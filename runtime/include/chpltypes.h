@@ -20,6 +20,10 @@ typedef struct __complex128 {
 typedef char* _string;
 
 
+#define _init_string(lhs_arg, lhs, rhs) \
+  lhs = NULL; \
+  _copy_string(lhs_arg, rhs)
+
 void _copy_string(_string* lhs, _string rhs);
 char* glomstrings(int numstrings, ...);
 

@@ -153,6 +153,32 @@ static void insert_domain_init(Stmt* stmt, VarSymbol* var) {
 }
 
 
+static void insert_string_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
+  if (type->defaultVal) {
+    Expr* args = new Variable(var);
+    args->append(new Variable(var));
+    args->append(type->defaultVal->copy());
+    Symbol* init_string = Symboltable::lookupInternal("_init_string");
+    FnCall* call = new FnCall(new Variable(init_string), args);
+    ExprStmt* call_stmt = new ExprStmt(call);
+    insert_default_init_stmt(var, call_stmt);
+  }
+}
+
+
+static void insert_string_user_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
+  if (type->defaultVal) {
+    Expr* args = new Variable(var);
+    args->append(new Variable(var));
+    args->append(type->defaultVal->copy());
+    Symbol* init_string = Symboltable::lookupInternal("_init_string");
+    FnCall* call = new FnCall(new Variable(init_string), args);
+    ExprStmt* call_stmt = new ExprStmt(call);
+    stmt->insertBefore(call_stmt);
+  }
+}
+
+
 static void insert_config_init(Stmt* stmt, VarSymbol* var) {
 
   // SJD: Note I want this to be a single macro INIT_CONFIG with the
@@ -230,22 +256,56 @@ static void insert_user_init(Stmt* stmt, VarSymbol* var) {
 
 
 static void insert_init(Stmt* stmt, VarSymbol* var, Type* type) {
+  //
+  // Default initialization (at the top of the scope)
+  //
+  if (dynamic_cast<ArrayType*>(type)) {
+    // Default initialization for arrays done at the DefStmt for now
+  } else if (dynamic_cast<DomainType*>(type)) {
+    // Default initialization for domains not done
+  } else if (type == dtString) {
+    insert_string_default_init(stmt, var, type);
+  } else {
+    insert_default_init(stmt, var, type);
+  }
+
+  //
+  // User initialization (at the DefStmt)
+  //
   if (dynamic_cast<ArrayType*>(type)) {
     insert_array_init(stmt, var, type);
   } else if (dynamic_cast<DomainType*>(type)) {
     insert_domain_init(stmt, var);
   } else if (var->varClass == VAR_CONFIG) {
-    insert_default_init(stmt, var, type);
     insert_config_init(stmt, var);
   } else {
-    insert_default_init(stmt, var, type);
     insert_user_init(stmt, var);
   }
 }
 
 
-// used within nested array call to put default init in loop
+//
+// This procedure is like insert_init, except the default
+// initialization is done at the DefStmt rather than at the top of the
+// scope.  This is how it is currently handled for arrays.
+//
 static void insert_init_at_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
+  //
+  // Default initialization (at the DefStmt)
+  //
+  if (dynamic_cast<ArrayType*>(type)) {
+    // Default initialization for arrays done at the DefStmt for now
+  } else if (dynamic_cast<DomainType*>(type)) {
+    // Default initialization for domains not done
+  } else if (type == dtString) {
+    insert_string_user_default_init(stmt, var, type);
+  } else {
+    insert_user_default_init(stmt, var, type);
+  }
+
+  //
+  // User initialization (at the DefStmt)
+  //
   if (dynamic_cast<ArrayType*>(type)) {
     insert_array_init(stmt, var, type);
   } else if (dynamic_cast<DomainType*>(type)) {
@@ -253,7 +313,6 @@ static void insert_init_at_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
   } else if (var->varClass == VAR_CONFIG) {
     INT_FATAL(stmt, "Array of configs?! or something");
   } else {
-    insert_user_default_init(stmt, var, type);
     insert_user_init(stmt, var);
   }
 }
