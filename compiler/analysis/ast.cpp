@@ -276,7 +276,6 @@ finalize_types(IF1 *i) {
   set_value_for_value_classes(i);
   set_true_type_for_variables(i);
   make_type_syms(i);
-  //build_type_hierarchy();
 }
 
 

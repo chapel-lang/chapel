@@ -30,6 +30,7 @@ void FieldsToMemberAccesses::preProcessStmt(Stmt* stmt) {
 	  Symboltable::defineInScope(this_insert, method->fn->scope);
 	  this_insert = appendLink(this_insert, method->fn->formals);
 	  method->fn->formals = this_insert;
+	  method->fn->_this = this_insert;
 	}
 	stmt = next;
       }

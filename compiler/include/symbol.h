@@ -107,6 +107,7 @@ class FnSymbol : public Symbol {
  public:
   bool exportMe;
   Symbol* formals;
+  Symbol* _this;
   Stmt* body;
 
   FnSymbol* parentFn;

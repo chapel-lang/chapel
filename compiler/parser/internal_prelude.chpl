@@ -2,11 +2,11 @@ class Index {
 }
 
 class Array {
-  function self(i) {
-    return __primitive("array_index", self, i);
+  function this(i) {
+    return __primitive("array_index", this, i);
   }
-  function self(i; j) {
-    return __primitive("array_index", self, i, j);
+  function this(i; j) {
+    return __primitive("array_index", this, i, j);
   }
 }
 

@@ -209,6 +209,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
   Symbol(SYMBOL_FN, init_name, init_retType),
   exportMe(init_exportMe),
   formals(init_formals),
+  _this(0),
   body(init_body),
   parentFn(init_parentFn)
 {}
@@ -217,6 +218,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 FnSymbol::FnSymbol(char* init_name, FnSymbol* init_parentFn) :
   Symbol(SYMBOL_FN, init_name, nilType),
   formals(nilSymbol),
+  _this(0),
   body(nilStmt),
   parentFn(init_parentFn)
 {}

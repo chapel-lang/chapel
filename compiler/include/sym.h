@@ -38,9 +38,9 @@ enum Type_kind {
   Type_ALIAS		// a type by another name, possible with constraints
 };
 
-#define CPP_IS_LAME {						\
-  "NONE", "UNKNOWN", "SUM", "PRODUCT", "RECORD", "VECTOR",	\
- "FUN", "REF", "TAGGED", "PRIMITIVE", "APPLICATION", "ALIAS"}
+#define CPP_IS_LAME {							\
+  "NONE", "UNKNOWN", "LUB", "GLB", "PRODUCT", "RECORD", "VECTOR",	\
+  "FUN", "REF", "TAGGED", "PRIMITIVE", "APPLICATION", "ALIAS"}
 EXTERN char *type_kind_string[] EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 

@@ -177,6 +177,16 @@ if1_set_float_type(IF1 *p, Sym *t, int size) {
 }
 
 void
+if1_set_complex_type(IF1 *p, Sym *t, int size) {
+  int ss = 0;
+  size >>= 4;
+  ss = size - 1;
+  p->complex_types[ss] = t;
+  t->num_kind = IF1_NUM_KIND_COMPLEX;
+  t->num_index = ss;
+}
+
+void
 Sym::inherits_add(Sym *s) {
   implements.add(s);
   specializes.add(s);

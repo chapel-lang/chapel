@@ -1214,18 +1214,18 @@ gen_fun(IF1 *i, ParseAST *ast) {
   ParseAST **args = &ast->children.v[1];
   Sym *as[n + 2];
   int iarg = 0;
+  if (fn->name != cannonical_class && fn->name != cannonical_self) {
+    as[iarg] = new_sym(i, fn->scope);
+    as[iarg]->ast = ast;
+    as[iarg]->must_implement_and_specialize(if1_make_symbol(i, fn->name));
+    iarg++;
+  }
   if (ast->sym->self) {
     as[iarg] = ast->sym->self;
     if (fn->name == cannonical_class)
       as[iarg]->must_implement_and_specialize(ast->sym->in->type_sym);
     else
       as[iarg]->must_implement_and_specialize(ast->sym->in);
-    iarg++;
-  }
-  if (fn->name != cannonical_class && fn->name != cannonical_self) {
-    as[iarg] = new_sym(i, fn->scope);
-    as[iarg]->ast = ast;
-    as[iarg]->must_implement_and_specialize(if1_make_symbol(i, fn->name));
     iarg++;
   }
   for (int j = 0; j < n; j++)
@@ -1682,7 +1682,7 @@ gen_type(IF1 *i, ParseAST *ast) {
       tself->aspect = s;
       if1_move(i, &body, ast->sym->init->self, tself, ast); 
       Sym *rval = new_sym(i, fn->scope);
-      Code *send = if1_send(i, &body, 2, 1, tself, s->init, rval);
+      Code *send = if1_send(i, &body, 2, 1, s->init, tself, rval);
       send->ast = ast;
     }
     if1_gen(i, &body, rec->code);
@@ -1690,10 +1690,10 @@ gen_type(IF1 *i, ParseAST *ast) {
     c = if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
     c->ast = ast;
     Sym *as[2];
-    as[0] = fn->self;
-    as[1] = new_sym(i, fn->scope);
-    as[1]->ast = ast;
-    as[1]->must_implement_and_specialize(if1_make_symbol(i, fn->name));
+    as[0] = new_sym(i, fn->scope);
+    as[0]->ast = ast;
+    as[0]->must_implement_and_specialize(if1_make_symbol(i, fn->name));
+    as[1] = fn->self;
     if1_closure(i, fn, body, 2, as);
     ast->rval = new_sym(i, ast->scope);
     if1_move(i, &ast->code, fn, ast->rval, ast);

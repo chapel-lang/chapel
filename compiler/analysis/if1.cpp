@@ -882,6 +882,9 @@ static char *int_type_names[IF1_INT_TYPE_NUM][2] = {
 static char *float_type_names[IF1_FLOAT_TYPE_NUM] = {
   "float32",  "float64", "float128"
 };
+static char *complex_type_names[IF1_FLOAT_TYPE_NUM] = {
+  "complex32",  "complex64", "complex128"
+};
 static int float_type_sizes[IF1_FLOAT_TYPE_NUM] = {
   32, 64, 128
 };
@@ -903,6 +906,12 @@ if1_set_primitive_types(IF1 *if1) {
       Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
       if (!ss) fail("unable to find builtin type '%s'", tt);
       if1_set_float_type(if1, ss, float_type_sizes[s]);
+    }
+    tt = complex_type_names[s];
+    if (tt) {
+      Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
+      if (!ss) fail("unable to find builtin type '%s'", tt);
+      if1_set_complex_type(if1, ss, float_type_sizes[s]);
     }
   }
 }

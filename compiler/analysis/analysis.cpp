@@ -333,6 +333,8 @@ build_types(Vec<BaseAST *> &syms) {
 	// ClassType::definition handled below in build_classes()
 	ClassType *tt = dynamic_cast<ClassType*>(t);
 	t->asymbol->type_kind = Type_RECORD;
+	if (tt->value)
+	  t->asymbol->is_value_class = 1;
 	tt->name->asymbol = (ASymbol*)tt->asymbol->type_sym;
 	if (tt->parentClass)
 	  t->asymbol->inherits_add(tt->parentClass->asymbol);
@@ -562,6 +564,13 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
   return 0;
 }
 
+static void
+gen_alloc(Sym *s, VarDefStmt *def, Sym *type) {
+  Code **c = &def->ainfo->code;
+  Code *send = if1_send(if1, c, 2, 1, sym_new, type, s);
+  send->ast = def->ainfo;
+}
+
 static int
 gen_vardef(BaseAST *a) {
   VarDefStmt *def = dynamic_cast<VarDefStmt*>(a);
@@ -569,20 +578,26 @@ gen_vardef(BaseAST *a) {
   Sym *s = var->asymbol;
   def->ainfo->sym = s;
   if (var->type) {
-    if (var->type->astType != TYPE_CLASS) {
-      s->type = var->type->asymbol;
+    if (var->type->astType != TYPE_CLASS || dynamic_cast<ClassType*>(var->type)->value) {
+      s->type = unalias_type(var->type->asymbol);
       s->is_var = 1;
     } else
-      s->must_implement = var->type->asymbol;
+      s->must_implement = unalias_type(var->type->asymbol);
   }
   if (!def->init->isNull()) {
     if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
     if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->sym, def->ainfo);
-  } else if (!s->is_var) {
-    show_error("missing value initializer", def->ainfo);
-    return -1;
-  } else {
-    s->is_external = 1; // hack
+  } else if (!s->is_var)
+    return show_error("missing initializer", def->ainfo);
+  else if (!s->type && !s->must_implement)
+    return show_error("missing variable type", def->ainfo);
+  else {
+    if (s->type) {
+      if (s->type->num_kind)
+	s->is_external = 1; // hack
+      else
+	gen_alloc(s, def, s->type);
+    }
   }
   switch (var->varClass) {
     case VAR_NORMAL: break;
@@ -725,7 +740,7 @@ gen_if1(BaseAST *ast) {
   switch (ast->astType) {
     case STMT: assert(ast->isNull()); break;
     case STMT_NOOP: break;
-    case STMT_WITH: break; /** NEW CASE--SJD: 2004/12/03 **/
+    case STMT_WITH: break;
     case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
     case STMT_TYPEDEF: break;
     case STMT_FNDEF: break;
@@ -734,6 +749,7 @@ gen_if1(BaseAST *ast) {
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
       Sym *fn = fnsym; // s->parentFn->asymbol;
+      //assert(s->parentSymbol);
       if (!s->expr->isNull()) {
 	if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
 	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
@@ -809,11 +825,6 @@ gen_if1(BaseAST *ast) {
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
       Sym *sym = s->var->asymbol;
-      // hack
-      if (s->var->asymbol->name && 
-	  !strcmp(s->var->asymbol->name, "self")) {
-	sym = fnsym->self;
-      }
       s->ainfo->sym = sym;
       gen_move(s, sym);
       break;
@@ -1145,9 +1156,7 @@ gen_fun(FnDefStmt *f) {
   Sym *as[args.n + 2];
   int iarg = 0;
   assert(f->fn->asymbol->name);
-  if (f->fn->scope->type == SCOPE_CLASS)
-    as[iarg++] = fn->self;
-  if (strcmp(f->fn->asymbol->name, "self") != 0) {
+  if (strcmp(f->fn->asymbol->name, "this") != 0) {
     as[iarg++] = new_sym(f->fn->asymbol->name);
     as[iarg-1]->must_specialize = if1_make_symbol(if1, f->fn->asymbol->name);
   }
@@ -1173,11 +1182,8 @@ build_function(FnDefStmt *f) {
   s->ret->ast = f->ainfo;
   s->ret->is_lvalue = 1;
   s->labelmap = new LabelMap;
-  if (f->fn->scope->type == SCOPE_CLASS) {
-    s->self = new_sym("self"); // hack
-    s->self->ast = f->ainfo;
-    s->self->must_implement_and_specialize(f->fn->scope->symContext->type->asymbol);
-  }
+  if (f->fn->_this)
+    s->self = f->fn->_this->asymbol;
   set_global_scope(s);
   if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
   Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
@@ -1401,7 +1407,10 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   init_symbols();
   debug_new_ast(stmts, syms);
   if (import_symbols(syms) < 0) return -1;
+  if1_set_primitive_types(if1);
   if (build_classes(syms) < 0) return -1;
+  sym_null->is_external = 1;	// hack
+  finalize_types(if1);
   if (build_functions(syms) < 0) return -1;
   pdb->fa->primitive_transfer_functions.put(
     domain_start_index_symbol->name, new RegisteredPrim(domain_start_index));
@@ -1429,9 +1438,6 @@ ast_to_if1(Vec<Stmt *> &stmts) {
     read_symbol->name, new RegisteredPrim(read_transfer_function));
   pdb->fa->primitive_transfer_functions.put(
     array_index_symbol->name, new RegisteredPrim(array_index));
-  if1_set_primitive_types(if1);
-  sym_null->is_external = 1;	// hack
-  finalize_types(if1);
   build_type_hierarchy();
   finalize_symbols(if1);
   return 0;

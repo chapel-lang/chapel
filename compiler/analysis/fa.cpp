@@ -950,8 +950,8 @@ make_closure(AVar *result) {
   PNode *partial_application = result->var->def;
   EntrySet *es = (EntrySet*)result->contour;
   if (partial_application->prim) { // apply and period
-    make_closure_var(partial_application->rvals.v[1], es, cs, result, add);
     make_closure_var(partial_application->rvals.v[3], es, cs, result, add);
+    make_closure_var(partial_application->rvals.v[1], es, cs, result, add);
   } else
     for (int i = 0; i < partial_application->rvals.n; i++)
       make_closure_var(partial_application->rvals.v[i], es, cs, result, add);
@@ -1333,8 +1333,8 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	      flow_vars(iv, result);
 	    else {
 	      Vec<AVar *> args;
-	      args.add(selector);
-	      int res = application_constraints(p, es, obj, cs, args);
+	      args.add(obj);
+	      int res = application_constraints(p, es, selector, cs, args);
 	      if (res > 0)
 		partial = 1;
 	      else if (res < 0)
