@@ -18702,3 +18702,14 @@ Added files:
 	                               break-5.future continue-2.future 
 	                               continue-4.future 
 
+---------------------------------------------------------------------------
+
+03/02/05 16:23:40 -- jplevyak
+
+Log message:
+	test for parsing of string constants with embedded "
+
+Added files:
+	chapel/test/trivial/jplevyak/: string-1.chpl string-1.future 
+	                               string-1.good 
+
