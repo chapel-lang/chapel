@@ -1651,7 +1651,9 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_NAMED: {
       NamedExpr *s = dynamic_cast<NamedExpr *>(ast);
-      s->ainfo->rval = s->actual->ainfo->rval;
+      s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
+      if1_move(if1, &s->ainfo->code, s->actual->ainfo->rval, s->ainfo->rval, s->ainfo);
       s->ainfo->rval->arg_name = if1_cannonicalize_string(if1, s->name);
       break;
     }

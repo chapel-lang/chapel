@@ -87,6 +87,11 @@ cannonicalize_mposition(MPosition &p) {
   cp = new MPosition;
   cp->pos.copy(p.pos);
   cannonical_mposition.put(cp);
+  if (cp->pos.n > 1) {
+    MPosition pp(*cp);
+    pp.pos.n--;
+    cp->parent = cannonicalize_mposition(pp);
+  }
   return cp;
 }
 
@@ -217,17 +222,17 @@ positional_to_named(CreationSet *cs, AVar *av, MPosition &pp, MPosition *np) {
 }
 
 void
-Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *cp, MPosition *cpp, 
+Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acpp, 
 			  Vec<Fun *> **local_matches, int recurse, int out_of_position)
 {
   a->arg_of_send.set_add(send);
-  if (!all_positions || all_positions->set_in(cp)) {
+  if (!all_positions || all_positions->set_in(acp)) {
     Vec<Fun *> funs;
     if (!a->out->n) {
       Vec<Fun *> new_funs;
       Vec<Sym *> done;
-      pattern_match_sym(sym_unknown, cp, *local_matches, new_funs, out_of_position, done);
-      update_match_map(a, sym_unknown->abstract_type->v[0], cp, cpp, new_funs);
+      pattern_match_sym(sym_unknown, acp, *local_matches, new_funs, out_of_position, done);
+      update_match_map(a, sym_unknown->abstract_type->v[0], acp, acpp, new_funs);
       funs.set_union(new_funs);
     } else {
       forv_CreationSet(cs, *a->out) if (cs) {
@@ -239,9 +244,9 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *cp, MPosition *cpp,
 	}
 	Vec<Sym *> done;
 	Vec<Fun *> new_funs, *new_funs_p = &new_funs;
-	if (!pattern_match_sym(sym, cp, *local_matches, new_funs, out_of_position, done))
+	if (!pattern_match_sym(sym, acp, *local_matches, new_funs, out_of_position, done))
 	  continue;
-	update_match_map(a, cs, cp, cpp, new_funs);
+	update_match_map(a, cs, acp, acpp, new_funs);
 	if (recurse && cs->vars.n) // for recursive ap == app !!
 	  find_all_matches(cs, cs->vars, &new_funs_p, ap, out_of_position);
 	funs.set_union(new_funs);
@@ -255,8 +260,8 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *cp, MPosition *cpp,
       forv_Fun(f, saved_matches) if (f) {
 	if (funs.set_in(f))
 	  (*local_matches)->set_add(f);
-	else if (!f->args.get(cp)) // the function does not use this argument
-	  (*local_matches)->set_add(f);
+	else if (acpp->parent && !f->arg_syms.get(to_formal(acpp->parent, match_map.get(f)))->is_pattern)
+	  (*local_matches)->set_add(f); 
       }
       (*local_matches)->set_union(funs);
     }
@@ -895,7 +900,7 @@ build_patterns(FA *fa) {
 // 
 
 static void
-build_arg_position(Fun *f, Sym *a, MPosition &fpp, MPosition *parent = 0) {
+build_arg_position(Fun *f, Sym *a, MPosition &fpp) {
   MPosition *fcpp = cannonicalize_mposition(fpp), *fcnp = 0;
   if (a->name && !a->is_constant && !a->is_symbol) {
     MPosition fnp(fpp);
@@ -904,7 +909,6 @@ build_arg_position(Fun *f, Sym *a, MPosition &fpp, MPosition *parent = 0) {
     f->named_to_positional.put(fcnp, fcpp);
   }
   for (MPosition *fcp = fcpp; fcp; fcp = fcnp, fcnp = 0) { 
-    fcp->parent = parent;
     f->arg_positions.add(fcp);
     if (!a->var)
       a->var = new Var(a);
@@ -918,7 +922,7 @@ build_arg_position(Fun *f, Sym *a, MPosition &fpp, MPosition *parent = 0) {
 	MPosition local_fpp(fpp);
 	local_fpp.push(1);
 	forv_Sym(aa, a->has) {
-	  build_arg_position(f, aa, local_fpp, fcp);
+	  build_arg_position(f, aa, local_fpp);
 	  local_fpp.inc();
 	}
 	local_fpp.pop();
