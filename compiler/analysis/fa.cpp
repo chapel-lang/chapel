@@ -47,7 +47,8 @@ static AType *type_diff(AType *a, AType *b);
 static AType *type_intersection(AType *a, AType *b);
 static AType *type_cannonicalize(AType *t);
 static AType *make_AType(CreationSet *cs);
-static int application_constraints(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args);
+static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
+		       Partial_kind partial);
 
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
@@ -1064,10 +1065,10 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
 
 // returns 1 if any are partial, 0 if some matched and -1 if none matched
 static int
-all_application_constraints(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args) {
+all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, Partial_kind partial) {
   int incomplete = -2;
   forv_CreationSet(cs, *a0->out) if (cs)
-    switch (application_constraints(p, es, a0, cs, args)) {
+    switch (application(p, es, a0, cs, args, partial)) {
       case -1: if (incomplete < 0) incomplete = -1; break;
       case 0: if (incomplete < 0) incomplete = 0; break;
       case 1: incomplete = 1; break;
@@ -1076,7 +1077,7 @@ all_application_constraints(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args)
 }
 
 static int
-partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> &args) {
+partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> &args, Partial_kind partial) {
   AVar *result = make_AVar(p->lvals.v[0], es);
   AVar *fun = cs->vars.v[0];
   for (int i = cs->vars.n - 1; i >= 1; i--) {
@@ -1084,7 +1085,7 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> &args) 
     args.add(cs->vars.v[i]);
   }
   fun->arg_of_send.set_add(result);
-  return all_application_constraints(p, es, fun, args);
+  return all_applications(p, es, fun, args, partial);
 }
 
 static void
@@ -1113,17 +1114,19 @@ record_arg(AVar *a, Sym *s, AEdge *e, MPosition &p) {
 }
 
 static int
-function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args) {
+function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args, 
+		  Partial_kind partial) 
+{
   Vec<AVar *> a;
-  int partial = 0;
+  int partial_result = 0;
   a.add(a0);
   for (int j = args.n - 1; j >= 0; j--)
     a.add(args.v[j]);
   Vec<Match *> matches;
   AVar *send = make_AVar(p->lvals.v[0], es);
-  if (pattern_match(a, send, 1, &matches)) {
+  if (pattern_match(a, send, partial, &matches)) {
     forv_Match(m, matches) {
-      if (m->fun->sym->has.n == a.n) {
+      if (!m->partial && partial != Partial_ALWAYS) {
 	AEdge *ee = make_AEdge(m, p, es);
 	if (!ee->args.n) {
 	  MPosition p;
@@ -1138,7 +1141,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 	    ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
 	}
       } else 
-	partial = 1;
+	partial_result = 1;
       if (!p->next_callees)
 	p->next_callees = new Callees;
       Fun *f = m->fun;
@@ -1146,14 +1149,16 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
       p->next_callees->funs.set_add(f);
     }
   }
-  return matches.n ? partial : -1;
+  return matches.n ? partial_result : -1;
 }
 
 static int
-application_constraints(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args) {
+application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args, 
+	    Partial_kind partial) 
+{
   if (sym_function->implementors.set_in(cs->sym) && cs->defs.n)
-    return partial_application(p, es, cs, args);
-  return function_dispatch(p, es, a0, cs, args);
+    return partial_application(p, es, cs, args, partial);
+  return function_dispatch(p, es, a0, cs, args, partial);
 }
 
 void
@@ -1224,7 +1229,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     }
     AVar *a0 = make_AVar(p->rvals.v[0], es);
     a0->arg_of_send.set_add(result);
-    if (all_application_constraints(p, es, a0, args) > 0)
+    if (all_applications(p, es, a0, args, (Partial_kind)p->code->partial) > 0)
       make_closure(result);
   } else {
     // argument and return constraints
@@ -1323,7 +1328,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	AVar *fun = make_AVar(p->rvals.v[1], es);
 	AVar *a1 = make_AVar(p->rvals.v[3], es);
 	args.add(a1);
-	if (all_application_constraints(p, es, fun, args) > 0)
+	if (all_applications(p, es, fun, args, (Partial_kind)p->code->partial) > 0)
 	  make_closure(result);
 	break;
       }
@@ -1341,7 +1346,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	    else {
 	      Vec<AVar *> args;
 	      args.add(obj);
-	      int res = application_constraints(p, es, selector, cs, args);
+	      int res = application(p, es, selector, cs, args, (Partial_kind)p->code->partial);
 	      if (res > 0)
 		partial = 1;
 	      else if (res < 0)

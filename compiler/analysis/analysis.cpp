@@ -912,6 +912,7 @@ gen_if1(BaseAST *ast) {
 			 s->base->ainfo->rval, op, selector,
 			 s->ainfo->rval);
       c->ast = s->ainfo;
+      c->partial = Partial_ALWAYS; // HACK
       s->ainfo->rval->is_lvalue = 1;
       break;
     }
@@ -1066,6 +1067,7 @@ gen_if1(BaseAST *ast) {
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
+      send->partial = Partial_NEVER;
       s->ainfo->rval->is_lvalue = 1;
       s->ainfo->sym = s->ainfo->rval;
       break;

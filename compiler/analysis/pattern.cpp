@@ -15,7 +15,7 @@ class Matcher {
  public:
   AVar *send;
   AVar *arg0;
-  int partial_ok;
+  Partial_kind partial;
   Vec<Match *> *matches;
   MatchMap match_map;
   Vec<Fun *> *all_matches, *partial_matches;
@@ -37,7 +37,7 @@ class Matcher {
   void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &);
   void cannonicalize_matches();
 
-  Matcher(AVar *send, AVar *arg0, int partial_ok, Vec<Match *> *matches);
+  Matcher(AVar *send, AVar *arg0, Partial_kind partial, Vec<Match *> *matches);
 };
 
 static ChainHash<MPosition *, MPositionHashFuns> cannonical_mposition;
@@ -113,10 +113,10 @@ Matcher::pattern_match_sym(Sym *type, MPosition *cp, Vec<Fun *> *local_matches,
   }
 }
 
-Matcher::Matcher(AVar *asend, AVar *aarg0, int apartial_ok, Vec<Match *> *amatches) {
+Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *amatches) {
   send = asend;
   arg0 = aarg0;
-  partial_ok = apartial_ok;
+  partial = apartial;
   matches = amatches;
   matches->clear();
   
@@ -407,7 +407,7 @@ Matcher::default_arguments_and_partial_application(
 
 int
 Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int top_level) {
-  if (top_level && partial_ok)
+  if (top_level && partial != Partial_NEVER)
     return 1;
   Match *m = match_map.get(f);
   Vec<MPosition *> formals;
@@ -587,8 +587,8 @@ Matcher::cannonicalize_matches() {
 
 // main dispatch entry point - given a vector of arguments return a vector of matches
 int
-pattern_match(Vec<AVar *> &args, AVar *send, int partial_ok, Vec<Match *> *matches) {
-  Matcher matcher(send, args.v[0], partial_ok, matches);
+pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial, Vec<Match *> *matches) {
+  Matcher matcher(send, args.v[0], partial, matches);
   {
     MPosition p;
     matcher.find_all_matches(0, args, &matcher.partial_matches, p, 0);

@@ -2,6 +2,7 @@
 #define _pattern_H_
 
 #include <sys/types.h>
+#include "code.h"
 
 class Sym;
 class FA;
@@ -74,6 +75,7 @@ class Match : public gc {
   Vec<MPosition *> generic_args;
   Vec<MPosition *> pointwise_args;
   int partial;
+
   Match(Fun *afun) : fun(afun), partial(0) {assert(afun);}
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
@@ -81,7 +83,7 @@ class Match : public gc {
 
 void build_patterns(FA *fa);
 void build_arg_positions(FA *fa);
-int pattern_match(Vec<AVar *> &args, AVar *send, int partial_ok, Vec<Match *> *matches);
+int pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial_ok, Vec<Match *> *matches);
 MPosition *cannonicalize_mposition(MPosition &p);
 
 #endif

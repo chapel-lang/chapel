@@ -15,6 +15,8 @@ enum Code_kind {
   Code_GOTO, Code_SEQ, Code_CONC, Code_NOP
 };
 
+enum Partial_kind { Partial_OK = 0, Partial_NEVER = 1, Partial_ALWAYS = 2 };
+
 #define CPP_IS_LAME { "SUB", "MOVE", "SEND", "IF", "LABEL", "GOTO", "SEQ", "CONC", "NOP" }
 EXTERN char *code_string[] EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
@@ -33,6 +35,7 @@ class Code : public gc {
   char 		*filename();
   int 		line();
 
+  unsigned int	partial:2;
   unsigned int  live:1;
   unsigned int	dead:1;	// used by if1.cpp
   Code		*cont;	// used by cfg.cpp
