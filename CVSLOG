@@ -12522,3 +12522,14 @@ Added files:
 	chapel/test/trivial/bradc/: testAllScopes.chpl 
 	                            testAllScopes.good 
 
+---------------------------------------------------------------------------
+
+12/21/04 15:21:49 -- bradc
+
+Log message:
+	Added support for C++-style single-line comments to a
+	passlist file specified with the --passlist option.
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+
