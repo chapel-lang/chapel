@@ -1,0 +1,7 @@
+#!/bin/csh -f
+set testname = $1
+set outfile = $2
+
+cp $outfile $outfile.unsorted.tmp
+sort $outfile.unsorted.tmp > $outfile
+rm $outfile.unsorted.tmp

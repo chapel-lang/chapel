@@ -134,6 +134,10 @@ foreach chplsrc ($testsrc)
 	    cat $catfiles >>& $complog
 	endif
 
+	if (-x ./PREDIFF) then
+	    ./PREDIFF $execfile $complog
+	endif
+
 	echo \[Executing diff $checkfile $complog\]
 	diff $diffargs $checkfile $complog
 	if ( $status != 0 ) then
@@ -184,6 +188,10 @@ foreach chplsrc ($testsrc)
 	    if ( "$catfiles" != "") then
 		echo \[Concatenating extra files: $catfiles\]
 		cat $catfiles >>& $execlog
+	    endif
+
+	    if (-x ./PREDIFF) then
+		./PREDIFF $execfile $execlog
 	    endif
 
 	    echo \[Executing diff $checkfile $execlog\]

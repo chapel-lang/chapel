@@ -134,6 +134,13 @@
 #    writing a specialized sub_test script.  Again, this file should
 #    be a single line with no linefeeds.
 #
+#  - if the subdirectory contains an executable PREDIFF file, that
+#    file will be executed prior to running any diff command and
+#    will be sent two arguments: 1) the name of the current test
+#    and 2) the name of the output file that the diff is going to
+#    be taken against.  (Other such commands can be added to various
+#    stages of the sub_test script on request).
+#
 #  - if the subdirectory contains a TIMEOUT file, then that file
 #    will be read to determine the number of seconds that the tests
 #    in the directory should be allowed to run before being killed.
