@@ -22339,3 +22339,14 @@ Added files:
 	                            test_record6.future 
 	                            test_record6.good 
 
+---------------------------------------------------------------------------
+
+03/29/05 14:39:50 -- jplevyak
+
+Log message:
+	Fixed up analysis of arrays of arrays and the .future which now crashes elsewhere.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/arrays/deitz/: test_array_of_array1.future 
+
