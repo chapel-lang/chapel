@@ -974,7 +974,11 @@ void MemberAccess::codegen(FILE* outfile) {
   else {
     INT_FATAL(this, "Dot applied to non-class/record");
   }
+#if 0
   member->codegen(outfile);
+#else
+  fprintf(outfile, member->name);
+#endif
 }
 
 

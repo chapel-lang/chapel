@@ -2035,7 +2035,12 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
   PNode *pn = ma->ainfo->pnodes.v[0];
   if (pn->code->kind != Code_SEND)
     return -2;
-  Vec<Fun *> *fns = ma->stmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
+  ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(ma->stmt->parentSymbol);
+  Vec<Fun *> *fns = 0;
+  if (mod)
+    fns = mod->initFn->asymbol->sym->fun->calls.get(pn);
+  else
+    ma->stmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
   if (!fns) {
     Sym *obj_type = pn->rvals.v[1]->type;
     char *sel = pn->rvals.v[3]->sym->name;

@@ -239,6 +239,7 @@ class ResolveEasy : public Traversal {
 };
 
 void ResolveEasy::preProcessExpr(Expr* expr) {
+#if 0
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
       Symbol* member = Symboltable::lookupInScope(member_access->member->name, class_type->classScope);
@@ -253,6 +254,7 @@ void ResolveEasy::preProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Error resolving dot-expression");
     }
   }
+#endif
 }
 
 
