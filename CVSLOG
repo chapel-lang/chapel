@@ -10642,3 +10642,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa_extras.cpp 
 
+---------------------------------------------------------------------------
+
+11/30/04 09:45:38 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	destructured return values must either be by position (for tuples) or
+	by name (for records and classes).
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp pattern.cpp 
+	chapel/test/flowanalysis/jplevyak/: destruct.good destruct.v 
+	                                    destruct2.good destruct2.v 
+
