@@ -705,7 +705,18 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 				  parentClass,
 				  constructor->copy(clone, map, analysis_clone),
 				  classScope);
-  copy->addDeclarations(declarationList->copy(clone, map, analysis_clone));
+  Stmt* new_decls = nilStmt;
+  Stmt* old_decls = declarationList;
+  while (old_decls && !old_decls->isNull()) {
+    if (dynamic_cast<FnDefStmt*>(old_decls)) {
+      new_decls = appendLink(new_decls, old_decls->copy(false, map, analysis_clone));
+    }
+    else {
+      new_decls = appendLink(new_decls, old_decls->copy(true, map, analysis_clone));
+    }
+    old_decls = nextLink(Stmt, old_decls);
+  }
+  copy->addDeclarations(new_decls);
   copy->addName(name);
   return copy;
 }
