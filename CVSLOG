@@ -6812,3 +6812,26 @@ Added files:
 	chapel/compiler/AST/: checkTypeInfo.cpp checkTypeInfo.h 
 	                      testGetStuff.h 
 
+---------------------------------------------------------------------------
+
+09/09/04 17:53:33 -- bradc
+
+Log message:
+	Oops -- some fixes to last checkin (who taught me to modify
+	code while writing my CVS commit log...?).  Sorry about
+	that.
+	
+	Took out some debugging and placeholder INT_FATAL code that
+	I forgot to pull before checking in.
+	
+	Added a dummy pass (DummyPass) and wrote a test that checks
+	the ability to specify a dynamic passfile to run.
+
+Modified files:
+	chapel/compiler/: pass.cpp pass.h passlist.cpp 
+	chapel/compiler/AST/: traversal.cpp 
+Added files:
+	chapel/test/compflags/bradc/passlist/: .cvsignore COMPOPTS 
+	                                       passlist.h test.chpl 
+	                                       test.good 
+
