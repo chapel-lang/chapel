@@ -17101,3 +17101,14 @@ Added files:
 	                           test_array_integer_2d.future 
 	                           test_array_integer_2d.good 
 
+---------------------------------------------------------------------------
+
+02/09/05 15:13:50 -- bradc
+
+Log message:
+	This is a minor cleanup from my last checkin, to make sure
+	that I haven't broken the logging/mailing hooks in CVSROOT.
+
+Modified files:
+	chapel/runtime/src/: chplio.c 
+
