@@ -19351,3 +19351,15 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: weirdinit.future 
 
+---------------------------------------------------------------------------
+
+03/13/05 13:26:48 -- jplevyak
+
+Log message:
+	Re-add noinit.chpl and remove noinit.future.
+
+Added files:
+	chapel/test/classes/bradc/: noinit.chpl 
+Removed files:
+	chapel/test/classes/bradc/: noinit.future 
+
