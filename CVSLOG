@@ -2113,3 +2113,14 @@ Modified files:
 	chapel/compiler/: driver.cpp 
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/05/13 10:32:15 -- bradc
+
+Log message:
+	Made the testing system exit with an error if valgrind is
+	not available.
+
+Modified files:
+	chapel/test/: start_test 
+
