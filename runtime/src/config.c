@@ -58,9 +58,12 @@ int installConfigVar(char* varName, char* value) {
   configVarType* configVar;
   unsigned hashValue;
 
-  if ((*varName == '\0') || (*value == '\0')) {
-      fprintf(stderr, "***Error:  \"-s%s=%s\" is not a valid argument***\n", 
-	      varName, value);
+  if (*varName == '\0') {
+    fprintf(stderr, "***Error:  \"%s\" is not a valid variable name***\n", varName);
+    exit(0);
+  }
+  if (*value == '\0') {
+    fprintf(stderr, "***Error:  config var %s missing its initialization value***\n", varName);
       exit(0);
   }
   configVar = lookupConfigVar(varName);
@@ -79,14 +82,15 @@ int installConfigVar(char* varName, char* value) {
 int setInCommandLine(char* varName, _integer64* value) {
   int varSet = 0;
   configVarType* configVar = NULL;
+  char extraChars;
   
   configVar = lookupConfigVar(varName);
   if (configVar) {
-    if (sscanf(configVar->value, _default_format_read_integer64, value) == 1) {
+    if (sscanf(configVar->value, _default_format_read_integer64"%c", value, &extraChars) == 1) {
       varSet = 1;
     } else {
-      fprintf(stderr, "***Error:  \"-s%s=%s\" is not a valid argument***\n", 
-	      configVar->varName, configVar->value);
+      fprintf(stderr, "***Error:  \"%s\" is not a valid integer value***\n", 
+	      configVar->value);
       exit(0);
     }
   }
