@@ -7,6 +7,14 @@
 class ESet;
 class AVar;
 
+class CallPoint : public gc {
+ public:
+  Fun 	*fun;
+  PNode *pnode;
+  CallPoint(Fun *afun, PNode *apnode) : fun(afun), pnode(apnode) {}
+};
+#define forv_CallPoint(_c, _v) forv_Vec(CallPoint, _c, _v)
+
 // Functions
 
 class Fun : public gc {
@@ -14,6 +22,7 @@ class Fun : public gc {
   PDB *pdb;
   Sym *sym;
   AST *ast;
+  int id;
 
   PNode *entry;
   PNode *exit;
@@ -37,10 +46,14 @@ class Fun : public gc {
   Vec<EntrySet *> called_ess;
   Vec<CreationSet *> called_css;
   Vec<Vec<EntrySet *> *> equiv_sets;
+  PNodeMap *nmap;
+  VarMap *vmap;
 
-  // clone.cpp typings
+  // clone.cpp typings and call graph
   Vec<Var *> args;
   Vec<Var *> rets;
+  Map<PNode *, Vec<Fun *> *> calls;
+  Vec<CallPoint *> called;
 
   // cg.cpp
   char *cg_string;

@@ -247,8 +247,10 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     case Builtin_float128:
     case Builtin_complex:
     case Builtin_string:
+    case Builtin_function:
       sym->type_kind = Type_PRIMITIVE;
       break;
+    case Builtin_any: sym->type_kind = Type_SUM; break;
     case Builtin_tuple: sym->type_kind = Type_PRODUCT; break;
     case Builtin_vector: sym->type_kind = Type_VECTOR; break;
     case Builtin_ref: 
@@ -285,6 +287,7 @@ build_builtin_syms(IF1 *i, AST *ast) {
 	ident = ast->get(AST_ident);
       Lok:
 	ast->sym = ident->sym = if1_alloc_sym(i, ident->string);
+	ast->sym->ast = ast;
 	set_builtin(i, ident->sym, ast->builtin);
 	break;
       }
@@ -484,6 +487,7 @@ scope_pattern(IF1 *i, AST *ast, Scope *scope) {
     case AST_pattern:
       ast->sym = new_sym(i, scope);
       ast->sym->type = sym_tuple;
+      ast->sym->ast = ast;
       forv_AST(a, *ast) {
 	if (scope_pattern(i, a, scope) < 0)
 	  return -1;
@@ -508,6 +512,7 @@ scope_pattern(IF1 *i, AST *ast, Scope *scope) {
 	ast->sym = ast->v[0]->sym;
       else
 	ast->sym = new_sym(i, scope);
+      ast->sym->ast = ast;
       if (ast->kind == AST_vararg)
 	ast->sym->vararg = 1;
       if (ty)
@@ -534,11 +539,13 @@ define_function(IF1 *i, AST *ast) {
     ast->sym->scope->dynamic.add(fscope);
     ast->sym->self = new_sym(i, ast->sym->scope, cannonical_self);
     ast->sym->self->type = ast->sym->in;
+    ast->sym->self->ast = ast;
   }
   for (int x = 1; x < ast->n - 1; x++)
     if (scope_pattern(i, ast->v[x], ast->sym->scope) < 0)
       return -1;
   ast->sym->cont = new_sym(i, ast->sym->scope);
+  ast->sym->cont->ast = ast;
   ast->sym->labelmap = new LabelMap;
   ast->sym->ast = ast;
   return 0;
@@ -814,6 +821,7 @@ gen_fun(IF1 *i, AST *ast) {
     fn->class_static = fn->name == cannonical_class;
   } else {
     as[0] = new_sym(i, fn->scope);
+    as[0]->ast = ast;
     as[0]->type = if1_make_symbol(i, fn->name);
   }
   if (!fn->self)
@@ -878,6 +886,7 @@ gen_op(IF1 *i, AST *ast) {
   Code **c = &ast->code;
   Code *send = 0;
   ast->rval = new_sym(i, ast->scope);
+  ast->rval->ast = ast;
   Sym *res = ast->rval;
   AST *a0 = ast->op_index ? ast->v[0] : 0, *a1 = ast->n > (int)(1 + ast->op_index) ? ast->last() : 0;
   if (a0) if1_gen(i, c, a0->code);

@@ -904,6 +904,11 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
     // specifics
     switch (p->prim->index) {
       default: break;
+      case P_prim_print: {
+	AVar *ret = make_AVar(p->lvals.v[0], es);
+	update_var_in(ret, make_abstract_type(sym_int));
+	break;
+      }
       case P_prim_vector: {
 	AVar *ret = make_AVar(p->lvals.v[0], es);
 	prim_make_vector(p, es, ret); 
@@ -1483,21 +1488,24 @@ type_info(AST *a, Sym *s) {
   if (!s) 
     s = a->sym;
   if (!s)
+    s = a->rval;
+  if (!s)
     return 0;
   if (a->pnodes.n) {
     forv_PNode(n, a->pnodes) {
       forv_Var(v, n->lvals)
-	if (v->sym == a->sym)
+	if (v->sym == s)
 	  return v->type;
       forv_Var(v, n->lvals)
-	if (v->sym == a->sym)
+	if (v->sym == s)
 	  return v->type;
       forv_Var(v, n->rvals)
-	if (v->sym == a->sym)
+	if (v->sym == s)
 	  return v->type;
     }
   } else
-    return s->var ? s->var->type : 0;
+    if (s->var)
+      return s->var->type;
   return 0;
 }
 
@@ -1507,14 +1515,9 @@ void
 call_info(Fun *f, AST *a, Vec<Fun *> &funs) {
   funs.clear();
   forv_PNode(n, a->pnodes) {
-    forv_EntrySet(es, f->ess) if (es) {
-      Map<Fun *, AEdge *> *m = es->out_edge_map.get(n);
-      if (!m)
-	continue;
-      for (int i = 0; i < m->n; i++)
-	if (m->v[i].key)
-	  funs.set_add(m->v[i].value->to->fun);
-    }	
+    Vec<Fun *> *ff = f->calls.get(n);
+    if (ff)
+      funs.set_union(*ff);
   }	
   funs.set_to_vec();
 }

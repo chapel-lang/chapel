@@ -20,6 +20,7 @@ typedef Map<PNode*, ATypeViolation*> ViolationMap;
 typedef Map<PNode *, Map<Fun *, AEdge *> *> EdgeMap;
 typedef BlockHash<AEdge *, PointerHashFns> EdgeHash;
 typedef Vec<CreationSet *> VecCreationSet;
+typedef Vec<Vec<CreationSet *> *> CSSS;
 
 class AType : public Vec<CreationSet *> { 
  public:
@@ -114,6 +115,8 @@ class FA : public gc {
   Vec<EntrySet *> ess;		// all used entry sets as array
   Vec<EntrySet *> ess_set;	// all used entry sets as set
   Vec<Sym *> basic_types;
+  Vec<CreationSet *> css, css_set;
+  Vec<AVar *> global_avars;
 
   int analyze(Fun *f);
   int concretize();

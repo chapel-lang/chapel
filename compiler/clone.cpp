@@ -4,25 +4,24 @@
 
 #include "geysa.h"
 
-typedef Vec<Vec<CreationSet *> *> CSSS;
+#define BAD_NAME ((char*)-1)
+#define BAD_AST ((AST*)-1)
 
 static FA *fa = 0;
-static Vec<CreationSet *> css, css_set;
-static Vec<AVar *> global_avars;
 
 static void
 initialize() {
   forv_Fun(f, fa->funs)
     forv_Var(v, f->fa_all_Vars) {
       for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].value) {
-	css_set.set_union(*v->avars.v[i].value->out);
+	fa->css_set.set_union(*v->avars.v[i].value->out);
 	if (v->avars.v[i].key && v->avars.v[i].value->contour == GLOBAL_CONTOUR)
-	  global_avars.set_add(v->avars.v[i].value);
+	  fa->global_avars.set_add(v->avars.v[i].value);
       }
   }
-  global_avars.set_to_vec();
-  forv_CreationSet(cs, css_set) if (cs) {
-    css.add(cs);
+  fa->global_avars.set_to_vec();
+  forv_CreationSet(cs, fa->css_set) if (cs) {
+    fa->css.add(cs);
     cs->equiv = new Vec<CreationSet *>();
     cs->equiv->add(cs);
   }
@@ -67,6 +66,8 @@ basic_type(FA *fa, AType *t, Sym *fail) {
 	  res = fail;
     }
   }
+  if (res == &non_basic)
+    res = fail;
   return res;
 }
 
@@ -225,7 +226,7 @@ make_not_equiv(CreationSet *a, CreationSet *b) {
 static void
 determine_basic_clones() {
   Vec<Vec<CreationSet *> *> css_sets;
-  sets_by_f<CreationSet, CS_SYM_FN>(css, css_sets);
+  sets_by_f<CreationSet, CS_SYM_FN>(fa->css, css_sets);
   // clone for unboxing of basic types
   for (int i = 0; i < css_sets.n; i++) {
     for (int j = 0; j < css_sets.v[i]->n; j++) {
@@ -267,7 +268,7 @@ determine_clones() {
   Vec<CreationSet *> changed_css, last_changed_css;
   Vec<EntrySet *> changed_ess, last_changed_ess;
   changed_ess.copy(fa->ess);
-  changed_css.copy(css);
+  changed_css.copy(fa->css);
 
   determine_basic_clones();
 
@@ -338,7 +339,7 @@ determine_clones() {
     }
     // recompute creation set equivalence from non-equivalence
     Vec<Vec<CreationSet *> *> css_sets;
-    sets_by_f<CreationSet, CS_EQ_FN>(css, css_sets);
+    sets_by_f<CreationSet, CS_EQ_FN>(fa->css, css_sets);
     for (int i = 0; i < css_sets.n; i++) {
       Vec<CreationSet *> *s = css_sets.v[i];
       forv_CreationSet(cs, *s) if (cs) {
@@ -378,11 +379,29 @@ define_concrete_types(CSSS &css_sets) {
 	  cs->type = sym;
       } else if (sym == sym_tuple) {
 	// tuples use record type
+	char *name = 0;
+	AST *ast = 0;
 	sym = if1_alloc_sym(fa->pdb->if1);
 	sym->type_kind = Type_RECORD;
 	sym->incomplete = 1;
-	forv_CreationSet(cs, *eqcss) if (cs)
+	forv_CreationSet(cs, *eqcss) if (cs) {
+	  if (!name)
+	    name = cs->sym->name;
+	  else
+	    if (cs->sym->name != name)
+	      name = BAD_NAME;
+	  if (cs->defs.n != 1)
+	    ast = BAD_AST;
+	  else if (!ast)
+	    ast = cs->defs.v[0]->var->def->code->ast;
+	  else if (ast != cs->defs.v[0]->var->def->code->ast)
+	    ast = BAD_AST;
 	  cs->type = sym;
+	}
+	if (name && name != BAD_NAME)
+	  sym->name = name;
+	if (ast && ast != BAD_AST)
+	  sym->ast = ast;
       } else {
 	Sym *s = if1_alloc_sym(fa->pdb->if1);
 	s->type_kind = sym->type_kind;
@@ -460,7 +479,7 @@ resolve_concrete_types(CSSS &css_sets) {
 static void
 build_concrete_types() {
   CSSS css_sets;
-  forv_CreationSet(cs, css)
+  forv_CreationSet(cs, fa->css)
     css_sets.set_add(cs->equiv);
   css_sets.set_to_vec();
   define_concrete_types(css_sets);
@@ -524,21 +543,6 @@ fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
     f->args.fill(es->args.n);
     f->rets.fill(es->rets.n);
   }
-  forv_EntrySet(es, *ess) if (es) {
-    for (int i = 0; i < es->args.n; i++) {
-      if (!f->args.v[i]) {
-	f->args.v[i] = es->args.v[i]->var->copy();
-	f->fa_all_Vars.add(f->args.v[i]);
-      }
-      f->args.v[i]->avars.put(es, es->args.v[i]);
-    }
-    for (int i = 0; i < es->rets.n; i++) {
-      if (!f->rets.v[i]) 
-	f->rets.v[i] = es->rets.v[i]->var->copy();
-      f->rets.v[i]->avars.put(es, es->rets.v[i]);
-      f->fa_all_Vars.add(f->rets.v[i]);
-    }
-  }
 }
 
 static void
@@ -546,6 +550,9 @@ clone_functions() {
   Vec<Fun *> fs;
   fs.copy(fa->funs);
   forv_Fun(f, fs) {
+    forv_Sym(s, f->sym->args)
+      f->args.add(s->var);
+    f->rets.add(f->sym->ret->var);
     if (f->equiv_sets.n == 1) {
       fixup_clone(f, f->equiv_sets.v[0]);
       concretize_types(f);
@@ -554,8 +561,37 @@ clone_functions() {
 	Fun *ff = (i == f->equiv_sets.n - 1) ? f : f->copy();
 	fixup_clone(ff, f->equiv_sets.v[i]);
 	concretize_types(ff);
-	fa->funs.add(ff);
+	if (i != f->equiv_sets.n - 1) {
+	  fa->pdb->add(ff);
+	  fa->funs.add(ff);
+	}
       }	
+    }
+  }
+  // build cloned call graph
+  // careful: only EntrySet::fun has been updated with the cloned function!
+  // build Fun::calls
+  forv_EntrySet(es, fa->ess) {
+    Fun *f = es->fun;
+    for (int i = 0; i < es->out_edge_map.n; i++) {
+      if (es->out_edge_map.v[i].key) {
+	PNode *pnode = es->out_edge_map.v[i].key;
+	if (f->nmap)
+	  pnode = f->nmap->get(pnode);
+	Map<Fun *, AEdge *> *m = es->out_edge_map.v[i].value;
+	Vec<Fun *> *vf = f->calls.get(pnode);
+	if (!vf)
+	  f->calls.put(pnode, (vf = new Vec<Fun *>));
+	for (int j = 0; j < m->n; j++) if (m->v[j].key)
+	  vf->add(m->v[j].value->to->fun);
+      }
+    }
+  }
+  // invert Fun::calls to generated Fun::called
+  forv_Fun(f, fa->funs) {
+    for (int i = 0; i < f->calls.n; i++) if (f->calls.v[i].key) {
+      forv_Fun(ff, *f->calls.v[i].value)
+	ff->called.add(new CallPoint(f, f->calls.v[i].key));
     }
   }
 }

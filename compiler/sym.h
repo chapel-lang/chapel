@@ -28,6 +28,12 @@ enum Type_kind {
   Type_ALIAS		// a type by another name
 };
 
+#define CPP_IS_LAME {						\
+  "NONE", "UNKNOWN", "SUM", "PRODUCT", "RECORD", "VECTOR",	\
+ "FUN", "REF", "TAGGED", "PRIMITIVE", "APPLICATION", "ALIAS"}
+EXTERN char *type_kind_string[] EXTERN_INIT(CPP_IS_LAME);
+#undef CPP_IS_LAME
+
 union Immediate {
   uint8 v_uint8;
   int8 v_int8;
@@ -65,7 +71,7 @@ class Sym : public gc {
   Sym			*cont;			// continuation (function returning ret)
   Sym			*init;			// for modules & classes (default init function)
   Code			*code;			// for functions, Code
-  Sym 			*next_sym;	       	// for function overloading
+  Sym 			*next_sym;	       	// in scope
   AST			*ast;			// AST node which defined this symbol
 
   unsigned int 		module:1;		// Sym is a module

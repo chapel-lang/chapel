@@ -42,7 +42,7 @@ type anyfloat __name "anyfloat" =
   float32 | float64 | float80 | float128;
 
 type anynum __name "anynum" = anyinteger | anyfloat;
-type char __name "char" = uint8;
+type char __name "char" = uinteger8;
 type complex __name "complex";
 type size __name "size" = uinteger;
 type bool __name "bool" = integer;
@@ -72,6 +72,7 @@ var reply = #reply __name "reply";
 #__primitive __name "primitive";
 #__new __name "new";
 #__index_vector __name "index_vector";
+#__print __name "print";
 #operator __name "operator";
 #"&" __name "doref";
 
@@ -247,6 +248,7 @@ function operator(a:array, s:symbol, b:array) {
 function reshape(l:locale, s:sequence) { l }
 
 function write(a) { 0 }
+function print(a) { #__print a; }
 
 /*
   David's old iterator and domain examples

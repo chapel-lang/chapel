@@ -54,6 +54,7 @@ S(new)
 S(index_vector)
 S(primitive)
 S(operator)
+S(print)
 S(doref)
 S(init)
 

@@ -89,3 +89,9 @@
     if it matches. Maybe cache the results as well: true/false/maybe
 
 - complex should have a size, same as float
+
+- implements, includes, contraints for cloned types
+
+- check handling of inheritance
+
+- remove SUM types from implements etc.

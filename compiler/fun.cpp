@@ -12,6 +12,8 @@ Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   sym = asym;
   asym->fun = this;
   ast = sym->ast;
+  nmap = 0;
+  vmap = 0;
   cg_string = 0;
   if (verbose_level > 1)
     if (asym->name)
@@ -80,6 +82,18 @@ Fun::collect_Vars(Vec<Var *> &vars, Vec<PNode *> *nodes) {
   vars.set_to_vec();
 }
 
+static void
+copy_var(Var **av, Sym *fsym, VarMap &vmap) {
+  Var *v = *av;
+  if (v->sym->in == fsym) {
+    if (!(v = vmap.get(*av))) {
+      v = (*av)->copy();
+      vmap.put(*av, v);
+    }
+  }
+  *av = v;
+}
+
 static PNode *
 copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
   PNode *n = new PNode(node->code);
@@ -91,26 +105,10 @@ copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
   n->phi.copy(node->phi);
   n->phy.copy(node->phy);
   n->prim = node->prim;
-  for (int i = 0; i < n->rvals.n; i++) {
-    Var *v = n->rvals.v[i];
-    if (v->sym->in == f->sym) {
-      if (!(v = vmap.get(n->rvals.v[i]))) {
-	v = n->rvals.v[i]->copy();
-	vmap.put(n->rvals.v[i], v);
-      }
-    }
-    n->rvals.v[i] = v;
-  }
-  for (int i = 0; i < n->lvals.n; i++) {
-    Var *v = n->lvals.v[i];
-    if (v->sym->in == f->sym) {
-      if (!(v = vmap.get(n->lvals.v[i]))) {
-	v = n->lvals.v[i]->copy();
-	vmap.put(n->lvals.v[i], v);
-      }
-    }
-    n->lvals.v[i] = v;
-  }
+  for (int i = 0; i < n->rvals.n; i++)
+    copy_var(&n->rvals.v[i], f->sym, vmap);
+  for (int i = 0; i < n->lvals.n; i++)
+    copy_var(&n->lvals.v[i], f->sym, vmap);
   return n;
 }
 
@@ -120,53 +118,57 @@ Fun::copy() {
   f->pdb = pdb;
   f->sym = sym;
   f->init_function = init_function;
+  f->nmap = new PNodeMap;
+  f->vmap = new VarMap;
 
-  PNodeMap nmap;
-  VarMap vmap;
   Vec<PNode *> nodes;
 
   forv_PNode(n, fa_all_PNodes) {
-    PNode *p = copy_pnode(n, f, vmap);
+    PNode *p = copy_pnode(n, f, *f->vmap);
     nodes.add(p);
-    nmap.put(n, p);
+    f->nmap->put(n, p);
     for (int i = 0; i < n->phi.n; i++) {
-      PNode *p = copy_pnode(n->phi.v[i], f, vmap);
+      PNode *p = copy_pnode(n->phi.v[i], f, *f->vmap);
       nodes.add(p);
-      nmap.put(n, p);
+      f->nmap->put(n, p);
       p->phi.v[i] = p;
     }
     for (int i = 0; i < n->phy.n; i++) {
-      PNode *p = copy_pnode(n->phy.v[i], f, vmap);
+      PNode *p = copy_pnode(n->phy.v[i], f, *f->vmap);
       nodes.add(p);
-      nmap.put(n, p);
+      f->nmap->put(n, p);
       p->phy.v[i] = p;
     }
   }
   forv_PNode(n, nodes) {
     for (int i = 0; i < n->cfg_succ.n; i++)
-      n->cfg_succ.v[i] = nmap.get(n->cfg_succ.v[i]);
+      n->cfg_succ.v[i] = f->nmap->get(n->cfg_succ.v[i]);
     for (int i = 0; i < n->cfg_pred.n; i++)
-      n->cfg_pred.v[i] = nmap.get(n->cfg_pred.v[i]);
+      n->cfg_pred.v[i] = f->nmap->get(n->cfg_pred.v[i]);
   }
-  for (int i = 0; i < vmap.n; i++)
-    if (vmap.v[i].key)
-      vmap.v[i].value->def = nmap.get(vmap.v[i].value->def);
+  f->args.copy(args);
+  for (int i = 0; i < f->args.n; i++)
+    copy_var(&f->args.v[i], f->sym, *f->vmap);
+  f->rets.copy(rets);
+  for (int i = 0; i < f->rets.n; i++)
+    copy_var(&f->rets.v[i], f->sym, *f->vmap);
+  for (int i = 0; i < f->vmap->n; i++)
+    if (f->vmap->v[i].key)
+      f->vmap->v[i].value->def = f->nmap->get(f->vmap->v[i].value->def);
   f->fa_all_PNodes.copy(fa_all_PNodes);
   for (int i = 0; i < f->fa_all_PNodes.n; i++)
-    f->fa_all_PNodes.v[i] = nmap.get(f->fa_all_PNodes.v[i]);
+    f->fa_all_PNodes.v[i] = f->nmap->get(f->fa_all_PNodes.v[i]);
   f->fa_all_Vars.copy(fa_all_Vars);
   for (int i = 0; i < f->fa_all_Vars.n; i++) {
-    Var *v = vmap.get(f->fa_all_Vars.v[i]);
-    if (!v)
-      f->fa_all_Vars.v[i] = f->fa_all_Vars.v[i];
-    else
+    Var *v = f->vmap->get(f->fa_all_Vars.v[i]);
+    if (v)
       f->fa_all_Vars.v[i] = v;
   }
-  f->entry = nmap.get(entry);
-  f->exit = nmap.get(exit);
-  f->region = region->copy(nmap);
+  f->entry = f->nmap->get(entry);
+  f->exit = f->nmap->get(exit);
+  f->region = region->copy(*f->nmap);
   f->ess.copy(ess);
-  f->ast = ast ? ast->copy(&nmap) : 0;
+  f->ast = ast ? ast->copy(f->nmap) : 0;
   return f;
 }
 

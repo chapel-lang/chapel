@@ -52,6 +52,7 @@ GEYSA_SRCS = \
 	cg.cpp \
 	clone.cpp \
 	driver.cpp \
+	dump.cpp \
 	fa.cpp \
 	fun.cpp \
 	grammar.cpp \

@@ -110,6 +110,7 @@ void myassert();
 #include "pdb.h"
 #include "clone.h"
 #include "log.h"
+#include "dump.h"
 #include "cg.h"
 #include "grammar.h"
 

@@ -17,7 +17,7 @@ class PDB : public gc {
   Vec<Fun*> funs;
 
   Sym *find_global(char *);
-  void add(Fun *f) { funs.add(f); }
+  void add(Fun *f) { f->id = funs.n; funs.add(f); }
   FA *analyze(Fun *top);
   int clone(FA *fa, Fun *top);
 

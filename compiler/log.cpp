@@ -5,7 +5,7 @@
 #include "geysa.h"
 
 static char save_dir[FILENAME_MAX];
-static FILE *log_FILE[256];
+static FILE *log_FILE[128];
 
 void init_logs() {
   if (log_dir[strlen(log_dir)-1] != '/') 

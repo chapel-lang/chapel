@@ -10,17 +10,22 @@ static void copyright(ArgumentState *arg_state, char *arg_unused);
 static char *program_name = 0;
 
 static int fwrite_c = 0;
-static char prelude_pathname[FILENAME_MAX] = "prelude";
+static int fdump_html = 0;
+static char prelude_filename[FILENAME_MAX] = "prelude";
 static char log_flags[512];
 extern int d_verbose_level;
 extern int d_debug_level;
 
 int fdce_if1 = 1;
+char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
+
 
 static ArgumentDescription arg_desc[] = {
- {"prelude", 'p', "Prelude Pathname", "P", prelude_pathname, "CHPL_PRELUDE", NULL},
+ {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
+ {"sysdir", 'D', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
+ {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
  {"write_c", ' ', "Write C", "T", &fwrite_c, "CHPL_WRITE_C", NULL},
- {"dce_if1", ' ', "Dead Code Elim on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
+ {"dump_html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_DUMP_HTML", NULL},
  {"log_dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'l', "Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
@@ -143,7 +148,8 @@ load_one(char *fn) {
   if (l >= (int)numberof(langs))
     fail("unknown extension '%s'", fn);
 
-  strcpy(tmpfn, prelude_pathname);
+  strcpy(tmpfn, system_dir);
+  strcat(tmpfn, prelude_filename);
   strcat(tmpfn, ".");
   strcat(tmpfn, langs[l].extension);
   if (!(a = load_file(tmpfn, if1, &scope, &langs[l])))
@@ -218,10 +224,24 @@ compile_one(char *fn) {
       strcat(cfn, ".c");
       my_write_c(fa, if1->top->fun, cfn);
     }
+    if (fdump_html)
+      dump_html(fa, if1->top->fun, fn);
   } else
   Lfail:
     fail("fatal error, program does not type");
   return 0;
+}
+
+static void
+init_system() {
+  char cwd[FILENAME_MAX];
+  if (system_dir[0] == '.' && (!system_dir[1] || system_dir[1] == '/')) {
+    getcwd(cwd, FILENAME_MAX);
+    strcat(cwd, system_dir + 1);
+    memcpy(system_dir, cwd, sizeof(system_dir));
+  }
+  if (system_dir[strlen(system_dir)-1] != '/') 
+    strcat(system_dir, "/");
 }
 
 int
@@ -231,6 +251,7 @@ main(int argc, char *argv[]) {
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
   init_logs();
+  init_system();
   for (int i = 0; i < arg_state.nfile_arguments; i++) 
     if (compile_one(arg_state.file_argument[i])) break;
   free_args(&arg_state);

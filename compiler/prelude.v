@@ -69,6 +69,7 @@ __init__ __name "init":0;
 #__primitive __name "primitive";
 #__new __name "new";
 #__index_vector __name "index_vector";
+#__print __name "print";
 #operator __name "operator";
 #"&" __name "doref";
 
@@ -127,4 +128,4 @@ operator(a:ref, #"--"): #__primitive a #"=" ((#__primitive#"*" a) #"-" 1);
 
 //
 
-write a : 0;
+print a : #__print a;

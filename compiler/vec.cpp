@@ -265,3 +265,5 @@ template class Vec<MapElem<PNode *, PNode *> >;
 template class Vec<MapElem<PNode *, ATypeViolation *> >;
 template class Vec<Prim *>;
 template class Vec<ATypeViolation *>;
+template class Vec<MapElem<PNode *, Vec<Fun *> *> >;
+template class Vec<CallPoint *>;
