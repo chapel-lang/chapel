@@ -452,6 +452,8 @@ define_concrete_types(CSSS &css_sets) {
 	char *name = 0;
 	s->type_kind = sym->type_kind;
 	s->incomplete = 1;
+	s->creators.copy(*eqcss);
+	s->creators.set_to_vec();
 	forv_CreationSet(cs, *eqcss) if (cs) {
 	  cs->type = s;
 	  if (!name)

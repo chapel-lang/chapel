@@ -1583,14 +1583,27 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
     return -2;
   Vec<Fun *> *fns = ma->stmt->parentFn->asymbol->fun->calls.get(pn);
   if (!fns) {
-    BaseAST *sym = ((ASymbol*)pn->rvals.v[1]->type->has.v[0])->xsymbol;
+    Sym *obj_type = pn->rvals.v[1]->type;
+    char *sel = pn->rvals.v[3]->sym->name;
+    Sym *iv = 0;
+    forv_Sym(s, obj_type->has) {
+      if (s->name == sel) {
+	if (!iv)
+	  iv = s;
+	else if (iv != s)
+	  return -3;
+      }
+    }
+    if (!iv)
+      return -4;
+    BaseAST *sym = ((ASymbol*)iv)->xsymbol;
     if (!sym)
-      return -3;
+      return -5;
     s = dynamic_cast<Symbol*>(sym);
     if (!s)
-      return -4;
+      return -6;
   } else
-    return -5;
+    return -7;
   return 0;
 }
 
