@@ -15158,3 +15158,22 @@ Modified files:
 	chapel/test/trivial/bradc/entrypoint/: twomains.good 
 	chapel/test/types/enum/deitz/: test_enum6.good 
 
+---------------------------------------------------------------------------
+
+01/20/05 16:29:19 -- deitz
+
+Log message:
+	Added a new Type subtype called VariableType.  These signal
+	type-variables.  Thus a TypeSymbol t declared as "type t" has type
+	VariableType.
+	
+	Added support for parsing type variables as formal parameters and
+	elsewhere.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: fixup.cpp verifyASTType.cpp 
+
