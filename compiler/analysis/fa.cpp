@@ -1332,7 +1332,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	AVar *index = make_AVar(p->rvals.v[2], es);
 	set_container(result, vec);
 	forv_CreationSet(cs, *vec->out) if (cs) {
-	  if (cs->sym == sym_tuple) {
+	  if (sym_tuple->specializers.set_in(cs->sym->type)) {
 	    int i;
 	    if (((index->var->sym->type && index->var->sym->imm_int(&i) == 0) ||
 		 (index->out->n == 1 && index->out->v[0]->sym->is_constant &&
