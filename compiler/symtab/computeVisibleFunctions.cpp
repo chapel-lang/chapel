@@ -26,6 +26,7 @@ void GetClassMethods::processSymbol(Symbol* sym) {
 	    method = method->overload;
 	  }
 	}
+	classMethods->set_add(class_type->defaultConstructor);
       }
     }
   }

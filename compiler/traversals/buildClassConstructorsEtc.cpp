@@ -11,9 +11,7 @@
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
 static void build_constructor(ClassType* class_type) {
-#ifndef CONSTRUCTOR_WITH_PARAMETERS
   SymScope* saveScope = Symboltable::setCurrentScope(class_type->classScope);
-#endif
 
   char* name = glomstrings(2, "_construct_", class_type->symbol->name);
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(name));
@@ -76,11 +74,8 @@ static void build_constructor(ClassType* class_type) {
   body = Symboltable::finishCompoundStmt(body, stmts);
   Expr* fn_def = Symboltable::finishFnDef(fn, args, class_type, body);
   class_type->constructor = new DefStmt(fn_def);
-
   SET_BACK(class_type->constructor);
-#ifndef CONSTRUCTOR_WITH_PARAMETERS
   Symboltable::setCurrentScope(saveScope);
-#endif
   if (dynamic_cast<SeqType*>(class_type)) {
     class_type->defaultVal = new FnCall(new Variable(fn), NULL);
     SET_BACK(class_type->defaultVal);
