@@ -230,3 +230,11 @@
    fun:GC_push_current_stack
    fun:GC_generic_push_regs
 }
+{
+   boehm-memcheck28
+   Memcheck:Cond
+   fun:GC_add_to_black_list_stack
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_generic_push_regs
+}
