@@ -5539,3 +5539,16 @@ Added files:
 	chapel/runtime/include/: chplboolean.h 
 	chapel/test/trivial/bradc/: noop.chpl noop.good 
 
+---------------------------------------------------------------------------
+
+08/20/04 15:51:05 -- bradc
+
+Log message:
+	Inserted a template function for the ILink class which
+	collects siblings of the template type and returns them
+	in a Vec<> argument by reference per John's request.
+
+Modified files:
+	chapel/compiler/: createAST.cpp vec.h 
+	chapel/compiler/AST/: TODO link.h 
+
