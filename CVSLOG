@@ -13873,3 +13873,14 @@ Log message:
 Modified files:
 	chapel/test/: DIRS 
 
+---------------------------------------------------------------------------
+
+01/06/05 17:24:26 -- bradc
+
+Log message:
+	Removing Steve's comment from the top-level
+	Makefile as a second check.
+
+Modified files:
+	./: Makefile 
+
