@@ -9,7 +9,7 @@ class Symbol;
 class UnresolvedSymbol;
 class MemberAccess;
 class BaseAST;
-class ParenOpExpr;
+class Expr;
 class Label;
 class Code;
 class Type;
@@ -83,7 +83,7 @@ Type *type_info(BaseAST *a, Symbol *s = 0);
 Type *return_type_info(FnSymbol *fn);
 int function_is_used(FnSymbol *fn);
 int type_is_used(TypeSymbol *fn);
-void call_info(ParenOpExpr *a, Vec<FnSymbol *> &fns);
+void call_info(Expr *a, Vec<FnSymbol *> &fns);
 int constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s = 0);
 /* VVVVVV DEPRECATED VVVVVV */
 int resolve_symbol(UnresolvedSymbol *us, MemberAccess *ma, Symbol *&sym);

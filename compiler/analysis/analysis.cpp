@@ -2198,7 +2198,7 @@ return_type_info(FnSymbol *fn) {
 }
 
 void 
-call_info(ParenOpExpr* a, Vec<FnSymbol *> &fns) {
+call_info(Expr* a, Vec<FnSymbol *> &fns) {
   FnSymbol* f = dynamic_cast<FnSymbol*>(a->stmt->parentSymbol);
   if (!f) {
     if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(a->stmt->parentSymbol))
