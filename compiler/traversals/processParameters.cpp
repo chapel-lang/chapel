@@ -11,6 +11,18 @@ ProcessParameters::ProcessParameters(void) {
 }
 
 
+static bool tmpRequired(ParamSymbol* formal, Expr* actual) {
+  if (actual == NULL) { // if actual is elided, temp required
+    return true;
+  }
+  if (formal->type != dtUnknown) {
+    return formal->requiresCTmp();
+  } else {
+    return actual->typeInfo()->requiresCParamTmp(formal->intent);
+  }
+}
+
+
 void ProcessParameters::postProcessExpr(Expr* expr) {
   if (typeid(*expr) == typeid(ParenOpExpr)) {
     fprintf(stderr, "ProcessParameters found a parenOpExpr:\n  ");
@@ -29,8 +41,8 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
       if (formal && actual) {
 
 	/*
-	fprintf(stderr, "Found a function call with parameters: %s\n", 
-		fnSym->name);
+	fprintf(stderr, "Found a function call with parameters: %s (%s:%d)\n", 
+		fnSym->name, fncall->filename, fncall->lineno);
 	*/
 
 	// BLC: pushes scope into wrong place if the current symboltable
@@ -43,12 +55,11 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	while (formal) {
 	  Expr* newActualUse = NULL;
 
-	  bool actualElided = !actual;
-	  if (formal->requiresCTmp() || actualElided) {
+	  if (tmpRequired(formal, actual)) {
 	    tmpsRequired = true;
 
 	    Expr* initializer;
-	    if (formal->intent == PARAM_OUT || actualElided) {
+	    if (formal->intent == PARAM_OUT || (actual == NULL)) {
 	      initializer = formal->init;
 	    } else {
 	      initializer = actual->copy();
@@ -67,7 +78,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	  newActuals = appendLink(newActuals, newActualUse);
 	
 	  formal = nextLink(ParamSymbol, formal);
-	  if (!actualElided) {
+	  if (actual) {
 	    actual = nextLink(Expr, actual);
 	  }
 	}

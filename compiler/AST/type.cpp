@@ -232,12 +232,23 @@ bool Type::requiresCParamTmp(paramType intent) {
   switch (intent) {
   case PARAM_BLANK:
     INT_FATAL(this, "should never have reached PARAM_BLANK case");
-  case PARAM_IN:
   case PARAM_CONST:
+  case PARAM_IN:
+    // if these are implemented using C's pass-by-value, then C
+    // effectively puts in the temp for us
+    if (implementedUsingCVals()) {
+      return false;
+    } else {
+      return true;
+    }
   case PARAM_INOUT:
+    // here a temp is probably always needed in order to avoid
+    // affecting the original value
   case PARAM_OUT:
+    // and here it's needed to set up the default value of the type
     return true;
   case PARAM_REF:
+    // here, a temp should never be needed
     return false;
   default:
     INT_FATAL(this, "case not handled in requiresCParamTmp");
@@ -248,6 +259,18 @@ bool Type::requiresCParamTmp(paramType intent) {
 
 bool Type::blankIntentImpliesRef(void) {
   return false;
+}
+
+
+bool Type::implementedUsingCVals(void) {
+  if (this == dtBoolean ||
+      this == dtInteger ||
+      this == dtFloat || 
+      this == dtComplex) {
+    return true;
+  } else {
+    return false;
+ }
 }
 
 
@@ -465,6 +488,11 @@ void EnumType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
+bool EnumType::implementedUsingCVals(void) {
+  return true;
+}
+
+
 DomainType::DomainType(Expr* init_expr) :
   Type(TYPE_DOMAIN, NULL),
   numdims(0),
@@ -668,6 +696,11 @@ void SeqType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 void SeqType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
 			    Expr* format) {
   Type::codegenIOCall(outfile, ioType, arg, format);
+}
+
+
+bool SeqType::implementedUsingCVals(void) {
+  return false;
 }
 
 
@@ -1157,6 +1190,15 @@ bool ClassType::blankIntentImpliesRef(void) {
     return false;
   } else {
     return true;
+  }
+}
+
+
+bool ClassType::implementedUsingCVals(void) {
+  if (value || union_value) {
+    return true;
+  } else {
+    return false;
   }
 }
 

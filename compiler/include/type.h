@@ -75,6 +75,7 @@ class Type : public BaseAST {
   virtual bool outParamNeedsPtr(void);
   virtual bool requiresCParamTmp(paramType intent);
   virtual bool blankIntentImpliesRef(void);
+  virtual bool implementedUsingCVals(void);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -96,6 +97,7 @@ class EnumType : public Type {
   void codegenIORoutines(FILE* outfile);
   void codegenConfigVarRoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
+  bool implementedUsingCVals(void);
 };
 
 
@@ -237,6 +239,7 @@ class ClassType : public Type {
 			     Expr* format = NULL);
 
   virtual bool blankIntentImpliesRef(void);
+  virtual bool implementedUsingCVals(void);
 };
 
 
@@ -255,6 +258,7 @@ class SeqType : public ClassType {
   //void codegenPrototype(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
+  bool implementedUsingCVals(void);
   void buildImplementationClasses();
 };
 
