@@ -1611,3 +1611,13 @@ Modified files:
 Added files:
 	chapel/compiler/: version_num.h 
 
+---------------------------------------------------------------------------
+
+04/04/02 14:09:28 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed a bug in flow analysis which was causing the vec.chpl test to fail.
+
+Modified files:
+	chapel/compiler/: driver.cpp fa.cpp 
+
