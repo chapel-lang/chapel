@@ -2683,3 +2683,15 @@ Log message:
 Modified files:
 	chapel/compiler/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+06/04/04 13:29:34 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	exponentiation now supported.
+	note: constant folding is not yet done for exponentiation... should it be?
+
+Modified files:
+	chapel/compiler/: TODO chpl.g codegen.cpp prelude.chpl 
+	                  prim_data.dat 
+
