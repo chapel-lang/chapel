@@ -155,7 +155,7 @@ make_type_syms(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     if (s->type_kind) {
       if (!s->type_sym) {
-	s->type_sym = if1_alloc_sym(i);
+	s->type_sym = new_Sym();
 	s->type_sym->is_meta_class = 1;
 	s->type_sym->in = s->in;
 	s->type_sym->name = s->name;

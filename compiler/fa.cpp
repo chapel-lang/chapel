@@ -823,7 +823,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
     Var *v = p->rvals.v[start + i];
     AVar *av = make_AVar(v, es);
     if (!p->tvals.v[i]) {
-      Sym *s = if1_alloc_sym(fa->pdb->if1);
+      Sym *s = new_Sym();
       s->function_scope = 1;
       s->is_lvalue = v->sym->is_lvalue;
       s->in = es->fun->sym;
@@ -873,7 +873,7 @@ vector_elems(int rank, PNode *p, AVar *ae, AVar *elem, AVar *container, int n = 
     if (p->tvals.v[n-1])
       e = make_AVar(p->tvals.v[n-1], es);
     else {
-      Sym *s = if1_alloc_sym(fa->pdb->if1);
+      Sym *s = new_Sym();
       s->function_scope = 1;
       assert(!e->var->sym->is_lvalue);
       s->in = es->fun->sym;
@@ -1702,8 +1702,7 @@ initialize_primitives() {
 
 static void
 initialize() {
-  element_var = new Var(if1_alloc_sym(
-    fa->pdb->if1, if1_cannonicalize_string(fa->pdb->if1, "some element")));
+  element_var = new Var(new_Sym("some element"));
   bottom_type = type_cannonicalize(new AType());
   top_type = make_abstract_type(sym_any);
   bool_type = make_abstract_type(sym_bool);

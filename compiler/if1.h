@@ -40,7 +40,6 @@ class IF1 : public gc {
   IF1();
 };
 
-Sym	*if1_alloc_sym(IF1 *p, char *s = 0, char *e = 0);
 Sym	*if1_register_sym(IF1 *p, Sym *, char *name = 0);
 Sym 	*if1_const(IF1 *p, Sym *typ, char *value);
 Sym 	*if1_make_symbol(IF1 *p, char *name, char *end = 0);
@@ -89,6 +88,6 @@ void	if1_dump_sym(FILE *fp, Sym *sym);
 
 extern IF1 *if1;
 
-static inline Sym *new_Sym() { return if1->callback->new_Sym(); }
+static inline Sym *new_Sym(char *name = 0) { return if1->callback->new_Sym(name); }
 
 #endif

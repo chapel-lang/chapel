@@ -26,19 +26,6 @@ IF1::IF1() {
 }
 
 Sym *
-if1_alloc_sym(IF1 *p, char *s, char *e) {
-  Sym *sy = new Sym;
-  sy->id = p->allsyms.n;
-  p->allsyms.add(sy);
-  if (s) {
-    if (e)
-      s = dupstr(s, e);
-    sy->name = if1_cannonicalize_string(p, s);
-  }
-  return sy;
-}
-
-Sym *
 if1_register_sym(IF1 *p, Sym *sy, char *name) {
   sy->id = p->allsyms.n;
   p->allsyms.add(sy);
@@ -58,7 +45,7 @@ if1_const(IF1 *p, Sym *type, char *constant) {
     assert(sym->type == type);
     return sym;
   }
-  sym = if1_alloc_sym(p);
+  sym = new_Sym();
   sym->is_constant = 1;
   sym->constant = c;
   sym->type = type;
@@ -74,7 +61,7 @@ if1_make_symbol(IF1 *p, char *name, char *end) {
   Sym *s = p->symbols.get(name);
   if (s)
     return s;
-  s = if1_alloc_sym(p);
+  s = new_Sym(name);
   s->name = name;
   s->type_kind = Type_PRIMITIVE;
   s->type = sym_symbol;
@@ -213,7 +200,7 @@ if1_operator(IF1 *p, Code **c, Sym *a1, Sym *a2, Sym *a3) {
   Code *cc = new Code(Code_SEND);
   Sym *res;
 
-  res = if1_alloc_sym(p);
+  res = new_Sym();
   if (a1) cc->rvals.add(a1);
   if (a2) cc->rvals.add(a2);
   if (a3) cc->rvals.add(a3);

@@ -5,7 +5,7 @@
 
 extern Stmt* internalPreludeStmts;
 extern Stmt* preludeStmts;
-extern Stmt* program;
+extern Stmt* programStmts;
 
 Stmt* fileToAST(char* filename, int debug);
 

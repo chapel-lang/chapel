@@ -281,25 +281,31 @@ compile_one(char *fn) {
   if (fnLen >= 2 && strcmp((fn+fnLen-2), ".v") == 0)
     dotVFile = true;
   if (newAST && !dotVFile) {
-    Stmt* program = fileToAST(fn, d_debug_level);
+    fileToAST(fn, d_debug_level);
     if (analyzeNewAST) {
       if1->callback = new ACallbacks;
-      AST_to_IF1(program);
+      init_ast();
+      Vec<Stmt *> stmts;
+      stmts.add(internalPreludeStmts);
+      stmts.add(preludeStmts);
+      stmts.add(programStmts);
+      AST_to_IF1(stmts);
       do_analysis(fn);
-      extern void x();
 #if 0
+      extern void x();
       x();
 #endif
     }
     if (!suppress_codegen)
-      codegen(fn, system_dir, program);
+      codegen(fn, system_dir, programStmts);
     else {
-      program->printList(stdout, "\n");
+      programStmts->printList(stdout, "\n");
       printf("\n");
     }
     return 0;
   }
   if1->callback = new PCallbacks;
+  init_ast();
   if (load_one(fn) < 0)
     return -1;
   do_analysis(fn);
@@ -310,7 +316,6 @@ static void
 init_system() {
   new IF1;
   new PDB(if1);
-  init_ast();
   char cwd[FILENAME_MAX];
   if (system_dir[0] == '.' && (!system_dir[1] || system_dir[1] == '/')) {
     getcwd(cwd, FILENAME_MAX);

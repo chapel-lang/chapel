@@ -18,7 +18,7 @@
 Stmt* yystmtlist = NULL;
 Stmt* internalPreludeStmts = NULL;
 Stmt* preludeStmts = NULL;
-Stmt* program = NULL;
+Stmt* programStmts = NULL;
 
 char* yyfilename;
 int yylineno;
@@ -125,14 +125,14 @@ Stmt* fileToAST(char* filename, int debug) {
   }
 
   yydebug = debug;
-  program = ParseFile(filename);
+  programStmts = ParseFile(filename);
 
   //  extern void testGetStuff(Stmt*);
   //  testGetStuff(program);
 
-  program = createInitFn(program);
+  programStmts = createInitFn(programStmts);
 
   //  Symboltable::dump(stdout);
 
-  return program;
+  return programStmts;
 }

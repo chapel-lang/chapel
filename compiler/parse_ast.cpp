@@ -41,8 +41,10 @@ PCallbacks::new_SUM_type(Sym *) {
 }
 
 Sym *
-PCallbacks::new_Sym() {
-  return if1_alloc_sym(if1);
+PCallbacks::new_Sym(char *name) {
+  Sym *sy = new Sym;
+  if1_register_sym(if1, sy, name);
+  return sy;
 }
 
 
@@ -387,7 +389,7 @@ new_constant(IF1 *i, char *string, char *constant_type) {
 Sym *
 new_sym(IF1 *i, Scope *scope, char *s, Sym *sym) {
   if (!sym)
-    sym = if1_alloc_sym(i, s);
+    sym = new_Sym(s);
   if (!sym->in && scope) {
     Sym *scope_in = unalias_type(scope->in);
     // unnamed temporaries are local to the class or module
@@ -445,7 +447,7 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     case Builtin_void: sym->type_kind = Type_PRODUCT; break;
     case Builtin_ref: 
       sym->type_kind = Type_REF; 
-      sym->has.add(if1_alloc_sym(i, if1_cannonicalize_string(i, "ref value")));
+      sym->has.add(new_Sym("ref value"));
       break;
     case Builtin_symbol: 
       if1_set_symbols_type(i); 
@@ -467,7 +469,7 @@ build_builtin_syms(IF1 *i, ParseAST *ast) {
 	goto Lok;
       case AST_def_fun: {
 	ident = ast->get(AST_ident);
-	ast->sym = ident->sym = if1_alloc_sym(i, ident->string);
+	ast->sym = ident->sym = new_Sym(ident->string);
 	set_builtin(i, if1_make_symbol(i, ident->string), ast->builtin);
 	break;
       }
@@ -476,7 +478,7 @@ build_builtin_syms(IF1 *i, ParseAST *ast) {
       case AST_qualified_ident: {
 	ident = ast->get(AST_ident);
       Lok:
-	ast->sym = ident->sym = if1_alloc_sym(i, ident->string);
+	ast->sym = ident->sym = new_Sym(ident->string);
 	ast->sym->ast = ast;
 	set_builtin(i, ident->sym, ast->builtin);
 	break;

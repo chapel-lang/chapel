@@ -42,7 +42,7 @@ Sym::copy_values(Sym *s) {
 
 Sym *
 Sym::copy() {
-  Sym *s = if1_alloc_sym(if1);
+  Sym *s = new_Sym();
   s->copy_values(this);
   return s;
 }

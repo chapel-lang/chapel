@@ -15,11 +15,12 @@ class Code;
 class Type;
 class BaseAST;
 class FnSymbol;
+class Stmt;
 
 class ACallbacks : public Callbacks {
 public:
   void new_SUM_type(Sym *);
-  Sym *new_Sym();
+  Sym *new_Sym(char *name = 0);
 };
 
 class ASymbol : public Sym {
@@ -48,7 +49,7 @@ class AInfo : public AST {
   AInfo();
 };
 
-int AST_to_IF1(BaseAST *s);
+int AST_to_IF1(Vec<Stmt *> &stmts);
 Type *type_info(BaseAST *a, Symbol *s = 0);
 void call_info(FnSymbol *f, BaseAST *a, Vec<FnSymbol *> &fns);
 int constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s = 0);

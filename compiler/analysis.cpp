@@ -58,13 +58,14 @@ AST *AInfo::copy(Map<PNode *, PNode*> *nmap) {
 }
 
 static void
-close_symbols(BaseAST *a, Vec<BaseAST *> &syms) {
+close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
-  while (a) {
-    set.set_add(a);
-    syms.add(a);
-    a = dynamic_cast<BaseAST *>(a->next);
-  }
+  forv_Stmt(a, stmts)
+    while (a) {
+      set.set_add(a);
+      syms.add(a);
+      a = dynamic_cast<Stmt *>(a->next);
+    }
   forv_BaseAST(s, syms) {
     Vec<BaseAST *> moresyms;
     s->getBaseASTs(moresyms);
@@ -104,8 +105,8 @@ ACallbacks::new_SUM_type(Sym *) {
 }
 
 Sym *
-ACallbacks::new_Sym() {
-  return new_ASymbol();
+ACallbacks::new_Sym(char *name) {
+  return new_ASymbol(name);
 }
 
 Sym *
@@ -984,9 +985,10 @@ print_baseast(BaseAST *a) {
 }
 
 static void
-debug_new_ast(BaseAST *a, Vec<BaseAST *> &syms) {
+debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
   if (verbose_level > 1) {
-    print_baseast(a);
+    forv_Stmt(s, stmts)
+      print_baseast(s);
     forv_BaseAST(s, syms)
       if (s->astType == STMT_FNDEF)
 	print_ast(dynamic_cast<FnDefStmt*>(s)->fn->body);
@@ -1023,15 +1025,15 @@ domain_valid_index(PNode *pn, EntrySet *es) {
   update_in(result, make_abstract_type(sym_int));
 }
 
-#if 0
 static void
 expr_domain(PNode *pn, EntrySet *es) {
+  assert(0);
 }
 
 static void
 expr_reduce(PNode *pn, EntrySet *es) {
+  assert(0);
 }
-#endif
 
 static void
 expr_simple_seq(PNode *pn, EntrySet *es) {
@@ -1052,20 +1054,18 @@ write_transfer_function(PNode *pn, EntrySet *es) {
 }
 
 int
-AST_to_IF1(BaseAST* a) {
+AST_to_IF1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
-  close_symbols(a, syms);
+  close_symbols(stmts, syms);
   init_symbols();
-  debug_new_ast(a, syms);
+  debug_new_ast(stmts, syms);
   if (import_symbols(syms) < 0) return -1;
   if (build_functions(syms) < 0) return -1;
   pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol, domain_start_index);
   pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol, domain_next_index);
   pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol, domain_valid_index);
-#if 0
   pdb->fa->primitive_transfer_functions.put(expr_domain_symbol, expr_domain);
   pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol, expr_reduce);
-#endif
   pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol, expr_simple_seq);
   pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol, expr_create_domain);
   pdb->fa->primitive_transfer_functions.put(write_symbol, write_transfer_function);
