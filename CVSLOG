@@ -4867,3 +4867,23 @@ Modified files:
 Added files:
 	chapel/compiler/: analysis.cpp analysis.h 
 
+---------------------------------------------------------------------------
+
+08/04/04 10:38:05 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Moved a bunch of stuff out of geysa.h.
+	Compartmentalized many of the header files to eliminate cross dependencies.
+
+Modified files:
+	chapel/compiler/: TODO analysis.cpp analysis.h arg.cpp ast.cpp 
+	                  ast_cf.cpp beautify.cpp cdb.cpp cfg.cpp cg.cpp 
+	                  chpl.g chpltypes.h clone.cpp dom.cpp 
+	                  driver.cpp dump.cpp fa.cpp files.cpp fun.h 
+	                  geysa.h grammar.cpp graph.cpp if1.cpp if1.h 
+	                  inline.cpp list.cpp log.h loop.cpp misc.cpp 
+	                  misc.h parse.cpp parse.h parse_structs.h 
+	                  pdb.cpp pdb.h pnode.h prim.cpp region.h 
+	                  ssu.cpp ssu.h ssu_extra.cpp sym.h v.g 
+	chapel/compiler/AST/: expr.h link.cpp link.h stmt.h symbol.h 
+
