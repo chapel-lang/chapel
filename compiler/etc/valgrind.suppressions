@@ -302,5 +302,11 @@
    fun:GC_generic_malloc
    fun:GC_malloc
 }
-
-
+{
+   boehm-memcheck43
+   Memcheck:Cond
+   fun:GC_push_marked2
+   fun:GC_push_next_marked
+   fun:GC_mark_some
+   fun:GC:stopped_mark
+}
