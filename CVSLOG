@@ -3830,3 +3830,40 @@ Modified files:
 	                      stmt.h symbol.cpp symbol.h symtab.cpp 
 	                      type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+07/09/04 11:58:37 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Big checkin.
+	
+	This adds the new dispatch mechanism and updates all the surrounding
+	code to use it.  This is a multiple dispatch mechanism that support
+	destructuring and multiple inheritance.  It reports ambiguties.
+	
+	Error reporting for typing has been completely overhauled.
+	Errors are now reported in a manner compatible with gcc (and
+	hence emacs compilation).  Errors are reported by location in
+	the code and include a (configurable) call tree depth to help
+	the user differentiate versions of generic calls.
+	
+	The testing system has been changed to do sub_clean before a
+	run so as to cleanup from the last run (necessary since I am
+	testing the error system and erroroneous compilations don't necessarily
+	overwrite the previous tests files).
+
+Modified files:
+	chapel/compiler/: Makefile ast.cpp ast.h builtin_symbols.h 
+	                  cfg.cpp cg_funs.cpp clone.cpp codegen.cpp 
+	                  driver.cpp driver.h dump.cpp fa.cpp fa.h 
+	                  fa_extras.cpp fun.cpp fun.h geysa.h graph.cpp 
+	                  if1.cpp misc.cpp misc.h pnode.cpp pnode.h 
+	                  prelude.chpl prelude.v ssu_extra.cpp sym.h 
+	                  var.h vec.cpp vec.h 
+	chapel/test/: start_clean start_test 
+	chapel/test/flowanalysis/jplevyak/: PREDIFF cs1.good cs4.good 
+	                                    cs5.good review1.good 
+	                                    review2.good 
+Added files:
+	chapel/compiler/: pattern.cpp pattern.h 
+
