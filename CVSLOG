@@ -6211,3 +6211,14 @@ Modified files:
 	chapel/compiler/: createAST.cpp 
 	chapel/compiler/AST/: TODO symtab.cpp symtab.h 
 
+---------------------------------------------------------------------------
+
+08/30/04 17:34:28 -- bradc
+
+Log message:
+	Simply housecleaning.
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp 
+	chapel/test/trivial/bradc/domarr/: domarr.chpl 
+
