@@ -11,7 +11,7 @@
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
 static void build_constructor(ClassType* class_type) {
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
+#ifndef CONSTRUCTOR_WITH_PARAMETERS
   SymScope* saveScope = Symboltable::setCurrentScope(class_type->classScope);
 #endif
 
@@ -77,7 +77,7 @@ static void build_constructor(ClassType* class_type) {
   class_type->constructor = new DefStmt(fn_def);
 
   SET_BACK(class_type->constructor);
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
+#ifndef CONSTRUCTOR_WITH_PARAMETERS
   Symboltable::setCurrentScope(saveScope);
 #endif
   TRAVERSE(dynamic_cast<Expr*>(class_type->symbol->defPoint)->stmt, new Fixup(), true);
