@@ -19135,3 +19135,22 @@ Removed files:
 	chapel/test/trivial/deitz/: test_let8.future 
 	                            test_var_decl_init1.future 
 
+---------------------------------------------------------------------------
+
+03/09/05 10:20:10 -- deitz
+
+Log message:
+	Added three tests for default parameters.  The first two work (though
+	an extra function is cloned).  The third prints out a good error
+	message but the line numbers don't exist for one of the functions.
+	Line numbers need to be cleaned up as regards this future.
+
+Added files:
+	chapel/test/functions/deitz/: test_default_param1.chpl 
+	                              test_default_param1.good 
+	                              test_default_param2.chpl 
+	                              test_default_param2.good 
+	                              test_default_param3.chpl 
+	                              test_default_param3.future 
+	                              test_default_param3.good 
+
