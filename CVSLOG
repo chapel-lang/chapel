@@ -23011,3 +23011,18 @@ Log message:
 Added files:
 	chapel/util/: lookForTabs.cron 
 
+---------------------------------------------------------------------------
+
+03/31/05 15:51:40 -- jplevyak
+
+Log message:
+	Some cleanup of the way "null" is handled.
+	Fixed noinit2.future test by naming "null" a subtype of "object"
+	  (the superclass of all classes)
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+Removed files:
+	chapel/test/classes/bradc/: noinit2.future 
+
