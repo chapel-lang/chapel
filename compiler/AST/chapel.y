@@ -493,7 +493,7 @@ assignOp:
 | MINUSGETS
     { $$ = GETS_MINUS; }
 | TIMESGETS
-    { $$ = GETS_TIMES; }
+    { $$ = GETS_MULT; }
 | DIVGETS
     { $$ = GETS_DIV; }
 | BITANDGETS
@@ -503,9 +503,9 @@ assignOp:
 | BITXORGETS
     { $$ = GETS_BITXOR; }
 | LSHGETS
-    { $$ = GETS_LSH; }
+    { $$ = GETS_BITSL; }
 | RSHGETS
-    { $$ = GETS_RSH; }
+    { $$ = GETS_BITSR; }
 ;
 
 

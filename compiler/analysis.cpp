@@ -587,13 +587,13 @@ gen_if1(BaseAST *ast) {
 	case GETS_NORM: op = if1_make_symbol(if1, "="); break;
 	case GETS_PLUS: op = if1_make_symbol(if1, "+="); break;
 	case GETS_MINUS: op = if1_make_symbol(if1, "-="); break;
-	case GETS_TIMES: op = if1_make_symbol(if1, "*="); break;
+	case GETS_MULT: op = if1_make_symbol(if1, "*="); break;
 	case GETS_DIV: op = if1_make_symbol(if1, "/="); break;
 	case GETS_BITAND: op = if1_make_symbol(if1, "&="); break;
 	case GETS_BITOR: op = if1_make_symbol(if1, "|="); break;
 	case GETS_BITXOR: op = if1_make_symbol(if1, "^="); break;
-	case GETS_LSH: op = if1_make_symbol(if1, "<<="); break;
-	case GETS_RSH: op = if1_make_symbol(if1, ">>="); break;
+	case GETS_BITSL: op = if1_make_symbol(if1, "<<="); break;
+	case GETS_BITSR: op = if1_make_symbol(if1, ">>="); break;
       }
       Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator, op, 
 			 s->left->ainfo->rval, s->right->ainfo->rval,
