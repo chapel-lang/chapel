@@ -23245,3 +23245,16 @@ Added files:
 	                            test_coerce_integer_to_string2.future 
 	                            test_coerce_integer_to_string2.good 
 
+---------------------------------------------------------------------------
+
+04/01/05 16:04:24 -- jplevyak
+
+Log message:
+	Indexes don't actually get assigned to tuples correctly.
+	Here, dead expressions were eliminated, masking the problem.
+
+Modified files:
+	chapel/test/domains/roxana/: test_index_expr1.chpl 
+Added files:
+	chapel/test/domains/roxana/: test_index_expr1.future 
+
