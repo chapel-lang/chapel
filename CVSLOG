@@ -6647,3 +6647,13 @@ Log message:
 Modified files:
 	chapel/compiler/: analysis.cpp analysis.h parse_ast.h 
 
+---------------------------------------------------------------------------
+
+09/08/04 08:18:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Tests converted from old ast chpl to v
+
+Added files:
+	chapel/test/flowanalysis/jplevyak/: cs4.v cs5.v 
+
