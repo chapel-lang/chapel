@@ -15426,3 +15426,13 @@ Modified files:
 	                                         test_clone_class1.future 
 	                                         test_clone_class2.future 
 
+---------------------------------------------------------------------------
+
+01/24/05 12:08:55 -- jplevyak
+
+Log message:
+	Fix bug in HTML output which has suffered bit rot.
+
+Modified files:
+	chapel/compiler/backend/: dump.cpp 
+
