@@ -14393,3 +14393,19 @@ Removed files:
 	                                         test_clone_function4.future 
 	                                         test_typevar_function4.future 
 
+---------------------------------------------------------------------------
+
+01/13/05 12:10:30 -- deitz
+
+Log message:
+	Added a new cloning test that attempts to clone three functions, over
+	an integer, a float, and a string.  It succeeds, but the function
+	calls do not resolve to the cloned ones.  This is happening in all of
+	our cloning tests, but it only shows up as an error here.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function5.chpl 
+	                                         test_clone_function5.future 
+	                                         test_clone_function5.good 
+
