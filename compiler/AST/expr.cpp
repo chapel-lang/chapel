@@ -1432,7 +1432,7 @@ void SizeofExpr::print(FILE* outfile) {
 
 void SizeofExpr::codegen(FILE* outfile) {
   fprintf(outfile, "sizeof(");
-  if (typeid(*type) == typeid(ClassType)) {
+  if (dynamic_cast<ClassType*>(type)) {
     fprintf(outfile, "_");
   }
   type->codegen(outfile);

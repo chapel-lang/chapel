@@ -8,6 +8,7 @@
     s->last = s->last->next = (type##_node)_chpl_malloc(1, sizeof(_##type##_node), "seq element"); \
   } \
   s->last->element = t; \
+  s->last->next = NULL; \
   s->length++
 
 #endif
