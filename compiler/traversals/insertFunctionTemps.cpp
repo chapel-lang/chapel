@@ -65,7 +65,7 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
 	  Symboltable::defineSingleVarDefStmt(temp_name, temp_type,
 					      temp_init, VAR_NORMAL, false);
 	copy_stmt->insertBefore(def_stmt);
-	function->replace(new Variable(def_stmt->def_sym));
+	function->replace(new Variable(def_stmt->varDef()));
       }
     }
     SymScope* block_scope = Symboltable::popScope();

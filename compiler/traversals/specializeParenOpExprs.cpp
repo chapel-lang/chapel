@@ -4,7 +4,7 @@
 #include "stringutil.h"
 #include "symtab.h"
 
-void SpecializeParenOpExprs::preProcessExpr(Expr* expr) {
+void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
   Expr* paren_replacement = NULL;
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
@@ -18,7 +18,7 @@ void SpecializeParenOpExprs::preProcessExpr(Expr* expr) {
 	DefStmt* constructor = dynamic_cast<DefStmt*>(ctype->constructor);
 	FnSymbol* fn;
 	if (constructor) {
-	  fn = dynamic_cast<FnSymbol*>(constructor->def_sym);
+	  fn = constructor->fnDef();
 	}
 	if (fn) {
 	  paren_replacement = new FnCall(new Variable(fn), paren->argList);

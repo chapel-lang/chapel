@@ -10,8 +10,11 @@
 void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
   currentStmt = stmt;
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (def_stmt->isTypeDef() || def_stmt->isVarDef()) {
-      currentScope = def_stmt->def_sym->parentScope;
+    if (Symbol* sym = def_stmt->typeDef()) {
+      currentScope = sym->parentScope;
+    }
+    else if (Symbol* sym = def_stmt->varDef()) {
+      currentScope = sym->parentScope;
     } else {
       currentScope = NULL;
     }
@@ -47,8 +50,9 @@ void InsertAnonymousDomains::preProcessType(Type* type) {
 
   SymScope* saveScope = Symboltable::setCurrentScope(currentScope);
   VarSymbol* domain_sym = new VarSymbol(name, domain_type, forall->copy());
-  DefStmt* def_stmt = new DefStmt(domain_sym);
-  domain_sym->setDefPoint(def_stmt);
+  DefExpr* def_expr = new DefExpr(domain_sym);
+  DefStmt* def_stmt = new DefStmt(def_expr);
+  domain_sym->setDefPoint(def_expr);
   array_type->domain->replace(new ForallExpr(new Variable(domain_sym)));
   currentStmt->insertBefore(def_stmt);
   Symboltable::setCurrentScope(saveScope);

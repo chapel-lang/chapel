@@ -14,7 +14,7 @@
 
 class SpecializeParenOpExprs : public Traversal {
  public:
-  void preProcessExpr(Expr* expr);
+  void postProcessExpr(Expr* expr);
 };
 
 #endif

@@ -223,8 +223,8 @@ AInfo::copy_tree(ASTCopyContext* context) {
   AnalysisCloneCallback callback;
   callback.context = context;
   Map<BaseAST*,BaseAST*> clone_map;
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(xast);
-  FnSymbol* orig_fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym);
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(xast);
+  FnSymbol* orig_fn = dynamic_cast<FnSymbol*>(def_expr->sym);
   FnSymbol *new_fn = orig_fn->clone(&callback, &clone_map);
   if (Expr* expr = dynamic_cast<Expr*>(new_fn->defPoint))
     return expr->ainfo;
@@ -376,10 +376,10 @@ static Fun *
 install_new_function(FnSymbol *f) {
   Vec<Stmt *> all_stmts;
   Vec<BaseAST *> all_syms, syms;
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(f->defPoint);
-  if (!def_stmt)
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(f->defPoint);
+  if (!def_expr)
     INT_FATAL(f, "Function not defined in DefStmt");
-  all_stmts.add(def_stmt);
+  all_stmts.add(def_expr->stmt);
   all_syms.add(f);
   close_symbols(all_stmts, all_syms);	
   forv_BaseAST(a, all_syms) {
@@ -1072,46 +1072,49 @@ is_reference_type(BaseAST *t) {
 static int
 gen_vardef(BaseAST *a) {
   DefStmt *def = dynamic_cast<DefStmt*>(a);
-  for (VarSymbol *var = dynamic_cast<VarSymbol*>(def->def_sym);var;var = dynamic_cast<VarSymbol*>(var->next)) {
-    Sym *s = var->asymbol->sym;
-    def->ainfo->sym = s;
-    if (var->type && var->type != dtUnknown) {
-      if (!is_reference_type(var->type)) {
-	s->type = unalias_type(var->type->asymbol->sym);
-	s->is_var = 1;
+  for (Expr* expr = def->defExprList;expr;expr = dynamic_cast<Expr*>(expr->next)) {
+    DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
+    for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym);var;var = dynamic_cast<VarSymbol*>(var->next)) {
+      Sym *s = var->asymbol->sym;
+      def->ainfo->sym = s;
+      if (var->type && var->type != dtUnknown) {
+	if (!is_reference_type(var->type)) {
+	  s->type = unalias_type(var->type->asymbol->sym);
+	  s->is_var = 1;
+	} else
+	  s->must_implement = unalias_type(var->type->asymbol->sym);
       } else
-	s->must_implement = unalias_type(var->type->asymbol->sym);
-    } else
-      s->is_var = 1;
-    if (var->init) {
-      if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
-      Sym *val = var->init->ainfo->rval;
-      if (s->type) {
-	if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
-	  val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
-	// else show_error("missing constructor", def->ainfo);
+	s->is_var = 1;
+      if (var->init) {
+	if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
+	Sym *val = var->init->ainfo->rval;
+	if (s->type) {
+	  if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
+	    val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
+	  // else show_error("missing constructor", def->ainfo);
+	}
+	if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
+      } 
+      else if (!s->is_var)
+	; // return show_error("missing initializer", def->ainfo);
+      else if (!s->type && !s->must_implement)
+	; // return show_error("missing variable type", def->ainfo);
+      else {
+	if (s->type) {
+	  if (s->type->num_kind || s->type == sym_string)
+	    s->is_external = 1; // hack
+	  else
+	    gen_alloc(s, def, s->type);
+	}
       }
-      if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
-    } 
-    else if (!s->is_var)
-      ; // return show_error("missing initializer", def->ainfo);
-    else if (!s->type && !s->must_implement)
-      ; // return show_error("missing variable type", def->ainfo);
-    else {
-      if (s->type) {
-	if (s->type->num_kind || s->type == sym_string)
-	  s->is_external = 1; // hack
-	else
-	  gen_alloc(s, def, s->type);
-      }
-    }
-    switch (var->varClass) {
+      switch (var->varClass) {
       case VAR_NORMAL: break;
       case VAR_CONFIG: s->is_external = 1; break;
       case VAR_STATE: assert(0); break;
+      }
+      if (var->isConstant)
+	s->is_read_only = 1;
     }
-    if (var->isConstant)
-      s->is_read_only = 1;
   }
   return 0;
 }
@@ -1227,7 +1230,7 @@ gen_if1(BaseAST *ast) {
   GetStuff getStuff(GET_STMTS|GET_EXPRS);
   TRAVERSE(ast, &getStuff, true);
   DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast);
-  if (!def_stmt || !def_stmt->isFnDef())
+  if (!def_stmt || !def_stmt->fnDef())
     forv_BaseAST(a, getStuff.asts)
       if (gen_if1(a) < 0)
 	return -1;
@@ -1250,7 +1253,7 @@ gen_if1(BaseAST *ast) {
     case STMT_WITH: break;
     case STMT_DEF:
       if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast)) {
-	if (def_stmt->isVarDef() && gen_vardef(def_stmt) < 0) return -1;
+	if (def_stmt->varDef() && gen_vardef(def_stmt) < 0) return -1;
       }
       break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
@@ -1343,6 +1346,7 @@ gen_if1(BaseAST *ast) {
       s->ainfo->rval = sym;
       break;
     }
+    case EXPR_DEF: break;
     case EXPR_UNOP: {
       UnOp *s = dynamic_cast<UnOp*>(ast);
       s->ainfo->rval = new_sym();
@@ -1937,8 +1941,8 @@ debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       print_one_baseast(s);
     forv_BaseAST(s, syms) {
       DefStmt* def_stmt = dynamic_cast<DefStmt*>(s);
-      if (def_stmt && def_stmt->isFnDef()) {
-	print_ast(dynamic_cast<FnSymbol*>(def_stmt->def_sym)->body);
+      if (def_stmt && def_stmt->fnDef()) {
+	print_ast(def_stmt->fnDef()->body);
       }	else {
 	Type *t = dynamic_cast<Type*>(s); 
 	if (t) 
@@ -2107,7 +2111,7 @@ print_AST_types() {
   forv_Fun(f, pdb->fa->funs) {
     AInfo *a = dynamic_cast<AInfo *>(f->ast);
     DefStmt* def_stmt = dynamic_cast<DefStmt*>(a->xast);
-    FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym);
+    FnSymbol* fn = def_stmt->fnDef();
     print_AST_Expr_types(fn->body);
   }
 }

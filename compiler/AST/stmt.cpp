@@ -385,85 +385,49 @@ void WithStmt::codegen(FILE* outfile) {
 }
 
 
-DefStmt::DefStmt(Symbol* init_def_sym) :
+DefStmt::DefStmt(Expr* init_defExprList) :
   Stmt(STMT_DEF),
-  def_sym(init_def_sym)
-{}
+  defExprList(init_defExprList)
+{
+  SET_BACK(defExprList);
+}
 
 
 Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  if (clone) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_sym)) {
-      FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(clone, map, analysis_clone));
-      Symboltable::startFnDef(fncopy);
-      Symbol* newformals = fn->formals->copyList(clone, map, analysis_clone);
-      return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
-				      fn->body->copyListInternal(clone, map, analysis_clone),
-				      fn->exportMe);
-    }
-    else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(def_sym)) {
-      TypeSymbol* sym_copy = dynamic_cast<TypeSymbol*>(type_sym->copy(clone, map, analysis_clone));
-      return new DefStmt(sym_copy);
-    }
-    else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_sym)) {
-      return
-	Symboltable::defineVarDefStmt(var, var->type,
-				      var->init->copyInternal(clone, map, analysis_clone), 
-				      var->varClass, var->isConstant);
-    }
-    return NULL;
-  }
-  else {
-    return new DefStmt(def_sym);
-  }
+  return new DefStmt(defExprList->copy(clone, map, analysis_clone));
 }
 
 
 void DefStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE_DEF_LS(def_sym, traversal, false);
+  TRAVERSE_LS(defExprList, traversal, false);
 }
 
 
 void DefStmt::print(FILE* outfile) {
-  if (isFnDef()) {
-    def_sym->printDef(outfile);
-  } else if (isTypeDef()) {
-    def_sym->type->printDef(outfile);
-    fprintf(outfile, ";");
-  } else if (isVarDef()) {
-    Symbol* tmp = def_sym;
-    while (tmp) {
-      tmp->printDef(outfile);
-      fprintf(outfile, ";");
-      tmp = nextLink(Symbol, tmp);
-      if (tmp) {
-	fprintf(outfile, "\n");
-      }
-    }
-  }
+  defExprList->printList(outfile);
 }
 
 
 void DefStmt::codegen(FILE* outfile) { /* Noop */ }
 
 
-bool DefStmt::isVarDef() {
-  return dynamic_cast<VarSymbol*>(def_sym);
+VarSymbol* DefStmt::varDef() {
+  return dynamic_cast<VarSymbol*>(dynamic_cast<DefExpr*>(defExprList)->sym);
 }
 
 
-bool DefStmt::isFnDef() {
-  return dynamic_cast<FnSymbol*>(def_sym);
+FnSymbol* DefStmt::fnDef() {
+  return dynamic_cast<FnSymbol*>(dynamic_cast<DefExpr*>(defExprList)->sym);
 }
 
 
-bool DefStmt::isTypeDef() {
-  return dynamic_cast<TypeSymbol*>(def_sym);
+TypeSymbol* DefStmt::typeDef() {
+  return dynamic_cast<TypeSymbol*>(dynamic_cast<DefExpr*>(defExprList)->sym);
 }
 
 
-bool DefStmt::isModuleDef() {
-  return dynamic_cast<ModuleSymbol*>(def_sym);
+ModuleSymbol* DefStmt::moduleDef() {
+  return dynamic_cast<ModuleSymbol*>(dynamic_cast<DefExpr*>(defExprList)->sym);
 }
 
 

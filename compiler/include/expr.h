@@ -237,6 +237,18 @@ class Variable : public Expr {
 };
 
 
+class DefExpr : public Expr {
+ public:
+  Symbol* sym;
+  DefExpr(Symbol* init_sym);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void traverseExpr(Traversal* traversal);
+  Type* typeInfo(void);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 class UnOp : public Expr {
  public:
   unOpType type;

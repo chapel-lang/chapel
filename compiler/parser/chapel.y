@@ -24,6 +24,7 @@
   ForallExpr* pfaexpr;
   Stmt* stmt;
   DefStmt* defstmt;
+  DefExpr* defexpr;
   ForLoopStmt* forstmt;
   BlockStmt* blkstmt;
   Type* pdt;
@@ -112,7 +113,8 @@
 %type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
-%type <defstmt> vardecl vardecl_inner vardecl_inner_ls
+%type <defexpr> vardecl_inner vardecl_inner_ls
+%type <defstmt> vardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl block_stmt
 %type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl function_body_stmt
 %type <pragmas> pragma pragmas
@@ -212,7 +214,7 @@ optional_init_expr:
 
 vardecl_inner:
   ident_symbol_ls vardecltype optional_init_expr
-    { $$ = Symboltable::defineVarDefStmt1($1, $2, $3); }
+    { $$ = Symboltable::defineVarDef1($1, $2, $3); }
 ;
 
 
@@ -228,7 +230,7 @@ vardecl_inner_ls:
 
 vardecl:
   vardecltag varconst vardecl_inner_ls TSEMI
-    { $$ = Symboltable::defineVarDefStmt2($3, $1, $2); }
+    { $$ = new DefStmt(Symboltable::defineVarDef2($3, $1, $2)); }
 ;
 
 
@@ -249,8 +251,9 @@ typealias:
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
       typeSym->pragmas = $2;
       newtype->addSymbol(typeSym);
-      $$ = new DefStmt(typeSym);
-      typeSym->setDefPoint($$);
+      DefExpr* def_expr = new DefExpr(typeSym);
+      typeSym->setDefPoint(def_expr);
+      $$ = new DefStmt(def_expr);
     }
 ;
 
@@ -262,8 +265,9 @@ typevardecl:
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
       new_symbol->pragmas = $2;
       new_type->addSymbol(new_symbol);
-      $$ = new DefStmt(new_symbol);
-      new_symbol->setDefPoint($$);
+      DefExpr* def_expr = new DefExpr(new_symbol);
+      new_symbol->setDefPoint(def_expr);
+      $$ = new DefStmt(def_expr);
     }
 ;
 
@@ -276,9 +280,10 @@ enumdecl:
       TypeSymbol* pst = new TypeSymbol($3, pdt);
       pst->pragmas = $2;
       pdt->addSymbol(pst);
-      $$ = new DefStmt(pst);
-      pst->setDefPoint($$);
-      $5->setDefPoint($$);
+      DefExpr* def_expr = new DefExpr(pst);
+      pst->setDefPoint(def_expr);
+      $5->setDefPoint(def_expr);
+      $$ = new DefStmt(def_expr);
     }
 ;
 
@@ -291,7 +296,7 @@ classdecl:
     }
                                 decls TRCBR
     {
-      $$ = Symboltable::finishClassDef($<ptsym>5, $6);
+      $$ = new DefStmt(Symboltable::finishClassDef($<ptsym>5, $6));
     }
 ;
 
@@ -304,7 +309,7 @@ recorddecl:
     }
                                 decls TRCBR
     {
-      $$ = Symboltable::finishClassDef($<ptsym>5, $6);
+      $$ = new DefStmt(Symboltable::finishClassDef($<ptsym>5, $6));
     }
 ;
 
@@ -317,7 +322,7 @@ uniondecl:
     }
                                 decls TRCBR
     {
-      $$ = Symboltable::finishClassDef($<ptsym>5, $6);
+      $$ = new DefStmt(Symboltable::finishClassDef($<ptsym>5, $6));
     }
 ;
 
@@ -469,7 +474,7 @@ fndecl:
     }
                        TLP formals TRP fnrettype function_body_stmt
     {
-      $$ = Symboltable::finishFnDef($<fnsym>3, $5, $7, $8);
+      $$ = new DefStmt(Symboltable::finishFnDef($<fnsym>3, $5, $7, $8));
     }
 |
   TFUNCTION identifier TDOT fname
@@ -479,7 +484,7 @@ fndecl:
     }
                        TLP formals TRP fnrettype function_body_stmt
     {
-      $$ = Symboltable::finishFnDef($<fnsym>5, $7, $9, $10);
+      $$ = new DefStmt(Symboltable::finishFnDef($<fnsym>5, $7, $9, $10));
     }
 ;
 
@@ -491,7 +496,7 @@ moduledecl:
     }
                      TLCBR modulebody TRCBR
     {
-      $$ = Symboltable::finishModuleDef($<modsym>3, $5);
+      $$ = new DefStmt(Symboltable::finishModuleDef($<modsym>3, $5));
     }
 ;
 

@@ -57,9 +57,9 @@ void TransformLetExprs::doTransformation(void) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(tmp)) {
 	var->prev = NULL;
 	var->next = NULL;
-	DefStmt* def_stmt = new DefStmt(var);
+	DefStmt* def_stmt = new DefStmt(new DefExpr(var));
 	var->cname = glomstrings(3, var->cname, "_let_", intstring(uid++));
-	var->setDefPoint(def_stmt);
+	var->setDefPoint(def_stmt->defExprList);
 	let_stmt_copy->insertBefore(def_stmt);
       }
       else {

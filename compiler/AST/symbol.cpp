@@ -399,9 +399,9 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
     INT_FATAL(this, "Attempt to clone non-class type");
   }
 
-  DefStmt* old_def_stmt = dynamic_cast<DefStmt*>(defPoint);
+  DefExpr* old_def_expr = dynamic_cast<DefExpr*>(defPoint);
 
-  if (!old_def_stmt) {
+  if (!old_def_expr) {
     INT_FATAL(this, "Attempt to clone class not defined in DefStmt");
   }
 
@@ -419,10 +419,10 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
 
   TypeSymbol* new_type_sym = new TypeSymbol(clone_name, new_class_type);
   new_class_type->addSymbol(new_type_sym);
-  DefStmt* new_def_stmt = new DefStmt(new_type_sym);
-  new_type_sym->setDefPoint(new_def_stmt);
-  new_class_type->classScope->setContext(new_def_stmt, new_type_sym);
-  old_def_stmt->insertBefore(new_def_stmt);
+  DefExpr* new_def_expr = new DefExpr(new_type_sym);
+  new_type_sym->setDefPoint(new_def_expr);
+  new_class_type->classScope->setContext(NULL, new_type_sym, new_def_expr);
+  old_def_expr->insertBefore(new_def_expr);
 
   Symboltable::setCurrentScope(save_scope);
   return new_type_sym;
@@ -564,31 +564,30 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 
 FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned functions
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(defPoint);
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
 
-  if (!def_stmt) {
+  if (!def_expr) {
     INT_FATAL(this, "Attempt to clone function not defined in DefStmt");
   }
 
   map->clear();
-  DefStmt* this_copy = NULL;
+  DefExpr* this_copy = NULL;
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
-  Stmt* stmt_copy = def_stmt->copy(true, map, clone_callback);
-  if (this_copy = dynamic_cast<DefStmt*>(stmt_copy)) {
-    this_copy->def_sym->cname =
-      glomstrings(3, this_copy->def_sym->cname, "_clone_", intstring(uid++));
-    def_stmt->insertBefore(this_copy);
+  Expr* expr_copy = def_expr->copy(true, map, clone_callback);
+  if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
+    this_copy->sym->cname =
+      glomstrings(3, this_copy->sym->cname, "_clone_", intstring(uid++));
+    def_expr->insertBefore(this_copy);
   }
   else {
     INT_FATAL(this, "Unreachable statement in FnSymbol::clone reached");
   }
   Symboltable::setCurrentScope(save_scope);
-  return dynamic_cast<FnSymbol*>(this_copy->def_sym);
+  return dynamic_cast<FnSymbol*>(this_copy->sym);
 }
 
 
 FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions) {
-  DefStmt* wrapper_stmt = NULL;
   static int uid = 1; // Unique ID for wrapped functions
   FnSymbol* wrapper_symbol;
   SymScope* save_scope;
@@ -620,8 +619,9 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
 	  glomstrings(2, "_coercion_temp_", formal_change->name);
 	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
 					       new Variable(formal_change));
-	Stmt* temp_def_stmt = new DefStmt(temp_symbol);
-	temp_symbol->setDefPoint(temp_def_stmt);
+	DefExpr* temp_def_expr = new DefExpr(temp_symbol);
+	temp_symbol->setDefPoint(temp_def_expr);
+	DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
 	temp_def_stmt->append(wrapper_body);
 	wrapper_body = temp_def_stmt;
 	formal_change->type = coercion_substitutions->e[i].value->type;
@@ -641,23 +641,22 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   wrapper_block->setBlkScope(block_scope);
   block_scope->stmtContext = wrapper_block;
   Type* wrapper_return_type = retType;
-  wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-					  wrapper_return_type, wrapper_block);
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(defPoint);
+  DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
+						   wrapper_return_type, wrapper_block);
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
 
-  if (!def_stmt) {
-    INT_FATAL(this, "Attempt to make coercion wrapper for function not defined in DefStmt");
+  if (!def_expr) {
+    INT_FATAL(this, "Attempt to make coercion wrapper for function not defined in DefExpr");
   }
 
-  def_stmt->insertBefore(wrapper_stmt);
+  def_expr->insertBefore(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
-  return dynamic_cast<FnSymbol*>(wrapper_stmt->def_sym);
+  return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
 }
 
 
 FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
   static int uid = 1; // Unique ID for wrapped functions
-  DefStmt* wrapper_stmt = NULL;
   FnSymbol* wrapper_symbol;
 
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
@@ -687,8 +686,9 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
 	  glomstrings(2, "_default_param_temp_", formal_change->name);
 	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
 					       ((ParamSymbol*)formal_change)->init->copy());
-	Stmt* temp_def_stmt = new DefStmt(temp_symbol);
-	temp_symbol->setDefPoint(temp_def_stmt);
+	DefExpr* temp_def_expr = new DefExpr(temp_symbol);
+	DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
+	temp_symbol->setDefPoint(temp_def_expr);
 	temp_def_stmt->append(wrapper_body);
 	wrapper_body = temp_def_stmt;
 	actual_change->var = temp_symbol;
@@ -719,17 +719,17 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
   wrapper_block->setBlkScope(block_scope);
   block_scope->stmtContext = wrapper_block;
   Type* wrapper_return_type = retType;
-  wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-					  wrapper_return_type, wrapper_block);
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(defPoint);
+  DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
+						   wrapper_return_type, wrapper_block);
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
 
-  if (!def_stmt) {
+  if (!def_expr) {
     INT_FATAL(this, "error in FnSymbol::default_wrapper");
   }
 
-  def_stmt->insertBefore(wrapper_stmt);
+  def_expr->insertBefore(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
-  return dynamic_cast<FnSymbol*>(wrapper_stmt->def_sym);
+  return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
 }
 
 
@@ -740,19 +740,19 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition *, MPosition *> *formals_to_actu
 
 
 FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutions) {
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(defPoint);
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
 
-  if (!def_stmt) {
-    INT_FATAL(this, "Attempt to instantiate generic function not defined in DefStmt");
+  if (!def_expr) {
+    INT_FATAL(this, "Attempt to instantiate generic function not defined in DefExpr");
   }
 
-  DefStmt* this_copy = NULL;
+  DefExpr* this_copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
   save_scope = Symboltable::setCurrentScope(parentScope);
   Map<BaseAST*,BaseAST*> map;
-  Stmt* stmt_copy = def_stmt->copy(true, &map);
-  if (this_copy = dynamic_cast<DefStmt*>(stmt_copy)) {
+  Expr* expr_copy = def_expr->copy(true, &map);
+  if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
     for (int i = 0; i < map.n; i++) {
       if (map.v[i].key) {
 	if (Variable* var = dynamic_cast<Variable*>(map.v[i].key)) {
@@ -769,15 +769,15 @@ FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutio
 	}
       }
     }
-    this_copy->def_sym->cname =
-      glomstrings(3, this_copy->def_sym->cname, "_instantiate_", intstring(uid++));
-    def_stmt->insertBefore(this_copy);
+    this_copy->sym->cname =
+      glomstrings(3, this_copy->sym->cname, "_instantiate_", intstring(uid++));
+    def_expr->insertBefore(this_copy);
   }
   else {
     INT_FATAL(this, "Error in FnSymbol::instantiate_generic");
   }
   Symboltable::setCurrentScope(save_scope);
-  return dynamic_cast<FnSymbol*>(this_copy->def_sym);
+  return dynamic_cast<FnSymbol*>(this_copy->sym);
 }
 
 
@@ -959,7 +959,7 @@ static bool stmtIsGlob(ILink* link) {
     INT_FATAL("Non-Stmt found in StmtIsGlob");
   }
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (def_stmt->isFnDef() || def_stmt->isTypeDef()) {
+    if (def_stmt->fnDef() || def_stmt->typeDef()) {
       return true;
     }
   }
@@ -984,7 +984,7 @@ void ModuleSymbol::createInitFn(void) {
 						    dtVoid, initFunBody, 
 						    true);
   //Symboltable::setCurrentScope(saveScope);
-  initFn = dynamic_cast<FnSymbol*>(initFunDef->def_sym);
+  initFn = initFunDef->fnDef();
   {
     Stmt* initstmt = initFunStmts;
     while (initstmt) {

@@ -47,26 +47,26 @@ class Symboltable {
   static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
 
   static Expr* startLetExpr(void);
-  static Expr* finishLetExpr(Expr* let_expr, DefStmt* stmts, Expr* inner_expr);
+  static Expr* finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_expr);
   static BlockStmt* startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, Stmt* body);
   static ModuleSymbol* startModuleDef(char* name, bool internal = false);
-  static DefStmt* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
+  static DefExpr* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
 					    Expr* init = NULL, 
 					    varType vartag = VAR_NORMAL, 
 					    bool isConst = false);
   static ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
 						Type* type, Expr* init);
-  static DefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
-						Expr* init, varType vartag, 
-						bool isConst);
-  static DefStmt* Symboltable::defineVarDefStmt1(Symbol* idents,
-						 Type* type, 
-						 Expr* init);
-  static DefStmt* Symboltable::defineVarDefStmt2(DefStmt* stmts,
-						 varType vartag, 
-						 bool isConst);
+  static DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type, 
+					    Expr* init, varType vartag, 
+					    bool isConst);
+  static DefExpr* Symboltable::defineVarDef1(Symbol* idents,
+					     Type* type, 
+					     Expr* init);
+  static DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
+					     varType vartag, 
+					     bool isConst);
   static DefStmt* Symboltable::defineSingleVarDefStmt(char* name, 
 						      Type* type,
 						      Expr* init,
@@ -79,14 +79,14 @@ class Symboltable {
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(FnSymbol* fnsym);
-  static DefStmt* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
+  static DefExpr* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
 			      Type* retType, Stmt* body, 
 			      bool isExtern = false);
   static DefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
 				 Stmt* body, bool isExtern = false);
 
   static TypeSymbol* startClassDef(char* name, bool isValueClass, bool isUnion);
-  static DefStmt* finishClassDef(TypeSymbol* classSym, Stmt* definition);
+  static DefExpr* finishClassDef(TypeSymbol* classSym, Stmt* definition);
 
   static ForLoopStmt* startForLoop(bool forall, Symbol* indices, Expr* domain);
   static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);

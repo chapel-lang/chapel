@@ -11,7 +11,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     return;
   }
 
-  FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym);
+  FnSymbol* fn = def_stmt->fnDef();
 
   if (!fn) {
     return;
@@ -56,7 +56,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(fn->paramScope);
       Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);
-      this_insert->defPoint = def_stmt;
+      this_insert->setDefPoint(def_stmt->defExprList);
       Symboltable::setCurrentScope(saveScope);
       this_insert = appendLink(this_insert, fn->formals);
       fn->formals = this_insert;

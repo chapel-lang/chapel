@@ -752,9 +752,9 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(symbol->defPoint);
-  if (!def_stmt) {
-    INT_FATAL(this, "Attempt to copy ClassType not defined in DefStmt");
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(symbol->defPoint);
+  if (!def_expr) {
+    INT_FATAL(this, "Attempt to copy ClassType not defined in DefExpr");
   }
   ClassType* copy_type = new ClassType(value, union_value);
   Symboltable::pushScope(SCOPE_CLASS);
@@ -763,7 +763,7 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   while (old_decls) {
     DefStmt* def = dynamic_cast<DefStmt*>(old_decls);
     FnSymbol* fn;
-    if (def && (fn = dynamic_cast<FnSymbol*>(def->def_sym))) {
+    if (def && (fn = def->fnDef())) {
       copy_type->methods.add(fn);
       //Symboltable::define(def->fn);
     }
@@ -787,15 +787,15 @@ void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
     FnSymbol* fn;
     TypeSymbol* type_sym;
     VarSymbol* var;
-    if (def_stmt && (fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym))) {
+    if (def_stmt && (fn = def_stmt->fnDef())) {
       fn->classBinding = this->symbol;
       fn->method_type = PRIMARY_METHOD;
       methods.add(fn);
     }
-    else if (def_stmt && (type_sym = dynamic_cast<TypeSymbol*>(def_stmt->def_sym))) {
+    else if (def_stmt && (type_sym = def_stmt->typeDef())) {
       types.add(type_sym);
     }
-    else if (def_stmt && (var = dynamic_cast<VarSymbol*>(def_stmt->def_sym))) {
+    else if (def_stmt && (var = def_stmt->varDef())) {
       fields.add(var);
     }
     tmp = nextLink(Stmt, tmp);
@@ -824,12 +824,13 @@ void ClassType::buildConstructor(void) {
     if (value || union_value) {
       BlockStmt* body = Symboltable::startCompoundStmt();
       VarSymbol* this_insert = new VarSymbol("this", this);
-      DefStmt* body1 = new DefStmt(this_insert);
-      this_insert->setDefPoint(body1);
+      DefExpr* def_expr = new DefExpr(this_insert);
+      DefStmt* body1 = new DefStmt(def_expr);
+      this_insert->setDefPoint(def_expr);
       ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
       body1->append(body2);
       Symboltable::finishCompoundStmt(body, body1);
-      constructor = Symboltable::finishFnDef(newFunSym, NULL, this, body);
+      constructor = new DefStmt(Symboltable::finishFnDef(newFunSym, NULL, this, body));
     }
     else {
       Expr* argList = new IntLiteral("1", 1);
@@ -845,7 +846,7 @@ void ClassType::buildConstructor(void) {
 				argList))
 			    )
 			  );
-      constructor = Symboltable::finishFnDef(newFunSym, NULL, this, body);
+      constructor = new DefStmt(Symboltable::finishFnDef(newFunSym, NULL, this, body));
     }
     /** Add test tags for unions: This is a little ugly, it should
 	insert the enum statement that we generate in codegen before
@@ -920,7 +921,7 @@ void ClassType::codegenDef(FILE* outfile) {
   }
   for (Stmt* tmp = declarationList; tmp; tmp = nextLink(Stmt, tmp)) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->def_sym)) {
+      if (VarSymbol* var = def_stmt->varDef()) {
 	var->codegenDef(outfile);
       }
     }

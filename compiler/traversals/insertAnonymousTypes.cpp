@@ -47,8 +47,9 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 	  TypeSymbol* array_sym = new TypeSymbol(name, array_type);
 	  array_type->addSymbol(array_sym);
 	  array_type->domainType = domain_type;
-	  DefStmt* array_type_def = new DefStmt(array_sym);
-	  array_sym->setDefPoint(array_type_def);
+	  DefExpr* def_expr = new DefExpr(array_sym);
+	  DefStmt* array_type_def = new DefStmt(def_expr);
+	  array_sym->setDefPoint(def_expr);
 	  if (Symboltable::getCurrentScope() == commonModule->modScope) {
 	    commonModule->stmts->insertAfter(array_type_def);
 	  }
@@ -100,7 +101,8 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
   else {
     TypeSymbol* tuple_sym = new TypeSymbol(name, tuple_type);
     tuple_type->addSymbol(tuple_sym);
-    DefStmt* tuple_type_def = new DefStmt(tuple_sym);
+    DefStmt* tuple_type_def = new DefStmt(new DefExpr(tuple_sym));
+    tuple_sym->setDefPoint(tuple_type_def->defExprList);
     commonModule->stmts = appendLink(commonModule->stmts, tuple_type_def);
   }
   Symboltable::setCurrentScope(saveScope);
@@ -139,8 +141,8 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     TypeSymbol* domain_sym = new TypeSymbol(name, domain_type);
     domain_type->addSymbol(domain_sym);
-    DefStmt* domain_type_def = new DefStmt(domain_sym);
-    domain_sym->setDefPoint(domain_type_def);
+    DefStmt* domain_type_def = new DefStmt(new DefExpr(domain_sym));
+    domain_sym->setDefPoint(domain_type_def->defExprList);
     commonModule->stmts->insertBefore(domain_type_def);
     Symboltable::setCurrentScope(saveScope);
     *type = domain_type;
@@ -165,8 +167,8 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
 
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
-  if (DefStmt* var_def = dynamic_cast<DefStmt*>(stmt)) {
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(var_def->def_sym)) {
+  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
+    if (VarSymbol* var = def_stmt->varDef()) {
       build_anon_type_def(stmt, &var->type);
     }
   }

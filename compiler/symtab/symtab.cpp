@@ -306,7 +306,7 @@ static bool ModuleDefContainsOnlyNestedModules(Stmt* def) {
 
   while (stmt) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-      if (!def_stmt->isModuleDef()) {
+      if (!def_stmt->moduleDef()) {
 	return false;
       }
     }
@@ -325,7 +325,7 @@ static Stmt* ModuleDefContainsNestedModules(Stmt* def) {
 
   while (stmt) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-      if (def_stmt->isModuleDef()) {
+      if (def_stmt->moduleDef()) {
 	return stmt;
       }
     }
@@ -336,8 +336,7 @@ static Stmt* ModuleDefContainsNestedModules(Stmt* def) {
 }
 
 
-DefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod, 
-					    Stmt* definition) {
+DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
   bool empty = false;
   if (!mod->internal) {
     if (ModuleDefContainsOnlyNestedModules(definition)) {
@@ -362,7 +361,7 @@ DefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
     }
   }
 
-  DefStmt* defStmt = new DefStmt(mod);
+  DefExpr* defExpr = new DefExpr(mod);
 
   if (!empty) {
     firstModule = appendLink(firstModule, mod);
@@ -376,7 +375,7 @@ DefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
     // pop the module's scope
     if (!mod->internal) {
       SymScope* modScope = Symboltable::popScope();
-      modScope->setContext(defStmt, mod);
+      modScope->setContext(NULL, mod, defExpr);
       mod->setModScope(modScope);
     }
 
@@ -393,7 +392,7 @@ DefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
   // HACK: should actually look at parent module in general case
   currentModule = NULL;
 
-  return defStmt;
+  return defExpr;
 }
 
 
@@ -439,9 +438,9 @@ ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
 }
 
 
-DefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
-				       Expr* init, varType vartag, 
-				       bool isConst) {
+DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type, 
+				   Expr* init, varType vartag, 
+				   bool isConst) {
 
   /** SJD: This is a stopgap measure to deal with changing sequences
       into domains when the type of a declared variable is a domain.
@@ -459,14 +458,14 @@ DefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type,
   }
 
   VarSymbol* varList = defineVars(idents, type, init, vartag, isConst);
-  DefStmt* stmt = new DefStmt(varList);
-  varList->setDefPoint(stmt);
-  return stmt;
+  DefExpr* expr = new DefExpr(varList);
+  varList->setDefPoint(expr);
+  return expr;
 }
 
 
-DefStmt* Symboltable::defineVarDefStmt1(Symbol* idents, Type* type, 
-					Expr* init) {
+DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type, 
+				    Expr* init) {
 
   /** SJD: This is a stopgap measure to deal with changing sequences
       into domains when the type of a declared variable is a domain.
@@ -484,39 +483,34 @@ DefStmt* Symboltable::defineVarDefStmt1(Symbol* idents, Type* type,
   }
 
   VarSymbol* varList = defineVars(idents, type, init);
-  DefStmt* stmt = new DefStmt(varList);
-  varList->setDefPoint(stmt);
-  return stmt;
+  DefExpr* expr = new DefExpr(varList);
+  varList->setDefPoint(expr);
+  return expr;
 }
 
 
-DefStmt* Symboltable::defineVarDefStmt2(DefStmt* stmts,
-					varType vartag, 
-					bool isConst) {
-  DefStmt* stmt = stmts;
-  while (stmt) {
-    VarSymbol* var = dynamic_cast<VarSymbol*>(stmt->def_sym);
+DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
+				    varType vartag, 
+				    bool isConst) {
+  DefExpr* expr = exprs;
+  while (expr) {
+    VarSymbol* var = dynamic_cast<VarSymbol*>(expr->sym);
     while (var) {
       var->isConstant = isConst;
       var->varClass = vartag;
       var = nextLink(VarSymbol, var);
     }
-    stmt = nextLink(DefStmt, stmt);
+    expr = nextLink(DefExpr, expr);
   }
-  return stmts;
+  return exprs;
 }
-
-
-
 
 
 DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
 					     Expr* init, varType vartag, 
 					     bool isConst) {
-  Symbol* newVarAsSym = new Symbol(SYMBOL, name);
-  DefStmt* retval = defineVarDefStmt(newVarAsSym, type, init, vartag, 
-				     isConst);
-  return retval;
+  Symbol* sym = new Symbol(SYMBOL, name);
+  return new DefStmt(defineVarDef(sym, type, init, vartag, isConst));
 }
 
 
@@ -552,17 +546,17 @@ Expr* Symboltable::startLetExpr(void) {
 }
 
 
-Expr* Symboltable::finishLetExpr(Expr* let_expr, DefStmt* stmts, Expr* inner_expr) {
+Expr* Symboltable::finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_expr) {
   LetExpr* let = dynamic_cast<LetExpr*>(let_expr);
 
   if (!let) {
     INT_FATAL(let_expr, "LetExpr expected");
   }
 
-  DefStmt* stmt = stmts;
-  while (stmt) {
-    let->syms = appendLink(let->syms, stmt->def_sym);
-    stmt = nextLink(DefStmt, stmt);
+  DefExpr* expr = exprs;
+  while (expr) {
+    let->syms = appendLink(let->syms, expr->sym);
+    expr = nextLink(DefExpr, expr);
   }
 
   let->setInnerExpr(inner_expr);
@@ -619,15 +613,15 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym) {
 }
 
 
-DefStmt* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
+DefExpr* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
 				  Type* retType, Stmt* body, bool isExtern) {
   SymScope* paramScope = Symboltable::popScope();
   fnsym->finishDef(formals, retType, body, paramScope, isExtern);
-  DefStmt* def_stmt = new DefStmt(fnsym);
-  paramScope->setContext(def_stmt, fnsym);
-  fnsym->setDefPoint(def_stmt);
-  formals->setDefPoint(def_stmt);
-  return def_stmt;
+  DefExpr* def_expr = new DefExpr(fnsym);
+  paramScope->setContext(NULL, fnsym, def_expr);
+  fnsym->setDefPoint(def_expr);
+  formals->setDefPoint(def_expr);
+  return def_expr;
 }
 
 
@@ -635,7 +629,7 @@ DefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 				     Type* retType, Stmt* body, 
 				     bool isExtern) {
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
-  return finishFnDef(fnsym, formals, retType, body, isExtern);
+  return new DefStmt(finishFnDef(fnsym, formals, retType, body, isExtern));
 }
 
 
@@ -652,18 +646,18 @@ TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUni
 }
 
 
-DefStmt* Symboltable::finishClassDef(TypeSymbol* classSym, 
+DefExpr* Symboltable::finishClassDef(TypeSymbol* classSym, 
 				     Stmt* definition) {
   ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
   classType->addDeclarations(definition);
   SymScope *classScope = Symboltable::popScope();
   classType->setClassScope(classScope);
   classType->buildConstructor();
-  DefStmt* classdefStmt = new DefStmt(classSym);
-  classSym->setDefPoint(classdefStmt);
-  classScope->setContext(classdefStmt, classSym);
+  DefExpr* classDefExpr = new DefExpr(classSym);
+  classSym->setDefPoint(classDefExpr);
+  classScope->setContext(NULL, classSym, classDefExpr);
 
-  return classdefStmt;
+  return classDefExpr;
 }
 
 

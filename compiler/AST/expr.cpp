@@ -716,9 +716,77 @@ void Variable::print(FILE* outfile) {
   var->print(outfile);
 }
 
+
 void Variable::codegen(FILE* outfile) {
   var->codegen(outfile);
 }
+
+
+DefExpr::DefExpr(Symbol* init_sym) :
+  Expr(EXPR_DEF),
+  sym(init_sym) 
+{}
+
+
+Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  if (clone) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+      FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(clone, map, analysis_clone));
+      Symboltable::startFnDef(fncopy);
+      Symbol* newformals = fn->formals->copyList(clone, map, analysis_clone);
+      return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
+				      fn->body->copyListInternal(clone, map, analysis_clone),
+				      fn->exportMe);
+    }
+    else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym)) {
+      TypeSymbol* sym_copy = dynamic_cast<TypeSymbol*>(type_sym->copy(clone, map, analysis_clone));
+      return new DefExpr(sym_copy);
+    }
+    else if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
+      return
+	Symboltable::defineVarDef(var, var->type,
+				  var->init->copyInternal(clone, map, analysis_clone), 
+				  var->varClass, var->isConstant);
+    }
+    return NULL;
+  }
+  else {
+    return new DefExpr(sym);
+  }
+}
+
+
+void DefExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE_DEF(sym, traversal, false);
+}
+
+
+Type* DefExpr::typeInfo(void) {
+  return sym->type;
+}
+
+
+void DefExpr::print(FILE* outfile) {
+  if (dynamic_cast<FnSymbol*>(sym)) {
+    sym->printDef(outfile);
+  } else if (dynamic_cast<TypeSymbol*>(sym)) {
+    sym->type->printDef(outfile);
+    fprintf(outfile, ";");
+  } else if (dynamic_cast<VarSymbol*>(sym)) {
+    Symbol* tmp = sym;
+    while (tmp) {
+      tmp->printDef(outfile);
+      fprintf(outfile, ";");
+      tmp = nextLink(Symbol, tmp);
+      if (tmp) {
+	fprintf(outfile, "\n");
+      }
+    }
+  }
+}
+
+
+void DefExpr::codegen(FILE* outfile) { /** noop **/ }
 
 
 UnOp::UnOp(unOpType init_type, Expr* op) :
@@ -1737,9 +1805,11 @@ Type* NamedExpr::typeInfo(void) {
 
 void NamedExpr::print(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::print not implemented");
+  actual->print(outfile);
 }
 
 
 void NamedExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::codegen not implemented");
+  actual->codegen(outfile);
 }

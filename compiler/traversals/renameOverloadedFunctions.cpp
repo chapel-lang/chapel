@@ -4,11 +4,11 @@
 #include "stringutil.h"
 #include "symtab.h"
 
-void RenameOverloadedFunctions::preProcessStmt(Stmt* stmt) {
+void RenameOverloadedFunctions::preProcessExpr(Expr* expr) {
   static int uid = 1; // Unique ID for user-overloaded functions
 
-  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym)) {
+  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
       if (fn->overload) {
 	FnSymbol* tmp = fn;
 

@@ -8,6 +8,7 @@
 #include "pragma.h"
 
 class Expr;
+class DefExpr;
 class AInfo;
 
 class Stmt : public BaseAST {
@@ -65,18 +66,18 @@ class WithStmt : public Stmt {
 
 class DefStmt : public Stmt {
 public:
-  Symbol* def_sym;
+  Expr* defExprList;
 
-  DefStmt(Symbol* init_def_sym);
+  DefStmt(Expr* init_defExprList);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 
-  bool isVarDef();
-  bool isFnDef();
-  bool isTypeDef();
-  bool isModuleDef();
+  VarSymbol* varDef();
+  FnSymbol* fnDef();
+  TypeSymbol* typeDef();
+  ModuleSymbol* moduleDef();
 };
 
 

@@ -10,7 +10,7 @@ ApplyThisParameters::ApplyThisParameters(void) {
 
 void ApplyThisParameters::preProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym)) {
+    if (FnSymbol* fn = def_stmt->fnDef()) {
       if (fn->classBinding) {
 	CurrentClass = dynamic_cast<ClassType*>(fn->classBinding->type);
       }
@@ -20,7 +20,7 @@ void ApplyThisParameters::preProcessStmt(Stmt* stmt) {
 
 void ApplyThisParameters::postProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym)) {
+    if (FnSymbol* fn = def_stmt->fnDef()) {
       if (fn->classBinding) {
 	CurrentClass = NULL;
       }

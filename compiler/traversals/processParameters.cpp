@@ -60,7 +60,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 						  VAR_NORMAL, false);
 	    body = appendLink(body, newActualDecl);
 
-	    newActualUse = new Variable(newActualDecl->def_sym);
+	    newActualUse = new Variable(newActualDecl->varDef());
 	  } else {
 	    newActualUse = actual->copy();
 	  }

@@ -26,16 +26,15 @@ PassInfo passlist[] = {
   RUN(RenameOverloadedFunctions, ""),
   RUN(SpecializeParenOpExprs, ""),
   RUN(ApplyThisParameters, ""),
-
   RUN(InsertAnonymousDomains, ""),
   RUN(InsertAnonymousTypes, ""),
 
   // passes to run analysis
-  RUN(Fixup, "verify"),  // this is a sanity check
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(RunAnalysis, ""),
-  RUN(Fixup, "verify"),  // this is a sanity check
 
   // passes to capture analysis information in the AST
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(RemoveDeadSymbols, ""),
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
@@ -43,19 +42,18 @@ PassInfo passlist[] = {
   RUN(RemoveTypeVariableFormals, ""),
 
   // passes to normalize the basic AST after analysis
-  RUN(Fixup, "verify"),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertFunctionTemps, ""),
-  RUN(Fixup, "verify"),
   RUN(TransformLetExprs, ""),
-  RUN(Fixup, "verify"),
 
   // check the program's semantics
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(CheckSemantics, ""),
-  //  RUN(Fixup, "hyper verify"),  // hyper verification!
 
   // eventually, optimizations will go here
 
   // passes to prepare for C code generation
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(MethodsToFunctions, ""),
   RUN(ProcessParameters, ""),
   RUN(InsertVariableInitializations, ""),
@@ -64,7 +62,7 @@ PassInfo passlist[] = {
   RUN(LegalizeCNames, ""), 
 
   // passes to generate code and compile
-  RUN(Fixup, "verify"),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(Codegen, ""),
   RUN(BuildBinary, ""),
 

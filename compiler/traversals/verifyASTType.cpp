@@ -105,6 +105,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_VARIABLE");
     }
     break;
+  case EXPR_DEF:
+    if (typeid(*ast) != typeid(DefExpr)) {
+      INT_FATAL(ast, "Unexpected AST expression type: EXPR_DEF");
+    }
+    break;
   case EXPR_UNOP:
     if (typeid(*ast) != typeid(UnOp)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_UNOP");

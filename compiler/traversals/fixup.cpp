@@ -35,7 +35,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
   DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt);
   FnSymbol* fn;
   if (def_stmt) {
-    fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym);
+    fn = def_stmt->fnDef();
   }
   if (!def_stmt || !fn || !fn->classBinding) {
     if (!verify) {
@@ -90,7 +90,9 @@ void Fixup::preProcessExpr(Expr* expr) {
     expr->parent = exprParent;
   }
 
-  exprParents.add(expr);
+  if (!dynamic_cast<DefExpr*>(expr)) {
+    exprParents.add(expr);
+  }
 
   if (!expr->back || *expr->back != expr) {
     INT_FATAL(expr, "expr back incorrect");
@@ -99,7 +101,9 @@ void Fixup::preProcessExpr(Expr* expr) {
 
 
 void Fixup::postProcessExpr(Expr* expr) {
-  exprParents.pop();
+  if (!dynamic_cast<DefExpr*>(expr)) {
+    exprParents.pop();
+  }
 }
 
 
@@ -172,15 +176,15 @@ static void verifySymbolDefPoint(Symbol* sym) {
 
   BaseAST* defPoint = sym->defPoint;
   if (defPoint) {
-    if (DefStmt* stmt = dynamic_cast<DefStmt*>(defPoint)) {
-      Symbol* tmp = stmt->def_sym;
+    if (DefExpr* expr = dynamic_cast<DefExpr*>(defPoint)) {
+      Symbol* tmp = expr->sym;
       while (tmp) {
 	if (tmp == sym) {
 	  return;
 	}
 	tmp = nextLink(Symbol, tmp);
       }
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->def_sym)) {
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(expr->sym)) {
 	Symbol* formals = fn->formals;
 	while (formals) {
 	  if (formals == sym) {
@@ -189,7 +193,7 @@ static void verifySymbolDefPoint(Symbol* sym) {
 	  formals = nextLink(Symbol, formals);
 	}
       }
-      if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(stmt->def_sym)) {
+      if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(expr->sym)) {
 	if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
 	  EnumSymbol* tmp = enum_type->valList;
 	  while (tmp) {
