@@ -82,9 +82,9 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       a = dynamic_cast<Stmt *>(a->next);
     }
   forv_BaseAST(s, syms) {
-    GetStuff* getStuff = new GetStuff(GET_ALL);
-    s->traverse(getStuff);
-    forv_BaseAST(ss, getStuff->asts) if (ss) {
+    GetStuff getStuff(GET_ALL);
+    s->traverse(&getStuff);
+    forv_BaseAST(ss, getStuff.asts) if (ss) {
       assert(ss);
       if (set.set_add(ss))
 	syms.add(ss);
@@ -610,39 +610,60 @@ gen_while(BaseAST *a) {
 }
 
 static int
-gen_for(BaseAST *a) {
-  ForLoopStmt *s = dynamic_cast<ForLoopStmt*>(a);
-  Code *body_code = 0, *send;
-  Vec<Stmt*> body;
-  getLinkElements(body, s->body);
-  forv_Stmt(ss, body)
-    if1_gen(if1, &body_code, ss->ainfo->code);
-  Vec<Symbol*> indices;
-  getLinkElements(indices, s->index);
-  Code *setup_code = 0;
-  if1_gen(if1, &setup_code, s->domain->ainfo->code);
-  send = if1_send(if1, &setup_code, 3, 0, sym_primitive, domain_start_index_symbol, 
-		  s->domain->ainfo->rval);
-  forv_Vec(Symbol, i, indices)
+gen_forall_internal(AInfo *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &domains) {
+  // setup code: evaluate domains and get starting indices
+  Code *setup_code = 0, *send;
+  forv_Expr(d, domains)
+    if1_gen(if1, &setup_code, d->ainfo->code);
+  send = if1_send(if1, &setup_code, 2, 0, sym_primitive, domain_start_index_symbol);
+  forv_Expr(d, domains)
+    if1_add_send_arg(if1, send, d->ainfo->rval);
+  forv_Symbol(i, indices)
     if1_add_send_result(if1, send, i->asymbol);
-  send->ast = s->ainfo;
-  Sym *condition_rval = new_sym();
+  send->ast = ainfo;
+
+  // loop condition code
   Code *condition_code = 0;
-  send = if1_send(if1, &condition_code, 3, 1, sym_primitive, domain_valid_index_symbol,
-		  s->domain->ainfo->rval, condition_rval);
-  forv_Vec(Symbol, i, indices)
+  Sym *condition_rval = new_sym();
+  send = if1_send(if1, &condition_code, 2, 1, sym_primitive, domain_valid_index_symbol,
+		  condition_rval);
+  forv_Expr(d, domains)
+    if1_add_send_arg(if1, send, d->ainfo->rval);
+  forv_Symbol( i, indices)
     if1_add_send_arg(if1, send, i->asymbol);
-  send->ast = s->ainfo;
-  send = if1_send(if1, &body_code, 3, 1, sym_primitive, domain_next_index_symbol, 
-		  s->domain->ainfo->rval, condition_rval);
-  forv_Vec(Symbol, i, indices)
+  send->ast = ainfo;
+
+  // next index code
+  send = if1_send(if1, &body, 2, 0, sym_primitive, domain_next_index_symbol);
+  forv_Expr(d, domains)
+    if1_add_send_arg(if1, send, d->ainfo->rval);
+  forv_Symbol( i, indices)
     if1_add_send_arg(if1, send, i->asymbol);
-  send->ast = s->ainfo;
-  if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
+  forv_Symbol( i, indices)
+    if1_add_send_result(if1, send, i->asymbol);
+  send->ast = ainfo;
+
+  // build loop
+  if1_loop(if1, &ainfo->code, ainfo->label[0], ainfo->label[1],
 	   condition_rval, setup_code, 
 	   condition_code, 0, 
-	   body_code, s->ainfo);
+	   body, ainfo);
   return 0;
+}
+
+static int
+gen_for(BaseAST *a) {
+  ForLoopStmt *s = dynamic_cast<ForLoopStmt*>(a);
+  Code *body = 0;
+  Vec<Stmt*> body_stmts;
+  getLinkElements(body_stmts, s->body);
+  forv_Stmt(ss, body_stmts)
+    if1_gen(if1, &body, ss->ainfo->code);
+  Vec<Symbol*> indices;
+  getLinkElements(indices, s->index);
+  Vec<Expr*> domains;
+  domains.add(s->domain);
+  return gen_forall_internal(s->ainfo, body, indices, domains);
 }
 
 static int
@@ -689,9 +710,9 @@ static Sym *fnsym = 0;
 static int
 gen_if1(BaseAST *ast) {
   // bottom's up
-  GetStuff* getStuff = new GetStuff(GET_STMTS|GET_EXPRS);
-  ast->traverse(getStuff);
-  forv_BaseAST(a, getStuff->asts)
+  GetStuff getStuff(GET_STMTS|GET_EXPRS);
+  ast->traverse(&getStuff);
+  forv_BaseAST(a, getStuff.asts)
     if (gen_if1(a) < 0)
       return -1;
   switch (ast->astType) {
@@ -940,26 +961,21 @@ gen_if1(BaseAST *ast) {
       getLinkElements(domains, s->domains);
       Vec<Symbol *> indices;
       getLinkElements(indices, s->indices);
-      forv_Vec(Expr, d, domains)
-	if1_gen(if1, &s->ainfo->code, d->ainfo->code);
-      Code *send = 0;
-      //assert(domains.n == 1 && "don't know now to handle multiple domains");
-      if (!s->forallExpr->isNull()) { 
-	send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, expr_domain_symbol, 
-			s->forallExpr->ainfo->rval, 
-			s->ainfo->rval);
+      if (!s->forallExpr->isNull()) { // forall expression
+	Code *body = 0;
 	forv_Vec(Expr, d, domains)
-	  if1_add_send_arg(if1, send, d->ainfo->rval);
-	forv_Vec(Symbol, i, indices)
-	  if1_add_send_arg(if1, send, i->asymbol);
-	if1_gen(if1, &s->ainfo->code, s->forallExpr->ainfo->code);
+	  if1_gen(if1, &body, d->ainfo->code);
+	if (gen_forall_internal(s->ainfo, body, indices, domains) < 0)
+	  return -1;
       } else {
-	send = if1_send(if1, &s->ainfo->code, 2, 1, sym_primitive, expr_create_domain_symbol, 
-			s->ainfo->rval);
+	forv_Vec(Expr, d, domains)
+	  if1_gen(if1, &s->ainfo->code, d->ainfo->code);
+	Code *send = if1_send(if1, &s->ainfo->code, 2, 1, sym_primitive, expr_create_domain_symbol, 
+			      s->ainfo->rval);
 	forv_Vec(Expr, d, domains)
 	  if1_add_send_arg(if1, send, d->ainfo->rval);
+	send->ast = s->ainfo;
       }
-      send->ast = s->ainfo;
       break;
     }
     case EXPR_WRITECALL: {
@@ -1219,11 +1235,11 @@ print_ast(BaseAST *a, Vec<BaseAST *> &asts) {
     return;
   }
   printf("(%d", (int)a->astType);
-  GetStuff* getStuff = new GetStuff(GET_STMTS|GET_EXPRS);
-  a->traverse(getStuff);
-  if (getStuff->asts.n)
+  GetStuff getStuff(GET_STMTS|GET_EXPRS);
+  a->traverse(&getStuff);
+  if (getStuff.asts.n)
     printf(" ");
-  forv_BaseAST(b, getStuff->asts)
+  forv_BaseAST(b, getStuff.asts)
     print_ast(b, asts);
   printf(")");
 }
@@ -1290,8 +1306,10 @@ domain_start_index(PNode *pn, EntrySet *es) {
 
 static void
 domain_next_index(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_in(result, make_abstract_type(sym_int));
+  forv_Var(v, pn->lvals) {
+    AVar *index = make_AVar(v, es);
+    creation_point(index, sym_index);
+  }
 }
 
 static void
@@ -1376,9 +1394,9 @@ AST_to_IF1(Vec<Stmt *> &stmts) {
 
 void 
 print_AST_Expr_types(BaseAST *ast) {
-  GetStuff* getStuff = new GetStuff(GET_STMTS|GET_EXPRS);
-  ast->traverse(getStuff);
-  forv_BaseAST(a, getStuff->asts)
+  GetStuff getStuff(GET_STMTS|GET_EXPRS);
+  ast->traverse(&getStuff);
+  forv_BaseAST(a, getStuff.asts)
     print_AST_Expr_types(a);
   Expr *x = dynamic_cast<Expr*>(ast);
   if (x) {
