@@ -13695,3 +13695,13 @@ Modified files:
 	                             traversal.cpp traversal.h 
 	                             verifyASTType.cpp verifyASTType.h 
 
+---------------------------------------------------------------------------
+
+01/06/05 13:23:33 -- deitz
+
+Log message:
+	Checking in change to runtime related to last checkin
+
+Modified files:
+	chapel/runtime/include/: union.h 
+
