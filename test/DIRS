@@ -1,2 +1,6 @@
-test/
-  compflags/ : tests that make sure compiler flags are working properly
+test/          -- regression tests
+  Bin/         -- binaries used in running the test system
+  Logs/        -- default location for log files to be written out
+  Samples/     -- sample tests (not run by default, use -startdir to test)
+  -----------
+  compflags/   -- tests that make sure compiler flags are working properly

@@ -27,7 +27,7 @@
 # This should go away once the chapel compiler actually can create
 # an executable
 #
-set CANNOT_CREATE_EXECUTABLES_YET = 1
+set CANT_CREATE_EXES_YET = 1
 
 
 
@@ -116,7 +116,7 @@ foreach chplsrc ($testsrc)
     echo \[Executing: \"$compiler $compopts $chplsrc $lastcompopts\"\]
     $timedexec $timeout $compiler $compopts $chplsrc $lastcompopts >& $complog
 
-    if ( $status != 0 || $CANNOT_CREATE_EXECUTABLES_YET == 1 ) then
+    if ( $status != 0 || $CANT_CREATE_EXES_YET == 1 ) then
 	# Compile unsuccessful
 	# Compare compiler output with expected program output
 	if ( ! -r $checkfile ) then

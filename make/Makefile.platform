@@ -3,8 +3,6 @@
 #
 OS_TYPE = $(shell uname -s | awk '{ split($$1,a,"_"); printf("%s", a[1]);  }')
 
-OS_VERSION = $(shell uname -r | awk '{ split($$1,a,"."); sub("V","",a[1]); printf("%d%d%d",a[1],a[2],a[3]); }')
-
 ARCH = $(shell uname -m)
 ifeq ($(ARCH),i386)
 	ARCH = x86

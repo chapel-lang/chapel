@@ -309,7 +309,8 @@ foreach dir ($dirs)
 			tee -a $logfile
 		continue
 	endif
-	set numtests = `find . -maxdepth 1 -name "*.chpl" | wc -l`
+       	echo " " |& tee -a $logfile
+	set numtests = `(ls *.chpl |& grep -v "No match" | wc -l)`
 	if (! -e ./NOTEST && ($numtests != 0 || -x ./sub_test)) then
 		if (-x ./sub_test) then
 		    set sub_test = ./sub_test
@@ -318,10 +319,8 @@ foreach dir ($dirs)
 		endif
 		setenv COMPOPTS $compopts
 		setenv EXECOPTS $execopts
-		echo ""
 		echo "[Starting $sub_test `date`]"
 		$sub_test "$compiler" "$testdir" |& tee -a $logfile
-		echo " "
 	else
 		echo \["No tests in directory " $dir\] |& \
 			tee -a $logfile
@@ -338,6 +337,9 @@ echo " " |& tee -a $logfile
 # Output grep to a temp file, don't want to infinite loop
 echo \[Test Summary - $datestr\] |& tee $logfile.summary
 grep "\[Error" $logfile |& tee -a $logfile.summary
+set successes = `grep "\[Success matching" $logfile | wc -l`
+set failures = `grep "\[Error" $logfile | wc -l`
+echo \[\#Successes = $successes \| \#Failures = $failures\] |& tee -a $logfile.summary
 echo \[END\] |& tee -a $logfile.summary
 cat $logfile.summary >> $logfile
 echo ''
