@@ -23,9 +23,9 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
 	Stmt* next = nextLink(Stmt, stmt);
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
 	  /* Done before analysis for now -SJD
-	    VarSymbol* this_insert = new VarSymbol("_this", ctype);
-	    this_insert->next = method->fn->formals;
-	    method->fn->formals = this_insert;
+	    VarSymbol* this_insert = new VarSymbol("_this", ctype); THIS NOT CORRECT
+	    this_insert->next = method->fn->formals;                COPY BACK IF COPYING BACK
+	    method->fn->formals = this_insert;                      FROM fieldsToMemberAccesses
 	  */
 	  method->fn->cname = glomstrings(4, "_", ctype->name->name, "_", method->fn->name);
 	  method->next = tds->next;

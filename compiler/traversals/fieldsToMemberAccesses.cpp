@@ -26,8 +26,8 @@ void FieldsToMemberAccesses::preProcessStmt(Stmt* stmt) {
       while (stmt) {
 	Stmt* next = nextLink(Stmt, stmt);
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
-	  VarSymbol* this_insert = new VarSymbol("_this", ctype);
-	  this_insert->next = method->fn->formals;
+	  Symbol* this_insert = new ParamSymbol(PARAM_INOUT, "_this", ctype);
+	  this_insert = appendLink(this_insert, method->fn->formals);
 	  method->fn->formals = this_insert;
 	}
 	stmt = next;

@@ -112,6 +112,9 @@ void ILink::add(ILink* newlink) {
 void ILink::append(ILink* newlink) {
   ILink* lastlink;
 
+  if (newlink->isNull()) {
+    return;
+  }
   lastlink = this;
   while (!lastlink->next->isNull()) {
     lastlink = lastlink->next;
