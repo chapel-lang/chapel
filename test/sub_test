@@ -23,13 +23,6 @@
 #    add these to the zplcompopts and zplexecopts
 #    flags, respectively.
 
-#
-# This should go away once the chapel compiler actually can create
-# an executable
-#
-set CANT_CREATE_EXES_YET = 1
-
-
 
 # Check number of incoming arguments
 if ( $#argv != 2 ) then
@@ -101,6 +94,12 @@ else
     set catfiles = ""
 endif
 
+if (-r ./NOEXEC) then
+    set execute = "no"
+else
+    set execute = "yes"
+endif
+
 # get all the source files
 set testsrc = `ls *.chpl`
 
@@ -116,7 +115,7 @@ foreach chplsrc ($testsrc)
     echo \[Executing: \"$compiler $compopts $chplsrc $lastcompopts\"\]
     $timedexec $timeout $compiler $compopts $chplsrc $lastcompopts >& $complog
 
-    if ( $status != 0 || $CANT_CREATE_EXES_YET == 1 ) then
+    if ( $status != 0 || $execute == "no") then
 	# Compile unsuccessful
 	# Compare compiler output with expected program output
 	if ( ! -r $checkfile ) then
@@ -144,7 +143,9 @@ foreach chplsrc ($testsrc)
 	#   program output
 	echo \[Success compiling $localdir/$chplsrc\]
 
-	if ( -f $execfile && -x $execfile ) then
+	set binfile = a.out
+
+	if ( -f $binfile && -x $binfile ) then
 	    # Move compiler output to program output directory.
 	    # Will be concatenated with program output so that
 	    # compiler warnings and program output are in one
@@ -154,7 +155,7 @@ foreach chplsrc ($testsrc)
 
 	    if ( ! -r $checkfile ) then
 		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
-		rm -f $execfile "$execfile"_real "$execfile"_dbg
+		rm -f $binfile
 		continue
 	    endif
 
@@ -163,18 +164,12 @@ foreach chplsrc ($testsrc)
 	    # compiler (in case warning were output
 	    # by compiler)
 
-	    # Should use these files, yet need to filter out
-	    # some items so that output files don't break
-	    # due to zmake output messages.
-	    #
-	    # $timedexec $timeout ./$execfile $execopts >>& $execlog
-
-	    $timedexec $timeout ./$execfile $execopts >>& $execlog
+	    $timedexec $timeout ./$binfile $execopts >>& $execlog
 
 	    if ( $status != 0 ) then
 		cat $execlog
 		echo \[Error executing program $localdir/$execfile\]
-		rm -f $execfile "$execfile"_real "$execfile"_dbg
+		rm -f $binfile
 		continue
 	    else
 		echo \[Success executing program $localdir/$execfile at `date +"%H:%M:%S"`\]
@@ -189,12 +184,12 @@ foreach chplsrc ($testsrc)
 	    diff $diffargs $checkfile $execlog
 	    if ( $status != 0 ) then
 		echo \[Error matching program output for $localdir/$execfile\]
-		rm -f $execfile "$execfile"_real "$execfile"_dbg
+		rm -f $binfile
 		continue
 	    else
 		echo \[Success matching program output for $localdir/$execfile\]
 		rm $execlog
-		rm -f $execfile "$execfile"_real "$execfile"_dbg
+		rm -f $binfile
 	    endif
 	else
 	    echo \[Error could not locate executable $localdir/$execfile\]

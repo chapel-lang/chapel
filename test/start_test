@@ -105,6 +105,12 @@
 #    tests (though they will also be ignored if they fail to
 #    contain any .chpl files...)
 #
+#  - if the subdirectory contains a NOEXEC file, any executables
+#    built in that directory will not attempt to be executed.
+#    Rather, only the compiler output will be diffed against the
+#    expected output (note that when a compile fails, this will
+#    also happen automatically).
+#
 #  - if the subdirectory contains a COMPOPTS or EXECOPTS file,
 #    the options listed in that file will be added to the compiler
 #    and execution options for that subdirectory.  NOTE: be sure
