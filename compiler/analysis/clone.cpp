@@ -400,8 +400,34 @@ determine_clones() {
 // sets cs->sym to the new concrete symbol
 static void
 define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
+  CSSS css_sets_local;
+  // for those only used in one way, do not clone
   for (int i = 0; i < css_sets.n; i++) {
     Vec<CreationSet *> *eqcss = css_sets.v[i];
+    Sym *sym = 0;
+    forv_CreationSet(cs, *eqcss) if (cs) {
+      if (!sym)
+	sym = cs->sym;
+      else if (sym != cs->sym)
+	sym = (Sym *)-1;
+    }
+    // same sym
+    if (sym != (Sym*)-1) {
+      if (sym != sym_tuple && sym != sym_function) {
+	Vec<CreationSet *> creators;
+	creators.set_union(sym->creators);
+	if (!creators.some_disjunction(*eqcss)) {
+	  forv_CreationSet(cs, *eqcss) if (cs)
+	    cs->type = sym;
+	  continue;
+	}
+      }
+    }
+    css_sets_local.add(eqcss);
+  }
+  // clone those used in more than one way
+  for (int i = 0; i < css_sets_local.n; i++) {
+    Vec<CreationSet *> *eqcss = css_sets_local.v[i];
     Sym *sym = 0;
     forv_CreationSet(cs, *eqcss) if (cs) {
       if (!sym)
@@ -453,9 +479,8 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
       } else {
-	Vec<CreationSet*> creators;
-	creators.set_union(sym->creators);
-	if (!eqcss->some_disjunction(creators)) {
+	if (eqcss->n == 1 && !eqcss->v[0]->defs.n) {
+	  // the abstract type
 	  forv_CreationSet(cs, *eqcss) if (cs)
 	    cs->type = sym;
 	} else {
@@ -465,7 +490,12 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	  s->type_kind = sym->type_kind;
 	  s->incomplete = 1;
 	  s->creators.copy(*eqcss);
+	  Vec<CreationSet *> old_creators;
+	  old_creators.set_union(sym->creators);
+	  sym->creators.clear();
+	  old_creators.set_difference(s->creators, sym->creators);
 	  s->creators.set_to_vec();
+	  sym->creators.set_to_vec();
 	  forv_CreationSet(cs, *eqcss) if (cs) {
 	    cs->type = s;
 	    if (!name)

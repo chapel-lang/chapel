@@ -296,7 +296,6 @@ ASymbol::copy() {
   ASymbol *s = new ASymbol;
   s->sym = sym->copy();
   s->sym->asymbol = s;
-  if1_register_sym(if1, s->sym, s->sym->name);
   return s;
 }
 
@@ -487,14 +486,21 @@ ASymbol::clone(CloneCallback *callback) {
     return s;
   } else {
     Type *type = dynamic_cast<Type*>(symbol);
-    TypeSymbol *type_symbol = dynamic_cast<TypeSymbol*>(type->name);
-    TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(type_symbol->defPoint);
+    TypeSymbol *old_type_symbol = dynamic_cast<TypeSymbol*>(type->name);
+    TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(old_type_symbol->defPoint);
     Map<BaseAST*,BaseAST*> clone_map;
     TypeDefStmt *new_stmt = old_stmt->clone(c, &clone_map);
     assert(new_stmt);
-    Sym *newsym = c->context->smap.get(type_symbol->type->asymbol->sym);
+    Sym *new_type = c->context->smap.get(old_type_symbol->type->asymbol->sym);
+    TypeSymbol *new_type_symbol = dynamic_cast<TypeSymbol*>(
+      dynamic_cast<Type*>(new_type->asymbol->symbol)->name);
+    if (!new_type_symbol->asymbol) // SHOULD BE ASSERT
+      callback->clone(old_type_symbol, new_type_symbol);
+    new_type->meta_type = new_type_symbol->asymbol->sym;
+    new_type_symbol->asymbol->sym->meta_type = new_type;
+    assert(new_type_symbol->asymbol->sym->is_meta_class);
     fixup_symbol_clone(sym, callback);
-    return newsym;
+    return new_type;
   }
 }
 
@@ -2149,9 +2155,23 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
 
 int
 function_is_used(FnSymbol *fn) {
-  if (fn->asymbol && fn->asymbol->sym)
-    return fn->asymbol->sym->fun->ess.n != 0;
-  else
+  if (if1->callback) {
+    if (fn->asymbol)
+      return fn->asymbol->sym->fun->ess.n != 0;
+    else
+      return false;
+  } else
+    return true; // analysis not run   
+}
+
+int
+type_is_used(TypeSymbol *t) {
+  if (if1->callback) {
+    if (t->asymbol)
+      return t->asymbol->sym->meta_type->creators.n != 0;
+    else
+      return false;
+  } else
     return true; // analysis not run   
 }
 
