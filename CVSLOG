@@ -10027,3 +10027,30 @@ Added files:
 	                                        configVarHashCollision.execopts 
 	                                        configVarHashCollision.good 
 
+---------------------------------------------------------------------------
+
+11/19/04 15:22:26 -- deitz
+
+Log message:
+	Removed the ReduceSymbol class.  Reductions are now no longer special
+	cased in the parser or the AST.  This simplifies the construction of
+	classes since they are no longer special-cased for reductions.
+	
+	Moved the test trivial/bradc/protoast/badred to a future directory so
+	that it is not checked.  This test used to report a syntax error when
+	the parser encountered a reduction by a class that was not a
+	reduction.  This should eventually be taken care of in type checking.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp symtab.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good noop.good 
+Added files:
+	chapel/test/trivial/bradc/protoast/future/: NOTEST badred.chpl 
+	                                            badred.good 
+Removed files:
+	chapel/test/trivial/bradc/protoast/: badred.chpl badred.good 
+
