@@ -1,0 +1,8 @@
+bradc/deitz
+
+Need to generate type-specific initializers for variables.
+This is slightly non-trivial, since not all legal Chapel
+initializers will be legal C initializers.  Thus, in some
+cases (or perhaps all for symmetry?), the type-specific
+initializers should be generated as assignments following
+the variable declarations.

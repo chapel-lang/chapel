@@ -236,6 +236,28 @@ void VarSymbol::printDef(FILE* outfile) {
 }
 
 
+bool VarSymbol::initializable(void) {
+  switch (parentScope->type) {
+  case SCOPE_FUNCTION:
+  case SCOPE_LOCAL:
+  case SCOPE_MODULE:
+    return true;
+  case SCOPE_INTRINSIC:
+  case SCOPE_INTERNAL_PRELUDE:
+  case SCOPE_PRELUDE:
+  case SCOPE_POSTPARSE:
+  case SCOPE_PARAM:
+  case SCOPE_FORLOOP:
+  case SCOPE_FORALLEXPR:
+  case SCOPE_CLASS:
+    return false;
+  default:
+    INT_FATAL(this, "unhandled case in needsTypeInitialization()");
+  }
+  return false;
+}
+
+
 void VarSymbol::codegenDef(FILE* outfile) {
   if (parentScope->type == SCOPE_MODULE) {
     outfile = intheadfile;
@@ -247,7 +269,9 @@ void VarSymbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
   fprintf(outfile, " ");
   this->codegen(outfile);
-  type->codegenSafeInit(outfile);
+  if (this->initializable()) {
+    type->codegenSafeInit(outfile);
+  }
   fprintf(outfile, ";\n");
 }
 
@@ -582,8 +606,13 @@ void FnSymbol::codegenDef(FILE* outfile) {
   fprintf(headfile, ";\n");
 
   codegenHeader(outfile);
-  fprintf(outfile, " ");
+  // need an extra set of curly braces in case (a) body is
+  // non-compound statement, or (b) formal parameters share same name
+  // as local variable
+  fprintf(outfile, " {\n");
   body->codegen(outfile);
+  fprintf(outfile, "\n");
+  fprintf(outfile, "}\n");
   fprintf(outfile, "\n\n");
   if (overload) {
     overload->codegenDef(outfile);

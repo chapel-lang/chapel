@@ -1,0 +1,8 @@
+x in foo() is: 0
+then x is: 4
+
+x in bar() is: 0
+then x is: 5
+
+x in baz() is: 2
+

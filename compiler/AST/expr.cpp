@@ -1070,7 +1070,6 @@ FnCall::FnCall(Expr* init_base, Expr* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {
   astType = EXPR_FNCALL;
-
 }
 
 

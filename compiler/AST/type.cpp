@@ -140,7 +140,7 @@ void Type::codegenSafeInit(FILE* outfile) {
   if (this == dtString) {
     fprintf(outfile, " = NULL");
   } else {
-    // Most types won't need an initializer to be safe
+    // Most types won't need an initializer to be safe, only correct
   }
 }
 
@@ -1009,7 +1009,8 @@ void initTypes(void) {
 					   new FloatLiteral("0.0", 0.0));
   dtComplex = Symboltable::defineBuiltinType("complex", "_complex128",
 					     new FloatLiteral("0.0", 0.0));
-  dtString = Symboltable::defineBuiltinType("string", "_string", new StringLiteral(""));
+  dtString = Symboltable::defineBuiltinType("string", "_string", 
+					    new StringLiteral(""));
   
 
   dtLocale = Symboltable::defineBuiltinType("locale", "_locale", nilExpr);

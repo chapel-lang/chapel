@@ -79,6 +79,8 @@ class VarSymbol : public Symbol {
 
   virtual void traverseDefSymbol(Traversal* traverse);
 
+  bool initializable(void);
+
   virtual void codegenDef(FILE* outfile);
 
   bool isNull(void);
