@@ -9465,3 +9465,43 @@ Removed files:
 	chapel/compiler/AST/: module.cpp 
 	chapel/compiler/include/: module.h 
 
+---------------------------------------------------------------------------
+
+11/09/04 14:51:43 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Front-end specific transfer functions are now a Struct so that
+	they can have additional annotations (e.g. "has sideeffects" vs not).
+	Low level CG a bit more robust when dealing with sum-types.
+	Fixed a bug in cloning which was causing some excess data structure
+	  cloning.
+	'void' is now not a subtype of 'any'; added a new type 'all' which
+	  includes 'void'.  'all' is not accessible to the user.
+	Added template iterator to iterate through all low level variables
+	  in a program.
+	Sum types which include "void" after analysis are set to "void"
+	  This makes sense because things which contain 'void' cannot be
+	  used for any purpose and are essentially dead.
+	Low Level intermediate for build function for 'if' now has option
+	  for if expression vs if statement.
+	Added basic level of dead code tagging based on the interprocedural
+	  dataflow graph.  This could be reflected to the higher level.
+	Reoganized the V grammar a bit to make it more like Chapel.
+
+Modified files:
+	chapel/compiler/analysis/: Makefile.share analysis.cpp cg.cpp 
+	                           clone.cpp fa.cpp if1.cpp 
+	                           prim_data.dat 
+	chapel/compiler/include/: fa.h if1.h pnode.h prim.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/vparser/: ast_kinds.h parse_ast.cpp v.g 
+	chapel/test/flowanalysis/jplevyak/: assign2.v cs3.good cs4.good 
+	                                    sample.good sample.v 
+	chapel/test/flowanalysis/jplevyak/constants/: const.v 
+	chapel/test/flowanalysis/jplevyak/loop/: rec.v 
+	chapel/test/lowlevelcg/jplevyak/: sample.v 
+	chapel/test/parsing/jplevyak/: for1.good for2.good module.good 
+Added files:
+	chapel/compiler/analysis/: dead.cpp 
+	chapel/compiler/include/: dead.h 
+
