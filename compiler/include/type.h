@@ -173,8 +173,7 @@ class ClassType : public Type {
 	    Stmt* init_constructor = NULL,
 	    SymScope* init_classScope = NULL);
   void addDeclarations(Stmt* newDeclarations,
-		       Stmt* afterStmt = NULL,
-		       VarSymbol* afterField = NULL);
+		       Stmt* afterStmt = NULL);
   void buildConstructor(void);
   void setClassScope(SymScope* init_classScope);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

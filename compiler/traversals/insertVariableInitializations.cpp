@@ -159,6 +159,10 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
     return;
   }
 
+  if (dynamic_cast<TypeSymbol*>(def_stmt->parentSymbol)) {
+    return;
+  }
+
   VarSymbol* var = def_stmt->var;
 
   while (var) {

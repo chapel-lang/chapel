@@ -764,9 +764,7 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 }
 
 
-void ClassType::addDeclarations(Stmt* newDeclarations,
-				Stmt* beforeStmt,
-				VarSymbol* beforeField) {
+void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
   Stmt* tmp = newDeclarations;
   while (tmp) {
     if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
@@ -775,12 +773,7 @@ void ClassType::addDeclarations(Stmt* newDeclarations,
       methods.add(fn_def_stmt->fn);
     }
     else if (VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
-      if (beforeField) {
-	fields.insert(beforeField, var_def_stmt->var);
-      }
-      else {
-	fields.add(var_def_stmt->var);
-      }
+      fields.add(var_def_stmt->var);
     }
     else if (TypeDefStmt* type_def_stmt = dynamic_cast<TypeDefStmt*>(tmp)) {
       types.add(type_def_stmt->type_sym);
@@ -905,10 +898,17 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "_union_id _chpl_union_tag;\n");
     fprintf(outfile, "union _chpl_union_def {\n");
   }
+  for (Stmt* tmp = declarationList; tmp; tmp = nextLink(Stmt, tmp)) {
+    if (VarDefStmt* def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
+      def_stmt->var->codegenDef(outfile);
+    }
+  }
+  /*
   forv_Vec(VarSymbol, tmp, fields) {
     tmp->codegenDef(outfile);
     fprintf(outfile, "\n");
   }
+  */
   if (union_value) {
     fprintf(outfile, "} _chpl_union;\n");
   }
