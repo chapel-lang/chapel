@@ -38,6 +38,8 @@ static ArgumentDescription arg_desc[] = {
  {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
+ {"constants_per_var", ' ', "# of Constants per Var", "I", &num_constants_per_variable, 
+  "CHPL_CONSTANTS_PER_VARIABLE", NULL},
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
  {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},

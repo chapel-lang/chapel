@@ -78,7 +78,8 @@ unique_AVar(Var *v, EntrySet *es) {
   v->avars.put(es, av);
   av->contour_is_entry_set = 1;
   if (v->sym->lvalue) {
-    av->lvalue = new AVar(new Var(v->sym), es);
+    av->lvalue = new AVar(v, es);
+    av->lvalue->is_lvalue = 1;
     av->lvalue->contour_is_entry_set = 1;
   }
   return av;
@@ -532,25 +533,71 @@ type_intersection(AType *a, AType *b) {
   return r;
 }
 
+static int 
+same_eq_classes(Setters *s, Setters *ss) {
+  if (s == ss)
+    return 1;
+  if (!s || !ss)
+    return 0;
+  if (s->eq_classes && ss->eq_classes)
+    return s->eq_classes == ss->eq_classes;
+  Vec<Setters *> sc1, sc2;
+  forv_AVar(av, *s)
+    sc1.set_add(av->setter_class);
+  forv_AVar(av, *ss)
+    sc2.set_add(av->setter_class);
+  if (sc1.some_disjunction(sc2))
+    return 0;
+  return 1;
+}
+
+static int
+edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
+  for (int i = 0; i < es->args.n; i++)
+    if (es->args.v[i]->out != e->args.v[i]->out)
+      return 0;
+  assert(es->rets.n == e->rets.n);
+  for (int i = 0; i < es->rets.n; i++) {
+    if (es->rets.v[i]->out != e->rets.v[i]->out)
+      return 0;
+    if (es->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
+      if (es->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
+	return 0;
+  }
+  return 1;
+}
+
+static int
+edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
+  int n = es->rets.n;
+  if (e->rets.n < n) n = e->rets.n;
+  for (int i = 0; i < es->rets.n; i++) {
+    if (!same_eq_classes(es->rets.v[i]->setters, e->rets.v[i]->setters))
+      return 0;
+    if (es->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
+      if (!same_eq_classes(es->rets.v[i]->lvalue->setters, e->rets.v[i]->lvalue->setters))
+	return 0;
+  }
+  return 1;
+}
+
 static int
 entry_set_compatibility(AEdge *e, EntrySet *es) {
   int val = INT_MAX;
-  assert(es->args.n == e->args.n); // FIXME
-  for (int i = 0; i < es->args.n; i++) {
-    AType *t = type_intersection(e->args.v[i]->out, e->dispatch_filters.v[i]);
-    if (es->args.v[i]->out != t) {
+  if (e->args.n) {
+    if (!edge_type_compatible_with_entry_set(e, es))
       val -= 4;
-      break;
+  } else {
+    for (int i = 0; i < es->args.n; i++) {
+      AType *t = type_intersection(e->args.v[i]->out, e->dispatch_filters.v[i]);
+      if (es->args.v[i]->out != t) {
+	val -= 4;
+	break;
+      }
     }
   }
-  int n = es->rets.n;
-  if (e->rets.n < n) n = e->rets.n;
-  for (int i = 0; i < n; i++) {
-    if (es->rets.v[i]->setter_class != e->rets.v[i]->setter_class) {
-      val -= 2;
-      break;
-    }
-  }
+  if (!edge_sset_compatible_with_entry_set(e, es))
+    val -= 2;
   if (e->fun->clone_for_constants) {
     for (int i = 0; i < es->args.n; i++) {
       if (es->args.v[i]->var->clone_for_constants) {
@@ -712,10 +759,10 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
     AVar *atv = make_AVar(tv, es);
     set_container(atv, container);
     flow_vars(av, atv);
-    if (!ref && !v->sym->lvalue)
+//    if (!ref && !v->sym->lvalue)
       flow_vars(atv, iv);
-    else
-      flow_vars_equal(atv, iv);
+//    else
+//      flow_vars_equal(atv, iv);
     if (iv->var->sym->name)
       cs->var_map.put(iv->var->sym->name, iv);
   }
@@ -859,8 +906,12 @@ add_move_constraints(EntrySet *es) {
       flow_vars(vv, make_AVar(v, es));
   }
   forv_PNode(p, f->fa_move_PNodes) {
-    for (int i = 0; i < p->rvals.n; i++)
-      flow_vars(make_AVar(p->rvals.v[i], es), make_AVar(p->lvals.v[i], es));
+    for (int i = 0; i < p->rvals.n; i++) {
+      AVar *lhs = make_AVar(p->lvals.v[i], es), *rhs = make_AVar(p->rvals.v[i], es);
+      flow_var_to_var(rhs, lhs);
+      if (lhs->lvalue)
+	flow_var_to_var(rhs, lhs->lvalue);
+    }
   }
 }
 
@@ -1375,10 +1426,13 @@ collect_results() {
   // collect css and css_set
   fa->css.clear();
   fa->css_set.clear();
-  forv_Fun(f, fa->funs)
-    forv_Var(v, f->fa_all_Vars)
-      for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].value) 
-	fa->css_set.set_union(*v->avars.v[i].value->out);
+  forv_EntrySet(es, fa->ess) {
+    forv_Var(v, es->fun->fa_all_Vars) {
+      AVar *xav = make_AVar(v, es);
+      for (AVar *av = xav; av; av = av->lvalue)
+	fa->css_set.set_union(*av->out);
+    }
+  }
   forv_CreationSet(cs, fa->css_set) if (cs) 
     fa->css.add(cs);
   // print results
@@ -1391,27 +1445,28 @@ static void
 collect_type_violations() {
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
-      AVar *av = make_AVar(v, es);
-      forv_AVar(c, av->arg_of_send) if (c) {
-	PNode *p = c->var->def;
-	if (p->prim) continue; // primitives handled elsewhere
-	EntrySet *from = (EntrySet*)c->contour;
-	AType *t = av->out;
-	forv_AVar(a, av->forward) if (a) {
-	  if (!a->contour_is_entry_set)
+      AVar *xav = make_AVar(v, es);
+      for (AVar *av = xav; av; av = av->lvalue)
+	forv_AVar(c, av->arg_of_send) if (c) {
+	  PNode *p = c->var->def;
+	  if (p->prim) continue; // primitives handled elsewhere
+	  EntrySet *from = (EntrySet*)c->contour;
+	  AType *t = av->out;
+	  forv_AVar(a, av->forward) if (a) {
+	    if (!a->contour_is_entry_set)
+	      continue;
+	    EntrySet *xes = (EntrySet*)a->contour;
+	    AEdge **last = xes->edges.last();
+	    for (AEdge **x = xes->edges.first(); x < last; x++) 
+	      if (*x && (*x)->pnode == p && (*x)->from == from)
+		goto Lfound;
 	    continue;
-	  EntrySet *xes = (EntrySet*)a->contour;
-	  AEdge **last = xes->edges.last();
-	  for (AEdge **x = xes->edges.first(); x < last; x++) 
-	    if (*x && (*x)->pnode == p && (*x)->from == from)
-	      goto Lfound;
-	  continue;
-	Lfound:
-	  t = type_diff(t, a->out);
+	  Lfound:
+	    t = type_diff(t, a->out);
+	  }
+	  if (t != bottom_type)
+	    type_violation(av, t, p);
 	}
-	if (t != bottom_type)
-	  type_violation(av, t, p);
-      }
     }
   }
 }
@@ -1588,7 +1643,7 @@ static void mark_es_cs_backedges(EntrySet *es);
 static void
 mark_es_cs_backedges(CreationSet *cs) {
   cs->dfs_color = DFS_grey;
-  forv_EntrySet(es, cs->ess) {
+  forv_EntrySet(es, cs->ess) if (es) {
     if (es->dfs_color == DFS_white)
       mark_es_cs_backedges(es);
     else if (es->dfs_color == DFS_grey)
@@ -1657,13 +1712,14 @@ collect_es_type_confluences(Vec<AVar *> &type_confluences) {
   type_confluences.clear();
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
-      AVar *av = make_AVar(v, es);
-      forv_AVar(x, av->backward) if (x) {
-	if (type_diff(av->in, x->out) != bottom_type) {
-	  type_confluences.set_add(av);
-	  break;
+      AVar *xav = make_AVar(v, es);
+      for (AVar *av = xav; av; av = av->lvalue)
+	forv_AVar(x, av->backward) if (x) {
+	  if (type_diff(av->in, x->out) != bottom_type) {
+	    type_confluences.set_add(av);
+	    break;
+	  }
 	}
-      }
     }
   }
   type_confluences.set_to_vec();
@@ -1685,25 +1741,6 @@ collect_cs_type_confluences(Vec<AVar *> &type_confluences) {
     }
   }
   type_confluences.set_to_vec();
-}
-
-static int
-edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
-  assert(es->args.n == e->args.n); // FIXME
-  for (int i = 0; i < es->args.n; i++)
-    if (es->args.v[i]->out != e->args.v[i]->out)
-      return 0;
-  return 1;
-}
-
-static int
-edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
-  int n = es->rets.n;
-  if (e->rets.n < n) n = e->rets.n;
-  for (int i = 0; i < n; i++)
-    if (es->rets.v[i]->setter_class != e->rets.v[i]->setter_class)
-      return 0;
-  return 1;
 }
 
 static int
@@ -1741,9 +1778,15 @@ split_ess(Vec<AVar *> &confluences, int fsset = 0) {
   int analyze_again = 0;
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
-      if (!fsset ? is_formal_argument(av) : is_return_value(av)) {
-	if (split_entry_set(av, fsset))
-	  analyze_again = 1;
+      if (!av->is_lvalue) {
+	if (!fsset ? is_formal_argument(av) : is_return_value(av))
+	  if (split_entry_set(av, fsset))
+	    analyze_again = 1;
+      } else {
+	AVar *aav = unique_AVar(av->var, av->contour);
+	if (fsset ? is_formal_argument(aav) : is_return_value(aav))
+	  if (split_entry_set(aav, fsset))
+	    analyze_again = 1;
       }
     }
   }
@@ -1766,8 +1809,11 @@ clear_avar(AVar *av) {
 
 static void
 clear_var(Var *v) {
-  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key)
-    clear_avar(v->avars.v[i].value);
+  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+    AVar *xav = v->avars.v[i].value;
+    for (AVar *av = xav; av; av = av->lvalue)
+      clear_avar(av);
+  }
 }
 
 static void
@@ -1856,15 +1902,6 @@ setters_classes_cannonicalize(SettersClasses *s) {
   return ss;
 }
 
-static int 
-same_eq_classes(Setters *s, Setters *ss) {
-  if (s == ss)
-    return 1;
-  if (!s || !ss)
-    return 0;
-  return s->eq_classes == ss->eq_classes;
-}
-
 static int
 update_setter(AVar *av, AVar *s) {
   Setters *new_setters = 0;
@@ -1911,24 +1948,26 @@ static void
 collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_starters) {
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
-      AVar *av = make_AVar(v, es);
-      if (av->setters) {
-	forv_AVar(x, av->forward) if (x) {
-	  if (x->setters && !same_eq_classes(av->setters, x->setters)) {
-	    setter_confluences.set_add(av);
-	    break;
+      AVar *xav = make_AVar(v, es);
+      for (AVar *av = xav; av; av = av->lvalue)
+	if (av->setters) {
+	  forv_AVar(x, av->forward) if (x) {
+	    if (x->setters && !same_eq_classes(av->setters, x->setters)) {
+	      setter_confluences.set_add(av);
+	      break;
+	    }
+	  }
+	  if (av->creation_set) {
+	    forv_AVar(s, *av->setters) if (s) {
+	      if (s->container->out->in(av->creation_set))
+		setter_starters.set_add(av);
+	    }
 	  }
 	}
-	if (av->creation_set) {
-	  forv_AVar(s, *av->setters) if (s) {
-	    if (s->container->out->in(av->creation_set))
-	      setter_starters.add(av);
-	  }
-	}
-      }
     }
   }
   setter_confluences.set_to_vec();
+  setter_starters.set_to_vec();
 }
 
 static int
@@ -1948,13 +1987,16 @@ split_css(Vec<AVar *> &starters) {
     starters.move(save);
     if (is_es_cs_recursive(cs))
       continue;
-    // for each element of the starter set, find all compatible starters
-    // and split off a new CreationSet for them
     while (starter_set.n) {
       AVar *av = starter_set.v[0];
       Vec<AVar *> compatible_set;
       forv_AVar(v, starter_set) {
-	if (same_eq_classes(v->setters, av->setters))
+	if 
+#if 0
+  (same_eq_classes(v->setters, av->setters))
+#else
+  (av == v)
+#endif
 	  compatible_set.set_add(v);
 	else
 	  save.add(v);
@@ -2042,6 +2084,7 @@ recompute_eq_classes(Vec<Setters *> &ss) {
       s->eq_classes = new_sc;
       new_sc->used_by.put(s);
     }
+    assert(s->eq_classes);
   }
 }
 
@@ -2049,10 +2092,11 @@ static int
 analyze_confluence(AVar *av, int fsetter = 0) {
   int setters_changed = 0;
   Vec<Setters *> ss;
-  forv_AVar(x, av->backward) if (x) {
+  Vec<AVar *> *dir = fsetter ? &av->forward : &av->backward;
+  forv_AVar(x, *dir) if (x) {
     assert(x->contour_is_entry_set);
     for (int i = 0; i < ss.n; i++) {
-      forv_AVar(a, *ss.v[i]) {
+      forv_AVar(a, *ss.v[i]) if (a) {
 	if ((!fsetter && a->out == x->out) || 
 	    (fsetter && same_eq_classes(a->setters, x->setters))) {
 	  ss.v[i]->set_add(x);
@@ -2076,6 +2120,7 @@ static int
 extend_analysis() {
   // initialize
   int analyze_again = 0;
+  static int extensions = 0;
   compute_recursive_entry_sets();
   compute_recursive_entry_creation_sets();
   forv_EntrySet(es, fa->ess) 
@@ -2108,7 +2153,8 @@ extend_analysis() {
     }
   }
   if (analyze_again) {
-    if (verbose_level) printf("extending analysis\n");
+    ++extensions;
+    if (verbose_level) printf("extending analysis %d\n", extensions);
     clear_results();
     return 1;
   }
