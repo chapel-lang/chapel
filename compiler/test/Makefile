@@ -23,6 +23,10 @@ TEST_CVS_SRCS = \
 	../map.cpp \
 	../misc.cpp \
 	../vec.cpp \
+	../files.cpp \
+	../beautify.cpp \
+	../mysystem.cpp \
+	../stringutil.cpp \
 	test_lib.cpp
 TEST_SRCS = $(TEST_CVS_SRCS)
 TEST_OBJS = $(TEST_SRCS:%.cpp=$(PLATFORM)/%.o)
