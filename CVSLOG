@@ -1980,3 +1980,13 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+04/05/07 17:48:52 -- bradc
+
+Log message:
+	Added support for a valgrind run to the nightly script.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
