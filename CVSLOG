@@ -23297,3 +23297,27 @@ Added files:
 	chapel/test/classes/deitz/: test_record_assign1.chpl 
 	                            test_record_assign1.good 
 
+---------------------------------------------------------------------------
+
+04/01/05 17:19:21 -- deitz
+
+Log message:
+	Added call to setDefPoint in constructor of DefExpr.  Now that every
+	defPoint is a DefExpr, this is a fine place to do it.  Removed a bunch
+	of unnecessary setDefPoint calls with this change.
+	
+	The only setDefPoint calls other than from the constructor are related
+	to formals in functions and enum symbols in an enum type.  They share
+	defPoints with the function and the enum type symbol.  Should they
+	have their own DefExprs?  That will have to wait for more thought.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/parser/: chapel.y internal_prelude.chpl 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertAnonymousDomains.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertIndexType.cpp 
+	                             insertThisParameters.cpp 
+
