@@ -13817,3 +13817,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 
+---------------------------------------------------------------------------
+
+01/06/05 16:51:13 -- bradc
+
+Log message:
+	Fixed the nightly regression test script so that it
+	understands the concept of future tests.  This wraps
+	up my first stab at supporting future tests.  Feel
+	free to send feedback, etc. as you start using it.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
