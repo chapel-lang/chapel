@@ -12282,3 +12282,206 @@ Modified files:
 	                           prim_data.dat 
 	chapel/compiler/include/: code.h pattern.h 
 
+---------------------------------------------------------------------------
+
+12/21/04 13:31:29 -- bradc
+
+Log message:
+	Big symboltable changes...
+	
+	Made the symboltable more tightly integrated with
+	traversals and beefed up/cleaned up several other
+	things related to the symboltable and its scope.
+	
+	First off, let me start by documenting the different
+	contexts in which a SymScope can be introduced:
+	
+	CONTEXT                      ABBREVIATION  SCOPE_...
+	-------------------------------------------------------
+	module                       mod           SCOPE_MODULE
+	class                        class         SCOPE_CLASS
+	function formal parameters   function      SCOPE_PARAM
+	for/forall stmt index scope  for stmt      SCOPE_FORLOOP
+	block statement              block stmt    SCOPE_LOCAL*
+	forall expr index scope      forall expr   SCOPE_FORALLEXPR
+	let expr                     let expr
+	
+	* = could also be SCOPE_FUNCTION if it's the block
+	    statement defining a function's body
+	
+	All of these are currently implemented other than the let
+	expression which the parser doesn't yet recognize.  The
+	following table is to help us remember some things about
+	where scopes are referred to:
+	
+	SCOPE         SymScope* name    field location
+	----------------------------------------------
+	mod           modScope          ModuleSymbol
+	class         classScope        ClassType
+	function      paramScope        FnSymbol
+	for stmt      indexScope        ForLoopStmt
+	block stmt    blkScope          BlockStmt
+	forall expr   indexScope        ForallExpr
+	let expr      <unimplemented>   <unimplemented>
+	
+	The first change of this pass was to rename all variables
+	named "scope" to something else, since it was often very
+	easy to say "I need a scope that tells me...." and then
+	say "aha!  a field named `scope'!" only to find out later
+	that it wasn't the scope you'd intended.  So the table
+	above tells the name of each scope variable.  The one
+	other place we store a scope is that every Symbol has a
+	pointer to the scope that it's defined in.  This is now
+	called parentScope (not the most descriptive name, but
+	declarationScope was a bit long -- suggestions?).
+	
+	The second change was to make sure that all of the places
+	where a scope was defined store their scope (in many
+	places we didn't do so, so the scope would point to its
+	context, but the context would not point to its scope).
+	
+	The third change was to make it so that when a traversal
+	is running, it automatically keeps the Symboltable's
+	sense of what the "currentScope" is up-to-date, with the
+	intent that traversals which do things like define new
+	symbols or functions or clone things will more-or-less
+	automatically put them in the right place and be able
+	to reuse more of the same code that the parser uses to
+	create things.  I didn't actually change any existing
+	traversals to use this, however, with the one
+	exception that I made one of Steve's lookupFromScope()
+	calls in Cleanup into a lookup() call.
+	
+	The fourth change was that previously when Symbols were
+	constructed, they automatically went to the Symboltable
+	to grab the currentScope as their own.  This caused
+	subtle bugs when people created Symbols in traversals
+	(prior to the traversals tracking the Symboltable), and
+	then inserted them manually into a different scope
+	because the parent was never patched up.  So the new
+	scheme is that Symbols are created with a NULL
+	parentScope, and only upon being inserted into the
+	Symboltable is their parentScope set.  This is much
+	more sane and I apologize to Steve for not doing this
+	straight off.  I've also added a check to the Fixup
+	("verify") traversal so that it will ensure that every
+	symbol is declared in the scope that it thinks it is.
+	
+	Added a test to try and test all scopes (at least
+	all that work -- as others start to work better,
+	the test should be updated).
+	
+	Some (somewhat) tangential changes that were made
+	along the way:
+	
+	* added the ability to parse and store overloaded
+	  functions.  This hasn't been tested very heavily,
+	  but previously, the redefinition of a function
+	  was causing the original to be replaced in the
+	  Symboltable, as far as lookup goes (the linked
+	  list representation still had both entries).  Now,
+	  each FnSymbol has an "overload" field that
+	  points to overloads of it that may exist in that
+	  scope.  Thus, when a second function "foo" is
+	  defined within a given scope, the first "foo"'s
+	  overload pointer is set up to point to the
+	  second function "foo".  This is currently a
+	  singly-linked list.  It may be that more robust
+	  support will be needed as we spend more effort
+	  on this.  This change had to be inserted now
+	  in order to handle the overloading of "this" in
+	  the Array class of the internal prelude.
+	
+	* added a "startTraversal" method to the ModuleSymbol
+	  class, which does the TRAVERSE_LS call that was
+	  previously found at the top level of all traversals.
+	  This was done (a) to hide the TRAVERSE_LS call a
+	  bit (since it was nontrivial), and to (b) update
+	  the Symboltable with the Module's scope as the
+	  current Scope to avoid replicating this in every
+	  traversal that had to write its own run() method.
+	
+	* moved each module's init function out of the
+	  global scope (where it was declared before) and
+	  into the module's scope.  This is more correct,
+	  and now more necessary so that Steve's symbol
+	  resolution code can call a normal "lookup()"
+	  rather than looking up into a specific scope.
+	  In making this change, also had to move the code
+	  which inserts the main module's init call into
+	  main out of createInitFn() and into
+	  createEntryPoint.cpp (which is a more appropriate
+	  place for it anyway, and the place where one
+	  would go looking for it).
+	
+	* SymScopes used to keep track of symbols that were
+	  used before they were defined (back when I
+	  conceived of the parser resolving all top-level
+	  symbols).  This no longer makes sense, and is
+	  unnecessary, so I killed the code related to it.
+	  Steve's resolution of unresolveds now trumps this.
+	
+	* added a global variable, printEmpty, to the
+	  Symboltable which indicates whether or not
+	  empty scopes should be printed out.  Previously
+	  they never were, however for debugging purposes,
+	  I found that printing them out was sometimes
+	  very helpful.  Currently, it's set to false and
+	  the only way to set it to true is to change it
+	  by hand and recompile.
+	
+	* Cleaned up Symboltable's lookup calls somewhat --
+	  implemented lookup() in terms of lookupFromScope()
+	  since they were virtually identical; added the
+	  ability to have lookupInScope() throw an internal
+	  error if it fails; killed a dead symbol; had the
+	  lookup...Scope() calls throw an internal fatal
+	  if the scope they are passed is NULL (previously
+	  they would fail quietly...)
+	
+	Some (very) tangential changes that were made along
+	the way:
+	
+	* made UnresolvedSymbols throw an internal error when
+	  someone tries to codegen them -- previously we
+	  simply codegen'd their name because we weren't
+	  resolving all symbols.  Now that we are, we should
+	  prevent against letting them fall through the
+	  compiler to codegen.
+	
+	* added an isInternal() method to SymScope that
+	  tells whether or not it's part of an internal
+	  module (the prelude or internal prelude) --
+	  this is not just the top-level scopes, but also
+	  all scopes that they contain.  This is currently
+	  unused, but was useful for debugging and a few
+	  lines to implement, so I left it in.
+	
+	* claned up the passlist.h file a bit by adding
+	  categorizations of what groups of passes are
+	  aiming to accomplish in the form of comments.
+	  Also, added a call to Fixup ("verify") before
+	  analysis in hopes of giving John a sane AST.
+	  Added a second call to Fixup ("verify") in
+	  hopes of ensuring the same for code generation,
+	  but it currently fails (hmmm...), so commented
+	  it out for now.
+	
+	* fixed a bug in the lexer in which line numbers
+	  were not being maintained properly for multi-
+	  line comments that actually spanned multiple
+	  lines.  I think I must've copied this out of
+	  a C lexer that didn't maintain a linecount...
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp stmt.cpp symbol.cpp 
+	                      symtab.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h stmt.h symbol.h symscope.h 
+	                          symtab.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.lex 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp fixup.h 
+	                             traversal.cpp 
+
