@@ -2441,3 +2441,24 @@ Modified files:
 	chapel/compiler/: Makefile 
 	chapel/compiler/make/: Makefile.compiler.foot 
 
+---------------------------------------------------------------------------
+
+04/06/02 13:24:46 -- bradc
+
+Log message:
+	Changed the sub_test script to remove the ihgfedcba from
+	the generated output files.  This was originally designed
+	by the ZPL implementor to avoid name conflicts, but my
+	suspicion is that those name conflicts aren't a real problem
+	and that the simpler filenames are less confusing.  The
+	result is that the output filenames are one of:
+	
+	testname.comp.out.tmp
+	testname.exec.out.tmp
+	
+	depending on whether the test was compiled only, or was
+	compiled and executed.
+
+Modified files:
+	chapel/test/: sub_test 
+
