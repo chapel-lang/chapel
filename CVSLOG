@@ -13244,3 +13244,19 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+12/29/04 14:15:04 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Phase 2 of support for intents.
+	Added an extra layer of analysis variables to permit filtering
+	at the call boundary to not effect what can be assigned into
+	variables in the function.
+
+Modified files:
+	chapel/compiler/analysis/: cg.cpp clone.cpp fa.cpp fun.cpp 
+	                           pattern.cpp 
+	chapel/compiler/backend/: dump.cpp graph.cpp 
+	chapel/compiler/include/: fa.h fun.h pattern.h 
+
