@@ -8302,3 +8302,50 @@ Added files:
 	chapel/test/flowanalysis/newast/: multiple_return.chpl 
 	                                  multiple_return.good 
 
+---------------------------------------------------------------------------
+
+09/21/04 17:28:03 -- bradc
+
+Log message:
+	Improved the traversal mechanism so that (a) it now
+	traverses a class' default constructor, and (b) it
+	does not go into any infinite loops.  Details follow
+	for my own sake and nobody else need read them unless
+	they're terminally bored.
+	
+	I made it so that when types are traversed, their
+	definitions are typically not traversed (thus, whenever
+	one comes across a reference to a class name in the
+	code, the traversal will not, by default, walk down
+	the entire class definition).  I did this by splitting
+	the traverse() method for classes into traverse() and
+	traverseDef(), much like codegen() and codegenDef().
+	Thus, a statement like a TypeDefStmt would call
+	traverseDef, because that's a reasonable place to look
+	at the class definition, whereas a variable definition
+	of that class type would not traverse the class
+	definition.
+	
+	There are some exceptions to this, however.  If a type
+	has no name (and therefore, I'm assuming, no TypeDefStmt),
+	then the type's definition will be traversed when the
+	traverse() method is called.  This should be useful for
+	anonymous type specifiers in casts, sizeof statements,
+	etc.
+	
+	The second is that if a client explicitly requests to
+	traverse() a type (as analysis.cpp does), the type's
+	definition will be traversed.  This may be the wrong
+	choice, but it's the current one (the other approach
+	would be to have analysis.cpp call traverseDef -- I'm
+	not sure which is more appropriate, so am punting
+	until we get more cases to weigh).  The rationale for
+	the current decision is that a client need never know
+	about traverseDef... they just call traverse().
+
+Modified files:
+	chapel/compiler/: DIRS 
+	chapel/compiler/AST/: expr.cpp nils.cpp stmt.cpp symtab.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: stmt.h symtab.h type.h 
+
