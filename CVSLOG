@@ -1506,3 +1506,13 @@ Log message:
 Modified files:
 	chapel/compiler/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+04/03/26 15:28:57 -- bradc
+
+Log message:
+	Added support for printing strings (string literals, at least).
+
+Modified files:
+	chapel/runtime/include/: chplio.h chpltypes.h 
+
