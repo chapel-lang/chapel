@@ -13404,3 +13404,18 @@ Modified files:
 	chapel/test/flowanalysis/jplevyak/: badcall.good badreturn.good 
 	                                    var.good 
 
+---------------------------------------------------------------------------
+
+01/03/05 14:33:04 -- bradc
+
+Log message:
+	Checking in a small change that Steve and I did today
+	during a side discussion -- made passes initialize
+	their argument lists to "" in their constructor so
+	that traversals called manually wouldn't have to call
+	the setArgs() method.
+
+Modified files:
+	chapel/compiler/AST/: link.cpp 
+	chapel/compiler/passes/: pass.cpp pass.h 
+
