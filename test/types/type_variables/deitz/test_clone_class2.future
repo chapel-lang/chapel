@@ -1,3 +1,11 @@
+jplevyak
+
+Uncommenting ANALYSIS_MATCH in findUnknownTypes.cpp, many types seem to be resolved in ways I would'nt expect.  The types for the member functions of the cloned classes are left Unresolved.
+
+
+HISTORY
+=======
+
 deitz
 
 The problem here is that classes have already been cloned, but 
