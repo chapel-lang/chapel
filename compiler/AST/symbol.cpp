@@ -191,7 +191,7 @@ void UnresolvedSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(this, traversal, false);
 }
 
-//Roxana -- added initialization for isParameter
+
 VarSymbol::VarSymbol(char* init_name,
 		     Type* init_type,
 		     Expr* init_expr,
@@ -202,10 +202,14 @@ VarSymbol::VarSymbol(char* init_name,
   consClass(init_consClass),
   init(init_expr)
 {
+#ifdef NUMBER_VAR_SYMBOLS_UNIQUELY
+  static int uid = 0;
+  cname = glomstrings(4, name, "__", intstring(uid++), "__");
+#endif
   Symboltable::define(this);
   SET_BACK(init);
-  //isParameter = false;
 }
+
 
 Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new VarSymbol(copystring(name), type, init, varClass, consClass);
@@ -213,8 +217,20 @@ Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCall
 
 
 void VarSymbol::traverseDefSymbol(Traversal* traversal) {
+  SymScope* saveScope = NULL;
+  /** SJD: assumes no nested arrays, should use a traversal to push scopes **/
+  if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
+    if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
+      if (forall->indexScope) {
+	saveScope = Symboltable::setCurrentScope(forall->indexScope);
+      }
+    }
+  }
   TRAVERSE(type, traversal, false);
   TRAVERSE(init, traversal, false);
+  if (saveScope) {
+    Symboltable::setCurrentScope(saveScope);
+  }
 }
 
 

@@ -531,7 +531,7 @@ static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
       }
     }
     else {
-      indices = appendLink(indices, new Symbol(SYMBOL, varTmp->var->name));
+      indices = appendLink(indices, new VarSymbol(varTmp->var->name, dtInteger));
     }
   }
   return indices;
@@ -669,7 +669,10 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
 				       Expr* domain) {
   Symboltable::pushScope(SCOPE_FORLOOP);
   // HACK: dtInteger is wrong -- same as with forallExpr HACK
-  VarSymbol* indexVars = defineVars(indices, dtInteger);
+  VarSymbol* indexVars = dynamic_cast<VarSymbol*>(indices);
+  if (!indexVars) {
+    indexVars = defineVars(indices, dtInteger);
+  }
   ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, indexVars, domain);
   indexVars->setDefPoint(for_loop_stmt);
   return for_loop_stmt;
