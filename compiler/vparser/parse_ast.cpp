@@ -655,18 +655,6 @@ define_types(IF1 *i, ParseAST *ast, Vec<ParseAST *> &funs, Scope *scope, int ski
       case AST_def_fun: // defer functions
 	funs.add(ast);
 	return 0;
-      case AST_declare_ident: {
-	Sym *sym = scope->get(ast->get(AST_ident)->string);
-	if (sym && sym->type_kind != Type_UNKNOWN)
-	  return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
-	if (!sym)
-	  sym = ast->sym = new_sym(i, scope, ast->get(AST_ident)->string, ast->sym);
-	else {
-	  assert(!ast->sym);;
-	  ast->sym = sym;
-	}
-	break;
-      }
       case AST_vector_type:
       case AST_ref_type:
       case AST_product_type:
@@ -764,12 +752,13 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       break;
     }
     case AST_arg:
-    case AST_vararg: {
+    case AST_rest: {
       set_scope_recursive(ast, scope);
       ParseAST *c = ast->get(AST_const);
       ParseAST *id = ast->get(AST_ident);
       ParseAST *ty = ast->get(AST_constraint);
-      ParseAST *init = ast->get(AST_pattern_init);
+      ParseAST *var = ast->get(AST_var);
+      ParseAST *init = ast->get(AST_init);
       if (ty)
 	if (resolve_parameterized_type(i, ty) < 0)
 	  return -1;
@@ -780,12 +769,14 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       else
 	ast->sym = new_sym(i, scope);
       ast->sym->ast = ast;
-      if (ast->kind == AST_vararg)
-	ast->sym->is_vararg = 1;
+      if (ast->kind == AST_rest)
+	ast->sym->is_rest = 1;
       if (ty)
 	ast->sym->type = ty->sym;
       if (init)
 	ast->sym->is_default_arg = 1;
+      if (var)
+	ast->sym->is_var = 1;
       break;
     }
     default: break;
@@ -877,8 +868,6 @@ resolve_types_and_define_recursive_functions(IF1 *i, ParseAST *ast, int skip = 0
 	if (scope_inherits(ast, ast->sym) < 0) return -1;
 	break;
       case AST_def_type:
-	if (ast->is_value)
-	  ast->sym->is_value_class = 1;
 	if (scope_constraints(ast, ast->sym) < 0) return -1;
 	break;
       case AST_where: {
@@ -1347,7 +1336,7 @@ gen_op(IF1 *i, ParseAST *ast) {
     if (a0->rval->is_read_only)
       show_error("assignment to read-only symbol", ast);
     if1_move(i, c, a1->rval, a0->rval, ast);
-    if1_move(i, c, a1->rval, res, ast);
+    if1_move(i, c, sym_void, res, ast);
   } else {
     Sym *args = new_sym(i, ast->scope);
     Sym *aa0 = NULL, *aa1 = NULL;
@@ -1541,7 +1530,7 @@ pre_gen_bottom_up(ParseAST *ast) {
       ast->is_inc_dec = (op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
       ast->is_simple_assign = ((op[0] == '=') && !op[1]);
       ast->is_assign = (op[1] == '=' && op[0] != '=' && op[0] != '<' && op[0] != '>') 
-	|| ast->is_simple_assign || ast->is_inc_dec;
+	|| ast->is_inc_dec;
       ast->is_ref = op[0] == '&' && ast->op_index == 0;
       ast->is_application = (op[0] == '^' && op[1] == '^') || op[0] == '(';
       ast->is_comma = op[0] == ',';
@@ -1625,22 +1614,21 @@ static void
 gen_def_ident(IF1 *i, ParseAST *ast) {
   ParseAST *constraint = ast->get(AST_constraint);
   ParseAST *pattern = ast->get(AST_pattern);
-  ParseAST *val = ast->last();
-  if (val == constraint)
-    val = 0;
-  if (val && val->sym && val->sym->type_kind) {
-    assert(!constraint);
-    constraint = val;
-    val = 0;
-  }
+  ParseAST *var = ast->get(AST_var);
+  ParseAST *val = 0;
+  for (int x = 1; x < ast->children.n; x++)
+    if (ast->children.v[x] != constraint &&
+	ast->children.v[x] != pattern &&
+	ast->children.v[x] != var) {
+      val = ast->children.v[x];
+      break;
+    }
   if (ast->container)
     ast->rval = gen_container(i, ast);
   else
     ast->rval = ast->sym;
-  if (constraint) {
-    assert(constraint->sym);
+  if (constraint)
     ast->sym->type = constraint->sym;
-  }
   if (ast->sym != sym_init) { // don't init the initial function
     // declared to be a value type
     if (constraint && constraint->sym->is_value_class) 
@@ -1657,7 +1645,7 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
       }
     }
   }
-  if (ast->is_var)
+  if (var)
     ast->rval->is_var = 1;
 }
 
@@ -1717,7 +1705,7 @@ gen_if1(IF1 *i, ParseAST *ast) {
 	;
     case AST_const:
     case AST_arg: 
-    case AST_vararg: 
+    case AST_rest: 
       ast->rval = ast->sym;
       break;
     case AST_list:

@@ -5,10 +5,10 @@ f a b : {
     if (b.a)
       a = b.b
     else
-      a = 4
+      a = 4;
   } else {
-   a = 5
+   a = 5;
   };
-  aa = a
+  aa = a;
 };
 f aa bb;

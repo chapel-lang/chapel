@@ -1669,12 +1669,13 @@ initialize_symbols() {
       type_syms.add(s);
   }
   forv_Sym(s, types) if (s) {
-    if (!s->dispatch_order.n && s != sym_any) {
+    if (!s->dispatch_order.n && s != sym_any // && s != sym_void
+      ) {
       if (s->is_meta_class && (s != sym_anyclass))
 	subtype(sym_anyclass, s, types);
       else if (s->is_value_class && (s != sym_value))
 	subtype(sym_value, s, types);
-      else
+      else 
 	subtype(sym_any, s, types);
     }
   }

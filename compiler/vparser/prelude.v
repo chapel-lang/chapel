@@ -12,7 +12,7 @@ type function __name "function";
 type continuation __name "continuation";
 type vector __name "vector";
 type tuple __name "tuple";
-type void __name "void" : tuple;
+type void __name "void";
 type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";

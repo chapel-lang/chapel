@@ -83,7 +83,7 @@ class Sym : public gc {
   unsigned int		is_fun:1;		// Sym is a function
   unsigned int 		is_symbol:1;		// Sym is a user level symbol
   unsigned int		is_pattern:1;		// Sym is a pattern
-  unsigned int		is_vararg:1;		// Sym is a vararg parameter
+  unsigned int		is_rest:1;		// Sym is a rest (vararg) parameter
   unsigned int		is_external:1;		// Sym is "external", so constraints are type
 
   unsigned int		global_scope:1;		// Sym is globally unique (file/module)

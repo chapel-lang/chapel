@@ -47,9 +47,6 @@ class ParseAST : public AST {
   unsigned int intent:2;
   unsigned int def_ident_label:1;
   unsigned int op_index:1;
-  unsigned int is_var:1;
-  unsigned int is_const:1;
-  unsigned int is_value:1;
   unsigned int in_tuple:1;
   unsigned int in_apply:1;
   unsigned int is_assign:1;

@@ -68,6 +68,9 @@ unterminated_statement
       $$.ast->scope_kind = Scope_RECURSIVE; }
   | control_flow
   | type_statement
+  | expression '=' expression $left 3000
+   { $$.ast = op_AST($g->i, $n); }
+  | 'var' def_ident_var_list $right 5100
   ;
 
 type_statement
@@ -76,7 +79,7 @@ type_statement
   ;
 
 unqualified_type_statement
-  : 'type' type_definition (',' type_definition)* 
+  : ('type' | 'subtype') type_definition (',' type_definition)* 
   | 'class' ident def_type_parameter_list? class_definition? 
 { $$.ast = new_AST(AST_def_type, &$n); 
   $$.ast->scope_kind = Scope_RECURSIVE; }
@@ -180,7 +183,6 @@ expression
       if ($#2)
         $$.ast = new_AST(AST_scope, &$n); 
     }
-  | 'var' def_ident_var_list $right 5100
   | anon_function expression { 
       $$.ast = new_AST(AST_def_fun, &$n);
       $$.ast->scope_kind = Scope_RECURSIVE; 
@@ -216,6 +218,10 @@ expression
     { $$.ast = new_AST(AST_seq, &$n); }
   ;
 
+init_expression : expression
+  { $$.ast = new_AST(AST_init, &$n); }
+  ;
+
 with_scope : qualified_ident (',' qualified_ident)* ':'
 { $$.ast = new_AST(AST_with_scope, &$n); };
 
@@ -223,6 +229,13 @@ symbol_ident: identifier
 { $$.ast = symbol_AST($g->i, &$n); };
 
 def_ident: idpattern ('__name' string)? ':' {
+  $$.ast = $0.ast;
+  if ($#1)
+    $$.ast->builtin = if1_cannonicalize_string(
+      $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
+};
+
+var_ident: idpattern ('__name' string)? '=' {
   $$.ast = $0.ast;
   if ($#1)
     $$.ast->builtin = if1_cannonicalize_string(
@@ -242,13 +255,13 @@ def_ident_list
   ;
 
 def_ident_var_one
-  : def_ident expression { 
+  : var_ident expression { 
       $$.ast = new_AST(AST_def_ident, &$n); 
-      $$.ast->is_var = 1;
+      $$.ast->add(new_AST(AST_var));
     }
-  | ident {
+  | idpattern {
       $$.ast = new_AST(AST_def_ident, &$n); 
-      $$.ast->is_var = 1;
+      $$.ast->add(new_AST(AST_var));
     }
   ;
 def_ident_var_list
@@ -289,37 +302,30 @@ pattern_type: ':' qualified_ident
   ;
 
 sub_pattern
-  : intent ident (':' constraint_type)? ('=' init_expression)?
-{ $$.ast = new_AST(AST_arg, &$n); }
+  : intent 'var'? ident (':' constraint_type)? ('=' init_expression)?
+{ $$.ast = new_AST(AST_arg, &$n); 
+  if ($#1) $$.ast->add(new_AST(AST_var));
+}
   | constant
 { $$.ast = new_AST(AST_arg, &$n); }
-  | intent 'var' ident (':' constraint_type)?
-{ $$.ast = new_AST(AST_arg, &$n); 
-  $$.ast->is_var = 1;
-}
   | '...' (intent ident (':' constraint_type)?)?
-{ $$.ast = new_AST(AST_vararg, &$n); };
+{ $$.ast = new_AST(AST_rest, &$n); };
   ;
 
 intent
   : 'const'
-{ $$.ast = new_AST(AST_pattern_intent, &$n); 
+{ $$.ast = new_AST(AST_intent, &$n); 
   $$.ast->intent = Intent_const; }
   | 'in'
-{ $$.ast = new_AST(AST_pattern_intent, &$n); 
+{ $$.ast = new_AST(AST_intent, &$n); 
   $$.ast->intent = Intent_in; }
   | 'out'
-{ $$.ast = new_AST(AST_pattern_intent, &$n); 
+{ $$.ast = new_AST(AST_intent, &$n); 
   $$.ast->intent = Intent_out; }
   | 'inout'
-{ $$.ast = new_AST(AST_pattern_intent, &$n); 
+{ $$.ast = new_AST(AST_intent, &$n); 
   $$.ast->intent = Intent_inout; }
   | ;
-
-init_expression
-  : expression
-{ $$.ast = new_AST(AST_pattern_init, &$n); }
-  ;
 
 qualified_ident : global? (ident '::')* ident
 { $$.ast = new_AST(AST_qualified_ident, &$n); };
@@ -359,7 +365,7 @@ binary_operator
   | '|'		$binary_op_left 8900
   | '&&'        $binary_op_left 8800
   | '||'        $binary_op_left 8700
-  | '='		$binary_op_left 8500
+  | ':='	$binary_op_left 8500
   | '*='        $binary_op_left 8500
   | '/='        $binary_op_left 8500
   | '%='        $binary_op_left 8500
@@ -405,6 +411,9 @@ post_operator
   [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
   { $0.ast = symbol_AST($g->i, &$n0); }
   | '[' expression ']' $unary_op_left 9850
+  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+  { $0.ast = symbol_AST($g->i, &$n0); }
+  | '[' ']' null $unary_op_left 9850
   [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
   { $0.ast = symbol_AST($g->i, &$n0); }
   ;
