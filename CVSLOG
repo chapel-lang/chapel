@@ -3762,3 +3762,13 @@ Modified files:
 	                                    cs5.good review1.good 
 	                                    review2.good 
 
+---------------------------------------------------------------------------
+
+06/28/04 12:04:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Improved number of analysis clones created for polymorphic classes.
+
+Modified files:
+	chapel/compiler/: fa.cpp 
+
