@@ -40,7 +40,6 @@ class AST : public Vec<AST *> {
   uint in_tuple:1;
   uint in_apply:1;
   uint is_const:1;
-  uint is_lval:1;
   uint is_assign:1;
   uint is_ref:1;
   uint is_application:1;
@@ -57,7 +56,7 @@ class AST : public Vec<AST *> {
 
   Label *label[2];	// before and after for loops (continue,break)
   Code	*code;
-  Sym	*rval, *lval;
+  Sym	*rval;
   Vec<PNode *> pnodes;
   
   AST *last() { return v[n-1]; }

@@ -364,6 +364,8 @@ mark_sym_live(Sym *s) {
     s->live = 1;
     if (s->type)
       mark_sym_live(s->type);
+    forv_Sym(ss, s->has)
+      mark_sym_live(ss);
     return 1;
   }
   return 0;

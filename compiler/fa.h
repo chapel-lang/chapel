@@ -94,7 +94,7 @@ class AEdge : public gc {
   PNode		*send;
   Fun 		*fun;	
   Vec<AVar *>	args;
-  Vec<AVar *>	ret;
+  Vec<AVar *>	rets;
   uint		in_edge_worklist:1;
   
   SLink<AEdge>	edge_worklist_link;

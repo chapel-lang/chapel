@@ -1,5 +1,5 @@
 /*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+  Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
 #include "geysa.h"
@@ -531,7 +531,6 @@ define_function(IF1 *i, AST *ast) {
     if (scope_pattern(i, ast->v[x], ast->sym->scope) < 0)
       return -1;
   ast->sym->cont = new_sym(i, ast->sym->scope);
-  ast->sym->ret = new_sym(i, ast->sym->scope);
   ast->sym->labelmap = new LabelMap;
   ast->sym->ast = ast;
   return 0;
@@ -784,7 +783,9 @@ gen_fun(IF1 *i, AST *ast) {
   Code *body = NULL, *c;
   if1_gen(i, &body, expr->code);
   if (expr->rval)
-    c = if1_move(i, &body, expr->rval, fn->ret, ast);
+    fn->ret = expr->rval;
+  else
+    fn->ret = sym_null;
   if1_label(i, &body, ast, ast->label[0]);
   c = if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
   c->ast = ast;
@@ -859,7 +860,7 @@ gen_op(IF1 *i, AST *ast) {
   Code **c = &ast->code;
   Code *send = 0;
   ast->rval = new_sym(i, ast->scope);
-  Sym *res = ast->is_ref ? new_sym(i, ast->scope) : ast->rval;
+  Sym *res = ast->rval;
   AST *a0 = ast->op_index ? ast->v[0] : 0, *a1 = ast->n > (int)(1 + ast->op_index) ? ast->last() : 0;
   if (a0) if1_gen(i, c, a0->code);
   if (a1) if1_gen(i, c, a1->code);
@@ -891,7 +892,13 @@ gen_op(IF1 *i, AST *ast) {
     if1_add_send_result(i, send, ast->rval);
   } else {
     Sym *args = new_sym(i, ast->scope);
-    Sym *aa0 = ast->is_assign ? a0->lval : a0->rval; 
+    Sym *aa0;
+    if (ast->is_assign) {
+      aa0 = new_sym(i, a0->scope);
+      send = if1_send(i, &ast->code, 3, 1, sym_primitive, sym_doref, a0->rval, aa0);
+      send->ast = ast;
+    } else
+      aa0 = a0->rval;
     int binary = ast->n > 2;
     if (binary)
       send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->v[ast->op_index]->rval, a1->rval, args);
@@ -901,18 +908,6 @@ gen_op(IF1 *i, AST *ast) {
       send = if1_send(i, c, 3, 1, sym_make_tuple, ast->v[ast->op_index]->rval, a1->rval, args);
     send->ast = ast;
     send = if1_send(i, c, 2, 1, sym_operator, args, res);
-    send->ast = ast;
-  }
-  if (ast->is_ref || ast->is_lval) {
-    ast->lval = res;
-    send = if1_send(i, c, 3, 1, sym_primitive, sym_deref, res, ast->rval);
-    send->ast = ast;
-  }
-  if (ast->is_assign) {
-    if (a0)
-      send = if1_move(i, c, a0->lval, ast->rval, ast);
-    else
-      send = if1_move(i, c, a1->lval, ast->rval, ast);
     send->ast = ast;
   }
 }
@@ -973,14 +968,12 @@ gen_constructor(IF1 *i, AST *ast) {
       constructor = sym_make_vector; 
       break;
     case AST_index:
-      constructor = sym_new;
+      constructor = sym_sequence;
       break;
   }
   if1_add_send_arg(i, send, constructor);
   if (ast->kind == AST_vector)
     if1_add_send_arg(i, send, make_int(i, ast->rank));
-  if (ast->kind == AST_index)
-    if1_add_send_arg(i, send, sym_sequence);
   forv_AST(a, *ast)
     if1_add_send_arg(i, send, a->rval);
   if (ast->kind == AST_index && ast->n < 3)
@@ -1014,8 +1007,6 @@ pre_gen_bottom_up(AST *ast) {
       ast->is_assign = (op[1] == '=' && op[0] != '=') || (!op[1] && op[0] == '=') ||
 	(op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
       ast->is_ref = ((op[0] == '.' && op[1] != '.') || (op[0] == '-' && op[1] == '>') || ast->is_assign);
-      if (ast->is_assign)
-	ast->v[0]->is_lval = 1;
       ast->is_application = (op[0] == '^' && op[1] == '^') || op[0] == '(';
       ast->is_comma = op[0] == ',';
       if (ast->is_comma) {
@@ -1074,14 +1065,9 @@ gen_if1(IF1 *i, AST *ast) {
       if (ast->n)
 	ast->rval = ast->last()->rval; 
       break;
-    case AST_qualified_ident: {
-      ast->lval = new_sym(i, ast->scope);
-      Code *send = if1_send(i, &ast->code, 3, 1, sym_primitive, 
-			    sym_doref, ast->sym, ast->lval);
-      send->ast = ast;
+    case AST_qualified_ident:
       ast->rval = ast->sym; 
       break;
-    }
     case AST_indices:
       forv_AST(a, *ast)
 	a->rval = ast->sym;

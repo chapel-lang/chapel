@@ -197,11 +197,11 @@ class sequence {
   const step : tuple;
 }
 
-function sequence::class(f : int, l : int) {
+function sequence::class afirst alast astep {
   var s = new sequence;
-  s.first = f;
-  s.last = l;
-  s.step = 1;
+  s.first = afirst;
+  s.last = alast;
+  s.step = astep;
   return s;
 }
 

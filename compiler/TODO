@@ -66,4 +66,10 @@ or "is_lval = true"?
 - fixup clearing and collecting of variables and Pnodes... what 
   are the phi and phy lists for?
 
+- remove lval and is_val
 
+- add ast arg to if1_send
+
+- remove duplicate type_violations by hashing av*pnode
+
+- figure out why adding $right 5200 to 'new' causes problems

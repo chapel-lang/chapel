@@ -17,7 +17,7 @@ class Var : public gc {
   Sym			*sym;
   Sym			*type;
   int			mark;	// used by ssu.cpp
-  PNode			*def;   // used by ssu.cpp
+  PNode			*def;
   AVarMap		avars;	// used by fa.cpp
   CreationSet		*as_CreationSet; // used by fa.cpp
   AType			*as_AType; // used by fa.cpp

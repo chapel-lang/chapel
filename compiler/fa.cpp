@@ -208,6 +208,8 @@ creation_point(AVar *v, Sym *s) {
       if (cs->defs.n)
 	goto LnextCreationSet;
     } else {
+      if (!cs->defs.n)
+	goto LnextCreationSet;
       forv_AVar(av, cs->defs)
         if (av->var != v->var)
           goto LnextCreationSet;
@@ -536,16 +538,12 @@ fill_rets(EntrySet *es, int n) {
   assert(n == 1);
   es->rets.fill(n);
   for (int i = 0; i < n; i++)
-    if (!es->rets.v[i]) {
-      Var *v = es->fun->sym->ret->var;
-      assert(v);
-      es->fun->fa_all_Vars.add(v);
-      es->rets.v[i] = make_AVar(v, es);
-    }
+    if (!es->rets.v[i])
+      es->rets.v[i] = make_AVar(es->fun->sym->ret->var, es);
 }
 
 static void
-prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1) {
+prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
   CreationSet *cs = creation_point(make_AVar(p->lvals.v[0], es), kind);
   cs->vars.fill(p->rvals.n - start);
   for (int i = 0; i < p->rvals.n - start; i++) {
@@ -553,7 +551,10 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1) {
     if (!cs->vars.v[i])
       cs->vars.v[i] = unique_AVar(v, cs);
     AVar *av = cs->vars.v[i];
-    flow_var_to_var(make_AVar(v, es), av);
+    if (!ref)
+      flow_var_to_var(make_AVar(v, es), av);
+    else
+      flow_vars_equal(make_AVar(v, es), av);
     if (av->var->sym->name)
       cs->sym->has_map.put(av->var->sym->name, v);
   }
@@ -598,6 +599,8 @@ prim_make_vector(PNode *p, EntrySet *es, AVar *ret) {
   }
 }
 
+// for send nodes, add simple constraints which do not depend 
+// on the computed types (compare to add_send_edgse_pnodes)
 static void
 add_send_constraints(EntrySet *es) {
   forv_PNode(p, es->fun->fa_send_PNodes) {
@@ -630,7 +633,7 @@ add_send_constraints(EntrySet *es) {
 	case P_prim_reply:
 	  fill_rets(es, p->rvals.n - 2);
 	  for (int i = 2; i < p->rvals.n; i++)
-	    flow_var_to_var(make_AVar(p->rvals.v[i], es), es->rets.v[i - 2]);
+	    flow_vars_equal(make_AVar(p->rvals.v[i], es), es->rets.v[i - 2]);
 	  break;
 	case P_prim_tuple: prim_make(p, es, sym_tuple); break;
 	case P_prim_list: prim_make_list(p, es); break;
@@ -641,7 +644,7 @@ add_send_constraints(EntrySet *es) {
 	}
 	case P_prim_continuation: prim_make(p, es, sym_continuation); break;
 	case P_prim_set: prim_make(p, es, sym_set); break;
-	case P_prim_ref: prim_make(p, es, sym_ref, 2); break;
+	case P_prim_ref: prim_make(p, es, sym_ref, 2, 1); break;
 	case P_prim_deref:
 	case P_prim_apply: 
 	case P_prim_period:
@@ -737,12 +740,12 @@ add_funs_constraints(PNode *p, EntrySet *es, Vec<Fun *> *fns, Vec<AVar *> &a, Ve
 	AEdge *ee = make_AEdge(f, p, es);
 	if (!ee->args.n)
 	  ee->args.copy(a);
-	if (!ee->ret.n) {
+	if (!ee->rets.n) {
 	  if (!ret)
 	    for (int i = 0; i < p->lvals.n; i++)
-	      ee->ret.add(make_AVar(p->lvals.v[i], ee->from));
+	      ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
 	  else
-	    ee->ret.copy(*ret);
+	    ee->rets.copy(*ret);
 	}
 	if (!ee->in_edge_worklist) {
 	  ee->in_edge_worklist = 1;
@@ -756,9 +759,9 @@ add_funs_constraints(PNode *p, EntrySet *es, Vec<Fun *> *fns, Vec<AVar *> &a, Ve
 
 static int 
 special_dispatch(Vec<AVar *> &a) {
-  return a.n == 2 && a.v[0]->out->n == 1 && a.v[0]->out->v[0]->sym->symbol &&
-    a.v[1]->out->n == 1 && 
-    a.v[1]->out->v[0]->sym == sym_tuple;
+  return a.n == 2 && 
+    a.v[0]->out->n == 1 && a.v[0]->out->v[0]->sym->symbol &&
+    a.v[1]->out->n == 1 && a.v[1]->out->v[0]->sym == sym_tuple;
 }
 
 static int 
@@ -779,9 +782,9 @@ function_application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar
       for (int j = args.n - 1; j >= 0; j--)
 	ee->args.add(args.v[j]);
     }
-    if (!ee->ret.n)
+    if (!ee->rets.n)
       for (int i = 0; i < p->lvals.n; i++)
-	ee->ret.add(make_AVar(p->lvals.v[i], ee->from));
+	ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
     if (!ee->in_edge_worklist) {
       ee->in_edge_worklist = 1;
       edge_worklist.push(ee);
@@ -853,48 +856,13 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 }
 
 static int
-autoderef_application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args) {
-  Vec<Fun *> *fns = self_dispatch_table.get(cs->sym->name);
-  if (fns) {
-    Vec<AVar *> a, ret;
-    a.add(a0);
-    for (int j = args.n - 1; j >= 0; j--)
-      a.add(args.v[j]);
-    if (p->code->ast->is_lval) {
-      for (int i = 0; i < p->lvals.n; i++)
-	ret.add(make_AVar(p->lvals.v[i], es));
-    } else {
-      p->tvals.fill(p->lvals.n);
-      for (int i = 0; i < p->lvals.n; i++) {
-	if (!p->tvals.v[i]) {
-	  p->tvals.v[i] = new Var(p->lvals.v[i]->sym);
-          es->fun->fa_all_Vars.add(p->tvals.v[i]);
-        }
-	AVar *ref = make_AVar(p->tvals.v[i], es);
-	ret.add(ref);
-	AVar *result = make_AVar(p->lvals.v[i], es);
-	ref->arg_of_send.set_add(result);
-	flow_var_type_restrict(ref, sym_ref);
-	forv_CreationSet(cs, *ref->out) if (cs) {
-	  AVar *av = cs->vars.v[0];
-	  flow_var_to_var(av, result);
-	}
-      }
-    }
-    add_funs_constraints(p, es, fns, a, &ret);
-  }
-  return 0;
-}
-
-static int
 application_constraints(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args) {
   if (sym_function->subtypes.set_in(cs->sym)) {
     if (!cs->defs.n)
       return function_application(p, es, a0, cs, args);
     else
       return partial_application(p, es, cs, args);
-  } else if (cs->defs.n && sym_vector->subtypes.set_in(cs->sym))
-    return autoderef_application(p, es, a0, cs, args);
+  }
   return function_dispatch(p, es, a0, cs, args);
 }
 
@@ -903,8 +871,10 @@ type_violation(AVar *av, AType *type, PNode *pnode) {
   type_violations.add(new ATypeViolation(av, type, pnode));
 }
 
+// for send nodes, add call edges and more complex constraints
+// which depend on the computed types (compare to add_send_constraints)
 static void
-add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
+add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
   if (!p->prim) {
     assert(p->lvals.n == 1);
     int incomplete = 0;
@@ -926,6 +896,7 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
     for (int i = start; i < p->rvals.n; i++) {
       if (i - start == p->prim->pos) continue;
       AVar *arg = make_AVar(p->rvals.v[i], es);
+      // record violations
       if (type_diff(arg->out, p->prim->args.v[iarg]) != bottom_type)
 	type_violation(arg, type_diff(arg->out, p->prim->args.v[iarg]), p); 
       switch (p->prim->arg_types[iarg]) {
@@ -954,11 +925,12 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
       case P_prim_index_vector: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *vec = make_AVar(p->rvals.v[1], es);
-	CreationSet *ref_cs = creation_point(result, sym_ref);
+	// CreationSet *ref_cs = creation_point(result, sym_ref);
 	// AVar *index = make_AVar(p->rvals.v[2], es); check for rank & constants
 	forv_CreationSet(cs, *vec->out) if (cs) {
 	  AVar *elem = unique_AVar(element_var, cs);
-	  flow_var_to_var(elem, ref_cs->vars.v[0]);
+	  //flow_var_to_var(elem, ref_cs->vars.v[0])
+	  flow_vars_equal(elem, result);
 	}
 	break;
       }
@@ -986,8 +958,8 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
 	    if (!v)
 	      flow_var_type_restrict(obj, cs->sym);
 	    else {
-	      CreationSet *ref_cs = creation_point(result, sym_ref);
-	      flow_vars_equal(unique_AVar(v, cs), ref_cs->vars.v[0]);
+//		      CreationSet *ref_cs = creation_point(result, sym_ref);
+	      flow_vars_equal(unique_AVar(v, cs), result);
 	    }
 	  }
 	}
@@ -1001,7 +973,7 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
 	  AVar *av = cs->vars.v[0];
 	  flow_var_to_var(val, av);
 	}
-	flow_var_to_var(ref, result);
+	flow_vars_equal(val, result);
 	break;
       }
       case P_prim_deref: {
@@ -1031,7 +1003,7 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
 static void
 add_send_edges(AEdge *e) {
   forv_PNode(p, e->fun->fa_send_PNodes)
-    add_send_edges_PNode(p, e->to, 1);
+    add_send_edges_pnode(p, e->to, 1);
 }
 
 static inline int
@@ -1135,7 +1107,7 @@ analyze_edge(AEdge *e) {
   creation_point(make_AVar(e->fun->sym->cont->var, e->to), sym_continuation);
   for (int i = 0; i < e->send->lvals.n; i++) {
     fill_rets(e->to, e->send->lvals.n);
-    flow_var_to_var(e->to->rets.v[i], e->ret.v[i]);
+    flow_vars_equal(e->to->rets.v[i], e->rets.v[i]);
   }
   if (!entry_set_done.set_in(e->to)) {
     entry_set_done.set_add(e->to);
@@ -1247,16 +1219,14 @@ build_dispatch_table(FA *fa) {
 	goto Lstandard;
     } else {
     Lstandard:
-      for (int i = 0; i < f->sym->args.n; i++) {
-	Sym *a = f->sym->args.v[i];
-	if (a->type) {
-	  Map<char *,Vec<Fun *> *> *table = 
-	    f->sym->class_static ? &class_dispatch_table : &self_dispatch_table;
-	  Vec<Fun *> *vf = table->get(a->type->name);
-	  if (!vf) 
-	    table->put(a->type->name, (vf = new Vec<Fun *>));
-	  vf->add(f);
-	}
+      Sym *a = f->sym->args.v[0];
+      if (a->type) {
+	Map<char *,Vec<Fun *> *> *table = 
+	  f->sym->class_static ? &class_dispatch_table : &self_dispatch_table;
+	Vec<Fun *> *vf = table->get(a->type->name);
+	if (!vf) 
+	  table->put(a->type->name, (vf = new Vec<Fun *>));
+	vf->add(f);
       }
     }
   }
@@ -1507,7 +1477,7 @@ FA::analyze(Fun *top) {
       }
       while (AVar *send = send_worklist.pop()) {
 	send->in_send_worklist = 0;
-	add_send_edges_PNode(send->var->def, (EntrySet*)send->contour);
+	add_send_edges_pnode(send->var->def, (EntrySet*)send->contour);
       }
     }
     complete_pass(this);
