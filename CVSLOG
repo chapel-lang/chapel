@@ -23885,3 +23885,24 @@ Modified files:
 	                         insertWriteFns.cpp symscope.cpp 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/05 10:05:37 -- jplevyak
+
+Log message:
+	Improve handling of meta types (actual type arguments e.g. integer as
+	an argument to generics).
+	
+	NOTE: in order to get intents-classes4.chpl to work I had to
+	  insert a conditional in removeDeadSymbols.cpp.  This looks like
+	  the right change, but if, Steve/Brad, you look at it and decide that
+	  this is indicative of an error someplace else I'll back out these changes.
+	  I believe I have tightened up the notion of dead types which is causing
+	  a builtin type to be declared dead which wasn't taken account of by
+	  the code in removeDeadSymbols.cpp
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	chapel/test/flowanalysis/newast/: enumarray.good 
+
