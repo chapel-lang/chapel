@@ -22128,3 +22128,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+03/28/05 18:35:38 -- jplevyak
+
+Log message:
+	new test case
+
+Added files:
+	chapel/test/arrays/jplevyak/: ranks-1.chpl ranks-1.future 
+	                              ranks-1.good 
+
