@@ -12961,3 +12961,29 @@ Modified files:
 Added files:
 	chapel/test/functions/bradc/: intents.chpl intents.good 
 
+---------------------------------------------------------------------------
+
+12/27/04 12:58:14 -- deitz
+
+Log message:
+	Fixed the MethodsToFunctions traversal to replace a ParenOpExpr of a
+	bound function with a FnCall of the bound function rather than just
+	modifying the ParenOpExpr and keeping it.
+	
+	Made codegen of ParenOpExpr flag an INT_FATAL error.  This basically
+	gets rid of Brad's "THE_FOLLOWING_IS_A_HACK" code that implemented
+	codegen on ParenOpExpr.  All ParenOpExpr are now resolved, before
+	codegen (before and after analysis), to IOCall, FNCall, or ArrayRef.
+	
+	Fixed codegen of IOCall so that if the type of the expression being
+	read or written is unknown, the compiler flags an INT_FATAL error
+	rather than calling into Analysis's type_info routine.  These calls
+	are made earlier if necessary.
+	
+	This checkin resolves trivial/deitz/test_write_return.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/traversals/: methodsToFunctions.cpp 
+
