@@ -66,6 +66,7 @@
 %token TVAL
 %token TVAR
 %token TWHILE
+%token TWITH
 
 %token TIDENT QUERY_IDENT
 %token <ptsym> TYPE_IDENT
@@ -353,7 +354,9 @@ moduledecl:
 
 
 decl:
-  vardecl
+  TWITH TYPE_IDENT TSEMI
+    { $$ = new WithStmt(new Variable($2)); }
+| vardecl
 | typedecl
 | fndecl
 | moduledecl

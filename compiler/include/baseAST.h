@@ -6,6 +6,7 @@
 enum astType_t {
   STMT,
   STMT_NOOP,
+  STMT_WITH,
   STMT_VARDEF,
   STMT_TYPEDEF,
   STMT_FNDEF,

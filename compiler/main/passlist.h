@@ -19,6 +19,7 @@
 #include "../traversals/getstuff.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
+#include "../traversals/processWithStatements.h"
 #include "../traversals/resolveSymbols2.h"
 #include "../traversals/setupStmtLinks.h"
 #include "../traversals/testGetStuff.h"
@@ -35,6 +36,7 @@ Pass* passlist[] = {
   RUN(CreateEntryPoint),
   RUN(SetupStmtLinks),
   RUN(CheckBackLinks),
+  RUN(ProcessWithStatements),
   RUN(FieldsToMemberAccesses),
   RUN(RunAnalysis),
   RUN(ResolveSymbols2),

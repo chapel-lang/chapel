@@ -65,6 +65,7 @@ type            return TTYPE;
 val             return TVAL;
 var             return TVAR;
 while           return TWHILE;
+with            return TWITH;
 
 "="             return TASSIGN;
 "+="            return TASSIGNPLUS;

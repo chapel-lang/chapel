@@ -44,6 +44,18 @@ class NoOpStmt : public Stmt {
 };
 
 
+class WithStmt : public Stmt {
+ public:
+  Expr* withExpr;
+
+  WithStmt(Expr* init_withExpr);
+  ClassType* getClass(void);
+  virtual Stmt* copy(void);
+  void traverseStmt(Traversal* traversal);
+  void print(FILE* outfile);
+};
+
+
 class VarDefStmt : public Stmt {
  public:
   VarSymbol* var;

@@ -9,6 +9,7 @@ TRAVERSALS_SRCS = \
 	getstuff.cpp \
 	printAST.cpp \
 	methodsToFunctions.cpp \
+	processWithStatements.cpp \
 	resolveSymbols2.cpp \
 	setupStmtLinks.cpp \
 	testGetStuff.cpp \

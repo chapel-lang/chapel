@@ -108,6 +108,44 @@ void NoOpStmt::codegen(FILE* outfile) {
 }
 
 
+WithStmt::WithStmt(Expr* init_withExpr) :
+  Stmt(STMT_WITH),
+  withExpr(init_withExpr)
+{}
+
+
+ClassType* WithStmt::getClass(void) {
+  Variable* vexpr;
+  ClassType* result;
+
+  if ((vexpr = dynamic_cast<Variable*>(withExpr)) &&
+      (result = dynamic_cast<ClassType*>(vexpr->var->type))) {
+    return result;
+  }
+  else {
+    INT_FATAL(this, "Bad with statement");
+    return NULL;
+  }
+}
+
+
+Stmt* WithStmt::copy(void) {
+  return new WithStmt(withExpr->copy());
+}
+
+
+void WithStmt::traverseStmt(Traversal* traversal) {
+  withExpr->traverse(traversal, false);
+}
+
+
+void WithStmt::print(FILE* outfile) {
+  fprintf(outfile, "with ");
+  withExpr->print(outfile);
+  fprintf(outfile, "\n");
+}
+
+
 VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
   Stmt(STMT_VARDEF),
   var(init_var),

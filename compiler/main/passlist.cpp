@@ -20,6 +20,7 @@ REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintStmts);
 REGISTER(PrintSymtab);     // BLC: prints out the whole symboltable
+REGISTER(ProcessWithStatements); // SJD: Copies with symbols into classes, etc.
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(ResolveSymbols2);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);

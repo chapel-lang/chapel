@@ -930,15 +930,12 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
 
 
 MemberAccess* Symboltable::defineMemberAccess(Expr* base, char* member) {
-  Type* baseType = base->typeInfo();
-  Symbol* memberSym;
+  Symbol* memberSym = NULL;
 
-  if (baseType == dtUnknown || analyzeAST) {
-    memberSym = new UnresolvedSymbol(member);
-  } else if (typeid(*baseType) == typeid(ClassType)) {
-    ClassType* classType = (ClassType*)baseType;
-    memberSym = Symboltable::lookupInScope(member, classType->scope);
-  } else {
+  if (ClassType* ctype = dynamic_cast<ClassType*>(base->typeInfo())) {
+    memberSym = Symboltable::lookupInScope(member, ctype->scope);
+  }
+  if (!memberSym) {
     memberSym = new UnresolvedSymbol(member);
   }
   return new MemberAccess(base, memberSym);
