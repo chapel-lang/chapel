@@ -1,7 +1,6 @@
 
 
  called from 11 in __init at formatoutput.chpl:17
- called from 11 in __init at formatoutput.chpl:17
  called from 17 in __entryPoint at formatoutput.chpl:17
  called from 17 in __entryPoint at formatoutput.chpl:17
  called from 17 in __entryPoint at formatoutput.chpl:17
@@ -32,18 +31,13 @@
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(formatoutput.chpl:17) ( __initPrelude (<unknown>:0) )
 ::array_index(internal_prelude.chpl:6) ( string (<unknown>:0) )
-::array_index(internal_prelude.chpl:9) ( string (<unknown>:0) )
-::i(<unknown>:0) ( Index (<unknown>:0) )
 ::i(<unknown>:0) ( Index (<unknown>:0) )
 ::i(<unknown>:0) ( Index (<unknown>:0) )
 ::i(formatoutput.chpl:11) ( Index (<unknown>:0) )
 ::i(internal_prelude.chpl:6) ( Index (<unknown>:0) )
-::i(internal_prelude.chpl:9) ( Index (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
-::self(internal_prelude.chpl:10) ( (<unknown>:0) )
 ::self(internal_prelude.chpl:6) ( (<unknown>:0) )
 ::self(internal_prelude.chpl:7) ( (<unknown>:0) )
-::self(internal_prelude.chpl:9) ( (<unknown>:0) )
 ::x is: (formatoutput.chpl:3) ( string (<unknown>:0) )
 ::x is: (formatoutput.chpl:4) ( string (<unknown>:0) )
 ::x is: (formatoutput.chpl:5) ( string (<unknown>:0) )
@@ -58,7 +52,6 @@ function __init formatoutput.chpl:17
 function __init() {
 function __initIntPrelude formatoutput.chpl:17
 function __initPrelude formatoutput.chpl:17
-function self internal_prelude.chpl:10
 function self internal_prelude.chpl:7
 globals
 var A: [D] integer;
