@@ -3400,3 +3400,14 @@ Modified files:
 	chapel/compiler/AST/: chapel.y expr.cpp expr.h stmt.cpp 
 	                      symbol.cpp symbol.h type.cpp 
 
+---------------------------------------------------------------------------
+
+06/16/04 12:01:57 -- bradc
+
+Log message:
+	AST prototype checkpoint.
+
+Modified files:
+	chapel/compiler/AST/: chapel.y expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp expr.h stmt.h symbol.h type.h 
+
