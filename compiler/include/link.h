@@ -16,8 +16,8 @@ class ILink : public Loc {
   ILink(void);
 
   virtual bool isNull(void);
-  virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseList(Traversal* traversal, bool atTop = true);
+  virtual void traverse(ILink* &_this, Traversal* traversal, bool atTop = true);
+  virtual void traverseList(ILink* &_this, Traversal* traversal, bool atTop = true);
 
   virtual void print(FILE* outfile);
   void println(FILE* outfile);
@@ -35,7 +35,6 @@ class ILink : public Loc {
 };
 
 extern ILink* nilILink;
-
 
 #define prevLink(type, node) (dynamic_cast<type*>((node)->prev))
 #define nextLink(type, node) (dynamic_cast<type*>((node)->next))

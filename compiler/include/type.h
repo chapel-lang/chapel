@@ -28,8 +28,9 @@ class Type : public BaseAST {
   bool isNull(void);
   virtual bool isComplex(void);
 
-  void traverse(Traversal* traversal, bool atTop = true);
-  void traverseDef(Traversal* traversal, bool atTop = true);
+  void traverse(Type* &_this, Traversal* traversal, bool atTop = true);
+  void traverseList(Type* &_this, Traversal* traversal, bool atTop = true);
+  void traverseDef(Type* &_this, Traversal* traversal, bool atTop = true);
   virtual void traverseType(Traversal* traversal);
   virtual void traverseDefType(Traversal* traversal);
 

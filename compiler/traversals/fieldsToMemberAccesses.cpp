@@ -1,6 +1,7 @@
 #include "fieldsToMemberAccesses.h"
 #include "chplalloc.h"
 #include "expr.h"
+#include "replace.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -17,7 +18,7 @@
 static ClassType* CurrentClass = NULL;
 
 
-void FieldsToMemberAccesses::preProcessStmt(Stmt* stmt) {
+void FieldsToMemberAccesses::preProcessStmt(Stmt* &stmt) {
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ClassType* ctype = dynamic_cast<ClassType*>(tds->type)) {
       CurrentClass = ctype;
@@ -39,7 +40,7 @@ void FieldsToMemberAccesses::preProcessStmt(Stmt* stmt) {
 }
 
 
-void FieldsToMemberAccesses::postProcessStmt(Stmt* stmt) {
+void FieldsToMemberAccesses::postProcessStmt(Stmt* &stmt) {
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (dynamic_cast<ClassType*>(tds->type)) {
       CurrentClass = NULL;
@@ -48,7 +49,7 @@ void FieldsToMemberAccesses::postProcessStmt(Stmt* stmt) {
 }
 
 
-void FieldsToMemberAccesses::preProcessExpr(Expr* expr) {
+void FieldsToMemberAccesses::preProcessExpr(Expr* &expr) {
   if (CurrentClass) {
     if (Variable* member = dynamic_cast<Variable*>(expr)) {
       if (!strcmp(member->var->name, "this")) {
@@ -60,7 +61,7 @@ void FieldsToMemberAccesses::preProcessExpr(Expr* expr) {
 	if (FnSymbol* parentFn = dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
 	  MemberAccess* repl = new MemberAccess(new Variable(parentFn->formals),
 						member->var);
-	  expr->parent->replace(expr, repl);
+	  Expr::replace(expr, repl);
 	}
 	else {
 	  INT_FATAL(expr, "Statement is not in method in FieldsToMemberAccesses");

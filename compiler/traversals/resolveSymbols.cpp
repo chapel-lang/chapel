@@ -7,7 +7,7 @@
 #include "symbol.h"
 #include "type.h"
 
-void ResolveSymbols::preProcessExpr(Expr* expr) {
+void ResolveSymbols::preProcessExpr(Expr* &expr) {
   if (MemberAccess* dot = dynamic_cast<MemberAccess*>(expr)) {
     UnresolvedSymbol* UnresolvedMember;
     Symbol* ResolvedMember;

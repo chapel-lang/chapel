@@ -1,3 +1,4 @@
+#include "ast_util.h"
 #include "stmt.h"
 #include "traversal.h"
 
@@ -11,35 +12,35 @@ Traversal::Traversal(bool processThis, bool exploreByDefault) :
 {}
 
 
-void Traversal::preProcessStmt(Stmt* stmt) {
+void Traversal::preProcessStmt(Stmt* &stmt) {
 }
 
 
-void Traversal::postProcessStmt(Stmt* stmt) {
+void Traversal::postProcessStmt(Stmt* &stmt) {
 }
 
 
-void Traversal::preProcessExpr(Expr* expr) {
+void Traversal::preProcessExpr(Expr* &expr) {
 }
 
 
-void Traversal::postProcessExpr(Expr* expr) {
+void Traversal::postProcessExpr(Expr* &expr) {
 }
 
 
-void Traversal::preProcessSymbol(Symbol* sym) {
+void Traversal::preProcessSymbol(Symbol* &sym) {
 }
 
 
-void Traversal::postProcessSymbol(Symbol* sym) {
+void Traversal::postProcessSymbol(Symbol* &sym) {
 }
 
 
-void Traversal::preProcessType(Type* type) {
+void Traversal::preProcessType(Type* &type) {
 }
 
 
-void Traversal::postProcessType(Type* type) {
+void Traversal::postProcessType(Type* &type) {
 }
 
 
@@ -47,9 +48,10 @@ void Traversal::run(ModuleSymbol* moduleList) {
   ModuleSymbol* mod = moduleList;
   while (mod) {
     if (mod->internal == false || processInternalModules == true) {
-      mod->stmts->traverseList(this);
+      TRAVERSE_LS(mod->stmts, this, true);
     }
     
     mod = nextLink(ModuleSymbol, mod);
   }
 }
+

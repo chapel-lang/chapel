@@ -13,7 +13,7 @@ GetStuff::GetStuff(int flags) :
 {}
 
 
-void GetStuff::preProcessStmt(Stmt* stmt) {
+void GetStuff::preProcessStmt(Stmt* &stmt) {
   if (getStmts) {
     asts.add(stmt);
     stmts.add(stmt);
@@ -21,7 +21,7 @@ void GetStuff::preProcessStmt(Stmt* stmt) {
 }
 
 
-void GetStuff::preProcessExpr(Expr* expr) {
+void GetStuff::preProcessExpr(Expr* &expr) {
   if (getExprs) {
     asts.add(expr);
     exprs.add(expr);
@@ -29,7 +29,7 @@ void GetStuff::preProcessExpr(Expr* expr) {
 }
 
 
-void GetStuff::preProcessSymbol(Symbol* sym) {
+void GetStuff::preProcessSymbol(Symbol* &sym) {
   if (getSymbols) {
     asts.add(sym);
     symbols.add(sym);
@@ -37,7 +37,7 @@ void GetStuff::preProcessSymbol(Symbol* sym) {
 }
 
 
-void GetStuff::preProcessType(Type* type) {
+void GetStuff::preProcessType(Type* &type) {
   if (getTypes) {
     asts.add(type);
     types.add(type);

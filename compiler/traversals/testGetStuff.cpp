@@ -1,15 +1,16 @@
 #include <stdlib.h>
+#include "ast_util.h"
 #include "expr.h"
 #include "getstuff.h"
 #include "stmt.h"
 #include "testGetStuff.h"
 
-void TestGetStuff::preProcessStmt(Stmt* stmt) {
+void TestGetStuff::preProcessStmt(Stmt* &stmt) {
   int i;
   GetStuff* asts = new GetStuff();
 
   asts->clear();
-  stmt->traverse(asts);
+  TRAVERSE(stmt, asts, true);
   fprintf(stderr, "\n\n\nstmt at line %d:\n", stmt->lineno);
   for (i = 0; i<asts->stmts.n; i++) {
     fprintf(stderr, "stmt %d ----------------------------------------\n", i);
@@ -35,6 +36,6 @@ void TestGetStuff::preProcessStmt(Stmt* stmt) {
 
 
 void testGetStuff(Stmt* program) {
-  program->traverseList(new TestGetStuff());
+  TRAVERSE_LS(program, new TestGetStuff(), true);
   exit(0);
 }

@@ -1,4 +1,5 @@
 AST_SRCS = \
+        ast_util.cpp \
 	baseAST.cpp \
 	expr.cpp \
 	link.cpp \

@@ -28,7 +28,8 @@ class Symbol : public BaseAST {
 
   bool isNull(void);
 
-  void traverse(Traversal* traverse, bool atTop = true);
+  void traverse(Symbol* &_this, Traversal* traverse, bool atTop = true);
+  void traverseList(Symbol* &_this, Traversal* traversal, bool atTop = true);
   virtual void traverseSymbol(Traversal* traverse);
 
   void print(FILE* outfile);

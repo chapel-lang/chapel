@@ -5,22 +5,22 @@
 #include "symbol.h"
 #include "type.h"
 
-void CheckIDs::preProcessStmt(Stmt* stmt) {
+void CheckIDs::preProcessStmt(Stmt* &stmt) {
   astlist[stmt->id] = stmt;
 }
 
 
-void CheckIDs::preProcessExpr(Expr* expr) {
+void CheckIDs::preProcessExpr(Expr* &expr) {
   astlist[expr->id] = expr;
 }
 
 
-void CheckIDs::preProcessSymbol(Symbol* symbol) {
+void CheckIDs::preProcessSymbol(Symbol* &symbol) {
   astlist[symbol->id] = symbol;
 }
 
 
-void CheckIDs::preProcessType(Type* type) {
+void CheckIDs::preProcessType(Type* &type) {
   astlist[type->id] = type;
 }
 

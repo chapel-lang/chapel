@@ -1,4 +1,5 @@
 #include <typeinfo>
+#include "ast_util.h"
 #include "geysa.h"
 #include "analysis.h"
 #include "expr.h"
@@ -86,7 +87,7 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
     }
   forv_BaseAST(s, syms) {
     GetStuff getStuff(GET_ALL);
-    s->traverse(&getStuff);
+    TRAVERSE(s, &getStuff, true);
     forv_BaseAST(ss, getStuff.asts) if (ss) {
       assert(ss);
       if (set.set_add(ss))
@@ -291,7 +292,7 @@ build_types(Vec<BaseAST *> &syms) {
 	t->asymbol->type_kind = Type_TAGGED;
 	t->asymbol->inherits_add(sym_enum_element);
 	GetSymbols* getSymbols = new GetSymbols();
-	t->traverseList(getSymbols);
+	TRAVERSE_LS(t, getSymbols, true);
 	for (int i = 0; i < getSymbols->symbols.n; i++) {
 	  BaseAST *s = getSymbols->symbols.v[i];
 	  Sym *ss = dynamic_cast<Symbol*>(s)->asymbol;
@@ -517,7 +518,7 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
     default: break;
   }
   GetStmts* getStmts = new GetStmts();
-  ast->traverseList(getStmts);
+  TRAVERSE_LS(ast, getStmts, true);
   forv_BaseAST(a, getStmts->stmts)
     define_labels(a, labelmap);
 #endif
@@ -561,7 +562,7 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
     default: break;
   }
   GetStmts* getStmts = new GetStmts();
-  ast->traverseList(getStmts);
+  TRAVERSE_LS(ast, getStmts, true);
   forv_BaseAST(a, getStmts->stmts)
     if (resolve_labels(a, labelmap, return_label, break_label, continue_label) < 0)
       return -1;
@@ -737,7 +738,7 @@ static int
 gen_if1(BaseAST *ast) {
   // bottom's up
   GetStuff getStuff(GET_STMTS|GET_EXPRS);
-  ast->traverse(&getStuff);
+  TRAVERSE(ast, &getStuff, true);
   forv_BaseAST(a, getStuff.asts)
     if (gen_if1(a) < 0)
       return -1;
@@ -1261,7 +1262,7 @@ print_ast(BaseAST *a, Vec<BaseAST *> &asts) {
   }
   printf("(%d", (int)a->astType);
   GetStuff getStuff(GET_STMTS|GET_EXPRS);
-  a->traverse(&getStuff);
+  TRAVERSE(a, &getStuff, true);
   if (getStuff.asts.n)
     printf(" ");
   forv_BaseAST(b, getStuff.asts)
@@ -1284,7 +1285,7 @@ print_baseast(BaseAST *a, Vec<BaseAST *> &asts) {
   }
   printf("(%d", (int)a->astType);
   GetStuff* getStuff = new GetStuff(GET_STMTS|GET_EXPRS);
-  a->traverse(getStuff);
+  TRAVERSE(a, getStuff, true);
   if (getStuff->asts.n)
     printf(" ");
   forv_BaseAST(b, getStuff->asts)
@@ -1457,7 +1458,7 @@ AST_to_IF1(Vec<Stmt *> &stmts) {
 void 
 print_AST_Expr_types(BaseAST *ast) {
   GetStuff getStuff(GET_STMTS|GET_EXPRS);
-  ast->traverse(&getStuff);
+  TRAVERSE(ast, &getStuff, true);
   forv_BaseAST(a, getStuff.asts)
     print_AST_Expr_types(a);
   Expr *x = dynamic_cast<Expr*>(ast);

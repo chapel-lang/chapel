@@ -11,7 +11,7 @@
  ***  Mangles names of methods with "_"
  ***  Moves method's function definition statement after class definition statement
  ***/
-void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
+void MethodsToFunctions::preProcessStmt(Stmt* &stmt) {
   TypeDefStmt* tds;
   ClassType* ctype;
 
@@ -39,7 +39,7 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
  ***  Adds base in MemberAccess for method to a new first parameter to the method
  ***  Makes MemberAccess for method a function on its own
  ***/
-void MethodsToFunctions::preProcessExpr(Expr* expr) {
+void MethodsToFunctions::preProcessExpr(Expr* &expr) {
   MemberAccess* method;
   ParenOpExpr* function;
   Expr* newArgList;

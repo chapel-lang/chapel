@@ -6,9 +6,9 @@
 
 class FieldsToMemberAccesses : public Traversal {
  public:
-  void preProcessStmt(Stmt* stmt);
-  void postProcessStmt(Stmt* stmt);
-  void preProcessExpr(Expr* expr);
+  void preProcessStmt(Stmt* &stmt);
+  void postProcessStmt(Stmt* &stmt);
+  void preProcessExpr(Expr* &expr);
 };
 
 #endif

@@ -24,14 +24,14 @@ class Stmt : public BaseAST {
   virtual bool canLiveAtFileScope(void);
   virtual bool topLevelExpr(Expr* testExpr);
 
-  void traverse(Traversal* traversal, bool atTop = true);
+  void traverse(Stmt* &_this, Traversal* traversal, bool atTop = true);
+  void traverseList(Stmt* &_this, Traversal* traversal, bool atTop);
   virtual void traverseStmt(Traversal* traversal);
 
   void codegenVarDefs(FILE* outfile);
   virtual void codegenVarDef(FILE* outfile);
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
-
 
 extern Stmt* nilStmt;
 

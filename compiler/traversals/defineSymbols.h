@@ -11,7 +11,7 @@ class DefineSymbols : public Traversal {
  public:
   SymScope* scope;
   DefineSymbols::DefineSymbols(SymScope* init_scope);
-  void preProcessStmt(Stmt* stmt);
+  void preProcessStmt(Stmt* &stmt);
 };
 
 #endif

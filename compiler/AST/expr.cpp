@@ -1,6 +1,7 @@
 #include <typeinfo>
 #include <string.h>
 #include "analysis.h"
+#include "ast_util.h"
 #include "expr.h"
 #include "fa.h"
 #include "misc.h"
@@ -116,50 +117,55 @@ bool Expr::isNull(void) {
 }
 
 
-void Expr::traverse(Traversal* traversal, bool atTop) {
+void Expr::traverse(Expr* &_this, Traversal* traversal, bool atTop) {
+  if (_this != this) {
+    INT_FATAL(this, "Fatal Expr::Traverse Call");
+  }
   if (isNull()) {
     return;
   }
-
   // explore Expr and components
   if (traversal->processTop || !atTop) {
-    traversal->preProcessExpr(this);
+    traversal->preProcessExpr(_this);
   }
   if (atTop || traversal->exploreChildExprs) {
-    this->traverseExpr(traversal);
+    _this->traverseExpr(traversal);
   }
   if (traversal->processTop || !atTop) {
-    traversal->postProcessExpr(this);
+    traversal->postProcessExpr(_this);
   }
 }
+
+
+void Expr::traverseList(Expr* &_this, Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  } else {
+    // explore this
+    _this->traverse(_this, traversal, atTop);
+
+    // explore siblings
+    TRAVERSE_LS(_this->next, traversal, atTop);
+  }
+}
+
 
 
 void Expr::traverseExpr(Traversal* traversal) {
 }
 
 
-static void replace_helper(Expr** expr, Expr* old_expr, Expr* new_expr) {
-  Expr* tmp = *expr;
-  Expr* prev = NULL;
-
-  while (tmp) {
-    if (tmp == old_expr) {
-      if (prev) {
-	prev->next = new_expr;
-      }
-      else {
-	*expr = new_expr;
-      }
-      new_expr->next = tmp->next;
-      new_expr->prev = tmp->prev;
-    }
-    tmp = nextLink(Expr, tmp);
+void Expr::replace(Expr* &old_expr, Expr* new_expr) {
+  new_expr->prev = old_expr->prev;
+  if ((old_expr->prev) && (!(old_expr->prev->isNull()))) {
+    old_expr->prev->next = new_expr;
   }
-}
-
-
-void Expr::replace(Expr* old_expr, Expr* new_expr) {
-
+  new_expr->next = old_expr->next;
+  if ((old_expr->next) && (!(old_expr->next->isNull()))) {
+    old_expr->next->prev = new_expr;
+  }
+  new_expr->parent = old_expr->parent;
+  old_expr = new_expr;
 }
 
 
@@ -424,7 +430,7 @@ Expr* Variable::copy(void) {
 
 
 void Variable::traverseExpr(Traversal* traversal) {
-  var->traverse(traversal, false);
+  var->traverse(var, traversal, false);
 }
 
 
@@ -477,12 +483,7 @@ long UnOp::intVal(void) {
 
 
 void UnOp::traverseExpr(Traversal* traversal) {
-  operand->traverse(traversal, false);
-}
-
-
-void UnOp::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&operand, old_expr, new_expr);
+  operand->traverse(operand, traversal, false);
 }
 
 
@@ -526,14 +527,8 @@ Expr* BinOp::copy(void) {
 
 
 void BinOp::traverseExpr(Traversal* traversal) {
-  left->traverse(traversal, false);
-  right->traverse(traversal, false);
-}
-
-
-void BinOp::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&left, old_expr, new_expr);
-  replace_helper(&right, old_expr, new_expr);
+  left->traverse(left, traversal, false);
+  right->traverse(right, traversal, false);
 }
 
 
@@ -680,13 +675,8 @@ Expr* MemberAccess::copy(void) {
 
 
 void MemberAccess::traverseExpr(Traversal* traversal) {
-  base->traverse(traversal, false);
-  member->traverse(traversal, false);
-}
-
-
-void MemberAccess::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&base, old_expr, new_expr);
+  base->traverse(base, traversal, false);
+  member->traverse(member, traversal, false);
 }
 
 
@@ -745,14 +735,8 @@ Expr* ParenOpExpr::copy(void) {
 
 
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
-  baseExpr->traverse(traversal, false);
-  argList->traverseList(traversal, false);
-}
-
-
-void ParenOpExpr::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&baseExpr, old_expr, new_expr);
-  replace_helper(&argList, old_expr, new_expr);
+  baseExpr->traverse(baseExpr, traversal, false);
+  argList->traverseList(argList, traversal, false);
 }
 
 
@@ -991,15 +975,10 @@ Expr* Tuple::copy(void) {
 void Tuple::traverseExpr(Traversal* traversal) {
   Expr* expr = exprs;
   while (expr) {
-    expr->traverse(traversal, false);
+    expr->traverse(expr, traversal, false);
 
     expr = nextLink(Expr, expr);
   }
-}
-
-
-void Tuple::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&exprs, old_expr, new_expr);
 }
 
 
@@ -1035,7 +1014,7 @@ Expr* SizeofExpr::copy(void) {
 
 
 void SizeofExpr::traverseExpr(Traversal* traversal) {
-  type->traverse(traversal, false);
+  type->traverse(type, traversal, false);
 }
 
 
@@ -1076,13 +1055,8 @@ Expr* CastExpr::copy(void) {
 
 
 void CastExpr::traverseExpr(Traversal* traversal) {
-  newType->traverse(traversal, false);
-  expr->traverse(traversal, false);
-}
-
-
-void CastExpr::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&expr, old_expr, new_expr);
+  newType->traverse(newType, traversal, false);
+  expr->traverse(expr, traversal, false);
 }
 
 
@@ -1123,15 +1097,9 @@ Expr* ReduceExpr::copy(void) {
 
 
 void ReduceExpr::traverseExpr(Traversal* traversal) {
-  reduceType->traverse(traversal, false);
-  redDim->traverseList(traversal, false);
-  argExpr->traverse(traversal, false);
-}
-
-
-void ReduceExpr::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&redDim, old_expr, new_expr);
-  replace_helper(&argExpr, old_expr, new_expr);
+  reduceType->traverse(reduceType, traversal, false);
+  redDim->traverseList(redDim, traversal, false);
+  argExpr->traverse(argExpr, traversal, false);
 }
 
 
@@ -1167,16 +1135,9 @@ Expr* SimpleSeqExpr::copy(void) {
 
 
 void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
-  lo->traverse(traversal, false);
-  hi->traverse(traversal, false);
-  str->traverse(traversal, false);
-}
-
-
-void SimpleSeqExpr::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&lo, old_expr, new_expr);
-  replace_helper(&hi, old_expr, new_expr);
-  replace_helper(&str, old_expr, new_expr);
+  lo->traverse(lo, traversal, false);
+  hi->traverse(hi, traversal, false);
+  str->traverse(str, traversal, false);
 }
 
 
@@ -1261,15 +1222,9 @@ Expr* ForallExpr::copy(void) {
 
 
 void ForallExpr::traverseExpr(Traversal* traversal) {
-  indices->traverseList(traversal, false);
-  domains->traverseList(traversal, false);
-  forallExpr->traverse(traversal, false);
-}
-
-
-void ForallExpr::replace(Expr* old_expr, Expr* new_expr) {
-  replace_helper(&domains, old_expr, new_expr);
-  replace_helper(&forallExpr, old_expr, new_expr);
+  indices->traverseList(indices, traversal, false);
+  domains->traverseList(domains, traversal, false);
+  forallExpr->traverse(forallExpr, traversal, false);
 }
 
 

@@ -6,8 +6,8 @@
 
 class MethodsToFunctions : public Traversal {
  public:
-  void preProcessStmt(Stmt* stmt);
-  void preProcessExpr(Expr* expr);
+  void preProcessStmt(Stmt* &stmt);
+  void preProcessExpr(Expr* &expr);
 };
 
 #endif

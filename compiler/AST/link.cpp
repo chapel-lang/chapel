@@ -14,7 +14,7 @@ bool ILink::isNull(void) {
 }
 
 
-void ILink::traverse(Traversal* traversal, bool atTop) {
+void ILink::traverse(ILink* &_this, Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
   } else {
@@ -23,15 +23,15 @@ void ILink::traverse(Traversal* traversal, bool atTop) {
 }
 
 
-void ILink::traverseList(Traversal* traversal, bool atTop) {
+void ILink::traverseList(ILink* &_this, Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
   } else {
     // explore this
-    traverse(traversal, atTop);
+    _this->traverse(_this, traversal, atTop);
 
     // explore siblings
-    next->traverseList(traversal, atTop);
+    _this->next->traverseList(next, traversal, atTop);
   }
 }
 

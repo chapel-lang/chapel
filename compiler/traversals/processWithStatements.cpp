@@ -14,7 +14,7 @@
  ***/
 
 
-void ProcessWithStatements::preProcessStmt(Stmt* stmt) {
+void ProcessWithStatements::preProcessStmt(Stmt* &stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(symType->type)) {

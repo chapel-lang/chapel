@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include "analysis.h"
+#include "ast_util.h"
 #include "files.h"
 #include "misc.h"
 #include "stmt.h"
@@ -43,22 +44,36 @@ bool Symbol::isNull(void) {
 }
 
 
-void Symbol::traverse(Traversal* traversal, bool atTop) {
+void Symbol::traverse(Symbol* &_this, Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
   }
 
   // explore Symbol and components
   if (traversal->processTop || !atTop) {
-    traversal->preProcessSymbol(this);
+    traversal->preProcessSymbol(_this);
   }
   if (atTop || traversal->exploreChildSymbols) {
-    traverseSymbol(traversal);
+    _this->traverseSymbol(traversal);
   }
   if (traversal->processTop || !atTop) {
-    traversal->postProcessSymbol(this);
+    traversal->postProcessSymbol(_this);
   }
 }
+
+
+void Symbol::traverseList(Symbol* &_this, Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  } else {
+    // explore this
+    _this->traverse(_this, traversal, atTop);
+
+    // explore siblings
+    TRAVERSE_LS(_this->next, traversal, atTop);
+  }
+}
+
 
 
 void Symbol::traverseSymbol(Traversal* traversal) {

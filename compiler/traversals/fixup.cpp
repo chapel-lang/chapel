@@ -1,6 +1,7 @@
 #include "fixup.h"
-#include "stmt.h"
+#include "ast_util.h"
 #include "expr.h"
+#include "stmt.h"
 
 Fixup::Fixup(void) {
   exprParent.add(NULL);
@@ -8,7 +9,7 @@ Fixup::Fixup(void) {
 }
 
 
-void Fixup::preProcessStmt(Stmt* stmt) {
+void Fixup::preProcessStmt(Stmt* &stmt) {
   Symbol* tmp = stmtParent.v[stmtParent.n-1];
   if (tmp == NULL) {
     INT_FATAL(stmt, "NULL in Fixup()");
@@ -29,7 +30,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 }
 
 
-void Fixup::postProcessStmt(Stmt* stmt) {
+void Fixup::postProcessStmt(Stmt* &stmt) {
   if (dynamic_cast<FnDefStmt*>(stmt)) {
     stmtParent.pop();
   }
@@ -44,7 +45,7 @@ void Fixup::postProcessStmt(Stmt* stmt) {
 }
 
 
-void Fixup::preProcessExpr(Expr* expr) {
+void Fixup::preProcessExpr(Expr* &expr) {
   Stmt* tmp = exprParent.v[exprParent.n-1];
   if (tmp == NULL) {
     INT_FATAL(expr, "NULL in Fixup()");
@@ -57,7 +58,7 @@ void Fixup::run(ModuleSymbol* moduleList) {
   ModuleSymbol* mod = moduleList;
   while (mod) {
     stmtParent.add(mod);
-    mod->stmts->traverseList(this);
+    TRAVERSE_LS(mod->stmts, this, true);
     if (mod != stmtParent.pop()) {
       INT_FATAL(mod, "Major error in Fixup traversal");
     }

@@ -102,10 +102,9 @@ class Expr : public BaseAST {
 
   bool isNull(void);
 
-  void traverse(Traversal* traversal, bool atTop = true);
+  void traverse(Expr* &_this, Traversal* traversal, bool atTop = true);
+  void traverseList(Expr* &_this, Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
-
-  virtual void replace(Expr* old_expr, Expr* new_expr);
 
   virtual Type* typeInfo(void);
   virtual bool isComputable(void);
@@ -116,6 +115,8 @@ class Expr : public BaseAST {
   virtual void codegenComplex(FILE* outfile, bool real);
 
   static Expr* newPlusMinus(binOpType op, Expr* l, Expr* r);
+
+  static void replace(Expr* &old_expr, Expr* new_expr);
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 
@@ -234,7 +235,6 @@ class UnOp : public Expr {
   long intVal(void);
 
   void traverseExpr(Traversal* traversal);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   Type* typeInfo(void);
 
@@ -254,7 +254,6 @@ class BinOp : public Expr {
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   Type* typeInfo(void);
 
@@ -295,7 +294,6 @@ class MemberAccess : public Expr {
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   Type* typeInfo(void);
 
@@ -313,7 +311,6 @@ class ParenOpExpr : public Expr {
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
@@ -361,7 +358,6 @@ class Tuple : public Expr {
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -393,7 +389,6 @@ class CastExpr : public Expr {
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   Type* typeInfo(void);
 
@@ -412,7 +407,6 @@ class ReduceExpr : public Expr {
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -428,7 +422,6 @@ class SimpleSeqExpr : public Expr {
   SimpleSeqExpr(Expr* init_lo, Expr* init_hi, 
                 Expr* init_str = new IntLiteral("1", 1));
   virtual Expr* copy(void);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   void traverseExpr(Traversal* traversal);
 
@@ -471,7 +464,6 @@ class ForallExpr : public Expr {
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);
-  void replace(Expr* old_expr, Expr* new_expr);
 
   Type* typeInfo(void);
 

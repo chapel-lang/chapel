@@ -6,7 +6,7 @@
 
 class ProcessWithStatements : public Traversal {
  public:
-  void preProcessStmt(Stmt* stmt);
+  void preProcessStmt(Stmt* &stmt);
 };
 
 #endif

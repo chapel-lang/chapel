@@ -1,5 +1,6 @@
 #include <typeinfo>
 #define TYPE_EXTERN
+#include "ast_util.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
@@ -37,46 +38,59 @@ bool Type::isComplex(void) {
 }
 
 
-void Type::traverse(Traversal* traversal, bool atTop) {
+void Type::traverse(Type* &_this, Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
   }
 
   // explore Type and components
   if (traversal->processTop || !atTop) {
-    traversal->preProcessType(this);
+    traversal->preProcessType(_this);
   }
   if (atTop || traversal->exploreChildTypes) {
-    if (atTop || name == nilSymbol) {
+    if (atTop || _this->name == nilSymbol) {
       // if the user has asked to traverse the type, always traverse
       // its definition
       // OR if the type is anonymous, always traverse its definition
-      traverseDefType(traversal);
+      _this->traverseDefType(traversal);
     } else {
-      traverseType(traversal);
+      _this->traverseType(traversal);
     }
   }
   if (traversal->processTop || !atTop) {
-    traversal->postProcessType(this);
+    traversal->postProcessType(_this);
   }
 }
 
 
-void Type::traverseDef(Traversal* traversal, bool atTop) {
+void Type::traverseList(Type* &_this, Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  } else {
+    // explore this
+    TRAVERSE(_this, traversal, atTop);
+
+    // explore siblings
+    TRAVERSE_LS(next, traversal, atTop);
+  }
+}
+
+
+void Type::traverseDef(Type* &_this, Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
   }
 
   // expore Type and components
   if (traversal->processTop || !atTop) {
-    traversal->preProcessType(this);
+    traversal->preProcessType(_this);
   }
   if (atTop || traversal->exploreChildTypes) {
-    name->traverse(traversal, false);
-    traverseDefType(traversal);
+    TRAVERSE(_this->name, traversal, false);
+    _this->traverseDefType(traversal);
   }
   if (traversal->processTop || !atTop) {
-    traversal->postProcessType(this);
+    traversal->postProcessType(_this);
   }
 }
 
@@ -86,7 +100,7 @@ void Type::traverseType(Traversal* traversal) {
 
 
 void Type::traverseDefType(Traversal* traversal) {
-  defaultVal->traverse(traversal, false);
+  TRAVERSE(defaultVal, traversal, false);
 }
 
 
@@ -178,8 +192,8 @@ Type* EnumType::copy(void) {
 
 
 void EnumType::traverseDefType(Traversal* traversal) {
-  valList->traverseList(traversal, false);
-  defaultVal->traverse(traversal, false);
+  TRAVERSE_LS(valList, traversal, false);
+  TRAVERSE(defaultVal, traversal, false);
 }
 
 
@@ -425,9 +439,9 @@ Type* ArrayType::copy(void) {
 
 
 void ArrayType::traverseDefType(Traversal* traversal) {
-  domain->traverse(traversal, false);
-  elementType->traverse(traversal, false);
-  defaultVal->traverse(traversal, false);
+  domain->traverse(domain, traversal, false);
+  elementType->traverse(elementType, traversal, false);
+  defaultVal->traverse(defaultVal, traversal, false);
 }
 
 
@@ -489,8 +503,8 @@ bool UserType::isComplex(void) {
 
 
 void UserType::traverseDefType(Traversal* traversal) {
-  definition->traverse(traversal, false);
-  defaultVal->traverse(traversal, false);
+  definition->traverse(definition, traversal, false);
+  defaultVal->traverse(defaultVal, traversal, false);
 }
 
 
@@ -621,9 +635,9 @@ void ClassType::addScope(SymScope* init_scope) {
 
 
 void ClassType::traverseDefType(Traversal* traversal) {
-  definition->traverseList(traversal, false);
-  constructor->traverseList(traversal, false);
-  defaultVal->traverse(traversal, false);
+  TRAVERSE_LS(definition, traversal, false);
+  TRAVERSE_LS(constructor, traversal, false);
+  TRAVERSE(defaultVal, traversal, false);
 }
 
 
@@ -709,9 +723,9 @@ Type* TupleType::copy(void) {
 
 void TupleType::traverseDefType(Traversal* traversal) {
   for (int i=0; i<components.n; i++) {
-    components.v[i]->traverse(traversal, false);
+    components.v[i]->traverse(components.v[i], traversal, false);
   }
-  defaultVal->traverse(traversal, false);
+  defaultVal->traverse(defaultVal, traversal, false);
 }
 
 

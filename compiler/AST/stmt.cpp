@@ -1,5 +1,6 @@
 #include <string.h>
 #include <typeinfo>
+#include "ast_util.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
@@ -78,20 +79,33 @@ bool Stmt::topLevelExpr(Expr* expr) {
 }
 
 
-void Stmt::traverse(Traversal* traversal, bool atTop) {
+void Stmt::traverse(Stmt* &_this, Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
   }
 
   // explore Stmt and components
   if (traversal->processTop || !atTop) {
-    traversal->preProcessStmt(this);
+    traversal->preProcessStmt(_this);
   }
   if (atTop || traversal->exploreChildStmts) {
-    this->traverseStmt(traversal);
+    _this->traverseStmt(traversal);
   }
   if (traversal->processTop || !atTop) {
-    traversal->postProcessStmt(this);
+    traversal->postProcessStmt(_this);
+  }
+}
+
+
+void Stmt::traverseList(Stmt* &_this, Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  } else {
+    // explore this
+    _this->traverse(_this, traversal, atTop);
+
+    // explore siblings
+    TRAVERSE_LS(next, traversal, atTop);
   }
 }
 
@@ -161,7 +175,7 @@ Stmt* WithStmt::copy(void) {
 
 
 void WithStmt::traverseStmt(Traversal* traversal) {
-  withExpr->traverse(traversal, false);
+  withExpr->traverse(withExpr, traversal, false);
 }
 
 
@@ -196,9 +210,9 @@ bool VarDefStmt::topLevelExpr(Expr* testExpr) {
 
 
 void VarDefStmt::traverseStmt(Traversal* traversal) {
-  var->traverseList(traversal, false);
-  var->type->traverse(traversal, false);
-  init->traverse(traversal, false);
+  ((Symbol*)var)->traverseList((Symbol*&)var, traversal, false);
+  var->type->traverse(var->type, traversal, false);
+  init->traverse(init, traversal, false);
 }
 
 
@@ -352,7 +366,7 @@ bool TypeDefStmt::canLiveAtFileScope(void) {
 
 
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
-  type->traverseDef(traversal, false);
+  type->traverseDef(type, traversal, false);
 }
 
 
@@ -410,10 +424,10 @@ bool FnDefStmt::canLiveAtFileScope(void) {
 
 void FnDefStmt::traverseStmt(Traversal* traversal) {
   // BLC: could move this into a traverseDef method?
-  fn->traverse(traversal, false);
-  fn->formals->traverseList(traversal, false);
-  fn->type->traverse(traversal, false);
-  fn->body->traverse(traversal, false);
+  ((Symbol*)fn)->traverse((Symbol*&)fn, traversal, false);
+  fn->formals->traverseList(fn->formals, traversal, false);
+  fn->type->traverse(fn->type, traversal, false);
+  fn->body->traverse(fn->body, traversal, false);
 }
 
 
@@ -484,7 +498,7 @@ bool ExprStmt::topLevelExpr(Expr* testExpr) {
 
 
 void ExprStmt::traverseStmt(Traversal* traversal) {
-  expr->traverse(traversal, false);
+  expr->traverse(expr, traversal, false);
 }
 
 
@@ -559,7 +573,7 @@ Stmt* BlockStmt::copy(void) {
 
 
 void BlockStmt::traverseStmt(Traversal* traversal) {
-  body->traverseList(traversal, false);
+  body->traverseList(body, traversal, false);
 }
 
 
@@ -602,11 +616,11 @@ bool WhileLoopStmt::topLevelExpr(Expr* testExpr) {
 
 void WhileLoopStmt::traverseStmt(Traversal* traversal) {
   if (isWhileDo) {
-    condition->traverse(traversal, false);
-    body->traverse(traversal, false);
+    condition->traverse(condition, traversal, false);
+    body->traverse(body, traversal, false);
   } else {
-    body->traverse(traversal, false);
-    condition->traverse(traversal, false);
+    body->traverse(body, traversal, false);
+    condition->traverse(condition, traversal, false);
   }
 }
 
@@ -671,9 +685,9 @@ bool ForLoopStmt::topLevelExpr(Expr* testExpr) {
 
 
 void ForLoopStmt::traverseStmt(Traversal* traversal) {
-  index->traverse(traversal, false);
-  domain->traverse(traversal, false);
-  body->traverse(traversal, false);
+  ((Symbol*)index)->traverse((Symbol*&)index, traversal, false);
+  domain->traverse(domain, traversal, false);
+  body->traverse(body, traversal, false);
 }
 
 
@@ -753,9 +767,9 @@ bool CondStmt::topLevelExpr(Expr* testExpr) {
 
 
 void CondStmt::traverseStmt(Traversal* traversal) {
-  condExpr->traverse(traversal, false);
-  thenStmt->traverse(traversal, false);
-  elseStmt->traverse(traversal, false);
+  condExpr->traverse(condExpr, traversal, false);
+  thenStmt->traverse(thenStmt, traversal, false);
+  elseStmt->traverse(elseStmt, traversal, false);
 }
 
 

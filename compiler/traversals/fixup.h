@@ -11,9 +11,9 @@ class Fixup : public Traversal {
 
   Fixup::Fixup();
 
-  virtual void preProcessStmt(Stmt* stmt);
-  virtual void postProcessStmt(Stmt* stmt);
-  virtual void preProcessExpr(Expr* expr);
+  virtual void preProcessStmt(Stmt* &stmt);
+  virtual void postProcessStmt(Stmt* &stmt);
+  virtual void preProcessExpr(Expr* &expr);
   void run(ModuleSymbol* moduleList);
 };
 
