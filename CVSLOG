@@ -6322,3 +6322,22 @@ Modified files:
 	                                     mg-seq-concrete.good 
 	                                     mg-seq.chpl mg-seq.good 
 
+---------------------------------------------------------------------------
+
+09/01/04 13:51:53 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	First new AST program through analysis.
+	test/flowanalysis/newast/chain.chpl
+
+Modified files:
+	chapel/compiler/: Makefile TODO analysis.cpp analysis.h ast.cpp 
+	                  ast.h driver.cpp fa_extras.cpp if1.cpp if1.h 
+	                  parse_ast.cpp pattern.h pdb.cpp pdb.h 
+	                  prim_data.dat 
+	chapel/compiler/AST/: symscope.h symtab.cpp 
+Added files:
+	chapel/test/flowanalysis/newast/: CATFILES CLEANFILES COMPOPTS 
+	                                  NOEXEC PREDIFF chain.chpl 
+	                                  chain.good 
+
