@@ -10,9 +10,6 @@ char *AST_name[] = {
 #undef S
 };
 
-#include <alloca.h>
-
-
 AST *
 AST::get(AST_kind k) {
   for (int i = 0; i < n; i++)
@@ -719,7 +716,7 @@ gen_fun(IF1 *i, AST *ast) {
   c->ast = ast;
   int n = ast->n - 2;
   AST **args = &ast->v[1];
-  Sym **as = (Sym **)alloca((n + 1) * sizeof(Sym *));
+  Sym *as[n + 1];
   as[0] = if1_make_symbol(i, fn->name);
   for (int j = 0; j < n; j++)
     as[j + 1] = args[j]->rval;
