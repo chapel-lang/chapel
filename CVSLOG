@@ -8791,3 +8791,26 @@ Modified files:
 	chapel/compiler/include/: expr.h 
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+10/13/04 10:37:14 -- bradc
+
+Log message:
+	Moved CastExpr out from under ParenOpExpr in the
+	AST class hierarchy, as it was becoming
+	increasingly clear that it was out of place
+	there.  Also, removed assumptions that it
+	would have a list of arguments rather than
+	a single argument -- this came from a guess
+	that casts might look like constructors in the
+	language.  As this became less true, it seemed
+	less reasonable to anticipate this.  Changed
+	analysis.cpp by pattern-matching in this
+	regard -- John, you may want to take a quick
+	look to make sure I got things correct.
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+
