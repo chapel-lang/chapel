@@ -19154,3 +19154,43 @@ Added files:
 	                              test_default_param3.future 
 	                              test_default_param3.good 
 
+---------------------------------------------------------------------------
+
+03/09/05 11:01:50 -- bradc
+
+Log message:
+	Trying to ease back into implementation, I worked on
+	getting parameter intents working correctly for class
+	arguments.  This was mostly fairly straightforward --
+	I ammended the logic that determines how formal arguments
+	should be codegened and how blank parameters are
+	interpreted to handle the class cases correctly (in
+	particular, blank intents imply pass-by-reference for
+	classes).
+	
+	This fix also revealed some subtle problems in call_fixup
+	within stmt.cpp which Steve helped me correct.
+	
+	I'm checked in four tests: 2 work correctly; 1 fails
+	in analysis because it uses equality (==) on class
+	instances, which seems to trip analysis up.  This is
+	a future I've assigned to John;  a second test fails
+	because it tries to refer to "nil" which we haven't
+	implemented yet.  I've put that one in my name.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+Added files:
+	chapel/test/functions/bradc/: intents-classes.chpl 
+	                              intents-classes.good 
+	                              intents-classes2.chpl 
+	                              intents-classes2.good 
+	                              intents-classes3.chpl 
+	                              intents-classes3.future 
+	                              intents-classes3.good 
+	                              intents-classes4.chpl 
+	                              intents-classes4.future 
+	                              intents-classes4.good 
+
