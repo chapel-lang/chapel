@@ -4,6 +4,7 @@
 #ifndef _fa_H_
 #define _fa_H_
 
+#include <sys/types.h>
 #include "map.h"
 #include "sym.h"
 
