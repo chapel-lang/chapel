@@ -20274,3 +20274,30 @@ Log message:
 Modified files:
 	chapel/test/classes/deitz/: test_class3.future 
 
+---------------------------------------------------------------------------
+
+03/18/05 13:40:19 -- jplevyak
+
+Log message:
+	Changed to:
+	
+	deitz
+	
+	record of record is not working
+	
+	The problem here is that buildClassConstructorsEtc is
+	not calling the constructor for the embedded record.
+	Analysis is using the constructor call to setup the
+	type information, so even if we don't want to make
+	a full "__new" call we could make an "__init" call
+	with the embedded type to tell analysis what it is.
+	Basically I would like a hook so that I can initialize
+	the type of "coordinates".
+	
+	I am passing this back to Steve to make the call
+	to the sub-constructor.  If we want to handle this
+	some other way, let's talk about it.
+
+Modified files:
+	chapel/test/classes/deitz/: test_nested_record1.future 
+
