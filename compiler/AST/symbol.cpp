@@ -74,3 +74,9 @@ FunSymbol::FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
   retType(init_retType),
   body(init_body)
 {}
+
+
+EnumSymbol::EnumSymbol(char* init_name, int init_val) :
+  Symbol(init_name),
+  val(init_val)
+{}

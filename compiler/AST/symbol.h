@@ -84,6 +84,14 @@ class FunSymbol : public Symbol {
 };
 
 
+class EnumSymbol : public Symbol {
+ public:
+  int val;
+
+  EnumSymbol(char* init_name, int init_val);
+};
+
+
 // BLC: Get rid of this
 extern Symbol* pstSumReduce;
 

@@ -6,3 +6,13 @@
 * check necessity of print*() variants
 * remove char literals from chapel.y
 * deal with BLC comments
+* get working with GC
+* get working with main compiler?  (e.g., via flag)
+* pull stderr to match compiler
+
+Got to insert
+* parameters (runtime, 
+* iterator indices
+* standard context stuff
+* methods?
+* query variables

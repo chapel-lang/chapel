@@ -2,21 +2,27 @@
 #include <string>
 #include "stmt.h"
 #include "symtab.h"
+#include "yy.h"
 
 using namespace std;
-
-static map<string, Symbol*> table;
-
 
 class Scope {
  public:
   scopeType type;
+
   Scope* parent;
   Scope* children;
   Scope* sibling;
+
+  //  Symbol* firstSym;
+  //  Symbol* lastSym;
   map<string, Symbol*> table;
 
   Scope(scopeType init_type);
+
+  void insert(Symbol* sym);
+
+  void print(FILE* outfile = stdout);
 };
 
 
@@ -25,7 +31,80 @@ Scope::Scope(scopeType init_type) :
   parent(NULL),
   children(NULL),
   sibling(NULL)
+  //  firstSym(NULL),
+  //  lastSym(NULL)
 {}
+
+
+void Scope::insert(Symbol* sym) {
+  /*
+  if (sym->next != NULL || sym->prev != NULL) {
+    fprintf(stderr, "WARNING A: '%s' linked\n", sym->name);
+  }
+  fprintf(stderr, "Thought I was inserting '%s'\n", sym->name);
+  */
+  table[sym->name] = sym;
+  /*
+  if (sym->next != NULL || sym->prev != NULL) {
+    fprintf(stderr, "WARNING B: '%s' linked\n", sym->name);
+  }
+  fprintf(stderr, "Got past map insertion\n");
+  //  print(stderr);
+  if (firstSym == NULL) {
+    firstSym = sym;
+    lastSym = sym;
+  } else {
+    if (sym->next != NULL || sym->prev != NULL) {
+      fprintf(stderr, "WARNING C: '%s' linked\n", sym->name);
+    }
+    fprintf(stderr, "Last sym is: ");
+    lastSym->print(stderr);
+    fprintf(stderr, "\n");
+    lastSym->append(sym);
+    fprintf(stderr, "Got past append\n");
+    lastSym = sym;
+  }
+  fprintf(stderr, "--------\n");
+  */
+}
+
+
+void Scope::print(FILE* outfile) {
+  fprintf(outfile, "======================================================\n");
+  switch (type) {
+  case SCOPE_INTRINSIC:
+    fprintf(outfile, "SCOPE: global, standard, intrinsic\n");
+    break;
+  case SCOPE_FILE:
+    fprintf(outfile, "SCOPE: file\n");
+    break;
+  case SCOPE_PARAM:
+    fprintf(outfile, "SCOPE: parameters\n");
+    break;
+  case SCOPE_FUNCTION:
+    fprintf(outfile, "SCOPE: function\n");
+    break;
+  case SCOPE_LOCAL:
+    fprintf(outfile, "SCOPE: local\n");
+    break;
+  }
+  /*
+  fprintf(outfile, "------------------------------------------------------\n");
+  if (firstSym != NULL) {
+    firstSym->printList(outfile, "\n");
+    fprintf(outfile, "\n");
+  }
+  */
+  fprintf(outfile, "------------------------------------------------------\n");
+  map<string, Symbol*>::iterator pos;
+  pos = table.begin();
+  while (pos != table.end()) {
+    (*pos).second->print(outfile);
+    fprintf(outfile, "\n");
+    pos++;
+  }
+  fprintf(outfile, "======================================================\n");
+}
 
 
 static Scope* rootScope = new Scope(SCOPE_INTRINSIC);
@@ -66,11 +145,11 @@ void Symboltable::popScope(void) {
 
 
 void Symboltable::define(Symbol* sym) {
-  currentScope->table[sym->name] = sym;
+  currentScope->insert(sym);
 }
 
 
-Symbol* Symboltable::lookup(char* name) {
+Symbol* Symboltable::lookup(char* name, bool genError) {
   Scope* scope;
   
   scope = currentScope;
@@ -82,7 +161,13 @@ Symbol* Symboltable::lookup(char* name) {
     scope = scope->parent;
   }
 
-  return NULL;
+  if (genError) {
+    //    Symboltable::print(stderr);
+    fprintf(stderr, "%s:%d '%s' used before defined\n", yyfilename, yylineno,
+	    name);
+    
+  }
+  return new Symbol(name);
 }
 
 
@@ -109,16 +194,64 @@ Stmt* Symboltable::defineVars(varType vartag, bool isConst,
   
   VarSymbol* paramList;
   VarSymbol* newParam;
+  VarSymbol* lastParam;
 
-  paramList = new VarSymbol(idents->name, vartag, isConst, type);
+  newParam = new VarSymbol(idents->name, vartag, isConst, type);
+  define(newParam);
 
-  newParam = paramList;
+  paramList = newParam;
+  lastParam = newParam;
+
   idents = (Symbol*)(idents->next); // BLC: yuck!
   while (idents != NULL) {
-    newParam->next = new VarSymbol(idents->name, vartag, isConst, type);
-    newParam = (VarSymbol*)(newParam->next);  // BLC: yuck!
+    newParam = new VarSymbol(idents->name, vartag, isConst, type);
+    define(newParam);    
+    lastParam->next = newParam;
+    lastParam = newParam;
+
     idents = (Symbol*)(idents->next); // BLC: yuck!
   }
 
   return new VarDefStmt(paramList, init);
+}
+
+
+EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
+  EnumSymbol* enumList;
+  EnumSymbol* lastEnum;
+  EnumSymbol* newEnum;
+  Symbol* sym = symList;
+  int val = 0;
+
+  newEnum = new EnumSymbol(sym->name, val);
+  define(newEnum);
+  enumList = newEnum;
+  lastEnum = newEnum;
+  sym = (Symbol*)(sym->next);   // BLC: yuck!
+  while (sym != NULL) {
+    val++;
+    newEnum = new EnumSymbol(sym->name, val);
+    define(newEnum);
+    lastEnum->append(newEnum);
+    lastEnum = newEnum;
+
+    sym = (Symbol*)(sym->next);  // BLC: yuck!
+  }
+
+  return enumList;
+}
+
+
+static void printHelp(FILE* outfile, Scope* aScope) {
+  if (aScope == NULL) {
+    return;
+  } else {
+    printHelp(outfile, aScope->parent);
+    aScope->print(outfile);
+  }
+}
+
+
+void Symboltable::print(FILE* outfile) {
+  printHelp(outfile, currentScope);
 }

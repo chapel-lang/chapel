@@ -49,7 +49,7 @@
 %token INOUT IN OUT REF VAL
 
 %token IDENT
-%token <ptsym> DEFINED_IDENT
+%token <ptsym> TYPE_IDENT
 %token INTLITERAL FLOATLITERAL 
 %token <pch> STRINGLITERAL
 
@@ -180,7 +180,8 @@ typealias:
 enumdecl:
   ENUM identifier GETS enumList ';'
     {
-      EnumType* pdt = new EnumType($4);
+      EnumSymbol* enumlist = Symboltable::defineEnumList($4);      
+      EnumType* pdt = new EnumType(enumlist);
       Symbol* pst = new TypeSymbol($2, pdt);
       pdt->addName(pst);
       Symboltable::define(pst);
@@ -298,7 +299,7 @@ type:
 | arrayType
 | tupleType
 | weirdType
-| DEFINED_IDENT
+| TYPE_IDENT
     { $$ = $1->definition; }
 ;
 
@@ -477,7 +478,7 @@ nonemptyExprlist:
 expr: 
   literal
 | identifier
-    { $$ = new Variable(new VarSymbol($1)); }
+    { $$ = new Variable(Symboltable::lookup($1)); }
 | expr binop expr
     { $$ = new BinOp($2, $1, $3); }
 | expr otherbinop expr

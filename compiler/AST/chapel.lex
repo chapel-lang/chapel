@@ -15,6 +15,7 @@
 %{
 
 #include <stdio.h>
+#include <typeinfo>
 #include "lexyacc.h"
 #include "chapel.tab.h"
 
@@ -101,12 +102,18 @@ reduce          return REDUCE;
 
 
 {ident}         {
-                  Symbol* sym = Symboltable::lookup(yytext);
-                  if (sym == NULL) {
+                  Symbol* sym = Symboltable::lookup(yytext, false);
+                  if (sym == NULL || typeid(*sym) == typeid(Symbol)) {
                     return IDENT;
                   } else {
-		    yylval.ptsym = (TypeSymbol*)sym;  // BLC: cast == yuck!
-                    return DEFINED_IDENT;
+		    if (typeid(*sym) == typeid(TypeSymbol)) {
+		      yylval.ptsym = (TypeSymbol*)sym;
+		      return TYPE_IDENT;
+		    } else if (typeid(*sym) == typeid(EnumSymbol)) {
+		      return IDENT;
+		    } else if (typeid(*sym) == typeid(VarSymbol)) {
+		      return IDENT;
+		    }
                   }
                 }
 {intLiteral}    return INTLITERAL;

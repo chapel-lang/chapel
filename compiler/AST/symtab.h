@@ -1,7 +1,6 @@
 #ifndef _SYMTAB_H_
 #define _SYMTAB_H_
 
-#include "link.h"
 #include "symbol.h"
 
 enum scopeType {
@@ -13,7 +12,7 @@ enum scopeType {
 };
   
 
-class Symboltable : public Link {
+class Symboltable {
  public:
   Symboltable(scopeType init_type);
 
@@ -21,13 +20,16 @@ class Symboltable : public Link {
   static void popScope();
 
   static void define(Symbol* sym);
-  static Symbol* lookup(char* name);
+  static Symbol* lookup(char* name, bool genError = true);
 
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);
   static Stmt* Symboltable::defineVars(varType vartag, bool isConst, 
 				       Symbol* idents, Type* type, 
 				       Expr* init);
+  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
+
+  static void print(FILE* outfile);
 };
 
 #endif
