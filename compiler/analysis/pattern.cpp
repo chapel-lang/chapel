@@ -147,7 +147,7 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
       Vec<Fun *> afuns;
       Sym *sym = cs->sym;
       if (a->var->sym->aspect) {
-	if (!a->var->sym->aspect->allimplementors.in(cs->sym))
+	if (!a->var->sym->aspect->implementors.in(cs->sym))
 	  continue;
 	sym = a->var->sym->aspect;
       }
@@ -252,7 +252,7 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
       }
       Sym *sym = cs->sym;
       if (a->var->sym->aspect) {
-	if (!a->var->sym->aspect->allimplementors.in(cs->sym))
+	if (!a->var->sym->aspect->implementors.in(cs->sym))
 	  continue;
 	sym = a->var->sym->aspect;
       }

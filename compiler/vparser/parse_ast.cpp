@@ -929,8 +929,8 @@ scope_idpattern(IF1 *i, ParseAST *ast, Scope *scope) {
       }
       if (ast->alt_name)
 	ast->sym->alt_name = ast->alt_name;
+      break;
     }
-    break;
     case AST_pattern: {
       ast->sym = new_sym(i, scope, ast->string, ast->sym);
       ParseAST *ptype = ast->get(AST_pattern_type);

@@ -487,10 +487,10 @@ subtype_of(Sym *a, Sym *b) {
     if (a == b)
       return 1;
     else
-      return b->allspecializers.set_in(a->type) != 0;
+      return b->specializers.set_in(a->type) != 0;
   }
   else
-    return b->allspecializers.set_in(a) != 0;
+    return b->specializers.set_in(a) != 0;
 }
 
 static AType *
@@ -1148,7 +1148,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 
 static int
 application_constraints(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args) {
-  if (sym_function->allimplementors.set_in(cs->sym) && cs->defs.n)
+  if (sym_function->implementors.set_in(cs->sym) && cs->defs.n)
     return partial_application(p, es, cs, args);
   return function_dispatch(p, es, a0, cs, args);
 }
@@ -1173,7 +1173,7 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
   if (p->sym->has.n) {
     AVar *violation = 0;
     forv_CreationSet(cs, *ov->out) if (cs) {
-      if (p->sym->must_specialize->allspecializers.in(cs->sym)) {
+      if (p->sym->must_specialize->specializers.in(cs->sym)) {
 	for (int i = 0; i < p->sym->has.n; i++) {
 	  AVar *av = NULL;
 	  if (p->sym->has.v[i]->alt_name)
@@ -1701,30 +1701,27 @@ initialize_symbols() {
     forv_Sym(ss, s->specializers) if (ss)
       s->type_sym->specializers.set_add(ss->type_sym);
   }
-  // compute allimplementors
   forv_Sym(s, types) if (s) {
-    s->allimplementors.set_add(s);
-    s->allimplementors.set_union(s->implementors);
-    s->allspecializers.set_add(s);
-    s->allspecializers.set_union(s->specializers);
+    s->implementors.set_add(s);
+    s->specializers.set_add(s);
   }
-  // compute allimplementors closure
+  // compute implementors closure
   int changed = 1;
   while (changed) {
     changed = 0;
     forv_Sym(s, types) if (s) {
-      forv_Sym(ss, s->allimplementors) if (ss) {
-	changed = s->allimplementors.set_union(ss->allimplementors) || changed;
+      forv_Sym(ss, s->implementors) if (ss) {
+	changed = s->implementors.set_union(ss->implementors) || changed;
       }
     }
   }
-  // compute allspecializers closure
+  // compute specializers closure
   changed = 1;
   while (changed) {
     changed = 0;
     forv_Sym(s, types) if (s) {
-      forv_Sym(ss, s->allspecializers) if (ss) {
-	changed = s->allspecializers.set_union(ss->allspecializers) || changed;
+      forv_Sym(ss, s->specializers) if (ss) {
+	changed = s->specializers.set_union(ss->specializers) || changed;
       }
     }
   }

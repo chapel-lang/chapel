@@ -119,9 +119,7 @@ class Sym : public gc {
   Scope 		*scope;			// used in ast.cpp
   LabelMap		*labelmap;		// used by ast.cpp
   Vec<Sym *>		implementors;		// used by fa.cpp, implementors
-  Vec<Sym *>		allimplementors;	// used by fa.cpp
   Vec<Sym *>		specializers;		// used by fa.cpp, specializers
-  Vec<Sym *>		allspecializers;	// used by fa.cpp
   Vec<Sym *>		dispatch_order;		// used by fa.cpp, pattern.cpp
   MType	       		*match_type;		// used by pattern.cpp
   AType			*abstract_type;		// used by fa.cpp

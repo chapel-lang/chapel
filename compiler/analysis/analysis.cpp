@@ -581,6 +581,13 @@ gen_vardef(BaseAST *a) {
   } else {
     s->is_external = 1; // hack
   }
+  switch (var->varClass) {
+    case VAR_NORMAL: break;
+    case VAR_CONFIG: s->is_external = 1; break;
+    case VAR_STATE: assert(0); break;
+  }
+  if (var->isConst)
+    s->is_read_only = 1;
   return 0;
 }
 

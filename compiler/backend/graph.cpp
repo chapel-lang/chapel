@@ -464,7 +464,7 @@ graph_abstract_types(FA *fa, char *fn) {
   Vec<Sym *> syms;
   syms.set_union(fa->patterns->types);
   forv_Sym(s, fa->patterns->types) if (s)
-    syms.set_union(s->allimplementors);
+    syms.set_union(s->implementors);
   forv_Sym(s, syms) if (s && s->live && !s->constant) {
     char name[256], *pname = name;
     strcpy(pname, type_kind_string[s->type_kind]);
