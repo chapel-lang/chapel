@@ -589,12 +589,12 @@ MemberAccess* Symboltable::defineMemberAccess(Expr* base, char* member) {
   Symbol* memberSym;
 
   if (baseType == dtUnknown) {
-    memberSym = new Symbol(SYMBOL, member);
+    memberSym = new UseBeforeDefSymbol(member);
   } else if (typeid(*baseType) == typeid(ClassType)) {
     ClassType* classType = (ClassType*)baseType;
     memberSym = Symboltable::lookupInScope(member, classType->scope);
   } else {
-    memberSym = new Symbol(SYMBOL, member);
+    memberSym = new UseBeforeDefSymbol(member);
   }
   return new MemberAccess(base, memberSym);
 }
