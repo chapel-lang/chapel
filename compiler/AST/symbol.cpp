@@ -225,8 +225,7 @@ void VarSymbol::printDef(FILE* outfile) {
   //Roxana -- introduced various types of constness: const, param, nothing (var)
   if (consClass == VAR_CONST) {
     fprintf(outfile, "const ");
-  }
-  if (consClass == VAR_PARAM){
+  } else if (consClass == VAR_PARAM){
   	fprintf(outfile, "param");
   }
   else {
