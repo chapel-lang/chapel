@@ -17112,3 +17112,20 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplio.c 
 
+---------------------------------------------------------------------------
+
+02/09/05 16:49:51 -- jplevyak
+
+Log message:
+	Fix test case test/arrays/deitz/test_array_integer_2d.chpl
+	Need to generalize handling of forall loops over tuples of indices.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: sym.h 
+	chapel/test/flowanalysis/newast/: domarr.good enumarray.good 
+	                                  formatoutput.good noop.good 
+	                                  protoast_test.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_integer_2d.future 
+
