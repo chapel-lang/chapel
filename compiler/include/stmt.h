@@ -111,7 +111,7 @@ class FnDefStmt : public Stmt {
 		   Vec<MPosition *> *default_set,
 		   Map<MPosition *, Symbol *> *coersion_substitutions,
 		   Map<MPosition *, MPosition *> *formal_to_actual_order_map,
-		   CloneCallback *clone_callback) { assert(0); return NULL; }
+		   CloneCallback *clone_callback);
 
   bool isNull(void);
 

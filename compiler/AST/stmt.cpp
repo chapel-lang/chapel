@@ -651,6 +651,16 @@ FnDefStmt* FnDefStmt::clone(CloneCallback* clone_callback) {
 }
 
 
+FnDefStmt* FnDefStmt::build(Map<Symbol *, Symbol *> *generic_substitutions,
+			    Vec<MPosition *> *default_set,
+			    Map<MPosition *, Symbol *> *coersion_substitutions,
+			    Map<MPosition *, MPosition *> *formal_to_actual_order_map,
+			    CloneCallback *clone_callback) {
+  INT_FATAL(this, "FnDefStmt::build not implemented");
+  return this;
+}
+
+
 bool FnDefStmt::isNull(void) {
   return (this == nilFnDefStmt);
 }
