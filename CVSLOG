@@ -5708,3 +5708,16 @@ Modified files:
 Added files:
 	chapel/test/trivial/shannon/: compSampler.chpl compSampler.good 
 
+---------------------------------------------------------------------------
+
+08/24/04 13:54:03 -- shannon
+
+Log message:
+	Woops!  I meant to include these in the last commit.
+	These test output files were changed to reflect
+	the new operator precedence.
+
+Modified files:
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+
