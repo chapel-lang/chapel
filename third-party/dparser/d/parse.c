@@ -882,17 +882,6 @@ cmp_pnodes(Parser *p, PNode *x, PNode *y) {
   return r;
 }
 
-static char *
-find_ws_before(Parser *p, ZNode *zn) {
-  while (zn && is_epsilon_PNode(zn->pn)) {
-    zn = zn->sns.n ? (zn->sns.v[0]->zns.n ? zn->sns.v[0]->zns.v[0] : NULL) : NULL;
-  }
-  if (zn)
-    return zn->pn->parse_node.end;
-  else
-    return p->start;
-}
-
 static PNode *
 make_PNode(Parser *p, uint hash, int symbol, d_loc_t *start_loc, char *e, PNode *pn,
 	   D_Reduction *r, VecZNode *path, D_Shift *sh, D_Scope *scope)
@@ -914,13 +903,11 @@ make_PNode(Parser *p, uint hash, int symbol, d_loc_t *start_loc, char *e, PNode 
   new_pn->hash = hash;
   new_pn->parse_node.symbol = symbol;
   new_pn->parse_node.start_loc = *start_loc;
-  if (!r || !path) { /* end of last parse node of path for non-epsilon reductions */ 
+  new_pn->ws_before = start_loc->ws;
+  if (!r || !path) /* end of last parse node of path for non-epsilon reductions */ 
     new_pn->parse_node.end = e;
-    new_pn->ws_before = e;
-  } else {
+  else
     new_pn->parse_node.end = pn->parse_node.end;
-    new_pn->ws_before = find_ws_before(p, path->v[path->n-1]->sns.v[0]->zns.v[0]);
-  }
   new_pn->parse_node.end_skip = e;
   new_pn->shift = sh;
   new_pn->reduction = r;
@@ -1279,7 +1266,8 @@ shift_all(Parser *p, char *pos) {
 	new_pn->parse_node.white_space(
 	  (D_Parser*)p, &skip_loc, (void**)&new_pn->parse_node.globals);
 	skip_loc.previous_col = r->snode->loc.col >= 0 ? r->snode->loc.col : -1;
-	new_pn->ws_before = find_ws_before(p, r->snode->zns.v[0]);
+	skip_loc.ws = r->loc.s;
+	new_pn->ws_before = loc.ws;
 	new_pn->ws_after = skip_loc.s;
       }
       goto_PNode(p, &skip_loc, new_pn, r->snode);
@@ -1877,7 +1865,7 @@ exhaustive_parse(Parser *p, int state) {
   int progress = 0, ready = 0;
   d_loc_t loc;
 
-  pos = p->user.loc.s = p->start;
+  pos = p->user.loc.ws = p->user.loc.s = p->start;
   loc = p->user.loc;
   p->user.initial_white_space_fn((D_Parser*)p, &loc, &p->user.initial_globals);
   /* initial state */
