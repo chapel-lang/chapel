@@ -11540,3 +11540,26 @@ Removed files:
 	chapel/compiler/traversals/: resolveSymbols2.cpp 
 	                             resolveSymbols2.h 
 
+---------------------------------------------------------------------------
+
+12/10/04 10:38:52 -- deitz
+
+Log message:
+	Fixed a bug that showed up when classes were declared with more than
+	one method.  Added a test case that declares more methods; I'm working
+	on others.  Added a pointer to the scope of parameters in the FnSymbol
+	which also has a pointer, like all symbols, to its scope.  This
+	parameter scope may be better off in a function type rather than the
+	function symbol, but there is no function type yet.
+	
+	Unfortunately, this fix does not fix the 7 regressions in flowanalysis
+	and trivial that I though it might.
+
+Modified files:
+	chapel/compiler/AST/: symtab.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+Added files:
+	chapel/test/classes/deitz/future/: test_method3.chpl 
+	                                   test_method3.good 
+
