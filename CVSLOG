@@ -21524,3 +21524,29 @@ Modified files:
 	chapel/compiler/traversals/: insertIndexType.cpp 
 	                             insertIndexType.h 
 
+---------------------------------------------------------------------------
+
+03/25/05 09:45:14 -- deitz
+
+Log message:
+	Added support for type definitions inside class types as in
+	
+	class foo {
+	  class bar {
+	    var x : integer;
+	    var y : integer;
+	  }
+	  var b : bar = bar();
+	  var z : integer;
+	}
+	
+	This just fell out with minimal changes.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_type_in_class1.chpl 
+	                            test_type_in_class1.good 
+	chapel/test/types/seq/deitz/noanalysis/: .cvsignore 
+
