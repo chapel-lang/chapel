@@ -19219,3 +19219,29 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/traversals/: fixup.cpp fixup.h 
 
+---------------------------------------------------------------------------
+
+03/09/05 14:50:55 -- bradc
+
+Log message:
+	I'm working on checking in some future tests that
+	have been festering in my local directory, and found
+	that this one was a trivial fix -- it seems as though
+	we haven't supported constants in Chapel for quite
+	some time -- at least since initializers were hoisted
+	away from declarations.  In particular, we were
+	codegening them using the "const" keyword in C, but
+	not initializing them (and of course, Chapel consts
+	can be less static than parameters, so that wouldn't
+	work anyway.  This fix is therefore to simply not
+	codegen the "const" tag for constants right now.  A
+	later optimization would be to determine cases where
+	a C const could be used and codegen the tag in that
+	case.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/trivial/bradc/: declprintconst.chpl 
+	                            declprintconst.good 
+
