@@ -23950,3 +23950,58 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/05 12:00:40 -- deitz
+
+Log message:
+	Added a new pass called, for now, ProcessDefs.  It puts in a default
+	initialization statement before analysis is run using VarInitExpr.  So
+	for something like:
+	
+	  {
+	    ...
+	    var x = foo();
+	
+	We would produce:
+	
+	  {
+	    VarInit x
+	    ...
+	    var x = foo();
+	
+	This alerts analysis that the defaultVal of the type of x is going to
+	be assigned to x at this point.
+	
+	Factored out SET_BACK for idxExpr in the constructor of IndexType.
+	
+	In ScopeResolveSymbols, added setting of defaultVal for UserTypes to
+	be whatever it is for its definition.
+	
+	In InsertAnonymousTypes creation of IndexTypes, added setting of the
+	defaultVal for the IndexType to be whatever it is for its idxType.
+	
+	Removed insertion of default initializations statements in
+	InsertVariableInitializations.  This now just changes VarDefStmts to
+	assignment statements.  The default assignment statements were put in
+	in ProcessDefs.
+	
+	Added default initialization to user initialization for temporary
+	inserted in ProcessParameters for case where out parameter is not
+	initialized.  All temporary variables need to have initializations
+	after ProcessDefs pass is run.
+	
+	Moved squelching of default initialization for arrays and domains to
+	removeNamedParameters, where VarInitExprs are resolved post-analysis.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             insertIndexType.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processDefs.cpp 
+	                             processParameters.cpp 
+	                             removeNamedParameters.cpp 
+	                             scopeResolveSymbols.cpp 
+
