@@ -15394,3 +15394,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+01/24/05 11:50:15 -- jplevyak
+
+Log message:
+	fixed trivial/deitz/test_var_decl4.chpl
+	had to treat strings more like immediates and less like objects
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp 
+	chapel/compiler/include/: ast.h 
+Removed files:
+	chapel/test/trivial/deitz/: test_var_decl4.future 
+
