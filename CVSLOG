@@ -22295,3 +22295,47 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: jacobi3.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 14:29:41 -- deitz
+
+Log message:
+	Fixed a bug in Expr's call_fixup used when expressions are replaced.
+	
+	The defaultVal of record types and union types is now a call to the
+	default constructor.  This causes the constructor to be called on all
+	records as they are created.  However, analysis doesn't see this and
+	marks the constructor as dead.  This has resulted in a few tests that
+	were seemingly working now not working.  Since they were never
+	working, I refuturized them.  John, let me know if you have any
+	questions.  Basically, the constructor call is in the defaultVal
+	expression of a type which is used by default to initialize variables.
+	It is therefore not dead.
+	
+	Arrays now insert default and user initializations when they are
+	created.  So arrays no longer have to be initialized if the default
+	initialization will do.
+	
+	I special-cased a test for inserting the default initialization
+	statement for classes within their constructor.  Since we declare a
+	"this" that will be return in the constructor, it is important not to
+	initialize it.  Surprisingly, doing so crashed my system multiple
+	times.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertVariableInitializations.cpp 
+	chapel/test/arrays/deitz/: test_array_basic1.future 
+	chapel/test/classes/deitz/: test_record_equal1.chpl 
+	                            test_record_equal2.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_of_record1.future 
+	chapel/test/classes/bradc/: writerecord.future 
+	                            writeunion-workaround.future 
+	                            writeunion.future 
+	chapel/test/classes/deitz/: test_record6.chpl 
+	                            test_record6.future 
+	                            test_record6.good 
+
