@@ -28,19 +28,19 @@ function wrap() {}
 class reduction {
 }
 
-class sum : reduction {
+class sum {
 }
 
-class max : reduction {
+class max {
 }
 
-class min : reduction {
+class min {
 }
 
-class maxloc : reduction {
+class maxloc {
 }
 
-class minloc : reduction {
+class minloc {
 }
 
 

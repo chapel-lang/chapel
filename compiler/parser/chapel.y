@@ -55,6 +55,7 @@
 %token TINOUT
 %token TMODULE
 %token TOUT
+%token TRECORD
 %token TREF
 %token TRETURN
 %token TSTATIC
@@ -98,14 +99,14 @@
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
-%type <psym> identsym formal nonemptyformals formals idlist indexlist subclass
+%type <psym> identsym formal nonemptyformals formals idlist indexlist
 %type <enumsym> enum_item enum_list
 %type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
 %type <pexpr> reduction vardeclinit
 %type <pdexpr> domainExpr
 %type <stmt> program modulebody statements statement decls decl vardecl 
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl 
-%type <stmt> typealias typedecl fndecl classdecl moduledecl
+%type <stmt> typealias typedecl fndecl classdecl recorddecl moduledecl
 
 
 /* These are declared in increasing order of precedence. */
@@ -202,6 +203,7 @@ typedecl:
   typealias
 | enumdecl
 | classdecl
+| recorddecl
 ;
 
 
@@ -227,24 +229,26 @@ enumdecl:
 ;
 
 
-subclass:
-  /* nothing */
-    { $$ = nilSymbol; }
-| TCOLON TYPE_IDENT
+classdecl:
+  TCLASS identifier TLCBR
     {
-      $$ = $2;   /* Symboltable::lookup($2); */
+      $<ptsym>$ = Symboltable::startClassDef($2, false);
+    }
+                                decls TRCBR
+    {
+      $$ = Symboltable::finishClassDef($<ptsym>4, $5);
     }
 ;
 
 
-classdecl:
-  TCLASS identifier subclass TLCBR
+recorddecl:
+  TRECORD identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($2, $3);
+      $<ptsym>$ = Symboltable::startClassDef($2, true);
     }
                                 decls TRCBR
     {
-      $$ = Symboltable::finishClassDef($<ptsym>5, $6);
+      $$ = Symboltable::finishClassDef($<ptsym>4, $5);
     }
 ;
 

@@ -703,8 +703,22 @@ void MemberAccess::print(FILE* outfile) {
 
 
 void MemberAccess::codegen(FILE* outfile) {
+  Variable* base_var; /* SJD: should get type using typeinfo once analysis works with records */
+  ClassType* base_type;
+
   base->codegen(outfile);
-  fprintf(outfile, "->");
+  if ((base_var = dynamic_cast<Variable*>(base)) &&
+      (base_type = dynamic_cast<ClassType*>(base_var->var->type))) {
+    if (!base_type->value) {
+      fprintf(outfile, "->");
+    }
+    else {
+      fprintf(outfile, ".");
+    }
+  }
+  else {
+    INT_FATAL(this, "Dot applied to non-class/record");
+  }
   member->codegen(outfile);
 }
 

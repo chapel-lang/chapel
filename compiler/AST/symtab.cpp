@@ -829,15 +829,11 @@ FnDefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 }
 
 
-TypeSymbol* Symboltable::startClassDef(char* name, Symbol* parent) {
+TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass) {
   ClassType* newdt;
   TypeSymbol* newsym;
 
-  if (parent->isNull()) {
-    newdt = new ClassType();
-  } else {
-    newdt = new ClassType(dynamic_cast<ClassType*>(parent->type));
-  }
+  newdt = new ClassType(isValueClass);
   newsym = new TypeSymbol(name, newdt);
   (newdt)->addName(newsym);
   define(newsym);

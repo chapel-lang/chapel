@@ -139,12 +139,14 @@ extern ClassType* nilClassType;
 
 class ClassType : public Type {
  public:
+  bool value; /* true if this is a value class (aka record) */
   ClassType* parentClass;
   Stmt* definition;
   FnDefStmt* constructor;
   SymScope* scope;
   
-  ClassType(ClassType* init_parentClass = nilClassType, 
+  ClassType(bool isValueClass,
+            ClassType* init_parentClass = nilClassType, 
 	    Stmt* init_definition = nilStmt, 
 	    FnDefStmt* init_constructor = nilFnDefStmt,
 	    SymScope* init_scope = NULL);

@@ -55,6 +55,7 @@ module		return TMODULE;
 not             return TNOT;
 or              return TOR;
 out             return TOUT;
+record          return TRECORD;
 reduce          return TREDUCE;
 ref             return TREF;
 return          return TRETURN;

@@ -563,9 +563,11 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-ClassType::ClassType(ClassType* init_parentClass, Stmt* init_definition,
+ClassType::ClassType(bool isValueClass,
+		     ClassType* init_parentClass, Stmt* init_definition,
 		     FnDefStmt* init_constructor, SymScope* init_scope) :
   Type(TYPE_CLASS, nilExpr),
+  value(isValueClass),
   parentClass(init_parentClass),
   definition(init_definition),
   constructor(init_constructor),
@@ -576,7 +578,7 @@ ClassType::ClassType(ClassType* init_parentClass, Stmt* init_definition,
 Type* ClassType::copy(void) {
   FnDefStmt* newConstructor = dynamic_cast<FnDefStmt*>(constructor->copy());
   ClassType* newParent = dynamic_cast<ClassType*>(parentClass->copy());
-  return new ClassType(newParent, definition->copyList(), newConstructor);
+  return new ClassType(value, newParent, definition->copyList(), newConstructor);
 }
 
 
@@ -585,18 +587,29 @@ void ClassType::addDefinition(Stmt* init_definition) {
 
   if (!isNull() && Symboltable::parsingUserCode()) {
     /* create default constructor */
+
     char* constructorName = glomstrings(2, "_construct_", name->name);
     FnSymbol* newFunSym = Symboltable::startFnDef(constructorName, false);
-    BlockStmt* body = new BlockStmt(
-			new ReturnStmt(
-			  new CastExpr(this, 
-			    new FnCall(
-			      new Variable(
-				Symboltable::lookupInternal("malloc")), 
-			      new SizeofExpr(this)))
-			  )
-			);
-    constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
+    if (!value) {
+      BlockStmt* body = new BlockStmt(
+			  new ReturnStmt(
+			    new CastExpr(this, 
+			      new FnCall(
+			        new Variable(
+				  Symboltable::lookupInternal("malloc")), 
+			        new SizeofExpr(this)))
+			    )
+			  );
+      constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
+    }
+    else {
+      VarSymbol* this_insert = new VarSymbol("_this", this);
+      VarDefStmt* body1 = new VarDefStmt(this_insert, nilExpr);
+      ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
+      body1->append(body2);
+      BlockStmt* body = new BlockStmt(body1);
+      constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
+    }
   }
 }
 
@@ -628,11 +641,18 @@ void ClassType::codegenDef(FILE* outfile) {
   name->codegen(outfile);
   fprintf(outfile, "_def {\n");
   definition->codegenVarDefs(outfile);
-  fprintf(outfile, "} _");
-  name->codegen(outfile);
-  fprintf(outfile,", *");
-  name->codegen(outfile);
-  fprintf(outfile, ";\n\n");
+  fprintf(outfile, "} ");
+  if (!value) {
+    fprintf(outfile, "_");
+    name->codegen(outfile);
+    fprintf(outfile,", *");
+    name->codegen(outfile);
+    fprintf(outfile, ";\n\n");
+  }
+  else {
+    name->codegen(outfile);
+    fprintf(outfile, ";\n\n");
+  }
 }
 
 

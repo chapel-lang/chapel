@@ -54,7 +54,6 @@ void FieldsToMemberAccesses::preProcessExpr(Expr* expr) {
 	/* replacement of expr variable by memberaccess */
 	MemberAccess* repl = new MemberAccess(new Variable(member->stmt->parentFn->formals), member->var);
 	expr->parent->replace(expr, repl);
-	printf("hi %s\n", repl->member->name);
       }
     }
   }
