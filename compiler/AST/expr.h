@@ -194,4 +194,16 @@ class CastExpr : public ParenOpExpr {
   CastExpr(Type* init_castType, Expr* init_argList);
 };
 
+
+class ReduceExpr : public Expr {
+ public:
+  Symbol* reduceType;
+  Expr* redDim;
+  Expr* argExpr;
+
+  ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, Expr* init_argExpr);
+
+  void print(FILE* outfile);
+};
+
 #endif

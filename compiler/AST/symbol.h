@@ -19,7 +19,6 @@ class Symbol : public Link {
   void printList(FILE*) {}
 };
 
-extern Symbol* pstInteger;
-extern Symbol* pstFloat;
+extern Symbol* pstSumReduce;
 
 #endif

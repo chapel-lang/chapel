@@ -61,9 +61,10 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 
 
 void ArrayType::print(FILE* outfile) {
-  fprintf(outfile, "[");
+  //  fprintf(outfile, "[");
   domain->print(outfile);
-  fprintf(outfile, "] ");
+  //  fprintf(outfile, "] ");
+  fprintf(outfile, " ");
   elementType->print(outfile);
 }
 

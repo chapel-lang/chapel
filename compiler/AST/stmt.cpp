@@ -40,7 +40,7 @@ VarDefStmt::VarDefStmt(Symbol* init_var, Expr* init_init) :
 void VarDefStmt::print(FILE* outfile) {
   fprintf(outfile, "var ");
   var->printWithType(outfile);
-  if (init != NULL) {
+  if (init != NULL && !init->isNull()) {
     fprintf(outfile, " = ");
     init->print(outfile);
   }

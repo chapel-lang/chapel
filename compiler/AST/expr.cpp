@@ -124,6 +124,7 @@ void AssignOp::print(FILE* outfile) {
   left->print(outfile);
   fprintf(outfile, " = ");
   right->print(outfile);
+  fprintf(outfile, ";");
 }
 
 
@@ -199,3 +200,25 @@ CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
   ParenOpExpr(NULL, init_argList),
   castType(init_castType)
 {}
+
+
+ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
+		       Expr* init_argExpr) :
+  reduceType(init_reduceType),
+  redDim(init_redDim),
+  argExpr(init_argExpr)
+{}
+
+
+void ReduceExpr::print(FILE* outfile) {
+  fprintf(outfile, "reduce ");
+  if (!redDim->isNull()) {
+    fprintf(outfile, "(dim=");
+    redDim->print(outfile);
+    fprintf(outfile, ") ");
+  }
+  fprintf(outfile, "by ");
+  reduceType->print(outfile);
+  fprintf(outfile, " ");
+  argExpr->print(outfile);
+}

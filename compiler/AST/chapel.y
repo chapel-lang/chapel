@@ -69,7 +69,7 @@
 %type <pch> identifier 
 %type <psym> idlist
 %type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
-%type <pexpr> reduction memberaccess vardeclinit cast
+%type <pexpr> reduction memberaccess vardeclinit cast reduceDim
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional 
 %type <stmt> return loop forloop whileloop
@@ -427,15 +427,19 @@ memberaccess:
 
 reduceDim:
   /* empty */
-| '(' DIM GETS intliteral ')'
+    { $$ = new NullExpr(); }
+| '(' expr ')'
+    { $$ = $2; }
+| '(' DIM GETS expr ')'
+    { $$ = $4; }
 ;
 
 
 reduction:
   SUM reduceDim expr
-    { $$ = $3; }
+    { $$ = new ReduceExpr(pstSumReduce, $2, $3); }
 | REDUCE reduceDim BY identifier expr
-    { $$ = $5; }
+    { $$ = new ReduceExpr(new Symbol($4), $2, $5); }
 ;
 
 

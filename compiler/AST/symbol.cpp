@@ -1,5 +1,7 @@
 #include "symbol.h"
 
+Symbol* pstSumReduce = new Symbol("sum");
+
 Symbol::Symbol(char* init_name, Type* init_type) :
   name(init_name),
   type(init_type)
