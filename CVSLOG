@@ -3989,3 +3989,14 @@ Log message:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: memberfun.good 
 
+---------------------------------------------------------------------------
+
+07/14/04 09:08:39 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	eliminate instability in types log which was causing random test failures
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/: cs6.good memberfun.good 
+	                                    review2.good 
+
