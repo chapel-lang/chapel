@@ -2247,7 +2247,7 @@ int
 constant_info(Var *v, Vec<Sym *> &constants) {
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
-    forv_CreationSet(cs, *av->out) {
+    forv_CreationSet(cs, *av->out) if (cs) {
       if (cs->sym->constant)
 	constants.set_add(cs->sym);
       else {

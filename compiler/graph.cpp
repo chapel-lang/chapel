@@ -374,7 +374,7 @@ graph_avar_node(FILE *fp, AVar *av) {
   sprintf(label, "%s_%d", av->var->sym->name ? av->var->sym->name : "",
 	  av->var->sym->id);
   Vec<Sym *> consts;
-  forv_CreationSet(cs, *av->out) {
+  forv_CreationSet(cs, *av->out) if (cs) {
     if (cs->sym->constant)
       consts.set_add(cs->sym);
     else {
@@ -382,6 +382,7 @@ graph_avar_node(FILE *fp, AVar *av) {
       break;
     }
   }
+  consts.set_to_vec();
   if (consts.n) {
     strcat(label, " {");
     forv_Sym(s, consts) {
@@ -396,29 +397,24 @@ graph_avar_node(FILE *fp, AVar *av) {
 static void 
 graph_avars(FA *fa, char *fn) {
   FILE *fp = graph_start(fn, "avars", "Analysis Variables");
-  Vec<AVar *> todo;
-  int again = 1;
+  Vec<AVar *> todo, todo_set;
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *av = make_AVar(v, es);
-      todo.set_add(av);
+      todo_set.set_add(av);
     }
   }
-  while (again) {
-    again = 0;
-    for (int i = 0; i < todo.n; i++) {
-      AVar *av = todo.v[i];
-      if (!av) 
-	continue;
-      forv_AVar(avv, av->forward)  
-	if (todo.set_add(avv))
-	  again = 1;
-      forv_AVar(avv, av->backward) 
-	if (todo.set_add(avv))
-	  again = 1;
-    }
+  todo.copy(todo_set);
+  todo.set_to_vec();
+  forv_AVar(av, todo) {
+    forv_AVar(avv, av->forward) if (avv)
+      if (todo_set.set_add(avv))
+	todo.add(avv);
+    forv_AVar(avv, av->backward) if (avv)
+      if (todo_set.set_add(avv))
+	todo.add(avv);
   }
-  forv_AVar(av, todo) if (av) {
+  forv_AVar(av, todo) {
     if (!av->forward.n && !av->backward.n)
       continue;
     graph_avar_node(fp, av);
