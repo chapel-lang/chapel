@@ -1,0 +1,24 @@
+#ifndef _UPDATE_SYMBOLS_H_
+#define _UPDATE_SYMBOLS_H_
+
+#include "traversal.h"
+#include "baseAST.h"
+#include "vec.h"
+
+/***
+ *** This traversal is called by copy to update the symbols in an
+ *** expression or a statement for those symbols that have themselves
+ *** been copied.
+ ***/
+
+#include "map.h"
+#include "baseAST.h"
+
+class UpdateSymbols : public Traversal {
+ public:
+  Map<BaseAST*,BaseAST*>* copy_map;
+  UpdateSymbols(Map<BaseAST*,BaseAST*>* init_copy_map);
+  void preProcessExpr(Expr* expr);
+};
+
+#endif

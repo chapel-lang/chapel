@@ -10,7 +10,7 @@
 #include "symscope.h"
 #include "symtab.h"
 #include "../traversals/fixup.h"
-#include "../traversals/cleanup.h"
+#include "../traversals/updateSymbols.h"
 
 
 static char* cUnOp[NUM_UNOPS] = {
@@ -92,17 +92,23 @@ Expr::Expr(astType_t astType) :
 
 
 Expr* Expr::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  if (map == NULL) {
+    map = new Map<BaseAST*,BaseAST*>();
+  }
   Expr* newExprList = copyListInternal(clone, map, analysis_clone);
   newExprList->back = &newExprList;  // in case, replaced by cleanup
-  call_cleanup_ls(newExprList);
+  TRAVERSE_LS(newExprList, new UpdateSymbols(map), true);
   return newExprList;
 }
 
 
 Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  if (map == NULL) {
+    map = new Map<BaseAST*,BaseAST*>();
+  }
   Expr* new_expr = copyInternal(clone, map, analysis_clone);
   new_expr->back = &new_expr;  // in case, replaced by cleanup
-  call_cleanup(new_expr);
+  TRAVERSE(new_expr, new UpdateSymbols(map), true);
   return new_expr;
 }
 
@@ -663,18 +669,7 @@ Variable::Variable(Symbol* init_var) :
 
 
 Expr* Variable::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  if (var->parentScope && var->parentScope->isInternal()) {
-    return new Variable(var);
-  }
-  else {
-    Symbol* sym;
-    if (clone) {
-      sym = new UnresolvedSymbol(var->name, var->cname);
-    } else {
-      sym = var;
-    }
-    return new Variable(sym);
-  }
+  return new Variable(var);
 }
 
 

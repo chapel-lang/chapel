@@ -10,7 +10,4 @@ class Cleanup : public Traversal {
   void run(ModuleSymbol* moduleList);
 };
 
-void call_cleanup(BaseAST* ast);
-void call_cleanup_ls(BaseAST* ast);
-
 #endif

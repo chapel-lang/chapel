@@ -6,7 +6,6 @@
 #include "../passes/runAnalysis.h"
 #include "../symtab/symtabTraversal.h"
 
-static int all_parsed = 0;
 
 /******************************************************************************
  *** Apply With
@@ -362,7 +361,6 @@ void Cleanup::run(ModuleSymbol* moduleList) {
   ApplyThis* apply_this = new ApplyThis();
   ModuleSymbol* mod = moduleList;
 
-  all_parsed = 1;  // First call to Cleanup::run and we're done parsing.
   while (mod) {
     mod->startTraversal(apply_with);
     mod->startTraversal(insert_this);
@@ -371,19 +369,5 @@ void Cleanup::run(ModuleSymbol* moduleList) {
     mod->startTraversal(specialize_parens);
     mod->startTraversal(apply_this);
     mod = nextLink(ModuleSymbol, mod);
-  }
-}
-
-void call_cleanup(BaseAST* ast) {
-  if (all_parsed) { // Don't want to resolve if not all parsed
-    TRAVERSE(ast, new ResolveEasiest(), true);
-    TRAVERSE(ast, new SpecializeParens(), true);
-  }
-}
-
-void call_cleanup_ls(BaseAST* ast) {
-  if (all_parsed) { // Don't want to resolve if not all parsed
-    TRAVERSE_LS(ast, new ResolveEasiest(), true);
-    TRAVERSE_LS(ast, new SpecializeParens(), true);
   }
 }

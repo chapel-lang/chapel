@@ -21,6 +21,7 @@ TRAVERSALS_SRCS = \
 	testGetStuff.cpp \
 	transformLetExprs.cpp \
 	traversal.cpp \
+	updateSymbols.cpp \
 	verifyASTType.cpp
 
 CVS_SRCS = $(TRAVERSALS_SRCS)

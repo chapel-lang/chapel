@@ -9,7 +9,7 @@
 #include "symscope.h"
 #include "symtab.h"
 #include "../traversals/fixup.h"
-#include "../traversals/cleanup.h"
+#include "../traversals/updateSymbols.h"
 
 
 Stmt::Stmt(astType_t astType) :
@@ -25,17 +25,23 @@ bool Stmt::isNull(void) {
 
 
 Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  if (map == NULL) {
+    map = new Map<BaseAST*,BaseAST*>();
+  }
   Stmt* newStmtList = copyListInternal(clone, map, analysis_clone);
   newStmtList->back = &newStmtList;  // in case, replaced by cleanup
-  call_cleanup_ls(newStmtList);
+  TRAVERSE_LS(newStmtList, new UpdateSymbols(map), true);
   return newStmtList;
 }
 
 
 Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  if (map == NULL) {
+    map = new Map<BaseAST*,BaseAST*>();
+  }
   Stmt* new_stmt = copyInternal(clone, map, analysis_clone);
   new_stmt->back = &new_stmt;  // in case, replaced by cleanup
-  call_cleanup(new_stmt);
+  TRAVERSE(new_stmt, new UpdateSymbols(map), true);
   return new_stmt;
 }
 
