@@ -4,6 +4,7 @@
 #include "ast.h"
 #include "sym.h"
 #include "callbacks.h"
+#include "gc_cpp.h"
 
 class Symbol;
 class UnresolvedSymbol;
@@ -52,7 +53,7 @@ class AInfo : public AST {
   AInfo();
 };
 
-class CloneCallback {
+class CloneCallback : public gc {
  public:
   virtual void clone(BaseAST* old_ast, BaseAST* new_ast);
 };
