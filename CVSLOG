@@ -15796,3 +15796,20 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
 	chapel/compiler/include/: analysis.h ast.h callbacks.h 
 
+---------------------------------------------------------------------------
+
+01/27/05 15:25:35 -- jplevyak
+
+Log message:
+	Map type symbols in IF1 conversion.  This causes the two test cases
+	  test_typevar_function1.chpl
+	  test_typevar_function2.chpl
+	to make it through analysis up to codegen.  This is not a
+	real implementation of type variables but rather an artifact
+	of the simple test cases.  If someone working on codegen
+	has nothing better to do, they could take a look a them, but
+	otherwise hold off till instantiation is fully implemented.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
