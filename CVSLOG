@@ -5871,3 +5871,23 @@ Modified files:
 Added files:
 	chapel/compiler/AST/: nils.cpp nils.h 
 
+---------------------------------------------------------------------------
+
+08/26/04 13:17:28 -- bradc
+
+Log message:
+	Some minor Makefile changes.  Per a discussion with John, fixed up the
+	way the Makefile in the compiler/test directory works by having it
+	copy sources from the compiler directory into the test directory and
+	remaking them there -- this fixes a dependence problem that we were
+	having in that directory.  Also removed symbolic linking of targets
+	from the subdirectory Makefiles, which I had missed when I did this
+	for the compiler/Makefile.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/cast/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.subdirrules 
+	chapel/compiler/make_prims/: Makefile 
+	chapel/compiler/test/: .cvsignore Makefile 
+
