@@ -76,12 +76,16 @@ class FnDefStmt : public Stmt {
 
   FnDefStmt(FnSymbol* init_fn);
 
+  bool isNull(void);
+
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   int getSymbols(Vec<BaseAST *> &asts);
 };
+
+extern FnDefStmt* nilFnDefStmt;
 
 
 class ExprStmt : public Stmt {

@@ -533,7 +533,7 @@ SizeofExpr::SizeofExpr(Type* init_type) :
 
 
 void SizeofExpr::traverseExpr(Traversal* traversal) {
-  type->traverse(traversal);
+  type->traverse(traversal, false);
 }
 
 

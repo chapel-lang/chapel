@@ -36,7 +36,33 @@ void Type::traverse(Traversal* traversal, bool atTop) {
     traversal->preProcessType(this);
   }
   if (atTop || traversal->exploreChildTypes) {
-    traverseType(traversal);
+    if (atTop || name == nilSymbol) {
+      // if the user has asked to traverse the type, always traverse
+      // its definition
+      // OR if the type is anonymous, always traverse its definition
+      traverseDefType(traversal);
+    } else {
+      traverseType(traversal);
+    }
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->postProcessType(this);
+  }
+}
+
+
+void Type::traverseDef(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  }
+
+  // expore Type and components
+  if (traversal->processTop || !atTop) {
+    traversal->preProcessType(this);
+  }
+  if (atTop || traversal->exploreChildTypes) {
+    name->traverse(traversal, false);
+    traverseDefType(traversal);
   }
   if (traversal->processTop || !atTop) {
     traversal->postProcessType(this);
@@ -45,6 +71,10 @@ void Type::traverse(Traversal* traversal, bool atTop) {
 
 
 void Type::traverseType(Traversal* traversal) {
+}
+
+
+void Type::traverseDefType(Traversal* traversal) {
 }
 
 
@@ -137,7 +167,7 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 }
 
 
-void EnumType::traverseType(Traversal* traversal) {
+void EnumType::traverseDefType(Traversal* traversal) {
   valList->traverseList(traversal, false);
 }
 
@@ -304,7 +334,7 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 {}
 
 
-void ArrayType::traverseType(Traversal* traversal) {
+void ArrayType::traverseDefType(Traversal* traversal) {
   domain->traverse(traversal, false);
   elementType->traverse(traversal, false);
 }
@@ -371,7 +401,7 @@ UserType::UserType(Type* init_definition) :
 {}
 
 
-void UserType::traverse(Traversal* traversal) {
+void UserType::traverseDefType(Traversal* traversal) {
   definition->traverse(traversal, false);
 }
 
@@ -395,14 +425,15 @@ ClassType::ClassType(ClassType* init_parentClass) :
   Type(TYPE_CLASS),
   parentClass(init_parentClass),
   definition(nilStmt),
-  scope(NULL)
+  scope(NULL),
+  constructor(nilFnDefStmt)
 {}
 
 
 void ClassType::addDefinition(Stmt* init_definition) {
   definition = init_definition;
 
-  if (!isNull()) {
+  if (!isNull() && Symboltable::parsingUserCode()) {
     /* create default constructor */
     char* constructorName = glomstrings(2, "_construct_", name->name);
     constructor = new FnDefStmt(
@@ -427,9 +458,9 @@ void ClassType::addScope(SymScope* init_scope) {
 }
 
 
-void ClassType::traverseType(Traversal* traversal) {
+void ClassType::traverseDefType(Traversal* traversal) {
   definition->traverseList(traversal, false);
-  //  constructor->traverseList(traversal, false);
+  constructor->traverseList(traversal, false);
 }
 
 
@@ -499,7 +530,7 @@ void TupleType::addType(Type* additionalType) {
 }
 
 
-void TupleType::traverseType(Traversal* traversal) {
+void TupleType::traverseDefType(Traversal* traversal) {
   for (int i=0; i<components.n; i++) {
     components.v[i]->traverse(traversal, false);
   }

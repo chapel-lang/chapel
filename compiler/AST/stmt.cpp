@@ -221,8 +221,7 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 
 
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
-  type->name->traverse(traversal, false);
-  type->traverse(traversal, false);
+  type->traverseDef(traversal, false);
 }
 
 
@@ -259,7 +258,13 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 {}
 
 
+bool FnDefStmt::isNull(void) {
+  return (this == nilFnDefStmt);
+}
+
+
 void FnDefStmt::traverseStmt(Traversal* traversal) {
+  // BLC: could move this into a traverseDef method?
   fn->traverse(traversal, false);
   fn->formals->traverseList(traversal, false);
   fn->type->traverse(traversal, false);

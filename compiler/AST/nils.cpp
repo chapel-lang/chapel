@@ -13,6 +13,7 @@ Type* nilType = NULL;
 
 VarSymbol* nilVarSymbol = NULL;
 FnSymbol* nilFnSymbol = NULL;
+FnDefStmt* nilFnDefStmt = NULL;
 ClassSymbol* nilClassSymbol = NULL;
 ClassType* nilClassType = NULL;
 
@@ -26,9 +27,10 @@ void initNils(void) {
   nilType = new Type(TYPE);
 
   nilVarSymbol = new VarSymbol("nilVarSymbol", nilType);
+  nilFnSymbol = new FnSymbol("nilFnSymbol");
+  nilFnDefStmt = new FnDefStmt(nilFnSymbol);
   nilClassType = new ClassType(nilClassType);
   nilClassType->addDefinition(nilStmt);
-  nilFnSymbol = new FnSymbol("nilFnSymbol");
   nilClassSymbol = new ClassSymbol("nilClass", nilClassType);
 
   verifyNilsUncorrupted("initialized incorrectly");
@@ -60,15 +62,19 @@ void verifyNilsUncorrupted(char* message) {
       nilVarSymbol->type != nilType) {
     INT_FATAL("nilVarSymbol has been %s", message);
   }
-  if (nilClassType->next != nilILink || nilClassType->prev != nilILink ||
-      nilClassType->name != nilSymbol || nilClassType->parentClass != NULL ||
-      nilClassType->definition != nilStmt) {
-    INT_FATAL("nilClassType has been %s", message);
-  }
   if (nilFnSymbol->next != nilILink || nilFnSymbol->prev != nilILink ||
       nilFnSymbol->formals != nilSymbol || nilFnSymbol->body != nilStmt ||
       nilFnSymbol->parentFn != NULL) {
     INT_FATAL("nilFnSymbol has been %s", message);
+  }
+  if (nilFnDefStmt->next != nilILink || nilFnDefStmt->prev != nilILink ||
+      nilFnDefStmt->fn != nilFnSymbol) {
+    INT_FATAL("nilFnDefStmt has been %s", message);
+  }
+  if (nilClassType->next != nilILink || nilClassType->prev != nilILink ||
+      nilClassType->name != nilSymbol || nilClassType->parentClass != NULL ||
+      nilClassType->definition != nilStmt) {
+    INT_FATAL("nilClassType has been %s", message);
   }
   if (nilClassSymbol->next != nilILink || nilClassSymbol->prev != nilILink ||
       nilClassSymbol->type != nilClassType) {

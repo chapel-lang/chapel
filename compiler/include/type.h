@@ -24,7 +24,9 @@ class Type : public BaseAST {
   bool isNull(void);
 
   void traverse(Traversal* traversal, bool atTop = true);
+  void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseType(Traversal* traversal);
+  virtual void traverseDefType(Traversal* traversal);
 
   virtual int rank(void);
 
@@ -50,7 +52,7 @@ class EnumType : public Type {
 
   EnumType(EnumSymbol* init_valList);
 
-  void traverseType(Traversal* traversal);
+  void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
@@ -91,7 +93,7 @@ class ArrayType : public Type {
 
   ArrayType(Expr* init_domain, Type* init_elementType);
 
-  void traverseType(Traversal* traversal);
+  void traverseDefType(Traversal* traversal);
 
   int rank(void);
 
@@ -111,7 +113,7 @@ class UserType : public Type {
 
   UserType(Type* init_definition);
 
-  void traverse(Traversal* traversal);
+  void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
   int getTypes(Vec<BaseAST *> &asts);
@@ -133,7 +135,7 @@ class ClassType : public Type {
   void addDefinition(Stmt* init_definition);
   void addScope(SymScope* init_scope);
 
-  void traverseType(Traversal* traversal);
+  void traverseDefType(Traversal* traversal);
 
   bool isNull(void);
 
@@ -154,7 +156,7 @@ class TupleType : public Type {
   TupleType(Type* init_type);
   void addType(Type* additionalType);
 
-  void traverseType(Traversal* traversal);
+  void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

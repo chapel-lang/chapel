@@ -7,7 +7,7 @@
 #include "yy.h"
 
 
-static bool parsingInternalPrelude = false;
+static bool parsingInternalPrelude = true;
 static bool parsingPrelude = false;
 
 
@@ -275,6 +275,11 @@ void Symboltable::parsePrelude(void) {
 void Symboltable::doneParsingPreludes(void) {
   parsingInternalPrelude = false;
   parsingPrelude = false;
+}
+
+
+bool Symboltable::parsingUserCode(void) {
+  return (!parsingInternalPrelude && !parsingPrelude);
 }
 
 

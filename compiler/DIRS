@@ -19,6 +19,5 @@ other directories:
 
 etc/            : miscellaneous non-code stuff (web, lowlevel cg help)
 make/           : common makefile stuff
-samples/        : sample codes  (perhaps outdated now that test is here?)
 test/           : unit tests (perhaps should be moved under a source dir?)
 

@@ -12,6 +12,7 @@ class Symboltable {
   static void parseInternalPrelude(void);
   static void parsePrelude(void);
   static void doneParsingPreludes(void);
+  static bool parsingUserCode(void);
 
   static void pushScope(scopeType type);
   static SymScope* popScope(void);
