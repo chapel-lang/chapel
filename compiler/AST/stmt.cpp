@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "misc.h"
 #include "stmt.h"
+#include "symscope.h"
 #include "yy.h"
 
 
@@ -172,7 +173,7 @@ void VarDefStmt::codegen(FILE* outfile) {
 void VarDefStmt::codegenVarDef(FILE* outfile) {
   VarSymbol* aVar = var;
 
-  if (aVar->level == 1) { /* if in file scope, hoist to internal header */
+  if (aVar->scope->level == SCOPE_FILE) { /* if in file scope, hoist to internal header */
     outfile = intheadfile;
   }
 
@@ -227,7 +228,7 @@ void TypeDefStmt::codegen(FILE* outfile) {
   FILE* deffile = outfile;
   /* if in file scope, hoist to internal header so that it will be
      defined before global variables at file scope. */  
-  if (type->name->level == 1) { 
+  if (type->name->scope->level == SCOPE_FILE) { 
     deffile = intheadfile;
   }
   type->codegenDef(deffile);

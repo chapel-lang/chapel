@@ -3,22 +3,13 @@
 
 #include "expr.h"
 #include "symbol.h"
-
-enum scopeType {
-  SCOPE_INTRINSIC,
-  SCOPE_FILE,
-  SCOPE_PARAM,
-  SCOPE_FUNCTION,
-  SCOPE_LOCAL,
-  SCOPE_FORLOOP
-};
-  
+#include "symscope.h"
 
 class Symboltable {
  public:
   static void pushScope(scopeType type);
   static void popScope(void);
-  static int getLevel(void);
+  static SymScope* getCurrentScope(void);
 
   static void define(Symbol* sym);
   static Symbol* lookup(char* name, bool inLexer = false);

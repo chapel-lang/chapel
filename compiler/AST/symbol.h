@@ -7,6 +7,7 @@
 
 class Stmt;
 class ASymbol;
+class SymScope;
 
 enum varType {
   VAR_NORMAL,
@@ -18,7 +19,7 @@ class Symbol : public BaseAST {
  public:
   char* name;
   Type* type;
-  int level;
+  SymScope* scope;
   ASymbol *asymbol;
   
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);

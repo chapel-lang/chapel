@@ -1,5 +1,3 @@
-#include <map>
-#include <string>
 #include <typeinfo>
 #include "expr.h"
 #include "misc.h"
@@ -8,9 +6,6 @@
 #include "symtab.h"
 #include "yy.h"
 
-using namespace std;
-
-static int level = 0;
 
 class SymLink : public ILink {
 public:
@@ -48,35 +43,6 @@ void SymLink::codegen(FILE* outfile) {
 }
 
 
-class SymScope {
- public:
-  scopeType type;
-  int level;
-
-  SymScope* parent;
-  SymScope* children;
-  SymScope* sibling;
-
-  SymLink* firstSym;
-  SymLink* lastSym;
-
-  SymLink* useBeforeDefSyms;
-
-  map<string, Symbol*> table;
-
-  SymScope(scopeType init_type, int init_level);
-
-  void insert(Symbol* sym);
-  SymScope* findFileScope(void);
-
-  void addUndefined(UseBeforeDefSymbol*);
-  void addUndefinedToFile(UseBeforeDefSymbol*);
-  void handleUndefined(void);
-
-  void print(FILE* outfile = stdout, bool alphabetical = false);
-};
-
-
 SymScope::SymScope(scopeType init_type, int init_level) :
   type(init_type),
   level(init_level),
@@ -90,7 +56,7 @@ SymScope::SymScope(scopeType init_type, int init_level) :
 
 
 void SymScope::insert(Symbol* sym) {
-  table[sym->name] = sym;
+  table.put(sym->name, sym);
 
   SymLink* newLink = new SymLink(sym);
 
@@ -177,13 +143,14 @@ void SymScope::print(FILE* outfile, bool alphabetical) {
   fprintf(outfile, "------------------------------------------------------\n");
 
   if (alphabetical) {
-    map<string, Symbol*>::iterator pos;
-    pos = table.begin();
-    while (pos != table.end()) {
-      (*pos).second->print(outfile);
-      fprintf(outfile, "\n");
-      pos++;
-    }  
+    int i;
+
+    for (i=0; i<table.n; i++) {
+      if (table.v[i].key) {
+	table.v[i].value->print(outfile);
+	fprintf(outfile, "\n");
+      }
+    }
   } else {
     if (firstSym != NULL) {
       firstSym->printList(outfile, "\n");
@@ -195,7 +162,8 @@ void SymScope::print(FILE* outfile, bool alphabetical) {
 }
 
 
-static SymScope* rootScope = new SymScope(SCOPE_INTRINSIC, level);
+static int level = SCOPE_INTRINSIC;
+static SymScope* rootScope = new SymScope(SCOPE_INTRINSIC, level++);
 static SymScope* currentScope = rootScope;
 
 
@@ -234,8 +202,8 @@ void Symboltable::popScope(void) {
 }
 
 
-int Symboltable::getLevel(void) {
-  return level;
+SymScope* Symboltable::getCurrentScope(void) {
+  return currentScope;
 }
 
 
@@ -250,9 +218,11 @@ Symbol* Symboltable::lookup(char* name, bool inLexer) {
   scope = currentScope;
   
   while (scope != NULL) {
-    if (scope->table.find(name) != scope->table.end()) {
-      return scope->table[name];
+    Symbol* sym = scope->table.get(name);
+    if (sym != NULL) {
+      return sym;
     }
+
     scope = scope->parent;
   }
 
@@ -391,7 +361,7 @@ ClassType* Symboltable::defineClass(char* name, ClassSymbol* parent) {
   } else {
     newdt = new ClassType(parent->getType());
   }
-  if (parent->level == 0 && 
+  if (parent->scope->level == SCOPE_INTRINSIC && 
       strcmp(parent->name, "reduction") == 0) {
     newsym = new ReduceSymbol(name, newdt);
   } else {

@@ -43,8 +43,6 @@
   needs to be initialized and then asks the type to generate
   the arguments to the initialize method.
 
-* does my symboltable break GC requirements?
-
 
 SHANNON:
 * fix type_info() for BinOp
