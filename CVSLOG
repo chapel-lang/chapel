@@ -18533,3 +18533,23 @@ Modified files:
 	                             insertAnonymousDomains.cpp 
 	                             insertAnonymousTypes.cpp 
 
+---------------------------------------------------------------------------
+
+03/01/05 16:47:20 -- bradc
+
+Log message:
+	Adding document sources for compiler architecture
+	paper written for the TAR, as well as for the
+	unabridged section on analysis that John prepared
+	for it.
+
+Added files:
+	chapel/doc/internal/analysisOverview/: .cvsignore analysis.tex 
+	                                       group.bib 
+	chapel/doc/internal/chapelCompArch/: .cvsignore bib.bib 
+	                                     chapel2c.eps chapel2c.fig 
+	                                     chapelCompArch.tex 
+	                                     nightly.eps overview.eps 
+	                                     overview.fig symtab.eps 
+	                                     symtab.fig tokctnightly.eps 
+
