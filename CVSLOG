@@ -2547,3 +2547,13 @@ Added files:
                                       equality_ops.good 
                                       relational_ops.chpl 
                                       relational_ops.good 
+---------------------------------------------------------------------------
+
+06/03/04 15:31:54 -- shannon
+
+Log message:
+	Didn't have RCS in path so edited CVSLOG by hand to reflect changes.
+
+Modified files:
+	./: CVSLOG 
+
