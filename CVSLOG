@@ -2581,3 +2581,95 @@ Modified files:
 	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
 	chapel/test/parsing/jplevyak/: mat1.good 
 
+---------------------------------------------------------------------------
+
+06/04/04 12:47:47 -- bradc
+
+Log message:
+	Added support for easily running the chpl compiler
+	within gdb via a --gdb flag.  This is designed for
+	cases when you are working with a long set of compile
+	line flags and suddenly want to run it within gdb:
+	
+	lotus% chpl --savec output --print-commands ../test/foo.chpl
+	fail: seg fault
+	
+	Typically, to debug this, you'd have to run "gdb chpl"
+	and then within gdb cut and paste your whole command-line
+	into the run command:
+	
+	(gdb) run --savec output --print-commands ../test/foo.chpl
+	
+	With this change, you can now run your original
+	command line again, adding --gdb to it somewhere:
+	
+	lotus% chpl --savec output --print-commands ../test/foo.chpl --gdb
+	
+	This will cause the chpl compiler to launch a gdb
+	session with the arguments automatically set up to
+	be those you included on the command line (except
+	for any occurrences of the --gdb flag, of course).
+	Thus, upon running the compiler, you'll be whisked
+	into gdb, and upon getting a gdb prompt, you can
+	simply type run:
+	
+	(gdb) run
+	
+	You can use the "show args" command to verify what
+	the arguments being used are.  Obviously, you can
+	override the arguments by hand simply by specifying
+	them with the "run" command or using the "set args"
+	command.
+	
+	The other benefit of debugging the compiler in this
+	mode is that it will set up hooks for the "run" and
+	"quit" commands such that any /tmp directories that
+	the compiler creates during the debugging session
+	will be deleted when the program is re-run or you
+	quit out of gdb.
+	
+	All this work was developed under gdb v5.3.  If you
+	have a different version and have conflicts with
+	what's been done here, let me know and we can look
+	into supporting your version.
+	
+	In making this change, some other changes occurred
+	as well:
+	
+	* Changed all instances of exit() to clean_exit(),
+	which cleans up the compiler state before exiting.
+	exit() should not be used anywhere in the program
+	(but I haven't yet gone so far as to #define it
+	out in a header file yet).
+	
+	* Made our current argument parsing routines make
+	copies of the arguments that they are working
+	with because they are fairly destructive with
+	them (and we want to pass them on to gdb in their
+	original form).
+	
+	* Previously, catching of SEGV and INT signals
+	was only done during codegen.  I switched this
+	to cover the whole program because it seems
+	right and because Chapel's temp directory may
+	now get created earlier, due to the --gdb flag.
+	
+	* Added a test to see that the --gdb command
+	causes gdb to be fired up.  In doing so, added
+	a new capability to the testing system: a
+	COMPSTDIN file can be added to a test directory
+	to specify an input file to be piped in as stdin
+	during the compile invocation.  As need warrants
+	it, I can add a similar feature, EXECSTDIN, for
+	the invocation of the executable.
+
+Modified files:
+	chapel/compiler/: arg.cpp arg.h codegen.cpp driver.cpp files.cpp 
+	                  files.h misc.cpp misc.h 
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/test/compflags/bradc/gdbddash/: .cvsignore COMPOPTS 
+	                                       COMPSTDIN NOEXEC 
+	                                       declint.chpl declint.good 
+	                                       gdb.in 
+
