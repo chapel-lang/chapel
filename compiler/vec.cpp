@@ -262,5 +262,6 @@ template class Vec<Scope *>;
 template class Vec<MapElem<char *, AST *> >;
 template class Vec<MapElem<Var *, Var *> >;
 template class Vec<MapElem<PNode *, PNode *> >;
+template class Vec<MapElem<PNode *, ATypeViolation *> >;
 template class Vec<Prim *>;
 template class Vec<ATypeViolation *>;

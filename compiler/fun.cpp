@@ -13,7 +13,7 @@ Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   asym->fun = this;
   ast = sym->ast;
   cg_string = 0;
-  if (verbose_level) 
+  if (verbose_level > 1)
     if (asym->name)
       printf("function %s\n", asym->name);
     else

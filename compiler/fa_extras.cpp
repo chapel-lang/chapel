@@ -94,7 +94,7 @@ fa_dump_types(FA *fa, FILE *fp) {
 static void
 show_type(Vec<CreationSet *> &t, FILE *fp) {
   fprintf(fp, "( ");
-  forv_CreationSet(cs, t) {
+  forv_CreationSet(cs, t) if (cs) {
     if (cs->sym->name)
       fprintf(fp, "%s ", cs->sym->name);
     else

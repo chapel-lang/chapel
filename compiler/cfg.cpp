@@ -27,7 +27,7 @@ static void
 finalize_cfg(Fun *f) {
   Vec<PNode*> nodes;
   f->collect_PNodes(nodes);
-  if (verbose_level)
+  if (verbose_level > 1)
     printf("%d cfg nodes\n", nodes.n);
   forv_PNode(p, nodes) {
     p->cfg_pred.set_to_vec();

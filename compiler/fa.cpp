@@ -590,12 +590,13 @@ static void
 prim_make_vector(PNode *p, EntrySet *es, AVar *ret) {
   CreationSet *cs = creation_point(make_AVar(p->lvals.v[0], es), sym_vector);
   AVar *elem = unique_AVar(element_var, cs);
-  assert(p->rvals.v[1]->sym->constant);
-  int rank = p->rvals.v[1]->sym->imm_int();
-  for (int i = 0; i < p->rvals.n - 2; i++) {
-    Var *v = p->rvals.v[2 + i];
-    AVar *av = make_AVar(v, es);
-    vector_elems(rank, av, elem, ret);
+  if (p->rvals.n > 2) {
+    int rank = p->rvals.v[1]->sym->imm_int();
+    for (int i = 0; i < p->rvals.n - 2; i++) {
+      Var *v = p->rvals.v[2 + i];
+      AVar *av = make_AVar(v, es);
+      vector_elems(rank, av, elem, ret);
+    }
   }
 }
 
@@ -645,17 +646,6 @@ add_send_constraints(EntrySet *es) {
 	case P_prim_continuation: prim_make(p, es, sym_continuation); break;
 	case P_prim_set: prim_make(p, es, sym_set); break;
 	case P_prim_ref: prim_make(p, es, sym_ref, 2, 1); break;
-	case P_prim_deref:
-	case P_prim_apply: 
-	case P_prim_period:
-	case P_prim_cast: 
-	{
-	  AVar *ret = make_AVar(p->lvals.v[0], es);
-	  forv_Var(v, p->rvals)
-	    if (!v->sym->symbol)
-	      make_AVar(v, es)->arg_of_send.set_add(ret);
-	  break;
-	}
       }
     }
   }
@@ -700,9 +690,6 @@ static int
 approx_pattern_match(AVar *a, Sym *b, AVar *result) {
   if (!b->type)
     return 1;
-  if (b->symbol)
-    if (b != a->var->sym)
-      return 0;
   AType *t = make_abstract_type(b->type);
   if (t == top_type)
     return 1;
@@ -832,16 +819,20 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
     if (at) {
       CreationSet *tuple = a.v[1]->out->v[0];
       for(int i = 0; i < tuple->vars.n; i++) {
-	if (at->n > i && tuple->vars.v[i]->var->sym->symbol) {
-	  Vec<Fun *> *fns = at->v[i]->get(tuple->vars.v[i]->var->sym->name);
-	  some = 1;
-	  add_funs_constraints(p, es, fns, a);
+	if (i >= at->n)
+	  break;
+	forv_CreationSet(cs, *tuple->vars.v[i]->out) if (cs) {
+	  if (cs->sym->symbol) {
+	    Vec<Fun *> *fns = at->v[i]->get(cs->sym->name);
+	    some = 1;
+	    add_funs_constraints(p, es, fns, a);
+	  }
 	}
       }
     }
-    if (some)
-      return 0;
-  } else {
+//    if (some)
+//      return 0;
+  } 
     // standard dispatch, on unique class (symbols, bare classes), and objects
     forv_CreationSet(cs, *a0->out) if (cs) {
       Vec<Fun *> *fns = 0;
@@ -851,7 +842,6 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 	fns = self_dispatch_table.get(cs->sym->name);
       add_funs_constraints(p, es, fns, a);
     }
-  }
   return 0;
 }
 
@@ -868,7 +858,12 @@ application_constraints(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<A
 
 static void
 type_violation(AVar *av, AType *type, PNode *pnode) {
-  type_violations.add(new ATypeViolation(av, type, pnode));
+  if (!av->violations)
+    av->violations = new ViolationMap;
+  ATypeViolation *v = av->violations->get(pnode);
+  if (!v)
+    av->violations->put(pnode, (v = new ATypeViolation(av, type, pnode)));
+  type_violations.set_add(v);
 }
 
 // for send nodes, add call edges and more complex constraints
@@ -925,11 +920,9 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
       case P_prim_index_vector: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *vec = make_AVar(p->rvals.v[1], es);
-	// CreationSet *ref_cs = creation_point(result, sym_ref);
-	// AVar *index = make_AVar(p->rvals.v[2], es); check for rank & constants
+	vec->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *vec->out) if (cs) {
 	  AVar *elem = unique_AVar(element_var, cs);
-	  //flow_var_to_var(elem, ref_cs->vars.v[0])
 	  flow_vars_equal(elem, result);
 	}
 	break;
@@ -938,8 +931,11 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
 	assert(p->lvals.n == 1);
 	int incomplete = 0;
 	Vec<AVar *> args;
+	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *fun = make_AVar(p->rvals.v[1], es);
 	AVar *a1 = make_AVar(p->rvals.v[3], es);
+	fun->arg_of_send.set_add(result);
+	a1->arg_of_send.set_add(result);
 	args.add(a1);
 	forv_CreationSet(f, *fun->out) if (f)
 	  incomplete = application_constraints(p, es, fun, f, args) || incomplete;
@@ -951,16 +947,16 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *obj = make_AVar(p->rvals.v[1], es);
 	AVar *selector = make_AVar(p->rvals.v[3], es);
+	obj->arg_of_send.set_add(result);
+	selector->arg_of_send.set_add(result);
 	forv_CreationSet(sel, *selector->out) if (sel) {
 	  char *symbol = sel->sym->name; assert(symbol);
 	  forv_CreationSet(cs, *obj->out) if (cs) {
 	    Var *v = cs->sym->has_map.get(symbol);
 	    if (!v)
 	      flow_var_type_restrict(obj, cs->sym);
-	    else {
-//		      CreationSet *ref_cs = creation_point(result, sym_ref);
+	    else
 	      flow_vars_equal(unique_AVar(v, cs), result);
-	    }
 	  }
 	}
 	break;
@@ -979,6 +975,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
       case P_prim_deref: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *ref = make_AVar(p->rvals.v[2], es);
+	ref->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *ref->out) if (cs) {
 	  AVar *av = cs->vars.v[0];
 	  flow_var_to_var(av, result);
@@ -1063,9 +1060,6 @@ check_pattern(AVar *a, Sym *b) {
   t = type_intersection(a->out, t);
   if (t == bottom_type)
     return 0;
-  if (b->symbol)
-    if (b != a->var->sym)
-      return 0;
   forv_CreationSet(cs, *t) {
     if (cs->vars.n != b->has.n)
       continue;
@@ -1163,7 +1157,6 @@ collect_type_violations(FA *fa) {
       forv_AVar(c, av->arg_of_send) if (c) {
 	PNode *p = c->var->def;
 	if (p->prim) continue; // primitives handled elsewhere
-	if (p->lvals.n && p->lvals.v[0]->sym == av->var->sym) continue; // hack for autoderef
 	EntrySet *from = (EntrySet*)c->contour;
 	AType *t = av->out;
 	forv_AVar(a, av->forward) {
@@ -1215,7 +1208,7 @@ build_dispatch_table(FA *fa) {
 	  some = 1;
 	}
       }
-      if (!some)
+//      if (!some)
 	goto Lstandard;
     } else {
     Lstandard:

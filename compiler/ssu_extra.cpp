@@ -72,7 +72,7 @@ print_renamed(Fun *f) {
 
 static void
 print_ssu(Fun *f, Vec<CQClass*> cq_classes, Region *region, Vec<PNode *> nodes) {
-  if (verbose_level) {
+  if (verbose_level > 1) {
     printf("%d cq classes\n", cq_classes.n);
     int phi = 0, phy = 0;
     forv_PNode(n, nodes) {
@@ -82,7 +82,7 @@ print_ssu(Fun *f, Vec<CQClass*> cq_classes, Region *region, Vec<PNode *> nodes) 
     printf("%d phi nodes\n", phi);
     printf("%d phy nodes\n", phi);
   }
-  if (verbose_level > 1) {
+  if (verbose_level > 2) {
     print_classes_nodes(cq_classes);
     print_classes_edges(cq_classes);
     print_regions_nodes(region, 0);

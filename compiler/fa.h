@@ -14,7 +14,9 @@ class AVar;
 class AEdge;
 class AType;
 class CreationSet;
+class ATypeViolation;
 
+typedef Map<PNode*, ATypeViolation*> ViolationMap;
 typedef Map<PNode *, Map<Fun *, AEdge *> *> EdgeMap;
 typedef BlockHash<AEdge *, PointerHashFns> EdgeHash;
 typedef Vec<CreationSet *> VecCreationSet;
@@ -73,6 +75,8 @@ class AVar : public gc {
   AType 		*in;
   AType 		*out;
   AType			*restrict;
+
+  ViolationMap		*violations;
 
   CreationSet		*creation_set;
 

@@ -73,3 +73,10 @@ or "is_lval = true"?
 - remove duplicate type_violations by hashing av*pnode
 
 - figure out why adding $right 5200 to 'new' causes problems
+
+- remove "next_sym"
+
+- optimize function dispatch
+- deal with "class_static"
+
+- document and do examples for functions returning lvals

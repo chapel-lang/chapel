@@ -200,16 +200,16 @@ Sym *
 new_sym(IF1 *i, Scope *scope, char *s, Sym *sym) {
   if (!sym)
     sym = if1_alloc_sym(i, s);
-  else
-    assert(!sym->in);
-  // unnamed temporaries are local to the module
-  if (scope->in && scope->in->module && !s)
-    sym->in = scope->in->init;
-  else
-    sym->in = scope->in;
+  if (!sym->in) {
+    // unnamed temporaries are local to the module
+    if (scope->in && scope->in->module && !s)
+      sym->in = scope->in->init;
+    else
+      sym->in = scope->in;
+  }
   if (s)
     scope->put(s, sym);
-  if (verbose_level)
+  if (verbose_level > 1)
     printf("new sym %X %s in %X\n", (int)sym, s, (int)scope);
   return sym;
 }
@@ -271,9 +271,14 @@ build_builtin_syms(IF1 *i, AST *ast) {
       case AST_ident:
 	ident = ast;
 	goto Lok;
+      case AST_def_fun: {
+	ident = ast->get(AST_ident);
+	ast->sym = ident->sym = if1_alloc_sym(i, ident->string);
+	set_builtin(i, if1_make_symbol(i, ident->string), ast->builtin);
+	break;
+      }
       case AST_in_module:
       case AST_def_type:
-      case AST_def_fun:
       case AST_qualified_ident: {
 	ident = ast->get(AST_ident);
       Lok:
@@ -387,7 +392,7 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 	Lkind_assigned:;
 	}
 	scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, ast->sym);
-	if (verbose_level)
+	if (verbose_level > 1)
 	  printf("creating scope %X for %s\n", (int)ast->sym->scope, ast->sym->name);
 	{
 	  AST *rtype = ast->get(AST_record_type);
@@ -521,6 +526,12 @@ define_function(IF1 *i, AST *ast) {
     return -1;
   AST *fid = ast_qualified_ident_ident(fqid);
   ast->sym = new_sym(i, fscope, fid->string, fqid->sym);
+  new_sym(i, fscope, fid->string, if1_make_symbol(i, fid->string));
+#if 0
+  if (!ast->sym)
+    ast->sym = fqid->sym = if1_alloc_sym(i, fid->string);
+  ast->sym->name = fid->string;
+#endif
   ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
   if (fscope != ast->scope) {
     ast->sym->scope->dynamic.add(fscope);
@@ -698,6 +709,15 @@ build_types(IF1 *i, AST *ast) {
 }
 
 static int
+unalias_types(IF1 *i, AST *ast) {
+  forv_AST(a, *ast)
+    if (unalias_types(i, a) < 0)
+      return -1;
+  ast->sym = unalias_type(ast->sym);
+  return 0;
+}
+
+static int
 define_labels(IF1 *i, AST *ast, LabelMap *labelmap) {
   switch (ast->kind) {
     case AST_def_ident:
@@ -792,7 +812,6 @@ gen_fun(IF1 *i, AST *ast) {
   int n = ast->n - 2;
   AST **args = &ast->v[1];
   Sym *as[n + 1];
-  AST *fqid = ast->get(AST_qualified_ident);
   if (fn->in && (fn->name == cannonical_class || fn->name == cannonical_self)) {
     as[0] = ast->sym->self;
     fn->class_static = fn->name == cannonical_class;
@@ -800,6 +819,8 @@ gen_fun(IF1 *i, AST *ast) {
     as[0] = new_sym(i, fn->scope);
     as[0]->type = if1_make_symbol(i, fn->name);
   }
+  if (!fn->self)
+    fn->class_static = 1;
   for (int j = 0; j < n; j++)
     as[j + 1] = args[j]->rval;
   if1_closure(i, fn, body, n + 1, as);
@@ -917,7 +938,13 @@ gen_forall(IF1 *i, AST *ast) {
   AST *domain = ast->get(AST_qualified_ident);
   AST *indices = ast->get(AST_indices);
   AST *body = ast->last();
-  ast->rval = body->rval;
+  if (body->rval->type_kind) { // creation
+    ast->rval = new_sym(i, ast->scope);
+    Code *send = if1_send(i, &ast->code, 3, 1, sym_array, domain->sym, body->rval, ast->rval);
+    send->ast = ast;
+  } else {
+    ast->rval = body->rval;
+  }
 }
 
 static void
@@ -1217,6 +1244,7 @@ finalize_types(IF1 *i) {
       if (s->constraints.v[x])
 	s->constraints.v[x] = unalias_type(s->constraints.v[x]);
     s->type = unalias_type(s->type);
+    s->in = unalias_type(s->in);
     if (s->type_kind != Type_NONE)
       s->type = s;
   }
@@ -1272,6 +1300,9 @@ ast_gen_if1(IF1 *i, Vec<AST *> &av) {
       return -1;
   forv_AST(a, av)
     if (build_types(i, a) < 0) 
+      return -1;
+  forv_AST(a, av)
+    if (unalias_types(i, a) < 0) 
       return -1;
   finalize_types(i);
   forv_AST(a, av)
