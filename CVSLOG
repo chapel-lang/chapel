@@ -14692,3 +14692,75 @@ Added files:
 Removed files:
 	chapel/compiler/traversals/: defineSymbols.cpp defineSymbols.h 
 
+---------------------------------------------------------------------------
+
+01/17/05 14:39:42 -- shannon
+
+Log message:
+	Added support for config vars with the same name in
+	different modules.  Changed the output of the -h
+	flag to include the module name followed by a list
+	of its config vars, in order of declaration.
+	
+	Specifically:
+	
+	* arg.c:  Wrote a function to parse out the module
+	  name from the var name string.  Broke the
+	  installConfigVar function into two, adding
+	  initSetValue to initialize the value of a config
+	  var set on the command line.
+	
+	* config.c:  Added the module name to a bunch of
+	  functions, and removed the isDefaultValue flag.
+	
+	  Added the print of the module name to the -h flag.
+	  Chose to not print out the module name if there is
+	  but one module in the program.
+	
+	  Made error messages more specific in the case of
+	  the variable name not being found on lookup, instead
+	  of telling the user, "well, it could be this or that."
+	
+	* createConfigVarTable.cpp:  Replaced the
+	  isDefaultValue flag from the codegen of a call to
+	  installConfigVar with the module name.
+	
+	* stmt.cpp:  Added the moduleName variable to the
+	  codegen for the call to setInCommandLine.
+	
+	* type.cpp:  Added the moduleName variable to the
+	  codegen for the call to lookupSetValue.
+	
+	* Added a bunch of tests.  Updated expected output
+	  for several tests after changing error messages.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	                             createConfigVarTable.h 
+	chapel/runtime/include/: config.h 
+	chapel/runtime/src/: arg.c config.c 
+	chapel/test/execflags/shannon/configs/: configVarHelp.good 
+	                                        configVarInvalidName.good 
+	                                        configVarSetNotDeclared.good 
+	                                        configVarTwoModules.chpl 
+	                                        configVarTwoModules.execopts 
+	                                        configVarTwoModules.good 
+Added files:
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarModStrings1.chpl 
+	                                        configVarModStrings1.execopts 
+	                                        configVarModStrings1.good 
+	                                        configVarModStrings2.chpl 
+	                                        configVarModStrings2.execopts 
+	                                        configVarModStrings2.good 
+	                                        configVarSetOver.chpl 
+	                                        configVarSetOver.execopts 
+	                                        configVarSetOver.good 
+	                                        configVarSetTwoTypes.chpl 
+	                                        configVarSetTwoTypes.execopts 
+	                                        configVarSetTwoTypes.good 
+	                                        configVarTwoModsNoneSpecified.chpl 
+	                                        configVarTwoModsNoneSpecified.execopts 
+	                                        configVarTwoModsNoneSpecified.good 
+
