@@ -280,6 +280,7 @@ ACallbacks::build(Match *m) {
 			      m->formal_to_actual_position.n ? &m->formal_to_actual_position : 0,
 			      (CloneCallback*)&callback);
   assert(f);
+  assert(0); // temporary
   Vec<Stmt *> all_stmts;
   Vec<BaseAST *> all_syms, syms;
   all_stmts.add(f);
