@@ -3197,3 +3197,17 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+06/10/04 17:51:53 -- bradc
+
+Log message:
+	Making start_test unsetenv CHPL_SYSTEM_DIR to ensure that
+	the nightly tests don't run using my development environment.
+	If this works, we may want to do the same for other env. vars
+	in the testing system (since they can always be set using the
+	-compargs flag for testing purposes).
+
+Modified files:
+	chapel/test/: start_test 
+
