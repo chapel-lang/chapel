@@ -759,6 +759,7 @@ build_types(Vec<BaseAST *> &syms) {
 	  t->asymbol->sym->is_union_class = 1;
 	if (tt->symbol) {
 	  tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
+	  tt->symbol->asymbol->symbol = tt->symbol;
 	}
 	if (tt->parentClass)
 	  t->asymbol->sym->inherits_add(tt->parentClass->asymbol->sym);
