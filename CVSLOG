@@ -2374,3 +2374,17 @@ Modified files:
 	chapel/compiler/: chpl.g 
 	chapel/test/parsing/jplevyak/: mat1.good 
 
+---------------------------------------------------------------------------
+
+04/06/01 16:50:47 -- bradc
+
+Log message:
+	Fixed a bug in the testing system in which -startdir was only
+	causing subdirectories of the named directory to be examined,
+	not the directory itself.  This particularly caused problems
+	when a leaf directory was specified, which would cause no
+	tests to be run since it had no subdirectories.
+
+Modified files:
+	chapel/test/: start_test 
+
