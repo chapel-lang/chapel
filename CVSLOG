@@ -8,7 +8,7 @@
 
 ---------------------------------------------------------------------------
 
-04/01/21 13:28:16 -- bradc
+01/21/04 13:28:16 -- bradc
 
 Log message:
 	This is a test.
@@ -18,7 +18,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/21 14:13:02 -- bradc
+01/21/04 14:13:02 -- bradc
 
 Log message:
 	Set the script up to mail both John (here at Cray) and me.
@@ -28,7 +28,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/21 14:22:46 -- bradc
+01/21/04 14:22:46 -- bradc
 
 Log message:
 	Still ashamed for my former sloppiness, made Makefile.base even more
@@ -53,7 +53,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/01/21 14:40:16 -- bradc
+01/21/04 14:40:16 -- bradc
 
 Log message:
 	Got rid of remaining DOS linefeeds.
@@ -64,7 +64,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/22 09:58:44 -- bradc
+01/22/04 09:58:44 -- bradc
 
 Log message:
 	Switched mailing list to chapel_dev@cray.com (should happen on
@@ -75,7 +75,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/22 09:59:37 -- bradc
+01/22/04 09:59:37 -- bradc
 
 Log message:
 	Just checking that mail to the new mailing list works.
@@ -85,7 +85,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/22 12:33:17 -- n10253
+01/22/04 12:33:17 -- n10253
 
 Log message:
 	Continued work on type checking, parameterized
@@ -99,7 +99,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/01/22 13:48:26 -- bradc
+01/22/04 13:48:26 -- bradc
 
 Log message:
 	Improved the Makefile so that clean would remove prim_data.cpp and so
@@ -117,7 +117,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/01/22 13:56:39 -- bradc
+01/22/04 13:56:39 -- bradc
 
 Log message:
 	Took a cue from John's mail yesterday and removed the optional
@@ -133,7 +133,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/01/22 13:58:47 -- bradc
+01/22/04 13:58:47 -- bradc
 
 Log message:
 	Added dparser's created BUILD_VERSION file to the list of files to be
@@ -144,7 +144,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/01/23 11:49:33 -- n10253
+01/23/04 11:49:33 -- n10253
 
 Log message:
 	add the binaries and "freebsd"
@@ -154,7 +154,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/23 13:15:20 -- n10253
+01/23/04 13:15:20 -- n10253
 
 Log message:
 	Little bug fixes in preparation for working on structural types.
@@ -164,7 +164,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/23 14:46:22 -- n10253
+01/23/04 14:46:22 -- n10253
 
 Log message:
 	Handle more sorts of argument type constraints.
@@ -174,7 +174,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/26 11:30:18 -- n10253
+01/26/04 11:30:18 -- n10253
 
 Log message:
 	freebsd build directory and a couple more executables into cvsignore
@@ -187,7 +187,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/28 11:55:22 -- n10253
+01/28/04 11:55:22 -- n10253
 
 Log message:
 	Added "path" argument type to args.*
@@ -201,7 +201,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/01/28 12:02:43 -- n10253
+01/28/04 12:02:43 -- n10253
 
 Log message:
 	Fix minor grammar ambiguity.
@@ -211,7 +211,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/01/28 18:41:34 -- n10253
+01/28/04 18:41:34 -- n10253
 
 Log message:
 	Implement constant folding.
@@ -225,7 +225,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/01/29 15:23:45 -- n10253
+01/29/04 15:23:45 -- n10253
 
 Log message:
 	Constant folding complete: converts the AST node to an AST_const.
@@ -241,7 +241,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/01/30 11:36:40 -- bradc
+01/30/04 11:36:40 -- bradc
 
 Log message:
 	Establishing an examples/ directory for use in managing
@@ -259,7 +259,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/02/03 13:48:58 -- n10253
+02/03/04 13:48:58 -- n10253
 
 Log message:
 	fix bug in error recovery
@@ -269,7 +269,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/03 15:11:32 -- bradc
+02/03/04 15:11:32 -- bradc
 
 Log message:
 	Just inserted scripts to update BUILDNUM and CVSLOG files
@@ -285,7 +285,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/03 15:14:25 -- bradc
+02/03/04 15:14:25 -- bradc
 
 Log message:
 	Oops, typo in previous log.  BUILDNUM should've
@@ -298,7 +298,7 @@ Removed files:
 
 ---------------------------------------------------------------------------
 
-04/02/03 16:15:41 -- n10253
+02/03/04 16:15:41 -- n10253
 
 Log message:
         casting decision tree
@@ -307,7 +307,7 @@ Added files:
         chapel/compiler/: cast_code.cpp 
 ---------------------------------------------------------------------------
 
-04/02/03 16:29:46 -- bradc
+02/03/04 16:29:46 -- bradc
 
 Log message:
 	John's last checkin failed to update these files due to a
@@ -319,7 +319,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/03 16:39:17 -- bradc
+02/03/04 16:39:17 -- bradc
 
 Log message:
 	Updated the compiler's version machinery from
@@ -337,7 +337,7 @@ Removed files:
 
 ---------------------------------------------------------------------------
 
-04/02/03 16:58:42 -- bradc
+02/03/04 16:58:42 -- bradc
 
 Log message:
 	Just noticed that when I check in files, it appears that their
@@ -350,7 +350,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/03 17:34:35 -- bradc
+02/03/04 17:34:35 -- bradc
 
 Log message:
 	Another attempt to fix my permissions problem.  Another small
@@ -361,7 +361,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/04 12:41:08 -- jplevyak (a.k.a. n10253, the android wonder)
+02/04/04 12:41:08 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	very preliminary chapel grammar and prelude
@@ -376,7 +376,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/02/04 14:00:36 -- jplevyak (a.k.a. n10253, the android wonder)
+02/04/04 14:00:36 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	start a prioritized TODO list
@@ -386,7 +386,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/09 16:39:53 -- bradc
+02/09/04 16:39:53 -- bradc
 
 Log message:
 	Changed dimension of reduction to be correct.
@@ -397,7 +397,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/10 14:53:16 -- jplevyak (a.k.a. n10253, the android wonder)
+02/10/04 14:53:16 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Extensive changes to the way assignment occurs.
@@ -416,7 +416,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/02/12 10:48:45 -- jplevyak (a.k.a. n10253, the android wonder)
+02/12/04 10:48:45 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Add support for trailing context to scanner
@@ -440,7 +440,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/02/12 15:38:21 -- jplevyak (a.k.a. n10253, the android wonder)
+02/12/04 15:38:21 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Fixed a bug in the trailing context code.
@@ -452,7 +452,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/12 15:39:15 -- jplevyak (a.k.a. n10253, the android wonder)
+02/12/04 15:39:15 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Update grammar to use trailing context.
@@ -462,7 +462,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/12 18:31:40 -- jplevyak (a.k.a. n10253, the android wonder)
+02/12/04 18:31:40 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	add support for basic sequences of the form
@@ -480,7 +480,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/02/13 15:48:39 -- jplevyak (a.k.a. n10253, the android wonder)
+02/13/04 15:48:39 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	cleaned up instance variable handling and
@@ -493,7 +493,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/19 10:36:58 -- jplevyak (a.k.a. n10253, the android wonder)
+02/19/04 10:36:58 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Fixed a bug in d_ws_before
@@ -503,7 +503,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/19 11:22:35 -- jplevyak (a.k.a. n10253, the android wonder)
+02/19/04 11:22:35 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	added support for analyzing vectors and vector operations
@@ -518,7 +518,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/02/19 11:28:53 -- jplevyak (a.k.a. n10253, the android wonder)
+02/19/04 11:28:53 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	
@@ -528,7 +528,7 @@ Removed files:
 
 ---------------------------------------------------------------------------
 
-04/02/20 10:00:47 -- jplevyak (a.k.a. n10253, the android wonder)
+02/20/04 10:00:47 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Add support for immediate sequences 1..n by m.
@@ -543,7 +543,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/25 16:26:23 -- jplevyak (a.k.a. n10253, the android wonder)
+02/25/04 16:26:23 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	made forv_Vec (the basis for all the forv_XXX vector iterators) safe with respect to
@@ -565,7 +565,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/26 11:57:51 -- jplevyak (a.k.a. n10253, the android wonder)
+02/26/04 11:57:51 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	checkpoint for rework of implicit references (e.g. array access, Mat(1))
@@ -577,7 +577,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/26 16:26:33 -- jplevyak (a.k.a. n10253, the android wonder)
+02/26/04 16:26:33 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Completely new method for handling implicit references (lvals).
@@ -593,7 +593,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/02/27 14:04:26 -- jplevyak (a.k.a. n10253, the android wonder)
+02/27/04 14:04:26 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	- change verbose levels so that -v only returns types
@@ -611,7 +611,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/02/27 16:43:00 -- jplevyak (a.k.a. n10253, the android wonder)
+02/27/04 16:43:00 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	- add samples/mat1.chpl
@@ -623,7 +623,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/01 10:40:57 -- jplevyak (a.k.a. n10253, the android wonder)
+03/01/04 10:40:57 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Fix bug with handling of simple expressions in false forks of conditionals
@@ -633,7 +633,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/01 11:07:13 -- jplevyak (a.k.a. n10253, the android wonder)
+03/01/04 11:07:13 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Chapel syntax for conditionals now: "if" expression "then" expression "else" expression
@@ -648,7 +648,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/05 16:02:00 -- jplevyak (a.k.a. n10253, the android wonder)
+03/05/04 16:02:00 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	- integers are now "integer"
@@ -664,7 +664,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/08 18:13:52 -- jplevyak (a.k.a. n10253, the android wonder)
+03/08/04 18:13:52 -- jplevyak (a.k.a. n10253, the android wonder)
 
 Log message:
 	Added samples/literals.v
@@ -681,7 +681,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/09 15:00-ish -- bradc (this is a hand-generated message due to
+03/09/04 15:00-ish -- bradc (this is a hand-generated message due to
                              problems in the CVS perl scripts when
                              moving to Linux)
 
@@ -697,7 +697,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/09 15:43:54 -- bradc
+03/09/04 15:43:54 -- bradc
 
 Log message:
 	Ran into incompatibilities with the CVS perl scripts on Linux, so
@@ -709,7 +709,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/09 16:21:13 -- jplevyak (a.k.a. n10253)
+03/09/04 16:21:13 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Removed unnecessary (and error causing) $name "complex"
@@ -719,7 +719,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/12 09:55:29 -- jplevyak (a.k.a. n10253)
+03/12/04 09:55:29 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Added new -t option which dumps the program as cross-linked HTML
@@ -739,7 +739,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/12 15:08:09 -- jplevyak (a.k.a. n10253)
+03/12/04 15:08:09 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	refactor headers for cast.cpp
@@ -751,7 +751,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/12 15:51:50 -- bradc
+03/12/04 15:51:50 -- bradc
 
 Log message:
 	This change is a revamping of the make system, in an attempt to
@@ -831,7 +831,7 @@ Removed files:
 
 ---------------------------------------------------------------------------
 
-04/03/12 15:53:10 -- bradc
+03/12/04 15:53:10 -- bradc
 
 Log message:
 	Oops, wasn't quite out at the root of the Chapel tree for that
@@ -845,7 +845,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/12 16:26:36 -- jplevyak (a.k.a. n10253)
+03/12/04 16:26:36 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	change recursive make invocations to use $(MAKE) so as to
@@ -857,7 +857,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/16 12:44:42 -- jplevyak (a.k.a. n10253)
+03/16/04 12:44:42 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	remove "dead" cruft from dump
@@ -867,7 +867,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/16 18:16:38 -- jplevyak (a.k.a. n10253)
+03/16/04 18:16:38 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	print out folded constants in dump.html
@@ -882,7 +882,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/17 12:58:45 -- jplevyak (a.k.a. n10253)
+03/17/04 12:58:45 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Begin work on indexing into tuples.  To get this to work I
@@ -894,7 +894,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/17 13:22:30 -- bradc
+03/17/04 13:22:30 -- bradc
 
 Log message:
 	Broke argv[0] down into the program's name and its directory
@@ -913,7 +913,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/17 13:41:54 -- bradc
+03/17/04 13:41:54 -- bradc
 
 Log message:
 	Squelched the creation of the log/ subdirectory unless the user
@@ -924,7 +924,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/18 10:13:06 -- jplevyak (a.k.a. n10253)
+03/18/04 10:13:06 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	update __index_vector to __index.
@@ -934,7 +934,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/18 15:34:43 -- bradc
+03/18/04 15:34:43 -- bradc
 
 Log message:
 	First version of the regression test system.
@@ -1103,7 +1103,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/18 15:36:22 -- bradc
+03/18/04 15:36:22 -- bradc
 
 Log message:
 	Added a command to run etags on the chapel compiler sources after
@@ -1114,7 +1114,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/22 16:43:30 -- bradc
+03/22/04 16:43:30 -- bradc
 
 Log message:
 	Learned that the time to build on an NFS-mounted directory was
@@ -1167,7 +1167,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/22 17:26:17 -- jplevyak (a.k.a. n10253)
+03/22/04 17:26:17 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	This is a big checkin.
@@ -1226,7 +1226,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/24 12:59:18 -- bradc
+03/24/04 12:59:18 -- bradc
 
 Log message:
 	This checkin adds some crufty support for some trivial code
@@ -1308,7 +1308,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/25 10:46:20 -- bradc
+03/25/04 10:46:20 -- bradc
 
 Log message:
 	This checkin adds some flags to help control the compilation
@@ -1376,7 +1376,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/25 17:05:43 -- bradc
+03/25/04 17:05:43 -- bradc
 
 Log message:
 	Incidental changes.  Did some work in starting to make header files
@@ -1403,7 +1403,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 11:45:53 -- bradc
+03/26/04 11:45:53 -- bradc
 
 Log message:
 	Minor changes.  codegen is still off by default:
@@ -1430,7 +1430,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 11:56:47 -- jplevyak (a.k.a. n10253)
+03/26/04 11:56:47 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Bug in comparison routine passed to qsort.
@@ -1440,7 +1440,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 12:01:21 -- jplevyak (a.k.a. n10253)
+03/26/04 12:01:21 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Suppression file for use with the Boehm GC and valgrind vr 2.0.0
@@ -1450,7 +1450,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 14:15:38 -- bradc
+03/26/04 14:15:38 -- bradc
 
 Log message:
 	Found some portability problems on the Sun with the Makefiles
@@ -1470,7 +1470,7 @@ Removed files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 14:18:14 -- bradc
+03/26/04 14:18:14 -- bradc
 
 Log message:
 	Never seem to have gotten this file checked in.
@@ -1480,7 +1480,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 15:02:02 -- bradc
+03/26/04 15:02:02 -- bradc
 
 Log message:
 	Enabled the testing system to run binaries produced by the
@@ -1498,7 +1498,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 15:28:01 -- bradc
+03/26/04 15:28:01 -- bradc
 
 Log message:
 	Cleaned up the handling of literals for now.
@@ -1508,7 +1508,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 15:28:57 -- bradc
+03/26/04 15:28:57 -- bradc
 
 Log message:
 	Added support for printing strings (string literals, at least).
@@ -1518,7 +1518,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 15:29:31 -- bradc
+03/26/04 15:29:31 -- bradc
 
 Log message:
 	Oops, I'm getting too fast.  This should've gone with the
@@ -1529,7 +1529,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/26 16:36:52 -- bradc
+03/26/04 16:36:52 -- bradc
 
 Log message:
 	Fixed a bug in which running the compiler using a relative
@@ -1544,7 +1544,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/03/31 19:01:09 -- jplevyak (a.k.a. n10253)
+03/31/04 19:01:09 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Added dominator computation a la Tarjan
@@ -1582,7 +1582,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/04/01 16:08:10 -- bradc
+04/01/04 16:08:10 -- bradc
 
 Log message:
 	Updated the astlog example a bit to (1) get the log file in
@@ -1599,7 +1599,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/04/01 17:07:05 -- bradc
+04/01/04 17:07:05 -- bradc
 
 Log message:
 	Broke version number stuff out into its own header file because
@@ -1613,7 +1613,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/04/02 14:09:28 -- jplevyak (a.k.a. n10253)
+04/02/04 14:09:28 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Fixed a bug in flow analysis which was causing the vec.chpl test to fail.
@@ -1623,7 +1623,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/04/02 16:09:32 -- bradc
+04/02/04 16:09:32 -- bradc
 
 Log message:
 	Added a new 0-argument option to the testing system: -valgrind
@@ -1641,7 +1641,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/04/02 16:20:00 -- bradc
+04/02/04 16:20:00 -- bradc
 
 Log message:
 	Turned on codegen (and therefore binary generation) by default.
@@ -1661,7 +1661,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/04/02 16:29:03 -- jplevyak (a.k.a. n10253)
+04/02/04 16:29:03 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Fixed issue with assuming the suffix was ".chpl"
@@ -1671,7 +1671,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/04/05 10:41:27 -- bradc
+04/05/04 10:41:27 -- bradc
 
 Log message:
 	Removed a debug printing line that I accidentally checked in.
@@ -1681,7 +1681,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/04/05 13:22:34 -- jplevyak (a.k.a. n10253)
+04/05/04 13:22:34 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Add Sym::internal field which is defined in internal.h which covers
@@ -1697,7 +1697,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/04/05 13:50:38 -- jplevyak (a.k.a. n10253)
+04/05/04 13:50:38 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Add simple parsing test cases
@@ -1714,7 +1714,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/04/05 15:52:28 -- jplevyak (a.k.a. n10253)
+04/05/04 15:52:28 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Fix building of concrete types so that instance variables point
@@ -1725,7 +1725,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/04/09 15:12:01 -- bradc
+04/09/04 15:12:01 -- bradc
 
 Log message:
 	Fixed a bug that Shannon found in which I wasn't quoting
@@ -1740,7 +1740,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/04/09 17:20:17 -- bradc
+04/09/04 17:20:17 -- bradc
 
 Log message:
 	Fixed two simple driver problems:
@@ -1756,7 +1756,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/04/09 18:09:50 -- bradc
+04/09/04 18:09:50 -- bradc
 
 Log message:
 	Wrote a bunch of simple programs that declare and initialize
@@ -1801,7 +1801,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/03 11:52:47 -- bradc
+05/03/04 11:52:47 -- bradc
 
 Log message:
 	Took a new sweep through the simple arrinit codes to update based
@@ -1827,7 +1827,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/03 12:04:00 -- jplevyak (a.k.a. n10253)
+05/03/04 12:04:00 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Change the system directory option letter since it conflicts with
@@ -1838,7 +1838,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/03 12:48:58 -- bradc
+05/03/04 12:48:58 -- bradc
 
 Log message:
 	Some small changes that have been festering in my directory
@@ -1859,7 +1859,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/03 12:53:43 -- bradc
+05/03/04 12:53:43 -- bradc
 
 Log message:
 	Did an abort partway through the last checkin, and so some mods
@@ -1872,7 +1872,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/03 13:01:43 -- bradc
+05/03/04 13:01:43 -- bradc
 
 Log message:
 	Changed some of my flags (--nocodgen, --print-commands) from
@@ -1885,7 +1885,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/04 19:25:23 -- jplevyak (a.k.a. n10253)
+05/04/04 19:25:23 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Fixed bug with trailing context (use to handle 1..n)
@@ -1895,7 +1895,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/04 19:32:42 -- jplevyak (a.k.a. n10253)
+05/04/04 19:32:42 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	updated tests for changes in the grammar and parser.
@@ -1906,7 +1906,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/05 13:00:24 -- jplevyak (a.k.a. n10253)
+05/05/04 13:00:24 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Begin support for incremnetalization: cdb.{h,cpp} save cloning info
@@ -1926,7 +1926,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/05 16:20:56 -- jplevyak (a.k.a. n10253)
+05/05/04 16:20:56 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	updated TODO list
@@ -1937,7 +1937,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/07 11:18:23 -- bradc
+05/07/04 11:18:23 -- bradc
 
 Log message:
 	Found that the path to the javascript stuff in the HTML dump
@@ -1960,7 +1960,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/07 17:05:01 -- bradc
+05/07/04 17:05:01 -- bradc
 
 Log message:
 	Started working on a script that will perform nightly regressions.
@@ -1972,7 +1972,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/07 17:20:43 -- bradc
+05/07/04 17:20:43 -- bradc
 
 Log message:
 	Oops, accidentally introduced a typo in the start_test script.
@@ -1982,7 +1982,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/07 17:48:52 -- bradc
+05/07/04 17:48:52 -- bradc
 
 Log message:
 	Added support for a valgrind run to the nightly script.
@@ -1992,7 +1992,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/10 09:10:50 -- jplevyak (a.k.a. n10253)
+05/10/04 09:10:50 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Add handling of value "clases" as per David's mail to TODO list
@@ -2003,7 +2003,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/10 10:59:22 -- jplevyak (a.k.a. n10253)
+05/10/04 10:59:22 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Added new log for flow analysis testing
@@ -2020,7 +2020,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/10 16:16:40 -- jplevyak (a.k.a. n10253)
+05/10/04 16:16:40 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Extend flow analyis to N levels of complex data structures.
@@ -2030,7 +2030,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/10 17:50:26 -- bradc
+05/10/04 17:50:26 -- bradc
 
 Log message:
 	Updated nightly test script to compare each night's results
@@ -2058,7 +2058,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/11 13:57:56 -- bradc
+05/11/04 13:57:56 -- bradc
 
 Log message:
 	Added generation of graph showing regression status.
@@ -2068,7 +2068,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/11 14:20:14 -- bradc
+05/11/04 14:20:14 -- bradc
 
 Log message:
 	Added a new feature to the testing scripts -- if a subdirectory
@@ -2092,7 +2092,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/12 12:19:34 -- bradc
+05/12/04 12:19:34 -- bradc
 
 Log message:
 	Introducing a purposeful bug to see if the nightly regression
@@ -2103,7 +2103,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/12 12:37:19 -- bradc
+05/12/04 12:37:19 -- bradc
 
 Log message:
 	Removed purposeful bug in driver.cpp and checking in new
@@ -2115,7 +2115,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/13 10:32:15 -- bradc
+05/13/04 10:32:15 -- bradc
 
 Log message:
 	Made the testing system exit with an error if valgrind is
@@ -2126,7 +2126,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/13 11:22:46 -- bradc
+05/13/04 11:22:46 -- bradc
 
 Log message:
 	Made nightly regression runs more resilient in the face of
@@ -2143,7 +2143,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/14 10:03:21 -- bradc
+05/14/04 10:03:21 -- bradc
 
 Log message:
 	I believe the nightly regressions are now working well
@@ -2169,7 +2169,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/19 17:31:05 -- jplevyak (a.k.a. n10253)
+05/19/04 17:31:05 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Remove builtin complex (will be implemented in standard header)
@@ -2183,7 +2183,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/25 16:08:56 -- bradc
+05/25/04 16:08:56 -- bradc
 
 Log message:
 	Making sure that we blow away /tmp directories on segfaults.
@@ -2193,7 +2193,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/25 16:23:07 -- bradc
+05/25/04 16:23:07 -- bradc
 
 Log message:
 	Put in code so that if we try to codegen something that we
@@ -2205,7 +2205,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/25 17:15:07 -- bradc
+05/25/04 17:15:07 -- bradc
 
 Log message:
 	Added initial code generation support for conditionals.  Added
@@ -2233,7 +2233,7 @@ Added files:
 
 ---------------------------------------------------------------------------
 
-04/05/26 11:39:10 -- jplevyak (a.k.a. n10253)
+05/26/04 11:39:10 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Fixed two bugs which were causing problems in the front end.
@@ -2245,7 +2245,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/26 11:47:16 -- jplevyak (a.k.a. n10253)
+05/26/04 11:47:16 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Missing semi-colon
@@ -2255,7 +2255,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/26 14:17:01 -- jplevyak (a.k.a. n10253)
+05/26/04 14:17:01 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	new supression in boehm GC
@@ -2265,7 +2265,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/26 16:09:39 -- jplevyak (a.k.a. n10253)
+05/26/04 16:09:39 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	New data structure for handling data polymorophism which is simpler and
@@ -2276,7 +2276,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/05/27 14:41:54 -- bradc
+05/27/04 14:41:54 -- bradc
 
 Log message:
 	Changed the test system to use .good files to store the expected
@@ -2344,7 +2344,7 @@ Removed files:
 
 ---------------------------------------------------------------------------
 
-04/05/27 16:04:20 -- jplevyak (a.k.a. n10253)
+05/27/04 16:04:20 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	fix bug with handling of references
@@ -2355,7 +2355,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/06/01 13:03:36 -- jplevyak (a.k.a. n10253)
+06/01/04 13:03:36 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	most of test/trivial/bradc/arrinit now "compile"
@@ -2365,7 +2365,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/06/01 14:33:58 -- jplevyak (a.k.a. n10253)
+06/01/04 14:33:58 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	fixup tests to match new grammar for parsing trivial/bradc
@@ -2376,7 +2376,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/06/01 16:50:47 -- bradc
+06/01/04 16:50:47 -- bradc
 
 Log message:
 	Fixed a bug in the testing system in which -startdir was only
@@ -2390,7 +2390,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/06/01 17:20:28 -- jplevyak (a.k.a. n10253)
+06/01/04 17:20:28 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	All of trivial/bradc/arrinit now parse.
@@ -2402,7 +2402,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/06/02 11:26:41 -- jplevyak (a.k.a. n10253)
+06/02/04 11:26:41 -- jplevyak (a.k.a. n10253)
 
 Log message:
 	Added support for value types.
@@ -2415,7 +2415,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/06/02 13:20:01 -- bradc
+06/02/04 13:20:01 -- bradc
 
 Log message:
 	Improved dependences for *.g.d_parser.o files.  These are
@@ -2443,7 +2443,7 @@ Modified files:
 
 ---------------------------------------------------------------------------
 
-04/06/02 13:24:46 -- bradc
+06/02/04 13:24:46 -- bradc
 
 Log message:
 	Changed the sub_test script to remove the ihgfedcba from
