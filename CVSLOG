@@ -3926,3 +3926,13 @@ Modified files:
 	                                    dispatch3.good 
 	                                    dispatch4.good 
 
+---------------------------------------------------------------------------
+
+07/12/04 16:29:54 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	new test cases for member functions
+
+Added files:
+	chapel/test/flowanalysis/jplevyak/: memberfun.v 
+
