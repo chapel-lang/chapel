@@ -3979,3 +3979,13 @@ Modified files:
 	                                    dispatch4.good review1.good 
 	                                    review2.good 
 
+---------------------------------------------------------------------------
+
+07/14/04 08:43:47 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	forgot good output file for test case
+
+Added files:
+	chapel/test/flowanalysis/jplevyak/: memberfun.good 
+
