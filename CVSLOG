@@ -10687,3 +10687,22 @@ Added files:
 	chapel/compiler/traversals/: resolveSymbols2.cpp 
 	                             resolveSymbols2.h 
 
+---------------------------------------------------------------------------
+
+11/30/04 16:35:32 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix bug in cloning which could cause an bogus error during low level CG
+	  by removing duplicates from the Fun::calls array
+	Add :TYPE_KIND to the debugging output of IF1
+	Use => for named arguments in the V parser.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp if1.cpp pattern.cpp 
+	chapel/compiler/vparser/: parse_ast.cpp v.g 
+	chapel/test/flowanalysis/jplevyak/: cs4.good destruct2.v 
+	                                    named.good 
+	chapel/test/flowanalysis/jplevyak/loop/: loop2.good 
+	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
+	                               module.good tuples.good 
+
