@@ -12628,3 +12628,33 @@ Removed files:
 	                                   test_method5.chpl 
 	                                   test_method6.chpl 
 
+---------------------------------------------------------------------------
+
+12/22/04 12:58:14 -- deitz
+
+Log message:
+	Fixed a bug in copy in which the type of a parameter symbol was copied
+	when a parameter symbol was copied and the return type of a function
+	was copied when the function definition statement was copied.  These
+	types are now shared, copying them led to an infinite recursion.
+	
+	Quick-fixed with-statement application so that it can be applied
+	before resolving symbols by having it resolve the class that is
+	applied via the with-expression.
+	
+	Moved the with-statement application traversal first in the suite of
+	Cleanup traversals.
+	
+	Moved test_class_with2.chpl out of the future directory.  This test
+	tests with on classes when the classes have methods.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/traversals/: cleanup.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_class_with2.chpl 
+	                            test_class_with2.good 
+Removed files:
+	chapel/test/classes/deitz/future/: test_class_with2.chpl 
+	                                   test_class_with2.good 
+
