@@ -20,7 +20,6 @@
 #include "driver.h"
 #include "graph.h"
 #include "inline.h"
-#include "internal.h"
 #include "grammar.h"
 #include "version.h"
 #include "pdb.h"

@@ -133,9 +133,9 @@ find_nesting_EntrySet(Fun *fn, EntrySet *e) {
 
 AVar *
 make_AVar(Var *v, EntrySet *es) {
-  if (v->sym->is_constant || v->sym->is_symbol || v->sym->in == es->fun->sym)
+  if (v->sym->function_scope)
     return unique_AVar(v, es);
-  if (!v->sym->in || v->sym->in->is_module || v->sym->type_kind)
+  if (v->sym->global_scope)
     return unique_AVar(v, GLOBAL_CONTOUR);
   return unique_AVar(v, find_nesting_EntrySet(v->sym->in->fun, es));
 }
@@ -833,6 +833,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
     AVar *av = make_AVar(v, es);
     if (!p->tvals.v[i]) {
       Sym *s = if1_alloc_sym(fa->pdb->if1);
+      s->function_scope = 1;
       s->is_lvalue = v->sym->is_lvalue;
       s->in = es->fun->sym;
       p->tvals.v[i] = new Var(s);
@@ -882,6 +883,7 @@ vector_elems(int rank, PNode *p, AVar *ae, AVar *elem, AVar *container, int n = 
       e = make_AVar(p->tvals.v[n-1], es);
     else {
       Sym *s = if1_alloc_sym(fa->pdb->if1);
+      s->function_scope = 1;
       assert(!e->var->sym->is_lvalue);
       s->in = es->fun->sym;
       Var *v = new Var(s);

@@ -86,13 +86,15 @@ class Sym : public gc {
   unsigned int		is_meta:1;		// Sym is class of class
   unsigned int 		is_value:1;		// Sym is a value class
 
+  unsigned int		global_scope:1;		// Sym is globally unique (file/module)
+  unsigned int		function_scope:1;	// Sym is function unique
+
   unsigned int		live:1;			// used by if1.cpp
   unsigned int		incomplete:1;		// used by clone.cpp
 
   unsigned int		type_kind:4;
   unsigned int		num_kind:2;		// Sort of number class
   unsigned int		num_index:3;		// Precision of number class
-  unsigned int		internal:4;		// Non-primitive 'internal' type 
 
   char			*alt_name;		// alternative name (pattern/extern)
 

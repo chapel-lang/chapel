@@ -25,4 +25,6 @@ class AST : public gc {
 };
 #define forv_AST(_x, _v) forv_Vec(AST, _x, _v)
 
+void build_module(Sym *sym, Sym *init);
+
 #endif

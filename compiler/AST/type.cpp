@@ -4,25 +4,26 @@
 #include "symbol.h"
 #include "type.h"
 
-Type* dtVoid;
-Type* dtInteger;
-Type* dtFloat;
-Type* dtString;
+Type* dtVoid = 0;
+Type* dtBoolean = 0;
+Type* dtInteger = 0;
+Type* dtFloat = 0;
+Type* dtString = 0;
 
-Type* dtTimer;
-Type* dtLocale;
+Type* dtTimer = 0;
+Type* dtLocale = 0;
 
-Type* dtUnknown;
+Type* dtUnknown = 0;
 
-Symbol* pstVoid;
-Symbol* pstInteger;
-Symbol* pstFloat;
-Symbol* pstString;
+Symbol* pstVoid = 0;
+Symbol* pstInteger = 0;
+Symbol* pstFloat = 0;
+Symbol* pstString = 0;
 
-Symbol* pstTimer;
-Symbol* pstLocale;
+Symbol* pstTimer = 0;
+Symbol* pstLocale = 0;
 
-Symbol* pstUnknown;
+Symbol* pstUnknown = 0;
 
 
 Type::Type(astType_t astType) :

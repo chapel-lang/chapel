@@ -5,7 +5,6 @@
 #include "geysa.h"
 #include "driver.h"
 #include "pattern.h"
-#include "internal.h"
 #include "prim.h"
 #include "builtin.h"
 #include "if1.h"
@@ -102,9 +101,6 @@ dump_sym(FILE *fp, Sym *t) {
   else
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
     fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->filename(), t->line());
-  if (t->ast && t->filename())
-  if (t->internal)
-    fprintf(fp, "<TR><TD><TD>internal<TD>%s\n", internal_string[t->internal]);
   if (t->is_builtin) {
     char *name = if1->builtins_names.get(t);
     fprintf(fp, "<TR><TD><TD>Builtin<TD>%s\n", name);

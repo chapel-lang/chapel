@@ -9,7 +9,6 @@
 #include "parse_ast.h"
 #include "if1.h"
 #include "scope.h"
-#include "internal.h"
 #include "prim.h"
 #include "builtin.h"
 #include "fa.h"
@@ -273,12 +272,6 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
   }
   switch (x) {
     default: break;
-    case Builtin_domain:
-      sym->internal = Internal_Domain;
-      break;
-    case Builtin_sequence:
-      sym->internal = Internal_Sequence;
-      break;
     case Builtin_int8:
     case Builtin_int16:
     case Builtin_int32:
@@ -384,19 +377,13 @@ ast_to_type(ParseAST *ast) {
 static Sym * 
 make_module(IF1 *i, char *mod_name, Scope *global, Sym *sym = 0) {
   sym = new_sym(i, global, mod_name, sym);
-  sym->type = sym_module;
-  sym->is_module = 1;
   sym->scope = new Scope(global, Scope_RECURSIVE, sym);
+  sym->labelmap = new LabelMap;
   if (sym != sym_system)
     sym->scope->add_dynamic(sym_system->scope);
-  sym->labelmap = new LabelMap;
-
   Sym *fun = new_sym(i, sym->scope, "__init");
   fun->scope = new Scope(sym->scope, Scope_RECURSIVE, fun);
-  fun->type = sym_function;
-  fun->type_kind = Type_FUN;
-  fun->type_sym = fun;
-  sym->init = fun;
+  build_module(sym, fun);
   return sym;
 }
 
@@ -1142,7 +1129,8 @@ gen_op(IF1 *i, ParseAST *ast) {
   ast->rval = new_sym(i, ast->scope);
   ast->rval->ast = ast;
   Sym *res = ast->rval;
-  ParseAST *a0 = ast->op_index ? ast->children.v[0] : 0, *a1 = ast->children.n > (int)(1 + ast->op_index) ? ast->last() : 0;
+  ParseAST *a0 = ast->op_index ? ast->children.v[0] : 0;
+  ParseAST *a1 = ast->children.n > (int)(1 + ast->op_index) ? ast->last() : 0;
   if (a0) if1_gen(i, c, a0->code);
   if (a1) if1_gen(i, c, a1->code);
   if (ast->is_comma)
@@ -1182,7 +1170,8 @@ gen_op(IF1 *i, ParseAST *ast) {
       res = new_sym(i, ast->scope);
     }
     if (binary)
-      send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->children.v[ast->op_index]->rval, aa1, args);
+      send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->children.v[ast->op_index]->rval, 
+		      aa1, args);
     else if (a0)
       send = if1_send(i, c, 3, 1, sym_make_tuple, aa0, ast->children.v[ast->op_index]->rval, args);
     else
@@ -1906,6 +1895,48 @@ finalize_types(IF1 *i) {
   make_type_syms(i);
 }
 
+static void
+finalize_sym(Sym *f, Sym *s) {
+  if (s->in == f)
+    s->function_scope = 1;
+  else
+    assert(!s->function_scope);
+  if (s->is_pattern)
+    forv_Sym(ss, s->has)
+      finalize_sym(f, ss);
+}
+
+static void
+finalize_fun_symbols(Sym *f, Code *code) {
+  forv_Sym(s, code->lvals)
+    finalize_sym(f, s);
+  forv_Sym(s, code->rvals)
+    finalize_sym(f, s);
+  forv_Code(c, code->sub)
+    finalize_fun_symbols(f, c);
+}
+
+// Set Sym::function_scope and Sym::global_scope for flow analysis
+static void
+finalize_symbols(IF1 *i) {
+  forv_Sym(f, i->allclosures) {
+    finalize_fun_symbols(f, f->code);
+    forv_Sym(s, f->has)
+      finalize_sym(f, s);
+    if (f->self)
+      finalize_sym(f, f->self);
+    finalize_sym(f, f->ret);
+    finalize_sym(f, f->cont);
+  }
+  forv_Sym(s, i->allsyms) {
+    if (s->is_constant || s->is_symbol)
+      s->function_scope = 1;
+    else
+      if (!s->in || s->in->is_module || s->type_kind)
+	s->global_scope = 1;
+  }
+}
+
 int
 ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   Scope *global = new Scope();
@@ -1942,6 +1973,7 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
       return -1;
   build_modules(i);
   build_init(i);
+  finalize_symbols(i);
   return 0;
 }
 
