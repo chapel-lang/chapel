@@ -34,8 +34,8 @@ class Symboltable {
   static FnDefStmt* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
 				Type* retType, Stmt* body, 
 				bool isExtern = false);
-  static FnSymbol* defineFunction(char* name, Symbol* formals, Type* retType, 
-				  Stmt* body, bool isExtern = false);
+  static FnDefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
+				   Stmt* body, bool isExtern = false);
   static ClassType* defineClass(char* name, ClassSymbol* parent);
 
   static VarSymbol* startForLoop(Symbol* indices);

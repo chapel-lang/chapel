@@ -410,13 +410,11 @@ FnDefStmt* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals,
 }
 
 
-FnSymbol* Symboltable::defineFunction(char* name, Symbol* formals, 
-				      Type* retType, Stmt* body, 
-				      bool isExtern) {
-  FnSymbol* newFn = new FnSymbol(name, formals, retType, body, isExtern);
-  define(newFn);
-
-  return newFn;
+FnDefStmt* Symboltable::defineFunction(char* name, Symbol* formals, 
+				       Type* retType, Stmt* body, 
+				       bool isExtern) {
+  FnSymbol* fnsym = startFnDef(name);
+  return finishFnDef(fnsym, formals, retType, body, isExtern);
 }
 
 

@@ -12,9 +12,6 @@
 
 * remove dead code (usually commented out)
 
-* refactor function implementation stuff into a helper function?
-  (from parser and createAST.cpp)
-
 * squelch init prototype
   - and/or specialize name of init procedure to file and make a top-level
     init file

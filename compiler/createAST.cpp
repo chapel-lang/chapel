@@ -75,9 +75,10 @@ static Stmt* createInitFn(Stmt* program) {
   program = dynamic_cast<Stmt*>(globstmts);
   Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
                                                  : nilStmt);
-  FnSymbol* initFun = Symboltable::defineFunction("__init", nilSymbol, 
-						   dtVoid, initFunBody, true);
-  FnDefStmt* initFunDef = new FnDefStmt(initFun);
+  FnDefStmt* initFunDef = Symboltable::defineFunction("__init", nilSymbol, 
+						      dtVoid, initFunBody, 
+						      true);
+
 
   program = appendLink(program, initFunDef);
 
