@@ -21857,3 +21857,24 @@ Modified files:
 	chapel/compiler/AST/: type.cpp 
 	chapel/compiler/parser/: internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+03/28/05 14:21:29 -- jplevyak
+
+Log message:
+	Turn on interprocedural constant propagation.  Removed constants from
+	the "types" before cloning and from the results reported in type_info().
+	The constant information is now available from constant_info() and symbol_info().
+	Currently, analysis only records when something has exactly 1 possible constant
+	value.  This can be changed on the command line.  However, this makes it possible
+	to clone for constants on a formal parameter by formal parameter basis, and this
+	capability is used to permit tuple indexing to work with manifest constants
+	since tuple indexing is implemented as a member function of tuples.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp cg.cpp clone.cpp fa.cpp 
+	chapel/compiler/include/: fa.h 
+	chapel/test/flowanalysis/jplevyak/constants/: 
+	                                              constant_folding.good 
+	chapel/test/types/tuple/jplevyak/: tuple_index-2.future 
+
