@@ -1,11 +1,36 @@
 #!/usr/bin/perl
 
+$printusage = 0;
+if (@ARGV) {
+    $debugflag = shift @ARGV;
+    if ($debugflag eq "-debug") {
+	$debug = 1;
+    } elsif ($debugflag eq "-cron") {
+	$debug = 0;
+    } else {
+	$printusage = 1;
+    }
+} else {
+    $printusage = 1;
+}
+
+if (@ARGV) {
+    $statdate = shift @ARGV;
+} else {
+    $statdate = `date +%D`; chomp($statdate);
+}
+
+if ($printusage == 1) {
+    print "nightly [-debug|-cron] {date}\n";
+    exit 1;
+}
+
+
 #
 # get uniquifiers
 #
 $id = getpgrp();
 $today = `date +%w-%a`; chomp($today);
-$statdate = `date +%D`; chomp($statdate);
 
 
 #
@@ -16,6 +41,11 @@ $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
 $logdir = "~bradc/chapel/test/Logs/Nightly";
 $statdir = "$logdir/Stats";
+if ($debug == 1) {
+    $statfile = "$statdir/nightly.debug.dat";
+} else {
+    $statfile = "$statdir/nightly.cron.dat";
+}
 
 
 #
@@ -34,16 +64,17 @@ $prevvgrsummary = "$logdir/last-vgr.log.sorted";
 
 
 $mailcommand = "| Mail -s \"Chapel: Nightly Results\" bradc\@cray.com";
+$somethingfailed = 0;
 
 #
 # make temp directory
 #
-mysystem("mkdir $tmpdir > /dev/null", "creating temp dir");
+mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 
 #
 # checkout sources
 #
-mysystem("cd $tmpdir && cvs -d ~bradc/CVS checkout chapel", "cvs checkout");
+mysystem("cd $tmpdir && cvs -d ~bradc/CVS checkout chapel", "cvs checkout", 1, 1);
 
 
 #
@@ -54,50 +85,80 @@ delete($ENV{'CHPLDEVTMP'});
 #
 # build stuff
 #
-mysystem("cd $chapeldir && make third-party", "making third-party");
-mysystem("cd $chapeldir && make compiler", "making chapel compiler");
-mysystem("cd $chapeldir && make runtime", "making chapel runtime");
+mysystem("cd $chapeldir && make third-party", "making third-party", 1, 1);
+mysystem("cd $chapeldir && make compiler", "making chapel compiler", 1, 1);
+mysystem("cd $chapeldir && make runtime", "making chapel runtime", 1, 1);
 
 #
 # run tests
 #
 `rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
-mysystem("cd $testdir && ./start_test -logfile $rawstdlog", "running standard tests");
-mysystem("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog", "running valgrind tests");
+$stdstatus = mysystem("cd $testdir && ./start_test -logfile $rawstdlog", "running standard tests", 0, 0);
+$vgrstatus = mysystem("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog", "running valgrind tests", 0, 0);
 
 
 #
 # sort output
 #
-`cat $rawstdsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedstdsummary`;
-`cat $rawvgrsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedvgrsummary`;
 
 
-#
-# count stuff
-#
-$oldstdsummary = `grep Summary: $prevstdsummary`; chomp($oldstdsummary);
-$oldvgrsummary = `grep Summary: $prevvgrsummary`; chomp($oldvgrsummary);
-$newstdsummary = `grep Summary: $sortedstdsummary`; chomp($newstdsummary);
-$newvgrsummary = `grep Summary: $sortedvgrsummary`; chomp($newvgrsummary);
+if ($stdstatus == 0) {
+    `cat $rawstdsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedstdsummary`;
 
-$oldstdsucc = &numsuccesses($oldstdsummary);
-$oldstdfail = &numfailures($oldstdsummary);
-$oldvgrsucc = &numsuccesses($oldvgrsummary);
-$oldvgrfail = &numfailures($oldvgrsummary);
-$newstdsucc = &numsuccesses($newstdsummary);
-$newstdfail = &numfailures($newstdsummary);
-$newvgrsucc = &numsuccesses($newvgrsummary);
-$newvgrfail = &numfailures($newvgrsummary);
+    $oldstdsummary = `grep Summary: $prevstdsummary`; chomp($oldstdsummary);
+    $newstdsummary = `grep Summary: $sortedstdsummary`; chomp($newstdsummary);
 
-$oldnumtests = $oldstdsucc + $oldstdfail;
-$newnumtests = $newstdsucc + $newstdfail;
-$deltests = &delta($oldnumtests, $newnumtests);
+    $oldstdsucc = &numsuccesses($oldstdsummary);
+    $oldstdfail = &numfailures($oldstdsummary);
 
-$delstdsucc = &delta($oldstdsucc, $newstdsucc);
-$delstdfail = &delta($oldstdfail, $newstdfail);
-$delvgrsucc = &delta($oldvgrsucc, $newvgrsucc);
-$delvgrfail = &delta($oldvgrfail, $newvgrfail);
+    $newstdsucc = &numsuccesses($newstdsummary);
+    $newstdfail = &numfailures($newstdsummary);
+
+    $delstdsucc = &delta($oldstdsucc, $newstdsucc);
+    $delstdfail = &delta($oldstdfail, $newstdfail);
+
+    $stdsummary = "standard run: $newstdsucc Successes ($delstdsucc), $newstdfail Failures ($delstdfail)";
+} else {
+    $stdsummary = "standard run: failed";
+}
+
+if ($vgrstatus == 0) {
+    `cat $rawvgrsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedvgrsummary`;
+
+    $oldvgrsummary = `grep Summary: $prevvgrsummary`; chomp($oldvgrsummary);
+    $newvgrsummary = `grep Summary: $sortedvgrsummary`; chomp($newvgrsummary);
+
+    $oldvgrsucc = &numsuccesses($oldvgrsummary);
+    $oldvgrfail = &numfailures($oldvgrsummary);
+
+    $newvgrsucc = &numsuccesses($newvgrsummary);
+    $newvgrfail = &numfailures($newvgrsummary);
+
+    $delvgrsucc = &delta($oldvgrsucc, $newvgrsucc);
+    $delvgrfail = &delta($oldvgrfail, $newvgrfail);
+
+    $vgrsummary = "valgrind run: $newvgrsucc Successes ($delvgrsucc), $newvgrfail Failures ($delvgrfail)";
+} else {
+    $vgrsummary = "valgrind run: failed";
+}
+
+$knownumtests = 1;
+if ($stdstatus == 0) {
+    $oldnumtests = $oldstdsucc + $oldstdfail;
+    $newnumtests = $newstdsucc + $newstdfail;
+    $deltests = &delta($oldnumtests, $newnumtests);
+    $numtestssummary = "$newnumtests Tests ($deltests)";
+} elsif ($vgrstatus == 0) {
+    $oldnumtests = $oldvgrsucc + $oldvgrfail;
+    $newnumtests = $newvgrsucc + $newvgrfail;
+    $deltests = &delta($oldnumtests, $newnumtests);
+    $numtestssummary = "$newnumtests Tests ($deltests)";
+} else {
+    $numtestssummary = "unknown number of Tests";
+    $knownumtests = 0;
+}
+
+
 
 
 #
@@ -106,35 +167,47 @@ $delvgrfail = &delta($oldvgrfail, $newvgrfail);
 open(MAIL, $mailcommand);
 
 print MAIL "=== Summary ===================================================\n";
-print MAIL "$newnumtests Tests ($deltests)\n";
-print MAIL "standard run: $newstdsucc Successes ($delstdsucc), $newstdfail Failures ($delstdfail)\n";
-print MAIL "valgrind run: $newvgrsucc Successes ($delvgrsucc), $newvgrfail Failures ($delvgrfail)\n";
+print MAIL "$numtestssummary\n";
+print MAIL "$stdsummary\n";
+print MAIL "$vgrsummary\n";
 print MAIL "===============================================================\n";
 print MAIL "\n";
 
-print MAIL "--- New Errors (standard) -------------------------------------\n";
-print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
-print MAIL "\n";
+if ($stdstatus == 0) {
+    print MAIL "--- New Errors (standard) -------------------------------------\n";
+    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+    print MAIL "\n";
+}
 
-print MAIL "--- New Errors (valgrind) -------------------------------------\n";
-print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
-print MAIL "\n";
+if ($vgrstatus == 0) {
+    print MAIL "--- New Errors (valgrind) -------------------------------------\n";
+    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
+    print MAIL "\n";
+}
 
-print MAIL "--- Resolved Errors (standard) --------------------------------\n";
-print MAIL `comm -23 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
-print MAIL "\n";
+if ($stdstatus == 0) {
+    print MAIL "--- Resolved Errors (standard) --------------------------------\n";
+    print MAIL `comm -23 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+    print MAIL "\n";
+}
 
-print MAIL "--- Resolved Errors (valgrind) --------------------------------\n";
-print MAIL `comm -23 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
-print MAIL "\n";
+if ($vgrstatus == 0) {
+    print MAIL "--- Resolved Errors (valgrind) --------------------------------\n";
+    print MAIL `comm -23 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
+    print MAIL "\n";
+}
 
-print MAIL "--- Unresolved Errors (standard) ------------------------------\n";
-print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
-print MAIL "\n";
+if ($stdstatus == 0) {
+    print MAIL "--- Unresolved Errors (standard) ------------------------------\n";
+    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+    print MAIL "\n";
+}
 
-print MAIL "--- Unresolved Errors (valgrind) ------------------------------\n";
-print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
-print MAIL "\n";
+if ($vgrstatus == 0) {
+    print MAIL "--- Unresolved Errors (valgrind) ------------------------------\n";
+    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
+    print MAIL "\n";
+}
 
 close(MAIL);
 
@@ -142,21 +215,46 @@ close(MAIL);
 #
 # tuck this run's output away for comparison tomorrow
 #
-`cp $sortedstdsummary $prevstdsummary`;
-`cp $sortedvgrsummary $prevvgrsummary`;
+if ($debug == 0) {
+    if ($stdstatus == 0) {
+	`cp $sortedstdsummary $prevstdsummary`;
+    }
+    if ($vgrstatus == 0) {
+	`cp $sortedvgrsummary $prevvgrsummary`;
+    }
+}
 
 
 #
 # write stats and build new graph
 #
-`echo "$statdate\t-\t$newnumtests\t$newstdsucc\t$newvgrsucc" >> $statdir/tests.dat`;
-`ci -l -m"automated nightly checkin" $statdir/tests.dat`;
+if ($knownumtests == 1) {
+    $testcol = "$newnumtests";
+} else {
+    $testcol = "-";
+}
+if ($stdstatus == 0) {
+    $stdcol = "$newstdsucc";
+} else {
+    $stdcol = "-";
+}
+if ($vgrstatus == 0) {
+    $vgrcol = "$newvgrsucc";
+} else {
+    $vgrcol = "-";
+}
+`echo "$statdate\t-\t$testcol\t$stdcol\t$vgrcol" >> $statfile`;
+if ($debug == 0) {
+    `ci -l -m"automated nightly checkin" $statfile`;
+}
 `cd $statdir && ./makeplot`;
 
 #
 # clean up
 #
-mysystem("rm -rf $tmpdir", "removing temp dir");
+if ($somethingfailed == 0) {
+    mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
+}
 
 exit 0;
 
@@ -166,23 +264,36 @@ exit 0;
 #
 
 sub mysystem {
-    $status = system($_[0]);
+    $command = $_[0];
+    $errorname = $_[1];
+    $fatal = $_[2];
+    $mailmsg = $_[3];
+
+    $status = system($command);
     if ($status != 0) {
+	$somethingfailed = 1;
         $status = $status / 256;
 	print "Error $_[1]: $status\n";
 
-	open(MAIL, $mailcommand);
-	print MAIL "=== Summary ===================================================\n";
-	print MAIL "ERROR $_[1]: $status\n";
-	print MAIL "(workspace left at $tmpdir)\n";
-	print MAIL "===============================================================\n";
-	close(MAIL);
+	if ($mailmsg != 0) {
+	    open(MAIL, $mailcommand);
+	    print MAIL "=== Summary ===================================================\n";
+	    print MAIL "ERROR $_[1]: $status\n";
+	    print MAIL "(workspace left at $tmpdir)\n";
+	    print MAIL "===============================================================\n";
+	    close(MAIL);
+	}
 
-	`echo "$statdate\t1" >> $statdir/tests.dat`;
-	`ci -l -m"automated nightly checkin" $statdir/tests.dat`;
-	`cd $statdir && ./makeplot`;
-	exit 1;
+	if ($fatal != 0) {
+	    `echo "$statdate\t1" >> $statfile`;
+	    if ($debug == 0) {
+		`ci -l -m"automated nightly checkin" $statfile`;
+	    }
+	    `cd $statdir && ./makeplot`;
+	    exit 1;
+	}
     }
+    $status;
 }
 
 sub numsuccesses {
