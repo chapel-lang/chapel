@@ -23606,3 +23606,37 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/05 13:45:28 -- bradc
+
+Log message:
+	Refactored code that makes runtime union
+	check calls into a method on UnionType
+	called buildSafeUnionAccessCall.  This
+	combines the three different places we
+	build these calls, removing a lot of
+	redundant code and localizing all
+	references to the union's enumerated
+	type to the type.cpp file.  All future
+	calls to these routines should be made
+	through this interface.
+	
+	In making this change, I propagated
+	filename/lineno information in
+	applyWithParameters.cpp so that I could
+	rely on looking at the base expression
+	in a MemberAccess to find out where
+	the MemberAccess lives.  Steve has
+	ideas about propagating this information
+	semi-automatically when creating new
+	AST nodes, and if that change is done,
+	my code could potentially be pulled out.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/symtab/: insertWriteFns.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             insertUnionChecks.cpp 
+
