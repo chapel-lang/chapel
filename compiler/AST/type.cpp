@@ -601,6 +601,7 @@ IndexType::IndexType(Expr* init_expr) :
   Type(TYPE_INDEX, NULL),
   idxExpr(init_expr)
 {
+  SET_BACK(idxExpr);
   if (typeid(*init_expr) == typeid(IntLiteral)) {
     TupleType* newTType = new TupleType(init_expr->typeInfo());
     for (int i = 1; i < init_expr->intVal(); i++){
@@ -609,7 +610,6 @@ IndexType::IndexType(Expr* init_expr) :
     idxType = newTType;
   } else {
     idxType = init_expr->typeInfo(); 
-    SET_BACK(idxExpr);
   }
 }
 

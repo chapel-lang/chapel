@@ -11,7 +11,7 @@
 
 static void insert_init(Stmt* stmt, VarSymbol* var, Type* type);
 static void insert_init_at_stmt(Stmt* stmt, VarSymbol* var, Type* type);
-static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type);
+//static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type);
 static void insert_user_default_init(Stmt* stmt, VarSymbol* var, Type* type);
 static void insert_user_init(Stmt* stmt, VarSymbol* var);
 
@@ -153,17 +153,17 @@ static void insert_domain_init(Stmt* stmt, VarSymbol* var) {
 }
 
 
-static void insert_string_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
-  if (type->defaultVal) {
-    Expr* args = new Variable(var);
-    args->append(new Variable(var));
-    args->append(type->defaultVal->copy());
-    Symbol* init_string = Symboltable::lookupInternal("_init_string");
-    FnCall* call = new FnCall(new Variable(init_string), args);
-    ExprStmt* call_stmt = new ExprStmt(call);
-    insert_default_init_stmt(var, call_stmt);
-  }
-}
+// static void insert_string_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
+//   if (type->defaultVal) {
+//     Expr* args = new Variable(var);
+//     args->append(new Variable(var));
+//     args->append(type->defaultVal->copy());
+//     Symbol* init_string = Symboltable::lookupInternal("_init_string");
+//     FnCall* call = new FnCall(new Variable(init_string), args);
+//     ExprStmt* call_stmt = new ExprStmt(call);
+//     insert_default_init_stmt(var, call_stmt);
+//   }
+// }
 
 
 static void insert_string_user_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
@@ -202,35 +202,35 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var) {
 }
 
 
-static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
+// static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
-  //
-  // SJD: This code squelches inserting the default init statement for
-  // classes within their own constructor.  This avoids generating
-  // code like the following which crashed my whole system:
-  //
-  //   ClassName _construct_ClassName(void) {
-  //     ClassName this;
-  //     this = _construct_ClassName();  <=== Squelched
-  //
-  if (StructuralType* class_type = dynamic_cast<StructuralType*>(type)) {
-    if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(class_type->constructor)) {
-      if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
-        if (def_expr->sym == stmt->parentSymbol) {
-          return;
-        }
-      }
-    }
-  }
+//   //
+//   // SJD: This code squelches inserting the default init statement for
+//   // classes within their own constructor.  This avoids generating
+//   // code like the following which crashed my whole system:
+//   //
+//   //   ClassName _construct_ClassName(void) {
+//   //     ClassName this;
+//   //     this = _construct_ClassName();  <=== Squelched
+//   //
+//   if (StructuralType* class_type = dynamic_cast<StructuralType*>(type)) {
+//     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(class_type->constructor)) {
+//       if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
+//         if (def_expr->sym == stmt->parentSymbol) {
+//           return;
+//         }
+//       }
+//     }
+//   }
 
-  if (type->defaultVal) {
-    AssignOp* assign_expr = new AssignOp(GETS_NORM,
-                                         new Variable(var),
-                                         type->defaultVal->copy());
-    ExprStmt* assign_stmt = new ExprStmt(assign_expr);
-    insert_default_init_stmt(var, assign_stmt);
-  }
-}
+//   if (type->defaultVal) {
+//     AssignOp* assign_expr = new AssignOp(GETS_NORM,
+//                                          new Variable(var),
+//                                          type->defaultVal->copy());
+//     ExprStmt* assign_stmt = new ExprStmt(assign_expr);
+//     insert_default_init_stmt(var, assign_stmt);
+//   }
+// }
 
 
 static void insert_user_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
@@ -256,18 +256,18 @@ static void insert_user_init(Stmt* stmt, VarSymbol* var) {
 
 
 static void insert_init(Stmt* stmt, VarSymbol* var, Type* type) {
-  //
-  // Default initialization (at the top of the scope)
-  //
-  if (dynamic_cast<ArrayType*>(type)) {
-    // Default initialization for arrays done at the DefStmt for now
-  } else if (dynamic_cast<DomainType*>(type)) {
-    // Default initialization for domains not done
-  } else if (type == dtString) {
-    insert_string_default_init(stmt, var, type);
-  } else {
-    insert_default_init(stmt, var, type);
-  }
+//   //
+//   // Default initialization (at the top of the scope)
+//   //
+//   if (dynamic_cast<ArrayType*>(type)) {
+//     // Default initialization for arrays done at the DefStmt for now
+//   } else if (dynamic_cast<DomainType*>(type)) {
+//     // Default initialization for domains not done
+//   } else if (type == dtString) {
+//     insert_string_default_init(stmt, var, type);
+//   } else {
+//     insert_default_init(stmt, var, type);
+//   }
 
   //
   // User initialization (at the DefStmt)

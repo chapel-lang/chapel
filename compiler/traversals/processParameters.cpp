@@ -66,14 +66,18 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 
             Expr* initializer;
             if (formal->intent == PARAM_OUT || (actual == NULL)) {
-              initializer = formal->init;
+              if (formal->init) {
+                initializer = formal->init;
+              } else {
+                initializer = formal->type->defaultVal;
+              }
             } else {
               initializer = actual->copy();
             }
             char* newActualName = glomstrings(2, "_", formal->name);
             DefStmt* newActualDecl = 
               Symboltable::defineSingleVarDefStmt(newActualName,
-                                                  formal->type, initializer,
+                                                  formal->type, initializer->copy(),
                                                   VAR_NORMAL, VAR_VAR);
             body = appendLink(body, newActualDecl);
 

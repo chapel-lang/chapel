@@ -4,6 +4,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
+#include "../traversals/fixup.h"
 
 static void resolve_type_helper(Type* &type) {
   if (dynamic_cast<UnresolvedType*>(type)) {
@@ -20,17 +21,18 @@ static void resolve_type_helper(Type* &type) {
     else {
       INT_FATAL(type, "Error resolving type");
     }
-  }
-  if (UserType* user_type = dynamic_cast<UserType*>(type)) {
+  } else if (UserType* user_type = dynamic_cast<UserType*>(type)) {
     resolve_type_helper(user_type->definition);
-  }
-  if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
+    if (!user_type->defaultVal) {
+      user_type->defaultVal = user_type->definition->defaultVal;
+      SET_BACK(user_type->defaultVal);
+      TRAVERSE(user_type->symbol->defPoint->stmt, new Fixup(), true);
+    }
+  } else if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
     resolve_type_helper(array_type->elementType);
-  }
-  if (SeqType* seq_type = dynamic_cast<SeqType*>(type)) {
+  } else if (SeqType* seq_type = dynamic_cast<SeqType*>(type)) {
     resolve_type_helper(seq_type->elementType);
-  }
-  if (TupleType* tuple_type = dynamic_cast<TupleType*>(type)) {
+  } else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type)) {
     for (int i = 0; i < tuple_type->components.n; i++) {
       resolve_type_helper(tuple_type->components.v[i]);
     }

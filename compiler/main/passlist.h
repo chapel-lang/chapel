@@ -1,8 +1,6 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
-//#define USE_EXPR_VARINIT
-
 /* This is the default list of passes that will be run by the
    compiler.  The passes shown will be run in the order shown,
    and their arguments will be set to the quoted string that
@@ -20,12 +18,13 @@ PassInfo passlist[] = {
   RUN(FilesToAST, ""),
   RUN(CreateEntryPoint, ""),
   RUN(Fixup, ""),
-  RUN(Fixup, "verify"), // this is a sanity check
 
   // passes to run if --noanalysis is used
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(OmitForNoAnalysis, ""),
 
   // passes to normalize the basic AST
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ExpandClassWiths, ""),
   RUN(InsertThisParameters, ""),
   RUN(ScopeResolveSymbols, ""),
@@ -36,9 +35,7 @@ PassInfo passlist[] = {
   RUN(BuildClassConstructorsEtc, ""),
   RUN(SpecializeParenOpExprs, ""),
   RUN(ApplyThisParameters, ""),
-#ifdef USE_EXPR_VARINIT
   RUN(ProcessDefs, ""),
-#endif
   RUN(RemoveLikeTypes, ""),
   RUN(ExpandSeqExprAssignments, ""),
 
@@ -78,9 +75,7 @@ PassInfo passlist[] = {
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(MethodsToFunctions, ""),
   RUN(ProcessParameters, ""),
-#ifndef USE_EXPR_VARINIT
   RUN(InsertVariableInitializations, ""),
-#endif
   RUN(DestructureTupleAssignments, ""),
   RUN(InsertUnionChecks, ""),
   RUN(LegalizeCNames, ""), 

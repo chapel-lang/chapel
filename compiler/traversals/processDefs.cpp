@@ -30,11 +30,15 @@ static void insert_default_init(Stmt* stmt, VarSymbol* var) {
     }
   }
 
+  if (var->consClass != VAR_VAR) {
+    return;
+  }
+
   ExprStmt* assign_stmt = new ExprStmt(new VarInitExpr(var));
   insert_default_init_stmt(var, assign_stmt);
 }
 
-
+/*
 static void insert_user_init(Stmt* stmt, VarSymbol* var) {
   if (var->init) {
     AssignOp* assign_expr = new AssignOp(GETS_NORM,
@@ -44,11 +48,11 @@ static void insert_user_init(Stmt* stmt, VarSymbol* var) {
     stmt->insertAfter(assign_stmt);
   }
 }
-
+*/
 
 static void insert_init(Stmt* stmt, VarSymbol* var) {
   insert_default_init(stmt, var);
-  insert_user_init(stmt, var);
+  //insert_user_init(stmt, var); -- done later
 }
 
 
