@@ -238,3 +238,61 @@
    fun:GC_push_current_stack
    fun:GC_generic_push_regs
 }
+{
+   boehm-memcheck29
+   Memcheck:Cond
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_generic_push_regs
+   fun:GC_push_roots
+}
+{
+   boehm-memcheck30
+   Memcheck:Cond
+   fun:GC_mark_from
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+   fun:GC_try_to_collect_inner
+}
+{
+   boehm-memcheck31
+   Memcheck:Value4
+   fun:GC_mark_and_push_stack
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_generic_push_regs
+}
+{
+   boehm-memcheck38
+   Memcheck:Cond
+   fun:GC_block_empty
+   fun:GC_push_marked
+   fun:GC_push_next_marked
+   fun:GC_mark_some
+}
+{
+   boehm-memcheck39
+   Memcheck:Cond
+   fun:GC_push_marked
+   fun:GC_push_next_marked
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+}
+{
+   boehm-memchec40
+   Memcheck:Cond
+   fun:GC_mark_and_push
+   fun:GC_push_marked4
+   fun:GC_push_next_marked
+   fun:GC_mark_some
+}
+{
+   boehm-memcheck41
+   Memcheck:Cond
+   fun:GC_push_marked4
+   fun:GC_push_next_marked
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+}
+
+
