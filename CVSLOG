@@ -3740,3 +3740,13 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/protoast/: badred.chpl badred.good 
 
+---------------------------------------------------------------------------
+
+06/23/04 22:11:21 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	additional flow analysis test case based on review example
+
+Added files:
+	chapel/test/flowanalysis/jplevyak/: review2.chpl review2.good 
+
