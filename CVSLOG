@@ -6986,3 +6986,19 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/13/04 13:56:59 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added new test cases for analysis.
+
+Added files:
+	chapel/test/flowanalysis/newast/: codegen_test.chpl 
+	                                  codegen_test.good enum.chpl 
+	                                  enum.good mutrec.chpl 
+	                                  mutrec.good noargs.chpl 
+	                                  noargs.good onearg.chpl 
+	                                  onearg.good usebeforedef.chpl 
+	                                  usebeforedef.good 
+
