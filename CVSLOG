@@ -17300,3 +17300,69 @@ Log message:
 Modified files:
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+02/11/05 16:44:09 -- deitz
+
+Log message:
+	Implemented limited and initial but moderately robust support for
+	tuples from parsing to code generation with the --noanalysis flag.
+	Passed the futures for three of the five tuple tests to John.  The
+	remaining two do not work because variable initialization is not
+	turned into assignment statements before tuple assignment statements
+	are turned into multiple assignment statements of tuple indexing
+	expressions.
+	
+	Added a new Expr called TupleSelect.  This corresponds to indexing
+	into Tuples.  Currently, the indexing must be done with IntLiterals.
+	Like the ArrayRef and the FnCall, the TupleSelect derives from
+	ParenOpExpr.  Unlike other ParenOpExprs however, the argList on the
+	TupleSelect should only contain a single index expression.
+	
+	Added two general utilities to ILink.  The method length() returns the
+	number of ILinks in a list of ILinks starting from it inclusive.  The
+	method get(int i) returns the ith ILink where the first one is
+	numbered as one.
+	
+	Made the InsertAnonymousTypes traversal handle anonymous tuple types.
+	Added support for generating code for tuple type definitions.
+	
+	Added a new traversal pass DestructureTupleAssignments to turn single
+	assignments of Tuple expressions to multiple assignments of
+	TupleSelect expressions.
+	
+	Unrelated, moved the mangling of method names out of
+	MethodsToFunctions (post-analysis) and into InsertThis (pre-analysis).
+	This has little impact since the name mangling only changes the cname
+	(the name to be generated).  It is a step in the right direction for
+	class cloning which I did at some point.
+	
+	Added three more tuple tests, two of which work.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp link.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h link.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share cleanup.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             methodsToFunctions.cpp 
+	                             methodsToFunctions.h 
+	                             verifyASTType.cpp 
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.chpl 
+	                                test_tuple_simple1.good 
+	                                test_tuple_simple2.chpl 
+	                                test_tuple_simple2.future 
+Added files:
+	chapel/compiler/traversals/: destructureTupleAssignments.cpp 
+	                             destructureTupleAssignments.h 
+	chapel/test/types/tuple/deitz/: COMPOPTS test_tuple_simple3.chpl 
+	                                test_tuple_simple3.future 
+	                                test_tuple_simple3.good 
+	                                test_tuple_simple4.chpl 
+	                                test_tuple_simple4.future 
+	                                test_tuple_simple4.good 
+	                                test_tuple_simple5.chpl 
+	                                test_tuple_simple5.future 
+	                                test_tuple_simple5.good 
+
