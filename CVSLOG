@@ -14965,3 +14965,35 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
 	chapel/test/functions/jplevyak/: intent-7-error.good 
 
+---------------------------------------------------------------------------
+
+01/19/05 16:15:05 -- bradc
+
+Log message:
+	Got parameter passing intents for integers working (finally!).
+	Modified Steve's new copy() protocol so that when his clone
+	flag is false, Variable Expr's Symbols are not changed into
+	UnresolvedSymbols, but merely re-used as-is.  In my case, I
+	just want to make a trivial copy of a Stmt without adding any
+	new symbols or re-resolving anything, so this seems to be
+	sufficient.
+	
+	Added a new helper function to the Symboltable --
+	defineSingleVarDefStmtwhich -- which defines a single variable
+	(for instance a compiler-introduced temporary) using a char*
+	name rather than a Symbol, to remove a few steps in this
+	common case.  The new variable is returned through a final
+	parameter.
+	
+	Turned on the processParameters pass by default.
+	
+	Fixed the output for Steve's test_record_method2 test.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: processParameters.cpp 
+	chapel/test/classes/deitz/: test_record_method2.good 
+
