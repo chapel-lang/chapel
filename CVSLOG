@@ -11020,3 +11020,34 @@ Added files:
 	chapel/test/types/complex/bradc/: intfloatelement.chpl 
 	                                  intfloatelement.good 
 
+---------------------------------------------------------------------------
+
+12/02/04 14:50:10 -- deitz
+
+Log message:
+	Added immature support for records.  In particular, assignment over
+	records is not supported and the compiler needs to be run with the
+	-noanalysis flag when using records.  Methods are not yet supported in
+	records.
+	
+	Accessing fields from records is supported and is handled using "."
+	rather than "->" in the generated C code.
+	
+	Eliminated support for inheritance in classes.  It was only really
+	implemented in the parser.  It no longer is since the scheme has
+	changed.  A parent pointer remains in the AST (although this will
+	probably change eventually too).
+	
+	Got rid of a print line I accidentally left in the
+	fieldsToMemberAccesses pass.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symtab.cpp type.cpp 
+	chapel/compiler/include/: symtab.h type.h 
+	chapel/compiler/parser/: chapel.lex chapel.y prelude.chpl 
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+Added files:
+	chapel/test/classes/deitz/: .cvsignore 
+	chapel/test/classes/deitz/future/: test_record1.chpl 
+	                                   test_record1.good 
+
