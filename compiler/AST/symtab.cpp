@@ -7,8 +7,15 @@
 #include "yy.h"
 
 
-static bool parsingInternalPrelude = true;
-static bool parsingPrelude = false;
+enum parsePhaseType {
+  PARSING_PRE,
+  PARSING_INTERNAL_PRELUDE,
+  PARSING_PRELUDE,
+  PARSING_USERFILES,
+  PARSING_POST
+};
+
+static parsePhaseType parsePhase = PARSING_PRE;
 
 
 class SymLink : public ILink {
@@ -98,11 +105,14 @@ void SymScope::addUndefined(UnresolvedSymbol* sym) {
 void SymScope::addUndefinedToFile(UnresolvedSymbol* sym) {
   SymScope* scope = Symboltable::getCurrentScope();
 
-  if (parsingInternalPrelude) {
+  switch (parsePhase) {
+  case PARSING_INTERNAL_PRELUDE:
     scope = findEnclosingScopeType(SCOPE_INTERNAL_PRELUDE);
-  } else if (parsingPrelude) {
+    break;
+  case PARSING_PRELUDE:
     INT_FATAL(sym, "undefined symbol in prelude: %s", sym->name);
-  } else {
+    break;
+  default:
     scope = findEnclosingScopeType(SCOPE_FILE);
   }
   
@@ -133,12 +143,13 @@ void SymScope::handleUndefined(void) {
 }
 
 
-static char* indentStr(FILE* outfile, int level) {
+static char* indentStr(FILE* outfile, scopeType type, int level) {
   static char* spaces = "                                                     "
                         "                          ";
   int printLevel;
-  switch (level) {
+  switch (type) {
   case SCOPE_INTRINSIC:
+  case SCOPE_POSTPARSE:
     printLevel = 0;
     break;
   case SCOPE_INTERNAL_PRELUDE:
@@ -146,7 +157,7 @@ static char* indentStr(FILE* outfile, int level) {
     printLevel = 1;
     break;
   default:
-    printLevel = level;
+    printLevel = level+1;
   }
 
   int maxspaces = strlen(spaces);
@@ -160,7 +171,7 @@ static char* indentStr(FILE* outfile, int level) {
 
 
 void SymScope::print(FILE* outfile, bool tableOrder) {
-  char* indent = indentStr(outfile, level);
+  char* indent = indentStr(outfile, type, level);
 
   // don't bother printing empty scopes
   if (firstSym == NULL) {
@@ -200,6 +211,9 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
   case SCOPE_CLASS:
     fprintf(outfile, "class\n");
     break;
+  case SCOPE_POSTPARSE:
+    fprintf(outfile, "post parsing\n");
+    break;
   }
 
   fprintf(outfile, "%s", indent);
@@ -228,63 +242,69 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
 }
 
 
-static int level = SCOPE_INTRINSIC;
+static int currentLevel = 0;
 static SymScope* rootScope = NULL;
 static SymScope* internalScope = NULL;
 static SymScope* preludeScope = NULL;
+static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
 static FnSymbol* currentFn = NULL;
 
 
 void Symboltable::init(void) {
-  rootScope = new SymScope(SCOPE_INTRINSIC, SCOPE_INTRINSIC);
+  rootScope = new SymScope(SCOPE_INTRINSIC);
 
   currentScope = rootScope;
-  level = SCOPE_INTRINSIC;
 
   currentFn = nilFnSymbol;
 }
 
 
 void Symboltable::parseInternalPrelude(void) {
-  internalScope = new SymScope(SCOPE_INTERNAL_PRELUDE, SCOPE_INTERNAL_PRELUDE);
+  internalScope = new SymScope(SCOPE_INTERNAL_PRELUDE);
   internalScope->parent = rootScope;
   rootScope->child = internalScope;
 
   currentScope = internalScope;
-  level = SCOPE_PRELUDE;
 
-  parsingInternalPrelude = true;
-  parsingPrelude = false;
+  parsePhase = PARSING_INTERNAL_PRELUDE;
 }
 
 
 void Symboltable::parsePrelude(void) {
-  preludeScope = new SymScope(SCOPE_PRELUDE, SCOPE_PRELUDE);
+  preludeScope = new SymScope(SCOPE_PRELUDE);
   preludeScope->parent = rootScope;
   internalScope->sibling = preludeScope;
 
   currentScope = preludeScope;
-  level = SCOPE_PRELUDE;
-  
-  parsingInternalPrelude = false;
-  parsingPrelude = true;
+
+  parsePhase = PARSING_PRELUDE;
 }
 
 
 void Symboltable::doneParsingPreludes(void) {
-  parsingInternalPrelude = false;
-  parsingPrelude = false;
+  parsePhase = PARSING_USERFILES;
+}
+
+
+void Symboltable::doneParsingUserFiles(void) {
+  postludeScope = new SymScope(SCOPE_POSTPARSE);
+  postludeScope->parent = rootScope;
+  preludeScope->sibling = postludeScope;
+
+  currentScope = postludeScope;
+
+  parsePhase = PARSING_POST;
 }
 
 
 bool Symboltable::parsingUserCode(void) {
-  return (!parsingInternalPrelude && !parsingPrelude);
+  return (parsePhase == PARSING_USERFILES);
 }
 
 
 void Symboltable::pushScope(scopeType type) {
-  SymScope* newScope = new SymScope(type, ++level);
+  SymScope* newScope = new SymScope(type, ++currentLevel);
   SymScope* child = currentScope->child;
 
   if (child == NULL) {
@@ -303,7 +323,7 @@ void Symboltable::pushScope(scopeType type) {
 SymScope* Symboltable::popScope(void) {
   //  currentScope->handleUndefined();
 
-  level--;
+  currentLevel--;
   SymScope* topScope = currentScope;
   SymScope* prevScope = currentScope->parent;
 
@@ -325,7 +345,7 @@ SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
   SymScope* oldScope = currentScope;
 
   currentScope = newScope;
-  level = newScope->level;
+  currentLevel = newScope->level;
 
   return oldScope;
 }
@@ -619,7 +639,7 @@ ClassSymbol* Symboltable::startClassDef(char* name, ClassSymbol* parent) {
     newdt = new ClassType(parent->getType());
   }
   if (!parent->isNull() && 
-      parent->scope->level == SCOPE_PRELUDE && 
+      parent->scope->type == SCOPE_PRELUDE && 
       strcmp(parent->name, "reduction") == 0) {
     newsym = new ReduceSymbol(name, newdt);
   } else {

@@ -6,15 +6,16 @@
 #include "symbol.h"
 
 enum scopeType {
-  SCOPE_INTRINSIC = -1,
-  SCOPE_INTERNAL_PRELUDE = 0,
-  SCOPE_PRELUDE = 1,
-  SCOPE_FILE = 2,
+  SCOPE_INTRINSIC = -4,
+  SCOPE_INTERNAL_PRELUDE = -3,
+  SCOPE_PRELUDE = -2,
+  SCOPE_POSTPARSE = -1,
+  SCOPE_FILE = 0,
   SCOPE_PARAM,
   SCOPE_FUNCTION,
   SCOPE_LOCAL,
   SCOPE_FORLOOP,
-  SCOPE_CLASS
+  SCOPE_CLASS,
 };
 
 class SymLink;
@@ -38,7 +39,7 @@ class SymScope : public gc {
 
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
-  SymScope(scopeType init_type, int init_level);
+  SymScope(scopeType init_type, int init_level = 0);
   void setContext(Stmt* stmt, Symbol* sym = nilSymbol);
 
   void insert(Symbol* sym);

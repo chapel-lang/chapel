@@ -237,7 +237,7 @@ void VarDefStmt::codegen(FILE* outfile) {
 void VarDefStmt::codegenVarDef(FILE* outfile) {
   VarSymbol* aVar = var;
 
-  if (aVar->scope->level == SCOPE_FILE) { /* if in file scope, hoist to internal header */
+  if (aVar->scope->type == SCOPE_FILE) { /* if in file scope, hoist to internal header */
     outfile = currentModule->intheadfile;
   }
 
@@ -290,7 +290,7 @@ void TypeDefStmt::codegen(FILE* outfile) {
   FILE* deffile = outfile;
   /* if in file scope, hoist to internal header so that it will be
      defined before global variables at file scope. */  
-  if (type->name->scope->level == SCOPE_FILE) { 
+  if (type->name->scope->type == SCOPE_FILE) { 
     deffile = currentModule->intheadfile;
   }
   type->codegenDef(deffile);

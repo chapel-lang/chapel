@@ -170,6 +170,7 @@ map_symbols(Vec<BaseAST *> &syms) {
 	  case SCOPE_INTERNAL_PRELUDE:
 	  case SCOPE_PRELUDE:
 	  case SCOPE_FILE:
+	  case SCOPE_POSTPARSE:
 	    sym->asymbol->global_scope = 1;
 	    break;
 	  case SCOPE_PARAM:

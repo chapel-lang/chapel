@@ -47,12 +47,10 @@
 * resolve question of whether or not resolving symbol in symtab.cpp
   for MemberAccess is a problem
 
-* tie off end of file parsing better: 
-    add new scope for new symbols?
-
 * multifile compiles
 
-* write forall for link.cpp?
+* write forall for link.cpp?  Refactor link into a list class to allow
+  pre-insertion?
 
 * preludes as modules?  Figure this out.
 
@@ -60,7 +58,9 @@
 
 * make a built-in types class
 
-* rename symbols prior to codegen
+* rename type symbols prior to codegen
+
+* write symbol resolution pass
 
 
 SHANNON:

@@ -67,16 +67,16 @@ void FilesToAST::run(Module* moduleList) {
   char* preludePath = glomstrings(2, system_dir, 
 				  "/parser/internal_prelude.chpl");
   internalPreludeStmts = ParseFile(preludePath, true);
+  internalPreludeStmts = createInitFn(internalPreludeStmts, "__initIntPrelude");
   findInternalTypes();
 
   Symboltable::parsePrelude();
   preludePath = glomstrings(2, system_dir, "/parser/prelude.chpl");
   preludeStmts = ParseFile(preludePath, true);
+  preludeStmts = createInitFn(preludeStmts, "__initPrelude");
   
   Symboltable::doneParsingPreludes();
 
-  internalPreludeStmts = createInitFn(internalPreludeStmts, "__initIntPrelude");
-  preludeStmts = createInitFn(preludeStmts, "__initPrelude");
 
   yydebug = debugParserLevel;
   Module* mod = moduleList;
@@ -86,6 +86,8 @@ void FilesToAST::run(Module* moduleList) {
 
     mod = nextLink(Module, mod);
   }
+
+  Symboltable::doneParsingUserFiles();
 
   entryPoint = createInitFn(entryPoint);
 }

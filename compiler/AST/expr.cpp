@@ -704,7 +704,7 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
 	typeid(*baseVar) == typeid(FnSymbol) ||
 	typeid(*baseVar) == typeid(ClassSymbol)) {
 
-      if (baseVar->scope->level == SCOPE_PRELUDE) {
+      if (baseVar->scope->type == SCOPE_PRELUDE) {
 	bool isWrite = (strcmp(baseVar->name, "write") == 0);
 	bool isWriteln = (strcmp(baseVar->name, "writeln") == 0);
 	bool isRead = (strcmp(baseVar->name, "read") == 0);
