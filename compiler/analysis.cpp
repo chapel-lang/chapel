@@ -203,10 +203,29 @@ build_record_type(Type *t, Sym *parent = 0) {
 }
 
 static void
-build_enum_element(Sym *ss) {
+build_enum_element(Sym *ss, int i) {
   ss->type_kind = Type_PRIMITIVE;
   ss->implements.add(sym_enum_element);
   ss->includes.add(sym_enum_element);
+  ss->type_sym = ss;
+  ss->imm.v_int32 = i;
+}
+
+static void
+build_symbols(Vec<BaseAST *> &syms) {
+  forv_BaseAST(ss, syms) {
+    Symbol *s = dynamic_cast<Symbol *>(ss);
+    if (s) { 
+      switch (s->astType) {
+	case SYMBOL_PARAM: {
+	  if (s->type && s->type != nilType && s->type != dtUnknown)
+	    s->asymbol->type = s->type->asymbol;
+	  break;
+	}
+	default: break;
+      }
+    }
+  }
 }
 
 static void
@@ -251,9 +270,10 @@ build_types(Vec<BaseAST *> &syms) {
 	t->asymbol->type_kind = Type_TAGGED;
 	Vec<BaseAST *> syms;
 	t->getSymbols(syms);
-	forv_BaseAST(s, syms) {
+	for (int i = 0; i < syms.n; i++) {
+	  BaseAST *s = syms.v[i];
 	  Sym *ss = dynamic_cast<Symbol*>(s)->asymbol;
-	  build_enum_element(ss);
+	  build_enum_element(ss, i);
 	  t->asymbol->has.add(ss);
 	}
 	break;
@@ -435,6 +455,7 @@ static int
 import_symbols(Vec<BaseAST *> &syms) {
   map_symbols(syms);
   build_builtin_symbols();
+  build_symbols(syms);
   build_types(syms);
   return 0;
 }
@@ -681,7 +702,12 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
+#if 0
+      s->ainfo->rval = new_sym(s->var->asymbol->name);
+      if1_move(if1, &s->ainfo->code, s->var->asymbol, s->ainfo->rval, s->ainfo);
+#else
       s->ainfo->rval = s->var->asymbol;
+#endif
       break;
     }
     case EXPR_UNOP: {
