@@ -244,7 +244,7 @@ fold_constant(IF1 *i, ParseAST *ast) {
   ast->sym->is_constant = 1;
   ast->sym->in = 0;
   ast->sym->type = res_type;
-  ast->sym->type_sym = ast->sym;
+  ast->sym->meta_type = ast->sym;
   ast->kind = AST_const;
   return 0;
 }

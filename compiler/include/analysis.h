@@ -2,7 +2,6 @@
 #define _analysis_H_
 
 #include "ast.h"
-#include "sym.h"
 #include "callbacks.h"
 #include "gc_cpp.h"
 
@@ -18,6 +17,7 @@ class BaseAST;
 class FnSymbol;
 class Stmt;
 class ASTCopyContext;
+class Sym;
 
 class ACallbacks : public Callbacks {
 public:
@@ -43,15 +43,17 @@ class AnalysisCloneCallback : public CloneCallback {
   AnalysisCloneCallback() : context(0) {}
 };
 
-class ASymbol : public Sym {
+class ASymbol : public gc {
  public:
   // Sym interface
   Sym *clone(CloneCallback *);
   void fixup(CloneCallback *);
   char *pathname();
   int line();
+  ASymbol *copy();
 
   BaseAST *xsymbol;
+  Sym *sym;
 
   ASymbol();
 };

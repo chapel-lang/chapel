@@ -1226,7 +1226,7 @@ gen_fun(IF1 *i, ParseAST *ast) {
   if (ast->sym->self) {
     as[iarg] = ast->sym->self;
     if (fn->name == cannonical_class)
-      as[iarg]->must_implement_and_specialize(ast->sym->in->type_sym);
+      as[iarg]->must_implement_and_specialize(ast->sym->in->meta_type);
     else
       as[iarg]->must_implement_and_specialize(ast->sym->in);
     iarg++;

@@ -15,8 +15,13 @@ meta_apply(Sym *fn, Sym *arg) {
 
 char *
 Sym::pathname() {
-  if (ast)
-    return ast->pathname();
+  char *p = 0;
+  if (asymbol)
+    p = asymbol->pathname();
+  if (!p && ast)
+    p = ast->pathname();
+  if (p)
+    return p;
   return "<unknown>";
 }
 
@@ -29,9 +34,12 @@ Sym::filename() {
 
 int
 Sym::line() {
-  if (ast)
-    return ast->line();
-  return 0;
+  int l = 0;
+  if (asymbol)
+    l = asymbol->line();
+  if (!l && ast)
+    l = ast->line();
+  return l;
 }
 
 void

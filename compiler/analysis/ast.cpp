@@ -177,7 +177,7 @@ compute_structural_type_hierarchy(Vec<Sym *> types) {
 
 void
 build_type_hierarchy() {
-  Vec<Sym *> type_syms, types;
+  Vec<Sym *> meta_types, types;
   implement_and_specialize(sym_unknown, sym_any, types);
   forv_Sym(s, if1->allsyms) {
     // functions implement and specialize symbols (selectors) of the same name
@@ -205,8 +205,8 @@ build_type_hierarchy() {
     }
     if (s->type_kind)
       types.set_add(s);
-    if (s->type_sym)
-      type_syms.add(s);
+    if (s->meta_type)
+      meta_types.add(s);
   }
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && s != sym_any && s != sym_void && s != sym_unknown) {
@@ -218,12 +218,12 @@ build_type_hierarchy() {
 	implement_and_specialize(sym_any, s, types);
     }
   }
-  // map subtyping and subclassing to type_syms
-  forv_Sym(s, type_syms) if (!s->is_meta_class) {
+  // map subtyping and subclassing to meta_types
+  forv_Sym(s, meta_types) if (!s->is_meta_class) {
     forv_Sym(ss, s->implementors) if (ss)
-      s->type_sym->implementors.set_add(ss->type_sym);
+      s->meta_type->implementors.set_add(ss->meta_type);
     forv_Sym(ss, s->specializers) if (ss)
-      s->type_sym->specializers.set_add(ss->type_sym);
+      s->meta_type->specializers.set_add(ss->meta_type);
   }
   forv_Sym(s, types) if (s) {
     s->implementors.set_add(s);
@@ -310,7 +310,7 @@ set_value_for_value_classes(IF1 *i) {
 }
 
 static void
-set_true_type_for_variables(IF1 *i) {
+set_type_for_variables(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     if (s->is_var && s->must_implement && s->must_implement->is_value_class)
       s->type = s->must_implement;
@@ -318,25 +318,25 @@ set_true_type_for_variables(IF1 *i) {
 }
 
 void
-make_type_sym(Sym *s) {
-  s->type_sym = new_Sym();
-  s->type_sym->is_meta_class = 1;
-  s->type_sym->in = s->in;
-  s->type_sym->name = s->name;
-  s->type_sym->type = s->type_sym;
-  s->type_sym->ast = s->ast;
-  s->type_sym->type_sym = s;
-  s->type_sym->type_kind = Type_PRIMITIVE;
+make_meta_type(Sym *s) {
+  s->meta_type = new_Sym();
+  s->meta_type->is_meta_class = 1;
+  s->meta_type->in = s->in;
+  s->meta_type->name = s->name;
+  s->meta_type->type = s->meta_type;
+  s->meta_type->ast = s->ast;
+  s->meta_type->meta_type = s;
+  s->meta_type->type_kind = Type_PRIMITIVE;
 }
 
 static void
-make_type_syms(IF1 *i) {
-  sym_anyclass->type_sym = sym_anyclass;
+make_meta_types(IF1 *i) {
+  sym_anyclass->meta_type = sym_anyclass;
   sym_anyclass->is_meta_class = 1;
   forv_Sym(s, i->allsyms) {
     if (s->type_kind) {
-      if (!s->type_sym)
-	make_type_sym(s);
+      if (!s->meta_type)
+	make_meta_type(s);
     }
   }
 }
@@ -349,8 +349,8 @@ finalize_types(IF1 *i) {
 #include "builtin_symbols.h"
 #undef S
   set_value_for_value_classes(i);
-  set_true_type_for_variables(i);
-  make_type_syms(i);
+  set_type_for_variables(i);
+  make_meta_types(i);
 }
 
 

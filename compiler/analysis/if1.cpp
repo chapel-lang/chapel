@@ -45,7 +45,7 @@ if1_const(IF1 *p, Sym *type, char *constant) {
   sym->is_constant = 1;
   sym->constant = c;
   sym->type = type;
-  sym->type_sym = sym;
+  sym->meta_type = sym;
   p->constants.put(c, sym);
   return sym;
 }
@@ -62,7 +62,7 @@ if1_make_symbol(IF1 *p, char *name, char *end) {
   s->name = name;
   s->type_kind = Type_PRIMITIVE;
   s->type = s;
-  s->type_sym = s;
+  s->meta_type = s;
   p->symbols.put(name, s);
   s->is_symbol = 1;
   return s;
@@ -350,7 +350,7 @@ if1_closure(IF1 *p, Sym *f, Code *c, int nargs, Sym **args) {
   f->is_fun = 1;
   f->type_kind = Type_FUN;
   f->type = f;
-  f->type_sym = f;
+  f->meta_type = f;
   p->allclosures.add(f);
   return f;
 }

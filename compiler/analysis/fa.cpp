@@ -829,7 +829,7 @@ add_var_constraints(EntrySet *es) {
       if (v->sym->is_symbol || v->sym->is_fun) 
 	update_in(av, v->sym->abstract_type);
       if (v->sym->type_kind != Type_NONE)
-	update_in(av, v->sym->type_sym->abstract_type);
+	update_in(av, v->sym->meta_type->abstract_type);
     }
   }
 }
@@ -1310,7 +1310,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	forv_CreationSet(cs1, *a1->out)
 	  forv_CreationSet(cs2, *a2->out)
 	    if (cs1->sym->is_meta_class && cs2->sym->is_meta_class && 
-		(s = meta_apply(cs1->sym->type_sym, cs2->sym->type_sym)))
+		(s = meta_apply(cs1->sym->meta_type, cs2->sym->meta_type)))
 	      update_in(result, make_abstract_type(s));
 	    else
 	      type_violation(ATypeViolation_SEND_ARGUMENT, a1, a1->out, result, 0);
@@ -1414,7 +1414,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       case P_prim_new: {
 	AVar *thing = make_AVar(p->rvals.v[1], es);
 	forv_CreationSet(cs, *thing->out) if (cs)
-	  creation_point(result, cs->sym->type_sym); // recover original type
+	  creation_point(result, cs->sym->meta_type); // recover original type
 	break;
       }
       case P_prim_coerce: {

@@ -18,6 +18,7 @@ class AST;
 class Code;
 class LabelMap;
 class CloneCallback;
+class ASymbol;
 
 enum IF1_num_kind {
   IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
@@ -70,17 +71,21 @@ union Immediate {
   char *v_string;
 };
 
+class TypeSym : public gc {
+};
+
 class Sym : public gc {
  public:
   int			id;			// unique number
   char 			*name;			// user level name
   Sym  			*in;			// containing module, class, function
-  Sym 			*type;			// true type
+  Sym 			*type;			// type of the symbol
   Sym  			*aspect;		// mascarade as type (e.g. superclass)
   Sym			*must_specialize;	// dispatch constraints
   Sym			*must_implement;	// type checking constraints
   AST			*ast;			// AST node which defined this symbol
   Var			*var;			// used by fa.cpp
+  ASymbol		*asymbol;		// front end interface object
   char 			*cg_string;		// used by cg.cpp
 
   unsigned int		is_builtin:1;		// Sym is builtin to the compiler
@@ -119,39 +124,40 @@ class Sym : public gc {
   char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values
 
-  Vec<Sym *>		specializes;		// declared superclasses
-  Vec<Sym *>		includes;		// included code
-  Vec<Sym *>		implements;		// declared supertypes
-  Vec<Sym *>		has;			// sub variables/members (currently fun args)
-  Vec<Sym *>		arg;			// arg variables (currently just meta type args)
-  Sym			*alias;			// alias of type
-  Sym			*init;			// for modules & classes (default init function)
-  Sym			*type_sym;		// the representative symbol for this type in code
-  Sym			*element;
+  Vec<Sym *>		specializes;		// declared superclasses	*type*
+  Vec<Sym *>		includes;		// included code		*type*
+  Vec<Sym *>		implements;		// declared supertypes		*type*
+  Vec<Sym *>		has;			// sub variables/members (currently fun args) *fun* *type*
+  Vec<Sym *>		arg;			// arg variables (currently just meta type args) *type*
+  Sym			*alias;			// alias of type		*type*
+  Sym			*init;			// for modules & classes (default init function) *type*
+  Sym			*meta_type;		// meta type and inverse ptr	*type*
+  Sym			*element;		// element type for aggregates *type*
 
-  Scope 		*scope;			// used in ast.cpp
-  LabelMap		*labelmap;		// used by ast.cpp
-  Vec<Sym *>		implementors;		// used by fa.cpp, implementors
-  Vec<Sym *>		specializers;		// used by fa.cpp, specializers
-  Vec<Sym *>		dispatch_order;		// used by fa.cpp, pattern.cpp
-  MType	       		*match_type;		// used by pattern.cpp
-  AType			*abstract_type;		// used by fa.cpp
-  Vec<CreationSet *>	creators;		// used by fa.cpp
+  Scope 		*scope;			// used in ast.cpp		*fun* *type* *module*
+  LabelMap		*labelmap;		// used by ast.cpp		*fun*
+  Vec<Sym *>		implementors;		// used by fa.cpp, implementors	*type*
+  Vec<Sym *>		specializers;		// used by fa.cpp, specializers	*type*
+  Vec<Sym *>		dispatch_order;		// used by fa.cpp, pattern.cpp	*type*
 
-  Fun			*fun;			// used by fa.cpp
-  Code			*code;			// for functions, Code
-  Sym			*self;			// self variable for the function
-  Sym			*ret;			// return value of functions
-  Sym			*cont;			// continuation (function returning ret)
+  MType	       		*match_type;		// used by pattern.cpp		*type*
+  AType			*abstract_type;		// used by fa.cpp		*type*
+  Vec<CreationSet *>	creators;		// used by fa.cpp		*type*
 
-  void			*temp;			// algorithmic temp
+  Fun			*fun;			// used by fa.cpp		*fun*
+  Code			*code;			// for functions, Code		*fun*
+  Sym			*self;			// self variable for the function *fun*
+  Sym			*ret;			// return value of functions	*fun*
+  Sym			*cont;			// continuation (function returning ret) *fun*
 
-  virtual char		*pathname();
-  virtual int		line();
+  void			*temp;			// algorithmic temp		*type*
+
+  Sym *			coerce_to(Sym *);
+  char			*pathname();
+  int			line();
   char			*filename();
-  virtual Sym *		coerce_to(Sym *);
-  virtual Sym *		clone(CloneCallback *);
-  virtual void		fixup(CloneCallback *);
+  Sym *			clone(CloneCallback *);
+  void			fixup(CloneCallback *);
 
   void			copy_values(Sym *);
   void 			inherits_add(Sym *);
