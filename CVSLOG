@@ -15773,3 +15773,26 @@ Log message:
 Modified files:
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+01/27/05 11:40:08 -- jplevyak
+
+Log message:
+	Visible function calculation now treats all functions which
+	are specialized with respect to a reference type (class) as
+	being globally available (as per the spec).
+	
+	Currently 'Array' is considered to be a reference variable because it
+	passes the test:
+	
+	  t->astType == TYPE_CLASS &&
+	  !dynamic_cast<ClassType*>(t)->union_value &&
+	  !dynamic_cast<ClassType*>(t)->value
+	
+	That is of the code in internal_prelude.  At some point when
+	we model Array's better, this will have to be fixed.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
+	chapel/compiler/include/: analysis.h ast.h callbacks.h 
+
