@@ -206,3 +206,27 @@
    fun:GC_collect_or_expand
    fun:GC_alloc_large
 }
+{
+   boehm-memcheck25
+   Memcheck:Cond
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_generic_push_regs
+   fun:GC_push_roots
+}
+{
+   boehm-memcheck26
+   Memcheck:Value4
+   fun:GC_mark_and_push_stack
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_generic_push_regs
+}
+{
+   boehm-memcheck27
+   Memcheck:Value4
+   fun:GC_add_to_black_list_stack
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_generic_push_regs
+}
