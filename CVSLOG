@@ -283,3 +283,16 @@ Log message:
 Modified files:
 	./: CVSLOG 
 
+---------------------------------------------------------------------------
+
+04/02/03 15:14:25 -- bradc
+
+Log message:
+	Oops, typo in previous log.  BUILDNUM should've
+	been BUILD_VERSION.
+
+Modified files:
+	./: BUILD_VERSION 
+Removed files:
+	./: BUILDNUM 
+
