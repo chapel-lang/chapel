@@ -21827,3 +21827,14 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: symscope.cpp 
 
+---------------------------------------------------------------------------
+
+03/28/05 12:21:22 -- deitz
+
+Log message:
+	Added a working test case that declares a type alias inside a class.
+
+Added files:
+	chapel/test/classes/deitz/: test_type_in_class2.chpl 
+	                            test_type_in_class2.good 
+
