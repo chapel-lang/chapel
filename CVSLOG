@@ -11563,3 +11563,23 @@ Added files:
 	chapel/test/classes/deitz/future/: test_method3.chpl 
 	                                   test_method3.good 
 
+---------------------------------------------------------------------------
+
+12/10/04 11:28:50 -- deitz
+
+Log message:
+	Removed the disable flag on fieldsToMemberAccesses so it now runs on
+	the internal_prelude.  This pass, among other things, puts "this"
+	around members in bound functions.
+	
+	Fixed a bug in which this was put around this (to transform it into
+	this.this).  This now does not happend, though I think bad things may
+	still happen to this.a (becoming maybe this.this.a).
+	
+	Unfortunately, the 7 tests in trivial and flowanalysis are still not
+	working.  However they seem to be closer in the diff.
+
+Modified files:
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+	                             fieldsToMemberAccesses.h 
+
