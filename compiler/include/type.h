@@ -11,9 +11,11 @@ class Symbol;
 class EnumSymbol;
 class VarSymbol;
 class TypeSymbol;
+class ParamSymbol;
 class FnSymbol;
 class Expr;
 class FnCall;
+class CondStmt;
 class ASymbol;
 class SymScope;
 
@@ -209,7 +211,6 @@ class LikeType : public Type {
 
 class StructuralType : public Type {
  public:
-  bool value; /* true if this is a value class (aka record) */
   Stmt* constructor;
   SymScope* structScope;
   Stmt* declarationList;
@@ -221,24 +222,25 @@ class StructuralType : public Type {
 
   FnSymbol *defaultConstructor;
   
-  StructuralType(astType_t astType, bool isValueClass, 
-                 Expr* init_defaultVal = NULL);
+  StructuralType(astType_t astType, Expr* init_defaultVal = NULL);
   void addDeclarations(Stmt* newDeclarations,
                        Stmt* afterStmt = NULL);
-  virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
   void setScope(SymScope* init_structScope);
   void copyGuts(StructuralType* copy_type, bool clone, Map<BaseAST*,BaseAST*>* map, 
                 CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
+  virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
+  virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
+  virtual Stmt* buildIOBodyStmts(ParamSymbol* thisArg);
 
-  void codegen(FILE* outfile);
+  virtual void codegen(FILE* outfile);
   virtual void codegenStartDefFields(FILE* outfile);
   virtual void codegenStopDefFields(FILE* outfile);
-  void codegenDef(FILE* outfile);
-  void codegenStructName(FILE* outfile);
-  void codegenPrototype(FILE* outfile);
+  virtual void codegenDef(FILE* outfile);
+  virtual void codegenStructName(FILE* outfile);
+  virtual void codegenPrototype(FILE* outfile);
   virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
                              Expr* format = NULL);
   virtual void codegenMemberAccessOp(FILE* outfile);
@@ -252,6 +254,16 @@ class ClassType : public StructuralType {
  public:
   ClassType(astType_t astType = TYPE_CLASS);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  virtual Stmt* buildIOBodyStmts(ParamSymbol* thisArg);
+
+  virtual void codegenStructName(FILE* outfile);
+  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+                             Expr* format = NULL);
+  virtual void ClassType::codegenMemberAccessOp(FILE* outfile);
+
+  virtual bool blankIntentImpliesRef(void);
+  virtual bool implementedUsingCVals(void);
 };
 
 
@@ -276,12 +288,14 @@ class UnionType : public StructuralType {
   EnumType* fieldSelector;
 
   UnionType();
-  void buildFieldSelector(void);
-  FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  void buildFieldSelector(void);
+  FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
+  CondStmt* buildUnionFieldIO(CondStmt* prevStmt, VarSymbol* field, ParamSymbol* thisArg);
+  virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
   Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
-  void codegenStructName(FILE* outfile);
+
   void codegenStartDefFields(FILE* outfile);
   void codegenStopDefFields(FILE* outfile);
   void codegenMemberAccessOp(FILE* outfile);

@@ -1114,7 +1114,7 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
       s->type->asymbol->symbol->astType == TYPE_RECORD ||
       s->type->asymbol->symbol->astType == TYPE_UNION) {
     StructuralType *ct = dynamic_cast<StructuralType*>(type->asymbol->symbol);
-    if (ct->value && s != _this)
+    if ((ct->astType == TYPE_RECORD || ct->astType == TYPE_UNION) && s != _this)
       send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
   }
   if (!send) 

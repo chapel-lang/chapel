@@ -407,9 +407,9 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
         fn = fn->overload;
       }
     } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
-      if (StructuralType* class_type = dynamic_cast<StructuralType*>(type_sym->type)) {
-        if (class_type->value) {
-          forv_Vec(FnSymbol, method, class_type->methods) {
+      if (StructuralType* structType = dynamic_cast<StructuralType*>(type_sym->type)) {
+        if (dynamic_cast<RecordType*>(structType) || dynamic_cast<UnionType*>(structType)) {
+          forv_Vec(FnSymbol, method, structType->methods) {
             while (method) {
               char *n = if1_cannonicalize_string(if1, method->name);
               Vec<FnSymbol*> *fs = visibleFunctions.get(n);
@@ -419,7 +419,7 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
               method = method->overload;
             }
           }
-          FnSymbol* constructor = class_type->defaultConstructor;
+          FnSymbol* constructor = structType->defaultConstructor;
           while (constructor) {
             char *n = if1_cannonicalize_string(if1, constructor->name);
             Vec<FnSymbol*> *fs = visibleFunctions.get(n);

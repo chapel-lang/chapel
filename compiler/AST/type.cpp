@@ -748,7 +748,7 @@ void SeqType::buildImplementationClasses() {
   Symboltable::pushScope(SCOPE_CLASS);
 
   Symbol* _seq = Symboltable::lookupInternal("_seq");
-  ClassType* _seq_type = dynamic_cast<ClassType*>(_seq->type);
+  StructuralType* _seq_type = dynamic_cast<StructuralType*>(_seq->type);
   // look at next because first one is the variable type
   Stmt* decls = dynamic_cast<Stmt*>(_seq_type->declarationList->next);
   Stmt* new_decls = decls->copyList(true);
@@ -756,7 +756,7 @@ void SeqType::buildImplementationClasses() {
 
   Symbol* _node = Symboltable::lookup("_node");
   _node->cname = glomstrings(2, symbol->name, _node->name);
-  SymScope* _node_scope = dynamic_cast<ClassType*>(_node->type)->structScope;
+  SymScope* _node_scope = dynamic_cast<StructuralType*>(_node->type)->structScope;
   Symboltable::lookupInScope("element", _node_scope)->type = elementType;
   Symboltable::lookupInScope("next", _node_scope)->type = _node->type;
   Symboltable::lookup("first")->type = _node->type;
@@ -1024,10 +1024,8 @@ void LikeType::codegenDef(FILE* outfile) {
 }
 
 
-StructuralType::StructuralType(astType_t astType, bool isValueClass,
-                               Expr* init_defaultVal) :
+StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
   Type(astType, init_defaultVal),
-  value(isValueClass),
   constructor(NULL),
   structScope(NULL),
   declarationList(NULL),
@@ -1091,6 +1089,25 @@ void StructuralType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
 }
 
 
+void StructuralType::setScope(SymScope* init_structScope) {
+  structScope = init_structScope;
+}
+
+
+void StructuralType::traverseDefType(Traversal* traversal) {
+  SymScope* prevScope;
+  if (structScope) {
+    prevScope = Symboltable::setCurrentScope(structScope);
+  }
+  TRAVERSE_LS(declarationList, traversal, false);
+  TRAVERSE_LS(constructor, traversal, false);
+  TRAVERSE(defaultVal, traversal, false);
+  if (structScope) {
+    Symboltable::setCurrentScope(prevScope);
+  }
+}
+
+
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
 Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
@@ -1136,22 +1153,52 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
 }
 
 
-void StructuralType::setScope(SymScope* init_structScope) {
-  structScope = init_structScope;
+static Stmt* addIOStmt(Stmt* ioStmtList, Expr* argExpr) {
+  IOCall* ioExpr = new IOCall(IO_WRITE, new StringLiteral("write"), argExpr);
+  Stmt* ioStmt = new ExprStmt(ioExpr);
+  if (ioStmtList == NULL) {
+    ioStmtList = ioStmt;
+  } else {
+    ioStmtList->append(ioStmt);
+  }
+  return ioStmtList;
 }
 
 
-void StructuralType::traverseDefType(Traversal* traversal) {
-  SymScope* prevScope;
-  if (structScope) {
-    prevScope = Symboltable::setCurrentScope(structScope);
+static Stmt* addIOStmt(Stmt* ioStmtList, ParamSymbol* _this, VarSymbol* field) {
+  return addIOStmt(ioStmtList, new MemberAccess(new Variable(_this), field));
+}
+
+
+static Stmt* addIOStmt(Stmt* ioStmtList, char* str) {
+  return addIOStmt(ioStmtList, new StringLiteral(str));
+}
+
+
+Stmt* StructuralType::buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg) {
+  bool firstField = true;
+
+  forv_Vec(VarSymbol, field, fields) {
+    if (!firstField) {
+      bodyStmts = addIOStmt(bodyStmts, ", ");
+    } else {
+      firstField = false;
+    }
+    bodyStmts = addIOStmt(bodyStmts, glomstrings(2, field->name, " = "));
+    bodyStmts = addIOStmt(bodyStmts, thisArg, field);
   }
-  TRAVERSE_LS(declarationList, traversal, false);
-  TRAVERSE_LS(constructor, traversal, false);
-  TRAVERSE(defaultVal, traversal, false);
-  if (structScope) {
-    Symboltable::setCurrentScope(prevScope);
-  }
+  return bodyStmts;
+}
+
+
+Stmt* StructuralType::buildIOBodyStmts(ParamSymbol* thisArg) {
+  Stmt* bodyStmts = NULL;
+
+  bodyStmts = addIOStmt(bodyStmts, "(");
+  bodyStmts = buildIOBodyStmtsHelp(bodyStmts, thisArg);
+  bodyStmts = addIOStmt(bodyStmts, ")");
+
+  return bodyStmts;
 }
 
 
@@ -1221,15 +1268,8 @@ void StructuralType::codegenDef(FILE* outfile) {
 
 
 void StructuralType::codegenStructName(FILE* outfile) {
-  if (value) {
-    symbol->codegen(outfile);
-  }
-  else {
-    fprintf(outfile, "_");
-    symbol->codegen(outfile);
-    fprintf(outfile,", *");
-    symbol->codegen(outfile);
-  }
+  symbol->codegen(outfile);
+  
 }
 
 
@@ -1247,29 +1287,13 @@ void StructuralType::codegenPrototype(FILE* outfile) {
 
 
 void StructuralType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                              Expr* format) {
+                                   Expr* format) {
   forv_Symbol(method, methods) {
     if (strcmp(method->name, "write") == 0) {
-      if (!value) {
-        if (symbol->isDead) {
-          // BLC: theoretically, this should only happen if no
-          // instantiations of a class are ever made
-          fprintf(outfile, "fprintf(stdout, \"nil\");\n");
-          return;
-        }
-        fprintf(outfile, "if (");
-        arg->codegen(outfile);
-        fprintf(outfile, " == nil) {\n");
-        fprintf(outfile, "fprintf(stdout, \"nil\");\n");
-        fprintf(outfile, "} else {\n");
-      }
       method->codegen(outfile);
       fprintf(outfile, "(&(");
       arg->codegen(outfile);
       fprintf(outfile, "));");
-      if (!value) {
-        fprintf(outfile, "}\n");
-      }
       return;
     }
   }
@@ -1278,36 +1302,22 @@ void StructuralType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
 
 
 void StructuralType::codegenMemberAccessOp(FILE* outfile) {
-  if (value) {              /* record */
-    fprintf(outfile, ".");
-  } else {                             /* class */
-    fprintf(outfile, "->");
-  }
+  fprintf(outfile, ".");
 }
 
 
 bool StructuralType::blankIntentImpliesRef(void) {
-  if (value) {
-    return false;
-  } else {
-    return true;
-  }
+  return false;
 }
 
 
 bool StructuralType::implementedUsingCVals(void) {
-  if (value) {
-    return true;
-  } else {
-    return false;
-  }
+  return true;
 }
 
 
 ClassType::ClassType(astType_t astType) :
-  StructuralType(astType, false,
-                 new Variable(Symboltable::lookupInternal("nil", 
-                                                          SCOPE_INTRINSIC)))
+  StructuralType(astType, new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))
 {}
 
 
@@ -1319,8 +1329,60 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map,
 }
 
 
+Stmt* ClassType::buildIOBodyStmts(ParamSymbol* thisArg) {
+  Stmt* bodyStmts = NULL;
+
+  bodyStmts = addIOStmt(bodyStmts, "{");
+  bodyStmts = buildIOBodyStmtsHelp(bodyStmts, thisArg);
+  bodyStmts = addIOStmt(bodyStmts, "}");
+  
+  return bodyStmts;
+}
+
+
+void ClassType::codegenStructName(FILE* outfile) {
+  fprintf(outfile, "_");
+  symbol->codegen(outfile);
+  fprintf(outfile,", *");
+  symbol->codegen(outfile);
+}
+
+
+void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+                              Expr* format) {
+  if (symbol->isDead) {
+    // BLC: theoretically, this should only happen if no
+    // instantiations of a class are ever made
+    fprintf(outfile, "fprintf(stdout, \"nil\");\n");
+    return;
+  }
+  fprintf(outfile, "if (");
+  arg->codegen(outfile);
+  fprintf(outfile, " == nil) {\n");
+  fprintf(outfile, "fprintf(stdout, \"nil\");\n");
+  fprintf(outfile, "} else {\n");
+  StructuralType::codegenIOCall(outfile, ioType, arg, format);
+  fprintf(outfile, "}\n");
+}
+
+
+void ClassType::codegenMemberAccessOp(FILE* outfile) {
+  fprintf(outfile, "->");
+}
+
+
+bool ClassType::blankIntentImpliesRef(void) {
+  return true;
+}
+
+
+bool ClassType::implementedUsingCVals(void) {
+  return false;
+}
+
+
 RecordType::RecordType(void) :
-  StructuralType(TYPE_RECORD, true)
+  StructuralType(TYPE_RECORD)
 {}
 
 
@@ -1333,7 +1395,7 @@ Type* RecordType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map,
 
 
 UnionType::UnionType(void) :
-  StructuralType(TYPE_UNION, true),
+  StructuralType(TYPE_UNION),
   fieldSelector(NULL)
 {}
 
@@ -1415,6 +1477,37 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
 }
 
 
+CondStmt* UnionType::buildUnionFieldIO(CondStmt* prevStmt, VarSymbol* field, 
+                                       ParamSymbol* thisArg) {
+  FnCall* checkFn = buildSafeUnionAccessCall(UNION_CHECK_QUIET, new Variable(thisArg),
+                                             field);
+  Stmt* condStmts = NULL;
+  if (field) {
+    condStmts = addIOStmt(condStmts, glomstrings(2, field->name, " = "));
+    condStmts = addIOStmt(condStmts, thisArg, field);
+  } else {
+    condStmts = addIOStmt(condStmts, "uninitialized");
+  }
+  Stmt* thenClause = new BlockStmt(condStmts);
+  CondStmt* newCondStmt = new CondStmt(checkFn, thenClause, NULL);
+  if (prevStmt) {
+    prevStmt->addElseStmt(newCondStmt);
+  }
+  return newCondStmt;
+}
+
+
+Stmt* UnionType::buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg) {
+  CondStmt* topStmt = buildUnionFieldIO(NULL, NULL, thisArg);
+  CondStmt* fieldIOStmt = topStmt;
+  forv_Vec(VarSymbol, field, fields) {
+    fieldIOStmt = buildUnionFieldIO(fieldIOStmt, field, thisArg);
+  }
+  bodyStmts->append(topStmt);
+  return bodyStmts;
+}
+
+
 Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
   Expr* arg1 = new Variable(_this);
   Expr* arg2 = new Variable(fieldSelector->valList);
@@ -1425,11 +1518,6 @@ Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
   stmts = appendLink(stmts, init_stmt);
   
   return stmts;
-}
-
-
-void UnionType::codegenStructName(FILE* outfile) {
-  symbol->codegen(outfile);
 }
 
 
