@@ -5741,3 +5741,20 @@ Log message:
 Modified files:
 	chapel/compiler/: analysis.cpp map.cpp map.h 
 
+---------------------------------------------------------------------------
+
+08/24/04 15:53:48 -- bradc
+
+Log message:
+	John pointed out that I wasn't being particularly consistent
+	about storing function return types as dtVoid if they didn't
+	return anything, using a new NullType() instead from time to
+	time.  Unified this so that dtVoid is now the return type from
+	all functions that return nothing.  NullType() is really
+	meant to be a sentinel in place of a NULL Type* pointer (and
+	its use is very limited as a result).
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: chapel.y stmt.cpp symbol.cpp type.cpp 
+
