@@ -14884,3 +14884,24 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+01/18/05 11:31:22 -- deitz
+
+Log message:
+	Added new field 'Stmt* defPoint' to Symbols.  This field contains a
+	pointer to the statement in which the symbol was defined.
+	Fixup-verify makes sure that it is correct for every symbol.
+	
+	Changed how the index symbols are stored in ForallExpr.  Rather than
+	being simply Symbols, they are now Stmts that must be VarDefStmts.
+	Note that in the ForLoopStmts, this is not the case, they are symbols,
+	but they should probably be Stmts there as well.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
+
