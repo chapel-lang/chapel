@@ -13,6 +13,7 @@ class Symboltable {
   static void pushScope(scopeType type);
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
+  static FnSymbol* getCurrentFn(void);
 
   static void define(Symbol* sym);
   static Symbol* lookup(char* name, bool inLexer = false);

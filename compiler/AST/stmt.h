@@ -11,6 +11,9 @@ class AInfo;
 class Stmt : public BaseAST {
  public:
   AInfo *ainfo;
+
+  FnSymbol* parentFn;
+
   Stmt(astType_t astType);
 
   bool isNull(void);

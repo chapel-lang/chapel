@@ -1,10 +1,10 @@
 #include "loc.h"
 #include "yy.h"
 
-Loc::Loc(void) {
-  filename = yyfilename;
-  lineno = yylineno;
-}
+Loc::Loc(void) :
+  filename(yyfilename), 
+  lineno(yylineno)
+{}
 
 /*
 void user_error(Loc* loc, char* control, ...) {

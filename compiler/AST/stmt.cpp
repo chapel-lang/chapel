@@ -5,11 +5,13 @@
 #include "misc.h"
 #include "stmt.h"
 #include "symscope.h"
+#include "symtab.h"
 #include "yy.h"
 
 
 Stmt::Stmt(astType_t astType) :
-  BaseAST(astType)
+  BaseAST(astType),
+  parentFn(Symboltable::getCurrentFn())
 {}
 
 

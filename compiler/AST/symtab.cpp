@@ -215,6 +215,11 @@ SymScope* Symboltable::getCurrentScope(void) {
 }
 
 
+FnSymbol* Symboltable::getCurrentFn(void) {
+  return currentFn;
+}
+
+
 void Symboltable::define(Symbol* sym) {
   currentScope->insert(sym);
 }
