@@ -1,0 +1,61 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+::o(<unknown>:0) ( int64 (<unknown>:0) )
+::p(<unknown>:0) ( int64 (<unknown>:0) )
+answer = (m<=n);
+answer = (m<=n);
+answer = (m<n);
+answer = (m<p);
+answer = (m>=p);
+answer = (m>n);
+answer = (m>p);
+answer = (o>=m);
+function __init relational_ops.chpl:59
+function __init() {
+globals
+var answer: integer = 0;
+var m: integer = 5;
+var n: integer = 2;
+var o: integer = 30;
+var p: integer = 5;
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("expected answer = 0");
+writeln("expected answer = 0");
+writeln("expected answer = 0");
+writeln("expected answer = 0");
+writeln("expected answer = 1");
+writeln("expected answer = 1");
+writeln("expected answer = 1");
+writeln("expected answer = 1");
+writeln("m = ", m);
+writeln("n = ", n);
+writeln("o = ", o);
+writeln("p = ", p);
+writeln("test: m < n");
+writeln("test: m < p");
+writeln("test: m <= n");
+writeln("test: m <= p");
+writeln("test: m > n");
+writeln("test: m > p");
+writeln("test: m >= p");
+writeln("test: o >= m");
+writeln();
+writeln();
+writeln();
+writeln();
+writeln();
+writeln();
+writeln();
+writeln();
+}

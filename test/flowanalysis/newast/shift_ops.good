@@ -1,0 +1,30 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+answer = (m<<1);
+answer = (m>>1);
+answer = (n>>1);
+function __init shift_ops.chpl:25
+function __init() {
+globals
+var answer: integer = 0;
+var m: integer = 10;
+var n: integer = 5;
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("expected answer = 2");
+writeln("expected answer = 20");
+writeln("expected answer = 5");
+writeln("m = ", m);
+writeln("n = ", n);
+writeln("test: m << 1");
+writeln("test: m >> 1");
+writeln("test: n >> 1");
+writeln();
+writeln();
+writeln();
+}

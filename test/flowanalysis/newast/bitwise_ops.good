@@ -1,0 +1,50 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+::o(<unknown>:0) ( int64 (<unknown>:0) )
+::p(<unknown>:0) ( int64 (<unknown>:0) )
+answer = (m&n);
+answer = (m^n);
+answer = (m|n);
+answer = (o||o);
+answer = (o||p);
+answer = (p||p);
+function __init bitwise_ops.chpl:46
+function __init() {
+globals
+var answer: integer = 0;
+var m: integer = 10;
+var n: integer = 12;
+var o: integer = 0;
+var p: integer = 1;
+write("m = ", m, "\n");
+write("n = ", n, "\n");
+write("o = ", o, "\n");
+write("p = ", p, "\n\n");
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("expected answer = 0");
+writeln("expected answer = 1");
+writeln("expected answer = 1");
+writeln("expected answer = 14");
+writeln("expected answer = 6");
+writeln("expected answer = 8");
+writeln("test: m & n");
+writeln("test: m ^ n");
+writeln("test: m | n");
+writeln("test: o || o");
+writeln("test: o || p");
+writeln("test: p || p");
+writeln();
+writeln();
+writeln();
+writeln();
+writeln();
+}

@@ -1,0 +1,35 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+answer = (+m);
+answer = (+n);
+answer = (-m);
+answer = (-n);
+function __init unary_plusMinus.chpl:33
+function __init() {
+globals
+var answer: integer = 0;
+var m: integer = 3;
+var n: integer = (-7);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("expected answer = -3");
+writeln("expected answer = -7");
+writeln("expected answer = 3");
+writeln("expected answer = 7");
+writeln("m = ", m);
+writeln("n = ", n);
+writeln("test: +m");
+writeln("test: +n");
+writeln("test: -m");
+writeln("test: -n");
+writeln();
+writeln();
+writeln();
+writeln();
+}

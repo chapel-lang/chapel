@@ -1,0 +1,8 @@
+
+
+::null(<unknown>:0) ( void (<unknown>:0) )
+function __init printstring.chpl:2
+function __init() {
+globals
+write("This is a test\n");
+}

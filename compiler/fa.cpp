@@ -212,7 +212,7 @@ flow_var_to_var(AVar *a, AVar *b) {
   update_in(b, a->out);
 }
 
-static void
+void
 flow_vars(AVar *v, AVar *vv) {
   if (v->lvalue) {
     if (vv->lvalue) {
@@ -233,7 +233,7 @@ flow_vars(AVar *v, AVar *vv) {
 
 // Initially create a unique creation set for each
 // variable (location in program text).
-static CreationSet *
+CreationSet *
 creation_point(AVar *v, Sym *s) {
   CreationSet *cs = v->creation_set;
   if (cs) {
@@ -1240,7 +1240,9 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       default: break;
       case P_prim_primitive: {
 	PrimitiveTransferFunctionPtr fn = fa->primitive_transfer_functions.get(p->rvals.v[1]->sym);
-	assert(fn);
+	if (!fn)
+	  fail("fatal error, undefined primitive transfer function '%s'", 
+	       p->rvals.v[1]->sym->name);
 	fn(p, es);
 	break;
       }

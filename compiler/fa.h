@@ -282,6 +282,8 @@ int constant_info(Var *v, Vec<Sym *> &constants);
 AType *make_AType(Vec<CreationSet *> &css);
 AType *make_abstract_type(Sym *s);
 void update_in(AVar *v, AType *t);
+void flow_vars(AVar *v, AVar *vv);
+CreationSet *creation_point(AVar *v, Sym *s);
 void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,
 		    Vec<Fun *> *funs = NULL);
 void log_var_types(Var *v, Fun *f);

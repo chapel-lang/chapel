@@ -1,0 +1,38 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+::o(<unknown>:0) ( int64 (<unknown>:0) )
+answer = (m!=n);
+answer = (m!=o);
+answer = (m==n);
+answer = (m==o);
+function __init equality_ops.chpl:33
+function __init() {
+globals
+var answer: integer = 0;
+var m: integer = 5;
+var n: integer = 2;
+var o: integer = 5;
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("expected answer = 0");
+writeln("expected answer = 0");
+writeln("expected answer = 1");
+writeln("expected answer = 1");
+writeln("m = ", m);
+writeln("n = ", n);
+writeln("o = ", o);
+writeln("test: m != n");
+writeln("test: m == n");
+writeln("test: m == o");
+writeln("test: m!= o");
+writeln();
+writeln();
+writeln();
+writeln();
+}

@@ -1,0 +1,25 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+::o(<unknown>:0) ( int64 (<unknown>:0) )
+::p(<unknown>:0) ( int64 (<unknown>:0) )
+answer = (!o);
+answer = (!p);
+function __init logical_not.chpl:19
+function __init() {
+globals
+var answer: integer = 0;
+var o: integer = 0;
+var p: integer = 1;
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("expected answer = 0");
+writeln("expected answer = 1");
+writeln("o = ", o);
+writeln("p = ", p);
+writeln("test: !o");
+writeln("test: !p");
+writeln();
+writeln();
+}

@@ -1,0 +1,11 @@
+
+
+::null(<unknown>:0) ( void (<unknown>:0) )
+::x(<unknown>:0) ( int64 (<unknown>:0) )
+function __init deadvar.chpl:5
+function __init() {
+globals
+var x: integer = 0;
+var y: integer = 0;
+writeln("x is ", x);
+}

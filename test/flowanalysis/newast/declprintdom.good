@@ -1,0 +1,22 @@
+
+
+::D1(<unknown>:0) ( sequence (<unknown>:0) )
+::D2(<unknown>:0) ( sequence (<unknown>:0) )
+::D3(<unknown>:0) ( domain (<unknown>:0) )
+::m1(<unknown>:0) ( int64 (<unknown>:0) )
+::m2(<unknown>:0) ( int64 (<unknown>:0) )
+::m3(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+function __init declprintdom.chpl:12
+function __init() {
+globals
+var D1: domain(1) = 1..m1;
+var D2: domain(1) = 1..m2;
+var D3: domain(1) = [1..m3];
+var m1: integer = 10;
+var m2: integer = 20;
+var m3: integer = 30;
+writeln("D1 is: ", D1);
+writeln("D2 is: ", D2);
+writeln("D3 is: ", D3);
+}

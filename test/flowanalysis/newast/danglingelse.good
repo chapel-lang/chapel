@@ -1,0 +1,21 @@
+
+
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::b(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+a += 1;
+b += 1;
+function __init danglingelse.chpl:29
+function __init() {
+globals
+if (a) if (b) write("in case 1 for conditional 1..."); else write("in case 2 for conditional 1...");
+if (a) if (b) write("in case 1 for conditional 2"); else write("in case 2 for conditional 2"); else write("in case 3 for conditional 2");
+var a: integer = 0;
+var b: integer = 0;
+while ((a<2)) {
+while ((b<2)) {
+write("when (a, b) is (", a, ", ", b, ") we end up...");
+writeln();
+}
+}
+}

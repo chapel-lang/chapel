@@ -25,6 +25,7 @@ static Sym *domain_next_index_symbol = 0;
 static Sym *domain_valid_index_symbol = 0;
 static Sym *expr_simple_seq_symbol = 0;
 static Sym *expr_domain_symbol = 0;
+static Sym *expr_create_domain_symbol = 0;
 static Sym *expr_reduce_symbol = 0;
 static Sym *write_symbol = 0;
 static Sym *flood_symbol = 0;
@@ -79,8 +80,11 @@ set_global_scope(Sym *s) {
 }
 
 static ASymbol *
-new_ASymbol(char *name = 0) {
+new_ASymbol(Symbol *symbol) {
   ASymbol *s = new ASymbol;
+  char *name = 0;
+  if (!symbol->isNull())
+    name = symbol->name;
   if1_register_sym(if1, s, name);
   return s;
 }
@@ -93,7 +97,7 @@ map_symbols(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms) {
     Symbol *sym = dynamic_cast<Symbol *>(s);
     if (sym) {
-      sym->asymbol = new_ASymbol(sym->name);
+      sym->asymbol = new_ASymbol(sym);
       sym->asymbol->xsymbol = sym;
       sym->asymbol->function_scope = 1;
       symbols++;
@@ -102,7 +106,7 @@ map_symbols(Vec<BaseAST *> &syms) {
     } else {
       Type *t = dynamic_cast<Type *>(s);
       if (t) {
-	t->asymbol = new_ASymbol(t->name->name);
+	t->asymbol = new_ASymbol(t->name);
 	t->asymbol->xsymbol = t;
 	set_global_scope(t->asymbol);
 	types++;
@@ -408,12 +412,14 @@ gen_vardef(BaseAST *a) {
     if (typeid(var->type) != typeid(ClassType))
       s->is_var = 1;
   }
-  if (def->init) {
+  if (!def->init->isNull()) {
     if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
     if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->sym, def->ainfo);
   } else if (!s->is_var) {
     show_error("missing value initializer", def->ainfo);
     return -1;
+  } else {
+    s->is_external = 1; // hack
   }
   return 0;
 }
@@ -448,13 +454,13 @@ gen_for(BaseAST *a) {
   getLinkElements(body, s->body);
   forv_Stmt(ss, body)
     if1_gen(if1, &body_code, ss->ainfo->code);
-  Sym *index = new_sym();
+  Sym *index = s->index->asymbol;
   Code *setup_code = 0;
   if1_gen(if1, &setup_code, s->domain->ainfo->code);
   send = if1_send(if1, &setup_code, 3, 1, sym_primitive, domain_start_index_symbol, s->domain->ainfo->rval, 
 		  index);
   send->ast = s->ainfo;
-  Sym *condition_rval = 0;
+  Sym *condition_rval = new_sym();
   Code *condition_code = 0;
   send = if1_send(if1, &condition_code, 4, 1, sym_primitive, domain_valid_index_symbol,
 		  s->domain->ainfo->rval, index,
@@ -508,7 +514,7 @@ gen_if1(BaseAST *ast) {
       break;
     }
 #if 0
-      // fall through
+    case STMT_GOTO:
     case STMT_BREAK:
     case STMT_CONTINUE:
     {
@@ -663,10 +669,16 @@ gen_if1(BaseAST *ast) {
       DomainExpr *s = dynamic_cast<DomainExpr *>(ast);
       s->ainfo->rval = new_sym();
       if1_gen(if1, &s->ainfo->code, s->domains->ainfo->code);
-      if1_gen(if1, &s->ainfo->code, s->forallExpr->ainfo->code);
-      Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_domain_symbol, 
-			    s->domains->ainfo->rval, s->indices->asymbol, s->forallExpr->ainfo->rval, 
-			    s->ainfo->rval);
+      Code *send = 0;
+      if (!s->forallExpr->isNull()) { 
+	if1_gen(if1, &s->ainfo->code, s->forallExpr->ainfo->code);
+	send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_domain_symbol, 
+			s->domains->ainfo->rval, s->indices->asymbol, s->forallExpr->ainfo->rval, 
+			s->ainfo->rval);
+      } else {
+	send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, expr_create_domain_symbol, 
+			s->domains->ainfo->rval, s->ainfo->rval);
+      }
       send->ast = s->ainfo;
       break;
     }
@@ -703,8 +715,16 @@ gen_if1(BaseAST *ast) {
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      assert(s->baseExpr->ainfo->rval->name);
-      if1_add_send_arg(if1, send, if1_make_symbol(if1, s->baseExpr->ainfo->rval->name));
+      if (s->baseExpr->astType == EXPR_VARIABLE) { 
+	Variable *v = dynamic_cast<Variable *>(s->baseExpr);
+	if (v->var->astType == SYMBOL_USEBEFOREDEF || v->var->astType == SYMBOL_FN) {
+	  assert(s->baseExpr->ainfo->rval->name);
+	  if1_add_send_arg(if1, send, if1_make_symbol(if1, s->baseExpr->ainfo->rval->name));
+	  goto LexprParenOpBaseDone;
+	}
+      }
+      if1_add_send_arg(if1, send, s->baseExpr->ainfo->rval);
+    LexprParenOpBaseDone:
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
@@ -846,6 +866,7 @@ init_symbols() {
   domain_valid_index_symbol = if1_make_symbol(if1, "domain_valid_index");
   expr_simple_seq_symbol = if1_make_symbol(if1, "expr_simple_seq");
   expr_domain_symbol = if1_make_symbol(if1, "expr_domain");
+  expr_create_domain_symbol = if1_make_symbol(if1, "expr_create_domain");
   expr_reduce_symbol = if1_make_symbol(if1, "expr_reduce");
   write_symbol = if1_make_symbol(if1, "write");
   flood_symbol = if1_make_symbol(if1, "*");
@@ -909,30 +930,6 @@ debug_new_ast(BaseAST *a, Vec<BaseAST *> &syms) {
 }
 
 static void
-domain_start_index(PNode *pn, EntrySet *es) {
-}
-
-static void
-domain_next_index(PNode *pn, EntrySet *es) {
-}
-
-static void
-domain_valid_index(PNode *pn, EntrySet *es) {
-}
-
-static void
-expr_simple_seq(PNode *pn, EntrySet *es) {
-}
-
-static void
-expr_domain(PNode *pn, EntrySet *es) {
-}
-
-static void
-expr_reduce(PNode *pn, EntrySet *es) {
-}
-
-static void
 finalize_symbols(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     if (s->is_constant || s->is_symbol)
@@ -941,6 +938,47 @@ finalize_symbols(IF1 *i) {
       if (s->type_kind)
 	s->global_scope = 1;
   }
+}
+
+static void
+domain_start_index(PNode *pn, EntrySet *es) {
+  AVar *container = make_AVar(pn->lvals.v[0], es);
+  creation_point(container, sym_tuple);
+}
+
+static void
+domain_next_index(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *index = make_AVar(pn->rvals.v[3], es);
+  flow_vars(index, result);
+}
+
+static void
+domain_valid_index(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  update_in(result, make_abstract_type(sym_int));
+}
+
+#if 0
+static void
+expr_domain(PNode *pn, EntrySet *es) {
+}
+
+static void
+expr_reduce(PNode *pn, EntrySet *es) {
+}
+#endif
+
+static void
+expr_simple_seq(PNode *pn, EntrySet *es) {
+  AVar *container = make_AVar(pn->lvals.v[0], es);
+  creation_point(container, sym_sequence);
+}
+
+static void
+expr_create_domain(PNode *pn, EntrySet *es) {
+  AVar *container = make_AVar(pn->lvals.v[0], es);
+  creation_point(container, sym_domain);
 }
 
 static void
@@ -960,9 +998,12 @@ AST_to_IF1(BaseAST* a) {
   pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol, domain_start_index);
   pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol, domain_next_index);
   pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol, domain_valid_index);
-  pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol, expr_simple_seq);
+#if 0
   pdb->fa->primitive_transfer_functions.put(expr_domain_symbol, expr_domain);
   pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol, expr_reduce);
+#endif
+  pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol, expr_simple_seq);
+  pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol, expr_create_domain);
   pdb->fa->primitive_transfer_functions.put(write_symbol, write_transfer_function);
   finalize_types(if1);
   sym_null->is_external = 1;	// hack

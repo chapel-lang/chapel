@@ -1,0 +1,22 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+answer = (~answer);
+answer = (~m);
+function __init bitwise_negation.chpl:17
+function __init() {
+globals
+var answer: integer = 0;
+var m: integer = 10;
+writeln("actual answer = ", answer);
+writeln("actual answer = ", answer);
+writeln("expected answer = -11");
+writeln("expected answer = 10");
+writeln("m = ", m);
+writeln("test: ~answer");
+writeln("test: ~m");
+writeln();
+writeln();
+}

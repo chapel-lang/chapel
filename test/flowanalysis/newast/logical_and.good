@@ -1,0 +1,17 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+answer = (o&&o);
+answer = (o&&p);
+answer = (p&&p);
+function __init logical_and.chpl:13
+function __init() {
+globals
+var answer: integer = 0;
+var o: integer = 0;
+var p: integer = 1;
+writeln("0 && 0 = ", answer);
+writeln("0 && 1 = ", answer);
+writeln("1 && 1 = ", answer);
+}
