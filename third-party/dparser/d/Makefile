@@ -43,12 +43,6 @@ else
   AR_FLAGS = crv
 endif
 
-ifeq ($(OS_TYPE),Linux)
-  CFLAGS +=
-  LIBS += -lpthread -ldl
-endif
-
-
 GC_CFLAGS += -I$(GCROOT)/include -L$(GCROOT)/lib
 
 ifdef D_USE_GC
