@@ -14926,3 +14926,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+01/19/05 11:10:16 -- jplevyak
+
+Log message:
+	update as per recent discussions
+
+Modified files:
+	chapel/doc/internal/: notes.todo 
+
