@@ -449,8 +449,16 @@ fname:
   { $$ = "*"; } 
 | TDIVIDE
   { $$ = "/"; } 
+| TMOD
+  { $$ = "mod"; } 
 | TEXP
   { $$ = "**"; } 
+| TAND
+  { $$ = "and"; } 
+| TOR
+  { $$ = "or"; } 
+| TBY
+  { $$ = "by"; } 
   ;
 
 fndecl:

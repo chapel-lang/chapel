@@ -26,6 +26,25 @@ class Tuple {
   }
 }
 
+function +(a : numeric, b : numeric) { return __primitive(a, "+", b); }
+function -(a : numeric, b : numeric) { return __primitive(a, "-", b); }
+function *(a : numeric, b : numeric) { return __primitive(a, "*", b); }
+function /(a : numeric, b : numeric) { return __primitive(a, "/", b); }
+function mod(a : numeric, b : numeric) { return __primitive(a, "%", b); }
+function ==(a : numeric, b : numeric) { return __primitive(a, "==", b); }
+function !=(a : numeric, b : numeric) { return __primitive(a, "!=", b); }
+function <=(a : numeric, b : numeric) { return __primitive(a, "<=", b); }
+function >=(a : numeric, b : numeric) { return __primitive(a, ">=", b); }
+function <(a : numeric, b : numeric) { return __primitive(a, "<", b); }
+function >(a : numeric, b : numeric) { return __primitive(a, ">", b); }
+function &(a : numeric, b : numeric) { return __primitive(a, "&", b); }
+function |(a : numeric, b : numeric) { return __primitive(a, "|", b); }
+function ^(a : numeric, b : numeric) { return __primitive(a, "^", b); }
+function and(a : numeric, b : numeric) { return __primitive(a, "&&", b); }
+function or(a : numeric, b : numeric) { return __primitive(a, "||", b); }
+function **(a : numeric, b : numeric) { return __primitive(a, "**", b); }
+function by(a : numeric, b : numeric) { return __primitive(a, "by", b); }
+
 function _chpl_malloc(number, size, description: string);
 function _chpl_calloc(number, size, description: string);
 function _chpl_free(memory);

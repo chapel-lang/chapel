@@ -487,7 +487,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
   forv_Fun(f, fa->funs) {
     char s[100];
     if (f->sym->name)
-      sprintf(s, "_CG_f_%s_%d_%d", f->sym->name, f->sym->id, f_index);
+      sprintf(s, "_CG_f_%d_%d/*%s*/", f->sym->id, f_index, f->sym->name);
     else
       sprintf(s, "_CG_f_%d_%d", f->sym->id, f_index);
     f->cg_string = dupstr(s);

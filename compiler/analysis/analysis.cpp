@@ -809,6 +809,7 @@ build_builtin_symbols() {
   sym_float64 = dtFloat->asymbol->sym;
   sym_complex64 = dtComplex->asymbol->sym;
   sym_string = dtString->asymbol->sym;
+  sym_anynum = dtNumeric->asymbol->sym;
 
   new_lub_type(sym_anyclass, "anyclass", 0);
   sym_anyclass->meta_type = sym_anyclass;
@@ -1338,7 +1339,7 @@ gen_if1(BaseAST *ast) {
 	case BINOP_MINUS: op = if1_make_symbol(if1, "-"); break;
 	case BINOP_MULT: op = if1_make_symbol(if1, "*"); break;
 	case BINOP_DIV: op = if1_make_symbol(if1, "/"); break;
-	case BINOP_MOD: op = if1_make_symbol(if1, "%"); break;
+	case BINOP_MOD: op = if1_make_symbol(if1, "mod"); break;
 	case BINOP_EQUAL: op = if1_make_symbol(if1, "=="); break;
 	case BINOP_LEQUAL: op = if1_make_symbol(if1, "<="); break;
 	case BINOP_GEQUAL: op = if1_make_symbol(if1, ">="); break;
@@ -1348,13 +1349,13 @@ gen_if1(BaseAST *ast) {
 	case BINOP_BITAND: op = if1_make_symbol(if1, "&"); break;
 	case BINOP_BITOR: op = if1_make_symbol(if1, "|"); break;
 	case BINOP_BITXOR: op = if1_make_symbol(if1, "^"); break;
-	case BINOP_LOGAND: op = if1_make_symbol(if1, "&&"); break;
-	case BINOP_LOGOR: op = if1_make_symbol(if1, "||"); break;
+	case BINOP_LOGAND: op = if1_make_symbol(if1, "and"); break;
+	case BINOP_LOGOR: op = if1_make_symbol(if1, "or"); break;
 	case BINOP_EXP: op = if1_make_symbol(if1, "**"); break;
 	case BINOP_BY: op = if1_make_symbol(if1, "by"); break;
       }
-      Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
-			 s->left->ainfo->rval, op, s->right->ainfo->rval,
+      Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
+			 s->left->ainfo->rval, s->right->ainfo->rval,
 			 s->ainfo->rval);
       c->ast = s->ainfo;
       break;
@@ -1415,8 +1416,8 @@ gen_if1(BaseAST *ast) {
       if (op) {
 	rval = new_sym();
 	rval->ast = s->ainfo;
-	Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
-			   s->left->ainfo->rval, op, s->right->ainfo->rval,
+	Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
+			   s->left->ainfo->rval, s->right->ainfo->rval,
 			   rval);
 	c->ast = s->ainfo;
       }
@@ -1531,8 +1532,11 @@ gen_if1(BaseAST *ast) {
       getLinkElements(args, s->argList);
       if (args.n == 1 && !args.v[0])
 	args.n--;
-      forv_Vec(Expr, a, args)
+      Vec<Sym *> rvals;
+      forv_Vec(Expr, a, args) {
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+	rvals.add(a->ainfo->rval);
+      }
       astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
       Sym *base = NULL;
       char *n = s->baseExpr->ainfo->rval->name;
@@ -1541,11 +1545,14 @@ gen_if1(BaseAST *ast) {
 	    if1->primitives->prim_map[0][0].get(
 	      if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[0])->str)))
 	  base = 0;
-	else
+	else if (args.n == 3 && dynamic_cast<StringLiteral*>(args.v[1]) &&
+		 if1->primitives->prim_map[1][1].get(
+		   if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[1])->str))) {
+	  rvals.v[1] = if1_make_symbol(if1, rvals.v[1]->constant);
+	  base = sym_operator;
+	} else
 	  base = sym_primitive;
-      } else if (n && !strcmp(n, "__operator"))
-	base = sym_operator;
-      else if (base_symbol == SYMBOL_UNRESOLVED) {
+      } else if (base_symbol == SYMBOL_UNRESOLVED) {
 	assert(n);
 	base = if1_make_symbol(if1, n);
       } else if (base_symbol == SYMBOL_FN)
@@ -1556,8 +1563,8 @@ gen_if1(BaseAST *ast) {
       send->ast = s->ainfo;
       if (base)
 	if1_add_send_arg(if1, send, base);
-      forv_Vec(Expr, a, args)
-	if1_add_send_arg(if1, send, a->ainfo->rval);
+      forv_Sym(r, rvals)
+	if1_add_send_arg(if1, send, r);
       if1_add_send_result(if1, send, s->ainfo->rval);
       send->partial = Partial_NEVER;
       s->ainfo->rval->is_lvalue = 1;
