@@ -2363,3 +2363,14 @@ Log message:
 Modified files:
 	chapel/compiler/: ast.cpp ast_kinds.h chpl.g 
 
+---------------------------------------------------------------------------
+
+04/06/01 14:33:58 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	fixup tests to match new grammar for parsing trivial/bradc
+
+Modified files:
+	chapel/compiler/: chpl.g 
+	chapel/test/parsing/jplevyak/: mat1.good 
+
