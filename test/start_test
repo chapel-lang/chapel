@@ -332,7 +332,11 @@ endif
 #   Take off : with sed
 #
 set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | sed 's/://g'`
-#set dirs = (./ $dirs)
+# gotta add ./ on in case -startdir is specified
+set dirs = (./ $dirs)
+
+echo "dirs is $dirs"
+echo "cwd is $cwd"
 
 foreach dir ($dirs)
 	if ( -x $dir ) then
