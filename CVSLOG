@@ -11071,3 +11071,14 @@ Added files:
 	                                   test_record_method1.chpl 
 	                                   test_record_method1.good 
 
+---------------------------------------------------------------------------
+
+12/02/04 16:01:51 -- deitz
+
+Log message:
+	Added a test for records with methods that access their fields.  On second glance, I've decided that these do work.  What is broken is inout parameters in general and specifically as it pertains to records.
+
+Added files:
+	chapel/test/classes/deitz/future/: test_record_method2.chpl 
+	                                   test_record_method2.good 
+
