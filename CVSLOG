@@ -16200,3 +16200,63 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: collectASTS.cpp collectASTS.h 
 
+---------------------------------------------------------------------------
+
+02/01/05 17:05:51 -- bradc
+
+Log message:
+	Added initial support for default values for parameters.
+	There is still no support for named parameters, so this
+	gives a C++-style default parameter mechanism at best.
+	Since analysis doesn't yet know where to look for these
+	default values, functions that rely on them will fail.
+	
+	Checked in two simple variations of my intents tests:
+	One tries to elide parameters that have default values,
+	which fails in analysis.  This is currently marked as a
+	future test for John, though there may be more work for
+	me down the road.  The second passes in arguments even
+	though the default parameter values are there, which
+	demonstrates that they are used to initialize an out
+	parameter in this case.
+	
+	The processParameters pass has been updated to deal with
+	default parameter values, but has not been tested
+	extensively.
+	
+	* fixed John's safety nets for return_type_info and
+	  function_is_used, which seem to have broken during
+	  today's code shuffle.  Someone may want to check
+	  that what I've done is reasonable.
+	
+	* added an Expr* init to ParamSymbol which stores its
+	  default value if it has one
+	
+	* factored the setting of a ParenOpExpr's argument list
+	  into a separate routine -- ParenOpExpr::setArgs -- so
+	  that it can be re-set earlier
+	
+	* made a small change to legalizeCNames so that names
+	  in the intrinsic scope (in particular dtUnknown) are
+	  not renamed.
+	
+	* also checked in a test that exercises declaring
+	  multiple parameters of the same type now that Steve's
+	  implemented that in the parser.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h symbol.h symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: legalizeCNames.cpp symtab.cpp 
+	chapel/compiler/traversals/: processParameters.cpp 
+Added files:
+	chapel/test/functions/bradc/: defaultParam.chpl 
+	                              defaultParam.future 
+	                              defaultParam.good 
+	                              defaultParam2.chpl 
+	                              defaultParam2.good 
+	                              multipleParamsSameType.chpl 
+	                              multipleParamsSameType.good 
+
