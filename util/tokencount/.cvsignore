@@ -1,0 +1,7 @@
+lex.yy.c
+tokencount
+tokencount.cron
+tokencount.dbg
+tokencount.tab.c
+tokencount.tab.h
+tokencount.output
