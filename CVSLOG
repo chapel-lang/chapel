@@ -22675,3 +22675,17 @@ Added files:
 	chapel/test/classes/bradc/: noinit2.chpl noinit2.future 
 	                            noinit2.good 
 
+---------------------------------------------------------------------------
+
+03/30/05 14:40:58 -- bradc
+
+Log message:
+	Fixed a simple codegen naming conflict that occurred when
+	one program contained two union types, and checked in a
+	test to lock in this behavior.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+Added files:
+	chapel/test/classes/bradc/unions/: twounions.chpl twounions.good 
+
