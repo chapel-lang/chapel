@@ -11623,3 +11623,32 @@ Added files:
 	                                        configVarFileStringsNoEquals.good 
 	                                        configVarFileStringsNoEquals.input 
 
+---------------------------------------------------------------------------
+
+12/13/04 12:29:54 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	New interface for copying AST's.  Here is my problem: I need to pass
+	some context down for the copy, so I have two functions:
+	
+	  AST *copy_tree(ASTCopyContext* context);
+	  AST *copy_node(ASTCopyContext* context);
+	
+	Where the former is called on the root of the AST and the
+	latter is called for each node.  I am going to implement
+	copy_node, but I was thinking you guys would want to
+	implement the traversal which copies your AST and then
+	just callback my stuff (or give me a place to put a callout
+	to copy my stuff).
+	
+	Basically, I need to pass down some context (ASTCopyContext) which is
+	then passed to a callback on each AInfo along with the old node.
+	
+	The root call is at fun.cpp:192, and the AST node which I am storing
+	with each function is the FnDefStmt (at analysis.cpp:1169).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fun.cpp 
+	chapel/compiler/include/: analysis.h ast.h 
+	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h 
+
