@@ -16845,3 +16845,15 @@ Modified files:
 	chapel/compiler/traversals/: findUnknownTypes.cpp 
 	                             findUnknownTypes.h 
 
+---------------------------------------------------------------------------
+
+02/07/05 15:38:49 -- deitz
+
+Log message:
+	Fixed a small bug in which functions having the same name (overloaded,
+	cloned or instantiated functions) may not be code generated if any of
+	the functions were marked as unused.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
