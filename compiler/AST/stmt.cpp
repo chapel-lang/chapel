@@ -56,7 +56,7 @@ void VarDefStmt::print(FILE* outfile) {
     }
     fprintf(outfile, ";");
 
-    aVar = (VarSymbol*)(aVar->next);
+    aVar = nextLink(VarSymbol, aVar);
     if (aVar) {
       fprintf(outfile, "\n");
     }
@@ -95,7 +95,7 @@ void VarDefStmt::codegen(FILE* outfile) {
       fprintf(outfile, ";");
     }
 
-    aVar = (VarSymbol*)(aVar->next);
+    aVar = nextLink(VarSymbol, aVar);
     if (aVar) {
       fprintf(outfile, "\n");
     }

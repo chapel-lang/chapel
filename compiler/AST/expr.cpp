@@ -352,7 +352,7 @@ void WriteCall::codegen(FILE* outfile) {
     fprintf(outfile, ", ");
     argList->codegen(outfile);
     fprintf(outfile, ");\n");
-    argList = (Expr*)(argList->next);  // BLC: cast!
+    argList = nextLink(Expr, argList);
   }
   if (writeln) {
     fprintf(outfile, "_write_linefeed(stdout);");

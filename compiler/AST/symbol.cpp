@@ -29,11 +29,11 @@ void Symbol::printDefList(FILE* outfile, char* separator) {
   Symbol* ptr;
 
   printDef(outfile);
-  ptr = (Symbol*)next;  // BLC: switch to dynamic cast
+  ptr = nextLink(Symbol, this);
   while (ptr != NULL) {
     fprintf(outfile, "%s", separator);
     ptr->printDef(outfile);
-    ptr = (Symbol*)(ptr->next);  // BLC: switch to dynamic cast
+    ptr = nextLink(Symbol, ptr);
   }
 }
 

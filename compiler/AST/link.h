@@ -22,4 +22,7 @@ class ILink : public Loc {
   void append(ILink* newlink);
 };
 
+#define prevLink(type, node) (dynamic_cast<type*>((node)->prev))
+#define nextLink(type, node) (dynamic_cast<type*>((node)->next))
+
 #endif

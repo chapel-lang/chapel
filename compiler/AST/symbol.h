@@ -127,8 +127,4 @@ class EnumSymbol : public Symbol {
   EnumSymbol(char* init_name, int init_val);
 };
 
-
-// BLC: Get rid of this
-extern Symbol* pstSumReduce;
-
 #endif

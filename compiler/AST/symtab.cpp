@@ -137,7 +137,7 @@ void SymScope::handleUndefined(void) {
 	fprintf(stdout, "\n");
       }
 
-      undefined = (SymLink*)(undefined->next);  // BLC: cast!
+      undefined = nextLink(SymLink, undefined);
     }
     exit(1);
   }
@@ -293,14 +293,14 @@ ParamSymbol* Symboltable::defineParams(paramType formaltag, Symbol* idents,
   paramList = newParam;
   lastParam = newParam;
 
-  idents = (Symbol*)(idents->next); // BLC: yuck!
+  idents = nextLink(Symbol, idents);
   while (idents != NULL) {
     newParam = new ParamSymbol(PARAM_INOUT, idents->name, type);
     define(newParam);
     lastParam->next = newParam;
     lastParam = newParam;
 
-    idents = (Symbol*)(idents->next); // BLC: yuck!
+    idents = nextLink(Symbol, idents);
   }
 
   return paramList;
@@ -319,14 +319,14 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   varList = newVar;
   lastVar = newVar;
 
-  idents = (Symbol*)(idents->next); // BLC: yuck!
+  idents = nextLink(Symbol, idents);
   while (idents != NULL) {
     newVar = new VarSymbol(idents->name, vartag, isConst, type);
     define(newVar);    
     lastVar->next = newVar;
     lastVar = newVar;
 
-    idents = (Symbol*)(idents->next); // BLC: yuck!
+    idents = nextLink(Symbol, idents);
   }
 
   return varList;
@@ -344,7 +344,7 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
   define(newEnum);
   enumList = newEnum;
   lastEnum = newEnum;
-  sym = (Symbol*)(sym->next);   // BLC: yuck!
+  sym = nextLink(Symbol, sym);
   while (sym != NULL) {
     val++;
     newEnum = new EnumSymbol(sym->name, val);
@@ -352,7 +352,7 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
     lastEnum->append(newEnum);
     lastEnum = newEnum;
 
-    sym = (Symbol*)(sym->next);  // BLC: yuck!
+    sym = nextLink(Symbol, sym);
   }
 
   return enumList;

@@ -74,7 +74,7 @@ EnumType::EnumType(Symbol* init_valList) :
   Symbol* val = valList;
   while (val != NULL) {
     val->type = this;
-    val = (Symbol*)(val->next);
+    val = nextLink(Symbol, val);
   }
 }
 

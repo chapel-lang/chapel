@@ -1,5 +1,4 @@
 * try to get return of append working better
-* and traversal of linked lists -- remove casting
 * take all instances of NULL out
 * move suspicious symbols into prelude file
 * fix precedence problems (and there are lots)
