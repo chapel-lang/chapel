@@ -1836,3 +1836,23 @@ Log message:
 Modified files:
 	chapel/compiler/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/03 12:48:58 -- bradc
+
+Log message:
+	Some small changes that have been festering in my directory
+	for awhile:
+	
+	(1) added support for writeln() in addition to write() as
+	our placeholder output routines.
+	
+	(2) added some support for codegen-ing parenthesized expressions.
+
+Modified files:
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+Added files:
+	chapel/test/trivial/bradc/: declprintint2.chk declprintint2.chpl 
+	                            pareninit.chk pareninit.chpl 
+
