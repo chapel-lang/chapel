@@ -7,10 +7,10 @@ class foo {
 
 var f : foo = foo();
 
-f.x = 2;
+f.x = 3.2;
 
 f.print();
 
-f.x = 3.2;
+f.x = 2;
 
 f.print();
