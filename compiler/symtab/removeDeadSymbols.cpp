@@ -34,8 +34,8 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
       // then the whole statement can be extracted; instead, we
       // should pull just the defExpr (but this breaks other stuff
       // that assumes that every defStmt).
-
-      sym->defPoint->stmt->extract();
+      if (sym->defPoint) // JBP 4/5/05 for intents-classes4.chpl this is NULL
+	sym->defPoint->stmt->extract();
     }
   }
   if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {

@@ -324,7 +324,8 @@ set_type_for_variables(IF1 *i) {
 
 void
 make_meta_type(Sym *s) {
-  s->meta_type = new_Sym();
+  if (!s->meta_type)
+    s->meta_type = new_Sym();
   s->meta_type->is_meta_class = 1;
   s->meta_type->in = s->in;
   s->meta_type->name = s->name;

@@ -296,6 +296,9 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
   forv_Type(t, builtinTypes) {
     if (set.set_add(t))
       syms.add(t);
+    if (t->symbol)
+      if (set.set_add(t->symbol))
+	syms.add(t->symbol);
   }
 }
 
@@ -602,6 +605,10 @@ map_symbols(Vec<BaseAST *> &syms) {
       int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
       sym->asymbol = new_ASymbol(sym, basic);
       sym->asymbol->symbol = sym;
+      if (sym->astType == SYMBOL_VAR && sym->type == dtNil) {
+	assert(!sym_nil);
+        sym_nil = sym->asymbol->sym;
+      }
       if (!sym->parentScope) {
         sym->asymbol->sym->global_scope = 1;
       } else {
@@ -643,8 +650,6 @@ map_symbols(Vec<BaseAST *> &syms) {
           pr = dynamic_cast<Pragma *>(pr->next);
         }
       }
-      if (sym->type == dtNil)
-        sym_nil = sym->asymbol->sym;
       symbols++;
       if (verbose_level > 1 && sym->name)
         printf("map_symbols: found Symbol '%s'\n", sym->name);
@@ -725,6 +730,10 @@ build_types(Vec<BaseAST *> &syms) {
       types.add(t);
   }
   forv_Type(t, types) {
+    if (t->symbol) {
+      t->asymbol->sym->meta_type = t->symbol->asymbol->sym;
+      t->symbol->asymbol->sym->meta_type = t->asymbol->sym;
+    }
     make_meta_type(t->asymbol->sym);
     switch (t->astType) {
       default: assert(!"case");
@@ -802,10 +811,6 @@ build_types(Vec<BaseAST *> &syms) {
           t->asymbol->sym->is_value_class = 1;
         if (t->astType == TYPE_UNION)
           t->asymbol->sym->is_union_class = 1;
-        if (tt->symbol) {
-          tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
-          tt->symbol->asymbol->symbol = tt->symbol;
-        }
         if (tt->parentStruct)
           t->asymbol->sym->inherits_add(tt->parentStruct->asymbol->sym);
         else
@@ -2467,8 +2472,8 @@ int
 type_is_used(TypeSymbol *t) {
   if (if1->callback) {
     if (t->asymbol) {
-      if (t->asymbol->sym->meta_type) {
-        return t->asymbol->sym->meta_type->creators.n != 0;
+      if (!t->asymbol->sym->is_meta_class) {
+        return t->asymbol->sym->creators.n != 0;
       } else
         return true; // SJD: ??
     } else

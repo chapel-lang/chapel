@@ -14,7 +14,7 @@
 ::__init_prelude(prelude.chpl:0) ( __init_prelude )
 ::__init_prelude(prelude.chpl:0) ( __init_prelude )
 ::_array_integer_1d(enumarray.chpl:5) ( _array_integer_1d )
-::classVals ( classVals (enumarray.chpl:1) )
+::classVals(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::i(enumarray.chpl:16) ( int64 )
 ::i(internal_prelude.chpl:0) ( classVals (enumarray.chpl:1) )
 ::i(internal_prelude.chpl:0) ( int64 )
