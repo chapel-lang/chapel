@@ -22010,3 +22010,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+03/28/05 15:37:43 -- jplevyak
+
+Log message:
+	Shadowing not taken into account.
+
+Modified files:
+	chapel/test/functions/jplevyak/scoping/: visibility-1.future 
+
