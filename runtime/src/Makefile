@@ -26,6 +26,7 @@ TARGETS = $(CHPL_RT_LIB)
 CVS_SRCS = $(CHPL_RT_SRCS) main.c
 
 all: $(CHPL_RT_LIB) $(PLATFORM)/main.o
+	@if [ `grep "chplrt.h" *.c | wc -l` -ne `ls *.c | wc -l` ]; then echo "PROBLEM:  There's a runtime source file that does not include 'chplrt.h'."; exit 1; fi
 
 clean:
 	rm -f ./$(PLATFORM)/*.o $(TARGETS)

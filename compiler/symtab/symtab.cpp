@@ -223,11 +223,16 @@ Symbol* Symboltable::lookupInCurrentScope(char* name) {
 
 
 Symbol* Symboltable::lookupInternal(char* name, bool publicSym) {
+  Symbol* sym;
   if (publicSym) {
-    return lookupInScope(name, preludeScope);
+    sym = lookupInScope(name, preludeScope);
   } else {
-    return lookupInScope(name, internalScope);
+    sym = lookupInScope(name, internalScope);
   }
+  if (!sym) {
+    INT_FATAL("lookupInternal failed on %s", name);
+  }
+  return sym;
 }
 
 
