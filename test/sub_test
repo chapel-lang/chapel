@@ -194,8 +194,13 @@ foreach chplsrc ($testsrc)
 	endif
 
 	if (-x ./PREDIFF) then
+            echo \[Executing PREDIFF\]
 	    ./PREDIFF $execfile $complog
 	endif
+        if (-x ./$execfile.prediff) then
+            echo \[Executing $execfile.prediff\]
+            ./$execfile.prediff $execfile $complog
+        endif
 
 	if ( ! -r $checkfile ) then
 	    echo \[Error cannot locate compiler output comparison file $localdir/$checkfile\]
@@ -219,6 +224,16 @@ foreach chplsrc ($testsrc)
 	echo \[Success compiling $localdir/$chplsrc\]
 
 	set binfile = a.out
+
+	if (-x ./PREEXEC) then
+            echo \[Executing PREEXEC\]
+	    ./PREEXEC $execfile $execlog
+	endif
+        if (-x ./$execfile.preexec) then
+            echo \[Executing $execfile.preexec\]
+            ./$execfile.preexec $execfile $complog
+        endif
+
 
 	if ( -f $binfile && -x $binfile ) then
 	    # Move compiler output to program output directory.
@@ -255,8 +270,14 @@ foreach chplsrc ($testsrc)
 	    endif
 
 	    if (-x ./PREDIFF) then
+                echo \[Executing PREDIFF\]
 		./PREDIFF $execfile $execlog
 	    endif
+            if (-x ./$execfile.prediff) then
+                echo \[Executing $execfile.prediff\]
+                ./$execfile.prediff $execfile $complog
+            endif
+
 
 	    if ( ! -r $checkfile ) then
 		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
