@@ -19510,3 +19510,13 @@ Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 	chapel/compiler/include/: fa.h 
 
+---------------------------------------------------------------------------
+
+03/14/05 17:06:00 -- jplevyak
+
+Log message:
+	Fix error messages from last checkin
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
