@@ -2263,3 +2263,14 @@ Log message:
 Modified files:
 	chapel/compiler/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+04/05/26 16:09:39 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	New data structure for handling data polymorophism which is simpler and
+	has better termination properites.
+
+Modified files:
+	chapel/compiler/: fa.cpp fa.h vec.cpp 
+
