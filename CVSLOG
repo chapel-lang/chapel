@@ -13862,3 +13862,14 @@ Modified files:
 	chapel/compiler/traversals/: insertUnionChecks.cpp 
 	                             insertUnionChecks.h 
 
+---------------------------------------------------------------------------
+
+01/06/05 17:18:30 -- bradc
+
+Log message:
+	Checking in a new directory map for the test/ directory
+	to see if my last change worked.
+
+Modified files:
+	chapel/test/: DIRS 
+
