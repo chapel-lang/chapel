@@ -139,6 +139,7 @@ Fun::copy() {
   f->init_function = init_function;
   f->nmap = new Map<PNode *, PNode*>;
   f->vmap = new VarMap;
+  f->wraps = wraps;
 
   Vec<PNode *> nodes;
 

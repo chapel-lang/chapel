@@ -44,10 +44,6 @@ static Que(AVar, send_worklist_link) send_worklist;
 static Vec<EntrySet *> entry_set_done;
 static Vec<ATypeViolation *> type_violations;
 
-static AType *type_union(AType *a, AType *b);
-static AType *type_diff(AType *a, AType *b);
-static AType *type_intersection(AType *a, AType *b);
-static AType *type_cannonicalize(AType *t);
 static AType *make_AType(CreationSet *cs);
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
 		       Partial_kind partial);
@@ -376,7 +372,7 @@ qsort_pointers(void **left, void **right) {
 }
 
 #define NO_TOP ((Sym *)-1)
-static AType *
+AType *
 type_cannonicalize(AType *t) {
   assert(!t->sorted.n);
   assert(!t->union_map.n);
@@ -454,7 +450,7 @@ type_cannonicalize(AType *t) {
 }
 #undef NO_TOP
 
-static AType *
+AType *
 type_union(AType *a, AType *b) {
   AType *r;
   if ((r = a->union_map.get(b)))
@@ -496,7 +492,7 @@ specializer_of(Sym *a, Sym *b) {
     return b->specializers.set_in(a) != 0;
 }
 
-static AType *
+AType *
 type_diff(AType *a, AType *b) {
   AType *r = new AType();
   forv_CreationSet(aa, *a) if (aa) {
@@ -513,7 +509,7 @@ type_diff(AType *a, AType *b) {
   return r;
 }
 
-static AType *
+AType *
 type_intersection(AType *a, AType *b) {
   AType *r;
   if ((r = a->intersection_map.get(b)))

@@ -22,18 +22,18 @@ class Matcher {
   Vec<MPosition *> *all_positions;
   Map<MPosition *, int> mapped_positions;
 
+  // C++'s manditory redundant declarations
   int pattern_match_sym(Sym *, MPosition *, Vec<Fun *> *, Vec<Fun *> &, int, Vec<Sym *> &);
   void build_positional_map(MPosition &, Vec<Fun *> **);
   void update_match_map(AVar *, CreationSet *, MPosition *, MPosition *, Vec<Fun *> &);
   void find_arg_matches(AVar *, MPosition &, MPosition *, Vec<Fun *> **, int, int);
   void find_all_matches(CreationSet *, Vec<AVar *> &, Vec<Fun *> **, MPosition &p, int);
   void record_all_positions();
-  void find_best_cs_match(Vec<CreationSet *> &, MPosition &p, Vec<Fun *> &local_matches, 
-			  Vec<Fun *> &result, int);
+  void find_best_cs_match(Vec<CreationSet *> &, MPosition &p, Vec<Fun *> &, Vec<Fun *> &, int);
   void find_best_matches(Vec<AVar *> &, Vec<CreationSet *> &, Vec<Fun *> &, MPosition &, 
 			 Vec<Fun *> &, int, int iarg = 0);
   int covers_formals(Fun *, Vec<CreationSet *> &, MPosition &, int);
-  void rebuild_Match(Match *m, Fun *f);
+  void build_Match(Fun *, Match *);
   void instantiation_wrappers_and_partial_application(Vec<Fun *> &);
   Fun *build(Match *m, Vec<Fun *> &matches);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
@@ -82,6 +82,13 @@ cannonicalize_mposition(MPosition &p) {
 static MPosition *
 to_formal(MPosition *p, Match *m) {
   MPosition *acp = m->actual_to_formal_position.get(p);
+  p = acp ? acp : p;
+  return p;
+}
+
+static MPosition *
+to_actual(MPosition *p, Match *m) {
+  MPosition *acp = m->formal_to_actual_position.get(p);
   p = acp ? acp : p;
   return p;
 }
@@ -400,21 +407,15 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &p, Vec<Fun *> &match
 }
 
 void
-Matcher::rebuild_Match(Match *m, Fun *f) {
-  m->fun = f;
-  match_map.put(f, m);
-  m->all_filters.clear(); // no longer needed
-  Map<MPosition *, AType *> old_filters;
-  old_filters.move(m->filters);
-  form_MPositionAType(x, old_filters)
-    m->filters.put(f->base_to_default_position.get(x->key), x->value);
-  Map<MPosition *, MPosition *> pos_map;
-  pos_map.move(m->actual_to_formal_position);
-  form_MPositionMPosition(x, pos_map)
-    m->actual_to_formal_position.put(x->key, f->base_to_default_position.get(x->value));
-  pos_map.move(m->formal_to_actual_position);
-  form_MPositionMPosition(x, pos_map)
-    m->formal_to_actual_position.put(f->base_to_default_position.get(x->key), x->value);
+Matcher::build_Match(Fun *f, Match *m) {
+  if (match_map.get(f))
+    return;
+  Match *mm = new Match(f);
+  match_map.put(f, mm);
+  // actuals
+  form_MPositionAVar(x, m->actuals)
+    mm->actuals.put(to_actual(x->key, m), x->value);
+  mm->partial = m->partial;
 }
 
 template <class C>
@@ -502,11 +503,8 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
     }
   } else
     m->order_substitutions.clear();
-  // need to loop over filters and split Match for those elements of the filter
-  // at cp which do not have the same concrete type as cs, install in matchmap
-  // m = *am = new match;
   if (f !=  m->fun)
-    rebuild_Match(m, f);
+    build_Match(f, m);
   return f;
 }
 

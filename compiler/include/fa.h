@@ -273,8 +273,8 @@ class FA : public gc {
   int concretize();
 };
 
-AVar *make_AVar(Var *v, EntrySet *es);
-Sym *coerce_num(Sym *a, Sym *b);
+AVar *make_AVar(Var *, EntrySet *);
+Sym *coerce_num(Sym *, Sym *);
 Sym *type_info(AST *a, Sym *s = 0);
 void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
 int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
@@ -286,8 +286,12 @@ void flow_vars(AVar *v, AVar *vv);
 CreationSet *creation_point(AVar *v, Sym *s);
 void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,
 		    Vec<Fun *> *funs = NULL);
-void log_var_types(Var *v, Fun *f);
-int compar_creation_sets(const void *ai, const void *aj);
+AType *type_cannonicalize(AType *t);
+AType *type_diff(AType *, AType *);
+AType *type_intersection(AType *, AType *);
+AType *type_union(AType *a, AType *b);
+void log_var_types(Var *, Fun *);
+int compar_creation_sets(const void *, const void *);
 void set_container(AVar *av, AVar *container);
 AVar * unique_AVar(Var *v, void *contour);
 AVar *unique_AVar(Var *v, EntrySet *es);

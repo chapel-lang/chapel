@@ -69,14 +69,6 @@ class Fun : public gc {
   Map<MPosition *, AST *> default_args;
   Vec<MPosition *> generic_args;
   
-  // generic/default/pointwise wrappers
-  Fun *wraps;
-  Vec<Fun *> wrappers;
-  Vec<MPosition *> defaulted_set;
-  Map<MPosition *, MPosition *> base_to_default_position;
-  Map<Sym *, Sym *> instantiated;
-  Map<MPosition *, Sym *> point_wised;
-
   // clone
   Vec<EntrySet *> called_ess;
   Vec<CreationSet *> called_css;
@@ -89,6 +81,9 @@ class Fun : public gc {
   void calls_funs(Vec<Fun *> &funs);
   Vec<CallPoint *> called;
   void called_by_funs(Vec<Fun *> &funs);
+
+  // wrappers and instantiations
+  Fun *wraps;
 
   // loop
   LoopGraph *loops;

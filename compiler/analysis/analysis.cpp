@@ -294,9 +294,10 @@ ACallbacks::order_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
   FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
-  FnDefStmt *f = fndef->order_wrapper(
-    m->formal_to_actual_position.n ? &m->formal_to_actual_position : 0);
-  return install_new_function(f);
+  FnDefStmt *f = fndef->order_wrapper(&m->formal_to_actual_position);
+  Fun *fun =  install_new_function(f);
+  fun->wraps = m->fun;
+  return fun;
 }
 
 Fun *
@@ -310,7 +311,9 @@ ACallbacks::coercion_wrapper(Match *m) {
   }
   FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
   FnDefStmt *f = fndef->coercion_wrapper(coercions.n ? &coercions : 0);
-  return install_new_function(f);
+  Fun *fun =  install_new_function(f);
+  fun->wraps = m->fun;
+  return fun;
 }
 
 Fun *
@@ -319,7 +322,9 @@ ACallbacks::default_wrapper(Match *m) {
     return NULL;
   FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
   FnDefStmt *f = fndef->default_wrapper(m->default_args.n ? &m->default_args : 0);
-  return install_new_function(f);
+  Fun *fun =  install_new_function(f);
+  fun->wraps = m->fun;
+  return fun;
 }
 
 Fun *
@@ -332,7 +337,9 @@ ACallbacks::instantiate_generic(Match *m) {
 		      dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
   FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
   FnDefStmt *f = fndef->instantiate_generic(substitutions.n ? &substitutions : 0);
-  return install_new_function(f);
+  Fun *fun =  install_new_function(f);
+  fun->wraps = m->fun;
+  return fun;
 }
 
 static void
