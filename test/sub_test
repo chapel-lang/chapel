@@ -1,0 +1,197 @@
+#!/bin/csh -f
+#
+#  Application output difference test for ZPL
+#
+# This is the sub_test that used to appear in all
+# subdirectories, but we've now hoisted it to the
+# top directory to avoid its over-replication and
+# support modifications to it.
+#
+# The rules:
+#
+# 1) by default, all subdirectories under the
+#    test directory will be run unless they contain
+#    a file called NOTEST
+#
+# 2) if the directory contains a sub_test script,
+#    that script will be run.  Otherwise, this one
+#    will  be.
+#
+# 3) if the directory does not contain a sub_test
+#    script, the start_test script will look for
+#    files named COMPOPTS and EXECOPTS and will
+#    add these to the zplcompopts and zplexecopts
+#    flags, respectively.
+
+#
+# This should go away once the chapel compiler actually can create
+# an executable
+#
+set CANNOT_CREATE_EXECUTABLES_YET = 1
+
+
+
+# Check number of incoming arguments
+if ( $#argv != 2 ) then
+	echo usage\: sub_test compiler testdir
+	exit
+endif
+
+# commenting this out for now:
+## set umask such that other testers can modify files also
+#umask 002
+
+set diffargs = "-i"
+
+# make sure can execute compiler
+
+set compiler = "$argv[1]"
+set testdir = "$argv[2]"
+
+if ( ! -f $compiler || ! -x $compiler ) then
+	echo \[Cannot execute compiler \"$compiler\"\]
+	exit
+endif
+
+# set variable to location of timedexec, a script that 
+#  will only allow a program to execute for a certain number
+#  of seconds ($timeout).
+if (-r ./TIMEOUT) then
+    set timeout = "$TIMEOUT"
+else
+    set timeout = 300
+endif
+set timedexec = "$testdir/Bin/timedexec"
+if ( ! -f $timedexec || ! -x $timedexec ) then
+	echo \[Cannot execute timedexec script \"$timedexec\"\]
+	exit
+endif
+
+# build a string representing the local directory
+# strip off $testdir
+set sedstr = `echo $testdir | sed 's/\//\\\//g'`
+set sedstr = "s/$sedstr\///"
+set localdir = `echo $cwd | sed $sedstr`
+
+echo \[Starting subtest - `date`\]
+echo \[pwd: \"`pwd`\"\]
+# echo \[compiler: \"$compiler\"\]
+
+if (-r ./COMPOPTS) then
+    set compopts = "$COMPOPTS `cat ./COMPOPTS`"
+else
+    set compopts = "$COMPOPTS"
+endif
+
+if (-r ./EXECOPTS) then
+    set execopts = "$EXECOPTS `cat ./EXECOPTS`"
+else
+    set execopts = "$EXECOPTS"
+endif
+
+if (-r ./CATFILES) then
+    set catfiles = `cat ./CATFILES`
+else
+    set catfiles = ""
+endif
+
+# get all the source files
+set testsrc = `ls *.chpl`
+
+# compile, execute, and compare each source file
+foreach chplsrc ($testsrc)
+
+    # set execfile now since used in both if branches
+    set execfile = `echo $chplsrc | sed 's/\.chpl//g'`
+    set checkfile = $execfile.chk
+    set complog = $execfile.ihgfedcba.comp.out.tmp
+    set execlog = $execfile.ihgfedcba.exec.out.tmp
+
+    echo \[Executing: \"$compiler $compopts $chplsrc\"\]
+    $timedexec $timeout $compiler $compopts $chplsrc >& $complog
+
+    if ( $status != 0 || $CANNOT_CREATE_EXECUTABLES_YET == 1 ) then
+	# Compile unsuccessful
+	# Compare compiler output with expected program output
+	if ( ! -r $checkfile ) then
+	    echo \[Error cannot locate compiler output comparison file $localdir/$checkfile\]
+	    continue
+	endif
+
+	if ( "$catfiles" != "") then
+	    echo \[Concatenating extra files: $catfiles\]
+	    cat $catfiles >>& $complog
+	endif
+
+	echo \[Executing diff $checkfile $complog\]
+	diff $diffargs $checkfile $complog
+	if ( $status != 0 ) then
+	    echo \[Error matching compiler output for $localdir/$execfile\]
+	    continue
+	else
+	    echo \[Success matching compiler output for $localdir/$execfile\]
+	    rm $complog
+	endif
+    else
+	# Compile successful
+	# Compare output of program execution to expected 
+	#   program output
+	echo \[Success compiling $localdir/$chplsrc\]
+
+	if ( -f $execfile && -x $execfile ) then
+	    # Move compiler output to program output directory.
+	    # Will be concatenated with program output so that
+	    # compiler warnings and program output are in one
+	    # file.
+
+	    mv $complog $execlog
+
+	    if ( ! -r $checkfile ) then
+		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
+		rm -f $execfile "$execfile"_real "$execfile"_dbg
+		continue
+	    endif
+
+	    echo \[Executing program $execfile $execopts at `date +"%H:%M:%S"`\]
+	    # Append program output to that of the 
+	    # compiler (in case warning were output
+	    # by compiler)
+
+	    # Should use these files, yet need to filter out
+	    # some items so that output files don't break
+	    # due to zmake output messages.
+	    #
+	    # $timedexec $timeout ./$execfile $execopts >>& $execlog
+
+	    $timedexec $timeout ./$execfile $execopts >>& $execlog
+
+	    if ( $status != 0 ) then
+		cat $execlog
+		echo \[Error executing program $localdir/$execfile\]
+		rm -f $execfile "$execfile"_real "$execfile"_dbg
+		continue
+	    else
+		echo \[Success executing program $localdir/$execfile at `date +"%H:%M:%S"`\]
+	    endif
+
+	    if ( "$catfiles" != "") then
+		echo \[Concatenating extra files: $catfiles\]
+		cat $catfiles >>& $execlog
+	    endif
+
+	    echo \[Executing diff $checkfile $execlog\]
+	    diff $diffargs $checkfile $execlog
+	    if ( $status != 0 ) then
+		echo \[Error matching program output for $localdir/$execfile\]
+		rm -f $execfile "$execfile"_real "$execfile"_dbg
+		continue
+	    else
+		echo \[Success matching program output for $localdir/$execfile\]
+		rm $execlog
+		rm -f $execfile "$execfile"_real "$execfile"_dbg
+	    endif
+	else
+	    echo \[Error could not locate executable $localdir/$execfile\]
+	endif
+    endif
+end		

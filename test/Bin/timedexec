@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+
+#
+# @ARGV[0] = "-S"
+# @ARGV[1] = <timeout value>
+# @ARGV[2...] = command to run
+#
+
+$| = 1;					# will flush buffers after write
+
+$SIG{'ALRM'} = 'doalarm';
+sub doalarm { exit(10); }
+
+alarm @ARGV[0];
+
+exec @ARGV[1..$#ARGV];			# don't call shell, will do fork
+
+exit($?);

@@ -1,0 +1,148 @@
+#!/bin/csh -f
+#
+#
+#
+# This is the clean_test script, based loosely on the start_test script
+# See the end of the leading comments in start_test for a description.
+#	
+
+set user = `whoami`
+
+if ( ($#argv % 2) == 1 ) then
+	echo Usage and defaults\:
+	echo '     clean_test -startdir ."
+	echo "		-logfile ./Logs/$user.cleanlog"
+	exit 0
+endif
+
+# Commented this out, because it only seems useful in shared environments:
+## Make sure that other testers can modify what another 
+## tester does
+#umask 002
+
+#
+set logtmp = ./Logs/$user.tmp.log
+set datestr = `date +"%y%m%d.%H%M%S"`
+echo \[Starting Chapel cleaning of tests - $datestr\] |& tee $logtmp
+
+# remember what directory to return to (the current working directory)
+set testdir = $cwd
+echo \[pwd: \"$testdir\"\] |& tee -a $logtmp
+
+set startdir = "$testdir"
+set logfile = "$testdir/Logs/$user.cleanlog"
+
+while ( $#argv > 0 )
+	switch ( $argv[1] )
+	case -startdir:
+		shift
+		set startdir = $argv[1]
+		# echo \[starting-dir: \"$startdir\"\] |& tee -a $logtmp
+		shift
+		breaksw
+	case -logfile:
+		shift
+		set logfile = $argv[1]
+		# echo \[log-file: \"$logfile\"\] |& tee -a $logtmp
+		shift
+		breaksw
+	default:
+		echo \[ERROR: Unknown command line parameter \"$argv[1]\", aborting.\] |& tee -a $logtmp
+		exit 1
+		breaksw
+	endsw
+end
+
+
+# if startdir exists then get absolute path name for
+if ( -d "$startdir" && -x "$startdir" ) then
+	pushd "$startdir" >& /dev/null
+	set startdir = "$cwd"
+	popd >& /dev/null
+
+	echo \[startdir: \"$startdir\"\] |& tee -a $logtmp
+else
+	echo \[Permission denied for starting directory: \"$startdir\"\] \
+		|& tee -a $logtmp
+	exit 1
+endif
+
+#if logfile directory exists, then get absolute path for
+if ( -d `dirname $logfile` && -x `dirname $logfile` ) then
+	pushd `dirname $logfile` >& /dev/null
+	set logfile = $cwd/`basename $logfile`
+	popd >& /dev/null
+
+	echo \[logfile: \"$logfile\"\] |& tee -a $logtmp
+else
+	echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
+		|& tee -a $logtmp
+	exit 1
+endif
+
+echo ""
+
+if ( -w $logfile ) then
+	echo \[Remove log file with duplicate name \"$logfile\"\]
+	rm -i $logfile
+	echo ""
+endif
+
+# Move temp log file ($logtmp) we have been accumulating to actual log file
+#   now that we know the name of the actual log file
+mv $logtmp $logfile
+
+# if specified to start in a specific directory, start there
+set basedir = $testdir
+if ( $startdir != $cwd ) then
+	set basedir = $startdir
+	cd $basedir
+endif
+
+# execute script that is located in each directory
+#   Recursively list all directories (have a : in the line)
+#   Don't include output or RCS directories (-v says don't include)
+#   Take off : with sed
+#
+set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | sed 's/://g'`
+#set dirs = (./ $dirs)
+
+foreach dir ($dirs)
+	if ( -x $dir ) then
+		pushd $dir >& /dev/null
+		set dir = $cwd
+		popd >& /dev/null
+
+		cd $dir
+	else
+		echo \["Warning: Cannot cd into" $dir "skipping directory."\]|&\
+			tee -a $logfile
+		continue
+	endif
+	set numtests = `find . -maxdepth 1 -name "*.chpl" | wc -l`
+	if (! -e ./NOTEST && ($numtests != 0 || -x ./sub_test)) then
+		if (-x ./sub_clean) then
+		    set sub_test = ./sub_clean
+		else
+		    set sub_test = $testdir/sub_clean
+		endif
+		echo ""
+		echo "[Starting $sub_test `date`]"
+		$sub_test "$testdir" |& tee -a $logfile
+		echo " "
+	else
+		echo \["No tests in directory " $dir\] |& \
+			tee -a $logfile
+	endif
+	cd $basedir
+end
+
+# return to directory where we started and remove lock
+cd $testdir
+
+echo \[Done with cleaning tests - `date +"%y%m%d.%H%M%S"`\] |& tee -a $logfile
+echo " " |& tee -a $logfile
+
+echo ''
+echo
+

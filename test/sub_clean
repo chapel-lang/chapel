@@ -1,0 +1,87 @@
+#!/bin/csh -f
+#
+#  Application output difference test for ZPL
+#
+# This is the sub_test that used to appear in all
+# subdirectories, but we've now hoisted it to the
+# top directory to avoid its over-replication and
+# support modifications to it.
+#
+# The rules:
+#
+# 1) by default, all subdirectories under the
+#    test directory will be run unless they contain
+#    a file called NOTEST
+#
+# 2) if the directory contains a sub_test script,
+#    that script will be run.  Otherwise, this one
+#    will  be.
+#
+# 3) if the directory does not contain a sub_test
+#    script, the start_test script will look for
+#    files named COMPOPTS and EXECOPTS and will
+#    add these to the zplcompopts and zplexecopts
+#    flags, respectively.
+
+#
+# This should go away once the chapel compiler actually can create
+# an executable
+#
+set CANNOT_CREATE_EXECUTABLES_YET = 1
+
+
+
+# Check number of incoming arguments
+if ( $#argv != 1 ) then
+	echo usage\: sub_clean testdir
+	exit
+endif
+
+# commenting this out for now
+## set umask such that other testers can modify files also
+#umask 002
+
+set testdir = "$argv[1]"
+
+# build a string representing the local directory
+# strip off $testdir
+set sedstr = `echo $testdir | sed 's/\//\\\//g'`
+set sedstr = "s/$sedstr\///"
+set localdir = `echo $cwd | sed $sedstr`
+
+echo \[Starting subclean - `date`\]
+echo \[pwd: \"`pwd`\"\]
+
+set defaultcleanfiles = 'core'
+
+if (-r ./CLEANFILES) then
+    set cleanfiles = "$defaultcleanfiles `cat ./CLEANFILES`"
+else
+    set cleanfiles = "$defaultcleanfiles"
+endif
+
+# get all the source files
+set testsrc = `ls *.chpl`
+
+echo "rm -f ./*.tmp"
+rm -f ./*.tmp >& /dev/null
+
+# compile, execute, and compare each source file
+foreach chplsrc ($testsrc)
+
+    # set execfile now since used in both if branches
+    set execfile = `echo $chplsrc | sed 's/\.chpl//g'`
+
+    if (-w ./$execfile) then
+	echo "rm -f ./$execfile"
+	rm -f ./$execfile
+    endif
+
+end		
+
+foreach file ($cleanfiles)
+    if (-w ./$file) then
+	echo "rm -rf ./$file"
+	rm -rf ./$file
+    endif
+end
