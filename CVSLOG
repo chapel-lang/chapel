@@ -23186,3 +23186,62 @@ Modified files:
 	                             specializeParenOpExprs.cpp 
 	                             verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+04/01/05 15:57:58 -- deitz
+
+Log message:
+	Added specialized codegen for assigning integers to strings.  Note
+	that I would rather overload assignment for this just as I would like
+	to overload + for string concatenation.
+	
+	Added _int_string to the runtime which is like intstring in the
+	compiler.  Changed the name of glomstrings in the runtime to
+	_glom_strings.
+	
+	Added a number of test cases:
+	
+	test/arrays/deitz/test_array_basic2.chpl attempts to assign floats to
+	an array of integers.  Analysis complains about mixed primitive types
+	but this should be a coercion.
+	
+	test/arrays/deitz/test_array_float1.chpl attempts to print out an
+	array of floats but the .0s are left off.
+	
+	test/arrays/deitz/test_array_of_string1.chpl is a simple array of
+	strings test that I mentioned in my last log message but accidentally
+	didn't checkin.
+	
+	test/arrays/deitz/test_array_of_string2.chpl attempts to assign
+	integers to an array of strings.  Analysis complains about mixed
+	primitive types but this should be a coercion too.
+	
+	test/trivial/deitz/test_coerce_integer_to_string1.chpl assigns an
+	integer to a string.
+	
+	test/trivial/deitz/test_coerce_integer_to_string2.chpl passes an
+	integer to a function expecting a string.  This should build a
+	coercion wrapper.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c config.c 
+Added files:
+	chapel/test/arrays/deitz/: test_array_basic2.chpl 
+	                           test_array_basic2.future 
+	                           test_array_basic2.good 
+	                           test_array_float1.chpl 
+	                           test_array_float1.future 
+	                           test_array_float1.good 
+	                           test_array_of_string1.chpl 
+	                           test_array_of_string1.good 
+	                           test_array_of_string2.chpl 
+	                           test_array_of_string2.future 
+	                           test_array_of_string2.good 
+	chapel/test/trivial/deitz/: test_coerce_integer_to_string1.chpl 
+	                            test_coerce_integer_to_string1.good 
+	                            test_coerce_integer_to_string2.chpl 
+	                            test_coerce_integer_to_string2.future 
+	                            test_coerce_integer_to_string2.good 
+
