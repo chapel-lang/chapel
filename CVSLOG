@@ -16003,3 +16003,18 @@ Modified files:
 	                           sym.cpp 
 	chapel/compiler/include/: analysis.h fun.h sym.h 
 
+---------------------------------------------------------------------------
+
+01/31/05 18:49:03 -- jplevyak
+
+Log message:
+	IN intent parameters can be assigned in the function, but
+	the assigned value does not propagate out of the function.
+
+Added files:
+	chapel/test/functions/jplevyak/: intent-6.chpl intent-6.good 
+Removed files:
+	chapel/test/functions/jplevyak/: intent-6-error.chpl 
+	                                 intent-6-error.future 
+	                                 intent-6-error.good 
+
