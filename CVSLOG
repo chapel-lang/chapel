@@ -11759,3 +11759,13 @@ Added files:
 	chapel/test/trivial/deitz/: test_write_return.chpl 
 	                            test_write_return.good 
 
+---------------------------------------------------------------------------
+
+12/14/04 10:43:12 -- deitz
+
+Log message:
+	Removed a reference to file that does not exist in fieldsToMemberAccesses.cpp
+
+Modified files:
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+
