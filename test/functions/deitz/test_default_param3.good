@@ -1,0 +1,5 @@
+test_default_param3.chpl:10: ambiguous call 'foo'
+  candidate functions:
+    test_default_param3.chpl:3: foo @ fooi : int64
+    test_default_param3.chpl:8: foo @ fooi : int64
+fail: fatal error, program does not type
