@@ -9,8 +9,7 @@
 
 
 /***
- ***  Mangles names of methods with "_", moves method's function
- ***  definition statement after class definition statement
+ ***  Mangles names of methods with "_"
  ***/
 void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
   TypeDefStmt* tds;
@@ -18,17 +17,11 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
 
   if (tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ctype = dynamic_cast<ClassType*>(tds->type)) {
-      Stmt* stmt = ctype->definition;
-
-      while (stmt) {
-	Stmt* next = nextLink(Stmt, stmt);
-	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
-	  method->fn->cname = 
-	    glomstrings(4, "_", ctype->name->name, "_", method->fn->name);
-	  method->extract();
-	  tds->insertAfter(method);
-	}
-	stmt = next;
+      FnSymbol* functions = ctype->embeddedFnSymbols;
+      while (functions) {
+	functions->cname = 
+	  glomstrings(4, "_", ctype->name->name, "_", functions->name);
+	functions = nextLink(FnSymbol, functions);
       }
     }
   }

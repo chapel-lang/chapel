@@ -43,9 +43,12 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
     if (userModule) {
       ExprStmt* initStmt = ExprStmt::createFnCallStmt(userModule->initFn);
       BlockStmt* mainBody = new BlockStmt(initStmt);
+      SymScope* saveScope = Symboltable::getCurrentScope();
+      Symboltable::setCurrentScope(userModule->modScope);
       FnDefStmt* maindefstmt = Symboltable::defineFunction("main", nilSymbol, 
 							   dtVoid, mainBody, 
 							   true);
+      Symboltable::setCurrentScope(saveScope);
       userModule->stmts->append(maindefstmt);
       mainFn = maindefstmt->fn;
     } else {

@@ -78,8 +78,7 @@ void verifyNilsUncorrupted(char* message) {
     INT_FATAL("nilFnDefStmt has been %s", message);
   }
   if (nilClassType->next != nilILink || nilClassType->prev != nilILink ||
-      nilClassType->name != nilSymbol || nilClassType->parentClass != NULL ||
-      nilClassType->definition != nilStmt) {
+      nilClassType->name != nilSymbol || nilClassType->parentClass != NULL) {
     INT_FATAL("nilClassType has been %s", message);
   }
 }

@@ -17,7 +17,7 @@ static int all_parsed = 0;
  *** included class.
  ***
  ***/
-
+/*
 class ApplyWith : public Traversal {
  public:
   void preProcessStmt(Stmt* stmt);
@@ -35,7 +35,7 @@ void ApplyWith::preProcessStmt(Stmt* stmt) {
     USR_FATAL(stmt, "With statement is not in a class type definition");
   }
 }
-
+*/
 
 /******************************************************************************
  *** Insert This
@@ -53,6 +53,19 @@ class InsertThis : public Traversal {
 void InsertThis::preProcessStmt(Stmt* stmt) {
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ClassType* ctype = dynamic_cast<ClassType*>(tds->type)) {
+      FnSymbol* functions = ctype->embeddedFnSymbols;
+
+      while (functions) {
+	SymScope* saveScope = Symboltable::getCurrentScope();
+	Symboltable::setCurrentScope(functions->paramScope);
+	Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", ctype);
+	Symboltable::setCurrentScope(saveScope);
+	this_insert = appendLink(this_insert, functions->formals);
+	functions->formals = this_insert;
+	functions->_this = this_insert;
+	functions = nextLink(FnSymbol, functions);
+      }
+      /****
       Stmt* stmt = ctype->definition;
 
       while (stmt) {
@@ -69,6 +82,7 @@ void InsertThis::preProcessStmt(Stmt* stmt) {
 	}
 	stmt = next;
       }
+      ****/
     }
   }
 }
@@ -314,19 +328,17 @@ void ApplyThis::postProcessStmt(Stmt* stmt) {
 void ApplyThis::preProcessExpr(Expr* expr) {
   if (CurrentClass) {
     if (Variable* member = dynamic_cast<Variable*>(expr)) {
-      // BLC: Steve, shouldn't this be a pointer compare rather than
-      // a string compare?  Could the user declare their own this which
-      // shadows the built-in variable?
-      if (!strcmp(member->var->name, "this")) {
-	return;
-      }
       if (Symboltable::lookupInScope(member->var->name, 
 				     CurrentClass->classScope)) {
 
 	/* replacement of expr variable by memberaccess */
-	if (FnSymbol* parentFn = dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
-	  MemberAccess* repl = new MemberAccess(new Variable(parentFn->formals),
-						member->var);
+	if (FnSymbol* parentFn =
+	    dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
+	  if (member->var == parentFn->_this) {
+	    return;
+	  }
+	  MemberAccess* repl =
+	    new MemberAccess(new Variable(parentFn->formals), member->var);
 	  repl->lineno = expr->lineno;
 	  repl->filename = expr->filename;
 	  expr->replace(repl);
@@ -340,10 +352,10 @@ void ApplyThis::preProcessExpr(Expr* expr) {
 }
 
 
-/******************************************************************************/
+/*****************************************************************************/
 
 void Cleanup::run(ModuleSymbol* moduleList) { 
-  ApplyWith* apply_with = new ApplyWith();
+//  ApplyWith* apply_with = new ApplyWith();
   InsertThis* insert_this = new InsertThis();
   ResolveEasiest* resolve_easiest = new ResolveEasiest();
   RenameOverloaded* rename_overloaded = new RenameOverloaded();
@@ -354,7 +366,7 @@ void Cleanup::run(ModuleSymbol* moduleList) {
 
   all_parsed = 1;  // First call to Cleanup::run and we're done parsing.
   while (mod) {
-    mod->startTraversal(apply_with);
+//mod->startTraversal(apply_with);
     mod->startTraversal(insert_this);
     mod->startTraversal(resolve_easiest);
     mod->startTraversal(rename_overloaded);
