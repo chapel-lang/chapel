@@ -20952,3 +20952,33 @@ Modified files:
 	chapel/test/functions/bradc/: intents-classes4.chpl 
 	                              intents-classes4.good 
 
+---------------------------------------------------------------------------
+
+03/23/05 10:22:57 -- bradc
+
+Log message:
+	Added a new Type class NilType and a single
+	instance of it (stored in dtNil) to represent
+	the type of the "nil" symbol.  Put some
+	empty cases in analysis so that it wouldn't
+	choke on existing code.  This new type largely
+	serves as a sentinel type until we come up
+	with something better to do (unless this is
+	sufficient for all time, of course :)
+	
+	Currently, I'm following  this path in order
+	to support default initializers of classes
+	(which are nil and seem to be working), as
+	well as the ability to compare against nil,
+	as in functions/bradc/intents-classes4.chpl,
+	a future that is almost working.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+Added files:
+	chapel/test/trivial/bradc/entrypoint/: .cvsignore 
+	chapel/test/trivial/roxana/: .cvsignore 
+
