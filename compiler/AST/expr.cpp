@@ -240,7 +240,7 @@ Variable::Variable(Symbol* init_var) :
 
 
 void Variable::traverseExpr(Traversal* traversal) {
-  //  var->traverse(traversal);
+  var->traverse(traversal, false);
 }
 
 

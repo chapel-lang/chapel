@@ -9,7 +9,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 BACKEND_OBJDIR = $(PLATFORM)
 include Makefile.share
 
-all: $(BACKEND_OBJS)
+TARGETS = $(BACKEND_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

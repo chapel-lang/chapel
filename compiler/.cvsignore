@@ -3,11 +3,8 @@ freebsd
 linux
 sun
 chpl
-*.g.d_parser.cpp
-prim_data.h
-prim_data.cpp
-cast_code.cpp
 a.out
 output
 BROWSE
 mypasslist.h
+log

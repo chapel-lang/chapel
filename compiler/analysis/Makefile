@@ -1,23 +1,28 @@
 COMPILER_ROOT = ..
-COMPILER_SUBDIR = ./analysis
+COMPILER_SUBDIR = analysis
 
 SUBDIRS = \
 	make_prims \
+
 
 #
 # standard header
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
+
 ANALYSIS_OBJDIR = $(PLATFORM)
 include Makefile.share
 
-all: $(MAKEALLSUBDIRS) $(ANALYSIS_OBJS)
+
+TARGETS = $(ANALYSIS_OBJS)
 
 OTHER_DEPEND_RULES = \
 	@$(MAKEDEPEND) -MT PRIM_DATA_INCLUDES $(CXXFLAGS) prim_data_incs.cpp | sed s/:\ prim_data_incs.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS) \
 
+
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
 
 MAKE_PRIMS = ./make_prims/$(PLATFORM)/make_prims$(EXE_SUFFIX)
 

@@ -1,5 +1,5 @@
 COMPILER_ROOT = ..
-COMPILER_SUBDIR = ./vparser
+COMPILER_SUBDIR = vparser
 
 USE_DPARSER = 1
 
@@ -14,7 +14,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 VPARSER_OBJDIR = $(PLATFORM)
 include Makefile.share
 
-all: $(MAKEALLSUBDIRS) $(VPARSER_OBJS)
+TARGETS = $(VPARSER_OBJS)
 
 OTHER_DEPEND_RULES = \
 	@$(MAKEDEPEND) -MT PARSE_INCLUDES $(CXXFLAGS) parse_incs.cpp | sed s/:\ parse_incs.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS)

@@ -3,7 +3,7 @@
 #
 
 COMPILER_ROOT = ../..
-COMPILER_SUBDIR = ./vparser/cast
+COMPILER_SUBDIR = vparser/cast
 
 #
 # standard header
@@ -35,7 +35,7 @@ EXECS = $(CAST)
 # rules
 #
 
-all: $(CAST)
+TARGETS = $(CAST)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

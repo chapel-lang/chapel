@@ -11,7 +11,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 UTIL_OBJDIR = $(PLATFORM)
 include Makefile.share
 
-all: $(UTIL_OBJS)
+TARGETS = $(UTIL_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

@@ -392,6 +392,7 @@ void ClassType::addScope(SymScope* init_scope) {
 
 
 void ClassType::traverseType(Traversal* traversal) {
+  parentClass->traverse(traversal, false);
   definition->traverseList(traversal, false);
 }
 

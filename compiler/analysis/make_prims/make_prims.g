@@ -5,11 +5,7 @@ typedef struct ParseNode {
 #define D_ParseNode_User ParseNode
 
 #include <dparse.h>
-#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
-#include <stdint.h>
-#else
 #include <inttypes.h>
-#endif
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"

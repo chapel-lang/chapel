@@ -9,7 +9,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 AST_OBJDIR = $(PLATFORM)
 include Makefile.share
 
-all: $(AST_OBJS)
+TARGETS = $(AST_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

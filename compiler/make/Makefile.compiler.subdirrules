@@ -1,14 +1,16 @@
 
-clean: $(CLEANSUBDIRS)
+all: $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
+
+clean: $(CLEANSUBDIRS) echocompilerdir
 	rm -f $(CLEAN_TARGS)
 
-cleandeps: $(CLEANSUBDIRDEPS)
+cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
 	rm -f $(CVS_DEPENDS)
 
-clobber: $(CLOBBERSUBDIRS)
+clobber: $(CLOBBERSUBDIRS) echocompilerdir
 	rm -rf ./$(CLOBBER_TARGS)
 
-depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS)
+depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echocompilerdir
 	@echo Updating dependences...
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \

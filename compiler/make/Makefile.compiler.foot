@@ -5,26 +5,21 @@
 STARS = \*\*\*\*\*
 
 echocompilerdir:
-	@echo $(STARS) $(COMPILER_SUBDIR)/. $(STARS)
+	@echo $(STARS) $(COMPILER_SUBDIR)/ $(STARS)
 
 %.makedir:
-	@echo $(STARS) $(COMPILER_SUBDIR)/$* $(STARS)
 	@cd $* && $(MAKE)
 
 %.cleandir:
-	@echo $(STARS) $(COMPILER_SUBDIR)/$* $(STARS)
 	@cd $* && $(MAKE) clean
 
 %.cleandirdeps:
-	@echo $(STARS) $(COMPILER_SUBDIR)/$* $(STARS)
 	@cd $* && $(MAKE) cleandeps
 
 %.clobberdir:
-	@echo $(STARS) $(COMPILER_SUBDIR)/$* $(STARS)
 	@cd $* && $(MAKE) clobber
 
 %.dependdir:
-	@echo $(STARS) $(COMPILER_SUBDIR)/$* $(STARS)
 	@cd $* && $(MAKE) depend
 
 

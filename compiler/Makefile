@@ -23,14 +23,13 @@ SUBDIRS = \
 	util \
 	vparser \
 
-#	cast \
-#	make_prims \
 #	test \
 
 #
 # include standard header for compiler
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
 
 #
 # include source subdirectories here
@@ -46,6 +45,7 @@ include traversals/Makefile.include
 include util/Makefile.include
 include vparser/Makefile.include
 
+CVS_SRCS = 
 
 CHPL = chpl$(EXE_SUFFIX)
 CHPL_OBJS = \
@@ -62,26 +62,14 @@ CHPL_OBJS = \
 
 EXECS = $(CHPL)
 
+TARGETS = $(CHPL)
+
 
 #
 # main rules
 #
 
-all: $(MAKEALLSUBDIRS) echocompilerdir $(CHPL)
-
-clean: $(CLEANSUBDIRS) echocompilerdir
-	rm -f $(CLEAN_TARGS)
-
-cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
-	rm -f $(CVS_DEPENDS)
-
-clobber: $(CLOBBERSUBDIRS) echocompilerdir
-	rm -rf $(CLOBBER_TARGS)
-
-depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR)
-
-test: FORCE
-	cd test && $(MAKE) test
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
 
 #

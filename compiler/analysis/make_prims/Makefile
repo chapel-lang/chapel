@@ -39,7 +39,7 @@ EXECS = $(MAKE_PRIMS)
 # rules
 #
 
-all: $(MAKE_PRIMS)
+TARGETS = $(MAKE_PRIMS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

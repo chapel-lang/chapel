@@ -9,7 +9,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 PARSER_OBJDIR = $(PLATFORM)
 include Makefile.share
 
-all: $(PARSER_OBJS)
+TARGETS = $(PARSER_OBJS)
 
 OTHER_DEPEND_RULES = \
 	@$(MAKEDEPEND) -MT LEXYACC_INCLUDES $(CXXFLAGS) lexyacc.cpp | sed s/:\ lexyacc.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS)
