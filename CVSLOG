@@ -4434,3 +4434,22 @@ Log message:
 Modified files:
 	chapel/compiler/test/: Makefile 
 
+---------------------------------------------------------------------------
+
+07/27/04 17:20:13 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added test cases for support of "value" semantics.
+	Fixed a couple bugs in IF1 generation of "value" variables.
+
+Modified files:
+	chapel/compiler/: ast.cpp fa.cpp prelude.chpl sym.h 
+	chapel/test/flowanalysis/jplevyak/: cs4.good cs5.good 
+	                                    review1.good review2.good 
+	                                    review3.good 
+	chapel/test/lowlevelcg/jplevyak/: review3.good 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: classvar.good classvar.v 
+	                                    var.chpl var.good var2.chpl 
+	                                    var2.good 
+
