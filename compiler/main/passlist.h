@@ -27,8 +27,6 @@ PassInfo passlist[] = {
   RUN(SpecializeParenOpExprs, ""),
   RUN(ApplyThisParameters, ""),
 
-  RUN(TransformLetExprs, ""),
-
   RUN(InsertAnonymousDomains, ""),
   RUN(InsertAnonymousTypes, ""),
 
@@ -36,6 +34,9 @@ PassInfo passlist[] = {
   RUN(Fixup, "verify"),  // this is a sanity check
   RUN(RunAnalysis, ""),
   RUN(Fixup, "verify"),  // this is a sanity check
+
+  // passes to normalize the basic AST after analysis
+  RUN(TransformLetExprs, ""),
 
   // passes to capture analysis information in the AST
   RUN(ResolveSymbols, ""),
