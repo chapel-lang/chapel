@@ -163,12 +163,6 @@ foreach chplsrc ($testsrc)
 
 	    mv $complog $execlog
 
-	    if ( ! -r $checkfile ) then
-		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
-		rm -f $binfile
-		continue
-	    endif
-
 	    echo \[Executing program $execfile $execopts at `date +"%H:%M:%S"`\]
 	    # Append program output to that of the 
 	    # compiler (in case warning were output
@@ -192,6 +186,12 @@ foreach chplsrc ($testsrc)
 
 	    if (-x ./PREDIFF) then
 		./PREDIFF $execfile $execlog
+	    endif
+
+	    if ( ! -r $checkfile ) then
+		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
+		rm -f $binfile
+		continue
 	    endif
 
 	    echo \[Executing diff $checkfile $execlog\]
