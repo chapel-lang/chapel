@@ -749,3 +749,83 @@ Modified files:
 Added files:
 	chapel/compiler/: num.h 
 
+---------------------------------------------------------------------------
+
+04/03/12 15:51:50 -- bradc
+
+Log message:
+	This change is a revamping of the make system, in an attempt to
+	make it more modular and more understandable (to myself, at least,
+	and hopefully to new implementors as well).
+	
+	This isn't a perfect check-in:  since compiler code is created
+	dynamically, it is difficult to establish dependences for those
+	bits of code that are dynamic.  It was hard enough to establish
+	proper dependences for those bits of code that #include dynamically-
+	created files.  So the main limitation of this version is that
+	dependences for dynamically created files (make_prims.cpp,
+	*.g.d_parser.cpp, cast_code.cpp) are not generated.  This will be
+	fixed when I revisit the topic (probably by keeping these
+	dependences under compiler control -- yuck; or simply by requiring
+	developers who want such dependences to run make depend after
+	they've completed a successful make (also yuck).  Alternatively,
+	we could put all code under CVS control, even if it is dynamically
+	generated (I'm not sure how fast some of these files change, so
+	don't know if this makes sense).
+	
+	The general organization strategy here is:
+	
+	- put each binary in its own directory (for understandability)
+	- teach the Makefiles how to make everything (so developers don't need
+	to know how)
+	- no automatic updating of dependences -- developers must do it
+	manually
+	
+	The new directory structure is:
+	
+	compiler/     -- code for the compiler
+	make/       -- stores common Makefile variables, rules
+	cast/       -- code to build cast
+	make_prims/ -- code to build make_prims
+	test/       -- unit tests for the compiler
+	
+	where each of these subdirectories has a platform-specific
+	subdirectory for storing object files, dependence information,
+	etc.
+	
+	The Makefile in compiler/ currently responds to:
+	
+	all: recursively builds subdirectories, then builds self
+	clean: cleans all subdirectories, self
+	depend: updates dependences for CVS-controlled sources in
+	subdirectories, self
+	cleandeps: remove all dependence information in
+	subdirectories, self
+	clobber: clean up "everything" not under CVS control
+	test: builds and runs unit tests
+	
+	The subdirectories are each structured in a fairly similar way so that
+	they can share a bunch of common Makefile rules and variables (stored
+	in the compiler/make/ subdirectory) and so that these rules can be
+	changed once and affect all the subdirectories.
+	
+	This took way more work than I expected, due mostly to the existence
+	of dynamically generated sources, which threw more monkey wrenches at
+	me than I imagined.  I documented some of the problems I was running
+	into in make/Makefile.NOTES so that in future changes I don't retread
+	over the same path again.
+
+Modified files:
+	chapel/compiler/: .cvsignore Makefile 
+Added files:
+	chapel/compiler/cast/: .cvsignore Makefile cast.cpp 
+	chapel/compiler/make/: Makefile.NOTES Makefile.compiler.foot 
+	                       Makefile.compiler.head 
+	                       Makefile.compiler.subdirrules 
+	chapel/compiler/make_prims/: .cvsignore Makefile make_prims.cpp 
+	                             make_prims.g 
+	chapel/compiler/test/: .cvsignore Makefile test_lib.cpp 
+Removed files:
+	chapel/compiler/: cast.cpp cast_code.cpp make_prims.cpp 
+	                  make_prims.g test_lib.cpp 
+
