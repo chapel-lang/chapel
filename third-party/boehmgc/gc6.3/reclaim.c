@@ -350,6 +350,13 @@ COUNT_DECL
 			*p++ = 0;
 		      }
 #		    endif
+#if defined(GC_VALGRIND_SUPPORT)
+		      if (GC_is_alloced(list)) {
+			VALGRIND_FREELIKE_BLOCK(list, GC_VALGRIND_RED_ZONE);
+			GC_clear_alloced_bit(list);
+		      }
+		      
+#endif
 	    }
 	    word_no += sz;
 	}
@@ -482,6 +489,9 @@ COUNT_DECL
 		/* object is available - put on list */
 		    obj_link(p) = list;
 		    list = ((ptr_t)p);
+#if defined(GC_VALGRIND_SUPPORT)
+		    //VALGRIND_FREELIKE_BLOCK(list, GC_VALGRIND_RED_ZONE);
+#endif
 	    }
 	    p += sz;
 	    word_no += sz;
@@ -672,7 +682,7 @@ COUNT_DECL
     GC_remove_protection(hbp, 1, (hhdr)->hb_descr == 0 /* Pointer-free? */);
     if (init) {
       switch(sz) {
-#      if !defined(SMALL_CONFIG) && !defined(USE_MARK_BYTES)
+#      if !defined(SMALL_CONFIG) && !defined(USE_MARK_BYTES) && !defined(GC_VALGRIND_SUPPORT)
         case 1:
 	    /* We now issue the hint even if GC_nearly_full returned	*/
 	    /* DONT_KNOW.						*/
@@ -692,7 +702,7 @@ COUNT_DECL
     } else {
       GC_ASSERT((hhdr)->hb_descr == 0 /* Pointer-free block */);
       switch(sz) {
-#      if !defined(SMALL_CONFIG) && !defined(USE_MARK_BYTES)
+#      if !defined(SMALL_CONFIG) && !defined(USE_MARK_BYTES) && !defined(GC_VALGRIND_SUPPORT)
         case 1:
             result = GC_reclaim1(hbp, hhdr, list COUNT_ARG);
             break;

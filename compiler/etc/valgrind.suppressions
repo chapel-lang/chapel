@@ -310,3 +310,162 @@
    fun:GC_mark_some
    fun:GC_stopped_mark
 }
+{ 
+   GC_* Cond
+   Memcheck:Cond
+   fun:GC_*
+}
+
+{
+   GC_* Value4
+   Memcheck:Value4
+   fun:GC_*
+}
+
+{
+   GC_* Addr1
+   Memcheck:Addr1
+   fun:GC_*
+}
+
+{
+   GC_* Addr2
+   Memcheck:Addr2
+   fun:GC_*
+}
+
+{
+   GC_* Addr4
+   Memcheck:Addr4
+   fun:GC_*
+}
+
+{
+   memset/GC_* Addr4
+   Memcheck:Addr4
+   fun:memset
+   fun:GC_*
+}
+
+{
+   get_index/GC_* Addr4
+   Memcheck:Addr4
+   fun:get_index
+   fun:GC_*
+}
+
+{
+   memset/get_index/GC_* Addr4
+   Memcheck:Addr4
+   fun:memset
+   fun:get_index
+   fun:GC_*
+}
+
+{
+   setup_header/GC_* Addr1
+   Memcheck:Addr1
+   fun:setup_header
+   fun:GC_*
+}
+
+{
+   setup_header/GC_* Addr2
+   Memcheck:Addr2
+   fun:setup_header
+   fun:GC_*
+}
+
+{
+   setup_header/GC_* Addr4
+   Memcheck:Addr4
+   fun:setup_header
+   fun:GC_*
+}
+
+{
+   memset/setup_header/GC_* Addr4
+   Memcheck:Addr4
+   fun:memset
+   fun:setup_header
+   fun:GC_*
+}
+
+{
+   pthread_*/GC_* Addr4
+   Memcheck:Addr4
+   fun:__pthread_*
+   fun:GC_*
+}
+
+{
+   clear_marks_for_block/GC_* Addr1
+   Memcheck:Addr1
+   fun:clear_marks_for_block
+   fun:GC_*
+}
+
+{
+   clear_marks_for_block/GC_* Addr4
+   Memcheck:Addr4
+   fun:clear_marks_for_block
+   fun:GC_*
+}
+
+{
+   memset/clear_marks_for_block/GC_* Addr4
+   Memcheck:Addr4
+   fun:memset
+   fun:clear_marks_for_block
+   fun:GC_*
+}
+
+{
+   free_hdr/GC_* Addr4
+   Memcheck:Addr4
+   fun:free_hdr
+   fun:GC_*
+}
+
+{
+   alloc_hdr/GC_* Addr4
+   Memcheck:Addr4
+   fun:alloc_hdr
+   fun:GC_*
+}
+
+{
+   return_freelists/GC_destroy_thread_local
+   Memcheck:Addr4
+   fun:return_freelists
+   fun:GC_destroy_thread_local
+}
+
+{
+   memset/pthread_join
+   Memcheck:Addr4
+   fun:memset
+   fun:__wrap_pthread_join
+}
+
+# The pthread_create wrapper allocates a temporary data structure for
+# the collector.
+
+{
+   pthread_create Addr4
+   Memcheck:Addr4
+   fun:__wrap_pthread_create
+}
+
+{
+   memset/pthread_create Addr4
+   Memcheck:Addr4
+   fun:memset
+   fun:__wrap_pthread_create
+}
+
+{
+   pthread_detach Addr2
+   Memcheck:Addr2
+   fun:__wrap_pthread_detach
+}

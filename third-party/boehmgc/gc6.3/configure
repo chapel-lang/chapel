@@ -3515,7 +3515,7 @@ if test "${enable_cplusplus+set}" = set; then
 
 fi;
 
-INCLUDES=-I${srcdir}/include
+INCLUDES="-I${srcdir}/include -I/opt/cpkg/v3/valgrind/2.1.2/include "
 THREADLIBS=
 case "$THREADS" in
  no | none | single)

@@ -1581,6 +1581,10 @@ word bytes;
     result = mmap(last_addr, bytes, PROT_READ | PROT_WRITE | OPT_PROT_EXEC,
 		  GC_MMAP_FLAGS | OPT_MAP_ANON, zero_fd, 0/* offset */);
     if (result == MAP_FAILED) return(0);
+#   if defined(GC_VALGRIND_SUPPORT)
+    /* Tell valgrind that this memory is not yet accessible. */
+    VALGRIND_MAKE_NOACCESS(result, bytes);
+#   endif
     last_addr = (ptr_t)result + bytes + GC_page_size - 1;
     last_addr = (ptr_t)((word)last_addr & ~(GC_page_size - 1));
 #   if !defined(LINUX)

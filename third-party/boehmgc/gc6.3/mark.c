@@ -137,8 +137,14 @@ register hdr * hhdr;
 {
 #   ifdef USE_MARK_BYTES
       BZERO(hhdr -> hb_marks, MARK_BITS_SZ);
+#     ifdef GC_VALGRIND_SUPPORT
+        BZERO(hhdr -> hb_alloced, MARK_BITS_SZ);
+#     endif
 #   else
       BZERO(hhdr -> hb_marks, MARK_BITS_SZ*sizeof(word));
+#     ifdef GC_VALGRIND_SUPPORT
+        BZERO(hhdr -> hb_alloced, MARK_BITS_SZ*sizeof(word));
+#     endif
 #   endif
 }
 
@@ -208,6 +214,39 @@ ptr_t p;
     
     return(mark_bit_from_hdr(hhdr, word_no));
 }
+
+#ifdef GC_VALGRIND_SUPPORT
+/* Slow but general routines for setting/clearing/asking about mark bits */
+void GC_set_alloced_bit(p)
+ptr_t p;
+{
+    register struct hblk *h = HBLKPTR(p);
+    register hdr * hhdr = HDR(h);
+    register int word_no = (word *)p - (word *)h;
+    
+    set_mark_bit_from_hdr(hhdr, word_no);
+}
+
+void GC_clear_alloced_bit(p)
+ptr_t p;
+{
+    register struct hblk *h = HBLKPTR(p);
+    register hdr * hhdr = HDR(h);
+    register int word_no = (word *)p - (word *)h;
+    
+    clear_mark_bit_from_hdr(hhdr, word_no);
+}
+
+GC_bool GC_is_alloced(p)
+ptr_t p;
+{
+    register struct hblk *h = HBLKPTR(p);
+    register hdr * hhdr = HDR(h);
+    register int word_no = (word *)p - (word *)h;
+    
+    return(mark_bit_from_hdr(hhdr, word_no));
+}
+#endif
 
 
 /*

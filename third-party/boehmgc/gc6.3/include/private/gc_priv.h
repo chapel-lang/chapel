@@ -19,6 +19,16 @@
 # ifndef GC_PRIVATE_H
 # define GC_PRIVATE_H
 
+#define GC_VALGRIND_SUPPORT
+
+#if defined(GC_VALGRIND_SUPPORT)
+#define GC_VALGRIND_RED_ZONE		8
+#endif
+
+# if defined(GC_VALGRIND_SUPPORT)
+#  include "valgrind/memcheck.h"
+# endif
+
 #if defined(mips) && defined(SYSTYPE_BSD) && defined(sony_news)
     /* sony RISC NEWS, NEWSOS 4 */
 #   define BSD_TIME
@@ -226,7 +236,6 @@ typedef char * ptr_t;	/* A generic pointer to which we can add	*/
 #else
 # define EXTRA_BYTES 0
 #endif
-
 
 # ifndef LARGE_CONFIG
 #   define MINHINCR 16	 /* Minimum heap increment, in blocks of HBLKSIZE  */
@@ -711,6 +720,9 @@ struct hblkhdr {
 #   ifdef USE_MARK_BYTES
       union {
         char _hb_marks[MARK_BITS_SZ];
+#ifdef GC_VALGRIND_SUPPORT
+        char _hb_alloced[MARK_BITS_SZ];
+#endif
 			    /* The i'th byte is 1 if the object 	*/
 			    /* starting at word 2i is marked, 0 o.w.	*/
 	word dummy;	/* Force word alignment of mark bytes. */
@@ -725,6 +737,9 @@ struct hblkhdr {
 			    /* Unused bits are invalid, and are 	    */
 			    /* occasionally set, e.g for uncollectable	    */
 			    /* objects.					    */
+#ifdef GC_VALGRIND_SUPPORT
+      word hb_alloced[MARK_BITS_SZ];
+#endif
 #   endif /* !USE_MARK_BYTES */
 };
 
@@ -1254,6 +1269,11 @@ extern long GC_large_alloc_warn_suppressed;
 # define mark_bit_from_hdr(hhdr,n) ((hhdr)->hb_marks[(n) >> 1])
 # define set_mark_bit_from_hdr(hhdr,n) ((hhdr)->hb_marks[(n)>>1]) = 1
 # define clear_mark_bit_from_hdr(hhdr,n) ((hhdr)->hb_marks[(n)>>1]) = 0
+#  ifdef GC_VALGRIND_SUPPORT
+#    define alloced_bit_from_hdr(hhdr,n) ((hhdr)->hb_alloced[(n) >> 1])
+#    define set_alloced_bit_from_hdr(hhdr,n) ((hhdr)->hb_alloced[(n)>>1]) = 1
+#    define clear_alloced_bit_from_hdr(hhdr,n) ((hhdr)->hb_alloced[(n)>>1]) = 0
+#  endif
 #else /* !USE_MARK_BYTES */
 # define mark_bit_from_hdr(hhdr,n) (((hhdr)->hb_marks[divWORDSZ(n)] \
 			    >> (modWORDSZ(n))) & (word)1)
@@ -1262,6 +1282,15 @@ extern long GC_large_alloc_warn_suppressed;
 				    (word)1 << modWORDSZ(n))
 # define clear_mark_bit_from_hdr(hhdr,n) (hhdr)->hb_marks[divWORDSZ(n)] \
 				&= ~((word)1 << modWORDSZ(n))
+#  ifdef GC_VALGRIND_SUPPORT
+#    define alloced_bit_from_hdr(hhdr,n) (((hhdr)->hb_alloced[divWORDSZ(n)] \
+			    >> (modWORDSZ(n))) & (word)1)
+#    define set_alloced_bit_from_hdr(hhdr,n) \
+			    OR_WORD((hhdr)->hb_alloced+divWORDSZ(n), \
+				    (word)1 << modWORDSZ(n))
+#     define clear_alloced_bit_from_hdr(hhdr,n) (hhdr)->hb_alloced[divWORDSZ(n)] \
+				&= ~((word)1 << modWORDSZ(n))
+#  endif
 #endif /* !USE_MARK_BYTES */
 
 /* Important internal collector routines */

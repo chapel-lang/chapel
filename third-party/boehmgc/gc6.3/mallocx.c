@@ -83,6 +83,16 @@ register word orig_sz;	 /* Original sz in bytes	*/
 int obj_kind;
 
     if (p == 0) return(GC_malloc(lb));	/* Required by ANSI */
+#if defined(GC_VALGRIND_SUPPORT)
+    /* This code uses a different way to go from lb to the hhdr than GC_malloc.
+       In particular x = GC_malloc(16) where GC_all_interior_pointers == 1
+       GC_size_map[16] == 6 which converted to bytes is 24.
+       Following with GC_realloc(x, 20) will result in a BZERO
+       since even though the realloc'ed size is larger!
+    */
+    size_t orig_lb = lb;
+    lb = lb + GC_VALGRIND_RED_ZONE;
+#endif
     h = HBLKPTR(p);
     hhdr = HDR(h);
     sz = hhdr -> hb_sz;
@@ -111,18 +121,34 @@ int obj_kind;
 	      /* Clear unneeded part of object to avoid bogus pointer */
 	      /* tracing.					      */
 	      /* Safe for stubborn objects.			      */
+#if defined(GC_VALGRIND_SUPPORT)
+	        VALGRIND_MAKE_READABLE(p, orig_lb);
+	        BZERO(((ptr_t)p) + orig_lb - GC_VALGRIND_RED_ZONE, orig_sz - lb);
+#else
 	        BZERO(((ptr_t)p) + lb, orig_sz - lb);
+#endif
 	    }
 	    return(p);
 	} else {
 	    /* shrink */
+#if defined(GC_VALGRIND_SUPPORT)
+	      GC_PTR result =
+	      		GC_generic_or_special_malloc((word)orig_lb, obj_kind);
+#else
 	      GC_PTR result =
 	      		GC_generic_or_special_malloc((word)lb, obj_kind);
+#endif
 
 	      if (result == 0) return(0);
 	          /* Could also return original object.  But this 	*/
 	          /* gives the client warning of imminent disaster.	*/
+#if defined(GC_VALGRIND_SUPPORT)
+	      /* conservative since the actual original size is not available */
+	      VALGRIND_MAKE_READABLE(p, sz - GC_VALGRIND_RED_ZONE);
+	      BCOPY(p, result, sz - GC_VALGRIND_RED_ZONE);
+#else
 	      BCOPY(p, result, lb);
+#endif
 #	      ifndef IGNORE_FREE
 	        GC_free(p);
 #	      endif
@@ -134,7 +160,14 @@ int obj_kind;
 	  	GC_generic_or_special_malloc((word)lb, obj_kind);
 
 	  if (result == 0) return(0);
+#if defined(GC_VALGRIND_SUPPORT)
+	      /* conservative since the actual original size is not available */
+	  VALGRIND_MAKE_READABLE(p, sz - GC_VALGRIND_RED_ZONE);
+	  BCOPY(p, result, sz - GC_VALGRIND_RED_ZONE);
+#else
 	  BCOPY(p, result, sz);
+#endif
+
 #	  ifndef IGNORE_FREE
 	    GC_free(p);
 #	  endif

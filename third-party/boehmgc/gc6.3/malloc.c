@@ -280,10 +280,14 @@ DCL_LOCK_STATE;
 # endif
 {
 register ptr_t op;
+register ptr_t return_value;
 register ptr_t *opp;
 register word lw;
 DCL_LOCK_STATE;
 
+#if defined(GC_VALGRIND_SUPPORT)
+ lb += GC_VALGRIND_RED_ZONE;
+#endif
     if( EXPECT(SMALL_OBJ(lb), 1) ) {
 #       ifdef MERGE_SIZES
 	  lw = GC_size_map[lb];
@@ -294,7 +298,8 @@ DCL_LOCK_STATE;
 	FASTLOCK();
         if( EXPECT(!FASTLOCK_SUCCEEDED() || (op = *opp) == 0, 0) ) {
             FASTUNLOCK();
-            return(GENERAL_MALLOC((word)lb, NORMAL));
+            return_value = (GENERAL_MALLOC((word)lb, NORMAL));
+	    goto Lreturn;
         }
         /* See above comment on signals.	*/
 	GC_ASSERT(0 == obj_link(op)
@@ -306,10 +311,17 @@ DCL_LOCK_STATE;
         obj_link(op) = 0;
         GC_words_allocd += lw;
         FASTUNLOCK();
-        return((GC_PTR) op);
+        return_value = ((GC_PTR) op);
    } else {
-       return(GENERAL_MALLOC((word)lb, NORMAL));
+       return_value = (GENERAL_MALLOC((word)lb, NORMAL));
    }
+ Lreturn:
+#if defined(GC_VALGRIND_SUPPORT)
+    VALGRIND_MALLOCLIKE_BLOCK(return_value, lb - GC_VALGRIND_RED_ZONE, GC_VALGRIND_RED_ZONE, 1);
+    VALGRIND_MAKE_READABLE(&return_value, sizeof(return_value));
+    GC_set_alloced_bit(return_value);
+#endif
+    return return_value;
 }
 
 # ifdef REDIRECT_MALLOC
@@ -446,6 +458,9 @@ DCL_LOCK_STATE;
         UNLOCK();
         ENABLE_SIGNALS();
     }
+#if defined(GC_VALGRIND_SUPPORT)
+    VALGRIND_FREELIKE_BLOCK(p, GC_VALGRIND_RED_ZONE);
+#endif
 }
 
 /* Explicitly deallocate an object p when we already hold lock.		*/
