@@ -20854,3 +20854,13 @@ Log message:
 Modified files:
 	chapel/test/arrays/deitz/: test_array_init2.future 
 
+---------------------------------------------------------------------------
+
+03/22/05 17:15:12 -- jplevyak
+
+Log message:
+	Add future test, codegen fails so I sent it to Steve.
+
+Added files:
+	chapel/test/types/tuple/jplevyak/: destruct-2.future 
+
