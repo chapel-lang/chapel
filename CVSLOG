@@ -2191,3 +2191,15 @@ Log message:
 Modified files:
 	chapel/compiler/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/25 16:23:07 -- bradc
+
+Log message:
+	Put in code so that if we try to codegen something that we
+	don't understand, an internal error is thrown and we don't
+	bother trying to compile the generated C code.
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+
