@@ -123,8 +123,13 @@ void Type::codegenIORoutines(FILE* outfile) {
 }
 
 
-void Type::codegenDefaultFormat(FILE* outfile) {
+void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
   fprintf(outfile, "_default_format");
+  if (isRead) {
+    fprintf(outfile, "_read");
+  } else {
+    fprintf(outfile, "_write");
+  }
   if (this == dtUnknown) {  // BLC: Hack until we get type inference working
     dtInteger->codegen(outfile);
   } else {
@@ -253,8 +258,14 @@ void EnumType::codegenIORoutines(FILE* outfile) {
 }
 
 
-void EnumType::codegenDefaultFormat(FILE* outfile) {
-  fprintf(outfile, "_default_format_enum");
+void EnumType::codegenDefaultFormat(FILE* outfile, bool isRead) {
+  fprintf(outfile, "_default_format");
+  if (isRead) {
+    fprintf(outfile, "_read");
+  } else {
+    fprintf(outfile, "_write");
+  }
+  fprintf(outfile, "_enum");
 }
 
 
@@ -360,8 +371,8 @@ void ArrayType::codegen(FILE* outfile) {
 }
 
 
-void ArrayType::codegenDefaultFormat(FILE* outfile) {
-  elementType->codegenDefaultFormat(outfile);
+void ArrayType::codegenDefaultFormat(FILE* outfile, bool isRead) {
+  elementType->codegenDefaultFormat(outfile, isRead);
 }
 
 

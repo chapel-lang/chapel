@@ -159,9 +159,9 @@ void VerifyASTType::preProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Unexpected AST expression type: EXPR_FNCALL");
     }
     break;
-  case EXPR_WRITECALL:
-    if (typeid(*expr) != typeid(WriteCall)) {
-      INT_FATAL(expr, "Unexpected AST expression type: EXPR_WRITECALL");
+  case EXPR_IOCALL:
+    if (typeid(*expr) != typeid(IOCall)) {
+      INT_FATAL(expr, "Unexpected AST expression type: EXPR_IOCALL");
     }
     break;
   case EXPR_ARRAYREF:

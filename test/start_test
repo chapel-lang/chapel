@@ -87,6 +87,13 @@
 # errors, warnings, and correct programs to all be tested using the
 # same mechanisms.
 #
+# If the test-writer wants to redirect standard input from a file,
+# they may do so by supplying a .stdin file with the same base
+# name as the test itself (e.g., if mytest.stdin exists, it will
+# be piped into stdin when running the executable created from
+# mytest.chpl).  If no such file exists, standard input is piped
+# from /dev/null (i.e., tests can't read from the console...)
+#
 # Particular subdirectories can also be customized if necessary.
 # Note that such customizations are not inherited recursively by
 # further subdirectories, but apply only to the directory in

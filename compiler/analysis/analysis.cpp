@@ -32,6 +32,7 @@ static Sym *expr_create_domain_symbol = 0;
 static Sym *expr_reduce_symbol = 0;
 static Sym *write_symbol = 0;
 static Sym *writeln_symbol = 0;
+static Sym *read_symbol = 0;
 static Sym *flood_symbol = 0;
 static Sym *completedim_symbol = 0;
 static Sym *array_index_symbol = 0;
@@ -976,8 +977,8 @@ gen_if1(BaseAST *ast) {
       }
       break;
     }
-    case EXPR_WRITECALL: {
-      WriteCall *s = dynamic_cast<WriteCall *>(ast);
+    case EXPR_IOCALL: {
+      IOCall *s = dynamic_cast<IOCall *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
@@ -990,10 +991,19 @@ gen_if1(BaseAST *ast) {
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if1_add_send_arg(if1, send, sym_primitive);
-      if (s->writeln)
+
+      switch (s->ioType) {
+      case IO_WRITELN:
 	if1_add_send_arg(if1, send, writeln_symbol);
-      else
+	break;
+      case IO_WRITE:
 	if1_add_send_arg(if1, send, write_symbol);
+	break;
+      case IO_READ:
+	if1_add_send_arg(if1, send, read_symbol); 
+	break;
+      }
+
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
@@ -1230,6 +1240,7 @@ init_symbols() {
   cast_symbol = if1_make_symbol(if1, "cast");
   write_symbol = if1_make_symbol(if1, "write");
   writeln_symbol = if1_make_symbol(if1, "writeln");
+  read_symbol = if1_make_symbol(if1, "read");
   array_index_symbol = if1_make_symbol(if1, "array_index");
   flood_symbol = if1_make_symbol(if1, "*");
   completedim_symbol = if1_make_symbol(if1, "..");
@@ -1367,6 +1378,15 @@ write_transfer_function(PNode *pn, EntrySet *es) {
   update_in(result, make_abstract_type(sym_int));
 }
 
+// John:  I copied this directly from the 
+// write_transfer_function above, but don't have any 
+// confidence that it's correct.  shannon
+static void
+read_transfer_function(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  update_in(result, make_abstract_type(sym_int));
+}
+
 static void
 array_index(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
@@ -1400,6 +1420,7 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   pdb->fa->primitive_transfer_functions.put(cast_symbol->name, cast_value);
   pdb->fa->primitive_transfer_functions.put(write_symbol->name, write_transfer_function);
   pdb->fa->primitive_transfer_functions.put(writeln_symbol->name, write_transfer_function);
+  pdb->fa->primitive_transfer_functions.put(read_symbol->name, read_transfer_function);
   pdb->fa->primitive_transfer_functions.put(array_index_symbol->name, array_index);
   if1_set_primitive_types(if1);
   finalize_types(if1);

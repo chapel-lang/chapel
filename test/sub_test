@@ -192,11 +192,17 @@ foreach chplsrc ($testsrc)
 
 	    mv $complog $execlog
 
-	    echo \[Executing program $valgrndbin$execfile $execopts at `date +"%H:%M:%S"`\]
+	    if (-r ./$execfile.stdin) then
+	        set redirectin = "$execfile.stdin"
+	    else 
+	        set redirectin = "/dev/null"
+	    endif
+
+	    echo \[Executing program $valgrndbin$execfile $execopts \< $redirectin at `date +"%H:%M:%S"`\]
 	    # Append program output to that of the 
 	    # compiler (in case warning were output
 	    # by compiler)
-	    $timedexec $timeout $valgrndbin./$binfile $execopts >>& $execlog
+	    $timedexec $timeout $valgrndbin./$binfile $execopts < $redirectin >>& $execlog
 
 
 	    if ( $status != 0 ) then

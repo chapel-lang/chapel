@@ -2,7 +2,7 @@
  called from 22 in __entryPoint at noop.chpl:22
  called from 22 in __entryPoint at noop.chpl:22
  called from 22 in __entryPoint at noop.chpl:22
-::0(prelude.chpl:9) ( int64 (<unknown>:0) )
+::0(prelude.chpl:10) ( int64 (<unknown>:0) )
 ::1(noop.chpl:7) ( int64 (<unknown>:0) )
 ::1(noop.chpl:7) ( int64 (<unknown>:0) )
 ::3(noop.chpl:7) ( int64 (<unknown>:0) )

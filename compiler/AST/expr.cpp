@@ -363,7 +363,6 @@ void BinOp::codegen(FILE* outfile) {
     fprintf(outfile, "(");
   }
 
-  // those outer parens really aren't necessary around (pow()) look up a line
   if (type == BINOP_EXP) {
     fprintf(outfile, "pow(");
     left->codegen(outfile);
@@ -575,9 +574,14 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
       if (baseVar->scope->level == SCOPE_PRELUDE) {
 	bool isWrite = (strcmp(baseVar->name, "write") == 0);
 	bool isWriteln = (strcmp(baseVar->name, "writeln") == 0);
+	bool isRead = (strcmp(baseVar->name, "read") == 0);
 
-	if (isWrite || isWriteln) {
-	  return new WriteCall(isWriteln, base, arg);
+	if (isWrite) {
+	  return new IOCall(IO_WRITE, base, arg);
+	} else if (isWriteln) {
+	  return new IOCall(IO_WRITELN, base, arg);
+	} else if (isRead) {
+	  return new IOCall(IO_READ, base, arg);
 	}
       }
 
@@ -729,23 +733,24 @@ FnCall::FnCall(Expr* init_base, Expr* init_arg) :
 }
 
 
-WriteCall::WriteCall(bool init_writeln, Expr* init_base, Expr* init_arg) :
+IOCall::IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg) :
   FnCall(init_base, init_arg),
-  writeln(init_writeln)
+  ioType(init_iotype)
 {
-  astType = EXPR_WRITECALL;
+  astType = EXPR_IOCALL;
 }
 
 
-Type* WriteCall::typeInfo(void) {
+Type* IOCall::typeInfo(void) {
   return dtVoid;
 }
 
 
-void WriteCall::codegen(FILE* outfile) {
-  while (argList && !argList->isNull()) {
+void IOCall::codegen(FILE* outfile) {
+  Expr* arg = argList;
+
+  while (arg && !arg->isNull()) {
     Expr* format = nilExpr;
-    Expr* arg = argList;
 
     if (typeid(*arg) == typeid(Tuple)) {
       Tuple* tupleArg = dynamic_cast<Tuple*>(arg);
@@ -755,7 +760,16 @@ void WriteCall::codegen(FILE* outfile) {
 
     Type* argdt = arg->typeInfo();
 
-    fprintf(outfile, "_write");
+    switch (ioType) {
+    case IO_WRITE:
+    case IO_WRITELN:
+      fprintf(outfile, "_write");
+      break;
+    case IO_READ:
+      fprintf(outfile, "_read");
+      break;
+    }
+
     if (argdt == dtUnknown) {
       argdt = type_info(arg);
       if (argdt == dtUnknown) {
@@ -764,21 +778,41 @@ void WriteCall::codegen(FILE* outfile) {
     }
     argdt->codegen(outfile);
     fprintf(outfile, "(");
-    fprintf(outfile, "stdout, ");
+
+    switch (ioType) {
+    case IO_WRITE:
+    case IO_WRITELN:
+      fprintf(outfile, "stdout, ");
+      break;
+    case IO_READ:
+      fprintf(outfile, "stdin, ");
+      break;
+    }
+
     if (format->isNull()) {
-      argdt->codegenDefaultFormat(outfile);
+      bool isRead = (ioType == IO_READ);
+      argdt->codegenDefaultFormat(outfile, isRead);
     } else {
       format->codegen(outfile);
     }
     fprintf(outfile, ", ");
-    arg->codegen(outfile);
-    fprintf(outfile, ");\n");
 
-    argList = nextLink(Expr, argList);
+    if (ioType == IO_READ) {
+      fprintf(outfile, "&");
+    }
+
+    arg->codegen(outfile);
+    fprintf(outfile, ")");
+
+    arg = nextLink(Expr, arg);
+    if (arg || (ioType == IO_WRITELN)) {
+      fprintf(outfile, ";\n");
+    } 
   }
-  if (writeln) {
-    fprintf(outfile, "_write_linefeed(stdout);");
-  }
+
+  if (ioType == IO_WRITELN) {
+    fprintf(outfile, "_write_linefeed(stdout)");
+  } 
 }
 
 

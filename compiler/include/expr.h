@@ -25,6 +25,11 @@ enum precedenceType {
   PREC_HIGHEST
 };
 
+enum ioCallType {
+  IO_WRITE = 0, 
+  IO_WRITELN, 
+  IO_READ
+};
 
 class Expr : public BaseAST {
  public:
@@ -361,11 +366,11 @@ class FnCall : public ParenOpExpr {
 };
 
 
-class WriteCall : public FnCall {
+class IOCall : public FnCall {
  public:
-  bool writeln;
+  ioCallType ioType;
 
-  WriteCall(bool init_writeln, Expr* init_base, Expr* init_arg);
+  IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg);
 
   Type* typeInfo(void);
 

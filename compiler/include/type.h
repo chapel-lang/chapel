@@ -35,7 +35,7 @@ class Type : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenIORoutines(FILE* outfile);
-  virtual void codegenDefaultFormat(FILE* outfile);
+  virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
   virtual void codegenConstructors(FILE* outfile);
   virtual bool needsInit(void);
   virtual void generateInit(FILE* outfile, VarSymbol* var);
@@ -58,7 +58,7 @@ class EnumType : public Type {
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
-  void codegenDefaultFormat(FILE* outfile);
+  void codegenDefaultFormat(FILE* outfile, bool isRead);
   int getSymbols(Vec<BaseAST *> &asts);
 };
 
@@ -99,7 +99,7 @@ class ArrayType : public Type {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  void codegenDefaultFormat(FILE* outfile);
+  void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool needsInit(void);
   void generateInit(FILE* outfile, VarSymbol* sym);
   int getExprs(Vec<BaseAST *> &asts);

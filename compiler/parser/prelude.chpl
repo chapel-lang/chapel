@@ -2,6 +2,7 @@
 
 function write() {}
 function writeln() {}
+function read() {}
 
 
 -- intrinsic types
