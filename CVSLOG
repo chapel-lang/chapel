@@ -16588,3 +16588,19 @@ Log message:
 Removed files:
 	chapel/test/functions/jplevyak/: intent-5-error.future 
 
+---------------------------------------------------------------------------
+
+02/04/05 11:43:50 -- deitz
+
+Log message:
+	Unified primaryMethods and secondarMethods in ClassType to methods.
+	Added a method_type field to FnSymbol that is either NON_METHOD,
+	PRIMARY_METHOD, or SECONDARY_METHOD.  This change was suggested by
+	John and makes sense since we'll treat these the same most, if not
+	all, of the time.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/traversals/: cleanup.cpp methodsToFunctions.cpp 
+
