@@ -3553,3 +3553,17 @@ Modified files:
 	                      main.cpp symbol.cpp symbol.h symtab.cpp 
 	                      symtab.h 
 
+---------------------------------------------------------------------------
+
+06/18/04 18:41:15 -- bradc
+
+Log message:
+	Last check-in for the weekend.  Changed order of
+	symboltable dumps to match definition order rather
+	than alphabetical (with option for the latter).
+
+Modified files:
+	chapel/compiler/AST/: TODO chapel.lex chapel.y symtab.cpp 
+Added files:
+	chapel/compiler/AST/: prelude.chpl 
+
