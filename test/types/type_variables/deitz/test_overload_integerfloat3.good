@@ -1,0 +1,4 @@
+foo w/ integer 1 = 2 and integer 2 = 2
+foo w/ integer 1 = 2 and float 2 = 3
+foo w/ float 1 = 3 and float 2 = 3
+foo w/ float 1 = 3 and float 2 = 2
