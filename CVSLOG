@@ -5692,3 +5692,19 @@ Modified files:
 Added files:
 	chapel/compiler/AST/: symscope.h 
 
+---------------------------------------------------------------------------
+
+08/24/04 13:46:48 -- shannon
+
+Log message:
+	Modified the operator precedence per the current Chapel
+	specifications.
+	
+	Added a test of precedence of binary operators which
+	consists of many small computations in varying orders.
+
+Modified files:
+	chapel/compiler/AST/: chapel.y 
+Added files:
+	chapel/test/trivial/shannon/: compSampler.chpl compSampler.good 
+
