@@ -8359,3 +8359,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+09/22/04 09:38:03 -- bradc
+
+Log message:
+	Shannon pointed out that I broke the ebrowse BROWSE file
+	when I reorganized the source trees.  This should fix it
+	(I forgot to include the headers).  I did the same for
+	the etags TAGS file, and this should fix that too.
+
+Modified files:
+	chapel/compiler/: Makefile 
+
