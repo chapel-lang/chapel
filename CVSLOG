@@ -9071,3 +9071,33 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: filesToAST.cpp 
 
+---------------------------------------------------------------------------
+
+10/18/04 14:44:22 -- shannon
+
+Log message:
+	Generated read statement for booleans and complex
+	numbers.  Added four tests; one for the boolean
+	and three for the complex numbers.  Tested both
+	the standard 'a + bi' and tuple (a, b) versions
+	of complex number reads.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+	chapel/test/trivial/shannon/: readStringOverflow.good 
+Added files:
+	chapel/test/trivial/shannon/: readWriteBool.chpl 
+	                              readWriteBool.good 
+	                              readWriteBool.stdin 
+	                              readWriteComplex.chpl 
+	                              readWriteComplex.good 
+	                              readWriteComplex.stdin 
+	                              readWriteComplexFail1.chpl 
+	                              readWriteComplexFail1.good 
+	                              readWriteComplexFail1.stdin 
+	                              readWriteComplexTuple.chpl 
+	                              readWriteComplexTuple.good 
+	                              readWriteComplexTuple.stdin 
+
