@@ -1,0 +1,17 @@
+bradc
+This test no longer works because of the fact that we don't
+successfully split VarDeclStmts into the declaration and
+the initialization, as C requires.  As a result, when we
+tuck var declarations that call functions into a new local
+scope, the scope of the variable itself is wrong.  This
+is a good incentive to do an AST rewrite that we've been
+planning for some time.
+
+Note that once we get this working, we *may* think about
+replacing testAllScopes.chpl with testAllScopes2.chpl
+(which was the original test).  Though on the other
+hand, if we don't come up with a better test for the
+splitting of VarDeclStmts, maybe keeping both is a good
+idea.
+
+

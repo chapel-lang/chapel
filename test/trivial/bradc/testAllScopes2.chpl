@@ -22,12 +22,10 @@ class e {
 
 function main() {
   writeln("a is: ", a);
-  var myB: integer;
-  myB = b(3);
+  var myB: integer = b(3);
   writeln("b(3) is: ", myB);
   var myE: e = e();
-  var myG: integer;
-  myG = myE.g(8);
+  var myG: integer = myE.g(8);
   writeln("e.g(8) is: ", myG);
 
 /*  
