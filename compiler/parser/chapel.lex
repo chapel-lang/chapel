@@ -26,7 +26,6 @@
 
 %}
 
-
 digit           [0-9]
 letter          [_a-zA-Z]
 ident           \??{letter}({letter}|{digit})*
@@ -34,73 +33,87 @@ intLiteral      {digit}+{digit}*
 floatLiteral    {digit}+"."{digit}+
 
 %%
-config          return CONFIG;
-static          return STATIC;
 
-var             return VAR;
-const           return CONST;
+and             return TAND;
+by              return TBY;
+call            return TCALL;
+class           return TCLASS;
+config          return TCONFIG;
+const           return TCONST;
+dim             return TDIM;
+do              return TDO;
+domain          return TDOMAIN;
+else            return TELSE;
+enum            return TENUM;
+for             return TFOR;
+forall          return TFORALL;
+function        return TFUNCTION;
+if              return TIF;
+in              return TIN;
+index           return TINDEX;
+inout           return TINOUT;
+mod             return TMOD;
+not             return TNOT;
+or              return TOR;
+out             return TOUT;
+reduce          return TREDUCE;
+ref             return TREF;
+return          return TRETURN;
+static          return TSTATIC;
+type            return TTYPE;
+val             return TVAL;
+var             return TVAR;
+while           return TWHILE;
 
-domain          return DOMAIN;
-index           return INDEX;
+"="             return TASSIGN;
+"+="            return TASSIGNPLUS;
+"-="            return TASSIGNMINUS;
+"*="            return TASSIGNMULTIPLY;
+"/="            return TASSIGNDIVIDE;
+"&="            return TASSIGNBAND;
+"|="            return TASSIGNBOR;
+"^="            return TASSIGNBXOR;
+"<<="           return TASSIGNBSL;
+">>="           return TASSIGNBSR;
 
-type            return TYPEDEF;
-enum            return ENUM;
-class           return CLASS;
+"&&"            return TAND;
+"||"            return TOR;
+"!"             return TNOT;
+"%"             return TMOD;
 
-function        return FUNCTION;
-inout           return INOUT;
-in              return IN;
-out             return OUT;
-ref             return REF;
-val             return VAL;
+".."            return TDOTDOT;
 
-if              return IF;
-else            return ELSE;
+"<<"            return TBSL;
+">>"            return TBSR;
+"&"             return TBAND;
+"|"             return TBOR;
+"^"             return TBXOR;
+"~"             return TBNOT;
 
-for             return FOR;
-forall          return FORALL;
+"=="            return TEQUAL;
+"!="            return TNOTEQUAL;
+"<="            return TLESSEQUAL;
+">="            return TGREATEREQUAL;
+"<"             return TLESS;
+">"             return TGREATER;
 
-while           return WHILE;
-do              return DO;
+"+"             return TPLUS;
+"-"             return TMINUS;
+"*"             return TSTAR;
+"/"             return TDIVIDE;
 
-by              return BY;
-return          return RETURN;
+"**"            return TEXP;
 
-dim             return DIM;
-reduce          return REDUCE;
-
-"+="            return PLUSGETS;
-"-="            return MINUSGETS;
-"*="            return TIMESGETS;
-"/="            return DIVGETS;
-"&="            return BITANDGETS;
-"|="            return BITORGETS;
-"^="            return BITXORGETS;
-"<<="           return BITSLGETS;
-">>="           return BITSRGETS;
-
-".."            return ELLIPSIS;
-
-"&&"            return LOGAND;
-"||"            return LOGOR;
-
-"<<"            return BITSL;
-">>"            return BITSR;
-"&"             return BITAND;
-"|"             return BITOR;
-"^"             return BITXOR;
-
-"=="            return EQUALS;
-"!="            return NEQUALS;
-"<="            return LEQUALS;
-">="            return GEQUALS;
-">"             return GTHAN;
-"<"             return LTHAN;
-
-"="             return GETS;
-
-"**"            return EXP;
-
+":"             return TCOLON;
+";"             return TSEMI;
+","             return TCOMMA;
+"."             return TDOT;
+"("             return TLP;
+")"             return TRP;
+"["             return TLSBR;
+"]"             return TRSBR;
+"{"             return TLCBR;
+"}"             return TRCBR;
 
 {ident}         {
                   if (yytext[0] == '?') {
@@ -118,7 +131,7 @@ reduce          return REDUCE;
 		    yylval.redsym = (ReduceSymbol*)sym;
 		    return REDUCE_IDENT;
 		  } else {
-		    return IDENT;
+		    return TIDENT;
 		  }
                 }
 {intLiteral}    return INTLITERAL;
@@ -154,7 +167,9 @@ reduce          return REDUCE;
 [ \t]           /* no action, eat spaces and tabs */
 \n              yylineno++;
 
-.               return (int) yytext[0];
+.               return (int) yytext[0]; /* This should be commented
+					   out */
+
 
 "--"            {
                   register int c;

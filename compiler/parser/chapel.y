@@ -42,48 +42,68 @@
   ClassSymbol* pcsym;
 }
 
+%token TCALL
+%token TCLASS
+%token TCONFIG
+%token TCONST
+%token TDIM
+%token TDO
+%token TDOMAIN
+%token TELSE
+%token TENUM
+%token TFOR
+%token TFORALL
+%token TFUNCTION
+%token TIF
+%token TIN
+%token TINDEX
+%token TINOUT
+%token TOUT
+%token TREDUCE
+%token TREF
+%token TRETURN
+%token TSTATIC
+%token TTYPE
+%token TVAL
+%token TVAR
+%token TWHILE
 
-%token CONFIG STATIC
-%token VAR CONST
-
-%token DOMAIN
-%token INDEX
-
-%token ENUM TYPEDEF CLASS
-%token FUNCTION
-%token INOUT IN OUT REF VAL
-
-%token IDENT QUERY_IDENT
+%token TIDENT QUERY_IDENT
 %token <ptsym> TYPE_IDENT
 %token <redsym> REDUCE_IDENT
 %token <pcsym> CLASS_IDENT
 %token INTLITERAL FLOATLITERAL COMPLEXLITERAL
 %token <pch> STRINGLITERAL
 
-%token IF ELSE
-%token FOR FORALL IN
-%token WHILE DO
-%token RETURN
+%token TDOTDOT
 
-%token BY
-%token ELLIPSIS
+%token TASSIGN;
+%token TASSIGNPLUS;
+%token TASSIGNMINUS;
+%token TASSIGNMULTIPLY;
+%token TASSIGNDIVIDE;
+%token TASSIGNBAND;
+%token TASSIGNBOR;
+%token TASSIGNBXOR;
+%token TASSIGNBSL;
+%token TASSIGNBSR;
 
-%token GETS PLUSGETS MINUSGETS TIMESGETS DIVGETS BITANDGETS BITORGETS 
-%token BITXORGETS BITSLGETS BITSRGETS
-
-%token DIM REDUCE
-
-%token EQUALS NEQUALS LEQUALS GEQUALS NEQUALS GTHAN LTHAN
-%token LOGOR LOGAND
-%token BITOR BITAND BITXOR BITSL BITSR
-%token EXP
-
+%token TCOLON;
+%token TSEMI;
+%token TCOMMA;
+%token TDOT;
+%token TLP;
+%token TRP;
+%token TLSBR;
+%token TRSBR;
+%token TLCBR;
+%token TRCBR;
 
 %type <boolval> varconst
 %type <intval> intliteral
 
 %type <got> assignOp
-%type <bot> otherbinop
+/*%type <bot> otherbinop*/
 /*%type <uot> unop*/
 %type <vt> vardecltag
 %type <pt> formaltag
@@ -104,22 +124,22 @@
 
 /* These are declared in increasing order of precedence. */
 
-%left LOGOR
-%left LOGAND
-%right '!'
-%left EQUALS NEQUALS
-%left LTHAN LEQUALS GTHAN GEQUALS
-%left BITSL BITSR
-%left BITOR
-%left BITXOR
-%left BITAND
-%left '+' '-'
-%left '*' '/' '%'
-%right TUMINUS TUPLUS
-%right '~'
-%right EXP
 %left TBY
-%left ':'
+%left TOR
+%left TAND
+%right TNOT
+%left TEQUAL TNOTEQUAL
+%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
+%left TBSL TBSR
+%left TBOR
+%left TBXOR
+%left TBAND
+%left TPLUS TMINUS
+%left TSTAR TDIVIDE TMOD
+%right TUPLUS TUMINUS
+%right TBNOT
+%right TEXP
+%left TCOLON
 
 %% 
 
@@ -133,17 +153,17 @@ program:
 vardecltag:
   /* nothing */
     { $$ = VAR_NORMAL; }
-| CONFIG
+| TCONFIG
     { $$ = VAR_CONFIG; }
-| STATIC
+| TSTATIC
     { $$ = VAR_STATE; }
 ;
 
 
 varconst:
-  VAR
+  TVAR
     { $$ = false; }
-| CONST
+| TCONST
     { $$ = true; }
 ;
 
@@ -156,7 +176,7 @@ identsym:
 
 idlist:
   identsym
-| idlist ',' identsym
+| idlist TCOMMA identsym
     {
       $1->append($3);
       $$ = $1;
@@ -167,7 +187,7 @@ idlist:
 vardecltype:
   /* nothing */
     { $$ = dtUnknown; }
-| ':' type
+| TCOLON type
     { $$ = $2; }
 ;
 
@@ -175,13 +195,13 @@ vardecltype:
 vardeclinit:
   /* nothing */
     { $$ = nilExpr; }
-| GETS expr
+| TASSIGN expr
     { $$ = $2; }
 ;
 
 
 vardecl:
-  vardecltag varconst idlist vardecltype vardeclinit ';'
+  vardecltag varconst idlist vardecltype vardeclinit TSEMI
     { $$ = Symboltable::defineVarDefStmt($3, $4, $5, $1, $2); }
 ;
 
@@ -194,15 +214,15 @@ typedecl:
 
 
 typealias:
-  TYPEDEF identifier ':' type ';'
+  TTYPE identifier TCOLON type TSEMI
     { $$ = Symboltable::defineUserType($2, $4); }
-| TYPEDEF identifier ':' type GETS expr ';'
+| TTYPE identifier TCOLON type TASSIGN expr TSEMI
     { $$ = Symboltable::defineUserType($2, $4, $6); }
 ;
 
 
 enumdecl:
-  ENUM identifier GETS enumList ';'
+  TENUM identifier TASSIGN enumList TSEMI
     {
       EnumSymbol* enumlist = Symboltable::defineEnumList($4);      
       EnumType* pdt = new EnumType(enumlist);
@@ -217,7 +237,7 @@ enumdecl:
 subclass:
   /* nothing */
     { $$ = nilClassSymbol; }
-| ':' identifier
+| TCOLON identifier
     {
       $$ = Symboltable::lookupClass($2);
     }
@@ -225,11 +245,11 @@ subclass:
 
 
 classdecl:
-  CLASS identifier subclass '{'
+  TCLASS identifier subclass TLCBR
     {
       $<pcsym>$ = Symboltable::startClassDef($2, $3);
     }
-                                statements '}'
+                                statements TRCBR
     {
       $$ = Symboltable::finishClassDef($<pcsym>5, $6);
     }
@@ -238,7 +258,7 @@ classdecl:
 
 enumList:
   identsym
-| enumList BITOR identsym
+| enumList TBOR identsym
     {
       $1->append($3);
       $$ = $1;
@@ -249,17 +269,17 @@ enumList:
 formaltag:
   /* nothing */
     { $$ = PARAM_INOUT; }
-| IN
+| TIN
     { $$ = PARAM_IN; }
-| INOUT
+| TINOUT
     { $$ = PARAM_INOUT; }
-| OUT
+| TOUT
     { $$ = PARAM_OUT; }
-| CONST
+| TCONST
     { $$ = PARAM_CONST; }
-| REF
+| TREF
     { $$ = PARAM_INOUT; }
-| VAL
+| TVAL
     { $$ = PARAM_IN; }
 ;
 
@@ -272,7 +292,7 @@ formal:
 
 nonemptyformals:
   formal
-| nonemptyformals ';' formal
+| nonemptyformals TSEMI formal
     {
       $1->append($3);
       $$ = $1;
@@ -289,19 +309,19 @@ formals:
 fnrettype:
   /* empty */
     { $$ = dtVoid; }
-| ':'
+| TCOLON
     { $$ = dtUnknown; }
-| ':' type
+| TCOLON type
     { $$ = $2; }
 ;
 
 
 fndecl:
-  FUNCTION identifier
+  TFUNCTION identifier
     {
       $<fnsym>$ = Symboltable::startFnDef($2);
     }
-                      '(' formals ')' fnrettype statement
+                      TLP formals TRP fnrettype statement
     {
       $$ = Symboltable::finishFnDef($<fnsym>3, $5, $7, $8);
     }
@@ -318,7 +338,7 @@ decl:
 tupleTypes:
   type
     { $$ = new TupleType($1); }
-| tupleTypes ',' type
+| tupleTypes TCOMMA type
     { 
       $1->addType($3);
       $$ = $1;
@@ -327,7 +347,7 @@ tupleTypes:
 
 
 tupleType:
-  '(' tupleTypes ')'
+  TLP tupleTypes TRP
     { $$ = $2; }
 ;
 
@@ -346,25 +366,25 @@ type:
 ;
 
 domainType:
-  DOMAIN
+  TDOMAIN
     { $$ = new DomainType(); }
-| DOMAIN '(' expr ')'
+| TDOMAIN TLP expr TRP
     { $$ = new DomainType($3); }
 ;
 
 
 indexType:
-  INDEX
+  TINDEX
     { $$ = new IndexType(); }
-| INDEX '(' expr ')'
+| TINDEX TLP expr TRP
     { $$ = new IndexType($3); }
 ;
 
 
 arrayType:
-  '[' ']' type
+  TLSBR TRSBR type
     { $$ = new ArrayType(unknownDomain, $3); }
-| '[' query_identifier ']' type
+| TLSBR query_identifier TRSBR type
     { 
       Symboltable::defineQueryDomain($2);  // really need to tuck this into
                                            // a var def stmt to be inserted
@@ -372,7 +392,7 @@ arrayType:
                                            // defined  -- BLC
       $$ = new ArrayType(unknownDomain, $4);
     }
-| '[' domainExpr ']' type
+| TLSBR domainExpr TRSBR type
     { $$ = new ArrayType($2, $4); }
 ;
 
@@ -386,18 +406,20 @@ statements:
 
 
 statement:
-  ';'
+  TSEMI
     { $$ = new NoOpStmt(); }
 | decl
 | assignment
 | conditional
 | loop
-| simple_lvalue ';'  /* This used to be "expr." Isn't this just for function calls? -SJD */
+| simple_lvalue TSEMI  /* This used to be "expr." Isn't this just for function calls? -SJD */
     { $$ = new ExprStmt($1); }
+| TCALL simple_lvalue TSEMI
+    { $$ = new ExprStmt($2); }
 | retStmt
-| '{'
+| TLCBR
     { Symboltable::startCompoundStmt(); }
-      statements '}'
+      statements TRCBR
     { $$ = Symboltable::finishCompoundStmt($3); }
 | error
     { printf("syntax error"); exit(1); }
@@ -405,28 +427,28 @@ statement:
 
 
 retStmt:
-  RETURN ';'
+  TRETURN TSEMI
     { $$ = new ReturnStmt(nilExpr); }
-| RETURN expr ';'
+| TRETURN expr TSEMI
     { $$ = new ReturnStmt($2); }
 ;
 
 
 fortype:
-  FOR
-| FORALL
+  TFOR
+| TFORALL
 ;
 
 
 indexlist:
   idlist
-| '(' idlist ')'
+| TLP idlist TRP
   { $$ = $2; }
 ;
 
 
 forloop:
-  fortype indexlist IN expr
+  fortype indexlist TIN expr
     { 
       $<pvsym>$ = Symboltable::startForLoop($2);
     }
@@ -438,9 +460,9 @@ forloop:
 
 
 whileloop:
-  WHILE expr statement
+  TWHILE expr statement
     { $$ = new WhileLoopStmt(true, $2, $3); }
-| DO statement WHILE expr ';'
+| TDO statement TWHILE expr TSEMI
     { $$ = new WhileLoopStmt(false, $4, $2); }
 ;
 
@@ -452,40 +474,40 @@ loop:
 
 
 conditional:
-  IF expr statement
+  TIF expr statement
     { $$ = new CondStmt($2, $3); }
-| IF expr statement ELSE statement
+| TIF expr statement TELSE statement
     { $$ = new CondStmt($2, $3, $5); }
 ;
 
 
 assignOp:
-  GETS
+  TASSIGN
     { $$ = GETS_NORM; }
-| PLUSGETS
+| TASSIGNPLUS
     { $$ = GETS_PLUS; }
-| MINUSGETS
+| TASSIGNMINUS
     { $$ = GETS_MINUS; }
-| TIMESGETS
+| TASSIGNMULTIPLY
     { $$ = GETS_MULT; }
-| DIVGETS
+| TASSIGNDIVIDE
     { $$ = GETS_DIV; }
-| BITANDGETS
+| TASSIGNBAND
     { $$ = GETS_BITAND; }
-| BITORGETS
+| TASSIGNBOR
     { $$ = GETS_BITOR; }
-| BITXORGETS
+| TASSIGNBXOR
     { $$ = GETS_BITXOR; }
-| BITSLGETS
+| TASSIGNBSL
     { $$ = GETS_BITSL; }
-| BITSRGETS
+| TASSIGNBSR
     { $$ = GETS_BITSR; }
 ;
 
 
 assign_lvalue:
   lvalue
-| '[' domainExpr ']' lvalue
+| TLSBR domainExpr TRSBR lvalue
   {
     $2->setForallExpr($4);
     $$ = $2;
@@ -494,7 +516,7 @@ assign_lvalue:
 
 
 assignment:
-  assign_lvalue assignOp expr ';'
+  assign_lvalue assignOp expr TSEMI
     { $$ = new ExprStmt(new AssignOp($2, $1, $3)); }
 ;
 
@@ -508,7 +530,7 @@ exprlist:
 
 nonemptyExprlist:
   expr
-| nonemptyExprlist ',' expr
+| nonemptyExprlist TCOMMA expr
     { $1->append($3); }
 ;
 
@@ -516,12 +538,12 @@ nonemptyExprlist:
 simple_lvalue:
   identifier
     { $$ = new Variable(Symboltable::lookup($1)); }
-| simple_lvalue '.' identifier
+| simple_lvalue TDOT identifier
     { $$ = Symboltable::defineMemberAccess($1, $3); }
-| simple_lvalue '(' exprlist ')'
+| simple_lvalue TLP exprlist TRP
     { $$ = ParenOpExpr::classify($1, $3); }
 /*
-| simple_lvalue '[' exprlist ']'
+| simple_lvalue TLSBR exprlist TRSBR
     { $$ = ParenOpExpr::classify($1, $3); }
 */
 ;
@@ -541,10 +563,10 @@ atom:
 expr: 
   atom
 | reduction
-| expr ':' type
+| expr TCOLON type
     { $$ = new CastExpr($3, $1); }
 | range
-| '(' nonemptyExprlist ')' 
+| TLP nonemptyExprlist TRP 
     { 
       if ($2->next->isNull()) {
         $$ = $2;
@@ -552,73 +574,72 @@ expr:
         $$ = new Tuple($2);
       }
     }
-| '[' domainExpr ']'
+| TLSBR domainExpr TRSBR
     { $$ = $2; }
-| '[' domainExpr ']' expr
+| TLSBR domainExpr TRSBR expr
     {
       $2->setForallExpr($4);
       $$ = $2;
     }
-| '+' expr                                     %prec TUPLUS
+| TPLUS expr %prec TUPLUS
     { $$ = new UnOp(UNOP_PLUS, $2); }
-| '-' expr                                     %prec TUMINUS
+| TMINUS expr %prec TUMINUS
     { $$ = new UnOp(UNOP_MINUS, $2); }
-| '!' expr
+| TNOT expr
     { $$ = new UnOp(UNOP_LOGNOT, $2); }
-| '~' expr
+| TBNOT expr
     { $$ = new UnOp(UNOP_BITNOT, $2); }
-| expr '+' expr
+| expr TPLUS expr
     { $$ = Expr::newPlusMinus(BINOP_PLUS, $1, $3); }
-| expr '-' expr
+| expr TMINUS expr
     { $$ = Expr::newPlusMinus(BINOP_MINUS, $1, $3); }
-| expr '*' expr
+| expr TSTAR expr
     { $$ = new BinOp(BINOP_MULT, $1, $3); }
-| expr '/' expr
+| expr TDIVIDE expr
     { $$ = new BinOp(BINOP_DIV, $1, $3); }
-| expr '%' expr
+| expr TMOD expr
     { $$ = new BinOp(BINOP_MOD, $1, $3); }
-| expr EQUALS expr
+| expr TEQUAL expr
     { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
-| expr NEQUALS expr
+| expr TNOTEQUAL expr
     { $$ = new BinOp(BINOP_NEQUAL, $1, $3); }
-| expr LEQUALS expr
+| expr TLESSEQUAL expr
     { $$ = new BinOp(BINOP_LEQUAL, $1, $3); }
-| expr GEQUALS expr
+| expr TGREATEREQUAL expr
     { $$ = new BinOp(BINOP_GEQUAL, $1, $3); }
-| expr GTHAN expr
-    { $$ = new BinOp(BINOP_GTHAN, $1, $3); }
-| expr LTHAN expr
+| expr TLESS expr
     { $$ = new BinOp(BINOP_LTHAN, $1, $3); }
-| expr BITAND expr
+| expr TGREATER expr
+    { $$ = new BinOp(BINOP_GTHAN, $1, $3); }
+| expr TBAND expr
     { $$ = new BinOp(BINOP_BITAND, $1, $3); }
-| expr BITOR expr
+| expr TBOR expr
     { $$ = new BinOp(BINOP_BITOR, $1, $3); }
-| expr BITXOR expr
+| expr TBXOR expr
     { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
-| expr BITSL expr
+| expr TBSL expr
     { $$ = new BinOp(BINOP_BITSL, $1, $3); }
-| expr BITSR expr
+| expr TBSR expr
     { $$ = new BinOp(BINOP_BITSR, $1, $3); }
-| expr LOGAND expr
+| expr TAND expr
     { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
-| expr LOGOR expr
+| expr TOR expr
     { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
-| expr EXP expr
+| expr TEXP expr
     { $$ = new BinOp(BINOP_EXP, $1, $3); }
 
 /** Can "by" really apply to arbitrary expressions or just ranges and reductions? -SJD */
-
-| expr otherbinop expr                           %prec TBY
-    { $$ = new SpecialBinOp($2, $1, $3); }
+| expr TBY expr
+    { $$ = new SpecialBinOp(BINOP_BY, $1, $3); }
 ;
 
 
 reduceDim:
   /* empty */
     { $$ = nilExpr; }
-| '(' expr ')'
+| TLP expr TRP
     { $$ = $2; }
-| '(' DIM GETS expr ')'
+| TLP TDIM TASSIGN expr TRP
     { $$ = $4; }
 ;
 
@@ -626,28 +647,30 @@ reduceDim:
 reduction:
   REDUCE_IDENT reduceDim expr
     { $$ = new ReduceExpr($1, $2, $3); }
-| REDUCE reduceDim BY REDUCE_IDENT expr
+| TREDUCE reduceDim TBY REDUCE_IDENT expr
     { $$ = new ReduceExpr($4, $2, $5); }
 ;
 
 
-/* Here are the other three reduce/reduce errors! nonemptyExprlist and indexlist -SJD */
+/* Here are the two reduce/reduce errors! nonemptyExprlist and indexlist -SJD */
 domainExpr:
   nonemptyExprlist
     { $$ = new DomainExpr($1); }
-| indexlist IN nonemptyExprlist          // BLC: This is wrong vv
+| indexlist TIN nonemptyExprlist          // BLC: This is wrong vv
     { $$ = new DomainExpr($3, Symboltable::defineVars($1, dtInteger)); }
 ;
 
 
 range:
-  expr ELLIPSIS expr
+  expr TDOTDOT expr
     { $$ = new SimpleSeqExpr($1, $3); }
-| expr ELLIPSIS expr BY expr
+/* MOVED to expr
+| expr TDOTDOT expr TBY expr
     { $$ = new SimpleSeqExpr($1, $3, $5); }
-| '*'
+*/
+| TSTAR
     { $$ = new FloodExpr(); }
-| ELLIPSIS
+| TDOTDOT
     { $$ = new CompleteDimExpr(); }
 ;
 
@@ -670,14 +693,16 @@ intliteral:
 ;
 
 
+/*
 otherbinop:
-  BY
+  TBY
     { $$ = BINOP_BY; }
 ;
+*/
 
 
 identifier:
-  IDENT
+  TIDENT
     { $$ = copystring(yytext); }
 | CLASS_IDENT
     { $$ = $1->name; }
