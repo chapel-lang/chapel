@@ -17949,3 +17949,13 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+02/19/05 11:57:19 -- jplevyak
+
+Log message:
+	Fix SEGV in log routine.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
