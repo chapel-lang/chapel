@@ -1973,3 +1973,6 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   return 0;
 }
 
+void PCallbacks::finalize_functions() {
+  pdb->fa->permit_boxing = 1;
+}

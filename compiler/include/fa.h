@@ -204,7 +204,8 @@ enum ATypeViolation_kind {
   ATypeViolation_DISPATCH_AMBIGUITY,
   ATypeViolation_MEMBER,
   ATypeViolation_MATCH,
-  ATypeViolation_NOTYPE
+  ATypeViolation_NOTYPE,
+  ATypeViolation_BOXING
 };
   
 class ATypeViolation : public gc {
@@ -266,8 +267,11 @@ class FA : public gc {
   Vec<CreationSet *> css, css_set;
   Vec<AVar *> global_avars;
   ChainHashMap<char*, StringHashFns, RegisteredPrim*> primitive_transfer_functions;
+  
+  bool permit_boxing;
 
-  FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0) {}
+  FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0),
+    permit_boxing(0) {}
 
   int analyze(Fun *f);
   int concretize();

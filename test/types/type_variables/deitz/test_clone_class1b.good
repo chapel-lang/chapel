@@ -1,1 +1,8 @@
-Error assigning float to integer
+test_clone_class1b.chpl:1: class foo:: 'x' has mixed basic types: float64 int64
+  called from test_clone_class1b.chpl:6
+test_clone_class1b.chpl:4: expression has mixed basic types: float64 int64
+  called from test_clone_class1b.chpl:12
+  called from test_clone_class1b.chpl:16
+test_clone_class1b.chpl:10: expression has mixed basic types: float64 int64
+test_clone_class1b.chpl:14: expression has mixed basic types: float64 int64
+fail: fatal error, program does not type

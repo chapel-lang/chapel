@@ -24,6 +24,7 @@ class Fun;
 
 class PCallbacks : public Callbacks {
 public:
+  void finalize_functions();
   void new_LUB_type(Sym *);
   Sym *new_Sym(char *name = 0);
 };
