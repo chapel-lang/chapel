@@ -413,6 +413,17 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 
 
 Symbol* FnSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
+//   if (clone) {
+//     FnSymbol* fn_copy = new FnSymbol(name);
+//     Symboltable::pushScope(SCOPE_PARAM);
+//     Symbol* newformals = formals->copyList(clone, analysis_clone);
+//     SymScope* paramScope = Symboltable::popScope();
+//     fn_copy->finishDef(newformals, type, body, paramScope, exportMe);
+//     return fn_copy;
+//   }
+//   else {
+//     return new FnSymbol(name);
+//   }
   return new FnSymbol(name);
 }
 
@@ -434,11 +445,24 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 }
 
 
+// FnSymbol* FnSymbol::clone(CloneCallback* clone_callback) {
+//   static int uid = 1; // Unique ID for cloned functions
+//   FnSymbol* this_copy;
+//   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
+//   if (!(this_copy = dynamic_cast<FnSymbol*>(copy(true, clone_callback)))) {
+//     INT_FATAL(this, "Major error in FnSymbol::clone");
+//   }
+//   this_copy->cname = 
+//     glomstrings(3, this_copy->cname, "_clone_", intstring(uid++));
+//   Symboltable::setCurrentScope(save_scope);
+//   return this_copy;
+// }
+
+
 FnSymbol* FnSymbol::clone(CloneCallback* clone_callback) {
   FnDefStmt* this_copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
-
   save_scope = Symboltable::setCurrentScope(parentScope);
   Stmt* stmt_copy = defPoint->copy(true, clone_callback);
   if (this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {

@@ -27,7 +27,6 @@ static SymScope* internalScope = NULL;
 static SymScope* preludeScope = NULL;
 static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
-static FnSymbol* currentFn = NULL;
 static ModuleSymbol* firstModule = NULL;
 static ModuleSymbol* currentModule = NULL;
 
@@ -35,10 +34,7 @@ ModuleSymbol* commonModule = NULL;
 
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);
-
   currentScope = rootScope;
-
-  currentFn = nilFnSymbol;
 }
 
 
@@ -147,11 +143,6 @@ SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
 
 ModuleSymbol* Symboltable::getModuleList(void) {
   return firstModule;
-}
-
-
-FnSymbol* Symboltable::getCurrentFn(void) {
-  return currentFn;
 }
 
 
@@ -600,7 +591,6 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
 
 
 FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym) {
-  currentFn = fnsym;
   Symboltable::pushScope(SCOPE_PARAM);
 
   return fnsym;
