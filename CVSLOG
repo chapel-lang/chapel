@@ -21779,3 +21779,26 @@ Added files:
 	chapel/test/domains/roxana/: test_index_assign.good 
 	                             test_index_assign.chpl 
 
+---------------------------------------------------------------------------
+
+03/28/05 10:32:43 -- deitz
+
+Log message:
+	Added a new pass ComputeVisibleFunctions that stores in every SymScope
+	a set called visibleFunctions that stores the functions that are
+	visible in that scope.  This includes every function defined in that
+	scope, every method defined in a record and union that is defined in
+	that scope, every visible function in a parent scope, and all class
+	methods.
+	
+	John, let me know if you can use this.  To get all visible functions
+	where a symbol is defined, use symbol->parentScope->visibleFunctions.
+
+Modified files:
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share symscope.cpp 
+Added files:
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         computeVisibleFunctions.h 
+
