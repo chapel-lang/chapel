@@ -3936,3 +3936,26 @@ Log message:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: memberfun.v 
 
+---------------------------------------------------------------------------
+
+07/13/04 12:52:09 -- bradc
+
+Log message:
+	Adding three scripts to the token counting utility directory:
+	
+	checkdiff : runs the tokencounter over a C++ file (or group
+	of files) and verifies that the output is the same
+	as the input (assumes tokencounter is doing nothing
+	other than passing tokens through).
+	
+	tokctnightly: a script that does the nightly token counting
+	of the compiler and runtime.
+	
+	countrange: a script that will do token counting for the
+	past n days (used to generate token counting graphs
+	for the span of time that we didn't yet have these
+	utilities).
+
+Added files:
+	chapel/util/tokencount/: checkdiff countrange tokctnightly 
+
