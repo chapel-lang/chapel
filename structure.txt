@@ -1,4 +1,6 @@
 chapel
+  * BUILD_VERSION      -- build number (automatically updated by CVS)
+  * CVSLOG             -- log of commits (automatically updated by CVS)
 - compiler             -- sources for Chapel-to-C translator
   + cygwin             -- platform-specific subdirectories for .o's and .dep's
   + linux
