@@ -15526,3 +15526,18 @@ Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 	chapel/compiler/include/: stmt.h 
 
+---------------------------------------------------------------------------
+
+01/24/05 15:28:03 -- bradc
+
+Log message:
+	Squelched codegen of functions that are not used, as
+	determined by John's new function_is_used() interface.
+	
+	Also, modified comments in passlist.h slightly for
+	inclusion in the TAR whitepaper.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/main/: passlist.h 
+
