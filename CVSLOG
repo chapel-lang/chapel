@@ -6657,3 +6657,20 @@ Log message:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: cs4.v cs5.v 
 
+---------------------------------------------------------------------------
+
+09/08/04 11:42:33 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added new interfaces for extracting type/callgraph/constants information
+	for the new AST: in analysis.h.
+	Note: these haven't been tested!
+	Added new callback facility for callbacks from the analysis to
+	the AST representation, also in alysis.h.
+
+Modified files:
+	chapel/compiler/: analysis.cpp analysis.h clone.cpp driver.cpp 
+	                  if1.h parse_ast.cpp parse_ast.h sym.cpp sym.h 
+Added files:
+	chapel/compiler/: callbacks.h 
+
