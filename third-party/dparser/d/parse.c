@@ -1792,7 +1792,7 @@ error_recovery(Parser *p) {
     r->next = NULL;
     free_old_nodes(p);
     reduce_one(p, r);
-    for (i = 0; i < p->t->nstates; i++)
+    for (i = 0; i < p->snode_hash.m; i++)
       for (sn = p->snode_hash.v[i]; sn; sn = sn->bucket_next)
 	for (j = 0; j < sn->zns.n; j++)
 	  if ((z = sn->zns.v[j]))
