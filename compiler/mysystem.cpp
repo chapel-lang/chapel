@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "misc.h"
+#include "mysystem.h"
 
-int printSystemCommands;
+int printSystemCommands = 0;
 
-int mysystem(const char* command, char* description, int ignorestatus=0) {
+int mysystem(const char* command, char* description, int ignorestatus) {
   if (printSystemCommands) {
     printf("%s\n\n", command);
   }
