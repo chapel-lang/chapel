@@ -21512,3 +21512,15 @@ Modified files:
 	chapel/runtime/include/: array.h chpltypes.h 
 	chapel/runtime/src/: chpltypes.c config.c 
 
+---------------------------------------------------------------------------
+
+03/25/05 09:30:46 -- roxana
+
+Log message:
+	More clean up on InsertIndexType pass. Removed currentScope and
+	currentStmt -- they were not used.
+
+Modified files:
+	chapel/compiler/traversals/: insertIndexType.cpp 
+	                             insertIndexType.h 
+
