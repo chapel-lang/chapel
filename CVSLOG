@@ -14150,3 +14150,14 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_function3.future 
 
+---------------------------------------------------------------------------
+
+01/07/05 15:01:43 -- jplevyak
+
+Log message:
+	Interm checkin of cloning code which clones Sym(s).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fun.cpp 
+	chapel/compiler/include/: ast.h baseAST.h 
+
