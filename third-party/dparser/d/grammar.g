@@ -4,8 +4,6 @@
 {
 #include "gramgram.h"
 #include "d.h"
-
-extern D_ParserTables parser_tables_dparser_gram;
 }
 
 grammar: top_level_statement*;
@@ -14,7 +12,7 @@ top_level_statement: global_code | production | include_statement;
 
 include_statement: 'include' regex {
   char *grammar_pathname = dup_str($n1.start_loc.s+1, $n1.end-1);
-  if (parse_grammar($g, grammar_pathname, &parser_tables_dparser_gram, sizeof(ParseNode_User)) < 0)
+  if (parse_grammar($g, grammar_pathname, 0) < 0)
     d_fail("unable to parse grammar '%s'", grammar_pathname);
 };
 
@@ -38,7 +36,6 @@ global_code
       }
     }
   | '${token' token_identifier+ '}'
-  | '${action}' { $g->action_index++; }
   | '${pass' identifier pass_types '}' {
       add_pass($g, $n1.start_loc.s, $n1.end,  $2.kind, $n1.start_loc.line);
     }
@@ -131,7 +128,9 @@ new_subrule : {
 };
 
 element_modifier 
-  : '$term' integer { 
+  : '${action}' { $g->r->action_index = $g->action_index++; }
+  | '${action' integer '}' { $g->r->action_index = strtol($n1.start_loc.s, NULL, 0); }
+  | '$term' integer { 
       if ($g->e->kind != ELEM_TERM) 
         d_fail("terminal priority on non-terminal");
       $g->e->e.term->term_priority = strtol($n1.start_loc.s, NULL, 0); 

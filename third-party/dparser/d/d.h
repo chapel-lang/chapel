@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
-#include <stdint.h>
+#include <inttypes.h>
 #endif
 #include <limits.h>
 #include <sys/types.h>

@@ -42,5 +42,5 @@ D_Parser *make_parser(int idpt,
 		      int dont_use_height_for_disambiguation,
 		      char *start_state);
 PyObject *run_parser(D_Parser *dp, PyObject* string, int buf_idx);
-int make_tables(char *grammar_pathname);
+int make_tables(char *grammar_string, char *grammar_pathname);
 int load_parser_tables(char *tables_name);

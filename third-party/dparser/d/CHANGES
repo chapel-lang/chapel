@@ -1,3 +1,10 @@
+1.12	Fixed some portability ANSI-C issues.
+	Fixed a bug where actions would not fire with regex productions.
+	Changed the binary interface ${action} placement.
+
+1.11	Added new interfaces for binary output to memory/file
+	Fixed bug in ambiguity handling
+
 1.10	Fixed bug in binary output
 	Port to x64
 

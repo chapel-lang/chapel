@@ -19,7 +19,7 @@ char *
 d_dup_pathname_str(char *s) {
   char *e = s;
   if (!s)
-    return strdup("");
+    return dup_str("", 0);
   if (*e == '"') {
     e++; while (*e && *e != '"') e++;
     return dup_str(s + 1, e);
@@ -89,6 +89,16 @@ d_fail(char *str, ...) {
   vfprintf(stderr, nstr, ap);
   va_end(ap);
   exit(1);
+}
+
+void
+d_warn(char *str, ...) {
+  char nstr[256];
+  va_list ap;
+  va_start(ap, str);
+  snprintf(nstr, 255, "warning: %s\n", str);
+  vfprintf(stderr, nstr, ap);
+  va_end(ap);
 }
 
 void

@@ -12,7 +12,7 @@ def skip_space(loc):
     while loc.s < len(loc.buf) and loc.buf[loc.s:loc.s+len('hello')] == 'hello':
         loc.s = loc.s + len('hello')
 
-parser = Parser()
+parser = Parser(make_grammar_file=1)
 
 buf = 'hi10hello+3hellohi'
 

@@ -1,13 +1,13 @@
 # Makefile for D_Parser
 
-D_DEBUG=1
-#D_OPTIMIZE=1
+#D_DEBUG=1
+D_OPTIMIZE=1
 #D_PROFILE=1
 D_USE_GC=1
 #D_LEAK_DETECT=1
 
 MAJOR=1
-MINOR=10
+MINOR=12
 RELEASE=$(MAJOR).$(MINOR)
 
 CC = gcc
@@ -54,12 +54,7 @@ CFLAGS += -DLEAK_DETECT  ${GC_CFLAGS}
 LIBS += -lleak
 endif
 
-BUILD_VERSION = $(shell touch BUILD_VERSION;cat BUILD_VERSION)
-ifeq ($(BUILD_VERSION),)
-D_BUILD_VERSION = 1
-else
-D_BUILD_VERSION = $(shell expr $(BUILD_VERSION) + 1)
-endif
+D_BUILD_VERSION = $(shell touch BUILD_VERSION;cat BUILD_VERSION)
 CFLAGS += -DD_MAJOR_VERSION=$(MAJOR) -DD_MINOR_VERSION=$(MINOR) -DD_BUILD_VERSION=$(D_BUILD_VERSION)
 
 CFLAGS += -Wall
@@ -69,7 +64,7 @@ CFLAGS += -g -DD_DEBUG=1
 endif
 # optimized flags
 ifdef D_OPTIMIZE
-CFLAGS += -O2
+CFLAGS += -O3
 ifeq ($(ARCH),x86)
 #CFLAGS += -march=pentiumpro 
 ifndef D_PROFILE
@@ -95,7 +90,7 @@ d/grammar.g d/sample.g d/my.g
 LIB_SRCS = arg.c parse.c scan.c symtab.c util.c read_binary.c
 LIB_OBJS = $(LIB_SRCS:%.c=%.o)
 
-MK_LIB_SRCS = write_tables.c grammar.g.c gram.c lex.c lr.c
+MK_LIB_SRCS = mkdparse.c write_tables.c grammar.g.c gram.c lex.c lr.c
 MK_LIB_OBJS = $(MK_LIB_SRCS:%.c=%.o)
 
 ifdef D_USE_GC
@@ -114,16 +109,18 @@ BASE_SAMPLE_PARSER_SRCS = sample_parser.c
 SAMPLE_PARSER_SRCS = sample_parser.c $(SAMPLE_GRAMMAR).d_parser.c
 SAMPLE_PARSER_OBJS = $(SAMPLE_PARSER_SRCS:%.c=%.o)
 
+TEST_PARSER_SRCS = test_parser.c
+TEST_PARSER_OBJS = $(TEST_PARSER_SRCS:%.c=%.o)
+
 MAKE_DPARSER = ./make_dparser
 
 EXECUTABLES = make_dparser
 LIBRARIES = $(LIBMKDPARSE) $(LIBDPARSE)
-SAMPLE_PARSER_OBJS = $(SAMPLE_PARSER_SRCS:%.c=%.o)
 INSTALL_LIBRARIES = $(LIBDPARSE)
 INCLUDES = dparse.h dparse_tables.h dsymtab.h
 MANPAGES = make_dparser.1
 
-EXECS = $(EXECUTABLES) sample_parser
+EXECS = $(EXECUTABLES) sample_parser test_parser
 ifeq ($(OS_TYPE),CYGWIN)
 EXEC_FILES = $(EXECS:%=%.exe)
 EXECUTABLE_FILES = $(EXECUTABLES:%=%.exe)
@@ -143,13 +140,13 @@ test:
 	(MAKE=$(MAKE) ./parser_tests)
 
 install:
-	cp $(EXECUTABLE_FILES) $(PREFIX)/bin
+	cp $(EXECUTABLES) $(PREFIX)/bin
 	cp $(INCLUDES) $(PREFIX)/include
 	cp $(INSTALL_LIBRARIES) $(PREFIX)/lib
 	cp $(MANPAGES) $(PREFIX)/man/man1
 
 deinstall:
-	rm $(EXECUTABLE_FILES:%=$(PREFIX)/bin/%)
+	rm $(EXECUTABLES:%=$(PREFIX)/bin/%)
 	rm $(INCLUDES:%=$(PREFIX)/include/%)
 	rm $(INSTALL_LIBRARIES:%=$(PREFIX)/lib/%)
 	rm $(MANPAGES:%=$(PREFIX)/man/man1/%)
@@ -167,6 +164,9 @@ $(LIBMKDPARSE): $(MK_LIB_OBJS)
 	$(MAKE_DPARSER) $<
 
 sample_parser: $(SAMPLE_PARSER_OBJS) $(INSTALL_LIBRARIES)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ version.c $(LIBS)
+
+test_parser: $(TEST_PARSER_OBJS) $(LIBRARIES)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ version.c $(LIBS)
 
 myexample:

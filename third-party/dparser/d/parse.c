@@ -18,6 +18,11 @@
 #define is_unreduced_epsilon_PNode(_pn) \
 (is_epsilon_PNode(_pn) && ((_pn)->reduction && (_pn)->reduction->final_code))
 
+#define LATEST(_pn) do { \
+  while ((_pn)->latest != (_pn)->latest->latest) (_pn)->latest = (_pn)->latest->latest; \
+  (_pn) = (_pn)->latest; \
+} while (0)
+
 #ifndef USE_GC
 static void free_SNode(struct Parser *p, struct SNode *s);
 #define ref_pn(_pn) do { (_pn)->refcount++; } while (0)
@@ -292,8 +297,10 @@ find_PNode(Parser *p, char *start, char *end_skip, int symbol, D_Scope *sc, void
 	  pn->parse_node.start_loc.s == start &&
 	  pn->parse_node.end_skip == end_skip &&
 	  pn->initial_scope == sc &&
-	  pn->initial_globals == g)
+	  pn->initial_globals == g) {
+	LATEST(pn);
 	return pn;
+      }
   return NULL;
 }
 
@@ -353,7 +360,7 @@ free_old_nodes(Parser *p) {
   p->snode_hash.all = NULL;
   while (pn) {
     for (i = 0; i < pn->children.n; i++) {
-      if (pn->children.v[i] != pn->children.v[i]->latest) {
+      while (pn->children.v[i] != pn->children.v[i]->latest) {
 	ref_pn(pn->children.v[i]->latest);
 	unref_pn(p, pn->children.v[i]);
 	pn->children.v[i] = pn->children.v[i]->latest;
@@ -747,8 +754,11 @@ get_exp_all(PNode *x, StackInt *psx) {
 
   if (x->assoc)
     stack_push(psx, x->priority);
-  for (i = 0; i < x->children.n; i++)
-    get_exp_all(x->children.v[i]->latest, psx);
+  for (i = 0; i < x->children.n; i++) {
+    PNode *pn = x->children.v[i];
+    LATEST(pn);
+    get_exp_all(pn, psx);
+  }
 }
 
 static void
@@ -925,20 +935,21 @@ make_PNode(Parser *p, uint hash, int symbol, d_loc_t *start_loc, char *e, PNode 
       D_Reduction dummy;
       memset(&dummy, 0, sizeof(dummy));
       dummy.action_index = sh->action_index;
-      pn->reduction = &dummy;
+      new_pn->reduction = &dummy;
       if (sh->speculative_code(
-	pn, (void**)&pn->children.v[0], pn->children.n,
+	new_pn, (void**)&new_pn->children.v[0], new_pn->children.n,
 	(int)&((PNode*)(NULL))->parse_node, (D_Parser*)p)) 
       {
 	free_PNode(p, new_pn);
 	return NULL;
       }
-      pn->reduction = NULL;
+      new_pn->reduction = NULL;
     }
   } else if (r) {
     if (path)
       for (i = path->n - 1; i >= 0; i--) {
-	PNode *latest = path->v[i]->pn->latest;
+	PNode *latest = path->v[i]->pn;
+	LATEST(latest);
 	vec_add(&new_pn->children, latest);
 	ref_pn(latest);
       }
@@ -974,7 +985,10 @@ PNode_equal(PNode *pn, D_Reduction *r, VecZNode *path, D_Shift *sh) {
     return 1;
   if (n == path->n) {
     for (i = 0; i < n; i++) {
-      if (pn->children.v[i]->latest != path->v[n - i - 1]->pn->latest)
+      PNode *x = pn->children.v[i], *y = path->v[n - i - 1]->pn;
+      LATEST(x);
+      LATEST(y);
+      if (x != y)
 	return 0;
     }
     return 1;
@@ -2099,17 +2113,29 @@ initialize_whitespace_parser(Parser *p) {
 static PNode *
 handle_top_level_ambiguities(Parser *p, SNode *sn) {
   int i;
-  PNode *pn = sn->zns.v[0]->pn->latest;
-  for (i = 1; i < sn->zns.n; i++) {
-    PNode *x = sn->zns.v[i]->pn->latest;
-    if (x != pn) {
-      ref_pn(x);
-      x->ambiguities = pn->ambiguities;
-      pn->ambiguities = x;
+  ZNode *z = 0;
+  PNode *pn = NULL, *last = NULL, *x;
+  for (i = 0; i < sn->zns.n; i++) {
+    if (sn->zns.v[i]) {
+      x = sn->zns.v[i]->pn;
+      LATEST(x);
+      if (!pn) {
+        z = sn->zns.v[i];
+        pn = x;
+      } else  {
+        if (x != pn && !x->ambiguities && x != last) {
+          ref_pn(x);
+          x->ambiguities = pn->ambiguities;
+          pn->ambiguities = x;
+          if (!last) last = x;
+        }
+        free_ZNode(p, sn->zns.v[i], sn);
+      }
     }
-    free_ZNode(p, sn->zns.v[i], sn);
   }
+  sn->zns.v[0] = z;
   sn->zns.n = 1;
+  sn->zns.i = 0;
   return pn;
 }
 
@@ -2141,7 +2167,8 @@ dparse(D_Parser *ap, char *buf, int buf_len) {
     if (sn->zns.n != 1)
       pn = handle_top_level_ambiguities(p, sn); 
     else
-      pn = sn->zns.v[0]->pn->latest;
+      pn = sn->zns.v[0]->pn;
+    LATEST(pn);
     pn = commit_tree(p, pn);
     if (d_verbose_level) {
       printf(

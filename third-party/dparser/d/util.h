@@ -109,6 +109,7 @@ char *sbuf_read(char *pathname);
   ((_n == sizeof(_s)-1) && !strncasecmp(_x,_s,sizeof(_s)-1))
 
 void d_fail(char *str, ...);
+void d_warn(char *str, ...);
 char *dup_str(char *str, char *end);
 uint strhashl(char *s, int len);
 void d_free(void *);

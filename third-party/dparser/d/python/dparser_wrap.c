@@ -33,8 +33,8 @@
  * and things like that.
  *
  * $Log$
- * Revision 1.5  2004/05/27 17:14:58  jplevyak
- * Fix speculative shift actions for binary code
+ * Revision 1.6  2004/08/10 20:49:27  jplevyak
+ * Use the new interface to build the tables from the grammar as a string.
  *
  ************************************************************************/
 
@@ -920,11 +920,12 @@ static PyObject *_wrap_make_tables(PyObject *self, PyObject *args) {
     PyObject * _resultobj;
     int  _result;
     char * _arg0;
+    char * _arg1;
 
     self = self;
-    if(!PyArg_ParseTuple(args,"s:make_tables",&_arg0)) 
+    if(!PyArg_ParseTuple(args,"ss:make_tables",&_arg0,&_arg1)) 
         return NULL;
-    _result = (int )make_tables(_arg0);
+    _result = (int )make_tables(_arg0,_arg1);
     _resultobj = Py_BuildValue("i",_result);
     return _resultobj;
 }

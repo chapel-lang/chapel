@@ -241,7 +241,7 @@ typedef struct Grammar {
 Grammar *new_D_Grammar(char *pathname);
 void free_D_Grammar(Grammar *g);
 int build_grammar(Grammar *g);
-int parse_grammar(Grammar *g, char *pathname, D_ParserTables *t, int sizeof_ParseNode_User);
+int parse_grammar(Grammar *g, char *pathname, char *str);
 void print_grammar(Grammar *g);
 void print_states(Grammar *g);
 void print_rule(Rule *r);

@@ -161,11 +161,11 @@ def my_ambiguity_func(nodes):
     raise AmbiguityException, "\nunresolved ambiguity.  Symbols:\n" + string.join([node.symbol for node in nodes], "\n")
 
 class Parser:
-    def __init__(self, modules=None, file_prefix="d_parser_mach_gen"):
+    def __init__(self, modules=None, file_prefix="d_parser_mach_gen",make_grammar_file=0):
         self.file_prefix = file_prefix
         self.actions = []
         sig = md5.new()
-        sig.update('1.10')
+        sig.update('1.12')
         
         if not modules:
             try:
@@ -195,15 +195,14 @@ class Parser:
         app_path = string.replace(app_path, '\\', '/')
 
         self.filename = app_path + '/' + self.file_prefix + ".g"
-        filename = self.filename
-        g_file = open(self.filename, "wb") # 'binary' mode has been set to force \n on end of the line
+        grammar_str = []
         for f in functions:
             if f.__doc__:
-                g_file.write(f.__doc__)
+                grammar_str.append(f.__doc__) 
                 sig.update(f.__doc__)
             else:
                 raise "\naction missing doc string:\n\t" + f.__name__
-            g_file.write(";\n${action}\n");
+            grammar_str.append(" ${action};\n")
             if f.func_code.co_argcount == 0:
                 raise "\naction " + f.__name__ + " must take at least one argument\n"
             speculative = 0
@@ -231,16 +230,20 @@ class Parser:
                 else:
                     raise "\nunknown argument name:\n\t" + var + "\nin function:\n\t" + f.__name__
             self.actions.append((f, arg_types, speculative, takes_strings))
-        g_file.close()
+        grammar_str = string.join(grammar_str, '')
+        
+        if make_grammar_file:
+            g_file = open(self.filename, "wb") # 'binary' mode has been set to force \n on end of the line
+            g_file.write(grammar_str)
+            g_file.close()
 
         if self.sig_changed(sig):
-            dparser_swigc.make_tables(filename)
+            dparser_swigc.make_tables(grammar_str, self.filename)
             sig_file = open(self.filename + ".md5", "w")
             sig_file.write("%s\n" % repr(sig.digest()))
             sig_file.close()
 
-        self.tables = dparser_swigc.load_parser_tables(filename + ".d_parser.dat")
-        #        dparser_swigc.set_parser_functions(self.tables)
+        self.tables = dparser_swigc.load_parser_tables(self.filename + ".d_parser.dat")
     def sig_changed(self, sig):
         try:
             sig_file = open(self.filename + ".md5", "r")

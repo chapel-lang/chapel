@@ -2,7 +2,10 @@
   Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 
+#include "gramgram.h"
 #include "d.h"
+
+extern D_ParserTables parser_tables_dparser_gram;
 
 static char *action_types[] = { "ACCEPT", "SHIFT", "REDUCE" };
 
@@ -429,7 +432,7 @@ plus_EBNF(Grammar *g) {
 
 void
 initialize_productions(Grammar *g) {
-  Production *pp = new_production(g, strdup("0 Start"));
+  Production *pp = new_production(g, dup_str("0 Start", 0));
   pp->internal = INTERNAL_HIDDEN;
 }
 
@@ -1117,14 +1120,14 @@ free_D_Grammar(Grammar *g) {
 }
 
 int
-parse_grammar(Grammar *g, char *pathname, D_ParserTables *t, int sizeof_ParseNode_User) {
-  char *s;
+parse_grammar(Grammar *g, char *pathname, char *s) {
   D_Parser *p;
 
-  if (!(s = sbuf_read(pathname)))
-    return -1;
+  if (!s) 
+    if (!(s = sbuf_read(pathname)))
+      return -1;
   initialize_productions(g);
-  p = new_D_Parser(t, sizeof_ParseNode_User);
+  p = new_D_Parser(&parser_tables_dparser_gram, sizeof(D_ParseNode_User));
   p->initial_globals = g;
   p->loc.pathname = pathname;
   if (dparse(p, s, strlen(s))) {
