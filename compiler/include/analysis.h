@@ -23,6 +23,7 @@ class ACallbacks : public Callbacks {
 public:
   void new_LUB_type(Sym *);
   Sym *new_Sym(char *name = 0);
+  Fun *build(Match *);
 };
 
 class CloneCallback : public gc {
@@ -35,6 +36,13 @@ class AnalysisCloneCallback : public CloneCallback {
   ASTCopyContext *context;
   void clone(BaseAST* old_ast, BaseAST* new_ast);
   AnalysisCloneCallback() : context(0) {}
+};
+
+class AnalysisBuildCallback : public CloneCallback {
+ public:
+  ASTCopyContext *context;
+  void clone(BaseAST* old_ast, BaseAST* new_ast);
+  AnalysisBuildCallback() : context(0) {}
 };
 
 class ASymbol : public Sym {

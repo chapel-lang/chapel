@@ -41,6 +41,11 @@ PCallbacks::new_Sym(char *name) {
   return sy;
 }
 
+Fun *
+PCallbacks::build(Match *m) {
+  return 0;
+}
+
 static int
 compatible_type(PrimType pt, Sym *s) {
   switch (pt) {

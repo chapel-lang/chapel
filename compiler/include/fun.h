@@ -118,7 +118,6 @@ class Fun : public gc {
   Fun(Sym *afn, int aninit_function = 0);
   Fun() {}
   Fun *copy();
-  Fun *build(Match *m) { return NULL; }
 };
 #define forv_Fun(_f, _v) forv_Vec(Fun, _f, _v)
 

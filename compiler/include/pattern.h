@@ -81,7 +81,7 @@ class Match : public gc {
  public:
   Fun *fun;
   Map<MPosition *, AVar *> actuals;
-  Map<MPosition *, Sym *> formal_types;
+  Map<MPosition *, Sym *> formal_dispatch_types;
   Map<MPosition *, AType *> all_filters; // point-wise and includes named arguments
   Map<MPosition *, AType *> filters;     // positional-only and takes into account all arguments
   Map<MPosition *, MPosition *> named_to_positional;
@@ -99,6 +99,10 @@ typedef MapElem<MPosition *, AType *> MapMPositionAType;
 #define form_MPositionAType(_p, _v) form_Map(MapMPositionAType, _p, _v)
 typedef MapElem<MPosition *, MPosition *> MapMPositionMPosition;
 #define form_MPositionMPosition(_p, _v) form_Map(MapMPositionMPosition, _p, _v)
+typedef MapElem<Sym *, Sym *> MapSymSym;
+#define form_SymSym(_p, _v) form_Map(MapSymSym, _p, _v)
+typedef MapElem<MPosition *, Sym *> MapMPositionSym;
+#define form_MPositionSym(_p, _v) form_Map(MapMPositionSym, _p, _v)
 
 
 void build_patterns(FA *fa);

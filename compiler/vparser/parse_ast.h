@@ -20,11 +20,13 @@ class Prim;
 class Label;
 class ParseAST;
 class PNode;
+class Fun;
 
 class PCallbacks : public Callbacks {
 public:
   void new_LUB_type(Sym *);
   Sym *new_Sym(char *name = 0);
+  Fun *build(Match *m);
 };
 
 // see ast_kinds.h for details

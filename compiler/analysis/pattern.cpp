@@ -347,8 +347,8 @@ subsumes(Match *x, Match *y, MPosition p, int nargs) {
   int result = 0;
   p.push(1);
   for (int i = 0; i < nargs; i++) {
-    Sym *xtype = dispatch_type(x->fun->arg_syms.get(cannonicalize_formal(p, x)));
-    Sym *ytype = dispatch_type(y->fun->arg_syms.get(cannonicalize_formal(p, y)));
+    Sym *xtype = x->formal_dispatch_types.get(cannonicalize_formal(p, x));
+    Sym *ytype = y->formal_dispatch_types.get(cannonicalize_formal(p, y));
     if (xtype == ytype)
       goto Lnext;
     if (xtype->specializers.set_in(ytype)) {
@@ -416,8 +416,7 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
     if (m->default_args.n || m->generic_substitutions.n || m->coercion_substitutions.n) {
-      f = f->build(m);
-      assert(f);
+      f = if1->callback->build(m);
       // need to loop over filters and split Match for those elements of the filter
       // at cp which do not have the same concrete type as cs, install in matchmap
       // m = *am = new match;
@@ -482,10 +481,10 @@ generic_substitutions(Match **am, MPosition &p, Vec<CreationSet*> args) {
     AVar *a = m->actuals.get(cp);
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
-    Sym *formal_type = m->formal_types.get(cp);
-    if (formal_type && is_generic_type(formal_type)) {
+    Sym *formal_type = m->formal_dispatch_types.get(cp);
+    if (is_generic_type(formal_type)) {
       Sym *t = unify_generic_type(formal_type, concrete_type, m->generic_substitutions);
-      m->formal_types.put(cp, t);
+      m->formal_dispatch_types.put(cp, t);
     }
     p.inc();
   }
@@ -501,13 +500,11 @@ coercion_uses(Match **am, MPosition &p, Vec<CreationSet*> args) {
     AVar *a = m->actuals.get(cp);
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
-    Sym *formal_type = m->formal_types.get(cp);
-    if (formal_type) {
-      Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
-      if (coerced_type) {
-	m->coercion_substitutions.put(cp, concrete_type);
-	m->formal_types.put(cp, coerced_type);
-      }
+    Sym *formal_type = m->formal_dispatch_types.get(cp);
+    Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
+    if (coerced_type && concrete_type != coerced_type) {
+      m->coercion_substitutions.put(cp, concrete_type);
+      m->formal_dispatch_types.put(cp, coerced_type);
     }
     p.inc();
   }
@@ -533,8 +530,8 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
 	goto LnextFun;
       }
       Sym *formal = m->fun->arg_syms.get(cp);
-      if (formal->type)
-	m->formal_types.put(cp, formal->type);
+      Sym *formal_type = dispatch_type(formal);
+      m->formal_dispatch_types.put(cp, formal_type);
       p.inc();
     }
     p.pop();

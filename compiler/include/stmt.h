@@ -8,6 +8,7 @@
 
 class Expr;
 class AInfo;
+class MPosition;
 
 class Stmt : public BaseAST {
  public:
@@ -113,6 +114,11 @@ class FnDefStmt : public Stmt {
   FnDefStmt(FnSymbol* init_fn);
   virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
   FnDefStmt* clone(CloneCallback* clone_callback);
+  FnDefStmt* build(Map<Symbol *, Symbol *> *generic_substitutions,
+		   Vec<MPosition *> *default_set,
+		   Map<MPosition *, Symbol *> *coersion_substitutions,
+		   Map<MPosition *, MPosition *> *formal_to_actual_order_map,
+		   CloneCallback *clone_callback) { assert(0); return NULL; }
 
   bool isNull(void);
   bool canLiveAtFileScope(void);

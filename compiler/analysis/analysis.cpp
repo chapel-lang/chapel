@@ -17,6 +17,7 @@
 #include "var.h"
 #include "fun.h"
 #include "prim.h"
+#include "pattern.h"
 
 class LabelMap : public Map<char *, BaseAST *> {};
 
@@ -41,6 +42,9 @@ static Sym *sym_domain = 0;
 static Sym *sym_array = 0;
 static Sym *sym_sequence = 0;
 static Sym *sym_locale = 0;
+
+static int init_function(FnDefStmt *f);
+static int build_function(FnDefStmt *f);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 
@@ -244,6 +248,36 @@ ACallbacks::new_LUB_type(Sym *) {
 Sym *
 ACallbacks::new_Sym(char *name) {
   return new_ASymbol(name);
+}
+
+void
+AnalysisBuildCallback::clone(BaseAST *old_ast, BaseAST *new_ast) {
+}
+
+Fun *
+ACallbacks::build(Match *m) {
+  if (!m->fun->ast) 
+    return NULL;
+  ASTCopyContext context;
+  AnalysisBuildCallback callback;
+  callback.context = &context;
+  Map<Symbol *, Symbol *> substitutions;
+  form_SymSym(s, m->generic_substitutions)
+    substitutions.put(dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->key)->xsymbol), 
+		      dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
+  Map<MPosition *, Symbol *> coercions;
+  form_MPositionSym(s, m->coercion_substitutions)
+    coercions.put(s->key, dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
+  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(m->fun->ast);
+  FnDefStmt *f = fndef->build(substitutions.n ? &substitutions : 0,
+			      m->default_args.n ? &m->default_args : 0,
+			      coercions.n ? &coercions : 0,
+			      m->formal_to_actual_position.n ? &m->formal_to_actual_position : 0,
+			      (CloneCallback*)&callback);
+  assert(f);
+  if (init_function(f) < 0 || build_function(f) < 0) 
+    assert(!"unable to instantiate generic/wrapper");
+  return f->fn->asymbol->fun;
 }
 
 static void

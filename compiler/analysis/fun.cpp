@@ -6,6 +6,7 @@
 #include "ast.h"
 #include "var.h"
 #include "region.h"
+#include "stmt.h"
 
 Fun::Fun(Sym *asym, int aninit_function) {
   init_function = aninit_function;
@@ -241,3 +242,4 @@ int
 Fun::line() {
   return ast->line(); 
 }
+
