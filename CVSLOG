@@ -22994,3 +22994,20 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
 
+---------------------------------------------------------------------------
+
+03/31/05 14:56:11 -- bradc
+
+Log message:
+	This is a script that will be run as a cron job
+	to make sure tabs don't creep into our code.
+	If it finds tabs, it'll mail chapel_dev with
+	a listing of files in which they were found
+	(similar to the one you just received while I
+	was debugging :).  If there are no tabs, it'll
+	just mail me so we have a heartbeat and know
+	that it's still running properly.
+
+Added files:
+	chapel/util/: lookForTabs.cron 
+
