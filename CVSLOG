@@ -3494,3 +3494,14 @@ Modified files:
 	chapel/compiler/AST/: .cvsignore expr.cpp 
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+06/17/04 14:25:16 -- bradc
+
+Log message:
+	Got lists of params/vars working better with prototype AST.
+
+Modified files:
+	chapel/compiler/AST/: chapel.y stmt.cpp symbol.cpp symbol.h 
+	                      symtab.cpp symtab.h type.cpp type.h 
+
