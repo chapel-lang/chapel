@@ -77,6 +77,73 @@ void Fixup::preProcessExpr(Expr* expr) {
 }
 
 
+static void verify_defPoint(Symbol* sym) {
+    Stmt* defPoint = sym->defPoint;
+    if (defPoint) {
+      if (VarDefStmt* stmt = dynamic_cast<VarDefStmt*>(defPoint)) {
+	Symbol* tmp = stmt->var;
+	while (tmp) {
+	  if (tmp == sym) {
+	    return;
+	  }
+	  tmp = nextLink(Symbol, tmp);
+	}
+	INT_FATAL(sym, "Incorrect VarDefStmt defPoint "
+		  "for symbol '%s'", sym->name);
+      }
+      else if (TypeDefStmt* stmt = dynamic_cast<TypeDefStmt*>(defPoint)) {
+	if (stmt->type->name == sym) {
+	  return;
+	}
+	if (EnumType* enum_type = dynamic_cast<EnumType*>(stmt->type)) {
+	  EnumSymbol* tmp = enum_type->valList;
+	  while (tmp) {
+	    if (tmp == sym) {
+	      return;
+	    }
+	    tmp = nextLink(EnumSymbol, tmp);
+	  }
+	}
+	INT_FATAL(sym, "Incorrect TypeDefStmt defPoint "
+		  "for symbol '%s'", sym->name);
+      }
+      else if (FnDefStmt* stmt = dynamic_cast<FnDefStmt*>(defPoint)) {
+	if (stmt->fn != sym) {
+	  Symbol* formals = stmt->fn->formals;
+	  while (formals) {
+	    if (formals == sym) {
+	      return;
+	    }
+	    formals = nextLink(Symbol, formals);
+	  }
+	  INT_FATAL(sym, "Incorrect FnDefStmt defPoint "
+		    "for symbol '%s'", sym->name);
+	}
+      }
+      else if (ModuleDefStmt* stmt = dynamic_cast<ModuleDefStmt*>(defPoint)) {
+	if (stmt->module != sym) {
+	  INT_FATAL(sym, "Incorrect ModuleDefStmt defPoint "
+		    "for symbol '%s'", sym->name);
+	}
+      }
+      else if (ForLoopStmt* stmt = dynamic_cast<ForLoopStmt*>(defPoint)) {
+	Symbol* tmp = stmt->index;
+	while (tmp) {
+	  if (tmp == sym) {
+	    return;
+	  }
+	  tmp = nextLink(Symbol, tmp);
+	}
+	INT_FATAL(sym, "Incorrect ForLoopStmt defPoint "
+		  "for symbol '%s'", sym->name);
+      }
+      else {
+	INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
+      }
+    }
+}
+
+
 void Fixup::preProcessSymbol(Symbol* sym) {
   int verify = !strcmp(args, "verify");
   if (verify) {
@@ -104,6 +171,8 @@ void Fixup::preProcessSymbol(Symbol* sym) {
 	}
       }
     }
+
+    verify_defPoint(sym);
   }
 }
 

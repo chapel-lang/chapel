@@ -58,6 +58,7 @@ void InsertThis::preProcessStmt(Stmt* stmt) {
 	  Symboltable::setCurrentScope(method->fn->paramScope);
 	  Symbol* this_insert = new ParamSymbol(ctype->intentForThisParam(), 
 						"this", ctype);
+	  this_insert->setDefPoint(method);
 	  Symboltable::setCurrentScope(saveScope);
 	  this_insert = appendLink(this_insert, method->fn->formals);
 	  method->fn->formals = this_insert;

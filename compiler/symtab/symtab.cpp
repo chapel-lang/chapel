@@ -444,7 +444,9 @@ VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type,
   }
 
   VarSymbol* varList = defineVars(idents, type, init, vartag, isConst);
-  return new VarDefStmt(varList, init);
+  VarDefStmt* stmt = new VarDefStmt(varList, init);
+  varList->setDefPoint(stmt);
+  return stmt;
 }
 
 
@@ -474,14 +476,14 @@ static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = nilSymbol) {
 ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
 
-  VarSymbol* indexVars;
-  if (indexExpr->isNull()) {
-    indexVars = nilVarSymbol;
-  } else {
+  Stmt* indexVars = nilStmt;
+  if (!indexExpr->isNull()) {
     Symbol* newSyms = exprToIndexSymbols(indexExpr);
     // HACK: this is a poor assumption -- that all index variables are
     // integers
-    indexVars = Symboltable::defineVars(newSyms, dtInteger);
+    indexVars = Symboltable::defineVarDefStmt(newSyms, dtInteger, 
+						    nilExpr, VAR_NORMAL,
+						    false);
   }
 
   return new ForallExpr(domainExpr, indexVars);
@@ -528,7 +530,8 @@ FnDefStmt* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals,
   fnsym->finishDef(formals, retType, body, paramScope, isExtern);
   FnDefStmt* fnstmt = new FnDefStmt(fnsym);
   paramScope->setContext(fnstmt, fnsym);
-
+  fnsym->setDefPoint(fnstmt);
+  formals->setDefPoint(fnstmt);
   return fnstmt;
 }
 
@@ -562,7 +565,7 @@ TypeDefStmt* Symboltable::finishClassDef(TypeSymbol* classSym,
   classType->setClassScope(classScope);
   classType->addDefinition(definition);
   TypeDefStmt* classdefStmt = new TypeDefStmt(classType);
-  
+  classSym->setDefPoint(classdefStmt);
   classScope->setContext(classdefStmt, classSym);
 
   return classdefStmt;
@@ -574,7 +577,9 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
   Symboltable::pushScope(SCOPE_FORLOOP);
   // HACK: dtInteger is wrong -- same as with forallExpr HACK
   VarSymbol* indexVars = defineVars(indices, dtInteger);
-  return new ForLoopStmt(forall, indexVars, domain);
+  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, indexVars, domain);
+  indexVars->setDefPoint(for_loop_stmt);
+  return for_loop_stmt;
 }
 
 

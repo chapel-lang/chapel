@@ -1428,7 +1428,7 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 }
 
 
-ForallExpr::ForallExpr(Expr* init_domains, Symbol* init_indices,
+ForallExpr::ForallExpr(Expr* init_domains, Stmt* init_indices,
 		       Expr* init_forallExpr) :
   Expr(EXPR_FORALL),
   domains(init_domains),
@@ -1436,6 +1436,7 @@ ForallExpr::ForallExpr(Expr* init_domains, Symbol* init_indices,
   forallExpr(init_forallExpr)
 {
   SET_BACK(domains);
+  SET_BACK(indices);
   SET_BACK(forallExpr);
 }
 
@@ -1491,7 +1492,13 @@ Type* ForallExpr::typeInfo(void) {
 void ForallExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
   if (!indices->isNull()) {
-    indices->printList(outfile);
+    Stmt* tmp = indices;
+
+    while (tmp) {
+      VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp);
+      var_def_stmt->var->printList(outfile);
+      tmp = nextLink(Stmt, tmp);
+    }
     fprintf(outfile, ":");
   }
   domains->printList(outfile);

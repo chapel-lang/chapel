@@ -681,6 +681,7 @@ void ClassType::addDefinition(Stmt* init_definition) {
     if (value || union_value) {
       VarSymbol* this_insert = new VarSymbol("this", this);
       VarDefStmt* body1 = new VarDefStmt(this_insert, nilExpr);
+      this_insert->setDefPoint(body1);
       ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
       body1->append(body2);
       BlockStmt* body = new BlockStmt(body1);
@@ -707,7 +708,8 @@ void ClassType::addDefinition(Stmt* init_definition) {
 
       while (tmpStmt) {
 	if (VarDefStmt* varStmt = dynamic_cast<VarDefStmt*>(tmpStmt)) {
-	  new VarSymbol(glomstrings(4, "_", name->name, "_union_id_", varStmt->var->name));
+	  VarSymbol* idtag = new VarSymbol(glomstrings(4, "_", name->name, "_union_id_", varStmt->var->name));
+	  idtag->setDefPoint(NULL); // SHOULD BE REAL statement for declaring this enum, UGH...short-term
 	}
 	tmpStmt = nextLink(Stmt, tmpStmt);
       }

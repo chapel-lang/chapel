@@ -13,6 +13,7 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   name(init_name),
   cname(name),
   type(init_type),
+  defPoint(nilStmt),
   parentScope(NULL),
   asymbol(0)
 {}
@@ -131,6 +132,14 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
     fprintf(outfile, "%s", separator);
     ptr->codegenDef(outfile);
     ptr = nextLink(Symbol, ptr);
+  }
+}
+
+void Symbol::setDefPoint(Stmt* stmt) {
+  Symbol* tmp = this;
+  while (tmp) {
+    tmp->defPoint = stmt;
+    tmp = nextLink(Symbol, tmp);
   }
 }
 

@@ -19,8 +19,9 @@ enum varType {
 class Symbol : public BaseAST {
  public:
   char* name;
-  char* cname; /* Name of symbol for generating C code */
+  char* cname;   /* Name of symbol for generating C code */
   Type* type;
+  Stmt* defPoint; /* Point of definition in AST */
 
   SymScope* parentScope;
   ASymbol *asymbol;
@@ -43,6 +44,7 @@ class Symbol : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   void codegenDefList(FILE* outfile, char* separator);
+  void setDefPoint(Stmt* stmt);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 

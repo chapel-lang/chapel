@@ -211,6 +211,7 @@ typealias:
       Symbol* typeSym = new TypeSymbol($2, newtype);
       newtype->addName(typeSym);
       $$ = new TypeDefStmt(newtype);
+      typeSym->setDefPoint($$);
     }
 ;
 
@@ -223,6 +224,8 @@ enumdecl:
       Symbol* pst = new TypeSymbol($2, pdt);
       pdt->addName(pst);
       $$ = new TypeDefStmt(pdt);
+      pst->setDefPoint($$);
+      $4->setDefPoint($$);
     }
 ;
 
