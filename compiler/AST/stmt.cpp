@@ -31,13 +31,23 @@ bool NullStmt::isNull(void) {
 }
 
 
-VarDefStmt::VarDefStmt(Symbol* init_var, Expr* init_init) :
+VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
   var(init_var),
   init(init_init) 
 {}
 
 
 void VarDefStmt::print(FILE* outfile) {
+  switch (var->varClass) {
+  case VAR_NORMAL:
+    break;
+  case VAR_CONFIG:
+    fprintf(outfile, "config ");
+    break;
+  case VAR_STATE:
+    fprintf(outfile, "state ");
+    break;
+  }
   if (var->isVar) {
     fprintf(outfile, "var ");
   } else {
@@ -64,7 +74,7 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 
 
 void TypeDefStmt::print(FILE* outfile) {
-  type->print(outfile);
+  type->printDef(outfile);
   fprintf(outfile, ";\n");
 }
 

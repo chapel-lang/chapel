@@ -101,6 +101,7 @@ reduce          return REDUCE;
                   if (sym == NULL) {
                     return IDENT;
                   } else {
+		    yypst = sym;
                     return DEFINED_IDENT;
                   }
                 }

@@ -29,6 +29,7 @@
   Type* pdt;
   char* pch;
   Symbol* psym;
+  VarSymbol* pvsym;
 }
 
 
@@ -75,12 +76,13 @@
 %type <pdt> type types domainType indexType arrayType tupleType weirdType
 %type <pdt> vardecltype
 %type <pch> identifier 
-%type <psym> idlist enumList
+%type <pvsym> idlist
+%type <psym> enumList
 %type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional 
-%type <stmt> return loop forloop whileloop enumdecl typedecl
+%type <stmt> return loop forloop whileloop enumdecl typealias typedecl
 
 
 /* These are declared in increasing order of precedence. */
@@ -103,11 +105,11 @@ program:
 
 vardecltag:
   /* nothing */
-    { return VAR_NORMAL; }
+    { $$ = VAR_NORMAL; }
 | CONFIG
-    { return VAR_CONFIG; }
+    { $$ = VAR_CONFIG; }
 | STATIC
-    { return VAR_STATE; }
+    { $$ = VAR_STATE; }
 ;
 
 
@@ -121,10 +123,10 @@ varconst:
 
 idlist:
   identifier
-    { $$ = new Symbol($1); }
+    { $$ = new VarSymbol($1); }
 | idlist ',' identifier
     {
-      $1->append(new Symbol($3));
+      $1->append(new VarSymbol($3));
       $$ = $1;
     }
 ;
@@ -159,14 +161,19 @@ vardecl:
 
 typedecl:
   typealias
-    { $$ = new NullStmt(); }
 | enumdecl
 ;
 
 
 typealias:
   TYPE identifier GETS type ';'
-    { Symboltable::define(new Symbol($2)); }
+    {
+      UserType* pdt = new UserType($4);
+      Symbol* pst = new TypeSymbol($2, pdt);
+      pdt->addName(pst);
+      Symboltable::define(pst);
+      $$ = new TypeDefStmt(pdt);
+    }
 ;
 
 
@@ -174,7 +181,7 @@ enumdecl:
   ENUM identifier GETS enumList ';'
     {
       EnumType* pdt = new EnumType($4);
-      Symbol* pst = new Symbol($2, pdt);
+      Symbol* pst = new TypeSymbol($2, pdt);
       pdt->addName(pst);
       Symboltable::define(pst);
       $$ = new TypeDefStmt(pdt);
@@ -251,7 +258,7 @@ type:
 | tupleType
 | weirdType
 | DEFINED_IDENT
-    { $$ = NULL; }
+    { $$ = ((TypeSymbol*)yypst)->definition; }  // BLC: yuck! rtt?
 ;
 
 
@@ -269,7 +276,7 @@ domainType:
 | DOMAIN '(' intliteral ')'
     { $$ = new DomainType($3); }
 | DOMAIN '(' identifier ')'
-    { $$ = new DomainType(777); }
+    { $$ = new SubDomainType(new Symbol($3)); }
 ;
 
 
@@ -424,7 +431,7 @@ nonemptyExprlist:
 expr: 
   literal
 | identifier
-    { $$ = new Variable(new Symbol($1)); }
+    { $$ = new Variable(new VarSymbol($1)); }
 | expr binop expr
     { $$ = new BinOp($2, $1, $3); }
 | expr otherbinop expr

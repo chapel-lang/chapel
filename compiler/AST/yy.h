@@ -2,8 +2,12 @@
 #define _YY_H_
 
 #ifdef __cplusplus
+
 #include "stmt.h"
+#include "symbol.h"
+
 extern Stmt* program;
+extern Symbol* yypst;
 
 extern "C" {
 #endif

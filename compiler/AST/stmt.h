@@ -29,10 +29,10 @@ class NullStmt : public Stmt {
 
 class VarDefStmt : public Stmt {
  public:
-  Symbol* var;
+  VarSymbol* var;
   Expr* init;
 
-  VarDefStmt(Symbol* init_var, Expr* init_expr);
+  VarDefStmt(VarSymbol* init_var, Expr* init_expr);
 
   void print(FILE* outfile);
 };

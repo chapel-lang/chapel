@@ -6,6 +6,7 @@
 
 
 Stmt* program;
+Symbol* yypst;
 
 
 /*

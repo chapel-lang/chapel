@@ -15,6 +15,7 @@ class Type : public Link {
   void addName(Symbol* newname);
 
   virtual void print(FILE* outfile);
+  virtual void printDef(FILE* outfile);
   void printList(FILE* outfile) {}
 };
 
@@ -25,7 +26,7 @@ class EnumType : public Type {
 
   EnumType(Symbol* init_valList);
 
-  void print(FILE* outfile);
+  void printDef(FILE* outfile);
 };
 
 
@@ -34,6 +35,16 @@ class DomainType : public Type {
   int rank;
 
   DomainType(int init_rank = 0);
+
+  void print(FILE* outfile);
+};
+
+
+class SubDomainType : public DomainType {
+ public:
+  Symbol* parent;
+
+  SubDomainType(Symbol* init_parent);
 
   void print(FILE* outfile);
 };
@@ -49,6 +60,16 @@ class ArrayType : public Type {
   void print(FILE* outfile);
 };
 
+
+class UserType : public Type {
+ public:
+  Type* definition;
+
+  UserType(Type* init_definition);
+
+  void printDef(FILE* outfile);
+};
+
 extern Type* dtBoolean;
 extern Type* dtInteger;
 extern Type* dtFloat;
@@ -56,12 +77,16 @@ extern Type* dtFloat;
 extern Type* dtTimer;
 extern Type* dtLocale;
 
+extern Type* dtUnknown;
+
 extern Symbol* pstBoolean;
 extern Symbol* pstInteger;
 extern Symbol* pstFloat;
 
 extern Symbol* pstTimer;
 extern Symbol* pstLocale;
+
+extern Symbol* pstUnknown;
 
 void setupTypes(void);
 
