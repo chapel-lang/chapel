@@ -18038,3 +18038,45 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/22/05 16:55:01 -- deitz
+
+Log message:
+	Replaced the Cleanup traversal with the following traversals:
+	
+	  ExpandClassWiths
+	  InsertThisParameters
+	  ScopeResolveSymbols
+	  RenameOverloadedFunctions
+	  SpecializeParenOpExprs
+	  ApplyThisParameters
+	
+	These traversals used to be embedded in Cleanup, but now show up in
+	the Passlist.  This makes the design slightly more modular and
+	uniform.
+	
+	Removed four lines that fix the back pointer after Cleanup was called
+	on copied expressions and statements.  Since Cleanup is no longer
+	called there, these are no longer necessary.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             applyThisParameters.h 
+	                             expandClassWiths.cpp 
+	                             expandClassWiths.h 
+	                             insertThisParameters.cpp 
+	                             insertThisParameters.h 
+	                             renameOverloadedFunctions.cpp 
+	                             renameOverloadedFunctions.h 
+	                             scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+	                             specializeParenOpExprs.cpp 
+	                             specializeParenOpExprs.h 
+Removed files:
+	chapel/compiler/traversals/: cleanup.cpp cleanup.h 
+
