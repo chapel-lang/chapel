@@ -25,7 +25,6 @@ cleanup ast.cc : closure of implements, move stuff from fa.cpp into here
 - document and do examples for functions returning lvals
 - handle goto, return etc. in gen_if1
 - merge structually equivalent types (same type_kind) unless internal doesn't match
-- set Fun::has_return in ast.cpp
 - when taking a reference, varaible cannot be put into SSU form
 - prevent SUM types from being formed when boxing is different (??)
 - remove SUM types from implements etc.

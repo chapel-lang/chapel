@@ -217,26 +217,20 @@ Sym::must_implement_and_specialize(Sym *s) {
   must_specialize = s;
 }
 
-int
-Sym::is_scalar() {
-  return type && type->num_kind;
-  //return sym_anynum->specializers.set_in(type) != 0;
-}
-
-Sym *
-Sym::element_type() {
-  return element;
+static int
+is_scalar(Sym *s) {
+  return s->type && s->type->num_kind;
 }
 
 Sym *
 Sym::coerce_to(Sym *to) {
-  if (this->is_scalar() && to->is_scalar()) {
+  if (is_scalar(this) && is_scalar(to)) {
     Sym *t = coerce_num(this->type, to->type);
     if (t == to->type)
       return to->type;
     return NULL;
   }
-  if (element && element->is_scalar() && to->is_scalar()) {
+  if (element && is_scalar(element) && is_scalar(to)) {
     Sym *t = coerce_num(to->type, element->type);
     if (t == to->type)
       return to->type;

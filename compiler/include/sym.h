@@ -149,8 +149,6 @@ class Sym : public gc {
   virtual char		*pathname();
   virtual int		line();
   char			*filename();
-  virtual int		is_scalar();
-  virtual Sym *		element_type();
   virtual Sym *		coerce_to(Sym *);
   virtual Sym *		clone(CloneCallback *);
   virtual void		fixup(CloneCallback *);

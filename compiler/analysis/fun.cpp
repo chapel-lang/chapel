@@ -13,7 +13,6 @@ Fun::Fun(Sym *asym, int aninit_function) {
   clone_for_constants = 1;
   execution_frequency = 0.0;
   fa_collected = 0;
-  has_return = 0;
   sym = asym;
   asym->fun = this;
   ast = sym->ast;

@@ -72,17 +72,6 @@ ASymbol::line() {
     return Sym::line();
 }
 
-Sym *
-ASymbol::element_type() {
-  switch (xsymbol->astType) {
-    default: return 0;
-    case TYPE_ARRAY: {
-      ArrayType *at = dynamic_cast<ArrayType*>(xsymbol);
-      return at->elementType->asymbol;
-    }
-  }
-}
-
 AInfo::AInfo() : xast(0), code(0), sym(0), rval(0) {
   label[0] = label[1] = 0;
 }
@@ -1930,7 +1919,10 @@ type_info(BaseAST *a, Symbol *s) {
 
 Type *
 return_type_info(FnSymbol *fn) {
-  return to_AST_type(fn->asymbol->ret->var->type);
+  if (fn->asymbol)
+    return to_AST_type(fn->asymbol->ret->var->type);
+  else
+    return dtUnknown;  // analysis not run
 }
 
 void 
@@ -2036,7 +2028,10 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
 
 int
 function_is_used(FnSymbol *fn) {
-  return fn->asymbol->fun->ess.n != 0;
+  if (fn->asymbol)
+    return fn->asymbol->fun->ess.n != 0;
+  else
+    return true; // analysis not run   
 }
 
 

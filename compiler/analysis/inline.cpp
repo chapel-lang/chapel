@@ -153,8 +153,6 @@ inline_calls(FA *fa, Fun *f, AST **aast, int simple = 0) {
       return;
     if (ff->calls.n) 
       return;
-    if (ff->has_return)
-      return;
   } else {
     return;
   }

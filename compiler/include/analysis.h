@@ -51,9 +51,6 @@ class ASymbol : public Sym {
   char *pathname();
   int line();
 
-  int is_aggregate();
-  Sym *element_type();
-  
   BaseAST *xsymbol;
 
   ASymbol();

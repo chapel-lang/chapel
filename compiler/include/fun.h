@@ -33,12 +33,14 @@ class Fun : public gc {
   Sym *sym;
   AST *ast;
 
+
+  
+  // pnode
   PNode *entry;
   PNode *exit;
   Region *region;
 
   uint init_function : 1; // everything is global
-  uint has_return : 1;
 
   // cdb
   char *cdb_id;
