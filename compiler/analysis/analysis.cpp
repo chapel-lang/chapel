@@ -1047,6 +1047,10 @@ gen_if1(BaseAST *ast) {
       if1_add_send_result(if1, send, s->ainfo->rval);
       break;
     }
+    case EXPR_SIZEOF: {
+      INT_FATAL("Don't know how to handle sizeof() in analysis.cpp yet");
+      break;
+    }
   case SYMBOL:
   case SYMBOL_USEBEFOREDEF:
   case SYMBOL_VAR:

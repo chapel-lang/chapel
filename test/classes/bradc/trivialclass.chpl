@@ -3,8 +3,8 @@ class myclass {
   var y: float;
 }
 
-var a: myclass;
-var b: myclass;
+var a: myclass = myclass();
+var b: myclass = myclass();
 
 a.x = 1;
 a.y = 2.3;

@@ -10,6 +10,7 @@ class VarSymbol;
 class Expr;
 class ASymbol;
 class SymScope;
+class FnDefStmt;
 extern Expr* nilExpr;
 
 class Type : public BaseAST {
@@ -33,6 +34,7 @@ class Type : public BaseAST {
   virtual void codegenDef(FILE* outfile);
   virtual void codegenIORoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile);
+  virtual void codegenConstructors(FILE* outfile);
   virtual bool needsInit(void);
   virtual void generateInit(FILE* outfile, VarSymbol* var);
   int getSymbols(Vec<BaseAST *> &asts);
@@ -96,6 +98,8 @@ class ArrayType : public Type {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile);
+  bool needsInit(void);
+  void generateInit(FILE* outfile, VarSymbol* sym);
   int getExprs(Vec<BaseAST *> &asts);
   int getTypes(Vec<BaseAST *> &asts);
 };
@@ -123,6 +127,7 @@ class ClassType : public Type {
   ClassType* parentClass;
   Stmt* definition;
   SymScope* scope;
+  FnDefStmt* constructor;
   
   ClassType(ClassType* init_parentClass = nilClassType);
   void addDefinition(Stmt* init_definition);
@@ -135,8 +140,7 @@ class ClassType : public Type {
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
-  bool needsInit(void);
-  void generateInit(FILE* outfile, VarSymbol* var);
+  void codegenConstructors(FILE* outfile);
 
   int getTypes(Vec<BaseAST *> &asts);
   int getStmts(Vec<BaseAST *> &asts);

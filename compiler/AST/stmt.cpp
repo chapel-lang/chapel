@@ -130,15 +130,11 @@ void VarDefStmt::codegen(FILE* outfile) {
     VarSymbol* nextVar = nextLink(VarSymbol, aVar);
     if (aVar->type->needsInit()) {
       aVar->type->generateInit(outfile, aVar);
-    } else if (typeid(*(aVar->type)) == typeid(ArrayType)) {
-      ArrayType* arrtype = (ArrayType*)(aVar->type);
-      fprintf(outfile, "_init");
-      arrtype->codegen(outfile);
-      fprintf(outfile, "(&(");
-      aVar->codegen(outfile);
-      fprintf(outfile, "), &(");
-      arrtype->domain->codegen(outfile);
-      fprintf(outfile, "));\n");
+      if (!init->isNull()) {
+	fprintf(outfile, "/* init is: ");
+	init->codegen(outfile);
+	fprintf(outfile, "*/\n");
+      }
     } else if (!init->isNull()) {
       if (typeid(*(aVar->type)) == typeid(DomainType)) {
 	DomainType* domtype = (DomainType*)(aVar->type);
@@ -246,6 +242,7 @@ void TypeDefStmt::codegen(FILE* outfile) {
   type->codegenDef(deffile);
 
   type->codegenIORoutines(outfile);
+  type->codegenConstructors(outfile);
 }
 
 
@@ -357,6 +354,16 @@ void ReturnStmt::print(FILE* outfile) {
   if (!expr->isNull()) {
     fprintf(outfile, " ");
     expr->print(outfile);
+  }
+  fprintf(outfile, ";");
+}
+
+
+void ReturnStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "return");
+  if (!expr->isNull()) {
+    fprintf(outfile, " ");
+    expr->codegen(outfile);
   }
   fprintf(outfile, ";");
 }

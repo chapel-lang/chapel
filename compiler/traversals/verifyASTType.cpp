@@ -145,6 +145,10 @@ void VerifyASTType::preProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Unexpected AST expression type: EXPR_PARENOP");
     }
     break;
+  case EXPR_SIZEOF:
+    if (typeid(*expr) != typeid(SizeofExpr)) {
+      INT_FATAL(expr, "Unexpected AST expression type: EXPR_SIZEOF");
+    }
   case EXPR_CAST:
     if (typeid(*expr) != typeid(CastExpr)) {
       INT_FATAL(expr, "Unexpected AST expression type: EXPR_CAST");

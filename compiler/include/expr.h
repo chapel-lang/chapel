@@ -306,6 +306,21 @@ class DomainExpr : public Expr {
 };
 
 
+class SizeofExpr : public Expr {
+ public:
+  Type* type;
+
+  SizeofExpr(Type* init_type);
+
+  void traverseExpr(Traversal* traversal);
+  
+  Type* typeInfo(void);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 class ParenOpExpr : public Expr {
  public:
   Expr* baseExpr;

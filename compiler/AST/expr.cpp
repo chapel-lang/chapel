@@ -514,13 +514,47 @@ SimpleSeqExpr::getExprs(Vec<BaseAST *> &asts) {
 }
 
 
+SizeofExpr::SizeofExpr(Type* init_type) :
+  Expr(EXPR_SIZEOF),
+  type(init_type)
+{}
+
+
+void SizeofExpr::traverseExpr(Traversal* traversal) {
+  type->traverse(traversal);
+}
+
+
+Type* SizeofExpr::typeInfo(void) {
+  return dtInteger;
+}
+
+
+void SizeofExpr::print(FILE* outfile) {
+  fprintf(outfile, "sizeof(");
+  type->print(outfile);
+  fprintf(outfile, ")");
+}
+
+
+void SizeofExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "sizeof(");
+  if (typeid(*type) == typeid(ClassType)) {
+    fprintf(outfile, "_");
+  }
+  type->codegen(outfile);
+  fprintf(outfile, ")");
+}
+
+
 ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
   if (typeid(*base) == typeid(Variable)) {
     Symbol* baseVar = ((Variable*)base)->var;
 
     // ASSUMPTION: Anything used before it is defined is a function
     if (typeid(*baseVar) == typeid(UseBeforeDefSymbol) ||
-	typeid(*baseVar) == typeid(FnSymbol)) {
+	typeid(*baseVar) == typeid(FnSymbol) ||
+	typeid(*baseVar) == typeid(ClassSymbol)) {
 
       if (baseVar->scope->level == SCOPE_PRELUDE) {
 	bool isWrite = (strcmp(baseVar->name, "write") == 0);
@@ -529,6 +563,15 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
 	if (isWrite || isWriteln) {
 	  return new WriteCall(isWriteln, base, arg);
 	}
+      }
+
+      if (typeid(*baseVar) == typeid(ClassSymbol)) {
+	ClassSymbol* classVar = (ClassSymbol*)baseVar;
+	ClassType* classType = dynamic_cast<ClassType*>(classVar->type);
+	if (!classType) {
+	  INT_FATAL(baseVar, "ClassSymbol type is not ClassType");
+	}
+	base = new Variable(classType->constructor->fn);
       }
 
       /*
@@ -632,9 +675,9 @@ void CastExpr::print(FILE* outfile) {
 
 void CastExpr::codegen(FILE* outfile) {
   fprintf(outfile, "(");
-  castType->print(outfile);
+  castType->codegen(outfile);
   fprintf(outfile, ")(");
-  argList->printList(outfile);
+  argList->codegenList(outfile);
   fprintf(outfile, ")");
 }
 

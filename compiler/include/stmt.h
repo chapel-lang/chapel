@@ -92,8 +92,8 @@ class ExprStmt : public Stmt {
 
   void traverseStmt(Traversal* traversal);
 
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  virtual void print(FILE* outfile);
+  virtual void codegen(FILE* outfile);
   int getExprs(Vec<BaseAST *> &asts);
 };
 
@@ -103,6 +103,7 @@ class ReturnStmt : public ExprStmt {
   ReturnStmt(Expr* retExpr);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 

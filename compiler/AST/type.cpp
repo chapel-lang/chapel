@@ -3,6 +3,7 @@
 #include "codegen.h"
 #include "expr.h"
 #include "misc.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
@@ -99,6 +100,10 @@ void Type::codegenDefaultFormat(FILE* outfile) {
   } else {
     this->codegen(outfile);
   }
+}
+
+
+void Type::codegenConstructors(FILE* outfile) {
 }
 
 
@@ -330,6 +335,22 @@ void ArrayType::codegenDefaultFormat(FILE* outfile) {
 }
 
 
+bool ArrayType::needsInit(void) {
+  return true;
+}
+
+
+void ArrayType::generateInit(FILE* outfile, VarSymbol* sym) {
+  fprintf(outfile, "_init");
+  this->codegen(outfile);
+  fprintf(outfile, "(&(");
+  sym->codegen(outfile);
+  fprintf(outfile, "), &(");
+  domain->codegen(outfile);
+  fprintf(outfile, "));\n");
+}
+
+
 int
 ArrayType::getExprs(Vec<BaseAST *> &asts) {
   asts.add(domain);
@@ -380,6 +401,24 @@ ClassType::ClassType(ClassType* init_parentClass) :
 
 void ClassType::addDefinition(Stmt* init_definition) {
   definition = init_definition;
+
+  if (!isNull()) {
+    /* create default constructor */
+    char* constructorName = glomstrings(2, "_construct_", name->name);
+    constructor = new FnDefStmt(
+                    new FnSymbol(constructorName, nilSymbol, this, 
+		      new BlockStmt(
+                        new ReturnStmt(
+                          new CastExpr(this, 
+			    new FnCall(
+			      new Variable(
+				Symboltable::lookupInternal("malloc")), 
+			      new SizeofExpr(this)
+			      ))
+			  )
+			))
+		    );
+  }
 }
 
 
@@ -390,6 +429,7 @@ void ClassType::addScope(SymScope* init_scope) {
 
 void ClassType::traverseType(Traversal* traversal) {
   definition->traverseList(traversal, false);
+  //  constructor->traverseList(traversal, false);
 }
 
 
@@ -416,6 +456,11 @@ void ClassType::codegenDef(FILE* outfile) {
 }
 
 
+void ClassType::codegenConstructors(FILE* outfile) {
+  constructor->codegenList(outfile, "\n");
+}
+
+
 void ClassType::codegenIORoutines(FILE* outfile) {
   codegenIOPrototype(intheadfile, name);
   fprintf(intheadfile, ";\n\n");
@@ -423,21 +468,6 @@ void ClassType::codegenIORoutines(FILE* outfile) {
   codegenIOPrototype(outfile, name);
   fprintf(outfile, "{\n");
   fprintf(outfile, "}\n");
-}
-
-
-bool ClassType::needsInit(void) {
-  return true;
-}
-
-
-void ClassType::generateInit(FILE* outfile, VarSymbol* var) {
-  var->codegen(outfile);
-  fprintf(outfile, " = (");
-  codegen(outfile);
-  fprintf(outfile, ")malloc(sizeof(_");
-  codegen(outfile);
-  fprintf(outfile, "));\n");
 }
 
 
