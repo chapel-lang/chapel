@@ -8726,3 +8726,50 @@ Modified files:
 	chapel/compiler/include/: symtab.h type.h 
 	chapel/compiler/parser/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/04 17:39:38 -- bradc
+
+Log message:
+	Checking in some initial AST cloning code -- no guarantees that it
+	works in any realistic way yet, but got enough making sense and
+	working stably that it made sense to take a snapshot.  All AST nodes
+	now support a copy() method (though it may not always be implemented)
+	which is designed to make a reasonable, deep copy of that node.  Those
+	AST nodes which will support cloning (like FnDefStmts and
+	TypeDefStmts), will also support a clone() function that does
+	lower-level stuff like inserting new symboltable scopes into the
+	correct place and linking the new statement into the statement list.
+	Currently, only FnDefStmt supports this clone() function -- the
+	interface may also become richer as we determine how this will
+	interact with John's code.
+	
+	Cloning of fairly flat functions seems to work fine, but I haven't
+	done careful testing for functions that contain deeply nested scopes.
+	Cloning of classes is unimplemented, and copying of classes is
+	unlikely to be correct, currently.
+	
+	I added a new debugging traversal -- cloneAllFns -- that simply walks
+	the AST looking for functions that don't being with an underscore and
+	clones them.  This works when applied to all tests in the test system.
+	
+	Renamed UseBeforeDefSymbol to be UnresolvedSymbol, and its astType to
+	SYMBOL_UNRESOLVED.
+	
+	Killed the old getXXXX() code, which we seem to be living without, and
+	because I'd prefer to put future effort into improving the GetStuff
+	pass rather than maintaining getXXXX().
+
+Modified files:
+	chapel/compiler/AST/: TODO baseAST.cpp expr.cpp link.cpp 
+	                      nils.cpp stmt.cpp symbol.cpp symtab.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h link.h stmt.h 
+	                          symbol.h symscope.h symtab.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: Makefile.share verifyASTType.cpp 
+Added files:
+	chapel/compiler/traversals/: cloneAllFns.cpp cloneAllFns.h 
+
