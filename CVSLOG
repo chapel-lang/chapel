@@ -20695,3 +20695,15 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+03/22/05 10:27:18 -- deitz
+
+Log message:
+	Decoupled the creation of the != record function from the == record
+	function.  It no longer negates the results of a call to == but rather
+	creates a different function from scratch.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
