@@ -2524,3 +2524,26 @@ Added files:
 	                                  writen.good writetwo.chpl 
 	                                  writetwo.good 
 
+---------------------------------------------------------------------------
+
+06/03/04 15:07:18 -- shannon
+
+Log message:
+        Implemented code generation of binary operators
+        and implemented tests.  Used a table mapping of
+        AST representations of the operators to their
+        corresponding representation in C.  Initial
+        mechanisms for the handling of operators not
+        implemented in C are present but not currently
+        in use.
+
+Modified files:
+        chapel/compiler/: codegen.cpp 
+Added files:
+        chapel/test/trivial/shannon/: .cvsignore arithmetic_ops.chpl 
+                                      arithmetic_ops.good 
+                                      bitwise_ops.chpl bitwise_ops.good 
+                                      equality_ops.chpl 
+                                      equality_ops.good 
+                                      relational_ops.chpl 
+                                      relational_ops.good 
