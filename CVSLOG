@@ -5015,3 +5015,13 @@ Modified files:
 	                  fun.cpp graph.cpp inline.cpp parse.h prim.cpp 
 	                  sym.h 
 
+---------------------------------------------------------------------------
+
+08/04/04 16:10:42 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	oops, forgot the new file
+
+Added files:
+	chapel/compiler/: prim_data_incs.h 
+
