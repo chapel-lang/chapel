@@ -4047,3 +4047,19 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: named.good named.v 
 
+---------------------------------------------------------------------------
+
+07/19/04 12:49:19 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Support for destructuring of non-tuple types in function calls.
+	Test case for destructring of non-tuple types.
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp ast_kinds.h fa.cpp pattern.cpp 
+	                  v.g 
+	chapel/test/flowanalysis/jplevyak/: dispatch3.good 
+	chapel/test/parsing/jplevyak/: literal.good tuples.good 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: structtype.good structtype.v 
+
