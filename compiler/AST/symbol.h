@@ -15,9 +15,10 @@ enum varType {
 class Symbol : public ILink {
  public:
   char* name;
+  Type* type;
   int level;
 
-  Symbol(char* init_name);
+  Symbol(char* init_name, Type* init_type = dtUnknown);
 
   void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
@@ -44,7 +45,6 @@ class VarSymbol : public Symbol {
  public:
   varType varClass;
   bool isConst;
-  Type* type;
 
   VarSymbol(char* init_name, varType init_varClass = VAR_NORMAL, 
 	    bool init_isConst = false, Type* init_type = dtUnknown);
@@ -74,7 +74,6 @@ enum paramType {
 class ParamSymbol : public Symbol {
  public:
   paramType usage;
-  Type* type;
 
   ParamSymbol(paramType init_usage, char* init_name, 
 	      Type* init_type = dtUnknown);
@@ -85,8 +84,6 @@ class ParamSymbol : public Symbol {
 
 class TypeSymbol : public Symbol {
  public:
-  Type* definition;
-
   TypeSymbol(char* init_name, Type* init_definition);
 };
 
@@ -116,7 +113,6 @@ class ReduceSymbol : public ClassSymbol {
 class FunSymbol : public Symbol {
  public:
   Symbol* formals;
-  Type* retType;
   Stmt* body;
 
   FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,

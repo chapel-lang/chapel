@@ -4,8 +4,9 @@
 #include "symtab.h"
 
 
-Symbol::Symbol(char* init_name) :
+Symbol::Symbol(char* init_name, Type* init_type) :
   name(init_name),
+  type(init_type),
   level(Symboltable::getLevel())
 {}
 
@@ -54,10 +55,9 @@ UseBeforeDefSymbol::UseBeforeDefSymbol(char* init_name) :
 
 VarSymbol::VarSymbol(char* init_name, varType init_varClass, bool init_isConst,
 		     Type* init_type) :
-  Symbol(init_name),
+  Symbol(init_name, init_type),
   varClass(init_varClass),
-  isConst(init_isConst),
-  type(init_type)
+  isConst(init_isConst)
 {}
 
 
@@ -89,9 +89,8 @@ static char* paramTypeNames[NUM_PARAM_TYPES] = {
 
 ParamSymbol::ParamSymbol(paramType init_usage, char* init_name, 
 			 Type* init_type) :
-  Symbol(init_name),
-  usage(init_usage),
-  type(init_type)
+  Symbol(init_name, init_type),
+  usage(init_usage)
 {}
 
 
@@ -104,8 +103,7 @@ void ParamSymbol::printDef(FILE* outfile) {
 
 
 TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
-  Symbol(init_name),
-  definition(init_definition)
+  Symbol(init_name, init_definition)
 {}
 
 
@@ -125,10 +123,10 @@ bool NullClassSymbol::isNull(void) {
 
 
 ClassType* ClassSymbol::getType(void) {
-  if (typeid(*definition) != typeid(ClassType)) {
+  if (typeid(*type) != typeid(ClassType)) {
     INT_FATAL(NULL, "ClassSymbol has non-ClassType");
   }
-  return (ClassType*)definition;
+  return (ClassType*)type;
 }
 
 
@@ -140,9 +138,8 @@ ReduceSymbol::ReduceSymbol(char* init_name, ClassType* init_class) :
 
 FunSymbol::FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 		     Stmt* init_body) :
-  Symbol(init_name),
+  Symbol(init_name, init_retType),
   formals(init_formals),
-  retType(init_retType),
   body(init_body)
 {}
 

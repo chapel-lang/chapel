@@ -212,7 +212,14 @@ load_one(char *fn) {
 static int
 compile_one(char *fn) {
   if (newAST) {
-    fileToAST(fn, d_debug_level);
+    Stmt* program = fileToAST(fn, d_debug_level);
+    if (!suppress_codegen)
+      codegen(fn, system_dir, program);
+    else {
+      program->printList(stdout, "\n");
+      printf("\n");
+    }
+
     return 0;
   }
   IF1 *if1 = load_one(fn);

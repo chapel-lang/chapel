@@ -135,7 +135,8 @@ $(PLATFORM)/$(CHPL): $(CHPL_OBJS)
 	@etags $(CHPL_SRCS) *.h \
 		$(D_PARSER_SRC_DIR)/*.c $(D_PARSER_SRC_DIR)/*.h \
 		$(GC_SRC_DIR)/*.c $(GC_SRC_DIR)/*.h \
-		$(GC_SRC_DIR)/*/*.c $(GC_SRC_DIR)/*/*.h
+		$(GC_SRC_DIR)/*/*.c $(GC_SRC_DIR)/*/*.h \
+		AST/*.h AST/*.cpp
 
 
 #

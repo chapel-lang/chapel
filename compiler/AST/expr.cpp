@@ -1,6 +1,7 @@
 #include <typeinfo>
 #include "expr.h"
 #include "stringutil.h"
+#include "string.h"
 
 
 static char* cUnOp[NUM_UNOPS] = {
@@ -26,6 +27,8 @@ static char* cBinOp[NUM_BINOPS] = {
   "&",
   "|",
   "^",
+  "<<",
+  ">>",
   "&&",
   "||",
   "**",
@@ -34,6 +37,20 @@ static char* cBinOp[NUM_BINOPS] = {
   ".",
 
   "???"
+};
+
+
+static char* cGetsOp[NUM_GETS_OPS] = {
+  "=",
+  "+=",
+  "-=",
+  "*=",
+  "/=",
+  "&=",
+  "|=",
+  "^=",
+  "<<=",
+  ">>="
 };
 
 
@@ -78,6 +95,11 @@ IntLiteral::IntLiteral(char* init_str, int init_val) :
 {}
 
 
+Type* IntLiteral::type_info(void) {
+  return dtInteger;
+}
+
+
 FloatLiteral::FloatLiteral(char* init_str, double init_val) :
   Literal(init_str),
   val(init_val) 
@@ -96,6 +118,11 @@ StringLiteral::StringLiteral(char* init_val) :
 {}
 
 
+Type* StringLiteral::type_info(void) {
+  return dtString;
+}
+
+
 void StringLiteral::print(FILE* outfile) {
   fprintf(outfile, "\"%s\"", str);
 }
@@ -109,6 +136,11 @@ void StringLiteral::codegen(FILE* outfile) {
 Variable::Variable(Symbol* init_var) :
   var(init_var) 
 {}
+
+
+Type* Variable::type_info(void) {
+  return var->type;
+}
 
 
 void Variable::print(FILE* outfile) {
@@ -170,21 +202,22 @@ SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
 {}
 
 
-AssignOp::AssignOp(Expr* l, Expr* r) :
-  BinOp(BINOP_OTHER, l, r) 
+AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
+  BinOp(BINOP_OTHER, l, r),
+  type(init_type)
 {}
 
 
 void AssignOp::print(FILE* outfile) {
   left->print(outfile);
-  fprintf(outfile, " = ");
+  fprintf(outfile, " %s ", cGetsOp[type]);
   right->print(outfile);
 }
 
 
 void AssignOp::codegen(FILE* outfile) {
   left->codegen(outfile);
-  fprintf(outfile, " = ");
+  fprintf(outfile, " %s ", cGetsOp[type]);
   right->codegen(outfile);
 }
 
@@ -216,6 +249,16 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
     // ASSUMPTION: Anything used before it is defined is a function
     if (typeid(*baseVar) == typeid(UseBeforeDefSymbol) ||
 	typeid(*baseVar) == typeid(FunSymbol)) {
+
+      if (baseVar->level == 0) {
+	bool isWrite = (strcmp(baseVar->name, "write") == 0);
+	bool isWriteln = (strcmp(baseVar->name, "writeln") == 0);
+
+	if (isWrite || isWriteln) {
+	  return new WriteCall(isWriteln, base, arg);
+	}
+      }
+
       /*
       printf("Found a function call: ");
       base->print(stdout);
@@ -288,6 +331,33 @@ void CastExpr::print(FILE* outfile) {
 FnCall::FnCall(Expr* init_base, Expr* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {}
+
+
+WriteCall::WriteCall(bool init_writeln, Expr* init_base, Expr* init_arg) :
+  FnCall(init_base, init_arg),
+  writeln(init_writeln)
+{}
+
+
+void WriteCall::codegen(FILE* outfile) {
+  while (argList != NULL && !argList->isNull()) {
+    Type* argdt = argList->type_info();
+
+    fprintf(outfile, "_write");
+    argdt->codegen(outfile);
+    fprintf(outfile, "(");
+    fprintf(outfile, "stdout, ");
+    fprintf(outfile, "_default_format");
+    argdt->codegen(outfile);
+    fprintf(outfile, ", ");
+    argList->codegen(outfile);
+    fprintf(outfile, ");\n");
+    argList = (Expr*)(argList->next);  // BLC: cast!
+  }
+  if (writeln) {
+    fprintf(outfile, "_write_linefeed(stdout);");
+  }
+}
 
 
 ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :

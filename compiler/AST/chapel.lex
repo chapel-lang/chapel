@@ -67,15 +67,26 @@ return          return RETURN;
 dim             return DIM;
 reduce          return REDUCE;
 
-"="             return GETS;
 "+="            return PLUSGETS;
 "-="            return MINUSGETS;
 "*="            return TIMESGETS;
 "/="            return DIVGETS;
+"&="            return BITANDGETS;
+"|="            return BITORGETS;
+"^="            return BITXORGETS;
 "<<="           return LSHGETS;
 ">>="           return RSHGETS;
 
 ".."            return ELLIPSIS;
+
+"&&"            return LOGAND;
+"||"            return LOGOR;
+
+"<<"            return BITSL;
+">>"            return BITSR;
+"&"             return BITAND;
+"|"             return BITOR;
+"^"             return BITXOR;
 
 "=="            return EQUALS;
 "!="            return NEQUALS;
@@ -84,12 +95,7 @@ reduce          return REDUCE;
 ">"             return GTHAN;
 "<"             return LTHAN;
 
-"&&"            return LOGAND;
-"||"            return LOGOR;
-
-"&"             return BITAND;
-"|"             return BITOR;
-"^"             return BITXOR;
+"="             return GETS;
 
 "**"            return EXP;
 

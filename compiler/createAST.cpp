@@ -31,6 +31,7 @@ static void ParseFile(char* filename, bool prelude = false) {
   if (yyin == NULL) {
     fail("Cannot read '%s'", filename);
   } else {
+    program = new NullStmt();
     yyparse();
 
     closeInputFile(yyin);
@@ -42,7 +43,7 @@ static void ParseFile(char* filename, bool prelude = false) {
 }
 
 
-void fileToAST(char* filename, int debug) {
+Stmt* fileToAST(char* filename, int debug) {
   static char* preludePath = NULL;
 
   if (preludePath == NULL) {
@@ -56,6 +57,5 @@ void fileToAST(char* filename, int debug) {
   yydebug = debug;
   ParseFile(filename);
 
-  program->printList(stdout, "\n");
-  printf("\n");
+  return program;
 }

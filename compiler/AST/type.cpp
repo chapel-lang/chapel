@@ -4,6 +4,7 @@
 
 Type* dtInteger;
 Type* dtFloat;
+Type* dtString;
 
 Type* dtTimer;
 Type* dtLocale;
@@ -12,6 +13,7 @@ Type* dtUnknown;
 
 Symbol* pstInteger;
 Symbol* pstFloat;
+Symbol* pstString;
 
 Symbol* pstTimer;
 Symbol* pstLocale;
@@ -46,7 +48,15 @@ void Type::printDef(FILE* outfile) {
 }
 
 void Type::codegen(FILE* outfile) {
-  fprintf(outfile, "This is Type's codegen method.\n");
+  if (this == dtInteger) {
+    fprintf(outfile, "_integer64");
+  } else if (this == dtFloat) {
+    fprintf(outfile, "_float64");
+  } else if (this == dtString) {
+    fprintf(outfile, "_string");
+  } else {
+    fprintf(outfile, "???");
+  }
 }
 
 
@@ -60,7 +70,13 @@ bool NullType::isNull(void) {
 
 EnumType::EnumType(Symbol* init_valList) :
   valList(init_valList)
-{}
+{
+  Symbol* val = valList;
+  while (val != NULL) {
+    val->type = this;
+    val = (Symbol*)(val->next);
+  }
+}
 
 
 void EnumType::printDef(FILE* outfile) {
@@ -181,6 +197,7 @@ static void newType(char* name, Type** dtHandle, Symbol** symHandle) {
 void initType(void) {
   newType("integer", &dtInteger, &pstInteger);
   newType("float", &dtFloat, &pstFloat);
+  newType("string", &dtString, &pstString);
   newType("locale", &dtLocale, &pstLocale);
   newType("timer", &dtTimer, &pstTimer);
   newType("???", &dtUnknown, &pstUnknown);

@@ -131,7 +131,7 @@ state const c: coeff = initCValues();
 state const c3d: [i, j, k:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
 const RD: ??? = (R.Domain);
 const Rstr: ??? = (R.stride);
-U = [ijk:RD] reduce by sum [off:Stencil] (c3d*R((ijk+(Rstr*off))));
+U += [ijk:RD] reduce by sum [off:Stencil] (c3d*R((ijk+(Rstr*off))));
 }
 
 
@@ -165,7 +165,7 @@ const SD: ??? = (S.Domain());
 const Rstr: ??? = (R.stride);
 const Sstr: ??? = (S.stride);
 forall ioff in IDom {
-[ijk:SD] R((ijk+(Rstr*ioff))) = (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
+[ijk:SD] R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
 }
 }
 
@@ -274,8 +274,8 @@ return (-(3.0/17.0));
 function lg2(inout x: ???): integer{
 var lg: integer = (-1);
 while (x) {
-x = 1;
-lg = 1;
+x >>= 1;
+lg += 1;
 }
 
 return lg;

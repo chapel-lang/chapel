@@ -483,3 +483,27 @@ void codegen(FA* fa, char* infilename, char* compilerDir) {
     makeAndCopyBinary();
   }
 }
+
+
+void codegen(char* infilename, char* compilerDir, Stmt* program) {
+  fileinfo outfileinfo;
+  fileinfo extheadfileinfo;
+  fileinfo intheadfileinfo;
+
+  openMakefile(infilename, compilerDir);
+  openCFiles(infilename, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
+
+  FILE* outfile = outfileinfo.fptr;
+  extheadfile = extheadfileinfo.fptr;
+  intheadfile = intheadfileinfo.fptr;
+
+  genHeader(outfile, extheadfileinfo.filename, intheadfileinfo.filename);
+  fprintf(outfile, "void __init(void) {\n");
+  program->codegenList(outfile, "\n");
+  fprintf(outfile, "}\n");
+
+  closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
+  closeMakefile();
+
+  makeAndCopyBinary();
+}

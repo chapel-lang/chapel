@@ -110,6 +110,7 @@ class ClassType : public Type {
 extern Type* dtBoolean;
 extern Type* dtInteger;
 extern Type* dtFloat;
+extern Type* dtString;
 
 extern Type* dtTimer;
 extern Type* dtLocale;
@@ -119,6 +120,7 @@ extern Type* dtUnknown;
 extern Symbol* pstBoolean;
 extern Symbol* pstInteger;
 extern Symbol* pstFloat;
+extern Symbol* pstString;
 
 extern Symbol* pstTimer;
 extern Symbol* pstLocale;

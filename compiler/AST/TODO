@@ -19,4 +19,4 @@
 
 * remove dead code (usually commented out)
 
-
+* fix insertion of code into init procedure

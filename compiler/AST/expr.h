@@ -15,6 +15,8 @@ class Expr : public ILink {
 
   Expr(void);
 
+  virtual Type* type_info(void) { return dtUnknown; }
+
   virtual void print(FILE* outfile) = 0;
   virtual void codegen(FILE* outfile) = 0;
 };
@@ -45,6 +47,8 @@ class IntLiteral : public Literal {
   long val;
 
   IntLiteral(char* init_str, int init_val);
+
+  Type* type_info(void);
 };
 
 
@@ -60,6 +64,8 @@ class StringLiteral : public Literal {
  public:
   StringLiteral(char* init_val);
 
+  Type* type_info(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
@@ -70,12 +76,15 @@ class Variable : public Expr {
   Symbol* var;
 
   Variable(Symbol* init_var);
+
+  Type* type_info(void);
   
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 
 
+/************* IF CHANGING THIS, change cUnOp as well... *****************/
 enum unOpType {
   UNOP_PLUS = 0,
   UNOP_MINUS,
@@ -84,6 +93,7 @@ enum unOpType {
 
   NUM_UNOPS
 };
+/************* IF CHANGING THIS, change cUnOp as well... *****************/
 
 
 class UnOp : public Expr {
@@ -97,7 +107,7 @@ class UnOp : public Expr {
   void codegen(FILE* outfile);
 };
 
-
+/************* IF CHANGING THIS, change cBinOp as well... *****************/
 enum binOpType {
   BINOP_PLUS = 0,
   BINOP_MINUS,
@@ -113,6 +123,8 @@ enum binOpType {
   BINOP_BITAND,
   BINOP_BITOR,
   BINOP_BITXOR,
+  BINOP_BITSL,
+  BINOP_BITSR,
   BINOP_LOGAND,
   BINOP_LOGOR,
   BINOP_EXP,
@@ -124,6 +136,7 @@ enum binOpType {
 
   NUM_BINOPS
 };
+/************* IF CHANGING THIS, change cBinOp as well... *****************/
 
 
 class BinOp : public Expr {
@@ -145,10 +158,28 @@ class SpecialBinOp : public BinOp {
 };
 
 
+/************* IF CHANGING THIS, change cGetsOp as well... *****************/
+enum getsOpType {
+  GETS_NORM = 0,
+  GETS_PLUS,
+  GETS_MINUS,
+  GETS_TIMES,
+  GETS_DIV,
+  GETS_BITAND,
+  GETS_BITOR,
+  GETS_BITXOR,
+  GETS_LSH,
+  GETS_RSH,
+
+  NUM_GETS_OPS
+};
+/************* IF CHANGING THIS, change cGetsOp as well... *****************/
+
 class AssignOp : public BinOp {
  public:
+  getsOpType type;
 
-  AssignOp(Expr* l, Expr* r);
+  AssignOp(getsOpType init_type, Expr* l, Expr* r);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -224,6 +255,15 @@ class CastExpr : public ParenOpExpr {
 class FnCall : public ParenOpExpr {
  public:
   FnCall(Expr* init_base, Expr* init_arg = new NullExpr());
+};
+
+
+class WriteCall : public FnCall {
+ public:
+  bool writeln;
+  WriteCall(bool init_writeln, Expr* init_base, Expr* init_arg);
+
+  void codegen(FILE* outfile);
 };
 
 

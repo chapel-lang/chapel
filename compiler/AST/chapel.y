@@ -16,6 +16,8 @@
 
 %}
 
+%start program
+
 %union	{
   bool boolval;
   long intval;
@@ -23,6 +25,7 @@
 
   unOpType uot;
   binOpType bot;
+  getsOpType got;
   varType vt;
   paramType pt;
 
@@ -65,19 +68,21 @@
 %token BY
 %token ELLIPSIS
 
-%token GETS PLUSGETS MINUSGETS TIMESGETS DIVGETS LSHGETS RSHGETS
+%token GETS PLUSGETS MINUSGETS TIMESGETS DIVGETS BITANDGETS BITORGETS 
+%token BITXORGETS LSHGETS RSHGETS
 
 %token DIM REDUCE
 
 %token EQUALS NEQUALS LEQUALS GEQUALS NEQUALS GTHAN LTHAN
 %token LOGOR LOGAND
-%token BITOR BITAND BITXOR
+%token BITOR BITAND BITXOR BITSL BITSR
 %token EXP
 
 
 %type <boolval> varconst
 %type <intval> intliteral
 
+%type <got> assignOp
 %type <bot> otherbinop
 %type <uot> unop
 %type <vt> vardecltag
@@ -92,17 +97,17 @@
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim binop
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional
-%type <stmt> return loop forloop whileloop enumdecl typealias typedecl fndecl
+%type <stmt> retStmt loop forloop whileloop enumdecl typealias typedecl fndecl
 %type <stmt> classdecl
 
 
 /* These are declared in increasing order of precedence. */
 
 %left EQUALS
-%left '<' '>' 
+%left LTHAN GTHAN
 %left '+' '-'
 %left '*' '/'
-%right '^'
+%right BITXOR
 %right UMINUS
 
 %% 
@@ -332,7 +337,7 @@ type:
 | tupleType
 | weirdType
 | TYPE_IDENT
-    { $$ = $1->definition; }
+    { $$ = $1->type; }
 | query_identifier
     { $$ = dtUnknown; }
 ;
@@ -404,7 +409,7 @@ statement:
 | loop
 | expr ';'
     { $$ = new ExprStmt($1); }
-| return
+| retStmt
 | '{'
     { Symboltable::pushScope(SCOPE_LOCAL); }
       statements '}'
@@ -415,7 +420,7 @@ statement:
 ;
 
 
-return:
+retStmt:
   RETURN ';'
     { $$ = new ReturnStmt(new NullExpr()); }
 | RETURN expr ';'
@@ -502,18 +507,31 @@ withElse:
 
 assignOp:
   GETS
+    { $$ = GETS_NORM; }
 | PLUSGETS
+    { $$ = GETS_PLUS; }
 | MINUSGETS
+    { $$ = GETS_MINUS; }
 | TIMESGETS
+    { $$ = GETS_TIMES; }
 | DIVGETS
+    { $$ = GETS_DIV; }
+| BITANDGETS
+    { $$ = GETS_BITAND; }
+| BITORGETS
+    { $$ = GETS_BITOR; }
+| BITXORGETS
+    { $$ = GETS_BITXOR; }
 | LSHGETS
+    { $$ = GETS_LSH; }
 | RSHGETS
+    { $$ = GETS_RSH; }
 ;
 
 
 assignment:
   expr assignOp expr ';'
-    { $$ = new ExprStmt(new AssignOp($1, $3)); }
+    { $$ = new ExprStmt(new AssignOp($2, $1, $3)); }
 ;
 
 
@@ -662,6 +680,10 @@ binop:
     { $$ = new BinOp(BINOP_BITOR, $1, $3); }
 | expr BITXOR expr
     { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
+| expr BITSL expr
+    { $$ = new BinOp(BINOP_BITSL, $1, $3); }
+| expr BITSR expr
+    { $$ = new BinOp(BINOP_BITSR, $1, $3); }
 | expr LOGAND expr
     { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
 | expr LOGOR expr

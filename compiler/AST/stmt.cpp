@@ -71,7 +71,8 @@ void VarDefStmt::codegen(FILE* outfile) {
     if (aVar->isConst) {
       fprintf(outfile, "const ");
     }
-    
+
+    // SHANNON: These should be replaced by calls to aVar->type->codegen()
     if (aVar->type != NULL) {
       if (strcmp(aVar->type->name->name, "integer") == 0) {
 	fprintf(outfile, "int ");
@@ -127,11 +128,11 @@ void FnDefStmt::print(FILE* outfile) {
   fprintf(outfile, "(");
   fun->formals->printDefList(outfile, ";\n");
   fprintf(outfile, ")");
-  if (fun->retType->isNull()) {
+  if (fun->type->isNull()) {
     fprintf(outfile, " ");
   } else {
     fprintf(outfile, ": ");
-    fun->retType->print(outfile);
+    fun->type->print(outfile);
   }
   fun->body->print(outfile);
   fprintf(outfile, "\n\n");
