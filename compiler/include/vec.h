@@ -62,6 +62,7 @@ template <class C> class Vec : public gc {
   inline void append(const Vec<C> &v);
   void reverse();
   C* end() { return v + n; }
+  Vec<C>& operator=(Vec<C> &v) { this->copy(v); return *this; }
 
  private:
   void add_internal(C a);

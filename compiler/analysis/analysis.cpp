@@ -323,6 +323,8 @@ ASymbol::copy() {
   ASymbol *s = new ASymbol;
   s->sym = sym->copy();
   s->sym->asymbol = s;
+  if (s->sym->type_kind != Type_NONE)
+    s->sym->type = s->sym;
   return s;
 }
 
@@ -509,14 +511,6 @@ ACallbacks::instantiate_generic(Match *m) {
   return fun;
 }
 
-void
-fixup_symbol_clone(Sym *sym, CloneCallback *callback) {
-  AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
-  if (callback)
-    for (int i = 0; i < sym->has.n; i++)
-      sym->has.v[i] = c->context->smap.get(sym->has.v[i]);
-}
-
 Sym *
 ASymbol::clone(CloneCallback *callback) {
   AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
@@ -536,7 +530,8 @@ ASymbol::clone(CloneCallback *callback) {
     new_type->meta_type = new_type_symbol->asymbol->sym;
     new_type_symbol->asymbol->sym->meta_type = new_type;
     assert(new_type_symbol->asymbol->sym->is_meta_class);
-    fixup_symbol_clone(sym, callback);
+    for (int i = 0; i < new_type->has.n; i++)
+      new_type->has.v[i] = c->context->smap.get(new_type->has.v[i]);
     return new_type;
   }
 }
@@ -1617,9 +1612,11 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       if (n && !strcmp(n, "__primitive")) {
 	if (args.n > 0 && dynamic_cast<StringLiteral*>(args.v[0]) &&
 	    if1->primitives->prim_map[0][0].get(
-	      if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[0])->str)))
+	      if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[0])->str))) 
+	{
+	  rvals.v[0] = if1_get_builtin(if1, dynamic_cast<StringLiteral*>(args.v[0])->str);
 	  base = 0;
-	else if (args.n == 3 && dynamic_cast<StringLiteral*>(args.v[1]) &&
+	} else if (args.n == 3 && dynamic_cast<StringLiteral*>(args.v[1]) &&
 		 if1->primitives->prim_map[1][1].get(
 		   if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[1])->str))) {
 	  rvals.v[1] = if1_make_symbol(if1, rvals.v[1]->constant);
@@ -2204,6 +2201,11 @@ to_AST_type(Sym *type) {
   if (!atype)
     atype = asymbol->sym->meta_type->asymbol->symbol;
   Type *btype = dynamic_cast<Type *>(atype);
+  if (!btype) {
+    TypeSymbol *ts = dynamic_cast<TypeSymbol *>(atype);
+    if (ts)
+      btype = ts->type;
+  }
 #ifdef COMPLETE_TYPING
   assert(btype);
 #endif

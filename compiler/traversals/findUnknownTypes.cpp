@@ -63,30 +63,37 @@ FindUnknownTypes::FindUnknownTypes(void) {
 }
 
 void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
-  if (sym->type == dtUnknown) {
-    sym->type = type_info(sym);
-#ifdef ANALYSIS_MATCH
+  if (sym->astType != SYMBOL_FN && sym->astType != SYMBOL_UNRESOLVED) {
     if (sym->type == dtUnknown) {
-      INT_FATAL(sym, "Analysis unable to to determine type");
-    }
-#endif
-  }
-#ifdef ANALYSIS_MATCH
-  else {
-    if (sym->type != type_info(sym)) {
-      INT_WARNING(sym, "Analysis type mismatch, using analysis type");
       sym->type = type_info(sym);
+#ifdef ANALYSIS_MATCH
       if (sym->type == dtUnknown) {
 	INT_FATAL(sym, "Analysis unable to to determine type");
       }
-    }
-  }
 #endif
+    }
+#ifdef ANALYSIS_MATCH
+    else {
+      if (sym->type != type_info(sym)) {
+	INT_WARNING(sym, "Analysis type mismatch, using analysis type");
+	sym->type = type_info(sym);
+	if (sym->type == dtUnknown) {
+	  INT_FATAL(sym, "Analysis unable to to determine type");
+	}
+      }
+    }
+#endif
+  }
   FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
   if (fn) {
     if (fn->retType == dtUnknown) {
       if (analyzeAST) {
 	fn->retType = return_type_info(fn);
+#ifdef ANALYSIS_MATCH
+	if (fn->retType == dtUnknown) {
+	  INT_FATAL(sym, "Analysis unable to to determine type");
+	}
+#endif
       }
       else {
 	FindReturn* traversal = new FindReturn();
