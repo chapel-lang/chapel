@@ -1,3 +1,4 @@
+#include "../passes/buildBinary.h"
 #include "../passes/codegen.h"
 #include "../passes/createEntryPoint.h"
 #include "../passes/filesToAST.h"
@@ -27,6 +28,7 @@
    the pass above.  */
 
 START_PASSLIST_REGISTRATION
+REGISTER(BuildBinary);
 REGISTER(CheckIDs);
 REGISTER(CheckTypeInfo);
 REGISTER(CloneAllFns);

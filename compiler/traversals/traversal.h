@@ -10,6 +10,7 @@ class Type;
 
 class Traversal : public Pass {
  public:
+  bool processInternalModules;
   bool processTop;
   bool exploreChildStmts;
   bool exploreChildExprs;

@@ -12,6 +12,23 @@ void CreateEntryPoint::addModuleInitToEntryPoint(ModuleSymbol* module) {
 }
 
 
+static ModuleSymbol* findUniqueUserModule(ModuleSymbol* moduleList) {
+  ModuleSymbol* userModule = NULL;
+
+  while (moduleList && !moduleList->isNull()) {
+    if (!moduleList->internal) {
+      if (userModule == NULL) {
+	userModule = moduleList;
+      } else {
+	return NULL;  // two user modules defined
+      }
+    }
+    moduleList = nextLink(ModuleSymbol, moduleList);
+  }
+  return userModule;
+}
+
+
 void CreateEntryPoint::run(ModuleSymbol* moduleList) {
   // add prelude initialization code to the entry point
   // BLC: This assumes there is some useful init code in the preludes;
@@ -22,13 +39,14 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
   // find main function if it exists; create one if not
   FnSymbol* mainFn = FnSymbol::mainFn;
   if (mainFn->isNull()) {
-    if (moduleList->next->isNull()) { // is there just one module?
-      ExprStmt* initStmt = ExprStmt::createFnCallStmt(moduleList->initFn);
+    ModuleSymbol* userModule = findUniqueUserModule(moduleList);
+    if (userModule) {
+      ExprStmt* initStmt = ExprStmt::createFnCallStmt(userModule->initFn);
       BlockStmt* mainBody = new BlockStmt(initStmt);
       FnDefStmt* maindefstmt = Symboltable::defineFunction("main", nilSymbol, 
 							   dtVoid, mainBody, 
 							   true);
-      moduleList->stmts->append(maindefstmt);
+      userModule->stmts->append(maindefstmt);
       mainFn = maindefstmt->fn;
     } else {
       fail("code defines multiple modules but no main function");

@@ -17,6 +17,11 @@
 static ClassType* CurrentClass = NULL;
 
 
+FieldsToMemberAccesses::FieldsToMemberAccesses(void) {
+  processInternalModules = false;
+}
+
+
 void FieldsToMemberAccesses::preProcessStmt(Stmt* stmt) {
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ClassType* ctype = dynamic_cast<ClassType*>(tds->type)) {

@@ -11,8 +11,6 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     if1->callback = new ACallbacks;
     init_ast();
     Vec<Stmt *> stmts;
-    stmts.add(internalPrelude->stmts);
-    stmts.add(prelude->stmts);
     ModuleSymbol* mod = moduleList;
     while (mod) {
       stmts.add(mod->stmts);
@@ -21,7 +19,7 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     }
     stmts.add(CreateEntryPoint::entryPoint);
     AST_to_IF1(stmts);
-    // JOHN: what filename should be passed in for multiple modules?
+    // BLC: John, what filename should be passed in for multiple modules?
     do_analysis(moduleList->filename);
   }
 }

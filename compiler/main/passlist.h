@@ -24,6 +24,7 @@ PassInfo passlist[] = {
   RUN(FindUnknownTypes, ""),
   RUN(MethodsToFunctions, ""),
   RUN(Codegen, ""),
+  RUN(BuildBinary, ""),
 
   LAST
 };

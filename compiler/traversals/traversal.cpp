@@ -2,6 +2,7 @@
 #include "traversal.h"
 
 Traversal::Traversal(bool processThis, bool exploreByDefault) :
+  processInternalModules(true),
   processTop(processThis),
   exploreChildStmts(exploreByDefault),
   exploreChildExprs(exploreByDefault),
@@ -45,7 +46,9 @@ void Traversal::postProcessType(Type* type) {
 void Traversal::run(ModuleSymbol* moduleList) {
   ModuleSymbol* mod = moduleList;
   while (mod) {
-    mod->stmts->traverseList(this);
+    if (mod->internal == false || processInternalModules == true) {
+      mod->stmts->traverseList(this);
+    }
     
     mod = nextLink(ModuleSymbol, mod);
   }

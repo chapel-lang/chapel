@@ -602,7 +602,6 @@ ModuleDefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
 	// for now, define all modules in the prelude scope, since
 	// they can't be nested
 	defineInScope(mod, preludeScope);
-	firstModule = appendLink(firstModule, mod);
       }
     }
   }
@@ -610,6 +609,8 @@ ModuleDefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
   ModuleDefStmt* modDefStmt = new ModuleDefStmt(mod);
 
   if (!empty) {
+    firstModule = appendLink(firstModule, mod);
+
     // pop the module's scope
     if (!mod->internal) {
       SymScope* modScope = Symboltable::popScope();

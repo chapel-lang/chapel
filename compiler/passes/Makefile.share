@@ -1,4 +1,5 @@
 PASSES_SRCS = \
+	buildBinary.cpp \
 	codegen.cpp \
 	createEntryPoint.cpp \
 	filesToAST.cpp \

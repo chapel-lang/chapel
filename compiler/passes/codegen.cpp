@@ -15,7 +15,9 @@ void Codegen::run(ModuleSymbol* moduleList) {
 
   ModuleSymbol* currentModule = moduleList;
   while (currentModule) {
-    currentModule->codegenDef();
+    if (!currentModule->internal) {
+      currentModule->codegenDef();
+    }
 
     currentModule = nextLink(ModuleSymbol, currentModule);
   }
@@ -23,6 +25,4 @@ void Codegen::run(ModuleSymbol* moduleList) {
   verifyNilsUncorrupted();
 
   closeMakefile();
-
-  makeAndCopyBinary();
 }
