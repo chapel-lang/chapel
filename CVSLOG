@@ -18590,3 +18590,17 @@ Log message:
 Added files:
 	chapel/third-party/boehmgc/: gc-valgrind.patch 
 
+---------------------------------------------------------------------------
+
+03/02/05 09:37:47 -- bradc
+
+Log message:
+	Changed check for chplrt.h in the runtime srcs to check
+	the sources used to build the runtime (CVS_SRCS) rather
+	than all .c files in the directory so that people may
+	have stray .c files in the directory that haven't been
+	worked into the runtime yet.
+
+Modified files:
+	chapel/runtime/src/: Makefile 
+
