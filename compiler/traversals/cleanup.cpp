@@ -158,6 +158,13 @@ void RenameOverloaded::preProcessStmt(Stmt* &stmt) {
 	tmp = tmp->overload;
       }
     }
+
+    /* for testing clone function, clone foo
+    else if (strcmp(fn->cname, "foo") == 0) {
+      fndef->clone();
+    }
+    uncomment above for testing cloning --SJD */
+
   }
 }
 

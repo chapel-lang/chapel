@@ -105,7 +105,7 @@ class FnDefStmt : public Stmt {
 
   FnDefStmt(FnSymbol* init_fn);
   virtual Stmt* copy(void);
-  Stmt* clone(void);
+  FnDefStmt* clone(void);
 
   bool isNull(void);
   bool canLiveAtFileScope(void);

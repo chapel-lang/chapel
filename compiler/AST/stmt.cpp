@@ -410,6 +410,26 @@ Stmt* FnDefStmt::copy(void) {
 }
 
 
+FnDefStmt* FnDefStmt::clone(void) {
+  FnDefStmt* this_copy = NULL;
+  static int uid = 1; // Unique ID for analysis-cloned functions
+  SymScope* save_scope;
+
+  save_scope = Symboltable::setCurrentScope(this->fn->parentScope);
+  Stmt* stmt_copy = copy();
+  if (FnDefStmt* this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
+    this_copy->fn->cname =
+      glomstrings(3, this_copy->fn->cname, "_clone_", intstring(uid++));
+    this->preinsert(this_copy);
+  }
+  else {
+    INT_FATAL(this, "Unreachable statement in FnDefStmt::clone reached");
+  }
+  Symboltable::setCurrentScope(save_scope);
+  return this_copy;
+}
+
+
 bool FnDefStmt::isNull(void) {
   return (this == nilFnDefStmt);
 }
