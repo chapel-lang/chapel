@@ -3073,3 +3073,44 @@ Log message:
 Modified files:
 	chapel/compiler/: ast.cpp 
 
+---------------------------------------------------------------------------
+
+06/10/04 12:30:51 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Update dparser to 1.10 to sync up with public release.
+	dparser ported to x86_64
+	Update Makefiles/depend to work with gcc 3.4
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.subdirrules 
+	chapel/make/: Makefile.gnu 
+	chapel/third-party/dparser/d/: CHANGES Makefile d.h 
+	                               dparse_tables.h grammar.g.c 
+	                               index.html make_dparser.c parse.c 
+	                               sample.g scan.c symtab.c util.c 
+	                               util.h 
+	chapel/third-party/dparser/d/python/: Makefile README dparser.i 
+	                                      dparser.py dparser_wrap.c 
+	                                      index.html 
+	                                      py_dparser_manual.html 
+	                                      pydparser.c pydparser.h 
+	                                      setup.py 
+	chapel/third-party/dparser/d/tests/: sample.test.g 
+Added files:
+	chapel/third-party/dparser/d/: write_tables.c write_tables.h 
+	chapel/third-party/dparser/d/python/: make_tables.c 
+	chapel/third-party/dparser/d/python/contrib/: 
+	                                              dparserpy-syntax_error.py 
+	                                              dparserpy.el 
+	chapel/third-party/dparser/d/python/tests/: test.py test2.py 
+	                                            test3.py test4.py 
+	                                            test5.py test6.py 
+	                                            test7.py test8.py 
+Removed files:
+	chapel/third-party/dparser/d/: write_ctables.c write_ctables.h 
+	chapel/third-party/dparser/d/python/: dparser_swig.py test.py 
+	                                      test2.py test3.py test4.py 
+	                                      test5.py test6.py test7.py 
+
