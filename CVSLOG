@@ -11176,3 +11176,29 @@ Modified files:
 	chapel/compiler/traversals/: verifyASTType.cpp 
 	chapel/test/trivial/bradc/protoast/: mg-seq.chpl mg-seq.good 
 
+---------------------------------------------------------------------------
+
+12/03/04 13:17:07 -- deitz
+
+Log message:
+	Added parsing support for simple with-statements.  Added a new
+	subclass of Stmt called a WithStmt used for with-statements.  Added a
+	new pass ProcessWithStatements which eliminates the with-statements by
+	including the symbols wherever they should go.  Note that this pass is
+	not implemented and is currently a space-holder.
+	
+	Fixed a bug in the creation of MemberAccesses where the member is not
+	in the class scope.  In this case, the member was left as NULL and is
+	now made an unresolved symbol.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symtab.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: Makefile.share verifyASTType.cpp 
+Added files:
+	chapel/compiler/traversals/: processWithStatements.cpp 
+	                             processWithStatements.h 
+
