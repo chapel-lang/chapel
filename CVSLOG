@@ -14288,3 +14288,15 @@ Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 	chapel/test/flowanalysis/newast/: enum.good enumarray.good 
 
+---------------------------------------------------------------------------
+
+01/11/05 11:01:22 -- jplevyak
+
+Log message:
+	Work on function visibility, stalled on issues with getting the scope
+	for arbitrary EXPR_FNCALL.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+	chapel/compiler/include/: analysis.h ast.h symscope.h 
+
