@@ -10,6 +10,52 @@
 
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
+
+static Stmt* buildClassConstructorBody(Stmt* stmts, ClassType* class_type,
+                                       Symbol* _this) {
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
+  ParamSymbol* ptmp = args;
+#endif
+  forv_Vec(VarSymbol, tmp, class_type->fields) {
+    Expr* lhs = new MemberAccess(new Variable(_this), tmp);
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
+    Expr* rhs = new Variable(ptmp);
+#else
+    Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
+    if (!rhs) {
+      if (ClassType* nested_class_type = dynamic_cast<ClassType*>(tmp->type)) {
+        rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
+      } else continue; // hack for classes that are cloned; we don't
+      // actually want to build the constructor for
+      // cloned classes until they are cloned
+    }
+#endif
+    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
+    Stmt* assign_stmt = new ExprStmt(assign_expr);
+    stmts = appendLink(stmts, assign_stmt);
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
+    ptmp = nextLink(ParamSymbol, ptmp);
+#endif
+  }
+  return stmts;
+}
+
+
+static Stmt* buildUnionConstructorBody(Stmt* stmts, ClassType* class_type, 
+                                       Symbol* _this) {
+  Expr* arg1 = new Variable(_this);
+  Expr* arg2 = new Variable(class_type->fieldSelector->valList);
+  arg1 = appendLink(arg1, arg2);
+  FnCall* init_function = 
+    new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), 
+               arg1);
+  ExprStmt* init_stmt = new ExprStmt(init_function);
+  stmts = appendLink(stmts, init_stmt);
+  
+  return stmts;
+}
+
+
 static void build_constructor(ClassType* class_type) {
   SymScope* saveScope = Symboltable::setCurrentScope(class_type->classScope);
 
@@ -46,29 +92,10 @@ static void build_constructor(ClassType* class_type) {
     Stmt* alloc_stmt = new ExprStmt(alloc_expr);
     stmts = appendLink(stmts, alloc_stmt);
   }
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
-  ParamSymbol* ptmp = args;
-#endif
-  forv_Vec(VarSymbol, tmp, class_type->fields) {
-    Expr* lhs = new MemberAccess(new Variable(fn->_this), tmp);
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
-    Expr* rhs = new Variable(ptmp);
-#else
-    Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
-    if (!rhs) {
-      if (ClassType* nested_class_type = dynamic_cast<ClassType*>(tmp->type)) {
-        rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
-      } else continue; // hack for classes that are cloned; we don't
-                       // actually want to build the constructor for
-                       // cloned classes until they are cloned
-    }
-#endif
-    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
-    Stmt* assign_stmt = new ExprStmt(assign_expr);
-    stmts = appendLink(stmts, assign_stmt);
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
-    ptmp = nextLink(ParamSymbol, ptmp);
-#endif
+  if (class_type->union_value) {
+    stmts = buildUnionConstructorBody(stmts, class_type, fn->_this);
+  } else {
+    stmts = buildClassConstructorBody(stmts, class_type, fn->_this);
   }
 
   stmts = appendLink(stmts, new ReturnStmt(new Variable(fn->_this)));
@@ -111,6 +138,7 @@ static void build_union_id_enum(ClassType* class_type) {
     glomstrings(3, "_", class_type->symbol->name, "_union_id");
   TypeSymbol* enum_symbol = new TypeSymbol(enum_name, enum_type);
   enum_type->addSymbol(enum_symbol);
+  class_type->addFieldSelector(enum_type);
   DefExpr* def_expr = new DefExpr(enum_symbol);
   enum_symbol->setDefPoint(def_expr);
   id_list->setDefPoint(def_expr);
@@ -201,8 +229,8 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
 
   if (TypeSymbol* type_symbol = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(type_symbol->type)) {
-      build_constructor(class_type);
       build_union_id_enum(class_type);
+      build_constructor(class_type);
       build_record_equality_function(class_type);
       build_record_inequality_function(class_type);
     } else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type_symbol->type)) {

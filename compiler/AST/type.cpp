@@ -1026,9 +1026,10 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
   union_value(isUnion),
   parentClass(init_parentClass),
   constructor(init_constructor),
-  classScope(init_classScope)
+  classScope(init_classScope),
+  declarationList(NULL),
+  fieldSelector(NULL)
 {
-  declarationList = NULL;
   fields.clear();
   methods.clear();
   types.clear();
@@ -1094,6 +1095,11 @@ void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
 
 void ClassType::setClassScope(SymScope* init_classScope) {
   classScope = init_classScope;
+}
+
+
+void ClassType::addFieldSelector(EnumType* init_fieldSelector) {
+  fieldSelector = init_fieldSelector;
 }
 
 

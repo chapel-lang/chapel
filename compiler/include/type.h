@@ -203,6 +203,7 @@ class ClassType : public Type {
   Stmt* constructor;
   SymScope* classScope;
   Stmt* declarationList;
+  EnumType* fieldSelector;
 
   Vec<VarSymbol*> fields;
   Vec<FnSymbol*> methods;
@@ -218,6 +219,7 @@ class ClassType : public Type {
   void addDeclarations(Stmt* newDeclarations,
                        Stmt* afterStmt = NULL);
   void setClassScope(SymScope* init_classScope);
+  void addFieldSelector(EnumType* init_fieldSelector);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
