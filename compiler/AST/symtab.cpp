@@ -7,6 +7,10 @@
 #include "yy.h"
 
 
+static bool parsingInternalPrelude = false;
+static bool parsingPrelude = false;
+
+
 class SymLink : public ILink {
 public:
   Symbol* pSym;
@@ -92,9 +96,17 @@ void SymScope::addUndefined(UseBeforeDefSymbol* sym) {
 }
 
 void SymScope::addUndefinedToFile(UseBeforeDefSymbol* sym) {
-  SymScope* fileScope = findFileScope();
+  SymScope* scope = Symboltable::getCurrentScope();
+
+  if (parsingInternalPrelude) {
+    scope = findEnclosingScopeType(SCOPE_INTERNAL);
+  } else if (parsingPrelude) {
+    INT_FATAL(sym, "undefined symbol in prelude: %s", sym->name);
+  } else {
+    scope = findEnclosingScopeType(SCOPE_FILE);
+  }
   
-  fileScope->addUndefined(sym);
+  scope->addUndefined(sym);
 }
 
 
@@ -121,10 +133,38 @@ void SymScope::handleUndefined(void) {
 }
 
 
-void SymScope::print(FILE* outfile, bool alphabetical) {
+static char* indentStr(FILE* outfile, int level) {
+  static char* spaces = "                                                     "
+                        "                          ";
+  int maxspaces = strlen(spaces);
+  int offset = maxspaces-(2*(level-SCOPE_INTRINSIC));
+  if (offset < 0) {
+    offset = 0;
+  } else if (offset > maxspaces) {
+    offset = maxspaces;
+  }
+
+  return spaces + offset;
+}
+
+
+void SymScope::print(FILE* outfile, bool tableOrder) {
+  char* indent = indentStr(outfile, level);
+
+  // don't bother printing empty scopes
+  if (firstSym == NULL) {
+    return;
+  }
+
+  fprintf(outfile, "%s", indent);
   fprintf(outfile, "======================================================\n");
+
+  fprintf(outfile, "%s", indent);
   fprintf(outfile, "SCOPE: ");
   switch (type) {
+  case SCOPE_INTERNAL:
+    fprintf(outfile, "internal, secret, intrinsic\n");
+    break;
   case SCOPE_INTRINSIC:
     fprintf(outfile, "global, standard, intrinsic\n");
     break;
@@ -143,37 +183,61 @@ void SymScope::print(FILE* outfile, bool alphabetical) {
   case SCOPE_FORLOOP:
     fprintf(outfile, "for loop\n");
     break;
+  case SCOPE_CLASS:
+    fprintf(outfile, "class\n");
+    break;
   }
+
+  fprintf(outfile, "%s", indent);
   fprintf(outfile, "------------------------------------------------------\n");
 
-  if (alphabetical) {
+  if (tableOrder) {
     int i;
     Vec<Symbol*> symlist;
 
     table.get_values(symlist);
     for (i=0; i<symlist.n; i++) {
+      fprintf(outfile, "%s", indent);
       symlist.v[i]->print(outfile);
       fprintf(outfile, "\n");
     }
   } else {
     if (firstSym != NULL) {
-      firstSym->printList(outfile, "\n");
+      fprintf(outfile, "%s", indent);
+      firstSym->printList(outfile, glomstrings(2, "\n", indent));
       fprintf(outfile, "\n");
     }
   }
 
+  fprintf(outfile, "%s", indent);
   fprintf(outfile, "======================================================\n");
 }
 
 
-static int level = SCOPE_INTRINSIC;
-static SymScope* rootScope = new SymScope(SCOPE_INTRINSIC, level++);
-static SymScope* currentScope = rootScope;
+static int level = SCOPE_INTERNAL;
+static SymScope* internalScope = new SymScope(SCOPE_INTERNAL, level++);
+static SymScope* currentScope = internalScope;
+static SymScope* rootScope = NULL;
 static FnSymbol* currentFn = NULL;
 
 
 void Symboltable::init(void) {
+  rootScope = new SymScope(SCOPE_INTRINSIC, level++);
+  internalScope->sibling = rootScope;
   currentFn = nilFnSymbol;
+  parsingInternalPrelude = true;
+}
+
+
+void Symboltable::hideInternalPreludeScope(void) {
+  currentScope = rootScope;
+  parsingInternalPrelude = false;
+  parsingPrelude = true;
+}
+
+
+void Symboltable::doneParsingPreludes(void) {
+  parsingPrelude = false;
 }
 
 
@@ -225,13 +289,23 @@ void Symboltable::define(Symbol* sym) {
 }
 
 
+Symbol* Symboltable::lookupInScope(char* name, SymScope* scope) {
+  return scope->table.get(name);
+}
+
+
+Symbol* Symboltable::lookupInternal(char* name) {
+  return lookupInScope(name, internalScope);
+}
+
+
 Symbol* Symboltable::lookup(char* name, bool inLexer) {
   SymScope* scope;
   
   scope = currentScope;
   
   while (scope != NULL) {
-    Symbol* sym = scope->table.get(name);
+    Symbol* sym = lookupInScope(name, scope);
     if (sym != NULL) {
       return sym;
     }
@@ -418,15 +492,14 @@ FnDefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 }
 
 
-ClassType* Symboltable::defineClass(char* name, ClassSymbol* parent, 
-				    Stmt* definition) {
+ClassSymbol* Symboltable::startClassDef(char* name, ClassSymbol* parent) {
   ClassType* newdt;
   ClassSymbol* newsym;
 
   if (parent->isNull()) {
-    newdt = new ClassType(definition);
+    newdt = new ClassType();
   } else {
-    newdt = new ClassType(definition, parent->getType());
+    newdt = new ClassType(parent->getType());
   }
   if (parent->scope->level == SCOPE_INTRINSIC && 
       strcmp(parent->name, "reduction") == 0) {
@@ -436,8 +509,20 @@ ClassType* Symboltable::defineClass(char* name, ClassSymbol* parent,
   }
   (newdt)->addName(newsym);
   define(newsym);
+  Symboltable::pushScope(SCOPE_CLASS);
 
-  return newdt;
+  return newsym;
+}
+
+
+TypeDefStmt* Symboltable::finishClassDef(ClassSymbol* classSym, 
+					 Stmt* definition) {
+  Symboltable::popScope();
+
+  ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
+  classType->addDefinition(definition);
+
+  return new TypeDefStmt(classType);
 }
 
 
@@ -479,4 +564,20 @@ static void printHelp(FILE* outfile, SymScope* aScope) {
 
 void Symboltable::print(FILE* outfile) {
   printHelp(outfile, currentScope);
+}
+
+
+static void dumpHelp(FILE* outfile, SymScope* scope) {
+  if (scope == NULL) {
+    return;
+  } else {
+    scope->print(outfile);
+    dumpHelp(outfile, scope->child);
+    dumpHelp(outfile, scope->sibling);
+  }
+}
+
+
+void Symboltable::dump(FILE* outfile) {
+  dumpHelp(outfile, internalScope);
 }

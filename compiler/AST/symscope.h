@@ -6,12 +6,14 @@
 #include "symbol.h"
 
 enum scopeType {
+  SCOPE_INTERNAL = -2,
   SCOPE_INTRINSIC = -1,
   SCOPE_FILE = 0,
   SCOPE_PARAM,
   SCOPE_FUNCTION,
   SCOPE_LOCAL,
-  SCOPE_FORLOOP
+  SCOPE_FORLOOP,
+  SCOPE_CLASS
 };
 
 class SymLink;
@@ -40,13 +42,12 @@ class SymScope : public gc {
 
   void insert(Symbol* sym);
   SymScope* findEnclosingScopeType(scopeType t);
-  SymScope* findFileScope(void) { return findEnclosingScopeType(SCOPE_FILE); }
 
   void addUndefined(UseBeforeDefSymbol*);
   void addUndefinedToFile(UseBeforeDefSymbol*);
   void handleUndefined(void);
 
-  void print(FILE* outfile = stdout, bool alphabetical = false);
+  void print(FILE* outfile = stdout, bool tableOrder = false);
 };
 
 #endif

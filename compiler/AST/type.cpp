@@ -388,11 +388,16 @@ UserType::getTypes(Vec<BaseAST *> &asts) {
 }
 
 
-ClassType::ClassType(Stmt* init_definition, ClassType* init_parentClass) :
+ClassType::ClassType(ClassType* init_parentClass) :
   Type(TYPE_CLASS),
-  definition(init_definition),
+  definition(nilStmt),
   parentClass(init_parentClass)
 {}
+
+
+void ClassType::addDefinition(Stmt* init_definition) {
+  definition = init_definition;
+}
 
 
 bool ClassType::isNull(void) {

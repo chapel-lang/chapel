@@ -123,7 +123,8 @@ class ClassType : public Type {
   Stmt* definition;
   ClassType* parentClass;
   
-  ClassType(Stmt* init_definition, ClassType* init_parentClass = nilClassType);
+  ClassType(ClassType* init_parentClass = nilClassType);
+  void addDefinition(Stmt* init_definition);
 
   bool isNull(void);
 

@@ -232,10 +232,13 @@ subclass:
 
 
 classdecl:
-  CLASS identifier subclass '{' statements '}'
+  CLASS identifier subclass '{'
     {
-      ClassType* pdt = Symboltable::defineClass($2, $3, $5);
-      $$ = new TypeDefStmt(pdt);
+      $<pcsym>$ = Symboltable::startClassDef($2, $3);
+    }
+                                statements '}'
+    {
+      $$ = Symboltable::finishClassDef($<pcsym>5, $6);
     }
 ;
 

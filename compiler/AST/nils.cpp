@@ -26,7 +26,8 @@ void initNils(void) {
   nilType = new Type(TYPE);
 
   nilVarSymbol = new VarSymbol("nilVarSymbol", nilType);
-  nilClassType = new ClassType(nilStmt, nilClassType);
+  nilClassType = new ClassType(nilClassType);
+  nilClassType->addDefinition(nilStmt);
   nilFnSymbol = new FnSymbol("nilFnSymbol");
   nilClassSymbol = new ClassSymbol("nilClass", nilClassType);
 

@@ -9,6 +9,8 @@
 class Symboltable {
  public:
   static void init(void);
+  static void hideInternalPreludeScope(void);
+  static void doneParsingPreludes(void);
 
   static void pushScope(scopeType type);
   static SymScope* popScope(void);
@@ -16,6 +18,8 @@ class Symboltable {
   static FnSymbol* getCurrentFn(void);
 
   static void define(Symbol* sym);
+  static Symbol* lookupInScope(char* name, SymScope* scope);
+  static Symbol* lookupInternal(char* name);
   static Symbol* lookup(char* name, bool inLexer = false);
   static ClassSymbol* lookupClass(char* name);
 
@@ -36,8 +40,9 @@ class Symboltable {
 				bool isExtern = false);
   static FnDefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
 				   Stmt* body, bool isExtern = false);
-  static ClassType* defineClass(char* name, ClassSymbol* parent, 
-				Stmt* definition);
+
+  static ClassSymbol* startClassDef(char* name, ClassSymbol* parent);
+  static TypeDefStmt* finishClassDef(ClassSymbol* classSym, Stmt* definition);
 
   static VarSymbol* startForLoop(Symbol* indices);
   static ForLoopStmt* finishForLoop(bool forall, VarSymbol* index,
@@ -46,6 +51,7 @@ class Symboltable {
   static DomainExpr* defineQueryDomain(char* name);
 
   static void print(FILE* outfile);
+  static void dump(FILE* outfile);
 };
 
 #endif

@@ -103,11 +103,18 @@ Stmt* fileToAST(char* filename, int debug) {
   if (preludePath == NULL) {
     initNils();
     Symboltable::init();
+
+    preludePath = glomstrings(2, system_dir, "/AST/internal_prelude.chpl");
+    ParseFile(preludePath, true);
+    Symboltable::hideInternalPreludeScope();
+
     initType(); // BLC : clean these up
     initExpr();
 
     preludePath = glomstrings(2, system_dir, "/AST/prelude.chpl");
     ParseFile(preludePath, true);
+
+    Symboltable::doneParsingPreludes();
   }
 
   yydebug = debug;
@@ -117,6 +124,8 @@ Stmt* fileToAST(char* filename, int debug) {
   //  testGetStuff(program);
 
   program = createInitFn(program);
+
+  //  Symboltable::dump(stdout);
 
   return program;
 }
