@@ -19598,3 +19598,36 @@ Modified files:
 	                               union_type_hierarchy-3-error.good 
 	chapel/test/flowanalysis/jplevyak/: badcall.good badreturn.good 
 
+---------------------------------------------------------------------------
+
+03/15/05 10:29:03 -- deitz
+
+Log message:
+	Unified VarDefStmt, TypeDefStmt, FnDefStmt, and ModuleDefStmt into
+	DefStmt.  The next step is to add DefExpr which will give a definition
+	expression for all symbols.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h symtab.h type.h 
+	chapel/compiler/main/: passlist.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             applyThisParameters.cpp fixup.cpp 
+	                             insertAnonymousDomains.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             removeDeadSymbols.cpp 
+	                             renameOverloadedFunctions.cpp 
+	                             specializeParenOpExprs.cpp 
+	                             transformLetExprs.cpp 
+	                             verifyASTType.cpp 
+Removed files:
+	chapel/compiler/traversals/: cloneAllFns.cpp cloneAllFns.h 
+
