@@ -22689,3 +22689,24 @@ Modified files:
 Added files:
 	chapel/test/classes/bradc/unions/: twounions.chpl twounions.good 
 
+---------------------------------------------------------------------------
+
+03/30/05 14:42:34 -- deitz
+
+Log message:
+	Added a new runtime function _init_string that sets a string to NULL
+	and then calls _copy_string.  This is used when initializing a string
+	to the default value.  This will eventually fix a bug that was showing
+	up with strings being initialized within classes.  (The current
+	valgrind regression).  At this time, however, this initialization
+	function is not being called in the constructor.
+	
+	I'm going to unify the building of the constructor and the
+	insertVariableInitializations pass to use the same code so that the
+	constructor calls the same initialization code.
+
+Modified files:
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+	chapel/runtime/include/: chpltypes.h 
+
