@@ -8,6 +8,7 @@
 #include "symscope.h"
 #include "symtab.h"
 #include "../traversals/fixup.h"
+#include "../traversals/cleanup.h"
 
 
 Stmt::Stmt(astType_t astType) :
@@ -33,11 +34,25 @@ bool Stmt::topLevelExpr(Expr* expr) {
 
 
 Stmt* Stmt::copyList(CloneCallback* analysis_clone) {
+  Stmt* newStmtList = copyListInternal(analysis_clone);
+  call_cleanup_ls(newStmtList);
+  return newStmtList;
+}
+
+
+Stmt* Stmt::copy(CloneCallback* analysis_clone) {
+  Stmt* new_stmt = copyInternal(analysis_clone);
+  call_cleanup(new_stmt);
+  return new_stmt;
+}
+
+
+Stmt* Stmt::copyListInternal(CloneCallback* analysis_clone) {
   Stmt* newStmtList = nilStmt;
   Stmt* oldStmt = this;
 
   while (oldStmt) {
-    newStmtList = appendLink(newStmtList, oldStmt->copy(analysis_clone));
+    newStmtList = appendLink(newStmtList, oldStmt->copyInternal(analysis_clone));
 
     oldStmt = nextLink(Stmt, oldStmt);
   }
@@ -46,7 +61,7 @@ Stmt* Stmt::copyList(CloneCallback* analysis_clone) {
 }
 
 
-Stmt* Stmt::copy(CloneCallback* analysis_clone) {
+Stmt* Stmt::copyInternal(CloneCallback* analysis_clone) {
   Stmt* new_stmt = copyStmt(analysis_clone);
 
   new_stmt->lineno = lineno;
@@ -333,7 +348,7 @@ ClassType* WithStmt::getClass(void) {
 
 
 Stmt* WithStmt::copyStmt(CloneCallback* analysis_clone) {
-  return new WithStmt(withExpr->copy(analysis_clone));
+  return new WithStmt(withExpr->copyInternal(analysis_clone));
 }
 
 
@@ -364,7 +379,7 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
 
 
 Stmt* VarDefStmt::copyStmt(CloneCallback* analysis_clone) {
-  return Symboltable::defineVarDefStmt(var, var->type, init->copy(analysis_clone), 
+  return Symboltable::defineVarDefStmt(var, var->type, init->copyInternal(analysis_clone), 
 				       var->varClass, var->isConst);
 }
 
@@ -584,8 +599,11 @@ Stmt* FnDefStmt::copyStmt(CloneCallback* analysis_clone) {
   // do this first to make sure symbols are defined before used when
   // body is copied
   Symbol* newformals = fn->formals->copyList(analysis_clone);
+  for (Symbol* tmp = newformals; tmp != NULL; tmp = nextLink(Symbol, tmp)) {
+    Symboltable::define(tmp);
+  }
   return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
-				  fn->body->copyList(analysis_clone),
+				  fn->body->copyListInternal(analysis_clone),
 				  fn->exportMe);
 }
 
@@ -696,7 +714,7 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 
 
 Stmt* ExprStmt::copyStmt(CloneCallback* analysis_clone) {
-  return new ExprStmt(expr->copy(analysis_clone));
+  return new ExprStmt(expr->copyInternal(analysis_clone));
 }
 
 
@@ -735,7 +753,7 @@ ReturnStmt::ReturnStmt(Expr* retExpr) :
 
 
 Stmt* ReturnStmt::copyStmt(CloneCallback* analysis_clone) {
-  return new ReturnStmt(expr->copy(analysis_clone));
+  return new ReturnStmt(expr->copyInternal(analysis_clone));
 }
 
 
@@ -785,7 +803,7 @@ void BlockStmt::setBlkScope(SymScope* init_blkScope) {
 
 
 Stmt* BlockStmt::copyStmt(CloneCallback* analysis_clone) {
-  return new BlockStmt(body->copyList(analysis_clone));
+  return new BlockStmt(body->copyListInternal(analysis_clone));
 }
 
 
@@ -830,7 +848,7 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 
 
 Stmt* WhileLoopStmt::copyStmt(CloneCallback* analysis_clone) {
-  return new WhileLoopStmt(isWhileDo, condition->copy(analysis_clone), body->copy(analysis_clone));
+  return new WhileLoopStmt(isWhileDo, condition->copyInternal(analysis_clone), body->copyInternal(analysis_clone));
 }
 
 
@@ -907,7 +925,7 @@ void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
 
 Stmt* ForLoopStmt::copyStmt(CloneCallback* analysis_clone) {
   return new ForLoopStmt(forall, dynamic_cast<VarSymbol*>(index->copy(analysis_clone)), 
-			 domain->copy(analysis_clone), body->copy(analysis_clone));
+			 domain->copyInternal(analysis_clone), body->copyInternal(analysis_clone));
 }
 
 
@@ -1001,7 +1019,7 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
 
 
 Stmt* CondStmt::copyStmt(CloneCallback* analysis_clone) {
-  return new CondStmt(condExpr->copy(analysis_clone), thenStmt->copy(analysis_clone), elseStmt->copy(analysis_clone));
+  return new CondStmt(condExpr->copyInternal(analysis_clone), thenStmt->copyInternal(analysis_clone), elseStmt->copyInternal(analysis_clone));
 }
 
 

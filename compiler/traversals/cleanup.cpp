@@ -325,3 +325,23 @@ void Cleanup::run(ModuleSymbol* moduleList) {
     mod = nextLink(ModuleSymbol, mod);
   }
 }
+
+void call_cleanup(BaseAST* ast) {
+  TRAVERSE(ast, new ApplyWith(), true);
+  TRAVERSE(ast, new InsertThis(), true);
+  TRAVERSE(ast, new ResolveEasiest(), true);
+  TRAVERSE(ast, new RenameOverloaded(), true);
+  TRAVERSE(ast, new ResolveEasy(), true);
+  TRAVERSE(ast, new SpecializeParens(), true);
+  TRAVERSE(ast, new ApplyThis(), true);
+}
+
+void call_cleanup_ls(BaseAST* ast) {
+  TRAVERSE_LS(ast, new ApplyWith(), true);
+  TRAVERSE_LS(ast, new InsertThis(), true);
+  TRAVERSE_LS(ast, new ResolveEasiest(), true);
+  TRAVERSE_LS(ast, new RenameOverloaded(), true);
+  TRAVERSE_LS(ast, new ResolveEasy(), true);
+  TRAVERSE_LS(ast, new SpecializeParens(), true);
+  TRAVERSE_LS(ast, new ApplyThis(), true);
+}

@@ -23,6 +23,8 @@ class Stmt : public BaseAST {
 
   Stmt* copyList(CloneCallback* analysis_clone = NULL);
   Stmt* copy(CloneCallback* analysis_clone = NULL);
+  Stmt* copyListInternal(CloneCallback* analysis_clone = NULL);
+  Stmt* copyInternal(CloneCallback* analysis_clone = NULL);
   virtual Stmt* copyStmt(CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);

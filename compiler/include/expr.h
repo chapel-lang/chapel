@@ -103,6 +103,8 @@ class Expr : public BaseAST {
 
   Expr* copyList(CloneCallback* analysis_clone = NULL);
   Expr* copy(CloneCallback* analysis_clone = NULL);
+  Expr* copyListInternal(CloneCallback* analysis_clone = NULL);
+  Expr* copyInternal(CloneCallback* analysis_clone = NULL);
   virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);

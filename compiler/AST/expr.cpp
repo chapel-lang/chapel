@@ -10,6 +10,7 @@
 #include "symscope.h"
 #include "symtab.h"
 #include "../traversals/fixup.h"
+#include "../traversals/cleanup.h"
 
 
 static char* cUnOp[NUM_UNOPS] = {
@@ -91,11 +92,25 @@ Expr::Expr(astType_t astType) :
 
 
 Expr* Expr::copyList(CloneCallback* analysis_clone) {
+  Expr* newExprList = copyListInternal(analysis_clone);
+  call_cleanup_ls(newExprList);
+  return newExprList;
+}
+
+
+Expr* Expr::copy(CloneCallback* analysis_clone) {
+  Expr* new_expr = copyInternal(analysis_clone);
+  call_cleanup(new_expr);
+  return new_expr;
+}
+
+
+Expr* Expr::copyListInternal(CloneCallback* analysis_clone) {
   Expr* newExprList = nilExpr;
   Expr* oldExpr = this;
 
   while (oldExpr) {
-    newExprList = appendLink(newExprList, oldExpr->copy(analysis_clone));
+    newExprList = appendLink(newExprList, oldExpr->copyInternal(analysis_clone));
 
     oldExpr = nextLink(Expr, oldExpr);
   }
@@ -104,7 +119,7 @@ Expr* Expr::copyList(CloneCallback* analysis_clone) {
 }
 
 
-Expr* Expr::copy(CloneCallback* analysis_clone) {
+Expr* Expr::copyInternal(CloneCallback* analysis_clone) {
   Expr* new_expr = copyExpr(analysis_clone);
 
   new_expr->lineno = lineno;
@@ -623,7 +638,8 @@ Variable::Variable(Symbol* init_var) :
 
 
 Expr* Variable::copyExpr(CloneCallback* analysis_clone) {
-  return new Variable(var);
+  return new Variable(new UnresolvedSymbol(var->name));
+  //  return new Variable(var);
 }
 
 
@@ -657,7 +673,7 @@ UnOp::UnOp(unOpType init_type, Expr* op) :
 
 
 Expr* UnOp::copyExpr(CloneCallback* analysis_clone) {
-  return new UnOp(type, operand->copy(analysis_clone));
+  return new UnOp(type, operand->copyInternal(analysis_clone));
 }
 
 
@@ -723,7 +739,7 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 
 
 Expr* BinOp::copyExpr(CloneCallback* analysis_clone) {
-  return new BinOp(type, left->copy(analysis_clone), right->copy(analysis_clone));
+  return new BinOp(type, left->copyInternal(analysis_clone), right->copyInternal(analysis_clone));
 }
 
 
@@ -804,7 +820,7 @@ AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
 
 
 Expr* AssignOp::copyExpr(CloneCallback* analysis_clone) {
-  return new AssignOp(type, left->copy(analysis_clone), right->copy(analysis_clone));
+  return new AssignOp(type, left->copyInternal(analysis_clone), right->copyInternal(analysis_clone));
 }
 
 
@@ -852,7 +868,7 @@ SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
 
 
 Expr* SpecialBinOp::copyExpr(CloneCallback* analysis_clone) {
-  return new SpecialBinOp(type, left->copy(analysis_clone), right->copy(analysis_clone));
+  return new SpecialBinOp(type, left->copyInternal(analysis_clone), right->copyInternal(analysis_clone));
 }
 
 
@@ -872,7 +888,7 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
 
 
 Expr* MemberAccess::copyExpr(CloneCallback* analysis_clone) {
-  return new MemberAccess(base->copy(analysis_clone), member);
+  return new MemberAccess(base->copyInternal(analysis_clone), member);
 }
 
 
@@ -938,7 +954,7 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 
 
 Expr* ParenOpExpr::copyExpr(CloneCallback* analysis_clone) {
-  return new ParenOpExpr(baseExpr->copy(analysis_clone), argList->copyList(analysis_clone));
+  return new ParenOpExpr(baseExpr->copyInternal(analysis_clone), argList->copyListInternal(analysis_clone));
 }
 
 
@@ -971,7 +987,7 @@ ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
 
 
 Expr* ArrayRef::copyExpr(CloneCallback* analysis_clone) {
-  return new ArrayRef(baseExpr->copy(analysis_clone), argList->copy(analysis_clone));
+  return new ArrayRef(baseExpr->copyInternal(analysis_clone), argList->copyListInternal(analysis_clone));
 }
 
 
@@ -1020,7 +1036,7 @@ Type* FnCall::typeInfo(void) {
 
 
 Expr* FnCall::copyExpr(CloneCallback* analysis_clone) {
-  return new FnCall(baseExpr->copy(analysis_clone), argList->copyList(analysis_clone));
+  return new FnCall(baseExpr->copyInternal(analysis_clone), argList->copyListInternal(analysis_clone));
 }
 
 
@@ -1079,7 +1095,7 @@ IOCall::IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg) :
 
 
 Expr* IOCall::copyExpr(CloneCallback* analysis_clone) {
-  return new IOCall(ioType, baseExpr->copy(analysis_clone), argList->copyList(analysis_clone));
+  return new IOCall(ioType, baseExpr->copyInternal(analysis_clone), argList->copyListInternal(analysis_clone));
 }
 
 
@@ -1165,7 +1181,7 @@ Tuple::Tuple(Expr* init_exprs) :
 
 
 Expr* Tuple::copyExpr(CloneCallback* analysis_clone) {
-  return new Tuple(exprs->copyList(analysis_clone));
+  return new Tuple(exprs->copyListInternal(analysis_clone));
 }
 
 
@@ -1243,7 +1259,7 @@ CastExpr::CastExpr(Type* init_newType, Expr* init_expr) :
 
 
 Expr* CastExpr::copyExpr(CloneCallback* analysis_clone) {
-  return new CastExpr(newType, expr->copy(analysis_clone));
+  return new CastExpr(newType, expr->copyInternal(analysis_clone));
 }
 
 
@@ -1288,7 +1304,7 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
 
 
 Expr* ReduceExpr::copyExpr(CloneCallback* analysis_clone) {
-  return new ReduceExpr(reduceType->copy(analysis_clone), redDim->copy(analysis_clone), argExpr->copy(analysis_clone));
+  return new ReduceExpr(reduceType->copy(analysis_clone), redDim->copyInternal(analysis_clone), argExpr->copyInternal(analysis_clone));
 }
 
 
@@ -1330,7 +1346,7 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
 
 
 Expr* SimpleSeqExpr::copyExpr(CloneCallback* analysis_clone) {
-  return new SimpleSeqExpr(lo->copy(analysis_clone), hi->copy(analysis_clone), str->copy(analysis_clone));
+  return new SimpleSeqExpr(lo->copyInternal(analysis_clone), hi->copyInternal(analysis_clone), str->copyInternal(analysis_clone));
 }
 
 
@@ -1425,7 +1441,7 @@ void ForallExpr::setIndexScope(SymScope* init_indexScope) {
 
 
 Expr* ForallExpr::copyExpr(CloneCallback* analysis_clone) {
-  return new ForallExpr(domains->copy(analysis_clone), indices->copy(analysis_clone), forallExpr->copy(analysis_clone));
+  return new ForallExpr(domains->copyInternal(analysis_clone), indices->copy(analysis_clone), forallExpr->copyInternal(analysis_clone));
 }
 
 

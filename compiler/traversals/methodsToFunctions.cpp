@@ -44,7 +44,7 @@ void MethodsToFunctions::preProcessExpr(Expr* expr) {
     if (typeid(*paren) == typeid(ParenOpExpr)) {
       if (MemberAccess* method = dynamic_cast<MemberAccess*>(paren->baseExpr)) {
 	if (dynamic_cast<FnSymbol*>(method->member)) {
-	  Expr* newArgList = method->base->copy();
+	  Expr* newArgList = method->base;
 	  newArgList->append(paren->argList);
 	  FnCall* fn = new FnCall(new Variable(method->member), newArgList);
 	  expr->replace(fn);
