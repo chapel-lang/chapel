@@ -22,6 +22,8 @@
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 
+#define HAND_TRAVERSE_EXPR_LET      	1
+
 class LabelMap : public Map<char *, BaseAST *> {};
 
 static Sym *domain_start_index_symbol = 0;
@@ -247,6 +249,7 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
 	  syms.add(ret);
 	break;
       }
+#ifdef HAND_TRAVERSE_EXPR_LET      
       case EXPR_LET: {
 	LetExpr *ss = dynamic_cast<LetExpr *>(s);
 	VarSymbol *vs = dynamic_cast<VarSymbol *>(ss->syms);
@@ -259,6 +262,7 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
 	}
 	break;
       }
+#endif
     }
   }
   forv_Type(t, builtinTypes) {
@@ -1149,6 +1153,7 @@ gen_if1(BaseAST *ast) {
     forv_BaseAST(a, getStuff.asts)
       if (gen_if1(a) < 0)
 	return -1;
+#ifdef HAND_TRAVERSE_EXPR_LET      
   if (ast->astType == EXPR_LET) {
     LetExpr *s = dynamic_cast<LetExpr *>(ast);
     VarSymbol *vs = dynamic_cast<VarSymbol *>(s->syms);
@@ -1158,6 +1163,7 @@ gen_if1(BaseAST *ast) {
 	vs = dynamic_cast<VarSymbol*>(vs->next);
       }
   }
+#endif
   switch (ast->astType) {
     case STMT: assert(ast->isNull()); break;
     case STMT_NOOP: break;
