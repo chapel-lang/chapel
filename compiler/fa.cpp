@@ -1602,23 +1602,24 @@ compute_recursive_entry_creation_sets() {
 
 static int
 is_es_recursive(EntrySet *es) {
-  forv_AEdge(e, es->backedges)
-    if (e->es_backedge)
-      return 1;
-  return 0;
+  if (es->split)
+    return es->split->backedges.n;
+  return es->backedges.n;
 }
 
 static int
 is_es_cs_recursive(EntrySet *es) {
   if (es->split)
     return es->split->backedges.n;
-  else
-    return es->backedges.n;
+  return es->backedges.n;
 }
+
 // make sure you take into account splits here!  what matters is the pre-split es/cs
 static int
 is_es_cs_recursive(CreationSet *cs) {
-  return 0;
+  if (cs->split)
+    return cs->es_backedges.n;
+  return cs->es_backedges.n;
 }
 
 static void
@@ -1644,9 +1645,11 @@ collect_cs_type_confluences(Vec<AVar *> &type_confluences) {
   forv_CreationSet(cs, fa->css) {
     forv_AVar(av, cs->vars) {
       forv_AVar(x, av->backward) if (x) {
-	if (type_diff(av->in, x->out) != bottom_type) {
-	  type_confluences.set_add(av);
-	  break;
+	if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
+	  if (type_diff(av->in, x->out) != bottom_type) {
+	    type_confluences.set_add(av);
+	    break;
+	  }
 	}
       }
     }
@@ -1925,7 +1928,7 @@ sset_find(SSet *ss, Setters *s) {
   return 0;
 }
 
-static void
+static int
 update_setters(AVar *av, Setters *s) {
   SSet *new_ss = new SSet;
   if (!av->sset) {
@@ -1940,17 +1943,39 @@ update_setters(AVar *av, Setters *s) {
       goto Lreturn;
     }
     if (s == *x)
-      return;
+      return 0;
     Setters *new_s = new Setters(s->ivar);
     new_s->set_union(*s);
     new_s = setters_cannonicalize(new_s);
     *x = new_s;
   }
  Lreturn:
+  SSet *old_sset = av->sset;
   av->sset = sset_cannonicalize(new_ss);
-  forv_AVar(x, av->backward) if (x)
-    update_sset(x, av->sset);
-  return;
+  if (old_sset != av->sset) {
+    forv_AVar(x, av->backward) if (x)
+      update_sset(x, av->sset);
+    return 1;
+  }
+  return 0;
+}
+
+static void
+collect_cs_sset_confluences(Vec<AVar *> &sset_confluences) {
+  sset_confluences.clear();
+  forv_CreationSet(cs, fa->css) {
+    forv_AVar(av, cs->vars) {
+      forv_AVar(x, av->forward) if (x) {
+	if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
+	  if (sset_diff(av->sset, x->sset)) {
+	    sset_confluences.set_add(av);
+	    break;
+	  }
+	}
+      }
+    }
+  }
+  sset_confluences.set_to_vec();
 }
 
 static void
@@ -2024,23 +2049,24 @@ split_css(Vec<AVar *> &starters) {
 
 static int
 analyze_setters(Vec<Setters *> &ss, Map<AVar *, AVar *> &container_map) {
+  int ssets_changed = 0;
   forv_Setters(s, ss) {
     forv_AVar(av, *s) {
       AVar *container = container_map.get(av);
-      update_setters(container, s);
+      ssets_changed = update_setters(container, s) || ssets_changed;
     }
   }
   Vec<AVar *> sset_confluences, sset_starters;
   collect_sset_confluences(sset_confluences, sset_starters);
   if (split_ess(sset_confluences, 1))
-    return 1;
+    return 2;
   if (split_css(sset_starters))
-    return 1;
-  return 0;
+    return 2;
+  return ssets_changed;
 }
 
 static int
-analyze_type_confluence(AVar *av) {
+analyze_confluence(AVar *av, int fsset = 0) {
   Vec<Setters *> ss;
   Map<AVar *, AVar *> container_map;
   Vec<AVar *> eqvars, eqvars_set;
@@ -2058,7 +2084,7 @@ analyze_type_confluence(AVar *av) {
       container_map.put(x, v);
       for (int i = 0; i < ss.n; i++) {
 	forv_AVar(a, *ss.v[i]) {
-	  if (a->out == x->out) {
+	  if ((!fsset && a->out == x->out) || (fsset && a->sset == x->sset)) {
 	    ss.v[i]->set_add(x);
 	    goto Ldone;
 	  }
@@ -2083,17 +2109,24 @@ extend_analysis() {
     es->split = 0;
   forv_CreationSet(cs, fa->css) 
     cs->split = 0;
-  Vec<AVar *> type_confluences;
-  collect_es_type_confluences(type_confluences);
-  analyze_again = split_ess(type_confluences);
+  Vec<AVar *> confluences;
+  collect_es_type_confluences(confluences);
+  analyze_again = split_ess(confluences);
   if (!analyze_again) {
-    collect_cs_type_confluences(type_confluences);
-    forv_AVar(av, type_confluences) {
-      if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-	if (analyze_type_confluence(av))
-	  analyze_again = 1;
-      }
+    collect_cs_type_confluences(confluences);
+    forv_AVar(av, confluences)
+      if (analyze_confluence(av) > 1)
+	analyze_again = 1;
+  }
+  while (!analyze_again) {
+    collect_cs_sset_confluences(confluences);
+    int progress = 0;
+    forv_AVar(av, confluences) {
+      int r = analyze_confluence(av, 1);
+      analyze_again = (r == 2) || analyze_again;
+      progress = (r == 1) || progress;
     }
+    if (!progress) break;
   }
   if (analyze_again) {
     if (verbose_level) printf("extending analysis\n");
