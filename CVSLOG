@@ -22952,3 +22952,19 @@ Modified files:
 	chapel/test/domains/roxana/: test_index_expr1.future 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+03/31/05 13:14:15 -- bradc
+
+Log message:
+	Added a small script to the util/ directory that looks for
+	tabs in the source code.  This must either be run from the
+	chapel/ directory, or a CHPLHOME environment variable must
+	be set that points to that directory.  This is going to be
+	part of a nightly script that is run, but may also be good
+	for people to sanity check that their code is tab-free as
+	we make the transition away from tabs.
+
+Added files:
+	chapel/util/: lookForTabs 
+
