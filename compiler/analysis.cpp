@@ -17,6 +17,10 @@
 
 class LabelMap : public Map<char *, BaseAST *> {};
 
+Sym *__domain_start_index = 0;
+Sym *__domain_next_index = 0;
+Sym *__domain_valid_index = 0;
+
 ASymbol::ASymbol() : xsymbol(0) {
 }
 
@@ -381,7 +385,7 @@ gen_vardef(BaseAST *a) {
   VarDefStmt *def = dynamic_cast<VarDefStmt*>(a);
   VarSymbol *var = def->var;
   Sym *s = var->asymbol;
-  def->ainfo->rval = def->ainfo->sym = s;
+  def->ainfo->sym = s;
   if (var->type) {
     s->type = var->type->asymbol;
     if (typeid(var->type) != typeid(ClassType))
@@ -389,7 +393,7 @@ gen_vardef(BaseAST *a) {
   }
   if (def->init) {
     if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
-    if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->rval, def->ainfo);
+    if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->sym, def->ainfo);
   } else if (!s->is_var) {
     show_error("missing value initializer", def->ainfo);
     return -1;
@@ -400,7 +404,7 @@ gen_vardef(BaseAST *a) {
 static int
 gen_expr_stmt(BaseAST *a) {
   ExprStmt *expr = dynamic_cast<ExprStmt*>(a);
-  expr->ainfo->rval = expr->expr->ainfo->rval;
+  expr->ainfo->code = expr->expr->ainfo->code;
   return 0;
 }
 
@@ -422,18 +426,40 @@ gen_while(BaseAST *a) {
 static int
 gen_for(BaseAST *a) {
   ForLoopStmt *s = dynamic_cast<ForLoopStmt*>(a);
-  Code *body_code = 0;
+  Code *body_code = 0, *send;
   Vec<Stmt*> body;
   getLinkElements(body, s->body);
   forv_Stmt(ss, body)
     if1_gen(if1, &body_code, ss->ainfo->code);
+  Sym *index = new_sym();
   Code *setup_code = 0;
+  if1_gen(if1, &setup_code, s->domain->ainfo->code);
+  send = if1_send(if1, &setup_code, 2, 1, __domain_start_index, s->domain->ainfo->rval, index);
+  send->ast = s->ainfo;
   Sym *condition_rval = 0;
   Code *condition_code = 0;
+  send = if1_send(if1, &condition_code, 3, 1, __domain_valid_index, 
+	   s->domain->ainfo->rval, index, condition_rval);
+  send->ast = s->ainfo;
+  send =if1_send(if1, &body_code, 3, 1, __domain_next_index, 
+	   s->domain->ainfo->rval, index, condition_rval);
+  send->ast = s->ainfo;
   if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
 	   condition_rval, setup_code, 
 	   condition_code, 0, 
 	   body_code, s->ainfo);
+  return 0;
+}
+
+static int
+gen_cond(BaseAST *a) {
+  CondStmt *s = dynamic_cast<CondStmt*>(a);
+  AInfo *ifelse = s->elseStmt->ainfo;
+  if (s->elseStmt == nilStmt) ifelse = 0;
+  if1_if(if1, &s->ainfo->code, s->condExpr->ainfo->code, s->condExpr->ainfo->rval, 
+	 s->thenStmt->ainfo->code, s->thenStmt->ainfo->rval, ifelse ? ifelse->code : 0, 
+	 ifelse ? ifelse->rval : 0, 
+	 s->ainfo->rval, s->ainfo);
   return 0;
 }
 
@@ -448,9 +474,8 @@ gen_if1(BaseAST *ast) {
   switch (ast->astType) {
     case STMT_NOOP: break;
     case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
-    case STMT_TYPEDEF:
-    case STMT_FNDEF:
-      break;
+    case STMT_TYPEDEF: break;
+    case STMT_FNDEF: break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
 #if 0
     case STMT_RETURN: 
@@ -467,18 +492,116 @@ gen_if1(BaseAST *ast) {
     case STMT_BLOCK: break;
     case STMT_WHILELOOP: gen_while(ast); break;
     case STMT_FORLOOP: gen_for(ast); break;
+    case STMT_COND: gen_cond(ast); break;
+      
+    case EXPR_INTLITERAL: {
+      IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
+      s->ainfo->rval = new_sym(s->str);
+      s->ainfo->rval->constant = s->str;
+      s->ainfo->rval->type = sym_int64;
+      s->ainfo->rval->imm.v_int64 = s->val;
+      break;
+    }
+    case EXPR_FLOATLITERAL: {
+      FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
+      s->ainfo->rval = new_sym(s->str);
+      s->ainfo->rval->constant = s->str;
+      s->ainfo->rval->type = sym_float64;
+      s->ainfo->rval->imm.v_float64 = s->val;
+      break;
+    }
+    case EXPR_STRINGLITERAL: {
+      StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
+      s->ainfo->rval = new_sym(s->str);
+      s->ainfo->rval->constant = s->str;
+      s->ainfo->rval->type = sym_string;
+      break;
+    }
+    case EXPR_VARIABLE: {
+      Variable *s = dynamic_cast<Variable*>(ast);
+      s->ainfo->rval = s->var->asymbol;
+      break;
+    }
+    case EXPR_UNOP: {
+      UnOp *s = dynamic_cast<UnOp*>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->operand->ainfo->code);
+      Sym *op = 0;
+      switch (s->type) {
+	default: assert(!"case");
+	case UNOP_PLUS: op = if1_make_symbol(if1, "+"); break;
+	case UNOP_MINUS: op = if1_make_symbol(if1, "-"); break;
+	case UNOP_LOGNOT: op = if1_make_symbol(if1, "!"); break;
+	case UNOP_BITNOT: op = if1_make_symbol(if1, "~"); break;
+      }
+      Code *c = if1_send(if1, &s->ainfo->code, 3, 1, sym_operator, op, 
+			 s->operand->ainfo->rval, s->ainfo->rval);
+      c->ast = s->ainfo;
+      break;
+    }
+    case EXPR_SPECIALBINOP:
+    case EXPR_BINOP: {
+      BinOp *s = dynamic_cast<BinOp*>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
+      Sym *op = 0;
+      switch (s->type) {
+	default: assert(!"case");
+	case BINOP_PLUS: op = if1_make_symbol(if1, "+"); break;
+	case BINOP_MINUS: op = if1_make_symbol(if1, "-"); break;
+	case BINOP_MULT: op = if1_make_symbol(if1, "*"); break;
+	case BINOP_DIV: op = if1_make_symbol(if1, "/"); break;
+	case BINOP_MOD: op = if1_make_symbol(if1, "%"); break;
+	case BINOP_EQUAL: op = if1_make_symbol(if1, "=="); break;
+	case BINOP_LEQUAL: op = if1_make_symbol(if1, "<="); break;
+	case BINOP_GEQUAL: op = if1_make_symbol(if1, ">="); break;
+	case BINOP_GTHAN: op = if1_make_symbol(if1, ">"); break;
+	case BINOP_LTHAN: op = if1_make_symbol(if1, "<"); break;
+	case BINOP_NEQUALS: op = if1_make_symbol(if1, "!="); break;
+	case BINOP_BITAND: op = if1_make_symbol(if1, "&"); break;
+	case BINOP_BITOR: op = if1_make_symbol(if1, "|"); break;
+	case BINOP_BITXOR: op = if1_make_symbol(if1, "^"); break;
+	case BINOP_BITSL: op = if1_make_symbol(if1, "<<"); break;
+	case BINOP_BITSR: op = if1_make_symbol(if1, ">>"); break;
+	case BINOP_LOGAND: op = if1_make_symbol(if1, "&&"); break;
+	case BINOP_LOGOR: op = if1_make_symbol(if1, "||"); break;
+	case BINOP_EXP: op = if1_make_symbol(if1, "**"); break;
+	case BINOP_BY: op = if1_make_symbol(if1, "by"); break;
+	case BINOP_DOT: op = if1_make_symbol(if1, "."); break;
+      }
+      Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator, op, 
+			 s->left->ainfo->rval, s->right->ainfo->rval,
+			 s->ainfo->rval);
+      c->ast = s->ainfo;
+      break;
+    }
+    case EXPR_ASSIGNOP: {
+      AssignOp *s = dynamic_cast<AssignOp*>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
+      Sym *op = 0;
+      switch (s->type) {
+	default: assert(!"case");
+	case GETS_NORM: op = if1_make_symbol(if1, "="); break;
+	case GETS_PLUS: op = if1_make_symbol(if1, "+="); break;
+	case GETS_MINUS: op = if1_make_symbol(if1, "-="); break;
+	case GETS_TIMES: op = if1_make_symbol(if1, "*="); break;
+	case GETS_DIV: op = if1_make_symbol(if1, "/="); break;
+	case GETS_BITAND: op = if1_make_symbol(if1, "&="); break;
+	case GETS_BITOR: op = if1_make_symbol(if1, "|="); break;
+	case GETS_BITXOR: op = if1_make_symbol(if1, "^="); break;
+	case GETS_LSH: op = if1_make_symbol(if1, "<<="); break;
+	case GETS_RSH: op = if1_make_symbol(if1, ">>="); break;
+      }
+      Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator, op, 
+			 s->left->ainfo->rval, s->right->ainfo->rval,
+			 s->ainfo->rval);
+      c->ast = s->ainfo;
+      break;
+    }
 #if 0
-  STMT_COND,
-
-  EXPR_LITERAL,
-  EXPR_INTLITERAL,
-  EXPR_FLOATLITERAL,
-  EXPR_STRINGLITERAL,
-  EXPR_VARIABLE,
-  EXPR_UNOP,
-  EXPR_BINOP,
-  EXPR_SPECIALBINOP,
-  EXPR_ASSIGNOP,
   EXPR_SIMPLESEQ,
   EXPR_FLOOD,
   EXPR_COMPLETEDIM,
@@ -526,10 +649,18 @@ import_symbols(Vec<BaseAST *> &syms) {
   return 0;
 }
 
+static void
+init_symbols() {
+  __domain_start_index = if1_make_symbol(if1, "__domain_start_index");
+  __domain_next_index = if1_make_symbol(if1, "__domain_next_index");
+  __domain_valid_index = if1_make_symbol(if1, "__domain_valid_index");
+}
+
 int
 analyze_new_ast(BaseAST* a) {
   Vec<BaseAST *> syms;
   close_symbols(a, syms);
+  init_symbols();
   if (import_symbols(syms) < 0) return -1;
   if (build_functions(syms) < 0) return -1;
   return 0;

@@ -295,7 +295,7 @@ if1_if_label_false(IF1 *p, Code *ifcode, Label *label, AST *ast) {
 
 Code *
 if1_if(IF1 *p, Code **c, Code *ifcond, Sym *ifcondvar, 
-       Code *ifif, Sym *if_var, Code *ifthen, Sym *then_var, Sym *r, AST *ast) 
+       Code *ifif, Sym *if_var, Code *ifelse, Sym *else_var, Sym *r, AST *ast) 
 {
   Code *if_code, *if_goto;
   if1_gen(p, c, ifcond);
@@ -305,13 +305,13 @@ if1_if(IF1 *p, Code **c, Code *ifcond, Sym *ifcondvar,
   if1_gen(p, c, ifif);
   if (if_var)
     if1_move(p, c, if_var, r, ast);
-  if (ifthen || then_var) {
+  if (ifelse || else_var) {
     if_goto = if1_goto(p, c);
     if_goto->ast = ast;
     if1_if_label_false(p, if_code, if1_label(p, c, ast), ast);
-    if1_gen(p, c, ifthen);
-    if (then_var)
-      if1_move(p, c, then_var, r, ast);
+    if1_gen(p, c, ifelse);
+    if (else_var)
+      if1_move(p, c, else_var, r, ast);
     if1_set_goto(p, if_goto, if1_label(p, c, ast));
   } else
     if1_if_label_false(p, if_code, if1_label(p, c, ast), ast);

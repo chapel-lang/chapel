@@ -1246,10 +1246,10 @@ static void
 gen_if(IF1 *i, ParseAST *ast) {
   ParseAST *ifcond = ast->children.v[0];
   ParseAST *ifif = ast->children.v[1];
-  ParseAST *ifthen = ast->children.v[2];
+  ParseAST *ifelse = ast->children.v[2];
   ast->rval = new_sym(i, ast->scope);
   if1_if(i, &ast->code, ifcond->code, ifcond->rval, ifif->code, ifif->rval,
-	 ifthen ? ifthen->code:0, ifthen ? ifthen->rval:0, ast->rval, ast);
+	 ifelse ? ifelse->code:0, ifelse ? ifelse->rval:0, ast->rval, ast);
 }
 
 static void

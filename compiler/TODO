@@ -1,3 +1,10 @@
+** High Priority
+
+- remove AVar->lvalue stuff, and have an additional "lvalue_ret" field to
+  handle lvalue returns.  For INOUT parameters, have an additional return value.
+- generalize primitives, use strings and have a way to register the transfer
+  functions.
+
 ** Front End
 
 - handle global scope for :: 
