@@ -15598,3 +15598,19 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+01/25/05 11:18:38 -- jplevyak
+
+Log message:
+	Changed over from ::build to ::coercion_wrapper (the new seperate wrapper construction API)
+	Added caching for coercion wrappers so they are only built once.
+	The test cases now fail in a new place, I am going to continue
+	working on this but perhaps Steve could take a look as well.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+	chapel/compiler/include/: analysis.h callbacks.h stmt.h 
+	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h 
+
