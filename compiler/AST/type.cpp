@@ -1111,9 +1111,23 @@ Stmt* ClassType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
       // cloned classes until they are cloned
     }
 #endif
-    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
-    Stmt* assign_stmt = new ExprStmt(assign_expr);
+
+    Stmt* assign_stmt;
+    /** stopgap: strings initialized using _init_string;
+        this will eventually use VarInitExpr **/
+    if (tmp->type == dtString) {
+      Expr* args = lhs;
+      args->append(new MemberAccess(new Variable(_this), tmp));
+      args->append(rhs);
+      Symbol* init_string = Symboltable::lookupInternal("_init_string");
+      FnCall* call = new FnCall(new Variable(init_string), args);
+      assign_stmt = new ExprStmt(call);
+    } else {
+      Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
+      assign_stmt = new ExprStmt(assign_expr);
+    }
     stmts = appendLink(stmts, assign_stmt);
+
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
     ptmp = nextLink(ParamSymbol, ptmp);
 #endif
