@@ -15354,3 +15354,20 @@ Added files:
 	                            test_var_decl_init3.chpl 
 	                            test_var_decl_init3.good 
 
+---------------------------------------------------------------------------
+
+01/24/05 09:52:10 -- deitz
+
+Log message:
+	Changed FnDefStmt::build to use INT_FATAL instead of assert.
+	
+	Added one test of out parameters.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+Added files:
+	chapel/test/functions/deitz/: .cvsignore 
+	                              test_out_parameter1.chpl 
+	                              test_out_parameter1.good 
+
