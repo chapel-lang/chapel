@@ -726,7 +726,6 @@ UnOp::UnOp(unOpType init_type, Expr* op) :
   type(init_type),
   operand(op) 
 {
-  operand->parent = this;
   SET_BACK(operand);
 }
 
@@ -792,8 +791,6 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 {
   SET_BACK(left);
   SET_BACK(right);
-  left->parent = this;
-  right->parent = this;
 }
 
 
@@ -873,8 +870,6 @@ AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   type(init_type)
 {
   astType = EXPR_ASSIGNOP;
-  left->parent = this;
-  right->parent = this;
 }
 
 
@@ -941,7 +936,6 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   base(init_base),
   member(init_member)
 {
-  base->parent = this;
   SET_BACK(base);
 }
 
@@ -1003,7 +997,6 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
   argList(NULL) 
 {
   if (baseExpr) {
-    baseExpr->parent = this;
     SET_BACK(baseExpr);
   }
   setArgs(init_arg);
@@ -1022,11 +1015,6 @@ void ParenOpExpr::setArgs(Expr* init_arg) {
   // setup back pointers for args
   if (argList) {
     SET_BACK(argList);
-    Expr* arg = argList;
-    while (arg) {
-      arg->parent = this;
-      arg = nextLink(Expr, arg);
-    }
   }
 }
 
@@ -1416,7 +1404,6 @@ CastExpr::CastExpr(Type* init_newType, Expr* init_expr) :
   newType(init_newType),
   expr(init_expr)
 {
-  expr->parent = this;
   SET_BACK(expr);
 }
 

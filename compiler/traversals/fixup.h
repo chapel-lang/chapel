@@ -6,7 +6,8 @@
 
 class Fixup : public Traversal {
  public:
-  Vec<Stmt*> exprParent;
+  Vec<Expr*> exprParents;
+  Vec<Stmt*> exprStmts;
   int verify;
 
   Fixup::Fixup();
@@ -14,6 +15,7 @@ class Fixup : public Traversal {
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);
+  virtual void postProcessExpr(Expr* expr);
   virtual void preProcessSymbol(Symbol* sym);
   void run(ModuleSymbol* moduleList);
 };

@@ -19,7 +19,8 @@ class HyperCopyReplace : public Traversal {
 
 
 Fixup::Fixup(void) {
-  exprParent.add(NULL);
+  exprParents.add(NULL);
+  exprStmts.add(NULL);
 }
 
 
@@ -50,7 +51,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
     }
   }
 
-  exprParent.add(stmt);
+  exprStmts.add(stmt);
 
   if (!stmt->back || *stmt->back != stmt) {
     INT_FATAL(stmt, "stmt back incorrect");
@@ -59,25 +60,42 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
 
 void Fixup::postProcessStmt(Stmt* stmt) {
-  exprParent.pop();
+  exprStmts.pop();
 }
 
 
 void Fixup::preProcessExpr(Expr* expr) {
-  Stmt* tmp = exprParent.v[exprParent.n-1];
-  if (tmp == NULL) {
-    INT_FATAL(expr, "NULL in Fixup()");
+  Stmt* exprStmt = exprStmts.v[exprStmts.n-1];
+  if (exprStmt == NULL) {
+    INT_FATAL(expr, "Fixup cannot determine Expr's stmt");
   }
-  if (!verify) {
-    expr->stmt = tmp;
+  if (verify) {
+    if (expr->stmt != exprStmt) {
+      INT_FATAL(expr, "Expr's stmt is incorrect");
+    }
+  } else {
+    expr->stmt = exprStmt;
   }
-  else if (expr->stmt != tmp) {
-    INT_FATAL(expr, "Expression's statement is incorrect");
+
+  Expr* exprParent = exprParents.v[exprParents.n-1];
+  if (verify) {
+    if (expr->parent != exprParent) {
+      INT_FATAL(expr, "Expr's parent is incorrect");
+    }
+  } else {
+    expr->parent = exprParent;
   }
+
+  exprParents.add(expr);
 
   if (!expr->back || *expr->back != expr) {
     INT_FATAL(expr, "expr back incorrect");
   }
+}
+
+
+void Fixup::postProcessExpr(Expr* expr) {
+  exprParents.pop();
 }
 
 
