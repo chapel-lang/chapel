@@ -55,21 +55,21 @@ class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 
 static ScopeLookupCache universal_lookup_cache;
 
-ASymbol::ASymbol() : xsymbol(0) {
+ASymbol::ASymbol() : symbol(0), sym(0) {
 }
 
 char* 
 ASymbol::pathname() {
-  if (xsymbol && xsymbol->filename)
-    return xsymbol->filename;
+  if (symbol && symbol->filename)
+    return symbol->filename;
   else
     return 0;
 }
 
 int 
 ASymbol::line() {
-  if (xsymbol && xsymbol->lineno)
-    return xsymbol->lineno;
+  if (symbol && symbol->lineno)
+    return symbol->lineno;
   else
     return 0;
 }
@@ -160,7 +160,7 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
     Symbol *old_s = dynamic_cast<Symbol*>(old_ast);
     if (old_s->asymbol) {
       new_s->asymbol = old_s->asymbol->copy();
-      new_s->asymbol->xsymbol = new_s;
+      new_s->asymbol->symbol = new_s;
       context->smap.put(old_s->asymbol->sym, new_s->asymbol->sym);
       if (old_s->asymbol->sym->var) {
 	new_s->asymbol->sym->var = context->vmap->get(old_s->asymbol->sym->var);
@@ -177,7 +177,7 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
     Type *old_s = dynamic_cast<Type*>(old_ast);
     if (old_s->asymbol) {
       new_s->asymbol = (ASymbol*)old_s->asymbol->copy();
-      new_s->asymbol->xsymbol = new_s;
+      new_s->asymbol->symbol = new_s;
       context->smap.put(old_s->asymbol->sym, new_s->asymbol->sym);
     }
   } else
@@ -276,7 +276,7 @@ new_ASymbol(Symbol *symbol, int basic = 0) {
     s->sym = new Sym;
   s->sym->asymbol = s;
   if1_register_sym(if1, s->sym, name);
-  s->xsymbol = symbol;
+  s->symbol = symbol;
   return s;
 }
 
@@ -343,9 +343,9 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     if (tt) {
       Map<Type *, Type *> subs;
       form_SymSym(s, substitutions)
-	subs.put(dynamic_cast<Type*>(s->key->asymbol->xsymbol), 
-		 dynamic_cast<Type*>(s->value->asymbol->xsymbol));
-      Type *type = dynamic_cast<Type*>(s->asymbol->xsymbol);
+	subs.put(dynamic_cast<Type*>(s->key->asymbol->symbol), 
+		 dynamic_cast<Type*>(s->value->asymbol->symbol));
+      Type *type = dynamic_cast<Type*>(s->asymbol->symbol);
       Type *new_type = type->instantiate_generic(subs);
       assert(tt == new_type->asymbol->sym);
       return tt;
@@ -358,7 +358,7 @@ Fun *
 ACallbacks::order_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->xsymbol);
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->order_wrapper(&m->formal_to_actual_position);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
@@ -371,10 +371,10 @@ ACallbacks::coercion_wrapper(Match *m) {
     return NULL;
   Map<MPosition *, Symbol *> coercions;
   form_MPositionSym(s, m->coercion_substitutions) {
-    Type *type = dynamic_cast<Type*>(s->value->asymbol->xsymbol);
+    Type *type = dynamic_cast<Type*>(s->value->asymbol->symbol);
     coercions.put(s->key, type->name);
   }
-  FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->xsymbol);
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->coercion_wrapper(&coercions);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
@@ -385,7 +385,7 @@ Fun *
 ACallbacks::default_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->xsymbol);
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->default_wrapper(&m->default_args);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
@@ -398,9 +398,9 @@ ACallbacks::instantiate_generic(Match *m) {
     return NULL;
   Map<Type *, Type *> substitutions;
   form_SymSym(s, m->generic_substitutions)
-    substitutions.put(dynamic_cast<Type*>(s->key->asymbol->xsymbol), 
-		      dynamic_cast<Type*>(s->value->asymbol->xsymbol));
-  FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->xsymbol);
+    substitutions.put(dynamic_cast<Type*>(s->key->asymbol->symbol), 
+		      dynamic_cast<Type*>(s->value->asymbol->symbol));
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->instantiate_generic(&substitutions);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
@@ -410,12 +410,12 @@ ACallbacks::instantiate_generic(Match *m) {
 Sym *
 ASymbol::clone(CloneCallback *callback) {
   AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
-  if (!xsymbol) { // internal to analysis
+  if (!symbol) { // internal to analysis
     Sym *s = copy()->sym;
     c->context->smap.put(this->sym, s);
     return s;
   } else {
-    Type *type = dynamic_cast<Type*>(xsymbol);
+    Type *type = dynamic_cast<Type*>(symbol);
     TypeSymbol *type_symbol = dynamic_cast<TypeSymbol*>(type->name);
     TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(type_symbol->defPoint);
     Map<BaseAST*,BaseAST*> clone_map;
@@ -446,7 +446,7 @@ new_sym(char *name = 0, int global = 0) {
 static void
 map_type(Type *t) {
   t->asymbol = new_ASymbol(t->name->name);
-  t->asymbol->xsymbol = t;
+  t->asymbol->symbol = t;
 }
 
 static void
@@ -459,7 +459,7 @@ map_symbols(Vec<BaseAST *> &syms) {
     if (sym) {
       int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
       sym->asymbol = new_ASymbol(sym, basic);
-      sym->asymbol->xsymbol = sym;
+      sym->asymbol->symbol = sym;
       if (!sym->parentScope) {
 	sym->asymbol->sym->global_scope = 1;
       } else {
@@ -701,7 +701,7 @@ builtin_Symbol(Type *dt, Sym **sym, char *name) {
   if1_set_builtin(if1, *sym, name);
   if (!dt->asymbol->sym->type_kind)
     dt->asymbol->sym->type_kind = Type_PRIMITIVE;
-  (*sym)->asymbol->xsymbol = dt;
+  (*sym)->asymbol->symbol = dt;
 }
 
 static void
@@ -1152,10 +1152,10 @@ gen_if1(BaseAST *ast) {
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
       Sym *sym = s->var->asymbol->sym;
-      switch (sym->asymbol->xsymbol->astType) {
+      switch (sym->asymbol->symbol->astType) {
 	default: break;
 	case SYMBOL_TYPE: 
-	  sym = ((TypeSymbol*)sym->asymbol->xsymbol)->type->asymbol->sym;
+	  sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym;
 	  break;
       }
       s->ainfo->sym = sym;
@@ -1569,13 +1569,16 @@ build_functions(Vec<BaseAST *> &syms) {
 }
 
 void
-ACallbacks::compute_visible_functions() {
+ACallbacks::finalize_functions() {
   forv_Fun(fun, pdb->funs) {
     char *name = fun->sym->has.v[0]->name;
     assert(name);
-    forv_Sym(s, fun->sym->has)
+    MPosition p;
+    p.push(1);
+    forv_Sym(s, fun->sym->has) {
+      assert(!s->is_pattern); // not yet supported
       if (s->must_specialize && 
-	  is_reference_type(s->must_specialize->asymbol->xsymbol)) 
+	  is_reference_type(s->must_specialize->asymbol->symbol)) 
       {
 	Vec<Fun *> *v = universal_lookup_cache.get(name);
 	if (!v)
@@ -1583,6 +1586,15 @@ ACallbacks::compute_visible_functions() {
 	v->add(fun);
 	universal_lookup_cache.put(name, v);
       }
+      if (s->asymbol->symbol) {
+	ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
+	if (symbol->init && symbol->init != nilExpr) {
+	  assert(symbol->init->ainfo);
+	  fun->default_args.put(cannonicalize_mposition(p), symbol->init->ainfo);
+	}
+      }
+      p.inc();
+    }
   }
 }
 
@@ -1876,9 +1888,9 @@ to_AST_type(Sym *type) {
   if (!type)
     return dtUnknown;
   ASymbol *asymbol = type->asymbol;
-  BaseAST *atype = asymbol->xsymbol;
+  BaseAST *atype = asymbol->symbol;
   if (!atype)
-    atype = asymbol->sym->meta_type->asymbol->xsymbol;
+    atype = asymbol->sym->meta_type->asymbol->symbol;
   Type *btype = dynamic_cast<Type *>(atype);
 #ifdef COMPLETE_TYPING
   assert(btype);
@@ -1944,7 +1956,7 @@ call_info(ParenOpExpr* a, Vec<FnSymbol *> &fns) {
   Vec<Fun *> funs;
   call_info(ff, ast, funs);
   forv_Fun(f, funs) {
-    FnSymbol *fs = dynamic_cast<FnSymbol *>(f->sym->asymbol->xsymbol);
+    FnSymbol *fs = dynamic_cast<FnSymbol *>(f->sym->asymbol->symbol);
     assert(fs);
     fns.add(fs);
   }
@@ -1959,7 +1971,7 @@ constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s) {
   Vec<Sym *> consts;
   constant_info(ast, consts, sym);
   forv_Sym(ss, consts) {
-    Symbol *fs = dynamic_cast<Symbol *>(ss->asymbol->xsymbol);
+    Symbol *fs = dynamic_cast<Symbol *>(ss->asymbol->symbol);
     assert(fs);
     constants.add(fs);
   }
@@ -1987,7 +1999,7 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
       }
     }
     if (iv) {
-      BaseAST *sym = iv->asymbol->xsymbol;
+      BaseAST *sym = iv->asymbol->symbol;
       if (!sym)
 	return -5;
       s = dynamic_cast<Symbol*>(sym);
@@ -2009,7 +2021,7 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
 	  return -9;
 	if (fns->n > 1)
 	  return -10;
-	BaseAST *sym = fns->v[0]->sym->asymbol->xsymbol;
+	BaseAST *sym = fns->v[0]->sym->asymbol->symbol;
 	if (!sym)
 	  return -11;
 	s = dynamic_cast<Symbol*>(sym);

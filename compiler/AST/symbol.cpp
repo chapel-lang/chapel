@@ -304,6 +304,7 @@ Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCa
 void ParamSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(this, traversal, false);
   TRAVERSE(type, traversal, false);
+  TRAVERSE(init, traversal, false);
 }
 
 

@@ -21,7 +21,7 @@ class Sym;
 
 class ACallbacks : public Callbacks {
 public:
-  void compute_visible_functions();
+  void finalize_functions();
   void new_LUB_type(Sym *);
   Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
   Sym *new_Sym(char *name = 0);
@@ -52,7 +52,7 @@ class ASymbol : public gc {
   int line();
   ASymbol *copy();
 
-  BaseAST *xsymbol;
+  BaseAST *symbol;
   Sym *sym;
 
   ASymbol();

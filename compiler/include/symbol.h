@@ -147,10 +147,13 @@ class FnSymbol : public Symbol {
   virtual void traverseDefSymbol(Traversal* traverse);
 
   FnSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
-  FnSymbol* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals) { return 0; }
+  FnSymbol* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals) 
+    { assert(!"not implemented"); return 0; }
   FnSymbol* coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions);
-  FnSymbol* default_wrapper(Vec<MPosition *> *defaults) { return 0; }
-  FnSymbol* instantiate_generic(Map<Type *, Type *> *generic_substitutions) { return 0; }
+  FnSymbol* default_wrapper(Vec<MPosition *> *defaults) 
+    { assert(!"not implemented"); return 0; }
+  FnSymbol* instantiate_generic(Map<Type *, Type *> *generic_substitutions) 
+    { assert(!"not implemented"); return 0; }
 
   bool isNull(void);
 
