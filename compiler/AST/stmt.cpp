@@ -515,6 +515,9 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
   // than separating the variable declaration from its initialization.
 
   while (aVar) {
+    if (aVar->parentScope->type == SCOPE_MODULE) {
+      fprintf(outfile, "static ");
+    }
     if (aVar->isConst) {
       fprintf(outfile, "const ");
     }
