@@ -1,9 +1,10 @@
 Description of files in this directory:
 
-codegen.cpp : starting point for back-end code generation
-driver.cpp : main(), flag list, and top-level driver for compiler
-files.cpp : routines related to creating tmp directory, output files
-misc.cpp : error msg routines, assertion failures, internal errors
-mysystem.cpp : wrapper around system()
+codegen.cpp    : starting point for back-end code generation
+datatype.cpp   : datatype-related utilities
+driver.cpp     : main(), flag list, and top-level driver for compiler
+files.cpp      : routines related to creating tmp directory, output files
+misc.cpp       : error msg routines, assertion failures, internal errors
+mysystem.cpp   : wrapper around system()
 stringutil.cpp : string (well, char*) utilities
 

@@ -255,7 +255,7 @@ init_system() {
 
 static void
 compute_program_name_loc(char* orig_argv0, char** name, char** loc) {
-  char* argv0 = glomstrings(1, orig_argv0);
+  char* argv0 = copystring(orig_argv0);
   char* lastslash = strrchr(argv0, '/');
   if (lastslash == NULL) {
     *name = argv0;

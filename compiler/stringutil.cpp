@@ -39,3 +39,8 @@ char* glomstrings(int numstrings, ...) {
 
   return newstring;
 }
+
+
+char* copystring(char* str) {
+  return glomstrings(1, str);
+}

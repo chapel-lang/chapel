@@ -8,7 +8,9 @@ extern char saveCDir[FILENAME_MAX];
 
 void deleteTmpDir(void);
 
-FILE* openoutfile(char* infilename);
+FILE* openOutfiles(char* infilename, 
+		   char** intheadfilename, FILE** intheadfile,
+		   char** extheadfilename, FILE** extheadfile);
 void closefile(FILE* thefile);
 
 void openMakefile(char* srcfilename, char* compilerDir);

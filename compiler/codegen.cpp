@@ -15,6 +15,9 @@ static void genAST(FILE* outfile, AST* ast);
 
 static int hitUnknown = 0;
 
+static FILE* intheadfile;
+static FILE* extheadfile;
+
 struct binOp {
   char* astSymName;
   char* astString;
@@ -229,6 +232,22 @@ static void genAST(FILE* outfile, AST* ast) {
     }
     break;
 
+  case AST_scope:
+    fprintf(outfile, "{\n");
+    forv_AST(subtree, *ast) {
+      genASTDecls(outfile, subtree);
+    }
+    forv_AST(subtree, *ast) {
+      genAST(outfile, subtree);
+      fprintf(outfile, ";\n");
+    }
+    fprintf(outfile, "}\n");
+    break;
+
+  case AST_def_fun:
+    fprintf(outfile, "/* function defined here */");
+    break;
+
   case AST_const:
     fprintf(outfile, "%s", ast->string);
     break;
@@ -363,12 +382,47 @@ static void genAST(FILE* outfile, AST* ast) {
 }
 
 
-static void genFun(FILE* outfile, Fun* fn) {
+static void genFunHead(FILE* outfile, Fun* fn) {
   const char* fname = fn->sym->name;
-  AST* root;
+  int numargs;
+  int i;
 
   // something with fn->ast->last()
-  fprintf(outfile, "void %s() ", fname);
+  if (strcmp(fname, "__init") != 0) {
+    fprintf(outfile, "static ");
+  }
+  fprintf(outfile, "void %s", fname);
+
+  /* formal parameter list */
+  fprintf(outfile, "(");
+  numargs = fn->args.n;
+  if (numargs == 1) {
+    fprintf(outfile, "void");
+  } else {
+    for (i=1; i<numargs; i++) {
+      if (i > 1) {
+	fprintf(outfile, ", ");
+      }
+      genDT(outfile, fn->args.v[i]->type);
+      fprintf(outfile, " ");
+      fprintf(outfile, "%s", fn->args.v[i]->sym->name);
+    }
+  }
+  fprintf(outfile,")");
+}
+
+
+static void genFun(FILE* outfile, Fun* fn) {
+  AST* root;
+
+  /* gen prototype */
+  genFunHead(intheadfile, fn);
+  fprintf(intheadfile, ";\n");
+  
+  /* gen function itself */
+  genFunHead(outfile, fn);
+  fprintf(outfile, " ");
+
   if (fn->ast->kind == AST_def_fun) {
     root = fn->ast->last();
   } else {
@@ -379,10 +433,7 @@ static void genFun(FILE* outfile, Fun* fn) {
 
 
 static void genFuns(FILE* outfile, FA* fa) {
-  Vec<Fun*> funs;
-  
-  funs.copy(fa->funs);
-  forv_Fun(fn, funs) {
+  forv_Fun(fn, fa->funs) {
     // const char* name = fn->sym->name ? fn->sym->name : "<unknown>";
     // const char* sname = fn->sym->in ? fn->sym->in->name : "<unknown>";
     // printf("%s::%s\n", sname, name);
@@ -394,21 +445,30 @@ static void genFuns(FILE* outfile, FA* fa) {
 }
 
 
-static void genHeader(FILE* outfile) {
-  fprintf(outfile, "#include \"stdchpl.h\"\n\n");
+static void genHeader(FILE* outfile, char* extheadfilename, 
+		      char* intheadfilename) {
+  fprintf(outfile, "#include \"stdchpl.h\"\n");
+  fprintf(outfile, "#include \"%s\"\n", extheadfilename);
+  fprintf(outfile, "#include \"%s\"\n", intheadfilename);
+  fprintf(outfile, "\n");
 }
 
 
 void codegen(FA* fa, char* infilename, char* compilerDir) {
+  FILE* outfile;
+  char* intheadfilename;
+  char* extheadfilename;
 
   openMakefile(infilename, compilerDir);
+  outfile = openOutfiles(infilename, &extheadfilename, &extheadfile, 
+                         &intheadfilename, &intheadfile);
 
-  FILE* outfile = openoutfile(infilename);
-
-  genHeader(outfile);
+  genHeader(outfile, extheadfilename, intheadfilename);
   genFuns(outfile, fa);
 
   closefile(outfile);
+  closefile(intheadfile);
+  closefile(extheadfile);
   closeMakefile();
 
   if (hitUnknown) {

@@ -22,7 +22,8 @@ static void createTmpDir(void) {
   char* commandExplanation;
 
   if (strcmp(saveCDir, "") == 0) {
-    const char* tmpdirprefix = "/tmp/chpl-deleteme.";
+    const char* tmpdirprefix = "/tmp/chpl-";
+    const char* tmpdirsuffix = ".deleteme";
 
     pid_t mypid = getpid();
 #ifdef DEBUGTMPDIR
@@ -32,7 +33,7 @@ static void createTmpDir(void) {
     char mypidstr[MAX_CHARS_PER_PID];
     snprintf(mypidstr, MAX_CHARS_PER_PID, "%d", mypid);
 
-    tmpdirname = glomstrings(2, tmpdirprefix, mypidstr);
+    tmpdirname = glomstrings(3, tmpdirprefix, mypidstr, tmpdirsuffix);
 
     intDirName = tmpdirname;
     commandExplanation = "making temporary directory";
@@ -97,23 +98,33 @@ static char* stripdirectories(char* filename) {
   } else {
     filenamebase++;
   }
-  char* strippedname = glomstrings(1, filenamebase);
+  char* strippedname = copystring(filenamebase);
 
   return strippedname;
 }
 
 
-static char* genoutfilename(char* infilename) {
-  char* infilenamebase = stripdirectories(infilename);
-  
-  char* outfilename = genIntFilename(infilenamebase);
+static char* stripextension(char* filename) {
+  char* newfilename = copystring(filename);
+  char* suffix = strrchr(newfilename, '.');
+  if (suffix != NULL) {
+    *suffix = '\0';
+  }
+  return newfilename;
+}
 
-  char* finalsuffix = strrchr(outfilename, '.');
-  finalsuffix++;
-  *finalsuffix++ = 'c';
-  *finalsuffix = '\0';
 
-  return outfilename;
+static void genOutfileNames(char* infilename, char** outfilename, 
+			    char** extheadfilename, char** intheadfilename) {
+  static char* outfilesuffix = ".c";
+  static char* extheadsuffix = ".h";
+  static char* intheadsuffix = "-internal.h";
+
+  char* infilenamebase = stripextension(stripdirectories(infilename));
+
+  *outfilename = glomstrings(2, infilenamebase, outfilesuffix);
+  *extheadfilename = glomstrings(2, infilenamebase, extheadsuffix);
+  *intheadfilename = glomstrings(2, infilenamebase, intheadsuffix);
 }
 
 
@@ -143,11 +154,25 @@ void closefile(FILE* thefile) {
 }
 
 
-FILE* openoutfile(char* infilename) {
-  char* outfilename = genoutfilename(infilename);
-  fprintf(makefile, "\t%s \\\n", outfilename);
+FILE* openOutfiles(char* infilename, 
+		   char** extheadfilename, FILE** extheadfile,
+		   char** intheadfilename, FILE** intheadfile) {
+  char* outfilename;
+  FILE* outfile;
 
-  return openfile(outfilename);
+  genOutfileNames(infilename, &outfilename, extheadfilename, intheadfilename);
+
+  char* fulloutfilename = genIntFilename(outfilename);
+  char* fullextheadfilename = genIntFilename(*extheadfilename);
+  char* fullintheadfilename = genIntFilename(*intheadfilename);
+
+  fprintf(makefile, "\t%s \\\n", fulloutfilename);
+  
+  outfile = openfile(fulloutfilename);
+  *extheadfile = openfile(fullextheadfilename);
+  *intheadfile = openfile(fullintheadfilename);
+
+  return outfile;
 }
 
 

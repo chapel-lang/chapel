@@ -84,7 +84,7 @@ process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
   char *end;
   char** argv = (char**)MALLOC((argc+1)*sizeof(char*));
   for (i=0; i<argc; i++) {
-    argv[i] = glomstrings(1, orig_argv[i]);
+    argv[i] = copystring(orig_argv[i]);
   }
   argv[i] = NULL;
   ArgumentDescription *desc = arg_state->desc;
@@ -129,7 +129,7 @@ process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
           if (len == (int)strlen(desc[i].name) &&
 	      !strncmp(desc[i].name,(*argv)+2, len))
 	  {
-	    char* currentFlag = glomstrings(1, *argv);
+	    char* currentFlag = copystring(*argv);
 	    if (!end)
 	      *argv += strlen(*argv) - 1;
 	    else

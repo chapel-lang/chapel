@@ -231,6 +231,7 @@ function operator(a:array, s:symbol, b:array) {
 function reshape(l:locale, s:sequence) { l }
 
 function write(a) { 0 }
+function writeln() { 0 }
 function writeln(a) { 0 }
 function print(a) { #__print ^^ a; }
 
