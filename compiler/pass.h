@@ -8,6 +8,8 @@ class Stmt;
 
 class Pass : public gc {
  public:
+  char* filename;
+
   virtual void run(Stmt* program) = 0;
 };
 
@@ -16,7 +18,7 @@ class DummyPass : public Pass {
   virtual void run(Stmt* program);
 };
 
-void runPasses(char* passfilename, Stmt* program);
+void runPasses(char* passfilename, Stmt* program, char* filename);
 
 #endif
 

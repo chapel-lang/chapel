@@ -16,4 +16,7 @@ extern int fgraph_frequencies;
 extern char system_dir[FILENAME_MAX];
 extern int print_call_depth;
 
+extern int analyzeNewAST;
+void do_analysis(char *fn);
+
 #endif

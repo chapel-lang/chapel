@@ -54,6 +54,7 @@ GEYSA_CVS_SRCS = \
 	pnode.cpp \
 	prim.cpp \
 	region.cpp \
+	runAnalysis.cpp \
 	scope.cpp \
 	ssu.cpp \
 	stringutil.cpp \

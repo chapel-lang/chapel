@@ -391,13 +391,13 @@ void ClassType::addScope(SymScope* init_scope) {
 }
 
 
-bool ClassType::isNull(void) {
-  return (this == nilClassType);
+void ClassType::traverseType(Traversal* traversal) {
+  definition->traverseList(traversal, false);
 }
 
 
-void ClassType::print(FILE* outfile) {
-  fprintf(outfile, "/* Classes not implemented yet */\n");
+bool ClassType::isNull(void) {
+  return (this == nilClassType);
 }
 
 

@@ -9,6 +9,7 @@ CXX_SRCS = \
 	nils.cpp \
 	printAST.cpp \
 	printSymtab.cpp \
+	setupStmtLinks.cpp \
 	stmt.cpp \
 	symbol.cpp \
         symtab.cpp \

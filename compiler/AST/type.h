@@ -128,9 +128,10 @@ class ClassType : public Type {
   void addDefinition(Stmt* init_definition);
   void addScope(SymScope* init_scope);
 
+  void traverseType(Traversal* traversal);
+
   bool isNull(void);
 
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);

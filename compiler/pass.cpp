@@ -24,12 +24,13 @@ static Pass* stringToPass(char* passname) {
 }
 
 
-static void runPass(Pass* pass, Stmt* program) {
+static void runPass(Pass* pass, Stmt* program, char* filename) {
+  pass->filename = filename;
   pass->run(program);
 }
 
 
-static void parsePassFile(char* passfilename, Stmt* program) {
+static void parsePassFile(char* passfilename, Stmt* program, char* filename) {
   FILE* passfile = openInputFile(passfilename);
   char passname[80];
   int readword;
@@ -48,24 +49,24 @@ static void parsePassFile(char* passfilename, Stmt* program) {
       int passnameLen = strlen(passnameStart);
       passnameStart[passnameLen-2] = '\0';
       Pass* pass = stringToPass(passnameStart);
-      runPass(pass, program);
+      runPass(pass, program, filename);
     }
   } while (readword == 1 && !done);
   closeInputFile(passfile);
 }
 
 
-void runPasses(char* passfilename, Stmt* program) {
+void runPasses(char* passfilename, Stmt* program, char* filename) {
   if (strcmp(passfilename, "") == 0) {
     Pass** pass = passlist+1;  // skip over FIRST
     
     while ((*pass) != NULL) {
-      runPass(*pass, program);
+      runPass(*pass, program, filename);
       
       pass++;
     }
   } else {
-    parsePassFile(passfilename, program);
+    parsePassFile(passfilename, program, filename);
   }
 }
 

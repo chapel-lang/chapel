@@ -228,7 +228,7 @@ load_one(char *fn) {
   return 0;
 }
 
-static void
+void
 do_analysis(char *fn) {
   if1_finalize(if1);
   if (logging(LOG_IF1))
@@ -272,18 +272,7 @@ compile_one(char *fn) {
   bool test_lang = is_test_lang(fn);
   if (!test_lang) {
     fileToAST(fn, d_debug_level);
-    if (analyzeNewAST) {
-      if1->callback = new ACallbacks;
-      init_ast();
-      Vec<Stmt *> stmts;
-      stmts.add(internalPreludeStmts);
-      stmts.add(preludeStmts);
-      stmts.add(programStmts);
-      stmts.add(entryPoint);
-      AST_to_IF1(stmts);
-      do_analysis(fn);
-    }
-    runPasses(passlist_filename, programStmts);
+    runPasses(passlist_filename, programStmts, fn);
     if (!suppress_codegen)
       codegen(fn, system_dir, programStmts);
     else {

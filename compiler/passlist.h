@@ -6,6 +6,8 @@
 #include "getstuff.h"
 #include "printAST.h"
 #include "printSymtab.h"
+#include "runAnalysis.h"
+#include "setupStmtLinks.h"
 #include "testGetStuff.h"
 #include "verifyASTType.h"
 
@@ -16,6 +18,8 @@
 Pass* passlist[] = {
   FIRST,
 
+  RUN(SetupStmtLinks),
+  RUN(RunAnalysis),
   RUN(FindUnknownTypes),
 
   LAST

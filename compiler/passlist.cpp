@@ -10,6 +10,8 @@ REGISTER(GetStuff);
 REGISTER(PrintAST);        // BLC: pretty-prints the AST
 REGISTER(PrintStmts);
 REGISTER(PrintSymtab);     // BLC: prints out the whole symboltable
+REGISTER(RunAnalysis);
+REGISTER(SetupStmtLinks);
 REGISTER(TestGetStuff);
 REGISTER(VerifyASTType);
 
