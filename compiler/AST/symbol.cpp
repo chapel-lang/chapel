@@ -305,7 +305,7 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 
 
 Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new ParamSymbol(intent, copystring(name), type);
+  return new ParamSymbol(intent, copystring(name), type, init->copy(clone, map, analysis_clone));
 }
 
 
@@ -610,8 +610,80 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
 
 
 FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
-  INT_FATAL(this, "FnSymbol::default_wrapper not implemented");
-  return NULL;
+  static int uid = 1; // Unique ID for wrapped functions
+  FnDefStmt* wrapper_stmt = NULL;
+  FnSymbol* wrapper_symbol;
+
+  SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
+  wrapper_symbol = new FnSymbol(name);
+  wrapper_symbol->cname =
+    glomstrings(3, cname, "_default_params_wrapper_", intstring(uid++));
+  wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
+  Symbol* wrapper_formals = formals->copyList();
+  Symbol* actuals = wrapper_formals;
+  Variable* argList = new Variable(actuals);
+  actuals = nextLink(Symbol, actuals);
+  while (actuals) {
+    argList->append(new Variable(actuals));
+    actuals = nextLink(Symbol, actuals);
+  }
+  Symboltable::pushScope(SCOPE_LOCAL);
+  Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(this), argList));
+  for (int i = 0; i < defaults->n; i++) {
+    int j = 1;
+    MPosition p;
+    Symbol* formal_change = wrapper_formals;
+    Variable* actual_change = argList;
+    forv_MPosition(p, asymbol->sym->fun->numeric_arg_positions) {
+      if (defaults->v[i] ==
+	  asymbol->sym->fun->numeric_arg_positions.e[j]) {
+	char* temp_name =
+	  glomstrings(2, "_default_param_temp_", formal_change->name);
+	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
+					       ((ParamSymbol*)formal_change)->init->copy());
+	Stmt* temp_def_stmt = new VarDefStmt(temp_symbol);
+	temp_symbol->setDefPoint(temp_def_stmt);
+	temp_def_stmt->append(wrapper_body);
+	wrapper_body = temp_def_stmt;
+	actual_change->var = temp_symbol;
+	if (formal_change == wrapper_formals) {
+	  wrapper_formals = nextLink(Symbol, formal_change);
+	  if (!wrapper_formals) {
+	    wrapper_formals = nilSymbol;
+	  }
+	}
+	if (!formal_change->prev->isNull()) {
+	  formal_change->prev->next = formal_change->next;
+	}
+	if (!formal_change->next->isNull()) {
+	  formal_change->next->prev = formal_change->prev;
+	}
+      }
+      if (!formal_change->next->isNull()) {
+	formal_change = nextLink(Symbol, formal_change);
+      }
+      if (!actual_change->next->isNull()) {
+	actual_change = nextLink(Variable, actual_change);
+      }
+      j++;
+    }
+  }
+  SymScope* block_scope = Symboltable::popScope();
+  BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
+  wrapper_block->setBlkScope(block_scope);
+  block_scope->stmtContext = wrapper_block;
+  Type* wrapper_return_type = retType;
+  wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
+					  wrapper_return_type, wrapper_block);
+  FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(defPoint);
+
+  if (!def_stmt) {
+    INT_FATAL(this, "error in FnSymbol::default_wrapper");
+  }
+
+  def_stmt->insertBefore(wrapper_stmt);
+  Symboltable::setCurrentScope(save_scope);
+  return wrapper_stmt->fn;
 }
 
 

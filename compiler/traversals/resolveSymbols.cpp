@@ -7,37 +7,26 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
-#include "../passes/runAnalysis.h"
 
 /** Assumption: Analysis has run **/
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
 
+  if (Variable* var_expr = dynamic_cast<Variable*>(expr)) {
+    if (var_expr->var->type == dtUnknown) {
+      var_expr->var->type = type_info(var_expr->var);
+    }
+  }
+
   if (MemberAccess* dot = dynamic_cast<MemberAccess*>(expr)) {
     if (UnresolvedSymbol* UnresolvedMember =
 	dynamic_cast<UnresolvedSymbol*>(dot->member)) {
-      if (RunAnalysis::runCount > 0) {
-	Type* type;
-	int offset;
-	resolve_member_access(dot, &offset, &type);
-	if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
+      if (analyzeAST) {
+	if (ClassType* class_type = dynamic_cast<ClassType*>(dot->base->typeInfo())) {
 	  dot->member = 
 	    Symboltable::lookupInScope(UnresolvedMember->name,
 				       class_type->classScope);
-	    /** Can I use offset here? **
-	    class_type->fields.v[offset]; offset = 0, 8, ...?
-	    Is this the offset in the generated type
-	    I guess I use lookupInScope here?
-	    */
 	}
-
-	    /*  OLD API
-	Symbol* ResolvedMember;
-	if (resolve_symbol(UnresolvedMember, dot, ResolvedMember)) {
-	  INT_FATAL(dot, "Major error resolving MemberAccess in ResolveSymbols");
-	}
-	dot->member = ResolvedMember;
-	    */
       }
       else {
 	if (Variable* var = dynamic_cast<Variable*>(dot->base)) {
@@ -69,7 +58,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 	    dynamic_cast<UnresolvedSymbol*>(var->var)) {
 	  if (strcmp(call->name, "__primitive")) { /** can't resolve that **/
 
-	    if (RunAnalysis::runCount > 0) {
+	    if (analyzeAST) {
 	      Vec<FnSymbol*> fns;
 	      call_info(paren, fns);
 	      if (fns.n != 1) {
