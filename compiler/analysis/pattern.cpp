@@ -301,11 +301,10 @@ Matcher::build_positional_map(MPosition &app, int nactuals, Vec<Fun *> **funs) {
 	  MPosition *fcpp = f->named_to_positional.get(fcnp);
 	  acpps_for_acnps.set_add(acpp);
 	  fcpps_for_fcnps.set_add(fcpp);
-	  if (acpp != fcpp) {
-	    m->actual_to_formal_position.put(acpp, fcpp);
-	    m->formal_to_actual_position.put(fcpp, acpp);
+	  m->actual_to_formal_position.put(acpp, fcpp);
+	  m->formal_to_actual_position.put(fcpp, acpp);
+	  if (acpp != fcpp)
 	    mapped_positions.put(acpp, 1);
-	  }
 	}
       }
       app.push(1);
@@ -328,11 +327,10 @@ Matcher::build_positional_map(MPosition &app, int nactuals, Vec<Fun *> **funs) {
 	  fpp.inc();
 	  continue;
 	}
-	if (unused_acpps.v[i] != fcpp) {
-	  m->actual_to_formal_position.put(unused_acpps.v[i], fcpp);
-	  m->formal_to_actual_position.put(fcpp, unused_acpps.v[i]);
+	m->actual_to_formal_position.put(unused_acpps.v[i], fcpp);
+	m->formal_to_actual_position.put(fcpp, unused_acpps.v[i]);
+	if (unused_acpps.v[i] != fcpp)
 	  mapped_positions.put(unused_acpps.v[i], 1);
-	}
 	fpp.inc();
       }
     }
