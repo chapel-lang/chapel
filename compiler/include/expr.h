@@ -187,6 +187,7 @@ class ComplexLiteral : public Literal {
 
   Type* typeInfo(void);
 
+  void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenComplex(FILE* outfile, bool real);
 };
