@@ -68,8 +68,8 @@
 # the run, a second log file named <logfile>.summary will be
 # generated containing only the Errors that were logged.
 #
-# The -valgrind option specifies that the compiler should be run
-# under valgrind in order to find errors.
+# The -valgrind option specifies that the compiler and generated
+# executable should be run using valgrind in order to find errors.
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
@@ -116,6 +116,10 @@
 #    Rather, only the compiler output will be diffed against the
 #    expected output (note that when a compile fails, this will
 #    also happen automatically).
+#
+#  - if the subdirectory contains a NOVGRBIN file and the -valgrind
+#    flag was used, the generated binary will not be run using 
+#    valgrind (the compiler still would be).
 #
 #  - if the subdirectory contains a COMPOPTS or EXECOPTS file,
 #    the options listed in that file will be added to the compiler

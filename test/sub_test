@@ -100,6 +100,12 @@ else
     set execute = "yes"
 endif
 
+if (-r ./NOVGRBIN) then
+    set vgrbin = "no"
+else
+    set vgrbin = "yes"
+endif
+
 if (-r ./COMPSTDIN) then
     set compstdin = "`cat ./COMPSTDIN`"
 else
@@ -120,9 +126,15 @@ else
 endif
 
 if ($CHPLTESTVGRND == "on") then
-set valgrnd = "$CHPL_VALGRIND_LINUX32 valgrind $CHPL_VALGRIND_OPTIONS --suppressions=$testdir/../compiler/valgrind.suppressions -q "
+  set valgrndcomp = "$CHPL_VALGRIND_LINUX32 valgrind $CHPL_VALGRIND_OPTIONS --suppressions=$testdir/../compiler/valgrind.suppressions -q "
+  if ($vgrbin == "yes") then
+    set valgrndbin = "$CHPL_VALGRIND_LINUX32 valgrind $CHPL_VALGRIND_OPTIONS $vgbinsupp -q "
+  else
+    set valgrndbin = ""
+  endif
 else
-set valgrnd = ""
+  set valgrndcomp = ""
+  set valgrndbin = ""
 endif
 
 # compile, execute, and compare each source file
@@ -134,8 +146,8 @@ foreach chplsrc ($testsrc)
     set complog = $execfile.comp.out.tmp
     set execlog = $execfile.exec.out.tmp
 
-    echo \[Executing: \"$valgrnd$compiler $compopts $chplsrc $lastcompopts \< $compstdin\"\]
-    $timedexec $timeout $valgrnd$compiler $compopts $chplsrc $lastcompopts < "$compstdin" >& $complog
+    echo \[Executing: \"$valgrndcomp$compiler $compopts $chplsrc $lastcompopts \< $compstdin\"\]
+    $timedexec $timeout $valgrndcomp$compiler $compopts $chplsrc $lastcompopts < "$compstdin" >& $complog
 	
 
     if ( $status != 0 || $execute == "no") then
@@ -180,12 +192,12 @@ foreach chplsrc ($testsrc)
 
 	    mv $complog $execlog
 
-	    echo \[Executing program $execfile $execopts at `date +"%H:%M:%S"`\]
+	    echo \[Executing program $valgrndbin$execfile $execopts at `date +"%H:%M:%S"`\]
 	    # Append program output to that of the 
 	    # compiler (in case warning were output
 	    # by compiler)
+	    $timedexec $timeout $valgrndbin./$binfile $execopts >>& $execlog
 
-	    $timedexec $timeout ./$binfile $execopts >>& $execlog
 
 	    if ( $status != 0 ) then
 		cat $execlog
