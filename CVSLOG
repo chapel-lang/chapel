@@ -11099,3 +11099,80 @@ Removed files:
 	                                   test_record_method2.chpl 
 	                                   test_record_method2.good 
 
+---------------------------------------------------------------------------
+
+12/03/04 11:31:06 -- bradc
+
+Log message:
+	Turned on an error message if two symbols with the
+	same name are defined in the same scope and the
+	symbols are not function names.
+	
+	Made forall expressions (e.g., [i in D] A(i) ) push
+	their own symboltable scope (of type SCOPE_FORALLEXPR)
+	so that symbols defined in the forall expression wouldn't
+	conflict with symbols in the parent scope.  These scopes
+	store a context pointer to the forall expression that
+	they are associated with.
+	
+	Previously, the forall expression concept was being
+	stored in an Expr named DomainExpr.  This change
+	renamed this to be ForallExpr, which more closely matches
+	the way we think of the concept.
+	
+	Also, refactored the way some statements are created
+	and their contexts stored so that line numbers more
+	closely relate to the beginning of the statement and
+	not the end.  Improved the printing of the symboltable
+	so that each scope not only prints out its type, but
+	also some indication of what it's associated with --
+	for things with symbol contexts (modules, classes),
+	this is the name of that symbol and its location in
+	the source file.  For things with expression or
+	statement contexts, this is just the location in the
+	source file.  In making this change, found that some
+	of the scopes were storing a symcontext that was the
+	function name, which seemed like a bad idea to me
+	(since the context is more specific than that, and
+	there ought to be another way to climb to the function
+	if necessary), so I removed these contexts and it
+	didn't seem to break anything...  If this represents
+	a problem, let's discuss a different approach.
+	
+	Refactored the way foralls and assignments are
+	handled in the parser to be a bit cleaner and
+	have fewer repeated cases.
+	
+	Renamed the U class in one of the protoast/mg codes
+	because it conflicted with the U array declared later
+	in the same program.
+	
+	A few things not done in this checkin:
+	
+	- the scope for a forall expression used to define an
+	  array type does not currently cover its initializer.
+	  Thus, if the language supports:
+	
+	     var A: [i in D] float = i;
+	
+	  the "i" scope that i is defined in would not currently
+	  be open when we parse the initializer.
+	
+	- I find myself wondering whether it's sufficient to have
+	  every SymScope have a single BaseAST context pointer
+	  rather than a Symbol, Stmt, Expr context pointer.  Do
+	  some scopes actually want to store multiple context
+	  pointers?  Or do we store all of them and the SymScope
+	  type indicates which one is dominant (in which case a
+	  function context could be stored even though it's
+	  overly general for a ForallExpr).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp symtab.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h symscope.h 
+	                          symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq.chpl mg-seq.good 
+
