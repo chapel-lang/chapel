@@ -22457,3 +22457,18 @@ Modified files:
 	chapel/test/domains/roxana/: test_index_expr1.future 
 	chapel/test/types/seq/deitz/: test_seq8.future test_seq8b.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 15:51:12 -- deitz
+
+Log message:
+	Uncommented and removed ANALYSIS_MATCH from resolveSymbols.  We now
+	check to make sure that analysis and the AST agree on the function
+	call even if it is already resolved.
+	
+	There is still an ANALYSIS_MATCH in findUnknownTypes which I will look
+	at.
+
+Modified files:
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+
