@@ -6522,3 +6522,35 @@ Modified files:
 	chapel/compiler/: analysis.cpp 
 	chapel/compiler/AST/: expr.cpp expr.h 
 
+---------------------------------------------------------------------------
+
+09/03/04 15:43:52 -- bradc
+
+Log message:
+	Stopped dropping prelude code on the ground and reorganized
+	the symboltable to make a bit more sense.
+	
+	As a placeholder until a better multi-file compilation
+	strategy takes place, tucked all AST code parsed out of
+	the internal prelude into internalPreludeStmts, that
+	parsed from the normal prelude into preludeStmts, and
+	that corresponding to the (currently single) source file
+	into program, as always.  Previously, code from the
+	prelude files was dropped on the ground.  These variables
+	are defined in createAST.h and createAST.cpp.
+	
+	Realized that in my last checkin, symbols defined by
+	the compiler like "integer" were no longer being placed
+	into a reasonable scope, so reorganized scopes as follows:
+	
+	SCOPE_INTRINSIC -- contains compiler defined things like integer
+	  SCOPE_PRELUDE_INTERNAL -- contains internal prelude symbols
+	  SCOPE_PRELUDE -- contains prelude symbols
+	    SCOPE_FILE -- contains user symbols for first file
+	    etc.
+
+Modified files:
+	chapel/compiler/: createAST.cpp createAST.h 
+	chapel/compiler/AST/: chapel.y expr.cpp prelude.chpl symscope.h 
+	                      symtab.cpp symtab.h yy.h 
+
