@@ -5758,3 +5758,14 @@ Modified files:
 	chapel/compiler/: createAST.cpp 
 	chapel/compiler/AST/: chapel.y stmt.cpp symbol.cpp type.cpp 
 
+---------------------------------------------------------------------------
+
+08/24/04 15:56:58 -- bradc
+
+Log message:
+	Per John's suggestion, changed my use of hashtable for the
+	symboltable from a HashMap to a ChainHashMap.
+
+Modified files:
+	chapel/compiler/AST/: symscope.h symtab.cpp 
+
