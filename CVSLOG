@@ -13488,3 +13488,68 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+01/05/05 13:29:43 -- deitz
+
+Log message:
+	Motivation: Remove references to pointers from the traversal since the
+	back pointer pointer makes them unncessary and they are error prone.
+	Expect a later checkin to do just this.
+	
+	Removed the setting of the back pointer pointer (back) from the Fixup
+	traversal.  It is now done manually in constructors and AST
+	manipulation routines including insertBefore, insertAfter, replace,
+	append, and extract.  Fixup merely checks that it is probably correct.
+	The back field of an AST makes it easy to update the AST structure
+	because it points to the pointer that is linking its node into the
+	AST.  (Note- because the AST is a Tree there is only one parent of any
+	given node.)
+	
+	Created a macro for setting back for an Expr or Stmt field of an AST
+	class since it duplicates the name of the ast.  For example, to set
+	back for the left expression in a Binop, write "SET_BACK(left)" rather
+	than "left->back = &left."
+	
+	Moved back out of the ILink class and into statements and expressions.
+	Its type is now either Stmt** or Expr** rather than ILink**.  This is
+	motivated by the following error:
+	
+		class C { };
+		class A : C { void foo1(); };
+		class B : C { void foo2(); };
+	
+		A* a = new A();
+		C** c = &a;                   -- ERROR: requires static cast
+		*c = new B();                 -- UH OH: a points to a B
+	
+	When back was in ILink, it was a pointer to a pointer to ILink and
+	could result in statement pointers pointing to expressions or vice
+	versa.  With this change, this can't happen, though there are still a
+	few places where static casts are used unsafely.  Namely, when dealing
+	with the next pointer which points to an ILink.  Also, since the
+	constructor field is a FnDefStmt and not just a Stmt, the same kind of
+	static cast is necessary.
+	
+	Moved replace, insertBefore, insertAfter, append, and extract out of
+	ILink and into Expr and Stmt since these update back.  Append is
+	virtual and a copy exists in ILink that does not touch back; this
+	version works on Symbols and Types.  A later checkin should rewrite
+	all of these when generic AST lists are added.  The replace function
+	is no longer a static method and can now be called as the others.  So
+	to replace a Stmt old with a Stmt new, write old->replace(new).
+	
+	Removed ILink::add since it's never used.  Added utilities ILink::head
+	and ILink::tail to find the start and finish of a list.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp link.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: baseAST.h expr.h link.h stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
+	                             methodsToFunctions.cpp 
+	                             processParameters.cpp 
+	                             resolveSymbols.cpp 
+
