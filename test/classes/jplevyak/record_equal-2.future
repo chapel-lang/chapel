@@ -1,3 +1,7 @@
-jplevyak
+deitz
 
 unify structurally-equivalent record types
+in analysis.h there is a new function:
+void structural_subtypes(Type *t, Vec<Type *> subtypes);
+
+

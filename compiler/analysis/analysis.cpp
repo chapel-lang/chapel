@@ -2361,3 +2361,13 @@ void
 resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type) {
   member_info(t->asymbol->sym, v->name, offset, type);
 }
+
+void
+structural_subtypes(Type *t, Vec<Type *> subtypes) {
+  subtypes.clear();
+  Sym *s = t->asymbol->sym;
+  forv_Sym(ss, s->specializers) if (ss) {
+    Type *tt = dynamic_cast<Type *>(ss->asymbol->symbol); assert(tt);
+    subtypes.add(tt);
+  }
+}

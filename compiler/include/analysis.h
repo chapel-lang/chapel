@@ -90,5 +90,6 @@ int resolve_symbol(UnresolvedSymbol *us, MemberAccess *ma, Symbol *&sym);
 /* ^^^^^^ DEPRECATED ^^^^^^ */
 void resolve_member_access(MemberAccess *ma, int *offset, Type **type); 
 void resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type); 
+void structural_subtypes(Type *t, Vec<Type *> subtypes);
 
 #endif
