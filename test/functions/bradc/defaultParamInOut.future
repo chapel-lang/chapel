@@ -1,0 +1,12 @@
+deitz/bradc
+
+It seems that the default parameter wrappers aren't setting
+up default values for this test (though I'm pretty sure they
+are for other tests such as defaultParam.chpl in the same
+directory).
+
+My concern is that even if they were, the parameters for
+other arguments that aren't default won't get copied back
+because the copy back statements appear after the nested 
+return (defaultParam.chpl's generated C code for callinout 
+shows the example of this that made me start worrying).
