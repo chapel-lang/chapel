@@ -336,6 +336,12 @@ Type* ComplexLiteral::typeInfo(void) {
 }
 
 
+void ComplexLiteral::print(FILE* outfile) {
+  fprintf(outfile, "%s + %s", realStr, str);
+  
+}
+
+
 void ComplexLiteral::codegen(FILE* outfile) {
   INT_FATAL(this, "codegen() called on a complex literal");
 }
