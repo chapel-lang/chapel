@@ -6579,3 +6579,49 @@ Added files:
 Removed files:
 	chapel/third-party/dparser/d/: x.c 
 
+---------------------------------------------------------------------------
+
+09/07/04 13:23:31 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix build problem with dparser which was breaking tests.
+	
+	Convert remaining oldast flow analysis tests to V or move
+	to the newast directory (where appropriate).
+	
+	The codes from the first review are not simply mapped to V
+	and do not compile with the new AST, these I have moved to
+	test/reviews/jplevyak/*.chpl with NOTEST set.  We can
+	decide what we want to do with these later.
+
+Modified files:
+	chapel/compiler/: grammar.cpp parse_ast.cpp parse_ast.h 
+	                  prelude.v v.g 
+	chapel/test/flowanalysis/jplevyak/: classvar.good cs1.good 
+	                                    cs2.good cs3.good cs4.good 
+	                                    cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good 
+	                                    memberfun.good 
+	                                    memberfun2.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good structtype.good 
+	                                    var.good 
+	chapel/third-party/dparser/d/: Makefile 
+Added files:
+	chapel/test/flowanalysis/newast/: var.chpl var.good var2.chpl 
+	                                  var2.good 
+	chapel/test/reviews/jplevyak/: NOTEST review1.chpl review2.chpl 
+	                               review3.chpl 
+	chapel/third-party/dparser/d/: mkdparse.c 
+Removed files:
+	chapel/test/flowanalysis/jplevyak/: cs4.chpl cs5.chpl 
+	                                    review1.chpl review1.good 
+	                                    review2.chpl review2.good 
+	                                    review3.chpl review3.good 
+	                                    var.chpl var2.chpl var2.good 
+
