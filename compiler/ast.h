@@ -36,7 +36,7 @@ typedef Map<char *, AST *> LabelMap;
 class AST : public Vec<AST *> {
  public:
   AST_kind kind;
-  unsigned int scope_kind:2;
+  unsigned int scope_kind:2;       // 0 = {}, 1 = () (BLC:???)
   unsigned int constructor:2;
   unsigned int def_record_type:1;
   unsigned int def_ident_label:1;

@@ -7,22 +7,33 @@
 #include "misc.h"
 #include "mysystem.h"
 #include "num.h"
-#include "stringutil.h"
 
 static void genAST(FILE* outfile, AST* ast);
 
+#define IO_WRITE   1
+#define IO_WRITELN 2
 
 static void genDT(FILE* outfile, Sym* pdt) {
-  fprintf(outfile, "_%s", pdt->name);
+  if (pdt == NULL || pdt->name == NULL) {
+    fprintf(outfile, "/* unknown type */");
+  } else {
+    fprintf(outfile, "_%s", pdt->name);
+  }
 }
 
 
 static int handleWrite(FILE* outfile, AST* ast) {
   AST* fnast = ast->v[0];
   int i;
+  int writeType = 0;
 
-  if (fnast->kind == AST_qualified_ident &&
-      strcmp(fnast->sym->name, "write") == 0) {
+  if (strcmp(fnast->sym->name, "write") == 0) {
+    writeType = IO_WRITE;
+  } else if (strcmp(fnast->sym->name, "writeln") == 0) {
+    writeType = IO_WRITELN;
+  }
+
+  if (fnast->kind == AST_qualified_ident && writeType) {
     for (i=2; i<ast->n; i++) {
       AST* arg = ast->v[i];
       Sym* argdt = type_info(arg);
@@ -36,9 +47,12 @@ static int handleWrite(FILE* outfile, AST* ast) {
       fprintf(outfile, ", ");
       genAST(outfile, arg);
       fprintf(outfile, ")");
-      if (i < ast->n-1) {
+      if (i < ast->n-1 || writeType == IO_WRITELN) {
 	fprintf(outfile, ";\n");
       }
+    }
+    if (writeType == IO_WRITELN) {
+      fprintf(outfile, "_write_linefeed(stdout)");
     }
     return 1;
   } else {
@@ -47,15 +61,51 @@ static int handleWrite(FILE* outfile, AST* ast) {
 }
 
 
+static void genASTDecls(FILE* outfile, AST* ast) {
+  if (ast->kind == AST_def_ident) {
+    Sym* sym = ast->sym;
+    Sym* dt = type_info(ast, sym);
+      
+    genDT(outfile, dt);
+    fprintf(outfile, " %s;\n", sym->name);
+  }
+}
+
+
 static void genAST(FILE* outfile, AST* ast) {
   switch (ast->kind) {
   case AST_block:
-    fprintf(outfile, "{\n");
+    switch (ast->scope_kind) {
+    case 0:
+      fprintf(outfile, "{\n");
+      break;
+    case 1:
+      fprintf(outfile, "(");
+      break;
+    default:
+      fprintf(outfile, "/* unexpected scope kind (open) */");
+      break;
+    }
+    forv_AST(subtree, *ast) {
+      genASTDecls(outfile, subtree);
+    }
     forv_AST(subtree, *ast) {
       genAST(outfile, subtree);
-      fprintf(outfile, ";\n");
+      if (ast->scope_kind == 0) {
+	fprintf(outfile, ";\n");
+      }
     }
-    fprintf(outfile, "}\n");
+    switch (ast->scope_kind) {
+    case 0:
+      fprintf(outfile, "}\n");
+      break;
+    case 1:
+      fprintf(outfile, ")");
+      break;
+    default:
+      fprintf(outfile, "/* unexpected scope kind (close) */");
+      break;
+    }
     break;
 
   case AST_const:
@@ -65,10 +115,8 @@ static void genAST(FILE* outfile, AST* ast) {
   case AST_def_ident:
     {
       Sym* sym = ast->sym;
-      Sym* dt = type_info(ast, sym);
       
-      genDT(outfile, dt);
-      fprintf(outfile, " %s", sym->name);
+      fprintf(outfile, "%s", sym->name);
       if (ast->v[1]) {
 	fprintf(outfile, " = ");
 	genAST(outfile, ast->v[1]);
@@ -95,13 +143,25 @@ static void genAST(FILE* outfile, AST* ast) {
 	  fprintf(outfile, ")");
 	}
 	break;
-      }
+      } else if (strcmp(ast->v[1]->sym->name, "+") == 0 &&
+		 strcmp(ast->v[1]->string, "#+") == 0) {
+	genAST(outfile, ast->v[0]);
+	fprintf(outfile, "+");
+	genAST(outfile, ast->v[2]);
+	break;
+      } else if (strcmp(ast->v[1]->sym->name, "*") == 0 &&
+		 strcmp(ast->v[1]->string, "#*") == 0) {
+	genAST(outfile, ast->v[0]);
+	fprintf(outfile, "*");
+	genAST(outfile, ast->v[2]);
+	break;
+     }
     }
     /* FALL THROUGH */
 
   default:
     fprintf(outfile, "/* cannot yet handle: %s\n", AST_name[ast->kind]);
-    //    ast_print_recursive(outfile, ast, 2);
+    ast_print_recursive(outfile, ast, 2);
     fprintf(outfile, "*/\n");
   }
 }
