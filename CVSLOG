@@ -8422,3 +8422,42 @@ Added files:
 	chapel/compiler/include/: checkBackLinks.h 
 	chapel/compiler/traversals/: checkBackLinks.cpp 
 
+---------------------------------------------------------------------------
+
+09/22/04 14:35:11 -- bradc
+
+Log message:
+	Moved header files for all passes and traversals to the passes/
+	and traversals/ directories, respectively, as I expect this number
+	to grow, and typically these passes and traversals are only
+	used in passlist.h and passlist.cpp.  Since their interface is
+	typically so narrow, it makes sense to not pollute the main include/
+	directory with them.
+	
+	Also fixed a dependence problem in the parser/ Makefile that John
+	pointed out.  I can never remember which aspects of Makefiles
+	have def-before-use requirements and which don't.  Variable
+	definitions do and I used the variable before defining it, causing
+	it to be interpreted as an empty value.
+
+Modified files:
+	chapel/compiler/AST/: TODO 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: Makefile 
+Added files:
+	chapel/compiler/passes/: printProgram.h printSymtab.h 
+	                         runAnalysis.h 
+	chapel/compiler/traversals/: checkBackLinks.h checkIDs.h 
+	                             checkTypeInfo.h findUnknownTypes.h 
+	                             getstuff.h printAST.h 
+	                             setupStmtLinks.h testGetStuff.h 
+	                             verifyASTType.h 
+Removed files:
+	chapel/compiler/include/: checkBackLinks.h checkIDs.h 
+	                          checkTypeInfo.h findUnknownTypes.h 
+	                          getstuff.h printAST.h printProgram.h 
+	                          printSymtab.h runAnalysis.h 
+	                          setupStmtLinks.h testGetStuff.h 
+	                          verifyASTType.h 
+
