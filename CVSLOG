@@ -1639,3 +1639,23 @@ Log message:
 Modified files:
 	chapel/test/: start_test sub_test 
 
+---------------------------------------------------------------------------
+
+04/04/02 16:20:00 -- bradc
+
+Log message:
+	Turned on codegen (and therefore binary generation) by default.
+	Use the --no-codegen flag to suppress code generation.
+	
+	Also switched the building of generated code to use gmake
+	rather than make.
+	
+	Checked in a few trivial tests in test/trivial/bradc to test
+	end-to-end behavior.
+
+Modified files:
+	chapel/compiler/: driver.cpp files.cpp 
+Added files:
+	chapel/test/trivial/bradc/: declprintint.chk declprintint.chpl 
+	                            printstring.chk printstring.chpl 
+
