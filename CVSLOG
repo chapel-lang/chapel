@@ -7492,3 +7492,18 @@ Added files:
 	chapel/test/trivial/shannon/gentest/: NOTEST compTest.c 
 	                                      genCompTest.c 
 
+---------------------------------------------------------------------------
+
+09/15/04 17:20:45 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Worked on support for domain expressions.
+	Fixed getExpr and getSymbol for DomainExpr (they were not getting
+	 all the elements of the list).
+	Updated tests results for enumarray and domarr
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+	chapel/compiler/AST/: expr.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good enumarray.good 
+
