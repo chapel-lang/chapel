@@ -80,7 +80,7 @@ static int symDead(Sym* sym) {
 
 static int findUnOp(FILE* outfile, AST* ast) {
   int i;
-  int numUnOps    = sizeof(unOps) / sizeof(unOps[0]);
+  int numUnOps = sizeof(unOps) / sizeof(unOps[0]);
 
   if (ast->v[0] && ast->v[0]->sym && 
       ast->v[0]->sym->name && ast->v[0]->string) {
@@ -404,21 +404,24 @@ void genAST(FILE* outfile, AST* ast) {
       int i;
       int index = 0;
 
-      if (strcmp(ast->v[1]->sym->name, "(") == 0 &&
-	  strcmp(ast->v[1]->string, "#(") == 0) {
-        if (!handleWrite(outfile, ast)) {
-	  genAST(outfile, ast->v[0]);
-	  fprintf(outfile, "(");
-	  for (i=2; i<ast->n; i++) {
-	    if (dtIsNullTuple(type_info(ast->v[i]))) {
-	      fprintf(outfile, "/* null tuple */");
-	    } else {
-	      genAST(outfile, ast->v[i]);
+      if (ast->v[1] && ast->v[1]->sym && 
+	  ast->v[1]->sym->name && ast->v[1]->string) {
+	if (strcmp(ast->v[1]->sym->name, "(") == 0 &&
+	    strcmp(ast->v[1]->string, "#(") == 0) {
+	  if (!handleWrite(outfile, ast)) {
+	    genAST(outfile, ast->v[0]);
+	    fprintf(outfile, "(");
+	    for (i=2; i<ast->n; i++) {
+	      if (dtIsNullTuple(type_info(ast->v[i]))) {
+		fprintf(outfile, "/* null tuple */");
+	      } else {
+		genAST(outfile, ast->v[i]);
+	      }
 	    }
+	    fprintf(outfile, ")");
 	  }
-	  fprintf(outfile, ")");
+	  break;
 	}
-	break;
       }
 
       index = findUnOp(outfile, ast);

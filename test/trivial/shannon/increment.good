@@ -1,0 +1,8 @@
+m = 3
+
+test: ++m
+expected answer = 4
+actual answer = 4
+test: --m
+expected answer = 3
+actual answer = 3
