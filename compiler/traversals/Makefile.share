@@ -28,7 +28,8 @@ TRAVERSALS_SRCS = \
 	transformLetExprs.cpp \
 	traversal.cpp \
 	updateSymbols.cpp \
-	verifyASTType.cpp
+	verifyASTType.cpp \
+        view.cpp
 
 CVS_SRCS = $(TRAVERSALS_SRCS)
 SRCS = $(CVS_SRCS)

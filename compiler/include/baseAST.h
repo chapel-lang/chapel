@@ -3,6 +3,9 @@
 
 #include "link.h"
 
+/**
+ **  Note: update astType and astName together always.
+ **/
 enum astType_t {
   STMT,
   STMT_NOOP,
@@ -75,6 +78,8 @@ enum astType_t {
 
   AST_TYPE_END 
 };
+
+extern char* astTypeName[];
 
 #define isSomeStmt(_x) (((_x) >= STMT) && (_x) < EXPR)
 #define isSomeExpr(_x) (((_x) >= EXPR) && (_x) < SYMBOL)
