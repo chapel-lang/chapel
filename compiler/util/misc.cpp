@@ -24,8 +24,10 @@ static void cleanup(void) {
 
 void
 clean_exit(int status) {
-  cleanup();
-  exit(status);
+  if (!ignore_errors) {
+    cleanup();
+    exit(status);
+  }
 }
 
 char *

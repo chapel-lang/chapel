@@ -46,6 +46,8 @@ int debugParserLevel = 0;
 
 int developer = 0;
 
+int ignore_errors = 0;
+
 int fdce_if1 = 1;
 int finline = 0;
 int fsimple_inline = 0;
@@ -69,6 +71,7 @@ static ArgumentDescription arg_desc[] = {
  {"constants_per_var", ' ', "# of Constants per Var", "I", &num_constants_per_variable, 
   "CHPL_CONSTANTS_PER_VARIABLE", NULL},
  {"devel", ' ', "Developer Compile", "F", &developer, "CHPL_DEVELOPER", NULL},
+ {"ignore_errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
  {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},

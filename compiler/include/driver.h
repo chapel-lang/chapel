@@ -23,6 +23,8 @@ extern int suppressCodegen;
 extern int developer;
 extern int scoping_test;
 
+extern int ignore_errors;
+
 void do_analysis(char *fn);
 
 #endif
