@@ -39,7 +39,28 @@ bool Type::isComplex(void) {
 }
 
 
-void Type::traverseDef(Type* &_this, Traversal* traversal, bool atTop) {
+void Type::traverse(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->preProcessType(this);
+  }
+  if (atTop || traversal->exploreChildTypes) {
+    if (atTop || name == nilSymbol) {
+      traverseDefType(traversal);
+    }
+    else {
+      traverseType(traversal);
+    }
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->postProcessType(this);
+  }
+}
+
+
+void Type::traverseDef(Type* _this, Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
   }

@@ -30,7 +30,6 @@ enum paramType {
 
 
 class Type : public BaseAST {
-  TRAVERSABLE_TYPE(Type);
  public:
   Symbol* name;
   Expr* defaultVal;
@@ -43,7 +42,8 @@ class Type : public BaseAST {
   bool isNull(void);
   virtual bool isComplex(void);
 
-  void traverseDef(Type* &_this, Traversal* traversal, bool atTop = true);
+  virtual void traverse(Traversal* traversal, bool atTop = true);
+  void traverseDef(Type* _this, Traversal* traversal, bool atTop = true);
   virtual void traverseType(Traversal* traversal);
   virtual void traverseDefType(Traversal* traversal);
 
@@ -72,7 +72,6 @@ class Type : public BaseAST {
 extern Type* nilType;
 
 class EnumType : public Type {
-  TRAVERSABLE_TYPE(EnumType);
  public:
   EnumSymbol* valList;
 
@@ -92,7 +91,6 @@ class EnumType : public Type {
 
 
 class DomainType : public Type {
-  TRAVERSABLE_TYPE(DomainType);
  public:
   int numdims;
   Expr* parent;
@@ -109,7 +107,6 @@ class DomainType : public Type {
 
 
 class IndexType : public DomainType {
-  TRAVERSABLE_TYPE(IndexType);
  public:
   IndexType(Expr* init_expr = nilExpr);
   IndexType(int init_numdims);
@@ -120,7 +117,6 @@ class IndexType : public DomainType {
 
 
 class ArrayType : public Type {
-  TRAVERSABLE_TYPE(ArrayType);
  public:
   Expr* domain;
   Type* elementType;
@@ -141,7 +137,6 @@ class ArrayType : public Type {
 
 
 class UserType : public Type {
-  TRAVERSABLE_TYPE(UserType);
  public:
   Type* definition;
 
@@ -165,7 +160,6 @@ class ClassType;
 extern ClassType* nilClassType;
 
 class ClassType : public Type {
-  TRAVERSABLE_TYPE(ClassType);
  public:
   bool value; /* true if this is a value class (aka record) */
   bool union_value; /* true if this is a union */
@@ -196,7 +190,6 @@ class ClassType : public Type {
 
 
 class TupleType : public Type {
-  TRAVERSABLE_TYPE(TupleType);
  public:
   Vec<Type*> components;
 
@@ -210,7 +203,6 @@ class TupleType : public Type {
 };
 
 class UnresolvedType : public Type {
-  TRAVERSABLE_TYPE(UnresolvedType);
  public:
   UnresolvedType(char* init_name);
   virtual Type* copy(void);

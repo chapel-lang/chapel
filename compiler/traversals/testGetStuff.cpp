@@ -4,7 +4,7 @@
 #include "stmt.h"
 #include "testGetStuff.h"
 
-void TestGetStuff::preProcessStmt(Stmt* &stmt) {
+void TestGetStuff::preProcessStmt(Stmt* stmt) {
   int i;
   GetStuff* asts = new GetStuff();
 

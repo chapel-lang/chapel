@@ -81,6 +81,22 @@ bool Stmt::topLevelExpr(Expr* expr) {
 }
 
 
+void Stmt::traverse(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->preProcessStmt(this);
+  }
+  if (atTop || traversal->exploreChildStmts) {
+    traverseStmt(traversal);
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->postProcessStmt(this);
+  }
+}
+
+
 void Stmt::traverseStmt(Traversal* traversal) {
 }
 

@@ -16,16 +16,15 @@
 
 class ApplyWith : public Traversal {
  public:
-  void preProcessStmt(Stmt* &stmt);
+  void preProcessStmt(Stmt* stmt);
 };
 
-void ApplyWith::preProcessStmt(Stmt* &stmt) {
+void ApplyWith::preProcessStmt(Stmt* stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(symType->type)) {
 	Stmt* with_replacement = with->getClass()->definition->copyList(ctype->classScope);
 	stmt->replace(with_replacement);
-	stmt = with_replacement;  /** necessary for reference? **/
 	return;
       }
     }
@@ -44,10 +43,10 @@ void ApplyWith::preProcessStmt(Stmt* &stmt) {
 
 class InsertThis : public Traversal {
  public:
-  void preProcessStmt(Stmt* &stmt);
+  void preProcessStmt(Stmt* stmt);
 };
 
-void InsertThis::preProcessStmt(Stmt* &stmt) {
+void InsertThis::preProcessStmt(Stmt* stmt) {
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ClassType* ctype = dynamic_cast<ClassType*>(tds->type)) {
       Stmt* stmt = ctype->definition;
@@ -79,15 +78,9 @@ void InsertThis::preProcessStmt(Stmt* &stmt) {
 
 class ResolveEasiest : public Traversal {
  public:
-  Expr* LastExpr;
-  ResolveEasiest::ResolveEasiest(void);
-  void preProcessExpr(Expr* &expr);
-  void preProcessSymbol(Symbol* &sym);
+  void preProcessExpr(Expr* expr);
+  void preProcessSymbol(Symbol* sym);
 };
-
-ResolveEasiest::ResolveEasiest(void) {
-  LastExpr = NULL;
-}
 
 static void resolve_type_helper(Type* &type) {
   if (dynamic_cast<UnresolvedType*>(type)) {
@@ -113,20 +106,21 @@ static void resolve_type_helper(Type* &type) {
   }
 }
 
-void ResolveEasiest::preProcessExpr(Expr* &expr) {
+void ResolveEasiest::preProcessExpr(Expr* expr) {
   if (CastExpr* cast_expr = dynamic_cast<CastExpr*>(expr)) {
     resolve_type_helper(cast_expr->newType);
   }
-  LastExpr = expr;
-}
-
-void ResolveEasiest::preProcessSymbol(Symbol* &sym) {
-  if (dynamic_cast<UnresolvedSymbol*>(sym)) {
-    Symbol* new_sym = Symboltable::lookup(sym->name);
-    if (new_sym && !dynamic_cast<FnSymbol*>(new_sym)) {
-      sym = new_sym;
+  if (Variable* variable_expr = dynamic_cast<Variable*>(expr)) {
+    if (dynamic_cast<UnresolvedSymbol*>(variable_expr->var)) {
+      Symbol* new_symbol = Symboltable::lookup(variable_expr->var->name);
+      if (new_symbol && !dynamic_cast<FnSymbol*>(new_symbol)) {
+	variable_expr->var = new_symbol;
+      }
     }
   }
+}
+
+void ResolveEasiest::preProcessSymbol(Symbol* sym) {
   resolve_type_helper(sym->type);
 }
 
@@ -140,10 +134,10 @@ void ResolveEasiest::preProcessSymbol(Symbol* &sym) {
 
 class RenameOverloaded : public Traversal {
  public:
-  void preProcessStmt(Stmt* &stmt);
+  void preProcessStmt(Stmt* stmt);
 };
 
-void RenameOverloaded::preProcessStmt(Stmt* &stmt) {
+void RenameOverloaded::preProcessStmt(Stmt* stmt) {
   static int uid = 1; // Unique ID for user-overloaded functions
 
   if (FnDefStmt* fndef = dynamic_cast<FnDefStmt*>(stmt)) {
@@ -181,10 +175,10 @@ void RenameOverloaded::preProcessStmt(Stmt* &stmt) {
 
 class ResolveEasy : public Traversal {
  public:
-  void preProcessExpr(Expr* &expr);
+  void preProcessExpr(Expr* expr);
 };
 
-void ResolveEasy::preProcessExpr(Expr* &expr) {
+void ResolveEasy::preProcessExpr(Expr* expr) {
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
       Symbol* member = Symboltable::lookupInScope(member_access->member->name, class_type->classScope);
@@ -208,10 +202,10 @@ void ResolveEasy::preProcessExpr(Expr* &expr) {
 
 class SpecializeParens : public Traversal {
  public:
-  void preProcessExpr(Expr* &expr);
+  void preProcessExpr(Expr* expr);
 };
 
-void SpecializeParens::preProcessExpr(Expr* &expr) {
+void SpecializeParens::preProcessExpr(Expr* expr) {
   Expr* paren_replacement = NULL;
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
@@ -237,7 +231,6 @@ void SpecializeParens::preProcessExpr(Expr* &expr) {
   }
   if (paren_replacement) {
     expr->replace(paren_replacement);
-    expr = paren_replacement; /** necessary for reference? **/
   }
 }
 
@@ -256,16 +249,16 @@ class ApplyThis : public Traversal {
  public:
   ClassType* CurrentClass;
   ApplyThis::ApplyThis(void);
-  void preProcessStmt(Stmt* &stmt);
-  void postProcessStmt(Stmt* &stmt);
-  void preProcessExpr(Expr* &expr);
+  void preProcessStmt(Stmt* stmt);
+  void postProcessStmt(Stmt* stmt);
+  void preProcessExpr(Expr* expr);
 };
 
 ApplyThis::ApplyThis(void) {
   CurrentClass = NULL;
 }
 
-void ApplyThis::preProcessStmt(Stmt* &stmt) {
+void ApplyThis::preProcessStmt(Stmt* stmt) {
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ClassType* ctype = dynamic_cast<ClassType*>(tds->type)) {
       CurrentClass = ctype;
@@ -273,7 +266,7 @@ void ApplyThis::preProcessStmt(Stmt* &stmt) {
   }
 }
 
-void ApplyThis::postProcessStmt(Stmt* &stmt) {
+void ApplyThis::postProcessStmt(Stmt* stmt) {
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (dynamic_cast<ClassType*>(tds->type)) {
       CurrentClass = NULL;
@@ -281,7 +274,7 @@ void ApplyThis::postProcessStmt(Stmt* &stmt) {
   }
 }
 
-void ApplyThis::preProcessExpr(Expr* &expr) {
+void ApplyThis::preProcessExpr(Expr* expr) {
   if (CurrentClass) {
     if (Variable* member = dynamic_cast<Variable*>(expr)) {
       // BLC: Steve, shouldn't this be a pointer compare rather than
@@ -298,7 +291,6 @@ void ApplyThis::preProcessExpr(Expr* &expr) {
 	  MemberAccess* repl = new MemberAccess(new Variable(parentFn->formals),
 						member->var);
 	  expr->replace(repl);
-	  expr = repl; /** reference necessary **/
 	}
 	else {
 	  INT_FATAL(expr, "Statement is not in method in ApplyThis");

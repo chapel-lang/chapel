@@ -14,12 +14,17 @@ ILink::ILink(void) :
 {}
 
 
-void ILink::traverse(ILink* &_this, Traversal* traversal, bool atTop) {
+void ILink::traverse(Traversal* traversal, bool atTop) {
   if (isNull()) return;
 
-  if (BaseAST* ast = dynamic_cast<BaseAST*>(_this)) {
-    ast->traverse(ast, traversal, atTop);
-  }
+  INT_FATAL(this, "Cannot traverse ILink");
+}
+
+
+void ILink::traverseList(Traversal* traversal, bool atTop) {
+  if (isNull()) return;
+  TRAVERSE(this, traversal, atTop);
+  TRAVERSE_LS(this->next, traversal, atTop);
 }
 
 

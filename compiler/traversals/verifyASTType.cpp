@@ -290,21 +290,21 @@ static void verifyASTType(BaseAST* ast) {
 }
 
 
-void VerifyASTType::preProcessStmt(Stmt* &stmt) {
+void VerifyASTType::preProcessStmt(Stmt* stmt) {
   verifyASTType(stmt);
 }
 
 
-void VerifyASTType::preProcessExpr(Expr* &expr) {
+void VerifyASTType::preProcessExpr(Expr* expr) {
   verifyASTType(expr);
 }
 
 
-void VerifyASTType::preProcessSymbol(Symbol* &sym) {
+void VerifyASTType::preProcessSymbol(Symbol* sym) {
   verifyASTType(sym);
 }
 
 
-void VerifyASTType::preProcessType(Type* &type) {
+void VerifyASTType::preProcessType(Type* type) {
   verifyASTType(type);
 }

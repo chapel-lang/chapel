@@ -20,7 +20,7 @@ DefineSymbols::DefineSymbols(SymScope* init_scope) {
 }
 
 
-void DefineSymbols::preProcessStmt(Stmt* &stmt) {
+void DefineSymbols::preProcessStmt(Stmt* stmt) {
   if (!scope) {
     return;
   }

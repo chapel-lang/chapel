@@ -6,6 +6,6 @@ PrintAST::PrintAST(void) :
 {}
 
 
-void PrintAST::preProcessStmt(Stmt* &stmt) {
+void PrintAST::preProcessStmt(Stmt* stmt) {
   stmt->print(stdout);
 }

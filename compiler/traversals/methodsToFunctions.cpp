@@ -12,7 +12,7 @@
  ***  Mangles names of methods with "_", moves method's function
  ***  definition statement after class definition statement
  ***/
-void MethodsToFunctions::preProcessStmt(Stmt* &stmt) {
+void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
   TypeDefStmt* tds;
   ClassType* ctype;
 
@@ -39,7 +39,7 @@ void MethodsToFunctions::preProcessStmt(Stmt* &stmt) {
  ***  Adds base in MemberAccess for method to a new first parameter to
  ***  the method, makes MemberAccess for method a function on its own
  ***/
-void MethodsToFunctions::preProcessExpr(Expr* &expr) {
+void MethodsToFunctions::preProcessExpr(Expr* expr) {
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (typeid(*paren) == typeid(ParenOpExpr)) {
       if (MemberAccess* method = dynamic_cast<MemberAccess*>(paren->baseExpr)) {
@@ -48,7 +48,6 @@ void MethodsToFunctions::preProcessExpr(Expr* &expr) {
 	  newArgList->append(paren->argList);
 	  FnCall* fn = new FnCall(new Variable(method->member), newArgList);
 	  expr->replace(fn);
-	  expr = fn; // necessary for reference?
 	}
       }
     }

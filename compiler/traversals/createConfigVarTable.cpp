@@ -19,7 +19,7 @@ CreateConfigVarTable::CreateConfigVarTable(void) {
 }
 
 
-void CreateConfigVarTable::preProcessStmt(Stmt* &stmt) {
+void CreateConfigVarTable::preProcessStmt(Stmt* stmt) {
   codefile = outfileinfo.fptr;
 
   if (typeid(*stmt) == typeid(VarDefStmt)) {

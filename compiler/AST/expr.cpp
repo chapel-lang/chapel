@@ -117,6 +117,22 @@ bool Expr::isNull(void) {
 }
 
 
+void Expr::traverse(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->preProcessExpr(this);
+  }
+  if (atTop || traversal->exploreChildExprs) {
+    traverseExpr(traversal);
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->postProcessExpr(this);
+  }
+}
+
+
 void Expr::traverseExpr(Traversal* traversal) {
 }
 

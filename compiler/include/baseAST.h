@@ -76,7 +76,6 @@ enum astType_t {
   (ast)->back = &(ast)
 
 class BaseAST : public ILink {
-  TRAVERSABLE_ILINK(BaseAST);
  public:
   astType_t astType;
   long id;

@@ -5,7 +5,7 @@
 
 class FindUnresolvedSymbols : public Traversal {
  public:
-  void preProcessSymbol(Symbol* &sym);
+  void preProcessSymbol(Symbol* sym);
 
 };
 

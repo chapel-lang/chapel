@@ -9,7 +9,6 @@
 
 
 class ILink : public Loc {
-  TRAVERSABLE_ILINK(ILink);
  public:
   ILink* prev;
   ILink* next;
@@ -17,6 +16,9 @@ class ILink : public Loc {
   ILink(void);
 
   virtual bool isNull(void);
+
+  virtual void traverse(Traversal* traversal, bool atTop = true);
+  void traverseList(Traversal* traversal, bool atTop = true);
 
   virtual void print(FILE* outfile);
   void println(FILE* outfile);

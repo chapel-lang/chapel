@@ -12,7 +12,7 @@ class CreateConfigVarTable : public Traversal {
 
   CreateConfigVarTable(void);
 
-  void preProcessStmt(Stmt* &stmt);
+  void preProcessStmt(Stmt* stmt);
 
   void closeCFile(void);
 };

@@ -12,7 +12,7 @@ Fixup::Fixup(void) {
 }
 
 
-void Fixup::preProcessStmt(Stmt* &stmt) {
+void Fixup::preProcessStmt(Stmt* stmt) {
   int verify = !strcmp(args, "verify");
   Symbol* tmp = stmtParent.v[stmtParent.n-1];
   if (tmp == NULL) {
@@ -43,7 +43,7 @@ void Fixup::preProcessStmt(Stmt* &stmt) {
 }
 
 
-void Fixup::postProcessStmt(Stmt* &stmt) {
+void Fixup::postProcessStmt(Stmt* stmt) {
   if (dynamic_cast<FnDefStmt*>(stmt)) {
     stmtParent.pop();
   }
@@ -58,7 +58,7 @@ void Fixup::postProcessStmt(Stmt* &stmt) {
 }
 
 
-void Fixup::preProcessExpr(Expr* &expr) {
+void Fixup::preProcessExpr(Expr* expr) {
   int verify = !strcmp(args, "verify");
   Stmt* tmp = exprParent.v[exprParent.n-1];
   if (tmp == NULL) {
@@ -77,7 +77,7 @@ void Fixup::preProcessExpr(Expr* &expr) {
 }
 
 
-void Fixup::preProcessSymbol(Symbol* &sym) {
+void Fixup::preProcessSymbol(Symbol* sym) {
   int verify = !strcmp(args, "verify");
   if (verify) {
     if (typeid(*sym) == typeid(UnresolvedSymbol)) {

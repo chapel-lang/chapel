@@ -7,7 +7,7 @@ class ProcessParameters : public Traversal {
  public:
   ProcessParameters(void);
 
-  void postProcessExpr(Expr* &expr);
+  void postProcessExpr(Expr* expr);
 };
 
 #endif

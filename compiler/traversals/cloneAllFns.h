@@ -4,7 +4,7 @@
 #include "traversal.h"
 
 class CloneAllFns : public Traversal {
-  void preProcessStmt(Stmt* &stmt);
+  void preProcessStmt(Stmt* stmt);
 };
 
 #endif

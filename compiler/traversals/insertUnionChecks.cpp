@@ -13,7 +13,7 @@ InsertUnionChecks::InsertUnionChecks(void) {
 }
 
 
-void InsertUnionChecks::preProcessStmt(Stmt* &stmt) {
+void InsertUnionChecks::preProcessStmt(Stmt* stmt) {
 
 }
 
@@ -54,7 +54,7 @@ void SetWriting(int OnOff, Expr* expr, int& writing) {
 }
 
 
-void InsertUnionChecks::preProcessExpr(Expr* &expr) {
+void InsertUnionChecks::preProcessExpr(Expr* expr) {
   SetWriting(1, expr, writing);
   if (MemberAccess* union_expr = dynamic_cast<MemberAccess*>(expr)) {
     if (ClassType* union_type =
@@ -71,10 +71,6 @@ void InsertUnionChecks::preProcessExpr(Expr* &expr) {
 	    new FnCall(new Variable(Symboltable::lookup("_UNION_SET")), args);
 	  ExprStmt* set_stmt = new ExprStmt(set_function);
 	  expr->stmt->insertAfter(set_stmt);
-	  //	  Stmt* copy_stmt = expr->stmt->copy();
-	  //	  copy_stmt->append(set_stmt);
-	  //	  Stmt::replace(expr->stmt, copy_stmt);
-	  // SJD: expr must be updated to be within copy_stmt now!!!
 	}
 	if (writing != 1) {
 	  Expr* args = union_expr->base->copy();
@@ -88,14 +84,7 @@ void InsertUnionChecks::preProcessExpr(Expr* &expr) {
 	  FnCall* check_function = 
 	    new FnCall(new Variable(Symboltable::lookup("_UNION_CHECK")), args);
 	  ExprStmt* check_stmt = new ExprStmt(check_function);
-
-	  // SJD: trouble with preinsert, should preinsert/postinsert
-	  // be implemented as follows instead
-
-	  expr->stmt->insertAfter(check_stmt);  // Should be Before
-	  //	  check_stmt->append(expr->stmt->copy());
-	  //	  Stmt::replace(expr->stmt, check_stmt);
-	  // SJD: expr must be updated to be within copy_stmt now!!!
+	  expr->stmt->insertBefore(check_stmt);  // Should be Before
 	}
       }
     }
@@ -103,6 +92,6 @@ void InsertUnionChecks::preProcessExpr(Expr* &expr) {
 }
 
 
-void InsertUnionChecks::postProcessExpr(Expr* &expr) {
+void InsertUnionChecks::postProcessExpr(Expr* expr) {
   SetWriting(0, expr, writing);
 }

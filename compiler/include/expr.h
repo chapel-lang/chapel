@@ -90,7 +90,6 @@ enum getsOpType {
 
 
 class Expr : public BaseAST {
-  TRAVERSABLE_EXPR(Expr);
  public:
   Stmt* stmt;
   AInfo *ainfo;
@@ -103,6 +102,7 @@ class Expr : public BaseAST {
 
   bool isNull(void);
 
+  virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
 
   virtual Type* typeInfo(void);
@@ -129,7 +129,6 @@ extern Expr* nilExpr;
 
 
 class Literal : public Expr {
-  TRAVERSABLE_EXPR(Literal);
  public:
   char* str;
 
@@ -144,7 +143,6 @@ class Literal : public Expr {
 
 
 class BoolLiteral : public Literal {
-  TRAVERSABLE_EXPR(BoolLiteral);
  public:
   bool val;
 
@@ -158,7 +156,6 @@ class BoolLiteral : public Literal {
 
 
 class IntLiteral : public Literal {
-  TRAVERSABLE_EXPR(IntLiteral);
  public:
   long val;
 
@@ -174,7 +171,6 @@ class IntLiteral : public Literal {
 
 
 class FloatLiteral : public Literal {
-  TRAVERSABLE_EXPR(FloatLiteral);
  public:
   double val;
 
@@ -184,7 +180,6 @@ class FloatLiteral : public Literal {
 
 
 class ComplexLiteral : public Literal {
-  TRAVERSABLE_EXPR(ComplexLiteral);
  public:
   double realVal;
   double imagVal;
@@ -206,7 +201,6 @@ class ComplexLiteral : public Literal {
 
 
 class StringLiteral : public Literal {
-  TRAVERSABLE_EXPR(StringLiteral);
  public:
   StringLiteral(char* init_val);
   virtual Expr* copy(void);
@@ -220,7 +214,6 @@ class StringLiteral : public Literal {
 
 
 class Variable : public Expr {
-  TRAVERSABLE_EXPR(Variable);
  public:
   Symbol* var;
 
@@ -237,7 +230,6 @@ class Variable : public Expr {
 
 
 class UnOp : public Expr {
-  TRAVERSABLE_EXPR(UnOp);
  public:
   unOpType type;
   Expr* operand;
@@ -258,7 +250,6 @@ class UnOp : public Expr {
 
 
 class BinOp : public Expr {
-  TRAVERSABLE_EXPR(BinOp);
  public:
   binOpType type;
   Expr* left;
@@ -278,7 +269,6 @@ class BinOp : public Expr {
 
 
 class AssignOp : public BinOp {
-  TRAVERSABLE_EXPR(AssignOp);
  public:
   getsOpType type;
 
@@ -292,7 +282,6 @@ class AssignOp : public BinOp {
 
 
 class SpecialBinOp : public BinOp {
-  TRAVERSABLE_EXPR(SpecialBinOp);
  public:
   SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
   virtual Expr* copy(void);
@@ -302,7 +291,6 @@ class SpecialBinOp : public BinOp {
 
 
 class MemberAccess : public Expr {
-  TRAVERSABLE_EXPR(MemberAccess);
  public:
   Expr* base;
   Symbol* member;
@@ -320,7 +308,6 @@ class MemberAccess : public Expr {
 
 
 class ParenOpExpr : public Expr {
-  TRAVERSABLE_EXPR(ParenOpExpr);
  public:
   Expr* baseExpr;
   Expr* argList;
@@ -336,7 +323,6 @@ class ParenOpExpr : public Expr {
 
 
 class ArrayRef : public ParenOpExpr {
-  TRAVERSABLE_EXPR(ArrayRef);
  public:
   ArrayRef(Expr* init_base, Expr* init_arg = nilExpr);
   virtual Expr* copy(void);
@@ -348,7 +334,6 @@ class ArrayRef : public ParenOpExpr {
 
 
 class FnCall : public ParenOpExpr {
-  TRAVERSABLE_EXPR(FnCall);
  public:
   FnCall(Expr* init_base, Expr* init_arg = nilExpr);
   virtual Expr* copy(void);
@@ -362,7 +347,6 @@ class FnCall : public ParenOpExpr {
 
 
 class IOCall : public FnCall {
-  TRAVERSABLE_EXPR(IOCall);
  public:
   ioCallType ioType;
 
@@ -376,7 +360,6 @@ class IOCall : public FnCall {
 
 
 class Tuple : public Expr {
-  TRAVERSABLE_EXPR(Tuple);
  public:
   Expr* exprs;
 
@@ -391,7 +374,6 @@ class Tuple : public Expr {
 
 
 class SizeofExpr : public Expr {
-  TRAVERSABLE_EXPR(SizeofExpr);
  public:
   Type* type;
 
@@ -408,7 +390,6 @@ class SizeofExpr : public Expr {
 
 
 class CastExpr : public Expr {
-  TRAVERSABLE_EXPR(CastExpr);
  public:
   Type* newType;
   Expr* expr;
@@ -426,7 +407,6 @@ class CastExpr : public Expr {
 
 
 class ReduceExpr : public Expr {
-  TRAVERSABLE_EXPR(ReduceExpr);
  public:
   Symbol* reduceType;
   Expr* redDim;
@@ -443,7 +423,6 @@ class ReduceExpr : public Expr {
 
 
 class SimpleSeqExpr : public Expr {
-  TRAVERSABLE_EXPR(SimpleSeqExpr);
  public:
   Expr* lo;
   Expr* hi;
@@ -463,7 +442,6 @@ class SimpleSeqExpr : public Expr {
 
 
 class FloodExpr : public Expr {
-  TRAVERSABLE_EXPR(FloodExpr);
  public:
   FloodExpr(void);
   virtual Expr* copy(void);
@@ -474,7 +452,6 @@ class FloodExpr : public Expr {
 
 
 class CompleteDimExpr : public Expr {
-  TRAVERSABLE_EXPR(CompleteDimExpr);
  public:
   CompleteDimExpr(void);
   virtual Expr* copy(void);
@@ -485,7 +462,6 @@ class CompleteDimExpr : public Expr {
 
 
 class ForallExpr : public Expr {
-  TRAVERSABLE_EXPR(ForallExpr);
  public:
   Expr* domains;
   Symbol* indices;

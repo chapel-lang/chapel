@@ -31,10 +31,10 @@ class GetStuff : public Traversal {
 
   GetStuff(int flags = GET_ALL);
 
-  void preProcessStmt(Stmt* &stmt);
-  void preProcessExpr(Expr* &expr);
-  void preProcessSymbol(Symbol* &sym);
-  void preProcessType(Type* &type);
+  void preProcessStmt(Stmt* stmt);
+  void preProcessExpr(Expr* expr);
+  void preProcessSymbol(Symbol* sym);
+  void preProcessType(Type* type);
 
   void clear(void);
 };

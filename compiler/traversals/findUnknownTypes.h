@@ -5,15 +5,15 @@
 
 class FindUnknownTypes : public Traversal {
  public:
-  void preProcessStmt(Stmt* &stmt);
-  void postProcessStmt(Stmt* &stmt);
-  void preProcessSymbol(Symbol* &sym);
-  void preProcessExpr(Expr* &expr);
+  void preProcessStmt(Stmt* stmt);
+  void postProcessStmt(Stmt* stmt);
+  void preProcessSymbol(Symbol* sym);
+  void preProcessExpr(Expr* expr);
 };
 
 class PrintStmts : public Traversal {
  public:
-  void preProcessStmt(Stmt* &stmt);
+  void preProcessStmt(Stmt* stmt);
 };
 
 #endif

@@ -48,6 +48,22 @@ bool Symbol::isNull(void) {
 }
 
 
+void Symbol::traverse(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->preProcessSymbol(this);
+  }
+  if (atTop || traversal->exploreChildSymbols) {
+    traverseSymbol(traversal);
+  }
+  if (traversal->processTop || !atTop) {
+    traversal->postProcessSymbol(this);
+  }
+}
+
+
 void Symbol::traverseSymbol(Traversal* traversal) {
 }
 

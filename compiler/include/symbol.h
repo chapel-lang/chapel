@@ -16,7 +16,6 @@ enum varType {
 };
 
 class Symbol : public BaseAST {
-  TRAVERSABLE_SYMBOL(Symbol);
  public:
   char* name;
   char* cname; /* Name of symbol for generating C code */
@@ -32,6 +31,7 @@ class Symbol : public BaseAST {
 
   bool isNull(void);
 
+  virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseSymbol(Traversal* traverse);
 
   void print(FILE* outfile);
@@ -48,7 +48,6 @@ extern Symbol* nilSymbol;
 
 
 class UnresolvedSymbol : public Symbol {
-  TRAVERSABLE_SYMBOL(UnresolvedSymbol);
  public:
   UnresolvedSymbol(char* init_name);
   virtual Symbol* copy(void);
@@ -58,7 +57,6 @@ class UnresolvedSymbol : public Symbol {
 
 
 class VarSymbol : public Symbol {
-  TRAVERSABLE_SYMBOL(VarSymbol);
  public:
   varType varClass;
   bool isConst;
@@ -76,7 +74,6 @@ extern VarSymbol* nilVarSymbol;
 
 
 class ParamSymbol : public Symbol {
-  TRAVERSABLE_SYMBOL(ParamSymbol);
  public:
   paramType intent;
 
@@ -94,7 +91,6 @@ class ParamSymbol : public Symbol {
 
 
 class TypeSymbol : public Symbol {
-  TRAVERSABLE_SYMBOL(TypeSymbol);
  public:
   TypeSymbol(char* init_name, Type* init_definition);
   virtual Symbol* copy(void);
@@ -105,7 +101,6 @@ class FnSymbol;
 extern FnSymbol* nilFnSymbol;
 
 class FnSymbol : public Symbol {
-  TRAVERSABLE_SYMBOL(FnSymbol);
  public:
   bool exportMe;
   Symbol* formals;
@@ -132,7 +127,6 @@ class FnSymbol : public Symbol {
 
 
 class EnumSymbol : public Symbol {
-  TRAVERSABLE_SYMBOL(EnumSymbol);
  public:
   Expr* init;
   int val;
@@ -144,7 +138,6 @@ class EnumSymbol : public Symbol {
 
 
 class ModuleSymbol : public Symbol {
-  TRAVERSABLE_SYMBOL(ModuleSymbol);
  public:
   bool internal;
   Stmt* stmts;

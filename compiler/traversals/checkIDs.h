@@ -7,10 +7,10 @@
 class CheckIDs : public Traversal {
  public:
   BaseAST** astlist;
-  void preProcessStmt(Stmt* &stmt);
-  void preProcessExpr(Expr* &expr);
-  void preProcessSymbol(Symbol* &symbol);
-  void preProcessType(Type* &type);
+  void preProcessStmt(Stmt* stmt);
+  void preProcessExpr(Expr* expr);
+  void preProcessSymbol(Symbol* symbol);
+  void preProcessType(Type* type);
 
   void run(ModuleSymbol* moduleList);
 };

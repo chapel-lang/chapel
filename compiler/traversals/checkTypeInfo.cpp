@@ -11,7 +11,7 @@ CheckTypeInfo::CheckTypeInfo(void) :
 {}
 
 
-void CheckTypeInfo::preProcessExpr(Expr* &expr) {
+void CheckTypeInfo::preProcessExpr(Expr* expr) {
   if (expr->ainfo) {
     Type* exprType = type_info(expr);
     if (exprType == NULL) {
