@@ -7,3 +7,4 @@ config.status
 libtool
 *.la
 *.lo
+gctest
