@@ -82,7 +82,7 @@ mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 delete($ENV{'CHPLDEVTMP'});
 delete($ENV{'CHPL_SYSTEM_DIR'});
 
-mysystem("which chpl", "locating chpl", 0, 0);
+#mysystem("which chpl", "locating chpl", 0, 0);
 mysystem("env", "checking environment", 0, 0);
 
 
