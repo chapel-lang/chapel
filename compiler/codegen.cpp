@@ -76,6 +76,9 @@ static void genASTDecls(FILE* outfile, AST* ast) {
 
 
 static void genAST(FILE* outfile, AST* ast) {
+  if (ast == NULL) {
+    INT_FATAL(NULL, "Got NULL AST in genAST()\n");
+  }
   switch (ast->kind) {
   case AST_block:
     switch (ast->scope_kind) {
@@ -133,6 +136,35 @@ static void genAST(FILE* outfile, AST* ast) {
     fprintf(outfile, "%s", ast->sym->name);
     break;
 
+  case AST_if:
+    fprintf(outfile, "if (");
+    genAST(outfile, ast->v[0]);
+    fprintf(outfile, ") {");
+    genAST(outfile, ast->v[1]);
+    fprintf(outfile, ";\n");
+    fprintf(outfile, "}");
+    if (ast->n > 2) {
+      fprintf(outfile, " else {");
+      genAST(outfile, ast->v[2]);
+      fprintf(outfile, ";\n");
+      fprintf(outfile, "}");
+    }
+    break;
+
+  case AST_object:
+    {
+      int i;
+
+      fprintf(outfile, "/* object?!? */\n");
+      for (i = 0; i<ast->n; i++) {
+	if (i) {
+	  fprintf(outfile, ";\n");
+	}
+	genAST(outfile, ast->v[i]);
+      }
+    }
+    break;
+
   case AST_op:
     {
       int i;
@@ -160,7 +192,12 @@ static void genAST(FILE* outfile, AST* ast) {
 	fprintf(outfile, "*");
 	genAST(outfile, ast->v[2]);
 	break;
-     }
+      } else if (strcmp(ast->v[0]->sym->name, "!") == 0 &&
+		 strcmp(ast->v[0]->string, "#!") == 0) {
+	fprintf(outfile, "!");
+	genAST(outfile, ast->v[1]);
+	break;
+      }
     }
     /* FALL THROUGH */
 
@@ -213,10 +250,14 @@ static void handleInterrupt(int sig) {
   fail("received interrupt");
 }
 
+static void handleSegFault(int sig) {
+  fail("seg fault");
+}
+
 
 void codegen(FA* fa, char* infilename, char* compilerDir) {
   signal(SIGINT, handleInterrupt);
-  signal(SIGSEGV, handleInterrupt);
+  signal(SIGSEGV, handleSegFault);
 
   createTmpDir();
   openMakefile(infilename, compilerDir);
