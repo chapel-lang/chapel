@@ -217,7 +217,9 @@ void VarDefStmt::codegen(FILE* outfile) {
 	fprintf(outfile, ");");
       } else {
 	if (aVar->varClass == VAR_CONFIG) {
-	  fprintf(outfile, "if (!setInCommandLine(\"%s\", &%s)) {\n", aVar->name, aVar->name);
+	  fprintf(outfile, "if (!setInCommandLine");
+	  aVar->type->codegen(outfile);
+	  fprintf(outfile, "(\"%s\", &%s)) {\n", aVar->name, aVar->name);
 	}
 	// TODO: hoist this into a traversal that rewrites vardefs as
 	// assignments?

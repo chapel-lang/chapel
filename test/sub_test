@@ -71,7 +71,7 @@ echo \[pwd: \"`pwd`\"\]
 # echo \[compiler: \"$compiler\"\]
 
 if (-r ./COMPOPTS) then
-    set globalCompopts = "$COMPOPTS `cat ./COMPOPTS`"
+    set globalCompopts = "$COMPOPTS`cat ./COMPOPTS`"
 else
     set globalCompopts = "$COMPOPTS"
 endif
@@ -83,7 +83,7 @@ else
 endif
 
 if (-r ./EXECOPTS) then
-    set globalExecopts = "$EXECOPTS `cat ./EXECOPTS`"
+    set globalExecopts = "$EXECOPTS`cat ./EXECOPTS`"
 else
     set globalExecopts = "$EXECOPTS"
 endif
@@ -147,19 +147,19 @@ foreach chplsrc ($testsrc)
     set execlog = $execfile.exec.out.tmp
 
     if (-r ./$execfile.compopts) then
-	set compopts = "$globalCompopts `cat ./$execfile.compopts`"
+	set compopts = "$globalCompopts`cat ./$execfile.compopts`"
     else
         set compopts = "$globalCompopts"
     endif
 
     if (-r ./$execfile.execopts) then
-	set execopts = "$globalExecopts `cat ./$execfile.execopts`"
+	set execopts = "$globalExecopts`cat ./$execfile.execopts`"
     else
         set execopts = "$globalExecopts"
     endif
 
     echo \[Executing: \"$valgrndcomp$compiler $compopts $chplsrc $lastcompopts \< $compstdin\"\]
-    $timedexec $timeout $valgrndcomp$compiler $compopts $chplsrc $lastcompopts < "$compstdin" >& $complog
+    $timedexec $timeout "$valgrndcomp$compiler $compopts $chplsrc $lastcompopts" < "$compstdin" >& $complog
 	
 
     if ( $status != 0 || $execute == "no") then
@@ -210,11 +210,11 @@ foreach chplsrc ($testsrc)
 	        set redirectin = "/dev/null"
 	    endif
 
-	    echo \[Executing program $valgrndbin$execfile $execopts \< $redirectin at `date +"%H:%M:%S"`\]
+	    echo \[Executing program $valgrndbin$execfile "$execopts" \< $redirectin at `date +"%H:%M:%S"`\]
 	    # Append program output to that of the 
 	    # compiler (in case warning were output
 	    # by compiler)
-	    $timedexec $timeout $valgrndbin./$binfile $execopts < $redirectin >>& $execlog
+	    $timedexec $timeout "$valgrndbin./$binfile $execopts" < $redirectin >>& $execlog
 
 	    if ( $status != 0 ) then
 		cat $execlog

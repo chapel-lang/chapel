@@ -1,0 +1,4 @@
+x is initialized at compile time to true
+x at runtime is false
+y is initialized at compile time to false
+y at runtime is true

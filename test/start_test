@@ -133,9 +133,9 @@
 #
 #  - if the subdirectory contains a COMPOPTS or EXECOPTS file,
 #    the options listed in that file will be added to the compiler
-#    and execution options for that subdirectory.  NOTE: be sure
-#    not to end the file with a linefeed -- it should simply be a
-#    list of options on the first line, followed <eof>.
+#    and execution options for that subdirectory.  In addition, 
+#    a test named foo.chpl can add its own compilation and execution
+#    options by specifying them in foo.compopts and foo.execopts.
 #
 #  - also added support for a LASTCOMPOPTS file that contains
 #    compiler options to be added after the source file.  Thus:

@@ -2,8 +2,10 @@ config var er: integer = 1;
 config var hz: integer = 2;
 config var ok: integer = 3;
 
-writeln("***Given a hash table size of 101, these three variables");
-writeln("hash to the same location.***");
+writeln("*****************************************************");
+writeln("Given a hash table size of 101, these three variables");
+writeln("hash to the same location.");
+writeln("*****************************************************");
 
 writeln("er is initialized at compile time to 1");
 writeln("er at runtime is ", er);

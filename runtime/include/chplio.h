@@ -33,6 +33,7 @@
 
 
 void _write_linefeed(FILE* outfile);
+int _string_to_boolean(char* valueString, _boolean* val);
 void _read_boolean(FILE* outfile, char* format, _boolean* val);
 void _write_boolean(FILE* outfile, char* format, _boolean val);
 

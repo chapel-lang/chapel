@@ -1,5 +1,7 @@
-***Given a hash table size of 101, these three variables
-hash to the same location.***
+*****************************************************
+Given a hash table size of 101, these three variables
+hash to the same location.
+*****************************************************
 er is initialized at compile time to 1
 er at runtime is 111
 hz is initialized at compile time to 2

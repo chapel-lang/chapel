@@ -9,14 +9,30 @@ void _write_linefeed(FILE* outfile) {
 }
 
 
+int _string_to_boolean(char* valueString, _boolean* val) {
+  int validBoolean = 0;
+
+  if (valueString) {
+    if (strcmp(valueString, "true") == 0) {
+      *val = true;
+      validBoolean = 1;
+    } else if (strcmp(valueString, "false") == 0){
+      *val = false;
+      validBoolean = 1;
+    }
+  }
+  return validBoolean;
+}
+
+
 void _read_boolean(FILE* infile, char* format, _boolean* val) {
   char* inputString = NULL;
+  int validBoolean = 0;
+
   _read_string(stdin, format, &inputString);
-  if (strcmp(inputString, "true") == 0) {
-    *val = true;
-  } else if (strcmp(inputString, "false") == 0) {
-    *val = false;
-  } else {
+  validBoolean = _string_to_boolean(inputString, val);
+
+  if (!validBoolean) {
     fflush(stdout);
     fprintf(stderr, "***ERROR:  Not of boolean type***\n");
     exit(0);
