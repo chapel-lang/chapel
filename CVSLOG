@@ -3588,3 +3588,56 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: Makefile TODO chapel.y expr.h loc.h 
 
+---------------------------------------------------------------------------
+
+06/21/04 17:01:18 -- bradc
+
+Log message:
+	Merged my prototype AST code with the main compiler.  By default,
+	it is not used.  However, it can be selected using the --newast
+	flag.  Currently this causes the new parser and AST to be used
+	and the AST to be printed out, but no code to be generated or
+	compiled.
+	
+	Added a few tests that I've been using to monitor its evolution
+	and ensure that I don't go down the wrong path.
+	
+	Changed the Makefile structure slightly so that the AST code
+	could continue to live in its own subdirectory, for organizational
+	purposes.
+
+Modified files:
+	chapel/compiler/: Makefile driver.cpp driver.h files.cpp files.h 
+	                  misc.cpp 
+Added files:
+	chapel/compiler/: createAST.cpp createAST.h 
+
+Log message:
+	Merged my prototype AST code with the main compiler.  By default,
+	it is not used.  However, it can be selected using the --newast
+	flag.  Currently this causes the new parser and AST to be used
+	and the AST to be printed out, but no code to be generated or
+	compiled.
+	
+	Added a few tests that I've been using to monitor its evolution
+	and ensure that I don't go down the wrong path.
+	
+	Changed the Makefile structure slightly so that the AST code
+	could continue to live in its own subdirectory, for organizational
+	purposes.
+	
+	Changed the name of my Link class to ILink (Inheritance-based
+	Link) to avoid conflicts with the previous instance.
+
+Modified files:
+	chapel/compiler/AST/: Makefile expr.h link.cpp link.h stmt.h 
+	                      symbol.h symtab.cpp type.h 
+Added files:
+	chapel/compiler/AST/: Makefile.include Makefile.share 
+	chapel/test/trivial/bradc/protoast/: COMPOPTS NOEXEC 
+	                                     mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+	                                     mvm-seq.chpl mvm-seq.good 
+	                                     test.chpl test.good 
+
