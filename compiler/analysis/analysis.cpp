@@ -658,6 +658,7 @@ build_types(Vec<BaseAST *> &syms) {
 	s->element->type = at->elementType->asymbol->sym;
 	s->element->is_var = 1;
 	s->element->is_external = 1;
+	s->domain = at->domainType->asymbol->sym;
 	break;
       }
       case TYPE_TUPLE: {	
@@ -1746,7 +1747,7 @@ static void
 domain_start_index(PNode *pn, EntrySet *es) {
   forv_Var(v, pn->lvals) {
     AVar *index = make_AVar(v, es);
-    creation_point(index, sym_index);
+    update_in(index, make_abstract_type(sym_int));
   }
 }
 
@@ -1754,7 +1755,7 @@ static void
 domain_next_index(PNode *pn, EntrySet *es) {
   forv_Var(v, pn->lvals) {
     AVar *index = make_AVar(v, es);
-    creation_point(index, sym_index);
+    update_in(index, make_abstract_type(sym_int));
   }
 }
 

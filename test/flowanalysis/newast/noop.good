@@ -7,7 +7,7 @@
 ::bool ( bool )
 ::false(prelude.chpl:10) ( bool )
 ::foo(noop.chpl:5) ( foo )
-::i(noop.chpl:10) ( Index (internal_prelude.chpl:1) )
+::i(noop.chpl:10) ( int64 )
 ::main ( main )
 ::void ( void )
 function __init_internal_prelude internal_prelude.chpl:27

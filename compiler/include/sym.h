@@ -150,7 +150,8 @@ class Sym : public BasicSym {
   Sym			*alias;			// alias of type		*type*
   Sym			*init;			// for modules & classes (default init function) *type*
   Sym			*meta_type;		// meta type and inverse ptr	*type*
-  Sym			*element;		// element type for aggregates *type*
+  Sym			*element;		// element type for aggregates	*type*
+  Sym			*domain;		// domain type for  aggregates	*type
 
   void			*temp;			// algorithmic temp		*type*
 
