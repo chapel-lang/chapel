@@ -7,7 +7,6 @@
 #include "symtab.h"
 #include "stringutil.h"
 
-
 static void build_anon_array_type_def(Stmt* stmt, Type** type) {
   ArrayType* array_type = dynamic_cast<ArrayType*>(*type);
 
@@ -31,10 +30,10 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
   if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
     if (Variable* var = dynamic_cast<Variable*>(forall->domains)) {
       if (var->next) {
-	INT_FATAL(stmt, "Multiple domains not handled in declarations");
+				INT_FATAL(stmt, "Multiple domains not handled in declarations");
       }
       if (DomainType* domain_type = dynamic_cast<DomainType*>(var->var->type)) {
-	char* name = glomstrings(5,
+				char* name = glomstrings(5,
 				 "_array_",
 				 array_type->elementType->symbol->name,
 				 "_",
@@ -63,7 +62,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 	}
       }
       else {
-	INT_FATAL(stmt, "Didn't find domain in this complicated case");
+				INT_FATAL(stmt, "Didn't find domain in this complicated case");
       }
     }
   }
@@ -193,6 +192,52 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
   }
 }
 
+void build_index_type_def(Stmt* stmt, Type** type, SymScope* scope) {
+	IndexType* index_type = dynamic_cast<IndexType*>(*type);
+	DomainType* domain_type;
+  
+  if (!index_type) {
+    INT_FATAL(*type, "Index type expected");
+  }
+ 
+ 	if (!(typeid(*index_type->idxExpr) == typeid(IntLiteral))){
+ 		Variable* var = dynamic_cast<Variable*>(index_type->idxExpr);
+ 		if (var){
+ 			Symbol* domain_sym = Symboltable::lookupInScope(var->var->name, scope);
+ 			if (domain_sym){
+ 				domain_type = dynamic_cast<DomainType*>(domain_sym->type);
+ 				if (!domain_type){
+ 					INT_FATAL(domain_type, "Domain type expected");
+ 				}
+ 			} else {
+ 				INT_FATAL(index_type, "Only index of domain supported for now.");
+ 			}
+ 		}
+ 	}
+	char *name; 
+  
+ 	if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
+  	name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "_d");
+  }
+  else{
+		name = glomstrings(2, "_index_", domain_type->symbol->name);
+  }
+  
+  Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);
+  if (index_sym) {
+    *type = index_sym->type;
+  }
+  else {
+    SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+    TypeSymbol* index_sym = new TypeSymbol(name, index_type);
+    index_type->addSymbol(index_sym);
+    DefStmt* index_type_def = new DefStmt(new DefExpr(index_sym));
+    index_sym->setDefPoint(index_type_def->defExprList);
+    commonModule->stmts->insertBefore(index_type_def);
+    Symboltable::setCurrentScope(saveScope);
+    *type = index_type;
+  }
+}
 /*** don't pass tuple_type and type
  *** switch statement on type_id
  ***  get tuple_type etc. inside procedure
@@ -214,11 +259,32 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
   }
 }
 
+static void build_anon_type_def(Stmt* stmt, Type** type, SymScope* scope){
+	if (typeid(**type) == typeid(IndexType)){
+  	build_index_type_def(stmt, type, scope);
+	}
+}
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
+	currentStmt = stmt;
+  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
+    if (Symbol* sym = def_stmt->typeDef()) {
+      currentScope = sym->parentScope;
+    }
+    else if (Symbol* sym = def_stmt->varDef()) {
+      currentScope = sym->parentScope;
+    } else {
+      currentScope = NULL;
+    }
+  }
+  else {
+    currentScope = NULL;
+  }
+  
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
     if (VarSymbol* var = def_stmt->varDef()) {
       build_anon_type_def(stmt, &var->type);
+      build_anon_type_def(stmt, &var->type, currentScope);
     }
   }
 }

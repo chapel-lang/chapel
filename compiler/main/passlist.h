@@ -26,10 +26,12 @@ PassInfo passlist[] = {
   RUN(RenameOverloadedFunctions, ""),
   RUN(InsertAnonymousDomains, ""),
   RUN(InsertAnonymousTypes, ""),
+  RUN(Fixup, "verify"),
+  RUN(InsertIndexType, ""),
+  RUN(Fixup, "verify"),
   RUN(BuildClassConstructorsEtc, ""),
   RUN(SpecializeParenOpExprs, ""),
   RUN(ApplyThisParameters, ""),
-
   // passes to run analysis
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(RunAnalysis, ""),

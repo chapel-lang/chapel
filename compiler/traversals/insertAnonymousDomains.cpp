@@ -5,7 +5,7 @@
 #include "type.h"
 #include "symtab.h"
 #include "stringutil.h"
-
+#include "view.h"
 
 void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
   currentStmt = stmt;

@@ -13,6 +13,7 @@ TRAVERSALS_SRCS = \
 	findUnresolvedSymbols.cpp \
 	fixup.cpp \
 	getstuff.cpp \
+	insertIndexType.cpp \
 	insertAnonymousDomains.cpp \
 	insertAnonymousTypes.cpp \
 	insertElidedLoops.cpp \

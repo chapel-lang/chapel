@@ -24,6 +24,7 @@
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
+#include "../traversals/insertIndexType.h"
 #include "../traversals/insertAnonymousDomains.h"
 #include "../traversals/insertAnonymousTypes.h"
 #include "../traversals/insertElidedLoops.h"
@@ -68,6 +69,7 @@ REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
 REGISTER(GetStuff);
+REGISTER(InsertIndexType);
 REGISTER(InsertAnonymousDomains);
 REGISTER(InsertAnonymousTypes);
 REGISTER(InsertElidedLoops);

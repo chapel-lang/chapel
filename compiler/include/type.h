@@ -103,6 +103,8 @@ class DomainType : public Type {
  public:
   int numdims;
   Expr* parent;
+  //upon creation, each domain creates an index type;
+  Type* idxType;
 
   DomainType(Expr* init_expr = NULL);
   DomainType(int init_numdims);
@@ -118,14 +120,28 @@ class DomainType : public Type {
   virtual bool blankIntentImpliesRef(void);
 };
 
+//Roxana -- Index should not by subtype of Domain
+//class IndexType : public DomainType {
+class IndexType : public Type {
+	public:
+		//the expression this index is instantiated from: e.g., index(2)
+		//or
+		//pointer to the domain, set to NULL until index(D) is used.
+		//then domain is used for bounds check
+		Expr* idxExpr;
+		DomainType* domainType;
+		//the type of the index: k-tuple for arithmetic domains, scalar type, or enum, record, union of scalar type
+		//for indefinite and opaque domains.
+		//taken from the domain it is associated with, or created anew otherwise
+		Type* idxType;
 
-class IndexType : public DomainType {
- public:
-  IndexType(Expr* init_expr = NULL);
-  IndexType(int init_numdims);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void print(FILE* outfile);
+	  //IndexType();
+  	IndexType(Expr* init_expr = NULL);
+  	//IndexType(int init_numdims);
+  	IndexType(Type* init_idxType);
+  	virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+		void codegenDef(FILE* outfile);
+	  void print(FILE* outfile);
 };
 
 

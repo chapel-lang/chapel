@@ -471,6 +471,7 @@ DomainType::DomainType(Expr* init_expr) :
   parent(NULL)
 {
   if (init_expr) {
+  	
     if (typeid(*init_expr) == typeid(IntLiteral)) {
       numdims = init_expr->intVal();
     } else {
@@ -478,6 +479,8 @@ DomainType::DomainType(Expr* init_expr) :
       parent = init_expr;
       SET_BACK(parent);
     }
+    idxType = new IndexType(init_expr);
+    ((IndexType*)idxType)->domainType = this;
   }
 }
 
@@ -554,28 +557,38 @@ bool DomainType::blankIntentImpliesRef(void) {
   return true;
 }
 
+IndexType::IndexType(Type* init_idxType):Type(TYPE_INDEX, init_idxType->defaultVal),
+	idxType(init_idxType) {
+	domainType = NULL;
+}
 
 IndexType::IndexType(Expr* init_expr) :
-  DomainType(init_expr)
+  Type(TYPE_INDEX, NULL),
+  idxExpr(init_expr)
 {
-  astType = TYPE_INDEX;
+	if (!(typeid(*init_expr) == typeid(IntLiteral))) {
+      //
+      //printf("K-tuple integer index.\n");
+			//var i : index(k) does not have a domain
+			//associated with it
+      //domainType = NULL;
+      //} else {
+    	//printf("Index of a domain?");
+    	//under the assumption that we can only have
+    	//var i: index(k), or var i : index(D) kind of declarations
+    	//domainType = (DomainType*)idxExpr->typeInfo();
+    	SET_BACK(idxExpr);
+	}
 }
-
-
-IndexType::IndexType(int init_numdims) :
-  DomainType(init_numdims)
-{
-  astType = TYPE_INDEX;
-}
-
 
 Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Type* copy;
-  if (!parent) {
+ // Type* copy;
+/*  if (!parent) {
     copy = new IndexType(numdims);
   } else {
     copy = new IndexType(parent->copy(clone, map, analysis_clone));
-  }
+  }*/
+  Type* copy = new IndexType(idxType->copy(clone, map, analysis_clone));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -583,18 +596,24 @@ Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 
 void IndexType::print(FILE* outfile) {
   fprintf(outfile, "index(");
-  if (!parent) {
-    if (numdims != 0) {
-      fprintf(outfile, "%d", numdims);
-    } else {
-      fprintf(outfile, "???");
-    }
+  if (typeid(*idxExpr) == typeid(IntLiteral)) {
+      fprintf(outfile, "%d", idxExpr->intVal());
   } else {
-    parent->print(outfile);
+    fprintf(outfile, "???");
   }
   fprintf(outfile, ")");
 }
 
+void IndexType::codegenDef(FILE* outfile) {
+  fprintf(outfile, "typedef struct _");
+  symbol->codegen(outfile);
+  fprintf(outfile, " {\n");
+	//idxType->codegen(stdout);
+  //fprintf(outfile, " _type;\n");
+  fprintf(outfile, "} ");
+  symbol->codegen(outfile);
+  fprintf(outfile, ";\n\n");
+}
 
 SeqType::SeqType(Type* init_elementType,
 		 ClassType* init_nodeType):
