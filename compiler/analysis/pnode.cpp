@@ -1,7 +1,3 @@
-/* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 #include "geysa.h"
 #include "if1.h"
 #include "pnode.h"

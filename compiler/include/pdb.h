@@ -1,6 +1,3 @@
-/*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
 #ifndef _pdb_H_
 #define _pdb_H_
 

@@ -1,0 +1,7 @@
+#!/bin/csh -f
+set testname = $1
+set outfile = $2
+
+echo > $1.good
+cat ../../../../LICENSE >> $1.good
+echo >> $1.good

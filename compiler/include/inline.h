@@ -1,6 +1,3 @@
-/*
-  Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
 #ifndef _inline_H_
 #define _inline_H_
 

@@ -1,5 +1,4 @@
 /* -*-Mode: c++;-*-
-Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #ifndef _dom_H
 #define _dom_H

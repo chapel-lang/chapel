@@ -1,7 +1,3 @@
-/*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 #include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>

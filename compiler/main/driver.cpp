@@ -1,7 +1,3 @@
-/*
-  Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 #define EXTERN
 #include "geysa.h"
 #include "parse.h"
@@ -109,16 +105,16 @@ help(ArgumentState *arg_state, char *arg_unused) {
   char ver[30];
   get_version(ver);
   fprintf(stderr, "%s Version %s ", arg_state->program_name, ver);  
-  fprintf(stderr, "Copyright (c) 1994-2004 John Plevyak\n");  
+  fprintf(stderr, "Copyright (c) 2004, Cray Inc. (see LICENSE file for more details)\n");  
   usage(arg_state, arg_unused);
 }
 
 static void
 copyright(ArgumentState *arg_state, char *arg_unused) {
-  fprintf(stderr,
-#include "../COPYRIGHT"
+  fprintf(stderr, "\n"
+#include "COPYRIGHT"
+	  "\n"
 	  );
-  fprintf(stderr, "\n\n");
   clean_exit(0);
 }
 

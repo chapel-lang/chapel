@@ -1,7 +1,3 @@
-/*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 #include "geysa.h"
 #include "scope.h"
 #include "sym.h"

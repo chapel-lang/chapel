@@ -1,7 +1,3 @@
-/*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 // module
 S(in_module)
 S(use_module)

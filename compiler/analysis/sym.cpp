@@ -1,6 +1,3 @@
-/*
-  Copyright 20004 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
 #include "geysa.h"
 #include "ast.h"
 #include "if1.h"

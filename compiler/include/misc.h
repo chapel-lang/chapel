@@ -1,5 +1,4 @@
 /* -*-Mode: c++;-*-
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #ifndef _misc_H_
 #define _misc_H_

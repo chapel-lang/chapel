@@ -1,5 +1,4 @@
 /*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 
   Static Single Use Form 
     - from the Illinois Concert Compiler circa 1992

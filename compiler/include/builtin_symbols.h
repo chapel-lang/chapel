@@ -1,7 +1,3 @@
-/*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 S(system)
 S(anyclass)
 S(any)

@@ -1,5 +1,4 @@
 /* -*-Mode: c++;-*-
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #ifndef _parse_H_
 #define _parse_H_

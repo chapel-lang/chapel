@@ -165,11 +165,6 @@ foreach chplsrc ($testsrc)
     if ( $status != 0 || $execute == "no") then
 	# Compile unsuccessful
 	# Compare compiler output with expected program output
-	if ( ! -r $checkfile ) then
-	    echo \[Error cannot locate compiler output comparison file $localdir/$checkfile\]
-	    continue
-	endif
-
 	if ( "$catfiles" != "") then
 	    echo \[Concatenating extra files: $catfiles\]
 	    cat $catfiles >>& $complog
@@ -177,6 +172,11 @@ foreach chplsrc ($testsrc)
 
 	if (-x ./PREDIFF) then
 	    ./PREDIFF $execfile $complog
+	endif
+
+	if ( ! -r $checkfile ) then
+	    echo \[Error cannot locate compiler output comparison file $localdir/$checkfile\]
+	    continue
 	endif
 
 	echo \[Executing diff $checkfile $complog\]

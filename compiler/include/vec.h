@@ -1,5 +1,5 @@
 /* -*-Mode: c++;-*-
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+  Copyright 2003 John Plevyak
 */
 
 #ifndef _vec_H_

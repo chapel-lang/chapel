@@ -1,5 +1,5 @@
 /* -*-Mode: c++;-*-
- Copyright 1994-2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+ Copyright 1994-2003 John Plevyak
 */
 #include <stdio.h>
 #include <stdlib.h>

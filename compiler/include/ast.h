@@ -1,5 +1,4 @@
 /* -*-Mode: c++;-*-
-  Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #ifndef _ast_H_
 #define _ast_H_

@@ -1,5 +1,4 @@
 /* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #ifndef _IF1_h_
 #define _IF1_h_

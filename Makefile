@@ -35,4 +35,6 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 
+-include make/Makefile.release
+
 FORCE:

@@ -1,6 +1,3 @@
-/*
-  Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
 #ifndef _cdb_H_
 #define _cdb_H_
 

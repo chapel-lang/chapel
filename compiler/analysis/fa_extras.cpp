@@ -1,7 +1,3 @@
-/* -*-Mode: c++;-*-
- Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 static void
 show_type(Vec<CreationSet *> &t, FILE *fp) {
   fprintf(fp, "( ");

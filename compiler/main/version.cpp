@@ -1,7 +1,3 @@
-/* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 #include <stdio.h>
 #include "version.h"
 #include "version_num.h"

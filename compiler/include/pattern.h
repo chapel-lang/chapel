@@ -1,6 +1,3 @@
-/*
-  Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
 #ifndef _pattern_H_
 #define _pattern_H_
 

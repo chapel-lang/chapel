@@ -1,6 +1,3 @@
-/*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
 #ifndef _fun_H_
 #define _fun_H_
 

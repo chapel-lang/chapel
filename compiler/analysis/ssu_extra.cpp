@@ -1,7 +1,3 @@
-/* -*-Mode: c++;-*-
- Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 #include "if1.h"
 
 static void

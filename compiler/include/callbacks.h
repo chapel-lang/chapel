@@ -1,6 +1,3 @@
-/*
-  Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
 #ifndef _callbacks_H_
 #define _callbacks_H_
 

@@ -1,7 +1,3 @@
-/*
-  Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 #include <typeinfo>
 #include "geysa.h"
 #include "analysis.h"

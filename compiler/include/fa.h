@@ -1,6 +1,3 @@
-/*
-  Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
 #ifndef _fa_H_
 #define _fa_H_
 

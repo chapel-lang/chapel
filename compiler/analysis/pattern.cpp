@@ -1,7 +1,3 @@
-/* -*-Mode: c++;-*-
- Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
-*/
-
 #include "geysa.h"
 #include "pattern.h"
 #include "pdb.h"
