@@ -492,6 +492,9 @@ DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
     while (var) {
       var->consClass = constag;
       var->varClass = vartag;
+      if (constag == VAR_PARAM && !var->init){
+      	USR_FATAL(var->init, "No initializer for parameter.");
+      }
       var = nextLink(VarSymbol, var);
     }
     expr = nextLink(DefExpr, expr);
