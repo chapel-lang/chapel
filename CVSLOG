@@ -4819,3 +4819,34 @@ Modified files:
 	chapel/test/lowlevelcg/jplevyak/: 1.good Makefile.cg 
 	                                  review3.good sample.good 
 
+---------------------------------------------------------------------------
+
+08/02/04 15:10:09 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	handle inheritance of functions and member variables
+	add test case for above
+	begin work on parametric types
+
+Modified files:
+	chapel/compiler/: ast.cpp ast.h builtin_symbols.h fa.cpp if1.cpp 
+	                  pattern.cpp prelude.chpl prelude.v 
+	                  prim_data.dat scope.cpp sym.h v.g 
+	chapel/test/flowanalysis/jplevyak/: classvar.good cs1.good 
+	                                    cs2.good cs3.good cs4.good 
+	                                    cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good 
+	                                    memberfun.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good review1.good 
+	                                    review2.good review3.good 
+	                                    structtype.good var.good 
+	                                    var2.good 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: memberfun2.good memberfun2.v 
+
