@@ -18614,3 +18614,29 @@ Log message:
 Modified files:
 	chapel/test/trivial/bradc/domarr/: enumarray.chpl 
 
+---------------------------------------------------------------------------
+
+03/02/05 10:27:34 -- bradc
+
+Log message:
+	Fixed last night's valgrind regression, which related to complex
+	literals that were expressed using integer sub-values.  The problem
+	was related to an idiom in my coding that I started out using, but
+	have since shied away from (though haven't completely eradicated
+	yet).  In particular, I used to do:
+	
+		if (typeid(foo) == typeid(DesiredType)) {
+		  DesiredType foo2 = (DesiredType)(foo);
+		  ...
+		}
+	
+	using a static rather than a dynamic cast, having proved it was
+	safe to do so.  I started to worry that this was a fragile
+	construct since someone might modify the conditional without
+	modifying the code.  It turns out that in this case, I did just
+	that.  So now I use dynamic casts inside of these conditionals
+	as an extra safety check (and performance be damned! :)
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
