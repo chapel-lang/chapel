@@ -6161,3 +6161,17 @@ Modified files:
 	chapel/compiler/: analysis.cpp 
 	chapel/compiler/AST/: chapel.y expr.h 
 
+---------------------------------------------------------------------------
+
+08/30/04 16:09:15 -- bradc
+
+Log message:
+	Removed SubDomainType and SubIndexType and implemented them
+	by adding a parent link to DomainType which can be set to
+	nilExpr for domains and indices that have no parent.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+	chapel/compiler/AST/: baseAST.h chapel.y type.cpp type.h 
+	                      verifyASTType.cpp 
+
