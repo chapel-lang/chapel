@@ -4,42 +4,44 @@
 #include "symbol.h"
 
 
+struct charPair {
+  char origChar;
+  char newChar;
+};
 
-static void symbolSub(Symbol* sym, char illegalChar) {
+static charPair replacement[] = {
+  {'?', 'Q'},
+  {'-', '_'}, 
 
+  {'\0', '\0'}  // This is a sentinel to mark the end of the array. 
+};
+
+
+static void symbolSub(Symbol* sym, int index) {
   if (sym->name == sym->cname) {
     sym->cname = copystring(sym->name);
   }
-
-  switch (illegalChar) {
-  case '?':
-    char* questionMark = strchr(sym->cname, '?');
-    while (questionMark) {
-      *questionMark = 'Q';
-      questionMark = strchr(sym->cname, '?');
+  int i = 0;
+  for (i = index; replacement[i].origChar != '\0'; i++) {
+    char* illegalChar = strchr(sym->cname, replacement[i].origChar);
+    while (illegalChar) {
+      *illegalChar = replacement[i].newChar;
+      illegalChar = strchr(sym->cname, replacement[i].origChar);
     }
-    break;
-
-  case '-':
-    char* dash = strchr(sym->cname, '-');
-    while (dash) {
-      *dash = '_';
-      dash = strchr(sym->cname, '-');
-    }
-    break;
   }
 }
 
 
 void LegalizeCNames::processSymbol(Symbol* sym) {
   if (sym->parentScope->type != SCOPE_INTRINSIC) {
-    char* questionMark = strchr(sym->cname, '?');
-    char* dash = strchr(sym->cname, '-');
-  
-    if (questionMark) {
-      symbolSub(sym, *questionMark);
-    } else if (dash) {
-      symbolSub(sym, *dash);
+    int i = 0;
+    for (i = 0; replacement[i].origChar != '\0'; i++) {
+      char* illegalChar = strchr(sym->cname, replacement[i].origChar);
+      if (illegalChar) {   
+	// This function processes all illegal chars.
+	symbolSub(sym, i);
+	break;
+      }
     }
   }
 }
