@@ -18689,3 +18689,16 @@ Added files:
 	                               label-1.chpl label-1.good 
 	                               label-2.chpl label-2.good 
 
+---------------------------------------------------------------------------
+
+03/02/05 16:22:35 -- jplevyak
+
+Log message:
+	.future files for the control flow tests
+
+Added files:
+	chapel/test/trivial/jplevyak/: break-1.future break-2.future 
+	                               break-3.future break-4.future 
+	                               break-5.future continue-2.future 
+	                               continue-4.future 
+
