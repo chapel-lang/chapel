@@ -3,7 +3,9 @@
 
 #include <stdio.h>
 #include "loc.h"
+#include "misc.h"
 #include "traversal.h"
+#include "vec.h"
 
 class ILink : public Loc {
  public:
@@ -33,5 +35,22 @@ class ILink : public Loc {
 #define appendLink(list, node) (((list) != NULL && !(list)->isNull()) ? \
                                 (list)->append(node), (list) : \
                                 (node))
+
+template <class astType>
+void getLinkElements(Vec<astType*>& elements, ILink* link) {
+  astType* element;
+
+  elements.clear();
+  while (link) {
+    element = dynamic_cast<astType*>(link);
+    if (element) {
+      elements.add(element);
+    } else {
+      INT_FATAL(link, "Unexpected type in getElements");
+    }
+
+    link = link->next;
+  }
+}
 
 #endif

@@ -43,9 +43,10 @@
   needs to be initialized and then asks the type to generate
   the arguments to the initialize method.
 
+* does my symboltable break GC requirements?
+
 
 SHANNON:
-* implement codegen for Conditional
 * fix type_info() for BinOp
 * implement isComputable() and intVal() better for Expr hierarchy
 * operator precedence

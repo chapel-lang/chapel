@@ -5,6 +5,11 @@
 #ifndef _vec_H_
 #define _vec_H_
 
+#include <stdint.h>
+#include <string.h>
+#include <sys/types.h>
+#include "chplalloc.h"
+
 // Simple Vector class, also supports open hashed sets
 
 #define VEC_INTEGRAL_SIZE	4		/* must be a power of 2 */

@@ -80,6 +80,13 @@ static Stmt* createInitFn(Stmt* program) {
 
   //  program->traverse(new FindUnknownTypes());
   //  program->traverse(new PrintStmts());
+  /*
+  Vec<Stmt*> stmts;
+  getLinkElements(stmts, program);
+  for (int i=0; i<stmts.n; i++) {
+    stmts.e[i]->print(stdout);
+  }
+  */
 
   return program;
 }
