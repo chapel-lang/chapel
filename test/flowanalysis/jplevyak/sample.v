@@ -1,8 +1,8 @@
 aa : 0;
 bb : { a: 1; b: 2; aa; 3; };
 f a b : {
-  if (a) {
-    if (b.a)
+  if a then {
+    if b.a then
       a = b.b
     else
       a = 4;

@@ -80,6 +80,7 @@ void	if1_dump(FILE *fp, Code *c);
 void	if1_dump_code(FILE *fp, Code *code, int indent);
 void	if1_dump_sym(FILE *fp, Sym *sym);
 
+int	is_functional(IF1 *p, Code *code);
 
 extern IF1 *if1;
 

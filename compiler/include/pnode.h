@@ -28,6 +28,7 @@ class PNode : public gc {
  public:
   Code *code;
   int id;
+  uint	is_dead : 1;
 
   Vec<Var *> lvals;
   Vec<Var *> rvals;

@@ -10,6 +10,7 @@
 #include "arg.h"
 #include "cg.h"
 #include "clone.h"
+#include "dead.h"
 #include "dom.h"
 #include "driver.h"
 #include "dump.h"
@@ -138,6 +139,8 @@ do_analysis(char *fn) {
     goto Lfail;
   if (clone(fa, if1->top->fun) < 0)
     goto Lfail;
+  if (mark_dead_code(fa, if1->top->fun) < 0)
+    fail("fatal error, dead code detection failed");
   if (logging(LOG_TEST_FA))
     log_test_fa(fa);
   forv_Fun(f, fa->funs)

@@ -11,8 +11,10 @@ class AST;
 class ParseAST;
 class PNode;
 class AType;
+class EntrySet;
 
 enum PrimType {
+  PRIM_TYPE_ALL,
   PRIM_TYPE_ANY,
   PRIM_TYPE_SYMBOL,
   PRIM_TYPE_A,
@@ -52,6 +54,17 @@ class Prim : public gc {
        PrimType *aarg_types, PrimType *aret_types, int options);
 };
 #define forv_Prim(_c, _v) forv_Vec(Prim, _c, _v)
+
+typedef void (*PrimitiveTransferFunctionPtr)(PNode *pn, EntrySet *es);
+
+// registered primitive transfer functions
+class RegisteredPrim : public gc {
+ public:
+  PrimitiveTransferFunctionPtr	fn;
+  uint is_functional : 1;
+  RegisteredPrim(PrimitiveTransferFunctionPtr afn, int is_func = 0) 
+    : fn(afn), is_functional(is_func) {}
+};
 
 #include "../analysis/prim_data.h"
 

@@ -49,7 +49,7 @@ prim_ref "&" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_cast "(" 3 0 {PRIM_TYPE_SYMBOL, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_sizeof "sizeof" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_SIZE} ;
 
-prim_reply  "reply" -3 0 {PRIM_TYPE_CONT, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} nonfunctional;
+prim_reply  "reply" -3 0 {PRIM_TYPE_CONT, PRIM_TYPE_ALL} {PRIM_TYPE_ALL} nonfunctional;
 prim_tuple "make_tuple" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_vector "make_vector" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_continuation "make_continuation" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;

@@ -21,7 +21,9 @@ static int creation_set_id = 1;
 static FA *fa = 0;
 
 static AType *bottom_type = 0;
+static AType *void_type = 0;
 static AType *top_type = 0;
+static AType *any_type = 0;
 static AType *bool_type = 0;
 static AType *size_type = 0;
 static AType *anyint_type = 0;
@@ -52,9 +54,9 @@ static AType *make_AType(CreationSet *cs);
 static int application_constraints(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args);
 
 AVar::AVar(Var *v, void *acontour) : 
-  var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), restrict(top_type), 
-  container(0), setters(0), setter_class(0), creation_set(0), in_send_worklist(0), 
-  contour_is_entry_set(0)
+  var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
+  restrict(top_type), container(0), setters(0), setter_class(0), creation_set(0), 
+  in_send_worklist(0), contour_is_entry_set(0)
 {
   id = avar_id++;
 }
@@ -1256,11 +1258,12 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     switch (p->prim->index) {
       default: break;
       case P_prim_primitive: {
-	PrimitiveTransferFunctionPtr fn = fa->primitive_transfer_functions.get(p->rvals.v[1]->sym->name);
-	if (!fn)
+	RegisteredPrim *rp = 
+	  fa->primitive_transfer_functions.get(p->rvals.v[1]->sym->name);
+	if (!rp)
 	  fail("fatal error, undefined primitive transfer function '%s'", 
 	       p->rvals.v[1]->sym->name);
-	fn(p, es);
+	rp->fn(p, es);
 	break;
       }
       case P_prim_meta_apply: {
@@ -1456,7 +1459,7 @@ refresh_top_edge(AEdge *e) {
   MPosition p, *cp;
   p.push(1);
   cp = cannonicalize_mposition(p);
-  e->match->filters.put(cp, top_type);
+  e->match->filters.put(cp, any_type);
   AVar *av = make_AVar(sym_init->var, e->to);
   e->args.put(cp, av);
   update_in(av, av->var->sym->abstract_type);
@@ -1669,8 +1672,7 @@ initialize_symbols() {
       type_syms.add(s);
   }
   forv_Sym(s, types) if (s) {
-    if (!s->dispatch_order.n && s != sym_any // && s != sym_void
-      ) {
+    if (!s->dispatch_order.n && s != sym_any && s != sym_void) {
       if (s->is_meta_class && (s != sym_anyclass))
 	subtype(sym_anyclass, s, types);
       else if (s->is_value_class && (s != sym_value))
@@ -1708,7 +1710,8 @@ initialize_primitives() {
     int n = p->nargs < 0 ? -p->nargs : p->nargs;
     for (int i = 0; i < n - 1; i++) {
       switch (p->arg_types[i]) {
-	case PRIM_TYPE_ANY:		p->args.add(top_type); break;
+	case PRIM_TYPE_ALL:		p->args.add(top_type); break;
+	case PRIM_TYPE_ANY:		p->args.add(any_type); break;
 	case PRIM_TYPE_SYMBOL:		p->args.add(symbol_type); break;
 	case PRIM_TYPE_CONT:		p->args.add(make_abstract_type(sym_continuation)); break;
 	case PRIM_TYPE_REF:		p->args.add(make_abstract_type(sym_ref)); break;
@@ -1726,7 +1729,9 @@ static void
 initialize() {
   element_var = new Var(new_Sym("some element"));
   bottom_type = type_cannonicalize(new AType());
-  top_type = make_abstract_type(sym_any);
+  void_type = make_abstract_type(sym_void);
+  any_type = make_abstract_type(sym_any);
+  top_type = type_union(any_type, void_type);
   bool_type = make_abstract_type(sym_bool);
   size_type = make_abstract_type(sym_size);
   symbol_type = make_abstract_type(sym_symbol);
@@ -2010,25 +2015,28 @@ clear_cs(CreationSet *cs) {
     clear_avar(v);
 }
 
+template <class F> void
+foreach_var() {
+  F::F(element_var);
+  forv_Sym(s, fa->pdb->if1->allsyms)
+    if (s->var)
+      F::F(s->var);
+  forv_Fun(f, fa->funs)
+    forv_Var(v, f->fa_all_Vars)
+      F::F(v);
+}
+
+struct ClearVarFn { static void F(Var *v) { 
+  clear_var(v); 
+} };
+
 static void 
 clear_results() {
-  clear_var(element_var);
+  foreach_var<ClearVarFn>();
   forv_Sym(s, fa->pdb->if1->allsyms) {
-    if (s->var)
-      clear_var(s->var);
     if (s->creators.n)
       forv_CreationSet(cs, s->creators)
 	clear_cs(cs);
-  }
-  forv_Fun(f, fa->funs) {
-    forv_Var(v, f->fa_all_Vars)
-      clear_var(v);
-    forv_Sym(v, f->sym->has)
-      if (v->var) clear_var(v->var);
-    if (f->sym->ret->var)
-      clear_var(f->sym->ret->var);
-    clear_var(f->sym->ret->var);
-    clear_var(f->sym->cont->var);
   }
   forv_Fun(f, fa->funs)
     forv_EntrySet(es, f->ess) if (es)
@@ -2325,6 +2333,20 @@ extend_analysis() {
   return 0;
 }
 
+struct SetVoidFn { static void F(Var *v) { 
+  CreationSet *s = void_type->v[0];
+  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+    AVar *av = v->avars.v[i].value;
+    if (av->out->in(s))
+      av->out = void_type;
+  }
+} };
+
+static void
+set_void_sum_types_to_void() {
+  foreach_var<SetVoidFn>();
+}
+
 int
 FA::analyze(Fun *top) {
   ::fa = this;
@@ -2345,6 +2367,7 @@ FA::analyze(Fun *top) {
     }
     complete_pass();
   } while (extend_analysis());
+  set_void_sum_types_to_void();
   show_violations(fa, stderr);
   return type_violations.n ? -1 : 0;
 }

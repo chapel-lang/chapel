@@ -1399,13 +1399,16 @@ gen_loop(IF1 *i, ParseAST *ast) {
 }
 
 static void
-gen_if(IF1 *i, ParseAST *ast) {
+gen_if(IF1 *i, ParseAST *ast, int is_expr) {
   ParseAST *ifcond = ast->children.v[0];
   ParseAST *ifif = ast->children.v[1];
-  ParseAST *ifelse = ast->children.v[2];
+  ParseAST *ifelse = ast->children.n > 2 ? ast->children.v[2] : 0;
   ast->rval = new_sym(i, ast->scope);
   if1_if(i, &ast->code, ifcond->code, ifcond->rval, ifif->code, ifif->rval,
-	 ifelse ? ifelse->code:0, ifelse ? ifelse->rval:0, ast->rval, ast);
+	 ifelse ? ifelse->code:0, ifelse ? ifelse->rval:0, 
+	 is_expr ? ast->rval : 0, ast);
+  if (!is_expr)
+    if1_move(i, &ast->code, sym_void, ast->rval, ast);
 }
 
 static void
@@ -1722,7 +1725,8 @@ gen_if1(IF1 *i, ParseAST *ast) {
     case AST_loop: gen_loop(i, ast); break;
     case AST_op: gen_op(i, ast); break;
     case AST_new: gen_new(i, ast); break;
-    case AST_if: gen_if(i, ast); break;
+    case AST_ifexpr: gen_if(i, ast, 1); break;
+    case AST_if: gen_if(i, ast, 0); break;
     case AST_return: {	
       if (ast->children.n) {
 	if1_gen(i, &ast->code, ast->children.v[0]->code);
@@ -1917,7 +1921,8 @@ print_transfer_function(PNode *pn, EntrySet *es) {
 
 static void
 add_primitive_transfer_functions() {
-  pdb->fa->primitive_transfer_functions.put(print_symbol->name, print_transfer_function);
+  pdb->fa->primitive_transfer_functions.put(
+    print_symbol->name, new RegisteredPrim(print_transfer_function));
 }
 
 int

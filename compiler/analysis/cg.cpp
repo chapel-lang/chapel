@@ -14,6 +14,12 @@
 #include "fa.h"
 #include "var.h"
 
+static inline char *
+c_type(Var *v) {
+  assert(v->type->cg_string);
+  return v->type->cg_string;
+}
+
 static void
 write_c_fun_proto(FILE *fp, Fun *f, int type = 0) {
   assert(f->rets.n == 1);
@@ -37,17 +43,11 @@ write_c_fun_proto(FILE *fp, Fun *f, int type = 0) {
     Var *v = f->args.get(cp);
     if (i)
       fputs(", ", fp);
-    fputs(v->type->cg_string, fp);
+    fputs(c_type(v), fp);
     fprintf(fp, " a%d", i);
     p.inc();
   }
   fputs(")", fp);
-}
-
-static inline char *
-c_type(Var *v) {
-  assert(v->type->cg_string);
-  return v->type->cg_string;
 }
 
 static void
@@ -303,7 +303,9 @@ write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
     case Code_MOVE:
       for (int i = 0; i < n->lvals.n; i++)
 	if (!n->rvals.v[i]->sym->fun)
-	  fprintf(fp, "%s = %s;\n", n->lvals.v[i]->cg_string, n->rvals.v[i]->cg_string);
+	  fprintf(fp, "%s = (%s)%s;\n", 
+		  n->lvals.v[i]->cg_string, c_type(n->lvals.v[i]), 
+		  n->rvals.v[i]->cg_string);
 	else
 	  fprintf(fp, "%s = (_GC_fun)&%s;\n", n->lvals.v[i]->cg_string, n->rvals.v[i]->cg_string);
       break;
@@ -415,18 +417,15 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
       v->cg_string = v->sym->var->cg_string = NULL;
   forv_Var(v, vars) {
     if (Var_is_local(v->sym->var, f)) {
-	if (v->sym->var->cg_string)
-	  v->cg_string = v->sym->var->cg_string;
-	else {
-	  char s[100];
-	  sprintf(s, "t%d", index++);
-	  v->cg_string = dupstr(s);
-	  v->sym->var->cg_string = v->cg_string;
-	}
-	if (defs.set_add(v->sym->var)) {
-	  write_c_type(fp, v);
-	  fprintf(fp, " %s; (void)%s;\n", v->cg_string, v->cg_string);
-	}
+      if (v->sym->var->cg_string) {
+	v->cg_string = v->sym->var->cg_string;
+      } else {
+	char s[100];
+	sprintf(s, "t%d", index++);
+	v->cg_string = dupstr(s);
+	write_c_type(fp, v);
+	fprintf(fp, " %s; (void)%s;\n", v->cg_string, v->cg_string);
+      }
     }
   }
   if (defs.n)
@@ -471,8 +470,6 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
       if (!Var_is_local(v, f))
 	globals.set_add(v);
       allsyms.set_add(v->type);
-//      if (v->type->meta)
-//	allsyms.set_add(v->type->type_sym);
     }
   }
   // collect type has syms
@@ -485,8 +482,6 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
       if (loopsyms.v[i]) {
 	forv_Sym(s, loopsyms.v[i]->has) {
 	  again = allsyms.set_add(s) || again;
-//	  if (s->type->meta)
-//	    again = allsyms.set_add(s->type->type_sym) || again;
 	}
       }
   }

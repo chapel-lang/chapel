@@ -6,6 +6,7 @@ ANALYSIS_SRCS = \
 	cfg.cpp \
 	cg.cpp \
 	clone.cpp \
+	dead.cpp \
 	dom.cpp \
 	fa.cpp \
 	fun.cpp \

@@ -16,6 +16,7 @@
 #define GLOBAL_CONTOUR ((void*)1)
 
 class Prim;
+class RegisteredPrim;
 class Fun;
 class PNode;
 class PDB;
@@ -134,6 +135,7 @@ class AVar : public gc {
   uint				in_send_worklist:1;
   uint				contour_is_entry_set:1;
   uint				is_lvalue:1;
+  uint				is_dead:1;
   Vec<AVar *>			arg_of_send;
   Link<AVar>			send_worklist_link;
 
@@ -263,7 +265,7 @@ class FA : public gc {
   Vec<Sym *> basic_types;
   Vec<CreationSet *> css, css_set;
   Vec<AVar *> global_avars;
-  ChainHashMap<char*, StringHashFns, PrimitiveTransferFunctionPtr> primitive_transfer_functions;
+  ChainHashMap<char*, StringHashFns, RegisteredPrim*> primitive_transfer_functions;
 
   FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0) {}
 

@@ -63,7 +63,7 @@ statement
 
 unterminated_statement
   : expression
-  | def_function expression
+  | def_function unterminated_statement $right 1000
     { $$.ast = new_AST(AST_def_fun, &$n); 
       $$.ast->scope_kind = Scope_RECURSIVE; }
   | control_flow
@@ -71,6 +71,8 @@ unterminated_statement
   | expression '=' expression $left 3000
    { $$.ast = op_AST($g->i, $n); }
   | 'var' def_ident_var_list $right 5100
+  | 'with' with_scope unterminated_statement $right 5100
+    { $$.ast = new_AST(AST_with, &$n); }
   ;
 
 type_statement
@@ -199,19 +201,11 @@ expression
   | paren_block
   | curly_block
   | expression '?' expression ':' expression $right 8600
-    { $$.ast = new_AST(AST_if, &$n); }
-  | 'if' '(' expression ')' unterminated_statement $right 6000
-    { $$.ast = new_AST(AST_if, &$n); }
-  | 'if' '(' expression ')' unterminated_statement 'else' unterminated_statement $right 6100
-    { $$.ast = new_AST(AST_if, &$n); }
-  | 'while' '(' expression ')' expression $right 6200
-    { $$.ast = loop_AST($n0, $n2, 0, 0, $n4); }
-  | 'do' expression 'while' expression $right 6300
-    { $$.ast = loop_AST($n0, $n3, &$n1, 0, $n1); }
-  | 'for' '(' expression? ';' expression? ';' expression? ')' expression $right 6400
-    { $$.ast = loop_AST($n0, $n4, &$n2, &$n6, $n8); }
-  | 'with' with_scope expression $right 5100
-    { $$.ast = new_AST(AST_with, &$n); }
+    { $$.ast = new_AST(AST_ifexpr, &$n); }
+  | 'if' expression 'then' unterminated_statement $right 2000
+    { $$.ast = new_AST(AST_ifexpr, &$n); }
+  | 'if' expression 'then' unterminated_statement 'else' unterminated_statement $right 2100
+    { $$.ast = new_AST(AST_ifexpr, &$n); }
   | 'conc' expression $right 5000
     { $$.ast = new_AST(AST_conc, &$n); }
   | 'seq' expression $right 5000
@@ -245,7 +239,7 @@ var_ident: idpattern ('__name' string)? '=' {
 def_ident_one
   : def_ident expression 
     { $$.ast = new_AST(AST_def_ident, &$n); }
-  | def_function expression
+  | def_function unterminated_statement
     { $$.ast = new_AST(AST_def_fun, &$n); 
       $$.ast->scope_kind = Scope_RECURSIVE; }
   ; 
@@ -335,13 +329,19 @@ global: '::'
 
 control_flow
   : 'goto' ident 
-{ $$.ast = new_AST(AST_goto, &$n); }
+    { $$.ast = new_AST(AST_goto, &$n); }
   | 'continue' ident? 
-{ $$.ast = new_AST(AST_continue, &$n); }
+    { $$.ast = new_AST(AST_continue, &$n); }
   | 'break' ident? 
-{ $$.ast = new_AST(AST_break, &$n); }
+    { $$.ast = new_AST(AST_break, &$n); }
   | 'return' expression? 
-{ $$.ast = new_AST(AST_return, &$n); }
+    { $$.ast = new_AST(AST_return, &$n); }
+  | 'while' '(' expression ')' unterminated_statement $right 2200
+    { $$.ast = loop_AST($n0, $n2, 0, 0, $n4); }
+  | 'do' unterminated_statement 'while' expression $right 2300
+    { $$.ast = loop_AST($n0, $n3, &$n1, 0, $n1); }
+  | 'for' '(' expression? ';' expression? ';' expression? ')' unterminated_statement $right 2400
+    { $$.ast = loop_AST($n0, $n4, &$n2, &$n6, $n8); }
   ;
 
 binary_operator

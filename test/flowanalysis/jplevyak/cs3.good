@@ -15,15 +15,12 @@ aa::a(cs3.v:1) ( int32 (prelude.v:24) )
 aa::x(cs3.v:1) ( float64 (prelude.v:37) )
 aa::x(cs3.v:1) ( int32 (prelude.v:24) )
 bb::b(cs3.v:2) ( tuple (prelude.v:14) )
-bb::b(cs3.v:2) ( tuple (prelude.v:14) )
-bb::x(cs3.v:2) ( tuple (prelude.v:14) )
 bb::x(cs3.v:2) ( tuple (prelude.v:14) )
 function __init cs3.v:1
 function __init prelude.v:7
 function __init__ <unknown>:0
 function aa cs3.v:1
 function aa cs3.v:1
-function bb cs3.v:2
 function bb cs3.v:2
 function operator prelude.v:75
 function operator prelude.v:75

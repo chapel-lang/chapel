@@ -20,6 +20,7 @@
 #include "pnode.h"
 #include "var.h"
 #include "fun.h"
+#include "prim.h"
 
 class LabelMap : public Map<char *, BaseAST *> {};
 
@@ -1402,19 +1403,32 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   if (import_symbols(syms) < 0) return -1;
   if (build_classes(syms) < 0) return -1;
   if (build_functions(syms) < 0) return -1;
-  pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol->name, domain_start_index);
-  pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol->name, domain_next_index);
-  pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol->name, integer_result);
-  pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol->name, expr_simple_seq);
-  pdb->fa->primitive_transfer_functions.put(expr_domain_symbol->name, expr_domain);
-  pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol->name, expr_create_domain);
-  pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol->name, expr_reduce);
-  pdb->fa->primitive_transfer_functions.put(sizeof_symbol->name, integer_result);
-  pdb->fa->primitive_transfer_functions.put(cast_symbol->name, cast_value);
-  pdb->fa->primitive_transfer_functions.put(write_symbol->name, write_transfer_function);
-  pdb->fa->primitive_transfer_functions.put(writeln_symbol->name, write_transfer_function);
-  pdb->fa->primitive_transfer_functions.put(read_symbol->name, read_transfer_function);
-  pdb->fa->primitive_transfer_functions.put(array_index_symbol->name, array_index);
+  pdb->fa->primitive_transfer_functions.put(
+    domain_start_index_symbol->name, new RegisteredPrim(domain_start_index));
+  pdb->fa->primitive_transfer_functions.put(
+    domain_next_index_symbol->name, new RegisteredPrim(domain_next_index));
+  pdb->fa->primitive_transfer_functions.put(
+    domain_valid_index_symbol->name, new RegisteredPrim(integer_result));
+  pdb->fa->primitive_transfer_functions.put(
+    expr_simple_seq_symbol->name, new RegisteredPrim(expr_simple_seq));
+  pdb->fa->primitive_transfer_functions.put(
+    expr_domain_symbol->name, new RegisteredPrim(expr_domain));
+  pdb->fa->primitive_transfer_functions.put(
+    expr_create_domain_symbol->name, new RegisteredPrim(expr_create_domain));
+  pdb->fa->primitive_transfer_functions.put(
+    expr_reduce_symbol->name, new RegisteredPrim(expr_reduce));
+  pdb->fa->primitive_transfer_functions.put(
+    sizeof_symbol->name, new RegisteredPrim(integer_result));
+  pdb->fa->primitive_transfer_functions.put(
+    cast_symbol->name, new RegisteredPrim(cast_value));
+  pdb->fa->primitive_transfer_functions.put(
+    write_symbol->name, new RegisteredPrim(write_transfer_function));
+  pdb->fa->primitive_transfer_functions.put(
+    writeln_symbol->name, new RegisteredPrim(write_transfer_function));
+  pdb->fa->primitive_transfer_functions.put(
+    read_symbol->name, new RegisteredPrim(read_transfer_function));
+  pdb->fa->primitive_transfer_functions.put(
+    array_index_symbol->name, new RegisteredPrim(array_index));
   if1_set_primitive_types(if1);
   finalize_types(if1);
   sym_null->is_external = 1;	// hack

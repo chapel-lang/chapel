@@ -386,7 +386,7 @@ determine_clones() {
     for (int i = 0; i < css_sets_by_sym.n; i++) {
       Vec<Vec<CreationSet *> *> css_sets;
       sets_by_f<CreationSet, CS_EQ_FN>(*css_sets_by_sym.v[i], css_sets);
-      for (int j = 0; i < css_sets.n; i++) {
+      for (int j = 0; j < css_sets.n; j++) {
 	Vec<CreationSet *> *s = css_sets.v[j];
 	forv_CreationSet(cs, *s) if (cs) {
 	  if (cs->equiv->some_disjunction(*s))
