@@ -1496,3 +1496,13 @@ Modified files:
 Added files:
 	chapel/test/compflags/bradc/copyright/: NOEXEC 
 
+---------------------------------------------------------------------------
+
+04/03/26 15:28:01 -- bradc
+
+Log message:
+	Cleaned up the handling of literals for now.
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+
