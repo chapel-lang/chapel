@@ -13716,3 +13716,27 @@ Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 	chapel/compiler/include/: pattern.h 
 
+---------------------------------------------------------------------------
+
+01/06/05 15:54:28 -- deitz
+
+Log message:
+	Factored copy in Stmt, Expr, Symbol, Type, and their subclasses into
+	two pieces like traverse.  There is now an external copy that should
+	be used, along with copyList, and internal copyStmt, etc., that does
+	the actual copying.
+	
+	Added a callback to analysis for cloning functions so that the ainfo
+	part of the BaseAST can be maintained in clone functions.  This uses a
+	new class called CloneCallback.  It is passed into copy with a default
+	value of NULL.  In the NULL case, nothing happens.  If it's not NULL,
+	then the external factor of copy calls back into analysis to update
+	the ainfo.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h expr.h stmt.h symbol.h 
+	                          type.h 
+	chapel/compiler/traversals/: cleanup.cpp 
+
