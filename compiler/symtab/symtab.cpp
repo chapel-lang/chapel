@@ -30,6 +30,7 @@ static FnSymbol* currentFn = NULL;
 static ModuleSymbol* firstModule = NULL;
 static ModuleSymbol* currentModule = NULL;
 
+ModuleSymbol* commonModule = NULL;
 
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);
@@ -64,6 +65,15 @@ void Symboltable::parsePrelude(void) {
 
 void Symboltable::doneParsingPreludes(void) {
   parsePhase = PARSING_USERFILES;
+
+  // Setup common module and scope
+  // Hacked nested module, for declaring arrays-of-primitives types
+  commonModule = new ModuleSymbol("_CommonModule", false);
+  commonModule->setModScope(new SymScope(SCOPE_MODULE));
+  commonModule->modScope->parent = preludeScope;
+  preludeScope->child = commonModule->modScope;
+  currentScope = commonModule->modScope;
+
 }
 
 

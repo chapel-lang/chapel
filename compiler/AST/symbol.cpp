@@ -420,6 +420,7 @@ void ModuleSymbol::codegenDef(void) {
   openCFiles(name, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
 
   fprintf(codefile, "#include \"stdchpl.h\"\n");
+  fprintf(codefile, "#include \"_chpl_common.h\"\n");
   fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
   fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
   fprintf(codefile, "\n");

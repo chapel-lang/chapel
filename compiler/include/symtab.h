@@ -6,6 +6,8 @@
 #include "symbol.h"
 #include "symscope.h"
 
+extern ModuleSymbol* commonModule;
+
 class Symboltable {
  public:
   static void init(void);
