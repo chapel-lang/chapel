@@ -19,6 +19,16 @@ bool Stmt::isNull(void) {
 }
 
 
+bool Stmt::canLiveAtFileScope(void) {
+  return false;
+}
+
+
+bool Stmt::topLevelExpr(Expr* expr) {
+  return false;
+}
+
+
 void Stmt::traverse(Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
@@ -75,6 +85,11 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
   var(init_var),
   init(init_init) 
 {}
+
+
+bool VarDefStmt::topLevelExpr(Expr* testExpr) {
+  return (testExpr == init);
+}
 
 
 void VarDefStmt::traverseStmt(Traversal* traversal) {
@@ -220,6 +235,11 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 {}
 
 
+bool TypeDefStmt::canLiveAtFileScope(void) {
+  return true;
+}
+
+
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
   type->traverseDef(traversal, false);
 }
@@ -260,6 +280,11 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 
 bool FnDefStmt::isNull(void) {
   return (this == nilFnDefStmt);
+}
+
+
+bool FnDefStmt::canLiveAtFileScope(void) {
+  return true;
 }
 
 
@@ -320,6 +345,11 @@ ExprStmt::ExprStmt(Expr* init_expr) :
   Stmt(STMT_EXPR),
   expr(init_expr) 
 {}
+
+
+bool ExprStmt::topLevelExpr(Expr* testExpr) {
+  return (testExpr == expr);
+}
 
 
 void ExprStmt::traverseStmt(Traversal* traversal) {
@@ -423,6 +453,11 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 }
 
 
+bool WhileLoopStmt::topLevelExpr(Expr* testExpr) {
+  return (testExpr == condition);
+}
+
+
 void WhileLoopStmt::traverseStmt(Traversal* traversal) {
   if (isWhileDo) {
     condition->traverse(traversal, false);
@@ -486,6 +521,11 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
     domain(init_domain) 
 {
   astType = STMT_FORLOOP;
+}
+
+
+bool ForLoopStmt::topLevelExpr(Expr* testExpr) {
+  return (testExpr == domain);
 }
 
 
@@ -572,6 +612,11 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
   thenStmt(init_thenStmt),
   elseStmt(init_elseStmt)
 {}
+
+
+bool CondStmt::topLevelExpr(Expr* testExpr) {
+  return (testExpr == condExpr);
+}
 
 
 void CondStmt::traverseStmt(Traversal* traversal) {

@@ -1,6 +1,7 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
+#include "checkBackLinks.h"
 #include "checkTypeInfo.h"
 #include "findUnknownTypes.h"
 #include "getstuff.h"
@@ -21,6 +22,7 @@ Pass* passlist[] = {
   FIRST,
 
   RUN(SetupStmtLinks),
+  RUN(CheckBackLinks),
   RUN(RunAnalysis),
   RUN(FindUnknownTypes),
 

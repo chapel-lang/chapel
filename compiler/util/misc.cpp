@@ -127,8 +127,15 @@ void myassert(char *file, int line, char *str) {
 
 // Support for internal errors, adopted from ZPL compiler
 
-void setupIntError(char *filename, int lineno) {
-  fprintf(stderr, "%s:%d: internal error: ", filename, lineno);
+static bool isError = true;
+
+void setupIntError(char *filename, int lineno, bool error) {
+  if (error) {
+    fprintf(stderr, "%s:%d: internal error: ", filename, lineno);
+  } else {
+    fprintf(stderr, "%s:%d: internal warning: ", filename, lineno);
+  }
+  isError = error;
 }
 
 
@@ -152,7 +159,7 @@ static void printUsrLocation(char* filename, int lineno) {
 }
 
 
-void intFatal(char *fmt, ...) {
+void intProblem(char *fmt, ...) {
   va_list args;
 
   va_start(args, fmt);
@@ -161,11 +168,13 @@ void intFatal(char *fmt, ...) {
 
   printUsrLocation(NULL, 0);
 
-  clean_exit(1);
+  if (isError) {
+    clean_exit(1);
+  }
 }
 
 
-void intFatal(AST* ast, char *fmt, ...) {
+void intProblem(AST* ast, char *fmt, ...) {
   va_list args;
   int usrlineno = 0;
   char *usrfilename = NULL;
@@ -181,11 +190,13 @@ void intFatal(AST* ast, char *fmt, ...) {
 
   printUsrLocation(usrfilename, usrlineno);
 
-  clean_exit(1);
+  if (isError) {
+    clean_exit(1);
+  }
 }
 
 
-void intFatal(Loc* loc, char *fmt, ...) {
+void intProblem(Loc* loc, char *fmt, ...) {
   va_list args;
   int usrlineno = 0;
   char *usrfilename = NULL;
@@ -201,7 +212,9 @@ void intFatal(Loc* loc, char *fmt, ...) {
 
   printUsrLocation(usrfilename, usrlineno);
 
-  clean_exit(1);
+  if (isError) {
+    clean_exit(1);
+  }
 }
 
 

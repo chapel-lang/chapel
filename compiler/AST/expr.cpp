@@ -411,7 +411,9 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   Expr(EXPR_MEMBERACCESS),
   base(init_base),
   member(init_member)
-{}
+{
+  base->parent = this;
+}
 
 
 void MemberAccess::traverseExpr(Traversal* traversal) {
@@ -458,6 +460,8 @@ AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   type(init_type)
 {
   astType = EXPR_ASSIGNOP;
+  left->parent = this;
+  right->parent = this;
 }
 
 
@@ -618,7 +622,16 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
   Expr(EXPR_PARENOP),
   baseExpr(init_base),
   argList(init_arg) 
-{}
+{
+  if (!baseExpr->isNull()) {
+    baseExpr->parent = this;
+  }
+  Expr* arg = argList;
+  while (arg && !arg->isNull()) {
+    arg->parent = this;
+    arg = nextLink(Expr, arg);
+  }
+}
 
 
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
@@ -663,6 +676,12 @@ CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
   castType(init_castType)
 {
   astType = EXPR_CAST;
+
+  Expr* arg = argList;
+  while (arg) {
+    arg->parent = this;
+    arg = nextLink(Expr, arg);
+  }
 }
 
 
@@ -706,6 +725,7 @@ FnCall::FnCall(Expr* init_base, Expr* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {
   astType = EXPR_FNCALL;
+
 }
 
 

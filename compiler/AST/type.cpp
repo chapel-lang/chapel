@@ -436,19 +436,17 @@ void ClassType::addDefinition(Stmt* init_definition) {
   if (!isNull() && Symboltable::parsingUserCode()) {
     /* create default constructor */
     char* constructorName = glomstrings(2, "_construct_", name->name);
-    constructor = new FnDefStmt(
-                    new FnSymbol(constructorName, nilSymbol, this, 
-		      new BlockStmt(
-                        new ReturnStmt(
-                          new CastExpr(this, 
+    FnSymbol* newFunSym = Symboltable::startFnDef(constructorName, false);
+    BlockStmt* body = new BlockStmt(
+			new ReturnStmt(
+			  new CastExpr(this, 
 			    new FnCall(
 			      new Variable(
 				Symboltable::lookupInternal("malloc")), 
-			      new SizeofExpr(this)
-			      ))
+			      new SizeofExpr(this)))
 			  )
-			))
-		    );
+			);
+    constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
   }
 }
 

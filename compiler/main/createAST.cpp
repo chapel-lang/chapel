@@ -57,16 +57,7 @@ static bool stmtIsGlob(ILink* link) {
   if (stmt == NULL) {
     INT_FATAL("Non-Stmt found in StmtIsGlob");
   }
-  if (stmt->isNull() ||
-      (dynamic_cast<ExprStmt*>(stmt) != NULL) ||
-      (dynamic_cast<BlockStmt*>(stmt) != NULL) ||
-      (dynamic_cast<CondStmt*>(stmt) != NULL) ||
-      (dynamic_cast<VarDefStmt*>(stmt) != NULL) ||
-      (dynamic_cast<NoOpStmt*>(stmt) != NULL)) {
-    return false;
-  } else {
-    return true;
-  }
+  return stmt->canLiveAtFileScope();
 }
 
 
@@ -85,6 +76,15 @@ static Stmt* createInitFn(Stmt* program, char* fnNameArg = 0) {
   FnDefStmt* initFunDef = Symboltable::defineFunction(fnName, nilSymbol, 
 						      dtVoid, initFunBody, 
 						      true);
+  {
+    FnSymbol* initFunSym = initFunDef->fn;
+    Stmt* initstmt = initFunStmts;
+    while (initstmt) {
+      initstmt->parentFn = initFunSym;
+      initstmt = nextLink(Stmt, initstmt);
+    }
+    initFunBody->parentFn = initFunSym;
+  }
 
 
   program = appendLink(program, initFunDef);

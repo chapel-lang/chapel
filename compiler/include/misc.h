@@ -26,12 +26,13 @@ char *loc_string(d_loc_t &l);
 // results in something like:
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
-#define INT_FATAL setupIntError(__FILE__, __LINE__); intFatal
+#define INT_FATAL   setupIntError(__FILE__, __LINE__, true);  intProblem
+#define INT_WARNING setupIntError(__FILE__, __LINE__, false); intProblem
 
-void setupIntError(char* filename, int lineno);
-void intFatal(char* fmt, ...);
-void intFatal(AST* ast, char* fmt, ...);
-void intFatal(Loc* loc, char* fmt, ...);
+void setupIntError(char* filename, int lineno, bool error);
+void intProblem(char* fmt, ...);
+void intProblem(AST* ast, char* fmt, ...);
+void intProblem(Loc* loc, char* fmt, ...);
 void myassert(char *file, int line, char *str);
 
 void startCatchingSignals(void);

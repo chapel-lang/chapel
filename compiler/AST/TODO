@@ -27,7 +27,7 @@
 
 * should do export control of variables, types, all symbols
 
-* organize and lump files better -- into a static class, e.g.
+* organize and lump user files better -- into a static class, e.g.
 
 * fix VarDefStmt::codegen() so that it asks the type whether it
   needs to be initialized and then asks the type to generate
@@ -37,9 +37,10 @@
   be able to tell most of the time, so should minimize our
   reliance on them...
 
+* add traversal that verifies that back pointers are non-nil.
+
 SHANNON:
 * fix type_info() for BinOp
 * implement isComputable() and intVal() better for Expr hierarchy
-* operator precedence
 * add read routines for enumerated types?
 

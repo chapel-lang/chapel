@@ -504,9 +504,11 @@ Type* Symboltable::defineBuiltinType(char* name, bool placeholder) {
 }
 
 
-FnSymbol* Symboltable::startFnDef(char* name) {
+FnSymbol* Symboltable::startFnDef(char* name, bool insert) {
   FnSymbol* newFn = new FnSymbol(name, currentFn);
-  define(newFn);
+  if (insert) {
+    define(newFn);
+  }
   currentFn = newFn;
   Symboltable::pushScope(SCOPE_PARAM);
 

@@ -17,6 +17,8 @@ class Stmt : public BaseAST {
   Stmt(astType_t astType);
 
   bool isNull(void);
+  virtual bool canLiveAtFileScope(void);
+  virtual bool topLevelExpr(Expr* testExpr);
 
   void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
@@ -46,6 +48,8 @@ class VarDefStmt : public Stmt {
 
   VarDefStmt(VarSymbol* init_var, Expr* init_expr);
 
+  bool topLevelExpr(Expr* testExpr);
+
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
@@ -62,6 +66,8 @@ class TypeDefStmt : public Stmt {
 
   TypeDefStmt(Type* init_type);
 
+  bool canLiveAtFileScope(void);
+
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
@@ -77,6 +83,7 @@ class FnDefStmt : public Stmt {
   FnDefStmt(FnSymbol* init_fn);
 
   bool isNull(void);
+  bool canLiveAtFileScope(void);
 
   void traverseStmt(Traversal* traversal);
 
@@ -93,6 +100,8 @@ class ExprStmt : public Stmt {
   Expr* expr;
 
   ExprStmt(Expr* initExpr);
+
+  bool topLevelExpr(Expr* testExpr);
 
   void traverseStmt(Traversal* traversal);
 
@@ -132,6 +141,8 @@ class WhileLoopStmt : public BlockStmt {
 
   WhileLoopStmt(bool init_whileDo, Expr* init_cond, Stmt* body);
 
+  bool topLevelExpr(Expr* testExpr);
+
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
@@ -148,6 +159,8 @@ class ForLoopStmt : public BlockStmt {
 
   ForLoopStmt(bool init_forall, VarSymbol* init_index, Expr* init_domain,
 	      Stmt* body);
+
+  bool topLevelExpr(Expr* testExpr);
 
   void traverseStmt(Traversal* traversal);
 
@@ -166,6 +179,8 @@ class CondStmt : public Stmt {
 
   CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
 	   Stmt* init_elseStmt = nilStmt);
+
+  bool topLevelExpr(Expr* testExpr);
 
   void traverseStmt(Traversal* traversal);
 
