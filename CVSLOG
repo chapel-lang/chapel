@@ -2763,3 +2763,17 @@ Log message:
 Modified files:
 	chapel/test/parsing/jplevyak/: mat1.good vec.good 
 
+---------------------------------------------------------------------------
+
+06/07/04 12:44:53 -- bradc
+
+Log message:
+	Made codegen handle dead variables cleanly.  Added a test
+	to make sure this works.
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+	chapel/test/trivial/bradc/: .cvsignore 
+Added files:
+	chapel/test/trivial/bradc/: deadvar.chpl deadvar.good 
+
