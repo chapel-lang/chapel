@@ -1,5 +1,5 @@
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
 ::__init_mod(mod.chpl:21) ( __init_mod )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::answer(mod.chpl:4) ( int64 )
@@ -9,7 +9,7 @@
 ::n(mod.chpl:2) ( int64 )
 ::o(mod.chpl:3) ( int64 )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:24
+function __init_internal_prelude internal_prelude.chpl:27
 function __init_mod mod.chpl:21
 function __init_prelude prelude.chpl:54
 globals

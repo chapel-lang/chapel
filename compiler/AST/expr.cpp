@@ -1195,7 +1195,12 @@ void IOCall::codegen(FILE* outfile) {
       INT_FATAL(arg, "unknown type encountered in codegen");
       argdt = type_info(arg);  // We used to do this but shouldn't -SJD
     }
-    argdt->codegen(outfile);
+    else if (dynamic_cast<DomainType*>(argdt)) {
+      fprintf(outfile, "_domain");
+    }
+    else {
+      argdt->codegen(outfile);
+    }
     fprintf(outfile, "(");
 
     switch (ioType) {
@@ -1208,13 +1213,15 @@ void IOCall::codegen(FILE* outfile) {
       break;
     }
 
-    if (format->isNull()) {
-      bool isRead = (ioType == IO_READ);
-      argdt->codegenDefaultFormat(outfile, isRead);
-    } else {
-      format->codegen(outfile);
+    if (!dynamic_cast<DomainType*>(argdt)) {
+      if (format->isNull()) {
+	bool isRead = (ioType == IO_READ);
+	argdt->codegenDefaultFormat(outfile, isRead);
+      } else {
+	format->codegen(outfile);
+      }
+      fprintf(outfile, ", ");
     }
-    fprintf(outfile, ", ");
 
     if (ioType == IO_READ) {
       fprintf(outfile, "&");

@@ -452,10 +452,10 @@ void VarDefStmt::codegen(FILE* outfile) {
 
       if (typeid(*(aVar->type)) == typeid(DomainType)) {
 	DomainType* domtype = (DomainType*)(aVar->type);
-	int rank = domtype->numdims ? domtype->numdims : 1; // BLC: hack!
-	fprintf(outfile, "_init_domain_%dD(&(", rank);
-	aVar->codegen(outfile);
-	fprintf(outfile, ")");
+	int rank = domtype->numdims;
+	if (rank == 0) {
+	  INT_FATAL(this, "Rank 0 domain encountered");
+	}
 	if (typeid(*initExpr) == typeid(ForallExpr)) {
 	  initExpr = ((ForallExpr*)initExpr)->domains;
 	}
@@ -463,16 +463,18 @@ void VarDefStmt::codegen(FILE* outfile) {
 	  SimpleSeqExpr* initseq = (SimpleSeqExpr*)initExpr;
 
 	  for (int i=0; i<rank; i++) {
-	    fprintf(outfile, ", ");
+	    fprintf(outfile, "_INIT_DOMAIN_DIM(");
+	    aVar->codegen(outfile);
+	    fprintf(outfile, ", %d, ", i);
 	    initseq->lo->codegen(outfile);
 	    fprintf(outfile, ", ");
 	    initseq->hi->codegen(outfile);
 	    fprintf(outfile, ", ");
 	    initseq->str->codegen(outfile);
+	    fprintf(outfile, ");\n");
 	    initseq = nextLink(SimpleSeqExpr, initseq);
 	  }
 	}
-	fprintf(outfile, ");");
       } else {
 	if (aVar->varClass == VAR_CONFIG) {
 	  char* moduleName = aVar->parentScope->symContext->name;

@@ -109,7 +109,7 @@ class DomainType : public Type {
   int rank(void);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
 };
 
 
@@ -126,6 +126,7 @@ class IndexType : public DomainType {
 class ArrayType : public Type {
  public:
   Expr* domain;
+  DomainType* domainType;
   Type* elementType;
 
   ArrayType(Expr* init_domain, Type* init_elementType);
@@ -137,6 +138,7 @@ class ArrayType : public Type {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool needsInit(void);
   void generateInit(FILE* outfile, VarSymbol* sym);

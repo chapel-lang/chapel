@@ -207,6 +207,13 @@ static void genEndif(FILE* outfile) {
 }
 
 
+void open_common(fileinfo* common_file) {
+  codefile = common_file->fptr;
+  extheadfile = common_file->fptr;
+  intheadfile = common_file->fptr;
+}
+
+
 void openCFiles(char* modulename, fileinfo* outfile,
 		fileinfo* extheader, fileinfo* intheader) {
   genCFilenames(modulename, &(outfile->filename),

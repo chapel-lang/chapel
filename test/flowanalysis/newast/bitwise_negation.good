@@ -1,6 +1,6 @@
 ::__init_bitwise_negation(bitwise_negation.chpl:17) ( __init_bitwise_negation )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::answer(bitwise_negation.chpl:2) ( int64 )
 ::int64 ( int64 )
@@ -8,6 +8,6 @@
 ::main ( main )
 ::void ( void )
 function __init_bitwise_negation bitwise_negation.chpl:17
-function __init_internal_prelude internal_prelude.chpl:24
+function __init_internal_prelude internal_prelude.chpl:27
 function __init_prelude prelude.chpl:54
 globals

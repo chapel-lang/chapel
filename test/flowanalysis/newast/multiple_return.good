@@ -1,6 +1,6 @@
  called from 8 in __init_multiple_return at multiple_return.chpl:9
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
 ::__init_multiple_return(multiple_return.chpl:9) ( __init_multiple_return )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::a(multiple_return.chpl:1) ( int64 )
@@ -9,7 +9,7 @@
 ::f(multiple_return.chpl:6) ( f )
 ::main ( main )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:24
+function __init_internal_prelude internal_prelude.chpl:27
 function __init_multiple_return multiple_return.chpl:9
 function __init_prelude prelude.chpl:54
 function f multiple_return.chpl:1

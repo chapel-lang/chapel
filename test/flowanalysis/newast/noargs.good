@@ -1,12 +1,12 @@
  called from 5 in __init_noargs at noargs.chpl:6
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
 ::__init_noargs(noargs.chpl:6) ( __init_noargs )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::foo(noargs.chpl:3) ( foo )
 ::main ( main )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:24
+function __init_internal_prelude internal_prelude.chpl:27
 function __init_noargs noargs.chpl:6
 function __init_prelude prelude.chpl:54
 function foo noargs.chpl:1

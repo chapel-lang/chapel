@@ -474,8 +474,14 @@ void DomainType::print(FILE* outfile) {
 }
 
 
-void DomainType::codegen(FILE* outfile) {
-  fprintf(outfile, "_domain%d", numdims ? numdims : 1);  // BLC: hack!
+void DomainType::codegenDef(FILE* outfile) {
+  fprintf(outfile, "typedef struct _");
+  name->codegen(outfile);
+  fprintf(outfile, " {\n");
+  fprintf(outfile, "  _dom_perdim dim_info[%d];\n", numdims);
+  fprintf(outfile, "} ");
+  name->codegen(outfile);
+  fprintf(outfile, ";\n\n");
 }
 
 
@@ -559,8 +565,66 @@ void ArrayType::print(FILE* outfile) {
 
 
 void ArrayType::codegen(FILE* outfile) {
-  fprintf(outfile, "_array%d", domain->rank());
+  name->codegen(outfile);
+}
+
+
+void ArrayType::codegenDef(FILE* outfile) {
+  fprintf(outfile, "typedef struct _");
+  name->codegen(outfile);
+  fprintf(outfile, " {\n");
+  fprintf(outfile, "  int elemsize;\n");
+  fprintf(outfile, "  int size;\n");
+  fprintf(outfile, "  ");
   elementType->codegen(outfile);
+  fprintf(outfile, "* base;\n");
+  fprintf(outfile, "  ");
+  elementType->codegen(outfile);
+  fprintf(outfile, "* origin;\n");
+  fprintf(outfile, "  ");
+  domainType->codegen(outfile);
+  fprintf(outfile, "* domain;\n");
+  fprintf(outfile, "  _arr_perdim dim_info[%d];\n", domainType->numdims);
+  fprintf(outfile, "} ");
+  name->codegen(outfile);
+  fprintf(outfile, ";\n");
+
+  fprintf(outfile, "void _write");
+  name->codegen(outfile);
+  fprintf(outfile, "(FILE* F, char* format, ");
+  name->codegen(outfile);
+  fprintf(outfile, " arr);\n\n");
+
+  fprintf(codefile, "void _write");
+  name->codegen(codefile);
+  fprintf(codefile, "(FILE* F, char* format, ");
+  name->codegen(codefile);
+  fprintf(codefile, " arr) {\n");
+  for (int dim = 0; dim < domainType->numdims; dim++) {
+    fprintf(codefile, "  int i%d;\n", dim);
+  }
+  domainType->codegen(codefile);
+  fprintf(codefile, "* const dom = arr.domain;\n\n");
+  for (int dim = 0; dim < domainType->numdims; dim++) {
+    fprintf(codefile, "for (i%d=dom->dim_info[%d].lo; i%d<=dom"
+	    "->dim_info[%d].hi; i%d+=dom->dim_info[%d].str) {\n",
+	    dim, dim, dim, dim, dim, dim);
+  }
+  fprintf(codefile, "fprintf(F, format, _ACC%d(arr, i0", domainType->numdims);
+  for (int dim = 1; dim < domainType->numdims; dim++) {
+    fprintf(codefile, ", i%d", dim);
+  }
+  fprintf(codefile, "));\n");
+  fprintf(codefile, "if (i%d<dom->dim_info[%d].hi) {\n",
+	  domainType->numdims-1, domainType->numdims-1);
+  fprintf(codefile, "fprintf(F, \" \");\n");
+  fprintf(codefile, "}\n");
+  fprintf(codefile, "}\n");
+  for (int dim = 1; dim < domainType->numdims; dim++) {
+    fprintf(codefile, "fprintf(F, \"\\n\");\n");
+    fprintf(codefile, "}\n");
+  }
+  fprintf(codefile, "}\n");
 }
 
 
@@ -575,13 +639,13 @@ bool ArrayType::needsInit(void) {
 
 
 void ArrayType::generateInit(FILE* outfile, VarSymbol* sym) {
-  fprintf(outfile, "_init");
-  this->codegen(outfile);
-  fprintf(outfile, "(&(");
+  fprintf(outfile, "_INIT_ARRAY(");
   sym->codegen(outfile);
-  fprintf(outfile, "), &(");
+  fprintf(outfile, ", ");
   domain->codegen(outfile);
-  fprintf(outfile, "));\n");
+  fprintf(outfile, ", ");
+  elementType->codegen(outfile);
+  fprintf(outfile, ");\n");
 }
 
 

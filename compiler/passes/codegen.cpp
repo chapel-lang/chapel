@@ -8,13 +8,21 @@
 #include "symtab.h"
 
 static void writeCommon(void) {
-  fileinfo* common_file = openTmpFile("_chpl_common.h");
+  fileinfo outfileinfo;
+  fileinfo extheadfileinfo;
+  fileinfo intheadfileinfo;
 
-  fprintf(common_file->fptr, "#ifndef __CHPL_COMMON_H_\n");
-  fprintf(common_file->fptr, "#define __CHPL_COMMON_H_\n");
-  commonModule->stmts->codegenList(common_file->fptr, "\n");
-  fprintf(common_file->fptr, "#endif\n");
-  fclose(common_file->fptr);
+  openCFiles("_chpl_common", &outfileinfo, &extheadfileinfo, &intheadfileinfo);
+
+  //  fileinfo* common_file = openTmpFile("_chpl_common.h");
+
+  //  open_common(common_file);
+  fprintf(codefile, "#include \"stdchpl.h\"\n");
+  fprintf(codefile, "#include \"_chpl_common.h\"\n");
+  fprintf(codefile, "#include \"_chpl_common-internal.h\"\n");
+  commonModule->modScope->codegen(codefile, "\n");
+  commonModule->stmts->codegenList(codefile, "\n");
+  closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
 }
 
 
@@ -23,9 +31,9 @@ void Codegen::run(ModuleSymbol* moduleList) {
     return;
   }
 
-  writeCommon();
-
   openMakefile(moduleList->filename, system_dir);
+
+  writeCommon();
 
   ModuleSymbol* currentModule = moduleList;
 

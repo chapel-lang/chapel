@@ -1,7 +1,7 @@
  called from 20 in __init_noop at noop.chpl:22
-::D(noop.chpl:7) ( Domain (internal_prelude.chpl:13) )
+::D(noop.chpl:7) ( Domain (internal_prelude.chpl:16) )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
 ::__init_noop(noop.chpl:22) ( __init_noop )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::bool ( bool )
@@ -10,7 +10,7 @@
 ::i(noop.chpl:10) ( Index (internal_prelude.chpl:1) )
 ::main ( main )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:24
+function __init_internal_prelude internal_prelude.chpl:27
 function __init_noop noop.chpl:22
 function __init_prelude prelude.chpl:54
 function foo noop.chpl:4

@@ -3,7 +3,7 @@
 ::D3(declprintdom.chpl:7) ( sequence )
 ::__init_declprintdom(declprintdom.chpl:12) ( __init_declprintdom )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::m1(declprintdom.chpl:1) ( int64 )
 ::m2(declprintdom.chpl:2) ( int64 )
@@ -11,6 +11,6 @@
 ::main ( main )
 ::void ( void )
 function __init_declprintdom declprintdom.chpl:12
-function __init_internal_prelude internal_prelude.chpl:24
+function __init_internal_prelude internal_prelude.chpl:27
 function __init_prelude prelude.chpl:54
 globals

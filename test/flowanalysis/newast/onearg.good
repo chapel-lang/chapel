@@ -1,13 +1,13 @@
  called from 5 in __init_onearg at onearg.chpl:6
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
 ::__init_onearg(onearg.chpl:6) ( __init_onearg )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::a(onearg.chpl:1) ( int64 )
 ::foo(onearg.chpl:3) ( foo )
 ::main ( main )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:24
+function __init_internal_prelude internal_prelude.chpl:27
 function __init_onearg onearg.chpl:6
 function __init_prelude prelude.chpl:54
 function foo onearg.chpl:1

@@ -10,6 +10,7 @@ TRAVERSALS_SRCS = \
 	findUnresolvedSymbols.cpp \
 	fixup.cpp \
 	getstuff.cpp \
+	insertAnonymousTypes.cpp \
 	insertUnionChecks.cpp \
 	printAST.cpp \
 	processParameters.cpp \

@@ -19,6 +19,7 @@
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
+#include "../traversals/insertAnonymousTypes.h"
 #include "../traversals/insertUnionChecks.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
@@ -48,6 +49,7 @@ REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
 REGISTER(GetStuff);
+REGISTER(InsertAnonymousTypes);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(LegalizeCNames);
 REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions

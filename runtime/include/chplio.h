@@ -29,7 +29,12 @@ extern char* _default_format_write_float64; //     "%g"   // double
 #define _default_format_read_enum         "%255s"
 #define _default_format_write_enum        "%s"
 
+/*
 #define _default_format_write_domain1 "%d..%d by %d"
+void _write_domain1(FILE* outfile, char* format, _domain1 val);
+*/
+#define _write_domain(F, dom) \
+  fprintf(F, "%d..%d by %d", dom.dim_info[0].lo, dom.dim_info[0].hi, dom.dim_info[0].str)
 
 
 void _write_linefeed(FILE* outfile);
@@ -47,12 +52,6 @@ void _write_complex128(FILE* outfile, char* format, _complex128 val);
 
 void _read_string(FILE* infile, char* format, _string* val);
 void _write_string(FILE* outfile, char* format, _string val);
-
-void _write_domain1(FILE* outfile, char* format, _domain1 val);
-
-/* Need to generalize this and/or generate it automatically: */
-void _write_array1_integer64(FILE* outfile, char* format, _array1_integer64 arr);
-void _write_array2_float64(FILE* outfile, char* format, _array2_float64 arr);
 
 #endif
 

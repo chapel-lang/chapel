@@ -2,24 +2,24 @@
 ::B(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::C(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::D(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::DClass(enumarray.chpl:3) ( Domain (internal_prelude.chpl:13) )
+::DClass(enumarray.chpl:3) ( Domain (internal_prelude.chpl:16) )
 ::O(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::S(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::W(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_enumarray(enumarray.chpl:20) ( __init_enumarray )
-::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::_array_integer_1d(enumarray.chpl:5) ( _array_integer_1d )
 ::classVals ( classVals (enumarray.chpl:1) )
 ::i(enumarray.chpl:16) ( Index (internal_prelude.chpl:1) )
 ::i(internal_prelude.chpl:5) ( classVals (enumarray.chpl:1) )
 ::main ( main )
-::nilSymbol(enumarray.chpl:5) ( nilSymbol )
-::probSize(enumarray.chpl:5) ( nilSymbol (enumarray.chpl:5) )
-::this ( nilSymbol (enumarray.chpl:5) )
+::probSize(enumarray.chpl:5) ( _array_integer_1d (enumarray.chpl:5) )
+::this ( _array_integer_1d (enumarray.chpl:5) )
 ::void ( void )
 function __init_enumarray enumarray.chpl:20
-function __init_internal_prelude internal_prelude.chpl:24
+function __init_internal_prelude internal_prelude.chpl:27
 function __init_prelude prelude.chpl:54
 function this internal_prelude.chpl:5
 globals

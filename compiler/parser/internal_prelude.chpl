@@ -8,6 +8,9 @@ class Array {
   function this(i, j) {
     return __primitive("array_index", this, i, j);
   }
+  function this(i, j, k) {
+    return __primitive("array_index", this, i, j, k);
+  }
 }
 
 class Domain {

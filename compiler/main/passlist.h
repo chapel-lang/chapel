@@ -22,6 +22,8 @@ PassInfo passlist[] = {
   // passes to normalize the basic AST
   RUN(Cleanup, ""),
 
+  RUN(InsertAnonymousTypes, ""),
+
   // passes to run analysis
   RUN(Fixup, "verify"),  // this is a sanity check
   RUN(RunAnalysis, ""),
