@@ -37,10 +37,11 @@ void GetClassMethods::processSymbol(Symbol* sym) {
 }
 
 
-ComputeVisibleFunctions::ComputeVisibleFunctions(void) {
+void ComputeVisibleFunctions::run(void) {
   classMethods.clear();
   GetClassMethods* traversal = new GetClassMethods(&classMethods);
   traversal->run();
+  SymtabTraversal::run();
 }
 
 

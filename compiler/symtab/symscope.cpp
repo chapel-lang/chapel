@@ -375,7 +375,6 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
 	if (!fs) fs = new Vec<FnSymbol*>;
 	fs->add(fn);
 	visibleFunctions.put(n, fs);
-	//visibleFunctions.set_add(fn);
 	fn = fn->overload;
       }
     } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
@@ -388,7 +387,6 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
 	      if (!fs) fs = new Vec<FnSymbol*>;
 	      fs->add(method);
 	      visibleFunctions.put(n, fs);
-	      //visibleFunctions.set_add(method);
 	      method = method->overload;
 	    }
 	  }
@@ -405,22 +403,22 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
       }
     }
   }
-  if (parent) {
-    for (int i = 0; i < parent->visibleFunctions.n; i++) {
-      Vec<FnSymbol *> *fs = visibleFunctions.get(parent->visibleFunctions.v[i].key);
-      if (!fs)
-	fs = parent->visibleFunctions.v[i].value;
-      else
-	fs->append(*parent->visibleFunctions.v[i].value);
-      visibleFunctions.put(parent->visibleFunctions.v[i].key, fs);
-    }
-    //visibleFunctions.set_union(parent->visibleFunctions);
-  }
 
-  //
-  // Include internal prelude's visible functions in prelude
-  //
-  if (type == SCOPE_PRELUDE) {
+  if (type == SCOPE_INTRINSIC) {
+    //
+    // Include class methods and constructors in intrinsic
+    //
+    forv_Vec(FnSymbol, fn, *moreVisibleFunctions) {
+      char *n = if1_cannonicalize_string(if1, fn->name);
+      Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+      if (!fs) fs = new Vec<FnSymbol*>;
+      fs->add(fn);
+      visibleFunctions.put(n, fs);
+    }
+  } else if (type == SCOPE_PRELUDE) {
+    //
+    // Include internal prelude's visible functions in prelude
+    //
     for (int i = 0; i < internalPrelude->modScope->visibleFunctions.n; i++) {
       Vec<FnSymbol *> *fs = visibleFunctions.get(internalPrelude->modScope->visibleFunctions.v[i].key);
       if (!fs)
@@ -429,18 +427,17 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
 	fs->append(*internalPrelude->modScope->visibleFunctions.v[i].value);
       visibleFunctions.put(internalPrelude->modScope->visibleFunctions.v[i].key, fs);
     }
-  }
-
-  //
-  // Include class methods and constructors in intrinsic
-  //
-  if (type == SCOPE_INTRINSIC) {
-    forv_Vec(FnSymbol, fn, *moreVisibleFunctions) {
-      char *n = if1_cannonicalize_string(if1, fn->name);
-      Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-      if (!fs) fs = new Vec<FnSymbol*>;
-      fs->add(fn);
-      visibleFunctions.put(n, fs);
+  } else if (parent) {
+    //
+    // Include parent scope's visible functions
+    //
+    for (int i = 0; i < parent->visibleFunctions.n; i++) {
+      Vec<FnSymbol *> *fs = visibleFunctions.get(parent->visibleFunctions.v[i].key);
+      if (!fs)
+	fs = parent->visibleFunctions.v[i].value;
+      else
+	fs->append(*parent->visibleFunctions.v[i].value);
+      visibleFunctions.put(parent->visibleFunctions.v[i].key, fs);
     }
   }
 }

@@ -1279,13 +1279,14 @@ Expr* FnCall::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* a
 
 
 FnSymbol* FnCall::findFnSymbol(void) {
-  if (typeid(*baseExpr) == typeid(Variable)) {
-    Variable* fnVar = dynamic_cast<Variable*>(baseExpr);
-    return dynamic_cast<FnSymbol*>(fnVar->var);
-  } else {
-    INT_FATAL(this, "unexpected FnCall structure in findFnSymbol");
-    return NULL;
+  FnSymbol* fn = NULL;
+  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+    fn = dynamic_cast<FnSymbol*>(variable->var);
   }
+  if (!fn) {
+    INT_FATAL(this, "Cannot find FnSymbol in FnCall");
+  }
+  return fn;
 }
 
 

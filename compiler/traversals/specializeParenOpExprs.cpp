@@ -25,7 +25,7 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
 	if (fn) {
 #ifdef NO_RESOLVE_CONSTRUCTOR
 	  //paren_replacement = new FnCall(new MemberAccess(new Variable(ctype->symbol), new UnresolvedSymbol(fn->name)), paren->argList);
-	  paren_replacement = new FnCall(new Variable(new UnresolvedSymbol(fn->name)), paren->argList);
+	  paren_replacement = new ParenOpExpr(new Variable(new UnresolvedSymbol(fn->name)), paren->argList);
 #else
 	  paren_replacement = new FnCall(new Variable(fn), paren->argList);
 #endif
