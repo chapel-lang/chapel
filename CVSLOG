@@ -3022,3 +3022,18 @@ Modified files:
 Added files:
 	chapel/compiler/: beautify.cpp beautify.h 
 
+---------------------------------------------------------------------------
+
+06/08/04 16:28:27 -- bradc
+
+Log message:
+	Added tests to look at functions calling other functions
+	and removed these from the Share/ directory thanks to
+	John's disabling of cloning based on values.
+
+Added files:
+	chapel/test/trivial/bradc/functions/: chain.chpl chain.good 
+	                                      mutrec.chpl mutrec.good 
+Removed files:
+	chapel/test/Share/: chain.chpl mutrec.chpl 
+
