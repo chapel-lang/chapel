@@ -77,3 +77,5 @@
 
 - debug type inference when dead code elimination is off.... or remove
   the flag
+
+- x = if i==1 then 0 else 1; gives syntax error

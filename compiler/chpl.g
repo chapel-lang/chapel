@@ -262,13 +262,13 @@ expression
     { $$.ast =  new AST(AST_forall, &$n); }
   | expression '?' expression ':' expression $right 8600
     { $$.ast = new AST(AST_if, &$n); }
-  | 'if' '(' expression ')' expression $right 6000
+  | 'if' expression 'then' expression $right 6000
     { $$.ast = new AST(AST_if, &$n); }
-  | 'if' '(' expression ')' expression 'else' expression $right 6100
+  | 'if' expression 'then' expression 'else' expression $right 6100
     { $$.ast = new AST(AST_if, &$n); }
-  | 'while' loop_scope '(' expression ')' expression $right 6200
+  | 'while' loop_scope expression 'do' expression $right 6200
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
-    { $$.ast = loop_AST($n0, $n3, 0, 0, $n5); }
+    { $$.ast = loop_AST($n0, $n2, 0, 0, $n4); }
   | 'do' loop_scope expression 'while' expression $right 6300
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n4, &$n2, 0, $n2); }
