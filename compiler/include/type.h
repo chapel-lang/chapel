@@ -47,6 +47,7 @@ class Type : public BaseAST {
 
   Type* copy(bool clone = false, CloneCallback* analysis_clone = NULL);
   virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
+  Type *instantiate_generic(Map<Type *, Type *> &substitutions);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);

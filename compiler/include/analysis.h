@@ -21,9 +21,10 @@ class ASTCopyContext;
 
 class ACallbacks : public Callbacks {
 public:
-  void new_LUB_type(Sym *);
-  Sym *new_Sym(char *name = 0);
   void compute_visible_functions();
+  void new_LUB_type(Sym *);
+  Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
+  Sym *new_Sym(char *name = 0);
   Fun *order_wrapper(Match *);
   Fun *coercion_wrapper(Match *);
   Fun *default_wrapper(Match *);

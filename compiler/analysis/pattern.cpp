@@ -53,7 +53,7 @@ dispatch_type(Sym *a) {
     return a;
   if (a->type && a->type->is_symbol)
     return a->type;
-  if (a->must_specialize)
+  if (a->must_specialize && a->must_specialize->type_kind != Type_VARIABLE)
     return a->must_specialize;
   return sym_any;
 }
@@ -559,12 +559,22 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
 
 static int 
 is_generic_type(Sym *t) {
-  return 0;
+  return t->type_kind == Type_VARIABLE;
 }
 
-static Sym *
+static void
 unify_generic_type(Sym *gtype, Sym *type, Map<Sym *, Sym *> &substitutions) {
-  return gtype;
+  if (gtype->type_kind == Type_VARIABLE)
+    substitutions.put(gtype, type);
+}
+
+static void
+instantiate_formal_types(Match *m) {
+  form_MPositionSym(x, m->formal_dispatch_types) {
+    Sym *type = m->fun->arg_syms.get(x->key)->must_specialize;
+    if (is_generic_type(type))
+      x->value = if1->callback->instantiate(type, m->generic_substitutions);
+  }
 }
 
 static void
@@ -576,10 +586,10 @@ generic_substitutions(Match **am, MPosition &p, Vec<CreationSet*> args) {
     AVar *a = m->actuals.get(cp);
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
-    Sym *formal_type = m->formal_dispatch_types.get(cp);
-    if (is_generic_type(formal_type)) {
-      Sym *t = unify_generic_type(formal_type, concrete_type, m->generic_substitutions);
-      m->formal_dispatch_types.put(cp, t);
+    Sym *type = m->fun->arg_syms.get(cp)->must_specialize;
+    if (type && is_generic_type(type)) {
+      unify_generic_type(type, concrete_type, m->generic_substitutions);
+      instantiate_formal_types(m);
     }
     p.inc();
   }

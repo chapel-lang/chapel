@@ -223,6 +223,28 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       if (set.set_add(ss))
 	syms.add(ss);
     }
+    switch (s->astType) {
+      default: break;
+      case SYMBOL_FN: {
+	Symbol *formals = dynamic_cast<FnSymbol*>(s)->formals;
+	while (formals) {
+	  if (set.set_add(formals))
+	    syms.add(formals);
+	  ParamSymbol *p = dynamic_cast<ParamSymbol*>(formals);
+	  if (p) {
+	    Type *tt = dynamic_cast<Type*>(p->type);
+	    if (tt) {
+	      if (set.set_add(tt))
+		syms.add(tt);
+	    }
+	  }
+	  formals = dynamic_cast<Symbol*>(formals->next);
+	}
+	Type *ret = dynamic_cast<FnSymbol*>(s)->retType;
+	if (set.set_add(ret))
+	  syms.add(ret);
+      }
+    }
   }
   forv_Type(t, builtinTypes) {
     if (set.set_add(t))
@@ -300,6 +322,24 @@ install_new_function(FnSymbol *f) {
   return fun;
 }
 
+Sym *
+ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
+  if (s->type_kind) {
+    Sym *tt = substitutions.get(s);
+    if (tt) {
+      Map<Type *, Type *> subs;
+      form_SymSym(s, substitutions)
+	subs.put(dynamic_cast<Type*>(dynamic_cast<ASymbol*>(s->key)->xsymbol), 
+		 dynamic_cast<Type*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
+      Type *type = dynamic_cast<Type*>(((ASymbol*)s)->xsymbol);
+      Type *new_type = type->instantiate_generic(subs);
+      assert(tt == new_type->asymbol);
+      return tt;
+    }
+  }
+  return 0;
+}
+
 Fun *
 ACallbacks::order_wrapper(Match *m) {
   if (!m->fun->ast) 
@@ -321,7 +361,7 @@ ACallbacks::coercion_wrapper(Match *m) {
     coercions.put(s->key, type->name);
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(((ASymbol*)m->fun->sym)->xsymbol);
-  FnSymbol *f = fndef->coercion_wrapper(coercions.n ? &coercions : 0);
+  FnSymbol *f = fndef->coercion_wrapper(&coercions);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
   return fun;
@@ -332,7 +372,7 @@ ACallbacks::default_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(((ASymbol*)m->fun->sym)->xsymbol);
-  FnSymbol *f = fndef->default_wrapper(m->default_args.n ? &m->default_args : 0);
+  FnSymbol *f = fndef->default_wrapper(&m->default_args);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
   return fun;
@@ -342,12 +382,12 @@ Fun *
 ACallbacks::instantiate_generic(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  Map<Symbol *, Symbol *> substitutions;
+  Map<Type *, Type *> substitutions;
   form_SymSym(s, m->generic_substitutions)
-    substitutions.put(dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->key)->xsymbol), 
-		      dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
+    substitutions.put(dynamic_cast<Type*>(dynamic_cast<ASymbol*>(s->key)->xsymbol), 
+		      dynamic_cast<Type*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(((ASymbol*)m->fun->sym)->xsymbol);
-  FnSymbol *f = fndef->instantiate_generic(substitutions.n ? &substitutions : 0);
+  FnSymbol *f = fndef->instantiate_generic(&substitutions);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
   return fun;
@@ -490,6 +530,12 @@ build_symbols(Vec<BaseAST *> &syms) {
     Symbol *s = dynamic_cast<Symbol *>(ss);
     if (s) { 
       switch (s->astType) {
+	case SYMBOL_TYPE: {
+	  TypeSymbol *t = dynamic_cast<TypeSymbol*>(s);
+	  if (t->type->astType == TYPE_VARIABLE)
+	    t->asymbol->must_specialize = sym_anyclass;
+	  break;
+	}
 	case SYMBOL_PARAM: {
 	  if (s->type && s->type != nilType && s->type != dtUnknown) {
 	    if (s->asymbol->intent != Sym_OUT)
@@ -520,32 +566,7 @@ build_types(Vec<BaseAST *> &syms) {
       case TYPE:
 	t->asymbol->type_kind = Type_UNKNOWN;
 	break;
-      case TYPE_BUILTIN:
-	if (t == dtVoid) {
-	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_void;
-	} else if (t == dtBoolean) {
-	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_bool;
-	} else if (t == dtInteger) {
-	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_int64;
-	} else if (t == dtFloat) {
-	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_float64;
-	} else if (t == dtComplex) {
-	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_complex64;
-	} else if (t == dtString) {
-	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_string;
-	} else if (t == dtLocale) {
-	} else if (t == dtUnknown) {
-	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_unknown;
-	} else
-	  assert(!"case");
-	break;
+      case TYPE_BUILTIN: break;
       case TYPE_ENUM: {
 	t->asymbol->type_kind = Type_TAGGED;
 	t->asymbol->inherits_add(sym_enum_element);
@@ -593,7 +614,6 @@ build_types(Vec<BaseAST *> &syms) {
 	break;
       }
       case TYPE_CLASS: {
-	// ClassType::definition handled below in build_classes()
 	ClassType *tt = dynamic_cast<ClassType*>(t);
 	t->asymbol->type_kind = Type_RECORD;
 	if (tt->value || tt->union_value)
@@ -615,8 +635,11 @@ build_types(Vec<BaseAST *> &syms) {
 
 static void
 new_primitive_type(Sym *&sym, char *name) {
+  name = if1_cannonicalize_string(if1, name);
   if (!sym)
     sym = new_sym(name, 1);
+  else
+    sym->name = name;
   sym->type_kind = Type_PRIMITIVE;
   if1_set_builtin(if1, sym, name);
 }
@@ -677,6 +700,14 @@ build_builtin_symbols() {
   if (!sym_system->init)
     sym_system->init = new_sym("__init", 1);
   build_module(sym_system, sym_system->init);
+
+  sym_void = dtVoid->asymbol;
+  sym_unknown = dtUnknown->asymbol;
+  sym_bool = dtBoolean->asymbol;
+  sym_int64 = dtInteger->asymbol;
+  sym_float64 = dtFloat->asymbol;
+  sym_complex64 = dtComplex->asymbol;
+  sym_string = dtString->asymbol;
 
   new_primitive_type(sym_anyclass, "anyclass");
   sym_anyclass->type_sym = sym_anyclass;
@@ -741,14 +772,6 @@ build_builtin_symbols() {
   new_primitive_type(sym_null, "null");
 
   sym_init = new_sym(); // placeholder
-
-  ((ASymbol*)sym_void)->xsymbol = dtVoid;
-  ((ASymbol*)sym_unknown)->xsymbol = dtUnknown;
-  ((ASymbol*)sym_bool)->xsymbol = dtBoolean;
-  ((ASymbol*)sym_int64)->xsymbol = dtInteger;
-  ((ASymbol*)sym_float64)->xsymbol = dtFloat;
-  ((ASymbol*)sym_complex64)->xsymbol = dtComplex;
-  ((ASymbol*)sym_string)->xsymbol = dtString;
 
   builtin_Symbol(dtTuple, &sym_tuple, "tuple");
   builtin_Symbol(dtIndex, &sym_index, "index");

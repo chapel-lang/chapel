@@ -51,6 +51,14 @@ Type* Type::copyType(bool clone, CloneCallback* analysis_clone) {
   return nilType;
 }
 
+Type *Type::instantiate_generic(Map<Type *, Type *> &substitutions) {
+  if (astType == TYPE_VARIABLE) {
+    Type *t = substitutions.get(this);
+    if (t)
+      return t;
+  }
+  return 0;
+}
 
 void Type::traverse(Traversal* traversal, bool atTop) {
   if (isNull()) {
