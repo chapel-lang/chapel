@@ -4,6 +4,7 @@
 
 #define EXTERN
 #include "geysa.h"
+#include "codegen.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -232,6 +233,9 @@ compile_one(char *fn) {
       strcat(cfn, ".c");
       my_write_c(fa, if1->top->fun, cfn);
     }
+#ifdef YEAH_I_REALLY_WANT_TO_ENABLE_CODEGEN
+    codegen(fa, fn, system_dir);
+#endif
     if (fdump_html)
       dump_html(fa, if1->top->fun, fn);
     if (fgraph)

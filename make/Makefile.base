@@ -5,46 +5,8 @@
 
 MAKEFLAGS = --no-print-directory
 
-#
-# OS/ARCH/PLATFORM stuff
-#
-OS_TYPE = $(shell uname -s | awk '{ split($$1,a,"_"); printf("%s", a[1]);  }')
 
-OS_VERSION = $(shell uname -r | awk '{ split($$1,a,"."); sub("V","",a[1]); printf("%d%d%d",a[1],a[2],a[3]); }')
-
-ARCH = $(shell uname -m)
-ifeq ($(ARCH),i386)
-	ARCH = x86
-endif
-ifeq ($(ARCH),i486)
-	ARCH = x86
-endif
-ifeq ($(ARCH),i586)
-	ARCH = x86
-endif
-ifeq ($(ARCH),i686)
-	ARCH = x86
-endif
-
-#
-# PLATFORM is simply the one-word description we'll use for all
-# platforms that we run on.
-#
-ifeq ($(OS_TYPE),CYGWIN)
-	PLATFORM=cygwin
-endif
-ifeq ($(OS_TYPE),SunOS)
-	PLATFORM=sun
-endif
-ifeq ($(OS_TYPE),Linux)
-	PLATFORM=linux
-endif
-ifeq ($(OS_TYPE),FreeBSD)
-	PLATFORM=freebsd
-endif
-ifndef PLATFORM
-	PLATFORM=unknown
-endif
+include $(CHAPEL_ROOT)/make/Makefile.platform
 
 #
 # Permit override of compiler used for generating dependencies

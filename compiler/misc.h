@@ -12,4 +12,16 @@ void fail(char *str, ...);
 char *loc_string(d_loc_t &l);
 // char *dupstr(char *s, char *e = 0); in map.h because of template's in header hell
 
+
+// INT_FATAL(ast, format, ...)
+//   where ast         == AST* or NULL
+//         format, ... == normal printf stuff
+// results in something like:
+// INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
+
+#define INT_FATAL setupIntError(__FILE__, __LINE__); intFatal
+
+void setupIntError(char* filename, int lineno);
+void intFatal(AST* ast, char* fmt, ...);
+
 #endif

@@ -98,3 +98,51 @@ void myassert() {
   *(int*)0 = 1;
 }
 
+
+// Support for internal errors, adopted from ZPL compiler
+
+static char *interrorfile;
+static int interrorline;
+
+void setupIntError(char *filename, int lineno) {
+  interrorfile = filename;
+  interrorline = lineno;
+}
+
+
+void intFatal(AST* ast, char *fmt, ...) {
+  va_list args;
+  int usrlineno = 0;
+  char *usrfilename = NULL;
+
+  if (ast) {
+    usrlineno = ast->line;
+    usrfilename = ast->pathname;
+  }
+  
+  fprintf(stderr, "INTERNAL ERROR in %s (%d): ", 
+	  interrorfile, interrorline);
+
+  va_start(args, fmt);
+  vfprintf(stderr, fmt, args);
+  va_end(args);
+
+  if (usrfilename || usrlineno) {
+    fprintf(stderr, " (");
+    if (usrfilename) {
+      fprintf(stderr, "%s", usrfilename);
+    }
+    if (usrlineno) {
+      if (usrfilename) {
+	fprintf(stderr, ":");
+      } else {
+	fprintf(stderr, "line ");
+      }
+      fprintf(stderr, "%d", usrlineno);
+    }
+    fprintf(stderr, ")");
+  }
+  fprintf(stderr, "\n\n");
+
+  exit(1);
+}

@@ -17,12 +17,14 @@ GEYSA_CVS_SRCS = \
 	ast.cpp \
 	ast_cf.cpp \
 	builtin.cpp \
+	codegen.cpp \
 	cfg.cpp \
 	cg.cpp \
 	clone.cpp \
 	driver.cpp \
 	dump.cpp \
 	fa.cpp \
+	files.cpp \
 	fun.cpp \
 	grammar.cpp \
 	graph.cpp \
@@ -31,6 +33,7 @@ GEYSA_CVS_SRCS = \
 	log.cpp \
 	map.cpp \
 	misc.cpp \
+	mysystem.cpp \
 	parse.cpp \
 	pdb.cpp \
 	pnode.cpp \
@@ -38,6 +41,7 @@ GEYSA_CVS_SRCS = \
 	region.cpp \
 	scope.cpp \
 	ssu.cpp \
+	stringutil.cpp \
 	var.cpp \
 	vec.cpp \
 	version.cpp
