@@ -865,3 +865,18 @@ Log message:
 Modified files:
 	chapel/compiler/: TODO dump.cpp 
 
+---------------------------------------------------------------------------
+
+04/03/16 18:16:38 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	print out folded constants in dump.html
+	add test case in samples for constant folding: samples/constant_folding.v
+
+Modified files:
+	chapel/compiler/: ast.cpp ast.h ast_cf.cpp builtin_symbols.h 
+	                  dump.cpp fa.cpp prelude.chpl prelude.v 
+	                  prim_data.dat sym.h 
+Added files:
+	chapel/compiler/samples/: constant_folding.v 
+
