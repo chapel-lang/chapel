@@ -23523,3 +23523,14 @@ Added files:
 	chapel/test/types/tuple/bradc/: .cvsignore writeTuple.chpl 
 	                                writeTuple.good 
 
+---------------------------------------------------------------------------
+
+04/04/05 10:51:04 -- deitz
+
+Log message:
+	Added a script list_futures to the test/ directory that lists all the
+	future tests next to the assigned person's name.
+
+Added files:
+	chapel/test/: list_futures 
+
