@@ -43,7 +43,7 @@ uint open_hash_multipliers[256] = {
 #ifdef TEST_LIB
 void
 test_map() {
-  StringOpenHash h;
+  StringChainHash h;
   char *hi = "hi", *ho = "ho", *hum = "hum", *hhi = "hhi";
   hhi++;
   h.put(hi);
@@ -83,6 +83,26 @@ test_map() {
   assert(sh.get(hum) == 3);
   assert(sh.get("af") == 10);
   assert(sh.get("ac") == 7);
+
+  ChainHashMap<char *, StringHashFns, int> ssh;
+  ssh.put(hi, 1);
+  ssh.put(ho, 2);
+  ssh.put(hum, 3);
+  ssh.put(hhi, 4);
+  assert(ssh.get(hi) == 4);
+  assert(ssh.get(ho) == 2);
+  assert(ssh.get(hum) == 3);
+  ssh.put("aa", 5);
+  ssh.put("ab", 6);
+  ssh.put("ac", 7);
+  ssh.put("ad", 8);
+  ssh.put("ae", 9);
+  ssh.put("af", 10);
+  assert(ssh.get(hi) == 4);
+  assert(ssh.get(ho) == 2);
+  assert(ssh.get(hum) == 3);
+  assert(ssh.get("af") == 10);
+  assert(ssh.get("ac") == 7);
 }
 #endif
 

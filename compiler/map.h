@@ -20,16 +20,16 @@ char *dupstr(char *s, char *e = 0); // from misc.h
 // Simple direct mapped Map (pointer hash table) and Environment
 
 template <class K, class C>
-class MapElem {
+class MapElem : public gc {
  public:
   K	key;
   C	value;
   bool operator==(MapElem &e) { return e.key == key; }
   operator unsigned int(void) { return (unsigned int)(uintptr_t)key; }
-  MapElem(unsigned int x) { assert(!x); key = 0; value = 0; }
+  MapElem(unsigned int x) { assert(!x); key = 0; }
   MapElem(K akey, C avalue) : key(akey), value(avalue) {}
   MapElem(MapElem &e) : key(e.key), value(e.value) {}
-  MapElem() : key(0), value(0) {}
+  MapElem() : key(0) {}
 };
 
 template <class K, class C> class Map : public Vec<MapElem<K,C> > {
@@ -77,13 +77,20 @@ class PointerHashFns {
   static int equal(void *a, void *b) { return a == b; }
 };
 
-template <class C, class AHashFns> class OpenHash : public Map<unsigned int, List<C> > {
+template <class C, class AHashFns> class ChainHash : public Map<unsigned int, List<C> > {
  public:
   inline C put(C c);
   inline C get(C c);
 };
 
-class StringOpenHash : public OpenHash<char *, StringHashFns> {
+template <class K, class AHashFns, class C> class ChainHashMap : 
+  public Map<unsigned int, List<MapElem<K,C> > > {
+ public:
+  inline C get(K akey);
+  inline MapElem<K,C> *put(K akey, C avalue);
+};
+
+class StringChainHash : public ChainHash<char *, StringHashFns> {
  public:
   inline char *cannonicalize(char *s, char *e);
 };
@@ -242,40 +249,82 @@ HashMap<K,AHashFns,C>::get_keys(Vec<K> &keys) { Map<K,C>::get_keys(keys); }
 template <class K, class AHashFns, class C> inline void
 HashMap<K,AHashFns,C>::get_values(Vec<C> &values) { Map<K,C>::get_values(values); }
 
-template <class C, class AnOpenHashFns> C
-OpenHash<C, AnOpenHashFns>::put(C c) {
-  unsigned int h = AnOpenHashFns::hash(c);
+template <class C, class AHashFns> C
+ChainHash<C, AHashFns>::put(C c) {
+  unsigned int h = AHashFns::hash(c);
   List<C> *l;
   MapElem<unsigned int,List<C> > e(h, (C)0);
   MapElem<unsigned int,List<C> > *x = set_in(e);
   if (x)
     l = &x->value;
-  else
+  else {
     l = &Map<unsigned int, List<C> >::put(h, c)->value;
+    return l->head->car;
+  }
   forc_List(C, x, *l)
-    if (AnOpenHashFns::equal(c, x->car))
+    if (AHashFns::equal(c, x->car))
       return x->car;
   l->push(c);
   return (C)0;
 }
 
-template <class C, class AnOpenHashFns> C
-OpenHash<C, AnOpenHashFns>::get(C c) {
-  unsigned int h = AnOpenHashFns::hash(c);
-  MapElem<unsigned int,List<C> > e(h, (C)0);
+template <class C, class AHashFns> C
+ChainHash<C, AHashFns>::get(C c) {
+  unsigned int h = AHashFns::hash(c);
+  List<C> empty;
+  MapElem<unsigned int,List<C> > e(h, empty);
   MapElem<unsigned int,List<C> > *x = set_in(e);
   if (!x)
     return 0;
   List<C> *l = &x->value;
   forc_List(C, x, *l)
-    if (AnOpenHashFns::equal(c, x->car))
+    if (AHashFns::equal(c, x->car))
       return x->car;
+  return 0;
+}
+
+template <class K, class AHashFns, class C>  MapElem<K,C> *
+ChainHashMap<K, AHashFns, C>::put(K akey, C avalue) {
+  unsigned int h = AHashFns::hash(akey);
+  List<MapElem<K,C> > empty;
+  List<MapElem<K,C> > *l;
+  MapElem<K, C> c(akey, avalue);
+  MapElem<unsigned int,List<MapElem<K,C> > > e(h, empty);
+  MapElem<unsigned int,List<MapElem<K,C> > > *x = set_in(e);
+  if (x)
+    l = &x->value;
+  else {
+    l = &Map<unsigned int, List<MapElem<K,C> > >::put(h, c)->value;
+    return &l->head->car;
+  }
+  if (l->head) 
+    for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
+      if (AHashFns::equal(akey, p->car.key)) {
+	p->car.value = avalue;
+	return &p->car;
+      }
   l->push(c);
-  return c;
+  return 0;
+}
+
+template <class K, class AHashFns, class C> C
+ChainHashMap<K, AHashFns, C>::get(K akey) {
+  unsigned int h = AHashFns::hash(akey);
+  List<MapElem<K,C> > empty;
+  MapElem<unsigned int,List<MapElem<K,C> > > e(h, empty);
+  MapElem<unsigned int,List<MapElem<K,C> > > *x = set_in(e);
+  if (!x)
+    return 0;
+  List<MapElem<K,C> > *l = &x->value;
+  if (l->head) 
+    for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
+      if (AHashFns::equal(akey, p->car.key))
+	return p->car.value;
+  return 0;
 }
 
 inline char *
-StringOpenHash::cannonicalize(char *s, char *e) {
+StringChainHash::cannonicalize(char *s, char *e) {
   unsigned int h = 0;
   char *a = s;
   // 31 changed to 27, to avoid prime2 in vec.cpp

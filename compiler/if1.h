@@ -22,7 +22,7 @@ extern char *builtin_strings[];
 
 class IF1 : public gc {
  public:
-  StringOpenHash	strings;		// unique strings
+  StringChainHash	strings;		// unique strings
   Map<char *, Sym *>	symbols;		// language level symbols
   Map<char *, Sym *>	builtins;		// symbols builtin to the compiler
   Map<Sym *, char *>	builtins_names;		// names of symbols builtin to the compiler

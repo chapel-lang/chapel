@@ -158,7 +158,7 @@ class AEdge : public gc {
 };
 #define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
 
-class ATypeOpenHashFns {
+class ATypeChainHashFns {
  public:
   static uint hash(AType *a) { return a->hash; }
   static int equal(AType *a, AType *b) {
@@ -240,7 +240,7 @@ class ATypeFold : public gc {
 };
 #define forv_ATypeFold(_p, _v) forv_Vec(ATypeFold, _p, _v)
 
-class ATypeFoldOpenHashFns {
+class ATypeFoldChainHashFns {
  public:
   static uint hash(ATypeFold *x) { 
     return (uint)((uintptr_t)x->p + (1009 * (uintptr_t)x->a) + (100003 * (uintptr_t)x->b));

@@ -31,11 +31,11 @@ static AType *symbol_type = 0;
 static AType *fun_symbol_type = 0;
 static AType *anyclass_type = 0;
 
-static OpenHash<AType *, ATypeOpenHashFns> cannonical_atypes;
-static OpenHash<Setters *, SettersHashFns> cannonical_setters;
-static OpenHash<SettersClasses *, SettersClassesHashFns> cannonical_setters_classes;
-static OpenHash<ATypeFold *, ATypeFoldOpenHashFns> type_fold_cache;
-static OpenHash<ATypeViolation *, ATypeViolationHashFuns> type_violation_hash;
+static ChainHash<AType *, ATypeChainHashFns> cannonical_atypes;
+static ChainHash<Setters *, SettersHashFns> cannonical_setters;
+static ChainHash<SettersClasses *, SettersClassesHashFns> cannonical_setters_classes;
+static ChainHash<ATypeFold *, ATypeFoldChainHashFns> type_fold_cache;
+static ChainHash<ATypeViolation *, ATypeViolationHashFuns> type_violation_hash;
 
 static Var *element_var = 0;
 

@@ -31,7 +31,7 @@
 typedef Map<Fun *, Match *> MatchMap;
 typedef Vec<Vec<Fun *> *> PartialMatches;
 
-static OpenHash<MPosition *, MPositionHashFuns> cannonical_mposition;
+static ChainHash<MPosition *, MPositionHashFuns> cannonical_mposition;
 
 MPosition::MPosition(MPosition &p) {
   pos.copy(p.pos);
