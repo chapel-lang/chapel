@@ -740,6 +740,10 @@ void FnDefStmt::print(FILE* outfile) {
 void FnDefStmt::codegen(FILE* outfile) {
   FILE* headfile;
 
+  if (!function_is_used(fn)) {
+    return;
+  }
+
   if (fn->exportMe) {
     headfile = extheadfile;
   } else {

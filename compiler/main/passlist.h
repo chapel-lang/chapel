@@ -27,12 +27,16 @@ PassInfo passlist[] = {
   RUN(RunAnalysis, ""),
   RUN(Fixup, "verify"),  // this is a sanity check
 
-  // passes to rewrite AST after analysis
+  // passes to capture analysis information in the AST
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
 
   //  RUN(Fixup, "hyper verify"),  // hyper verification!
 
+  // eventually, optimizations will go here
+
+
+  // passes to prepare for C code generation
   RUN(MethodsToFunctions, ""),
   RUN(ProcessParameters, ""),
   RUN(InsertUnionChecks, ""),
