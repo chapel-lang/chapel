@@ -181,6 +181,7 @@ void Expr::insertBefore(Expr* new_expr) {
       prev->next = first;
     }
   */
+  back = &(Expr*&)last->next; // UGH --SJD
 
   prev = last;
   last->next = this;

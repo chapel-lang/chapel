@@ -186,6 +186,7 @@ void Stmt::insertBefore(Stmt* new_stmt) {
       prev->next = first;
     }
   */
+  back = &(Stmt*&)last->next; // UGH --SJD
 
   prev = last;
   last->next = this;
