@@ -5,8 +5,8 @@
 #include "fa.h"
 #include "parse_ast.h"
 
-static void
-cast(Sym *s, Sym *t, Immediate *im) {
+void
+coerce_numeric(Sym *s, Sym *t, Immediate *im) {
 #include "cast_code.cpp"
 }
 
@@ -211,9 +211,9 @@ fold_constant(IF1 *i, ParseAST *ast) {
   }
   if (!a->is_constant || (b && !b->is_constant))
     return 0;
-  cast(a, res_type, &im1);
+  coerce_numeric(a, res_type, &im1);
   if (b)
-    cast(b, res_type, &im2);
+    coerce_numeric(b, res_type, &im2);
   assert(!ast->sym);
   ast->sym = new_sym(i, ast->scope);
   switch (ast->prim->index) {

@@ -1420,6 +1420,11 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	  creation_point(result, cs->sym->type_sym); // recover original type
 	break;
       }
+      case P_prim_coerce: {
+	assert(p->rvals.v[1]->sym->abstract_type);
+	update_in(result, p->rvals.v[1]->sym->abstract_type);
+	break;
+      }
       case P_prim_cast: {
 	assert(!"implemented");
 	break;

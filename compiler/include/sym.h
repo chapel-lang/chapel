@@ -166,5 +166,6 @@ void convert_constant_to_immediate(Sym *sym);
 int print(FILE *fp, Immediate &imm, Sym *type);
 int sprint(char *s, Immediate &imm, Sym *type);
 int compar_syms(const void *ai, const void *aj);
+void coerce_numeric(Sym *s, Sym *t, Immediate *im);
 
 #endif

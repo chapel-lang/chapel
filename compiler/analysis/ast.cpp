@@ -39,6 +39,7 @@ void init_ast() {
   new_builtin_symbol(sym_meta_apply, "__meta_apply", "meta_apply");
   new_builtin_symbol(sym_period, ".", "period");
   new_builtin_symbol(sym_assign, "=", "assign");
+  new_builtin_symbol(sym_coerce, "__coerce", "coerce");
 }
 
 static void

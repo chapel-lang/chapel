@@ -59,5 +59,6 @@ S(destruct)
 S(meta_apply)
 S(period)
 S(assign)
+S(coerce)
 S(init)
 

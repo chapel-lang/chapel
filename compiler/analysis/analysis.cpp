@@ -706,6 +706,15 @@ gen_alloc(Sym *s, VarDefStmt *def, Sym *type) {
   send->ast = def->ainfo;
 }
 
+static Sym *
+gen_coerce(VarDefStmt *def, Sym *s, Sym *type) {
+  Sym *ret = new_sym();
+  Code **c = &def->ainfo->code;
+  Code *send = if1_send(if1, c, 3, 1, sym_coerce, type, s, ret);
+  send->ast = def->ainfo;
+  return ret;
+}
+
 static int
 gen_vardef(BaseAST *a) {
   VarDefStmt *def = dynamic_cast<VarDefStmt*>(a);
@@ -723,11 +732,14 @@ gen_vardef(BaseAST *a) {
   } else
     s->is_var = 1;
   if (!def->init->isNull()) {
-//    if (!s->type || !s->type->num_kind) {
-      if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
-      if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->sym, def->ainfo);
-//    } else
-//      s->is_external = 1; // hack
+    if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
+    Sym *val = def->init->ainfo->rval;
+    if (s->type) {
+      if (s->type->num_kind && s->type != val->type)
+	val = gen_coerce(def, val, s->type);
+      // else show_error("missing constructor", def->ainfo);
+    }
+    if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
   } else if (!s->is_var)
     return show_error("missing initializer", def->ainfo);
   else if (!s->type && !s->must_implement)

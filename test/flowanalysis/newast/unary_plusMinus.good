@@ -3,6 +3,7 @@
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::__init_unary_plusMinus(unary_plusMinus.chpl:33) ( __init_unary_plusMinus )
 ::answer(unary_plusMinus.chpl:3) ( int64 )
+::int64 ( int64 )
 ::m(unary_plusMinus.chpl:1) ( int64 )
 ::main ( main )
 ::n(unary_plusMinus.chpl:2) ( int64 )
