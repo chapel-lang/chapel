@@ -8,6 +8,7 @@
 
 #include "../symtab/printSymtab.h"
 #include "../symtab/legalizeCNames.h"
+#include "../symtab/renameOverloadedFunctions.h"
 
 #include "../traversals/applyThisParameters.h"
 #include "../traversals/buildClassConstructorsEtc.h"
@@ -35,7 +36,6 @@
 #include "../traversals/specializeParenOpExprs.h"
 #include "../traversals/removeDeadSymbols.h"
 #include "../traversals/removeNamedParameters.h"
-#include "../traversals/renameOverloadedFunctions.h"
 #include "../traversals/resolveOverloadedOperators.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"

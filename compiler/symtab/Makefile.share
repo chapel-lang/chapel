@@ -2,11 +2,12 @@ SYMTAB_SRCS = \
 	collectFunctions.cpp \
 	collectSymbols.cpp \
 	legalizeCNames.cpp \
+	printSymtab.cpp \
+	renameOverloadedFunctions.cpp \
 	symlink.cpp \
 	symscope.cpp \
         symtab.cpp \
-	symtabTraversal.cpp \
-	printSymtab.cpp
+	symtabTraversal.cpp
 
 CVS_SRCS = $(SYMTAB_SRCS)
 SRCS = $(CVS_SRCS)

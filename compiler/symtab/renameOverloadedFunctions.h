@@ -8,11 +8,11 @@
 #ifndef _RENAME_OVERLOADED_FUNCTIONS_H_
 #define _RENAME_OVERLOADED_FUNCTIONS_H_
 
-#include "traversal.h"
+#include "symtabTraversal.h"
 
-class RenameOverloadedFunctions : public Traversal {
+class RenameOverloadedFunctions : public SymtabTraversal {
  public:
-  void preProcessExpr(Expr* expr);
+  void processSymbol(Symbol* sym);
 };
 
 #endif
