@@ -9,15 +9,14 @@
 
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkTypeInfo.h"
+#include "../traversals/cleanup.h"
 #include "../traversals/cloneAllFns.h"
-#include "../traversals/fieldsToMemberAccesses.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
-#include "../traversals/processWithStatements.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/verifyASTType.h"
@@ -31,11 +30,11 @@ START_PASSLIST_REGISTRATION
 REGISTER(BuildBinary);
 REGISTER(CheckIDs);
 REGISTER(CheckTypeInfo);
+REGISTER(Cleanup);                // SJD: Post-parsing cleanup, e.g. resolve symbols, insert this
 REGISTER(CloneAllFns);
 REGISTER(Codegen);
 REGISTER(CreateEntryPoint);
 REGISTER(DummyPass);
-REGISTER(FieldsToMemberAccesses); // SJD: Convert fields in methods to MemberAccesses
 REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
@@ -46,7 +45,6 @@ REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintStmts);
 REGISTER(PrintSymtab);     // BLC: prints out the whole symboltable
-REGISTER(ProcessWithStatements); // SJD: Copies with symbols into classes, etc.
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);

@@ -670,7 +670,7 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
 
 
 Expr* MemberAccess::copy(void) {
-  return Symboltable::defineMemberAccess(base->copy(), member->name);
+  return new MemberAccess(base->copy(), member->copy());
 }
 
 
@@ -757,66 +757,6 @@ void ParenOpExpr::codegen(FILE* outfile) {
     argList->codegenList(outfile, ", ");
   }
   fprintf(outfile, ")");
-}
-
-
-ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
-  if (typeid(*base) == typeid(Variable)) {
-    Symbol* baseVar = ((Variable*)base)->var;
-
-    // ASSUMPTION: Anything used before it is defined is a function
-    if (typeid(*baseVar) == typeid(UnresolvedSymbol) ||
-	typeid(*baseVar) == typeid(FnSymbol) ||
-	typeid(*baseVar) == typeid(TypeSymbol)) {
-      
-      if (baseVar->scope->type == SCOPE_PRELUDE) {
-	bool isWrite = (strcmp(baseVar->name, "write") == 0);
-	bool isWriteln = (strcmp(baseVar->name, "writeln") == 0);
-	bool isRead = (strcmp(baseVar->name, "read") == 0);
-
-	if (isWrite) {
-	  return new IOCall(IO_WRITE, base, arg);
-	} else if (isWriteln) {
-	  return new IOCall(IO_WRITELN, base, arg);
-	} else if (isRead) {
-	  return new IOCall(IO_READ, base, arg);
-	}
-      }
-
-      if (typeid(*baseVar) == typeid(TypeSymbol)) {
-	TypeSymbol* classVar = (TypeSymbol*)baseVar;
-	ClassType* classType = dynamic_cast<ClassType*>(classVar->type);
-	if (!classType) {
-	  INT_FATAL(baseVar, "ClassSymbol type is not ClassType");
-	}
-	base = new Variable(classType->constructor->fn);
-      }
-
-      /*
-      printf("Found a function call: ");
-      base->print(stdout);
-      printf("\n");
-      */
-
-      return new FnCall(base, arg);
-    } else {
-      /*
-      printf("Found an array ref: ");
-      base->print(stdout);
-      printf("\n");
-      */
-
-      return new ArrayRef(base, arg);
-    }
-  } else {
-    /*
-    printf("Found an unknown paren op expr: ");
-    base->print(stdout);
-    printf("\n");
-    */
-    
-    return new ParenOpExpr(base, arg);
-  }
 }
 
 

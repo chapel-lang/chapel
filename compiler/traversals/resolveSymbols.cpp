@@ -9,14 +9,9 @@
 
 void ResolveSymbols::preProcessExpr(Expr* &expr) {
   if (MemberAccess* dot = dynamic_cast<MemberAccess*>(expr)) {
-    UnresolvedSymbol* UnresolvedMember;
-    Symbol* ResolvedMember;
-
-    if (UnresolvedMember = dynamic_cast<UnresolvedSymbol*>(dot->member)) {
-      //      printf("hi\n");
-    }
     if (RunAnalysis::runCount) {
-      if (UnresolvedMember = dynamic_cast<UnresolvedSymbol*>(dot->member)) {
+      if (UnresolvedSymbol* UnresolvedMember = dynamic_cast<UnresolvedSymbol*>(dot->member)) {
+	Symbol* ResolvedMember;
 	if (resolve_symbol(UnresolvedMember, dot, ResolvedMember)) {
 	  INT_FATAL(dot, "Major error resolving MemberAccess in ResolveSymbols");
 	}

@@ -130,6 +130,11 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 }
 
 
+void Symbol::replace(Symbol* &old_symbol, Symbol* new_symbol) {
+  old_symbol = new_symbol;
+}
+
+
 UnresolvedSymbol::UnresolvedSymbol(char* init_name) :
   Symbol(SYMBOL_UNRESOLVED, init_name)
 {}

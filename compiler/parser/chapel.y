@@ -580,14 +580,14 @@ nonemptyExprlist:
 
 simple_lvalue:
   identifier
-    { $$ = new Variable(Symboltable::lookup($1)); }
+    { $$ = new Variable(new UnresolvedSymbol($1)); }
 | simple_lvalue TDOT identifier
-    { $$ = Symboltable::defineMemberAccess($1, $3); }
+    { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
 | simple_lvalue TLP exprlist TRP
-    { $$ = ParenOpExpr::classify($1, $3); }
+    { $$ = new ParenOpExpr($1, $3); }
 /*
 | simple_lvalue TLSBR exprlist TRSBR
-    { $$ = ParenOpExpr::classify($1, $3); }
+    { $$ = new ParenOpExpr($1, $3); }
 */
 ;
 
@@ -606,7 +606,7 @@ atom:
 expr: 
   atom
 | TYPE_IDENT TLP exprlist TRP
-{ $$ = ParenOpExpr::classify(new Variable($1), $3); }
+    { $$ = new ParenOpExpr(new Variable($1), $3); }
 | reduction %prec TREDUCE
 | expr TCOLON type
     { $$ = new CastExpr($3, $1); }

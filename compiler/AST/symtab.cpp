@@ -414,6 +414,21 @@ Symbol* Symboltable::lookupInScope(char* name, SymScope* scope) {
 }
 
 
+Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope) {
+  while (scope != NULL) {
+    Symbol* sym = lookupInScope(name, scope);
+    if (sym != NULL) {
+      return sym;
+    }
+    scope = scope->parent;
+  }
+
+  UnresolvedSymbol* undefinedSym = new UnresolvedSymbol(name);
+
+  return undefinedSym;
+}
+
+
 Symbol* Symboltable::lookupInCurrentScope(char* name) {
   return lookupInScope(name, currentScope);
 }
@@ -810,33 +825,6 @@ ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr,
 }
 
 
-/*** Replaced by EnumSymbol::set_values ------------------
-EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
-  EnumSymbol* enumList;
-  EnumSymbol* lastEnum;
-  EnumSymbol* newEnum;
-  Symbol* sym = symList;
-  int val = 0;
-
-  newEnum = new EnumSymbol(sym->name, NULL, val);
-  define(newEnum);
-  enumList = newEnum;
-  lastEnum = newEnum;
-  sym = nextLink(Symbol, sym);
-  while (sym != NULL) {
-    val++;
-    newEnum = new EnumSymbol(sym->name, NULL, val);
-    define(newEnum);
-    lastEnum->append(newEnum);
-    lastEnum = newEnum;
-
-    sym = nextLink(Symbol, sym);
-  }
-
-  return enumList;
-}
------------------------------------------------------ ***/
-
 Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
   Type* newType = new Type(TYPE_BUILTIN, init);
   TypeSymbol* sym = new TypeSymbol(name, newType);
@@ -928,19 +916,6 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
   forScope->setContext(forstmt);
 
   return forstmt;
-}
-
-
-MemberAccess* Symboltable::defineMemberAccess(Expr* base, char* member) {
-  Symbol* memberSym = NULL;
-
-  if (ClassType* ctype = dynamic_cast<ClassType*>(base->typeInfo())) {
-    memberSym = Symboltable::lookupInScope(member, ctype->scope);
-  }
-  if (!memberSym) {
-    memberSym = new UnresolvedSymbol(member);
-  }
-  return new MemberAccess(base, memberSym);
 }
 
 

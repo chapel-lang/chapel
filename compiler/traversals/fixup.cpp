@@ -2,6 +2,8 @@
 #include "ast_util.h"
 #include "expr.h"
 #include "stmt.h"
+#include <string.h>
+
 
 Fixup::Fixup(void) {
   exprParent.add(NULL);
@@ -10,11 +12,17 @@ Fixup::Fixup(void) {
 
 
 void Fixup::preProcessStmt(Stmt* &stmt) {
+  int verify = !strcmp(args, "verify");
   Symbol* tmp = stmtParent.v[stmtParent.n-1];
   if (tmp == NULL) {
     INT_FATAL(stmt, "NULL in Fixup()");
   }
-  stmt->parentSymbol = tmp;
+  if (!verify) {
+    stmt->parentSymbol = tmp;
+  }
+  else if (stmt->parentSymbol != tmp) {
+    INT_FATAL(stmt, "Error during verification fixup: statement's parent is incorrect");
+  }
 
   if (FnDefStmt* fstmt = dynamic_cast<FnDefStmt*>(stmt)) {
     stmtParent.add(fstmt->fn);
@@ -46,11 +54,17 @@ void Fixup::postProcessStmt(Stmt* &stmt) {
 
 
 void Fixup::preProcessExpr(Expr* &expr) {
+  int verify = !strcmp(args, "verify");
   Stmt* tmp = exprParent.v[exprParent.n-1];
   if (tmp == NULL) {
     INT_FATAL(expr, "NULL in Fixup()");
   }
-  expr->stmt = tmp;
+  if (!verify) {
+    expr->stmt = tmp;
+  }
+  else if (expr->stmt != tmp) {
+    INT_FATAL(expr, "Error during verification fixup: expression's statement is incorrect");
+  }
 }
 
 

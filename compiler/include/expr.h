@@ -314,8 +314,6 @@ class ParenOpExpr : public Expr {
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
-
-  static ParenOpExpr* classify(Expr* base, Expr* arg);
 };
 
 

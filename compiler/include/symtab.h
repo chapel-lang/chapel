@@ -24,7 +24,15 @@ class Symboltable {
 
   static void defineInScope(Symbol* sym, SymScope* scope);
   static void define(Symbol* sym);
+
+  /** SJD: These are the lookup's to use--
+      lookupInScope only checks the passed scope
+      lookupFromScope checks the passed scope and then moves up the scopes
+  **/
   static Symbol* lookupInScope(char* name, SymScope* scope);
+  static Symbol* lookupFromScope(char* name, SymScope* scope);
+
+
   static Symbol* lookupInCurrentScope(char* name);
   static Symbol* lookupInternal(char* name, bool publicSym = false);
   static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
@@ -65,8 +73,6 @@ class Symboltable {
 
   static ForLoopStmt* startForLoop(bool forall, Symbol* indices, Expr* domain);
   static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);
-
-  static MemberAccess* defineMemberAccess(Expr* base, char* member);
 
   static ForallExpr* defineQueryDomain(char* name);
 
