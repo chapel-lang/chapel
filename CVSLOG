@@ -3652,3 +3652,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: Makefile 
 
+---------------------------------------------------------------------------
+
+06/22/04 15:17:04 -- bradc
+
+Log message:
+	Cleaning up AST prototype: integrated with compiler's
+	warning/error mechanisms; removed code from header
+	files.
+
+Modified files:
+	chapel/compiler/AST/: Makefile TODO expr.cpp expr.h link.cpp 
+	                      main.cpp stmt.cpp stmt.h stringutil.cpp 
+	                      symbol.cpp symbol.h symtab.cpp type.cpp 
+	                      type.h 
+
