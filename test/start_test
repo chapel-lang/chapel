@@ -42,6 +42,9 @@
 #   -logfile   <log filename>         ./Logs/<username>.log
 #   -valgrind
 #
+# These options can be used with a double-dash as well 
+# (e.g. --compopts).
+#
 # The -compiler option allows the user to specify the compiler to test
 # if it is something other than the obvious one in the current CVS
 # structure.  This lets one run other people's compilers, old copies
@@ -212,41 +215,48 @@ set valgrind = 0
 while ( $#argv > 0 )
 	switch ( $argv[1] )
 	case -execopts:
+	case --execopts:
 		shift
 		set execopts = "$argv[1]"
 		# echo \[execopts: \"$execopts\"\] |& tee -a $logtmp
 		shift
 		breaksw
 	case -compiler:
+	case --compiler:
 		shift
 		set compiler = $argv[1]
 		# echo \[compiler: \"$compiler\"\] |& tee -a $logtmp
 		shift
 		breaksw
 	case -compopts:
+	case --compopts:
 		shift
 		set compopts = "$argv[1]"
 		# echo \[compopts: \"$compopts\"\] |& tee -a $logtmp
 		shift
 		breaksw
 	case -startdir:
+	case --startdir:
 		shift
 		set startdir = $argv[1]
 		# echo \[starting-dir: \"$startdir\"\] |& tee -a $logtmp
 		shift
 		breaksw
 	case -logfile:
+	case --logfile:
 		shift
 		set logfile = $argv[1]
 		# echo \[log-file: \"$logfile\"\] |& tee -a $logtmp
 		shift
 		breaksw
 	case -valgrind:
+	case --valgrind:
 		shift
 		set valgrind = 1
 		breaksw
 	case -h:
 	case -help:
+        case --help
 		echo Usage and defaults\:
 		echo "     start_test"
 		echo "          -compiler ../compiler/chpl"
