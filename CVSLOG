@@ -695,3 +695,15 @@ Modified files:
 
 
 
+---------------------------------------------------------------------------
+
+04/03/09 15:43:54 -- bradc
+
+Log message:
+	Ran into incompatibilities with the CVS perl scripts on Linux, so
+	my previous log file got lost and I entered it by hand.  It
+	concerned modifications to third-party/dparser/d/Makefile.
+
+Modified files:
+	./: CVSLOG 
+
