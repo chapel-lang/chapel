@@ -18740,3 +18740,13 @@ Added files:
 	                               pragma-5.good pragma-6.chpl 
 	                               pragma-6.good 
 
+---------------------------------------------------------------------------
+
+03/03/05 09:04:13 -- jplevyak
+
+Log message:
+	Forgotten file
+
+Added files:
+	chapel/compiler/AST/: pragma.cpp 
+
