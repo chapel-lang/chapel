@@ -6186,3 +6186,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: TODO stmt.cpp symbol.cpp symbol.h 
 
+---------------------------------------------------------------------------
+
+08/30/04 16:57:55 -- bradc
+
+Log message:
+	Cleaned up parsing of conditionals and added a dangling else
+	test.
+
+Modified files:
+	chapel/compiler/AST/: TODO chapel.lex chapel.y 
+Added files:
+	chapel/test/trivial/bradc/: danglingelse.chpl danglingelse.good 
+
