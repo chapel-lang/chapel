@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "arg.h"
 #include "array.h"
+#include "config.h"
 #include "chplio.h"
 #include "chpltypes.h"
 #include "domain.h"

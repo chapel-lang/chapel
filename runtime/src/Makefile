@@ -7,9 +7,11 @@ CC = gcc
 CFLAGS += -I../include
 
 CHPL_RT_SRCS = \
+	arg.c \
 	array.c \
 	chplio.c \
 	chpltypes.c \
+	config.c \
 	domain.c \
 
 CHPL_RT_OBJS = $(CHPL_RT_SRCS:%.c=$(PLATFORM)/%.o)
