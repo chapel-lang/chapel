@@ -23727,3 +23727,73 @@ Modified files:
 	chapel/compiler/main/: passlist.h 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/05 17:29:39 -- bradc
+
+Log message:
+	Refactored the ClassType subclass tree with the
+	intention of making classes and records more
+	distinct.  This is a continuation of my union-related
+	refactoring from last week.  The old class hierarchy
+	was:
+	
+	  ClassType
+	  > SeqType
+	  > UnionType
+	
+	The new hierarchy is:
+	
+	  StructuralType (a reasonably abstract superclass)
+	  > ClassType
+	  > > SeqType
+	  > RecordType
+	  > UnionType
+	
+	So when we create classes, records, and unions, we
+	now create an instance of ClassType, RecordType,
+	or UnionType.  The details of the classes are
+	currently almost all contained within ClassType,
+	and the vast majority of them will stay there, but
+	my goal is to remove the "value" field (still set
+	and used as before) and rely on the class hierarchy
+	more directly.
+	
+	Related to this change, many things that had a
+	class bias to them (like classScope) have now been
+	renamed to have a new, more neutral name (like
+	structScope).  "struct" isn't meant to imply C
+	structs, it's merely a shorthand for the fact that
+	it relates to the StructuralType class.  If someone
+	has a proposal for a better naming scheme, I'm all
+	ears, but let's make the change quick before anyone
+	gets too wedded to these.
+	
+	Some side changes:
+	
+	- noticed that the astTypeName array of debugging
+	  class names was out-of-date w.r.t. the enumeration,
+	  so put in an assertion in verifyASTType.cpp to
+	  ensure that the last field is set correctly (as
+	  a means of forcing people to add new strings,
+	  though they could still add them out-of-order...).
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h baseAST.h stmt.h type.h 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         insertWriteFns.cpp symscope.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             applyThisParameters.h 
+	                             buildClassConstructorsEtc.cpp 
+	                             expandClassWiths.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             omitForNoAnalysis.cpp 
+	                             processDefs.cpp resolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+	                             verifyASTType.cpp verifyASTType.h 
+
