@@ -3274,3 +3274,13 @@ Modified files:
 	                  map.h ssu_extra.cpp vec.cpp vec.h 
 	chapel/compiler/make_prims/: make_prims.g 
 
+---------------------------------------------------------------------------
+
+06/14/04 11:02:38 -- shannon
+
+Log message:
+	Add two failing tests to the Share directory.
+
+Added files:
+	chapel/test/Share/: increment.chpl unary_plusMinus.chpl 
+
