@@ -1,0 +1,12 @@
+arrinit.<dommode>.<arrmode>.chpl
+
+dommode:
+  notype = no definition specified, just initializer
+  type = definition and initializer specified
+  *p = initializer parenthesized
+
+arrmode:
+  notype = no definition specified, just initializer
+  type = definition and initializer specified
+  *pr = promoted initializer used
+  *ind = specify indices in the forall initializer
