@@ -116,7 +116,8 @@ depend: $(DEPENDSUBDIRS) echocompilerdir $(PLATFORM_DIR)
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
 	  $(CXX) -MM -MG $(CXXFLAGS) $$file | grep -v ^# >> $(CVS_DEPENDS); \
 	done
-	@$(CXX) -MM -MG -MT GEYSA_INCLUDES $(CFLAGS) geysa.cpp | sed s/:\ geysa.cpp/\ =/ | grep -v ^# >> $(CVS_DEPENDS)
+	@$(CXX) -MM -MG -MT PARSE_INCLUDES $(CFLAGS) parse_incs.cpp | sed s/:\ parse_incs.cpp/\ =/ | grep -v ^# >> $(CVS_DEPENDS)
+	@$(CXX) -MM -MG -MT PRIM_DATA_INCLUDES $(CFLAGS) prim_data_incs.cpp | sed s/:\ prim_data_incs.cpp/\ =/ | grep -v ^# >> $(CVS_DEPENDS)
 
 test: FORCE
 	cd test && $(MAKE) test
@@ -201,9 +202,12 @@ $(PLATFORM)/chpl.g.d_parser.o: prim_data.h
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
 #
-# non-obvious dependences -- if these include GEYSA_INCLUDES,
-# they must follow Makefile.compiler.foot
+# non-obvious dependences -- these must follow
+# Makefile.compiler.foot (technically, Makefile.cvs.depend,
+# which it includes) due to the use of the
+# *_INCLUDES variables...
 #
 
 $(PLATFORM)/ast_cf.o: cast_code.cpp
-$(PLATFORM)/prim_data.o: $(GEYSA_INCLUDES)
+$(PLATFORM)/prim_data.o: $(PRIM_DATA_INCLUDES)
+$(PLATFORM)/%.g.d_parser.o: $(PARSE_INCLUDES)

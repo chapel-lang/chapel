@@ -7,3 +7,6 @@ all:
 
 clean:
 	cd src && $(MAKE) clean
+
+clobber:
+	cd src && $(MAKE) clobber
