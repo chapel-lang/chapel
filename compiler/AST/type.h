@@ -14,8 +14,18 @@ class Type : public Link {
 
   void addName(Symbol* newname);
 
-  virtual void print(FILE*);
-  void printList(FILE*) {}
+  virtual void print(FILE* outfile);
+  void printList(FILE* outfile) {}
+};
+
+
+class EnumType : public Type {
+ public:
+  Symbol* valList;
+
+  EnumType(Symbol* init_valList);
+
+  void print(FILE* outfile);
 };
 
 
@@ -25,7 +35,7 @@ class DomainType : public Type {
 
   DomainType(int init_rank = 0);
 
-  void print(FILE*);
+  void print(FILE* outfile);
 };
 
 
@@ -36,7 +46,7 @@ class ArrayType : public Type {
 
   ArrayType(Expr* init_domain, Type* init_elementType);
 
-  void print(FILE*);
+  void print(FILE* outfile);
 };
 
 extern Type* dtBoolean;

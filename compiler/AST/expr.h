@@ -30,6 +30,11 @@ class NullExpr : public Expr {
 
 class Literal : public Expr {
  public:
+  char* str;
+
+  Literal(char* init_str);
+
+  void print(FILE* outfile);
 };
 
 
@@ -37,9 +42,7 @@ class IntLiteral : public Literal {
  public:
   long val;
 
-  IntLiteral(int init_val);
-
-  void print(FILE* outfile);
+  IntLiteral(char* init_str, int init_val);
 };
 
 
@@ -47,16 +50,12 @@ class FloatLiteral : public Literal {
  public:
   double val;
 
-  FloatLiteral(double init_val);
-
-  void print(FILE* outfile);
+  FloatLiteral(char* init_str, double init_val);
 };
 
 
 class StringLiteral : public Literal {
  public:
-  char* val;
-
   StringLiteral(char* init_val);
 
   void print(FILE* outfile);

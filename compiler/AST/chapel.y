@@ -17,8 +17,12 @@
 %}
 
 %union	{
+  bool boolval;
   long intval;
+
   binOpType bot;
+  varType vt;
+
   Expr* pexpr;
   DomainExpr* pdexpr;
   Stmt* stmt;
@@ -62,17 +66,21 @@
 %token EXP
 
 
+%type <boolval> varconst
 %type <intval> intliteral
+
 %type <bot> binop otherbinop
+%type <vt> vardecltag
+
 %type <pdt> type types domainType indexType arrayType tupleType weirdType
 %type <pdt> vardecltype
 %type <pch> identifier 
-%type <psym> idlist
+%type <psym> idlist enumList
 %type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional 
-%type <stmt> return loop forloop whileloop
+%type <stmt> return loop forloop whileloop enumdecl typedecl
 
 
 /* These are declared in increasing order of precedence. */
@@ -95,14 +103,19 @@ program:
 
 vardecltag:
   /* nothing */
+    { return VAR_NORMAL; }
 | CONFIG
+    { return VAR_CONFIG; }
 | STATIC
+    { return VAR_STATE; }
 ;
 
 
-varconst:  
+varconst:
   VAR
+    { $$ = true; }
 | CONST
+    { $$ = false; }
 ;
 
 
@@ -136,7 +149,9 @@ vardeclinit:
 vardecl:
   vardecltag varconst idlist vardecltype vardeclinit ';'
     {
+      $3->setIsVar($2);
       $3->setType($4);
+      $3->setVarClass($1);
       $$ = new VarDefStmt($3, $5);
     }
 ;
@@ -144,22 +159,36 @@ vardecl:
 
 typedecl:
   typealias
+    { $$ = new NullStmt(); }
 | enumdecl
 ;
+
 
 typealias:
   TYPE identifier GETS type ';'
     { Symboltable::define(new Symbol($2)); }
 ;
 
+
 enumdecl:
   ENUM identifier GETS enumList ';'
-    { Symboltable::define(new Symbol($2)); }
+    {
+      EnumType* pdt = new EnumType($4);
+      Symbol* pst = new Symbol($2, pdt);
+      pdt->addName(pst);
+      Symboltable::define(pst);
+      $$ = new TypeDefStmt(pdt);
+    }
 ;
 
 enumList:
   identifier
+    { $$ = new Symbol($1); }
 | enumList BITOR identifier
+    {
+      $1->append(new Symbol($3));
+      $$ = $1;
+    }
 ;
 
 
@@ -188,7 +217,6 @@ fndecl:
 decl:
   vardecl
 | typedecl
-    { $$ = new NullStmt(); }
 | fndecl
     { $$ = new NullStmt(); }
 ;
@@ -329,11 +357,11 @@ loop:
 
 conditional:
   IF expr statement
-    { printf("conditional 1\n"); }
+    { $$ = new CondStmt($2, $3); }
 | IF expr statement ELSE statement
-    { printf("conditional 2\n"); }
+    { $$ = new CondStmt($2, $3, $5); }
 | IF expr statement elsifstmt
-    { printf("conditional 3\n"); }
+    { $$ = new CondStmt($2, $3); }  /* BLC: Todo: elsifstmt */
 ;
 
 elsifstmt:
@@ -465,11 +493,11 @@ range:
 
 literal:
   intliteral
-    { $$ = new IntLiteral($1); }
+    { $$ = new IntLiteral(yytext, $1); }
 | FLOATLITERAL
-    { $$ = new FloatLiteral(atof(yytext)); }
+    { $$ = new FloatLiteral(yytext, atof(yytext)); }
 | STRINGLITERAL
-    { $$ = new StringLiteral("gooper"); }
+    { $$ = new StringLiteral(yytext); }
 ;
 
 

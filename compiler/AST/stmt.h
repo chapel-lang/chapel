@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include "link.h"
+#include "symbol.h"
 class Expr;
 
 class Stmt : public Link {
@@ -33,7 +34,17 @@ class VarDefStmt : public Stmt {
 
   VarDefStmt(Symbol* init_var, Expr* init_expr);
 
-  void print(FILE*);
+  void print(FILE* outfile);
+};
+
+
+class TypeDefStmt : public Stmt {
+ public:
+  Type* type;
+
+  TypeDefStmt(Type* init_type);
+
+  void print(FILE* outfile);
 };
 
 
@@ -43,7 +54,7 @@ class ExprStmt : public Stmt {
 
   ExprStmt(Expr* initExpr);
 
-  void print(FILE*);
+  void print(FILE* outfile);
 };
 
 
@@ -51,7 +62,7 @@ class ReturnStmt : public ExprStmt {
  public:
   ReturnStmt(Expr* retExpr);
 
-  void print(FILE*);
+  void print(FILE* outfile);
 };
 
 
@@ -61,7 +72,7 @@ class LoopStmt : public Stmt {
 
   LoopStmt::LoopStmt(Stmt* init_body);
 
-  void print(FILE*);
+  void print(FILE* outfile);
 };
 
 
@@ -72,7 +83,7 @@ class WhileLoopStmt : public LoopStmt {
 
   WhileLoopStmt(bool init_topTest, Expr* init_cond, Stmt* body);
 
-  void print(FILE*);
+  void print(FILE* outfile);
 };
 
 
@@ -85,8 +96,20 @@ class ForLoopStmt : public LoopStmt {
   ForLoopStmt(bool init_forall, Expr* init_index, Expr* init_domain,
 	      Stmt* body);
 
-  void print(FILE*);
+  void print(FILE* outfile);
+};
+
+
+class CondStmt : public Stmt {
+ public:
+  Expr* condExpr;
+  Stmt* thenStmt;
+  Stmt* elseStmt;
+
+  CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
+	   Stmt* init_elseStmt = new NullStmt());
+
+  void print(FILE* outfile);
 };
 
 #endif
-

@@ -19,9 +19,31 @@ void Symbol::setType(Type* newType) {
 }
 
 
+void Symbol::setIsVar(bool init_isVar) {
+  isVar = init_isVar;
+}
+
+
+void Symbol::setVarClass(varType init_varClass) {
+  varClass = init_varClass;
+}
+
 
 void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
+}
+
+
+void Symbol::printList(FILE* outfile) {
+  Link* ptr;
+
+  print(outfile);
+  ptr = next;
+  while (ptr != NULL) {
+    fprintf(outfile, " | ");
+    ptr->print(outfile);
+    ptr = ptr->next;
+  }
 }
 
 

@@ -44,33 +44,42 @@ bool NullExpr::isNull(void) {
 }
 
 
-IntLiteral::IntLiteral(int init_val) :
-  val(init_val) 
+Literal::Literal(char* init_str) :
+  str(copystring(init_str))
 {}
 
 
-void IntLiteral::print(FILE* outfile) {
-  fprintf(outfile, "%ld", val);
+void Literal::print(FILE* outfile) {
+  fprintf(outfile, "%s", str);
 }
 
 
-FloatLiteral::FloatLiteral(double init_val) :
+IntLiteral::IntLiteral(char* init_str, int init_val) :
+  Literal(init_str),
   val(init_val) 
 {}
 
 
+FloatLiteral::FloatLiteral(char* init_str, double init_val) :
+  Literal(init_str),
+  val(init_val) 
+{}
+
+
+/*
 void FloatLiteral::print(FILE* outfile) {
   fprintf(outfile, "%lf", val);
 }
+*/
 
 
 StringLiteral::StringLiteral(char* init_val) :
-  val(copystring(init_val))
+  Literal(init_val)
 {}
 
 
 void StringLiteral::print(FILE* outfile) {
-  fprintf(outfile, "%s", val);
+  fprintf(outfile, "\"%s\"", str);
 }
 
 

@@ -38,12 +38,33 @@ VarDefStmt::VarDefStmt(Symbol* init_var, Expr* init_init) :
 
 
 void VarDefStmt::print(FILE* outfile) {
-  fprintf(outfile, "var ");
+  if (var->isVar) {
+    fprintf(outfile, "var ");
+  } else {
+    fprintf(outfile, "const ");
+  }
   var->printWithType(outfile);
   if (init != NULL && !init->isNull()) {
     fprintf(outfile, " = ");
-    init->print(outfile);
+    if (init->next) {
+      fprintf(outfile, "(");
+      init->printList(outfile);
+      fprintf(outfile, ")");
+    } else {
+      init->print(outfile);
+    }
   }
+  fprintf(outfile, ";\n");
+}
+
+
+TypeDefStmt::TypeDefStmt(Type* init_type) :
+  type(init_type)
+{}
+
+
+void TypeDefStmt::print(FILE* outfile) {
+  type->print(outfile);
   fprintf(outfile, ";\n");
 }
 
@@ -139,4 +160,27 @@ void ForLoopStmt::print(FILE* outfile) {
   domain->print(outfile);
   fprintf(outfile, " ");
   body->print(outfile);
+}
+
+
+CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt, 
+		   Stmt* init_elseStmt) :
+  condExpr(init_condExpr),
+  thenStmt(init_thenStmt),
+  elseStmt(init_elseStmt)
+{}
+
+
+void CondStmt::print(FILE* outfile) {
+  fprintf(outfile, "if (");
+  condExpr->print(outfile);
+  fprintf(outfile, ") {\n");
+  thenStmt->print(outfile);
+  fprintf(outfile, "}");
+  if (!elseStmt->isNull()) {
+    fprintf(outfile, " else {\n");
+    elseStmt->print(outfile);
+    fprintf(outfile, "}");
+  }
+  fprintf(outfile, "\n");
 }

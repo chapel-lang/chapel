@@ -38,6 +38,19 @@ void Type::print(FILE* outfile) {
 }
 
 
+EnumType::EnumType(Symbol* init_valList) :
+  valList(init_valList)
+{}
+
+
+void EnumType::print(FILE* outfile) {
+  printf("enum ");
+  name->print(outfile);
+  printf(" = ");
+  valList->printList(outfile);
+}
+
+
 DomainType::DomainType(int init_rank) :
   rank(init_rank)
 {}
