@@ -622,7 +622,16 @@ ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
 
 
 Type* ArrayRef::typeInfo(void) {
-  ArrayType* arrayType = dynamic_cast<ArrayType*>(baseExpr->typeInfo());
+  // The Type of this expression may be a user type in which case we
+  // need to walk past these names to the real definition of the array
+  // type
+  Type* baseExprType = baseExpr->typeInfo();
+  while (typeid(*baseExprType) == typeid(UserType)) {
+    baseExprType = ((UserType*)baseExprType)->definition;
+  }
+  // At this point, if we don't have an array type, we shouldn't
+  // be in an array reference...
+  ArrayType* arrayType = dynamic_cast<ArrayType*>(baseExprType);
   if (!arrayType) {
     INT_FATAL(this, "array type is Null?");
   }

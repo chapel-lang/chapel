@@ -82,7 +82,7 @@ static Stmt* createInitFn(Stmt* program) {
 
   program = appendLink(program, initFunDef);
 
-  //  program->traverse(new FindUnknownTypes());
+  //  program->traverseList(new FindUnknownTypes());
   //  program->traverse(new PrintStmts());
   //  program->traverse(new VerifyASTType());
   /*
