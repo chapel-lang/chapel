@@ -8372,3 +8372,53 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/22/04 13:59:00 -- bradc
+
+Log message:
+	A bunch of work related to back pointers:
+	
+	* recoded the implementation of default constructors so that
+	  their parentFn pointers would be set up properly as pointed
+	  out by John.
+	
+	* implemented more parent pointers for Expr subclasses
+	
+	* added two new methods to the Stmt subclasses:
+	
+	  - canLiveAtFileScope -- whether or not the statement is a legal
+	    top-level statement, or would need to be moved into an __init
+	    procedure of sorts (this was hardcoded using dynamic casts
+	    previously)
+	
+	  - topLevelExpr -- takes an expression as an argument and tells
+	    whether or not it's one of the "top" expressions in the
+	    statement -- which is to say, an expression with no parent
+	    expression.
+	
+	* added an INT_WARNING macro which works like INT_FATAL, except
+	  that it only prints out warnings and doesn't halt execution
+	  of the compiler.
+	
+	* added parentFn pointers for all statements appearing in the
+	  __init functions.
+	
+	* added a new traversal -- checkBackLinks -- that walks over the AST
+	  and checks back pointers to make sure that they are not nil when
+	  they are not supposed to be nil.  This is not yet implemented
+	  correctly for parentFn pointers, unfortunately, because we don't
+	  have sufficient information to squelch the warning for class member
+	  statements.  Turned this on to run by default before calling into
+	  John's analysis pass.
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp stmt.cpp symtab.cpp type.cpp 
+	chapel/compiler/include/: misc.h stmt.h symtab.h 
+	chapel/compiler/main/: createAST.cpp passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/compiler/util/: misc.cpp 
+Added files:
+	chapel/compiler/include/: checkBackLinks.h 
+	chapel/compiler/traversals/: checkBackLinks.cpp 
+
