@@ -6835,3 +6835,20 @@ Added files:
 	                                       passlist.h test.chpl 
 	                                       test.good 
 
+---------------------------------------------------------------------------
+
+09/09/04 18:15:37 -- bradc
+
+Log message:
+	Modified the statement lists for the prelude files so that
+	appropriate statements would be refactored into an init
+	procedure, as in the user code.  Rather than combining
+	these into a single prelude init function, I made a separate
+	init function for each prelude.  The internal prelude's
+	function is named __initIntPrelude, while the normal prelude
+	is simply __initPrelude.  John, let me know whether or not
+	this is acceptible for what you need.  Thanks.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+
