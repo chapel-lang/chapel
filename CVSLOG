@@ -18298,3 +18298,24 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/newast/: sum_type-2.future 
 
+---------------------------------------------------------------------------
+
+02/28/05 13:36:57 -- shannon
+
+Log message:
+	Changed the last outstanding malloc to _chpl_malloc.
+	
+	Added a script to the runtime Makefile to print an error
+	if there exists a runtime source file that does not
+	include the chplrt.h header file.
+	
+	In symtab.cpp added some error checking to lookupInternal,
+	per Brad's instructions.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/runtime/include/: chplrt.h 
+	chapel/runtime/src/: Makefile array.c domain.c 
+
