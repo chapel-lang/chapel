@@ -4,7 +4,7 @@
 
 #include "geysa.h"
 #include "scope.h"
-
+#include "sym.h"
 
 void 
 Scope::add_dynamic(Scope *s, Sym *sy) {
@@ -64,6 +64,15 @@ Scope *
 Scope::module() {
   Scope *s = this;
   while (s->up->up) s = s->up;
+  return s;
+}
+
+Scope *
+Scope::function() {
+  Scope *s = this;
+  while (s->up->up && (!s->in || !s->in->is_fun)) s = s->up;
+  if (s->in->is_module)
+    s = s->in->init->scope;
   return s;
 }
 

@@ -31,7 +31,6 @@ g::self(memberfun2.v:5) ( B (memberfun2.v:2) )
 globals
 new::a(prelude.v:74) ( B (memberfun2.v:2) )
 new::o(prelude.v:74) ( B (memberfun2.v:2) )
-new::o(prelude.v:74) ( B (memberfun2.v:2) )
 operator::a(prelude.v:75) ( B (memberfun2.v:2) )
 operator::a(prelude.v:75) ( B (memberfun2.v:2) )
 operator::a(prelude.v:80) ( float64 (prelude.v:37) )

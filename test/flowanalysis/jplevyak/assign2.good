@@ -13,7 +13,6 @@
  called from 75 in operator at prelude.v:75
 __init::self(assign2.v:1) ( C (assign2.v:1) )
 f::c2(assign2.v:3) ( C (assign2.v:1) )
-fail: fatal error, program does not type
 function __init assign2.v:1
 function __init assign2.v:1
 function __init prelude.v:7

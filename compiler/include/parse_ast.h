@@ -4,9 +4,9 @@
 #ifndef _parse_ast_H_
 #define _parse_ast_H_
 
-#include "ast.h"
-
 #include <stdio.h>
+
+#include "ast.h"
 #include "map.h"
 #include "scope.h"
 #include "callbacks.h"

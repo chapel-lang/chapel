@@ -231,6 +231,14 @@ flow_vars(AVar *v, AVar *vv) {
   }
 }
 
+void
+flow_vars_assign(AVar *rhs, AVar *lhs) {
+  flow_var_to_var(rhs, lhs);
+  if (lhs->lvalue)
+    flow_var_to_var(rhs, lhs->lvalue);
+}
+
+
 // Initially create a unique creation set for each
 // variable (location in program text).
 CreationSet *
@@ -1010,10 +1018,10 @@ add_move_constraints(EntrySet *es) {
   forv_PNode(p, f->fa_move_PNodes) {
     for (int i = 0; i < p->rvals.n; i++) {
       AVar *lhs = make_AVar(p->lvals.v[i], es), *rhs = make_AVar(p->rvals.v[i], es);
-      flow_var_to_var(rhs, lhs);
-      if (lhs->lvalue) {
-	  flow_var_to_var(rhs, lhs->lvalue);
-      }
+      if (lhs->lvalue && rhs->lvalue)
+	flow_vars(rhs, lhs);
+      else
+	flow_vars_assign(rhs, lhs);
     }
   }
 }

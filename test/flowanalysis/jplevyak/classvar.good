@@ -24,7 +24,6 @@ function print prelude.v:134
 globals
 new::a(prelude.v:74) ( Vars (classvar.v:2) )
 new::o(prelude.v:74) ( Vars (classvar.v:2) )
-new::o(prelude.v:74) ( Vars (classvar.v:2) )
 operator::a(prelude.v:75) ( Vars (classvar.v:2) )
 operator::a(prelude.v:75) ( Vars (classvar.v:2) )
 operator::a(prelude.v:75) ( Vars (classvar.v:2) )

@@ -22,7 +22,6 @@ function print prelude.v:134
 globals
 new::a(prelude.v:74) ( A (memberfun.v:1) )
 new::o(prelude.v:74) ( A (memberfun.v:1) )
-new::o(prelude.v:74) ( A (memberfun.v:1) )
 operator::a(prelude.v:75) ( A (memberfun.v:1) )
 operator::a(prelude.v:75) ( A (memberfun.v:1) )
 operator::a(prelude.v:80) ( int32 (prelude.v:24) )

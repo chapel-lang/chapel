@@ -223,9 +223,9 @@ expression
   | curly_block
   | expression '?' expression ':' expression $right 8600
     { $$.ast = new_AST(AST_if, &$n); }
-  | 'if' '(' expression ')' expression $right 6000
+  | 'if' '(' expression ')' some_statement $right 6000
     { $$.ast = new_AST(AST_if, &$n); }
-  | 'if' '(' expression ')' expression 'else' expression $right 6100
+  | 'if' '(' expression ')' some_statement 'else' some_statement $right 6100
     { $$.ast = new_AST(AST_if, &$n); }
   | 'while' loop_scope '(' expression ')' expression $right 6200
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]

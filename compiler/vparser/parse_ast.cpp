@@ -19,7 +19,7 @@
 #include "pdb.h"
 #include "pnode.h"
 
-//#define TEST_RETURN 1
+#define TEST_RETURN 1
 
 class LabelMap : public Map<char *, ParseAST *> {};
 
@@ -744,6 +744,7 @@ define_function(IF1 *i, ParseAST *ast) {
     return -1;
   ParseAST *fid = ast_qualified_ident_ident(fqid);
   ast->sym = new_sym(i, fscope, fid->string, fqid->sym);
+  ast->sym->is_fun = 1;
   Sym *tsym = new_sym(i, fscope, fid->string, if1_make_symbol(i, fid->string));
   tsym->ast = ast;
   ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
@@ -1675,9 +1676,14 @@ gen_if1(IF1 *i, ParseAST *ast) {
     case AST_new: gen_new(i, ast); break;
     case AST_if: gen_if(i, ast); break;
 #ifdef TEST_RETURN
-    case AST_return:	
-      if1_move(i, &ast->code, ast->last()->rval, ast->scope->in->ret, ast);
+    case AST_return: {	
+      if (ast->children.v[0]->code) {
+	if1_gen(i, &ast->code, ast->children.v[0]->code);
+	Sym *fn = ast->scope->function()->in;
+	if1_move(i, &ast->code, ast->last()->rval, fn->ret, ast);
       // fall through
+      }
+    }
     case AST_break:
     case AST_continue: {
       Code *c = if1_goto(i, &ast->code, ast->label[0]);
