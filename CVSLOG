@@ -384,3 +384,14 @@ Log message:
 Modified files:
 	chapel/compiler/: TODO 
 
+---------------------------------------------------------------------------
+
+04/02/09 16:39:53 -- bradc
+
+Log message:
+	Changed dimension of reduction to be correct.
+
+Modified files:
+	chapel/examples/milestone0/: mvm.chpl 
+	chapel/examples/milestone0/variations/: mvm_brad.chpl 
+
