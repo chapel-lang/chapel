@@ -19577,3 +19577,24 @@ Log message:
 Modified files:
 	chapel/third-party/boehmgc/gc6.3/: configure 
 
+---------------------------------------------------------------------------
+
+03/15/05 10:18:32 -- jplevyak
+
+Log message:
+	Regorganized the loops used to determine which formals arguments types
+	are not covered by the potential target functions.  The algorithm is
+	now linear in the number of edges in the call tree and the number of
+	function arguments.
+	
+	PROFILE says that it is now inconsequential.  compSampler still
+	takes a fair amount of time, but it is now dominated by GC with
+	the highest non-GC function ILink::tail().
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/jplevyak/: badcall.good badreturn.good 
+
