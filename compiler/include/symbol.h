@@ -2,7 +2,6 @@
 #define _SYMBOL_H_
 
 #include "baseAST.h"
-#include "traversal.h"
 #include "type.h"
 
 class Stmt;

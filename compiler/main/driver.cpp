@@ -6,7 +6,6 @@
 #include "geysa.h"
 #include "parse.h"
 #include "arg.h"
-#include "codegen.h"
 #include "createAST.h"
 #include "files.h"
 #include "misc.h"
@@ -35,11 +34,11 @@ static char passlist_filename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 extern int d_verbose_level;
 extern int d_debug_level;
-static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
 static int pre_malloc = 0;
 int analyzeNewAST = 1;
+int suppressCodegen = 0;
 
 int fdce_if1 = 1;
 int finline = 0;
@@ -79,7 +78,7 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"analyzenewast", ' ', "Analyze New AST", "f", &analyzeNewAST, NULL, NULL},
- {"no-codegen", ' ', "Suppress code generation", "F", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
+ {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
@@ -290,8 +289,6 @@ compile_all(void) {
   if (noTestLangFiles) {
     char* fn = arg_state.file_argument[0];
     runPasses(passlist_filename, fn);
-    if (!suppress_codegen)
-      codegen(fn, system_dir, programStmts);
   } else
     for (int i = 0; i < arg_state.nfile_arguments; i++) 
       if (compile_one_test_file(arg_state.file_argument[i])) break;

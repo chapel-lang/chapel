@@ -1,7 +1,7 @@
 #ifndef _TRAVERSAL_H_
 #define _TRAVERSAL_H_
 
-#include "pass.h"
+#include "../passes/pass.h"
 
 class Stmt;
 class Expr;

@@ -3,8 +3,8 @@
 #include "createAST.h"
 #include "files.h"
 #include "misc.h"
-#include "pass.h"
 #include "stringutil.h"
+#include "../passes/pass.h"
 
 #define FIRST NULL
 #define LAST NULL

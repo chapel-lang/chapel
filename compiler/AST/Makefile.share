@@ -3,6 +3,7 @@ AST_SRCS = \
 	expr.cpp \
 	link.cpp \
 	loc.cpp \
+	module.cpp \
 	nils.cpp \
 	stmt.cpp \
 	symbol.cpp \

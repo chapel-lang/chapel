@@ -1,6 +1,7 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
+#include "../passes/codegen.h"
 #include "../passes/filesToAST.h"
 #include "../passes/printProgram.h"
 #include "../passes/printSymtab.h"
@@ -29,6 +30,7 @@ Pass* passlist[] = {
   RUN(CheckBackLinks),
   RUN(RunAnalysis),
   RUN(FindUnknownTypes),
+  RUN(Codegen),
 
   LAST
 };

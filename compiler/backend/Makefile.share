@@ -1,6 +1,5 @@
 BACKEND_SRCS = \
 	beautify.cpp \
-	codegen.cpp \
 	dump.cpp \
 	graph.cpp \
 

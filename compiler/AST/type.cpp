@@ -1,8 +1,8 @@
 #include <typeinfo>
 #define TYPE_EXTERN
-#include "codegen.h"
 #include "expr.h"
 #include "misc.h"
+#include "module.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
@@ -251,8 +251,8 @@ static void codegenIOPrototype(FILE* outfile, Symbol* name) {
 void EnumType::codegenIORoutines(FILE* outfile) {
   EnumSymbol* enumSym;
 
-  codegenIOPrototype(intheadfile, name);
-  fprintf(intheadfile, ";\n\n");
+  codegenIOPrototype(currentModule->intheadfile, name);
+  fprintf(currentModule->intheadfile, ";\n\n");
 
   codegenIOPrototype(outfile, name);
   fprintf(outfile, " {\n");
@@ -489,8 +489,8 @@ void UserType::codegenDef(FILE* outfile) {
 // their own write routines and have UserType print its
 // definition's write routine
 void UserType::codegenIORoutines(FILE* outfile) {
-  codegenIOPrototype(intheadfile, name);
-  fprintf(intheadfile, ";\n\n");
+  codegenIOPrototype(currentModule->intheadfile, name);
+  fprintf(currentModule->intheadfile, ";\n\n");
   
   codegenIOPrototype(outfile, name);
   fprintf(outfile, " {\n");
@@ -585,8 +585,8 @@ void ClassType::codegenConstructors(FILE* outfile) {
 
 
 void ClassType::codegenIORoutines(FILE* outfile) {
-  codegenIOPrototype(intheadfile, name);
-  fprintf(intheadfile, ";\n\n");
+  codegenIOPrototype(currentModule->intheadfile, name);
+  fprintf(currentModule->intheadfile, ";\n\n");
 
   codegenIOPrototype(outfile, name);
   fprintf(outfile, "{\n");

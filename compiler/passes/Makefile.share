@@ -1,4 +1,5 @@
 PASSES_SRCS = \
+	codegen.cpp \
 	filesToAST.cpp \
 	printProgram.cpp \
 	printSymtab.cpp \

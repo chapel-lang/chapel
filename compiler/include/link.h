@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include "loc.h"
 #include "misc.h"
-#include "traversal.h"
 #include "vec.h"
+#include "../traversals/traversal.h"
+
 
 class ILink : public Loc {
  public:
