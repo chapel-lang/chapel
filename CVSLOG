@@ -6625,3 +6625,13 @@ Removed files:
 	                                    review3.chpl review3.good 
 	                                    var.chpl var2.chpl var2.good 
 
+---------------------------------------------------------------------------
+
+09/07/04 15:35:16 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add back in code to handle empty BUILD_VERSION
+
+Modified files:
+	chapel/third-party/dparser/d/: Makefile 
+
