@@ -251,6 +251,8 @@ TYPE_EXTERN Type* dtFloat;
 TYPE_EXTERN Type* dtComplex;
 TYPE_EXTERN Type* dtString;
 
+TYPE_EXTERN Type* dtNumeric;
+
 // abstract base types
 TYPE_EXTERN Type* dtTuple;
 TYPE_EXTERN Type* dtIndex;

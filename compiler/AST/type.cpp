@@ -1108,7 +1108,7 @@ void initTypes(void) {
 					     new FloatLiteral("0.0", 0.0));
   dtString = Symboltable::defineBuiltinType("string", "_string", 
 					    new StringLiteral(""));
-  
+  dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", nilExpr);
 
   dtLocale = Symboltable::defineBuiltinType("locale", "_locale", nilExpr);
 }
