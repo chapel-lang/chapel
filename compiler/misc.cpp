@@ -2,10 +2,17 @@
   Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
+#include "files.h"
 #include "geysa.h"
 
 int verbose_level = 0;
 int debug_level = 0;
+
+static void
+clean_exit(int status) {
+  deleteTmpDir();
+  exit(status);
+}
 
 char *
 loc_string(d_loc_t &l) {
@@ -81,7 +88,7 @@ fail(char *str, ...) {
   snprintf(nstr, 255, "fail: %s\n", str);
   vfprintf(stderr, nstr, ap);
   va_end(ap);
-  exit(1);
+  clean_exit(1);
 }
 
 char *
@@ -144,5 +151,5 @@ void intFatal(AST* ast, char *fmt, ...) {
   }
   fprintf(stderr, "\n\n");
 
-  exit(1);
+  clean_exit(1);
 }

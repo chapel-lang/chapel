@@ -1,14 +1,13 @@
 #include <assert.h>
+#include <signal.h>
 #include <stdio.h>
 #include "codegen.h"
 #include "files.h"
 #include "fun.h"
+#include "misc.h"
 #include "mysystem.h"
 #include "num.h"
 #include "stringutil.h"
-
-// BLC -- TODO: 
-//   generalize write to use actual types of arguments
 
 static void genAST(FILE* outfile, AST* ast);
 
@@ -59,6 +58,11 @@ static int ast_constant_print(FILE *fp, AST *ast) {
 }
 
 
+static void genDT(FILE* outfile, Sym* pdt) {
+  fprintf(outfile, "_%s", pdt->name);
+}
+
+
 static int handleWrite(FILE* outfile, AST* ast) {
   AST* fnast = ast->v[0];
   int i;
@@ -66,8 +70,17 @@ static int handleWrite(FILE* outfile, AST* ast) {
   if (fnast->kind == AST_qualified_ident &&
       strcmp(fnast->sym->name, "write") == 0) {
     for (i=2; i<ast->n; i++) {
-      fprintf(outfile, "_write_integer64(stdout, ");
-      genAST(outfile, ast->v[i]);
+      AST* arg = ast->v[i];
+      Sym* argdt = type_info(arg);
+
+      fprintf(outfile, "_write");
+      genDT(outfile, argdt);
+      fprintf(outfile, "(");
+      fprintf(outfile, "stdout, ");
+      fprintf(outfile, "_default_format");
+      genDT(outfile, argdt);
+      fprintf(outfile, ", ");
+      genAST(outfile, arg);
       fprintf(outfile, ")");
       if (i < ast->n-1) {
 	fprintf(outfile, ";\n");
@@ -100,7 +113,8 @@ static void genAST(FILE* outfile, AST* ast) {
       Sym* sym = ast->sym;
       Sym* dt = type_info(ast, sym);
       
-      fprintf(outfile, "%s %s", dt->name, sym->name);
+      genDT(outfile, dt);
+      fprintf(outfile, " %s", sym->name);
       if (ast->v[1]) {
 	fprintf(outfile, " = ");
 	genAST(outfile, ast->v[1]);
@@ -175,8 +189,14 @@ static void genHeader(FILE* outfile) {
 }
 
 
+static void handleInterrupt(int sig) {
+  fail("received interrupt");
+}
+
+
 void codegen(FA* fa, char* infilename, char* compilerDir) {
-  createtmpdir();
+  signal(SIGINT, handleInterrupt);
+  createTmpDir();
   openMakefile(infilename, compilerDir);
 
   FILE* outfile = openoutfile(infilename);
@@ -189,5 +209,6 @@ void codegen(FA* fa, char* infilename, char* compilerDir) {
 
   makeAndCopyBinary();
 
-  deletetmpdir();
+  deleteTmpDir();
+  signal(SIGINT, SIG_DFL);
 }

@@ -18,7 +18,7 @@ static FILE* makefile;
 static char* strippedExeFilename;
 
 
-void createtmpdir(void) {
+void createTmpDir(void) {
   char* commandExplanation;
 
   if (strcmp(saveCDir, "") == 0) {
@@ -49,7 +49,14 @@ void createtmpdir(void) {
 }
 
 
-void deletetmpdir(void) {
+void deleteTmpDir(void) {
+  static int inDeleteTmpDir = 0; // break infinite recursion
+
+  if (inDeleteTmpDir) {
+    return;
+  }
+  inDeleteTmpDir = 1;
+
 #ifndef DEBUGTMPDIR
   if (tmpdirname != NULL) {
     if (strlen(tmpdirname) < 1 ||
@@ -64,6 +71,8 @@ void deletetmpdir(void) {
     tmpdirname = NULL;
   }
 #endif
+
+  inDeleteTmpDir = 0;
 }
 
 
