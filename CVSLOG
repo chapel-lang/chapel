@@ -8915,3 +8915,25 @@ Added files:
 	                              readWriteEnum.good 
 	                              readWriteEnum.stdin 
 
+---------------------------------------------------------------------------
+
+10/14/04 15:37:12 -- bradc
+
+Log message:
+	Removed Shannon's .cvsignore which I think she
+	checked in by accident (Shannon, if this isn't
+	true, let me know).
+	
+	TIP: I find a .cvsignore in the root level of
+	a project can be very helpful, but also very
+	user-specific, so I suggest making your own
+	.cvsignore file which contains .cvsignore,
+	and then you can add stuff to it, and it'll
+	never try to check itself in.  Hope that's
+	true now that a .cvsignore file exists in
+	this directory.  If not I'll yank it from the
+	CVS tree manually.
+
+Removed files:
+	./: .cvsignore 
+
