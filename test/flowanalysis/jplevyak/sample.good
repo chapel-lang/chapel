@@ -23,6 +23,8 @@ function operator prelude.v:75
 globals
 operator::a(prelude.v:75) ( tuple (prelude.v:14) )
 operator::a(prelude.v:75) ( tuple (prelude.v:14) )
+operator::b(prelude.v:75) ( a (<unknown>:0) )
+operator::b(prelude.v:75) ( b (<unknown>:0) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:59) ( null (prelude.v:59) )
 system::void(prelude.v:15) ( void (prelude.v:15) )

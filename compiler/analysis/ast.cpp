@@ -147,6 +147,14 @@ set_value_for_value_classes(IF1 *i) {
   }
 }
 
+static void
+set_true_type_for_variables(IF1 *i) {
+  forv_Sym(s, i->allsyms) {
+    if (s->is_var && s->must_implement && s->must_implement->is_value_class)
+      s->type = s->must_implement;
+  }
+}
+
 void
 make_type_sym(Sym *s) {
   s->type_sym = new_Sym();
@@ -181,6 +189,7 @@ finalize_types(IF1 *i) {
 #include "builtin_symbols.h"
 #undef S
   set_value_for_value_classes(i);
+  set_true_type_for_variables(i);
   make_type_syms(i);
 }
 

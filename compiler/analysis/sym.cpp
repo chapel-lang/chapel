@@ -182,3 +182,10 @@ Sym::inherits_add(Sym *s) {
   specializes.add(s);
   includes.add(s);
 }  
+
+void
+Sym::must_implement_and_specialize(Sym *s) {
+  assert(!must_implement && !must_specialize);
+  must_implement = s;
+  must_specialize = s;
+}

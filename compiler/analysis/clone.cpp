@@ -442,7 +442,9 @@ define_concrete_types(CSSS &css_sets) {
 	  s->name = name;
 	if (ast && ast != BAD_AST)
 	  s->ast = ast;
-      } else if (sym->type_kind == Type_PRIMITIVE || sym->constant || sym->fun) {
+      } else if (sym->type_kind == Type_PRIMITIVE || sym->is_symbol 
+		 || sym->is_constant || sym->is_fun) 
+      {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
       } else {

@@ -281,7 +281,8 @@ get_target_fun(PNode *n, Fun *f) {
 static void
 write_c_fun_arg(FILE *fp, char *s, char *e, Sym *sym, int i) {
   if (i) fprintf(fp, ", ");
-  if (!i && sym->type_kind == Type_FUN && !sym->fun && sym->has.n) {
+  if (!i && sym->is_fun && !sym->fun && sym->has.n) {
+    assert(0);
     for (int i = 0; i < sym->type->has.n; i++) {
       if (i) fprintf(fp, ", ");
       sprintf(e, "->e%d", i);
@@ -356,7 +357,7 @@ write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
 	for (int i = 0; i < n->rvals.n; i++) {
 	  if (i) fprintf(fp, ", ");
 	  Sym *t = n->rvals.v[0]->type;
-	  if (!i && t->type_kind == Type_FUN && !t->fun && t->has.n) {
+	  if (!i && t->is_fun && !t->fun && t->has.n) {
 	    char ss[4096];
 	    sprintf(ss, "%s", n->rvals.v[0]->cg_string);
 	    char *ee = ss + strlen(ss);
@@ -563,8 +564,8 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
 	if (s->var->sym->fun) {
 	  if (!s->cg_string)
 	    s->cg_string = s->var->sym->fun->cg_structural_string;
-	} else if (s->type == sym_symbol)
-	  s->cg_string = s->type->cg_string;
+	} else if (s->is_symbol)
+	  s->cg_string = sym_symbol->cg_string;
       }
     }
   }

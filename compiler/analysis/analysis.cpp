@@ -232,7 +232,7 @@ build_symbols(Vec<BaseAST *> &syms) {
       switch (s->astType) {
 	case SYMBOL_PARAM: {
 	  if (s->type && s->type != nilType && s->type != dtUnknown)
-	    s->asymbol->type = s->type->asymbol;
+	    s->asymbol->must_implement_and_specialize(s->type->asymbol);
 	  break;
 	}
 	default: break;
@@ -566,9 +566,11 @@ gen_vardef(BaseAST *a) {
   Sym *s = var->asymbol;
   def->ainfo->sym = s;
   if (var->type) {
-    s->type = var->type->asymbol;
-    if (var->type->astType != TYPE_CLASS)
+    if (var->type->astType != TYPE_CLASS) {
+      s->type = var->type->asymbol;
       s->is_var = 1;
+    } else
+      s->must_implement = var->type->asymbol;
   }
   if (!def->init->isNull()) {
     if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
@@ -1134,7 +1136,7 @@ gen_fun(FnDefStmt *f) {
     as[iarg++] = fn->self;
   if (strcmp(f->fn->asymbol->name, "self") != 0) {
     as[iarg++] = new_sym(f->fn->asymbol->name);
-    as[iarg-1]->type = if1_make_symbol(if1, f->fn->asymbol->name);
+    as[iarg-1]->must_specialize = if1_make_symbol(if1, f->fn->asymbol->name);
   }
   for (int i = 0; i < args.n; i++)
     as[iarg++] = args.v[i]->asymbol;
@@ -1164,7 +1166,8 @@ build_function(FnDefStmt *f) {
   if (f->fn->scope->type == SCOPE_CLASS) {
     s->self = new_sym("self"); // hack
     s->self->ast = f->ainfo;
-    s->self->type = dynamic_cast<TypeSymbol *>(f->fn->scope->symContext)->type->asymbol;
+    s->self->must_implement_and_specialize(
+      dynamic_cast<TypeSymbol *>(f->fn->scope->symContext)->type->asymbol);
   }
   set_global_scope(s);
   if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;

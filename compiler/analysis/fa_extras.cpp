@@ -21,13 +21,20 @@ show_sym(Sym *s, FILE *fp) {
 	fprintf(fp, ", ");
       show_sym(ss, fp);
     }
-    fprintf(fp, ")");
+    fprintf(fp, ") ");
   } else if (s->name)
     fprintf(fp, "%s ", s->name);
   else if (s->constant)
     fprintf(fp, "\"%s\" ", s->constant);
   if (s->type && s->type->name)
-    fprintf(fp, ": %s", s->type->name);
+    fprintf(fp, "= %s", s->type->name);
+  else if (s->must_implement && 
+	   s->must_implement == s->must_specialize)
+    fprintf(fp, ": %s", s->must_implement->name);
+  else if (s->must_implement)
+    fprintf(fp, "< %s", s->must_implement->name);
+  else if (s->must_specialize)
+    fprintf(fp, "@ %s", s->must_specialize->name);
 }
 
 static void
@@ -67,7 +74,7 @@ fa_print_backward(AVar *v, FILE *fp) {
 void
 fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
   Var *v = av->var;
-  if (verbose < 2 && (!v->sym->name || v->sym->type == sym_symbol))
+  if (verbose < 2 && (!v->sym->name || v->sym->is_symbol))
     return;
   if (!v->sym->in)
     fprintf(fp, "::");
@@ -284,7 +291,7 @@ static char *fn(char *s) {
 
 void
 log_var_types(Var *v, Fun *f) {
-  if (!v->sym->name || v->sym->type == sym_symbol)
+  if (!v->sym->name || v->sym->is_symbol)
     return;
   if (!v->sym->in)
     log(LOG_TEST_FA, "::");

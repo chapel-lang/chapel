@@ -1,5 +1,5 @@
-    dispatch3.v:1: : f( x : anynum, y : int32): tuple
-    dispatch3.v:2: : f( x : int32, y : anynum): tuple
+    dispatch3.v:1: : f( x : anynum, y : int32) : tuple
+    dispatch3.v:2: : f( x : int32, y : anynum) : tuple
   called from <unknown>:0
   called from <unknown>:0
   called from <unknown>:0

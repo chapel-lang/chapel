@@ -74,7 +74,7 @@ build_arg(FA *fa, Fun *f, Sym *a, MPosition &p) {
     Sym *sel = a->is_symbol ? a : a->type;
     insert_fun(fa, f, a, sel, p);
   } else
-    insert_fun(fa, f, a, a->type ? a->type : sym_any, p);
+    insert_fun(fa, f, a, a->must_specialize ? a->must_specialize : sym_any, p);
   if (a->is_pattern) {
     p.push(1);
     forv_Sym(aa, a->has)

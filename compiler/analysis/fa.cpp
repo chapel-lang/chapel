@@ -322,7 +322,8 @@ type_num_fold(Prim *p, AType *a, AType *b) {
   a = type_intersection(a, anynum_kind);
   b = type_intersection(b, anynum_kind);
   if (a->n == 1 && b->n == 1)
-    return type_union(a->v[0]->sym->type->abstract_type, b->v[0]->sym->type->abstract_type)->top;
+    return type_union(a->v[0]->sym->type->abstract_type, 
+		      b->v[0]->sym->type->abstract_type)->top;
   ATypeFold f(p, a, b), *ff;
   if ((ff = type_fold_cache.get(&f)))
     return ff->result;
@@ -394,7 +395,9 @@ type_cannonicalize(AType *t) {
     // compress constants into the base type
     rebuild = 1;
     for (int i = 0; i < t->sorted.n; i++)
-      if (t->sorted.v[i]->sym->constant || (t->sorted.v[i]->sym->type->num_kind && t->sorted.v[i]->sym != t->sorted.v[i]->sym->type)) {
+      if (t->sorted.v[i]->sym->constant || 
+	  (t->sorted.v[i]->sym->type->num_kind && 
+	   t->sorted.v[i]->sym != t->sorted.v[i]->sym->type)) {
 	CreationSet *base_cs = t->sorted.v[i]->sym->type->abstract_type->v[0];
 	if (!t->set_in(base_cs)) {
 	  t->sorted.v[i] = base_cs;
@@ -1170,7 +1173,7 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
   if (p->sym->has.n) {
     AVar *violation = 0;
     forv_CreationSet(cs, *ov->out) if (cs) {
-      if (cs->sym == p->sym->type) {
+      if (p->sym->must_specialize->allspecializers.in(cs->sym)) {
 	for (int i = 0; i < p->sym->has.n; i++) {
 	  AVar *av = NULL;
 	  if (p->sym->has.v[i]->alt_name)
@@ -1656,21 +1659,18 @@ initialize_symbols() {
       s->abstract_type = make_abstract_type(s);
       implement_and_specialize(sym_function, s, types);
     }
-    // things with a 'type' implement and specialize that type
-    if (s->type && s->type_kind && s != s->type)
-      implement_and_specialize(s->type, s, types);
     forv_Sym(ss, s->implements)
       implement(ss, s, types);
     forv_Sym(ss, s->specializes)
       specialize(ss, s, types);
-    // functions are implement_and_specializes of the initial symbol in their pattern
-    // which may be a constant or a constant contrainted variable
+    // functions implement and specializes of the initial symbol in their pattern
+    // which may be a constant or a constant constrainted variable
     if (s->is_fun && s->has.n) {
       Sym *a = s->self ? s->has.v[1] : s->has.v[0];
       if (a->is_symbol && a->name == s->name)
 	implement_and_specialize(a, s, types);
-      else if (a->type && a->type->is_symbol && a->type->name == s->name)
-	implement_and_specialize(a->type, s, types);
+      else if (a->must_specialize && a->must_specialize->is_symbol && a->must_specialize->name == s->name)
+	implement_and_specialize(a->must_specialize, s, types);
     }
     if (s->type_kind) {
       s->abstract_type = make_abstract_type(s);

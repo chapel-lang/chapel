@@ -44,7 +44,7 @@ static int
 compatible_type(PrimType pt, Sym *s) {
   switch (pt) {
     case PRIM_TYPE_ANY: return 1;
-    case PRIM_TYPE_SYMBOL: if (s && s->type == sym_symbol) return 1; break;
+    case PRIM_TYPE_SYMBOL: if (s && s->is_symbol) return 1; break;
     case PRIM_TYPE_REF: if (s && s->type == sym_ref) return 1; break;
     case PRIM_TYPE_CONT: if (s && s->type == sym_continuation) return 1; break;
     case PRIM_TYPE_ANY_NUM_A:
@@ -53,7 +53,8 @@ compatible_type(PrimType pt, Sym *s) {
     case PRIM_TYPE_ANY_INT_A:
     case PRIM_TYPE_ANY_INT_B: 
       if (s && s->type && 
-	  (s->type->num_kind == IF1_NUM_KIND_INT || s->type->num_kind == IF1_NUM_KIND_UINT))
+	  (s->type->num_kind == IF1_NUM_KIND_INT || 
+	   s->type->num_kind == IF1_NUM_KIND_UINT))
 	return 1;
       break;
     default: assert(!"case"); break;
@@ -730,9 +731,9 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       ParseAST *ptype = ast->get(AST_pattern_type);
       ast->sym = new_sym(i, scope);
       if (ptype)
-	ast->sym->type = ptype->sym;
+	ast->sym->must_implement_and_specialize(ptype->sym);
       else
-	ast->sym->type = sym_tuple;
+	ast->sym->must_implement_and_specialize(sym_tuple);
       ast->sym->ast = ast;
       forv_ParseAST(a, ast->children) if (a != ptype) {
 	if (scope_pattern(i, a, scope) < 0)
@@ -742,9 +743,9 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       }
       if (!ast->sym->has.n) {
 	ast->sym = new_sym(i, scope);
-	ast->sym->type = sym_tuple;
+	ast->sym->must_implement_and_specialize(sym_tuple);
 	ast->sym->ast = ast;
-      } else if (ast->sym->has.n == 1)
+      } else if (ast->sym->has.n == 1 && !ptype)
 	ast->sym = ast->sym->has.v[0];
       break;
     }
@@ -753,11 +754,15 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       set_scope_recursive(ast, scope);
       ParseAST *c = ast->get(AST_const);
       ParseAST *id = ast->get(AST_ident);
-      ParseAST *ty = ast->get(AST_must_implement);
+      ParseAST *must_implement = ast->get(AST_must_implement);
+      ParseAST *must_specialize = ast->get(AST_must_specialize);
       ParseAST *var = ast->get(AST_var);
       ParseAST *init = ast->get(AST_init);
-      if (ty)
-	if (resolve_parameterized_type(i, ty) < 0)
+      if (must_implement)
+	if (resolve_parameterized_type(i, must_implement) < 0)
+	  return -1;
+      if (must_specialize)
+	if (resolve_parameterized_type(i, must_specialize) < 0)
 	  return -1;
       if (id)
 	ast->sym = id->sym = new_sym(i, scope, id->string);
@@ -768,8 +773,14 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       ast->sym->ast = ast;
       if (ast->kind == AST_rest)
 	ast->sym->is_rest = 1;
-      if (ty)
-	ast->sym->type = ty->sym;
+      if (must_implement) {
+	assert(!ast->sym->must_implement);
+	ast->sym->must_implement = must_implement->sym;
+      }
+      if (must_specialize) {
+	assert(!ast->sym->must_specialize);
+	ast->sym->must_specialize = must_specialize->sym;
+      }
       if (init)
 	ast->sym->is_default_arg = 1;
       if (var)
@@ -890,9 +901,9 @@ resolve_types_and_define_recursive_functions(IF1 *i, ParseAST *ast, int skip = 0
 	  if (!a->sym)
 	    if (!checked_ast_qualified_ident_sym(a))
 	      return -1;
-	  if (!a->sym->type)
+	  if (!a->sym->must_specialize)
 	    show_error("with without declared type", ast);
-	  ast->sym->scope->add_dynamic(a->sym->type->scope, a->sym);
+	  ast->sym->scope->add_dynamic(a->sym->must_specialize->scope, a->sym);
 	}
 	break;
       }
@@ -924,16 +935,21 @@ scope_idpattern(IF1 *i, ParseAST *ast, Scope *scope) {
       ast->sym = new_sym(i, scope, ast->string, ast->sym);
       ParseAST *ptype = ast->get(AST_pattern_type);
       if (ptype)
-	ast->sym->type = ptype->sym;
+	ast->sym->must_implement_and_specialize(ptype->sym);
       else
-	ast->sym->type = sym_tuple;
+	ast->sym->must_implement_and_specialize(sym_tuple);
       ast->sym->ast = ast;
       forv_ParseAST(a, ast->children) if (a != ptype) {
 	if (a->kind == AST_must_implement) {
-	  assert(!ast->sym->type);
+	  assert(!ast->sym->must_implement);
 	  if (resolve_parameterized_type(i, a) < 0)
 	    return -1;
-	  ast->sym->type = a->sym;
+	  ast->sym->must_implement = a->sym;
+	} else if (a->kind == AST_must_specialize) {
+	  assert(!ast->sym->must_specialize);
+	  if (resolve_parameterized_type(i, a) < 0)
+	    return -1;
+	  ast->sym->must_specialize = a->sym;
 	} else {
 	  if (scope_idpattern(i, a, scope) < 0)
 	    return -1;
@@ -1200,15 +1216,15 @@ gen_fun(IF1 *i, ParseAST *ast) {
   if (ast->sym->self) {
     as[iarg] = ast->sym->self;
     if (fn->name == cannonical_class)
-      as[iarg]->type = ast->sym->in->type_sym;
+      as[iarg]->must_implement_and_specialize(ast->sym->in->type_sym);
     else
-      as[iarg]->type = ast->sym->in;
+      as[iarg]->must_implement_and_specialize(ast->sym->in);
     iarg++;
   }
   if (fn->name != cannonical_class && fn->name != cannonical_self) {
     as[iarg] = new_sym(i, fn->scope);
     as[iarg]->ast = ast;
-    as[iarg]->type = if1_make_symbol(i, fn->name);
+    as[iarg]->must_implement_and_specialize(if1_make_symbol(i, fn->name));
     iarg++;
   }
   for (int j = 0; j < n; j++)
@@ -1467,6 +1483,9 @@ define_type_init(IF1 *i, ParseAST *ast, Sym **container_scope, Sym **container) 
   if (rec) {
     Scope *scope = ast->sym->scope;
     Sym *fn = new_sym(i, scope, "__init");
+    fn->type_kind = Type_FUN;
+    fn->type = fn;
+    fn->type_sym = fn;
     fn->ast = ast;
     fn->scope = new Scope(ast->scope, Scope_RECURSIVE, fn);
     assert(!ast->sym->init);
@@ -1476,10 +1495,7 @@ define_type_init(IF1 *i, ParseAST *ast, Sym **container_scope, Sym **container) 
     fn->cont->ast = ast;
     fn->self = new_sym(i, fn->scope, cannonical_self);
     fn->self->ast = ast;
-    fn->self->type = ast->sym;
-    fn->type_kind = Type_FUN;
-    fn->type = fn;
-    fn->type_sym = fn;
+    fn->self->must_implement_and_specialize(ast->sym);
     *container_scope = ast->sym;
     *container = fn->self;
   }
@@ -1635,7 +1651,9 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
   else
     ast->rval = ast->sym;
   if (must_implement)
-    ast->sym->type = must_implement->sym;
+    ast->sym->must_implement = must_implement->sym;
+  if (var)
+    ast->sym->is_var = 1;
   if (ast->sym != sym_init) { // don't init the initial function
     // declared to be a value type
     if (must_implement && must_implement->sym->is_value_class) 
@@ -1652,8 +1670,6 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
       }
     }
   }
-  if (var)
-    ast->rval->is_var = 1;
 }
 
 static void
@@ -1679,7 +1695,7 @@ gen_type(IF1 *i, ParseAST *ast) {
     as[0] = fn->self;
     as[1] = new_sym(i, fn->scope);
     as[1]->ast = ast;
-    as[1]->type = if1_make_symbol(i, fn->name);
+    as[1]->must_implement_and_specialize(if1_make_symbol(i, fn->name));
     if1_closure(i, fn, body, 2, as);
     ast->rval = new_sym(i, ast->scope);
     if1_move(i, &ast->code, fn, ast->rval, ast);
@@ -1802,7 +1818,7 @@ build_modules(IF1 *i) {
       if1_gen(i, &body, fn->code);
       if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
       Sym *as = new_sym(i, fn->scope);
-      as->type = fn;
+      as->must_implement_and_specialize(fn);
       as->ast = s->ast;
       if1_closure(i, fn, body, 1, &as);
     }
@@ -1850,7 +1866,6 @@ ast_call(IF1 *i, int n, ...) {
 static void
 build_init(IF1 *i) {
   Sym *fn = sym_init;
-  fn->type = sym_function;
   fn->type_kind = Type_FUN;
   fn->type = fn;
   fn->type_sym = fn;
