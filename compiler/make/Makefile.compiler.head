@@ -59,6 +59,10 @@ CFLAGS += -DLANG_V=1
 endif
 
 
+CXXFLAGS := $(CFLAGS) $(ONLYCXXFLAGS)
+CFLAGS := $(CFLAGS) $(ONLYCFLAGS)
+
+
 #
 # clean and clobber targets
 #

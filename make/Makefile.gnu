@@ -38,21 +38,16 @@ LDFLAGS += -pg
 endif
 
 CFLAGS += -Wall
-CXXFLAGS = $(CFLAGS)
+
 
 # add error stuff
 
-CFLAGS += -Werror
+ONLYCFLAGS += -Werror
 
 ifeq ($(GNU_GCC_MAJOR_VERSION),3)
 ifeq ($(GNU_GCC_MINOR_VERSION),4)
-CXXFLAGS += -Wno-invalid-offsetof
+ONLYCXXFLAGS += -Wno-invalid-offsetof -Werror
 else
-CXXFLAGS += -Werror
 endif
 else
-CXXFLAGS += -Werror
 endif
-
-
-

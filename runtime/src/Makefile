@@ -6,6 +6,8 @@ include $(CHAPEL_ROOT)/runtime/etc/Makefile.macros
 CC = gcc
 CFLAGS += -I../include
 
+CFLAGS += $(ONLYCFLAGS)
+
 CHPL_RT_SRCS = \
 	arg.c \
 	array.c \
