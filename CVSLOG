@@ -11268,3 +11268,38 @@ Added files:
 	                                        configVarFile.good 
 	                                        configVarFile.input 
 
+---------------------------------------------------------------------------
+
+12/07/04 12:09:28 -- deitz
+
+Log message:
+	Added compiler support for simple usage of "with" inside of a class.
+	Variable fields are now copied from a class into another class.  The
+	variables are put in the scope of the new class.  This support should
+	also work with records, though the tests are faltering.
+	
+	Added a new traversal called DefineSymbols which takes a scope and
+	adds symbols to it that are defined in the statements being traversed.
+	This currently only handles VarDefStmts and the variables they define.
+	
+	Added two new functions to the ILink, preinsert and postinsert.  Only
+	preinsert is completed and tested.  This inserts a statement LIST into
+	another statement LIST before a specified statement.  The function
+	postinsert should do the same thing after the specified statement.
+	
+	Added a new test case test_class_with1 that successfully tests a
+	simple usage of the with construct in classes.  Added two new
+	unsuccessful tests in a future directory that act on records.
+
+Modified files:
+	chapel/compiler/AST/: link.cpp 
+	chapel/compiler/include/: link.h 
+	chapel/compiler/traversals/: Makefile.share 
+	                             processWithStatements.cpp 
+Added files:
+	chapel/compiler/traversals/: defineSymbols.cpp defineSymbols.h 
+	chapel/test/classes/deitz/: test_class_with1.chpl 
+	                            test_class_with1.good 
+	chapel/test/classes/deitz/future/future/: test_record2.chpl 
+	                                          test_record_with1.chpl 
+
