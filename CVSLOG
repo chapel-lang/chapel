@@ -2018,3 +2018,13 @@ Added files:
 	                                    NOEXEC cs1.chk cs1.v cs2.chk 
 	                                    cs2.v cs3.chk cs3.v 
 
+---------------------------------------------------------------------------
+
+04/05/10 16:16:40 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Extend flow analyis to N levels of complex data structures.
+
+Modified files:
+	chapel/compiler/: fa.cpp 
+
