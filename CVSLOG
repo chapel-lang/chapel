@@ -2752,3 +2752,14 @@ Added files:
 	chapel/runtime/src/: domain.c 
 	chapel/test/trivial/bradc/: declprintdom.chpl declprintdom.good 
 
+---------------------------------------------------------------------------
+
+06/04/04 17:11:52 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	forgot to checkin the parsing .good files corresponding to the parser
+	changes... oops.
+
+Modified files:
+	chapel/test/parsing/jplevyak/: mat1.good vec.good 
+
