@@ -7168,3 +7168,42 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/newast/: noop.chpl noop.good 
 
+---------------------------------------------------------------------------
+
+09/14/04 12:13:15 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Checkpoint.
+	Index, Domain, Array, Tuple classes created in internal_perlude.chpl
+	These classes are hidden superclasses for all Chapel objects of the
+	corresponding type and can be used to provide builtin behavior.
+	Support for these classes has been moved into analysis.{cpp,h}
+	Primitives now can have more than one return value, this is to
+	  support domain_start_index since domain indexing can be over
+	  multiple degenerate (integer) indexes.
+	Added partial support for complex numbers, complex now defaults
+	  to 64-bit complex numbers.
+	Removed support for 80-bit floats (we can add this back, but 128 is
+	  probably more useful).
+
+Modified files:
+	chapel/compiler/: analysis.cpp builtin_symbols.h chpltypes.h 
+	                  fa.cpp parse.cpp parse_ast.cpp prelude.v 
+	                  prim.cpp prim.h prim_data.dat sym.h v.g 
+	chapel/compiler/AST/: internal_prelude.chpl 
+	chapel/compiler/make_prims/: make_prims.g 
+	chapel/test/flowanalysis/jplevyak/: classvar.good cs1.good 
+	                                    cs2.good cs3.good cs4.good 
+	                                    cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good 
+	                                    memberfun.good 
+	                                    memberfun2.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good structtype.good 
+	                                    var.good 
+
