@@ -19966,3 +19966,23 @@ Added files:
 Removed files:
 	chapel/test/trivial/roxana/: test_param_decl3.future 
 
+---------------------------------------------------------------------------
+
+03/17/05 11:51:13 -- deitz
+
+Log message:
+	Added a new pass BuildClassConstructorsEtc which is currently only
+	used to build an == function for records.  This function overloads ==
+	for records.
+	
+	This pass is currently commented out because of an error that I'm
+	getting in analysis and can't figure out.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildClassConstructorsEtc.h 
+	chapel/test/classes/deitz/: test_record3.chpl test_record3.good 
+
