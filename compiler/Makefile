@@ -141,6 +141,9 @@ $(PLATFORM)/$(CHPL): $(CHPL_OBJS)
 		$(GC_SRC_DIR)/*.c $(GC_SRC_DIR)/*.h \
 		$(GC_SRC_DIR)/*/*.c $(GC_SRC_DIR)/*/*.h \
 		AST/*.h AST/*.cpp
+	@echo "Updating BROWSE..."
+	@ebrowse *.cpp *.h AST/*.cpp AST/*.h
+	@cd AST && ebrowse *.cpp *.h
 
 
 #
