@@ -16062,3 +16062,19 @@ Added files:
 	chapel/compiler/symtab/: collectFunctions.cpp collectFunctions.h 
 	                         collectSymbols.cpp collectSymbols.h 
 
+---------------------------------------------------------------------------
+
+02/01/05 13:01:45 -- jplevyak
+
+Log message:
+	Reorganized ASymbol so that it is now an interface object which points
+	to a Sym instead of being a Sym.  This decreases the coupling between
+	the AST and analysis and should simplify the interface.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp if1.cpp 
+	                           sym.cpp 
+	chapel/compiler/include/: analysis.h ast.h sym.h 
+	chapel/compiler/vparser/: ast_cf.cpp parse_ast.cpp 
+
