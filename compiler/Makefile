@@ -14,16 +14,6 @@ USE_DPARSER=1
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 #
-# version number
-#
-MAJOR=0
-MINOR=2
-RELEASE=$(MAJOR).$(MINOR)
-BUILD_VERSION = $(shell expr $(shell cat BUILD_VERSION) + 1)
-VERFLAGS = -DMAJOR_VERSION=$(MAJOR) -DMINOR_VERSION=$(MINOR) -DBUILD_VERSION=$(BUILD_VERSION)
-
-
-#
 # source languages accepted by the tool and settings based on them
 #
 LANG_V = 1
@@ -76,6 +66,7 @@ GEYSA_SRCS = \
 	scope.cpp \
 	ssu.cpp \
 	var.cpp \
+	version.cpp \
 	$(LIB_SRCS)
 
 CHPL_SRCS = $(LANGS:%=%.g.d_parser.cpp) $(GEYSA_SRCS)
@@ -106,7 +97,7 @@ EXECS = $(CHPL) $(TEST_LIB)
 # rules
 #
 
-all: $(EXECS) BUILD_VERSION
+all: $(EXECS)
 
 clean:
 	rm -f ./$(PLATFORM)/*.o core *.core *.gmon *.a $(EXECS) $(MAKE_PRIMS) *.g.d_parser.cpp prim_data.h prim_data.cpp
@@ -130,7 +121,7 @@ $(TEST_LIB): test_lib.cpp $(LIB_SRCS)
 	$(CC) $(CFLAGS) -DTEST_LIB=1 $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(CHPL): $(CHPL_OBJS)
-	$(CC) $(VERFLAGS) $(LDFLAGS) -o $@ $^ version.cpp $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(MAKE_PRIMS): $(MAKE_PRIMS_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -147,12 +138,6 @@ prim_data.cpp: prim_data.h
 	$(MAKE_DPARSER) -v -Xcpp -I $<
 
 .PRECIOUS: %.g.d_parser.cpp
-
-BUILD_VERSION: $(EXECS_FILES)
-	rm -f BUILD_VERSION.tmp
-	echo $(BUILD_VERSION) > BUILD_VERSION.tmp
-	mv BUILD_VERSION.tmp BUILD_VERSION
-
 
 #
 # tar-related stuff

@@ -3,6 +3,7 @@
 */
 
 #include <stdio.h>
+#include "version.h"
 
 void
 get_version(char *v) {
