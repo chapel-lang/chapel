@@ -12570,3 +12570,17 @@ Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y 
 	chapel/compiler/traversals/: cleanup.cpp verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+12/21/04 16:41:49 -- deitz
+
+Log message:
+	Added pre-preliminary support for unions.  Basically a union is
+	treated as a record so correct code works correctly but inefficiently.
+	I'm checking this in only so that I have only one working version.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+Added files:
+	chapel/test/classes/deitz/: test_union1.chpl test_union1.good 
+
