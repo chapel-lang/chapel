@@ -22931,3 +22931,24 @@ Added files:
 	                                  like-1.good like-2.chpl 
 	                                  like-2.future like-2.good 
 
+---------------------------------------------------------------------------
+
+03/31/05 11:05:50 -- roxana
+
+Log message:
+	Added the ability for a type to return something else than
+	its own instance. This masks situations like with index type
+	when we want to see a tuple instead of the index type.
+	
+	However, this does not entirely solve the problem of assigning a
+	tuple to an index variable. I left the future to Steve since he is
+	the one who implemented all tuple machinery.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/traversals/: destructureTupleAssignments.cpp 
+	                             insertAnonymousTypes.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/domains/roxana/: test_index_expr1.future 
+	chapel/compiler/include/: type.h 
+
