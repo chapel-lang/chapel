@@ -14470,3 +14470,13 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_clone_function5.future 
 
+---------------------------------------------------------------------------
+
+01/14/05 12:49:34 -- jplevyak
+
+Log message:
+	Fix 'var x : float = 1;'  Coersion in initialization.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
