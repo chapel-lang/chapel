@@ -3262,3 +3262,15 @@ Added files:
 	chapel/test/trivial/shannon/: bitwise_negation.chpl 
 	                              bitwise_negation.good 
 
+---------------------------------------------------------------------------
+
+06/12/04 11:41:36 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Cleaned up x86_64 issues.  Working and warning free.
+
+Modified files:
+	chapel/compiler/: fa.h fa_extras.cpp geysa.h graph.cpp list.h 
+	                  map.h ssu_extra.cpp vec.cpp vec.h 
+	chapel/compiler/make_prims/: make_prims.g 
+
