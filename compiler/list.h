@@ -15,6 +15,11 @@
 #ifndef _list_H_
 #define _list_H_
 
+#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
+#include <stdint.h>
+#else
+#include <inttypes.h>
+#endif
 #include "chplalloc.h"
 
 template <class C> class SLink {
