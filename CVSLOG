@@ -22185,3 +22185,19 @@ Added files:
 	                             test_index_expr1.good 
 	                             test_intex_expr1.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 11:49:34 -- jplevyak
+
+Log message:
+	Move more information into the IF1 representation regarding instance
+	variables and primitive types.
+	Add a cloning option MERGE_UNIONS (current ON) which merges unions
+	  which use different subsets of the union.
+	Update .future for writeunion... now the executed code is wrong.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp 
+	chapel/compiler/include/: sym.h 
+	chapel/test/classes/bradc/: writeunion.future 
+
