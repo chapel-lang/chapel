@@ -134,7 +134,7 @@ const SD: ??? = S.Domain();
 const Rstr: ??? = R.stride;
 const Sstr: ??? = S.stride;
 forall ioff in IDom {
-[ijk:SD] R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
+forall ijk in SD R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
 }
 }
 

@@ -130,7 +130,7 @@ state const w: [ijk:IDom] float = (1.0/IStn.size());
 const Rstr: [1..3] integer = DR.stride;
 const Sstr: [1..3] integer = DS.stride;
 forall ioff in IDom {
-[ijk:DS] R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
+forall ijk in DS R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
 }
 }
 

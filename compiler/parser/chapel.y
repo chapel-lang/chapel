@@ -599,6 +599,22 @@ forloop:
     { 
       $$ = Symboltable::finishForLoop($<forstmt>5, $7);
     }
+| TLSBR indexlist TIN expr TRSBR
+    { 
+      $<forstmt>$ = Symboltable::startForLoop(true, $2, $4);
+    }
+                                 statement
+    { 
+      $$ = Symboltable::finishForLoop($<forstmt>6, $7);
+    }
+| TLSBR identifier TRSBR
+    { 
+      $<forstmt>$ = Symboltable::startForLoop(true, nilSymbol, new Variable(new UnresolvedSymbol($2)));
+    }
+                   statement
+    { 
+      $$ = Symboltable::finishForLoop($<forstmt>4, $5);
+    }
 ;
 
 
@@ -653,8 +669,6 @@ assignOp:
 assignExpr:
   lvalue assignOp expr
     { $$ = new AssignOp($2, $1, $3); }
-| forallExpr assignExpr
-    { $$ = Symboltable::finishForallExpr($1, $2); }
 ;
 
 
