@@ -392,5 +392,14 @@ void CondStmt::print(FILE* outfile) {
 }
 
 void CondStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "This is CondStmt's codegen method.\n");
+  fprintf(outfile, "if (");
+  condExpr->codegen(outfile);
+  fprintf(outfile, ") {\n");
+  thenStmt->codegen(outfile);
+  fprintf(outfile, "\n}");
+  if (!elseStmt->isNull()) {
+    fprintf(outfile, " else {\n");
+    elseStmt->codegen(outfile);
+    fprintf(outfile, "\n}");
+  }
 }
