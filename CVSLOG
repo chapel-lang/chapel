@@ -7218,3 +7218,38 @@ Log message:
 Modified files:
 	chapel/compiler/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+09/14/04 14:49:15 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Load variables by moving into a temporary.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good enum.good 
+	                                  equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  mutrec.good noop.good 
+	                                  octalliteral.good onearg.good 
+	                                  pareninit.good 
+	                                  relational_ops.good 
+	                                  shift_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+
