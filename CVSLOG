@@ -8205,3 +8205,75 @@ Modified files:
 Added files:
 	chapel/test/trivial/shannon/: exp.chpl exp.good 
 
+---------------------------------------------------------------------------
+
+09/21/04 14:23:11 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Updated analysis/TODO to remove things that have gotten done
+	Got low level code generation working for some new AST chapel files
+	  (with the same .good test files used with the standard code generator).
+	Fixed bugs in mapping of types from the AST to the low level representation.
+	Added support for "bool" as a 1 bit unsigned numeric type including
+	  support for constant folding in the old parser.
+	Fixed bug in assignment to variables of primitive type.
+	
+	**** NOTE ****
+	
+	When we want to overload assignment for other value objects, we
+	are going to need an assignment function.  If we do it like C++
+	we can reuse a "copy constructor" which takes a single argument of
+	the same type.
+	
+	Currently assignment is always interpreted as assigment to a
+	primitive numeric type.  To overcome this limitation and permit
+	assignment to be analyzed, assignment needs to be mapped to an
+	overloaded function, and that overloaded function needs to be
+	defined for primitive numeric types to correspond to the builtin
+	version like (from the old prelude.chpl):
+	
+	function operator(a:anynum, #"=", b:anynum) { return __operator(a, #"=", b:anynum); }
+	
+	The __operator represents primitive assignment while other objects can
+	overload the "operator" function.
+	
+	This is just a sample syntax, and we don't even have to have make this
+	public, but it would be easiest for analysis if something like this
+	existed in the internal prelude.
+
+Modified files:
+	chapel/compiler/analysis/: TODO analysis.cpp cg.cpp clone.cpp 
+	                           fa.cpp if1.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/compiler/include/: if1.h num.h parse.h sym.h 
+	chapel/compiler/vparser/: ast_cf.cpp cast_code.cpp parse.cpp 
+	                          parse_ast.cpp 
+	chapel/test/flowanalysis/jplevyak/: literal.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  danglingelse.good 
+	                                  equality_ops.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  relational_ops.good 
+	                                  shift_ops.good 
+	                                  unary_plusMinus.good var.good 
+	                                  var2.good whileLoop.good 
+	chapel/test/lowlevelcg/jplevyak/: COMPOPTS 
+Added files:
+	chapel/test/lowlevelcg/jplevyak/: arithmetic_ops.chpl 
+	                                  arithmetic_ops.good 
+	                                  assignment_expr.chpl 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.chpl 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.chpl 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.chpl 
+	                                  bitwise_ops.good 
+
