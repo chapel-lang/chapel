@@ -71,6 +71,11 @@ D_PARSER_BIN_DIR = $(D_PARSER_ROOT)/bin
 D_PARSER_INC_DIR = $(D_PARSER_ROOT)/include
 D_PARSER_LIB_DIR = $(D_PARSER_ROOT)/lib
 
+MAKE_DPARSER = $(D_PARSER_BIN_DIR)/make_dparser$(EXE_SUFFIX)
+MAKE_DPARSER_FLAGS = -v -Xcpp -I
+
+.PRECIOUS: %.g.d_parser.cpp
+
 
 #
 # add dparser stuff
@@ -91,7 +96,7 @@ endif
 ifdef USE_GC
 CFLAGS += -DUSE_GC
 CFLAGS += -I$(GC_ROOT)/include/gc
-LIBS += -L $(GC_ROOT)/lib -lgc
+LIBS += $(GC_ROOT)/lib/libgc.a
 endif
 
 ifdef LEAK_DETECT
