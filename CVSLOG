@@ -2462,3 +2462,17 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+06/02/04 16:09:23 -- bradc
+
+Log message:
+	Found a bug in my previous check-in -- in trying to minimize
+	redundancy I put in an assumption that the user would have
+	necessarily run "make depend".  Took this out by re-adding in
+	the explicit dependence that causes make_prims to be run before
+	compiling the output of the v or chpl grammar files.
+
+Modified files:
+	chapel/compiler/: Makefile 
+
