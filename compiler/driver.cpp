@@ -11,7 +11,7 @@ static void copyright(ArgumentState *arg_state, char *arg_unused);
 static int fwrite_c = 0;
 static int fdump_html = 0;
 static char prelude_filename[FILENAME_MAX] = "prelude";
-static char log_flags[512];
+static char log_flags[512] = "";
 extern int d_verbose_level;
 extern int d_debug_level;
 
@@ -269,7 +269,8 @@ main(int argc, char *argv[]) {
   process_args(&arg_state, argv);
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
-  init_logs();
+  if (fdump_html || strcmp(log_flags, ""))
+    init_logs();
   init_system();
   for (int i = 0; i < arg_state.nfile_arguments; i++) 
     if (compile_one(arg_state.file_argument[i])) break;
