@@ -95,3 +95,5 @@
 - check handling of inheritance
 
 - remove SUM types from implements etc.
+
+- deal with "tuple" having having "has" for all possible tuples

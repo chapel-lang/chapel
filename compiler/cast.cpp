@@ -1,5 +1,7 @@
+#include <stdio.h>
 #define EXTERN
-#include "geysa.h"
+#define EXTERN_INIT(_x) = _x
+#include "num.h"
 
 int
 main() {
