@@ -158,6 +158,13 @@ foreach chplsrc ($testsrc)
         set execopts = "$globalExecopts"
     endif
 
+    if (-r ./$execfile.future) then
+	set owner = `head -n 1 ./$execfile.future`
+	set futuretest = "Future ($owner) ";
+    else
+	set futuretest = "";
+    endif
+
     echo \[Executing: \"$valgrndcomp$compiler $compopts $chplsrc $lastcompopts \< $compstdin\"\]
     $timedexec $timeout "$valgrndcomp$compiler $compopts $chplsrc $lastcompopts" < "$compstdin" >& $complog
 	
@@ -181,12 +188,13 @@ foreach chplsrc ($testsrc)
 
 	echo \[Executing diff $checkfile $complog\]
 	diff $diffargs $checkfile $complog
-	if ( $status != 0 ) then
-	    echo \[Error matching compiler output for $localdir/$execfile\]
-	    continue
-	else
-	    echo \[Success matching compiler output for $localdir/$execfile\]
+	set difffailed = $status
+        if ( $difffailed == 0 ) then
+	    echo "$futuretest""[Success matching compiler output for $localdir/$execfile]"
 	    rm $complog
+	else
+	    echo "$futuretest""[Error matching compiler output for $localdir/$execfile]"
+	    continue
 	endif
     else
 	# Compile successful
@@ -242,14 +250,15 @@ foreach chplsrc ($testsrc)
 
 	    echo \[Executing diff $checkfile $execlog\]
 	    diff $diffargs $checkfile $execlog
-	    if ( $status != 0 ) then
-		echo \[Error matching program output for $localdir/$execfile\]
-		rm -f $binfile
-		continue
-	    else
-		echo \[Success matching program output for $localdir/$execfile\]
+	    set difffailed = $status
+	    if ( $difffailed == 0 ) then
+		echo "$futuretest""[Success matching program output for $localdir/$execfile]"
 		rm $execlog
 		rm -f $binfile
+	    else
+		echo "$futuretest""[Error matching program output for $localdir/$execfile]"
+		rm -f $binfile
+		continue
 	    endif
 	else
 	    echo \[Error could not locate executable $localdir/$execfile\]

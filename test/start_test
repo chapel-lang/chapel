@@ -12,7 +12,9 @@
 # run (sub_test).  The output of these runs will typically be logged
 # in a file stored in the Logs/ subdirectory, as will a summary of the
 # errors reported (determined by grepping for the string "[Error", so
-# don't have your program print this out.
+# don't have your program print this out) and the status of "future"
+# tests -- those that have never worked, but are checked in for the
+# purpose of sharing and placeholding.
 #
 # Here's the directory structure:
 #
@@ -86,6 +88,20 @@
 # the .good file.  This allows programs that are supposed to generate
 # errors, warnings, and correct programs to all be tested using the
 # same mechanisms.
+#
+# Tests that are not yet expected to work can be marked as such
+# by creating a <testname>.future file.  The presence of the
+# .future file will prevent the test from counting toward our
+# nightly successes and regressions, and is intended to allow
+# tests to be checked in to share them between multiple developers
+# in-line with other tests that work.  In general, once a test
+# is working and stable, its future file should be removed and 
+# should not be re-added (for future failures of the test should
+# be counted as regressions).  The .future file should contain
+# the userid of the developer who's court it's in on the first
+# line (this will appear in the test system's summaries).
+# Subsequent lines can contain notes and will be ignored by the
+# testing system.
 #
 # If the test-writer wants to redirect standard input from a file,
 # they may do so by supplying a .stdin file with the same base
@@ -412,13 +428,19 @@ echo \[Done with tests - `date +"%y%m%d.%H%M%S"`\] |& tee -a $logfile
 echo " " |& tee -a $logfile
 
 # Output grep to a temp file, don't want to infinite loop
+set futuremarker = "^Future"
+set errormarker = "^\[Error"
+set successmarker = "^\[Success matching"
+
 echo \[Test Summary - $datestr\] |& tee $logfile.summary
-grep "\[Error" $logfile |& tee -a $logfile.summary
-set successes = `grep "\[Success matching" $logfile | wc -l`
-set failures = `grep "\[Error" $logfile | wc -l`
-echo \[\Summary: \#Successes = $successes \| \#Failures = $failures\] |& tee -a $logfile.summary
+grep $errormarker $logfile |& tee -a $logfile.summary
+grep $futuremarker $logfile |& tee -a $logfile.summary
+
+set successes = `grep "$successmarker" $logfile | wc -l`
+set failures = `grep $errormarker $logfile | wc -l`
+set futures = `grep $futuremarker $logfile | wc -l`
+echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& tee -a $logfile.summary
 echo \[END\] |& tee -a $logfile.summary
 cat $logfile.summary >> $logfile
 echo ''
 echo
-
