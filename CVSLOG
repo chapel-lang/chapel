@@ -13553,3 +13553,14 @@ Modified files:
 	                             processParameters.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/05 14:15:40 -- deitz
+
+Log message:
+	Fixed an oversight in Expr::insertBefore and Stmt::insertBefore in
+	which the back pointer for this was not set.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+
