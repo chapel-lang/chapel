@@ -1,2 +1,2 @@
-896 states 549 scans 195 shifts 387 reductions 14 compares 0 ambiguities
-(((((( f )( a ) : )( for  ( (( i  : )(( 0 ))) ; (( i ) < ( a )) ; (( i ) ++ ) ) ( for  ( (( j  : )(( 0 ))) ; (( j ) < (( 10 ))) ; (( j ) ++ ) ) (( print )( ( (( i ) + ( j )) ) ))))) ; )((( f )(( 20 ))) ; )))
+932 states 583 scans 200 shifts 387 reductions 14 compares 0 ambiguities
+(((((( f )( a ) : )( for  ( ((( i ) : )(( 0 ))) ; (( i ) < ( a )) ; (( i ) ++ ) ) ( for  ( ((( j ) : )(( 0 ))) ; (( j ) < (( 10 ))) ; (( j ) ++ ) ) (( print )( ( (( i ) + ( j )) ) ))))) ; )((( f )(( 20 ))) ; )))

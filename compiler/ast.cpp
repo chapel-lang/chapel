@@ -676,6 +676,8 @@ scope_idpattern(IF1 *i, AST *ast, Scope *scope) {
 	sym->type_kind = Type_NONE;
 	ast->sym = sym;
       }
+      if (ast->alt)
+	ast->sym->alt = ast->alt;
     }
     break;
     case AST_pattern: {

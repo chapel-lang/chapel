@@ -1133,12 +1133,24 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
   AVar *pv = make_AVar(p, es);
   flow_vars(ov, pv);
   if (p->sym->has.n) {
+    AVar *violation = 0;
     forv_CreationSet(cs, *ov->out) if (cs) {
-      if (cs->sym == p->sym->type && cs->vars.n == p->sym->has.n) {
-	for (int i = 0; i < p->sym->has.n; i++)
-	  destruct(cs->vars.v[i], p->sym->has.v[i]->var, es, result);
+      if (cs->sym == p->sym->type) {
+	for (int i = 0; i < p->sym->has.n; i++) {
+	  AVar *av = NULL;
+	  if (p->sym->has.v[i]->alt)
+	    av = cs->var_map.get(p->sym->has.v[i]->alt);
+	  else if (i < cs->vars.n)
+	    av = cs->vars.v[i];
+	  if (!av) {
+	    violation = make_AVar(p->sym->has.v[i]->var, es);
+	    goto Lviolation;
+	  }
+	  destruct(av, p->sym->has.v[i]->var, es, result);
+	}
       } else {
-	AVar *av = ov;
+      Lviolation:
+	AVar *av = violation ? violation : ov;
 	if (!av->var->sym->name && p->sym->name)
 	  av = pv;
 	if (!av->var->sym->name && cs->vars.n < p->sym->has.n && p->sym->has.v[cs->vars.n]->name)

@@ -59,6 +59,7 @@ class Sym : public gc {
   char 			*name;			// user level name
   int			id;			// unique number
   Sym  			*in;			// containing module, class or function
+  char			*alt;			// alternative name (pattern/extern)
 
   Sym 			*type;			// true type
   Sym  			*aspect;		// mascarade as (e.g. superclass)

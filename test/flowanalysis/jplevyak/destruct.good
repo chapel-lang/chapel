@@ -1,0 +1,24 @@
+A::A(destruct.v:1) ( A (destruct.v:1) )
+__init::self(destruct.v:1) ( A (destruct.v:1) )
+function __init destruct.v:1 with 1 edges
+function __init destruct.v:1 with 1 edges
+function __init prelude.v:7 with 1 edges
+function __init__ <none>:0 with 1 edges
+function f destruct.v:2 with 1 edges
+function new prelude.v:85 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:91 with 1 edges
+function print prelude.v:140 with 1 edges
+globals
+new::a(prelude.v:85) ( A (destruct.v:1) )
+new::o(prelude.v:85) ( A (destruct.v:1) )
+new::o(prelude.v:85) ( A (destruct.v:1) )
+operator::a(prelude.v:86) ( A (destruct.v:1) )
+operator::a(prelude.v:91) ( int32 (prelude.v:29) )
+operator::b(prelude.v:91) ( int32 (prelude.v:29) )
+print::a(prelude.v:140) ( int32 (prelude.v:29) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:58) ( tuple (prelude.v:13) )
+user::__init(destruct.v:1) ( __init (destruct.v:1) )
+user::x(destruct.v:3) ( int32 (prelude.v:29) )
+user::y(destruct.v:3) ( int32 (prelude.v:29) )

@@ -55,6 +55,7 @@ class AST : public Vec<AST *> {
   unsigned int rank;
   Sym *sym;
   char *string;
+  char *alt;
   char *builtin;
   Prim *prim;
   char *pathname;
