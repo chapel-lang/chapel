@@ -6093,3 +6093,17 @@ Modified files:
 	chapel/compiler/AST/: loc.cpp stmt.cpp stmt.h symtab.cpp 
 	                      symtab.h 
 
+---------------------------------------------------------------------------
+
+08/27/04 15:35:43 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Primitives which are operators are now called "operator"
+	Some work on loops.
+
+Modified files:
+	chapel/compiler/: analysis.cpp ast.cpp ast.h builtin_symbols.h 
+	                  fa.cpp parse_ast.cpp prelude.chpl prelude.v 
+	                  prim.cpp prim_data.dat 
+	chapel/test/flowanalysis/jplevyak/: badprimitive.v 
+
