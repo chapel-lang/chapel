@@ -20479,3 +20479,33 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
 
+---------------------------------------------------------------------------
+
+03/21/05 11:01:46 -- deitz
+
+Log message:
+	Added high-level support for eliding the parentheses of methods that
+	take no arguments.  Added error-checking to make sure parentheses are
+	not elided in functions that are not methods.
+	
+	Added a test case for ? at the end of functions.
+	
+	This doesn't completely work yet because analysis seems to mark the
+	method as being dead.  I left the future for test_method_noparens for
+	John.
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: methodsToFunctions.cpp 
+	                             removeDeadSymbols.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_bad_function_noparens.chpl 
+	                            test_bad_function_noparens.good 
+	                            test_method_noparens.chpl 
+	                            test_method_noparens.future 
+	                            test_method_noparens.good 
+	chapel/test/trivial/deitz/: test_function_question_mark.chpl 
+	                            test_function_question_mark.good 
+
