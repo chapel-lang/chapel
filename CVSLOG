@@ -24111,3 +24111,31 @@ Added files:
 	                              nameDefaultParamInOut.future 
 	                              nameDefaultParamInOut.good 
 
+---------------------------------------------------------------------------
+
+04/05/05 13:43:19 -- deitz
+
+Log message:
+	Changed VarInitExpr to contain an Expr rather than a Symbol so that it
+	can contain MemberAccesses when used in class constructors.
+	
+	Reworked BuildClassConstructors to use VarInitExpr iff
+	
+	      #define USE_VAR_INIT_EXPR
+	
+	is uncommented.  Otherwise it uses the type->defaultVal if it is known
+	and nothing otherwise.
+	
+	Improved support for sequences.  I believe I'm close to getting these
+	things working.  Create a new function createSeqType that grabs the
+	_seq class in the internal prelude and turns it into a new sequence
+	type when requested to do so by InsertAnonymousTypes.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h type.h 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             processDefs.cpp 
+	                             processParameters.cpp 
+	                             removeNamedParameters.cpp 
+
