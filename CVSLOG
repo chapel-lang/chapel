@@ -9132,3 +9132,38 @@ Added files:
 	                              readWriteUserType.good 
 	                              readWriteUserType.stdin 
 
+---------------------------------------------------------------------------
+
+10/22/04 16:29:19 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Test files for the first part of SSCA #2, up to the kernels.
+	For your consideration.
+
+Added files:
+	chapel/test/Share/: arrayfun-1.chpl assert-1.chpl 
+	                    assert-2-assert.chpl builtins-1.chpl 
+	                    class-1.chpl class-2.chpl class-3.chpl 
+	                    config-1.chpl constant-folding-1.chpl 
+	                    constructor-1.chpl count-1.chpl 
+	                    destruct-1.chpl destruct-2.chpl 
+	                    domain-1.chpl domain-2-rangeerror.chpl 
+	                    domain-2.chpl domain-3.chpl domain-4.chpl 
+	                    domain-5.chpl domain-6.chpl domain-7.chpl 
+	                    error-1.chpl funcall-1.chpl funcall-2.chpl 
+	                    funcall-3.chpl intent-1.chpl intent-2.chpl 
+	                    intent-3.chpl intent-4.chpl 
+	                    intent-5-error.chpl intent-6-error.chpl 
+	                    intent-7-error.chpl intent-8-error.chpl 
+	                    let-1.chpl main-1.chpl module-1.chpl 
+	                    module-2-error.chpl namedargs-1.chpl 
+	                    noinitdecl-1.chpl noinitdecl-2.chpl 
+	                    noinitdecl-3-error.chpl 
+	                    noinitdecl-4-error.chpl print-1.chpl 
+	                    record-1.chpl record-2.chpl record-3.chpl 
+	                    scan-1.chpl seq-1.chpl seq-2.chpl seq-3.chpl 
+	                    strdomain-1.chpl string-1.chpl 
+	                    typeselect-1.chpl typevar-1.chpl 
+	                    typevar-2.chpl union-1.chpl union-2.chpl 
+	                    union-3.chpl with-1.chpl with-2.chpl 
+
