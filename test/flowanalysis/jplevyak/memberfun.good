@@ -1,0 +1,26 @@
+A::A(memberfun.v:1) ( A (memberfun.v:1) )
+__init::self(memberfun.v:1) ( A (memberfun.v:1) )
+f::self(memberfun.v:2) ( A (memberfun.v:1) )
+function __init memberfun.v:1 with 1 edges
+function __init memberfun.v:1 with 2 edges
+function __init prelude.v:7 with 1 edges
+function __init__ <none>:0 with 1 edges
+function f memberfun.v:2 with 1 edges
+function new prelude.v:85 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:91 with 1 edges
+function print prelude.v:140 with 1 edges
+globals
+new::a(prelude.v:85) ( A (memberfun.v:1) )
+new::o(prelude.v:85) ( A (memberfun.v:1) )
+new::o(prelude.v:85) ( A (memberfun.v:1) )
+operator::a(prelude.v:86) ( A (memberfun.v:1) )
+operator::a(prelude.v:86) ( A (memberfun.v:1) )
+operator::a(prelude.v:91) ( int32 (prelude.v:29) )
+operator::b(prelude.v:91) ( int32 (prelude.v:29) )
+print::a(prelude.v:140) ( int32 (prelude.v:29) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:58) ( tuple (prelude.v:13) )
+user::__init(memberfun.v:1) ( __init (memberfun.v:1) )
+user::a(memberfun.v:3) ( A (memberfun.v:1) )
