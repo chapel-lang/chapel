@@ -9520,3 +9520,18 @@ Modified files:
 Added files:
 	chapel/test/lowlevelcg/jplevyak/: ssu.good ssu.v 
 
+---------------------------------------------------------------------------
+
+11/15/04 10:27:19 -- bradc
+
+Log message:
+	Small change to --gdb flag test to make it work with gdb 6.x
+	which seems to be becoming the default on Cray systems.
+	Basically, had to grep out a line that it printed indicating
+	what thread_db  library it was using...
+
+Modified files:
+	chapel/test/compflags/bradc/gdbddash/: declint.good 
+Added files:
+	chapel/test/compflags/bradc/gdbddash/: PREDIFF 
+
