@@ -15719,3 +15719,19 @@ Removed files:
 	                                         test_overload_integerfloat3.future 
 	                                         test_overload_integerfloat4.future 
 
+---------------------------------------------------------------------------
+
+01/26/05 16:21:02 -- jplevyak
+
+Log message:
+	Add future test for function visibility
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+Added files:
+	chapel/test/functions/jplevyak/scoping/: COMPOPTS scoping-1.chpl 
+	                                         scoping-1.future 
+	                                         scoping-1.good 
+
