@@ -21650,3 +21650,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp fa.cpp 
 
+---------------------------------------------------------------------------
+
+03/25/05 14:34:49 -- jplevyak
+
+Log message:
+	More tests for method/function separation
+
+Removed files:
+	chapel/test/classes/deitz/: test_mf_class.future 
+	                            test_mf_record.future 
+
