@@ -139,8 +139,17 @@ void Stmt::traverseStmt(Traversal* traversal) {
 static void call_fixup(Stmt* stmt) {
   Fixup* fixup = new Fixup();
 
-  fixup->stmtParent.add(stmt->parentSymbol);
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->parentSymbol)) {
+  SymScope* tmp = Symboltable::getCurrentScope();
+  while (tmp && tmp->symContext->isNull()) {
+    tmp = tmp->parent;
+  }
+  if (!stmt->parentSymbol) {
+    if (!tmp) {
+      INT_FATAL(stmt, "Error calling fixup");
+    }
+    TRAVERSE_DEF(tmp->symContext, fixup, true);
+  }
+  else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->parentSymbol)) {
     TRAVERSE_LS(fn->body, fixup, true);
   }
   else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
@@ -150,6 +159,9 @@ static void call_fixup(Stmt* stmt) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(type->type)) {
       TRAVERSE(class_type, fixup, true);
     }
+  }
+  else {
+    INT_FATAL(stmt, "Error calling fixup");
   }
 }
 
@@ -547,19 +559,7 @@ bool FnDefStmt::isNull(void) {
 
 
 void FnDefStmt::traverseStmt(Traversal* traversal) {
-  SymScope* prevScope;
-
-  // BLC: could move all this into a traverseDef method?
-  TRAVERSE(fn, traversal, false);
-  if (fn->paramScope) {
-    prevScope = Symboltable::setCurrentScope(fn->paramScope);
-  }
-  TRAVERSE_LS(fn->formals, traversal, false);
-  TRAVERSE(fn->type, traversal, false);
-  TRAVERSE(fn->body, traversal, false);
-  if (fn->paramScope) {
-    Symboltable::setCurrentScope(prevScope);
-  }
+  TRAVERSE_DEF(fn, traversal, false);
 }
 
 

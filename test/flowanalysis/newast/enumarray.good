@@ -24,6 +24,5 @@
 ::this ( _array_integer_1d (enumarray.chpl:5) )
 ::this ( _array_integer_1d (enumarray.chpl:5) )
 ::void ( void )
-Internal error: FIX0053 chpl Version 0.2.750
 function __init_enumarray enumarray.chpl:20
 globals
