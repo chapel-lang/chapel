@@ -4978,3 +4978,14 @@ Added files:
 	chapel/runtime/include/: array.h forall.h 
 	chapel/runtime/src/: array.c 
 
+---------------------------------------------------------------------------
+
+08/04/04 15:49:31 -- bradc
+
+Log message:
+	Oops, this one snuck in with that last check-in accidentally.
+	Reverting.
+
+Modified files:
+	chapel/test/trivial/bradc/: conditional.chpl 
+
