@@ -80,6 +80,7 @@ mysystem("cd $compdir/include && $tokctr $allcppfiles > ../include.ntoks");
 mysystem("cd $compdir/main && $tokctr $allcppfiles > ../main.ntoks");
 mysystem("cd $compdir/parser && $tokctr $allcppfiles > ../parser.ntoks");
 mysystem("cd $compdir/passes && $tokctr $allcppfiles > ../passes.ntoks");
+mysystem("cd $compdir/symtab && $tokctr $allcppfiles > ../symtab.ntoks");
 mysystem("cd $compdir/traversals && $tokctr $allcppfiles > ../traversals.ntoks");
 mysystem("cd $compdir/util && $tokctr $allcppfiles > ../util.ntoks");
 mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks");
@@ -93,6 +94,7 @@ $includetoks = `cat $compdir/include.ntoks`; chomp($includetoks);
 $maintoks = `cat $compdir/main.ntoks`; chomp($maintoks);
 $parsertoks = `cat $compdir/parser.ntoks`; chomp($parsertoks);
 $passestoks = `cat $compdir/passes.ntoks`; chomp($passestoks);
+$symtabtoks = `cat $compdir/symtab.ntoks`; chomp($symtabtoks);
 $traversalstoks = `cat $compdir/traversals.ntoks`; chomp($traversalstoks);
 $utiltoks = `cat $compdir/util.ntoks`; chomp($utiltoks);
 $vparsertoks = `cat $compdir/vparser.ntoks`; chomp($vparsertoks);
@@ -121,6 +123,9 @@ if ($parsertoks == "") {
 }
 if ($passestoks == "") {
     $passestoks = 0;
+}
+if ($symtabtoks == "") {
+    $symtabtoks = 0;
 }
 if ($traversalstoks == "") {
     $traversalstoks = 0;
@@ -153,6 +158,8 @@ emit($tot);
 $tot += $passestoks;
 emit($tot);
 $tot += $parsertoks;
+emit($tot);
+$tot += $symtabtoks;
 emit($tot);
 $tot += $asttoks;
 emit($tot);
