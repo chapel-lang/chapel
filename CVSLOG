@@ -3893,3 +3893,16 @@ Added files:
 	                                    dispatch3.good dispatch3.v 
 	                                    dispatch4.good dispatch4.v 
 
+---------------------------------------------------------------------------
+
+07/09/04 14:59:19 -- bradc
+
+Log message:
+	Checking in some code to do token-counting and other static
+	code statistics that I've been playing with as a background
+	activity to putting review slides together.
+
+Added files:
+	chapel/util/tokencount/: .cvsignore Makefile tokencount.c 
+	                         tokencount.h tokencount.l tokencount.y 
+
