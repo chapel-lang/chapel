@@ -165,8 +165,7 @@ make_abstract_type(Sym *s) {
 AType *
 make_AType(Vec<CreationSet *> &css) {
   AType *t = new AType();
-  forv_CreationSet(cs, css)
-    t->set_add(cs);
+  t->set_union(css);
   return type_cannonicalize(t);
 }
 
@@ -379,36 +378,31 @@ type_cannonicalize(AType *t) {
   assert(!t->sorted.n);
   assert(!t->union_map.n);
   assert(!t->intersection_map.n);
-  int nconsts = 0, rebuild = 0;
+  int consts = 0, rebuild = 0;
+  Vec<CreationSet *> nonconsts;
   forv_CreationSet(cs, *t) if (cs) {
     // strip out constants if the base type is included
-    if (cs->sym->is_constant || (cs->sym->type->num_kind && cs->sym != cs->sym->type)) {
-      CreationSet *base_cs = cs->sym->type->abstract_type->v[0];
+    CreationSet *base_cs = 0;
+    if (cs->sym->is_constant || (cs->sym->type->num_kind && cs->sym != cs->sym->type))
+      base_cs = cs->sym->type->abstract_type->v[0];
+    else if (cs->sym->type_kind == Type_TAGGED)
+      base_cs = cs->sym->type->specializes.v[0]->abstract_type->v[0];
+    if (base_cs) {
       if (t->set_in(base_cs)) {
 	rebuild = 1;
 	continue;
       }
-      nconsts++;
-    }
+      consts++;
+      nonconsts.set_add(base_cs);
+    } else
+      nonconsts.set_add(cs);
     t->sorted.add(cs);
   }
-  if (nconsts > num_constants_per_variable) {
-    // compress constants into the base type
+  if (consts > num_constants_per_variable)
     rebuild = 1;
-    for (int i = 0; i < t->sorted.n; i++)
-      if (t->sorted.v[i]->sym->is_constant || 
-	  (t->sorted.v[i]->sym->type->num_kind && 
-	   t->sorted.v[i]->sym != t->sorted.v[i]->sym->type)) {
-	CreationSet *base_cs = t->sorted.v[i]->sym->type->abstract_type->v[0];
-	if (!t->set_in(base_cs)) {
-	  t->sorted.v[i] = base_cs;
-	} else {
-	  t->sorted.v[i] = t->sorted.v[t->sorted.n - 1];
-	  t->sorted.n--;
-	}
-      }
-  }
   if (rebuild) {
+    t->sorted.clear();
+    t->sorted.append(nonconsts);
     t->clear();
     t->set_union(t->sorted);
   }
@@ -420,7 +414,8 @@ type_cannonicalize(AType *t) {
   t->hash = h ? h : h + 1; // 0 is empty
   AType *tt = cannonical_atypes.put(t);
   if (!tt) tt = t;
-  if (tt == t) {
+  if (tt == t) {  // this one is new
+    // compute "top"
     if (tt->sorted.n < 2)
       tt->top = tt;
     else {
@@ -446,8 +441,13 @@ type_cannonicalize(AType *t) {
       else
 	tt->top = s->abstract_type;
     }
-  Ltop_done:;
   }
+  Ltop_done:;
+  // compute "type" (without constants)
+  if (consts)
+    tt->type = make_AType(nonconsts);
+  else
+    tt->type = tt;
   return tt;
 }
 #undef NO_TOP
@@ -1445,7 +1445,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	AVar *rhs = make_AVar(p->rvals.v[2], es);
 	Vec<CreationSet *> css;
 	forv_CreationSet(cs, *rhs->out)
-	  if (cs->sym == p->rvals.v[1]->sym)
+	  if (cs->sym->type == p->rvals.v[1]->sym)
 	    css.set_add(cs);
 	if (css.n)
 	  update_in(result, make_AType(css));
@@ -1743,7 +1743,7 @@ show_illegal_type(FILE *fp, ATypeViolation *v) {
     }
   }
   fprintf(stderr, "illegal: ");
-  show_type(*v->type, fp);
+  show_type(*v->type->type, fp);
   fprintf(stderr, "\n");
 }
 
@@ -2288,9 +2288,16 @@ collect_es_type_confluences(Vec<AVar *> &type_confluences) {
 	forv_AVar(x, av->backward) if (x) {
 	  if (!x->out->n)
 	    continue;
-	  if (type_diff(av->in, x->out) != bottom_type) {
-	    type_confluences.set_add(av);
-	    break;
+	  if (av->var->sym->clone_for_constants) {
+	    if (type_diff(av->in, x->out) != bottom_type) {
+	      type_confluences.set_add(av);
+	      break;
+	    }
+	  } else {
+	    if (type_diff(av->in->type, x->out->type) != bottom_type) {
+	      type_confluences.set_add(av);
+	      break;
+	    }
 	  }
 	}
     }
@@ -2307,9 +2314,16 @@ collect_cs_type_confluences(Vec<AVar *> &type_confluences) {
 	if (!x->out->n)
 	  continue;
 	if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-	  if (type_diff(av->in, x->out) != bottom_type) {
-	    type_confluences.set_add(av);
-	    break;
+	  if (av->var->sym->clone_for_constants) {
+	    if (type_diff(av->in, x->out) != bottom_type) {
+	      type_confluences.set_add(av);
+	      break;
+	    }
+	  } else {
+	    if (type_diff(av->in->type, x->out->type) != bottom_type) {
+	      type_confluences.set_add(av);
+	      break;
+	    }
 	  }
 	}
       }
@@ -2902,4 +2916,23 @@ constant_info(AST *a, Vec<Sym *> &constants, Sym *s) {
     return constant_info(v, constants);
   return 0;
 }
+
+int
+symbol_info(Var *v, Vec<Sym *> &symbols) {
+  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+    AVar *av = v->avars.v[i].value;
+    forv_CreationSet(cs, *av->out) if (cs) {
+      if (cs->sym->is_symbol)
+	symbols.set_add(cs->sym);
+      else {
+	symbols.clear();
+	return 0;
+      }
+    }
+  }
+  symbols.set_to_vec();
+  return symbols.n;
+}
+
+
 

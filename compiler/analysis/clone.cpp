@@ -79,6 +79,16 @@ to_basic_type(Sym *t) {
   return 0;
 }
 
+static Sym *
+to_concrete_type(Sym *t) {
+  t = t->type;
+  if (t->is_symbol)
+    return sym_symbol;
+  if (t->type_kind == Type_TAGGED && t->specializes.n)
+    return t->specializes.v[0];
+  return t;
+}
+
 // return the Sym of some basic type, fail if basics are mixed or with non basics
 // and NULL if basic
 Sym *
@@ -89,7 +99,7 @@ basic_type(FA *fa, AType *t, Sym *fail) {
     Sym *t = 0;
     if ((t = to_basic_type(cs->sym))) {
       if (!res)
-	res = cs->sym;
+	res = t;
       else
 	res = fail;
     } else {
@@ -446,9 +456,10 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
     Vec<CreationSet *> *eqcss = css_sets.v[i];
     Sym *sym = 0;
     forv_CreationSet(cs, *eqcss) if (cs) {
+      Sym *ct = to_concrete_type(cs->sym);
       if (!sym)
-	sym = cs->sym->type;
-      else if (sym != cs->sym->type)
+	sym = ct;
+      else if (sym != ct)
 	sym = (Sym *)-1;
     }
     // same sym
@@ -473,9 +484,10 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
     Vec<CreationSet *> *eqcss = css_sets_local.v[i];
     Sym *sym = 0;
     forv_CreationSet(cs, *eqcss) if (cs) {
+      Sym *ct = to_concrete_type(cs->sym);
       if (!sym)
-	sym = cs->sym->type;
-      else if (sym != cs->sym->type)
+	sym = ct;
+      else if (sym != ct)
 	sym = (Sym *)-1;
     }
     // same sym
@@ -498,10 +510,11 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	s->type_kind = sym == sym_tuple ? Type_RECORD : Type_FUN;
 	s->incomplete = 1;
 	forv_CreationSet(cs, *eqcss) if (cs) {
+	  Sym *ct = to_concrete_type(cs->sym);
 	  if (!name)
-	    name = cs->sym->type->name;
+	    name = ct->name;
 	  else
-	    if (cs->sym->type->name != name)
+	    if (ct->name != name)
 	      name = BAD_NAME;
 	  if (cs->defs.n != 1)
 	    ast = BAD_AST;
@@ -517,7 +530,7 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	  s->ast = ast;
       } else if (sym->type_kind == Type_PRIMITIVE ||
 		 sym->type_kind == Type_TAGGED || 
-		 sym->is_symbol || sym->is_constant || sym->is_fun) 
+		 sym->is_fun) 
       {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
@@ -647,8 +660,8 @@ resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 		  sym->has.v[i] = av->var->sym->copy();
 		s = sym->has.v[i];
 	      }
-	      forv_CreationSet(x, *av->out) if (x)
-		t.set_add(x->type);
+	      forv_CreationSet(x, *av->out->type) if (x)
+		t.set_add(to_concrete_type(x->sym));
 	    }
 	    t.set_to_vec();
 	    if (t.n == 1)

@@ -344,10 +344,14 @@ ACallbacks::make_LUB_type(Sym *t) {
 	fail("mixed primitive types");
     }
     Type *ttt = dynamic_cast<Type *>(s->asymbol->symbol);
-    assert(ttt);
-    types.set_add(ttt);
+    if (ttt)
+      types.set_add(ttt);
   }
   types.set_to_vec();
+  if (types.n == 0)
+    return sym_void;
+  if (types.n == 1)
+    return types.v[0]->asymbol->sym;
   Type *tt = find_or_make_sum_type(&types);
   if (tt->asymbol)
     return tt->asymbol->sym;
@@ -436,6 +440,7 @@ install_new_function(FnSymbol *f) {
   if (init_function(f) < 0 || build_function(f) < 0) 
     assert(!"unable to instantiate generic/wrapper");
   if1_finalize_closure(if1, f->asymbol->sym);
+  build_type_hierarchy();
   finalize_symbols(if1);
   Fun *fun = new Fun(f->asymbol->sym);
   build_arg_positions(fun);

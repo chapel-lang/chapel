@@ -6,7 +6,7 @@
 #include "sym.h"
 #include "extern.h"
 
-#define DEFAULT_NUM_CONSTANTS_PER_VARIABLE	0
+#define DEFAULT_NUM_CONSTANTS_PER_VARIABLE	1
 
 #define GLOBAL_CONTOUR ((void*)1)
 
@@ -40,6 +40,7 @@ class AType : public Vec<CreationSet *> {
  public:
   uint 			hash;
   AType			*top;
+  AType			*type;		// not including values (constants)
   Vec<CreationSet *>	sorted;
   Map<AType *, AType *> union_map;
   Map<AType *, AType *> intersection_map;
@@ -287,6 +288,7 @@ Sym *type_info(AST *a, Sym *s = 0);
 void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
 int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
 int constant_info(Var *v, Vec<Sym *> &constants);
+int symbol_info(Var *v, Vec<Sym *> &symbols);
 AType *make_AType(Vec<CreationSet *> &css);
 AType *make_abstract_type(Sym *s);
 void update_in(AVar *v, AType *t);

@@ -4,11 +4,6 @@ function __init constant_folding.v:7
 function f constant_folding.v:16
 globals
 print::a(prelude.v:0) ( float64 )
-print::a(prelude.v:0) ( float64 )
-print::a(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( int32 )
 print::a(prelude.v:0) ( int32 )
 system::__init(prelude.v:0) ( __init )
 system::null(prelude.v:0) ( null )

@@ -162,8 +162,10 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
     }
     case P_prim_period: {
       char *t = c_type(n->lvals.v[0]);
-      Sym *selector = n->rvals.v[3]->type;
-      char *symbol = selector->name; assert(symbol);
+      Vec<Sym *> symbols;
+      symbol_info(n->rvals.v[3], symbols);
+      assert(symbols.n == 1);
+      char *symbol = symbols.v[0]->name;
       Sym *obj = n->rvals.v[1]->type;
       if (n->lvals.v[0]->type->type_kind == Type_FUN && n->creates) {
 	fprintf(fp, "%s = _CG_prim_closure(%s);\n", n->lvals.v[0]->cg_string, t);
