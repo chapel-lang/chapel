@@ -3411,3 +3411,17 @@ Modified files:
 	chapel/compiler/AST/: chapel.y expr.cpp stmt.cpp symbol.cpp 
 	                      type.cpp expr.h stmt.h symbol.h type.h 
 
+---------------------------------------------------------------------------
+
+06/16/04 12:56:38 -- bradc
+
+Log message:
+	Lunchtime prototype AST checkpoint.
+
+Modified files:
+	chapel/compiler/AST/: Makefile chapel.lex chapel.y main.cpp 
+	                      stmt.cpp stmt.h symbol.cpp symbol.h 
+	                      type.cpp type.h yy.h 
+Added files:
+	chapel/compiler/AST/: TODO 
+
