@@ -19,6 +19,7 @@ class Code;
 class LabelMap;
 class CloneCallback;
 class ASymbol;
+class Sym;
 
 enum IF1_num_kind {
   IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
@@ -71,10 +72,7 @@ union Immediate {
   char *v_string;
 };
 
-class TypeSym : public gc {
-};
-
-class Sym : public gc {
+class BasicSym : public gc {
  public:
   int			id;			// unique number
   char 			*name;			// user level name
@@ -117,12 +115,32 @@ class Sym : public gc {
   unsigned int		type_kind:4;
   unsigned int		num_kind:3;		// Sort of number class
   unsigned int		num_index:3;		// Precision of number class
+};
 
+class Sym : public BasicSym {
+ public:
   char			*destruct_name;		// name of related destructured element
   char			*arg_name;		// argument name
 
   char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values
+
+  Scope 		*scope;			// used in ast.cpp		*fun* *type* *module*
+  LabelMap		*labelmap;		// used by ast.cpp		*fun*
+
+  Fun			*fun;			// used by fa.cpp		*fun*
+  Code			*code;			// for functions, Code		*fun*
+  Sym			*self;			// self variable for the function *fun*
+  Sym			*ret;			// return value of functions	*fun*
+  Sym			*cont;			// continuation (function returning ret) *fun*
+
+  Vec<Sym *>		implementors;		// used by fa.cpp, implementors	*type*
+  Vec<Sym *>		specializers;		// used by fa.cpp, specializers	*type*
+  Vec<Sym *>		dispatch_order;		// used by fa.cpp, pattern.cpp	*type*
+
+  MType	       		*match_type;		// used by pattern.cpp		*type*
+  AType			*abstract_type;		// used by fa.cpp		*type*
+  Vec<CreationSet *>	creators;		// used by fa.cpp		*type*
 
   Vec<Sym *>		specializes;		// declared superclasses	*type*
   Vec<Sym *>		includes;		// included code		*type*
@@ -133,22 +151,6 @@ class Sym : public gc {
   Sym			*init;			// for modules & classes (default init function) *type*
   Sym			*meta_type;		// meta type and inverse ptr	*type*
   Sym			*element;		// element type for aggregates *type*
-
-  Scope 		*scope;			// used in ast.cpp		*fun* *type* *module*
-  LabelMap		*labelmap;		// used by ast.cpp		*fun*
-  Vec<Sym *>		implementors;		// used by fa.cpp, implementors	*type*
-  Vec<Sym *>		specializers;		// used by fa.cpp, specializers	*type*
-  Vec<Sym *>		dispatch_order;		// used by fa.cpp, pattern.cpp	*type*
-
-  MType	       		*match_type;		// used by pattern.cpp		*type*
-  AType			*abstract_type;		// used by fa.cpp		*type*
-  Vec<CreationSet *>	creators;		// used by fa.cpp		*type*
-
-  Fun			*fun;			// used by fa.cpp		*fun*
-  Code			*code;			// for functions, Code		*fun*
-  Sym			*self;			// self variable for the function *fun*
-  Sym			*ret;			// return value of functions	*fun*
-  Sym			*cont;			// continuation (function returning ret) *fun*
 
   void			*temp;			// algorithmic temp		*type*
 

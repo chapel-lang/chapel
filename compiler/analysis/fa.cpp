@@ -1667,16 +1667,13 @@ collect_notype() {
 static void
 initialize_symbols() {
   forv_Sym(s, fa->pdb->if1->allsyms) {
-    if (s->is_symbol)
+    if (s->is_symbol || s->is_fun || s->type_kind)
       s->abstract_type = make_abstract_type(s);
-    if (s->is_fun)
-      s->abstract_type = make_abstract_type(s);
-    if (s->type_kind)
-      s->abstract_type = make_abstract_type(s);
-    forv_Sym(ss, s->has)
-      if (!ss->var)
-	ss->var = new Var(ss);
-    if (s->element)
+    if (s->is_fun || s->is_pattern || s->type_kind)
+      forv_Sym(ss, s->has)
+	if (!ss->var)
+	  ss->var = new Var(ss);
+    if (s->type_kind && s->element)
       s->element->var = new Var(s->element);
   }
 }
@@ -2015,7 +2012,7 @@ static void
 clear_results() {
   foreach_var<ClearVarFn>();
   forv_Sym(s, fa->pdb->if1->allsyms) {
-    if (s->creators.n)
+    if ((s->type_kind || s->is_constant || s->is_symbol) && s->creators.n)
       forv_CreationSet(cs, s->creators)
 	clear_cs(cs);
   }

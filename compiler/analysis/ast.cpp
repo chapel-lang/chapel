@@ -62,12 +62,14 @@ unalias_syms(IF1 *i) {
     }
   }
   forv_Sym(s, i->allsyms) {
-    for (int x = 0; x < s->specializes.n; x++)
-      s->specializes.v[x] = unalias_type(s->specializes.v[x]);
-    for (int x = 0; x < s->includes.n; x++)
-      s->includes.v[x] = unalias_type(s->includes.v[x]);
-    for (int x = 0; x < s->implements.n; x++)
-      s->implements.v[x] = unalias_type(s->implements.v[x]);
+    if (s->type_kind) {
+      for (int x = 0; x < s->specializes.n; x++)
+	s->specializes.v[x] = unalias_type(s->specializes.v[x]);
+      for (int x = 0; x < s->includes.n; x++)
+	s->includes.v[x] = unalias_type(s->includes.v[x]);
+      for (int x = 0; x < s->implements.n; x++)
+	s->implements.v[x] = unalias_type(s->implements.v[x]);
+    }
     if (s->must_specialize)
       s->must_specialize = unalias_type(s->must_specialize);
     if (s->must_implement)
@@ -190,10 +192,12 @@ build_type_hierarchy() {
     // functions implement and specialize of "function"
     if (s->is_fun)
       implement_and_specialize(sym_function, s, types);
-    forv_Sym(ss, s->implements)
-      implement(ss, s, types);
-    forv_Sym(ss, s->specializes)
-      specialize(ss, s, types);
+    if (s->type_kind) {
+      forv_Sym(ss, s->implements)
+	implement(ss, s, types);
+      forv_Sym(ss, s->specializes)
+	specialize(ss, s, types);
+    }
     // functions implement and specializes of the initial symbol in their pattern
     // which may be a constant or a constant constrainted variable
     if (s->is_fun && s->has.n) {
@@ -205,7 +209,7 @@ build_type_hierarchy() {
     }
     if (s->type_kind)
       types.set_add(s);
-    if (s->meta_type)
+    if (s->is_meta_class)
       meta_types.add(s);
   }
   forv_Sym(s, types) if (s) {
@@ -280,7 +284,7 @@ include_instance_variables(IF1 *i) {
   Vec<Sym *> include_set, includes;
   forv_Sym(s, i->allsyms) {
     Vec<Sym *> in_includes;
-    if (s->includes.n)
+    if (s->type_kind && s->includes.n)
       collect_includes(s, include_set, includes, in_includes);
   }
   forv_Sym(s, includes) 
@@ -294,7 +298,7 @@ set_value_for_value_classes(IF1 *i) {
   sym_anynum->is_value_class = 1;
   Vec<Sym *> implementers;
   forv_Sym(s, i->allsyms) {
-    if (s->implements.n)
+    if (s->type_kind && s->implements.n)
       implementers.add(s);
   }	
   int changed = 1;

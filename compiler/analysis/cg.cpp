@@ -657,7 +657,7 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
   if (globals.n)
     fputs("\n", fp);
   forv_Var(v, globals) {
-    if (v->sym->constant) {
+    if (v->sym->is_constant && v->sym->constant) {
       if (v->type == sym_string)
 	v->cg_string = quote_string(v->sym->constant);
       else

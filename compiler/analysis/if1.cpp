@@ -374,18 +374,21 @@ mark_sym_live(Sym *s) {
       mark_sym_live(s->type);
     if (s->in)
       mark_sym_live(s->in);
-    forv_Sym(ss, s->implements)
-      mark_sym_live(ss);
-    forv_Sym(ss, s->specializes)
-      mark_sym_live(ss);
-    forv_Sym(ss, s->includes)
-      mark_sym_live(ss);
+    if (s->type_kind) {
+      forv_Sym(ss, s->implements)
+	mark_sym_live(ss);
+      forv_Sym(ss, s->specializes)
+	mark_sym_live(ss);
+      forv_Sym(ss, s->includes)
+	mark_sym_live(ss);
+    }
     if (s->must_specialize)
       mark_sym_live(s->must_specialize);
     if (s->must_implement)
       mark_sym_live(s->must_implement);
-    forv_Sym(ss, s->has)
-      mark_sym_live(ss);
+    if (s->is_fun || s->is_pattern || s->type_kind)
+      forv_Sym(ss, s->has)
+	mark_sym_live(ss);
     return 1;
   }
   return 0;

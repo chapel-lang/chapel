@@ -19,6 +19,8 @@
 #include "prim.h"
 #include "pattern.h"
 
+//#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
+
 class LabelMap : public Map<char *, BaseAST *> {};
 
 static Sym *domain_start_index_symbol = 0;
@@ -249,24 +251,31 @@ set_global_scope(Sym *s) {
 }
 
 static ASymbol *
-new_ASymbol(Symbol *symbol = 0) {
-  ASymbol *s = new ASymbol;
-  s->xsymbol = symbol;
-  s->sym = new Sym;
-  s->sym->asymbol = s;
-  char *name = 0;
-  if (symbol && !symbol->isNull())
-    name = symbol->name;
-  if1_register_sym(if1, s->sym, name);
-  return s;
-}
-
-static ASymbol *
 new_ASymbol(char *name) {
   ASymbol *s = new ASymbol;
   s->sym = new Sym;
   s->sym->asymbol = s;
   if1_register_sym(if1, s->sym, name);
+  return s;
+}
+
+static ASymbol *
+new_ASymbol(Symbol *symbol, int basic = 0) {
+  char *name = 0;
+  if (symbol && !symbol->isNull())
+    name = symbol->name;
+  ASymbol *s = new ASymbol;
+  if (basic)
+#ifdef MINIMIZED_MEMORY
+    s->sym = (Sym*)new BasicSym;
+#else
+    s->sym = (Sym*)new Sym;
+#endif
+  else
+    s->sym = new Sym;
+  s->sym->asymbol = s;
+  if1_register_sym(if1, s->sym, name);
+  s->xsymbol = symbol;
   return s;
 }
 
@@ -447,7 +456,8 @@ map_symbols(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms) {
     Symbol *sym = dynamic_cast<Symbol *>(s);
     if (sym) {
-      sym->asymbol = new_ASymbol(sym);
+      int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
+      sym->asymbol = new_ASymbol(sym, basic);
       sym->asymbol->xsymbol = sym;
       if (!sym->parentScope) {
 	sym->asymbol->sym->global_scope = 1;
