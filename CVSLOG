@@ -5643,3 +5643,52 @@ Modified files:
 	                  map.h 
 	chapel/compiler/AST/: stmt.h 
 
+---------------------------------------------------------------------------
+
+08/24/04 12:51:28 -- bradc
+
+Log message:
+	Made some improvements to the symboltable and symbols.
+	
+	In particular, I hadn't yet linked symbols back to their scope.
+	Have now done so -- each Symbol has a "scope" link of type
+	SymScope* (defined in symscope.h) which links back to the scope
+	in which it was defined.  The most useful bits of information
+	in this scope are:
+	
+	(1) its "type" an enumeration of type scopeType that indicates
+	whether the scope is:
+	
+	SCOPE_INTRINSIC == builtins at the global level
+	SCOPE_FILE      == defined at the file level
+	SCOPE_PARAM     == a function's parameter scope
+	SCOPE_FUNCTION  == a function's top-level scope
+	SCOPE_LOCAL     == a local scope to a function (compound stmt)
+	SCOPE_FORLOOP   == the scope for a for loop's indices
+	
+	There will be more scope types as we move forward (SCOPE_CLASS is
+	notably absent currently...).
+	
+	(2) its "level" -- an integer indicating the depth of the scope.
+	
+	-1 == SCOPE_INTRINSIC
+	0 == SCOPE_FILE
+	>0 == some scope within the file
+	
+	Note that this numbering has changed by 1 in this checkin
+	(SCOPE_INTRINSIC used to be 0).  For convenience, the
+	SCOPE_INTRINSIC and SCOPE_FILE symbols are defined to be -1
+	and 0, respectively.
+	
+	In this check-in, I also moved away from STL maps and strings
+	to avoid problems with GC that I hadn't anticipated initially,
+	but which has been on my TODO list since I had the realization
+	one morning that I was probably causing problems in this
+	respect.  I'm now using John's HashMap class instead.
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp stmt.cpp symbol.cpp symbol.h 
+	                      symtab.cpp symtab.h 
+Added files:
+	chapel/compiler/AST/: symscope.h 
+
