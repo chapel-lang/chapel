@@ -2917,3 +2917,13 @@ Added files:
 	                              logical_and.chpl logical_and.good 
 	                              shift_ops.chpl shift_ops.good 
 
+---------------------------------------------------------------------------
+
+06/08/04 11:45:45 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix test/Share/mutrec.chpl
+
+Modified files:
+	chapel/compiler/: fun.cpp 
+
