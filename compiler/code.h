@@ -31,6 +31,7 @@ class Code : public gc {
   Prim		*prim;
 
   char 		*pathname();
+  char 		*filename();
   int 		line();
 
   unsigned int	dead:1;	// used by if1.cpp

@@ -100,8 +100,8 @@ dump_sym(FILE *fp, Sym *t) {
 	    t->in->name);
   else
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
-    fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->pathname(), t->line());
-  if (t->ast && t->pathname())
+    fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->filename(), t->line());
+  if (t->ast && t->filename())
   if (t->internal)
     fprintf(fp, "<TR><TD><TD>internal<TD>%s\n", internal_string[t->internal]);
   if (t->builtin) {
@@ -128,20 +128,6 @@ dump_sym(FILE *fp, Sym *t) {
   dump_sub_sym(fp, t->cont, "Cont");
   dump_sub_sym(fp, t->init, "Init");
   fprintf(fp, "</TABLE><BR>\n");
-}
-
-static int
-compar_sym_ids(const void *ai, const void *aj) {
-  uint32 i = (*(Sym**)ai)->id;
-  uint32 j = (*(Sym**)aj)->id;
-  return (i > j) ? 1 : ((i < j) ? -1 : 0);
-}
-
-static int
-compar_fun_ids(const void *ai, const void *aj) {
-  uint32 i = (*(Fun**)ai)->id;
-  uint32 j = (*(Fun**)aj)->id;
-  return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
 void
@@ -204,15 +190,15 @@ dump_functions(FILE *fp, FA *fa) {
   fprintf(fp, "<H1><A NAME=\"CONCRETE_FUNCTIONS\">Concrete Functions</A></H1>\n\n");
   Vec<Fun *> funs;
   funs.copy(fa->funs);
-  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_fun_ids);
+  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_funs);
   forv_Fun(f, funs) {
     const char *name = f->sym->name ? f->sym->name : ANON;
     const char *sname = f->sym->in ? f->sym->in->name : "";
     if (!sname) sname = ANON;
     fprintf(fp, "<b><A NAME=\"FUN_%d\">%s::%s (%d)</A></b>\n", f->id, sname, name, f->id);
     fprintf(fp, "<TABLE BORDER=0, CELLSPACING=0, CELLPADDING=0>\n");
-    if (f->ast && f->pathname())
-      fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->pathname(), f->line());
+    if (f->ast && f->filename())
+      fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->filename(), f->line());
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>Args<TD>\n");
     dump_var_type_marg_positions(fp, f->arg_positions, f->args);
     fprintf(fp, "<TR><TD><TD>Rets<TD>\n");
@@ -305,10 +291,10 @@ dump_symbols(FILE *fp, FA *fa) {
   globals.set_to_vec();
 
   other.set_to_vec();
-  qsort(concrete_types.v, concrete_types.n, sizeof(concrete_types.v[0]), compar_sym_ids);
-  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_sym_ids);
-  qsort(other.v, other.n, sizeof(other.v[0]), compar_sym_ids);
-  qsort(globals.v, globals.n, sizeof(globals.v[0]), compar_sym_ids);
+  qsort(concrete_types.v, concrete_types.n, sizeof(concrete_types.v[0]), compar_syms);
+  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_syms);
+  qsort(other.v, other.n, sizeof(other.v[0]), compar_syms);
+  qsort(globals.v, globals.n, sizeof(globals.v[0]), compar_syms);
   // Concrete Types
   fprintf(fp, "<H1><A NAME=\"CONCRETE_TYPES\">Concrete Types</A></H1>\n\n");
   forv_Sym(t, concrete_types)

@@ -36,7 +36,7 @@ show_sym(Sym *s, FILE *fp) {
 
 static void
 show_fun(Fun *f, FILE *fp) {
-  fprintf(fp, "%s:%d: ", f->pathname(), f->line());
+  fprintf(fp, "%s:%d: ", f->filename(), f->line());
   forv_Sym(s, f->sym->has)
     show_sym(s, fp);
 }
@@ -152,10 +152,10 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
   depth++;
   if (depth > print_call_depth || !p->code)
     return;
-  if (depth > 1 && p->code->pathname()) {
+  if (depth > 1 && p->code->filename()) {
     for (int x = 0; x < depth; x++)
       fprintf(stderr, " ");
-    fprintf(stderr, "called from %s:%d\n", p->code->pathname(), p->code->line());
+    fprintf(stderr, "called from %s:%d\n", p->code->filename(), p->code->line());
   }
   AEdge **last = es->edges.last();
   for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
@@ -205,10 +205,10 @@ show_violations(FA *fa, FILE *fp) {
     if (!verbose_level && !v->av->var->sym->name)
       continue;
     if (v->send)
-      fprintf(stderr, "%s:%d: ", v->send->var->def->code->pathname(), 
+      fprintf(stderr, "%s:%d: ", v->send->var->def->code->filename(), 
 	      v->send->var->def->code->line());
     else if (v->av->var->sym->ast)
-      fprintf(stderr, "%s:%d: ", v->av->var->sym->pathname(), 
+      fprintf(stderr, "%s:%d: ", v->av->var->sym->filename(), 
 	      v->av->var->sym->line());
     else
       fprintf(stderr, "error: ");
@@ -299,9 +299,9 @@ log_var_types(Var *v, Fun *f) {
   else
     log(LOG_TEST_FA, "%d::", v->sym->in->id);
   if (v->sym->name)
-    log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->pathname()), v->sym->line());
+    log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->filename()), v->sym->line());
   else
-    log(LOG_TEST_FA, "(%s:%d) ", fn(v->sym->pathname()), v->sym->line());
+    log(LOG_TEST_FA, "(%s:%d) ", fn(v->sym->filename()), v->sym->line());
   Vec<CreationSet *> css;
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
@@ -315,7 +315,7 @@ log_var_types(Var *v, Fun *f) {
       log(LOG_TEST_FA, "%s ", cs->sym->name);
     else if (cs->sym->constant)
       log(LOG_TEST_FA, "\"%s\" ", cs->sym->constant);
-    log(LOG_TEST_FA, "(%s:%d) ", fn(cs->sym->pathname()), cs->sym->line());
+    log(LOG_TEST_FA, "(%s:%d) ", fn(cs->sym->filename()), cs->sym->line());
   }
   log(LOG_TEST_FA, ")\n");
 }

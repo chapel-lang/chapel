@@ -137,7 +137,7 @@ operator(a:anynum, #"--")		   : a - 1;
 
 // tuples indexing
 
-tuple::self(a) : #__index self a;
+tuple::self(a:anyint) : #__index self a;
 
 // generic printing
 

@@ -94,6 +94,7 @@ class Fun : public gc {
   char *cg_structural_string;
   
   char *pathname();
+  char *filename();
   int line();
   
   void collect_PNodes(Vec<PNode *> &v);

@@ -1891,6 +1891,7 @@ make_type_syms(IF1 *i) {
 
 static void
 finalize_types(IF1 *i) {
+  sym_null->type = sym_void;
   unalias_implements_constraints(i);
   closure_of_implements(i);
   include_instance_variables(i);

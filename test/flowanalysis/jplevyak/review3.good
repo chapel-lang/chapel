@@ -7,10 +7,10 @@
  called from 17 in __init at review3.chpl:1
  called from 18 in __init at review3.chpl:1
  called from 18 in __init at review3.chpl:1
- called from 192 in class at /home/jplevyak/chapel/compiler/prelude.chpl:190
- called from 193 in class at /home/jplevyak/chapel/compiler/prelude.chpl:190
- called from 194 in class at /home/jplevyak/chapel/compiler/prelude.chpl:190
- called from 195 in class at /home/jplevyak/chapel/compiler/prelude.chpl:190
+ called from 192 in class at prelude.chpl:190
+ called from 193 in class at prelude.chpl:190
+ called from 194 in class at prelude.chpl:190
+ called from 195 in class at prelude.chpl:190
  called from 2 in compute at review3.chpl:1
  called from 2 in compute at review3.chpl:1
  called from 20 in f at review3.chpl:20
@@ -19,10 +19,10 @@
  called from 20 in f at review3.chpl:20
  called from 20 in f at review3.chpl:20
  called from 20 in f at review3.chpl:20
- called from 215 in class at /home/jplevyak/chapel/compiler/prelude.chpl:213
- called from 216 in class at /home/jplevyak/chapel/compiler/prelude.chpl:213
- called from 216 in class at /home/jplevyak/chapel/compiler/prelude.chpl:213
- called from 217 in class at /home/jplevyak/chapel/compiler/prelude.chpl:213
+ called from 215 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 217 in class at prelude.chpl:213
  called from 25 in __init at review3.chpl:1
  called from 26 in __init at review3.chpl:1
  called from 3 in compute at review3.chpl:1
@@ -121,54 +121,54 @@ f::p2(review3.chpl:20) ( integer64 (prelude.chpl:27) )
 f::p2(review3.chpl:20) ( integer64 (prelude.chpl:27) )
 f::self(review3.chpl:20) ( FParams (review3.chpl:16) )
 f::self(review3.chpl:20) ( FParams (review3.chpl:16) )
-function __init /home/jplevyak/chapel/compiler/prelude.chpl:7
+function __init prelude.chpl:7
 function __init review3.chpl:1
 function __init__ <unknown>:0
-function class /home/jplevyak/chapel/compiler/prelude.chpl:190
-function class /home/jplevyak/chapel/compiler/prelude.chpl:213
+function class prelude.chpl:190
+function class prelude.chpl:213
 function compute review3.chpl:1
 function compute review3.chpl:1
 function f review3.chpl:20
 function f review3.chpl:20
 function g1 review3.chpl:8
 function g2 review3.chpl:9
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:103
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:86
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:89
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:93
-function self /home/jplevyak/chapel/compiler/prelude.chpl:203
-function self /home/jplevyak/chapel/compiler/prelude.chpl:203
-function self /home/jplevyak/chapel/compiler/prelude.chpl:203
-function self /home/jplevyak/chapel/compiler/prelude.chpl:211
+function operator prelude.chpl:103
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:86
+function operator prelude.chpl:88
+function operator prelude.chpl:88
+function operator prelude.chpl:88
+function operator prelude.chpl:88
+function operator prelude.chpl:88
+function operator prelude.chpl:89
+function operator prelude.chpl:93
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:211
 g1::c1(review3.chpl:8) ( float64 (prelude.chpl:39) )
 g1::c2(review3.chpl:8) ( float64 (prelude.chpl:39) )
 g1::p1(review3.chpl:8) ( float64 (prelude.chpl:39) )

@@ -45,7 +45,6 @@ initialize() {
 	  if (av)
 	    f->called_css.set_union(*av->out);
       }
-
   }
 }
 
@@ -464,6 +463,7 @@ resolve_concrete_types(CSSS &css_sets) {
 	  forv_CreationSet(cs, *eqcss) if (cs)
 	    sym->has.set_add(cs->sym);
 	  sym->has.set_to_vec();
+	  qsort(sym->has.v, sym->has.n, sizeof(sym->has.v[0]), compar_syms);
 	  break;
 	}
 	case Type_RECORD:
@@ -476,22 +476,23 @@ resolve_concrete_types(CSSS &css_sets) {
 	    sym->has.fill(cs->vars.n);
 	    for (int i = 0; i < cs->vars.n; i++) {
 	      AVar *av = cs->vars.v[i];
-	      if (!sym->has.v[i])
-		sym->has.v[i] = if1_alloc_sym(fa->pdb->if1);
+	      assert(!sym->has.v[i]);
+	      Sym *s = sym->has.v[i] = av->var->sym->copy();
+	      Vec<Sym *> t;
 	      forv_CreationSet(x, *av->out) if (x)
-		sym->has.v[i]->has.set_add(x->type);
-	    }
-	  }
-	  for (int i = 0; i < sym->has.n; i++) {
-	    Sym *s = sym->has.v[i];
-	    s->has.set_to_vec();
-	    if (s->has.n == 1)
-	      sym->has.v[i] = s->has.v[0];
-	    else {
-	      if (s->has.n != 0)
-		s->type_kind = Type_SUM;
-	      else
-		sym->has.v[i] = sym_null;
+		t.set_add(x->type);
+	      t.set_to_vec();
+	      if (t.n == 1)
+		s->type = t.v[0];
+	      else {
+		if (s->has.n != 0) {
+		  Sym *tt = if1_alloc_sym(if1);
+		  tt->type_kind = Type_SUM;
+		  tt->has.copy(t);
+		  s->type = tt;
+		} else
+		  s->type = sym_void;
+	      }
 	    }
 	  }
 	  break;
@@ -631,12 +632,12 @@ log_test_fa(FA *fa) {
   Vec<Var *> gvars;
   forv_Fun(f, fa->funs) {
     log(LOG_TEST_FA, "function %s %s:%d\n", f->sym->name ? f->sym->name : "<anonymous>",
-	f->sym->pathname(), f->sym->line());
+	f->sym->filename(), f->sym->line());
     forv_CallPoint(cp, f->called) {
       Fun *ff = cp->fun;
       log(LOG_TEST_FA, " called from %d in %s at %s:%d\n", cp->pnode->code->line(),
 	  ff->sym->name ? ff->sym->name : "<anonymous>",
-	  ff->pathname(), ff->line());
+	  ff->filename(), ff->line());
     }
     forv_Var(v, f->fa_all_Vars) {
       if (v->sym->in != f->sym) {

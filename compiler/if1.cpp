@@ -707,26 +707,6 @@ if1_cannonicalize_string(IF1 *p, char *s, char *e) {
 }
 
 void
-if1_set_int_type(IF1 *p, Sym *t, int signd, int size) {    
-  int ss = 0;
-  size >>= 3;
-  while (size) { ss++; size >>= 1; }
-  p->int_types[ss][signd] = t;
-  t->num_type = signd ? IF1_NUM_TYPE_INT : IF1_NUM_TYPE_UINT;
-  t->num_index = ss;
-}
-
-void
-if1_set_float_type(IF1 *p, Sym *t, int size) {
-  int ss = 0;
-  size >>= 4;
-  ss = size - 1;
-  p->float_types[ss] = t;
-  t->num_type = IF1_NUM_TYPE_FLOAT;
-  t->num_index = ss;
-}
-
-void
 if1_dump_code(FILE *fp, Code *code, int indent) {
   if (indent > 40)
     indent = 40;
@@ -788,135 +768,8 @@ if1_dump(FILE *fp, Code *code) {
   if1_dump_code(fp, code, 0);
 }
 
-Sym *
-unalias_type(Sym *s) {
-  if (!s)
-    return s;
-  if (s->type_kind == Type_ALIAS) {
-    Vec<Sym *> aliases;
-    do {
-      if (!s->alias)
-	return 0;
-      Sym *ss = s->alias;
-      if (aliases.set_in(ss))
-	fail("circular type alias");
-      aliases.set_add(ss);
-      s = ss;
-    } while (s->type_kind == Type_ALIAS);
-  }
-  return s;
-}
-
-int 
-sprint(char *str, Immediate &imm, Sym *type) {
-  int res = -1;
-  switch (type->num_type) {
-    case IF1_NUM_TYPE_NONE:
-      break;
-    case IF1_NUM_TYPE_UINT: {
-      switch (type->num_index) {
-	case IF1_INT_TYPE_8: 
-	  res = sprintf(str, "%u", imm.v_uint8); break;
-	case IF1_INT_TYPE_16:
-	  res = sprintf(str, "%u", imm.v_uint16); break;
-	case IF1_INT_TYPE_32:
-	  res = sprintf(str, "%u", imm.v_uint32); break;
-	case IF1_INT_TYPE_64:
-	  res = sprintf(str, "%llu", imm.v_uint64); break;
-	default: assert(!"case");
-      }
-      break;
-    }
-    case IF1_NUM_TYPE_INT: {
-      switch (type->num_index) {
-	case IF1_INT_TYPE_8: 
-	  res = sprintf(str, "%d", imm.v_int8); break;
-	case IF1_INT_TYPE_16:
-	  res = sprintf(str, "%d", imm.v_int16); break;
-	case IF1_INT_TYPE_32:
-	  res = sprintf(str, "%d", imm.v_int32); break;
-	case IF1_INT_TYPE_64:
-	  res = sprintf(str, "%lld", imm.v_int64); break;
-	default: assert(!"case");
-      }
-      break;
-    }
-    case IF1_NUM_TYPE_FLOAT:
-      switch (type->num_index) {
-	case IF1_FLOAT_TYPE_32:
-	  res = sprintf(str, "%f", imm.v_float32); break;
-	case IF1_FLOAT_TYPE_64:
-	  res = sprintf(str, "%f", imm.v_float64); break;
-	default: assert(!"case");
-      }
-      break;
-  }
-  return res;
-}
-
-int 
-print(FILE *fp, Immediate &imm, Sym *type) {
-  char str[80];
-  int res;
-  if ((res = sprint(str, imm, type) >= 0))
-    fprintf(fp, str);
-  return res;
-}
-
 int pp(Immediate &imm, Sym *type) {
   return print(stdout, imm, type);
-}
-
-int
-Sym::imm_int(int *result) {
-  int i = 0;
-  switch (type->num_type) {
-    default: return -1;
-    case IF1_NUM_TYPE_UINT: {
-      switch (type->num_index) {
-	case IF1_INT_TYPE_8: i = imm.v_uint8; break;
-	case IF1_INT_TYPE_16: i = imm.v_uint16; break;
-	case IF1_INT_TYPE_32: i = imm.v_uint32; break;
-	case IF1_INT_TYPE_64: i = imm.v_uint64; break;
-	default: return -1;
-      }
-      break;
-    }
-    case IF1_NUM_TYPE_INT: {
-      switch (type->num_index) {
-	case IF1_INT_TYPE_8: i = imm.v_int8; break;
-	case IF1_INT_TYPE_16: i = imm.v_int16; break;
-	case IF1_INT_TYPE_32: i = imm.v_int32; break;
-	case IF1_INT_TYPE_64: i = imm.v_int64; break;
-	default: return -1;
-      }
-      break;
-    }
-  }
-  *result = i;
-  return 0;
-}
-
-Sym *
-meta_apply(Sym *fn, Sym *arg) {
-  if (fn->type_kind != Type_APPLICATION)
-    return 0;
-  assert(0);
-  return 0;
-}
-
-char *
-Sym::pathname() {
-  if (ast)
-    return ast->pathname();
-  return "<unknown>";
-}
-
-int
-Sym::line() {
-  if (ast)
-    return ast->line();
-  return 0;
 }
 
 char *
@@ -926,11 +779,19 @@ Code::pathname() {
   return "<unknown>";
 }
 
+char *
+Code::filename() {
+  char *fn = pathname();
+  char *r = strrchr(fn, '/');
+  if (r) return r+1; else return fn;
+}
+
 int
 Code::line() {
   if (ast)
     return ast->line();
   return 0;
 }
+
 
 

@@ -11,6 +11,7 @@ typedef void *_CG_vector;
 typedef void *_CG_continuation;
 typedef void *_CG_any;
 typedef void *_CG_null;
+typedef void *_CG_void;
 typedef int _CG_int;
 typedef void *_CG_ref;
 #define _CG_reply _CG_symbol

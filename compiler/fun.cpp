@@ -220,6 +220,13 @@ Fun::pathname() {
   return ast->pathname();
 }
 
+char *
+Fun::filename() {
+  char *fn = pathname();
+  char *r = strrchr(fn, '/');
+  if (r) return r+1; else return fn;
+}
+
 int
 Fun::line() {
   return ast->line(); 

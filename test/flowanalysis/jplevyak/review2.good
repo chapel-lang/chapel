@@ -27,20 +27,20 @@
  called from 18 in merge at review2.chpl:16
  called from 18 in merge at review2.chpl:16
  called from 18 in merge at review2.chpl:16
- called from 192 in class at /home/jplevyak/chapel/compiler/prelude.chpl:190
- called from 193 in class at /home/jplevyak/chapel/compiler/prelude.chpl:190
- called from 194 in class at /home/jplevyak/chapel/compiler/prelude.chpl:190
- called from 195 in class at /home/jplevyak/chapel/compiler/prelude.chpl:190
+ called from 192 in class at prelude.chpl:190
+ called from 193 in class at prelude.chpl:190
+ called from 194 in class at prelude.chpl:190
+ called from 195 in class at prelude.chpl:190
  called from 2 in modify2 at review2.chpl:2
  called from 2 in modify2 at review2.chpl:2
  called from 2 in modify2 at review2.chpl:2
  called from 2 in modify2 at review2.chpl:2
  called from 20 in __init at review2.chpl:1
  called from 21 in __init at review2.chpl:1
- called from 215 in class at /home/jplevyak/chapel/compiler/prelude.chpl:213
- called from 216 in class at /home/jplevyak/chapel/compiler/prelude.chpl:213
- called from 216 in class at /home/jplevyak/chapel/compiler/prelude.chpl:213
- called from 217 in class at /home/jplevyak/chapel/compiler/prelude.chpl:213
+ called from 215 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 217 in class at prelude.chpl:213
  called from 7 in do_op at review2.chpl:7
  called from 7 in do_op at review2.chpl:7
  called from 7 in do_op at review2.chpl:7
@@ -70,56 +70,56 @@ do_op::p1(review2.chpl:7) ( float64 (prelude.chpl:39) )
 do_op::p1(review2.chpl:7) ( float64 (prelude.chpl:39) )
 do_op::p2(review2.chpl:7) ( integer64 (prelude.chpl:27) )
 do_op::p2(review2.chpl:7) ( integer64 (prelude.chpl:27) )
-function __init /home/jplevyak/chapel/compiler/prelude.chpl:7
+function __init prelude.chpl:7
 function __init review2.chpl:1
 function __init__ <unknown>:0
-function class /home/jplevyak/chapel/compiler/prelude.chpl:190
-function class /home/jplevyak/chapel/compiler/prelude.chpl:213
+function class prelude.chpl:190
+function class prelude.chpl:213
 function do_op review2.chpl:7
 function do_op review2.chpl:7
 function merge review2.chpl:16
 function merge review2.chpl:16
 function modify1 review2.chpl:1
 function modify2 review2.chpl:2
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:103
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:85
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:86
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:86
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:89
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:93
-function self /home/jplevyak/chapel/compiler/prelude.chpl:203
-function self /home/jplevyak/chapel/compiler/prelude.chpl:203
-function self /home/jplevyak/chapel/compiler/prelude.chpl:203
-function self /home/jplevyak/chapel/compiler/prelude.chpl:211
+function operator prelude.chpl:103
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:86
+function operator prelude.chpl:86
+function operator prelude.chpl:88
+function operator prelude.chpl:88
+function operator prelude.chpl:88
+function operator prelude.chpl:88
+function operator prelude.chpl:89
+function operator prelude.chpl:93
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:211
 globals
 merge::a1(review2.chpl:16) ( vector (prelude.chpl:13) )
 merge::a1(review2.chpl:16) ( vector (prelude.chpl:13) )

@@ -57,6 +57,7 @@ GEYSA_CVS_SRCS = \
 	scope.cpp \
 	ssu.cpp \
 	stringutil.cpp \
+	sym.cpp \
 	var.cpp \
 	vec.cpp \
 	version.cpp

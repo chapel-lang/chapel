@@ -1583,6 +1583,14 @@ collect_notype() {
 	type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
     }
   }
+#if 0
+  forv_CreationSet(cs, fa->css) {
+    forv_AVar(av, cs->vars) {
+      if (av->out == bottom_type)
+	type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
+    }
+  }
+#endif
 }
 
 static void

@@ -1,5 +1,5 @@
-aa a : { a; }; 
-bb b : { b; }; 
+aa x : { a:x; }; 
+bb x : { b:x; }; 
 a1 : aa 1; 
 b1 : bb a1;
 a2 : aa 2.0; 

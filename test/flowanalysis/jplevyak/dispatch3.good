@@ -17,14 +17,14 @@ dispatch3.v:3: unresolved call 'print'
 f::x(dispatch2.v:2) ( float64 (prelude.v:42) )
 f::x(dispatch2.v:3) ( int32 (prelude.v:29) )
 fail: fatal error, program does not type
-function __init /home/jplevyak/chapel/compiler/prelude.v:7
 function __init dispatch2.v:1
+function __init prelude.v:7
 function __init__ <unknown>:0
 function f dispatch2.v:2
 function f dispatch2.v:3
 function g dispatch2.v:1
-function print /home/jplevyak/chapel/compiler/prelude.v:144
-function print /home/jplevyak/chapel/compiler/prelude.v:144
+function print prelude.v:144
+function print prelude.v:144
 g::x(dispatch2.v:1) ( float64 (prelude.v:42) )
 globals
 print::a(prelude.v:144) ( float64 (prelude.v:42) )

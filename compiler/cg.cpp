@@ -108,7 +108,7 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
       } else {
 	for (int i = 0; i < obj->has.n; i++) {
 	  if (symbol == obj->has.v[i]->name) {
-	    fprintf(fp, "%s = %s->e%d;\n", n->lvals.v[0]->cg_string, n->rvals.v[0]->cg_string, i);
+	    fprintf(fp, "%s = %s->e%d;\n", n->lvals.v[0]->cg_string, n->rvals.v[1]->cg_string, i);
 	    break;
 	  }
 	}
@@ -413,8 +413,8 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
       if (!Var_is_local(v, f))
 	globals.set_add(v);
       allsyms.set_add(v->type);
-      if (v->type->meta)
-	allsyms.set_add(v->type->type_sym);
+//      if (v->type->meta)
+//	allsyms.set_add(v->type->type_sym);
     }
   }
   // collect type has syms
@@ -425,8 +425,11 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
     loopsyms.copy(allsyms);
     for (int i = 0; i < loopsyms.n; i++) 
       if (loopsyms.v[i]) {
-	forv_Sym(s, loopsyms.v[i]->has)
-	  again = allsyms.set_add(s) || again;
+	forv_Sym(s, loopsyms.v[i]->has) {
+	  again = allsyms.set_add(s->type) || again;
+//	  if (s->type->meta)
+//	    again = allsyms.set_add(s->type->type_sym) || again;
+	}
       }
   }
   globals.set_to_vec();
@@ -455,7 +458,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
 	      sprintf(ss, "_CG_ps%d", s->id);
 	      s->cg_string = dupstr(ss);
 	    } else
-	      s->cg_string = "_CG_null";
+	      s->cg_string = "_CG_void";
 	    break;
 	  }
 	}
@@ -493,7 +496,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
 	  fprintf(fp, "struct _CG_s%d {\n", s->id);
 	  for (int i = 0; i <  s->has.n; i++) {
 	    fputs("  ", fp);
-	    fputs(s->has.v[i]->cg_string, fp);
+	    fputs(s->has.v[i]->type->cg_string, fp);
 	    fprintf(fp, " e%d;\n", i);
 	  }
 	  fprintf(fp, "};\n");

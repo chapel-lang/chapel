@@ -11,20 +11,20 @@
  called from 8 in __init at cs5.chpl:1
  called from 8 in __init at cs5.chpl:1
  called from 8 in __init at cs5.chpl:1
-function __init /home/jplevyak/chapel/compiler/prelude.chpl:7
 function __init cs5.chpl:1
+function __init prelude.chpl:7
 function __init__ <unknown>:0
 function makeC cs5.chpl:3
 function makeD cs5.chpl:4
 function makeD cs5.chpl:4
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:82
-function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
-function writeln /home/jplevyak/chapel/compiler/prelude.chpl:237
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:82
+function operator prelude.chpl:88
+function writeln prelude.chpl:237
 globals
 makeC::a(cs5.chpl:3) ( integer64 (prelude.chpl:27) )
 makeC::c(cs5.chpl:3) ( C (cs5.chpl:1) )

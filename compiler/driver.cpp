@@ -27,6 +27,7 @@
 #include "fun.h"
 #include "fa.h"
 
+static void g_option(ArgumentState *arg_state, char *arg_unused);
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
 
@@ -62,7 +63,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
  {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
- {"lowlevel_cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
+ {"lowlevel_cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", g_option},
  {"graph", 'G', "Dump Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
  {"graph_var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
  {"graph_fun", ' ', "Limit Graph to Fun", "S80", graph_fun, "CHPL_GRAPH_FUN", NULL},
@@ -141,6 +142,14 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
 	  );
   fprintf(stderr, "\n\n");
   clean_exit(0);
+}
+
+static void
+g_option(ArgumentState *arg_state, char *arg_unused) {
+  if (fcg) {
+    newAST = 0;
+    suppress_codegen = 1;
+  }
 }
 
 static ParseAST *

@@ -119,7 +119,10 @@ class Sym : public gc {
   char 			*cg_string;		// used by cg.cpp
 
   char			*pathname();
+  char			*filename();
   int			line();
+
+  Sym			*copy();
 
   Sym() { memset(this, 0, sizeof *this); }
   int imm_int(int *);
@@ -133,5 +136,6 @@ static inline int is_const(Sym *s) { return s->constant || s->symbol; }
 int pp(Immediate &imm, Sym *type);
 int print(FILE *fp, Immediate &imm, Sym *type);
 int sprint(char *s, Immediate &imm, Sym *type);
+int compar_syms(const void *ai, const void *aj);
 
 #endif
