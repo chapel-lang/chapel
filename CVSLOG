@@ -20707,3 +20707,15 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+03/22/05 11:02:44 -- jplevyak
+
+Log message:
+	Fix arrays of records and remove the .future file.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_of_record1.future 
+
