@@ -21235,3 +21235,18 @@ Log message:
 Removed files:
 	chapel/test/functions/jplevyak/scoping/: scoping-1.future 
 
+---------------------------------------------------------------------------
+
+03/23/05 17:59:31 -- bradc
+
+Log message:
+	Implemented a simple change that is intended to
+	pass records and unions by value rather than
+	parameter when they are passed with blank intent.
+	It seems to work, though I haven't spent much
+	time testing or looking at generated code (just
+	the one future that is relying on it, so far).
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
