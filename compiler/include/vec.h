@@ -413,11 +413,11 @@ Vec<C>::some_difference(Vec<C> &vv) {
 
 template <class C> int
 Vec<C>::set_count() {
-  int n = 0;
+  int x = 0;
   for (int i = 0; i < n; i++)
     if (v[i])
-      n++;
-  return n;
+      x++;
+  return x;
 } 
 
 template <class C> void
