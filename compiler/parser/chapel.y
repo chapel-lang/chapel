@@ -20,7 +20,6 @@
 
 %union	{
   bool boolval;
-  long intval;
   char* pch;
 
   getsOpType got;
@@ -87,7 +86,6 @@
 %token TRCBR;
 
 %type <boolval> varconst
-%type <intval> intliteral
 
 %type <got> assignOp
 %type <vt> vardecltag
@@ -245,7 +243,7 @@ classdecl:
 
 enumList:
   identsym
-| enumList TBOR identsym
+| enumList TCOMMA identsym
     {
       $1->append($3);
       $$ = $1;
@@ -651,20 +649,14 @@ range:
 
 
 literal:
-  intliteral
-    { $$ = new IntLiteral(yytext, $1); }
+  INTLITERAL
+    { $$ = new IntLiteral(yytext, atol(yytext)); }
 | FLOATLITERAL
     { $$ = new FloatLiteral(yytext, atof(yytext)); }
 | COMPLEXLITERAL
     { $$ = new ComplexLiteral(yytext, atof(yytext)); }
 | STRINGLITERAL
     { $$ = new StringLiteral($1); }
-;
-
-
-intliteral:
-  INTLITERAL
-    { $$ = atol(yytext); }
 ;
 
 

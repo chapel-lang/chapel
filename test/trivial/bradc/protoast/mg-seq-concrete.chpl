@@ -1,6 +1,6 @@
 -- problem size to run:
 
-enum classVals = S | W | A | B | C | D | O;
+enum classVals = S, W, A, B, C, D, O;
 
 const probSize: [S..O] integer = (32, 64, 256, 256, 512, 1024, 256);
 const numIters: [S..O] integer = (4, 40, 4, 20, 20, 50, 4);
