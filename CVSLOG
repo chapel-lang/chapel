@@ -8461,3 +8461,31 @@ Removed files:
 	                          setupStmtLinks.h testGetStuff.h 
 	                          verifyASTType.h 
 
+---------------------------------------------------------------------------
+
+09/22/04 15:46:01 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed a bug in cloning which was causing flow analysis of literal.v to
+	fail periodically.  Basically, I was not cloning correctly for basic
+	types.  Cloning will build a new clone to eliminate dynamic dispatch
+	or to ensure that a variable only drawn from a descrete set of types
+	(float(8), integer(8), integer(4), string, bool, any by reference thing
+	including classes and tuples).  This ensures that we can build an
+	efficient implementation by being able to specialize the storage
+	and access requirements for this objects.  In the future we can
+	change these groupings for the convenience of code generation.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp 
+	chapel/test/flowanalysis/jplevyak/: assign1.good assign2.good 
+	                                    badcall.good 
+	                                    badprimitive.good 
+	                                    badreturn.good cs3.good 
+	                                    cs4.good cs5.good cs6.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good tuples.good 
+	chapel/test/flowanalysis/jplevyak/loop/: loop2.good 
+	chapel/test/flowanalysis/newast/: enumarray.good 
+
