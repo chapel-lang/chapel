@@ -7253,3 +7253,16 @@ Modified files:
 	                                  usebeforedef.good var.good 
 	                                  var2.good whileLoop.good 
 
+---------------------------------------------------------------------------
+
+09/14/04 15:15:07 -- bradc
+
+Log message:
+	Made the testing system accept the double-dash (--) versions
+	of the flags in addition to the normal ones.  I find more
+	and more that I've been typing --compopts, having gotten used
+	to the double-dash syntax with the compiler's longer flags.
+
+Modified files:
+	chapel/test/: start_test 
+
