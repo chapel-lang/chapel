@@ -17279,3 +17279,13 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+02/11/05 11:07:05 -- shannon
+
+Log message:
+	Refactored the code that legalizes C names.
+
+Modified files:
+	chapel/compiler/symtab/: legalizeCNames.cpp 
+
