@@ -1173,7 +1173,7 @@ compute_recursive_entry_sets(FA *fa) {
   while (changed) {
     changed = 0;
     forv_EntrySet(es, fa->ess) if (es) {
-      forv_AEdge(e, es->out_edges) if (e) {
+      forv_AEdge(e, es->out_edges) if (e && e->to) {
 	changed = es->reachable.set_add(e->to) || changed;
       }
     }

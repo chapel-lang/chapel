@@ -769,6 +769,8 @@ if1_dump(FILE *fp, Code *code) {
 
 Sym *
 unalias_type(Sym *s) {
+  if (!s)
+    return s;
   if (s->type_kind == Type_ALIAS) {
     Vec<Sym *> aliases;
     do {
