@@ -23,13 +23,6 @@
 #    add these to the zplcompopts and zplexecopts
 #    flags, respectively.
 
-#
-# This should go away once the chapel compiler actually can create
-# an executable
-#
-set CANNOT_CREATE_EXECUTABLES_YET = 1
-
-
 
 # Check number of incoming arguments
 if ( $#argv != 1 ) then

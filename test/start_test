@@ -358,7 +358,7 @@ endif
 
 if ( -w $logfile ) then
 	echo ""
-	echo \[Remove log file with duplicate name \"$logfile\"\]
+	echo \[Removing log file with duplicate name \"$logfile\"\]
 	rm -f $logfile
 endif
 
@@ -434,12 +434,12 @@ set errormarker = "^\[Error"
 set successmarker = "^\[Success matching"
 
 echo \[Test Summary - $datestr\] |& tee $logfile.summary
-grep $errormarker $logfile |& tee -a $logfile.summary
-grep $futuremarker $logfile |& tee -a $logfile.summary
+grep "$errormarker" $logfile |& tee -a $logfile.summary
+grep "$futuremarker" $logfile |& tee -a $logfile.summary
 
 set successes = `grep "$successmarker" $logfile | wc -l`
-set failures = `grep $errormarker $logfile | wc -l`
-set futures = `grep $futuremarker $logfile | wc -l`
+set failures = `grep "$errormarker" $logfile | wc -l`
+set futures = `grep "$futuremarker" $logfile | wc -l`
 echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& tee -a $logfile.summary
 echo \[END\] |& tee -a $logfile.summary
 cat $logfile.summary >> $logfile

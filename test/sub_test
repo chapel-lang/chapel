@@ -115,20 +115,20 @@ endif
 # get all the source files
 set testsrc = `ls *.{chpl,v}`
 
-if ($?CHPL_VALGRIND_OPTIONS == 0) then
-  set CHPL_VALGRIND_OPTIONS = "--tool=memcheck"
+if ($?CHPL_VALGRIND_OPTS == 0) then
+  set CHPL_VALGRIND_OPTS = "--tool=memcheck"
 endif
 
 if (`uname -a | grep x86_64` == "") then
-  set CHPL_VALGRIND_LINUX32 = "" 
+  set CHPL_VGRND_LINUX32 = "" 
 else
-  set CHPL_VALGRIND_LINUX32 = "linux32 " 
+  set CHPL_VGRND_LINUX32 = "linux32 " 
 endif
 
 if ($CHPLTESTVGRND == "on") then
-  set valgrndcomp = "$CHPL_VALGRIND_LINUX32 valgrind $CHPL_VALGRIND_OPTIONS --suppressions=$testdir/../compiler/etc/valgrind.suppressions -q "
+  set valgrndcomp = "$CHPL_VGRND_LINUX32 valgrind $CHPL_VALGRIND_OPTS --suppressions=$testdir/../compiler/etc/valgrind.suppressions -q "
   if ($vgrbin == "yes") then
-    set valgrndbin = "$CHPL_VALGRIND_LINUX32 valgrind $CHPL_VALGRIND_OPTIONS -q "
+    set valgrndbin = "$CHPL_VGRND_LINUX32 valgrind $CHPL_VALGRIND_OPTS -q "
   else
     set valgrndbin = ""
   endif

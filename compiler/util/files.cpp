@@ -54,7 +54,7 @@ static void createTmpDir(void) {
 #endif
 
     char mypidstr[MAX_CHARS_PER_PID];
-    snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", mypid);
+    snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
 
     struct passwd* passwdinfo = getpwuid(geteuid());
     char* userid;
