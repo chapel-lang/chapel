@@ -118,7 +118,7 @@ build_types(Vec<BaseAST *> &syms) {
   forv_Type(t, types) {
     switch (t->astType) {
       default: assert(!"case");
-      case TYPE_NULL:
+      case TYPE:
 	t->asymbol->type_kind = Type_UNKNOWN;
 	break;
       case TYPE_BUILTIN:

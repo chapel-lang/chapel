@@ -169,7 +169,7 @@ vardecltype:
 
 vardeclinit:
   /* nothing */
-    { $$ = new NullExpr(); }
+    { $$ = nilExpr; }
 | GETS expr
     { $$ = $2; }
 ;
@@ -218,7 +218,7 @@ enumdecl:
 
 subclass:
   /* nothing */
-    { $$ = new NullClassSymbol(); }
+    { $$ = nilClassSymbol; }
 | ':' identifier
     {
       $$ = Symboltable::lookupClass($2);
@@ -280,7 +280,7 @@ nonemptyformals:
 
 formals:
   /* empty */
-    { $$ = new NullSymbol(); }
+    { $$ = nilSymbol; }
 | nonemptyformals
 ;
 
@@ -395,7 +395,7 @@ arrayType:
 
 statements:
   /* empty */
-    { $$ = new NullStmt(); }
+    { $$ = nilStmt; }
 | statements statement
     { $$ = appendLink($1, $2); }
 ;
@@ -403,7 +403,7 @@ statements:
 
 statement:
   ';'
-    { $$ = new NullStmt(); }
+    { $$ = new NoOpStmt(); }
 | decl
 | assignment
 | conditional
@@ -423,7 +423,7 @@ statement:
 
 retStmt:
   RETURN ';'
-    { $$ = new ReturnStmt(new NullExpr()); }
+    { $$ = new ReturnStmt(nilExpr); }
 | RETURN expr ';'
     { $$ = new ReturnStmt($2); }
 ;
@@ -536,7 +536,7 @@ assignment:
 
 exprlist:
   /* empty */
-    { $$ = new NullExpr(); }
+    { $$ = nilExpr; }
 | nonemptyExprlist
 ;
 
@@ -564,7 +564,7 @@ expr:
 | range
 | '(' nonemptyExprlist ')' 
     { 
-      if ($2->next == NULL) {
+      if ($2->next->isNull()) {
         $$ = $2;
       } else {
         $$ = new Tuple($2);
@@ -588,7 +588,7 @@ memberaccess:
 
 reduceDim:
   /* empty */
-    { $$ = new NullExpr(); }
+    { $$ = nilExpr; }
 | '(' expr ')'
     { $$ = $2; }
 | '(' DIM GETS expr ')'

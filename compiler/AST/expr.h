@@ -17,6 +17,8 @@ class Expr : public BaseAST {
 
   Expr(astType_t astType);
 
+  bool isNull(void);
+
   void traverse(Traversal* traversal);
   virtual void traverseExpr(Traversal* traversal);
 
@@ -25,22 +27,12 @@ class Expr : public BaseAST {
   virtual long intVal(void);
   virtual int rank(void);
 
-  virtual void print(FILE* outfile) = 0;
-  virtual void codegen(FILE* outfile) = 0;
   int getTypes(Vec<BaseAST *> &asts);
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 
 
-class NullExpr : public Expr {
- public:
-  NullExpr(void);
-
-  bool isNull(void);
-  
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
+extern Expr* nilExpr;
 
 
 class Literal : public Expr {
@@ -260,7 +252,7 @@ class DomainExpr : public Expr {
   VarSymbol* indices;
   Expr* forallExpr;
 
-  DomainExpr(Expr* init_domains, VarSymbol* init_indices = new NullVarSymbol());
+  DomainExpr(Expr* init_domains, VarSymbol* init_indices = nilVarSymbol);
   void setForallExpr(Expr* exp);
 
   void traverseExpr(Traversal* traversal);
@@ -281,7 +273,7 @@ class ParenOpExpr : public Expr {
 
   static ParenOpExpr* classify(Expr* base, Expr* arg);
 
-  ParenOpExpr(Expr* init_base, Expr* init_arg = new NullExpr());
+  ParenOpExpr(Expr* init_base, Expr* init_arg = nilExpr);
 
   void traverseExpr(Traversal* traversal);
 
@@ -309,7 +301,7 @@ class CastExpr : public ParenOpExpr {
 
 class FnCall : public ParenOpExpr {
  public:
-  FnCall(Expr* init_base, Expr* init_arg = new NullExpr());
+  FnCall(Expr* init_base, Expr* init_arg = nilExpr);
 };
 
 
@@ -327,7 +319,7 @@ class WriteCall : public FnCall {
 
 class ArrayRef : public ParenOpExpr {
  public:
-  ArrayRef(Expr* init_base, Expr* init_arg = new NullExpr());
+  ArrayRef(Expr* init_base, Expr* init_arg = nilExpr);
 
   Type* typeInfo();
 

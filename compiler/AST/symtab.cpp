@@ -11,7 +11,7 @@ class SymLink : public ILink {
 public:
   Symbol* pSym;
   
-  SymLink(Symbol* init_pSym = NULL);
+  SymLink(Symbol* init_pSym = nilSymbol);
 
   void traverse(Traversal* traversal);
 

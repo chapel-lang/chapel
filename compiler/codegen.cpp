@@ -7,6 +7,7 @@
 #include "fun.h"
 #include "misc.h"
 #include "mysystem.h"
+#include "nils.h"
 #include "num.h"
 #include "builtin.h"
 #include "parse_ast.h"
@@ -502,6 +503,8 @@ void codegen(char* infilename, char* compilerDir, Stmt* program) {
 
   genHeader(outfile, extheadfileinfo.filename, intheadfileinfo.filename);
   program->codegenList(outfile, "\n");
+
+  verifyNilsUncorrupted();
 
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
   closeMakefile();

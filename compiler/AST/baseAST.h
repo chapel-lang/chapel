@@ -5,7 +5,7 @@
 
 enum astType_t {
   STMT,
-  STMT_NULL,
+  STMT_NOOP,
   STMT_VARDEF,
   STMT_TYPEDEF,
   STMT_FNDEF,
@@ -17,7 +17,6 @@ enum astType_t {
   STMT_COND,
 
   EXPR,
-  EXPR_NULL,
   EXPR_LITERAL,
   EXPR_INTLITERAL,
   EXPR_FLOATLITERAL,
@@ -40,7 +39,6 @@ enum astType_t {
   EXPR_TUPLE,
 
   SYMBOL,
-  SYMBOL_NULL,
   SYMBOL_USEBEFOREDEF,
   SYMBOL_VAR,
   SYMBOL_PARAM,
@@ -51,7 +49,6 @@ enum astType_t {
   SYMBOL_ENUM,
 
   TYPE,
-  TYPE_NULL,
   TYPE_BUILTIN,
   TYPE_ENUM,
   TYPE_DOMAIN,
@@ -73,6 +70,7 @@ enum astType_t {
 class BaseAST : public ILink {
  public:
   astType_t astType;
+  long id;
 
   int getBaseASTs(Vec<BaseAST *> &asts);
   int getSymbolTypes(Vec<BaseAST *> &asts);

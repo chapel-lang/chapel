@@ -2,6 +2,7 @@
 #include <string.h>
 #include "expr.h"
 #include "misc.h"
+#include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
 
@@ -59,10 +60,15 @@ static char* cGetsOp[NUM_GETS_OPS] = {
 
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
-  stmt(NULL),
+  stmt(nilStmt),
   ainfo(NULL),
-  parent(NULL)
+  parent(nilExpr)
 {}
+
+
+bool Expr::isNull(void) {
+  return (this == nilExpr);
+}
 
 
 void Expr::traverse(Traversal* traversal) {
@@ -112,26 +118,6 @@ Expr::getTypes(Vec<BaseAST *> &asts) {
 }
 
 
-NullExpr::NullExpr(void) :
-  Expr(EXPR_NULL)
-{}
-
-
-bool NullExpr::isNull(void) {
-  return true;
-}
-
-
-void NullExpr::print(FILE* outfile) {
-  printf("/* NULLExpr! */\n");
-}
-
-
-void NullExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "This is NullExpr's codegen.\n");
-}
-
-
 Literal::Literal(astType_t astType, char* init_str) :
   Expr(astType),
   str(copystring(init_str))
@@ -146,6 +132,7 @@ bool Literal::isComputable(void) {
 void Literal::print(FILE* outfile) {
   fprintf(outfile, "%s", str);
 }
+
 
 void Literal::codegen(FILE* outfile) {
   fprintf(outfile, "%s", str);
@@ -509,7 +496,7 @@ ParenOpExpr::getExprs(Vec<BaseAST *> &asts) {
 
 
 CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
-  ParenOpExpr(NULL, init_argList),
+  ParenOpExpr(nilExpr, init_argList),
   castType(init_castType)
 {
   astType = EXPR_CAST;
@@ -573,8 +560,8 @@ Type* WriteCall::typeInfo(void) {
 
 
 void WriteCall::codegen(FILE* outfile) {
-  while (argList != NULL && !argList->isNull()) {
-    Expr* format = NULL;
+  while (argList && !argList->isNull()) {
+    Expr* format = nilExpr;
     Expr* arg = argList;
 
     if (typeid(*arg) == typeid(Tuple)) {
@@ -593,7 +580,7 @@ void WriteCall::codegen(FILE* outfile) {
     }
     fprintf(outfile, "(");
     fprintf(outfile, "stdout, ");
-    if (format == NULL) {
+    if (format->isNull()) {
       argdt->codegenDefaultFormat(outfile);
     } else {
       format->codegen(outfile);
@@ -619,8 +606,8 @@ ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
 
 Type* ArrayRef::typeInfo(void) {
   ArrayType* arrayType = dynamic_cast<ArrayType*>(baseExpr->typeInfo());
-  if (arrayType == NULL) {
-    INT_FATAL(this, "array type is NULL?");
+  if (!arrayType) {
+    INT_FATAL(this, "array type is Null?");
   }
   // BLC: Assumes that each array index fully indexes array.
   // This isn't how David thinks about it, and more care would
@@ -674,7 +661,7 @@ DomainExpr::DomainExpr(Expr* init_domains, VarSymbol* init_indices) :
   Expr(EXPR_DOMAIN),
   domains(init_domains),
   indices(init_indices),
-  forallExpr(new NullExpr())
+  forallExpr(nilExpr)
 {}
 
 
@@ -721,11 +708,12 @@ void DomainExpr::print(FILE* outfile) {
   }
 }
 
+
 void DomainExpr::codegen(FILE* outfile) {
-  if (domains->next != NULL) {
-    INT_FATAL(this, "Don't know how to codegen lists of domains yet");
-  } else {
+  if (domains->next->isNull()) {
     domains->codegen(outfile);
+  } else {
+    INT_FATAL(this, "Don't know how to codegen lists of domains yet");
   }
 }
 
@@ -803,11 +791,11 @@ Tuple::Tuple(Expr* init_exprs) :
 void Tuple::print(FILE* outfile) {
   fprintf(outfile, "(");
   Expr* expr = exprs;
-  while (expr != NULL) {
+  while (expr) {
     expr->codegen(outfile);
 
     expr = nextLink(Expr, expr);
-    if (expr != NULL) {
+    if (expr) {
       fprintf(outfile, ", ");
     }
   }

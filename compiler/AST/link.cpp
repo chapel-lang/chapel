@@ -4,13 +4,27 @@
 #include "misc.h"
 
 ILink::ILink(void) :
-  prev(NULL),
-  next(NULL)
+  prev(nilILink),
+  next(nilILink)
 {}
 
 
 bool ILink::isNull(void) {
-  return false;
+  return (this == nilILink);
+}
+
+
+void ILink::traverse(Traversal* traversal) {
+  INT_FATAL("Calling traverse() on an ILink");
+}
+
+
+void ILink::print(FILE* outfile) {
+  if (isNull()) {
+    INT_FATAL("Calling print() on a Null AST");
+  } else {
+    INT_FATAL("print() is unimplemented for a subclass of ILink");
+  }
 }
 
 
@@ -19,19 +33,28 @@ void ILink::printList(FILE* outfile, char* separator) {
 
   print(outfile);
   ptr = next;
-  while (ptr != NULL) {
+  while (!ptr->isNull()) {
     fprintf(outfile, "%s", separator);
     ptr->print(outfile);
     ptr = ptr->next;
   }
 }
 
+void ILink::codegen(FILE* outfile) {
+  if (isNull()) {
+    INT_FATAL("Calling codegen() on a Null AST");
+  } else {
+    INT_FATAL("codegen() is unimplemented for a subclass of ILink");
+  }
+}
+
+
 void ILink::codegenList(FILE* outfile, char* separator) {
   ILink* ptr;
 
   codegen(outfile);
   ptr = next;
-  while (ptr != NULL) {
+  while (!ptr->isNull()) {
     fprintf(outfile, "%s", separator);
     ptr->codegen(outfile);
     ptr = ptr->next;
@@ -40,7 +63,7 @@ void ILink::codegenList(FILE* outfile, char* separator) {
 
 
 void ILink::insert(ILink* newlink) {
-  if (prev != NULL) {
+  if (!prev->isNull()) {
     prev->next = newlink;
   }
   newlink->prev = prev;
@@ -60,7 +83,7 @@ void ILink::append(ILink* newlink) {
   ILink* lastlink;
 
   lastlink = this;
-  while (lastlink->next != NULL) {
+  while (!lastlink->next->isNull()) {
     lastlink = lastlink->next;
   }
   lastlink->next = newlink;
@@ -72,14 +95,14 @@ void ILink::filter(bool filter(ILink*), ILink** truelinks,
 		   ILink** falselinks) {
   ILink* link = this;
   ILink* nextlink;
-  *truelinks = NULL;
-  *falselinks = NULL;
+  *truelinks = nilILink;
+  *falselinks = nilILink;
 
-  while (link) {
+  while (!link->isNull()) {
     nextlink = link->next;
-    link->next = NULL;
-    if (nextlink) {
-      nextlink->prev = NULL;
+    link->next = nilILink;
+    if (!nextlink->isNull()) {
+      nextlink->prev = nilILink;
     }
     if (filter(link)) {
       *truelinks = appendLink(*truelinks, link);

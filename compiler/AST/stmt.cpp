@@ -13,6 +13,11 @@ Stmt::Stmt(astType_t astType) :
 {}
 
 
+bool Stmt::isNull(void) {
+  return (this == nilStmt);
+}
+
+
 void Stmt::traverse(Traversal* traversal) {
   traversal->preProcessStmt(this);
   if (traversal->exploreStmts) {
@@ -35,7 +40,7 @@ void Stmt::codegenVarDefs(FILE* outfile) {
   do {
     nextStmt->codegenVarDef(outfile);
     nextStmt = nextLink(Stmt, nextStmt);
-  } while (nextStmt != NULL);
+  } while (nextStmt);
 }
 
 
@@ -43,21 +48,17 @@ void Stmt::codegenVarDef(FILE* outfile) {
 }
 
 
-NullStmt::NullStmt(void) :
-  Stmt(STMT_NULL)
+NoOpStmt::NoOpStmt(void) :
+  Stmt(STMT_NOOP)
 {}
 
 
-bool NullStmt::isNull(void) {
-  return true;
+void NoOpStmt::print(FILE* outfile) {
+  fprintf(outfile, ";");
 }
 
 
-void NullStmt::print(FILE* outfile) {
-  fprintf(outfile, "/* NullStmt!! */\n");
-}
-
-void NullStmt::codegen(FILE* outfile) {
+void NoOpStmt::codegen(FILE* outfile) {
   fprintf(outfile, "{}\n");
 }
 
@@ -78,7 +79,7 @@ void VarDefStmt::traverseStmt(Traversal* traversal) {
 void VarDefStmt::print(FILE* outfile) {
   VarSymbol* aVar = var;
 
-  while (aVar != NULL) {
+  while (aVar) {
     switch (aVar->varClass) {
     case VAR_NORMAL:
       break;
@@ -95,14 +96,14 @@ void VarDefStmt::print(FILE* outfile) {
       fprintf(outfile, "var ");
     }
     aVar->printWithType(outfile);
-    if (init != NULL && !init->isNull()) {
+    if (!init->isNull()) {
       fprintf(outfile, " = ");
-      if (init->next) {
+      if (init->next->isNull()) {
+	init->print(outfile);
+      } else {
 	fprintf(outfile, "(");
 	init->printList(outfile);
 	fprintf(outfile, ")");
-      } else {
-	init->print(outfile);
       }
     }
     fprintf(outfile, ";");
@@ -117,7 +118,7 @@ void VarDefStmt::print(FILE* outfile) {
 void VarDefStmt::codegen(FILE* outfile) {
   VarSymbol* aVar = var;
   
-  while (aVar != NULL) {
+  while (aVar) {
     VarSymbol* nextVar = nextLink(VarSymbol, aVar);
     if (typeid(*(aVar->type)) == typeid(ArrayType)) {
       ArrayType* arrtype = (ArrayType*)(aVar->type);
@@ -128,7 +129,7 @@ void VarDefStmt::codegen(FILE* outfile) {
       fprintf(outfile, "), &(");
       arrtype->domain->codegen(outfile);
       fprintf(outfile, "));\n");
-    } else if (init != NULL && !init->isNull()) {
+    } else if (!init->isNull()) {
       if (typeid(*(aVar->type)) == typeid(DomainType)) {
 	DomainType* domtype = (DomainType*)(aVar->type);
 	int rank = domtype->numdims ? domtype->numdims : 1; // BLC: hack!
@@ -180,7 +181,7 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
   // TODO: for certain cases, we could use a C initializer inline rather
   // than separating the variable declaration from its initialization.
 
-  while (aVar != NULL) {
+  while (aVar) {
     if (aVar->isConst) {
       fprintf(outfile, "const ");
     }
@@ -259,7 +260,9 @@ void FnDefStmt::print(FILE* outfile) {
   fprintf(outfile, "function ");
   fn->print(outfile);
   fprintf(outfile, "(");
-  fn->formals->printDefList(outfile, ";\n");
+  if (!fn->formals->isNull()) {
+    fn->formals->printDefList(outfile, ";\n");
+  }
   fprintf(outfile, ")");
   if (fn->type == dtVoid) {
     fprintf(outfile, " ");
@@ -488,7 +491,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
 
   // TODO: Unify with VarDefStmt?  Have parser insert one here?
   // is it a challenge that we may not know the domain exprs at that point?
-  while (aVar != NULL) {
+  while (aVar) {
     aVar->codegenDef(outfile);
     fprintf(outfile, ";\n");
     rank++;

@@ -14,13 +14,13 @@ class ILink : public Loc {
 
   ILink(void);
 
-  virtual void traverse(Traversal* traversal) = 0;
-
-  virtual void print(FILE*) = 0;
-  virtual void printList(FILE* outfile, char* separator = ", ");
-  virtual void codegen(FILE* outfile) = 0;
-  virtual void codegenList(FILE* outfile, char* separator = ", ");
   virtual bool isNull(void);
+  virtual void traverse(Traversal* traversal);
+
+  virtual void print(FILE* outfile);
+  virtual void printList(FILE* outfile, char* separator = ", ");
+  virtual void codegen(FILE* outfile);
+  virtual void codegenList(FILE* outfile, char* separator = ", ");
 
   void insert(ILink* newlink);
   void add(ILink* newlink);
@@ -29,19 +29,22 @@ class ILink : public Loc {
   void filter(bool filter(ILink*), ILink** truelinks, ILink** falselinks);
 };
 
+extern ILink* nilILink;
+
+
 #define prevLink(type, node) (dynamic_cast<type*>((node)->prev))
 #define nextLink(type, node) (dynamic_cast<type*>((node)->next))
 
-#define appendLink(list, node) (((list) != NULL && !(list)->isNull()) ? \
-                                (list)->append(node), (list) : \
-                                (node))
+#define appendLink(list, node) ((((list) == NULL) || (list)->isNull()) ? \
+                                (node) : \
+                                ((list)->append(node), (list)))
 
 template <class astType>
 void getLinkElements(Vec<astType*>& elements, ILink* link) {
   astType* element;
 
   elements.clear();
-  while (link) {
+  while (!link->isNull()) {
     element = dynamic_cast<astType*>(link);
     if (element) {
       elements.add(element);

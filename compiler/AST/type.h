@@ -16,6 +16,8 @@ class Type : public BaseAST {
   Type(astType_t astType);
   void addName(Symbol* newname);
 
+  bool isNull(void);
+
   void traverse(Traversal* traversal);
   virtual void traverseType(Traversal* traversal);
 
@@ -31,13 +33,7 @@ class Type : public BaseAST {
 };
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
-
-class NullType : public Type {
- public:
-  NullType(void);
-
-  bool isNull(void);
-};
+extern Type* nilType;
 
 
 class EnumType : public Type {
@@ -129,15 +125,22 @@ class UserType : public Type {
 };
 
 
+class ClassType;
+
+extern ClassType* nilClassType;
+
 class ClassType : public Type {
  public:
   ClassType* parentClass;
   
-  ClassType(ClassType* init_parentClass = NULL);
+  ClassType(ClassType* init_parentClass = nilClassType);
+
+  bool isNull(void);
 
   void print(FILE* outfile);
   int getTypes(Vec<BaseAST *> &asts);
 };
+
 
 
 // BLC: move these to standard prelude

@@ -24,6 +24,8 @@ class Symbol : public BaseAST {
   
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
 
+  bool isNull(void);
+
   void traverse(Traversal* traverse);
   virtual void traverseSymbol(Traversal* traverse);
 
@@ -38,12 +40,7 @@ class Symbol : public BaseAST {
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 
-class NullSymbol : public Symbol {
- public:
-  NullSymbol(void);
-
-  bool isNull(void);
-};
+extern Symbol* nilSymbol;
 
 
 class UseBeforeDefSymbol : public Symbol {
@@ -59,17 +56,13 @@ class VarSymbol : public Symbol {
 
   VarSymbol(char* init_name, Type* init_type = dtUnknown, 
 	    varType init_varClass = VAR_NORMAL, bool init_isConst = false);
+
+  bool isNull(void);
   
   void printWithType(FILE* outfile);
 };
 
-
-class NullVarSymbol : public VarSymbol {
- public:
-  NullVarSymbol(void);
-
-  bool isNull(void);
-};
+extern VarSymbol* nilVarSymbol;
 
 
 enum paramType {
@@ -104,16 +97,12 @@ class ClassSymbol : public TypeSymbol {
  public:
   ClassSymbol(char* init_name, ClassType* init_class);
 
+  bool isNull();
+
   ClassType* getType(void);
 };
 
-
-class NullClassSymbol : public ClassSymbol {
- public:
-  NullClassSymbol(void);
-  
-  bool isNull(void);
-};
+extern ClassSymbol* nilClassSymbol;
 
 
 class ReduceSymbol : public ClassSymbol {

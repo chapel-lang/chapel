@@ -1,12 +1,15 @@
 #include "baseAST.h"
 
+static long uid = 1;
+
 BaseAST::BaseAST(void) {
   INT_FATAL("Base AST must be given type");
 }
 
 
 BaseAST::BaseAST(astType_t type) :
-  astType(type)
+  astType(type),
+  id(uid++)
 {}
 
 int

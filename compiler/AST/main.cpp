@@ -28,7 +28,7 @@ static void ParseFile(char* filename) {
 
   yyin = fopen(yyfilename, "r");
   
-  if (yyin == NULL) {
+  if (!yyin) {
     fprintf(stdout, "ERROR: Can't open file %s\n", yyfilename);
     exit(1);
   }

@@ -18,7 +18,7 @@ class Symboltable {
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
-					    Expr* init = NULL, 
+					    Expr* init = nilExpr, 
 					    varType vartag = VAR_NORMAL, 
 					    bool isConst = false);
   static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);

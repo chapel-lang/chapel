@@ -1,4 +1,4 @@
-function __init(NullSymbol) {
+function __init() {
 var n: integer = 999;
 var D: domain(1) = 1..n;
 var A: [D] float;

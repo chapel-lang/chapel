@@ -3,9 +3,10 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
-#include "findUnknownTypes.h"
+// #include "findUnknownTypes.h"
 #include "link.h"
 #include "misc.h"
+#include "nils.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
@@ -32,7 +33,7 @@ static void ParseFile(char* filename, bool prelude = false) {
   if (yyin == NULL) {
     fail("Cannot read '%s'", filename);
   } else {
-    program = new NullStmt();
+    program = nilStmt;
     yyparse();
 
     closeInputFile(yyin);
@@ -54,7 +55,8 @@ static bool stmtIsGlob(ILink* link) {
       (dynamic_cast<ExprStmt*>(stmt) != NULL) ||
       (dynamic_cast<BlockStmt*>(stmt) != NULL) ||
       (dynamic_cast<CondStmt*>(stmt) != NULL) ||
-      (dynamic_cast<VarDefStmt*>(stmt) != NULL)) {
+      (dynamic_cast<VarDefStmt*>(stmt) != NULL) ||
+      (dynamic_cast<NoOpStmt*>(stmt) != NULL)) {
     return false;
   } else {
     return true;
@@ -71,8 +73,8 @@ static Stmt* createInitFn(Stmt* program) {
   Stmt* initFunStmts = dynamic_cast<Stmt*>(initstmts);
   program = dynamic_cast<Stmt*>(globstmts);
   Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
-                                                 : new NullStmt());
-  FnSymbol* initFun = Symboltable::defineFunction("__init", new NullSymbol(), 
+                                                 : nilStmt);
+  FnSymbol* initFun = Symboltable::defineFunction("__init", nilSymbol, 
 						   dtVoid, initFunBody, true);
   FnDefStmt* initFunDef = new FnDefStmt(initFun);
 
@@ -97,6 +99,7 @@ Stmt* fileToAST(char* filename, int debug) {
   static char* preludePath = NULL;
 
   if (preludePath == NULL) {
+    initNils();
     initType(); // BLC : clean these up
     initExpr();
 

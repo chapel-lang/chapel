@@ -14,6 +14,11 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
 {}
 
 
+bool Symbol::isNull(void) {
+  return (this == nilSymbol);
+}
+
+
 void Symbol::traverse(Traversal* traversal) {
   traversal->preProcessSymbol(this);
   if (traversal->exploreSymbols) {
@@ -50,7 +55,7 @@ void Symbol::printDefList(FILE* outfile, char* separator) {
 
   printDef(outfile);
   ptr = nextLink(Symbol, this);
-  while (ptr != NULL) {
+  while (ptr) {
     fprintf(outfile, "%s", separator);
     ptr->printDef(outfile);
     ptr = nextLink(Symbol, ptr);
@@ -70,7 +75,7 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 
   codegenDef(outfile);
   ptr = nextLink(Symbol, this);
-  while (ptr != NULL) {
+  while (ptr) {
     fprintf(outfile, "%s", separator);
     ptr->codegenDef(outfile);
     ptr = nextLink(Symbol, ptr);
@@ -82,15 +87,6 @@ int
 Symbol::getTypes(Vec<BaseAST *> &asts) {
   asts.add(type);
   return asts.n;
-}
-
-NullSymbol::NullSymbol(void) :
-  Symbol(SYMBOL_NULL, "NullSymbol", new NullType())
-{}
-
-
-bool NullSymbol::isNull(void) {
-  return true;
 }
 
 
@@ -107,12 +103,15 @@ VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass,
 {}
 
 
+bool VarSymbol::isNull(void) {
+  return (this == nilVarSymbol);
+}
+
+
 void VarSymbol::printWithType(FILE* outfile) {
   print(outfile);
-  if (type != NULL) {
-    fprintf(outfile, ": ");
-    type->print(outfile);
-  }
+  fprintf(outfile, ": ");
+  type->print(outfile);
 }
 
 
@@ -122,16 +121,6 @@ static char* paramTypeNames[NUM_PARAM_TYPES] = {
   "out",
   "const"
 };
-
-
-NullVarSymbol::NullVarSymbol() :
-  VarSymbol("NullVarSymbol", new NullType())
-{}
-
-
-bool NullVarSymbol::isNull(void) {
-  return true;
-}
 
 
 ParamSymbol::ParamSymbol(paramType init_usage, char* init_name, 
@@ -172,13 +161,8 @@ ClassSymbol::ClassSymbol(char* init_name, ClassType* init_class) :
 }
 
 
-NullClassSymbol::NullClassSymbol(void) :
-  ClassSymbol("NullClass", NULL)
-{}
-
-
-bool NullClassSymbol::isNull(void) {
-  return true;
+bool ClassSymbol::isNull(void) {
+  return (this == nilClassSymbol);
 }
 
 

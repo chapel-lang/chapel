@@ -13,6 +13,8 @@ class Stmt : public BaseAST {
   AInfo *ainfo;
   Stmt(astType_t astType);
 
+  bool isNull(void);
+
   void traverse(Traversal* traversal);
   virtual void traverseStmt(Traversal* traversal);
 
@@ -22,12 +24,13 @@ class Stmt : public BaseAST {
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 
 
-class NullStmt : public Stmt {
- public:
-  NullStmt(void);
+extern Stmt* nilStmt;
 
-  bool isNull(void);
-  
+
+class NoOpStmt : public Stmt {
+ public:
+  NoOpStmt(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
@@ -154,7 +157,7 @@ class CondStmt : public Stmt {
   Stmt* elseStmt;
 
   CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
-	   Stmt* init_elseStmt = new NullStmt());
+	   Stmt* init_elseStmt = nilStmt);
 
   void traverseStmt(Traversal* traversal);
 

@@ -12,8 +12,8 @@ void VerifyASTType::preProcessStmt(Stmt* stmt) {
       INT_FATAL(stmt, "Unexpected AST statement type: ");
     }
     break;
-  case STMT_NULL:
-    if (typeid(*stmt) != typeid(NullStmt)) {
+  case STMT_NOOP:
+    if (typeid(*stmt) != typeid(NoOpStmt)) {
       INT_FATAL(stmt, "Unexpected AST statement type: ");
     }
     break;
@@ -73,11 +73,6 @@ void VerifyASTType::preProcessExpr(Expr* expr) {
   case EXPR:
     if (typeid(*expr) != typeid(Expr)) {
       INT_FATAL(expr, "Unexpected AST expression type: EXPR");
-    }
-    break;
-  case EXPR_NULL:
-    if (typeid(*expr) != typeid(NullExpr)) {
-      INT_FATAL(expr, "Unexpected AST expression type: EXPR_NULL");
     }
     break;
   case EXPR_LITERAL:
@@ -193,19 +188,13 @@ void VerifyASTType::preProcessSymbol(Symbol* sym) {
       INT_FATAL(sym, "Unexpected AST symbol type: SYMBOL");
     }
     break;
-  case SYMBOL_NULL:
-    if (typeid(*sym) != typeid(NullSymbol)) {
-      INT_FATAL(sym, "Unexpected AST symbol type: SYMBOL_NULL");
-    }
-    break;
   case SYMBOL_USEBEFOREDEF:
     if (typeid(*sym) != typeid(UseBeforeDefSymbol)) {
       INT_FATAL(sym, "Unexpected AST symbol type: SYMBOL_USEBEFOREDEF");
     }
     break;
   case SYMBOL_VAR:
-    if (typeid(*sym) != typeid(VarSymbol) &&
-	typeid(*sym) != typeid(NullVarSymbol)) {
+    if (typeid(*sym) != typeid(VarSymbol)) {
       INT_FATAL(sym, "Unexpected AST symbol type: SYMBOL_VAR");
     }
     break;
@@ -220,8 +209,7 @@ void VerifyASTType::preProcessSymbol(Symbol* sym) {
     }
     break;
   case SYMBOL_CLASS:
-    if (typeid(*sym) != typeid(ClassSymbol) &&
-	typeid(*sym) != typeid(NullClassSymbol)) {
+    if (typeid(*sym) != typeid(ClassSymbol)) {
       INT_FATAL(sym, "Unexpected AST symbol type: SYMBOL_CLASS");
     }
     break;
@@ -252,11 +240,6 @@ void VerifyASTType::preProcessType(Type* type) {
   case TYPE:
     if (typeid(*type) != typeid(Type)) {
       INT_FATAL(type, "Unexpected AST type type: TYPE");
-    }
-    break;
-  case TYPE_NULL:
-    if (typeid(*type) != typeid(NullType)) {
-      INT_FATAL(type, "Unexpected AST type type: TYPE_NULL");
     }
     break;
   case TYPE_BUILTIN:

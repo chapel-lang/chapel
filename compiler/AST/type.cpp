@@ -28,13 +28,18 @@ Symbol* pstUnknown = 0;
 
 Type::Type(astType_t astType) :
   BaseAST(astType),
-  name(NULL),
+  name(nilSymbol),
   asymbol(NULL)
 {}
 
 
 void Type::addName(Symbol* newname) {
   name = newname;
+}
+
+
+bool Type::isNull(void) {
+  return (this == nilType);
 }
 
 
@@ -60,9 +65,7 @@ int Type::rank(void) {
 
 
 void Type::print(FILE* outfile) {
-  if (name != NULL) {
-    name->print(outfile);
-  }
+  name->print(outfile);
 }
 
 
@@ -117,21 +120,12 @@ Type::getSymbols(Vec<BaseAST *> &asts) {
 } 
 
 
-NullType::NullType(void) :
-  Type(TYPE_NULL)
-{}
-
-bool NullType::isNull(void) {
-  return true;
-}
-
-
 EnumType::EnumType(EnumSymbol* init_valList) :
   Type(TYPE_ENUM),
   valList(init_valList)
 {
   Symbol* val = valList;
-  while (val != NULL) {
+  while (val) {
     val->type = this;
     val = nextLink(Symbol, val);
   }
@@ -164,7 +158,7 @@ void EnumType::codegenDef(FILE* outfile) {
 
   fprintf(outfile, "typedef enum {\n");
   enumSym = valList;
-  while (enumSym != NULL) {
+  while (enumSym) {
     enumSym->printDef(outfile);
 
     enumSym = nextLink(EnumSymbol, enumSym);
@@ -211,7 +205,7 @@ void EnumType::codegenIORoutines(FILE* outfile) {
 
   fprintf(outfile, "switch (val) {\n");
   enumSym = valList;
-  while (enumSym != NULL) {
+  while (enumSym) {
     fprintf(outfile, "case ");
     enumSym->codegen(outfile);
     fprintf(outfile, ":\n");
@@ -397,6 +391,11 @@ ClassType::ClassType(ClassType* init_parentClass) :
   Type(TYPE_CLASS),
   parentClass(init_parentClass)
 {}
+
+
+bool ClassType::isNull(void) {
+  return (this == nilClassType);
+}
 
 
 void ClassType::print(FILE* outfile) {

@@ -4,6 +4,7 @@ CXX_SRCS = \
 	findUnknownTypes.cpp \
 	link.cpp \
 	loc.cpp \
+	nils.cpp \
 	stmt.cpp \
 	symbol.cpp \
         symtab.cpp \
