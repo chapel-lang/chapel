@@ -24314,3 +24314,50 @@ Added files:
 	                                     version.goodstart 
 	                                     version.prediff 
 
+---------------------------------------------------------------------------
+
+04/06/05 13:56:42 -- deitz
+
+Log message:
+	Implemented setter and getter functions for all fields within a
+	structure (classes, records, unions) as methods within the structure.
+	If the field is named "field," then the setter is "set_field" and the
+	getter is "get_field."
+	
+	For example, for a class like
+	
+	class foo {
+	  var i : integer;
+	  var f : float;
+	}
+	
+	we would generate the following functions:
+	
+	foo.set_i(arg : integer) {
+	  i = arg;
+	}
+	
+	foo.set_f(arg : float) {
+	  f = arg;
+	}
+	
+	foo.get_i() : integer {
+	  return i;
+	}
+	
+	foo.get_f() : float {
+	  return f;
+	}
+	
+	Note that if the type is unknown for the field, it is not used in the
+	setter or getter function.  Of course.
+	
+	Added _getter and _setter pointers within FnSymbols that point to the
+	VarSymbols in a class that they apply to.  In non-setter/getter
+	functions, this pointer is NULL.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
