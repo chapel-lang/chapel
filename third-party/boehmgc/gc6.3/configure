@@ -3515,7 +3515,28 @@ if test "${enable_cplusplus+set}" = set; then
 
 fi;
 
-INCLUDES="-I${srcdir}/include -I/opt/cpkg/v3/valgrind/2.1.2/include "
+INCLUDES=-I${srcdir}/include
+
+# BLC: detect valgrind -- note that this doesn't come close to
+# conforming to the gnu configure protocol for writing these
+# things.
+#
+VALGRIND=`which valgrind 2>&1`
+vgr_status=$?
+if test $vgr_status -eq 0; then
+  echo "found valgrind at $VALGRIND"
+  VALGRIND_PATH=`echo $VALGRIND | sed s/valgrind$//`
+#  echo "path is $VALGRIND_PATH"
+  VALGRIND_INC="$VALGRIND_PATH../include"
+#  echo "include is $VALGRIND_INC"
+  INCLUDES="$INCLUDES -I$VALGRIND_INC"
+#  echo "INCLUDES is $INCLUDES"
+  CFLAGS="$CFLAGS -DGC_VALGRIND_SUPPORT"
+#  echo "CFLAGS is $CFLAGS"
+else
+  echo "didn't find valgrind"
+fi
+
 THREADLIBS=
 case "$THREADS" in
  no | none | single)

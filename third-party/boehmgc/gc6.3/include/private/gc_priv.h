@@ -19,8 +19,6 @@
 # ifndef GC_PRIVATE_H
 # define GC_PRIVATE_H
 
-#define GC_VALGRIND_SUPPORT
-
 #if defined(GC_VALGRIND_SUPPORT)
 #define GC_VALGRIND_RED_ZONE		8
 #endif
