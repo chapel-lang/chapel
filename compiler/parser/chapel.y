@@ -100,7 +100,7 @@
 %type <pexpr> simple_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
 %type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
-%type <stmt> program modulebody statements statement decls decl vardecl 
+%type <stmt> program modulebody statements statement decls decl vardecl typevardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl 
 %type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl
 
@@ -197,6 +197,7 @@ vardecl:
 
 typedecl:
   typealias
+| typevardecl
 | enumdecl
 | classdecl
 | recorddecl
@@ -212,6 +213,18 @@ typealias:
       newtype->addName(typeSym);
       $$ = new TypeDefStmt(newtype);
       typeSym->setDefPoint($$);
+    }
+;
+
+
+typevardecl:
+  TTYPE identifier TSEMI
+    {
+      VariableType* new_type = new VariableType();
+      TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
+      new_type->addName(new_symbol);
+      $$ = new TypeDefStmt(new_type);
+      new_symbol->setDefPoint($$);
     }
 ;
 
@@ -308,6 +321,12 @@ formaltag:
 formal:
   formaltag identifier vardecltype
     { $$ = new ParamSymbol($1, $2, $3); }
+| TTYPE identifier
+    {
+      VariableType* new_type = new VariableType();
+      $$ = new TypeSymbol($2, new_type);
+      new_type->addName($$);
+    }
 ;
 
 

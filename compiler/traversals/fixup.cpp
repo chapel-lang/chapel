@@ -221,6 +221,11 @@ static void verifySymbolDefPoint(Symbol* sym) {
       INT_FATAL(sym, "Incorrect ForLoopStmt defPoint "
 		"for symbol '%s'", sym->name);
     }
+    else if (defPoint->isNull()) {
+      if (sym->parentScope->type != SCOPE_INTRINSIC) {
+	INT_FATAL(sym, "Nil defPoint for symbol '%s'", sym->name);
+      }
+    }
     else {
       INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
     }

@@ -890,9 +890,23 @@ void TupleType::codegen(FILE* outfile) {
 }
 
 
+VariableType::VariableType() :
+  Type(TYPE_VARIABLE, nilExpr)
+{}
+
+
+Type* VariableType::copyType(bool clone, CloneCallback* analysis_clone) {
+  return new VariableType();
+}
+
+
+void VariableType::codegen(FILE* outfile) {
+  INT_FATAL(this, "ERROR:  Cannot codegen a variable type.");
+}
+
+
 UnresolvedType::UnresolvedType(char* init_name) :
-  Type(TYPE_UNRESOLVED, nilExpr)
-{
+  Type(TYPE_UNRESOLVED, nilExpr) {
   name = new UnresolvedSymbol(init_name);
 }
 
@@ -903,7 +917,6 @@ Type* UnresolvedType::copyType(bool clone, CloneCallback* analysis_clone) {
 
 
 void UnresolvedType::codegen(FILE* outfile) {
-  //  fprintf(outfile, name->name);
   INT_FATAL(this, "ERROR:  Cannot codegen an unresolved type.");
 }
 

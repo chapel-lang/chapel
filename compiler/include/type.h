@@ -206,6 +206,13 @@ class TupleType : public Type {
   void codegen(FILE* outfile);
 };
 
+class VariableType : public Type {
+ public:
+  VariableType();
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
+  void codegen(FILE* outfile);
+};
+
 class UnresolvedType : public Type {
  public:
   UnresolvedType(char* init_name);

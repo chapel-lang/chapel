@@ -62,6 +62,7 @@ enum astType_t {
   TYPE_USER,
   TYPE_CLASS,
   TYPE_TUPLE,
+  TYPE_VARIABLE,
   TYPE_UNRESOLVED,
   
   AST_TYPE_END 
