@@ -1,1 +1,2 @@
-fail: code defines multiple modules but no main function
+Error: Code defines multiple modules but no main function.
+

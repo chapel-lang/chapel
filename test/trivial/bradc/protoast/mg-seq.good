@@ -1,3 +1,4 @@
+;
 enum classVals = S | W | A | B | C | D | O;
 type coeff = [0..3] float;
 function initializeMG( V: ???;

@@ -788,8 +788,9 @@ void ModuleSymbol::codegenDef(void) {
   openCFiles(name, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
 
   fprintf(codefile, "#include \"stdchpl.h\"\n");
-  fprintf(codefile, "#include \"_chpl_common.h\"\n");
-  fprintf(codefile, "#include \"_chpl_common-internal.h\"\n");
+
+  fprintf(codefile, "#include \"_CommonModule.h\"\n");
+  fprintf(codefile, "#include \"_CommonModule-internal.h\"\n");
   /** SJD: Better to export things? (above line) **/
   fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
   fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);

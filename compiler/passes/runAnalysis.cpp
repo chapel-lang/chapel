@@ -5,6 +5,7 @@
 #include "if1.h"
 #include "runAnalysis.h"
 #include "symbol.h"
+#include "symtab.h"
 
 int RunAnalysis::runCount = 0;
 
@@ -24,7 +25,7 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     // BLC: John, what filename should be passed in for multiple modules?
     // I'm just passing in the first non-internal module's filename
     char* firstUserModuleName = NULL;
-    while (moduleList && moduleList->internal) {
+    while (moduleList && (moduleList->internal || moduleList == commonModule)) {
       moduleList = nextLink(ModuleSymbol, moduleList);
     }
     if (moduleList) {

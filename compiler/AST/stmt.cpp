@@ -317,7 +317,8 @@ void NoOpStmt::print(FILE* outfile) {
 
 
 void NoOpStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "{}\n");
+  //  fprintf(outfile, "{}\n");
+  //  SJD: Change back when _CommonModule gets an initFn
 }
 
 
@@ -891,18 +892,48 @@ void ForLoopStmt::codegen(FILE* outfile) {
   fprintf(outfile, "\n");
   
   aVar = index;
-  for (int i=0; i<rank; i++) {
-    fprintf(outfile, "_FOR");
-    if (forall) {
-      fprintf(outfile, "ALL");
-    }
-    fprintf(outfile, "(");
-    aVar->codegen(outfile);
-    fprintf(outfile, ", ");
-    domain->codegen(outfile);
-    fprintf(outfile, ", %d) {\n", i);
 
-    aVar = nextLink(VarSymbol, aVar);
+  Tuple* tuple = dynamic_cast<Tuple*>(domain);
+
+  SimpleSeqExpr* seq = (tuple)
+    ? dynamic_cast<SimpleSeqExpr*>(tuple->exprs)
+    : dynamic_cast<SimpleSeqExpr*>(domain);
+
+  if (seq) {
+    for (int i=0; i<rank; i++) {
+      fprintf(outfile, "_FOR");
+      if (forall) {
+	fprintf(outfile, "ALL");
+      }
+      fprintf(outfile, "_DIM");
+      fprintf(outfile, "(");
+      aVar->codegen(outfile);
+      fprintf(outfile, ", ");
+      seq->lo->codegen(outfile);
+      fprintf(outfile, ", ");
+      seq->hi->codegen(outfile);
+      fprintf(outfile, ", ");
+      seq->str->codegen(outfile);
+      fprintf(outfile, ") {\n");
+
+      aVar = nextLink(VarSymbol, aVar);
+      seq = nextLink(SimpleSeqExpr, seq);
+    }
+  }
+  else {
+    for (int i=0; i<rank; i++) {
+      fprintf(outfile, "_FOR");
+      if (forall) {
+	fprintf(outfile, "ALL");
+      }
+      fprintf(outfile, "(");
+      aVar->codegen(outfile);
+      fprintf(outfile, ", ");
+      domain->codegen(outfile);
+      fprintf(outfile, ", %d) {\n", i);
+
+      aVar = nextLink(VarSymbol, aVar);
+    }
   }
 
   body->codegen(outfile);

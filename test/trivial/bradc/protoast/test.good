@@ -1,3 +1,4 @@
+;
 function __init_test() {
 var n: integer = 999;
 var D: domain(1) = [1..n];

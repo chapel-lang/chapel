@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include "insertAnonymousTypes.h"
 #include "expr.h"
 #include "stmt.h"
@@ -7,124 +8,164 @@
 #include "stringutil.h"
 
 
-static void build_anon_type_defs(VarDefStmt* stmt, Type* type) {
-  if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
-    if (!array_type->name->isNull()) {
-      INT_FATAL(stmt, "Array type already resolved");
-    }
-    SymScope* save_scope;
-    /** SJD: Why is SCOPE_INTRINSIC not internal? **/
-    if (array_type->elementType->name->parentScope->isInternal() ||
-	array_type->elementType->name->defPoint->isNull()) {
-      save_scope = Symboltable::setCurrentScope(commonModule->modScope);
-    }
-    else {
-      save_scope = Symboltable::setCurrentScope(array_type->elementType->name->parentScope);
-    }
-    if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
-      if (Variable* var = dynamic_cast<Variable*>(forall->domains)) {
-	if (!var->next->isNull()) {
-	  INT_FATAL(stmt, "Multiple domains not handled in declarations");
-	}
-	if (DomainType* domain_type = dynamic_cast<DomainType*>(var->var->type)) {
-	  char* name = glomstrings(5,
-				   "_array_",
-				   array_type->elementType->name->name,
-				   "_",
-				   intstring(domain_type->numdims), 
-				   "d");
-	  if (Symbol* array_symbol = Symboltable::lookupInCurrentScope(name)) {
-	    stmt->var->type = array_symbol->type;
-	  }
-	  else {
-	    TypeSymbol* array_symbol = new TypeSymbol(name, array_type);
-	    array_type->addName(array_symbol);
-	    array_type->domainType = domain_type;
-	    TypeDefStmt* array_type_def = new TypeDefStmt(array_type);
-	    if (Symboltable::getCurrentScope() == commonModule->modScope) {
-	      commonModule->stmts = appendLink(commonModule->stmts, array_type_def);
-	    }
-	    else {
-	      Stmt* def_stmt = dynamic_cast<Stmt*>(array_type->elementType->name->defPoint);
-	      if (!def_stmt) {
-		INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
-	      }
-	      def_stmt->insertAfter(array_type_def);
-	    }
-	  }
+static void build_anon_array_type_def(Stmt* stmt, Type** type) {
+  ArrayType* array_type = dynamic_cast<ArrayType*>(*type);
+
+  if (!array_type) {
+    INT_FATAL(stmt, "Array type expected");
+  }
+
+  if (!array_type->name->isNull()) {
+    INT_FATAL(stmt, "Array type already resolved");
+  }
+
+  SymScope* saveScope;
+  /** SJD: Why is SCOPE_INTRINSIC not internal? **/
+  if (array_type->elementType->name->parentScope->isInternal() ||
+      array_type->elementType->name->defPoint->isNull()) {
+    saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+  }
+  else {
+    saveScope = Symboltable::setCurrentScope(array_type->elementType->name->parentScope);
+  }
+  if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
+    if (Variable* var = dynamic_cast<Variable*>(forall->domains)) {
+      if (!var->next->isNull()) {
+	INT_FATAL(stmt, "Multiple domains not handled in declarations");
+      }
+      if (DomainType* domain_type = dynamic_cast<DomainType*>(var->var->type)) {
+	char* name = glomstrings(5,
+				 "_array_",
+				 array_type->elementType->name->name,
+				 "_",
+				 intstring(domain_type->numdims), 
+				 "d");
+	if (Symbol* array_sym = Symboltable::lookupInCurrentScope(name)) {
+	  *type = array_sym->type;
 	}
 	else {
-	  INT_FATAL(stmt, "Didn't find domain in this complicated case");
+	  TypeSymbol* array_sym = new TypeSymbol(name, array_type);
+	  array_type->addName(array_sym);
+	  array_type->domainType = domain_type;
+	  TypeDefStmt* array_type_def = new TypeDefStmt(array_type);
+	  array_sym->setDefPoint(array_type_def);
+	  if (Symboltable::getCurrentScope() == commonModule->modScope) {
+	    commonModule->stmts->insertAfter(array_type_def);
+	  }
+	  else {
+	    Stmt* def_stmt = dynamic_cast<Stmt*>(array_type->elementType->name->defPoint);
+	    if (!def_stmt) {
+	      INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
+	    }
+	    def_stmt->insertAfter(array_type_def);
+	  }
 	}
       }
+      else {
+	INT_FATAL(stmt, "Didn't find domain in this complicated case");
+      }
     }
-    Symboltable::setCurrentScope(save_scope);
   }
-  else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type)) {
-    /***
-     ***  Note I'm assuming a tuple with component types that are all
-     ***  primitive types and I'm declaring this thing with a mangled
-     ***  name in the commonModule.  This won't be possible when we
-     ***  support tuples of different types.  In this case, they may
-     ***  have to be defined in the scope they are used.
-     ***/
-    if (!tuple_type->name->isNull()) {
-      INT_FATAL(stmt, "Tuple type already resolved");
-    }
-    SymScope* save_scope = Symboltable::setCurrentScope(commonModule->modScope);
+  Symboltable::setCurrentScope(saveScope);
+}
 
-    char* name = glomstrings(1, "_tuple");
-    forv_Vec(Type, component, tuple_type->components) {
-      name = glomstrings(3, name, "_", component->name->name);
-    }
-    if (Symbol* tuple_symbol = Symboltable::lookupInCurrentScope(name)) {
-      stmt->var->type = tuple_symbol->type;
-    }
-    else {
-      TypeSymbol* tuple_symbol = new TypeSymbol(name, tuple_type);
-      tuple_type->addName(tuple_symbol);
-      TypeDefStmt* tuple_type_def = new TypeDefStmt(tuple_type);
-      commonModule->stmts = appendLink(commonModule->stmts, tuple_type_def);
-    }
-    Symboltable::setCurrentScope(save_scope);
+
+static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
+  /***  Note I'm assuming a tuple with component types that are all
+   ***  primitive types and I'm declaring this thing with a mangled
+   ***  name in the commonModule.  This won't be possible when we
+   ***  support tuples of different types.  In this case, they may
+   ***  have to be defined in the scope they are used.
+   ***/
+
+  TupleType* tuple_type = dynamic_cast<TupleType*>(*type);
+
+  if (!tuple_type) {
+    INT_FATAL(*type, "Tuple type expected");
+  }
+
+  if (!tuple_type->name->isNull()) {
+    INT_FATAL(tuple_type, "Tuple type already resolved");
+  }
+
+  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+  
+  char* name = glomstrings(1, "_tuple");
+  forv_Vec(Type, component, tuple_type->components) {
+    name = glomstrings(3, name, "_", component->name->name);
+  }
+  if (Symbol* tuple_sym = Symboltable::lookupInCurrentScope(name)) {
+    *type = tuple_sym->type;
+  }
+  else {
+    TypeSymbol* tuple_sym = new TypeSymbol(name, tuple_type);
+    tuple_type->addName(tuple_sym);
+    TypeDefStmt* tuple_type_def = new TypeDefStmt(tuple_type);
+    commonModule->stmts = appendLink(commonModule->stmts, tuple_type_def);
+  }
+  Symboltable::setCurrentScope(saveScope);
+}
+
+
+static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
+  /*** Note I'm only handling arithmetic domains and these are being
+   *** put in the commonModule.
+   ***/
+
+  DomainType* domain_type = dynamic_cast<DomainType*>(*type);
+
+  if (!domain_type) {
+    INT_FATAL(*type, "Domain type expected");
+  }
+
+  if (!domain_type->name->isNull()) {
+    INT_FATAL(domain_type, "Domain type already resolved");
+  }
+
+  if (!domain_type->parent->isNull()) {
+    INT_FATAL(domain_type, "Only supporting arithmetic domains for now");
+  }
+
+  if (domain_type->numdims == 0) { // SJD: Duplicates original BLC assumption
+    domain_type->numdims = 1;
+  }
+
+  char* name = glomstrings(3, "_domain_", intstring(domain_type->numdims), "d");
+  Symbol* domain_sym = Symboltable::lookupInScope(name, commonModule->modScope);
+  if (domain_sym) {
+    *type = domain_sym->type;
+  }
+  else {
+    SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+    domain_sym = new TypeSymbol(name, domain_type);
+    domain_type->addName(domain_sym);
+    TypeDefStmt* domain_type_def = new TypeDefStmt(domain_type);
+    domain_sym->setDefPoint(domain_type_def);
+    commonModule->stmts->insertBefore(domain_type_def);
+    Symboltable::setCurrentScope(saveScope);
+    *type = domain_type;
   }
 }
+
+/*** don't pass tuple_type and type
+ *** switch statement on type_id
+ ***  get tuple_type etc. inside procedure
+ ***/
+static void build_anon_type_def(Stmt* stmt, Type** type) {
+  if (typeid(**type) == typeid(ArrayType)) {
+    build_anon_array_type_def(stmt, type);
+  }
+  else if (typeid(**type) == typeid(DomainType)) {
+    build_anon_domain_type_def(stmt, type);
+  }
+  else if (typeid(**type) == typeid(TupleType)) {
+    build_anon_tuple_type_def(stmt, type);
+  }
+}
+
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
   if (VarDefStmt* var_def = dynamic_cast<VarDefStmt*>(stmt)) {
-    build_anon_type_defs(var_def, var_def->var->type);
+    build_anon_type_def(stmt, &var_def->var->type);
   }
-}
-
-void InsertAnonymousTypes::preProcessSymbol(Symbol* sym) {
-  /***
-   ***  Insert arithmetic domain type definitions in commonModule
-   ***/
-  if (DomainType* domain_type = dynamic_cast<DomainType*>(sym->type)) {
-    if (!domain_type->name->isNull()) {
-      return;
-    }
-    if (!domain_type->parent->isNull()) {
-      INT_FATAL(sym, "Only supporting arithmetic domains for now");
-    }
-    if (domain_type->numdims == 0) {
-      domain_type->numdims = 1;   // SJD: Ugh, duplicates BLC hack prior to
-                                  // change that generalized domains and arrays
-    }
-    char* name = glomstrings(3, "_domain_", intstring(domain_type->numdims), "d");
-    if (Symbol* domain_symbol = Symboltable::lookupInScope(name, commonModule->modScope)) {
-      sym->type = domain_symbol->type;
-    }
-    else {
-      SymScope* save_scope = Symboltable::setCurrentScope(commonModule->modScope);
-      TypeSymbol* domain_symbol = new TypeSymbol(name, domain_type);
-      domain_type->addName(domain_symbol);
-      TypeDefStmt* domain_type_def = new TypeDefStmt(domain_type);
-      commonModule->stmts = appendLink(commonModule->stmts, domain_type_def);
-      Symboltable::setCurrentScope(save_scope);
-      sym->type = domain_type;
-    }
-    return;
-  }
-  return;
 }

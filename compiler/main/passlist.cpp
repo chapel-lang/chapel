@@ -20,6 +20,7 @@
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
+#include "../traversals/insertAnonymousDomains.h"
 #include "../traversals/insertAnonymousTypes.h"
 #include "../traversals/insertUnionChecks.h"
 #include "../traversals/insertVariableInitializations.h"
@@ -53,6 +54,7 @@ REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
 REGISTER(GetStuff);
+REGISTER(InsertAnonymousDomains);
 REGISTER(InsertAnonymousTypes);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);

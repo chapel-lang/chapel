@@ -11,6 +11,7 @@ TRAVERSALS_SRCS = \
 	findUnresolvedSymbols.cpp \
 	fixup.cpp \
 	getstuff.cpp \
+	insertAnonymousDomains.cpp \
 	insertAnonymousTypes.cpp \
 	insertUnionChecks.cpp \
 	insertVariableInitializations.cpp \

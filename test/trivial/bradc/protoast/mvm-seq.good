@@ -1,3 +1,4 @@
+;
 function __init_mvm-seq() {
 var m: integer = 100;
 var n: integer = 200;

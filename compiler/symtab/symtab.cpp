@@ -68,8 +68,15 @@ void Symboltable::doneParsingPreludes(void) {
   commonModule = new ModuleSymbol("_CommonModule", false);
   commonModule->setModScope(new SymScope(SCOPE_MODULE));
   commonModule->modScope->parent = preludeScope;
+  commonModule->modScope->setContext(nilStmt, commonModule);
+
   preludeScope->child = commonModule->modScope;
   currentScope = commonModule->modScope;
+
+  commonModule->stmts = new NoOpStmt();
+  SET_BACK(commonModule->stmts);
+
+  firstModule = appendLink(firstModule, commonModule);
 
   prelude->modScope = preludeScope;          // SJD: Why here?
   internalPrelude->modScope = internalScope; // I just put it here

@@ -6,7 +6,6 @@
 class InsertAnonymousTypes : public Traversal {
  public:
   void preProcessStmt(Stmt* stmt);
-  void preProcessSymbol(Symbol* sym);
 };
 
 #endif

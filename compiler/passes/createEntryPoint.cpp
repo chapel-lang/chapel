@@ -16,7 +16,7 @@ static ModuleSymbol* findUniqueUserModule(ModuleSymbol* moduleList) {
   ModuleSymbol* userModule = NULL;
 
   while (moduleList && !moduleList->isNull()) {
-    if (!moduleList->internal) {
+    if (!moduleList->internal && moduleList != commonModule) {
       if (userModule == NULL) {
 	userModule = moduleList;
       } else {
@@ -52,7 +52,7 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
       userModule->stmts->append(maindefstmt);
       mainFn = maindefstmt->fn;
     } else {
-      fail("code defines multiple modules but no main function");
+      USR_FATAL("Code defines multiple modules but no main function.");
     }
   } else {
     // tack call to main fn module's init call onto main fn's body

@@ -24,6 +24,7 @@ PassInfo passlist[] = {
 
   RUN(TransformLetExprs, ""),
 
+  RUN(InsertAnonymousDomains, ""),
   RUN(InsertAnonymousTypes, ""),
 
   // passes to run analysis

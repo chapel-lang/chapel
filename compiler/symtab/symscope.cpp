@@ -278,6 +278,11 @@ void SymScope::codegen(FILE* outfile, char* separator) {
   for (SymLink* tmp = firstSym;
        tmp && !tmp->isNull();
        tmp = nextLink(SymLink, tmp)) {
-    tmp->pSym->codegenDefList(outfile, "\n");
+    if (dynamic_cast<FnSymbol*>(tmp->pSym)) {
+      tmp->pSym->codegenDefList(outfile, "\n");
+    }
+    else {
+      tmp->pSym->codegenDef(outfile);
+    }
   }
 }
