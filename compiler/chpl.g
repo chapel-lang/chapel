@@ -427,12 +427,12 @@ binary_operator
 pre_operator
   : '++' 	 $unary_op_right 9800
   | '--' 	 $unary_op_right 9800
-  | '+'          $unary_op_right 9800
-  | '-'          $unary_op_right 9800
+  | "+/+"        $unary_op_right 9800
+  | "-/-"        $unary_op_right 9800
   | '~'          $unary_op_right 9800
   | '!'          $unary_op_right 9800
-  | '*'		 $unary_op_right 9800
-  | '&'          $unary_op_right 9800
+  | '*/*'	 $unary_op_right 9800
+  | "&/&"        $unary_op_right 9800
   | '(' type ')' $unary_op_right 9800
   | 'sizeof'     $unary_op_right 9900
   ;
