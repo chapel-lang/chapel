@@ -11652,3 +11652,13 @@ Modified files:
 	chapel/compiler/include/: analysis.h ast.h 
 	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h 
 
+---------------------------------------------------------------------------
+
+12/13/04 17:12:09 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix compilation issue... don't know how it got past the dependencies.
+
+Modified files:
+	chapel/compiler/vparser/: v.g 
+
