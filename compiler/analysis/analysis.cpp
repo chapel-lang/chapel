@@ -54,6 +54,7 @@ static void build_types(Vec<BaseAST *> &syms);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 static ScopeLookupCache universal_lookup_cache;
+static int finalized_symbols = 0;
 
 
 ASymbol::ASymbol() : symbol(0), sym(0) {
@@ -331,6 +332,19 @@ ACallbacks::new_Sym(char *name) {
   return new_ASymbol(name)->sym;
 }
 
+static void
+finalize_symbols(IF1 *i) {
+  for (int x = finalized_symbols; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
+    if (s->is_constant || s->is_symbol)
+      set_global_scope(s);
+    else
+      if (s->type_kind)
+	set_global_scope(s);
+  }
+  finalized_symbols = i->allsyms.n;
+}
+
 static Fun *
 install_new_function(FnSymbol *f) {
   Vec<Stmt *> all_stmts;
@@ -390,6 +404,7 @@ install_new_function(FnSymbol *f) {
   if (init_function(f) < 0 || build_function(f) < 0) 
     assert(!"unable to instantiate generic/wrapper");
   if1_finalize_closure(if1, f->asymbol->sym);
+  finalize_symbols(if1);
   Fun *fun = new Fun(f->asymbol->sym);
   build_arg_positions(fun);
   pdb->add(fun);
@@ -1860,17 +1875,6 @@ debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
 	  printf("Type: %s cname %s\n", t->symbol->name, t->symbol->cname); 
       }
     }
-  }
-}
-
-static void
-finalize_symbols(IF1 *i) {
-  forv_Sym(s, i->allsyms) {
-    if (s->is_constant || s->is_symbol)
-      set_global_scope(s);
-    else
-      if (s->type_kind)
-	set_global_scope(s);
   }
 }
 
