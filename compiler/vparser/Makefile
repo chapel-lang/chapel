@@ -6,6 +6,7 @@ USE_DPARSER = 1
 SUBDIRS = \
 	cast \
 
+
 #
 # standard header
 #
@@ -17,7 +18,7 @@ include Makefile.share
 TARGETS = $(VPARSER_OBJS)
 
 OTHER_DEPEND_RULES = \
-	@$(MAKEDEPEND) -MT PARSE_INCLUDES $(CXXFLAGS) parse_incs.cpp | sed s/:\ parse_incs.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS)
+	@$(MAKEDEPEND) -MT V_G_INCLUDES $(CXXFLAGS) v.g_incs.cpp | sed s/:\ v.g_incs.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
@@ -35,7 +36,6 @@ cast_code.cpp: $(CAST)
 # will capture this information redundantly).
 
 $(PLATFORM)/v.g.d_parser.o: ../analysis/prim_data.h
-$(PLATFORM)/chpl.g.d_parser.o: ../analysis/prim_data.h
 
 
 #
@@ -52,4 +52,4 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 #
 
 $(PLATFORM)/ast_cf.o: cast_code.cpp
-$(PLATFORM)/%.g.d_parser.o: $(PARSE_INCLUDES)
+$(PLATFORM)/v.g.d_parser.o: $(V_G_INCLUDES)

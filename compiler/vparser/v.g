@@ -1,9 +1,7 @@
 %<
-#include "geysa.h"
-#include "parse_structs.h"
-#include "grammar.h"
-#include "parse_ast.h"
-#include "if1.h"
+/* DON'T add #includes here -- add to v.g.h to keep make depend working */
+#include "v.g.h"
+/* DON'T add #includes here -- add to v.g.h to keep make depend working */
 
 extern D_ParserTables parser_tables_v;
 extern D_Symbol d_symbols_v[];
