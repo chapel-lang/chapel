@@ -27,7 +27,8 @@ Symbol* pstUnknown;
 
 Type::Type(astType_t astType) :
   BaseAST(astType),
-  name(NULL)
+  name(NULL),
+  asymbol(NULL)
 {}
 
 

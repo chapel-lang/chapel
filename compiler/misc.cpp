@@ -56,6 +56,7 @@ show_error(char *str, AST *a, ...) {
   return -1;
 }
 
+#ifndef TEST_LIB
 int
 show_error(char *str, Var *v, ...) {
   char nstr[1024];
@@ -71,6 +72,7 @@ show_error(char *str, Var *v, ...) {
   va_end(ap);
   return -1;
 }
+#endif
 
 int
 buf_read(char *pathname, char **buf, int *len) {

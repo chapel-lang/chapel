@@ -19,23 +19,6 @@ AInfo::AInfo() : xast(0) {
 }
 
 static void
-map_symbols(Vec<BaseAST *> &syms) {
-  int symbols = 0;
-  printf("%d\n", syms.n);
-  forv_BaseAST(s, syms) {
-    Symbol *sym = dynamic_cast<Symbol *>(s);
-    if (sym) {
-      sym->asymbol = new ASymbol;
-      sym->asymbol->xsymbol = sym;
-      symbols++;
-      if (sym->name)
-        printf("Symbol '%s'\n", sym->name);
-    } 
-  }
-  printf("BaseASTs: %d, Symbols: %d\n", syms.n, symbols);
-}
-
-static void
 close_symbols(BaseAST *a, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
   set.set_add(a);
@@ -52,9 +35,49 @@ close_symbols(BaseAST *a, Vec<BaseAST *> &syms) {
 }
 
 static void
+map_symbols(Vec<BaseAST *> &syms) {
+  int symbols = 0, types = 0, exprs = 0, stmts = 0;
+  if (verbose_level > 1)
+    printf("map_symbols: %d\n", syms.n);
+  forv_BaseAST(s, syms) {
+    Symbol *sym = dynamic_cast<Symbol *>(s);
+    if (sym) {
+      sym->asymbol = new ASymbol;
+      sym->asymbol->xsymbol = sym;
+      symbols++;
+      if (verbose_level > 1 && sym->name)
+        printf("map_symbols: found Symbol '%s'\n", sym->name);
+    } else {
+      Type *t = dynamic_cast<Type *>(s);
+      if (t) {
+	t->asymbol = new ASymbol;
+	t->asymbol->xsymbol = t;
+	types++;
+      } else {
+#if 0
+	if (e) {
+	Expr *e = dynamic_cast<Expr *>(s);
+	  e->ainfo = new AInfo;
+	  e->ainfo->xast = e;
+	  exprs++;
+	} else {
+	  Stmt *s = dynamic_cast<Stmt *>(s);
+	  s->ainfo = new AInfo;
+	  s->ainfo->xast = s;
+	  stmts++;
+	}
+#endif	
+      }
+    }
+  }
+  if (verbose_level > 1)
+    printf("map_symbols: BaseASTs: %d, Symbols: %d, Types: %d, Exprs: %d, Stmts: %d\n", 
+	   syms.n, symbols, types, exprs, stmts);
+}
+
+static void
 import_symbols(BaseAST *a) {
   Vec<BaseAST *> syms;
-
   close_symbols(a, syms);
   map_symbols(syms);
 }

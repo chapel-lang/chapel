@@ -6,10 +6,12 @@
 class Symbol;
 class EnumSymbol;
 class Expr;
+class ASymbol;
 
 class Type : public BaseAST {
  public:
   Symbol* name;
+  ASymbol *asymbol;
 
   Type(astType_t astType);
   void addName(Symbol* newname);

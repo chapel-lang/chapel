@@ -9,7 +9,8 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
   name(init_name),
   type(init_type),
-  level(Symboltable::getLevel())
+  level(Symboltable::getLevel()),
+  asymbol(0)
 {}
 
 

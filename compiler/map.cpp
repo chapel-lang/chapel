@@ -62,6 +62,15 @@ test_map() {
   hh.del(hi);
   assert(hh.get(hhi) == 0);
   assert(hh.get(hi) == 0);
+
+  HashMap<char *, StringHashFns, int> sh;
+  sh.put(hi, 1);
+  sh.put(ho, 2);
+  sh.put(hum, 3);
+  sh.put(hhi, 4);
+  assert(sh.get(hi) == 4);
+  assert(sh.get(ho) == 2);
+  assert(sh.get(hum) == 3);
 }
 #endif
 

@@ -59,6 +59,7 @@ static char* cGetsOp[NUM_GETS_OPS] = {
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
   stmt(NULL),
+  ainfo(NULL),
   parent(NULL)
 {}
 
