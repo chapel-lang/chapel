@@ -104,6 +104,8 @@ test: FORCE
 
 $(CHPL): $(CHPL_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
+	@echo "Updating TAGS..."
+	@etags $(CHPL_SRCS) *.h
 
 
 #
