@@ -605,6 +605,7 @@ coercion_uses(Match **am, MPosition &p, Vec<CreationSet*> args) {
     AVar *a = m->actuals.get(cp);
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
+    concrete_type = concrete_type->type;
     Sym *formal_type = m->formal_dispatch_types.get(cp);
     Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
     if (coerced_type && concrete_type != coerced_type) {

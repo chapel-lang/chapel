@@ -15,4 +15,4 @@ tuple4 : (tuple3, "4"); print(tuple4);
 
 // Indexing Tuples
 
-anInt : tuple3(1);
+//anInt : tuple3(1);

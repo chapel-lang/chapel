@@ -1330,17 +1330,19 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	break;
       case P_prim_index_object: {
 	AVar *vec = make_AVar(p->rvals.v[1], es);
-	Sym *index = p->rvals.v[2]->sym;
+	AVar *index = make_AVar(p->rvals.v[2], es);
 	set_container(result, vec);
 	forv_CreationSet(cs, *vec->out) if (cs) {
 	  if (cs->sym == sym_tuple) {
 	    int i;
-	    if (index->type && index->imm_int(&i) == 0 && i >= 0 && i < cs->vars.n)
+	    if (((index->var->sym->type && index->var->sym->imm_int(&i) == 0) ||
+		 (index->out->n == 1 && index->out->v[0]->sym->is_constant &&
+		  index->out->v[0]->sym->imm_int(&i) == 0)) &&
+		(i >= 0 && i < cs->vars.n))
 	      flow_vars(cs->vars.v[i], result);
-	    else { // assume the worst
-	      for (i = 0; i < cs->vars.n; i++)
+	    else
+	      for (int i = 0; i < cs->vars.n; i++) // assume the worst
 		flow_vars(cs->vars.v[i], result);
-	    }
 	  } else {
 	    AVar *elem = get_element_avar(cs);
 	    flow_vars(elem, result);

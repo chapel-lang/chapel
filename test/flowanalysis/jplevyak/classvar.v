@@ -1,7 +1,7 @@
 
 class Vars {
-  var x : int;
-  var y : float;
+  var x : float;
+  var y : int;
 };
 
 v : new Vars;
