@@ -24005,3 +24005,15 @@ Modified files:
 	                             removeNamedParameters.cpp 
 	                             scopeResolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/05 12:21:03 -- bradc
+
+Log message:
+	Fixed some problems with start_clean when an explicit
+	start directory was given.  Added support for double-
+	dash option names.
+
+Modified files:
+	chapel/test/: start_clean 
+
