@@ -666,6 +666,8 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
       char s[100];
       sprintf(s, "_CG_Symbol(%d, \"%s\")", v->sym->id, v->sym->name);
       v->cg_string = dupstr(s);
+    } else if (v->sym->is_fun) {
+      v->cg_string = v->sym->fun->cg_string;
     } else if (!v->sym->type_kind) {
       char s[100];
       if (v->sym->name)

@@ -165,7 +165,8 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
       context->smap.put(old_s->asymbol->sym, new_s->asymbol->sym);
       if (context->vmap && old_s->asymbol->sym->var) {
 	new_s->asymbol->sym->var = context->vmap->get(old_s->asymbol->sym->var);
-	assert(new_s->asymbol->sym->var);
+	if (!new_s->asymbol->sym->var)
+	  new_s->asymbol->sym->var = old_s->asymbol->sym->var;
       }
       if (old_s->asymbol->sym->fun) {
 	Fun *new_f = context->fmap.get(old_s->asymbol->sym->fun);
@@ -1096,16 +1097,13 @@ gen_cond(BaseAST *a) {
   return 0;
 }
 
-static int
+static astType_t
 undef_or_fn_expr(Expr *ast) {
   if (ast->astType == EXPR_VARIABLE) { 
     Variable *v = dynamic_cast<Variable *>(ast);
-    if (v->var->astType == SYMBOL_UNRESOLVED || v->var->astType == SYMBOL_FN) {
-      assert(ast->ainfo->rval->name);
-      return 1;
-    }
+    return v->var->astType;
   }
-  return 0;
+  return (astType_t)0;
 }
 
 static int
@@ -1269,6 +1267,7 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_MEMBERACCESS: {
+      // **************** CURRENTLY UNUSED ****************
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
@@ -1415,8 +1414,8 @@ gen_if1(BaseAST *ast) {
       if1_add_send_result(if1, send, s->ainfo->rval);
       break;
     }
+    case EXPR_ARRAYREF: // **************** CURRENTLY UNUSED ****************
     case EXPR_FNCALL:
-    case EXPR_ARRAYREF:
     case EXPR_PARENOP: {
       ParenOpExpr *s = dynamic_cast<ParenOpExpr *>(ast);
       s->ainfo->rval = new_sym();
@@ -1428,16 +1427,19 @@ gen_if1(BaseAST *ast) {
 	args.n--;
       forv_Vec(Expr, a, args)
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
-      int use_symbol = undef_or_fn_expr(s->baseExpr);
+      astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
       Sym *base = NULL;
       char *n = s->baseExpr->ainfo->rval->name;
       if (n && !strcmp(n, "__primitive"))
 	base = sym_primitive;
       else if (n && !strcmp(n, "__operator"))
 	base = sym_operator;
-      else if (use_symbol)
+      else if (base_symbol == SYMBOL_UNRESOLVED) {
+	assert(n);
 	base = if1_make_symbol(if1, n);
-      if (!base)
+      } else if (base_symbol == SYMBOL_FN)
+	base = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(s->baseExpr)->var)->asymbol->sym;
+      else
 	base = s->baseExpr->ainfo->rval;
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;

@@ -1,14 +1,18 @@
  called from 10 in __init_chain at chain.chpl:13
  called from 11 in __init_chain at chain.chpl:13
  called from 3 in foo at chain.chpl:4
-::__init_chain(chain.chpl:13) ( __init_chain )
+::__init_chain(chain.chpl:13) ( __init_chain (chain.chpl:13) )
+::__init_chain(chain.chpl:13) ( __init_chain (chain.chpl:13) )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude )
-::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
+::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
+::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
+::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
 ::a(chain.chpl:1) ( int64 )
 ::a(chain.chpl:6) ( int64 )
 ::bar(chain.chpl:8) ( bar )
 ::foo(chain.chpl:4) ( foo )
+::main ( main )
 ::main ( main )
 ::void ( void )
 function __init_chain chain.chpl:13
