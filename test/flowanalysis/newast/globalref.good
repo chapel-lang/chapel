@@ -1,0 +1,38 @@
+
+
+
+
+ called from 20 in __init at globalref.chpl:27
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::b(<unknown>:0) ( int64 (<unknown>:0) )
+::c(<unknown>:0) ( int64 (<unknown>:0) )
+::c(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+foo(1);
+function __init globalref.chpl:27
+function __init() {
+function foo globalref.chpl:12
+function foo(inout a: ???) {
+globals
+var a: integer = 10;
+var b: integer = 20;
+var c: integer = 30;
+var c: integer = 3;
+writeln("  a is ", a);
+writeln("  a is ", a);
+writeln("  a is ", a);
+writeln("  b is ", b);
+writeln("  b is ", b);
+writeln("  b is ", b);
+writeln("  c is ", c);
+writeln("  c is ", c);
+writeln("  c is ", c);
+writeln("In foo:");
+writeln("In main:");
+writeln("In main:");
+writeln();
+writeln();
+writeln();
+}
+}

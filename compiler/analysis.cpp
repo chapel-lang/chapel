@@ -128,7 +128,6 @@ map_symbols(Vec<BaseAST *> &syms) {
       sym->asymbol = new_ASymbol(sym);
       sym->asymbol->xsymbol = sym;
       if (!sym->scope) {
-	printf("symbol %s has NULL ->scope\n", sym->name ? sym->name : "<unknown>");
 	sym->asymbol->global_scope = 1;
       } else {
 	switch (sym->scope->type) {
