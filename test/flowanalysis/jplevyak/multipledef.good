@@ -1,0 +1,18 @@
+function __init multipledef.v:1 with 1 edges
+function __init prelude.v:7 with 1 edges
+function __init__ <none>:0 with 1 edges
+function operator prelude.v:91 with 1 edges
+function operator prelude.v:91 with 1 edges
+function print prelude.v:140 with 1 edges
+globals
+operator::a(prelude.v:91) ( int32 (prelude.v:29) )
+operator::a(prelude.v:91) ( int32 (prelude.v:29) )
+operator::b(prelude.v:91) ( int32 (prelude.v:29) )
+operator::b(prelude.v:91) ( int32 (prelude.v:29) )
+print::a(prelude.v:140) ( int32 (prelude.v:29) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:58) ( tuple (prelude.v:13) )
+user::__init(multipledef.v:1) ( __init (multipledef.v:1) )
+user::a(multipledef.v:1) ( int32 (prelude.v:29) )
+user::b(multipledef.v:1) ( int32 (prelude.v:29) )
+user::c(multipledef.v:1) ( int32 (prelude.v:29) )

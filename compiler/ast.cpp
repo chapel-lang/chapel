@@ -1482,7 +1482,7 @@ gen_def_ident(IF1 *i, AST *ast) {
 	if1_gen(i, &ast->code, val->code);
       if (val && val->rval) {
 	if (pattern) {
-	  Code *s = if1_send(i, &ast->code, 2, 1, sym_match, val->rval, ast->rval);
+	  Code *s = if1_send(i, &ast->code, 2, 1, sym_destruct, val->rval, ast->rval);
 	  s->ast = ast;
 	} else
 	  if1_move(i, &ast->code, val->rval, ast->rval, ast); 

@@ -25,7 +25,7 @@ prim_new "new" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_index "index" -3 0 {PRIM_TYPE_ANY, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_print "print" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_primitive "primitive" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
-prim_match "match" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} nonfunctional;
+prim_destruct "destruct" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} nonfunctional;
 prim_period "." 3 1 {PRIM_TYPE_ANY, PRIM_TYPE_SYMBOL} {PRIM_TYPE_ANY} nonfunctional;
 prim_exp "**" 3 1 {PRIM_TYPE_ANY_NUM_A, PRIM_TYPE_ANY_NUM_B} {PRIM_TYPE_ANY_NUM_AB} ;
 prim_mult "*" 3 1 {PRIM_TYPE_ANY_NUM_A, PRIM_TYPE_ANY_NUM_B} {PRIM_TYPE_ANY_NUM_AB} ;

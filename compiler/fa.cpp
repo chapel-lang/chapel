@@ -896,6 +896,16 @@ prim_make_vector(PNode *p, EntrySet *es) {
 }
 
 static void
+make_closure_var(Var *v, EntrySet *es, CreationSet *cs, AVar*result, int add) {
+  AVar *iv = unique_AVar(v, cs);
+  AVar *av = make_AVar(v, es);
+  set_container(av, result);
+  flow_var_to_var(av, iv);
+  if (add)
+    cs->vars.add(iv);
+}
+
+static void
 make_closure(AVar *result) {
   assert(result->contour_is_entry_set);
   CreationSet *cs = creation_point(result, sym_function);
@@ -903,28 +913,11 @@ make_closure(AVar *result) {
   PNode *partial_application = result->var->def;
   EntrySet *es = (EntrySet*)result->contour;
   if (partial_application->prim) { // apply and period
-    AVar *iv = unique_AVar(partial_application->rvals.v[1], cs);
-    AVar *v = make_AVar(partial_application->rvals.v[1], es);
-    set_container(v, result);
-    flow_var_to_var(v, iv);
-    if (add)
-      cs->vars.add(iv);
-    iv = unique_AVar(partial_application->rvals.v[3], cs);
-    v = make_AVar(partial_application->rvals.v[3], es);
-    set_container(v, result);
-    flow_var_to_var(v, iv);
-    if (add)
-      cs->vars.add(iv);
-  } else {
-    for (int i = 0; i < partial_application->rvals.n; i++) {
-      AVar *iv = unique_AVar(partial_application->rvals.v[i], cs);
-      AVar *v = make_AVar(partial_application->rvals.v[i], es);
-      flow_var_to_var(make_AVar(partial_application->rvals.v[i], es), iv);
-      set_container(v, result);
-      if (add)
-	cs->vars.add(iv);
-    }
-  }
+    make_closure_var(partial_application->rvals.v[1], es, cs, result, add);
+    make_closure_var(partial_application->rvals.v[3], es, cs, result, add);
+  } else
+    for (int i = 0; i < partial_application->rvals.n; i++)
+      make_closure_var(partial_application->rvals.v[i], es, cs, result, add);
 }
 
 // for send nodes, add simple constraints which do not depend 
@@ -1135,6 +1128,21 @@ type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send, Vec
   type_violations.set_add(v);
 }
 
+static void
+destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
+  AVar *pv = make_AVar(p, es);
+  flow_vars(ov, pv);
+  if (p->sym->has.n) {
+    forv_CreationSet(cs, *ov->out) if (cs) {
+      if (cs->vars.n == p->sym->has.n) {
+	for (int i = 0; i < p->sym->has.n; i++)
+	  destruct(cs->vars.v[i], p->sym->has.v[i]->var, es, result);
+      } else 
+	type_violation(ATypeViolation_MATCH, ov, make_AType(cs), result);
+    }
+  }
+}
+
 // for send nodes, add call edges and more complex constraints
 // which depend on the computed types (compare to add_send_constraints)
 static void
@@ -1185,8 +1193,14 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     // specifics
     switch (p->prim->index) {
       default: break;
-      case P_prim_match: {
-	//pattern_match(fa, a, matches, send);
+      case P_prim_destruct: {
+	assert(p->rvals.n - 1 == p->lvals.n);
+	AVar *result = make_AVar(p->lvals.v[0], es);
+	for (int i = 0; i < p->lvals.n; i++) {
+	  AVar *av = make_AVar(p->rvals.v[i + 1], es);
+	  destruct(av, p->lvals.v[i], es, result);
+	  av->arg_of_send.set_add(result);
+	}
 	break;
       }
       case P_prim_print: {

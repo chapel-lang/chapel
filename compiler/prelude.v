@@ -71,7 +71,7 @@ __init__ __name "init":0;
 #__new __name "new";
 #__index __name "index";
 #__print __name "print"; 
-#__match __name "match";
+#__destruct __name "destruct";
 #operator __name "operator";
 #"." __name "period";
 #"=" __name "assign";

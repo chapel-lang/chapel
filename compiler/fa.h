@@ -198,6 +198,7 @@ enum ATypeViolation_kind {
   ATypeViolation_SEND_ARGUMENT,
   ATypeViolation_DISPATCH_AMBIGUITY,
   ATypeViolation_MEMBER,
+  ATypeViolation_MATCH,
   ATypeViolation_NOTYPE
 };
   

@@ -253,6 +253,15 @@ show_violations(FA *fa, FILE *fp) {
 	    fprintf(stderr, "  class '%s'\n", cs->sym->name);
 	}
 	break;
+      case ATypeViolation_MATCH:
+	if (v->type->n == 1)
+	  fprintf(stderr, "unmatched type '%s'\n", v->type->v[0]->sym->name);
+	else {
+	  fprintf(stderr, "unmatched type\n");
+	  forv_CreationSet(cs, *v->type)
+	    fprintf(stderr, "  type '%s'\n", cs->sym->name);
+	}
+	break;
       case ATypeViolation_NOTYPE:
 	if (v->av->var->sym->name)
 	  fprintf(stderr, "'%s' ", v->av->var->sym->name);
