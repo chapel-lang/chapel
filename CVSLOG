@@ -16664,3 +16664,16 @@ Added files:
 	                            defaultinit1a.future 
 	                            defaultinit1a.good 
 
+---------------------------------------------------------------------------
+
+02/04/05 12:49:44 -- deitz
+
+Log message:
+	Changed test_clone_class1a to assign the float first and then the
+	integer second.  If I'm right, this class has member of type float.
+	The second assignment is an implicit coercion.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.chpl 
+	                                         test_clone_class1a.good 
+
