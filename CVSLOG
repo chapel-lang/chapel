@@ -18353,3 +18353,15 @@ Modified files:
 	chapel/compiler/traversals/: expandClassWiths.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+02/28/05 16:49:34 -- jplevyak
+
+Log message:
+	Add option to
+	
+	   HAND_TRAVERSE_EXPR_LET
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
