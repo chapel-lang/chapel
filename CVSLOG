@@ -19939,3 +19939,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+03/17/05 09:22:20 -- roxana
+
+Log message:
+	Added blank line to test_param_decl2.good -- UST_FATAL
+	seems to do that.
+
+Modified files:
+	chapel/test/trivial/roxana/: test_param_decl2.good 
+
