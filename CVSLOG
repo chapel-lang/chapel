@@ -8606,3 +8606,21 @@ Added files:
 	                              readWriteFloatInt.good 
 	                              readWriteFloatInt.stdin 
 
+---------------------------------------------------------------------------
+
+10/01/04 17:48:24 -- bradc
+
+Log message:
+	Updated the nightly token-counting script and removed
+	some generated files that I'd accidentally checked into
+	CVS when reorganizing the source tree.
+
+Modified files:
+	chapel/compiler/vparser/: .cvsignore 
+	chapel/util/tokencount/: tokctnightly 
+Added files:
+	chapel/compiler/analysis/: .cvsignore 
+Removed files:
+	chapel/compiler/analysis/: prim_data.cpp prim_data.h 
+	chapel/compiler/vparser/: cast_code.cpp 
+
