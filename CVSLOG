@@ -17975,3 +17975,30 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_assign1.future 
 
+---------------------------------------------------------------------------
+
+02/21/05 17:56:00 -- jplevyak
+
+Log message:
+	Fixed a couple issues with class cloning and resolve symbols.
+	test/types/type_variables/deitz/test_clone_class1 is now working correctly.
+	Updated .future files for test/types/type_variables/deitz/test_clone_class2(a)
+	since I fixed a couple issues.  Here is the new .future:
+	
+	"The problem here is that classes have already been cloned, but
+	the original class (from which the clones were derived) still
+	exists in the AST via the TypeDefStmt.  Like unused functions
+	there will be unused types which should not be resolved.
+	
+	If you need an interface to query which types are actually
+	used in the program, ask me."
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class2.future 
+	                                         test_clone_class2a.future 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1.future 
+
