@@ -424,6 +424,18 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 }
 
 
+ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
+				       Type* type) {
+  ParamSymbol* list = new ParamSymbol(tag, syms->name, type);
+  syms = nextLink(Symbol, syms);
+  while (syms != NULL) {
+    list->append(new ParamSymbol(tag, syms->name, type));
+    syms = nextLink(Symbol, syms);
+  }
+  return list;
+}
+
+
 VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
 					  Expr* init, varType vartag, 
 					  bool isConst) {
@@ -447,6 +459,48 @@ VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type,
   VarDefStmt* stmt = new VarDefStmt(varList, init);
   varList->setDefPoint(stmt);
   return stmt;
+}
+
+
+VarDefStmt* Symboltable::defineVarDefStmt1(Symbol* idents, Type* type, 
+					   Expr* init) {
+
+  /** SJD: This is a stopgap measure to deal with changing sequences
+      into domains when the type of a declared variable is a domain.
+      It replaces the syntax of assigning domains using square
+      brackets.
+  **/
+  if (dynamic_cast<DomainType*>(type) &&
+      !dynamic_cast<ForallExpr*>(init)) {
+    if (dynamic_cast<Tuple*>(init)) {
+      init = new ForallExpr(dynamic_cast<Tuple*>(init)->exprs);
+    }
+    else {
+      init = new ForallExpr(init);
+    }
+  }
+
+  VarSymbol* varList = defineVars(idents, type, init);
+  VarDefStmt* stmt = new VarDefStmt(varList, init);
+  varList->setDefPoint(stmt);
+  return stmt;
+}
+
+
+VarDefStmt* Symboltable::defineVarDefStmt2(VarDefStmt* stmts,
+					  varType vartag, 
+					  bool isConst) {
+  VarDefStmt* stmt = stmts;
+  while (stmt) {
+    VarSymbol* var = stmt->var;
+    while (var) {
+      var->isConst = isConst;
+      var->varClass = vartag;
+      var = nextLink(VarSymbol, var);
+    }
+    stmt = nextLink(VarDefStmt, stmt);
+  }
+  return stmts;
 }
 
 

@@ -49,9 +49,17 @@ class Symboltable {
 					    Expr* init = nilExpr, 
 					    varType vartag = VAR_NORMAL, 
 					    bool isConst = false);
+  static ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
+						Type* type);
   static VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
 						   Expr* init, varType vartag, 
 						   bool isConst);
+  static VarDefStmt* Symboltable::defineVarDefStmt1(Symbol* idents,
+						    Type* type, 
+						    Expr* init);
+  static VarDefStmt* Symboltable::defineVarDefStmt2(VarDefStmt* stmts,
+						    varType vartag, 
+						    bool isConst);
   static VarDefStmt* Symboltable::defineSingleVarDefStmt(char* name, 
 							 Type* type,
 							 Expr* init,

@@ -22,6 +22,7 @@
   Expr* pexpr;
   ForallExpr* pfaexpr;
   Stmt* stmt;
+  VarDefStmt* varstmt;
   ForLoopStmt* forstmt;
   BlockStmt* blkstmt;
   Type* pdt;
@@ -95,12 +96,13 @@
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
-%type <psym> identsym formal formals idlist indexlist
+%type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
 %type <enumsym> enum_item enum_list
 %type <pexpr> simple_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
 %type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
-%type <stmt> program modulebody statements statement decls decl vardecl typevardecl
+%type <stmt> program modulebody statements statement decls decl typevardecl
+%type <varstmt> vardecl vardecl_inner vardecl_inner_ls
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl 
 %type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl
 
@@ -157,17 +159,17 @@ varconst:
 ;
 
 
-identsym:
+ident_symbol:
   identifier
     { $$ = new Symbol(SYMBOL, $1); }
 ;
 
 
-idlist:
-  identsym
-| idlist TCOMMA identsym
+ident_symbol_ls:
+  ident_symbol
+| ident_symbol_ls ident_symbol
     {
-      $1->append($3);
+      $1->append($2);
       $$ = $1;
     }
 ;
@@ -189,9 +191,25 @@ optional_init_expr:
 ;
 
 
+vardecl_inner:
+  ident_symbol_ls vardecltype optional_init_expr
+    { $$ = Symboltable::defineVarDefStmt1($1, $2, $3); }
+;
+
+
+vardecl_inner_ls:
+  vardecl_inner
+| vardecl_inner_ls TCOMMA vardecl_inner
+    {
+      $1->append($3);
+      $$ = $1;
+    }
+;
+
+
 vardecl:
-  vardecltag varconst idlist vardecltype optional_init_expr TSEMI
-    { $$ = Symboltable::defineVarDefStmt($3, $4, $5, $1, $2); }
+  vardecltag varconst vardecl_inner_ls TSEMI
+    { $$ = Symboltable::defineVarDefStmt2($3, $1, $2); }
 ;
 
 
@@ -319,8 +337,11 @@ formaltag:
 
 
 formal:
-  formaltag identifier vardecltype
-    { $$ = new ParamSymbol($1, $2, $3); }
+  formaltag ident_symbol_ls vardecltype
+    {
+      $$ = Symboltable::defineParams($1, $2, $3);
+      //      $$ = new ParamSymbol($1, $2, $3);
+    }
 | TTYPE identifier
     {
       VariableType* new_type = new VariableType();
@@ -378,6 +399,7 @@ decl:
   TWITH simple_lvalue TSEMI
     { $$ = new WithStmt($2); }
 | vardecl
+    { $$ = $1; }
 | typedecl
 | fndecl
 | moduledecl
@@ -506,9 +528,19 @@ fortype:
 ;
 
 
+indexes:
+  ident_symbol
+| indexes TCOMMA ident_symbol
+    {
+      $1->append($3);
+      $$ = $1;
+    }
+;
+
+
 indexlist:
-  idlist
-| TLP idlist TRP
+  indexes
+| TLP indexes TRP
   { $$ = $2; }
 ;
 

@@ -301,7 +301,7 @@ function randlc(x, a): float {
   static const r46: float = 0.5**46;
   static const t46: float = 2**46;
 
-  var t1, t2, t3, t4, a1, a2, x1, x2, y: float;
+  var t1 t2 t3 t4 a1 a2 x1 x2 y: float;
 
   t1 = r23 * x;
   a1 = t1: integer;

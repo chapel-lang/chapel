@@ -1,5 +1,3 @@
---SJD: note parameters to functions are wrong, remove commas
-
 -- problem size to run:
 
 enum classVals {S, W, A, B, C, D, O};
@@ -79,7 +77,7 @@ printResults(rnm2, initTimer.read(), benchTimer.read());
 -- Top-level functions:
 
 function initializeMG(out V: [Base] float,
-                      out U, R: [lvl in Levels] [Hier(lvl)] float) {
+                      out U R: [lvl in Levels] [Hier(lvl)] float) {
   writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
   writeln(" Size: ", nx, "x", ny, "x", nz);
   writeln(" Iterations: ", nit);
@@ -90,7 +88,7 @@ function initializeMG(out V: [Base] float,
 
 
 function warmupMG(inout V: [Base] float,
-                  inout U, R: [lvl in Levels] [Hier(lvl)] float) {
+                  inout U R: [lvl in Levels] [Hier(lvl)] float) {
   if (warmup) {
     mg3P(V, U, R);
     resid(R(1), V, U(1));
@@ -101,7 +99,7 @@ function warmupMG(inout V: [Base] float,
 
 
 function computeMG(in V: [Base] float,
-                   inout U, R: [lvl in Levels] [Hier(lvl)] float): float {
+                   inout U R: [lvl in Levels] [Hier(lvl)] float): float {
   resid(R(1), V, U(1));
   norm2u3(R(1));
   for it in (1..nit) {
@@ -114,7 +112,7 @@ function computeMG(in V: [Base] float,
 }
 
 
-function printResults(const rnm2, inittime, runtime: float) {
+function printResults(const rnm2 inittime runtime: float) {
   var verified: boolean;
 
   if (verifyValue != 0.0) {
@@ -154,7 +152,7 @@ function printResults(const rnm2, inittime, runtime: float) {
 -- Work for a single iteration:
 
 function mg3P(inout V: [Base] float,
-              inout U, R: [lvl in Levels] [Hier(lvl)] float) {
+              inout U R: [lvl in Levels] [Hier(lvl)] float) {
   -- project up the hierarchy
   for lvl in (2..numLevels) {
     rprj3(R(lvl), R(lvl-1));
@@ -193,7 +191,7 @@ function psinv(inout U: [?DUR] float,
 
 
 function resid(out R: [?DUR] float,
-               const V, U: [DUR] float) {
+               const V U: [DUR] float) {
   static const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
   static const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
 
@@ -243,7 +241,7 @@ function norm2u3(const R: [] float): (float, float) {
 -- Setup stuff
 
 function initArrays(out V: [Base] float,
-                    out U, R: [lvl in Levels] [Hier(lvl)] float) {
+                    out U R: [lvl in Levels] [Hier(lvl)] float) {
   -- conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
   -- but the following is minimal:
   zran3(V);
@@ -309,7 +307,7 @@ function randlc(inout x: float,
   static const r46: float = 0.5**46;
   static const t46: float = 2**46;
 
-  var t1, t2, t3, t4, a1, a2, x1, x2, y: float;
+  var t1 t2 t3 t4 a1 a2 x1 x2 y : float;
 
   t1 = r23 * x;
   a1 = t1: integer;
