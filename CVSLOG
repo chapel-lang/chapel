@@ -12485,3 +12485,15 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp fixup.cpp fixup.h 
 	                             traversal.cpp 
 
+---------------------------------------------------------------------------
+
+12/21/04 13:44:55 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Reorganized the code which detects functions which subsume other
+	functions.  The code is now smaller and (I think) easier to understand.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+	chapel/compiler/include/: vec.h 
+
