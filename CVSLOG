@@ -16817,3 +16817,31 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: clone.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/05 15:30:23 -- deitz
+
+Log message:
+	Initial implementation of FnSymbol::instantiate_generic.  The
+	functions appear to be instantiated but they are not code generated.
+	Not sure why unless it is later marked as never used.
+	
+	Added two traversals to remove type variables after analysis has run
+	and presumably called FnSymbol::instantiate_generic.  These traversals
+	remove the type variables as formals and actuals in expressions.
+	
+	This initial implementation piggybacks on clone.  The function is
+	first cloned.  Then the type variable types in the cloned function are
+	changed to real types based on the instantiation.
+	
+	Note.  Since the cloned function potentially clones the types (for
+	parameters for example), the map that clone returns of all copied
+	AST's is traversed in order to find all the types that need to change.
+	How robust is this? will have to be answered.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+	                             findUnknownTypes.h 
+
