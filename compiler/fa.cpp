@@ -1229,12 +1229,28 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       if (p->prim->ret_types[i] == PRIM_TYPE_A)
 	flow_vars(a, make_AVar(p->lvals.v[i], es));
     }
+    AVar *result = p->lvals.n ? make_AVar(p->lvals.v[0], es) : 0;
+    if (result)
+      for (int i = 0; i < p->rvals.n; i++)
+	make_AVar(p->rvals.v[i], es)->arg_of_send.set_add(result);
     // specifics
     switch (p->prim->index) {
       default: break;
+      case P_prim_meta_apply: {
+	AVar *a1 = make_AVar(p->rvals.v[1], es);
+	AVar *a2 = make_AVar(p->rvals.v[2], es);
+	Sym *s;
+	forv_CreationSet(cs1, *a1->out)
+	  forv_CreationSet(cs2, *a2->out)
+	    if (cs1->sym->meta && cs2->sym->meta && 
+		(s = meta_apply(cs1->sym->type_sym, cs2->sym->type_sym)))
+	      update_in(result, make_abstract_type(s));
+	    else
+	      type_violation(ATypeViolation_SEND_ARGUMENT, a1, a1->out, result, 0);
+	break;
+      }
       case P_prim_destruct: {
 	assert(p->rvals.n - 1 == p->lvals.n);
-	AVar *result = make_AVar(p->lvals.v[0], es);
 	for (int i = 0; i < p->lvals.n; i++) {
 	  AVar *av = make_AVar(p->rvals.v[i + 1], es);
 	  destruct(av, p->lvals.v[i], es, result);
@@ -1243,18 +1259,15 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	break;
       }
       case P_prim_print: {
-	AVar *ret = make_AVar(p->lvals.v[0], es);
-	update_in(ret, make_abstract_type(sym_int));
+	update_in(result, make_abstract_type(sym_int));
 	break;
       }
       case P_prim_vector:
 	prim_make_vector(p, es);
 	break;
       case P_prim_index: {
-	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *vec = make_AVar(p->rvals.v[1], es);
 	Sym *index = p->rvals.v[2]->sym;
-	vec->arg_of_send.set_add(result);
 	set_container(result, vec);
 	forv_CreationSet(cs, *vec->out) if (cs) {
 	  if (cs->sym == sym_tuple) {
@@ -1275,23 +1288,17 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       case P_prim_apply: {
 	assert(p->lvals.n == 1);
 	Vec<AVar *> args;
-	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *fun = make_AVar(p->rvals.v[1], es);
 	AVar *a1 = make_AVar(p->rvals.v[3], es);
-	fun->arg_of_send.set_add(result);
-	a1->arg_of_send.set_add(result);
 	args.add(a1);
 	if (all_application_constraints(p, es, fun, args) > 0)
 	  make_closure(result);
 	break;
       }
       case P_prim_period: {
-	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *obj = make_AVar(p->rvals.v[1], es);
 	AVar *selector = make_AVar(p->rvals.v[3], es);
 	int partial = 0;
-	obj->arg_of_send.set_add(result);
-	selector->arg_of_send.set_add(result);
 	set_container(result, obj);
 	forv_CreationSet(sel, *selector->out) if (sel) {
 	  char *symbol = sel->sym->name; assert(symbol);
@@ -1315,11 +1322,8 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	break;
       }
       case P_prim_assign: {
-	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *lhs = make_AVar(p->rvals.v[1], es);
 	AVar *rhs = make_AVar(p->rvals.v[3], es);
-	lhs->arg_of_send.set_add(result);
-	rhs->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *lhs->out) if (cs) {
 	  if (cs->sym == sym_ref) {
 	    assert(cs->vars.n);
@@ -1336,9 +1340,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	break;
       }
       case P_prim_deref: {
-	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *ref = make_AVar(p->rvals.v[2], es);
-	ref->arg_of_send.set_add(result);
 	set_container(result, ref);
 	forv_CreationSet(cs, *ref->out) if (cs) {
 	  AVar *av = cs->vars.v[0];
@@ -1347,9 +1349,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	break;
       }
       case P_prim_new: {
-	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *thing = make_AVar(p->rvals.v[1], es);
-	thing->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *thing->out) if (cs)
 	  creation_point(result, cs->sym->type_sym); // recover original type
 	break;
@@ -1618,11 +1618,11 @@ initialize_symbols() {
     // functions are subtypes of the initial symbol in their pattern
     // which may be a constant or a constant contrainted variable
     if (s->fun && s->has.n) {
-      Sym *a0 = s->has.v[0];
-      if (a0->symbol)
-	subtype(a0, s, types);
-      if (a0->type && a0->type->symbol)
-	subtype(a0->type, s, types);
+      Sym *a = s->self ? s->has.v[1] : s->has.v[0];
+      if (a->symbol && a->name == s->name)
+	subtype(a, s, types);
+      else if (a->type && a->type->symbol && a->type->name == s->name)
+	subtype(a->type, s, types);
     }
     if (s->type_kind) {
       s->abstract_type = make_abstract_type(s);

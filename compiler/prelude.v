@@ -4,11 +4,12 @@ in system __name "system";
 
 // simple builtin types
 
+type anyclass __name "anyclass";
+type any __name "any";
+type module __name "module";
 type symbol __name "symbol";
 type function __name "function";
-type module __name "module";
 type continuation __name "continuation";
-type any __name "any";
 type vector __name "vector";
 type tuple __name "tuple";
 type void __name "void" : tuple;
@@ -16,7 +17,6 @@ type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";
 type value __name "value";
-type anyclass __name "anyclass";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;
@@ -61,7 +61,7 @@ null __name "null" : ();
 
 __init__ __name "init":0;
 
-// builtin functions
+// builtin functions/primitives
 #__make_tuple __name "make_tuple";
 #__make_list __name "make_list";
 #__make_vector __name "make_vector";
@@ -72,12 +72,16 @@ __init__ __name "init":0;
 #__index __name "index";
 #__print __name "print"; 
 #__destruct __name "destruct";
+#__meta_apply __name "meta_apply";
 #operator __name "operator";
 #"." __name "period";
 #"=" __name "assign";
 
 //   public builtin functions
 reply: #reply __name "reply";
+
+// meta functions
+anyclass::class(a:anyclass)		   : #__meta_apply self a;
 
 // overloadable primitive operators
 

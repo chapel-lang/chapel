@@ -21,7 +21,7 @@ enum IF1_num_type {
 
 enum Type_kind {
   Type_NONE,      	// Sym is not a type
-  Type_UNKNOWN,     	// Type is not given (e.g. type parameter, forward decl)
+  Type_UNKNOWN,     	// type is not given (e.g. type parameter, forward decl)
   Type_SUM,  		// one thing or another (e.g. int | float)
   Type_PRODUCT, 	// two things together (e.g. (1, 2.0))
   Type_RECORD,    	// things with names (nominally unordered)
@@ -31,7 +31,7 @@ enum Type_kind {
   Type_TAGGED, 		// tag + type (used for variant types)
   Type_PRIMITIVE, 	// builtin things (e.g. int and float)
   Type_APPLICATION, 	// application of a Type_ALIAS with args
-  Type_ALIAS		// a type by another name
+  Type_ALIAS		// a type by another name, possible with constraints
 };
 
 #define CPP_IS_LAME {						\
@@ -74,7 +74,8 @@ class Sym : public gc {
   Vec<Sym *>		implements;
   Vec<Sym *>		includes;		// included code
   Vec<Sym *>		constraints;		// must-implement
-  Vec<Sym *>		has;			// sub variables (fun args / members)
+  Vec<Sym *>		has;			// sub variables/members (currently fun args)
+  Vec<Sym *>		arg;			// arg variables (currently just meta type args)
   Sym			*alias;			// alias of type
   Sym			*self;			// self variable for the function
   Sym			*ret;			// return value of functions
@@ -119,6 +120,7 @@ class Sym : public gc {
 #define forv_Sym(_c, _v) forv_Vec(Sym, _c, _v)
 
 Sym *unalias_type(Sym *s);
+Sym *meta_apply(Sym *fn, Sym *arg);
 static inline int is_const(Sym *s) { return s->constant || s->symbol; }
 
 int pp(Immediate &imm, Sym *type);

@@ -891,3 +891,9 @@ Sym::imm_int(int *result) {
   return 0;
 }
 
+Sym *
+meta_apply(Sym *fn, Sym *arg) {
+  if (fn->type_kind != Type_APPLICATION)
+    return 0;
+  return 0;
+}

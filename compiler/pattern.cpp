@@ -144,7 +144,13 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
     forv_CreationSet(cs, *a->out) if (cs) {
       Vec<Sym *> done;
       Vec<Fun *> afuns;
-      if (!pattern_match_sym(fa, cs->sym, cs, &afuns, partial_matches.v[partial_matches.n-1], 
+      Sym *sym = cs->sym;
+      if (a->var->sym->aspect) {
+	if (!a->var->sym->aspect->allsubtypes.in(cs->sym))
+	  continue;
+	sym = a->var->sym->aspect;
+      }
+      if (!pattern_match_sym(fa, sym, cs, &afuns, partial_matches.v[partial_matches.n-1], 
 			     match_map, cp, done))
 	continue;
       Vec<Fun *> pfuns;
@@ -243,7 +249,13 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	    afuns.set_add(f);
 	}
       }
-      best_match_sym(fa, cs->sym, cs, funs, &afuns, match_map, cp, done);
+      Sym *sym = cs->sym;
+      if (a->var->sym->aspect) {
+	if (!a->var->sym->aspect->allsubtypes.in(cs->sym))
+	  continue;
+	sym = a->var->sym->aspect;
+      }
+      best_match_sym(fa, sym, cs, funs, &afuns, match_map, cp, done);
       if (cs->vars.n) {
 	partial_matches.add(new Vec<Fun *>(pfuns));
 	if (!check_ambiguities) {

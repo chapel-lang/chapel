@@ -81,12 +81,6 @@ some_statement
   | some_type_statement
   ;
 
-type_statement 
-  : some_type_statement ';'
-{ $$.ast = $0.ast; }
-  | ';'
-  ;
-
 some_type_statement
   : unqualified_type_statement where_statement*
   | where_statement+
@@ -102,6 +96,10 @@ unqualified_type_statement
 
 type_definition : def_type def_type_parameter_list? ('__name' string)? 
 		(':' constraint_type)? ('=' type)? 
+[
+  $$.saved_scope = ${scope};
+  ${scope} = enter_D_Scope(${scope}, $n0.scope);
+]
 {
   $$.ast = new AST(AST_def_type, &$n); 
   if ($#2)
@@ -140,7 +138,7 @@ type
 { $$.ast = new AST(AST_fun_type, &$n); }
   | ident 'of' type	$binary_right 300
 { $$.ast = new AST(AST_tagged_type, &$n); }
-  | type type_parameter_list	$unary_left 200
+  | type type_parameter_list $unary_left 200
 { $$.ast = new AST(AST_type_application, &$n); }
   | '(' type  ')'
   | class_definition

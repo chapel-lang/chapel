@@ -4,11 +4,12 @@ in system __name "system"; // system module
 
 // builtin types
 
+type anyclass __name "anyclass";
+type any __name "any";
+type module __name "module";
 type symbol __name "symbol";
 type function __name "function";
-type module __name "module";
 type continuation __name "continuation";
-type any __name "any";
 type vector __name "vector";
 type tuple __name "tuple";
 type void __name "void" : tuple;
@@ -16,7 +17,6 @@ type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";
 type value __name "value";
-type anyclass __name "anyclass";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;
@@ -72,6 +72,7 @@ var reply = #reply __name "reply";
 #__index __name "index";
 #__print __name "print";
 #__destruct __name "destruct";
+#__meta_apply __name "meta_apply";
 #operator __name "operator";
 #"." __name "period";
 #"=" __name "assign";

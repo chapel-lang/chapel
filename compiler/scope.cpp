@@ -11,6 +11,23 @@ Scope::add_dynamic(Scope *s, Sym *sy) {
   dynamic_container.add(sy);
 }
 
+static Sym *
+get_dynamic(Scope *scope, Sym *scope_container, char *name, Sym **container) {
+  Sym *s;
+  if ((s = scope->hash.get(name))) {
+    if (container && scope_container)
+      *container = scope_container;
+    return s;
+  }
+  for (int i = 0; i < scope->dynamic.n; i++)
+    if ((s = get_dynamic(scope->dynamic.v[i], scope->dynamic_container.v[i], name, container))) {
+      if (container && scope_container)
+	*container = scope_container;
+      return s;
+    }
+  return NULL;
+}
+
 Sym *
 Scope::get_local(char *name, Sym **container) {
   Sym *s;
@@ -19,13 +36,9 @@ Scope::get_local(char *name, Sym **container) {
       *container = 0;
     return s;
   }
-  for (int i = 0; i < dynamic.n; i++) {
-    if ((s = dynamic.v[i]->hash.get(name))) {
-      if (container)
-	*container = dynamic_container.v[i];
+  for (int i = 0; i < dynamic.n; i++)
+    if ((s = get_dynamic(dynamic.v[i], dynamic_container.v[i], name, container)))
       return s;
-    }
-  }
   return NULL;
 }
 

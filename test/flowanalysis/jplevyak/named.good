@@ -13,20 +13,20 @@ function __init named.v:1
 function __init prelude.v:7
 function __init__ <none>:0
 function f named.v:1
-function operator prelude.v:91
-function operator prelude.v:91
-function operator prelude.v:91
-function print prelude.v:140
+function operator prelude.v:95
+function operator prelude.v:95
+function operator prelude.v:95
+function print prelude.v:144
 globals
-operator::a(prelude.v:91) ( float64 (prelude.v:42) )
-operator::a(prelude.v:91) ( float64 (prelude.v:42) )
-operator::a(prelude.v:91) ( float64 (prelude.v:42) )
-operator::b(prelude.v:91) ( float64 (prelude.v:42) )
-operator::b(prelude.v:91) ( float64 (prelude.v:42) )
-operator::b(prelude.v:91) ( int32 (prelude.v:29) )
-print::a(prelude.v:140) ( float64 (prelude.v:42) )
+operator::a(prelude.v:95) ( float64 (prelude.v:42) )
+operator::a(prelude.v:95) ( float64 (prelude.v:42) )
+operator::a(prelude.v:95) ( float64 (prelude.v:42) )
+operator::b(prelude.v:95) ( float64 (prelude.v:42) )
+operator::b(prelude.v:95) ( float64 (prelude.v:42) )
+operator::b(prelude.v:95) ( int32 (prelude.v:29) )
+print::a(prelude.v:144) ( float64 (prelude.v:42) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:58) ( tuple (prelude.v:13) )
+system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::__init(named.v:1) ( __init (named.v:1) )
 user::c(named.v:3) ( float64 (prelude.v:42) )
 user::d(named.v:3) ( int32 (prelude.v:29) )

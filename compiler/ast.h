@@ -38,7 +38,6 @@ class AST : public Vec<AST *> {
   AST_kind kind;
   unsigned int scope_kind:2;       // 0 = {}, 1 = () (BLC:???)
   unsigned int constructor:2;
-  unsigned int def_record_type:1;
   unsigned int def_ident_label:1;
   unsigned int op_index:1;
   unsigned int is_var:1;

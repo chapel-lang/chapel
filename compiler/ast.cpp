@@ -390,33 +390,31 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 	Sym *sym = scope->get(ast->get(AST_ident)->string);
 	if (sym && sym->type_kind != Type_UNKNOWN)
 	  return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
-	if (!sym)
+	if (!sym) {
 	  ast->sym = new_sym(i, scope, ast->get(AST_ident)->string, ast->sym);
-	else {
+	  ast->sym->ast = ast;
+	} else {
 	  assert(!ast->sym);
 	  ast->sym = sym;
 	}
 	if (ast->sym->type_kind == Type_NONE || ast->sym->type_kind == Type_UNKNOWN) {
-	  int i = 1;
-	  for (; i < ast->n; i++) {
-           if (ast->v[i]->kind == AST_def_type_param || ast->v[i]->kind == AST_constraint) {
-	      // handled below
-	    } else { 
-	      ast->v[i]->sym = sym;
-	      ast->sym->type_kind = Type_ALIAS;
-	      goto Lkind_assigned;
-	    }
-	  }
-	  ast->sym->type_kind = Type_UNKNOWN;
-	Lkind_assigned:;
+	  if (ast->n > 1)
+	    ast->sym->type_kind = Type_ALIAS; // handled below
+	  else
+	    ast->sym->type_kind = Type_UNKNOWN;
 	}
 	scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, ast->sym);
 	if (verbose_level > 2)
 	  printf("creating scope %X for %s\n", (int)ast->sym->scope, ast->sym->name);
-	{
-	  AST *rtype = ast->get(AST_record_type);
-	  if (rtype)
-	    rtype->def_record_type = 1;
+	switch (ast->last()->kind) {
+	  case AST_constraint:
+	  case AST_def_type_param:
+	  case AST_ident:
+	  case AST_qualified_ident:
+	    break;
+	  default:
+	    ast->last()->sym = ast->sym;
+	    break;
 	}
 	break;
       }
@@ -442,20 +440,20 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
       case AST_fun_type:
       case AST_tagged_type:
       case AST_type_application:
-	ast->sym = new_sym(i, scope);
-	ast->sym->type_kind = ast_to_type(ast);
-	ast->sym->ast = ast;
-	break;
       case AST_record_type:
+	if (!ast->sym) {
+	  ast->sym = new_sym(i, scope);
+	  ast->sym->type_kind = ast_to_type(ast);
+	  ast->sym->ast = ast;
+	  if (ast->kind == AST_record_type)
+	    scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, scope->in);
+	} else
+	  ast->sym->type_kind = ast_to_type(ast);
+	break;
       case AST_loop:
       case AST_with:
 	ast->sym = new_sym(i, scope);
 	ast->sym->ast = ast;
-	if (ast->kind == AST_record_type) {
-	  ast->sym->type_kind = Type_RECORD;
-	  if (ast->def_record_type)
-	    break;
-	}
 	scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, scope->in);
 	break;
       case AST_scope:
@@ -596,6 +594,18 @@ define_function(IF1 *i, AST *ast) {
 }
 
 static int
+scope_inherits(AST *ast, Sym *sym) {
+  forv_AST(a, *ast) {
+    if (a->kind == AST_includes || a->kind == AST_inherits) {
+      if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
+	return -1;
+      sym->scope->add_dynamic(a->sym->scope);
+    }
+  }
+  return 0;
+}
+
+static int
 scope_constraints(AST *ast, Sym *sym) {
   forv_AST(a, *ast) {
     if (a->kind == AST_constraint) {
@@ -604,7 +614,7 @@ scope_constraints(AST *ast, Sym *sym) {
       sym->constraints.set_add(a->sym);
       sym->scope->add_dynamic(a->sym->scope);
     } else if (a->kind == AST_def_type_param) {
-      sym->has.add(a->sym);
+      sym->arg.add(a->sym);
       if (verbose_level > 2)
 	printf("%s has param %s\n", sym->name, a->sym->name);
     }
@@ -614,31 +624,36 @@ scope_constraints(AST *ast, Sym *sym) {
 
 static int
 resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
-  Sym *sym;
   if (!skip)
     switch (ast->kind) {
-      case AST_pattern_type:
+      case AST_pattern_type: {
+	Sym *sym;
 	if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
 	  return -1;
 	ast->sym = sym;
 	break;
+      }
       case AST_inherits:
       case AST_implements:
       case AST_includes:
 	if (resolve_parameterized_type(i, ast) < 0)
 	  return -1;
 	break;
-      case AST_def_type:
-	sym = ast->sym;
-	if (ast->is_value)
-	  sym->value = 1;
-	if (scope_constraints(ast, sym) < 0) return -1;
+      case AST_record_type:
+	if (scope_inherits(ast, ast->sym) < 0) return -1;
 	break;
-      case AST_where:
+      case AST_def_type:
+	if (ast->is_value)
+	  ast->sym->value = 1;
+	if (scope_constraints(ast, ast->sym) < 0) return -1;
+	break;
+      case AST_where: {
+	Sym *sym;
 	if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
 	  return -1;
 	if (scope_constraints(ast, sym) < 0) return -1;
 	break;
+      }
       case AST_def_fun:
 	if (ast->scope->kind == Scope_RECURSIVE) 
 	  if (define_function(i, ast) < 0)
@@ -652,7 +667,7 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	      return -1;
 	  if (!a->sym->type)
 	    show_error("with without declared type", ast);
-	  sym->scope->add_dynamic(a->sym->type->scope, a->sym);
+	  ast->sym->scope->add_dynamic(a->sym->type->scope, a->sym);
 	}
 	break;
       }
@@ -815,23 +830,16 @@ build_types(IF1 *i, AST *ast) {
 	if (a->sym)
 	  a->sym->implements.set_add(ast->sym);
       break;
-    case AST_def_type:
-      for (int i = 1; i < ast->n; i++) {
-	if (ast->v[i]->kind != AST_def_type_param && ast->v[i]->kind != AST_constraint) {
-	  assert(!ast->sym->alias);
-	  ast->sym->alias = ast->v[i]->sym;
-	  break;
-	}
-      }
-      if (ast->sym->type_kind == Type_ALIAS && ast->sym->alias) {
-	if (!ast->sym->alias->name)
-	  ast->sym->alias->name = ast->sym->name;
-	if (!ast->sym->alias->internal)
-	  ast->sym->alias->internal = ast->sym->internal;
-	if (!ast->sym->alias->value)
-	  ast->sym->alias->value = ast->is_value;
+    case AST_def_type: {
+      AST *last = ast->last();
+      if (ast->sym->type_kind == Type_ALIAS) {
+	if (last->kind != AST_def_type_param && last->kind != AST_constraint)
+	  ast->sym->alias = last->sym;
+	else
+	  ast->sym->type_kind = Type_UNKNOWN; // can be resolved by a "where" statement
       }
       break;
+    }
     case AST_constraint:
       forv_AST(a, *ast)
 	if (!ast->sym)
@@ -853,10 +861,12 @@ unalias_types(IF1 *i, AST *ast) {
   forv_AST(a, *ast)
     if (unalias_types(i, a) < 0)
       return -1;
-  Sym *s = unalias_type(ast->sym);
-  if (s != ast->sym) {
-    s->scope = ast->sym->scope;
-    ast->sym = s;
+  if (ast->sym && !ast->sym->constraints.n) {
+    Sym *s = unalias_type(ast->sym);
+    if (s != ast->sym) {
+      s->scope = ast->sym->scope;
+      ast->sym = s;
+    }
   }
   return 0;
 }
@@ -988,19 +998,8 @@ gen_fun(IF1 *i, AST *ast) {
   if1_move(i, &ast->code, fn, ast->rval, ast);
 }
 
-static int
-get_tuple_args(IF1 *i, Code **c, AST *ast, Vec<Sym *> &args) {
-  if (ast->kind == AST_op && ast->v[ast->op_index]->sym->name[0] == ',') {
-    int r = get_tuple_args(i, c, ast->v[0], args);
-    if (ast->v[2]->kind != AST_qualified_ident || is_const(ast->v[2]->rval))
-      args.add(ast->v[2]->rval);
-    else {
-      Sym *s = new_sym(i, ast->scope);
-      if1_move(i, c, ast->v[2]->rval, s, ast);
-      args.add(s);
-    }
-    return 1 + r;
-  }
+static void
+get_arg(IF1 *i, Code **c, AST *ast, Vec<Sym *> &args) {
   if (ast->kind != AST_qualified_ident || is_const(ast->rval))
     args.add(ast->rval);
   else {
@@ -1008,6 +1007,16 @@ get_tuple_args(IF1 *i, Code **c, AST *ast, Vec<Sym *> &args) {
     if1_move(i, c, ast->rval, s, ast);
     args.add(s);
   }
+}
+
+static int
+get_tuple_args(IF1 *i, Code **c, AST *ast, Vec<Sym *> &args) {
+  if (ast->kind == AST_op && ast->v[ast->op_index]->sym->name[0] == ',') {
+    int r = get_tuple_args(i, c, ast->v[0], args);
+    get_arg(i, c, ast->v[2], args);
+    return 1 + r;
+  }
+  get_arg(i, c, ast, args);
   return 1;
 }
 
@@ -1015,23 +1024,11 @@ static int
 get_apply_args(IF1 *i, Code **c, AST *ast, Vec<Sym *> &args) {
   if (ast->is_application) {
     int r = get_apply_args(i, c, ast->v[0], args);
-    if (ast->v[2]->kind != AST_qualified_ident || is_const(ast->v[2]->rval))
-      args.add(ast->v[2]->rval);
-    else {
-      Sym *s = new_sym(i, ast->scope);
-      if1_move(i, c, ast->v[2]->rval, s, ast);
-      args.add(s);
-    }
-     return 1 + r;
+    get_arg(i, c, ast->v[2], args);
+    return 1 + r;
   }
- if (ast->kind != AST_qualified_ident || is_const(ast->rval))
-    args.add(ast->rval);
-  else {
-    Sym *s = new_sym(i, ast->scope);
-    if1_move(i, c, ast->rval, s, ast);
-    args.add(s);
-  }
-   return 1;
+  get_arg(i, c, ast, args);
+  return 1;
 }
 
 static void
@@ -1059,6 +1056,48 @@ make_int(IF1 *i, int n) {
 }
 
 static void
+gen_comma_op(IF1 *i, AST *ast, AST *a0, AST *a1) {
+  Code **c = &ast->code;
+  if (ast->in_tuple)
+    return;
+  Vec<Sym *> args;
+  get_tuple_args(i, c, a0, args);
+  get_arg(i, c, a1, args);
+  Code *send = if1_send1(i, c);
+  send->ast = ast;
+  Sym *constructor;
+  switch (ast->constructor) {
+    case Make_TUPLE: constructor = sym_make_tuple; break;
+    case Make_VECTOR: constructor = sym_make_vector; break;
+    case Make_SET: constructor = sym_make_set; break;
+  }
+  if1_add_send_arg(i, send, constructor);
+  if (ast->constructor == Make_VECTOR)
+    if1_add_send_arg(i, send, make_int(i, ast->rank));
+  forv_Sym(a, args)
+    if1_add_send_arg(i, send, a);
+  if1_add_send_result(i, send, ast->rval);
+}
+
+static void
+gen_apply_op(IF1 *i, AST *ast, AST *a0, AST *a1) {
+  Code **c = &ast->code;
+  Sym *res = ast->rval;
+  if (ast->in_apply)
+    return;
+  Vec<Sym *> args;
+  get_apply_args(i, c, a0, args);
+  if (a1)
+    get_arg(i, c, a1, args);
+  Code *send = if1_send1(i, c);
+  send->ast = ast;
+  forv_Sym(a, args)
+    if1_add_send_arg(i, send, a);
+  if1_add_send_result(i, send, res);
+  res->lvalue = 1;
+}
+
+static void
 gen_op(IF1 *i, AST *ast) {
   Code **c = &ast->code;
   Code *send = 0;
@@ -1068,53 +1107,11 @@ gen_op(IF1 *i, AST *ast) {
   AST *a0 = ast->op_index ? ast->v[0] : 0, *a1 = ast->n > (int)(1 + ast->op_index) ? ast->last() : 0;
   if (a0) if1_gen(i, c, a0->code);
   if (a1) if1_gen(i, c, a1->code);
-  if (ast->is_comma) {
-    if (ast->in_tuple)
-      return;
-    Vec<Sym *> args;
-    get_tuple_args(i, c, a0, args);
-    if (a1->kind != AST_qualified_ident || is_const(a1->rval))
-      args.add(a1->rval);
-    else {
-      Sym *s = new_sym(i, ast->scope);
-      if1_move(i, c, a1->rval, s, ast);
-      args.add(s);
-    }
-    send = if1_send1(i, c);
-    send->ast = ast;
-    Sym *constructor;
-    switch (ast->constructor) {
-      case Make_TUPLE: constructor = sym_make_tuple; break;
-      case Make_VECTOR: constructor = sym_make_vector; break;
-      case Make_SET: constructor = sym_make_set; break;
-    }
-    if1_add_send_arg(i, send, constructor);
-    if (ast->constructor == Make_VECTOR)
-      if1_add_send_arg(i, send, make_int(i, ast->rank));
-    forv_Sym(a, args)
-      if1_add_send_arg(i, send, a);
-    if1_add_send_result(i, send, ast->rval);
-  } else if (ast->is_application) {
-    if (ast->in_apply)
-      return;
-    Vec<Sym *> args;
-    get_apply_args(i, c, a0, args);
-    if (a1) {
-      if (a1->kind != AST_qualified_ident || is_const(a1->rval))
-	args.add(a1->rval);
-      else {
-	Sym *s = new_sym(i, ast->scope);
-	if1_move(i, c, a1->rval, s, ast);
-	args.add(s);
-      }
-    }
-    send = if1_send1(i, c);
-    send->ast = ast;
-    forv_Sym(a, args)
-      if1_add_send_arg(i, send, a);
-    if1_add_send_result(i, send, res);
-    res->lvalue = 1;
-  } else if (ast->is_simple_assign && !a0->rval->is_var) {
+  if (ast->is_comma)
+    gen_comma_op(i, ast, a0, a1);
+  else if (ast->is_application) 
+    gen_apply_op(i, ast, a0, a1);
+  else if (ast->is_simple_assign && !a0->rval->is_var) {
     if (a0->rval->read_only)
       show_error("assignment to read-only symbol", ast);
     if1_move(i, c, a1->rval, a0->rval, ast);
@@ -1277,7 +1274,7 @@ define_type_init(IF1 *i, AST *ast, Sym **container_scope, Sym **container) {
     fn->cont->ast = ast;
     fn->self = new_sym(i, fn->scope, cannonical_self);
     fn->self->ast = ast;
-    fn->self->type = ast->sym->in;
+    fn->self->type = ast->sym;
     fn->type = sym_function;
     fn->type_kind = Type_FUN;
     fn->type_sym = fn;
@@ -1472,10 +1469,19 @@ gen_def_ident(IF1 *i, AST *ast) {
   AST *val = ast->last();
   if (val == constraint)
     val = 0;
+  if (val && val->sym && val->sym->type_kind) {
+    assert(!constraint);
+    constraint = val;
+    val = 0;
+  }
   if (ast->container)
     ast->rval = gen_container(i, ast);
   else
     ast->rval = ast->sym;
+  if (constraint) {
+    assert(constraint->sym);
+    ast->sym->type = constraint->sym;
+  }
   if (ast->sym != sym_init) { // don't init the initial function
     // declared to be a value type
     if (constraint && constraint->sym->value) 
@@ -1507,6 +1513,14 @@ gen_type(IF1 *i, AST *ast) {
     // build __init function
     Sym *fn = ast->sym->init;
     Code *body = NULL, *c;
+    forv_Sym(s, ast->sym->includes) {
+      Sym *tself = new_sym(i, fn->scope);
+      tself->aspect = s;
+      if1_move(i, &body, ast->sym->init->self, tself, ast); 
+      Sym *rval = new_sym(i, fn->scope);
+      Code *send = if1_send(i, &body, 2, 1, tself, s->init, rval);
+      send->ast = ast;
+    }
     if1_gen(i, &body, rec->code);
     if1_label(i, &body, ast, ast->label[0]);
     c = if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
@@ -1715,7 +1729,7 @@ global_asserts() {
 }
 
 static void
-finalize_types(IF1 *i) {
+unalias_implements_constraints(IF1 *i) {
   // unalias
   forv_Sym(s, i->allsyms) {
     for (int x = 0; x < s->implements.n; x++)
@@ -1738,7 +1752,10 @@ finalize_types(IF1 *i) {
       }
     }
   }
-  // transitive closure of implements
+}
+
+static void 
+closure_of_implements(IF1 *i) {
   int changed = 1;
   while (changed) {
     changed = 0;
@@ -1753,11 +1770,46 @@ finalize_types(IF1 *i) {
   }
   forv_Sym(s, i->allsyms)
     s->implements.set_to_vec();
-  // unalias builtin symbols
-#define S(_n) sym_##_n = unalias_type(sym_##_n);
-#include "builtin_symbols.h"
-#undef S
-  // set value for classes of value types
+}
+
+static void
+collect_includes(Sym *s, Vec<Sym *> &include_set, Vec<Sym *> &includes, Vec<Sym *> &in_includes) {
+  if (!include_set.in(s) && in_includes.set_add(s)) {
+    forv_Sym(ss, s->includes)
+      collect_includes(ss, include_set, includes, in_includes);
+    if (include_set.set_add(s))
+      includes.add(s);
+  }
+}
+
+static void
+collect_include_vars(Sym *s, Sym *in = 0) {
+  Vec<Sym *> saved;
+  if (!in)
+    saved.move(s->has);
+  else
+    in->has.append(s->has);
+  forv_Sym(ss, s->includes)
+    collect_include_vars(ss, in ? in : s);
+  if (!in)
+    s->has.append(saved);
+}
+
+static void
+include_instance_variables(IF1 *i) {
+  Vec<Sym *> include_set, includes;
+  forv_Sym(s, i->allsyms) {
+    Vec<Sym *> in_includes;
+    if (s->includes.n)
+      collect_includes(s, include_set, includes, in_includes);
+  }
+  forv_Sym(s, includes) 
+    if (s->includes.n)
+      collect_include_vars(s);
+}
+
+static void
+set_value_for_value_classes(IF1 *i) {
   sym_value->value = 1;
   sym_anynum->value = 1;
   Vec<Sym *> implementers;
@@ -1765,7 +1817,7 @@ finalize_types(IF1 *i) {
     if (s->implements.n)
       implementers.add(s);
   }	
-  changed = 1;
+  int changed = 1;
   while (changed) {
     changed = 0;
     forv_Sym(s, implementers)
@@ -1775,7 +1827,11 @@ finalize_types(IF1 *i) {
 	  s->value = 1;
         }
   }
-  // make type_syms
+}
+
+static void
+make_type_syms(IF1 *i) {
+  sym_anyclass->type_sym = sym_anyclass;
   forv_Sym(s, i->allsyms) {
     if (s->type_kind) {
       if (!s->type_sym) {
@@ -1790,13 +1846,19 @@ finalize_types(IF1 *i) {
       }
     }
   }
-  // set "self" type
-#if 0
-  forv_Sym(s, i->allsyms) {
-    if (s->self)
-      // set to either the function class or the function class sym
-  }
-#endif
+}
+
+static void
+finalize_types(IF1 *i) {
+  unalias_implements_constraints(i);
+  closure_of_implements(i);
+  include_instance_variables(i);
+  // unalias builtin symbols
+#define S(_n) sym_##_n = unalias_type(sym_##_n);
+#include "builtin_symbols.h"
+#undef S
+  set_value_for_value_classes(i);
+  make_type_syms(i);
 }
 
 int

@@ -6,17 +6,17 @@
 function __init multipledef.v:1
 function __init prelude.v:7
 function __init__ <none>:0
-function operator prelude.v:91
-function operator prelude.v:91
-function print prelude.v:140
+function operator prelude.v:95
+function operator prelude.v:95
+function print prelude.v:144
 globals
-operator::a(prelude.v:91) ( int32 (prelude.v:29) )
-operator::a(prelude.v:91) ( int32 (prelude.v:29) )
-operator::b(prelude.v:91) ( int32 (prelude.v:29) )
-operator::b(prelude.v:91) ( int32 (prelude.v:29) )
-print::a(prelude.v:140) ( int32 (prelude.v:29) )
+operator::a(prelude.v:95) ( int32 (prelude.v:29) )
+operator::a(prelude.v:95) ( int32 (prelude.v:29) )
+operator::b(prelude.v:95) ( int32 (prelude.v:29) )
+operator::b(prelude.v:95) ( int32 (prelude.v:29) )
+print::a(prelude.v:144) ( int32 (prelude.v:29) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:58) ( tuple (prelude.v:13) )
+system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::__init(multipledef.v:1) ( __init (multipledef.v:1) )
 user::a(multipledef.v:1) ( int32 (prelude.v:29) )
 user::b(multipledef.v:1) ( int32 (prelude.v:29) )
