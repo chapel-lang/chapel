@@ -14456,3 +14456,17 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp fun.cpp 
 	chapel/compiler/include/: ast.h 
 
+---------------------------------------------------------------------------
+
+01/14/05 11:11:59 -- jplevyak
+
+Log message:
+	Fixed stupid SEGV.
+	Removed .future for test_clone_function5 which is now working.
+
+Modified files:
+	chapel/compiler/analysis/: fun.cpp 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function5.future 
+
