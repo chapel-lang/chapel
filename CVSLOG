@@ -16270,3 +16270,36 @@ Log message:
 Modified files:
 	chapel/compiler/include/: vec.h 
 
+---------------------------------------------------------------------------
+
+02/02/05 10:23:46 -- bradc
+
+Log message:
+	A small checkin to clean up my directory
+	
+	* added an automatic set of curly brackets in codegen-ing
+	  functions' bodies to (a) handle the case when the function
+	  body is not a compound statement, and (b) support local
+	  variables with the same name as a formal parameter (in C
+	  these conflict).
+	
+	* added a future test which tests some different variable
+	  scoping rules.  This currently doesn't work due to the
+	  fact that we don't initialize variables with their type's
+	  default initializer at their declaration point.  This is
+	  currently assigned to me and/or Steve.
+	
+	* removed the future mark from one of John's tests that
+	  started working and seems like it ought to work.  I'm
+	  not quite sure what fixed it.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h 
+Added files:
+	chapel/test/trivial/bradc/: vardecls.chpl vardecls.future 
+	                            vardecls.good 
+	chapel/test/types/complex/bradc/: .cvsignore 
+Removed files:
+	chapel/test/classes/jplevyak/: record_type_hierarchy-1.future 
+
