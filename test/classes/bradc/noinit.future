@@ -1,0 +1,5 @@
+jplevyak
+
+Analysis seems to be complaining about a not having an initializer
+even though it has a class type specification.  This should be
+allowed, right?
