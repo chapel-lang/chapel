@@ -62,15 +62,17 @@ class Fun : public gc {
   Vec<MPosition *> numeric_arg_positions;
   Map<MPosition*, Sym*> arg_syms;
   Map<MPosition *, Var*> filtered_args;
-  Map<MPosition *, Var*> args; // underlying argument
+  Map<MPosition *, Var*> args;
   Vec<Var *> rets;
   Vec<MPosition *> out_positions;
   Map<MPosition *, AST *> default_args;
+  Vec<MPosition *> generic_args;
   
   // generic/default/pointwise wrappers
   Fun *wraps;
   Vec<Fun *> wrappers;
   Vec<MPosition *> defaulted_set;
+  Map<MPosition *, MPosition *> base_to_default_position;
   Map<Sym *, Sym *> instantiated;
   Map<MPosition *, Sym *> point_wised;
 

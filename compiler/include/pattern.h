@@ -85,6 +85,7 @@ class Match : public gc {
   Map<MPosition *, MPosition *> named_to_positional;
   Map<MPosition *, MPosition *> actual_to_formal_position;
   Map<MPosition *, MPosition *> formal_to_actual_position;
+  Map<MPosition *, AVar *> actuals;
   Vec<MPosition *> default_args;
   Vec<MPosition *> generic_args;
   Vec<MPosition *> pointwise_args;
@@ -93,6 +94,10 @@ class Match : public gc {
   Match(Fun *afun) : fun(afun), partial(0) {assert(afun);}
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
+typedef MapElem<MPosition *, AType *> MapMPositionAType;
+#define form_MPositionAType(_p, _v) form_Map(MapMPositionAType, _p, _v)
+typedef MapElem<MPosition *, MPosition *> MapMPositionMPosition;
+#define form_MPositionMPosition(_p, _v) form_Map(MapMPositionMPosition, _p, _v)
 
 
 void build_patterns(FA *fa);
