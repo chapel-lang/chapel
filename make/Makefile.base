@@ -35,6 +35,9 @@ endif
 ifeq ($(OS_TYPE),Linux)
 	PLATFORM=linux
 endif
+ifndef PLATFORM
+	PLATFORM=unknown
+endif
 
 #
 # Permit override of compiler used for generating dependencies
