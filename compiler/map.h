@@ -79,15 +79,22 @@ class PointerHashFns {
 
 template <class C, class AHashFns> class ChainHash : public Map<unsigned int, List<C> > {
  public:
+  using Map<unsigned int, List<C> >::n;
+  using Map<unsigned int, List<C> >::v;
   inline C put(C c);
   inline C get(C c);
+  inline void get_elements(Vec<C> &elements);
 };
 
 template <class K, class AHashFns, class C> class ChainHashMap : 
   public Map<unsigned int, List<MapElem<K,C> > > {
  public:
+  using Map<unsigned int, List<MapElem<K, C> > >::n;
+  using Map<unsigned int, List<MapElem<K, C> > >::v;
   inline C get(K akey);
   inline MapElem<K,C> *put(K akey, C avalue);
+  inline void get_keys(Vec<K> &keys);
+  inline void get_values(Vec<C> &values);
 };
 
 class StringChainHash : public ChainHash<char *, StringHashFns> {
@@ -283,6 +290,15 @@ ChainHash<C, AHashFns>::get(C c) {
   return 0;
 }
 
+template <class C, class AHashFns> void
+ChainHash<C, AHashFns>::get_elements(Vec<C> &elements) {
+  for (int i = 0; i < n; i++) {
+    List<C> *l = &v[i].value;
+    forc_List(C, x, *l)
+      elements.add(x);
+  }
+}
+
 template <class K, class AHashFns, class C>  MapElem<K,C> *
 ChainHashMap<K, AHashFns, C>::put(K akey, C avalue) {
   unsigned int h = AHashFns::hash(akey);
@@ -321,6 +337,26 @@ ChainHashMap<K, AHashFns, C>::get(K akey) {
       if (AHashFns::equal(akey, p->car.key))
 	return p->car.value;
   return 0;
+}
+
+template <class K, class AHashFns, class C> void
+ChainHashMap<K, AHashFns, C>::get_keys(Vec<K> &keys) {
+  for (int i = 0; i < n; i++) {
+    List<MapElem<K,C> > *l = &v[i].value;
+    if (l->head) 
+      for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
+	keys.add(p->car.key);
+  }
+}
+
+template <class K, class AHashFns, class C> void
+ChainHashMap<K, AHashFns, C>::get_values(Vec<C> &values) {
+  for (int i = 0; i < n; i++) {
+    List<MapElem<K,C> > *l = &v[i].value;
+    if (l->head) 
+      for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
+	values.add(p->car.value);
+  }
 }
 
 inline char *

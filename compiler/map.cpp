@@ -103,6 +103,13 @@ test_map() {
   assert(ssh.get(hum) == 3);
   assert(ssh.get("af") == 10);
   assert(ssh.get("ac") == 7);
+
+  Vec<int> ints;
+  ssh.get_values(ints);
+  assert(ints.n == 9);
+  Vec<char *> chars;
+  ssh.get_keys(chars);
+  assert(chars.n == 9);
 }
 #endif
 

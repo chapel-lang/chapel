@@ -100,8 +100,12 @@ build_types(Vec<BaseAST *> &syms) {
   forv_Type(t, types) {
     switch (t->astType) {
       default: assert(!"case");
-      case TYPE_NULL:
+      case TYPE_NULL:  // used like "void" for function return type
+	//t->asymbol->alias = sym_void;
+	t->asymbol->type_kind = Type_ALIAS;
+	break;
       case TYPE_BUILTIN:
+	
       case TYPE_ENUM:
       case TYPE_DOMAIN:
       case TYPE_SUBDOMAIN:
