@@ -13648,3 +13648,50 @@ Added files:
 	                                        configVarTwoModules.execopts 
 	                                        configVarTwoModules.good 
 
+---------------------------------------------------------------------------
+
+01/06/05 13:22:55 -- deitz
+
+Log message:
+	Removed referenceness from the parameters to preProcess* and
+	postProcess* in the traversal apparatus.  Removed _this pointer
+	reference from traverse and traverseList.  Removed the macro mess
+	surrounding the traversal apparatus.  This greatly simplifies how the
+	traversal mechanism works.
+	
+	Fixed the InsertUnionChecks traversal to use insertBefore instead of
+	insertAfter since that now works.  Made union checks return a
+	zero-status at runtime so that the test system (which checks for this
+	status) works.  This fix and change fixes the following two regressions:
+	
+	[Error executing program classes/deitz/test_union2]
+	[Error executing program classes/deitz/test_union4]
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp link.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h expr.h link.h stmt.h 
+	                          symbol.h type.h 
+	chapel/compiler/traversals/: checkIDs.cpp checkIDs.h 
+	                             checkTypeInfo.cpp checkTypeInfo.h 
+	                             cleanup.cpp cloneAllFns.cpp 
+	                             cloneAllFns.h 
+	                             createConfigVarTable.cpp 
+	                             createConfigVarTable.h 
+	                             defineSymbols.cpp defineSymbols.h 
+	                             findUnknownTypes.cpp 
+	                             findUnknownTypes.h 
+	                             findUnresolvedSymbols.cpp 
+	                             findUnresolvedSymbols.h fixup.cpp 
+	                             fixup.h getstuff.cpp getstuff.h 
+	                             insertUnionChecks.cpp 
+	                             insertUnionChecks.h 
+	                             methodsToFunctions.cpp 
+	                             methodsToFunctions.h printAST.cpp 
+	                             printAST.h processParameters.cpp 
+	                             processParameters.h 
+	                             resolveSymbols.cpp resolveSymbols.h 
+	                             testGetStuff.cpp testGetStuff.h 
+	                             traversal.cpp traversal.h 
+	                             verifyASTType.cpp verifyASTType.h 
+
