@@ -1,1 +1,1 @@
---no-codegen --parser_verbose_np
+--no-codegen --parser_verbose_np --oldast

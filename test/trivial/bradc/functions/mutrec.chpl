@@ -1,6 +1,6 @@
 function foo(a) {
   writeln("in foo");
-  if (a == 0) then {
+  if (a == 0) {
     bar(1);
   } else {
     writeln("done with foo");
@@ -9,7 +9,7 @@ function foo(a) {
 
 function bar(a) {
   writeln("in bar");
-  if (a == 0) then {
+  if (a == 0) {
     foo(1);
   } else {
     writeln("done with bar");

@@ -74,7 +74,11 @@ void Type::codegenIORoutines(FILE* outfile) {
 
 void Type::codegenDefaultFormat(FILE* outfile) {
   fprintf(outfile, "_default_format");
-  this->codegen(outfile);
+  if (this == dtUnknown) {  // BLC: Hack until we get type inference working
+    dtInteger->codegen(outfile);
+  } else {
+    this->codegen(outfile);
+  }
 }
 
 

@@ -48,7 +48,7 @@ void Symbol::codegenDef(FILE* outfile) {
 void Symbol::codegenDefList(FILE* outfile, char* separator) {
   Symbol* ptr;
 
-  codegenDef(outfile); // BLC -- is this right? do i need "this"
+  codegenDef(outfile);
   ptr = nextLink(Symbol, this);
   while (ptr != NULL) {
     fprintf(outfile, "%s", separator);
@@ -119,6 +119,17 @@ void ParamSymbol::printDef(FILE* outfile) {
   Symbol::print(outfile);
   fprintf(outfile, ": ");
   type->print(outfile);
+}
+
+
+void ParamSymbol::codegenDef(FILE* outfile) {
+  if (type == dtUnknown) {       // BLC: This is a temporary hack until
+    dtInteger->codegen(outfile); // we get type inference hooked in; assume
+  } else {                       // all params are integers...  Inherit
+    type->codegen(outfile);      // from Symbol::codegenDef() once this
+  }                              // hack is fixed
+  fprintf(outfile, " ");
+  this->codegen(outfile);
 }
 
 

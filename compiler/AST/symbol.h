@@ -83,6 +83,7 @@ class ParamSymbol : public Symbol {
 	      Type* init_type = dtUnknown);
 
   void printDef(FILE* outfile);
+  void codegenDef(FILE* outfile);
 };
 
 

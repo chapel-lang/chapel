@@ -418,7 +418,11 @@ void WriteCall::codegen(FILE* outfile) {
     Type* argdt = argList->typeInfo();
 
     fprintf(outfile, "_write");
-    argdt->codegen(outfile);
+    if (argdt == dtUnknown) {
+      dtInteger->codegen(outfile); // BLC: Hack until type inference works
+    } else {
+      argdt->codegen(outfile);
+    }
     fprintf(outfile, "(");
     fprintf(outfile, "stdout, ");
     argdt->codegenDefaultFormat(outfile);

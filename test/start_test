@@ -321,7 +321,7 @@ endif
 if ( -w $logfile ) then
 	echo ""
 	echo \[Remove log file with duplicate name \"$logfile\"\]
-	rm -i $logfile
+	rm -f $logfile
 endif
 
 # Move temp log file ($logtmp) we have been accumulating to actual log file

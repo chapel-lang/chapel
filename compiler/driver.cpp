@@ -38,7 +38,7 @@ extern int d_debug_level;
 static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
-static int newAST = 0;
+static bool newAST = true;
 static int analyzeNewAST = 0;
 
 int fdce_if1 = 1;
@@ -76,7 +76,7 @@ static ArgumentDescription arg_desc[] = {
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"newast", ' ', "Use New AST", "F", &newAST, NULL, NULL},
+ {"oldast", ' ', "Use Old AST", "f", &newAST, NULL, NULL},
  {"analyzenewast", ' ', "Analyze New AST", "F", &analyzeNewAST, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
@@ -231,7 +231,11 @@ load_one(char *fn) {
 
 static int
 compile_one(char *fn) {
-  if (newAST) {
+  bool dotVFile = false;
+  int fnLen = strlen(fn);
+  if (fnLen >= 2 && strcmp((fn+fnLen-2), ".v") == 0)
+    dotVFile = true;
+  if (newAST && !dotVFile) {
     Stmt* program = fileToAST(fn, d_debug_level);
     if (analyzeNewAST)
       analyze_new_ast(program);
