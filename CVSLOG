@@ -18750,3 +18750,16 @@ Log message:
 Added files:
 	chapel/compiler/AST/: pragma.cpp 
 
+---------------------------------------------------------------------------
+
+03/03/05 10:51:25 -- deitz
+
+Log message:
+	Reworked ClassType::copy to not  build a TypeDefStmt and symbol.  This
+	is done elsewhere now and caused some duplicate copying.
+	
+	Cleaned VarDefStmt traversal.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+
