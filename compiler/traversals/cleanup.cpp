@@ -267,16 +267,16 @@ void ApplyThis::preProcessExpr(Expr* &expr) {
 /******************************************************************************/
 
 void Cleanup::run(ModuleSymbol* moduleList) { 
+  InsertThis* insert_this = new InsertThis();
   ResolveEasiest* resolve_easiest = new ResolveEasiest();
   ApplyWith* apply_with = new ApplyWith();
-  InsertThis* insert_this = new InsertThis();
   ResolveEasy* resolve_easy = new ResolveEasy();
   SpecializeParens* specialize_parens = new SpecializeParens();
   ApplyThis* apply_this = new ApplyThis();
   ModuleSymbol* mod = moduleList;
   while (mod) {
-    mod->startTraversal(resolve_easiest);
     mod->startTraversal(insert_this);
+    mod->startTraversal(resolve_easiest);
     mod->startTraversal(apply_with);
     mod->startTraversal(resolve_easy);
     mod->startTraversal(specialize_parens);

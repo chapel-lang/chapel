@@ -16,7 +16,7 @@
 ::A(domarr.chpl:11) ( (<unknown>:0) )
 ::A(domarr.chpl:9) ( (<unknown>:0) )
 ::Mat(<unknown>:0) ( Domain (<unknown>:0) )
-::Mat(domarr.chpl:8) ( Domain (<unknown>:0) )
+::Mat(domarr.chpl:9) ( Domain (<unknown>:0) )
 ::__init_domarr(<internal>:0) ( __init_domarr (<unknown>:0) )
 ::__init_domarr(<unknown>:0) ( __init_domarr (<unknown>:0) )
 ::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
