@@ -5,7 +5,6 @@
 #include "findUnknownTypes.h"
 #include "getstuff.h"
 #include "printAST.h"
-#include "printProgram.h"
 #include "printSymtab.h"
 #include "runAnalysis.h"
 #include "setupStmtLinks.h"
@@ -19,9 +18,7 @@
 Pass* passlist[] = {
   FIRST,
 
-  RUN(SetupStmtLinks),
-  RUN(RunAnalysis),
-  RUN(FindUnknownTypes),
+  RUN(PrintProgram),
 
   LAST
 };

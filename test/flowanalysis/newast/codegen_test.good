@@ -1,7 +1,3 @@
-
-
-
-
  called from 15 in __init at codegen_test.chpl:17
  called from 17 in __entryPoint at codegen_test.chpl:17
  called from 17 in __entryPoint at codegen_test.chpl:17
@@ -31,22 +27,9 @@
 ::z is: (codegen_test.chpl:11) ( string (<unknown>:0) )
 ::z(<unknown>:0) ( int64 (<unknown>:0) )
 ::z(codegen_test.chpl:11) ( int64 (<unknown>:0) )
-foo(765);
 function __entryPoint codegen_test.chpl:17
 function __init codegen_test.chpl:17
-function __init() {
 function __initIntPrelude codegen_test.chpl:17
 function __initPrelude codegen_test.chpl:17
 function foo codegen_test.chpl:12
-function foo(inout z: integer) {
 globals
-var a: integer = 789;
-var x: integer = 123;
-var y: integer;
-writeln("a is: ", a);
-writeln("x is: ", x);
-writeln("y is: ", y);
-writeln("z is: ", z);
-y = 456;
-}
-}

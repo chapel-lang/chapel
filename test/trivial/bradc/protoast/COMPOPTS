@@ -1,1 +1,2 @@
---no-codegen
+--passlist mypasslist.h --no-codegen
+

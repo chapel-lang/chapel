@@ -1,9 +1,3 @@
-
-
-
-
-
-
  called from 10 in __init at chain.chpl:13
  called from 11 in __init at chain.chpl:13
  called from 13 in __entryPoint at chain.chpl:13
@@ -32,21 +26,10 @@
 ::in bar, a is (chain.chpl:7) ( string (<unknown>:0) )
 ::in foo, a is (chain.chpl:2) ( string (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
-bar(5);
-bar(7);
-foo(3);
 function __entryPoint chain.chpl:13
 function __init chain.chpl:13
-function __init() {
 function __initIntPrelude chain.chpl:13
 function __initPrelude chain.chpl:13
 function bar chain.chpl:8
-function bar(inout a: integer) {
 function foo chain.chpl:4
-function foo(inout a: integer) {
 globals
-writeln("in bar, a is ", a);
-writeln("in foo, a is ", a);
-}
-}
-}

@@ -276,10 +276,6 @@ compile_one(char *fn) {
     runPasses(passlist_filename, programStmts, fn);
     if (!suppress_codegen)
       codegen(fn, system_dir, programStmts);
-    else {
-      programStmts->printList(stdout, "\n");
-      printf("\n");
-    }
     return 0;
   } else {
     if1->callback = new PCallbacks;

@@ -1,5 +1,3 @@
-
-
  called from 4 in __entryPoint at octalliteral.chpl:4
  called from 4 in __entryPoint at octalliteral.chpl:4
  called from 4 in __entryPoint at octalliteral.chpl:4
@@ -17,10 +15,6 @@
 ::x(octalliteral.chpl:3) ( int64 (<unknown>:0) )
 function __entryPoint octalliteral.chpl:4
 function __init octalliteral.chpl:4
-function __init() {
 function __initIntPrelude octalliteral.chpl:4
 function __initPrelude octalliteral.chpl:4
 globals
-var x: integer = 011;
-writeln("x is: ", x);
-}

@@ -1,5 +1,3 @@
-
-
  called from 46 in __entryPoint at bitwise_ops.chpl:46
  called from 46 in __entryPoint at bitwise_ops.chpl:46
  called from 46 in __entryPoint at bitwise_ops.chpl:46
@@ -57,48 +55,8 @@
 ::test: o || o(bitwise_ops.chpl:36) ( string (<unknown>:0) )
 ::test: o || p(bitwise_ops.chpl:30) ( string (<unknown>:0) )
 ::test: p || p(bitwise_ops.chpl:42) ( string (<unknown>:0) )
-answer = (m&n);
-answer = (m^n);
-answer = (m|n);
-answer = (o||o);
-answer = (o||p);
-answer = (p||p);
 function __entryPoint bitwise_ops.chpl:46
 function __init bitwise_ops.chpl:46
-function __init() {
 function __initIntPrelude bitwise_ops.chpl:46
 function __initPrelude bitwise_ops.chpl:46
 globals
-var answer: integer = 0;
-var m: integer = 10;
-var n: integer = 12;
-var o: integer = 0;
-var p: integer = 1;
-write("m = ", m, "\n");
-write("n = ", n, "\n");
-write("o = ", o, "\n");
-write("p = ", p, "\n\n");
-writeln("actual answer = ", answer);
-writeln("actual answer = ", answer);
-writeln("actual answer = ", answer);
-writeln("actual answer = ", answer);
-writeln("actual answer = ", answer);
-writeln("actual answer = ", answer);
-writeln("expected answer = 0");
-writeln("expected answer = 1");
-writeln("expected answer = 1");
-writeln("expected answer = 14");
-writeln("expected answer = 6");
-writeln("expected answer = 8");
-writeln("test: m & n");
-writeln("test: m ^ n");
-writeln("test: m | n");
-writeln("test: o || o");
-writeln("test: o || p");
-writeln("test: p || p");
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-}

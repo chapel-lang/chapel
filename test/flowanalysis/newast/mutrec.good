@@ -1,9 +1,3 @@
-
-
-
-
-
-
  called from 13 in bar at mutrec.chpl:17
  called from 19 in __init at mutrec.chpl:22
  called from 20 in __init at mutrec.chpl:22
@@ -39,30 +33,10 @@
 ::in bar(mutrec.chpl:11) ( string (<unknown>:0) )
 ::in foo(mutrec.chpl:2) ( string (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
-bar(0);
-bar(1);
-foo(0);
-foo(1);
 function __entryPoint mutrec.chpl:22
 function __init mutrec.chpl:22
-function __init() {
 function __initIntPrelude mutrec.chpl:22
 function __initPrelude mutrec.chpl:22
 function bar mutrec.chpl:17
-function bar(inout a: integer) {
 function foo mutrec.chpl:8
-function foo(inout a: integer) {
 globals
-if ((a==0)) {
-if ((a==0)) {
-writeln("done with bar");
-writeln("done with foo");
-writeln("in bar");
-writeln("in foo");
-}
-}
-}
-}
-}
-} else {
-} else {

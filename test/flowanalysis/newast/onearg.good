@@ -1,7 +1,3 @@
-
-
-
-
  called from 5 in __init at onearg.chpl:6
  called from 6 in __entryPoint at onearg.chpl:6
  called from 6 in __entryPoint at onearg.chpl:6
@@ -20,15 +16,9 @@
 ::foo(<unknown>:0) ( foo (<unknown>:0) )
 ::foo(onearg.chpl:5) ( foo (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
-foo(5);
 function __entryPoint onearg.chpl:6
 function __init onearg.chpl:6
-function __init() {
 function __initIntPrelude onearg.chpl:6
 function __initPrelude onearg.chpl:6
 function foo onearg.chpl:3
-function foo(inout a: integer) {
 globals
-writeln("a is ", a);
-}
-}

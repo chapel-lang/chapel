@@ -1,5 +1,5 @@
 PASSES_SRCS = \
-	printAST.cpp \
+	printProgram.cpp \
 	printSymtab.cpp \
 	runAnalysis.cpp \
 

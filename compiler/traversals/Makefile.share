@@ -2,6 +2,7 @@ TRAVERSALS_SRCS = \
 	checkTypeInfo.cpp \
 	findUnknownTypes.cpp \
 	getstuff.cpp \
+	printAST.cpp \
 	setupStmtLinks.cpp \
 	testGetStuff.cpp \
 	traversal.cpp \

@@ -1,5 +1,3 @@
-
-
  called from 115 in __entryPoint at conditional.chpl:115
  called from 115 in __entryPoint at conditional.chpl:115
  called from 115 in __entryPoint at conditional.chpl:115
@@ -81,90 +79,6 @@
 ::took true path for h(conditional.chpl:59) ( string (<unknown>:0) )
 function __entryPoint conditional.chpl:115
 function __init conditional.chpl:115
-function __init() {
 function __initIntPrelude conditional.chpl:115
 function __initPrelude conditional.chpl:115
 globals
-if ((!a)) {
-if ((!b)) {
-if ((!c)) writeln("took true path for !c"); else writeln("took false path for !c");
-if ((!d)) writeln("took true path for !d"); else {
-if ((!e)) {
-if ((!f)) writeln("took true path for !f");
-if ((!g)) {
-if ((!h)) {
-if (a) {
-if (b) {
-if (c) writeln("took true path for c"); else writeln("took false path for c");
-if (d) writeln("took true path for d"); else {
-if (e) {
-if (f) writeln("took true path for f");
-if (g) {
-if (h) {
-var a: integer = 0;
-var b: integer = 1;
-var c: integer = 2;
-var d: integer = 3;
-var e: integer = 4;
-var f: integer = 5;
-var g: integer = 6;
-var h: integer = 7;
-writeln("no really, I did!");
-writeln("no really, I did!");
-writeln("no really, I did!");
-writeln("no really, I did!");
-writeln("no really, I did!");
-writeln("no really, I did!");
-writeln("no really, I did!");
-writeln("no really, I did!");
-writeln("no really, I did");
-writeln("no really, I did");
-writeln("took false path for !a");
-writeln("took false path for !b");
-writeln("took false path for !d");
-writeln("took false path for a");
-writeln("took false path for b");
-writeln("took false path for d");
-writeln("took true path for !a");
-writeln("took true path for !b");
-writeln("took true path for !e");
-writeln("took true path for !g");
-writeln("took true path for !h");
-writeln("took true path for a");
-writeln("took true path for b");
-writeln("took true path for e");
-writeln("took true path for g");
-writeln("took true path for h");
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-writeln();
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-} else writeln("took false path for !e");
-} else writeln("took false path for e");
-} else {
-} else {
-} else {
-} else {

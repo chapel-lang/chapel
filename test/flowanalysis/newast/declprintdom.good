@@ -1,5 +1,3 @@
-
-
  called from 12 in __entryPoint at declprintdom.chpl:12
  called from 12 in __entryPoint at declprintdom.chpl:12
  called from 12 in __entryPoint at declprintdom.chpl:12
@@ -37,17 +35,6 @@
 ::null(<unknown>:0) ( void (<unknown>:0) )
 function __entryPoint declprintdom.chpl:12
 function __init declprintdom.chpl:12
-function __init() {
 function __initIntPrelude declprintdom.chpl:12
 function __initPrelude declprintdom.chpl:12
 globals
-var D1: domain(1) = 1..m1;
-var D2: domain(1) = 1..m2;
-var D3: domain(1) = [1..m3];
-var m1: integer = 10;
-var m2: integer = 20;
-var m3: integer = 30;
-writeln("D1 is: ", D1);
-writeln("D2 is: ", D2);
-writeln("D3 is: ", D3);
-}

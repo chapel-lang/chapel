@@ -1,5 +1,3 @@
-
-
  called from 26 in __entryPoint at bitwise_assignment.chpl:26
  called from 26 in __entryPoint at bitwise_assignment.chpl:26
  called from 26 in __entryPoint at bitwise_assignment.chpl:26
@@ -33,29 +31,6 @@
 ::test: m |= n(bitwise_assignment.chpl:22) ( string (<unknown>:0) )
 function __entryPoint bitwise_assignment.chpl:26
 function __init bitwise_assignment.chpl:26
-function __init() {
 function __initIntPrelude bitwise_assignment.chpl:26
 function __initPrelude bitwise_assignment.chpl:26
 globals
-m &= n;
-m = 10;
-m = 10;
-m ^= n;
-m |= n;
-var m: integer = 10;
-var n: integer = 12;
-writeln("actual answer = ", m);
-writeln("actual answer = ", m);
-writeln("actual answer = ", m);
-writeln("expected answer = 14");
-writeln("expected answer = 6");
-writeln("expected answer = 8");
-writeln("m = ", m);
-writeln("n = ", n);
-writeln("test: m &= n");
-writeln("test: m ^= n");
-writeln("test: m |= n");
-writeln();
-writeln();
-writeln();
-}

@@ -1,5 +1,3 @@
-
-
  called from 16 in __entryPoint at assignment_expr.chpl:16
  called from 16 in __entryPoint at assignment_expr.chpl:16
  called from 16 in __entryPoint at assignment_expr.chpl:16
@@ -25,19 +23,6 @@
 ::o(assignment_expr.chpl:9) ( int64 (<unknown>:0) )
 function __entryPoint assignment_expr.chpl:16
 function __init assignment_expr.chpl:16
-function __init() {
 function __initIntPrelude assignment_expr.chpl:16
 function __initPrelude assignment_expr.chpl:16
 globals
-m *= n;
-m += n;
-m -= o;
-o /= n;
-var m: integer = 5;
-var n: integer = 2;
-var o: integer = 30;
-writeln("m = ", m);
-writeln("m = ", m);
-writeln("m = ", m);
-writeln("o = ", o);
-}

@@ -1,5 +1,3 @@
-
-
  called from 10 in __entryPoint at enum.chpl:10
  called from 10 in __entryPoint at enum.chpl:10
  called from 10 in __entryPoint at enum.chpl:10
@@ -20,15 +18,8 @@
 ::y is: (enum.chpl:9) ( string (<unknown>:0) )
 ::y(<unknown>:0) ( B (<unknown>:0) )
 ::y(enum.chpl:9) ( B (<unknown>:0) )
-enum classVals = S | W | A | B | C | D | O;
 function __entryPoint enum.chpl:10
 function __init enum.chpl:10
-function __init() {
 function __initIntPrelude enum.chpl:10
 function __initPrelude enum.chpl:10
 globals
-var x: classVals = B;
-var y: integer = x;
-writeln("x is: ", x);
-writeln("y is: ", y);
-}
