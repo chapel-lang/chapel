@@ -18464,3 +18464,13 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/traversals/: resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+03/01/05 11:51:24 -- deitz
+
+Log message:
+	Passed defaultParam test case future to John.
+
+Modified files:
+	chapel/test/functions/bradc/: defaultParam.future 
+
