@@ -14491,3 +14491,39 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_overload_integerfloat2.future 
 
+---------------------------------------------------------------------------
+
+01/14/05 12:52:08 -- deitz
+
+Log message:
+	January task list and January future tests.
+	
+	This is a draft version of what we should get done in January.  There
+	is alot here, including the holdover stuff from Nov/Dec.  Comments,
+	changes?
+	
+	I moved SSCA2.HLtasks.txt to SSCA2.tasks and removed the tasks we've
+	completed (into 2004.NovDec.tasks).  I figure this can be a shrinking
+	list of what's left.  I left the HLtasks file there for reference.
+
+Added files:
+	chapel/doc/internal/: 2004.NovDec.tasks 2005.Feb.tasks 
+	                      2005.Jan.tasks SSCA2.tasks 
+	chapel/test/arrays/deitz/: test_basic1d1.chpl test_basic1d1.good 
+	                           test_basic1d2.chpl 
+	                           test_basic1d2.future 
+	                           test_basic1d2.good test_basic1d3.chpl 
+	                           test_basic1d3.future 
+	                           test_basic1d3.good test_basic1d4.chpl 
+	                           test_basic1d4.future 
+	                           test_basic1d4.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1.chpl 
+	                                         test_clone_class1.future 
+	                                         test_clone_class1.good 
+	                                         test_clone_class2.chpl 
+	                                         test_clone_class2.future 
+	                                         test_clone_class2.good 
+	                                         test_typevar_class1.chpl 
+	                                         test_typevar_class1.future 
+	                                         test_typevar_class1.good 
+
