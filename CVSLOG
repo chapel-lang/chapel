@@ -20014,3 +20014,33 @@ Added files:
 	chapel/test/classes/deitz/: test_record_equal1.chpl 
 	                            test_record_equal1.good 
 
+---------------------------------------------------------------------------
+
+03/17/05 15:47:50 -- jplevyak
+
+Log message:
+	test_named_param2 now calls the function to create a reorder wrapper
+	(which is currently not implemented)
+	Passed .future over to Steve.
+	Instituted naming conventions to differentiate various types of MPositions:
+	// Key to names of position variables
+	//  ABCD
+	//   A = a | f, actual or formal (MANDITORY)
+	//   B = c, cannonical (OPTIONAL)
+	//   C = p, positional (OPTIONAL)
+	//   D = p, position (MANDITORY)
+	// Examples:
+	//  acpp - actual, cannonical, positional position
+	//  acnp - actual, cannonical, named position
+	//  ap - actual non-cannonical, positional or named position
+	Did a full review of pattern.cpp to ensure that all positions were being
+	used correctly.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: cg.cpp clone.cpp fa.cpp fun.cpp 
+	                           pattern.cpp 
+	chapel/compiler/backend/: dump.cpp 
+	chapel/compiler/include/: fun.h pattern.h 
+	chapel/test/functions/deitz/: test_named_param2.future 
+
