@@ -57,7 +57,7 @@
 %token <ptsym> TYPE_IDENT
 %token <redsym> REDUCE_IDENT
 %token <pcsym> CLASS_IDENT
-%token INTLITERAL FLOATLITERAL 
+%token INTLITERAL FLOATLITERAL COMPLEXLITERAL
 %token <pch> STRINGLITERAL
 
 %token IF ELSE
@@ -115,7 +115,7 @@
 %left '+' '-'
 %right UMINUS '~'
 %left '*' '/' '%'
-%left EXP
+%right EXP
 
 %% 
 
@@ -193,14 +193,10 @@ typedecl:
 
 
 typealias:
-  TYPEDEF identifier GETS type ';'
-    {
-      UserType* pdt = new UserType($4);
-      Symbol* pst = new TypeSymbol($2, pdt);
-      pdt->addName(pst);
-      Symboltable::define(pst);
-      $$ = new TypeDefStmt(pdt);
-    }
+  TYPEDEF identifier ':' type ';'
+    { $$ = Symboltable::defineUserType($2, $4); }
+| TYPEDEF identifier ':' type GETS expr ';'
+    { $$ = Symboltable::defineUserType($2, $4, $6); }
 ;
 
 
@@ -615,6 +611,8 @@ literal:
     { $$ = new IntLiteral(yytext, $1); }
 | FLOATLITERAL
     { $$ = new FloatLiteral(yytext, atof(yytext)); }
+| COMPLEXLITERAL
+    { $$ = new ComplexLiteral(yytext, atof(yytext)); }
 | STRINGLITERAL
     { $$ = new StringLiteral($1); }
 ;
@@ -640,9 +638,9 @@ unop:
 
 binop:
   expr '+' expr
-    { $$ = new BinOp(BINOP_PLUS, $1, $3); }
+    { $$ = Expr::newPlusMinus(BINOP_PLUS, $1, $3); }
 | expr '-' expr
-    { $$ = new BinOp(BINOP_MINUS, $1, $3); }
+    { $$ = Expr::newPlusMinus(BINOP_MINUS, $1, $3); }
 | expr '*' expr
     { $$ = new BinOp(BINOP_MULT, $1, $3); }
 | expr '/' expr

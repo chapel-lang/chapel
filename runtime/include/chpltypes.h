@@ -1,29 +1,25 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
-enum _boolean {
+typedef enum __boolean {
   false = 0,
   true = 1
-};
+} _boolean;
+
 typedef long long _integer64;
+
 typedef double _float64;
+
+typedef struct __complex128 {
+  _float64 re;
+  _float64 im;
+} _complex128;
+
 typedef char* _string;
 
-#define _default_format_read_integer64    "%lld" // long long int
-#define _default_format_write_integer64   "%lld" // long long int
 
-#define _default_format_read_float32      "%g"   // float
-#define _default_format_write_float32     "%g"   // double
-#define _default_format_read_float64      "%lg"  // double
-#define _default_format_write_float64     "%g"   // double
-#define _default_format_read_float128     "%llg" // long double
-#define _default_format_write_float128    "%Lg"  // long double 
+void _copy_string(_string* lhs, _string rhs);
 
-#define _default_format_read_string       "%s"   
-#define _default_format_write_string      "%s"
-
-#define _default_format_read_enum         "%s"
-#define _default_format_write_enum        "%s"
 
 #endif
 

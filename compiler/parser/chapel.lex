@@ -123,6 +123,7 @@ reduce          return REDUCE;
                 }
 {intLiteral}    return INTLITERAL;
 {floatLiteral}  return FLOATLITERAL;
+{floatLiteral}i return COMPLEXLITERAL;
 "\""            {
                   register int c;
                   int bufflen = 256;

@@ -765,6 +765,12 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_LITERAL: assert(!"case"); break;
+    case EXPR_BOOLLITERAL: {
+      BoolLiteral *s = dynamic_cast<BoolLiteral*>(ast);
+      Sym *c = if1_const(if1, sym_bool, s->str);
+      c->imm.v_bool = s->val;
+      break;
+    }
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
       Sym *c = if1_const(if1, sym_int64, s->str);
@@ -777,6 +783,13 @@ gen_if1(BaseAST *ast) {
       Sym *c = if1_const(if1, sym_float64, s->str);
       c->imm.v_float64 = s->val;
       gen_move(s, c);
+      break;
+    }
+    case EXPR_COMPLEXLITERAL: {
+      ComplexLiteral *s = dynamic_cast<ComplexLiteral*>(ast);
+      Sym *c = if1_const(if1, sym_complex64, s->str);
+      c->imm.v_complex64.r = s->realVal;
+      c->imm.v_complex64.i = s->imagVal;
       break;
     }
     case EXPR_STRINGLITERAL: {

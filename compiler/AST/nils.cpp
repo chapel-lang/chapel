@@ -24,7 +24,7 @@ void initNils(void) {
   nilStmt = new Stmt(STMT);
   nilExpr = new Expr(EXPR);
   nilSymbol = new Symbol(SYMBOL, "nilSymbol");
-  nilType = new Type(TYPE);
+  nilType = new Type(TYPE, nilExpr);
 
   nilVarSymbol = new VarSymbol("nilVarSymbol", nilType);
   nilFnSymbol = new FnSymbol("nilFnSymbol");
@@ -54,7 +54,7 @@ void verifyNilsUncorrupted(char* message) {
     INT_FATAL("nilSymbol has been %s", message);
   }
   if (nilType->next != nilILink || nilType->prev != nilILink ||
-      nilType->name != nilSymbol) {
+      nilType->name != nilSymbol || nilType->initDefault != nilExpr) {
     INT_FATAL("nilType has been %s", message);
   }
 

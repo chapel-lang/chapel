@@ -73,6 +73,7 @@ void Symbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
   fprintf(outfile, " ");
   this->codegen(outfile);
+  type->codegenSafeInit(outfile);
 }  
 
 

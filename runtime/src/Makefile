@@ -9,6 +9,7 @@ CFLAGS += -I../include
 CHPL_RT_SRCS = \
 	array.c \
 	chplio.c \
+	chpltypes.c \
 	domain.c \
 
 CHPL_RT_OBJS = $(CHPL_RT_SRCS:%.c=$(PLATFORM)/%.o)

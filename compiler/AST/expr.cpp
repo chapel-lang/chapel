@@ -149,6 +149,46 @@ precedenceType Expr::precedence(void) {
 
 }
 
+
+void Expr::codegenComplex(FILE* outfile, bool real) {
+  Type* type = this->typeInfo();
+  if (type->isComplex()) {
+    fprintf(outfile, "(");
+    this->codegen(outfile);
+    fprintf(outfile, ").");
+    if (real) {
+      fprintf(outfile, "re");
+    } else {
+      fprintf(outfile, "im");
+    }
+  } else {
+    if (real) {
+      this->codegen(outfile);
+    } else {
+      fprintf(outfile, "0.0");
+    }
+  } 
+}
+
+
+// BLC: Currently, this only handles simple real +/- imag cases
+Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
+  if (typeid(*l) == typeid(FloatLiteral) && 
+      typeid(*r) == typeid(ComplexLiteral)) {
+    ComplexLiteral* rcomplex = (ComplexLiteral*)r;
+    FloatLiteral* lfloat = (FloatLiteral*)l;
+    if (rcomplex->realVal == 0.0) {
+      rcomplex->addReal(lfloat);
+      if (op == BINOP_MINUS) {
+	rcomplex->negateImag();
+      }
+      return rcomplex;
+    }
+  }
+  return new BinOp(op, l, r);
+}
+
+
 int
 Expr::getTypes(Vec<BaseAST *> &asts) {
   return asts.n;
@@ -173,6 +213,22 @@ void Literal::print(FILE* outfile) {
 
 void Literal::codegen(FILE* outfile) {
   fprintf(outfile, "%s", str);
+}
+
+
+BoolLiteral::BoolLiteral(char* init_str, bool init_val) :
+  Literal(EXPR_BOOLLITERAL, init_str),
+  val(init_val)
+{}
+
+
+bool BoolLiteral::boolVal(void) {
+  return val;
+}
+
+
+Type* BoolLiteral::typeInfo(void) {
+  return dtBoolean;
 }
 
 
@@ -211,6 +267,55 @@ FloatLiteral::FloatLiteral(char* init_str, double init_val) :
   Literal(EXPR_FLOATLITERAL, init_str),
   val(init_val) 
 {}
+
+
+ComplexLiteral::ComplexLiteral(char* init_str, double init_imag, 
+			       double init_real, char* init_realStr) :
+  Literal(EXPR_COMPLEXLITERAL, init_str),
+  realVal(init_real),
+  imagVal(init_imag),
+  realStr(init_realStr)
+{}
+
+
+void ComplexLiteral::addReal(FloatLiteral* init_real) {
+  if (realVal != 0.0) {
+    INT_FATAL(this, "adding real component to non-zero real component");
+  } else {
+    realVal = init_real->val;
+    realStr = copystring(init_real->str);
+  }
+}
+
+
+void ComplexLiteral::negateImag(void) {
+  imagVal = -imagVal;
+}
+
+
+Type* ComplexLiteral::typeInfo(void) {
+  return dtComplex;
+}
+
+
+void ComplexLiteral::codegen(FILE* outfile) {
+  INT_FATAL(this, "codegen() called on a complex literal");
+}
+
+
+void ComplexLiteral::codegenComplex(FILE* outfile, bool real) {
+  if (real) {
+    fprintf(outfile, "%s", realStr);
+  } else {
+    char* imagval = copystring(str);
+    char* i = strrchr(imagval, 'i');
+    if (i != (imagval + strlen(imagval) - 1)) {
+      INT_FATAL(this, "imaginary literal ill-formed");
+    }
+    *i = '\0';
+    fprintf(outfile, "%s", imagval);
+  }
+}
 
 
 StringLiteral::StringLiteral(char* init_val) :
@@ -472,9 +577,26 @@ void AssignOp::print(FILE* outfile) {
 
 
 void AssignOp::codegen(FILE* outfile) {
-  left->codegen(outfile);
-  fprintf(outfile, " %s ", cGetsOp[type]);
-  right->codegen(outfile);
+  Type* leftType = left->typeInfo();
+  if (leftType->isComplex()) {
+    left->codegenComplex(outfile, true);
+    fprintf(outfile, " %s ", cGetsOp[type]);
+    right->codegenComplex(outfile, true);
+    fprintf(outfile, ";\n");
+    left->codegenComplex(outfile, false);
+    fprintf(outfile, " %s ", cGetsOp[type]);
+    right->codegenComplex(outfile, false);
+  } else if (leftType == dtString) {
+    fprintf(outfile, "_copy_string(&(");
+    left->codegen(outfile);
+    fprintf(outfile, "), ");
+    right->codegen(outfile);
+    fprintf(outfile, ")");
+  } else {
+    left->codegen(outfile);
+    fprintf(outfile, " %s ", cGetsOp[type]);
+    right->codegen(outfile);
+  }
 }
 
 

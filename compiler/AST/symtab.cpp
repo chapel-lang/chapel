@@ -336,8 +336,12 @@ Symbol* Symboltable::lookupInScope(char* name, SymScope* scope) {
 }
 
 
-Symbol* Symboltable::lookupInternal(char* name) {
-  return lookupInScope(name, internalScope);
+Symbol* Symboltable::lookupInternal(char* name, bool publicSym) {
+  if (publicSym) {
+    return lookupInScope(name, preludeScope);
+  } else {
+    return lookupInScope(name, internalScope);
+  }
 }
 
 
@@ -405,6 +409,15 @@ BlockStmt* Symboltable::finishCompoundStmt(Stmt* body) {
   return newStmt;
 }
 
+
+TypeDefStmt* Symboltable::defineUserType(char* name, Type* definition, 
+					 Expr* initializer) {
+  UserType* newtype = new UserType(definition, initializer);
+  Symbol* typeSym = new TypeSymbol(name, newtype);
+  newtype->addName(typeSym);
+  define(typeSym);
+  return new TypeDefStmt(newtype);
+}
 
 ParamSymbol* Symboltable::defineParams(paramType formaltag, Symbol* idents, 
 				       Type* type) {
@@ -490,8 +503,9 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
 }
 
 
-Type* Symboltable::defineBuiltinType(char* name, bool placeholder) {
-  Type* newType = new Type(TYPE_BUILTIN);
+Type* Symboltable::defineBuiltinType(char* name, Expr* init, 
+				     bool placeholder) {
+  Type* newType = new Type(TYPE_BUILTIN, init);
   TypeSymbol* sym = new TypeSymbol(name, newType);
   newType->addName(sym);
 

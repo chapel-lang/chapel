@@ -31,6 +31,36 @@ enum ioCallType {
   IO_READ
 };
 
+/************* IF CHANGING THIS, change cBinOp as well... *****************/
+enum binOpType {
+  BINOP_PLUS = 0,
+  BINOP_MINUS,
+  BINOP_MULT,
+  BINOP_DIV,
+  BINOP_MOD,
+  BINOP_EQUAL,
+  BINOP_LEQUAL,
+  BINOP_GEQUAL,
+  BINOP_GTHAN,
+  BINOP_LTHAN,
+  BINOP_NEQUAL,
+  BINOP_BITAND,
+  BINOP_BITOR,
+  BINOP_BITXOR,
+  BINOP_BITSL,
+  BINOP_BITSR,
+  BINOP_LOGAND,
+  BINOP_LOGOR,
+  BINOP_EXP,
+
+  BINOP_BY,
+
+  BINOP_OTHER,
+
+  NUM_BINOPS
+};
+/************* IF CHANGING THIS, change cBinOp as well... *****************/
+
 class Expr : public BaseAST {
  public:
   Stmt* stmt;
@@ -52,6 +82,9 @@ class Expr : public BaseAST {
   virtual precedenceType precedence(void);
 
   int getTypes(Vec<BaseAST *> &asts);
+  virtual void codegenComplex(FILE* outfile, bool real);
+
+  static Expr* newPlusMinus(binOpType op, Expr* l, Expr* r);
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 
@@ -69,6 +102,18 @@ class Literal : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+};
+
+
+class BoolLiteral : public Literal {
+ public:
+  bool val;
+
+  BoolLiteral(char* init_str, bool init_val);
+
+  bool boolVal(void);
+  
+  Type* typeInfo(void);
 };
 
 
@@ -92,6 +137,27 @@ class FloatLiteral : public Literal {
 
   FloatLiteral(char* init_str, double init_val);
 };
+
+
+class ComplexLiteral : public Literal {
+ public:
+  double realVal;
+  double imagVal;
+  char* realStr;
+
+  ComplexLiteral(char* init_str, double init_imag, double init_real = 0.0,
+		 char* init_realStr = "");
+
+  void addReal(FloatLiteral* init_real);
+  void negateImag(void);
+
+  Type* typeInfo(void);
+
+  void codegen(FILE* outfile);
+  void codegenComplex(FILE* outfile, bool real);
+};
+  
+  
 
 
 class StringLiteral : public Literal {
@@ -149,36 +215,6 @@ class UnOp : public Expr {
   precedenceType precedence(void);
   int getExprs(Vec<BaseAST *> &asts);
 };
-
-/************* IF CHANGING THIS, change cBinOp as well... *****************/
-enum binOpType {
-  BINOP_PLUS = 0,
-  BINOP_MINUS,
-  BINOP_MULT,
-  BINOP_DIV,
-  BINOP_MOD,
-  BINOP_EQUAL,
-  BINOP_LEQUAL,
-  BINOP_GEQUAL,
-  BINOP_GTHAN,
-  BINOP_LTHAN,
-  BINOP_NEQUAL,
-  BINOP_BITAND,
-  BINOP_BITOR,
-  BINOP_BITXOR,
-  BINOP_BITSL,
-  BINOP_BITSR,
-  BINOP_LOGAND,
-  BINOP_LOGOR,
-  BINOP_EXP,
-
-  BINOP_BY,
-
-  BINOP_OTHER,
-
-  NUM_BINOPS
-};
-/************* IF CHANGING THIS, change cBinOp as well... *****************/
 
 
 class BinOp : public Expr {

@@ -140,28 +140,34 @@ void VarDefStmt::print(FILE* outfile) {
 
 void VarDefStmt::codegen(FILE* outfile) {
   VarSymbol* aVar = var;
+  Expr* initExpr;
   
   while (aVar) {
     VarSymbol* nextVar = nextLink(VarSymbol, aVar);
+    if (init->isNull()) {
+      initExpr = aVar->type->initDefault;
+    } else {
+      initExpr = init;
+    }
     if (aVar->type->needsInit()) {
       aVar->type->generateInit(outfile, aVar);
-      if (!init->isNull()) {
+      if (!initExpr->isNull()) {
 	fprintf(outfile, "/* init is: ");
-	init->codegen(outfile);
+	initExpr->codegen(outfile);
 	fprintf(outfile, "*/\n");
       }
-    } else if (!init->isNull()) {
+    } else if (!initExpr->isNull()) {
       if (typeid(*(aVar->type)) == typeid(DomainType)) {
 	DomainType* domtype = (DomainType*)(aVar->type);
 	int rank = domtype->numdims ? domtype->numdims : 1; // BLC: hack!
 	fprintf(outfile, "_init_domain_%dD(&(", rank);
 	aVar->codegen(outfile);
 	fprintf(outfile, ")");
-	if (typeid(*init) == typeid(DomainExpr)) {
-	  init = ((DomainExpr*)init)->domains;
+	if (typeid(*initExpr) == typeid(DomainExpr)) {
+	  initExpr = ((DomainExpr*)initExpr)->domains;
 	}
-	if (typeid(*init) == typeid(SimpleSeqExpr)) {
-	  SimpleSeqExpr* initseq = (SimpleSeqExpr*)init;
+	if (typeid(*initExpr) == typeid(SimpleSeqExpr)) {
+	  SimpleSeqExpr* initseq = (SimpleSeqExpr*)initExpr;
 
 	  for (int i=0; i<rank; i++) {
 	    fprintf(outfile, ", ");
@@ -176,10 +182,12 @@ void VarDefStmt::codegen(FILE* outfile) {
 	}
 	fprintf(outfile, ");");
      } else {
-	aVar->codegen(outfile);
-	fprintf(outfile, " = ");
-	init->codegen(outfile);
-	fprintf(outfile, ";");
+       // TODO: hoist this into a traversal that rewrites vardefs as
+       // assignments?
+       AssignOp* assignment = new AssignOp(GETS_NORM, new Variable(aVar), 
+					   initExpr);
+       assignment->codegen(outfile);
+       fprintf(outfile, ";");
       }
 
       if (nextVar) {

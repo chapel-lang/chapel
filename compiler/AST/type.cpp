@@ -9,9 +9,10 @@
 #include "type.h"
 
 
-Type::Type(astType_t astType) :
+Type::Type(astType_t astType, Expr* init_initDefault) :
   BaseAST(astType),
   name(nilSymbol),
+  initDefault(init_initDefault),
   asymbol(NULL)
 {}
 
@@ -23,6 +24,11 @@ void Type::addName(Symbol* newname) {
 
 bool Type::isNull(void) {
   return (this == nilType);
+}
+
+
+bool Type::isComplex(void) {
+  return (this == dtComplex);
 }
 
 
@@ -75,6 +81,7 @@ void Type::traverseType(Traversal* traversal) {
 
 
 void Type::traverseDefType(Traversal* traversal) {
+  initDefault->traverse(traversal, false);
 }
 
 
@@ -101,6 +108,8 @@ void Type::codegen(FILE* outfile) {
     fprintf(outfile, "_integer64");
   } else if (this == dtFloat) {
     fprintf(outfile, "_float64");
+  } else if (this == dtComplex) {
+    fprintf(outfile, "_complex128");
   } else if (this == dtString) {
     fprintf(outfile, "_string");
   } else if (this == dtVoid) {
@@ -118,8 +127,16 @@ void Type::codegenDef(FILE* outfile) {
 }
 
 
+void Type::codegenSafeInit(FILE* outfile) {
+  if (this == dtString) {
+    fprintf(outfile, " = NULL");
+  } else {
+    // Most types won't need an initializer to be safe
+  }
+}
+
+
 void Type::codegenIORoutines(FILE* outfile) {
-  INT_FATAL(this, "Don't know how to codegenIORoutines() for all types yet");
 }
 
 
@@ -161,7 +178,7 @@ Type::getSymbols(Vec<BaseAST *> &asts) {
 
 
 EnumType::EnumType(EnumSymbol* init_valList) :
-  Type(TYPE_ENUM),
+  Type(TYPE_ENUM, new Variable(init_valList)),
   valList(init_valList)
 {
   Symbol* val = valList;
@@ -174,6 +191,7 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 
 void EnumType::traverseDefType(Traversal* traversal) {
   valList->traverseList(traversal, false);
+  initDefault->traverse(traversal, false);
 }
 
 
@@ -270,7 +288,7 @@ void EnumType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 
 DomainType::DomainType(Expr* init_expr) :
-  Type(TYPE_DOMAIN),
+  Type(TYPE_DOMAIN, nilExpr),
   numdims(0),
   parent(nilExpr)
 {
@@ -284,10 +302,10 @@ DomainType::DomainType(Expr* init_expr) :
   }
 }
 
-  DomainType::DomainType(int init_numdims) :
-    Type(TYPE_DOMAIN),
-    numdims(init_numdims),
-    parent(nilExpr)
+DomainType::DomainType(int init_numdims) :
+  Type(TYPE_DOMAIN, nilExpr),
+  numdims(init_numdims),
+  parent(nilExpr)
 {}
 
 
@@ -339,7 +357,7 @@ void IndexType::print(FILE* outfile) {
 
 
 ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
-  Type(TYPE_ARRAY),
+  Type(TYPE_ARRAY, init_elementType->initDefault),
   domain(init_domain),
   elementType(init_elementType)
 {}
@@ -348,6 +366,7 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 void ArrayType::traverseDefType(Traversal* traversal) {
   domain->traverse(traversal, false);
   elementType->traverse(traversal, false);
+  initDefault->traverse(traversal, false);
 }
 
 
@@ -406,14 +425,20 @@ ArrayType::getTypes(Vec<BaseAST *> &asts) {
 }
 
 
-UserType::UserType(Type* init_definition) :
-  Type(TYPE_USER),
+UserType::UserType(Type* init_definition, Expr* init_initDefault) :
+  Type(TYPE_USER, init_initDefault),
   definition(init_definition)
 {}
 
 
+bool UserType::isComplex(void) {
+  return definition->isComplex();
+}
+
+
 void UserType::traverseDefType(Traversal* traversal) {
   definition->traverse(traversal, false);
+  initDefault->traverse(traversal, false);
 }
 
 
@@ -425,6 +450,41 @@ void UserType::printDef(FILE* outfile) {
 }
 
 
+void UserType::codegen(FILE* outfile) {
+  name->codegen(outfile);
+}
+
+
+void UserType::codegenDef(FILE* outfile) {
+  fprintf(outfile, "typedef ");
+  definition->codegen(outfile);
+  fprintf(outfile, " ");
+  name->codegen(outfile);
+  fprintf(outfile, ";\n");
+}
+
+
+// TODO: We should probably instead have types print out
+// their own write routines and have UserType print its
+// definition's write routine
+void UserType::codegenIORoutines(FILE* outfile) {
+  codegenIOPrototype(intheadfile, name);
+  fprintf(intheadfile, ";\n\n");
+  
+  codegenIOPrototype(outfile, name);
+  fprintf(outfile, " {\n");
+  fprintf(outfile, "  _write");
+  definition->codegen(outfile);
+  fprintf(outfile, "(outfile, format, val);\n");
+  fprintf(outfile, "}\n");
+}
+
+
+void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
+  definition->codegenDefaultFormat(outfile, isRead);
+}
+
+
 int
 UserType::getTypes(Vec<BaseAST *> &asts) {
   asts.add(definition);
@@ -433,7 +493,7 @@ UserType::getTypes(Vec<BaseAST *> &asts) {
 
 
 ClassType::ClassType(ClassType* init_parentClass) :
-  Type(TYPE_CLASS),
+  Type(TYPE_CLASS, nilExpr),
   parentClass(init_parentClass),
   definition(nilStmt),
   scope(NULL),
@@ -470,6 +530,7 @@ void ClassType::addScope(SymScope* init_scope) {
 void ClassType::traverseDefType(Traversal* traversal) {
   definition->traverseList(traversal, false);
   constructor->traverseList(traversal, false);
+  initDefault->traverse(traversal, false);
 }
 
 
@@ -528,7 +589,7 @@ ClassType::getStmts(Vec<BaseAST *> &asts) {
 
 
 TupleType::TupleType(Type* firstType) :
-  Type(TYPE_TUPLE)
+  Type(TYPE_TUPLE, nilExpr)
 {
   components.add(firstType);
 }
@@ -543,6 +604,7 @@ void TupleType::traverseDefType(Traversal* traversal) {
   for (int i=0; i<components.n; i++) {
     components.v[i]->traverse(traversal, false);
   }
+  initDefault->traverse(traversal, false);
 }
 
 
@@ -565,20 +627,24 @@ void TupleType::codegen(FILE* outfile) {
 
 void initTypes(void) {
   // define built-in types
-  dtUnknown = Symboltable::defineBuiltinType("???");
-  dtVoid = Symboltable::defineBuiltinType("void");
+  dtUnknown = Symboltable::defineBuiltinType("???", nilExpr);
+  dtVoid = Symboltable::defineBuiltinType("void", nilExpr);
 
-  dtBoolean = Symboltable::defineBuiltinType("boolean");
-  dtInteger = Symboltable::defineBuiltinType("integer");
-  dtFloat = Symboltable::defineBuiltinType("float");
-  dtComplex = Symboltable::defineBuiltinType("complex");
-  dtString = Symboltable::defineBuiltinType("string");
+  dtBoolean = Symboltable::defineBuiltinType("boolean", 
+					     new BoolLiteral("false", false));
+  dtInteger = Symboltable::defineBuiltinType("integer", 
+					     new IntLiteral("0", 0));
+  dtFloat = Symboltable::defineBuiltinType("float", 
+					   new FloatLiteral("0.0", 0.0));
+  dtComplex = Symboltable::defineBuiltinType("complex", 
+					     new FloatLiteral("0.0", 0.0));
+  dtString = Symboltable::defineBuiltinType("string", new StringLiteral(""));
+  
 
-
-  dtLocale = Symboltable::defineBuiltinType("locale");
+  dtLocale = Symboltable::defineBuiltinType("locale", nilExpr);
 
   // this needs to be moved into the standard prelude
-  dtTimer = Symboltable::defineBuiltinType("timer", false);
+  dtTimer = Symboltable::defineBuiltinType("timer", nilExpr, false);
 }
 
 

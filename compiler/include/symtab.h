@@ -21,12 +21,14 @@ class Symboltable {
 
   static void define(Symbol* sym);
   static Symbol* lookupInScope(char* name, SymScope* scope);
-  static Symbol* lookupInternal(char* name);
+  static Symbol* lookupInternal(char* name, bool publicSym = false);
   static Symbol* lookup(char* name, bool inLexer = false);
   static ClassSymbol* lookupClass(char* name);
 
   static void startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(Stmt* body);
+  static TypeDefStmt* defineUserType(char* name, Type* definition, 
+				     Expr* initializer = nilExpr);
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
@@ -34,7 +36,7 @@ class Symboltable {
 					    varType vartag = VAR_NORMAL, 
 					    bool isConst = false);
   static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
-  static Type* Symboltable::defineBuiltinType(char* name, 
+  static Type* Symboltable::defineBuiltinType(char* name, Expr* init,
 					      bool placeholder = false);
   static FnSymbol* startFnDef(char* name, bool insert = true);
   static FnDefStmt* finishFnDef(FnSymbol* fnsym, Symbol* formals, 

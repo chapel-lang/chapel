@@ -7,6 +7,15 @@ void _write_linefeed(FILE* outfile) {
 }
 
 
+void _write_boolean(FILE* outfile, char* format, _boolean val) {
+  if (val) {
+    fprintf(outfile, format, "true");
+  } else {
+    fprintf(outfile, format, "false");
+  }
+}
+
+
 void _read_integer64(FILE* infile, char* format, _integer64* val) {
   fscanf(infile, format, val);
 }
@@ -24,6 +33,11 @@ void _read_float64(FILE* infile, char* format, _float64* val) {
 
 void _write_float64(FILE* outfile, char* format, _float64 val) {
   fprintf(outfile, format, val);
+}
+
+
+void _write_complex128(FILE* outfile, char* format, _complex128 val) {
+  fprintf(outfile, format, val.re, val.im);
 }
 
 

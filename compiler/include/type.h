@@ -16,12 +16,14 @@ extern Expr* nilExpr;
 class Type : public BaseAST {
  public:
   Symbol* name;
+  Expr* initDefault;
   ASymbol *asymbol;
 
-  Type(astType_t astType);
+  Type(astType_t astType, Expr* init_initDefault);
   void addName(Symbol* newname);
 
   bool isNull(void);
+  virtual bool isComplex(void);
 
   void traverse(Traversal* traversal, bool atTop = true);
   void traverseDef(Traversal* traversal, bool atTop = true);
@@ -34,6 +36,7 @@ class Type : public BaseAST {
   virtual void printDef(FILE* outfile);
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
+  virtual void codegenSafeInit(FILE* outfile);
   virtual void codegenIORoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
   virtual void codegenConstructors(FILE* outfile);
@@ -111,11 +114,16 @@ class UserType : public Type {
  public:
   Type* definition;
 
-  UserType(Type* init_definition);
+  UserType(Type* init_definition, Expr* init_initDefault = nilExpr);
+  bool isComplex(void);
 
   void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
+  void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
+  void codegenIORoutines(FILE* outfile);
+  void codegenDefaultFormat(FILE* outfile, bool isRead);
   int getTypes(Vec<BaseAST *> &asts);
 };
 

@@ -41,7 +41,7 @@ config const debug: boolean = false;
 
 -- help for coefficient arrays:
 
-type coeff = [0..3] float;
+type coeff: [0..3] float;
 
 
 -- domains:
