@@ -2400,3 +2400,16 @@ Modified files:
 	chapel/compiler/: chpl.g prelude.chpl 
 	chapel/test/parsing/jplevyak/: mat1.good vec.good 
 
+---------------------------------------------------------------------------
+
+04/06/02 11:26:41 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added support for value types.
+	Modified format of internal errors to work with gdb's compile mode
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp ast.h builtin_symbols.h chpl.g 
+	                  codegen.cpp misc.cpp prelude.chpl prelude.v 
+	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
+
