@@ -8705,3 +8705,24 @@ Added files:
 	                              readWriteString.good 
 	                              readWriteString.stdin 
 
+---------------------------------------------------------------------------
+
+10/06/04 17:34:27 -- bradc
+
+Log message:
+	A couple of housekeeping things while killing time for my ride
+	to come:
+	
+	- moved timers out of the compiler's internals and into the
+	  prelude as a library class (a poorly defined one, currently,
+	  but nonetheless... :)
+	
+	- added a lookupInternalType() method to the symboltable to
+	  avoid some dynamic casting.
+
+Modified files:
+	chapel/compiler/AST/: symtab.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symtab.h type.h 
+	chapel/compiler/parser/: prelude.chpl 
+
