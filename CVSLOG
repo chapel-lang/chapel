@@ -14380,3 +14380,16 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+01/13/05 10:40:17 -- deitz
+
+Log message:
+	Removed .future files for three cloning tests that are now working.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function3.future 
+	                                         test_clone_function4.future 
+	                                         test_typevar_function4.future 
+
