@@ -80,6 +80,48 @@ void SymScope::insert(Symbol* sym) {
 }
 
 
+/************* NOT USING, BUT LEAVING  --SJD 2/2/05
+void SymScope::remove(Symbol* sym) {
+
+
+  if (firstSym == lastSym) {
+    if (firstSym->pSym != sym) {
+      INT_FATAL(sym, "Symbol not found in scope from which deleted");
+    }
+    else {
+      firstSym = NULL;
+      lastSym = NULL;
+    }
+  }
+  else {
+    SymLink* tmp = firstSym;
+    while (tmp) {
+      if (tmp->pSym == sym) {
+	if (tmp == firstSym) {
+	  firstSym = dynamic_cast<SymLink*>(tmp->next);
+	  firstSym->prev = nilILink;
+	}
+	else if (tmp == lastSym) {
+	  lastSym = dynamic_cast<SymLink*>(tmp->prev);
+	  lastSym->next = nilILink;
+	}
+	else {
+	  tmp->prev->next = tmp->next;
+	  tmp->next->prev = tmp->prev;
+	}
+      }
+      else if (tmp == lastSym) {
+	INT_FATAL(sym, "Symbol not found in scope from which deleted");
+      }
+      else {
+	tmp = nextLink(SymLink, tmp);
+      }
+    }
+  }
+}
+************************/
+
+
 SymScope* SymScope::findEnclosingScopeType(scopeType t) {
   if (type == t) {
     return this;

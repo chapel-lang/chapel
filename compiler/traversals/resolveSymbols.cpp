@@ -16,11 +16,33 @@ void ResolveSymbols::preProcessExpr(Expr* expr) {
   if (MemberAccess* dot = dynamic_cast<MemberAccess*>(expr)) {
     if (UnresolvedSymbol* UnresolvedMember =
 	dynamic_cast<UnresolvedSymbol*>(dot->member)) {
-      Symbol* ResolvedMember;
-      if (resolve_symbol(UnresolvedMember, dot, ResolvedMember)) {
-	INT_FATAL(dot, "Major error resolving MemberAccess in ResolveSymbols");
+      if (RunAnalysis::runCount > 0) {
+	Symbol* ResolvedMember;
+	if (resolve_symbol(UnresolvedMember, dot, ResolvedMember)) {
+	  INT_FATAL(dot, "Major error resolving MemberAccess in ResolveSymbols");
+	}
+	dot->member = ResolvedMember;
       }
-      dot->member = ResolvedMember;
+      else {
+	if (Variable* var = dynamic_cast<Variable*>(dot->base)) {
+	  if (ClassType* class_type = dynamic_cast<ClassType*>(var->var->type)) {
+	    Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
+						     class_type->classScope);
+	    if (sym) {
+	      dot->member = sym;
+	    }
+	    else {
+	      INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+	    }
+	  }
+	  else {
+	    INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+	  }
+	}
+	else {
+	  INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+	}
+      }
     }
   }
 

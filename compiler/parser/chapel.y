@@ -380,6 +380,16 @@ fndecl:
     {
       $$ = Symboltable::finishFnDef($<fnsym>3, $5, $7, $8);
     }
+|
+  TFUNCTION identifier TDOT identifier
+    {
+      $<fnsym>$ =
+	Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
+    }
+                       TLP formals TRP fnrettype statement
+    {
+      $$ = Symboltable::finishFnDef($<fnsym>5, $7, $9, $10);
+    }
 ;
 
 

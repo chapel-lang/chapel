@@ -36,11 +36,22 @@ void Fixup::preProcessStmt(Stmt* stmt) {
     INT_FATAL(stmt, "NULL in Fixup()");
   }
   parent = tmp->symContext;
-  if (!verify) {
-    stmt->parentSymbol = parent;
+
+  // SJD: HACK for FnDefStmts of secondary methods
+  bool ignore = false;
+  if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(stmt)) {
+    if (!fn_def_stmt->fn->classBinding->isNull()) {
+      ignore = true;
+    }
   }
-  else if (stmt->parentSymbol != parent) {
-    INT_FATAL(stmt, "Error during verification fixup: statement's parent is incorrect");
+
+  if (!ignore) {
+    if (!verify) {
+      stmt->parentSymbol = parent;
+    }
+    else if (stmt->parentSymbol != parent) {
+      INT_FATAL(stmt, "Error during verification fixup: statement's parent is incorrect");
+    }
   }
   /*
   if (FnDefStmt* fstmt = dynamic_cast<FnDefStmt*>(stmt)) {

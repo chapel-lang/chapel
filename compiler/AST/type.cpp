@@ -726,6 +726,7 @@ void ClassType::addDefinition(Stmt* init_definition) {
   Stmt* tmp = init_definition;
   while (tmp && !tmp->isNull()) {
     if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
+      fn_def_stmt->fn->classBinding = this->name;
       embeddedFnSymbols = appendLink(embeddedFnSymbols, fn_def_stmt->fn);
     }
     else if (VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
@@ -822,7 +823,14 @@ void ClassType::traverseDefType(Traversal* traversal) {
     }
     // SJD) WANT: TRAVERSE_DEF_LS(embeddedFnSymbols, traversal, false);
   }
-  if (boundFnSymbols) TRAVERSE_DEF_LS(boundFnSymbols, traversal, false);
+  if (boundFnSymbols) {
+    FnSymbol* tmp = boundFnSymbols;
+    while (tmp && !tmp->isNull()) {
+      TRAVERSE(tmp->defPoint, traversal, false);
+      tmp = nextLink(FnSymbol, tmp);
+    }
+    // SJD) WANT: TRAVERSE_DEF_LS(boundFnSymbols, traversal, false);
+  }
   TRAVERSE_LS(constructor, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
   if (classScope) {
@@ -885,7 +893,8 @@ void ClassType::codegenDef(FILE* outfile) {
     name->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }
-  if (embeddedFnSymbols) embeddedFnSymbols->codegenDefList(codefile, "\n");
+  if (embeddedFnSymbols && !embeddedFnSymbols->isNull()) embeddedFnSymbols->codegenDefList(codefile, "\n");
+  if (boundFnSymbols && !boundFnSymbols->isNull()) boundFnSymbols->codegenDefList(codefile, "\n");
 }
 
 

@@ -2,6 +2,7 @@
 #include "expr.h"
 #include "findUnknownTypes.h"
 #include "stmt.h"
+#include "../passes/runAnalysis.h"
 
 
 FindUnknownTypes::FindUnknownTypes(void) {
@@ -19,6 +20,24 @@ void FindUnknownTypes::postProcessStmt(Stmt* stmt) {
 }
 
 
+class FindReturn : public Traversal {
+ public:
+  bool found;
+  FindReturn(void);
+  void preProcessStmt(Stmt* stmt);
+};
+
+FindReturn::FindReturn() {
+  found = false;
+}
+
+void FindReturn::preProcessStmt(Stmt* stmt) {
+  if (dynamic_cast<ReturnStmt*>(stmt)) {
+    found = true;
+  }
+}
+
+
 void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
   if (sym->type == dtUnknown) {
     sym->type = type_info(sym);
@@ -26,7 +45,19 @@ void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
   FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym);
   if (fnSym) {
     if (fnSym->retType == dtUnknown) {
-      fnSym->retType = return_type_info(fnSym);
+      if (RunAnalysis::runCount > 0) {
+	fnSym->retType = return_type_info(fnSym);
+      }
+      else {
+	FindReturn* traversal = new FindReturn();
+	TRAVERSE_LS(fnSym->body, traversal, true);
+	if (traversal->found) {
+	  INT_FATAL(sym, "Analysis required to determine return type");
+	}
+	else {
+	  fnSym->retType = dtVoid;
+	}
+      }
     }
   }
 }

@@ -389,28 +389,35 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 }
 
 
-FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-		   Stmt* init_body, bool init_exportMe) :
+FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
+		   Type* init_retType, Stmt* init_body,
+		   bool init_exportMe, Symbol* init_classBinding) :
   Symbol(SYMBOL_FN, init_name, init_retType),
   exportMe(init_exportMe),
   formals(init_formals),
   retType(init_retType),
   _this(0),
   body(init_body),
+  classBinding(init_classBinding),
   overload(nilFnSymbol)
 {
-  Symboltable::define(this);
+  if (!dynamic_cast<UnresolvedSymbol*>(classBinding)) {
+    Symboltable::define(this);
+  } // Don't want to define this if it's bound to a class
 }
 
  
-FnSymbol::FnSymbol(char* init_name) :
+FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
   Symbol(SYMBOL_FN, init_name, nilType),
   formals(nilSymbol),
   retType(nilType),
   _this(0),
-  body(nilStmt)
+  body(nilStmt),
+  classBinding(init_classBinding)
 {
-  Symboltable::define(this);
+  if (!dynamic_cast<UnresolvedSymbol*>(classBinding)) {
+    Symboltable::define(this);
+  } // Don't want to define this if it's bound to a class
 }
 
 
@@ -453,7 +460,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 //   else {
 //     return new FnSymbol(name);
 //   }
-  return new FnSymbol(name);
+  return new FnSymbol(name, classBinding);
 }
 
 

@@ -50,55 +50,66 @@ class InsertThis : public Traversal {
   void preProcessStmt(Stmt* stmt);
 };
 
+static void insert_this_helper(FnSymbol* functions, ClassType* class_type) {
+  while (functions && !functions->isNull()) {
+    SymScope* saveScope = Symboltable::getCurrentScope();
+    Symboltable::setCurrentScope(functions->paramScope);
+    Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);
+    Symboltable::setCurrentScope(saveScope);
+    this_insert = appendLink(this_insert, functions->formals);
+    functions->formals = this_insert;
+    functions->_this = this_insert;
+    functions = nextLink(FnSymbol, functions);
+  }
+}
+
 void InsertThis::preProcessStmt(Stmt* stmt) {
-  //  bool newscope = false;  SJD: Why is this stuff not necessary?
+  if (FnDefStmt* fds = dynamic_cast<FnDefStmt*>(stmt)) {
+    FnSymbol* fnSym = fds->fn;
+    if (!fnSym->classBinding->isNull() &&
+	dynamic_cast<UnresolvedSymbol*>(fnSym->classBinding)) {
+      Symbol* new_classBinding = 
+	Symboltable::lookup(fnSym->classBinding->name);
+      if (new_classBinding) {
+	if (TypeSymbol* new_classBindingTypeSymbol =
+	    dynamic_cast<TypeSymbol*>(new_classBinding)) {
+	  if (ClassType* new_classBindingType =
+	      dynamic_cast<ClassType*>(new_classBindingTypeSymbol->type)) {
+	    fnSym->classBinding = new_classBinding;
+	    new_classBindingType->boundFnSymbols =
+	      appendLink(new_classBindingType->boundFnSymbols, fnSym);
+	    Symboltable::defineInScope(fnSym, new_classBindingType->classScope);
+	    fnSym->paramScope->parent = new_classBindingType->classScope;
+
+	    /** Yuk, I have to move the statement
+	    fnSym->defPoint->extract();
+	    if (new_classBindingType->embeddedFnSymbols &&
+		!new_classBindingType->embeddedFnSymbols->isNull()) {
+	      new_classBindingType->embeddedFnSymbols->defPoint->insertAfter(fnSym->defPoint->copy());
+	    }
+	    else {
+	      INT_FATAL(stmt, "Doh! Need a primary method for now");
+	    }
+	    **/
+	  }
+	  else {
+	    USR_FATAL(fnSym, "Function is not bound to legal class");
+	  }
+	}
+	else {
+	  USR_FATAL(fnSym, "Function is not bound to legal class");
+	}
+      }
+      else {
+	USR_FATAL(fnSym, "Function is not bound to legal class");
+      }
+    }
+  }
 
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
-    if (ClassType* ctype = dynamic_cast<ClassType*>(tds->type)) {
-      FnSymbol* functions = ctype->embeddedFnSymbols;
-
-      while (functions) {
-	SymScope* saveScope = Symboltable::getCurrentScope();
-	/*
-	  if (functions->paramScope) {*/
-	  Symboltable::setCurrentScope(functions->paramScope);
-	  /*	}
-	else {
-	  newscope = true;
-	  Symboltable::pushScope(SCOPE_PARAM);
-	  }*/
-	Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", ctype);
-	/*
-	if (newscope) {
-	  functions->paramScope = Symboltable::popScope();
-	}
-	else {
-	*/
-	  Symboltable::setCurrentScope(saveScope);
-	  //	}
-	this_insert = appendLink(this_insert, functions->formals);
-	functions->formals = this_insert;
-	functions->_this = this_insert;
-	functions = nextLink(FnSymbol, functions);
-      }
-      /****
-      Stmt* stmt = ctype->definition;
-
-      while (stmt) {
-	Stmt* next = nextLink(Stmt, stmt);
-	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
-	  SymScope* saveScope = Symboltable::getCurrentScope();
-	  Symboltable::setCurrentScope(method->fn->paramScope);
-	  Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", ctype);
-	  this_insert->setDefPoint(method);
-	  Symboltable::setCurrentScope(saveScope);
-	  this_insert = appendLink(this_insert, method->fn->formals);
-	  method->fn->formals = this_insert;
-	  method->fn->_this = this_insert;
-	}
-	stmt = next;
-      }
-      ****/
+    if (ClassType* class_type = dynamic_cast<ClassType*>(tds->type)) {
+      insert_this_helper(class_type->embeddedFnSymbols, class_type);
+      insert_this_helper(class_type->boundFnSymbols, class_type);
     }
   }
 }
@@ -326,16 +337,16 @@ ApplyThis::ApplyThis(void) {
 }
 
 void ApplyThis::preProcessStmt(Stmt* stmt) {
-  if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
-    if (ClassType* ctype = dynamic_cast<ClassType*>(tds->type)) {
-      CurrentClass = ctype;
+  if (FnDefStmt* fds = dynamic_cast<FnDefStmt*>(stmt)) {
+    if (!fds->fn->classBinding->isNull()) {
+      CurrentClass = dynamic_cast<ClassType*>(fds->fn->classBinding->type);
     }
   }
 }
 
 void ApplyThis::postProcessStmt(Stmt* stmt) {
-  if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
-    if (dynamic_cast<ClassType*>(tds->type)) {
+  if (FnDefStmt* fds = dynamic_cast<FnDefStmt*>(stmt)) {
+    if (!fds->fn->classBinding->isNull()) {
       CurrentClass = NULL;
     }
   }

@@ -17,5 +17,10 @@ void CollectASTs::preProcessStmt(Stmt* stmt) {
 
 void collect_asts(Vec<BaseAST*>* asts, FnSymbol* function) {
   CollectASTs* traversal = new CollectASTs(asts);
+  Vec<Symbol*> syms;
+  collect_symbols(&syms, function);
+  forv_Vec(Symbol, sym, syms) {
+    traversal->asts->add(sym);
+  }
   TRAVERSE(function->body, traversal, true);
 }

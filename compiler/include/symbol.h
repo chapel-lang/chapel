@@ -132,13 +132,15 @@ class FnSymbol : public Symbol {
   Type* retType;
   Symbol* _this;
   Stmt* body;
+  Symbol* classBinding;
   SymScope* paramScope;
 
   FnSymbol* overload;
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-	   Stmt* init_body, bool init_exportMe=false);
-  FnSymbol(char* init_name);
+	   Stmt* init_body, bool init_exportMe=false,
+	   Symbol* init_classBinding = nilSymbol);
+  FnSymbol(char* init_name, Symbol* init_classBinding = nilSymbol);
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
 		 SymScope* init_paramScope, bool init_exportMe=false);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

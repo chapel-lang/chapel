@@ -23,6 +23,12 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
 	  glomstrings(4, "_", ctype->name->name, "_", functions->name);
 	functions = nextLink(FnSymbol, functions);
       }
+      functions = ctype->boundFnSymbols;
+      while (functions) {
+	functions->cname = 
+	  glomstrings(4, "_", ctype->name->name, "_", functions->name);
+	functions = nextLink(FnSymbol, functions);
+      }
     }
   }
 }
