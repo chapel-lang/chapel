@@ -7518,3 +7518,340 @@ Log message:
 Modified files:
 	chapel/test/flowanalysis/newast/: enumarray.good 
 
+---------------------------------------------------------------------------
+
+09/16/04 19:18:58 -- bradc
+
+Log message:
+	Big source code reorganization.  The main goal here
+	was to take all the source code that was getting
+	piled up in compiler/ and compiler/AST and tease it
+	out into subdirectories which are a little smaller
+	and more topically organized.  The directory structure
+	under compiler/ now looks like this (also reflected in
+	the DIRS file in that directory):
+	
+	----------------------------
+	
+	code directories:
+	
+	AST/            : high-level AST & symboltable classes
+	adt/            : abstract data types (vector, map, etc.)
+	analysis/       : low-level analysis code
+	  make_prims/   : makes prim_data stuff
+	backend/        : back-end stuff (codegen, dump, graph output)
+	include/        : public interface header files
+	main/           : main compiler control (main, passlist, etc.)
+	parser/         : new parser
+	passes/         : pass classes
+	traversals/     : traversal classes
+	util/           : utility code
+	vparser/        : bootstrap parser
+	  cast/         : cast stuff
+	
+	other directories:
+	
+	etc/            : miscellaneous non-code stuff (web, lowlevel cg help)
+	make/           : common makefile stuff
+	samples/        : sample codes  (perhaps outdated now that test is here?)
+	test/           : unit tests (perhaps should be moved under a source dir?)
+	
+	----------------------------
+	
+	I did my best to sort code into these categories,
+	but it could be that I got some wrong, or additional
+	directories should be added to reflect other
+	functions.
+	
+	Note that I implemented the movement of these files
+	by removing them from their old location and adding
+	them in their new location -- thus the history of
+	the file will be difficult to trace across this
+	boundary.  The alternative was to move internal CVS
+	files around, but this fairly terrifies me, so I'm
+	hoping we'll all be able to deal with the bother.
+	
+	Our stance for include files is as discussed on email:
+	header files that are part of a public interface should
+	go in the include/ directory.  Header files that are
+	part of a private interface can/should go into the
+	source directory directly.  I did a quick scan of all
+	header files, looking for those that only appeared in
+	a single directory's Makefile.cvs.depend file, and moved
+	those files into the directory in question.  There
+	weren't very many of these, as it turns out.  Could be
+	that if we looked more carefully, we'd find false
+	dependences that could allow more headers to be teased
+	into code directories.  This would be a good background
+	activity for all of us -- moving code into the most
+	appropriate place for it.
+	
+	The current assumption is that all source directories
+	for the compiler will be siblings under the compiler/
+	directory.  Subdirectories under those are used to
+	create dynamically-generated sources (like the make_prims
+	and cast stuff).
+	
+	To add new directories, take a look at something like
+	main (which is an exceptionally normal directory) and
+	copy its Makefile, Makefile.share, and Makefile.include
+	files, replacing "main" with your directory name
+	(capitalized appropriately -- emacs will do amazing
+	things here with a query replace).  Then go to the
+	top-level compiler/Makefile and search on main,
+	creating a new line for your new directory as required.
+	Everything should then fall out.
+	
+	This reorg is not perfect yet -- it compiles and tests,
+	and I need to get home so am checking in before people
+	come in to do development tomorrow to reflect the
+	structure.  However, some of the printing done by
+	the Makefiles comes out in an unintuitive order (when
+	there are sub-subdirectories), and I haven't had a
+	chance to check the dependences deeply yet (though I
+	believe I've got them approximately correct).  I'll
+	continue to work on improving this stuff as a background
+	activity or as others request it.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: .cvsignore Makefile Makefile.include 
+	                      Makefile.share stmt.cpp 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.head 
+	                       Makefile.compiler.subdirrules 
+	chapel/make/: Makefile.base Makefile.gnu 
+	chapel/test/: sub_test 
+	chapel/test/lowlevelcg/jplevyak/: Makefile.cg 
+Added files:
+	chapel/compiler/: DIRS 
+	chapel/compiler/adt/: FILES Makefile Makefile.include 
+	                      Makefile.share list.cpp map.cpp vec.cpp 
+	chapel/compiler/analysis/: FILES Makefile Makefile.include 
+	                           Makefile.share TODO analysis.cpp 
+	                           ast.cpp cdb.cpp cdb.h cfg.cpp cg.cpp 
+	                           clone.cpp dom.cpp fa.cpp 
+	                           fa_extras.cpp fun.cpp if1.cpp 
+	                           inline.cpp loop.cpp pattern.cpp 
+	                           pdb.cpp pnode.cpp prim.cpp 
+	                           prim_data.cpp prim_data.dat 
+	                           prim_data.h prim_data_incs.cpp 
+	                           prim_data_incs.h region.cpp region.h 
+	                           ssu.cpp ssu.h ssu_extra.cpp sym.cpp 
+	                           var.cpp 
+	chapel/compiler/analysis/make_prims/: .cvsignore Makefile 
+	                                      make_prims.cpp 
+	                                      make_prims.g 
+	chapel/compiler/backend/: FILES Makefile Makefile.include 
+	                          Makefile.share beautify.cpp 
+	                          codegen.cpp dump.cpp graph.cpp 
+	chapel/compiler/etc/: c_runtime.h valgrind.suppressions 
+	chapel/compiler/etc/www/: bullet.gif minus.gif mktree.css 
+	                          mktree.js plus.gif 
+	chapel/compiler/include/: analysis.h ast.h ast_kinds.h baseAST.h 
+	                          beautify.h builtin.h builtin_symbols.h 
+	                          callbacks.h cg.h checkTypeInfo.h 
+	                          chplalloc.h chpltypes.h clone.h code.h 
+	                          codegen.h createAST.h dom.h driver.h 
+	                          dump.h expr.h extern.h fa.h files.h 
+	                          findUnknownTypes.h fun.h getstuff.h 
+	                          geysa.h grammar.h graph.h if1.h 
+	                          inline.h link.h list.h loc.h log.h 
+	                          loop.h map.h misc.h mysystem.h nils.h 
+	                          num.h parse.h parse_ast.h 
+	                          parse_structs.h pass.h pattern.h pdb.h 
+	                          pnode.h prim.h printAST.h 
+	                          printSymtab.h runAnalysis.h scope.h 
+	                          setupStmtLinks.h stmt.h stringutil.h 
+	                          sym.h symbol.h symscope.h symtab.h 
+	                          testGetStuff.h traversal.h type.h 
+	                          var.h vec.h verifyASTType.h yy.h 
+	chapel/compiler/main/: FILES Makefile Makefile.include 
+	                       Makefile.share arg.cpp arg.h 
+	                       createAST.cpp driver.cpp pass.cpp 
+	                       passlist.cpp passlist.h version.cpp 
+	                       version.h version_num.h 
+	chapel/compiler/parser/: .cvsignore Makefile Makefile.include 
+	                         Makefile.share chapel.lex chapel.y 
+	                         internal_prelude.chpl lexyacc.cpp 
+	                         lexyacc.h prelude.chpl yy.c 
+	chapel/compiler/passes/: Makefile Makefile.include 
+	                         Makefile.share printAST.cpp 
+	                         printSymtab.cpp runAnalysis.cpp 
+	chapel/compiler/test/: beautify.cpp files.cpp list.cpp map.cpp 
+	                       misc.cpp mysystem.cpp stringutil.cpp 
+	                       vec.cpp 
+	chapel/compiler/traversals/: Makefile Makefile.include 
+	                             Makefile.share checkTypeInfo.cpp 
+	                             findUnknownTypes.cpp getstuff.cpp 
+	                             setupStmtLinks.cpp testGetStuff.cpp 
+	                             traversal.cpp verifyASTType.cpp 
+	chapel/compiler/util/: FILES Makefile Makefile.include 
+	                       Makefile.share files.cpp log.cpp misc.cpp 
+	                       mysystem.cpp stringutil.cpp 
+	chapel/compiler/vparser/: FILES Makefile Makefile.include 
+	                          Makefile.share ast_cf.cpp builtin.cpp 
+	                          c.g cast_code.cpp grammar.cpp 
+	                          parse.cpp parse_ast.cpp parse_incs.cpp 
+	                          prelude.v scope.cpp v.g 
+	                          v.g.d_parser.cpp 
+	chapel/compiler/vparser/cast/: .cvsignore Makefile cast.cpp 
+Removed files:
+	chapel/compiler/: CHANGES FILES Makefile.cg TODO analysis.cpp 
+	                  analysis.h arg.cpp arg.h ast.cpp ast.h 
+	                  ast_cf.cpp ast_kinds.h beautify.cpp beautify.h 
+	                  builtin.cpp builtin.h builtin_symbols.h 
+	                  bullet.gif c.g c_runtime.h callbacks.h cdb.cpp 
+	                  cdb.h cfg.cpp cg.cpp cg.h chplalloc.h 
+	                  chpltypes.h clone.cpp clone.h code.h 
+	                  codegen.cpp codegen.h createAST.cpp 
+	                  createAST.h datatype.cpp datatype.h dom.cpp 
+	                  dom.h driver.cpp driver.h dump.cpp dump.h 
+	                  extern.h fa.cpp fa.h fa_extras.cpp files.cpp 
+	                  files.h fun.cpp fun.h geysa.h grammar.cpp 
+	                  grammar.h graph.cpp graph.h if1.cpp if1.h 
+	                  inline.cpp inline.h list.cpp list.h log.cpp 
+	                  log.h loop.cpp loop.h map.cpp map.h minus.gif 
+	                  misc.cpp misc.h mktree.css mktree.js 
+	                  mysystem.cpp mysystem.h num.h parse.cpp 
+	                  parse.h parse_ast.cpp parse_ast.h 
+	                  parse_incs.cpp parse_structs.h pass.cpp pass.h 
+	                  passlist.cpp passlist.h pattern.cpp pattern.h 
+	                  pdb.cpp pdb.h plus.gif pnode.cpp pnode.h 
+	                  prelude.v prim.cpp prim.h prim_data.dat 
+	                  prim_data_incs.cpp prim_data_incs.h region.cpp 
+	                  region.h runAnalysis.cpp runAnalysis.h 
+	                  scope.cpp scope.h ssu.cpp ssu.h ssu_extra.cpp 
+	                  stringutil.cpp stringutil.h sym.cpp sym.h v.g 
+	                  valgrind.suppressions var.cpp var.h vec.cpp 
+	                  vec.h version.cpp version.h version_num.h 
+	chapel/compiler/AST/: baseAST.h chapel.lex chapel.y 
+	                      checkTypeInfo.cpp checkTypeInfo.h expr.h 
+	                      findUnknownTypes.cpp findUnknownTypes.h 
+	                      getstuff.cpp getstuff.h 
+	                      internal_prelude.chpl lexyacc.h link.h 
+	                      loc.h main.cpp nils.h prelude.chpl 
+	                      printAST.cpp printAST.h printSymtab.cpp 
+	                      printSymtab.h setupStmtLinks.cpp 
+	                      setupStmtLinks.h stmt.h stringutil.cpp 
+	                      stringutil.h symbol.h symscope.h symtab.h 
+	                      testGetStuff.cpp testGetStuff.h 
+	                      traversal.cpp traversal.h type.h 
+	                      verifyASTType.cpp verifyASTType.h yy.c 
+	                      yy.h 
+	chapel/third-party/boehmgc/: gc6.2.tar.gz 
+	chapel/third-party/boehmgc/gc6.2/: AmigaOS.c BCC_MAKEFILE 
+	                                   EMX_MAKEFILE MacOS.c 
+	                                   MacProjects.sit.hqx 
+	                                   Makefile.DLLs Makefile.am 
+	                                   Makefile.direct Makefile.dj 
+	                                   Makefile.in NT_MAKEFILE 
+	                                   NT_THREADS_MAKEFILE 
+	                                   OS2_MAKEFILE PCR-Makefile 
+	                                   README.QUICK SMakefile.amiga 
+	                                   WCC_MAKEFILE acinclude.m4 
+	                                   aclocal.m4 add_gc_prefix.c 
+	                                   aix_irix_threads.c allchblk.c 
+	                                   alloc.c alpha_mach_dep.S 
+	                                   backgraph.c base_lib 
+	                                   blacklst.c callprocs 
+	                                   checksums.c config.guess 
+	                                   config.sub configure 
+	                                   configure.host configure.in 
+	                                   darwin_stop_world.c dbg_mlc.c 
+	                                   depcomp digimars.mak 
+	                                   dyn_load.c finalize.c gc.mak 
+	                                   gc_cpp.cc gc_cpp.cpp 
+	                                   gc_dlopen.c gcc_support.c 
+	                                   gcj_mlc.c gcname.c headers.c 
+	                                   hpux_test_and_clear.s 
+	                                   ia64_save_regs_in_stack.s 
+	                                   if_mach.c if_not_there.c 
+	                                   install-sh libtool.m4 
+	                                   ltconfig ltmain.sh mach_dep.c 
+	                                   malloc.c mallocx.c mark.c 
+	                                   mark_rts.c 
+	                                   mips_sgi_mach_dep.s 
+	                                   mips_ultrix_mach_dep.s misc.c 
+	                                   missing mkinstalldirs 
+	                                   new_hblk.c obj_map.c os_dep.c 
+	                                   pc_excludes pcr_interface.c 
+	                                   powerpc_darwin_mach_dep.s 
+	                                   pthread_stop_world.c 
+	                                   pthread_support.c ptr_chck.c 
+	                                   real_malloc.c reclaim.c 
+	                                   rs6000_mach_dep.s setjmp_t.c 
+	                                   solaris_pthreads.c 
+	                                   solaris_threads.c 
+	                                   sparc_mach_dep.S 
+	                                   sparc_netbsd_mach_dep.s 
+	                                   sparc_sunos4_mach_dep.s 
+	                                   specific.c stubborn.c 
+	                                   threadlibs.c typd_mlc.c 
+	                                   version.h win32_threads.c 
+	chapel/third-party/boehmgc/gc6.2/Mac_files/: MacOS_Test_config.h 
+	                                             MacOS_config.h 
+	                                             dataend.c 
+	                                             datastart.c 
+	chapel/third-party/boehmgc/gc6.2/cord/: cordbscs.c cordprnt.c 
+	                                        cordtest.c cordxtra.c 
+	                                        de.c de_cmds.h 
+	                                        de_win.ICO de_win.RC 
+	                                        de_win.c de_win.h 
+	chapel/third-party/boehmgc/gc6.2/doc/: Makefile.am Makefile.in 
+	                                       README README.DGUX386 
+	                                       README.Mac README.MacOSX 
+	                                       README.OS2 README.amiga 
+	                                       README.arm.cross 
+	                                       README.autoconf 
+	                                       README.changes 
+	                                       README.contributors 
+	                                       README.cords 
+	                                       README.darwin README.dj 
+	                                       README.environment 
+	                                       README.ews4800 README.hp 
+	                                       README.linux 
+	                                       README.macros 
+	                                       README.rs6000 README.sgi 
+	                                       README.solaris2 
+	                                       README.uts README.win32 
+	                                       barrett_diagram 
+	                                       debugging.html gc.man 
+	                                       gcdescr.html 
+	                                       gcinterface.html 
+	                                       leak.html scale.html 
+	                                       tree.html 
+	chapel/third-party/boehmgc/gc6.2/include/: Makefile.am 
+	                                           Makefile.in cord.h 
+	                                           ec.h gc.h gc_alloc.h 
+	                                           gc_allocator.h 
+	                                           gc_amiga_redirects.h 
+	                                           gc_backptr.h 
+	                                           gc_config_macros.h 
+	                                           gc_cpp.h gc_gcj.h 
+	                                           gc_inl.h gc_inline.h 
+	                                           gc_local_alloc.h 
+	                                           gc_mark.h 
+	                                           gc_pthread_redirects.h 
+	                                           gc_typed.h javaxfc.h 
+	                                           leak_detector.h 
+	                                           new_gc_alloc.h 
+	                                           weakpointer.h 
+	chapel/third-party/boehmgc/gc6.2/include/private/: cord_pos.h 
+	                                                   darwin_semaphore.h 
+	                                                   darwin_stop_world.h 
+	                                                   dbg_mlc.h 
+	                                                   gc_hdrs.h 
+	                                                   gc_locks.h 
+	                                                   gc_pmark.h 
+	                                                   gc_priv.h 
+	                                                   gcconfig.h 
+	                                                   pthread_stop_world.h 
+	                                                   pthread_support.h 
+	                                                   solaris_threads.h 
+	                                                   specific.h 
+	chapel/third-party/boehmgc/gc6.2/tests/: leak_test.c test.c 
+	                                         test_cpp.cc 
+	                                         thread_leak_test.c 
+	                                         trace_test.c 
+
