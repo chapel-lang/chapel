@@ -295,12 +295,13 @@ if1_if(IF1 *p, Code **c, Code *ifcond, Sym *ifcondvar,
   if1_gen(p, c, ifif);
   if (if_var)
     if1_move(p, c, if_var, r, ast);
-  if (ifthen) {
+  if (ifthen || then_var) {
     if_goto = if1_goto(p, c);
     if_goto->ast = ast;
     if1_if_label_false(p, if_code, if1_label(p, c, ast), ast);
     if1_gen(p, c, ifthen);
-    if1_move(p, c, then_var, r, ast);
+    if (then_var)
+      if1_move(p, c, then_var, r, ast);
     if1_set_goto(p, if_goto, if1_label(p, c, ast));
   } else
     if1_if_label_false(p, if_code, if1_label(p, c, ast), ast);

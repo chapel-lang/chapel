@@ -1079,10 +1079,12 @@ gen_if1(IF1 *i, AST *ast) {
       ast->rval = ast->sym; 
       ast->rval->pattern = 1;
       break;
+    case AST_qualified_ident:
     case AST_const:
     case AST_arg: 
     case AST_vararg: 
-      ast->rval = ast->sym; break;
+      ast->rval = ast->sym;
+      break;
     case AST_list:
     case AST_vector:
     case AST_object:
@@ -1094,9 +1096,6 @@ gen_if1(IF1 *i, AST *ast) {
 	if1_gen(i, &ast->code, a->code);
       if (ast->n)
 	ast->rval = ast->last()->rval; 
-      break;
-    case AST_qualified_ident:
-      ast->rval = ast->sym; 
       break;
     case AST_indices:
       forv_AST(a, *ast)

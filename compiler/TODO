@@ -74,3 +74,6 @@
 - fix A(i,j) = (if (i==j) 1 else 0)
 
 - handle bulltin constants so that they default to the default size
+
+- debug type inference when dead code elimination is off.... or remove
+  the flag
