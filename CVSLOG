@@ -20815,3 +20815,15 @@ Added files:
 	                           test_array_init3.chpl 
 	                           test_array_init3.good 
 
+---------------------------------------------------------------------------
+
+03/22/05 16:28:34 -- deitz
+
+Log message:
+	Added two more variations of Jacobi.  One fails in analysis.
+
+Added files:
+	chapel/test/arrays/deitz/: jacobi2.chpl jacobi2.good 
+	                           jacobi3.chpl jacobi3.future 
+	                           jacobi3.good 
+
