@@ -2342,3 +2342,14 @@ Removed files:
 	                                    arrinit.typep.typeind.chk 
 	                                    arrinit.typep.typepr.chk 
 
+---------------------------------------------------------------------------
+
+04/05/27 16:04:20 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	fix bug with handling of references
+	minor cleanups
+
+Modified files:
+	chapel/compiler/: TODO fa.cpp 
+
