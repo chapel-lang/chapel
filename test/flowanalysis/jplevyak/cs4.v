@@ -1,0 +1,11 @@
+class C { c:; };
+class D { d:; };
+makeC() : { c : new C; c };
+makeD() : { d : new D; d };
+c1 : makeC(); c1.c = 1;
+d1 : makeD(); d1.d = c1;
+c2 : makeC(); c2.c = 2.0;
+d2 : makeD(); d2.d = c2;
+d3 : makeD(); d3.d = 3.0;
+d4 : makeD(); d4.d = 4.0;
+print(d1.d.c + d2.d.c + d3.d + d4.d);
