@@ -97,6 +97,7 @@ CreationSet::CreationSet(CreationSet *cs) {
   atype = NULL;
   forv_AVar(v, cs->vars) {
     AVar *iv = unique_AVar(v->var, this);
+    vars.add(iv);
     if (iv->var->sym->name)
       var_map.put(iv->var->sym->name, iv);
   }

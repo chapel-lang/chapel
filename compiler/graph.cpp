@@ -69,7 +69,7 @@ graph_node(FILE *fp, void *id, char *label, int options = 0) {
       fprintf(fp, "}\n");
       break;
     case GraphViz:
-      fprintf(fp, "n%x [label=\"%s\"", id, label);
+      fprintf(fp, "n%p [label=\"%s\"", id, label);
       if (options & G_BOX)
 	fprintf(fp, " shape=box");
       if (options & G_BLUE)
@@ -96,7 +96,7 @@ graph_edge(FILE *fp, void *a, void *b, int options = 0) {
       fprintf(fp, "}\n");
       break;
     case GraphViz:
-      fprintf(fp, "n%x -> n%x [", a, b);
+      fprintf(fp, "n%p -> n%p [", a, b);
       if (options & G_BLUE)
 	fprintf(fp, " color=blue");
       if (options & G_GREEN)
