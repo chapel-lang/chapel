@@ -58,6 +58,7 @@ reduce          return TREDUCE;
 ref             return TREF;
 return          return TRETURN;
 static          return TSTATIC;
+then            return TTHEN;
 type            return TTYPE;
 val             return TVAL;
 var             return TVAR;

@@ -50,7 +50,6 @@
 %token TCONST
 %token TDO
 %token TDOMAIN
-%token TELSE
 %token TENUM
 %token TFOR
 %token TFORALL
@@ -64,6 +63,7 @@
 %token TREF
 %token TRETURN
 %token TSTATIC
+%token TTHEN
 %token TTYPE
 %token TVAL
 %token TVAR
@@ -135,6 +135,9 @@
 %right TUPLUS TUMINUS TREDUCE TBNOT
 %right TEXP
 %left TCOLON
+
+%left TNOELSE
+%left TELSE
 
 %% 
 
@@ -304,8 +307,6 @@ formals:
 fnrettype:
   /* empty */
     { $$ = dtVoid; }
-| TCOLON
-    { $$ = dtUnknown; }
 | TCOLON type
     { $$ = $2; }
 ;
@@ -469,10 +470,14 @@ loop:
 
 
 conditional:
-  TIF expr statement
+  TIF expr statement %prec TNOELSE
     { $$ = new CondStmt($2, $3); }
+| TIF expr TTHEN statement %prec TNOELSE
+    { $$ = new CondStmt($2, $4); }
 | TIF expr statement TELSE statement
     { $$ = new CondStmt($2, $3, $5); }
+| TIF expr TTHEN statement TELSE statement
+    { $$ = new CondStmt($2, $4, $6); }
 ;
 
 

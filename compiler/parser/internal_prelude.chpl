@@ -16,5 +16,5 @@ class Domain {
 class Tuple {
 }
 
-function malloc(size: integer): {
+function malloc(size: integer) {
 }

@@ -1,0 +1,15 @@
+#!/opt/cpkg/v3/all/bin/perl
+
+@fnames = `find \* | grep \'\\\.good\$\'`;
+
+foreach $fname (@fnames) {
+  chomp $fname;
+  print "\nFILE: $fname\n\n";
+  @prog = `cat $fname`;
+  $lineno = 1;
+  foreach $line (@prog) {
+    printf("$fname %5d: ", $lineno);
+    print "$line";
+    $lineno++;
+  }
+}
