@@ -4,8 +4,6 @@
 #ifndef _map_H_
 #define _map_H_
 
-#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

@@ -447,8 +447,8 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
     Sym *sym = 0;
     forv_CreationSet(cs, *eqcss) if (cs) {
       if (!sym)
-	sym = cs->sym;
-      else if (sym != cs->sym)
+	sym = cs->sym->type;
+      else if (sym != cs->sym->type)
 	sym = (Sym *)-1;
     }
     // same sym
@@ -471,8 +471,8 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
     Sym *sym = 0;
     forv_CreationSet(cs, *eqcss) if (cs) {
       if (!sym)
-	sym = cs->sym;
-      else if (sym != cs->sym)
+	sym = cs->sym->type;
+      else if (sym != cs->sym->type)
 	sym = (Sym *)-1;
     }
     // same sym
@@ -496,9 +496,9 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	s->incomplete = 1;
 	forv_CreationSet(cs, *eqcss) if (cs) {
 	  if (!name)
-	    name = cs->sym->name;
+	    name = cs->sym->type->name;
 	  else
-	    if (cs->sym->name != name)
+	    if (cs->sym->type->name != name)
 	      name = BAD_NAME;
 	  if (cs->defs.n != 1)
 	    ast = BAD_AST;
@@ -539,9 +539,9 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	  forv_CreationSet(cs, *eqcss) if (cs) {
 	    cs->type = s;
 	    if (!name)
-	      name = cs->sym->name;
+	      name = cs->sym->type->name;
 	    else
-	      if (cs->sym->name != name)
+	      if (cs->sym->type->name != name)
 		name = BAD_NAME;
 	  }
 	  if (name && name != BAD_NAME)
@@ -614,7 +614,7 @@ resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	  break;
 	case Type_LUB: {
 	  forv_CreationSet(cs, *eqcss) if (cs)
-	    sym->has.set_add(cs->sym);
+	    sym->has.set_add(cs->sym->type);
 	  sym->has.set_to_vec();
 	  qsort(sym->has.v, sym->has.n, sizeof(sym->has.v[0]), compar_syms);
 	  sym = if1->callback->make_LUB_type(sym);

@@ -1,13 +1,13 @@
 function __init const.v:1
 globals
-operator::a(prelude.v:0) ( "1" )
-operator::a(prelude.v:0) ( "1" )
-operator::b(prelude.v:0) ( "1" )
+operator::a(prelude.v:0) ( int32 )
+operator::a(prelude.v:0) ( int32 )
+operator::b(prelude.v:0) ( int32 )
 operator::b(prelude.v:0) ( int32 )
 print::a(prelude.v:0) ( int32 )
 system::__init(prelude.v:0) ( __init )
 system::null(prelude.v:0) ( null )
 user::__init(const.v:1) ( __init (const.v:1) )
-user::a(const.v:1) ( "1" )
+user::a(const.v:1) ( int32 )
 user::b(const.v:2) ( int32 )
 user::c(const.v:3) ( int32 )

@@ -1,8 +1,6 @@
 #ifndef _fa_H_
 #define _fa_H_
 
-#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
-#endif
 #include <sys/types.h>
 #include "map.h"
 #include "sym.h"

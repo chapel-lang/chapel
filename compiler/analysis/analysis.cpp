@@ -1227,6 +1227,38 @@ undef_or_fn_expr(Expr *ast) {
   return (astType_t)0;
 }
 
+static Sym *
+gen_destruct_sym(Tuple *e, AST *ast) {
+  Sym *s = new_sym();
+  s->is_pattern = 1;
+  s->must_implement_and_specialize(sym_tuple);
+  Vec<Expr *> exprs;
+  getLinkElements(exprs, e->exprs);
+  forv_Expr(ee, exprs) {
+    if (ee->astType == EXPR_TUPLE)
+      s->has.add(gen_destruct_sym(dynamic_cast<Tuple*>(ee), ast));
+    else {
+      if (ee->astType != EXPR_VARIABLE)
+	show_error("non-variable or tuple in destructuring assignment", ast);
+      else {
+	s->has.add(dynamic_cast<Variable*>(ee)->var->asymbol->sym);
+      }
+    }
+  }
+  return s;
+}
+
+static int
+gen_destruct(Tuple *left, Expr *right, Expr *base_ast) {
+  AInfo *ast = base_ast->ainfo;
+  ast->rval = gen_destruct_sym(left, ast);
+  ast->rval->ast = ast;
+  if1_gen(if1, &ast->code, right->ainfo->code);
+  Code *s = if1_send(if1, &ast->code, 2, 1, sym_destruct, right->ainfo->rval, ast->rval);
+  s->ast = ast;
+  return 0;
+}
+
 static int
 gen_if1(BaseAST *ast, BaseAST *parent = 0) {
   // bottom's up
@@ -1416,6 +1448,11 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
     }
     case EXPR_ASSIGNOP: {
       AssignOp *s = dynamic_cast<AssignOp*>(ast);
+      if (s->left->astType == EXPR_TUPLE) {
+	if (gen_destruct(dynamic_cast<Tuple*>(s->left), s->right, s) < 0)
+	  return -1;
+	break;
+      }
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       s->ainfo->sym = s->left->ainfo->sym;

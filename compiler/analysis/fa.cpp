@@ -1925,7 +1925,7 @@ log_var_types(Var *v, Fun *f) {
   log(LOG_TEST_FA, "( ");
   Vec<Sym *> syms;
   forv_CreationSet(cs, css) if (cs)
-    syms.set_add(cs->sym);
+    syms.set_add(cs->sym->type);
   syms.set_to_vec();
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_syms);
   forv_Sym(s, syms) {
