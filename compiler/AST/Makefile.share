@@ -1,4 +1,5 @@
 CXX_SRCS = \
+	baseAST.cpp \
 	expr.cpp \
 	findUnknownTypes.cpp \
 	link.cpp \
@@ -8,6 +9,7 @@ CXX_SRCS = \
         symtab.cpp \
 	traversal.cpp \
 	type.cpp \
+	verifyASTType.cpp
 
 C_SRCS = \
 	yy.c \

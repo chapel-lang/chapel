@@ -25,7 +25,8 @@ Symbol* pstLocale;
 Symbol* pstUnknown;
 
 
-Type::Type(void) :
+Type::Type(astType_t astType) :
+  BaseAST(astType),
   name(NULL)
 {}
 
@@ -100,8 +101,9 @@ void Type::codegenDefaultFormat(FILE* outfile) {
 }
 
 
-NullType::NullType(void) {
-}
+NullType::NullType(void) :
+  Type(TYPE_NULL)
+{}
 
 bool NullType::isNull(void) {
   return true;
@@ -109,6 +111,7 @@ bool NullType::isNull(void) {
 
 
 EnumType::EnumType(EnumSymbol* init_valList) :
+  Type(TYPE_ENUM),
   valList(init_valList)
 {
   Symbol* val = valList;
@@ -203,6 +206,7 @@ void EnumType::codegenDefaultFormat(FILE* outfile) {
 
 
 DomainType::DomainType(int init_numdims) :
+  Type(TYPE_DOMAIN),
   numdims(init_numdims)
 {}
 
@@ -229,8 +233,10 @@ void DomainType::codegen(FILE* outfile) {
 
 
 SubDomainType::SubDomainType(Symbol* init_parent) :
+  DomainType(),
   parent(init_parent)
 {
+  astType = TYPE_SUBDOMAIN;
   numdims = 777; // BLC -- fill in correctly!
 }
 
@@ -244,7 +250,9 @@ void SubDomainType::print(FILE* outfile) {
 
 IndexType::IndexType(int init_numdims) :
   DomainType(init_numdims)
-{}
+{
+  astType = TYPE_INDEX;
+}
 
 
 void IndexType::print(FILE* outfile) {
@@ -261,6 +269,7 @@ void IndexType::print(FILE* outfile) {
 SubIndexType::SubIndexType(Symbol* init_parent) :
   SubDomainType(init_parent)
 {
+  astType = TYPE_SUBINDEX;
   numdims = 777; // BLC -- fill in correctly!
 }
 
@@ -273,6 +282,7 @@ void SubIndexType::print(FILE* outfile) {
 
 
 ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
+  Type(TYPE_ARRAY),
   domain(init_domain),
   elementType(init_elementType)
 {}
@@ -310,6 +320,7 @@ void ArrayType::codegenDefaultFormat(FILE* outfile) {
 
 
 UserType::UserType(Type* init_definition) :
+  Type(TYPE_USER),
   definition(init_definition)
 {}
 
@@ -328,6 +339,7 @@ void UserType::printDef(FILE* outfile) {
 
 
 ClassType::ClassType(ClassType* init_parentClass) :
+  Type(TYPE_CLASS),
   parentClass(init_parentClass)
 {}
 
@@ -338,7 +350,7 @@ void ClassType::print(FILE* outfile) {
 
 
 static void newType(char* name, Type** dtHandle, Symbol** symHandle) {
-  *dtHandle = new Type();
+  *dtHandle = new Type(TYPE_BUILTIN);
   *symHandle = new TypeSymbol(name, *dtHandle);
   (*dtHandle)->addName(*symHandle);
 }

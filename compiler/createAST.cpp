@@ -9,6 +9,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
+//#include "verifyASTType.h"
 #include "yy.h"
 
 
@@ -80,6 +81,7 @@ static Stmt* createInitFn(Stmt* program) {
 
   //  program->traverse(new FindUnknownTypes());
   //  program->traverse(new PrintStmts());
+  //  program->traverse(new VerifyASTType());
   /*
   Vec<Stmt*> stmts;
   getLinkElements(stmts, program);

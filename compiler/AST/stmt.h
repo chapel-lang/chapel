@@ -2,15 +2,17 @@
 #define _STMT_H_
 
 #include <stdio.h>
-#include "link.h"
+#include "baseAST.h"
 #include "symbol.h"
 
 class Expr;
 class AInfo;
 
-class Stmt : public ILink {
+class Stmt : public BaseAST {
   AInfo *ainfo;
  public:
+  Stmt(astType_t astType);
+
   void traverse(Traversal* traversal);
   virtual void traverseStmt(Traversal* traversal);
 
@@ -21,6 +23,7 @@ class Stmt : public ILink {
 
 class NullStmt : public Stmt {
  public:
+  NullStmt(void);
 
   bool isNull(void);
   

@@ -7,11 +7,11 @@ class Symbol;
 class EnumSymbol;
 class Expr;
 
-class Type : public ILink {
+class Type : public BaseAST {
  public:
   Symbol* name;
 
-  Type();
+  Type(astType_t astType);
   void addName(Symbol* newname);
 
   void traverse(Traversal* traversal);

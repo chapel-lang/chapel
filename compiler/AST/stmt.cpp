@@ -7,6 +7,11 @@
 #include "yy.h"
 
 
+Stmt::Stmt(astType_t astType) :
+  BaseAST(astType)
+{}
+
+
 void Stmt::traverse(Traversal* traversal) {
   traversal->preProcessStmt(this);
   if (traversal->exploreStmts) {
@@ -37,6 +42,11 @@ void Stmt::codegenVarDef(FILE* outfile) {
 }
 
 
+NullStmt::NullStmt(void) :
+  Stmt(STMT_NULL)
+{}
+
+
 bool NullStmt::isNull(void) {
   return true;
 }
@@ -52,6 +62,7 @@ void NullStmt::codegen(FILE* outfile) {
 
 
 VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
+  Stmt(STMT_VARDEF),
   var(init_var),
   init(init_init) 
 {}
@@ -182,6 +193,7 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
 
 
 TypeDefStmt::TypeDefStmt(Type* init_type) :
+  Stmt(STMT_TYPEDEF),
   type(init_type)
 {}
 
@@ -211,6 +223,7 @@ void TypeDefStmt::codegen(FILE* outfile) {
 
 
 FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
+  Stmt(STMT_FNDEF),
   fn(init_fn)
 {}
 
@@ -256,6 +269,7 @@ void FnDefStmt::codegen(FILE* outfile) {
 
 
 ExprStmt::ExprStmt(Expr* init_expr) :
+  Stmt(STMT_EXPR),
   expr(init_expr) 
 {}
 
@@ -279,7 +293,9 @@ void ExprStmt::codegen(FILE* outfile) {
 
 ReturnStmt::ReturnStmt(Expr* retExpr) :
   ExprStmt(retExpr)
-{}
+{
+  astType = STMT_RETURN;
+}
 
 
 void ReturnStmt::print(FILE* outfile) {
@@ -294,6 +310,7 @@ void ReturnStmt::print(FILE* outfile) {
 
 
 BlockStmt::BlockStmt(Stmt* init_body) :
+  Stmt(STMT_BLOCK),
   body(init_body)
 {}
 
@@ -325,7 +342,9 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
   : BlockStmt(init_body), 
     isWhileDo(init_whileDo), 
     condition(init_cond) 
-{}
+{
+  astType = STMT_WHILELOOP;
+}
 
 
 void WhileLoopStmt::traverseStmt(Traversal* traversal) {
@@ -382,7 +401,9 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
     forall(init_forall),
     index(init_index),
     domain(init_domain) 
-{}
+{
+  astType = STMT_FORLOOP;
+}
 
 
 void ForLoopStmt::traverseStmt(Traversal* traversal) {
@@ -450,6 +471,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
 
 CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt, 
 		   Stmt* init_elseStmt) :
+  Stmt(STMT_COND),
   condExpr(init_condExpr),
   thenStmt(init_thenStmt),
   elseStmt(init_elseStmt)

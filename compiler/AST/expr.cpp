@@ -56,7 +56,8 @@ static char* cGetsOp[NUM_GETS_OPS] = {
 };
 
 
-Expr::Expr(void) :
+Expr::Expr(astType_t astType) :
+  BaseAST(astType),
   stmt(NULL),
   parent(NULL)
 {}
@@ -102,6 +103,11 @@ int Expr::rank(void) {
 }
 
 
+NullExpr::NullExpr(void) :
+  Expr(EXPR_NULL)
+{}
+
+
 bool NullExpr::isNull(void) {
   return true;
 }
@@ -117,7 +123,8 @@ void NullExpr::codegen(FILE* outfile) {
 }
 
 
-Literal::Literal(char* init_str) :
+Literal::Literal(astType_t astType, char* init_str) :
+  Expr(astType),
   str(copystring(init_str))
 {}
 
@@ -137,7 +144,7 @@ void Literal::codegen(FILE* outfile) {
 
 
 IntLiteral::IntLiteral(char* init_str, int init_val) :
-  Literal(init_str),
+  Literal(EXPR_INTLITERAL, init_str),
   val(init_val) 
 {}
 
@@ -168,7 +175,7 @@ void IntLiteral::codegen(FILE* outfile) {
 
 
 FloatLiteral::FloatLiteral(char* init_str, double init_val) :
-  Literal(init_str),
+  Literal(EXPR_FLOATLITERAL, init_str),
   val(init_val) 
 {}
 
@@ -181,7 +188,7 @@ void FloatLiteral::print(FILE* outfile) {
 
 
 StringLiteral::StringLiteral(char* init_val) :
-  Literal(init_val)
+  Literal(EXPR_STRINGLITERAL, init_val)
 {}
 
 
@@ -201,6 +208,7 @@ void StringLiteral::codegen(FILE* outfile) {
 
 
 Variable::Variable(Symbol* init_var) :
+  Expr(EXPR_VARIABLE),
   var(init_var) 
 {}
 
@@ -225,6 +233,7 @@ void Variable::codegen(FILE* outfile) {
 
 
 UnOp::UnOp(unOpType init_type, Expr* op) :
+  Expr(EXPR_UNOP),
   type(init_type),
   operand(op) 
 {
@@ -256,6 +265,7 @@ Type* UnOp::typeInfo(void) {
 
 
 BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
+  Expr(EXPR_BINOP),
   type(init_type),
   left(l),
   right(r)
@@ -304,13 +314,17 @@ void BinOp::codegen(FILE* outfile) {
 
 SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
   BinOp(init_type, l, r)
-{}
+{
+  astType = EXPR_SPECIALBINOP;
+}
 
 
 AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   BinOp(BINOP_OTHER, l, r),
   type(init_type)
-{}
+{
+  astType = EXPR_ASSIGNOP;
+}
 
 
 void AssignOp::print(FILE* outfile) {
@@ -327,6 +341,7 @@ void AssignOp::codegen(FILE* outfile) {
 }
 
 SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
+  Expr(EXPR_SIMPLESEQ),
   lo(init_lo),
   hi(init_hi),
   str(init_str) 
@@ -411,6 +426,7 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
 
 
 ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
+  Expr(EXPR_PARENOP),
   baseExpr(init_base),
   argList(init_arg) 
 {}
@@ -444,7 +460,9 @@ void ParenOpExpr::codegen(FILE* outfile) {
 CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
   ParenOpExpr(NULL, init_argList),
   castType(init_castType)
-{}
+{
+  astType = EXPR_CAST;
+}
 
 
 void CastExpr::traverseExpr(Traversal* traversal) {
@@ -477,13 +495,17 @@ void CastExpr::codegen(FILE* outfile) {
 
 FnCall::FnCall(Expr* init_base, Expr* init_arg) :
   ParenOpExpr(init_base, init_arg)
-{}
+{
+  astType = EXPR_FNCALL;
+}
 
 
 WriteCall::WriteCall(bool init_writeln, Expr* init_base, Expr* init_arg) :
   FnCall(init_base, init_arg),
   writeln(init_writeln)
-{}
+{
+  astType = EXPR_WRITECALL;
+}
 
 
 Type* WriteCall::typeInfo(void) {
@@ -531,7 +553,9 @@ void WriteCall::codegen(FILE* outfile) {
 
 ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
   ParenOpExpr(init_base, init_arg)
-{}
+{
+  astType = EXPR_ARRAYREF;
+}
 
 
 Type* ArrayRef::typeInfo(void) {
@@ -558,13 +582,24 @@ void ArrayRef::codegen(FILE* outfile) {
 }
 
 
+FloodExpr::FloodExpr(void) :
+  Expr(EXPR_FLOOD)
+{}
+
+
 void FloodExpr::print(FILE* outfile) {
   fprintf(outfile, "*");
 }
 
+
 void FloodExpr::codegen(FILE* outfile) {
   fprintf(outfile, "This is FloodExpr's codegen method.\n");
 }
+
+
+CompleteDimExpr::CompleteDimExpr(void) :
+  Expr(EXPR_COMPLETEDIM)
+{}
 
 
 void CompleteDimExpr::print(FILE* outfile) {
@@ -577,6 +612,7 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 
 
 DomainExpr::DomainExpr(Expr* init_domains, VarSymbol* init_indices) :
+  Expr(EXPR_DOMAIN),
   domains(init_domains),
   indices(init_indices),
   forallExpr(new NullExpr())
@@ -637,6 +673,7 @@ void DomainExpr::codegen(FILE* outfile) {
 
 ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
 		       Expr* init_argExpr) :
+  Expr(EXPR_REDUCE),
   reduceType(init_reduceType),
   redDim(init_redDim),
   argExpr(init_argExpr)
@@ -669,6 +706,7 @@ void ReduceExpr::codegen(FILE* outfile) {
 
 
 Tuple::Tuple(Expr* init_exprs) :
+  Expr(EXPR_TUPLE),
   exprs(init_exprs)
 {}
 
@@ -696,7 +734,7 @@ void Tuple::codegen(FILE* outfile) {
 DomainExpr* unknownDomain;
 
 void initExpr(void) {
-  Symbol* pst = new Symbol("?anonDomain");
+  Symbol* pst = new Symbol(SYMBOL, "?anonDomain");
   Variable* var = new Variable(pst);
   unknownDomain = new DomainExpr(var);
 }

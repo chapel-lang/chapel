@@ -50,7 +50,7 @@
 %token DOMAIN
 %token INDEX
 
-%token ENUM TYPE CLASS
+%token ENUM TYPEDEF CLASS
 %token FUNCTION
 %token INOUT IN OUT REF VAL
 
@@ -139,7 +139,7 @@ varconst:
 
 identsym:
   identifier
-    { $$ = new Symbol($1); }
+    { $$ = new Symbol(SYMBOL, $1); }
 ;
 
 
@@ -186,7 +186,7 @@ typedecl:
 
 
 typealias:
-  TYPE identifier GETS type ';'
+  TYPEDEF identifier GETS type ';'
     {
       UserType* pdt = new UserType($4);
       Symbol* pst = new TypeSymbol($2, pdt);
@@ -357,7 +357,7 @@ domainType:
 | DOMAIN '(' intliteral ')'
     { $$ = new DomainType($3); }
 | DOMAIN '(' identifier ')'
-    { $$ = new SubDomainType(new Symbol($3)); }
+    { $$ = new SubDomainType(new Symbol(SYMBOL, $3)); }
 ;
 
 
@@ -367,7 +367,7 @@ indexType:
 | INDEX '(' intliteral ')'
     { $$ = new IndexType($3); }
 | INDEX '(' identifier ')'
-    { $$ = new SubIndexType(new Symbol($3)); }
+    { $$ = new SubIndexType(new Symbol(SYMBOL, $3)); }
 ;
 
 

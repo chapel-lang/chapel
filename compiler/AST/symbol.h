@@ -1,7 +1,7 @@
 #ifndef _SYMBOL_H_
 #define _SYMBOL_H_
 
-#include "link.h"
+#include "baseAST.h"
 #include "traversal.h"
 #include "type.h"
 
@@ -14,14 +14,14 @@ enum varType {
   VAR_STATE
 };
 
-class Symbol : public ILink {
+class Symbol : public BaseAST {
  public:
   char* name;
   Type* type;
   int level;
   ASymbol *asymbol;
   
-  Symbol(char* init_name, Type* init_type = dtUnknown);
+  Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
 
   void traverse(Traversal* traverse);
   virtual void traverseSymbol(Traversal* traverse);

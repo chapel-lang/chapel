@@ -38,7 +38,7 @@ index           return INDEX;
 locale          return LOCALE;
 timer           return TIMER;
 
-type            return TYPE;
+type            return TYPEDEF;
 enum            return ENUM;
 class           return CLASS;
 

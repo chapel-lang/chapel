@@ -2,20 +2,20 @@
 #define _EXPR_H_
 
 #include <stdio.h>
-#include "link.h"
+#include "baseAST.h"
 #include "symbol.h"
 
 class Stmt;
 class AInfo;
 
-class Expr : public ILink {
+class Expr : public BaseAST {
  public:
   Stmt* stmt;
   AInfo *ainfo;
 
   Expr* parent;
 
-  Expr(void);
+  Expr(astType_t astType);
 
   void traverse(Traversal* traversal);
   virtual void traverseExpr(Traversal* traversal);
@@ -32,6 +32,8 @@ class Expr : public ILink {
 
 class NullExpr : public Expr {
  public:
+  NullExpr(void);
+
   bool isNull(void);
   
   void print(FILE* outfile);
@@ -43,7 +45,7 @@ class Literal : public Expr {
  public:
   char* str;
 
-  Literal(char* init_str);
+  Literal(astType_t astType, char* init_str);
 
   bool isComputable(void);
 
@@ -230,6 +232,8 @@ class SimpleSeqExpr : public Expr {
 
 class FloodExpr : public Expr {
  public:
+  FloodExpr(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
@@ -237,6 +241,8 @@ class FloodExpr : public Expr {
 
 class CompleteDimExpr : public Expr {
  public:
+  CompleteDimExpr(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

@@ -5,7 +5,8 @@
 #include "symtab.h"
 
 
-Symbol::Symbol(char* init_name, Type* init_type) :
+Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
+  BaseAST(astType),
   name(init_name),
   type(init_type),
   level(Symboltable::getLevel())
@@ -77,7 +78,7 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 
 
 NullSymbol::NullSymbol(void) :
-  Symbol("NullSymbol", new NullType())
+  Symbol(SYMBOL_NULL, "NullSymbol", new NullType())
 {}
 
 
@@ -87,13 +88,13 @@ bool NullSymbol::isNull(void) {
 
 
 UseBeforeDefSymbol::UseBeforeDefSymbol(char* init_name) :
-  Symbol(init_name)
+  Symbol(SYMBOL_USEBEFOREDEF, init_name)
 {}
 
 
 VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass, 
 		     bool init_isConst) :
-  Symbol(init_name, init_type),
+  Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   isConst(init_isConst)
 {}
@@ -107,6 +108,15 @@ void VarSymbol::printWithType(FILE* outfile) {
   }
 }
 
+
+static char* paramTypeNames[NUM_PARAM_TYPES] = {
+  "in",
+  "inout",
+  "out",
+  "const"
+};
+
+
 NullVarSymbol::NullVarSymbol() :
   VarSymbol("NullVarSymbol", new NullType())
 {}
@@ -117,17 +127,9 @@ bool NullVarSymbol::isNull(void) {
 }
 
 
-static char* paramTypeNames[NUM_PARAM_TYPES] = {
-  "in",
-  "inout",
-  "out",
-  "const"
-};
-
-
 ParamSymbol::ParamSymbol(paramType init_usage, char* init_name, 
 			 Type* init_type) :
-  Symbol(init_name, init_type),
+  Symbol(SYMBOL_PARAM, init_name, init_type),
   usage(init_usage)
 {}
 
@@ -152,13 +154,15 @@ void ParamSymbol::codegenDef(FILE* outfile) {
 
 
 TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
-  Symbol(init_name, init_definition)
+  Symbol(SYMBOL_TYPE, init_name, init_definition)
 {}
 
 
 ClassSymbol::ClassSymbol(char* init_name, ClassType* init_class) :
   TypeSymbol(init_name, init_class)
-{}
+{
+  astType = SYMBOL_CLASS;
+}
 
 
 NullClassSymbol::NullClassSymbol(void) :
@@ -181,13 +185,15 @@ ClassType* ClassSymbol::getType(void) {
 
 ReduceSymbol::ReduceSymbol(char* init_name, ClassType* init_class) :
   ClassSymbol(init_name, init_class)
-{}
+{
+  astType = SYMBOL_REDUCE;
+}
 
 
 
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 		   Stmt* init_body, bool init_exportMe) :
-  Symbol(init_name, init_retType),
+  Symbol(SYMBOL_FN, init_name, init_retType),
   exportMe(init_exportMe),
   formals(init_formals),
   body(init_body)
@@ -222,6 +228,6 @@ void FnSymbol::codegenDef(FILE* outfile) {
 
 
 EnumSymbol::EnumSymbol(char* init_name, int init_val) :
-  Symbol(init_name),
+  Symbol(SYMBOL_ENUM, init_name),
   val(init_val)
 {}
