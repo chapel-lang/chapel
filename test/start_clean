@@ -35,12 +35,14 @@ set logfile = "$testdir/Logs/$user.cleanlog"
 while ( $#argv > 0 )
 	switch ( $argv[1] )
 	case -startdir:
+        case --startdir:
 		shift
 		set startdir = $argv[1]
 		# echo \[starting-dir: \"$startdir\"\] |& tee -a $logtmp
 		shift
 		breaksw
 	case -logfile:
+        case --logfile:
 		shift
 		set logfile = $argv[1]
 		# echo \[log-file: \"$logfile\"\] |& tee -a $logtmp
@@ -83,8 +85,8 @@ endif
 echo ""
 
 if ( -w $logfile ) then
-	echo \[Remove log file with duplicate name \"$logfile\"\]
-	rm -i $logfile
+	echo \[Removing log file with duplicate name \"$logfile\"\]
+	rm -f $logfile
 	echo ""
 endif
 
@@ -105,7 +107,8 @@ endif
 #   Take off : with sed
 #
 set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | sed 's/://g'`
-#set dirs = (./ $dirs)
+# gotta add ./ on in case -startdir is specified
+set dirs = (./ $dirs)
 
 foreach dir ($dirs)
 	if ( -x $dir ) then
@@ -119,7 +122,7 @@ foreach dir ($dirs)
 			tee -a $logfile
 		continue
 	endif
-	set numtests = `find . -maxdepth 1 -name "*.{chpl,v}" | wc -l`
+	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
 	if (! -e ./NOTEST && ($numtests != 0 || -x ./sub_test)) then
 		if (-x ./sub_clean) then
 		    set sub_test = ./sub_clean
