@@ -1,0 +1,15 @@
+In main:
+  a is 10
+  b is 20
+  c is 30
+
+In foo:
+  a is 1
+  b is 20
+  c is 3
+
+In main:
+  a is 10
+  b is 20
+  c is 30
+

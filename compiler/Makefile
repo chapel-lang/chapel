@@ -17,11 +17,12 @@ GEYSA_CVS_SRCS = \
 	ast.cpp \
 	ast_cf.cpp \
 	builtin.cpp \
-	codegen.cpp \
 	cdb.cpp \
 	cfg.cpp \
 	cg.cpp \
+	cg_funs.cpp \
 	clone.cpp \
+	codegen.cpp \
 	datatype.cpp \
 	dom.cpp \
 	driver.cpp \

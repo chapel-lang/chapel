@@ -1,5 +1,6 @@
 Description of files in this directory:
 
+cg_funs.cpp    : code generation for functions
 codegen.cpp    : starting point for back-end code generation
 datatype.cpp   : datatype-related utilities
 driver.cpp     : main(), flag list, and top-level driver for compiler

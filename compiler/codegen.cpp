@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/types.h>
+#include "cg_funs.h"
 #include "codegen.h"
 #include "datatype.h"
 #include "files.h"
@@ -11,12 +12,10 @@
 #define IO_WRITE   1
 #define IO_WRITELN 2
 
-static void genAST(FILE* outfile, AST* ast);
-
 static int hitUnknown = 0;
 
-static FILE* intheadfile;
-static FILE* extheadfile;
+FILE* intheadfile;
+FILE* extheadfile;
 
 struct binOp {
   char* astSymName;
@@ -90,7 +89,7 @@ static int genBinOp(FILE* outfile, AST* ast, int index) {
 }
 
 
-static void genDT(FILE* outfile, Sym* pdt) {
+void genDT(FILE* outfile, Sym* pdt) {
   if (pdt == NULL || pdt->name == NULL) {
     fprintf(outfile, "/* unknown type */");
     hitUnknown = 1;
@@ -167,7 +166,7 @@ static int handleWrite(FILE* outfile, AST* ast) {
 }
 
 
-static void genASTDecls(FILE* outfile, AST* ast) {
+void genASTDecls(FILE* outfile, AST* ast) {
   if (ast->kind == AST_def_ident) {
     Sym* sym = ast->sym;
     
@@ -191,7 +190,7 @@ static void genDomValues(FILE* outfile, AST* ast) {
 }
 
 
-static void genAST(FILE* outfile, AST* ast) {
+void genAST(FILE* outfile, AST* ast) {
   if (ast == NULL) {
     INT_FATAL(NULL, "Got NULL AST in genAST()\n");
   }
@@ -209,8 +208,10 @@ static void genAST(FILE* outfile, AST* ast) {
       hitUnknown = 1;
       break;
     }
-    forv_AST(subtree, *ast) {
-      genASTDecls(outfile, subtree);
+    if (!currentFunIsInit()) { /* we've already generated init vars */
+      forv_AST(subtree, *ast) {
+	genASTDecls(outfile, subtree);
+      }
     }
     forv_AST(subtree, *ast) {
       genAST(outfile, subtree);
@@ -234,8 +235,10 @@ static void genAST(FILE* outfile, AST* ast) {
 
   case AST_scope:
     fprintf(outfile, "{\n");
-    forv_AST(subtree, *ast) {
-      genASTDecls(outfile, subtree);
+    if (!currentFunIsInit()) { /* we've already generated init vars */
+      forv_AST(subtree, *ast) {
+	genASTDecls(outfile, subtree);
+      }
     }
     forv_AST(subtree, *ast) {
       genAST(outfile, subtree);
@@ -378,69 +381,6 @@ static void genAST(FILE* outfile, AST* ast) {
     ast_print_recursive(outfile, ast, 2);
     fprintf(outfile, "*/\n");
     hitUnknown = 1;
-  }
-}
-
-
-static void genFunHead(FILE* outfile, Fun* fn) {
-  const char* fname = fn->sym->name;
-  int numargs;
-  int i;
-
-  // something with fn->ast->last()
-  if (strcmp(fname, "__init") != 0) {
-    fprintf(outfile, "static ");
-  }
-  fprintf(outfile, "void %s", fname);
-
-  /* formal parameter list */
-  fprintf(outfile, "(");
-  numargs = fn->args.n;
-  if (numargs == 1) {
-    fprintf(outfile, "void");
-  } else {
-    for (i=1; i<numargs; i++) {
-      if (i > 1) {
-	fprintf(outfile, ", ");
-      }
-      genDT(outfile, fn->args.v[i]->type);
-      fprintf(outfile, " ");
-      fprintf(outfile, "%s", fn->args.v[i]->sym->name);
-    }
-  }
-  fprintf(outfile,")");
-}
-
-
-static void genFun(FILE* outfile, Fun* fn) {
-  AST* root;
-
-  /* gen prototype */
-  genFunHead(intheadfile, fn);
-  fprintf(intheadfile, ";\n");
-  
-  /* gen function itself */
-  genFunHead(outfile, fn);
-  fprintf(outfile, " ");
-
-  if (fn->ast->kind == AST_def_fun) {
-    root = fn->ast->last();
-  } else {
-    root = fn->ast;
-  }
-  genAST(outfile, root);
-}
-
-
-static void genFuns(FILE* outfile, FA* fa) {
-  forv_Fun(fn, fa->funs) {
-    // const char* name = fn->sym->name ? fn->sym->name : "<unknown>";
-    // const char* sname = fn->sym->in ? fn->sym->in->name : "<unknown>";
-    // printf("%s::%s\n", sname, name);
-
-    if (strcmp(fn->sym->in->name, "user") == 0) {
-      genFun(outfile, fn);
-    }
   }
 }
 
