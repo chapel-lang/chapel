@@ -69,6 +69,20 @@ symbol_AST(IF1 *if1, D_ParseNode *pn) {
   return a;
 }
 
+static
+int dig_add_ast(AST *op, D_ParseNode *pn) {
+  int n = 0;
+  for (int i = 0; i < d_get_number_of_children(pn); i++) {
+    D_ParseNode *c = d_get_child(pn, i);
+    if (c->user.ast) {
+      op->add(c->user.ast);
+      n++;
+    } else
+      n += dig_add_ast(op, c);
+  }
+  return n;
+}
+
 AST *
 op_AST(IF1 *if1, D_ParseNode &pn) {
   AST *op = new AST(AST_op);
@@ -79,7 +93,8 @@ op_AST(IF1 *if1, D_ParseNode &pn) {
       op->add(c->user.ast);
     else {
       op->op_index = i;
-      op->add(symbol_AST(if1, c));
+      if (!dig_add_ast(op, c))
+	op->add(symbol_AST(if1, c));
     }
   }
   return op;

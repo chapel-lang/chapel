@@ -151,7 +151,6 @@ function operator(a:ref, #"--")			{
    __primitive a #"=" ((__primitive#"*" a) #"-" 1)
 }
 
-
 // domains
 
 type domain;

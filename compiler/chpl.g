@@ -22,7 +22,7 @@ some_top_level_statement
   ;
 
 module_statement 
-  : 'in' identifier ('__name' string)? ';' 
+  : 'in' ident ('__name' string)? ';' 
 [ in_module($g, $n1.start_loc.s, $n1.end, &${scope}); ]
 { 
   $$.ast = new AST(AST_in_module, &$n); 
@@ -30,7 +30,7 @@ module_statement
     $$.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
 }
-  | 'use' identifier ';'
+  | 'use' ident ';'
 [ assert(!"unsupported"); ]
 { $$.ast = new AST(AST_use_module, &$n); }
   | 'export' module_expression (',' module_expression)* ';'
@@ -41,10 +41,10 @@ module_statement
 { $$.ast = new AST(AST_import, &$n); }
   ;
 module_expression
-  : module_identifier 
-  | module_identifier 'as' module_identifier
+  : module_ident 
+  | module_ident 'as' module_ident
 { $$.ast = new AST(AST_as, &$n); };
-module_identifier: qualified_identifier ('.' identifier)*;
+module_ident: qualified_ident ('.' ident)*;
 
 include "c.g"
 c_extern_statement
@@ -74,7 +74,7 @@ statement
 { $$.ast = new AST(AST_def_type, &$n); }
   | 'class' def_type def_type_parameter_list? ';'
 { $$.ast = new AST(AST_def_type, &$n); }
-  | identifier ':' ';'
+  | ident ':' ';'
 { $$.ast = new AST(AST_label, &$n); }
   | ';'
   ;
@@ -90,7 +90,7 @@ some_statement
   ;
 
 var_declarations : ('var' | 'const')  var_declaration (',' var_declaration)* ;
-var_declaration : identifier ('__name' string)? (':' constraint_type)? ('=' expression)?
+var_declaration : ident ('__name' string)? (':' constraint_type)? ('=' expression)?
 {
   $$.ast = new AST(AST_def_ident, &$n); 
   if ($#1)
@@ -125,7 +125,7 @@ unqualified_type_statement
   ;
 
 unqualified_pure_type_statement
-  : def_identifier type
+  : def_ident type
 {  $$.ast = new AST(AST_declare_ident, &$n); }
   | unqualified_type_statement
   | var_declarations
@@ -146,7 +146,7 @@ constraint_types: constraint_type (',' constraint_type)*;
 constraint_type: parameterized_type
 { $$.ast = new AST(AST_constraint, &$n); };
 
-def_type: identifier 
+def_type: ident 
 [
   $$.saved_scope = ${scope};
   ${scope} = new_D_Scope(${scope});
@@ -172,13 +172,13 @@ type
 { $$.ast = new AST(AST_sum_type, &$n); }
   | type '->' type	$binary_left 400
 { $$.ast = new AST(AST_fun_type, &$n); }
-  | identifier 'of' type	$binary_right 300
+  | ident 'of' type	$binary_right 300
 { $$.ast = new AST(AST_tagged_type, &$n); }
   | type type_parameter_list	$unary_left 200
 { $$.ast = new AST(AST_type_application, &$n); }
   | '(' type  ')'
   | class_definition
-  | qualified_identifier
+  | qualified_ident
   | constant
   ;
 
@@ -195,20 +195,20 @@ new_class_scope: [ ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RE
 
 class_modifiers : (class_modifier (',' class_modifiers)*)?;
 class_modifier  
-  : (':'  | 'inherits') inherits_identifier (',' inherits_identifier)*
-  | (':>' | 'implements') implements_identifier (',' implements_identifier)*
-  | (':+' | 'includes') includes_identifier (',' includes_identifier)*
+  : (':'  | 'inherits') inherits_ident (',' inherits_ident)*
+  | (':>' | 'implements') implements_ident (',' implements_ident)*
+  | (':+' | 'includes') includes_ident (',' includes_ident)*
   ;
-inherits_identifier: parameterized_type { $$.ast = new AST(AST_inherits, &$n); };
-implements_identifier: parameterized_type { $$.ast = new AST(AST_implements, &$n); };
-includes_identifier: parameterized_type { $$.ast = new AST(AST_includes, &$n); };
+inherits_ident: parameterized_type { $$.ast = new AST(AST_inherits, &$n); };
+implements_ident: parameterized_type { $$.ast = new AST(AST_implements, &$n); };
+includes_ident: parameterized_type { $$.ast = new AST(AST_includes, &$n); };
 parameterized_type
-  : qualified_identifier 
-  | qualified_identifier type_parameter_list
+  : qualified_ident 
+  | qualified_ident type_parameter_list
 { $$.ast = new AST(AST_type_application, &$n); };
 
 enum_definition : '{' enumerator (',' enumerator)* '}';
-enumerator: identifier ('=' expression)? 
+enumerator: ident ('=' expression)? 
 { $$.ast = new AST(AST_tagged_type, &$n); };
 
 vector_type : '[' (vector_index (',' vector_index)*)? ']';
@@ -220,7 +220,7 @@ vector_index
   ;
 
 where_statement : 'where' where_type (',' where_type)*;
-where_type : qualified_identifier (':' constraint_types)? ('=' type)?
+where_type : qualified_ident (':' constraint_types)? ('=' type)?
 { $$.ast = new AST(AST_where, &$n); };
 
 expression
@@ -233,8 +233,8 @@ expression
    }
   | 'new' expression
     { $$.ast = new AST(AST_new, &$n); }
-  | qualified_identifier
-  | def_identifier expression $right 5100
+  | qualified_ident
+  | def_ident expression $right 5100
     { 
       $$.ast = new AST(AST_def_ident, &$n); 
       $$.ast->def_ident_label = 1;
@@ -248,7 +248,7 @@ expression
     { $$.ast = op_AST($g->i, $n); }
   | expression binary_operator expression
     { $$.ast = op_AST($g->i, $n); }
-  | expression ('.' $name "op period" | '->' $name "op arrow") symbol_identifier $left 9900
+  | expression ('.' $name "op period" | '->' $name "op arrow") symbol_ident $left 9900
     { $$.ast = op_AST($g->i, $n); }
   | expression '..' expression ('by' expression)? $left 8400
   | vector_immediate
@@ -256,7 +256,7 @@ expression
   | paren_block
   | curly_block
   | square_forall
-  | 'forall' loop_scope forall_indices 'in' qualified_identifier expression
+  | 'forall' loop_scope forall_indices 'in' qualified_ident expression
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast =  new AST(AST_forall, &$n); }
   | expression '?' expression ':' expression $right 8600
@@ -288,10 +288,10 @@ with_scope : expression (',' expression)* ':'
 [ ${scope} = new_D_Scope(${scope}); ] 
 { $$.ast = new AST(AST_with_scope, &$n); };
 
-symbol_identifier: identifier
+symbol_ident: identifier
 { $$.ast = symbol_AST($g->i, &$n); };
 
-def_identifier: identifier ('__name' string)? ':' 
+def_ident: ident ('__name' string)? ':' 
 {
   $$.ast = $0.ast;
   if ($#1)
@@ -299,7 +299,7 @@ def_identifier: identifier ('__name' string)? ':'
       $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
 };
 
-def_function: 'function' qualified_identifier pattern+ ('__name' string)?
+def_function: 'function' qualified_ident pattern+ ('__name' string)?
 [ 
   $$.saved_scope = ${scope}; 
   ${scope} = new_D_Scope(${scope}); 
@@ -318,7 +318,7 @@ anon_function: 'fun' pattern+
 ];
 
 pattern
-  : identifier (':' constraint_type)?
+  : ident (':' constraint_type)?
 { $$.ast = new AST(AST_arg, &$n); }
   | constant
 { $$.ast = new AST(AST_arg, &$n); }
@@ -328,11 +328,11 @@ pattern
 
 sub_pattern
   : pattern
-  | '...' (identifier (':' type)?)?
+  | '...' (ident (':' type)?)?
 { $$.ast = new AST(AST_vararg, &$n); };
   ;
 
-qualified_identifier : global? (identifier '::')* identifier
+qualified_ident : global? (ident '::')* ident
 { $$.ast = new AST(AST_qualified_ident, &$n); };
 
 global: '::' 
@@ -341,11 +341,11 @@ global: '::'
 with_scope : expression (',' expression)* ':' ;
 
 control_flow
-  : 'goto' identifier 
+  : 'goto' ident 
 { $$.ast = new AST(AST_goto, &$n); }
-  | 'continue' identifier? 
+  | 'continue' ident? 
 { $$.ast = new AST(AST_continue, &$n); }
-  | 'break' identifier? 
+  | 'break' ident? 
 { $$.ast = new AST(AST_break, &$n); }
   | 'return' expression? 
 { $$.ast = new AST(AST_return, &$n); }
@@ -404,6 +404,9 @@ pre_operator
 post_operator
   : '--'	$unary_op_left 9800
   | '++'	$unary_op_left 9800
+  | '(' expression ')' $unary_op_left 9850
+  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+  { $0.ast = symbol_AST($g->i, &$n0); }
   ;
 
 curly_block: '{' [ ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RECURSIVE; ]
@@ -431,11 +434,11 @@ vector_immediate: '#' '[' statement* expression? ']' {
   $$.ast = new AST(AST_vector, &$n);
 };
 
-square_forall: '[' loop_scope forall_indices? qualified_identifier ']' expression 
+square_forall: '[' loop_scope forall_indices? qualified_ident ']' expression 
 [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
 { $$.ast = new AST(AST_forall, &$n); };
 
-forall_indices: identifier (',' identifier)* ':' {
+forall_indices: ident (',' ident)* ':' {
   $$.ast = new AST(AST_indices, &$n);
 };
 
@@ -493,7 +496,9 @@ anynum ::= character | int8 | uint8 | int16 | uint16 |
 
 complex	   ::= $name "complex" anynum "i" ;
 
-identifier : "[a-zA-Z_][a-zA-Z0-9_]*" $term -1 { 
+identifier : "[a-zA-Z_][a-zA-Z0-9_]*" $term -1;
+
+ident : identifier { 
   $$.ast = new AST(AST_ident, &$n); 
   $$.ast->string = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
 };

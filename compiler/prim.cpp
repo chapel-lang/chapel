@@ -105,8 +105,8 @@ Primitives::find(AST *ast) {
     if (nargs < 0)
       nargs = 0;
     if (ast->v[0]->sym && ast->v[0]->sym->type == sym_symbol) {
-      prim = prim_map[nargs][0].get(ast->v[1]->sym->name);
       assert(nargs == 2);
+      prim = prim_map[nargs][0].get(ast->v[1]->sym->name);
       if (!compatible_type(prim->arg_types[0], ast->v[1]->sym))
 	return 0;
     }

@@ -159,6 +159,11 @@ ast_print(FILE *fp, AST *a, int indent) {
 }
 
 void
+ast_pp(AST *a) {
+  ast_print_recursive(stdout, a, 0);
+}
+
+void
 ast_print_recursive(FILE *fp, AST *a, int indent) {
   ast_print(fp, a, indent);
   forv_AST(aa, *a)
@@ -288,14 +293,15 @@ static void
 build_constant_syms(IF1 *i, AST *ast) {
   switch (ast->kind) {
     case AST_const:
+      assert(!ast->n);
       if (!ast->sym)
 	ast->sym = new_constant(i, ast->string, ast->constant_type);
       break;
     default:
-      forv_AST(a, *ast)
-	build_constant_syms(i, a);
       break;
   }
+  forv_AST(a, *ast)
+    build_constant_syms(i, a);
 }
 
 static Type_kind
@@ -515,8 +521,11 @@ define_function(IF1 *i, AST *ast) {
   AST *fid = ast_qualified_ident_ident(fqid);
   ast->sym = new_sym(i, fscope, fid->string, fqid->sym);
   ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
-  if (fscope != ast->scope)
+  if (fscope != ast->scope) {
     ast->sym->scope->dynamic.add(fscope);
+    ast->sym->self = new_sym(i, ast->sym->scope, if1_cannonicalize_string(i, "self"));
+    ast->sym->self->type = ast->sym->in;
+  }
   for (int x = 1; x < ast->n - 1; x++)
     if (scope_pattern(i, ast->v[x], ast->sym->scope) < 0)
       return -1;
@@ -782,10 +791,9 @@ gen_fun(IF1 *i, AST *ast) {
   AST **args = &ast->v[1];
   Sym *as[n + 1];
   AST *fqid = ast->get(AST_qualified_ident);
-  if (fn->in && fn->name == if1_cannonicalize_string(i, "class")) {
-    as[0] = new_sym(i, fqid->scope, fn->name);
-    as[0]->type = fn->in;
-  } else
+  if (fn->in && fn->name == if1_cannonicalize_string(i, "class"))
+    as[0] = ast->sym->self;
+  else
     as[0] = if1_make_symbol(i, fn->name);
   for (int j = 0; j < n; j++)
     as[j + 1] = args[j]->rval;
@@ -809,9 +817,7 @@ get_tuple_args(IF1 *i, Code *send, AST *ast) {
 
 static int
 get_apply_args(IF1 *i, Code *send, AST *ast) {
-  if (ast->kind == AST_op && (ast->v[ast->op_index]->sym->name[0] == '^' &&
-			      ast->v[ast->op_index]->sym->name[1] == '^'))
-  {
+  if (ast->is_application) {
     int r = get_apply_args(i, send, ast->v[0]);
     if1_add_send_arg(i, send, ast->v[2]->rval);
     return 1 + r;
@@ -830,22 +836,33 @@ gen_new(IF1 *i, AST *ast) {
   send->ast = ast;
 }
 
+static Sym *
+make_int(IF1 *i, int n) {
+  if (n >= 0 && n < 10) {
+    char c[2];
+    c[0] = n + '0';
+    c[1] = 0;
+    return if1_const(i, sym_int, c);
+  } else {
+    char str[100];
+    sprintf(str, "%d", n);
+    return if1_const(i, sym_int, str);
+  }
+}
+
 static void
 gen_op(IF1 *i, AST *ast) {
-  char *op = ast->v[ast->op_index]->sym->name;
-  int assign = (op[1] == '=' && op[0] != '=') || (!op[1] && op[0] == '=') ||
-    (op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
-  int ref = ((op[0] == '.' && op[1] != '.') || (op[0] == '-' && op[1] == '>') || assign);
-  int binary = ast->n > 2;
   Code **c = &ast->code;
-  AST *a0 = ast->op_index ? ast->v[0] : 0, *a1 = ast->n > (int)(1 + ast->op_index) ? ast->last() : 0;
+  Code *send = 0;
   ast->rval = new_sym(i, ast->scope);
+  Sym *res = ast->is_ref ? new_sym(i, ast->scope) : ast->rval;
+  AST *a0 = ast->op_index ? ast->v[0] : 0, *a1 = ast->n > (int)(1 + ast->op_index) ? ast->last() : 0;
   if (a0) if1_gen(i, c, a0->code);
   if (a1) if1_gen(i, c, a1->code);
-  if (op[0] == ',') {
+  if (ast->is_comma) {
     if (ast->in_tuple)
       return;
-    Code *send = if1_send1(i, c);
+    send = if1_send1(i, c);
     send->ast = ast;
     Sym *constructor;
     switch (ast->constructor) {
@@ -854,13 +871,15 @@ gen_op(IF1 *i, AST *ast) {
       case Make_SET: constructor = sym_make_set; break;
     }
     if1_add_send_arg(i, send, constructor);
+    if (ast->constructor == Make_VECTOR)
+      if1_add_send_arg(i, send, make_int(i, ast->rank));
     get_tuple_args(i, send, a0);
     if1_add_send_arg(i, send, a1->rval);
     if1_add_send_result(i, send, ast->rval);
-  } else if (op[0] == '^' && op[1] == '^') {
+  } else if (ast->is_application) {
     if (ast->in_apply)
       return;
-    Code *send = if1_send1(i, c);
+    send = if1_send1(i, c);
     send->ast = ast;
     get_apply_args(i, send, a0);
     if (a1)
@@ -868,9 +887,8 @@ gen_op(IF1 *i, AST *ast) {
     if1_add_send_result(i, send, ast->rval);
   } else {
     Sym *args = new_sym(i, ast->scope);
-    Sym *res = ref ? new_sym(i, ast->scope) : ast->rval;
-    Code *send;
-    Sym *aa0 = assign ? a0->lval : a0->rval; 
+    Sym *aa0 = ast->is_assign ? a0->lval : a0->rval; 
+    int binary = ast->n > 2;
     if (binary)
       send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->v[ast->op_index]->rval, a1->rval, args);
     else if (a0)
@@ -880,17 +898,18 @@ gen_op(IF1 *i, AST *ast) {
     send->ast = ast;
     send = if1_send(i, c, 2, 1, sym_operator, args, res);
     send->ast = ast;
-    if (ref) {
-      ast->lval = res;
-      send = if1_send(i, c, 3, 1, sym_primitive, sym_deref, res, ast->rval);
-      send->ast = ast;
-    }
-    if (assign) {
-      if (a0)
-	send = if1_move(i, c, a0->lval, ast->rval, ast);
-      else
-	send = if1_move(i, c, a1->lval, ast->rval, ast);
-    }
+  }
+  if (ast->is_ref || ast->is_lval) {
+    ast->lval = res;
+    send = if1_send(i, c, 3, 1, sym_primitive, sym_deref, res, ast->rval);
+    send->ast = ast;
+  }
+  if (ast->is_assign) {
+    if (a0)
+      send = if1_move(i, c, a0->lval, ast->rval, ast);
+    else
+      send = if1_move(i, c, a1->lval, ast->rval, ast);
+    send->ast = ast;
   }
 }
 
@@ -951,9 +970,59 @@ gen_constructor(IF1 *i, AST *ast) {
       break;
   }
   if1_add_send_arg(i, send, constructor);
+  if (ast->kind == AST_vector)
+    if1_add_send_arg(i, send, make_int(i, ast->rank));
   for (int x = 0; x < ast->n; x++)
     if1_add_send_arg(i, send, ast->v[x]->rval);
   if1_add_send_result(i, send, ast->rval);
+}
+
+static int
+pre_gen_bottom_up(AST *ast) {
+  forv_AST(a, *ast)
+    if (pre_gen_bottom_up(a) < 0)
+      return -1;
+  switch (ast->kind) {
+    case AST_vector: {
+      uint rank = 0;
+      forv_AST(a, *ast)
+	if (a->rank > rank)
+	  rank = a->rank;
+      if (ast->n > 1)
+	ast->rank = rank + 1;
+      else
+	ast->rank = rank;
+      break;
+    }
+    case AST_block: {
+      ast->rank = ast->last()->rank;
+      break;
+    }
+    case AST_op: {
+      char *op = ast->v[ast->op_index]->sym->name;
+      ast->is_assign = (op[1] == '=' && op[0] != '=') || (!op[1] && op[0] == '=') ||
+	(op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
+      ast->is_ref = ((op[0] == '.' && op[1] != '.') || (op[0] == '-' && op[1] == '>') || ast->is_assign);
+      if (ast->is_assign)
+	ast->v[0]->is_lval = 1;
+      ast->is_application = (op[0] == '^' && op[1] == '^') || op[0] == '(';
+      ast->is_comma = op[0] == ',';
+      if (ast->is_comma) {
+	uint rank = 1;
+	forv_AST(a, *ast)
+	  if (!a->in_tuple) {
+	    if (a->rank + 1 > rank)
+	      rank = a->rank + 1;
+	  } else
+	    if (a->rank > rank)
+	      rank = a->rank;
+	ast->rank = rank;
+      }
+      break;
+    }
+    default: break;
+  }
+  return 0;
 }
 
 static int
@@ -985,7 +1054,7 @@ gen_if1(IF1 *i, AST *ast) {
     case AST_list:
     case AST_vector:
     case AST_object:
-      gen_constructor(i, ast); break;
+       gen_constructor(i, ast); break;
     case AST_scope:
     case AST_block:
       for (int x = 0; x < ast->n; x++)
@@ -1046,11 +1115,11 @@ collect_module_init(IF1 *i, AST *ast, Sym *mod) {
   return mod;
 }
 
-
 static int
 build_functions(IF1 *i, AST *ast, Sym *mod) {
   if (define_labels(i, ast, mod->labelmap) < 0) return -1;
   if (resolve_labels(i, ast, mod->labelmap) < 0) return -1;
+  if (pre_gen_bottom_up(ast) < 0) return -1;
   if (gen_if1(i, ast) < 0) return -1;
   collect_module_init(i, ast, mod->init);
   return 0;

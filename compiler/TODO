@@ -29,3 +29,9 @@
 - move build_map and add_vars out of prim_make
   - handle ref variables
   - maybe in creation_point?  
+
+- handle constants in vector_application
+
+- do constant propgation in fa.cpp
+
+- odd thing about vectors: #[1] is of undertermined rank !

@@ -60,6 +60,7 @@ class Sym : public gc {
   Vec<Sym *>		constraints;		// must-implement
   Vec<Sym *>		has;			// instance variables
   Vec<Sym *>		args;			// parameters of functions and types
+  Sym			*self;			// self variable for the function
   Sym			*ret;			// return value of functions
   Sym			*cont;			// continuation (function returning ret)
   Sym			*init;			// for modules & classes (default init function)
@@ -89,6 +90,7 @@ class Sym : public gc {
   char 			*cg_string;		// used by cg.cpp
 
   Sym() { memset(this, 0, sizeof *this); }
+  int imm_int();
 };
 #define forv_Sym(_c, _v) forv_Vec(Sym, _c, _v)
 

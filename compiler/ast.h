@@ -40,6 +40,12 @@ class AST : public Vec<AST *> {
   uint in_tuple:1;
   uint in_apply:1;
   uint is_const:1;
+  uint is_lval:1;
+  uint is_assign:1;
+  uint is_ref:1;
+  uint is_application:1;
+  uint is_comma:1;
+  uint rank;
   Sym *sym;
   char *string;
   char *builtin;

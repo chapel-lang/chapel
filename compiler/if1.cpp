@@ -838,3 +838,33 @@ print(FILE *fp, Immediate &imm, Sym *type) {
 int pp(Immediate &imm, Sym *type) {
   return print(stdout, imm, type);
 }
+
+int
+Sym::imm_int() {
+  int i = 0;
+  switch (type->num_type) {
+    default: break;
+	case IF1_NUM_TYPE_UINT: {
+	  switch (type->num_index) {
+	    case IF1_INT_TYPE_8: i = imm.v_uint8; break;
+	    case IF1_INT_TYPE_16: i = imm.v_uint16; break;
+	    case IF1_INT_TYPE_32: i = imm.v_uint32; break;
+	    case IF1_INT_TYPE_64: i = imm.v_uint64; break;
+	    default: assert(!"case");
+	  }
+	  break;
+	}
+	case IF1_NUM_TYPE_INT: {
+	  switch (type->num_index) {
+	    case IF1_INT_TYPE_8: i = imm.v_int8; break;
+	    case IF1_INT_TYPE_16: i = imm.v_int16; break;
+	    case IF1_INT_TYPE_32: i = imm.v_int32; break;
+	    case IF1_INT_TYPE_64: i = imm.v_int64; break;
+	    default: assert(!"case");
+	  }
+	  break;
+	}
+  }
+  return i;
+}
+
