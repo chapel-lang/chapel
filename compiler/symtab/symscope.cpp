@@ -6,6 +6,7 @@
 #include "symtab.h"
 #include "symtabTraversal.h"
 #include "if1.h"
+#include "../passes/filesToAST.h"
 
 
 SymScope::SymScope(scopeType init_type, int init_level) :
@@ -402,10 +403,24 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
       else
 	fs->append(*parent->visibleFunctions.v[i].value);
       visibleFunctions.put(parent->visibleFunctions.v[i].key, fs);
-      
     }
     //visibleFunctions.set_union(parent->visibleFunctions);
   }
+
+  //
+  // Include internal prelude's visible functions in prelude
+  //
+  if (type == SCOPE_PRELUDE) {
+    for (int i = 0; i < internalPrelude->modScope->visibleFunctions.n; i++) {
+      Vec<FnSymbol *> *fs = visibleFunctions.get(internalPrelude->modScope->visibleFunctions.v[i].key);
+      if (!fs)
+	fs = internalPrelude->modScope->visibleFunctions.v[i].value;
+      else
+	fs->append(*internalPrelude->modScope->visibleFunctions.v[i].value);
+      visibleFunctions.put(internalPrelude->modScope->visibleFunctions.v[i].key, fs);
+    }
+  }
+
   if (moreVisibleFunctions) {
     forv_Vec(FnSymbol, fn, *moreVisibleFunctions) {
       char *n = if1_cannonicalize_string(if1, fn->name);
