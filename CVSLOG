@@ -23078,3 +23078,16 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: processDefs.cpp processDefs.h 
 
+---------------------------------------------------------------------------
+
+04/01/05 09:39:48 -- deitz
+
+Log message:
+	Added an isConstructor field to FnSymbol that is true if the function
+	is a constructor and false otherwise.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
