@@ -13769,3 +13769,41 @@ Log message:
 Modified files:
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+01/06/05 16:33:51 -- bradc
+
+Log message:
+	(Realized I couldn't finish my testing of "future tests"
+	without checking this in too...)
+	
+	Modified the test system so that for a test named foo.chpl,
+	if its directory also contains a file foo.future, then the
+	test will be run, and the result will show up in the test
+	summary, but its success or failure will not be counted in
+	the test summary.  This information is used in the nightly
+	regression mailing to list future tests that are passing,
+	new, and continuing to fail at the bottom of the mail.
+	
+	The .future file should contain the userid of the developer
+	who's currently supposed to be working on the test on its
+	first line.  Subsequent lines are intended to store notes
+	(as tests are passed from developer to developer, e.g.),
+	and are ignored by the testing system.
+	
+	The intent is that .future files will be used to mark files
+	that we're working on in the near-term.  Once a test is
+	working and stable, its .future tag should be removed,
+	adding it to the test system.  Further failures of the
+	test should be considered regressions and the future tag
+	should not be re-instated.
+	
+	In order to keep nightly and personal test summaries readable
+	and not too overwhelming, I'd suggest we avoid using this as
+	a mechanism to check in every test we can think of that should
+	work someday, and use it only for tests that we're actively
+	working on (or should be).
+
+Modified files:
+	chapel/test/: sub_test start_test 
+
