@@ -4063,3 +4063,16 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: structtype.good structtype.v 
 
+---------------------------------------------------------------------------
+
+07/19/04 13:45:08 -- bradc
+
+Log message:
+	Updated sub_test to use the --tools option by default with
+	valgrind to support newer versions of valgrind such as 1.2.1
+	(now selected on lotus when using Brad's .chapelcshrc-env
+	file...).
+
+Modified files:
+	chapel/test/: sub_test 
+
