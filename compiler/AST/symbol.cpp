@@ -502,6 +502,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
   _this(0),
   body(init_body),
   classBinding(init_classBinding),
+  isConstructor(false),
   overload(NULL)
 {
   if (!dynamic_cast<UnresolvedSymbol*>(classBinding)) {
@@ -517,7 +518,9 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
   retType(NULL),
   _this(0),
   body(NULL),
-  classBinding(init_classBinding)
+  classBinding(init_classBinding),
+  isConstructor(false),
+  overload(NULL)
 {
   if (!dynamic_cast<UnresolvedSymbol*>(classBinding)) {
     Symboltable::define(this);
@@ -886,6 +889,10 @@ void FnSymbol::codegenDef(FILE* outfile) {
     }
     codegenHeader(headfile);
     fprintf(headfile, ";\n");
+
+    if (isConstructor) {
+      fprintf(outfile, "/* constructor */\n");
+    }
 
     codegenHeader(outfile);
     // need an extra set of curly braces in case (a) body is

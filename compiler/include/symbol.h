@@ -158,6 +158,7 @@ class FnSymbol : public Symbol {
   Symbol* classBinding;
   _method_type method_type;
   SymScope* paramScope;
+  bool isConstructor;
 
   FnSymbol* overload;
 
