@@ -2184,9 +2184,12 @@ function_is_used(FnSymbol *fn) {
 int
 type_is_used(TypeSymbol *t) {
   if (if1->callback) {
-    if (t->asymbol)
-      return t->asymbol->sym->meta_type->creators.n != 0;
-    else
+    if (t->asymbol) {
+      if (t->asymbol->sym->meta_type) {
+	return t->asymbol->sym->meta_type->creators.n != 0;
+      } else
+	return true; // SJD: ??
+    } else
       return false;
   } else
     return true; // analysis not run   

@@ -392,6 +392,10 @@ void TypeSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 void TypeSymbol::codegenDef(FILE* outfile) {
+  if (!type_is_used(this)) {
+    return;
+  }
+
   FILE* deffile = outfile;
   /* if in file scope, hoist to internal header so that it will be
      defined before global variables at file scope. */  
