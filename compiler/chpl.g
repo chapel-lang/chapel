@@ -3,9 +3,7 @@
 */
 
 %<
-#include "geysa.h"
 #include "parse.h"
-#include "grammar.h"
 
 extern D_Symbol d_symbols_chpl[];
 
