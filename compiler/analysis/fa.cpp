@@ -16,18 +16,19 @@ static int creation_set_id = 1;
 
 static FA *fa = 0;
 
-static AType *bottom_type = 0;
-static AType *void_type = 0;
-static AType *top_type = 0;
-static AType *any_type = 0;
-static AType *bool_type = 0;
-static AType *size_type = 0;
-static AType *anyint_type = 0;
-static AType *anynum_kind = 0;
-static AType *fun_type = 0;
-static AType *symbol_type = 0;
-static AType *fun_symbol_type = 0;
-static AType *anyclass_type = 0;
+AType *bottom_type = 0;
+AType *void_type = 0;
+AType *unknown_type = 0;
+AType *top_type = 0;
+AType *any_type = 0;
+AType *bool_type = 0;
+AType *size_type = 0;
+AType *anyint_type = 0;
+AType *anynum_kind = 0;
+AType *fun_type = 0;
+AType *symbol_type = 0;
+AType *fun_symbol_type = 0;
+AType *anyclass_type = 0;
 
 static ChainHash<AType *, ATypeChainHashFns> cannonical_atypes;
 static ChainHash<Setters *, SettersHashFns> cannonical_setters;
@@ -562,10 +563,21 @@ type_intersection(AType *a, AType *b) {
 
 static void
 fill_rets(EntrySet *es, int n) {
+  es->fun->rets.fill(n);
   es->rets.fill(n);
   for (int i = 0; i < n; i++)
-    if (!es->rets.v[i])
-      es->rets.v[i] = make_AVar(es->fun->sym->ret->var, es);
+    if (!es->rets.v[i]) {
+      if (!i)
+	es->rets.v[i] = make_AVar(es->fun->sym->ret->var, es);
+      else {
+	if (!es->fun->rets.v[i]) {
+	  Var *v = new Var(es->fun->sym->ret);
+	  es->fun->rets.v[i] = v;
+	  es->fun->fa_all_Vars.add(v);
+	}
+	es->rets.v[i] = make_AVar(es->fun->rets.v[i], es);
+      }
+    }
 }
 
 static int 
@@ -592,7 +604,7 @@ static int
 edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
-    forv_MPosition(p, e->match->fun->arg_positions) {
+    forv_MPosition(p, e->match->fun->numeric_arg_positions) {
       AVar *es_arg = es->args.get(p), *e_arg = e->args.get(p);
       if (!e_arg)
 	continue;
@@ -604,8 +616,9 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 	if (es_arg->out != e_arg->out)
 	  return 0;
     }
-    assert(es->rets.n == e->rets.n);
-    for (int i = 0; i < es->rets.n; i++) {
+    if (es->rets.n != e->rets.n)
+      return 0;
+    for (int i = 0; i < e->rets.n; i++) {
       if (es->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
 	if (es->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
 	  return 0;
@@ -624,7 +637,8 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 	if (ee_arg->out != e_arg->out)
 	  return 0;
       }
-      assert(e->rets.n == ee->rets.n);
+      if (e->rets.n != ee->rets.n)
+	return 0;
       for (int i = 0; i < e->rets.n; i++) {
 	if (ee->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
 	  if (ee->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
@@ -655,7 +669,8 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 	if (!sset_compatible(av, es->args.get(p)))
 	  return 0;
     }
-    assert(es->rets.n == e->rets.n);
+    if (es->rets.n != e->rets.n)
+      return 0;
     for (int i = 0; i < es->rets.n; i++)
       if (!sset_compatible(e->rets.v[i], es->rets.v[i]))
 	return 0;
@@ -671,7 +686,8 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 	  if (!sset_compatible(eav, eeav))
 	    return 0;
       }
-      assert(e->rets.n == ee->rets.n);
+      if (e->rets.n != ee->rets.n)
+	return 0;
       for (int i = 0; i < e->rets.n; i++)
 	if (!sset_compatible(ee->rets.v[i], ee->rets.v[i]))
 	  return 0;
@@ -682,7 +698,7 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 
 static int
 edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
-  forv_MPosition(p, e->match->fun->arg_positions) {
+  forv_MPosition(p, e->match->fun->numeric_arg_positions) {
     AVar *av = es->args.get(p);
     if (av->var->clone_for_constants) {
       AType css;
@@ -721,9 +737,9 @@ set_entry_set(AEdge *e, EntrySet *es = 0) {
   e->to = new_es;
   new_es->edges.put(e);
   if (!es) {
-    forv_MPosition(p, e->match->fun->arg_positions) {
-      Sym *s = e->match->fun->arg_syms.get(p);
-      AVar *av = make_AVar(s->var, new_es);
+    forv_MPosition(p, e->match->fun->numeric_arg_positions) {
+      Var *v = e->match->fun->filtered_args.get(p);
+      AVar *av = make_AVar(v, new_es);
       new_es->args.put(p, av);
     }
   }
@@ -1060,7 +1076,7 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
     e->match = m;
   else {
     assert(e->match->fun == m->fun);
-    forv_MPosition(p, e->match->fun->arg_positions) {
+    forv_MPosition(p, e->match->fun->numeric_arg_positions) {
       AType *t1 = e->match->filters.get(p), *t2 = m->filters.get(p);
       if (t1 && t2)
 	e->match->filters.put(p, type_union(t1, t2));
@@ -1451,8 +1467,6 @@ static void
 analyze_edge(AEdge *e) {
   make_entry_set(e);
   form_MPositionAVar(x, e->args) {
-    if (!x->key->is_numeric())
-      continue;
     MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
     AVar *a = x->value, *b = e->to->args.get(p);
     AType *filter = e->match->filters.get(p);
@@ -1461,7 +1475,11 @@ analyze_edge(AEdge *e) {
     flow_var_type_permit(b, filter);
     forv_CreationSet(cs, *filter) if (cs)
       cs->ess.set_add(e->to);
+    // the paramter used to filter the input
     flow_vars(a, b);
+    // the parameter used in then function
+    AVar *bb = make_AVar(b->var->sym->var, e->to);
+    flow_vars(b, bb);
     if (p->pos.n > 1)
       set_container(b, e->to->args.get(p->parent));
   }
@@ -1679,6 +1697,7 @@ initialize() {
   element_var = new Var(new_Sym("some element"));
   bottom_type = type_cannonicalize(new AType());
   void_type = make_abstract_type(sym_void);
+  unknown_type = make_abstract_type(sym_unknown);
   any_type = make_abstract_type(sym_any);
   top_type = type_union(any_type, void_type);
   bool_type = make_abstract_type(sym_bool);
@@ -1949,7 +1968,7 @@ clear_es(EntrySet *es) {
   for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee)
     clear_edge(*ee);
   es->out_edges.clear();
-  forv_MPosition(p, es->fun->arg_positions)
+  forv_MPosition(p, es->fun->numeric_arg_positions)
     es->args.get(p)->restrict = bottom_type;
   es->backedges.clear();
   es->cs_backedges.clear();

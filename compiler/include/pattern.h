@@ -84,6 +84,7 @@ class Match : public gc {
   Map<MPosition *, AType *> filters;
   Map<MPosition *, MPosition *> named_to_positional;
   Map<MPosition *, MPosition *> actual_to_formal_position;
+  Map<MPosition *, MPosition *> formal_to_actual_position;
   Vec<MPosition *> default_args;
   Vec<MPosition *> generic_args;
   Vec<MPosition *> pointwise_args;

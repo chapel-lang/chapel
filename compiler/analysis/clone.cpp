@@ -45,7 +45,7 @@ initialize() {
 	  es->out_edge_map.put(e->pnode, (f2e = new Map<Fun *, AEdge *>()));
 	f2e->put(e->match->fun, e);
 	// build called_css
-	forv_MPosition(p, e->match->fun->arg_positions) {
+	forv_MPosition(p, e->match->fun->numeric_arg_positions) {
 	  AVar *av = e->args.get(p);
 	  if (av)
 	    f->called_css.set_union(*av->out);
@@ -143,7 +143,7 @@ class ES_FN { public: static int inline equivalent(EntrySet *a, EntrySet *b); };
 inline int
 ES_FN::equivalent(EntrySet *a, EntrySet *b) {
   if (a->fun->clone_for_constants) {
-    forv_MPosition(p, a->fun->arg_positions) {
+    forv_MPosition(p, a->fun->numeric_arg_positions) {
       AVar *av = a->args.get(p);
       if (av->var->clone_for_constants)
 	if (av->out->constants() != b->args.get(p)->out->constants())
@@ -359,7 +359,7 @@ determine_clones() {
 	    for (int k = 0; k < j; k++) {
 	      AEdge *e1 = edge_sets.v[i]->v[j], *e2 = edge_sets.v[i]->v[k];
 	      if (e1 && e2 && e1->match->fun == e2->match->fun && e1->to->equiv != e2->to->equiv) {
-		forv_MPosition(p, e1->match->fun->arg_positions) {
+		forv_MPosition(p, e1->match->fun->numeric_arg_positions) {
 		  Vec<CreationSet *> d1, d2;
 		  AVar *a1 = e1->args.get(p), *a2 = e2->args.get(p);
 		  if (!a1 || !a2)

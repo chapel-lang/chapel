@@ -416,20 +416,14 @@ write_arg_position(FILE *fp, MPosition *p) {
 
 static void
 write_c_args(FILE *fp, Fun *f) {
-  forv_MPosition(p, f->arg_positions) {
-    for (int i = 0; i < p->pos.n; i++) 
-      if (!is_intPosition(p->pos.v[i]))
-	goto Lnext;
-    {
-      Sym *s = f->arg_syms.get(p);
-      Var *v = f->args.get(p);
-      if (v->cg_string && !s->is_symbol) {
-	fprintf(fp, "%s = ", v->cg_string);
-	write_arg_position(fp, p);
-	fprintf(fp, ";\n");
-      }
+  forv_MPosition(p, f->numeric_arg_positions) {
+    Var *v = f->args.get(p);
+    Sym *s = v->sym;
+    if (v->cg_string && !s->is_symbol) {
+      fprintf(fp, "%s = ", v->cg_string);
+      write_arg_position(fp, p);
+      fprintf(fp, ";\n");
     }
-  Lnext:;
   }
 }
 

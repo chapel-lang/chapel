@@ -292,6 +292,20 @@ void set_container(AVar *av, AVar *container);
 AVar * unique_AVar(Var *v, void *contour);
 AVar *unique_AVar(Var *v, EntrySet *es);
 
+extern AType *bottom_type;
+extern AType *void_type;
+extern AType *unknown_type;
+extern AType *top_type;
+extern AType *any_type;
+extern AType *bool_type;
+extern AType *size_type;
+extern AType *anyint_type;
+extern AType *anynum_kind;
+extern AType *fun_type;
+extern AType *symbol_type;
+extern AType *fun_symbol_type;
+extern AType *anyclass_type;
+
 EXTERN int num_constants_per_variable EXTERN_INIT(DEFAULT_NUM_CONSTANTS_PER_VARIABLE);
 
 #endif

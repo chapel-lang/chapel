@@ -206,7 +206,7 @@ Matcher::find_arg_matches(AVar *a, MPosition &p, MPosition *positional_p,
       forv_Fun(f, saved_matches) if (f) {
 	if (funs.set_in(f))
 	  (*local_matches)->set_add(f);
-	else if (!f->args.get(cp)) // the function does not use this argument
+	else if (!f->filtered_args.get(cp)) // the function does not use this argument
 	  (*local_matches)->set_add(f);
       }
       (*local_matches)->set_union(funs);
@@ -661,6 +661,8 @@ build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
   for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
     cp->parent = parent;
     f->arg_positions.add(cp);
+    if (cp->is_numeric())
+      f->numeric_arg_positions.add(cp);
     if (!a->var)
       a->var = new Var(a);
     f->arg_syms.put(cp, a);
@@ -685,9 +687,12 @@ build_arg_positions(FA *fa) {
       build_arg_position(f, a, p);
       p.inc();
     }
-    forv_MPosition(p, f->arg_positions) {
+    forv_MPosition(p, f->numeric_arg_positions) {
       Sym *s = f->arg_syms.get(p);
       f->args.put(p, s->var);
+      Var *v = new Var(s); // new variable to handle filtering inputs
+      v->is_internal = 1;
+      f->filtered_args.put(p, v);
     }
     f->rets.add(f->sym->ret->var);
   }
