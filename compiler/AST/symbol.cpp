@@ -160,7 +160,7 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 
 
 Symbol* ParamSymbol::copy(void) {
-  return new ParamSymbol(intent, copystring(name), type->copy());
+  return new ParamSymbol(intent, copystring(name), type);
 }
 
 

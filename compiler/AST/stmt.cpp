@@ -139,17 +139,29 @@ WithStmt::WithStmt(Expr* init_withExpr) :
 
 
 ClassType* WithStmt::getClass(void) {
-  Variable* vexpr;
-  ClassType* result;
-
-  if ((vexpr = dynamic_cast<Variable*>(withExpr)) &&
-      (result = dynamic_cast<ClassType*>(vexpr->var->type))) {
-    return result;
+  if (Variable* var = dynamic_cast<Variable*>(withExpr)) {
+    if (ClassType* result = 
+	dynamic_cast<ClassType*>(var->var->type)) {
+      return result;
+    }
+    else if (UnresolvedSymbol* unresolved = 
+	     dynamic_cast<UnresolvedSymbol*>(var->var)) {
+      if (ClassType* result = 
+	  dynamic_cast<ClassType*>(Symboltable::lookup(unresolved->name)->type)) {
+	return result;
+      }
+      else {
+	INT_FATAL(this, "Bad with statement");
+      }
+    }
+    else {
+      INT_FATAL(this, "Bad with statement");
+    }
   }
   else {
     INT_FATAL(this, "Bad with statement");
-    return NULL;
   }
+  return NULL;
 }
 
 
@@ -393,7 +405,7 @@ Stmt* FnDefStmt::copy(void) {
   } else {
     newformals = nilSymbol;
   }
-  return Symboltable::finishFnDef(fncopy, newformals, fn->type->copy(), 
+  return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
 				  fn->body->copyList(), fn->exportMe);
 }
 

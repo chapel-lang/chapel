@@ -275,9 +275,9 @@ void Cleanup::run(ModuleSymbol* moduleList) {
   ApplyThis* apply_this = new ApplyThis();
   ModuleSymbol* mod = moduleList;
   while (mod) {
+    mod->startTraversal(apply_with);
     mod->startTraversal(insert_this);
     mod->startTraversal(resolve_easiest);
-    mod->startTraversal(apply_with);
     mod->startTraversal(resolve_easy);
     mod->startTraversal(specialize_parens);
     mod->startTraversal(apply_this);
