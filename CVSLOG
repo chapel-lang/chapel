@@ -5025,3 +5025,45 @@ Log message:
 Added files:
 	chapel/compiler/: prim_data_incs.h 
 
+---------------------------------------------------------------------------
+
+08/05/04 12:35:40 -- bradc
+
+Log message:
+	Thanks to John's refactoring of include files for generated
+	source code yesterday, this change improves our Makefiles
+	so that (I believe) dependences will be correct for all
+	generated source.  The one caveat is that if the third-party
+	code changes, I don't think it's guaranteed that generated
+	sources will correctly recompile.  This seemed like a
+	reasonable step to take given that the third-party stuff
+	is reasonably static, but the moral would be, if you remake
+	your third-party directory, you might want to do a make
+	clean in the compiler directory to be absolutely safe.
+	
+	The general strategy is that dummy .cpp files were introduced
+	that #include only the single header file that is included
+	by each generated source file, our make depend step is run
+	on the .cpp file, and the output is sed-ited to define a
+	Makefile variable.  Dependences are then added for the .o
+	files for the generated files based on these variables to
+	get the dependences correct.  This is actually what we
+	were doing previously with geysa.h, but with John's recent
+	refactoring of headers, this logic needed to be reproduced
+	for other files rather than geysa.h.
+	
+	Since this doesn't use any new Makefile technology, I don't
+	expect this to cause any problems for people, but if it does
+	(or if you find things aren't getting remade when they should),
+	give a shout.
+
+Modified files:
+	./: Makefile 
+	chapel/compiler/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	chapel/runtime/: Makefile 
+Added files:
+	chapel/compiler/: parse_incs.cpp prim_data_incs.cpp 
+Removed files:
+	chapel/compiler/: geysa.cpp 
+
