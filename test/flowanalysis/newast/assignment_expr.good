@@ -1,0 +1,20 @@
+
+
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+::o(<unknown>:0) ( int64 (<unknown>:0) )
+function __init assignment_expr.chpl:16
+function __init() {
+globals
+m *= n;
+m += n;
+m -= o;
+o /= n;
+var m: integer = 5;
+var n: integer = 2;
+var o: integer = 30;
+writeln("m = ", m);
+writeln("m = ", m);
+writeln("m = ", m);
+writeln("o = ", o);
+}

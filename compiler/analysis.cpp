@@ -249,6 +249,8 @@ new_sum_type(Sym *&sym, char *name, ...)  {
     if ((s = va_arg(ap, Sym*)))
       sym->has.add(s);
   } while (s);
+  forv_Sym(ss, sym->has)
+    ss->implements.set_add(sym);
 }
 
 static void
@@ -315,7 +317,7 @@ build_builtin_symbols() {
   new_primitive_type(sym_float, "float");
   new_sum_type(sym_anyfloat, "anyfloat", 
 	       sym_float32, sym_float64, sym_float80, sym_float128, 0);
-  new_primitive_type(sym_anynum, "anynum");
+  new_sum_type(sym_anynum, "anynum", sym_anyint, sym_anyfloat, 0);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
   if (!sym_new_object) {
@@ -490,7 +492,7 @@ gen_if1(BaseAST *ast) {
     if (gen_if1(a) < 0)
       return -1;
   switch (ast->astType) {
-    case STMT: assert(!"case"); break;
+    case STMT: assert(ast->isNull()); break;
     case STMT_NOOP: break;
     case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
     case STMT_TYPEDEF: break;
@@ -527,7 +529,7 @@ gen_if1(BaseAST *ast) {
     case STMT_FORLOOP: gen_for(ast); break;
     case STMT_COND: gen_cond(ast); break;
       
-    case EXPR: assert(!"case"); break;
+    case EXPR: assert(ast->isNull()); break;
     case EXPR_LITERAL: assert(!"case"); break;
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
@@ -599,8 +601,8 @@ gen_if1(BaseAST *ast) {
 	case BINOP_BY: op = if1_make_symbol(if1, "by"); break;
 	case BINOP_DOT: op = if1_make_symbol(if1, "."); break;
       }
-      Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator, op, 
-			 s->left->ainfo->rval, s->right->ainfo->rval,
+      Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
+			 s->left->ainfo->rval, op, s->right->ainfo->rval,
 			 s->ainfo->rval);
       c->ast = s->ainfo;
       break;
@@ -611,23 +613,28 @@ gen_if1(BaseAST *ast) {
       if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
       Sym *op = 0;
+      Sym *rval = s->right->ainfo->rval;
       switch (s->type) {
 	default: assert(!"case");
-	case GETS_NORM: op = if1_make_symbol(if1, "="); break;
-	case GETS_PLUS: op = if1_make_symbol(if1, "+="); break;
-	case GETS_MINUS: op = if1_make_symbol(if1, "-="); break;
-	case GETS_MULT: op = if1_make_symbol(if1, "*="); break;
-	case GETS_DIV: op = if1_make_symbol(if1, "/="); break;
-	case GETS_BITAND: op = if1_make_symbol(if1, "&="); break;
-	case GETS_BITOR: op = if1_make_symbol(if1, "|="); break;
-	case GETS_BITXOR: op = if1_make_symbol(if1, "^="); break;
-	case GETS_BITSL: op = if1_make_symbol(if1, "<<="); break;
-	case GETS_BITSR: op = if1_make_symbol(if1, ">>="); break;
+	case GETS_NORM: op = 0; break;
+	case GETS_PLUS: op = if1_make_symbol(if1, "+"); break;
+	case GETS_MINUS: op = if1_make_symbol(if1, "-"); break;
+	case GETS_MULT: op = if1_make_symbol(if1, "*"); break;
+	case GETS_DIV: op = if1_make_symbol(if1, "/"); break;
+	case GETS_BITAND: op = if1_make_symbol(if1, "&"); break;
+	case GETS_BITOR: op = if1_make_symbol(if1, "|"); break;
+	case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
+	case GETS_BITSL: op = if1_make_symbol(if1, "<<"); break;
+	case GETS_BITSR: op = if1_make_symbol(if1, ">>"); break;
       }
-      Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator, op, 
-			 s->left->ainfo->rval, s->right->ainfo->rval,
-			 s->ainfo->rval);
-      c->ast = s->ainfo;
+      if (op) {
+	rval = new_sym();
+	Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
+			   s->left->ainfo->rval, op, s->right->ainfo->rval,
+			   rval);
+	c->ast = s->ainfo;
+      }
+      if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
       break;
     }
     case EXPR_SIMPLESEQ: {
@@ -669,6 +676,8 @@ gen_if1(BaseAST *ast) {
       if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
+      if (args.n == 1 && args.v[0]->isNull())
+	args.n--;
       forv_Vec(Expr, a, args)
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
@@ -688,6 +697,8 @@ gen_if1(BaseAST *ast) {
       if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
+      if (args.n == 1 && args.v[0]->isNull())
+	args.n--;
       forv_Vec(Expr, a, args)
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);

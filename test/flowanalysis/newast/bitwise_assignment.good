@@ -1,0 +1,30 @@
+
+
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+function __init bitwise_assignment.chpl:26
+function __init() {
+globals
+m &= n;
+m = 10;
+m = 10;
+m ^= n;
+m |= n;
+var m: integer = 10;
+var n: integer = 12;
+writeln("actual answer = ", m);
+writeln("actual answer = ", m);
+writeln("actual answer = ", m);
+writeln("expected answer = 14");
+writeln("expected answer = 6");
+writeln("expected answer = 8");
+writeln("m = ", m);
+writeln("n = ", n);
+writeln("test: m &= n");
+writeln("test: m ^= n");
+writeln("test: m |= n");
+writeln();
+writeln();
+writeln();
+}

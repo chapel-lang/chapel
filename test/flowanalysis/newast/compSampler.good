@@ -1,0 +1,35 @@
+
+
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+answer = ((m%n)+o);
+answer = ((m+n)-o);
+answer = ((m-n)+o);
+answer = ((m/n)+o);
+answer = (m+(n%o));
+answer = (m+(n/o));
+answer = 0;
+answer = 0;
+answer = 0;
+answer = 0;
+answer = 0;
+function __init compSampler.chpl:35
+function __init() {
+globals
+if ((answer!=0)) writeln("**ERROR** =>  m + n - o");
+if ((answer!=2)) writeln("**ERROR** =>  m + n / o");
+if ((answer!=4)) writeln("**ERROR** =>  m - n + o");
+if ((answer!=5)) writeln("**ERROR** =>  m + n % o");
+if ((answer!=5)) writeln("**ERROR** =>  m / n + o");
+if ((answer!=7)) writeln("**ERROR** =>  m % n + o");
+var answer: integer = 0;
+var m: integer = 2;
+var n: integer = 3;
+var o: integer = 5;
+writeln(answer);
+writeln(answer);
+writeln(answer);
+writeln(answer);
+writeln(answer);
+writeln(answer);
+}
