@@ -8163,3 +8163,21 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/functions/: retstmt.chpl retstmt.good 
 
+---------------------------------------------------------------------------
+
+09/21/04 12:30:47 -- bradc
+
+Log message:
+	Adding a new traversal -- checkIDs -- that does a traversal of
+	the AST and then prints out which baseASTs it did and did not
+	hit.  This is of limited worth, but is interesting to me today.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/main/: passlist.h passlist.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/include/: checkIDs.h 
+	chapel/compiler/traversals/: checkIDs.cpp 
+
