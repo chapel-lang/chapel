@@ -8489,3 +8489,21 @@ Modified files:
 	chapel/test/flowanalysis/jplevyak/loop/: loop2.good 
 	chapel/test/flowanalysis/newast/: enumarray.good 
 
+---------------------------------------------------------------------------
+
+09/22/04 16:22:01 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed a bug in AST/expr.cpp which was using type_info to get the
+	type of the WriteCall expression itself instead of the type
+	of the arguments (funny, it was always coming back integer(8)).
+	
+	!!!!!!!! Switch over to --analyzeNewAST !!!!!!!!!
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/main/: driver.cpp 
+	chapel/test/flowanalysis/newast/: COMPOPTS 
+	chapel/test/lowlevelcg/jplevyak/: COMPOPTS 
+
