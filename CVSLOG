@@ -15762,3 +15762,14 @@ Modified files:
 	                                         test_typevar_function1.future 
 	                                         test_typevar_function2.future 
 
+---------------------------------------------------------------------------
+
+01/27/05 11:03:14 -- jplevyak
+
+Log message:
+	Terminate gracefully before IF1 translation if dead code elimination is
+	turned off as the translation will fail.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+
