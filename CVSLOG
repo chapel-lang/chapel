@@ -15614,3 +15614,20 @@ Modified files:
 	chapel/compiler/include/: analysis.h callbacks.h stmt.h 
 	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h 
 
+---------------------------------------------------------------------------
+
+01/25/05 11:38:17 -- deitz
+
+Log message:
+	Fixed a bug in the coercion_wrapper function in which the temporary
+	variable used to do the coercion assignment was not declared in a
+	VarDefStmt.
+	
+	Need to go back with a broom through this procedure as I know it won't
+	work if multiple variables need to be declared.  Also, some of the
+	code can be modularized to make it even easier for us to build up new
+	AST later.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+
