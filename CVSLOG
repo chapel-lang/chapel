@@ -21674,3 +21674,13 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+03/25/05 15:03:04 -- deitz
+
+Log message:
+	Oops. I had it right.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
