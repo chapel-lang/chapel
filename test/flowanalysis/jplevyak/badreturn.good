@@ -1,0 +1,14 @@
+badreturn.v:2: 'a' has no type
+badreturn.v:2: 'b' has no type
+badreturn.v:2: 'q' has no type
+badreturn.v:2: near 'q' unmatched type 'tuple'
+badreturn.v:3: unresolved call 'operator'
+badreturn.v:3: unresolved call 'operator'
+badreturn.v:3: unresolved call 'print'
+badreturn.v:6: 's' has no type
+badreturn.v:6: 't' has no type
+badreturn.v:6: near 't' unmatched type 'tuple'
+badreturn.v:7: unresolved call 'operator'
+badreturn.v:7: unresolved call 'print'
+cat: log/log.F: No such file or directory
+fail: fatal error, program does not type

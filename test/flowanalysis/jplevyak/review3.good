@@ -114,8 +114,7 @@ function operator prelude.chpl:87 with 2 edges
 function operator prelude.chpl:87 with 2 edges
 function operator prelude.chpl:88 with 1 edges
 function operator prelude.chpl:92 with 2 edges
-function self prelude.chpl:203 with 2 edges
-function self prelude.chpl:203 with 2 edges
+function self prelude.chpl:203 with 4 edges
 function self prelude.chpl:203 with 4 edges
 function self prelude.chpl:211 with 2 edges
 g1::c1(review3.chpl:8) ( float64 (prelude.chpl:39) )
@@ -181,9 +180,7 @@ operator::b(prelude.chpl:88) ( integer64 (prelude.chpl:27) )
 operator::b(prelude.chpl:92) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
-self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:211) ( integer64 (prelude.chpl:27) )
-self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:211) ( array (prelude.chpl:206) )

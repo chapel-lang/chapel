@@ -255,9 +255,11 @@ show_violations(FA *fa, FILE *fp) {
 	break;
       case ATypeViolation_MATCH:
 	if (v->type->n == 1)
-	  fprintf(stderr, "unmatched type '%s'\n", v->type->v[0]->sym->name);
+	  fprintf(stderr, "near '%s' unmatched type '%s'\n", 
+		  v->av->var->sym->name ? v->av->var->sym->name : "<anonymous>", 
+		  v->type->v[0]->sym->name);
 	else {
-	  fprintf(stderr, "unmatched type\n");
+	  fprintf(stderr, "near '%s' unmatched type\n");
 	  forv_CreationSet(cs, *v->type)
 	    fprintf(stderr, "  type '%s'\n", cs->sym->name);
 	}

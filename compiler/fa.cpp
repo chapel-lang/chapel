@@ -1134,11 +1134,20 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
   flow_vars(ov, pv);
   if (p->sym->has.n) {
     forv_CreationSet(cs, *ov->out) if (cs) {
-      if (cs->vars.n == p->sym->has.n) {
+      if (cs->sym == p->sym->type && cs->vars.n == p->sym->has.n) {
 	for (int i = 0; i < p->sym->has.n; i++)
 	  destruct(cs->vars.v[i], p->sym->has.v[i]->var, es, result);
-      } else 
-	type_violation(ATypeViolation_MATCH, ov, make_AType(cs), result);
+      } else {
+	AVar *av = ov;
+	if (!av->var->sym->name && p->sym->name)
+	  av = pv;
+	if (!av->var->sym->name && cs->vars.n < p->sym->has.n && p->sym->has.v[cs->vars.n]->name)
+	  av = make_AVar(p->sym->has.v[cs->vars.n]->var, es);
+	if (!av->var->sym->name && cs->vars.n > p->sym->has.n && p->sym->has.n &&
+	    p->sym->has.v[p->sym->has.n-1]->name)
+	  av = make_AVar(p->sym->has.v[p->sym->has.n-1]->var, es);
+	type_violation(ATypeViolation_MATCH, av, make_AType(cs), result);
+      }
     }
   }
 }
