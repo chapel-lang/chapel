@@ -10202,3 +10202,43 @@ Added files:
 	                            test_badclass1.good test_class1.chpl 
 	                            test_class1.good 
 
+---------------------------------------------------------------------------
+
+11/22/04 17:54:32 -- bradc
+
+Log message:
+	Added -l and -L flags to the compiler which are fed to the
+	back-end C compiler, allowing additional libraries to be
+	linked into the generated C code.  For example, to run the
+	generated executable using efence, one could do:
+	
+		chpl myfile.chpl -lefence
+	
+	(though on the Cray systems, you would also have to use
+	the -L flag and LD_LIBRARY_PATH envvar to get efence to
+	work properly...  Hopefully this module will be touched
+	up to fix this).
+	
+	This replaces the previous use of -l which was to specify
+	logs.  Switched this flag to -d (think of them as "debugging
+	logs"), and removed the old -d flag (which nobody was using
+	anyway... and wouldn't you really prefer a log to debug
+	anyway?  :).  And of course the longer form --log still
+	works (and I changed the flowanalysis tests to use this
+	form in case someone reclaims -d later...).
+	
+	Touched up the arg.cpp file so that if no long-form of a
+	flag is supplied (-l and -L currently have no long form),
+	the printout is cleaner.
+
+Modified files:
+	chapel/compiler/include/: files.h geysa.h 
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/compiler/util/: files.cpp misc.cpp 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/test/Samples/ex1-astlog/: COMPOPTS 
+	chapel/test/flowanalysis/jplevyak/: COMPOPTS 
+	chapel/test/flowanalysis/jplevyak/constants/: COMPOPTS 
+	chapel/test/flowanalysis/jplevyak/loop/: COMPOPTS 
+	chapel/test/flowanalysis/newast/: COMPOPTS 
+
