@@ -25,5 +25,13 @@ void MethodsToFunctions::preProcessExpr(Expr* expr) {
 	}
       }
     }
+  } else if (MemberAccess* method = dynamic_cast<MemberAccess*>(expr)) {
+    if (dynamic_cast<FnCall*>(method->parent)) {
+      return;
+    }
+    if (dynamic_cast<FnSymbol*>(method->member)) {
+      FnCall* fn = new FnCall(new Variable(method->member), method->base);
+      expr->replace(fn);
+    }
   }
 }

@@ -488,6 +488,15 @@ fndecl:
     {
       $$ = new DefStmt(Symboltable::finishFnDef($<fnsym>5, $7, $9, $10));
     }
+|
+  TFUNCTION fname
+    {
+      $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2), true);
+    }
+                       fnrettype function_body_stmt
+    {
+      $$ = new DefStmt(Symboltable::finishFnDef($<fnsym>3, NULL, $4, $5));
+    }
 ;
 
 

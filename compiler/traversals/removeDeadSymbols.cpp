@@ -2,6 +2,7 @@
 #include "analysis.h"
 #include "stmt.h"
 #include "expr.h"
+#include "../traversals/view.h"
 
 void RemoveDeadSymbols::postProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
@@ -13,6 +14,7 @@ void RemoveDeadSymbols::postProcessStmt(Stmt* stmt) {
     if (FnSymbol* fn_sym = def_stmt->fnDef()) {
       if (!function_is_used(fn_sym)) {
 	def_stmt->extract();
+	//print_view(def_stmt);
       }
     }
   }
