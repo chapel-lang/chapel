@@ -21550,3 +21550,15 @@ Added files:
 	                            test_type_in_class1.good 
 	chapel/test/types/seq/deitz/noanalysis/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/25/05 10:29:28 -- jplevyak
+
+Log message:
+	Add test cases for separating member functions and regular functions.
+
+Added files:
+	chapel/test/functions/jplevyak/: member-1.chpl member-1.good 
+	                                 member-2.chpl member-2.future 
+	                                 member-2.good 
+
