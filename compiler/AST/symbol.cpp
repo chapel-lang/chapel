@@ -29,12 +29,12 @@ bool Symbol::isNull(void) {
 }
 
 
-Symbol* Symbol::copyList(CloneCallback* analysis_clone) {
+Symbol* Symbol::copyList(bool clone, CloneCallback* analysis_clone) {
   Symbol* newSymbolList = nilSymbol;
   Symbol* oldSymbol = this;
 
   while (oldSymbol && !oldSymbol->isNull()) {
-    newSymbolList = appendLink(newSymbolList, oldSymbol->copy(analysis_clone));
+    newSymbolList = appendLink(newSymbolList, oldSymbol->copy(clone, analysis_clone));
 
     oldSymbol = nextLink(Symbol, oldSymbol);
   }
@@ -43,12 +43,12 @@ Symbol* Symbol::copyList(CloneCallback* analysis_clone) {
 }
 
 
-Symbol* Symbol::copy(CloneCallback* analysis_clone) {
+Symbol* Symbol::copy(bool clone, CloneCallback* analysis_clone) {
   if (isNull()) {
     return this;
   }
 
-  Symbol* new_symbol = copySymbol(analysis_clone);
+  Symbol* new_symbol = copySymbol(clone, analysis_clone);
 
   new_symbol->lineno = lineno;
   new_symbol->filename = filename;
@@ -60,7 +60,7 @@ Symbol* Symbol::copy(CloneCallback* analysis_clone) {
 }
 
 
-Symbol* Symbol::copySymbol(CloneCallback* analysis_clone) {
+Symbol* Symbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
   INT_FATAL(this, "Symbol::copySymbol() not anticipated to be needed");
   return nilSymbol;
 }
@@ -144,9 +144,13 @@ void Symbol::setDefPoint(Stmt* stmt) {
 }
 
 
-UnresolvedSymbol::UnresolvedSymbol(char* init_name) :
+UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
   Symbol(SYMBOL_UNRESOLVED, init_name)
-{}
+{
+  if (init_cname) {
+    cname = init_cname;
+  }
+}
 
 
 void UnresolvedSymbol::codegen(FILE* outfile) {
@@ -154,7 +158,7 @@ void UnresolvedSymbol::codegen(FILE* outfile) {
 }
 
 
-Symbol* UnresolvedSymbol::copySymbol(CloneCallback* analysis_clone) {
+Symbol* UnresolvedSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
   return new UnresolvedSymbol(copystring(name));
 }
 
@@ -169,7 +173,7 @@ VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass,
 }
 
 
-Symbol* VarSymbol::copySymbol(CloneCallback* analysis_clone) {
+Symbol* VarSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
   return new VarSymbol(copystring(name), type, varClass, isConst);
 }
 
@@ -204,7 +208,7 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 }
 
 
-Symbol* ParamSymbol::copySymbol(CloneCallback* analysis_clone) {
+Symbol* ParamSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
   return new ParamSymbol(intent, copystring(name), type);
 }
 
@@ -258,7 +262,7 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 }
 
 
-Symbol* TypeSymbol::copySymbol(CloneCallback* analysis_clone) {
+Symbol* TypeSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
   return new TypeSymbol(copystring(name), type);
 }
 
@@ -312,7 +316,7 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 }
 
 
-Symbol* FnSymbol::copySymbol(CloneCallback* analysis_clone) {
+Symbol* FnSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
   return new FnSymbol(name);
 }
 
@@ -356,8 +360,8 @@ EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
 }
 
 
-Symbol* EnumSymbol::copySymbol(CloneCallback* analysis_clone) {
-  return new EnumSymbol(copystring(name), init->copy(analysis_clone), val);
+Symbol* EnumSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
+  return new EnumSymbol(copystring(name), init->copy(clone, analysis_clone), val);
 }
 
 

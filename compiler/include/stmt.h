@@ -21,11 +21,11 @@ class Stmt : public BaseAST {
   virtual bool canLiveAtFileScope(void);
   virtual bool topLevelExpr(Expr* testExpr);
 
-  Stmt* copyList(CloneCallback* analysis_clone = NULL);
-  Stmt* copy(CloneCallback* analysis_clone = NULL);
-  Stmt* copyListInternal(CloneCallback* analysis_clone = NULL);
-  Stmt* copyInternal(CloneCallback* analysis_clone = NULL);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  Stmt* copyList(bool clone = false, CloneCallback* analysis_clone = NULL);
+  Stmt* copy(bool clone = false, CloneCallback* analysis_clone = NULL);
+  Stmt* copyListInternal(bool clone = false, CloneCallback* analysis_clone = NULL);
+  Stmt* copyInternal(bool clone = false, CloneCallback* analysis_clone = NULL);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
@@ -50,7 +50,7 @@ extern Stmt* nilStmt;
 class NoOpStmt : public Stmt {
  public:
   NoOpStmt(void);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -63,7 +63,7 @@ class WithStmt : public Stmt {
 
   WithStmt(Expr* init_withExpr);
   ClassType* getClass(void);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -76,7 +76,7 @@ class VarDefStmt : public Stmt {
   Expr* init;
 
   VarDefStmt(VarSymbol* init_var, Expr* init_expr);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -94,7 +94,7 @@ class TypeDefStmt : public Stmt {
   Type* type;
 
   TypeDefStmt(Type* init_type);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
   TypeDefStmt* clone(CloneCallback* clone_callback);
 
   bool canLiveAtFileScope(void);
@@ -111,7 +111,7 @@ class FnDefStmt : public Stmt {
   FnSymbol* fn;
 
   FnDefStmt(FnSymbol* init_fn);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
   FnDefStmt* clone(CloneCallback* clone_callback);
 
   bool isNull(void);
@@ -141,7 +141,7 @@ class ExprStmt : public Stmt {
   Expr* expr;
 
   ExprStmt(Expr* initExpr);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -157,7 +157,7 @@ class ExprStmt : public Stmt {
 class ReturnStmt : public ExprStmt {
  public:
   ReturnStmt(Expr* retExpr);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -173,7 +173,7 @@ class BlockStmt : public Stmt {
   BlockStmt::BlockStmt(Stmt* init_body = nilStmt);
   void addBody(Stmt* init_body);
   void setBlkScope(SymScope* init_blkScope);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   void traverseStmt(Traversal* traversal);
 
@@ -188,7 +188,7 @@ class WhileLoopStmt : public BlockStmt {
   Expr* condition;
 
   WhileLoopStmt(bool init_whileDo, Expr* init_cond, Stmt* body);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -210,7 +210,7 @@ class ForLoopStmt : public BlockStmt {
   ForLoopStmt(bool init_forall, VarSymbol* init_index, Expr* init_domain,
 	      Stmt* body = nilStmt);
   void setIndexScope(SymScope* init_indexScope);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -229,7 +229,7 @@ class CondStmt : public Stmt {
 
   CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
 	   Stmt* init_elseStmt = nilStmt);
-  virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   bool topLevelExpr(Expr* testExpr);
 

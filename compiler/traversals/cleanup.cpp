@@ -3,6 +3,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
+#include "../passes/runAnalysis.h"
 
 
 /******************************************************************************
@@ -23,7 +24,7 @@ void ApplyWith::preProcessStmt(Stmt* stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
       if (dynamic_cast<ClassType*>(symType->type)) {
-	Stmt* with_replacement = with->getClass()->definition->copyList();
+	Stmt* with_replacement = with->getClass()->definition->copyList(true);
 	stmt->replace(with_replacement);
 	return;
       }
@@ -116,8 +117,28 @@ void ResolveEasiest::preProcessExpr(Expr* expr) {
   if (Variable* variable_expr = dynamic_cast<Variable*>(expr)) {
     if (dynamic_cast<UnresolvedSymbol*>(variable_expr->var)) {
       Symbol* new_symbol = Symboltable::lookup(variable_expr->var->name);
-      if (new_symbol && !dynamic_cast<FnSymbol*>(new_symbol)) {
-	variable_expr->var = new_symbol;
+      if (new_symbol) {
+	if (!dynamic_cast<FnSymbol*>(new_symbol)) {
+	  variable_expr->var = new_symbol;
+	}
+	else if (RunAnalysis::runCount > 0) {
+	  if (!strcmp(new_symbol->cname, variable_expr->var->cname)) {
+	    variable_expr->var = new_symbol;
+	  }
+	  else {
+	    INT_FATAL(expr, "Unable to resolve function in Cleanup");
+	    /** DETAILS: Post-analysis, we should be able to resolve
+		functions.  In the case of copied symbols, the cname
+		is set to the cloned or overloaded function so we can
+		continue to get the right one. **/
+	  }
+	}
+      }
+      else {
+	if (strcmp(variable_expr->var->name, "__primitive")) {
+	  USR_FATAL(expr, "Error: cannot resolve symbol '%s'",
+		    variable_expr->var->name);
+	}
       }
     }
   }
@@ -216,7 +237,14 @@ void SpecializeParens::preProcessExpr(Expr* expr) {
     }
     else if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(baseVar->var->type)) {
-	paren_replacement = new FnCall(new Variable(ctype->constructor->fn), paren->argList);
+	if (FnDefStmt* constructor = 
+	    dynamic_cast<FnDefStmt*>(ctype->constructor)) {
+	  paren_replacement = new FnCall(new Variable(constructor->fn),
+					 paren->argList);
+	}
+	else {
+	  INT_FATAL(expr, "constructor is not a FnDefStmt");
+	}
       }
       else if (strcmp(baseVar->var->name, "write") == 0) {
 	paren_replacement = new IOCall(IO_WRITE, paren->baseExpr, paren->argList);
@@ -330,21 +358,13 @@ void Cleanup::run(ModuleSymbol* moduleList) {
 }
 
 void call_cleanup(BaseAST* ast) {
-  TRAVERSE(ast, new ApplyWith(), true);
-  TRAVERSE(ast, new InsertThis(), true);
   TRAVERSE(ast, new ResolveEasiest(), true);
-  TRAVERSE(ast, new RenameOverloaded(), true);
   TRAVERSE(ast, new ResolveEasy(), true);
   TRAVERSE(ast, new SpecializeParens(), true);
-  TRAVERSE(ast, new ApplyThis(), true);
 }
 
 void call_cleanup_ls(BaseAST* ast) {
-  TRAVERSE_LS(ast, new ApplyWith(), true);
-  TRAVERSE_LS(ast, new InsertThis(), true);
   TRAVERSE_LS(ast, new ResolveEasiest(), true);
-  TRAVERSE_LS(ast, new RenameOverloaded(), true);
   TRAVERSE_LS(ast, new ResolveEasy(), true);
   TRAVERSE_LS(ast, new SpecializeParens(), true);
-  TRAVERSE_LS(ast, new ApplyThis(), true);
 }

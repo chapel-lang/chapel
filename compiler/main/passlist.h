@@ -31,6 +31,8 @@ PassInfo passlist[] = {
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
 
+  //  RUN(Fixup, "hyper verify"),  // hyper verification!
+
   RUN(MethodsToFunctions, ""),
   //  RUN(ProcessParameters, ""),
 

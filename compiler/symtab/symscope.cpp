@@ -55,8 +55,7 @@ bool SymScope::isInternal(void) {
   SymScope* scope = this;
 
   while (scope != NULL) {
-    if (scope->type == SCOPE_INTERNAL_PRELUDE || 
-	scope->type == SCOPE_PRELUDE) {
+    if (scope->type == SCOPE_INTERNAL_PRELUDE) {
       return true;
     }
     scope = scope->parent;

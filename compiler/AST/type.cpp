@@ -34,8 +34,8 @@ bool Type::isComplex(void) {
 }
 
 
-Type* Type::copy(CloneCallback* analysis_clone) {
-  Type* new_type = copyType(analysis_clone);
+Type* Type::copy(bool clone, CloneCallback* analysis_clone) {
+  Type* new_type = copyType(clone, analysis_clone);
 
   new_type->lineno = lineno;
   new_type->filename = filename;
@@ -46,8 +46,9 @@ Type* Type::copy(CloneCallback* analysis_clone) {
 }
 
 
-Type* Type::copyType(CloneCallback* analysis_clone) {
-  return this;
+Type* Type::copyType(bool clone, CloneCallback* analysis_clone) {
+  INT_FATAL(this, "Unanticipated call to Type::copyType");
+  return nilType;
 }
 
 
@@ -203,16 +204,24 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 }
 
 
-Type* EnumType::copyType(CloneCallback* analysis_clone) {
-  Symbol* newSyms = valList->copyList(analysis_clone);
+Type* EnumType::copyType(bool clone, CloneCallback* analysis_clone) {
+  Type* copy = new EnumType(valList);
+  copy->addName(name);
+  return copy;
+
+    /*
+  Symbol* newSyms = valList->copyList(clone, analysis_clone);
 
   if (typeid(*newSyms) != typeid(EnumSymbol)) {
     INT_FATAL(this, "valList is not EnumSymbol in EnumType::copyType()");
     return nilType;
   } else {
     EnumSymbol* newEnums = (EnumSymbol*)newSyms;
-    return new EnumType(newEnums);
+    Type* copy = new EnumType(newEnums);
+    copy->addName(name);
+    return copy;
   }
+    */
 }
 
 
@@ -421,12 +430,15 @@ DomainType::DomainType(int init_numdims) :
 {}
 
 
-Type* DomainType::copyType(CloneCallback* analysis_clone) {
+Type* DomainType::copyType(bool clone, CloneCallback* analysis_clone) {
+  Type* copy;
   if (parent->isNull()) {
-    return new DomainType(numdims);
+    copy = new DomainType(numdims);
   } else {
-    return new DomainType(parent->copy(analysis_clone));
+    copy = new DomainType(parent->copy(clone, analysis_clone));
   }
+  copy->addName(name);
+  return copy;
 }
 
 
@@ -469,12 +481,15 @@ IndexType::IndexType(int init_numdims) :
 }
 
 
-Type* IndexType::copyType(CloneCallback* analysis_clone) {
+Type* IndexType::copyType(bool clone, CloneCallback* analysis_clone) {
+  Type* copy;
   if (parent->isNull()) {
-    return new IndexType(numdims);
+    copy = new IndexType(numdims);
   } else {
-    return new IndexType(parent->copy(analysis_clone));
+    copy = new IndexType(parent->copy(clone, analysis_clone));
   }
+  copy->addName(name);
+  return copy;
 }
 
 
@@ -502,8 +517,11 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 }
 
 
-Type* ArrayType::copyType(CloneCallback* analysis_clone) {
-  return new ArrayType(domain->copy(analysis_clone), elementType->copy(analysis_clone));
+Type* ArrayType::copyType(bool clone, CloneCallback* analysis_clone) {
+  Type* copy = new ArrayType(domain->copy(clone, analysis_clone),
+			     elementType->copy(clone, analysis_clone));
+  copy->addName(name);
+  return copy;
 }
 
 
@@ -561,8 +579,11 @@ UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
 {}
 
 
-Type* UserType::copyType(CloneCallback* analysis_clone) {
-  return new UserType(definition->copy(analysis_clone), defaultVal->copy(analysis_clone));
+Type* UserType::copyType(bool clone, CloneCallback* analysis_clone) {
+  Type* copy = new UserType(definition,
+			    defaultVal->copy(clone, analysis_clone));
+  copy->addName(name);
+  return copy;
 }
 
 
@@ -648,7 +669,7 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 ClassType::ClassType(bool isValueClass, bool isUnion,
 		     ClassType* init_parentClass, Stmt* init_definition,
-		     FnDefStmt* init_constructor, SymScope* init_classScope) :
+		     Stmt* init_constructor, SymScope* init_classScope) :
   Type(TYPE_CLASS, nilExpr),
   value(isValueClass),
   union_value(isUnion),
@@ -662,10 +683,15 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 }
 
 
-Type* ClassType::copyType(CloneCallback* analysis_clone) {
-  FnDefStmt* newConstructor = dynamic_cast<FnDefStmt*>(constructor->copy(analysis_clone));
-  ClassType* newParent = dynamic_cast<ClassType*>(parentClass->copy(analysis_clone));
-  return new ClassType(value, union_value, newParent, definition->copyList(analysis_clone), newConstructor);
+Type* ClassType::copyType(bool clone, CloneCallback* analysis_clone) {
+  Type* copy = new ClassType(value,
+			     union_value,
+			     parentClass,
+			     definition->copyList(clone, analysis_clone),
+			     constructor->copy(clone, analysis_clone),
+			     classScope);
+  copy->addName(name);
+  return copy;
 }
 
 
@@ -835,12 +861,13 @@ void TupleType::addType(Type* additionalType) {
 }
 
 
-Type* TupleType::copyType(CloneCallback* analysis_clone) {
-  TupleType* newTupleType = new TupleType(components.v[0]->copy(analysis_clone));
+Type* TupleType::copyType(bool clone, CloneCallback* analysis_clone) {
+  TupleType* newTupleType =
+    new TupleType(components.v[0]->copy(clone, analysis_clone));
   for (int i=1; i<components.n; i++) {
-    newTupleType->addType(components.v[i]->copy(analysis_clone));
+    newTupleType->addType(components.v[i]->copy(clone, analysis_clone));
   }
-  
+  newTupleType->addName(name);
   return newTupleType;
 }
 
@@ -877,14 +904,14 @@ UnresolvedType::UnresolvedType(char* init_name) :
 }
 
 
-Type* UnresolvedType::copyType(CloneCallback* analysis_clone) {
+Type* UnresolvedType::copyType(bool clone, CloneCallback* analysis_clone) {
   return new UnresolvedType(copystring(name->name));
 }
 
 
 void UnresolvedType::codegen(FILE* outfile) {
-  fprintf(outfile, name->name);
-  //  INT_FATAL(this, "ERROR:  Cannot codegen an unresolved type.");
+  //  fprintf(outfile, name->name);
+  INT_FATAL(this, "ERROR:  Cannot codegen an unresolved type.");
 }
 
 

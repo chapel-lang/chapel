@@ -31,9 +31,9 @@ class Symbol : public BaseAST {
 
   bool isNull(void);
 
-  Symbol* copyList(CloneCallback* analysis_clone = NULL);
-  Symbol* copy(CloneCallback* analysis_clone = NULL);
-  virtual Symbol* copySymbol(CloneCallback* analysis_clone);
+  Symbol* copyList(bool clone = false, CloneCallback* analysis_clone = NULL);
+  Symbol* copy(bool clone = false, CloneCallback* analysis_clone = NULL);
+  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseSymbol(Traversal* traverse);
@@ -54,8 +54,8 @@ extern Symbol* nilSymbol;
 
 class UnresolvedSymbol : public Symbol {
  public:
-  UnresolvedSymbol(char* init_name);
-  virtual Symbol* copySymbol(CloneCallback* analysis_clone);
+  UnresolvedSymbol(char* init_name, char* init_cname = NULL);
+  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
   void codegen(FILE* outfile);
 };
@@ -68,7 +68,7 @@ class VarSymbol : public Symbol {
 
   VarSymbol(char* init_name, Type* init_type = dtUnknown, 
 	    varType init_varClass = VAR_NORMAL, bool init_isConst = false);
-  virtual Symbol* copySymbol(CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
   bool isNull(void);
   
@@ -84,7 +84,7 @@ class ParamSymbol : public Symbol {
 
   ParamSymbol(paramType init_intent, char* init_name, 
 	      Type* init_type = dtUnknown);
-  virtual Symbol* copySymbol(CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
   bool requiresCPtr(void);
   bool requiresCTmp(void);
@@ -98,7 +98,7 @@ class ParamSymbol : public Symbol {
 class TypeSymbol : public Symbol {
  public:
   TypeSymbol(char* init_name, Type* init_definition);
-  virtual Symbol* copySymbol(CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 };
 
 
@@ -120,7 +120,7 @@ class FnSymbol : public Symbol {
   FnSymbol(char* init_name);
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
 		 SymScope* init_paramScope, bool init_exportMe=false);
-  virtual Symbol* copySymbol(CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
   bool isNull(void);
 
@@ -137,7 +137,7 @@ class EnumSymbol : public Symbol {
   int val;
 
   EnumSymbol(char* init_name, Expr* init_init, int init_val = 0);
-  virtual Symbol* copySymbol(CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
   void set_values(void);
 };
 

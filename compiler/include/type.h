@@ -42,8 +42,8 @@ class Type : public BaseAST {
   bool isNull(void);
   virtual bool isComplex(void);
 
-  Type* copy(CloneCallback* analysis_clone = NULL);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  Type* copy(bool clone = false, CloneCallback* analysis_clone = NULL);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   void traverseDef(Type* _this, Traversal* traversal, bool atTop = true);
@@ -79,7 +79,7 @@ class EnumType : public Type {
   EnumSymbol* valList;
 
   EnumType(EnumSymbol* init_valList);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
@@ -100,7 +100,7 @@ class DomainType : public Type {
 
   DomainType(Expr* init_expr = nilExpr);
   DomainType(int init_numdims);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   int rank(void);
 
@@ -113,7 +113,7 @@ class IndexType : public DomainType {
  public:
   IndexType(Expr* init_expr = nilExpr);
   IndexType(int init_numdims);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   void print(FILE* outfile);
 };
@@ -125,7 +125,7 @@ class ArrayType : public Type {
   Type* elementType;
 
   ArrayType(Expr* init_domain, Type* init_elementType);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
@@ -144,7 +144,7 @@ class UserType : public Type {
   Type* definition;
 
   UserType(Type* init_definition, Expr* init_defaultVal = nilExpr);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   bool isComplex(void);
 
@@ -168,18 +168,18 @@ class ClassType : public Type {
   bool union_value; /* true if this is a union */
   ClassType* parentClass;
   Stmt* definition;
-  FnDefStmt* constructor;
+  Stmt* constructor;
   SymScope* classScope;
   
   ClassType(bool isValueClass,
 	    bool isUnion,
             ClassType* init_parentClass = nilClassType, 
-	    Stmt* init_definition = nilStmt, 
-	    FnDefStmt* init_constructor = nilFnDefStmt,
+	    Stmt* init_definition = nilStmt,
+	    Stmt* init_constructor = nilStmt,
 	    SymScope* init_classScope = NULL);
   void addDefinition(Stmt* init_definition);
   void setClassScope(SymScope* init_classScope);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
@@ -200,7 +200,7 @@ class TupleType : public Type {
 
   TupleType(Type* init_type);
   void addType(Type* additionalType);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
@@ -210,7 +210,7 @@ class TupleType : public Type {
 class UnresolvedType : public Type {
  public:
   UnresolvedType(char* init_name);
-  virtual Type* copyType(CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
   void codegen(FILE* outfile);
 };
 
