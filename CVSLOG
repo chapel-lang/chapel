@@ -15967,3 +15967,25 @@ Modified files:
 	                                         test_typevar_function1.future 
 	                                         test_typevar_function2.future 
 
+---------------------------------------------------------------------------
+
+01/31/05 16:18:46 -- deitz
+
+Log message:
+	Removed commented out versions of FnDefStmt::clone,etc.
+	
+	Removed unused currentFn in Symboltable since this was out-of-date and
+	not used.
+	
+	Added commented out version FnSymbol::clone which doesn't work because
+	analysis stores the type information of a cloned FnSymbol in its
+	FnDefStmt.  Thus the cloned version must create a FnDefStmt even if it
+	is ignored.  This has to do with the recent changes.
+	
+	I now see analysis's representation as being more tightly coupled to
+	the high-level representation than I thought.  This explains much.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+
