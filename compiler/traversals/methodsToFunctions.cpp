@@ -17,17 +17,11 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
 
   if (tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ctype = dynamic_cast<ClassType*>(tds->type)) {
-      FnSymbol* functions = ctype->embeddedFnSymbols;
-      while (functions) {
-	functions->cname = 
-	  glomstrings(4, "_", ctype->name->name, "_", functions->name);
-	functions = nextLink(FnSymbol, functions);
+      forv_Vec(FnSymbol, fn, ctype->primaryMethods) {
+	fn->cname = glomstrings(4, "_", ctype->name->name, "_", fn->name);
       }
-      functions = ctype->boundFnSymbols;
-      while (functions) {
-	functions->cname = 
-	  glomstrings(4, "_", ctype->name->name, "_", functions->name);
-	functions = nextLink(FnSymbol, functions);
+      forv_Vec(FnSymbol, fn, ctype->secondaryMethods) {
+	fn->cname = glomstrings(4, "_", ctype->name->name, "_", fn->name);
       }
     }
   }

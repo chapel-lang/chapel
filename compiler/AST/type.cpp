@@ -682,78 +682,64 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 ClassType::ClassType(bool isValueClass, bool isUnion,
 		     ClassType* init_parentClass,
 		     Stmt* init_constructor,
-		     SymScope* init_classScope,
-		     FnSymbol* init_embeddedFnSymbols,
-		     VarSymbol* init_classVarSymbols,
-		     TypeSymbol* init_classTypeSymbols,
-		     FnSymbol* init_boundFnSymbols) :
+		     SymScope* init_classScope) :
   Type(TYPE_CLASS, nilExpr),
   value(isValueClass),
   union_value(isUnion),
   parentClass(init_parentClass),
   constructor(init_constructor),
-  classScope(init_classScope),
-  embeddedFnSymbols(init_embeddedFnSymbols),
-  classVarSymbols(init_classVarSymbols),
-  classTypeSymbols(init_classTypeSymbols),
-  boundFnSymbols(init_boundFnSymbols)
+  classScope(init_classScope)
 {
+  declarationList = nilStmt;
+  fields.clear();
+  primaryMethods.clear();
+  secondaryMethods.clear();
+  types.clear();
   SET_BACK(constructor);
 }
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  VarSymbol* classVarSymbolsCopy =
-    dynamic_cast<VarSymbol*>(classVarSymbols->copy(clone, map, analysis_clone));
-  if (classVarSymbols && !classVarSymbolsCopy) {
-    INT_FATAL(this, "Error copying class variables");
-  }
-  Type* copy = new ClassType(value,
-			     union_value,
-			     parentClass,
-			     constructor->copy(clone, map, analysis_clone),
-			     classScope,
-			     embeddedFnSymbols,
-			     classVarSymbolsCopy,
-			     classTypeSymbols,
-			     boundFnSymbols);
+  ClassType* copy = new ClassType(value,
+				  union_value,
+				  parentClass,
+				  constructor->copy(clone, map, analysis_clone),
+				  classScope);
+  copy->addDeclarations(declarationList->copy(clone, map, analysis_clone));
   copy->addName(name);
   return copy;
 }
 
 
-void ClassType::addDefinition(Stmt* init_definition) {
-  Stmt* tmp = init_definition;
+void ClassType::addDeclarations(Stmt* newDeclarations) {
+  Stmt* tmp = newDeclarations;
   while (tmp && !tmp->isNull()) {
     if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
       fn_def_stmt->fn->classBinding = this->name;
-      embeddedFnSymbols = appendLink(embeddedFnSymbols, fn_def_stmt->fn);
+      primaryMethods.add(fn_def_stmt->fn);
     }
     else if (VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
-      classVarSymbols = appendLink(classVarSymbols, var_def_stmt->var);
+      fields.add(var_def_stmt->var);
     }
     else if (TypeDefStmt* type_def_stmt = dynamic_cast<TypeDefStmt*>(tmp)) {
       if (TypeSymbol* type_symbol =
 	  dynamic_cast<TypeSymbol*>(type_def_stmt->type->name)) {
-	classTypeSymbols = appendLink(classTypeSymbols, type_symbol);
+	types.add(type_symbol);
       }
       else {
 	INT_FATAL(type_def_stmt, "Major error in class definition");
       }
     }
-    else if (WithStmt* with_stmt = dynamic_cast<WithStmt*>(tmp)) {
-      ClassType* ctype = with_stmt->getClass();
-      FnSymbol* copyEmbeddedFnSymbols = dynamic_cast<FnSymbol*>(ctype->embeddedFnSymbols->copyList());
-      embeddedFnSymbols = appendLink(embeddedFnSymbols, copyEmbeddedFnSymbols);
-      /*SJD: change below too*/
-      classVarSymbols = appendLink(classVarSymbols, (VarSymbol*)ctype->classVarSymbols->copyList());
-      classTypeSymbols = appendLink(classTypeSymbols, (TypeSymbol*)ctype->classTypeSymbols->copyList());
-      boundFnSymbols = appendLink(boundFnSymbols, (FnSymbol*)ctype->boundFnSymbols->copyList());
-    }
     tmp = nextLink(Stmt, tmp);
   }
-  // Fake back
-  init_definition->back = &((Stmt*&)init_definition->next->prev);
+  if (declarationList->isNull()) {
+    declarationList = appendLink(declarationList, newDeclarations);
+  }
+  else {
+    Stmt* last = dynamic_cast<Stmt*>(declarationList->tail());
+    last->insertAfter(newDeclarations);
+  }
+  SET_BACK(declarationList);
 }
 
 
@@ -790,12 +776,9 @@ void ClassType::buildConstructor(void) {
 	the union def stmt.
     **/
     if (union_value) {
-      Symbol* tmp = classVarSymbols;
-
-      while (tmp && !tmp->isNull()) {
+      forv_Vec(VarSymbol, tmp, fields) {
 	EnumSymbol* idtag = new EnumSymbol(glomstrings(4, "_", name->name, "_union_id_", tmp->name), nilExpr);
 	idtag->setDefPoint(NULL); // SHOULD BE REAL statement for declaring this enum, UGH...short-term
-	tmp = nextLink(VarSymbol, tmp);
       }
     }
   }
@@ -813,24 +796,7 @@ void ClassType::traverseDefType(Traversal* traversal) {
   if (classScope) {
     prevScope = Symboltable::setCurrentScope(classScope);
   }
-  if (classTypeSymbols) TRAVERSE_DEF_LS(classTypeSymbols, traversal, false);
-  if (classVarSymbols) TRAVERSE_DEF_LS(classVarSymbols, traversal, false);
-  if (embeddedFnSymbols) {
-    FnSymbol* tmp = embeddedFnSymbols;
-    while (tmp && !tmp->isNull()) {
-      TRAVERSE(tmp->defPoint, traversal, false);
-      tmp = nextLink(FnSymbol, tmp);
-    }
-    // SJD) WANT: TRAVERSE_DEF_LS(embeddedFnSymbols, traversal, false);
-  }
-  if (boundFnSymbols) {
-    FnSymbol* tmp = boundFnSymbols;
-    while (tmp && !tmp->isNull()) {
-      TRAVERSE(tmp->defPoint, traversal, false);
-      tmp = nextLink(FnSymbol, tmp);
-    }
-    // SJD) WANT: TRAVERSE_DEF_LS(boundFnSymbols, traversal, false);
-  }
+  TRAVERSE_LS(declarationList, traversal, false);
   TRAVERSE_LS(constructor, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
   if (classScope) {
@@ -854,15 +820,19 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "typedef enum _");
     name->codegen(outfile);
     fprintf(outfile, "_union_id_def {\n");
-    VarSymbol* tmp = classVarSymbols;
-    while (tmp && !tmp->isNull()) {
+    bool first = true;
+    forv_Vec(VarSymbol, tmp, fields) {
+      if (!first) {
+	if (tmp) {
+	  fprintf(outfile, ",");
+	}
+	fprintf(outfile, "\n");
+      }
+      else {
+	first = false;
+      }
       fprintf(outfile, "_%s_union_id_", name->name);
       tmp->codegen(outfile);
-      tmp = nextLink(VarSymbol, tmp);
-      if (tmp) {
-	fprintf(outfile, ",");
-      }
-      fprintf(outfile, "\n");
     }
     fprintf(outfile, "} _");
     name->codegen(outfile);
@@ -877,7 +847,10 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "_union_id _chpl_union_tag;\n");
     fprintf(outfile, "union _chpl_union_def {\n");
   }
-  if (classVarSymbols) classVarSymbols->codegenDefList(outfile, "\n");
+  forv_Vec(VarSymbol, tmp, fields) {
+    tmp->codegenDef(outfile);
+    fprintf(outfile, "\n");
+  }
   if (union_value) {
     fprintf(outfile, "} _chpl_union;\n");
   }
@@ -893,8 +866,14 @@ void ClassType::codegenDef(FILE* outfile) {
     name->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }
-  if (embeddedFnSymbols && !embeddedFnSymbols->isNull()) embeddedFnSymbols->codegenDefList(codefile, "\n");
-  if (boundFnSymbols && !boundFnSymbols->isNull()) boundFnSymbols->codegenDefList(codefile, "\n");
+  forv_Vec(FnSymbol, fn, primaryMethods) {
+    fn->codegenDef(codefile);
+    fprintf(codefile, "\n");
+  }
+  forv_Vec(FnSymbol, fn, secondaryMethods) {
+    fn->codegenDef(codefile);
+    fprintf(codefile, "\n");
+  }
 }
 
 

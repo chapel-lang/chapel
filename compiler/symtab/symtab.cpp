@@ -633,7 +633,7 @@ TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUni
 TypeDefStmt* Symboltable::finishClassDef(TypeSymbol* classSym, 
 					 Stmt* definition) {
   ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
-  classType->addDefinition(definition);
+  classType->addDeclarations(definition);
   SymScope *classScope = Symboltable::popScope();
   classType->setClassScope(classScope);
   classType->buildConstructor();

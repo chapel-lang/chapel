@@ -36,7 +36,12 @@ void SymScope::traverse(SymtabTraversal* traversal) {
   SymLink* link = firstSym;
   while (link) {
     traversal->processSymbol(link->pSym);
-
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(link->pSym)) {
+      while (fn->overload) {
+	fn = fn->overload;
+	traversal->processSymbol(fn);
+      }
+    }
     link = nextLink(SymLink, link);
   }
 

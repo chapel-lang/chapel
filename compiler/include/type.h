@@ -173,21 +173,19 @@ class ClassType : public Type {
   ClassType* parentClass;
   Stmt* constructor;
   SymScope* classScope;
-  FnSymbol* embeddedFnSymbols;
-  VarSymbol* classVarSymbols;
-  TypeSymbol* classTypeSymbols;
-  FnSymbol* boundFnSymbols;
+  Stmt* declarationList;
+
+  Vec<VarSymbol*> fields;
+  Vec<FnSymbol*> primaryMethods;
+  Vec<FnSymbol*> secondaryMethods;
+  Vec<TypeSymbol*> types;
   
   ClassType(bool isValueClass,
 	    bool isUnion,
             ClassType* init_parentClass = nilClassType, 
 	    Stmt* init_constructor = nilStmt,
-	    SymScope* init_classScope = NULL,
-	    FnSymbol* init_embeddedFnSymbols = NULL,
-	    VarSymbol* init_classVarSymbols = NULL,
-	    TypeSymbol* init_classTypeSymbols = NULL,
-	    FnSymbol* init_boundFnSymbols = NULL);
-  void addDefinition(Stmt* init_definition);
+	    SymScope* init_classScope = NULL);
+  void addDeclarations(Stmt* newDeclarations);
   void buildConstructor(void);
   void setClassScope(SymScope* init_classScope);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

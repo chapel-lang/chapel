@@ -4,10 +4,10 @@
 #include "stringutil.h"
 #include "symtab.h"
 #include "../passes/runAnalysis.h"
+#include "../symtab/symtabTraversal.h"
 
 
 static int all_parsed = 0;
-
 
 /******************************************************************************
  *** Apply With
@@ -17,31 +17,32 @@ static int all_parsed = 0;
  *** included class.
  ***
  ***/
-/*
+
 class ApplyWith : public Traversal {
- public:
+public:
   void preProcessStmt(Stmt* stmt);
 };
 
 void ApplyWith::preProcessStmt(Stmt* stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
-      if (dynamic_cast<ClassType*>(symType->type)) {
-	Stmt* with_replacement = with->getClass()->definition->copyList(true);
-	stmt->replace(with_replacement);
+      if (ClassType* class_type = dynamic_cast<ClassType*>(symType->type)) {
+	Stmt* with_declarations = with->getClass()->declarationList->copyList(true);
+	class_type->addDeclarations(with_declarations);
 	return;
       }
     }
     USR_FATAL(stmt, "With statement is not in a class type definition");
   }
 }
-*/
+
 
 /******************************************************************************
  *** Insert This
  ***
  *** This traversal inserts "this" as the first parameter in bound
- *** functions.
+ *** functions.  It also resolves the class that secondary methods are
+ *** bound to.
  ***
  ***/
 
@@ -50,66 +51,60 @@ class InsertThis : public Traversal {
   void preProcessStmt(Stmt* stmt);
 };
 
-static void insert_this_helper(FnSymbol* functions, ClassType* class_type) {
-  while (functions && !functions->isNull()) {
-    SymScope* saveScope = Symboltable::getCurrentScope();
-    Symboltable::setCurrentScope(functions->paramScope);
-    Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);
-    Symboltable::setCurrentScope(saveScope);
-    this_insert = appendLink(this_insert, functions->formals);
-    functions->formals = this_insert;
-    functions->_this = this_insert;
-    functions = nextLink(FnSymbol, functions);
-  }
-}
-
 void InsertThis::preProcessStmt(Stmt* stmt) {
-  if (FnDefStmt* fds = dynamic_cast<FnDefStmt*>(stmt)) {
-    FnSymbol* fnSym = fds->fn;
-    if (!fnSym->classBinding->isNull() &&
-	dynamic_cast<UnresolvedSymbol*>(fnSym->classBinding)) {
-      Symbol* new_classBinding = 
-	Symboltable::lookup(fnSym->classBinding->name);
-      if (new_classBinding) {
-	if (TypeSymbol* new_classBindingTypeSymbol =
-	    dynamic_cast<TypeSymbol*>(new_classBinding)) {
-	  if (ClassType* new_classBindingType =
-	      dynamic_cast<ClassType*>(new_classBindingTypeSymbol->type)) {
-	    fnSym->classBinding = new_classBinding;
-	    new_classBindingType->boundFnSymbols =
-	      appendLink(new_classBindingType->boundFnSymbols, fnSym);
-	    Symboltable::defineInScope(fnSym, new_classBindingType->classScope);
-	    fnSym->paramScope->parent = new_classBindingType->classScope;
+  FnDefStmt* def = dynamic_cast<FnDefStmt*>(stmt);
 
-	    /** Yuk, I have to move the statement
-	    fnSym->defPoint->extract();
-	    if (new_classBindingType->embeddedFnSymbols &&
-		!new_classBindingType->embeddedFnSymbols->isNull()) {
-	      new_classBindingType->embeddedFnSymbols->defPoint->insertAfter(fnSym->defPoint->copy());
-	    }
-	    else {
-	      INT_FATAL(stmt, "Doh! Need a primary method for now");
-	    }
-	    **/
-	  }
-	  else {
-	    USR_FATAL(fnSym, "Function is not bound to legal class");
-	  }
+  if (!def) {
+    return;
+  }
+
+  FnSymbol* fn = dynamic_cast<FnSymbol*>(def->fn);
+
+  if (!fn) {
+    return;
+  }
+
+  /***
+   *** Resolve classBinding
+   ***/
+  if (dynamic_cast<UnresolvedSymbol*>(fn->classBinding)) {
+    Symbol* classBinding = Symboltable::lookup(fn->classBinding->name);
+    if (classBinding) {
+      if (TypeSymbol* classBindingTypeSymbol =
+	  dynamic_cast<TypeSymbol*>(classBinding)) {
+	if (ClassType* classBindingType =
+	    dynamic_cast<ClassType*>(classBindingTypeSymbol->type)) {
+	  fn->classBinding = classBinding;
+	  classBindingType->secondaryMethods.add(fn);
+	  Symboltable::defineInScope(fn, classBindingType->classScope);
+	  fn->paramScope->parent = classBindingType->classScope;
 	}
 	else {
-	  USR_FATAL(fnSym, "Function is not bound to legal class");
+	  USR_FATAL(fn, "Function is not bound to legal class");
 	}
       }
       else {
-	USR_FATAL(fnSym, "Function is not bound to legal class");
+	USR_FATAL(fn, "Function is not bound to legal class");
       }
     }
+    else {
+      USR_FATAL(fn, "Function is not bound to legal class");
+    }
   }
-
-  if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
-    if (ClassType* class_type = dynamic_cast<ClassType*>(tds->type)) {
-      insert_this_helper(class_type->embeddedFnSymbols, class_type);
-      insert_this_helper(class_type->boundFnSymbols, class_type);
+  
+  /***
+   *** Insert this as first parameter
+   ***/
+  
+  if (TypeSymbol* class_symbol = dynamic_cast<TypeSymbol*>(fn->classBinding)) {
+    if (ClassType* class_type = dynamic_cast<ClassType*>(class_symbol->type)) {
+      SymScope* saveScope = Symboltable::getCurrentScope();
+      Symboltable::setCurrentScope(fn->paramScope);
+      Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);
+      Symboltable::setCurrentScope(saveScope);
+      this_insert = appendLink(this_insert, fn->formals);
+      fn->formals = this_insert;
+      fn->_this = this_insert;
     }
   }
 }
@@ -224,13 +219,6 @@ void RenameOverloaded::preProcessStmt(Stmt* stmt) {
 	tmp = tmp->overload;
       }
     }
-
-    /* for testing clone function, clone foo
-    else if (strcmp(fn->cname, "foo") == 0) {
-      fndef->clone(NULL);
-    }
-    uncomment above for testing cloning --SJD */
-
   }
 }
 
@@ -253,7 +241,12 @@ void ResolveEasy::preProcessExpr(Expr* expr) {
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
       Symbol* member = Symboltable::lookupInScope(member_access->member->name, class_type->classScope);
-      member_access->member = member;
+      if (member) {
+	member_access->member = member;
+      }
+      else {
+	INT_FATAL(expr, "Error resolving dot-expression");
+      }
     }
     else {
       INT_FATAL(expr, "Error resolving dot-expression");
@@ -365,7 +358,7 @@ void ApplyThis::preProcessExpr(Expr* expr) {
 	    return;
 	  }
 	  MemberAccess* repl =
-	    new MemberAccess(new Variable(parentFn->formals), member->var);
+	    new MemberAccess(new Variable(parentFn->_this), member->var);
 	  repl->lineno = expr->lineno;
 	  repl->filename = expr->filename;
 	  expr->replace(repl);
@@ -381,8 +374,8 @@ void ApplyThis::preProcessExpr(Expr* expr) {
 
 /*****************************************************************************/
 
-void Cleanup::run(ModuleSymbol* moduleList) { 
-//  ApplyWith* apply_with = new ApplyWith();
+void Cleanup::run(ModuleSymbol* moduleList) {
+  ApplyWith* apply_with = new ApplyWith();
   InsertThis* insert_this = new InsertThis();
   ResolveEasiest* resolve_easiest = new ResolveEasiest();
   RenameOverloaded* rename_overloaded = new RenameOverloaded();
@@ -393,7 +386,7 @@ void Cleanup::run(ModuleSymbol* moduleList) {
 
   all_parsed = 1;  // First call to Cleanup::run and we're done parsing.
   while (mod) {
-//mod->startTraversal(apply_with);
+    mod->startTraversal(apply_with);
     mod->startTraversal(insert_this);
     mod->startTraversal(resolve_easiest);
     mod->startTraversal(rename_overloaded);

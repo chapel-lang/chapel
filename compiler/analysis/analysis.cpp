@@ -1546,10 +1546,8 @@ build_classes(Vec<BaseAST *> &syms) {
     printf("build_classes: %d classes\n", classes.n);
   forv_Vec(ClassType, c, classes) {
     Sym *csym = c->asymbol->sym;
-    VarSymbol* tmp = c->classVarSymbols;
-    while (tmp && !tmp->isNull()) {
+    forv_Vec(VarSymbol, tmp, c->fields) {
       csym->has.add(tmp->asymbol->sym);
-      tmp = nextLink(VarSymbol, tmp);
     }
   }
   return 0;
