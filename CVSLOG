@@ -15285,3 +15285,32 @@ Added files:
 	                                        varNameQMark.execopts 
 	                                        varNameQMark.good 
 
+---------------------------------------------------------------------------
+
+01/21/05 15:52:36 -- jplevyak
+
+Log message:
+	This checkin adds a good deal of support for the
+	combined wrapper/generics interface that I proposed.
+	I know we have been going back and forth on it, but
+	I did promise to checkin an example and here it is.
+	It is being called for :
+	
+	test/types/type_variables/deitz/test_overload_integerfloat3
+	test/types/type_variables/deitz/test_overload_integerfloat4
+	
+	where a wrapper is required to coerce an integer argument into a float.
+	Currently this causes an assertion because the AST bit is stubbed out.
+	
+	Check out the notes in the .future.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fun.cpp pattern.cpp 
+	chapel/compiler/include/: analysis.h callbacks.h fun.h pattern.h 
+	                          stmt.h 
+	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overload_integerfloat3.future 
+	                                         test_overload_integerfloat4.future 
+
