@@ -1,14 +1,22 @@
 #!/usr/bin/perl
 
-$valgrind = 1;
+$valgrind = 0;
 
 $printusage = 0;
 if (@ARGV) {
     $debugflag = shift @ARGV;
     if ($debugflag eq "-debug") {
 	$debug = 1;
+	$valgrind = 0;
     } elsif ($debugflag eq "-cron") {
 	$debug = 0;
+	$valgrind = 1;
+    } elsif ($debugflag eq "-cronnovgr") {
+	$debug = 0;
+	$valgrind = 0;
+    } elsif ($debugflag eq "-debugvgr") {
+	$debug = 1;
+	$valgrind = 1;
     } else {
 	$printusage = 1;
     }
@@ -19,19 +27,15 @@ if (@ARGV) {
 $statdate = `date +%D`; chomp($statdate);
 
 if (@ARGV) {
-    $nextarg = shift @ARGV;
-    if ($nextarg eq "-novgr") {
-	$valgrind = 0;
-	if (@ARGV) {
-	    $statdate = shift @ARGV;
-	}
-    } else {
-	$statdate = $nextarg;
-    }
+    $statdate = shift @ARGV;
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-cron] {-novgr} {date}\n";
+    print "nightly [-debug|-debugvgr|-cron|-cronnovgr] {date}\n";
+    print "\t-debug     : check out sources and run standard only\n";
+    print "\t-debugvgr  : check out sources and run standard, valgrind\n";
+    print "\t-cron      : use for nightly cron runs only\n";
+    print "\t-cronnovgr : user for nightly cron runs on platforms without valgrind\n";
     exit 1;
 }
 
@@ -50,7 +54,8 @@ $today = `date +%w-%a`; chomp($today);
 $tmpdir = "/tmp/chapel-nightly-uw.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
-$logdir = "~bradc/chapel/test/Logs/Nightly";
+$chplhome = $ENV{'CHPLHOME'};
+$logdir = "$chplhome/test/Logs/Nightly";
 $statdir = "$logdir/Stats";
 if ($debug == 1) {
     $statfile = "$statdir/nightly.debug.dat";
@@ -80,7 +85,7 @@ $prevvgrsummary = "$logdir/last-vgr.log.sorted";
 
 
 if ($debug == 1) {
-    $mailcommand = "| Mail -s \"Chapel: Debug Results\" bradc\@cray.com";
+    $mailcommand = "| Mail -s \"Chapel: Debug Results\" $user\@cray.com";
 } else {
     $mailcommand = "| Mail -s \"Chapel: Nightly Results\" chapel_dev\@cray.com";
 }
@@ -105,7 +110,7 @@ delete($ENV{'CHPL_SYSTEM_DIR'});
 #
 # checkout sources
 #
-mysystem("cd $tmpdir && cvs -d :pserver:bradc\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot checkout chapel", "cvs checkout", 1, 1);
+mysystem("cd $tmpdir && cvs -d :pserver:$CHPL_UW_CVS_USERNAME\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot checkout chapel", "cvs checkout", 1, 1);
 
 
 #
@@ -116,7 +121,7 @@ if ($debug == 0) {
   chomp($todaydate);
   $lastmonth = `date -d"1 month ago" +%m%d%y`;
   chomp($lastmonth);
-  $archivedir = "~bradc/UWchapel";
+  $archivedir = "~$user/UWchapel";
 
   mysystem("cd $tmpdir && tar cvf chapel.tar chapel", "tarring chapel", 0, 1);
   mysystem("cd $tmpdir && gzip chapel.tar", "gzipping chapel", 0, 1);
