@@ -8,10 +8,10 @@
 #include "stringutil.h"
 #include "../traversals/fixup.h"
 
-//#define CONSTRUCTOR_WITH_PARAMETERS 1
+//#define CONSTRUCTOR_WITH_PARAMETERS
 
 static void build_constructor(ClassType* class_type) {
-#ifndef CONSTRUCTOR_WITH_PARAMETERS
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
   SymScope* saveScope = Symboltable::setCurrentScope(class_type->classScope);
 #endif
 
@@ -21,7 +21,7 @@ static void build_constructor(ClassType* class_type) {
 
   ParamSymbol* args = NULL;
   forv_Vec(VarSymbol, tmp, class_type->fields) {
-#if CONSTRUCTOR_WITH_PARAMETERS
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
     args = appendLink(args, new ParamSymbol(PARAM_BLANK, tmp->name, tmp->type, tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy()));
 #else
 #endif
@@ -46,12 +46,12 @@ static void build_constructor(ClassType* class_type) {
     Stmt* alloc_stmt = new ExprStmt(alloc_expr);
     stmts = appendLink(stmts, alloc_stmt);
   }
-#if CONSTRUCTOR_WITH_PARAMETERS
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
   ParamSymbol* ptmp = args;
 #endif
   forv_Vec(VarSymbol, tmp, class_type->fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
-#if CONSTRUCTOR_WITH_PARAMETERS
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
     Expr* rhs = new Variable(ptmp);
 #else
     Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
@@ -66,7 +66,7 @@ static void build_constructor(ClassType* class_type) {
     Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts = appendLink(stmts, assign_stmt);
-#if CONSTRUCTOR_WITH_PARAMETERS
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
     ptmp = nextLink(ParamSymbol, ptmp);
 #endif
   }
@@ -77,7 +77,7 @@ static void build_constructor(ClassType* class_type) {
   class_type->constructor = new DefStmt(fn_def);
 
   SET_BACK(class_type->constructor);
-#ifndef CONSTRUCTOR_WITH_PARAMETERS
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
   Symboltable::setCurrentScope(saveScope);
 #endif
   TRAVERSE(dynamic_cast<Expr*>(class_type->symbol->defPoint)->stmt, new Fixup(), true);
