@@ -101,7 +101,7 @@ else
 endif
 
 # get all the source files
-set testsrc = `ls *.chpl`
+set testsrc = `ls *.{chpl,v}`
 
 if ($CHPLTESTVGRND == "on") then
 set valgrnd = "valgrind --suppressions=$testdir/../compiler/valgrind.suppressions -q "
@@ -113,7 +113,7 @@ endif
 foreach chplsrc ($testsrc)
 
     # set execfile now since used in both if branches
-    set execfile = `echo $chplsrc | sed 's/\.chpl//g'`
+    set execfile = $chplsrc:r
     set checkfile = $execfile.chk
     set complog = $execfile.ihgfedcba.comp.out.tmp
     set execlog = $execfile.ihgfedcba.exec.out.tmp
