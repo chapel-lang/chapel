@@ -4411,3 +4411,16 @@ Log message:
 Modified files:
 	chapel/compiler/: ast.cpp cg.cpp 
 
+---------------------------------------------------------------------------
+
+07/27/04 13:24:11 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Some cleanup.
+	Removed explicit template instantiation.
+
+Modified files:
+	chapel/compiler/: cg.cpp clone.cpp dump.cpp fa.cpp fun.cpp fun.h 
+	                  graph.cpp list.cpp list.h pattern.cpp 
+	                  pattern.h pnode.h vec.cpp vec.h 
+
