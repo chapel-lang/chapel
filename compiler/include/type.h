@@ -176,8 +176,7 @@ class ClassType : public Type {
   Stmt* declarationList;
 
   Vec<VarSymbol*> fields;
-  Vec<FnSymbol*> primaryMethods;
-  Vec<FnSymbol*> secondaryMethods;
+  Vec<FnSymbol*> methods;
   Vec<TypeSymbol*> types;
   
   ClassType(bool isValueClass,

@@ -75,7 +75,8 @@ void InsertThis::preProcessStmt(Stmt* stmt) {
 	if (ClassType* classBindingType =
 	    dynamic_cast<ClassType*>(classBindingTypeSymbol->type)) {
 	  fn->classBinding = classBinding;
-	  classBindingType->secondaryMethods.add(fn);
+	  fn->method_type = SECONDARY_METHOD;
+	  classBindingType->methods.add(fn);
 	  Symboltable::defineInScope(fn, classBindingType->classScope);
 	  fn->paramScope->parent = classBindingType->classScope;
 	}

@@ -129,6 +129,12 @@ class TypeSymbol : public Symbol {
 class FnSymbol;
 extern FnSymbol* nilFnSymbol;
 
+typedef enum __method_type {
+  NON_METHOD,
+  PRIMARY_METHOD,
+  SECONDARY_METHOD
+} _method_type;
+
 class FnSymbol : public Symbol {
  public:
   bool exportMe;
@@ -137,6 +143,7 @@ class FnSymbol : public Symbol {
   Symbol* _this;
   Stmt* body;
   Symbol* classBinding;
+  _method_type method_type;
   SymScope* paramScope;
 
   FnSymbol* overload;

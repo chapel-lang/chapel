@@ -692,8 +692,7 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 {
   declarationList = nilStmt;
   fields.clear();
-  primaryMethods.clear();
-  secondaryMethods.clear();
+  methods.clear();
   types.clear();
   SET_BACK(constructor);
 }
@@ -727,7 +726,8 @@ void ClassType::addDeclarations(Stmt* newDeclarations) {
   while (tmp && !tmp->isNull()) {
     if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
       fn_def_stmt->fn->classBinding = this->name;
-      primaryMethods.add(fn_def_stmt->fn);
+      fn_def_stmt->fn->method_type = PRIMARY_METHOD;
+      methods.add(fn_def_stmt->fn);
     }
     else if (VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
       fields.add(var_def_stmt->var);
@@ -877,11 +877,7 @@ void ClassType::codegenDef(FILE* outfile) {
     name->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }
-  forv_Vec(FnSymbol, fn, primaryMethods) {
-    fn->codegenDef(codefile);
-    fprintf(codefile, "\n");
-  }
-  forv_Vec(FnSymbol, fn, secondaryMethods) {
+  forv_Vec(FnSymbol, fn, methods) {
     fn->codegenDef(codefile);
     fprintf(codefile, "\n");
   }

@@ -421,6 +421,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
   if (!dynamic_cast<UnresolvedSymbol*>(classBinding)) {
     Symboltable::define(this);
   } // Don't want to define this if it's bound to a class
+  method_type = NON_METHOD;
 }
 
  
@@ -435,6 +436,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
   if (!dynamic_cast<UnresolvedSymbol*>(classBinding)) {
     Symboltable::define(this);
   } // Don't want to define this if it's bound to a class
+  method_type = NON_METHOD;
 }
 
 

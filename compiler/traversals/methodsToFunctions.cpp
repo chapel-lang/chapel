@@ -17,10 +17,7 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
 
   if (tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ctype = dynamic_cast<ClassType*>(tds->type)) {
-      forv_Vec(FnSymbol, fn, ctype->primaryMethods) {
-	fn->cname = glomstrings(4, "_", ctype->name->name, "_", fn->name);
-      }
-      forv_Vec(FnSymbol, fn, ctype->secondaryMethods) {
+      forv_Vec(FnSymbol, fn, ctype->methods) {
 	fn->cname = glomstrings(4, "_", ctype->name->name, "_", fn->name);
       }
     }
