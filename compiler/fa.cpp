@@ -202,6 +202,8 @@ flow_vars_equal(AVar *v, AVar *vv) {
   flow_var_to_var(vv, v);
 }
 
+// Initially create a unique creation set for each
+// variable (location in program text).
 static CreationSet *
 creation_point(AVar *v, Sym *s) {
   if (v->creation_set) {
@@ -222,6 +224,8 @@ creation_point(AVar *v, Sym *s) {
   CreationSet *cs = new CreationSet(s, v);
   s->creators.add(cs);
   v->creation_set = cs;
+  forv_Sym(h, s->has)
+    cs->vars.add(unique_AVar(h->var, cs));
   update_var_in(v, make_AType(v->creation_set));
   return v->creation_set;
 }
@@ -543,15 +547,15 @@ fill_rets(EntrySet *es, int n) {
 static void
 prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1) {
   CreationSet *cs = creation_point(make_AVar(p->lvals.v[0], es), kind);
-  int build_map = !cs->sym->has_map.n;
-  int add = !cs->vars.n;
-  for (int i = start; i < p->rvals.n; i++) {
-    AVar *av = unique_AVar(p->rvals.v[i], cs);
-    if (add)
-      cs->vars.add(av);
-    if (build_map && av->var->sym->name)
-      cs->sym->has_map.put(av->var->sym->name, p->rvals.v[i]);
-    flow_var_to_var(make_AVar(p->rvals.v[i], es), av);
+  cs->vars.fill(p->rvals.n - start);
+  for (int i = 0; i < p->rvals.n - start; i++) {
+    Var *v = p->rvals.v[start + i];
+    if (!cs->vars.v[i])
+      cs->vars.v[i] = unique_AVar(v, cs);
+    AVar *av = cs->vars.v[i];
+    flow_var_to_var(make_AVar(v, es), av);
+    if (av->var->sym->name)
+      cs->sym->has_map.put(av->var->sym->name, v);
   }
 }
 
@@ -692,7 +696,7 @@ make_AEdge(Fun *f, PNode *p, EntrySet *from) {
 }
 
 static int
-approx_pattern(AVar *a, Sym *b) {
+approx_pattern(AVar *a, Sym *b, AVar *result) {
   if (!b->type)
     return 1;
   if (b->symbol)
@@ -701,6 +705,7 @@ approx_pattern(AVar *a, Sym *b) {
   AType *t = make_abstract_type(b->type);
   if (t == top_type)
     return 1;
+  a->arg_of_send.set_add(result);
   t = type_intersection(a->out, t);
   if (t == bottom_type)
     return 0;
@@ -709,7 +714,7 @@ approx_pattern(AVar *a, Sym *b) {
       continue;
     for (int i = 0; i < b->has.n; i++)
       if (b->has.v[i]->type) 
-	if (!approx_pattern(cs->vars.v[i], b->has.v[i]))
+	if (!approx_pattern(cs->vars.v[i], b->has.v[i], result))
 	  goto Lcontinue;
     return 1;
   Lcontinue:;
@@ -720,6 +725,7 @@ approx_pattern(AVar *a, Sym *b) {
 static void
 add_funs_constraints(PNode *p, EntrySet *es, Vec<Fun *> *fns, Vec<AVar *> &a) {
   if (fns) {
+    AVar *result = make_AVar(p->lvals.v[0], es);
     forv_Fun(f, *fns) {
       Vec<Sym *> *fargs = &f->sym->args;
       if (a.n == fargs->n) {
@@ -727,7 +733,7 @@ add_funs_constraints(PNode *p, EntrySet *es, Vec<Fun *> *fns, Vec<AVar *> &a) {
 	  if (fargs->v[j]->type && 
 	      (type_intersection(a.v[j]->out, make_abstract_type(fargs->v[j]->type)) == bottom_type))
 	    goto Lnext;
-	  if (fargs->v[j]->pattern && !approx_pattern(a.v[j], fargs->v[j]))
+	  if (fargs->v[j]->pattern && !approx_pattern(a.v[j], fargs->v[j], result))
 	    goto Lnext;
 	}
 	AEdge *ee = make_AEdge(f, p, es);
@@ -892,10 +898,7 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
 	      flow_var_type_restrict(obj, cs->sym);
 	    else {
 	      CreationSet *ref_cs = creation_point(result, sym_ref);
-	      AVar *ref_var = unique_AVar(element_var, ref_cs);
-	      if (!ref_cs->vars.n)
-		ref_cs->vars.add(ref_var);
-	      flow_vars_equal(unique_AVar(v, cs), ref_var);
+	      flow_vars_equal(unique_AVar(v, cs), ref_cs->vars.v[0]);
 	    }
 	  }
 	}
@@ -979,7 +982,7 @@ pattern_match(AVar *a, AVar *b, EntrySet *es) {
     if (s->type && s->type != cs->sym)
       continue;
     if (s->type == sym_tuple) {
-      if (cs->vars.n < s->has.n)
+      if (cs->vars.n < s->has.n) // must have enough to cover args
 	continue;
       for (int i = 0; i < s->has.n; i++)
 	if (s->has.v[i]->var) /* if used */
@@ -1180,12 +1183,13 @@ initialize(FA *fa) {
     }
     forv_Sym(ss, s->implements)
       ss->subtypes.set_add(s);
-    forv_Sym(ss, s->has)
+    forv_Sym(ss, s->has) {
+      if (!ss->var)
+	ss->var = new Var(ss);
       if (ss->name) {
-	if (!ss->var)
-	  ss->var = new Var(ss);
 	s->has_map.put(ss->name, ss->var);
       }
+    }
   }
   forv_Sym(s, fa->pdb->if1->allsyms) {
     if (s->constraints.n) {
@@ -1307,6 +1311,12 @@ clear_results(FA *fa) {
     clear_var(f->sym->cont->var);
     forv_EntrySet(es, f->ess) if (es)
       clear_es(es);
+  }
+  forv_Sym(s, fa->pdb->if1->allsyms) {
+    if (s->var)
+      clear_var(s->var);
+    forv_Sym(ss, s->has)
+      clear_var(ss->var);
   }
   clear_var(return_var);
   clear_var(element_var);

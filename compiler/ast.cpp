@@ -244,8 +244,6 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     case Builtin_ref: 
       sym->type_kind = Type_REF; 
       sym->has.add(if1_alloc_sym(i, if1_cannonicalize_string(i, "ref value")));
-      sym->has.v[0]->type = sym_any;
-      assert(sym_any); // make sure sym_any is defined before sym_ref
       break;
     case Builtin_symbol: 
       if1_set_symbols_type(i); 

@@ -142,6 +142,7 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
 	  AVar *bv = make_AVar(n->rvals.v[3], b);
 	  if (av->out->some_disjunction(*bv->out))
 	    return 0;
+	  break;
 	}
 	case P_prim_cast: {
 	  assert(n->prim->arg_types[0] == PRIM_TYPE_SYMBOL);
@@ -149,6 +150,7 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
 	  AVar *bv = make_AVar(n->rvals.v[2], b);
 	  if (av->out->some_disjunction(*bv->out))
 	    return 0;
+	  break;
 	}
       }
     }

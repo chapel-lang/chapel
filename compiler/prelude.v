@@ -13,7 +13,7 @@ type vector __name "vector";
 type tuple __name "tuple";
 type void __name "void" : tuple;
 type object __name "object" = { };
-type list(a) __name "list" = a * list | void;
+type list __name "list";
 type ref __name "ref";
 
 type catagory __name "catagory";
