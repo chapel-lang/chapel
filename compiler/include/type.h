@@ -317,6 +317,7 @@ class SeqType : public ClassType {
   void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
   bool implementedUsingCVals(void);
   void buildImplementationClasses();
+  static SeqType* createSeqType(char* new_seq_name, Type* init_elementType);
 };
 
 

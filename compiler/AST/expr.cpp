@@ -1854,36 +1854,38 @@ void NamedExpr::codegen(FILE* outfile) {
 }
 
 
-VarInitExpr::VarInitExpr(Symbol* init_var) :
+VarInitExpr::VarInitExpr(Expr* init_expr) :
   Expr(EXPR_VARINIT),
-  var(init_var)
-{}
+  expr(init_expr)
+{
+  SET_BACK(expr);
+}
 
 
 Expr* VarInitExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new VarInitExpr(var);
+  return new VarInitExpr(expr->copy(clone, map, analysis_clone));
 }
 
 
 void VarInitExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(var, traversal, false);
+  TRAVERSE(expr, traversal, false);
 }
 
 
 Type* VarInitExpr::typeInfo(void) {
-  return var->type;
+  return expr->typeInfo();
 }
 
 
 void VarInitExpr::print(FILE* outfile) {
   fprintf(outfile, "DefaultInit(");
-  var->print(outfile);
+  expr->print(outfile);
   fprintf(outfile, ")");
 }
 
 
 void VarInitExpr::codegen(FILE* outfile) {
   fprintf(outfile, "/*** VarInit of ");
-  var->print(outfile);
+  expr->print(outfile);
   fprintf(outfile, "**/");
 }

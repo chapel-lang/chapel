@@ -577,8 +577,8 @@ class NamedExpr : public Expr {
 
 class VarInitExpr : public Expr {
  public:
-  Symbol* var;
-  VarInitExpr(Symbol* init_var);
+  Expr* expr;
+  VarInitExpr(Expr* init_expr);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);

@@ -34,7 +34,7 @@ static void insert_default_init(Stmt* stmt, VarSymbol* var) {
     return;
   }
 
-  ExprStmt* assign_stmt = new ExprStmt(new VarInitExpr(var));
+  ExprStmt* assign_stmt = new ExprStmt(new VarInitExpr(new Variable(var)));
   insert_default_init_stmt(var, assign_stmt);
 }
 

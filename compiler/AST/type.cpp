@@ -10,6 +10,10 @@
 #include "sym.h"
 #include "../traversals/fixup.h"
 
+//#define CONSTRUCTOR_WITH_PARAMETERS
+
+//#define USE_VAR_INIT_EXPR
+
 
 static void genIOReadWrite(FILE* outfile, ioCallType ioType) {
   switch (ioType) {
@@ -744,6 +748,28 @@ bool SeqType::implementedUsingCVals(void) {
 }
 
 
+SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
+  SeqType* new_seq_type = new SeqType(init_elementType);
+  Symbol* _seq = Symboltable::lookupInternal("_seq");
+  ClassType* _seq_type = dynamic_cast<ClassType*>(_seq->type);
+  Symboltable::pushScope(SCOPE_CLASS);
+  Stmt* new_decls = dynamic_cast<Stmt*>(_seq_type->declarationList->next)->copyList(true);
+  new_seq_type->addDeclarations(new_decls);
+
+  Symbol* _node = Symboltable::lookup("_node");
+  _node->cname = glomstrings(2, new_seq_name, _node->name);
+  SymScope* _node_scope = dynamic_cast<StructuralType*>(_node->type)->structScope;
+  Symboltable::lookupInScope("element", _node_scope)->type = new_seq_type->elementType;
+  Symboltable::lookupInScope("next", _node_scope)->type = _node->type;
+  Symboltable::lookup("first")->type = _node->type;
+  Symboltable::lookup("last")->type = _node->type;
+
+  SymScope* new_seq_scope = Symboltable::popScope();
+  new_seq_type->setScope(new_seq_scope);
+  return new_seq_type;
+}
+
+
 void SeqType::buildImplementationClasses() {
   Symboltable::pushScope(SCOPE_CLASS);
 
@@ -1108,9 +1134,35 @@ void StructuralType::traverseDefType(Traversal* traversal) {
 }
 
 
-//#define CONSTRUCTOR_WITH_PARAMETERS
-
 Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
+  forv_Vec(VarSymbol, tmp, fields) {
+    Expr* lhs = new MemberAccess(new Variable(_this), tmp);
+    Stmt* assign_stmt;
+    /** stopgap: strings initialized using _init_string;
+        this will eventually use VarInitExpr **/
+    if (tmp->type == dtString) {
+      Expr* args = lhs;
+      args->append(new MemberAccess(new Variable(_this), tmp));
+      args->append(tmp->type->defaultVal->copy());
+      Symbol* init_string = Symboltable::lookupInternal("_init_string");
+      FnCall* call = new FnCall(new Variable(init_string), args);
+      assign_stmt = new ExprStmt(call);
+    } else {
+#ifdef USE_VAR_INIT_EXPR
+      Expr* assign_expr = new VarInitExpr(lhs);
+      assign_stmt = new ExprStmt(assign_expr);
+#else
+      if (tmp->type->defaultVal) {
+        Expr* assign_expr = new AssignOp(GETS_NORM, lhs, tmp->type->defaultVal->copy());
+        assign_stmt = new ExprStmt(assign_expr);
+      } else {
+        continue;
+      }
+#endif
+    }
+    stmts = appendLink(stmts, assign_stmt);
+  }
+
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
   ParamSymbol* ptmp = args;
 #endif
@@ -1119,13 +1171,9 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
     Expr* rhs = new Variable(ptmp);
 #else
-    Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
+    Expr* rhs = tmp->init ? tmp->init->copy() : NULL;
     if (!rhs) {
-      if (StructuralType* nested_class_type = dynamic_cast<StructuralType*>(tmp->type)) {
-        rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
-      } else continue; // hack for classes that are cloned; we don't
-      // actually want to build the constructor for
-      // cloned classes until they are cloned
+      continue;
     }
 #endif
 

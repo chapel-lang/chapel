@@ -93,9 +93,11 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
   if (Symbol* seq_sym = Symboltable::lookupInCurrentScope(name)) {
     *type = seq_sym->type;
   } else {
-    TypeSymbol* seq_sym = new TypeSymbol(name, seq_type);
-    seq_type->addSymbol(seq_sym);
+    SeqType* new_seq_type = SeqType::createSeqType(name, seq_type->elementType);
+    TypeSymbol* seq_sym = new TypeSymbol(name, new_seq_type);
+    new_seq_type->addSymbol(seq_sym);
     DefExpr* def_expr = new DefExpr(seq_sym);
+    new_seq_type->structScope->setContext(NULL, seq_sym, def_expr);
     DefStmt* seq_type_def = new DefStmt(def_expr);
     if (Symboltable::getCurrentScope() == commonModule->modScope) {
       commonModule->stmts->insertAfter(seq_type_def);
@@ -106,7 +108,8 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
       }
       def_stmt->insertAfter(seq_type_def);
     }
-    seq_type->buildImplementationClasses();
+    *type = new_seq_type;
+    // seq_type->buildImplementationClasses();
   }
   Symboltable::setCurrentScope(saveScope);
 }
