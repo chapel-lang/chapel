@@ -14,7 +14,14 @@ void InsertIndexType::preProcessType(Type* type) {
     return;
   }
   
-  char* name = glomstrings(2, "_index_", domain_type->symbol->name);
+  char* name;
+  
+  if (!(domain_type->parent)){
+    name = glomstrings(3, "_index_", intstring(domain_type->numdims), "d");
+  }
+  else{
+    name = glomstrings(2, "_index_", domain_type->symbol->name);
+  }
   
   IndexType* index_type = dynamic_cast<IndexType*>(domain_type->idxType);
   if (!index_type){

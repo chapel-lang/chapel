@@ -209,10 +209,15 @@ void build_index_type_def(Stmt* stmt, Type** type) {
 	char *name; 
   
  	if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
-  	name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "_d");
+  	name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "d");
   }
   else{
-		name = glomstrings(2, "_index_", domain_type->symbol->name);
+    if (!domain_type->parent){
+      name = glomstrings(3, "_index_", intstring(domain_type->numdims), "d");
+    }
+    else {
+  		name = glomstrings(2, "_index_", domain_type->symbol->name);
+    }
   }
   
   Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);
