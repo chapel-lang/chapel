@@ -11328,3 +11328,14 @@ Modified files:
 	                             fixup.cpp fixup.h 
 	                             methodsToFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+12/09/04 10:26:35 -- deitz
+
+Log message:
+	Fixed up the Fixup pass so that it just sets new Stmt parent symbols
+	for function, class, and module definitions,
+
+Modified files:
+	chapel/compiler/traversals/: fixup.cpp fixup.h 
+
