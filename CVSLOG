@@ -359,3 +359,18 @@ Log message:
 Modified files:
 	./: structure.txt 
 
+---------------------------------------------------------------------------
+
+04/02/04 12:41:08 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	very preliminary chapel grammar and prelude
+	sample/sample.chpl added, and compiles
+
+Modified files:
+	chapel/compiler/: ast.cpp ast_kinds.h builtin_symbols.h chpl.g 
+	                  fa.cpp prelude.chpl prelude.v prim_data.dat 
+	                  v.g 
+Added files:
+	chapel/compiler/samples/: sample.chpl 
+
