@@ -1850,6 +1850,7 @@ Log message:
 	(2) added some support for codegen-ing parenthesized expressions.
 
 Modified files:
+	chapel/compiler/: ast.h codegen.cpp prelude.chpl
 	chapel/runtime/include/: chplio.h 
 	chapel/runtime/src/: chplio.c 
 Added files:
