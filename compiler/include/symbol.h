@@ -9,6 +9,7 @@
 class Stmt;
 class ASymbol;
 class SymScope;
+class MPosition;
 
 enum varType {
   VAR_NORMAL,
@@ -125,6 +126,12 @@ class FnSymbol : public Symbol {
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
 		 SymScope* init_paramScope, bool init_exportMe=false);
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
+
+  FnSymbol* clone(CloneCallback* clone_callback);
+  FnSymbol* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals) { return 0; }
+  FnSymbol* coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions);
+  FnSymbol* default_wrapper(Vec<MPosition *> *defaults) { return 0; }
+  FnSymbol* instantiate_generic(Map<Symbol *, Symbol *> *generic_substitutions) { return 0; }
 
   bool isNull(void);
 

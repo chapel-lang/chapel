@@ -36,6 +36,7 @@ enum Type_kind {
   Type_TAGGED, 		// tag + type (used for variant types)
   Type_PRIMITIVE, 	// builtin things (e.g. int and float)
   Type_APPLICATION, 	// application of a Type_ALIAS with args
+  Type_VARIABLE, 	// type variable
   Type_ALIAS		// a type by another name, possible with constraints
 };
 
@@ -48,7 +49,7 @@ enum Sym_Intent {
 
 #define CPP_IS_LAME {							\
   "NONE", "UNKNOWN", "LUB", "GLB", "PRODUCT", "RECORD", "VECTOR",	\
-  "FUN", "REF", "TAGGED", "PRIMITIVE", "APPLICATION", "ALIAS"}
+  "FUN", "REF", "TAGGED", "PRIMITIVE", "APPLICATION", "VARIABLE", "ALIAS"}
 EXTERN char *type_kind_string[] EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 

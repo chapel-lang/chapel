@@ -8,7 +8,6 @@
 
 class Expr;
 class AInfo;
-class MPosition;
 
 class Stmt : public BaseAST {
  public:
@@ -106,11 +105,6 @@ class FnDefStmt : public Stmt {
 
   FnDefStmt(FnSymbol* init_fn);
   virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
-  FnDefStmt* clone(CloneCallback* clone_callback);
-  FnDefStmt* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals) { return 0; }
-  FnDefStmt* coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions);
-  FnDefStmt* default_wrapper(Vec<MPosition *> *defaults) { return 0; }
-  FnDefStmt* instantiate_generic(Map<Symbol *, Symbol *> *generic_substitutions) { return 0; }
 
   bool isNull(void);
 

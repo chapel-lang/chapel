@@ -2,9 +2,7 @@
 #include <typeinfo>
 #include "expr.h"
 #include "files.h"
-#include "fun.h"
 #include "misc.h"
-#include "pattern.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
@@ -630,82 +628,6 @@ Stmt* FnDefStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
   else {
     return new FnDefStmt(fn);
   }
-}
-
-
-FnDefStmt* FnDefStmt::clone(CloneCallback* clone_callback) {
-  FnDefStmt* this_copy = NULL;
-  static int uid = 1; // Unique ID for cloned functions
-  SymScope* save_scope;
-
-  save_scope = Symboltable::setCurrentScope(this->fn->parentScope);
-  Stmt* stmt_copy = copy(true, clone_callback);
-  if (this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
-    this_copy->fn->cname =
-      glomstrings(3, this_copy->fn->cname, "_clone_", intstring(uid++));
-    this->insertBefore(this_copy);
-  }
-  else {
-    INT_FATAL(this, "Unreachable statement in FnDefStmt::clone reached");
-  }
-  Symboltable::setCurrentScope(save_scope);
-  return this_copy;
-}
-
-
-FnDefStmt* FnDefStmt::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions) {
-  FnDefStmt* wrapper_stmt = NULL;
-  static int uid = 1; // Unique ID for wrapped functions
-  FnSymbol* wrapper_symbol = new FnSymbol(fn->name);
-  wrapper_symbol->cname =
-    glomstrings(3, fn->cname, "_coercion_wrapper_", intstring(uid++));
-  wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
-  Symbol* wrapper_formals = fn->formals->copyList();
-  Symbol* actuals = wrapper_formals;
-  Variable* argList = new Variable(actuals);
-  actuals = nextLink(Symbol, actuals);
-  while (actuals) {
-    argList->append(new Variable(actuals));
-    actuals = nextLink(Symbol, actuals);
-  }
-  Symboltable::pushScope(SCOPE_LOCAL);
-  Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(fn), argList));
-  for (int i = 0; i < coercion_substitutions->n; i++) {
-    int j = 1;
-    MPosition p;
-    Symbol* formal_change = wrapper_formals;
-    Variable* actual_change = argList;
-    forv_MPosition(p, fn->asymbol->fun->numeric_arg_positions) {
-      if (coercion_substitutions->e[i].key ==
-	  fn->asymbol->fun->numeric_arg_positions.e[j]) {
-	char* temp_name =
-	  glomstrings(2, "_coercion_temp_", formal_change->name);
-	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
-					       new Variable(formal_change));
-	Stmt* temp_def_stmt = new VarDefStmt(temp_symbol);
-	temp_symbol->setDefPoint(temp_def_stmt);
-	temp_def_stmt->append(wrapper_body);
-	wrapper_body = temp_def_stmt;
-	formal_change->type = coercion_substitutions->e[i].value->type;
-	actual_change->var = temp_symbol;
-      }
-      if (!formal_change->next->isNull()) {
-	formal_change = nextLink(Symbol, formal_change);
-      }
-      if (!actual_change->next->isNull()) {
-	actual_change = nextLink(Variable, actual_change);
-      }
-      j++;
-    }
-  }
-  SymScope* block_scope = Symboltable::popScope();
-  BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
-  wrapper_block->setBlkScope(block_scope);
-  Type* wrapper_return_type = fn->retType;
-  wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-					  wrapper_return_type, wrapper_block);
-  insertBefore(wrapper_stmt);
-  return wrapper_stmt;
 }
 
 

@@ -43,8 +43,8 @@ static Sym *sym_array = 0;
 static Sym *sym_sequence = 0;
 static Sym *sym_locale = 0;
 
-static int init_function(FnDefStmt *f);
-static int build_function(FnDefStmt *f);
+static int init_function(FnSymbol *f);
+static int build_function(FnSymbol *f);
 static void map_symbols(Vec<BaseAST *> &syms);
 static void build_symbols(Vec<BaseAST *> &syms);
 static void build_types(Vec<BaseAST *> &syms);
@@ -196,9 +196,9 @@ AST *
 AInfo::copy_tree(ASTCopyContext* context) {
   AnalysisCloneCallback callback;
   callback.context = context;
-  FnDefStmt *orig_fn = dynamic_cast<FnDefStmt*>(xast);  
-  FnDefStmt *new_fn = orig_fn->clone(&callback);
-  return new_fn->ainfo;
+  FnSymbol *orig_fn = dynamic_cast<FnDefStmt*>(xast)->fn;
+  FnSymbol *new_fn = orig_fn->clone(&callback);
+  return new_fn->defPoint->ainfo;
 }
 
 static void
@@ -263,10 +263,11 @@ ACallbacks::new_Sym(char *name) {
 }
 
 static Fun *
-install_new_function(FnDefStmt *f) {
+install_new_function(FnSymbol *f) {
   Vec<Stmt *> all_stmts;
   Vec<BaseAST *> all_syms, syms;
-  all_stmts.add(f);
+  all_stmts.add(f->defPoint);
+  all_syms.add(f);
   close_symbols(all_stmts, all_syms);	
   forv_BaseAST(a, all_syms) {
     Stmt *s = dynamic_cast<Stmt *>(a);
@@ -293,7 +294,7 @@ install_new_function(FnDefStmt *f) {
   build_types(syms);
   if (init_function(f) < 0 || build_function(f) < 0) 
     assert(!"unable to instantiate generic/wrapper");
-  Fun *fun = new Fun(f->fn->asymbol);
+  Fun *fun = new Fun(f->asymbol);
   build_arg_positions(fun);
   pdb->add(fun);
   return fun;
@@ -303,8 +304,8 @@ Fun *
 ACallbacks::order_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
-  FnDefStmt *f = fndef->order_wrapper(&m->formal_to_actual_position);
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(((ASymbol*)m->fun->sym)->xsymbol);
+  FnSymbol *f = fndef->order_wrapper(&m->formal_to_actual_position);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
   return fun;
@@ -319,8 +320,8 @@ ACallbacks::coercion_wrapper(Match *m) {
     Type *type = dynamic_cast<Type*>(dynamic_cast<ASymbol*>(s->value)->xsymbol);
     coercions.put(s->key, type->name);
   }
-  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
-  FnDefStmt *f = fndef->coercion_wrapper(coercions.n ? &coercions : 0);
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(((ASymbol*)m->fun->sym)->xsymbol);
+  FnSymbol *f = fndef->coercion_wrapper(coercions.n ? &coercions : 0);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
   return fun;
@@ -330,8 +331,8 @@ Fun *
 ACallbacks::default_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
-  FnDefStmt *f = fndef->default_wrapper(m->default_args.n ? &m->default_args : 0);
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(((ASymbol*)m->fun->sym)->xsymbol);
+  FnSymbol *f = fndef->default_wrapper(m->default_args.n ? &m->default_args : 0);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
   return fun;
@@ -345,15 +346,11 @@ ACallbacks::instantiate_generic(Match *m) {
   form_SymSym(s, m->generic_substitutions)
     substitutions.put(dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->key)->xsymbol), 
 		      dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
-  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
-  FnDefStmt *f = fndef->instantiate_generic(substitutions.n ? &substitutions : 0);
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(((ASymbol*)m->fun->sym)->xsymbol);
+  FnSymbol *f = fndef->instantiate_generic(substitutions.n ? &substitutions : 0);
   Fun *fun =  install_new_function(f);
   fun->wraps = m->fun;
   return fun;
-}
-
-static void
-fixup_from_cloning(AnalysisCloneCallback *c) {
 }
 
 Sym *
@@ -368,7 +365,6 @@ ASymbol::clone(CloneCallback *callback) {
     TypeSymbol *type_symbol = dynamic_cast<TypeSymbol*>(type->name);
     TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(type_symbol->defPoint);
     old_stmt->clone(c);
-    fixup_from_cloning(c);
     return c->context->smap.get(type_symbol->asymbol);
   }
 }
@@ -608,6 +604,10 @@ build_types(Vec<BaseAST *> &syms) {
 	if (tt->parentClass)
 	  t->asymbol->inherits_add(tt->parentClass->asymbol);
 	break;
+      }
+      case TYPE_VARIABLE: {
+	VariableType *tt = dynamic_cast<VariableType*>(t);
+	tt->asymbol->type_kind = Type_VARIABLE;
       }
     }
   }
@@ -1436,19 +1436,19 @@ gen_if1(BaseAST *ast) {
 }
 
 static int
-gen_fun(FnDefStmt *f) {
-  Sym *fn = f->fn->asymbol;
-  AInfo *ast = f->ainfo;
+gen_fun(FnSymbol *f) {
+  Sym *fn = f->asymbol;
+  AInfo *ast = f->defPoint->ainfo;
   Vec<Symbol *> args;
   Vec<Sym *> out_args;
-  getLinkElements(args, f->fn->formals);
+  getLinkElements(args, f->formals);
   Sym *as[args.n + 2];
   int iarg = 0;
-  assert(f->fn->asymbol->name);
-  if (strcmp(f->fn->asymbol->name, "this") != 0) {
-    Sym *s = new_sym(f->fn->asymbol->name);
+  assert(f->asymbol->name);
+  if (strcmp(f->asymbol->name, "this") != 0) {
+    Sym *s = new_sym(f->asymbol->name);
     s->ast = ast;
-    s->must_specialize = if1_make_symbol(if1, f->fn->asymbol->name);
+    s->must_specialize = if1_make_symbol(if1, f->asymbol->name);
     as[iarg++] = s;
   }
   for (int i = 0; i < args.n; i++) {
@@ -1457,7 +1457,7 @@ gen_fun(FnDefStmt *f) {
     as[iarg++] = args.v[i]->asymbol;
   }
   Code *body = 0;
-  if1_gen(if1, &body, f->fn->body->ainfo->code);
+  if1_gen(if1, &body, f->body->ainfo->code);
   if1_move(if1, &body, sym_void, fn->ret, ast);
   if1_label(if1, &body, ast, ast->label[0]);
   Code *c = if1_send(if1, &body, 3, 0, sym_reply, fn->cont, fn->ret);
@@ -1470,32 +1470,32 @@ gen_fun(FnDefStmt *f) {
 }
 
 static int
-init_function(FnDefStmt *f) {
-  Sym *s = f->fn->asymbol;
-  if (verbose_level > 1 && f->fn->name)
-    printf("build_functions: %s\n", f->fn->name);
+init_function(FnSymbol *f) {
+  Sym *s = f->asymbol;
+  if (verbose_level > 1 && f->name)
+    printf("build_functions: %s\n", f->name);
   if (s->name && !strcmp("__init_entryPoint", s->name)) {
     if1_set_builtin(if1, s, "init");
     sym_init = s;
   }
   s->cont = new_sym();
-  s->cont->ast = f->ainfo;
+  s->cont->ast = f->defPoint->ainfo;
   s->ret = new_sym();
-  s->ret->ast = f->ainfo;
+  s->ret->ast = f->defPoint->ainfo;
   s->ret->is_lvalue = 1;
   s->labelmap = new LabelMap;
-  if (f->fn->_this)
-    s->self = f->fn->_this->asymbol;
+  if (f->_this)
+    s->self = f->_this->asymbol;
   set_global_scope(s);
   return 0;
 }
 
 static int
-build_function(FnDefStmt *f) {
-  if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
-  Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
-  if (resolve_labels(f->fn->body, f->fn->asymbol->labelmap, return_label) < 0) return -1;
-  if (gen_if1(f->fn->body) < 0) return -1;
+build_function(FnSymbol *f) {
+  if (define_labels(f->body, f->asymbol->labelmap) < 0) return -1;
+  Label *return_label = f->defPoint->ainfo->label[0] = if1_alloc_label(if1);
+  if (resolve_labels(f->body, f->asymbol->labelmap, return_label) < 0) return -1;
+  if (gen_if1(f->body) < 0) return -1;
   if (gen_fun(f) < 0) return -1;
   return 0;
 }
@@ -1530,12 +1530,12 @@ build_classes(Vec<BaseAST *> &syms) {
 static int
 build_functions(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms)
-    if (s->astType == STMT_FNDEF)
-      if (init_function(dynamic_cast<FnDefStmt*>(s)) < 0)
+    if (s->astType == SYMBOL_FN)
+      if (init_function(dynamic_cast<FnSymbol*>(s)) < 0)
         return -1;
   forv_BaseAST(s, syms)
-    if (s->astType == STMT_FNDEF)
-      if (build_function(dynamic_cast<FnDefStmt*>(s)) < 0)
+    if (s->astType == SYMBOL_FN)
+      if (build_function(dynamic_cast<FnSymbol*>(s)) < 0)
         return -1;
   return 0;
 }
