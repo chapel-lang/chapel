@@ -3425,3 +3425,15 @@ Modified files:
 Added files:
 	chapel/compiler/AST/: TODO 
 
+---------------------------------------------------------------------------
+
+06/16/04 15:05:26 -- bradc
+
+Log message:
+	mid-afternoon AST prototype checkin.
+
+Modified files:
+	chapel/compiler/AST/: TODO chapel.y expr.cpp expr.h link.cpp 
+	                      link.h main.cpp stmt.cpp stmt.h symbol.cpp 
+	                      symbol.h type.cpp type.h 
+
