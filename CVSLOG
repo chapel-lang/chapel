@@ -4010,3 +4010,13 @@ Log message:
 Modified files:
 	chapel/compiler/: TODO fa.cpp fa_extras.cpp 
 
+---------------------------------------------------------------------------
+
+07/14/04 10:41:38 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Deal with one more instability in the valgrind output
+
+Modified files:
+	chapel/compiler/: pattern.cpp 
+
