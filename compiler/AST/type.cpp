@@ -2,11 +2,20 @@
 #include "symbol.h"
 #include "type.h"
 
+Type* dtBoolean;
 Type* dtInteger;
-Symbol* pstInteger;
-
 Type* dtFloat;
+
+Type* dtTimer;
+Type* dtLocale;
+
+Symbol* pstBoolean;
+Symbol* pstInteger;
 Symbol* pstFloat;
+
+Symbol* pstTimer;
+Symbol* pstLocale;
+
 
 Type::Type(void) {
 }
@@ -59,12 +68,17 @@ void ArrayType::print(FILE* outfile) {
 }
 
 
-void setupTypes(void) {
-  dtInteger = new Type();
-  pstInteger = new Symbol("integer", dtInteger);
-  dtInteger->addName(pstInteger);
+static void newType(char* name, Type** dtHandle, Symbol** symHandle) {
+  *dtHandle = new Type();
+  *symHandle = new Symbol(name, *dtHandle);
+  (*dtHandle)->addName(*symHandle);
+}
 
-  dtFloat = new Type();
-  pstFloat = new Symbol("float", dtFloat);
-  dtFloat->addName(pstFloat);
+
+void setupTypes(void) {
+  newType("boolean", &dtBoolean, &pstBoolean);
+  newType("integer", &dtInteger, &pstInteger);
+  newType("float", &dtFloat, &pstFloat);
+  newType("locale", &dtLocale, &pstLocale);
+  newType("timer", &dtTimer, &pstTimer);
 }

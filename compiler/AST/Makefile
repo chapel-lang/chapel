@@ -9,6 +9,7 @@ CXX_SRCS = \
 	stmt.cpp \
 	stringutil.cpp \
 	symbol.cpp \
+        symtab.cpp \
 	type.cpp \
 
 CXX_C_SRCS = \

@@ -47,6 +47,14 @@ class ExprStmt : public Stmt {
 };
 
 
+class ReturnStmt : public ExprStmt {
+ public:
+  ReturnStmt(Expr* retExpr);
+
+  void print(FILE*);
+};
+
+
 class LoopStmt : public Stmt {
  public:
   Stmt* body;

@@ -59,6 +59,21 @@ void ExprStmt::print(FILE* outfile) {
 }
 
 
+ReturnStmt::ReturnStmt(Expr* retExpr) :
+  ExprStmt(retExpr)
+{}
+
+
+void ReturnStmt::print(FILE* outfile) {
+  fprintf(outfile, "return");
+  if (expr != NULL) {
+    fprintf(outfile, " ");
+    expr->print(outfile);
+  }
+  fprintf(outfile, ";");
+}
+
+
 LoopStmt::LoopStmt(Stmt* init_body) :
   body(init_body)
 {}

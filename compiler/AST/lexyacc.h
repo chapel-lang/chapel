@@ -5,6 +5,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "symtab.h"
 #include "type.h"
 #include "yy.h"
 

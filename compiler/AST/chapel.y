@@ -27,18 +27,23 @@
 }
 
 
+%token CONFIG STATIC
 %token VAR CONST
 
-%token INTEGER FLOAT
-%token LOCALE
+%token BOOLEAN INTEGER FLOAT
+%token LOCALE TIMER
 
 %token DOMAIN
 
-%token IDENT
-%token INTLITERAL FLOATLITERAL
+%token ENUM TYPE
+%token FUNCTION
 
-%token IF THEN ELSE
-%token FORALL IN
+%token IDENT
+%token DEFINED_IDENT
+%token INTLITERAL FLOATLITERAL STRINGLITERAL
+
+%token IF ELSE ELSIF
+%token FOR FORALL IN
 %token RETURN
 
 %token BY
@@ -54,13 +59,14 @@
 
 
 %type <intval> intliteral
-%type <bot> binop
-%type <pdt> type domainType arrayType
+%type <bot> binop otherbinop
+%type <pdt> type domainType arrayType weirdType
 %type <pch> identifier
 %type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
-%type <pexpr> reduction
+%type <pexpr> reduction memberaccess
 %type <pdexpr> domainExpr
-%type <stmt> program statements statement decl assignment conditional loop
+%type <stmt> program statements statement decl vardecl assignment conditional 
+%type <stmt> return loop
 
 
 /* These are declared in increasing order of precedence. */
@@ -81,27 +87,99 @@ program:
 ;
 
 
+vardecltype:
+  /* nothing */
+| CONFIG
+| STATIC
+;
+
+
 varconst:  
   VAR
 | CONST
 ;
 
 
-decl:
-  varconst identifier ':' type ';'
-    { $$ = new VarDefStmt(new Symbol($2, $4), NULL); }
-| varconst identifier ':' type '=' expr ';'
-    { $$ = new VarDefStmt(new Symbol($2, $4), $6); }
+vardecl:
+  vardecltype varconst identifier ':' type ';'
+    { $$ = new VarDefStmt(new Symbol($3, $5), NULL); }
+| vardecltype varconst identifier ':' type '=' expr ';'
+    { $$ = new VarDefStmt(new Symbol($3, $5), $7); }
 ;
 
 
-type:  
-  INTEGER
+typedecl:
+  typealias
+| enumdecl
+;
+
+typealias:
+  TYPE identifier '=' type ';'
+    { Symboltable::define(new Symbol($2)); }
+;
+
+enumdecl:
+  ENUM identifier '=' enumList ';'
+    { Symboltable::define(new Symbol($2)); }
+;
+
+enumList:
+  identifier
+| enumList BITOR identifier
+;
+
+
+formal:
+  identifier
+;
+
+
+nonemptyformals:
+  formal
+| nonemptyformals ',' formal
+;
+
+formals:
+  /* empty */
+| nonemptyformals
+;
+
+
+fndecl:
+  FUNCTION identifier '(' formals ')' statement
+| FUNCTION identifier '(' formals ')' ':' type statement
+;
+
+
+decl:
+  vardecl
+| typedecl
+    { $$ = new NullStmt(); }
+| fndecl
+    { $$ = new NullStmt(); }
+;
+
+
+type:
+  BOOLEAN
+    { $$ = dtBoolean; }
+| INTEGER
     { $$ = dtInteger; }
 | FLOAT
     { $$ = dtFloat; }
 |  domainType
 |  arrayType
+|  weirdType
+|  DEFINED_IDENT
+    { $$ = NULL; }
+;
+
+
+weirdType:
+  LOCALE
+    { $$ = dtLocale; }
+| TIMER
+    { $$ = dtTimer; }
 ;
 
 
@@ -110,13 +188,15 @@ domainType:
     { $$ = new DomainType(); }
 | DOMAIN '(' intliteral ')'
     { $$ = new DomainType($3); }
+| DOMAIN '(' identifier ')'
+    { $$ = new DomainType(777); }
 ;
 
 
 arrayType:
   '[' ']' type
     { $$ = new ArrayType(NULL, $3); }
-| '[' expr ']' type
+| '[' domainExpr ']' type
     { $$ = new ArrayType($2, $4); }
 ;
 
@@ -141,31 +221,66 @@ statement:
 | assignment
 | conditional
 | loop
-| expr
+| expr ';'
     { $$ = new ExprStmt($1); }
+| return
 | '{' statements '}'
     { $$ = new LoopStmt($2); }
 ;
 
 
-loop:
-  FORALL expr IN expr statement
-    { $$ = new ForLoopStmt(true, $2, $4, $5); }
+return:
+  RETURN ';'
+    { $$ = new ReturnStmt(NULL); }
+| RETURN expr ';'
+    { $$ = new ReturnStmt($2); }
 ;
 
 
+fortype:
+  FOR
+| FORALL
+;
+
+
+loop:
+  fortype expr IN expr statement
+    { $$ = new ForLoopStmt(true, $2, $4, $5); }
+;
+
 conditional:
-  IF expr THEN statement
+  IF expr statement
+    { printf("conditional 1\n"); }
+| IF expr statement ELSE statement
+    { printf("conditional 2\n"); }
+| IF expr statement elsifstmt
+    { printf("conditional 3\n"); }
+;
+
+elsifstmt:
+  ELSIF expr statement
+    { printf("conditional 4\n"); }
+| ELSIF expr statement ELSE statement
+    { printf("conditional 5\n"); }
+| ELSIF expr statement elsifstmt
+    { printf("conditional 6\n"); }
+;
+
+
+/*
+conditional:
+  IF expr statement
     {printf("found an if-then statement\n");}
-| IF expr THEN withElse ELSE statement
+| IF expr withElse ELSE statement
     {printf("found an if-then-else statement\n");}
 ;
 
 
 withElse:
-  IF expr THEN withElse ELSE withElse
-| assignment
+  IF expr withElse ELSE withElse
+| statement
 ;
+*/
 
 
 assignment:
@@ -194,10 +309,12 @@ expr:
     { $$ = new Variable(new Symbol($1)); }
 | expr binop expr
     { $$ = new BinOp($2, $1, $3); }
+| expr otherbinop expr
 | unop expr
     { $$ = new UnOp($2); }
 | reduction
 | arrayref
+| memberaccess
 | range
 | '(' expr ')' 
     { $$ = $2; }
@@ -208,6 +325,12 @@ expr:
       $2->setForallExpr($4);
       $$ = $2;
     }
+;
+
+
+memberaccess:
+  expr '.' identifier '(' ')'
+    { $$ = $1; }
 ;
 
 
@@ -242,6 +365,8 @@ literal:
     { $$ = new IntLiteral($1); }
 | FLOATLITERAL
     { $$ = new FloatLiteral(atof(yytext)); }
+| STRINGLITERAL
+    { $$ = new StringLiteral("gooper"); }
 ;
 
 
@@ -292,6 +417,12 @@ binop:
     { $$ = BINOP_LOGAND; }
 | LOGOR
     { $$ = BINOP_LOGOR; }
+;
+
+
+otherbinop:
+  BY
+    { $$ = BINOP_OTHER; }
 ;
 
 

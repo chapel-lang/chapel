@@ -1,4 +1,5 @@
 #include "expr.h"
+#include "stringutil.h"
 
 
 static char* cBinOp[] = {
@@ -59,6 +60,16 @@ FloatLiteral::FloatLiteral(double init_val) :
 
 void FloatLiteral::print(FILE* outfile) {
   fprintf(outfile, "%lf", val);
+}
+
+
+StringLiteral::StringLiteral(char* init_val) :
+  val(copystring(init_val))
+{}
+
+
+void StringLiteral::print(FILE* outfile) {
+  fprintf(outfile, "%s", val);
 }
 
 

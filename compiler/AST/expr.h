@@ -53,6 +53,16 @@ class FloatLiteral : public Literal {
 };
 
 
+class StringLiteral : public Literal {
+ public:
+  char* val;
+
+  StringLiteral(char* init_val);
+
+  void print(FILE* outfile);
+};
+
+
 class Variable : public Expr {
  public:
   Symbol* var;

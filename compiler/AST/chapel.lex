@@ -28,17 +28,30 @@ intLiteral      {digit}+{digit}*
 floatLiteral    {digit}+"."{digit}+
 
 %%
+config          return CONFIG;
+static          return STATIC;
+
 var             return VAR;
 const           return CONST;
 
+boolean         return BOOLEAN;
 integer         return INTEGER;
 float           return FLOAT;
+
 domain          return DOMAIN;
 locale          return LOCALE;
+timer           return TIMER;
+
+type            return TYPE;
+enum            return ENUM;
+
+function        return FUNCTION;
 
 if              return IF;
-then            return THEN;
 else            return ELSE;
+elsif           return ELSIF;
+
+for             return FOR;
 forall          return FORALL;
 in              return IN;
 by              return BY;
@@ -59,9 +72,29 @@ dim             return DIM;
 "^"             return BITXOR;
 
 
-{ident}         return IDENT;
+{ident}         {
+                  Symbol* sym = Symboltable::lookup(yytext);
+                  if (sym == NULL) {
+                    return IDENT;
+                  } else {
+                    return DEFINED_IDENT;
+                  }
+                }
 {intLiteral}    return INTLITERAL;
 {floatLiteral}  return FLOATLITERAL;
+"\""            {
+                  register int c;
+
+                  while (1) {
+                    while ((c = yyinput()) != '\"' && c != EOF) {
+                    } /* eat up string */
+                    if (c == EOF) {
+                      yyerror("EOF in string");
+                    } else {
+                      return STRINGLITERAL;
+                    }
+                  }
+                }
 
 [ \t]           /* no action, eat spaces and tabs */
 \n              yylineno++;

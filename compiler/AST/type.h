@@ -38,11 +38,19 @@ class ArrayType : public Type {
   void print(FILE*);
 };
 
+extern Type* dtBoolean;
 extern Type* dtInteger;
-extern Symbol* pstInteger;
-
 extern Type* dtFloat;
+
+extern Type* dtTimer;
+extern Type* dtLocale;
+
+extern Symbol* pstBoolean;
+extern Symbol* pstInteger;
 extern Symbol* pstFloat;
+
+extern Symbol* pstTimer;
+extern Symbol* pstLocale;
 
 void setupTypes(void);
 
