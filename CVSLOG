@@ -450,3 +450,13 @@ Modified files:
 	chapel/third-party/dparser/d/: Makefile lex.c parse.c scan.c 
 	chapel/third-party/dparser/d/tests/: g36.test.g.1.check 
 
+---------------------------------------------------------------------------
+
+04/02/12 15:39:15 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Update grammar to use trailing context.
+
+Modified files:
+	chapel/compiler/: chpl.g v.g 
+
