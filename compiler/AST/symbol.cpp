@@ -19,8 +19,11 @@ NullSymbol::NullSymbol(void) :
 {}
 
 
-VarSymbol::VarSymbol(char* init_name, Type* init_type) :
+VarSymbol::VarSymbol(char* init_name, varType init_varClass, bool init_isConst,
+		     Type* init_type) :
   Symbol(init_name),
+  varClass(init_varClass),
+  isConst(init_isConst),
   type(init_type)
 {}
 

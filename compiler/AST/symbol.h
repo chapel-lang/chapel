@@ -32,11 +32,12 @@ class NullSymbol : public Symbol {
 
 class VarSymbol : public Symbol {
  public:
-  bool isConst;
   varType varClass;
+  bool isConst;
   Type* type;
 
-  VarSymbol(char* init_name, Type* init_type = dtUnknown);
+  VarSymbol(char* init_name, varType init_varClass = VAR_NORMAL, 
+	    bool init_isConst = false, Type* init_type = dtUnknown);
   
   void setType(Type* newType);
   void setIsConst(bool init_isConst);

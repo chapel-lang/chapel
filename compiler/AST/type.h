@@ -57,6 +57,22 @@ class SubDomainType : public DomainType {
 };
 
 
+class IndexType : public DomainType {
+ public:
+  IndexType(int init_rank = 0);
+
+  void print(FILE* outfile);
+};
+
+
+class SubIndexType : public SubDomainType {
+ public:
+  SubIndexType(Symbol* init_parent);
+
+  void print(FILE* outfile);
+};
+
+
 class ArrayType : public Type {
  public:
   Expr* domain;

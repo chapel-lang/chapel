@@ -15,33 +15,42 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
 
 
 void VarDefStmt::print(FILE* outfile) {
-  switch (var->varClass) {
-  case VAR_NORMAL:
-    break;
-  case VAR_CONFIG:
-    fprintf(outfile, "config ");
-    break;
-  case VAR_STATE:
-    fprintf(outfile, "state ");
-    break;
-  }
-  if (var->isConst) {
-    fprintf(outfile, "var ");
-  } else {
-    fprintf(outfile, "const ");
-  }
-  var->printWithType(outfile);
-  if (init != NULL && !init->isNull()) {
-    fprintf(outfile, " = ");
-    if (init->next) {
-      fprintf(outfile, "(");
-      init->printList(outfile);
-      fprintf(outfile, ")");
+  VarSymbol* aVar = var;
+
+  while (aVar != NULL) {
+    switch (aVar->varClass) {
+    case VAR_NORMAL:
+      break;
+    case VAR_CONFIG:
+      fprintf(outfile, "config ");
+      break;
+    case VAR_STATE:
+      fprintf(outfile, "state ");
+      break;
+    }
+    if (aVar->isConst) {
+      fprintf(outfile, "const ");
     } else {
-      init->print(outfile);
+      fprintf(outfile, "var ");
+    }
+    aVar->printWithType(outfile);
+    if (init != NULL && !init->isNull()) {
+      fprintf(outfile, " = ");
+      if (init->next) {
+	fprintf(outfile, "(");
+	init->printList(outfile);
+	fprintf(outfile, ")");
+      } else {
+	init->print(outfile);
+      }
+    }
+    fprintf(outfile, ";");
+
+    aVar = (VarSymbol*)(aVar->next);
+    if (aVar) {
+      fprintf(outfile, "\n");
     }
   }
-  fprintf(outfile, ";");
 }
 
 
@@ -95,6 +104,7 @@ ReturnStmt::ReturnStmt(Expr* retExpr) :
 
 
 void ReturnStmt::print(FILE* outfile) {
+  fprintf(outfile, "\n");
   fprintf(outfile, "return");
   if (expr != NULL) {
     fprintf(outfile, " ");

@@ -31,7 +31,6 @@
   Stmt* stmt;
   Type* pdt;
   Symbol* psym;
-  VarSymbol* pvsym;
   TypeSymbol* ptsym;
 }
 
@@ -83,8 +82,7 @@
 %type <pdt> type types domainType indexType arrayType tupleType weirdType
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier 
-%type <pvsym> idlist
-%type <psym> enumList formal nonemptyformals formals
+%type <psym> enumList formal nonemptyformals formals idlist
 %type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim
 %type <pdexpr> domainExpr
@@ -130,10 +128,10 @@ varconst:
 
 idlist:
   identifier
-    { $$ = new VarSymbol($1); }
+    { $$ = new Symbol($1); }
 | idlist ',' identifier
     {
-      $1->append(new VarSymbol($3));
+      $1->append(new Symbol($3));
       $$ = $1;
     }
 ;
@@ -157,12 +155,7 @@ vardeclinit:
 
 vardecl:
   vardecltag varconst idlist vardecltype vardeclinit ';'
-    {
-      $3->setIsConst($2);
-      $3->setType($4);
-      $3->setVarClass($1);
-      $$ = new VarDefStmt($3, $5);
-    }
+    { $$ = Symboltable::defineVars($1, $2, $3, $4, $5); }
 ;
 
 
@@ -226,7 +219,7 @@ formaltag:
 
 formal:
   formaltag idlist vardecltype
-    { $$ = new ParamSymbol(PARAM_INOUT, "???", $3); }
+    { $$ = Symboltable::defineParams($1, $2, $3); }
 ;
 
 
@@ -325,11 +318,11 @@ domainType:
 
 indexType:
   INDEX
-    { $$ = new DomainType(); }
+    { $$ = new IndexType(); }
 | INDEX '(' intliteral ')'
-    { $$ = new DomainType($3); }
+    { $$ = new IndexType($3); }
 | INDEX '(' identifier ')'
-    { $$ = new DomainType(777); }
+    { $$ = new SubIndexType(new Symbol($3)); }
 ;
 
 

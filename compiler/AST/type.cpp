@@ -95,6 +95,36 @@ void SubDomainType::print(FILE* outfile) {
 }
 
 
+IndexType::IndexType(int init_rank) :
+  DomainType(init_rank)
+{}
+
+
+void IndexType::print(FILE* outfile) {
+  fprintf(outfile, "index(");
+  if (rank != 0) {
+    fprintf(outfile, "%d", rank);
+  } else {
+    fprintf(outfile, "???");
+  }
+  fprintf(outfile, ")");
+}
+
+
+SubIndexType::SubIndexType(Symbol* init_parent) :
+  SubDomainType(init_parent)
+{
+  rank = 777; // BLC -- fill in correctly!
+}
+
+
+void SubIndexType::print(FILE* outfile) {
+  fprintf(outfile, "index(");
+  parent->print(outfile);
+  fprintf(outfile, ")");
+}
+
+
 ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
   domain(init_domain),
   elementType(init_elementType)
