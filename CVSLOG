@@ -16172,3 +16172,31 @@ Log message:
 Removed files:
 	chapel/test/trivial/bradc/: testAllScopes2.future 
 
+---------------------------------------------------------------------------
+
+02/01/05 16:58:24 -- deitz
+
+Log message:
+	Added the following support function (which may or may not be used):
+	
+	void collect_asts(Vec<BaseAST*>* asts, FnSymbol* function);
+	
+	USAGE:
+	 Vec<BaseAST*> all_asts;
+	 FnSymbol* function = ...;
+	 collect_asts(&all_asts, function);
+	
+	This function returns the expressions and statements in the body of a
+	function.
+	
+	Moved all collect_* functions to baseAST.h so that they are together
+	and don't require funny includes.
+
+Modified files:
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/symtab/: collectFunctions.cpp collectFunctions.h 
+	                         collectSymbols.cpp collectSymbols.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: collectASTS.cpp collectASTS.h 
+
