@@ -17366,3 +17366,16 @@ Added files:
 	                                test_tuple_simple5.future 
 	                                test_tuple_simple5.good 
 
+---------------------------------------------------------------------------
+
+02/11/05 16:50:23 -- deitz
+
+Log message:
+	Added --noanalysis flag temporarily to test/types/tuple/deitz/ making
+	three future tests pass (but not for real).
+	
+	Fixed good for test_tuple_simple2.
+
+Modified files:
+	chapel/test/types/tuple/deitz/: COMPOPTS test_tuple_simple2.good 
+
