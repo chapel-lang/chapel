@@ -1,4 +1,4 @@
-::A(protoast_test.chpl:7) ( )
+::A(protoast_test.chpl:7) ( (protoast_test.chpl:7) )
 ::D(protoast_test.chpl:5) ( Domain (internal_prelude.chpl:13) )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
@@ -9,7 +9,7 @@
 ::main ( main )
 ::n(protoast_test.chpl:3) ( int64 )
 ::null ( null )
-::this ( )
+::this ( (protoast_test.chpl:7) )
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_prelude prelude.chpl:54
 function __init_protoast_test protoast_test.chpl:12

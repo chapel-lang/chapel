@@ -18,6 +18,11 @@ void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
   if (sym->type == dtUnknown) {
     sym->type = type_info(sym);
   }
+  FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym);
+  if (fnSym) {
+    Type *retType = return_type_info(fnSym);
+    (void) retType;
+  }
 }
 
 

@@ -17,6 +17,7 @@ class Type;
 class BaseAST;
 class FnSymbol;
 class Stmt;
+class ASTCopyContext;
 
 class ACallbacks : public Callbacks {
 public:
@@ -24,10 +25,23 @@ public:
   Sym *new_Sym(char *name = 0);
 };
 
+class CloneCallback : public gc {
+ public:
+  virtual void clone(BaseAST* old_ast, BaseAST* new_ast) = 0;
+};
+
+class AnalysisCloneCallback : public CloneCallback {
+ public:
+  ASTCopyContext *context;
+  void clone(BaseAST* old_ast, BaseAST* new_ast);
+  AnalysisCloneCallback() : context(0) {}
+};
+
 class ASymbol : public Sym {
  public:
   // Sym interface
-  Sym *copy();
+  Sym *clone(CloneCallback *);
+  void fixup(CloneCallback *);
   char *pathname();
   int line();
 
@@ -55,11 +69,6 @@ class AInfo : public AST {
   Sym *sym, *rval;	// IF1 Syms
 
   AInfo();
-};
-
-class CloneCallback : public gc {
- public:
-  virtual void clone(BaseAST* old_ast, BaseAST* new_ast) = 0;
 };
 
 int AST_to_IF1(Vec<Stmt *> &stmts);

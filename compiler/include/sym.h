@@ -17,6 +17,7 @@ class Scope;
 class AST;
 class Code;
 class LabelMap;
+class CloneCallback;
 
 enum IF1_num_kind {
   IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
@@ -147,15 +148,17 @@ class Sym : public gc {
   virtual char		*pathname();
   virtual int		line();
   char			*filename();
-  virtual Sym		*copy();
   virtual int		is_scalar();
   virtual Sym *		element_type();
   virtual Sym *		coerce_to(Sym *);
+  virtual Sym *		clone(CloneCallback *);
+  virtual void		fixup(CloneCallback *);
 
   void			copy_values(Sym *);
   void 			inherits_add(Sym *);
   void 			must_implement_and_specialize(Sym *);
 
+  Sym			*copy();
   int imm_int(int *);
 };
 #define forv_Sym(_c, _v) forv_Vec(Sym, _c, _v)

@@ -67,10 +67,10 @@ enum astType_t {
   AST_TYPE_END 
 };
 
-#define isSomeStmt(_x) (((_x) > STMT) && (_x) < EXPR)
-#define isSomeExpr(_x) (((_x) > EXPR) && (_x) < SYMBOL)
-#define isSomeSymbol(_x) (((_x) > SYMBOL) && (_x) < TYPE)
-#define isSomeType(_x) (((_x) > TYPE) && (_x) < AST_TYPE_END)
+#define isSomeStmt(_x) (((_x) >= STMT) && (_x) < EXPR)
+#define isSomeExpr(_x) (((_x) >= EXPR) && (_x) < SYMBOL)
+#define isSomeSymbol(_x) (((_x) >= SYMBOL) && (_x) < TYPE)
+#define isSomeType(_x) (((_x) >= TYPE) && (_x) < AST_TYPE_END)
 
 #define SET_BACK(ast) \
   (ast)->back = &(ast)

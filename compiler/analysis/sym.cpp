@@ -3,6 +3,7 @@
 #include "if1.h"
 #include "fa.h"
 #include "builtin.h"
+#include "analysis.h"
 
 Sym *
 meta_apply(Sym *fn, Sym *arg) {
@@ -35,8 +36,22 @@ Sym::line() {
 
 void
 Sym::copy_values(Sym *s) {
-  name = s->name;
-  ast = s->ast;
+  int temp_id = id;
+  *this = *s;
+  id = temp_id;
+}
+
+Sym *
+Sym::clone(CloneCallback *callback) {
+  AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
+  Sym *new_sym = copy();
+  if (callback)
+    c->context->smap.put(this, new_sym);
+  return new_sym;
+}
+
+void
+Sym::fixup(CloneCallback *callback) {
 }
 
 Sym *

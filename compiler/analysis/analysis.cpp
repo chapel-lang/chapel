@@ -131,12 +131,6 @@ AInfo::visible_functions(char *name) {
 #endif
 }
 
-class AnalysisCloneCallback : public CloneCallback {
- public:
-  ASTCopyContext *context;
-  void clone(BaseAST* old_ast, BaseAST* new_ast);
-};
-
 void
 AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
   if (isSomeStmt(new_ast->astType)) {
@@ -165,11 +159,20 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
 	assert(new_s->asymbol->var);
       }
       if (old_s->asymbol->fun) {
-	new_s->asymbol->fun = context->fmap.get(old_s->asymbol->fun);
-	assert(new_s->asymbol->fun);
+	Fun *new_f = context->fmap.get(old_s->asymbol->fun);
+	if (new_f)
+	  new_s->asymbol->fun = new_f;
       }
     }
-  } else 
+  } else if (isSomeType(new_ast->astType)) {
+    Type *new_s = dynamic_cast<Type*>(new_ast);
+    Type *old_s = dynamic_cast<Type*>(old_ast);
+    if (old_s->asymbol) {
+      new_s->asymbol = (ASymbol*)old_s->asymbol->copy();
+      new_s->asymbol->xsymbol = new_s;
+      context->smap.put(old_s->asymbol, new_s->asymbol);
+    }
+  } else
     assert(!"clone of Type unsupported");
 }
 
@@ -205,6 +208,10 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
 	syms.add(ss);
     }
   }
+  forv_Type(t, builtinTypes) {
+    if (set.set_add(t))
+      syms.add(t);
+  }
 }
 
 static void
@@ -239,15 +246,34 @@ ACallbacks::new_Sym(char *name) {
   return new_ASymbol(name);
 }
 
+static void
+fixup_from_cloning(AnalysisCloneCallback *c) {
+}
+
 Sym *
-ASymbol::copy() {
-  ASymbol *s = new_ASymbol(); 
-  s->copy_values(this);
-  TypeSymbol *type_symbol = dynamic_cast<TypeSymbol *>(xsymbol);
-  (void) type_symbol;
-  //TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback)  
-  s->xsymbol = xsymbol;
-  return s;
+ASymbol::clone(CloneCallback *callback) {
+  AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
+  if (!xsymbol) { // internal to analysis
+    Sym *s = copy();
+    c->context->smap.put(this, s);
+    return s;
+  } else {
+    Type *type = dynamic_cast<Type*>(xsymbol);
+    TypeSymbol *type_symbol = dynamic_cast<TypeSymbol*>(type->name);
+    TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(type_symbol->defPoint);
+    old_stmt->clone(c);
+    fixup_from_cloning(c);
+    return c->context->smap.get(type_symbol->asymbol);
+  }
+}
+
+void
+ASymbol::fixup(CloneCallback *callback) {
+  AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
+  if (callback) {
+    for (int i = 0; i < has.n; i++)
+      has.v[i] = c->context->smap.get(has.v[i]);
+  }
 }
 
 static Sym *
@@ -318,6 +344,7 @@ map_symbols(Vec<BaseAST *> &syms) {
       if (t) {
 	map_type(t);
 	t->asymbol = new_ASymbol(t->name);
+	t->asymbol->xsymbol = t;
 	types++;
       } else {
 	Expr *e = dynamic_cast<Expr *>(s);
@@ -625,7 +652,6 @@ build_builtin_symbols() {
 
   // automatic promotions
 
-#if 1
   sym_int8->specializes.add(sym_int16);
   sym_int16->specializes.add(sym_int32);
   sym_int32->specializes.add(sym_int64);
@@ -638,8 +664,6 @@ build_builtin_symbols() {
   sym_float32->specializes.add(sym_complex32);
   sym_float64->specializes.add(sym_complex64);
   sym_float128->specializes.add(sym_complex128);
-#else
-#endif
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
@@ -1470,7 +1494,13 @@ debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       print_baseast(s);
     forv_BaseAST(s, syms) {
       if (s->astType == STMT_FNDEF)
-	print_ast(dynamic_cast<FnDefStmt*>(s)->fn->body); else { Type *t = dynamic_cast<Type*>(s); if (t) printf("<type %s %s>\n", t->name->name, t->name->cname); }}
+	print_ast(dynamic_cast<FnDefStmt*>(s)->fn->body); 
+      else { 
+	Type *t = dynamic_cast<Type*>(s); 
+	if (t) 
+	  printf("Type: %s cname %s\n", t->name->name, t->name->cname); 
+      }
+    }
   }
 }
 

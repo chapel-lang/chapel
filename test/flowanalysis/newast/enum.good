@@ -1,4 +1,4 @@
-::B(enum.chpl:1) ( classVals )
+::B(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_enum(enum.chpl:10) ( __init_enum )
 ::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
@@ -6,7 +6,7 @@
 ::int64 ( int64 )
 ::main ( main )
 ::null ( null )
-::x(enum.chpl:3) ( classVals )
+::x(enum.chpl:3) ( classVals (enum.chpl:1) )
 ::y(enum.chpl:7) ( int64 )
 function __init_enum enum.chpl:10
 function __init_internal_prelude internal_prelude.chpl:24

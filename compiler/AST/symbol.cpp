@@ -453,7 +453,6 @@ void ModuleSymbol::createInitFn(void) {
 						      dtVoid, initFunBody, 
 						      true);
   initFn = initFunDef->fn;
-
   {
     Stmt* initstmt = initFunStmts;
     while (initstmt) {
