@@ -6024,3 +6024,19 @@ Log message:
 Modified files:
 	./: Makefile 
 
+---------------------------------------------------------------------------
+
+08/27/04 11:57:38 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Interm checkin for porting analysis to the new AST.
+	Dead code elimination in CFG construction.
+
+Modified files:
+	chapel/compiler/: analysis.cpp analysis.h cfg.cpp cg.cpp fa.cpp 
+	                  if1.cpp parse_ast.cpp parse_ast.h sym.h var.h 
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/flowanalysis/jplevyak/: cs1.good 
+Added files:
+	chapel/test/lowlevelcg/jplevyak/: cs2.good cs2.v 
+
