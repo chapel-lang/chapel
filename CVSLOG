@@ -22562,3 +22562,68 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+03/30/05 11:35:37 -- bradc
+
+Log message:
+	Tidied up my last change a bit by hoisting the flag
+	about whether or not a Traversal/SymtabTraversal
+	should process the internal modules/scopes into
+	the Pass class to unify this behavior across the
+	two class types.  This variable is now called:
+	
+	    whichModules
+	
+	and can be set to one of the values:
+	                           Traversal         SymtabTraversal
+	                           ----------------  ---------------
+	  MODULES_USER             do user modules   do user scopes
+	  MODULES_COMMON_AND_USER  do common also    do common also
+	  MODULES_ALL              do internal also  do all scopes
+	
+	This also helped unify the way that traversals are
+	invoked from the runpasses.cpp file.  One result of
+	this is that the Traversal::run() routine no longer
+	filters modules as it used to, because only the
+	correct ones will be passed in.
+	
+	In doing this, I introduced a new header file chplenum.h.
+	This is meant to store enumerations that straddle the
+	uses of multiple header files.  Otherwise, I typically
+	find myself #including code that doesn't really pertain
+	(like #include-ing type.h in order to get the parameter
+	intent choices).  Not all enums are intended to go here,
+	just those that are used in enough contexts that they
+	don't fit neatly into an existing header file.
+	
+	Some smaller changes:
+	
+	- changed a Traversal's overloaded run call to call
+	  Traversal::run() rather than copying the code into
+	  its body to make it more resilient down the road.
+	
+	- Fixed a bug in which we were keeping a pointer to
+	  the wrong module as being the first user module if
+	  an actual module was declared in the code rather
+	  than using the file-oriented modules.
+	
+	- fixed some of the lingering over-tabbed code
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: symtab.h type.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/passes/: pass.cpp pass.h 
+	chapel/compiler/symtab/: insertWriteFns.cpp 
+	                         removeDeadSymbols.cpp symtab.cpp 
+	                         symtabTraversal.cpp symtabTraversal.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             findUnknownTypes.cpp fixup.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             transformLetExprs.cpp traversal.cpp 
+	                             traversal.h 
+Added files:
+	chapel/compiler/include/: chplenum.h 
+
