@@ -2777,3 +2777,49 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/: deadvar.chpl deadvar.good 
 
+---------------------------------------------------------------------------
+
+06/07/04 17:55:41 -- bradc
+
+Log message:
+	Added initial support for code generation of functions and
+	inserted a few tests to pin down this behavior.
+	
+	In order to make this work, I had to generate function
+	prototypes at the top of the code because (a) we
+	currently generate functions in a nondeterministic
+	order such that functions won't necessarily be defined
+	in the generated code before their calls, even if the
+	user's code has the definition before the use, and
+	(b) the current language concept allows functions to be
+	called before they're used, so even if code generation
+	followed the user's code directly, a prototype could
+	still be required.
+	
+	I made code generation create two new header files to
+	support these prototypes -- one that gives the external
+	interface for the .c file (foo.h) and a second that
+	contains internal prototypes for the .c file -- ones
+	that are only meant to be included by the .c file itself,
+	and not external clients (foo-internal.h).
+	
+	A few other minor changes that are going in with this:
+	
+	* I'd been using my glomstrings() in a degenerate way to
+	copy strings -- glomstrings(1, stringToCopy) -- I
+	wrapped this in an explicit copystring() function to
+	make the code more readable.
+	
+	* Updated the compiler/FILES file to mention the new
+	datatype.c file that I added yesterday.
+
+Modified files:
+	chapel/compiler/: FILES arg.cpp codegen.cpp driver.cpp files.cpp 
+	                  files.h prelude.chpl stringutil.cpp 
+	                  stringutil.h 
+Added files:
+	chapel/test/trivial/bradc/functions/: .cvsignore onearg.chpl 
+	                                      onearg.good 
+	                                      usebeforedef.chpl 
+	                                      usebeforedef.good 
+
