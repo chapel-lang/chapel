@@ -2861,3 +2861,29 @@ Log message:
 Modified files:
 	chapel/compiler/: TODO chpl.g 
 
+---------------------------------------------------------------------------
+
+06/08/04 11:20:15 -- bradc
+
+Log message:
+	Implemented variables at the file scope of the chapel input
+	file as global variables in the generated C code rather
+	than local variables to the _init() procedure, as had been
+	done previously.  These should be made static by default,
+	but this checkin doesn't address that issue.  Added a test
+	to lock in this behavior.
+	
+	Broke code related to code generating functions into a file
+	called cg_funs.cpp.  As Shannon and I move forward with
+	code generation, we should continue to make cg_*.cpp/h files
+	to avoid making codegen too monolithic and having to wrestle
+	with bad CVS merges very often.
+
+Modified files:
+	chapel/compiler/: FILES Makefile codegen.cpp codegen.h 
+Added files:
+	chapel/compiler/: cg_funs.cpp cg_funs.h 
+	chapel/test/Share/: .cvsignore 
+	chapel/test/trivial/bradc/functions/: globalref.chpl 
+	                                      globalref.good 
+
