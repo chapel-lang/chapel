@@ -1799,3 +1799,29 @@ Added files:
 	                                    arrinit.typep.typepr.chk 
 	                                    arrinit.typep.typepr.chpl 
 
+---------------------------------------------------------------------------
+
+04/05/03 11:52:47 -- bradc
+
+Log message:
+	Took a new sweep through the simple arrinit codes to update based
+	on new requirement that domains and arrays must be identified as
+	such at declaration time.
+
+Modified files:
+	chapel/test/trivial/bradc/arrinit/: README 
+	                                    arrinit.notype.notype.chpl 
+	                                    arrinit.notypep.notype.chpl 
+	                                    arrinit.notypep.notypeind.chpl 
+	                                    arrinit.notypep.notypeind2.chpl 
+	                                    arrinit.notypep.typepr.chpl 
+	                                    arrinit.notypep.typeprind.chpl 
+	                                    arrinit.notypep.typeprind2.chpl 
+	                                    arrinit.type.notype.chpl 
+	                                    arrinit.typep.notype.chpl 
+Added files:
+	chapel/test/trivial/bradc/arrinit/: arrinit.notype.nodom.chpl 
+	                                    arrinit.notype.noelem.chpl 
+	                                    arrinit.notypes.notype.chpl 
+	                                    arrinit.types.notype.chpl 
+
