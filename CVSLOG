@@ -15870,3 +15870,35 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
 	                             methodsToFunctions.cpp traversal.h 
 
+---------------------------------------------------------------------------
+
+01/28/05 16:02:00 -- deitz
+
+Log message:
+	Reverting from last checkin.  This puts the code back to the way I had
+	it and eliminates the regressions.
+	
+	The reason to revert is that the fix was not trivial (like I thought
+	it would be) and John didn't agree that I should checkin broken code.
+	In retrospect, I'm not sure how I got it in my head that he did think
+	it would be easy or that I should checkin broken.  Sorry about that.
+	
+	Hopefully we can work past this change in some way.  I'm concerned
+	about the brittleness of the compiler as this change was mostly
+	superficial but paved the way for better support.  Cloning and
+	otherwise manipulating symbols directly.  And supporting bound and
+	embedded functions without the unnecessary statements.
+	
+	SJD: To revert back, checkout at 15:45 on Friday Jan 28, 2005.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp link.cpp nils.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h link.h stmt.h symbol.h 
+	                          symscope.h type.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
+	                             methodsToFunctions.cpp traversal.h 
+
