@@ -3185,3 +3185,15 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+06/10/04 17:19:47 -- bradc
+
+Log message:
+	Fixed undefined CHPL_VALGRIND_OPTIONS error when the env. var
+	wasn't set (John, you may want to make sure this still works
+	for you).
+
+Modified files:
+	chapel/test/: sub_test 
+
