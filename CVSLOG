@@ -6341,3 +6341,22 @@ Added files:
 	                                  NOEXEC PREDIFF chain.chpl 
 	                                  chain.good 
 
+---------------------------------------------------------------------------
+
+09/01/04 17:12:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	4 more test cases working for analysis over the new AST.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+Added files:
+	chapel/test/flowanalysis/newast/: arithmetic_ops.chpl 
+	                                  arithmetic_ops.good 
+	                                  assignment_expr.chpl 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.chpl 
+	                                  bitwise_assignment.good 
+	                                  compSampler.chpl 
+	                                  compSampler.good 
+
