@@ -14161,3 +14161,23 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp fun.cpp 
 	chapel/compiler/include/: ast.h baseAST.h 
 
+---------------------------------------------------------------------------
+
+01/07/05 16:01:18 -- deitz
+
+Log message:
+	Added code to preserve the line number and filename of copied
+	statements, expressions, symbols, and types.  Also added code to
+	preserve the line number and filename for fields within methods for
+	which a this is place before, the new MemberAccess gets the old
+	expression's line number and filename.
+	
+	Removed the .future for test_union_method3 since it now works,
+	printing out the right line number and filename.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/traversals/: cleanup.cpp 
+Removed files:
+	chapel/test/classes/deitz/: test_union_method3.future 
+
