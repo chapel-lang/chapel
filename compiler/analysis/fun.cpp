@@ -8,20 +8,28 @@
 #include "region.h"
 #include "stmt.h"
 
-Fun::Fun(Sym *asym, int aninit_function) {
-  init_function = aninit_function;
+void Fun::init_fun() {
   clone_for_constants = 0;
   clone_for_manifest_constants = 0;
   execution_frequency = 0.0;
   fa_collected = 0;
+  coercion_cache = 0;
+  generic_cache = 0;
+  order_cache = 0;
+  default_cache = 0;
+  nmap = 0;
+  vmap = 0;
+  wraps = 0;
+  size = -1;
+  cg_string = 0;
+}
+
+Fun::Fun(Sym *asym, int aninit_function) {
+  init_function = aninit_function;
   sym = asym;
   asym->fun = this;
   ast = sym->ast;
-  wraps = 0;
-  nmap = 0;
-  vmap = 0;
-  size = -1;
-  cg_string = 0;
+  init_fun();
   if (verbose_level > 2)
     if (asym->name)
       printf("function %s\n", asym->name);
@@ -30,6 +38,10 @@ Fun::Fun(Sym *asym, int aninit_function) {
   build_cfg();
   build_ssu();
   setup_ast();
+}
+
+Fun::Fun() {
+  init_fun();
 }
 
 int

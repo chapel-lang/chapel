@@ -445,9 +445,9 @@ class MapCacheHashFns  {
 typedef Map<MPosition *, Sym*> CoercionMap;
 typedef Map<Sym *, Sym*> GenericMap;
 typedef Map<MPosition *, MPosition*> OrderMap;
-static HashMap<CoercionMap *, MapCacheHashFns<CoercionMap *>, Fun *> coercion_cache;
-static HashMap<GenericMap *, MapCacheHashFns<GenericMap *>, Fun *> generic_cache;
-static HashMap<OrderMap *, MapCacheHashFns<OrderMap *>, Fun *> order_cache;
+class CoercionCache { public: HashMap<CoercionMap *, MapCacheHashFns<CoercionMap *>, Fun *> cache; };
+class GenericCache { public: HashMap<GenericMap *, MapCacheHashFns<GenericMap *>, Fun *> cache; };
+class OrderCache { public: HashMap<OrderMap *, MapCacheHashFns<OrderMap *>, Fun *> cache; };
 
 class DefaultCacheHashFns  {
  public:
@@ -466,28 +466,34 @@ class DefaultCacheHashFns  {
     return 1;
   }
 };
-static HashMap<Vec<MPosition*> *, DefaultCacheHashFns, Fun *> default_cache;
+class DefaultCache { public: HashMap<Vec<MPosition*> *, DefaultCacheHashFns, Fun *> cache; };
 
 Fun *
 Matcher::build(Match *m, Vec<Fun *> &matches) {
   Fun *f = m->fun;
   if (m->generic_substitutions.n) {
-    if (!(f = generic_cache.get(&m->generic_substitutions))) {
+    GenericCache *c = f->generic_cache;
+    if (!c) c = f->generic_cache = new GenericCache;
+    if (!(f = c->cache.get(&m->generic_substitutions))) {
       f = if1->callback->instantiate_generic(m);
-      generic_cache.put(&m->generic_substitutions, f);
+      c->cache.put(&m->generic_substitutions, f);
     }
   }
   if (m->default_args.n) {
     qsort(m->default_args.v, m->default_args.n, sizeof(void*), compar_last_position);
-    if (!(f = default_cache.get(&m->default_args))) {
+    DefaultCache *c = f->default_cache;
+    if (!c) c = f->default_cache = new DefaultCache;
+    if (!(f = c->cache.get(&m->default_args))) {
       f = if1->callback->default_wrapper(m);
-      default_cache.put(&m->default_args, f);
+      c->cache.put(&m->default_args, f);
     }
   }
   if (m->coercion_substitutions.n) {
-    if (!(f = coercion_cache.get(&m->coercion_substitutions))) {
+    CoercionCache *c = f->coercion_cache;
+    if (!c) c = f->coercion_cache = new CoercionCache;
+    if (!(f = c->cache.get(&m->coercion_substitutions))) {
       f = if1->callback->coercion_wrapper(m);
-      coercion_cache.put(&m->coercion_substitutions, f);
+      c->cache.put(&m->coercion_substitutions, f);
     }
   }
   int order_change = 0;
@@ -500,9 +506,11 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
     }
   }
   if (order_change) {
-    if (!(f = order_cache.get(&m->order_substitutions))) {
+    OrderCache *c = f->order_cache;
+    if (!c) c = f->order_cache = new OrderCache;
+    if (!(f = c->cache.get(&m->order_substitutions))) {
       f = if1->callback->order_wrapper(m);
-      order_cache.put(&m->order_substitutions, f);
+      c->cache.put(&m->order_substitutions, f);
     }
   } else
     m->order_substitutions.clear();

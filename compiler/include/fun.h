@@ -16,6 +16,10 @@ class Sym;
 class PNode;
 class CreationSet;
 class Match;
+class CoercionCache;
+class GenericCache;
+class OrderCache;
+class DefaultCache;
 
 class CallPoint : public gc {
  public:
@@ -68,6 +72,10 @@ class Fun : public gc {
   Vec<MPosition *> out_positions;
   Map<MPosition *, AST *> default_args;
   Vec<MPosition *> generic_args;
+  CoercionCache *coercion_cache;
+  GenericCache *generic_cache;
+  OrderCache *order_cache;
+  DefaultCache *default_cache;
   
   // clone
   Vec<EntrySet *> called_ess;
@@ -108,11 +116,11 @@ class Fun : public gc {
 
   void build_cfg();
   void build_ssu();
-
   void setup_ast();
+  void init_fun();
 
   Fun(Sym *afn, int aninit_function = 0);
-  Fun() {}
+  Fun();
   Fun *copy();
 };
 #define forv_Fun(_f, _v) forv_Vec(Fun, _f, _v)
