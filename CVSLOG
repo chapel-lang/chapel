@@ -10252,3 +10252,16 @@ Log message:
 Modified files:
 	chapel/test/flowanalysis/jplevyak/config/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+11/23/04 12:44:09 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Print out "must_specialize" and "must_implement" in the "i" log.
+	Fix the collapseable nested structures in the HTML dump (-t) by
+	fixing up the paths to point to compiler/etc/www.
+
+Modified files:
+	chapel/compiler/analysis/: if1.cpp pattern.cpp 
+	chapel/compiler/backend/: dump.cpp 
+
