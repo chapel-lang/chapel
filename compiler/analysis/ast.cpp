@@ -12,8 +12,8 @@ void
 build_module(Sym *sym, Sym *fun) {
   sym->type = sym_module;
   sym->is_module = 1;
-  fun->type = sym_function;
   fun->type_kind = Type_FUN;
+  fun->type = fun;
   fun->type_sym = fun;
   sym->init = fun;
 }
@@ -48,14 +48,16 @@ unalias_syms(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     for (int x = 0; x < s->implements.n; x++)
       s->implements.v[x] = unalias_type(s->implements.v[x]);
+    if (s->must_specialize)
+      s->must_specialize = unalias_type(s->must_specialize);
     if (s->must_implement)
-      for (int x = 0; x < s->must_implement->n; x++)
-	if (s->must_implement->v[x])
-	  s->must_implement->v[x] = unalias_type(s->must_implement->v[x]);
+      s->must_implement = unalias_type(s->must_implement);
     s->type = unalias_type(s->type);
     s->in = unalias_type(s->in);
-    if (s->type_kind != Type_NONE)
+    if (s->type_kind != Type_NONE) {
+      assert(!s->type || s->type == s);
       s->type = s;
+    }
   }
   forv_Sym(s, i->allsyms) {
     Sym *us = unalias_type(s);

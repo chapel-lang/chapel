@@ -60,7 +60,7 @@ if1_make_symbol(IF1 *p, char *name, char *end) {
   s = new_Sym(name);
   s->name = name;
   s->type_kind = Type_PRIMITIVE;
-  s->type = sym_symbol;
+  s->type = s;
   s->type_sym = s;
   p->symbols.put(name, s);
   s->is_symbol = 1;
@@ -71,7 +71,7 @@ void
 if1_set_symbols_type(IF1 *p) {
   for (int i = 0; i < p->symbols.n; i++)
     if (p->symbols.v[i].value)
-      p->symbols.v[i].value->type = sym_symbol;
+      p->symbols.v[i].value->inherits_add(sym_symbol);
 }
 
 void
@@ -375,9 +375,10 @@ mark_sym_live(Sym *s) {
       mark_sym_live(ss);
     forv_Sym(ss, s->includes)
       mark_sym_live(ss);
+    if (s->must_specialize)
+      mark_sym_live(s->must_specialize);
     if (s->must_implement)
-      forv_Sym(ss, *s->must_implement)
-	mark_sym_live(ss);
+      mark_sym_live(s->must_implement);
     forv_Sym(ss, s->has)
       mark_sym_live(ss);
     return 1;

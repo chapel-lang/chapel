@@ -1152,8 +1152,8 @@ build_function(FnDefStmt *f) {
     if1_set_builtin(if1, s, "init");
     sym_init = s;
   }
-  s->type = sym_function;
   s->type_kind = Type_FUN;
+  s->type = s;
   s->type_sym = s;
   s->cont = new_sym();
   s->cont->ast = f->ainfo;

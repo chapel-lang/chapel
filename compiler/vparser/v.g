@@ -290,10 +290,15 @@ anon_function: '\\' pattern+ ':';
 must_specialize_type: parameterized_type
   { $$.ast = new_AST(AST_must_specialize, &$n); };
 
-must_implement_and_specialize_type: parameterized_type
-  { $$.ast = new_AST(AST_must_implement, &$n); 
-    $$.ast->add(new_AST(AST_must_specialize, &$n)); 
+must_implement_and_specialize_type: parameterized_type nothing
+  { ParseAST *ast = $0.ast;
+    $0.ast = new_AST(AST_must_implement);
+    $0.ast->add((ParseAST*)ast->copy());
+    $1.ast = new_AST(AST_must_specialize);
+    $1.ast->add(ast);
   };
+
+nothing : ;
 
 pattern
   : ident
@@ -309,7 +314,8 @@ pattern_type: ':' qualified_ident
   ;
 
 pattern_suffix :
-  ('@' must_specialize_type)? (':' must_implement_type)? ('=' init_expression)?;
+  ('@' must_specialize_type)? ('<' must_implement_type)? 
+  (':' must_implement_and_specialize_type)?  ('=' init_expression)?;
 
 sub_pattern
   : intent? 'var'? ident pattern_suffix

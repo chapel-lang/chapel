@@ -68,7 +68,8 @@ class Sym : public gc {
   Sym  			*in;			// containing module, class, function
   Sym 			*type;			// true type
   Sym  			*aspect;		// mascarade as type (e.g. superclass)
-  Vec<Sym *>		*must_implement;	// type checking constraints
+  Sym			*must_specialize;	// dispatch constraints
+  Sym			*must_implement;	// type checking constraints
   AST			*ast;			// AST node which defined this symbol
   Var			*var;			// used by fa.cpp
   char 			*cg_string;		// used by cg.cpp
@@ -105,9 +106,9 @@ class Sym : public gc {
   char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values
 
-  Vec<Sym *>		implements;		// declared supertypes
   Vec<Sym *>		specializes;		// declared superclasses
   Vec<Sym *>		includes;		// included code
+  Vec<Sym *>		implements;		// declared supertypes
   Vec<Sym *>		has;			// sub variables/members (currently fun args)
   Vec<Sym *>		arg;			// arg variables (currently just meta type args)
   Sym			*alias;			// alias of type
@@ -139,7 +140,8 @@ class Sym : public gc {
   virtual Sym		*copy();
   void			copy_values(Sym *);
 
-  void 			inherits_add(Sym *parent);
+  void 			inherits_add(Sym *);
+  void 			must_implement_and_specialize(Sym *);
 
   int imm_int(int *);
 };

@@ -828,13 +828,17 @@ scope_inherits(ParseAST *ast, Sym *sym) {
 static int
 scope_constraints(ParseAST *ast, Sym *sym) {
   forv_ParseAST(a, ast->children) {
-    if (a->kind == AST_must_implement) {
+    if (a->kind == AST_must_specialize) {
       if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
 	return -1;
-      if (!sym->must_implement)
-	sym->must_implement = new Vec<Sym *>;
-      sym->must_implement->set_add(a->sym);
+      assert(!sym->must_specialize);
+      sym->must_specialize = a->sym;
       sym->scope->add_dynamic(a->sym->scope);
+    } else if (a->kind == AST_must_implement) {
+      if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
+	return -1;
+      assert(!sym->must_implement);
+      sym->must_implement = a->sym;
     } else if (a->kind == AST_def_type_param) {
       sym->arg.add(a->sym);
       if (verbose_level > 2)
@@ -1210,8 +1214,8 @@ gen_fun(IF1 *i, ParseAST *ast) {
   for (int j = 0; j < n; j++)
     as[iarg + j] = args[j]->rval;
   if1_closure(i, fn, body, iarg + n, as);
-  fn->type = sym_function;
   fn->type_kind = Type_FUN;
+  fn->type = fn;
   fn->type_sym = fn;
   fn->ast = ast;
   ast->rval = new_sym(i, ast->scope);
@@ -1473,8 +1477,8 @@ define_type_init(IF1 *i, ParseAST *ast, Sym **container_scope, Sym **container) 
     fn->self = new_sym(i, fn->scope, cannonical_self);
     fn->self->ast = ast;
     fn->self->type = ast->sym;
-    fn->type = sym_function;
     fn->type_kind = Type_FUN;
+    fn->type = fn;
     fn->type_sym = fn;
     *container_scope = ast->sym;
     *container = fn->self;
@@ -1848,6 +1852,7 @@ build_init(IF1 *i) {
   Sym *fn = sym_init;
   fn->type = sym_function;
   fn->type_kind = Type_FUN;
+  fn->type = fn;
   fn->type_sym = fn;
   fn->scope = new Scope((dynamic_cast<ParseAST*>(fn->ast))->scope, Scope_RECURSIVE, fn);
   Sym *rval = 0;

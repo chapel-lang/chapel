@@ -114,8 +114,10 @@ dump_sym(FILE *fp, Sym *t) {
   dump_sym_list(fp, t, t->implements, "Implements", is_internal_type);
   dump_sym_list(fp, t, t->specializes, "Specializes");
   dump_sym_list(fp, t, t->includes, "Includes");
+  if (t->must_specialize)
+    dump_sub_sym(fp, t->must_specialize, "Must Specialize");
   if (t->must_implement)
-    dump_sym_list(fp, t, *t->must_implement, "Must Implement");
+    dump_sub_sym(fp, t->must_implement, "Must Implement");
   dump_sym_list(fp, t, t->has, "Has");
   dump_sub_sym(fp, t->self, "Self");
   dump_sub_sym(fp, t->ret, "Ret");
@@ -238,9 +240,10 @@ dump_symbols(FILE *fp, FA *fa) {
 	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->includes)
 	again = syms.set_add(ss) || again;
+      if (s->must_specialize)
+	again = syms.set_add(s->must_specialize) || again;
       if (s->must_implement)
-	forv_Sym(ss, *s->must_implement)
-	  again = syms.set_add(ss) || again;
+	again = syms.set_add(s->must_implement) || again;
       forv_Sym(ss, s->dispatch_order) if (ss)
 	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->has) if (ss)
