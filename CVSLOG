@@ -6448,3 +6448,16 @@ Modified files:
 	                      verifyASTType.cpp 
 	chapel/runtime/include/: stdchpl.h 
 
+---------------------------------------------------------------------------
+
+09/02/04 17:00:08 -- bradc
+
+Log message:
+	Fixed a bug that John found in which ArrayRef::typeInfo() was
+	hitting an assertion due to an array type that had been given
+	a user-defined name in mg-seq-concrete.chpl.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: expr.cpp 
+
