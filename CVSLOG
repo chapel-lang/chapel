@@ -23154,3 +23154,35 @@ Removed files:
 	chapel/test/classes/bradc/: writeunion-workaround.future 
 	                            writeunion.future 
 
+---------------------------------------------------------------------------
+
+04/01/05 15:25:29 -- deitz
+
+Log message:
+	Fixed a bug in sequence types in which the type had astType TYPE_CLASS
+	rather than TYPE_SEQ.
+	
+	Fixed and added pass VerifyASTType to the passlist just before
+	analysis is run.  This is another nice sanity check.
+	
+	Reworked sequence code in the internal prelude.  Most of it remains
+	commented out.
+	
+	Made BuildClassConstructorsEtc work on all modules, not just the
+	common and user modules.
+	
+	Fixed a bug in specializeParenOpExprs in which a variable was not set
+	to NULL.  This didn't matter until there was an error in which case
+	the INT_FATAL was incorrectly not firing.
+	
+	Added a simple test for arrays of strings.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildClassConstructorsEtc.h 
+	                             specializeParenOpExprs.cpp 
+	                             verifyASTType.cpp 
+
