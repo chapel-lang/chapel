@@ -994,7 +994,6 @@ partial_application(PNode *p, EntrySet *es, CreationSet *s, Vec<AVar *> &args) {
     }
   }
   AVar *fun = unique_AVar(partial_application->rvals.v[0], contour);
-//  flow_var_type_restrict(fun, fun_symbol_type);
   forv_CreationSet(cs, *fun->out) if (cs)
     incomplete = application_constraints(p, es, fun, cs, args) || incomplete;
   return incomplete;
@@ -1024,18 +1023,18 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 	}
       }
     }
-//    if (some)
-//      return 0;
+    if (some)
+      return 0;
   } 
-    // standard dispatch, on unique class (symbols, bare classes), and objects
-    forv_CreationSet(cs, *a0->out) if (cs) {
-      Vec<Fun *> *fns = 0;
-      if (!cs->defs.n)
-	fns = class_dispatch_table.get(cs->sym->name);
-      else
-	fns = self_dispatch_table.get(cs->sym->name);
-      add_funs_constraints(p, es, fns, a);
-    }
+  // standard dispatch, on unique class (symbols, bare classes), and objects
+  forv_CreationSet(cs, *a0->out) if (cs) {
+    Vec<Fun *> *fns = 0;
+    if (!cs->defs.n)
+      fns = class_dispatch_table.get(cs->sym->name);
+    else
+      fns = self_dispatch_table.get(cs->sym->name);
+    add_funs_constraints(p, es, fns, a);
+  }
   return 0;
 }
 
@@ -1186,6 +1185,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *ref = make_AVar(p->rvals.v[2], es);
 	ref->arg_of_send.set_add(result);
+	set_container(result, ref);
 	forv_CreationSet(cs, *ref->out) if (cs) {
 	  AVar *av = cs->vars.v[0];
 	  flow_vars_equal(av, result);
@@ -1424,9 +1424,9 @@ build_dispatch_table() {
   class_dispatch_table.clear();
   self_dispatch_table.clear();
   forv_Fun(f, fa->pdb->funs) {
+    Sym *a = f->sym->args.v[0];
     if (special_dispatch(f->sym->args)) {
       int some = 0;
-      Sym *a = f->sym->args.v[0];
       TupleDispatchTable *at = tuple_dispatch_table.get(a->type->name);
       if (!at)
 	tuple_dispatch_table.put(a->type->name, (at = new TupleDispatchTable));
@@ -1443,19 +1443,14 @@ build_dispatch_table() {
 	  some = 1;
 	}
       }
-//      if (!some)
-	goto Lstandard;
-    } else {
-    Lstandard:
-      Sym *a = f->sym->args.v[0];
-      if (a->type) {
-	Map<char *,Vec<Fun *> *> *table = 
-	  f->sym->class_static ? &class_dispatch_table : &self_dispatch_table;
-	Vec<Fun *> *vf = table->get(a->type->name);
-	if (!vf) 
-	  table->put(a->type->name, (vf = new Vec<Fun *>));
-	vf->add(f);
-      }
+    }
+    if (a->type) {
+      Map<char *,Vec<Fun *> *> *table = 
+	f->sym->class_static ? &class_dispatch_table : &self_dispatch_table;
+      Vec<Fun *> *vf = table->get(a->type->name);
+      if (!vf) 
+	table->put(a->type->name, (vf = new Vec<Fun *>));
+      vf->add(f);
     }
   }
 }
