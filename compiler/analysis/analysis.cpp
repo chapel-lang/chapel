@@ -1029,10 +1029,39 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
   return 0;
 }
 
+static int
+is_reference_type(BaseAST *t) {
+  return (t && t->astType == TYPE_CLASS &&
+	  !dynamic_cast<ClassType*>(t)->union_value &&
+	  !dynamic_cast<ClassType*>(t)->value);
+}
+
 static void
-gen_alloc(Sym *s, DefStmt *def, Sym *type) {
+gen_alloc(Sym *s, DefStmt *def, Sym *type, AST *ast) {
   Code **c = &def->ainfo->code;
   Code *send = if1_send(if1, c, 2, 1, sym_new, type, s);
+  send->ast = ast;
+  if (type->asymbol->symbol->astType == TYPE_ARRAY) {
+    // just set the first element
+    ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
+    if (at->elementType->astType == TYPE_CLASS && 
+	dynamic_cast<ClassType*>(at->elementType)->value) 
+    {
+      Sym *ret = new_sym();
+      Code *new_element = if1_send(if1, c, 2, 1, sym_new, at->elementType->asymbol->sym, ret);
+      new_element->ast = ast;
+      Sym *index_sym = new_sym();
+      Code *start_index = if1_send(if1, c, 3, 1, sym_primitive, domain_start_index_symbol, 
+				   at->domainType->asymbol->sym, index_sym);
+      start_index->ast = ast;
+      Sym *element = new_sym();
+      Code *access_element = if1_send(if1, c, 4, 1, sym_primitive, array_index_symbol, 
+				      s, index_sym, element);
+      access_element->ast = ast;
+      element->is_lvalue = 1;
+      if1_move(if1, c, ret, element, ast);
+    }
+  }
   send->ast = def->ainfo;
 }
 
@@ -1042,13 +1071,6 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
   Code *send = if1_send(if1, c, 3, 1, sym_coerce, type, s, ret);
   send->ast = ast;
   return ret;
-}
-
-static int
-is_reference_type(BaseAST *t) {
-  return (t && t->astType == TYPE_CLASS &&
-	  !dynamic_cast<ClassType*>(t)->union_value &&
-	  !dynamic_cast<ClassType*>(t)->value);
 }
 
 static int
@@ -1086,7 +1108,7 @@ gen_vardef(BaseAST *a) {
 	  if (s->type->num_kind || s->type == sym_string)
 	    s->is_external = 1; // hack
 	  else
-	    gen_alloc(s, def, s->type);
+	    gen_alloc(s, def, s->type, def->ainfo);
 	}
       }
     switch (var->varClass) {
