@@ -648,31 +648,6 @@ ParamSymbol* Symboltable::defineParams(paramType intent, Symbol* idents,
 }
 
 
-ParamSymbol* Symboltable::copyParams(ParamSymbol* formals) {
-  ParamSymbol* paramList;
-  ParamSymbol* newParam;
-  ParamSymbol* lastParam;
-
-  newParam = dynamic_cast<ParamSymbol*>(formals->copy());
-  define(newParam);
-  
-  paramList = newParam;
-  lastParam = newParam;
-
-  formals = nextLink(ParamSymbol, formals);
-  while (formals != NULL) {
-    newParam = dynamic_cast<ParamSymbol*>(formals->copy());
-    define(newParam);
-    lastParam->next = newParam;
-    lastParam = newParam;
-
-    formals = nextLink(ParamSymbol, formals);
-  }
-
-  return paramList;
-}
-
-
 VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 				   varType vartag, bool isConst) {
   VarSymbol* varList;

@@ -1111,8 +1111,8 @@ void IOCall::codegen(FILE* outfile) {
     }
 
     if (argdt == dtUnknown) {
-      INT_FATAL(arg, "shouldn't be calling into analysis now");
-      argdt = type_info(arg);
+      INT_FATAL(arg, "unknown type encountered in codegen");
+      argdt = type_info(arg);  // We used to do this but shouldn't -SJD
     }
     argdt->codegen(outfile);
     fprintf(outfile, "(");

@@ -578,17 +578,12 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 
 Stmt* FnDefStmt::copyStmt(CloneCallback* analysis_clone) {
   FnSymbol* fncopy = Symboltable::startFnDef(fn->name);
-  // do this first to make sure symbols are defined before used when body is
-  // copied
-  Symbol* newformals;
-  if (typeid(*(fn->formals)) == typeid(ParamSymbol)) {
-    ParamSymbol* oldformals = (ParamSymbol*)(fn->formals);
-    newformals = Symboltable::copyParams(oldformals);
-  } else {
-    newformals = nilSymbol;
-  }
+  // do this first to make sure symbols are defined before used when
+  // body is copied
+  Symbol* newformals = fn->formals->copyList(analysis_clone);
   return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
-				  fn->body->copyList(analysis_clone), fn->exportMe);
+				  fn->body->copyList(analysis_clone),
+				  fn->exportMe);
 }
 
 

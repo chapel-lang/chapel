@@ -32,7 +32,7 @@ Symbol* Symbol::copyList(CloneCallback* analysis_clone) {
   Symbol* newSymbolList = nilSymbol;
   Symbol* oldSymbol = this;
 
-  while (oldSymbol) {
+  while (oldSymbol && !oldSymbol->isNull()) {
     newSymbolList = appendLink(newSymbolList, oldSymbol->copy(analysis_clone));
 
     oldSymbol = nextLink(Symbol, oldSymbol);
@@ -43,6 +43,10 @@ Symbol* Symbol::copyList(CloneCallback* analysis_clone) {
 
 
 Symbol* Symbol::copy(CloneCallback* analysis_clone) {
+  if (isNull()) {
+    return this;
+  }
+
   Symbol* new_symbol = copySymbol(analysis_clone);
 
   if (analysis_clone) {
