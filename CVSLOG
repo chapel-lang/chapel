@@ -21684,3 +21684,18 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+03/25/05 15:29:45 -- jplevyak
+
+Log message:
+	Implement "nil" (the global constant) and "null" the corresponding class.
+	remove the .future for the test case testing nil.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp 
+	chapel/compiler/include/: builtin_symbols.h 
+	chapel/compiler/vparser/: prelude.v 
+Removed files:
+	chapel/test/classes/deitz/: test_class_list1.future 
+
