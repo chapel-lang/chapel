@@ -19313,3 +19313,25 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: noinit.chpl 
 
+---------------------------------------------------------------------------
+
+03/11/05 12:05:55 -- deitz
+
+Log message:
+	Improved parsing of strings starting with ' and ".  Also, " can now be
+	inserted as \" between "s and ' can now be inserted as \' between 's.
+	Between 's, the " can be inserted without a \, but one is put in by
+	the lexer.
+	
+	Removed trivial/jplevyak/string-1.future as it now works.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex 
+Added files:
+	chapel/test/trivial/deitz/: test_write_quotes.chpl 
+	                            test_write_quotes.good 
+	                            test_write_slash_n.chpl 
+	                            test_write_slash_n.good 
+Removed files:
+	chapel/test/trivial/jplevyak/: string-1.future 
+
