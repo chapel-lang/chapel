@@ -16018,3 +16018,17 @@ Removed files:
 	                                 intent-6-error.future 
 	                                 intent-6-error.good 
 
+---------------------------------------------------------------------------
+
+02/01/05 10:34:49 -- deitz
+
+Log message:
+	Changed traversing of class component variables to traverse the
+	definition of the VarSymbol rather than traverse the VarDefStmt and,
+	via this, the definition of the VarSymbol.
+	
+	This coincidentally fixes one of the class-with-statement regressions.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
