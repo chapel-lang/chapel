@@ -3004,3 +3004,21 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp fa.h 
 
+---------------------------------------------------------------------------
+
+06/08/04 15:49:39 -- bradc
+
+Log message:
+	Ripped ZPL's beautify.c code out, which performs indentation
+	on generated C code.  Reworked this to work within the Chapel
+	framework better and applied it to our generated code to ease
+	with debugging code generation.
+	
+	Also reworked some of the file interfaces a bit, though they
+	could still use some more work.
+
+Modified files:
+	chapel/compiler/: Makefile codegen.cpp files.cpp files.h 
+Added files:
+	chapel/compiler/: beautify.cpp beautify.h 
+
