@@ -1428,3 +1428,13 @@ Modified files:
 	chapel/runtime/include/: chplio.h chpltypes.h 
 	chapel/runtime/src/: chplio.c 
 
+---------------------------------------------------------------------------
+
+04/03/26 11:56:47 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Bug in comparison routine passed to qsort.
+
+Modified files:
+	chapel/third-party/dparser/d/: lr.c 
+
