@@ -21465,3 +21465,20 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/runtime/include/: seq.h 
 
+---------------------------------------------------------------------------
+
+03/24/05 18:18:46 -- roxana
+
+Log message:
+	Cleaned up some of the things from the previous commit. Added a
+	traverse method to the Index type. Added initialization to the test
+	file (I assumed that was done by default).
+
+Modified files:
+	chapel/test/domains/roxana/: test_index_expr.chpl 
+	chapel/compiler/traversals/: insertIndexType.cpp 
+	                             insertAnonymousTypes.h 
+	                             insertAnonymousTypes.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/AST/: type.cpp 
+
