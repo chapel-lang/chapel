@@ -20844,3 +20844,13 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+03/22/05 17:10:49 -- deitz
+
+Log message:
+	Passed future to John.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_init2.future 
+
