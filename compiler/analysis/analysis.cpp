@@ -325,6 +325,29 @@ install_new_function(FnSymbol *f) {
       } 
     }
   }
+#if 0
+  // BEGIN veryify collect_asts
+  Vec<BaseAST *> xsyms, ysyms, xysyms, yxsyms;
+  collect_asts(&xsyms, f);
+  ysyms.copy(syms);
+  xsyms.add(f);
+  xsyms.add(f->defPoint);
+  xsyms.vec_to_set();
+  ysyms.vec_to_set();
+  xsyms.set_difference(ysyms, xysyms);
+  ysyms.set_difference(xsyms, yxsyms);
+  if (xysyms.n) {
+    printf("BaseAST's found by collect_asts but not by close_symbols: %d\n", xysyms.set_count());
+    forv_BaseAST(b, xysyms) if (b)
+      printf("type %2d, id %ld\n", (int)b->astType, b->id);
+  }
+  if (yxsyms.n) {
+    printf("BaseAST's found by close_symbols but not by collect_asts: %d\n", yxsyms.set_count());
+    forv_BaseAST(b, yxsyms) if (b)
+      printf("type %2d, id %ld\n", (int)b->astType, b->id);
+  }
+  // END veryify collect_asts
+#endif
   map_symbols(syms);
   build_symbols(syms);
   build_types(syms);
@@ -1913,12 +1936,12 @@ type_info(BaseAST *a, Symbol *s) {
 #endif
   if (!sym)
     return dtUnknown;
-  if (sym->var) {
-    type = sym->var->type;
-    goto Ldone;
-  }
   if (sym->type) {
     type = sym->type;
+    goto Ldone;
+  }
+  if (sym->var) {
+    type = sym->var->type;
     goto Ldone;
   }
  Ldone:
