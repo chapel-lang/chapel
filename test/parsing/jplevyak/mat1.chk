@@ -1,2 +1,2 @@
-638 states 356 scans 141 shifts 329 reductions 24 compares 0 ambiguities
+602 states 337 scans 130 shifts 301 reductions 14 compares 0 ambiguities
 (((( var (( m ( = (( 100 )))))) ; )(( var (( n ( = (( 200 )))))) ; )(( var (( Mat ( = (( domain )( ( (((( 1 )) .. ( m )) , ((( 1 )) .. ( n ))) ) )))))) ; )(( var (( A ( = ( [ ( Mat ) ] ( float )))))) ; )(( forall ( i ( ,  j )) in ( Mat )( { (((( A )( ( (( i ) , ( j )) ) )) = (( i ) == ( j ))) ; ) } )) ; )((( write )( ( ( A ) ) )) ; )))

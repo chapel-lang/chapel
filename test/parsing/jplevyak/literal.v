@@ -17,7 +17,6 @@ an_uint64 : 1ul;	print(an_uint64);
 a_float : 1.0;		print(a_float);
 a_float32 : 1.0f;	print(a_float32);
 a_float64 : 1.0d;	print(a_float64);
-a_complex : 1i;		print(a_complex);
 
 // Character Literals
 
