@@ -10465,3 +10465,16 @@ Added files:
 	chapel/test/classes/deitz/future/: .cvsignore 
 	chapel/test/types/enum/deitz/: test_enum4.chpl test_enum4.good 
 
+---------------------------------------------------------------------------
+
+11/29/04 13:32:10 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	new resolve_symbol function which works on MemberAccess ASTs.
+	tested with test_class1.chpl
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+
