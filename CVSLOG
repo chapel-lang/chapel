@@ -2983,3 +2983,13 @@ Log message:
 Modified files:
 	chapel/compiler/: list.h log.h map.h ssu.cpp ssu.h 
 
+---------------------------------------------------------------------------
+
+06/08/04 15:27:18 -- bradc
+
+Log message:
+	Somehow this file slipped out of my last checkin.
+
+Added files:
+	chapel/test/trivial/bradc/functions/: noargs.chpl 
+
