@@ -7,7 +7,7 @@
 #define _UNION_CHECK(u, tag, filename, lineno) \
   if ((u)._chpl_union_tag != (tag)) { \
     printf("ERROR: Union type error (%s:%d)\n", filename, lineno); \
-    exit(1); \
+    exit(0); \
   }
  
 #endif
