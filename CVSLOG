@@ -22283,3 +22283,15 @@ Modified files:
 Removed files:
 	chapel/test/types/like/deitz/: test_like1.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 14:15:37 -- jplevyak
+
+Log message:
+	Fix initialization of arrays with scalars.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: jacobi3.future 
+
