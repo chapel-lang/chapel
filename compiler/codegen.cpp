@@ -347,7 +347,7 @@ void genAST(FILE* outfile, AST* ast) {
 	if (rank) {
 	  int subtree;
 
-	  fprintf(outfile, "%s = _init_domain_%dD(", sym->name, rank);
+	  fprintf(outfile, "_init_domain_%dD(&(%s), ", rank, sym->name);
 	  if (ast->v[1]->kind == AST_constraint) {
 	    subtree = 2;
 	  } else {
