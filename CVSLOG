@@ -20765,3 +20765,26 @@ Log message:
 Modified files:
 	chapel/third-party/boehmgc/gc6.3/: configure 
 
+---------------------------------------------------------------------------
+
+03/22/05 13:34:08 -- deitz
+
+Log message:
+	Reordered pre-analysis normalizing passes in passlist so that
+	anonymous types are inserted before class constructors etc. are
+	created.
+	
+	Added creation of overloaded assignment operator for tuple types in
+	BuildClassConstructorsEtc.
+	
+	Removed parsing of ForLoops without indices: "[D] ....;"
+	
+	Started work on getting arrays to initialize their values, post-analysis.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertVariableInitializations.cpp 
+	                             resolveOverloadedOperators.cpp 
+
