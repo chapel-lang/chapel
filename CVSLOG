@@ -2953,3 +2953,13 @@ Added files:
 Removed files:
 	chapel/test/Share/: noargs.chpl 
 
+---------------------------------------------------------------------------
+
+06/08/04 15:11:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	update counts
+
+Modified files:
+	chapel/test/parsing/jplevyak/: mat1.good vec.good 
+
