@@ -1001,7 +1001,11 @@ void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
 
 
 bool ClassType::blankIntentImpliesRef(void) {
-  return true;
+  if (value || union_value) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 
