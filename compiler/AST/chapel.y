@@ -347,8 +347,8 @@ domainType:
     { $$ = new DomainType(); }
 | DOMAIN '(' intliteral ')'
     { $$ = new DomainType($3); }
-| DOMAIN '(' identifier ')'
-    { $$ = new SubDomainType(new Symbol(SYMBOL, $3)); }
+| DOMAIN '(' expr ')'
+    { $$ = new DomainType($3->rank(), $3); }
 ;
 
 
@@ -357,8 +357,8 @@ indexType:
     { $$ = new IndexType(); }
 | INDEX '(' intliteral ')'
     { $$ = new IndexType($3); }
-| INDEX '(' identifier ')'
-    { $$ = new SubIndexType(new Symbol(SYMBOL, $3)); }
+| INDEX '(' expr ')'
+    { $$ = new IndexType($3->rank(), $3); }
 ;
 
 

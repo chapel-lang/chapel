@@ -8,6 +8,7 @@ class Symbol;
 class EnumSymbol;
 class Expr;
 class ASymbol;
+extern Expr* nilExpr;
 
 class Type : public BaseAST {
  public:
@@ -58,8 +59,9 @@ class EnumType : public Type {
 class DomainType : public Type {
  public:
   int numdims;
+  Expr* parent;
 
-  DomainType(int init_numdims = 0);
+  DomainType(int init_numdims = 0, Expr* init_parent = nilExpr);
 
   int rank(void);
 
@@ -68,28 +70,9 @@ class DomainType : public Type {
 };
 
 
-class SubDomainType : public DomainType {
- public:
-  Symbol* parent;
-
-  SubDomainType(Symbol* init_parent);
-
-  void print(FILE* outfile);
-  int getSymbols(Vec<BaseAST *> &asts);
-};
-
-
 class IndexType : public DomainType {
  public:
-  IndexType(int init_rank = 0);
-
-  void print(FILE* outfile);
-};
-
-
-class SubIndexType : public SubDomainType {
- public:
-  SubIndexType(Symbol* init_parent);
+  IndexType(int init_rank = 0, Expr* init_parent = nilExpr);
 
   void print(FILE* outfile);
 };

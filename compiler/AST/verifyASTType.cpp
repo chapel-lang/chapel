@@ -257,19 +257,9 @@ void VerifyASTType::preProcessType(Type* type) {
       INT_FATAL(type, "Unexpected AST type type: TYPE_DOMAIN");
     }
     break;
-  case TYPE_SUBDOMAIN:
-    if (typeid(*type) != typeid(SubDomainType)) {
-      INT_FATAL(type, "Unexpected AST type type: TYPE_SUBDOMAIN");
-    }
-    break;
   case TYPE_INDEX:
     if (typeid(*type) != typeid(IndexType)) {
       INT_FATAL(type, "Unexpected AST type type: TYPE_INDEX");
-    }
-    break;
-  case TYPE_SUBINDEX:
-    if (typeid(*type) != typeid(SubIndexType)) {
-      INT_FATAL(type, "Unexpected AST type type: TYPE_SUBINDEX");
     }
     break;
   case TYPE_ARRAY:

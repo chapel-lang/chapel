@@ -167,8 +167,6 @@ build_types(Vec<BaseAST *> &syms) {
       }
       case TYPE_DOMAIN: build_record_type(t, sym_domain); break;
       case TYPE_INDEX: build_record_type(t, sym_tuple); break;
-      case TYPE_SUBDOMAIN: build_record_type(t, sym_domain); break;
-      case TYPE_SUBINDEX: build_record_type(t, sym_tuple); break;
       case TYPE_ARRAY: build_record_type(t, sym_array); break;
       case TYPE_USER: {
 	UserType *tt = dynamic_cast<UserType*>(t);

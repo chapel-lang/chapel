@@ -230,9 +230,10 @@ void EnumType::codegenDefaultFormat(FILE* outfile) {
 }
 
 
-DomainType::DomainType(int init_numdims) :
+DomainType::DomainType(int init_numdims, Expr* init_parent) :
   Type(TYPE_DOMAIN),
-  numdims(init_numdims)
+  numdims(init_numdims),
+  parent(init_parent)
 {}
 
 
@@ -243,10 +244,14 @@ int DomainType::rank(void) {
 
 void DomainType::print(FILE* outfile) {
   fprintf(outfile, "domain(");
-  if (numdims != 0) {
-    fprintf(outfile, "%d", numdims);
+  if (parent->isNull()) {
+    if (numdims != 0) {
+      fprintf(outfile, "%d", numdims);
+    } else {
+      fprintf(outfile, "???");
+    }
   } else {
-    fprintf(outfile, "???");
+    parent->print(outfile);
   }
   fprintf(outfile, ")");
 }
@@ -257,31 +262,8 @@ void DomainType::codegen(FILE* outfile) {
 }
 
 
-SubDomainType::SubDomainType(Symbol* init_parent) :
-  DomainType(),
-  parent(init_parent)
-{
-  astType = TYPE_SUBDOMAIN;
-  numdims = 777; // BLC -- fill in correctly!
-}
-
-
-void SubDomainType::print(FILE* outfile) {
-  fprintf(outfile, "domain(");
-  parent->print(outfile);
-  fprintf(outfile, ")");
-}
-
-
-int
-SubDomainType::getSymbols(Vec<BaseAST *> &asts) {
-  asts.add(parent);
-  return asts.n;
-}
-
-
-IndexType::IndexType(int init_numdims) :
-  DomainType(init_numdims)
+IndexType::IndexType(int init_numdims, Expr* init_parent) :
+  DomainType(init_numdims, init_parent)
 {
   astType = TYPE_INDEX;
 }
@@ -289,26 +271,15 @@ IndexType::IndexType(int init_numdims) :
 
 void IndexType::print(FILE* outfile) {
   fprintf(outfile, "index(");
-  if (numdims != 0) {
-    fprintf(outfile, "%d", numdims);
+  if (parent->isNull()) {
+    if (numdims != 0) {
+      fprintf(outfile, "%d", numdims);
+    } else {
+      fprintf(outfile, "???");
+    }
   } else {
-    fprintf(outfile, "???");
+    parent->print(outfile);
   }
-  fprintf(outfile, ")");
-}
-
-
-SubIndexType::SubIndexType(Symbol* init_parent) :
-  SubDomainType(init_parent)
-{
-  astType = TYPE_SUBINDEX;
-  numdims = 777; // BLC -- fill in correctly!
-}
-
-
-void SubIndexType::print(FILE* outfile) {
-  fprintf(outfile, "index(");
-  parent->print(outfile);
   fprintf(outfile, ")");
 }
 
