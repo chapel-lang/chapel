@@ -19,6 +19,9 @@
 
 //#define TEST_RETURN 1
 
+extern Sym *operator_symbol;
+
+
 class LabelMap : public Map<char *, ParseAST *> {};
 
 char *AST_name[] = {
@@ -30,6 +33,7 @@ char *AST_name[] = {
 char *cannonical_class = 0;
 char *cannonical_self = 0;
 char *cannonical_folded = 0;
+Sym *operator_symbol = 0;
 
 char *
 ParseAST::pathname() {
@@ -1189,7 +1193,7 @@ gen_op(IF1 *i, ParseAST *ast) {
     else
       send = if1_send(i, c, 3, 1, sym_make_tuple, ast->children.v[ast->op_index]->rval, aa1, args);
     send->ast = ast;
-    send = if1_send(i, c, 2, 1, sym_operator, args, res);
+    send = if1_send(i, c, 2, 1, operator_symbol, args, res);
     send->ast = ast;
     res->is_lvalue = 1;
     if (ast->is_ref)
@@ -1401,7 +1405,7 @@ gen_assign(IF1 *i, ParseAST *ast, ParseAST *val, Sym *in, Sym *out) {
   Sym *args = new_sym(i, ast->scope);
   Code *send = if1_send(i, &ast->code, 4, 1, sym_make_tuple, in, sym_assign, val->rval, args);
   send->ast = ast;
-  send = if1_send(i, &ast->code, 2, 1, sym_operator, args, out);
+  send = if1_send(i, &ast->code, 2, 1, operator_symbol, args, out);
   send->ast = ast;
 }
 
@@ -1493,7 +1497,7 @@ gen_def_ident_value(IF1 *i, ParseAST *ast, ParseAST *constraint, ParseAST *val) 
 static Sym *
 gen_container(IF1 *i, ParseAST *ast) {
   Sym *rval = new_sym(i, ast->scope);
-  Code *send = if1_send(i, &ast->code, 4, 1, sym_primitive, 
+  Code *send = if1_send(i, &ast->code, 4, 1, sym_operator, 
 			ast->container, sym_period, if1_make_symbol(i, ast->sym->name), 
 			rval);
   send->ast = ast;
@@ -1962,6 +1966,7 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   cannonical_class = if1_cannonicalize_string(i, "class");
   cannonical_self = if1_cannonicalize_string(i, "self");
   cannonical_folded = if1_cannonicalize_string(i, "< folded >");
+  operator_symbol = if1_make_symbol(if1, "operator");
   global_asserts();
   forv_ParseAST(a, av)
     build_builtin_syms(i, a);

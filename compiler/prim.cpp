@@ -35,7 +35,7 @@ Primitives::find(Code *c) {
   if (f->is_builtin) {
     char *name = if1->builtins_names.get(f);
     Prim *prim = prim_map[0][0].get(name);
-    if (prim == prim_primitive) {
+    if (prim == prim_operator) {
       int nargs = c->rvals.n - 3;
       if (nargs < 0)
 	nargs = 0;
@@ -61,7 +61,7 @@ Primitives::find(PNode *p) {
   if (f->sym->is_builtin) {
     char *name = if1->builtins_names.get(f->sym);
     Prim *prim = prim_map[0][0].get(name);
-    if (prim == prim_primitive) {
+    if (prim == prim_operator) {
       int nargs = p->rvals.n - 3;
       if (nargs < 0)
 	nargs = 0;

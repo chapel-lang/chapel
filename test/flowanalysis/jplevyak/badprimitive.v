@@ -1,2 +1,2 @@
-f a : #__primitive #"+" a;
+f a : #__operator #"+" a;
 f "hi";

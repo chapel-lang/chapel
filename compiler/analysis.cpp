@@ -299,7 +299,6 @@ build_builtin_symbols() {
   new_symbol(sym_new, "new");
   new_symbol(sym_new_object, "new_object");
   new_symbol(sym_index, "index");
-  new_symbol(sym_primitive, "primitive");
   new_symbol(sym_operator, "operator");
   new_symbol(sym_print, "print");
   new_symbol(sym_destruct, "destruct");
@@ -406,6 +405,39 @@ gen_expr_stmt(BaseAST *a) {
 }
 
 static int
+gen_while(BaseAST *a) {
+  WhileLoopStmt *s = dynamic_cast<WhileLoopStmt*>(a);
+  Code *body_code = 0;
+  Vec<Stmt*> body;
+  getLinkElements(body, s->body);
+  forv_Stmt(ss, body)
+    if1_gen(if1, &body_code, ss->ainfo->code);
+  if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
+	   s->condition->ainfo->rval, 0, 
+	   s->condition->ainfo->code, 0, 
+	   body_code, s->ainfo);
+  return 0;
+}
+
+static int
+gen_for(BaseAST *a) {
+  ForLoopStmt *s = dynamic_cast<ForLoopStmt*>(a);
+  Code *body_code = 0;
+  Vec<Stmt*> body;
+  getLinkElements(body, s->body);
+  forv_Stmt(ss, body)
+    if1_gen(if1, &body_code, ss->ainfo->code);
+  Code *setup_code = 0;
+  Sym *condition_rval = 0;
+  Code *condition_code = 0;
+  if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
+	   condition_rval, setup_code, 
+	   condition_code, 0, 
+	   body_code, s->ainfo);
+  return 0;
+}
+
+static int
 gen_if1(BaseAST *ast) {
   // bottom's up
   Vec<BaseAST *> asts;
@@ -421,10 +453,21 @@ gen_if1(BaseAST *ast) {
       break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
 #if 0
-    case STMT_RETURN:
-  STMT_BLOCK,
-  STMT_WHILELOOP,
-  STMT_FORLOOP,
+    case STMT_RETURN: 
+      if1_move(if1, &ast->ainfo->code, ast->expr->ainfo->rval, ast->scope->in->ret, ast);
+      // fall through
+    case STMT_BREAK:
+    case STMT_CONTINUE:
+    {
+      Code *c = if1_goto(i, &ast->code, ast->label[0]);
+      c->ast = ast;
+      break;
+    }
+#endif
+    case STMT_BLOCK: break;
+    case STMT_WHILELOOP: gen_while(ast); break;
+    case STMT_FORLOOP: gen_for(ast); break;
+#if 0
   STMT_COND,
 
   EXPR_LITERAL,

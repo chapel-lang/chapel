@@ -6,11 +6,11 @@
 #include "ast.h"
 #include "sym.h"
 #include "builtin.h"
+#include "if1.h"
 
 void AST::dump(FILE *fp, Fun *f) { }
 
 void AST::graph(FILE *fp) { }
-
 
 void
 build_module(Sym *sym, Sym *fun) {

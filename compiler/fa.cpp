@@ -946,7 +946,7 @@ static void
 add_send_constraints(EntrySet *es) {
   forv_PNode(p, es->fun->fa_send_PNodes) {
     if (p->prim) {
-      int start = (p->rvals.v[0]->sym == sym_primitive) ? 1 : 0;
+      int start = (p->rvals.v[0]->sym == sym_operator) ? 1 : 0;
       // return constraints
       assert(p->lvals.n < 2);
       for (int i = 0; i < p->lvals.n; i++) {
@@ -978,9 +978,7 @@ add_send_constraints(EntrySet *es) {
 	  break;
 	case P_prim_tuple: prim_make(p, es, sym_tuple); break;
 	case P_prim_list: prim_make_list(p, es); break;
-	case P_prim_vector:
-	  prim_make_vector(p, es);
-	  break;
+	case P_prim_vector: prim_make_vector(p, es); break;
 	case P_prim_continuation: prim_make(p, es, sym_continuation); break;
 	case P_prim_set: prim_make(p, es, sym_set); break;
 	case P_prim_ref: prim_make(p, es, sym_ref, 2, 1); break;
@@ -1207,7 +1205,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     int n = p->prim->nargs < 0 ? -p->prim->nargs : p->prim->nargs;
     AVar *a = 0, *b = 0;
     int start = 0, iarg = 0;
-    if (p->rvals.v[0]->sym == sym_primitive)
+    if (p->rvals.v[0]->sym == sym_operator)
       start = 1;
     for (int i = start; i < p->rvals.n; i++) {
       if (i - start == p->prim->pos) continue;
