@@ -13,6 +13,7 @@ class VarSymbol;
 class TypeSymbol;
 class FnSymbol;
 class Expr;
+class FnCall;
 class ASymbol;
 class SymScope;
 
@@ -246,13 +247,22 @@ class ClassType : public Type {
 };
 
 
+enum unionCall {
+  UNION_SET = 0,
+  UNION_CHECK,
+  UNION_CHECK_QUIET,
+
+  NUM_UNION_CALLS
+};
+
+
 class UnionType : public ClassType {
  public:
   EnumType* fieldSelector;
 
   UnionType();
-  char* buildFieldSelectorName(char*);
   void buildFieldSelector(void);
+  FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
 
   Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
   void codegenStructName(FILE* outfile);

@@ -1317,12 +1317,19 @@ UnionType::UnionType(void) :
 {}
 
 
-char* UnionType::buildFieldSelectorName(char* fieldName) {
-  if (fieldName) {
-    return glomstrings(4, "_", symbol->name, "_union_id_", fieldName);
+static char* buildFieldSelectorName(UnionType* unionType, Symbol* field, 
+                                    bool enumName = false) {
+  char* fieldName;
+  if (field) {
+    fieldName = field->name;
   } else {
-    return glomstrings(3, "_", symbol->name, "_union_id");
+    if (enumName) {
+      fieldName = "";
+    } else {
+      fieldName = "_uninitialized";
+    }
   }
+  return glomstrings(4, "_", unionType->symbol->name, "_union_id_", fieldName);
 }
 
 
@@ -1330,11 +1337,11 @@ void UnionType::buildFieldSelector(void) {
   EnumSymbol* id_list = NULL;
 
   /* build list of enum symbols */
-  char* id_name = buildFieldSelectorName("__uninitialized");
+  char* id_name = buildFieldSelectorName(this, NULL);
   EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
   id_list = appendLink(id_list, id_symbol);
   forv_Vec(VarSymbol, tmp, fields) {
-    id_name = buildFieldSelectorName(tmp->name);
+    id_name = buildFieldSelectorName(this, tmp);
     id_symbol = new EnumSymbol(id_name, NULL);
     id_list = appendLink(id_list, id_symbol);
   }
@@ -1342,7 +1349,7 @@ void UnionType::buildFieldSelector(void) {
 
   /* build enum type */
   EnumType* enum_type = new EnumType(id_list);
-  char* enum_name = buildFieldSelectorName(NULL);
+  char* enum_name = buildFieldSelectorName(this, NULL, true);
   TypeSymbol* enum_symbol = new TypeSymbol(enum_name, enum_type);
   enum_type->addSymbol(enum_symbol);
 
@@ -1354,6 +1361,28 @@ void UnionType::buildFieldSelector(void) {
   symbol->defPoint->stmt->insertBefore(def_stmt);
 
   fieldSelector = enum_type;
+}
+
+
+static char* unionCallName[NUM_UNION_CALLS] = {
+  "_UNION_SET",
+  "_UNION_CHECK",
+  "_UNION_CHECK_QUIET"
+};
+
+
+FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
+                                            Symbol* field) {
+  Expr* args = base->copy();
+  char* id_tag = buildFieldSelectorName(this, field);
+  args->append(new Variable(Symboltable::lookup(id_tag)));
+  if (type == UNION_CHECK) {
+    args->append(new StringLiteral(base->filename));
+    args->append(new IntLiteral(intstring(base->lineno), base->lineno));
+  }
+  
+  char* fnName = unionCallName[type];
+  return new FnCall(new Variable(Symboltable::lookupInternal(fnName)), args);
 }
 
 
@@ -1376,9 +1405,8 @@ void UnionType::codegenStructName(FILE* outfile) {
 
 
 void UnionType::codegenStartDefFields(FILE* outfile) {
-  fprintf(outfile, "_");
-  symbol->codegen(outfile);
-  fprintf(outfile, "_union_id _chpl_union_tag;\n");
+  fieldSelector->codegen(outfile);
+  fprintf(outfile, " _chpl_union_tag;\n");
   fprintf(outfile, "union {\n");
 }
 

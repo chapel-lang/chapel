@@ -40,8 +40,12 @@ void ApplyThisParameters::preProcessExpr(Expr* expr) {
           if (member->var == parentFn->_this) {
             return;
           }
-          MemberAccess* repl =
-            new MemberAccess(new Variable(parentFn->_this), member->var);
+          Variable* base = new Variable(parentFn->_this);
+          // propagate field's source location to the parent
+          base->filename = member->filename;
+          base->lineno = member->lineno;
+
+          MemberAccess* repl = new MemberAccess(base, member->var);
           repl->lineno = expr->lineno;
           repl->filename = expr->filename;
           expr->replace(repl);

@@ -30,27 +30,20 @@ static Stmt* addIOStmt(Stmt* ioStmtList, char* str) {
 
 
 static CondStmt* createUnionFieldIO(CondStmt* prevStmt, VarSymbol* field, 
-                                    ClassType* classType, 
+                                    UnionType* unionType, 
                                     ParamSymbol* thisArg) {
-  char* fieldName = "__uninitialized";
-  if (field) {
-    fieldName = field->name;
-  }
-  char* id_tag = glomstrings(4, "_", classType->symbol->name, "_union_id_",
-                             fieldName);
-  Expr* argExpr = new Variable(thisArg);
-  argExpr->append(new Variable(Symboltable::lookup(id_tag, true)));
-  Symbol* fnSym = Symboltable::lookupInternal("_UNION_CHECK_QUIET");
-  FnCall* check_function = new FnCall(new Variable(fnSym), argExpr);
+  FnCall* checkFn = unionType->buildSafeUnionAccessCall(UNION_CHECK_QUIET,
+                                                        new Variable(thisArg),
+                                                        field);
   Stmt* condStmts = NULL;
   if (field) {
-    condStmts = addIOStmt(condStmts, glomstrings(2, fieldName, " = "));
+    condStmts = addIOStmt(condStmts, glomstrings(2, field->name, " = "));
     condStmts = addIOStmt(condStmts, thisArg, field);
   } else {
     condStmts = addIOStmt(condStmts, "uninitialized");
   }
   Stmt* thenClause = new BlockStmt(condStmts);
-  CondStmt* newCondStmt = new CondStmt(check_function, thenClause, NULL);
+  CondStmt* newCondStmt = new CondStmt(checkFn, thenClause, NULL);
   if (prevStmt) {
     prevStmt->addElseStmt(newCondStmt);
   }
@@ -58,12 +51,12 @@ static CondStmt* createUnionFieldIO(CondStmt* prevStmt, VarSymbol* field,
 }
 
 
-static Stmt* createUnionBody(Stmt* bodyStmts, ClassType* classType, 
+static Stmt* createUnionBody(Stmt* bodyStmts, UnionType* unionType, 
                              ParamSymbol* thisArg) {
-  CondStmt* topStmt = createUnionFieldIO(NULL, NULL, classType, thisArg);
+  CondStmt* topStmt = createUnionFieldIO(NULL, NULL, unionType, thisArg);
   CondStmt* fieldIOStmt = topStmt;
-  forv_Vec(VarSymbol, field, classType->fields) {
-    fieldIOStmt = createUnionFieldIO(fieldIOStmt, field, classType, thisArg);
+  forv_Vec(VarSymbol, field, unionType->fields) {
+    fieldIOStmt = createUnionFieldIO(fieldIOStmt, field, unionType, thisArg);
   }
   bodyStmts->append(topStmt);
   return bodyStmts;
@@ -107,8 +100,9 @@ static void createWriteFn(ClassType* classType) {
     bodyStmts = addIOStmt(bodyStmts, "{");
   }
 
-  if (dynamic_cast<UnionType*>(classType)) {
-    bodyStmts = createUnionBody(bodyStmts, classType, thisArg);
+  UnionType* unionType = dynamic_cast<UnionType*>(classType);
+  if (unionType) {
+    bodyStmts = createUnionBody(bodyStmts, unionType, thisArg);
   } else {
     bodyStmts = createClassRecordBody(bodyStmts, classType, thisArg);
   }
