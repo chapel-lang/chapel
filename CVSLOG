@@ -15093,3 +15093,23 @@ Added files:
 	                            testAllScopes2.future 
 	                            testAllScopes2.good 
 
+---------------------------------------------------------------------------
+
+01/20/05 12:02:38 -- bradc
+
+Log message:
+	Changed "this" to be passed as a new parameter intent
+	(unavailable to the user) PARAM_REF, regardless of
+	whether it is a class, a record, or a union.  Updated
+	processParameters traversal to handle intents of type
+	PARAM_REF, and removed futures for currently-working
+	tests of parameter intents.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/traversals/: cleanup.cpp processParameters.cpp 
+Removed files:
+	chapel/test/classes/deitz/: test_record_method2.future 
+	chapel/test/functions/bradc/: inferReturn.future intents.future 
+
