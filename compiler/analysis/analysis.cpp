@@ -1376,7 +1376,6 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       break;
     }
     case EXPR_MEMBERACCESS: {
-      // **************** CURRENTLY UNUSED ****************
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
@@ -1388,7 +1387,8 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
 			 s->base->ainfo->rval, op, selector,
 			 s->ainfo->rval);
       c->ast = s->ainfo;
-      c->partial = Partial_ALWAYS;
+      c->partial = Partial_NEVER; // assume this is a member
+      s->ainfo->send = c;
       s->ainfo->rval->is_lvalue = 1;
       break;
     }
@@ -1524,6 +1524,15 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
     case EXPR_FNCALL:
     case EXPR_PARENOP: {
       ParenOpExpr *s = dynamic_cast<ParenOpExpr *>(ast);
+      if (s->baseExpr->astType == EXPR_MEMBERACCESS) {
+	if (!s->argList) {
+	  s->ainfo->rval = s->baseExpr->ainfo->rval;
+	  s->ainfo->code = s->baseExpr->ainfo->code;
+	  s->baseExpr->ainfo->send->partial = Partial_NEVER;
+	  break;
+	} else
+	  s->baseExpr->ainfo->send->partial = Partial_ALWAYS;
+      }
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);

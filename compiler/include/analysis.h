@@ -72,6 +72,7 @@ class AInfo : public AST {
 
   BaseAST *xast;	// pointer to shadowed BaseAST
   Code *code;		// IF1 Code
+  Code *send;		// used for 0-arity parenops
   Label *label[2];	// before and after for loops (continue,break)
   Sym *sym, *rval;	// IF1 Syms
 
