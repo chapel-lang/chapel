@@ -2,8 +2,9 @@
 #define _TYPE_H_
 
 #include <stdio.h>
-#include "baseAST.h"
 #include "analysis.h"
+#include "baseAST.h"
+#include "chplenum.h"
 #include "vec.h"
 
 class Symbol;
@@ -17,24 +18,6 @@ class SymScope;
 
 
 // neither of these really seem like they should be here
-enum paramType {
-  PARAM_BLANK = 0,
-  PARAM_IN,
-  PARAM_INOUT,
-  PARAM_OUT,
-  PARAM_CONST,
-  PARAM_REF,
-
-  NUM_PARAM_TYPES
-};
-
-enum ioCallType {
-  IO_WRITE = 0, 
-  IO_WRITELN, 
-  IO_READ
-};
-
-
 
 class Type : public BaseAST {
  public:

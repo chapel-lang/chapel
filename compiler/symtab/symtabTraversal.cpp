@@ -13,25 +13,19 @@ void SymtabTraversal::processSymbol(Symbol* sym) {
 }
 
 
-void SymtabTraversal::run(void) {
-  if (skipInternalScopes) {
-    // BLC: took a wild stab at what scope we should start at, but am
-    // still not clear at how the common module is inserted
-    ModuleSymbol* mod = Symboltable::getModuleList(true);
+void SymtabTraversal::run(ModuleSymbol* moduleList) {
+  if (whichModules == MODULES_ALL) {
+    // start from root of symboltable rather than internal scopes in
+    // this case
+    Symboltable::traverse(this);
+  } else {
+    ModuleSymbol* mod = moduleList;
     while (mod) {
       Symboltable::traverseFromScope(this, mod->modScope);
 
       mod = nextLink(ModuleSymbol, mod);
     }
-  } else {
-    Symboltable::traverse(this);
   }
-}
-
-
-void SymtabTraversal::run(ModuleSymbol* moduleList) {
-  run();
-  //  Symboltable::traverseFromScope(this, moduleList->modScope);
 }
 
 

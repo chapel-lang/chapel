@@ -7,7 +7,7 @@
 
 
 ProcessParameters::ProcessParameters(void) {
-  processInternalModules = false;
+  whichModules = MODULES_USER;
 }
 
 

@@ -20,14 +20,7 @@ void TransformLetExprs::postProcessExpr(Expr* expr) {
 
 
 void TransformLetExprs::run(ModuleSymbol* moduleList) {
-  ModuleSymbol* mod = moduleList;
-  while (mod) {
-    if (mod->internal == false || processInternalModules == true) {
-      mod->startTraversal(this);
-    }
-    
-    mod = nextLink(ModuleSymbol, mod);
-  }
+  Traversal::run(moduleList);
   doTransformation();
 }
 

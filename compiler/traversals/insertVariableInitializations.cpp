@@ -260,7 +260,7 @@ static void insert_init_at_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
 
 
 InsertVariableInitializations::InsertVariableInitializations() {
-  processInternalModules = false;
+  whichModules = MODULES_USER;
 }
 
 

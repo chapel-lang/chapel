@@ -4,7 +4,8 @@
 
 
 Pass::Pass(void) :
-  args("")
+  args(""),
+  whichModules(MODULES_ALL)
 {}
 
 

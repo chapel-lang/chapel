@@ -187,7 +187,7 @@ static void build_tuple_assignment_function(TupleType* tuple_type) {
 
 
 BuildClassConstructorsEtc::BuildClassConstructorsEtc(void) {
-  processInternalModules = false;
+  whichModules = MODULES_COMMON_AND_USER;
 }
 
 

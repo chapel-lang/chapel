@@ -3,7 +3,7 @@
 #include "symtab.h"
 
 InsertWriteFns::InsertWriteFns(void) {
-  skipInternalScopes = true;
+  whichModules = MODULES_USER;
 }
 
 

@@ -1,6 +1,7 @@
 #ifndef _SYMTAB_H_
 #define _SYMTAB_H_
 
+#include "chplenum.h"
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -26,7 +27,7 @@ class Symboltable {
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);
-  static ModuleSymbol* getModuleList(bool userModulesOnly);
+  static ModuleSymbol* getModuleList(moduleSet modules);
   static FnSymbol* getCurrentFn(void);
 
   static void defineInScope(Symbol* sym, SymScope* scope);

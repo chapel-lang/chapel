@@ -59,7 +59,7 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
 
 
 FindUnknownTypes::FindUnknownTypes(void) {
-  processInternalModules = false;
+  whichModules = MODULES_USER;
 }
 
 void FindUnknownTypes::preProcessSymbol(Symbol* sym) {

@@ -212,7 +212,7 @@ static void verifySymbolDefPoint(Symbol* sym) {
 
 
 HyperCopyReplace::HyperCopyReplace(void) {
-  processInternalModules = false;
+  whichModules = MODULES_USER;
 }
 
 

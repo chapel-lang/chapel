@@ -149,11 +149,17 @@ SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
 }
 
 
-ModuleSymbol* Symboltable::getModuleList(bool userModulesOnly) {
-  if (userModulesOnly) {
+ModuleSymbol* Symboltable::getModuleList(moduleSet whichModules) {
+  switch (whichModules) {
+  case MODULES_USER:
     return firstUserModule;
-  } else {
+  case MODULES_COMMON_AND_USER:
+    return commonModule;
+  case MODULES_ALL:
     return firstModule;
+  default:
+    INT_FATAL("Unexpected case in getModuleList: %d\n", whichModules);
+    return NULL;
   }
 }
 
@@ -302,7 +308,7 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
       // first software module, but then contains other file module
       // code after the first software module.
       if (newModule->isFileModule()) {
-				Symboltable::pushScope(SCOPE_MODULE);
+	Symboltable::pushScope(SCOPE_MODULE);
       } else {
 	if (!currentScope->isEmpty()) {
 	  USR_FATAL(newModule, "Can't handle nested modules yet");
@@ -312,11 +318,6 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
   }
 
   currentModule = newModule;
-
-  if (!internal && firstUserModule == NULL) {
-    firstUserModule = newModule;
-  }
-    
 
   return newModule;
 }
@@ -385,6 +386,9 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
 
   if (!empty) {
     firstModule = appendLink(firstModule, mod);
+    if (!mod->internal && firstUserModule == NULL) {
+      firstUserModule = mod;
+    }
 
     // define the module's init function.  This should arguably go
     // in the module's scope, but that doesn't currently seem to

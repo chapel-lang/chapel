@@ -6,7 +6,7 @@
 
 
 RemoveDeadSymbols::RemoveDeadSymbols(void) {
-  skipInternalScopes = true;
+  whichModules = MODULES_USER;
 }
 
 

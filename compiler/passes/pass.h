@@ -1,6 +1,7 @@
 #ifndef _PASS_H_
 #define _PASS_H_
 
+#include "chplenum.h"
 #include "gc_cpp.h"
 
 class ModuleSymbol;
@@ -8,6 +9,7 @@ class ModuleSymbol;
 class Pass : public gc {
  public:
   char* args;
+  moduleSet whichModules;
 
   Pass(void);
 
@@ -21,4 +23,3 @@ class DummyPass : public Pass {
 };
 
 #endif
-

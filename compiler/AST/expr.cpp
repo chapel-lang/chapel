@@ -105,9 +105,9 @@ Expr* Expr::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
   if (update_list) {
     for (int j = 0; j < update_list->n; j++) {
       for (int i = 0; i < map->n; i++) {
-				if (update_list->v[j] == map->v[i].key) {
-	  			update_list->v[j] = map->v[i].value;
-				}
+        if (update_list->v[j] == map->v[i].key) {
+          update_list->v[j] = map->v[i].value;
+        }
       }
     }
   }
@@ -128,9 +128,9 @@ Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
   if (update_list) {
     for (int j = 0; j < update_list->n; j++) {
       for (int i = 0; i < map->n; i++) {
-				if (update_list->v[j] == map->v[i].key) {
-	  			update_list->v[j] = map->v[i].value;
-				}
+	if (update_list->v[j] == map->v[i].key) {
+	  update_list->v[j] = map->v[i].value;
+	}
       }
     }
   }
@@ -148,8 +148,8 @@ Expr* Expr::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   Expr* oldExpr = this;
 
   while (oldExpr) {
-    newExprList = appendLink(newExprList, 
-			     oldExpr->copyInternal(clone, map, analysis_clone));
+    newExprList = appendLink(newExprList,
+                             oldExpr->copyInternal(clone, map, analysis_clone));
     
     oldExpr = nextLink(Expr, oldExpr);
   }
