@@ -210,6 +210,7 @@ static void handleInterrupt(int sig) {
 
 void codegen(FA* fa, char* infilename, char* compilerDir) {
   signal(SIGINT, handleInterrupt);
+  signal(SIGSEGV, handleInterrupt);
   createTmpDir();
   openMakefile(infilename, compilerDir);
 
