@@ -16759,3 +16759,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/05 10:10:43 -- jplevyak
+
+Log message:
+	Fix SEGV in test_typevar_function1.chpl, expected all formals to
+	be ParamSymbols.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
