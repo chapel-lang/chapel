@@ -10408,3 +10408,38 @@ Modified files:
 	                                  unary_plusMinus.good var.good 
 	                                  var2.good whileLoop.good 
 
+---------------------------------------------------------------------------
+
+11/29/04 10:33:29 -- deitz
+
+Log message:
+	Added the ability to assign values to enumerated type symbols.  The
+	values by default start at zero:
+	
+		enum adjectives = good, bad, soso;
+	
+	The values are good is 0, bad is 1, and soso is 2.  These values can
+	now be overridden as in:
+	
+		enum adjectives = good, bad = 2, soso;
+	
+	In this case, good is 0, bad is 2, and soso is 3.
+	
+	Added a test case to make sure this works.  Also, moved
+	test_enum2.chpl out of the no-testing future directory.
+	
+	Note that the syntax is slightly different than in the spec in which
+	the initial equal does not belong but the symbols should be wrapped in
+	curly brackets.  This should be changed.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp symtab.cpp type.cpp 
+	chapel/compiler/include/: symbol.h symtab.h 
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/types/enum/deitz/: .cvsignore test_enum2.chpl 
+	                               test_enum2.good test_enum3.chpl 
+	                               test_enum3.good 
+Removed files:
+	chapel/test/types/enum/deitz/future/: test_enum2.chpl 
+
