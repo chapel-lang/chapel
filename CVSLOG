@@ -6876,3 +6876,23 @@ Added files:
 	chapel/compiler/AST/: printAST.cpp printAST.h printSymtab.cpp 
 	                      printSymtab.h 
 
+---------------------------------------------------------------------------
+
+09/10/04 14:24:29 -- bradc
+
+Log message:
+	Created a single top-level list of statements pointed to by
+	the variable entryPoint (defined in createAST.h).  This
+	currently contains calls to the three _init procedures --
+	the internal prelude one, the prelude one, and the user
+	code's entry point.  As we start to support more files
+	and/or a concept of modules, this will be expanded to
+	handle those entities as well.
+	
+	Note that this top-level statement list is not currently
+	wrapped in a function (John, if you need this, let me
+	know).
+
+Modified files:
+	chapel/compiler/: createAST.cpp createAST.h 
+
