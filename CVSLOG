@@ -16408,3 +16408,57 @@ Log message:
 Modified files:
 	chapel/test/classes/deitz/: test_secondary_method1.future 
 
+---------------------------------------------------------------------------
+
+02/03/05 16:57:03 -- deitz
+
+Log message:
+	Added the statement of declarations back to ClassType.  Renamed it
+	declarationList instead of definition.
+	
+	Changed the storage of class variables, methods, and types to use
+	vectors rather than the symbol links.  This was essential if we are
+	going to keep the DefStmts.  I changed the names while doing this.
+	The ClassType fields are now called fields (previously
+	classVarSymbols), types (classTypeSymbols), primaryMethods
+	(embeddedFnSymbols), and secondaryMethods (boundFnSymbols).
+	
+	Cleaned up how class types are handled in the compiler.  The
+	addDeclarations procedure, previously addDefinition, now can be called
+	multiple times to continue adding to a class.  This is used for
+	with-statement resolution in classes.
+	
+	This checkin fixes the test_class_with2 regression and improves the
+	stability of with in classes.  It is likely that withing a class that
+	withs will now work even though I think it didn't before.  There are
+	no tests of this.
+	
+	Removed future for test_secondary_method1.  Secondary methods now have
+	stronger support though are still not complete.
+	
+	Backing down from removing the FnDefStmt, I think it is worth keeping
+	around for the short-term and maybe even the long-term.  I do believe
+	all of the DefStmts should become a single class (though will hold off
+	on this change as it doesn't seem terribly important).
+	
+	I also believe we should now maintain the defPoint, maybe calling it
+	defStmt, as a pointer from a symbol back to the statement where it was
+	defined.  Note that this was only added by me a couple weeks ago, so
+	this is still small.
+	
+	How the traversal will work is still in play though so it is essential
+	to continue working on the interface between analysis and the
+	compiler.
+
+Modified files:
+	chapel/compiler/AST/: nils.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: cleanup.cpp methodsToFunctions.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_secondary_method3.chpl 
+	                            test_secondary_method3.good 
+Removed files:
+	chapel/test/classes/deitz/: test_secondary_method1.future 
+
