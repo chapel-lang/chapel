@@ -7,40 +7,40 @@
  called from 12 in merge at review1.chpl:10
  called from 12 in merge at review1.chpl:10
  called from 14 in __init at review1.chpl:1
- called from 192 in class at prelude.chpl:190
- called from 193 in class at prelude.chpl:190
- called from 194 in class at prelude.chpl:190
- called from 195 in class at prelude.chpl:190
+ called from 191 in class at prelude.chpl:189
+ called from 192 in class at prelude.chpl:189
+ called from 193 in class at prelude.chpl:189
+ called from 194 in class at prelude.chpl:189
  called from 2 in modify at review1.chpl:1
  called from 2 in modify at review1.chpl:1
  called from 2 in modify at review1.chpl:1
  called from 2 in modify at review1.chpl:1
- called from 215 in class at prelude.chpl:213
- called from 216 in class at prelude.chpl:213
- called from 216 in class at prelude.chpl:213
- called from 217 in class at prelude.chpl:213
+ called from 214 in class at prelude.chpl:212
+ called from 215 in class at prelude.chpl:212
+ called from 215 in class at prelude.chpl:212
+ called from 216 in class at prelude.chpl:212
  called from 5 in __init at review1.chpl:1
  called from 5 in __init at review1.chpl:1
  called from 8 in __init at review1.chpl:1
-array::array(prelude.chpl:206) ( array (prelude.chpl:206) )
-class::a(prelude.chpl:214) ( array (prelude.chpl:206) )
-class::afirst(prelude.chpl:190) ( integer64 (prelude.chpl:27) )
-class::alast(prelude.chpl:190) ( integer64 (prelude.chpl:27) )
-class::astep(prelude.chpl:190) ( integer64 (prelude.chpl:27) )
-class::dd(prelude.chpl:213) ( sequence (prelude.chpl:183) )
-class::e(prelude.chpl:213) ( float64 (prelude.chpl:39) )
-class::s(prelude.chpl:191) ( sequence (prelude.chpl:183) )
-class::self(prelude.chpl:190) ( sequence (prelude.chpl:183) )
-class::self(prelude.chpl:213) ( array (prelude.chpl:206) )
-domain::domain(prelude.chpl:155) ( domain (prelude.chpl:155) )
+array::array(prelude.chpl:205) ( array (prelude.chpl:205) )
+class::a(prelude.chpl:213) ( array (prelude.chpl:205) )
+class::afirst(prelude.chpl:189) ( integer64 (prelude.chpl:27) )
+class::alast(prelude.chpl:189) ( integer64 (prelude.chpl:27) )
+class::astep(prelude.chpl:189) ( integer64 (prelude.chpl:27) )
+class::dd(prelude.chpl:212) ( sequence (prelude.chpl:182) )
+class::e(prelude.chpl:212) ( float64 (prelude.chpl:39) )
+class::s(prelude.chpl:190) ( sequence (prelude.chpl:182) )
+class::self(prelude.chpl:189) ( sequence (prelude.chpl:182) )
+class::self(prelude.chpl:212) ( array (prelude.chpl:205) )
+domain::domain(prelude.chpl:154) ( domain (prelude.chpl:154) )
 function __init prelude.chpl:7
 function __init review1.chpl:1
 function __init__ <none>:0
-function class prelude.chpl:190
-function class prelude.chpl:213
+function class prelude.chpl:189
+function class prelude.chpl:212
 function merge review1.chpl:10
 function modify review1.chpl:1
-function operator prelude.chpl:103
+function operator prelude.chpl:102
 function operator prelude.chpl:81
 function operator prelude.chpl:81
 function operator prelude.chpl:81
@@ -55,9 +55,9 @@ function operator prelude.chpl:84
 function operator prelude.chpl:85
 function operator prelude.chpl:87
 function operator prelude.chpl:92
-function self prelude.chpl:203
-function self prelude.chpl:203
-function self prelude.chpl:211
+function self prelude.chpl:202
+function self prelude.chpl:202
+function self prelude.chpl:210
 globals
 merge::a1(review1.chpl:10) ( vector (prelude.chpl:12) )
 merge::a1(review1.chpl:10) ( vector (prelude.chpl:12) )
@@ -75,52 +75,51 @@ merge::fn(review1.chpl:10) ( modify (review1.chpl:1) )
 merge::i(review1.chpl:10) ( integer64 (prelude.chpl:27) )
 merge::i(review1.chpl:10) ( integer64 (prelude.chpl:27) )
 merge::i(review1.chpl:10) ( integer64 (prelude.chpl:27) )
-merge::i(review1.chpl:10) ( integer64 (prelude.chpl:27) )
 merge::p(review1.chpl:10) ( tuple (prelude.chpl:13) )
 merge::p(review1.chpl:10) ( tuple (prelude.chpl:13) )
 merge::p(review1.chpl:10) ( tuple (prelude.chpl:13) )
-merge::result(review1.chpl:10) ( array (prelude.chpl:206) )
-merge::result(review1.chpl:10) ( array (prelude.chpl:206) )
-merge::result(review1.chpl:10) ( array (prelude.chpl:206) )
+merge::result(review1.chpl:10) ( array (prelude.chpl:205) )
+merge::result(review1.chpl:10) ( array (prelude.chpl:205) )
+merge::result(review1.chpl:10) ( array (prelude.chpl:205) )
 modify::c1(review1.chpl:1) ( float64 (prelude.chpl:39) )
 modify::c2(review1.chpl:1) ( float64 (prelude.chpl:39) )
 modify::c3(review1.chpl:1) ( integer64 (prelude.chpl:27) )
 modify::p1(review1.chpl:1) ( float64 (prelude.chpl:39) )
 modify::p2(review1.chpl:1) ( integer64 (prelude.chpl:27) )
-operator::a(prelude.chpl:103) ( domain (prelude.chpl:155) )
-operator::a(prelude.chpl:81) ( array (prelude.chpl:206) )
-operator::a(prelude.chpl:81) ( array (prelude.chpl:206) )
-operator::a(prelude.chpl:81) ( array (prelude.chpl:206) )
-operator::a(prelude.chpl:81) ( sequence (prelude.chpl:183) )
-operator::a(prelude.chpl:81) ( sequence (prelude.chpl:183) )
-operator::a(prelude.chpl:81) ( sequence (prelude.chpl:183) )
-operator::a(prelude.chpl:81) ( sequence (prelude.chpl:183) )
-operator::a(prelude.chpl:81) ( sequence (prelude.chpl:183) )
+operator::a(prelude.chpl:102) ( domain (prelude.chpl:154) )
+operator::a(prelude.chpl:81) ( array (prelude.chpl:205) )
+operator::a(prelude.chpl:81) ( array (prelude.chpl:205) )
+operator::a(prelude.chpl:81) ( array (prelude.chpl:205) )
+operator::a(prelude.chpl:81) ( sequence (prelude.chpl:182) )
+operator::a(prelude.chpl:81) ( sequence (prelude.chpl:182) )
+operator::a(prelude.chpl:81) ( sequence (prelude.chpl:182) )
+operator::a(prelude.chpl:81) ( sequence (prelude.chpl:182) )
+operator::a(prelude.chpl:81) ( sequence (prelude.chpl:182) )
 operator::a(prelude.chpl:84) ( float64 (prelude.chpl:39) )
 operator::a(prelude.chpl:84) ( float64 (prelude.chpl:39) )
 operator::a(prelude.chpl:84) ( float64 (prelude.chpl:39) )
 operator::a(prelude.chpl:85) ( float64 (prelude.chpl:39) )
 operator::a(prelude.chpl:87) ( float64 (prelude.chpl:39) )
 operator::a(prelude.chpl:92) ( integer64 (prelude.chpl:27) )
-operator::b(prelude.chpl:103) ( sequence (prelude.chpl:183) )
+operator::b(prelude.chpl:102) ( sequence (prelude.chpl:182) )
 operator::b(prelude.chpl:84) ( float64 (prelude.chpl:39) )
 operator::b(prelude.chpl:84) ( float64 (prelude.chpl:39) )
 operator::b(prelude.chpl:84) ( integer64 (prelude.chpl:27) )
 operator::b(prelude.chpl:85) ( integer64 (prelude.chpl:27) )
 operator::b(prelude.chpl:87) ( float64 (prelude.chpl:39) )
 operator::b(prelude.chpl:92) ( integer64 (prelude.chpl:27) )
-self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
-self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
-self::s(prelude.chpl:211) ( integer64 (prelude.chpl:27) )
-self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
-self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
-self::self(prelude.chpl:211) ( array (prelude.chpl:206) )
-sequence::sequence(prelude.chpl:183) ( sequence (prelude.chpl:183) )
+self::s(prelude.chpl:202) ( integer64 (prelude.chpl:27) )
+self::s(prelude.chpl:202) ( integer64 (prelude.chpl:27) )
+self::s(prelude.chpl:210) ( integer64 (prelude.chpl:27) )
+self::self(prelude.chpl:202) ( vector (prelude.chpl:12) )
+self::self(prelude.chpl:202) ( vector (prelude.chpl:12) )
+self::self(prelude.chpl:210) ( array (prelude.chpl:205) )
+sequence::sequence(prelude.chpl:182) ( sequence (prelude.chpl:182) )
 system::__init(prelude.chpl:7) ( __init (prelude.chpl:7) )
 system::null(prelude.chpl:55) ( tuple (prelude.chpl:13) )
-user::D(review1.chpl:5) ( sequence (prelude.chpl:183) )
+user::D(review1.chpl:5) ( sequence (prelude.chpl:182) )
 user::__init(review1.chpl:1) ( __init (review1.chpl:1) )
 user::params(review1.chpl:4) ( tuple (prelude.chpl:13) )
 user::v1(review1.chpl:6) ( vector (prelude.chpl:12) )
 user::v2(review1.chpl:7) ( vector (prelude.chpl:12) )
-user::v3(review1.chpl:8) ( array (prelude.chpl:206) )
+user::v3(review1.chpl:8) ( array (prelude.chpl:205) )

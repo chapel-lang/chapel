@@ -26,7 +26,7 @@ function operator prelude.chpl:81
 function operator prelude.chpl:81
 function operator prelude.chpl:81
 function operator prelude.chpl:87
-function writeln prelude.chpl:237
+function writeln prelude.chpl:236
 globals
 makeC::a(cs5.chpl:3) ( integer64 (prelude.chpl:27) )
 makeC::c(cs5.chpl:3) ( C (cs5.chpl:1) )
@@ -48,4 +48,4 @@ user::__init(cs5.chpl:1) ( __init (cs5.chpl:1) )
 user::c1(cs5.chpl:5) ( C (cs5.chpl:1) )
 user::d1(cs5.chpl:6) ( D (cs5.chpl:2) )
 user::d3(cs5.chpl:7) ( D (cs5.chpl:2) )
-writeln::a(prelude.chpl:237) ( float64 (prelude.chpl:39) )
+writeln::a(prelude.chpl:236) ( float64 (prelude.chpl:39) )

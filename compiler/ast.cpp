@@ -1114,7 +1114,7 @@ gen_op(IF1 *i, AST *ast) {
       if1_add_send_arg(i, send, a);
     if1_add_send_result(i, send, res);
     res->lvalue = 1;
-  } else if (ast->is_simple_assign) {
+  } else if (ast->is_simple_assign && !a0->rval->is_var) {
     if (a0->rval->read_only)
       show_error("assignment to read-only symbol", ast);
     if1_move(i, c, a1->rval, a0->rval, ast);
@@ -1391,7 +1391,7 @@ gen_def_ident_value(IF1 *i, AST *ast, AST *constraint, AST *val) {
     AST *element_type = constraint->last();
     if (element_type != arr)
       init = value_type(i, ast, element_type->sym);
-    if (val != constraint) { // if we have a initializer
+    if (val) {
       if (!domain && val->kind == AST_forall) { // if it has a domain and we need one, use it
 	AST *domain_ast = val->get(AST_domain);
 	domain = domain_ast->rval;
@@ -1429,7 +1429,7 @@ gen_def_ident_value(IF1 *i, AST *ast, AST *constraint, AST *val) {
       if1_gen(i, &ast->code, val->code);
     Sym *declared_type = constraint->sym;
     if (declared_type->num_type) { // numbers
-      if (val != constraint && val->kind == AST_const && val->sym->type == declared_type)
+      if (val && val->kind == AST_const && val->sym->type == declared_type)
 	if1_move(i, &ast->code, val->sym, ast->sym, ast);
       else {
 	Sym *rval = value_type(i, ast, declared_type);
@@ -1492,8 +1492,10 @@ gen_def_ident(IF1 *i, AST *ast) {
       }
     }
   }
-  if (ast->is_var)
+  if (ast->is_var) {
     ast->rval->lvalue = 1;
+    ast->rval->is_var = 1;
+  }
   if (ast->is_const)
     ast->rval->single_assign = 1;
 }
@@ -1756,6 +1758,8 @@ finalize_types(IF1 *i) {
 #include "builtin_symbols.h"
 #undef S
   // set value for classes of value types
+  sym_value->value = 1;
+  sym_anynum->value = 1;
   Vec<Sym *> implementers;
   forv_Sym(s, i->allsyms) {
     if (s->implements.n)
@@ -1793,8 +1797,6 @@ finalize_types(IF1 *i) {
       // set to either the function class or the function class sym
   }
 #endif
-  sym_value->value = 1;
-  sym_anynum->value = 1;
 }
 
 int

@@ -1,0 +1,21 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 2 in __init at var.chpl:1
+ called from 2 in __init at var.chpl:1
+ called from 3 in __init at var.chpl:1
+function __init prelude.chpl:7
+function __init var.chpl:1
+function __init__ <none>:0
+function operator prelude.chpl:103
+function operator prelude.chpl:87
+function print prelude.chpl:237
+globals
+operator::a(prelude.chpl:103) ( integer64 (prelude.chpl:27) )
+operator::a(prelude.chpl:87) ( integer64 (prelude.chpl:27) )
+operator::b(prelude.chpl:103) ( float64 (prelude.chpl:39) )
+operator::b(prelude.chpl:87) ( float64 (prelude.chpl:39) )
+print::a(prelude.chpl:237) ( integer64 (prelude.chpl:27) )
+system::__init(prelude.chpl:7) ( __init (prelude.chpl:7) )
+system::null(prelude.chpl:55) ( tuple (prelude.chpl:13) )
+user::__init(var.chpl:1) ( __init (var.chpl:1) )
+user::x(var.chpl:1) ( integer64 (prelude.chpl:27) )

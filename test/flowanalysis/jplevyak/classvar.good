@@ -1,0 +1,42 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 10 in __init at classvar.v:2
+ called from 10 in __init at classvar.v:2
+ called from 11 in __init at classvar.v:2
+ called from 11 in __init at classvar.v:2
+ called from 7 in __init at classvar.v:2
+ called from 8 in __init at classvar.v:2
+ called from 85 in new at prelude.v:85
+ called from 86 in operator at prelude.v:86
+ called from 9 in __init at classvar.v:2
+Vars::Vars(classvar.v:2) ( Vars (classvar.v:2) )
+__init::self(classvar.v:2) ( Vars (classvar.v:2) )
+function __init classvar.v:2
+function __init classvar.v:2
+function __init prelude.v:7
+function __init__ <none>:0
+function new prelude.v:85
+function operator prelude.v:86
+function operator prelude.v:86
+function operator prelude.v:86
+function operator prelude.v:86
+function operator prelude.v:86
+function print prelude.v:140
+function print prelude.v:140
+globals
+new::a(prelude.v:85) ( Vars (classvar.v:2) )
+new::o(prelude.v:85) ( Vars (classvar.v:2) )
+new::o(prelude.v:85) ( Vars (classvar.v:2) )
+operator::a(prelude.v:86) ( Vars (classvar.v:2) )
+operator::a(prelude.v:86) ( Vars (classvar.v:2) )
+operator::a(prelude.v:86) ( Vars (classvar.v:2) )
+operator::a(prelude.v:86) ( Vars (classvar.v:2) )
+operator::a(prelude.v:86) ( Vars (classvar.v:2) )
+print::a(prelude.v:140) ( float64 (prelude.v:42) int32 (prelude.v:29) )
+print::a(prelude.v:140) ( int32 (prelude.v:29) float64 (prelude.v:42) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::float64(prelude.v:42) ( float64 (prelude.v:42) )
+system::int32(prelude.v:29) ( int32 (prelude.v:29) )
+system::null(prelude.v:58) ( tuple (prelude.v:13) )
+user::__init(classvar.v:2) ( __init (classvar.v:2) )
+user::v(classvar.v:7) ( Vars (classvar.v:2) )

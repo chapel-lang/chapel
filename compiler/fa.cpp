@@ -1300,15 +1300,23 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       }
       case P_prim_assign: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
-	AVar *ref = make_AVar(p->rvals.v[1], es);
-	AVar *val = make_AVar(p->rvals.v[3], es);
-	ref->arg_of_send.set_add(result);
-	forv_CreationSet(cs, *ref->out) if (cs) {
-	  assert(cs->vars.n);
-	  AVar *av = cs->vars.v[0];
-	  flow_vars(val, av);
+	AVar *lhs = make_AVar(p->rvals.v[1], es);
+	AVar *rhs = make_AVar(p->rvals.v[3], es);
+	lhs->arg_of_send.set_add(result);
+	rhs->arg_of_send.set_add(result);
+	forv_CreationSet(cs, *lhs->out) if (cs) {
+	  if (cs->sym == sym_ref) {
+	    assert(cs->vars.n);
+	    AVar *av = cs->vars.v[0];
+	    flow_vars(rhs, av);
+	    flow_vars_equal(rhs, result);
+	  } else {
+	    if (cs->sym->type->num_type)
+	      update_in(result, cs->sym->type->abstract_type);
+	    else
+	      type_violation(ATypeViolation_MATCH, lhs, make_AType(cs), result);
+	  }
 	}
-	flow_vars_equal(val, result);
 	break;
       }
       case P_prim_deref: {

@@ -85,16 +85,17 @@ class Sym : public gc {
 
   unsigned int		read_only:1;		// Sym is an read only
   unsigned int		lvalue:1;		// Sym is an lvalue
+  unsigned int		is_var:1;		// Sym refers to a variable (as opposed to let bound)
   unsigned int		single_assign:1;	// Sym is a single assignment variable
   unsigned int 		module:1;		// Sym is a module
   unsigned int 		symbol:1;		// Sym is a user level symbol
   unsigned int		pattern:1;		// Sym is a pattern
   unsigned int		vararg:1;		// Sym is a vararg parameter
-  unsigned int 		value:1;		// Sym is a value 
   unsigned int		external:1;		// Sym is "external", so constraints are type
   unsigned int		structure:1;		// Sym is a structure (C compatibility)
   unsigned int		internal:4;		// Sym is of a non-primitive 'internal' type 
   unsigned int		meta:1;			// Sym is class of class
+  unsigned int 		value:1;		// Sym is a value class
 
   unsigned int		num_type:2;		// used by if1.cpp
   unsigned int		num_index:3;		// used by if1.cpp

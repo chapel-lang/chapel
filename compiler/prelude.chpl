@@ -99,9 +99,8 @@ function operator(a:integer, #"^", b:integer)	{ #__primitive ^^ a ^^ #"^" ^^ b }
 function operator(a:integer, #"|", b:integer)	{ #__primitive ^^ a ^^ #"|" ^^ b }
 function operator(a:any, #"&&", b:any)		{ #__primitive ^^ a ^^ #"&&" ^^ b }
 function operator(a:any, #"||", b:any)		{ #__primitive ^^ a ^^ #"||" ^^ b }
-function operator(a:ref, #"=", b:any)		{ #__primitive ^^ a ^^ #"=" ^^ b }
 function operator(a:any, #"=", b:any)		{ b }
-//function operator(a:value, #"=", b:value)	{ numeric assignment }
+function operator(a:value, #"=", b:value)	{ #__primitive ^^ a ^^ #"=" ^^ b }
 function operator(a:anynum, #"*=", b:anynum)	{ #__primitive ^^ a ^^ #"*" ^^ b }
 function operator(a:anynum, #"/=", b:anynum)	{ #__primitive ^^ a ^^ #"/" ^^ b }
 function operator(a:anynum, #"%=", b:anynum)	{ #__primitive ^^ a ^^ #"%" ^^ b }
