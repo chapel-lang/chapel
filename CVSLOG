@@ -1695,3 +1695,20 @@ Modified files:
 Added files:
 	chapel/compiler/: internal.h 
 
+---------------------------------------------------------------------------
+
+04/04/05 13:50:38 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add simple parsing test cases
+
+Modified files:
+	chapel/test/: sub_test 
+Added files:
+	chapel/test/parsing/jplevyak/: COMPOPTS NOEXEC extern.chk 
+	                               extern.v for1.chk for1.v for2.chk 
+	                               for2.v literal.chk literal.v 
+	                               mat1.chk mat1.chpl module.chk 
+	                               module.v tuples.chk tuples.v 
+	                               vec.chk vec.chpl 
+
