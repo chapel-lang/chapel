@@ -121,6 +121,7 @@ while           return TWHILE;
                 }
 {intLiteral}    return INTLITERAL;
 {floatLiteral}  return FLOATLITERAL;
+{intLiteral}i   return COMPLEXLITERAL;
 {floatLiteral}i return COMPLEXLITERAL;
 "\""            {
                   register int c;

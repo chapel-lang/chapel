@@ -7,7 +7,7 @@
 #include "symbol.h"
 
 void RunAnalysis::run(ModuleSymbol* moduleList) {
-  if (analyzeNewAST) {
+  if (analyzeAST) {
     if1->callback = new ACallbacks;
     init_ast();
     Vec<Stmt *> stmts;

@@ -215,8 +215,8 @@ void Expr::codegenComplex(FILE* outfile, bool real) {
 
 // BLC: Currently, this only handles simple real +/- imag cases
 Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
-  if (typeid(*l) == typeid(FloatLiteral) && 
-      typeid(*r) == typeid(ComplexLiteral)) {
+  if ((typeid(*l) == typeid(FloatLiteral) || typeid(*l) == typeid(IntLiteral))
+      && typeid(*r) == typeid(ComplexLiteral)) {
     ComplexLiteral* rcomplex = (ComplexLiteral*)r;
     FloatLiteral* lfloat = (FloatLiteral*)l;
     if (rcomplex->realVal == 0.0) {

@@ -1,4 +1,5 @@
 #include <typeinfo>
+#include "driver.h"
 #include "expr.h"
 #include "misc.h"
 #include "stmt.h"
@@ -881,8 +882,7 @@ MemberAccess* Symboltable::defineMemberAccess(Expr* base, char* member) {
   Type* baseType = base->typeInfo();
   Symbol* memberSym;
 
-extern int analyzeNewAST;
-  if (baseType == dtUnknown || analyzeNewAST) {
+  if (baseType == dtUnknown || analyzeAST) {
     memberSym = new UnresolvedSymbol(member);
   } else if (typeid(*baseType) == typeid(ClassType)) {
     ClassType* classType = (ClassType*)baseType;

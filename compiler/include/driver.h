@@ -17,7 +17,7 @@ extern char system_dir[FILENAME_MAX];
 extern int print_call_depth;
 extern int parser_verbose_non_prelude;
 
-extern int analyzeNewAST;
+extern int analyzeAST;
 extern int debugParserLevel;
 extern int suppressCodegen;
 
