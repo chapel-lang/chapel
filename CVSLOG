@@ -12110,3 +12110,35 @@ Removed files:
 	                                   test_record_method1.chpl 
 	                                   test_record_method1.good 
 
+---------------------------------------------------------------------------
+
+12/17/04 10:32:22 -- deitz
+
+Log message:
+	Fixed a small bug in which "this" in a record's constructor was
+	defined in the wrong scope.  Moved the test
+	classes/deitz/test_record_with1.chpl out of a future directory.  Move
+	a bunch of tests in future/future to future.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_record_with1.chpl 
+	                            test_record_with1.good 
+	chapel/test/classes/deitz/future/: NOTEST test_class_with2.chpl 
+	                                   test_method4.chpl 
+	                                   test_method5.chpl 
+	                                   test_method6.chpl 
+	                                   test_record2.chpl 
+	                                   test_record_method2.chpl 
+	                                   test_record_method2.good 
+Removed files:
+	chapel/test/classes/deitz/future/: COMPOPTS 
+	chapel/test/classes/deitz/future/future/: test_method4.chpl 
+	                                          test_method5.chpl 
+	                                          test_method6.chpl 
+	                                          test_record2.chpl 
+	                                          test_record_method2.chpl 
+	                                          test_record_method2.good 
+	                                          test_record_with1.chpl 
+
