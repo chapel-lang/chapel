@@ -23258,3 +23258,18 @@ Modified files:
 Added files:
 	chapel/test/domains/roxana/: test_index_expr1.future 
 
+---------------------------------------------------------------------------
+
+04/01/05 16:48:28 -- roxana
+
+Log message:
+	I am not sure I understand the dead expression argument of John.
+	Maybe you should create a new future for yourself and check out the
+	I/O for index types. I do not have time to look into this. The
+	intent of the test was to do the assignments that it does correctly.
+
+Modified files:
+	chapel/test/domains/roxana/: test_index_expr1.chpl 
+Removed files:
+	chapel/test/domains/roxana/: test_index_expr1.future 
+
