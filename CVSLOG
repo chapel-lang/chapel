@@ -20744,3 +20744,24 @@ Removed files:
 	chapel/test/types/tuple/deitz/: test_tuple_simple1.future 
 	                                test_tuple_simple2.future 
 
+---------------------------------------------------------------------------
+
+03/22/05 11:55:13 -- bradc
+
+Log message:
+	Improved BoehmGC configure script to no longer
+	assume that presence of valgrind implied the
+	presence of a valgrind include directory.  This
+	should fix Roxana's build since her valgrind
+	installation didn't seem to include the include
+	paths.
+	
+	John, as a sanity check, is your valgrind include
+	a sibling of your binary?  Which is to say:
+	
+		.../bin/valgrind
+		.../include/valgrind/*.h
+
+Modified files:
+	chapel/third-party/boehmgc/gc6.3/: configure 
+
