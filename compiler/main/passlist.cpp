@@ -32,6 +32,7 @@
 #include "../traversals/processParameters.h"
 #include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/specializeParenOpExprs.h"
+#include "../traversals/removeDeadSymbols.h"
 #include "../traversals/renameOverloadedFunctions.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
@@ -73,6 +74,7 @@ REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
+REGISTER(RemoveDeadSymbols);
 REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen

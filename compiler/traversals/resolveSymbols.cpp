@@ -8,6 +8,10 @@
 #include "symtab.h"
 #include "type.h"
 
+
+//#define ANALYSIS_MATCH
+
+
 /** Assumption: Analysis has run **/
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
@@ -94,6 +98,25 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 	    }
 	  }
 	}
+#ifdef ANALYSIS_MATCH
+	else {
+	  if (strcmp(var->var->name, "__primitive")) { /** can't resolve that **/
+	    if (analyzeAST) {
+	      Vec<FnSymbol*> fns;
+	      call_info(paren, fns);
+	      if (fns.n != 1) {
+		INT_FATAL(expr, "Trouble resolving function call");
+	      }
+	      if (fns.e[0] != var->var) {
+		INT_WARNING(var, "Analysis function call mismatch, using analysis function");
+		FnCall* fn = new FnCall(new Variable(fns.e[0]),
+					paren->argList->copyList());
+		expr->replace(fn);
+	      }
+	    }
+	  }
+	}
+#endif
       }
     }
   }

@@ -4,6 +4,9 @@
 #include "stmt.h"
 
 
+//#define ANALYSIS_MATCH
+
+
 class FindReturn : public Traversal {
  public:
   bool found;
@@ -62,7 +65,23 @@ FindUnknownTypes::FindUnknownTypes(void) {
 void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
   if (sym->type == dtUnknown) {
     sym->type = type_info(sym);
+#ifdef ANALYSIS_MATCH
+    if (sym->type == dtUnknown) {
+      INT_FATAL(sym, "Analysis unable to to determine type");
+    }
+#endif
   }
+#ifdef ANALYSIS_MATCH
+  else {
+    if (sym->type != type_info(sym)) {
+      INT_WARNING(sym, "Analysis type mismatch, using analysis type");
+      sym->type = type_info(sym);
+      if (sym->type == dtUnknown) {
+	INT_FATAL(sym, "Analysis unable to to determine type");
+      }
+    }
+  }
+#endif
   FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
   if (fn) {
     if (fn->retType == dtUnknown) {
@@ -80,5 +99,16 @@ void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
 	}
       }
     }
+#ifdef ANALYSIS_MATCH
+    else {
+      if (fn->retType != return_type_info(fn)) {
+	INT_WARNING(sym, "Analysis return type mismatch, using analysis type");
+	fn->retType = return_type_info(fn);
+	if (fn->retType == dtUnknown) {
+	  INT_FATAL(sym, "Analysis unable to to determine type");
+	}
+      }
+    }
+#endif
   }
 }

@@ -421,6 +421,7 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
   new_class_type->addSymbol(new_type_sym);
   TypeDefStmt* new_def_stmt = new TypeDefStmt(new_type_sym);
   new_type_sym->setDefPoint(new_def_stmt);
+  new_class_type->classScope->setContext(new_def_stmt, new_type_sym);
   old_def_stmt->insertBefore(new_def_stmt);
 
   Symboltable::setCurrentScope(save_scope);

@@ -960,7 +960,12 @@ void ClassType::codegenDef(FILE* outfile) {
 
 
 void ClassType::codegenConstructors(FILE* outfile) {
-  constructor->codegenList(outfile, "\n");
+  if (constructor) {
+    constructor->codegenList(outfile, "\n");
+  }
+  else {
+    INT_FATAL(this, "Unable to generate constructors");
+  }
 }
 
 
@@ -1173,6 +1178,7 @@ static class BlockHash<Symbol *, LUBCacheHashFns> lub_cache;
 
 
 Type *find_or_make_sum_type(Vec<Type *> *types) {
+  static int uid = 1;
   if (types->n < 2) {
     INT_FATAL("Trying to create sum_type of less than 2 types");
   }
@@ -1181,5 +1187,8 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   for (int i = 1; i <= types->n; i++) {
     new_sum_type->addType(types->v[i]);
   }
+  char* name = glomstrings(2, "_sum_type", intstring(uid++));
+  Symbol* sym = new TypeSymbol(name, new_sum_type);
+  new_sum_type->addSymbol(sym);
   return new_sum_type;
 }

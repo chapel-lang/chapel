@@ -147,7 +147,11 @@ static void call_fixup(Stmt* stmt) {
     TRAVERSE_LS(mod->stmts, fixup, true);
   } else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(type->type)) {
+#if 0
+      TRAVERSE(type->defPoint, fixup, true);
+#endif
       TRAVERSE_LS(class_type->declarationList, fixup, true);
+      //      TRAVERSE_LS(class_type->constructor, fixup, true);
     } else {
       INT_FATAL(stmt, "Unexpected TypeSymbol in call_fixup");
     }

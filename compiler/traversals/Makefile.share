@@ -21,6 +21,7 @@ TRAVERSALS_SRCS = \
 	printAST.cpp \
 	processParameters.cpp \
 	methodsToFunctions.cpp \
+	removeDeadSymbols.cpp \
 	renameOverloadedFunctions.cpp \
 	resolveSymbols.cpp \
 	scopeResolveSymbols.cpp \
