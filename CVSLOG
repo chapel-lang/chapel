@@ -10326,3 +10326,16 @@ Added files:
 	chapel/test/classes/deitz/future/: NOTEST test_method1.chpl 
 	                                   test_method2.chpl 
 
+---------------------------------------------------------------------------
+
+11/24/04 10:43:04 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed issue whereby "float" declared funcions were abstract instead
+	of defined to be "float64" float(8).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Added files:
+	chapel/test/dispatch/jplevyak/: dispatch-8.good dispatch-8.v 
+
