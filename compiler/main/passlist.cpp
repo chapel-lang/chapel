@@ -10,6 +10,7 @@
 #include "../symtab/legalizeCNames.h"
 
 #include "../traversals/applyThisParameters.h"
+#include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
@@ -48,6 +49,7 @@
 START_PASSLIST_REGISTRATION
 REGISTER(ApplyThisParameters);
 REGISTER(BuildBinary);
+REGISTER(BuildClassConstructorsEtc);
 REGISTER(CheckIDs);
 REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);

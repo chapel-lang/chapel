@@ -1,5 +1,6 @@
 TRAVERSALS_SRCS = \
 	applyThisParameters.cpp \
+	buildClassConstructorsEtc.cpp \
 	checkIDs.cpp \
 	checkSemantics.cpp \
 	checkTypeInfo.cpp \
