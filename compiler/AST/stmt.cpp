@@ -659,11 +659,11 @@ FnDefStmt* FnDefStmt::coercion_wrapper(
 {
   FnDefStmt* wrapper_stmt = NULL;
   static int uid = 1; // Unique ID for wrapped functions
-  FnSymbol* wrapper_symbol = (FnSymbol*)fn->copy(true, clone_callback); //new FnSymbol(fn->name);
+  FnSymbol* wrapper_symbol = new FnSymbol(fn->name);
   wrapper_symbol->cname =
-      glomstrings(3, wrapper_symbol->cname, "_wrapper_", intstring(uid++));
+    glomstrings(3, fn->cname, "_coercion_wrapper_", intstring(uid++));
   wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
-  Symbol* wrapper_formals = fn->formals->copyList(true, clone_callback);
+  Symbol* wrapper_formals = fn->formals->copyList();
   Symbol* actuals = wrapper_formals;
   Variable* argList = new Variable(actuals);
   actuals = nextLink(Symbol, actuals);
@@ -681,20 +681,16 @@ FnDefStmt* FnDefStmt::coercion_wrapper(
     forv_MPosition(p, fn->asymbol->fun->numeric_arg_positions) {
       if (coercion_substitutions->e[i].key ==
 	  fn->asymbol->fun->numeric_arg_positions.e[j]) {
-	char* copy_name =
-	  glomstrings(3, formal_change->name, "_copy_", intstring(uid-1));
-	VarSymbol* copy_symbol = new VarSymbol(copy_name, formal_change->type);
-	Stmt* copy_def_stmt = new VarDefStmt(copy_symbol);
-	copy_symbol->setDefPoint(copy_def_stmt);
-	Variable* copy_tmp = new Variable(copy_symbol);
-	Variable* copy_formal = new Variable(formal_change);
-	AssignOp* copy_assign = new AssignOp(GETS_NORM, copy_tmp, copy_formal);
-	ExprStmt* copy_stmt = new ExprStmt(copy_assign);
-	copy_def_stmt->append(copy_stmt);
-	copy_def_stmt->append(wrapper_body);
-	wrapper_body = copy_def_stmt;
+	char* temp_name =
+	  glomstrings(2, "_coercion_temp_", formal_change->name);
+	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
+					       new Variable(formal_change));
+	Stmt* temp_def_stmt = new VarDefStmt(temp_symbol);
+	temp_symbol->setDefPoint(temp_def_stmt);
+	temp_def_stmt->append(wrapper_body);
+	wrapper_body = temp_def_stmt;
 	formal_change->type = coercion_substitutions->e[i].value->type;
-	actual_change->var = copy_symbol;
+	actual_change->var = temp_symbol;
       }
       if (!formal_change->next->isNull()) {
 	formal_change = nextLink(Symbol, formal_change);

@@ -675,10 +675,10 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
   value(isValueClass),
   union_value(isUnion),
   parentClass(init_parentClass),
-  definition(init_definition),
   constructor(init_constructor),
   classScope(init_classScope)
 {
+  addDefinition(init_definition);
   SET_BACK(definition);
   constructor->back = &(Stmt*&)constructor; // UGH --SJD
 }
