@@ -5,7 +5,6 @@
 %<
 #include "geysa.h"
 
-extern D_ParserTables parser_tables_chpl;
 extern D_Symbol d_symbols_chpl[];
 %>
 
@@ -210,9 +209,17 @@ inherits_ident: parameterized_type { $$.ast = new AST(AST_inherits, &$n); };
 implements_ident: parameterized_type { $$.ast = new AST(AST_implements, &$n); };
 includes_ident: parameterized_type { $$.ast = new AST(AST_includes, &$n); };
 parameterized_type
-  : qualified_ident 
-  | qualified_ident type_parameter_list
+  :
+  | qualified_ident 
+  | array_descriptor parameterized_type $unary_right 100
+{ $$.ast = new AST(AST_array_descriptor, &$n); }
+  | parameterized_type type_parameter_list $unary_left 200
 { $$.ast = new AST(AST_type_application, &$n); };
+
+array_descriptor : '[' (indices? ident)? ']';
+
+indices : ident (',' ident)* ':' 
+{ $$.ast = new AST(AST_indices, &$n); };
 
 enum_definition : '{' enumerator (',' enumerator)* '}';
 enumerator: ident ('=' expression)? 
@@ -264,7 +271,7 @@ expression
   | paren_block
   | curly_block
   | square_forall
-  | 'forall' loop_scope forall_indices 'in' qualified_ident expression
+  | 'forall' loop_scope indices 'in' qualified_ident expression
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast =  new AST(AST_forall, &$n); }
   | expression '?' expression ':' expression $right 8600
@@ -447,17 +454,9 @@ vector_immediate: '#' '[' statement* expression? ']' {
   $$.ast = new AST(AST_vector, &$n);
 };
 
-square_forall: '[' loop_scope square_forall_indices? qualified_ident ']' expression 
+square_forall: '[' loop_scope indices? expression ']' expression
 [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
 { $$.ast = new AST(AST_forall, &$n); };
-
-square_forall_indices: ident (',' ident)* ':' {
-  $$.ast = new AST(AST_indices, &$n);
-};
-
-forall_indices: ident (',' ident)* {
-  $$.ast = new AST(AST_indices, &$n);
-};
 
 constant : (character | int8 | uint8 | int16 | uint16 | 
 	    int32 | uint32 | int64 | uint64 | int | uint |

@@ -50,6 +50,8 @@ S(fun_type)
 S(ref_type)
 S(tagged_type)
 S(type_application)
+// arrays
+S(array_descriptor)
 // expression
 S(op)
 S(if)
