@@ -127,6 +127,9 @@ void Type::printDef(FILE* outfile) {
 }
 
 void Type::codegen(FILE* outfile) {
+  if (this == dtUnknown) {
+    INT_FATAL(this, "Cannot generate unknown type");
+  }
   symbol->codegen(outfile);
 }
 
@@ -743,10 +746,10 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
     INT_FATAL(this, "Attempt to copy ClassType not defined in TypeDefStmt");
   }
 
-  static int uid = 0;
+  //  static int uid = 0;
   ClassType* copy_type = new ClassType(value, union_value);
-  TypeSymbol* copy_symbol = new TypeSymbol(glomstrings(3, symbol->name, "_copy_", intstring(uid++)), copy_type);
-  copy_type->addSymbol(copy_symbol);
+  //  TypeSymbol* copy_symbol = new TypeSymbol(glomstrings(3, symbol->name, "_copy_", intstring(uid++)), copy_type);
+  //  copy_type->addSymbol(copy_symbol);
   Symboltable::pushScope(SCOPE_CLASS);
 
   Stmt* new_decls = nilStmt;
@@ -766,10 +769,10 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   copy_type->setClassScope(copy_scope);
   copy_type->buildConstructor();
 
-  TypeDefStmt* copy_def = new TypeDefStmt(copy_symbol);
-  copy_symbol->setDefPoint(copy_def);
-  copy_scope->setContext(copy_def, copy_symbol);
-  def_stmt->insertBefore(copy_def);
+  //  TypeDefStmt* copy_def = new TypeDefStmt(copy_symbol);
+  //  copy_symbol->setDefPoint(copy_def);
+  //  copy_scope->setContext(copy_def, copy_symbol);
+  //  def_stmt->insertBefore(copy_def);
   return copy_type;
 }
 

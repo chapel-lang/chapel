@@ -418,9 +418,7 @@ Stmt* VarDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 
 
 void VarDefStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE_LS(var, traversal, false);
-  TRAVERSE(var->type, traversal, false);
-  TRAVERSE(var->init, traversal, false);
+  TRAVERSE_DEF_LS(var, traversal, false);
 }
 
 
