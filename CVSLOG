@@ -16732,3 +16732,30 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/traversals/: methodsToFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/05 08:29:46 -- jplevyak
+
+Log message:
+	Fix bug in Class cloning.  It now seems to work up to codegen.
+	
+	To turn it ON, uncomment #define CLONE at the top of analysis/clone.cpp
+	
+	This causes:
+	
+	[Error matching compiler output for classes/deitz/test_union1]
+	[Error matching compiler output for classes/deitz/test_union2]
+	[Error matching compiler output for classes/deitz/test_union3]
+	[Error matching compiler output for classes/deitz/test_union4]
+	[Error matching compiler output for classes/deitz/test_union_method1]
+	[Error matching compiler output for classes/deitz/test_union_method2]
+	[Error matching compiler output for classes/deitz/test_union_method3]
+	[Error matching compiler output for classes/jplevyak/record_type_hierarchy-1]
+	
+	I have not investigated yet why (I am working on it), so
+	I have left #define CLONE commented out, but if anyone else is
+	interested feel free to take a look.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
