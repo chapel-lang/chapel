@@ -5601,3 +5601,21 @@ Added files:
 	chapel/compiler/AST/: baseAST.cpp baseAST.h verifyASTType.cpp 
 	                      verifyASTType.h 
 
+---------------------------------------------------------------------------
+
+08/23/04 21:36:54 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added code to the new AST to retrieve Symbols/Types/Stmts/Exprs in a generic way.
+	Modified constant folding to be more generic (and potentially reusable).
+	Added ASymbol and AInfo classes which are the shadow objects for
+	analysis on the new AST.
+	Added code to collect and shodow symbols using the retrival code.
+
+Modified files:
+	chapel/compiler/: analysis.cpp analysis.h ast_cf.cpp driver.cpp 
+	                  fa.cpp sym.h 
+	chapel/compiler/AST/: baseAST.cpp baseAST.h expr.cpp expr.h 
+	                      stmt.cpp stmt.h symbol.cpp symbol.h 
+	                      type.cpp type.h 
+
