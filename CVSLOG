@@ -17379,3 +17379,15 @@ Log message:
 Modified files:
 	chapel/test/types/tuple/deitz/: COMPOPTS test_tuple_simple2.good 
 
+---------------------------------------------------------------------------
+
+02/14/05 10:12:40 -- deitz
+
+Log message:
+	Started implementing "Type* find_or_make_sum_type(Vec<Type*>* types)"
+	which works but currently always makes a new sum type, never looking
+	to see if it already created it.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
