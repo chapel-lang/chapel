@@ -20301,3 +20301,21 @@ Log message:
 Modified files:
 	chapel/test/classes/deitz/: test_nested_record1.future 
 
+---------------------------------------------------------------------------
+
+03/18/05 13:57:10 -- jplevyak
+
+Log message:
+	in analysis.h there is a new function:
+	void structural_subtypes(Type *t, Vec<Type *> subtypes);
+	which tells which things are structural subtypes of others.
+	If two things are mutually structural subtypes of each other
+	then they are equivalent.
+	Updated .future files for Steve to use the above function.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/test/classes/jplevyak/: record_equal-1.future 
+	                               record_equal-2.future 
+
