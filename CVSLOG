@@ -19986,3 +19986,31 @@ Added files:
 	                             buildClassConstructorsEtc.h 
 	chapel/test/classes/deitz/: test_record3.chpl test_record3.good 
 
+---------------------------------------------------------------------------
+
+03/17/05 12:34:16 -- deitz
+
+Log message:
+	Enabled BuildClassConstructorsEtc which currently just builds an ==
+	function for records.
+	
+	Made it so that RemoveDeadSymbols now removes dead functions as well
+	as dead types right after analysis.
+	
+	Added a guard against codegening an empty list of statements for a
+	module.  Added a guard against codegening constructors if there are
+	none.  (For records, the constructor might be dead and thus removed.)
+	
+	Made a couple of superficial changes to BuildClassConstructorsEtc.
+	
+	Added a new test test_record_equal1 to test if we can use == on records.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             removeDeadSymbols.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_record_equal1.chpl 
+	                            test_record_equal1.good 
+
