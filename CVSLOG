@@ -829,3 +829,17 @@ Removed files:
 	chapel/compiler/: cast.cpp cast_code.cpp make_prims.cpp 
 	                  make_prims.g test_lib.cpp 
 
+---------------------------------------------------------------------------
+
+04/03/12 15:53:10 -- bradc
+
+Log message:
+	Oops, wasn't quite out at the root of the Chapel tree for that
+	last checkin.  The changes to Makefile.base factor some of the
+	make_dparser variables out to this level and switch from -L -l
+	for libgc.a to simply specifying the library directly (for
+	some reason, the former wasn't working for me on Linux).
+
+Modified files:
+	chapel/make/: Makefile.base 
+
