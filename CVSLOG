@@ -5471,3 +5471,15 @@ Modified files:
 Added files:
 	chapel/test/lowlevelcg/jplevyak/: NOVGRBIN 
 
+---------------------------------------------------------------------------
+
+08/16/04 18:16:03 -- bradc
+
+Log message:
+	Ooops, previous check-in had a problem that I didn't detect
+	because I'd only tested it on a directory with a NOVGRBIN
+	file...
+
+Modified files:
+	chapel/test/: sub_test 
+
