@@ -15902,3 +15902,18 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
 	                             methodsToFunctions.cpp traversal.h 
 
+---------------------------------------------------------------------------
+
+01/31/05 13:40:44 -- jplevyak
+
+Log message:
+	Moved wrappers and instantiation to FnSymbol, moved from
+	using FnDefStmt to FnSymbol as the basis for talking about
+	a function in the AST within analysis.  Used FnSymbol::defPoint
+	when a statement was needed to represent the entire function definition.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h sym.h symbol.h 
+
