@@ -22060,3 +22060,22 @@ Modified files:
 	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
 	                                     mg-seq.good test.good 
 
+---------------------------------------------------------------------------
+
+03/28/05 17:20:19 -- deitz
+
+Log message:
+	Made Symbol::defPoint DefExpr* rather than BaseAST* and removed
+	numerous unnecessary dynamic casts.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             fixup.cpp insertAnonymousTypes.cpp 
+	                             insertIndexType.cpp 
+	                             insertThisParameters.cpp 
+	                             resolveOverloadedOperators.cpp 
+
