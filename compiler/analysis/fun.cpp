@@ -189,7 +189,7 @@ Fun::copy() {
   f->exit = f->nmap->get(exit);
   f->region = region->copy(*f->nmap);
   f->ess.copy(ess);
-  f->ast = ast ? ast->copy(f->nmap) : 0;
+  f->ast = ast ? ast->copy_tree(f->nmap) : 0;
   return f;
 }
 

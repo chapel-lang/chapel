@@ -21,6 +21,9 @@ class Label;
 class ParseAST;
 class PNode;
 
+class ParseAstCopyContext : Map<PNode *, PNode*> {
+};
+
 class PCallbacks : public Callbacks {
 public:
   void new_LUB_type(Sym *);
@@ -80,7 +83,9 @@ class ParseAST : public AST {
   ParseAST *get(AST_kind k);
 
   Sym *symbol() { return rval ? rval : sym; } 
-  AST *copy(Map<PNode *, PNode*> *nmap = 0);
+  AST *copy_tree(ASTCopyContext* context);
+  AST *copy_node(ASTCopyContext* context);
+
   char *pathname();
   int line();
   void propagate(Vec<PNode *> *nodes);

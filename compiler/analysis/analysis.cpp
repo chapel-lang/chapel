@@ -62,7 +62,11 @@ Sym *AInfo::symbol() {
   return sym;
 }
 
-AST *AInfo::copy(Map<PNode *, PNode*> *nmap) {
+AST *AInfo::copy_tree(ASTCopyContext* context) {
+  return NULL;
+}
+
+AST* AInfo::copy_node(ASTCopyContext* contex) {
   return NULL;
 }
 

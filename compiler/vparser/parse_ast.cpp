@@ -283,20 +283,21 @@ ParseAST::set_location(D_ParseNode *pn) {
   _line = pn->start_loc.line;
 }
 
-ParseAST *
-copy_internal(ParseAST *ast, Map<PNode *, PNode*> *nmap) {
-  ParseAST *a = new ParseAST(*ast);
+AST *
+ParseAST::copy_node(ASTCopyContext *nmap) {
+  ParseAST *a = new ParseAST(*this);
   if (nmap)
     for (int i = 0; i < a->pnodes.n; i++)
       a->pnodes.v[i] = nmap->get(a->pnodes.v[i]);
-  for (int i = 0; i < a->children.n; i++)
-    a->children.v[i] = copy_internal(a->children.v[i], nmap);
   return a;
 }
 
 AST *
-ParseAST::copy(Map<PNode *, PNode*> *nmap) {
-  return copy_internal(this, nmap);
+ParseAST::copy_tree(ASTCopyContext *nmap) {
+  ParseAST *a = (ParseAST*)copy_node(nmap);
+  for (int i = 0; i < a->children.n; i++)
+    a->children.v[i] = (ParseAST*)a->children.v[i]->copy_tree(nmap);
+  return a;
 }
 
 ParseAST::ParseAST(AST_kind k, D_ParseNode *pn) {

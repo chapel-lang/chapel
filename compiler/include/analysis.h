@@ -37,8 +37,9 @@ class AInfo : public AST {
   // AST interface
   char *pathname();
   int line();
-  Sym *symbol();
-  AST *copy(Map<PNode *, PNode*> *nmap = 0);
+  Sym *symbol();  
+  AST *copy_tree(ASTCopyContext* context);
+  AST *copy_node(ASTCopyContext* context);
 
   BaseAST *xast;	// pointer to shadowed BaseAST
   Code *code;		// IF1 Code
