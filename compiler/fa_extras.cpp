@@ -316,8 +316,11 @@ log_test_fa(FA *fa) {
     log(LOG_TEST_FA, "function %s %s:%d ", f->sym->name ? f->sym->name : "<anonymous>",
 	fn(f->sym->ast->pathname), f->sym->ast->line);
     int nedges = 0;
-    forv_EntrySet(es, f->ess)
-      nedges += es->edges.count();
+    forv_EntrySet(es, f->ess) {
+      AEdge **last = es->edges.last();
+      for (AEdge **pee = es->edges.first(); pee < last; pee++)
+	if (*pee && (*pee)->args.n) nedges++;
+    }
     log(LOG_TEST_FA, "with %d edges\n", nedges);
     forv_Var(v, f->fa_all_Vars) {
       if (v->sym->in != f->sym) {

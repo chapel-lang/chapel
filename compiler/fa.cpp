@@ -765,27 +765,14 @@ add_var_constraints(EntrySet *es) {
   forv_Var(v, f->fa_Vars) {
     AVar *av = make_AVar(v, es);
     if (v->sym->type && !v->sym->pattern) {
-      if (!v->sym->external) {
-#if 0
-	if (v->sym->type_kind != Type_NONE)
-	  av->restrict = v->sym->type_sym->abstract_type;
-	else
-	  av->restrict = v->sym->type->abstract_type;
-#endif
-      } else
+      if (v->sym->external)
 	update_in(av, v->sym->type->abstract_type);
       if (v->sym->constant) // for constants, the abstract type is the concrete type
 	update_in(av, make_abstract_type(v->sym));
       if (v->sym->symbol || v->sym->fun) 
 	update_in(av, v->sym->abstract_type);
-#if 0
-      else 
-	if (v->sym->type_kind != Type_NONE)
-	  update_in(av, av->restrict);
-#else
       if (v->sym->type_kind != Type_NONE)
 	update_in(av, v->sym->type_sym->abstract_type);
-#endif
     }
   }
 }

@@ -147,3 +147,14 @@ numeric types which uses coerce_num
 - redo SSU conversion after simple inlining
 - constant folding for exponential (**)
 
+** 
+
+- handle structural types other than tuple
+- handle matching/destructuring in return values
+- implement #match
+- hash folded constants... has constants on type + binary image
+- handle currying within tuples
+- handle named arguments
+- casting?
+- off by 1 on line # of pnodes?
+- generalize/obviate forced splitting of "new_object"
