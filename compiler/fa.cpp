@@ -4,6 +4,12 @@
 
 #include "geysa.h"
 
+#if 0
+int *assert_NULL_var = 0;
+#undef assert
+#define assert(_x) if (!(_x)) *assert_NULL_var = 1
+#endif
+
 static FA *fa = 0;
 
 static AType *bottom_type = 0;
@@ -540,12 +546,16 @@ same_eq_classes(Setters *s, Setters *ss) {
   if (!s || !ss)
     return 0;
   if (s->eq_classes && ss->eq_classes)
-    return s->eq_classes == ss->eq_classes;
+    return s->eq_classes == ss->eq_classes; 
   Vec<Setters *> sc1, sc2;
-  forv_AVar(av, *s)
+  forv_AVar(av, *s) {
+    assert(av->setter_class);
     sc1.set_add(av->setter_class);
-  forv_AVar(av, *ss)
+  }
+  forv_AVar(av, *ss) {
+    assert(av->setter_class);
     sc2.set_add(av->setter_class);
+  }
   if (sc1.some_disjunction(sc2))
     return 0;
   return 1;
@@ -1309,6 +1319,7 @@ pattern_match(AVar *a, AVar *b, EntrySet *es) {
       for (int i = 0; i < s->has.n; i++)
 	if (s->has.v[i]->var)  { // if used
 	  AVar *aa = cs->vars.v[i], *bb = make_AVar(s->has.v[i]->var, es);
+	  set_container(bb, b);
 	  flow_vars(aa, bb);
 	  if (s->has.v[i]->var->sym->pattern)
 	    pattern_match(aa, bb, es);
@@ -1748,16 +1759,16 @@ collect_cs_type_confluences(Vec<AVar *> &type_confluences) {
 }
 
 static int
-split_entry_set(AVar *av, int fsset = 0) {
+split_entry_set(AVar *av, int fsetters = 0) {
   EntrySet *es = (EntrySet*)av->contour;
-  if (!fsset ? is_es_recursive(es) : is_es_cs_recursive(es))
+  if (!fsetters ? is_es_recursive(es) : is_es_cs_recursive(es))
     return 0;
   Vec<AEdge *> do_edges;
   int nedges = 0;
   AEdge **last = es->edges.last();
   for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee) {
     nedges++;
-    if (!fsset) {
+    if (!fsetters) {
       if (!edge_type_compatible_with_entry_set(*ee, es))
 	do_edges.add(*ee);
     } else
@@ -1778,18 +1789,38 @@ split_entry_set(AVar *av, int fsset = 0) {
 }
 
 static int
-split_ess(Vec<AVar *> &confluences, int fsset = 0) {
+split_ess_type(Vec<AVar *> &confluences) {
   int analyze_again = 0;
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
-	if (!fsset ? is_formal_argument(av) : is_return_value(av))
-	  if (split_entry_set(av, fsset))
+	if (is_formal_argument(av))
+	  if (split_entry_set(av, 0))
 	    analyze_again = 1;
       } else {
 	AVar *aav = unique_AVar(av->var, av->contour);
-	if (fsset ? is_formal_argument(aav) : is_return_value(aav))
-	  if (split_entry_set(aav, fsset))
+	if (is_return_value(aav))
+	  if (split_entry_set(aav, 0))
+	    analyze_again = 1;
+      }
+    }
+  }
+  return analyze_again;
+}
+
+static int
+split_ess_setters(Vec<AVar *> &confluences) {
+  int analyze_again = 0;
+  forv_AVar(av, confluences) {
+    if (av->contour_is_entry_set) {
+      if (!av->is_lvalue) {
+	if (is_return_value(av))
+	  if (split_entry_set(av, 1))
+	    analyze_again = 1;
+      } else {
+	AVar *aav = unique_AVar(av->var, av->contour);
+	if (is_formal_argument(aav))
+	  if (split_entry_set(aav, 1))
 	    analyze_again = 1;
       }
     }
@@ -1813,11 +1844,8 @@ clear_avar(AVar *av) {
 
 static void
 clear_var(Var *v) {
-  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
-    AVar *xav = v->avars.v[i].value;
-    for (AVar *av = xav; av; av = av->lvalue)
-      clear_avar(av);
-  }
+  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key)
+    clear_avar(v->avars.v[i].value);
 }
 
 static void
@@ -1879,7 +1907,9 @@ clear_results() {
 static Setters *
 setters_cannonicalize(Setters *s) {
   assert(!s->sorted.n);
-  forv_AVar(x, *s) if (x) s->sorted.add(x);
+  forv_AVar(x, *s)
+    if (x)
+      s->sorted.add(x);
   if (s->sorted.n > 1)
     qsort_pointers((void**)&s->sorted.v[0], (void**)s->sorted.end());
   uint h = 0;
@@ -1963,6 +1993,7 @@ collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_
 	  }
 	  if (av->creation_set) {
 	    forv_AVar(s, *av->setters) if (s) {
+	      assert(s->setter_class);
 	      if (s->container->out->in(av->creation_set))
 		setter_starters.set_add(av);
 	    }
@@ -1995,12 +2026,7 @@ split_css(Vec<AVar *> &starters) {
       AVar *av = starter_set.v[0];
       Vec<AVar *> compatible_set;
       forv_AVar(v, starter_set) {
-	if 
-#if 0
-  (same_eq_classes(v->setters, av->setters))
-#else
-  (av == v)
-#endif
+	if (same_eq_classes(v->setters, av->setters))
 	  compatible_set.set_add(v);
 	else
 	  save.add(v);
@@ -2026,7 +2052,7 @@ static int
 split_for_setters() {
   Vec<AVar *> setter_confluences, setter_starters;
   collect_setter_confluences(setter_confluences, setter_starters);
-  if (split_ess(setter_confluences, 1))
+  if (split_ess_setters(setter_confluences))
     return 1;
   if (split_css(setter_starters))
     return 1;
@@ -2115,7 +2141,7 @@ analyze_confluence(AVar *av, int fsetter = 0) {
   for (int i = 0; i < ss.n; i++)
     ss.v[i] = setters_cannonicalize(ss.v[i]);
   recompute_eq_classes(ss);
-  forv_AVar(x, av->backward) if (x)
+  forv_AVar(x, *dir) if (x)
     setters_changed = update_setter(x->container, x) || setters_changed;
   return setters_changed;
 }
@@ -2134,7 +2160,7 @@ extend_analysis() {
   Vec<AVar *> confluences;
   // 1) split EntrySet(s) based on type
   collect_es_type_confluences(confluences);
-  analyze_again = split_ess(confluences);
+  analyze_again = split_ess_type(confluences);
   if (!analyze_again) {
     collect_cs_type_confluences(confluences);
     forv_AVar(av, confluences)
