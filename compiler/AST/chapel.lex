@@ -1,16 +1,10 @@
 /*
- * Description:  Scan a simple Chapel program.
- * 
- * > flex chapel_tokens.lex
- * > gcc -DSTANDALONE lex.yy.c -lfl
- * > ./a.out
+ * A mini-Chapel scanner.  Derived from code that
+ * Shannon wrote in learning to use flex.
  *
- * Shannon Hoffswell
- * 3/9/2004
- *
+ * Brad, 6/2004
  */
 
-/* SHANNON: Figure out how to get rid of leading zeroes with the intLiteral */
 
 %{
 

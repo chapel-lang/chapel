@@ -36,8 +36,8 @@ class Scope {
   Scope* children;
   Scope* sibling;
 
-  //  Symbol* firstSym;
-  //  Symbol* lastSym;
+  SymLink* firstSym;
+  SymLink* lastSym;
 
   SymLink* useBeforeDefSyms;
 
@@ -52,7 +52,7 @@ class Scope {
   void addUndefinedToFile(UseBeforeDefSymbol*);
   void handleUndefined(void);
 
-  void print(FILE* outfile = stdout);
+  void print(FILE* outfile = stdout, bool alphabetical = false);
 };
 
 
@@ -61,42 +61,24 @@ Scope::Scope(scopeType init_type) :
   parent(NULL),
   children(NULL),
   sibling(NULL),
+  firstSym(NULL),
+  lastSym(NULL),
   useBeforeDefSyms(NULL)
-  //  firstSym(NULL),
-  //  lastSym(NULL)
 {}
 
 
 void Scope::insert(Symbol* sym) {
-  /*
-  if (sym->next != NULL || sym->prev != NULL) {
-    fprintf(stderr, "WARNING A: '%s' linked\n", sym->name);
-  }
-  fprintf(stderr, "Thought I was inserting '%s'\n", sym->name);
-  */
   table[sym->name] = sym;
-  /*
-  if (sym->next != NULL || sym->prev != NULL) {
-    fprintf(stderr, "WARNING B: '%s' linked\n", sym->name);
-  }
-  fprintf(stderr, "Got past map insertion\n");
-  //  print(stderr);
+
+  SymLink* newLink = new SymLink(sym);
+
   if (firstSym == NULL) {
-    firstSym = sym;
-    lastSym = sym;
+    firstSym = newLink;
+    lastSym = firstSym;
   } else {
-    if (sym->next != NULL || sym->prev != NULL) {
-      fprintf(stderr, "WARNING C: '%s' linked\n", sym->name);
-    }
-    fprintf(stderr, "Last sym is: ");
-    lastSym->print(stderr);
-    fprintf(stderr, "\n");
-    lastSym->append(sym);
-    fprintf(stderr, "Got past append\n");
-    lastSym = sym;
+    lastSym->append(newLink);
+    lastSym = newLink;
   }
-  fprintf(stderr, "--------\n");
-  */
 }
 
 
@@ -148,7 +130,7 @@ void Scope::handleUndefined(void) {
 }
 
 
-void Scope::print(FILE* outfile) {
+void Scope::print(FILE* outfile, bool alphabetical) {
   fprintf(outfile, "======================================================\n");
   fprintf(outfile, "SCOPE: ");
   switch (type) {
@@ -171,21 +153,23 @@ void Scope::print(FILE* outfile) {
     fprintf(outfile, "for loop\n");
     break;
   }
-  /*
   fprintf(outfile, "------------------------------------------------------\n");
-  if (firstSym != NULL) {
-    firstSym->printList(outfile, "\n");
-    fprintf(outfile, "\n");
+
+  if (alphabetical) {
+    map<string, Symbol*>::iterator pos;
+    pos = table.begin();
+    while (pos != table.end()) {
+      (*pos).second->print(outfile);
+      fprintf(outfile, "\n");
+      pos++;
+    }  
+  } else {
+    if (firstSym != NULL) {
+      firstSym->printList(outfile, "\n");
+      fprintf(outfile, "\n");
+    }
   }
-  */
-  fprintf(outfile, "------------------------------------------------------\n");
-  map<string, Symbol*>::iterator pos;
-  pos = table.begin();
-  while (pos != table.end()) {
-    (*pos).second->print(outfile);
-    fprintf(outfile, "\n");
-    pos++;
-  }
+
   fprintf(outfile, "======================================================\n");
 }
 

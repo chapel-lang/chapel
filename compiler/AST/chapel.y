@@ -83,7 +83,7 @@
 %type <pdt> type types domainType indexType arrayType tupleType weirdType
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
-%type <psym> enumList formal nonemptyformals formals idlist indexlist
+%type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
 %type <pexpr> expr exprlist nonemptyExprlist arrayfun literal range
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim
 %type <pdexpr> domainExpr
@@ -127,12 +127,17 @@ varconst:
 ;
 
 
-idlist:
+identsym:
   identifier
     { $$ = new Symbol($1); }
-| idlist ',' identifier
+;
+
+
+idlist:
+  identsym
+| idlist ',' identsym
     {
-      $1->append(new Symbol($3));
+      $1->append($3);
       $$ = $1;
     }
 ;
@@ -194,11 +199,10 @@ enumdecl:
 ;
 
 enumList:
-  identifier
-    { $$ = new Symbol($1); }
-| enumList BITOR identifier
+  identsym
+| enumList BITOR identsym
     {
-      $1->append(new Symbol($3));
+      $1->append($3);
       $$ = $1;
     }
 ;
@@ -667,7 +671,7 @@ arrayfun:
     { $$ = ParenOpExpr::classify($1, $3); }
 /*
 | expr '[' exprlist ']'
-    { $$ = new 
+    { $$ = ParenOpExpr::classify($1, $3); }
 */
 ;
 

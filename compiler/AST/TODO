@@ -1,22 +1,24 @@
 * try to get return of append working better
 * and traversal of linked lists -- remove casting
-* take NULL out
+* take all instances of NULL out
 * move suspicious symbols into prelude file
-* fix precedence
+* fix precedence problems (and there are lots)
 * check necessity of print*() variants
-* remove char literals from chapel.y
+* move char literals from chapel.y to chapel.lex
 * deal with BLC comments
 * get working with GC
 * get working with main compiler?  (e.g., via flag)
-* pull stderr to match compiler
+* pull stderr uses to match compiler
 
-Got to insert
-* parameters (runtime, 
-* iterator indices
-* standard context stuff
-* methods?
-* query variables
+* Need to insert iterator indices into own scope (e.g., [i:D] i)
+* Check for redefinition of symbol within same scope
 
-* remove code from headers
+* support for classes/methods
 
-* make symboltable print things out in order
+* remove code from headers  (e.g., isNull definitions)
+
+* subdomain/subindex expressions are wrong (idents rather than expressions)
+
+* understand what can be used before defined better and handle more cleanly
+
+* remove dead code (usually commented out)
