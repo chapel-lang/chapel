@@ -16879,3 +16879,13 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/traversals/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/05 17:28:54 -- jplevyak
+
+Log message:
+	Bug fix handling of code in module init functions.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
