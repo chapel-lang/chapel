@@ -7,6 +7,8 @@
 class Prim;
 class Dom;
 class LoopNode;
+class Fun;
+class MPosition;
 
 /* #define CONC_IMPLEMENTED 1 */
 
@@ -14,6 +16,12 @@ class LoopNode;
 
 class PNode : public gc {
  public:
+  class Callees {
+   public:
+    Vec<Fun *> funs; 
+    Vec<MPosition *> positions; 
+  };
+
   Code *code;
 
   Vec<Var *> lvals;
@@ -38,6 +46,9 @@ class PNode : public gc {
 
   // Primitive
   Prim *prim;
+
+  // Callees
+  Callees *callees;
 
   // Temporary Space
   union {

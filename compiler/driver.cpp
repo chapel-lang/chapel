@@ -32,12 +32,13 @@ int fgraph_constants = 0;
 int fgraph_frequencies = 0;
 int fgraph_vcg = 0;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
-
+int print_call_depth = 2;
 
 static ArgumentDescription arg_desc[] = {
  {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
+ {"print_call_depth", 'C', "Print Call Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
  {"constants_per_var", ' ', "# of Constants per Var", "I", &num_constants_per_variable, 
   "CHPL_CONSTANTS_PER_VARIABLE", NULL},
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
@@ -55,14 +56,14 @@ static ArgumentDescription arg_desc[] = {
  {"log", 'l', "Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
- {"no-codegen", ' ', "Suppress code generation", "F", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
+ {"newast", ' ', "Use New AST", "F", &newAST, NULL, NULL},
+ {"no-codegen", ' ', "Suppress code generation", "F", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
    "CHPL_PARSER_VERBOSE", NULL},
  {"parser_debug", 'D', "Parser Debug Level", "+", &d_debug_level, "CHPL_PARSER_DEBUG", NULL},
- {"newast", ' ', "Use New AST", "F", &newAST, NULL, NULL},
  {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},

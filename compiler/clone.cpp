@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "pattern.h"
 
 #define BAD_NAME ((char*)-1)
 #define BAD_AST ((AST*)-1)
@@ -29,11 +30,11 @@ initialize() {
       es->equiv = new Vec<EntrySet *>();
       es->equiv->add(es);
     }
-    forv_EntrySet(es, f->ess) if (es) {
+    forv_EntrySet(es, f->ess) if (es)
       forv_AEdge(e, es->out_edges) if (e)
-        forv_AVar(a, e->args)
-          f->called_css.set_union(*a->out);
-    }
+	forv_MPosition(p, e->match->fun->positions)
+          f->called_css.set_union(*e->args.get(p)->out);
+
   }
 }
 
@@ -108,10 +109,12 @@ class ES_FN { public: static int inline equivalent(EntrySet *a, EntrySet *b); };
 inline int
 ES_FN::equivalent(EntrySet *a, EntrySet *b) {
   if (a->fun->clone_for_constants) {
-    for (int i = 0; i < a->args.n; i++)
-      if (a->args.v[i]->var->clone_for_constants)
-	if (a->args.v[i]->out->constants() != a->args.v[i]->out->constants())
+    forv_MPosition(p, a->fun->positions) {
+      AVar *av = a->args.get(p);
+      if (av->var->clone_for_constants)
+	if (av->out->constants() != b->args.get(p)->out->constants())
 	  return 0;
+    }
   }
   if (!equivalent_es_ivars(a, b))
     return 0;
@@ -314,14 +317,13 @@ determine_clones() {
 	  for (int j = 0; j < edge_sets.v[i]->n; j++)
 	    for (int k = 0; k < j; k++) {
 	      AEdge *e1 = edge_sets.v[i]->v[j], *e2 = edge_sets.v[i]->v[k];
-	      if (e1 && e2 && e1->fun == e2->fun && e1->to->equiv != e2->to->equiv) {
-		for (int a = 0; a < e1->args.n; a++) {
+	      if (e1 && e2 && e1->match->fun == e2->match->fun && e1->to->equiv != e2->to->equiv) {
+		forv_MPosition(p, e1->match->fun->positions) {
 		  Vec<CreationSet *> d1, d2;
+		  AVar *a1 = e1->args.get(p), *a2 = e2->args.get(p);
 		  // this is why strict type systems bite
-		  ((VecCreationSet*)e1->args.v[a]->out)->set_difference(
-		    *((VecCreationSet*)e2->args.v[a]->out), d1);
-		  ((VecCreationSet*)e2->args.v[a]->out)->set_difference(
-		    *((VecCreationSet*)e1->args.v[a]->out), d2);
+		  ((VecCreationSet*)a1->out)->set_difference(*((VecCreationSet*)a2->out), d1);
+		  ((VecCreationSet*)a2->out)->set_difference(*((VecCreationSet*)a1->out), d2);
 		  forv_CreationSet(c1, d1) {
 		    forv_CreationSet(c2, d2) {
 		      if (c1->equiv == c2->equiv) 
@@ -433,7 +435,7 @@ static void
 resolve_concrete_types(CSSS &css_sets) {
   for (int i = 0; i < css_sets.n; i++) {
     Vec<CreationSet *> *eqcss = css_sets.v[i];
-    Sym *sym;
+    Sym *sym = 0;
     forv_CreationSet(cs, *eqcss) if (cs) {
       sym = cs->type;
       break;
@@ -445,7 +447,6 @@ resolve_concrete_types(CSSS &css_sets) {
 	case Type_UNKNOWN: 
 	case Type_FUN:
 	case Type_ALIAS:
-	case Type_PRODUCT:
 	case Type_PRIMITIVE:
 	case Type_APPLICATION:
 	  assert(!"bad case");
@@ -459,6 +460,7 @@ resolve_concrete_types(CSSS &css_sets) {
 	case Type_RECORD:
 	case Type_VECTOR:
 	case Type_REF:
+	case Type_PRODUCT:
 	case Type_TAGGED: {
 	  forv_CreationSet(cs, *eqcss) if (cs) {
 	    sym->has.fill(cs->vars.n);
@@ -554,11 +556,6 @@ fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
   forv_Var(v, f->fa_all_Vars)
     if (v->sym->in == f->sym)
       fixup_var(v, f, ess);
-  // fixup arguments and return values
-  forv_EntrySet(es, *ess) if (es) {
-    f->args.fill(es->args.n);
-    f->rets.fill(es->rets.n);
-  }
 }
 
 static int

@@ -119,7 +119,7 @@ foreach dir ($dirs)
 			tee -a $logfile
 		continue
 	endif
-	set numtests = `find . -maxdepth 1 -name "*.chpl" | wc -l`
+	set numtests = `find . -maxdepth 1 -name "*.{chpl,v}" | wc -l`
 	if (! -e ./NOTEST && ($numtests != 0 || -x ./sub_test)) then
 		if (-x ./sub_clean) then
 		    set sub_test = ./sub_clean

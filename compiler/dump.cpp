@@ -316,6 +316,8 @@ dump_symbols(FILE *fp, FA *fa) {
 	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->subtypes) if (ss)
 	again = syms.set_add(ss) || again;
+      forv_Sym(ss, s->dispatch_order) if (ss)
+	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->has) if (ss)
 	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->args) if (ss)

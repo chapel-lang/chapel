@@ -44,13 +44,6 @@ extern int debug_level;
 #define dbg if (debug_level) printf
 #define DBG(_x) if (debug_level) { _x; }
 
-#ifdef __CYGWIN__
-// cygwin assert busted 
-#undef assert
-void myassert();
-#define assert(_x) if (!(_x)) myassert()
-#endif
-
 #include "extern.h"
 
 #include "list.h"
@@ -85,5 +78,10 @@ void myassert();
 #include "loop.h"
 #include "graph.h"
 #include "version.h"
+
+#if defined(__CYGWIN__) || 1
+#undef assert
+#define assert(_x) do { if (!(_x)) myassert(__FILE__, __LINE__, #_x); } while(0)
+#endif
 
 #endif

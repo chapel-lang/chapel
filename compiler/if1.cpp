@@ -64,6 +64,7 @@ if1_make_symbol(IF1 *p, char *name, char *end) {
   s->name = name;
   s->type_kind = Type_PRIMITIVE;
   s->type = sym_symbol;
+  s->type_sym = s;
   p->symbols.put(name, s);
   s->symbol = 1;
   return s;
@@ -370,6 +371,12 @@ mark_sym_live(Sym *s) {
       mark_sym_live(s->type);
     if (s->in)
       mark_sym_live(s->in);
+    forv_Sym(ss, s->implements)
+      mark_sym_live(ss);
+    forv_Sym(ss, s->includes)
+      mark_sym_live(ss);
+    forv_Sym(ss, s->constraints)
+      mark_sym_live(ss);
     forv_Sym(ss, s->has)
       mark_sym_live(ss);
     return 1;
@@ -696,6 +703,7 @@ if1_finalize(IF1 *p) {
 void
 if1_write(FILE *fp, IF1 *p) {
   print_syms(fp, &p->allsyms);
+  fflush(fp);
 }
 
 char *

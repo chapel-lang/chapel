@@ -13,6 +13,7 @@ class LoopGraph;
 class LoopNode;
 class Dom;
 class CDB_EntrySet;
+class MPosition;
 
 class CallPoint : public gc {
  public:
@@ -56,6 +57,9 @@ class Fun : public gc {
   Vec<PNode *> fa_phy_PNodes;
   Vec<PNode *> fa_send_PNodes;
 
+  // pattern
+  Vec<MPosition *> positions;
+
   // loop
   LoopGraph *loops;
   LoopNode *loop_node;
@@ -69,6 +73,7 @@ class Fun : public gc {
   VarMap *vmap;
 
   // clone typings and call graph
+  Map<MPosition*, Sym*> arg_syms;
   Vec<Var *> args;
   Vec<Var *> rets;
   Map<PNode *, Vec<Fun *> *> calls;
@@ -83,7 +88,6 @@ class Fun : public gc {
   // cg
   char *cg_string;
   char *cg_structural_string;
-
   
   void collect_PNodes(Vec<PNode *> &v);
   void collect_Vars(Vec<Var *> &v, Vec<PNode *> *vv = 0);

@@ -19,12 +19,11 @@ class Var : public gc {
   PNode			*def;
   AVarMap		avars;	// used by fa.cpp
   CreationSet		*as_CreationSet; // used by fa.cpp
-  AType			*as_AType; // used by fa.cpp
   unsigned int		clone_for_constants : 1;
   char			*cg_string; // used by cg.cpp
 
   Var *copy();
-  Var(Sym *s) : sym(s), mark(0), def(0), as_CreationSet(0), as_AType(0),
+  Var(Sym *s) : sym(s), mark(0), def(0), as_CreationSet(0),
     clone_for_constants(0), cg_string(0) {}
 };
 #define forv_Var(_p, _v) forv_Vec(Var, _p, _v)

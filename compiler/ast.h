@@ -47,6 +47,7 @@ class AST : public Vec<AST *> {
   unsigned int in_tuple:1;
   unsigned int in_apply:1;
   unsigned int is_assign:1;
+  unsigned int is_simple_assign:1;
   unsigned int is_ref:1;
   unsigned int is_application:1;
   unsigned int is_comma:1;
@@ -88,7 +89,7 @@ inline AST *ast_qualified_ident_ident(AST *x) { return x->v[x->n-1]; }
 Scope *ast_qualified_ident_scope(AST *qualified_ident, Scope *global);
 Sym *ast_qualified_ident_sym(AST *qualified_ident, Scope *global);
 
-Sym *new_sym(IF1 *i, Scope *scope, char *s = 0, Sym *sym = 0);
+Sym *new_sym(IF1 *i, Scope *scope = 0, char *s = 0, Sym *sym = 0);
 
 extern char *cannonical_class;
 extern char *cannonical_self;

@@ -13,6 +13,7 @@ class Var;
 class Fun;
 class AType;
 class CreationSet;
+class MType;
 
 enum IF1_num_type {
   IF1_NUM_TYPE_NONE, IF1_NUM_TYPE_UINT, IF1_NUM_TYPE_INT, IF1_NUM_TYPE_FLOAT
@@ -57,10 +58,14 @@ class Sym : public gc {
  public:
   char 			*name;			// user level name
   int			id;			// unique number
-  Sym 			*type;			// true type
-  char 			*constant;		// string representing constant value
-  Sym  			*aspect;		// mascarade as (e.g. superclass)
   Sym  			*in;			// containing module, class or function
+
+  Sym 			*type;			// true type
+  Sym  			*aspect;		// mascarade as (e.g. superclass)
+  Sym			*type_sym;		// the representative symbol for this typ in code
+                                                // as opposed to the type itself
+
+  char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values
 
   char 			*builtin;		// one of builtin_symbols.h
@@ -85,9 +90,8 @@ class Sym : public gc {
   unsigned int		pattern:1;		// Sym is a pattern
   unsigned int		vararg:1;		// Sym is a vararg parameter
   unsigned int 		value:1;		// Sym is a value 
-  unsigned int		external:1;
+  unsigned int		external:1;		// Sym is "external", so constraints are type
   unsigned int		structure:1;		// Sym is a structure (C compatibility)
-  unsigned int		class_static:1;		// Sym is 'class static'
   unsigned int		internal:4;		// Sym is of a non-primitive 'internal' type 
 
   unsigned int		num_type:2;		// used by if1.cpp
@@ -96,7 +100,10 @@ class Sym : public gc {
   unsigned int		incomplete:1;		// used by clone.cpp
   Scope 		*scope;			// used in ast.cpp
   LabelMap		*labelmap;		// used by ast.cpp
+  Vec<Sym *>		dispatch_order;		// used by fa.cpp, pattern.cpp
   Vec<Sym *>		subtypes;		// used by fa.cpp
+  Vec<Sym *>		allsubtypes;		// used by fa.cpp
+  MType	       		*match_type;		// used by pattern.cpp
   AType			*abstract_type;		// used by fa.cpp
   Vec<CreationSet *>	creators;		// used by fa.cpp
   Var			*var;			// used by fa.cpp

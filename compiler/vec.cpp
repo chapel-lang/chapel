@@ -5,6 +5,7 @@
 /* UnionFind by Tarjan (adapted) */
 
 #include "geysa.h"
+#include "pattern.h"
 
 uint prime2[] = {
   1, 3, 7, 13, 31, 61, 127, 251, 509, 1021, 2039, 4093, 8191,
@@ -145,6 +146,14 @@ Vec<C>::some_disjunction(Vec<C> &vv) {
       if (!set_in(vv.v[i]))
 	return 1;
   return 0;
+} 
+
+template <class C> void
+Vec<C>::set_intersection(Vec<C> &vv, Vec<C> &result) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (vv.set_in(v[i]))
+	result.set_add(v[i]);
 } 
 
 template <class C> void
@@ -457,7 +466,6 @@ template class Vec<Scope *>;
 template class Vec<MapElem<char *, AST *> >;
 template class Vec<MapElem<Var *, Var *> >;
 template class Vec<MapElem<PNode *, PNode *> >;
-template class Vec<MapElem<PNode *, ATypeViolation *> >;
 template class Vec<Prim *>;
 template class Vec<ATypeViolation *>;
 template class Vec<MapElem<PNode *, Vec<Fun *> *> >;
@@ -479,4 +487,15 @@ template class Vec<MapElem<unsigned int, List<Setters *> > >;
 template class Vec<MapElem<char *, AVar *> >;
 template class Vec<MapElem<AVar *, AVar *> >;
 template class Vec<MapElem<AVar *, Setters *> >;
+template class Vec<MType *>;
+template class Vec<MapElem<unsigned int, List<MPosition *> > >;
+template class Vec<MapElem<MPosition *, Vec<Fun *> *> >;
+template class Vec<Match *>;
+template class Vec<MapElem<Fun *, Match *> >;
+template class Vec<MapElem<MPosition *, AType *> >;
+template class Vec<MapElem<MPosition *, AVar *> >;
+template class Vec<MPosition *>;
+template class Vec<MapElem<MPosition *, Sym *> >;
+template class Vec<MapElem<unsigned int, List<ATypeViolation *> > >;
+
 

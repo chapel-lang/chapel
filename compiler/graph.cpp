@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "pattern.h"
 
 #define G_BOX		(1<<0)
 #define G_BLUE		(1<<1)
@@ -491,6 +492,59 @@ graph_rec(FA *fa, char *fn) {
   graph_end(fp);
 }
 
+static void
+graph_abstract_types(FA *fa, char *fn) {
+  FILE *fp = graph_start(fn, "at", "Abstract Types");
+  Vec<Sym *> syms;
+  syms.set_union(fa->patterns->types);
+  forv_Sym(s, fa->patterns->types) if (s)
+    syms.set_union(s->allsubtypes);
+  forv_Sym(s, syms) if (s && s->live && !s->constant) {
+    char name[256], *pname = name;
+    strcpy(pname, type_kind_string[s->type_kind]);
+    pname += strlen(pname);
+    *pname++ = ' ';
+    *pname = 0;
+    if (s->symbol) {
+      *pname++ = '#';
+      strcpy(pname, s->name);
+      pname += strlen(pname);
+    } else if (s->pattern) {
+      strcpy(pname, "pattern ");
+      pname += strlen(pname);
+      if (s->name)
+	strcpy(pname, s->name);
+      else
+	sprintf(pname, "%d", s->id);
+      pname += strlen(pname);
+    } else if (s->fun) {
+      pname += strlen(pname);
+      if (s->name)
+	strcpy(pname, s->name);
+      else
+	strcpy(pname, "<anonymous>");
+      pname += strlen(pname);
+      if (s->fun->ast->pathname) {
+	char *pn = strrchr(s->fun->ast->pathname, '/');
+	if (!pn) pn = s->fun->ast->pathname; else pn++;
+	sprintf(pname, "%s:%d ", pn, s->fun->ast->line);
+	pname += strlen(pname);
+      }
+    } else if (s->name) {
+      strcpy(pname, s->name);
+      pname += strlen(pname);
+    } else {
+      strcpy(pname, "<anonymous>");
+      pname += strlen(pname);
+    }
+    graph_node(fp, s, name);
+  }
+  forv_Sym(s, syms) if (s && s->live && !s->constant)
+    forv_Sym(ss, s->subtypes) if (ss && ss->live && !ss->constant)
+      graph_edge(fp, s, ss);
+  graph_end(fp);
+}
+
 void 
 graph(FA *fa, char *fn, int agraph_type) {
   graph_type = agraph_type;
@@ -512,4 +566,5 @@ graph(FA *fa, char *fn, int agraph_type) {
   graph_avars(fa, fn);
   graph_calls(fa, fn);
   graph_rec(fa, fn);
+  graph_abstract_types(fa, fn);
 }

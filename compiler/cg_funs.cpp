@@ -30,8 +30,7 @@ static void genFunHead(FILE* outfile, Fun* fn) {
   /* formal parameter list */
   fprintf(outfile, "(");
   numargs = fn->args.n;
-  if (numargs < 2 ||
-      numargs == 2 && dtIsNullTuple(fn->args.v[1]->type)) {
+  if (numargs < 2 || numargs == 2 && dtIsNullTuple(fn->args.v[1]->type)) {
     fprintf(outfile, "void");
   } else {
     for (i=1; i<numargs; i++) {

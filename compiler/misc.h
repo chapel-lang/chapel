@@ -29,6 +29,7 @@ char *loc_string(d_loc_t &l);
 
 void setupIntError(char* filename, int lineno);
 void intFatal(AST* ast, char* fmt, ...);
+void myassert(char *file, int line, char *str);
 
 void startCatchingSignals(void);
 void stopCatchingSignals(void);

@@ -70,6 +70,7 @@ var reply = #reply __name "reply";
 #__new __name "new";
 #__index __name "index";
 #__print __name "print";
+#__match __name "match";
 #operator __name "operator";
 #"&" __name "doref";
 #"=" __name "assign";
@@ -122,7 +123,6 @@ function operator(#"!", a:any)			{ #__primitive ^^ #"!" ^^ a }
 function operator(#"*", a:ref)			{ #__primitive ^^ #"*" ^^ a }
 function operator(#"&", var a:any)		{ #__primitive ^^ #"&" ^^ a }
 function operator(a:anynum, #"|", b:anynum)	{ #__primitive ^^ a ^^ #"|" ^^ b }
-function operator(#"(", a:symbol, b:any)	{ #__primitive ^^ #"(" ^^ a ^^ b }
 function operator(a:anynum, #"++")		{ #__primitive ^^ a ^^ #"+" ^^ 1 }
 function operator(a:anynum, #"--")		{ #__primitive ^^ a ^^ #"-" ^^ 1 }
 
@@ -151,7 +151,7 @@ class cyclic implements distribution {
 var block2 = new distribution;
 function distribution::class(d:distribution, l:locale) { d }  
 
-value domain(rank, distribute, target) : vector {
+value domain(rank, distribute, target) {
   const rank : integer;
   const index : sequence;
   type target : domain;
@@ -230,6 +230,7 @@ function operator(a:array, s:symbol, b:array) {
 
 function reshape(l:locale, s:sequence) { l }
 
+function write() { 0 }
 function write(a) { 0 }
 function writeln() { 0 }
 function writeln(a) { 0 }

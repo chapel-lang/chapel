@@ -202,17 +202,17 @@ Sym *
 new_sym(IF1 *i, Scope *scope, char *s, Sym *sym) {
   if (!sym)
     sym = if1_alloc_sym(i, s);
-  if (!sym->in) {
+  if (!sym->in && scope) {
     // unnamed temporaries are local to the module
     if (scope->in && scope->in->module && !s)
       sym->in = scope->in->init;
     else
       sym->in = scope->in;
   }
-  if (s)
+  if (s && scope)
     scope->put(s, sym);
-  if (verbose_level > 1)
-    printf("new sym %X %s in %X\n", (int)sym, s, (int)scope);
+  if (verbose_level > 2)
+    printf("new sym %p %s in %p\n", sym, s, scope);
   return sym;
 }
 
@@ -260,6 +260,7 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     case Builtin_any: sym->type_kind = Type_SUM; break;
     case Builtin_tuple: sym->type_kind = Type_PRODUCT; break;
     case Builtin_vector: sym->type_kind = Type_VECTOR; break;
+    case Builtin_void: sym->type_kind = Type_PRODUCT; break;
     case Builtin_ref: 
       sym->type_kind = Type_REF; 
       sym->has.add(if1_alloc_sym(i, if1_cannonicalize_string(i, "ref value")));
@@ -356,6 +357,8 @@ make_module(IF1 *i, char *mod_name, Scope *global, Sym *sym = 0) {
   Sym *fun = new_sym(i, sym->scope, "__init");
   fun->scope = new Scope(sym->scope, Scope_RECURSIVE, fun);
   fun->type = sym_function;
+  fun->type_kind = Type_FUN;
+  fun->type_sym = fun;
   sym->init = fun;
   return sym;
 }
@@ -406,7 +409,7 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 	Lkind_assigned:;
 	}
 	scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, ast->sym);
-	if (verbose_level > 1)
+	if (verbose_level > 2)
 	  printf("creating scope %X for %s\n", (int)ast->sym->scope, ast->sym->name);
 	{
 	  AST *rtype = ast->get(AST_record_type);
@@ -506,7 +509,8 @@ scope_pattern(IF1 *i, AST *ast, Scope *scope) {
   switch (ast->kind) {
     case AST_pattern:
       ast->sym = new_sym(i, scope);
-      ast->sym->type = sym_tuple;
+      ast->sym->implements.add(sym_tuple);
+      ast->sym->type_kind = Type_PRODUCT;
       ast->sym->ast = ast;
       forv_AST(a, *ast) {
 	if (scope_pattern(i, a, scope) < 0)
@@ -514,7 +518,11 @@ scope_pattern(IF1 *i, AST *ast, Scope *scope) {
 	assert(a->sym);
 	ast->sym->has.add(a->sym);
       }
-      if (ast->sym->has.n == 1)
+      if (!ast->sym->has.n) {
+	ast->sym = new_sym(i, scope);
+	ast->sym->type = sym_void;
+	ast->sym->ast = ast;
+      } else if (ast->sym->has.n == 1)
 	ast->sym = ast->sym->has.v[0];
       break;
     case AST_arg:
@@ -559,7 +567,6 @@ define_function(IF1 *i, AST *ast) {
   if (fscope != ast->scope) {
     ast->sym->scope->dynamic.add(fscope);
     ast->sym->self = new_sym(i, ast->sym->scope, cannonical_self);
-    ast->sym->self->type = ast->sym->in;
     ast->sym->self->ast = ast;
   }
   for (int x = 1; x < ast->n - 1; x++)
@@ -600,7 +607,7 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	    sym->scope->dynamic.add(a->sym->scope);
 	  } if (a->kind == AST_def_type_param) {
 	    sym->args.add(a->sym);
-	    if (verbose_level)
+	    if (verbose_level > 2)
 	      printf("%s has param %s\n", sym->name, a->sym->name);
 	  }
 	}
@@ -858,18 +865,21 @@ gen_fun(IF1 *i, AST *ast) {
   Sym *as[n + 1];
   if (fn->in && (fn->name == cannonical_class || fn->name == cannonical_self)) {
     as[0] = ast->sym->self;
-    fn->class_static = fn->name == cannonical_class;
+    if (fn->name == cannonical_class)
+      as[0]->type = ast->sym->in->type_sym;
+    else
+      as[0]->type = ast->sym->in;
   } else {
     as[0] = new_sym(i, fn->scope);
     as[0]->ast = ast;
     as[0]->type = if1_make_symbol(i, fn->name);
   }
-  if (!fn->self)
-    fn->class_static = 1;
   for (int j = 0; j < n; j++)
     as[j + 1] = args[j]->rval;
   if1_closure(i, fn, body, n + 1, as);
   fn->type = sym_function;
+  fn->type_kind = Type_FUN;
+  fn->type_sym = fn;
   fn->ast = ast;
   ast->rval = new_sym(i, ast->scope);
   c = if1_move(i, &ast->code, fn, ast->rval, ast);
@@ -958,6 +968,9 @@ gen_op(IF1 *i, AST *ast) {
       if1_add_send_arg(i, send, a1->rval);
     if1_add_send_result(i, send, res);
     res->lvalue = 1;
+  } else if (ast->is_simple_assign) {
+    if1_move(i, c, a1->rval, a0->rval, ast);
+    if1_move(i, c, a1->rval, res, ast);
   } else {
     Sym *args = new_sym(i, ast->scope);
     Sym *aa0 = a0 ? a0->rval : 0;
@@ -1099,7 +1112,8 @@ pre_gen_bottom_up(AST *ast) {
     case AST_op: {
       char *op = ast->v[ast->op_index]->sym->name;
       ast->is_inc_dec = (op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
-      ast->is_assign = (op[1] == '=' && op[0] != '=') || (!op[1] && op[0] == '=') || ast->is_inc_dec;
+      ast->is_simple_assign = ((op[0] == '=') && !op[1]);
+      ast->is_assign = (op[1] == '=' && op[0] != '=') || ast->is_simple_assign || ast->is_inc_dec;
       ast->is_ref = op[0] == '&' && ast->op_index == 0;
       ast->is_application = (op[0] == '^' && op[1] == '^') || op[0] == '(';
       ast->is_comma = op[0] == ',';
@@ -1346,7 +1360,7 @@ build_modules(IF1 *i) {
       if1_gen(i, &body, fn->code);
       if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
       Sym *as = new_sym(i, fn->scope);
-      as->type = if1_make_symbol(i, fn->name);
+      as->type = fn;
       if1_closure(i, fn, body, 1, &as);
     }
   }
@@ -1393,6 +1407,9 @@ ast_call(IF1 *i, int n, ...) {
 static void
 build_init(IF1 *i) {
   Sym *fn = sym_init;
+  fn->type = sym_function;
+  fn->type_kind = Type_FUN;
+  fn->type_sym = fn;
   fn->scope = new Scope(fn->ast->scope, Scope_RECURSIVE, fn);
   Sym *rval = 0;
   Code *body = 0;
@@ -1461,11 +1478,6 @@ finalize_types(IF1 *i) {
 #define S(_n) sym_##_n = unalias_type(sym_##_n);
 #include "builtin_symbols.h"
 #undef S
-  // make value types subclasses of "value"
-  forv_Sym(s, i->allsyms) {
-    if (s->num_type || s->value)
-      s->implements.add(sym_value);
-  }
   // set value for classes of value types
   Vec<Sym *> implementers;
   forv_Sym(s, i->allsyms) {
@@ -1482,7 +1494,29 @@ finalize_types(IF1 *i) {
 	  s->value = 1;
         }
   }
+  // make type_syms
+  forv_Sym(s, i->allsyms) {
+    if (s->type_kind) {
+      if (!s->type_sym) {
+	s->type_sym = new_sym(i);
+	s->type_sym->in = s->in;
+	s->type_sym->name = s->name;
+	s->type_sym->type = s->type_sym;
+	s->type_sym->ast = s->ast;
+	s->type_sym->type_sym = s;
+	s->type_sym->type_kind = Type_PRIMITIVE;
+      }
+    }
+  }
+  // set "self" type
+#if 0
+  forv_Sym(s, i->allsyms) {
+    if (s->self)
+      // set to either the function class or the function class sym
+  }
+#endif
   sym_value->value = 1;
+  sym_anynum->value = 1;
 }
 
 int

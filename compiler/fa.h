@@ -28,8 +28,10 @@ class Setters;
 class CreationSet;
 class ATypeViolation;
 class CDB;
+class Patterns;
+class Match;
+class MPosition;
 
-typedef Map<PNode*, ATypeViolation*> ViolationMap;
 typedef Map<PNode *, Map<Fun *, AEdge *> *> EdgeMap;
 typedef BlockHash<AEdge *, PointerHashFns> EdgeHash;
 typedef Vec<CreationSet *> VecCreationSet;
@@ -55,12 +57,13 @@ class EntrySet : public gc {
  public:
   Fun			*fun;
   uint			dfs_color : 2;
-  Vec<AVar *>		args;
+  Map<MPosition*,AVar*> args;
   Vec<AVar *>		rets;
   EdgeHash		edges;
   EdgeMap		out_edge_map;
   Vec<AEdge *>		out_edges;
   Vec<AEdge *>		backedges;
+  Vec<AEdge *>		es_cs_backedges;
   Vec<CreationSet *>	cs_backedges;
   Vec<CreationSet *>	creates;
   EntrySet		*split;
@@ -121,7 +124,6 @@ class AVar : public gc {
   AType 		*in;
   AType 		*out;
   AType			*restrict;
-  ViolationMap		*violations;
   AVar			*container;
   Setters		*setters;
   Setters		*setter_class;
@@ -138,18 +140,17 @@ class AVar : public gc {
 
 class AEdge : public gc {
  public:
-  EntrySet	*from, *to;
-  PNode		*pnode;
-  Fun 		*fun;	
-  Vec<AVar *>	args;
-  Vec<AVar *>	rets;
-  Vec<AType *>  dispatch_filters;
-  uint		in_edge_worklist : 1;
-  uint		es_backedge : 1;
-  uint		es_cs_backedge : 1;
-  SLink<AEdge>	edge_worklist_link;
+  EntrySet		*from, *to;
+  PNode			*pnode;
+  Map<MPosition*,AVar*> args;
+  Vec<AVar *>		rets;
+  Match			*match;
+  uint			in_edge_worklist : 1;
+  uint			es_backedge : 1;
+  uint			es_cs_backedge : 1;
+  SLink<AEdge>		edge_worklist_link;
 
-  AEdge() : from(0), to(0), pnode(0), fun(0), in_edge_worklist(0) {}
+  AEdge() : from(0), to(0), pnode(0), match(0), in_edge_worklist(0) {}
 };
 #define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
 
@@ -192,15 +193,36 @@ class SettersClassesHashFns {
   }
 };
 
+enum ATypeViolation_kind {
+  ATypeViolation_PRIMITIVE_ARGUMENT,
+  ATypeViolation_SEND_ARGUMENT,
+  ATypeViolation_DISPATCH_AMBIGUITY,
+  ATypeViolation_MEMBER,
+  ATypeViolation_NOTYPE
+};
+  
 class ATypeViolation : public gc {
  public:
+  ATypeViolation_kind kind;
   AVar *av;
+  AVar *send;
   AType *type;
-  PNode *pnode;
+  Vec<Fun *> *funs;
 
-  ATypeViolation(AVar *aav, AType *atype, PNode *apnode) : av(aav), type(atype), pnode(apnode) {}
+  ATypeViolation(ATypeViolation_kind akind, AVar *aav, AVar *asend) 
+    : kind(akind), av(aav), send(asend), type(0), funs(0) {}
 };
 #define forv_ATypeViolation(_p, _v) forv_Vec(ATypeViolation, _p, _v)
+
+class ATypeViolationHashFuns {
+ public:
+  static uint hash(ATypeViolation *x) { 
+    return (uint)((uint)x->kind + (13 * (uintptr_t)x->av) + (100003 * (uintptr_t)x->send));
+  }
+  static int equal(ATypeViolation *x, ATypeViolation *y) {
+    return x->kind == y->kind && x->av == y->av && x->send == y->send;
+  }
+};
 
 class ATypeFold : public gc {
  public:
@@ -227,6 +249,7 @@ class FA : public gc {
  public:
   PDB *pdb;
   CDB *cdb;
+  Patterns *patterns;
   Vec<Fun *> funs;
   AEdge *top_edge;
   Vec<EntrySet *> ess;		// all used entry sets as array
@@ -235,19 +258,22 @@ class FA : public gc {
   Vec<CreationSet *> css, css_set;
   Vec<AVar *> global_avars;
 
-  FA(PDB *apdb) : pdb(apdb), top_edge(0) {}
+  FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0) {}
 
   int analyze(Fun *f);
   int concretize();
 };
 
-AVar * make_AVar(Var *v, EntrySet *es);
+AVar *make_AVar(Var *v, EntrySet *es);
 Sym *coerce_num(Sym *a, Sym *b);
 Sym *type_info(AST *a, Sym *s = 0);
 void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
 int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
 int constant_info(Var *v, Vec<Sym *> &constants);
 void log_test_fa(FA *fa);
+AType *make_AType(Vec<CreationSet *> &css);
+void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,
+		    Vec<Fun *> *funs = NULL);
 
 EXTERN int num_constants_per_variable EXTERN_INIT(DEFAULT_NUM_CONSTANTS_PER_VARIABLE);
 

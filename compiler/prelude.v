@@ -69,7 +69,7 @@ __init__ __name "init":0;
 #__primitive __name "primitive";
 #__new __name "new";
 #__index __name "index";
-#__print __name "print";
+#__print __name "print"; #__match __name "match";
 #operator __name "operator";
 #"&" __name "doref";
 #"=" __name "assign";

@@ -18,7 +18,7 @@ Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   vmap = 0;
   size = -1;
   cg_string = 0;
-  if (verbose_level > 1)
+  if (verbose_level > 2)
     if (asym->name)
       printf("function %s\n", asym->name);
     else

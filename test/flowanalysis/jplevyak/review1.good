@@ -16,28 +16,21 @@ function class prelude.chpl:189 with 1 edges
 function class prelude.chpl:212 with 1 edges
 function merge review1.chpl:10 with 1 edges
 function modify review1.chpl:1 with 1 edges
-function operator prelude.chpl:101 with 1 edges
-function operator prelude.chpl:101 with 1 edges
-function operator prelude.chpl:101 with 1 edges
-function operator prelude.chpl:101 with 1 edges
-function operator prelude.chpl:101 with 1 edges
-function operator prelude.chpl:101 with 1 edges
-function operator prelude.chpl:101 with 1 edges
-function operator prelude.chpl:101 with 1 edges
-function operator prelude.chpl:79 with 1 edges
-function operator prelude.chpl:79 with 1 edges
-function operator prelude.chpl:79 with 1 edges
-function operator prelude.chpl:79 with 1 edges
-function operator prelude.chpl:79 with 1 edges
-function operator prelude.chpl:79 with 1 edges
-function operator prelude.chpl:79 with 1 edges
-function operator prelude.chpl:79 with 1 edges
-function operator prelude.chpl:82 with 1 edges
-function operator prelude.chpl:82 with 1 edges
-function operator prelude.chpl:82 with 1 edges
+function operator prelude.chpl:102 with 1 edges
+function operator prelude.chpl:80 with 1 edges
+function operator prelude.chpl:80 with 1 edges
+function operator prelude.chpl:80 with 1 edges
+function operator prelude.chpl:80 with 1 edges
+function operator prelude.chpl:80 with 1 edges
+function operator prelude.chpl:80 with 1 edges
+function operator prelude.chpl:80 with 1 edges
+function operator prelude.chpl:80 with 1 edges
 function operator prelude.chpl:83 with 1 edges
-function operator prelude.chpl:85 with 1 edges
-function operator prelude.chpl:90 with 1 edges
+function operator prelude.chpl:83 with 1 edges
+function operator prelude.chpl:83 with 1 edges
+function operator prelude.chpl:84 with 1 edges
+function operator prelude.chpl:86 with 1 edges
+function operator prelude.chpl:91 with 1 edges
 function self prelude.chpl:202 with 1 edges
 function self prelude.chpl:202 with 1 edges
 function self prelude.chpl:210 with 1 edges
@@ -70,34 +63,27 @@ modify::c2(review1.chpl:1) ( float64 (prelude.chpl:38) )
 modify::c3(review1.chpl:1) ( integer64 (prelude.chpl:26) )
 modify::p1(review1.chpl:1) ( float64 (prelude.chpl:38) )
 modify::p2(review1.chpl:1) ( integer64 (prelude.chpl:26) )
-operator::a(prelude.chpl:79) ( array (prelude.chpl:205) )
-operator::a(prelude.chpl:79) ( array (prelude.chpl:205) )
-operator::a(prelude.chpl:79) ( array (prelude.chpl:205) )
-operator::a(prelude.chpl:79) ( sequence (prelude.chpl:182) )
-operator::a(prelude.chpl:79) ( sequence (prelude.chpl:182) )
-operator::a(prelude.chpl:79) ( sequence (prelude.chpl:182) )
-operator::a(prelude.chpl:79) ( sequence (prelude.chpl:182) )
-operator::a(prelude.chpl:79) ( sequence (prelude.chpl:182) )
-operator::a(prelude.chpl:82) ( float64 (prelude.chpl:38) )
-operator::a(prelude.chpl:82) ( float64 (prelude.chpl:38) )
-operator::a(prelude.chpl:82) ( float64 (prelude.chpl:38) )
+operator::a(prelude.chpl:80) ( array (prelude.chpl:205) )
+operator::a(prelude.chpl:80) ( array (prelude.chpl:205) )
+operator::a(prelude.chpl:80) ( array (prelude.chpl:205) )
+operator::a(prelude.chpl:80) ( sequence (prelude.chpl:182) )
+operator::a(prelude.chpl:80) ( sequence (prelude.chpl:182) )
+operator::a(prelude.chpl:80) ( sequence (prelude.chpl:182) )
+operator::a(prelude.chpl:80) ( sequence (prelude.chpl:182) )
+operator::a(prelude.chpl:80) ( sequence (prelude.chpl:182) )
 operator::a(prelude.chpl:83) ( float64 (prelude.chpl:38) )
-operator::a(prelude.chpl:85) ( float64 (prelude.chpl:38) )
-operator::a(prelude.chpl:90) ( integer64 (prelude.chpl:26) )
-operator::b(prelude.chpl:101) ( float64 (prelude.chpl:38) )
-operator::b(prelude.chpl:101) ( integer64 (prelude.chpl:26) )
-operator::b(prelude.chpl:101) ( integer64 (prelude.chpl:26) )
-operator::b(prelude.chpl:101) ( integer64 (prelude.chpl:26) )
-operator::b(prelude.chpl:101) ( integer64 (prelude.chpl:26) )
-operator::b(prelude.chpl:101) ( sequence (prelude.chpl:182) )
-operator::b(prelude.chpl:101) ( sequence (prelude.chpl:182) )
-operator::b(prelude.chpl:101) ( vector (prelude.chpl:12) )
-operator::b(prelude.chpl:82) ( float64 (prelude.chpl:38) )
-operator::b(prelude.chpl:82) ( float64 (prelude.chpl:38) )
-operator::b(prelude.chpl:82) ( integer64 (prelude.chpl:26) )
+operator::a(prelude.chpl:83) ( float64 (prelude.chpl:38) )
+operator::a(prelude.chpl:83) ( float64 (prelude.chpl:38) )
+operator::a(prelude.chpl:84) ( float64 (prelude.chpl:38) )
+operator::a(prelude.chpl:86) ( float64 (prelude.chpl:38) )
+operator::a(prelude.chpl:91) ( integer64 (prelude.chpl:26) )
+operator::b(prelude.chpl:102) ( sequence (prelude.chpl:182) )
+operator::b(prelude.chpl:83) ( float64 (prelude.chpl:38) )
+operator::b(prelude.chpl:83) ( float64 (prelude.chpl:38) )
 operator::b(prelude.chpl:83) ( integer64 (prelude.chpl:26) )
-operator::b(prelude.chpl:85) ( float64 (prelude.chpl:38) )
-operator::b(prelude.chpl:90) ( integer64 (prelude.chpl:26) )
+operator::b(prelude.chpl:84) ( integer64 (prelude.chpl:26) )
+operator::b(prelude.chpl:86) ( float64 (prelude.chpl:38) )
+operator::b(prelude.chpl:91) ( integer64 (prelude.chpl:26) )
 self::s(prelude.chpl:202) ( integer64 (prelude.chpl:26) )
 self::s(prelude.chpl:202) ( integer64 (prelude.chpl:26) )
 self::s(prelude.chpl:210) ( integer64 (prelude.chpl:26) )

@@ -16,6 +16,31 @@ show_type(Vec<CreationSet *> &t, FILE *fp) {
   fprintf(fp, ") ");
 }
 
+static void
+show_sym(Sym *s, FILE *fp) {
+  if (s->pattern) {
+    fprintf(fp, "( ");
+    forv_Sym(ss, s->has) {
+      if (ss != s->has.v[0])
+	fprintf(fp, ", ");
+      show_sym(ss, fp);
+    }
+    fprintf(fp, ")");
+  } else if (s->name)
+    fprintf(fp, "%s ", s->name);
+  else if (s->constant)
+    fprintf(fp, "\"%s\" ", s->constant);
+  if (s->type && s->type->name)
+    fprintf(fp, ": %s", s->type->name);
+}
+
+static void
+show_fun(Fun *f, FILE *fp) {
+  fprintf(fp, "%s:%d: ", f->ast->pathname, f->ast->line);
+  forv_Sym(s, f->sym->args)
+    show_sym(s, fp);
+}
+
 void
 fa_print_backward(AVar *v, FILE *fp) {
   Vec<AVar *> done, todo;
@@ -102,58 +127,140 @@ fa_dump_types(FA *fa, FILE *fp) {
 }
 
 static void
-show_violations(FA *fa, FILE *fp) {
-  forv_ATypeViolation(v, type_violations) if (v) {
-    AVar *av = v->av;
-    assert(v->pnode->code->ast);
-    fprintf(stderr, "%s:%d: ", v->pnode->code->ast->pathname, v->pnode->code->ast->line);
-    if (av->var->sym->name)
-      fprintf(stderr, "'%s' ", av->var->sym->name);
-    else if (verbose_level)
-      fprintf(stderr, "expr:%d ", av->var->sym->id);
-    else
-      fprintf(stderr, "expression ");
-    if (verbose_level) {
-      fprintf(stderr, "id:%d ", av->var->sym->id);
-      if (av->out->n) {
-	fprintf(stderr, ": ");
-	show_type(*av->out, fp);
-      }
+show_illegal_type(FILE *fp, ATypeViolation *v) {
+  AVar *av = v->av;
+  if (av->var->sym->name)
+    fprintf(stderr, "'%s' ", av->var->sym->name);
+  else if (verbose_level)
+    fprintf(stderr, "expr:%d ", av->var->sym->id);
+  else
+    fprintf(stderr, "expression ");
+  if (verbose_level) {
+    fprintf(stderr, "id:%d ", av->var->sym->id);
+    if (av->out->n) {
+      fprintf(stderr, ": ");
+      show_type(*av->out, fp);
     }
-    fprintf(stderr, "has illegal type: ");
-    show_type(*v->type, fp);
-    fprintf(fp, "\n");
   }
+  fprintf(stderr, "illegal: ");
+  show_type(*v->type, fp);
+  fprintf(stderr, "\n");
+}
+
+static void
+show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
+  depth++;
+  if (depth > print_call_depth || !p->code)
+    return;
+  if (depth > 1 && p->code->ast->pathname) {
+    for (int x = 0; x < depth; x++)
+      fprintf(stderr, " ");
+    fprintf(stderr, "called from %s:%d\n", p->code->ast->pathname, p->code->ast->line);
+  }
+  AEdge **last = es->edges.last();
+  for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
+    show_call_tree(fp, (*x)->pnode, (*x)->from, depth);
+}
+
+static void
+show_call_tree(FILE *fp, AVar *av) {
+  EntrySet *es = (EntrySet*)av->contour;
+  AEdge **last = es->edges.last();
+  for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
+    show_call_tree(fp, (*x)->pnode, (*x)->from, 1);
 }
 
 static int
-show_untyped(FA *fa) {
-  int res = 0;
-  forv_EntrySet(es, fa->ess) {
-    forv_Var(v, es->fun->fa_all_Vars) {
-      AVar *av = make_AVar(v, es);
-      if (av->out == bottom_type) {
-	res++;
-	if (v->def && v->def->code && v->def->code->ast && v->def->code->ast->pathname)
-	  fprintf(stderr, "%s:%d: ", v->def->code->ast->pathname, 
-		  v->def->code->ast->line);
-	else
-	  fprintf(stderr, "error: ");
-	if (v->sym->name)
-	  fprintf(stderr, "'%s' ", v->sym->name);
+compar_tv_pos(const void *aa, const void *bb) {
+  ATypeViolation *a = (*(ATypeViolation**)aa);
+  ATypeViolation *b = (*(ATypeViolation**)bb);
+  AST *aast = a->send ? a->send->var->def->code->ast : 0;
+  if (!aast) aast = a->av->var->sym->ast;
+  AST *bast = b->send ? b->send->var->def->code->ast : 0;
+  if (!bast) bast = b->av->var->sym->ast;
+  if (!aast || !bast) {
+    if (bast) return -1;
+    if (aast) return 1;
+    return 0;
+  }
+  int x = strcmp(aast->pathname, bast->pathname);
+  if (x) return x;
+  int i = aast->line;
+  int j = bast->line;
+  return (i > j) ? 1 : ((i < j) ? -1 : 0);
+}
+
+static void
+show_violations(FA *fa, FILE *fp) {
+  Vec<ATypeViolation *> vv;
+  forv_ATypeViolation(v, type_violations) if (v)
+    vv.add(v);
+  qsort(vv.v, vv.n, sizeof(vv.v[0]), compar_tv_pos);
+  forv_ATypeViolation(v, vv) if (v) {
+    if (!verbose_level && !v->av->var->sym->name)
+      continue;
+    if (v->send)
+      fprintf(stderr, "%s:%d: ", v->send->var->def->code->ast->pathname, 
+	      v->send->var->def->code->ast->line);
+    else if (v->av->var->sym->ast)
+      fprintf(stderr, "%s:%d: ", v->av->var->sym->ast->pathname, 
+	      v->av->var->sym->ast->line);
+    else
+      fprintf(stderr, "error: ");
+    switch (v->kind) {
+      default: assert(0);
+      case ATypeViolation_PRIMITIVE_ARGUMENT:
+	fprintf(stderr, "illegal primitive argument type ");
+	show_illegal_type(fp, v);
+	break;
+      case ATypeViolation_SEND_ARGUMENT:
+	if (v->av->var->sym->symbol &&
+	    v->send->var->def->rvals.v[0] == v->av->var)
+	  fprintf(stderr, "unresolved call '%s'\n", v->av->var->sym->name);
+	else {
+	  fprintf(stderr, "illegal call argument type ");
+	  show_illegal_type(fp, v);
+	}
+	break;
+      case ATypeViolation_DISPATCH_AMBIGUITY:
+	fprintf(stderr, "ambiguous call '%s'\n", v->av->var->sym->name);
+	fprintf(stderr, "  candidate functions:\n");
+	forv_Fun(f, *v->funs) {
+	  fprintf(stderr, "    ");
+	  show_fun(f, stderr);
+	  fprintf(stderr, "\n");
+	}
+	break;
+      case ATypeViolation_MEMBER:
+	if (v->av->out->n == 1)
+	  fprintf(stderr, "unresolved member '%s'", v->av->out->v[0]->sym->name);
+	else {
+	  fprintf(stderr, "unresolved member\n");
+	  forv_CreationSet(selector, *v->av->out)
+	    fprintf(stderr, "  selector '%s'\n", selector->sym->name);
+	}
+	if (v->type->n == 1)
+	  fprintf(stderr, "  class '%s'\n", v->type->v[0]->sym->name ? v->type->v[0]->sym->name : 
+		  "<anonymous>");
+	else {
+	  fprintf(stderr, "  classes\n");
+	  forv_CreationSet(cs, *v->type)
+	    fprintf(stderr, "  class '%s'\n", cs->sym->name);
+	}
+	break;
+      case ATypeViolation_NOTYPE:
+	if (v->av->var->sym->name)
+	  fprintf(stderr, "'%s' ", v->av->var->sym->name);
 	else
 	  fprintf(stderr, "expression ");
-	if (verbose_level) {
-	  if (!v->sym->name)
-	    fprintf(stderr, "expr:%d ", v->sym->id);
-	  else
-	    fprintf(stderr, "id:%d ", v->sym->id);
-	}
 	fprintf(stderr, "has no type\n");
-      }
+	break;
     }
+    if (v->send)
+      show_call_tree(fp, v->send->var->def, (EntrySet*)v->send->contour);
+    else if (v->av->contour_is_entry_set)
+      show_call_tree(fp, v->av);
   }
-  return res;
 }
 
 static char *fn(char *s) {

@@ -8,6 +8,7 @@
 
 int verbose_level = 0;
 int debug_level = 0;
+int *assert_NULL_var = 0;
 
 static void cleanup(void) {
   deleteTmpDir();
@@ -110,8 +111,8 @@ dupstr(char *s, char *e) {
   return ss;
 }
 
-void myassert() {
-  printf("assert\n");
+void myassert(char *file, int line, char *str) {
+  printf("assert %s:%d: %s\n", file, line, str);
   *(int*)0 = 1;
 }
 

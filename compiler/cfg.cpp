@@ -13,7 +13,7 @@ static PNode *build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont);
 // build CFG
 void  
 Fun::build_cfg() {
-  if (verbose_level > 1)
+  if (verbose_level > 2)
     if1_dump(stdout, sym->code);
   if (!sym->code || (sym->code->is_group() && !sym->code->sub.n))
     return;
@@ -27,7 +27,7 @@ static void
 finalize_cfg(Fun *f) {
   Vec<PNode*> nodes;
   f->collect_PNodes(nodes);
-  if (verbose_level > 1)
+  if (verbose_level > 2)
     printf("%d cfg nodes\n", nodes.n);
   forv_PNode(p, nodes) {
     p->cfg_pred.set_to_vec();

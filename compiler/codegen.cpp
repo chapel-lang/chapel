@@ -8,6 +8,7 @@
 #include "misc.h"
 #include "mysystem.h"
 #include "num.h"
+#include "builtin.h"
 
 #define IO_WRITE   1
 #define IO_WRITELN 2
@@ -165,7 +166,7 @@ static int isTupleArg(AST* ast) {
 static void genSingleWriteArg(FILE* outfile, AST* arg, int genSemi) {
   Sym* argdt = type_info(arg);
 
-  if (!dtIsNullTuple(argdt)) {
+  if (!dtIsNullTuple(argdt) && arg->sym != sym_null) {
     fprintf(outfile, "_write");
     genDT(outfile, argdt);
     fprintf(outfile, "(");

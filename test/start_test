@@ -367,9 +367,15 @@ foreach dir ($dirs)
 		else
 		    set sub_test = $testdir/sub_test
 		endif
+                if (-x ./sub_clean) then
+                    set sub_clean = ./sub_clean
+                else
+                    set sub_clean = $testdir/sub_clean
+                endif
 		setenv COMPOPTS "$compopts"
 		setenv EXECOPTS "$execopts"
 		echo "[Starting $sub_test `date`]"
+		$sub_clean "$testdir" |& tee -a $logfile
 		$sub_test "$compiler" "$testdir" |& tee -a $logfile
 	else
 		echo \["No tests in directory " $dir\] |& \
