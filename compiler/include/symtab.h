@@ -89,9 +89,8 @@ class Symboltable {
   static DefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
                                  Stmt* body, bool isExtern = false);
 
-  static TypeSymbol* startClassDef(char* name, bool isValueClass, bool isUnion);
-  static TypeSymbol* startUnionDef(char* name);
-  static DefExpr* finishClassDef(TypeSymbol* classSym, Stmt* definition);
+  static TypeSymbol* startStructDef(structType type, char* name);
+  static DefExpr* finishStructDef(TypeSymbol* classSym, Stmt* definition);
 
   static ForLoopStmt* startForLoop(bool forall, Symbol* indices, Expr* domain);
   static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);

@@ -654,28 +654,29 @@ DefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 }
 
 
-static TypeSymbol* startClassHelp(char* name, ClassType* newdt) {
-  TypeSymbol* newsym = new TypeSymbol(name, newdt);
-  (newdt)->addSymbol(newsym);
+TypeSymbol* Symboltable::startStructDef(structType type, char* name) {
+  ClassType* newType;
+  switch (type) {
+  case STRUCT_CLASS:
+    newType = new ClassType(false);
+    break;
+  case STRUCT_RECORD:
+    newType = new ClassType(true);
+    break;
+  case STRUCT_UNION:
+    newType = new UnionType();
+    break;
+  }
+  TypeSymbol* newsym = new TypeSymbol(name, newType);
+  (newType)->addSymbol(newsym);
   Symboltable::pushScope(SCOPE_CLASS);
 
   return newsym;
 }
-  
+                                        
 
-
-TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUnion) {
-  return startClassHelp(name, new ClassType(isValueClass));
-}
-
-
-TypeSymbol* Symboltable::startUnionDef(char* name) {
-  return startClassHelp(name, new UnionType());
-}
-
-
-DefExpr* Symboltable::finishClassDef(TypeSymbol* classSym, 
-                                     Stmt* definition) {
+DefExpr* Symboltable::finishStructDef(TypeSymbol* classSym, 
+                                      Stmt* definition) {
   ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
   classType->addDeclarations(definition);
   SymScope *classScope = Symboltable::popScope();

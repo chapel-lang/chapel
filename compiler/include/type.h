@@ -17,6 +17,14 @@ class ASymbol;
 class SymScope;
 
 
+enum structType {
+  STRUCT_CLASS,
+  STRUCT_RECORD,
+  STRUCT_UNION
+};
+
+
+
 // neither of these really seem like they should be here
 
 class Type : public BaseAST {

@@ -20,6 +20,7 @@
   varType vt;
   consType ct;
   paramType pt;
+  structType st;
 
   Expr* pexpr;
   ForallExpr* pfaexpr;
@@ -126,7 +127,8 @@
 %type <defexpr> vardecl_inner vardecl_inner_ls
 %type <defstmt> vardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl block_stmt
-%type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl function_body_stmt
+%type <st> structtype
+%type <stmt> typealias typedecl fndecl structdecl moduledecl function_body_stmt
 %type <pragmas> pragma pragmas
 
 
@@ -248,9 +250,7 @@ typedecl:
   typealias
 | typevardecl
 | enumdecl
-| classdecl
-| recorddecl
-| uniondecl
+| structdecl
 ;
 
 
@@ -295,43 +295,28 @@ enumdecl:
 ;
 
 
-classdecl:
-  TCLASS pragmas identifier TLCBR
-    {
-      $<ptsym>$ = Symboltable::startClassDef($3, false, false);
-      $<ptsym>$->pragmas = $2;
-    }
-                                decls TRCBR
-    {
-      $$ = new DefStmt(Symboltable::finishClassDef($<ptsym>5, $6));
-    }
+structtype:
+  TCLASS
+    { $$ = STRUCT_CLASS; }
+| TRECORD
+    { $$ = STRUCT_RECORD; }
+| TUNION
+    { $$ = STRUCT_UNION; }
 ;
 
 
-recorddecl:
-  TRECORD pragmas identifier TLCBR
+structdecl:
+  structtype pragmas identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($3, true, false);
+      $<ptsym>$ = Symboltable::startStructDef($1, $3);
       $<ptsym>$->pragmas = $2;
     }
-                                decls TRCBR
+                                      decls TRCBR
     {
-      $$ = new DefStmt(Symboltable::finishClassDef($<ptsym>5, $6));
+      $$ = new DefStmt(Symboltable::finishStructDef($<ptsym>5, $6));
     }
 ;
 
-
-uniondecl:
-  TUNION pragmas identifier TLCBR
-    {
-      $<ptsym>$ = Symboltable::startUnionDef($3);
-      $<ptsym>$->pragmas = $2;
-    }
-                                decls TRCBR
-    {
-      $$ = new DefStmt(Symboltable::finishClassDef($<ptsym>5, $6));
-    }
-;
 
 enum_item:
   identifier
