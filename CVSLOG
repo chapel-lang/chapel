@@ -14338,3 +14338,45 @@ Added files:
 	                               union_type_hierarchy-2.future 
 	                               union_type_hierarchy-2.good 
 
+---------------------------------------------------------------------------
+
+01/13/05 10:04:03 -- jplevyak
+
+Log message:
+	Cleanup IF1 generation by eliminating some unnecessary moves.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+
