@@ -20993,3 +20993,19 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp symbol.cpp 
 
+---------------------------------------------------------------------------
+
+03/23/05 11:37:34 -- deitz
+
+Log message:
+	Added a couple of tuple tests that declare tuples without explicit
+	types.  These fail in analysis.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_tuple_simple6.chpl 
+	                                test_tuple_simple6.future 
+	                                test_tuple_simple6.good 
+	                                test_tuple_simple7.chpl 
+	                                test_tuple_simple7.future 
+	                                test_tuple_simple7.good 
+
