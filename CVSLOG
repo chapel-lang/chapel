@@ -18914,3 +18914,52 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+03/04/05 15:03:27 -- deitz
+
+Log message:
+	Added functionality to print the AST.  This can be used in debugging
+	with the print_view function by passing it a Stmt or an Expr.
+	
+	For example, I can print out the TypeDefStmt for the class Array in
+	the internal_prelude just after parsing and I get something like:
+	
+	(gdb) p print_view(stmt)
+	
+	(TypeDefStmt 'Array' 'Array'
+	  (FnDefStmt 'this' 'this' 'i'
+	    (BlockStmt
+	      (ReturnStmt
+	        (ParenOp
+	          (Variable '__primitive')
+	          (StringLiteral)
+	          (Variable 'this')
+	          (Variable 'i')))))
+	  (FnDefStmt 'this' 'this' 'i' 'j'
+	    (BlockStmt
+	      (ReturnStmt
+	        (ParenOp
+	          (Variable '__primitive')
+	          (StringLiteral)
+	          (Variable 'this')
+	          (Variable 'i')
+	          (Variable 'j')))))
+	  (FnDefStmt 'this' 'this' 'i' 'j' 'k'
+	    (BlockStmt
+	      (ReturnStmt
+	        (ParenOp
+	          (Variable '__primitive')
+	          (StringLiteral)
+	          (Variable 'this')
+	          (Variable 'i')
+	          (Variable 'j')
+	          (Variable 'k'))))))
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: view.cpp view.h 
+
