@@ -22020,3 +22020,13 @@ Log message:
 Modified files:
 	chapel/test/functions/jplevyak/scoping/: visibility-1.future 
 
+---------------------------------------------------------------------------
+
+03/28/05 16:41:39 -- jplevyak
+
+Log message:
+	Fix .future for foralls in initialization
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_init2.future 
+
