@@ -855,3 +855,13 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/03/16 12:44:42 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	remove "dead" cruft from dump
+
+Modified files:
+	chapel/compiler/: TODO dump.cpp 
+
