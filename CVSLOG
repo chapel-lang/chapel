@@ -22484,3 +22484,17 @@ Modified files:
 	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
 	                         symscope.cpp 
 
+---------------------------------------------------------------------------
+
+03/29/05 16:42:48 -- jplevyak
+
+Log message:
+	Integrated Steve's code to set the _this field in FnSymbol of constructors.
+	Use the _this field to not call the constructor recursively.
+	We should probably use something other than DevVar for "this", but
+	  the hack presented here should suffice for now.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
