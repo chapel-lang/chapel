@@ -23848,3 +23848,13 @@ Added files:
 	                             jacobi.chpl jacobi.execopts 
 	                             jacobi.good 
 
+---------------------------------------------------------------------------
+
+04/04/05 17:57:00 -- shannon
+
+Log message:
+	Woops, forgot to add this to the last commit.
+
+Added files:
+	chapel/test/memory/shannon/: PREDIFF 
+
