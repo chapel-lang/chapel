@@ -64,8 +64,8 @@ mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 
 mysystem("cd $tmpdir && cvs -d ~bradc/CVS checkout -D \"$cvsdate\" chapel", "cvs checkout", 1, 1);
 
-mysystem("cd $tmpdir/chapel/compiler && $tokctr *.h > $tmpdir/comp-inc.ntoks");
-mysystem("cd $tmpdir/chapel/compiler && $tokctr *.cpp > $tmpdir/comp-src.ntoks");
+mysystem("cd $tmpdir/chapel/compiler && $tokctr *.h cast/*.h make_prims/*.h > $tmpdir/comp-inc.ntoks");
+mysystem("cd $tmpdir/chapel/compiler && $tokctr *.cpp cast/*.cpp make_prims/*.cpp > $tmpdir/comp-src.ntoks");
 mysystem("cd $tmpdir/chapel/compiler/AST && $tokctr *.h > $tmpdir/fe-inc.ntoks");
 mysystem("cd $tmpdir/chapel/compiler/AST && $tokctr *.cpp > $tmpdir/fe-src.ntoks");
 mysystem("cd $tmpdir/chapel/runtime/include && $tokctr *.h > $tmpdir/rt-inc.ntoks");

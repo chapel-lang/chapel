@@ -32,6 +32,10 @@ int main(int argc, char* argv[]) {
   clearGlob();
 
   for (i=1; i<argc; i++) {
+    if (strchr(argv[i], '*') != NULL) {
+      /* wildcard not expanded -- by sh when no matches exist, e.g. */
+      break;
+    }
     if (fileVerbosity & PRINT_FILESEP) {
       fflush(stdout);
       fprintf(stderr, "%s\n", argv[i]);
