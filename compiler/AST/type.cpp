@@ -45,6 +45,10 @@ void Type::printDef(FILE* outfile) {
   print(outfile);
 }
 
+void Type::codegen(FILE* outfile) {
+  fprintf(outfile, "This is Type's codegen method.\n");
+}
+
 
 NullType::NullType(void) {
 }

@@ -16,6 +16,7 @@ class Type : public ILink {
 
   virtual void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
+  virtual void codegen(FILE* outfile);
 };
 
 

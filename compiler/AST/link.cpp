@@ -26,6 +26,18 @@ void ILink::printList(FILE* outfile, char* separator) {
   }
 }
 
+void ILink::codegenList(FILE* outfile, char* separator) {
+  ILink* ptr;
+
+  codegen(outfile);
+  ptr = next;
+  while (ptr != NULL) {
+    fprintf(outfile, "%s", separator);
+    ptr->codegen(outfile);
+    ptr = ptr->next;
+  }
+}
+
 
 void ILink::insert(ILink* newlink) {
   if (prev != NULL) {

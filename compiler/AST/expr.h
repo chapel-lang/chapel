@@ -16,6 +16,7 @@ class Expr : public ILink {
   Expr(void);
 
   virtual void print(FILE* outfile) = 0;
+  virtual void codegen(FILE* outfile) = 0;
 };
 
 
@@ -24,6 +25,7 @@ class NullExpr : public Expr {
   bool isNull(void);
   
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -34,6 +36,7 @@ class Literal : public Expr {
   Literal(char* init_str);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -58,6 +61,7 @@ class StringLiteral : public Literal {
   StringLiteral(char* init_val);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -68,6 +72,7 @@ class Variable : public Expr {
   Variable(Symbol* init_var);
   
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -89,6 +94,7 @@ class UnOp : public Expr {
   UnOp(unOpType init_type, Expr* op);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -129,6 +135,7 @@ class BinOp : public Expr {
   BinOp(binOpType init_type, Expr* l, Expr* r);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -144,6 +151,7 @@ class AssignOp : public BinOp {
   AssignOp(Expr* l, Expr* r);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -156,18 +164,21 @@ class SimpleSeqExpr : public Expr {
   SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str = new NullExpr());
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
 class FloodExpr : public Expr {
  public:
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
 class CompleteDimExpr : public Expr {
  public:
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -182,6 +193,7 @@ class DomainExpr : public Expr {
   void setForallExpr(Expr* exp);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -195,6 +207,7 @@ class ParenOpExpr : public Expr {
   ParenOpExpr(Expr* init_base, Expr* init_arg = new NullExpr());
 
   virtual void print(FILE* outfile);
+  virtual void codegen(FILE* outfile);
 };
 
 
@@ -229,6 +242,7 @@ class ReduceExpr : public Expr {
   ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, Expr* init_argExpr);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 

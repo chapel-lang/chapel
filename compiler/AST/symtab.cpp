@@ -19,6 +19,7 @@ public:
   SymLink(Symbol* init_pSym = NULL);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -29,6 +30,10 @@ SymLink::SymLink(Symbol* init_pSym) :
 
 void SymLink::print(FILE* outfile) {
   pSym->print(outfile);
+}
+
+void SymLink::codegen(FILE* outfile) {
+  fprintf(outfile, "This is SymLink's codegen method.\n");
 }
 
 

@@ -17,6 +17,7 @@ class NullStmt : public Stmt {
   bool isNull(void);
   
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -28,6 +29,7 @@ class VarDefStmt : public Stmt {
   VarDefStmt(VarSymbol* init_var, Expr* init_expr);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -38,6 +40,7 @@ class TypeDefStmt : public Stmt {
   TypeDefStmt(Type* init_type);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -48,6 +51,7 @@ class FnDefStmt : public Stmt {
   FnDefStmt(FunSymbol* init_fun);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -58,6 +62,7 @@ class ExprStmt : public Stmt {
   ExprStmt(Expr* initExpr);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -76,6 +81,7 @@ class BlockStmt : public Stmt {
   BlockStmt::BlockStmt(Stmt* init_body);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -120,6 +126,7 @@ class CondStmt : public Stmt {
 	   Stmt* init_elseStmt = new NullStmt());
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 #endif

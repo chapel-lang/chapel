@@ -14,6 +14,10 @@ void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
 }
 
+void Symbol::codegen(FILE* outfile) {
+  fprintf(outfile, "%s", name);
+}
+
 
 void Symbol::printDef(FILE* outfile) {
   print(outfile);
@@ -64,7 +68,6 @@ void VarSymbol::printWithType(FILE* outfile) {
     type->print(outfile);
   }
 }
-
 
 NullVarSymbol::NullVarSymbol() :
   VarSymbol("NullVarSymbol")

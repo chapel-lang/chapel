@@ -53,12 +53,21 @@ void NullExpr::print(FILE* outfile) {
 }
 
 
+void NullExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "This is NullExpr's codegen.\n");
+}
+
+
 Literal::Literal(char* init_str) :
   str(copystring(init_str))
 {}
 
 
 void Literal::print(FILE* outfile) {
+  fprintf(outfile, "%s", str);
+}
+
+void Literal::codegen(FILE* outfile) {
   fprintf(outfile, "%s", str);
 }
 
@@ -92,6 +101,11 @@ void StringLiteral::print(FILE* outfile) {
 }
 
 
+void StringLiteral::codegen(FILE* outfile) {
+  fprintf(outfile, "\"%s\"", str);
+}
+
+
 Variable::Variable(Symbol* init_var) :
   var(init_var) 
 {}
@@ -99,6 +113,10 @@ Variable::Variable(Symbol* init_var) :
 
 void Variable::print(FILE* outfile) {
   var->print(outfile);
+}
+
+void Variable::codegen(FILE* outfile) {
+  var->codegen(outfile);
 }
 
 
@@ -114,6 +132,11 @@ void UnOp::print(FILE* outfile) {
   fprintf(outfile, "(%s", cUnOp[type]);
   operand->print(outfile);
   fprintf(outfile, ")");
+}
+
+void UnOp::codegen(FILE* outfile) {
+  fprintf(outfile, "%s", cUnOp[type]);
+  operand->codegen(outfile);
 }
 
 
@@ -135,6 +158,12 @@ void BinOp::print(FILE* outfile) {
   fprintf(outfile, ")");
 }
 
+void BinOp::codegen(FILE* outfile) {
+  left->codegen(outfile);
+  fprintf(outfile, "%s", cBinOp[type]);
+  right->codegen(outfile);
+}
+
 
 SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
   BinOp(init_type, l, r)
@@ -153,6 +182,12 @@ void AssignOp::print(FILE* outfile) {
 }
 
 
+void AssignOp::codegen(FILE* outfile) {
+  left->codegen(outfile);
+  fprintf(outfile, " = ");
+  right->codegen(outfile);
+}
+
 SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
   lo(init_lo),
   hi(init_hi),
@@ -170,6 +205,9 @@ void SimpleSeqExpr::print(FILE* outfile) {
   }
 }
 
+void SimpleSeqExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "This is SimpleSeqExpr's codegen.\n");
+}
 
 ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
   if (typeid(*base) == typeid(Variable)) {
@@ -223,6 +261,15 @@ void ParenOpExpr::print(FILE* outfile) {
   fprintf(outfile, ")");
 }
 
+void ParenOpExpr::codegen(FILE* outfile) {
+  baseExpr->codegen(outfile);
+  fprintf(outfile, "(");
+  if (!argList->isNull()) {
+    argList->codegenList(outfile, ", ");
+  }
+  fprintf(outfile, ")");
+}
+
 
 CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
   ParenOpExpr(NULL, init_argList),
@@ -252,9 +299,17 @@ void FloodExpr::print(FILE* outfile) {
   fprintf(outfile, "*");
 }
 
+void FloodExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "This is FloodExpr's codegen method.\n");
+}
+
 
 void CompleteDimExpr::print(FILE* outfile) {
   fprintf(outfile, "..");
+}
+
+void CompleteDimExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "This is CompleteDimExpr's codegen method.\n");
 }
 
 
@@ -284,6 +339,10 @@ void DomainExpr::print(FILE* outfile) {
   }
 }
 
+void DomainExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "This is DomainExpr's codegen method.\n");
+}
+
 
 ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
 		       Expr* init_argExpr) :
@@ -304,6 +363,10 @@ void ReduceExpr::print(FILE* outfile) {
   reduceType->print(outfile);
   fprintf(outfile, " ");
   argExpr->print(outfile);
+}
+
+void ReduceExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "This is ReduceExpr's codegen method.\n");
 }
 
 

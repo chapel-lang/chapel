@@ -1,3 +1,4 @@
+#include <string.h>
 #include "expr.h"
 #include "stmt.h"
 #include "yy.h"
@@ -10,6 +11,10 @@ bool NullStmt::isNull(void) {
 
 void NullStmt::print(FILE* outfile) {
   fprintf(outfile, "/* NullStmt!! */\n");
+}
+
+void NullStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "This is NullStmt's codegen method.\n");
 }
 
 
@@ -58,6 +63,43 @@ void VarDefStmt::print(FILE* outfile) {
   }
 }
 
+void VarDefStmt::codegen(FILE* outfile) {
+
+  VarSymbol* aVar = var;
+  
+  while (aVar != NULL) {
+    if (aVar->isConst) {
+      fprintf(outfile, "const ");
+    }
+    
+    if (aVar->type != NULL) {
+      if (strcmp(aVar->type->name->name, "integer") == 0) {
+	fprintf(outfile, "int ");
+      } 
+      else if (strcmp(aVar->type->name->name, "float") == 0) {
+	fprintf(outfile, "float ");
+      }
+
+    }
+
+    if (strcmp(aVar->type->name->name, "???") == 0) {
+      fprintf(outfile, "int ");
+    }
+
+    aVar->codegen(outfile);
+
+    if (init != NULL && !init->isNull()) {
+      fprintf(outfile, " = ");
+      init->codegen(outfile);
+      fprintf(outfile, ";");
+    }
+
+    aVar = (VarSymbol*)(aVar->next);
+    if (aVar) {
+      fprintf(outfile, "\n");
+    }
+  }
+}
 
 TypeDefStmt::TypeDefStmt(Type* init_type) :
   type(init_type)
@@ -67,6 +109,10 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 void TypeDefStmt::print(FILE* outfile) {
   type->printDef(outfile);
   fprintf(outfile, ";");
+}
+
+void TypeDefStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "This is TypeDefStmt's codegen method.\n");
 }
 
 
@@ -92,6 +138,11 @@ void FnDefStmt::print(FILE* outfile) {
 }
 
 
+void FnDefStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "This is FnDefStmt's codegen method.\n");
+}
+
+
 ExprStmt::ExprStmt(Expr* init_expr) :
   expr(init_expr) 
 {}
@@ -99,6 +150,12 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 
 void ExprStmt::print(FILE* outfile) {
   expr->print(outfile);
+  fprintf(outfile, ";");
+}
+
+
+void ExprStmt::codegen(FILE* outfile) {
+  expr->codegen(outfile);
   fprintf(outfile, ";");
 }
 
@@ -129,6 +186,10 @@ void BlockStmt::print(FILE* outfile) {
   body->printList(outfile, "\n");
   fprintf(outfile, "\n");
   fprintf(outfile, "}");
+}
+
+void BlockStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "This is BlockStmt's codegen method.\n");
 }
 
 
@@ -217,4 +278,8 @@ void CondStmt::print(FILE* outfile) {
     fprintf(outfile, " else ");
     elseStmt->print(outfile);
   }
+}
+
+void CondStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "This is CondStmt's codegen method.\n");
 }

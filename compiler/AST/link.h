@@ -13,6 +13,8 @@ class ILink : public Loc {
 
   virtual void print(FILE*) = 0;
   virtual void printList(FILE* outfile, char* separator = ", ");
+  virtual void codegen(FILE* outfile) = 0;
+  virtual void codegenList(FILE* outfile, char* separator = ", ");
   virtual bool isNull(void);
 
   void insert(ILink* newlink);

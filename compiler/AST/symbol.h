@@ -20,6 +20,7 @@ class Symbol : public ILink {
   Symbol(char* init_name);
 
   void print(FILE* outfile);
+  virtual void codegen(FILE* outfile);
   virtual void printDef(FILE* outfile);
   void printDefList(FILE* outfile, char* separator);
 };
