@@ -63,20 +63,17 @@ int installConfigVar(char* varName, char* value) {
 	    varName);
     exit(0);
   }
-  if (*value == '\0') {
-    fprintf(stderr, "***Error:  Configuration variable \"%s\" is missing its"
-	    " initialization value***\n", varName);
-      exit(0);
-  }
   configVar = lookupConfigVar(varName);
   if (configVar == NULL) { /* not found */
     configVar = (configVarType*) malloc(sizeof(configVarType));
     hashValue = hash(varName);
     configVar->next = configVarTable[hashValue]; 
     configVarTable[hashValue] = configVar;
-    configVar->varName = varName;
+    configVar->varName = NULL;
+    _copy_string(&configVar->varName, varName);
   }
-  configVar->value = value;
+  configVar->value = NULL;
+  _copy_string(&configVar->value, value);
   return 0;
 }
 

@@ -7,4 +7,4 @@ b at runtime is false
 c is initialized to 1.2+3.4i
 c at runtime is 9.9 + 99.9i
 s is initialized to Georgie Porgie
-s at runtime is "puddin"
+s at runtime is puddin' and pie
