@@ -19929,3 +19929,13 @@ Modified files:
 Added files:
 	chapel/test/trivial/roxana/: test_param_init.good 
 
+---------------------------------------------------------------------------
+
+03/16/05 20:07:06 -- jplevyak
+
+Log message:
+	Fix printDecl to only print "var" when not "const" or "param".
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
