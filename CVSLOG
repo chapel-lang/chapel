@@ -18175,3 +18175,58 @@ Modified files:
 	                             insertVariableInitializations.cpp 
 	                             scopeResolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+02/28/05 11:42:08 -- jplevyak
+
+Log message:
+	Grab bag checkin.
+	
+	1. added new interfaces for resolving members:
+	
+	void resolve_member_access(MemberAccess *ma, int *offset, Type **type);
+	void resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type);
+	
+	we should switch over from
+	
+	int resolve_symbol(UnresolvedSymbol *us, MemberAccess *ma, Symbol *&sym);
+	
+	at some point.
+	
+	2. Added Stmt::parentFunction() to handle the special case where the
+	   stmt->parentSymbol is a module.
+	
+	3. Added a "type" field to VariableType to handle type constraints of the form:
+	
+	function foo(type t : A, i : t) ....
+	
+	4. Added code which computes the layouts for ClassType objects which includes
+	   the offset of each field.  Those offsets are returned by the above new
+	   APIs.
+	
+	   Currently I use the provided order to build the layouts, but that could
+	   change as/when we decided to optimize layouts.
+	
+	   Layout compatiibility is now used to build function clones.
+	
+	   Pointer size is take from the build environment as sizeof(void *)...
+	   we may have to make this configurable at some point for cross compilation.
+	
+	5. Add a flag to report an error when an instance variable is
+	   unused (and hence has no type).
+	
+	6. Added TQUESTION to chapel.lex in preparation for supporting
+	   the alternate type variable syntax.
+	
+	7. Added support in the parser for the "type" field of VariableType's defined as:
+	
+	function foo(type t : A, i : t) ....
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp clone.cpp fa.cpp 
+	                           if1.cpp pattern.cpp sym.cpp 
+	chapel/compiler/include/: analysis.h clone.h fa.h if1.h stmt.h 
+	                          sym.h type.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+
