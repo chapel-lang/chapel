@@ -14527,3 +14527,13 @@ Added files:
 	                                         test_typevar_class1.future 
 	                                         test_typevar_class1.good 
 
+---------------------------------------------------------------------------
+
+01/14/05 14:17:44 -- jplevyak
+
+Log message:
+	Fix regression
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
