@@ -42,13 +42,13 @@ chapel.tab.h chapel.tab.c: chapel.y
 
 
 $(PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) *.h
-	$(CC) -c -g $(INCL) -o $@ $<
+	$(CXX) -c -g $(INCL) -o $@ $<
 
 $(PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) *.h
-	$(CC) -c -g $(INCL) -o $@ $<
+	$(CXX) -c -g $(INCL) -o $@ $<
 
 $(PLATFORM)/yy.o: yy.c $(PLATFORM_DIR) yy.h *.h
-	gcc -c -g $(INCL) -o $@ $<
+	$(CC) -c -g $(INCL) -o $@ $<
 
 FORCE:
 

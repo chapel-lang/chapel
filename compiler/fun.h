@@ -74,7 +74,7 @@ class Fun : public gc {
 
   // clone typings and call graph
   Map<MPosition*, Sym*> arg_syms;
-  Vec<Var *> args;
+  Map<MPosition *, Var*> args;
   Vec<Var *> rets;
   Map<PNode *, Vec<Fun *> *> calls;
   void calls_funs(Vec<Fun *> &funs);

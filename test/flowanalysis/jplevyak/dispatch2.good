@@ -1,13 +1,20 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 2 in f at dispatch2.v:2
+ called from 4 in __init at dispatch2.v:1
+ called from 4 in __init at dispatch2.v:1
+ called from 5 in __init at dispatch2.v:1
+ called from 5 in __init at dispatch2.v:1
 f::x(dispatch2.v:2) ( float64 (prelude.v:42) )
 f::x(dispatch2.v:3) ( int32 (prelude.v:29) )
-function __init dispatch2.v:1 with 1 edges
-function __init prelude.v:7 with 1 edges
-function __init__ <none>:0 with 1 edges
-function f dispatch2.v:2 with 1 edges
-function f dispatch2.v:3 with 1 edges
-function g dispatch2.v:1 with 1 edges
-function print prelude.v:140 with 1 edges
-function print prelude.v:140 with 1 edges
+function __init dispatch2.v:1
+function __init prelude.v:7
+function __init__ <none>:0
+function f dispatch2.v:2
+function f dispatch2.v:3
+function g dispatch2.v:1
+function print prelude.v:140
+function print prelude.v:140
 g::x(dispatch2.v:1) ( float64 (prelude.v:42) )
 globals
 print::a(prelude.v:140) ( float64 (prelude.v:42) )

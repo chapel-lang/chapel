@@ -1,3 +1,27 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 11 in merge at review1.chpl:10
+ called from 12 in merge at review1.chpl:10
+ called from 12 in merge at review1.chpl:10
+ called from 12 in merge at review1.chpl:10
+ called from 12 in merge at review1.chpl:10
+ called from 12 in merge at review1.chpl:10
+ called from 14 in __init at review1.chpl:1
+ called from 192 in class at prelude.chpl:190
+ called from 193 in class at prelude.chpl:190
+ called from 194 in class at prelude.chpl:190
+ called from 195 in class at prelude.chpl:190
+ called from 2 in modify at review1.chpl:1
+ called from 2 in modify at review1.chpl:1
+ called from 2 in modify at review1.chpl:1
+ called from 2 in modify at review1.chpl:1
+ called from 215 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 217 in class at prelude.chpl:213
+ called from 5 in __init at review1.chpl:1
+ called from 5 in __init at review1.chpl:1
+ called from 8 in __init at review1.chpl:1
 array::array(prelude.chpl:206) ( array (prelude.chpl:206) )
 class::a(prelude.chpl:214) ( array (prelude.chpl:206) )
 class::afirst(prelude.chpl:190) ( integer64 (prelude.chpl:27) )
@@ -9,31 +33,31 @@ class::s(prelude.chpl:191) ( sequence (prelude.chpl:183) )
 class::self(prelude.chpl:190) ( sequence (prelude.chpl:183) )
 class::self(prelude.chpl:213) ( array (prelude.chpl:206) )
 domain::domain(prelude.chpl:155) ( domain (prelude.chpl:155) )
-function __init prelude.chpl:7 with 1 edges
-function __init review1.chpl:1 with 1 edges
-function __init__ <none>:0 with 1 edges
-function class prelude.chpl:190 with 1 edges
-function class prelude.chpl:213 with 1 edges
-function merge review1.chpl:10 with 1 edges
-function modify review1.chpl:1 with 1 edges
-function operator prelude.chpl:103 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:85 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:92 with 1 edges
-function self prelude.chpl:203 with 1 edges
-function self prelude.chpl:203 with 1 edges
-function self prelude.chpl:211 with 1 edges
+function __init prelude.chpl:7
+function __init review1.chpl:1
+function __init__ <none>:0
+function class prelude.chpl:190
+function class prelude.chpl:213
+function merge review1.chpl:10
+function modify review1.chpl:1
+function operator prelude.chpl:103
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:85
+function operator prelude.chpl:87
+function operator prelude.chpl:92
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:211
 globals
 merge::a1(review1.chpl:10) ( vector (prelude.chpl:12) )
 merge::a1(review1.chpl:10) ( vector (prelude.chpl:12) )

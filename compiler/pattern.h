@@ -8,8 +8,11 @@
 #include "sym.h"
 #include "fa.h"
 
+#define MAX_ARGS 1000
+
 #define int2Position(_i) ((void*)((intptr_t)-(_i)))
 #define Position2int(_p) (-((intptr_t)_p))
+#define is_intPosition(_p) (((uint32)Position2int(_p)) < MAX_ARGS)
 
 class MPosition : public gc {
  public:

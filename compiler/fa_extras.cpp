@@ -320,32 +320,4 @@ log_var_types(Var *v, Fun *f) {
   log(LOG_TEST_FA, ")\n");
 }
 
-void
-log_test_fa(FA *fa) {
-  Vec<Var *> gvars;
-  forv_Fun(f, fa->funs) {
-    log(LOG_TEST_FA, "function %s %s:%d ", f->sym->name ? f->sym->name : "<anonymous>",
-	fn(f->sym->ast->pathname), f->sym->ast->line);
-    int nedges = 0;
-    forv_EntrySet(es, f->ess) {
-      AEdge **last = es->edges.last();
-      for (AEdge **pee = es->edges.first(); pee < last; pee++)
-	if (*pee && (*pee)->args.n) nedges++;
-    }
-    log(LOG_TEST_FA, "with %d edges\n", nedges);
-    forv_Var(v, f->fa_all_Vars) {
-      if (v->sym->in != f->sym) {
-	gvars.set_add(v);
-	continue;
-      } else
-	log_var_types(v, f);
-    }
-  }
-  gvars.set_to_vec();
-  log(LOG_TEST_FA, "globals\n");
-  forv_Var(v, gvars)
-    if (!v->sym->constant && !v->sym->symbol)
-      log_var_types(v, 0);
-}
-
 

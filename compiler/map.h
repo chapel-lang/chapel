@@ -130,7 +130,11 @@ Map<K,C>::get(K akey) {
 template <class K, class C> inline MapElem<K,C> *
 Map<K,C>::put(K akey, C avalue) {
   MapElem<K,C> e(akey, avalue);
-  return set_add(e);
+  MapElem<K,C> *x = set_in(e);
+  if (x)
+    x->value = avalue;
+  else
+    return set_add(e);
 }
 
 template <class K, class C> inline void

@@ -1,3 +1,59 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 11 in __init at review3.chpl:1
+ called from 11 in __init at review3.chpl:1
+ called from 14 in __init at review3.chpl:1
+ called from 17 in __init at review3.chpl:1
+ called from 17 in __init at review3.chpl:1
+ called from 18 in __init at review3.chpl:1
+ called from 18 in __init at review3.chpl:1
+ called from 192 in class at prelude.chpl:190
+ called from 193 in class at prelude.chpl:190
+ called from 194 in class at prelude.chpl:190
+ called from 195 in class at prelude.chpl:190
+ called from 2 in compute at review3.chpl:1
+ called from 2 in compute at review3.chpl:1
+ called from 20 in f at review3.chpl:20
+ called from 20 in f at review3.chpl:20
+ called from 20 in f at review3.chpl:20
+ called from 20 in f at review3.chpl:20
+ called from 20 in f at review3.chpl:20
+ called from 20 in f at review3.chpl:20
+ called from 215 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 217 in class at prelude.chpl:213
+ called from 25 in __init at review3.chpl:1
+ called from 26 in __init at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 3 in compute at review3.chpl:1
+ called from 4 in compute at review3.chpl:1
+ called from 4 in compute at review3.chpl:1
+ called from 8 in g1 at review3.chpl:8
+ called from 8 in g1 at review3.chpl:8
+ called from 8 in g1 at review3.chpl:8
+ called from 9 in g2 at review3.chpl:9
+ called from 9 in g2 at review3.chpl:9
+ called from 9 in g2 at review3.chpl:9
+ called from 9 in g2 at review3.chpl:9
 FParams::FParams(review3.chpl:16) ( FParams (review3.chpl:16) )
 array::array(prelude.chpl:206) ( array (prelude.chpl:206) )
 class::a(prelude.chpl:214) ( array (prelude.chpl:206) )
@@ -70,53 +126,54 @@ f::p2(review3.chpl:20) ( integer64 (prelude.chpl:27) )
 f::p2(review3.chpl:20) ( integer64 (prelude.chpl:27) )
 f::self(review3.chpl:20) ( FParams (review3.chpl:16) )
 f::self(review3.chpl:20) ( FParams (review3.chpl:16) )
-function __init prelude.chpl:7 with 1 edges
-function __init review3.chpl:1 with 1 edges
-function __init__ <none>:0 with 1 edges
-function class prelude.chpl:190 with 1 edges
-function class prelude.chpl:213 with 1 edges
-function compute review3.chpl:1 with 1 edges
-function compute review3.chpl:1 with 1 edges
-function f review3.chpl:20 with 1 edges
-function f review3.chpl:20 with 1 edges
-function g1 review3.chpl:8 with 1 edges
-function g2 review3.chpl:9 with 1 edges
-function operator prelude.chpl:103 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:85 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:87 with 2 edges
-function operator prelude.chpl:87 with 2 edges
-function operator prelude.chpl:88 with 1 edges
-function operator prelude.chpl:92 with 2 edges
-function self prelude.chpl:203 with 4 edges
-function self prelude.chpl:203 with 4 edges
-function self prelude.chpl:211 with 2 edges
+function __init prelude.chpl:7
+function __init review3.chpl:1
+function __init__ <none>:0
+function class prelude.chpl:190
+function class prelude.chpl:213
+function compute review3.chpl:1
+function compute review3.chpl:1
+function f review3.chpl:20
+function f review3.chpl:20
+function g1 review3.chpl:8
+function g2 review3.chpl:9
+function operator prelude.chpl:103
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:85
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function operator prelude.chpl:88
+function operator prelude.chpl:92
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:211
 g1::c1(review3.chpl:8) ( float64 (prelude.chpl:39) )
 g1::c2(review3.chpl:8) ( float64 (prelude.chpl:39) )
 g1::p1(review3.chpl:8) ( float64 (prelude.chpl:39) )
@@ -180,7 +237,9 @@ operator::b(prelude.chpl:88) ( integer64 (prelude.chpl:27) )
 operator::b(prelude.chpl:92) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
+self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:211) ( integer64 (prelude.chpl:27) )
+self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:211) ( array (prelude.chpl:206) )

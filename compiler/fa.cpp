@@ -351,7 +351,7 @@ type_cannonicalize(AType *t) {
   int nconsts = 0, rebuild = 0;
   forv_CreationSet(cs, *t) if (cs) {
     // strip out constants if the base type is included
-    if (cs->sym->type->num_type && cs->sym != cs->sym->type) {
+    if (cs->sym->constant || (cs->sym->type->num_type && cs->sym != cs->sym->type)) {
       CreationSet *base_cs = cs->sym->type->abstract_type->v[0];
       if (t->set_in(base_cs)) {
 	rebuild = 1;
@@ -365,7 +365,7 @@ type_cannonicalize(AType *t) {
     // compress constants into the base type
     rebuild = 1;
     for (int i = 0; i < t->sorted.n; i++)
-      if (t->sorted.v[i]->sym->type->num_type && t->sorted.v[i]->sym != t->sorted.v[i]->sym->type) {
+      if (t->sorted.v[i]->sym->constant || (t->sorted.v[i]->sym->type->num_type && t->sorted.v[i]->sym != t->sorted.v[i]->sym->type)) {
 	CreationSet *base_cs = t->sorted.v[i]->sym->type->abstract_type->v[0];
 	if (!t->set_in(base_cs)) {
 	  t->sorted.v[i] = base_cs;
@@ -810,6 +810,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
       s->lvalue = v->sym->lvalue;
       s->in = es->fun->sym;
       p->tvals.v[i] = new Var(s);
+      s->var = p->tvals.v[i];
       es->fun->fa_all_Vars.add(p->tvals.v[i]);
     }
     Var *tv = p->tvals.v[i];
@@ -858,6 +859,7 @@ vector_elems(int rank, PNode *p, AVar *ae, AVar *elem, AVar *container, int n = 
       assert(!e->var->sym->lvalue);
       s->in = es->fun->sym;
       Var *v = new Var(s);
+      s->var = v;
       p->tvals.v[n-1] = v;
       es->fun->fa_all_Vars.add(v);
       e = make_AVar(v, es);

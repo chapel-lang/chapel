@@ -71,7 +71,6 @@ extern int debug_level;
 #include "clone.h"
 #include "log.h"
 #include "dump.h"
-#include "cg.h"
 #include "grammar.h"
 #include "internal.h"
 #include "inline.h"

@@ -63,6 +63,9 @@ class PNode : public gc {
 
   // Dominators
   Dom *dom; // dom.cpp
+  
+  // Cloning
+  Sym *creates;
 
   // inline.cpp
   float execution_frequency;

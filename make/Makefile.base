@@ -92,13 +92,6 @@ endif
 # 
 
 #
-# Permit override of compiler used for generating dependencies
-#
-ifndef CCDEP
-CCDEP = $(CC)
-endif
-
-#
 # echo to use with the -n option
 #
 ECHO = echo
@@ -113,4 +106,3 @@ EXE_SUFFIX =
 # include platform-specific settings
 #
 include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)
-

@@ -1,19 +1,32 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 3 in makeC at cs5.chpl:3
+ called from 4 in makeD at cs5.chpl:4
+ called from 4 in makeD at cs5.chpl:4
+ called from 5 in __init at cs5.chpl:1
+ called from 6 in __init at cs5.chpl:1
+ called from 7 in __init at cs5.chpl:1
+ called from 8 in __init at cs5.chpl:1
+ called from 8 in __init at cs5.chpl:1
+ called from 8 in __init at cs5.chpl:1
+ called from 8 in __init at cs5.chpl:1
+ called from 8 in __init at cs5.chpl:1
 C::C(cs5.chpl:1) ( C (cs5.chpl:1) )
 D::D(cs5.chpl:2) ( D (cs5.chpl:2) )
-function __init cs5.chpl:1 with 1 edges
-function __init prelude.chpl:7 with 1 edges
-function __init__ <none>:0 with 1 edges
-function makeC cs5.chpl:3 with 1 edges
-function makeD cs5.chpl:4 with 1 edges
-function makeD cs5.chpl:4 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function writeln prelude.chpl:237 with 1 edges
+function __init cs5.chpl:1
+function __init prelude.chpl:7
+function __init__ <none>:0
+function makeC cs5.chpl:3
+function makeD cs5.chpl:4
+function makeD cs5.chpl:4
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:87
+function writeln prelude.chpl:237
 globals
 makeC::a(cs5.chpl:3) ( integer64 (prelude.chpl:27) )
 makeC::c(cs5.chpl:3) ( C (cs5.chpl:1) )

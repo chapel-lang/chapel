@@ -1,29 +1,53 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 10 in __init at cs4.chpl:1
+ called from 10 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 11 in __init at cs4.chpl:1
+ called from 5 in __init at cs4.chpl:1
+ called from 5 in __init at cs4.chpl:1
+ called from 6 in __init at cs4.chpl:1
+ called from 6 in __init at cs4.chpl:1
+ called from 7 in __init at cs4.chpl:1
+ called from 7 in __init at cs4.chpl:1
+ called from 8 in __init at cs4.chpl:1
+ called from 8 in __init at cs4.chpl:1
+ called from 9 in __init at cs4.chpl:1
+ called from 9 in __init at cs4.chpl:1
 C::C(cs4.chpl:1) ( C (cs4.chpl:1) )
 D::D(cs4.chpl:2) ( D (cs4.chpl:2) )
-function __init cs4.chpl:1 with 1 edges
-function __init prelude.chpl:7 with 1 edges
-function __init__ <none>:0 with 1 edges
-function makeC cs4.chpl:3 with 1 edges
-function makeC cs4.chpl:3 with 1 edges
-function makeD cs4.chpl:4 with 1 edges
-function makeD cs4.chpl:4 with 1 edges
-function makeD cs4.chpl:4 with 2 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function writeln prelude.chpl:237 with 1 edges
+function __init cs4.chpl:1
+function __init prelude.chpl:7
+function __init__ <none>:0
+function makeC cs4.chpl:3
+function makeC cs4.chpl:3
+function makeD cs4.chpl:4
+function makeD cs4.chpl:4
+function makeD cs4.chpl:4
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function writeln prelude.chpl:237
 globals
 makeC::c(cs4.chpl:3) ( C (cs4.chpl:1) )
 makeC::c(cs4.chpl:3) ( C (cs4.chpl:1) )

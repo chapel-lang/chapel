@@ -12,7 +12,7 @@
 	$(MAKE_DPARSER) $(MAKE_DPARSER_FLAGS) $<
 
 $(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
-	$(CC) -c $(CFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 
 FORCE:

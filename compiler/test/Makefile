@@ -58,7 +58,7 @@ $(TEST_LIB): $(PLATFORM)/$(TEST_LIB)
 	ln -s $< $@
 
 $(PLATFORM)/$(TEST_LIB): $(TEST_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 
 #

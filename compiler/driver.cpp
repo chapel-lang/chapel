@@ -10,6 +10,7 @@
 #include "misc.h"
 #include "mysystem.h"
 #include "stringutil.h"
+#include "cg.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -31,6 +32,7 @@ int fgraph = 0;
 int fgraph_constants = 0;
 int fgraph_frequencies = 0;
 int fgraph_vcg = 0;
+int fcg = 0;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int print_call_depth = 2;
 
@@ -44,6 +46,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
  {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
+ {"lowlevel_cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
  {"graph", 'G', "Dump Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
  {"graph_var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
  {"graph_fun", ' ', "Limit Graph to Fun", "S80", graph_fun, "CHPL_GRAPH_FUN", NULL},
@@ -252,6 +255,10 @@ compile_one(char *fn) {
       dump_html(fa, fn);
     if (!suppress_codegen)
       codegen(fa, fn, system_dir);
+    if (fcg) {
+      cg_write_c(fa, if1->top->fun,  fn);
+      cg_compile(fn);
+    }
   } else
   Lfail:
     fail("fatal error, program does not type");

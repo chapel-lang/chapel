@@ -1,3 +1,60 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 1 in modify1 at review2.chpl:1
+ called from 1 in modify1 at review2.chpl:1
+ called from 1 in modify1 at review2.chpl:1
+ called from 1 in modify1 at review2.chpl:1
+ called from 11 in __init at review2.chpl:1
+ called from 11 in __init at review2.chpl:1
+ called from 14 in __init at review2.chpl:1
+ called from 17 in merge at review2.chpl:16
+ called from 17 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 18 in merge at review2.chpl:16
+ called from 192 in class at prelude.chpl:190
+ called from 193 in class at prelude.chpl:190
+ called from 194 in class at prelude.chpl:190
+ called from 195 in class at prelude.chpl:190
+ called from 2 in modify2 at review2.chpl:2
+ called from 2 in modify2 at review2.chpl:2
+ called from 2 in modify2 at review2.chpl:2
+ called from 2 in modify2 at review2.chpl:2
+ called from 20 in __init at review2.chpl:1
+ called from 21 in __init at review2.chpl:1
+ called from 215 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 216 in class at prelude.chpl:213
+ called from 217 in class at prelude.chpl:213
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 7 in do_op at review2.chpl:7
+ called from 8 in __init at review2.chpl:1
+ called from 8 in __init at review2.chpl:1
+ called from 9 in __init at review2.chpl:1
+ called from 9 in __init at review2.chpl:1
 Operate::Operate(review2.chpl:6) ( Operate (review2.chpl:6) )
 array::array(prelude.chpl:206) ( array (prelude.chpl:206) )
 class::a(prelude.chpl:214) ( array (prelude.chpl:206) )
@@ -16,56 +73,56 @@ do_op::p1(review2.chpl:7) ( float64 (prelude.chpl:39) )
 do_op::p2(review2.chpl:7) ( integer64 (prelude.chpl:27) )
 do_op::p2(review2.chpl:7) ( integer64 (prelude.chpl:27) )
 domain::domain(prelude.chpl:155) ( domain (prelude.chpl:155) )
-function __init prelude.chpl:7 with 1 edges
-function __init review2.chpl:1 with 1 edges
-function __init__ <none>:0 with 1 edges
-function class prelude.chpl:190 with 1 edges
-function class prelude.chpl:213 with 1 edges
-function do_op review2.chpl:7 with 1 edges
-function do_op review2.chpl:7 with 1 edges
-function merge review2.chpl:16 with 1 edges
-function merge review2.chpl:16 with 1 edges
-function modify1 review2.chpl:1 with 1 edges
-function modify2 review2.chpl:2 with 1 edges
-function operator prelude.chpl:103 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:81 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:84 with 1 edges
-function operator prelude.chpl:85 with 1 edges
-function operator prelude.chpl:85 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:87 with 1 edges
-function operator prelude.chpl:87 with 2 edges
-function operator prelude.chpl:88 with 1 edges
-function operator prelude.chpl:92 with 2 edges
-function self prelude.chpl:203 with 2 edges
-function self prelude.chpl:203 with 2 edges
-function self prelude.chpl:203 with 4 edges
-function self prelude.chpl:211 with 2 edges
+function __init prelude.chpl:7
+function __init review2.chpl:1
+function __init__ <none>:0
+function class prelude.chpl:190
+function class prelude.chpl:213
+function do_op review2.chpl:7
+function do_op review2.chpl:7
+function merge review2.chpl:16
+function merge review2.chpl:16
+function modify1 review2.chpl:1
+function modify2 review2.chpl:2
+function operator prelude.chpl:103
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:81
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:84
+function operator prelude.chpl:85
+function operator prelude.chpl:85
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function operator prelude.chpl:87
+function operator prelude.chpl:88
+function operator prelude.chpl:92
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:203
+function self prelude.chpl:211
 globals
 merge::a1(review2.chpl:16) ( vector (prelude.chpl:12) )
 merge::a1(review2.chpl:16) ( vector (prelude.chpl:12) )

@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "pattern.h"
 
 #define ANON "*anon*"
 
@@ -139,24 +140,35 @@ dump_sym_name(FILE *fp, Sym *s) {
 }
 
 static void
-dump_var_type_list(FILE *fp, Vec<Var *> &vars) {
-  for (int i = 0; i < vars.n; i++) {
-    Var *v = vars.v[i];
-    if (i)
-      fprintf(fp, ", ");
-    dump_sym_name(fp, v->sym);
-    fprintf(fp, " : ");
-    dump_sym_name(fp, v->type);
-    Vec<Sym *> consts;
-    if (constant_info(v, consts)) {
-      fprintf(fp, " constants {");
-      forv_Sym(s, consts) {
-	fprintf(fp, " ");
-	print(fp, s->imm, s->type);
-      }
-      fprintf(fp, " }");
-      
+dump_var_type(FILE *fp, Var *v, int i) {
+  if (i)
+    fprintf(fp, ", ");
+  dump_sym_name(fp, v->sym);
+  fprintf(fp, " : ");
+  dump_sym_name(fp, v->type);
+  Vec<Sym *> consts;
+  if (constant_info(v, consts)) {
+    fprintf(fp, " constants {");
+    forv_Sym(s, consts) {
+      fprintf(fp, " ");
+      print(fp, s->imm, s->type);
     }
+    fprintf(fp, " }");
+  }
+}
+
+static void
+dump_var_type_list(FILE *fp, Vec<Var *> &vars) {
+  for (int i = 0; i < vars.n; i++)
+    dump_var_type(fp, vars.v[i], i);
+}
+
+static void
+dump_var_type_mpositions(FILE *fp, Vec<MPosition *> &positions, Map<MPosition *, Var *> &vars) {
+  int i = 0;
+  forv_MPosition(p, positions) {
+    dump_var_type(fp, vars.get(p), i);
+    i++;
   }
 }
 
@@ -266,7 +278,7 @@ dump_functions(FILE *fp, FA *fa) {
     if (f->ast && f->ast->pathname)
       fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->ast->pathname, f->ast->line);
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>Args<TD>\n");
-    dump_var_type_list(fp, f->args);
+    dump_var_type_mpositions(fp, f->positions, f->args);
     fprintf(fp, "<TR><TD><TD>Rets<TD>\n");
     dump_var_type_list(fp, f->rets);
     fprintf(fp, "<TR><TD><TD>Calls<TD>\n");

@@ -1,0 +1,1 @@
+gcc -I../../../compiler/../third-party/dparser/linux/include -DUSE_GC -I../../../compiler/../third-party/boehmgc/linux/include/gc -Wall -g -DDEBUG=1 -I../../../compiler -DLANG_V=1 -DLANG_CHPL=1  -o a.out sample.v.c -L../../../compiler/../third-party/dparser/linux/lib -ldparse_gc ../../../compiler/../third-party/boehmgc/linux/lib/libgc.a

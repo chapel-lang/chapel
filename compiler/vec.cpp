@@ -496,6 +496,7 @@ template class Vec<MapElem<MPosition *, AType *> >;
 template class Vec<MapElem<MPosition *, AVar *> >;
 template class Vec<MPosition *>;
 template class Vec<MapElem<MPosition *, Sym *> >;
+template class Vec<MapElem<MPosition *, Var *> >;
 template class Vec<MapElem<unsigned int, List<ATypeViolation *> > >;
 template class Vec<void *>;
 

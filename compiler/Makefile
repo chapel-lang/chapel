@@ -113,9 +113,9 @@ depend: $(DEPENDSUBDIRS) echocompilerdir $(PLATFORM_DIR)
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(CCDEP) -MM -MG $(CFLAGS) $$file | grep -v ^# >> $(CVS_DEPENDS); \
+	  $(CXX) -MM -MG $(CXXFLAGS) $$file | grep -v ^# >> $(CVS_DEPENDS); \
 	done
-	@$(CCDEP) -MM -MG -MT GEYSA_INCLUDES $(CFLAGS) geysa.cpp | sed s/:\ geysa.cpp/\ =/ | grep -v ^# >> $(CVS_DEPENDS)
+	@$(CXX) -MM -MG -MT GEYSA_INCLUDES $(CFLAGS) geysa.cpp | sed s/:\ geysa.cpp/\ =/ | grep -v ^# >> $(CVS_DEPENDS)
 
 test: FORCE
 	cd test && $(MAKE) test
@@ -130,7 +130,7 @@ $(CHPL): $(PLATFORM)/$(CHPL)
 	ln -s $< $@
 
 $(PLATFORM)/$(CHPL): $(CHPL_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
 	@etags $(CHPL_SRCS) *.h \
 		$(D_PARSER_SRC_DIR)/*.c $(D_PARSER_SRC_DIR)/*.h \

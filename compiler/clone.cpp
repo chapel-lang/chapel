@@ -238,12 +238,12 @@ determine_basic_clones() {
 	if (!css_sets.v[i]->v[k])
 	  continue;
 	CreationSet *cs1 = css_sets.v[i]->v[j], *cs2 = css_sets.v[i]->v[k];
-	// if tuples are different lengths
+	// if different number of instance variables
 	if (cs1->vars.n != cs2->vars.n) {
 	  make_not_equiv(cs1, cs2);
 	  continue;
 	}
-	// for tuples, for each variable
+	// for each variable
 	for (int v = 0; v < cs1->vars.n; v++) {
 	  AVar *av1 = cs1->vars.v[v], *av2 = cs2->vars.v[v];
 	  // if the boxing or basic type is different
@@ -377,19 +377,13 @@ define_concrete_types(CSSS &css_sets) {
 	    def = (AVar *)-1;
 	}
       }
-      if (sym->type_kind == Type_PRIMITIVE || sym->fun) {
-	forv_CreationSet(cs, *eqcss) if (cs)
-	  cs->type = sym;
-      } else if (sym->constant) {
-	forv_CreationSet(cs, *eqcss) if (cs)
-	  cs->type = sym->type;
-      } else if (sym == sym_tuple) {
+      if (sym == sym_tuple || sym == sym_function) {
 	// tuples use record type
 	char *name = 0;
 	AST *ast = 0;
-	sym = if1_alloc_sym(fa->pdb->if1);
-	sym->type_kind = Type_RECORD;
-	sym->incomplete = 1;
+	Sym *s = if1_alloc_sym(fa->pdb->if1);
+	s->type_kind = sym == sym_tuple ? Type_RECORD : Type_FUN;
+	s->incomplete = 1;
 	forv_CreationSet(cs, *eqcss) if (cs) {
 	  if (!name)
 	    name = cs->sym->name;
@@ -402,12 +396,15 @@ define_concrete_types(CSSS &css_sets) {
 	    ast = cs->defs.v[0]->var->def->code->ast;
 	  else if (ast != cs->defs.v[0]->var->def->code->ast)
 	    ast = BAD_AST;
-	  cs->type = sym;
+	  cs->type = s;
 	}
 	if (name && name != BAD_NAME)
-	  sym->name = name;
+	  s->name = name;
 	if (ast && ast != BAD_AST)
-	  sym->ast = ast;
+	  s->ast = ast;
+      } else if (sym->type_kind == Type_PRIMITIVE || sym->constant || sym->fun) {
+	forv_CreationSet(cs, *eqcss) if (cs)
+	  cs->type = sym;
       } else {
 	Sym *s = if1_alloc_sym(fa->pdb->if1);
 	char *name = 0;
@@ -450,7 +447,6 @@ resolve_concrete_types(CSSS &css_sets) {
       switch (sym->type_kind) {
 	case Type_NONE:
 	case Type_UNKNOWN: 
-	case Type_FUN:
 	case Type_ALIAS:
 	case Type_PRIMITIVE:
 	case Type_APPLICATION:
@@ -465,6 +461,7 @@ resolve_concrete_types(CSSS &css_sets) {
 	case Type_RECORD:
 	case Type_VECTOR:
 	case Type_REF:
+	case Type_FUN:
 	case Type_PRODUCT:
 	case Type_TAGGED: {
 	  forv_CreationSet(cs, *eqcss) if (cs) {
@@ -527,6 +524,10 @@ concretize_types(Fun *f) {
 	  }
 	}
       }
+      if (v->avars.v[i].value->creation_set && v->def) {
+	assert(!v->def->creates || v->def->creates == v->avars.v[i].value->creation_set->type);
+	v->def->creates = v->avars.v[i].value->creation_set->type;
+      }
     }
     if (!type)
       v->type = sym;
@@ -548,7 +549,7 @@ fixup_var(Var *v, Fun *f, Vec<EntrySet *> *ess) {
   AVarMap avs;
   for (int i = 0; i < v->avars.n; i++)
     if (v->avars.v[i].key && ess->set_in((EntrySet*)v->avars.v[i].key))
-	  avs.put(v->avars.v[i].key, v->avars.v[i].value);
+      avs.put(v->avars.v[i].key, v->avars.v[i].value);
   v->avars.move(avs);
 }
 
@@ -568,8 +569,10 @@ clone_functions() {
   Vec<Fun *> fs;
   fs.copy(fa->funs);
   forv_Fun(f, fs) {
-    forv_Sym(s, f->sym->has)
-      f->args.add(s->var);
+    forv_MPosition(p, f->positions) {
+      Sym *s = f->arg_syms.get(p);
+      f->args.put(p, s->var);
+    }
     f->rets.add(f->sym->ret->var);
     if (f->equiv_sets.n == 1) {
       fixup_clone(f, f->equiv_sets.v[0]);
@@ -618,6 +621,42 @@ clone_functions() {
     }
   }
   return 0;
+}
+
+static char *fn(char *s) {
+  if (!s)
+    return "<none>";
+  char *filename = strrchr(s, '/');
+  if (filename)
+    return filename + 1;	
+  return s;
+}
+
+void
+log_test_fa(FA *fa) {
+  Vec<Var *> gvars;
+  forv_Fun(f, fa->funs) {
+    log(LOG_TEST_FA, "function %s %s:%d\n", f->sym->name ? f->sym->name : "<anonymous>",
+	fn(f->sym->ast->pathname), f->sym->ast->line);
+    forv_CallPoint(cp, f->called) {
+      Fun *ff = cp->fun;
+      log(LOG_TEST_FA, " called from %d in %s at %s:%d\n", cp->pnode->code->ast->line,
+	  ff->sym->name ? ff->sym->name : "<anonymous>",
+	  fn(ff->sym->ast->pathname), ff->sym->ast->line);	  
+    }
+    forv_Var(v, f->fa_all_Vars) {
+      if (v->sym->in != f->sym) {
+	gvars.set_add(v);
+	continue;
+      } else
+	log_var_types(v, f);
+    }
+  }
+  gvars.set_to_vec();
+  log(LOG_TEST_FA, "globals\n");
+  forv_Var(v, gvars)
+    if (!v->sym->constant && !v->sym->symbol)
+      log_var_types(v, 0);
 }
 
 int

@@ -1,16 +1,25 @@
+ called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <none>:0
+ called from 2 in f at memberfun.v:2
+ called from 3 in __init at memberfun.v:1
+ called from 4 in __init at memberfun.v:1
+ called from 4 in __init at memberfun.v:1
+ called from 4 in __init at memberfun.v:1
+ called from 85 in new at prelude.v:85
+ called from 86 in operator at prelude.v:86
 A::A(memberfun.v:1) ( A (memberfun.v:1) )
 __init::self(memberfun.v:1) ( A (memberfun.v:1) )
 f::self(memberfun.v:2) ( A (memberfun.v:1) )
-function __init memberfun.v:1 with 1 edges
-function __init memberfun.v:1 with 1 edges
-function __init prelude.v:7 with 1 edges
-function __init__ <none>:0 with 1 edges
-function f memberfun.v:2 with 1 edges
-function new prelude.v:85 with 1 edges
-function operator prelude.v:86 with 1 edges
-function operator prelude.v:86 with 1 edges
-function operator prelude.v:91 with 1 edges
-function print prelude.v:140 with 1 edges
+function __init memberfun.v:1
+function __init memberfun.v:1
+function __init prelude.v:7
+function __init__ <none>:0
+function f memberfun.v:2
+function new prelude.v:85
+function operator prelude.v:86
+function operator prelude.v:86
+function operator prelude.v:91
+function print prelude.v:140
 globals
 new::a(prelude.v:85) ( A (memberfun.v:1) )
 new::o(prelude.v:85) ( A (memberfun.v:1) )

@@ -271,10 +271,10 @@ Sym *type_info(AST *a, Sym *s = 0);
 void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
 int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
 int constant_info(Var *v, Vec<Sym *> &constants);
-void log_test_fa(FA *fa);
 AType *make_AType(Vec<CreationSet *> &css);
 void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,
 		    Vec<Fun *> *funs = NULL);
+void log_var_types(Var *v, Fun *f);
 
 EXTERN int num_constants_per_variable EXTERN_INIT(DEFAULT_NUM_CONSTANTS_PER_VARIABLE);
 

@@ -2,6 +2,7 @@
 #include "codegen.h"
 #include "datatype.h"
 #include "fun.h"
+#include "pattern.h"
 
 static Fun* currentFunction;
 
@@ -29,17 +30,23 @@ static void genFunHead(FILE* outfile, Fun* fn) {
 
   /* formal parameter list */
   fprintf(outfile, "(");
-  numargs = fn->args.n;
-  if (numargs < 2 || numargs == 2 && dtIsNullTuple(fn->args.v[1]->type)) {
+  numargs = fn->sym->has.n;
+  MPosition p;
+  p.push(2);
+  Var *arg1 = fn->args.get(cannonicalize_mposition(p));
+  if (numargs < 2 || numargs == 2 && dtIsNullTuple(arg1->type)) {
     fprintf(outfile, "void");
   } else {
     for (i=1; i<numargs; i++) {
       if (i > 1) {
 	fprintf(outfile, ", ");
       }
-      genDT(outfile, fn->args.v[i]->type);
+      MPosition p;
+      p.push(i+1);
+      Var *arg = fn->args.get(cannonicalize_mposition(p));
+      genDT(outfile, arg->type);
       fprintf(outfile, " ");
-      fprintf(outfile, "%s", fn->args.v[i]->sym->name);
+      fprintf(outfile, "%s", arg->sym->name);
     }
   }
   fprintf(outfile,")");

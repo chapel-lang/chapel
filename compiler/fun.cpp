@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "pattern.h"
 
 Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   pdb = apdb;
@@ -165,9 +166,13 @@ Fun::copy() {
     for (int i = 0; i < n->cfg_pred.n; i++)
       n->cfg_pred.v[i] = f->nmap->get(n->cfg_pred.v[i]);
   }
-  f->args.copy(args);
-  for (int i = 0; i < f->args.n; i++)
-    copy_var(&f->args.v[i], f->sym, *f->vmap);
+  f->arg_syms.copy(arg_syms);
+  f->positions.copy(positions);
+  forv_MPosition(p, f->positions) {
+    Var *v = args.get(p);
+    copy_var(&v, f->sym, *f->vmap);
+    f->args.put(p, v);
+  }
   f->rets.copy(rets);
   for (int i = 0; i < f->rets.n; i++)
     copy_var(&f->rets.v[i], f->sym, *f->vmap);
