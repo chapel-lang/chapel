@@ -18271,3 +18271,18 @@ Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 	chapel/test/flowanalysis/newast/: enumarray.good 
 
+---------------------------------------------------------------------------
+
+02/28/05 12:09:31 -- jplevyak
+
+Log message:
+	Add 2 new tests for object layout conformance testing.
+	The first fails because of the order of 'with' variables.
+
+Added files:
+	chapel/test/flowanalysis/newast/: sum_type-1.chpl 
+	                                  sum_type-1.future 
+	                                  sum_type-1.good 
+	                                  sum_type-2.chpl 
+	                                  sum_type-2.good 
+
