@@ -9101,3 +9101,22 @@ Added files:
 	                              readWriteComplexTuple.good 
 	                              readWriteComplexTuple.stdin 
 
+---------------------------------------------------------------------------
+
+10/20/04 14:22:46 -- shannon
+
+Log message:
+	Wrote a traversal routine that identifies all
+	symbols of type UnresolvedSymbol.  When an
+	unresolved symbol is found an error message
+	identifying the symbol is printed.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: findUnresolvedSymbols.cpp 
+	                             findUnresolvedSymbols.h 
+
