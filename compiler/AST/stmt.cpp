@@ -528,6 +528,7 @@ Stmt* TypeDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
 
 
 TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
+  map->clear();
   TypeDefStmt* this_copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;

@@ -464,6 +464,7 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
+  map->clear();
   FnDefStmt* this_copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
