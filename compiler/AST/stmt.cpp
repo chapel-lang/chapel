@@ -466,25 +466,30 @@ void VarDefStmt::print(FILE* outfile) {
 void VarDefStmt::codegen(FILE* outfile) { }
 
 
-TypeDefStmt::TypeDefStmt(Type* init_type) :
+TypeDefStmt::TypeDefStmt(TypeSymbol* init_type_sym) :
   Stmt(STMT_TYPEDEF),
-  type(init_type)
+  type_sym(init_type_sym)
 {}
 
 
 Stmt* TypeDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Type* newType = type->copy(clone, map, analysis_clone);
-  return new TypeDefStmt(newType);
+  if (clone) {
+    TypeSymbol* sym_copy = dynamic_cast<TypeSymbol*>(type_sym->copy(clone, map, analysis_clone));
+    return new TypeDefStmt(sym_copy);
+  }
+  else {
+    return new TypeDefStmt(type_sym);
+  }
 }
 
 
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
-  type->traverseDef(traversal, false);
+  type_sym->traverseDef(traversal, false);
 }
 
 
 void TypeDefStmt::print(FILE* outfile) {
-  type->printDef(outfile);
+  type_sym->type->printDef(outfile);
   fprintf(outfile, ";");
 }
 

@@ -232,9 +232,9 @@ typealias:
   TTYPE identifier TCOLON type optional_init_expr TSEMI
     {
       UserType* newtype = new UserType($4, $5);
-      Symbol* typeSym = new TypeSymbol($2, newtype);
+      TypeSymbol* typeSym = new TypeSymbol($2, newtype);
       newtype->addSymbol(typeSym);
-      $$ = new TypeDefStmt(newtype);
+      $$ = new TypeDefStmt(typeSym);
       typeSym->setDefPoint($$);
     }
 ;
@@ -246,7 +246,7 @@ typevardecl:
       VariableType* new_type = new VariableType();
       TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
       new_type->addSymbol(new_symbol);
-      $$ = new TypeDefStmt(new_type);
+      $$ = new TypeDefStmt(new_symbol);
       new_symbol->setDefPoint($$);
     }
 ;
@@ -257,9 +257,9 @@ enumdecl:
     {
       $4->set_values();
       EnumType* pdt = new EnumType($4);
-      Symbol* pst = new TypeSymbol($2, pdt);
+      TypeSymbol* pst = new TypeSymbol($2, pdt);
       pdt->addSymbol(pst);
-      $$ = new TypeDefStmt(pdt);
+      $$ = new TypeDefStmt(pst);
       pst->setDefPoint($$);
       $4->setDefPoint($$);
     }

@@ -766,7 +766,7 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   copy_type->setClassScope(copy_scope);
   copy_type->buildConstructor();
 
-  TypeDefStmt* copy_def = new TypeDefStmt(copy_type);
+  TypeDefStmt* copy_def = new TypeDefStmt(copy_symbol);
   copy_symbol->setDefPoint(copy_def);
   copy_scope->setContext(copy_def, copy_symbol);
   def_stmt->insertBefore(copy_def);
@@ -793,13 +793,7 @@ void ClassType::addDeclarations(Stmt* newDeclarations,
       }
     }
     else if (TypeDefStmt* type_def_stmt = dynamic_cast<TypeDefStmt*>(tmp)) {
-      if (TypeSymbol* type_symbol =
-	  dynamic_cast<TypeSymbol*>(type_def_stmt->type->symbol)) {
-	types.add(type_symbol);
-      }
-      else {
-	INT_FATAL(type_def_stmt, "Major error in class definition");
-      }
+      types.add(type_def_stmt->type_sym);
     }
     tmp = nextLink(Stmt, tmp);
   }

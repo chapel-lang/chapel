@@ -80,9 +80,9 @@ class VarDefStmt : public Stmt {
 
 class TypeDefStmt : public Stmt {
  public:
-  Type* type;
+  TypeSymbol* type_sym;
 
-  TypeDefStmt(Type* init_type);
+  TypeDefStmt(TypeSymbol* init_type_sym);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseStmt(Traversal* traversal);

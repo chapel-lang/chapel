@@ -10,7 +10,7 @@
 void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
   currentStmt = stmt;
   if (TypeDefStmt* type_def = dynamic_cast<TypeDefStmt*>(stmt)) {
-    currentScope = type_def->type->symbol->parentScope;
+    currentScope = type_def->type_sym->parentScope;
   }
   else if (VarDefStmt* var_def = dynamic_cast<VarDefStmt*>(stmt)) {
     currentScope = var_def->var->parentScope;

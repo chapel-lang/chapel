@@ -678,7 +678,7 @@ TypeDefStmt* Symboltable::finishClassDef(TypeSymbol* classSym,
   SymScope *classScope = Symboltable::popScope();
   classType->setClassScope(classScope);
   classType->buildConstructor();
-  TypeDefStmt* classdefStmt = new TypeDefStmt(classType);
+  TypeDefStmt* classdefStmt = new TypeDefStmt(classSym);
   classSym->setDefPoint(classdefStmt);
   classScope->setContext(classdefStmt, classSym);
 

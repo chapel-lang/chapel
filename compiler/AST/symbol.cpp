@@ -388,26 +388,39 @@ Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCal
 
 TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned classes
-  TypeDefStmt* def_stmt = dynamic_cast<TypeDefStmt*>(defPoint);
 
-  if (!def_stmt) {
+  ClassType* old_class_type = dynamic_cast<ClassType*>(type);
+
+  if (!old_class_type) {
+    INT_FATAL(this, "Attempt to clone non-class type");
+  }
+
+  TypeDefStmt* old_def_stmt = dynamic_cast<TypeDefStmt*>(defPoint);
+
+  if (!old_def_stmt) {
     INT_FATAL(this, "Attempt to clone class not defined in TypeDefStmt");
   }
 
   map->clear();
-  TypeDefStmt* this_copy = NULL;
+
+
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
-  Stmt* stmt_copy = def_stmt->copy(true, map, clone_callback);
-  if (this_copy = dynamic_cast<TypeDefStmt*>(stmt_copy)) {
-    this_copy->type->symbol->cname =
-      glomstrings(3, this_copy->type->symbol->cname, "_clone_", intstring(uid++));
-    def_stmt->insertBefore(this_copy);
+
+  ClassType* new_class_type = dynamic_cast<ClassType*>(type->copy(true, map, clone_callback));
+
+  if (!new_class_type) {
+    INT_FATAL(this, "Major error in TypeSymbol::clone");
   }
-  else {
-    INT_FATAL(this, "Unreachable statement in TypeDefStmt::clone reached");
-  }
+  char* clone_name = glomstrings(3, name, "_clone_", intstring(uid++));
+
+  TypeSymbol* new_type_sym = new TypeSymbol(clone_name, new_class_type);
+  new_class_type->addSymbol(new_type_sym);
+  TypeDefStmt* new_def_stmt = new TypeDefStmt(new_type_sym);
+  new_type_sym->setDefPoint(new_def_stmt);
+  old_def_stmt->insertBefore(new_def_stmt);
+
   Symboltable::setCurrentScope(save_scope);
-  return dynamic_cast<TypeSymbol*>(this_copy->type->symbol);
+  return new_type_sym;
 }
 
 
