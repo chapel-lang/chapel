@@ -21250,3 +21250,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+03/24/05 09:05:04 -- bradc
+
+Log message:
+	Removing .future files for tests that are now working,
+	and seemingly for the right reasons.
+
+Removed files:
+	chapel/test/classes/jplevyak/: union_type_hierarchy-1.future 
+	chapel/test/trivial/bradc/entrypoint/: twomains2.future 
+	                                       twomains2a.future 
+
