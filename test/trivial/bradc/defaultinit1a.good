@@ -1,0 +1,11 @@
+a is: false
+b is: 0
+c is: 0.0
+d is: 0 + 0i
+e is: 
+
+a is: true
+b is: 1
+c is: 1.2
+d is: 1.2 + 3.4
+e is: nonempty
