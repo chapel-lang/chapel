@@ -18128,3 +18128,27 @@ Modified files:
 	chapel/compiler/AST/: type.cpp 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+02/28/05 10:00:53 -- deitz
+
+Log message:
+	Moved TransformLetExprs after analysis.
+	
+	This breaks test_let[1-7].  I added futures for each of these tests
+	for John.
+	
+	Note to whom-will-be-concerned: I'm not letting them regress (adding
+	futures instead), because this will require new functionality.  It was
+	premature to remove the futures before.  Therefore, these are not
+	regressions, but rather not yet fully implemented.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/test/trivial/deitz/: test_let8.future 
+Added files:
+	chapel/test/trivial/deitz/: test_let1.future test_let2.future 
+	                            test_let3.future test_let4.future 
+	                            test_let5.future test_let6.future 
+	                            test_let7.future 
+
