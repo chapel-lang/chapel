@@ -63,6 +63,7 @@
 %token TSTATIC
 %token TTHEN
 %token TTYPE
+%token TUNION
 %token TVAL
 %token TVAR
 %token TWHILE
@@ -108,7 +109,7 @@
 %type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement decls decl vardecl 
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl 
-%type <stmt> typealias typedecl fndecl classdecl recorddecl moduledecl
+%type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl
 
 
 /* These are declared in increasing order of precedence. */
@@ -206,6 +207,7 @@ typedecl:
 | enumdecl
 | classdecl
 | recorddecl
+| uniondecl
 ;
 
 
@@ -245,6 +247,18 @@ classdecl:
 
 recorddecl:
   TRECORD identifier TLCBR
+    {
+      $<ptsym>$ = Symboltable::startClassDef($2, true);
+    }
+                                decls TRCBR
+    {
+      $$ = Symboltable::finishClassDef($<ptsym>4, $5);
+    }
+;
+
+
+uniondecl:
+  TUNION identifier TLCBR
     {
       $<ptsym>$ = Symboltable::startClassDef($2, true);
     }
