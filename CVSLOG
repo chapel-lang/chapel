@@ -14936,3 +14936,32 @@ Log message:
 Modified files:
 	chapel/doc/internal/: notes.todo 
 
+---------------------------------------------------------------------------
+
+01/19/05 14:39:32 -- deitz
+
+Log message:
+	This is an up-for-air checkin.  It greatly increases the stability of
+	copying things in the AST though more work is still needed.
+	
+	Added a new fixup verification called using fixup "hyper verify".
+	This does the regular fixup "verify" but also copies and replaces
+	every statement and expression in the AST.  The point of "hyper
+	verify" is to catch bugs in copy, replace, and elsewhere.  I am
+	finding it hugely useful.  Though I have a number of things left to
+	fix (that are caught when "hyper verify" is used), this checkin fixes
+	many things and is stable without the "hyper verify" pass.
+	
+	The copy interface is undergoing major changes.  These will be
+	documented when they are finished.  The basic idea is to get copying
+	working well either before or after analysis and when the symbols and
+	types should or should not be copied.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: expr.h stmt.h symbol.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
+	chapel/test/functions/jplevyak/: intent-7-error.good 
+
