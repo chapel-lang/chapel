@@ -97,9 +97,47 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 		    expr->replace(fn_call);
 		  }
 		  else {
-		    INT_FATAL(expr, 
-			      "Unable to resolve overloaded"
-			      "function without analysis");
+		    // Try to resolve overloaded functions
+		    // This is just a stopgap for developing
+		    // It is not accurate, but good enough for some things
+		    FnSymbol* tmp = fn;
+		    FnSymbol* candidate = NULL;
+		    while (tmp) {
+		      Symbol* formals = tmp->formals;
+		      Expr* actuals = paren->argList;
+
+		      bool match = true;
+		      while (actuals && formals) {
+			if (actuals->typeInfo() != formals->type) {
+			  match = false;
+			  break;
+			}
+			actuals = nextLink(Expr, actuals);
+			formals = nextLink(Symbol, formals);
+		      }
+		      if (actuals || formals) {
+			match = false;
+		      }
+		      if (match) {
+			if (candidate) {
+			  INT_FATAL(expr, 
+				    "Unable to resolve overloaded"
+				    "function without analysis");
+			}
+			candidate = tmp;
+		      }
+		      tmp = tmp->overload;
+		    }
+		    if (!candidate) {
+			  INT_FATAL(expr, 
+				    "Unable to resolve overloaded"
+				    "function without analysis");
+		    } else {
+		      FnCall* fn_call = new FnCall(new Variable(candidate),
+						   paren->argList->copyList());
+		      expr->replace(fn_call);
+
+		    }
 		  }
 		}
 		else {
