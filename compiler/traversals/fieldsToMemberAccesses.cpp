@@ -1,7 +1,6 @@
 #include "fieldsToMemberAccesses.h"
 #include "chplalloc.h"
 #include "expr.h"
-#include "replace.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
