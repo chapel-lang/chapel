@@ -1,0 +1,144 @@
+{
+   boehm-memcheck1
+   Memcheck:Cond
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_push_roots
+   fun:GC_mark_some
+}
+{
+   boehm-memcheck2
+   Memcheck:Value4
+   fun:GC_mark_and_push_stack
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_push_roots
+}
+{
+   boehm-memcheck3
+   Memcheck:Value4
+   fun:GC_add_to_black_list_stack
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_push_roots
+}
+{
+   boehm-memcheck4
+   Memcheck:Cond
+   fun:GC_add_to_black_list_stack
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_push_roots
+}
+{
+   boehm-memcheck5
+   Memcheck:Cond
+   fun:GC_mark_from
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+   fun:GC_try_to_collect_inner
+}
+{
+   boehm-memcheck6
+   Memcheck:Value4
+   fun:GC_mark_from
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+   fun:GC_try_to_collect_inner
+}
+{
+   boehm-memcheck7
+   Memcheck:Value4
+   fun:GC_add_to_black_list_stack
+   fun:GC_mark_from
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+}
+{
+   boehm-memcheck8
+   Memcheck:Cond
+   fun:GC_add_to_black_list_stack
+   fun:GC_mark_from
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+}
+{
+   boehm-memcheck9
+   Memcheck:Cond
+   fun:GC_is_black_listed
+   fun:GC_allochblk_nth
+   fun:GC_allochblk
+   fun:GC_new_hblk
+}
+{
+   boehm-memcheck10
+   Memcheck:Cond
+   fun:GC_is_black_listed
+   fun:GC_allochblk_nth
+   fun:GC_allochblk
+   fun:GC_alloc_large
+}
+{
+   boehm-memcheck11
+   Memcheck:Cond
+   fun:GC_number_stack_black_listed
+   fun:total_stack_black_listed
+   fun:GC_promote_black_lists
+   fun:GC_try_to_collect_inner
+}
+{
+   boehm-memcheck12
+   Memcheck:Cond
+   fun:GC_mark_and_push_stack
+   fun:GC_push_all_eager
+   fun:GC_push_current_stack
+   fun:GC_push_roots
+}
+{
+   boehm-memcheck13
+   Memcheck:Cond
+   fun:GC_block_empty
+   fun:GC_reclaim_block
+   fun:GC_apply_to_all_blocks
+   fun:GC_start_reclaim
+}
+{
+   boehm-memcheck14
+   Memcheck:Cond
+   fun:GC_reclaim_clear
+   fun:GC_reclaim_generic
+   fun:GC_reclaim_small_nonempty_block
+   fun:GC_continue_reclaim
+}
+{
+   boehm-memcheck15
+   Memcheck:Value4
+   fun:GC_find_start
+   fun:GC_mark_from
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+}
+{
+   boehm-memcheck16
+   Memcheck:Cond
+   fun:GC_find_start
+   fun:GC_mark_from
+   fun:GC_mark_some
+   fun:GC_stopped_mark
+}
+{
+   boehm-memcheck17
+   Memcheck:Cond
+   fun:GC_reclaim_block
+   fun:GC_apply_to_all_blocks
+   fun:GC_start_reclaim
+   fun:GC_finish_collection
+}
+{
+   boehm-memcheck18
+   Memcheck:Cond
+   fun:GC_block_nearly_full3
+   fun:GC_block_nearly_full
+   fun:GC_reclaim_block
+   fun:GC_apply_to_all_blocks
+}
