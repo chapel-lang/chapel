@@ -6,7 +6,7 @@
 class RemoveDeadSymbols : public SymtabTraversal {
  public:
   RemoveDeadSymbols(void);
-  void run(ModuleSymbol* moduleList);
+  void processSymbol(Symbol* sym);
 };
 
 #endif

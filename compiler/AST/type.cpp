@@ -455,7 +455,6 @@ void EnumType::codegenConfigVarRoutines(FILE* outfile) {
   fprintf(outfile, "(char* varName, ");
   symbol->codegen(outfile);
   fprintf(outfile, "* value, char* moduleName) {\n");
-  fprintf(outfile, "int isDefaultValue = 0;\n");
   fprintf(outfile, "int varSet = 0;\n");
   fprintf(outfile, "char* setValue = lookupSetValue(varName, moduleName);\n");
   fprintf(outfile, "if (setValue) {\n");
@@ -1118,7 +1117,13 @@ void ClassType::traverseDefType(Traversal* traversal) {
 
 
 void ClassType::codegen(FILE* outfile) {
-  symbol->codegen(outfile);
+  if (symbol->isDead) {
+    // BLC: theoretically, this case should only occur when a class
+    // is never instantiated -- only nil references are used
+    fprintf(outfile, "void* ");
+  } else {
+    symbol->codegen(outfile);
+  }
 }
 
 
@@ -1204,6 +1209,12 @@ void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
   forv_Symbol(method, methods) {
     if (strcmp(method->name, "write") == 0) {
       if (!value && !union_value) {
+	if (symbol->isDead) {
+	  // BLC: theoretically, this should only happen if no
+	  // instantiations of a class are ever made
+	  fprintf(outfile, "fprintf(stdout, \"nil\");\n");
+	  return;
+	}
 	fprintf(outfile, "if (");
 	arg->codegen(outfile);
 	fprintf(outfile, " == nil) {\n");
