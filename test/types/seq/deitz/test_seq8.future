@@ -1,1 +1,6 @@
-jplevyak
+deitz
+
+The problem here is that GetStuff
+is not returning the VarSymbol's which 
+are members of a ClassType so analysis
+doesn't build a mapping for them.

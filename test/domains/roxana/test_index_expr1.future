@@ -1,2 +1,4 @@
-Roxana: if tuples can be assigned to indices.
+roxana
+
+If tuples can be assigned to indices.
 Problem: TupleType and IndexType are different.
