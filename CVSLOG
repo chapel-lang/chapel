@@ -15190,3 +15190,19 @@ Added files:
 	                                         test_clone_function_multiargs1.chpl 
 	                                         test_clone_function_multiargs1.good 
 
+---------------------------------------------------------------------------
+
+01/21/05 10:55:27 -- deitz
+
+Log message:
+	Added a test that shows an error with declaring a string.  This simple
+	test declares a string, initializes it in a different statement, and
+	prints it out.
+	
+	John, this seems to fail in analysis.
+
+Added files:
+	chapel/test/trivial/deitz/: test_var_decl4.chpl 
+	                            test_var_decl4.good 
+	                            test_var_decl4.future 
+
