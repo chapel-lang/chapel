@@ -1,5 +1,6 @@
 ** Front End
- 
+
+- handle global scope for :: 
 - handle david's generics stuff
 - how to support 'with' when the type isn't given??
 - document and do examples for functions returning lvals
@@ -32,6 +33,8 @@
 - describe vector ranks: vectors: #[1] is rank 0
 - AST rewrite to change '=' to '==' in expressions and to
   make sure no other assignments are in expressions. (??)
+- automatically build constructors for classes
+  -- remove ast->sym != sym_init checks
 
 ** Language features
 
@@ -121,6 +124,9 @@ numeric types which uses coerce_num
   the recursive loop.  Should do this after computing
   the full set of setters so as not to get into trouble.
   How to ensure termination???
+- need a partial order for functions such that any two functions
+  which could apply to the same arguments are total ordered
+  Left first.  
 - figure out why can't remove lvalue test from Var_is_local
 
 ** Cloning

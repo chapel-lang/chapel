@@ -440,9 +440,23 @@ pre_operator
 post_operator
   : '--'	$unary_op_left 9800
   | '++'	$unary_op_left 9800
-  | '(' expression ')' $unary_op_left 9850
+  | '(' expression_or_null ')' $unary_op_left 9850
   [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
   { $0.ast = symbol_AST($g->i, &$n0); }
+  ;
+
+expression_or_null
+  : expression
+  |
+{
+  $$.ast = new AST(AST_qualified_ident, &$n); 
+  AST *a = new AST(AST_global);
+//  $$.ast->add(a);
+//  a->string = if1_cannonicalize_string($g->i, "");
+  a = new AST(AST_ident);
+  a->string = if1_cannonicalize_string($g->i, "null");
+  $$.ast->add(a);
+}
   ;
 
 curly_block: '{' [ ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RECURSIVE; ]
