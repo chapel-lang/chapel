@@ -6,6 +6,8 @@
 #include "runAnalysis.h"
 #include "symbol.h"
 
+int RunAnalysis::runCount = 0;
+
 void RunAnalysis::run(ModuleSymbol* moduleList) {
   if (analyzeAST) {
     if1->callback = new ACallbacks;
@@ -21,5 +23,6 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     AST_to_IF1(stmts);
     // BLC: John, what filename should be passed in for multiple modules?
     do_analysis(moduleList->filename);
+    runCount++;
   }
 }

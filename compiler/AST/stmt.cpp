@@ -22,6 +22,15 @@ Stmt* Stmt::copy(void) {
 }
 
 
+Stmt* Stmt::copy(SymScope* new_scope) {
+  SymScope* prevScope = Symboltable::setCurrentScope(new_scope);
+  Stmt* newStmt = this->copy();
+  Symboltable::setCurrentScope(prevScope);
+
+  return newStmt;
+}
+
+
 Stmt* Stmt::copyList(void) {
   Stmt* newStmtList = nilStmt;
   Stmt* oldStmt = this;
@@ -31,6 +40,24 @@ Stmt* Stmt::copyList(void) {
 
     oldStmt = nextLink(Stmt, oldStmt);
   }
+
+  return newStmtList;
+}
+
+
+Stmt* Stmt::copyList(SymScope* new_scope) {
+  SymScope* prevScope = Symboltable::setCurrentScope(new_scope);
+
+  Stmt* newStmtList = nilStmt;
+  Stmt* oldStmt = this;
+
+  while (oldStmt) {
+    newStmtList = appendLink(newStmtList, oldStmt->copy());
+
+    oldStmt = nextLink(Stmt, oldStmt);
+  }
+
+  Symboltable::setCurrentScope(prevScope);
 
   return newStmtList;
 }
@@ -142,6 +169,11 @@ void WithStmt::print(FILE* outfile) {
   fprintf(outfile, "with ");
   withExpr->print(outfile);
   fprintf(outfile, "\n");
+}
+
+
+void WithStmt::codegen(FILE* outfile) {
+  INT_FATAL(this, "With statement encountered in codegen()");
 }
 
 
@@ -351,7 +383,7 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 
 
 Stmt* FnDefStmt::copy(void) {
-  FnSymbol* fncopy = Symboltable::startFnDef(fn->name);  //glomstrings(3, "__", fn->name, "_clone"));
+  FnSymbol* fncopy = Symboltable::startFnDef(fn->name);
   // do this first to make sure symbols are defined before used when body is
   // copied
   Symbol* newformals;
@@ -363,16 +395,6 @@ Stmt* FnDefStmt::copy(void) {
   }
   return Symboltable::finishFnDef(fncopy, newformals, fn->type->copy(), 
 				  fn->body->copyList(), fn->exportMe);
-}
-
-
-Stmt* FnDefStmt::clone(void) {
-  SymScope* prevScope = Symboltable::setCurrentScope(fn->scope);
-  Stmt* newStmt = this->copy();
-  Symboltable::setCurrentScope(prevScope);
-  this->add(newStmt);
-
-  return newStmt;
 }
 
 

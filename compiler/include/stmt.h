@@ -17,6 +17,8 @@ class Stmt : public BaseAST {
   Stmt(astType_t astType);
   virtual Stmt* copy(void);
   Stmt* copyList(void);
+  Stmt* copy(SymScope* new_scope);
+  Stmt* copyList(SymScope* new_scope);
 
   bool isNull(void);
   virtual bool canLiveAtFileScope(void);
@@ -53,6 +55,7 @@ class WithStmt : public Stmt {
   virtual Stmt* copy(void);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 

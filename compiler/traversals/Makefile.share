@@ -11,7 +11,7 @@ TRAVERSALS_SRCS = \
 	printAST.cpp \
 	methodsToFunctions.cpp \
 	processWithStatements.cpp \
-	resolveSymbols2.cpp \
+	resolveSymbols.cpp \
 	testGetStuff.cpp \
 	traversal.cpp \
 	verifyASTType.cpp

@@ -143,6 +143,19 @@ void ILink::append(ILink* newlink) {
 }
 
 
+ILink* ILink::extract(void) {
+  if (prev && !prev->isNull()) {
+    prev->next = next;
+  }
+  if (next && !next->isNull()) {
+    next->prev = prev;
+  }
+  next = nilILink;
+  prev = nilILink;
+  return this;
+}
+
+
 void ILink::filter(bool filter(ILink*), ILink** truelinks, 
 		   ILink** falselinks) {
   ILink* link = this;

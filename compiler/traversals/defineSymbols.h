@@ -1,6 +1,8 @@
 #ifndef _DEFINE_SYMBOLS_H_
 #define _DEFINE_SYMBOLS_H_
 
+/*** DEAD -- SJD [12/9/2004] ***/
+
 #include "baseAST.h"
 #include "traversal.h"
 #include "symscope.h"

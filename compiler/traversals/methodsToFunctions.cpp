@@ -22,21 +22,11 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
       while (stmt) {
 	Stmt* next = nextLink(Stmt, stmt);
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
-	  /* Done before analysis for now -SJD
-	    VarSymbol* this_insert = new VarSymbol("this", ctype);  THIS NOT CORRECT
-	    this_insert->next = method->fn->formals;                COPY BACK IF COPYING BACK
-	    method->fn->formals = this_insert;                      FROM fieldsToMemberAccesses
-	  */
-	  method->fn->cname = glomstrings(4, "_", ctype->name->name, "_", method->fn->name);
-	  method->next = tds->next;
-	  tds->next = method;
-
-	  /***  SJD: DON'T do this here unless this should be put in after
-		analysis (for not it is its own pass before analysis
-	      CurrentClass= ctype;
-	      FieldsToMemberAccesses* FTMA = new FieldsToMemberAccesses();
-	      method->fn->body->traverse(FTMA);
-	  ***/
+	  method->fn->cname = 
+	    glomstrings(4, "_", ctype->name->name, "_", method->fn->name);
+	  /* NEED TO REMOVE METHOD FROM CLASS TYPE */
+	  method->extract();
+	  tds->append(method);
 	}
 	stmt = next;
       }

@@ -18,7 +18,7 @@
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processWithStatements.h"
-#include "../traversals/resolveSymbols2.h"
+#include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/verifyASTType.h"
 
@@ -48,7 +48,7 @@ REGISTER(PrintStmts);
 REGISTER(PrintSymtab);     // BLC: prints out the whole symboltable
 REGISTER(ProcessWithStatements); // SJD: Copies with symbols into classes, etc.
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
-REGISTER(ResolveSymbols2);       // SJD: Resolve symbols after analysis
+REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
 REGISTER(TestGetStuff);
 REGISTER(VerifyASTType);

@@ -29,6 +29,7 @@ class ILink : public Loc {
   void postinsert(ILink* newlink);
   void add(ILink* newlink);
   void append(ILink* newlink);
+  ILink* extract(void);
 
   void filter(bool filter(ILink*), ILink** truelinks, ILink** falselinks);
 };
