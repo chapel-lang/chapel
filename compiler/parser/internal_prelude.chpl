@@ -4,7 +4,7 @@ const NULL: integer = 0;  -- this needs to precede any class definitions
 class Index {
 }
 
-class Array {
+pragma "omit for noanalysis" class Array {
   function this(i) {
     return __primitive("array_index", this, i);
   }
@@ -82,7 +82,7 @@ function _SEQ_APPEND(s, t, type_name);
 function _SEQ_INIT_NIL(s);
 
 
-class _seq {
+pragma "omit for noanalysis" class _seq {
   type elementType;
 
   class _node {
@@ -94,7 +94,7 @@ class _seq {
   var first : _node;
   var last : _node;
 
-/*  function append(e : elementType) {
+  function append(e : elementType) {
     var new : _node = _node();
     new.element = e;
     if length > 0 {
@@ -134,7 +134,7 @@ class _seq {
       new.append(e);
     }
     return new;
-  }*/
+  }
 }
 
 pragma "omit for noanalysis" function _seq_pound(s, e) {

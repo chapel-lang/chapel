@@ -335,6 +335,7 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
   init(init_init)
 {
   Symboltable::define(this);
+  SET_BACK(init);
 }
 
 
@@ -567,7 +568,7 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
   if (paramScope) {
     saveScope = Symboltable::setCurrentScope(paramScope);
   }
-  TRAVERSE_LS(formals, traversal, false);
+  TRAVERSE_DEF_LS(formals, traversal, false);
   TRAVERSE(type, traversal, false);
   TRAVERSE(body, traversal, false);
   TRAVERSE(retType, traversal, false);

@@ -58,7 +58,7 @@ class SymScope : public gc {
   bool isInternal(void);
 
   void insert(Symbol* sym);
-  //void remove(Symbol* sym);
+  void remove(Symbol* sym);
   SymScope* findEnclosingScopeType(scopeType t);
 
   Symbol* findEnclosingSymContext();

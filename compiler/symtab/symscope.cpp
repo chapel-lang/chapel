@@ -87,46 +87,75 @@ void SymScope::insert(Symbol* sym) {
 }
 
 
-/************* NOT USING, BUT LEAVING  --SJD 2/2/05
 void SymScope::remove(Symbol* sym) {
-
-
-  if (firstSym == lastSym) {
-    if (firstSym->pSym != sym) {
-      INT_FATAL(sym, "Symbol not found in scope from which deleted");
-    }
-    else {
-      firstSym = NULL;
-      lastSym = NULL;
-    }
+  if (!firstSym) {
+    INT_FATAL(sym, "Symbol not found in scope from which deleted");
   }
-  else {
+  if (firstSym == lastSym) {
+    FnSymbol* fn = dynamic_cast<FnSymbol*>(firstSym->pSym);
+    if (!fn || !fn->overload) {
+      if (firstSym->pSym != sym) {
+        INT_FATAL(sym, "Symbol not found in scope from which deleted");
+      } else {
+        firstSym = NULL;
+        lastSym = NULL;
+      }
+    } else {
+      FnSymbol* prev = NULL;
+      while (fn) {
+        if (fn == sym) {
+          if (!prev) {
+            firstSym->pSym = fn->overload;
+          } else {
+            prev->overload = fn->overload;
+          }
+          return;
+        }
+        prev = fn;
+        fn = fn->overload;
+      }
+    }
+  } else {
     SymLink* tmp = firstSym;
     while (tmp) {
-      if (tmp->pSym == sym) {
-        if (tmp == firstSym) {
-          firstSym = dynamic_cast<SymLink*>(tmp->next);
-          firstSym->prev = NULL;
+      FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp->pSym);
+      if (!fn || !fn->overload) {
+        if (tmp->pSym == sym) {
+          if (tmp == firstSym) {
+            firstSym = dynamic_cast<SymLink*>(tmp->next);
+            firstSym->prev = NULL;
+          } else if (tmp == lastSym) {
+            lastSym = dynamic_cast<SymLink*>(tmp->prev);
+            lastSym->next = NULL;
+          } else {
+            tmp->prev->next = tmp->next;
+            tmp->next->prev = tmp->prev;
+          }
+          return;
         }
-        else if (tmp == lastSym) {
-          lastSym = dynamic_cast<SymLink*>(tmp->prev);
-          lastSym->next = NULL;
-        }
-        else {
-          tmp->prev->next = tmp->next;
-          tmp->next->prev = tmp->prev;
+      } else {
+        FnSymbol* prev = NULL;
+        while (fn) {
+          if (fn == sym) {
+            if (!prev) {
+              tmp->pSym = fn->overload;
+            } else {
+              prev->overload = fn->overload;
+            }
+            return;
+          }
+          prev = fn;
+          fn = fn->overload;
         }
       }
-      else if (tmp == lastSym) {
+      if (tmp == lastSym) {
         INT_FATAL(sym, "Symbol not found in scope from which deleted");
-      }
-      else {
+      } else {
         tmp = nextLink(SymLink, tmp);
       }
     }
   }
 }
-************************/
 
 
 SymScope* SymScope::findEnclosingScopeType(scopeType t) {

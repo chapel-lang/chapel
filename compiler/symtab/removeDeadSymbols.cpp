@@ -6,11 +6,15 @@
 
 
 RemoveDeadSymbols::RemoveDeadSymbols(void) {
-  whichModules = MODULES_USER;
+  //  whichModules = MODULES_USER;
 }
 
 
 void RemoveDeadSymbols::processSymbol(Symbol* sym) {
+  if (sym->parentScope->type == SCOPE_INTRINSIC) {
+    return;
+  }
+
 #ifdef USE_AST_IS_USED
   if (!AST_is_used(sym)) {
     sym->isDead = true;

@@ -449,11 +449,11 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 
 ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
                                        Type* type, Expr* init) {
-  ParamSymbol* list = new ParamSymbol(tag, syms->name, type, init);
+  ParamSymbol* list = new ParamSymbol(tag, syms->name, type, init->copy());
   list->pragmas = syms->pragmas;
   syms = nextLink(Symbol, syms);
   while (syms != NULL) {
-    ParamSymbol* s = new ParamSymbol(tag, syms->name, type, init);
+    ParamSymbol* s = new ParamSymbol(tag, syms->name, type, init->copy());
     s->pragmas = syms->pragmas;
     list->append(s);
     syms = nextLink(Symbol, syms);
