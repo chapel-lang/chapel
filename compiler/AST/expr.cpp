@@ -81,8 +81,8 @@ static precedenceType binOpPrecedence[NUM_BINOPS] = {
   PREC_BITS,          // BINOP_BITSL
   PREC_BITS,          // BINOP_BITSR
   PREC_LOGAND,        // BINOP_LOGAND
-  PREC_LOGOR          // BINOP_LOGOR
-
+  PREC_LOGOR,         // BINOP_LOGOR
+  PREC_EXP            // BINOP_EXP
 };
 
 
@@ -348,22 +348,34 @@ void BinOp::print(FILE* outfile) {
 }
 
 void BinOp::codegen(FILE* outfile) {
-  bool parensRequired = this->precedence() <= parent->precedence();
+  precedenceType parentPrecedence = parent->precedence();
+  bool parensRequired = this->precedence() <= parentPrecedence;
 
   bool parensRecommended = false;
-  if ((parent->precedence() == PREC_BITOR)  ||
-      (parent->precedence() == PREC_BITXOR) ||
-      (parent->precedence() == PREC_BITAND) ||
-      (parent->precedence() == PREC_LOGOR)) {
+  if ((parentPrecedence == PREC_BITOR)  ||
+      (parentPrecedence == PREC_BITXOR) ||
+      (parentPrecedence == PREC_BITAND) ||
+      (parentPrecedence == PREC_LOGOR)) {
     parensRecommended = true;
   }    
 
   if (parensRequired || parensRecommended) {
     fprintf(outfile, "(");
   }
-  left->codegen(outfile);
-  fprintf(outfile, "%s", cBinOp[type]);
-  right->codegen(outfile);
+
+  // those outer parens really aren't necessary around (pow()) look up a line
+  if (type == BINOP_EXP) {
+    fprintf(outfile, "pow(");
+    left->codegen(outfile);
+    fprintf(outfile, ", ");
+    right->codegen(outfile);
+    fprintf(outfile, ")");
+  } else {
+    left->codegen(outfile);
+    fprintf(outfile, "%s", cBinOp[type]);
+    right->codegen(outfile);
+  }
+
   if (parensRequired || parensRecommended) {
     fprintf(outfile, ")");
   } 

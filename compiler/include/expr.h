@@ -21,6 +21,7 @@ enum precedenceType {
   PREC_PLUSMINUS,
   PREC_MULTDIV,
   PREC_UNOP, 
+  PREC_EXP,
   PREC_HIGHEST
 };
 
