@@ -12598,3 +12598,17 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp 
 	chapel/test/flowanalysis/newast/: domarr.good noop.good 
 
+---------------------------------------------------------------------------
+
+12/22/04 10:44:44 -- deitz
+
+Log message:
+	Added a few type variable in function tests and a NOTEST since they don't work
+
+Added files:
+	chapel/test/types/type_variables/deitz/: NOTEST 
+	                                         test_typevar_function1.chpl 
+	                                         test_typevar_function2.chpl 
+	                                         test_typevar_function3.chpl 
+	                                         test_typevar_function4.chpl 
+
