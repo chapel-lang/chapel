@@ -47,7 +47,7 @@ void NullStmt::print(FILE* outfile) {
 }
 
 void NullStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "This is NullStmt's codegen method.\n");
+  fprintf(outfile, "{}\n");
 }
 
 

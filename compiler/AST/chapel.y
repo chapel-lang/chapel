@@ -396,7 +396,9 @@ statements:
 
 
 statement:
-  decl
+  ';'
+    { $$ = new NullStmt(); }
+| decl
 | assignment
 | conditional
 | loop

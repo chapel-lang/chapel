@@ -131,7 +131,7 @@ test: FORCE
 
 $(CHPL): $(PLATFORM)/$(CHPL)
 	rm -f $@
-	ln -s $< $@
+	cp $< $@
 
 $(PLATFORM)/$(CHPL): $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
