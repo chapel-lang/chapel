@@ -19245,3 +19245,29 @@ Added files:
 	chapel/test/trivial/bradc/: declprintconst.chpl 
 	                            declprintconst.good 
 
+---------------------------------------------------------------------------
+
+03/09/05 14:53:01 -- deitz
+
+Log message:
+	Added initial front-end support for named parameters.  These build up
+	NamedExprs, a new class of Exprs.
+	
+	Added two tests which currently fail in analysis.  Assigned the
+	futures to John.  When the function to create the wrappers is called,
+	I'll take it back.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+Added files:
+	chapel/test/functions/deitz/: test_named_param1.chpl 
+	                              test_named_param1.future 
+	                              test_named_param1.good 
+	                              test_named_param2.chpl 
+	                              test_named_param2.future 
+	                              test_named_param2.good 
+
