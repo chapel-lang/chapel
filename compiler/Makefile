@@ -40,7 +40,7 @@ endif
 
 
 
-.PHONY: default all clean cleandepend depend version test tar bintar install
+.PHONY: default all clean cleandepend clobber depend version test tar bintar install
 
 
 
@@ -106,6 +106,9 @@ clean:
 
 cleandepend:
 	rm -f $(PLATFORM)/*.dep
+
+clobber: clean
+	rm -rf $(PLATFORM)
 
 depend: $(ALL_DEPS)
 
