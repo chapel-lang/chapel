@@ -14117,3 +14117,23 @@ Added files:
 	                                         test_typevar_function3.good 
 	                                         test_typevar_function4.good 
 
+---------------------------------------------------------------------------
+
+01/07/05 13:59:08 -- deitz
+
+Log message:
+	Added three tests for unions with bound functions.  These all work
+	though the runtime typechecking error message printed out for the
+	third test doesn't have a line number or filename.  The problem has to
+	do with copying.  When AST structures such as statements are copied,
+	the line number and filename is lost.
+
+Added files:
+	chapel/test/classes/deitz/: test_union_method1.chpl 
+	                            test_union_method1.good 
+	                            test_union_method2.chpl 
+	                            test_union_method2.good 
+	                            test_union_method3.chpl 
+	                            test_union_method3.future 
+	                            test_union_method3.good 
+
