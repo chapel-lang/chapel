@@ -14012,3 +14012,25 @@ Removed files:
 	                                                test_typevar_function3.chpl 
 	                                                test_typevar_function4.chpl 
 
+---------------------------------------------------------------------------
+
+01/07/05 11:18:59 -- deitz
+
+Log message:
+	Removed Symboltable::copyParams and handle the copying of parameters
+	in the copying of a FnDefStmt.  The parameters are now copied with the
+	CloneCallback for the case of a function being called.  This uses
+	copyList rather than copyParams which basically did the same thing.
+	
+	Added a guard against copying the NilSymbol so that it is just
+	returned.
+	
+	Changed the error message in codegen having to do with unresolved
+	types.  If the type of an expression is unknown at codegen time, we
+	now say "unknown type encountered in codegen" rather than " shouldn't
+	be calling into analysis now".
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp symtab.cpp 
+	chapel/compiler/include/: symtab.h 
+
