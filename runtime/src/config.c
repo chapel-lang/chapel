@@ -9,7 +9,7 @@
 typedef struct _configVarType { /* table entry */
   char* varName;
   char* value;
-
+ 
   struct _configVarType* next;
 } configVarType;
 
@@ -54,6 +54,17 @@ static configVarType* lookupConfigVar(char* varName) {
 }
 
 
+char* lookupConfigVarValue(char* varName) {
+  configVarType* configVar;
+  configVar = lookupConfigVar(varName);
+  if (configVar) {
+    return configVar->value;
+  } else {
+    return NULL;
+  }
+}
+
+
 int installConfigVar(char* varName, char* value) {
   configVarType* configVar;
   unsigned hashValue;
@@ -81,19 +92,18 @@ int installConfigVar(char* varName, char* value) {
 int setInCommandLine_integer64(char* varName, _integer64* value) {
   int varSet = 0;
   int numScans = 0;
-  configVarType* configVar = NULL;
+  char* configVarValue = NULL;
   char extraChars;
   
-  configVar = lookupConfigVar(varName);
-  if (configVar) {
-    numScans = sscanf(configVar->value, _default_format_read_integer64"%c", 
+  configVarValue = lookupConfigVarValue(varName);
+  if (configVarValue) {
+    numScans = sscanf(configVarValue, _default_format_read_integer64"%c", 
 		      value, &extraChars);
     if (numScans == 1) {
       varSet = 1;
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-	      " \"%s\" of type integer***\n", configVar->value, 
-	      configVar->varName);
+	      " \"%s\" of type integer***\n", configVarValue, varName);
       exit(0);
     }
   }
@@ -104,19 +114,18 @@ int setInCommandLine_integer64(char* varName, _integer64* value) {
 int setInCommandLine_float64(char* varName, _float64* value) {
   int varSet = 0;
   int numScans = 0;
-  configVarType* configVar = NULL;
+  char* configVarValue = NULL;
   char extraChars;
   
-  configVar = lookupConfigVar(varName);
-  if (configVar) {
-    numScans = sscanf(configVar->value, _default_format_read_float64"%c", 
+  configVarValue = lookupConfigVarValue(varName);
+  if (configVarValue) {
+    numScans = sscanf(configVarValue, _default_format_read_float64"%c", 
 		      value, &extraChars);
     if (numScans == 1) {
       varSet = 1;
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-	      " \"%s\" of type float***\n", configVar->value, 
-	      configVar->varName);
+	      " \"%s\" of type float***\n", configVarValue, varName);
       exit(0);
     }
   }
@@ -127,18 +136,17 @@ int setInCommandLine_float64(char* varName, _float64* value) {
 int setInCommandLine_boolean(char* varName, _boolean* value) {
   int varSet = 0;
   int validBoolean = 0;
-  configVarType* configVar = NULL;
+  char* configVarValue = NULL;
 
-  configVar = lookupConfigVar(varName);
-  if (configVar) {
-    validBoolean = _string_to_boolean(configVar->value, value);
+  configVarValue = lookupConfigVarValue(varName);
+  if (configVarValue) {
+    validBoolean = _string_to_boolean(configVarValue, value);
 
     if (validBoolean) {
       varSet = 1;
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-	      " \"%s\" of type boolean***\n", configVar->value, 
-	      configVar->varName);
+	      " \"%s\" of type boolean***\n", configVarValue, varName);
       exit(0);
     }
   }
@@ -148,11 +156,11 @@ int setInCommandLine_boolean(char* varName, _boolean* value) {
 
 int setInCommandLine_string(char* varName, _string* value) {
   int varSet = 0;
-  configVarType* configVar = NULL;
+  char* configVarValue = NULL;
   
-  configVar = lookupConfigVar(varName);
-  if (configVar) {
-    _copy_string(value, configVar->value);
+  configVarValue = lookupConfigVarValue(varName);
+  if (configVarValue) {
+    _copy_string(value, configVarValue);
     varSet = 1;
   }
   return varSet;
@@ -162,19 +170,18 @@ int setInCommandLine_complex128(char* varName, _complex128* value) {
   int varSet = 0;
   char imaginaryI = 'i';
   int numScans;
-  configVarType* configVar = NULL;
+  char* configVarValue = NULL;
   char extraChars;
 
-  configVar = lookupConfigVar(varName);
-  if (configVar) {
-    numScans = sscanf(configVar->value, _default_format_read_complex128"%c", 
+  configVarValue = lookupConfigVarValue(varName);
+  if (configVarValue) {
+    numScans = sscanf(configVarValue, _default_format_read_complex128"%c", 
 		      &(value->re), &(value->im), &imaginaryI, &extraChars);
     if ((numScans == 3) && (imaginaryI == 'i')) {
       varSet = 1;
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var "
-	      "\"%s\" of type complex***\n", configVar->value, 
-	      configVar->varName); 
+	      "\"%s\" of type complex***\n", configVarValue, varName); 
       exit(0);
     }
   }

@@ -41,7 +41,9 @@ class Type : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenSafeInit(FILE* outfile);
+  virtual void codegenStringToType(FILE* outfile);
   virtual void codegenIORoutines(FILE* outfile);
+  virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
   virtual void codegenConstructors(FILE* outfile);
   virtual bool needsInit(void);
@@ -50,7 +52,6 @@ class Type : public BaseAST {
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
 extern Type* nilType;
-
 
 class EnumType : public Type {
  public:
@@ -64,7 +65,9 @@ class EnumType : public Type {
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
+  void codegenStringToType(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
+  void codegenConfigVarRoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
 };
 

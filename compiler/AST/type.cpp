@@ -137,7 +137,15 @@ void Type::codegenSafeInit(FILE* outfile) {
 }
 
 
+void Type::codegenStringToType(FILE* outfile) {
+}
+
+
 void Type::codegenIORoutines(FILE* outfile) {
+}
+
+
+void Type::codegenConfigVarRoutines(FILE* outfile) {
 }
 
 
@@ -260,8 +268,33 @@ static void codegenIOPrototype(FILE* outfile, Symbol* name, bool isRead) {
 }
 
 
+void EnumType::codegenStringToType(FILE* outfile) {
+  EnumSymbol* enumSym = valList;
+
+  fprintf(outfile, "int _convert_string_to_enum");
+  name->codegen(outfile);
+  fprintf(outfile, "(char* inputString, ");
+  name->codegen(outfile);
+  fprintf(outfile, "* val) {\n");
+  
+  while (enumSym) {
+    fprintf(outfile, "if (strcmp(inputString, \"");
+    enumSym->codegen(outfile);
+    fprintf(outfile, "\") == 0) {\n");
+    fprintf(outfile, "*val = ");
+    enumSym->codegen(outfile);
+    fprintf(outfile, ";\n");
+    fprintf(outfile, "} else ");
+    enumSym = nextLink(EnumSymbol, enumSym);
+  }
+  fprintf(outfile, "{ \n");
+  fprintf(outfile, "return 0;\n");
+  fprintf(outfile, "}\n");
+  fprintf(outfile, "return 1;\n}\n\n");
+}
+
 void EnumType::codegenIORoutines(FILE* outfile) {
-  EnumSymbol* enumSym;
+  EnumSymbol* enumSym = valList;
   bool isRead;
 
   isRead = true;
@@ -277,33 +310,21 @@ void EnumType::codegenIORoutines(FILE* outfile) {
   fprintf(outfile, " {\n");
   fprintf(outfile, "char* inputString = NULL;\n");
   fprintf(outfile, "_read_string(stdin, format, &inputString);\n");
-
-  enumSym = valList;
-  while (enumSym) {
-    fprintf(outfile, "if (strcmp(inputString, \"");
-    enumSym->codegen(outfile);
-    fprintf(outfile, "\") == 0) {\n");
-    fprintf(outfile, "*val = ");
-    enumSym->codegen(outfile);
-    fprintf(outfile, ";\n");
-    fprintf(outfile, "} ");
-    fprintf(outfile, "else ");
-    enumSym = nextLink(EnumSymbol, enumSym);
-  }
-  fprintf(outfile, "{ \n");
+  fprintf(outfile, "if (!(_convert_string_to_enum");
+  name->codegen(outfile);
+  fprintf(outfile, "(inputString, val))) {\n");
   fprintf(outfile, "fflush(stdout);\n");
   fprintf(outfile, "fprintf (stderr, \"***ERROR:  Not of ");
   name->codegen(outfile);
   fprintf(outfile, " type***\\n\");\n");
   fprintf(outfile, "exit(0);\n");
   fprintf(outfile, "}\n");
-  fprintf(outfile, "}\n\n\n");
+  fprintf(outfile, "}\n\n");
 
   isRead = false;
   codegenIOPrototype(outfile, name, isRead);
   fprintf(outfile, " {\n");
   fprintf(outfile, "switch (val) {\n");
-  enumSym = valList;
   while (enumSym) {
     fprintf(outfile, "case ");
     enumSym->codegen(outfile);
@@ -316,6 +337,35 @@ void EnumType::codegenIORoutines(FILE* outfile) {
     enumSym = nextLink(EnumSymbol, enumSym);
   }
   fprintf(outfile, "}\n");
+  fprintf(outfile, "}\n\n");
+}
+
+
+void EnumType::codegenConfigVarRoutines(FILE* outfile) {
+  fprintf(outfile, "int setInCommandLine");
+  name->codegen(outfile);
+  fprintf(outfile, "(char* varName, ");
+  name->codegen(outfile);
+  fprintf(outfile, "* value) {\n");
+  fprintf(outfile, "int varSet = 0;\n");
+  fprintf(outfile, "int validEnum = 0;\n");
+  fprintf(outfile, "char* configVarValue = NULL;\n\n");
+  fprintf(outfile, "configVarValue = lookupConfigVarValue(varName);\n");
+  fprintf(outfile, "if (configVarValue) {\n");
+  fprintf(outfile, "validEnum = _convert_string_to_enum");
+  name->codegen(outfile);
+  fprintf(outfile, "(configVarValue, value);\n");
+  fprintf(outfile, "if (validEnum) {\n");
+  fprintf(outfile, "varSet = 1;\n");
+  fprintf(outfile, "} else {\n");
+  fprintf(outfile, "fprintf(stderr, \"***Error: \\\"%%s\\\" is not a valid "
+	  "value for a config var \\\"%%s\\\" of type ");
+  name->codegen(outfile);
+  fprintf(outfile, "***\\n\", configVarValue, varName);\n");
+  fprintf(outfile, "exit(0);\n");
+  fprintf(outfile, "}\n");
+  fprintf(outfile, "}\n");
+  fprintf(outfile, "return varSet;\n");
   fprintf(outfile, "}\n\n");
 }
 

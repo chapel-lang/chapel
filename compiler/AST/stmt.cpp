@@ -433,7 +433,9 @@ void TypeDefStmt::codegen(FILE* outfile) {
   }
   type->codegenDef(deffile);
 
+  type->codegenStringToType(outfile);
   type->codegenIORoutines(outfile);
+  type->codegenConfigVarRoutines(outfile);
   type->codegenConstructors(outfile);
 }
 

@@ -10,6 +10,7 @@ int setInCommandLine_string(char* varName, _string* value);
 int setInCommandLine_complex128(char* varName, _complex128* value);
 int initConfigVarTable(void);
 int installConfigVar(char* varName, char* value);
+char* lookupConfigVarValue(char* varName);
 
 #endif
 
