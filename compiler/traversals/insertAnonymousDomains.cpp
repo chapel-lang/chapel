@@ -52,7 +52,6 @@ void InsertAnonymousDomains::preProcessType(Type* type) {
   VarSymbol* domain_sym = new VarSymbol(name, domain_type, forall->copy());
   DefExpr* def_expr = new DefExpr(domain_sym);
   DefStmt* def_stmt = new DefStmt(def_expr);
-  domain_sym->setDefPoint(def_expr);
   ForallExpr* new_forall = new ForallExpr(new Variable(domain_sym), forall->indices);
   array_type->domain->replace(new_forall);
   currentStmt->insertBefore(def_stmt);

@@ -445,7 +445,6 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
   TypeSymbol* new_type_sym = new TypeSymbol(clone_name, new_class_type);
   new_class_type->addSymbol(new_type_sym);
   DefExpr* new_def_expr = new DefExpr(new_type_sym);
-  new_type_sym->setDefPoint(new_def_expr);
   new_class_type->classScope->setContext(NULL, new_type_sym, new_def_expr);
   defPoint->insertBefore(new_def_expr);
 
@@ -631,7 +630,6 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
         VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
                                                new Variable(formal_change));
         DefExpr* temp_def_expr = new DefExpr(temp_symbol);
-        temp_symbol->setDefPoint(temp_def_expr);
         DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
         temp_def_stmt->append(wrapper_body);
         wrapper_body = temp_def_stmt;
@@ -699,7 +697,6 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
                                                ((ParamSymbol*)formal_change)->init->copy());
         DefExpr* temp_def_expr = new DefExpr(temp_symbol);
         DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
-        temp_symbol->setDefPoint(temp_def_expr);
         temp_def_stmt->append(wrapper_body);
         wrapper_body = temp_def_stmt;
         actual_change->var = temp_symbol;

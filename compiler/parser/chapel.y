@@ -262,7 +262,6 @@ typealias:
       typeSym->pragmas = $2;
       newtype->addSymbol(typeSym);
       DefExpr* def_expr = new DefExpr(typeSym);
-      typeSym->setDefPoint(def_expr);
       $$ = new DefStmt(def_expr);
     }
 ;
@@ -276,7 +275,6 @@ typevardecl:
       new_symbol->pragmas = $2;
       new_type->addSymbol(new_symbol);
       DefExpr* def_expr = new DefExpr(new_symbol);
-      new_symbol->setDefPoint(def_expr);
       $$ = new DefStmt(def_expr);
     }
 ;
@@ -291,8 +289,7 @@ enumdecl:
       pst->pragmas = $2;
       pdt->addSymbol(pst);
       DefExpr* def_expr = new DefExpr(pst);
-      pst->setDefPoint(def_expr);
-      $5->setDefPoint(def_expr);
+      $5->setDefPoint(def_expr);  /* SJD: Should enums have more DefExprs? */
       $$ = new DefStmt(def_expr);
     }
 ;

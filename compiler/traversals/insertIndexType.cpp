@@ -38,7 +38,6 @@ void InsertIndexType::preProcessType(Type* type) {
         index_type->addSymbol(index_sym);
         DefExpr* def_expr = new DefExpr(index_sym);
         DefStmt* def_stmt = new DefStmt(def_expr);
-        index_sym->setDefPoint(def_expr);
         domain_type->idxType = index_type;
                 commonModule->stmts->insertBefore(def_stmt);
         Symboltable::setCurrentScope(saveScope);

@@ -480,7 +480,6 @@ DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type,
   }
   VarSymbol* varList = defineVars(idents, type, init, vartag, constag);
   DefExpr* expr = new DefExpr(varList);
-  varList->setDefPoint(expr);
   return expr;
 }
 
@@ -506,7 +505,6 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
 
   VarSymbol* varList = defineVars(idents, type, init);
   DefExpr* expr = new DefExpr(varList);
-  varList->setDefPoint(expr);
   return expr;
 }
 
@@ -540,7 +538,6 @@ DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type,
 static Expr* exprToIndexSymbols(Expr* expr, Expr* domain, Symbol* indices = NULL) {
   if (!expr) {
     DefExpr* def_expr = new DefExpr(indices);
-    indices->setDefPoint(def_expr);
     return def_expr;
   }
 
@@ -560,7 +557,6 @@ static Expr* exprToIndexSymbols(Expr* expr, Expr* domain, Symbol* indices = NULL
     }
   }
   DefExpr* def_expr = new DefExpr(indices);
-  indices->setDefPoint(def_expr);
   return def_expr;
 }
 
@@ -645,8 +641,7 @@ DefExpr* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals,
   fnsym->finishDef(formals, retType, body, paramScope, isExtern);
   DefExpr* def_expr = new DefExpr(fnsym);
   paramScope->setContext(NULL, fnsym, def_expr);
-  fnsym->setDefPoint(def_expr);
-  formals->setDefPoint(def_expr);
+  formals->setDefPoint(def_expr); /* SJD: Should formals have their own DefExprs? */
   return def_expr;
 }
 
@@ -679,7 +674,6 @@ DefExpr* Symboltable::finishClassDef(TypeSymbol* classSym,
   SymScope *classScope = Symboltable::popScope();
   classType->setClassScope(classScope);
   DefExpr* classDefExpr = new DefExpr(classSym);
-  classSym->setDefPoint(classDefExpr);
   classScope->setContext(NULL, classSym, classDefExpr);
 
   return classDefExpr;
@@ -696,7 +690,6 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
     //indexVars = defineVars(indices, new IndexType(domain));
   }
   DefExpr* indices_def = new DefExpr(indexVars);
-  indexVars->setDefPoint(indices_def);
   ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, indices_def, domain);
   return for_loop_stmt;
 }

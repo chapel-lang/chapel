@@ -751,7 +751,9 @@ void Variable::codegen(FILE* outfile) {
 DefExpr::DefExpr(Symbol* init_sym) :
   Expr(EXPR_DEF),
   sym(init_sym) 
-{}
+{
+  init_sym->setDefPoint(this);
+}
 
 
 Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -771,7 +773,6 @@ Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
     else if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
       VarSymbol* sym_copy = dynamic_cast<VarSymbol*>(var->copyList(clone, map, analysis_clone));
       DefExpr* def_expr = new DefExpr(sym_copy);
-      sym_copy->setDefPoint(def_expr);
       return def_expr;
     }
     return NULL;

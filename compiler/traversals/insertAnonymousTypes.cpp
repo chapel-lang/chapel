@@ -48,7 +48,6 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
           array_type->domainType = domain_type;
           DefExpr* def_expr = new DefExpr(array_sym);
           DefStmt* array_type_def = new DefStmt(def_expr);
-          array_sym->setDefPoint(def_expr);
           if (Symboltable::getCurrentScope() == commonModule->modScope) {
             commonModule->stmts->insertAfter(array_type_def);
           }
@@ -98,7 +97,6 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
     seq_type->addSymbol(seq_sym);
     DefExpr* def_expr = new DefExpr(seq_sym);
     DefStmt* seq_type_def = new DefStmt(def_expr);
-    seq_sym->setDefPoint(def_expr);
     if (Symboltable::getCurrentScope() == commonModule->modScope) {
       commonModule->stmts->insertAfter(seq_type_def);
     } else {
@@ -146,7 +144,6 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
     tuple_type->addSymbol(tuple_sym);
     DefExpr* def_expr = new DefExpr(tuple_sym);
     DefStmt* tuple_type_def = new DefStmt(def_expr);
-    tuple_sym->setDefPoint(def_expr);
     commonModule->stmts->insertBefore(tuple_type_def);
   }
   Symboltable::setCurrentScope(saveScope);
@@ -187,7 +184,6 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     domain_type->addSymbol(domain_sym);
     DefExpr* def_expr = new DefExpr(domain_sym);
     DefStmt* domain_type_def = new DefStmt(def_expr);
-    domain_sym->setDefPoint(def_expr);
     commonModule->stmts->insertBefore(domain_type_def);
     Symboltable::setCurrentScope(saveScope);
     *type = domain_type;
@@ -241,7 +237,6 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     index_type->addSymbol(index_sym);
     DefExpr* def_expr = new DefExpr(index_sym);
     DefStmt* index_type_def = new DefStmt(def_expr);
-    index_sym->setDefPoint(def_expr);
     commonModule->stmts->insertBefore(index_type_def);
     Symboltable::setCurrentScope(saveScope);
     *type = index_type;

@@ -133,15 +133,15 @@ class _seq {
 }
 
 /*
-function _seq_pound(s, e) {
+pragma "omit for noanalysis" function _seq_pound(s, e) {
   s.append(e);
 }
 
-function _seq_pound(e, s) {
+pragma "omit for noanalysis" function _seq_pound(e, s) {
   s.prepend(e);
 }
 
-function __seq_pound(s1 : _seq, s2 : _seq) {
+pragma "omit for noanalysis" function __seq_pound(s1 : _seq, s2 : _seq) {
   s1.last.next = s2.first;
   return s1;
 }

@@ -87,7 +87,6 @@ static void build_constructor(ClassType* class_type) {
   Stmt* stmts = NULL;
   fn->_this = new VarSymbol("this", class_type);
   DefExpr* def_expr = new DefExpr(fn->_this);
-  fn->_this->setDefPoint(def_expr);
   stmts = new DefStmt(def_expr);
   if (!(class_type->value || class_type->union_value)) {
     char* description = glomstrings(2, "instance of class ", class_type->symbol->name);
@@ -150,8 +149,7 @@ static void build_union_id_enum(ClassType* class_type) {
   enum_type->addSymbol(enum_symbol);
   class_type->addFieldSelector(enum_type);
   DefExpr* def_expr = new DefExpr(enum_symbol);
-  enum_symbol->setDefPoint(def_expr);
-  id_list->setDefPoint(def_expr);
+  id_list->setDefPoint(def_expr); /* SJD: Should enums have their own DefExprs? */
   DefStmt* def_stmt = new DefStmt(def_expr);
   class_type->symbol->defPoint->stmt->insertBefore(def_stmt);
 }
