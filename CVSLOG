@@ -21214,3 +21214,13 @@ Modified files:
 Added files:
 	chapel/compiler/symtab/: insertWriteFns.cpp insertWriteFns.h 
 
+---------------------------------------------------------------------------
+
+03/23/05 17:17:04 -- jplevyak
+
+Log message:
+	Updated .future file... I believe that the test is in error.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_basic1.future 
+
