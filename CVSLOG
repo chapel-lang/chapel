@@ -20362,3 +20362,17 @@ Added files:
 	                             reallocZeroSize.chpl 
 	                             reallocZeroSize.good 
 
+---------------------------------------------------------------------------
+
+03/18/05 14:15:38 -- jplevyak
+
+Log message:
+	OK, now I only include in the map those positions which are different.
+	So now both tests have 2 mappings.  This also eliminates the mapping for
+	the function name (which never changes).  However, argument numbering
+	still starts at 2.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+	chapel/test/functions/deitz/: test_named_param3.future 
+
