@@ -911,3 +911,14 @@ Log message:
 Modified files:
 	chapel/compiler/: arg.cpp arg.h driver.cpp 
 
+---------------------------------------------------------------------------
+
+04/03/17 13:41:54 -- bradc
+
+Log message:
+	Squelched the creation of the log/ subdirectory unless the user
+	requests the creation of a log or an HTML dump.
+
+Modified files:
+	chapel/compiler/: driver.cpp 
+
