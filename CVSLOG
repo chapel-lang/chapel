@@ -6360,3 +6360,51 @@ Added files:
 	                                  compSampler.chpl 
 	                                  compSampler.good 
 
+---------------------------------------------------------------------------
+
+09/02/04 13:06:00 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Analysis now working for a large number of the test cases.
+
+Modified files:
+	chapel/compiler/: analysis.cpp fa.cpp fa.h 
+Added files:
+	chapel/test/flowanalysis/newast/: bitwise_negation.chpl 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.chpl 
+	                                  bitwise_ops.good 
+	                                  conditional.chpl 
+	                                  conditional.good 
+	                                  danglingelse.chpl 
+	                                  danglingelse.good deadvar.chpl 
+	                                  deadvar.good declprintdom.chpl 
+	                                  declprintdom.good 
+	                                  declprintdom2.chpl 
+	                                  declprintdom2.good 
+	                                  declprintint.chpl 
+	                                  declprintint.good 
+	                                  declprintint2.chpl 
+	                                  declprintint2.good 
+	                                  equality_ops.chpl 
+	                                  equality_ops.good 
+	                                  logical_and.chpl 
+	                                  logical_and.good 
+	                                  logical_not.chpl 
+	                                  logical_not.good mod.chpl 
+	                                  mod.good octalliteral.chpl 
+	                                  octalliteral.good 
+	                                  pareninit.chpl pareninit.good 
+	                                  printempty.chpl 
+	                                  printempty.good 
+	                                  printstring.chpl 
+	                                  printstring.good 
+	                                  relational_ops.chpl 
+	                                  relational_ops.good 
+	                                  shift_ops.chpl shift_ops.good 
+	                                  unary_plusMinus.chpl 
+	                                  unary_plusMinus.good 
+	                                  whileLoop.chpl whileLoop.good 
+	                                  writen.chpl writen.good 
+	                                  writetwo.chpl writetwo.good 
+
