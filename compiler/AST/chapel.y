@@ -75,7 +75,7 @@
 %type <boolval> varconst
 %type <intval> intliteral
 
-%type <bot> binop otherbinop
+%type <bot> otherbinop
 %type <uot> unop
 %type <vt> vardecltag
 %type <pt> formaltag
@@ -85,7 +85,7 @@
 %type <pch> identifier query_identifier
 %type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
 %type <pexpr> expr exprlist nonemptyExprlist arrayfun literal range
-%type <pexpr> reduction memberaccess vardeclinit cast reduceDim
+%type <pexpr> reduction memberaccess vardeclinit cast reduceDim binop
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional
 %type <stmt> return loop forloop whileloop enumdecl typealias typedecl fndecl
@@ -509,8 +509,7 @@ expr:
   literal
 | identifier
     { $$ = new Variable(Symboltable::lookup($1)); }
-| expr binop expr
-    { $$ = new BinOp($2, $1, $3); }
+| binop
 | expr otherbinop expr
     { $$ = new SpecialBinOp($2, $1, $3); }
 | unop expr
@@ -605,42 +604,44 @@ unop:
 
 
 binop:
-  '+'
-    { $$ = BINOP_PLUS; }
-| '-'
-    { $$ = BINOP_MINUS; }
-| '*'
-    { $$ = BINOP_MULT; }
-| '/'
-    { $$ = BINOP_DIV; }
-| '%'
-    { $$ = BINOP_MOD; }
-| EQUALS
-    { $$ = BINOP_EQUAL; }
-| GETS
-    { $$ = BINOP_EQUAL; }
-| LEQUALS
-    { $$ = BINOP_LEQUAL; }
-| GEQUALS
-    { $$ = BINOP_GEQUAL; }
-| GTHAN
-    { $$ = BINOP_GTHAN; }
-| LTHAN
-    { $$ = BINOP_LTHAN; }
-| NEQUALS
-    { $$ = BINOP_NEQUALS; }
-| BITAND
-    { $$ = BINOP_BITAND; }
-| BITOR
-    { $$ = BINOP_BITOR; }
-| BITXOR
-    { $$ = BINOP_BITXOR; }
-| LOGAND
-    { $$ = BINOP_LOGAND; }
-| LOGOR
-    { $$ = BINOP_LOGOR; }
-| EXP
-    { $$ = BINOP_EXP; }
+  expr '+' expr
+    { $$ = new BinOp(BINOP_PLUS, $1, $3); }
+| expr '-' expr
+    { $$ = new BinOp(BINOP_MINUS, $1, $3); }
+| expr '*' expr
+    { $$ = new BinOp(BINOP_MULT, $1, $3); }
+| expr '/' expr
+    { $$ = new BinOp(BINOP_DIV, $1, $3); }
+| expr '%' expr
+    { $$ = new BinOp(BINOP_MOD, $1, $3); }
+| expr EQUALS expr
+    { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
+/*
+| expr GETS expr
+    { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
+*/
+| expr LEQUALS expr
+    { $$ = new BinOp(BINOP_LEQUAL, $1, $3); }
+| expr GEQUALS expr
+    { $$ = new BinOp(BINOP_GEQUAL, $1, $3); }
+| expr GTHAN expr
+    { $$ = new BinOp(BINOP_GTHAN, $1, $3); }
+| expr LTHAN expr
+    { $$ = new BinOp(BINOP_LTHAN, $1, $3); }
+| expr NEQUALS expr
+    { $$ = new BinOp(BINOP_NEQUALS, $1, $3); }
+| expr BITAND expr
+    { $$ = new BinOp(BINOP_BITAND, $1, $3); }
+| expr BITOR expr
+    { $$ = new BinOp(BINOP_BITOR, $1, $3); }
+| expr BITXOR expr
+    { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
+| expr LOGAND expr
+    { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
+| expr LOGOR expr
+    { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
+| expr EXP expr
+    { $$ = new BinOp(BINOP_EXP, $1, $3); }
 ;
 
 

@@ -6,7 +6,8 @@ COMPILER_SUBDIR = AST
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-CFLAGS = -g -Wall -Werror
+CFLAGS = -g -Wall -Werror -I$(GC_ROOT)/include/gc
+INCL = -I$(GC_ROOT)/include/gc
 
 CXX_SRCS = \
 	expr.cpp \
@@ -36,7 +37,7 @@ all: bradast
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
 bradast: $(OBJS)
-	$(CXX) -o bradast $(OBJS)
+	$(CXX) -o bradast $(OBJS) $(GC_ROOT)/lib/libgc.a
 	@etags $(SRCS) *.h
 
 CLEAN_TARGS += \
@@ -55,13 +56,13 @@ chapel.tab.h chapel.tab.c: chapel.y
 
 
 $(PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) *.h
-	$(CC) -c -g -o $@ $<
+	$(CC) -c -g $(INCL) -o $@ $<
 
 $(PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) *.h
-	$(CC) -c -g -o $@ $<
+	$(CC) -c -g $(INCL) -o $@ $<
 
 $(PLATFORM)/yy.o: yy.c $(PLATFORM_DIR) yy.h *.h
-	gcc -c -g -o $@ $<
+	gcc -c -g $(INCL) -o $@ $<
 
 FORCE:
 

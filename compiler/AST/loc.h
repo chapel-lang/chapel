@@ -1,7 +1,9 @@
 #ifndef _LOC_H_
 #define _LOC_H_
 
-class Loc {
+#include "gc_cpp.h"
+
+class Loc : public gc {
  public:
   char* filename;
   int lineno;

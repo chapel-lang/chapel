@@ -185,18 +185,6 @@ class DomainExpr : public Expr {
 };
 
 
-/*
-class FunCall : public ParenOpExpr {
- public:
-};
-
-
-class ArrayRef : public ParenOpExpr {
- public:
-};
-*/
-
-
 class ParenOpExpr : public Expr {
  public:
   Expr* baseExpr;
