@@ -29,6 +29,7 @@ typedef struct ArgumentState {
   char **file_argument;
   int nfile_arguments;
   char *program_name;
+  char *program_loc;
   ArgumentDescription *desc;
 } ArgumentState;
 

@@ -7,7 +7,6 @@
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
-static char *program_name = 0;
 
 static int fwrite_c = 0;
 static int fdump_html = 0;
@@ -17,6 +16,7 @@ extern int d_verbose_level;
 extern int d_debug_level;
 
 int fdce_if1 = 1;
+
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 
 
@@ -41,6 +41,7 @@ static ArgumentDescription arg_desc[] = {
 static ArgumentState arg_state = {
   0, 0,
   "program", 
+  "path",
   arg_desc
 };
 
@@ -73,7 +74,7 @@ static void
 help(ArgumentState *arg_state, char *arg_unused) {
   char ver[30];
   get_version(ver);
-  fprintf(stderr, "%s Version %s ", program_name, ver);  
+  fprintf(stderr, "%s Version %s ", arg_state->program_name, ver);  
   fprintf(stderr, "Copyright (c) 1994-2004 John Plevyak\n");  
   usage(arg_state, arg_unused);
 }
@@ -244,9 +245,27 @@ init_system() {
     strcat(system_dir, "/");
 }
 
+
+static void
+compute_program_name_loc(char* argv0, char** name, char** loc) {
+  char* lastslash = strrchr(argv0, '/');
+  if (lastslash == NULL) {
+    *name = argv0;
+    *loc = ".";   // BLC: this is inaccurate; we should search the path.  
+                  // It's no less accurate than what we did previously, though.
+  } else {
+    *lastslash = '\0';
+    *name = lastslash+1;
+    *loc = argv0;
+  }
+  strcpy(system_dir, *loc);
+}
+
+
 int
 main(int argc, char *argv[]) {
-  program_name = argv[0];
+  compute_program_name_loc(argv[0], &(arg_state.program_name),
+			   &(arg_state.program_loc));
   process_args(&arg_state, argv);
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);

@@ -92,7 +92,6 @@ process_args(ArgumentState *arg_state, char **argv) {
   /*
     Grab Command Line Arguments
   */
-  arg_state->program_name = argv[0];
   while ( *++argv ) {
     if ( **argv == '-' ) {
       if ((*argv)[1] == '-') {
