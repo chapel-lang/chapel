@@ -335,3 +335,16 @@ Added files:
 Removed files:
 	chapel/compiler/: BUILD_VERSION 
 
+---------------------------------------------------------------------------
+
+04/02/03 16:58:42 -- bradc
+
+Log message:
+	Just noticed that when I check in files, it appears that their
+	group gets changed from chapel back to criemp.  Am trying to
+	fix it, and this checkin is essentially a test (albeit one
+	that updates the structure file a bit).
+
+Modified files:
+	./: structure.txt 
+
