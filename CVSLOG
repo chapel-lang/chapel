@@ -10795,3 +10795,202 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/: test_method1.chpl test_method1.good 
 
+---------------------------------------------------------------------------
+
+12/02/04 00:12:45 -- bradc
+
+Log message:
+	Added support for keyword-based modules.  Before this
+	checkin, modules were only associated with files.  Now
+	they can also be created using the module keyword.  This
+	checkin does not allow modules to be nested.  This means
+	that module declarations may not themselves contain
+	modules, and that files which contain keyword-based modules
+	may not also contain top-level code.  As before, each module
+	is codegened to its own set of C files.
+	
+	Changes include:
+	
+	* added a ModuleDefStmt to mark the place where the module
+	  was defined.  This has little or no purpose, though it
+	  may once nested modules are supported (or perhaps not)
+	
+	* moved the creation of a module's init function from
+	  the parser/filesToAST code that it was in before and
+	  into a method on ModuleSymbol, called during module
+	  creation.
+	
+	* changed the line number that's used when creating a
+	  file's module from 0 to 1 to distinguish it from a
+	  keyword-based module defined on line 1.
+	
+	* added start and finishModuleDef routines into the
+	  symboltable to match all the other creation routines.
+	  This will need to be cleaned up (and should be much
+	  cleaner) when we add support for nested modules.
+	  The grodiness is largely due to the need to check
+	  for whether there is top-level code in a file before
+	  or after a keyword-based module.
+	
+	* changed modules' init routines so they are all called
+	  __init_moduleName.  Previously, the init routines for
+	  the prelude modules were special and different.  No
+	  longer!  This resulted in lots of cosmetic changes to
+	  the output of most flowanalysis tests, so their output
+	  was updated.
+	
+	* added a handful of new tests in a new (modules)
+	  test directory to lock in some of this behavior.
+	  As we support nested modules and the use of one
+	  module by another, these tests and their output
+	  should evolve (in particular, since one module
+	  cannot use another, there is currently no way
+	  other than inspection to determine that the
+	  modules are being codegened properly.
+	
+	And this checkin also includes these somewhat
+	vaguely-related changes:
+	
+	* made codegenList() of empty lists work properly
+	
+	* added a static method to the ExprStmt class that creates
+	  a statement that's a standalone function call because
+	  this was a common case in the compiler (in particular
+	  for creating calls to module initialization code and
+	  the user's entry point)
+	
+	* took advantage of Steve's new cname field on Symbols
+	  to create main() to have a c name of _chpl_main()
+	  rather than locating it and converting it in the
+	  renameCSymbols pass as we did before.  This made the
+	  renameCSymbols pass currently pointless, so it was
+	  removed from passlist.h.  However, I expect it might
+	  become useful again later if/when we strive to
+	  avoid identifiers that match C keywords, so I didn't
+	  completely remove the file.
+	
+	* also took advantage of Steve's new field by having
+	  builtin types declare their c name.  This removed
+	  a bunch of special-casing that existed in the codegen
+	  routine for types.
+	
+	* put a check in to complain about duplicate symbols,
+	  but then took it out because it caused the protoast
+	  tests to fail since the indices declared by [i in D]
+	  expressions aren't put into a new scope yet.  Started
+	  to make this change, but decided this checkin was
+	  big enough as-is.  Put a test in that checks for an
+	  error when two variables of the same name are declared
+	  in a scope to serve as a personal placeholder.
+	
+	* added the ability to define a symbol in a certain
+	  scope (rather than in the current scope), and the
+	  ability to look up a symbol in the current scope
+	  without recursing to parent scopes.
+	
+	* added a new pass -- createEntryPoint -- that is
+	  responsible for creating the appropriate entry point
+	  for the program.  Previously this was done right
+	  after parsing, and in a somewhat more haphazard way.
+	  I believe it was also incorrect when the user actually
+	  defined a main function.  The new approach more
+	  correctly models the dynamic behavior of the program.
+	
+	* as alluded to in other bullets, cleaned up the
+	  filesToAST pass by moving lots of the code that
+	  was cluttering it up into the ModuleSymbol creation
+	  code and/or the entryPoint creation pass.
+	
+	* made the entry point from a global variable to a static
+	  member of the createentrypoint class.
+	
+	* fixed some error messages that were missing their
+	  description in verifyASTType.cpp.
+	
+	* changed flags used by runtime Makefile so that library
+	  code is compiled with very strict warnings, but the
+	  compiler-generated C code is not (since users are
+	  free to declare unused functions and variables, etc.)
+	
+	* added linefeeds to the ends of COMPOPTS files that
+	  didn't have them so it would be easier to grep for
+	  particular compilation options in the test system.
+
+Modified files:
+	chapel/compiler/AST/: TODO link.cpp stmt.cpp symbol.cpp 
+	                      symtab.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h files.h stmt.h symbol.h 
+	                          symscope.h symtab.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.lex chapel.y parser.cpp 
+	chapel/compiler/passes/: Makefile.share codegen.cpp 
+	                         filesToAST.cpp filesToAST.h 
+	                         renameCSymbols.cpp runAnalysis.cpp 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/etc/: Makefile.macros 
+	chapel/runtime/src/: Makefile 
+	chapel/test/: .cvsignore 
+	chapel/test/Samples/ex1-astlog/: COMPOPTS 
+	chapel/test/compflags/bradc/badflagddash/: COMPOPTS 
+	chapel/test/compflags/bradc/copyright/: COMPOPTS 
+	chapel/test/compflags/bradc/missinginfile/: COMPOPTS 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+	chapel/test/trivial/bradc/protoast/: COMPOPTS 
+	chapel/test/trivial/bradc/protoast/codegen/: COMPOPTS 
+Added files:
+	chapel/compiler/passes/: createEntryPoint.cpp createEntryPoint.h 
+	chapel/test/flowanalysis/jplevyak/config/: .cvsignore 
+	chapel/test/modules/bradc/: .cvsignore nestedmodule.chpl 
+	                            nestedmodule.good 
+	                            twomodulesonefile.chpl 
+	                            twomodulesonefile.good 
+	chapel/test/modules/bradc/manymodules/: flatmodules.chpl 
+	                                        flatmodules.compopts 
+	                                        flatmodules.good 
+	                                        manymodules.chpl 
+	                                        manymodules.compopts 
+	                                        manymodules.good 
+	                                        twomodulestwofiles.chpl 
+	                                        twomodulestwofiles.compopts 
+	                                        twomodulestwofiles.good 
+	chapel/test/modules/bradc/manymodules/modules/: .cvsignore 
+	                                                NOTEST a.chpl 
+	                                                b.chpl c.chpl 
+	                                                d.chpl e.chpl 
+	                                                g.chpl main.chpl 
+	                                                z.chpl 
+	chapel/test/trivial/bradc/: redefinevar.chpl redefinevar.good 
+
