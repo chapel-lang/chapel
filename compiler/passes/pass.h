@@ -9,6 +9,8 @@ class Pass : public gc {
  public:
   char* args;
 
+  Pass(void);
+
   void setArgs(char* init_args);
   virtual void run(ModuleSymbol* moduleList) = 0;
 };

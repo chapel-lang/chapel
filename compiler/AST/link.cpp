@@ -147,7 +147,6 @@ static ILink* find_end_of_list(ILink* list) {
 
 static void call_fixup(ILink* link) {
   Fixup* fixup = new Fixup();
-  fixup->setArgs("");
 
   if (Expr* expr = dynamic_cast<Expr*>(link)) {
     fixup->stmtParent.add(expr->stmt->parentSymbol);

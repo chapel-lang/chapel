@@ -3,6 +3,11 @@
 #include "stringutil.h"
 
 
+Pass::Pass(void) :
+  args("")
+{}
+
+
 void Pass::setArgs(char* init_args) {
   args = copystring(init_args);
 }
