@@ -38,7 +38,6 @@ static char* cBinOp[NUM_BINOPS] = {
   "**",
 
   " by ",
-  ".",
 
   "???"
 };
@@ -336,16 +335,24 @@ SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
 }
 
 
-void SpecialBinOp::print(FILE* outfile) {
-  switch (type) {
-  case BINOP_DOT:
-    left->print(outfile);
-    fprintf(outfile, ".");
-    right->print(outfile);
-    break;
-  default:
-    BinOp::print(outfile);
-  }
+MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
+  Expr(EXPR_MEMBERACCESS),
+  base(init_base),
+  member(init_member)
+{}
+
+
+void MemberAccess::print(FILE* outfile) {
+  base->print(outfile);
+  fprintf(outfile, ".");
+  member->print(outfile);
+}
+
+
+void MemberAccess::codegen(FILE* outfile) {
+  base->codegen(outfile);
+  fprintf(outfile, "->");
+  member->print(outfile);
 }
 
 

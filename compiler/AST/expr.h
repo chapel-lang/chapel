@@ -148,7 +148,6 @@ enum binOpType {
   BINOP_EXP,
 
   BINOP_BY,
-  BINOP_DOT,
 
   BINOP_OTHER,
 
@@ -175,11 +174,21 @@ class BinOp : public Expr {
 };
 
 
+class MemberAccess : public Expr {
+ public:
+  Expr* base;
+  Symbol* member;
+
+  MemberAccess(Expr* init_base, Symbol* init_member);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 class SpecialBinOp : public BinOp {
  public:
   SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
-  
-  void print(FILE* outfile);
 };
 
 

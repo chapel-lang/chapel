@@ -117,6 +117,16 @@ void Type::codegenDefaultFormat(FILE* outfile) {
 }
 
 
+bool Type::needsInit(void) {
+  return false;
+}
+
+
+void Type::generateInit(FILE* outfile, VarSymbol* var) {
+  INT_FATAL(this, "Don't know how to generateInit() for all types yet");
+}
+
+
 int
 Type::getSymbols(Vec<BaseAST *> &asts) {
   if (name)
@@ -378,8 +388,9 @@ UserType::getTypes(Vec<BaseAST *> &asts) {
 }
 
 
-ClassType::ClassType(ClassType* init_parentClass) :
+ClassType::ClassType(Stmt* init_definition, ClassType* init_parentClass) :
   Type(TYPE_CLASS),
+  definition(init_definition),
   parentClass(init_parentClass)
 {}
 
@@ -391,6 +402,49 @@ bool ClassType::isNull(void) {
 
 void ClassType::print(FILE* outfile) {
   fprintf(outfile, "/* Classes not implemented yet */\n");
+}
+
+
+void ClassType::codegen(FILE* outfile) {
+  name->codegen(outfile);
+}
+
+
+void ClassType::codegenDef(FILE* outfile) {
+  fprintf(outfile, "typedef struct _");
+  name->codegen(outfile);
+  fprintf(outfile, "_def {\n");
+  definition->codegenVarDefs(outfile);
+  fprintf(outfile, "} _");
+  name->codegen(outfile);
+  fprintf(outfile,", *");
+  name->codegen(outfile);
+  fprintf(outfile, ";\n\n");
+}
+
+
+void ClassType::codegenIORoutines(FILE* outfile) {
+  codegenIOPrototype(intheadfile, name);
+  fprintf(intheadfile, ";\n\n");
+
+  codegenIOPrototype(outfile, name);
+  fprintf(outfile, "{\n");
+  fprintf(outfile, "}\n");
+}
+
+
+bool ClassType::needsInit(void) {
+  return true;
+}
+
+
+void ClassType::generateInit(FILE* outfile, VarSymbol* var) {
+  var->codegen(outfile);
+  fprintf(outfile, " = (");
+  codegen(outfile);
+  fprintf(outfile, ")malloc(sizeof(_");
+  codegen(outfile);
+  fprintf(outfile, "));\n");
 }
 
 

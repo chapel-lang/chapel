@@ -418,14 +418,15 @@ FnDefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 }
 
 
-ClassType* Symboltable::defineClass(char* name, ClassSymbol* parent) {
+ClassType* Symboltable::defineClass(char* name, ClassSymbol* parent, 
+				    Stmt* definition) {
   ClassType* newdt;
   ClassSymbol* newsym;
 
   if (parent->isNull()) {
-    newdt = new ClassType();
+    newdt = new ClassType(definition);
   } else {
-    newdt = new ClassType(parent->getType());
+    newdt = new ClassType(definition, parent->getType());
   }
   if (parent->scope->level == SCOPE_INTRINSIC && 
       strcmp(parent->name, "reduction") == 0) {

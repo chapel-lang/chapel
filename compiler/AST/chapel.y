@@ -56,6 +56,7 @@
 %token IDENT QUERY_IDENT
 %token <ptsym> TYPE_IDENT
 %token <redsym> REDUCE_IDENT
+%token <pcsym> CLASS_IDENT
 %token INTLITERAL FLOATLITERAL 
 %token <pch> STRINGLITERAL
 
@@ -223,13 +224,17 @@ subclass:
     {
       $$ = Symboltable::lookupClass($2);
     }
+| ':' CLASS_IDENT
+    {
+      $$ = $2;
+    }
 ;
 
 
 classdecl:
-  CLASS identifier subclass '{' '}'
+  CLASS identifier subclass '{' statements '}'
     {
-      ClassType* pdt = Symboltable::defineClass($2, $3);
+      ClassType* pdt = Symboltable::defineClass($2, $3, $5);
       $$ = new TypeDefStmt(pdt);
     }
 ;
@@ -337,6 +342,8 @@ type:
 | arrayType
 | tupleType
 | TYPE_IDENT
+    { $$ = $1->type; }
+| CLASS_IDENT
     { $$ = $1->type; }
 | query_identifier
     { $$ = dtUnknown; }
@@ -512,7 +519,7 @@ simple_lvalue:
   identifier
     { $$ = new Variable(Symboltable::lookup($1)); }
 | simple_lvalue '.' identifier
-    { $$ = new SpecialBinOp(BINOP_DOT, $1, new Variable(Symboltable::lookup($3))); }
+    { $$ = new MemberAccess($1, new Symbol(SYMBOL, $3)); }
 | simple_lvalue '(' exprlist ')'
     { $$ = ParenOpExpr::classify($1, $3); }
 /*
@@ -679,6 +686,8 @@ otherbinop:
 identifier:
   IDENT
     { $$ = copystring(yytext); }
+| CLASS_IDENT
+    { $$ = $1->name; }
 ;
 
 

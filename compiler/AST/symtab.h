@@ -36,7 +36,8 @@ class Symboltable {
 				bool isExtern = false);
   static FnDefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
 				   Stmt* body, bool isExtern = false);
-  static ClassType* defineClass(char* name, ClassSymbol* parent);
+  static ClassType* defineClass(char* name, ClassSymbol* parent, 
+				Stmt* definition);
 
   static VarSymbol* startForLoop(Symbol* indices);
   static ForLoopStmt* finishForLoop(bool forall, VarSymbol* index,

@@ -128,7 +128,9 @@ void VarDefStmt::codegen(FILE* outfile) {
   
   while (aVar) {
     VarSymbol* nextVar = nextLink(VarSymbol, aVar);
-    if (typeid(*(aVar->type)) == typeid(ArrayType)) {
+    if (aVar->type->needsInit()) {
+      aVar->type->generateInit(outfile, aVar);
+    } else if (typeid(*(aVar->type)) == typeid(ArrayType)) {
       ArrayType* arrtype = (ArrayType*)(aVar->type);
       fprintf(outfile, "_init");
       arrtype->codegen(outfile);

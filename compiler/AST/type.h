@@ -6,6 +6,7 @@
 
 class Symbol;
 class EnumSymbol;
+class VarSymbol;
 class Expr;
 class ASymbol;
 extern Expr* nilExpr;
@@ -31,6 +32,8 @@ class Type : public BaseAST {
   virtual void codegenDef(FILE* outfile);
   virtual void codegenIORoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile);
+  virtual bool needsInit(void);
+  virtual void generateInit(FILE* outfile, VarSymbol* var);
   int getSymbols(Vec<BaseAST *> &asts);
 };
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -117,13 +120,20 @@ extern ClassType* nilClassType;
 
 class ClassType : public Type {
  public:
+  Stmt* definition;
   ClassType* parentClass;
   
-  ClassType(ClassType* init_parentClass = nilClassType);
+  ClassType(Stmt* init_definition, ClassType* init_parentClass = nilClassType);
 
   bool isNull(void);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
+  void codegenIORoutines(FILE* outfile);
+  bool needsInit(void);
+  void generateInit(FILE* outfile, VarSymbol* var);
+
   int getTypes(Vec<BaseAST *> &asts);
 };
 

@@ -165,6 +165,10 @@ void VerifyASTType::preProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Unexpected AST expression type: EXPR_ARRAYREF");
     }
     break;
+  case EXPR_MEMBERACCESS:
+    if (typeid(*expr) != typeid(MemberAccess)) {
+      INT_FATAL(expr, "Unexpected AST expression type: EXPR_MEMBERACCESS");
+    }
   case EXPR_REDUCE:
     if (typeid(*expr) != typeid(ReduceExpr)) {
       INT_FATAL(expr, "Unexpected AST expression type: EXPR_REDUCE");

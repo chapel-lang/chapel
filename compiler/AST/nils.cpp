@@ -26,7 +26,7 @@ void initNils(void) {
   nilType = new Type(TYPE);
 
   nilVarSymbol = new VarSymbol("nilVarSymbol", nilType);
-  nilClassType = new ClassType(nilClassType);
+  nilClassType = new ClassType(nilStmt, nilClassType);
   nilFnSymbol = new FnSymbol("nilFnSymbol");
   nilClassSymbol = new ClassSymbol("nilClass", nilClassType);
 
@@ -60,7 +60,8 @@ void verifyNilsUncorrupted(char* message) {
     INT_FATAL("nilVarSymbol has been %s", message);
   }
   if (nilClassType->next != nilILink || nilClassType->prev != nilILink ||
-      nilClassType->name != nilSymbol || nilClassType->parentClass != NULL) {
+      nilClassType->name != nilSymbol || nilClassType->parentClass != NULL ||
+      nilClassType->definition != nilStmt) {
     INT_FATAL("nilClassType has been %s", message);
   }
   if (nilFnSymbol->next != nilILink || nilFnSymbol->prev != nilILink ||

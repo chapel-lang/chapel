@@ -605,12 +605,26 @@ gen_if1(BaseAST *ast) {
 	case BINOP_LOGOR: op = if1_make_symbol(if1, "||"); break;
 	case BINOP_EXP: op = if1_make_symbol(if1, "**"); break;
 	case BINOP_BY: op = if1_make_symbol(if1, "by"); break;
-	case BINOP_DOT: op = if1_make_symbol(if1, "."); break;
       }
       Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
 			 s->left->ainfo->rval, op, s->right->ainfo->rval,
 			 s->ainfo->rval);
       c->ast = s->ainfo;
+      break;
+    }
+    case EXPR_MEMBERACCESS: {
+      INT_FATAL(ast, "Analysis not yet implemented for '.'");
+      /* loosely interpreted from BinOp:
+      MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->base->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->member->asymbol->code);
+      Sym *op = if1_make_symbol(if1, ".");
+      Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
+			 s->base->ainfo->rval, op, s->member->asymbol->rval,
+			 s->ainfo->rval);
+      c->ast = s->ainfo;
+      */
       break;
     }
     case EXPR_ASSIGNOP: {

@@ -33,6 +33,9 @@
   needs to be initialized and then asks the type to generate
   the arguments to the initialize method.
 
+* unify IDENT tokens in the lexer/parser -- we're not going to
+  be able to tell most of the time, so should minimize our
+  reliance on them...
 
 SHANNON:
 * fix type_info() for BinOp
