@@ -155,6 +155,8 @@ class AEdge : public gc {
   AEdge() : from(0), to(0), pnode(0), match(0), in_edge_worklist(0) {}
 };
 #define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
+typedef MapElem<MPosition *, AVar *> MapMPositionAVar;
+#define form_MPositionAVar(_p, _v) form_Map(MapMPositionAVar, _p, _v)
 
 class ATypeChainHashFns {
  public:

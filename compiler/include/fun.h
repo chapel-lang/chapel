@@ -63,11 +63,14 @@ class Fun : public gc {
   Map<MPosition *, Var*> args;
   Vec<Var *> rets;
   Map<MPosition *, AST *> default_args;
-  Vec<MPosition *> generic_arguments;
+  Vec<Sym *> generic_args;
   
   // generic/default/pointwise wrappers
   Fun *wraps;
   Vec<Fun *> wrappers;
+  Vec<MPosition *> defaulted_set;
+  Map<Sym *, Sym *> instantiated;
+  Map<MPosition *, Sym *> point_wised;
 
   // clone
   Vec<EntrySet *> called_ess;
@@ -110,6 +113,7 @@ class Fun : public gc {
   Fun(Sym *afn, int aninit_function = 0);
   Fun() {}
   Fun *copy();
+  Fun *default_wrapper(Vec<MPosition *> &defaults) { return 0; }
 };
 #define forv_Fun(_f, _v) forv_Vec(Fun, _f, _v)
 

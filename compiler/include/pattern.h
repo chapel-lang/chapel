@@ -27,10 +27,22 @@ class MPosition : public gc {
   void pop() { pos.pop(); }
   void inc() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) + 1); }
   void dec() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) - 1); }
+  void *last() { return pos.v[pos.n -1]; }
+  int is_numeric() { for (int i = 0; i < pos.n; i++) if (!is_intPosition(pos.v[i])) return 0; return 1; }
+  int last_is_numeric() { return is_intPosition(last()); }
+  int prefix_to_last(MPosition &p);
   MPosition() : parent(0) {}
   MPosition(MPosition &p);
 };
 #define forv_MPosition(_p, _v) forv_Vec(MPosition, _p, _v)
+
+inline int 
+MPosition::prefix_to_last(MPosition &p) { 
+  if (pos.n != p.pos.n + 1) return 0; 
+  if (memcmp(pos.v, p.pos.v, p.pos.n * sizeof(void*)))
+    return 0;
+  return 1;
+}
 
 class MPositionHashFuns : public gc {
  public:

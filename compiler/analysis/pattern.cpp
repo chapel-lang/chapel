@@ -232,9 +232,7 @@ Matcher::build_positional_map(MPosition &p, Vec<Fun *> **funs) {
       // collect named argument positions at this level
       for (int i = 0; i < m->all_filters.n; i++) {
 	MPosition *pp = m->all_filters.v[i].key;
-	if (pp && pp->pos.n == p.pos.n + 1 &&
-	    !memcmp(pp->pos.v, p.pos.v, p.pos.n * sizeof(void*))) 
-	{
+	if (pp && pp->prefix_to_last(p)) {
 	  named_actuals.add(pp);
 	  named_actual_positions.add(m->named_to_positional.get(pp));
 	}
@@ -242,9 +240,7 @@ Matcher::build_positional_map(MPosition &p, Vec<Fun *> **funs) {
       // collect formal positions not used by named arguments at this level
       for (int i = 0; i < f->arg_positions.n; i++) {
 	MPosition *pp = f->arg_positions.v[i];
-	if (pp->pos.n == p.pos.n + 1 &&
-	    !memcmp(pp->pos.v, p.pos.v, p.pos.n * sizeof(void*)) &&
-	    is_intPosition(pp->pos.v[pp->pos.n - 1]) &&
+	if (pp->prefix_to_last(p) && is_intPosition(pp->last()) &&
 	    !named_actual_positions.set_in(pp))
 	  positional_formals.add(pp);
       }
@@ -362,12 +358,12 @@ Matcher::default_arguments_and_partial_application(
   Vec<Fun *> complete;
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    // collect all formals covered for f
-    Vec<MPosition *> formals;
+    // collect all provided arguments
+    Vec<MPosition *> provided;
     p.push(1);
     for (int i = 0; i < csargs.n; i++) {
       MPosition *cp = cannonicalize_formal(p, m);
-      formals.set_add(cp);
+      provided.set_add(cp);
       p.inc();
     }
     p.pop();
@@ -375,12 +371,9 @@ Matcher::default_arguments_and_partial_application(
     Vec<MPosition *> defaults, needed;
     for (int i = 0; i < f->arg_positions.n; i++) {
       MPosition *pp = f->arg_positions.v[i];
-      if (pp->pos.n == p.pos.n + 1 &&
-	  !memcmp(pp->pos.v, p.pos.v, p.pos.n * sizeof(void*)) &&
-	  is_intPosition(pp->pos.v[pp->pos.n - 1])) 
-      {
-	if (formals.set_in(pp))
-	  continue; // provided
+      if (pp->prefix_to_last(p) && is_intPosition(pp->last())) {
+	if (provided.set_in(pp))
+	  continue;
 	if (f->default_args.get(pp))
 	  defaults.add(pp);
 	needed.add(pp);
@@ -395,6 +388,8 @@ Matcher::default_arguments_and_partial_application(
     }
     if (defaults.n) {
       // build new wrapper and put into new_matches
+      f = f->default_wrapper(defaults);
+      m->fun = f;
     }
     complete.add(f);
     new_matches.add(f);
@@ -420,14 +415,9 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
   p.pop();
   for (int i = 0; i < f->arg_positions.n; i++) {
     MPosition *pp = f->arg_positions.v[i];
-    if (pp->pos.n == p.pos.n + 1 &&
-	!memcmp(pp->pos.v, p.pos.v, p.pos.n * sizeof(void*)) &&
-	is_intPosition(pp->pos.v[pp->pos.n - 1])) 
-    {
+    if (pp->prefix_to_last(p) && is_intPosition(pp->last())) 
       if (formals.set_in(pp) || f->default_args.get(pp))
-	continue;
-      return 0;
-    }
+	return 0;
   }
   return 1;
 }

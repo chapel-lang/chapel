@@ -1437,10 +1437,11 @@ collect_Vars_PNodes(Fun *f) {
 static void
 analyze_edge(AEdge *e) {
   make_entry_set(e);
-  forv_MPosition(p, e->match->fun->arg_positions) {
-    AVar *a = e->args.get(p), *b = e->to->args.get(p);
-    if (!a)
+  form_MPositionAVar(x, e->args) {
+    if (!x->key->is_numeric())
       continue;
+    MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
+    AVar *a = x->value, *b = e->to->args.get(p);
     AType *filter = e->match->filters.get(p);
     if (!filter)
       continue;
