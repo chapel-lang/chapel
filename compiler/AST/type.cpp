@@ -71,7 +71,7 @@ void Type::traverseList(Type* &_this, Traversal* traversal, bool atTop) {
     TRAVERSE(_this, traversal, atTop);
 
     // explore siblings
-    TRAVERSE_LS(next, traversal, atTop);
+    TRAVERSE_LS(_this->next, traversal, atTop);
   }
 }
 

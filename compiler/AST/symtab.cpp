@@ -665,13 +665,13 @@ TypeDefStmt* Symboltable::defineUserType(char* name, Type* definition,
 }
 
 
-ParamSymbol* Symboltable::defineParams(paramType formaltag, Symbol* idents, 
+ParamSymbol* Symboltable::defineParams(paramType intent, Symbol* idents, 
 				       Type* type) {
   ParamSymbol* paramList;
   ParamSymbol* newParam;
   ParamSymbol* lastParam;
 
-  newParam = new ParamSymbol(PARAM_INOUT, idents->name, type);
+  newParam = new ParamSymbol(intent, idents->name, type);
   define(newParam);
 
   paramList = newParam;
@@ -679,7 +679,7 @@ ParamSymbol* Symboltable::defineParams(paramType formaltag, Symbol* idents,
 
   idents = nextLink(Symbol, idents);
   while (idents != NULL) {
-    newParam = new ParamSymbol(PARAM_INOUT, idents->name, type);
+    newParam = new ParamSymbol(intent, idents->name, type);
     define(newParam);
     lastParam->next = newParam;
     lastParam = newParam;

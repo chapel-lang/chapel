@@ -104,8 +104,7 @@ void Stmt::traverseList(Stmt* &_this, Traversal* traversal, bool atTop) {
     // explore this
     _this->traverse(_this, traversal, atTop);
 
-    // explore siblings
-    TRAVERSE_LS(next, traversal, atTop);
+    TRAVERSE_LS(_this->next, traversal, atTop);
   }
 }
 

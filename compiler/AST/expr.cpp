@@ -816,6 +816,17 @@ Expr* FnCall::copy(void) {
 }
 
 
+FnSymbol* FnCall::findFnSymbol(void) {
+  if (typeid(*baseExpr) == typeid(Variable)) {
+    Variable* fnVar = dynamic_cast<Variable*>(baseExpr);
+    return dynamic_cast<FnSymbol*>(fnVar->var);
+  } else {
+    INT_FATAL(this, "unexpected FnCall structure in findFnSymbol");
+    return NULL;
+  }
+}
+
+
 IOCall::IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg) :
   FnCall(init_base, init_arg),
   ioType(init_iotype)

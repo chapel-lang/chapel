@@ -332,6 +332,8 @@ class FnCall : public ParenOpExpr {
  public:
   FnCall(Expr* init_base, Expr* init_arg = nilExpr);
   virtual Expr* copy(void);
+
+  FnSymbol* findFnSymbol(void);
 };
 
 

@@ -74,7 +74,8 @@ extern VarSymbol* nilVarSymbol;
 
 
 enum paramType {
-  PARAM_IN = 0,
+  PARAM_BLANK = 0,
+  PARAM_IN,
   PARAM_INOUT,
   PARAM_OUT,
   PARAM_CONST,
@@ -85,9 +86,9 @@ enum paramType {
 
 class ParamSymbol : public Symbol {
  public:
-  paramType usage;
+  paramType intent;
 
-  ParamSymbol(paramType init_usage, char* init_name, 
+  ParamSymbol(paramType init_intent, char* init_name, 
 	      Type* init_type = dtUnknown);
   virtual Symbol* copy(void);
 

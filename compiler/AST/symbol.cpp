@@ -178,6 +178,7 @@ void VarSymbol::printDef(FILE* outfile) {
 
 
 static char* paramTypeNames[NUM_PARAM_TYPES] = {
+  "",
   "in",
   "inout",
   "out",
@@ -185,20 +186,20 @@ static char* paramTypeNames[NUM_PARAM_TYPES] = {
 };
 
 
-ParamSymbol::ParamSymbol(paramType init_usage, char* init_name, 
+ParamSymbol::ParamSymbol(paramType init_intent, char* init_name, 
 			 Type* init_type) :
   Symbol(SYMBOL_PARAM, init_name, init_type),
-  usage(init_usage)
+  intent(init_intent)
 {}
 
 
 Symbol* ParamSymbol::copy(void) {
-  return new ParamSymbol(usage, copystring(name), type->copy());
+  return new ParamSymbol(intent, copystring(name), type->copy());
 }
 
 
 void ParamSymbol::printDef(FILE* outfile) {
-  fprintf(outfile, "%s ", paramTypeNames[usage]);
+  fprintf(outfile, "%s ", paramTypeNames[intent]);
   Symbol::print(outfile);
   fprintf(outfile, ": ");
   type->print(outfile);

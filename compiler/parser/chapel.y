@@ -283,7 +283,7 @@ enum_list:
 
 formaltag:
   /* nothing */
-    { $$ = PARAM_INOUT; }
+    { $$ = PARAM_BLANK; }
 | TIN
     { $$ = PARAM_IN; }
 | TINOUT
@@ -292,10 +292,6 @@ formaltag:
     { $$ = PARAM_OUT; }
 | TCONST
     { $$ = PARAM_CONST; }
-| TREF
-    { $$ = PARAM_INOUT; }
-| TVAL
-    { $$ = PARAM_IN; }
 ;
 
 

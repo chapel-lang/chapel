@@ -1,8 +1,8 @@
 enum classVals = S | W | A | B | C | D | O;
 type coeff = [0..3] float;
-function initializeMG(inout V: [Base] float;
-inout U: [lvl:Levels] [Hier(lvl)] float;
-inout R: [lvl:Levels] [Hier(lvl)] float) {
+function initializeMG(out V: [Base] float;
+out U: [lvl:Levels] [Hier(lvl)] float;
+out R: [lvl:Levels] [Hier(lvl)] float) {
 writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
 writeln(" Size: ", nx, "x", ny, "x", nz);
 writeln(" Iterations: ", nit);
@@ -22,7 +22,7 @@ initArrays(V, U, R);
 }
 
 
-function computeMG(inout V: [Base] float;
+function computeMG(in V: [Base] float;
 inout U: [lvl:Levels] [Hier(lvl)] float;
 inout R: [lvl:Levels] [Hier(lvl)] float): float{
 resid(R(1), V, U(1));
@@ -37,9 +37,9 @@ return rnm2;
 }
 
 
-function printResults(inout rnm2: float;
-inout inittime: float;
-inout runtime: float) {
+function printResults(const rnm2: float;
+const inittime: float;
+const runtime: float) {
 var verified: boolean;
 if ((verifyValue!=0.0)) {
 const epsilon: float = 0.00000001;
@@ -95,7 +95,7 @@ psinv(U(1), R(1));
 
 
 function psinv(inout U: [?anonDomain] float;
-inout R: [DUR] float) {
+const R: [DUR] float) {
 state const c: coeff = initCValues();
 state const c3d: [i, j, k:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
 const Rstr: [1..3] integer = DUR.stride;
@@ -103,9 +103,9 @@ U += [ijk:DUR] reduce by sum [off:Stencil] (c3d*R((ijk+(Rstr*off))));
 }
 
 
-function resid(inout R: [?anonDomain] float;
-inout V: [DUR] float;
-inout U: [DUR] float) {
+function resid(out R: [?anonDomain] float;
+const V: [DUR] float;
+const U: [DUR] float) {
 state const a: coeff = (((-8.0)/3.0), 0.0, (1.0/6.0), (1.0/12.0));
 state const a3d: [i, j, k:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
 const Ustr: [1..3] integer = DUR.stride;
@@ -113,8 +113,8 @@ R = (V-[ijk:DUR] reduce by sum [off:Stencil] (a3d*U((ijk+(Ustr*off)))));
 }
 
 
-function rprj3(inout S: [?anonDomain] float;
-inout R: [?anonDomain] float) {
+function rprj3(out S: [?anonDomain] float;
+in R: [?anonDomain] float) {
 state const w: coeff = (0.5, 0.25, 0.125, 0.0625);
 state const w3d: [i, j, k:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
 const Rstr: [1..3] integer = R.stride;
@@ -122,8 +122,8 @@ S = [ijk:DR] reduce by sum [off:Stencil] (w3d*R((ijk+(Rstr*off))));
 }
 
 
-function interp(inout R: [?anonDomain] float;
-inout S: [?anonDomain] float) {
+function interp(out R: [?anonDomain] float;
+const S: [?anonDomain] float) {
 state const IDom: domain(3) = [(-1)..0, (-1)..0, (-1)..0];
 state const IStn: [i, j, k:IDom] domain(3) = (i..0, j..0, k..0);
 state const w: [ijk:IDom] float = (1.0/IStn.size());
@@ -135,7 +135,7 @@ forall ioff in IDom {
 }
 
 
-function norm2u3(inout R: [?anonDomain] float): (float, float){
+function norm2u3(const R: [?anonDomain] float): (float, float){
 const rnm2: float = sqrt((reduce by sum (R**2)/((nx*ny)*nz)));
 const rnmu: float = reduce by max abs(R);
 
@@ -143,9 +143,9 @@ return (rnm2, rnmu);
 }
 
 
-function initArrays(inout V: [Base] float;
-inout U: [lvl:Levels] [Hier(lvl)] float;
-inout R: [lvl:Levels] [Hier(lvl)] float) {
+function initArrays(out V: [Base] float;
+out U: [lvl:Levels] [Hier(lvl)] float;
+out R: [lvl:Levels] [Hier(lvl)] float) {
 zran3(V);
 U(1) = 0.0;
 V.outOfBounds(wrap);
@@ -154,7 +154,7 @@ R.outOfBounds(wrap);
 }
 
 
-function zran3(inout V: [Base] float) {
+function zran3(out V: [Base] float) {
 const ncharge: integer = 10;
 var POS: [1..ncharge] index(Base);
 var NEG: [1..ncharge] index(Base);
@@ -171,7 +171,7 @@ V(NEG(i)) = (-1.0);
 }
 
 
-function longRandlc(inout n: integer): float{
+function longRandlc(const n: integer): float{
 state const s: float = 314159265.0;
 state const arand: float = (5.0**13);
 var kk: integer = n;
@@ -194,7 +194,7 @@ return randlc(t1, arand);
 
 
 function randlc(inout x: float;
-inout a: float): float{
+const a: float): float{
 state const r23: float = (0.5**23);
 state const t23: float = (2**23);
 state const r46: float = (0.5**46);
@@ -225,7 +225,7 @@ return (r46*x);
 }
 
 
-function initCValues(inout Class: classVals): coeff{
+function initCValues(const Class: classVals): coeff{
 if ((((Class==A)||(Class==S))||(Class==W))) {
 
 return (((-3.0)/8.0), (1.0/32.0), ((-1.0)/64.0), 0.0);
@@ -236,7 +236,7 @@ return (((-3.0)/17.0), (1.0/33.0), ((-1.0)/61.0), 0.0);
 }
 
 
-function lg2(inout x: integer): integer{
+function lg2(const x: integer): integer{
 var lg: integer = (-1);
 while (x) {
 x *= 2;

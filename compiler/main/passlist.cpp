@@ -17,6 +17,7 @@
 #include "../traversals/getstuff.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
+#include "../traversals/processParameters.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/verifyASTType.h"
@@ -45,6 +46,7 @@ REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintStmts);
 REGISTER(PrintSymtab);     // BLC: prints out the whole symboltable
+REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
