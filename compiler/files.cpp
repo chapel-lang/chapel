@@ -15,7 +15,7 @@ static char* intDirName; // directory for intermediates; tmpdir or saveCDir
 static const int MAX_CHARS_PER_PID = 32;
 
 static FILE* makefile;
-static char* strippedExeFilename;
+static char* intExeFilename;
 
 
 void createTmpDir(void) {
@@ -92,12 +92,10 @@ static char* stripdirectories(char* filename) {
   } else {
     filenamebase++;
   }
-  char* strippedname = (char*)MALLOC((strlen(filenamebase+1)*sizeof(char)));
-  strcpy(strippedname, filenamebase);
+  char* strippedname = glomstrings(1, filenamebase);
 
   return strippedname;
 }
-				     
 
 
 static char* genoutfilename(char* infilename) {
@@ -142,7 +140,7 @@ void closefile(FILE* thefile) {
 
 FILE* openoutfile(char* infilename) {
   char* outfilename = genoutfilename(infilename);
-  fprintf(makefile, "\t%s \\\n", stripdirectories(outfilename));
+  fprintf(makefile, "\t%s \\\n", outfilename);
 
   return openfile(outfilename);
 }
@@ -159,8 +157,9 @@ static char* compilerdir2runtimedir(char* compilerDir) {
 static void genMakefileHeader(char* srcfilename, char* compilerDir) {
   char* runtimedir = compilerdir2runtimedir(compilerDir);
 
-  strippedExeFilename = stripdirectories(executableFilename);
-  fprintf(makefile, "BINNAME = %s\n", strippedExeFilename);
+  char* strippedExeFilename = stripdirectories(executableFilename);
+  intExeFilename = genIntFilename(strippedExeFilename);
+  fprintf(makefile, "BINNAME = %s\n", intExeFilename);
   fprintf(makefile, "CHPLRTDIR = %s\n", runtimedir);
   fprintf(makefile, "CHPLSRC = \\\n");
 }
@@ -177,18 +176,17 @@ FILE* openMakefile(char* srcfilename, char* compilerDir) {
 
 void closeMakefile(void) {
   fprintf(makefile, "\n");
-  fprintf(makefile, "include $(CHPLRTDIR)/etc/Makefile.include");
+  fprintf(makefile, "include $(CHPLRTDIR)/etc/Makefile.include\n");
 
   closefile(makefile);
 }
 
 
 void makeAndCopyBinary(void) {
-  char* command = glomstrings(3, "cd ", intDirName, " && make");
+  char* command = glomstrings(3, "make -f ", intDirName, "/Makefile");
   mysystem(command, "compiling generated source");
-  char* fullExeName = genIntFilename(strippedExeFilename);
 
-  command = glomstrings(4, "cp ", fullExeName, " ", executableFilename);
+  command = glomstrings(4, "cp ", intExeFilename, " ", executableFilename);
   mysystem(command, "copying binary to final directory");
 }
 
