@@ -19194,3 +19194,15 @@ Added files:
 	                              intents-classes4.future 
 	                              intents-classes4.good 
 
+---------------------------------------------------------------------------
+
+03/09/05 11:18:26 -- deitz
+
+Log message:
+	Removed stmtParent vector in fixup because the parentSymbol of Stmts
+	is now set by looking up the symboltable scopes.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: fixup.cpp fixup.h 
+
