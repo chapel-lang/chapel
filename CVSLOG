@@ -16260,3 +16260,13 @@ Added files:
 	                              multipleParamsSameType.chpl 
 	                              multipleParamsSameType.good 
 
+---------------------------------------------------------------------------
+
+02/02/05 08:50:18 -- jplevyak
+
+Log message:
+	Fix Vec::set_count() (variable name aliasing bug)
+
+Modified files:
+	chapel/compiler/include/: vec.h 
+
