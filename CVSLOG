@@ -14620,3 +14620,75 @@ Added files:
 	chapel/test/modules/bradc/: twomodulessamevar.chpl 
 	                            twomodulessamevar.good 
 
+---------------------------------------------------------------------------
+
+01/17/05 14:24:27 -- deitz
+
+Log message:
+	Expected regression! This checkin breaks the following test(s):
+	  trivial/bradc/protoast/mg-seq-concrete
+	See note(s) below.
+	
+	Changed the mechanism through which symbols are defined in the
+	symboltable.  Previously, the creation of symbols was decoupled from
+	defining them in the symboltable.  They are now defined in the
+	symboltable when they are constructed.  This greatly simplifies many
+	aspects of the compiler.
+	
+	Made a new scope called nilsScope for declaring nilSymbol,
+	nilFnSymbol, and nilVarSymbol.
+	
+	Implemented copy for VarSymbol and TypeSymbol.  The others are already
+	implemented.
+	
+	Added a new procedure "TypeDefStmt* TypeDefStmt::clone(CloneCallback*
+	clone_callback)" for cloning types such as classes.  This is ready
+	(pending bugs) to be called by analysis in order to clone classes with
+	underspecified types, e.g., a class with a variable field with no
+	type.  Handed the futures of
+	test/types/type_variables/deitz/test_clone_class[1|2] to John.
+	
+	Fixed a small bug in which the back pointer was not set for
+	ForallExprs that were modified by setForallExpr.
+	
+	Partially cleaned up how unions are handled.  The enums for unions
+	should eventually be made statements of their own rather than be
+	handled in code generation.  Now at least the symbols are added to the
+	symboltables.  The InsertUnionChecks looks up these symbols rather
+	than creating but not defining its own.
+	
+	Changed how parameters to procedures are parsed.  Commas, rather than
+	semicolons, are now used between intent-variable-type formals.
+	Multiple variables will eventually be allowed with blank space.  This
+	change breaks mg-seq-concrete.
+	
+	Removed long-dead traversal DefineSymbols.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp nils.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: stmt.h symtab.h 
+	chapel/compiler/parser/: Makefile chapel.y internal_prelude.chpl 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share cleanup.cpp 
+	                             insertUnionChecks.cpp 
+	chapel/doc/internal/: 2005.Feb.tasks 
+	chapel/test/classes/deitz/: test_union3.chpl 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1.future 
+	                                         test_clone_class2.future 
+	                                         test_overload_integerfloat1.chpl 
+	                                         test_overload_integerfloat2.chpl 
+	                                         test_overload_integerfloat3.chpl 
+	                                         test_overload_integerfloat4.chpl 
+	                                         test_typevar_function1.chpl 
+	                                         test_typevar_function2.chpl 
+	chapel/test/types/type_variables/jplevyak/: test_coerse1.chpl 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function6.chpl 
+	                                         test_clone_function6.good 
+Removed files:
+	chapel/compiler/traversals/: defineSymbols.cpp defineSymbols.h 
+
