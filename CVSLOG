@@ -18856,3 +18856,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+03/04/05 11:35:18 -- jplevyak
+
+Log message:
+	Moved the wrapper caches into the Fun class to make them function specific.
+	Fixed default parameters, removed the .future file.
+
+Modified files:
+	chapel/compiler/analysis/: fun.cpp pattern.cpp 
+	chapel/compiler/include/: fun.h 
+Removed files:
+	chapel/test/functions/bradc/: defaultParam.future 
+
