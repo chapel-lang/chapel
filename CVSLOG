@@ -15541,3 +15541,25 @@ Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 	chapel/compiler/main/: passlist.h 
 
+---------------------------------------------------------------------------
+
+01/24/05 15:32:42 -- bradc
+
+Log message:
+	Removed future tags for these tests, now fixed.
+	
+	Note that I'd prefer to restrict the .future tag
+	for use on new files that have never worked, not
+	as a way of making new regressions seem less bad.
+	If we need a way of assigning regressions to
+	specific people, I can implement one.  I didn't
+	add it at the same time as futures out of laziness,
+	and because to this point we've had few enough
+	regressions and developers that it hasn't been
+	difficult to keep track of which are in whose
+	court.
+
+Removed files:
+	chapel/test/classes/deitz/: test_class_with2.future 
+	chapel/test/modules/bradc/manymodules/: flatmodules.future 
+
