@@ -18904,3 +18904,13 @@ Removed files:
 	chapel/compiler/AST/: nils.cpp 
 	chapel/compiler/include/: nils.h 
 
+---------------------------------------------------------------------------
+
+03/04/05 14:41:36 -- jplevyak
+
+Log message:
+	Add support for functions with operator (symbol) names.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
