@@ -11903,3 +11903,45 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/04 14:42:52 -- bradc
+
+Log message:
+	Started working on implementing a new AST transformation
+	traversal -- processParameters -- that makes the different
+	parameter intents (in, out, inout), work as they should.
+	This isn't yet working, but I got temporarily stuck at a
+	reasonable stopping point, so this is just a synch point
+	(the new traversal isn't run by default).  Some changes
+	that go in with this:
+	
+	* fixed a bug in which parameter intents were being
+	  parsed and passed to the parameter creation routines,
+	  but then dropped on the floor
+	
+	* removed ref and val intents from the parser since they
+	  never made it into the language.
+	
+	* added a PARAM_BLANK intent to the internal enumeration
+	  since BLANK != CONST in the language spec, as
+	  anticipated
+	
+	* with Steve's help, fixed a subtle problem in his new
+	  traversal stuff in which the next field of this rather
+	  than _this was used for traversing lists of Stmt and Type
+	  nodes.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp symtab.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+	chapel/compiler/main/: passlist.cpp 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+Added files:
+	chapel/compiler/traversals/: processParameters.cpp 
+	                             processParameters.h 
+
