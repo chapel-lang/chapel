@@ -3685,3 +3685,18 @@ Modified files:
 	                      prelude.chpl symbol.cpp symbol.h 
 	                      symtab.cpp symtab.h type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+06/23/04 10:13:01 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added new option to permit cloning for constants.
+	Fixed bug related to specializing classes.
+	Added test cases related to above bug.
+
+Modified files:
+	chapel/compiler/: driver.cpp fa.cpp fa.h 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: cs4.chpl cs4.good cs5.chpl 
+	                                    cs5.good 
+
