@@ -30,10 +30,10 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
   if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
     if (Variable* var = dynamic_cast<Variable*>(forall->domains)) {
       if (var->next) {
-                                INT_FATAL(stmt, "Multiple domains not handled in declarations");
+        INT_FATAL(stmt, "Multiple domains not handled in declarations");
       }
       if (DomainType* domain_type = dynamic_cast<DomainType*>(var->var->type)) {
-                                char* name = glomstrings(5,
+        char* name = glomstrings(5,
                                  "_array_",
                                  array_type->elementType->symbol->name,
                                  "_",
@@ -62,7 +62,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
         }
       }
       else {
-                                INT_FATAL(stmt, "Didn't find domain in this complicated case");
+        INT_FATAL(stmt, "Didn't find domain in this complicated case");
       }
     }
   }
@@ -202,18 +202,18 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(*type, "Index type expected");
   }
  
-        if (!(typeid(*index_type->idxExpr) == typeid(IntLiteral))){
-                Variable* var = dynamic_cast<Variable*>(index_type->idxExpr);
-                if (var){
-                        domain_type = dynamic_cast<DomainType*>(var->var->type);
+  if (!(typeid(*index_type->idxExpr) == typeid(IntLiteral))){
+    Variable* var = dynamic_cast<Variable*>(index_type->idxExpr);
+    if (var){
+      domain_type = dynamic_cast<DomainType*>(var->var->type);
       index_type->idxType = ((IndexType*)(domain_type->idxType))->idxType;
       printf("\n");
- 		}
+    }
     else{
       INT_FATAL(index_type, "Invalid index expression.");
     }
- 	}
-	char* name = NULL; 
+  }
+  char* name = NULL; 
   
   if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
         name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "d");
@@ -267,8 +267,8 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
     build_anon_seq_type_def(stmt, type);
   }
   if (typeid(**type) == typeid(IndexType)){
-        build_index_type_def(stmt, type);
-        }
+    build_index_type_def(stmt, type);
+  }
 }
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
