@@ -334,7 +334,7 @@ ACallbacks::make_LUB_type(Sym *t) {
   Type *tt = find_or_make_sum_type(&types);
   if (tt->asymbol)
     return tt->asymbol->sym;
-  tt->asymbol = new ASymbol;
+  tt->asymbol = t->asymbol;
   tt->asymbol->sym = t;
   tt->asymbol->symbol = tt;
   assert(tt->asymbol->sym->type_kind == Type_LUB);
