@@ -3378,3 +3378,14 @@ Added files:
 Removed files:
 	chapel/test/Share/: increment.chpl unary_plusMinus.chpl 
 
+---------------------------------------------------------------------------
+
+06/15/04 14:01:00 -- bradc
+
+Log message:
+	prototype AST checkpoint (mg-seq parses).
+
+Modified files:
+	chapel/compiler/AST/: chapel.lex chapel.y expr.cpp expr.h 
+	                      symbol.cpp symbol.h type.h 
+
