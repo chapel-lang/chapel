@@ -8517,3 +8517,18 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+09/23/04 12:31:42 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed bug in cloning which prevented clones from being created
+	for functions containing calls to (other) different clones from
+	the same call site.
+	This should fix the cs4.v issue.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp fa.cpp 
+	chapel/test/flowanalysis/jplevyak/: COMPOPTS cs4.good cs5.good 
+	                                    cs6.good 
+
