@@ -2,7 +2,9 @@
 #include <typeinfo>
 #include "expr.h"
 #include "files.h"
+#include "fun.h"
 #include "misc.h"
+#include "pattern.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
@@ -653,11 +655,43 @@ FnDefStmt* FnDefStmt::clone(CloneCallback* clone_callback) {
 
 FnDefStmt* FnDefStmt::build(Map<Symbol *, Symbol *> *generic_substitutions,
 			    Vec<MPosition *> *default_set,
-			    Map<MPosition *, Symbol *> *coersion_substitutions,
+			    Map<MPosition *, Symbol *> *coercion_substitutions,
 			    Map<MPosition *, MPosition *> *formal_to_actual_order_map,
 			    CloneCallback *clone_callback) {
-  INT_FATAL(this, "FnDefStmt::build not implemented");
-  return this;
+  FnDefStmt* wrapper_stmt = NULL;
+  static int uid = 1; // Unique ID for wrapped functions
+
+  FnSymbol* wrapper_symbol = new FnSymbol(fn->name);
+  wrapper_symbol->cname =
+      glomstrings(3, wrapper_symbol->cname, "_wrapper_", intstring(uid++));
+  wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
+
+  Symbol* wrapper_formals = fn->formals->copyList();
+
+  for (int i = 0; i < coercion_substitutions->n; i++) {
+    int j = 1;
+    MPosition p;
+    Symbol* formal_change = wrapper_formals;
+    forv_MPosition(p, fn->asymbol->fun->numeric_arg_positions) {
+      if (coercion_substitutions->e[i].key ==
+	  fn->asymbol->fun->numeric_arg_positions.e[j]) {
+	formal_change->type = coercion_substitutions->e[i].value->type;
+      }
+      if (!formal_change->next->isNull()) {
+	formal_change = nextLink(Symbol, formal_change);
+      }
+      j++;
+    }
+  }
+
+  Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(fn)));
+
+  Type* wrapper_return_type = fn->retType;
+
+  wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
+					  wrapper_return_type, wrapper_body);
+  insertBefore(wrapper_stmt);
+  return wrapper_stmt;
 }
 
 

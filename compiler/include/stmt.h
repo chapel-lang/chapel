@@ -109,7 +109,7 @@ class FnDefStmt : public Stmt {
   FnDefStmt* clone(CloneCallback* clone_callback);
   FnDefStmt* build(Map<Symbol *, Symbol *> *generic_substitutions,
 		   Vec<MPosition *> *default_set,
-		   Map<MPosition *, Symbol *> *coersion_substitutions,
+		   Map<MPosition *, Symbol *> *coercion_substitutions,
 		   Map<MPosition *, MPosition *> *formal_to_actual_order_map,
 		   CloneCallback *clone_callback);
 
