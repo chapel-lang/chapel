@@ -20,7 +20,8 @@
 
 #define _default_format_write_complex128  "%g + %gi"
 
-#define _default_format_read_string       "%s"   
+/**** IF CHANGING THIS, change _read_string() in chplio.c as well ****/
+#define _default_format_read_string       "%255s"   
 #define _default_format_write_string      "%s"
 
 #define _default_format_read_enum         "%s"
@@ -36,6 +37,7 @@ void _write_integer64(FILE* outfile, char* format, _integer64 val);
 void _read_float64(FILE* infile, char* format, _float64* val);
 void _write_float64(FILE* outfile, char* format, _float64 val);
 void _write_complex128(FILE* outfile, char* format, _complex128 val);
+void _read_string(FILE* infile, char* format, _string* val);
 void _write_string(FILE* outfile, char* format, _string val);
 void _write_domain1(FILE* outfile, char* format, _domain1 val);
 

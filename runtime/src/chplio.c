@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 #include "chplio.h"
 #include "domain.h"
 
@@ -33,6 +35,20 @@ void _read_float64(FILE* infile, char* format, _float64* val) {
 
 void _write_float64(FILE* outfile, char* format, _float64 val) {
   fprintf(outfile, format, val);
+}
+
+
+void _read_string(FILE* infile, char* format, _string* val) {
+  /**** IF CHANGING THIS, change _default_format_read_string in chplio.h ****/
+  int DEFAULT_STRING_LENGTH = 256;
+  char localVal[DEFAULT_STRING_LENGTH];
+
+  fscanf(infile, format, localVal);
+  if (strlen(localVal) == (DEFAULT_STRING_LENGTH - 1)) {
+    fprintf(stderr, "ERROR:  MAX STRING LENGTH is %d\n", DEFAULT_STRING_LENGTH);
+    exit(0);
+  }
+  _copy_string(val, localVal);
 }
 
 
