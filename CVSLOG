@@ -13477,3 +13477,14 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+01/05/05 11:15:06 -- bradc
+
+Log message:
+	Updated nightly token-counting script to use new UW
+	location.
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly 
+
