@@ -19827,3 +19827,18 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/: test_operator_overloading1.future 
 
+---------------------------------------------------------------------------
+
+03/16/05 14:46:24 -- deitz
+
+Log message:
+	Added the pragma "builtin" to mean that this overloaded operator
+	function should not replace the operator.  It is used on all the
+	overloaded operator functions in the internal prelude.  The
+	ResolveOverloaedOperators ignores operators that are overloaded with
+	"builtin" functions.
+
+Modified files:
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: resolveOverloadedOperators.cpp 
+
