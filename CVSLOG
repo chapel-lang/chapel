@@ -7855,3 +7855,14 @@ Removed files:
 	                                         thread_leak_test.c 
 	                                         trace_test.c 
 
+---------------------------------------------------------------------------
+
+09/16/04 19:26:34 -- bradc
+
+Log message:
+	Fixed a problem in which the arch-specific directory
+	was not being made from a clean build.
+
+Modified files:
+	chapel/compiler/: Makefile 
+
