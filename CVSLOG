@@ -23485,3 +23485,14 @@ Added files:
 	chapel/compiler/traversals/: omitForNoAnalysis.cpp 
 	                             omitForNoAnalysis.h 
 
+---------------------------------------------------------------------------
+
+04/04/05 10:37:01 -- bradc
+
+Log message:
+	This is an old SSCA2 feature list that we made but
+	never committed to CVS.
+
+Added files:
+	chapel/doc/internal/: SSCA2.features 
+
