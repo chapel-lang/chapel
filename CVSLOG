@@ -6554,3 +6554,28 @@ Modified files:
 	chapel/compiler/AST/: chapel.y expr.cpp prelude.chpl symscope.h 
 	                      symtab.cpp symtab.h yy.h 
 
+---------------------------------------------------------------------------
+
+09/03/04 16:06:36 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Updated DParser to the latest version (fixes some bugs).
+
+Modified files:
+	chapel/compiler/make_prims/: Makefile 
+	chapel/third-party/dparser/d/: CHANGES Makefile d.h gram.c 
+	                               gram.h grammar.g grammar.g.c 
+	                               index.html make_dparser.c my.g 
+	                               parse.c read_binary.c 
+	                               read_binary.h util.c util.h 
+	                               write_tables.c write_tables.h 
+	chapel/third-party/dparser/d/python/: dparser.py dparser_wrap.c 
+	                                      make_tables.c pydparser.h 
+	chapel/third-party/dparser/d/python/tests/: test.py 
+	chapel/third-party/dparser/d/verilog/: Makefile ambig.c main.c 
+	                                       vparse.c 
+Added files:
+	chapel/third-party/dparser/d/: mkdparse.h test_parser.c 
+Removed files:
+	chapel/third-party/dparser/d/: x.c 
+
