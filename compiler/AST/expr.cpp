@@ -988,6 +988,7 @@ void AssignOp::print(FILE* outfile) {
 
 void AssignOp::codegen(FILE* outfile) {
   Type* leftType = left->typeInfo();
+  Type* rightType = right->typeInfo();
   if (leftType->isComplex()) {
     left->codegenComplex(outfile, true);
     fprintf(outfile, " %s ", cGetsOp[type]);
@@ -1008,6 +1009,12 @@ void AssignOp::codegen(FILE* outfile) {
       fprintf(outfile, ")");
     }
     fprintf(outfile, ")");
+  } else if ((leftType == dtInteger || leftType == dtFloat) && rightType == dtNil) {
+    left->codegen(outfile);
+    fprintf(outfile, " %s (", cGetsOp[type]);
+    leftType->codegen(outfile);
+    fprintf(outfile, ")(intptr_t)");
+    right->codegen(outfile);
   } else {
     left->codegen(outfile);
     fprintf(outfile, " %s ", cGetsOp[type]);

@@ -1156,7 +1156,9 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
         Expr* assign_expr = new AssignOp(GETS_NORM, lhs, tmp->type->defaultVal->copy());
         assign_stmt = new ExprStmt(assign_expr);
       } else {
-        continue;
+        Expr* assign_expr = new AssignOp(
+          GETS_NORM, lhs, new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)));
+        assign_stmt = new ExprStmt(assign_expr);
       }
 #endif
     }

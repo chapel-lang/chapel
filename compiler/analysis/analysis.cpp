@@ -694,6 +694,11 @@ build_enum_element(Sym *enum_sym, Sym *element_sym, int i) {
   element_sym->is_constant = 1;
 }
 
+static int
+is_reference_type(BaseAST *t) {
+  return (t && (t->astType == TYPE_NIL || t->astType == TYPE_CLASS));
+}
+
 static void
 build_symbols(Vec<BaseAST *> &syms) {
   forv_BaseAST(ss, syms) {
@@ -1090,11 +1095,6 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
   return 0;
 }
 
-static int
-is_reference_type(BaseAST *t) {
-  return (t && t->astType == TYPE_CLASS);
-}
-
 static void
 gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
   // currently just a hack to set the first element
@@ -1193,9 +1193,11 @@ gen_vardef(BaseAST *a) {
       else if (is_reference_type(var->type)) {
         if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
       } else if (!s->is_var)
-        ; // return show_error("missing initializer", def->ainfo);
+        if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
+        // return show_error("missing initializer", def->ainfo);
       else if (!s->type && !s->must_implement)
-        ; // return show_error("missing variable type", def->ainfo);
+        if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
+        // return show_error("missing variable type", def->ainfo);
       else {
         if (s->type) {
           if (s->type->num_kind || s->type == sym_string)
@@ -1204,7 +1206,8 @@ gen_vardef(BaseAST *a) {
             FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
             gen_alloc(s, s->type, def->ainfo, f->_this ? f->_this->asymbol->sym : 0);
           }
-        }
+        } else
+          if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
       }
     switch (var->varClass) {
       case VAR_NORMAL: break;
