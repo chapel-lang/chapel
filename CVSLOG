@@ -21482,3 +21482,33 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+03/24/05 18:41:01 -- bradc
+
+Log message:
+	This is strange, I could've sworn I just committed this.
+	
+	Was debugging some memory allocation stuff in the generated
+	code tonight and realized that we're not taking very good
+	advantage of Shannon's capabilities to attach descriptions
+	to things, so improved the descriptions.  Classes get
+	descriptions like "instance of myclass", arrays are like
+	"array A", etc.  It's very lovely (and will be moreso once
+	we expose hooks into it... :) for now you have to know
+	what routines to insert by hand...)
+	
+	Added a glomstrings() routine to the runtime, similar to
+	the one at compiletime, except that it uses Shannon's
+	memory allocation routines, and *is*not*garbage*collected*
+	(so clean up after yourself).
+	
+	Added a space after each argument in our generated function
+	calls to improve readability of the generated code.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/runtime/include/: array.h chpltypes.h 
+	chapel/runtime/src/: chpltypes.c config.c 
+
