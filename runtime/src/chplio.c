@@ -9,6 +9,21 @@ void _write_linefeed(FILE* outfile) {
 }
 
 
+void _read_boolean(FILE* infile, char* format, _boolean* val) {
+  char* inputString = NULL;
+  _read_string(stdin, format, &inputString);
+  if (strcmp(inputString, "true") == 0) {
+    *val = true;
+  } else if (strcmp(inputString, "false") == 0) {
+    *val = false;
+  } else {
+    fflush(stdout);
+    fprintf(stderr, "***ERROR:  Not of boolean type***\n");
+    exit(0);
+  }
+}
+
+
 void _write_boolean(FILE* outfile, char* format, _boolean val) {
   if (val) {
     fprintf(outfile, format, "true");
@@ -45,10 +60,25 @@ void _read_string(FILE* infile, char* format, _string* val) {
 
   fscanf(infile, format, localVal);
   if (strlen(localVal) == (DEFAULT_STRING_LENGTH - 1)) {
-    fprintf(stderr, "ERROR:  MAX STRING LENGTH is %d\n", DEFAULT_STRING_LENGTH);
+    fprintf(stderr, "***ERROR:  MAX STRING LENGTH is %d***\n", DEFAULT_STRING_LENGTH);
     exit(0);
   }
   _copy_string(val, localVal);
+}
+
+
+void _read_complex128(FILE* infile, char* format, _complex128* val) {
+  char imaginaryI = 'i';
+  int numScans;
+
+  // NOTE:  The imaginary "i" is stored and checked in the if statement below
+  // to ensure that it has been entered directly after the second double of 
+  // the complex number, with no intervening space.
+  numScans = fscanf(infile, format, &(val->re), &(val->im), &imaginaryI);
+  if ((imaginaryI != 'i') || (numScans < 2)) {
+    fprintf(stderr, "***ERROR:  Incorrect format for complex numbers***\n");
+    exit(0);
+  }
 }
 
 

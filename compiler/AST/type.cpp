@@ -557,17 +557,17 @@ static void codegenIOPrototypeBody(FILE* outfile, Symbol* name, Type* definition
 void UserType::codegenIORoutines(FILE* outfile) {
   bool isRead;
 
-  //  isRead = true;
-  //  codegenIOPrototype(currentModule->intheadfile, name, isRead);
-  //  fprintf(currentModule->intheadfile, ";\n");
+  isRead = true;
+  codegenIOPrototype(currentModule->intheadfile, name, isRead);
+  fprintf(currentModule->intheadfile, ";\n");
 
   isRead = false;
   codegenIOPrototype(currentModule->intheadfile, name, isRead);
   fprintf(currentModule->intheadfile, ";\n\n");
 
-  //  isRead = true;
-  //  codegenIOPrototypeBody(outfile, name, definition, isRead);
-  //  fprintf(outfile, "\n\n");
+  isRead = true;
+  codegenIOPrototypeBody(outfile, name, definition, isRead);
+  fprintf(outfile, "\n\n");
 
   isRead = false;
   codegenIOPrototypeBody(outfile, name, definition, isRead);
