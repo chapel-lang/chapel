@@ -22201,3 +22201,16 @@ Modified files:
 	chapel/compiler/include/: sym.h 
 	chapel/test/classes/bradc/: writeunion.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 12:02:10 -- bradc
+
+Log message:
+	I made this .good file by hand and accidentally put a typo
+	into it.  This test works now, thanks to John.
+
+Modified files:
+	chapel/test/classes/bradc/: writeunion.good 
+Removed files:
+	chapel/test/classes/bradc/: writeunion.future 
+
