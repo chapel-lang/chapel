@@ -17532,3 +17532,15 @@ Added files:
 	chapel/test/trivial/deitz/: test_config_use_before_decl.chpl 
 	                            test_config_use_before_decl.good 
 
+---------------------------------------------------------------------------
+
+02/15/05 13:14:10 -- deitz
+
+Log message:
+	Eliminated dead runtime code based on my changes to generalize arrays
+	and domains.
+
+Modified files:
+	chapel/runtime/include/: array.h chplio.h domain.h 
+	chapel/runtime/src/: array.c domain.c 
+
