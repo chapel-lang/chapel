@@ -16496,3 +16496,16 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/traversals/: collectASTS.cpp 
 
+---------------------------------------------------------------------------
+
+02/03/05 17:29:04 -- jplevyak
+
+Log message:
+	Cleanup of type cloning code.
+	Still not enabled because TypeDefStmt::clone() is still cloning
+	methods.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp sym.cpp 
+	chapel/compiler/include/: analysis.h sym.h 
+
