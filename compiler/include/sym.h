@@ -157,6 +157,7 @@ class Sym : public BasicSym {
 
   void			*temp;			// algorithmic temp		*type*
 
+  Sym *			scalar_type();		// scalar inheritted from or NULL
   Sym *			coerce_to(Sym *);
   char			*pathname();
   int			line();
