@@ -103,12 +103,18 @@
 
 /* These are declared in increasing order of precedence. */
 
-%left EQUALS
-%left LTHAN GTHAN
+%left LOGOR
+%left LOGAND
+%right '!'
+%left BITOR
+%left BITXOR
+%left BITAND
+%left EQUALS NEQUALS
+%left LTHAN LEQUALS GTHAN GEQUALS
 %left '+' '-'
-%left '*' '/'
-%right BITXOR
-%right UMINUS
+%right UMINUS '~'
+%left '*' '/' '%'
+%left EXP
 
 %% 
 
