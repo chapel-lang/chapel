@@ -22776,3 +22776,14 @@ Modified files:
 	chapel/compiler/symtab/: removeDeadSymbols.cpp 
 	                         removeDeadSymbols.h 
 
+---------------------------------------------------------------------------
+
+03/30/05 18:13:25 -- bradc
+
+Log message:
+	Changed some C++ comments in the runtime to C-style,
+	to keep us strict for non-gcc backend compilers.
+
+Modified files:
+	chapel/runtime/include/: array.h chplio.h 
+
