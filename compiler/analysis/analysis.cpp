@@ -1906,7 +1906,7 @@ type_info(BaseAST *a, Symbol *s) {
 
 Type *
 return_type_info(FnSymbol *fn) {
-  if (fn->asymbol->sym)
+  if (fn->asymbol && fn->asymbol->sym)
     return to_AST_type(fn->asymbol->sym->ret->var->type);
   else
     return dtUnknown;  // analysis not run
@@ -2013,7 +2013,7 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
 
 int
 function_is_used(FnSymbol *fn) {
-  if (fn->asymbol->sym)
+  if (fn->asymbol && fn->asymbol->sym)
     return fn->asymbol->sym->fun->ess.n != 0;
   else
     return true; // analysis not run   

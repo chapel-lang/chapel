@@ -322,6 +322,7 @@ class ParenOpExpr : public Expr {
   Expr* argList;
 
   ParenOpExpr(Expr* init_base, Expr* init_arg = nilExpr);
+  void setArgs(Expr* init_arg);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);

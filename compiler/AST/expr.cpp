@@ -966,12 +966,26 @@ void MemberAccess::codegen(FILE* outfile) {
 ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
   Expr(EXPR_PARENOP),
   baseExpr(init_base),
-  argList(init_arg) 
+  argList(nilExpr) 
 {
   if (!baseExpr->isNull()) {
     baseExpr->parent = this;
     SET_BACK(baseExpr);
   }
+  setArgs(init_arg);
+}
+
+
+void ParenOpExpr::setArgs(Expr* init_arg) {
+  // if argList already exists, unlink it
+  if (!argList->isNull()) {
+    argList->back = NULL;
+  }
+
+  // assign new args
+  argList = init_arg;
+
+  // setup back pointers for args
   if (!argList->isNull()) {
     SET_BACK(argList);
     Expr* arg = argList;

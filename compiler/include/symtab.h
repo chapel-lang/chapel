@@ -54,7 +54,7 @@ class Symboltable {
 					    varType vartag = VAR_NORMAL, 
 					    bool isConst = false);
   static ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
-						Type* type);
+						Type* type, Expr* init);
   static VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
 						   Expr* init, varType vartag, 
 						   bool isConst);

@@ -32,13 +32,15 @@ static void symbolSub(Symbol* sym, char illegalChar) {
 
 
 void LegalizeCNames::processSymbol(Symbol* sym) {
-  char* questionMark = strchr(sym->cname, '?');
-  char* dash = strchr(sym->cname, '-');
+  if (sym->parentScope->type != SCOPE_INTRINSIC) {
+    char* questionMark = strchr(sym->cname, '?');
+    char* dash = strchr(sym->cname, '-');
   
-  if (questionMark) {
-    symbolSub(sym, *questionMark);
-  } else if (dash) {
-    symbolSub(sym, *dash);
+    if (questionMark) {
+      symbolSub(sym, *questionMark);
+    } else if (dash) {
+      symbolSub(sym, *dash);
+    }
   }
 }
 

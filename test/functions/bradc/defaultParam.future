@@ -1,0 +1,5 @@
+jplevyak
+
+Default parameters have just been added and cause analysis to
+fail because it doesn't know about default parameter values
+associated with ParamSymbols yet.

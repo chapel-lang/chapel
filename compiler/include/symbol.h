@@ -92,10 +92,12 @@ extern VarSymbol* nilVarSymbol;
 class ParamSymbol : public Symbol {
  public:
   paramType intent;
+  Expr* init;
 
   ParamSymbol(paramType init_intent, char* init_name, 
-	      Type* init_type = dtUnknown);
-  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+	      Type* init_type = dtUnknown, Expr* init_init = nilExpr);
+  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, 
+			     CloneCallback* analysis_clone);
 
   virtual void traverseDefSymbol(Traversal* traverse);
 

@@ -23,8 +23,9 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
     if (fncall) {
       FnSymbol* fnSym = fncall->findFnSymbol();
       ParamSymbol* formal = dynamic_cast<ParamSymbol*>(fnSym->formals);
-      Expr* origActuals = fncall->argList->copyList();
-      Expr* actual = fncall->argList;
+      Expr* actualList = fncall->argList;
+      Expr* actual = actualList;
+      Expr* newActuals = nilExpr;
       if (formal && actual) {
 
 	/*
@@ -40,33 +41,42 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 
 	/* generate copy-in statements */
 	while (formal) {
-	  if (formal->requiresCTmp()) {
+	  Expr* newActualUse = nilExpr;
+
+	  bool actualElided = actual->isNull();
+	  if (formal->requiresCTmp() || actualElided) {
 	    tmpsRequired = true;
 
-	    Symbol* newActual;
 	    Expr* initializer;
-	    if (formal->intent == PARAM_OUT) {
-	      initializer = nilExpr;
+	    if (formal->intent == PARAM_OUT || actualElided) {
+	      initializer = formal->init;
 	    } else {
 	      initializer = actual->copy();
 	    }
-	    char* actualName = glomstrings(2, "_", formal->name);
+	    char* newActualName = glomstrings(2, "_", formal->name);
+	    Symbol* newActual;
 	    VarDefStmt* newActualDecl = 
-	      Symboltable::defineSingleVarDefStmt(actualName,
+	      Symboltable::defineSingleVarDefStmt(newActualName,
 						  formal->type, initializer,
 						  VAR_NORMAL, false, &newActual);
-	    Variable* newActualUse = new Variable(newActual);
-	    actual->replace(newActualUse);
-
 	    body = appendLink(body, newActualDecl);
+
+	    newActualUse = new Variable(newActual);
+	  } else {
+	    newActualUse = actual->copy();
 	  }
+	  newActuals = appendLink(newActuals, newActualUse);
 	
 	  formal = nextLink(ParamSymbol, formal);
-	  actual = nextLink(Expr, actual);
+	  if (!actualElided) {
+	    actual = nextLink(Expr, actual);
+	  }
 	}
 	if (!tmpsRequired) {
 	  return;
 	}
+
+	fncall->setArgs(newActuals);
 
 	Stmt* origStmt = expr->stmt;
 	Stmt* newStmt = origStmt->copy();
@@ -74,11 +84,11 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 
 	/* generate copy out statements */
 	formal = dynamic_cast<ParamSymbol*>(fnSym->formals);
-	actual = origActuals;
+	actual = actualList;
 	Expr* newActual = fncall->argList;
 	if (formal && actual) {
 	  while (formal) {
-	    if (formal->requiresCopyBack()) {
+	    if (formal->requiresCopyBack() && !actual->isNull()) {
 	      Expr* copyBack = new AssignOp(GETS_NORM, actual->copy(),
 					    newActual->copy());
 	      ExprStmt* copyBackStmt = new ExprStmt(copyBack);
@@ -86,7 +96,9 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	    }
 
 	    formal = nextLink(ParamSymbol, formal);
-	    actual = nextLink(Expr, actual);
+	    if (!actual->isNull()) {
+	      actual = nextLink(Expr, actual);
+	    }
 	    newActual = nextLink(Expr, newActual);
 	  }
 	}

@@ -263,9 +263,10 @@ static char* paramTypeNames[NUM_PARAM_TYPES] = {
 
 
 ParamSymbol::ParamSymbol(paramType init_intent, char* init_name, 
-			 Type* init_type) :
+			 Type* init_type, Expr* init_init) :
   Symbol(SYMBOL_PARAM, init_name, init_type),
-  intent(init_intent)
+  intent(init_intent),
+  init(init_init)
 {
   Symboltable::define(this);
 }

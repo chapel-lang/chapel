@@ -337,9 +337,9 @@ formaltag:
 
 
 formal:
-  formaltag ident_symbol_ls vardecltype
+  formaltag ident_symbol_ls vardecltype optional_init_expr
     {
-      $$ = Symboltable::defineParams($1, $2, $3);
+      $$ = Symboltable::defineParams($1, $2, $3, $4);
       //      $$ = new ParamSymbol($1, $2, $3);
     }
 | TTYPE identifier
