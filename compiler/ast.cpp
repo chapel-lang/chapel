@@ -117,6 +117,7 @@ ast_qualified_ident_sym(AST *a) {
 char *
 ast_qualified_ident_string(AST *ast) {
   char *s = ast->v[0]->string;
+  s = s ? s : (char*)""; // global
   for (int i = 1; i < ast->n; i++) {
     char *ss = (char*)MALLOC(strlen(s) + strlen(ast->v[i]->string) + 3);
     strcpy(ss, s);
