@@ -21009,3 +21009,25 @@ Added files:
 	                                test_tuple_simple7.future 
 	                                test_tuple_simple7.good 
 
+---------------------------------------------------------------------------
+
+03/23/05 11:37:55 -- bradc
+
+Log message:
+	Made some small changes to the renameOverloadedFunctions
+	traversal -- changed it from a Traversal to a SymtabTraversal
+	in order to make it more efficient  (SymtabTraversals didn't
+	exist when it was first written).  Also made sure that it
+	doesn't rename the entry point main().
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/symtab/: renameOverloadedFunctions.cpp 
+	                         renameOverloadedFunctions.h 
+Removed files:
+	chapel/compiler/traversals/: renameOverloadedFunctions.cpp 
+	                             renameOverloadedFunctions.h 
+
