@@ -13010,3 +13010,29 @@ Added files:
 	chapel/test/types/type_variables/deitz/future/: 
 	                                                test_clone_function4.chpl 
 
+---------------------------------------------------------------------------
+
+12/27/04 17:02:36 -- deitz
+
+Log message:
+	Added rudimentary support for unions (without runtime typechecking)
+	from parsing to code generation.  The single test case currently fails
+	in analysis, but I'm not sure why.  Expect a regression:
+	classes/deitz/test_union1.chpl.
+	
+	Unions are now generated as structs with an id tag (for runtime
+	typechecking) and a union for efficient storage of the union fields.
+	In the AST, the union is a class just like a record.  In the case of
+	the record, a bool flag value is set to true.  Similarly, for unions,
+	a bool flag union_value is set set to true.
+	
+	Fixed a bug in the setup of nilClassType in which uninitialized
+	nilClassType was passed to its own constructor.  This was coerced to
+	false, but now that there are two parameters required by this
+	constructor, it no longer worked.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp nils.cpp symtab.cpp type.cpp 
+	chapel/compiler/include/: symtab.h type.h 
+	chapel/compiler/parser/: chapel.y 
+
