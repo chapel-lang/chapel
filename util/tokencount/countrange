@@ -1,0 +1,17 @@
+#!/usr/bin/perl
+
+if (@ARGV) {
+    $numdays = shift @ARGV;
+} else {
+    print "countrange <numdaysago>\n";
+    exit 1;
+}
+
+$i = $numdays;
+for ($i = $numdays; $i >= 0; $i--) {
+    $date = `date --date="$i days ago" +%D`; chomp($date);
+#    print "$date\n";
+    print "Running tokctnightly -debug $date\n";
+    system("tokctnightly -debug $date");
+}
+

@@ -1,0 +1,211 @@
+#!/usr/bin/perl
+
+$printusage = 0;
+if (@ARGV) {
+    $debugflag = shift @ARGV;
+    if ($debugflag eq "-debug") {
+	$debug = 1;
+    } elsif ($debugflag eq "-cron") {
+	$debug = 0;
+    } else {
+	$printusage = 1;
+    }
+} else {
+    $printusage = 1;
+}
+
+if (@ARGV) {
+    $statdate = shift @ARGV;
+    $cvsdate = "$statdate 00:00:01";
+} else {
+    $statdate = `date +%D`; chomp($statdate);
+    $cvsdate = $statdate;
+}
+
+if ($printusage == 1) {
+    print "nightly [-debug|-cron] {date}\n";
+    exit 1;
+}
+
+
+#
+# get uniquifiers
+#
+$id = getpgrp();
+$today = `date +%w-%a`; chomp($today);
+
+
+#
+# directory locations
+#
+$tmpdir = "/tmp/chapel-tokctnightly.$id.deleteme";
+$chapeldir = "$tmpdir/chapel";
+$logdir = "~bradc/chapel/test/Logs/Nightly";
+$statdir = "$logdir/Stats";
+if ($debug == 1) {
+    $statfile = "$statdir/tokctnightly.debug.dat";
+} else {
+    $statfile = "$statdir/tokctnightly.cron.dat";
+}
+$tokctdir = "~bradc/chapel/util/tokencount";
+$tokctr = "$tokctdir/tokencount.cron";
+
+
+$somethingfailed = 0;
+
+#
+# make temp directory
+#
+mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
+
+#
+# checkout sources
+#
+
+mysystem("cd $tmpdir && cvs -d ~bradc/CVS checkout -D \"$cvsdate\" chapel", "cvs checkout", 1, 1);
+
+mysystem("cd $tmpdir/chapel/compiler && $tokctr *.h > $tmpdir/comp-inc.ntoks");
+mysystem("cd $tmpdir/chapel/compiler && $tokctr *.cpp > $tmpdir/comp-src.ntoks");
+mysystem("cd $tmpdir/chapel/compiler/AST && $tokctr *.h > $tmpdir/fe-inc.ntoks");
+mysystem("cd $tmpdir/chapel/compiler/AST && $tokctr *.cpp > $tmpdir/fe-src.ntoks");
+mysystem("cd $tmpdir/chapel/runtime/include && $tokctr *.h > $tmpdir/rt-inc.ntoks");
+mysystem("cd $tmpdir/chapel/runtime/src && $tokctr *.c > $tmpdir/rt-src.ntoks");
+$compinctoks = `cat $tmpdir/comp-inc.ntoks`; chomp($compinctoks);
+$compsrctoks = `cat $tmpdir/comp-src.ntoks`; chomp($compsrctoks);
+$feinctoks = `cat $tmpdir/fe-inc.ntoks`; chomp($feinctoks);
+$fesrctoks = `cat $tmpdir/fe-src.ntoks`; chomp($fesrctoks);
+$rtinctoks = `cat $tmpdir/rt-inc.ntoks`; chomp($rtinctoks);
+$rtsrctoks = `cat $tmpdir/rt-src.ntoks`; chomp($rtsrctoks);
+
+
+if ($compinctoks == "") {
+    $compinctoks = 0;
+}
+if ($compsrctoks == "") {
+    $compsrctoks = 0;
+}
+if ($feinctoks == "") {
+    $feinctoks = 0;
+}
+if ($fesrctoks == "") {
+    $fesrctoks = 0;
+}
+if ($rtinctoks == "") {
+    $rtinctoks = 0;
+}
+if ($rtsrctoks == "") {
+    $rtsrctoks = 0;
+}
+
+$comptoks = $compinctoks + $compsrctoks;
+$fetoks = $feinctoks + $fesrctoks;
+if ($fetoks != 0) {
+    $fetoks += $comptoks;
+}
+$rttoks = $rtinctoks + $rtsrctoks;
+if ($rttoks != 0) {
+    if ($fetoks != 0) {
+	$rttoks += $fetoks;
+    } else {
+	$rttoks += $comptoks;
+    }
+}
+
+`echo -n "$statdate\t" >> $statfile`;
+if ($comptoks == 0) {
+    `echo -n "-" >> $statfile`;
+} else {
+    `echo -n "$comptoks" >> $statfile`;
+}
+`echo -n "\t" >> $statfile`;
+if ($fetoks == 0) {
+    `echo -n "-" >> $statfile`;
+} else {
+    `echo -n "$fetoks" >> $statfile`;
+}
+`echo -n "\t" >> $statfile`;
+if ($rttoks == 0) {
+    `echo -n "-" >> $statfile`;
+} else {
+    `echo -n "$rttoks" >> $statfile`;
+}
+`echo -n "\n" >> $statfile`;
+
+
+#
+# sort output
+#
+
+
+if (0) {
+#
+# write stats and build new graph
+#
+if ($knownumtests == 1) {
+    $testcol = "$newnumtests";
+} else {
+    $testcol = "-";
+}
+if ($stdstatus == 0) {
+    $stdcol = "$newstdsucc";
+} else {
+    $stdcol = "-";
+}
+if ($vgrstatus == 0) {
+    $vgrcol = "$newvgrsucc";
+} else {
+    $vgrcol = "-";
+}
+`echo "$statdate\t-\t$testcol\t$stdcol\t$vgrcol" >> $statfile`;
+if ($debug == 0) {
+    `ci -l -m"automated nightly checkin" $statfile`;
+}
+`cd $statdir && ./makeplot`;
+}
+
+#
+# clean up
+#
+if (1 || $somethingfailed == 0) {
+    mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
+}
+
+exit 0;
+
+
+#
+# subroutines
+#
+
+sub mysystem {
+    $command = $_[0];
+    $errorname = $_[1];
+    $fatal = $_[2];
+    $mailmsg = $_[3];
+
+    $status = system($command);
+    if ($status != 0) {
+	$somethingfailed = 1;
+        $status = $status / 256;
+	print "Error $_[1]: $status\n";
+
+	if ($mailmsg != 0) {
+	    open(MAIL, $mailcommand);
+	    print MAIL "=== Summary ===================================================\n";
+	    print MAIL "ERROR $_[1]: $status\n";
+	    print MAIL "(workspace left at $tmpdir)\n";
+	    print MAIL "===============================================================\n";
+	    close(MAIL);
+	}
+
+	if ($fatal != 0) {
+	    `echo "$statdate\t1" >> $statfile`;
+	    if ($debug == 0) {
+		`ci -l -m"automated nightly checkin" $statfile`;
+	    }
+	    `cd $statdir && ./makeplot`;
+	    exit 1;
+	}
+    }
+    $status;
+}
