@@ -191,6 +191,7 @@ void VarDefStmt::codegen(FILE* outfile) {
 	fprintf(outfile, "*/\n");
       }
     } else if (!initExpr->isNull()) {
+
       if (typeid(*(aVar->type)) == typeid(DomainType)) {
 	DomainType* domtype = (DomainType*)(aVar->type);
 	int rank = domtype->numdims ? domtype->numdims : 1; // BLC: hack!
@@ -210,25 +211,28 @@ void VarDefStmt::codegen(FILE* outfile) {
 	    initseq->hi->codegen(outfile);
 	    fprintf(outfile, ", ");
 	    initseq->str->codegen(outfile);
-
 	    initseq = nextLink(SimpleSeqExpr, initseq);
 	  }
 	}
 	fprintf(outfile, ");");
-     } else {
-       // TODO: hoist this into a traversal that rewrites vardefs as
-       // assignments?
-       AssignOp* assignment = new AssignOp(GETS_NORM, new Variable(aVar), 
-					   initExpr);
-       assignment->codegen(outfile);
-       fprintf(outfile, ";");
+      } else {
+	if (aVar->varClass == VAR_CONFIG) {
+	  fprintf(outfile, "if (!setInCommandLine(\"%s\", &%s)) {\n", aVar->name, aVar->name);
+	}
+	// TODO: hoist this into a traversal that rewrites vardefs as
+	// assignments?
+	AssignOp* assignment = new AssignOp(GETS_NORM, new Variable(aVar), 
+					    initExpr);
+	assignment->codegen(outfile);
+	fprintf(outfile, ";");
+	if (aVar->varClass == VAR_CONFIG) {
+	  fprintf(outfile, "\n}");
+	}
       }
-
       if (nextVar) {
 	fprintf(outfile, "\n");
       }
     }
-
     aVar = nextVar;
   }
 }

@@ -53,5 +53,7 @@ void _write_domain1(FILE* outfile, char* format, _domain1 val);
 void _write_array1_integer64(FILE* outfile, char* format, _array1_integer64 arr);
 void _write_array2_float64(FILE* outfile, char* format, _array2_float64 arr);
 
+int setInCommandLine(char* varName, _integer64* value);
+
 #endif
 

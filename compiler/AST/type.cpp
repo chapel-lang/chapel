@@ -42,7 +42,7 @@ void Type::traverse(Traversal* traversal, bool atTop) {
     return;
   }
 
-  // expore Type and components
+  // explore Type and components
   if (traversal->processTop || !atTop) {
     traversal->preProcessType(this);
   }
