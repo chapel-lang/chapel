@@ -34,11 +34,13 @@ floatLiteral    {digit}+"."{digit}+
 %%
 
 and             return TAND;
+break           return TBREAK;
 by              return TBY;
 call            return TCALL;
 class           return TCLASS;
 config          return TCONFIG;
 const           return TCONST;
+continue        return TCONTINUE;
 do              return TDO;
 domain          return TDOMAIN;
 else            return TELSE;
@@ -46,10 +48,12 @@ enum            return TENUM;
 for             return TFOR;
 forall          return TFORALL;
 function        return TFUNCTION;
+goto            return TGOTO;
 if              return TIF;
 in              return TIN;
 index           return TINDEX;
 inout           return TINOUT;
+label           return TLABEL;
 let             return TLET;
 mod             return TMOD;
 module		return TMODULE;

@@ -17,6 +17,10 @@ enum astType_t {
   STMT_WHILELOOP,
   STMT_FORLOOP,
   STMT_COND,
+  STMT_LABEL,
+  STMT_GOTO,
+  STMT_BREAK,
+  STMT_CONTINUE,
 
   EXPR,
   EXPR_LITERAL,
@@ -67,7 +71,7 @@ enum astType_t {
   TYPE_SUM,
   TYPE_VARIABLE,
   TYPE_UNRESOLVED,
-  
+
   AST_TYPE_END 
 };
 

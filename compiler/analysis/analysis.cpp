@@ -22,7 +22,7 @@
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 
-class LabelMap : public Map<char *, BaseAST *> {};
+class LabelMap : public Map<char *, Stmt *> {};
 
 static Sym *domain_start_index_symbol = 0;
 static Sym *domain_next_index_symbol = 0;
@@ -336,9 +336,8 @@ install_new_function(FnSymbol *f) {
   Vec<Stmt *> all_stmts;
   Vec<BaseAST *> all_syms, syms;
   FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(f->defPoint);
-  if (!def_stmt) {
+  if (!def_stmt)
     INT_FATAL(f, "Function not defined in FnDefStmt");
-  }
   all_stmts.add(def_stmt);
   all_syms.add(f);
   close_symbols(all_stmts, all_syms);	
@@ -892,16 +891,39 @@ import_symbols(Vec<BaseAST *> &syms) {
   return 0;
 }
 
-// FUTURE: support for goto or named break
+static Stmt *
+label_target(Stmt *stmt) {
+  Stmt *target = stmt;
+  while (target && target->astType == STMT_LABEL)
+    target = dynamic_cast<LabelStmt*>(target)->stmt;
+  if (!target || target == nilStmt)
+    target = stmt;
+  return target;
+}
+
 static int
 define_labels(BaseAST *ast, LabelMap *labelmap) {
-#if 0
   Stmt *stmt = dynamic_cast<Stmt *>(ast);
   switch (stmt->astType) {
-    case AST_label:
-      ast->label[0] = if1_alloc_label(i);
-      ast->label[1] = ast->label[0];
-      labelmap->put(ast->get(AST_ident)->string, ast);
+    case STMT_LABEL: {
+      Stmt *target = label_target(stmt);
+      switch (target->astType) {
+	default:
+	  target->ainfo->label[0] = if1_alloc_label(if1);
+	  target->ainfo->label[1] = target->ainfo->label[0];
+	  break;
+	case STMT_WHILELOOP:
+	case STMT_FORLOOP:
+	  // handled below
+	  break;
+      }
+      labelmap->put(if1_cannonicalize_string(if1, dynamic_cast<LabelStmt*>(stmt)->name), target);
+      break;
+    }
+    case STMT_WHILELOOP:
+    case STMT_FORLOOP:
+      stmt->ainfo->label[0] = if1_alloc_label(if1);
+      stmt->ainfo->label[1] = if1_alloc_label(if1);
       break;
     default: break;
   }
@@ -909,7 +931,6 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
   TRAVERSE_LS(ast, getStmts, true);
   forv_BaseAST(a, getStmts->stmts)
     define_labels(a, labelmap);
-#endif
   return 0;
 }
 
@@ -921,32 +942,45 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
   switch (stmt->astType) {
     case STMT_WHILELOOP:
     case STMT_FORLOOP:
-      continue_label = stmt->ainfo->label[0] = if1_alloc_label(if1);
-      break_label = stmt->ainfo->label[1] = if1_alloc_label(if1);
+      continue_label = stmt->ainfo->label[0];
+      break_label = stmt->ainfo->label[1];
       break;
     case STMT_RETURN:
       stmt->ainfo->label[0] = return_label;
       break;
-#if 0
-    case STMT_BREAK;
-      if ((target = ast->get(AST_ident))) {
-	target = labelmap->get(target->string);
-	ast->label[0] = target->label[1];
+    case STMT_GOTO: {
+      GotoStmt *s = dynamic_cast<GotoStmt*>(ast);
+      Stmt *target = labelmap->get(if1_cannonicalize_string(if1, s->name));
+      if (!target)
+	return show_error("unresolved label %s", s->ainfo, s->name);
+      else 
+	stmt->ainfo->label[0] = target->ainfo->label[0];
+      break;
+    }
+    case STMT_BREAK: {
+      BreakStmt *s = dynamic_cast<BreakStmt*>(ast);
+      if (s->name) {
+	Stmt *target = labelmap->get(if1_cannonicalize_string(if1, s->name));
+	if (!target)
+	  return show_error("unresolved label %s", s->ainfo, s->name);
+	else 
+	  stmt->ainfo->label[0] = target->ainfo->label[1];
       } else
-	ast->label[0] = break_label;
+	stmt->ainfo->label[0] = break_label;
       break;
-    case STMT_CONTINUE:
-      if ((target = ast->get(AST_ident))) {
-	target = labelmap->get(target->string);
-	ast->label[0] = target->label[0];
+    }
+    case STMT_CONTINUE: {
+      ContinueStmt *s = dynamic_cast<ContinueStmt*>(ast);
+      if (s->name) {
+	Stmt *target = labelmap->get(if1_cannonicalize_string(if1, s->name));
+	if (!target)
+	  return show_error("unresolved label %s", s->ainfo, s->name);
+	else 
+	  stmt->ainfo->label[0] = target->ainfo->label[0];
       } else
-	ast->label[0] = continue_label;
+	stmt->ainfo->label[0] = continue_label;
       break;
-    case STMT_GOTO:
-      target = labelmap->get(ast->get(AST_ident)->string);
-      ast->label[0] = target->label[0];
-      break;
-#endif
+    }
     default: break;
   }
   GetStmts* getStmts = new GetStmts();
@@ -1136,6 +1170,21 @@ gen_if1(BaseAST *ast) {
 	return -1;
   switch (ast->astType) {
     case STMT: assert(ast->isNull()); break;
+    case STMT_LABEL: {
+      LabelStmt *s = dynamic_cast<LabelStmt*>(ast);
+      Stmt *target = label_target(s);
+      if1_label(if1, &s->ainfo->code, s->stmt->ainfo, target->ainfo->label[0]);
+      if1_gen(if1, &s->ainfo->code, s->stmt->ainfo->code);
+      break;
+    }
+    case STMT_BREAK:
+    case STMT_GOTO:
+    case STMT_CONTINUE: {
+      Stmt *s = dynamic_cast<Stmt*>(ast);
+      Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
+      c->ast = s->ainfo;
+      break;
+    }
     case STMT_NOOP: break;
     case STMT_WITH: break;
     case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
@@ -1568,13 +1617,11 @@ gen_if1(BaseAST *ast) {
 static int
 gen_fun(FnSymbol *f) {
   Sym *fn = f->asymbol->sym;
-  AInfo* ast;
-  if (Expr* expr = dynamic_cast<Expr*>(f->defPoint)) {
+  AInfo* ast; Expr *expr; Stmt *stmt;
+  if (expr = dynamic_cast<Expr*>(f->defPoint))
     ast = expr->ainfo;
-  }
-  else if (Stmt* stmt = dynamic_cast<Stmt*>(f->defPoint)) {
+  else if (stmt = dynamic_cast<Stmt*>(f->defPoint)) 
     ast = stmt->ainfo;
-  }
   else {
     INT_FATAL(f, "defPoint is not Stmt or Expr");
   }
@@ -1618,18 +1665,14 @@ init_function(FnSymbol *f) {
     sym_init = s;
   }
   s->cont = new_sym();
-
-  AInfo* ast;
-  if (Expr* expr = dynamic_cast<Expr*>(f->defPoint)) {
+  AInfo* ast; Expr *expr; Stmt *stmt;
+  if ((expr = dynamic_cast<Expr*>(f->defPoint)))
     ast = expr->ainfo;
-  }
-  else if (Stmt* stmt = dynamic_cast<Stmt*>(f->defPoint)) {
+  else if ((stmt = dynamic_cast<Stmt*>(f->defPoint)))
     ast = stmt->ainfo;
-  }
   else {
     INT_FATAL(f, "defPoint is not Stmt or Expr");
   }
-
   s->cont->ast = ast;
   s->ret = new_sym();
   s->ret->ast = ast;
@@ -1644,13 +1687,11 @@ init_function(FnSymbol *f) {
 static int
 build_function(FnSymbol *f) {
   if (define_labels(f->body, f->asymbol->sym->labelmap) < 0) return -1;
-  AInfo* ast;
-  if (Expr* expr = dynamic_cast<Expr*>(f->defPoint)) {
+  AInfo* ast; Expr *expr; Stmt *stmt;
+  if ((expr = dynamic_cast<Expr*>(f->defPoint)))
     ast = expr->ainfo;
-  }
-  else if (Stmt* stmt = dynamic_cast<Stmt*>(f->defPoint)) {
+  else if ((stmt = dynamic_cast<Stmt*>(f->defPoint)))
     ast = stmt->ainfo;
-  }
   else {
     INT_FATAL(f, "defPoint is not Stmt or Expr");
   }

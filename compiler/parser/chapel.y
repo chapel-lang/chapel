@@ -36,20 +36,24 @@
   ModuleSymbol* modsym;
 }
 
+%token TBREAK
 %token TCALL
 %token TCLASS
 %token TCONFIG
 %token TCONST
+%token TCONTINUE
 %token TDO
 %token TDOMAIN
 %token TENUM
 %token TFOR
 %token TFORALL
 %token TFUNCTION
+%token TGOTO
 %token TIF
 %token TIN
 %token TINDEX
 %token TINOUT
+%token TLABEL
 %token TLET
 %token TMODULE
 %token TOUT
@@ -528,6 +532,18 @@ function_body_stmt:
 
 statement:
   noop_stmt
+| TLABEL identifier statement
+    { $$ = new LabelStmt($2, $3); }
+| TGOTO identifier TSEMI
+    { $$ = new GotoStmt($2); }
+| TBREAK identifier TSEMI
+    { $$ = new BreakStmt($2); }
+| TBREAK TSEMI
+    { $$ = new BreakStmt(); }
+| TCONTINUE identifier TSEMI
+    { $$ = new ContinueStmt($2); }
+| TCONTINUE TSEMI
+    { $$ = new ContinueStmt(); }
 | decl
 | assignment
 | conditional

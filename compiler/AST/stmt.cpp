@@ -969,3 +969,113 @@ void CondStmt::codegen(FILE* outfile) {
     fprintf(outfile, "\n}");
   }
 }
+
+
+
+LabelStmt::LabelStmt(char* init_name, Stmt* init_stmt) :
+  Stmt(STMT_LABEL),
+  name(init_name),
+  stmt(init_stmt)
+{
+  SET_BACK(stmt);
+}
+
+
+Stmt* LabelStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new LabelStmt(name, stmt->copyInternal(clone, map, analysis_clone));
+}
+
+
+void LabelStmt::traverseStmt(Traversal* traversal) {
+  TRAVERSE(stmt, traversal, false);
+}
+
+
+void LabelStmt::print(FILE* outfile) {
+  fprintf(outfile, "label %s ", name);
+  stmt->print(outfile);
+}
+
+void LabelStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "%s:;\n", name);
+  stmt->codegen(outfile);
+}
+
+
+
+GotoStmt::GotoStmt(char* init_name) :
+  Stmt(STMT_GOTO),
+  name(init_name)
+{
+}
+
+
+Stmt* GotoStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new GotoStmt(name);
+}
+
+
+void GotoStmt::traverseStmt(Traversal* traversal) {
+}
+
+
+void GotoStmt::print(FILE* outfile) {
+  fprintf(outfile, "goto %s", name);
+}
+
+void GotoStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "goto %s;\n", name);
+}
+
+
+
+BreakStmt::BreakStmt(char* init_name) :
+  Stmt(STMT_BREAK),
+  name(init_name)
+{
+}
+
+
+Stmt* BreakStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new BreakStmt(name);
+}
+
+
+void BreakStmt::traverseStmt(Traversal* traversal) {
+}
+
+
+void BreakStmt::print(FILE* outfile) {
+  fprintf(outfile, "goto %s", name);
+}
+
+void BreakStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "goto %s;\n", name);
+}
+
+
+
+ContinueStmt::ContinueStmt(char* init_name) :
+  Stmt(STMT_CONTINUE),
+  name(init_name)
+{
+}
+
+
+Stmt* ContinueStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new ContinueStmt(name);
+}
+
+
+void ContinueStmt::traverseStmt(Traversal* traversal) {
+}
+
+
+void ContinueStmt::print(FILE* outfile) {
+  fprintf(outfile, "goto %s", name);
+}
+
+void ContinueStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "goto %s;\n", name);
+}
+

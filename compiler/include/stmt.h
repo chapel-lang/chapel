@@ -5,6 +5,7 @@
 #include "baseAST.h"
 #include "symbol.h"
 #include "analysis.h"
+#include "pragma.h"
 
 class Expr;
 class AInfo;
@@ -14,6 +15,7 @@ class Stmt : public BaseAST {
   Symbol* parentSymbol;
   AInfo *ainfo;
   Stmt** back;
+  Pragma *pragmas;
 
   Stmt(astType_t astType);
 
@@ -214,5 +216,67 @@ class CondStmt : public Stmt {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
+
+
+class LabelStmt : public Stmt {
+ public:
+  char *name;
+  Stmt *stmt;
+  
+  LabelStmt(char *name, Stmt *stmt);
+
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void traverseStmt(Traversal* traversal);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class GotoStmt : public Stmt {
+ public:
+  char *name;
+  
+  GotoStmt(char *name);
+
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void traverseStmt(Traversal* traversal);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class BreakStmt : public Stmt {
+ public:
+  char *name;
+  
+  BreakStmt(char *name = NULL);
+
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void traverseStmt(Traversal* traversal);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class ContinueStmt : public Stmt {
+ public:
+  char *name;
+  
+  ContinueStmt(char *name = NULL);
+
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void traverseStmt(Traversal* traversal);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
 
 #endif
