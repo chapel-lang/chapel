@@ -145,6 +145,9 @@ class Sym : public gc {
   virtual int		line();
   char			*filename();
   virtual Sym		*copy();
+  virtual int		is_scalar();
+  virtual Sym *		element_type();
+
   void			copy_values(Sym *);
   void 			inherits_add(Sym *);
   void 			must_implement_and_specialize(Sym *);

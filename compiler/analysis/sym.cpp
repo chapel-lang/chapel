@@ -1,6 +1,7 @@
 #include "geysa.h"
 #include "ast.h"
 #include "if1.h"
+#include "builtin.h"
 
 Sym *
 meta_apply(Sym *fn, Sym *arg) {
@@ -198,4 +199,14 @@ Sym::must_implement_and_specialize(Sym *s) {
   assert(!must_implement && !must_specialize);
   must_implement = s;
   must_specialize = s;
+}
+
+int
+Sym::is_scalar() {
+  return sym_anynum->specializers.set_in(type) != 0;
+}
+
+Sym *
+Sym::element_type() {
+  return element;
 }

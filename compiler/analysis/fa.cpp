@@ -1471,7 +1471,7 @@ analyze_edge(AEdge *e) {
       continue;
     MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
     Var *v = e->to->fun->args.get(p), *filtered_v = e->to->fun->filtered_args.get(p);
-    AVar *a = x->value, *b = make_AVar(v, e->to), *filtered_b = make_AVar(filtered_v, e->to);
+    AVar *a = x->value, *b = make_AVar(v, e->to), *filtered_b = unique_AVar(filtered_v, e->to);
     AType *filter = e->match->filters.get(p);
     if (!filter)
       continue;

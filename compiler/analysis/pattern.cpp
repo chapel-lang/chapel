@@ -473,7 +473,7 @@ generic_substitutions(Match **am, MPosition &p, Vec<CreationSet*> args) {
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     Sym *formal_type = m->formal_types.get(cp);
-    if (is_generic_type(formal_type)) {
+    if (formal_type && is_generic_type(formal_type)) {
       Sym *t = unify_generic_type(formal_type, concrete_type, m->generic_substitutions);
       // need to loop over filters and split Match for those elements of the filter
       // at cp which do not have the same concrete type as cs, install in matchmap
@@ -485,19 +485,10 @@ generic_substitutions(Match **am, MPosition &p, Vec<CreationSet*> args) {
   p.pop();
 }
 
-static int 
-is_scalar(Sym *type) {
-  return sym_anynum->specializers.set_in(type) != 0;
-}
-
 static int
 is_scalar_aggregate(Sym *type) {
-  return 0;
-}
-
-static Sym *
-aggregate_scalar_type(Sym *type) {
-  return 0;
+  Sym *et = type->element_type();
+  return et && et->is_scalar();
 }
 
 static void
@@ -510,9 +501,9 @@ point_wise_uses(Match **am, MPosition &p, Vec<CreationSet*> args) {
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     Sym *formal_type = m->formal_types.get(cp);
-    if (is_scalar(formal_type) && is_scalar_aggregate(concrete_type)) {
+    if (formal_type && formal_type->is_scalar() && is_scalar_aggregate(concrete_type)) {
       m->pointwise_substitutions.put(cp, concrete_type);
-      m->formal_types.put(cp, aggregate_scalar_type(concrete_type));
+      m->formal_types.put(cp, concrete_type->element_type());
     }
     p.inc();
   }
@@ -538,7 +529,8 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
 	goto LnextFun;
       }
       Sym *formal = m->fun->arg_syms.get(cp);
-      m->formal_types.put(cp, formal->type);
+      if (formal->type)
+	m->formal_types.put(cp, formal->type);
       p.inc();
     }
     p.pop();

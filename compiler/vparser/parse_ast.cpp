@@ -1912,7 +1912,7 @@ finalize_symbols(IF1 *i) {
   }
   forv_Sym(s, i->allsyms) {
     if (s->is_constant || s->is_symbol)
-      s->function_scope = 1;
+      s->global_scope = 1;
     else
       if (!s->in || s->in->is_module || s->type_kind)
 	s->global_scope = 1;

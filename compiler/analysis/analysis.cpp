@@ -61,6 +61,17 @@ ASymbol::line() {
     return Sym::line();
 }
 
+Sym *
+ASymbol::element_type() {
+  switch (xsymbol->astType) {
+    default: return 0;
+    case TYPE_ARRAY: {
+      ArrayType *at = dynamic_cast<ArrayType*>(xsymbol);
+      return at->elementType->asymbol;
+    }
+  }
+}
+
 AInfo::AInfo() : xast(0), code(0), sym(0), rval(0) {
   label[0] = label[1] = 0;
 }

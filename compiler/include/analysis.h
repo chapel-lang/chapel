@@ -30,6 +30,9 @@ class ASymbol : public Sym {
   Sym *copy();
   char *pathname();
   int line();
+
+  int is_aggregate();
+  Sym *element_type();
   
   BaseAST *xsymbol;
 

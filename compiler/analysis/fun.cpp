@@ -189,6 +189,7 @@ Fun::copy() {
   f->fa_all_Vars.copy(fa_all_Vars);
   for (int i = 0; i < f->fa_all_Vars.n; i++) {
     Var *v = f->vmap->get(f->fa_all_Vars.v[i]);
+    //if (f->fa_all_Vars.v[i]->sym->function_scope) assert(v);
     if (v)
       f->fa_all_Vars.v[i] = v;
   }
