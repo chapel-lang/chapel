@@ -31,8 +31,8 @@ class Symboltable {
 					    varType vartag = VAR_NORMAL, 
 					    bool isConst = false);
   static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
-  static FunSymbol* defineFunction(char* name, Symbol* formals, Type* retType, 
-				   Stmt* body, bool isExtern = false);
+  static FnSymbol* defineFunction(char* name, Symbol* formals, Type* retType, 
+				  Stmt* body, bool isExtern = false);
   static ClassType* defineClass(char* name, ClassSymbol* parent);
 
   static VarSymbol* enterForLoop(Symbol* indices);

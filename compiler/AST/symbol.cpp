@@ -156,8 +156,8 @@ ReduceSymbol::ReduceSymbol(char* init_name, ClassType* init_class) :
 
 
 
-FunSymbol::FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-		     Stmt* init_body, bool init_exportMe) :
+FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
+		   Stmt* init_body, bool init_exportMe) :
   Symbol(init_name, init_retType),
   exportMe(init_exportMe),
   formals(init_formals),
@@ -165,7 +165,7 @@ FunSymbol::FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 {}
 
 
-void FunSymbol::codegenDef(FILE* outfile) {
+void FnSymbol::codegenDef(FILE* outfile) {
   if (!exportMe) {
     fprintf(outfile, "static ");
   }

@@ -59,7 +59,7 @@ static bool stmtIsGlob(ILink* link) {
 }
 
 
-static Stmt* createInitFun(Stmt* program) {
+static Stmt* createInitFn(Stmt* program) {
   ILink* globstmts;
   ILink* initstmts;
 
@@ -69,7 +69,7 @@ static Stmt* createInitFun(Stmt* program) {
   program = dynamic_cast<Stmt*>(globstmts);
   Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
                                                  : new NullStmt());
-  FunSymbol* initFun = Symboltable::defineFunction("__init", new NullSymbol(), 
+  FnSymbol* initFun = Symboltable::defineFunction("__init", new NullSymbol(), 
 						   new NullType(), 
 						   initFunBody, true);
   FnDefStmt* initFunDef = new FnDefStmt(initFun);
@@ -94,7 +94,7 @@ Stmt* fileToAST(char* filename, int debug) {
   yydebug = debug;
   ParseFile(filename);
 
-  program = createInitFun(program);
+  program = createInitFn(program);
 
   return program;
 }

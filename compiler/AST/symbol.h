@@ -112,13 +112,13 @@ class ReduceSymbol : public ClassSymbol {
 };
 
 
-class FunSymbol : public Symbol {
+class FnSymbol : public Symbol {
  public:
   bool exportMe;
   Symbol* formals;
   Stmt* body;
 
-  FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
+  FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 	    Stmt* init_body, bool init_exportMe=false);
 
   void codegenDef(FILE* outfile);

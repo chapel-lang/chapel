@@ -359,13 +359,13 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
 }
 
 
-FunSymbol* Symboltable::defineFunction(char* name, Symbol* formals, 
-				       Type* retType, Stmt* body, 
-				       bool isExtern) {
-  FunSymbol* newFun = new FunSymbol(name, formals, retType, body, isExtern);
-  define(newFun);
+FnSymbol* Symboltable::defineFunction(char* name, Symbol* formals, 
+				      Type* retType, Stmt* body, 
+				      bool isExtern) {
+  FnSymbol* newFn = new FnSymbol(name, formals, retType, body, isExtern);
+  define(newFn);
 
-  return newFun;
+  return newFn;
 }
 
 

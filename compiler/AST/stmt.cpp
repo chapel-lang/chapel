@@ -118,24 +118,24 @@ void TypeDefStmt::codegen(FILE* outfile) {
 }
 
 
-FnDefStmt::FnDefStmt(FunSymbol* init_fun) :
-  fun(init_fun)
+FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
+  fn(init_fn)
 {}
 
 
 void FnDefStmt::print(FILE* outfile) {
   fprintf(outfile, "function ");
-  fun->print(outfile);
+  fn->print(outfile);
   fprintf(outfile, "(");
-  fun->formals->printDefList(outfile, ";\n");
+  fn->formals->printDefList(outfile, ";\n");
   fprintf(outfile, ")");
-  if (fun->type->isNull()) {
+  if (fn->type->isNull()) {
     fprintf(outfile, " ");
   } else {
     fprintf(outfile, ": ");
-    fun->type->print(outfile);
+    fn->type->print(outfile);
   }
-  fun->body->print(outfile);
+  fn->body->print(outfile);
   fprintf(outfile, "\n\n");
 }
 
@@ -143,17 +143,17 @@ void FnDefStmt::print(FILE* outfile) {
 void FnDefStmt::codegen(FILE* outfile) {
   FILE* headfile;
 
-  if (fun->exportMe) {
+  if (fn->exportMe) {
     headfile = extheadfile;
   } else {
     headfile = intheadfile;
   }
-  fun->codegenDef(headfile);
+  fn->codegenDef(headfile);
   fprintf(headfile, ";\n");
 
-  fun->codegenDef(outfile);
+  fn->codegenDef(outfile);
   fprintf(outfile, " ");
-  fun->body->codegen(outfile);
+  fn->body->codegen(outfile);
   fprintf(outfile, "\n");
 }
 

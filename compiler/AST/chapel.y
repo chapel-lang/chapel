@@ -297,7 +297,7 @@ fndecl:
                       '(' formals ')' fnrettype statement
     {
       Symboltable::popScope();
-      FunSymbol* fnpst = Symboltable::defineFunction($2, $5, $7, $8);
+      FnSymbol* fnpst = Symboltable::defineFunction($2, $5, $7, $8);
       $$ = new FnDefStmt(fnpst);
     }
 ;

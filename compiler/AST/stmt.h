@@ -46,9 +46,9 @@ class TypeDefStmt : public Stmt {
 
 class FnDefStmt : public Stmt {
  public:
-  FunSymbol* fun;
+  FnSymbol* fn;
 
-  FnDefStmt(FunSymbol* init_fun);
+  FnDefStmt(FnSymbol* init_fn);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);

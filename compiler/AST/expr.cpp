@@ -248,7 +248,7 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
 
     // ASSUMPTION: Anything used before it is defined is a function
     if (typeid(*baseVar) == typeid(UseBeforeDefSymbol) ||
-	typeid(*baseVar) == typeid(FunSymbol)) {
+	typeid(*baseVar) == typeid(FnSymbol)) {
 
       if (baseVar->level == 0) {
 	bool isWrite = (strcmp(baseVar->name, "write") == 0);
