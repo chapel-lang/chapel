@@ -19420,3 +19420,15 @@ Added files:
 	chapel/compiler/traversals/: removeDeadSymbols.cpp 
 	                             removeDeadSymbols.h 
 
+---------------------------------------------------------------------------
+
+03/14/05 14:07:29 -- deitz
+
+Log message:
+	Fixed the scope that is used to lookup visible functions in
+	analysis.cpp.  It is the modScope of a module and the paramScope of a
+	function, not the parentScope.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
