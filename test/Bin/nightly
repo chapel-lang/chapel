@@ -5,21 +5,32 @@ $tmpdir = "/tmp/chapel-nightly.$id.deleteme";
 
 system("mkdir $tmpdir > /dev/null");
 
-system("cd $tmpdir && cvs checkout chapel | tee $tmpdir/LOG 2>&1");
+$redirect = "| tee -a $tmpdir/LOG 2>&1";
+
+system("cd $tmpdir && cvs checkout chapel $redirect");
 
 $chapeldir = "$tmpdir/chapel";
+$testdir = "$chapeldir/test";
 
 delete($ENV{'CHPLDEVTMP'});
-system("cd $chapeldir && make third-party | tee -a $tmpdir/LOG 2>&1");
-system("cd $chapeldir && make compiler | tee -a $tmpdir/LOG 2>&1");
-system("cd $chapeldir && make runtime | tee -a $tmpdir/LOG 2>&1");
-system("cd $chapeldir && make test | tee -a $tmpdir/LOG 2>&1");
-
-system("grep Summary: $tmpdir/LOG");
+system("cd $chapeldir && make third-party $redirect");
+system("cd $chapeldir && make compiler $redirect");
+system("cd $chapeldir && make runtime $redirect");
+system("cd $testdir && start_test -logfile ./Logs/nightly.log $redirect");
+system("cd $testdir && start_test -valgrind -logfile ./Logs/nightly-valgrind.log $redirect");
 
 open(MAIL, "| Mail -s \"Chapel: Nightly Results\" bradc\@cray.com");
-print MAIL `grep Summary: $tmpdir/LOG`;
+
+print MAIL "results from standard run:\n";
+print MAIL "==========================\n";
+print MAIL `grep Summary: $testdir/Logs/nightly.log.summary`;
+print MAIL "\n";
+
+print MAIL "results from valgrind run:\n";
+print MAIL "==========================\n";
+print MAIL `grep Summary: $testdir/Logs/nightly-valgrind.log.summary`;
+print MAIL "\n";
+
 close(MAIL);
 
 system("rm -rf $tmpdir");
-
