@@ -8089,3 +8089,77 @@ Modified files:
 Added files:
 	chapel/compiler/vparser/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+09/20/04 18:47:41 -- bradc
+
+Log message:
+	Added some initial support for default constructors for
+	classes.  These currently do nothing apart from allocating
+	memory for the class.  Eventually, they should also
+	initialize the member variables as appropriate, call
+	constructors recursively, etc.
+	
+	In order to do this:
+	
+	* the constructor (currently only one, the default one,
+	  is supported) is stored as a FnDefStmt* in ClassType.
+	
+	* once again, ran into traversal issues because
+	  traversing a type traverses its constructor which
+	  returns the same type, leading to an infinite loop.
+	  For now, I fail to traverse the constructor.  It
+	  seems like the fix for this will be to split
+	  traversal of types into two cases: a deep traversal
+	  that looks at its composition, and a shallow
+	  traversal that merely notes its Type*.
+	
+	* added a function malloc() to the standard prelude.
+	  I could see wanting to change this to be some sort
+	  of wrapper function for our internal purposes (I
+	  like a malloc wrapper that takes an element type
+	  and a number of elements, for reasons of logging),
+	  but this will do for now.
+	
+	* added a new Expr type -- SizeofExpr -- to represent
+	  sizeof() expressions in the generated C.  I didn't
+	  implement this using the internal_prelude because I
+	  wasn't confident that we could handle a function
+	  that takes a type as its parameter yet (if we ever
+	  need to be able to).  This seemed like an easy
+	  workaround for now (NOTE FOR JOHN: I added a case
+	  for SizeofExpr in analysis.cpp that flags an
+	  internal error for now)
+	
+	* added support for "function calls" to constructors
+	  by having the ParenOpExpr's classify routine convert
+	  such calls into function calls to the constructor
+	  in question.
+	
+	* fixed some bugs in codegen() routines that were
+	  calling into print() routines rather than other
+	  codegen() routines.
+	
+	* improved allocation of array types to use a new
+	  type initialization interface that I introduced
+	  awhile back, but failed to use very widely (until
+	  now).
+	
+	* implemented code generation for return statements,
+	  which I'd apparently never gotten to previously.
+	  Added a trivial test to lock this in.
+	
+	* fixed old trivialclass.chpl code to call a
+	  constructor (previously, it was incorrect as
+	  the class would have been nil).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h type.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/test/classes/bradc/: trivialclass.chpl 
+Added files:
+	chapel/test/trivial/bradc/functions/: retstmt.chpl retstmt.good 
+
