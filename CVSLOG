@@ -20426,3 +20426,32 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/: test_nested_record1.future 
 
+---------------------------------------------------------------------------
+
+03/18/05 16:57:00 -- deitz
+
+Log message:
+	Regarding test_class3.future:
+	
+	The default_wrapper now returns whatever the function returns.  This
+	helps with constructors.
+	
+	John, can you take a look at this by uncommenting
+	CONSTRUCTOR_WITH_PARAMETERS again.  Now we are really close on the
+	other tests, ex. test_class1.chpl, but the actual call to the
+	constructor is still made to the constructor not the wrapper.  I think
+	this may have something to do with resolving the symbol before
+	analysis rather than using an UnresolvedSymbol.  I can do that, but
+	then the problem is that analysis can't resolve it.  This is in
+	specializeParenOpExprs.cpp:24.  If you change the reference from "fn"
+	to new UnresolvedSymbol(fn->name).
+	
+	I was thinking of making it a MemberAccess too where the base is the
+	typesymbol for the class.  This is inline with how constructors should
+	work Classname.constructor, but that doesn't work either.  How do you
+	think we should handle this.  Feel free to take a look at it if you
+	want.  Otherwise we can go through it Monday.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
