@@ -23026,3 +23026,19 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: noinit2.future 
 
+---------------------------------------------------------------------------
+
+03/31/05 16:38:37 -- roxana
+
+Log message:
+	Removed the future for the tuple to index assignment that I
+	had left for Steve.
+
+Modified files:
+	chapel/test/domains/roxana/: test_index_expr1.chpl 
+	                             test_index_expr1.good 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/AST/: expr.cpp type.cpp 
+Removed files:
+	chapel/test/domains/roxana/: test_index_expr1.future 
+
