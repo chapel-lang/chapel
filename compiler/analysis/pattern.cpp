@@ -138,15 +138,13 @@ void
 Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *cp, MPosition *positional_p,
 			  Vec<Fun *> &new_matches) 
 {
-  if (positional_p)
-    positional_p = cannonical_mposition.get(positional_p);
   forv_Fun(f, new_matches) if (f) {
     Match *m = match_map.get(f);
     if (!m) {
       m = new Match(f);
       match_map.put(f, m); 
     }
-    MPosition *m_cp = !positional_p ? m->actual_to_formal_position.get(cp) : m_cp;
+    MPosition *m_cp = !positional_p ? m->actual_to_formal_position.get(cp) : positional_p;
     m_cp = m_cp ? m_cp : cp;
     AType *t = m->all_filters.get(m_cp);
     if (!t) {
@@ -292,7 +290,8 @@ Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<Fun *> **funs,
   forv_AVar(av, args) {
     MPosition named_p;
     if (named_position(cs, av, p, &named_p)) {
-      find_arg_matches(av, named_p, &p, funs, 0, out_of_position);
+      MPosition *pp = cannonicalize_mposition(p);
+      find_arg_matches(av, named_p, pp, funs, 0, out_of_position);
       some_named = 1;
     }
     p.inc();
