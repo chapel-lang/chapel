@@ -21639,3 +21639,14 @@ Modified files:
 Removed files:
 	chapel/test/functions/jplevyak/: member-2.future 
 
+---------------------------------------------------------------------------
+
+03/25/05 14:33:00 -- jplevyak
+
+Log message:
+	Fixed bug from last checking, forgot to clear method_token between
+	analysis passes.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+
