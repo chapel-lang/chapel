@@ -168,7 +168,7 @@ load_one(char *fn) {
   Vec<AST *> av;
   AST *a;
   D_Scope *scope = NULL;
-  char *ext = strchr(fn, '.');
+  char *ext = strrchr(fn, '.');
   if (!ext)
     fail("no file extension '%s'", fn);
   for (l = 0; l < (int)numberof(langs); l++)
@@ -267,10 +267,10 @@ compile_one(char *fn) {
       inline_calls(fa);
     else if (fsimple_inline)
       simple_inline_calls(fa);
-    if (!suppress_codegen)
-      codegen(fa, fn, system_dir);
     if (fdump_html)
       dump_html(fa, fn);
+    if (!suppress_codegen)
+      codegen(fa, fn, system_dir);
   } else
   Lfail:
     fail("fatal error, program does not type");
