@@ -4887,3 +4887,13 @@ Modified files:
 	                  ssu.cpp ssu.h ssu_extra.cpp sym.h v.g 
 	chapel/compiler/AST/: expr.h link.cpp link.h stmt.h symbol.h 
 
+---------------------------------------------------------------------------
+
+08/04/04 11:30:12 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Missing include files
+
+Modified files:
+	chapel/compiler/make_prims/: make_prims.g 
+
