@@ -9233,3 +9233,42 @@ Modified files:
 	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
 	                               module.good tuples.good 
 
+---------------------------------------------------------------------------
+
+11/01/04 15:44:21 -- shannon
+
+Log message:
+	Added functionality to the regression test harness so
+	that now the tester can supply a test.execopts or
+	test.compopts file to add executable or compile time
+	options on a per-test basis.
+	
+	Implemented code generation of configuration variables
+	of integer type.  Added a bunch of tests that use the
+	new test.execopts functionality.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: main.c 
+	chapel/test/: sub_test 
+Added files:
+	chapel/test/execflags/shannon/configs/: EXECOPTS configVar.chpl 
+	                                        configVar.execopts 
+	                                        configVar.good 
+	                                        configVarDash.chpl 
+	                                        configVarDash.execopts 
+	                                        configVarDash.good 
+	                                        configVarDashS.chpl 
+	                                        configVarDashS.execopts 
+	                                        configVarDashS.good 
+	                                        configVarDashSVarEquals.chpl 
+	                                        configVarDashSVarEquals.execopts 
+	                                        configVarDashSVarEquals.good 
+	                                        configVarWithSpaces.chpl 
+	                                        configVarWithSpaces.execopts 
+	                                        configVarWithSpaces.good 
+	                                        configVarY.chpl 
+	                                        configVarY.execopts 
+	                                        configVarY.good 
+
