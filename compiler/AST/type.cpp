@@ -1,6 +1,5 @@
 #include <typeinfo>
 #define TYPE_EXTERN
-#include "ast_util.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
@@ -35,44 +34,6 @@ bool Type::isNull(void) {
 
 bool Type::isComplex(void) {
   return (this == dtComplex);
-}
-
-
-void Type::traverse(Type* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
-
-  // explore Type and components
-  if (traversal->processTop || !atTop) {
-    traversal->preProcessType(_this);
-  }
-  if (atTop || traversal->exploreChildTypes) {
-    if (atTop || _this->name == nilSymbol) {
-      // if the user has asked to traverse the type, always traverse
-      // its definition
-      // OR if the type is anonymous, always traverse its definition
-      _this->traverseDefType(traversal);
-    } else {
-      _this->traverseType(traversal);
-    }
-  }
-  if (traversal->processTop || !atTop) {
-    traversal->postProcessType(_this);
-  }
-}
-
-
-void Type::traverseList(Type* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  } else {
-    // explore this
-    TRAVERSE(_this, traversal, atTop);
-
-    // explore siblings
-    TRAVERSE_LS(_this->next, traversal, atTop);
-  }
 }
 
 
@@ -489,9 +450,9 @@ Type* ArrayType::copy(void) {
 
 
 void ArrayType::traverseDefType(Traversal* traversal) {
-  domain->traverse(domain, traversal, false);
-  elementType->traverse(elementType, traversal, false);
-  defaultVal->traverse(defaultVal, traversal, false);
+  TRAVERSE(domain, traversal, false);
+  TRAVERSE(elementType, traversal, false);
+  TRAVERSE(defaultVal, traversal, false);
 }
 
 
@@ -553,8 +514,8 @@ bool UserType::isComplex(void) {
 
 
 void UserType::traverseDefType(Traversal* traversal) {
-  definition->traverse(definition, traversal, false);
-  defaultVal->traverse(defaultVal, traversal, false);
+  TRAVERSE(definition, traversal, false);
+  TRAVERSE(defaultVal, traversal, false);
 }
 
 
@@ -773,9 +734,9 @@ Type* TupleType::copy(void) {
 
 void TupleType::traverseDefType(Traversal* traversal) {
   for (int i=0; i<components.n; i++) {
-    components.v[i]->traverse(components.v[i], traversal, false);
+    TRAVERSE(components.v[i], traversal, false);
   }
-  defaultVal->traverse(defaultVal, traversal, false);
+  TRAVERSE(defaultVal, traversal, false);
 }
 
 

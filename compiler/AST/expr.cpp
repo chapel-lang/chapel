@@ -1,7 +1,6 @@
 #include <typeinfo>
 #include <string.h>
 #include "analysis.h"
-#include "ast_util.h"
 #include "expr.h"
 #include "fa.h"
 #include "misc.h"
@@ -117,54 +116,23 @@ bool Expr::isNull(void) {
 }
 
 
-void Expr::traverse(Expr* &_this, Traversal* traversal, bool atTop) {
-  if (_this != this) {
-    INT_FATAL(this, "Fatal Expr::Traverse Call");
-  }
-  if (isNull()) {
-    return;
-  }
-  // explore Expr and components
-  if (traversal->processTop || !atTop) {
-    traversal->preProcessExpr(_this);
-  }
-  if (atTop || traversal->exploreChildExprs) {
-    _this->traverseExpr(traversal);
-  }
-  if (traversal->processTop || !atTop) {
-    traversal->postProcessExpr(_this);
-  }
-}
-
-
-void Expr::traverseList(Expr* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  } else {
-    // explore this
-    _this->traverse(_this, traversal, atTop);
-
-    // explore siblings
-    TRAVERSE_LS(_this->next, traversal, atTop);
-  }
-}
-
-
-
 void Expr::traverseExpr(Traversal* traversal) {
 }
 
 
 void Expr::replace(Expr* &old_expr, Expr* new_expr) {
-  new_expr->prev = old_expr->prev;
-  if ((old_expr->prev) && (!(old_expr->prev->isNull()))) {
-    old_expr->prev->next = new_expr;
+  /* Set parent expressions */
+  for (ILink* tmp = new_expr; tmp != NULL && !tmp->isNull(); tmp = tmp->next) {
+    if (Expr* etmp = dynamic_cast<Expr*>(tmp)) {
+      etmp->stmt = old_expr->stmt;
+      etmp->parent = old_expr->parent;
+    }
+    else {
+      INT_FATAL(old_expr, "Non-expression in expression list encountered in Expr::replace");
+    }
   }
-  new_expr->next = old_expr->next;
-  if ((old_expr->next) && (!(old_expr->next->isNull()))) {
-    old_expr->next->prev = new_expr;
-  }
-  new_expr->parent = old_expr->parent;
+
+  ILink::replace(old_expr, new_expr);
   old_expr = new_expr;
 }
 
@@ -430,7 +398,7 @@ Expr* Variable::copy(void) {
 
 
 void Variable::traverseExpr(Traversal* traversal) {
-  var->traverse(var, traversal, false);
+  TRAVERSE(var, traversal, false);
 }
 
 
@@ -483,7 +451,7 @@ long UnOp::intVal(void) {
 
 
 void UnOp::traverseExpr(Traversal* traversal) {
-  operand->traverse(operand, traversal, false);
+  TRAVERSE(operand, traversal, false);
 }
 
 
@@ -527,8 +495,8 @@ Expr* BinOp::copy(void) {
 
 
 void BinOp::traverseExpr(Traversal* traversal) {
-  left->traverse(left, traversal, false);
-  right->traverse(right, traversal, false);
+  TRAVERSE(left, traversal, false);
+  TRAVERSE(right, traversal, false);
 }
 
 
@@ -675,8 +643,8 @@ Expr* MemberAccess::copy(void) {
 
 
 void MemberAccess::traverseExpr(Traversal* traversal) {
-  base->traverse(base, traversal, false);
-  member->traverse(member, traversal, false);
+  TRAVERSE(base, traversal, false);
+  TRAVERSE(member, traversal, false);
 }
 
 
@@ -735,8 +703,8 @@ Expr* ParenOpExpr::copy(void) {
 
 
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
-  baseExpr->traverse(baseExpr, traversal, false);
-  argList->traverseList(argList, traversal, false);
+  TRAVERSE(baseExpr, traversal, false);
+  TRAVERSE_LS(argList, traversal, false);
 }
 
 
@@ -924,12 +892,7 @@ Expr* Tuple::copy(void) {
 
 
 void Tuple::traverseExpr(Traversal* traversal) {
-  Expr* expr = exprs;
-  while (expr) {
-    expr->traverse(expr, traversal, false);
-
-    expr = nextLink(Expr, expr);
-  }
+  TRAVERSE_LS(exprs, traversal, false);
 }
 
 
@@ -965,7 +928,7 @@ Expr* SizeofExpr::copy(void) {
 
 
 void SizeofExpr::traverseExpr(Traversal* traversal) {
-  type->traverse(type, traversal, false);
+  TRAVERSE(type, traversal, false);
 }
 
 
@@ -1006,8 +969,8 @@ Expr* CastExpr::copy(void) {
 
 
 void CastExpr::traverseExpr(Traversal* traversal) {
-  newType->traverse(newType, traversal, false);
-  expr->traverse(expr, traversal, false);
+  TRAVERSE(newType, traversal, false);
+  TRAVERSE(expr, traversal, false);
 }
 
 
@@ -1048,9 +1011,9 @@ Expr* ReduceExpr::copy(void) {
 
 
 void ReduceExpr::traverseExpr(Traversal* traversal) {
-  reduceType->traverse(reduceType, traversal, false);
-  redDim->traverseList(redDim, traversal, false);
-  argExpr->traverse(argExpr, traversal, false);
+  TRAVERSE(reduceType, traversal, false);
+  TRAVERSE_LS(redDim, traversal, false);
+  TRAVERSE(argExpr, traversal, false);
 }
 
 
@@ -1086,9 +1049,9 @@ Expr* SimpleSeqExpr::copy(void) {
 
 
 void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
-  lo->traverse(lo, traversal, false);
-  hi->traverse(hi, traversal, false);
-  str->traverse(str, traversal, false);
+  TRAVERSE(lo, traversal, false);
+  TRAVERSE(hi, traversal, false);
+  TRAVERSE(str, traversal, false);
 }
 
 
@@ -1173,9 +1136,9 @@ Expr* ForallExpr::copy(void) {
 
 
 void ForallExpr::traverseExpr(Traversal* traversal) {
-  indices->traverseList(indices, traversal, false);
-  domains->traverseList(domains, traversal, false);
-  forallExpr->traverse(forallExpr, traversal, false);
+  TRAVERSE_LS(indices, traversal, false);
+  TRAVERSE_LS(domains, traversal, false);
+  TRAVERSE(forallExpr, traversal, false);
 }
 
 

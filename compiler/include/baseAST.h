@@ -72,6 +72,7 @@ enum astType_t {
 #define isSomeType(_x) (((_x) > astType_t::TYPE) && (_x) < astType_t::AST_TYPE_END)
 
 class BaseAST : public ILink {
+  TRAVERSABLE_ILINK(BaseAST);
  public:
   astType_t astType;
   long id;

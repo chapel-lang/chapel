@@ -7,8 +7,23 @@
 #include "vec.h"
 #include "../traversals/traversal.h"
 
+#define TRAVERSE(link, traversal, atTop) \
+  link->traverse(link, traversal, atTop)
+
+#define TRAVERSE_LS(link, traversal, atTop) \
+  link->traverseList(link, traversal, atTop)
+
+#define TRAVERSABLE_ILINK(name)                                                      \
+ public:                                                                             \
+  void traverse(name* &_this, Traversal* traversal, bool atTop = true);              \
+  void traverseList(name* &_this, Traversal* traversal, bool atTop = true) {         \
+    if (isNull()) return;                                                            \
+    TRAVERSE(_this, traversal, atTop);                                               \
+    TRAVERSE_LS(_this->next, traversal, atTop);                                      \
+  }
 
 class ILink : public Loc {
+  TRAVERSABLE_ILINK(ILink);
  public:
   ILink* prev;
   ILink* next;
@@ -16,8 +31,6 @@ class ILink : public Loc {
   ILink(void);
 
   virtual bool isNull(void);
-  virtual void traverse(ILink* &_this, Traversal* traversal, bool atTop = true);
-  virtual void traverseList(ILink* &_this, Traversal* traversal, bool atTop = true);
 
   virtual void print(FILE* outfile);
   void println(FILE* outfile);
@@ -32,6 +45,8 @@ class ILink : public Loc {
   ILink* extract(void);
 
   void filter(bool filter(ILink*), ILink** truelinks, ILink** falselinks);
+
+  static void replace(ILink* old_link, ILink* new_link);
 };
 
 extern ILink* nilILink;

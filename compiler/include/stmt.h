@@ -5,10 +5,25 @@
 #include "baseAST.h"
 #include "symbol.h"
 
+#define TRAVERSABLE_STMT(name)                                                       \
+ public:                                                                             \
+  void traverse(name* &_this, Traversal* traversal, bool atTop = true) {             \
+    if (isNull()) return;                                                            \
+    if (traversal->processTop || !atTop) traversal->preProcessStmt((Stmt*&)_this);   \
+    if (atTop || traversal->exploreChildStmts) _this->traverseStmt(traversal);       \
+    if (traversal->processTop || !atTop) traversal->postProcessStmt((Stmt*&)_this);  \
+  };                                                                                 \
+  void traverseList(name* &_this, Traversal* traversal, bool atTop = true) {         \
+    if (isNull()) return;                                                            \
+    TRAVERSE(_this, traversal, atTop);                                               \
+    TRAVERSE_LS(_this->next, traversal, atTop);                                      \
+  }
+
 class Expr;
 class AInfo;
 
 class Stmt : public BaseAST {
+  TRAVERSABLE_STMT(Stmt);
  public:
   AInfo *ainfo;
 
@@ -24,8 +39,6 @@ class Stmt : public BaseAST {
   virtual bool canLiveAtFileScope(void);
   virtual bool topLevelExpr(Expr* testExpr);
 
-  void traverse(Stmt* &_this, Traversal* traversal, bool atTop = true);
-  void traverseList(Stmt* &_this, Traversal* traversal, bool atTop);
   virtual void traverseStmt(Traversal* traversal);
 
   void codegenVarDefs(FILE* outfile);
@@ -39,6 +52,7 @@ extern Stmt* nilStmt;
 
 
 class NoOpStmt : public Stmt {
+  TRAVERSABLE_STMT(NoOpStmt);
  public:
   NoOpStmt(void);
   virtual Stmt* copy(void);
@@ -49,6 +63,7 @@ class NoOpStmt : public Stmt {
 
 
 class WithStmt : public Stmt {
+  TRAVERSABLE_STMT(WithStmt);
  public:
   Expr* withExpr;
 
@@ -62,6 +77,7 @@ class WithStmt : public Stmt {
 
 
 class VarDefStmt : public Stmt {
+  TRAVERSABLE_STMT(VarDefStmt);
  public:
   VarSymbol* var;
   Expr* init;
@@ -80,6 +96,7 @@ class VarDefStmt : public Stmt {
 
 
 class TypeDefStmt : public Stmt {
+  TRAVERSABLE_STMT(TypeDefStmt);
  public:
   Type* type;
 
@@ -96,6 +113,7 @@ class TypeDefStmt : public Stmt {
 
 
 class FnDefStmt : public Stmt {
+  TRAVERSABLE_STMT(FnDefStmt);
  public:
   FnSymbol* fn;
 
@@ -116,6 +134,7 @@ extern FnDefStmt* nilFnDefStmt;
 
 
 class ModuleDefStmt : public Stmt {
+  TRAVERSABLE_STMT(ModuleDefStmt);
  public:
   ModuleSymbol* module;
 
@@ -126,6 +145,7 @@ class ModuleDefStmt : public Stmt {
 
 
 class ExprStmt : public Stmt {
+  TRAVERSABLE_STMT(ExprStmt);
  public:
   Expr* expr;
 
@@ -144,6 +164,7 @@ class ExprStmt : public Stmt {
 
 
 class ReturnStmt : public ExprStmt {
+  TRAVERSABLE_STMT(ReturnStmt);
  public:
   ReturnStmt(Expr* retExpr);
   virtual Stmt* copy(void);
@@ -154,6 +175,7 @@ class ReturnStmt : public ExprStmt {
 
 
 class BlockStmt : public Stmt {
+  TRAVERSABLE_STMT(BlockStmt);
  public:
   Stmt* body;
 
@@ -169,6 +191,7 @@ class BlockStmt : public Stmt {
 
 
 class WhileLoopStmt : public BlockStmt {
+  TRAVERSABLE_STMT(WhileLoopStmt);
  public:
   bool isWhileDo;
   Expr* condition;
@@ -186,6 +209,7 @@ class WhileLoopStmt : public BlockStmt {
 
 
 class ForLoopStmt : public BlockStmt {
+  TRAVERSABLE_STMT(ForLoopStmt);
  public:
   bool forall;
   VarSymbol* index;
@@ -205,6 +229,7 @@ class ForLoopStmt : public BlockStmt {
 
 
 class CondStmt : public Stmt {
+  TRAVERSABLE_STMT(CondStmt);
  public:
   Expr* condExpr;
   Stmt* thenStmt;

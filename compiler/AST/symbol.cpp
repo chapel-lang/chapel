@@ -1,6 +1,5 @@
 #include <typeinfo>
 #include "analysis.h"
-#include "ast_util.h"
 #include "files.h"
 #include "misc.h"
 #include "stmt.h"
@@ -42,38 +41,6 @@ Symbol* Symbol::copyList(void) {
 bool Symbol::isNull(void) {
   return (this == nilSymbol);
 }
-
-
-void Symbol::traverse(Symbol* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
-
-  // explore Symbol and components
-  if (traversal->processTop || !atTop) {
-    traversal->preProcessSymbol(_this);
-  }
-  if (atTop || traversal->exploreChildSymbols) {
-    _this->traverseSymbol(traversal);
-  }
-  if (traversal->processTop || !atTop) {
-    traversal->postProcessSymbol(_this);
-  }
-}
-
-
-void Symbol::traverseList(Symbol* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  } else {
-    // explore this
-    _this->traverse(_this, traversal, atTop);
-
-    // explore siblings
-    TRAVERSE_LS(_this->next, traversal, atTop);
-  }
-}
-
 
 
 void Symbol::traverseSymbol(Traversal* traversal) {
@@ -127,11 +94,6 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
     ptr->codegenDef(outfile);
     ptr = nextLink(Symbol, ptr);
   }
-}
-
-
-void Symbol::replace(Symbol* &old_symbol, Symbol* new_symbol) {
-  old_symbol = new_symbol;
 }
 
 

@@ -1,6 +1,5 @@
 #include <string.h>
 #include <typeinfo>
-#include "ast_util.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
@@ -79,36 +78,6 @@ bool Stmt::topLevelExpr(Expr* expr) {
 }
 
 
-void Stmt::traverse(Stmt* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
-
-  // explore Stmt and components
-  if (traversal->processTop || !atTop) {
-    traversal->preProcessStmt(_this);
-  }
-  if (atTop || traversal->exploreChildStmts) {
-    _this->traverseStmt(traversal);
-  }
-  if (traversal->processTop || !atTop) {
-    traversal->postProcessStmt(_this);
-  }
-}
-
-
-void Stmt::traverseList(Stmt* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  } else {
-    // explore this
-    _this->traverse(_this, traversal, atTop);
-
-    TRAVERSE_LS(_this->next, traversal, atTop);
-  }
-}
-
-
 void Stmt::traverseStmt(Traversal* traversal) {
 }
 
@@ -128,37 +97,6 @@ void Stmt::codegenVarDef(FILE* outfile) {
 
 
 void Stmt::replace(Stmt* &old_stmt, Stmt* new_stmt) {
-
-  /* Find first statement in new list */
-  ILink* first = new_stmt;
-  while (first->prev && !first->prev->isNull()) {
-    first = first->prev;
-  }
-
-  /* If first is not new statement, is this an error? */
-  if (first != new_stmt) {
-    INT_FATAL(old_stmt, "ERROR? You are replacing a statement where the new\n"
-                        "statement is in the middle of a statement list");
-  }
-
-  /* Find last statement in new list */
-  ILink* last = new_stmt;
-  while (last->next && !last->next->isNull()) {
-    last = last->next;
-  }
-
-  /* Set prev link */
-  first->prev = old_stmt->prev;
-  if ((old_stmt->prev) && (!(old_stmt->prev->isNull()))) {
-    old_stmt->prev->next = first;
-  }
-
-  /* Set next link */
-  last->next = old_stmt->next;
-  if ((old_stmt->next) && (!(old_stmt->next->isNull()))) {
-    old_stmt->next->prev = last;
-  }
-
   /* Set parent symbols */
   for (ILink* tmp = new_stmt; tmp != NULL && !tmp->isNull(); tmp = tmp->next) {
     if (Stmt* stmp = dynamic_cast<Stmt*>(tmp)) {
@@ -169,9 +107,7 @@ void Stmt::replace(Stmt* &old_stmt, Stmt* new_stmt) {
     }
   }
 
-  //  old_stmt->extract();
-
-  /* Replace reference */
+  ILink::replace(old_stmt, new_stmt);
   old_stmt = new_stmt;
 }
 
@@ -223,7 +159,7 @@ Stmt* WithStmt::copy(void) {
 
 
 void WithStmt::traverseStmt(Traversal* traversal) {
-  withExpr->traverse(withExpr, traversal, false);
+  TRAVERSE(withExpr, traversal, false);
 }
 
 
@@ -258,9 +194,9 @@ bool VarDefStmt::topLevelExpr(Expr* testExpr) {
 
 
 void VarDefStmt::traverseStmt(Traversal* traversal) {
-  ((Symbol*)var)->traverseList((Symbol*&)var, traversal, false);
-  var->type->traverse(var->type, traversal, false);
-  init->traverse(init, traversal, false);
+  TRAVERSE_LS(var, traversal, false);
+  TRAVERSE(var->type, traversal, false);
+  TRAVERSE(init, traversal, false);
 }
 
 
@@ -474,10 +410,10 @@ bool FnDefStmt::canLiveAtFileScope(void) {
 
 void FnDefStmt::traverseStmt(Traversal* traversal) {
   // BLC: could move this into a traverseDef method?
-  ((Symbol*)fn)->traverse((Symbol*&)fn, traversal, false);
-  fn->formals->traverseList(fn->formals, traversal, false);
-  fn->type->traverse(fn->type, traversal, false);
-  fn->body->traverse(fn->body, traversal, false);
+  TRAVERSE(fn, traversal, false);
+  TRAVERSE_LS(fn->formals, traversal, false);
+  TRAVERSE(fn->type, traversal, false);
+  TRAVERSE(fn->body, traversal, false);
 }
 
 
@@ -548,7 +484,7 @@ bool ExprStmt::topLevelExpr(Expr* testExpr) {
 
 
 void ExprStmt::traverseStmt(Traversal* traversal) {
-  expr->traverse(expr, traversal, false);
+  TRAVERSE(expr, traversal, false);
 }
 
 
@@ -623,7 +559,7 @@ Stmt* BlockStmt::copy(void) {
 
 
 void BlockStmt::traverseStmt(Traversal* traversal) {
-  body->traverseList(body, traversal, false);
+  TRAVERSE_LS(body, traversal, false);
 }
 
 
@@ -666,11 +602,11 @@ bool WhileLoopStmt::topLevelExpr(Expr* testExpr) {
 
 void WhileLoopStmt::traverseStmt(Traversal* traversal) {
   if (isWhileDo) {
-    condition->traverse(condition, traversal, false);
-    body->traverse(body, traversal, false);
+    TRAVERSE(condition, traversal, false);
+    TRAVERSE(body, traversal, false);
   } else {
-    body->traverse(body, traversal, false);
-    condition->traverse(condition, traversal, false);
+    TRAVERSE(body, traversal, false);
+    TRAVERSE(condition, traversal, false);
   }
 }
 
@@ -735,9 +671,9 @@ bool ForLoopStmt::topLevelExpr(Expr* testExpr) {
 
 
 void ForLoopStmt::traverseStmt(Traversal* traversal) {
-  ((Symbol*)index)->traverse((Symbol*&)index, traversal, false);
-  domain->traverse(domain, traversal, false);
-  body->traverse(body, traversal, false);
+  TRAVERSE(index, traversal, false);
+  TRAVERSE(domain, traversal, false);
+  TRAVERSE(body, traversal, false);
 }
 
 
@@ -817,9 +753,9 @@ bool CondStmt::topLevelExpr(Expr* testExpr) {
 
 
 void CondStmt::traverseStmt(Traversal* traversal) {
-  condExpr->traverse(condExpr, traversal, false);
-  thenStmt->traverse(thenStmt, traversal, false);
-  elseStmt->traverse(elseStmt, traversal, false);
+  TRAVERSE(condExpr, traversal, false);
+  TRAVERSE(thenStmt, traversal, false);
+  TRAVERSE(elseStmt, traversal, false);
 }
 
 

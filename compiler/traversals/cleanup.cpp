@@ -1,5 +1,4 @@
 #include "cleanup.h"
-#include "ast_util.h"
 #include "expr.h"
 #include "stmt.h"
 #include "symtab.h"
@@ -23,10 +22,8 @@ void ApplyWith::preProcessStmt(Stmt* &stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(symType->type)) {
-	Stmt::replace(stmt, with->getClass()->definition->copyList(ctype->scope));
-	//	Stmt* defStmt = with->getClass()->definition->copyList(ctype->scope);
-	//	with->preinsert(defStmt);
-	//      Todo: The with-statement needs to be removed at this point.
+	Stmt* with_replacement = with->getClass()->definition->copyList(ctype->scope);
+	Stmt::replace(stmt, with_replacement);
 	return;
       }
     }
@@ -119,7 +116,7 @@ void ResolveEasy::preProcessSymbol(Symbol* &sym) {
   if (dynamic_cast<UnresolvedSymbol*>(sym)) {
     Symbol* new_sym = Symboltable::lookupFromScope(sym->name, sym->scope);
     if (!dynamic_cast<UnresolvedSymbol*>(new_sym)) {
-      Symbol::replace(sym, new_sym);
+      sym = new_sym;
 
 //       printf("changing: ");
 //       sym->codegen(stdout);
@@ -154,24 +151,28 @@ class SpecializeParens : public Traversal {
 };
 
 void SpecializeParens::preProcessExpr(Expr* &expr) {
+  Expr* paren_replacement = NULL;
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
-      Expr::replace(expr, new ArrayRef(paren->baseExpr, paren->argList));
+      paren_replacement = new ArrayRef(paren->baseExpr, paren->argList);
     }
     else if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(baseVar->var->type)) {
-	Expr::replace(expr, new FnCall(new Variable(ctype->constructor->fn), paren->argList));
+	paren_replacement = new FnCall(new Variable(ctype->constructor->fn), paren->argList);
       }
       else if (strcmp(baseVar->var->name, "write") == 0) {
-	Expr::replace(expr, new IOCall(IO_WRITE, paren->baseExpr, paren->argList));
+	paren_replacement = new IOCall(IO_WRITE, paren->baseExpr, paren->argList);
       }
       else if (strcmp(baseVar->var->name, "writeln") == 0) {
-	Expr::replace(expr, new IOCall(IO_WRITELN, paren->baseExpr, paren->argList));
+	paren_replacement = new IOCall(IO_WRITELN, paren->baseExpr, paren->argList);
       }
       else if (strcmp(baseVar->var->name, "read") == 0) {
-	Expr::replace(expr, new IOCall(IO_READ, paren->baseExpr, paren->argList));
+	paren_replacement = new IOCall(IO_READ, paren->baseExpr, paren->argList);
       }
     }
+  }
+  if (paren_replacement) {
+    Expr::replace(expr, paren_replacement);
   }
 }
 

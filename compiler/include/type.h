@@ -2,7 +2,28 @@
 #define _TYPE_H_
 
 #include <stdio.h>
+#include "baseAST.h"
 #include "vec.h"
+
+#define TRAVERSABLE_TYPE(typename)                                                       \
+ public:                                                                                 \
+  void traverse(typename* &_this, Traversal* traversal, bool atTop = true) {     \
+    if (isNull()) return;                                                                \
+    if (traversal->processTop || !atTop) traversal->preProcessType((Type*&)_this);       \
+    if (atTop || traversal->exploreChildTypes) {                                         \
+      if (atTop || _this->name == nilSymbol) {                                           \
+	_this->traverseDefType(traversal);                                               \
+      } else {                                                                           \
+	_this->traverseType(traversal);                                                  \
+      }                                                                                  \
+    }                                                                                    \
+    if (traversal->processTop || !atTop) traversal->postProcessType((Type*&)_this);      \
+  };                                                                                     \
+  void traverseList(typename* &_this, Traversal* traversal, bool atTop = true) { \
+    if (isNull()) return;                                                                \
+    TRAVERSE(_this, traversal, atTop);                                                   \
+    TRAVERSE_LS(_this->next, traversal, atTop);                                          \
+  }
 
 class Symbol;
 class EnumSymbol;
@@ -13,9 +34,12 @@ class SymScope;
 class FnDefStmt;
 extern Expr* nilExpr;
 extern Stmt* nilStmt;
+extern Symbol* nilSymbol;
 extern FnDefStmt* nilFnDefStmt;
 
+
 class Type : public BaseAST {
+  TRAVERSABLE_TYPE(Type);
  public:
   Symbol* name;
   Expr* defaultVal;
@@ -28,8 +52,6 @@ class Type : public BaseAST {
   bool isNull(void);
   virtual bool isComplex(void);
 
-  void traverse(Type* &_this, Traversal* traversal, bool atTop = true);
-  void traverseList(Type* &_this, Traversal* traversal, bool atTop = true);
   void traverseDef(Type* &_this, Traversal* traversal, bool atTop = true);
   virtual void traverseType(Traversal* traversal);
   virtual void traverseDefType(Traversal* traversal);
@@ -54,6 +76,7 @@ class Type : public BaseAST {
 extern Type* nilType;
 
 class EnumType : public Type {
+  TRAVERSABLE_TYPE(EnumType);
  public:
   EnumSymbol* valList;
 
@@ -73,6 +96,7 @@ class EnumType : public Type {
 
 
 class DomainType : public Type {
+  TRAVERSABLE_TYPE(DomainType);
  public:
   int numdims;
   Expr* parent;
@@ -89,6 +113,7 @@ class DomainType : public Type {
 
 
 class IndexType : public DomainType {
+  TRAVERSABLE_TYPE(IndexType);
  public:
   IndexType(Expr* init_expr = nilExpr);
   IndexType(int init_numdims);
@@ -99,6 +124,7 @@ class IndexType : public DomainType {
 
 
 class ArrayType : public Type {
+  TRAVERSABLE_TYPE(ArrayType);
  public:
   Expr* domain;
   Type* elementType;
@@ -119,6 +145,7 @@ class ArrayType : public Type {
 
 
 class UserType : public Type {
+  TRAVERSABLE_TYPE(UserType);
  public:
   Type* definition;
 
@@ -142,6 +169,7 @@ class ClassType;
 extern ClassType* nilClassType;
 
 class ClassType : public Type {
+  TRAVERSABLE_TYPE(ClassType);
  public:
   bool value; /* true if this is a value class (aka record) */
   ClassType* parentClass;
@@ -170,6 +198,7 @@ class ClassType : public Type {
 
 
 class TupleType : public Type {
+  TRAVERSABLE_TYPE(TupleType);
  public:
   Vec<Type*> components;
 

@@ -1,5 +1,4 @@
 #include "fixup.h"
-#include "ast_util.h"
 #include "expr.h"
 #include "stmt.h"
 #include <string.h>

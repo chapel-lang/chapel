@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "link.h"
 #include "misc.h"
+#include "baseAST.h"
 
 ILink::ILink(void) :
   prev(nilILink),
@@ -9,30 +10,17 @@ ILink::ILink(void) :
 {}
 
 
+void ILink::traverse(ILink* &_this, Traversal* traversal, bool atTop) {
+  if (isNull()) return;
+
+  if (BaseAST* ast = dynamic_cast<BaseAST*>(_this)) {
+    ast->traverse(ast, traversal, atTop);
+  }
+}
+
+
 bool ILink::isNull(void) {
   return (this == nilILink);
-}
-
-
-void ILink::traverse(ILink* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  } else {
-    INT_FATAL("Calling traverse() on an ILink");
-  }
-}
-
-
-void ILink::traverseList(ILink* &_this, Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  } else {
-    // explore this
-    _this->traverse(_this, traversal, atTop);
-
-    // explore siblings
-    _this->next->traverseList(next, traversal, atTop);
-  }
 }
 
 
@@ -176,4 +164,41 @@ void ILink::filter(bool filter(ILink*), ILink** truelinks,
     }
     link = nextlink;
   }
+}
+
+
+void ILink::replace(ILink* old_link, ILink* new_link) {
+  /* Find first link in new list */
+  ILink* first = new_link;
+  while (first->prev && !first->prev->isNull()) {
+    first = first->prev;
+  }
+
+  /* If first is not new_link, is this an error? */
+  if (first != new_link) {
+    INT_FATAL(old_link, "ERROR? You are replacing an ast where the new\n"
+                        "ast list is in the middle of an ast list");
+  }
+
+  /* Find last link in new list */
+  ILink* last = new_link;
+  while (last->next && !last->next->isNull()) {
+    last = last->next;
+  }
+
+  /* Set prev link */
+  first->prev = old_link->prev;
+  if ((old_link->prev) && (!(old_link->prev->isNull()))) {
+    old_link->prev->next = first;
+  }
+
+  /* Set next link */
+  last->next = old_link->next;
+  if ((old_link->next) && (!(old_link->next->isNull()))) {
+    old_link->next->prev = last;
+  }
+
+  /* Wipe out old links--it's been replaced */
+  old_link->prev = nilILink;
+  old_link->next = nilILink;
 }

@@ -1,5 +1,4 @@
 #include <typeinfo>
-#include "ast_util.h"
 #include "geysa.h"
 #include "analysis.h"
 #include "expr.h"
