@@ -19545,3 +19545,19 @@ Modified files:
 	chapel/third-party/boehmgc/gc6.3/: configure 
 	chapel/third-party/boehmgc/gc6.3/include/private/: gc_priv.h 
 
+---------------------------------------------------------------------------
+
+03/14/05 17:44:12 -- jplevyak
+
+Log message:
+	Add new tests for record ==.
+	Future assigned to Steve for want of a better disposition.
+
+Added files:
+	chapel/test/classes/jplevyak/: record_equal-1.chpl 
+	                               record_equal-1.future 
+	                               record_equal-1.good 
+	                               record_equal-2.chpl 
+	                               record_equal-2.future 
+	                               record_equal-2.good 
+
