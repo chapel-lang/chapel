@@ -4490,3 +4490,45 @@ Modified files:
 	                                     mg-seq.good mvm-seq.good 
 	                                     test.good 
 
+---------------------------------------------------------------------------
+
+07/28/04 17:48:21 -- bradc
+
+Log message:
+	Some random stuff:
+	
+	* parenthesize all codegen'd binary expressions as a
+	conservative way to get operator precedence correct
+	for the time being.
+	
+	* implemented type_info() for UnOp
+	
+	* implemented some very simple and naive type inference
+	for variables with initializers whose type is elided.
+	This is a stop-gap until we get John's inference stuff
+	hooked into the high-level AST.
+	
+	* these changes allow Shannon's tests to work correctly,
+	so turned on the --newast flag in her directory and
+	removed her preincrement/postincrement tests, as we
+	don't have them in the current language spec (or
+	front-end).
+	
+	* dropped in some .cvsignore files to ignore test-generated
+	files in the lowlevelcg directory, and output/ directories
+	in the trivial subdirectories (because I often test with
+	--compopts "--savec output" so I can see the generated code
+	that failed.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp expr.h symtab.cpp 
+	chapel/test/trivial/bradc/functions/: chain.chpl mutrec.chpl 
+	chapel/test/trivial/bradc/protoast/: .cvsignore 
+	chapel/test/trivial/bradc/write/: .cvsignore 
+	chapel/test/trivial/shannon/: .cvsignore 
+Added files:
+	chapel/test/lowlevelcg/jplevyak/: .cvsignore 
+	chapel/test/trivial/shannon/: COMPOPTS 
+Removed files:
+	chapel/test/trivial/shannon/: increment.chpl increment.good 
+
