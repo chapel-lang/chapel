@@ -21589,3 +21589,30 @@ Added files:
 	chapel/test/types/like/deitz/: .cvsignore test_like1.chpl 
 	                               test_like1.future test_like1.good 
 
+---------------------------------------------------------------------------
+
+03/25/05 11:24:37 -- deitz
+
+Log message:
+	Implemented for over sequences as in 'for e in s do'.  Currently, as
+	with other for loop statements and forall expressions, e is assumed to
+	an index.  This is going to have to be set to dtUnknown and resolve
+	after and in analysis eventually.  Probably shortly as this fits in
+	well with Roxana's creation of IndexType.
+	
+	Fixed a bug in the parser in which forall and for were basically
+	parsed as forall.  Updated mg protoast tests accordingly.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/runtime/include/: seq.h 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq8.chpl test_seq8.future 
+	                              test_seq8.good test_seq8b.chpl 
+	                              test_seq8b.future test_seq8b.good 
+	chapel/test/types/seq/deitz/noanalysis/: test_seq8.chpl 
+	                                         test_seq8.good 
+
