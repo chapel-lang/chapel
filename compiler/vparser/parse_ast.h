@@ -21,9 +21,6 @@ class Label;
 class ParseAST;
 class PNode;
 
-class ParseAstCopyContext : Map<PNode *, PNode*> {
-};
-
 class PCallbacks : public Callbacks {
 public:
   void new_LUB_type(Sym *);

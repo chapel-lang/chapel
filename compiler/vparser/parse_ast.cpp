@@ -286,19 +286,19 @@ ParseAST::set_location(D_ParseNode *pn) {
 }
 
 AST *
-ParseAST::copy_node(ASTCopyContext *nmap) {
+ParseAST::copy_node(ASTCopyContext *context) {
   ParseAST *a = new ParseAST(*this);
-  if (nmap)
+  if (context)
     for (int i = 0; i < a->pnodes.n; i++)
-      a->pnodes.v[i] = nmap->get(a->pnodes.v[i]);
+      a->pnodes.v[i] = context->nmap->get(a->pnodes.v[i]);
   return a;
 }
 
 AST *
-ParseAST::copy_tree(ASTCopyContext *nmap) {
-  ParseAST *a = (ParseAST*)copy_node(nmap);
+ParseAST::copy_tree(ASTCopyContext *context) {
+  ParseAST *a = (ParseAST*)copy_node(context);
   for (int i = 0; i < a->children.n; i++)
-    a->children.v[i] = (ParseAST*)a->children.v[i]->copy_tree(nmap);
+    a->children.v[i] = (ParseAST*)a->children.v[i]->copy_tree(context);
   return a;
 }
 

@@ -65,29 +65,61 @@ AInfo::AInfo() : xast(0), code(0), sym(0), rval(0) {
   label[0] = label[1] = 0;
 }
 
-char *AInfo::pathname() { 
+char
+*AInfo::pathname() { 
   return xast->filename;
 }
 
-int AInfo::line() {
+int
+AInfo::line() {
   return xast->lineno;
 }
 
-Sym *AInfo::symbol() {
+Sym *
+AInfo::symbol() {
   if (rval) return rval;
   return sym;
 }
 
-AST *AInfo::copy_tree(ASTCopyContext* context) {
-  return NULL;
+AST*
+AInfo::copy_node(ASTCopyContext* context) {
+  AInfo *a = new AInfo(*this);
+  for (int i = 0; i < a->pnodes.n; i++)
+    a->pnodes.v[i] = context->nmap->get(a->pnodes.v[i]);
+  return a;
 }
 
-AST* AInfo::copy_node(ASTCopyContext* contex) {
-  return NULL;
+class AnalysisCloneCallback : public CloneCallback {
+ public:
+  ASTCopyContext *context;
+  void clone(BaseAST* old_ast, BaseAST* new_ast);
+};
+
+void
+AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
+  Stmt *new_s = dynamic_cast<Stmt*>(new_ast);
+  if (new_s) {
+    Stmt *old_s = dynamic_cast<Stmt*>(old_ast);
+    if (old_s->ainfo) {
+      new_s->ainfo = (AInfo*)old_s->ainfo->copy_node(context);
+      new_s->ainfo->xast = new_s;
+    }
+  } else {
+    Expr *new_e = dynamic_cast<Expr*>(new_ast);
+    Expr *old_e = dynamic_cast<Expr*>(old_ast);
+    if (old_e->ainfo) {
+      new_e->ainfo = (AInfo*)old_e->ainfo->copy_node(context);
+      new_e->ainfo->xast = new_e;
+    }
+  }
 }
 
-void CloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
-  
+AST *
+AInfo::copy_tree(ASTCopyContext* context) {
+  AnalysisCloneCallback callback;
+  callback.context = context;
+  FnDefStmt *orig_fn = dynamic_cast<FnDefStmt*>(xast);  
+  return orig_fn->clone(&callback)->ainfo;
 }
 
 static void

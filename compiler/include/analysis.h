@@ -55,7 +55,7 @@ class AInfo : public AST {
 
 class CloneCallback : public gc {
  public:
-  virtual void clone(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void clone(BaseAST* old_ast, BaseAST* new_ast) = 0;
 };
 
 int AST_to_IF1(Vec<Stmt *> &stmts);

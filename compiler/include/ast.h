@@ -12,8 +12,13 @@ class Fun;
 class PNode;
 class Sym;
 class IF1;
+class AST;
+class BaseAST;
 
-typedef Map<PNode *, PNode *> ASTCopyContext;
+class ASTCopyContext : public gc {
+ public:
+  Map<PNode *, PNode *> *nmap;
+};
 
 class AST : public gc {
  public:
