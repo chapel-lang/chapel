@@ -1738,3 +1738,19 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+04/04/09 17:20:17 -- bradc
+
+Log message:
+	Fixed two simple driver problems:
+	
+	(1) changed the search for the input file's extension to use
+	strrchr so that relative paths including .. will work properly.
+	
+	(2) moved code generation after the HTML dump so that if codegen
+	fails requested HTML dumps won't be squelched.
+
+Modified files:
+	chapel/compiler/: driver.cpp 
+
