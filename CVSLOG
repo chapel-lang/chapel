@@ -24221,3 +24221,15 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+04/06/05 12:35:37 -- jplevyak
+
+Log message:
+	Added Symbol::isThis().  To be used in analysis.cpp.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+
