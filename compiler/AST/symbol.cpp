@@ -11,11 +11,14 @@
 #include "fun.h"
 #include "pattern.h"
 
-Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
+Symbol::Symbol(astType_t astType, char* init_name, Type* init_type, 
+	       bool init_exportMe) :
   BaseAST(astType),
   name(init_name),
   cname(name),
   type(init_type),
+  exportMe(init_exportMe),
+  isDead(false),
   defPoint(NULL),
   parentScope(NULL),
   asymbol(0)
@@ -463,7 +466,7 @@ void TypeSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 void TypeSymbol::codegenPrototype(FILE* outfile) {
-  if (!type_is_used(this)) {
+  if (isDead) {
     return;
   }
 
@@ -478,7 +481,7 @@ void TypeSymbol::codegenPrototype(FILE* outfile) {
 
 
 void TypeSymbol::codegenDef(FILE* outfile) {
-  if (!type_is_used(this)) {
+  if (isDead) {
     return;
   }
 
@@ -499,8 +502,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
 		   Type* init_retType, Stmt* init_body,
 		   bool init_exportMe, Symbol* init_classBinding) :
-  Symbol(SYMBOL_FN, init_name, init_retType),
-  exportMe(init_exportMe),
+  Symbol(SYMBOL_FN, init_name, init_retType, init_exportMe),
   formals(init_formals),
   retType(init_retType),
   _this(0),
@@ -906,8 +908,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 void FnSymbol::codegenDef(FILE* outfile) {
   FILE* headfile;
 
-  if (function_is_used(this)) {
-
+  if (!isDead) {
     if (exportMe) {
       headfile = extheadfile;
     } else {

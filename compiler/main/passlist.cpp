@@ -9,6 +9,7 @@
 #include "../symtab/insertWriteFns.h"
 #include "../symtab/legalizeCNames.h"
 #include "../symtab/printSymtab.h"
+#include "../symtab/removeDeadSymbols.h"
 #include "../symtab/removeLikeTypes.h"
 #include "../symtab/renameOverloadedFunctions.h"
 
@@ -86,6 +87,7 @@ REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(RemoveDeadSymbols);
+REGISTER(RemoveDeadSymbols2);  // BLC: eventually this one should win out
 REGISTER(RemoveLikeTypes);
 REGISTER(RemoveNamedParameters);
 REGISTER(RemoveTypeVariableActuals);

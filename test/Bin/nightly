@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+$valgrind = 1;
+
 $printusage = 0;
 if (@ARGV) {
     $debugflag = shift @ARGV;
@@ -14,14 +16,22 @@ if (@ARGV) {
     $printusage = 1;
 }
 
+$statdate = `date +%D`; chomp($statdate);
+
 if (@ARGV) {
-    $statdate = shift @ARGV;
-} else {
-    $statdate = `date +%D`; chomp($statdate);
+    $nextarg = shift @ARGV;
+    if ($nextarg eq "-novgr") {
+	$valgrind = 0;
+	if (@ARGV) {
+	    $statdate = shift @ARGV;
+	}
+    } else {
+	$statdate = $nextarg;
+    }
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-cron] {date}\n";
+    print "nightly [-debug|-cron] {-novgr} {date}\n";
     exit 1;
 }
 
@@ -127,7 +137,11 @@ mysystem("cd $chapeldir && make runtime", "making chapel runtime", 1, 1);
 #
 #`rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
 $stdstatus = mysystem("cd $testdir && ./start_test -logfile $rawstdlog", "running standard tests", 0, 0);
-$vgrstatus = mysystem("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog", "running valgrind tests", 0, 0);
+if ($valgrind == 1) {
+  $vgrstatus = mysystem("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog", "running valgrind tests", 0, 0);
+} else {
+    $vgrstatus = 1;
+}
 
 
 #
@@ -158,9 +172,9 @@ if ($stdstatus == 0) {
     $stdsummary = "standard run: failed";
 }
 
-if ($vgrstatus == 0) {
+if ($valgrind == 1 && $vgrstatus == 0) {
     `cat $rawvgrsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedvgrsummary`;
-
+    
     $oldvgrsummary = `grep Summary: $prevvgrsummary`; chomp($oldvgrsummary);
     $newvgrsummary = `grep Summary: $sortedvgrsummary`; chomp($newvgrsummary);
 
@@ -177,8 +191,13 @@ if ($vgrstatus == 0) {
     $delvgrfut  = &delta($oldvgrfut, $newvgrfut);
 
     $vgrsummary = "valgrind run: $newvgrsucc Successes ($delvgrsucc), $newvgrfail Failures ($delvgrfail)";
+
 } else {
-    $vgrsummary = "valgrind run: failed";
+    if ($valgrind == 1) {
+	$vgrsummary = "valgrind run: failed";
+    } else {
+	$vgrsummary = "valgrind not run";
+    }
 }
 
 $knownumtests = 1;

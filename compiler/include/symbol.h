@@ -31,6 +31,8 @@ class Symbol : public BaseAST {
   char* name;
   char* cname;   /* Name of symbol for generating C code */
   Type* type;
+  bool exportMe;
+  bool isDead;
   BaseAST* defPoint; /* Point of definition in AST, A Stmt or Expr */
   Pragma *pragmas;
 
@@ -38,7 +40,8 @@ class Symbol : public BaseAST {
   SymScope* parentScope;
   ASymbol *asymbol;
 
-  Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
+  Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown,
+	 bool init_exportMe = false);
   void setParentScope(SymScope* init_parentScope);
 
   Symbol* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
@@ -146,7 +149,6 @@ typedef enum __method_type {
 
 class FnSymbol : public Symbol {
  public:
-  bool exportMe;
   Symbol* formals;
   Type* retType;
   Symbol* _this;

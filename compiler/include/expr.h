@@ -230,7 +230,6 @@ class Variable : public Expr {
 
   Type* typeInfo(void);
   virtual bool isConst(void);
-  //Roxana
   virtual bool isParam(void);
   virtual bool isComputable();
   void print(FILE* outfile);
@@ -241,10 +240,13 @@ class Variable : public Expr {
 class DefExpr : public Expr {
  public:
   Symbol* sym;
+
   DefExpr(Symbol* init_sym);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void traverseExpr(Traversal* traversal);
+
   Type* typeInfo(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

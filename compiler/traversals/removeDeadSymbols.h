@@ -4,7 +4,8 @@
 #include "traversal.h"
 
 class RemoveDeadSymbols : public Traversal {
-  void postProcessStmt(Stmt* stmt);
+ public:
+  void postProcessExpr(Expr* expr);
 };
 
 #endif
