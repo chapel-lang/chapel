@@ -4532,3 +4532,13 @@ Added files:
 Removed files:
 	chapel/test/trivial/shannon/: increment.chpl increment.good 
 
+---------------------------------------------------------------------------
+
+07/28/04 18:02:52 -- bradc
+
+Log message:
+	Oops, didn't mean to check this one in.
+
+Modified files:
+	chapel/test/trivial/bradc/functions/: mutrec.chpl 
+
