@@ -11303,3 +11303,28 @@ Added files:
 	chapel/test/classes/deitz/future/future/: test_record2.chpl 
 	                                          test_record_with1.chpl 
 
+---------------------------------------------------------------------------
+
+12/09/04 09:55:57 -- deitz
+
+Log message:
+	This checkin makes a few small improvements and prepares to support
+	"with" on records and classes with functions.
+	
+	The "_this" is now "this" and it is added to the scopes of the
+	functions in which it is inserted.
+	
+	The DefineSymbols traversal now inserts function symbols into the new
+	scope (though this doesn't seem to be found by all subsequent passes).
+	
+	The fixup pass now assigns non-null parentSymbols to every statement
+	that points to either a class/record, function, or module depending on
+	where the statement is located.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/traversals/: defineSymbols.cpp 
+	                             fieldsToMemberAccesses.cpp 
+	                             fixup.cpp fixup.h 
+	                             methodsToFunctions.cpp 
+
