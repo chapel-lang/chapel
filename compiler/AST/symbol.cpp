@@ -172,10 +172,37 @@ void ParamSymbol::printDef(FILE* outfile) {
 }
 
 
+bool ParamSymbol::requiresCPtr(void) {
+  return ((intent == PARAM_OUT || intent == PARAM_INOUT) && 
+	  type->outParamNeedsPtr());
+}
+
+
+bool ParamSymbol::requiresCTmp(void) {
+  return type->requiresCParamTmp(intent);
+}
+
+
+void ParamSymbol::codegen(FILE* outfile) {
+  bool requiresDeref = requiresCPtr();
+ 
+  if (requiresDeref) {
+    fprintf(outfile, "(*");
+  }
+  Symbol::codegen(outfile);
+  if (requiresDeref) {
+    fprintf(outfile, ")");
+  }
+}
+
+
 void ParamSymbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
+  if (requiresCPtr()) {
+    fprintf(outfile, "*");
+  }
   fprintf(outfile, " ");
-  this->codegen(outfile);
+  Symbol::codegen(outfile);
 }
 
 

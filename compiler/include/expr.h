@@ -348,6 +348,8 @@ class FnCall : public ParenOpExpr {
   virtual Expr* copy(void);
 
   FnSymbol* findFnSymbol(void);
+
+  void codegen(FILE* outfile);
 };
 
 

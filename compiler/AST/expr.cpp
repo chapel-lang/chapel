@@ -719,12 +719,16 @@ void ParenOpExpr::print(FILE* outfile) {
 
 
 void ParenOpExpr::codegen(FILE* outfile) {
+#ifndef THE_FOLLOWING_IS_A_HACK
   baseExpr->codegen(outfile);
   fprintf(outfile, "(");
   if (!argList->isNull()) {
     argList->codegenList(outfile, ", ");
   }
   fprintf(outfile, ")");
+#else
+  INT_FATAL(this, "ParenOpExprs must be resolved before codegen");
+#endif
 }
 
 
@@ -792,6 +796,41 @@ FnSymbol* FnCall::findFnSymbol(void) {
     INT_FATAL(this, "unexpected FnCall structure in findFnSymbol");
     return NULL;
   }
+}
+
+
+void FnCall::codegen(FILE* outfile) {
+  baseExpr->codegen(outfile);
+  fprintf(outfile, "(");
+
+  Expr* actuals = argList;
+  if (!actuals->isNull()) {
+    FnSymbol* fnSym = findFnSymbol();
+    ParamSymbol* formals = dynamic_cast<ParamSymbol*>(fnSym->formals);
+    bool firstArg = true;
+    while (actuals && formals) {
+      if (firstArg) {
+	firstArg = false;
+      } else {
+	fprintf(outfile, ",");
+      }
+      bool ampersand = formals->requiresCPtr();
+      if (ampersand) {
+	fprintf(outfile, "&(");
+      }
+      actuals->codegen(outfile);
+      if (ampersand) {
+	fprintf(outfile, ")");
+      }
+
+      formals = nextLink(ParamSymbol, formals);
+      actuals = nextLink(Expr, actuals);
+    }
+    if (formals || actuals) {
+      INT_FATAL(this, "Number of formals and actuals didn't match");
+    }
+  }
+  fprintf(outfile, ")");
 }
 
 
@@ -923,7 +962,7 @@ SizeofExpr::SizeofExpr(Type* init_type) :
 
 
 Expr* SizeofExpr::copy(void) {
-  return new SizeofExpr(type->copy());
+  return new SizeofExpr(type);
 }
 
 
@@ -964,7 +1003,7 @@ CastExpr::CastExpr(Type* init_newType, Expr* init_expr) :
 
 
 Expr* CastExpr::copy(void) {
-  return new CastExpr(newType->copy(), expr->copy());
+  return new CastExpr(newType, expr->copy());
 }
 
 

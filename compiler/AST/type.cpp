@@ -135,6 +135,27 @@ void Type::generateInit(FILE* outfile, VarSymbol* var) {
 }
 
 
+bool Type::outParamNeedsPtr(void) {
+  return true;
+}
+
+
+bool Type::requiresCParamTmp(paramType intent) {
+  switch (intent) {
+  case PARAM_BLANK:
+  case PARAM_IN:
+  case PARAM_CONST:
+    return false;
+  case PARAM_INOUT:
+  case PARAM_OUT:
+    return true;
+  default:
+    INT_FATAL(this, "case not handled in requiresCParamTmp");
+    return false;
+  }
+}
+
+
 EnumType::EnumType(EnumSymbol* init_valList) :
   Type(TYPE_ENUM, new Variable(init_valList)),
   valList(init_valList)

@@ -176,8 +176,8 @@ void ILink::replace(ILink* old_link, ILink* new_link) {
 
   /* If first is not new_link, is this an error? */
   if (first != new_link) {
-    INT_FATAL(old_link, "ERROR? You are replacing an ast where the new\n"
-                        "ast list is in the middle of an ast list");
+    INT_FATAL(old_link, "Cannot call replace() using a replacement AST that "
+	      "isn't the head of a list");
   }
 
   /* Find last link in new list */

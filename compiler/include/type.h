@@ -18,6 +18,17 @@ extern Symbol* nilSymbol;
 extern FnDefStmt* nilFnDefStmt;
 
 
+enum paramType {
+  PARAM_BLANK = 0,
+  PARAM_IN,
+  PARAM_INOUT,
+  PARAM_OUT,
+  PARAM_CONST,
+
+  NUM_PARAM_TYPES
+};
+
+
 class Type : public BaseAST {
   TRAVERSABLE_TYPE(Type);
  public:
@@ -48,9 +59,14 @@ class Type : public BaseAST {
   virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
   virtual void codegenConstructors(FILE* outfile);
+
   virtual bool needsInit(void);
   virtual void generateInit(FILE* outfile, VarSymbol* var);
+
+  virtual bool outParamNeedsPtr(void);
+  virtual bool requiresCParamTmp(paramType intent);
 };
+
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
 extern Type* nilType;

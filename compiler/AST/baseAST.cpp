@@ -1,10 +1,11 @@
 #include "baseAST.h"
-#include "stmt.h"
 #include "expr.h"
+#include "stmt.h"
 #include "symbol.h"
 #include "type.h"
 
 static long uid = 1;
+
 
 void BaseAST::traverse(BaseAST* &_this, Traversal* traversal, bool atTop) {
   if (isNull()) return;

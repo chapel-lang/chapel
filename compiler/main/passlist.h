@@ -21,7 +21,7 @@ PassInfo passlist[] = {
 
   // passes to normalize the basic AST
   RUN(Cleanup, ""),
-  RUN(Fixup, ""),
+  RUN(Fixup, ""),        // BLC: why is this necessary?
 
   // passes to run analysis
   RUN(Fixup, "verify"),  // this is a sanity check
@@ -31,6 +31,7 @@ PassInfo passlist[] = {
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
   RUN(MethodsToFunctions, ""),
+  //  RUN(ProcessParameters, ""),
 
   // passes to generate code and compile
   //  RUN(Fixup, "verify"),  // BLC: We want this, but it doesn't work yet

@@ -54,7 +54,7 @@ void InsertThis::preProcessStmt(Stmt* &stmt) {
       while (stmt) {
 	Stmt* next = nextLink(Stmt, stmt);
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
-	  Symbol* this_insert = new ParamSymbol(PARAM_INOUT, "this", ctype);
+	  Symbol* this_insert = new ParamSymbol(PARAM_BLANK, "this", ctype);
 	  this_insert->parentScope = method->fn->paramScope;
 	  Symboltable::defineInScope(this_insert, method->fn->paramScope);
 	  this_insert = appendLink(this_insert, method->fn->formals);
@@ -221,6 +221,9 @@ void SpecializeParens::preProcessExpr(Expr* &expr) {
       }
       else if (strcmp(baseVar->var->name, "read") == 0) {
 	paren_replacement = new IOCall(IO_READ, paren->baseExpr, paren->argList);
+      }
+      else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
+	paren_replacement = new FnCall(baseVar, paren->argList);
       }
     }
   }

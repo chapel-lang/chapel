@@ -75,17 +75,6 @@ class VarSymbol : public Symbol {
 extern VarSymbol* nilVarSymbol;
 
 
-enum paramType {
-  PARAM_BLANK = 0,
-  PARAM_IN,
-  PARAM_INOUT,
-  PARAM_OUT,
-  PARAM_CONST,
-
-  NUM_PARAM_TYPES
-};
-
-
 class ParamSymbol : public Symbol {
   TRAVERSABLE_SYMBOL(ParamSymbol);
  public:
@@ -95,7 +84,11 @@ class ParamSymbol : public Symbol {
 	      Type* init_type = dtUnknown);
   virtual Symbol* copy(void);
 
+  bool requiresCPtr(void);
+  bool requiresCTmp(void);
+
   void printDef(FILE* outfile);
+  void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
 };
 
