@@ -4030,3 +4030,20 @@ Log message:
 Modified files:
 	./: Makefile 
 
+---------------------------------------------------------------------------
+
+07/16/04 13:20:53 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	named arguments work
+	new test case for named arguments
+
+Modified files:
+	chapel/compiler/: ast.cpp clone.cpp fa.cpp pattern.cpp pattern.h 
+	                  sym.h v.g vec.cpp 
+	chapel/test/flowanalysis/jplevyak/: badcall.good 
+	                                    badprimitive.good cs2.good 
+	                                    cs3.good 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: named.good named.v 
+
