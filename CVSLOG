@@ -2851,3 +2851,13 @@ Modified files:
 Added files:
 	chapel/test/Share/: chain.chpl mutrec.chpl noargs.chpl 
 
+---------------------------------------------------------------------------
+
+06/08/04 11:11:56 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	noarg.chpl now gets through parser and type checking... though not codegen
+
+Modified files:
+	chapel/compiler/: TODO chpl.g 
+
