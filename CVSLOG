@@ -23858,3 +23858,30 @@ Log message:
 Added files:
 	chapel/test/memory/shannon/: PREDIFF 
 
+---------------------------------------------------------------------------
+
+04/05/05 09:48:22 -- bradc
+
+Log message:
+	Continued yesterday's refactoring of the StructuralType
+	hierarchy by removing the "value" field from the
+	StructuralType class and inserting more specific checks
+	into the code that relied on this field.  This resulted
+	in some nice refactorizations, especially in the realm
+	of insertWriteFns, where the code was moved into the
+	Type hierarchy and made better use of inheritance.
+	
+	In other cases, there are still more dynamic casts than
+	I would like.  A good next step would be to try and
+	determine what aspects of a type's behavior the code is
+	relying on and embedding these into methods rather than
+	relying on dynamic casts.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         insertWriteFns.cpp symscope.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
