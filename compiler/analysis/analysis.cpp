@@ -251,7 +251,7 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       syms.add(a);
       a = dynamic_cast<Stmt *>(a->next);
     }
-  forv_BaseAST(s, syms) {
+  forv_BaseAST(s, syms) if (s) {
     GetStuff getStuff(GET_ALL);
     TRAVERSE(s, &getStuff, true);
     forv_BaseAST(ss, getStuff.asts) if (ss) {
@@ -259,6 +259,15 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       if (set.set_add(ss))
 	syms.add(ss);
     }
+#if 1
+    if (s->astType == SYMBOL_FN) {
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, dynamic_cast<FnSymbol*>(s));
+      forv_BaseAST(x, asts)
+	if (set.set_add(x))
+	  syms.add(x);
+    }
+#else
     switch (s->astType) {
       default: break;
       case SYMBOL_FN: {
@@ -282,6 +291,7 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
 	break;
       }
     }
+#endif
   }
   forv_Type(t, builtinTypes) {
     if (set.set_add(t))
@@ -394,6 +404,7 @@ finalize_symbols(IF1 *i) {
 
 static Fun *
 install_new_function(FnSymbol *f) {
+#if 0
   Vec<Stmt *> all_stmts;
   Vec<BaseAST *> all_syms, syms;
   all_stmts.add(f->defPoint->stmt);
@@ -441,6 +452,12 @@ install_new_function(FnSymbol *f) {
       printf("type %2d, id %ld\n", (int)b->astType, b->id);
   }
   // END veryify collect_asts
+#endif
+#else
+  Vec<BaseAST *> syms;
+  collect_asts(&syms, f);
+  syms.add(f);
+  syms.add(f->defPoint);
 #endif
   map_symbols(syms);
   build_symbols(syms);
