@@ -14916,3 +14916,13 @@ Added files:
 	chapel/test/types/type_variables/jplevyak/: test_coerse2.chpl 
 	                                            test_coerse2.good 
 
+---------------------------------------------------------------------------
+
+01/18/05 16:50:50 -- jplevyak
+
+Log message:
+	Fix SEGV in return_type_info
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
