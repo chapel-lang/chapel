@@ -65,6 +65,7 @@ class Type : public BaseAST {
 
   virtual bool outParamNeedsPtr(void);
   virtual bool requiresCParamTmp(paramType intent);
+  virtual bool blankIntentImpliesRef(void);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -102,6 +103,8 @@ class DomainType : public Type {
 
   void print(FILE* outfile);
   void codegenDef(FILE* outfile);
+
+  virtual bool blankIntentImpliesRef(void);
 };
 
 
@@ -132,6 +135,8 @@ class ArrayType : public Type {
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
+
+  virtual bool blankIntentImpliesRef(void);
 };
 
 
@@ -184,6 +189,8 @@ class ClassType : public Type {
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
   void codegenConstructors(FILE* outfile);
+
+  virtual bool blankIntentImpliesRef(void);
 };
 
 

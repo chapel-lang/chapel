@@ -1,0 +1,5 @@
+jplevyak
+
+It appears that analysis doesn't know about equality on
+class instances.  This should be a pointer compare, I
+believe?

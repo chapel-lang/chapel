@@ -325,9 +325,10 @@ void ParamSymbol::printDef(FILE* outfile) {
 
 
 bool ParamSymbol::requiresCPtr(void) {
-  return ((intent == PARAM_OUT || intent == PARAM_INOUT || 
-	   intent == PARAM_REF) && 
-	  type->outParamNeedsPtr());
+  return (((intent == PARAM_OUT || intent == PARAM_INOUT || 
+	    intent == PARAM_REF) && 
+	   type->outParamNeedsPtr()) ||
+	  (intent == PARAM_BLANK && type->blankIntentImpliesRef()));
 }
 
 

@@ -168,8 +168,16 @@ bool Type::outParamNeedsPtr(void) {
 
 
 bool Type::requiresCParamTmp(paramType intent) {
+  if (intent == PARAM_BLANK) {
+    if (blankIntentImpliesRef()) {
+      intent = PARAM_REF;
+    } else {
+      intent = PARAM_CONST;
+    }
+  }
   switch (intent) {
   case PARAM_BLANK:
+    INT_FATAL(this, "should never have reached PARAM_BLANK case");
   case PARAM_IN:
   case PARAM_CONST:
   case PARAM_INOUT:
@@ -181,6 +189,11 @@ bool Type::requiresCParamTmp(paramType intent) {
     INT_FATAL(this, "case not handled in requiresCParamTmp");
     return false;
   }
+}
+
+
+bool Type::blankIntentImpliesRef(void) {
+  return false;
 }
 
 
@@ -465,6 +478,11 @@ void DomainType::codegenDef(FILE* outfile) {
 }
 
 
+bool DomainType::blankIntentImpliesRef(void) {
+  return true;
+}
+
+
 IndexType::IndexType(Expr* init_expr) :
   DomainType(init_expr)
 {
@@ -613,6 +631,11 @@ void ArrayType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
+bool ArrayType::blankIntentImpliesRef(void) {
+  return true;
+}
+
+
 UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
   Type(TYPE_USER, init_defaultVal),
   definition(init_definition)
@@ -711,7 +734,9 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 		     ClassType* init_parentClass,
 		     Stmt* init_constructor,
 		     SymScope* init_classScope) :
-  Type(TYPE_CLASS, NULL),
+  Type(TYPE_CLASS, ((isValueClass || isUnion) ? 
+                    NULL : // BLC: needs to eventually change
+                    new Variable(Symboltable::lookupInternal("NULL")))),
   value(isValueClass),
   union_value(isUnion),
   parentClass(init_parentClass),
@@ -959,6 +984,11 @@ void ClassType::codegenIORoutines(FILE* outfile) {
   codegenIOPrototype(outfile, symbol, isRead);
   fprintf(outfile, "{\n");
   fprintf(outfile, "}\n");
+}
+
+
+bool ClassType::blankIntentImpliesRef(void) {
+  return true;
 }
 
 

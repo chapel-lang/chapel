@@ -130,26 +130,28 @@ void Stmt::traverseStmt(Traversal* traversal) {
 
 static void call_fixup(Stmt* stmt) {
   Fixup* fixup = new Fixup();
+  Symbol* sym;
 
-  if (!stmt->parentSymbol) {
-    Symbol* sym = Symboltable::getCurrentScope()->findEnclosingSymContext();
+  
+  sym = stmt->parentSymbol;
+  if (!sym) {
+    sym = Symboltable::getCurrentScope()->findEnclosingSymContext();
     if (!sym) {
       INT_FATAL(stmt, "Problem calling fixup");
     }
-    TRAVERSE_DEF(sym, fixup, true);
   }
-  else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->parentSymbol)) {
+
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     TRAVERSE_LS(fn->body, fixup, true);
-  }
-  else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
+  } else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(sym)) {
     TRAVERSE_LS(mod->stmts, fixup, true);
-  }
-  else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(stmt->parentSymbol)) {
+  } else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(type->type)) {
-      TRAVERSE(class_type, fixup, true);
+      TRAVERSE_LS(class_type->declarationList, fixup, true);
+    } else {
+      INT_FATAL(stmt, "Unexpected TypeSymbol in call_fixup");
     }
-  }
-  else {
+  } else {
     INT_FATAL(stmt, "Error calling fixup");
   }
 }

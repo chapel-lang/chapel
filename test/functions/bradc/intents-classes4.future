@@ -1,0 +1,5 @@
+bradc
+
+need to implement nil for the user's perspective and for
+class variables.  In doing so, could tidy up use of NULL
+in internal_prelude and for defaultVal of a ClassType.
