@@ -16509,3 +16509,40 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp clone.cpp sym.cpp 
 	chapel/compiler/include/: analysis.h sym.h 
 
+---------------------------------------------------------------------------
+
+02/03/05 18:13:10 -- bradc
+
+Log message:
+	Blowing off steam after an afternoon of TAR work,
+	and continuing in the ongoing struggle to remove
+	my name from the future list... :)
+	
+	Added a new traversal to check the semantics of
+	the program after analysis has run and we've
+	incorporated its results into the AST.  Currently,
+	the only thing that this pass checks for is
+	assignment to constant expressions.  Added an
+	isConst() method to the Expr and Symbol class
+	hierarchies to help with this effort (and renamed
+	the old isConst field to be isConstant to avoid
+	conflicts).
+	
+	Known problems: blank parameter intents that
+	should be interpreted as const are not classified
+	correctly by the current isConst() implementation
+	(a note to that effect was placed in
+	ParamSymbol::isConst().
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/functions/jplevyak/: intent-5-error.good 
+Added files:
+	chapel/compiler/traversals/: checkSemantics.cpp checkSemantics.h 
+	chapel/test/functions/jplevyak/scoping/: .cvsignore 
+
