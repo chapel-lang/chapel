@@ -3803,3 +3803,14 @@ Modified files:
 	chapel/compiler/: fa.cpp 
 	chapel/test/flowanalysis/jplevyak/: cs4.good 
 
+---------------------------------------------------------------------------
+
+07/01/04 12:54:43 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed compilation warning in graph.cpp from %x instead of %p.
+	Fixed bug in flow anlysis related to cloning of classes.
+
+Modified files:
+	chapel/compiler/: fa.cpp graph.cpp 
+
