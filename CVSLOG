@@ -20683,3 +20683,15 @@ Added files:
 	                           test_array_of_record1.future 
 	                           test_array_of_record1.good 
 
+---------------------------------------------------------------------------
+
+03/22/05 09:59:19 -- deitz
+
+Log message:
+	With this checkin change, if CONSTRUCTOR_WITH_PARAMETERS is
+	uncommented, the constructors will be built in the scope of the class
+	(visible wherever the class is).
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
