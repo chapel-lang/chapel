@@ -22214,3 +22214,26 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: writeunion.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 12:13:06 -- jplevyak
+
+Log message:
+	Reassigned and annotated .future files:
+	
+	OK, I took a look at the results with ANALYSIS_MATCH turned on, and
+	they look correct to me.  We get one "warning" at line 78, but that
+	is for "f" being set to a cloned type (which it should be), and
+	we get one warning at line 112 which is the return type of the cloned
+	construct_foo function which is now returning the new cloned type
+	(which it should be).
+	
+	*** note: the problem is that the AST's types are not specific, sure
+	    the variable is a "foo", but it is really a clone of "foo".
+	    Perhaps ANALYSIS_MATCH needs to be enhanced.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class2.future 
+	                                         test_clone_class2a.future 
+
