@@ -162,7 +162,7 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 
   codegenDef(outfile);
   ptr = nextLink(Symbol, this);
-  while (ptr) {
+  while (ptr && !ptr->isNull()) {
     fprintf(outfile, "%s", separator);
     ptr->codegenDef(outfile);
     ptr = nextLink(Symbol, ptr);
@@ -381,7 +381,10 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 
 
 Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new TypeSymbol(copystring(name), type);
+  Type* new_type = type->copy(clone, map, analysis_clone);
+  TypeSymbol* new_type_symbol = new TypeSymbol(copystring(name), new_type);
+  new_type->addName(new_type_symbol);
+  return new_type_symbol;
 }
 
 
@@ -608,8 +611,69 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition *, MPosition *> *formals_to_actu
 
 
 FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutions) {
-  INT_FATAL(this, "FnSymbol::instantiate_generic not implemented");
-  return NULL;
+  FnDefStmt* this_copy = NULL;
+  static int uid = 1; // Unique ID for cloned functions
+  SymScope* save_scope;
+  save_scope = Symboltable::setCurrentScope(parentScope);
+  Map<BaseAST*,BaseAST*> map;
+  Stmt* stmt_copy = defPoint->copy(true, &map);
+  if (this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
+    /*** OLD APPROACH, find type vars in formals and replace Had to
+	 look at old ones since new ones would not show up in sub
+	 list, already changed.  Then tried to plug in new type symbol
+	 for user type.  But symbols always point to types not to type
+	 symbols so this didn't work ***
+
+    Symbol* old_formals = formals;
+    Symbol* new_formals = this_copy->fn->formals;
+    while (old_formals && !old_formals->isNull()) {
+      if (!new_formals || new_formals->isNull()) {
+	INT_FATAL(this, "Error in FnSymbol::instantiate_generic");
+      }
+      if (dynamic_cast<TypeSymbol*>(old_formals)) {
+	new_formals->cname =
+	  glomstrings(3, new_formals->cname, "_instantiate_", intstring(uid));
+	Type* new_type = generic_substitutions->get(old_formals->type);
+	if (!new_type) {
+	  INT_FATAL(this, "Cannot resolve generic_substitutions in "
+		    "FnSymbol::instantiate_generic");
+	}
+	new_formals->type = new UserType(new_type);
+	new_formals->type->addName(new_formals);
+	TypeDefStmt* type_def = new TypeDefStmt(new_formals->type);
+	defPoint->insertBefore(type_def);
+      }
+      old_formals = nextLink(Symbol, old_formals);
+      new_formals = nextLink(Symbol, new_formals);
+    }
+    ***/
+
+    for (int i = 0; i < map.n; i++) {
+      if (map.v[i].key) {
+	if (Variable* var = dynamic_cast<Variable*>(map.v[i].key)) {
+	  if (Type* new_type = generic_substitutions->get(var->var->type)) {
+	    Variable* new_var = dynamic_cast<Variable*>(map.v[i].value);
+	    new_var->var->type = new_type;
+	  }
+	}
+	else if (Symbol* sym = dynamic_cast<Symbol*>(map.v[i].key)) {
+	  if (Type* new_type = generic_substitutions->get(sym->type)) {
+	    Symbol* new_sym = dynamic_cast<Symbol*>(map.v[i].value);
+	    new_sym->type = new_type;
+	  }
+	}
+      }
+    }
+
+    this_copy->fn->cname =
+      glomstrings(3, this_copy->fn->cname, "_instantiate_", intstring(uid++));
+    defPoint->insertBefore(this_copy);
+  }
+  else {
+    INT_FATAL(this, "Error in FnSymbol::instantiate_generic");
+  }
+  Symboltable::setCurrentScope(save_scope);
+  return this_copy->fn;
 }
 
 

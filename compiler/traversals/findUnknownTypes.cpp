@@ -2,22 +2,6 @@
 #include "expr.h"
 #include "findUnknownTypes.h"
 #include "stmt.h"
-#include "../passes/runAnalysis.h"
-
-
-FindUnknownTypes::FindUnknownTypes(void) {
-  processInternalModules = false;
-}
-
-
-void FindUnknownTypes::preProcessStmt(Stmt* stmt) {
-  //  fprintf(stderr, "STMT:\n");
-  //  stmt->print(stderr);
-}
-
-void FindUnknownTypes::postProcessStmt(Stmt* stmt) {
-  //  fprintf(stderr, "STMT\n\n\n");
-}
 
 
 class FindReturn : public Traversal {
@@ -38,46 +22,63 @@ void FindReturn::preProcessStmt(Stmt* stmt) {
 }
 
 
-void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
-  if (sym->type == dtUnknown) {
-    sym->type = type_info(sym);
-  }
-  FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym);
-  if (fnSym) {
-    if (fnSym->retType == dtUnknown) {
-      if (RunAnalysis::runCount > 0) {
-	fnSym->retType = return_type_info(fnSym);
-      }
-      else {
-	FindReturn* traversal = new FindReturn();
-	TRAVERSE_LS(fnSym->body, traversal, true);
-	if (traversal->found) {
-	  INT_FATAL(sym, "Analysis required to determine return type");
-	}
-	else {
-	  fnSym->retType = dtVoid;
+void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
+  if (FnCall* call = dynamic_cast<FnCall*>(expr)) {
+    Expr* arg = call->argList;
+    while (arg && !arg->isNull()) {
+      Expr* next_arg = nextLink(Expr, arg);
+      if (Variable* var_arg = dynamic_cast<Variable*>(arg)) {
+	if (dynamic_cast<TypeSymbol*>(var_arg->var)) {
+	  arg->extract();
 	}
       }
+      arg = next_arg;
     }
   }
 }
 
-
-void FindUnknownTypes::preProcessExpr(Expr* expr) {
-  /*
-  if (expr->typeInfo() == dtUnknown) {
-    fprintf(stderr, "Found expression with unknown type:\n");
-    expr->print(stderr);
-    fprintf(stderr, "\n\n");
+void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    Symbol* old_formals = fn->formals;
+    Symbol* new_formals = nilSymbol;
+    while (old_formals && !old_formals->isNull()) {
+      Symbol* next_old_formals = nextLink(Symbol, old_formals);
+      old_formals->next = nilSymbol;
+      old_formals->prev = nilSymbol;
+      if (dynamic_cast<ParamSymbol*>(old_formals)) {
+	new_formals = appendLink(new_formals, old_formals);
+      }
+      old_formals = next_old_formals;
+    }
+    fn->formals = new_formals;
   }
-  */
 }
 
 
+FindUnknownTypes::FindUnknownTypes(void) {
+  processInternalModules = false;
+}
 
-
-void PrintStmts::preProcessStmt(Stmt* stmt) {
-  fprintf(stdout, "STMT:\n");
-  stmt->print(stdout);
-  fprintf(stdout, "\n\n\n");
+void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
+  if (sym->type == dtUnknown) {
+    sym->type = type_info(sym);
+  }
+  FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
+  if (fn) {
+    if (fn->retType == dtUnknown) {
+      if (analyzeAST) {
+	fn->retType = return_type_info(fn);
+      }
+      else {
+	FindReturn* traversal = new FindReturn();
+	TRAVERSE_LS(fn->body, traversal, true);
+	if (traversal->found) {
+	  INT_FATAL(sym, "Analysis required to determine return type");
+	}
+	else {
+	  fn->retType = dtVoid;
+	}
+      }
+    }
+  }
 }

@@ -3,19 +3,18 @@
 
 #include "traversal.h"
 
-class FindUnknownTypes : public Traversal {
- public:
-  FindUnknownTypes(void);
-
-  void preProcessStmt(Stmt* stmt);
-  void postProcessStmt(Stmt* stmt);
-  void preProcessSymbol(Symbol* sym);
+class RemoveTypeVariableActuals : public Traversal {
   void preProcessExpr(Expr* expr);
 };
 
-class PrintStmts : public Traversal {
+class RemoveTypeVariableFormals : public Traversal {
+  void preProcessSymbol(Symbol* sym);
+};
+
+class FindUnknownTypes : public Traversal {
  public:
-  void preProcessStmt(Stmt* stmt);
+  FindUnknownTypes(void);
+  void preProcessSymbol(Symbol* sym);
 };
 
 #endif

@@ -30,6 +30,8 @@ PassInfo passlist[] = {
   // passes to capture analysis information in the AST
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
+  RUN(RemoveTypeVariableActuals, ""),
+  RUN(RemoveTypeVariableFormals, ""),
 
   // check the program's semantics
   RUN(CheckSemantics, ""),

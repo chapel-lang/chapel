@@ -54,8 +54,9 @@ REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
-REGISTER(PrintStmts);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
+REGISTER(RemoveTypeVariableActuals);
+REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
