@@ -10086,3 +10086,30 @@ Modified files:
 	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
 	                               tuples.good 
 
+---------------------------------------------------------------------------
+
+11/22/04 07:30:54 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Seperated out "must_implement" (type checking), "must_specialize" (dispatch)
+	and true type (concrete type) in the low level code translators and in dispatch.
+	Updated logging and type warning code to differentiate them, and updated
+	test cases.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp cg.cpp clone.cpp 
+	                           fa.cpp fa_extras.cpp pattern.cpp 
+	                           sym.cpp 
+	chapel/compiler/vparser/: parse_ast.cpp 
+	chapel/test/flowanalysis/jplevyak/: assign1.good assign2.good 
+	                                    badcall.good 
+	                                    badprimitive.good 
+	                                    badreturn.good classvar.good 
+	                                    cs1.good cs2.good cs3.good 
+	                                    cs4.good cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch3.good 
+	                                    memberfun.good 
+	                                    memberfun2.good sample.good 
+	                                    structtype.good 
+
