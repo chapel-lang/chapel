@@ -35,6 +35,7 @@ static Sym *writeln_symbol = 0;
 static Sym *flood_symbol = 0;
 static Sym *completedim_symbol = 0;
 static Sym *array_index_symbol = 0;
+static Sym *sizeof_symbol = 0;
 
 static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
@@ -1082,7 +1083,12 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_SIZEOF: {
-      INT_FATAL("Don't know how to handle sizeof() in analysis.cpp yet");
+      SizeofExpr *s = dynamic_cast<SizeofExpr *>(ast);
+      s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
+      Code *send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, sizeof_symbol, 
+			    s->type->asymbol->type_sym, s->ainfo->rval);
+      send->ast = s->ainfo;
       break;
     }
   case SYMBOL:
@@ -1216,9 +1222,10 @@ init_symbols() {
   expr_domain_symbol = if1_make_symbol(if1, "expr_domain");
   expr_create_domain_symbol = if1_make_symbol(if1, "expr_create_domain");
   expr_reduce_symbol = if1_make_symbol(if1, "expr_reduce");
-  array_index_symbol = if1_make_symbol(if1, "array_index");
+  sizeof_symbol = if1_make_symbol(if1, "sizeof");
   write_symbol = if1_make_symbol(if1, "write");
   writeln_symbol = if1_make_symbol(if1, "writeln");
+  array_index_symbol = if1_make_symbol(if1, "array_index");
   flood_symbol = if1_make_symbol(if1, "*");
   completedim_symbol = if1_make_symbol(if1, "..");
 }
@@ -1308,7 +1315,7 @@ domain_next_index(PNode *pn, EntrySet *es) {
 }
 
 static void
-domain_valid_index(PNode *pn, EntrySet *es) {
+integer_result(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   update_in(result, make_abstract_type(sym_int));
 }
@@ -1365,11 +1372,12 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   if (build_functions(syms) < 0) return -1;
   pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol->name, domain_start_index);
   pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol->name, domain_next_index);
-  pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol->name, domain_valid_index);
+  pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol->name, integer_result);
   pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol->name, expr_simple_seq);
   pdb->fa->primitive_transfer_functions.put(expr_domain_symbol->name, expr_domain);
   pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol->name, expr_create_domain);
   pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol->name, expr_reduce);
+  pdb->fa->primitive_transfer_functions.put(sizeof_symbol->name, integer_result);
   pdb->fa->primitive_transfer_functions.put(write_symbol->name, write_transfer_function);
   pdb->fa->primitive_transfer_functions.put(writeln_symbol->name, write_transfer_function);
   pdb->fa->primitive_transfer_functions.put(array_index_symbol->name, array_index);
