@@ -17,11 +17,6 @@
 static ClassType* CurrentClass = NULL;
 
 
-FieldsToMemberAccesses::FieldsToMemberAccesses(void) {
-  processInternalModules = false;
-}
-
-
 void FieldsToMemberAccesses::preProcessStmt(Stmt* stmt) {
   if (TypeDefStmt* tds = dynamic_cast<TypeDefStmt*>(stmt)) {
     if (ClassType* ctype = dynamic_cast<ClassType*>(tds->type)) {
@@ -56,6 +51,9 @@ void FieldsToMemberAccesses::postProcessStmt(Stmt* stmt) {
 void FieldsToMemberAccesses::preProcessExpr(Expr* expr) {
   if (CurrentClass) {
     if (Variable* member = dynamic_cast<Variable*>(expr)) {
+      if (!strcmp(member->var->name, "this")) {
+	return;
+      }
       if (Symboltable::lookupInScope(member->var->name, CurrentClass->scope)) {
 
 	/* replacement of expr variable by memberaccess */
