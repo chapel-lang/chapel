@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include "methodsToFunctions.h"
 #include "chplalloc.h"
 #include "expr.h"
@@ -8,8 +9,8 @@
 
 
 /***
- ***  Mangles names of methods with "_"
- ***  Moves method's function definition statement after class definition statement
+ ***  Mangles names of methods with "_", moves method's function
+ ***  definition statement after class definition statement
  ***/
 void MethodsToFunctions::preProcessStmt(Stmt* &stmt) {
   TypeDefStmt* tds;
@@ -24,7 +25,6 @@ void MethodsToFunctions::preProcessStmt(Stmt* &stmt) {
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
 	  method->fn->cname = 
 	    glomstrings(4, "_", ctype->name->name, "_", method->fn->name);
-	  /* NEED TO REMOVE METHOD FROM CLASS TYPE */
 	  method->extract();
 	  tds->append(method);
 	}
@@ -36,24 +36,19 @@ void MethodsToFunctions::preProcessStmt(Stmt* &stmt) {
 
 
 /***
- ***  Adds base in MemberAccess for method to a new first parameter to the method
- ***  Makes MemberAccess for method a function on its own
+ ***  Adds base in MemberAccess for method to a new first parameter to
+ ***  the method, makes MemberAccess for method a function on its own
  ***/
 void MethodsToFunctions::preProcessExpr(Expr* &expr) {
-  MemberAccess* method;
-  ParenOpExpr* function;
-  Expr* newArgList;
-
-  if (method = dynamic_cast<MemberAccess*>(expr)) {
-    if (dynamic_cast<FnSymbol*>(method->member)) {
-      if (function = dynamic_cast<ParenOpExpr*>(method->parent)) {
-	newArgList = method->base->copy();
-	newArgList->append(function->argList);
-	function->argList = newArgList;
-	function->baseExpr = new Variable(method->member);
-      }
-      else {
-	INT_FATAL(expr, "Bad Method Call?");
+  if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
+    if (typeid(*paren) == typeid(ParenOpExpr)) {
+      if (MemberAccess* method = dynamic_cast<MemberAccess*>(paren->baseExpr)) {
+	if (dynamic_cast<FnSymbol*>(method->member)) {
+	  Expr* newArgList = method->base->copy();
+	  newArgList->append(paren->argList);
+	  FnCall* fn = new FnCall(new Variable(method->member), newArgList);
+	  Expr::replace(expr, fn);
+	}
       }
     }
   }

@@ -719,16 +719,7 @@ void ParenOpExpr::print(FILE* outfile) {
 
 
 void ParenOpExpr::codegen(FILE* outfile) {
-#ifndef THE_FOLLOWING_IS_A_HACK
-  baseExpr->codegen(outfile);
-  fprintf(outfile, "(");
-  if (!argList->isNull()) {
-    argList->codegenList(outfile, ", ");
-  }
-  fprintf(outfile, ")");
-#else
   INT_FATAL(this, "ParenOpExprs must be resolved before codegen");
-#endif
 }
 
 
@@ -780,6 +771,11 @@ FnCall::FnCall(Expr* init_base, Expr* init_arg) :
 {
   astType = EXPR_FNCALL;
 
+}
+
+
+Type* FnCall::typeInfo(void) {
+  return findFnSymbol()->type;
 }
 
 
@@ -877,6 +873,7 @@ void IOCall::codegen(FILE* outfile) {
     }
 
     if (argdt == dtUnknown) {
+      INT_FATAL(arg, "shouldn't be calling into analysis now");
       argdt = type_info(arg);
     }
     argdt->codegen(outfile);

@@ -347,6 +347,8 @@ class FnCall : public ParenOpExpr {
   FnCall(Expr* init_base, Expr* init_arg = nilExpr);
   virtual Expr* copy(void);
 
+  Type* typeInfo(void);
+
   FnSymbol* findFnSymbol(void);
 
   void codegen(FILE* outfile);
