@@ -298,6 +298,11 @@ endif
 if ($valgrind) then
     echo \[valgrind: ON\]
     setenv CHPLTESTVGRND on
+    which valgrind > /dev/null
+    if ( $status != 0 ) then
+	echo ERROR: can\'t find valgrind |& tee -a $logtmp
+	exit 1
+    endif
 else
     echo \[valgrind: OFF\]
     setenv CHPLTESTVGRND off
