@@ -1825,3 +1825,14 @@ Added files:
 	                                    arrinit.notypes.notype.chpl 
 	                                    arrinit.types.notype.chpl 
 
+---------------------------------------------------------------------------
+
+04/05/03 12:04:00 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Change the system directory option letter since it conflicts with
+	the (preexisting) -D for parser debugging.
+
+Modified files:
+	chapel/compiler/: driver.cpp 
+
