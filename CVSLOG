@@ -2181,3 +2181,13 @@ Modified files:
 	chapel/compiler/samples/: sample.chpl 
 	chapel/test/flowanalysis/jplevyak/: cs1.chk cs2.chk cs3.chk 
 
+---------------------------------------------------------------------------
+
+04/05/25 16:08:56 -- bradc
+
+Log message:
+	Making sure that we blow away /tmp directories on segfaults.
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+
