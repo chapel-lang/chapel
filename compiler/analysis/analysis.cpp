@@ -1109,7 +1109,7 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
   Code *send = 0;
   if (s->type->asymbol->symbol->astType == TYPE_CLASS) {
     ClassType *ct = dynamic_cast<ClassType*>(type->asymbol->symbol);
-    if (ct->value && s != _this)
+    if ((ct->value || ct->union_value) && s != _this)
       send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
   }
   if (!send) 
@@ -1118,7 +1118,9 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
   if (type->asymbol->symbol->astType == TYPE_ARRAY) {
     // just set the first element
     ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
-    if ((at->elementType->astType == TYPE_CLASS && dynamic_cast<ClassType*>(at->elementType)->value) ||
+    if ((at->elementType->astType == TYPE_CLASS && 
+	 (dynamic_cast<ClassType*>(at->elementType)->value || 
+	  dynamic_cast<ClassType*>(at->elementType)->union_value)) ||
 	(at->elementType->astType == TYPE_ARRAY))
     {
       Sym *ret = new_sym();
