@@ -12658,3 +12658,16 @@ Removed files:
 	chapel/test/classes/deitz/future/: test_class_with2.chpl 
 	                                   test_class_with2.good 
 
+---------------------------------------------------------------------------
+
+12/22/04 14:50:35 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	form_XXX marco for looping over Map's now skips empty MapElem's correctly.
+	Added additional functions to MPosition class: last(), prefix_to_last().
+	More work on support for default arguments.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp pattern.cpp 
+	chapel/compiler/include/: fa.h fun.h map.h pattern.h 
+
