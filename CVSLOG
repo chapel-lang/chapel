@@ -3332,3 +3332,14 @@ Added files:
 	                      stringutil.h symbol.cpp symbol.h type.cpp 
 	                      type.h yy.c yy.h 
 
+---------------------------------------------------------------------------
+
+06/15/04 11:16:32 -- bradc
+
+Log message:
+	Prototype AST checkpoint.
+
+Modified files:
+	chapel/compiler/AST/: chapel.lex chapel.y expr.cpp expr.h 
+	                      main.cpp yy.h 
+
