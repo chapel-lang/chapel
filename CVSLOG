@@ -22983,3 +22983,14 @@ Removed files:
 	                            writeclass2a.future 
 	                            writerecord2.future 
 
+---------------------------------------------------------------------------
+
+03/31/05 14:50:52 -- bradc
+
+Log message:
+	Removing some tabs that presumably got mis-merged
+	in last night's switch-over.
+
+Modified files:
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+
