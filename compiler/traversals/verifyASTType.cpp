@@ -218,11 +218,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_CLASS");
     }
     break;
-  case SYMBOL_REDUCE:
-    if (typeid(*ast) != typeid(ReduceSymbol)) {
-      INT_FATAL(ast, "Unexpected AST symbol type: ");
-    }
-    break;
   case SYMBOL_FN:
     if (typeid(*ast) != typeid(FnSymbol)) {
       INT_FATAL(ast, "Unexpected AST symbol type: ");

@@ -117,9 +117,6 @@ while           return TWHILE;
 		  } else if (typeid(*sym) == typeid(ClassSymbol)) {
 		    yylval.pcsym = (ClassSymbol*)sym;
 		    return CLASS_IDENT;
-		  } else if (typeid(*sym) == typeid(ReduceSymbol)) {
-		    yylval.redsym = (ReduceSymbol*)sym;
-		    return REDUCE_IDENT;
 		  } else {
 		    return TIDENT;
 		  }

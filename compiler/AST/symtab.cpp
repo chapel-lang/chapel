@@ -697,13 +697,7 @@ ClassSymbol* Symboltable::startClassDef(char* name, ClassSymbol* parent) {
   } else {
     newdt = new ClassType(parent->getType());
   }
-  if (!parent->isNull() && 
-      parent->scope->type == SCOPE_PRELUDE && 
-      strcmp(parent->name, "reduction") == 0) {
-    newsym = new ReduceSymbol(name, newdt);
-  } else {
-    newsym = new ClassSymbol(name, newdt);
-  }
+  newsym = new ClassSymbol(name, newdt);
   (newdt)->addName(newsym);
   define(newsym);
   Symboltable::pushScope(SCOPE_CLASS);

@@ -112,13 +112,6 @@ class ClassSymbol : public TypeSymbol {
 extern ClassSymbol* nilClassSymbol;
 
 
-class ReduceSymbol : public ClassSymbol {
- public:
-  ReduceSymbol(char* init_name, ClassType* init_class);
-  virtual Symbol* copy(void);
-};
-
-
 class FnSymbol;
 extern FnSymbol* nilFnSymbol;
 

@@ -1097,7 +1097,6 @@ gen_if1(BaseAST *ast) {
   case SYMBOL_PARAM:
   case SYMBOL_TYPE:
   case SYMBOL_CLASS:
-  case SYMBOL_REDUCE:
   case SYMBOL_FN:
   case SYMBOL_ENUM:
   case TYPE:

@@ -230,19 +230,6 @@ ClassType* ClassSymbol::getType(void) {
 }
 
 
-ReduceSymbol::ReduceSymbol(char* init_name, ClassType* init_class) :
-  ClassSymbol(init_name, init_class)
-{
-  astType = SYMBOL_REDUCE;
-}
-
-
-Symbol* ReduceSymbol::copy(void) {
-  INT_FATAL(this, "ReduceSymbol::copy() not implemented yet");
-  return nilSymbol;
-}
-
-
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 		   Stmt* init_body, bool init_exportMe, 
 		   FnSymbol* init_parentFn) :

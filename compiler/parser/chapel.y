@@ -36,7 +36,6 @@
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
   FnSymbol* fnsym;
-  ReduceSymbol* redsym;
   ClassSymbol* pcsym;
 }
 
@@ -55,7 +54,6 @@
 %token TINDEX
 %token TINOUT
 %token TOUT
-%token TREDUCE
 %token TREF
 %token TRETURN
 %token TSTATIC
@@ -67,7 +65,6 @@
 
 %token TIDENT QUERY_IDENT
 %token <ptsym> TYPE_IDENT
-%token <redsym> REDUCE_IDENT
 %token <pcsym> CLASS_IDENT
 %token INTLITERAL FLOATLITERAL COMPLEXLITERAL
 %token <pch> STRINGLITERAL
@@ -620,7 +617,7 @@ expr:
 
 
 reduction:
-  REDUCE_IDENT TREDUCE expr
+  identsym TREDUCE expr
     { $$ = new ReduceExpr($1, nilExpr, $3); }
 ;
 
