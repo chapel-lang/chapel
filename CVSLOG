@@ -18433,3 +18433,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+03/01/05 09:46:23 -- jplevyak
+
+Log message:
+	Make sum_type-1 a .future test case since it requires moving
+	to a new interface.
+
+Added files:
+	chapel/test/classes/jplevyak/: sum_type-1.future 
+
