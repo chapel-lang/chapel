@@ -13348,3 +13348,47 @@ Added files:
 	chapel/test/types/type_variables/deitz/: .cvsignore 
 	chapel/test/types/type_variables/deitz/future/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+12/30/04 16:18:09 -- deitz
+
+Log message:
+	Fixed two bugs and got the call to fixup-verify to work before code
+	generation.
+	
+	Fixed a bug in the call to fixup that is applied during calls to
+	insertAfter, insertBefore, and replace.  This call was only fixing up
+	the first statement in a module or function in which a statement or
+	expression was modified.  It now fixes up the list of statements.
+	
+	Changed the call to 'append' in MethodsToFunctions to be 'insertAfter'
+	instead since append is not really necessary and has not yet been
+	robustified.
+	
+	Fixed a bug in extract and generally robustified extract so that it is
+	just as versatile as insertAfter, insertBefore, and replace.
+	
+	Caution: brain dump.  The remaining difficulty with these four
+	functions (insertAfter, insertBefore, extract, and replace) shows up
+	in traversals.  Specifically, it is difficult to determine what will
+	be traversed when a change is made to the AST during a traversal.  It
+	would be nice if this could be better defined and I have some ideas to
+	talk over with Brad next week.  The two major problems show up in
+	replace (if it is used to replace a piece of the AST containing a
+	piece that is being traversed though the current piece that is being
+	traversed can be replaced) and insertBefore (since if that is used
+	immediately before the statement being traversed, there is a good
+	likelihood for an infinite loop).  Though not as common, insertAfter
+	could cause an infinite loop if it is applied to the statement before
+	the one being traversed.  This has to do with the reference parameter
+	which is changed in fixup and makes the same statement be traversed
+	again.
+
+Modified files:
+	chapel/compiler/AST/: link.cpp 
+	chapel/compiler/include/: link.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: methodsToFunctions.cpp 
+Added files:
+	chapel/test/functions/jplevyak/: .cvsignore 
+
