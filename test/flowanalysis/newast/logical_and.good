@@ -3,6 +3,7 @@
 ::__init_logical_and(logical_and.chpl:13) ( __init_logical_and )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::answer(logical_and.chpl:3) ( int64 )
+::int64 ( int64 )
 ::main ( main )
 ::null ( null null )
 ::o(logical_and.chpl:1) ( int64 )

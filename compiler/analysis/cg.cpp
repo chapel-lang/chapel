@@ -297,10 +297,12 @@ write_c_fun_arg(FILE *fp, char *s, char *e, Sym *sym, int i) {
 
 static void
 simple_move(FILE *fp, Var *lhs, Var *rhs) {
-    if (!rhs->sym->fun)
-      fprintf(fp, "%s = (%s)%s;\n", lhs->cg_string, c_type(lhs), rhs->cg_string);
-    else
-      fprintf(fp, "%s = (_GC_fun)&%s;\n", lhs->cg_string, rhs->cg_string);
+  if (lhs->sym->type_kind || rhs->sym->type_kind)
+    return;
+  if (!rhs->sym->fun)
+    fprintf(fp, "%s = (%s)%s;\n", lhs->cg_string, c_type(lhs), rhs->cg_string);
+  else
+    fprintf(fp, "%s = (_GC_fun)&%s;\n", lhs->cg_string, rhs->cg_string);
 }
 
 static void do_phi_nodes(FILE *fp, PNode *n, int isucc) {
@@ -459,7 +461,7 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
     fputs("\n", fp);
   if (globals)
     forv_Var(v, *globals)
-      if (v->sym->fun)
+      if (v->sym->fun && !v->sym->type_kind)
 	fprintf(fp, "%s = %s;\n", v->cg_string, v->sym->fun->cg_string);
   write_c_args(fp, f);
   // rebuild cfg_pred_index
@@ -531,7 +533,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
       } else {
 	switch (s->type_kind) {
 	  default: 
-	    s->cg_string = strdup("_CG_any");
+	    s->cg_string = dupstr("_CG_any");
 	    break;
 	  case Type_FUN:
 	    if (s->fun) break;
@@ -664,7 +666,7 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
       char s[100];
       sprintf(s, "_CG_Symbol(%d, \"%s\")", v->sym->id, v->sym->name);
       v->cg_string = dupstr(s);
-    } else {
+    } else if (!v->sym->type_kind) {
       char s[100];
       if (v->sym->name)
 	sprintf(s, "/* %s %d */ g%d", v->sym->name, v->sym->id, index++);
@@ -675,10 +677,13 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
       fputs(" ", fp);
       fputs(v->cg_string, fp);
       fputs(";\n", fp);
+    } else {
+      index++;
+      v->cg_string = dupstr(v->sym->name);
     }
   }
   forv_Fun(f, fa->funs) if (f != init)
-      write_c(fp, fa, f);
+    write_c(fp, fa, f);
   write_c(fp, fa, init, &globals);
   fprintf(fp, "\nint main(int argc, char *argv[]) {"
 	  "  (void)argc; (void) argv;\n"

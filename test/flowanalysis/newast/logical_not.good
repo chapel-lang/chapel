@@ -3,6 +3,7 @@
 ::__init_logical_not(logical_not.chpl:19) ( __init_logical_not )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::answer(logical_not.chpl:3) ( int64 )
+::int64 ( int64 )
 ::main ( main )
 ::null ( null null )
 ::o(logical_not.chpl:1) ( int64 )

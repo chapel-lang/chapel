@@ -31,7 +31,10 @@ typedef void *_CG_ref;
 #define _CG_primitive _CG_symbol
 #define _CG_make_tuple _CG_symbol
 #define _CG_Symbol(_x, _y) ((void*)(uintptr_t)_x)
+#define null ((void*)0)
+#define __init ((void*)0)
 
+#define _CG_prim_coerce(_t, _v) ((_t)_v)
 #define _CG_prim_closure(_c) (_c)GC_MALLOC(sizeof(*((_c)0)))
 #define _CG_prim_tuple(_c) (_c)GC_MALLOC(sizeof(*((_c)0)))
 #define _CG_prim_vector(_c, _n) (void*)GC_MALLOC(sizeof(_c*) * _n)

@@ -707,11 +707,10 @@ gen_alloc(Sym *s, VarDefStmt *def, Sym *type) {
 }
 
 static Sym *
-gen_coerce(VarDefStmt *def, Sym *s, Sym *type) {
+gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
   Sym *ret = new_sym();
-  Code **c = &def->ainfo->code;
   Code *send = if1_send(if1, c, 3, 1, sym_coerce, type, s, ret);
-  send->ast = def->ainfo;
+  send->ast = ast;
   return ret;
 }
 
@@ -736,7 +735,7 @@ gen_vardef(BaseAST *a) {
     Sym *val = def->init->ainfo->rval;
     if (s->type) {
       if (s->type->num_kind && s->type != val->type)
-	val = gen_coerce(def, val, s->type);
+	val = gen_coerce( val, s->type, &def->ainfo->code, def->ainfo);
       // else show_error("missing constructor", def->ainfo);
     }
     if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
@@ -1081,15 +1080,9 @@ gen_if1(BaseAST *ast) {
       }
       if (!s->left->ainfo->sym)
 	show_error("assignment to non-lvalue", s->ainfo);
-      if (s->left->ainfo->sym->is_var) {
-	Sym *rrval = new_sym();
-	rrval->ast = s->ainfo;
-	Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
-			   s->left->ainfo->sym, sym_assign, rval,
-			   rrval);
-	c->ast = s->ainfo;
-	rval = rrval;
-      }
+      if (s->left->ainfo->sym->is_var)
+	if (s->left->ainfo->sym->type) 
+	  rval = gen_coerce(rval, s->left->ainfo->sym->type, &s->ainfo->code, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->left->ainfo->sym, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
       break;

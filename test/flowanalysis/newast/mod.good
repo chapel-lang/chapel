@@ -3,6 +3,7 @@
 ::__init_mod(mod.chpl:21) ( __init_mod )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::answer(mod.chpl:4) ( int64 )
+::int64 ( int64 )
 ::m(mod.chpl:1) ( int64 )
 ::main ( main )
 ::n(mod.chpl:2) ( int64 )
