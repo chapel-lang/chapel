@@ -1,3 +1,4 @@
-deitz
+jplevyak
 
-FnSymbol::default_wrapper needs to be implemented.
+problem later in analysis, after default_wrapper is called.
+Don't know why.  --SJD
