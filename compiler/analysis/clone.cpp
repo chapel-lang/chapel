@@ -659,10 +659,14 @@ clone_functions() {
 	  f->calls.put(pnode, (vf = new Vec<Fun *>));
 	for (int j = 0; j < m->n; j++) 
 	  if (m->v[j].key && used_edges.set_in(m->v[j].value))
-	    vf->add(m->v[j].value->to->fun);
+	    vf->set_add(m->v[j].value->to->fun);
       }
     }
   }
+  // convert Fun::calls to vectors
+  forv_Fun(f, fa->funs)
+    for (int i = 0; i < f->calls.n; i++) if (f->calls.v[i].key)
+      f->calls.v[i].value->set_to_vec();
   // invert Fun::calls to generated Fun::called
   forv_Fun(f, fa->funs) {
     for (int i = 0; i < f->calls.n; i++) if (f->calls.v[i].key) {

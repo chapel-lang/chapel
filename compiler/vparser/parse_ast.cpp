@@ -1774,6 +1774,20 @@ gen_if1(IF1 *i, ParseAST *ast) {
   return 0;
 }
 
+static int
+post_gen_top_down(IF1 *i, ParseAST *ast) {
+  if (ast->alt_name) {
+    if (ast->rval)
+      ast->rval->alt_name = ast->alt_name;
+    if (ast->sym)
+      ast->sym->alt_name = ast->alt_name;
+  }
+  forv_ParseAST(a, ast->children)
+    if (post_gen_top_down(i, a) < 0)
+      return -1;
+  return 0;
+}
+
 static Sym *
 collect_module_init(IF1 *i, ParseAST *ast, Sym *mod) {
   forv_ParseAST(a, ast->children) 
@@ -1800,6 +1814,7 @@ build_functions(IF1 *i, ParseAST *ast, Sym *mod) {
   if (pre_gen_top_down(i, ast, 0, 0) < 0) return -1;
   if (pre_gen_bottom_up(ast) < 0) return -1;
   if (gen_if1(i, ast) < 0) return -1;
+  if (post_gen_top_down(i, ast)) return -1;
   collect_module_init(i, ast, mod->init);
   return 0;
 }

@@ -164,10 +164,15 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	Vec<Fun *> *push_funs = new Vec<Fun *>(pfuns);
 	partial_matches.add(push_funs);
 	forv_AVar(av, cs->vars) {
-	  if (av->var->sym->name && !av->var->sym->is_constant && !av->var->sym->is_symbol) {
+	  if (cs->sym != sym_tuple && av->var->sym->name && 
+	      !av->var->sym->is_constant & !av->var->sym->is_symbol) {
 	    MPosition pp(p);
 	    pp.set_top(av->var->sym->name);
-	    pattern_match_arg(fa, av, partial_matches, match_map, pp, send, all_positions);
+	    pattern_match_arg(fa, av, partial_matches, match_map, p, send, all_positions);
+	  } else if (cs->sym == sym_tuple && av->var->sym->alt_name) {
+	    MPosition pp(p);
+	    pp.set_top(av->var->sym->alt_name);
+	    pattern_match_arg(fa, av, partial_matches, match_map, p, send, all_positions);
 	  } else
 	    pattern_match_arg(fa, av, partial_matches, match_map, p, send, all_positions);
 	  if (!partial_matches.v[partial_matches.n-1] ||
@@ -260,9 +265,14 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	if (!check_ambiguities) {
 	  p.push(1);
 	  forv_AVar(av, cs->vars) {
-	    if (av->var->sym->name && !av->var->sym->is_constant & !av->var->sym->is_symbol) {
+	    if (cs->sym != sym_tuple && av->var->sym->name && 
+		!av->var->sym->is_constant & !av->var->sym->is_symbol) {
 	      MPosition pp(p);
 	      pp.set_top(av->var->sym->name);
+	      best_match_arg(fa, av, partial_matches, match_map, pp, all_positions, check_ambiguities);
+	    } else if (cs->sym == sym_tuple && av->var->sym->alt_name) {
+	      MPosition pp(p);
+	      pp.set_top(av->var->sym->alt_name);
 	      best_match_arg(fa, av, partial_matches, match_map, pp, all_positions, check_ambiguities);
 	    } else
 	      best_match_arg(fa, av, partial_matches, match_map, p, all_positions, check_ambiguities);

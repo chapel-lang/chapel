@@ -16,8 +16,6 @@
  called from 3 in makeC at cs4.v:3
  called from 4 in makeD at cs4.v:4
  called from 4 in makeD at cs4.v:4
- called from 4 in makeD at cs4.v:4
- called from 4 in makeD at cs4.v:4
  called from 5 in __init at cs4.v:1
  called from 5 in __init at cs4.v:1
  called from 6 in __init at cs4.v:1
@@ -28,8 +26,6 @@
  called from 74 in new at prelude.v:74
  called from 74 in new at prelude.v:74
  called from 74 in new at prelude.v:74
- called from 74 in new at prelude.v:74
- called from 75 in operator at prelude.v:75
  called from 75 in operator at prelude.v:75
  called from 75 in operator at prelude.v:75
  called from 75 in operator at prelude.v:75

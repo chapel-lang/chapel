@@ -583,6 +583,8 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       continue;
     fputs("(SYMBOL ", fp);
     if1_dump_sym(fp, s);
+    if (s->type_kind)
+      fprintf(fp, " :TYPE_KIND %s", type_kind_string[s->type_kind]);
     if (s->type) {
       fputs(" :TYPE ", fp);
       if1_dump_sym(fp, s->type);

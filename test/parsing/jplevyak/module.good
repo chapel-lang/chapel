@@ -1,2 +1,2 @@
-698 states 380 scans 134 shifts 374 reductions 17 compares 0 ambiguities
-(( in  my_module  ; )((( v ) : (( 0 ))) ; )(((( f ) a  : )((( v )) + (( a )))) ; )(((( f ))(( 1 ))) ; )(((( g ) b  : )((( 7 )) + (( b )))) ; )( in  my_module2  ; )((( v ) : (( 1 ))) ; )(((( f ) a  : )(((( v )) + (( a ))) + (( 1 )))) ; )(((( f ))(( 2 ))) ; )( in  user  ; )((( v ) : (( 2 ))) ; )(((( f ) a  : )(((( v )) + (( a ))) + (( 2 )))) ; )(((( f ))(( 3 ))) ; )((((( my_module  :: ) f ))(( v ))) ; ))
+697 states 390 scans 134 shifts 397 reductions 17 compares 0 ambiguities
+(( in  my_module  ; )((( v ) : (( 0 ))) ; )(((( f ) a  : )(( v ) + ( a ))) ; )((( f )(( 1 ))) ; )(((( g ) b  : )((( 7 )) + ( b ))) ; )( in  my_module2  ; )((( v ) : (( 1 ))) ; )(((( f ) a  : )((( v ) + ( a )) + (( 1 )))) ; )((( f )(( 2 ))) ; )( in  user  ; )((( v ) : (( 2 ))) ; )(((( f ) a  : )((( v ) + ( a )) + (( 2 )))) ; )((( f )(( 3 ))) ; )(((( my_module  :: ) f )( v )) ; ))

@@ -7,8 +7,8 @@
  called from 4 in __init at named.v:1
 f::a(named.v:1) ( float64 (prelude.v:37) )
 f::b(named.v:1) ( float64 (prelude.v:37) )
-f::c(named.v:1) ( float64 (prelude.v:37) )
-f::d(named.v:1) ( int32 (prelude.v:24) )
+f::c(named.v:1) ( int32 (prelude.v:24) )
+f::d(named.v:1) ( float64 (prelude.v:37) )
 function __init named.v:1
 function __init prelude.v:7
 function __init__ <unknown>:0

@@ -178,12 +178,7 @@ expression
        $$.ast->builtin = if1_cannonicalize_string(
          $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
    }
-  | qualified_ident ('=>' identifier)? {
-      $$.ast = $0.ast;
-      if ($#1)
-        $$.ast->alt_name = if1_cannonicalize_string(
-          $g->i, ${child 1, 0, 1}->start_loc.s, ${child 1, 0, 1}->end);
-    }
+  | qualified_ident
   | def_ident ':' expression $right 5100 { 
       $$.ast = new_AST(AST_def_ident, &$n); 
       $$.ast->def_ident_label = 1;
@@ -204,6 +199,11 @@ expression
     { $$.ast = op_AST($g->i, $n); }
   | expression ('.' $name "op period" | '->' $name "op arrow") symbol_ident $left 9900
     { $$.ast = op_AST($g->i, $n); }
+  | identifier ':=' expression	$left 8600 
+    {
+      $$.ast = $2.ast;
+      $$.ast->alt_name = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
+    }
   | square_block
   | paren_block
   | curly_block
@@ -275,7 +275,7 @@ idpattern
   ;
 
 sub_idpattern
-  : ident def_suffix ('=>' identifier)? { 
+  : ident def_suffix (':=' identifier)? { 
       $$.ast = $0.ast;
       if ($#2)
         $$.ast->alt_name = if1_cannonicalize_string(
