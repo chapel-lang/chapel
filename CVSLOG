@@ -2203,3 +2203,31 @@ Log message:
 Modified files:
 	chapel/compiler/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/25 17:15:07 -- bradc
+
+Log message:
+	Added initial code generation support for conditionals.  Added
+	a simple test to try different conditional idioms.  Also added
+	short-term support for the unary negation op.
+	
+	Touched up support for seg faults slightly from my previous
+	version which was laid in in a rush a week or two ago.
+	
+	In writing my conditional code, found what appears to be a bug
+	with empty strings on linux -- when strlen is taken of their
+	compile-time representation, it seg faults.  I assume that this
+	is due to our storage of them as opposed to a bug in strlen,
+	but filed this as a placeholder.  It seemed I could get around
+	it by writing my own strlen that checked against NULL and the
+	empty string before sending the string in to the real strlen(),
+	but this seems bogus, so I'm not checking that code in.  I
+	did check the bug in though (test/trivial/bradc/printempty.chpl.
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+Added files:
+	chapel/test/trivial/bradc/: conditional.chk conditional.chpl 
+	                            printempty.chk printempty.chpl 
+
