@@ -185,17 +185,11 @@ echocompilerdir:
 	@cd $* && $(MAKE) depend
 
 
-#
-# non-obvious dependences
-#
-
-$(PLATFORM)/ast_cf.o: cast_code.cpp
-
 # Here, prim_data.h needs to be mentioned explicitly to get
 # prim_data.h created before we try to create %.g.d_parser.cpp, just
 # in case the user hasn't already run a "make depend" (in which case
 # GEYSA_INCLUDES will be set and the dependences in the generated file
-# will capture this information redundantly.
+# will capture this information redundantly).
 
 $(PLATFORM)/v.g.d_parser.o: prim_data.h
 $(PLATFORM)/chpl.g.d_parser.o: prim_data.h
@@ -205,3 +199,11 @@ $(PLATFORM)/chpl.g.d_parser.o: prim_data.h
 # include standard footer for compiler
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+
+#
+# non-obvious dependences -- if these include GEYSA_INCLUDES,
+# they must follow Makefile.compiler.foot
+#
+
+$(PLATFORM)/ast_cf.o: cast_code.cpp
+$(PLATFORM)/prim_data.o: $(GEYSA_INCLUDES)
