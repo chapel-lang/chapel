@@ -11892,3 +11892,14 @@ Removed files:
 	                             processWithStatements.cpp 
 	                             processWithStatements.h 
 
+---------------------------------------------------------------------------
+
+12/15/04 14:25:36 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed a bug in low level code generation which was setting up
+	a parameter after the call (whoops).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+
