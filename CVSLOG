@@ -374,3 +374,13 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: sample.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/04 14:00:36 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	start a prioritized TODO list
+
+Modified files:
+	chapel/compiler/: TODO 
+
