@@ -8181,3 +8181,27 @@ Added files:
 	chapel/compiler/include/: checkIDs.h 
 	chapel/compiler/traversals/: checkIDs.cpp 
 
+---------------------------------------------------------------------------
+
+09/21/04 14:22:49 -- shannon
+
+Log message:
+	Implemented code generation of the exponentiation
+	binary operator, and added a test.
+	
+	Added a variable to the binOp codegen method to
+	hold the return of a call to the precedence method,
+	instead of needlessly calling the method repeatedly.
+	
+	Added the math libraries to the list of included
+	headers in stdchpl.h and to the link line in the
+	runtime/etc Makefile.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/include/: stdchpl.h 
+Added files:
+	chapel/test/trivial/shannon/: exp.chpl exp.good 
+
