@@ -272,7 +272,7 @@ uniondecl:
 enum_item:
   identifier
     {
-      $$ = new EnumSymbol($1, NULL);
+      $$ = new EnumSymbol($1, nilExpr);
     }
 | identifier TASSIGN expr
     {

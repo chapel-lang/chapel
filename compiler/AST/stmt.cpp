@@ -7,10 +7,13 @@
 #include "stringutil.h"
 #include "symscope.h"
 #include "symtab.h"
+#include "../traversals/fixup.h"
 
 
 Stmt::Stmt(astType_t astType) :
-  BaseAST(astType)
+  BaseAST(astType),
+  ainfo(NULL),
+  back(NULL)
 {}
 
 
@@ -113,19 +116,162 @@ void Stmt::codegenVarNames(FILE* outfile, char* premod, char* postmod) {
 void Stmt::codegenVarName(FILE* outfile, char* premod, char* postmod) { }
 
 
-void Stmt::replace(Stmt* &old_stmt, Stmt* new_stmt) {
-  /* Set parent symbols */
-  for (ILink* tmp = new_stmt; tmp != NULL && !tmp->isNull(); tmp = tmp->next) {
-    if (Stmt* stmp = dynamic_cast<Stmt*>(tmp)) {
-      stmp->parentSymbol = old_stmt->parentSymbol;
-    }
-    else {
-      INT_FATAL(old_stmt, "Non-Stmt in Stmt list in Stmt::replace");
+static void call_fixup(Stmt* stmt) {
+  Fixup* fixup = new Fixup();
+
+  fixup->stmtParent.add(stmt->parentSymbol);
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->parentSymbol)) {
+    TRAVERSE_LS(fn->body, fixup, true);
+  }
+  else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
+    TRAVERSE_LS(mod->stmts, fixup, true);
+  }
+  else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(stmt->parentSymbol)) {
+    if (ClassType* class_type = dynamic_cast<ClassType*>(type->type)) {
+      TRAVERSE(class_type, fixup, true);
     }
   }
+}
 
-  ILink::replace(old_stmt, new_stmt);
-  old_stmt = new_stmt;
+
+void Stmt::replace(Stmt* new_stmt) {
+  Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
+  Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());
+
+  if (!first || !last) {
+    INT_FATAL(this, "Illegal call to replace, new_stmt list invalid");
+  }
+
+  if (first != new_stmt) {
+    INT_FATAL(this, "Illegal replace, new_stmt is not head of list");
+  }
+
+  last->next = next;
+  if (next && !next->isNull()) {
+    next->prev = last;
+    Stmt* tmp = dynamic_cast<Stmt*>(next);
+    tmp->back = &(Stmt*&)last->next; // UGH --SJD
+  }
+  first->prev = prev;
+  first->back = back;
+  *back = first;
+  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
+    if (prev && !prev->isNull()) {
+      prev->next = first;
+    }
+  */
+  prev = nilStmt;
+  next = nilStmt;
+  call_fixup(this);
+}
+
+
+void Stmt::insertBefore(Stmt* new_stmt) {
+  Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
+  Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());
+
+  if (!first || !last) {
+    INT_FATAL(this, "Illegal call to insertBefore, new_stmt list invalid");
+  }
+
+  if (first != new_stmt) {
+    INT_FATAL(this, "Illegal insertBefore, new_stmt is not head of list");
+  }
+
+  first->prev = prev;
+  first->back = back;
+  *back = first;
+  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
+    if (prev && !prev->isNull()) {
+      prev->next = first;
+    }
+  */
+
+  prev = last;
+  last->next = this;
+
+  call_fixup(this);
+}
+
+
+void Stmt::insertAfter(Stmt* new_stmt) {
+  Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
+  Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());
+
+  if (!first || !last) {
+    INT_FATAL(this, "Illegal call to insertAfter, new_stmt list invalid");
+  }
+
+  if (first != new_stmt) {
+    INT_FATAL(this, "Illegal insertAfter, new_stmt is not head of list");
+  }
+
+  last->next = next;
+  if (next && !next->isNull()) {
+    next->prev = last;
+    Stmt* tmp = dynamic_cast<Stmt*>(next);
+    tmp->back = &(Stmt*&)last->next; // UGH --SJD
+  }
+  next = first;
+  first->prev = this;
+  first->back = &(Stmt*&)next; // UGH --SJD
+
+  call_fixup(this);
+}
+
+
+void Stmt::append(ILink* new_stmt) {
+  if (new_stmt->isNull()) {
+    return;
+  }
+
+  Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
+  Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());
+
+  if (!first || !last) {
+    INT_FATAL(this, "Illegal call to append, new_stmt list invalid");
+  }
+
+  if (first != new_stmt) {
+    INT_FATAL(this, "Illegal append, new_stmt is not head of list");
+  }
+
+  Stmt* append_point = dynamic_cast<Stmt*>(this->tail());
+
+  append_point->next = first;
+  first->prev = append_point;
+  // UGH!! --SJD
+  first->back = &(Stmt*&)append_point->next;
+  if ((*first->back)->isNull()) {
+    INT_FATAL(this, "major error in back");
+  }
+}
+
+
+Stmt* Stmt::extract(void) {
+  if (next && !next->isNull()) {
+    if (Stmt* next_stmt = dynamic_cast<Stmt*>(next)) { 
+      next_stmt->prev = prev;
+      next_stmt->back = back;
+      *back = next_stmt;
+      /* NOT NECESSARY BECAUSE OF PRECEDING LINE
+	 if (prev && !prev->isNull()) {
+	 prev->next = next;
+	 }
+      */
+    }
+    else {
+      INT_FATAL(this, "Illegal call to extract, stmt is invalid");
+    }
+  }
+  else {
+    *back = nilStmt;
+  }
+  next = nilStmt;
+  prev = nilStmt;
+  back = NULL;
+
+  return this;
 }
 
 
@@ -152,7 +298,9 @@ void NoOpStmt::codegen(FILE* outfile) {
 WithStmt::WithStmt(Expr* init_withExpr) :
   Stmt(STMT_WITH),
   withExpr(init_withExpr)
-{}
+{
+  SET_BACK(withExpr);
+}
 
 
 ClassType* WithStmt::getClass(void) {
@@ -208,7 +356,9 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
   Stmt(STMT_VARDEF),
   var(init_var),
   init(init_init) 
-{}
+{
+  SET_BACK(init);
+}
 
 
 Stmt* VarDefStmt::copy(void) {
@@ -542,7 +692,9 @@ void ModuleDefStmt::codegen(FILE* outfile) {
 ExprStmt::ExprStmt(Expr* init_expr) :
   Stmt(STMT_EXPR),
   expr(init_expr) 
-{}
+{
+  SET_BACK(expr);
+}
 
 
 Stmt* ExprStmt::copy(void) {
@@ -614,12 +766,15 @@ BlockStmt::BlockStmt(Stmt* init_body) :
   Stmt(STMT_BLOCK),
   body(init_body),
   blkScope(NULL)
-{}
+{
+  SET_BACK(body);
+}
 
 
 void BlockStmt::addBody(Stmt* init_body) {
   if (body->isNull()) {
     body = init_body;
+    SET_BACK(body); // SJD: Eliminate please.
   } else {
     INT_FATAL(this, "Adding a body to a for loop that already has one");
   }
@@ -672,6 +827,7 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
     condition(init_cond) 
 {
   astType = STMT_WHILELOOP;
+  SET_BACK(condition);
 }
 
 
@@ -742,6 +898,7 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
     indexScope(NULL)
 {
   astType = STMT_FORLOOP;
+  SET_BACK(domain);
 }
 
 
@@ -838,7 +995,11 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
   condExpr(init_condExpr),
   thenStmt(init_thenStmt),
   elseStmt(init_elseStmt)
-{}
+{
+  SET_BACK(condExpr);
+  SET_BACK(thenStmt);
+  SET_BACK(elseStmt);
+}
 
 
 Stmt* CondStmt::copy(void) {

@@ -37,7 +37,9 @@ void Fixup::preProcessStmt(Stmt* &stmt) {
 
   exprParent.add(stmt);
 
-  stmt->back = &((ILink*&)stmt);
+  if (!stmt->back || *stmt->back != stmt) {
+    INT_FATAL(stmt, "stmt back incorrect");
+  }
 }
 
 
@@ -69,7 +71,9 @@ void Fixup::preProcessExpr(Expr* &expr) {
     INT_FATAL(expr, "Error during verification fixup: expression's statement is incorrect");
   }
 
-  expr->back = &((ILink*&)expr);
+  if (!expr->back || *expr->back != expr) {
+    INT_FATAL(expr, "expr back incorrect");
+  }
 }
 
 

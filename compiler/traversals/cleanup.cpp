@@ -24,7 +24,8 @@ void ApplyWith::preProcessStmt(Stmt* &stmt) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(symType->type)) {
 	Stmt* with_replacement = with->getClass()->definition->copyList(ctype->classScope);
-	Stmt::replace(stmt, with_replacement);
+	stmt->replace(with_replacement);
+	stmt = with_replacement;  /** necessary for reference? **/
 	return;
       }
     }
@@ -235,7 +236,8 @@ void SpecializeParens::preProcessExpr(Expr* &expr) {
     }
   }
   if (paren_replacement) {
-    Expr::replace(expr, paren_replacement);
+    expr->replace(paren_replacement);
+    expr = paren_replacement; /** necessary for reference? **/
   }
 }
 
@@ -295,7 +297,8 @@ void ApplyThis::preProcessExpr(Expr* &expr) {
 	if (FnSymbol* parentFn = dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
 	  MemberAccess* repl = new MemberAccess(new Variable(parentFn->formals),
 						member->var);
-	  Expr::replace(expr, repl);
+	  expr->replace(repl);
+	  expr = repl; /** reference necessary **/
 	}
 	else {
 	  INT_FATAL(expr, "Statement is not in method in ApplyThis");

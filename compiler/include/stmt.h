@@ -11,9 +11,9 @@ class AInfo;
 class Stmt : public BaseAST {
   TRAVERSABLE_STMT(Stmt);
  public:
-  AInfo *ainfo;
-
   Symbol* parentSymbol;
+  AInfo *ainfo;
+  Stmt** back;
 
   Stmt(astType_t astType);
   virtual Stmt* copy(void);
@@ -33,7 +33,11 @@ class Stmt : public BaseAST {
   void codegenVarNames(FILE* outfile, char* premod, char* postmod);
   virtual void codegenVarName(FILE* outfile, char* premod, char* postmod);
 
-  static void replace(Stmt* &old_stmt, Stmt* new_stmt);
+  void replace(Stmt* new_stmt);
+  virtual void append(ILink* new_stmt);
+  void insertBefore(Stmt* new_stmt);
+  void insertAfter(Stmt* new_stmt);
+  Stmt* extract(void);
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 

@@ -7,10 +7,10 @@
 #include "expr.h"
 #include "../traversals/fixup.h"
 
+
 ILink::ILink(void) :
   prev(nilILink),
-  next(nilILink),
-  back(NULL)
+  next(nilILink)
 {}
 
 
@@ -81,14 +81,6 @@ void ILink::codegenList(FILE* outfile, char* separator) {
 }
 
 
-void ILink::add(ILink* newlink) {
-  newlink->next = next;
-  newlink->prev = this;
-  next->prev = newlink;
-  next = newlink;
-}
-
-
 void ILink::append(ILink* newlink) {
   ILink* lastlink;
 
@@ -127,8 +119,8 @@ void ILink::filter(bool filter(ILink*), ILink** truelinks,
 }
 
 
-static ILink* find_start_of_list(ILink* list) {
-  ILink* first = list;
+ILink* ILink::head(void) {
+  ILink* first = this;
   while (first->prev && !first->prev->isNull()) {
     first = first->prev;
   }
@@ -136,128 +128,10 @@ static ILink* find_start_of_list(ILink* list) {
 }
 
 
-static ILink* find_end_of_list(ILink* list) {
-  ILink* last = list;
+ILink* ILink::tail(void) {
+  ILink* last = this;
   while (last->next && !last->next->isNull()) {
     last = last->next;
   }
   return last;
-}
-
-
-static void call_fixup(ILink* link) {
-  Fixup* fixup = new Fixup();
-
-  if (Expr* expr = dynamic_cast<Expr*>(link)) {
-    fixup->stmtParent.add(expr->stmt->parentSymbol);
-    TRAVERSE(expr->stmt, fixup, true);
-  }
-  else if (Stmt* stmt = dynamic_cast<Stmt*>(link)) {
-    fixup->stmtParent.add(stmt->parentSymbol);
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->parentSymbol)) {
-      TRAVERSE_LS(fn->body, fixup, true);
-    }
-    else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
-      TRAVERSE_LS(mod->stmts, fixup, true);
-    }
-    else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(stmt->parentSymbol)) {
-      if (ClassType* class_type = dynamic_cast<ClassType*>(type->type)) {
-	TRAVERSE(class_type, fixup, true);
-      }
-    }
-  }
-  else {
-    INT_FATAL(link, "Symbol and Types not supported for any of the following:\n"
-                        "  insertBefore, insertAfter, replace\n");
-  }
-}
-
-
-void ILink::insertBefore(ILink* new_link) {
-  ILink* first = find_start_of_list(new_link);
-  ILink* last = find_end_of_list(new_link);
-
-  if (first != new_link) {
-    INT_FATAL(this, "Illegal insertBefore, new_link is not head of list");
-  }
-
-  first->prev = prev;
-
-  *back = first;
-  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev && !prev->isNull()) {
-      prev->next = first;
-    }
-  */
-
-  prev = last;
-  last->next = this;
-
-  call_fixup(this);
-}
-
-
-void ILink::insertAfter(ILink* new_link) {
-  ILink* first = find_start_of_list(new_link);
-  ILink* last = find_end_of_list(new_link);
-
-  if (first != new_link) {
-    INT_FATAL(this, "Illegal insertAfter, new_link is not head of list");
-  }
-
-  last->next = next;
-  if (next && !next->isNull()) {
-    next->prev = last;
-  }
-  next = first;
-  first->prev = this;
-
-  call_fixup(this);
-}
-
-
-ILink* ILink::extract(void) {
-  if (next && !next->isNull()) {
-    next->prev = prev;
-    next->back = back;
-  }
-  *back = next;
-  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev && !prev->isNull()) {
-      prev->next = next;
-    }
-  */
-
-  next = nilILink;
-  prev = nilILink;
-  back = NULL;
-
-  return this;
-}
-
-
-void ILink::replace(ILink* old_link, ILink* new_link) {
-  ILink* first = find_start_of_list(new_link);
-  ILink* last = find_end_of_list(new_link);
-
-  if (first != new_link) {
-    INT_FATAL(old_link, "Illegal replace, new_link is not head of list");
-  }
-
-  first->prev = old_link->prev;
-  if (old_link->prev && !old_link->prev->isNull()) {
-    old_link->prev->next = first;
-  }
-  last->next = old_link->next;
-  if (old_link->next && !old_link->next->isNull()) {
-    old_link->next->prev = last;
-  }
-
-  *old_link->back = new_link;
-
-  /* Wipe out old links--it's been replaced */
-  old_link->prev = nilILink;
-  old_link->next = nilILink;
-
-  call_fixup(old_link);
 }

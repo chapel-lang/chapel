@@ -14,7 +14,9 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   name(nilSymbol),
   defaultVal(init_defaultVal),
   asymbol(NULL)
-{}
+{
+  SET_BACK(defaultVal);
+}
 
 
 void Type::addName(Symbol* newname) {
@@ -374,6 +376,7 @@ DomainType::DomainType(Expr* init_expr) :
     } else {
       numdims = init_expr->rank();
       parent = init_expr;
+      SET_BACK(parent);
     }
   }
 }
@@ -462,7 +465,9 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
   Type(TYPE_ARRAY, init_elementType->defaultVal),
   domain(init_domain),
   elementType(init_elementType)
-{}
+{
+  SET_BACK(domain);
+}
 
 
 Type* ArrayType::copy(void) {
@@ -619,7 +624,10 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
   definition(init_definition),
   constructor(init_constructor),
   classScope(init_classScope)
-{}
+{
+  SET_BACK(definition);
+  constructor->back = &(Stmt*&)constructor; // UGH --SJD
+}
 
 
 Type* ClassType::copy(void) {
@@ -631,6 +639,7 @@ Type* ClassType::copy(void) {
 
 void ClassType::addDefinition(Stmt* init_definition) {
   definition = init_definition;
+  SET_BACK(definition); // SJD: Eliminate please.
 
   if (!isNull() && Symboltable::parsingUserCode()) {
     /* create default constructor */
@@ -659,6 +668,7 @@ void ClassType::addDefinition(Stmt* init_definition) {
       constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
     }
   }
+  constructor->back = &(Stmt*&)constructor; // UGH --SJD
 }
 
 

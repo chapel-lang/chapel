@@ -9,7 +9,7 @@
 #include "sym.h"
 #include "symscope.h"
 #include "symtab.h"
-
+#include "../traversals/fixup.h"
 
 
 static char* cUnOp[NUM_UNOPS] = {
@@ -85,7 +85,8 @@ Expr::Expr(astType_t astType) :
   BaseAST(astType),
   stmt(nilStmt),
   ainfo(NULL),
-  parent(nilExpr)
+  parent(nilExpr),
+  back(NULL)
 {}
 
 
@@ -120,20 +121,152 @@ void Expr::traverseExpr(Traversal* traversal) {
 }
 
 
-void Expr::replace(Expr* &old_expr, Expr* new_expr) {
-  /* Set parent expressions */
-  for (ILink* tmp = new_expr; tmp != NULL && !tmp->isNull(); tmp = tmp->next) {
-    if (Expr* etmp = dynamic_cast<Expr*>(tmp)) {
-      etmp->stmt = old_expr->stmt;
-      etmp->parent = old_expr->parent;
-    }
-    else {
-      INT_FATAL(old_expr, "Non-Expr in Expr list in Expr::replace");
-    }
+static void call_fixup(Expr* expr) {
+  Fixup* fixup = new Fixup();
+
+  fixup->stmtParent.add(expr->stmt->parentSymbol);
+  TRAVERSE(expr->stmt, fixup, true);
+}
+
+
+void Expr::replace(Expr* new_expr) {
+  Expr* first = dynamic_cast<Expr*>(new_expr->head());
+  Expr* last = dynamic_cast<Expr*>(new_expr->tail());
+
+  if (!first || !last) {
+    INT_FATAL(this, "Illegal call to replace, new_expr list invalid");
   }
 
-  ILink::replace(old_expr, new_expr);
-  old_expr = new_expr;
+  if (first != new_expr) {
+    INT_FATAL(this, "Illegal replace, new_expr is not head of list");
+  }
+
+  last->next = next;
+  if (next && !next->isNull()) {
+    next->prev = last;
+    Expr* tmp = dynamic_cast<Expr*>(next);
+    tmp->back = &(Expr*&)last->next; // UGH --SJD
+  }
+  first->prev = prev;
+  first->back = back;
+  *back = first;
+  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
+    if (prev && !prev->isNull()) {
+      prev->next = first;
+    }
+  */
+  prev = nilExpr;
+  next = nilExpr;
+  call_fixup(this);
+}
+
+
+void Expr::insertBefore(Expr* new_expr) {
+  Expr* first = dynamic_cast<Expr*>(new_expr->head());
+  Expr* last = dynamic_cast<Expr*>(new_expr->tail());
+
+  if (!first || !last) {
+    INT_FATAL(this, "Illegal call to insertBefore, new_expr list invalid");
+  }
+
+  if (first != new_expr) {
+    INT_FATAL(this, "Illegal insertBefore, new_expr is not head of list");
+  }
+
+  first->prev = prev;
+  first->back = back;
+  *back = first;
+  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
+    if (prev && !prev->isNull()) {
+      prev->next = first;
+    }
+  */
+
+  prev = last;
+  last->next = this;
+
+  call_fixup(this);
+}
+
+
+void Expr::insertAfter(Expr* new_expr) {
+  Expr* first = dynamic_cast<Expr*>(new_expr->head());
+  Expr* last = dynamic_cast<Expr*>(new_expr->tail());
+
+  if (!first || !last) {
+    INT_FATAL(this, "Illegal call to insertAfter, new_expr list invalid");
+  }
+
+  if (first != new_expr) {
+    INT_FATAL(this, "Illegal insertAfter, new_expr is not head of list");
+  }
+
+  last->next = next;
+  if (next && !next->isNull()) {
+    next->prev = last;
+    Expr* tmp = dynamic_cast<Expr*>(next);
+    tmp->back = &(Expr*&)last->next; // UGH --SJD
+  }
+  next = first;
+  first->prev = this;
+  first->back = &(Expr*&)next; // UGH --SJD
+
+  call_fixup(this);
+}
+
+
+void Expr::append(ILink* new_expr) {
+  if (new_expr->isNull()) {
+    return;
+  }
+
+  Expr* first = dynamic_cast<Expr*>(new_expr->head());
+  Expr* last = dynamic_cast<Expr*>(new_expr->tail());
+
+  if (!first || !last) {
+    INT_FATAL(this, "Illegal call to append, new_expr list invalid");
+  }
+
+  if (first != new_expr) {
+    INT_FATAL(this, "Illegal append, new_expr is not head of list");
+  }
+
+  Expr* append_point = dynamic_cast<Expr*>(this->tail());
+
+  append_point->next = first;
+  first->prev = append_point;
+  // UGH!! --SJD
+  first->back = &(Expr*&)append_point->next;
+  if ((*first->back)->isNull()) {
+    INT_FATAL(this, "major error in back");
+  }
+}
+
+
+Expr* Expr::extract(void) {
+  if (next && !next->isNull()) {
+    if (Expr* next_expr = dynamic_cast<Expr*>(next)) { 
+      next_expr->prev = prev;
+      next_expr->back = back;
+      *back = next_expr;
+      /* NOT NECESSARY BECAUSE OF PRECEDING LINE
+	 if (prev && !prev->isNull()) {
+	 prev->next = next;
+	 }
+      */
+    }
+    else {
+      INT_FATAL(this, "Illegal call to extract, expr is invalid");
+    }
+  }
+  else {
+    *back = NULL;
+  }
+  next = nilExpr;
+  prev = nilExpr;
+  back = NULL;
+
+  return this;
 }
 
 
@@ -422,6 +555,7 @@ UnOp::UnOp(unOpType init_type, Expr* op) :
   operand(op) 
 {
   operand->parent = this;
+  SET_BACK(operand);
 }
 
 
@@ -484,6 +618,8 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
   left(l),
   right(r)
 {
+  SET_BACK(left);
+  SET_BACK(right);
   left->parent = this;
   right->parent = this;
 }
@@ -634,6 +770,7 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   member(init_member)
 {
   base->parent = this;
+  SET_BACK(base);
 }
 
 
@@ -690,11 +827,15 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 {
   if (!baseExpr->isNull()) {
     baseExpr->parent = this;
+    SET_BACK(baseExpr);
   }
-  Expr* arg = argList;
-  while (arg && !arg->isNull()) {
-    arg->parent = this;
-    arg = nextLink(Expr, arg);
+  if (!argList->isNull()) {
+    SET_BACK(argList);
+    Expr* arg = argList;
+    while (arg && !arg->isNull()) {
+      arg->parent = this;
+      arg = nextLink(Expr, arg);
+    }
   }
 }
 
@@ -921,7 +1062,9 @@ void IOCall::codegen(FILE* outfile) {
 Tuple::Tuple(Expr* init_exprs) :
   Expr(EXPR_TUPLE),
   exprs(init_exprs)
-{}
+{
+  SET_BACK(exprs);
+}
 
 
 Expr* Tuple::copy(void) {
@@ -998,6 +1141,7 @@ CastExpr::CastExpr(Type* init_newType, Expr* init_expr) :
   expr(init_expr)
 {
   expr->parent = this;
+  SET_BACK(expr);
 }
 
 
@@ -1040,7 +1184,10 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
   reduceType(init_reduceType),
   redDim(init_redDim),
   argExpr(init_argExpr)
-{}
+{
+  SET_BACK(redDim);
+  SET_BACK(argExpr);
+}
 
 
 Expr* ReduceExpr::copy(void) {
@@ -1078,7 +1225,11 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
   lo(init_lo),
   hi(init_hi),
   str(init_str) 
-{}
+{
+  SET_BACK(lo);
+  SET_BACK(hi);
+  SET_BACK(str);
+}
 
 
 Expr* SimpleSeqExpr::copy(void) {
@@ -1160,7 +1311,10 @@ ForallExpr::ForallExpr(Expr* init_domains, Symbol* init_indices,
   domains(init_domains),
   indices(init_indices),
   forallExpr(init_forallExpr)
-{}
+{
+  SET_BACK(domains);
+  SET_BACK(forallExpr);
+}
 
 
 void ForallExpr::setForallExpr(Expr* exp) {

@@ -14,8 +14,6 @@ class ILink : public Loc {
   ILink* prev;
   ILink* next;
 
-  ILink** back;
-
   ILink(void);
 
   virtual bool isNull(void);
@@ -26,47 +24,12 @@ class ILink : public Loc {
   virtual void codegen(FILE* outfile);
   virtual void codegenList(FILE* outfile, char* separator = ", ");
 
-  void add(ILink* newlink);
-  void append(ILink* newlink);
+  virtual void append(ILink* newlink);
 
   void filter(bool filter(ILink*), ILink** truelinks, ILink** falselinks);
 
-  /***  Certifiable AST Management
-   ***
-   ***  For use within traversals or not
-   ***
-   ***  The insertBefore method inserts a list of statements,
-   ***  expressions, symbols, or types _before_ a single statement,
-   ***  expression, symbol, or type (respectively) in the AST.  The
-   ***  inserted part of the AST will _not_ be traversed.
-   ***
-   ***  The insertAfter method inserts a list of statements,
-   ***  expressions, symbols, or types _after_ a single statement,
-   ***  expression, symbol, or type (respectively) in the AST.  The
-   ***  inserted part of the AST _will_ be traversed.
-   ***
-   ***  The extract method removes a statement from the AST.
-   ***
-   ***  The static replace method (called via Stmt::replace,
-   ***  Expr::replace, Symbol::replace, or Type::replace) replaces a
-   ***  statement, expression, symbol, or type with a list of
-   ***  statements, expressions, symbols, or types (respectively) in
-   ***  the AST.  The traversal will continue after this replacement.
-   ***  This method cannot be called on a piece of the AST containing
-   ***  the part of the AST being traversed.  That is, if traversing
-   ***  an expression inside a statement, the statement cannot be
-   ***  replaced (e.g. Stmt::replace(expr->stmt, ...) where expr is
-   ***  the formal parameter in preProcessExpr.
-   ***
-   ***  >>>>>>>>>>>>>>>>>>>>>>>>>>CAUTION<<<<<<<<<<<<<<<<<<<<<<<<<<
-   ***  > Do not call ILink::replace directly; use Stmt::replace, <
-   ***  > Expr::replace, Symbol::replace, or Type::replace        <
-   ***  >>>>>>>>>>>>>>>>>>>>>>>>END CAUTION<<<<<<<<<<<<<<<<<<<<<<<<
-   ***/
-  void insertBefore(ILink* new_link);
-  void insertAfter(ILink* new_link);
-  ILink* extract(void);
-  static void replace(ILink* old_link, ILink* new_link);
+  ILink* head(void);
+  ILink* tail(void);
 };
 
 extern ILink* nilILink;

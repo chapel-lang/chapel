@@ -39,7 +39,7 @@ void ResolveSymbols::preProcessExpr(Expr* &expr) {
 	      }
 	      FnCall* fn = new FnCall(new Variable(fns.e[0]),
 				      paren->argList->copyList());
-	      Expr::replace(expr, fn);
+	      expr->replace(fn);
 	    }
 	    else {
 	      if (Symbol* sym = Symboltable::lookup(call->name)) {
@@ -47,7 +47,7 @@ void ResolveSymbols::preProcessExpr(Expr* &expr) {
 		  if (!fn->overload) {
 		    FnCall* fn_call = new FnCall(new Variable(fn),
 					    paren->argList->copyList());
-		    Expr::replace(expr, fn_call);
+		    expr->replace(fn_call);
 		  }
 		  else {
 		    INT_FATAL(expr, 

@@ -69,7 +69,8 @@ void ProcessParameters::postProcessExpr(Expr* &expr) {
 	FnCall* newFnCall = new FnCall(fncall->baseExpr, newActuals);
 
 	/* This is what we'd like to do (along with the code below
-	Expr::replace(expr, newFnCall);
+	expr->replace(newFnCall);
+	expr = newFnCall; // reference necessary?
 	Stmt* origStmt = expr->stmt;
 	Stmt* newStmt = origStmt->copy();
 	body = appendLink(body, newStmt);
@@ -80,7 +81,8 @@ void ProcessParameters::postProcessExpr(Expr* &expr) {
 	Stmt* prevStmt = prevLink(Stmt, origStmt);
 	Stmt* nextStmt = nextLink(Stmt, origStmt);
 	origStmt->extract();
-	Expr::replace(expr, newFnCall);
+	expr->replace(newFnCall);
+	expr = newFnCall; // reference necessary?
 	body = appendLink(body, origStmt);
 	
 	formal = dynamic_cast<ParamSymbol*>(fnSym->formals);

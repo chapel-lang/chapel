@@ -94,8 +94,8 @@ class Expr : public BaseAST {
  public:
   Stmt* stmt;
   AInfo *ainfo;
-
   Expr* parent;
+  Expr** back;
 
   Expr(astType_t astType);
   virtual Expr* copy(void);
@@ -115,7 +115,11 @@ class Expr : public BaseAST {
 
   static Expr* newPlusMinus(binOpType op, Expr* l, Expr* r);
 
-  static void replace(Expr* &old_expr, Expr* new_expr);
+  void replace(Expr* new_expr);
+  void insertBefore(Expr* new_expr);
+  void insertAfter(Expr* new_expr);
+  virtual void append(ILink* new_expr);
+  Expr* extract(void);
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 

@@ -72,6 +72,9 @@ enum astType_t {
 #define isSomeSymbol(_x) (((_x) > astType_t::SYMBOL) && (_x) < astType_t::TYPE)
 #define isSomeType(_x) (((_x) > astType_t::TYPE) && (_x) < astType_t::AST_TYPE_END)
 
+#define SET_BACK(ast) \
+  (ast)->back = &(ast)
+
 class BaseAST : public ILink {
   TRAVERSABLE_ILINK(BaseAST);
  public:

@@ -47,7 +47,8 @@ void MethodsToFunctions::preProcessExpr(Expr* &expr) {
 	  Expr* newArgList = method->base->copy();
 	  newArgList->append(paren->argList);
 	  FnCall* fn = new FnCall(new Variable(method->member), newArgList);
-	  Expr::replace(expr, fn);
+	  expr->replace(fn);
+	  expr = fn; // necessary for reference?
 	}
       }
     }

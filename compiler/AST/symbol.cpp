@@ -242,6 +242,7 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
   formals = init_formals;
   type = init_retType;
   body = init_body;
+  SET_BACK(body);
   exportMe = init_exportMe;
   paramScope = init_paramScope;
 
@@ -300,7 +301,9 @@ EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
   Symbol(SYMBOL_ENUM, init_name),
   init(init_init),
   val(init_val)
-{}
+{
+  SET_BACK(init);
+}
 
 
 Symbol* EnumSymbol::copy(void) {
@@ -313,7 +316,7 @@ void EnumSymbol::set_values(void) {
   int tally = 0;
 
   while (tmp) {
-    if (tmp->init) {
+    if (!tmp->init->isNull()) {
       if (tmp->init->isComputable() == false) {
 	USR_FATAL(tmp->init, "Enumerator value for %s must be integer parameter", tmp->name);
       }
@@ -407,9 +410,15 @@ void ModuleSymbol::createInitFn(void) {
     initFunBody->parentSymbol = initFn;
   }
 
-  definition = appendLink(definition, initFunDef);
+  if (definition) {
+    definition->append(initFunDef);
+  }
+  else {
+    definition = initFunDef;
+  }
 
   stmts = definition;
+  SET_BACK(stmts); // SJD: Eliminate please.
 }
 
 
