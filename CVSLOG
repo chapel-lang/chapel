@@ -15631,3 +15631,48 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 
+---------------------------------------------------------------------------
+
+01/25/05 12:44:58 -- deitz
+
+Log message:
+	Added a new top-level module called commonModule and an associated
+	scope.  The new scoping scheme now looks like
+	
+	                     Intrinsic
+	                     /       \
+	                    /         \
+	      Internal Prelude        Prelude
+	                                 |
+	                                 |
+	                               Common
+	                                / | \
+	                               /  |  \
+	                            User Modules
+	
+	The Intrinsic is defined within the compiler.  Internal Prelude and
+	Prelude are defined in prelude files.  The things defined in Prelude
+	are visible to the user, the things in Internal Prelude are not.
+	
+	Common is for things that we'll define on a program specific basis.
+	These things will be codegened which is basically why it is
+	distinguished from the prelude.
+	
+	Common is currently not used.  The output file _chpl_common.h is thus
+	always empty.
+	
+	In the near term, Common will be used for creating array types where
+	the base type of the array is something defined in the preludes or the
+	intrinsic scope such as integers and also domain types.
+	
+	In general, the plan for declaring array types is to do so after the
+	primitive type is declared.  We'll use name mangling and will
+	determine if the array type was already declared by looking for the
+	mangled name.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+
