@@ -21,6 +21,5 @@
   (from parser and createAST.cpp)
 
 * squelch init prototype
-
-* unify fun and fn as abbreviations for function
-
+  - and/or specialize name of init procedure to file and make a top-level
+    init file

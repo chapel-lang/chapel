@@ -51,7 +51,8 @@ static bool stmtIsGlob(ILink* link) {
   if (stmt->isNull() ||
       (dynamic_cast<ExprStmt*>(stmt) != NULL) ||
       (dynamic_cast<BlockStmt*>(stmt) != NULL) ||
-      (dynamic_cast<CondStmt*>(stmt) != NULL)) {
+      (dynamic_cast<CondStmt*>(stmt) != NULL) ||
+      (dynamic_cast<VarDefStmt*>(stmt) != NULL)) {
     return false;
   } else {
     return true;

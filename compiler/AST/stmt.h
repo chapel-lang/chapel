@@ -8,6 +8,8 @@ class Expr;
 
 class Stmt : public ILink {
  public:
+  void codegenVarDefs(FILE* outfile);
+  virtual void codegenVarDef(FILE* outfile);
 };
 
 
@@ -30,6 +32,7 @@ class VarDefStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  void codegenVarDef(FILE* outfile);
 };
 
 

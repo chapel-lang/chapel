@@ -5,6 +5,20 @@
 #include "yy.h"
 
 
+void Stmt::codegenVarDefs(FILE* outfile) {
+  Stmt* nextStmt = this;
+
+  do {
+    nextStmt->codegenVarDef(outfile);
+    nextStmt = nextLink(Stmt, nextStmt);
+  } while (nextStmt != NULL);
+}
+
+
+void Stmt::codegenVarDef(FILE* outfile) {
+}
+
+
 bool NullStmt::isNull(void) {
   return true;
 }
@@ -65,9 +79,34 @@ void VarDefStmt::print(FILE* outfile) {
 }
 
 void VarDefStmt::codegen(FILE* outfile) {
-
   VarSymbol* aVar = var;
   
+  while (aVar != NULL) {
+    if (init != NULL && !init->isNull()) {
+      aVar->codegen(outfile);
+      fprintf(outfile, " = ");
+      init->codegen(outfile);
+    }
+    fprintf(outfile, ";");
+
+    aVar = nextLink(VarSymbol, aVar);
+    if (aVar) {
+      fprintf(outfile, "\n");
+    }
+  }
+}
+
+
+void VarDefStmt::codegenVarDef(FILE* outfile) {
+  VarSymbol* aVar = var;
+
+  if (aVar->level == 1) { /* if in file scope, hoist to internal header */
+    outfile = intheadfile;
+  }
+
+  // TODO: for certain cases, we could use a C initializer inline rather
+  // than separating the variable declaration from its initialization.
+
   while (aVar != NULL) {
     if (aVar->isConst) {
       fprintf(outfile, "const ");
@@ -90,18 +129,11 @@ void VarDefStmt::codegen(FILE* outfile) {
 
     aVar->codegen(outfile);
 
-    if (init != NULL && !init->isNull()) {
-      fprintf(outfile, " = ");
-      init->codegen(outfile);
-    }
-    fprintf(outfile, ";");
-
+    fprintf(outfile, ";\n");
     aVar = nextLink(VarSymbol, aVar);
-    if (aVar) {
-      fprintf(outfile, "\n");
-    }
   }
 }
+
 
 TypeDefStmt::TypeDefStmt(Type* init_type) :
   type(init_type)
@@ -205,6 +237,7 @@ void BlockStmt::print(FILE* outfile) {
 
 void BlockStmt::codegen(FILE* outfile) {
   fprintf(outfile, "{\n");
+  body->codegenVarDefs(outfile);
   body->codegenList(outfile, "\n");
   fprintf(outfile, "\n");
   fprintf(outfile, "}");
