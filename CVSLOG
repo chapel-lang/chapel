@@ -679,3 +679,19 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: literal.v 
 
+---------------------------------------------------------------------------
+
+04/03/09 15:00-ish -- bradc (this is a hand-generated message due to
+                             problems in the CVS perl scripts when
+                             moving to Linux)
+
+Log message:
+	Reincorporated changes from ver 1.5 of Makefile to (1) work in
+	the face of a missing BUILD_VERSION file and (2) look in the
+	Chapel installation of the GC stuff for libraries and headers.
+
+Modified files:
+	chapel/third-party/dparser/d/: Makefile
+
+
+
