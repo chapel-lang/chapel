@@ -11202,3 +11202,37 @@ Added files:
 	chapel/compiler/traversals/: processWithStatements.cpp 
 	                             processWithStatements.h 
 
+---------------------------------------------------------------------------
+
+12/06/04 09:51:27 -- deitz
+
+Log message:
+	Added a new pass called Fixup that sets back-pointers from expressions
+	to the statements they are in (previously done in SetupStmtLinks) and
+	that sets back-pointers from statements to the symbols they are in
+	(previously done in a limited way within the parser).
+	
+	Removed two passes SetupStmtLinks and CheckBackLinks which are no
+	longer necessary.  Though not with this checkin, the Fixup pass will
+	eventually take a parameter which can be optionally set in order that
+	the Fixup pass merely check that everything is in order, not put
+	everything in order.  This support will be added when passes can take
+	parameters (see one of Brad's future commits).
+	
+	Changed the function symbol pointer of statements to point to, more
+	generally, a symbol.  This symbol can be either a function or a class
+	(since a class has a statement body as well).
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	                             fieldsToMemberAccesses.cpp 
+Added files:
+	chapel/compiler/traversals/: fixup.cpp fixup.h 
+Removed files:
+	chapel/compiler/traversals/: checkBackLinks.cpp checkBackLinks.h 
+	                             setupStmtLinks.cpp setupStmtLinks.h 
+
