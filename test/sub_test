@@ -110,7 +110,7 @@ endif
 set testsrc = `ls *.{chpl,v}`
 
 if ($?CHPL_VALGRIND_OPTIONS == 0) then
-  set CHPL_VALGRIND_OPTIONS = ""
+  set CHPL_VALGRIND_OPTIONS = "--tool=memcheck"
 endif
 
 if ($CHPLTESTVGRND == "on") then
