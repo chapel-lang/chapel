@@ -1116,6 +1116,12 @@ gen_if1(BaseAST *ast) {
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
       Sym *sym = s->var->asymbol;
+      switch (((ASymbol*)sym)->xsymbol->astType) {
+	default: break;
+	case SYMBOL_TYPE: 
+	  sym = ((TypeSymbol*)((ASymbol*)sym)->xsymbol)->type->asymbol;
+	  break;
+      }
       s->ainfo->sym = sym;
       s->ainfo->rval = sym;
       break;
