@@ -154,7 +154,12 @@ numeric types which uses coerce_num
 - implement #match
 - hash folded constants... has constants on type + binary image
 - handle currying within tuples
-- handle named arguments
 - casting?
 - off by 1 on line # of pnodes?
 - generalize/obviate forced splitting of "new_object"
+- default arguments --- need to make a closure for each subset of 
+  arguments which computes defaults and calls the underlying function.
+  Probably with callbacks into the AST.
+- curry functions: handle SEND where the whole set of arguments doesn't
+  resolve... perhaps just don't group arguments in the front end.
+

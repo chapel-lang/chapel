@@ -21,6 +21,7 @@ S(declare_ident)
 // function
 S(def_fun)
 S(pattern)
+S(pattern_type)
 S(arg)
 S(vararg)
 // constructor

@@ -291,8 +291,12 @@ pattern
 }
   | constant
 { $$.ast = new AST(AST_arg, &$n); }
-  | '(' (sub_pattern (',' sub_pattern)*)? ')'
+  | '(' pattern_type? (sub_pattern (',' sub_pattern)*)? ')'
 { $$.ast = new AST(AST_pattern, &$n); };
+  ;
+
+pattern_type: ':' qualified_ident
+{ $$.ast = new AST(AST_pattern_type, &$n); }
   ;
 
 sub_pattern

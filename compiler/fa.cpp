@@ -1062,15 +1062,13 @@ record_arg(AVar *a, Sym *s, Map<MPosition*,AVar*> &args, MPosition &p) {
     args.put(cp, a);
     if (s->pattern) {
       forv_CreationSet(cs, *a->out) {
-	if (cs->sym == sym_tuple) {
-	  assert(s->has.n == cs->vars.n);
-	  p.push(1);
-	  for (int i = 0; i < s->has.n; i++) {
-	    record_arg(cs->vars.v[i], s->has.v[i], args, p);
-	    p.inc();
-	  }
-	  p.pop();
+	assert(s->has.n == cs->vars.n);
+	p.push(1);
+	for (int i = 0; i < s->has.n; i++) {
+	  record_arg(cs->vars.v[i], s->has.v[i], args, p);
+	  p.inc();
 	}
+	p.pop();
       }
     }
   }

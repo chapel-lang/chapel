@@ -512,12 +512,15 @@ set_scope_recursive(AST *ast, Scope *scope) {
 static int
 scope_pattern(IF1 *i, AST *ast, Scope *scope) {
   switch (ast->kind) {
-    case AST_pattern:
+    case AST_pattern: {
+      AST *ptype = ast->get(AST_pattern_type);
       ast->sym = new_sym(i, scope);
-      ast->sym->implements.add(sym_tuple);
-      ast->sym->type_kind = Type_PRODUCT;
+      if (ptype)
+	ast->sym->type = ptype->sym;
+      else
+	ast->sym->type = sym_tuple;
       ast->sym->ast = ast;
-      forv_AST(a, *ast) {
+      forv_AST(a, *ast) if (a != ptype) {
 	if (scope_pattern(i, a, scope) < 0)
 	  return -1;
 	assert(a->sym);
@@ -530,6 +533,7 @@ scope_pattern(IF1 *i, AST *ast, Scope *scope) {
       } else if (ast->sym->has.n == 1)
 	ast->sym = ast->sym->has.v[0];
       break;
+    }
     case AST_arg:
     case AST_vararg: {
       set_scope_recursive(ast, scope);
@@ -607,6 +611,11 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
   Sym *sym;
   if (!skip)
     switch (ast->kind) {
+      case AST_pattern_type:
+	if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
+	  return -1;
+	ast->sym = sym;
+	break;
       case AST_inherits:
       case AST_implements:
       case AST_includes:
@@ -1460,11 +1469,13 @@ gen_if1(IF1 *i, AST *ast) {
     case AST_def_type: gen_type(i, ast); break;
     case AST_def_fun: gen_fun(i, ast); break;
     case AST_def_ident: gen_def_ident(i, ast); break;
-    case AST_pattern: 
+    case AST_pattern: {
       ast->rval = ast->sym; 
-      if (ast->n > 1)
+      AST *ptype = ast->get(AST_pattern_type);
+      if (ast->n > (ptype ? 2 : 1))
 	ast->rval->pattern = 1;
       break;
+    }
     case AST_qualified_ident:
       if (ast->container) {
 	ast->rval = gen_container(i, ast);

@@ -1,5 +1,5 @@
-    dispatch3.v:1: : f( x : anynum, y : int32)
-    dispatch3.v:2: : f( x : int32, y : anynum)
+    dispatch3.v:1: : f( x : anynum, y : int32): tuple
+    dispatch3.v:2: : f( x : int32, y : anynum): tuple
   candidate functions:
 dispatch3.v:3: ambiguous call 'f'
 dispatch3.v:3: unresolved call 'f'
