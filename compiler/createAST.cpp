@@ -72,7 +72,7 @@ static bool stmtIsGlob(ILink* link) {
 }
 
 
-static Stmt* createInitFn(Stmt* program) {
+static Stmt* createInitFn(Stmt* program, char* fnName = "__init") {
   ILink* globstmts;
   ILink* initstmts;
 
@@ -82,7 +82,7 @@ static Stmt* createInitFn(Stmt* program) {
   program = dynamic_cast<Stmt*>(globstmts);
   Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
                                                  : nilStmt);
-  FnDefStmt* initFunDef = Symboltable::defineFunction("__init", nilSymbol, 
+  FnDefStmt* initFunDef = Symboltable::defineFunction(fnName, nilSymbol, 
 						      dtVoid, initFunBody, 
 						      true);
 
@@ -130,7 +130,18 @@ Stmt* fileToAST(char* filename, int debug) {
   //  extern void testGetStuff(Stmt*);
   //  testGetStuff(program);
 
+  internalPreludeStmts = createInitFn(internalPreludeStmts, "__initIntPrelude");
+  preludeStmts = createInitFn(preludeStmts, "__initPrelude");
   programStmts = createInitFn(programStmts);
+
+  /*
+  fprintf(stderr, "-------------------------------------\n");
+  internalPreludeStmts->printList(stderr, "\n");
+  fprintf(stderr, "-------------------------------------\n");
+  preludeStmts->printList(stderr, "\n");
+  fprintf(stderr, "-------------------------------------\n");
+  */
+  
 
   //  Symboltable::dump(stdout);
 
