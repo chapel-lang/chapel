@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+$id = getpgrp();
+$tmpdir = "/tmp/chapel-nightly.$id.deleteme";
+
+system("mkdir $tmpdir > /dev/null");
+
+system("cd $tmpdir && cvs checkout chapel | tee $tmpdir/LOG 2>&1");
+
+$chapeldir = "$tmpdir/chapel";
+
+delete($ENV{'CHPLDEVTMP'});
+system("cd $chapeldir && make third-party | tee -a $tmpdir/LOG 2>&1");
+system("cd $chapeldir && make compiler | tee -a $tmpdir/LOG 2>&1");
+system("cd $chapeldir && make runtime | tee -a $tmpdir/LOG 2>&1");
+system("cd $chapeldir && make test | tee -a $tmpdir/LOG 2>&1");
+
+system("grep Summary: $tmpdir/LOG");
+
+open(MAIL, "| Mail -s \"Chapel: Nightly Results\" bradc\@cray.com");
+print MAIL `grep Summary: $tmpdir/LOG`;
+close(MAIL);
+
+system("rm -rf $tmpdir");
+
