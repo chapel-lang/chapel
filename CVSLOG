@@ -2028,3 +2028,31 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/10 17:50:26 -- bradc
+
+Log message:
+	Updated nightly test script to compare each night's results
+	against the previous night's, to mail the results of the
+	run out (currently just to me, but once everything's
+	debugged, to chapel_dev), and to append stats on the run
+	to a file that can be gnuplotted.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
+Log message:
+	Updated nightly test script to compare each night's results
+	against the previous night's, to mail the results of the
+	run out (currently just to me, but once everything's
+	debugged, to chapel_dev), and to append stats on the run
+	to a file that can be gnuplotted.
+	
+	Also, added a few .cvsignore files to ignore files that
+	are currently left due to broken tests.
+
+Added files:
+	chapel/test/flowanalysis/jplevyak/: .cvsignore 
+	chapel/test/parsing/jplevyak/: .cvsignore 
+
