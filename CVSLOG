@@ -15062,3 +15062,34 @@ Added files:
 	                              inferReturn.future 
 	                              inferReturn.good 
 
+---------------------------------------------------------------------------
+
+01/19/05 17:45:15 -- bradc
+
+Log message:
+	My earlier checkin today caused a regression that I'd
+	forgotten about due to the way we codegen VarDeclStmts
+	in two passes currently.  We've talked about splitting
+	VarDeclStmts into two statements before C codegen --
+	one to declare the variable and a second to initialize
+	it.  For cases where a variable's initializer is a
+	function call, this becomes more necessary, as the
+	processParameters pass inserts a new statement block
+	around the function call statement, and thereby
+	pushes the original variable into an inappropriate scope.
+	Doing this correctly will fix this problem (exercised
+	in testAllScopes.chpl).
+	
+	Since this wasn't the original intent of
+	testAllScopes.chpl, I rewrote it to not cause this
+	bug, and commited a copy of the original test as
+	a future test to serve as a placeholder for me
+	to get this working.
+
+Modified files:
+	chapel/test/trivial/bradc/: testAllScopes.chpl 
+Added files:
+	chapel/test/trivial/bradc/: testAllScopes2.chpl 
+	                            testAllScopes2.future 
+	                            testAllScopes2.good 
+
