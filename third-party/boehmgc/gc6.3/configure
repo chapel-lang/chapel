@@ -3530,11 +3530,15 @@ if test $vgr_status -eq 0 && test $vgr_help_status -eq 0; then
   VALGRIND_PATH=`echo $VALGRIND | sed s/valgrind$//`
 #  echo "path is $VALGRIND_PATH"
   VALGRIND_INC="$VALGRIND_PATH../include"
-#  echo "include is $VALGRIND_INC"
-  INCLUDES="$INCLUDES -I$VALGRIND_INC"
-#  echo "INCLUDES is $INCLUDES"
-  CFLAGS="$CFLAGS -DGC_VALGRIND_SUPPORT"
-#  echo "CFLAGS is $CFLAGS"
+  if test -r $VALGRIND_INC/valgrind/memcheck.h; then
+#    echo "include is $VALGRIND_INC"
+    INCLUDES="$INCLUDES -I$VALGRIND_INC"
+#    echo "INCLUDES is $INCLUDES"
+    CFLAGS="$CFLAGS -DGC_VALGRIND_SUPPORT"
+#    echo "CFLAGS is $CFLAGS"
+   else
+     echo "could not find valgrind include directory"
+   fi
 else
   echo "didn't find valgrind"
 fi
