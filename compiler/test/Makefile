@@ -18,15 +18,17 @@ CFLAGS += -DTEST_LIB
 #
 
 TEST_LIB = test_lib$(EXE_SUFFIX)
+COMPILER_SRCS = \
+	list.cpp \
+	map.cpp \
+	misc.cpp \
+	vec.cpp \
+	files.cpp \
+	beautify.cpp \
+	mysystem.cpp \
+	stringutil.cpp
 TEST_CVS_SRCS = \
-	../list.cpp \
-	../map.cpp \
-	../misc.cpp \
-	../vec.cpp \
-	../files.cpp \
-	../beautify.cpp \
-	../mysystem.cpp \
-	../stringutil.cpp \
+	$(COMPILER_SRCS) \
 	test_lib.cpp
 TEST_SRCS = $(TEST_CVS_SRCS)
 TEST_OBJS = $(TEST_SRCS:%.cpp=$(PLATFORM)/%.o)
@@ -39,6 +41,8 @@ TEST_OBJS = $(TEST_SRCS:%.cpp=$(PLATFORM)/%.o)
 CVS_SRCS = $(TEST_CVS_SRCS)
 GEN_SRCS = 
 EXECS = $(TEST_LIB)
+CLEAN_TARGS = $(COMPILER_SRCS)
+DEPEND_DEPS = $(COMPILER_SRCS)
 
 
 #
@@ -58,12 +62,13 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 #
 
 $(TEST_LIB): $(PLATFORM)/$(TEST_LIB)
-	rm -f $@
-	ln -s $< $@
+	cp $< $@
 
 $(PLATFORM)/$(TEST_LIB): $(TEST_OBJS)
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
+%.cpp: ../%.cpp
+	cp $< $@
 
 #
 # standard footer

@@ -8,7 +8,7 @@ cleandeps:
 clobber: 
 	rm -rf ./$(CLOBBER_TARGS)
 
-depend: $(PLATFORM_DIR)
+depend: $(PLATFORM_DIR) $(DEPEND_DEPS)
 	@echo Updating dependences...
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \

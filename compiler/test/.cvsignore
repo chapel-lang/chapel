@@ -3,3 +3,11 @@ freebsd
 linux
 sun
 test_lib
+list.cpp
+map.cpp
+misc.cpp
+vec.cpp
+files.cpp
+beautify.cpp
+mysystem.cpp
+stringutil.cpp
