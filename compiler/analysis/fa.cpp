@@ -1780,7 +1780,7 @@ show_violations(FA *fa, FILE *fp) {
     else if (v->av->var->sym->ast)
       fprintf(stderr, "%s:%d: ", v->av->var->sym->filename(), 
 	      v->av->var->sym->line());
-    else if (!v->av->contour_is_entry_set) {
+    else if (!v->av->contour_is_entry_set && v->av->contour != GLOBAL_CONTOUR) {
       CreationSet *cs = (CreationSet*)v->av->contour;
       fprintf(stderr, "%s:%d: class %s:: ", 
 	      cs->sym->filename(), cs->sym->line(), cs->sym->name);	
