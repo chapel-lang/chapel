@@ -20788,3 +20788,30 @@ Modified files:
 	                             insertVariableInitializations.cpp 
 	                             resolveOverloadedOperators.cpp 
 
+---------------------------------------------------------------------------
+
+03/22/05 15:33:53 -- deitz
+
+Log message:
+	Added initial support for initializing arrays.
+	
+	Added three test cases.  The second test case fails because in
+	something like
+	  var a : [i, j in 1..n, 1..n] integer = (i - 1) * n + j;
+	we have trouble resolving i and j to be part of the scope from the
+	type.
+
+Modified files:
+	chapel/compiler/traversals/: insertAnonymousDomains.cpp 
+	                             insertElidedLoops.cpp 
+	                             insertElidedLoops.h 
+	                             insertVariableInitializations.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_array_init1.chpl 
+	                           test_array_init1.good 
+	                           test_array_init2.chpl 
+	                           test_array_init2.future 
+	                           test_array_init2.good 
+	                           test_array_init3.chpl 
+	                           test_array_init3.good 
+
