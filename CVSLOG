@@ -18489,3 +18489,20 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+03/01/05 13:14:31 -- deitz
+
+Log message:
+	Changed the interface for cloning types from
+	  TypeDefStmt::clone(...)
+	to
+	  TypeSymbol::clone(...)
+	
+	Removed some old commented out code.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h symbol.h 
+
