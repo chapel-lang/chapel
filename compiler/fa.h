@@ -95,14 +95,14 @@ class AVar : public gc {
 class AEdge : public gc {
  public:
   EntrySet	*from, *to;
-  PNode		*send;
+  PNode		*pnode;
   Fun 		*fun;	
   Vec<AVar *>	args;
   Vec<AVar *>	rets;
   uint		in_edge_worklist:1;
   
   SLink<AEdge>	edge_worklist_link;
-  AEdge() : from(0), to(0), send(0), fun(0), in_edge_worklist(0) {}
+  AEdge() : from(0), to(0), pnode(0), fun(0), in_edge_worklist(0) {}
 };
 #define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
 

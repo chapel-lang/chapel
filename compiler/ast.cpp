@@ -527,11 +527,6 @@ define_function(IF1 *i, AST *ast) {
   AST *fid = ast_qualified_ident_ident(fqid);
   ast->sym = new_sym(i, fscope, fid->string, fqid->sym);
   new_sym(i, fscope, fid->string, if1_make_symbol(i, fid->string));
-#if 0
-  if (!ast->sym)
-    ast->sym = fqid->sym = if1_alloc_sym(i, fid->string);
-  ast->sym->name = fid->string;
-#endif
   ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
   if (fscope != ast->scope) {
     ast->sym->scope->dynamic.add(fscope);
@@ -944,7 +939,7 @@ gen_forall(IF1 *i, AST *ast) {
     send->ast = ast;
   } else {
     forv_AST(a, *indices)
-      if1_move(i, &ast->code, new_constant(i, "0", "int32"), a->sym);
+      if1_move(i, &ast->code, new_constant(i, "0", "int"), a->sym);
     if1_gen(i, &ast->code, body->code);
     ast->rval = body->rval;
   }
@@ -1077,7 +1072,8 @@ gen_if1(IF1 *i, AST *ast) {
     }
     case AST_pattern: 
       ast->rval = ast->sym; 
-      ast->rval->pattern = 1;
+      if (ast->n > 1)
+	ast->rval->pattern = 1;
       break;
     case AST_qualified_ident:
     case AST_const:

@@ -38,6 +38,8 @@ Sym *
 if1_const(IF1 *p, Sym *type, char *constant) {
   char *c = if1_cannonicalize_string(p, constant);
   Sym *sym = p->constants.get(c);
+  if (type)
+    type = unalias_type(type);
   if (sym) {
     assert(sym->type == type);
     return sym;
@@ -605,9 +607,12 @@ if1_simple_dead_code_elimination(IF1 *p) {
     for (int j = 0; j < p->allclosures.v[i]->args.n; j++)
       mark_sym_live(p->allclosures.v[i]->args.v[j]);
   }
-  for (int i = 0; i < p->allclosures.n; i++) {
-    if (p->allclosures.v[i]->code)
-      while (mark_live(p, p->allclosures.v[i]->code));
+  int again = 1;
+  while (again) {
+    again = 0;
+    for (int i = 0; i < p->allclosures.n; i++)
+      if (p->allclosures.v[i]->code)
+	again = mark_live(p, p->allclosures.v[i]->code) || again;
   }
   for (int i = 0; i < p->allclosures.n; i++) {
     if (p->allclosures.v[i]->code)

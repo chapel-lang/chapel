@@ -679,7 +679,7 @@ make_AEdge(Fun *f, PNode *p, EntrySet *from) {
   if (!e) {
     m->put(f, (e = new AEdge()));
     e->fun = f;
-    e->send = p;
+    e->pnode = p;
     e->from = from;
   }
   from->out_edges.set_add(e);
@@ -687,7 +687,7 @@ make_AEdge(Fun *f, PNode *p, EntrySet *from) {
 }
 
 static int
-approx_pattern_match(AVar *a, Sym *b, AVar *result) {
+approx_check_pattern(AVar *a, Sym *b, AVar *result) {
   if (!b->type)
     return 1;
   AType *t = make_abstract_type(b->type);
@@ -697,16 +697,19 @@ approx_pattern_match(AVar *a, Sym *b, AVar *result) {
   t = type_intersection(a->out, t);
   if (t == bottom_type)
     return 0;
-  forv_CreationSet(cs, *t) {
-    if (cs->vars.n < b->has.n)
-      continue;
-    for (int i = 0; i < b->has.n; i++)
-      if (b->has.v[i]->type) 
-	if (!approx_pattern_match(cs->vars.v[i], b->has.v[i], result))
-	  goto Lcontinue;
+  if (b->pattern) {
+    forv_CreationSet(cs, *t) {
+      if (cs->vars.n != b->has.n)
+	continue;
+      for (int i = 0; i < b->has.n; i++)
+	if (b->has.v[i]->type) 
+	  if (!approx_check_pattern(cs->vars.v[i], b->has.v[i], result))
+	    goto Lcontinue;
+      return 1;
+    Lcontinue:;
+    }
+  } else
     return 1;
-  Lcontinue:;
-  }
   return 0;
 }
 
@@ -721,7 +724,7 @@ add_funs_constraints(PNode *p, EntrySet *es, Vec<Fun *> *fns, Vec<AVar *> &a, Ve
 	  if (fargs->v[j]->type && 
 	      (type_intersection(a.v[j]->out, make_abstract_type(fargs->v[j]->type)) == bottom_type))
 	    goto Lnext;
-	  if (fargs->v[j]->pattern && !approx_pattern_match(a.v[j], fargs->v[j], result))
+	  if (fargs->v[j]->pattern && !approx_check_pattern(a.v[j], fargs->v[j], result))
 	    goto Lnext;
 	}
 	AEdge *ee = make_AEdge(f, p, es);
@@ -1041,11 +1044,11 @@ pattern_match(AVar *a, AVar *b, EntrySet *es) {
     Sym *s = b->var->sym;
     if (s->type && s->type != cs->sym)
       continue;
-    if (s->type == sym_tuple) {
+    if (s->pattern) {
       if (cs->vars.n < s->has.n) // must have enough to cover args
 	continue;
       for (int i = 0; i < s->has.n; i++)
-	if (s->has.v[i]->var) /* if used */
+	if (s->has.v[i]->var) // if used
 	  flow_var_to_var(cs->vars.v[i], make_AVar(s->has.v[i]->var, es));
     }
   }
@@ -1055,27 +1058,30 @@ static AType *
 check_pattern(AVar *a, Sym *b) {
   if (!b->type)
     return top_type;
-  Vec<CreationSet *> css;
-  AType *t = make_abstract_type(b->type); 
-  if (t == top_type) 
+  AType *bt = make_abstract_type(b->type); 
+  if (bt == top_type) 
     return a->out;
-  t = type_intersection(a->out, t);
+  AType *t = type_intersection(a->out, bt);
   if (t == bottom_type)
     return 0;
-  forv_CreationSet(cs, *t) {
-    if (cs->vars.n != b->has.n)
-      continue;
-    for (int i = 0; i < b->has.n; i++)
-      if (b->has.v[i]->type) 
-	if (!check_pattern(cs->vars.v[i], b->has.v[i]->type))
-	  goto Lcontinue;
-    css.add(cs);
-  Lcontinue:;
-  }
-  if (css.n)
-    return make_AType(css);
-  else
-    return 0;
+  Vec<CreationSet *> css;
+  if (b->pattern) {
+    forv_CreationSet(cs, *t) {
+      if (cs->vars.n != b->has.n)
+	continue;
+      for (int i = 0; i < b->has.n; i++)
+	if (b->has.v[i]->type) 
+	  if (!check_pattern(cs->vars.v[i], b->has.v[i]->type))
+	    goto Lcontinue;
+      css.add(cs);
+    Lcontinue:;
+    }
+    if (css.n)
+      return make_AType(css);
+    else
+      return 0;
+  } else
+    return t;
 }
 
 static void
@@ -1101,8 +1107,8 @@ analyze_edge(AEdge *e) {
       pattern_match(a, b, e->to);
   }
   creation_point(make_AVar(e->fun->sym->cont->var, e->to), sym_continuation);
-  for (int i = 0; i < e->send->lvals.n; i++) {
-    fill_rets(e->to, e->send->lvals.n);
+  for (int i = 0; i < e->pnode->lvals.n; i++) {
+    fill_rets(e->to, e->pnode->lvals.n);
     flow_vars_equal(e->to->rets.v[i], e->rets.v[i]);
   }
   if (!entry_set_done.set_in(e->to)) {
@@ -1120,7 +1126,7 @@ static AEdge *
 make_top_edge(FA *fa, Fun *top) {
   AEdge *e = new AEdge();
   e->fun = top;
-  e->send = new PNode();
+  e->pnode = new PNode();
   find_entry_set(e);
   return e;
 }
@@ -1167,7 +1173,7 @@ collect_type_violations(FA *fa) {
 	  EntrySet *es = (EntrySet*)a->contour;
 	  AEdge **last = es->edges.last();
 	  for (AEdge **x = es->edges.first(); x < last; x++) 
-	    if (*x && (*x)->send == p && (*x)->from == from)
+	    if (*x && (*x)->pnode == p && (*x)->from == from)
 	      goto Lfound;
 	  continue;
 	Lfound:

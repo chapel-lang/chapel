@@ -78,4 +78,8 @@
 - debug type inference when dead code elimination is off.... or remove
   the flag
 
-- x = if i==1 then 0 else 1; gives syntax error
+- have const discussion
+
+- for pattern matching: handle parameterized types & structural types
+  - probably by recursing down the actual argument and checking
+    if it matches. Maybe cache the results as well: true/false/maybe

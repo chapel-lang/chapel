@@ -19,19 +19,19 @@ type ref __name "ref";
 type catagory __name "catagory";
 type set __name "set" : catagory;
 
-type int8 __name "int8";
-type int16 __name "int16";
-type int32 __name "int32";
-type int64 __name "int64";
-type int __name "int" = int32;
-type uint8 __name "uint8";
-type uint16 __name "uint16";
-type uint32 __name "uint32";
-type uint64 __name "uint64";
-type uint __name "uint" = uint32;
-type anyint __name "anyint" = 
-  int8 | int16 | int32 | int64 |
-  uint8 | uint16 | uint32 | uint64;
+type integer8 __name "int8";
+type integer16 __name "int16";
+type integer32 __name "int32";
+type integer64 __name "int64";
+type integer __name "int" = integer64;
+type uinteger8 __name "uint8";
+type uinteger16 __name "uint16";
+type uinteger32 __name "uint32";
+type uinteger64 __name "uint64";
+type uinteger __name "uint" = uinteger32;
+type anyinteger __name "anyint" = 
+  integer8 | integer16 | integer32 | integer64 |
+  uinteger8 | uinteger16 | uinteger32 | uinteger64;
 
 type float32 __name "float32";
 type float64 __name "float64";
@@ -41,10 +41,10 @@ type float __name "float" = float64;
 type anyfloat __name "anyfloat" = 
   float32 | float64 | float80 | float128;
 
-type anynum __name "anynum" = anyint | anyfloat;
-type size __name "size" = uint32;
-type bool __name "bool" = int;
-type enum_element __name "enum_element" = int;
+type anynum __name "anynum" = anyinteger | anyfloat;
+type size __name "size" = uinteger;
+type bool __name "bool" = integer;
+type enum_element __name "enum_element" = integer;
 
 // builtin constants
 0;
@@ -81,17 +81,17 @@ function operator(a:anynum, #"/", b:anynum)	{ #__primitive a #"/" b }
 function operator(a:anynum, #"%", b:anynum)	{ #__primitive a #"%" b }
 function operator(a:anynum, #"+", b:anynum)	{ #__primitive a #"+" b }
 function operator(a:anynum, #"-", b:anynum)	{ #__primitive a #"-" b }
-function operator(a:int, #"<<", b:int)		{ #__primitive a #"<<" b }
-function operator(a:int, #">>", b:int)		{ #__primitive a #">>" b }
+function operator(a:integer, #"<<", b:integer)	{ #__primitive a #"<<" b }
+function operator(a:integer, #">>", b:integer)	{ #__primitive a #">>" b }
 function operator(a:anynum, #"<", b:anynum)	{ #__primitive a #"<" b }
 function operator(a:anynum, #"<=", b:anynum)	{ #__primitive a #"<=" b }
 function operator(a:anynum, #">", b:anynum)	{ #__primitive a #">" b }
 function operator(a:anynum, #">=", b:anynum)	{ #__primitive a #">=" b }
 function operator(a:anynum, #"==", b:anynum)	{ #__primitive a #"==" b }
 function operator(a:anynum, #"!=", b:anynum)	{ #__primitive a #"!=" b }
-function operator(a:int, #"&", b:int)		{ #__primitive a #"&" b }
-function operator(a:int, #"^", b:int)		{ #__primitive a #"^" b }
-function operator(a:int, #"|", b:int)		{ #__primitive a #"|" b }
+function operator(a:integer, #"&", b:integer)	{ #__primitive a #"&" b }
+function operator(a:integer, #"^", b:integer)	{ #__primitive a #"^" b }
+function operator(a:integer, #"|", b:integer)	{ #__primitive a #"|" b }
 function operator(a:any, #"&&", b:any)		{ #__primitive a #"&&" b }
 function operator(a:any, #"||", b:any)		{ #__primitive a #"||" b }
 function operator(a:ref, #"=", b:any)		{ #__primitive a #"=" b; }
@@ -110,19 +110,19 @@ function operator(a:ref, #"+=", b:anynum)	{
 function operator(a:ref, #"-=", b:anynum)	{
   #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"-" b)
 }
-function operator(a:ref, #"<<=", b:int)		{
+function operator(a:ref, #"<<=", b:integer)		{
   #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"<<" b)
 }
-function operator(a:ref, #">>=", b:int)		{
+function operator(a:ref, #">>=", b:integer)		{
   #__primitive a #"=" (#__primitive (#__primitive #"*" a) #">>" b)
 }
-function operator(a:ref, #"&=", b:int)		{
+function operator(a:ref, #"&=", b:integer)		{
   #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"&" b)
 }
-function operator(a:ref, #"|=", b:int)		{
+function operator(a:ref, #"|=", b:integer)		{
   #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"|" b)
 }
-function operator(a:ref, #"^=", b:int)		{
+function operator(a:ref, #"^=", b:integer)		{
   #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"^" b)
 }
 function operator(a:any, #"->", b:symbol)	{ #__primitive (#__primitive #"*" a) #"." b }
@@ -154,6 +154,9 @@ function operator(a:ref, #"--")			{
 type sequence __name "sequence";
 type domain __name "domain";
 type array __name "array";
+class locale {};
+
+var Locales = new locale;
 
 class distribution {
   type source_domain : domain;
@@ -165,11 +168,14 @@ class distribution {
 }
 
 class cyclic implements distribution {
-  var width : int;
+  var width : integer;
 }
 
+var block2 = new distribution;
+function distribution::class(d:distribution, l:locale) { d }  
+
 class domain(rank, distribute, target) : vector {
-  const rank : int;
+  const rank : integer;
   const index : sequence;
   type target : domain;
   type distribute: distribution;
@@ -190,6 +196,10 @@ function domain::class(s1 : sequence, s2 : sequence) {
   d.index.last = s1.last * s2.last;
   d.index.step = s1.step * s2.step;
   return d;
+}
+
+function domain::class(s : sequence, d : distribution) {
+  domain(s)
 }
 
 class sequence {
@@ -231,6 +241,8 @@ function operator(a:array, s:symbol, b:array) {
   operator(a.v(0), s, b.v(0));
 }
 
+function reshape(l:locale, s:sequence) { l }
+
 function write(a) { 0 }
 
 /*
@@ -254,9 +266,9 @@ type arithmetic_domain(rank:symbol, distribute:decomposition, to:domain) : domai
 type opaque_domain(distribute:decomposition, to:domain) : domain;
 type index(a:domain);
 type subdomain(a:domain) = {
-  size : int;
-  lbound : int -> int;
-  ubound : int -> int;
+  size : integer;
+  lbound : integer -> integer;
+  ubound : integer -> integer;
 };
 
 type decomposition : catagory = {
@@ -268,8 +280,8 @@ type simple_block_decomposition : decomposition = {
   where source : arithmetic_domain(1), target : arithmetic_domain(1);
   s : source;
   t : target;
-  chunk : int;
-  mod : int;
+  chunk : integer;
+  mod : integer;
 };
 
 simple_block_decomposition::local(i): {

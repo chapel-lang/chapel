@@ -161,7 +161,7 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
 // this code was MUCH easier to write in Lisp
 class AEDGE_FN { 
  public: 
-  static int equivalent(AEdge *a, AEdge *b) { return a->send == b->send; }
+  static int equivalent(AEdge *a, AEdge *b) { return a->pnode == b->pnode; }
 };
 
 class CS_SYM_FN { 
