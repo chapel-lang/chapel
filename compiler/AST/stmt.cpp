@@ -599,7 +599,7 @@ FnDefStmt* FnDefStmt::clone(CloneCallback* clone_callback) {
 
   save_scope = Symboltable::setCurrentScope(this->fn->parentScope);
   Stmt* stmt_copy = copy(clone_callback);
-  if (FnDefStmt* this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
+  if (this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
     this_copy->fn->cname =
       glomstrings(3, this_copy->fn->cname, "_clone_", intstring(uid++));
     this->insertBefore(this_copy);
