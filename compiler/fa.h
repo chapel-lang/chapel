@@ -7,6 +7,8 @@
 #include "map.h"
 #include "sym.h"
 
+#define DEFAULT_NUM_CONSTANTS_PER_VARIABLE	4
+
 #define GLOBAL_CONTOUR ((void*)1)
 
 class Fun;
@@ -18,6 +20,7 @@ class AEdge;
 class AType;
 class CreationSet;
 class ATypeViolation;
+class CDB;
 
 typedef Map<PNode*, ATypeViolation*> ViolationMap;
 typedef Map<PNode *, Map<Fun *, AEdge *> *> EdgeMap;
@@ -28,10 +31,10 @@ typedef Vec<Vec<CreationSet *> *> CSSS;
 class AType : public Vec<CreationSet *> { 
  public:
   uint 			hash;
+  AType			*top;
   Vec<CreationSet *>	sorted;
   Map<AType *, AType *> union_map;
   Map<AType *, AType *> intersection_map;
-  AType			*top;
 
   AType(CreationSet *cs);
   AType(AType &a);
@@ -44,13 +47,18 @@ class AType : public Vec<CreationSet *> {
 class EntrySet : public gc {
  public:
   Fun			*fun;
+  uint			dfs_color : 2;
   Vec<AVar *>		args;
   Vec<AVar *>		rets;
   EdgeHash		edges;
   EdgeMap		out_edge_map;
   Vec<AEdge *>		out_edges;
-  Vec<EntrySet *>	reachable;
-  Vec<EntrySet *>	*equiv;
+  Vec<AEdge *>		backedges;
+  Vec<CreationSet *>	cs_backedges;
+  Vec<CreationSet *>	creates;
+  EntrySet		*split;
+  Vec<EntrySet *>	*equiv;		// clone.cpp
+
   EntrySet(Fun *af): fun(af), equiv(0) {}
 };
 #define forv_EntrySet(_p, _v) forv_Vec(EntrySet, _p, _v)
@@ -58,37 +66,59 @@ class EntrySet : public gc {
 class CreationSet : public gc {
  public:
   Sym 			*sym;
+  uint			clone_for_constants : 1;
+  uint			added_element_var : 1;
+  uint			dfs_color : 2;
   Vec<AVar *> 		defs;
   AType 		*atype; 	// the type that this creation set belongs to
   Vec<AVar *>		vars;
-  uint			clone_for_constants : 1;
-  Vec<CreationSet*>	*equiv;		// used by clone.cpp & fa.cpp
-  Vec<CreationSet*>	not_equiv;	// used by clone.cpp
+  Map<char *, AVar *>	var_map;
+  Vec<EntrySet *>	ess;		// entry sets restricted by this creation set
+  Vec<EntrySet *>	es_backedges;	// entry sets restricted by this creation set
+  CreationSet		*split;		// creation set this one was split from
+  Vec<CreationSet *>	*equiv;		// used by clone.cpp & fa.cpp
+  Vec<CreationSet *>	not_equiv;	// used by clone.cpp
   Sym 			*type;		// used by clone.cpp & fa.capp
 
-  CreationSet(Sym *s) : sym(s), atype(0), clone_for_constants(0), equiv(0) { }
+  CreationSet(Sym *s) : sym(s), clone_for_constants(0), atype(0), equiv(0) { }
+  CreationSet(CreationSet *cs);
 };
 #define forv_CreationSet(_p, _v) forv_Vec(CreationSet, _p, _v)
+
+class Setters : public Vec<AVar *> {
+ public:
+  uint			hash;
+  AVar			*ivar;
+  Vec<AVar *>		sorted;
+
+  Setters(AVar *av) : ivar(av) {}
+};
+#define forv_Setters(_p, _v) forv_Vec(Setters, _p, _v)
+
+class SSet : public Vec<Setters *> {
+ public:
+  uint						hash;
+  Vec<Setters *>				sorted;
+
+  SSet() : hash(0) {}
+};
+#define forv_SSet(_p, _v) forv_Vec(SSet, _p, _v)
 
 class AVar : public gc {
  public:
   Var			*var;
   void			*contour;
-
   Vec<AVar *>		forward;
   Vec<AVar *>		backward;
-
   AType 		*in;
   AType 		*out;
   AType			*restrict;
-
   ViolationMap		*violations;
-
+  AVar			*container;
+  SSet			*sset;
   CreationSet		*creation_set;
-
   uint			in_send_worklist:1;
   uint			contour_is_entry_set:1;
-
   Vec<AVar *>		arg_of_send;
   SLink<AVar>		send_worklist_link;
 
@@ -103,29 +133,15 @@ class AEdge : public gc {
   Fun 		*fun;	
   Vec<AVar *>	args;
   Vec<AVar *>	rets;
-  uint		in_edge_worklist:1;
-  
+  Vec<AType *>  dispatch_filters;
+  uint		in_edge_worklist : 1;
+  uint		es_backedge : 1;
+  uint		es_cs_backedge : 1;
   SLink<AEdge>	edge_worklist_link;
+
   AEdge() : from(0), to(0), pnode(0), fun(0), in_edge_worklist(0) {}
 };
 #define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
-
-class FA : public gc {
- public:
-  PDB *pdb;
-
-  Vec<Fun *> funs;
-  Vec<EntrySet *> ess;		// all used entry sets as array
-  Vec<EntrySet *> ess_set;	// all used entry sets as set
-  Vec<Sym *> basic_types;
-  Vec<CreationSet *> css, css_set;
-  Vec<AVar *> global_avars;
-
-  int analyze(Fun *f);
-  int concretize();
-
-  FA(PDB *apdb) : pdb(apdb) {}
-};
 
 class ATypeOpenHashFns {
  public:
@@ -140,11 +156,40 @@ class ATypeOpenHashFns {
   }
 };
 
+class SSetOpenHashFns {
+ public:
+  static uint hash(SSet *a) { return a->hash; }
+  static int equal(SSet *a, SSet *b) {
+    if (a->sorted.n != b->sorted.n)
+      return 0;
+    for (int i = 0; i < a->sorted.n; i++)
+      if (a->sorted.v[i] != b->sorted.v[i])
+	return 0;
+    return 1;
+  }
+};
+
+class SettersCannonicalizeHashFns {
+ public:
+  static uint hash(Setters *a) { return a->hash; }
+  static int equal(Setters *a, Setters *b) {
+    if (a->ivar != b->ivar)
+      return 0;
+    if (a->sorted.n != b->sorted.n)
+      return 0;
+    for (int i = 0; i < a->sorted.n; i++)
+      if (a->sorted.v[i] != b->sorted.v[i])
+	return 0;
+    return 1;
+  }
+};
+
 class ATypeViolation : public gc {
  public:
   AVar *av;
   AType *type;
   PNode *pnode;
+
   ATypeViolation(AVar *aav, AType *atype, PNode *apnode) : av(aav), type(atype), pnode(apnode) {}
 };
 #define forv_ATypeViolation(_p, _v) forv_Vec(ATypeViolation, _p, _v)
@@ -155,6 +200,7 @@ class ATypeFold : public gc {
   AType *a;
   AType *b;
   AType *result;
+
   ATypeFold(Prim *ap, AType *aa, AType *ab, AType *aresult = 0) : p(ap), a(aa), b(ab), result(aresult) {}
 };
 #define forv_ATypeFold(_p, _v) forv_Vec(ATypeFold, _p, _v)
@@ -169,12 +215,31 @@ class ATypeFoldOpenHashFns {
   }
 };
 
+class FA : public gc {
+ public:
+  PDB *pdb;
+  CDB *cdb;
+  Vec<Fun *> funs;
+  AEdge *top_edge;
+  Vec<EntrySet *> ess;		// all used entry sets as array
+  Vec<EntrySet *> ess_set;	// all used entry sets as set
+  Vec<Sym *> basic_types;
+  Vec<CreationSet *> css, css_set;
+  Vec<AVar *> global_avars;
+
+  FA(PDB *apdb) : pdb(apdb), top_edge(0) {}
+
+  int analyze(Fun *f);
+  int concretize();
+};
+
 AVar * make_AVar(Var *v, EntrySet *es);
 Sym *coerce_num(Sym *a, Sym *b);
-Sym *coerce_type(IF1 *i, Sym *a, Sym *b);
 Sym *type_info(AST *a, Sym *s = 0);
 void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
 int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
 int constant_info(Var *v, Vec<Sym *> &constants);
+
+EXTERN int num_constants_per_variable EXTERN_INIT(DEFAULT_NUM_CONSTANTS_PER_VARIABLE);
 
 #endif

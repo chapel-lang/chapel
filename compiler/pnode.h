@@ -18,6 +18,7 @@ class PNode : public gc {
 
   Vec<Var *> lvals;
   Vec<Var *> rvals;
+  Vec<Var *> tvals;
 
   // Control-Flow Graph (CFG): cfg.cpp, ssu.cpp 
   int mark; // ssu.c

@@ -28,6 +28,16 @@ Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   setup_ast();
 }
 
+static void
+propagate_ast(AST *ast, Vec<PNode *> *nodes) {
+  if (nodes && !ast->pnodes.n)
+    ast->pnodes.copy(*nodes);
+  if (ast->pnodes.n)
+    nodes = &ast->pnodes;
+  forv_AST(a, *ast)
+    propagate_ast(a, nodes);
+}
+
 void
 Fun::setup_ast() {
   Vec<PNode *> nodes;
@@ -36,6 +46,8 @@ Fun::setup_ast() {
     if (n->code && n->code->ast)
       n->code->ast->pnodes.add(n);
   }
+  nodes.clear();
+  propagate_ast(ast, &nodes);
 }
 
 void
@@ -56,6 +68,8 @@ collect_Vars_PNode(PNode *n, Vec<Var *> &vars) {
   forv_Var(v, n->rvals)
     vars.set_add(v);
   forv_Var(v, n->lvals)
+    vars.set_add(v);
+  forv_Var(v, n->tvals)
     vars.set_add(v);
   forv_PNode(p, n->phi)
     collect_Vars_PNode(p, vars);
@@ -99,6 +113,7 @@ copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
   PNode *n = new PNode(node->code);
   n->rvals.copy(node->rvals);
   n->lvals.copy(node->lvals);
+  n->tvals.copy(node->tvals);
   n->cfg_succ.copy(node->cfg_succ);
   n->cfg_pred.copy(node->cfg_pred);
   n->phi.copy(node->phi);
@@ -108,6 +123,8 @@ copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
     copy_var(&n->rvals.v[i], f->sym, vmap);
   for (int i = 0; i < n->lvals.n; i++)
     copy_var(&n->lvals.v[i], f->sym, vmap);
+  for (int i = 0; i < n->tvals.n; i++)
+    copy_var(&n->tvals.v[i], f->sym, vmap);
   return n;
 }
 

@@ -65,7 +65,7 @@ AST::copy(PNodeMap *nmap) {
     for (int i = 0; i < a->pnodes.n; i++)
       a->pnodes.v[i] = nmap->get(a->pnodes.v[i]);
   for (int i = 0; i < a->n; i++)
-    a->v[i] = a->v[i]->copy();
+    a->v[i] = a->v[i]->copy(nmap);
   return a;
 }
 
@@ -999,8 +999,11 @@ gen_if(IF1 *i, AST *ast) {
 static void
 gen_constructor(IF1 *i, AST *ast) {
   Sym *constructor;
-  forv_AST(a, *ast)
+  Vec<Sym *> args;
+  forv_AST(a, *ast) {
     if1_gen(i, &ast->code, a->code);
+    args.add(a->rval); assert(a->rval);
+  }
   Code *send = if1_send1(i, &ast->code);
   send->ast = ast;
   ast->rval = new_sym(i, ast->scope);
@@ -1010,7 +1013,7 @@ gen_constructor(IF1 *i, AST *ast) {
       if (!ast->n)
 	constructor = sym_make_set;
       else
-	constructor = sym_make_tuple; 
+	constructor = sym_make_tuple;
       break;
     case AST_list: 
       if (!ast->n)
@@ -1028,8 +1031,8 @@ gen_constructor(IF1 *i, AST *ast) {
   if1_add_send_arg(i, send, constructor);
   if (ast->kind == AST_vector)
     if1_add_send_arg(i, send, make_int(i, ast->rank));
-  forv_AST(a, *ast)
-    if1_add_send_arg(i, send, a->rval);
+  for (int x = 0; x < args.n; x++)
+    if1_add_send_arg(i, send, args.v[x]);
   if (ast->kind == AST_index && ast->n < 3)
     if1_add_send_arg(i, send, make_int(i, 1));
   if1_add_send_result(i, send, ast->rval);
@@ -1108,8 +1111,8 @@ gen_if1(IF1 *i, AST *ast) {
       if (ast->n > 1)
 	ast->rval->pattern = 1;
       break;
-    case AST_qualified_ident:
     case AST_const:
+    case AST_qualified_ident:
     case AST_arg: 
     case AST_vararg: 
       ast->rval = ast->sym;

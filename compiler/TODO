@@ -126,3 +126,36 @@
 - fix negative integers in 'index' in vector-type
 
 - merge structually equivalent types (same type_kind) unless internal doesn't match
+
+- use setters?
+
+-- handle additional cases for entry set contour is fa.cpp extend_analysis
+
+-- collect together elements of es-cs recursion so that we can verify that the corresponding
+   cs is part of the es-cs loop for the es being split
+
+-- splitting for sset is on return values... do splitting correctly to pull out different
+   ssets for different return values.
+
+-- check handling of structural types in matching
+
+-- subclass tuple for argument-tuple to add things like named arguments etc.
+
+-- handle mismatched number of arguments (e.g. entry_set_compatiblity, matching etc).
+
+-- look into fa.cpp split() for phi nodes and maybe instance variables/globals
+
+-- trailing context is problematic
+
+-- add simple type restrictions to non-pattern arguments in analyze_edge
+
+-- add complex restrictions for pattern arguments
+
+-- clear those complex restrictions in clear_results
+
+-- use clone.h basic_type to pre-split entry-sets ?? recursion could be a problem ... no more than 1 deep
+
+-- handle recursively analyzing setters for setter confluces
+   on instance variables
+
+-- handle vector initializers more precisely and more efficiently

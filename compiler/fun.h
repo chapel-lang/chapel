@@ -12,6 +12,7 @@ class AVar;
 class LoopGraph;
 class LoopNode;
 class Dom;
+class CDB_EntrySet;
 
 class CallPoint : public gc {
  public:
@@ -37,7 +38,13 @@ class Fun : public gc {
   uint init_function : 1; // everything is global
   uint has_return : 1;
 
-  // fa.cpp
+  // cdb
+  char *cdb_id;
+  int prof_id;
+  Vec<int> prof_ess;
+  Vec<CDB_EntrySet *> es_info;
+
+  // fa
   uint fa_collected : 1;
   uint clone_for_constants : 1;
   Vec<EntrySet *> ess;
@@ -49,19 +56,19 @@ class Fun : public gc {
   Vec<PNode *> fa_phy_PNodes;
   Vec<PNode *> fa_send_PNodes;
 
-  // loop.cpp
+  // loop
   LoopGraph *loops;
   LoopNode *loop_node;
   Dom *dom;
   
-  // clone.cpp
+  // clone
   Vec<EntrySet *> called_ess;
   Vec<CreationSet *> called_css;
   Vec<Vec<EntrySet *> *> equiv_sets;
   PNodeMap *nmap;
   VarMap *vmap;
 
-  // clone.cpp typings and call graph
+  // clone typings and call graph
   Vec<Var *> args;
   Vec<Var *> rets;
   Map<PNode *, Vec<Fun *> *> calls;
@@ -69,15 +76,14 @@ class Fun : public gc {
   Vec<CallPoint *> called;
   void called_by_funs(Vec<Fun *> &funs);
 
-  // inline.cpp
+  // inline
   float execution_frequency;
+  int size;
   
-  // cg.cpp
+  // cg
   char *cg_string;
   char *cg_structural_string;
 
-  // inline.cpp
-  int size;
   
   void collect_PNodes(Vec<PNode *> &v);
   void collect_Vars(Vec<Var *> &v, Vec<PNode *> *vv = 0);

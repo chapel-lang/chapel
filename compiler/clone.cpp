@@ -12,16 +12,12 @@ static FA *fa = 0;
 static void
 initialize() {
   forv_Fun(f, fa->funs)
-    forv_Var(v, f->fa_all_Vars) {
-      for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].value) {
-	fa->css_set.set_union(*v->avars.v[i].value->out);
+    forv_Var(v, f->fa_all_Vars)
+      for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].value)
 	if (v->avars.v[i].key && v->avars.v[i].value->contour == GLOBAL_CONTOUR)
 	  fa->global_avars.set_add(v->avars.v[i].value);
-      }
-  }
   fa->global_avars.set_to_vec();
-  forv_CreationSet(cs, fa->css_set) if (cs) {
-    fa->css.add(cs);
+  forv_CreationSet(cs, fa->css) {
     cs->equiv = new Vec<CreationSet *>();
     cs->equiv->add(cs);
   }
@@ -48,7 +44,7 @@ equivalent_es_ivars(EntrySet *a, EntrySet *b) {
 }
 
 // return the Sym of some basic type, fail if basics are mixed or with non basics
-static Sym *
+Sym *
 basic_type(FA *fa, AType *t, Sym *fail) {
   Sym non_basic;
   Sym *res = 0;

@@ -401,6 +401,9 @@ test_vec() {
 }
 #endif
 
+class CDB_CreationSet;
+class CDB_EntrySet;
+
 template class Vec<Sym *>;
 template class Vec<Code *>;
 template class Vec<Label *>;
@@ -455,4 +458,13 @@ template class Vec<int>;
 template class Vec<LoopNode *>;
 template class Vec<Vec<LoopNode *> *>;
 template class Vec<MapElem<unsigned int, List<ATypeFold *> > >;
+template class Vec<CDB_CreationSet *>;
+template class Vec<CDB_EntrySet *>;
+template class Vec<MapElem<Sym *, Vec<CDB_CreationSet *> *> >;
+template class Vec<MapElem<char *, Fun *> >;
+template class Vec<SSet *>;
+template class Vec<MapElem<unsigned int, List<SSet *> > >;
+template class Vec<Setters *>;
+template class Vec<MapElem<unsigned int, List<Setters *> > >;
+template class Vec<MapElem<char *, AVar *> >;
 

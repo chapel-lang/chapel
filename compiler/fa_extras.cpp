@@ -2,6 +2,20 @@
  Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
+static void
+show_type(Vec<CreationSet *> &t, FILE *fp) {
+  fprintf(fp, "( ");
+  forv_CreationSet(cs, t) if (cs) {
+    if (cs->sym->name)
+      fprintf(fp, "%s ", cs->sym->name);
+    else if (cs->sym->constant)
+      fprintf(fp, "\"%s\" ", cs->sym->constant);
+    else
+      fprintf(fp, "%d ", cs->sym->id);
+  }
+  fprintf(fp, ") ");
+}
+
 void
 fa_print_backward(AVar *v, FILE *fp) {
   Vec<AVar *> done, todo;
@@ -19,27 +33,14 @@ fa_print_backward(AVar *v, FILE *fp) {
 	fprintf(fp, "VAR %X\n", (int)v->var);
     } else
       fprintf(fp, "AVAR %X\n", (int)v);
-    forv_AVar(vv, v->backward) {
+    show_type(*v->out, fp); fprintf(fp, "\n");
+    forv_AVar(vv, v->backward) if (vv) {
       if (!done.set_in(vv)) {
 	todo.add(vv);
 	done.set_add(vv);
       }
     }
   }
-}
-
-static void
-show_type(Vec<CreationSet *> &t, FILE *fp) {
-  fprintf(fp, "( ");
-  forv_CreationSet(cs, t) if (cs) {
-    if (cs->sym->name)
-      fprintf(fp, "%s ", cs->sym->name);
-    else if (cs->sym->constant)
-      fprintf(fp, "\"%s\" ", cs->sym->constant);
-    else
-      fprintf(fp, "%d ", cs->sym->id);
-  }
-  fprintf(fp, ") ");
 }
 
 void
@@ -96,7 +97,8 @@ fa_dump_types(FA *fa, FILE *fp) {
   gvars.set_to_vec();
   fprintf(fp, "globals\n");
   forv_Var(v, gvars)
-    fa_dump_var_types(unique_AVar(v, GLOBAL_CONTOUR), fp);
+    if (!v->sym->constant && !v->sym->symbol)
+      fa_dump_var_types(unique_AVar(v, GLOBAL_CONTOUR), fp);
 }
 
 static void
@@ -129,7 +131,8 @@ show_untyped(FA *fa) {
   int res = 0;
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
-      if (make_AVar(v, es)->out == bottom_type) {
+      AVar *av = make_AVar(v, es);
+      if (av->out == bottom_type) {
 	res++;
 	if (v->def && v->def->code && v->def->code->ast && v->def->code->ast->pathname)
 	  fprintf(stderr, "%s:%d: ", v->def->code->ast->pathname, 

@@ -8,11 +8,14 @@
 
 static void
 dump_header(FILE *fp, char *fn) {
+  int relative = system_dir[0] == '.';
   fprintf(fp, "<HTML>\n");
   fprintf(fp, "<HEAD>\n");
   fprintf(fp, "<TITLE> Program Dump for %s </TITLE>\n", fn);
-  fprintf(fp, "<SCRIPT SRC=\"%smktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", system_dir);
-  fprintf(fp, "<LINK REL=\"stylesheet\" HREF=\"%smktree.css\">", system_dir);
+  fprintf(fp, "<SCRIPT SRC=\"%s%smktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
+	  system_dir, relative ? "../" : "");
+  fprintf(fp, "<LINK REL=\"stylesheet\" HREF=\"%s%smktree.css\">", 
+	  system_dir, relative ? "../" : "");
   fprintf(fp, "</HEAD>\n");
   fprintf(fp, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
   fprintf(fp, "Program Dump for %s <br></span></big></big>\n", fn);

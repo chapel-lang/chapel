@@ -18,6 +18,7 @@ GEYSA_CVS_SRCS = \
 	ast_cf.cpp \
 	builtin.cpp \
 	codegen.cpp \
+	cdb.cpp \
 	cfg.cpp \
 	cg.cpp \
 	clone.cpp \

@@ -434,7 +434,7 @@ square_block: '['
 constant : (char | int8 | uint8 | int16 | uint16 | 
 	    int32 | uint32 | int64 | uint64 | int | uint |
 	    float32 | float64 | float128 | float | 
-	    string | symbol | complex) ('__name' string)?
+	    string | symbol) ('__name' string)?
 { 
   $$.ast = new AST(AST_const, &$n); 
   $$.ast->string = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
@@ -462,7 +462,7 @@ int32	 ::= base_int "(w|W)";
 uint32	 ::= base_int "(u|U)(w|W)|(w|W)(u|U)";
 int64	 ::= base_int "(l|L)";
 uint64	 ::= base_int "(u|U)(l|L)|(u|U)(l|L)";
-int	 ::= base_int;
+int	 ::= base_int  "/[^\.]";
 uint	 ::= base_int "(u|U)";
 anyint	 : char | int8 | uint8 | int16 | uint16 | 
 	   int32 | uint32 | int64 | uint64 | int | uint
@@ -477,13 +477,7 @@ float32	   ::= base_float "(f|F)";
 float64	   ::= base_float "(d|D)";
 float80	   ::= base_float "(t|T)";
 float128   ::= base_float "(l|L)";
-float	   ::= base_float;
-
-anynum ::= char | int8 | uint8 | int16 | uint16 | 
-           int32 | uint32 | int64 | uint64 | int | uint |
-           float32 | float64 | float128 | float;
-
-complex	   ::= anynum "i" ;
+float	   ::= base_float "/[^\.]";
 
 identifier : "[a-zA-Z_][a-zA-Z0-9_]*" $term -1;
 
