@@ -20387,3 +20387,20 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/18/05 15:28:10 -- deitz
+
+Log message:
+	Implemented FnSymbol::order_wrapper to create wrapper functions for
+	named parameters.
+	
+	Removed futures for test_named_param2 and test_named_param3.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/functions/deitz/: test_named_param3.good 
+Removed files:
+	chapel/test/functions/deitz/: test_named_param2.future 
+	                              test_named_param3.future 
+
