@@ -232,6 +232,13 @@ class UnresolvedType : public Type {
   void codegen(FILE* outfile);
 };
 
+class NilType : public Type {
+ public:
+  NilType(void);
+  void codegen(FILE* outfile);
+};
+
+
 #ifndef TYPE_EXTERN
 #define TYPE_EXTERN extern
 #endif
@@ -239,6 +246,7 @@ class UnresolvedType : public Type {
 // null-ish types
 TYPE_EXTERN Type* dtUnknown;
 TYPE_EXTERN Type* dtVoid;
+TYPE_EXTERN Type* dtNil;
 
 // built-in types
 TYPE_EXTERN Type* dtBoolean;

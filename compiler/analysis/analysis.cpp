@@ -772,6 +772,9 @@ build_types(Vec<BaseAST *> &syms) {
 	tt->asymbol->sym->type_kind = Type_VARIABLE;
 	break;
       }
+    case TYPE_NIL: {
+      break;
+    }
     }
   }
 }
@@ -1714,6 +1717,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
   case TYPE_SUM:
   case TYPE_VARIABLE:
   case TYPE_UNRESOLVED:
+  case TYPE_NIL:
   case AST_TYPE_END:
     assert(!"case");
     break;

@@ -1080,6 +1080,15 @@ void initTypes(void) {
   dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
   dtObject = Symboltable::defineBuiltinType("object", "_object", NULL);
   dtLocale = Symboltable::defineBuiltinType("locale", "_locale", NULL);
+
+  // define dtNil.  This doesn't reuse the above because it's a
+  // different subclass of Type.  Could come up with a more clever
+  // way to generalize
+  dtNil = new NilType();
+  TypeSymbol* sym = new TypeSymbol("_nilType", dtNil);
+  sym->cname = copystring("_nilType");
+  dtNil->addSymbol(sym);
+  builtinTypes.add(dtNil);
 }
 
 
@@ -1135,3 +1144,14 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   new_sum_type->addSymbol(sym);
   return new_sum_type;
 }
+
+
+NilType::NilType(void) :
+  Type(TYPE_NIL, NULL)
+{}
+
+
+void NilType::codegen(FILE* outfile) {
+  INT_FATAL(this, "Trying to codegen a nil Type");
+}
+
