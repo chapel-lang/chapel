@@ -1086,6 +1086,80 @@ void ArrayRef::codegen(FILE* outfile) {
 }
 
 
+TupleSelect::TupleSelect(Expr* init_base, Expr* init_arg) :
+  ParenOpExpr(init_base, init_arg)
+{
+  astType = EXPR_TUPLESELECT;
+}
+
+
+Expr* TupleSelect::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new TupleSelect(baseExpr->copyInternal(clone, map, analysis_clone), argList->copyInternal(clone, map, analysis_clone));
+}
+
+
+Type* TupleSelect::typeInfo(void) {
+  // Simple typeInfo  --SJD 2/11/05
+
+  TupleType* tuple_type = dynamic_cast<TupleType*>(baseExpr->typeInfo());
+
+  if (!tuple_type) {
+    if (Tuple* tuple = dynamic_cast<Tuple*>(baseExpr)) {
+      IntLiteral* index = dynamic_cast<IntLiteral*>(argList);
+
+      if (!index) {
+	INT_FATAL(this, "Tuple indexing only support with integer literals");
+      }
+
+      Expr* expr = dynamic_cast<Expr*>(tuple->exprs->get(index->val));
+      if (expr) {
+	return expr->typeInfo();
+      }
+    }
+
+    INT_FATAL(this, "Tuple indexing on something not a tuple");
+  }
+
+  IntLiteral* index = dynamic_cast<IntLiteral*>(argList);
+
+  if (!index) {
+    INT_FATAL(this, "Tuple indexing only support with integer literals");
+  }
+
+  if (index->val < 1 || index->val > tuple_type->components.n) {
+    INT_FATAL(this, "Tuple index is not in range");
+  }
+
+  return tuple_type->components.v[index->val-1];
+}
+
+
+bool TupleSelect::isConst(void) {
+  return baseExpr->isConst();
+}
+
+
+void TupleSelect::codegen(FILE* outfile) {
+  if (Tuple* tuple = dynamic_cast<Tuple*>(baseExpr)) {
+    IntLiteral* index = dynamic_cast<IntLiteral*>(argList);
+
+    if (!index) {
+      INT_FATAL(this, "Tuple indexing only support with integer literals");
+    }
+
+    tuple->exprs->get(index->val)->codegen(outfile);
+  }
+  else if (Variable* var = dynamic_cast<Variable*>(baseExpr)) {
+    var->var->codegen(outfile);
+    fprintf(outfile, "._field");
+    argList->codegen(outfile);
+  }
+  else {
+    INT_FATAL(this, "Unanticipated TupleSelect");
+  }
+}
+
+
 FnCall::FnCall(Expr* init_base, Expr* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {

@@ -34,6 +34,8 @@ class ILink : public Loc {
 
   ILink* head(void);
   ILink* tail(void);
+  int length(void);
+  ILink* get(int);
 };
 
 extern ILink* nilILink;

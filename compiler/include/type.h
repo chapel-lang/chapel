@@ -214,7 +214,9 @@ class TupleType : public Type {
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
 };
+
 
 class SumType : public Type {
  public:

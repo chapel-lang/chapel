@@ -56,6 +56,34 @@ static void build_anon_type_defs(VarDefStmt* stmt, Type* type) {
     }
     Symboltable::setCurrentScope(save_scope);
   }
+  else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type)) {
+    /***
+     ***  Note I'm assuming a tuple with component types that are all
+     ***  primitive types and I'm declaring this thing with a mangled
+     ***  name in the commonModule.  This won't be possible when we
+     ***  support tuples of different types.  In this case, they may
+     ***  have to be defined in the scope they are used.
+     ***/
+    if (!tuple_type->name->isNull()) {
+      INT_FATAL(stmt, "Tuple type already resolved");
+    }
+    SymScope* save_scope = Symboltable::setCurrentScope(commonModule->modScope);
+
+    char* name = glomstrings(1, "_tuple");
+    forv_Vec(Type, component, tuple_type->components) {
+      name = glomstrings(3, name, "_", component->name->name);
+    }
+    if (Symbol* tuple_symbol = Symboltable::lookupInCurrentScope(name)) {
+      stmt->var->type = tuple_symbol->type;
+    }
+    else {
+      TypeSymbol* tuple_symbol = new TypeSymbol(name, tuple_type);
+      tuple_type->addName(tuple_symbol);
+      TypeDefStmt* tuple_type_def = new TypeDefStmt(tuple_type);
+      commonModule->stmts = appendLink(commonModule->stmts, tuple_type_def);
+    }
+    Symboltable::setCurrentScope(save_scope);
+  }
 }
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {

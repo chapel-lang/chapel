@@ -6,7 +6,6 @@
 #include "../passes/runAnalysis.h"
 #include "../symtab/symtabTraversal.h"
 
-
 static int all_parsed = 0;
 
 /******************************************************************************
@@ -42,7 +41,7 @@ void ApplyWith::preProcessStmt(Stmt* stmt) {
  ***
  *** This traversal inserts "this" as the first parameter in bound
  *** functions.  It also resolves the class that secondary methods are
- *** bound to.
+ *** bound to.  It also mangles the cname of methods.
  ***
  ***/
 
@@ -94,11 +93,12 @@ void InsertThis::preProcessStmt(Stmt* stmt) {
   }
   
   /***
-   *** Insert this as first parameter
+   *** Mangle code-generation name and insert this as first parameter
    ***/
   
   if (TypeSymbol* class_symbol = dynamic_cast<TypeSymbol*>(fn->classBinding)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(class_symbol->type)) {
+      fn->cname = glomstrings(4, "_", class_type->name->cname, "_", fn->cname);
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(fn->paramScope);
       Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);
@@ -146,6 +146,11 @@ static void resolve_type_helper(Type* &type) {
   }
   if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
     resolve_type_helper(array_type->elementType);
+  }
+  if (TupleType* tuple_type = dynamic_cast<TupleType*>(type)) {
+    for (int i = 0; i < tuple_type->components.n; i++) {
+      resolve_type_helper(tuple_type->components.v[i]);
+    }
   }
 }
 
@@ -254,6 +259,9 @@ void SpecializeParens::preProcessExpr(Expr* expr) {
 	else {
 	  INT_FATAL(expr, "constructor is not a FnDefStmt");
 	}
+      }
+      else if (dynamic_cast<TupleType*>(paren->baseExpr->typeInfo())) {
+	paren_replacement = new TupleSelect(baseVar, paren->argList);
       }
       else if (strcmp(baseVar->var->name, "write") == 0) {
 	paren_replacement = new IOCall(IO_WRITE, paren->baseExpr, paren->argList);

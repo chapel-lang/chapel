@@ -320,6 +320,20 @@ class MemberAccess : public Expr {
 };
 
 
+class Tuple : public Expr {
+ public:
+  Expr* exprs;
+
+  Tuple(Expr* init_exprs);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void traverseExpr(Traversal* traversal);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 class ParenOpExpr : public Expr {
  public:
   Expr* baseExpr;
@@ -348,6 +362,19 @@ class ArrayRef : public ParenOpExpr {
 };
 
 
+class TupleSelect : public ParenOpExpr {
+ public:
+  /* baseExpr is TupleExpr, argList is indexing expression (single expression) */
+  TupleSelect(Expr* init_base, Expr* init_arg);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  bool isConst(void);
+  Type* typeInfo(void);
+
+  void codegen(FILE* outfile);
+};
+
+
 class FnCall : public ParenOpExpr {
  public:
   FnCall(Expr* init_base, Expr* init_arg = nilExpr);
@@ -370,20 +397,6 @@ class IOCall : public FnCall {
 
   Type* typeInfo(void);
 
-  void codegen(FILE* outfile);
-};
-
-
-class Tuple : public Expr {
- public:
-  Expr* exprs;
-
-  Tuple(Expr* init_exprs);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void traverseExpr(Traversal* traversal);
-
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 

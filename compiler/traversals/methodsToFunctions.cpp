@@ -10,29 +10,6 @@
 
 
 /***
- ***  Mangles names of methods with "_"
- ***/
-void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
-  TypeDefStmt* tds;
-  ClassType* ctype;
-
-  if (tds = dynamic_cast<TypeDefStmt*>(stmt)) {
-    /** test cloning of classes
-    if (!tds->type->name->parentScope->isInternal()) {
-      Map<BaseAST*,BaseAST*> map;
-      tds->clone(NULL, &map);
-    }
-    **/
-    if (ctype = dynamic_cast<ClassType*>(tds->type)) {
-      forv_Vec(FnSymbol, fn, ctype->methods) {
-	fn->cname = glomstrings(4, "_", ctype->name->cname, "_", fn->cname);
-      }
-    }
-  }
-}
-
-
-/***
  ***  Adds base in MemberAccess for method to a new first parameter to
  ***  the method, makes MemberAccess for method a function on its own
  ***/

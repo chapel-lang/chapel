@@ -1415,6 +1415,7 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_ARRAYREF: // **************** CURRENTLY UNUSED ****************
+    case EXPR_TUPLESELECT: // *** ADDED 2/11/05 --SJD
     case EXPR_FNCALL:
     case EXPR_PARENOP: {
       ParenOpExpr *s = dynamic_cast<ParenOpExpr *>(ast);

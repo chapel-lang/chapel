@@ -1035,7 +1035,22 @@ void TupleType::print(FILE* outfile) {
 
 
 void TupleType::codegen(FILE* outfile) {
-  INT_FATAL(this, "Cannot codegen Tuple types yet");
+  name->codegen(outfile);
+}
+
+
+void TupleType::codegenDef(FILE* outfile) {
+  fprintf(outfile, "typedef struct _");
+  name->codegen(outfile);
+  fprintf(outfile, " {\n");
+  int i = 0;
+  forv_Vec(Type, component, components) {
+    component->codegen(outfile);
+    fprintf(outfile, " _field%d;\n", ++i);
+  }
+  fprintf(outfile, "} ");
+  name->codegen(outfile);
+  fprintf(outfile, ";\n\n");
 }
 
 
@@ -1148,7 +1163,7 @@ qsort(types.v, types.n, sizeof(types.v[0]), compar_baseast);
 #endif
 
 Type *find_or_make_sum_type(Vec<Type *> *types) {
-  assert(!"implemented"); 
-  return 0; 
+  INT_FATAL("find_or_make_sum_type not implemented");
+  return NULL;
 }
 

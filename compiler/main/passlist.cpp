@@ -15,6 +15,7 @@
 #include "../traversals/cleanup.h"
 #include "../traversals/cloneAllFns.h"
 #include "../traversals/createConfigVarTable.h"
+#include "../traversals/destructureTupleAssignments.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
@@ -43,6 +44,7 @@ REGISTER(CloneAllFns);
 REGISTER(Codegen);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
+REGISTER(DestructureTupleAssignments);
 REGISTER(DummyPass);
 REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);

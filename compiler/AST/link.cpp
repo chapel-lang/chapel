@@ -155,3 +155,36 @@ ILink* ILink::tail(void) {
   }
   return last;
 }
+
+
+int ILink::length(void) {
+  if (isNull()) {
+    return 0;
+  }
+  else if (next) {
+    return next->length() + 1;
+  }
+  else {
+    return 1;
+  }
+}
+
+
+ILink* ILink::get(int i) {
+  if (i <= 0) {
+    INT_FATAL(this, "get(i)--invalid i");
+  }
+  if (isNull()) {
+    INT_FATAL(this, "get(i)--i may be too big");
+  }
+  else if (i == 1) {
+    return this;
+  }
+  else if (next) {
+    return next->get(i-1);
+  }
+  else {
+    INT_FATAL(this, "get(i)--i is too big");
+  }
+  return NULL;
+}
