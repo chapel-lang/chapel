@@ -3528,3 +3528,16 @@ Modified files:
 	chapel/compiler/AST/: TODO chapel.lex chapel.y link.cpp 
 	                      symbol.cpp symbol.h symtab.cpp symtab.h 
 
+---------------------------------------------------------------------------
+
+06/18/04 16:23:22 -- bradc
+
+Log message:
+	Checkpoint time.  Continuing to populate the symboltable.
+
+Modified files:
+	chapel/compiler/AST/: TODO chapel.lex chapel.y expr.cpp expr.h 
+	                      link.cpp main.cpp stmt.cpp stmt.h 
+	                      symbol.cpp symbol.h symtab.cpp symtab.h 
+	                      type.cpp yy.c 
+
