@@ -4769,3 +4769,39 @@ Modified files:
 	chapel/compiler/AST/: TODO expr.cpp expr.h stmt.cpp symbol.cpp 
 	                      symtab.cpp type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+07/29/04 17:51:03 -- bradc
+
+Log message:
+	* The main change in this check-in is the implementation of
+	code generation for enumerated types, including the ability
+	to print them out.  This change involved the following three
+	steps which are more general:
+	
+	* Moved generation of default format strings for write statements
+	from WriteCall to Type hierarchy so that things like enums and
+	arrays could generate appopriate formats.
+	
+	* Started implementing codegen for TypeDefStmt's, and put
+	methods to the Type hierarchy to generate IO routines for
+	that type.
+	
+	* Specialized the symbols stored by EnumType to be EnumSymbols
+	rather than simply Symbols.
+	
+	* As a side issue, added codegen for cast expressions.
+	
+	* Added a simple test of declaring, assigning, and printing
+	enumerated type variables, as well as checking their integer
+	values.
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp expr.h stmt.cpp type.cpp 
+	                      type.h 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/test/lowlevelcg/jplevyak/: .cvsignore 
+	chapel/test/trivial/bradc/protoast/codegen/: .cvsignore 
+Added files:
+	chapel/test/trivial/bradc/protoast/codegen/: enum.chpl enum.good 
+
