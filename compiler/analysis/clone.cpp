@@ -14,7 +14,6 @@
 
 #define BAD_NAME ((char*)-1)
 #define BAD_AST ((AST*)-1)
-//#define CLONE 1
 
 static FA *fa = 0;
 
@@ -425,12 +424,8 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	// tuples use record type
 	char *name = 0;
 	AST *ast = 0;
-#ifdef CLONE
 	int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
 	Sym *s = abstract ? sym->copy() : sym->clone(&callback);
-#else
-	Sym *s = sym->copy();
-#endif
 	s->type_kind = sym == sym_tuple ? Type_RECORD : Type_FUN;
 	s->incomplete = 1;
 	forv_CreationSet(cs, *eqcss) if (cs) {
@@ -458,27 +453,30 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
       } else {
-#ifdef CLONE
-	int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
-	Sym *s = abstract ? sym->copy() : sym->clone(&callback);
-#else
-	Sym *s = sym->copy();
-#endif
-	char *name = 0;
-	s->type_kind = sym->type_kind;
-	s->incomplete = 1;
-	s->creators.copy(*eqcss);
-	s->creators.set_to_vec();
-	forv_CreationSet(cs, *eqcss) if (cs) {
-	  cs->type = s;
-	  if (!name)
-	    name = cs->sym->name;
-	  else
-	    if (cs->sym->name != name)
-	      name = BAD_NAME;
+	Vec<CreationSet*> creators;
+	creators.set_union(sym->creators);
+	if (!eqcss->some_disjunction(creators)) {
+	  forv_CreationSet(cs, *eqcss) if (cs)
+	    cs->type = sym;
+	} else {
+	  int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
+	  Sym *s = abstract ? sym->copy() : sym->clone(&callback);
+	  char *name = 0;
+	  s->type_kind = sym->type_kind;
+	  s->incomplete = 1;
+	  s->creators.copy(*eqcss);
+	  s->creators.set_to_vec();
+	  forv_CreationSet(cs, *eqcss) if (cs) {
+	    cs->type = s;
+	    if (!name)
+	      name = cs->sym->name;
+	    else
+	      if (cs->sym->name != name)
+		name = BAD_NAME;
+	  }
+	  if (name && name != BAD_NAME)
+	    s->name = name;
 	}
-	if (name && name != BAD_NAME)
-	  s->name = name;
       }
     } else {
       // if different sym use sum type
