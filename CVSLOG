@@ -17079,3 +17079,25 @@ Modified files:
 	                                    tuples.good tuples.v 
 	chapel/test/parsing/jplevyak/: tuples.good tuples.v 
 
+---------------------------------------------------------------------------
+
+02/09/05 12:45:00 -- deitz
+
+Log message:
+	Fixed a bug in arrays of higher dimensions having trouble storing
+	their values that I introduced in the last checkin.
+	
+	Added a test case that stores values other than zero in an array.
+	Unfortunately this test case fails in analysis (future for John)
+	because the index variables used in the forall expression are added
+	and assigned to the array of integers.  Can the index type be treated
+	symmetrically to integers?
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/runtime/include/: array.h 
+Added files:
+	chapel/test/arrays/deitz/: test_array_integer_2d.chpl 
+	                           test_array_integer_2d.future 
+	                           test_array_integer_2d.good 
+
