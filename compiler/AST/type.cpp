@@ -1033,6 +1033,10 @@ void ClassType::codegen(FILE* outfile) {
 
 
 void ClassType::codegenDef(FILE* outfile) {
+  forv_Vec(TypeSymbol, type, types) {
+    type->codegenDef(outfile);
+    fprintf(outfile, "\n");
+  }
   fprintf(outfile, "struct _");
   symbol->codegen(outfile);
   fprintf(outfile, "_def {\n");
@@ -1085,6 +1089,10 @@ void ClassType::codegenDef(FILE* outfile) {
 
 
 void ClassType::codegenPrototype(FILE* outfile) {
+  forv_Vec(TypeSymbol, type, types) {
+    type->codegenPrototype(outfile);
+    fprintf(outfile, "\n");
+  }
   fprintf(outfile, "typedef struct _");
   symbol->codegen(outfile);
   fprintf(outfile, "_def ");

@@ -14,6 +14,14 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   FnSymbol* fn = def_stmt->fnDef();
 
   if (!fn) {
+    /*** mangle type names in class types ***/
+    if (TypeSymbol* type_sym = def_stmt->typeDef()) {
+      if (ClassType* classType = dynamic_cast<ClassType*>(type_sym->type)) {
+	forv_Vec(TypeSymbol, type, classType->types) {
+	  type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
+	}
+      }
+    }
     return;
   }
 
