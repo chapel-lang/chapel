@@ -2124,3 +2124,20 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+04/05/13 11:22:46 -- bradc
+
+Log message:
+	Made nightly regression runs more resilient in the face of
+	failures (for example, last night valgrind was missing,
+	making the reported results pretty inaccurate).  Also
+	added support for a debug mode so that I wouldn't have
+	to mess up the running tally of statistics every time
+	the testing system failed.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+Added files:
+	chapel/test/trivial/bradc/: .cvsignore 
+
