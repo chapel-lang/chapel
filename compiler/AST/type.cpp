@@ -521,3 +521,10 @@ void initInternalTypes(void) {
   dtDomain = Symboltable::defineBuiltinType("Domain");
   dtArray = Symboltable::defineBuiltinType("Array");
 }
+
+void findInternalTypes(void) {
+  dtTuple = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Tuple"))->type;
+  dtIndex = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Index"))->type;
+  dtDomain = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Domain"))->type;
+  dtArray = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Array"))->type;
+}

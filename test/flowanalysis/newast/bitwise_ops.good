@@ -1,5 +1,8 @@
 
 
+ called from 46 in __entryPoint at bitwise_ops.chpl:46
+ called from 46 in __entryPoint at bitwise_ops.chpl:46
+ called from 46 in __entryPoint at bitwise_ops.chpl:46
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
@@ -12,8 +15,11 @@ answer = (m|n);
 answer = (o||o);
 answer = (o||p);
 answer = (p||p);
+function __entryPoint bitwise_ops.chpl:46
 function __init bitwise_ops.chpl:46
 function __init() {
+function __initIntPrelude bitwise_ops.chpl:46
+function __initPrelude bitwise_ops.chpl:46
 globals
 var answer: integer = 0;
 var m: integer = 10;

@@ -70,9 +70,11 @@ static bool stmtIsGlob(ILink* link) {
 }
 
 
-static Stmt* createInitFn(Stmt* program, char* fnName = "__init") {
+static Stmt* createInitFn(Stmt* program, char* fnNameArg = 0) {
   ILink* globstmts;
   ILink* initstmts;
+  char *fnName = fnNameArg ? fnNameArg : (char*)"__entryPoint";
+  
 
   program->filter(stmtIsGlob, &globstmts, &initstmts);
 
@@ -87,10 +89,12 @@ static Stmt* createInitFn(Stmt* program, char* fnName = "__init") {
 
   program = appendLink(program, initFunDef);
 
-  FnSymbol* initFunSym = initFunDef->fn;
-  FnCall* initFunCall = new FnCall(new Variable(initFunSym));
-  ExprStmt* initFunCallStmt = new ExprStmt(initFunCall);
-  entryPoint = appendLink(entryPoint, initFunCallStmt);
+  if (fnNameArg) {
+    FnSymbol* initFunSym = initFunDef->fn;
+    FnCall* initFunCall = new FnCall(new Variable(initFunSym));
+    ExprStmt* initFunCallStmt = new ExprStmt(initFunCall);
+    entryPoint = appendLink(entryPoint, initFunCallStmt);
+  }
 
   return program;
 }
@@ -106,9 +110,10 @@ Stmt* fileToAST(char* filename, int debug) {
     initExpr();
 
     Symboltable::parseInternalPrelude();
-    initInternalTypes();
+    //initInternalTypes();
     preludePath = glomstrings(2, system_dir, "/AST/internal_prelude.chpl");
     internalPreludeStmts = ParseFile(preludePath, true);
+    findInternalTypes();
 
     Symboltable::parsePrelude();
     preludePath = glomstrings(2, system_dir, "/AST/prelude.chpl");
@@ -122,7 +127,8 @@ Stmt* fileToAST(char* filename, int debug) {
 
   internalPreludeStmts = createInitFn(internalPreludeStmts, "__initIntPrelude");
   preludeStmts = createInitFn(preludeStmts, "__initPrelude");
-  programStmts = createInitFn(programStmts);
+  programStmts = createInitFn(programStmts, "__init");
+  entryPoint = createInitFn(entryPoint);
 
   return programStmts;
 }

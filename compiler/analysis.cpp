@@ -117,6 +117,16 @@ ASymbol::copy() {
   return s;
 }
 
+static Sym *
+new_sym(char *name = 0, int global = 0) {
+  Sym *s = new_ASymbol(name);
+  if (!global)
+    s->function_scope = 1;
+  else
+    s->global_scope = 1;
+  return s;
+}
+
 static void
 map_symbols(Vec<BaseAST *> &syms) {
   int symbols = 0, types = 0, exprs = 0, stmts = 0;
@@ -260,18 +270,20 @@ build_types(Vec<BaseAST *> &syms) {
 	}
 	break;
       }
+      case TYPE_TUPLE: {	
+	TupleType *tt = dynamic_cast<TupleType*>(t);
+	forv_Vec(Type, c, tt->components) {
+	  Sym *x = new_sym();
+	  x->type = c->asymbol;
+	  t->asymbol->has.add(x);
+	}
+	t->asymbol->implements.add(sym_tuple);
+	t->asymbol->includes.add(sym_tuple);
+	break;
+      }
     }
+    make_type_sym(t->asymbol);
   }
-}
-
-static Sym *
-new_sym(char *name = 0, int global = 0) {
-  Sym *s = new_ASymbol(name);
-  if (!global)
-    s->function_scope = 1;
-  else
-    s->global_scope = 1;
-  return s;
 }
 
 static void
@@ -344,9 +356,9 @@ build_builtin_symbols() {
   new_primitive_type(sym_list, "list");
   new_primitive_type(sym_ref, "ref");
   new_primitive_type(sym_value, "value");
-  new_primitive_type(sym_catagory, "catagory");
   new_primitive_type(sym_set, "set");
   new_primitive_type(sym_sequence, "sequence");
+  new_primitive_type(sym_index, "index");
   new_primitive_type(sym_domain, "domain");
   new_primitive_type(sym_array, "array");
   new_primitive_type(sym_int8, "int8");
@@ -363,7 +375,9 @@ build_builtin_symbols() {
 	       sym_int8, sym_int16, sym_int32, sym_int64,
 	       sym_uint8, sym_uint16, sym_uint32, sym_uint64, 0);
   new_primitive_type(sym_size, "size");
-  new_alias_type(sym_bool, "bool", sym_int);
+  new_primitive_type(sym_true, "true");
+  new_primitive_type(sym_false, "false");
+  new_sum_type(sym_bool, "bool", sym_true, sym_false, 0);
   new_primitive_type(sym_enum_element, "enum_element");
   new_primitive_type(sym_float32, "float32");
   new_primitive_type(sym_float64, "float64");
@@ -390,7 +404,19 @@ build_builtin_symbols() {
   ((ASymbol*)sym_float64)->xsymbol = dtFloat;
   ((ASymbol*)sym_string)->xsymbol = dtString;
   ((ASymbol*)sym_bool)->xsymbol = dtBoolean;
+  ((ASymbol*)sym_index)->xsymbol = dtIndex;
+  ((ASymbol*)sym_domain)->xsymbol = dtDomain;
+  ((ASymbol*)sym_array)->xsymbol = dtArray;
+  ((ASymbol*)sym_tuple)->xsymbol = dtTuple;
   ((ASymbol*)sym_void)->xsymbol = dtVoid;
+}
+
+static int
+import_symbols(Vec<BaseAST *> &syms) {
+  map_symbols(syms);
+  build_builtin_symbols();
+  build_types(syms);
+  return 0;
 }
 
 // FUTURE: support for goto or named break
@@ -604,7 +630,12 @@ gen_if1(BaseAST *ast) {
     case STMT_FORLOOP: gen_for(ast); break;
     case STMT_COND: gen_cond(ast); break;
       
-    case EXPR: assert(ast->isNull()); break;
+    case EXPR: {
+      Expr *e = dynamic_cast<Expr*>(ast);
+      assert(ast->isNull()); 
+      e->ainfo->rval = sym_null;
+      break;
+    }
     case EXPR_LITERAL: assert(!"case"); break;
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
@@ -833,8 +864,8 @@ gen_if1(BaseAST *ast) {
       if1_gen(if1, &s->ainfo->code, s->redDim->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->argExpr->ainfo->code);
       Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_reduce_symbol, 
-			    s->reduceType->asymbol, s->redDim->ainfo->rval, s->argExpr->ainfo->rval, 
-			    s->ainfo->rval);
+			    s->reduceType->asymbol, s->redDim->ainfo->rval, 
+			    s->argExpr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
       break;
     }
@@ -890,12 +921,19 @@ gen_fun(FnDefStmt *f) {
   c->ast = ast;
   Vec<Symbol *> args;
   getLinkElements(args, f->fn->formals);
-  Sym *as[args.n + 1];
+  Sym *as[args.n + 2];
+  int iarg = 0;
   assert(f->fn->asymbol->name);
-  as[0] = if1_make_symbol(if1, f->fn->asymbol->name);
-  for (int i = 1; i < args.n + 1; i++)
-    as[i] = args.v[i-1]->asymbol;
-  if1_closure(if1, fn, body, args.n + 1, as);
+  if (f->fn->scope->type == SCOPE_CLASS) {
+    fn->self = new_sym("self"); // hack
+    as[iarg++] = fn->self;
+    fn->self->type = dynamic_cast<TypeSymbol *>(f->fn->scope->symContext)->type->asymbol;
+  }
+  if (strcmp(f->fn->asymbol->name, "self"))
+    as[iarg++] = if1_make_symbol(if1, f->fn->asymbol->name);
+  for (int i = 0; i < args.n; i++)
+    as[iarg++] = args.v[i]->asymbol;
+  if1_closure(if1, fn, body, iarg, as);
   fn->ast = ast;
   return 0;
 }
@@ -905,7 +943,7 @@ build_function(FnDefStmt *f) {
   Sym *s = f->fn->asymbol;
   if (verbose_level > 1 && f->fn->name)
     printf("build_functions: %s\n", f->fn->name);
-  if (s->name && !strcmp("__init", s->name)) {
+  if (s->name && !strcmp("__entryPoint", s->name)) {
     if1_set_builtin(if1, s, "init");
     sym_init = s;
   }
@@ -954,14 +992,6 @@ build_functions(Vec<BaseAST *> &syms) {
     if (s->astType == STMT_FNDEF)
       if (build_function(dynamic_cast<FnDefStmt*>(s)) < 0)
         return -1;
-  return 0;
-}
-
-static int
-import_symbols(Vec<BaseAST *> &syms) {
-  map_symbols(syms);
-  build_builtin_symbols();
-  build_types(syms);
   return 0;
 }
 
@@ -1050,7 +1080,7 @@ finalize_symbols(IF1 *i) {
 static void
 domain_start_index(PNode *pn, EntrySet *es) {
   AVar *container = make_AVar(pn->lvals.v[0], es);
-  creation_point(container, sym_tuple);
+  creation_point(container, sym_index);
 }
 
 static void

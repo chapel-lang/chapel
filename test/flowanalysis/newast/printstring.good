@@ -1,8 +1,14 @@
 
 
+ called from 2 in __entryPoint at printstring.chpl:2
+ called from 2 in __entryPoint at printstring.chpl:2
+ called from 2 in __entryPoint at printstring.chpl:2
 ::null(<unknown>:0) ( void (<unknown>:0) )
+function __entryPoint printstring.chpl:2
 function __init printstring.chpl:2
 function __init() {
+function __initIntPrelude printstring.chpl:2
+function __initPrelude printstring.chpl:2
 globals
 write("This is a test\n");
 }

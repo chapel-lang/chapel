@@ -18,9 +18,9 @@ type list __name "list";
 type ref __name "ref";
 type value __name "value";
 
-type catagory __name "catagory";
-type set __name "set" : catagory;
+type set __name "set";
 type sequence __name "sequence";
+type index __name "index";
 type domain __name "domain";
 type array __name "array";
 
@@ -49,7 +49,7 @@ type anyfloat __name "anyfloat" =
 type anynum __name "anynum" = anyint | anyfloat;
 type char __name "char" = uint8;
 type size __name "size" = uint32;
-type bool __name "bool" = int;
+type true __name "true"; type false __name "false"; type bool __name "bool" = true | false;
 type string __name "string";
 type enum_element __name "enum_element" = int;
 
@@ -122,11 +122,11 @@ operator(a:anynum, #"--")		   : a - 1;
 
 // tuples indexing
 
-tuple::self(a:anyint) : #__index self a;
+tuple::self(a:anyint) : #__index_object self a;
 
 // vector indexing
 
-vector::self(a:anyint) : #__index self a;
+vector::self(a:anyint) : #__index_object self a;
 
 // generic printing
 

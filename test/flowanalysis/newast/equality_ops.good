@@ -1,5 +1,8 @@
 
 
+ called from 33 in __entryPoint at equality_ops.chpl:33
+ called from 33 in __entryPoint at equality_ops.chpl:33
+ called from 33 in __entryPoint at equality_ops.chpl:33
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
@@ -9,8 +12,11 @@ answer = (m!=n);
 answer = (m!=o);
 answer = (m==n);
 answer = (m==o);
+function __entryPoint equality_ops.chpl:33
 function __init equality_ops.chpl:33
 function __init() {
+function __initIntPrelude equality_ops.chpl:33
+function __initPrelude equality_ops.chpl:33
 globals
 var answer: integer = 0;
 var m: integer = 5;

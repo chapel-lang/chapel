@@ -1,5 +1,8 @@
 
 
+ called from 22 in __entryPoint at declprintdom2.chpl:22
+ called from 22 in __entryPoint at declprintdom2.chpl:22
+ called from 22 in __entryPoint at declprintdom2.chpl:22
 ::D4(<unknown>:0) ( sequence (<unknown>:0) )
 ::D5(<unknown>:0) ( sequence (<unknown>:0) )
 ::D6(<unknown>:0) ( domain (<unknown>:0) )
@@ -13,8 +16,11 @@
 ::m8(<unknown>:0) ( int64 (<unknown>:0) )
 ::m9(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
+function __entryPoint declprintdom2.chpl:22
 function __init declprintdom2.chpl:22
 function __init() {
+function __initIntPrelude declprintdom2.chpl:22
+function __initPrelude declprintdom2.chpl:22
 globals
 var D4: domain(1) = 1..m4;
 var D5: domain(1) = 1..m5;

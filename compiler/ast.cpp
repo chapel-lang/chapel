@@ -39,7 +39,7 @@ void init_ast() {
   new_builtin_symbol(sym_make_continuation, "__make_continuation", "make_continuation");
   new_builtin_symbol(sym_make_set, "__make_set", "make_set");
   new_builtin_symbol(sym_new, "__new", "new");
-  new_builtin_symbol(sym_index, "__index", "index");
+  new_builtin_symbol(sym_index_object, "__index_object", "index_object");
   new_builtin_symbol(sym_operator, "__operator", "operator");
   new_builtin_symbol(sym_destruct, "__destruct", "destruct");
   new_builtin_symbol(sym_meta_apply, "__meta_apply", "meta_apply");
@@ -149,21 +149,25 @@ set_value_for_value_classes(IF1 *i) {
   }
 }
 
+void
+make_type_sym(Sym *s) {
+  s->type_sym = new_Sym();
+  s->type_sym->is_meta_class = 1;
+  s->type_sym->in = s->in;
+  s->type_sym->name = s->name;
+  s->type_sym->type = s->type_sym;
+  s->type_sym->ast = s->ast;
+  s->type_sym->type_sym = s;
+  s->type_sym->type_kind = Type_PRIMITIVE;
+}
+
 static void
 make_type_syms(IF1 *i) {
   sym_anyclass->type_sym = sym_anyclass;
   forv_Sym(s, i->allsyms) {
     if (s->type_kind) {
-      if (!s->type_sym) {
-	s->type_sym = new_Sym();
-	s->type_sym->is_meta_class = 1;
-	s->type_sym->in = s->in;
-	s->type_sym->name = s->name;
-	s->type_sym->type = s->type_sym;
-	s->type_sym->ast = s->ast;
-	s->type_sym->type_sym = s;
-	s->type_sym->type_kind = Type_PRIMITIVE;
-      }
+      if (!s->type_sym)
+	make_type_sym(s);
     }
   }
 }

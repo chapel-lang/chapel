@@ -3,6 +3,9 @@
 
 
  called from 20 in __init at globalref.chpl:27
+ called from 27 in __entryPoint at globalref.chpl:27
+ called from 27 in __entryPoint at globalref.chpl:27
+ called from 27 in __entryPoint at globalref.chpl:27
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::b(<unknown>:0) ( int64 (<unknown>:0) )
@@ -10,8 +13,11 @@
 ::c(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 foo(1);
+function __entryPoint globalref.chpl:27
 function __init globalref.chpl:27
 function __init() {
+function __initIntPrelude globalref.chpl:27
+function __initPrelude globalref.chpl:27
 function foo globalref.chpl:12
 function foo(inout a: integer) {
 globals

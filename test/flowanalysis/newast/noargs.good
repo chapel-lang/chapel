@@ -3,10 +3,16 @@
 
 
  called from 5 in __init at noargs.chpl:6
+ called from 6 in __entryPoint at noargs.chpl:6
+ called from 6 in __entryPoint at noargs.chpl:6
+ called from 6 in __entryPoint at noargs.chpl:6
 ::null(<unknown>:0) ( void (<unknown>:0) )
 foo();
+function __entryPoint noargs.chpl:6
 function __init noargs.chpl:6
 function __init() {
+function __initIntPrelude noargs.chpl:6
+function __initPrelude noargs.chpl:6
 function foo noargs.chpl:3
 function foo() {
 globals

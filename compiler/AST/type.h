@@ -185,5 +185,6 @@ TYPE_EXTERN Vec<Type*> builtinTypes;
 
 void initTypes(void);
 void initInternalTypes(void);
+void findInternalTypes(void);
 
 #endif

@@ -141,7 +141,7 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
       }
       break;
     }
-    case P_prim_index: {
+    case P_prim_index_object: {
       assert(n->lvals.n == 1);
       fprintf(fp, "%s = ((%s", n->lvals.v[0]->cg_string, n->lvals.v[0]->type->cg_string);
       for (int i = 2; i < n->rvals.n; i++) fprintf(fp, "*");

@@ -1,5 +1,8 @@
 
 
+ called from 33 in __entryPoint at arithmetic_ops.chpl:33
+ called from 33 in __entryPoint at arithmetic_ops.chpl:33
+ called from 33 in __entryPoint at arithmetic_ops.chpl:33
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
@@ -9,8 +12,11 @@ answer = (m*n);
 answer = (m+n);
 answer = (m-n);
 answer = (o/m);
+function __entryPoint arithmetic_ops.chpl:33
 function __init arithmetic_ops.chpl:33
 function __init() {
+function __initIntPrelude arithmetic_ops.chpl:33
+function __initPrelude arithmetic_ops.chpl:33
 globals
 var answer: integer = 0;
 var m: integer = 5;

@@ -1,0 +1,27 @@
+
+
+
+
+ called from 20 in __init at noop.chpl:22
+ called from 22 in __entryPoint at noop.chpl:22
+ called from 22 in __entryPoint at noop.chpl:22
+ called from 22 in __entryPoint at noop.chpl:22
+::D(<unknown>:0) ( domain (<unknown>:0) )
+::false(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( index (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+;
+do ;while (false)
+foo();
+forall i in D ;
+function __entryPoint noop.chpl:22
+function __init noop.chpl:22
+function __init() {
+function __initIntPrelude noop.chpl:22
+function __initPrelude noop.chpl:22
+function foo noop.chpl:5
+function foo() ;
+globals
+var D: domain(1) = [1..3];
+while (false) ;
+}

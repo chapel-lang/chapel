@@ -3,11 +3,17 @@
 
 
  called from 1 in __init at usebeforedef.chpl:7
+ called from 7 in __entryPoint at usebeforedef.chpl:7
+ called from 7 in __entryPoint at usebeforedef.chpl:7
+ called from 7 in __entryPoint at usebeforedef.chpl:7
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 foo(5);
+function __entryPoint usebeforedef.chpl:7
 function __init usebeforedef.chpl:7
 function __init() {
+function __initIntPrelude usebeforedef.chpl:7
+function __initPrelude usebeforedef.chpl:7
 function foo usebeforedef.chpl:5
 function foo(inout a: integer) {
 globals

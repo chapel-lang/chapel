@@ -395,40 +395,83 @@ is_functional(IF1 *p, Code *code) {
 }
 
 static int
-mark_live(IF1 *p, Code *code) {
+mark_code_live(IF1 *p, Code *code, int &code_live) {
   int changed = 0;
+  if (code_live)
+    code->live = 1;
 
   switch (code->kind) {
     case Code_GOTO:
-      code->label[0]->live = 1;
-      break;
-    case Code_IF:
-      code->label[0]->live = 1;
-      code->label[1]->live = 1;
-      changed = mark_sym_live(code->rvals.v[0]) || changed;
-      break;
-    case Code_MOVE:
-      if (code->lvals.v[0]->live)
-	changed = mark_sym_live(code->rvals.v[0]) || changed;
-      break;
-    case Code_SEND:
-      if (!code->lvals.n || code->lvals.v[0]->live || !is_functional(p, code)) {
-	for (int i = 0; i < code->rvals.n; i++)
-	  changed = mark_sym_live(code->rvals.v[i]) || changed;
-	for (int i = 0; i < code->lvals.n; i++)
-	  changed = mark_sym_live(code->lvals.v[i]) || changed;
+      if (code_live) {
+	if (!code->label[0]->live) {
+	  code->label[0]->live = 1;
+	  changed = 1;
+	}
+	code_live = 0;
       }
       break;
+    case Code_IF:
+      if (code_live) {
+	if (!code->label[0]->live || !code->label[1]->live) {
+	  code->label[0]->live = 1;
+	  code->label[1]->live = 1;
+	  changed = 1;
+	}
+	code_live = 0;
+      }
+      break;
+    case Code_LABEL:
+      if (code->label[0]->live) {
+	code_live = 1;
+	code->live = 1;
+      }
+      break;
+    case Code_MOVE: break;
+    case Code_SEND: break;
     default:
       for (int i = 0; i < code->sub.n; i++)
-	changed = mark_live(p, code->sub.v[i]) || changed;
+	changed = mark_code_live(p, code->sub.v[i], code_live) || changed;
       break;
+  }
+  return changed;
+}
+
+static int
+mark_live(IF1 *p, Code *code) {
+  int changed = 0;
+
+  if (code->live) {
+    switch (code->kind) {
+      case Code_GOTO:
+	break;
+      case Code_IF:
+	changed = mark_sym_live(code->rvals.v[0]) || changed;
+	break;
+      case Code_MOVE:
+	if (code->lvals.v[0]->live)
+	  changed = mark_sym_live(code->rvals.v[0]) || changed;
+	break;
+      case Code_SEND:
+	if (!code->lvals.n || code->lvals.v[0]->live || !is_functional(p, code)) {
+	  for (int i = 0; i < code->rvals.n; i++)
+	    changed = mark_sym_live(code->rvals.v[i]) || changed;
+	  for (int i = 0; i < code->lvals.n; i++)
+	    changed = mark_sym_live(code->lvals.v[i]) || changed;
+	}
+	break;
+      default:
+	for (int i = 0; i < code->sub.n; i++)
+	  changed = mark_live(p, code->sub.v[i]) || changed;
+	break;
+    }
   }
   return changed;
 }
 
 static void
 mark_dead(IF1 *p, Code *code) {
+  if (!code->live)
+    code->dead = 1;
   switch (code->kind) {
     case Code_LABEL:
       if (!code->label[0]->live)
@@ -610,6 +653,11 @@ if1_simple_dead_code_elimination(IF1 *p) {
     for (int j = 0; j < p->allclosures.v[i]->has.n; j++)
       mark_sym_live(p->allclosures.v[i]->has.v[j]);
   }
+  for (int i = 0; i < p->allclosures.n; i++)
+    if (p->allclosures.v[i]->code) {
+      int code_live = 1;
+      while (mark_code_live(p, p->allclosures.v[i]->code, code_live));
+    }
   int again = 1;
   while (again) {
     again = 0;

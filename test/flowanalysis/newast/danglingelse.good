@@ -1,12 +1,18 @@
 
 
+ called from 29 in __entryPoint at danglingelse.chpl:29
+ called from 29 in __entryPoint at danglingelse.chpl:29
+ called from 29 in __entryPoint at danglingelse.chpl:29
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::b(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 a += 1;
 b += 1;
+function __entryPoint danglingelse.chpl:29
 function __init danglingelse.chpl:29
 function __init() {
+function __initIntPrelude danglingelse.chpl:29
+function __initPrelude danglingelse.chpl:29
 globals
 if (a) if (b) write("in case 1 for conditional 1..."); else write("in case 2 for conditional 1...");
 if (a) if (b) write("in case 1 for conditional 2"); else write("in case 2 for conditional 2"); else write("in case 3 for conditional 2");

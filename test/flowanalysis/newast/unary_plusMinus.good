@@ -1,5 +1,8 @@
 
 
+ called from 33 in __entryPoint at unary_plusMinus.chpl:33
+ called from 33 in __entryPoint at unary_plusMinus.chpl:33
+ called from 33 in __entryPoint at unary_plusMinus.chpl:33
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
@@ -8,8 +11,11 @@ answer = (+m);
 answer = (+n);
 answer = (-m);
 answer = (-n);
+function __entryPoint unary_plusMinus.chpl:33
 function __init unary_plusMinus.chpl:33
 function __init() {
+function __initIntPrelude unary_plusMinus.chpl:33
+function __initPrelude unary_plusMinus.chpl:33
 globals
 var answer: integer = 0;
 var m: integer = 3;

@@ -1275,7 +1275,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       case P_prim_vector:
 	prim_make_vector(p, es);
 	break;
-      case P_prim_index: {
+      case P_prim_index_object: {
 	AVar *vec = make_AVar(p->rvals.v[1], es);
 	Sym *index = p->rvals.v[2]->sym;
 	set_container(result, vec);

@@ -1,9 +1,15 @@
 
 
+ called from 4 in __entryPoint at var.chpl:4
+ called from 4 in __entryPoint at var.chpl:4
+ called from 4 in __entryPoint at var.chpl:4
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
+function __entryPoint var.chpl:4
 function __init var.chpl:4
 function __init() {
+function __initIntPrelude var.chpl:4
+function __initPrelude var.chpl:4
 globals
 var x: integer = 1;
 writeln(x);

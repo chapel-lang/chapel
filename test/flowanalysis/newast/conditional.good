@@ -1,5 +1,8 @@
 
 
+ called from 115 in __entryPoint at conditional.chpl:115
+ called from 115 in __entryPoint at conditional.chpl:115
+ called from 115 in __entryPoint at conditional.chpl:115
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::b(<unknown>:0) ( int64 (<unknown>:0) )
 ::c(<unknown>:0) ( int64 (<unknown>:0) )
@@ -9,8 +12,11 @@
 ::g(<unknown>:0) ( int64 (<unknown>:0) )
 ::h(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
+function __entryPoint conditional.chpl:115
 function __init conditional.chpl:115
 function __init() {
+function __initIntPrelude conditional.chpl:115
+function __initPrelude conditional.chpl:115
 globals
 if ((!a)) {
 if ((!b)) {

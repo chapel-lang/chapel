@@ -279,6 +279,7 @@ compile_one(char *fn) {
       stmts.add(internalPreludeStmts);
       stmts.add(preludeStmts);
       stmts.add(programStmts);
+      stmts.add(entryPoint);
       AST_to_IF1(stmts);
       do_analysis(fn);
     }

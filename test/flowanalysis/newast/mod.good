@@ -1,5 +1,8 @@
 
 
+ called from 21 in __entryPoint at mod.chpl:21
+ called from 21 in __entryPoint at mod.chpl:21
+ called from 21 in __entryPoint at mod.chpl:21
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
@@ -7,8 +10,11 @@
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
 answer = (m%n);
 answer = (o%m);
+function __entryPoint mod.chpl:21
 function __init mod.chpl:21
 function __init() {
+function __initIntPrelude mod.chpl:21
+function __initPrelude mod.chpl:21
 globals
 var answer: integer = 0;
 var m: integer = 5;

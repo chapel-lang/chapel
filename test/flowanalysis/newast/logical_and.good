@@ -1,12 +1,18 @@
 
 
+ called from 13 in __entryPoint at logical_and.chpl:13
+ called from 13 in __entryPoint at logical_and.chpl:13
+ called from 13 in __entryPoint at logical_and.chpl:13
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = (o&&o);
 answer = (o&&p);
 answer = (p&&p);
+function __entryPoint logical_and.chpl:13
 function __init logical_and.chpl:13
 function __init() {
+function __initIntPrelude logical_and.chpl:13
+function __initPrelude logical_and.chpl:13
 globals
 var answer: integer = 0;
 var o: integer = 0;

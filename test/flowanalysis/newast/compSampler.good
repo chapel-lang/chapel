@@ -1,5 +1,8 @@
 
 
+ called from 35 in __entryPoint at compSampler.chpl:35
+ called from 35 in __entryPoint at compSampler.chpl:35
+ called from 35 in __entryPoint at compSampler.chpl:35
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = ((m%n)+o);
@@ -13,8 +16,11 @@ answer = 0;
 answer = 0;
 answer = 0;
 answer = 0;
+function __entryPoint compSampler.chpl:35
 function __init compSampler.chpl:35
 function __init() {
+function __initIntPrelude compSampler.chpl:35
+function __initPrelude compSampler.chpl:35
 globals
 if ((answer!=0)) writeln("**ERROR** =>  m + n - o");
 if ((answer!=2)) writeln("**ERROR** =>  m + n / o");

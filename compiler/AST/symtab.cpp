@@ -555,7 +555,7 @@ ClassSymbol* Symboltable::startClassDef(char* name, ClassSymbol* parent) {
 
 TypeDefStmt* Symboltable::finishClassDef(ClassSymbol* classSym, 
 					 Stmt* definition) {
-  SymScope* classScope = Symboltable::popScope();
+  SymScope *classScope = Symboltable::popScope();
 
   ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
   classType->addScope(classScope);

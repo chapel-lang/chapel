@@ -570,7 +570,8 @@ define_types(IF1 *i, ParseAST *ast, Vec<ParseAST *> &funs, Scope *scope, int ski
 	  ast->sym = new_sym(i, scope, ast->get(AST_ident)->string, ast->sym);
 	  ast->sym->ast = ast;
 	} else {
-	  assert(!ast->sym);
+	  if (ast->sym) 
+	    return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
 	  ast->sym = sym;
 	}
 	if (ast->sym->type_kind == Type_NONE || ast->sym->type_kind == Type_UNKNOWN) {

@@ -1,10 +1,16 @@
 
 
+ called from 5 in __entryPoint at pareninit.chpl:5
+ called from 5 in __entryPoint at pareninit.chpl:5
+ called from 5 in __entryPoint at pareninit.chpl:5
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::y(<unknown>:0) ( int64 (<unknown>:0) )
+function __entryPoint pareninit.chpl:5
 function __init pareninit.chpl:5
 function __init() {
+function __initIntPrelude pareninit.chpl:5
+function __initPrelude pareninit.chpl:5
 globals
 var x: integer = 2;
 var y: integer = (3*(x+2));

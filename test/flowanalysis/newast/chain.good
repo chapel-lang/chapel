@@ -6,6 +6,9 @@
 
  called from 10 in __init at chain.chpl:13
  called from 11 in __init at chain.chpl:13
+ called from 13 in __entryPoint at chain.chpl:13
+ called from 13 in __entryPoint at chain.chpl:13
+ called from 13 in __entryPoint at chain.chpl:13
  called from 3 in foo at chain.chpl:4
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
@@ -13,8 +16,11 @@
 bar(5);
 bar(7);
 foo(3);
+function __entryPoint chain.chpl:13
 function __init chain.chpl:13
 function __init() {
+function __initIntPrelude chain.chpl:13
+function __initPrelude chain.chpl:13
 function bar chain.chpl:8
 function bar(inout a: integer) {
 function foo chain.chpl:4

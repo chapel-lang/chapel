@@ -1,5 +1,8 @@
 
 
+ called from 25 in __entryPoint at shift_ops.chpl:25
+ called from 25 in __entryPoint at shift_ops.chpl:25
+ called from 25 in __entryPoint at shift_ops.chpl:25
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
@@ -7,8 +10,11 @@
 answer = (m<<1);
 answer = (m>>1);
 answer = (n>>1);
+function __entryPoint shift_ops.chpl:25
 function __init shift_ops.chpl:25
 function __init() {
+function __initIntPrelude shift_ops.chpl:25
+function __initPrelude shift_ops.chpl:25
 globals
 var answer: integer = 0;
 var m: integer = 10;

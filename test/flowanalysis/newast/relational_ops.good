@@ -1,5 +1,8 @@
 
 
+ called from 59 in __entryPoint at relational_ops.chpl:59
+ called from 59 in __entryPoint at relational_ops.chpl:59
+ called from 59 in __entryPoint at relational_ops.chpl:59
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
@@ -14,8 +17,11 @@ answer = (m>=p);
 answer = (m>n);
 answer = (m>p);
 answer = (o>=m);
+function __entryPoint relational_ops.chpl:59
 function __init relational_ops.chpl:59
 function __init() {
+function __initIntPrelude relational_ops.chpl:59
+function __initPrelude relational_ops.chpl:59
 globals
 var answer: integer = 0;
 var m: integer = 5;

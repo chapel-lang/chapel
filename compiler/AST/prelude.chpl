@@ -41,3 +41,4 @@ class maxloc : reduction {
 
 class minloc : reduction {
 }
+
