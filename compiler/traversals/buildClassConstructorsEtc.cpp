@@ -109,41 +109,50 @@ static void build_union_id_enum(ClassType* class_type) {
 }
 
 
-static void build_record_equality_testing_functions(ClassType* class_type) {
+static void build_record_equality_function(ClassType* class_type) {
   if (!class_type->value) {
     return;
   }
 
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("=="));
-  {
-    ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", class_type);
-    ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", class_type);
-    arg1->append(arg2);
-    Expr* cond = NULL;
-    forv_Vec(VarSymbol, tmp, class_type->fields) {
-      Expr* left = new MemberAccess(new Variable(arg1), tmp);
-      Expr* right = new MemberAccess(new Variable(arg2), tmp);
-      cond = (cond)
-	? new BinOp(BINOP_LOGAND, cond, new BinOp(BINOP_EQUAL, left, right))
-	: new BinOp(BINOP_EQUAL, left, right);
-    }
-    Stmt* body = new ReturnStmt(cond);
-    DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
-    dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
+  ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", class_type);
+  ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", class_type);
+  arg1->append(arg2);
+  Expr* cond = NULL;
+  forv_Vec(VarSymbol, tmp, class_type->fields) {
+    Expr* left = new MemberAccess(new Variable(arg1), tmp);
+    Expr* right = new MemberAccess(new Variable(arg2), tmp);
+    cond = (cond)
+      ? new BinOp(BINOP_LOGAND, cond, new BinOp(BINOP_EQUAL, left, right))
+      : new BinOp(BINOP_EQUAL, left, right);
+  }
+  Stmt* body = new ReturnStmt(cond);
+  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
+  dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
+}
+
+
+static void build_record_inequality_function(ClassType* class_type) {
+  if (!class_type->value) {
+    return;
   }
 
-  FnSymbol* fn2 = Symboltable::startFnDef(new FnSymbol("!="));
-  {
-    ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "__arg1", class_type);
-    ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "__arg2", class_type);
-    arg1->append(arg2);
-    Expr* actuals = new Variable(arg1);
-    actuals->append(new Variable(arg2));
-    Expr* call_equal = new FnCall(new Variable(fn), actuals);
-    Stmt* body = new ReturnStmt(new UnOp(UNOP_LOGNOT, call_equal));
-    DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn2, arg1, dtBoolean, body));
-    dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
+  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("!="));
+
+  ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", class_type);
+  ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", class_type);
+  arg1->append(arg2);
+  Expr* cond = NULL;
+  forv_Vec(VarSymbol, tmp, class_type->fields) {
+    Expr* left = new MemberAccess(new Variable(arg1), tmp);
+    Expr* right = new MemberAccess(new Variable(arg2), tmp);
+    cond = (cond)
+      ? new BinOp(BINOP_LOGOR, cond, new BinOp(BINOP_EQUAL, left, right))
+      : new BinOp(BINOP_NEQUAL, left, right);
   }
+  Stmt* body = new ReturnStmt(cond);
+  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
+  dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
 }
 
 
@@ -163,7 +172,8 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(type_symbol->type)) {
       build_constructor(class_type);
       build_union_id_enum(class_type);
-      build_record_equality_testing_functions(class_type);
+      build_record_equality_function(class_type);
+      build_record_inequality_function(class_type);
     }
   }
 }
