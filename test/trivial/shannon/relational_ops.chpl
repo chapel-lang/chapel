@@ -1,50 +1,58 @@
 var m = 5;
 var n = 2;
 var o = 30;
+var p = 5;
 var answer = 0;
 
-write("m = ");
-write(m);
-write("\n");
-write("n = ");
-write(n);
-write("\n");
-write("o = ");
-write(o);
-write("\n\n");
+writeln("m = ", m);
+writeln("n = ", n);
+writeln("o = ", o);
+writeln("p = ", p);
+writeln("");
 
-write("test: m > n"); 
-write("\n");
-write("expected answer = 1");
-write("\n");
+writeln("test: m > n"); 
+writeln("expected answer = 1");
 answer = m > n;
-write("actual answer = ");
-write(answer);
-write("\n\n");
+writeln("actual answer = ", answer);
+writeln("");
 
-write("test: o >= m");
-write("\n");
-write("expected answer = 1");
-write("\n");
+writeln("test: m > p");  
+writeln("expected answer = 0");
+answer = m > p; 
+writeln("actual answer = ", answer);
+writeln("");
+
+writeln("test: o >= m");
+writeln("expected answer = 1");
 answer = o >= m;
-write("actual answer = ");
-write(answer);
-write("\n\n");
+writeln("actual answer = ", answer);
+writeln("");
 
-write("test: m < n"); 
-write("\n");
-write("expected answer = 0");
-write("\n");
+writeln("test: m >= p");
+writeln("expected answer = 1");
+answer = m >= p;
+writeln("actual answer = ", answer);
+writeln("");
+
+writeln("test: m < n"); 
+writeln("expected answer = 0");
 answer = m < n;
-write("actual answer = ");
-write(answer);
-write("\n\n");
+writeln("actual answer = ", answer);
+writeln("");
 
-write("test: m <= n"); 
-write("\n");
-write("expected answer = 0");
-write("\n");
+writeln("test: m < p");    
+writeln("expected answer = 0");
+answer = m < p;
+writeln("actual answer = ", answer);
+writeln("");
+
+writeln("test: m <= n"); 
+writeln("expected answer = 0");
 answer = m <= n;
-write("actual answer = ");
-write(answer);
-write("\n\n");
+writeln("actual answer = ", answer);
+writeln("");
+
+writeln("test: m <= p");  
+writeln("expected answer = 1");
+answer = m <= n;
+writeln("actual answer = ", answer);

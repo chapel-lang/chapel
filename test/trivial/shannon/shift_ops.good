@@ -1,0 +1,14 @@
+m = 10
+n = 5
+
+test: m << 1
+expected answer = 20
+actual answer = 20
+
+test: m >> 1
+expected answer = 5
+actual answer = 5
+
+test: n >> 1
+expected answer = 2
+actual answer = 2
