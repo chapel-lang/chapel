@@ -4465,3 +4465,28 @@ Modified files:
 	chapel/compiler/: code.h fa.cpp fa.h fun.cpp fun.h if1.cpp 
 	                  pnode.cpp pnode.h var.cpp var.h 
 
+---------------------------------------------------------------------------
+
+07/28/04 16:21:08 -- bradc
+
+Log message:
+	Broke code generation of variables into two steps: the
+	C declaration of the variable, and the initialization
+	of the variable.  This is in part because C's variable
+	declarations still need to be at the top of the scope,
+	and in part because not all legal Chapel initializations
+	are legal C initializations (as a TODO, noted in stmt.cpp,
+	those variables that could be handled using C declarations
+	+ initializations could be handled in this way down the
+	road...).  Also moved VarDefStmts in the global scope into
+	the __init() procedure, and hoisted the definition of the
+	variable into the generated internal header file.  Updated
+	the protoast tests to reflect this change.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: TODO stmt.cpp stmt.h 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+
