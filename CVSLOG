@@ -14275,3 +14275,16 @@ Modified files:
 	chapel/compiler/include/: analysis.h sym.h 
 	chapel/compiler/vparser/: parse_ast.cpp 
 
+---------------------------------------------------------------------------
+
+01/10/05 19:02:35 -- jplevyak
+
+Log message:
+	Fixed a bug with whereby analysis of enumerations was splitting
+	for each enumeration element instead of folding them together.
+	This fixes the regression on enumarray.chpl
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/test/flowanalysis/newast/: enum.good enumarray.good 
+
