@@ -6510,3 +6510,15 @@ Added files:
 	chapel/compiler/AST/: internal_prelude.chpl 
 	chapel/test/flowanalysis/newast/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+09/03/04 14:28:08 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added support for EXPR_MEMBERACCESS.
+	Print out functions in the AST in verbose mode.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+	chapel/compiler/AST/: expr.cpp expr.h 
+
