@@ -1,4 +1,3 @@
-
 CHAPEL_ROOT = ../..
 include $(CHAPEL_ROOT)/make/Makefile.base
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.macros
@@ -13,6 +12,7 @@ CHPL_RT_SRCS = \
 	arg.c \
 	array.c \
 	chplio.c \
+	chplmem.c \
 	chpltypes.c \
 	config.c \
 	domain.c \

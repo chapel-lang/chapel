@@ -2,6 +2,8 @@
 #include <string.h>
 #include "chplio.h"
 #include "domain.h"
+#include "chplrt.h"
+
 
 char* _default_format_write_float64  = "%g";   // double
 

@@ -1,6 +1,7 @@
 #ifndef _stdchpl_H_
 #define _stdchpl_H_
 
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +10,8 @@
 #include "array.h"
 #include "config.h"
 #include "chplio.h"
+#include "chplmem.h"
+#include "chplrt.h"
 #include "chpltypes.h"
 #include "domain.h"
 #include "forall.h"

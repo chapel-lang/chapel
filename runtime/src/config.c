@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "chplio.h"
+#include "chplmem.h"
 #include "config.h"
+#include "chplrt.h"
 
 #define HASHSIZE 101
 
@@ -163,17 +165,9 @@ char* lookupSetValue(char* varName, char* moduleName) {
 
 int installConfigVar(char* varName, char* value, char* moduleName) {
   unsigned hashValue;
-  /* Note:  If we replace malloc with a zeroing version, all these NULL
-     initializations are unnecessary.
-  */
-  configVarType* configVar = (configVarType*) malloc(sizeof(configVarType));
-  configVar->varName       = NULL;
-  configVar->moduleName    = NULL;
-  configVar->defaultValue  = NULL;
-  configVar->setValue      = NULL;
-  configVar->nextInBucket    = NULL;
-  configVar->nextInstalled = NULL;
-  
+  configVarType* configVar = (configVarType*) 
+    _chpl_calloc(1, sizeof(configVarType), "configVarType");
+
   hashValue = hash(varName);
   configVar->nextInBucket = configVarTable[hashValue]; 
   configVarTable[hashValue] = configVar;

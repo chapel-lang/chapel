@@ -4,7 +4,7 @@
 #include "arg.h"
 #include "chplio.h"
 #include "config.h"
-
+#include "chplrt.h"
 
 
 static void parseModVarName(char* modVarName, char** moduleName, 

@@ -827,13 +827,14 @@ void ClassType::buildConstructor(void) {
       constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
     }
     else {
+      Expr* argList = new SizeofExpr(this);
       BlockStmt* body = new BlockStmt(
 			  new ReturnStmt(
 			    new CastExpr(this, 
 			      new FnCall(
 			        new Variable(
 				  Symboltable::lookupInternal("malloc")), 
-			        new SizeofExpr(this)))
+				argList))
 			    )
 			  );
       constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);

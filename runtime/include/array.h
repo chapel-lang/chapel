@@ -1,8 +1,10 @@
 #ifndef _array_H_
 #define _array_H_
 
+#include "chplmem.h"
 #include "chpltypes.h" // only needed while _DECL_ARRAY is instantiated here
 #include "domain.h"
+
 
 typedef struct __arr_perdim {
   int off;
@@ -25,10 +27,7 @@ typedef struct __arr_perdim {
     arr.size = arr.dim_info[0].blk \
       * ((dom.dim_info[d+1].hi - dom.dim_info[d+1].lo + 1) \
 	 / dom.dim_info[d+1].str); \
-    arr.base = (elemtype*)malloc(arr.size * sizeof(elemtype)); \
-    if (arr.base == NULL) { \
-      fprintf(stderr, "ERROR: out of memory"); \
-    } \
+    arr.base = (elemtype*)_chpl_malloc(arr.size, sizeof(elemtype), "array"); \
   }
 
 #define _ACC1(arr, i0) \

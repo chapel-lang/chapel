@@ -1,4 +1,5 @@
 #include "arg.h"
+#include "chplrt.h"
 
 extern void _chpl_main(void);
 extern void CreateConfigVarTable(void);
