@@ -15408,3 +15408,21 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_var_decl4.future 
 
+---------------------------------------------------------------------------
+
+01/24/05 11:57:19 -- jplevyak
+
+Log message:
+	These two are now deitz/jplevyak since they require that cloning
+	of types not clone all the member functions of the type, just
+	the type proper.  If you uncomment #define CLONE 1 in clone.cpp
+	it will make the call and then crash if the member functions are
+	cloned.  If we need to change the interface or make a new call
+	we need to decided what it is and implement it.  That is why
+	I have assigned it to deitz/jplevyak.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1.future 
+	                                         test_clone_class2.future 
+
