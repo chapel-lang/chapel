@@ -15384,3 +15384,13 @@ Removed files:
 	                                 intent-3.future intent-4.future 
 	                                 intent-9.future 
 
+---------------------------------------------------------------------------
+
+01/24/05 11:17:38 -- jplevyak
+
+Log message:
+	bug in cast of FnDefStmt
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
