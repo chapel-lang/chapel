@@ -15032,3 +15032,33 @@ Modified files:
 	                                  formatoutput.good 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+01/19/05 17:21:09 -- bradc
+
+Log message:
+	With John's help, made functions whose return
+	types are undeclared work properly (to the
+	extent that they've been tested).  All FnSymbols
+	now have a retType field which indicates their
+	return type, or dtUnknown if the user didn't
+	specify one.  After analysis is run, it is
+	queried for all functions whose retType is
+	dtUnknown to fill in their return types.  This
+	complements our ability to elide parameter
+	types nicely and is an important step to
+	getting the remaining intent tests working.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: cleanup.cpp findUnknownTypes.cpp 
+	                             findUnknownTypes.h 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+Added files:
+	chapel/test/functions/bradc/: inferReturn.chpl 
+	                              inferReturn.future 
+	                              inferReturn.good 
+
