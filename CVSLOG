@@ -23412,3 +23412,17 @@ Log message:
 Removed files:
 	chapel/test/functions/bradc/: intents-classes4.future 
 
+---------------------------------------------------------------------------
+
+04/01/05 18:22:15 -- bradc
+
+Log message:
+	It seems that these Makefiles' clean and clobber
+	commands weren't really written very well,
+	which explains why Roxana's clobbers never
+	cleaned up as much as expected.
+
+Modified files:
+	chapel/third-party/boehmgc/: Makefile 
+	chapel/third-party/dparser/: Makefile 
+
