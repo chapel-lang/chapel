@@ -21276,3 +21276,73 @@ Added files:
 	                            test_class_list1.future 
 	                            test_class_list1.good 
 
+---------------------------------------------------------------------------
+
+03/24/05 14:12:20 -- deitz
+
+Log message:
+	Added initial support for sequences (literal sequence expressions and
+	cruftily printing sequences).  Added new Expr subclass SeqExpr and new
+	Type subclass SeqType which are sequence literals and sequence types
+	respectively.
+	
+	SeqType is a subclass of ClassType.  This allows us to implement it as
+	a class.  The strategy for sequences is to create it as a class and to
+	create a node class.  This is implemented using linked lists at the
+	AST level.  Note that once class cloning and class type variables are
+	working we may be able to leverage that for our sequence
+	implementation too.
+	
+	Added a new traversal expandSeqExprAssignments that expands
+	assignments of literal sequences into multiple append lines.  Append
+	is currently a runtime function but will eventually be a method in the
+	AST of SeqType.
+	
+	Initialization of SeqTypes works the same as any ClassType by using
+	the constructor.  The defaultVal for SeqTypes is a call to the
+	constructor not nil.  However, the defaultVal for the node's class is
+	still nil.
+	
+	Added new future to test parsing 'seq(integer)' in addition to 'seq of
+	integer'.
+	
+	Added new sub-directory to my seq tests called noanalysis which uses
+	the --noanalysis flag.  These tests now work without analysis so I'm
+	putting this there so I can maintain them until they work with
+	analysis.
+	
+	Plugged CommonModule with a stopgap measure to not print out static in
+	front of its functions during codegen because these can be used in
+	other modules.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h symscope.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	                         internal_prelude.chpl 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             buildClassConstructorsEtc.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertVariableInitializations.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             verifyASTType.cpp 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/test/types/seq/deitz/: test_seq3.chpl test_seq4.chpl 
+	                              test_seq5.chpl test_seq6.chpl 
+	                              test_seq7.chpl 
+Added files:
+	chapel/compiler/traversals/: expandSeqExprAssignments.cpp 
+	                             expandSeqExprAssignments.h 
+	chapel/runtime/include/: seq.h 
+	chapel/test/types/seq/deitz/: test_seq1a.chpl test_seq1a.future 
+	                              test_seq1a.good 
+	chapel/test/types/seq/deitz/noanalysis/: COMPOPTS test_seq1.chpl 
+	                                         test_seq1.good 
+	                                         test_seq1a.chpl 
+	                                         test_seq1a.good 
+	                                         test_seq2.chpl 
+	                                         test_seq2.good 
+
