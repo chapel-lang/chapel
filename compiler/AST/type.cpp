@@ -665,7 +665,9 @@ SeqType::SeqType(Type* init_elementType,
   ClassType(false, false),
   elementType(init_elementType),
   nodeType(init_nodeType)
-{}
+{
+  astType = TYPE_SEQ;
+}
 
 
 Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1020,7 +1022,7 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
                      Stmt* init_constructor,
                      SymScope* init_classScope) :
   Type(TYPE_CLASS, ((isValueClass || isUnion) ? 
-                    NULL : // BLC: needs to eventually change
+                    NULL : // SJD: Set to be constructor when that is built
                     new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))),
   value(isValueClass),
   union_value(isUnion),

@@ -294,7 +294,7 @@ bool VarSymbol::isConst(void) {
 
 //Roxana
 bool VarSymbol::isParam(void){
-        return (consClass == VAR_PARAM);
+  return (consClass == VAR_PARAM);
 }
 
 void VarSymbol::codegenDef(FILE* outfile) {
@@ -557,17 +557,6 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 
 
 Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-//   if (clone) {
-//     FnSymbol* fn_copy = new FnSymbol(name);
-//     Symboltable::pushScope(SCOPE_PARAM);
-//     Symbol* newformals = formals->copyList(clone, map, analysis_clone);
-//     SymScope* paramScope = Symboltable::popScope();
-//     fn_copy->finishDef(newformals, type, body, paramScope, exportMe);
-//     return fn_copy;
-//   }
-//   else {
-//     return new FnSymbol(name);
-//   }
   return new FnSymbol(name, classBinding);
 }
 
@@ -587,20 +576,6 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
     Symboltable::setCurrentScope(saveScope);
   }
 }
-
-
-// FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
-//   static int uid = 1; // Unique ID for cloned functions
-//   FnSymbol* this_copy;
-//   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
-//   if (!(this_copy = dynamic_cast<FnSymbol*>(copy(true, map, clone_callback)))) {
-//     INT_FATAL(this, "Major error in FnSymbol::clone");
-//   }
-//   this_copy->cname = 
-//     glomstrings(3, this_copy->cname, "_clone_", intstring(uid++));
-//   Symboltable::setCurrentScope(save_scope);
-//   return this_copy;
-// }
 
 
 FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {

@@ -5,7 +5,6 @@
 
 class BuildClassConstructorsEtc : public Traversal {
  public:
-  BuildClassConstructorsEtc(void);
   void postProcessExpr(Expr* expr);
 };
 

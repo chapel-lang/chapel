@@ -81,6 +81,7 @@ static void verifyASTType(BaseAST* ast) {
     if (typeid(*ast) != typeid(BoolLiteral)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_BOOLLITERAL");
     }
+    break;
   case EXPR_INTLITERAL:
     if (typeid(*ast) != typeid(IntLiteral)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_INTLITERAL");
@@ -95,6 +96,7 @@ static void verifyASTType(BaseAST* ast) {
     if (typeid(*ast) != typeid(ComplexLiteral)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_COMPLEXLITERAL");
     }
+    break;
   case EXPR_STRINGLITERAL:
     if (typeid(*ast) != typeid(StringLiteral)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_STRINGLITERAL");
@@ -174,6 +176,7 @@ static void verifyASTType(BaseAST* ast) {
     if (typeid(*ast) != typeid(SizeofExpr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_SIZEOF");
     }
+    break;
   case EXPR_CAST:
     if (typeid(*ast) != typeid(CastExpr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_CAST");
@@ -203,6 +206,7 @@ static void verifyASTType(BaseAST* ast) {
     if (typeid(*ast) != typeid(MemberAccess)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_MEMBERACCESS");
     }
+    break;
   case EXPR_REDUCE:
     if (typeid(*ast) != typeid(ReduceExpr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_REDUCE");

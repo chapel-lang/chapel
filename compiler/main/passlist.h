@@ -20,6 +20,7 @@ PassInfo passlist[] = {
   RUN(FilesToAST, ""),
   RUN(CreateEntryPoint, ""),
   RUN(Fixup, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
 
   // passes to normalize the basic AST
   RUN(ExpandClassWiths, ""),
@@ -28,9 +29,7 @@ PassInfo passlist[] = {
   RUN(RenameOverloadedFunctions, ""),
   RUN(InsertAnonymousDomains, ""),
   RUN(InsertAnonymousTypes, ""),
-  RUN(Fixup, "verify"),
   RUN(InsertIndexType, ""),
-  RUN(Fixup, "verify"),
   RUN(BuildClassConstructorsEtc, ""),
   RUN(SpecializeParenOpExprs, ""),
   RUN(ApplyThisParameters, ""),
@@ -40,6 +39,7 @@ PassInfo passlist[] = {
 
   // passes to collect information for analysis
   RUN(Fixup, "verify"), // this is a sanity check
+  RUN(VerifyASTType, ""),
   RUN(ComputeVisibleFunctions, ""),
 
   // passes to run analysis

@@ -18,7 +18,7 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
           USR_FATAL(expr, "Invalid class constructor");
         }
         DefStmt* constructor = dynamic_cast<DefStmt*>(ctype->constructor);
-        FnSymbol* fn;
+        FnSymbol* fn = NULL;
         if (constructor) {
           fn = constructor->fnDef();
         }

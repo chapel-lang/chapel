@@ -215,11 +215,6 @@ static void build_tuple_assignment_function(TupleType* tuple_type) {
 }
 
 
-BuildClassConstructorsEtc::BuildClassConstructorsEtc(void) {
-  whichModules = MODULES_COMMON_AND_USER;
-}
-
-
 void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
   DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
 
