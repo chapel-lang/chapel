@@ -24139,3 +24139,17 @@ Modified files:
 	                             processParameters.cpp 
 	                             removeNamedParameters.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/05 15:35:32 -- bradc
+
+Log message:
+	Added a test that shows that function call intents
+	break in code generation when we return a
+	function call immediately.
+
+Added files:
+	chapel/test/functions/bradc/: returnFnCallIntents.chpl 
+	                              returnFnCallIntents.future 
+	                              returnFnCallIntents.good 
+
