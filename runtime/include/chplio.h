@@ -9,15 +9,15 @@
 #define _default_format_write_boolean     "%s"
 #define _default_format_read_boolean      "%s"
 
-#define _default_format_read_integer64    "%lld" // long long int
-#define _default_format_write_integer64   "%lld" // long long int
+#define _default_format_read_integer64    "%lld" /* long long int */
+#define _default_format_write_integer64   "%lld" /* long long int */
 
-#define _default_format_read_float32      "%g"   // float
-#define _default_format_write_float32     "%g"   // double
-#define _default_format_read_float64      "%lg"  // double
-extern char* _default_format_write_float64; //     "%g"   // double
-#define _default_format_read_float128     "%llg" // long double
-#define _default_format_write_float128    "%Lg"  // long double 
+#define _default_format_read_float32      "%g"   /* float */
+#define _default_format_write_float32     "%g"   /* double */
+#define _default_format_read_float64      "%lg"  /* double */
+extern char* _default_format_write_float64; /*     "%g"   / * double */
+#define _default_format_read_float128     "%llg" /* long double */
+#define _default_format_write_float128    "%Lg"  /* long double */
 
 #define _default_format_read_complex128   "%lg  +  %lg%c"
 #define _default_format_write_complex128  "%g + %gi"

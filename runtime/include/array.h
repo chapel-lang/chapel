@@ -2,7 +2,7 @@
 #define _array_H_
 
 #include "chplmem.h"
-#include "chpltypes.h" // only needed while _DECL_ARRAY is instantiated here
+#include "chpltypes.h" /* only needed while _DECL_ARRAY is instantiated here */
 #include "domain.h"
 
 
