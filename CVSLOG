@@ -18230,3 +18230,30 @@ Modified files:
 	                          sym.h type.h 
 	chapel/compiler/parser/: chapel.lex chapel.y 
 
+---------------------------------------------------------------------------
+
+02/28/05 11:46:48 -- jplevyak
+
+Log message:
+	Fixed the union type hierarchy tests and added a new error test
+	for bad structural typing.
+	Added a new test for sum types which is currently failing
+	(invisibly) because of the way "with" variables are inserted.
+	Added a new (future) test for type variable constraints which
+	failes because inheritance is not yet implemented.
+
+Modified files:
+	chapel/test/classes/jplevyak/: union_type_hierarchy-1.chpl 
+	                               union_type_hierarchy-2.chpl 
+Added files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.chpl 
+	                               record_type_hierarchy-3-error.good 
+	                               sum_type-1.chpl sum_type-1.good 
+	                               union_type_hierarchy-3-error.chpl 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            typevar_constraint-1.chpl 
+	                                            typevar_constraint-1.future 
+	                                            typevar_constraint-1.good 
+
