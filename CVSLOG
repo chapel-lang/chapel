@@ -23273,3 +23273,27 @@ Modified files:
 Removed files:
 	chapel/test/domains/roxana/: test_index_expr1.future 
 
+---------------------------------------------------------------------------
+
+04/01/05 16:50:19 -- deitz
+
+Log message:
+	Added overloaded = for records.
+	
+	As a stopgap until VarInitExpr is working well, I fixed how
+	constructors are made so that an assignment to a string is done with
+	the _init_string function rather than assignment.  As a stopgap to
+	this, I added a bail-out in ProcessParameters if the function is
+	called _init_string.  This let me move on with the test I was writing
+	and should fix the regression we've been seeing.
+	
+	Added a test case for record assignment that is working even though
+	the overloaded = is not firing.  This is because C does it for us.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             processParameters.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_record_assign1.chpl 
+	                            test_record_assign1.good 
+
