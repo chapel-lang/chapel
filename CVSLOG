@@ -5364,3 +5364,31 @@ Modified files:
 	                                    dispatch2.good 
 	                                    dispatch3.good 
 
+---------------------------------------------------------------------------
+
+08/16/04 16:14:46 -- bradc
+
+Log message:
+	* got first multidimensional domain/array code compiling through the
+	compiler correctly.  There are currently things specialized that
+	should be generalized in the runtime -- in particular, the definition
+	of array descriptors and their supporting routines for initialization
+	and output -- but this is a start.
+	
+	* fixed codegen for octal literals -- we currently don't have a notion
+	of octal literals in Chapel, so care has to be taken when generating
+	such literals in our C code so that the C compiler doesn't interpret
+	them as such.
+	
+	* added tests to lock in this behavior
+
+Modified files:
+	chapel/compiler/: .cvsignore 
+	chapel/compiler/AST/: TODO expr.cpp expr.h stmt.cpp 
+	chapel/runtime/include/: array.h chplio.h 
+	chapel/runtime/src/: array.c chplio.c 
+Added files:
+	chapel/test/trivial/bradc/: octalliteral.chpl octalliteral.good 
+	chapel/test/trivial/bradc/domarr/: .cvsignore domarr.chpl 
+	                                   domarr.good 
+
