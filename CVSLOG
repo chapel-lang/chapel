@@ -18444,3 +18444,23 @@ Log message:
 Added files:
 	chapel/test/classes/jplevyak/: sum_type-1.future 
 
+---------------------------------------------------------------------------
+
+03/01/05 11:50:20 -- deitz
+
+Log message:
+	Initial implementation of default_wrapper for functions that are
+	called without parameters that have default values.  This function is
+	called from analysis.  There is now a problem later on in the
+	defaultParam test case.
+	
+	Fixed a bug in copying ParamSymbols.  The init expression was lost
+	prior to this fix.
+	
+	Simplified resolution of MemberAccesses while we work in the new
+	interface.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+
