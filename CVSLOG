@@ -267,3 +267,19 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/d/: parse.c 
 
+---------------------------------------------------------------------------
+
+04/02/03 15:11:32 -- bradc
+
+Log message:
+	Just inserted scripts to update BUILDNUM and CVSLOG files
+	in the root chapel/ directory automatically, and inserted
+	these files manually.  Just added a header to the top of
+	CVSLOG requesting that people not change it manually
+	(though it is possible to do so, to commit those changes,
+	and then to have the script automatically tack your log to
+	the end of those changes, as will happen with this entry.
+
+Modified files:
+	./: CVSLOG 
+
