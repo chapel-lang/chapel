@@ -18365,3 +18365,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/28/05 17:06:22 -- jplevyak
+
+Log message:
+	Stupid bug, forgot to update backpointer.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
