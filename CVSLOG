@@ -21096,3 +21096,28 @@ Added files:
 	                                test_tuple_of_tuples.future 
 	                                test_tuple_of_tuples.good 
 
+---------------------------------------------------------------------------
+
+03/23/05 14:18:26 -- bradc
+
+Log message:
+	Updating a future that isn't working due
+	to lack of support for array parameters
+	that specify an anonymous domain.  This
+	isn't at all a priority to fix, but I
+	wanted to keep track of why its failing.
+	
+	Wrote a new version of the test that
+	tests what this test was really meant
+	to test -- which is: what happens when
+	one main function is provided but it
+	takes arguments (answer: it is not
+	treated as the entry point).
+
+Modified files:
+	chapel/test/trivial/bradc/entrypoint/: wrongmain.chpl 
+	                                       wrongmain.future 
+Added files:
+	chapel/test/trivial/bradc/entrypoint/: wrongmain2.chpl 
+	                                       wrongmain2.good 
+
