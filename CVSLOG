@@ -22627,3 +22627,22 @@ Modified files:
 Added files:
 	chapel/compiler/include/: chplenum.h 
 
+---------------------------------------------------------------------------
+
+03/30/05 11:54:46 -- bradc
+
+Log message:
+	Improved the passlist concept so that passes are
+	created (i.e., their constructors are called)
+	right when they are about to be executed rather
+	than at program startup time, as they had been
+	previously.  There wasn't any particularly good
+	reason to do it the old way except that it was
+	simpler to implement at the time.  Since then,
+	things have evolved such that the new way is
+	just as easy, not to mention far more natural
+	and logical.
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+
