@@ -2,5 +2,5 @@ identifier
 identifierX
 identifier
 do identifier
-24 states 6 scans 5 shifts 17 reductions 0 compares 0 ambiguities
+32 states 8 scans 8 shifts 23 reductions 1 compares 0 ambiguities
 ( dont  formulaX  formula ( do  form ))

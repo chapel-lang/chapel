@@ -1237,12 +1237,16 @@ shift_all(Parser *p, char *pos) {
     if (!r->shift)
       continue;
     if (r->shift->shift_kind == D_SCAN_TRAILING) {
+      int symbol = r->shift->symbol;
+      r->shift = 0;
       for (j = i + 1; j < nshifts; j++) {
-	if (r->shift->symbol == p->shift_results[j].shift->symbol)
+	if (p->shift_results[j].shift && symbol == p->shift_results[j].shift->symbol) {
+	  r->shift = p->shift_results[j].shift;
 	  p->shift_results[j].shift = 0;
+	}
       }
     }
-    if (r->shift->term_priority) {
+    if (r->shift && r->shift->term_priority) {
       /* potentially n^2 but typically small */
       for (j = 0; j < nshifts; j++) {
 	if (!p->shift_results[j].shift)

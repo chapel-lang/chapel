@@ -6,7 +6,7 @@
 
 int
 scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
-  d_loc_t loc = *aloc;
+  d_loc_t loc = *aloc, last_loc = *aloc;
   char *s = loc.s, *scol = 0;
   int col = loc.col, collast = col, line = loc.line;
   int nresults = 0, i, j;
@@ -17,7 +17,7 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
       /* all matches */
       SB_uint8 *st = (SB_uint8*)parse_state->scanner_table;
       SB_trans_uint8 *tst = (SB_trans_uint8*)parse_state->transition_table;
-      uint8 state = 0, last = state, sd_sb = 0;
+      uint8 state = 0, last = state, prev = state;
       uint8 c;
       uint32 sb, so;
       c = (uint8)*s++;
@@ -25,19 +25,18 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
 	      [(so = c & SCANNER_BLOCK_MASK)]))
       {
 	state -= 1;
+	if (prev && parse_state->accepts_diff) {
+	  shift_diff = parse_state->accepts_diff[tst[prev].scanner_block[sb][so]];
+	  for (; *shift_diff; shift_diff++) {
+	    results[nresults].loc = loc;
+	    results[nresults++].shift = *shift_diff;
+	  }
+	}
+	prev = state;
+	loc.s = s; collast = col; loc.line = line;
 	if (st[state].shift) {
 	  last = state;
-	  loc.s = s; collast = col; loc.line = line;
-	  sd_sb = state;
-	} else {
-	  if (sd_sb && parse_state->accepts_diff) {
-	    shift_diff = parse_state->accepts_diff[tst[sd_sb].scanner_block[sb][so]];
-	    for (; *shift_diff; shift_diff++) {
-	      results[nresults].loc = loc;
-	      results[nresults++].shift = *shift_diff;
-	    }
-	  }
-	  sd_sb = 0;
+	  last_loc = loc;
 	}
 	if (c == '\n') { line++; col = 0; scol = s; } else col++;
 	c = (uint8)*s++;
@@ -49,7 +48,7 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
       /* all matches */
       SB_uint16 *st = (SB_uint16*)parse_state->scanner_table;
       SB_trans_uint16 *tst = (SB_trans_uint16*)parse_state->transition_table;
-      uint16 state = 0, last = state, sd_sb = 0;
+      uint16 state = 0, last = state, prev = state;
       uint8 c;
       uint32 sb, so;
       c = (uint8)*s++;
@@ -57,19 +56,18 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
 	      [(so = c & SCANNER_BLOCK_MASK)]))
       {
 	state -= 1;
+	if (prev && parse_state->accepts_diff) {
+	  shift_diff = parse_state->accepts_diff[tst[prev].scanner_block[sb][so]];
+	  for (; *shift_diff; shift_diff++) {
+	    results[nresults].loc = loc;
+	    results[nresults++].shift = *shift_diff;
+	  }
+	}
+	prev = state;
+	loc.s = s; collast = col; loc.line = line;
 	if (st[state].shift) {
 	  last = state;
-	  loc.s = s; collast = col; loc.line = line;
-	  sd_sb = state;
-	} else {
-	  if (sd_sb && parse_state->accepts_diff) {
-	    shift_diff = parse_state->accepts_diff[tst[sd_sb].scanner_block[sb][so]];
-	    for (; *shift_diff; shift_diff++) {
-	      results[nresults].loc = loc;
-	      results[nresults++].shift = *shift_diff;
-	    }
-	  }
-	  sd_sb = 0;
+	  last_loc = loc;
 	}
 	if (c == '\n') { line++; col = 0; scol = s; } else col++;
 	c = (uint8)*s++;
@@ -81,7 +79,7 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
       /* all matches */
       SB_uint32 *st = (SB_uint32*)parse_state->scanner_table;
       SB_trans_uint32 *tst = (SB_trans_uint32*)parse_state->transition_table;
-      uint32 state = 0, last = state, sd_sb = 0;
+      uint32 state = 0, last = state, prev = state;
       uint8 c;
       uint32 sb, so;
       c = (uint8)*s++;
@@ -89,19 +87,18 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
 	      [(so = c & SCANNER_BLOCK_MASK)]))
       {
 	state -= 1;
+	if (prev && parse_state->accepts_diff) {
+	  shift_diff = parse_state->accepts_diff[tst[prev].scanner_block[sb][so]];
+	  for (; *shift_diff; shift_diff++) {
+	    results[nresults].loc = loc;
+	    results[nresults++].shift = *shift_diff;
+	  }
+	}
+	prev = state;
+	loc.s = s; collast = col; loc.line = line;
 	if (st[state].shift) {
 	  last = state;
-	  loc.s = s; collast = col; loc.line = line;
-	  sd_sb = state;
-	} else {
-	  if (sd_sb && parse_state->accepts_diff) {
-	    shift_diff = parse_state->accepts_diff[tst[sd_sb].scanner_block[sb][so]];
-	    for (; *shift_diff; shift_diff++) {
-	      results[nresults].loc = loc;
-	      results[nresults++].shift = *shift_diff;
-	    }
-	  }
-	  sd_sb = 0;
+	  last_loc = loc;
 	}
 	if (c == '\n') { line++; col = 0; scol = s; } else col++;
 	c = (uint8)*s++;
@@ -114,7 +111,7 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
   if (shift) {
     loc.line = line;
     for (; *shift; shift++) {
-      results[nresults].loc = loc;
+      results[nresults].loc = last_loc;
       results[nresults++].shift = *shift;
     }
   }
@@ -125,21 +122,21 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
       longest = 1;
     if (parse_state->scan_kind == D_SCAN_MIXED) {
       for (i = nresults - 1; i >= 0; i--) {
-	if (results[i].shift->shift_kind == D_SCAN_LONGEST)
-	  longest = 1;
 	if (results[i].loc.s < end)
 	  break;
+	if (results[i].shift->shift_kind == D_SCAN_LONGEST)
+	  longest = 1;
       }
     }
     if (longest) {
       /* keep only 'longest' */
       i = 0;
       for (j = 0; j < nresults; j++) {
-	if (results[j].loc.s != end && results[j].shift->shift_kind != D_SCAN_TRAILING) {
+	if (results[j].loc.s == end || results[j].shift->shift_kind == D_SCAN_TRAILING) {
 	  if (i != j)
 	    results[i] = results[j];
-	} else
 	  i++;
+	}
       }
       nresults = i;
     } else if (parse_state->scan_kind == D_SCAN_MIXED) {

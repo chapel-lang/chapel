@@ -510,7 +510,7 @@ build_state_scanner(LexState *ls, State *s) {
   for (j = 0; j < s->shift_actions.n; j++) {
     a = s->shift_actions.v[j];
     if (a->kind == ACTION_SHIFT && a->term->kind == TERM_REGEX) {
-      Action *trailing_context = (Action *)malloc(sizeof(Action));
+      Action *trailing_context = (Action *)MALLOC(sizeof(Action));
       memcpy(trailing_context, a, sizeof(Action));
       trailing_context->kind = ACTION_SHIFT_TRAILING;
       one = 1;
