@@ -208,11 +208,14 @@ void build_index_type_def(Stmt* stmt, Type** type) {
                         domain_type = dynamic_cast<DomainType*>(var->var->type);
       index_type->idxType = ((IndexType*)(domain_type->idxType))->idxType;
       printf("\n");
-                }
-        }
-        char *name; 
+ 		}
+    else{
+      INT_FATAL(index_type, "Invalid index expression.");
+    }
+ 	}
+	char* name = NULL; 
   
-        if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
+  if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
         name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "d");
   }
   else{
@@ -220,8 +223,12 @@ void build_index_type_def(Stmt* stmt, Type** type) {
       name = glomstrings(3, "_index_", intstring(domain_type->numdims), "d");
     }
     else {
-                name = glomstrings(2, "_index_", domain_type->symbol->name);
+      name = glomstrings(2, "_index_", domain_type->symbol->name);
     }
+  }
+  
+  if (!name){
+    INT_FATAL(index_type, "Invalid index expression.");  
   }
   
   Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);

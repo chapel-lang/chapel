@@ -1,4 +1,4 @@
-roxana
+steve
 
 If tuples can be assigned to indices.
-Problem: TupleType and IndexType are different.
+Problem: An index type points to a tuple type, but not to a tuple expression.

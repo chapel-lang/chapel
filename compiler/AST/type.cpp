@@ -273,6 +273,9 @@ bool Type::implementedUsingCVals(void) {
  }
 }
 
+Type* Type::getType(){
+  return this;
+}
 
 EnumType::EnumType(EnumSymbol* init_valList) :
   Type(TYPE_ENUM, new Variable(init_valList)),
@@ -597,10 +600,6 @@ IndexType::IndexType(Expr* init_expr) :
   Type(TYPE_INDEX, NULL),
   idxExpr(init_expr)
 {
-        /*if (!(typeid(*init_expr) == typeid(IntLiteral))) {
-        SET_BACK(idxExpr);
-        }*/
-  
   if (typeid(*init_expr) == typeid(IntLiteral)) {
     TupleType* newTType = new TupleType(init_expr->typeInfo());
     for (int i = 1; i < init_expr->intVal(); i++){
@@ -627,19 +626,12 @@ void IndexType::print(FILE* outfile) {
 }
 
 void IndexType::codegenDef(FILE* outfile) {
-  /*fprintf(outfile, "typedef struct _");
-  symbol->codegen(outfile);
-  fprintf(outfile, " {\n");
-  fprintf(outfile, "} ");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n\n");*/
   fprintf(outfile, "typedef ");
   //idxType->codegenDef(outfile);
   //idxType->print(stdout);
   //if (typeid(*idxType) == typeid(Tuple))
   TupleType* tt = dynamic_cast<TupleType*>(idxType);
   if (tt){
-    //printf("\nTuple type to codegen!!\n");
     fprintf(outfile, "struct {\n");
     int i = 0;
     forv_Vec(Type, component, tt->components) {
@@ -650,7 +642,6 @@ void IndexType::codegenDef(FILE* outfile) {
     symbol->codegen(outfile);
     fprintf(outfile, ";\n\n");
   } else {
-  //fprintf(outfile, "} ");
     idxType->codegenDef(outfile);
     symbol->codegen(outfile);
     fprintf(outfile, ";\n\n");
@@ -658,11 +649,15 @@ void IndexType::codegenDef(FILE* outfile) {
 }
 
 void IndexType::traverseDefType(Traversal* traversal) {
-        if (!(typeid(*idxExpr) == typeid(IntLiteral))) {
-        TRAVERSE(idxExpr, traversal, false);
-        }
+  if (!(typeid(*idxExpr) == typeid(IntLiteral))) {
+    TRAVERSE(idxExpr, traversal, false);
+  }
   TRAVERSE(idxType, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
+}
+
+Type* IndexType::getType(){
+  return idxType; 
 }
 
 SeqType::SeqType(Type* init_elementType,

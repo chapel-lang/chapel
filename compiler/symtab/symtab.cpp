@@ -9,7 +9,6 @@
 #include "yy.h"
 #include "../passes/filesToAST.h"
 
-
 enum parsePhaseType {
   PARSING_PRE,
   PARSING_INTERNAL_PRELUDE,
@@ -557,6 +556,7 @@ static Expr* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
       }
     } else {
       indices = appendLink(indices, new VarSymbol(varTmp->var->name, dtInteger));
+      //indices = appendLink(indices, new VarSymbol(varTmp->var->name, IndexType));
     }
   }
   DefExpr* def_expr = new DefExpr(indices);

@@ -17,8 +17,8 @@ void DestructureTupleAssignments::postProcessStmt(Stmt* stmt) {
     return;
   }
 
-  TupleType* left_type = dynamic_cast<TupleType*>(assign_expr->left->typeInfo());
-  TupleType* right_type = dynamic_cast<TupleType*>(assign_expr->right->typeInfo());
+  TupleType* left_type = dynamic_cast<TupleType*>(assign_expr->left->typeInfo()->getType());
+  TupleType* right_type = dynamic_cast<TupleType*>(assign_expr->right->typeInfo()->getType());
 
   Tuple* left_tuple = dynamic_cast<Tuple*>(assign_expr->left);
   Tuple* right_tuple = dynamic_cast<Tuple*>(assign_expr->right);
@@ -39,12 +39,12 @@ void DestructureTupleAssignments::postProcessStmt(Stmt* stmt) {
     (left_type) 
     ? left_type->components.n 
     : left_tuple->exprs->length();
-
+  
   int right_n =
     (right_type) 
     ? right_type->components.n 
     : right_tuple->exprs->length();
-
+  
   if (left_n != right_n) {
     INT_FATAL(stmt, "Non-matching tuple assign should be caught earlier");
   }
