@@ -16806,3 +16806,14 @@ Modified files:
 	chapel/test/flowanalysis/newast/: enumarray.chpl enumarray.good 
 	chapel/test/trivial/bradc/domarr/: enumarray.chpl 
 
+---------------------------------------------------------------------------
+
+02/07/05 10:44:11 -- jplevyak
+
+Log message:
+	Type cloning now enabled by default.  All the old test cases work,
+	new ones fail in new and interesting ways :)
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp 
+
