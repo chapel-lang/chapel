@@ -236,7 +236,8 @@ Vec<C>::fill(int nn)  {
 template <class C> inline void
 Vec<C>::append(const Vec<C> &vv)  {
   for (C *c = vv.v; c < vv.v + vv.n; c++)
-    add(*c);
+    if (*c)
+      add(*c);
 }
 
 template <class C> inline void 

@@ -481,34 +481,34 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
   LnextApplicable:;
   }
   // for those remaining, check for ambiguities
-  Vec<Fun *> matches;
-  Vec<Fun *> similar;
-  Fun *x = unsubsumed.v[0]->fun;	// all unambiguous results must be similar
-  similar.add(x);
-  for (int j = 1; j < unsubsumed.n; j++) {
-    Fun *y = unsubsumed.v[j]->fun;
-    for (int i = 0; i < csargs.n; i++) {
-      Sym *xarg, *yarg;
-      if (top_level) {
-	xarg = x->sym->has.v[i];
-	yarg = y->sym->has.v[i];
-      } else {
-	xarg = x->arg_syms.get(local_p)->has.v[i];
-	yarg = y->arg_syms.get(local_p)->has.v[i];
+  Vec<Fun *> matches, similar, done;
+  for (int i = 0; i < unsubsumed.n; i++) {
+    Fun *x = unsubsumed.v[i]->fun;
+    if (done.set_in(x))
+      continue;
+    similar.clear(); similar.add(x);
+    for (int j = i + 1; j < unsubsumed.n; j++) {
+      Fun *y = unsubsumed.v[j]->fun;
+      if (done.set_in(y))
+	continue;
+      for (int k = 0; k < csargs.n; k++) {
+	Sym *xarg, *yarg;
+	if (top_level) {
+	  xarg = x->sym->has.v[k];
+	  yarg = y->sym->has.v[k];
+	} else {
+	  xarg = x->arg_syms.get(local_p)->has.v[k];
+	  yarg = y->arg_syms.get(local_p)->has.v[k];
+	}
+	Sym *xtype = xarg->must_specialize ? xarg->must_specialize : sym_any;
+	Sym *ytype = yarg->must_specialize ? yarg->must_specialize : sym_any;
+	if (xtype != ytype || xarg->is_pattern != yarg->is_pattern)
+	  goto LnextUnsubsumed;
       }
-      Sym *xtype = xarg->must_specialize ? xarg->must_specialize : sym_any;
-      Sym *ytype = yarg->must_specialize ? yarg->must_specialize : sym_any;
-      if (xtype != ytype || xarg->is_pattern != yarg->is_pattern) {
-	matches.set_add(x);
-	matches.set_add(y);
-	goto LnextUnsubsumed;
-      }
+      similar.add(y); done.set_add(y);
+    LnextUnsubsumed:;
     }
-    similar.add(y);
-  LnextUnsubsumed:;
-  }
-  // for similar functions recurse for patterns to check for subsumption and ambiguities
-  if (similar.n) {
+    // for similar functions recurse for patterns to check for subsumption and ambiguities
     p.push(1);
     for (int i = 0; i < csargs.n; i++) {
       Sym *arg = similar.v[0]->arg_syms.get(cannonical_mposition.get(&p));
@@ -521,25 +521,9 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
       p.inc();
     }
     p.pop();
-  }
-  // recurse to set filters for matches
-  forv_Fun(f, matches) if (f) {
-    p.push(1);
-    for (int i = 0; i < csargs.n; i++) {
-      Sym *arg = similar.v[0]->arg_syms.get(cannonical_mposition.get(&p));
-      if (arg->is_pattern) {
-	Vec<CreationSet *> local_csargs;
-	Vec<Fun *> local_result, match;
-	match.add(f);
-	find_best_matches(csargs.v[i]->vars, local_csargs, match, p, local_result, 0);
-      }
-      p.inc();
-    }
-    p.pop();
+    matches.append(similar);
   }
   // handle defaults and set filters
-  matches.set_union(similar);
-  matches.set_to_vec();
   default_arguments_and_partial_application(csargs, p, matches, top_level);
   set_filters(csargs, p, matches);
   result.set_union(matches);
@@ -553,7 +537,7 @@ Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs,
 			   int iarg) 
 {
   if (iarg >= args.n)
-    find_best_cs_match(csargs, p, *partial_matches, result, top_level);
+    find_best_cs_match(csargs, p, matches, result, top_level);
   else {
     csargs.fill(iarg + 1);
     forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
@@ -585,7 +569,9 @@ Matcher::cannonicalize_matches() {
   }
 }
 
+//
 // main dispatch entry point - given a vector of arguments return a vector of matches
+//
 int
 pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial, Vec<Match *> *matches) {
   Matcher matcher(send, args.v[0], partial, matches);
@@ -608,6 +594,10 @@ pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial, Vec<Match *> 
   matcher.cannonicalize_matches();
   return matches->n;
 }
+
+//
+// Build dispatch tables
+//
 
 static void
 insert_fun(FA *fa, Fun *f, Sym *arg, Sym *s, MPosition &p) {
@@ -666,7 +656,10 @@ build_patterns(FA *fa) {
   build(fa);
 }
 
-// build a Fun::arg_position - positional and named argument Positions for an arg or pattern
+//
+// Build argument positions (MPosition)s for functions
+// 
+
 static void
 build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
@@ -693,8 +686,6 @@ build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
   }
 }
 
-// build Fun::arg_positions - vec of positional and named argument Positions
-// build Fun::args - map from Position's to Var's
 void
 build_arg_positions(FA *fa) {
   forv_Fun(f, fa->pdb->funs) {
