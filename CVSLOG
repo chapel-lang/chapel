@@ -6149,3 +6149,15 @@ Modified files:
 Added files:
 	chapel/compiler/AST/: getstuff.cpp getstuff.h testGetStuff.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/04 15:53:25 -- bradc
+
+Log message:
+	Unified some inconsistencies in naming my enumerated
+	types that John pointed out.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+	chapel/compiler/AST/: chapel.y expr.h 
+
