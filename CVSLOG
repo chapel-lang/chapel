@@ -4424,3 +4424,13 @@ Modified files:
 	                  graph.cpp list.cpp list.h pattern.cpp 
 	                  pattern.h pnode.h vec.cpp vec.h 
 
+---------------------------------------------------------------------------
+
+07/27/04 13:27:57 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Updated to take into account mysystem, stringutil, etc.
+
+Modified files:
+	chapel/compiler/test/: Makefile 
+
