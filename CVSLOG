@@ -13740,3 +13740,21 @@ Modified files:
 	                          type.h 
 	chapel/compiler/traversals/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+01/06/05 16:21:40 -- bradc
+
+Log message:
+	Checking in "future" files for tests that have never
+	worked.  This is in preparation for checking in test
+	system code that has a notion of future tests.
+
+Added files:
+	chapel/test/functions/bradc/: intents.future 
+	chapel/test/functions/jplevyak/: intent-1.future intent-2.future 
+	                                 intent-3.future intent-4.future 
+	                                 intent-5-error.future 
+	                                 intent-6-error.future 
+	                                 intent-8-error.future 
+	                                 intent-9.future 
+
