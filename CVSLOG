@@ -7397,3 +7397,32 @@ Added files:
 	                                  protoast_test.chpl 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+09/15/04 13:35:07 -- bradc
+
+Log message:
+	Added a new Pass and a new Traversal:
+	
+		RunAnalysis : is a pass that runs John's analysis work
+			if the analyzenewast flag is set.  This is
+			essentially what we had before, but I moved it
+			to a pass so that we could put it between other
+			passes.  Such as:
+	
+		SetupStmtLinks : is a traversal that walks the AST,
+			ensuring that expressions' stmt pointers point
+			to their parent statement.  These are difficult
+			to set up while parsing since the expressions
+			are created before the statements, so this
+			seemed like a clean way to do it.  Can/should
+			be run directly after parsing.
+
+Modified files:
+	chapel/compiler/: Makefile driver.cpp driver.h pass.cpp pass.h 
+	                  passlist.cpp passlist.h 
+	chapel/compiler/AST/: Makefile.share type.cpp type.h 
+Added files:
+	chapel/compiler/: runAnalysis.cpp runAnalysis.h 
+	chapel/compiler/AST/: setupStmtLinks.cpp setupStmtLinks.h 
+
