@@ -1,0 +1,12 @@
+UTIL_SRCS = \
+	files.cpp \
+	log.cpp \
+	misc.cpp \
+	mysystem.cpp \
+	stringutil.cpp \
+
+CVS_SRCS = $(UTIL_SRCS)
+SRCS = $(CVS_SRCS)
+
+UTIL_OBJS = \
+	$(UTIL_SRCS:%.cpp=$(UTIL_OBJDIR)/%.o)

@@ -1,0 +1,10 @@
+PASSES_SRCS = \
+	printAST.cpp \
+	printSymtab.cpp \
+	runAnalysis.cpp \
+
+CVS_SRCS = $(PASSES_SRCS)
+SRCS = $(CVS_SRCS)
+
+PASSES_OBJS = \
+	$(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.o)

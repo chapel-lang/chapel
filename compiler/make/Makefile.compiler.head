@@ -5,7 +5,6 @@ DEBUG=1
 #OPTIMIZE=1
 #PROFILE=1
 USE_GC=1
-USE_DPARSER=1
 #LEAK_DETECT=1
 
 #
@@ -18,7 +17,35 @@ CHAPEL_SUBDIR = compiler/$(COMPILER_SUBDIR)
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 
-CFLAGS += -I$(COMPILER_ROOT) -I$(COMPILER_ROOT)/AST
+CFLAGS += -I. -I$(COMPILER_ROOT)/include
+
+
+#
+# add dparser stuff
+#
+ifdef USE_DPARSER
+CFLAGS += -I$(D_PARSER_INC_DIR)
+ifdef USE_GC
+LIBS += -L$(D_PARSER_LIB_DIR) -ldparse_gc
+else
+LIBS += $(D_PARSER_LIB_DIR)/libdparse.a
+endif
+endif
+
+
+#
+# add gc-related stuff
+#
+ifdef USE_GC
+CFLAGS += -DUSE_GC
+CFLAGS += -I$(GC_ROOT)/include/gc
+LIBS += $(GC_ROOT)/lib/libgc.a
+endif
+
+ifdef LEAK_DETECT
+CFLAGS += -DLEAK_DETECT -I$(GC_ROOT)/include
+LIBS += $(GC_ROOT)/lib/libleak.a
+endif
 
 
 #
@@ -58,3 +85,8 @@ CVS_DEPENDS = ./$(PLATFORM)/Makefile.cvs.depend
 
 
 
+MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
+CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
+CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
+CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)
+DEPENDSUBDIRS = $(SUBDIRS:%=%.dependdir)

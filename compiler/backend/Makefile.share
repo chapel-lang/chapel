@@ -1,0 +1,11 @@
+BACKEND_SRCS = \
+	beautify.cpp \
+	codegen.cpp \
+	dump.cpp \
+	graph.cpp \
+
+CVS_SRCS = $(BACKEND_SRCS)
+SRCS = $(CVS_SRCS)
+
+BACKEND_OBJS = \
+	$(BACKEND_SRCS:%.cpp=$(BACKEND_OBJDIR)/%.o)

@@ -1,0 +1,5 @@
+TRAVERSALS_OBJDIR = $(COMPILER_ROOT)/traversals/$(PLATFORM)
+
+ALL_SRCS += traversals/*.cpp
+
+include $(COMPILER_ROOT)/traversals/Makefile.share

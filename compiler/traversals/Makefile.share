@@ -1,0 +1,14 @@
+TRAVERSALS_SRCS = \
+	checkTypeInfo.cpp \
+	findUnknownTypes.cpp \
+	getstuff.cpp \
+	setupStmtLinks.cpp \
+	testGetStuff.cpp \
+	traversal.cpp \
+	verifyASTType.cpp
+
+CVS_SRCS = $(TRAVERSALS_SRCS)
+SRCS = $(CVS_SRCS)
+
+TRAVERSALS_OBJS = \
+	$(TRAVERSALS_SRCS:%.cpp=$(TRAVERSALS_OBJDIR)/%.o)

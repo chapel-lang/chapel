@@ -1,0 +1,5 @@
+ANALYSIS_OBJDIR = $(COMPILER_ROOT)/analysis/$(PLATFORM)
+
+ALL_SRCS += analysis/*.h analysis/*.cpp
+
+include $(COMPILER_ROOT)/analysis/Makefile.share

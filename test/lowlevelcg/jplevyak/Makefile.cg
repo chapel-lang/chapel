@@ -3,4 +3,4 @@ COMPILER_SUBDIR =
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 all: $(CG_FILES)
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $(CG_TARGET) $(CG_FILES) $(LIBS)
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $(CG_TARGET) $(CG_FILES) -I../../../compiler/etc $(LIBS)

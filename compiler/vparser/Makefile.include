@@ -1,0 +1,5 @@
+VPARSER_OBJDIR = $(COMPILER_ROOT)/vparser/$(PLATFORM)
+
+ALL_SRCS += vparser/*.cpp
+
+include $(COMPILER_ROOT)/vparser/Makefile.share

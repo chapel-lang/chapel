@@ -1,0 +1,16 @@
+PARSER_SRCS = \
+
+C_SRCS = \
+	yy.c \
+
+CXX_C_SRCS = \
+	chapel.tab.c \
+	lex.yy.c \
+
+CVS_SRCS = $(PARSER_SRCS) $(C_SRCS)
+SRCS = $(CVS_SRCS) $(CXX_C_SRCS)
+
+PARSER_OBJS = \
+	$(C_SRCS:%.c=$(PARSER_OBJDIR)/%.o) \
+	$(CXX_C_SRCS:%.c=$(PARSER_OBJDIR)/%.o) \
+	$(PARSER_SRCS:%.cpp=$(PARSER_OBJDIR)/%.o)

@@ -1,6 +1,0 @@
-COMPILER_ROOT=.
-COMPILER_SUBDIR = 
-include $(COMPILER_ROOT)/make/Makefile.compiler.head
-
-all: $(CG_FILES)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(CG_TARGET) $(CG_FILES) $(LIBS)

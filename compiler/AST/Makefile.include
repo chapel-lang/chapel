@@ -1,5 +1,5 @@
 AST_OBJDIR = $(COMPILER_ROOT)/AST/$(PLATFORM)
 
-include $(COMPILER_ROOT)/AST/Makefile.share
+ALL_SRCS += AST/*.cpp
 
-CFLAGS += -IAST
+include $(COMPILER_ROOT)/AST/Makefile.share

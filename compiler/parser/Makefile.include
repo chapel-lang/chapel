@@ -1,0 +1,5 @@
+PARSER_OBJDIR = $(COMPILER_ROOT)/parser/$(PLATFORM)
+
+ALL_SRCS += parser/*.h parser/*.c parser/*.cpp
+
+include $(COMPILER_ROOT)/parser/Makefile.share

@@ -1,0 +1,5 @@
+BACKEND_OBJDIR = $(COMPILER_ROOT)/backend/$(PLATFORM)
+
+ALL_SRCS += backend/*.cpp
+
+include $(COMPILER_ROOT)/backend/Makefile.share

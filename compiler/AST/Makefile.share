@@ -1,34 +1,16 @@
-CXX_SRCS = \
+AST_SRCS = \
 	baseAST.cpp \
-	checkTypeInfo.cpp \
 	expr.cpp \
-	findUnknownTypes.cpp \
-	getstuff.cpp \
 	link.cpp \
 	loc.cpp \
 	nils.cpp \
-	printAST.cpp \
-	printSymtab.cpp \
-	setupStmtLinks.cpp \
 	stmt.cpp \
 	symbol.cpp \
         symtab.cpp \
-	testGetStuff.cpp \
-	traversal.cpp \
 	type.cpp \
-	verifyASTType.cpp
 
-C_SRCS = \
-	yy.c \
-
-CXX_C_SRCS = \
-	chapel.tab.c \
-	lex.yy.c \
-
-CVS_SRCS = $(CXX_SRCS) $(C_SRCS)
-SRCS = $(CVS_SRCS) $(CXX_C_SRCS)
+CVS_SRCS = $(AST_SRCS)
+SRCS = $(CVS_SRCS)
 
 AST_OBJS = \
-	$(C_SRCS:%.c=$(AST_OBJDIR)/%.o) \
-	$(CXX_C_SRCS:%.c=$(AST_OBJDIR)/%.o) \
-	$(CXX_SRCS:%.cpp=$(AST_OBJDIR)/%.o)
+	$(AST_SRCS:%.cpp=$(AST_OBJDIR)/%.o)

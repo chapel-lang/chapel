@@ -1,0 +1,5 @@
+PASSES_OBJDIR = $(COMPILER_ROOT)/passes/$(PLATFORM)
+
+ALL_SRCS += passes/*.cpp
+
+include $(COMPILER_ROOT)/passes/Makefile.share

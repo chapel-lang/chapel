@@ -1,17 +1,18 @@
 
-clean:
+clean: $(CLEANSUBDIRS)
 	rm -f $(CLEAN_TARGS)
 
-cleandeps:
+cleandeps: $(CLEANSUBDIRDEPS)
 	rm -f $(CVS_DEPENDS)
 
-clobber: 
+clobber: $(CLOBBERSUBDIRS)
 	rm -rf ./$(CLOBBER_TARGS)
 
-depend: $(PLATFORM_DIR) $(DEPEND_DEPS)
+depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS)
 	@echo Updating dependences...
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(CXX) -MM -MG $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS); \
+	  $(MAKEDEPEND) $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS); \
 	done
+	$(OTHER_DEPEND_RULES)

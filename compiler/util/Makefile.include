@@ -1,0 +1,5 @@
+UTIL_OBJDIR = $(COMPILER_ROOT)/util/$(PLATFORM)
+
+ALL_SRCS += util/*.cpp
+
+include $(COMPILER_ROOT)/util/Makefile.share

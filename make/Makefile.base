@@ -38,34 +38,6 @@ MAKE_DPARSER_FLAGS = -v -Xcpp -I
 
 
 #
-# add dparser stuff
-#
-ifdef USE_DPARSER
-CFLAGS += -I$(D_PARSER_INC_DIR)
-ifdef USE_GC
-LIBS += -L$(D_PARSER_LIB_DIR) -ldparse_gc
-else
-LIBS += $(D_PARSER_LIB_DIR)/libdparse.a
-endif
-endif
-
-
-#
-# add gc-related stuff
-#
-ifdef USE_GC
-CFLAGS += -DUSE_GC
-CFLAGS += -I$(GC_ROOT)/include/gc
-LIBS += $(GC_ROOT)/lib/libgc.a
-endif
-
-ifdef LEAK_DETECT
-CFLAGS += -DLEAK_DETECT -I$(GC_ROOT)/include
-LIBS += $(GC_ROOT)/lib/libleak.a
-endif
-
-
-#
 # how to make a platform-specific subdirectory
 #
 

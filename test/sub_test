@@ -126,7 +126,7 @@ else
 endif
 
 if ($CHPLTESTVGRND == "on") then
-  set valgrndcomp = "$CHPL_VALGRIND_LINUX32 valgrind $CHPL_VALGRIND_OPTIONS --suppressions=$testdir/../compiler/valgrind.suppressions -q "
+  set valgrndcomp = "$CHPL_VALGRIND_LINUX32 valgrind $CHPL_VALGRIND_OPTIONS --suppressions=$testdir/../compiler/etc/valgrind.suppressions -q "
   if ($vgrbin == "yes") then
     set valgrndbin = "$CHPL_VALGRIND_LINUX32 valgrind $CHPL_VALGRIND_OPTIONS -q "
   else

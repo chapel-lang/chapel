@@ -1,0 +1,12 @@
+MAIN_SRCS = \
+	arg.cpp \
+	createAST.cpp \
+	driver.cpp \
+	pass.cpp \
+	version.cpp \
+
+CVS_SRCS = $(MAIN_SRCS)
+SRCS = $(CVS_SRCS)
+
+MAIN_OBJS = \
+	$(MAIN_SRCS:%.cpp=$(MAIN_OBJDIR)/%.o)

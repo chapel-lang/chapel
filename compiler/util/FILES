@@ -1,0 +1,5 @@
+files.cpp      : routines related to creating tmp directory, output files
+log.cpp	       : generic logging (lib ??)
+misc.cpp       : error msg routines, assertion failures, internal errors
+mysystem.cpp   : wrapper around system()
+stringutil.cpp : string (well, char*) utilities
