@@ -20902,3 +20902,24 @@ Added files:
 	                            writeclass3.chpl writeclass3.future 
 	                            writeclass3.good 
 
+---------------------------------------------------------------------------
+
+03/22/05 17:59:51 -- bradc
+
+Log message:
+	Added a bunch of entry point tests that I had
+	laying around before we had the future mechanism.
+	These are all in my name and low priority.
+
+Added files:
+	chapel/test/trivial/bradc/entrypoint/: main2.chpl main2.future 
+	                                       main2.good twomains2.chpl 
+	                                       twomains2.future 
+	                                       twomains2.good 
+	                                       twomains2a.chpl 
+	                                       twomains2a.future 
+	                                       twomains2a.good 
+	                                       wrongmain.chpl 
+	                                       wrongmain.future 
+	                                       wrongmain.good 
+
