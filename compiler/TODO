@@ -8,8 +8,6 @@
 - handle structural types.  Generalize tuple handling to include ref etc. in
   patterns.
 
-- prototype Chapel grammar
-
 - constant propogation & generalized splitting
   also handle things like __make_vector which require constants
   in generic code
@@ -17,8 +15,6 @@
 - inlining
 
 - handle david's generics stuff
-
-- trailing context for regex to handle 1..n
 
 - AST rewrite to change '=' to '==' in expressions and to
   make sure no other assignments are in expressions. (??)
@@ -64,8 +60,6 @@
 
 - add ast arg to if1_send
 
-- remove duplicate type_violations by hashing av*pnode
-
 - figure out why adding $right 5200 to 'new' causes problems
 
 - optimize function dispatch
@@ -81,8 +75,6 @@
 
 - debug type inference when dead code elimination is off.... or remove
   the flag
-
-- have const discussion
 
 - for pattern matching: handle parameterized types & structural types
   - probably by recursing down the actual argument and checking

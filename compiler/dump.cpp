@@ -166,6 +166,19 @@ dump_fun_list(FILE *fp, Vec<Fun *> &funs) {
 
 static void
 dump_ast_tree(FILE *fp, Fun *f, AST *a, int indent = 0) {
+  switch (a->kind) {
+    case AST_def_fun: return;
+    case AST_const: 
+    case AST_def_ident: 
+      if (!a->sym->var || !a->sym->var->avars.n)
+	return;
+      break;
+    case AST_def_type:
+      if (!unalias_type(a->sym)->creators.n)
+	return;
+      break;
+    default: break;
+  }
   for (int i = 0; i < indent; i++) putc(' ', fp);
   fprintf(fp, "<LI>%s ", AST_name[a->kind]);
   if (a->sym) {
@@ -243,7 +256,10 @@ dump_functions(FILE *fp, FA *fa) {
     fprintf(fp, "<a href=\"#\" onClick=\"collapseTree('funtree%d'); return false;\">[Collapse AST]</a>\n", f->id);
     fprintf(fp, "</TABLE>\n");
     fprintf(fp, "<UL CLASS =\"mktree\" ID=\"funtree%d\">\n", f->id);
-    dump_ast_tree(fp, f, f->ast);
+    if (f->ast->kind == AST_def_fun)
+      dump_ast_tree(fp, f, f->ast->last());
+    else
+      dump_ast_tree(fp, f, f->ast);
     fprintf(fp, "</UL><BR>\n");
   }
 }
