@@ -2476,3 +2476,15 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+06/02/04 16:25:06 -- bradc
+
+Log message:
+	Found that I never could get used to the date format
+	that was used by the ZPL folks in their CVS system,
+	so switched to a more standard format.
+
+Modified files:
+	./: CVSLOG 
+
