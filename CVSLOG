@@ -16889,3 +16889,31 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/08/05 10:32:14 -- deitz
+
+Log message:
+	Removed ResolveEasy traversal from Cleanup.  This used to resolve
+	MemberAccess expressions where the type of the base expression was
+	known.  It is not necessary as this is resolved after analysis.
+	
+	Fixed a small bug in the ResolveSymbols traversal.  It used a
+	preprocess function rather than a postprocess function.  The
+	postprocess functions are preferred for traversals that modify the
+	AST.  What was happening in this case was that the expression being
+	traversed was replaced in the preprocess.  Then the old expression was
+	traversed deeply.  By putting it in the postprocess, the expression is
+	traversed deeply and then replaced.  This was a problem because some
+	other modification was done in the deeper traversal but was done on
+	the old AST and thus lost.
+	
+	Removed John's quick-fix change to codegening MemberAccess expressions
+	(just print out member->name) back to calling codegen on it
+	(member->codegen()).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: cleanup.cpp resolveSymbols.cpp 
+	                             resolveSymbols.h 
+
