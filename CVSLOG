@@ -707,3 +707,13 @@ Log message:
 Modified files:
 	./: CVSLOG 
 
+---------------------------------------------------------------------------
+
+04/03/09 16:21:13 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Removed unnecessary (and error causing) $name "complex"
+
+Modified files:
+	chapel/compiler/: v.g 
+
