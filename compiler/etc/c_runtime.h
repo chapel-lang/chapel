@@ -55,10 +55,10 @@ typedef void *_CG_ref;
 #define _CG_prim_paren(_f, _a) ((*(_f))((_f), (_a)))
 #define _CG_prim_set(_a, _b) (_a) = (_b)
 #define _CG_prim_apply(_a, _b) ((*(_a)->e0)((_a)->e1))
-#define _CG_make_apply(_r, _s, _f, _a) do { 	\
-  _r = (_s)GC_MALLOC(sizeof(*((_s)0)));		\
-  _r->e0 = _f;					\
-  _r->e1 = _a;					\
+#define _CG_make_apply(_r, _s, _f, _a) do {     \
+  _r = (_s)GC_MALLOC(sizeof(*((_s)0)));         \
+  _r->e0 = _f;                                  \
+  _r->e1 = _a;                                  \
 } while (0)
 
 static inline int _CG_prim_primitive_write(_CG_symbol s, ...) {

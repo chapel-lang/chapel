@@ -17,7 +17,7 @@ static void collect(Expr* expr, Vec<BaseAST*>* asts) {
     }
     void postProcessExpr(Expr* expr) {
       if (dynamic_cast<FnCall*>(expr)) {
-	data->add(expr);
+        data->add(expr);
       }
     }
   };
@@ -55,17 +55,17 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     forv_Vec(BaseAST, ast, functions) {
       FnCall* function = dynamic_cast<FnCall*>(ast);
       if (!function) {
-	INT_FATAL(ast, "FnCall expected");
+        INT_FATAL(ast, "FnCall expected");
       }
       if (function->typeInfo() != dtVoid) {
-	char* temp_name = glomstrings(2, "_fntemp_", intstring(uid++));
-	Expr* temp_init = function->copy(false, NULL, NULL, &functions);
-	Type* temp_type = function->typeInfo();
-	DefStmt* def_stmt =
-	  Symboltable::defineSingleVarDefStmt(temp_name, temp_type,
-					      temp_init, VAR_NORMAL, VAR_VAR);
-	copy_stmt->insertBefore(def_stmt);
-	function->replace(new Variable(def_stmt->varDef()));
+        char* temp_name = glomstrings(2, "_fntemp_", intstring(uid++));
+        Expr* temp_init = function->copy(false, NULL, NULL, &functions);
+        Type* temp_type = function->typeInfo();
+        DefStmt* def_stmt =
+          Symboltable::defineSingleVarDefStmt(temp_name, temp_type,
+                                              temp_init, VAR_NORMAL, VAR_VAR);
+        copy_stmt->insertBefore(def_stmt);
+        function->replace(new Variable(def_stmt->varDef()));
       }
     }
     SymScope* block_scope = Symboltable::popScope();

@@ -107,7 +107,7 @@ void ILink::append(ILink* newlink) {
 
 
 void ILink::filter(bool filter(ILink*), ILink** truelinks, 
-		   ILink** falselinks) {
+                   ILink** falselinks) {
   ILink* link = this;
   ILink* nextlink;
   *truelinks = NULL;

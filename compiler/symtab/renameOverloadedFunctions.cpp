@@ -20,10 +20,10 @@ void RenameOverloadedFunctions::processSymbol(Symbol* sym) {
       FnSymbol* tmp = fn;
 
       while (tmp) {
-	if (shouldRenameOverload(tmp)) {
-	  tmp->cname = glomstrings(3, tmp->cname, munger, intstring(tmp->id));
-	}
-	tmp = tmp->overload;
+        if (shouldRenameOverload(tmp)) {
+          tmp->cname = glomstrings(3, tmp->cname, munger, intstring(tmp->id));
+        }
+        tmp = tmp->overload;
       }
     }
   }

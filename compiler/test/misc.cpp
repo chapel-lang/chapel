@@ -87,8 +87,8 @@ buf_read(char *pathname, char **buf, int *len) {
   fstat(fd, &sb);
   *len = sb.st_size;
   *buf = (char*)MALLOC(*len + 2);
-  (*buf)[*len] = 0;		/* terminator */
-  (*buf)[*len + 1] = 0;		/* sentinal */
+  (*buf)[*len] = 0;             /* terminator */
+  (*buf)[*len + 1] = 0;         /* sentinal */
   read(fd, *buf, *len);
   close(fd);
   return *len;
@@ -146,9 +146,9 @@ static void printUsrLocation(char* filename, int lineno) {
     }
     if (lineno) {
       if (filename) {
-	fprintf(stderr, ":");
+        fprintf(stderr, ":");
       } else {
-	fprintf(stderr, "line ");
+        fprintf(stderr, "line ");
       }
       fprintf(stderr, "%d", lineno);
     }

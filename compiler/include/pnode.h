@@ -27,8 +27,8 @@ class PNode : public gc {
  public:
   Code *code;
   int id;
-  uint	is_dead : 1;
-	//variables this node assigns
+  uint  is_dead : 1;
+        //variables this node assigns
   Vec<Var *> lvals;
   //variables this node reads
   Vec<Var *> rvals;
@@ -62,7 +62,7 @@ class PNode : public gc {
   // Temporary Space
   union {
     UNode *unode; // ssu.cpp
-    int	used; // ssu.cpp
+    int used; // ssu.cpp
     BlockHash<Var *, PointerHashFns> *live_vars; // ssu.cpp
     LoopNode *loop_node; // loop.cpp
   };

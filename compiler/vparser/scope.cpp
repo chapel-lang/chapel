@@ -19,7 +19,7 @@ get_dynamic(Scope *scope, Sym *scope_container, char *name, Sym **container) {
   for (int i = 0; i < scope->dynamic.n; i++)
     if ((s = get_dynamic(scope->dynamic.v[i], scope->dynamic_container.v[i], name, container))) {
       if (container && scope_container)
-	*container = scope_container;
+        *container = scope_container;
       return s;
     }
   return NULL;

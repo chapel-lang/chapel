@@ -70,11 +70,11 @@ class AInfo : public AST {
   AST *copy_node(ASTCopyContext* context);
   Vec<Fun *> *visible_functions(Sym *arg0);
 
-  BaseAST *xast;	// pointer to shadowed BaseAST
-  Code *code;		// IF1 Code
-  Code *send;		// used for 0-arity parenops
-  Label *label[2];	// before and after for loops (continue,break)
-  Sym *sym, *rval;	// IF1 Syms
+  BaseAST *xast;        // pointer to shadowed BaseAST
+  Code *code;           // IF1 Code
+  Code *send;           // used for 0-arity parenops
+  Label *label[2];      // before and after for loops (continue,break)
+  Sym *sym, *rval;      // IF1 Syms
 
   AInfo();
 };

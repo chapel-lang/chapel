@@ -6,7 +6,7 @@
 #include "sym.h"
 #include "extern.h"
 
-#define DEFAULT_NUM_CONSTANTS_PER_VARIABLE	1
+#define DEFAULT_NUM_CONSTANTS_PER_VARIABLE      1
 
 #define GLOBAL_CONTOUR ((void*)1)
 
@@ -38,10 +38,10 @@ typedef Vec<Vec<CreationSet *> *> CSSS;
 
 class AType : public Vec<CreationSet *> { 
  public:
-  uint 			hash;
-  AType			*top;
-  AType			*type;		// not including values (constants)
-  Vec<CreationSet *>	sorted;
+  uint                  hash;
+  AType                 *top;
+  AType                 *type;          // not including values (constants)
+  Vec<CreationSet *>    sorted;
   Map<AType *, AType *> union_map;
   Map<AType *, AType *> intersection_map;
   Map<AType *, AType *> diff_map;
@@ -56,19 +56,19 @@ class AType : public Vec<CreationSet *> {
 
 class EntrySet : public gc {
  public:
-  Fun			*fun;
-  uint			dfs_color : 2;
+  Fun                   *fun;
+  uint                  dfs_color : 2;
   Map<MPosition*,AVar*> args;
-  Vec<AVar *>		rets;
-  EdgeHash		edges;
-  EdgeMap		out_edge_map;
-  Vec<AEdge *>		out_edges;
-  Vec<AEdge *>		backedges;
-  Vec<AEdge *>		es_cs_backedges;
-  Vec<CreationSet *>	cs_backedges;
-  Vec<CreationSet *>	creates;
-  EntrySet		*split;
-  Vec<EntrySet *>	*equiv;		// clone.cpp
+  Vec<AVar *>           rets;
+  EdgeHash              edges;
+  EdgeMap               out_edge_map;
+  Vec<AEdge *>          out_edges;
+  Vec<AEdge *>          backedges;
+  Vec<AEdge *>          es_cs_backedges;
+  Vec<CreationSet *>    cs_backedges;
+  Vec<CreationSet *>    creates;
+  EntrySet              *split;
+  Vec<EntrySet *>       *equiv;         // clone.cpp
 
   EntrySet(Fun *af): fun(af), equiv(0) {}
 };
@@ -76,21 +76,21 @@ class EntrySet : public gc {
 
 class CreationSet : public gc {
  public:
-  Sym 			*sym;
-  int			id;
-  uint			clone_for_constants : 1;
-  uint			added_element_var : 1;
-  uint			dfs_color : 2;
-  Vec<AVar *> 		defs;
-  AType 		*atype; 	// the type that this creation set belongs to
-  Vec<AVar *>		vars;
-  Map<char *, AVar *>	var_map;
-  Vec<EntrySet *>	ess;		// entry sets restricted by this creation set
-  Vec<EntrySet *>	es_backedges;	// entry sets restricted by this creation set
-  CreationSet		*split;		// creation set this one was split from
-  Vec<CreationSet *>	*equiv;		// used by clone.cpp & fa.cpp
-  Vec<CreationSet *>	not_equiv;	// used by clone.cpp
-  Sym 			*type;		// used by clone.cpp & fa.capp
+  Sym                   *sym;
+  int                   id;
+  uint                  clone_for_constants : 1;
+  uint                  added_element_var : 1;
+  uint                  dfs_color : 2;
+  Vec<AVar *>           defs;
+  AType                 *atype;         // the type that this creation set belongs to
+  Vec<AVar *>           vars;
+  Map<char *, AVar *>   var_map;
+  Vec<EntrySet *>       ess;            // entry sets restricted by this creation set
+  Vec<EntrySet *>       es_backedges;   // entry sets restricted by this creation set
+  CreationSet           *split;         // creation set this one was split from
+  Vec<CreationSet *>    *equiv;         // used by clone.cpp & fa.cpp
+  Vec<CreationSet *>    not_equiv;      // used by clone.cpp
+  Sym                   *type;          // used by clone.cpp & fa.capp
 
   CreationSet(Sym *s);
   CreationSet(CreationSet *cs);
@@ -99,18 +99,18 @@ class CreationSet : public gc {
 
 class SettersClasses : public Vec<Setters *> {
  public:
-  uint					hash;
-  Vec<Setters *>			sorted;
-  BlockHash<Setters *, SettersHashFns>	used_by;
+  uint                                  hash;
+  Vec<Setters *>                        sorted;
+  BlockHash<Setters *, SettersHashFns>  used_by;
 };
 #define forv_SettersClasses(_p, _v) forv_Vec(SettersClasses, _p, _v)
 
 class Setters : public Vec<AVar *> {
  public:
-  uint			hash;
-  Vec<AVar *>		sorted;
-  SettersClasses	*eq_classes;
-  Map<AVar *, Setters*>	add_map;
+  uint                  hash;
+  Vec<AVar *>           sorted;
+  SettersClasses        *eq_classes;
+  Map<AVar *, Setters*> add_map;
 
   Setters() : hash(0), eq_classes(0) { }
 };
@@ -118,26 +118,26 @@ class Setters : public Vec<AVar *> {
 
 class AVar : public gc {
  public:
-  Var				*var;
-  int				id;
-  void				*contour;
-  Vec<AVar *>			forward;
-  Vec<AVar *>			backward;
-  AVar				*lvalue;
-  AType 			*in;
-  AType 			*out;
-  AType				*restrict;
-  AVar				*container;
-  Setters			*setters;
-  Setters			*setter_class;
-  CreationSet 			*creation_set;
-  int				ivar_offset;
-  uint				in_send_worklist:1;
-  uint				contour_is_entry_set:1;
-  uint				is_lvalue:1;
-  uint				is_dead:1;
-  Vec<AVar *>			arg_of_send;
-  Link<AVar>			send_worklist_link;
+  Var                           *var;
+  int                           id;
+  void                          *contour;
+  Vec<AVar *>                   forward;
+  Vec<AVar *>                   backward;
+  AVar                          *lvalue;
+  AType                         *in;
+  AType                         *out;
+  AType                         *restrict;
+  AVar                          *container;
+  Setters                       *setters;
+  Setters                       *setter_class;
+  CreationSet                   *creation_set;
+  int                           ivar_offset;
+  uint                          in_send_worklist:1;
+  uint                          contour_is_entry_set:1;
+  uint                          is_lvalue:1;
+  uint                          is_dead:1;
+  Vec<AVar *>                   arg_of_send;
+  Link<AVar>                    send_worklist_link;
 
   AVar(Var *v, void *acontour);
 };
@@ -145,16 +145,16 @@ class AVar : public gc {
 
 class AEdge : public gc {
  public:
-  EntrySet		*from, *to;
-  PNode			*pnode;
+  EntrySet              *from, *to;
+  PNode                 *pnode;
   Map<MPosition*,AVar*> args;
   Map<MPosition*,AVar*> filtered_args;
-  Vec<AVar *>		rets;
-  Match			*match;
-  uint			in_edge_worklist : 1;
-  uint			es_backedge : 1;
-  uint			es_cs_backedge : 1;
-  Link<AEdge>		edge_worklist_link;
+  Vec<AVar *>           rets;
+  Match                 *match;
+  uint                  in_edge_worklist : 1;
+  uint                  es_backedge : 1;
+  uint                  es_cs_backedge : 1;
+  Link<AEdge>           edge_worklist_link;
 
   AEdge() : from(0), to(0), pnode(0), match(0), in_edge_worklist(0) {}
 };
@@ -170,7 +170,7 @@ class ATypeChainHashFns {
       return 0;
     for (int i = 0; i < a->sorted.n; i++)
       if (a->sorted.v[i] != b->sorted.v[i])
-	return 0;
+        return 0;
     return 1;
   }
 };
@@ -183,7 +183,7 @@ class SettersHashFns {
       return 0;
     for (int i = 0; i < a->sorted.n; i++)
       if (a->sorted.v[i] != b->sorted.v[i])
-	return 0;
+        return 0;
     return 1;
   }
 };
@@ -196,7 +196,7 @@ class SettersClassesHashFns {
       return 0;
     for (int i = 0; i < a->sorted.n; i++)
       if (a->sorted.v[i] != b->sorted.v[i])
-	return 0;
+        return 0;
     return 1;
   }
 };
@@ -264,8 +264,8 @@ class FA : public gc {
   Patterns *patterns;
   Vec<Fun *> funs;
   AEdge *top_edge;
-  Vec<EntrySet *> ess;		// all used entry sets as array
-  Vec<EntrySet *> ess_set;	// all used entry sets as set
+  Vec<EntrySet *> ess;          // all used entry sets as array
+  Vec<EntrySet *> ess_set;      // all used entry sets as set
   Vec<Sym *> basic_types;
   Vec<CreationSet *> css, css_set;
   Vec<AVar *> global_avars;
@@ -295,7 +295,7 @@ void update_in(AVar *v, AType *t);
 void flow_vars(AVar *v, AVar *vv);
 CreationSet *creation_point(AVar *v, Sym *s);
 void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,
-		    Vec<Fun *> *funs = NULL);
+                    Vec<Fun *> *funs = NULL);
 AType *type_cannonicalize(AType *t);
 AType *type_diff(AType *, AType *);
 AType *type_intersection(AType *, AType *);

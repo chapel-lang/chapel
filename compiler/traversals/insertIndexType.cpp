@@ -25,7 +25,7 @@ void InsertIndexType::preProcessType(Type* type) {
   
   IndexType* index_type = dynamic_cast<IndexType*>(domain_type->idxType);
   if (!index_type){
-  	return;
+        return;
   } 
   
   Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);
@@ -33,14 +33,14 @@ void InsertIndexType::preProcessType(Type* type) {
     type = index_sym->type;
   }
   else {
-	  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  	TypeSymbol* index_sym = new TypeSymbol(name, index_type);
-  	index_type->addSymbol(index_sym);
-	DefExpr* def_expr = new DefExpr(index_sym);
-  	DefStmt* def_stmt = new DefStmt(def_expr);
-  	index_sym->setDefPoint(def_expr);
-  	domain_type->idxType = index_type;
-		commonModule->stmts->insertBefore(def_stmt);
-  	Symboltable::setCurrentScope(saveScope);
-	}
+          SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+        TypeSymbol* index_sym = new TypeSymbol(name, index_type);
+        index_type->addSymbol(index_sym);
+        DefExpr* def_expr = new DefExpr(index_sym);
+        DefStmt* def_stmt = new DefStmt(def_expr);
+        index_sym->setDefPoint(def_expr);
+        domain_type->idxType = index_type;
+                commonModule->stmts->insertBefore(def_stmt);
+        Symboltable::setCurrentScope(saveScope);
+        }
 }

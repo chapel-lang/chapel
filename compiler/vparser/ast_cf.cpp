@@ -12,174 +12,174 @@ coerce_numeric(Sym *s, Sym *t, Immediate *im) {
 
 #define DO_FOLD(_op) \
       switch (res_type->num_kind) { \
-	case IF1_NUM_KIND_NONE: \
-	  break; \
-	case IF1_NUM_KIND_UINT: { \
-	  switch (res_type->num_index) { \
-	    case IF1_INT_TYPE_1:  \
-	      ast->sym->imm.v_bool = im1.v_bool _op im2.v_bool; break; \
-	    case IF1_INT_TYPE_8:  \
-	      ast->sym->imm.v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
-	    case IF1_INT_TYPE_16: \
-	      ast->sym->imm.v_uint16 = im1.v_uint16 _op im2.v_uint16; break; \
-	    case IF1_INT_TYPE_32: \
-	      ast->sym->imm.v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
-	    case IF1_INT_TYPE_64: \
-	      ast->sym->imm.v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
-	} \
-	case IF1_NUM_KIND_INT: { \
-	  switch (res_type->num_index) { \
-	    case IF1_INT_TYPE_8:  \
-	      ast->sym->imm.v_int8 = im1.v_int8 _op im2.v_int8; break; \
-	    case IF1_INT_TYPE_16: \
-	      ast->sym->imm.v_int16 = im1.v_int16 _op im2.v_int16; break; \
-	    case IF1_INT_TYPE_32: \
-	      ast->sym->imm.v_int32 = im1.v_int32 _op im2.v_int32; break; \
-	    case IF1_INT_TYPE_64: \
-	      ast->sym->imm.v_int64 = im1.v_int64 _op im2.v_int64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
-	} \
-	case IF1_NUM_KIND_FLOAT: \
-	  switch (res_type->num_index) { \
-	    case IF1_FLOAT_TYPE_32: \
-	      ast->sym->imm.v_float32 = im1.v_float32 _op im2.v_float32; break; \
-	    case IF1_FLOAT_TYPE_64: \
-	      ast->sym->imm.v_float64 = im1.v_float64 _op im2.v_float64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
+        case IF1_NUM_KIND_NONE: \
+          break; \
+        case IF1_NUM_KIND_UINT: { \
+          switch (res_type->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              ast->sym->imm.v_bool = im1.v_bool _op im2.v_bool; break; \
+            case IF1_INT_TYPE_8:  \
+              ast->sym->imm.v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
+            case IF1_INT_TYPE_16: \
+              ast->sym->imm.v_uint16 = im1.v_uint16 _op im2.v_uint16; break; \
+            case IF1_INT_TYPE_32: \
+              ast->sym->imm.v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
+            case IF1_INT_TYPE_64: \
+              ast->sym->imm.v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_INT: { \
+          switch (res_type->num_index) { \
+            case IF1_INT_TYPE_8:  \
+              ast->sym->imm.v_int8 = im1.v_int8 _op im2.v_int8; break; \
+            case IF1_INT_TYPE_16: \
+              ast->sym->imm.v_int16 = im1.v_int16 _op im2.v_int16; break; \
+            case IF1_INT_TYPE_32: \
+              ast->sym->imm.v_int32 = im1.v_int32 _op im2.v_int32; break; \
+            case IF1_INT_TYPE_64: \
+              ast->sym->imm.v_int64 = im1.v_int64 _op im2.v_int64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_FLOAT: \
+          switch (res_type->num_index) { \
+            case IF1_FLOAT_TYPE_32: \
+              ast->sym->imm.v_float32 = im1.v_float32 _op im2.v_float32; break; \
+            case IF1_FLOAT_TYPE_64: \
+              ast->sym->imm.v_float64 = im1.v_float64 _op im2.v_float64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
       }
 
 #define DO_FOLDI(_op) \
       switch (res_type->num_kind) { \
-	case IF1_NUM_KIND_NONE: \
-	  break; \
-	case IF1_NUM_KIND_UINT: { \
-	  switch (res_type->num_index) { \
-	    case IF1_INT_TYPE_1:  \
-	      ast->sym->imm.v_bool = im1.v_bool _op im2.v_bool; break; \
-	    case IF1_INT_TYPE_8:  \
-	      ast->sym->imm.v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
-	    case IF1_INT_TYPE_16: \
-	      ast->sym->imm.v_uint16 = im1.v_uint16 _op im2.v_uint16; break; \
-	    case IF1_INT_TYPE_32: \
-	      ast->sym->imm.v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
-	    case IF1_INT_TYPE_64: \
-	      ast->sym->imm.v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
-	} \
-	case IF1_NUM_KIND_INT: { \
-	  switch (res_type->num_index) { \
-	    case IF1_INT_TYPE_8:  \
-	      ast->sym->imm.v_int8 = im1.v_int8 _op im2.v_int8; break; \
-	    case IF1_INT_TYPE_16: \
-	      ast->sym->imm.v_int16 = im1.v_int16 _op im2.v_int16; break; \
-	    case IF1_INT_TYPE_32: \
-	      ast->sym->imm.v_int32 = im1.v_int32 _op im2.v_int32; break; \
-	    case IF1_INT_TYPE_64: \
-	      ast->sym->imm.v_int64 = im1.v_int64 _op im2.v_int64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
-	} \
-	case IF1_NUM_KIND_FLOAT: \
-	  switch (res_type->num_index) { \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
+        case IF1_NUM_KIND_NONE: \
+          break; \
+        case IF1_NUM_KIND_UINT: { \
+          switch (res_type->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              ast->sym->imm.v_bool = im1.v_bool _op im2.v_bool; break; \
+            case IF1_INT_TYPE_8:  \
+              ast->sym->imm.v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
+            case IF1_INT_TYPE_16: \
+              ast->sym->imm.v_uint16 = im1.v_uint16 _op im2.v_uint16; break; \
+            case IF1_INT_TYPE_32: \
+              ast->sym->imm.v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
+            case IF1_INT_TYPE_64: \
+              ast->sym->imm.v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_INT: { \
+          switch (res_type->num_index) { \
+            case IF1_INT_TYPE_8:  \
+              ast->sym->imm.v_int8 = im1.v_int8 _op im2.v_int8; break; \
+            case IF1_INT_TYPE_16: \
+              ast->sym->imm.v_int16 = im1.v_int16 _op im2.v_int16; break; \
+            case IF1_INT_TYPE_32: \
+              ast->sym->imm.v_int32 = im1.v_int32 _op im2.v_int32; break; \
+            case IF1_INT_TYPE_64: \
+              ast->sym->imm.v_int64 = im1.v_int64 _op im2.v_int64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_FLOAT: \
+          switch (res_type->num_index) { \
+            default: assert(!"case"); \
+          } \
+          break; \
       }
 
 #define DO_FOLD1(_op) \
       switch (res_type->num_kind) { \
-	case IF1_NUM_KIND_NONE: \
-	  break; \
-	case IF1_NUM_KIND_UINT: { \
-	  switch (res_type->num_index) { \
-	    case IF1_INT_TYPE_1:  \
-	      ast->sym->imm.v_bool = _op im1.v_bool; break; \
-	    case IF1_INT_TYPE_8:  \
-	      ast->sym->imm.v_uint8 = _op im1.v_uint8; break; \
-	    case IF1_INT_TYPE_16: \
-	      ast->sym->imm.v_uint16 = _op im1.v_uint16; break; \
-	    case IF1_INT_TYPE_32: \
-	      ast->sym->imm.v_uint32 = _op im1.v_uint32; break; \
-	    case IF1_INT_TYPE_64: \
-	      ast->sym->imm.v_uint64 = _op im1.v_uint64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
-	} \
-	case IF1_NUM_KIND_INT: { \
-	  switch (res_type->num_index) { \
-	    case IF1_INT_TYPE_8:  \
-	      ast->sym->imm.v_int8 = _op im1.v_int8; break; \
-	    case IF1_INT_TYPE_16: \
-	      ast->sym->imm.v_int16 = _op im1.v_int16; break; \
-	    case IF1_INT_TYPE_32: \
-	      ast->sym->imm.v_int32 = _op im1.v_int32; break; \
-	    case IF1_INT_TYPE_64: \
-	      ast->sym->imm.v_int64 = _op im1.v_int64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
-	} \
-	case IF1_NUM_KIND_FLOAT: \
-	  switch (res_type->num_index) { \
-	    case IF1_FLOAT_TYPE_32: \
-	      ast->sym->imm.v_float32 = _op im1.v_float32; break; \
-	    case IF1_FLOAT_TYPE_64: \
-	      ast->sym->imm.v_float64 =  _op im1.v_float64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
+        case IF1_NUM_KIND_NONE: \
+          break; \
+        case IF1_NUM_KIND_UINT: { \
+          switch (res_type->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              ast->sym->imm.v_bool = _op im1.v_bool; break; \
+            case IF1_INT_TYPE_8:  \
+              ast->sym->imm.v_uint8 = _op im1.v_uint8; break; \
+            case IF1_INT_TYPE_16: \
+              ast->sym->imm.v_uint16 = _op im1.v_uint16; break; \
+            case IF1_INT_TYPE_32: \
+              ast->sym->imm.v_uint32 = _op im1.v_uint32; break; \
+            case IF1_INT_TYPE_64: \
+              ast->sym->imm.v_uint64 = _op im1.v_uint64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_INT: { \
+          switch (res_type->num_index) { \
+            case IF1_INT_TYPE_8:  \
+              ast->sym->imm.v_int8 = _op im1.v_int8; break; \
+            case IF1_INT_TYPE_16: \
+              ast->sym->imm.v_int16 = _op im1.v_int16; break; \
+            case IF1_INT_TYPE_32: \
+              ast->sym->imm.v_int32 = _op im1.v_int32; break; \
+            case IF1_INT_TYPE_64: \
+              ast->sym->imm.v_int64 = _op im1.v_int64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_FLOAT: \
+          switch (res_type->num_index) { \
+            case IF1_FLOAT_TYPE_32: \
+              ast->sym->imm.v_float32 = _op im1.v_float32; break; \
+            case IF1_FLOAT_TYPE_64: \
+              ast->sym->imm.v_float64 =  _op im1.v_float64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
       }
 
 #define DO_FOLD1I(_op) \
       switch (res_type->num_kind) { \
-	case IF1_NUM_KIND_NONE: \
-	  break; \
-	case IF1_NUM_KIND_UINT: { \
-	  switch (res_type->num_index) { \
-	    case IF1_INT_TYPE_1:  \
-	      ast->sym->imm.v_bool = _op im1.v_bool; break; \
-	    case IF1_INT_TYPE_8:  \
-	      ast->sym->imm.v_uint8 = _op im1.v_uint8; break; \
-	    case IF1_INT_TYPE_16: \
-	      ast->sym->imm.v_uint16 = _op im1.v_uint16; break; \
-	    case IF1_INT_TYPE_32: \
-	      ast->sym->imm.v_uint32 = _op im1.v_uint32; break; \
-	    case IF1_INT_TYPE_64: \
-	      ast->sym->imm.v_uint64 = _op im1.v_uint64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
-	} \
-	case IF1_NUM_KIND_INT: { \
-	  switch (res_type->num_index) { \
-	    case IF1_INT_TYPE_8:  \
-	      ast->sym->imm.v_int8 = _op im1.v_int8; break; \
-	    case IF1_INT_TYPE_16: \
-	      ast->sym->imm.v_int16 = _op im1.v_int16; break; \
-	    case IF1_INT_TYPE_32: \
-	      ast->sym->imm.v_int32 = _op im1.v_int32; break; \
-	    case IF1_INT_TYPE_64: \
-	      ast->sym->imm.v_int64 = _op im1.v_int64; break; \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
-	} \
-	case IF1_NUM_KIND_FLOAT: \
-	  switch (res_type->num_index) { \
-	    default: assert(!"case"); \
-	  } \
-	  break; \
+        case IF1_NUM_KIND_NONE: \
+          break; \
+        case IF1_NUM_KIND_UINT: { \
+          switch (res_type->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              ast->sym->imm.v_bool = _op im1.v_bool; break; \
+            case IF1_INT_TYPE_8:  \
+              ast->sym->imm.v_uint8 = _op im1.v_uint8; break; \
+            case IF1_INT_TYPE_16: \
+              ast->sym->imm.v_uint16 = _op im1.v_uint16; break; \
+            case IF1_INT_TYPE_32: \
+              ast->sym->imm.v_uint32 = _op im1.v_uint32; break; \
+            case IF1_INT_TYPE_64: \
+              ast->sym->imm.v_uint64 = _op im1.v_uint64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_INT: { \
+          switch (res_type->num_index) { \
+            case IF1_INT_TYPE_8:  \
+              ast->sym->imm.v_int8 = _op im1.v_int8; break; \
+            case IF1_INT_TYPE_16: \
+              ast->sym->imm.v_int16 = _op im1.v_int16; break; \
+            case IF1_INT_TYPE_32: \
+              ast->sym->imm.v_int32 = _op im1.v_int32; break; \
+            case IF1_INT_TYPE_64: \
+              ast->sym->imm.v_int64 = _op im1.v_int64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_FLOAT: \
+          switch (res_type->num_index) { \
+            default: assert(!"case"); \
+          } \
+          break; \
       }
 
 static int
@@ -251,62 +251,62 @@ fold_constant(IF1 *i, ParseAST *ast) {
 
 void
 convert_constant_to_immediate(Sym *sym) {
-  if (!sym->is_constant)	
+  if (!sym->is_constant)        
     return;
   switch (sym->type->num_kind) {
     case IF1_NUM_KIND_NONE:
       break;
     case IF1_NUM_KIND_UINT: {
       switch (sym->type->num_index) {
-	case IF1_INT_TYPE_8: 
-	  if (sym->constant[0] != '\'')
-	    sym->imm.v_uint8 = strtoul(sym->constant, 0, 0);
-	  else {
-	    if (sym->constant[1] != '\\')
-	      sym->imm.v_uint8 = sym->constant[1];
-	    else
-	      sym->imm.v_uint8 = sym->constant[2];
-	  }
-	  break;
-	case IF1_INT_TYPE_16:
-	  sym->imm.v_uint16 = strtoul(sym->constant, 0, 0); break;
-	case IF1_INT_TYPE_32:
-	  sym->imm.v_uint32 = strtoul(sym->constant, 0, 0); break;
-	case IF1_INT_TYPE_64:
-	  sym->imm.v_uint64 = strtoull(sym->constant, 0, 0); break;
-	default: assert(!"case");
+        case IF1_INT_TYPE_8: 
+          if (sym->constant[0] != '\'')
+            sym->imm.v_uint8 = strtoul(sym->constant, 0, 0);
+          else {
+            if (sym->constant[1] != '\\')
+              sym->imm.v_uint8 = sym->constant[1];
+            else
+              sym->imm.v_uint8 = sym->constant[2];
+          }
+          break;
+        case IF1_INT_TYPE_16:
+          sym->imm.v_uint16 = strtoul(sym->constant, 0, 0); break;
+        case IF1_INT_TYPE_32:
+          sym->imm.v_uint32 = strtoul(sym->constant, 0, 0); break;
+        case IF1_INT_TYPE_64:
+          sym->imm.v_uint64 = strtoull(sym->constant, 0, 0); break;
+        default: assert(!"case");
       }
       break;
     }
     case IF1_NUM_KIND_INT: {
       switch (sym->type->num_index) {
-	case IF1_INT_TYPE_8: 
-	  if (sym->constant[0] != '\'')
-	    sym->imm.v_int8 = strtoul(sym->constant, 0, 0);
-	  else {
-	    if (sym->constant[1] != '\\')
-	      sym->imm.v_int8 = sym->constant[1];
-	    else
-	      sym->imm.v_int8 = sym->constant[2];
-	  }
-	  break;
-	case IF1_INT_TYPE_16:
-	  sym->imm.v_int16 = strtol(sym->constant, 0, 0); break;
-	case IF1_INT_TYPE_32:
-	  sym->imm.v_int32 = strtol(sym->constant, 0, 0); break;
-	case IF1_INT_TYPE_64:
-	  sym->imm.v_int64 = strtoll(sym->constant, 0, 0); break;
-	default: assert(!"case");
+        case IF1_INT_TYPE_8: 
+          if (sym->constant[0] != '\'')
+            sym->imm.v_int8 = strtoul(sym->constant, 0, 0);
+          else {
+            if (sym->constant[1] != '\\')
+              sym->imm.v_int8 = sym->constant[1];
+            else
+              sym->imm.v_int8 = sym->constant[2];
+          }
+          break;
+        case IF1_INT_TYPE_16:
+          sym->imm.v_int16 = strtol(sym->constant, 0, 0); break;
+        case IF1_INT_TYPE_32:
+          sym->imm.v_int32 = strtol(sym->constant, 0, 0); break;
+        case IF1_INT_TYPE_64:
+          sym->imm.v_int64 = strtoll(sym->constant, 0, 0); break;
+        default: assert(!"case");
       }
       break;
     }
     case IF1_NUM_KIND_FLOAT:
       switch (sym->type->num_index) {
-	case IF1_FLOAT_TYPE_32:
-	  sym->imm.v_float32 = strtod(sym->constant, 0); break;
-	case IF1_FLOAT_TYPE_64:
-	  sym->imm.v_float64 = strtod(sym->constant, 0); break;
-	default: assert(!"case");
+        case IF1_FLOAT_TYPE_32:
+          sym->imm.v_float32 = strtod(sym->constant, 0); break;
+        case IF1_FLOAT_TYPE_64:
+          sym->imm.v_float64 = strtod(sym->constant, 0); break;
+        default: assert(!"case");
       }
       break;
   }
@@ -324,8 +324,8 @@ ast_constant_fold(IF1 *i, ParseAST *ast) {
     case AST_op: {
       ast->prim = i->primitives->find(ast);
       if (ast->prim)
-	if (fold_constant(i, ast) < 0)
-	  return -1;
+        if (fold_constant(i, ast) < 0)
+          return -1;
       break;
     }
     default: break;

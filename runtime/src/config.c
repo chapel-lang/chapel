@@ -64,7 +64,7 @@ void printConfigVarTable(void) {
     if (moduleName == NULL) {
       moduleName = configVar->moduleName;
       if (strcmp(first->moduleName, last->moduleName) != 0) {
-	fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
+        fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
       }
     }
     if (strcmp(configVar->moduleName, moduleName) != 0) {
@@ -75,7 +75,7 @@ void printConfigVarTable(void) {
     fprintf(stdout, "  %*s: ", longestName, configVar->varName);
     if (configVar->setValue) {
       fprintf(stdout, "%s (default:  %s)\n", configVar->setValue, 
-	       configVar->defaultValue);
+               configVar->defaultValue);
     } else {
       fprintf(stdout, "%s\n", configVar->defaultValue);
     }
@@ -102,16 +102,16 @@ static configVarType* lookupConfigVar(char* varName, char* moduleName) {
 
     if (strcmp(configVar->varName, varName) == 0) {
       if (strcmp(moduleName, "") == 0) {
-	numTimesFound++;
-	if (numTimesFound == 1) {
-	  foundConfigVar = configVar;
-	} else {
-	  foundConfigVar = ambiguousConfigVar;
-	}
+        numTimesFound++;
+        if (numTimesFound == 1) {
+          foundConfigVar = configVar;
+        } else {
+          foundConfigVar = ambiguousConfigVar;
+        }
       } else {
-	if (strcmp(configVar->moduleName, moduleName) == 0) {
-	  foundConfigVar = configVar;
-	}
+        if (strcmp(configVar->moduleName, moduleName) == 0) {
+          foundConfigVar = configVar;
+        }
       }
     }
   }
@@ -128,17 +128,17 @@ void initSetValue(char* varName, char* value, char* moduleName) {
   if (configVar == NULL) {
     if (strcmp(moduleName, "") != 0) {
       fprintf(stderr, "***Error:  There is no \"%s\" config var in %s***\n", 
-	      varName, moduleName);
+              varName, moduleName);
       exit(0);
     } else {
       fprintf(stderr, "***Error:  There is no config var \"%s\" in the "
-	      "program***\n", varName);
+              "program***\n", varName);
       exit(0);
     }
   } else if (configVar == ambiguousConfigVar) {
     fprintf(stderr, "***Error:  Config var \"%s\" is defined in more than one "
-	    "module.  Use \"-h\" for a list of config vars and \"-s<module>"
-	    ".%s\" to indicate which to use.***\n", varName, varName);
+            "module.  Use \"-h\" for a list of config vars and \"-s<module>"
+            ".%s\" to indicate which to use.***\n", varName, varName);
     exit(0);
   }
   _copy_string(&configVar->setValue, value);
@@ -148,7 +148,7 @@ void initSetValue(char* varName, char* value, char* moduleName) {
 char* lookupSetValue(char* varName, char* moduleName) {
   if (strcmp(moduleName, "") == 0) {
     fprintf(stderr, "***Internal Error:  Attempted to lookup value with "
-	    "the module name an empty string***\n");
+            "the module name an empty string***\n");
     exit(0);
   }
 
@@ -185,19 +185,19 @@ void installConfigVar(char* varName, char* value, char* moduleName) {
 
 
 int setInCommandLine_integer64(char* varName, _integer64* value, 
-			       char* moduleName) {
+                               char* moduleName) {
   int varSet = 0;
   char *setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     char extraChars;
     int numScans = sscanf(setValue, _default_format_read_integer64"%c", 
-		      value, &extraChars);
+                      value, &extraChars);
     if (numScans == 1) {
       varSet = 1;
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-	      " \"%s\" of type integer***\n", setValue, varName);
+              " \"%s\" of type integer***\n", setValue, varName);
       exit(0);
     }
   }   
@@ -206,19 +206,19 @@ int setInCommandLine_integer64(char* varName, _integer64* value,
 
 
 int setInCommandLine_float64(char* varName, _float64* value, 
-			     char* moduleName) {
+                             char* moduleName) {
   int varSet = 0;
   char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     char extraChars;
     int numScans = sscanf(setValue, _default_format_read_float64"%c", 
-		      value, &extraChars);
+                      value, &extraChars);
     if (numScans == 1) {
       varSet = 1;
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-	      " \"%s\" of type float***\n", setValue, varName);
+              " \"%s\" of type float***\n", setValue, varName);
       exit(0);
     }
   }
@@ -227,7 +227,7 @@ int setInCommandLine_float64(char* varName, _float64* value,
 
 
 int setInCommandLine_boolean(char* varName, _boolean* value, 
-			     char* moduleName) {
+                             char* moduleName) {
   int varSet = 0;
   char* setValue = lookupSetValue(varName, moduleName);
 
@@ -237,7 +237,7 @@ int setInCommandLine_boolean(char* varName, _boolean* value,
       varSet = 1;
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-	      " \"%s\" of type boolean***\n", setValue, varName);
+              " \"%s\" of type boolean***\n", setValue, varName);
       exit(0);
     }
   }
@@ -258,7 +258,7 @@ int setInCommandLine_string(char* varName, _string* value, char* moduleName) {
 
 
 int setInCommandLine_complex128(char* varName, _complex128* value, 
-				char* moduleName) {
+                                char* moduleName) {
   int varSet = 0;
   char* setValue = lookupSetValue(varName, moduleName);
 
@@ -266,12 +266,12 @@ int setInCommandLine_complex128(char* varName, _complex128* value,
     char extraChars;
     char imaginaryI = 'i';
     int numScans = sscanf(setValue, _default_format_read_complex128"%c", 
-		      &(value->re), &(value->im), &imaginaryI, &extraChars);
+                      &(value->re), &(value->im), &imaginaryI, &extraChars);
     if ((numScans == 3) && (imaginaryI == 'i')) {
       varSet = 1;
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var "
-	      "\"%s\" of type complex***\n", setValue, varName); 
+              "\"%s\" of type complex***\n", setValue, varName); 
       exit(0);
     }
   }

@@ -40,8 +40,8 @@ void SymScope::traverse(SymtabTraversal* traversal) {
     traversal->processSymbol(link->pSym);
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(link->pSym)) {
       while (fn->overload) {
-	fn = fn->overload;
-	traversal->processSymbol(fn);
+        fn = fn->overload;
+        traversal->processSymbol(fn);
       }
     }
     link = nextLink(SymLink, link);
@@ -104,24 +104,24 @@ void SymScope::remove(Symbol* sym) {
     SymLink* tmp = firstSym;
     while (tmp) {
       if (tmp->pSym == sym) {
-	if (tmp == firstSym) {
-	  firstSym = dynamic_cast<SymLink*>(tmp->next);
-	  firstSym->prev = NULL;
-	}
-	else if (tmp == lastSym) {
-	  lastSym = dynamic_cast<SymLink*>(tmp->prev);
-	  lastSym->next = NULL;
-	}
-	else {
-	  tmp->prev->next = tmp->next;
-	  tmp->next->prev = tmp->prev;
-	}
+        if (tmp == firstSym) {
+          firstSym = dynamic_cast<SymLink*>(tmp->next);
+          firstSym->prev = NULL;
+        }
+        else if (tmp == lastSym) {
+          lastSym = dynamic_cast<SymLink*>(tmp->prev);
+          lastSym->next = NULL;
+        }
+        else {
+          tmp->prev->next = tmp->next;
+          tmp->next->prev = tmp->prev;
+        }
       }
       else if (tmp == lastSym) {
-	INT_FATAL(sym, "Symbol not found in scope from which deleted");
+        INT_FATAL(sym, "Symbol not found in scope from which deleted");
       }
       else {
-	tmp = nextLink(SymLink, tmp);
+        tmp = nextLink(SymLink, tmp);
       }
     }
   }
@@ -326,7 +326,7 @@ void SymScope::codegen(FILE* outfile, char* separator) {
        tmp = nextLink(SymLink, tmp)) {
     if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
       if (dynamic_cast<EnumType*>(type_sym->type)) {
-	tmp->pSym->codegenDef(outfile);
+        tmp->pSym->codegenDef(outfile);
       }
     }
   }
@@ -345,7 +345,7 @@ void SymScope::codegen(FILE* outfile, char* separator) {
       tmp->pSym->codegenDefList(outfile, "\n");
     } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
       if (!dynamic_cast<EnumType*>(type_sym->type)) {
-	tmp->pSym->codegenDef(outfile);
+        tmp->pSym->codegenDef(outfile);
       }
     } else {
       tmp->pSym->codegenDef(outfile);
@@ -370,36 +370,36 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   for(SymLink* tmp = firstSym; tmp; tmp = nextLink(SymLink, tmp)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp->pSym)) {
       while (fn) {
-	char *n = if1_cannonicalize_string(if1, fn->name);
-	Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-	if (!fs) fs = new Vec<FnSymbol*>;
-	fs->add(fn);
-	visibleFunctions.put(n, fs);
-	fn = fn->overload;
+        char *n = if1_cannonicalize_string(if1, fn->name);
+        Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+        if (!fs) fs = new Vec<FnSymbol*>;
+        fs->add(fn);
+        visibleFunctions.put(n, fs);
+        fn = fn->overload;
       }
     } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
       if (ClassType* class_type = dynamic_cast<ClassType*>(type_sym->type)) {
-	if (class_type->value || class_type->union_value) {
-	  forv_Vec(FnSymbol, method, class_type->methods) {
-	    while (method) {
-	      char *n = if1_cannonicalize_string(if1, method->name);
-	      Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-	      if (!fs) fs = new Vec<FnSymbol*>;
-	      fs->add(method);
-	      visibleFunctions.put(n, fs);
-	      method = method->overload;
-	    }
-	  }
-	  FnSymbol* constructor = class_type->defaultConstructor;
-	  while (constructor) {
-	    char *n = if1_cannonicalize_string(if1, constructor->name);
-	    Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-	    if (!fs) fs = new Vec<FnSymbol*>;
-	    fs->add(constructor);
-	    visibleFunctions.put(n, fs);
-	    constructor = constructor->overload;
-	  }
-	}
+        if (class_type->value || class_type->union_value) {
+          forv_Vec(FnSymbol, method, class_type->methods) {
+            while (method) {
+              char *n = if1_cannonicalize_string(if1, method->name);
+              Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+              if (!fs) fs = new Vec<FnSymbol*>;
+              fs->add(method);
+              visibleFunctions.put(n, fs);
+              method = method->overload;
+            }
+          }
+          FnSymbol* constructor = class_type->defaultConstructor;
+          while (constructor) {
+            char *n = if1_cannonicalize_string(if1, constructor->name);
+            Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+            if (!fs) fs = new Vec<FnSymbol*>;
+            fs->add(constructor);
+            visibleFunctions.put(n, fs);
+            constructor = constructor->overload;
+          }
+        }
       }
     }
   }
@@ -422,9 +422,9 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
     for (int i = 0; i < internalPrelude->modScope->visibleFunctions.n; i++) {
       Vec<FnSymbol *> *fs = visibleFunctions.get(internalPrelude->modScope->visibleFunctions.v[i].key);
       if (!fs)
-	fs = internalPrelude->modScope->visibleFunctions.v[i].value;
+        fs = internalPrelude->modScope->visibleFunctions.v[i].value;
       else
-	fs->append(*internalPrelude->modScope->visibleFunctions.v[i].value);
+        fs->append(*internalPrelude->modScope->visibleFunctions.v[i].value);
       visibleFunctions.put(internalPrelude->modScope->visibleFunctions.v[i].key, fs);
     }
   } else if (parent) {
@@ -434,9 +434,9 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
     for (int i = 0; i < parent->visibleFunctions.n; i++) {
       Vec<FnSymbol *> *fs = visibleFunctions.get(parent->visibleFunctions.v[i].key);
       if (!fs)
-	fs = parent->visibleFunctions.v[i].value;
+        fs = parent->visibleFunctions.v[i].value;
       else
-	fs->append(*parent->visibleFunctions.v[i].value);
+        fs->append(*parent->visibleFunctions.v[i].value);
       visibleFunctions.put(parent->visibleFunctions.v[i].key, fs);
     }
   }
@@ -448,10 +448,10 @@ void SymScope::printVisibleFunctions() {
     Vec<FnSymbol *> *fs = visibleFunctions.v[i].value;
     if (fs) {
       forv_Vec(FnSymbol, fn, *fs) {
-	if (fn) {
-	  fn->print(stdout);
-	  printf("\n");
-	}
+        if (fn) {
+          fn->print(stdout);
+          printf("\n");
+        }
       }
     }
   }

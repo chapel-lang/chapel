@@ -18,9 +18,9 @@ static ModuleSymbol* findUniqueUserModule(ModuleSymbol* moduleList) {
   while (moduleList) {
     if (!moduleList->internal && moduleList != commonModule) {
       if (userModule == NULL) {
-	userModule = moduleList;
+        userModule = moduleList;
       } else {
-	return NULL;  // two user modules defined
+        return NULL;  // two user modules defined
       }
     }
     moduleList = nextLink(ModuleSymbol, moduleList);
@@ -46,8 +46,8 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(userModule->modScope);
       DefStmt* maindefstmt = Symboltable::defineFunction("main", NULL, 
-							 dtVoid, mainBody, 
-							 true);
+                                                         dtVoid, mainBody, 
+                                                         true);
       Symboltable::setCurrentScope(saveScope);
       userModule->stmts->append(maindefstmt);
       mainFn = maindefstmt->fnDef();

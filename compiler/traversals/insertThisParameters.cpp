@@ -18,9 +18,9 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     /*** mangle type names in class types ***/
     if (TypeSymbol* type_sym = def_stmt->typeDef()) {
       if (ClassType* classType = dynamic_cast<ClassType*>(type_sym->type)) {
-	forv_Vec(TypeSymbol, type, classType->types) {
-	  type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
-	}
+        forv_Vec(TypeSymbol, type, classType->types) {
+          type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
+        }
       }
     }
     return;
@@ -33,21 +33,21 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     Symbol* classBinding = Symboltable::lookup(fn->classBinding->name);
     if (classBinding) {
       if (TypeSymbol* classBindingTypeSymbol =
-	  dynamic_cast<TypeSymbol*>(classBinding)) {
-	if (ClassType* classBindingType =
-	    dynamic_cast<ClassType*>(classBindingTypeSymbol->type)) {
-	  fn->classBinding = classBinding;
-	  fn->method_type = SECONDARY_METHOD;
-	  classBindingType->methods.add(fn);
-	  Symboltable::defineInScope(fn, classBindingType->classScope);
-	  fn->paramScope->parent = classBindingType->classScope;
-	}
-	else {
-	  USR_FATAL(fn, "Function is not bound to legal class");
-	}
+          dynamic_cast<TypeSymbol*>(classBinding)) {
+        if (ClassType* classBindingType =
+            dynamic_cast<ClassType*>(classBindingTypeSymbol->type)) {
+          fn->classBinding = classBinding;
+          fn->method_type = SECONDARY_METHOD;
+          classBindingType->methods.add(fn);
+          Symboltable::defineInScope(fn, classBindingType->classScope);
+          fn->paramScope->parent = classBindingType->classScope;
+        }
+        else {
+          USR_FATAL(fn, "Function is not bound to legal class");
+        }
       }
       else {
-	USR_FATAL(fn, "Function is not bound to legal class");
+        USR_FATAL(fn, "Function is not bound to legal class");
       }
     }
     else {

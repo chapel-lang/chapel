@@ -20,11 +20,11 @@ mark_all_dead(FA *fa) {
       p->is_dead = 1;
     forv_Var(v, f->fa_all_Vars)
       for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key)
-	v->avars.v[i].value->is_dead = 1;
+        v->avars.v[i].value->is_dead = 1;
     forv_Sym(s, fa->pdb->if1->allsyms)
       if (s->var)
-	for (int i = 0; i < s->var->avars.n; i++) if (s->var->avars.v[i].key)
-	  s->var->avars.v[i].value->is_dead = 1;
+        for (int i = 0; i < s->var->avars.n; i++) if (s->var->avars.v[i].key)
+          s->var->avars.v[i].value->is_dead = 1;
   }
 }
 
@@ -34,15 +34,15 @@ print_dead(FA *fa) {
   forv_Fun(f, fa->funs) {
     forv_PNode(p, f->fa_all_PNodes)
       if (p->is_dead) {
-	ndead_pnodes++;
-	printf("PNode %d DEAD\n", p->id);
+        ndead_pnodes++;
+        printf("PNode %d DEAD\n", p->id);
       }
     forv_Var(v, f->fa_all_Vars)
       for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
-	if (v->avars.v[i].value->is_dead) {
-	  ndead_avars++;
-	  printf("AVar %d:%d:%d DEAD\n", v->sym->id, v->id, v->avars.v[i].value->id);
-	}
+        if (v->avars.v[i].value->is_dead) {
+          ndead_avars++;
+          printf("AVar %d:%d:%d DEAD\n", v->sym->id, v->id, v->avars.v[i].value->id);
+        }
       }
   }
   printf("%d PNodes DEAD\n", ndead_pnodes);
@@ -54,9 +54,9 @@ mark_initial_live_pnodes(FA *fa) {
   forv_Fun(f, fa->funs) {
     forv_PNode(p, f->fa_all_PNodes) {
       if (p->code && p->code->kind == Code_SEND && 
-	  (!is_functional(if1, p->code) &&
-	   p->prim != prim_reply))
-	p->is_dead = 0;
+          (!is_functional(if1, p->code) &&
+           p->prim != prim_reply))
+        p->is_dead = 0;
     }
   }
 }
@@ -78,34 +78,34 @@ mark_live_avars(FA *fa) {
   forv_Fun(f, fa->funs) {
     forv_PNode(p, f->fa_all_PNodes) {
       if (!p->is_dead) {
-	forv_Var(v, p->rvals) {
-	  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
-	    AVar *av = v->avars.v[i].value;
-	    if (av->is_dead) 
-	      mark_live_avar(av);
-	  }
-	}
+        forv_Var(v, p->rvals) {
+          for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+            AVar *av = v->avars.v[i].value;
+            if (av->is_dead) 
+              mark_live_avar(av);
+          }
+        }
       }
     }
     forv_Var(v, f->fa_all_Vars) {
       Sym *s = v->sym;
       for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
-	AVar *av = v->avars.v[i].value;
-	if (av->is_dead) {
-	  if (s->is_pattern) {
-	    forv_Sym(h, s->has) {
-	      AVar *hav = make_AVar(h->var, (EntrySet*)av->contour);
-	      if (!hav->is_dead)
-		mark_live_avar(av);
-	    }
-	  }
-	  forv_CreationSet(cs, *av->out) {
-	    forv_AVar(iv, cs->vars) {
-	      if (!iv->is_dead)
-		mark_live_avar(av);
-	    }
-	  }
-	}
+        AVar *av = v->avars.v[i].value;
+        if (av->is_dead) {
+          if (s->is_pattern) {
+            forv_Sym(h, s->has) {
+              AVar *hav = make_AVar(h->var, (EntrySet*)av->contour);
+              if (!hav->is_dead)
+                mark_live_avar(av);
+            }
+          }
+          forv_CreationSet(cs, *av->out) {
+            forv_AVar(iv, cs->vars) {
+              if (!iv->is_dead)
+                mark_live_avar(av);
+            }
+          }
+        }
       }
     }
   }
@@ -125,23 +125,23 @@ mark_live_pnodes(FA *fa) {
   forv_Fun(f, fa->funs) {
     forv_PNode(p, f->fa_all_PNodes) {
       if (p->is_dead && p->code)
-	switch (p->code->kind) {
-	  default: break;
-	  case Code_SEND:
-	    forv_Var(v, p->lvals) {
-	      for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
-		AVar *av = v->avars.v[i].value;
-		if (!av->is_dead) { 
-		  p->is_dead = 0;
-		  mark_live_avars_again = 1;
-		}
-	      }
-	    }
-	    break;
-	  case Code_IF:
-	    mark_live_var(p->rvals.v[0]); // conservative
-	    break;
-	}
+        switch (p->code->kind) {
+          default: break;
+          case Code_SEND:
+            forv_Var(v, p->lvals) {
+              for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+                AVar *av = v->avars.v[i].value;
+                if (!av->is_dead) { 
+                  p->is_dead = 0;
+                  mark_live_avars_again = 1;
+                }
+              }
+            }
+            break;
+          case Code_IF:
+            mark_live_var(p->rvals.v[0]); // conservative
+            break;
+        }
     }
   }
 }

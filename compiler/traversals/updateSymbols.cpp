@@ -20,10 +20,10 @@ void UpdateSymbols::preProcessExpr(Expr* expr) {
   for (int i = 0; i < copy_map->n; i++) {
     if (copy_map->v[i].key == sym_expr->var) {
       if (Symbol* new_sym = dynamic_cast<Symbol*>(copy_map->v[i].value)) {
-	sym_expr->var = new_sym;
+        sym_expr->var = new_sym;
       }
       else {
-	INT_FATAL("Major error in UpdateSymbols");
+        INT_FATAL("Major error in UpdateSymbols");
       }
     }
   }

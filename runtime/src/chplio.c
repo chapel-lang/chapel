@@ -88,7 +88,7 @@ void _read_string(FILE* infile, char* format, _string* val) {
   fscanf(infile, format, localVal);
   if (strlen(localVal) == (_default_string_length - 1)) {
     fprintf(stderr, "***Error:  The maximum string length is %d***\n", 
-	    _default_string_length);
+            _default_string_length);
     exit(0);
   }
   _copy_string(val, localVal);

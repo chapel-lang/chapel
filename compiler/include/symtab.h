@@ -21,7 +21,7 @@ class Symboltable {
 
   static void traverse(SymtabTraversal* traversal);
   static void traverseFromScope(SymtabTraversal* traversal,
-				SymScope* scope);
+                                SymScope* scope);
 
   static void pushScope(scopeType type);
   static SymScope* popScope(void);
@@ -39,13 +39,13 @@ class Symboltable {
   **/
   static Symbol* lookupInScope(char* name, SymScope* scope);
   static Symbol* lookupFromScope(char* name, SymScope* scope, 
-				 bool genError = false);
+                                 bool genError = false);
 
   static Symbol* lookupInCurrentScope(char* name);
   static Symbol* lookup(char* name, bool genError = false);
 
   static Symbol* lookupInternal(char* name, 
-				scopeType scope = SCOPE_INTERNAL_PRELUDE);
+                                scopeType scope = SCOPE_INTERNAL_PRELUDE);
   static TypeSymbol* lookupInternalType(char* name);
 
   static Expr* startLetExpr(void);
@@ -55,39 +55,39 @@ class Symboltable {
   static ModuleSymbol* startModuleDef(char* name, bool internal = false);
   static DefExpr* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
-					    Expr* init = NULL, 
-					    varType vartag = VAR_NORMAL, 
-					    consType constag = VAR_VAR);
+                                            Expr* init = NULL, 
+                                            varType vartag = VAR_NORMAL, 
+                                            consType constag = VAR_VAR);
   static ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
-						Type* type, Expr* init);
-	
+                                                Type* type, Expr* init);
+        
   static DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type, 
-						Expr* init, varType vartag, 
-						consType consTag);
+                                                Expr* init, varType vartag, 
+                                                consType consTag);
   static DefExpr* Symboltable::defineVarDef1(Symbol* idents,
-						 Type* type, 
-						 Expr* init);
+                                                 Type* type, 
+                                                 Expr* init);
   static DefExpr* Symboltable::defineVarDef2(DefExpr* stmts,
-						 varType vartag, 
-						 consType constag);
+                                                 varType vartag, 
+                                                 consType constag);
 
   static DefStmt* Symboltable::defineSingleVarDefStmt(char* name, 
-						      Type* type,
-						      Expr* init,
-						      varType vartag,
-						      consType constag);
+                                                      Type* type,
+                                                      Expr* init,
+                                                      varType vartag,
+                                                      consType constag);
   static ForallExpr* startForallExpr(Expr* domainExpr, 
-				     Expr* indexExpr = NULL);
+                                     Expr* indexExpr = NULL);
   static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 
-				      Expr* argExpr = NULL);
+                                      Expr* argExpr = NULL);
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(FnSymbol* fnsym, bool noparens = false);
   static DefExpr* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
-			      Type* retType, Stmt* body, 
-			      bool isExtern = false);
+                              Type* retType, Stmt* body, 
+                              bool isExtern = false);
   static DefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
-				 Stmt* body, bool isExtern = false);
+                                 Stmt* body, bool isExtern = false);
 
   static TypeSymbol* startClassDef(char* name, bool isValueClass, bool isUnion);
   static DefExpr* finishClassDef(TypeSymbol* classSym, Stmt* definition);

@@ -6,7 +6,7 @@
 #include "symbol.h"
 
 enum scopeType {
-	//builtins at the global level
+        //builtins at the global level
   SCOPE_INTRINSIC = -4,
   SCOPE_INTERNAL_PRELUDE = -3,
   SCOPE_PRELUDE = -2,
@@ -32,7 +32,7 @@ class SymScope : public gc {
   
   ScopeLookupCache *lookupCache;
 
-	//statement context
+        //statement context
   Stmt* stmtContext;
   //symbol context
   Symbol* symContext;

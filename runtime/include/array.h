@@ -21,12 +21,12 @@ typedef struct __arr_perdim {
     for (__dim=rank-2; __dim>=0; __dim--) { \
       arr.dim_info[__dim].off = dom.dim_info[__dim].lo; \
       arr.dim_info[__dim].blk = arr.dim_info[__dim+1].blk \
-	* ((dom.dim_info[__dim+1].hi - dom.dim_info[__dim+1].lo + 1)  \
-	   / dom.dim_info[__dim+1].str); \
+        * ((dom.dim_info[__dim+1].hi - dom.dim_info[__dim+1].lo + 1)  \
+           / dom.dim_info[__dim+1].str); \
     } \
     arr.size = arr.dim_info[0].blk \
       * ((dom.dim_info[__dim+1].hi - dom.dim_info[__dim+1].lo + 1) \
-	 / dom.dim_info[__dim+1].str); \
+         / dom.dim_info[__dim+1].str); \
     arr.base = (elemtype*)_chpl_malloc(arr.size, sizeof(elemtype), "array " #arr); \
   }
 

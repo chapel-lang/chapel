@@ -56,7 +56,7 @@ static void build_constructor(ClassType* class_type) {
     Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
     if (!rhs) {
       if (ClassType* nested_class_type = dynamic_cast<ClassType*>(tmp->type)) {
-	rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
+        rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
       } else continue; // hack for classes that are cloned; we don't
                        // actually want to build the constructor for
                        // cloned classes until they are cloned
@@ -95,7 +95,7 @@ static void build_union_id_enum(ClassType* class_type) {
 
   EnumSymbol* id_list = NULL;
   char* id_name = glomstrings(4, "_", class_type->symbol->name, "_union_id_",
-			      "__uninitialized");
+                              "__uninitialized");
   EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
   id_list = appendLink(id_list, id_symbol);
   forv_Vec(VarSymbol, tmp, class_type->fields) {

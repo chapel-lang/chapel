@@ -127,8 +127,8 @@ static void
 copyright(ArgumentState *arg_state, char *arg_unused) {
   fprintf(stderr, "\n"
 #include "COPYRIGHT"
-	  "\n"
-	  );
+          "\n"
+          );
   clean_exit(0);
 }
 
@@ -251,7 +251,7 @@ main(int argc, char *argv[]) {
   startCatchingSignals();
   
   compute_program_name_loc(argv[0], &(arg_state.program_name),
-			   &(arg_state.program_loc));
+                           &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);

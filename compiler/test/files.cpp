@@ -83,8 +83,8 @@ void deleteTmpDir(void) {
 #ifndef DEBUGTMPDIR
   if (tmpdirname != NULL) {
     if (strlen(tmpdirname) < 1 ||
-	strchr(tmpdirname, '*') != NULL ||
-	strcmp(tmpdirname, "//") == 0) {
+        strchr(tmpdirname, '*') != NULL ||
+        strcmp(tmpdirname, "//") == 0) {
       INT_FATAL("tmp directory name looks fishy");
     }
     const char* rmdircommand = "rm -r ";
@@ -127,7 +127,7 @@ static char* stripdirectories(char* filename) {
 
 
 static void genCFilenames(char* modulename, char** outfilename, 
-			  char** extheadfilename, char** intheadfilename) {
+                          char** extheadfilename, char** intheadfilename) {
   static char* outfilesuffix = ".c";
   static char* extheadsuffix = ".h";
   static char* intheadsuffix = "-internal.h";
@@ -145,7 +145,7 @@ static FILE* openfile(char* outfilename, char* mode = "w") {
   if (outfile == NULL) {
     char* errorstr = "opening ";
     char* errormsg = glomstrings(4, errorstr, outfilename, ": ", 
-				 strerror(errno));
+                                 strerror(errno));
 
     fail(errormsg);
   }
@@ -199,9 +199,9 @@ static void genEndif(FILE* outfile) {
 
 
 void openCFiles(char* modulename, fileinfo* outfile,
-		fileinfo* extheader, fileinfo* intheader) {
+                fileinfo* extheader, fileinfo* intheader) {
   genCFilenames(modulename, &(outfile->filename),
-		&(extheader->filename), &(intheader->filename));
+                &(extheader->filename), &(intheader->filename));
 
   outfile->pathname = genIntFilename(outfile->filename);
   extheader->pathname = genIntFilename(extheader->filename);
@@ -223,7 +223,7 @@ void openCFiles(char* modulename, fileinfo* outfile,
 
 
 void closeCFiles(fileinfo* outfile, 
-		 fileinfo* extheadfile, fileinfo* intheadfile) {
+                 fileinfo* extheadfile, fileinfo* intheadfile) {
   genEndif(extheadfile->fptr);
   genEndif(intheadfile->fptr);
 
@@ -356,7 +356,7 @@ char* createGDBFile(int argc, char* argv[]) {
 void makeAndCopyBinary(void) {
   const char* gmakeflags = printSystemCommands ? "-f " : "-s -f ";
   char* command = glomstrings(4, "gmake ", gmakeflags, intDirName, 
-			      "/Makefile");
+                              "/Makefile");
   mysystem(command, "compiling generated source");
 
   command = glomstrings(4, "cp ", intExeFilename, " ", executableFilename);

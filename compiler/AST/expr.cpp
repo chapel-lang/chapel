@@ -128,9 +128,9 @@ Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
   if (update_list) {
     for (int j = 0; j < update_list->n; j++) {
       for (int i = 0; i < map->n; i++) {
-	if (update_list->v[j] == map->v[i].key) {
-	  update_list->v[j] = map->v[i].value;
-	}
+        if (update_list->v[j] == map->v[i].key) {
+          update_list->v[j] = map->v[i].value;
+        }
       }
     }
   }
@@ -352,9 +352,9 @@ Expr* Expr::extract(void) {
       next_expr->back = back;
       *back = next_expr;
       /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-	 if (prev) {
-	 prev->next = next;
-	 }
+         if (prev) {
+         prev->next = next;
+         }
       */
     }
     else {
@@ -387,7 +387,7 @@ bool Expr::isConst(void) {
 
 //Roxana: tells if an expression is a compile-time constant
 bool Expr::isParam(void){
-  return this->isComputable();	
+  return this->isComputable();  
 }
 
 long Expr::intVal(void) {
@@ -445,12 +445,12 @@ Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
     if (lfloat == NULL) {
       Literal* llit = dynamic_cast<Literal*>(l);
       lfloat = new FloatLiteral(glomstrings(2, llit->str, ".0"), 
-				atof(llit->str));
+                                atof(llit->str));
     }
     if (rcomplex->realVal == 0.0) {
       rcomplex->addReal(lfloat);
       if (op == BINOP_MINUS) {
-	rcomplex->negateImag();
+        rcomplex->negateImag();
       }
       return rcomplex;
     }
@@ -472,33 +472,33 @@ static EXPR_RW expr_read_written(Expr* expr) {
     }
     if (ArrayRef* array_expr = dynamic_cast<ArrayRef*>(parent)) {
       if (*expr->back == array_expr->baseExpr) {
-	return expr_read_written(parent);
+        return expr_read_written(parent);
       }
     }
     if (AssignOp* assignment = dynamic_cast<AssignOp*>(parent)) {
       if (assignment->left == expr) {
-	return expr_w;
+        return expr_w;
       }
     }
     if (FnCall* fn_call = dynamic_cast<FnCall*>(parent)) {
       if (typeid(*fn_call) == typeid(FnCall)) {
-	FnSymbol* fn = fn_call->findFnSymbol();
-	Symbol* formal = fn->formals;
-	for(Expr* actual = fn_call->argList;
-	    actual;
-	    actual = nextLink(Expr, actual)) {
-	  if (actual == expr) {
-	    if (ParamSymbol* formal_param = dynamic_cast<ParamSymbol*>(formal)) {
-	      if (formal_param->intent == PARAM_OUT) {
-		return expr_w;
-	      }
-	      else if (formal_param->intent == PARAM_INOUT) {
-		return expr_rw;
-	      }
-	    }
-	  }
-	  formal = nextLink(Symbol, formal);
-	}
+        FnSymbol* fn = fn_call->findFnSymbol();
+        Symbol* formal = fn->formals;
+        for(Expr* actual = fn_call->argList;
+            actual;
+            actual = nextLink(Expr, actual)) {
+          if (actual == expr) {
+            if (ParamSymbol* formal_param = dynamic_cast<ParamSymbol*>(formal)) {
+              if (formal_param->intent == PARAM_OUT) {
+                return expr_w;
+              }
+              else if (formal_param->intent == PARAM_INOUT) {
+                return expr_rw;
+              }
+            }
+          }
+          formal = nextLink(Symbol, formal);
+        }
       }
     }
   }
@@ -610,7 +610,7 @@ Expr* FloatLiteral::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 
 
 ComplexLiteral::ComplexLiteral(char* init_str, double init_imag, 
-			       double init_real, char* init_realStr) :
+                               double init_real, char* init_realStr) :
   Literal(EXPR_COMPLEXLITERAL, init_str),
   realVal(init_real),
   imagVal(init_imag),
@@ -630,7 +630,7 @@ void ComplexLiteral::addReal(FloatLiteral* init_real) {
 
 Expr* ComplexLiteral::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new ComplexLiteral(copystring(str), imagVal, realVal, 
-			    copystring(realStr));
+                            copystring(realStr));
 }
 
 
@@ -729,13 +729,13 @@ bool Variable::isConst(void) {
 
 //Roxana
 bool Variable::isParam(void){
-	return var->isParam();
+        return var->isParam();
 }
 //Roxana
 bool Variable::isComputable(void){
-	VarSymbol* vs = dynamic_cast<VarSymbol*>(var);
-	if (vs && vs->init) return vs->init->isComputable();
-	return false;
+        VarSymbol* vs = dynamic_cast<VarSymbol*>(var);
+        if (vs && vs->init) return vs->init->isComputable();
+        return false;
 }
 
 void Variable::print(FILE* outfile) {
@@ -761,8 +761,8 @@ Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
       Symboltable::startFnDef(fncopy);
       Symbol* newformals = fn->formals->copyList(clone, map, analysis_clone);
       return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
-				      fn->body->copyListInternal(clone, map, analysis_clone),
-				      fn->exportMe);
+                                      fn->body->copyListInternal(clone, map, analysis_clone),
+                                      fn->exportMe);
     }
     else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym)) {
       TypeSymbol* sym_copy = dynamic_cast<TypeSymbol*>(type_sym->copy(clone, map, analysis_clone));
@@ -805,7 +805,7 @@ void DefExpr::print(FILE* outfile) {
       fprintf(outfile, ";");
       tmp = nextLink(Symbol, tmp);
       if (tmp) {
-	fprintf(outfile, "\n");
+        fprintf(outfile, "\n");
       }
     }
   }
@@ -894,8 +894,8 @@ Expr* BinOp::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* an
 
 bool BinOp::isComputable(void) {
   return (left->isComputable() && right->isComputable() && type != BINOP_BITAND 
-  				&& type != BINOP_BITOR && type != BINOP_BITXOR);
-  							
+                                && type != BINOP_BITOR && type != BINOP_BITXOR);
+                                                        
 }
 
 void BinOp::traverseExpr(Traversal* traversal) {
@@ -1209,12 +1209,12 @@ Type* TupleSelect::typeInfo(void) {
       IntLiteral* index = dynamic_cast<IntLiteral*>(argList);
 
       if (!index) {
-	INT_FATAL(this, "Tuple indexing only support with integer literals");
+        INT_FATAL(this, "Tuple indexing only support with integer literals");
       }
 
       Expr* expr = dynamic_cast<Expr*>(tuple->exprs->get(index->val));
       if (expr) {
-	return expr->typeInfo();
+        return expr->typeInfo();
       }
     }
 
@@ -1301,17 +1301,17 @@ void FnCall::codegen(FILE* outfile) {
     bool firstArg = true;
     while (actuals && formals) {
       if (firstArg) {
-	firstArg = false;
+        firstArg = false;
       } else {
-	fprintf(outfile, ", ");
+        fprintf(outfile, ", ");
       }
       bool ampersand = formals->requiresCPtr();
       if (ampersand) {
-	fprintf(outfile, "&(");
+        fprintf(outfile, "&(");
       }
       actuals->codegen(outfile);
       if (ampersand) {
-	fprintf(outfile, ")");
+        fprintf(outfile, ")");
       }
 
       formals = nextLink(ParamSymbol, formals);
@@ -1491,7 +1491,7 @@ void CastExpr::codegen(FILE* outfile) {
 
 
 ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
-		       Expr* init_argExpr) :
+                       Expr* init_argExpr) :
   Expr(EXPR_REDUCE),
   reduceType(init_reduceType),
   redDim(init_redDim),
@@ -1653,7 +1653,7 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 
 
 ForallExpr::ForallExpr(Expr* init_domains, Expr* init_indices,
-		       Expr* init_forallExpr) :
+                       Expr* init_forallExpr) :
   Expr(EXPR_FORALL),
   domains(init_domains),
   indices(init_indices),
@@ -1678,8 +1678,8 @@ void ForallExpr::setIndexScope(SymScope* init_indexScope) {
 
 Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new ForallExpr(domains->copyListInternal(clone, map, analysis_clone),
-			indices->copyInternal(clone, map, analysis_clone),
-			forallExpr->copyInternal(clone, map, analysis_clone));
+                        indices->copyInternal(clone, map, analysis_clone),
+                        forallExpr->copyInternal(clone, map, analysis_clone));
 }
 
 
@@ -1782,7 +1782,7 @@ void LetExpr::setLetScope(SymScope* init_letScope) {
 Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   LetExpr* copy =
     new LetExpr(symDefs->copyListInternal(clone, map, analysis_clone),
-		innerExpr->copyInternal(clone, map, analysis_clone));
+                innerExpr->copyInternal(clone, map, analysis_clone));
   copy->setLetScope(letScope);
   return copy;
 }

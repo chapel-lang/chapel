@@ -23,26 +23,26 @@ EXTERN char *code_string[] EXTERN_INIT(CPP_IS_LAME);
 
 class Code : public gc {
  public:
-  Code_kind	kind;
+  Code_kind     kind;
   //the variables this node reads
-  Vec<Sym *> 	rvals;
+  Vec<Sym *>    rvals;
   //the variables this node assigns
-  Vec<Sym *> 	lvals;
-  Label		*label[2];
-  Vec<Code *> 	sub;
-  AST		*ast;
-  Prim		*prim;
+  Vec<Sym *>    lvals;
+  Label         *label[2];
+  Vec<Code *>   sub;
+  AST           *ast;
+  Prim          *prim;
 
-  char 		*pathname();
-  char 		*filename();
-  int 		line();
-  int 		log_line(); // squelch line number in prelude (for testing)
+  char          *pathname();
+  char          *filename();
+  int           line();
+  int           log_line(); // squelch line number in prelude (for testing)
 
-  unsigned int	partial:2;
+  unsigned int  partial:2;
   unsigned int  live:1;
-  unsigned int	dead:1;	// used by if1.cpp
-  Code		*cont;	// used by cfg.cpp
-  PNode		*pn;	// used by cfg.cpp
+  unsigned int  dead:1; // used by if1.cpp
+  Code          *cont;  // used by cfg.cpp
+  PNode         *pn;    // used by cfg.cpp
 
   Code(Code_kind k = Code_SUB) { memset(this, 0, sizeof *this); kind = k; }
   int is_group() { return kind == Code_SUB || kind == Code_SEQ || kind == Code_CONC; }
@@ -51,9 +51,9 @@ class Code : public gc {
 
 class Label : public gc {
  public:
-  int			id;
-  unsigned int		live:1;
-  Code			*code;			// used by fun.cpp
+  int                   id;
+  unsigned int          live:1;
+  Code                  *code;                  // used by fun.cpp
 
   Label() { memset(this, 0, sizeof *this); }
 };

@@ -56,7 +56,7 @@ test_map() {
   if ((ssm).n) 
     for (
       MapElem<char *, char*> *qq__x = (MapElem<char *, char*>*)(void*)0, 
-	    *x = &(ssm).v[0]; 
+            *x = &(ssm).v[0]; 
       ((intptr_t)(qq__x) < (ssm).n) && (ssm).v[(intptr_t)qq__x].key && 
          ((x = &(ssm).v[(intptr_t)qq__x]) || 1);
       qq__x = (MapElem<char *, char*>*)(((intptr_t)qq__x) + 1))

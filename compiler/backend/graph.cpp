@@ -12,14 +12,14 @@
 #include "ast.h"
 #include "var.h"
 
-#define G_BOX		(1<<0)
-#define G_BLUE		(1<<1)
-#define G_GREEN 	(1<<2)
-#define G_RED 		(1<<3)
+#define G_BOX           (1<<0)
+#define G_BLUE          (1<<1)
+#define G_GREEN         (1<<2)
+#define G_RED           (1<<3)
 
 // options to pnode print
-#define G_DOM		(1<<10)
-#define G_LOOP		(1<<11)
+#define G_DOM           (1<<10)
+#define G_LOOP          (1<<11)
 
 char graph_fun[80];
 char graph_var[80];
@@ -46,9 +46,9 @@ graph_start(char *fn, char *tag, char *name) {
       fprintf(fp, "graph: {\n");
       fprintf(fp, "\ttitle: \"%s\"\n", name);
       fprintf(fp, 
-	      "\tedge.arrowsize: 15\n"
-	      "\tedge.thickness: 3\n"
-	);
+              "\tedge.arrowsize: 15\n"
+              "\tedge.thickness: 3\n"
+        );
       break;
     case GraphViz:
       fprintf(fp, "digraph G {\n");
@@ -71,19 +71,19 @@ graph_node(FILE *fp, void *id, char *label, int options) {
     case VCG:
       fprintf(fp, "node: {title:\"%p\" label:\"%s\"", id, label);
       if (options & G_BLUE)
-	fprintf(fp, " color: blue");
+        fprintf(fp, " color: blue");
       if (options & G_GREEN)
-	fprintf(fp, " color: green");
+        fprintf(fp, " color: green");
       fprintf(fp, "}\n");
       break;
     case GraphViz:
       fprintf(fp, "n%p [label=\"%s\"", id, label);
       if (options & G_BOX)
-	fprintf(fp, " shape=box");
+        fprintf(fp, " shape=box");
       if (options & G_BLUE)
-	fprintf(fp, " color=blue");
+        fprintf(fp, " color=blue");
       if (options & G_GREEN)
-	fprintf(fp, " color=green");
+        fprintf(fp, " color=green");
       fprintf(fp, "];\n");
       break;
     default: assert(!"bad case");
@@ -96,21 +96,21 @@ graph_edge(FILE *fp, void *a, void *b, int options) {
     case VCG:
       fprintf(fp, "edge: {sourcename:\"%p\" targetname:\"%p\"", a, b);
       if (options & G_BLUE)
-	fprintf(fp, " color: blue");
+        fprintf(fp, " color: blue");
       if (options & G_GREEN)
-	fprintf(fp, " color: green");
+        fprintf(fp, " color: green");
       if (options & G_RED)
-	fprintf(fp, " color: red");
+        fprintf(fp, " color: red");
       fprintf(fp, "}\n");
       break;
     case GraphViz:
       fprintf(fp, "n%p -> n%p [", a, b);
       if (options & G_BLUE)
-	fprintf(fp, " color=blue");
+        fprintf(fp, " color=blue");
       if (options & G_GREEN)
-	fprintf(fp, " color=green");
+        fprintf(fp, " color=green");
       if (options & G_RED)
-	fprintf(fp, " color=red");
+        fprintf(fp, " color=red");
       fprintf(fp, "];\n");
       break;
     default: assert(!"bad case");
@@ -162,14 +162,14 @@ graph_pnode_node(FILE *fp, PNode *pn, int options = 0) {
   if (options & G_DOM) {
     for (int i = 0; i < pn->dom->intervals.n; i += 2) {
       sprintf(title + strlen(title), "[%d %d]", 
-	      pn->dom->intervals.v[i], pn->dom->intervals.v[i + 1]);
+              pn->dom->intervals.v[i], pn->dom->intervals.v[i + 1]);
     }
   }
   if (options & G_LOOP) {
     sprintf(title + strlen(title), "C(%d %d)", 
-	    pn->loop_node->pre_dfs, pn->loop_node->post_dfs);
+            pn->loop_node->pre_dfs, pn->loop_node->post_dfs);
     sprintf(title + strlen(title), "D(%d %d)", 
-	    pn->loop_node->pre_dom, pn->loop_node->post_dom);
+            pn->loop_node->pre_dom, pn->loop_node->post_dom);
   }
   if (fgraph_frequencies)
     sprintf(title + strlen(title), "freq(%f)", pn->execution_frequency);
@@ -193,12 +193,12 @@ static void
 graph_loop_edges(FILE *fp, LoopNode *n) {
   forv_LoopNode(nn, n->children)
     graph_edge(fp, 
-	       n->node ? n->node : n, 
-	       nn->node ? nn->node : nn, G_BLUE);
+               n->node ? n->node : n, 
+               nn->node ? nn->node : nn, G_BLUE);
   forv_LoopNode(nn, n->loops)
     graph_edge(fp, 
-	       n->node ? n->node : n, 
-	       nn->node ? nn->node : nn, G_RED);
+               n->node ? n->node : n, 
+               nn->node ? nn->node : nn, G_RED);
 }
 
 static void
@@ -251,9 +251,9 @@ graph_loops(Vec<Fun *> &funs, char *fn) {
   forv_Fun(f, funs) if (f->loops->loops) {
     forv_LoopNode(p, f->loops->nodes)
       if (p->node)
-	graph_pnode_node(fp, (PNode*)p->node, G_LOOP);
+        graph_pnode_node(fp, (PNode*)p->node, G_LOOP);
       else
-	graph_loop_node(fp, p);
+        graph_loop_node(fp, p);
     forv_LoopNode(p, f->loops->nodes) {
       if (p->node)
         graph_pnode_cfg_edges(fp, (PNode*)p->node);
@@ -272,8 +272,8 @@ graph_var_node(FILE *fp, Var *v, int options = 0) {
     if (constant_info(v, consts)) {
       strcat(id, " {");
       forv_Sym(s, consts) {
-	strcat(id, " ");
-	sprint(id + strlen(id), s->imm, s->type);
+        strcat(id, " ");
+        sprint(id + strlen(id), s->imm, s->type);
       }
       strcat(id, " }");
     }
@@ -287,7 +287,7 @@ graph_it(Var *v) {
     if (!v->sym->name || strcmp(v->sym->name, graph_var))
       return 0;
   if (!fgraph_constants && (v->sym->is_constant || v->sym->is_symbol))
-    return 0;	
+    return 0;   
   return 1;
 }
 
@@ -302,7 +302,7 @@ graph_pnode_var_edges(FILE *fp, PNode *pn) {
   if (!pn->code || pn->code->kind == Code_MOVE) {
     forv_Var(a, pn->rvals) forv_Var(b, pn->lvals)      
       if (graph_it(a) && graph_it(b))
-	graph_edge(fp, a, b, G_GREEN);
+        graph_edge(fp, a, b, G_GREEN);
   }
 }
 
@@ -322,8 +322,8 @@ graph_ssu(Vec<Fun *> &funs, char *fn) {
       graph_pnode_node(fp, p);
     forv_Var(v, vars) {
       if (graph_it(v))
-	if (vdone.set_add(v))
-	  graph_var_node(fp, v);
+        if (vdone.set_add(v))
+          graph_var_node(fp, v);
     }
     forv_PNode(p, pnodes) {
       graph_pnode_var_edges(fp, p);
@@ -338,7 +338,7 @@ static void
 graph_avar_node(FILE *fp, AVar *av) {
   char label[80];
   sprintf(label, "%s_%d", av->var->sym->name ? av->var->sym->name : "",
-	  av->var->sym->id);
+          av->var->sym->id);
   Vec<Sym *> consts;
   forv_CreationSet(cs, *av->out) if (cs) {
     if (cs->sym->constant)
@@ -375,10 +375,10 @@ graph_avars(FA *fa, char *fn) {
   forv_AVar(av, todo) {
     forv_AVar(avv, av->forward) if (avv)
       if (todo_set.set_add(avv))
-	todo.add(avv);
+        todo.add(avv);
     forv_AVar(avv, av->backward) if (avv)
       if (todo_set.set_add(avv))
-	todo.add(avv);
+        todo.add(avv);
   }
   forv_AVar(av, todo) {
     if (!av->forward.n && !av->backward.n)
@@ -452,7 +452,7 @@ graph_rec(FA *fa, char *fn) {
       Vec<Fun *> calls;
       f->calls_funs(calls);
       forv_Fun(ff, calls)
-	graph_call(fp, f, ff);
+        graph_call(fp, f, ff);
     } else
       graph_loop_edges(fp, n);
   graph_end(fp);
@@ -479,16 +479,16 @@ graph_abstract_types(FA *fa, char *fn) {
       strcpy(pname, "pattern ");
       pname += strlen(pname);
       if (s->name)
-	strcpy(pname, s->name);
+        strcpy(pname, s->name);
       else
-	sprintf(pname, "%d", s->id);
+        sprintf(pname, "%d", s->id);
       pname += strlen(pname);
     } else if (s->fun) {
       pname += strlen(pname);
       if (s->name)
-	strcpy(pname, s->name);
+        strcpy(pname, s->name);
       else
-	strcpy(pname, "<anonymous>");
+        strcpy(pname, "<anonymous>");
       pname += strlen(pname);
       sprintf(pname, "%s:%d ", s->fun->filename(), s->fun->line());
       pname += strlen(pname);
@@ -518,7 +518,7 @@ graph(FA *fa, char *fn, int agraph_type) {
   else {
     forv_Fun(f, tfuns)
       if (f->sym->name && !strcmp(f->sym->name, graph_fun))
-	funs.add(f);
+        funs.add(f);
   }
   graph_ast(funs, fn);
   graph_cfg(funs, fn);

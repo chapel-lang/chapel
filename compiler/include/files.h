@@ -20,9 +20,9 @@ void deleteTmpDir(void);
 
 void open_common(fileinfo* commonfile);
 void openCFiles(char* modulename, fileinfo* outfile,
-		fileinfo* extheadfile, fileinfo* intheadfile);
+                fileinfo* extheadfile, fileinfo* intheadfile);
 void closeCFiles(fileinfo* outfile, 
-		 fileinfo* extheadfile, fileinfo* intheadfile);
+                 fileinfo* extheadfile, fileinfo* intheadfile);
 
 fileinfo* openTmpFile(char* tmpfilename);
 

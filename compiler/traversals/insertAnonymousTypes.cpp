@@ -30,39 +30,39 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
   if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
     if (Variable* var = dynamic_cast<Variable*>(forall->domains)) {
       if (var->next) {
-				INT_FATAL(stmt, "Multiple domains not handled in declarations");
+                                INT_FATAL(stmt, "Multiple domains not handled in declarations");
       }
       if (DomainType* domain_type = dynamic_cast<DomainType*>(var->var->type)) {
-				char* name = glomstrings(5,
-				 "_array_",
-				 array_type->elementType->symbol->name,
-				 "_",
-				 intstring(domain_type->numdims), 
-				 "d");
-	if (Symbol* array_sym = Symboltable::lookupInCurrentScope(name)) {
-	  *type = array_sym->type;
-	}
-	else {
-	  TypeSymbol* array_sym = new TypeSymbol(name, array_type);
-	  array_type->addSymbol(array_sym);
-	  array_type->domainType = domain_type;
-	  DefExpr* def_expr = new DefExpr(array_sym);
-	  DefStmt* array_type_def = new DefStmt(def_expr);
-	  array_sym->setDefPoint(def_expr);
-	  if (Symboltable::getCurrentScope() == commonModule->modScope) {
-	    commonModule->stmts->insertAfter(array_type_def);
-	  }
-	  else {
-	    Stmt* def_stmt = array_type->elementType->symbol->defPoint->stmt;
-	    if (!def_stmt) {
-	      INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
-	    }
-	    def_stmt->insertAfter(array_type_def);
-	  }
-	}
+                                char* name = glomstrings(5,
+                                 "_array_",
+                                 array_type->elementType->symbol->name,
+                                 "_",
+                                 intstring(domain_type->numdims), 
+                                 "d");
+        if (Symbol* array_sym = Symboltable::lookupInCurrentScope(name)) {
+          *type = array_sym->type;
+        }
+        else {
+          TypeSymbol* array_sym = new TypeSymbol(name, array_type);
+          array_type->addSymbol(array_sym);
+          array_type->domainType = domain_type;
+          DefExpr* def_expr = new DefExpr(array_sym);
+          DefStmt* array_type_def = new DefStmt(def_expr);
+          array_sym->setDefPoint(def_expr);
+          if (Symboltable::getCurrentScope() == commonModule->modScope) {
+            commonModule->stmts->insertAfter(array_type_def);
+          }
+          else {
+            Stmt* def_stmt = array_type->elementType->symbol->defPoint->stmt;
+            if (!def_stmt) {
+              INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
+            }
+            def_stmt->insertAfter(array_type_def);
+          }
+        }
       }
       else {
-				INT_FATAL(stmt, "Didn't find domain in this complicated case");
+                                INT_FATAL(stmt, "Didn't find domain in this complicated case");
       }
     }
   }
@@ -104,7 +104,7 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
     } else {
       Stmt* def_stmt = seq_type->elementType->symbol->defPoint->stmt;
       if (!def_stmt) {
-	INT_FATAL(stmt, "Seq with anonymous type not declared in statement not handled");
+        INT_FATAL(stmt, "Seq with anonymous type not declared in statement not handled");
       }
       def_stmt->insertAfter(seq_type_def);
     }
@@ -195,32 +195,32 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
 }
 
 void build_index_type_def(Stmt* stmt, Type** type) {
-	IndexType* index_type = dynamic_cast<IndexType*>(*type);
-	DomainType* domain_type;
+        IndexType* index_type = dynamic_cast<IndexType*>(*type);
+        DomainType* domain_type;
   
   if (!index_type) {
     INT_FATAL(*type, "Index type expected");
   }
  
- 	if (!(typeid(*index_type->idxExpr) == typeid(IntLiteral))){
- 		Variable* var = dynamic_cast<Variable*>(index_type->idxExpr);
- 		if (var){
- 			domain_type = dynamic_cast<DomainType*>(var->var->type);
+        if (!(typeid(*index_type->idxExpr) == typeid(IntLiteral))){
+                Variable* var = dynamic_cast<Variable*>(index_type->idxExpr);
+                if (var){
+                        domain_type = dynamic_cast<DomainType*>(var->var->type);
       index_type->idxType = ((IndexType*)(domain_type->idxType))->idxType;
       printf("\n");
- 		}
- 	}
-	char *name; 
+                }
+        }
+        char *name; 
   
- 	if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
-  	name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "d");
+        if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
+        name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "d");
   }
   else{
     if (!domain_type->parent){
       name = glomstrings(3, "_index_", intstring(domain_type->numdims), "d");
     }
     else {
-  		name = glomstrings(2, "_index_", domain_type->symbol->name);
+                name = glomstrings(2, "_index_", domain_type->symbol->name);
     }
   }
   
@@ -260,8 +260,8 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
     build_anon_seq_type_def(stmt, type);
   }
   if (typeid(**type) == typeid(IndexType)){
-  	build_index_type_def(stmt, type);
-	}
+        build_index_type_def(stmt, type);
+        }
 }
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {

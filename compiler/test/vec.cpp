@@ -32,7 +32,7 @@ i_find(Intervals *i, int x) {
     l = m;
     goto Lrecurse;
   }
-  if (x < i->v[m]) {	
+  if (x < i->v[m]) {    
     h = m;
     goto Lrecurse;
   }
@@ -69,8 +69,8 @@ Intervals::insert(int x) {
     l += 2;
     if (l < n) {
       if (x == v[l] - 1) {
-	v[l]--;
-	goto Lmerge;
+        v[l]--;
+        goto Lmerge;
       }
     }
     goto Lmore;

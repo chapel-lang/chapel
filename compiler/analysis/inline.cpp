@@ -72,7 +72,7 @@ global_frequency_estimation(FA *fa) {
     f->execution_frequency = 0;
     forv_CallPoint(c, f->called) {
       if (c->fun != f && f->loop_node->dfs_ancestor(c->fun->loop_node))
-	f->execution_frequency += freq * c->pnode->execution_frequency;  
+        f->execution_frequency += freq * c->pnode->execution_frequency;  
     }
     if (f->execution_frequency < 1.0)
       f->execution_frequency = 1.0;
@@ -111,7 +111,7 @@ inline_call(FA *fa, Fun *f, AST **aa, Fun *target) {
   forv_EntrySet(es, ess) {
     for (int i = 0; i < es->edges.n; i++) {
       if (es->edges.v[i] && pnodes.set_in(es->edges.v[i]->pnode))
-	newess.set_add(es);
+        newess.set_add(es);
     }
   }
   newess.set_to_vec();

@@ -10,10 +10,10 @@
 
 class CDB_EntrySet : public gc {
  public:
-  int		es_id;
-  Vec<int>	cs_ids;
+  int           es_id;
+  Vec<int>      cs_ids;
   Vec<char *>   edge_pnode_id;
-  Vec<int>   	edge_es_id;
+  Vec<int>      edge_es_id;
   
   CDB_EntrySet(int aes_id) : es_id(aes_id) {}
 };
@@ -21,9 +21,9 @@ class CDB_EntrySet : public gc {
 
 class CDB_CreationSet : public gc {
  public:
-  int		cs_id;
+  int           cs_id;
   Vec<char *>   edge_pnode_id;
-  Vec<int>   	edge_es_id;
+  Vec<int>      edge_es_id;
   
   CDB_CreationSet(int acs_id) : cs_id(acs_id) {}
 };

@@ -38,9 +38,9 @@ void LegalizeCNames::processSymbol(Symbol* sym) {
     for (i = 0; replacement[i].origChar != '\0'; i++) {
       char* illegalChar = strchr(sym->cname, replacement[i].origChar);
       if (illegalChar) {   
-	// This function processes all illegal chars.
-	symbolSub(sym, i);
-	break;
+        // This function processes all illegal chars.
+        symbolSub(sym, i);
+        break;
       }
     }
   }

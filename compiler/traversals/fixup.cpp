@@ -45,12 +45,12 @@ void Fixup::preProcessStmt(Stmt* stmt) {
       // SJD hack because of __init function
       bool ignore = false;
       if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
-				if (m->initFn == parent) {
-	  			ignore = true;
-				}
+                                if (m->initFn == parent) {
+                                ignore = true;
+                                }
       }
       if (!ignore) {
-				INT_FATAL(stmt, "Statement's parent is incorrect");
+                                INT_FATAL(stmt, "Statement's parent is incorrect");
       }
     }
   }
@@ -153,16 +153,16 @@ static void verifySymbolScope(Symbol* sym) {
       bool error = true;
       FnSymbol* fnMatch = dynamic_cast<FnSymbol*>(match);
       if (fnMatch) {
-	while (fnMatch) {
-	  if (fnMatch == sym) {
-	    error = false;
-	  }
-	  fnMatch = fnMatch->overload;
-	}
+        while (fnMatch) {
+          if (fnMatch == sym) {
+            error = false;
+          }
+          fnMatch = fnMatch->overload;
+        }
       }
       if (error) {
-	INT_FATAL(sym, "Symbol '%s' and Scope don't refer to each other",
-		  sym->name);
+        INT_FATAL(sym, "Symbol '%s' and Scope don't refer to each other",
+                  sym->name);
       }
     }
   }
@@ -191,7 +191,7 @@ static void verifySymbolDefPoint(Symbol* sym) {
     Symbol* formals = fn->formals;
     while (formals) {
       if (formals == sym) {
-	return;
+        return;
       }
       formals = nextLink(Symbol, formals);
     }
@@ -200,10 +200,10 @@ static void verifySymbolDefPoint(Symbol* sym) {
     if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
       EnumSymbol* tmp = enum_type->valList;
       while (tmp) {
-	if (tmp == sym) {
-	  return;
-	}
-	tmp = nextLink(EnumSymbol, tmp);
+        if (tmp == sym) {
+          return;
+        }
+        tmp = nextLink(EnumSymbol, tmp);
       }
     }
   }

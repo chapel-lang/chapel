@@ -12,7 +12,7 @@
 #include "pattern.h"
 
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type, 
-	       bool init_exportMe) :
+               bool init_exportMe) :
   BaseAST(astType),
   name(init_name),
   cname(name),
@@ -109,7 +109,7 @@ bool Symbol::isConst(void) {
 
 //Roxana: not all symbols are parameter symbols
 bool Symbol::isParam(){
-	return false;
+        return false;
 }
 
 void Symbol::print(FILE* outfile) {
@@ -193,10 +193,10 @@ void UnresolvedSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 VarSymbol::VarSymbol(char* init_name,
-		     Type* init_type,
-		     Expr* init_expr,
-		     varType init_varClass, 
-		     consType init_consClass) :
+                     Type* init_type,
+                     Expr* init_expr,
+                     varType init_varClass, 
+                     consType init_consClass) :
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
@@ -222,7 +222,7 @@ void VarSymbol::traverseDefSymbol(Traversal* traversal) {
   if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
     if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
       if (forall->indexScope) {
-	saveScope = Symboltable::setCurrentScope(forall->indexScope);
+        saveScope = Symboltable::setCurrentScope(forall->indexScope);
       }
     }
   }
@@ -245,7 +245,7 @@ void VarSymbol::printDef(FILE* outfile) {
   if (consClass == VAR_CONST) {
     fprintf(outfile, "const ");
   } else if (consClass == VAR_PARAM){
-  	fprintf(outfile, "param");
+        fprintf(outfile, "param");
   }
   else {
     fprintf(outfile, "var ");
@@ -294,7 +294,7 @@ bool VarSymbol::isConst(void) {
 
 //Roxana
 bool VarSymbol::isParam(void){
-	return (consClass == VAR_PARAM);
+        return (consClass == VAR_PARAM);
 }
 
 void VarSymbol::codegenDef(FILE* outfile) {
@@ -329,7 +329,7 @@ static char* paramTypeNames[NUM_PARAM_TYPES] = {
 
 
 ParamSymbol::ParamSymbol(paramType init_intent, char* init_name, 
-			 Type* init_type, Expr* init_init) :
+                         Type* init_type, Expr* init_init) :
   Symbol(SYMBOL_PARAM, init_name, init_type),
   intent(init_intent),
   init(init_init)
@@ -360,15 +360,15 @@ void ParamSymbol::printDef(FILE* outfile) {
 
 bool ParamSymbol::requiresCPtr(void) {
   return (((intent == PARAM_OUT || intent == PARAM_INOUT || 
-	    intent == PARAM_REF) && 
-	   type->outParamNeedsPtr()) ||
-	  (intent == PARAM_BLANK && type->blankIntentImpliesRef()));
+            intent == PARAM_REF) && 
+           type->outParamNeedsPtr()) ||
+          (intent == PARAM_BLANK && type->blankIntentImpliesRef()));
 }
 
 
 bool ParamSymbol::requiresCopyBack(void) {
   return ((intent == PARAM_OUT || intent == PARAM_INOUT) &&
-	  type->outParamNeedsPtr());
+          type->outParamNeedsPtr());
 }
 
 
@@ -494,8 +494,8 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 
 
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
-		   Type* init_retType, Stmt* init_body,
-		   bool init_exportMe, Symbol* init_classBinding) :
+                   Type* init_retType, Stmt* init_body,
+                   bool init_exportMe, Symbol* init_classBinding) :
   Symbol(SYMBOL_FN, init_name, init_retType, init_exportMe),
   formals(init_formals),
   retType(init_retType),
@@ -527,8 +527,8 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
 
 
 void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
-			 Stmt* init_body, SymScope* init_paramScope,
-			 bool init_exportMe) {
+                         Stmt* init_body, SymScope* init_paramScope,
+                         bool init_exportMe) {
   formals = init_formals;
   type = init_retType;
   retType = init_retType;
@@ -547,7 +547,7 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
       cname = copystring("_chpl_main");
     } else {
       USR_FATAL(this, "main multiply defined -- first occurrence at %s",
-		mainFn->stringLoc());
+                mainFn->stringLoc());
     }
   }
 }
@@ -646,25 +646,25 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
     Variable* actual_change = argList;
     forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
       if (coercion_substitutions->e[i].key ==
-	  asymbol->sym->fun->positional_arg_positions.e[j]) {
-	char* temp_name =
-	  glomstrings(2, "_coercion_temp_", formal_change->name);
+          asymbol->sym->fun->positional_arg_positions.e[j]) {
+        char* temp_name =
+          glomstrings(2, "_coercion_temp_", formal_change->name);
 
-	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
-					       new Variable(formal_change));
-	DefExpr* temp_def_expr = new DefExpr(temp_symbol);
-	temp_symbol->setDefPoint(temp_def_expr);
-	DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
-	temp_def_stmt->append(wrapper_body);
-	wrapper_body = temp_def_stmt;
-	formal_change->type = coercion_substitutions->e[i].value->type;
-	actual_change->var = temp_symbol;
+        VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
+                                               new Variable(formal_change));
+        DefExpr* temp_def_expr = new DefExpr(temp_symbol);
+        temp_symbol->setDefPoint(temp_def_expr);
+        DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
+        temp_def_stmt->append(wrapper_body);
+        wrapper_body = temp_def_stmt;
+        formal_change->type = coercion_substitutions->e[i].value->type;
+        actual_change->var = temp_symbol;
       }
       if (formal_change->next) {
-	formal_change = nextLink(Symbol, formal_change);
+        formal_change = nextLink(Symbol, formal_change);
       }
       if (actual_change->next) {
-	actual_change = nextLink(Variable, actual_change);
+        actual_change = nextLink(Variable, actual_change);
       }
       j++;
     }
@@ -675,7 +675,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   block_scope->stmtContext = wrapper_block;
   Type* wrapper_return_type = retType;
   DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-						   wrapper_return_type, wrapper_block);
+                                                   wrapper_return_type, wrapper_block);
   defPoint->insertBefore(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
@@ -714,35 +714,35 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
     Variable* actual_change = argList;
     forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
       if (defaults->v[i] ==
-	  asymbol->sym->fun->positional_arg_positions.e[j]) {
-	char* temp_name =
-	  glomstrings(2, "_default_param_temp_", formal_change->name);
-	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
-					       ((ParamSymbol*)formal_change)->init->copy());
-	DefExpr* temp_def_expr = new DefExpr(temp_symbol);
-	DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
-	temp_symbol->setDefPoint(temp_def_expr);
-	temp_def_stmt->append(wrapper_body);
-	wrapper_body = temp_def_stmt;
-	actual_change->var = temp_symbol;
-	if (formal_change == wrapper_formals) {
-	  wrapper_formals = nextLink(Symbol, formal_change);
-	  if (!wrapper_formals) {
-	    wrapper_formals = NULL;
-	  }
-	}
-	if (formal_change->prev) {
-	  formal_change->prev->next = formal_change->next;
-	}
-	if (formal_change->next) {
-	  formal_change->next->prev = formal_change->prev;
-	}
+          asymbol->sym->fun->positional_arg_positions.e[j]) {
+        char* temp_name =
+          glomstrings(2, "_default_param_temp_", formal_change->name);
+        VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
+                                               ((ParamSymbol*)formal_change)->init->copy());
+        DefExpr* temp_def_expr = new DefExpr(temp_symbol);
+        DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
+        temp_symbol->setDefPoint(temp_def_expr);
+        temp_def_stmt->append(wrapper_body);
+        wrapper_body = temp_def_stmt;
+        actual_change->var = temp_symbol;
+        if (formal_change == wrapper_formals) {
+          wrapper_formals = nextLink(Symbol, formal_change);
+          if (!wrapper_formals) {
+            wrapper_formals = NULL;
+          }
+        }
+        if (formal_change->prev) {
+          formal_change->prev->next = formal_change->next;
+        }
+        if (formal_change->next) {
+          formal_change->next->prev = formal_change->prev;
+        }
       }
       if (formal_change->next) {
-	formal_change = nextLink(Symbol, formal_change);
+        formal_change = nextLink(Symbol, formal_change);
       }
       if (actual_change->next) {
-	actual_change = nextLink(Variable, actual_change);
+        actual_change = nextLink(Variable, actual_change);
       }
       j++;
     }
@@ -752,7 +752,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
   wrapper_block->setBlkScope(block_scope);
   block_scope->stmtContext = wrapper_block;
   DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-						   retType, wrapper_block);
+                                                   retType, wrapper_block);
   defPoint->insertAfter(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
@@ -772,10 +772,10 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
     Symbol* tmp = formals;
     for (int j = 0; j < formals_to_actuals->n - 1; j++) {
       if (formals_to_actuals->v[i].key == formals_to_actuals->v[j].value) {
-	wrapper_formals = appendLink(wrapper_formals, tmp->copy());
+        wrapper_formals = appendLink(wrapper_formals, tmp->copy());
       }
       if (tmp->next) {
-	tmp = nextLink(Symbol, tmp);
+        tmp = nextLink(Symbol, tmp);
       }
     }
   }
@@ -785,10 +785,10 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
     Symbol* tmp = wrapper_formals;
     for (int j = 0; j < formals_to_actuals->n - 1; j++) {
       if (formals_to_actuals->v[i].value == formals_to_actuals->v[j].key) {
-	actuals = appendLink(actuals, new Variable(tmp));
+        actuals = appendLink(actuals, new Variable(tmp));
       }
       if (tmp->next) {
-	tmp = nextLink(Symbol, tmp);
+        tmp = nextLink(Symbol, tmp);
       }
     }
   }
@@ -812,18 +812,18 @@ FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutio
   if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
     for (int i = 0; i < map.n; i++) {
       if (map.v[i].key) {
-	if (Variable* var = dynamic_cast<Variable*>(map.v[i].key)) {
-	  if (Type* new_type = generic_substitutions->get(var->var->type)) {
-	    Variable* new_var = dynamic_cast<Variable*>(map.v[i].value);
-	    new_var->var->type = new_type;
-	  }
-	}
-	else if (Symbol* sym = dynamic_cast<Symbol*>(map.v[i].key)) {
-	  if (Type* new_type = generic_substitutions->get(sym->type)) {
-	    Symbol* new_sym = dynamic_cast<Symbol*>(map.v[i].value);
-	    new_sym->type = new_type;
-	  }
-	}
+        if (Variable* var = dynamic_cast<Variable*>(map.v[i].key)) {
+          if (Type* new_type = generic_substitutions->get(var->var->type)) {
+            Variable* new_var = dynamic_cast<Variable*>(map.v[i].value);
+            new_var->var->type = new_type;
+          }
+        }
+        else if (Symbol* sym = dynamic_cast<Symbol*>(map.v[i].key)) {
+          if (Type* new_type = generic_substitutions->get(sym->type)) {
+            Symbol* new_sym = dynamic_cast<Symbol*>(map.v[i].value);
+            new_sym->type = new_type;
+          }
+        }
       }
     }
     this_copy->sym->cname =
@@ -937,7 +937,7 @@ void EnumSymbol::set_values(void) {
   while (tmp) {
     if (tmp->init) {
       if (tmp->init->isComputable() == false) {
-	USR_FATAL(tmp->init, "Enumerator value for %s must be integer parameter", tmp->name);
+        USR_FATAL(tmp->init, "Enumerator value for %s must be integer parameter", tmp->name);
       }
       tally = tmp->init->intVal();
     }
@@ -1037,8 +1037,8 @@ void ModuleSymbol::createInitFn(void) {
                                                  : NULL);
   //SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   DefStmt* initFunDef = Symboltable::defineFunction(fnName, NULL, 
-						    dtVoid, initFunBody, 
-						    true);
+                                                    dtVoid, initFunBody, 
+                                                    true);
   //Symboltable::setCurrentScope(saveScope);
   initFn = initFunDef->fnDef();
   {

@@ -57,7 +57,7 @@ typedef void (*PrimitiveTransferFunctionPtr)(PNode *pn, EntrySet *es);
 // registered primitive transfer functions
 class RegisteredPrim : public gc {
  public:
-  PrimitiveTransferFunctionPtr	fn;
+  PrimitiveTransferFunctionPtr  fn;
   uint is_functional : 1;
   RegisteredPrim(PrimitiveTransferFunctionPtr afn, int is_func = 0) 
     : fn(afn), is_functional(is_func) {}

@@ -192,7 +192,7 @@ class ComplexLiteral : public Literal {
   char* realStr;
 
   ComplexLiteral(char* init_str, double init_imag, double init_real = 0.0,
-		 char* init_realStr = "");
+                 char* init_realStr = "");
   void addReal(FloatLiteral* init_real);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -284,7 +284,7 @@ class BinOp : public Expr {
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
-	bool isComputable(void);
+        bool isComputable(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   precedenceType precedence(void);
@@ -523,7 +523,7 @@ class ForallExpr : public Expr {
   SymScope* indexScope;
 
   ForallExpr(Expr* init_domains, Expr* init_indices = NULL,
-	     Expr* init_forallExpr = NULL);
+             Expr* init_forallExpr = NULL);
   void setForallExpr(Expr* exp);
   void setIndexScope(SymScope* init_indexScope);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

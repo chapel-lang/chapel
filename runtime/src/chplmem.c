@@ -88,7 +88,7 @@ static memTableEntry* lookupMemory(void* memAlloc) {
 
 
 void installMemory(void* memAlloc, size_t number, size_t size, 
-		  char* description) {
+                  char* description) {
   unsigned hashValue;
   memTableEntry* memEntry = lookupMemory(memAlloc);
 
@@ -96,7 +96,7 @@ void installMemory(void* memAlloc, size_t number, size_t size,
     memEntry = (memTableEntry*) calloc(1, sizeof(memTableEntry));
     if (!memEntry) {
       fprintf(stderr, "***Error:  Out of memory allocating table entry for %s"
-	      "***\n", description);
+              "***\n", description);
       exit(0);
     }
     hashValue = hash(memAlloc);
@@ -111,7 +111,7 @@ void installMemory(void* memAlloc, size_t number, size_t size,
     }
     last = memEntry;
     memEntry->description = (char*) malloc((strlen(description) + 1)
-					   * sizeof(char));
+                                           * sizeof(char));
     strcpy(memEntry->description, description);
     memEntry->memAlloc = memAlloc;
   }  
@@ -128,15 +128,15 @@ void removeMemory(void* memAlloc) {
     if (memEntry == first) {
       first = memEntry->nextInstalled;
       if (memEntry->nextInstalled) {
-	memEntry->nextInstalled->prevInstalled = NULL;
+        memEntry->nextInstalled->prevInstalled = NULL;
       }
     } else {
       memEntry->prevInstalled->nextInstalled = memEntry->nextInstalled;
       if (memEntry->nextInstalled) {
-	memEntry->nextInstalled->prevInstalled = memEntry->prevInstalled;
+        memEntry->nextInstalled->prevInstalled = memEntry->prevInstalled;
       } else {
-	// there is no next, which means this one is last.  must reset last.
-	last = memEntry->prevInstalled;
+        // there is no next, which means this one is last.  must reset last.
+        last = memEntry->prevInstalled;
       } 
     }
 
@@ -148,23 +148,23 @@ void removeMemory(void* memAlloc) {
       memTable[hashValue] = thisBucketEntry->nextInBucket;
     } else {
       for (thisBucketEntry = memTable[hashValue]; 
-	   thisBucketEntry != NULL; 
-	   thisBucketEntry = thisBucketEntry->nextInBucket) {
+           thisBucketEntry != NULL; 
+           thisBucketEntry = thisBucketEntry->nextInBucket) {
 
-	memTableEntry* nextBucketEntry = thisBucketEntry->nextInBucket;
-	
-	if (nextBucketEntry->memAlloc == memAlloc) {
-	  thisBucketEntry->nextInBucket = nextBucketEntry->nextInBucket;
-	  thisBucketEntry = nextBucketEntry;
-	  break;
-	}
+        memTableEntry* nextBucketEntry = thisBucketEntry->nextInBucket;
+        
+        if (nextBucketEntry->memAlloc == memAlloc) {
+          thisBucketEntry->nextInBucket = nextBucketEntry->nextInBucket;
+          thisBucketEntry = nextBucketEntry;
+          break;
+        }
       }
     }
     free(thisBucketEntry->description);
     free(thisBucketEntry);
   } else {
     fprintf(stderr, "***Error:  Attempting to free memory that wasn't "
-	    "allocated***\n");
+            "allocated***\n");
     exit(0);
   }
 }
@@ -173,7 +173,7 @@ void removeMemory(void* memAlloc) {
 static void confirm(void* memAlloc, char* description) {
   if (!memAlloc) {
     fprintf(stderr, "***Error:  Out of memory allocating %s***\n", 
-	    description);
+            description);
     exit(0);
   }
 }
@@ -213,7 +213,7 @@ void _chpl_free(void* memAlloc) {
 
 
 void* _chpl_realloc(void* memAlloc, size_t number, size_t size, 
-		    char* description) {
+                    char* description) {
   size_t chunk = number * size;
   if (!chunk) {
     _chpl_free(memAlloc);
@@ -223,7 +223,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
   memTableEntry* memEntry = lookupMemory(memAlloc);
   if (!memEntry && (memAlloc != NULL)) {
     fprintf(stderr, "***Error:  Attempting to realloc memory for %s that "
-	    "wasn't allocated***\n", description);
+            "wasn't allocated***\n", description);
     exit(0);
   }
   void* moreMemAlloc = realloc(memAlloc, chunk);

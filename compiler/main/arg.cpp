@@ -34,7 +34,7 @@ bad_flag(char* flag) {
 static void 
 missing_arg(char* currentFlag) {
   fprintf(stderr, "Missing argument for flag: '%s' (use '-h' for help)\n", 
-	  currentFlag);
+          currentFlag);
   clean_exit(1);
 }
 
@@ -101,19 +101,19 @@ process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
       char * env = getenv(desc[i].env);
       if (!env) continue;
       switch (type) {
-	case '+': (*(int *)desc[i].location)++; break;
-	case 'f': 
-	case 'F': 
-	  *(int *)desc[i].location = type=='F'?1:0; break;
+        case '+': (*(int *)desc[i].location)++; break;
+        case 'f': 
+        case 'F': 
+          *(int *)desc[i].location = type=='F'?1:0; break;
         case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
-	case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
-	case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
-	case 'L': *(int64 *)desc[i].location = strtoll(env, NULL, 0); break;
-	case 'P': strncpy((char *)desc[i].location, env, FILENAME_MAX); break;
-	case 'S': strncpy((char *)desc[i].location, env, strtol(desc[i].type+1, NULL, 0)); break;
+        case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
+        case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
+        case 'L': *(int64 *)desc[i].location = strtoll(env, NULL, 0); break;
+        case 'P': strncpy((char *)desc[i].location, env, FILENAME_MAX); break;
+        case 'S': strncpy((char *)desc[i].location, env, strtol(desc[i].type+1, NULL, 0)); break;
       }
       if (desc[i].pfn)
-	desc[i].pfn(arg_state, env);
+        desc[i].pfn(arg_state, env);
     }
   }
 
@@ -125,19 +125,19 @@ process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
       if ((*argv)[1] == '-') {
         for (i = 0;; i++) {
           if (!desc[i].name)
-	    bad_flag(*argv);
-	  if ((end = strchr((*argv)+2, '=')))
-	    len = end - ((*argv) + 2);
-	  else
-	    len = strlen((*argv) + 2);
+            bad_flag(*argv);
+          if ((end = strchr((*argv)+2, '=')))
+            len = end - ((*argv) + 2);
+          else
+            len = strlen((*argv) + 2);
           if (len == (int)strlen(desc[i].name) &&
-	      !strncmp(desc[i].name,(*argv)+2, len))
-	  {
-	    char* currentFlag = copystring(*argv);
-	    if (!end)
-	      *argv += strlen(*argv) - 1;
-	    else
-	      *argv = end;
+              !strncmp(desc[i].name,(*argv)+2, len))
+          {
+            char* currentFlag = copystring(*argv);
+            if (!end)
+              *argv += strlen(*argv) - 1;
+            else
+              *argv = end;
             process_arg(arg_state, i, &argv, currentFlag);
             break;
           }
@@ -146,7 +146,7 @@ process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
         while (*++(*argv))
           for (i = 0;; i++) {
             if (!desc[i].name)
-	      bad_flag((*argv)-1);
+              bad_flag((*argv)-1);
             if (desc[i].key == **argv) {
               process_arg(arg_state, i, &argv, (*argv)-1);
               break;
@@ -176,10 +176,10 @@ usage(ArgumentState *arg_state, char *arg_unused) {
     if (!desc[i].description)
       continue;
     fprintf(stderr,"  %c%c%c %s%s%s%s", 
-	    desc[i].key != ' ' ? '-' : ' ', desc[i].key, 
-	    (desc[i].key != ' ' && desc[i].name && desc[i].name[0]) ? ',' : ' ', 
-	    (desc[i].name && desc[i].name[0] != '\0') ? "--" : "  ",
-	    desc[i].name,
+            desc[i].key != ' ' ? '-' : ' ', desc[i].key, 
+            (desc[i].key != ' ' && desc[i].name && desc[i].name[0]) ? ',' : ' ', 
+            (desc[i].name && desc[i].name[0] != '\0') ? "--" : "  ",
+            desc[i].name,
             (strlen(desc[i].name) + 61 < 81) ?
              &SPACES[strlen(desc[i].name)+61] : "",
             arg_types_desc[desc[i].type?strchr(arg_types_keys,desc[i].type[0])-

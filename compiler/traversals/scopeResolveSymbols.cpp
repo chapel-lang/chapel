@@ -10,11 +10,11 @@ static void resolve_type_helper(Type* &type) {
     Symbol* new_type = Symboltable::lookup(type->symbol->name);
     if (new_type) {
       if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
-	type = new_type->type;
+        type = new_type->type;
       }
       else {
-	resolve_type_helper(new_type->type);
-	type = new_type->type;
+        resolve_type_helper(new_type->type);
+        type = new_type->type;
       }
     }
     else {
@@ -129,15 +129,15 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
     if (dynamic_cast<UnresolvedSymbol*>(variable_expr->var)) {
       Symbol* new_symbol = Symboltable::lookup(variable_expr->var->name);
       if (new_symbol) {
-	if (!dynamic_cast<FnSymbol*>(new_symbol)) {
-	  variable_expr->var = new_symbol;
-	}
+        if (!dynamic_cast<FnSymbol*>(new_symbol)) {
+          variable_expr->var = new_symbol;
+        }
       }
       else {
-	if (strcmp(variable_expr->var->name, "__primitive")) {
-	  USR_FATAL(expr, "Unable to resolve token '%s'",
-		    variable_expr->var->name);
-	}
+        if (strcmp(variable_expr->var->name, "__primitive")) {
+          USR_FATAL(expr, "Unable to resolve token '%s'",
+                    variable_expr->var->name);
+        }
       }
     }
   }

@@ -32,8 +32,8 @@ buf_read(char *pathname, char **buf, int *len) {
   fstat(fd, &sb);
   *len = sb.st_size;
   *buf = (char*)malloc(*len + 2);
-  (*buf)[*len] = 0;		/* terminator */
-  (*buf)[*len + 1] = 0;		/* sentinal */
+  (*buf)[*len] = 0;             /* terminator */
+  (*buf)[*len + 1] = 0;         /* sentinal */
   read(fd, *buf, *len);
   close(fd);
   return *len;

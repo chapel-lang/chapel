@@ -68,22 +68,22 @@ no_preprocessor_whitespace(D_Parser *p, d_loc_t *loc, void **p_user_globals) {
       rec++;
     LmoreComment:
       while (*s) {
-	if (s[0] == '*' && s[1] == '/') {
-	  s += 2;
-	  rec--;
-	  if (!rec)
-	    goto Lmore;
-	  goto LmoreComment;
-	}
-	if (s[0] == '/' && s[1] == '*') {
-	  s += 2;
-	  goto LnestComment;
-	}
-	if (*s == '\n') { 
-	  loc->line++; 
-	  scol = s + 1; 
-	}
-	s++;
+        if (s[0] == '*' && s[1] == '/') {
+          s += 2;
+          rec--;
+          if (!rec)
+            goto Lmore;
+          goto LmoreComment;
+        }
+        if (s[0] == '/' && s[1] == '*') {
+          s += 2;
+          goto LnestComment;
+        }
+        if (*s == '\n') { 
+          loc->line++; 
+          scol = s + 1; 
+        }
+        s++;
       }
     }
   }
@@ -160,7 +160,7 @@ load_one(char *fn) {
     int save_parser_verbose = d_verbose_level;
     if (parser_verbose_non_prelude) d_verbose_level = parser_verbose_non_prelude;
     if (!(a = load_file(fn, &langs[l])))
-      return -1;	
+      return -1;        
     if (parser_verbose_non_prelude) d_verbose_level = save_parser_verbose;
   }
   av.add(a);

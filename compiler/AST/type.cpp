@@ -187,7 +187,7 @@ void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 
 void Type::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-			 Expr* format) {
+                         Expr* format) {
   genIOReadWrite(outfile, ioType);
   
   if (this == dtUnknown) {
@@ -465,7 +465,7 @@ void EnumType::codegenConfigVarRoutines(FILE* outfile) {
   fprintf(outfile, "varSet = 1;\n");
   fprintf(outfile, "} else {\n");
   fprintf(outfile, "fprintf(stderr, \"***Error: \\\"%%s\\\" is not a valid "
-	  "value for a config var \\\"%%s\\\" of type ");
+          "value for a config var \\\"%%s\\\" of type ");
   symbol->codegen(outfile);
   fprintf(outfile, "***\\n\", setValue, varName);\n");
   fprintf(outfile, "exit(0);\n");
@@ -498,7 +498,7 @@ DomainType::DomainType(Expr* init_expr) :
   parent(NULL)
 {
   if (init_expr) {
-  	
+        
     if (typeid(*init_expr) == typeid(IntLiteral)) {
       numdims = init_expr->intVal();
     } else {
@@ -567,7 +567,7 @@ void DomainType::codegenDef(FILE* outfile) {
 
 
 void DomainType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-			       Expr* format) {
+                               Expr* format) {
   genIOReadWrite(outfile, ioType);
 
   fprintf(outfile, "_domain");
@@ -589,17 +589,17 @@ bool DomainType::blankIntentImpliesRef(void) {
 }
 
 IndexType::IndexType(Type* init_idxType):Type(TYPE_INDEX, init_idxType->defaultVal),
-	idxType(init_idxType) {
-	domainType = NULL;
+        idxType(init_idxType) {
+        domainType = NULL;
 }
 
 IndexType::IndexType(Expr* init_expr) :
   Type(TYPE_INDEX, NULL),
   idxExpr(init_expr)
 {
-	/*if (!(typeid(*init_expr) == typeid(IntLiteral))) {
-    	SET_BACK(idxExpr);
-	}*/
+        /*if (!(typeid(*init_expr) == typeid(IntLiteral))) {
+        SET_BACK(idxExpr);
+        }*/
   
   if (typeid(*init_expr) == typeid(IntLiteral)) {
     TupleType* newTType = new TupleType(init_expr->typeInfo());
@@ -658,15 +658,15 @@ void IndexType::codegenDef(FILE* outfile) {
 }
 
 void IndexType::traverseDefType(Traversal* traversal) {
-	if (!(typeid(*idxExpr) == typeid(IntLiteral))) {
-  	TRAVERSE(idxExpr, traversal, false);
-	}
+        if (!(typeid(*idxExpr) == typeid(IntLiteral))) {
+        TRAVERSE(idxExpr, traversal, false);
+        }
   TRAVERSE(idxType, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
 }
 
 SeqType::SeqType(Type* init_elementType,
-		 ClassType* init_nodeType):
+                 ClassType* init_nodeType):
   ClassType(false, false),
   elementType(init_elementType),
   nodeType(init_nodeType)
@@ -676,7 +676,7 @@ SeqType::SeqType(Type* init_elementType,
 Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* new_type =
     new SeqType(elementType->copy(clone, map, analysis_clone),
-		dynamic_cast<ClassType*>(nodeType->copy(clone, map, analysis_clone)));
+                dynamic_cast<ClassType*>(nodeType->copy(clone, map, analysis_clone)));
   new_type->addSymbol(symbol);
   return new_type;
 }
@@ -732,7 +732,7 @@ void SeqType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 
 void SeqType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-			    Expr* format) {
+                            Expr* format) {
   Type::codegenIOCall(outfile, ioType, arg, format);
 }
 
@@ -775,7 +775,7 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 
 Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy = new ArrayType(domain->copy(clone, map, analysis_clone),
-			     elementType->copy(clone, map, analysis_clone));
+                             elementType->copy(clone, map, analysis_clone));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -843,8 +843,8 @@ void ArrayType::codegenDef(FILE* outfile) {
   fprintf(codefile, "* const dom = arr.domain;\n\n");
   for (int dim = 0; dim < domainType->numdims; dim++) {
     fprintf(codefile, "for (i%d=dom->dim_info[%d].lo; i%d<=dom"
-	    "->dim_info[%d].hi; i%d+=dom->dim_info[%d].str) {\n",
-	    dim, dim, dim, dim, dim, dim);
+            "->dim_info[%d].hi; i%d+=dom->dim_info[%d].str) {\n",
+            dim, dim, dim, dim, dim, dim);
   }
   fprintf(codefile, "fprintf(F, format, _ACC%d(arr, i0", domainType->numdims);
   for (int dim = 1; dim < domainType->numdims; dim++) {
@@ -852,7 +852,7 @@ void ArrayType::codegenDef(FILE* outfile) {
   }
   fprintf(codefile, "));\n");
   fprintf(codefile, "if (i%d<dom->dim_info[%d].hi) {\n",
-	  domainType->numdims-1, domainType->numdims-1);
+          domainType->numdims-1, domainType->numdims-1);
   fprintf(codefile, "fprintf(F, \" \");\n");
   fprintf(codefile, "}\n");
   fprintf(codefile, "}\n");
@@ -891,7 +891,7 @@ UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
 
 Type* UserType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy = new UserType(definition,
-			    defaultVal->copy(clone, map, analysis_clone));
+                            defaultVal->copy(clone, map, analysis_clone));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -1021,9 +1021,9 @@ void LikeType::codegenDef(FILE* outfile) {
 
 
 ClassType::ClassType(bool isValueClass, bool isUnion,
-		     ClassType* init_parentClass,
-		     Stmt* init_constructor,
-		     SymScope* init_classScope) :
+                     ClassType* init_parentClass,
+                     Stmt* init_constructor,
+                     SymScope* init_classScope) :
   Type(TYPE_CLASS, ((isValueClass || isUnion) ? 
                     NULL : // BLC: needs to eventually change
                     new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))),
@@ -1144,7 +1144,7 @@ void ClassType::codegenDef(FILE* outfile) {
   for (Stmt* tmp = declarationList; tmp; tmp = nextLink(Stmt, tmp)) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
       if (VarSymbol* var = def_stmt->varDef()) {
-	var->codegenDef(outfile);
+        var->codegenDef(outfile);
       }
     }
   }
@@ -1205,28 +1205,28 @@ void ClassType::codegenPrototype(FILE* outfile) {
 
 
 void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-			      Expr* format) {
+                              Expr* format) {
   forv_Symbol(method, methods) {
     if (strcmp(method->name, "write") == 0) {
       if (!value && !union_value) {
-	if (symbol->isDead) {
-	  // BLC: theoretically, this should only happen if no
-	  // instantiations of a class are ever made
-	  fprintf(outfile, "fprintf(stdout, \"nil\");\n");
-	  return;
-	}
-	fprintf(outfile, "if (");
-	arg->codegen(outfile);
-	fprintf(outfile, " == nil) {\n");
-	fprintf(outfile, "fprintf(stdout, \"nil\");\n");
-	fprintf(outfile, "} else {\n");
+        if (symbol->isDead) {
+          // BLC: theoretically, this should only happen if no
+          // instantiations of a class are ever made
+          fprintf(outfile, "fprintf(stdout, \"nil\");\n");
+          return;
+        }
+        fprintf(outfile, "if (");
+        arg->codegen(outfile);
+        fprintf(outfile, " == nil) {\n");
+        fprintf(outfile, "fprintf(stdout, \"nil\");\n");
+        fprintf(outfile, "} else {\n");
       }
       method->codegen(outfile);
       fprintf(outfile, "(&(");
       arg->codegen(outfile);
       fprintf(outfile, "));");
       if (!value && !union_value) {
-	fprintf(outfile, "}\n");
+        fprintf(outfile, "}\n");
       }
       return;
     }
@@ -1381,15 +1381,15 @@ void initTypes(void) {
   dtVoid = Symboltable::defineBuiltinType("void", "void", NULL);
 
   dtBoolean = Symboltable::defineBuiltinType("boolean", "_boolean",
-					     new BoolLiteral("false", false));
+                                             new BoolLiteral("false", false));
   dtInteger = Symboltable::defineBuiltinType("integer", "_integer64",
-					     new IntLiteral("0", 0));
+                                             new IntLiteral("0", 0));
   dtFloat = Symboltable::defineBuiltinType("float", "_float64",
-					   new FloatLiteral("0.0", 0.0));
+                                           new FloatLiteral("0.0", 0.0));
   dtComplex = Symboltable::defineBuiltinType("complex", "_complex128",
-					     new FloatLiteral("0.0", 0.0));
+                                             new FloatLiteral("0.0", 0.0));
   dtString = Symboltable::defineBuiltinType("string", "_string", 
-					    new StringLiteral(""));
+                                            new StringLiteral(""));
   dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
   dtObject = Symboltable::defineBuiltinType("object", "_object", NULL);
   dtLocale = Symboltable::defineBuiltinType("locale", "_locale", NULL);
@@ -1434,7 +1434,7 @@ class LUBCacheHashFns : public gc {
       return 0;
     for (int i = 0; i < a->has.n; i++)
       if (a->has.v[i] != b->has.v[i])
-	return 0;
+        return 0;
     return 1;
   }
 };

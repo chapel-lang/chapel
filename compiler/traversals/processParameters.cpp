@@ -40,83 +40,83 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
       Expr* newActuals = NULL;
       if (formal && actual) {
 
-	/*
-	fprintf(stderr, "Found a function call with parameters: %s (%s:%d)\n", 
-		fnSym->name, fncall->filename, fncall->lineno);
-	*/
+        /*
+        fprintf(stderr, "Found a function call with parameters: %s (%s:%d)\n", 
+                fnSym->name, fncall->filename, fncall->lineno);
+        */
 
-	// BLC: pushes scope into wrong place if the current symboltable
-	// scope is an expression scope?
-	BlockStmt* blkStmt = Symboltable::startCompoundStmt(); 
-	Stmt* body = NULL;
-	bool tmpsRequired = false;
+        // BLC: pushes scope into wrong place if the current symboltable
+        // scope is an expression scope?
+        BlockStmt* blkStmt = Symboltable::startCompoundStmt(); 
+        Stmt* body = NULL;
+        bool tmpsRequired = false;
 
-	/* generate copy-in statements */
-	while (formal) {
-	  Expr* newActualUse = NULL;
+        /* generate copy-in statements */
+        while (formal) {
+          Expr* newActualUse = NULL;
 
-	  if (tmpRequired(formal, actual)) {
-	    tmpsRequired = true;
+          if (tmpRequired(formal, actual)) {
+            tmpsRequired = true;
 
-	    Expr* initializer;
-	    if (formal->intent == PARAM_OUT || (actual == NULL)) {
-	      initializer = formal->init;
-	    } else {
-	      initializer = actual->copy();
-	    }
-	    char* newActualName = glomstrings(2, "_", formal->name);
-	    DefStmt* newActualDecl = 
-	      Symboltable::defineSingleVarDefStmt(newActualName,
-						  formal->type, initializer,
-						  VAR_NORMAL, VAR_VAR);
-	    body = appendLink(body, newActualDecl);
+            Expr* initializer;
+            if (formal->intent == PARAM_OUT || (actual == NULL)) {
+              initializer = formal->init;
+            } else {
+              initializer = actual->copy();
+            }
+            char* newActualName = glomstrings(2, "_", formal->name);
+            DefStmt* newActualDecl = 
+              Symboltable::defineSingleVarDefStmt(newActualName,
+                                                  formal->type, initializer,
+                                                  VAR_NORMAL, VAR_VAR);
+            body = appendLink(body, newActualDecl);
 
-	    newActualUse = new Variable(newActualDecl->varDef());
-	  } else {
-	    newActualUse = actual->copy();
-	  }
-	  newActuals = appendLink(newActuals, newActualUse);
-	
-	  formal = nextLink(ParamSymbol, formal);
-	  if (actual) {
-	    actual = nextLink(Expr, actual);
-	  }
-	}
-	if (!tmpsRequired) {
-	  return;
-	}
+            newActualUse = new Variable(newActualDecl->varDef());
+          } else {
+            newActualUse = actual->copy();
+          }
+          newActuals = appendLink(newActuals, newActualUse);
+        
+          formal = nextLink(ParamSymbol, formal);
+          if (actual) {
+            actual = nextLink(Expr, actual);
+          }
+        }
+        if (!tmpsRequired) {
+          return;
+        }
 
-	fncall->setArgs(newActuals);
+        fncall->setArgs(newActuals);
 
-	Stmt* origStmt = expr->stmt;
-	Stmt* newStmt = origStmt->copy();
-	body = appendLink(body, newStmt);
+        Stmt* origStmt = expr->stmt;
+        Stmt* newStmt = origStmt->copy();
+        body = appendLink(body, newStmt);
 
-	/* generate copy out statements */
-	formal = dynamic_cast<ParamSymbol*>(fnSym->formals);
-	actual = actualList;
-	Expr* newActual = fncall->argList;
-	if (formal && actual) {
-	  while (formal) {
-	    if (formal->requiresCopyBack() && actual) {
-	      Expr* copyBack = new AssignOp(GETS_NORM, actual->copy(),
-					    newActual->copy());
-	      ExprStmt* copyBackStmt = new ExprStmt(copyBack);
-	      body = appendLink(body, copyBackStmt);
-	    }
+        /* generate copy out statements */
+        formal = dynamic_cast<ParamSymbol*>(fnSym->formals);
+        actual = actualList;
+        Expr* newActual = fncall->argList;
+        if (formal && actual) {
+          while (formal) {
+            if (formal->requiresCopyBack() && actual) {
+              Expr* copyBack = new AssignOp(GETS_NORM, actual->copy(),
+                                            newActual->copy());
+              ExprStmt* copyBackStmt = new ExprStmt(copyBack);
+              body = appendLink(body, copyBackStmt);
+            }
 
-	    formal = nextLink(ParamSymbol, formal);
-	    if (actual) {
-	      actual = nextLink(Expr, actual);
-	    }
-	    newActual = nextLink(Expr, newActual);
-	  }
-	}
-	
+            formal = nextLink(ParamSymbol, formal);
+            if (actual) {
+              actual = nextLink(Expr, actual);
+            }
+            newActual = nextLink(Expr, newActual);
+          }
+        }
+        
 
-	blkStmt = Symboltable::finishCompoundStmt(blkStmt, body);
+        blkStmt = Symboltable::finishCompoundStmt(blkStmt, body);
 
-	origStmt->replace(blkStmt);
+        origStmt->replace(blkStmt);
       }
     }
   }

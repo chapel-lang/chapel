@@ -45,17 +45,17 @@ void InsertElidedLoops::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
     if (AssignOp* assign = dynamic_cast<AssignOp*>(expr_stmt->expr)) {
       if (ArrayType* array_type = dynamic_cast<ArrayType*>(assign->left->typeInfo())) {
-	Symbol* indices = NULL;
-	for (int i = 0; i < array_type->domainType->numdims; i++) {
-	  char* name = glomstrings(4, "_ind_", intstring(uid), "_", intstring(i));
-	  indices = appendLink(indices, new Symbol(SYMBOL, name));
-	}
-	uid++;
-	ForLoopStmt* loop = Symboltable::startForLoop(true, indices, array_type->domain->copy());
-	loop = Symboltable::finishForLoop(loop, stmt->copy());
-	stmt->replace(loop);
-	Symbol* indices_change = dynamic_cast<DefExpr*>(loop->indices)->sym;
-	TRAVERSE(loop->body, new InsertElidedIndices(indices_change), true);
+        Symbol* indices = NULL;
+        for (int i = 0; i < array_type->domainType->numdims; i++) {
+          char* name = glomstrings(4, "_ind_", intstring(uid), "_", intstring(i));
+          indices = appendLink(indices, new Symbol(SYMBOL, name));
+        }
+        uid++;
+        ForLoopStmt* loop = Symboltable::startForLoop(true, indices, array_type->domain->copy());
+        loop = Symboltable::finishForLoop(loop, stmt->copy());
+        stmt->replace(loop);
+        Symbol* indices_change = dynamic_cast<DefExpr*>(loop->indices)->sym;
+        TRAVERSE(loop->body, new InsertElidedIndices(indices_change), true);
       }
     }
   }

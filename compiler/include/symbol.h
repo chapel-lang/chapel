@@ -43,7 +43,7 @@ class Symbol : public BaseAST {
   ASymbol *asymbol;
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown,
-	 bool init_exportMe = false);
+         bool init_exportMe = false);
   void setParentScope(SymScope* init_parentScope);
 
   Symbol* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
@@ -91,9 +91,9 @@ class VarSymbol : public Symbol {
   Expr* init;
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
-	    Expr* init_expr = NULL,
-	    varType init_varClass = VAR_NORMAL, consType init_consClass = VAR_VAR);
-	    
+            Expr* init_expr = NULL,
+            varType init_varClass = VAR_NORMAL, consType init_consClass = VAR_VAR);
+            
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -115,9 +115,9 @@ class ParamSymbol : public Symbol {
   Expr* init;
 
   ParamSymbol(paramType init_intent, char* init_name, 
-	      Type* init_type = dtUnknown, Expr* init_init = NULL);
+              Type* init_type = dtUnknown, Expr* init_init = NULL);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, 
-			     CloneCallback* analysis_clone);
+                             CloneCallback* analysis_clone);
 
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -162,11 +162,11 @@ class FnSymbol : public Symbol {
   FnSymbol* overload;
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-	   Stmt* init_body, bool init_exportMe=false,
-	   Symbol* init_classBinding = NULL);
+           Stmt* init_body, bool init_exportMe=false,
+           Symbol* init_classBinding = NULL);
   FnSymbol(char* init_name, Symbol* init_classBinding = NULL);
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
-		 SymScope* init_paramScope, bool init_exportMe=false);
+                 SymScope* init_paramScope, bool init_exportMe=false);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void traverseDefSymbol(Traversal* traverse);
 

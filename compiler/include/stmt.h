@@ -149,7 +149,7 @@ class ForLoopStmt : public BlockStmt {
   SymScope* indexScope;
 
   ForLoopStmt(bool init_forall, Expr* init_indices, Expr* init_domain,
-	      Stmt* body = NULL);
+              Stmt* body = NULL);
   void setIndexScope(SymScope* init_indexScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -167,7 +167,7 @@ class CondStmt : public Stmt {
   Stmt* elseStmt;
 
   CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
-	   Stmt* init_elseStmt = NULL);
+           Stmt* init_elseStmt = NULL);
   void addElseStmt(Stmt* init_elseStmt);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 

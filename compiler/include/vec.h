@@ -13,19 +13,19 @@
 
 // Simple Vector class, also supports open hashed sets
 
-#define VEC_INTEGRAL_SIZE	4		/* must be a power of 2 */
-#define VEC_INITIAL_SHIFT	3
-#define VEC_INITIAL_SIZE	(1 << VEC_INITIAL_SHIFT)
+#define VEC_INTEGRAL_SIZE       4               /* must be a power of 2 */
+#define VEC_INITIAL_SHIFT       3
+#define VEC_INITIAL_SIZE        (1 << VEC_INITIAL_SHIFT)
 
-#define SET_MAX_SEQUENTIAL	5
-#define SET_INITIAL_INDEX	2
+#define SET_MAX_SEQUENTIAL      5
+#define SET_INITIAL_INDEX       2
 
 template <class C> class Vec : public gc {
  public:
-  int		n;
-  int		i;	// size index for sets
-  C  		*v;
-  C  		e[VEC_INTEGRAL_SIZE];
+  int           n;
+  int           i;      // size index for sets
+  C             *v;
+  C             e[VEC_INTEGRAL_SIZE];
   
   Vec<C>();
   Vec<C>(const Vec<C> &vv);
@@ -159,7 +159,7 @@ Vec<C>::set_add(C a) {
   if (n < VEC_INTEGRAL_SIZE) {
     for (C *c = v; c < v + n; c++)
       if (*c == a)
-	return 0;
+        return 0;
     add(a);
     return &v[n-1];
   }
@@ -264,11 +264,11 @@ Vec<C>::addx() {
       while (!(l&1)) { l = l >> 1; nl++; }
       l = l >> 1;
       if (!l) {
-	void *vv = (void*)v;
-	nl = 1 << nl;
-	v = (C*)MALLOC(nl * sizeof(C));
-	memcpy(v, vv, n * sizeof(C));
-	memset(&v[n], 0, (nl - n) * sizeof(C));
+        void *vv = (void*)v;
+        nl = 1 << nl;
+        v = (C*)MALLOC(nl * sizeof(C));
+        memcpy(v, vv, n * sizeof(C));
+        memset(&v[n], 0, (nl - n) * sizeof(C));
       }
     }
   }
@@ -332,7 +332,7 @@ Vec<C>::set_in_internal(C c) {
          k = ((k + 1) % n), j++)
     {
       if (!v[k])
-	return 0;
+        return 0;
       else if (v[k] == c)
         return &v[k];
     }
@@ -357,9 +357,9 @@ Vec<C>::set_intersection(Vec<C> &vv) {
   for (int i = 0; i < tv.n; i++)
     if (tv.v[i]) {
       if (vv.set_in(tv.v[i]))
-	set_add(tv.v[i]);
+        set_add(tv.v[i]);
       else
-	changed = 1;
+        changed = 1;
     }
   return changed;
 } 
@@ -369,7 +369,7 @@ Vec<C>::some_intersection(Vec<C> &vv) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (vv.set_in(v[i]))
-	return 1;
+        return 1;
   return 0;
 } 
 
@@ -378,11 +378,11 @@ Vec<C>::some_disjunction(Vec<C> &vv) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (!vv.set_in(v[i]))
-	return 1;
+        return 1;
   for (int i = 0; i < vv.n; i++)
     if (vv.v[i])
       if (!set_in(vv.v[i]))
-	return 1;
+        return 1;
   return 0;
 } 
 
@@ -391,7 +391,7 @@ Vec<C>::set_intersection(Vec<C> &vv, Vec<C> &result) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (vv.set_in(v[i]))
-	result.set_add(v[i]);
+        result.set_add(v[i]);
 } 
 
 template <class C> void
@@ -399,11 +399,11 @@ Vec<C>::set_disjunction(Vec<C> &vv, Vec<C> &result) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (!vv.set_in(v[i]))
-	result.set_add(v[i]);
+        result.set_add(v[i]);
   for (int i = 0; i < vv.n; i++)
     if (vv.v[i])
       if (!set_in(vv.v[i]))
-	result.set_add(vv.v[i]);
+        result.set_add(vv.v[i]);
 } 
 
 template <class C> void
@@ -411,7 +411,7 @@ Vec<C>::set_difference(Vec<C> &vv, Vec<C> &result) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (!vv.set_in(v[i]))
-	result.set_add(v[i]);
+        result.set_add(v[i]);
 } 
 
 template <class C> int
@@ -419,7 +419,7 @@ Vec<C>::some_difference(Vec<C> &vv) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (!vv.set_in(v[i]))
-	return 1;
+        return 1;
   return 0;
 } 
 

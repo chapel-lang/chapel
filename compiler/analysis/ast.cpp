@@ -48,27 +48,27 @@ unalias_syms(IF1 *i) {
     Sym *us = unalias_type(s);
     if (s != us) {
       forv_Sym(ss, s->specializes) if (ss) {
-	assert(ss != us);
-	us->specializes.add(ss);
+        assert(ss != us);
+        us->specializes.add(ss);
       }
       forv_Sym(ss, s->includes) if (ss) {
-	assert(ss != us);
-	us->includes.add(ss);
+        assert(ss != us);
+        us->includes.add(ss);
       }
       forv_Sym(ss, s->implements) if (ss) {
-	assert(ss != us);
-	us->implements.add(ss);
+        assert(ss != us);
+        us->implements.add(ss);
       }
     }
   }
   forv_Sym(s, i->allsyms) {
     if (s->type_kind) {
       for (int x = 0; x < s->specializes.n; x++)
-	s->specializes.v[x] = unalias_type(s->specializes.v[x]);
+        s->specializes.v[x] = unalias_type(s->specializes.v[x]);
       for (int x = 0; x < s->includes.n; x++)
-	s->includes.v[x] = unalias_type(s->includes.v[x]);
+        s->includes.v[x] = unalias_type(s->includes.v[x]);
       for (int x = 0; x < s->implements.n; x++)
-	s->implements.v[x] = unalias_type(s->implements.v[x]);
+        s->implements.v[x] = unalias_type(s->implements.v[x]);
     }
     if (s->must_specialize)
       s->must_specialize = unalias_type(s->must_specialize);
@@ -120,30 +120,30 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
     s->temp = (void*)new Vec<void *>;
     for (int i = 0; i < s->has.n; i++) {
       if (s->has.v[i]->name)
-	E(s)->set_add(s->has.v[i]->name);
+        E(s)->set_add(s->has.v[i]->name);
       else
-	E(s)->set_add(int2Position(i));
+        E(s)->set_add(int2Position(i));
     }
   }
   // naive n**2 algorithm
   for (int i = 1; i < by_size.n; i++) {
     if (by_size.v[i]) {
       forv_Sym(s, *by_size.v[i]) {
-	for (int j = i; j < by_size.n; j++) {
-	  forv_Sym(ss, *by_size.v[j]) {
-	    if (s != ss) {
-	      if (!E(s)->some_difference(*E(ss))) {
-		if (!is_union) {
-		  if (s->specializers.set_add(ss))
-		    ss->dispatch_order.add(s);
-		} else {
-		  if (ss->specializers.set_add(s))
-		    s->dispatch_order.add(ss);
-		}
-	      }
-	    }
-	  }
-	}
+        for (int j = i; j < by_size.n; j++) {
+          forv_Sym(ss, *by_size.v[j]) {
+            if (s != ss) {
+              if (!E(s)->some_difference(*E(ss))) {
+                if (!is_union) {
+                  if (s->specializers.set_add(ss))
+                    ss->dispatch_order.add(s);
+                } else {
+                  if (ss->specializers.set_add(s))
+                    s->dispatch_order.add(ss);
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -151,9 +151,9 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
   if (by_size.n && by_size.v[0]) {
     forv_Sym(s, *by_size.v[0]) {
       forv_Sym(ss, types) {
-	if (s != ss)
-	  if (s->specializers.set_add(ss))
-	    ss->dispatch_order.add(s);
+        if (s != ss)
+          if (s->specializers.set_add(ss))
+            ss->dispatch_order.add(s);
       }
     }
   }
@@ -168,9 +168,9 @@ compute_structural_type_hierarchy(Vec<Sym *> types) {
   forv_Sym(s, types) if (s) {
     if (s->type_kind == Type_RECORD && s->is_value_class) {
       if (!s->is_union_class)
-	record_types.add(s);
+        record_types.add(s);
       else
-	union_types.add(s);
+        union_types.add(s);
     }
   }
   compute_single_structural_type_hierarchy(record_types, 0);
@@ -195,18 +195,18 @@ build_type_hierarchy() {
       implement_and_specialize(sym_function, s, types);
     if (s->type_kind) {
       forv_Sym(ss, s->implements)
-	implement(ss, s, types);
+        implement(ss, s, types);
       forv_Sym(ss, s->specializes)
-	specialize(ss, s, types);
+        specialize(ss, s, types);
     }
     // functions implement and specializes of the initial symbol in their pattern
     // which may be a constant or a constant constrainted variable
     if (s->is_fun && s->has.n) {
       Sym *a = s->self ? s->has.v[1] : s->has.v[0];
       if (a->is_symbol && a->name == s->name)
-	implement_and_specialize(a, s, types);
+        implement_and_specialize(a, s, types);
       else if (a->must_specialize && a->must_specialize->is_symbol && a->must_specialize->name == s->name)
-	implement_and_specialize(a->must_specialize, s, types);
+        implement_and_specialize(a->must_specialize, s, types);
     }
     if (s->type_kind)
       types.set_add(s);
@@ -216,11 +216,11 @@ build_type_hierarchy() {
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && s != sym_any && s != sym_void && s != sym_unknown) {
       if (s->is_meta_class && (s != sym_anyclass))
-	implement_and_specialize(sym_anyclass, s, types);
+        implement_and_specialize(sym_anyclass, s, types);
       else if (s->is_value_class && (s != sym_value))
-	implement_and_specialize(sym_value, s, types);
+        implement_and_specialize(sym_value, s, types);
       else 
-	implement_and_specialize(sym_any, s, types);
+        implement_and_specialize(sym_any, s, types);
     }
   }
   // map subtyping and subclassing to meta_types
@@ -240,7 +240,7 @@ build_type_hierarchy() {
     changed = 0;
     forv_Sym(s, types) if (s) {
       forv_Sym(ss, s->implementors) if (ss) {
-	changed = s->implementors.set_union(ss->implementors) || changed;
+        changed = s->implementors.set_union(ss->implementors) || changed;
       }
     }
   }
@@ -250,7 +250,7 @@ build_type_hierarchy() {
     changed = 0;
     forv_Sym(s, types) if (s) {
       forv_Sym(ss, s->specializers) if (ss) {
-	changed = s->specializers.set_union(ss->specializers) || changed;
+        changed = s->specializers.set_union(ss->specializers) || changed;
       }
     }
   }
@@ -301,7 +301,7 @@ set_value_for_value_classes(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     if (s->type_kind && s->implements.n)
       implementers.add(s);
-  }	
+  }     
   int changed = 1;
   while (changed) {
     changed = 0;
@@ -309,7 +309,7 @@ set_value_for_value_classes(IF1 *i) {
       forv_Sym(ss, s->implements)
         if (ss->is_value_class && !s->is_value_class) { 
           changed = 1;
-	  s->is_value_class = 1;
+          s->is_value_class = 1;
         }
   }
 }
@@ -341,7 +341,7 @@ make_meta_types(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     if (s->type_kind) {
       if (!s->meta_type)
-	make_meta_type(s);
+        make_meta_type(s);
     }
  
  }
@@ -353,12 +353,12 @@ compute_type_sizes(IF1 *i) {
     if (s->type_kind || s->is_constant || s->is_symbol) {
       Sym *type = s->type;
       if (type->is_symbol || type->type_kind == Type_TAGGED) {
-	type = unalias_type(sym_int);
-	s->size = if1_numeric_size(i, type);
+        type = unalias_type(sym_int);
+        s->size = if1_numeric_size(i, type);
       } else if (type->num_kind)
-	s->size = if1_numeric_size(i, type);
+        s->size = if1_numeric_size(i, type);
       else
-	s->size = i->pointer_size;
+        s->size = i->pointer_size;
     }
   }
 }

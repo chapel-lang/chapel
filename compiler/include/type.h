@@ -53,7 +53,7 @@ class Type : public BaseAST {
   virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
   virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-			     Expr* format = NULL);
+                             Expr* format = NULL);
 
   virtual bool outParamNeedsPtr(void);
   virtual bool requiresCParamTmp(paramType intent);
@@ -100,7 +100,7 @@ class DomainType : public Type {
   void print(FILE* outfile);
   void codegenDef(FILE* outfile);
   virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-			     Expr* format = NULL);
+                             Expr* format = NULL);
 
   virtual bool blankIntentImpliesRef(void);
 };
@@ -108,26 +108,26 @@ class DomainType : public Type {
 //Roxana -- Index should not by subtype of Domain
 //class IndexType : public DomainType {
 class IndexType : public Type {
-	public:
-		//the expression this index is instantiated from: e.g., index(2)
-		//or
-		//pointer to the domain, set to NULL until index(D) is used.
-		//then domain is used for bounds check
-		Expr* idxExpr;
-		DomainType* domainType;
-		//the type of the index: k-tuple for arithmetic domains, scalar type, or enum, record, union of scalar type
-		//for indefinite and opaque domains.
-		//taken from the domain it is associated with, or created anew otherwise
-		Type* idxType;
+        public:
+                //the expression this index is instantiated from: e.g., index(2)
+                //or
+                //pointer to the domain, set to NULL until index(D) is used.
+                //then domain is used for bounds check
+                Expr* idxExpr;
+                DomainType* domainType;
+                //the type of the index: k-tuple for arithmetic domains, scalar type, or enum, record, union of scalar type
+                //for indefinite and opaque domains.
+                //taken from the domain it is associated with, or created anew otherwise
+                Type* idxType;
 
-	  //IndexType();
-  	IndexType(Expr* init_expr = NULL);
-  	//IndexType(int init_numdims);
-  	IndexType(Type* init_idxType);
-  	virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-		void codegenDef(FILE* outfile);
-	  void print(FILE* outfile);
-	  void traverseDefType(Traversal* traversal);
+          //IndexType();
+        IndexType(Expr* init_expr = NULL);
+        //IndexType(int init_numdims);
+        IndexType(Type* init_idxType);
+        virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+                void codegenDef(FILE* outfile);
+          void print(FILE* outfile);
+          void traverseDefType(Traversal* traversal);
 };
 
 
@@ -206,12 +206,12 @@ class ClassType : public Type {
   FnSymbol *defaultConstructor;
   
   ClassType(bool isValueClass,
-	    bool isUnion,
+            bool isUnion,
             ClassType* init_parentClass = NULL, 
-	    Stmt* init_constructor = NULL,
-	    SymScope* init_classScope = NULL);
+            Stmt* init_constructor = NULL,
+            SymScope* init_classScope = NULL);
   void addDeclarations(Stmt* newDeclarations,
-		       Stmt* afterStmt = NULL);
+                       Stmt* afterStmt = NULL);
   void setClassScope(SymScope* init_classScope);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -222,7 +222,7 @@ class ClassType : public Type {
   void codegenDef(FILE* outfile);
   void codegenPrototype(FILE* outfile);
   virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-			     Expr* format = NULL);
+                             Expr* format = NULL);
 
   virtual bool blankIntentImpliesRef(void);
   virtual bool implementedUsingCVals(void);
@@ -235,7 +235,7 @@ class SeqType : public ClassType {
   ClassType* nodeType;
 
   SeqType::SeqType(Type* init_elementType,
-		   ClassType* init_nodeClassType = NULL);
+                   ClassType* init_nodeClassType = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);

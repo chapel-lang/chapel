@@ -78,16 +78,16 @@ build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont) {
 
     switch (pn->code->kind) {
       case Code_IF:
-	pn->cfg_succ.add(build_PNode(pn, code->label[0]->code));
-	pn->cfg_succ.add(build_PNode(pn, code->label[1]->code));
-	break;
+        pn->cfg_succ.add(build_PNode(pn, code->label[0]->code));
+        pn->cfg_succ.add(build_PNode(pn, code->label[1]->code));
+        break;
       case Code_GOTO:
-	pn->cfg_succ.add(build_PNode(pn, code->label[0]->code));
-	break;
+        pn->cfg_succ.add(build_PNode(pn, code->label[0]->code));
+        break;
       default:
-	if (cont)
-	  pn->cfg_succ.add(build_PNode(pn, cont));
-	break;
+        if (cont)
+          pn->cfg_succ.add(build_PNode(pn, cont));
+        break;
     }
     forv_PNode(p, pn->cfg_succ)
       p->cfg_pred.set_add(pn);

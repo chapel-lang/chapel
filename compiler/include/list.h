@@ -100,8 +100,8 @@ class CountQueue : public Queue<C, o> {
 template <class C>
 class ConsCell : public gc {
  public:
-  C 		car;
-  ConsCell	*cdr;
+  C             car;
+  ConsCell      *cdr;
   ConsCell(C acar, ConsCell *acdr) : car(acar), cdr(acdr) {}
   ConsCell(C acar) : car(acar), cdr(NULL) {}
   ConsCell(ConsCell *acdr) : cdr(acdr) {}

@@ -87,10 +87,10 @@ find_loop(LoopGraph *g, LoopNode *header, Vec<LoopNode *> &worklist) {
     forv_LoopNode(z, y->pred) {
       LoopNode *zr = g->find(z);
       if (!zr->dfs_ancestor(header))
-	zr->loops.add(rep);
+        zr->loops.add(rep);
       else if (!body.set_in(zr) && !zr->in_worklist) {
-	worklist.add(zr);
-	zr->in_worklist = 1;
+        worklist.add(zr);
+        zr->in_worklist = 1;
       }
     }
   }
@@ -130,24 +130,24 @@ find_loops(LoopGraph *g) {
     g->uf.size(g->nodes.n * 3);
     for (int i = g->levels.n - 1; i >= 0; i--) {
       forv_LoopNode(x, *g->levels.v[i]) {
-	Vec<LoopNode *> worklist;
-	forv_LoopNode(y, x->pred) {
-	  if (y->dfs_ancestor(x) && y->dom_ancestor(x))
-	    worklist.add(y);
-	  if (x == y)
-	    self_loop(g, x);
-	}
-	if (worklist.n) find_loop(g, x, worklist);
+        Vec<LoopNode *> worklist;
+        forv_LoopNode(y, x->pred) {
+          if (y->dfs_ancestor(x) && y->dom_ancestor(x))
+            worklist.add(y);
+          if (x == y)
+            self_loop(g, x);
+        }
+        if (worklist.n) find_loop(g, x, worklist);
       }
       forv_LoopNode(x, *g->levels.v[i]) {
-	if (!x->processed) {
-	  Vec<LoopNode *> worklist;
-	  forv_LoopNode(y, x->pred) {
-	    if (y->dfs_ancestor(x) && !y->dom_ancestor(x))
-	      worklist.add(y);
-	  }
-	  if (worklist.n) find_loop(g, x, worklist);
-	}	
+        if (!x->processed) {
+          Vec<LoopNode *> worklist;
+          forv_LoopNode(y, x->pred) {
+            if (y->dfs_ancestor(x) && !y->dom_ancestor(x))
+              worklist.add(y);
+          }
+          if (worklist.n) find_loop(g, x, worklist);
+        }       
       }
     }
     g->loops = g->nodes.v[g->nodes.n-1];

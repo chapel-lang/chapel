@@ -169,19 +169,19 @@ void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
   if (prevDefInScope) {
     // only allow redefinition of functions in a single scope currently
     if (typeid(*sym) == typeid(FnSymbol) &&
-	typeid(*prevDefInScope) == typeid(FnSymbol)) {
+        typeid(*prevDefInScope) == typeid(FnSymbol)) {
       FnSymbol* origFn = dynamic_cast<FnSymbol*>(prevDefInScope);
       FnSymbol* newFn = dynamic_cast<FnSymbol*>(sym);
       FnSymbol* lastOverload = origFn;
       while (lastOverload->overload) {
-	lastOverload = lastOverload->overload;
+        lastOverload = lastOverload->overload;
       }
       // this is the equivalent of the .put above
       lastOverload->overload = newFn;
       newFn->setParentScope(origFn->parentScope);
     } else {
       USR_FATAL(sym, "redefinition of symbol %s (previous definition at %s)",
-		sym->name, prevDefInScope->stringLoc());
+                sym->name, prevDefInScope->stringLoc());
     }
   } else {
     scope->insert(sym);
@@ -203,7 +203,7 @@ Symbol* Symboltable::lookupInScope(char* name, SymScope* scope) {
 
 
 Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
-				     bool genError) {
+                                     bool genError) {
   if (scope == NULL) {
     INT_FATAL("NULL scope passed to lookupFromScope()");
   }
@@ -308,11 +308,11 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
       // first software module, but then contains other file module
       // code after the first software module.
       if (newModule->isFileModule()) {
-	Symboltable::pushScope(SCOPE_MODULE);
+        Symboltable::pushScope(SCOPE_MODULE);
       } else {
-	if (!currentScope->isEmpty()) {
-	  USR_FATAL(newModule, "Can't handle nested modules yet");
-	}
+        if (!currentScope->isEmpty()) {
+          USR_FATAL(newModule, "Can't handle nested modules yet");
+        }
       }
     }
   }
@@ -328,7 +328,7 @@ static bool ModuleDefContainsOnlyNestedModules(Stmt* def) {
   while (stmt) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
       if (!def_stmt->moduleDef()) {
-	return false;
+        return false;
       }
     }
     else {
@@ -347,7 +347,7 @@ static Stmt* ModuleDefContainsNestedModules(Stmt* def) {
   while (stmt) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
       if (def_stmt->moduleDef()) {
-	return stmt;
+        return stmt;
       }
     }
     
@@ -373,11 +373,11 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
       // a software module and some other stuff, which is a nested
       // module, and we can't handle that case yet
       if (moduleDef) {
-	USR_FATAL(moduleDef, "Can't handle nested modules yet");
+        USR_FATAL(moduleDef, "Can't handle nested modules yet");
       } else {
-	// for now, define all modules in the prelude scope, since
-	// they can't be nested
-	defineInScope(mod, preludeScope);
+        // for now, define all modules in the prelude scope, since
+        // they can't be nested
+        defineInScope(mod, preludeScope);
       }
     }
   }
@@ -408,7 +408,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
     // work with here.
     if (!mod->internal) {
       if (!mod->isFileModule()) {
-	Symboltable::pushScope(SCOPE_MODULE);
+        Symboltable::pushScope(SCOPE_MODULE);
       }
     }
   }
@@ -420,7 +420,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
 }
 
 VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
-				   varType vartag, consType constag) {
+                                   varType vartag, consType constag) {
   VarSymbol* varList;
   VarSymbol* newVar;
   VarSymbol* lastVar;
@@ -449,7 +449,7 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 }
 
 ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
-				       Type* type, Expr* init) {
+                                       Type* type, Expr* init) {
   ParamSymbol* list = new ParamSymbol(tag, syms->name, type, init);
   list->pragmas = syms->pragmas;
   syms = nextLink(Symbol, syms);
@@ -463,8 +463,8 @@ ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
 }
 
 DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type, 
-				       Expr* init, varType vartag, 
-				       consType constag) {
+                                       Expr* init, varType vartag, 
+                                       consType constag) {
   /** SJD: This is a stopgap measure to deal with changing sequences
       into domains when the type of a declared variable is a domain.
       It replaces the syntax of assigning domains using square
@@ -487,7 +487,7 @@ DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type,
 
 
 DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type, 
-				    Expr* init) {
+                                    Expr* init) {
 
   /** SJD: This is a stopgap measure to deal with changing sequences
       into domains when the type of a declared variable is a domain.
@@ -512,8 +512,8 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
 }
 
 DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
-					varType vartag, 
-					consType constag) {
+                                        varType vartag, 
+                                        consType constag) {
   DefExpr* expr = exprs;
   while (expr) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(expr->sym);
@@ -521,7 +521,7 @@ DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
       var->consClass = constag;
       var->varClass = vartag;
       if (constag == VAR_PARAM && !var->init){
-      	USR_FATAL(var->init, "No initializer for parameter.");
+        USR_FATAL(var->init, "No initializer for parameter.");
       }
       var = nextLink(VarSymbol, var);
     }
@@ -531,8 +531,8 @@ DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
 }
 
 DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
-					     Expr* init, varType vartag, 
-					     consType constag) {
+                                             Expr* init, varType vartag, 
+                                             consType constag) {
   Symbol* sym = new Symbol(SYMBOL, name);
   return new DefStmt(defineVarDef(sym, type, init, vartag, constag));
 }
@@ -551,9 +551,9 @@ static Expr* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
     if (!varTmp) {
       Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
       if (!tupTmp) {
-	USR_FATAL(tmp, "Index variable expected");
+        USR_FATAL(tmp, "Index variable expected");
       } else {
-	return exprToIndexSymbols(tupTmp->exprs, indices);
+        return exprToIndexSymbols(tupTmp->exprs, indices);
       }
     } else {
       indices = appendLink(indices, new VarSymbol(varTmp->var->name, dtInteger));
@@ -600,7 +600,7 @@ ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
 
 
 ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr, 
-					  Expr* argExpr) {
+                                          Expr* argExpr) {
   if (argExpr) {
     forallExpr->setForallExpr(argExpr);
   }
@@ -627,9 +627,9 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
 FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
   if (noparens) {
     if (getCurrentScope()->type != SCOPE_CLASS &&
-	fnsym->classBinding == NULL) {
+        fnsym->classBinding == NULL) {
       USR_FATAL(fnsym, 
-		"Non-member functions must have parenthesized argument lists");
+                "Non-member functions must have parenthesized argument lists");
     }
   }
 
@@ -640,7 +640,7 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
 
 
 DefExpr* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
-				  Type* retType, Stmt* body, bool isExtern) {
+                                  Type* retType, Stmt* body, bool isExtern) {
   SymScope* paramScope = Symboltable::popScope();
   fnsym->finishDef(formals, retType, body, paramScope, isExtern);
   DefExpr* def_expr = new DefExpr(fnsym);
@@ -652,8 +652,8 @@ DefExpr* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals,
 
 
 DefStmt* Symboltable::defineFunction(char* name, Symbol* formals, 
-				     Type* retType, Stmt* body, 
-				     bool isExtern) {
+                                     Type* retType, Stmt* body, 
+                                     bool isExtern) {
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
   return new DefStmt(finishFnDef(fnsym, formals, retType, body, isExtern));
 }
@@ -673,7 +673,7 @@ TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUni
 
 
 DefExpr* Symboltable::finishClassDef(TypeSymbol* classSym, 
-				     Stmt* definition) {
+                                     Stmt* definition) {
   ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
   classType->addDeclarations(definition);
   SymScope *classScope = Symboltable::popScope();
@@ -687,7 +687,7 @@ DefExpr* Symboltable::finishClassDef(TypeSymbol* classSym,
 
 
 ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices, 
-				       Expr* domain) {
+                                       Expr* domain) {
   Symboltable::pushScope(SCOPE_FORLOOP);
   // HACK: dtInteger is wrong -- same as with forallExpr HACK
   VarSymbol* indexVars = dynamic_cast<VarSymbol*>(indices);
@@ -757,7 +757,7 @@ void Symboltable::traverse(SymtabTraversal* traversal) {
 
 
 void Symboltable::traverseFromScope(SymtabTraversal* traversal,
-				    SymScope* scope) {
+                                    SymScope* scope) {
   if (scope != NULL) {
     scope->traverse(traversal);
     traverseSymtab(traversal, scope->child);

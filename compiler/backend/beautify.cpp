@@ -61,8 +61,8 @@ static int intick = FALSE;
 static int escaped = FALSE;
 
 static void update_state(char *line) {
-  int oldstuff;	/* characters up to the last open paren */
-  int stuff;		/* characters since last open paren */
+  int oldstuff; /* characters up to the last open paren */
+  int stuff;            /* characters since last open paren */
   char *cp;
   int oldoldstuff;
 
@@ -80,65 +80,65 @@ static void update_state(char *line) {
     case '\'':
       stuff++;
       if (!escaped && !inquote) {
-	intick = !intick;
+        intick = !intick;
       }
       escaped = FALSE;
       break;
     case '\"':
       stuff++;
       if (!escaped) {
-	inquote = !inquote;
+        inquote = !inquote;
       }
       escaped = FALSE;
       break;
     case '{':
       if (!inquote && !intick) {
-	if (oldstuff == -1) {
-	  INT_FATAL("Unbalanced curly braces:\n\t%s",line);
-	}
-	oldstuff = 0;	/* assume all parens have been closed */
-	stuff = 0;
-	depth++;
+        if (oldstuff == -1) {
+          INT_FATAL("Unbalanced curly braces:\n\t%s",line);
+        }
+        oldstuff = 0;   /* assume all parens have been closed */
+        stuff = 0;
+        depth++;
       } else {
-	stuff++;
+        stuff++;
       }
       escaped = FALSE;
       break;
     case '}':
       if (!inquote && !intick) {
-	if (oldstuff == -1) {
-	  INT_FATAL("Unbalanced curly braces:\n\t%s",line);
-	}
-	oldstuff = 0;	/* assume all parens have been closed */
-	stuff = 0;
-	depth--;
+        if (oldstuff == -1) {
+          INT_FATAL("Unbalanced curly braces:\n\t%s",line);
+        }
+        oldstuff = 0;   /* assume all parens have been closed */
+        stuff = 0;
+        depth--;
       } else {
-	stuff++;
+        stuff++;
       }
       escaped = FALSE;
       break;
     case '(':
       if (!inquote && !intick) {
-	justification.add(oldstuff);
-	if (oldstuff == -1) {
-	  INT_FATAL("Unbalanced parentheses:\n\t%s",line);
-	}
-	oldoldstuff = oldstuff;
-	oldstuff = oldoldstuff + stuff + 1;
-	stuff = 0;
-	parens++;
+        justification.add(oldstuff);
+        if (oldstuff == -1) {
+          INT_FATAL("Unbalanced parentheses:\n\t%s",line);
+        }
+        oldoldstuff = oldstuff;
+        oldstuff = oldoldstuff + stuff + 1;
+        stuff = 0;
+        parens++;
       } else {
-	stuff++;
+        stuff++;
       }
       escaped = FALSE;
       break;
     case ')':
       if (!inquote && !intick) {
-	oldstuff = justification.pop();
-	stuff = 0;
-	parens--;
+        oldstuff = justification.pop();
+        stuff = 0;
+        parens--;
       } else {
-	stuff++;
+        stuff++;
       }
       escaped = FALSE;
       break;
@@ -191,18 +191,18 @@ void beautify(fileinfo* origfile) {
     if (new_line == TRUE) {
       indent = TRUE;
 
-      while (isspace((int)(*cp)))		/* remove leading spaces */
-	cp++;
+      while (isspace((int)(*cp)))               /* remove leading spaces */
+        cp++;
 
       /* record zpl/c source line map info */
       if (!strncmp(cp, ZLINEINPUT, ZLINEINPUTLEN)) {
-	sscanf(cp, ZLINEINPUTFORMAT, &zline, zname);
-	znptr = strrchr(zname,'/');
-	if (znptr != NULL) {
-	  strcpy(zname,znptr+1);
-	}
-	
-	total_lines = max(total_lines, zline);
+        sscanf(cp, ZLINEINPUTFORMAT, &zline, zname);
+        znptr = strrchr(zname,'/');
+        if (znptr != NULL) {
+          strcpy(zname,znptr+1);
+        }
+        
+        total_lines = max(total_lines, zline);
       }
     }
     else {
@@ -216,42 +216,42 @@ void beautify(fileinfo* origfile) {
 
     switch (cp[0]) {
     case '\0':
-      fprintf(outputfile, "\n");	/* output blank line */
-	break;
+      fprintf(outputfile, "\n");        /* output blank line */
+        break;
     case '}':
       /*** assumes there is no open curly braces follow on the line ***/
       old_depth = depth;
-      update_state(cp);		/* update state first */
+      update_state(cp);         /* update state first */
       if (zline >= 0) {
-	fprintf(outputfile, ZLINEFORMAT, zline, zname);
-	current_line++;
+        fprintf(outputfile, ZLINEFORMAT, zline, zname);
+        current_line++;
       }
       for (i = 0; i < 2*(old_depth-1)+justify; i++) {
-	fprintf(outputfile, " ");
+        fprintf(outputfile, " ");
       }
-      fprintf(outputfile, "%s", cp);	/* output line */
+      fprintf(outputfile, "%s", cp);    /* output line */
       break;
     default:
       if (strncmp(cp, "case", 4) == 0)
-	i = 1;
+        i = 1;
       else
-	i = 0;
+        i = 0;
 
       if (strncmp(cp, ZLINEINPUT, ZLINEINPUTLEN)) { /* don't output ZLINE comments */
-	if (zline >= 0) {
-	  fprintf(outputfile, ZLINEFORMAT, zline, zname);
-	  current_line++;
-	}
-	if ((indent == TRUE) && (cp[0] != '#'))
-	  for (i = 0; i < 2*depth+justify; i++)
-	    fprintf(outputfile, " ");
-	else {}				/* don't indent pre-processor stmts*/
-	fprintf(outputfile, "%s", cp);	/* output line */
-      } else {				/* ignore ZLINE lines in line count */
-	current_line--;
+        if (zline >= 0) {
+          fprintf(outputfile, ZLINEFORMAT, zline, zname);
+          current_line++;
+        }
+        if ((indent == TRUE) && (cp[0] != '#'))
+          for (i = 0; i < 2*depth+justify; i++)
+            fprintf(outputfile, " ");
+        else {}                         /* don't indent pre-processor stmts*/
+        fprintf(outputfile, "%s", cp);  /* output line */
+      } else {                          /* ignore ZLINE lines in line count */
+        current_line--;
       }
 
-      update_state(cp);		/* update state */
+      update_state(cp);         /* update state */
     }
     current_line++;
   }

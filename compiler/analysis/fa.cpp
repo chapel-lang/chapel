@@ -48,7 +48,7 @@ static Vec<ATypeViolation *> type_violations;
 
 static AType *make_AType(CreationSet *cs);
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
-		       Partial_kind partial);
+                       Partial_kind partial);
 static void add_var_constraint(AVar *av);
 
 AVar::AVar(Var *v, void *acontour) : 
@@ -192,13 +192,13 @@ update_in(AVar *v, AType *t) {
       assert(tt != top_type);
       v->out = tt;
       forv_AVar(vv, v->arg_of_send) if (vv) {
-	if (!vv->in_send_worklist) {
-	  vv->in_send_worklist = 1;
-	  send_worklist.enqueue(vv);
-	}
+        if (!vv->in_send_worklist) {
+          vv->in_send_worklist = 1;
+          send_worklist.enqueue(vv);
+        }
       }
       forv_AVar(vv, v->forward) if (vv)
-	update_in(vv, tt);
+        update_in(vv, tt);
     }
   }
 }
@@ -254,10 +254,10 @@ creation_point(AVar *v, Sym *s) {
     cs = x;
     if (v->contour == GLOBAL_CONTOUR) {
       if (cs->defs.n)
-	goto LnextCreationSet;
+        goto LnextCreationSet;
     } else {
       if (!cs->defs.n)
-	goto LnextCreationSet;
+        goto LnextCreationSet;
       forv_AVar(av, cs->defs)
         if (av->var != v->var)
           goto LnextCreationSet;
@@ -326,7 +326,7 @@ type_num_fold(Prim *p, AType *a, AType *b) {
   b = type_intersection(b, anynum_kind);
   if (a->n == 1 && b->n == 1)
     return type_union(a->v[0]->sym->type->abstract_type, 
-		      b->v[0]->sym->type->abstract_type)->top;
+                      b->v[0]->sym->type->abstract_type)->top;
   ATypeFold f(p, a, b), *ff;
   if ((ff = type_fold_cache.get(&f)))
     return ff->result;
@@ -346,11 +346,11 @@ qsort_pointers(void **left, void **right) {
   if (right - left < 5) {
     for (void **y = right - 1; y > left; y--) {
       for (void **x = left; x < y; x++) {
-	if (x[0] > x[1]) {
-	  void *t = x[0];
-	  x[0] = x[1];
-	  x[1] = t;
-	} 
+        if (x[0] > x[1]) {
+          void *t = x[0];
+          x[0] = x[1];
+          x[1] = t;
+        } 
       } 
     }
   } else {
@@ -392,8 +392,8 @@ type_cannonicalize(AType *t) {
       base_cs = cs->sym->type->specializes.v[0]->abstract_type->v[0];
     if (base_cs) {
       if (t->set_in(base_cs)) {
-	rebuild = 1;
-	continue;
+        rebuild = 1;
+        continue;
       }
       consts++;
       nonconsts.set_add(base_cs);
@@ -424,25 +424,25 @@ type_cannonicalize(AType *t) {
     else {
       Sym *s = NO_TOP;
       forv_CreationSet(cs, tt->sorted) {
-	if (s == NO_TOP)
-	  s = cs->sym;
-	if (s == cs->sym)
-	  continue;
-	else if (!cs->defs.n) {
-	  if (s->type->num_kind && cs->sym->type->num_kind)
-	    s = coerce_num(s->type, cs->sym);
-	  else
-	    goto Ldone;
-	} else {
-	Ldone:
-	  tt->top = top_type;
-	  goto Ltop_done;
-	}
+        if (s == NO_TOP)
+          s = cs->sym;
+        if (s == cs->sym)
+          continue;
+        else if (!cs->defs.n) {
+          if (s->type->num_kind && cs->sym->type->num_kind)
+            s = coerce_num(s->type, cs->sym);
+          else
+            goto Ldone;
+        } else {
+        Ldone:
+          tt->top = top_type;
+          goto Ltop_done;
+        }
       }
       if (s == NO_TOP)
-	tt->top = bottom_type;
+        tt->top = bottom_type;
       else
-	tt->top = s->abstract_type;
+        tt->top = s->abstract_type;
     }
   }
   Ltop_done:;
@@ -474,10 +474,10 @@ type_union(AType *a, AType *b) {
     r = new AType(*ab);
     forv_CreationSet(x, *ba)
       if (x)
-	r->set_add(x);
+        r->set_add(x);
     forv_CreationSet(x, *a)
       if (x && b->in(x))
-	r->set_add(x);
+        r->set_add(x);
     r = type_cannonicalize(r);
   }
  Ldone:
@@ -507,7 +507,7 @@ type_diff(AType *a, AType *b) {
       continue;
     forv_CreationSet(bb, *b) if (bb && !bb->defs.n) {
       if (subsumed_by(aa->sym, bb->sym))
-	goto Lnext;
+        goto Lnext;
     }
     r->set_add(aa);
   Lnext:;
@@ -535,28 +535,28 @@ type_intersection(AType *a, AType *b) {
   forv_CreationSet(aa, *a) if (aa) {
     forv_CreationSet(bb, *b) if (bb) {
       if (aa->defs.n) {
-	if (bb->defs.n) {
-	  if (aa == bb) {
-	    r->set_add(aa);
-	    goto Lnexta;
-	  }
-	} else {
-	  if (subsumed_by(aa->sym, bb->sym)) {
-	    r->set_add(aa);
-	    goto Lnexta;
-	  }
-	}
+        if (bb->defs.n) {
+          if (aa == bb) {
+            r->set_add(aa);
+            goto Lnexta;
+          }
+        } else {
+          if (subsumed_by(aa->sym, bb->sym)) {
+            r->set_add(aa);
+            goto Lnexta;
+          }
+        }
       } else {
-	if (bb->defs.n) {
-	  if (subsumed_by(bb->sym, aa->sym))
-	    r->set_add(bb);
-	} else {
-	  if (subsumed_by(aa->sym, bb->sym)) {
-	    r->set_add(aa);
-	    goto Lnexta;
-	  } else if (subsumed_by(bb->sym, aa->sym))
-	    r->set_add(bb);
-	}
+        if (bb->defs.n) {
+          if (subsumed_by(bb->sym, aa->sym))
+            r->set_add(bb);
+        } else {
+          if (subsumed_by(aa->sym, bb->sym)) {
+            r->set_add(aa);
+            goto Lnexta;
+          } else if (subsumed_by(bb->sym, aa->sym))
+            r->set_add(bb);
+        }
       }
     }
   Lnexta:;
@@ -574,14 +574,14 @@ fill_rets(EntrySet *es, int n) {
   for (int i = 0; i < n; i++)
     if (!es->rets.v[i]) {
       if (!i)
-	es->rets.v[i] = make_AVar(es->fun->sym->ret->var, es);
+        es->rets.v[i] = make_AVar(es->fun->sym->ret->var, es);
       else {
-	if (!es->fun->rets.v[i]) {
-	  Var *v = new Var(es->fun->sym->ret);
-	  es->fun->rets.v[i] = v;
-	  es->fun->fa_all_Vars.add(v);
-	}
-	es->rets.v[i] = make_AVar(es->fun->rets.v[i], es);
+        if (!es->fun->rets.v[i]) {
+          Var *v = new Var(es->fun->sym->ret);
+          es->fun->rets.v[i] = v;
+          es->fun->fa_all_Vars.add(v);
+        }
+        es->rets.v[i] = make_AVar(es->fun->rets.v[i], es);
       }
     }
 }
@@ -613,42 +613,42 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
     forv_MPosition(p, e->match->fun->positional_arg_positions) {
       AVar *es_arg = es->args.get(p), *e_arg = e->args.get(p);
       if (!e_arg)
-	continue;
+        continue;
       // always split the "new" method... should generalize this
       if (p->pos.n == 1 && p->pos.v[0] == int2Position(2) && es->fun->sym == sym_new_object) {
-	if (es_arg->out != e_arg->out)
-	  return -1;
+        if (es_arg->out != e_arg->out)
+          return -1;
       } else
-	if (es_arg->out != e_arg->out)
-	  return 0;
+        if (es_arg->out != e_arg->out)
+          return 0;
     }
     if (es->rets.n != e->rets.n)
       return 0;
     for (int i = 0; i < e->rets.n; i++) {
       if (es->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
-	if (es->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
-	  return 0;
+        if (es->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
+          return 0;
     }
   } else {
     AEdge **last = es->edges.last();
     for (AEdge **pee = es->edges.first(); pee < last; pee++) if (*pee) {
       AEdge *ee = *pee;
-      if (!ee->args.n)	
-	continue;
+      if (!ee->args.n)  
+        continue;
       forv_MPosition(p, e->match->fun->arg_positions) {
-	AVar *e_arg = e->args.get(p); 
-	AVar *ee_arg = ee->args.get(p);
-	if (!e_arg || !ee_arg)
-	  continue;
-	if (ee_arg->out != e_arg->out)
-	  return 0;
+        AVar *e_arg = e->args.get(p); 
+        AVar *ee_arg = ee->args.get(p);
+        if (!e_arg || !ee_arg)
+          continue;
+        if (ee_arg->out != e_arg->out)
+          return 0;
       }
       if (e->rets.n != ee->rets.n)
-	return 0;
+        return 0;
       for (int i = 0; i < e->rets.n; i++) {
-	if (ee->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
-	  if (ee->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
-	    return 0;
+        if (ee->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
+          if (ee->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
+            return 0;
       }
     }
   }
@@ -672,31 +672,31 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
     forv_MPosition(p, e->match->fun->positional_arg_positions) {
       AVar *av = e->args.get(p);
       if (av)
-	if (!sset_compatible(av, es->args.get(p)))
-	  return 0;
+        if (!sset_compatible(av, es->args.get(p)))
+          return 0;
     }
     if (es->rets.n != e->rets.n)
       return 0;
     for (int i = 0; i < es->rets.n; i++)
       if (!sset_compatible(e->rets.v[i], es->rets.v[i]))
-	return 0;
+        return 0;
   } else {
     AEdge **last = es->edges.last();
     for (AEdge **pee = es->edges.first(); pee < last; pee++) if (*pee) {
       AEdge *ee = *pee;
-      if (!ee->args.n)	
-	continue;
+      if (!ee->args.n)  
+        continue;
       forv_MPosition(p, e->match->fun->arg_positions) {
-	AVar *eav = e->args.get(p), *eeav = ee->args.get(p);
-	if (eav && eeav)
-	  if (!sset_compatible(eav, eeav))
-	    return 0;
+        AVar *eav = e->args.get(p), *eeav = ee->args.get(p);
+        if (eav && eeav)
+          if (!sset_compatible(eav, eeav))
+            return 0;
       }
       if (e->rets.n != ee->rets.n)
-	return 0;
+        return 0;
       for (int i = 0; i < e->rets.n; i++)
-	if (!sset_compatible(ee->rets.v[i], ee->rets.v[i]))
-	  return 0;
+        if (!sset_compatible(ee->rets.v[i], ee->rets.v[i]))
+          return 0;
     }
   }
   return 1;
@@ -710,8 +710,8 @@ edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
       AType css;
       av->out->set_disjunction(*e->args.get(p)->out, css);
       forv_CreationSet(cs, css)
-	if (cs->sym->constant)
-	  return 0;
+        if (cs->sym->constant)
+          return 0;
     }
   }
   return 1;
@@ -761,7 +761,7 @@ find_best_entry_set(AEdge *e, EntrySet *split) {
     if (v > 0 && v > val) {
       es = x;
       if (v == INT_MAX)
-	return es;
+        return es;
       val = v;
     }
   }
@@ -776,10 +776,10 @@ check_split(AEdge *e) {
     Map<Fun *, AEdge *> *m = e->from->split->out_edge_map.get(e->pnode);
     if (m) {
       for (int i = 0; i < m->n; i++)
-	if (m->v[i].key == e->match->fun) {
-	  set_entry_set(e, m->v[i].value->to);
-	  return 1;
-	}
+        if (m->v[i].key == e->match->fun) {
+          set_entry_set(e, m->v[i].value->to);
+          return 1;
+        }
     }
   }
   return 0;
@@ -814,8 +814,8 @@ flow_var_type_permit(AVar *v, AType *t) {
     v->out = tt;
     forv_AVar(vv, v->arg_of_send) if (vv) {
       if (!vv->in_send_worklist) {
-	vv->in_send_worklist = 1;
-	send_worklist.enqueue(vv);
+        vv->in_send_worklist = 1;
+        send_worklist.enqueue(vv);
       }
     }
     forv_AVar(vv, v->forward) if (vv)
@@ -833,7 +833,7 @@ add_var_constraint(AVar *av) {
   Sym *s = av->var->sym;
   if (s->type && !s->is_pattern) {
     if (s->is_external && 
-	(s->type->num_kind || s->type == sym_string || s == sym_nil))
+        (s->type->num_kind || s->type == sym_string || s == sym_nil))
       update_in(av, s->type->abstract_type);
     if (s->is_constant) // for constants, the abstract type is the concrete type
       update_in(av, make_abstract_type(s));
@@ -935,11 +935,11 @@ vector_elems(int rank, PNode *p, AVar *ae, AVar *elem, AVar *container, int n = 
   if (rank > 0) {
     forv_CreationSet(cs, *e->out) if (cs) {
       if (cs->sym != sym_tuple)
-	flow_vars(e, elem);
+        flow_vars(e, elem);
       else {
-	e->arg_of_send.set_add(container);
-	forv_AVar(av, cs->vars)
-	  vector_elems(rank - 1, p, av, elem, container, n+1);
+        e->arg_of_send.set_add(container);
+        forv_AVar(av, cs->vars)
+          vector_elems(rank - 1, p, av, elem, container, n+1);
       }
     }
   } else
@@ -1015,41 +1015,41 @@ add_send_constraints(EntrySet *es) {
       int start = (p->rvals.v[0]->sym == sym_operator) ? 1 : 0;
       // return constraints
       for (int i = 0; i < p->lvals.n; i++) {
-	int ii = i;
-	if (p->prim->nrets < 0 || p->prim->nrets <= i)
-	  ii = -p->prim->nrets -1; // last
-	switch (p->prim->ret_types[ii]) {
-	  case PRIM_TYPE_ANY: break;
-	  case PRIM_TYPE_BOOL: update_in(make_AVar(p->lvals.v[i], es), bool_type); break;
-	  case PRIM_TYPE_SIZE: update_in(make_AVar(p->lvals.v[i], es), size_type); break;
-	  case PRIM_TYPE_ANY_NUM_AB:
-	  case PRIM_TYPE_A: {
-	    for (int j = start; j < p->rvals.n; j++)
-	      if (j - start != p->prim->pos) {
-		AVar *av = make_AVar(p->rvals.v[j], es), *res = make_AVar(p->lvals.v[0], es);
-		av->arg_of_send.set_add(res);
-	      }
-	    break;
-	  }
-	  default: assert(!"case"); break;
-	}
+        int ii = i;
+        if (p->prim->nrets < 0 || p->prim->nrets <= i)
+          ii = -p->prim->nrets -1; // last
+        switch (p->prim->ret_types[ii]) {
+          case PRIM_TYPE_ANY: break;
+          case PRIM_TYPE_BOOL: update_in(make_AVar(p->lvals.v[i], es), bool_type); break;
+          case PRIM_TYPE_SIZE: update_in(make_AVar(p->lvals.v[i], es), size_type); break;
+          case PRIM_TYPE_ANY_NUM_AB:
+          case PRIM_TYPE_A: {
+            for (int j = start; j < p->rvals.n; j++)
+              if (j - start != p->prim->pos) {
+                AVar *av = make_AVar(p->rvals.v[j], es), *res = make_AVar(p->lvals.v[0], es);
+                av->arg_of_send.set_add(res);
+              }
+            break;
+          }
+          default: assert(!"case"); break;
+        }
       }
       // specifics
       switch (p->prim->index) {
-	default: break;
-	case P_prim_reply:
-	  fill_rets(es, p->rvals.n - 2);
-	  for (int i = 2; i < p->rvals.n; i++) {
-	    AVar *r = make_AVar(p->rvals.v[i], es);
-	    flow_vars(r, es->rets.v[i - 2]);
-	  }
-	  break;
-	case P_prim_tuple: prim_make(p, es, sym_tuple); break;
-	case P_prim_list: prim_make_list(p, es); break;
-	case P_prim_vector: prim_make_vector(p, es); break;
-	case P_prim_continuation: prim_make(p, es, sym_continuation); break;
-	case P_prim_set: prim_make(p, es, sym_set); break;
-	case P_prim_ref: prim_make(p, es, sym_ref, 2, 1); break;
+        default: break;
+        case P_prim_reply:
+          fill_rets(es, p->rvals.n - 2);
+          for (int i = 2; i < p->rvals.n; i++) {
+            AVar *r = make_AVar(p->rvals.v[i], es);
+            flow_vars(r, es->rets.v[i - 2]);
+          }
+          break;
+        case P_prim_tuple: prim_make(p, es, sym_tuple); break;
+        case P_prim_list: prim_make_list(p, es); break;
+        case P_prim_vector: prim_make_vector(p, es); break;
+        case P_prim_continuation: prim_make(p, es, sym_continuation); break;
+        case P_prim_set: prim_make(p, es, sym_set); break;
+        case P_prim_ref: prim_make(p, es, sym_ref, 2, 1); break;
       }
     }
   }
@@ -1072,9 +1072,9 @@ add_move_constraints(EntrySet *es) {
     for (int i = 0; i < p->rvals.n; i++) {
       AVar *lhs = make_AVar(p->lvals.v[i], es), *rhs = make_AVar(p->rvals.v[i], es);
       if (lhs->lvalue && rhs->lvalue)
-	flow_vars(rhs, lhs);
+        flow_vars(rhs, lhs);
       else
-	flow_vars_assign(rhs, lhs);
+        flow_vars_assign(rhs, lhs);
     }
   }
 }
@@ -1098,9 +1098,9 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
     forv_MPosition(p, e->match->fun->positional_arg_positions) {
       AType *t1 = e->match->formal_filters.get(p), *t2 = m->formal_filters.get(p);
       if (t1 && t2)
-	e->match->formal_filters.put(p, type_union(t1, t2));
+        e->match->formal_filters.put(p, type_union(t1, t2));
       else if (!t1 && t2)
-	e->match->formal_filters.put(p, t2);
+        e->match->formal_filters.put(p, t2);
     }
   }
   from->out_edges.set_add(e);
@@ -1146,13 +1146,13 @@ record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
     if (s->is_pattern) {
       AType *t = type_intersection(a->out, e->match->formal_filters.get(cp));
       forv_CreationSet(cs, *t) {
-	assert(s->has.n == cs->vars.n);
-	p.push(1);
-	for (int i = 0; i < s->has.n; i++) {
-	  record_arg(cs, cs->vars.v[i], s->has.v[i], e, p);
-	  p.inc();
-	}
-	p.pop();
+        assert(s->has.n == cs->vars.n);
+        p.push(1);
+        for (int i = 0; i < s->has.n; i++) {
+          record_arg(cs, cs->vars.v[i], s->has.v[i], e, p);
+          p.inc();
+        }
+        p.pop();
       }
     }
   }
@@ -1160,7 +1160,7 @@ record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
 
 static int
 function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args, 
-		  Partial_kind partial) 
+                  Partial_kind partial) 
 {
   Vec<AVar *> a;
   int partial_result = 0;
@@ -1172,23 +1172,23 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
   if (pattern_match(a, send, partial, &matches)) {
     forv_Match(m, matches) {
       if (!m->partial && partial != Partial_ALWAYS) {
-	AEdge *ee = make_AEdge(m, p, es);
-	if (!ee->args.n) {
-	  MPosition p;
-	  p.push(1);
-	  for (int i = 0; i < m->fun->sym->has.n; i++) {
-	    record_arg(0, a.v[i], m->fun->sym->has.v[i], ee, p);
-	    p.inc();
-	  }
-	}
-	if (!ee->rets.n) {
-	  for (int i = 0; i < p->lvals.n; i++)
-	    ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
-	}
+        AEdge *ee = make_AEdge(m, p, es);
+        if (!ee->args.n) {
+          MPosition p;
+          p.push(1);
+          for (int i = 0; i < m->fun->sym->has.n; i++) {
+            record_arg(0, a.v[i], m->fun->sym->has.v[i], ee, p);
+            p.inc();
+          }
+        }
+        if (!ee->rets.n) {
+          for (int i = 0; i < p->lvals.n; i++)
+            ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
+        }
       } else 
-	partial_result = 1;
+        partial_result = 1;
       if (!p->next_callees)
-	p->next_callees = new Callees;
+        p->next_callees = new Callees;
       Fun *f = m->fun;
       while (f->wraps) f = f->wraps;
       p->next_callees->funs.set_add(f);
@@ -1199,7 +1199,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 
 static int
 application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args, 
-	    Partial_kind partial) 
+            Partial_kind partial) 
 {
   if (sym_function->implementors.set_in(cs->sym) && cs->defs.n)
     return partial_application(p, es, cs, args, partial);
@@ -1231,29 +1231,29 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
     AVar *violation = 0;
     forv_CreationSet(cs, *ov->out) if (cs) {
       if (p->sym->must_specialize->specializers.in(cs->sym)) {
-	for (int i = 0; i < p->sym->has.n; i++) {
-	  AVar *av = NULL;
-	  if (cs->sym != sym_tuple && p->sym->has.v[i]->destruct_name)
-	    av = cs->var_map.get(p->sym->has.v[i]->destruct_name);
-	  else if (cs->sym == sym_tuple && i < cs->vars.n)
-	    av = cs->vars.v[i];
-	  if (!av) {
-	    violation = make_AVar(p->sym->has.v[i]->var, es);
-	    goto Lviolation;
-	  }
-	  destruct(av, p->sym->has.v[i]->var, es, result);
-	}
+        for (int i = 0; i < p->sym->has.n; i++) {
+          AVar *av = NULL;
+          if (cs->sym != sym_tuple && p->sym->has.v[i]->destruct_name)
+            av = cs->var_map.get(p->sym->has.v[i]->destruct_name);
+          else if (cs->sym == sym_tuple && i < cs->vars.n)
+            av = cs->vars.v[i];
+          if (!av) {
+            violation = make_AVar(p->sym->has.v[i]->var, es);
+            goto Lviolation;
+          }
+          destruct(av, p->sym->has.v[i]->var, es, result);
+        }
       } else {
       Lviolation:
-	AVar *av = violation ? violation : ov;
-	if (!av->var->sym->name && p->sym->name)
-	  av = pv;
-	if (!av->var->sym->name && cs->vars.n < p->sym->has.n && p->sym->has.v[cs->vars.n]->name)
-	  av = make_AVar(p->sym->has.v[cs->vars.n]->var, es);
-	if (!av->var->sym->name && cs->vars.n > p->sym->has.n && p->sym->has.n &&
-	    p->sym->has.v[p->sym->has.n-1]->name)
-	  av = make_AVar(p->sym->has.v[p->sym->has.n-1]->var, es);
-	type_violation(ATypeViolation_MATCH, av, make_AType(cs), result);
+        AVar *av = violation ? violation : ov;
+        if (!av->var->sym->name && p->sym->name)
+          av = pv;
+        if (!av->var->sym->name && cs->vars.n < p->sym->has.n && p->sym->has.v[cs->vars.n]->name)
+          av = make_AVar(p->sym->has.v[cs->vars.n]->var, es);
+        if (!av->var->sym->name && cs->vars.n > p->sym->has.n && p->sym->has.n &&
+            p->sym->has.v[p->sym->has.n-1]->name)
+          av = make_AVar(p->sym->has.v[p->sym->has.n-1]->var, es);
+        type_violation(ATypeViolation_MATCH, av, make_AType(cs), result);
       }
     }
   }
@@ -1288,180 +1288,180 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       AVar *arg = make_AVar(p->rvals.v[i], es);
       // record violations
       if (type_diff(arg->out, p->prim->args.v[iarg]) != bottom_type)
-	type_violation(ATypeViolation_PRIMITIVE_ARGUMENT, arg, 
-		       type_diff(arg->out, p->prim->args.v[iarg]), 
-		       make_AVar(p->lvals.v[0], es)); 
+        type_violation(ATypeViolation_PRIMITIVE_ARGUMENT, arg, 
+                       type_diff(arg->out, p->prim->args.v[iarg]), 
+                       make_AVar(p->lvals.v[0], es)); 
       switch (p->prim->arg_types[iarg]) {
-	default: break;
-	case PRIM_TYPE_ANY_NUM_A: a = arg; break;
-	case PRIM_TYPE_ANY_NUM_B: b = arg; break;
-	case PRIM_TYPE_ANY_INT_A: a = arg; break;
-	case PRIM_TYPE_ANY_INT_B: b = arg; break;
+        default: break;
+        case PRIM_TYPE_ANY_NUM_A: a = arg; break;
+        case PRIM_TYPE_ANY_NUM_B: b = arg; break;
+        case PRIM_TYPE_ANY_INT_A: a = arg; break;
+        case PRIM_TYPE_ANY_INT_B: b = arg; break;
       }
       if (i - start < n - 1) iarg++;
     }
     for (int i = 0; i < p->lvals.n; i++) {
       if (p->prim->ret_types[i] == PRIM_TYPE_ANY_NUM_AB)
-	update_in(make_AVar(p->lvals.v[i], es), type_num_fold(p->prim, a->out, b->out));
+        update_in(make_AVar(p->lvals.v[i], es), type_num_fold(p->prim, a->out, b->out));
       if (p->prim->ret_types[i] == PRIM_TYPE_A)
-	flow_vars(a, make_AVar(p->lvals.v[i], es));
+        flow_vars(a, make_AVar(p->lvals.v[i], es));
     }
     AVar *result = p->lvals.n ? make_AVar(p->lvals.v[0], es) : 0;
     if (result)
       for (int i = 0; i < p->rvals.n; i++)
-	make_AVar(p->rvals.v[i], es)->arg_of_send.set_add(result);
+        make_AVar(p->rvals.v[i], es)->arg_of_send.set_add(result);
     // specifics
     switch (p->prim->index) {
       default: break;
       case P_prim_primitive: {
-	char *name = p->rvals.v[1]->sym->name;
-	if (!name) name = p->rvals.v[1]->sym->constant;
-	if (!name)
-	  fail("fatal error, bad primitive transfer function");
-	RegisteredPrim *rp = fa->primitive_transfer_functions.get(name);
-	if (!rp)
-	  fail("fatal error, undefined primitive transfer function '%s'", 
-	       p->rvals.v[1]->sym->name);
-	rp->fn(p, es);
-	break;
+        char *name = p->rvals.v[1]->sym->name;
+        if (!name) name = p->rvals.v[1]->sym->constant;
+        if (!name)
+          fail("fatal error, bad primitive transfer function");
+        RegisteredPrim *rp = fa->primitive_transfer_functions.get(name);
+        if (!rp)
+          fail("fatal error, undefined primitive transfer function '%s'", 
+               p->rvals.v[1]->sym->name);
+        rp->fn(p, es);
+        break;
       }
       case P_prim_meta_apply: {
-	AVar *a1 = make_AVar(p->rvals.v[1], es);
-	AVar *a2 = make_AVar(p->rvals.v[2], es);
-	Sym *s;
-	forv_CreationSet(cs1, *a1->out)
-	  forv_CreationSet(cs2, *a2->out)
-	    if (cs1->sym->is_meta_class && cs2->sym->is_meta_class && 
-		(s = meta_apply(cs1->sym->meta_type, cs2->sym->meta_type)))
-	      update_in(result, make_abstract_type(s));
-	    else
-	      type_violation(ATypeViolation_SEND_ARGUMENT, a1, a1->out, result, 0);
-	break;
+        AVar *a1 = make_AVar(p->rvals.v[1], es);
+        AVar *a2 = make_AVar(p->rvals.v[2], es);
+        Sym *s;
+        forv_CreationSet(cs1, *a1->out)
+          forv_CreationSet(cs2, *a2->out)
+            if (cs1->sym->is_meta_class && cs2->sym->is_meta_class && 
+                (s = meta_apply(cs1->sym->meta_type, cs2->sym->meta_type)))
+              update_in(result, make_abstract_type(s));
+            else
+              type_violation(ATypeViolation_SEND_ARGUMENT, a1, a1->out, result, 0);
+        break;
       }
       case P_prim_destruct: {
-	assert(p->rvals.n - 1 == p->lvals.n);
-	for (int i = 0; i < p->lvals.n; i++) {
-	  AVar *av = make_AVar(p->rvals.v[i + 1], es);
-	  destruct(av, p->lvals.v[i], es, result);
-	  av->arg_of_send.set_add(result);
-	}
-	break;
+        assert(p->rvals.n - 1 == p->lvals.n);
+        for (int i = 0; i < p->lvals.n; i++) {
+          AVar *av = make_AVar(p->rvals.v[i + 1], es);
+          destruct(av, p->lvals.v[i], es, result);
+          av->arg_of_send.set_add(result);
+        }
+        break;
       }
       case P_prim_vector:
-	prim_make_vector(p, es);
-	break;
+        prim_make_vector(p, es);
+        break;
       case P_prim_index_object: {
-	AVar *vec = make_AVar(p->rvals.v[1], es);
-	AVar *index = make_AVar(p->rvals.v[2], es);
-	set_container(result, vec);
-	forv_CreationSet(cs, *vec->out) if (cs) {
-	  if (sym_tuple->specializers.set_in(cs->sym->type)) {
-	    int i;
-	    if (((index->var->sym->type && index->var->sym->imm_int(&i) == 0) ||
-		 (index->out->n == 1 && index->out->v[0]->sym->is_constant &&
-		  index->out->v[0]->sym->imm_int(&i) == 0)) &&
-		(i >= 0 && i < cs->vars.n))
-	      flow_vars(cs->vars.v[i], result);
-	    else
-	      for (int i = 0; i < cs->vars.n; i++) // assume the worst
-		flow_vars(cs->vars.v[i], result);
-	  } else {
-	    AVar *elem = get_element_avar(cs);
-	    flow_vars(elem, result);
-	  }
-	}
-	break;
+        AVar *vec = make_AVar(p->rvals.v[1], es);
+        AVar *index = make_AVar(p->rvals.v[2], es);
+        set_container(result, vec);
+        forv_CreationSet(cs, *vec->out) if (cs) {
+          if (sym_tuple->specializers.set_in(cs->sym->type)) {
+            int i;
+            if (((index->var->sym->type && index->var->sym->imm_int(&i) == 0) ||
+                 (index->out->n == 1 && index->out->v[0]->sym->is_constant &&
+                  index->out->v[0]->sym->imm_int(&i) == 0)) &&
+                (i >= 0 && i < cs->vars.n))
+              flow_vars(cs->vars.v[i], result);
+            else
+              for (int i = 0; i < cs->vars.n; i++) // assume the worst
+                flow_vars(cs->vars.v[i], result);
+          } else {
+            AVar *elem = get_element_avar(cs);
+            flow_vars(elem, result);
+          }
+        }
+        break;
       }
       case P_prim_apply: {
-	assert(p->lvals.n == 1);
-	Vec<AVar *> args;
-	AVar *fun = make_AVar(p->rvals.v[1], es);
-	AVar *a1 = make_AVar(p->rvals.v[3], es);
-	args.add(a1);
-	if (all_applications(p, es, fun, args, (Partial_kind)p->code->partial) > 0)
-	  make_closure(result);
-	break;
+        assert(p->lvals.n == 1);
+        Vec<AVar *> args;
+        AVar *fun = make_AVar(p->rvals.v[1], es);
+        AVar *a1 = make_AVar(p->rvals.v[3], es);
+        args.add(a1);
+        if (all_applications(p, es, fun, args, (Partial_kind)p->code->partial) > 0)
+          make_closure(result);
+        break;
       }
       case P_prim_period: {
-	AVar *obj = make_AVar(p->rvals.v[1], es);
-	AVar *selector = make_AVar(p->rvals.v[3], es);
-	int partial = 0;
-	set_container(result, obj);
-	forv_CreationSet(sel, *selector->out) if (sel) {
-	  char *symbol = sel->sym->name; assert(symbol);
-	  forv_CreationSet(cs, *obj->out) if (cs) {
-	    if (cs == null_type->v[0])
-	      continue;
-	    AVar *iv = cs->var_map.get(symbol);
-	    if (iv)
-	      flow_vars(iv, result);
-	    else {
-	      Vec<AVar *> args;
-	      args.add(obj);
-	      if (fa->method_token)
-		args.add(fa->method_token);
-	      int res = application(p, es, selector, cs, args, (Partial_kind)p->code->partial);
-	      if (res > 0)
-		partial = 1;
-	      else if (res < 0)
-		type_violation(ATypeViolation_MEMBER, selector, make_AType(cs), result);
-	    }
-	  }
-	}
-	if (partial)
-	  make_closure(result);
-	break;
+        AVar *obj = make_AVar(p->rvals.v[1], es);
+        AVar *selector = make_AVar(p->rvals.v[3], es);
+        int partial = 0;
+        set_container(result, obj);
+        forv_CreationSet(sel, *selector->out) if (sel) {
+          char *symbol = sel->sym->name; assert(symbol);
+          forv_CreationSet(cs, *obj->out) if (cs) {
+            if (cs == null_type->v[0])
+              continue;
+            AVar *iv = cs->var_map.get(symbol);
+            if (iv)
+              flow_vars(iv, result);
+            else {
+              Vec<AVar *> args;
+              args.add(obj);
+              if (fa->method_token)
+                args.add(fa->method_token);
+              int res = application(p, es, selector, cs, args, (Partial_kind)p->code->partial);
+              if (res > 0)
+                partial = 1;
+              else if (res < 0)
+                type_violation(ATypeViolation_MEMBER, selector, make_AType(cs), result);
+            }
+          }
+        }
+        if (partial)
+          make_closure(result);
+        break;
       }
       case P_prim_assign: {
-	AVar *lhs = make_AVar(p->rvals.v[1], es);
-	AVar *rhs = make_AVar(p->rvals.v[3], es);
-	forv_CreationSet(cs, *lhs->out) if (cs) {
-	  if (cs->sym == sym_ref) {
-	    assert(cs->vars.n);
-	    AVar *av = cs->vars.v[0];
-	    flow_vars(rhs, av);
-	    flow_vars(rhs, result);
-	  } else {
-	    if (sym_anynum->specializers.in(cs->sym->type))
-	      update_in(result, cs->sym->type->abstract_type);
-	    else
-	      type_violation(ATypeViolation_MATCH, lhs, make_AType(cs), result);
-	  }
-	}
-	break;
+        AVar *lhs = make_AVar(p->rvals.v[1], es);
+        AVar *rhs = make_AVar(p->rvals.v[3], es);
+        forv_CreationSet(cs, *lhs->out) if (cs) {
+          if (cs->sym == sym_ref) {
+            assert(cs->vars.n);
+            AVar *av = cs->vars.v[0];
+            flow_vars(rhs, av);
+            flow_vars(rhs, result);
+          } else {
+            if (sym_anynum->specializers.in(cs->sym->type))
+              update_in(result, cs->sym->type->abstract_type);
+            else
+              type_violation(ATypeViolation_MATCH, lhs, make_AType(cs), result);
+          }
+        }
+        break;
       }
       case P_prim_deref: {
-	AVar *ref = make_AVar(p->rvals.v[2], es);
-	set_container(result, ref);
-	forv_CreationSet(cs, *ref->out) if (cs) {
-	  AVar *av = cs->vars.v[0];
-	  flow_vars(av, result);
-	}
-	break;
+        AVar *ref = make_AVar(p->rvals.v[2], es);
+        set_container(result, ref);
+        forv_CreationSet(cs, *ref->out) if (cs) {
+          AVar *av = cs->vars.v[0];
+          flow_vars(av, result);
+        }
+        break;
       }
       case P_prim_new: {
-	AVar *thing = make_AVar(p->rvals.v[1], es);
-	forv_CreationSet(cs, *thing->out) if (cs)
-	  creation_point(result, cs->sym->meta_type); // recover original type
-	break;
+        AVar *thing = make_AVar(p->rvals.v[1], es);
+        forv_CreationSet(cs, *thing->out) if (cs)
+          creation_point(result, cs->sym->meta_type); // recover original type
+        break;
       }
       case P_prim_coerce: {
-	assert(p->rvals.v[1]->sym->abstract_type);
-	Sym *s = p->rvals.v[1]->sym;
-	AVar *rhs = make_AVar(p->rvals.v[2], es);
-	Vec<CreationSet *> css;
-	forv_CreationSet(cs, *rhs->out)
-	  if (cs->sym->type == p->rvals.v[1]->sym)
-	    css.set_add(cs);
-	if (css.n)
-	  update_in(result, make_AType(css));
-	else if (s->type->num_kind || s->type == sym_string || s->type->is_symbol)
-	  update_in(result, p->rvals.v[1]->sym->abstract_type);
-	break;
+        assert(p->rvals.v[1]->sym->abstract_type);
+        Sym *s = p->rvals.v[1]->sym;
+        AVar *rhs = make_AVar(p->rvals.v[2], es);
+        Vec<CreationSet *> css;
+        forv_CreationSet(cs, *rhs->out)
+          if (cs->sym->type == p->rvals.v[1]->sym)
+            css.set_add(cs);
+        if (css.n)
+          update_in(result, make_AType(css));
+        else if (s->type->num_kind || s->type == sym_string || s->type->is_symbol)
+          update_in(result, p->rvals.v[1]->sym->abstract_type);
+        break;
       }
       case P_prim_cast: {
-	assert(!"implemented");
-	break;
+        assert(!"implemented");
+        break;
       }
     }
   }
@@ -1623,7 +1623,7 @@ show_sym(Sym *s, FILE *fp) {
     fprintf(fp, "( ");
     forv_Sym(ss, s->has) {
       if (ss != s->has.v[0])
-	fprintf(fp, ", ");
+        fprintf(fp, ", ");
       show_sym(ss, fp);
     }
     fprintf(fp, ") ");
@@ -1634,7 +1634,7 @@ show_sym(Sym *s, FILE *fp) {
   if (s->type && s->type->name)
     fprintf(fp, "= %s", s->type->name);
   else if (s->must_implement && 
-	   s->must_implement == s->must_specialize)
+           s->must_implement == s->must_specialize)
     fprintf(fp, ": %s", s->must_implement->name);
   else if (s->must_implement)
     fprintf(fp, "< %s", s->must_implement->name);
@@ -1658,19 +1658,19 @@ fa_print_backward(AVar *v, FILE *fp) {
     v = todo.v[i];
     if (v->var) {
       if (v->var->sym) {
-	if (v->var->sym->name)
-	  fprintf(fp, "%s %d\n", v->var->sym->name, v->var->sym->id);
-	else
-	  fprintf(fp, "%d\n", v->var->sym->id);
+        if (v->var->sym->name)
+          fprintf(fp, "%s %d\n", v->var->sym->name, v->var->sym->id);
+        else
+          fprintf(fp, "%d\n", v->var->sym->id);
       } else
-	fprintf(fp, "VAR %p\n", v->var);
+        fprintf(fp, "VAR %p\n", v->var);
     } else
       fprintf(fp, "AVAR %p\n", v);
     show_type(*v->out, fp); fprintf(fp, "\n");
     forv_AVar(vv, v->backward) if (vv) {
       if (!done.set_in(vv)) {
-	todo.add(vv);
-	done.set_add(vv);
+        todo.add(vv);
+        done.set_add(vv);
       }
     }
   }
@@ -1710,18 +1710,18 @@ fa_dump_types(FA *fa, FILE *fp) {
   forv_Fun(f, fa->funs) {
     forv_EntrySet(es, f->ess) {
       if (f->sym->name)
-	fprintf(fp, "function %s (%d) ", f->sym->name, f->sym->id);
+        fprintf(fp, "function %s (%d) ", f->sym->name, f->sym->id);
       else
-	fprintf(fp, "function %d ", f->sym->id);
+        fprintf(fp, "function %d ", f->sym->id);
       fprintf(fp, "entry set with %d edges\n", es->edges.count());
       Vec<Var *> vars;
       f->collect_Vars(vars);
       forv_Var(v, vars) {
-	if (v->sym->global_scope) {
-	  gvars.set_add(v);
-	  continue;
-	}
-	fa_dump_var_types(make_AVar(v, es), fp);
+        if (v->sym->global_scope) {
+          gvars.set_add(v);
+          continue;
+        }
+        fa_dump_var_types(make_AVar(v, es), fp);
       }
     }
   }
@@ -1814,89 +1814,89 @@ show_violations(FA *fa, FILE *fp) {
 #endif
     if (v->send)
       fprintf(stderr, "%s:%d: ", v->send->var->def->code->filename(), 
-	      v->send->var->def->code->line());
+              v->send->var->def->code->line());
     else if (v->av->var->sym->ast)
       fprintf(stderr, "%s:%d: ", v->av->var->sym->filename(), 
-	      v->av->var->sym->line());
+              v->av->var->sym->line());
     else if (!v->av->contour_is_entry_set && v->av->contour != GLOBAL_CONTOUR) {
       CreationSet *cs = (CreationSet*)v->av->contour;
       fprintf(stderr, "%s:%d: class %s:: ", 
-	      cs->sym->filename(), cs->sym->line(), cs->sym->name);	
+              cs->sym->filename(), cs->sym->line(), cs->sym->name);     
     } else
       fprintf(stderr, "error: ");
     switch (v->kind) {
       default: assert(0);
       case ATypeViolation_PRIMITIVE_ARGUMENT:
-	fprintf(stderr, "illegal primitive argument type ");
-	show_illegal_type(fp, v);
-	break;
+        fprintf(stderr, "illegal primitive argument type ");
+        show_illegal_type(fp, v);
+        break;
       case ATypeViolation_SEND_ARGUMENT:
-	if (v->av->var->sym->is_symbol &&
-	    v->send->var->def->rvals.v[0] == v->av->var)
-	  fprintf(stderr, "unresolved call '%s'\n", v->av->var->sym->name);
-	else {
-	  fprintf(stderr, "illegal call argument type ");
-	  show_illegal_type(fp, v);
-	}
-	break;
+        if (v->av->var->sym->is_symbol &&
+            v->send->var->def->rvals.v[0] == v->av->var)
+          fprintf(stderr, "unresolved call '%s'\n", v->av->var->sym->name);
+        else {
+          fprintf(stderr, "illegal call argument type ");
+          show_illegal_type(fp, v);
+        }
+        break;
       case ATypeViolation_DISPATCH_AMBIGUITY:
-	fprintf(stderr, "ambiguous call '%s'\n", v->av->var->sym->name);
-	fprintf(stderr, "  candidate functions:\n");
-	forv_Fun(f, *v->funs) {
-	  fprintf(stderr, "    ");
-	  show_fun(f, stderr);
-	  fprintf(stderr, "\n");
-	}
-	break;
+        fprintf(stderr, "ambiguous call '%s'\n", v->av->var->sym->name);
+        fprintf(stderr, "  candidate functions:\n");
+        forv_Fun(f, *v->funs) {
+          fprintf(stderr, "    ");
+          show_fun(f, stderr);
+          fprintf(stderr, "\n");
+        }
+        break;
       case ATypeViolation_MEMBER:
-	if (v->av->out->n == 1)
-	  fprintf(stderr, "unresolved member '%s'", v->av->out->v[0]->sym->name);
-	else {
-	  fprintf(stderr, "unresolved member\n");
-	  forv_CreationSet(selector, *v->av->out)
-	    fprintf(stderr, "  selector '%s'\n", selector->sym->name);
-	}
-	if (v->type->n == 1)
-	  fprintf(stderr, "  class '%s'\n", v->type->v[0]->sym->name ? v->type->v[0]->sym->name : 
-		  "<anonymous>");
-	else {
-	  fprintf(stderr, "  classes\n");
-	  forv_CreationSet(cs, *v->type)
-	    fprintf(stderr, "  class '%s'\n", cs->sym->name);
-	}
-	break;
+        if (v->av->out->n == 1)
+          fprintf(stderr, "unresolved member '%s'", v->av->out->v[0]->sym->name);
+        else {
+          fprintf(stderr, "unresolved member\n");
+          forv_CreationSet(selector, *v->av->out)
+            fprintf(stderr, "  selector '%s'\n", selector->sym->name);
+        }
+        if (v->type->n == 1)
+          fprintf(stderr, "  class '%s'\n", v->type->v[0]->sym->name ? v->type->v[0]->sym->name : 
+                  "<anonymous>");
+        else {
+          fprintf(stderr, "  classes\n");
+          forv_CreationSet(cs, *v->type)
+            fprintf(stderr, "  class '%s'\n", cs->sym->name);
+        }
+        break;
       case ATypeViolation_MATCH:
-	if (v->type->n == 1)
-	  fprintf(stderr, "near '%s' unmatched type '%s'\n", 
-		  v->av->var->sym->name ? v->av->var->sym->name : "<anonymous>", 
-		  v->type->v[0]->sym->name);
-	else {
-	  fprintf(stderr, "near '%s' unmatched type\n");
-	  forv_CreationSet(cs, *v->type)
-	    fprintf(stderr, "  type '%s'\n", cs->sym->name);
-	}
-	break;
+        if (v->type->n == 1)
+          fprintf(stderr, "near '%s' unmatched type '%s'\n", 
+                  v->av->var->sym->name ? v->av->var->sym->name : "<anonymous>", 
+                  v->type->v[0]->sym->name);
+        else {
+          fprintf(stderr, "near '%s' unmatched type\n");
+          forv_CreationSet(cs, *v->type)
+            fprintf(stderr, "  type '%s'\n", cs->sym->name);
+        }
+        break;
       case ATypeViolation_NOTYPE:
-	if (v->av->var->sym->name)
-	  fprintf(stderr, "'%s' ", v->av->var->sym->name);
-	else if (verbose_level)
-	  fprintf(stderr, "expr:%d ", v->av->var->sym->id);
-	else
-	  fprintf(stderr, "expression ");
-	fprintf(stderr, "has no type\n");
-	break;
+        if (v->av->var->sym->name)
+          fprintf(stderr, "'%s' ", v->av->var->sym->name);
+        else if (verbose_level)
+          fprintf(stderr, "expr:%d ", v->av->var->sym->id);
+        else
+          fprintf(stderr, "expression ");
+        fprintf(stderr, "has no type\n");
+        break;
       case ATypeViolation_BOXING:
-	if (v->av->var->sym->name)
-	  fprintf(stderr, "'%s' ", v->av->var->sym->name);
-	else if (verbose_level)
-	  fprintf(stderr, "expr:%d ", v->av->var->sym->id);
-	else
-	  fprintf(stderr, "expression ");
-	fprintf(stderr, "has mixed basic types:");
-	forv_CreationSet(cs, *v->type)
-	  fprintf(stderr, " %s", cs->sym->name);
-	fprintf(stderr, "\n");
-	break;
+        if (v->av->var->sym->name)
+          fprintf(stderr, "'%s' ", v->av->var->sym->name);
+        else if (verbose_level)
+          fprintf(stderr, "expr:%d ", v->av->var->sym->id);
+        else
+          fprintf(stderr, "expression ");
+        fprintf(stderr, "has mixed basic types:");
+        forv_CreationSet(cs, *v->type)
+          fprintf(stderr, " %s", cs->sym->name);
+        fprintf(stderr, "\n");
+        break;
     }
     if (v->send)
       show_call_tree(fp, v->send->var->def, (EntrySet*)v->send->contour);
@@ -1904,7 +1904,7 @@ show_violations(FA *fa, FILE *fp) {
       show_call_tree(fp, v->av);
     else if (v->av->contour != GLOBAL_CONTOUR)
       show_call_tree(fp, ((CreationSet*)v->av->contour)->defs.v[0]->var->def,
-		     (EntrySet*)((CreationSet*)v->av->contour)->defs.v[0]->contour, 1);
+                     (EntrySet*)((CreationSet*)v->av->contour)->defs.v[0]->contour, 1);
   }
 }
 
@@ -1913,7 +1913,7 @@ static char *fn(char *s) {
     return "<none>";
   char *filename = strrchr(s, '/');
   if (filename)
-    return filename + 1;	
+    return filename + 1;        
   return s;
 }
 
@@ -1982,7 +1982,7 @@ collect_results() {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *xav = make_AVar(v, es);
       for (AVar *av = xav; av; av = av->lvalue)
-	fa->css_set.set_union(*av->out);
+        fa->css_set.set_union(*av->out);
     }
   }
   forv_CreationSet(cs, fa->css_set) if (cs) 
@@ -1992,10 +1992,10 @@ collect_results() {
   forv_Fun(f, fa->funs) {
     forv_PNode(pnode, f->fa_send_PNodes) {
       if (pnode->next_callees) {
-	pnode->callees = pnode->next_callees;
-	pnode->next_callees = 0;
-	forv_Fun(f, pnode->callees->funs)
-	  pnode->callees->arg_positions.set_union(f->arg_positions);
+        pnode->callees = pnode->next_callees;
+        pnode->next_callees = 0;
+        forv_Fun(f, pnode->callees->funs)
+          pnode->callees->arg_positions.set_union(f->arg_positions);
       }
     }
   }
@@ -2035,37 +2035,37 @@ collect_argument_type_violations() {
     forv_PNode(p, f->fa_send_PNodes) {
       if (p->prim) continue; // primitives handled elsewhere
       forv_EntrySet(from, f->ess) {
-	FunAEdgeMap *m = from->out_edge_map.get(p);
-	if (!m) {
-	  forv_Var(v, p->rvals) {
-	    AVar *av = make_AVar(v, from);
-	    type_violation(ATypeViolation_SEND_ARGUMENT, av, av->out, 
-			   make_AVar(p->lvals.v[0], from));
-	  }
-	} else {
-	  AEdge *base_e = 0;
-	  form_Map(FunAEdgeMapElem, me, *m) {
-	    base_e = me->value;
-	    break;
-	  }
-	  form_MPositionAVar(x, base_e->args) {
-	    if (!x->key->is_positional())
-	      continue;
-	    AVar *av = x->value;
-	    AType *t = av->out;
-	    form_Map(FunAEdgeMapElem, me, *m) {
-	      AEdge *e = me->value;
-	      MPosition *pp = e->match->actual_to_formal_position.get(x->key), 
-		*p = pp ? pp : x->key;
-	      AVar *filtered = e->filtered_args.get(p);
-	      t = type_diff(t, filtered->out);
-	    }
-	    if (!empty_type_minus_partial_applications(t)) {
-	      t = type_minus_partial_applications(t);
-	      type_violation(ATypeViolation_SEND_ARGUMENT, av, t, make_AVar(p->lvals.v[0], from));
-	    }
-	  }
-	}
+        FunAEdgeMap *m = from->out_edge_map.get(p);
+        if (!m) {
+          forv_Var(v, p->rvals) {
+            AVar *av = make_AVar(v, from);
+            type_violation(ATypeViolation_SEND_ARGUMENT, av, av->out, 
+                           make_AVar(p->lvals.v[0], from));
+          }
+        } else {
+          AEdge *base_e = 0;
+          form_Map(FunAEdgeMapElem, me, *m) {
+            base_e = me->value;
+            break;
+          }
+          form_MPositionAVar(x, base_e->args) {
+            if (!x->key->is_positional())
+              continue;
+            AVar *av = x->value;
+            AType *t = av->out;
+            form_Map(FunAEdgeMapElem, me, *m) {
+              AEdge *e = me->value;
+              MPosition *pp = e->match->actual_to_formal_position.get(x->key), 
+                *p = pp ? pp : x->key;
+              AVar *filtered = e->filtered_args.get(p);
+              t = type_diff(t, filtered->out);
+            }
+            if (!empty_type_minus_partial_applications(t)) {
+              t = type_minus_partial_applications(t);
+              type_violation(ATypeViolation_SEND_ARGUMENT, av, t, make_AVar(p->lvals.v[0], from));
+            }
+          }
+        }
       }
     }
   }
@@ -2089,30 +2089,30 @@ collect_var_type_violations() {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *av = make_AVar(v, es);
       if (!av->var->is_internal && av->out == bottom_type && !is_Sym_OUT(av->var->sym))
-	type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
+        type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
     }
   }
   if (!fa->permit_boxing) {
     // collect BOXING violations
     forv_EntrySet(es, fa->ess) {
       forv_Var(v, es->fun->fa_all_Vars) {
-	AVar *av = make_AVar(v, es);
-	if (mixed_basics(av)) 
-	  type_violation(ATypeViolation_BOXING, av, av->out, 0, 0);
+        AVar *av = make_AVar(v, es);
+        if (mixed_basics(av)) 
+          type_violation(ATypeViolation_BOXING, av, av->out, 0, 0);
       }
     }
     forv_CreationSet(cs, fa->css) {
       forv_AVar(av, cs->vars) {
-	if (mixed_basics(av)) 
-	  type_violation(ATypeViolation_BOXING, av, av->out, 0, 0);
+        if (mixed_basics(av)) 
+          type_violation(ATypeViolation_BOXING, av, av->out, 0, 0);
       }
     }
   }
   if (fa->no_unused_instance_variables) {
     forv_CreationSet(cs, fa->css) {
       forv_AVar(av, cs->vars) {
-	if (av->out == bottom_type)
-	  type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
+        if (av->out == bottom_type)
+          type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
       }
     }
   }
@@ -2125,8 +2125,8 @@ initialize_symbols() {
       s->abstract_type = make_abstract_type(s);
     if (s->is_fun || s->is_pattern || s->type_kind)
       forv_Sym(ss, s->has)
-	if (!ss->var)
-	  ss->var = new Var(ss);
+        if (!ss->var)
+          ss->var = new Var(ss);
     if (s->type_kind && s->element)
       s->element->var = new Var(s->element);
   }
@@ -2139,16 +2139,16 @@ initialize_primitives() {
     int n = p->nargs < 0 ? -p->nargs : p->nargs;
     for (int i = 0; i < n - 1; i++) {
       switch (p->arg_types[i]) {
-	case PRIM_TYPE_ALL:		p->args.add(top_type); break;
-	case PRIM_TYPE_ANY:		p->args.add(any_type); break;
-	case PRIM_TYPE_SYMBOL:		p->args.add(symbol_type); break;
-	case PRIM_TYPE_CONT:		p->args.add(make_abstract_type(sym_continuation)); break;
-	case PRIM_TYPE_REF:		p->args.add(make_abstract_type(sym_ref)); break;
-	case PRIM_TYPE_ANY_NUM_A:	p->args.add(anynum_kind); break;
-	case PRIM_TYPE_ANY_NUM_B:	p->args.add(anynum_kind); break;
-	case PRIM_TYPE_ANY_INT_A:	p->args.add(anyint_type); break;
-	case PRIM_TYPE_ANY_INT_B:	p->args.add(anyint_type); break;
-	default: assert(!"case");	break;
+        case PRIM_TYPE_ALL:             p->args.add(top_type); break;
+        case PRIM_TYPE_ANY:             p->args.add(any_type); break;
+        case PRIM_TYPE_SYMBOL:          p->args.add(symbol_type); break;
+        case PRIM_TYPE_CONT:            p->args.add(make_abstract_type(sym_continuation)); break;
+        case PRIM_TYPE_REF:             p->args.add(make_abstract_type(sym_ref)); break;
+        case PRIM_TYPE_ANY_NUM_A:       p->args.add(anynum_kind); break;
+        case PRIM_TYPE_ANY_NUM_B:       p->args.add(anynum_kind); break;
+        case PRIM_TYPE_ANY_INT_A:       p->args.add(anyint_type); break;
+        case PRIM_TYPE_ANY_INT_B:       p->args.add(anyint_type); break;
+        default: assert(!"case");       break;
       }
     }
   }
@@ -2201,8 +2201,8 @@ mark_es_backedges(EntrySet *es, Vec<EntrySet *> &nodes) {
       mark_es_backedges(e->to, nodes);
     else {
       if (e->to->dfs_color == DFS_grey) {
-	e->es_backedge = 1;
-	e->to->backedges.add(e);
+        e->es_backedge = 1;
+        e->to->backedges.add(e);
       }
     }
   }
@@ -2295,21 +2295,21 @@ collect_es_type_confluences(Vec<AVar *> &type_confluences) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *xav = make_AVar(v, es);
       for (AVar *av = xav; av; av = av->lvalue)
-	forv_AVar(x, av->backward) if (x) {
-	  if (!x->out->n)
-	    continue;
-	  if (av->var->sym->clone_for_constants) {
-	    if (type_diff(av->in, x->out) != bottom_type) {
-	      type_confluences.set_add(av);
-	      break;
-	    }
-	  } else {
-	    if (type_diff(av->in->type, x->out->type) != bottom_type) {
-	      type_confluences.set_add(av);
-	      break;
-	    }
-	  }
-	}
+        forv_AVar(x, av->backward) if (x) {
+          if (!x->out->n)
+            continue;
+          if (av->var->sym->clone_for_constants) {
+            if (type_diff(av->in, x->out) != bottom_type) {
+              type_confluences.set_add(av);
+              break;
+            }
+          } else {
+            if (type_diff(av->in->type, x->out->type) != bottom_type) {
+              type_confluences.set_add(av);
+              break;
+            }
+          }
+        }
     }
   }
   type_confluences.set_to_vec();
@@ -2321,21 +2321,21 @@ collect_cs_type_confluences(Vec<AVar *> &type_confluences) {
   forv_CreationSet(cs, fa->css) {
     forv_AVar(av, cs->vars) {
       forv_AVar(x, av->backward) if (x) {
-	if (!x->out->n)
-	  continue;
-	if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-	  if (av->var->sym->clone_for_constants) {
-	    if (type_diff(av->in, x->out) != bottom_type) {
-	      type_confluences.set_add(av);
-	      break;
-	    }
-	  } else {
-	    if (type_diff(av->in->type, x->out->type) != bottom_type) {
-	      type_confluences.set_add(av);
-	      break;
-	    }
-	  }
-	}
+        if (!x->out->n)
+          continue;
+        if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
+          if (av->var->sym->clone_for_constants) {
+            if (type_diff(av->in, x->out) != bottom_type) {
+              type_confluences.set_add(av);
+              break;
+            }
+          } else {
+            if (type_diff(av->in->type, x->out->type) != bottom_type) {
+              type_confluences.set_add(av);
+              break;
+            }
+          }
+        }
       }
     }
   }
@@ -2351,15 +2351,15 @@ split_entry_set(AVar *av, int fsetters = 0) {
   int nedges = 0;
   AEdge **last = es->edges.last();
   for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee) {
-    if (!(*ee)->args.n)	
+    if (!(*ee)->args.n) 
       continue;
     nedges++;
     if (!fsetters) {
       if (!edge_type_compatible_with_entry_set(*ee, es))
-	do_edges.add(*ee);
+        do_edges.add(*ee);
     } else
       if (!edge_sset_compatible_with_entry_set(*ee, es))
-	do_edges.add(*ee);
+        do_edges.add(*ee);
   }
   int first = do_edges.n == nedges ? 1 : 0;
   int split = 0;
@@ -2381,14 +2381,14 @@ split_ess_type(Vec<AVar *> &confluences) {
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
-	if (av->var->is_formal)
-	  if (split_entry_set(av, 0))
-	    analyze_again = 1;
+        if (av->var->is_formal)
+          if (split_entry_set(av, 0))
+            analyze_again = 1;
       } else {
-	AVar *aav = unique_AVar(av->var, av->contour);
-	if (is_return_value(aav))
-	  if (split_entry_set(aav, 0))
-	    analyze_again = 1;
+        AVar *aav = unique_AVar(av->var, av->contour);
+        if (is_return_value(aav))
+          if (split_entry_set(aav, 0))
+            analyze_again = 1;
       }
     }
   }
@@ -2401,14 +2401,14 @@ split_ess_setters(Vec<AVar *> &confluences) {
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
-	if (is_return_value(av))
-	  if (split_entry_set(av, 1))
-	    analyze_again = 1;
+        if (is_return_value(av))
+          if (split_entry_set(av, 1))
+            analyze_again = 1;
       } else {
-	AVar *aav = unique_AVar(av->var, av->contour);
-	if (aav->var->is_formal)
-	  if (split_entry_set(aav, 1))
-	    analyze_again = 1;
+        AVar *aav = unique_AVar(av->var, av->contour);
+        if (aav->var->is_formal)
+          if (split_entry_set(aav, 1))
+            analyze_again = 1;
       }
     }
   }
@@ -2459,7 +2459,7 @@ clear_es(EntrySet *es) {
 
 static void
 clear_cs(CreationSet *cs) {
-  cs->ess.clear();	
+  cs->ess.clear();      
   cs->es_backedges.clear();
   forv_AVar(v, cs->vars)
     clear_avar(v);
@@ -2486,7 +2486,7 @@ clear_results() {
   forv_Sym(s, fa->pdb->if1->allsyms) {
     if ((s->type_kind || s->is_constant || s->is_symbol) && s->creators.n)
       forv_CreationSet(cs, s->creators)
-	clear_cs(cs);
+        clear_cs(cs);
   }
   forv_Fun(f, fa->funs)
     forv_EntrySet(es, f->ess) if (es)
@@ -2563,23 +2563,23 @@ collect_cs_setter_confluences(Vec<AVar *> &setters_confluences) {
   forv_CreationSet(cs, fa->css) {
     forv_AVar(av, cs->vars) {
       forv_AVar(x, av->forward) if (x) {
-	if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-	  if (!same_eq_classes(av->setters, x->setters)) {
-	    setters_confluences.set_add(av);
-	    break;
-	  }
-	}
+        if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
+          if (!same_eq_classes(av->setters, x->setters)) {
+            setters_confluences.set_add(av);
+            break;
+          }
+        }
       }
     }
     if (cs->added_element_var) {
       AVar *av = get_element_avar(cs);
       forv_AVar(x, av->forward) if (x) {
-	if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-	  if (!same_eq_classes(av->setters, x->setters)) {
-	    setters_confluences.set_add(av);
-	    break;
-	  }
-	}
+        if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
+          if (!same_eq_classes(av->setters, x->setters)) {
+            setters_confluences.set_add(av);
+            break;
+          }
+        }
       }
     }
   }
@@ -2592,21 +2592,21 @@ collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *xav = make_AVar(v, es);
       for (AVar *av = xav; av; av = av->lvalue)
-	if (av->setters) {
-	  forv_AVar(x, av->forward) if (x) {
-	    if (x->setters && !same_eq_classes(av->setters, x->setters)) {
-	      setter_confluences.set_add(av);
-	      break;
-	    }
-	  }
-	  if (av->creation_set) {
-	    forv_AVar(s, *av->setters) if (s) {
-	      assert(s->setter_class);
-	      if (s->container->out->in(av->creation_set))
-		setter_starters.set_add(av);
-	    }
-	  }
-	}
+        if (av->setters) {
+          forv_AVar(x, av->forward) if (x) {
+            if (x->setters && !same_eq_classes(av->setters, x->setters)) {
+              setter_confluences.set_add(av);
+              break;
+            }
+          }
+          if (av->creation_set) {
+            forv_AVar(s, *av->setters) if (s) {
+              assert(s->setter_class);
+              if (s->container->out->in(av->creation_set))
+                setter_starters.set_add(av);
+            }
+          }
+        }
     }
   }
   setter_confluences.set_to_vec();
@@ -2625,31 +2625,31 @@ split_css(Vec<AVar *> &starters) {
     Vec<AVar *> starter_set;
     forv_AVar(av, starters) {
       if (av->creation_set == cs)
-	starter_set.add(av);	
+        starter_set.add(av);    
       else
-	save.add(av);
+        save.add(av);
     }
     starters.move(save);
     while (starter_set.n > 1) {
       AVar *av = starter_set.v[0];
       Vec<AVar *> compatible_set;
       forv_AVar(v, starter_set) {
-	if (same_eq_classes(v->setters, av->setters))
-	  compatible_set.set_add(v);
-	else
-	  save.add(v);
+        if (same_eq_classes(v->setters, av->setters))
+          compatible_set.set_add(v);
+        else
+          save.add(v);
       }
       starter_set.move(save);
       Vec<AVar *> new_defs;
       cs->defs.set_difference(compatible_set, new_defs);
       if (new_defs.n) {
-	cs->defs.move(new_defs);
-	CreationSet *new_cs = new CreationSet(cs);
-	new_cs->defs.move(compatible_set);
-	forv_AVar(v, new_cs->defs)
-	  v->creation_set = new_cs;
-	new_cs->split = cs;
-	analyze_again = 1;
+        cs->defs.move(new_defs);
+        CreationSet *new_cs = new CreationSet(cs);
+        new_cs->defs.move(compatible_set);
+        forv_AVar(v, new_cs->defs)
+          v->creation_set = new_cs;
+        new_cs->split = cs;
+        analyze_again = 1;
       }
     }
   }
@@ -2690,21 +2690,21 @@ recompute_eq_classes(Vec<Setters *> &ss) {
     Setters *new_s = NULL;
     forv_AVar(v, *s) if (v)
       if (!v->setter_class) {
-	if (!new_s)
-	  new_s = new Setters;
-	new_s->set_add(v);
+        if (!new_s)
+          new_s = new Setters;
+        new_s->set_add(v);
       }
     if (new_s) {
       new_s = setters_cannonicalize(new_s);
       forv_AVar(v, *new_s) if (v)
-	v->setter_class = new_s;
+        v->setter_class = new_s;
       // reparition existing classes
       forv_AVar(v, *s) if (v) {
-	if (v->setter_class != new_s) {
-	  Vec<AVar *> diff;
-	  v->setter_class->set_difference(*s, diff);
-	  split_eq_class(v->setter_class, diff);
-	}
+        if (v->setter_class != new_s) {
+          Vec<AVar *> diff;
+          v->setter_class->set_difference(*s, diff);
+          split_eq_class(v->setter_class, diff);
+        }
       }
     }
   }
@@ -2721,11 +2721,11 @@ analyze_confluence(AVar *av, int fsetter = 0) {
       continue;
     for (int i = 0; i < ss.n; i++) {
       forv_AVar(a, *ss.v[i]) if (a) {
-	if ((!fsetter && a->out == x->out) || 
-	    (fsetter && same_eq_classes(a->setters, x->setters))) {
-	  ss.v[i]->set_add(x);
-	  goto Ldone;
-	}
+        if ((!fsetter && a->out == x->out) || 
+            (fsetter && same_eq_classes(a->setters, x->setters))) {
+          ss.v[i]->set_add(x);
+          goto Ldone;
+        }
       }
     }
     ss.add(new Setters);
@@ -2830,12 +2830,12 @@ FA::analyze(Fun *top) {
     edge_worklist.enqueue(top_edge);
     while (edge_worklist.head || send_worklist.head) {
       while (AEdge *e = edge_worklist.pop()) {
-	e->in_edge_worklist = 0;
-	analyze_edge(e);
+        e->in_edge_worklist = 0;
+        analyze_edge(e);
       }
       while (AVar *send = send_worklist.pop()) {
-	send->in_send_worklist = 0;
-	add_send_edges_pnode(send->var->def, (EntrySet*)send->contour);
+        send->in_send_worklist = 0;
+        add_send_edges_pnode(send->var->def, (EntrySet*)send->contour);
       }
     }
     complete_pass();
@@ -2855,14 +2855,14 @@ info_var(AST *a, Sym *s) {
   if (a->pnodes.n) {
     forv_PNode(n, a->pnodes) {
       forv_Var(v, n->lvals)
-	if (v->sym == s)
-	  return v;
+        if (v->sym == s)
+          return v;
       forv_Var(v, n->lvals)
-	if (v->sym == s)
-	  return v;
+        if (v->sym == s)
+          return v;
       forv_Var(v, n->rvals)
-	if (v->sym == s)
-	  return v;
+        if (v->sym == s)
+          return v;
     }
   }
   if (s->var)
@@ -2890,7 +2890,7 @@ call_info(Fun *f, AST *a, Vec<Fun *> &funs) {
     Vec<Fun *> *ff = f->calls.get(n);
     if (ff)
       funs.set_union(*ff);
-  }	
+  }     
   funs.set_to_vec();
 }
 
@@ -2903,10 +2903,10 @@ constant_info(Var *v, Vec<Sym *> &constants) {
     AVar *av = v->avars.v[i].value;
     forv_CreationSet(cs, *av->out) if (cs) {
       if (cs->sym->constant)
-	constants.set_add(cs->sym);
+        constants.set_add(cs->sym);
       else {
-	constants.clear();
-	return 0;
+        constants.clear();
+        return 0;
       }
     }
   }
@@ -2933,10 +2933,10 @@ symbol_info(Var *v, Vec<Sym *> &symbols) {
     AVar *av = v->avars.v[i].value;
     forv_CreationSet(cs, *av->out) if (cs) {
       if (cs->sym->is_symbol)
-	symbols.set_add(cs->sym);
+        symbols.set_add(cs->sym);
       else {
-	symbols.clear();
-	return 0;
+        symbols.clear();
+        return 0;
       }
     }
   }

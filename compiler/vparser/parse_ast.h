@@ -70,9 +70,9 @@ class ParseAST : public AST {
   Scope *scope;
   char *constant_type;
   Sym *container;
-  Label *label[2];	// before and after for loops (continue,break)
-  Code	*code;
-  Sym	*rval;
+  Label *label[2];      // before and after for loops (continue,break)
+  Code  *code;
+  Sym   *rval;
 
   ParseAST *last() { return children.v[children.n-1]; }
   void add(ParseAST *a);

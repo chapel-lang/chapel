@@ -14,27 +14,27 @@ main() {
     for (int tn = 0; tn < 8; tn++) {
       fprintf(fp, "case %d:\n", tn);
       if (!num_kind_string[tt][tn]) {
-	fprintf(fp, "assert(!\"case\"); break;\n");
+        fprintf(fp, "assert(!\"case\"); break;\n");
       } else {
-	fprintf(fp, "switch (s->type->num_kind) {\n");
-	fprintf(fp, "default: assert(!\"case\"); break;\n");
-	for (int st = 1; st < 4; st++) {
-	  fprintf(fp, "case %d:\n", st);
-	  fprintf(fp, "switch (s->type->num_index) {\n");
-	  for (int sn = 0; sn < 8; sn++) {
-	    fprintf(fp, "case %d:\n", sn);
-	    if (!num_kind_string[st][sn]) {
-	      fprintf(fp, "assert(!\"case\"); break;\n");
-	    } else {
-	      fprintf(fp, "im->v_%s = (%s)s->imm.v_%s; break;\n",
-		      num_kind_string[tt][tn],
-		      num_kind_string[tt][tn],
-		      num_kind_string[st][sn]);
-	    }
-	  }
-	  fprintf(fp, "} break;\n");
-	}
-	fprintf(fp, "} break;\n");
+        fprintf(fp, "switch (s->type->num_kind) {\n");
+        fprintf(fp, "default: assert(!\"case\"); break;\n");
+        for (int st = 1; st < 4; st++) {
+          fprintf(fp, "case %d:\n", st);
+          fprintf(fp, "switch (s->type->num_index) {\n");
+          for (int sn = 0; sn < 8; sn++) {
+            fprintf(fp, "case %d:\n", sn);
+            if (!num_kind_string[st][sn]) {
+              fprintf(fp, "assert(!\"case\"); break;\n");
+            } else {
+              fprintf(fp, "im->v_%s = (%s)s->imm.v_%s; break;\n",
+                      num_kind_string[tt][tn],
+                      num_kind_string[tt][tn],
+                      num_kind_string[st][sn]);
+            }
+          }
+          fprintf(fp, "} break;\n");
+        }
+        fprintf(fp, "} break;\n");
       }
     }
     fprintf(fp, "} break;\n");

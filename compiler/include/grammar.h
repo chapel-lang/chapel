@@ -18,7 +18,7 @@ internal_D_Sym(__module);
 char *constant_type(D_ParseNode &pn, D_Symbol *symbols);
 void in_module(Globals *g, char *s, char *e, D_Scope **scope);
 ParseAST *loop_AST(D_ParseNode &loop, D_ParseNode &cond, D_ParseNode *before, 
-		   D_ParseNode *after, D_ParseNode &body);
+                   D_ParseNode *after, D_ParseNode &body);
 ParseAST *symbol_AST(IF1 *if1, D_ParseNode *pn);
 ParseAST *op_AST(IF1 *if1, D_ParseNode &pn);
 

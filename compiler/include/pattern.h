@@ -60,7 +60,7 @@ class MPositionHashFuns : public gc {
       return 0;
     for (int i = 0; i < x->pos.n; i++)
       if (x->pos.v[i] != y->pos.v[i])
-	return 0;
+        return 0;
     return 1;
   }
 };
@@ -72,9 +72,9 @@ class MType : public gc {
 
 class Patterns : public gc {
  public:
-  Vec<Sym *>		types;
-  Vec<Sym *>		types_set;
-  Vec<MType *>		mtypes; 
+  Vec<Sym *>            types;
+  Vec<Sym *>            types_set;
+  Vec<MType *>          mtypes; 
 };
 
 class Match : public gc {

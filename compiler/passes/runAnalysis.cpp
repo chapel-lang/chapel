@@ -40,11 +40,11 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     // test type_is_used
     forv_Sym(s, if1->allsyms) {
       if (s->type_kind) {
-	if (s->asymbol->symbol && s->name && 
-	    dynamic_cast<Type*>(s->asymbol->symbol) &&
-	    dynamic_cast<TypeSymbol*>(dynamic_cast<Type*>(s->asymbol->symbol)->name))
-	  printf("%s is_used: %d\n", s->name, 
-		 type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<Type*>(s->asymbol->symbol)->name)));
+        if (s->asymbol->symbol && s->name && 
+            dynamic_cast<Type*>(s->asymbol->symbol) &&
+            dynamic_cast<TypeSymbol*>(dynamic_cast<Type*>(s->asymbol->symbol)->name))
+          printf("%s is_used: %d\n", s->name, 
+                 type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<Type*>(s->asymbol->symbol)->name)));
       }
     }
 #endif

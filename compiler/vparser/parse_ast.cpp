@@ -54,9 +54,9 @@ compatible_type(PrimType pt, Sym *s) {
     case PRIM_TYPE_ANY_INT_A:
     case PRIM_TYPE_ANY_INT_B: 
       if (s && s->type && 
-	  (s->type->num_kind == IF1_NUM_KIND_INT || 
-	   s->type->num_kind == IF1_NUM_KIND_UINT))
-	return 1;
+          (s->type->num_kind == IF1_NUM_KIND_INT || 
+           s->type->num_kind == IF1_NUM_KIND_UINT))
+        return 1;
       break;
     default: assert(!"case"); break;
   }
@@ -79,20 +79,20 @@ Primitives::find(ParseAST *ast) {
     if (ast->children.v[0]->sym && ast->children.v[0]->sym->is_symbol) {
       prim = prim_map[nargs][0].get(ast->children.v[0]->sym->name);
       if (!prim)
-	return 0;
+        return 0;
       if (!compatible_type(prim->arg_types[0], ast->children.v[1]->sym))
-	return 0;
+        return 0;
     }
     else {
       assert(ast->children.v[1]->sym && ast->children.v[1]->sym->is_symbol);
       prim = prim_map[nargs][1].get(ast->children.v[1]->sym->name);
       if (!prim)
-	return 0;
+        return 0;
       if (!compatible_type(prim->arg_types[0], ast->children.v[0]->sym))
-	return 0;
+        return 0;
       if (nargs > 0)
-	if (!compatible_type(prim->arg_types[1], ast->children.v[2]->sym))
-	  return 0;
+        if (!compatible_type(prim->arg_types[1], ast->children.v[2]->sym))
+          return 0;
     }
     assert(prim);
   }
@@ -108,11 +108,11 @@ dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
     case AST_const: 
     case AST_def_ident: 
       if (!a->sym->var || !a->sym->var->avars.n)
-	return;
+        return;
       break;
     case AST_def_type:
       if (!unalias_type(a->sym)->creators.n)
-	return;
+        return;
       break;
     default: break;
   }
@@ -121,10 +121,10 @@ dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
   if (a->sym) {
     if (a->sym->constant) {
       if (!a->sym->type->num_kind)
-	fprintf(fp, " constant %s", a->sym->constant);
+        fprintf(fp, " constant %s", a->sym->constant);
       else {
-	fprintf(fp, " constant ");
-	print(fp, a->sym->imm, a->sym->type);
+        fprintf(fp, " constant ");
+        print(fp, a->sym->imm, a->sym->type);
       }
     } else if (a->sym->is_symbol)
       fprintf(fp, " symbol %s", a->sym->name);
@@ -150,8 +150,8 @@ dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
     if (constant_info(a, consts, s)) {
       fprintf(fp, " constants {");
       forv_Sym(s, consts) {
-	fprintf(fp, " ");
-	print(fp, s->imm, s->type);
+        fprintf(fp, " ");
+        print(fp, s->imm, s->type);
       }
       fprintf(fp, " }");
     }
@@ -190,11 +190,11 @@ graph_it(ParseAST *a) {
     case AST_const: 
     case AST_def_ident: 
       if (!a->sym->var || !a->sym->var->avars.n)
-	return 0;
+        return 0;
       break;
     case AST_def_type:
       if (!unalias_type(a->sym)->creators.n)
-	return 0;
+        return 0;
       break;
     default: break;
   }
@@ -467,7 +467,7 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
   int x = 0;
   for (; builtin_strings[x]; x++)
     if ((int)strlen(builtin_strings[x]) == (int)(end-start) && 
-	!strncmp(builtin_strings[x], start, end-start))
+        !strncmp(builtin_strings[x], start, end-start))
       goto Lfound;
   fail("builtin not found '%s'", dupstr(start, end));
  Lfound:
@@ -521,29 +521,29 @@ build_builtin_syms(IF1 *i, ParseAST *ast) {
   if (ast->builtin) {
     switch (ast->kind) {
       case AST_ident:
-	ident = ast;
-	goto Lok;
+        ident = ast;
+        goto Lok;
       case AST_def_fun: {
-	ident = ast->get(AST_ident);
-	ast->sym = ident->sym = new_Sym(ident->string);
-	set_builtin(i, if1_make_symbol(i, ident->string), ast->builtin);
-	break;
+        ident = ast->get(AST_ident);
+        ast->sym = ident->sym = new_Sym(ident->string);
+        set_builtin(i, if1_make_symbol(i, ident->string), ast->builtin);
+        break;
       }
       case AST_in_module:
       case AST_def_type:
       case AST_qualified_ident: {
-	ident = ast->get(AST_ident);
+        ident = ast->get(AST_ident);
       Lok:
-	ast->sym = ident->sym = new_Sym(ident->string);
-	ast->sym->ast = ast;
-	set_builtin(i, ident->sym, ast->builtin);
-	break;
+        ast->sym = ident->sym = new_Sym(ident->string);
+        ast->sym->ast = ast;
+        set_builtin(i, ident->sym, ast->builtin);
+        break;
       }
       case AST_const:
-	ast->sym = new_constant(i, ast->string, ast->constant_type);
-	ast->sym->ast = ast;
-	set_builtin(i, ast->sym, ast->builtin);
-	break;
+        ast->sym = new_constant(i, ast->string, ast->constant_type);
+        ast->sym->ast = ast;
+        set_builtin(i, ast->sym, ast->builtin);
+        break;
       default: assert(!"bad case");
     }
   }
@@ -557,7 +557,7 @@ build_constant_syms(IF1 *i, ParseAST *ast) {
     case AST_const:
       assert(!ast->children.n);
       if (!ast->sym)
-	ast->sym = new_constant(i, ast->string, ast->constant_type);
+        ast->sym = new_constant(i, ast->string, ast->constant_type);
       break;
     default:
       break;
@@ -616,46 +616,46 @@ define_types(IF1 *i, ParseAST *ast, Vec<ParseAST *> &funs, Scope *scope, int ski
     ast->scope = scope;
     switch (ast->kind) {
       case AST_in_module: {
-	ast->sym = in_module(i, ast->get(AST_ident)->string, scope, ast->sym);
-	scope = ast->sym->scope;
-	break;
+        ast->sym = in_module(i, ast->get(AST_ident)->string, scope, ast->sym);
+        scope = ast->sym->scope;
+        break;
       }
       case AST_def_type: {
-	Sym *sym = scope->get(ast->get(AST_ident)->string);
-	if (sym && sym->type_kind != Type_UNKNOWN)
-	  return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
-	if (!sym) {
-	  ast->sym = new_sym(i, scope, ast->get(AST_ident)->string, ast->sym);
-	  ast->sym->ast = ast;
-	} else {
-	  if (ast->sym) 
-	    return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
-	  ast->sym = sym;
-	}
-	if (ast->sym->type_kind == Type_NONE || ast->sym->type_kind == Type_UNKNOWN) {
-	  if (ast->children.n > 1)
-	    ast->sym->type_kind = Type_ALIAS; // handled below
-	  else
-	    ast->sym->type_kind = Type_UNKNOWN;
-	}
-	scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, ast->sym);
-	if (verbose_level > 2)
-	  printf("creating scope %X for %s\n", (int)ast->sym->scope, ast->sym->name);
-	switch (ast->last()->kind) {
-	  case AST_must_implement:
-	  case AST_def_type_param:
-	  case AST_ident:
-	  case AST_qualified_ident:
-	    break;
-	  default:
-	    ast->last()->sym = ast->sym;
-	    break;
-	}
-	break;
+        Sym *sym = scope->get(ast->get(AST_ident)->string);
+        if (sym && sym->type_kind != Type_UNKNOWN)
+          return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
+        if (!sym) {
+          ast->sym = new_sym(i, scope, ast->get(AST_ident)->string, ast->sym);
+          ast->sym->ast = ast;
+        } else {
+          if (ast->sym) 
+            return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
+          ast->sym = sym;
+        }
+        if (ast->sym->type_kind == Type_NONE || ast->sym->type_kind == Type_UNKNOWN) {
+          if (ast->children.n > 1)
+            ast->sym->type_kind = Type_ALIAS; // handled below
+          else
+            ast->sym->type_kind = Type_UNKNOWN;
+        }
+        scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, ast->sym);
+        if (verbose_level > 2)
+          printf("creating scope %X for %s\n", (int)ast->sym->scope, ast->sym->name);
+        switch (ast->last()->kind) {
+          case AST_must_implement:
+          case AST_def_type_param:
+          case AST_ident:
+          case AST_qualified_ident:
+            break;
+          default:
+            ast->last()->sym = ast->sym;
+            break;
+        }
+        break;
       }
       case AST_def_fun: // defer functions
-	funs.add(ast);
-	return 0;
+        funs.add(ast);
+        return 0;
       case AST_vector_type:
       case AST_ref_type:
       case AST_product_type:
@@ -664,30 +664,30 @@ define_types(IF1 *i, ParseAST *ast, Vec<ParseAST *> &funs, Scope *scope, int ski
       case AST_tagged_type:
       case AST_type_application:
       case AST_record_type:
-	if (!ast->sym) {
-	  ast->sym = new_sym(i, scope);
-	  ast->sym->type_kind = ast_to_type(ast);
-	  ast->sym->ast = ast;
-	  if (ast->kind == AST_record_type)
-	    scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, scope->in);
-	} else
-	  ast->sym->type_kind = ast_to_type(ast);
-	break;
+        if (!ast->sym) {
+          ast->sym = new_sym(i, scope);
+          ast->sym->type_kind = ast_to_type(ast);
+          ast->sym->ast = ast;
+          if (ast->kind == AST_record_type)
+            scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, scope->in);
+        } else
+          ast->sym->type_kind = ast_to_type(ast);
+        break;
       case AST_loop:
       case AST_with:
-	ast->sym = new_sym(i, scope);
-	ast->sym->ast = ast;
-	scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, scope->in);
-	break;
+        ast->sym = new_sym(i, scope);
+        ast->sym->ast = ast;
+        scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, scope->in);
+        break;
       case AST_scope:
-	scope = new Scope(scope, ast->scope_kind, scope->in);
-	break;
+        scope = new Scope(scope, ast->scope_kind, scope->in);
+        break;
       case AST_def_type_param:
-	ast->sym = new_sym(i, scope, ast->get(AST_ident)->string);
-	ast->sym->type_kind = Type_UNKNOWN;
-	break;
+        ast->sym = new_sym(i, scope, ast->get(AST_ident)->string);
+        ast->sym->type_kind = Type_UNKNOWN;
+        break;
       default:
-	break;
+        break;
     }
   }
   forv_ParseAST(a, ast->children) {
@@ -711,7 +711,7 @@ resolve_parameterized_type(IF1 *i, ParseAST *ast) {
     for (int i = 1; i < ast->children.n; i++) {
       assert(ast->children.v[i]->kind == AST_type_param && ast->children.v[i]->sym);
       if (!(sym = checked_ast_qualified_ident_sym(ast->children.v[i]->get(AST_qualified_ident))))
-	return -1;
+        return -1;
       s->has.add(sym);
     }
     ast->sym = s;
@@ -734,22 +734,22 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       ParseAST *ptype = ast->get(AST_pattern_type);
       ast->sym = new_sym(i, scope);
       if (ptype)
-	ast->sym->must_implement_and_specialize(ptype->sym);
+        ast->sym->must_implement_and_specialize(ptype->sym);
       else
-	ast->sym->must_implement_and_specialize(sym_tuple);
+        ast->sym->must_implement_and_specialize(sym_tuple);
       ast->sym->ast = ast;
       forv_ParseAST(a, ast->children) if (a != ptype) {
-	if (scope_pattern(i, a, scope) < 0)
-	  return -1;
-	assert(a->sym);
-	ast->sym->has.add(a->sym);
+        if (scope_pattern(i, a, scope) < 0)
+          return -1;
+        assert(a->sym);
+        ast->sym->has.add(a->sym);
       }
       if (!ast->sym->has.n) {
-	ast->sym = new_sym(i, scope);
-	ast->sym->must_implement_and_specialize(sym_tuple);
-	ast->sym->ast = ast;
+        ast->sym = new_sym(i, scope);
+        ast->sym->must_implement_and_specialize(sym_tuple);
+        ast->sym->ast = ast;
       } else if (ast->sym->has.n == 1 && !ptype)
-	ast->sym = ast->sym->has.v[0];
+        ast->sym = ast->sym->has.v[0];
       break;
     }
     case AST_arg:
@@ -762,32 +762,32 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       ParseAST *var = ast->get(AST_var);
       ParseAST *init = ast->get(AST_init);
       if (must_implement)
-	if (resolve_parameterized_type(i, must_implement) < 0)
-	  return -1;
+        if (resolve_parameterized_type(i, must_implement) < 0)
+          return -1;
       if (must_specialize)
-	if (resolve_parameterized_type(i, must_specialize) < 0)
-	  return -1;
+        if (resolve_parameterized_type(i, must_specialize) < 0)
+          return -1;
       if (id)
-	ast->sym = id->sym = new_sym(i, scope, id->string);
+        ast->sym = id->sym = new_sym(i, scope, id->string);
       else if (c)
-	ast->sym = ast->children.v[0]->sym;
+        ast->sym = ast->children.v[0]->sym;
       else
-	ast->sym = new_sym(i, scope);
+        ast->sym = new_sym(i, scope);
       ast->sym->ast = ast;
       if (ast->kind == AST_rest)
-	ast->sym->is_rest = 1;
+        ast->sym->is_rest = 1;
       if (must_implement) {
-	assert(!ast->sym->must_implement);
-	ast->sym->must_implement = must_implement->sym;
+        assert(!ast->sym->must_implement);
+        ast->sym->must_implement = must_implement->sym;
       }
       if (must_specialize) {
-	assert(!ast->sym->must_specialize);
-	ast->sym->must_specialize = must_specialize->sym;
+        assert(!ast->sym->must_specialize);
+        ast->sym->must_specialize = must_specialize->sym;
       }
       if (init)
-	ast->sym->is_default_arg = 1;
+        ast->sym->is_default_arg = 1;
       if (var)
-	ast->sym->is_var = 1;
+        ast->sym->is_var = 1;
       break;
     }
     default: break;
@@ -833,7 +833,7 @@ scope_inherits(ParseAST *ast, Sym *sym) {
   forv_ParseAST(a, ast->children) {
     if (a->kind == AST_includes || a->kind == AST_inherits) {
       if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
-	return -1;
+        return -1;
       sym->scope->add_dynamic(a->sym->scope);
     }
   }
@@ -845,19 +845,19 @@ scope_constraints(ParseAST *ast, Sym *sym) {
   forv_ParseAST(a, ast->children) {
     if (a->kind == AST_must_specialize) {
       if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
-	return -1;
+        return -1;
       assert(!sym->must_specialize);
       sym->must_specialize = a->sym;
       sym->scope->add_dynamic(a->sym->scope);
     } else if (a->kind == AST_must_implement) {
       if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
-	return -1;
+        return -1;
       assert(!sym->must_implement);
       sym->must_implement = a->sym;
     } else if (a->kind == AST_def_type_param) {
       sym->arg.add(a->sym);
       if (verbose_level > 2)
-	printf("%s has param %s\n", sym->name, a->sym->name);
+        printf("%s has param %s\n", sym->name, a->sym->name);
     }
   }
   return 0;
@@ -868,48 +868,48 @@ resolve_types_and_define_recursive_functions(IF1 *i, ParseAST *ast, int skip = 0
   if (!skip)
     switch (ast->kind) {
       case AST_pattern_type: {
-	Sym *sym;
-	if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
-	  return -1;
-	ast->sym = sym;
-	break;
+        Sym *sym;
+        if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
+          return -1;
+        ast->sym = sym;
+        break;
       }
       case AST_inherits:
       case AST_implements:
       case AST_specializes:
       case AST_includes:
-	if (resolve_parameterized_type(i, ast) < 0)
-	  return -1;
-	break;
+        if (resolve_parameterized_type(i, ast) < 0)
+          return -1;
+        break;
       case AST_record_type:
-	if (scope_inherits(ast, ast->sym) < 0) return -1;
-	break;
+        if (scope_inherits(ast, ast->sym) < 0) return -1;
+        break;
       case AST_def_type:
-	if (scope_constraints(ast, ast->sym) < 0) return -1;
-	break;
+        if (scope_constraints(ast, ast->sym) < 0) return -1;
+        break;
       case AST_where: {
-	Sym *sym;
-	if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
-	  return -1;
-	if (scope_constraints(ast, sym) < 0) return -1;
-	break;
+        Sym *sym;
+        if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
+          return -1;
+        if (scope_constraints(ast, sym) < 0) return -1;
+        break;
       }
       case AST_def_fun:
-	if (ast->scope->kind == Scope_RECURSIVE) 
-	  if (define_function(i, ast) < 0)
-	    return -1;
-	return 0; // defer
+        if (ast->scope->kind == Scope_RECURSIVE) 
+          if (define_function(i, ast) < 0)
+            return -1;
+        return 0; // defer
       case AST_with: {
-	ParseAST *with_scope = ast->get(AST_with_scope);
-	forv_ParseAST(a, with_scope->children) {
-	  if (!a->sym)
-	    if (!checked_ast_qualified_ident_sym(a))
-	      return -1;
-	  if (!a->sym->must_specialize)
-	    show_error("with without declared type", ast);
-	  ast->sym->scope->add_dynamic(a->sym->must_specialize->scope, a->sym);
-	}
-	break;
+        ParseAST *with_scope = ast->get(AST_with_scope);
+        forv_ParseAST(a, with_scope->children) {
+          if (!a->sym)
+            if (!checked_ast_qualified_ident_sym(a))
+              return -1;
+          if (!a->sym->must_specialize)
+            show_error("with without declared type", ast);
+          ast->sym->scope->add_dynamic(a->sym->must_specialize->scope, a->sym);
+        }
+        break;
       }
       default: break;
     }
@@ -925,41 +925,41 @@ scope_idpattern(IF1 *i, ParseAST *ast, Scope *scope) {
     case AST_ident: {
       Sym *sym = scope->get(ast->string);
       if (!sym || sym->type_kind != Type_UNKNOWN) {
-	ast->sym = new_sym(i, scope, ast->string, ast->sym);
-	ast->sym->ast = ast;
+        ast->sym = new_sym(i, scope, ast->string, ast->sym);
+        ast->sym->ast = ast;
       } else {
-	sym->type_kind = Type_NONE;
-	ast->sym = sym;
+        sym->type_kind = Type_NONE;
+        ast->sym = sym;
       }
       if (ast->destruct_name)
-	ast->sym->destruct_name = ast->destruct_name;
+        ast->sym->destruct_name = ast->destruct_name;
       break;
     }
     case AST_pattern: {
       ast->sym = new_sym(i, scope, ast->string, ast->sym);
       ParseAST *ptype = ast->get(AST_pattern_type);
       if (ptype)
-	ast->sym->must_implement_and_specialize(ptype->sym);
+        ast->sym->must_implement_and_specialize(ptype->sym);
       else
-	ast->sym->must_implement_and_specialize(sym_tuple);
+        ast->sym->must_implement_and_specialize(sym_tuple);
       ast->sym->ast = ast;
       forv_ParseAST(a, ast->children) if (a != ptype) {
-	if (a->kind == AST_must_implement) {
-	  assert(!ast->sym->must_implement);
-	  if (resolve_parameterized_type(i, a) < 0)
-	    return -1;
-	  ast->sym->must_implement = a->sym;
-	} else if (a->kind == AST_must_specialize) {
-	  assert(!ast->sym->must_specialize);
-	  if (resolve_parameterized_type(i, a) < 0)
-	    return -1;
-	  ast->sym->must_specialize = a->sym;
-	} else {
-	  if (scope_idpattern(i, a, scope) < 0)
-	    return -1;
-	  assert(a->sym);
-	  ast->sym->has.add(a->sym);
-	}
+        if (a->kind == AST_must_implement) {
+          assert(!ast->sym->must_implement);
+          if (resolve_parameterized_type(i, a) < 0)
+            return -1;
+          ast->sym->must_implement = a->sym;
+        } else if (a->kind == AST_must_specialize) {
+          assert(!ast->sym->must_specialize);
+          if (resolve_parameterized_type(i, a) < 0)
+            return -1;
+          ast->sym->must_specialize = a->sym;
+        } else {
+          if (scope_idpattern(i, a, scope) < 0)
+            return -1;
+          assert(a->sym);
+          ast->sym->has.add(a->sym);
+        }
       }
       break;
     }
@@ -973,25 +973,25 @@ variables_and_nonrecursive_functions(IF1 *i, ParseAST *ast, int skip = 0) {
   if (!skip)
     switch (ast->kind) {
       case AST_def_ident: {
-	ParseAST *id = ast->children.v[0];
-	if (scope_idpattern(i, id, ast->scope) < 0)
-	  return -1;
-	ast->sym = id->sym;
-	break;
+        ParseAST *id = ast->children.v[0];
+        if (scope_idpattern(i, id, ast->scope) < 0)
+          return -1;
+        ast->sym = id->sym;
+        break;
       }
       case AST_def_fun:
-	if (ast->scope->kind != Scope_RECURSIVE) 
-	  if (define_function(i, ast) < 0)
-	    return -1;
-	return 0;
+        if (ast->scope->kind != Scope_RECURSIVE) 
+          if (define_function(i, ast) < 0)
+            return -1;
+        return 0;
       case AST_qualified_ident: {
-	Sym *container = 0;
-	if (!ast->sym)
-	  if (!checked_ast_qualified_ident_sym(ast, &container))
-	    return -1;
-	if (container)
-	  ast->container = container;
-	return 0;
+        Sym *container = 0;
+        if (!ast->sym)
+          if (!checked_ast_qualified_ident_sym(ast, &container))
+            return -1;
+        if (container)
+          ast->container = container;
+        return 0;
       }
       default: break;
     }
@@ -1013,11 +1013,11 @@ build_scopes(IF1 *i, ParseAST *ast, Scope *scope) {
       int fun = a->kind == AST_def_fun;
       scope = fun ? a->sym->scope : a->scope;
       if (define_types(i, a, funs, scope, fun) < 0) 
-	return -1;
+        return -1;
       if (resolve_types_and_define_recursive_functions(i, a, fun) < 0) 
-	return -1;
+        return -1;
       if (variables_and_nonrecursive_functions(i, a, fun) < 0) 
-	return -1;
+        return -1;
     }
     if (!funs.n)
       break;
@@ -1042,48 +1042,48 @@ build_types(IF1 *i, ParseAST *ast) {
     case AST_type_application:
     case AST_record_type:
       forv_ParseAST(a, ast->children)
-	if (a->sym) {
-	  switch (a->kind) {
-	    case AST_type_param:
-	      ast->sym->has.add(a->sym);
-	      break;
-	    case AST_inherits:
-	      ast->sym->inherits_add(a->children.v[0]->sym);
-	      break;
-	    case AST_implements:
-	      ast->sym->implements.add(a->children.v[0]->sym);
-	      break;
-	    case AST_specializes:
-	      ast->sym->specializes.add(a->children.v[0]->sym);
-	      break;
-	    case AST_includes:
-	      ast->sym->includes.add(a->children.v[0]->sym);
-	      break;
-	    default:
-	      ast->sym->has.add(a->sym);
-	      break;
-	  }
-	}
+        if (a->sym) {
+          switch (a->kind) {
+            case AST_type_param:
+              ast->sym->has.add(a->sym);
+              break;
+            case AST_inherits:
+              ast->sym->inherits_add(a->children.v[0]->sym);
+              break;
+            case AST_implements:
+              ast->sym->implements.add(a->children.v[0]->sym);
+              break;
+            case AST_specializes:
+              ast->sym->specializes.add(a->children.v[0]->sym);
+              break;
+            case AST_includes:
+              ast->sym->includes.add(a->children.v[0]->sym);
+              break;
+            default:
+              ast->sym->has.add(a->sym);
+              break;
+          }
+        }
       break;
     case AST_lub_type:
       forv_ParseAST(a, ast->children)
-	if (a->sym)
-	  a->sym->inherits_add(ast->sym);
+        if (a->sym)
+          a->sym->inherits_add(ast->sym);
       break;
     case AST_def_type: {
       ParseAST *last = ast->last();
       if (ast->sym->type_kind == Type_ALIAS) {
-	if (last->kind != AST_def_type_param && last->kind != AST_must_implement)
-	  ast->sym->alias = last->sym;
-	else
-	  ast->sym->type_kind = Type_UNKNOWN; // can be resolved by a "where" statement
+        if (last->kind != AST_def_type_param && last->kind != AST_must_implement)
+          ast->sym->alias = last->sym;
+        else
+          ast->sym->type_kind = Type_UNKNOWN; // can be resolved by a "where" statement
       }
       break;
     }
     case AST_must_implement:
       forv_ParseAST(a, ast->children)
-	if (!ast->sym)
-	  ast->sym = a->sym;
+        if (!ast->sym)
+          ast->sym = a->sym;
       break;
     default: break;
   }
@@ -1122,11 +1122,11 @@ define_labels(IF1 *i, ParseAST *ast, LabelMap *labelmap) {
   switch (ast->kind) {
     case AST_def_ident:
       if (!ast->get(AST_pattern)) {
-	if (ast->def_ident_label) {
-	  ast->label[0] = if1_alloc_label(i);
-	  ast->label[1] = if1_alloc_label(i);
-	  labelmap->put(ast->get(AST_ident)->string, ast);
-	}
+        if (ast->def_ident_label) {
+          ast->label[0] = if1_alloc_label(i);
+          ast->label[1] = if1_alloc_label(i);
+          labelmap->put(ast->get(AST_ident)->string, ast);
+        }
       }
       break;
     case AST_in_module:
@@ -1148,7 +1148,7 @@ define_labels(IF1 *i, ParseAST *ast, LabelMap *labelmap) {
 
 static int
 resolve_labels(IF1 *i, ParseAST *ast, LabelMap *labelmap,
-	       Label *break_label = 0, Label *continue_label = 0, Label *return_label = 0) 
+               Label *break_label = 0, Label *continue_label = 0, Label *return_label = 0) 
 {
   ParseAST *target;
   switch (ast->kind) {
@@ -1162,17 +1162,17 @@ resolve_labels(IF1 *i, ParseAST *ast, LabelMap *labelmap,
       break;
     case AST_break:
       if ((target = ast->get(AST_ident))) {
-	target = labelmap->get(target->string);
-	ast->label[0] = target->label[1];
+        target = labelmap->get(target->string);
+        ast->label[0] = target->label[1];
       } else
-	ast->label[0] = break_label;
+        ast->label[0] = break_label;
       break;
     case AST_continue:
       if ((target = ast->get(AST_ident))) {
-	target = labelmap->get(target->string);
-	ast->label[0] = target->label[0];
+        target = labelmap->get(target->string);
+        ast->label[0] = target->label[0];
       } else
-	ast->label[0] = continue_label;
+        ast->label[0] = continue_label;
       break;
     case AST_goto:
       target = labelmap->get(ast->get(AST_ident)->string);
@@ -1182,15 +1182,15 @@ resolve_labels(IF1 *i, ParseAST *ast, LabelMap *labelmap,
       break;
     case AST_op:
       if (ast->children.v[ast->op_index]->sym->name[0] == ',')
-	ast->children.v[0]->in_tuple = 1;
+        ast->children.v[0]->in_tuple = 1;
       if (ast->children.v[ast->op_index]->sym->name[0] == '^' && 
-	  ast->children.v[ast->op_index]->sym->name[1] == '^')
-	ast->children.v[0]->in_apply = 1;
+          ast->children.v[ast->op_index]->sym->name[1] == '^')
+        ast->children.v[0]->in_apply = 1;
       break;
     case AST_scope:
       forv_ParseAST(a, ast->children)
-	a->constructor = a->scope->kind == Scope_PARALLEL ? Make_VECTOR : 
-	  (a->scope->kind == Scope_SEQUENTIAL ? Make_TUPLE : Make_SET);
+        a->constructor = a->scope->kind == Scope_PARALLEL ? Make_VECTOR : 
+          (a->scope->kind == Scope_SEQUENTIAL ? Make_TUPLE : Make_SET);
       break;
     default: break;
   }
@@ -1360,7 +1360,7 @@ gen_op(IF1 *i, ParseAST *ast) {
     }
     if (binary)
       send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->children.v[ast->op_index]->rval, 
-		      aa1, args);
+                      aa1, args);
     else if (a0)
       send = if1_send(i, c, 3, 1, sym_make_tuple, aa0, ast->children.v[ast->op_index]->rval, args);
     else
@@ -1373,9 +1373,9 @@ gen_op(IF1 *i, ParseAST *ast) {
       aa1->is_lvalue = 1;
     if (ast->is_assign) {
       if (a0)
-	if1_move(i, c, res, a0->rval, ast);
+        if1_move(i, c, res, a0->rval, ast);
       else
-	if1_move(i, c, res, a1->rval, ast);
+        if1_move(i, c, res, a1->rval, ast);
     }
   }
 }
@@ -1387,8 +1387,8 @@ gen_loop(IF1 *i, ParseAST *ast) {
   ParseAST *body = dowhile ? ast->children.v[ast->children.n - 2] : ast->last();
   ParseAST *before = ast->children.n > 2 ? ast->children.v[0] : 0;
   if1_loop(i, &ast->code, ast->label[0], ast->label[1],
-	   cond->rval, before ? before->code : 0, 
-	   cond->code, 0, body->code, ast);
+           cond->rval, before ? before->code : 0, 
+           cond->code, 0, body->code, ast);
   ast->rval = body->rval;
 }
 
@@ -1399,8 +1399,8 @@ gen_if(IF1 *i, ParseAST *ast, int is_expr) {
   ParseAST *ifelse = ast->children.n > 2 ? ast->children.v[2] : 0;
   ast->rval = new_sym(i, ast->scope);
   if1_if(i, &ast->code, ifcond->code, ifcond->rval, ifif->code, ifif->rval,
-	 ifelse ? ifelse->code:0, ifelse ? ifelse->rval:0, 
-	 is_expr ? ast->rval : 0, ast);
+         ifelse ? ifelse->code:0, ifelse ? ifelse->rval:0, 
+         is_expr ? ast->rval : 0, ast);
   if (!is_expr)
     if1_move(i, &ast->code, sym_void, ast->rval, ast);
 }
@@ -1427,15 +1427,15 @@ gen_constructor(IF1 *i, ParseAST *ast) {
     default: assert(!"bad case"); break;
     case AST_object: 
       if (!ast->children.n)
-	constructor = sym_make_set;
+        constructor = sym_make_set;
       else
-	constructor = sym_make_tuple;
+        constructor = sym_make_tuple;
       break;
     case AST_list: 
       if (!ast->children.n)
-	constructor = sym_make_tuple;
+        constructor = sym_make_tuple;
       else
-	constructor = sym_make_list;
+        constructor = sym_make_list;
       break;
     case AST_vector: 
       constructor = sym_make_vector; 
@@ -1480,7 +1480,7 @@ pre_gen_top_down(IF1 *i, ParseAST *ast, Sym *container_scope, Sym *container = 0
     default: break;
     case AST_def_type: 
       if (define_type_init(i, ast, &container_scope, &container) < 0)
-	return -1;
+        return -1;
       break;
     case AST_def_fun:
       container_scope = container = 0;
@@ -1488,8 +1488,8 @@ pre_gen_top_down(IF1 *i, ParseAST *ast, Sym *container_scope, Sym *container = 0
     case AST_def_ident:
     case AST_qualified_ident:
       if (container_scope && ast->sym->in == container_scope) {
-	assert(!ast->container);
-	ast->container = container;
+        assert(!ast->container);
+        ast->container = container;
       }
       break;
   }
@@ -1508,12 +1508,12 @@ pre_gen_bottom_up(ParseAST *ast) {
     case AST_vector: {
       uint rank = 0;
       forv_ParseAST(a, ast->children)
-	if (a->rank > rank)
-	  rank = a->rank;
+        if (a->rank > rank)
+          rank = a->rank;
       if (ast->children.n > 1)
-	ast->rank = rank + 1;
+        ast->rank = rank + 1;
       else
-	ast->rank = rank;
+        ast->rank = rank;
       break;
     }
     case AST_block: {
@@ -1525,20 +1525,20 @@ pre_gen_bottom_up(ParseAST *ast) {
       ast->is_inc_dec = (op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
       ast->is_simple_assign = ((op[0] == '=') && !op[1]);
       ast->is_assign = (op[1] == '=' && op[0] != '=' && op[0] != '<' && op[0] != '>') 
-	|| ast->is_inc_dec;
+        || ast->is_inc_dec;
       ast->is_ref = op[0] == '&' && ast->op_index == 0;
       ast->is_application = (op[0] == '^' && op[1] == '^') || op[0] == '(';
       ast->is_comma = op[0] == ',';
       if (ast->is_comma) {
-	uint rank = 1;
-	forv_ParseAST(a, ast->children)
-	  if (!a->in_tuple) {
-	    if (a->rank + 1 > rank)
-	      rank = a->rank + 1;
-	  } else
-	    if (a->rank > rank)
-	      rank = a->rank;
-	ast->rank = rank;
+        uint rank = 1;
+        forv_ParseAST(a, ast->children)
+          if (!a->in_tuple) {
+            if (a->rank + 1 > rank)
+              rank = a->rank + 1;
+          } else
+            if (a->rank > rank)
+              rank = a->rank;
+        ast->rank = rank;
       }
       break;
     }
@@ -1575,9 +1575,9 @@ gen_def_ident_value(IF1 *i, ParseAST *ast, ParseAST *constraint, ParseAST *val) 
     else {
       Sym *rval = value_type(i, ast, declared_type);
       if (val) {
-	Sym *rrval = new_sym(i, ast->scope);
-	gen_assign(i, ast, val, rval, rrval);
-	rval = rrval;
+        Sym *rrval = new_sym(i, ast->scope);
+        gen_assign(i, ast, val, rval, rrval);
+        rval = rrval;
       }
       if1_move(i, &ast->code, rval, ast->rval, ast);
     }
@@ -1598,8 +1598,8 @@ static Sym *
 gen_container(IF1 *i, ParseAST *ast) {
   Sym *rval = new_sym(i, ast->scope);
   Code *send = if1_send(i, &ast->code, 4, 1, sym_operator, 
-			ast->container, sym_period, if1_make_symbol(i, ast->sym->name), 
-			rval);
+                        ast->container, sym_period, if1_make_symbol(i, ast->sym->name), 
+                        rval);
   send->ast = ast;
   rval->is_lvalue = 1;
   return rval;
@@ -1614,9 +1614,9 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
   ParseAST *val = 0;
   for (int x = 1; x < ast->children.n; x++)
     if (ast->children.v[x] != must_implement &&
-	ast->children.v[x] != must_specialize &&
-	ast->children.v[x] != pattern &&
-	ast->children.v[x] != var) {
+        ast->children.v[x] != must_specialize &&
+        ast->children.v[x] != pattern &&
+        ast->children.v[x] != var) {
       val = ast->children.v[x];
       break;
     }
@@ -1634,13 +1634,13 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
       gen_def_ident_value(i, ast, must_implement, val);
     else {
       if (val)
-	if1_gen(i, &ast->code, val->code);
+        if1_gen(i, &ast->code, val->code);
       if (val && val->rval) {
-	if (pattern) {
-	  Code *s = if1_send(i, &ast->code, 2, 1, sym_destruct, val->rval, ast->rval);
-	  s->ast = ast;
-	} else
-	  if1_move(i, &ast->code, val->rval, ast->rval, ast); 
+        if (pattern) {
+          Code *s = if1_send(i, &ast->code, 2, 1, sym_destruct, val->rval, ast->rval);
+          s->ast = ast;
+        } else
+          if1_move(i, &ast->code, val->rval, ast->rval, ast); 
       }
     }
   }
@@ -1690,16 +1690,16 @@ gen_if1(IF1 *i, ParseAST *ast) {
       ast->rval = ast->sym; 
       ParseAST *ptype = ast->get(AST_pattern_type);
       if (ast->children.n > (ptype ? 2 : 1))
-	ast->rval->is_pattern = 1;
+        ast->rval->is_pattern = 1;
       break;
     }
     case AST_qualified_ident:
       if (ast->container) {
-	ast->rval = gen_container(i, ast);
-	break;
+        ast->rval = gen_container(i, ast);
+        break;
       } else
-	// fall through
-	;
+        // fall through
+        ;
     case AST_const:
     case AST_arg: 
     case AST_rest: 
@@ -1712,20 +1712,20 @@ gen_if1(IF1 *i, ParseAST *ast) {
     case AST_scope:
     case AST_block:
       forv_ParseAST(a, ast->children)
-	if1_gen(i, &ast->code, a->code);
+        if1_gen(i, &ast->code, a->code);
       if (ast->children.n)
-	ast->rval = ast->last()->rval; 
+        ast->rval = ast->last()->rval; 
       break;
     case AST_loop: gen_loop(i, ast); break;
     case AST_op: gen_op(i, ast); break;
     case AST_new: gen_new(i, ast); break;
     case AST_ifexpr: gen_if(i, ast, 1); break;
     case AST_if: gen_if(i, ast, 0); break;
-    case AST_return: {	
+    case AST_return: {  
       if (ast->children.n) {
-	if1_gen(i, &ast->code, ast->children.v[0]->code);
-	Sym *fn = ast->scope->function()->in;
-	if1_move(i, &ast->code, ast->last()->rval, fn->ret, ast);
+        if1_gen(i, &ast->code, ast->children.v[0]->code);
+        Sym *fn = ast->scope->function()->in;
+        if1_move(i, &ast->code, ast->last()->rval, fn->ret, ast);
       // fall through
       }
     }
@@ -1737,14 +1737,14 @@ gen_if1(IF1 *i, ParseAST *ast) {
     }
     default: 
       if (ast->children.n == 1) {
-	if (ast->code)
-	  if1_gen(i, &ast->code, ast->children.v[0]->code);
-	else
-	  ast->code = ast->children.v[0]->code;
-	ast->rval = ast->children.v[0]->rval;
+        if (ast->code)
+          if1_gen(i, &ast->code, ast->children.v[0]->code);
+        else
+          ast->code = ast->children.v[0]->code;
+        ast->rval = ast->children.v[0]->rval;
       } else
-	forv_ParseAST(a, ast->children)
-	  if1_gen(i, &ast->code, a->code);
+        forv_ParseAST(a, ast->children)
+          if1_gen(i, &ast->code, a->code);
       break;
   }
   return 0;
@@ -1769,15 +1769,15 @@ collect_module_init(IF1 *i, ParseAST *ast, Sym *mod) {
   forv_ParseAST(a, ast->children) 
     switch (a->kind) {
       case AST_in_module: 
-	mod = a->sym->init; 
-	break;
+        mod = a->sym->init; 
+        break;
       default: 
-	if1_gen(i, &mod->code, a->code);
-	if (!mod->ast)
-	  mod->ast = new_AST(AST_block);
-	(dynamic_cast<ParseAST*>(mod->ast))->add(a);
-	mod->ret = a->rval;
-	break;
+        if1_gen(i, &mod->code, a->code);
+        if (!mod->ast)
+          mod->ast = new_AST(AST_block);
+        (dynamic_cast<ParseAST*>(mod->ast))->add(a);
+        mod->ret = a->rval;
+        break;
     }
   return mod;
 }
@@ -1915,7 +1915,7 @@ finalize_symbols(IF1 *i) {
       s->global_scope = 1;
     else
       if (!s->in || s->in->is_module || s->type_kind)
-	s->global_scope = 1;
+        s->global_scope = 1;
   }
 }
 

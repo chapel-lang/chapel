@@ -88,21 +88,21 @@ Sym::imm_int(int *result) {
     default: return -1;
     case IF1_NUM_KIND_UINT: {
       switch (type->num_index) {
-	case IF1_INT_TYPE_8: i = imm.v_uint8; break;
-	case IF1_INT_TYPE_16: i = imm.v_uint16; break;
-	case IF1_INT_TYPE_32: i = imm.v_uint32; break;
-	case IF1_INT_TYPE_64: i = imm.v_uint64; break;
-	default: return -1;
+        case IF1_INT_TYPE_8: i = imm.v_uint8; break;
+        case IF1_INT_TYPE_16: i = imm.v_uint16; break;
+        case IF1_INT_TYPE_32: i = imm.v_uint32; break;
+        case IF1_INT_TYPE_64: i = imm.v_uint64; break;
+        default: return -1;
       }
       break;
     }
     case IF1_NUM_KIND_INT: {
       switch (type->num_index) {
-	case IF1_INT_TYPE_8: i = imm.v_int8; break;
-	case IF1_INT_TYPE_16: i = imm.v_int16; break;
-	case IF1_INT_TYPE_32: i = imm.v_int32; break;
-	case IF1_INT_TYPE_64: i = imm.v_int64; break;
-	default: return -1;
+        case IF1_INT_TYPE_8: i = imm.v_int8; break;
+        case IF1_INT_TYPE_16: i = imm.v_int16; break;
+        case IF1_INT_TYPE_32: i = imm.v_int32; break;
+        case IF1_INT_TYPE_64: i = imm.v_int64; break;
+        default: return -1;
       }
       break;
     }
@@ -119,10 +119,10 @@ unalias_type(Sym *s) {
     Vec<Sym *> aliases;
     do {
       if (!s->alias)
-	return 0;
+        return 0;
       Sym *ss = s->alias;
       if (aliases.set_in(ss))
-	fail("circular type alias");
+        fail("circular type alias");
       aliases.set_add(ss);
       s = ss;
     } while (s->type_kind == Type_ALIAS);
@@ -138,39 +138,39 @@ sprint(char *str, Immediate &imm, Sym *type) {
       break;
     case IF1_NUM_KIND_UINT: {
       switch (type->num_index) {
-	case IF1_INT_TYPE_8: 
-	  res = sprintf(str, "%u", imm.v_uint8); break;
-	case IF1_INT_TYPE_16:
-	  res = sprintf(str, "%u", imm.v_uint16); break;
-	case IF1_INT_TYPE_32:
-	  res = sprintf(str, "%u", imm.v_uint32); break;
-	case IF1_INT_TYPE_64:
-	  res = sprintf(str, "%llu", imm.v_uint64); break;
-	default: assert(!"case");
+        case IF1_INT_TYPE_8: 
+          res = sprintf(str, "%u", imm.v_uint8); break;
+        case IF1_INT_TYPE_16:
+          res = sprintf(str, "%u", imm.v_uint16); break;
+        case IF1_INT_TYPE_32:
+          res = sprintf(str, "%u", imm.v_uint32); break;
+        case IF1_INT_TYPE_64:
+          res = sprintf(str, "%llu", imm.v_uint64); break;
+        default: assert(!"case");
       }
       break;
     }
     case IF1_NUM_KIND_INT: {
       switch (type->num_index) {
-	case IF1_INT_TYPE_8: 
-	  res = sprintf(str, "%d", imm.v_int8); break;
-	case IF1_INT_TYPE_16:
-	  res = sprintf(str, "%d", imm.v_int16); break;
-	case IF1_INT_TYPE_32:
-	  res = sprintf(str, "%d", imm.v_int32); break;
-	case IF1_INT_TYPE_64:
-	  res = sprintf(str, "%lld", imm.v_int64); break;
-	default: assert(!"case");
+        case IF1_INT_TYPE_8: 
+          res = sprintf(str, "%d", imm.v_int8); break;
+        case IF1_INT_TYPE_16:
+          res = sprintf(str, "%d", imm.v_int16); break;
+        case IF1_INT_TYPE_32:
+          res = sprintf(str, "%d", imm.v_int32); break;
+        case IF1_INT_TYPE_64:
+          res = sprintf(str, "%lld", imm.v_int64); break;
+        default: assert(!"case");
       }
       break;
     }
     case IF1_NUM_KIND_FLOAT:
       switch (type->num_index) {
-	case IF1_FLOAT_TYPE_32:
-	  res = sprintf(str, "%f", imm.v_float32); break;
-	case IF1_FLOAT_TYPE_64:
-	  res = sprintf(str, "%f", imm.v_float64); break;
-	default: assert(!"case");
+        case IF1_FLOAT_TYPE_32:
+          res = sprintf(str, "%f", imm.v_float32); break;
+        case IF1_FLOAT_TYPE_64:
+          res = sprintf(str, "%f", imm.v_float64); break;
+        default: assert(!"case");
       }
       break;
   }
@@ -269,7 +269,7 @@ Sym::coerce_to(Sym *to) {
     if (s1 && s2) {
       Sym *t = coerce_num(s1, s2);
       if (t == s2)
-	return s2;
+        return s2;
       return NULL;
     }
   }

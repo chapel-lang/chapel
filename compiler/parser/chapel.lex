@@ -40,7 +40,7 @@ call            return TCALL;
 class           return TCLASS;
 config          return TCONFIG;
 const           return TCONST;
-parameter		return TPARAM;
+parameter       return TPARAM;
 continue        return TCONTINUE;
 do              return TDO;
 domain          return TDOMAIN;
@@ -58,7 +58,7 @@ label           return TLABEL;
 let             return TLET;
 like            return TLIKE;
 mod             return TMOD;
-module		return TMODULE;
+module          return TMODULE;
 nil             return TNIL;
 not             return TNOT;
 of              return TOF;
@@ -120,13 +120,13 @@ with            return TWITH;
 "{"             return TLCBR;
 "}"             return TRCBR;
 
-"?"		return TQUESTION;
+"?"             return TQUESTION;
 
 {ident}         {
                   if (yytext[0] == '?') {
                     return QUERY_IDENT;
                   }
-		  return TIDENT;
+                  return TIDENT;
                 }
 {intLiteral}    return INTLITERAL;
 {floatLiteral}  return FLOATLITERAL;
@@ -135,28 +135,28 @@ with            return TWITH;
 "\""            {
                   register int c;
                   int bufflen = 256;
-		  static char* stringbuffer = 
+                  static char* stringbuffer = 
                     (char*)MALLOC(bufflen*sizeof(char));
                   int stringlen = 0;
 
                   while (1) {
                     while ((c = yyinput()) != '\"' && c != EOF) {
-		    FORCE_NEXT:
-		      stringbuffer[stringlen] = c;
+                    FORCE_NEXT:
+                      stringbuffer[stringlen] = c;
                       stringlen++;
                       if (stringlen == bufflen) {
                         bufflen *= 2;
                         stringbuffer = (char*)REALLOC(stringbuffer,
                                                       bufflen*sizeof(char));
                       }
-		      if (c == '\\') {
-			c = yyinput();
-			if (c != EOF) {
-			  goto FORCE_NEXT;
-			}
-		      }
+                      if (c == '\\') {
+                        c = yyinput();
+                        if (c != EOF) {
+                          goto FORCE_NEXT;
+                        }
+                      }
                     } /* eat up string */
-		    stringbuffer[stringlen] = '\0';
+                    stringbuffer[stringlen] = '\0';
                     if (c == EOF) {
                       yyerror("EOF in string");
                     } else {
@@ -169,37 +169,37 @@ with            return TWITH;
 "\'"            {
                   register int c;
                   int bufflen = 256;
-		  static char* stringbuffer = 
+                  static char* stringbuffer = 
                     (char*)MALLOC(bufflen*sizeof(char));
                   int stringlen = 0;
 
                   while (1) {
                     while ((c = yyinput()) != '\'' && c != EOF) {
-		      if (c == '\"') {
-			stringbuffer[stringlen] = '\\';
-			stringlen++;
-			if (stringlen == bufflen) {
-			  bufflen *= 2;
-			  stringbuffer = (char*)REALLOC(stringbuffer,
-							bufflen*sizeof(char));
-			}
-		      }
-		    FORCE_NEXT2:
-		      stringbuffer[stringlen] = c;
+                      if (c == '\"') {
+                        stringbuffer[stringlen] = '\\';
+                        stringlen++;
+                        if (stringlen == bufflen) {
+                          bufflen *= 2;
+                          stringbuffer = (char*)REALLOC(stringbuffer,
+                                                        bufflen*sizeof(char));
+                        }
+                      }
+                    FORCE_NEXT2:
+                      stringbuffer[stringlen] = c;
                       stringlen++;
                       if (stringlen == bufflen) {
                         bufflen *= 2;
                         stringbuffer = (char*)REALLOC(stringbuffer,
                                                       bufflen*sizeof(char));
                       }
-		      if (c == '\\') {
-			c = yyinput();
-			if (c != EOF) {
-			  goto FORCE_NEXT2;
-			}
-		      }
+                      if (c == '\\') {
+                        c = yyinput();
+                        if (c != EOF) {
+                          goto FORCE_NEXT2;
+                        }
+                      }
                     } /* eat up string */
-		    stringbuffer[stringlen] = '\0';
+                    stringbuffer[stringlen] = '\0';
                     if (c == EOF) {
                       yyerror("EOF in string");
                     } else {
@@ -217,26 +217,26 @@ with            return TWITH;
           
                   while (1) {
                     while ( (c = yyinput()) != '\n' && c != EOF ) {
-		      //		      printf("%c", c);
-		      //		      fflush(stdout);
+                      //                      printf("%c", c);
+                      //                      fflush(stdout);
                     }    /* eat up text of comment */
                     if (c == EOF) {
                       yyerror("EOF in comment");
                     } else {
-		      yylineno++;
-		      break;
+                      yylineno++;
+                      break;
                     }
                   }
-		}
+                }
 
 "/*"            {
                   register int c;
           
                   while (1) {
                     while ((c = yyinput()) != '*' && c != EOF ) {
-		      if (c == '\n') {
-			yylineno++;
-		      }
+                      if (c == '\n') {
+                        yylineno++;
+                      }
                     }    /* eat up text of comment */
           
                     if ( c == '*' ) {
@@ -245,8 +245,8 @@ with            return TWITH;
                       if ( c == '/' ) {
                         break;    /* found the end */
                       } else if (c == '\n') {
-			yylineno++;
-		      }
+                        yylineno++;
+                      }
                     } else {      // c == EOF
                       yyerror( "EOF in comment" );
                       break;

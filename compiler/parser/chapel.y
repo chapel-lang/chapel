@@ -12,7 +12,7 @@
 
 %start program
 
-%union	{
+%union  {
   bool boolval;
   char* pch;
 
@@ -183,7 +183,7 @@ varconst:
 | TPARAM
     { $$ = VAR_PARAM; }
 ;
-	
+        
 ident_symbol:
    pragma ident_symbol
     { 
@@ -489,7 +489,7 @@ fndecl:
   TFUNCTION identifier TDOT fname
     {
       $<fnsym>$ =
-	Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
+        Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
     }
                        TLP formals TRP fnrettype function_body_stmt
     {

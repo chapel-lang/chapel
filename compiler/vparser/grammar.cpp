@@ -9,14 +9,14 @@ char *
 constant_type(D_ParseNode &pn, D_Symbol *d_symbols) {
   D_ParseNode *child = d_get_child(&pn, 0);
   while (d_symbols[child->symbol].kind != D_SYMBOL_REGEX && 
-	 d_symbols[child->symbol].kind != D_SYMBOL_NTERM)
+         d_symbols[child->symbol].kind != D_SYMBOL_NTERM)
     child = d_get_child(child, 0);
   return d_symbols[child->symbol].name;
 }
 
 ParseAST *
 loop_AST(D_ParseNode &loop, D_ParseNode &cond, D_ParseNode *before, 
-	 D_ParseNode *after, D_ParseNode &body) 
+         D_ParseNode *after, D_ParseNode &body) 
 {
   ParseAST *b = body.user.ast;
   if (after) {
@@ -85,7 +85,7 @@ op_AST(IF1 *if1, D_ParseNode &pn) {
     else {
       op->op_index = i;
       if (!dig_add_ast(op, c))
-	op->add(symbol_AST(if1, c));
+        op->add(symbol_AST(if1, c));
     }
   }
   return op;

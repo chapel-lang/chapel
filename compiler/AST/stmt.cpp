@@ -37,9 +37,9 @@ Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
   if (update_list) {
     for (int j = 0; j < update_list->n; j++) {
       for (int i = 0; i < map->n; i++) {
-	if (update_list->v[j] == map->v[i].key) {
-	  update_list->v[j] = map->v[i].value;
-	}
+        if (update_list->v[j] == map->v[i].key) {
+          update_list->v[j] = map->v[i].value;
+        }
       }
     }
   }
@@ -56,9 +56,9 @@ Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
   if (update_list) {
     for (int j = 0; j < update_list->n; j++) {
       for (int i = 0; i < map->n; i++) {
-	if (update_list->v[j] == map->v[i].key) {
-	  update_list->v[j] = map->v[i].value;
-	}
+        if (update_list->v[j] == map->v[i].key) {
+          update_list->v[j] = map->v[i].value;
+        }
       }
     }
   }
@@ -73,7 +73,7 @@ Stmt* Stmt::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 
   while (oldStmt) {
     newStmtList = appendLink(newStmtList, 
-			     oldStmt->copyInternal(clone, map, analysis_clone));
+                             oldStmt->copyInternal(clone, map, analysis_clone));
     
     oldStmt = nextLink(Stmt, oldStmt);
   }
@@ -292,9 +292,9 @@ Stmt* Stmt::extract(void) {
       next_stmt->back = back;
       *back = next_stmt;
       /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-	 if (prev) {
-	 prev->next = next;
-	 }
+         if (prev) {
+         prev->next = next;
+         }
       */
     }
     else {
@@ -344,17 +344,17 @@ WithStmt::WithStmt(Expr* init_withExpr) :
 ClassType* WithStmt::getClass(void) {
   if (Variable* var = dynamic_cast<Variable*>(withExpr)) {
     if (ClassType* result = 
-	dynamic_cast<ClassType*>(var->var->type)) {
+        dynamic_cast<ClassType*>(var->var->type)) {
       return result;
     }
     else if (UnresolvedSymbol* unresolved = 
-	     dynamic_cast<UnresolvedSymbol*>(var->var)) {
+             dynamic_cast<UnresolvedSymbol*>(var->var)) {
       if (ClassType* result = 
-	  dynamic_cast<ClassType*>(Symboltable::lookup(unresolved->name)->type)) {
-	return result;
+          dynamic_cast<ClassType*>(Symboltable::lookup(unresolved->name)->type)) {
+        return result;
       }
       else {
-	INT_FATAL(this, "Bad with statement");
+        INT_FATAL(this, "Bad with statement");
       }
     }
     else {
@@ -575,8 +575,8 @@ void BlockStmt::codegen(FILE* outfile) {
 
 
 WhileLoopStmt::WhileLoopStmt(bool init_whileDo, 
-			     Expr* init_cond, 
-			     Stmt* init_body) 
+                             Expr* init_cond, 
+                             Stmt* init_body) 
   : BlockStmt(init_body), 
     isWhileDo(init_whileDo), 
     condition(init_cond) 
@@ -638,9 +638,9 @@ void WhileLoopStmt::codegen(FILE* outfile) {
 
 
 ForLoopStmt::ForLoopStmt(bool init_forall,
-			 Expr* init_indices,
-			 Expr* init_domain,
-			 Stmt* body)
+                         Expr* init_indices,
+                         Expr* init_domain,
+                         Stmt* body)
   : BlockStmt(body),
     forall(init_forall),
     indices(init_indices),
@@ -754,7 +754,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
     for (int i=0; i<rank; i++) {
       fprintf(outfile, "_FOR");
       if (forall) {
-	fprintf(outfile, "ALL");
+        fprintf(outfile, "ALL");
       }
       fprintf(outfile, "_DIM");
       fprintf(outfile, "(");
@@ -775,7 +775,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
     for (int i=0; i<rank; i++) {
       fprintf(outfile, "_FOR");
       if (forall) {
-	fprintf(outfile, "ALL");
+        fprintf(outfile, "ALL");
       }
       fprintf(outfile, "(");
       aVar->codegen(outfile);
@@ -799,7 +799,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
 
 
 CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt, 
-		   Stmt* init_elseStmt) :
+                   Stmt* init_elseStmt) :
   Stmt(STMT_COND),
   condExpr(init_condExpr),
   thenStmt(init_thenStmt),

@@ -72,7 +72,7 @@ Fun::collect_PNodes(Vec<PNode *> &v) {
   for (int i = 0; i < v.n; i++)
     forv_PNode(p, v.v[i]->cfg_pred)
       if (sv.set_add(p))
-	v.add(p);
+        v.add(p);
 }
 
 void
@@ -100,7 +100,7 @@ Fun::collect_Vars(Vec<Var *> &vars, Vec<PNode *> *nodes) {
     collect_Vars_PNode(nodes->v[i], vars);
     forv_PNode(p, nodes->v[i]->cfg_pred)
       if (sv.set_add(p))
-	nodes->add(p);
+        nodes->add(p);
   }
   forv_MPosition(p, positional_arg_positions)
     vars.set_add(args.get(p));

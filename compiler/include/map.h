@@ -17,8 +17,8 @@ char *dupstr(char *s, char *e = 0); // from misc.h
 
 template <class K, class C> class MapElem : public gc {
  public:
-  K	key;
-  C	value;
+  K     key;
+  C     value;
   bool operator==(MapElem &e) { return e.key == key; }
   operator unsigned int(void) { return (unsigned int)(uintptr_t)key; }
   MapElem(unsigned int x) { assert(!x); key = 0; }
@@ -64,7 +64,7 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
 class StringHashFns {
  public:
   static unsigned int hash(char *s) { 
-    unsigned int h = 0;	
+    unsigned int h = 0; 
     // 31 changed to 27, to avoid prime2 in vec.cpp
     while (*s) h = h * 27 + (unsigned char)*s++;  
     return h;
@@ -121,7 +121,7 @@ template <class C, class AHashFns, int N> class NBlockHash : public gc {
   inline NBlockHash();
 };
 
-#define DEFAULT_BLOCK_HASH_SIZE	4
+#define DEFAULT_BLOCK_HASH_SIZE 4
 template <class C, class ABlockHashFns> class BlockHash : 
   public NBlockHash<C, ABlockHashFns, DEFAULT_BLOCK_HASH_SIZE> {};
 typedef BlockHash<char *, StringHashFns> StringBlockHash;
@@ -186,8 +186,8 @@ HashMap<K,AHashFns,C>::get_internal(K akey) {
   if (n <= VEC_INTEGRAL_SIZE) {
     for (MapElem<K,C> *c = v; c < v + n; c++)
       if (c->key)
-	if (AHashFns::equal(akey, c->key))
-	  return c;
+        if (AHashFns::equal(akey, c->key))
+          return c;
     return 0;
   }
   unsigned int h = AHashFns::hash(akey);
@@ -221,7 +221,7 @@ HashMap<K,AHashFns,C>::put(K akey, C avalue) {
   } else {
     if (n < VEC_INTEGRAL_SIZE) {
       if (!v)
-	v = e;
+        v = e;
       v[n].key = akey;
       v[n].value = avalue;
       n++;
@@ -231,14 +231,14 @@ HashMap<K,AHashFns,C>::put(K akey, C avalue) {
       unsigned int h = AHashFns::hash(akey);
       h = h % n;
       for (int k = h, j = 0;
-	   k < n && j < SET_MAX_SEQUENTIAL;
-	   k = ((k + 1) % n), j++)
+           k < n && j < SET_MAX_SEQUENTIAL;
+           k = ((k + 1) % n), j++)
       {
-	if (!v[k].key) {
-	  v[k].key = akey;
-	  v[k].value = avalue;
-	  return &v[k];
-	}
+        if (!v[k].key) {
+          v[k].key = akey;
+          v[k].value = avalue;
+          return &v[k];
+        }
       }
     }
   }
@@ -316,8 +316,8 @@ ChainHashMap<K, AHashFns, C>::put(K akey, C avalue) {
   if (l->head) 
     for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
       if (AHashFns::equal(akey, p->car.key)) {
-	p->car.value = avalue;
-	return &p->car;
+        p->car.value = avalue;
+        return &p->car;
       }
   l->push(c);
   return 0;
@@ -335,7 +335,7 @@ ChainHashMap<K, AHashFns, C>::get(K akey) {
   if (l->head) 
     for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
       if (AHashFns::equal(akey, p->car.key))
-	return p->car.value;
+        return p->car.value;
   return 0;
 }
 
@@ -345,7 +345,7 @@ ChainHashMap<K, AHashFns, C>::get_keys(Vec<K> &keys) {
     List<MapElem<K,C> > *l = &v[i].value;
     if (l->head) 
       for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
-	keys.add(p->car.key);
+        keys.add(p->car.key);
   }
 }
 
@@ -355,7 +355,7 @@ ChainHashMap<K, AHashFns, C>::get_values(Vec<C> &values) {
     List<MapElem<K,C> > *l = &v[i].value;
     if (l->head) 
       for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
-	values.add(p->car.value);
+        values.add(p->car.value);
   }
 }
 
@@ -377,14 +377,14 @@ StringChainHash::cannonicalize(char *s, char *e) {
       a = s;
       char *b = x->car;
       while (1) {
-	if (!*b) {
-	  if (a == e)
-	    return x->car;
-	  break;
-	}
-	if (a >= e || *a != *b)
-	  break;
-	a++; b++;
+        if (!*b) {
+          if (a == e)
+            return x->car;
+          break;
+        }
+        if (a >= e || *a != *b)
+          break;
+        a++; b++;
       }
     }
   }
@@ -501,15 +501,15 @@ NBlockHash<C, AHashFns, N>::del(C c) {
       return;
     if (AHashFns::equal(c, x[a])) {
       if (a < N - 1) {
-	for (b = a + 1; b < N; b++) {
-	  if (!x[b])
-	    break;
-	}
-	if (b != a + 1)
-	  x[a] = x[b - 1];
-	x[b - 1] = (C)0;
+        for (b = a + 1; b < N; b++) {
+          if (!x[b])
+            break;
+        }
+        if (b != a + 1)
+          x[a] = x[b - 1];
+        x[b - 1] = (C)0;
       } else
-	x[N - 1] = (C)0;
+        x[N - 1] = (C)0;
     }
   }
 }

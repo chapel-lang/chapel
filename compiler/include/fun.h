@@ -23,7 +23,7 @@ class DefaultCache;
 
 class CallPoint : public gc {
  public:
-  Fun 	*fun;
+  Fun   *fun;
   PNode *pnode;
   CallPoint(Fun *afun, PNode *apnode) : fun(afun), pnode(apnode) {}
 };

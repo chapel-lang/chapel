@@ -18,9 +18,9 @@ dump_header(FILE *fp, char *fn) {
   fprintf(fp, "<HEAD>\n");
   fprintf(fp, "<TITLE> Program Dump for %s </TITLE>\n", fn);
   fprintf(fp, "<SCRIPT SRC=\"%s%s/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
-	  relative ? "../" : "", system_dir);
+          relative ? "../" : "", system_dir);
   fprintf(fp, "<LINK REL=\"stylesheet\" HREF=\"%s%s/etc/www/mktree.css\">", 
-	  relative ? "../" : "", system_dir);
+          relative ? "../" : "", system_dir);
   fprintf(fp, "</HEAD>\n");
   fprintf(fp, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
   fprintf(fp, "Program Dump for %s <br></span></big></big>\n", fn);
@@ -54,10 +54,10 @@ static void
 dump_sub_sym(FILE *fp, Sym *ss, char *title) {
   if (ss) {
     fprintf(fp, "<TR><TD><TD>%s<TD><a href=\"#SYM_%d\">%s (%d)</a>",
-	    title,
-	    ss->id,
-	    ss->name ? ss->name : ANON,
-	    ss->id);
+            title,
+            ss->id,
+            ss->name ? ss->name : ANON,
+            ss->id);
   }
 }
 
@@ -70,10 +70,10 @@ dump_sym_list(FILE *fp, Sym *s, Vec<Sym *> &l, char *title, sym_pred_fn fn = 0) 
     if (v.n) {
       dump_sub_sym(fp, v.v[0], title);
       for (int i = 1; i < v.n; i++)
-	fprintf(fp, ", <a href=\"#SYM_%d\">%s (%d)</a>", 
-		v.v[i]->id,
-		v.v[i]->name ? v.v[i]->name : ANON,
-		v.v[i]->id);
+        fprintf(fp, ", <a href=\"#SYM_%d\">%s (%d)</a>", 
+                v.v[i]->id,
+                v.v[i]->name ? v.v[i]->name : ANON,
+                v.v[i]->id);
       fprintf(fp, "\n");
     }
   }
@@ -82,8 +82,8 @@ dump_sym_list(FILE *fp, Sym *s, Vec<Sym *> &l, char *title, sym_pred_fn fn = 0) 
 static void
 dump_sym(FILE *fp, Sym *t) {
   fprintf(fp, "<b><A NAME=\"SYM_%d\">%s (%d)</A></b>\n", t->id, 
-	  t->name ? t->name : ANON,
-	  t->id);
+          t->name ? t->name : ANON,
+          t->id);
   fprintf(fp, "<TABLE BORDER=0, CELLSPACING=0, CELLPADDING=0>\n");
 #if 0
   fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>ID<TD>%d\n",  t->id);
@@ -92,8 +92,8 @@ dump_sym(FILE *fp, Sym *t) {
 #endif
   if (t->in && t->in->name)
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>%s %s\n", 
-	    t->in->is_module ? "module" : (t->type_kind != Type_NONE ? "type" : "function"), 
-	    t->in->name);
+            t->in->is_module ? "module" : (t->type_kind != Type_NONE ? "type" : "function"), 
+            t->in->name);
   else
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
     fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->filename(), t->line());
@@ -203,7 +203,7 @@ dump_functions(FILE *fp, FA *fa) {
     Vec<Fun *> funs;
     for (int i = 0; i < f->calls.n; i++)
       if (f->calls.v[i].key)
-	funs.set_union(*f->calls.v[i].value);
+        funs.set_union(*f->calls.v[i].value);
     funs.set_to_vec();
     dump_fun_list(fp, funs);
     fprintf(fp, "<TR><TD><TD>Called by<TD>\n");
@@ -233,29 +233,29 @@ dump_symbols(FILE *fp, FA *fa) {
     again = 0;
     forv_Sym(s, syms) if (s) {
       if (s->type)
-	again = syms.set_add(s->type) || again;
+        again = syms.set_add(s->type) || again;
       forv_Sym(ss, s->implements)
-	again = syms.set_add(ss) || again;
+        again = syms.set_add(ss) || again;
       forv_Sym(ss, s->specializes)
-	again = syms.set_add(ss) || again;
+        again = syms.set_add(ss) || again;
       forv_Sym(ss, s->includes)
-	again = syms.set_add(ss) || again;
+        again = syms.set_add(ss) || again;
       if (s->must_specialize)
-	again = syms.set_add(s->must_specialize) || again;
+        again = syms.set_add(s->must_specialize) || again;
       if (s->must_implement)
-	again = syms.set_add(s->must_implement) || again;
+        again = syms.set_add(s->must_implement) || again;
       forv_Sym(ss, s->dispatch_order) if (ss)
-	again = syms.set_add(ss) || again;
+        again = syms.set_add(ss) || again;
       forv_Sym(ss, s->has) if (ss)
-	again = syms.set_add(ss) || again;
+        again = syms.set_add(ss) || again;
       if (s->self)
-	again = syms.set_add(s->self) || again;
+        again = syms.set_add(s->self) || again;
       if (s->ret)
-	again = syms.set_add(s->ret) || again;
+        again = syms.set_add(s->ret) || again;
       if (s->cont)
-	again = syms.set_add(s->cont) || again;
+        again = syms.set_add(s->cont) || again;
       if (s->init)
-	again = syms.set_add(s->init) || again;
+        again = syms.set_add(s->init) || again;
     }
   }
 

@@ -7,7 +7,7 @@
 #include "ast.h"
 
 Prim::Prim(int aindex, char *astring, char *aname, int anargs, int apos, int anrets,
-	   PrimType *aarg_types, PrimType *aret_types, int options) {
+           PrimType *aarg_types, PrimType *aret_types, int options) {
   index = aindex;
   string = astring;
   name = aname;
@@ -34,15 +34,15 @@ Primitives::find(Code *c) {
     if (prim == prim_operator) {
       int nargs = c->rvals.n - 3;
       if (nargs < 0)
-	nargs = 0;
+        nargs = 0;
       if (c->rvals.v[1]->is_symbol)
-	prim = prim_map[nargs][0].get(c->rvals.v[1]->name);
+        prim = prim_map[nargs][0].get(c->rvals.v[1]->name);
       else {
-	char *n = c->rvals.v[2]->is_symbol ? c->rvals.v[2]->name : 0;
-	if (!n)
-	  n = if1->builtins_names.get(c->rvals.v[2]);
-	assert(n);
-	prim = prim_map[nargs][1].get(n);
+        char *n = c->rvals.v[2]->is_symbol ? c->rvals.v[2]->name : 0;
+        if (!n)
+          n = if1->builtins_names.get(c->rvals.v[2]);
+        assert(n);
+        prim = prim_map[nargs][1].get(n);
       }
       assert(prim);
     }
@@ -60,12 +60,12 @@ Primitives::find(PNode *p) {
     if (prim == prim_operator) {
       int nargs = p->rvals.n - 3;
       if (nargs < 0)
-	nargs = 0;
+        nargs = 0;
       if (p->rvals.v[1]->sym->is_symbol)
-	prim = prim_map[nargs][0].get(p->rvals.v[1]->sym->name);
+        prim = prim_map[nargs][0].get(p->rvals.v[1]->sym->name);
       else {
-	assert(p->rvals.v[2]->sym->is_symbol);
-	prim = prim_map[nargs][1].get(p->rvals.v[2]->sym->name);
+        assert(p->rvals.v[2]->sym->is_symbol);
+        prim = prim_map[nargs][1].get(p->rvals.v[2]->sym->name);
       }
       assert(prim);
     }

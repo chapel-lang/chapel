@@ -144,7 +144,7 @@ AInfo::visible_functions(Sym *arg0) {
   Symbol *internal_symbol = Symboltable::lookupInScope(name, internalScope);
   if (!symbol && !internal_symbol)
     v = new Vec<Fun *>;
-  else {	
+  else {        
     Symbol *cache_symbol = symbol ? symbol : internal_symbol;
     sym_cache = cache_symbol->parentScope->lookupCache;
     if (sym_cache && (v = sym_cache->get(name))) 
@@ -153,15 +153,15 @@ AInfo::visible_functions(Sym *arg0) {
     if (symbol) {
       FnSymbol *fn = dynamic_cast<FnSymbol*>(symbol);
       while (fn) {
-	v->set_add(fn->asymbol->sym->fun);
-	fn = fn->overload;
+        v->set_add(fn->asymbol->sym->fun);
+        fn = fn->overload;
       }
     }
     if (internal_symbol) {
       FnSymbol *fn = dynamic_cast<FnSymbol*>(internal_symbol);
       while (fn) {
-	v->set_add(fn->asymbol->sym->fun);
-	fn = fn->overload;
+        v->set_add(fn->asymbol->sym->fun);
+        fn = fn->overload;
       }
     }
   }
@@ -209,14 +209,14 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
       new_s->asymbol->symbol = new_s;
       context->smap.put(old_s->asymbol->sym, new_s->asymbol->sym);
       if (context->vmap && old_s->asymbol->sym->var) {
-	new_s->asymbol->sym->var = context->vmap->get(old_s->asymbol->sym->var);
-	if (!new_s->asymbol->sym->var)
-	  new_s->asymbol->sym->var = old_s->asymbol->sym->var;
+        new_s->asymbol->sym->var = context->vmap->get(old_s->asymbol->sym->var);
+        if (!new_s->asymbol->sym->var)
+          new_s->asymbol->sym->var = old_s->asymbol->sym->var;
       }
       if (old_s->asymbol->sym->fun) {
-	Fun *new_f = context->fmap.get(old_s->asymbol->sym->fun);
-	if (new_f)
-	  new_s->asymbol->sym->fun = new_f;
+        Fun *new_f = context->fmap.get(old_s->asymbol->sym->fun);
+        if (new_f)
+          new_s->asymbol->sym->fun = new_f;
       }
     }
   } else if (isSomeType(new_ast->astType)) {
@@ -257,38 +257,38 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
     forv_BaseAST(ss, getStuff.asts) if (ss) {
       assert(ss);
       if (set.set_add(ss))
-	syms.add(ss);
+        syms.add(ss);
     }
 #if 1
     if (s->astType == SYMBOL_FN) {
       Vec<BaseAST*> asts;
       collect_asts(&asts, dynamic_cast<FnSymbol*>(s));
       forv_BaseAST(x, asts)
-	if (set.set_add(x))
-	  syms.add(x);
+        if (set.set_add(x))
+          syms.add(x);
     }
 #else
     switch (s->astType) {
       default: break;
       case SYMBOL_FN: {
-	Symbol *formals = dynamic_cast<FnSymbol*>(s)->formals;
-	while (formals) {
-	  if (set.set_add(formals))
-	    syms.add(formals);
-	  ParamSymbol *p = dynamic_cast<ParamSymbol*>(formals);
-	  if (p) {
-	    Type *tt = dynamic_cast<Type*>(p->type);
-	    if (tt) {
-	      if (set.set_add(tt))
-		syms.add(tt);
-	    }
-	  }
-	  formals = dynamic_cast<Symbol*>(formals->next);
-	}
-	Type *ret = dynamic_cast<FnSymbol*>(s)->retType;
-	if (set.set_add(ret))
-	  syms.add(ret);
-	break;
+        Symbol *formals = dynamic_cast<FnSymbol*>(s)->formals;
+        while (formals) {
+          if (set.set_add(formals))
+            syms.add(formals);
+          ParamSymbol *p = dynamic_cast<ParamSymbol*>(formals);
+          if (p) {
+            Type *tt = dynamic_cast<Type*>(p->type);
+            if (tt) {
+              if (set.set_add(tt))
+                syms.add(tt);
+            }
+          }
+          formals = dynamic_cast<Symbol*>(formals->next);
+        }
+        Type *ret = dynamic_cast<FnSymbol*>(s)->retType;
+        if (set.set_add(ret))
+          syms.add(ret);
+        break;
       }
     }
 #endif
@@ -352,9 +352,9 @@ ACallbacks::make_LUB_type(Sym *t) {
     Sym *b = to_basic_type(s);
     if (b) {
       if (!basic)
-	basic = b;
+        basic = b;
       else if (basic != b)
-	fail("mixed primitive types");
+        fail("mixed primitive types");
     }
     Type *ttt = dynamic_cast<Type *>(s->asymbol->symbol);
     if (ttt)
@@ -389,13 +389,13 @@ finalize_symbols(IF1 *i) {
       set_global_scope(s);
     else
       if (s->type_kind)
-	set_global_scope(s);
+        set_global_scope(s);
     if (s->asymbol && s->asymbol->symbol && s->asymbol->symbol->astType == SYMBOL_VAR) {
       VarSymbol *v = (VarSymbol*)s->asymbol->symbol;
       if (v->type && v->type != dtUnknown) {
-	Sym *t = v->type->asymbol->sym;
-	if (t->num_kind)
-	  s->type = t;
+        Sym *t = v->type->asymbol->sym;
+        if (t->num_kind)
+          s->type = t;
       }
     }
   }
@@ -409,7 +409,7 @@ install_new_function(FnSymbol *f) {
   Vec<BaseAST *> all_syms, syms;
   all_stmts.add(f->defPoint->stmt);
   all_syms.add(f);
-  close_symbols(all_stmts, all_syms);	
+  close_symbols(all_stmts, all_syms);   
   forv_BaseAST(a, all_syms) {
     Stmt *s = dynamic_cast<Stmt *>(a);
     if (s && !s->ainfo)
@@ -417,16 +417,16 @@ install_new_function(FnSymbol *f) {
     else {
       Expr *s = dynamic_cast<Expr *>(a);
       if (s && !s->ainfo)
-	syms.add(s);
+        syms.add(s);
       else {
-	Symbol *s = dynamic_cast<Symbol *>(a);
-	if (s && !s->asymbol)
-	  syms.add(s);
-	else {
-	  Type *s = dynamic_cast<Type *>(a);
-	  if (s && !s->asymbol)
-	    syms.add(s);
-	} 
+        Symbol *s = dynamic_cast<Symbol *>(a);
+        if (s && !s->asymbol)
+          syms.add(s);
+        else {
+          Type *s = dynamic_cast<Type *>(a);
+          if (s && !s->asymbol)
+            syms.add(s);
+        } 
       } 
     }
   }
@@ -480,8 +480,8 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     if (tt) {
       Map<Type *, Type *> subs;
       form_SymSym(s, substitutions)
-	subs.put(dynamic_cast<Type*>(s->key->asymbol->symbol), 
-		 dynamic_cast<Type*>(s->value->asymbol->symbol));
+        subs.put(dynamic_cast<Type*>(s->key->asymbol->symbol), 
+                 dynamic_cast<Type*>(s->value->asymbol->symbol));
       Type *type = dynamic_cast<Type*>(s->asymbol->symbol);
       Type *new_type = type->instantiate_generic(subs);
       assert(tt == new_type->asymbol->sym);
@@ -536,7 +536,7 @@ ACallbacks::instantiate_generic(Match *m) {
   Map<Type *, Type *> substitutions;
   form_SymSym(s, m->generic_substitutions)
     substitutions.put(dynamic_cast<Type*>(s->key->asymbol->symbol), 
-		      dynamic_cast<Type*>(s->value->asymbol->symbol));
+                      dynamic_cast<Type*>(s->value->asymbol->symbol));
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->instantiate_generic(&substitutions);
   Fun *fun = install_new_function(f);
@@ -603,74 +603,74 @@ map_symbols(Vec<BaseAST *> &syms) {
       sym->asymbol = new_ASymbol(sym, basic);
       sym->asymbol->symbol = sym;
       if (!sym->parentScope) {
-	sym->asymbol->sym->global_scope = 1;
+        sym->asymbol->sym->global_scope = 1;
       } else {
-	switch (sym->parentScope->type) {
-	  default: assert(0);
-	  case SCOPE_INTRINSIC:
-	  case SCOPE_INTERNAL_PRELUDE:
-	  case SCOPE_PRELUDE:
-	  case SCOPE_MODULE:
-	  case SCOPE_POSTPARSE:
-	    sym->asymbol->sym->global_scope = 1;
-	    break;
-	  case SCOPE_LETEXPR:
-	  case SCOPE_PARAM:
-	  case SCOPE_FUNCTION:
-	  case SCOPE_LOCAL:
-	  case SCOPE_FORLOOP:
-	  case SCOPE_FORALLEXPR:
-	    sym->asymbol->sym->function_scope = 1;
-	    break;
-	  case SCOPE_CLASS: // handled as the symbols appears in code
-	    break;
-	}
+        switch (sym->parentScope->type) {
+          default: assert(0);
+          case SCOPE_INTRINSIC:
+          case SCOPE_INTERNAL_PRELUDE:
+          case SCOPE_PRELUDE:
+          case SCOPE_MODULE:
+          case SCOPE_POSTPARSE:
+            sym->asymbol->sym->global_scope = 1;
+            break;
+          case SCOPE_LETEXPR:
+          case SCOPE_PARAM:
+          case SCOPE_FUNCTION:
+          case SCOPE_LOCAL:
+          case SCOPE_FORLOOP:
+          case SCOPE_FORALLEXPR:
+            sym->asymbol->sym->function_scope = 1;
+            break;
+          case SCOPE_CLASS: // handled as the symbols appears in code
+            break;
+        }
       }
       if (sym->astType == SYMBOL_PARAM) {
-	ParamSymbol *s = dynamic_cast<ParamSymbol *>(sym);
-	switch (s->intent) {
-	  default: break;
-	  case PARAM_IN: sym->asymbol->sym->intent = Sym_IN; break;
-	  case PARAM_INOUT: sym->asymbol->sym->intent = Sym_INOUT; break;
-	  case PARAM_OUT: sym->asymbol->sym->intent = Sym_OUT; break;
-	  case PARAM_CONST: sym->asymbol->sym->is_read_only = 1; break;
-	}
-	// handle pragmas
-	Pragma *pr = sym->pragmas;
-	while (pr) {
-	  if (!strcmp(pr->str, "clone_for_constants"))
-	    s->asymbol->sym->clone_for_constants = 1;
-	  pr = dynamic_cast<Pragma *>(pr->next);
-	}
+        ParamSymbol *s = dynamic_cast<ParamSymbol *>(sym);
+        switch (s->intent) {
+          default: break;
+          case PARAM_IN: sym->asymbol->sym->intent = Sym_IN; break;
+          case PARAM_INOUT: sym->asymbol->sym->intent = Sym_INOUT; break;
+          case PARAM_OUT: sym->asymbol->sym->intent = Sym_OUT; break;
+          case PARAM_CONST: sym->asymbol->sym->is_read_only = 1; break;
+        }
+        // handle pragmas
+        Pragma *pr = sym->pragmas;
+        while (pr) {
+          if (!strcmp(pr->str, "clone_for_constants"))
+            s->asymbol->sym->clone_for_constants = 1;
+          pr = dynamic_cast<Pragma *>(pr->next);
+        }
       }
       if (sym->type == dtNil)
-	sym_nil = sym->asymbol->sym;
+        sym_nil = sym->asymbol->sym;
       symbols++;
       if (verbose_level > 1 && sym->name)
-	printf("map_symbols: found Symbol '%s'\n", sym->name);
+        printf("map_symbols: found Symbol '%s'\n", sym->name);
     } else {
       Type *t = dynamic_cast<Type *>(s);
       if (t) {
-	map_type(t);
-	types++;
+        map_type(t);
+        types++;
       } else {
-	Expr *e = dynamic_cast<Expr *>(s);
-	if (e) {
-	  e->ainfo = new AInfo;
-	  e->ainfo->xast = e;
-	  exprs++;
-	} else {
-	  Stmt *st = dynamic_cast<Stmt *>(s);
-	  st->ainfo = new AInfo;
-	  st->ainfo->xast = s;
-	  stmts++; 
-	}
+        Expr *e = dynamic_cast<Expr *>(s);
+        if (e) {
+          e->ainfo = new AInfo;
+          e->ainfo->xast = e;
+          exprs++;
+        } else {
+          Stmt *st = dynamic_cast<Stmt *>(s);
+          st->ainfo = new AInfo;
+          st->ainfo->xast = s;
+          stmts++; 
+        }
       }
     }
   }
   if (verbose_level > 1)
     printf("map_symbols: BaseASTs: %d, Symbols: %d, Types: %d, Exprs: %d, Stmts: %d\n", 
-	   syms.n, symbols, types, exprs, stmts);
+           syms.n, symbols, types, exprs, stmts);
 }
 
 static void 
@@ -695,22 +695,22 @@ build_symbols(Vec<BaseAST *> &syms) {
     Symbol *s = dynamic_cast<Symbol *>(ss);
     if (s) { 
       switch (s->astType) {
-	case SYMBOL_TYPE: {
-	  TypeSymbol *t = dynamic_cast<TypeSymbol*>(s);
-	  if (t->type->astType == TYPE_VARIABLE)
-	    t->asymbol->sym->must_specialize = sym_anyclass;
-	  break;
-	}
-	case SYMBOL_PARAM: {
-	  if (s->type && s->type != dtUnknown) {
-	    if (s->asymbol->sym->intent != Sym_OUT)
-	      s->asymbol->sym->must_implement_and_specialize(s->type->asymbol->sym);
-	    else
-	      s->asymbol->sym->must_implement = s->type->asymbol->sym;
-	  }
-	  break;
-	}
-	default: break;
+        case SYMBOL_TYPE: {
+          TypeSymbol *t = dynamic_cast<TypeSymbol*>(s);
+          if (t->type->astType == TYPE_VARIABLE)
+            t->asymbol->sym->must_specialize = sym_anyclass;
+          break;
+        }
+        case SYMBOL_PARAM: {
+          if (s->type && s->type != dtUnknown) {
+            if (s->asymbol->sym->intent != Sym_OUT)
+              s->asymbol->sym->must_implement_and_specialize(s->type->asymbol->sym);
+            else
+              s->asymbol->sym->must_implement = s->type->asymbol->sym;
+          }
+          break;
+        }
+        default: break;
       }
     }
   }
@@ -729,90 +729,90 @@ build_types(Vec<BaseAST *> &syms) {
     switch (t->astType) {
       default: assert(!"case");
       case TYPE:
-	t->asymbol->sym->type_kind = Type_UNKNOWN;
-	break;
+        t->asymbol->sym->type_kind = Type_UNKNOWN;
+        break;
       case TYPE_BUILTIN: break;
       case TYPE_ENUM: {
-	t->asymbol->sym->type_kind = Type_TAGGED;
-	t->asymbol->sym->inherits_add(sym_enum_element);
-	GetSymbols* getSymbols = new GetSymbols();
-	TRAVERSE_LS(t, getSymbols, true);
-	for (int i = 0; i < getSymbols->symbols.n; i++) {
-	  BaseAST *s = getSymbols->symbols.v[i];
-	  Sym *ss = dynamic_cast<Symbol*>(s)->asymbol->sym;
-	  build_enum_element(t->asymbol->sym, ss, i);
-	  t->asymbol->sym->has.add(ss);
-	}
-	break;
+        t->asymbol->sym->type_kind = Type_TAGGED;
+        t->asymbol->sym->inherits_add(sym_enum_element);
+        GetSymbols* getSymbols = new GetSymbols();
+        TRAVERSE_LS(t, getSymbols, true);
+        for (int i = 0; i < getSymbols->symbols.n; i++) {
+          BaseAST *s = getSymbols->symbols.v[i];
+          Sym *ss = dynamic_cast<Symbol*>(s)->asymbol->sym;
+          build_enum_element(t->asymbol->sym, ss, i);
+          t->asymbol->sym->has.add(ss);
+        }
+        break;
       }
       case TYPE_DOMAIN: 
-	build_record_type(t, sym_domain);
-	break;
+        build_record_type(t, sym_domain);
+        break;
       case TYPE_INDEX: 
-	build_record_type(t, sym_tuple);
-	break;
+        build_record_type(t, sym_tuple);
+        break;
       case TYPE_ARRAY: {
-	ArrayType *at = dynamic_cast<ArrayType*>(t);
-	build_record_type(t, sym_array); 
-	Sym *s = at->asymbol->sym;
-	s->element = new_sym();
-	s->element->type = at->elementType->asymbol->sym;
-	s->element->is_var = 1;
-	s->element->is_external = 1;
-	s->domain = at->domainType->asymbol->sym;
-	break;
+        ArrayType *at = dynamic_cast<ArrayType*>(t);
+        build_record_type(t, sym_array); 
+        Sym *s = at->asymbol->sym;
+        s->element = new_sym();
+        s->element->type = at->elementType->asymbol->sym;
+        s->element->is_var = 1;
+        s->element->is_external = 1;
+        s->domain = at->domainType->asymbol->sym;
+        break;
       }
-      case TYPE_TUPLE: {	
-	TupleType *tt = dynamic_cast<TupleType*>(t);
-	forv_Vec(Type, c, tt->components) {
-	  Sym *x = new_sym();
-	  x->ast = c->asymbol->sym->ast;
-	  x->type = c->asymbol->sym;
-	  t->asymbol->sym->has.add(x);
-	}
-	t->asymbol->sym->type_kind = Type_PRODUCT;
-	t->asymbol->sym->inherits_add(sym_tuple);
-	break;
+      case TYPE_TUPLE: {        
+        TupleType *tt = dynamic_cast<TupleType*>(t);
+        forv_Vec(Type, c, tt->components) {
+          Sym *x = new_sym();
+          x->ast = c->asymbol->sym->ast;
+          x->type = c->asymbol->sym;
+          t->asymbol->sym->has.add(x);
+        }
+        t->asymbol->sym->type_kind = Type_PRODUCT;
+        t->asymbol->sym->inherits_add(sym_tuple);
+        break;
       }
       case TYPE_USER: {
-	UserType *tt = dynamic_cast<UserType*>(t);
-	t->asymbol->sym->type_kind = Type_ALIAS;
-	t->asymbol->sym->alias = tt->definition->asymbol->sym;
-	break;
+        UserType *tt = dynamic_cast<UserType*>(t);
+        t->asymbol->sym->type_kind = Type_ALIAS;
+        t->asymbol->sym->alias = tt->definition->asymbol->sym;
+        break;
       }
       case TYPE_LIKE: {
-	LikeType *tt = dynamic_cast<LikeType*>(t);
-	if (tt->expr->astType == EXPR_VARIABLE) {
-	  Variable *v = (Variable*)tt->expr;
-	  if (v->var->type && v->var->type != dtUnknown) {
-	    t->asymbol->sym->type_kind = Type_ALIAS;
-	    t->asymbol->sym->alias = v->var->type->asymbol->sym;
-	    break;
-	  }
-	}
-	INT_FATAL(t, "No analysis support for 'like'");
+        LikeType *tt = dynamic_cast<LikeType*>(t);
+        if (tt->expr->astType == EXPR_VARIABLE) {
+          Variable *v = (Variable*)tt->expr;
+          if (v->var->type && v->var->type != dtUnknown) {
+            t->asymbol->sym->type_kind = Type_ALIAS;
+            t->asymbol->sym->alias = v->var->type->asymbol->sym;
+            break;
+          }
+        }
+        INT_FATAL(t, "No analysis support for 'like'");
       }
       case TYPE_CLASS: {
-	ClassType *tt = dynamic_cast<ClassType*>(t);
-	t->asymbol->sym->type_kind = Type_RECORD;
-	if (tt->value || tt->union_value)
-	  t->asymbol->sym->is_value_class = 1;
-	if (tt->union_value)
-	  t->asymbol->sym->is_union_class = 1;
-	if (tt->symbol) {
-	  tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
-	  tt->symbol->asymbol->symbol = tt->symbol;
-	}
-	if (tt->parentClass)
-	  t->asymbol->sym->inherits_add(tt->parentClass->asymbol->sym);
-	else
-	  t->asymbol->sym->inherits_add(sym_object);
-	break;
+        ClassType *tt = dynamic_cast<ClassType*>(t);
+        t->asymbol->sym->type_kind = Type_RECORD;
+        if (tt->value || tt->union_value)
+          t->asymbol->sym->is_value_class = 1;
+        if (tt->union_value)
+          t->asymbol->sym->is_union_class = 1;
+        if (tt->symbol) {
+          tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
+          tt->symbol->asymbol->symbol = tt->symbol;
+        }
+        if (tt->parentClass)
+          t->asymbol->sym->inherits_add(tt->parentClass->asymbol->sym);
+        else
+          t->asymbol->sym->inherits_add(sym_object);
+        break;
       }
       case TYPE_VARIABLE: {
-	VariableType *tt = dynamic_cast<VariableType*>(t);
-	tt->asymbol->sym->type_kind = Type_VARIABLE;
-	break;
+        VariableType *tt = dynamic_cast<VariableType*>(t);
+        tt->asymbol->sym->type_kind = Type_VARIABLE;
+        break;
       }
     case TYPE_NIL: {
       break;
@@ -939,8 +939,8 @@ build_builtin_symbols() {
   new_primitive_type(sym_uint64, "uint64");
   new_alias_type(sym_uint, "uint", sym_uint64);
   new_lub_type(sym_anyint, "anyint", 
-	       sym_int8, sym_int16, sym_int32, sym_int64, sym_bool,
-	       sym_uint8, sym_uint16, sym_uint32, sym_uint64, 0);
+               sym_int8, sym_int16, sym_int32, sym_int64, sym_bool,
+               sym_uint8, sym_uint16, sym_uint32, sym_uint64, 0);
   new_alias_type(sym_size, "size", sym_int64);
   new_alias_type(sym_enum_element, "enum_element", sym_int64);
   new_primitive_type(sym_float32, "float32");
@@ -948,13 +948,13 @@ build_builtin_symbols() {
   new_primitive_type(sym_float128, "float128");
   new_alias_type(sym_float, "float", sym_float64);
   new_lub_type(sym_anyfloat, "anyfloat", 
-	       sym_float32, sym_float64, sym_float128, 0);
+               sym_float32, sym_float64, sym_float128, 0);
   new_primitive_type(sym_complex32, "complex32");
   new_primitive_type(sym_complex64, "complex64");
   new_primitive_type(sym_complex128, "complex128");
   new_primitive_type(sym_complex, "complex");
   new_lub_type(sym_anycomplex, "anycomplex", 
-	       sym_complex32, sym_complex64, sym_complex128, 0);
+               sym_complex32, sym_complex64, sym_complex128, 0);
   new_lub_type(sym_anynum, "anynum", sym_bool, sym_anyint, sym_anyfloat, sym_anycomplex, 0);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
@@ -1021,14 +1021,14 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
     case STMT_LABEL: {
       Stmt *target = label_target(stmt);
       switch (target->astType) {
-	default:
-	  target->ainfo->label[0] = if1_alloc_label(if1);
-	  target->ainfo->label[1] = target->ainfo->label[0];
-	  break;
-	case STMT_WHILELOOP:
-	case STMT_FORLOOP:
-	  // handled below
-	  break;
+        default:
+          target->ainfo->label[0] = if1_alloc_label(if1);
+          target->ainfo->label[1] = target->ainfo->label[0];
+          break;
+        case STMT_WHILELOOP:
+        case STMT_FORLOOP:
+          // handled below
+          break;
       }
       labelmap->put(if1_cannonicalize_string(if1, dynamic_cast<LabelStmt*>(stmt)->label->name), target);
       break;
@@ -1049,7 +1049,7 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
 
 static int
 resolve_labels(BaseAST *ast, LabelMap *labelmap,
-	       Label *return_label, Label *break_label = 0, Label *continue_label = 0)
+               Label *return_label, Label *break_label = 0, Label *continue_label = 0)
 {
   Stmt *stmt = dynamic_cast<Stmt *>(ast);
   switch (stmt->astType) {
@@ -1065,9 +1065,9 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
       GotoStmt *s = dynamic_cast<GotoStmt*>(ast);
       Stmt *target = labelmap->get(if1_cannonicalize_string(if1, s->label->name));
       if (!target)
-	return show_error("unresolved label %s", s->ainfo, s->label->name);
+        return show_error("unresolved label %s", s->ainfo, s->label->name);
       else 
-	stmt->ainfo->label[0] = target->ainfo->label[0];
+        stmt->ainfo->label[0] = target->ainfo->label[0];
       break;
     }
     default: break;
@@ -1083,8 +1083,8 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 static int
 is_reference_type(BaseAST *t) {
   return (t && t->astType == TYPE_CLASS &&
-	  !dynamic_cast<ClassType*>(t)->union_value &&
-	  !dynamic_cast<ClassType*>(t)->value);
+          !dynamic_cast<ClassType*>(t)->union_value &&
+          !dynamic_cast<ClassType*>(t)->value);
 }
 
 static void
@@ -1093,11 +1093,11 @@ gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
   Code **c = &ast->code;
   Sym *index_sym = new_sym();
   Code *start_index = if1_send(if1, c, 3, 1, sym_primitive, domain_start_index_symbol, 
-			       at->domainType->asymbol->sym, index_sym);
+                               at->domainType->asymbol->sym, index_sym);
   start_index->ast = ast;
   Sym *element = new_sym();
   Code *access_element = if1_send(if1, c, 4, 1, sym_primitive, array_index_symbol, 
-				  array, index_sym, element);
+                                  array, index_sym, element);
   access_element->ast = ast;
   element->is_lvalue = 1;
   if1_move(if1, c, val, element, ast);
@@ -1119,18 +1119,18 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
     // just set the first element
     ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
     if ((at->elementType->astType == TYPE_CLASS && 
-	 (dynamic_cast<ClassType*>(at->elementType)->value || 
-	  dynamic_cast<ClassType*>(at->elementType)->union_value)) ||
-	(at->elementType->astType == TYPE_ARRAY))
+         (dynamic_cast<ClassType*>(at->elementType)->value || 
+          dynamic_cast<ClassType*>(at->elementType)->union_value)) ||
+        (at->elementType->astType == TYPE_ARRAY))
     {
       Sym *ret = new_sym();
       if (at->elementType->astType == TYPE_ARRAY)
-	gen_alloc(ret, at->elementType->asymbol->sym, ast);
+        gen_alloc(ret, at->elementType->asymbol->sym, ast);
       else {
-	Code *new_element = 0;
-	ClassType *ct = dynamic_cast<ClassType*>(at->elementType);
-	new_element = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, ret);
-	new_element->ast = ast;
+        Code *new_element = 0;
+        ClassType *ct = dynamic_cast<ClassType*>(at->elementType);
+        new_element = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, ret);
+        new_element->ast = ast;
       }
       gen_set_array(s, at, ret, ast);
     }
@@ -1152,50 +1152,50 @@ gen_vardef(BaseAST *a) {
   for (Expr* expr = def->defExprList;expr;expr = dynamic_cast<Expr*>(expr->next)) {
     DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
     for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym); var;
-	 var = dynamic_cast<VarSymbol*>(var->next)) 
+         var = dynamic_cast<VarSymbol*>(var->next)) 
     {
       Sym *s = var->asymbol->sym;
       def->ainfo->sym = s;
       if (var->type && var->type != dtUnknown) {
-	if (!is_reference_type(var->type)) {
-	  s->type = unalias_type(var->type->asymbol->sym);
-	  s->is_var = 1;
-	} else
-	  s->must_implement = unalias_type(var->type->asymbol->sym);
+        if (!is_reference_type(var->type)) {
+          s->type = unalias_type(var->type->asymbol->sym);
+          s->is_var = 1;
+        } else
+          s->must_implement = unalias_type(var->type->asymbol->sym);
       } else
-	s->is_var = 1;
+        s->is_var = 1;
       if (var->init) {
-	if (s->is_var && var->type->astType == TYPE_ARRAY) {
-	  ArrayType *at = dynamic_cast<ArrayType*>(var->type->asymbol->symbol);
-	  if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
-	  gen_alloc(s, s->type, def->ainfo);
-	  gen_set_array(s, at, var->init->ainfo->rval, def->ainfo);
-	} else {
-	  if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
-	  Sym *val = var->init->ainfo->rval;
-	  if (s->type) {
-	    if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
-	      val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
-	    // else show_error("missing constructor", def->ainfo);
-	  }
-	  if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
-	}
+        if (s->is_var && var->type->astType == TYPE_ARRAY) {
+          ArrayType *at = dynamic_cast<ArrayType*>(var->type->asymbol->symbol);
+          if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
+          gen_alloc(s, s->type, def->ainfo);
+          gen_set_array(s, at, var->init->ainfo->rval, def->ainfo);
+        } else {
+          if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
+          Sym *val = var->init->ainfo->rval;
+          if (s->type) {
+            if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
+              val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
+            // else show_error("missing constructor", def->ainfo);
+          }
+          if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
+        }
       } 
       else if (is_reference_type(var->type)) {
-	if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
+        if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
       } else if (!s->is_var)
-	; // return show_error("missing initializer", def->ainfo);
+        ; // return show_error("missing initializer", def->ainfo);
       else if (!s->type && !s->must_implement)
-	; // return show_error("missing variable type", def->ainfo);
+        ; // return show_error("missing variable type", def->ainfo);
       else {
-	if (s->type) {
-	  if (s->type->num_kind || s->type == sym_string)
-	    s->is_external = 1; // hack
-	  else {
-	    FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
-	    gen_alloc(s, s->type, def->ainfo, f->_this ? f->_this->asymbol->sym : 0);
-	  }
-	}
+        if (s->type) {
+          if (s->type->num_kind || s->type == sym_string)
+            s->is_external = 1; // hack
+          else {
+            FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
+            gen_alloc(s, s->type, def->ainfo, f->_this ? f->_this->asymbol->sym : 0);
+          }
+        }
       }
     switch (var->varClass) {
       case VAR_NORMAL: break;
@@ -1224,9 +1224,9 @@ gen_while(BaseAST *a) {
   forv_Stmt(ss, body)
     if1_gen(if1, &body_code, ss->ainfo->code);
   if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
-	   s->condition->ainfo->rval, 0, 
-	   s->condition->ainfo->code, 0, 
-	   body_code, s->ainfo);
+           s->condition->ainfo->rval, 0, 
+           s->condition->ainfo->code, 0, 
+           body_code, s->ainfo);
   return 0;
 }
 
@@ -1247,7 +1247,7 @@ gen_forall_internal(AInfo *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> 
   Code *condition_code = 0;
   Sym *condition_rval = new_sym();
   send = if1_send(if1, &condition_code, 2, 1, sym_primitive, domain_valid_index_symbol,
-		  condition_rval);
+                  condition_rval);
   forv_Expr(d, domains)
     if1_add_send_arg(if1, send, d->ainfo->rval);
   forv_Symbol( i, indices)
@@ -1266,9 +1266,9 @@ gen_forall_internal(AInfo *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> 
 
   // build loop
   if1_loop(if1, &ainfo->code, ainfo->label[0], ainfo->label[1],
-	   condition_rval, setup_code, 
-	   condition_code, 0, 
-	   body, ainfo);
+           condition_rval, setup_code, 
+           condition_code, 0, 
+           body, ainfo);
   return 0;
 }
 
@@ -1299,9 +1299,9 @@ gen_cond(BaseAST *a) {
     ifelse = s->elseStmt->ainfo;
   }
   if1_if(if1, &s->ainfo->code, s->condExpr->ainfo->code, s->condExpr->ainfo->rval, 
-	 s->thenStmt->ainfo->code, s->thenStmt->ainfo->rval, ifelse ? ifelse->code : 0, 
-	 ifelse ? ifelse->rval : 0, 
-	 s->ainfo->rval, s->ainfo);
+         s->thenStmt->ainfo->code, s->thenStmt->ainfo->rval, ifelse ? ifelse->code : 0, 
+         ifelse ? ifelse->rval : 0, 
+         s->ainfo->rval, s->ainfo);
   return 0;
 }
 
@@ -1326,9 +1326,9 @@ gen_destruct_sym(Tuple *e, AST *ast) {
       s->has.add(gen_destruct_sym(dynamic_cast<Tuple*>(ee), ast));
     else {
       if (ee->astType != EXPR_VARIABLE)
-	show_error("non-variable or tuple in destructuring assignment", ast);
+        show_error("non-variable or tuple in destructuring assignment", ast);
       else {
-	s->has.add(dynamic_cast<Variable*>(ee)->var->asymbol->sym);
+        s->has.add(dynamic_cast<Variable*>(ee)->var->asymbol->sym);
       }
     }
   }
@@ -1355,7 +1355,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
   if (!def_stmt || !def_stmt->fnDef())
     forv_BaseAST(a, getStuff.asts)
       if (gen_if1(a, ast) < 0)
-	return -1;
+        return -1;
   switch (ast->astType) {
     case STMT: assert(!ast); break;
     case STMT_LABEL: {
@@ -1375,7 +1375,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
     case STMT_WITH: break;
     case STMT_DEF:
       if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast)) {
-	if (def_stmt->varDef() && gen_vardef(def_stmt) < 0) return -1;
+        if (def_stmt->varDef() && gen_vardef(def_stmt) < 0) return -1;
       }
       break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
@@ -1383,9 +1383,9 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
       Sym *fn = s->parentSymbol->asymbol->sym;
       if (s->expr) {
-	if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
-	s->expr->ainfo->rval->is_lvalue = 1;
-	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
+        if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
+        s->expr->ainfo->rval->is_lvalue = 1;
+        if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
       }
       Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
       c->ast = s->ainfo;
@@ -1396,7 +1396,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Vec<Stmt *> stmts;
       getLinkElements(stmts, s->body);
       forv_Stmt(ss, stmts)
-	if1_gen(if1, &s->ainfo->code, ss->ainfo->code);
+        if1_gen(if1, &s->ainfo->code, ss->ainfo->code);
       break;
     }
     case STMT_WHILELOOP: gen_while(ast); break;
@@ -1449,13 +1449,13 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Variable *s = dynamic_cast<Variable*>(ast);
       Sym *sym = s->var->asymbol->sym;
       switch (sym->asymbol->symbol->astType) {
-	default: break;
-	case SYMBOL_TYPE: 
-	  if (parent && parent->astType == EXPR_MEMBERACCESS)
-	    sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym->meta_type;
-	  else
-	    sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym;
-	  break;
+        default: break;
+        case SYMBOL_TYPE: 
+          if (parent && parent->astType == EXPR_MEMBERACCESS)
+            sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym->meta_type;
+          else
+            sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym;
+          break;
       }
       s->ainfo->sym = sym;
       s->ainfo->rval = sym;
@@ -1469,15 +1469,15 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       if1_gen(if1, &s->ainfo->code, s->operand->ainfo->code);
       Sym *op = 0;
       switch (s->type) {
-	default: assert(!"case");
-	case UNOP_PLUS: op = if1_make_symbol(if1, "+"); break;
-	case UNOP_MINUS: op = if1_make_symbol(if1, "-"); break;
-	case UNOP_LOGNOT: op = if1_make_symbol(if1, "!"); break;
-	case UNOP_BITNOT: op = if1_make_symbol(if1, "~"); break;
+        default: assert(!"case");
+        case UNOP_PLUS: op = if1_make_symbol(if1, "+"); break;
+        case UNOP_MINUS: op = if1_make_symbol(if1, "-"); break;
+        case UNOP_LOGNOT: op = if1_make_symbol(if1, "!"); break;
+        case UNOP_BITNOT: op = if1_make_symbol(if1, "~"); break;
       }
       
       Code *c = if1_send(if1, &s->ainfo->code, 3, 1, sym_operator, op, 
-			 s->operand->ainfo->rval, s->ainfo->rval);
+                         s->operand->ainfo->rval, s->ainfo->rval);
       c->ast = s->ainfo;
       break;
     }
@@ -1490,29 +1490,29 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
       Sym *op = 0;
       switch (s->type) {
-	default: assert(!"case");
-	case BINOP_PLUS: op = if1_make_symbol(if1, "+"); break;
-	case BINOP_MINUS: op = if1_make_symbol(if1, "-"); break;
-	case BINOP_MULT: op = if1_make_symbol(if1, "*"); break;
-	case BINOP_DIV: op = if1_make_symbol(if1, "/"); break;
-	case BINOP_MOD: op = if1_make_symbol(if1, "mod"); break;
-	case BINOP_EQUAL: op = if1_make_symbol(if1, "=="); break;
-	case BINOP_LEQUAL: op = if1_make_symbol(if1, "<="); break;
-	case BINOP_GEQUAL: op = if1_make_symbol(if1, ">="); break;
-	case BINOP_GTHAN: op = if1_make_symbol(if1, ">"); break;
-	case BINOP_LTHAN: op = if1_make_symbol(if1, "<"); break;
-	case BINOP_NEQUAL: op = if1_make_symbol(if1, "!="); break;
-	case BINOP_BITAND: op = if1_make_symbol(if1, "&"); break;
-	case BINOP_BITOR: op = if1_make_symbol(if1, "|"); break;
-	case BINOP_BITXOR: op = if1_make_symbol(if1, "^"); break;
-	case BINOP_LOGAND: op = if1_make_symbol(if1, "and"); break;
-	case BINOP_LOGOR: op = if1_make_symbol(if1, "or"); break;
-	case BINOP_EXP: op = if1_make_symbol(if1, "**"); break;
-	case BINOP_BY: op = if1_make_symbol(if1, "by"); break;
+        default: assert(!"case");
+        case BINOP_PLUS: op = if1_make_symbol(if1, "+"); break;
+        case BINOP_MINUS: op = if1_make_symbol(if1, "-"); break;
+        case BINOP_MULT: op = if1_make_symbol(if1, "*"); break;
+        case BINOP_DIV: op = if1_make_symbol(if1, "/"); break;
+        case BINOP_MOD: op = if1_make_symbol(if1, "mod"); break;
+        case BINOP_EQUAL: op = if1_make_symbol(if1, "=="); break;
+        case BINOP_LEQUAL: op = if1_make_symbol(if1, "<="); break;
+        case BINOP_GEQUAL: op = if1_make_symbol(if1, ">="); break;
+        case BINOP_GTHAN: op = if1_make_symbol(if1, ">"); break;
+        case BINOP_LTHAN: op = if1_make_symbol(if1, "<"); break;
+        case BINOP_NEQUAL: op = if1_make_symbol(if1, "!="); break;
+        case BINOP_BITAND: op = if1_make_symbol(if1, "&"); break;
+        case BINOP_BITOR: op = if1_make_symbol(if1, "|"); break;
+        case BINOP_BITXOR: op = if1_make_symbol(if1, "^"); break;
+        case BINOP_LOGAND: op = if1_make_symbol(if1, "and"); break;
+        case BINOP_LOGOR: op = if1_make_symbol(if1, "or"); break;
+        case BINOP_EXP: op = if1_make_symbol(if1, "**"); break;
+        case BINOP_BY: op = if1_make_symbol(if1, "by"); break;
       }
       Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
-			 s->left->ainfo->rval, s->right->ainfo->rval,
-			 s->ainfo->rval);
+                         s->left->ainfo->rval, s->right->ainfo->rval,
+                         s->ainfo->rval);
       c->ast = s->ainfo;
       break;
     }
@@ -1525,8 +1525,8 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Sym *op = if1_make_symbol(if1, ".");
       Sym *selector = if1_make_symbol(if1, s->member->asymbol->sym->name);
       Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
-			 s->base->ainfo->rval, op, selector,
-			 s->ainfo->rval);
+                         s->base->ainfo->rval, op, selector,
+                         s->ainfo->rval);
       c->ast = s->ainfo;
       c->partial = Partial_NEVER; // assume this is a member
       s->ainfo->send = c;
@@ -1536,9 +1536,9 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
     case EXPR_ASSIGNOP: {
       AssignOp *s = dynamic_cast<AssignOp*>(ast);
       if (s->left->astType == EXPR_TUPLE) {
-	if (gen_destruct(dynamic_cast<Tuple*>(s->left), s->right, s) < 0)
-	  return -1;
-	break;
+        if (gen_destruct(dynamic_cast<Tuple*>(s->left), s->right, s) < 0)
+          return -1;
+        break;
       }
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
@@ -1548,29 +1548,29 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Sym *op = 0;
       Sym *rval = s->right->ainfo->rval;
       switch (s->type) {
-	default: assert(!"case");
-	case GETS_NORM: op = 0; break;
-	case GETS_PLUS: op = if1_make_symbol(if1, "+"); break;
-	case GETS_MINUS: op = if1_make_symbol(if1, "-"); break;
-	case GETS_MULT: op = if1_make_symbol(if1, "*"); break;
-	case GETS_DIV: op = if1_make_symbol(if1, "/"); break;
-	case GETS_BITAND: op = if1_make_symbol(if1, "&"); break;
-	case GETS_BITOR: op = if1_make_symbol(if1, "|"); break;
-	case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
+        default: assert(!"case");
+        case GETS_NORM: op = 0; break;
+        case GETS_PLUS: op = if1_make_symbol(if1, "+"); break;
+        case GETS_MINUS: op = if1_make_symbol(if1, "-"); break;
+        case GETS_MULT: op = if1_make_symbol(if1, "*"); break;
+        case GETS_DIV: op = if1_make_symbol(if1, "/"); break;
+        case GETS_BITAND: op = if1_make_symbol(if1, "&"); break;
+        case GETS_BITOR: op = if1_make_symbol(if1, "|"); break;
+        case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
       }
       if (op) {
-	rval = new_sym();
-	rval->ast = s->ainfo;
-	Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
-			   s->left->ainfo->rval, s->right->ainfo->rval,
-			   rval);
-	c->ast = s->ainfo;
+        rval = new_sym();
+        rval->ast = s->ainfo;
+        Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
+                           s->left->ainfo->rval, s->right->ainfo->rval,
+                           rval);
+        c->ast = s->ainfo;
       }
       if (!s->left->ainfo->sym)
-	show_error("assignment to non-lvalue", s->ainfo);
+        show_error("assignment to non-lvalue", s->ainfo);
       if (s->left->ainfo->sym->is_var)
-	if (s->left->ainfo->sym->type) 
-	  rval = gen_coerce(rval, s->left->ainfo->sym->type, &s->ainfo->code, s->ainfo);
+        if (s->left->ainfo->sym->type) 
+          rval = gen_coerce(rval, s->left->ainfo->sym->type, &s->ainfo->code, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
       if1_move(if1, &s->ainfo->code, s->ainfo->rval, s->left->ainfo->sym, s->ainfo);
       break;
@@ -1587,8 +1587,8 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       if1_gen(if1, &s->ainfo->code, s->hi->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->str->ainfo->code);
       Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_simple_seq_symbol, 
-			    s->lo->ainfo->rval, s->hi->ainfo->rval, s->str->ainfo->rval, 
-			    s->ainfo->rval);
+                            s->lo->ainfo->rval, s->hi->ainfo->rval, s->str->ainfo->rval, 
+                            s->ainfo->rval);
       send->ast = s->ainfo;
       break;
     }
@@ -1606,13 +1606,13 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       LetExpr *s = dynamic_cast<LetExpr *>(ast);
       DefExpr* def_expr = dynamic_cast<DefExpr*>(s->symDefs);
       while (def_expr) {
-	VarSymbol *vs = dynamic_cast<VarSymbol*>(def_expr->sym);
-	while (vs) {
-	  if1_gen(if1, &s->ainfo->code, vs->init->ainfo->code);
-	  if1_move(if1, &s->ainfo->code, vs->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
-	  vs = dynamic_cast<VarSymbol*>(vs->next);
-	}
-	def_expr = nextLink(DefExpr, def_expr);
+        VarSymbol *vs = dynamic_cast<VarSymbol*>(def_expr->sym);
+        while (vs) {
+          if1_gen(if1, &s->ainfo->code, vs->init->ainfo->code);
+          if1_move(if1, &s->ainfo->code, vs->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
+          vs = dynamic_cast<VarSymbol*>(vs->next);
+        }
+        def_expr = nextLink(DefExpr, def_expr);
       }
       if1_gen(if1, &s->ainfo->code, s->innerExpr->ainfo->code);
       s->ainfo->rval = s->innerExpr->ainfo->rval;
@@ -1629,19 +1629,19 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Symbol* indices_syms = def_expr ? def_expr->sym : 0;
       getLinkElements(indices, indices_syms);
       if (s->forallExpr) { // forall expression
-	Code *body = 0;
-	forv_Vec(Expr, d, domains)
-	  if1_gen(if1, &body, d->ainfo->code);
-	if (gen_forall_internal(s->ainfo, body, indices, domains) < 0)
-	  return -1;
+        Code *body = 0;
+        forv_Vec(Expr, d, domains)
+          if1_gen(if1, &body, d->ainfo->code);
+        if (gen_forall_internal(s->ainfo, body, indices, domains) < 0)
+          return -1;
       } else {
-	forv_Vec(Expr, d, domains)
-	  if1_gen(if1, &s->ainfo->code, d->ainfo->code);
-	Code *send = if1_send(if1, &s->ainfo->code, 2, 1, sym_primitive, expr_create_domain_symbol, 
-			      s->ainfo->rval);
-	forv_Vec(Expr, d, domains)
-	  if1_add_send_arg(if1, send, d->ainfo->rval);
-	send->ast = s->ainfo;
+        forv_Vec(Expr, d, domains)
+          if1_gen(if1, &s->ainfo->code, d->ainfo->code);
+        Code *send = if1_send(if1, &s->ainfo->code, 2, 1, sym_primitive, expr_create_domain_symbol, 
+                              s->ainfo->rval);
+        forv_Vec(Expr, d, domains)
+          if1_add_send_arg(if1, send, d->ainfo->rval);
+        send->ast = s->ainfo;
       }
       break;
     }
@@ -1653,25 +1653,25 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
       if (args.n == 1 && !args.v[0])
-	args.n--;
+        args.n--;
       forv_Vec(Expr, a, args)
-	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+        if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if1_add_send_arg(if1, send, sym_primitive);
       switch (s->ioType) {
-	case IO_WRITELN:
-	  if1_add_send_arg(if1, send, writeln_symbol);
-	  break;
-	case IO_WRITE:
-	  if1_add_send_arg(if1, send, write_symbol);
-	  break;
-	case IO_READ:
-	  if1_add_send_arg(if1, send, read_symbol); 
-	  break;
+        case IO_WRITELN:
+          if1_add_send_arg(if1, send, writeln_symbol);
+          break;
+        case IO_WRITE:
+          if1_add_send_arg(if1, send, write_symbol);
+          break;
+        case IO_READ:
+          if1_add_send_arg(if1, send, read_symbol); 
+          break;
       }
       forv_Vec(Expr, a, args)
-	if1_add_send_arg(if1, send, a->ainfo->rval);
+        if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
       break;
     }
@@ -1681,13 +1681,13 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
     case EXPR_PARENOP: {
       ParenOpExpr *s = dynamic_cast<ParenOpExpr *>(ast);
       if (s->baseExpr->astType == EXPR_MEMBERACCESS) {
-	if (!s->argList) {
-	  s->ainfo->rval = s->baseExpr->ainfo->rval;
-	  s->ainfo->code = s->baseExpr->ainfo->code;
-	  s->baseExpr->ainfo->send->partial = Partial_NEVER;
-	  break;
-	} else
-	  s->baseExpr->ainfo->send->partial = Partial_ALWAYS;
+        if (!s->argList) {
+          s->ainfo->rval = s->baseExpr->ainfo->rval;
+          s->ainfo->code = s->baseExpr->ainfo->code;
+          s->baseExpr->ainfo->send->partial = Partial_NEVER;
+          break;
+        } else
+          s->baseExpr->ainfo->send->partial = Partial_ALWAYS;
       }
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
@@ -1695,42 +1695,42 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
       if (args.n == 1 && !args.v[0])
-	args.n--;
+        args.n--;
       Vec<Sym *> rvals;
       forv_Vec(Expr, a, args) {
-	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
-	rvals.add(a->ainfo->rval);
+        if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+        rvals.add(a->ainfo->rval);
       }
       astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
       Sym *base = NULL;
       char *n = s->baseExpr->ainfo->rval->name;
       if (n && !strcmp(n, "__primitive")) {
-	if (args.n > 0 && dynamic_cast<StringLiteral*>(args.v[0]) &&
-	    if1->primitives->prim_map[0][0].get(
-	      if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[0])->str))) 
-	{
-	  rvals.v[0] = if1_get_builtin(if1, dynamic_cast<StringLiteral*>(args.v[0])->str);
-	  base = 0;
-	} else if (args.n == 3 && dynamic_cast<StringLiteral*>(args.v[1]) &&
-		 if1->primitives->prim_map[1][1].get(
-		   if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[1])->str))) {
-	  rvals.v[1] = if1_make_symbol(if1, rvals.v[1]->constant);
-	  base = sym_operator;
-	} else
-	  base = sym_primitive;
+        if (args.n > 0 && dynamic_cast<StringLiteral*>(args.v[0]) &&
+            if1->primitives->prim_map[0][0].get(
+              if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[0])->str))) 
+        {
+          rvals.v[0] = if1_get_builtin(if1, dynamic_cast<StringLiteral*>(args.v[0])->str);
+          base = 0;
+        } else if (args.n == 3 && dynamic_cast<StringLiteral*>(args.v[1]) &&
+                 if1->primitives->prim_map[1][1].get(
+                   if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[1])->str))) {
+          rvals.v[1] = if1_make_symbol(if1, rvals.v[1]->constant);
+          base = sym_operator;
+        } else
+          base = sym_primitive;
       } else if (base_symbol == SYMBOL_UNRESOLVED) {
-	assert(n);
-	base = if1_make_symbol(if1, n);
+        assert(n);
+        base = if1_make_symbol(if1, n);
       } else if (base_symbol == SYMBOL_FN)
-	base = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(s->baseExpr)->var)->asymbol->sym;
+        base = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(s->baseExpr)->var)->asymbol->sym;
       else
-	base = s->baseExpr->ainfo->rval;
+        base = s->baseExpr->ainfo->rval;
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if (base)
-	if1_add_send_arg(if1, send, base);
+        if1_add_send_arg(if1, send, base);
       forv_Sym(r, rvals)
-	if1_add_send_arg(if1, send, r);
+        if1_add_send_arg(if1, send, r);
       if1_add_send_result(if1, send, s->ainfo->rval);
       send->partial = Partial_NEVER;
       s->ainfo->rval->is_lvalue = 1;
@@ -1743,7 +1743,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
       Code *send = if1_send(if1, &s->ainfo->code, 4, 1, sym_primitive, cast_symbol, 
-			    s->newType->asymbol->sym->meta_type, s->expr->ainfo->rval, s->ainfo->rval);
+                            s->newType->asymbol->sym->meta_type, s->expr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
       break;
     }
@@ -1754,8 +1754,8 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       if1_gen(if1, &s->ainfo->code, s->redDim->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->argExpr->ainfo->code);
       Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_reduce_symbol, 
-			    s->reduceType->asymbol->sym, s->redDim->ainfo->rval, 
-			    s->argExpr->ainfo->rval, s->ainfo->rval);
+                            s->reduceType->asymbol->sym, s->redDim->ainfo->rval, 
+                            s->argExpr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
       break;
     }
@@ -1766,12 +1766,12 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Vec<Expr *> args;
       getLinkElements(args, s->exprs);
       forv_Vec(Expr, a, args)
-	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+        if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if1_add_send_arg(if1, send, sym_make_tuple);
       forv_Vec(Expr, a, args)
-	if1_add_send_arg(if1, send, a->ainfo->rval);
+        if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
       break;
     }
@@ -1780,7 +1780,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Code *send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, sizeof_symbol, 
-			    s->type->asymbol->sym->meta_type, s->ainfo->rval);
+                            s->type->asymbol->sym->meta_type, s->ainfo->rval);
       send->ast = s->ainfo;
       break;
     }
@@ -1945,13 +1945,13 @@ ACallbacks::finalize_functions() {
     if (fs->classBinding && fs->classBinding->type) {
       if (
 #ifdef FORCE_RECORD_METHODS_GLOBAL
-	1 || 
+        1 || 
 #endif
-	  is_reference_type(fs->classBinding->asymbol->symbol)) {
-	if (fs->method_type != NON_METHOD) {
-	  add_to_universal_lookup_cache(name, fun);
-	  added = 1;
-	}
+          is_reference_type(fs->classBinding->asymbol->symbol)) {
+        if (fs->method_type != NON_METHOD) {
+          add_to_universal_lookup_cache(name, fun);
+          added = 1;
+        }
       }
     }
     MPosition p;
@@ -1961,18 +1961,18 @@ ACallbacks::finalize_functions() {
       // non-scoped lookup if any parameteter is specialized on a reference type
       // (is dispatched)
       if (!added && s->must_specialize && 
-	  is_reference_type(s->must_specialize->asymbol->symbol)) 
+          is_reference_type(s->must_specialize->asymbol->symbol)) 
       {
-	add_to_universal_lookup_cache(name, fun);
-	added = 1;
+        add_to_universal_lookup_cache(name, fun);
+        added = 1;
       }
       // record default argument positions
       if (s->asymbol->symbol) {
-	ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
-	if (symbol && symbol->init) {
-	  assert(symbol->init->ainfo);
-	  fun->default_args.put(cannonicalize_mposition(p), symbol->init->ainfo);
-	}
+        ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
+        if (symbol && symbol->init) {
+          assert(symbol->init->ainfo);
+          fun->default_args.put(cannonicalize_mposition(p), symbol->init->ainfo);
+        }
       }
       p.inc();
     }
@@ -1983,7 +1983,7 @@ ACallbacks::finalize_functions() {
     Pragma *pr = f->defPoint->pragmas;
     while (pr) {
       if (!strcmp(pr->str, "clone_for_manifest_constants"))
-	fun->clone_for_manifest_constants = 1;
+        fun->clone_for_manifest_constants = 1;
       pr = dynamic_cast<Pragma *>(pr->next);
     }
 #endif
@@ -2065,11 +2065,11 @@ debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
     forv_BaseAST(s, syms) {
       DefStmt* def_stmt = dynamic_cast<DefStmt*>(s);
       if (def_stmt && def_stmt->fnDef()) {
-	print_ast(def_stmt->fnDef()->body);
-      }	else {
-	Type *t = dynamic_cast<Type*>(s); 
-	if (t) 
-	  printf("Type: %s cname %s\n", t->symbol->name, t->symbol->cname); 
+        print_ast(def_stmt->fnDef()->body);
+      } else {
+        Type *t = dynamic_cast<Type*>(s); 
+        if (t) 
+          printf("Type: %s cname %s\n", t->symbol->name, t->symbol->cname); 
       }
     }
   }
@@ -2258,16 +2258,16 @@ ast_sym_info(BaseAST *a, Symbol *s, AST **ast, Sym **sym) {
     else {
       Stmt *stmt = dynamic_cast<Stmt *>(a);
       if (stmt)
-	*ast = stmt->ainfo;
+        *ast = stmt->ainfo;
       else {
-	Symbol *symbol = dynamic_cast<Symbol *>(a);
-	if (symbol) {
-	  if (symbol->asymbol)
-	    *sym = symbol->asymbol->sym;
-	} else {
-	  Type *t = dynamic_cast<Type *>(a);
-	  *sym = t->asymbol->sym;
-	}
+        Symbol *symbol = dynamic_cast<Symbol *>(a);
+        if (symbol) {
+          if (symbol->asymbol)
+            *sym = symbol->asymbol->sym;
+        } else {
+          Type *t = dynamic_cast<Type *>(a);
+          *sym = t->asymbol->sym;
+        }
       }
     }
   }
@@ -2401,41 +2401,41 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
     Sym *iv = 0;
     forv_Sym(s, obj_type->has) {
       if (s->name == sel) {
-	if (!iv)
-	  iv = s;
-	else if (iv != s)
-	  return -3;
+        if (!iv)
+          iv = s;
+        else if (iv != s)
+          return -3;
       }
     }
     if (iv) {
       BaseAST *sym = iv->asymbol->symbol;
       if (!sym)
-	return -5;
+        return -5;
       s = dynamic_cast<Symbol*>(sym);
       if (!s)
-	return -6;
+        return -6;
       return 0;
     }
     if (ma->parent && ma->parent->astType == EXPR_PARENOP) {
       ParenOpExpr *p = dynamic_cast<ParenOpExpr*>(ma->parent);
       if (p->baseExpr == ma) {
-	if (p->ainfo->pnodes.n != 1)
-	  return -7;
-	pn = p->ainfo->pnodes.v[0];
-	if (pn->code->kind != Code_SEND)
-	  return -8;
-	fns = ma->stmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
-	if (!fns)
-	  return -9;
-	if (fns->n > 1)
-	  return -10;
-	BaseAST *sym = fns->v[0]->sym->asymbol->symbol;
-	if (!sym)
-	  return -11;
-	s = dynamic_cast<Symbol*>(sym);
-	if (!s)
-	  return -12;
-	return 0;
+        if (p->ainfo->pnodes.n != 1)
+          return -7;
+        pn = p->ainfo->pnodes.v[0];
+        if (pn->code->kind != Code_SEND)
+          return -8;
+        fns = ma->stmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
+        if (!fns)
+          return -9;
+        if (fns->n > 1)
+          return -10;
+        BaseAST *sym = fns->v[0]->sym->asymbol->symbol;
+        if (!sym)
+          return -11;
+        s = dynamic_cast<Symbol*>(sym);
+        if (!s)
+          return -12;
+        return 0;
       }
     }
   } 
@@ -2458,9 +2458,9 @@ type_is_used(TypeSymbol *t) {
   if (if1->callback) {
     if (t->asymbol) {
       if (t->asymbol->sym->meta_type) {
-	return t->asymbol->sym->meta_type->creators.n != 0;
+        return t->asymbol->sym->meta_type->creators.n != 0;
       } else
-	return true; // SJD: ??
+        return true; // SJD: ??
     } else
       return false;
   } else
@@ -2495,9 +2495,9 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
     forv_CreationSet(cs, s->creators) {
       AVar *iv = cs->var_map.get(name);
       if (iv) {
-	if (oresult >= 0 && oresult != iv->ivar_offset)
-	  fail("missmatched offsets");
-	oresult = iv->ivar_offset;
+        if (oresult >= 0 && oresult != iv->ivar_offset)
+          fail("missmatched offsets");
+        oresult = iv->ivar_offset;
       }
     }
   }

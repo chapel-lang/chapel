@@ -17,9 +17,9 @@ char* glomstrings(int numstrings, ...) {
   if (numstrings > maxControlStrings) {
     maxControlStrings = numstrings;
     control = (char*)_chpl_realloc(control, (numstrings*2 + 1), sizeof(char),
-				   "control string buffer in glomstrings");
+                                   "control string buffer in glomstrings");
     stringlist = (char**)_chpl_realloc(stringlist, numstrings, sizeof(char*),
-				       "stringlist buffer in glomstrings");
+                                       "stringlist buffer in glomstrings");
   }
 
   for (i=0; i<numstrings; i++) {
@@ -41,7 +41,7 @@ char* glomstrings(int numstrings, ...) {
   }
 
   char* newstring = (char*)_chpl_malloc((totlen + 1), sizeof(char), 
-					"glomstrings result");
+                                        "glomstrings result");
   newstring[0] = '\0';
   for (i=0; i<numstrings; i++) {
     strcat(newstring, stringlist[i]);

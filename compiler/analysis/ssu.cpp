@@ -44,11 +44,11 @@ print_classes_edges(Vec<CQClass *> &v) {
     printf("Edge Class\n");
     forv_UEdge(e, c->edges) {
       if (e->from->code) 
-	if1_dump_code(stdout, e->from->code, 2);
+        if1_dump_code(stdout, e->from->code, 2);
       else printf("FAKE\n");
       printf("->"); 
       if (e->to->code) 
-	if1_dump_code(stdout, e->to->code, 0);
+        if1_dump_code(stdout, e->to->code, 0);
       else printf("FAKE\n");
     }
   }
@@ -158,17 +158,17 @@ cycle_equiv(Vec<UNode *> &nodes) {
       UNode *p = e->other(n);
       assert(p != n);
       if (!hi0 || p->dfs_num < hi0->dfs_num)
-	hi0 = p;
+        hi0 = p;
     }
     forl_UEdge(e, n->dfs_children) {
       UNode *p = e->other(n);
       assert(p != n);
       if (!hi1 || p->hi->dfs_num < hi1->dfs_num) {
-	if (!hi2 || hi1->dfs_num < hi2->dfs_num)
-	  hi2 = hi1;
-	hi1 = p->hi;
+        if (!hi2 || hi1->dfs_num < hi2->dfs_num)
+          hi2 = hi1;
+        hi1 = p->hi;
       } else if (!hi2 || p->hi->dfs_num < hi2->dfs_num)
-	hi2 = p->hi;
+        hi2 = p->hi;
     }
     n->hi = !hi0 ? hi1 : !hi1 ? hi0 : hi0->dfs_num < hi1->dfs_num ? hi0 : hi1;
     forl_UEdge(e, n->dfs_children)
@@ -177,13 +177,13 @@ cycle_equiv(Vec<UNode *> &nodes) {
       n->blist.remove(e);
     forl_UEdge(e, n->backedges)
       if (e->other(n)->dfs_num > n->dfs_num) {
-	n->blist.remove(e);
-	if (!e->cq_class)
-	  e->cq_class = new CQClass();
+        n->blist.remove(e);
+        if (!e->cq_class)
+          e->cq_class = new CQClass();
       }
     forl_UEdge(e, n->backedges)
       if (e->other(n)->dfs_num <= n->dfs_num)
-	n->blist.push(e);
+        n->blist.push(e);
     if (hi2 && (!hi0 || hi0->dfs_num > hi2->dfs_num)) {
       UEdge *c = new UEdge(n->pn, hi2->pn);
       hi2->capping.push(c);
@@ -192,12 +192,12 @@ cycle_equiv(Vec<UNode *> &nodes) {
     if (n->dfs_parent) {
       UEdge *t = n->blist.head;
       if (t->recent_size != n->blist.size) {
-	t->recent_size = n->blist.size;
-	t->recent_class = new CQClass();
+        t->recent_size = n->blist.size;
+        t->recent_class = new CQClass();
       }
       n->dfs_parent->cq_class = t->recent_class;
       if (t->recent_size == 1)
-	t->cq_class = n->dfs_parent->cq_class;
+        t->cq_class = n->dfs_parent->cq_class;
     }
   }
 }
@@ -225,7 +225,7 @@ build_cycle_equiv(Fun *f, UEdge *ee, Vec<CQClass*> &cq_classes) {
   Vec<UNode *> nodes;
   int mark = 0;
   undirected_dfs(f->entry, 0, nodes, mark);
-  nodes.reverse();	// reverse DFS order
+  nodes.reverse();      // reverse DFS order
   cycle_equiv(nodes);
   for (int i = 0; i < f->entry->cfg_succ.n; i++)
     order_cq(f->entry->unode[1].edges.v[i], cq_classes);
@@ -245,18 +245,18 @@ nest_regions(PNode *n, Region *r) {
       UEdge *e = n->unode[1].edges.v[i];
       Region *r1 = e->entry, *r2 = e->exit, *rn = r;
       if (r == r1 || r == r2)
-	rn = r->parent;
+        rn = r->parent;
       if (r1 && r1 != r && r1 != rn) {
-	r1->parent = rn;
-	r1->depth = rn->depth + 1;
-	rn->children.add(r1);
-	rn = r1;
+        r1->parent = rn;
+        r1->depth = rn->depth + 1;
+        rn->children.add(r1);
+        rn = r1;
       }
       if (r2 && r2 != r && r2 != rn) {
-	r2->parent = rn;
-	r2->depth = rn->depth + 1;
-	rn->children.add(r2);
-	rn = r2;
+        r2->parent = rn;
+        r2->depth = rn->depth + 1;
+        rn->children.add(r2);
+        rn = r2;
       }
       nest_regions(e->to, rn);
     }
@@ -316,7 +316,7 @@ merge_live(PNode *n, PNode *p) {
   for (Var **v = s; v < e; v++)
     if (*v)
       if (!n->lvals_set.set_in(*v))
-	changed = !n->live_vars->put(*v);
+        changed = !n->live_vars->put(*v);
   return changed;
 }
 
@@ -327,16 +327,16 @@ approximate_liveness(Fun *f, Vec<PNode *> &nodes) {
     n->live_vars = new BlockHash<Var *, PointerHashFns>;
     forv_Var(v, n->lvals)
       if (Var_is_local(v, f))
-	n->lvals_set.set_add(v);
+        n->lvals_set.set_add(v);
   }
   while (changed) {
     changed = 0;
     forv_PNode(n, nodes) {
       forv_PNode(p, n->cfg_succ)
-	changed = merge_live(n, p) || changed;
+        changed = merge_live(n, p) || changed;
       forv_Var(v, n->rvals)
-	if (Var_is_local(v, f))
-	  changed = !n->live_vars->put(v) || changed;
+        if (Var_is_local(v, f))
+          changed = !n->live_vars->put(v) || changed;
     }
   }
 }
@@ -361,18 +361,18 @@ place_one(Region *r, Var *v, int phy) {
     placed = place_one(rr, v, phy) || placed;
     forv_PNode(n, rr->nodes) {
       if (!phy && n->lvals.in(v))
-	placed = true;
+        placed = true;
       if (phy && n->rvals.in(v))
-	placed = true;
+        placed = true;
     }
   }
   if (placed) {
     forv_PNode(n, r->nodes) {
       if (maybe_live(n, v)) {
-	if (!phy && n->cfg_pred.n > 1)
-	  n->phi.add(new_phiphi(n, v, phy));
-	if (phy && n->cfg_succ.n > 1)
-	  n->phy.add(new_phiphi(n, v, phy));
+        if (!phy && n->cfg_pred.n > 1)
+          n->phi.add(new_phiphi(n, v, phy));
+        if (phy && n->cfg_succ.n > 1)
+          n->phy.add(new_phiphi(n, v, phy));
       }
     }
   }
@@ -463,7 +463,7 @@ mark_used(PNode *n, List<PNode *> &worklist) {
     if (!v->mark) {
       v->mark = 1;
       if (v->def)
-	worklist.push(v->def);
+        worklist.push(v->def);
     }
 }
 
@@ -516,14 +516,14 @@ eliminate_unused_code(Fun *f, Vec<PNode *> &base_nodes) {
     if (n->phi.n) {
       vv.move(n->phi);
       forv_PNode(p, vv)
-	if (p->used) 
-	  n->phi.add(p);
+        if (p->used) 
+          n->phi.add(p);
     }
     if (n->phy.n) {
       vv.move(n->phy);
       forv_PNode(p, vv)
-	if (p->used) 
-	  n->phy.add(p);
+        if (p->used) 
+          n->phy.add(p);
     }
   }
 }

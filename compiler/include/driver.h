@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 
-#define DEFAULT_SYSTEM_DIR	"."
+#define DEFAULT_SYSTEM_DIR      "."
 
 extern int fdce_if1;
 extern int finline;

@@ -30,14 +30,14 @@ static Stmt* addIOStmt(Stmt* ioStmtList, char* str) {
 
 
 static CondStmt* createUnionFieldIO(CondStmt* prevStmt, VarSymbol* field, 
-				    ClassType* classType, 
-				    ParamSymbol* thisArg) {
+                                    ClassType* classType, 
+                                    ParamSymbol* thisArg) {
   char* fieldName = "__uninitialized";
   if (field) {
     fieldName = field->name;
   }
   char* id_tag = glomstrings(4, "_", classType->symbol->name, "_union_id_",
-			     fieldName);
+                             fieldName);
   Expr* argExpr = new Variable(thisArg);
   argExpr->append(new Variable(Symboltable::lookup(id_tag, true)));
   Symbol* fnSym = Symboltable::lookupInternal("_UNION_CHECK_QUIET");
@@ -59,7 +59,7 @@ static CondStmt* createUnionFieldIO(CondStmt* prevStmt, VarSymbol* field,
 
 
 static Stmt* createUnionBody(Stmt* bodyStmts, ClassType* classType, 
-			     ParamSymbol* thisArg) {
+                             ParamSymbol* thisArg) {
   CondStmt* topStmt = createUnionFieldIO(NULL, NULL, classType, thisArg);
   CondStmt* fieldIOStmt = topStmt;
   forv_Vec(VarSymbol, field, classType->fields) {
@@ -71,7 +71,7 @@ static Stmt* createUnionBody(Stmt* bodyStmts, ClassType* classType,
 
 
 static Stmt* createClassRecordBody(Stmt* bodyStmts, ClassType* classType,
-				   ParamSymbol* thisArg) {
+                                   ParamSymbol* thisArg) {
   bool firstField = true;
 
   forv_Vec(VarSymbol, field, classType->fields) {
@@ -91,12 +91,12 @@ static void createWriteFn(ClassType* classType) {
   SymScope* prevScope = Symboltable::setCurrentScope(classType->classScope);
   
   FnSymbol* writeFn = Symboltable::startFnDef(new FnSymbol("write", 
-							   classType->symbol),
-					      false);
+                                                           classType->symbol),
+                                              false);
   writeFn->cname = glomstrings(3, "_", classType->symbol->name, "_write");
   ParamSymbol* thisArg = Symboltable::defineParams(PARAM_REF, 
-						   new Symbol(SYMBOL, "_this"),
-						   classType, NULL);
+                                                   new Symbol(SYMBOL, "_this"),
+                                                   classType, NULL);
   
   bool useParens = (classType->value || classType->union_value);
   Stmt* bodyStmts = NULL;
@@ -139,10 +139,10 @@ void InsertWriteFns::processSymbol(Symbol* sym) {
     if (classType != NULL) {
       //      fprintf(stderr, "Found a class function: %s\n", typeSym->name);
       forv_Symbol(method, classType->methods) {
-	if (strcmp(method->name, "write") == 0) {
-	  //	  fprintf(stderr, "  ***has a write function!!!\n");
-	  return;
-	}
+        if (strcmp(method->name, "write") == 0) {
+          //      fprintf(stderr, "  ***has a write function!!!\n");
+          return;
+        }
       }
 
       createWriteFn(classType);

@@ -13,7 +13,7 @@
 #define VNULL (vertex.v[0])
 
 Dom::Dom(void *n) : node(n), semi(-1), size(1), label(0), parent(0), child(0),
-		    ancestor(0), idom(0)
+                    ancestor(0), idom(0)
 {
 }
 

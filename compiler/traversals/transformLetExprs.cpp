@@ -51,8 +51,8 @@ void TransformLetExprs::doTransformation(void) {
     while (def_expr) {
       Symbol* tmp = def_expr->sym;
       while (tmp) {
-	tmp->cname = glomstrings(3, tmp->cname, "_let_", intstring(uid++));
-	tmp = nextLink(Symbol, tmp);
+        tmp->cname = glomstrings(3, tmp->cname, "_let_", intstring(uid++));
+        tmp = nextLink(Symbol, tmp);
       }
       def_expr = nextLink(DefExpr, def_expr);
     }

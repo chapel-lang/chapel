@@ -20,49 +20,49 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 
   if (MemberAccess* dot = dynamic_cast<MemberAccess*>(expr)) {
     if (UnresolvedSymbol* UnresolvedMember =
-	dynamic_cast<UnresolvedSymbol*>(dot->member)) {
+        dynamic_cast<UnresolvedSymbol*>(dot->member)) {
       if (analyzeAST) {
-	if (ClassType* class_type = dynamic_cast<ClassType*>(dot->base->typeInfo())) {
-	  dot->member = 
-	    Symboltable::lookupInScope(UnresolvedMember->name,
-				       class_type->classScope);
-	}
+        if (ClassType* class_type = dynamic_cast<ClassType*>(dot->base->typeInfo())) {
+          dot->member = 
+            Symboltable::lookupInScope(UnresolvedMember->name,
+                                       class_type->classScope);
+        }
       } else {
-	Expr* base = dot->base;
-	while (ArrayRef* array_ref = dynamic_cast<ArrayRef*>(base)) {
-	  base = array_ref->baseExpr;
-	}
-	if (Variable* var = dynamic_cast<Variable*>(base)) {
-	  Type* type = var->var->type;
-	  while (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
-	    type = array_type->elementType;
-	  }
-	  if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
-	    Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
-						     class_type->classScope);
-	    if (sym) {
-	      dot->member = sym;
-	    } else {
-	      INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
-	    }
-	  } else {
-	    INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
-	  }
-	} else if (MemberAccess* outer = dynamic_cast<MemberAccess*>(base)) {
-	  if (ClassType* class_type = dynamic_cast<ClassType*>(outer->member->type)) {
-	    Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
-						     class_type->classScope);
-	    if (sym) {
-	      dot->member = sym;
-	    } else {
-	      INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
-	    }
-	  } else {
-	    INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
-	  }
-	} else {
-	  INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
-	}
+        Expr* base = dot->base;
+        while (ArrayRef* array_ref = dynamic_cast<ArrayRef*>(base)) {
+          base = array_ref->baseExpr;
+        }
+        if (Variable* var = dynamic_cast<Variable*>(base)) {
+          Type* type = var->var->type;
+          while (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
+            type = array_type->elementType;
+          }
+          if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
+            Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
+                                                     class_type->classScope);
+            if (sym) {
+              dot->member = sym;
+            } else {
+              INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+            }
+          } else {
+            INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+          }
+        } else if (MemberAccess* outer = dynamic_cast<MemberAccess*>(base)) {
+          if (ClassType* class_type = dynamic_cast<ClassType*>(outer->member->type)) {
+            Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
+                                                     class_type->classScope);
+            if (sym) {
+              dot->member = sym;
+            } else {
+              INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+            }
+          } else {
+            INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+          }
+        } else {
+          INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+        }
       }
     }
   }
@@ -70,100 +70,100 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (typeid(*paren) == typeid(ParenOpExpr)) {
       if (Variable* var = dynamic_cast<Variable*>(paren->baseExpr)) {
-	if (UnresolvedSymbol* call = 
-	    dynamic_cast<UnresolvedSymbol*>(var->var)) {
-	  if (strcmp(call->name, "__primitive")) { /** can't resolve that **/
+        if (UnresolvedSymbol* call = 
+            dynamic_cast<UnresolvedSymbol*>(var->var)) {
+          if (strcmp(call->name, "__primitive")) { /** can't resolve that **/
 
-	    if (analyzeAST) {
-	      Vec<FnSymbol*> fns;
-	      call_info(paren, fns);
-	      if (fns.n != 1) {
-		INT_FATAL(expr, "Trouble resolving function call");
-	      }
-	      FnCall* fn = new FnCall(new Variable(fns.e[0]),
-				      paren->argList->copyList());
-	      expr->replace(fn);
-	    }
-	    else {
-	      if (Symbol* sym = Symboltable::lookup(call->name)) {
-		if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-		  if (!fn->overload) {
-		    FnCall* fn_call = new FnCall(new Variable(fn),
-					    paren->argList->copyList());
-		    expr->replace(fn_call);
-		  }
-		  else {
-		    // Try to resolve overloaded functions
-		    // This is just a stopgap for developing
-		    // It is not accurate, but good enough for some things
-		    FnSymbol* tmp = fn;
-		    FnSymbol* candidate = NULL;
-		    while (tmp) {
-		      Symbol* formals = tmp->formals;
-		      Expr* actuals = paren->argList;
+            if (analyzeAST) {
+              Vec<FnSymbol*> fns;
+              call_info(paren, fns);
+              if (fns.n != 1) {
+                INT_FATAL(expr, "Trouble resolving function call");
+              }
+              FnCall* fn = new FnCall(new Variable(fns.e[0]),
+                                      paren->argList->copyList());
+              expr->replace(fn);
+            }
+            else {
+              if (Symbol* sym = Symboltable::lookup(call->name)) {
+                if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+                  if (!fn->overload) {
+                    FnCall* fn_call = new FnCall(new Variable(fn),
+                                            paren->argList->copyList());
+                    expr->replace(fn_call);
+                  }
+                  else {
+                    // Try to resolve overloaded functions
+                    // This is just a stopgap for developing
+                    // It is not accurate, but good enough for some things
+                    FnSymbol* tmp = fn;
+                    FnSymbol* candidate = NULL;
+                    while (tmp) {
+                      Symbol* formals = tmp->formals;
+                      Expr* actuals = paren->argList;
 
-		      bool match = true;
-		      while (actuals && formals) {
-			if (actuals->typeInfo() != formals->type) {
-			  match = false;
-			  break;
-			}
-			actuals = nextLink(Expr, actuals);
-			formals = nextLink(Symbol, formals);
-		      }
-		      if (actuals || formals) {
-			match = false;
-		      }
-		      if (match) {
-			if (candidate) {
-			  INT_FATAL(expr, 
-				    "Unable to resolve overloaded"
-				    "function without analysis");
-			}
-			candidate = tmp;
-		      }
-		      tmp = tmp->overload;
-		    }
-		    if (!candidate) {
-			  INT_FATAL(expr, 
-				    "Unable to resolve overloaded"
-				    "function without analysis");
-		    } else {
-		      FnCall* fn_call = new FnCall(new Variable(candidate),
-						   paren->argList->copyList());
-		      expr->replace(fn_call);
+                      bool match = true;
+                      while (actuals && formals) {
+                        if (actuals->typeInfo() != formals->type) {
+                          match = false;
+                          break;
+                        }
+                        actuals = nextLink(Expr, actuals);
+                        formals = nextLink(Symbol, formals);
+                      }
+                      if (actuals || formals) {
+                        match = false;
+                      }
+                      if (match) {
+                        if (candidate) {
+                          INT_FATAL(expr, 
+                                    "Unable to resolve overloaded"
+                                    "function without analysis");
+                        }
+                        candidate = tmp;
+                      }
+                      tmp = tmp->overload;
+                    }
+                    if (!candidate) {
+                          INT_FATAL(expr, 
+                                    "Unable to resolve overloaded"
+                                    "function without analysis");
+                    } else {
+                      FnCall* fn_call = new FnCall(new Variable(candidate),
+                                                   paren->argList->copyList());
+                      expr->replace(fn_call);
 
-		    }
-		  }
-		}
-		else {
-		  INT_FATAL(expr,
-			    "Unable to resolve 'strange' function without analysis");
-		}
-	      }
-	      else {
-		INT_FATAL(expr,
-			  "Unable to resolve unknownfunction without analysis");
-	      }
-	    }
-	  }
-	} else {
-	  if (strcmp(var->var->name, "__primitive")) { /** can't resolve that **/
-	    if (analyzeAST) {
-	      Vec<FnSymbol*> fns;
-	      call_info(paren, fns);
-	      if (fns.n != 1) {
-		INT_FATAL(expr, "Trouble resolving function call");
-	      }
-	      if (fns.e[0] != var->var) {
-		INT_WARNING(var, "Analysis function call mismatch, using analysis function");
-		FnCall* fn = new FnCall(new Variable(fns.e[0]),
-					paren->argList->copyList());
-		expr->replace(fn);
-	      }
-	    }
-	  }
-	}
+                    }
+                  }
+                }
+                else {
+                  INT_FATAL(expr,
+                            "Unable to resolve 'strange' function without analysis");
+                }
+              }
+              else {
+                INT_FATAL(expr,
+                          "Unable to resolve unknownfunction without analysis");
+              }
+            }
+          }
+        } else {
+          if (strcmp(var->var->name, "__primitive")) { /** can't resolve that **/
+            if (analyzeAST) {
+              Vec<FnSymbol*> fns;
+              call_info(paren, fns);
+              if (fns.n != 1) {
+                INT_FATAL(expr, "Trouble resolving function call");
+              }
+              if (fns.e[0] != var->var) {
+                INT_WARNING(var, "Analysis function call mismatch, using analysis function");
+                FnCall* fn = new FnCall(new Variable(fns.e[0]),
+                                        paren->argList->copyList());
+                expr->replace(fn);
+              }
+            }
+          }
+        }
       }
     }
   }

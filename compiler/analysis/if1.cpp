@@ -314,7 +314,7 @@ if1_if(IF1 *p, Code **c, Code *ifcond, Sym *ifcondvar,
 
 Code *
 if1_loop(IF1 *p, Code **t, Label *cont, Label *brk, Sym *cond_var, 
-	 Code *before, Code *cond, Code *after, Code *body, AST *ast)
+         Code *before, Code *cond, Code *after, Code *body, AST *ast)
 {
   Code *if_goto;
   int do_while = before == body;
@@ -360,7 +360,7 @@ void
 if1_dump_sym(FILE *fp, Sym *s) {
   if (s->name)
     fprintf(fp, "(var \"%s\" %d)",
-	    s->name, s->id);
+            s->name, s->id);
   else if (s->constant)
     fprintf(fp, "(const \"%s\" %d)", (char*)s->constant, s->id);
   else
@@ -377,11 +377,11 @@ mark_sym_live(Sym *s) {
       mark_sym_live(s->in);
     if (s->type_kind) {
       forv_Sym(ss, s->implements)
-	mark_sym_live(ss);
+        mark_sym_live(ss);
       forv_Sym(ss, s->specializes)
-	mark_sym_live(ss);
+        mark_sym_live(ss);
       forv_Sym(ss, s->includes)
-	mark_sym_live(ss);
+        mark_sym_live(ss);
     }
     if (s->must_specialize)
       mark_sym_live(s->must_specialize);
@@ -389,7 +389,7 @@ mark_sym_live(Sym *s) {
       mark_sym_live(s->must_implement);
     if (s->is_fun || s->is_pattern || s->type_kind)
       forv_Sym(ss, s->has)
-	mark_sym_live(ss);
+        mark_sym_live(ss);
     return 1;
   }
   return 0;
@@ -411,34 +411,34 @@ mark_code_live(IF1 *p, Code *code, int &code_live) {
   switch (code->kind) {
     case Code_GOTO:
       if (code_live) {
-	if (!code->label[0]->live) {
-	  code->label[0]->live = 1;
-	  changed = 1;
-	}
-	code_live = 0;
+        if (!code->label[0]->live) {
+          code->label[0]->live = 1;
+          changed = 1;
+        }
+        code_live = 0;
       }
       break;
     case Code_IF:
       if (code_live) {
-	if (!code->label[0]->live || !code->label[1]->live) {
-	  code->label[0]->live = 1;
-	  code->label[1]->live = 1;
-	  changed = 1;
-	}
-	code_live = 0;
+        if (!code->label[0]->live || !code->label[1]->live) {
+          code->label[0]->live = 1;
+          code->label[1]->live = 1;
+          changed = 1;
+        }
+        code_live = 0;
       }
       break;
     case Code_LABEL:
       if (code->label[0]->live) {
-	code_live = 1;
-	code->live = 1;
+        code_live = 1;
+        code->live = 1;
       }
       break;
     case Code_MOVE: break;
     case Code_SEND: break;
     default:
       for (int i = 0; i < code->sub.n; i++)
-	changed = mark_code_live(p, code->sub.v[i], code_live) || changed;
+        changed = mark_code_live(p, code->sub.v[i], code_live) || changed;
       break;
   }
   return changed;
@@ -451,26 +451,26 @@ mark_live(IF1 *p, Code *code) {
   if (code->live) {
     switch (code->kind) {
       case Code_GOTO:
-	break;
+        break;
       case Code_IF:
-	changed = mark_sym_live(code->rvals.v[0]) || changed;
-	break;
+        changed = mark_sym_live(code->rvals.v[0]) || changed;
+        break;
       case Code_MOVE:
-	if (code->lvals.v[0]->live)
-	  changed = mark_sym_live(code->rvals.v[0]) || changed;
-	break;
+        if (code->lvals.v[0]->live)
+          changed = mark_sym_live(code->rvals.v[0]) || changed;
+        break;
       case Code_SEND:
-	if (!code->lvals.n || code->lvals.v[0]->live || !is_functional(p, code)) {
-	  for (int i = 0; i < code->rvals.n; i++)
-	    changed = mark_sym_live(code->rvals.v[i]) || changed;
-	  for (int i = 0; i < code->lvals.n; i++)
-	    changed = mark_sym_live(code->lvals.v[i]) || changed;
-	}
-	break;
+        if (!code->lvals.n || code->lvals.v[0]->live || !is_functional(p, code)) {
+          for (int i = 0; i < code->rvals.n; i++)
+            changed = mark_sym_live(code->rvals.v[i]) || changed;
+          for (int i = 0; i < code->lvals.n; i++)
+            changed = mark_sym_live(code->lvals.v[i]) || changed;
+        }
+        break;
       default:
-	for (int i = 0; i < code->sub.n; i++)
-	  changed = mark_live(p, code->sub.v[i]) || changed;
-	break;
+        for (int i = 0; i < code->sub.n; i++)
+          changed = mark_live(p, code->sub.v[i]) || changed;
+        break;
     }
   }
   return changed;
@@ -483,15 +483,15 @@ mark_dead(IF1 *p, Code *code) {
   switch (code->kind) {
     case Code_LABEL:
       if (!code->label[0]->live)
-	code->dead = 1;
+        code->dead = 1;
       break;
     case Code_MOVE:
       if (!code->lvals.v[0]->live)
-	code->dead = 1;
+        code->dead = 1;
       break;
     case Code_SEND:
       if (is_functional(p, code) && !code->lvals.v[0]->live)
-	code->dead = 1;
+        code->dead = 1;
       break;
     default:
       break;
@@ -515,16 +515,16 @@ print_code(FILE *fp, Code *code, int indent, int lf) {
   switch (code->kind) {
     case Code_SUB:
       for (int i = 0; i < code->sub.n; i++)
-	print_code(fp, code->sub.v[i], indent, i < code->sub.n-1 ? 1 : lf);
+        print_code(fp, code->sub.v[i], indent, i < code->sub.n-1 ? 1 : lf);
       break;
     case Code_MOVE:
       if (!code->dead) {
-	SP(fp, indent);
-	fputs("(MOVE ", fp);
-	if1_dump_sym(fp, code->rvals.v[0]);
-	fputs(" ", fp);
-	if1_dump_sym(fp, code->lvals.v[0]);
-	fputs(")", fp);
+        SP(fp, indent);
+        fputs("(MOVE ", fp);
+        if1_dump_sym(fp, code->rvals.v[0]);
+        fputs(" ", fp);
+        if1_dump_sym(fp, code->lvals.v[0]);
+        fputs(")", fp);
       }
       break;
     case Code_SEND:
@@ -533,14 +533,14 @@ print_code(FILE *fp, Code *code, int indent, int lf) {
       if (code->lvals.n) {
         fputs(" (FUTURE ", fp);
         for (int i = 0; i < code->lvals.n; i++) {
-	  if1_dump_sym(fp, code->lvals.v[i]);
-	  if (i < code->lvals.n-1) fputs(" ", fp);
+          if1_dump_sym(fp, code->lvals.v[i]);
+          if (i < code->lvals.n-1) fputs(" ", fp);
         }
         fputs(")", fp);
       }
       for (int i = 0; i < code->rvals.n; i++) {
-	fputs(" ", fp);
-	if1_dump_sym(fp, code->rvals.v[i]);
+        fputs(" ", fp);
+        if1_dump_sym(fp, code->rvals.v[i]);
       }
       fputs(")", fp);
       break;
@@ -552,8 +552,8 @@ print_code(FILE *fp, Code *code, int indent, int lf) {
       break;
     case Code_LABEL:
       if (!code->dead) {
-	SP(fp, indent);
-	fprintf(fp, "(LABEL %d)", code->label[0]->id);
+        SP(fp, indent);
+        fprintf(fp, "(LABEL %d)", code->label[0]->id);
       }
       break;
     case Code_GOTO:
@@ -565,7 +565,7 @@ print_code(FILE *fp, Code *code, int indent, int lf) {
       SP(fp, indent);
       fprintf(fp, "(%s\n", Code_kind_string[code->kind]);
       for (int i = 0; i < code->sub.n; i++)
-	print_code(fp, code->sub.v[i], indent+1, i < code->sub.n-1 ? 1 : 0);
+        print_code(fp, code->sub.v[i], indent+1, i < code->sub.n-1 ? 1 : 0);
       fputs(")", fp);
       break;
     case Code_NOP:
@@ -603,10 +603,10 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
     }
     if (s->is_constant) {
       if (s->type && s->constant)
-	fprintf(fp, " :CONSTANT %s", (char*)s->constant);
+        fprintf(fp, " :CONSTANT %s", (char*)s->constant);
       else {
-	fprintf(fp, " :CONSTANT ");
-	print(fp, s->imm, s->type);
+        fprintf(fp, " :CONSTANT ");
+        print(fp, s->imm, s->type);
       }
     }
     if (s->aspect) {
@@ -620,36 +620,36 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
     if (s->has.n) {
       fputs(" :HAS (", fp);
       for (int j = 0; j < s->has.n; j++) {
-	if (j)
-	  fprintf(fp, " ");
-	if1_dump_sym(fp, s->has.v[j]);
+        if (j)
+          fprintf(fp, " ");
+        if1_dump_sym(fp, s->has.v[j]);
       }
       fputs(")", fp);
     }
     if (s->implements.n) {
       fputs(" :IMPLEMENTS (", fp);
       for (int j = 0; j < s->implements.n; j++) {
-	if (j)
-	  fprintf(fp, " ");
-	if1_dump_sym(fp, s->implements.v[j]);
+        if (j)
+          fprintf(fp, " ");
+        if1_dump_sym(fp, s->implements.v[j]);
       }
       fputs(")", fp);
     }
     if (s->specializes.n) {
       fputs(" :SPECIALZES (", fp);
       for (int j = 0; j < s->specializes.n; j++) {
-	if (j)
-	  fprintf(fp, " ");
-	if1_dump_sym(fp, s->specializes.v[j]);
+        if (j)
+          fprintf(fp, " ");
+        if1_dump_sym(fp, s->specializes.v[j]);
       }
       fputs(")", fp);
     }
     if (s->includes.n) {
       fputs(" :INCLUDES (", fp);
       for (int j = 0; j < s->includes.n; j++) {
-	if (j)
-	  fprintf(fp, " ");
-	if1_dump_sym(fp, s->includes.v[j]);
+        if (j)
+          fprintf(fp, " ");
+        if1_dump_sym(fp, s->includes.v[j]);
       }
       fputs(")", fp);
     }
@@ -701,7 +701,7 @@ if1_simple_dead_code_elimination(IF1 *p) {
     again = 0;
     for (int i = 0; i < p->allclosures.n; i++)
       if (p->allclosures.v[i]->code)
-	again = mark_live(p, p->allclosures.v[i]->code) || again;
+        again = mark_live(p, p->allclosures.v[i]->code) || again;
   }
   for (int i = 0; i < p->allclosures.n; i++) {
     if (p->allclosures.v[i]->code)
@@ -718,7 +718,7 @@ if1_flatten_code(Code *c, Code_kind k, Vec<Code *> *v) {
     case Code_GOTO:
     case Code_IF:
       if (!c->dead)
-	v->add(c);
+        v->add(c);
       break;
     case Code_SUB:
     case Code_CONC:
@@ -727,22 +727,22 @@ if1_flatten_code(Code *c, Code_kind k, Vec<Code *> *v) {
       Vec<Code *> newsub, *nv = v;
       if (!nv) nv = &newsub;
       for (int i = 0; i < c->sub.n; i++) {
-	Code *cc = c->sub.v[i];
-	if (cc->is_group() && cc->kind != Code_SUB && cc->kind != k) {
-	  if1_flatten_code(cc, c->kind, NULL);
-	  if (cc->sub.n) {
-	    if (cc->sub.n == 1)
-	      nv->add(cc->sub.v[1]);
-	    else
-	      nv->add(cc);
-	  }
-	} else
-	  if1_flatten_code(cc, k, nv);
+        Code *cc = c->sub.v[i];
+        if (cc->is_group() && cc->kind != Code_SUB && cc->kind != k) {
+          if1_flatten_code(cc, c->kind, NULL);
+          if (cc->sub.n) {
+            if (cc->sub.n == 1)
+              nv->add(cc->sub.v[1]);
+            else
+              nv->add(cc);
+          }
+        } else
+          if1_flatten_code(cc, k, nv);
       }
       if (!v)
-	c->sub.move(newsub);
+        c->sub.move(newsub);
       if (c->kind == Code_SUB)
-	c->kind = k;
+        c->kind = k;
       break;
     }
     case Code_NOP:
@@ -829,14 +829,14 @@ if1_dump_code(FILE *fp, Code *code, int indent) {
       if (code->lvals.n) {
         fputs(" (FUTURE ", fp);
         for (int i = 0; i < code->lvals.n; i++) {
-	  if1_dump_sym(fp, code->lvals.v[i]);
-	  if (i < code->lvals.n-1) fputs(" ", fp);
+          if1_dump_sym(fp, code->lvals.v[i]);
+          if (i < code->lvals.n-1) fputs(" ", fp);
         }
         fputs(")", fp);
       }
       for (int i = 0; i < code->rvals.n; i++) {
-	fputs(" ", fp);
-	if1_dump_sym(fp, code->rvals.v[i]);
+        fputs(" ", fp);
+        if1_dump_sym(fp, code->rvals.v[i]);
       }
       fputs(")\n", fp);
       break;
@@ -847,7 +847,7 @@ if1_dump_code(FILE *fp, Code *code, int indent) {
       break;
     case Code_LABEL:
       fprintf(fp, "(LABEL %d%s)\n", code->label[0]->id,
-	      code->dead ? " :DEAD" : "");
+              code->dead ? " :DEAD" : "");
       break;
     case Code_GOTO:
       fprintf(fp, "(GOTO %d)\n", code->label[0]->id);
@@ -857,7 +857,7 @@ if1_dump_code(FILE *fp, Code *code, int indent) {
     case Code_CONC:
       fprintf(fp, "(%s\n", Code_kind_string[code->kind]);
       for (int i = 0; i < code->sub.n; i++)
-	if1_dump_code(fp, code->sub.v[i], indent+1);
+        if1_dump_code(fp, code->sub.v[i], indent+1);
       SP(fp, indent);
       fputs(")\n", fp);
       break;
@@ -927,9 +927,9 @@ if1_set_primitive_types(IF1 *if1) {
     for (int s = 0; s < IF1_INT_TYPE_NUM; s++) {
       char *tt = int_type_names[s][signd];
       if (tt) {
-	Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
-	if (!ss) fail("unable to find builtin type '%s'", tt);
-	if1_set_int_type(if1, ss, signd, 8 << (s-1));
+        Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
+        if (!ss) fail("unable to find builtin type '%s'", tt);
+        if1_set_int_type(if1, ss, signd, 8 << (s-1));
       }
     }
   for (int s = 0; s < IF1_FLOAT_TYPE_NUM; s++) {

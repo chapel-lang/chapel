@@ -8,7 +8,7 @@
 
 
 static void parseModVarName(char* modVarName, char** moduleName, 
-			    char** varName) {
+                            char** varName) {
   char* dot = strrchr(modVarName, '.');
   if (dot) {
     *dot = '\0';
@@ -22,7 +22,7 @@ static void parseModVarName(char* modVarName, char** moduleName,
 
 
 static void parseSingleArg(char* currentArg) {
-  char* equalsSign = strchr(currentArg, '=');	  
+  char* equalsSign = strchr(currentArg, '=');     
 
   if (equalsSign) {
     *equalsSign = '\0';
@@ -34,9 +34,9 @@ static void parseSingleArg(char* currentArg) {
       parseModVarName(currentArg, &moduleName, &varName);
 
       if (*value == '\0') {
-	fprintf(stderr, "***Error:  Configuration variable \"%s\" is missing"
-		" its initialization value***\n", varName);
-	exit(0);
+        fprintf(stderr, "***Error:  Configuration variable \"%s\" is missing"
+                " its initialization value***\n", varName);
+        exit(0);
       }
       initSetValue(varName, value, moduleName);
     } else {
@@ -45,7 +45,7 @@ static void parseSingleArg(char* currentArg) {
     }
   } else {
     fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n", 
-	    currentArg);
+            currentArg);
     exit(0);
   }
 }
@@ -79,29 +79,29 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
     do {
       switch (nextChar) {
       case EOF:
-	setConfigBuffer[stringLength] = '\0';
-	fprintf(stderr, "***Error:  Found end of file while "
-		"reading string: %c%s***\n", firstChar, value);
-	exit(0);
-	break;
-	
+        setConfigBuffer[stringLength] = '\0';
+        fprintf(stderr, "***Error:  Found end of file while "
+                "reading string: %c%s***\n", firstChar, value);
+        exit(0);
+        break;
+        
       case '\n':
-	setConfigBuffer[stringLength] = '\0';
-	fprintf(stderr, "***Error:  Found newline while reading"
-		" string: %c%s***\n", firstChar, value);
-	exit(0);
-	break;
-	
+        setConfigBuffer[stringLength] = '\0';
+        fprintf(stderr, "***Error:  Found newline while reading"
+                " string: %c%s***\n", firstChar, value);
+        exit(0);
+        break;
+        
       default:
-	if (stringLength >= _default_string_length - 1) {
-	  fprintf(stderr, "***Error:  String exceeds the "
-		  "maximum string length of %d***\n", 
-		  _default_string_length);
-	  exit(0);
-	}
-	setConfigBuffer[stringLength] = nextChar;
-	stringLength++;
-	nextChar = fgetc(argFile);
+        if (stringLength >= _default_string_length - 1) {
+          fprintf(stderr, "***Error:  String exceeds the "
+                  "maximum string length of %d***\n", 
+                  _default_string_length);
+          exit(0);
+        }
+        setConfigBuffer[stringLength] = nextChar;
+        stringLength++;
+        nextChar = fgetc(argFile);
       }
     } while (nextChar != firstChar);
   } else {
@@ -123,7 +123,7 @@ int parseArgs(int argc, char* argv[]) {
 
     if (argLength < 2) {
       fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n", 
-	      currentArg);
+              currentArg);
       exit(0);
     }
     
@@ -131,40 +131,40 @@ int parseArgs(int argc, char* argv[]) {
     case '-':
       switch (currentArg[1]) {
       case 's':
-	if (argLength < 3) {
-	  fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n",
-		  currentArg);
-	  exit(0);
-	}
-	parseSingleArg(currentArg + 2);
-	break;
+        if (argLength < 3) {
+          fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n",
+                  currentArg);
+          exit(0);
+        }
+        parseSingleArg(currentArg + 2);
+        break;
       case 'f':
-	{
-	  char* argFilename = currentArg + 2;
-	  FILE* argFile = fopen(argFilename, "r");
-	  if (!argFile) {
-	    fprintf(stderr, "***Error:  Unable to open %s***\n", argFilename);
-	    exit(0);
-	  } 
-	  while (!feof(argFile)) {
-	    int numScans = 0;
-	    char setConfigBuffer[_default_string_length];
-	    numScans = fscanf(argFile, _default_format_read_string, 
-			      setConfigBuffer);
-	    if (numScans == 1) {
-	      if (!aParsedString(argFile, setConfigBuffer)) {
-		parseSingleArg(setConfigBuffer);
-	      } 
-	    }
-	  }
-	  break;
-	}
+        {
+          char* argFilename = currentArg + 2;
+          FILE* argFile = fopen(argFilename, "r");
+          if (!argFile) {
+            fprintf(stderr, "***Error:  Unable to open %s***\n", argFilename);
+            exit(0);
+          } 
+          while (!feof(argFile)) {
+            int numScans = 0;
+            char setConfigBuffer[_default_string_length];
+            numScans = fscanf(argFile, _default_format_read_string, 
+                              setConfigBuffer);
+            if (numScans == 1) {
+              if (!aParsedString(argFile, setConfigBuffer)) {
+                parseSingleArg(setConfigBuffer);
+              } 
+            }
+          }
+          break;
+        }
       case 'h':
-	printConfigVarTable();
-	break;
+        printConfigVarTable();
+        break;
       default:
-	fprintf(stderr, "***Error: unexpected flag: '%s'\n", currentArg);
-	exit(0);
+        fprintf(stderr, "***Error: unexpected flag: '%s'\n", currentArg);
+        exit(0);
       }
     }
   }

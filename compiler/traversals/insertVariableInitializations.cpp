@@ -18,25 +18,25 @@ static void insert_user_init(Stmt* stmt, VarSymbol* var);
 static void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
   if (var->parentScope->stmtContext) {
     if (BlockStmt* block_stmt =
-	dynamic_cast<BlockStmt*>(var->parentScope->stmtContext)) {
+        dynamic_cast<BlockStmt*>(var->parentScope->stmtContext)) {
       block_stmt->body->insertBefore(init_stmt);
     }
     else if (DefStmt* def_stmt =
-	     dynamic_cast<DefStmt*>(var->parentScope->stmtContext)) {
+             dynamic_cast<DefStmt*>(var->parentScope->stmtContext)) {
       if (ModuleSymbol* mod = def_stmt->moduleDef()) {
-	if (BlockStmt* block_stmt =
-	    dynamic_cast<BlockStmt*>(mod->initFn->body)) {
-	  block_stmt->body->insertBefore(init_stmt);
-	}
-	else {
-	  INT_FATAL(var, "SJD \"Where should I put the default init?\"");
-	}
+        if (BlockStmt* block_stmt =
+            dynamic_cast<BlockStmt*>(mod->initFn->body)) {
+          block_stmt->body->insertBefore(init_stmt);
+        }
+        else {
+          INT_FATAL(var, "SJD \"Where should I put the default init?\"");
+        }
       }
       else if (def_stmt->typeDef()) {
-	// Ignore case
+        // Ignore case
       }
       else {
-	INT_FATAL(var, "SJD \"Where should I put the default init?\"");
+        INT_FATAL(var, "SJD \"Where should I put the default init?\"");
       }
     }
     else {
@@ -46,11 +46,11 @@ static void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
   else if (DefExpr* def_expr = dynamic_cast<DefExpr*>(var->parentScope->exprContext)) {
     if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def_expr->sym)) {
       if (BlockStmt* block_stmt =
-	  dynamic_cast<BlockStmt*>(mod->initFn->body)) {
-	block_stmt->body->insertBefore(init_stmt);
+          dynamic_cast<BlockStmt*>(mod->initFn->body)) {
+        block_stmt->body->insertBefore(init_stmt);
       }
       else {
-	INT_FATAL(var, "SJD \"Where should I put the default init?\"");
+        INT_FATAL(var, "SJD \"Where should I put the default init?\"");
       }
     }
     else if (dynamic_cast<TypeSymbol*>(def_expr->sym)) {
@@ -216,17 +216,17 @@ static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
   if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(class_type->constructor)) {
       if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
-	if (def_expr->sym == stmt->parentSymbol) {
-	  return;
-	}
+        if (def_expr->sym == stmt->parentSymbol) {
+          return;
+        }
       }
     }
   }
 
   if (type->defaultVal) {
     AssignOp* assign_expr = new AssignOp(GETS_NORM,
-					 new Variable(var),
-					 type->defaultVal->copy());
+                                         new Variable(var),
+                                         type->defaultVal->copy());
     ExprStmt* assign_stmt = new ExprStmt(assign_expr);
     insert_default_init_stmt(var, assign_stmt);
   }
@@ -236,8 +236,8 @@ static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
 static void insert_user_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
   if (type->defaultVal) {
     AssignOp* assign_expr = new AssignOp(GETS_NORM,
-					 new Variable(var),
-					 type->defaultVal->copy());
+                                         new Variable(var),
+                                         type->defaultVal->copy());
     ExprStmt* assign_stmt = new ExprStmt(assign_expr);
     stmt->insertBefore(assign_stmt);
   }
@@ -247,8 +247,8 @@ static void insert_user_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
 static void insert_user_init(Stmt* stmt, VarSymbol* var) {
   if (var->init) {
     AssignOp* assign_expr = new AssignOp(GETS_NORM,
-					 new Variable(var),
-					 var->init->copy());
+                                         new Variable(var),
+                                         var->init->copy());
     ExprStmt* assign_stmt = new ExprStmt(assign_expr);
     stmt->insertBefore(assign_stmt);
   }

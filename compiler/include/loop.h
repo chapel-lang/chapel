@@ -4,25 +4,25 @@
 class FA;
 
 struct LoopNode : public gc {
-  int 			index;
-  void			*node;
-  LoopNode		*parent;
-  Vec<LoopNode *>	children;
-  Vec<LoopNode *>	loops;
-  Vec<LoopNode *>	pred;
-  Vec<LoopNode *>	succ;
-  Vec<LoopNode *>	dom_children;
-  int			pre_dfs, post_dfs;
-  int			pre_dom, post_dom;
-  uint			processed : 1;
-  uint			in_worklist : 1;
-  int			dfs_ancestor(LoopNode *);
-  int			dom_ancestor(LoopNode *);
+  int                   index;
+  void                  *node;
+  LoopNode              *parent;
+  Vec<LoopNode *>       children;
+  Vec<LoopNode *>       loops;
+  Vec<LoopNode *>       pred;
+  Vec<LoopNode *>       succ;
+  Vec<LoopNode *>       dom_children;
+  int                   pre_dfs, post_dfs;
+  int                   pre_dom, post_dom;
+  uint                  processed : 1;
+  uint                  in_worklist : 1;
+  int                   dfs_ancestor(LoopNode *);
+  int                   dom_ancestor(LoopNode *);
   LoopNode(int i, void *n = 0);
 };
 #define forv_LoopNode(_p, _v) forv_Vec(LoopNode, _p, _v)
 
-struct LoopGraph : public gc {	
+struct LoopGraph : public gc {  
   LoopNode *loops;
   LoopNode *entry;
   Vec<LoopNode *> nodes;
