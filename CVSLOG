@@ -9802,3 +9802,24 @@ Modified files:
 	                              mod.chpl mod.good 
 	                              readWriteBool.chpl 
 
+---------------------------------------------------------------------------
+
+11/16/04 16:48:52 -- deitz
+
+Log message:
+	Removed support for the bitwise shift operators << and >> from the
+	compiler and updated or removed several test cases.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+	                                     mvm-seq.chpl mvm-seq.good 
+Removed files:
+	chapel/test/flowanalysis/newast/: shift_ops.chpl shift_ops.good 
+	chapel/test/trivial/shannon/: shift_ops.chpl shift_ops.good 
+
