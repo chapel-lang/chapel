@@ -1468,3 +1468,13 @@ Removed files:
 	./: structure.txt 
 	chapel/make/: Makefile.gcc 
 
+---------------------------------------------------------------------------
+
+04/03/26 14:18:14 -- bradc
+
+Log message:
+	Never seem to have gotten this file checked in.
+
+Added files:
+	chapel/test/Logs/: .cvsignore 
+
