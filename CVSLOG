@@ -19912,3 +19912,20 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: checkSemantics.cpp 
 
+---------------------------------------------------------------------------
+
+03/16/05 18:44:21 -- roxana
+
+Log message:
+	Added NL to the good files. I still did not get how to check
+	in files that check for errors. For now, these are test_param_decl2.chpl
+	and good. It looks like this is not the right way...
+
+Modified files:
+	chapel/test/trivial/roxana/: test_param_init.chpl 
+	                             test_param_decl.good 
+	                             test_param_decl2.good 
+	                             test_param_decl1.good 
+Added files:
+	chapel/test/trivial/roxana/: test_param_init.good 
+
