@@ -20181,3 +20181,21 @@ Modified files:
 	                             resolveSymbols.cpp 
 	chapel/test/classes/deitz/: test_nested_record1.future 
 
+---------------------------------------------------------------------------
+
+03/18/05 11:29:59 -- jplevyak
+
+Log message:
+	Remove "clone_for_manifest_constant" and use "clone_for_constants" intead.
+	Attach "clone_for_constants" pragma to tuple indexing function argument.
+	Move Symbol pragmas from temporary Symbol to ParamSymbol in defineFun...
+	  I don't understand this code, so I hope I didn't overlook something.
+	Cleanup analysis.cpp a bit.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp fun.cpp 
+	                           var.cpp 
+	chapel/compiler/include/: fa.h fun.h sym.h var.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/symtab/: symtab.cpp 
+
