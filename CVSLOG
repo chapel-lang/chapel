@@ -10706,3 +10706,14 @@ Modified files:
 	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
 	                               module.good tuples.good 
 
+---------------------------------------------------------------------------
+
+12/01/04 06:41:48 -- shannon
+
+Log message:
+	Forgot to change the expected output when I modified this test
+	yesterday.
+
+Modified files:
+	chapel/test/execflags/shannon/configs/: configVarComplex.good 
+
