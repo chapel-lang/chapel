@@ -646,3 +646,19 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: mat1.chpl 
 
+---------------------------------------------------------------------------
+
+04/03/05 16:02:00 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	- integers are now "integer"
+	- added sample/matassign1.chpl which is closer to what we have been discussing
+	- matassign1.chpl type checks
+	- fixed a pattern matching bug in fa.cpp
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp clone.cpp fa.cpp fa.h if1.cpp 
+	                  prelude.chpl 
+Added files:
+	chapel/compiler/samples/: matassign1.chpl 
+
