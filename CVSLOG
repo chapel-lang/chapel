@@ -563,3 +563,15 @@ Modified files:
 	                  prelude.chpl prelude.v prim.cpp prim_data.dat 
 	                  vec.h 
 
+---------------------------------------------------------------------------
+
+04/02/26 11:57:51 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	checkpoint for rework of implicit references (e.g. array access, Mat(1))
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp ast.h builtin_symbols.h 
+	                  driver.cpp fa.cpp fa.h fa_extras.cpp fun.cpp 
+	                  prelude.chpl prelude.v sym.h vec.cpp 
+
