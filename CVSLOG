@@ -5552,3 +5552,23 @@ Modified files:
 	chapel/compiler/: createAST.cpp vec.h 
 	chapel/compiler/AST/: TODO link.h 
 
+---------------------------------------------------------------------------
+
+08/20/04 16:30:23 -- bradc
+
+Log message:
+	Updated the Makefile so that whenever the compiler is built,
+	ebrowse is run on the sources to create a BROWSE file in the
+	compiler directory.  If you're not familiar with EBROWSE, it's
+	a surprisingly nice class browser for emacs.  Mouse over a
+	class definition to get a list of things you can do (expand
+	collapse parts of the tree, list methods, jump to source code,
+	etc.)  It's pretty sweet.  Let me know if you have any
+	questions about it.  (NOTE: I also drop an AST-specific BROWSE
+	file into the AST directory to prune away John's stuff for my
+	own reference).
+
+Modified files:
+	chapel/compiler/: .cvsignore Makefile 
+	chapel/compiler/AST/: .cvsignore 
+
