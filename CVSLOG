@@ -7207,3 +7207,14 @@ Modified files:
 	                                    named.good structtype.good 
 	                                    var.good 
 
+---------------------------------------------------------------------------
+
+09/14/04 14:46:54 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Some work on enumerations (store their values as integers).
+	Import declared types on parameters.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+
