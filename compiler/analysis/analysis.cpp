@@ -2009,6 +2009,13 @@ ptr_neq(PNode *pn, EntrySet *es) {
   update_in(result, make_abstract_type(sym_int));
 }
 
+static void
+array_pointwise_op(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *array = make_AVar(pn->rvals.v[2], es);
+  flow_vars(array, result);
+}
+
 int 
 ast_to_if1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
@@ -2021,21 +2028,23 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   sym_null->is_external = 1;	// hack
   finalize_types(if1);
   if (build_functions(syms) < 0) return -1;
-  pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol->name, new RegisteredPrim(domain_start_index));
-  pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol->name, new RegisteredPrim(domain_next_index));
-  pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol->name, new RegisteredPrim(integer_result));
-  pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol->name, new RegisteredPrim(expr_simple_seq));
-  pdb->fa->primitive_transfer_functions.put(expr_domain_symbol->name, new RegisteredPrim(expr_domain));
-  pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol->name, new RegisteredPrim(expr_create_domain));
-  pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol->name, new RegisteredPrim(expr_reduce));
-  pdb->fa->primitive_transfer_functions.put(sizeof_symbol->name, new RegisteredPrim(integer_result));
-  pdb->fa->primitive_transfer_functions.put(cast_symbol->name, new RegisteredPrim(cast_value));
-  pdb->fa->primitive_transfer_functions.put(write_symbol->name, new RegisteredPrim(write_transfer_function));
-  pdb->fa->primitive_transfer_functions.put(writeln_symbol->name, new RegisteredPrim(write_transfer_function));
-  pdb->fa->primitive_transfer_functions.put(read_symbol->name, new RegisteredPrim(read_transfer_function));
-  pdb->fa->primitive_transfer_functions.put(array_index_symbol->name, new RegisteredPrim(array_index));
-  pdb->fa->primitive_transfer_functions.put(if1_cannonicalize_string(if1, "ptr_eq"), new RegisteredPrim(ptr_eq));
-  pdb->fa->primitive_transfer_functions.put(if1_cannonicalize_string(if1, "ptr_neq"), new RegisteredPrim(ptr_neq));
+#define REG(_n, _f) pdb->fa->primitive_transfer_functions.put(_n, new RegisteredPrim(_f));
+  REG(domain_start_index_symbol->name, domain_start_index);
+  REG(domain_next_index_symbol->name, domain_next_index);
+  REG(domain_valid_index_symbol->name, integer_result);
+  REG(expr_simple_seq_symbol->name, expr_simple_seq);
+  REG(expr_domain_symbol->name, expr_domain);
+  REG(expr_create_domain_symbol->name, expr_create_domain);
+  REG(expr_reduce_symbol->name, expr_reduce);
+  REG(sizeof_symbol->name, integer_result);
+  REG(cast_symbol->name, cast_value);
+  REG(write_symbol->name, write_transfer_function);
+  REG(writeln_symbol->name, write_transfer_function);
+  REG(read_symbol->name, read_transfer_function);
+  REG(array_index_symbol->name, array_index);
+  REG(if1_cannonicalize_string(if1, "ptr_eq"), ptr_eq);
+  REG(if1_cannonicalize_string(if1, "ptr_neq"), ptr_neq);
+  REG(if1_cannonicalize_string(if1, "array_pointwise_op"), array_pointwise_op);
   build_type_hierarchy();
   finalize_symbols(if1);
   return 0;

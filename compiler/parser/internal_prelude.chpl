@@ -25,46 +25,43 @@ class Tuple {
   }
 }
 
-pragma "builtin"
-function +(a : numeric, b : numeric) { return __primitive(a, "+", b); }
-pragma "builtin"
-function -(a : numeric, b : numeric) { return __primitive(a, "-", b); }
-pragma "builtin"
-function *(a : numeric, b : numeric) { return __primitive(a, "*", b); }
-pragma "builtin"
-function /(a : numeric, b : numeric) { return __primitive(a, "/", b); }
-pragma "builtin"
-function mod(a : numeric, b : numeric) { return __primitive(a, "%", b); }
-pragma "builtin"
-function ==(a : numeric, b : numeric) { return __primitive(a, "==", b); }
-pragma "builtin"
-function !=(a : numeric, b : numeric) { return __primitive(a, "!=", b); }
-pragma "builtin"
-function <=(a : numeric, b : numeric) { return __primitive(a, "<=", b); }
-pragma "builtin"
-function >=(a : numeric, b : numeric) { return __primitive(a, ">=", b); }
-pragma "builtin"
-function <(a : numeric, b : numeric) { return __primitive(a, "<", b); }
-pragma "builtin"
-function >(a : numeric, b : numeric) { return __primitive(a, ">", b); }
-pragma "builtin"
-function &(a : numeric, b : numeric) { return __primitive(a, "&", b); }
-pragma "builtin"
-function |(a : numeric, b : numeric) { return __primitive(a, "|", b); }
-pragma "builtin"
-function ^(a : numeric, b : numeric) { return __primitive(a, "^", b); }
-pragma "builtin"
-function and(a : numeric, b : numeric) { return __primitive(a, "&&", b); }
-pragma "builtin"
-function or(a : numeric, b : numeric) { return __primitive(a, "||", b); }
-pragma "builtin"
-function **(a : numeric, b : numeric) { return __primitive(a, "**", b); }
-pragma "builtin"
-function by(a : numeric, b : numeric) { return __primitive(a, "by", b); }
-pragma "builtin"
-function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
-pragma "builtin"
-function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
+pragma "builtin" function +(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function -(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function *(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function /(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function &(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function |(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function ^(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function ==(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function !=(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function <=(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function >=(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function <(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function >(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function and(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function or(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+pragma "builtin" function **(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
+
+pragma "builtin" function +(a : numeric, b : numeric) { return __primitive(a, "+", b); }
+pragma "builtin" function -(a : numeric, b : numeric) { return __primitive(a, "-", b); }
+pragma "builtin" function *(a : numeric, b : numeric) { return __primitive(a, "*", b); }
+pragma "builtin" function /(a : numeric, b : numeric) { return __primitive(a, "/", b); }
+pragma "builtin" function mod(a : numeric, b : numeric) { return __primitive(a, "%", b); }
+pragma "builtin" function ==(a : numeric, b : numeric) { return __primitive(a, "==", b); } 
+pragma "builtin" function !=(a : numeric, b : numeric) { return __primitive(a, "!=", b); }
+pragma "builtin" function <=(a : numeric, b : numeric) { return __primitive(a, "<=", b); }
+pragma "builtin" function >=(a : numeric, b : numeric) { return __primitive(a, ">=", b); }
+pragma "builtin" function <(a : numeric, b : numeric) { return __primitive(a, "<", b); }
+pragma "builtin" function >(a : numeric, b : numeric) { return __primitive(a, ">", b); }
+pragma "builtin" function &(a : numeric, b : numeric) { return __primitive(a, "&", b); }
+pragma "builtin" function |(a : numeric, b : numeric) { return __primitive(a, "|", b); }
+pragma "builtin" function ^(a : numeric, b : numeric) { return __primitive(a, "^", b); }
+pragma "builtin" function and(a : numeric, b : numeric) { return __primitive(a, "&&", b); }
+pragma "builtin" function or(a : numeric, b : numeric) { return __primitive(a, "||", b); }
+pragma "builtin" function **(a : numeric, b : numeric) { return __primitive(a, "**", b); }
+pragma "builtin" function by(a : numeric, b : numeric) { return __primitive(a, "by", b); }
+pragma "builtin" function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
+pragma "builtin" function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
 
 function _chpl_malloc(number, size, description: string);
 function _chpl_calloc(number, size, description: string);
