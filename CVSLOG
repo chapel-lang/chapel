@@ -22445,3 +22445,15 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             specializeParenOpExprs.cpp 
 
+---------------------------------------------------------------------------
+
+03/29/05 15:41:30 -- jplevyak
+
+Log message:
+	update some .future files
+	clean up syntax in test_index_expr1.future (name only on first line)
+
+Modified files:
+	chapel/test/domains/roxana/: test_index_expr1.future 
+	chapel/test/types/seq/deitz/: test_seq8.future test_seq8b.future 
+
