@@ -1723,3 +1723,18 @@ Log message:
 Modified files:
 	chapel/compiler/: clone.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/09 15:12:01 -- bradc
+
+Log message:
+	Fixed a bug that Shannon found in which I wasn't quoting
+	the -compopts and -execopts arguments, causing problems
+	when they were more than a single string.  This change
+	should re-enable the ability to do things like:
+	
+	start_test -compopts "--savec myoutputdir"
+
+Modified files:
+	chapel/test/: start_test 
+
