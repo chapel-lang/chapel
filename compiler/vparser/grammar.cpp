@@ -49,9 +49,10 @@ symbol_AST(IF1 *if1, D_ParseNode *pn) {
   if (!l)
     s = "#^^";
   else {
-    s =  (char*)MALLOC(l + 1);
+    s = (char*)MALLOC(l + 2);
     memcpy(s+1, pn->start_loc.s, l);
     s[0] = '#';
+    s[l+1] = 0;
   }
   a->string = if1_cannonicalize_string(if1, s);
   a->constant_type = "symbol";
