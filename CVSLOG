@@ -21224,3 +21224,14 @@ Log message:
 Modified files:
 	chapel/test/arrays/deitz/: test_array_basic1.future 
 
+---------------------------------------------------------------------------
+
+03/23/05 17:50:30 -- bradc
+
+Log message:
+	Removing this future, which I believe is now resolved and
+	for the right reasons.
+
+Removed files:
+	chapel/test/functions/jplevyak/scoping/: scoping-1.future 
+
