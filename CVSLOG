@@ -5429,3 +5429,18 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/: formatoutput.chpl formatoutput.good 
 
+---------------------------------------------------------------------------
+
+08/16/04 17:25:29 -- bradc
+
+Log message:
+	Implemented typeInfo() for CastExprs.
+	
+	Added a test that creates a domain using an enumerated
+	type.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp expr.h 
+Added files:
+	chapel/test/trivial/bradc/domarr/: enumarray.chpl enumarray.good 
+
