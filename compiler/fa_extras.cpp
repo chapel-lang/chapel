@@ -156,3 +156,70 @@ show_untyped(FA *fa) {
   return res;
 }
 
+static char *fn(char *s) {
+  if (!s)
+    return "<none>";
+  char *filename = strrchr(s, '/');
+  if (filename)
+    return filename + 1;	
+  return s;
+}
+
+void
+log_var_types(Var *v, Fun *f) {
+  if (!v->sym->name || v->sym->type == sym_symbol)
+    return;
+  if (!v->sym->in)
+    log(LOG_TEST_FA, "::");
+  else if (v->sym->in->name)
+    log(LOG_TEST_FA, "%s::", v->sym->in->name);
+  else
+    log(LOG_TEST_FA, "%d::", v->sym->in->id);
+  if (v->sym->name)
+    log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->ast->pathname), v->sym->ast->line);
+  else
+    log(LOG_TEST_FA, "(%s:%d) ", fn(v->sym->ast->pathname), v->sym->ast->line);
+  Vec<CreationSet *> css;
+  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+    AVar *av = v->avars.v[i].value;
+    if (!f || f->ess.in(((EntrySet*)av->contour)))
+      css.set_union(*av->out);
+  }
+  assert(css.n);
+  log(LOG_TEST_FA, "( ");
+  forv_CreationSet(cs, css) if (cs) {
+    if (cs->sym->name)
+      log(LOG_TEST_FA, "%s ", cs->sym->name);
+    else if (cs->sym->constant)
+      log(LOG_TEST_FA, "\"%s\" ", cs->sym->constant);
+    log(LOG_TEST_FA, "(%s:%d) ", fn(cs->sym->ast->pathname), cs->sym->ast->line);
+  }
+  log(LOG_TEST_FA, ")\n");
+}
+
+void
+log_test_fa(FA *fa) {
+  Vec<Var *> gvars;
+  forv_Fun(f, fa->funs) {
+    log(LOG_TEST_FA, "function %s %s:%d ", f->sym->name ? f->sym->name : "<anonymous>",
+	fn(f->sym->ast->pathname), f->sym->ast->line);
+    int nedges = 0;
+    forv_EntrySet(es, f->ess)
+      nedges += es->edges.count();
+    log(LOG_TEST_FA, "with %d edges\n", nedges);
+    forv_Var(v, f->fa_all_Vars) {
+      if (v->sym->in != f->sym) {
+	gvars.set_add(v);
+	continue;
+      } else
+	log_var_types(v, f);
+    }
+  }
+  gvars.set_to_vec();
+  log(LOG_TEST_FA, "globals\n");
+  forv_Var(v, gvars)
+    if (!v->sym->constant && !v->sym->symbol)
+      log_var_types(v, 0);
+}
+
+

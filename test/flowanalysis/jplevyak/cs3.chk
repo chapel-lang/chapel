@@ -1,0 +1,30 @@
+function __init prelude.v:7 with 1 edges
+function operator prelude.v:87 with 1 edges
+operator::b(prelude.v:87) ( "1" (cs3.v:3) "2.0" (cs3.v:5) )
+operator::a(prelude.v:87) ( "1" (cs3.v:3) "2.0" (cs3.v:5) )
+function print prelude.v:136 with 1 edges
+print::a(prelude.v:136) ( float64 (prelude.v:40) )
+function __init cs3.v:1 with 1 edges
+function __init__ <none>:0 with 1 edges
+function aa cs3.v:1 with 1 edges
+aa::a(cs3.v:1) ( "2.0" (cs3.v:5) )
+function operator prelude.v:82 with 1 edges
+operator::a(prelude.v:82) ( tuple (prelude.v:13) )
+function bb cs3.v:2 with 2 edges
+bb::b(cs3.v:2) ( tuple (prelude.v:13) )
+function aa cs3.v:1 with 1 edges
+aa::a(cs3.v:1) ( "1" (cs3.v:3) )
+function operator prelude.v:82 with 1 edges
+operator::a(prelude.v:82) ( tuple (prelude.v:13) )
+function operator prelude.v:82 with 1 edges
+operator::a(prelude.v:82) ( tuple (prelude.v:13) )
+function operator prelude.v:82 with 1 edges
+operator::a(prelude.v:82) ( tuple (prelude.v:13) )
+globals
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+user::a1(cs3.v:3) ( tuple (prelude.v:13) )
+user::b2(cs3.v:6) ( tuple (prelude.v:13) )
+user::a2(cs3.v:5) ( tuple (prelude.v:13) )
+system::null(prelude.v:57) ( tuple (prelude.v:13) )
+user::b1(cs3.v:4) ( tuple (prelude.v:13) )
+user::__init(cs3.v:1) ( __init (cs3.v:1) )

@@ -430,11 +430,13 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
       case AST_type_application:
 	ast->sym = new_sym(i, scope);
 	ast->sym->type_kind = ast_to_type(ast);
+	ast->sym->ast = ast;
 	break;
       case AST_record_type:
       case AST_loop:
       case AST_with:
 	ast->sym = new_sym(i, scope);
+	ast->sym->ast = ast;
 	if (ast->kind == AST_record_type) {
 	  ast->sym->type_kind = Type_RECORD;
 	  if (ast->def_record_type)

@@ -11,7 +11,6 @@
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
 
-static int fwrite_c = 0;
 static int fdump_html = 0;
 static char prelude_filename[FILENAME_MAX] = "prelude";
 static char log_flags[512] = "";
@@ -36,7 +35,6 @@ static ArgumentDescription arg_desc[] = {
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
  {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
- {"write_c", ' ', "Write C", "T", &fwrite_c, "CHPL_WRITE_C", NULL},
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"graph", 'G', "Dump Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
  {"graph_var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
@@ -201,40 +199,6 @@ load_one(char *fn) {
   return if1;
 }
 
-static void
-my_write_c(FA *fa, Fun *main, char *cfn) {
-  Vec<Fun *> ftodo, fdone;
-  ftodo.add(main);
-  for (int fi = 0; fi < ftodo.n; fi++) {
-    Fun *f = ftodo.v[fi];
-    Vec<AST *> atodo, adone;
-    atodo.add(f->ast);
-    printf("fun: %s %X\n", f->sym->name ? f->sym->name : "", (int)f);
-    for (int ai = 0; ai < atodo.n; ai++) {
-      AST *a = atodo.v[ai];
-      ast_print(stdout, a);
-      Sym *s = type_info(a);
-      if (s)
-	printf("type: %s %d\n", s->name ? s->name : "", s->id);
-      Vec<Fun *> calls;
-      call_info(f, a, calls);
-      if (calls.n) {
-	printf("calls: ");
-	forv_Fun(ff, calls) {
-	  printf("%d ", ff->sym->id);
-	  if (fdone.set_add(ff))
-	    ftodo.add(ff);
-	}
-	printf("\n");
-      }
-      forv_AST(aa, *a) {
-	if (adone.set_add(aa))
-	  atodo.add(aa);
-      }
-    }
-  }
-}
-
 static int
 compile_one(char *fn) {
   IF1 *if1 = load_one(fn);
@@ -252,12 +216,8 @@ compile_one(char *fn) {
   if (fa) {
     if (clone(fa, if1->top->fun) < 0)
       goto Lfail;
-    if (fwrite_c) {
-      char cfn[512];
-      strcpy(cfn, fn);
-      strcat(cfn, ".c");
-      my_write_c(fa, if1->top->fun, cfn);
-    }
+    if (logging(LOG_TEST_FA))
+      log_test_fa(fa);
     forv_Fun(f, fa->funs)
       build_forward_cfg_dominators(f);
     frequency_estimation(fa);

@@ -335,7 +335,7 @@ foreach dir ($dirs)
 		continue
 	endif
        	echo " " |& tee -a $logfile
-	set numtests = `(ls *.chpl |& grep -v "No match" | wc -l)`
+	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
 	if (! -e ./NOTEST && ($numtests != 0 || -x ./sub_test)) then
 		if (-x ./sub_test) then
 		    set sub_test = ./sub_test
