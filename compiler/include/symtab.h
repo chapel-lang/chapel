@@ -45,7 +45,7 @@ class Symboltable {
   static VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
 						   Expr* init, varType vartag, 
 						   bool isConst);
-  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
+  // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, Expr* init,
 					      bool placeholder = false);
   static FnSymbol* startFnDef(char* name, bool insert = true);

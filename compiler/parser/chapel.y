@@ -31,6 +31,7 @@
   Stmt* stmt;
   Type* pdt;
   TupleType* tupledt;
+  EnumSymbol* enumsym;
   Symbol* psym;
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
@@ -95,7 +96,8 @@
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
-%type <psym> identsym enumList formal nonemptyformals formals idlist indexlist subclass
+%type <psym> identsym formal nonemptyformals formals idlist indexlist subclass
+%type <enumsym> enum_item enum_list
 %type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
 %type <pexpr> reduction vardeclinit
 %type <pdexpr> domainExpr
@@ -207,10 +209,11 @@ typealias:
 
 
 enumdecl:
-  TENUM identifier TASSIGN enumList TSEMI
+  TENUM identifier TASSIGN enum_list TSEMI
     {
-      EnumSymbol* enumlist = Symboltable::defineEnumList($4);      
-      EnumType* pdt = new EnumType(enumlist);
+      $4->set_values();
+      // EnumSymbol* enumlist = Symboltable::defineEnumList($4);      
+      EnumType* pdt = new EnumType($4);
       Symbol* pst = new TypeSymbol($2, pdt);
       pdt->addName(pst);
       Symboltable::define(pst);
@@ -241,9 +244,24 @@ classdecl:
 ;
 
 
-enumList:
-  identsym
-| enumList TCOMMA identsym
+enum_item:
+  identifier
+    {
+      $$ = new EnumSymbol($1, NULL);
+    }
+| identifier TASSIGN expr
+    {
+      $$ = new EnumSymbol($1, $3);
+    }
+;
+
+
+enum_list:
+  enum_item
+    {
+      $$ = $1;
+    }
+| enum_list TCOMMA enum_item
     {
       $1->append($3);
       $$ = $1;

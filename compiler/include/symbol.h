@@ -129,10 +129,12 @@ class FnSymbol : public Symbol {
 
 class EnumSymbol : public Symbol {
  public:
+  Expr* init;
   int val;
 
-  EnumSymbol(char* init_name, int init_val);
+  EnumSymbol(char* init_name, Expr* init_init, int init_val = 0);
   virtual Symbol* copy(void);
+  void set_values(void);
 };
 
 

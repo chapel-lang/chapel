@@ -600,7 +600,7 @@ VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type,
   return new VarDefStmt(varList, init);
 }
 
-
+/*** Replaced by EnumSymbol::set_values ------------------
 EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
   EnumSymbol* enumList;
   EnumSymbol* lastEnum;
@@ -608,14 +608,14 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
   Symbol* sym = symList;
   int val = 0;
 
-  newEnum = new EnumSymbol(sym->name, val);
+  newEnum = new EnumSymbol(sym->name, NULL, val);
   define(newEnum);
   enumList = newEnum;
   lastEnum = newEnum;
   sym = nextLink(Symbol, sym);
   while (sym != NULL) {
     val++;
-    newEnum = new EnumSymbol(sym->name, val);
+    newEnum = new EnumSymbol(sym->name, NULL, val);
     define(newEnum);
     lastEnum->append(newEnum);
     lastEnum = newEnum;
@@ -625,7 +625,7 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
 
   return enumList;
 }
-
+----------------------------------------------------- ***/
 
 Type* Symboltable::defineBuiltinType(char* name, Expr* init, 
 				     bool placeholder) {

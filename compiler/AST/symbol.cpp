@@ -274,14 +274,30 @@ void FnSymbol::init(void) {
 
 
 
-EnumSymbol::EnumSymbol(char* init_name, int init_val) :
+EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
   Symbol(SYMBOL_ENUM, init_name),
+  init(init_init),
   val(init_val)
 {}
 
 
 Symbol* EnumSymbol::copy(void) {
-  return new EnumSymbol(copystring(name), val);
+  return new EnumSymbol(copystring(name), init->copy(), val);
+}
+
+
+void EnumSymbol::set_values(void) {
+  EnumSymbol* tmp = this;
+  int tally = 0;
+
+  while (tmp) {
+    if (tmp->init) {
+      tally = tmp->init->intVal();
+    }
+    tmp->val = tally++;
+    Symboltable::define(tmp);
+    tmp = nextLink(EnumSymbol, tmp);
+  }
 }
 
 

@@ -216,11 +216,17 @@ void EnumType::codegen(FILE* outfile) {
 
 void EnumType::codegenDef(FILE* outfile) {
   EnumSymbol* enumSym;
+  int last = -1;
 
   fprintf(outfile, "typedef enum {\n");
   enumSym = valList;
   while (enumSym) {
     enumSym->printDef(outfile);
+
+    if (enumSym->val != last + 1) {
+      fprintf(outfile, " = %d", enumSym->val);
+    }
+    last = enumSym->val;
 
     enumSym = nextLink(EnumSymbol, enumSym);
 
