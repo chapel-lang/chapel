@@ -17877,3 +17877,55 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+02/18/05 16:48:26 -- deitz
+
+Log message:
+	Added modest support for anonymous domains.  They can be used in
+	forall and for statements and a domain is not created.  They can be
+	used in array types and a domain variable is created.  Currently only
+	1D domains are supported in this latter case.
+	
+	Made the common module more like other modules.  It is now codegened
+	like other modules and passes act on it like other modules.
+	
+	Added a new traversal InsertAnonymousDomains that runs before
+	InsertAnonymousTypes.  The domains are inserted right before the
+	arrays that are declared over them.
+	
+	Improved InsertAnonymousTypes though it is still not very recursive.
+	Anonymous types of anonymous types are not yet fully supported.
+	Almost there.
+	
+	Added new future cases using anonymous domains and assigning arrays.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: codegen.cpp createEntryPoint.cpp 
+	                         runAnalysis.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             insertAnonymousTypes.cpp 
+	                             insertAnonymousTypes.h 
+	chapel/runtime/include/: forall.h 
+	chapel/test/compflags/bradc/twomodulesnomain/: module1.good 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+Added files:
+	chapel/compiler/traversals/: insertAnonymousDomains.cpp 
+	                             insertAnonymousDomains.h 
+	chapel/test/arrays/deitz/: test_anon_domain1.chpl 
+	                           test_anon_domain1.good 
+	                           test_anon_domain2.chpl 
+	                           test_anon_domain2.future 
+	                           test_anon_domain2.good 
+	                           test_array_assign1.chpl 
+	                           test_array_assign1.future 
+	                           test_array_assign1.good 
+	                           test_array_assign2.chpl 
+	                           test_array_assign2.future 
+	                           test_array_assign2.good 
+
