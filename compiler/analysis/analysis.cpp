@@ -764,6 +764,15 @@ build_types(Vec<BaseAST *> &syms) {
 	break;
       }
       case TYPE_LIKE: {
+	LikeType *tt = dynamic_cast<LikeType*>(t);
+	if (tt->expr->astType == EXPR_VARIABLE) {
+	  Variable *v = (Variable*)tt->expr;
+	  if (v->var->type && v->var->type != dtUnknown) {
+	    t->asymbol->sym->type_kind = Type_ALIAS;
+	    t->asymbol->sym->alias = v->var->type->asymbol->sym;
+	    break;
+	  }
+	}
 	INT_FATAL(t, "No analysis support for 'like'");
       }
       case TYPE_CLASS: {
