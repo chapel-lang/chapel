@@ -9897,3 +9897,33 @@ Added files:
 	chapel/runtime/include/: arg.h config.h 
 	chapel/runtime/src/: arg.c config.c 
 
+---------------------------------------------------------------------------
+
+11/18/04 11:06:26 -- deitz
+
+Log message:
+	Removed the shift-reduce error associated with the else-statement of
+	an if-statement.  Added the optional keyword "then" which can be used
+	between the expression and the then-statement in an "if" statement.
+	The AST is unchanged.  Added two test cases for using if, then, and
+	else.
+	
+	Removed parsing support for functions with no known type as given by
+	the syntax "function foo(): { }" in which a type did not follow the
+	colon.  This removes two problematic shift-reduce errors.
+	
+	Added two scripts to the test directory, cat_tests and cat_goods,
+	which print to standard out all of the test programs and their good
+	outputs.  On each line, the file name and line number are displayed.
+	These scripts allow for easy grepping of features in the test
+	directory.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	                         internal_prelude.chpl 
+Added files:
+	chapel/test/: cat_goods cat_tests 
+	chapel/test/trivial/deitz/: test_if_else.chpl test_if_else.good 
+	                            test_if_then_else.chpl 
+	                            test_if_then_else.good 
+
