@@ -2090,3 +2090,14 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: PREDIFF 
 
+---------------------------------------------------------------------------
+
+04/05/12 12:19:34 -- bradc
+
+Log message:
+	Introducing a purposeful bug to see if the nightly regression
+	testing works in the presence of a compiler build failure.
+
+Modified files:
+	chapel/compiler/: driver.cpp 
+
