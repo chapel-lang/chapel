@@ -5984,3 +5984,29 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: chapel.y symscope.h symtab.cpp symtab.h 
 
+---------------------------------------------------------------------------
+
+08/26/04 18:50:58 -- bradc
+
+Log message:
+	Updated the table from my last checkin so that all scopes internal
+	to a function have their symContext pointing to that function.
+	This involved a nice refactoring of complicated scope
+	pushing/popping/context-setting code out of chapel.y and into the
+	symboltable code, which seems appropriate and attractive.  Here's
+	the new table:
+	
+	scope type        stmtContext           symContext
+	------------------------------------------------------
+	SCOPE_INTRINSIC   nilStmt               nilSymbol
+	SCOPE_FILE        nilStmt               nilSymbol
+	SCOPE_PARAM       foo's FnDefStmt       foo's FnSymbol
+	SCOPE_FUNCTION    scope 1's BlockStmt   foo's FnSymbol
+	SCOPE_LOCAL       scope 2's BlockStmt   foo's FnSymbol
+	SCOPE_FORLOOP     forall stmt           foo's FnSymbol
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: chapel.y nils.cpp symbol.cpp symbol.h 
+	                      symtab.cpp symtab.h 
+
