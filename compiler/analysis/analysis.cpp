@@ -1087,9 +1087,16 @@ gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
 }
 
 static void
-gen_alloc(Sym *s, Sym *type, AInfo *ast) {
+gen_alloc(Sym *s, Sym *type, AInfo *ast, FnSymbol *f = 0) {
   Code **c = &ast->code;
-  Code *send = if1_send(if1, c, 2, 1, sym_new, type, s);
+  Code *send = 0;
+  if (s->type->asymbol->symbol->astType == TYPE_CLASS) {
+    ClassType *ct = dynamic_cast<ClassType*>(type->asymbol->symbol);
+    if (ct->value && f != ct->defaultConstructor)  // HACK!!
+      send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
+  }
+  if (!send) 
+    send = if1_send(if1, c, 2, 1, sym_new, type, s);
   send->ast = ast;
   if (type->asymbol->symbol->astType == TYPE_ARRAY) {
     // just set the first element
@@ -1165,8 +1172,10 @@ gen_vardef(BaseAST *a) {
 	if (s->type) {
 	  if (s->type->num_kind || s->type == sym_string)
 	    s->is_external = 1; // hack
-	  else
-	    gen_alloc(s, s->type, def->ainfo);
+	  else {
+	    FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
+	    gen_alloc(s, s->type, def->ainfo, f);
+	  }
 	}
       }
     switch (var->varClass) {
