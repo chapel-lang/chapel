@@ -21616,3 +21616,26 @@ Added files:
 	chapel/test/types/seq/deitz/noanalysis/: test_seq8.chpl 
 	                                         test_seq8.good 
 
+---------------------------------------------------------------------------
+
+03/25/05 14:11:36 -- jplevyak
+
+Log message:
+	Implement separation between methods and non-methods.
+	Fix future test for separation.
+	
+	Added
+	
+	  FORCE_RECORD_METHODS_GLOBAL
+	
+	to analysis.cpp.  When record methods are scoped this can be unset.
+	Steve, if you want to test your change for record methods, try
+	unsetting this in analysis.cpp.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: fa.h 
+	chapel/test/functions/jplevyak/: member-2.chpl 
+Removed files:
+	chapel/test/functions/jplevyak/: member-2.future 
+
