@@ -430,20 +430,6 @@ Symbol* Symboltable::lookup(char* name, bool genError, bool inLexer) {
 }
 
 
-ClassSymbol* Symboltable::lookupClass(char* name) {
-  Symbol* pst = lookup(name);
-  
-  if (typeid(*pst) != typeid(ClassSymbol)) {
-    char* error = glomstrings(3, "Expected '", name, 
-			      "' to be a class but it's not");
-    yyerror(error);
-    return NULL;
-  } else {
-    return (ClassSymbol*)pst;
-  }
-}
-
-
 void Symboltable::startCompoundStmt(void) {
   scopeType type = SCOPE_LOCAL;
   if (currentScope->type == SCOPE_PARAM) {
@@ -688,16 +674,16 @@ FnDefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 }
 
 
-ClassSymbol* Symboltable::startClassDef(char* name, ClassSymbol* parent) {
+TypeSymbol* Symboltable::startClassDef(char* name, Symbol* parent) {
   ClassType* newdt;
-  ClassSymbol* newsym;
+  TypeSymbol* newsym;
 
   if (parent->isNull()) {
     newdt = new ClassType();
   } else {
-    newdt = new ClassType(parent->getType());
+    newdt = new ClassType(dynamic_cast<ClassType*>(parent->type));
   }
-  newsym = new ClassSymbol(name, newdt);
+  newsym = new TypeSymbol(name, newdt);
   (newdt)->addName(newsym);
   define(newsym);
   Symboltable::pushScope(SCOPE_CLASS);
@@ -706,7 +692,7 @@ ClassSymbol* Symboltable::startClassDef(char* name, ClassSymbol* parent) {
 }
 
 
-TypeDefStmt* Symboltable::finishClassDef(ClassSymbol* classSym, 
+TypeDefStmt* Symboltable::finishClassDef(TypeSymbol* classSym, 
 					 Stmt* definition) {
   SymScope *classScope = Symboltable::popScope();
 

@@ -99,19 +99,6 @@ class TypeSymbol : public Symbol {
 };
 
 
-class ClassSymbol : public TypeSymbol {
- public:
-  ClassSymbol(char* init_name, ClassType* init_class);
-  virtual Symbol* copy(void);
-
-  bool isNull();
-
-  ClassType* getType(void);
-};
-
-extern ClassSymbol* nilClassSymbol;
-
-
 class FnSymbol;
 extern FnSymbol* nilFnSymbol;
 

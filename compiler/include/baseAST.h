@@ -48,7 +48,6 @@ enum astType_t {
   SYMBOL_VAR,
   SYMBOL_PARAM,
   SYMBOL_TYPE,
-  SYMBOL_CLASS,
   SYMBOL_FN,
   SYMBOL_ENUM,
 

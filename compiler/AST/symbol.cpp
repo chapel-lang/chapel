@@ -200,32 +200,6 @@ Symbol* TypeSymbol::copy(void) {
 }
 
 
-ClassSymbol::ClassSymbol(char* init_name, ClassType* init_class) :
-  TypeSymbol(init_name, init_class)
-{
-  astType = SYMBOL_CLASS;
-}
-
-
-Symbol* ClassSymbol::copy(void) {
-  INT_FATAL(this, "ClassSymbol::copy() not implemented yet");
-  return nilSymbol;
-}
-
-
-bool ClassSymbol::isNull(void) {
-  return (this == nilClassSymbol);
-}
-
-
-ClassType* ClassSymbol::getType(void) {
-  if (typeid(*type) != typeid(ClassType)) {
-    INT_FATAL(this, "ClassSymbol has non-ClassType");
-  }
-  return (ClassType*)type;
-}
-
-
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 		   Stmt* init_body, bool init_exportMe, 
 		   FnSymbol* init_parentFn) :

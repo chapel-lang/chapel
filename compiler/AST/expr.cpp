@@ -696,8 +696,8 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
     // ASSUMPTION: Anything used before it is defined is a function
     if (typeid(*baseVar) == typeid(UnresolvedSymbol) ||
 	typeid(*baseVar) == typeid(FnSymbol) ||
-	typeid(*baseVar) == typeid(ClassSymbol)) {
-
+	typeid(*baseVar) == typeid(TypeSymbol)) {
+      
       if (baseVar->scope->type == SCOPE_PRELUDE) {
 	bool isWrite = (strcmp(baseVar->name, "write") == 0);
 	bool isWriteln = (strcmp(baseVar->name, "writeln") == 0);
@@ -712,8 +712,8 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
 	}
       }
 
-      if (typeid(*baseVar) == typeid(ClassSymbol)) {
-	ClassSymbol* classVar = (ClassSymbol*)baseVar;
+      if (typeid(*baseVar) == typeid(TypeSymbol)) {
+	TypeSymbol* classVar = (TypeSymbol*)baseVar;
 	ClassType* classType = dynamic_cast<ClassType*>(classVar->type);
 	if (!classType) {
 	  INT_FATAL(baseVar, "ClassSymbol type is not ClassType");

@@ -14,7 +14,6 @@ Type* nilType = NULL;
 VarSymbol* nilVarSymbol = NULL;
 FnSymbol* nilFnSymbol = NULL;
 FnDefStmt* nilFnDefStmt = NULL;
-ClassSymbol* nilClassSymbol = NULL;
 ClassType* nilClassType = NULL;
 
 
@@ -31,7 +30,6 @@ void initNils(void) {
   nilFnDefStmt = new FnDefStmt(nilFnSymbol);
   nilClassType = new ClassType(nilClassType);
   nilClassType->addDefinition(nilStmt);
-  nilClassSymbol = new ClassSymbol("nilClass", nilClassType);
 
   verifyNilsUncorrupted("initialized incorrectly");
 }
@@ -75,9 +73,5 @@ void verifyNilsUncorrupted(char* message) {
       nilClassType->name != nilSymbol || nilClassType->parentClass != NULL ||
       nilClassType->definition != nilStmt) {
     INT_FATAL("nilClassType has been %s", message);
-  }
-  if (nilClassSymbol->next != nilILink || nilClassSymbol->prev != nilILink ||
-      nilClassSymbol->type != nilClassType) {
-    INT_FATAL("nilClassSymbol has been %s", message);
   }
 }

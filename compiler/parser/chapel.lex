@@ -114,9 +114,6 @@ while           return TWHILE;
 		  if (typeid(*sym) == typeid(TypeSymbol)) {
 		    yylval.ptsym = (TypeSymbol*)sym;
 		    return TYPE_IDENT;
-		  } else if (typeid(*sym) == typeid(ClassSymbol)) {
-		    yylval.pcsym = (ClassSymbol*)sym;
-		    return CLASS_IDENT;
 		  } else {
 		    return TIDENT;
 		  }

@@ -28,7 +28,6 @@ class Symboltable {
   static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
   static Symbol* lookup(char* name, bool genError = false, 
 			bool inLexer = false);
-  static ClassSymbol* lookupClass(char* name);
 
   static void startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(Stmt* body);
@@ -56,8 +55,8 @@ class Symboltable {
   static FnDefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
 				   Stmt* body, bool isExtern = false);
 
-  static ClassSymbol* startClassDef(char* name, ClassSymbol* parent);
-  static TypeDefStmt* finishClassDef(ClassSymbol* classSym, Stmt* definition);
+  static TypeSymbol* startClassDef(char* name, Symbol* parent);
+  static TypeDefStmt* finishClassDef(TypeSymbol* classSym, Stmt* definition);
 
   static VarSymbol* startForLoop(Symbol* indices);
   static ForLoopStmt* finishForLoop(bool forall, VarSymbol* index,

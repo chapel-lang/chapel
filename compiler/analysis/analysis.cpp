@@ -1098,7 +1098,6 @@ gen_if1(BaseAST *ast) {
   case SYMBOL_VAR:
   case SYMBOL_PARAM:
   case SYMBOL_TYPE:
-  case SYMBOL_CLASS:
   case SYMBOL_FN:
   case SYMBOL_ENUM:
   case TYPE:
@@ -1166,8 +1165,7 @@ build_function(FnDefStmt *f) {
   if (f->fn->scope->type == SCOPE_CLASS) {
     s->self = new_sym("self"); // hack
     s->self->ast = f->ainfo;
-    s->self->must_implement_and_specialize(
-      dynamic_cast<TypeSymbol *>(f->fn->scope->symContext)->type->asymbol);
+    s->self->must_implement_and_specialize(f->fn->scope->symContext->type->asymbol);
   }
   set_global_scope(s);
   if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;

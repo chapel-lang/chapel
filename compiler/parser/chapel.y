@@ -36,7 +36,6 @@
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
   FnSymbol* fnsym;
-  ClassSymbol* pcsym;
 }
 
 %token TCALL
@@ -65,11 +64,8 @@
 
 %token TIDENT QUERY_IDENT
 %token <ptsym> TYPE_IDENT
-%token <pcsym> CLASS_IDENT
 %token INTLITERAL FLOATLITERAL COMPLEXLITERAL
 %token <pch> STRINGLITERAL
-
-%token TDOTDOT
 
 %token TASSIGN;
 %token TASSIGNPLUS;
@@ -101,8 +97,7 @@
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
-%type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
-%type <pcsym> subclass
+%type <psym> identsym enumList formal nonemptyformals formals idlist indexlist subclass
 %type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
 %type <pexpr> reduction vardeclinit
 %type <pdexpr> domainExpr
@@ -112,6 +107,9 @@
 
 
 /* These are declared in increasing order of precedence. */
+
+%left TNOELSE
+%left TELSE
 
 %left TRSBR
 %left TBY
@@ -129,9 +127,6 @@
 %right TUPLUS TUMINUS TREDUCE TBNOT
 %right TEXP
 %left TCOLON
-
-%left TNOELSE
-%left TELSE
 
 %% 
 
@@ -228,10 +223,10 @@ enumdecl:
 
 subclass:
   /* nothing */
-    { $$ = nilClassSymbol; }
-| TCOLON identifier
+    { $$ = nilSymbol; }
+| TCOLON TYPE_IDENT
     {
-      $$ = Symboltable::lookupClass($2);
+      $$ = $2;   /* Symboltable::lookup($2); */
     }
 ;
 
@@ -239,11 +234,11 @@ subclass:
 classdecl:
   TCLASS identifier subclass TLCBR
     {
-      $<pcsym>$ = Symboltable::startClassDef($2, $3);
+      $<ptsym>$ = Symboltable::startClassDef($2, $3);
     }
                                 statements TRCBR
     {
-      $$ = Symboltable::finishClassDef($<pcsym>5, $6);
+      $$ = Symboltable::finishClassDef($<ptsym>5, $6);
     }
 ;
 
@@ -348,8 +343,6 @@ type:
 | arrayType
 | tupleType
 | TYPE_IDENT
-    { $$ = $1->type; }
-| CLASS_IDENT
     { $$ = $1->type; }
 | query_identifier
     { $$ = dtUnknown; }
@@ -552,6 +545,8 @@ atom:
 
 expr: 
   atom
+| TYPE_IDENT TLP exprlist TRP
+{ $$ = ParenOpExpr::classify(new Variable($1), $3); }
 | reduction %prec TREDUCE
 | expr TCOLON type
     { $$ = new CastExpr($3, $1); }
@@ -617,7 +612,7 @@ expr:
 
 
 reduction:
-  identsym TREDUCE expr
+  TYPE_IDENT TREDUCE expr
     { $$ = new ReduceExpr($1, nilExpr, $3); }
 ;
 
@@ -668,8 +663,6 @@ intliteral:
 identifier:
   TIDENT
     { $$ = copystring(yytext); }
-| CLASS_IDENT
-    { $$ = $1->name; }
 ;
 
 
