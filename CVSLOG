@@ -7029,3 +7029,37 @@ Modified files:
 	                                  mutrec.good onearg.good 
 	                                  usebeforedef.good 
 
+---------------------------------------------------------------------------
+
+09/13/04 15:04:42 -- bradc
+
+Log message:
+	Added four abstract types to the internal prelude scope just
+	prior to parsing the prelude.  These are:
+	
+		Identifier	Type* variable	purpose
+		----------	--------------	-----------
+		Tuple		dtTuple		abstract Tuple type
+		Index		dtIndex		abstract Index type
+		Domain		dtDomain	abstract Domain type
+		Array		dtArray		abstract Array type
+	
+	It is reasonable to think of these types as being parent types
+	of which all actual tuples, index-es, domains, and arrays are
+	subtypes, although no explicit subtype information is currently
+	stored in the high-level AST.
+	
+	Because these symbols are declared in the internal prelude, they are
+	not currently visible in user source code (i.e., the user cannot
+	declare a variable of type "Tuple"), though the dtTuple pointer will
+	exist and be valid for the compiler internals throughout the
+	compilation process.
+	
+	I had to change the Array class name in the internal_prelude to
+	_Array to avoid conflicts with this new variable (though I
+	suspect that John will change it further to suit his needs...).
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: internal_prelude.chpl type.cpp type.h 
+
