@@ -4276,3 +4276,28 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+07/23/04 17:06:07 -- bradc
+
+Log message:
+	Improved function code generation routines:
+	
+	* added notion of Symbols codegening their definition (rather than
+	their use, which has been the default) via the codegenDef() method.
+	
+	* refactored function definition code away from FnDefStmt's codegen()
+	method and into FunSymbol's codegenDef() method (but why do I use
+	Fun in some places and Fn in others!?!?)
+	
+	* added notion of whether a symbol is exported or not (from the scope
+	it's declared in) to the AST.
+	
+	* added #ifndef protection to compiler-generated header files.
+
+Modified files:
+	chapel/compiler/: createAST.cpp files.cpp 
+	chapel/compiler/AST/: Makefile TODO stmt.cpp symbol.cpp symbol.h 
+	                      symtab.cpp symtab.h 
+	chapel/test/trivial/bradc/protoast/codegen/: test.good 
+
