@@ -105,25 +105,7 @@ void Type::printDef(FILE* outfile) {
 }
 
 void Type::codegen(FILE* outfile) {
-  // BLC: Perhaps we should just rename the built-in types between
-  // parsing and codegen?
-  if (this == dtBoolean) {
-    fprintf(outfile, "_boolean");
-  } else if (this == dtInteger) {
-    fprintf(outfile, "_integer64");
-  } else if (this == dtFloat) {
-    fprintf(outfile, "_float64");
-  } else if (this == dtComplex) {
-    fprintf(outfile, "_complex128");
-  } else if (this == dtString) {
-    fprintf(outfile, "_string");
-  } else if (this == dtVoid) {
-    fprintf(outfile, "void");
-  } else if (this == dtUnknown) {
-    fprintf(outfile, "???");
-  } else {
-    INT_FATAL(this, "Don't know how to codegen() for all types yet");
-  }
+  name->codegen(outfile);
 }
 
 
@@ -731,21 +713,21 @@ void TupleType::codegen(FILE* outfile) {
 
 void initTypes(void) {
   // define built-in types
-  dtUnknown = Symboltable::defineBuiltinType("???", nilExpr);
-  dtVoid = Symboltable::defineBuiltinType("void", nilExpr);
+  dtUnknown = Symboltable::defineBuiltinType("???", "???", nilExpr);
+  dtVoid = Symboltable::defineBuiltinType("void", "void", nilExpr);
 
-  dtBoolean = Symboltable::defineBuiltinType("boolean", 
+  dtBoolean = Symboltable::defineBuiltinType("boolean", "_boolean",
 					     new BoolLiteral("false", false));
-  dtInteger = Symboltable::defineBuiltinType("integer", 
+  dtInteger = Symboltable::defineBuiltinType("integer", "_integer64",
 					     new IntLiteral("0", 0));
-  dtFloat = Symboltable::defineBuiltinType("float", 
+  dtFloat = Symboltable::defineBuiltinType("float", "_float64",
 					   new FloatLiteral("0.0", 0.0));
-  dtComplex = Symboltable::defineBuiltinType("complex", 
+  dtComplex = Symboltable::defineBuiltinType("complex", "_complex128",
 					     new FloatLiteral("0.0", 0.0));
-  dtString = Symboltable::defineBuiltinType("string", new StringLiteral(""));
+  dtString = Symboltable::defineBuiltinType("string", "_string", new StringLiteral(""));
   
 
-  dtLocale = Symboltable::defineBuiltinType("locale", nilExpr);
+  dtLocale = Symboltable::defineBuiltinType("locale", "_locale", nilExpr);
 }
 
 

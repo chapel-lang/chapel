@@ -51,6 +51,7 @@ in              return TIN;
 index           return TINDEX;
 inout           return TINOUT;
 mod             return TMOD;
+module		return TMODULE;
 not             return TNOT;
 or              return TOR;
 out             return TOUT;

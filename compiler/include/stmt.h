@@ -98,6 +98,16 @@ class FnDefStmt : public Stmt {
 extern FnDefStmt* nilFnDefStmt;
 
 
+class ModuleDefStmt : public Stmt {
+ public:
+  ModuleSymbol* module;
+
+  ModuleDefStmt(ModuleSymbol* init_module);
+
+  void codegen(FILE* outfile);
+};
+
+
 class ExprStmt : public Stmt {
  public:
   Expr* expr;
@@ -111,6 +121,8 @@ class ExprStmt : public Stmt {
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
+
+  static ExprStmt* createFnCallStmt(FnSymbol* fnSym, Expr* argList = nilExpr);
 };
 
 

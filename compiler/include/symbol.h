@@ -141,12 +141,15 @@ class EnumSymbol : public Symbol {
 
 class ModuleSymbol : public Symbol {
  public:
+  bool internal;
   Stmt* stmts;
   FnSymbol* initFn;
 
-  ModuleSymbol(char* init_name);
+  ModuleSymbol(char* init_name, bool init_internal);
 
-  void codegen(void);
+  void codegenDef(void);
+  void createInitFn(void);
+  bool isFileModule(void);
 };
 
 #endif

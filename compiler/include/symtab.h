@@ -22,8 +22,10 @@ class Symboltable {
   static ModuleSymbol* getModuleList(void);
   static FnSymbol* getCurrentFn(void);
 
+  static void defineInScope(Symbol* sym, SymScope* scope);
   static void define(Symbol* sym);
   static Symbol* lookupInScope(char* name, SymScope* scope);
+  static Symbol* lookupInCurrentScope(char* name);
   static Symbol* lookupInternal(char* name, bool publicSym = false);
   static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
   static Symbol* lookup(char* name, bool genError = false, 
@@ -31,7 +33,8 @@ class Symboltable {
 
   static void startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(Stmt* body);
-  static ModuleSymbol* defineModule(char* name, bool internal = false);
+  static ModuleSymbol* startModuleDef(char* name, bool internal = false);
+  static ModuleDefStmt* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
   static TypeDefStmt* defineUserType(char* name, Type* definition, 
 				     Expr* initializer = nilExpr);
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
@@ -46,8 +49,7 @@ class Symboltable {
 						   Expr* init, varType vartag, 
 						   bool isConst);
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
-  static Type* Symboltable::defineBuiltinType(char* name, Expr* init,
-					      bool placeholder = false);
+  static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(char* name, bool insert = true);
   static FnDefStmt* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
 				Type* retType, Stmt* body, 

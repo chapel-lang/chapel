@@ -2,6 +2,7 @@
 #define _PASSLIST_H_
 
 #include "../passes/codegen.h"
+#include "../passes/createEntryPoint.h"
 #include "../passes/filesToAST.h"
 #include "../passes/printProgram.h"
 #include "../passes/printSymtab.h"
@@ -31,6 +32,7 @@ Pass* passlist[] = {
   FIRST,
 
   RUN(FilesToAST),
+  RUN(CreateEntryPoint),
   RUN(SetupStmtLinks),
   RUN(CheckBackLinks),
   RUN(FieldsToMemberAccesses),
@@ -38,7 +40,6 @@ Pass* passlist[] = {
   RUN(ResolveSymbols2),
   RUN(FindUnknownTypes),
   RUN(MethodsToFunctions),
-  RUN(RenameCSymbols),
   RUN(Codegen),
 
   LAST

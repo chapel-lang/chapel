@@ -1,17 +1,18 @@
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in main at <internal>:0
 ::0(arithmetic_ops.chpl:4) ( int64 (<unknown>:0) )
 ::2(arithmetic_ops.chpl:2) ( int64 (<unknown>:0) )
 ::30(arithmetic_ops.chpl:3) ( int64 (<unknown>:0) )
 ::5(arithmetic_ops.chpl:1) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__init_arithmetic_ops(<internal>:0) ( __init_arithmetic_ops (<unknown>:0) )
 ::__init_arithmetic_ops(<unknown>:0) ( __init_arithmetic_ops (<unknown>:0) )
+::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
+::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
+::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
+::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
+::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
 ::actual answer = (arithmetic_ops.chpl:14) ( string (<unknown>:0) )
 ::actual answer = (arithmetic_ops.chpl:20) ( string (<unknown>:0) )
 ::actual answer = (arithmetic_ops.chpl:26) ( string (<unknown>:0) )
@@ -32,6 +33,8 @@
 ::m(arithmetic_ops.chpl:25) ( int64 (<unknown>:0) )
 ::m(arithmetic_ops.chpl:31) ( int64 (<unknown>:0) )
 ::m(arithmetic_ops.chpl:6) ( int64 (<unknown>:0) )
+::main(<internal>:0) ( main (<unknown>:0) )
+::main(<unknown>:0) ( main (<unknown>:0) )
 ::n = (arithmetic_ops.chpl:7) ( string (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(arithmetic_ops.chpl:13) ( int64 (<unknown>:0) )
@@ -47,8 +50,9 @@
 ::test: m + n(arithmetic_ops.chpl:23) ( string (<unknown>:0) )
 ::test: m - n(arithmetic_ops.chpl:29) ( string (<unknown>:0) )
 ::test: o / m(arithmetic_ops.chpl:17) ( string (<unknown>:0) )
-function __entryPoint <internal>:0
-function __initIntPrelude <internal>:0
-function __initPrelude <internal>:0
-function __init_arithmetic_ops <internal>:0
+function __init_arithmetic_ops arithmetic_ops.chpl:33
+function __init_entryPoint <internal>:0
+function __init_internal_prelude internal_prelude.chpl:21
+function __init_prelude prelude.chpl:54
+function main <internal>:0
 globals

@@ -126,27 +126,15 @@ static char* stripdirectories(char* filename) {
 }
 
 
-static char* stripextension(char* filename) {
-  char* newfilename = copystring(filename);
-  char* suffix = strrchr(newfilename, '.');
-  if (suffix != NULL) {
-    *suffix = '\0';
-  }
-  return newfilename;
-}
-
-
-static void genCFilenames(char* infilename, char** outfilename, 
+static void genCFilenames(char* modulename, char** outfilename, 
 			  char** extheadfilename, char** intheadfilename) {
   static char* outfilesuffix = ".c";
   static char* extheadsuffix = ".h";
   static char* intheadsuffix = "-internal.h";
 
-  char* infilenamebase = stripextension(stripdirectories(infilename));
-
-  *outfilename = glomstrings(2, infilenamebase, outfilesuffix);
-  *extheadfilename = glomstrings(2, infilenamebase, extheadsuffix);
-  *intheadfilename = glomstrings(2, infilenamebase, intheadsuffix);
+  *outfilename = glomstrings(2, modulename, outfilesuffix);
+  *extheadfilename = glomstrings(2, modulename, extheadsuffix);
+  *intheadfilename = glomstrings(2, modulename, intheadsuffix);
 }
 
 
@@ -210,9 +198,9 @@ static void genEndif(FILE* outfile) {
 }
 
 
-void openCFiles(char* infilename, fileinfo* outfile,
+void openCFiles(char* modulename, fileinfo* outfile,
 		fileinfo* extheader, fileinfo* intheader) {
-  genCFilenames(infilename, &(outfile->filename),
+  genCFilenames(modulename, &(outfile->filename),
 		&(extheader->filename), &(intheader->filename));
 
   outfile->pathname = genIntFilename(outfile->filename);

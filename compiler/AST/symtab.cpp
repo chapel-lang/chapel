@@ -70,6 +70,11 @@ void SymScope::setContext(Stmt* stmt, Symbol* sym) {
 }
 
 
+bool SymScope::isEmpty(void) {
+  return (firstSym == NULL);
+}
+
+
 void SymScope::insert(Symbol* sym) {
   table.put(sym->name, sym);
 
@@ -250,6 +255,7 @@ static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
 static FnSymbol* currentFn = NULL;
 static ModuleSymbol* firstModule = NULL;
+static ModuleSymbol* currentModule = NULL;
 static Symbol* mainFn = NULL;
 
 
@@ -364,13 +370,34 @@ FnSymbol* Symboltable::getCurrentFn(void) {
 }
 
 
+void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
+  Symbol* prevDefInScope = Symboltable::lookupInScope(sym->name, scope);
+  if (prevDefInScope) {
+    // only allow redefinition of functions in a single scope currently
+    if (typeid(*sym) != typeid(FnSymbol) &&
+	typeid(*sym) != typeid(FnSymbol)) {
+      /* currently the protoast tests fail because of this
+      USR_FATAL(sym, "redefinition of symbol %s (previous definition at %s)",
+		sym->name, prevDefInScope->stringLoc());
+      */
+    }
+  }
+  scope->insert(sym);
+}
+
+
 void Symboltable::define(Symbol* sym) {
-  currentScope->insert(sym);
+  defineInScope(sym, currentScope);
 }
 
 
 Symbol* Symboltable::lookupInScope(char* name, SymScope* scope) {
   return scope->table.get(name);
+}
+
+
+Symbol* Symboltable::lookupInCurrentScope(char* name) {
+  return lookupInScope(name, currentScope);
 }
 
 
@@ -449,15 +476,144 @@ BlockStmt* Symboltable::finishCompoundStmt(Stmt* body) {
 }
 
 
-ModuleSymbol* Symboltable::defineModule(char* name, bool internal) {
-  ModuleSymbol* newModule = new ModuleSymbol(name);
+ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
+  ModuleSymbol* newModule = new ModuleSymbol(name, internal);
 
-  if (!internal) {
-    define(newModule);
-    firstModule = appendLink(firstModule, newModule);
+  // if this is a software rather than a file module and there
+  // is a current module that is also a software module, then
+  // this is a nested module, which we can't handle
+  if (!newModule->isFileModule() && currentModule && 
+      !currentModule->isFileModule()) {
+    USR_FATAL(newModule, "Can't handle nested modules yet");
+  } else {
+    if (!internal) {
+      // Typically all modules would push scopes;  however, if this
+      // is a software module within a file module, and the file
+      // module's scope is empty, we can re-use it for simplicity
+      // This will have to change once we support nested modules
+      // to work with the case where the file is empty up to the
+      // first software module, but then contains other file module
+      // code after the first software module.
+      if (newModule->isFileModule()) {
+	Symboltable::pushScope(SCOPE_MODULE);
+      } else {
+	if (!currentScope->isEmpty()) {
+	  USR_FATAL(newModule, "Can't handle nested modules yet");
+	}
+      }
+    }
   }
 
+  currentModule = newModule;
+
   return newModule;
+}
+
+
+/*
+static bool ModuleDefIsInteresting(Stmt* def) {
+  Stmt* stmt = def;
+
+  while (stmt) {
+    if (!stmt->isNull()) {
+      if (typeid(*stmt) != typeid(ModuleDefStmt)) {
+	return true;
+      }
+    }
+    
+    stmt = nextLink(Stmt, stmt);
+  }
+  return false;
+}
+*/
+
+
+static bool ModuleDefContainsOnlyNestedModules(Stmt* def) {
+  Stmt* stmt = def;
+
+  while (stmt) {
+    if (!stmt->isNull()) {
+      if (typeid(*stmt) != typeid(ModuleDefStmt)) {
+	return false;
+      }
+    }
+    
+    stmt = nextLink(Stmt, stmt);
+  }
+  return true;
+}
+
+
+static Stmt* ModuleDefContainsNestedModules(Stmt* def) {
+  Stmt* stmt = def;
+
+  while (stmt) {
+    if (!stmt->isNull()) {
+      if (typeid(*stmt) == typeid(ModuleDefStmt)) {
+	return stmt;
+      }
+    }
+    
+    stmt = nextLink(Stmt, stmt);
+  }
+  return NULL;
+}
+
+
+ModuleDefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod, 
+					    Stmt* definition) {
+  bool empty = false;
+  if (!mod->internal) {
+    if (ModuleDefContainsOnlyNestedModules(definition)) {
+      // This is the case for a file module that contains a number
+      // of software modules and nothing else.  Such modules should
+      // essentially be dropped on the floor, as the file only
+      // served as a container, not as a module
+      empty = true;
+    } else {
+      Stmt* moduleDef = ModuleDefContainsNestedModules(definition);
+      // if the definition contains anything other than module
+      // definitions, then this is the case of a file that contains
+      // a software module and some other stuff, which is a nested
+      // module, and we can't handle that case yet
+      if (moduleDef) {
+	USR_FATAL(moduleDef, "Can't handle nested modules yet");
+      } else {
+	// for now, define all modules in the prelude scope, since
+	// they can't be nested
+	defineInScope(mod, preludeScope);
+	firstModule = appendLink(firstModule, mod);
+      }
+    }
+  }
+
+  if (!empty) {
+    // pop the module's scope
+    if (!mod->internal) {
+      SymScope* modScope = Symboltable::popScope();
+      modScope->setContext(nilStmt, mod);
+    }
+
+    // define the module's init function.  This should arguably go
+    // in the module's scope, but that doesn't currently seem to
+    // work.
+    mod->stmts = definition;
+    mod->createInitFn();
+
+    // if this was a software scope within a file scope, we borrowed
+    // its (empty) scope in startModuleDef.  Give it a new scope to
+    // work with here.
+    if (!mod->internal) {
+      if (!mod->isFileModule()) {
+	Symboltable::pushScope(SCOPE_MODULE);
+      }
+    }
+  }
+
+  // HACK: should actually look at parent module in general case
+  currentModule = NULL;
+
+  return new ModuleDefStmt(mod);
 }
 
 
@@ -627,16 +783,14 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
 }
 ----------------------------------------------------- ***/
 
-Type* Symboltable::defineBuiltinType(char* name, Expr* init, 
-				     bool placeholder) {
+Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
   Type* newType = new Type(TYPE_BUILTIN, init);
   TypeSymbol* sym = new TypeSymbol(name, newType);
+  sym->cname = copystring(cname);
   newType->addName(sym);
 
   define(sym);
-  if (!placeholder) {
-    builtinTypes.add(newType);
-  }
+  builtinTypes.add(newType);
 
   return newType;
 }

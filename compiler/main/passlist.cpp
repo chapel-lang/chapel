@@ -8,6 +8,7 @@ REGISTER(CheckIDs);
 REGISTER(CheckTypeInfo);
 REGISTER(CloneAllFns);
 REGISTER(Codegen);
+REGISTER(CreateEntryPoint);
 REGISTER(DummyPass);
 REGISTER(FieldsToMemberAccesses); // SJD: Convert fields in methods to MemberAccesses
 REGISTER(FindUnknownTypes);

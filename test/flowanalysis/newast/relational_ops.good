@@ -1,16 +1,17 @@
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in main at <internal>:0
 ::0(relational_ops.chpl:5) ( int64 (<unknown>:0) )
 ::2(relational_ops.chpl:2) ( int64 (<unknown>:0) )
 ::30(relational_ops.chpl:3) ( int64 (<unknown>:0) )
 ::5(relational_ops.chpl:1) ( int64 (<unknown>:0) )
 ::5(relational_ops.chpl:4) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
+::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
+::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
+::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
+::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
 ::__init_relational_ops(<internal>:0) ( __init_relational_ops (<unknown>:0) )
 ::__init_relational_ops(<unknown>:0) ( __init_relational_ops (<unknown>:0) )
 ::actual answer = (relational_ops.chpl:16) ( string (<unknown>:0) )
@@ -49,6 +50,8 @@
 ::m(relational_ops.chpl:51) ( int64 (<unknown>:0) )
 ::m(relational_ops.chpl:57) ( int64 (<unknown>:0) )
 ::m(relational_ops.chpl:7) ( int64 (<unknown>:0) )
+::main(<internal>:0) ( main (<unknown>:0) )
+::main(<unknown>:0) ( main (<unknown>:0) )
 ::n = (relational_ops.chpl:8) ( string (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(relational_ops.chpl:15) ( int64 (<unknown>:0) )
@@ -75,8 +78,9 @@
 ::test: m > p(relational_ops.chpl:19) ( string (<unknown>:0) )
 ::test: m >= p(relational_ops.chpl:31) ( string (<unknown>:0) )
 ::test: o >= m(relational_ops.chpl:25) ( string (<unknown>:0) )
-function __entryPoint <internal>:0
-function __initIntPrelude <internal>:0
-function __initPrelude <internal>:0
-function __init_relational_ops <internal>:0
+function __init_entryPoint <internal>:0
+function __init_internal_prelude internal_prelude.chpl:21
+function __init_prelude prelude.chpl:54
+function __init_relational_ops relational_ops.chpl:59
+function main <internal>:0
 globals

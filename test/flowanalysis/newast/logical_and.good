@@ -1,23 +1,26 @@
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in main at <internal>:0
 ::0 and 0 = (logical_and.chpl:6) ( string (<unknown>:0) )
 ::0 and 1 = (logical_and.chpl:12) ( string (<unknown>:0) )
 ::0(logical_and.chpl:1) ( int64 (<unknown>:0) )
 ::0(logical_and.chpl:3) ( int64 (<unknown>:0) )
 ::1 and 1 = (logical_and.chpl:9) ( string (<unknown>:0) )
 ::1(logical_and.chpl:2) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
+::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
+::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
 ::__init_logical_and(<internal>:0) ( __init_logical_and (<unknown>:0) )
 ::__init_logical_and(<unknown>:0) ( __init_logical_and (<unknown>:0) )
+::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
+::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::answer(logical_and.chpl:12) ( int64 (<unknown>:0) )
 ::answer(logical_and.chpl:6) ( int64 (<unknown>:0) )
 ::answer(logical_and.chpl:9) ( int64 (<unknown>:0) )
+::main(<internal>:0) ( main (<unknown>:0) )
+::main(<unknown>:0) ( main (<unknown>:0) )
 ::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
 ::o(logical_and.chpl:11) ( int64 (<unknown>:0) )
@@ -27,8 +30,9 @@
 ::p(logical_and.chpl:11) ( int64 (<unknown>:0) )
 ::p(logical_and.chpl:8) ( int64 (<unknown>:0) )
 ::p(logical_and.chpl:8) ( int64 (<unknown>:0) )
-function __entryPoint <internal>:0
-function __initIntPrelude <internal>:0
-function __initPrelude <internal>:0
-function __init_logical_and <internal>:0
+function __init_entryPoint <internal>:0
+function __init_internal_prelude internal_prelude.chpl:21
+function __init_logical_and logical_and.chpl:13
+function __init_prelude prelude.chpl:54
+function main <internal>:0
 globals

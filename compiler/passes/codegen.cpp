@@ -15,7 +15,7 @@ void Codegen::run(ModuleSymbol* moduleList) {
 
   ModuleSymbol* currentModule = moduleList;
   while (currentModule) {
-    currentModule->codegen();
+    currentModule->codegenDef();
 
     currentModule = nextLink(ModuleSymbol, currentModule);
   }

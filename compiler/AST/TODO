@@ -1,5 +1,4 @@
 * move suspicious symbols into prelude file
-* unify char literals between chapel.y and chapel.lex (name or not)
 * deal with BLC comments
 
 * Need to insert iterator indices into own scope (e.g., [i:D] i) rather
@@ -9,8 +8,6 @@
 * support for classes/methods
 
 * understand what can be used before defined better and handle more cleanly
-
-* remove dead code (usually commented out)
 
 * squelch init prototype
   - and/or specialize name of init procedure to file and make a top-level
@@ -22,8 +19,6 @@
 
 * remove hack that assumes domains of unknown rank are 1 (stmt.cpp
   and type.cpp) -- trivial/bradc/declprintdom2.chpl is an example
-
-* remove reduce/reduce and scan/reduce conflicts
 
 * should do export control of variables, types, all symbols
 
@@ -42,29 +37,26 @@
 * make codegen for unresolved symbol cause problem to ensure all
   symbols are resolved
 
-* remove hacks that assume dtUnknown is an integer
-
 * resolve question of whether or not resolving symbol in symtab.cpp
   for MemberAccess is a problem
 
-* multifile compiles
-
 * write forall for link.cpp?  Refactor link into a list class to allow
   pre-insertion?
-
-* preludes as modules?  Figure this out.
 
 * codegen standard libraries as a compiler invocation?
 
 * make a built-in types class
 
-* rename type symbols prior to codegen
+* rename type symbols prior to codegen rather than special casing
 
-* write symbol resolution pass
+* write symbol resolution pass & make all symbols Unresolved by
+  default
 
+* implement internal & external C names?
 
-SHANNON:
 * fix type_info() for BinOp
-* implement isComputable() and intVal() better for Expr hierarchy
-* add read routines for enumerated types?
 
+* implement isComputable() and intVal() better for Expr hierarchy
+
+* should module's init functions go in their scope?  Currently they
+  aren't.

@@ -18,7 +18,7 @@ struct fileinfo {
 
 void deleteTmpDir(void);
 
-void openCFiles(char* infilename, fileinfo* outfile,
+void openCFiles(char* modulename, fileinfo* outfile,
 		fileinfo* extheadfile, fileinfo* intheadfile);
 void closeCFiles(fileinfo* outfile, 
 		 fileinfo* extheadfile, fileinfo* intheadfile);

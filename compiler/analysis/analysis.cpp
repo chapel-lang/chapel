@@ -727,6 +727,7 @@ gen_if1(BaseAST *ast) {
     case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
     case STMT_TYPEDEF: break;
     case STMT_FNDEF: break;
+    case STMT_MODDEF: break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
@@ -1160,7 +1161,7 @@ build_function(FnDefStmt *f) {
   Sym *s = f->fn->asymbol;
   if (verbose_level > 1 && f->fn->name)
     printf("build_functions: %s\n", f->fn->name);
-  if (s->name && !strcmp("__entryPoint", s->name)) {
+  if (s->name && !strcmp("__init_entryPoint", s->name)) {
     if1_set_builtin(if1, s, "init");
     sym_init = s;
   }

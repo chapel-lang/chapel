@@ -7,7 +7,6 @@ class Stmt;
 
 extern ModuleSymbol* internalPrelude;
 extern ModuleSymbol* prelude;
-extern Stmt* entryPoint;
 
 class FilesToAST : public Pass {
   void run(ModuleSymbol* moduleList);

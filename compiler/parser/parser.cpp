@@ -2,7 +2,6 @@
 #include "files.h"
 #include "parser.h"
 #include "stringutil.h"
-#include "symbol.h"
 #include "symtab.h"
 #include "yy.h"
 
@@ -28,27 +27,20 @@ static char* filenameToModulename(char* filename) {
 
 ModuleSymbol* ParseFile(char* filename, bool prelude) {
   yyfilename = filename;
-  yylineno = 1;
+  yylineno = 0;
 
   char* modulename = filenameToModulename(filename);
-  ModuleSymbol* newModule = Symboltable::defineModule(modulename, prelude);
+  ModuleSymbol* newModule = Symboltable::startModuleDef(modulename, prelude);
 
-  if (!prelude) {
-    Symboltable::pushScope(SCOPE_MODULE);
-  }
-
+  yylineno = 1;
   yyin = openInputFile(filename);
   
   yystmtlist = nilStmt;
   yyparse();
-  newModule->stmts = yystmtlist;
 
   closeInputFile(yyin);
 
-  if (!prelude) {
-    SymScope* modScope = Symboltable::popScope();
-    modScope->setContext(nilStmt, newModule);
-  }
+  Symboltable::finishModuleDef(newModule, yystmtlist);
 
   yyfilename = "<internal>";
   yylineno = 0;

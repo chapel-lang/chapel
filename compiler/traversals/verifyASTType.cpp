@@ -9,57 +9,62 @@ static void verifyASTType(BaseAST* ast) {
   switch (ast->astType) {
   case STMT:
     if (typeid(*ast) != typeid(Stmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT");
     }
     break;
   case STMT_NOOP:
     if (typeid(*ast) != typeid(NoOpStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_NOOP");
     }
     break;
   case STMT_VARDEF:
     if (typeid(*ast) != typeid(VarDefStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_VARDEF");
     }
     break;
   case STMT_TYPEDEF:
     if (typeid(*ast) != typeid(TypeDefStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_TYPEDEF");
     }
     break;
   case STMT_FNDEF:
     if (typeid(*ast) != typeid(FnDefStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_FNDEF");
+    }
+    break;
+  case STMT_MODDEF:
+    if (typeid(*ast) != typeid(ModuleDefStmt)) {
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_MODDEF");
     }
     break;
   case STMT_EXPR:
     if (typeid(*ast) != typeid(ExprStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_EXPR");
     }
     break;
   case STMT_RETURN:
     if (typeid(*ast) != typeid(ReturnStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_RETURN");
     }
     break;
   case STMT_BLOCK:
     if (typeid(*ast) != typeid(BlockStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_BLOCK");
     }
     break;
   case STMT_WHILELOOP:
     if (typeid(*ast) != typeid(WhileLoopStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_WHILELOOP");
     }
     break;
   case STMT_FORLOOP:
     if (typeid(*ast) != typeid(ForLoopStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_FORLOOP");
     }
     break;
   case STMT_COND:
     if (typeid(*ast) != typeid(CondStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: ");
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_COND");
     }
     break;
   case EXPR:
@@ -215,12 +220,12 @@ static void verifyASTType(BaseAST* ast) {
     break;
   case SYMBOL_FN:
     if (typeid(*ast) != typeid(FnSymbol)) {
-      INT_FATAL(ast, "Unexpected AST symbol type: ");
+      INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_FN");
     }
     break;
   case SYMBOL_ENUM:
     if (typeid(*ast) != typeid(EnumSymbol)) {
-      INT_FATAL(ast, "Unexpected AST symbol type: ");
+      INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_ENUM");
     }
     break;
   case TYPE:

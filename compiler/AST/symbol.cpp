@@ -227,11 +227,13 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
   body = init_body;
   exportMe = init_exportMe;
 
-  if (strcmp(name, "main") == 0 && scope->type == SCOPE_MODULE && 
+  if (strcmp(name, "main") == 0 && 
+      (scope->type == SCOPE_MODULE || scope->type == SCOPE_POSTPARSE) && 
       formals->isNull()) {
     if (mainFn->isNull()) {
       mainFn = this;
       exportMe = true;
+      cname = copystring("_chpl_main");
     } else {
       USR_FATAL(this, "main multiply defined -- first occurrence at %s",
 		mainFn->stringLoc());
@@ -305,18 +307,20 @@ void EnumSymbol::set_values(void) {
 }
 
 
-ModuleSymbol::ModuleSymbol(char* init_name) :
+ModuleSymbol::ModuleSymbol(char* init_name, bool init_internal) :
   Symbol(SYMBOL_MODULE, init_name),
+  internal(init_internal),
+  stmts(nilStmt),
   initFn(nilFnSymbol)
 {}
 
 
-void ModuleSymbol::codegen(void) {
+void ModuleSymbol::codegenDef(void) {
   fileinfo outfileinfo;
   fileinfo extheadfileinfo;
   fileinfo intheadfileinfo;
 
-  openCFiles(filename, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
+  openCFiles(name, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
 
   fprintf(codefile, "#include \"stdchpl.h\"\n");
   fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
@@ -326,4 +330,62 @@ void ModuleSymbol::codegen(void) {
   stmts->codegenList(codefile, "\n");
 
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
+}
+
+
+static bool stmtIsGlob(ILink* link) {
+  Stmt* stmt = dynamic_cast<Stmt*>(link);
+
+  if (stmt == NULL) {
+    INT_FATAL("Non-Stmt found in StmtIsGlob");
+  }
+  return stmt->canLiveAtFileScope();
+}
+
+
+void ModuleSymbol::createInitFn(void) {
+  char* fnName = glomstrings(2, "__init_", name);
+  ILink* globstmts;
+  ILink* initstmts;
+  Stmt* definition = stmts;
+
+  definition->filter(stmtIsGlob, &globstmts, &initstmts);
+
+  Stmt* initFunStmts = dynamic_cast<Stmt*>(initstmts);
+  definition = dynamic_cast<Stmt*>(globstmts);
+  Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
+                                                 : nilStmt);
+  FnDefStmt* initFunDef = Symboltable::defineFunction(fnName, nilSymbol, 
+						      dtVoid, initFunBody, 
+						      true);
+  initFn = initFunDef->fn;
+
+  {
+    Stmt* initstmt = initFunStmts;
+    while (initstmt) {
+      initstmt->parentFn = initFn;
+      initstmt = nextLink(Stmt, initstmt);
+    }
+    initFunBody->parentFn = initFn;
+  }
+
+  definition = appendLink(definition, initFunDef);
+
+  stmts = definition;
+
+  // if main() is defined in this module, prefix its body with call
+  // to the module's init function
+  FnSymbol* mainFn = FnSymbol::mainFn;
+  if (!mainFn->isNull()) {
+    if (mainFn->scope->symContext == this) {
+      ExprStmt* initStmt = ExprStmt::createFnCallStmt(initFn);
+      initStmt->append(mainFn->body);
+      mainFn->body = new BlockStmt(initStmt);
+    }
+  }
+}
+
+
+bool ModuleSymbol::isFileModule(void) {
+  return (lineno == 0);
 }

@@ -36,6 +36,7 @@
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
   FnSymbol* fnsym;
+  ModuleSymbol* modsym;
 }
 
 %token TCALL
@@ -52,6 +53,7 @@
 %token TIN
 %token TINDEX
 %token TINOUT
+%token TMODULE
 %token TOUT
 %token TREF
 %token TRETURN
@@ -101,9 +103,9 @@
 %type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
 %type <pexpr> reduction vardeclinit
 %type <pdexpr> domainExpr
-%type <stmt> program statements statement decls decl vardecl assignment conditional
-%type <stmt> retStmt loop forloop whileloop enumdecl typealias typedecl fndecl
-%type <stmt> classdecl
+%type <stmt> program modulebody statements statement decls decl vardecl 
+%type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl 
+%type <stmt> typealias typedecl fndecl classdecl moduledecl
 
 
 /* These are declared in increasing order of precedence. */
@@ -131,9 +133,12 @@
 %% 
 
 
-program:  
-  statements
+program: modulebody
     { yystmtlist = $$; }
+;
+
+modulebody: 
+  statements
 ;
 
 
@@ -329,10 +334,23 @@ fndecl:
 ;
 
 
+moduledecl:
+  TMODULE identifier
+    {
+      $<modsym>$ = Symboltable::startModuleDef($2);
+    }
+                     TLCBR modulebody TRCBR
+    {
+      $$ = Symboltable::finishModuleDef($<modsym>3, $5);
+    }
+;
+
+
 decl:
   vardecl
 | typedecl
 | fndecl
+| moduledecl
 ;
 
 

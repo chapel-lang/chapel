@@ -42,6 +42,8 @@ class SymScope : public gc {
   SymScope(scopeType init_type, int init_level = 0);
   void setContext(Stmt* stmt, Symbol* sym = nilSymbol);
 
+  bool isEmpty(void);
+
   void insert(Symbol* sym);
   SymScope* findEnclosingScopeType(scopeType t);
 

@@ -1,32 +1,13 @@
 #include "renameCSymbols.h"
-#include "symtab.h"
-
-
-static FnSymbol* ensureMainExists(ModuleSymbol* moduleList) {
-  FnSymbol* mainFn = FnSymbol::mainFn;
-  if (mainFn->isNull()) {
-    if (moduleList->next->isNull()) {
-      // TODO: factor this together with similar code in filesToAST.cpp?
-      FnCall* initCall = new FnCall(new Variable(moduleList->initFn));
-      ExprStmt* initStmt = new ExprStmt(initCall);
-      BlockStmt* mainBody = new BlockStmt(initStmt);
-      FnDefStmt* maindefstmt = Symboltable::defineFunction("main", nilSymbol, 
-							   dtVoid, mainBody, 
-							   true);
-      moduleList->stmts->append(maindefstmt);
-      mainFn = maindefstmt->fn;
-      FnSymbol::mainFn = mainFn;
-    } else {
-      fail("code defines multiple modules but no main function");
-    }
-  }
-
-  return mainFn;
-}
+#include "symbol.h"
 
 
 void RenameCSymbols::run(ModuleSymbol* moduleList) {
-  FnSymbol* mainFn = ensureMainExists(moduleList);
+  // BLC: we could/should rename other things here as well -- types,
+  // overloaded function names?  reserved C words?
 
-  mainFn->cname = "_chpl_main";
+  // BLC: or perhaps every symbol should have two names, a chapel name
+  // and a C name, in which case they could just be created correctly
+  // in the first place for most cases, and others could be munged here
+  // or wherever is appropriate.
 }

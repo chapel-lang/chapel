@@ -1,16 +1,17 @@
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in main at <internal>:0
 ::...and so on...\n(writen.chpl:1) ( string (<unknown>:0) )
 ::3rd...(writen.chpl:2) ( string (<unknown>:0) )
 ::4th...(writen.chpl:2) ( string (<unknown>:0) )
 ::5(writen.chpl:1) ( int64 (<unknown>:0) )
 ::5(writen.chpl:2) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
+::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
+::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
+::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
+::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
 ::__init_writen(<internal>:0) ( __init_writen (<unknown>:0) )
 ::__init_writen(<unknown>:0) ( __init_writen (<unknown>:0) )
 ::and another second...(writen.chpl:2) ( string (<unknown>:0) )
@@ -20,10 +21,13 @@
 ::here is the fourth...(writen.chpl:1) ( string (<unknown>:0) )
 ::here is the second\n(writen.chpl:1) ( string (<unknown>:0) )
 ::here is the third\n(writen.chpl:1) ( string (<unknown>:0) )
+::main(<internal>:0) ( main (<unknown>:0) )
+::main(<unknown>:0) ( main (<unknown>:0) )
 ::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::th...(writen.chpl:2) ( string (<unknown>:0) )
-function __entryPoint <internal>:0
-function __initIntPrelude <internal>:0
-function __initPrelude <internal>:0
-function __init_writen <internal>:0
+function __init_entryPoint <internal>:0
+function __init_internal_prelude internal_prelude.chpl:21
+function __init_prelude prelude.chpl:54
+function __init_writen writen.chpl:3
+function main <internal>:0
 globals

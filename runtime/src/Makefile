@@ -6,6 +6,7 @@ include $(CHAPEL_ROOT)/runtime/etc/Makefile.macros
 CC = gcc
 CFLAGS += -I../include
 
+CFLAGS += -Wall -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
 CFLAGS += $(ONLYCFLAGS)
 
 CHPL_RT_SRCS = \

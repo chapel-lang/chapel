@@ -77,12 +77,14 @@ void ILink::codegen(FILE* outfile) {
 void ILink::codegenList(FILE* outfile, char* separator) {
   ILink* ptr;
 
-  codegen(outfile);
-  ptr = next;
-  while (!ptr->isNull()) {
-    fprintf(outfile, "%s", separator);
-    ptr->codegen(outfile);
-    ptr = ptr->next;
+  if (!isNull()) {
+    codegen(outfile);
+    ptr = next;
+    while (!ptr->isNull()) {
+      fprintf(outfile, "%s", separator);
+      ptr->codegen(outfile);
+      ptr = ptr->next;
+    }
   }
 }
 

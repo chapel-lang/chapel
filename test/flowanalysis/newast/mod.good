@@ -1,17 +1,18 @@
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
- called from 0 in __entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in main at <internal>:0
 ::0(mod.chpl:4) ( int64 (<unknown>:0) )
 ::10(mod.chpl:3) ( int64 (<unknown>:0) )
 ::2(mod.chpl:2) ( int64 (<unknown>:0) )
 ::5(mod.chpl:1) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
+::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
+::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
 ::__init_mod(<internal>:0) ( __init_mod (<unknown>:0) )
 ::__init_mod(<unknown>:0) ( __init_mod (<unknown>:0) )
+::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
+::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
 ::actual answer = (mod.chpl:14) ( string (<unknown>:0) )
 ::actual answer = (mod.chpl:20) ( string (<unknown>:0) )
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
@@ -24,6 +25,8 @@
 ::m(mod.chpl:13) ( int64 (<unknown>:0) )
 ::m(mod.chpl:19) ( int64 (<unknown>:0) )
 ::m(mod.chpl:6) ( int64 (<unknown>:0) )
+::main(<internal>:0) ( main (<unknown>:0) )
+::main(<unknown>:0) ( main (<unknown>:0) )
 ::n = (mod.chpl:7) ( string (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(mod.chpl:13) ( int64 (<unknown>:0) )
@@ -35,8 +38,9 @@
 ::o(mod.chpl:8) ( int64 (<unknown>:0) )
 ::test: m mod n(mod.chpl:11) ( string (<unknown>:0) )
 ::test: o mod m(mod.chpl:17) ( string (<unknown>:0) )
-function __entryPoint <internal>:0
-function __initIntPrelude <internal>:0
-function __initPrelude <internal>:0
-function __init_mod <internal>:0
+function __init_entryPoint <internal>:0
+function __init_internal_prelude internal_prelude.chpl:21
+function __init_mod mod.chpl:21
+function __init_prelude prelude.chpl:54
+function main <internal>:0
 globals

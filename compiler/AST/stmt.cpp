@@ -395,6 +395,19 @@ void FnDefStmt::codegen(FILE* outfile) {
 }
 
 
+ModuleDefStmt::ModuleDefStmt(ModuleSymbol* init_module) :
+  Stmt(STMT_MODDEF),
+  module(init_module)
+{}
+
+
+void ModuleDefStmt::codegen(FILE* outfile) {
+  fprintf(outfile, "/* module ");
+  module->codegen(outfile);
+  fprintf(outfile, " was declared here */");
+}
+
+
 ExprStmt::ExprStmt(Expr* init_expr) :
   Stmt(STMT_EXPR),
   expr(init_expr) 
@@ -425,6 +438,11 @@ void ExprStmt::print(FILE* outfile) {
 void ExprStmt::codegen(FILE* outfile) {
   expr->codegen(outfile);
   fprintf(outfile, ";");
+}
+
+
+ExprStmt* ExprStmt::createFnCallStmt(FnSymbol* fnSym, Expr* argList) {
+  return new ExprStmt(new FnCall(new Variable(fnSym), argList));
 }
 
 
