@@ -18375,3 +18375,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/28/05 17:09:23 -- deitz
+
+Log message:
+	Moved TransformLetExprs after ResolveSymbols etc.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+
