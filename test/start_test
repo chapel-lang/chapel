@@ -342,8 +342,8 @@ foreach dir ($dirs)
 		else
 		    set sub_test = $testdir/sub_test
 		endif
-		setenv COMPOPTS $compopts
-		setenv EXECOPTS $execopts
+		setenv COMPOPTS "$compopts"
+		setenv EXECOPTS "$execopts"
 		echo "[Starting $sub_test `date`]"
 		$sub_test "$compiler" "$testdir" |& tee -a $logfile
 	else
