@@ -10146,3 +10146,28 @@ Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y 
 	chapel/compiler/traversals/: verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+11/22/04 12:38:32 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed test cases (Steve, did you forget to checkin the test changes?)
+	Fixed "config" so that it doesn't propagate constants, and assumes
+	that the variable can take on any legal value, and added test
+	case to that effect.
+	Removed unnecessary variables in Sym.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp dead.cpp fa.cpp 
+	                           pattern.cpp 
+	chapel/compiler/backend/: graph.cpp 
+	chapel/compiler/include/: sym.h 
+	chapel/compiler/vparser/: parse_ast.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good noop.good 
+Added files:
+	chapel/test/flowanalysis/jplevyak/config/: CATFILES CLEANFILES 
+	                                           COMPOPTS NOEXEC 
+	                                           PREDIFF 
+	                                           configVar.chpl 
+	                                           configVar.good 
+
