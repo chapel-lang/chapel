@@ -7451,3 +7451,16 @@ Modified files:
 	chapel/compiler/: analysis.cpp 
 	chapel/compiler/AST/: internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+09/15/04 15:45:59 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	enumarray.chpl now working
+
+Modified files:
+	chapel/test/flowanalysis/newast/: domarr.good formatoutput.good 
+	                                  protoast_test.good 
+Added files:
+	chapel/test/flowanalysis/newast/: enumarray.chpl enumarray.good 
+
