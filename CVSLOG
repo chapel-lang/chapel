@@ -12584,3 +12584,17 @@ Modified files:
 Added files:
 	chapel/test/classes/deitz/: test_union1.chpl test_union1.good 
 
+---------------------------------------------------------------------------
+
+12/21/04 17:09:10 -- deitz
+
+Log message:
+	Fixed a small bug in which symbols were resolved before "this" was
+	inserted into bound functions.  Updated the line numbers in a couple
+	of flowanalysis tests which probably changed in the checkin before my
+	last one.
+
+Modified files:
+	chapel/compiler/traversals/: cleanup.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good noop.good 
+
