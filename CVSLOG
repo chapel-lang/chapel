@@ -12009,3 +12009,73 @@ Added files:
 	                                        configVarGoodEnum.execopts 
 	                                        configVarGoodEnum.good 
 
+---------------------------------------------------------------------------
+
+12/17/04 09:38:26 -- deitz
+
+Log message:
+	Beefed up the traversal mechanism so that the functions TRAVERSE and
+	TRAVERSE_LS can be used with impunity.  Unfortunately, the old
+	TRAVERSE and TRAVERSE_LS procedures did not work well.  Because the
+	traverse and traverseList member functions take a first argument
+	(_this) that changes in each class (It must be a reference to a
+	pointer to an object of the same type as this.), the dispatch could
+	not correctly handle the variations.  These same functions are now
+	replicated throughout the hierarchy.  The macro at the beginning of
+	classes derived from Stmt, Expr, Symbol, and Type create these
+	traversal functions.
+	
+	Fixed a major-league subtle bug in the new replace mechanism.  The
+	problem had to do with changing a pointer inside the function that
+	could be aliased to the parameter by the pass-pointer-by-reference
+	semantics.  The fix is to use an internal function that does not use
+	pass-pointer-by-reference semantics.  This keeps the same
+	functionality on replace.  So replacing one statement with another
+	results in the pointer being changed as well.  This is good when the
+	function is used inside a traversal on the statement being processed.
+	The same holds for expressions.
+	
+	The replace mechanism now works seemingly very well for statements and
+	expressions using Stmt::replace(old_stmt, new_stmt) and
+	Expr::replace(old_expr, new_expr).  ILink::replace should never be
+	called (except within the implementations of these other replace
+	routines).
+	
+	Removed Symbol::replace (which had other semantics and was not
+	necessary).  It can be rebuilt later and could be used, for example,
+	to replace formal parameters in a function.
+	
+	Removed the ast_util files which used to contain the traverse
+	functions TRAVERSE and TRAVERSE_LS.  These are now macros in link.h
+	that should be used simply because they are a less redundant way to
+	call these methods that require _this, i.e., write TRAVERSE(a, b, c)
+	rather than a->traverse(a, b, c).  Changed most, if not all, calls to
+	the methods traverse and traverseList to these macros.  Eliminated
+	some static casts.
+	
+	Added a new test case that uses a with-statement in a class definition
+	where it is the first statement in the class.
+	
+	Added a few .cvsignore files to certain test directories where my
+	"tmp" directories kept showing up.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share baseAST.cpp expr.cpp 
+	                      link.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h link.h stmt.h 
+	                          symbol.h type.h 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
+	                             testGetStuff.cpp traversal.cpp 
+	chapel/test/classes/deitz/: .cvsignore 
+	chapel/test/classes/deitz/future/: .cvsignore 
+	chapel/test/trivial/bradc/: .cvsignore 
+Added files:
+	chapel/test/classes/deitz/: test_class_with3.chpl 
+	                            test_class_with3.good 
+	chapel/test/classes/deitz/future/future/: .cvsignore 
+	chapel/test/trivial/deitz/: .cvsignore 
+Removed files:
+	chapel/compiler/AST/: ast_util.cpp 
+	chapel/compiler/include/: ast_util.h 
+
