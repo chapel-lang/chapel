@@ -17129,3 +17129,19 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_integer_2d.future 
 
+---------------------------------------------------------------------------
+
+02/10/05 10:57:49 -- deitz
+
+Log message:
+	Added Jacobi computation to test suite.
+	
+	Removed futures for function type variable tests.
+
+Added files:
+	chapel/test/arrays/deitz/: jacobi.chpl jacobi.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_function1.future 
+	                                         test_typevar_function2.future 
+
