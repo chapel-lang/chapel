@@ -849,9 +849,6 @@ void IOCall::codegen(FILE* outfile) {
 
     if (argdt == dtUnknown) {
       argdt = type_info(arg);
-      if (argdt == dtUnknown) {
-	argdt = dtInteger; // BLC: hack!  Remove once type_info() working
-      }
     }
     argdt->codegen(outfile);
     fprintf(outfile, "(");

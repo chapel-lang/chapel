@@ -183,11 +183,7 @@ void ParamSymbol::printDef(FILE* outfile) {
 
 
 void ParamSymbol::codegenDef(FILE* outfile) {
-  if (type == dtUnknown) {       // BLC: This is a temporary hack until
-    dtInteger->codegen(outfile); // we get type inference hooked in; assume
-  } else {                       // all params are integers...  Inherit
-    type->codegen(outfile);      // from Symbol::codegenDef() once this
-  }                              // hack is fixed
+  type->codegen(outfile);
   fprintf(outfile, " ");
   this->codegen(outfile);
 }

@@ -152,11 +152,7 @@ void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
   } else {
     fprintf(outfile, "_write");
   }
-  if (this == dtUnknown) {  // BLC: Hack until we get type inference working
-    dtInteger->codegen(outfile);
-  } else {
-    this->codegen(outfile);
-  }
+  this->codegen(outfile);
 }
 
 
