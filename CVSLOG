@@ -4542,3 +4542,136 @@ Log message:
 Modified files:
 	chapel/test/trivial/bradc/functions/: mutrec.chpl 
 
+---------------------------------------------------------------------------
+
+07/29/04 10:08:52 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Upgrade BoehmGC to version 6.3
+	This corrects an issue I am seeing where non-free objects are being collected.
+	(could be a gcc 3.4.1,Linux 2.6,or AMD64 issue)
+
+Modified files:
+	chapel/compiler/: pattern.cpp 
+	chapel/make/: Makefile.base 
+Added files:
+	chapel/third-party/boehmgc/: gc6.3.tar.gz 
+	chapel/third-party/boehmgc/gc6.3/: AmigaOS.c BCC_MAKEFILE 
+	                                   EMX_MAKEFILE MacOS.c 
+	                                   MacProjects.sit.hqx 
+	                                   Makefile.DLLs Makefile.am 
+	                                   Makefile.direct Makefile.dj 
+	                                   Makefile.in NT_MAKEFILE 
+	                                   NT_STATIC_THREADS_MAKEFILE 
+	                                   NT_THREADS_MAKEFILE 
+	                                   OS2_MAKEFILE PCR-Makefile 
+	                                   README.QUICK SMakefile.amiga 
+	                                   WCC_MAKEFILE acinclude.m4 
+	                                   aclocal.m4 add_gc_prefix.c 
+	                                   aix_irix_threads.c allchblk.c 
+	                                   alloc.c alpha_mach_dep.S 
+	                                   backgraph.c base_lib 
+	                                   blacklst.c callprocs 
+	                                   checksums.c config.guess 
+	                                   config.sub configure 
+	                                   configure.host configure.in 
+	                                   darwin_stop_world.c dbg_mlc.c 
+	                                   depcomp digimars.mak 
+	                                   dyn_load.c finalize.c gc.a 
+	                                   gc.mak gc_cpp.cc gc_cpp.cpp 
+	                                   gc_dlopen.c gcc_support.c 
+	                                   gcj_mlc.c gcname.c headers.c 
+	                                   hpux_test_and_clear.s 
+	                                   ia64_save_regs_in_stack.s 
+	                                   if_mach if_mach.c 
+	                                   if_not_there if_not_there.c 
+	                                   install-sh libtool.m4 
+	                                   ltmain.sh mach_dep.c malloc.c 
+	                                   mallocx.c mark.c mark_rts.c 
+	                                   mips_sgi_mach_dep.s 
+	                                   mips_ultrix_mach_dep.s misc.c 
+	                                   missing mkinstalldirs 
+	                                   new_hblk.c obj_map.c os_dep.c 
+	                                   pc_excludes pcr_interface.c 
+	                                   powerpc_darwin_mach_dep.s 
+	                                   pthread_stop_world.c 
+	                                   pthread_support.c ptr_chck.c 
+	                                   real_malloc.c reclaim.c 
+	                                   rs6000_mach_dep.s setjmp_t.c 
+	                                   solaris_pthreads.c 
+	                                   solaris_threads.c 
+	                                   sparc_mach_dep.S 
+	                                   sparc_netbsd_mach_dep.s 
+	                                   sparc_sunos4_mach_dep.s 
+	                                   specific.c stubborn.c 
+	                                   threadlibs threadlibs.c 
+	                                   typd_mlc.c version.h 
+	                                   win32_threads.c 
+	chapel/third-party/boehmgc/gc6.3/Mac_files/: MacOS_Test_config.h 
+	                                             MacOS_config.h 
+	                                             dataend.c 
+	                                             datastart.c 
+	chapel/third-party/boehmgc/gc6.3/cord/: cordbscs.c cordprnt.c 
+	                                        cordtest.c cordxtra.c 
+	                                        de.c de_cmds.h 
+	                                        de_win.ICO de_win.RC 
+	                                        de_win.c de_win.h 
+	chapel/third-party/boehmgc/gc6.3/doc/: Makefile.am Makefile.in 
+	                                       README README.DGUX386 
+	                                       README.Mac README.MacOSX 
+	                                       README.OS2 README.amiga 
+	                                       README.arm.cross 
+	                                       README.autoconf 
+	                                       README.changes 
+	                                       README.contributors 
+	                                       README.cords 
+	                                       README.darwin README.dj 
+	                                       README.environment 
+	                                       README.ews4800 README.hp 
+	                                       README.linux 
+	                                       README.macros 
+	                                       README.rs6000 README.sgi 
+	                                       README.solaris2 
+	                                       README.uts README.win32 
+	                                       barrett_diagram 
+	                                       debugging.html gc.man 
+	                                       gcdescr.html 
+	                                       gcinterface.html 
+	                                       leak.html scale.html 
+	                                       simple_example.html 
+	                                       tree.html 
+	chapel/third-party/boehmgc/gc6.3/include/: Makefile.am 
+	                                           Makefile.in cord.h 
+	                                           ec.h gc.h gc_alloc.h 
+	                                           gc_allocator.h 
+	                                           gc_amiga_redirects.h 
+	                                           gc_backptr.h 
+	                                           gc_config_macros.h 
+	                                           gc_cpp.h gc_gcj.h 
+	                                           gc_inl.h gc_inline.h 
+	                                           gc_local_alloc.h 
+	                                           gc_mark.h 
+	                                           gc_pthread_redirects.h 
+	                                           gc_typed.h javaxfc.h 
+	                                           leak_detector.h 
+	                                           new_gc_alloc.h 
+	                                           weakpointer.h 
+	chapel/third-party/boehmgc/gc6.3/include/private/: cord_pos.h 
+	                                                   darwin_semaphore.h 
+	                                                   darwin_stop_world.h 
+	                                                   dbg_mlc.h 
+	                                                   gc_hdrs.h 
+	                                                   gc_locks.h 
+	                                                   gc_pmark.h 
+	                                                   gc_priv.h 
+	                                                   gcconfig.h 
+	                                                   pthread_stop_world.h 
+	                                                   pthread_support.h 
+	                                                   solaris_threads.h 
+	                                                   specific.h 
+	chapel/third-party/boehmgc/gc6.3/tests/: leak_test.c middle.c 
+	                                         test.c test.o 
+	                                         test_cpp.cc 
+	                                         thread_leak_test.c 
+	                                         trace_test.c 
+
