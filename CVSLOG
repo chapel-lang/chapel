@@ -12239,3 +12239,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+12/20/04 17:08:08 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Error messages have changed for the new dispatch system.
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/: badcall.good 
+	                                    badprimitive.good 
+	                                    badreturn.good 
+	                                    dispatch3.good 
+	chapel/test/parsing/jplevyak/: module.good 
+
