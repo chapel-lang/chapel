@@ -487,7 +487,16 @@ Type* WriteCall::typeInfo(void) {
 
 void WriteCall::codegen(FILE* outfile) {
   while (argList != NULL && !argList->isNull()) {
-    Type* argdt = argList->typeInfo();
+    Expr* format = NULL;
+    Expr* arg = argList;
+
+    if (typeid(*arg) == typeid(Tuple)) {
+      Tuple* tupleArg = dynamic_cast<Tuple*>(arg);
+      format = tupleArg->exprs;
+      arg = nextLink(Expr, format);
+    }
+
+    Type* argdt = arg->typeInfo();
 
     fprintf(outfile, "_write");
     if (argdt == dtUnknown) {
@@ -497,10 +506,15 @@ void WriteCall::codegen(FILE* outfile) {
     }
     fprintf(outfile, "(");
     fprintf(outfile, "stdout, ");
-    argdt->codegenDefaultFormat(outfile);
+    if (format == NULL) {
+      argdt->codegenDefaultFormat(outfile);
+    } else {
+      format->codegen(outfile);
+    }
     fprintf(outfile, ", ");
-    argList->codegen(outfile);
+    arg->codegen(outfile);
     fprintf(outfile, ");\n");
+
     argList = nextLink(Expr, argList);
   }
   if (writeln) {
@@ -645,6 +659,31 @@ void ReduceExpr::print(FILE* outfile) {
 
 void ReduceExpr::codegen(FILE* outfile) {
   fprintf(outfile, "This is ReduceExpr's codegen method.\n");
+}
+
+
+Tuple::Tuple(Expr* init_exprs) :
+  exprs(init_exprs)
+{}
+
+
+void Tuple::print(FILE* outfile) {
+  fprintf(outfile, "(");
+  Expr* expr = exprs;
+  while (expr != NULL) {
+    expr->codegen(outfile);
+
+    expr = nextLink(Expr, expr);
+    if (expr != NULL) {
+      fprintf(outfile, ", ");
+    }
+  }
+  fprintf(outfile, ")");
+}
+
+
+void Tuple::codegen(FILE* outfile) {
+  INT_FATAL(this, "can't codegen tuples yet");
 }
 
 

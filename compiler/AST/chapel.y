@@ -557,7 +557,13 @@ expr:
 | memberaccess
 | range
 | '(' nonemptyExprlist ')' 
-    { $$ = $2; }
+    { 
+      if ($2->next == NULL) {
+        $$ = $2;
+      } else {
+        $$ = new Tuple($2);
+      }
+    }
 | '[' domainExpr ']'
     { $$ = $2; }
 | '[' domainExpr ']' expr

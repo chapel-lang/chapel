@@ -332,6 +332,17 @@ class ReduceExpr : public Expr {
 };
 
 
+class Tuple : public Expr {
+ public:
+  Expr* exprs;
+
+  Tuple(Expr* init_exprs);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 extern DomainExpr* unknownDomain;
 
 void initExpr(void);
