@@ -10754,3 +10754,44 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/future/: test_method1.chpl 
 
+---------------------------------------------------------------------------
+
+12/01/04 14:26:41 -- deitz
+
+Log message:
+	Improved support for methods so that they can now refer to fields
+	within the class.
+	
+	With this checkin, method support now only works when analysis is not
+	run.  The method test from before has been pushed back into the future
+	directory.  This needs to be resolved--we need to determine what
+	should be done before analysis and what should be done after analysis.
+	This will probably be resolved on the 6th when John is back and in
+	Seattle.
+	
+	Added an virtual procedure for expressions called replace that is used
+	to replace children expressions of an expression.  The function takes
+	an old expression and a new expression and checks to see if the old
+	expression matches any of its children; if so, the child is replaced
+	with the new expression.  This is crufty.  A better procedure would
+	probably compare deeply using an "equals" function and replace on
+	these matches.  This is more versatile.  In addition, how this
+	procedure can be used recursively (such as in a traversal) is not
+	well-understood.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	                             methodsToFunctions.cpp 
+	                             methodsToFunctions.h 
+Added files:
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+	                             fieldsToMemberAccesses.h 
+	chapel/test/classes/deitz/future/: test_method1.chpl 
+	                                   test_method1.good 
+	                                   test_method2.good 
+Removed files:
+	chapel/test/classes/deitz/: test_method1.chpl test_method1.good 
+
