@@ -8,26 +8,6 @@ Fixup::Fixup(void) {
 }
 
 
-void Fixup::preProcessSymbol(Symbol* symbol) {
-  stmtParent.add(symbol);
-}
-
-
-void Fixup::postProcessSymbol(Symbol* symbol) {
-  stmtParent.pop();
-}
-
-
-void Fixup::preProcessType(Type* type) {
-  stmtParent.add(type->name);
-}
-
-
-void Fixup::postProcessType(Type* type) {
-  stmtParent.pop();
-}
-
-
 void Fixup::preProcessStmt(Stmt* stmt) {
   Symbol* tmp = stmtParent.v[stmtParent.n-1];
   if (tmp == NULL) {
@@ -39,6 +19,12 @@ void Fixup::preProcessStmt(Stmt* stmt) {
     stmtParent.add(fstmt->fn);
   }
 
+  if (TypeDefStmt* tstmt = dynamic_cast<TypeDefStmt*>(stmt)) {
+    if (ClassType* ctype = dynamic_cast<ClassType*>(tstmt->type)) {
+      stmtParent.add(ctype->name);
+    }
+  }
+
   exprParent.add(stmt);
 }
 
@@ -46,6 +32,12 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 void Fixup::postProcessStmt(Stmt* stmt) {
   if (dynamic_cast<FnDefStmt*>(stmt)) {
     stmtParent.pop();
+  }
+
+  if (TypeDefStmt* tstmt = dynamic_cast<TypeDefStmt*>(stmt)) {
+    if (dynamic_cast<ClassType*>(tstmt->type)) {
+      stmtParent.pop();
+    }
   }
 
   exprParent.pop();

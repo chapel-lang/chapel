@@ -11,10 +11,6 @@ class Fixup : public Traversal {
 
   Fixup::Fixup();
 
-  virtual void preProcessType(Type* type);
-  virtual void postProcessType(Type* type);
-  virtual void preProcessSymbol(Symbol* sym);
-  virtual void postProcessSymbol(Symbol* sym);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);
