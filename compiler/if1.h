@@ -86,7 +86,7 @@ void	if1_set_int_type(IF1 *p, Sym *t, int signd, int size);
 void	if1_set_float_type(IF1 *p, Sym *t, int size);
 char	*if1_cannonicalize_string(IF1 *p, char *start, char *end = 0);
 void	if1_finalize(IF1 *p);
-void	if1_write(IF1 *p, char *pathname);
+void	if1_write(FILE *fp, IF1 *p);
 
 // debugging
 void	if1_dump(FILE *fp, Code *c);

@@ -4,9 +4,10 @@
 #include "geysa.h"
 
 static char *SPACES = "                                                                               ";
-static char *arg_types_keys = (char *)"ISDfF+TL";
+static char *arg_types_keys = (char *)"IPSDfF+TL";
 static char *arg_types_desc[] = {
   (char *)"int     ",
+  (char *)"path    ",
   (char *)"string  ",
   (char *)"double  ",
   (char *)"set off ",
@@ -41,6 +42,8 @@ process_arg(ArgumentState *arg_state, int i, char ***argv) {
           break;
         case 'L':
           *(int64 *)desc[i].location = atoll(arg);
+          break;
+        case 'P': strncpy((char *)desc[i].location,arg, FILENAME_MAX);
           break;
         case 'S': strncpy((char *)desc[i].location,arg, atoi(desc[i].type+1));
           break;
@@ -78,9 +81,8 @@ process_args(ArgumentState *arg_state, char **argv) {
 	case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
 	case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
 	case 'L': *(int64 *)desc[i].location = strtoll(env, NULL, 0); break;
-	case 'S': strncpy((char *)desc[i].location,env, 
-			  strtol(desc[i].type+1, NULL, 0));
-	  break;
+	case 'P': strncpy((char *)desc[i].location, env, FILENAME_MAX); break;
+	case 'S': strncpy((char *)desc[i].location, env, strtol(desc[i].type+1, NULL, 0)); break;
       }
       if (desc[i].pfn)
 	desc[i].pfn(arg_state, env);
@@ -165,6 +167,7 @@ usage(ArgumentState *arg_state, char *arg_unused) {
 #endif
                 *(int64*)desc[i].location);
         break;
+      case 'P':
       case 'S':
         if (*(char*)desc[i].location) {
           if (strlen((char*)desc[i].location) < 10)

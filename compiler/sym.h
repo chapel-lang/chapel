@@ -53,9 +53,9 @@ class Sym : public gc {
 
   unsigned int 		module:1;		// Sym is a module
   unsigned int 		symbol:1;		// Sym is a user level symbol
-  unsigned int 		value:1;		// Sym is a value (immediate)
   unsigned int		pattern:1;		// Sym is a pattern
   unsigned int		vararg:1;		// Sym is a vararg parameter
+  unsigned int 		value:1;		// Sym is a value (immediate)
   unsigned int		structure:1;		// Sym is a structure (C compatibility)
 
   unsigned int		num_type:2;		// used by if1.cpp

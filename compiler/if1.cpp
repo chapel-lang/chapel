@@ -673,10 +673,8 @@ if1_finalize(IF1 *p) {
 }
 
 void
-if1_write(IF1 *p, char *filename) {
-  FILE *fp = fopen(filename, "w");
+if1_write(FILE *fp, IF1 *p) {
   print_syms(fp, &p->allsyms);
-  fclose(fp);
 }
 
 char *

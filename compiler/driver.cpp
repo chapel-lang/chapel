@@ -1,5 +1,5 @@
 /*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+  Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
 #define EXTERN
@@ -9,21 +9,20 @@ static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
 static char *program_name = 0;
 
-static int fwrite_ast = 1;
-static int fwrite_if1 = 1;
 static int fwrite_c = 0;
-static char prelude_pathname[512] = "prelude";
+static char prelude_pathname[FILENAME_MAX] = "prelude";
+static char log_flags[512];
 extern int d_verbose_level;
 extern int d_debug_level;
 
 int fdce_if1 = 1;
 
 static ArgumentDescription arg_desc[] = {
- {"prelude", 'p', "Prelude Pathname", "S512", prelude_pathname, "CHPL_PRELUDE", NULL},
- {"write_ast", ' ', "Write AST", "T", &fwrite_ast, "CHPL_WRITE_AST", NULL},
- {"write_if1", ' ', "Write IF1", "T", &fwrite_if1, "CHPL_WRITE_IF1", NULL},
+ {"prelude", 'p', "Prelude Pathname", "P", prelude_pathname, "CHPL_PRELUDE", NULL},
  {"write_c", ' ', "Write C", "T", &fwrite_c, "CHPL_WRITE_C", NULL},
  {"dce_if1", ' ', "Dead Code Elim on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
+ {"log_dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
+ {"log", 'l', "Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
    "CHPL_PARSER_VERBOSE", NULL},
  {"parser_debug", 'D', "Parser Debug Level", "+", &d_debug_level, "CHPL_PARSER_DEBUG", NULL},
@@ -119,12 +118,8 @@ load_file(char *fn, IF1 *if1, D_Scope **scope, FrontEnd *fe) {
     else
       fprintf(stderr, "fatal error, '%s'\n", fn);
   } else {
-    if (fwrite_ast) {
-      char tmpfn[1024];
-      strcpy(tmpfn, fn);
-      strcat(tmpfn, ".ast");
-      ast_write(pn->user.ast, tmpfn);
-    }
+    if (logging(LOG_AST))
+      ast_print_recursive(log_fp(LOG_AST), pn->user.ast);
     res = pn->user.ast;
   }
   free_D_Parser(p);
@@ -162,11 +157,8 @@ load_one(char *fn) {
   if1_finalize(if1);
   set_primitive_types(if1);
   free_D_Scope(scope, 1);
-  if (fwrite_if1) {
-    strcpy(tmpfn, fn);
-    strcat(tmpfn, ".if1");
-    if1_write(if1, tmpfn);
-  }
+  if (logging(LOG_IF1))
+    if1_write(log_fp(LOG_IF1), if1);
   return if1;
 }
 
@@ -239,6 +231,7 @@ main(int argc, char *argv[]) {
   process_args(&arg_state, argv);
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
+  init_logs();
   for (int i = 0; i < arg_state.nfile_arguments; i++) 
     if (compile_one(arg_state.file_argument[i])) break;
   free_args(&arg_state);

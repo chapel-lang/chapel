@@ -73,6 +73,20 @@ extern int debug_level;
 #define dbg if (debug_level) printf
 #define DBG(_x) if (debug_level) { _x; }
 
+#ifdef __CYGWIN__
+// cygwin assert busted 
+#undef assert
+void myassert();
+#define assert(_x) if (!(_x)) myassert()
+#endif
+
+#ifdef EXTERN
+#define EXTERN_INIT(_x) = _x
+#else
+#define EXTERN_INIT(_x)
+#define EXTERN extern
+#endif
+
 #include "list.h"
 #include "vec.h"
 #include "map.h"
@@ -95,15 +109,9 @@ extern int debug_level;
 #include "fun.h"
 #include "pdb.h"
 #include "clone.h"
+#include "log.h"
 #include "cg.h"
 
 void get_version(char *);
-
-#ifdef __CYGWIN__
-// cygwin assert busted 
-#undef assert
-void myassert();
-#define assert(_x) if (!(_x)) myassert()
-#endif
 
 #endif

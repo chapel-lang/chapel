@@ -7,7 +7,6 @@
 // TODO
 // use selectors to handle 'with'
 // finish check_pattern
-// handle references
 // handle multi-dimensional arrays (at least check tuple size)
 // cache 'AVar::constant()' ??
 // cache 'type' ??, store upper/lower constraints (could miss failures)
@@ -1314,6 +1313,9 @@ FA::analyze(Fun *top) {
   return type_violations.n || untyped ? -1 : 0;
 }
 
+// Given an AST node and a Sym, find the Sym which
+// corresponds to the concrete (post-cloning) type of the
+// variable corresponding to the Sym at that AST node.
 Sym *
 type_info(AST *a, Sym *s) {
   if (!s) 
@@ -1337,6 +1339,8 @@ type_info(AST *a, Sym *s) {
   return 0;
 }
 
+// Given a function and an AST node, return the set of
+// functions which could be called from that AST node.
 void
 call_info(Fun *f, AST *a, Vec<Fun *> &funs) {
   funs.clear();

@@ -64,6 +64,7 @@ GEYSA_SRCS = \
 	fa.cpp \
 	fun.cpp \
 	if1.cpp \
+	log.cpp \
 	parse.cpp \
 	pdb.cpp \
 	pnode.cpp \
