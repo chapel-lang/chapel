@@ -940,7 +940,7 @@ void ModuleSymbol::codegenDef(void) {
   fprintf(codefile, "\n");
 
   modScope->codegen(codefile, "\n");
-  stmts->codegenList(codefile, "\n");
+  if (stmts) stmts->codegenList(codefile, "\n");
 
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
 }

@@ -17,9 +17,10 @@ static void build_record_equality_function(ClassType* class_type) {
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", class_type);
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", class_type);
   arg1->append(arg2);
+  BlockStmt* block_stmt = Symboltable::startCompoundStmt();
+  Stmt* body = NULL;
   Variable* false_variable = new Variable(Symboltable::lookup("false"));
   ReturnStmt* return_false = new ReturnStmt(false_variable);
-  Stmt* body = NULL;
   forv_Vec(VarSymbol, tmp, class_type->fields) {
     MemberAccess* left = new MemberAccess(new Variable(arg1), tmp);
     MemberAccess* right = new MemberAccess(new Variable(arg2), tmp);
@@ -29,10 +30,8 @@ static void build_record_equality_function(ClassType* class_type) {
   }
   Variable* true_variable = new Variable(Symboltable::lookup("true"));
   body = appendLink(body, new ReturnStmt(true_variable));
-  BlockStmt* block_stmt = new BlockStmt(body);
-  DefExpr* def_expr = Symboltable::finishFnDef(fn, arg1, dtBoolean, block_stmt);
-  fn->setDefPoint(def_expr);
-  DefStmt* def_stmt = new DefStmt(def_expr);
+  block_stmt = Symboltable::finishCompoundStmt(block_stmt, body);
+  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, block_stmt));
   dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
 }
 

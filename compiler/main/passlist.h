@@ -21,7 +21,7 @@ PassInfo passlist[] = {
 
   // passes to normalize the basic AST
   RUN(ExpandClassWiths, ""),
-  //RUN(BuildClassConstructorsEtc, ""),
+  RUN(BuildClassConstructorsEtc, ""),
   RUN(InsertThisParameters, ""),
   RUN(ScopeResolveSymbols, ""),
   RUN(RenameOverloadedFunctions, ""),

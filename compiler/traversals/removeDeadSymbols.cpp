@@ -10,5 +10,10 @@ void RemoveDeadSymbols::postProcessStmt(Stmt* stmt) {
 	def_stmt->extract();
       }
     }
+    if (FnSymbol* fn_sym = def_stmt->fnDef()) {
+      if (!function_is_used(fn_sym)) {
+	def_stmt->extract();
+      }
+    }
   }
 }

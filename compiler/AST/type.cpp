@@ -961,9 +961,6 @@ void ClassType::codegenConstructors(FILE* outfile) {
   if (constructor) {
     constructor->codegenList(outfile, "\n");
   }
-  else {
-    INT_FATAL(this, "Unable to generate constructors");
-  }
 }
 
 
