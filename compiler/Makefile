@@ -85,9 +85,9 @@ $(PLATFORM)/$(CHPL): $(PLATFORM_DIR) $(CHPL_OBJS)
 	@etags 	$(D_PARSER_SRC_DIR)/*.h $(D_PARSER_SRC_DIR)/*.c \
 		$(GC_SRC_DIR)/*.h $(GC_SRC_DIR)/*.c \
 		$(GC_SRC_DIR)/*/*.h $(GC_SRC_DIR)/*/*.c \
-		$(ALL_SRCS)
+		$(ALL_SRCS) */*.h
 	@echo "Updating BROWSE..."
-	@ebrowse $(ALL_SRCS)
+	@ebrowse $(ALL_SRCS) */*.h
 
 
 #
