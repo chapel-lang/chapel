@@ -717,3 +717,23 @@ Log message:
 Modified files:
 	chapel/compiler/: v.g 
 
+---------------------------------------------------------------------------
+
+04/03/12 09:55:29 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added new -t option which dumps the program as cross-linked HTML
+	into the "log" directory as "dump.html".
+	Fixed a number of bugs discovered by examining the HTML.
+
+Modified files:
+	chapel/compiler/: Makefile TODO ast.cpp builtin_symbols.h 
+	                  clone.cpp driver.cpp driver.h fa.cpp fa.h 
+	                  fun.cpp fun.h geysa.h if1.h log.cpp pdb.h 
+	                  prelude.chpl prelude.v prim_data.dat sym.h 
+	                  vec.cpp 
+	chapel/compiler/samples/: literal.v 
+Added files:
+	chapel/compiler/: bullet.gif dump.cpp dump.h minus.gif 
+	                  mktree.css mktree.js plus.gif 
+
