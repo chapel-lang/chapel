@@ -2715,3 +2715,40 @@ Log message:
 Modified files:
 	chapel/compiler/: chpl.g 
 
+---------------------------------------------------------------------------
+
+06/04/04 16:44:28 -- bradc
+
+Log message:
+	Got some extremely initial support for code generating
+	domains in.  It's fairly crufty and is hardwired to 1D
+	domains in  several places, but it makes some simple
+	1D domain declarations work correctly, and seems like
+	a reasonable stopping place to synch into before the
+	weekend.
+	
+	This change also involved some minor side changes:
+	
+	* Turned on debugging and a bunch of warning flags for
+	the compilation of the runtime and compiler-generated
+	sources -- eventually, we'll want a more interesting
+	mechanism for turning these on and off (like a -g
+	flag in the compiler at minimum), but it's a start.
+	
+	* Made the gcc commands issued by the compiler via its
+	generated Makefile show up on the console when the
+	--show-commands flag is used.
+
+Modified files:
+	chapel/compiler/: Makefile codegen.cpp files.cpp 
+	chapel/runtime/: Makefile 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/include/: chplio.h stdchpl.h 
+	chapel/runtime/src/: Makefile chplio.c 
+Added files:
+	chapel/compiler/: datatype.cpp datatype.h 
+	chapel/runtime/etc/: Makefile.macros 
+	chapel/runtime/include/: domain.h 
+	chapel/runtime/src/: domain.c 
+	chapel/test/trivial/bradc/: declprintdom.chpl declprintdom.good 
+
