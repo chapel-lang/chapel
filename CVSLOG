@@ -7426,3 +7426,15 @@ Added files:
 	chapel/compiler/: runAnalysis.cpp runAnalysis.h 
 	chapel/compiler/AST/: setupStmtLinks.cpp setupStmtLinks.h 
 
+---------------------------------------------------------------------------
+
+09/15/04 15:17:26 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add shadow types for Locales and Timers.
+	Use a representative meta-class for class names which appear in code (ClassSymbol).
+	Little bit of bulletproofing from a smoke run on some of the protoast files.
+
+Modified files:
+	chapel/compiler/: analysis.cpp fa.cpp 
+
