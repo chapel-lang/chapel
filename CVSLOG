@@ -880,3 +880,15 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: constant_folding.v 
 
+---------------------------------------------------------------------------
+
+04/03/17 12:58:45 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Begin work on indexing into tuples.  To get this to work I
+	need to implement constant propogation and inlining.
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp clone.cpp dump.cpp fa.cpp if1.cpp 
+	                  misc.cpp misc.h sym.h 
+
