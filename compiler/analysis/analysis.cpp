@@ -1072,6 +1072,7 @@ is_reference_type(BaseAST *t) {
 
 static void
 gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
+  // currently just a hack to set the first element
   Code **c = &ast->code;
   Sym *index_sym = new_sym();
   Code *start_index = if1_send(if1, c, 3, 1, sym_primitive, domain_start_index_symbol, 
@@ -1086,23 +1087,29 @@ gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
 }
 
 static void
-gen_alloc(Sym *s, DefStmt *def, Sym *type, AInfo *ast) {
-  Code **c = &def->ainfo->code;
+gen_alloc(Sym *s, Sym *type, AInfo *ast) {
+  Code **c = &ast->code;
   Code *send = if1_send(if1, c, 2, 1, sym_new, type, s);
   send->ast = ast;
   if (type->asymbol->symbol->astType == TYPE_ARRAY) {
     // just set the first element
     ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
-    if (at->elementType->astType == TYPE_CLASS && 
-	dynamic_cast<ClassType*>(at->elementType)->value) 
+    if ((at->elementType->astType == TYPE_CLASS && dynamic_cast<ClassType*>(at->elementType)->value) ||
+	(at->elementType->astType == TYPE_ARRAY))
     {
       Sym *ret = new_sym();
-      Code *new_element = if1_send(if1, c, 2, 1, sym_new, at->elementType->asymbol->sym, ret);
-      new_element->ast = ast;
+      if1_send(if1, c, 2, 1, sym_new, at->elementType->asymbol->sym, ret);
+      if (at->elementType->astType == TYPE_ARRAY)
+	gen_alloc(ret, at->elementType->asymbol->sym, ast);
+      else {
+	Code *new_element = 0;
+	new_element = if1_send(if1, c, 2, 1, sym_new, at->elementType->asymbol->sym, ret);
+	new_element->ast = ast;
+      }
       gen_set_array(s, at, ret, ast);
     }
   }
-  send->ast = def->ainfo;
+  send->ast = ast;
 }
 
 static Sym *
@@ -1118,7 +1125,9 @@ gen_vardef(BaseAST *a) {
   DefStmt *def = dynamic_cast<DefStmt*>(a);
   for (Expr* expr = def->defExprList;expr;expr = dynamic_cast<Expr*>(expr->next)) {
     DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
-    for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym);var;var = dynamic_cast<VarSymbol*>(var->next)) {
+    for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym); var;
+	 var = dynamic_cast<VarSymbol*>(var->next)) 
+    {
       Sym *s = var->asymbol->sym;
       def->ainfo->sym = s;
       if (var->type && var->type != dtUnknown) {
@@ -1133,7 +1142,7 @@ gen_vardef(BaseAST *a) {
 	if (s->is_var && var->type->astType == TYPE_ARRAY) {
 	  ArrayType *at = dynamic_cast<ArrayType*>(var->type->asymbol->symbol);
 	  if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
-	  gen_alloc(s, def, s->type, def->ainfo);
+	  gen_alloc(s, s->type, def->ainfo);
 	  gen_set_array(s, at, var->init->ainfo->rval, def->ainfo);
 	} else {
 	  if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
@@ -1157,7 +1166,7 @@ gen_vardef(BaseAST *a) {
 	  if (s->type->num_kind || s->type == sym_string)
 	    s->is_external = 1; // hack
 	  else
-	    gen_alloc(s, def, s->type, def->ainfo);
+	    gen_alloc(s, s->type, def->ainfo);
 	}
       }
     switch (var->varClass) {
