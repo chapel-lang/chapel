@@ -5109,3 +5109,40 @@ Added files:
 	chapel/test/trivial/bradc/arrinit/: COMPOPTS 
 	chapel/test/trivial/bradc/write/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+08/06/04 13:07:53 -- bradc
+
+Log message:
+	Switched new parser/AST over to be the default.  The old AST
+	is automatically selected when compiling .v source files, or
+	when using the --oldast flag.  Switched the COMPOPTS files
+	in the test hierarchy to reflect this reversal (removed
+	--newast from the trivial directories and added --oldast to
+	John's directories that contain .chpl files).
+	
+	This required two hacks to get around types that haven't been
+	inferred.  In the following cases, when the type is unknown,
+	it's been hardwired to integer:
+	- unknown parameter types
+	- write()'s of unknown types
+	
+	This check in also removed the interactive removal of the
+	log file when running start_test.
+
+Modified files:
+	chapel/compiler/: driver.cpp 
+	chapel/compiler/AST/: expr.cpp symbol.cpp symbol.h type.cpp 
+	chapel/test/: start_test 
+	chapel/test/flowanalysis/jplevyak/: COMPOPTS 
+	chapel/test/lowlevelcg/jplevyak/: COMPOPTS 
+	chapel/test/parsing/jplevyak/: COMPOPTS 
+	chapel/test/trivial/bradc/functions/: mutrec.chpl 
+	chapel/test/trivial/bradc/protoast/: COMPOPTS 
+	chapel/test/trivial/bradc/protoast/codegen/: COMPOPTS 
+Removed files:
+	chapel/test/trivial/bradc/: COMPOPTS 
+	chapel/test/trivial/bradc/arrinit/: COMPOPTS 
+	chapel/test/trivial/bradc/write/: COMPOPTS 
+	chapel/test/trivial/shannon/: COMPOPTS 
+
