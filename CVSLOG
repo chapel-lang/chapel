@@ -15735,3 +15735,18 @@ Added files:
 	                                         scoping-1.future 
 	                                         scoping-1.good 
 
+---------------------------------------------------------------------------
+
+01/26/05 16:50:24 -- jplevyak
+
+Log message:
+	Store pre-wrap function in Fun.
+	Export type diff/intersection/union/cannonicalize from fa.cpp
+	Rebuild Match after wrappers/cloning.
+	Cleanup unused variables in Fun.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp fun.cpp 
+	                           pattern.cpp 
+	chapel/compiler/include/: fa.h fun.h 
+
