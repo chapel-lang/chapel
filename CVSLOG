@@ -24017,3 +24017,13 @@ Log message:
 Modified files:
 	chapel/test/: start_clean 
 
+---------------------------------------------------------------------------
+
+04/05/05 12:51:13 -- bradc
+
+Log message:
+	Updated copyright to include 2005.
+
+Modified files:
+	./: COPYRIGHT LICENSE 
+
