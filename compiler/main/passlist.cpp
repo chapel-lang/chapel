@@ -23,6 +23,7 @@
 #include "../traversals/getstuff.h"
 #include "../traversals/insertAnonymousDomains.h"
 #include "../traversals/insertAnonymousTypes.h"
+#include "../traversals/insertElidedLoops.h"
 #include "../traversals/insertFunctionTemps.h"
 #include "../traversals/insertThisParameters.h"
 #include "../traversals/insertUnionChecks.h"
@@ -66,6 +67,7 @@ REGISTER(Fixup);
 REGISTER(GetStuff);
 REGISTER(InsertAnonymousDomains);
 REGISTER(InsertAnonymousTypes);
+REGISTER(InsertElidedLoops);
 REGISTER(InsertFunctionTemps);
 REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions

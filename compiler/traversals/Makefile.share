@@ -14,6 +14,7 @@ TRAVERSALS_SRCS = \
 	getstuff.cpp \
 	insertAnonymousDomains.cpp \
 	insertAnonymousTypes.cpp \
+	insertElidedLoops.cpp \
 	insertFunctionTemps.cpp \
 	insertThisParameters.cpp \
 	insertUnionChecks.cpp \

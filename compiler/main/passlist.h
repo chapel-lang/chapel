@@ -48,6 +48,7 @@ PassInfo passlist[] = {
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertFunctionTemps, ""),
   RUN(TransformLetExprs, ""),
+  RUN(InsertElidedLoops, ""),
 
   // check the program's semantics
   RUN(Fixup, "verify"), // this is a sanity check
