@@ -155,7 +155,6 @@ load_one(char *fn) {
   if (ast_gen_if1(if1, av) < 0)
     fail("fatal error, '%s'\n", fn);
   if1_finalize(if1);
-  set_primitive_types(if1);
   free_D_Scope(scope, 1);
   if (logging(LOG_IF1))
     if1_write(log_fp(LOG_IF1), if1);

@@ -10,7 +10,7 @@ class IF1;
 enum PrimType {
   PRIM_TYPE_ANY,
   PRIM_TYPE_SYMBOL,
-  PRIM_TYPE_ANY_A, PRIM_TYPE_A,
+  PRIM_TYPE_A,
   PRIM_TYPE_REF, PRIM_TYPE_CONT,
   PRIM_TYPE_ANY_NUM_A, PRIM_TYPE_ANY_NUM_B, PRIM_TYPE_ANY_NUM_AB,
   PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B,
@@ -24,6 +24,7 @@ enum PrimOptions {
 class Primitives : public gc {
  public:
   Map<char *, Prim *> prim_map[2][2];
+  Prim *find(AST *c);
   Prim *find(Code *c);
   Prim *find(PNode *p);
   Primitives(IF1 *if1);

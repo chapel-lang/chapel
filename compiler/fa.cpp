@@ -581,7 +581,6 @@ add_send_constraints(EntrySet *es) {
 	if (i - start == prim->pos) continue;
 	switch (*t) {
 	  case PRIM_TYPE_ANY: break;
-	  case PRIM_TYPE_ANY_A: a = make_AVar(p->rvals.v[i], es); break;
 	  case PRIM_TYPE_SYMBOL:
 	    flow_var_type_restrict(make_AVar(p->rvals.v[i], es), sym_symbol);
 	    break;
@@ -914,6 +913,7 @@ is_fa_Var(Var *v) {
 
 static void
 collect_Vars_PNodes(Fun *f) {
+  Primitives *prim = f->pdb->if1->primitives;
   f->fa_collected = 1;
   if (!f->entry)
     return;
@@ -927,7 +927,7 @@ collect_Vars_PNodes(Fun *f) {
     f->fa_phi_PNodes.append(p->phi);
     f->fa_phy_PNodes.append(p->phy);
     if (p->code->kind == Code_SEND) {
-      p->prim = p->code ? p->code->prim : 0;
+      p->prim = prim->find(p);
       f->fa_send_PNodes.add(p);
       if (p->code && p->code->ast)
 	p->code->ast->prim = p->prim;

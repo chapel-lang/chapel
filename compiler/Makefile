@@ -56,6 +56,7 @@ LIB_SRCS = \
 GEYSA_SRCS = \
 	arg.cpp \
 	ast.cpp \
+	ast_cf.cpp \
 	builtin.cpp \
 	cfg.cpp \
 	cg.cpp \
@@ -85,10 +86,14 @@ MAKE_PRIMS_SRCS = \
 	make_prims.g.d_parser.cpp
 MAKE_PRIMS_OBJS = $(MAKE_PRIMS_SRCS:%.cpp=$(PLATFORM)/%.o)
 MAKE_PRIMS_DEPS = $(MAKE_PRIMS_SRCS:%.cpp=$(PLATFORM)/%.dep)
+CAST_SRCS = cast.cpp
+CAST_OBJS = $(CAST_SRCS:%.cpp=$(PLATFORM)/%.o)
+CAST_DEPS = $(CAST_SRCS:%.cpp=$(PLATFORM)/%.dep)
 
-ALL_DEPS = $(CHPL_DEPS) $(MAKE_PRIMS_DEPS)
+ALL_DEPS = $(CHPL_DEPS) $(MAKE_PRIMS_DEPS) $(CAST_DEPS)
 
 MAKE_PRIMS = make_prims$(EXE_SUFFIX)
+CAST = cast$(EXE_SUFFIX)
 MAKE_DPARSER = $(D_PARSER_BIN_DIR)/make_dparser$(EXE_SUFFIX)
 
 CHPL = chpl$(EXE_SUFFIX)
@@ -127,6 +132,9 @@ $(CHPL): $(CHPL_OBJS)
 	$(CC) $(VERFLAGS) $(LDFLAGS) -o $@ $^ version.cpp $(LIBS)
 
 $(MAKE_PRIMS): $(MAKE_PRIMS_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+$(CAST): $(CAST_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 prim_data.h: $(MAKE_PRIMS) prim_data.dat

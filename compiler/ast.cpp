@@ -188,7 +188,7 @@ new_constant(IF1 *i, char *string, char *constant_type) {
 }
 
 Sym *
-new_sym(IF1 *i, Scope *scope, char *s = 0, Sym *sym = 0) {
+new_sym(IF1 *i, Scope *scope, char *s, Sym *sym) {
   if (!sym)
     sym = if1_alloc_sym(i, s);
   else
@@ -1132,6 +1132,7 @@ ast_gen_if1(IF1 *i, Vec<AST *> &av) {
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
 #undef S
+  set_primitive_types(i);
   make_module(i, sym_system->name, global, sym_system);
   forv_AST(a, av)
     build_constant_syms(i, a);
@@ -1149,5 +1150,8 @@ ast_gen_if1(IF1 *i, Vec<AST *> &av) {
       return -1;
   build_modules(i);
   build_init(i);
+  forv_AST(a, av)
+    if (ast_constant_fold(i, a) < 0)
+      return -1;
   return 0;
 }

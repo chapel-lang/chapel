@@ -28,6 +28,21 @@ enum Type_kind {
   Type_ALIAS		// a type by another name
 };
 
+union Immediate {
+  uint8 v_uint8;
+  int8 v_int8;
+  uint16 v_uint16;
+  int16 v_int16;
+  uint32 v_uint32;
+  int32 v_int32;
+  uint64 v_uint64;
+  int64 v_int64;
+  float32 v_float32;
+  float64 v_float64;
+  complex64 v_complex64;
+  char *v_string;
+};
+
 class Sym : public gc {
  public:
   char 			*name;			// user level name
@@ -36,6 +51,7 @@ class Sym : public gc {
   char 			*constant;		// string representing constant value
   Sym  			*aspect;		// mascarade as (e.g. superclass)
   Sym  			*in;			// containing module, class or function
+  Immediate		imm;			// constant and folded constant immediate values
 
   char 			*builtin;		// one of builtin_symbols.h
   Type_kind		type_kind;

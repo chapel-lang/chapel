@@ -24,6 +24,8 @@ Prim *
 Primitives::find(Code *c) {
   if (c->kind != Code_SEND)
     return NULL;
+  if (c->ast && c->ast->prim)
+    return c->ast->prim;
   Sym *f = c->rvals.v[0];
   if (f->builtin) {
     Prim *prim = prim_map[0][0].get(f->builtin);
@@ -46,6 +48,7 @@ Primitives::find(Code *c) {
 
 Prim *
 Primitives::find(PNode *p) {
+#if 1
   Var *f = p->rvals.v[0];
   if (f->sym->builtin) {
     Prim *prim = prim_map[0][0].get(f->sym->builtin);
@@ -64,4 +67,64 @@ Primitives::find(PNode *p) {
     return prim;
   }
   return NULL;
+#else
+  return p->code->ast->prim;
+#endif
 }
+
+static int
+compatible_type(PrimType pt, Sym *s) {
+  switch (pt) {
+    case PRIM_TYPE_ANY: return 1;
+    case PRIM_TYPE_SYMBOL: if (s && s->type == sym_symbol) return 1; break;
+    case PRIM_TYPE_REF: if (s && s->type == sym_ref) return 1; break;
+    case PRIM_TYPE_CONT: if (s && s->type == sym_continuation) return 1; break;
+    case PRIM_TYPE_ANY_NUM_A:
+    case PRIM_TYPE_ANY_NUM_B: 
+      if (s && s->type && s->type->num_type != IF1_NUM_TYPE_NONE) return 1; break;
+    case PRIM_TYPE_ANY_INT_A:
+    case PRIM_TYPE_ANY_INT_B: 
+      if (s && s->type && 
+	  (s->type->num_type == IF1_NUM_TYPE_INT || s->type->num_type == IF1_NUM_TYPE_UINT))
+	return 1;
+      break;
+    default: assert(!"case"); break;
+  }
+  return 0;
+}
+
+Prim *
+Primitives::find(AST *ast) {
+  if (ast->n < 2)
+    return 0;
+  Prim *prim = NULL;
+  if (ast->v[0]->sym && ast->v[0]->sym->builtin)
+    prim = prim_map[0][0].get(ast->v[0]->sym->builtin);
+  if (!prim) {
+    int nargs = ast->n - 2;
+    if (nargs < 0)
+      nargs = 0;
+    if (ast->v[0]->sym && ast->v[0]->sym->type == sym_symbol) {
+      prim = prim_map[nargs][0].get(ast->v[1]->sym->name);
+      assert(nargs == 2);
+      if (!compatible_type(prim->arg_types[0], ast->v[1]->sym))
+	return 0;
+    }
+    else {
+      assert(ast->v[1]->sym && ast->v[1]->sym->type == sym_symbol);
+      prim = prim_map[nargs][1].get(ast->v[1]->sym->name);
+      if (!prim)
+	return 0;
+      if (!compatible_type(prim->arg_types[0], ast->v[0]->sym))
+	return 0;
+      if (nargs > 0)
+	if (!compatible_type(prim->arg_types[1], ast->v[2]->sym))
+	  return 0;
+    }
+    assert(prim);
+  }
+  if (prim == prim_apply) // do not deal with apply at this level
+    return 0;
+  return prim;
+}
+

@@ -23,21 +23,6 @@ enum AST_kind {
   AST_MAX
 };
 
-union Immediate {
-  uint8 v_uint8;
-  int8 v_int8;
-  uint16 v_uint16;
-  int16 v_int16;
-  uint32 v_uint32;
-  int32 v_int32;
-  uint64 v_uint64;
-  int64 v_int64;
-  float32 v_float32;
-  float64 v_float64;
-  complex64 v_complex64;
-  char *v_string;
-};
-
 enum Contructor { Make_TUPLE, Make_VECTOR, Make_SET };
 
 extern char *AST_name[];
@@ -64,8 +49,6 @@ class AST : public Vec<AST *> {
   Scope *scope;
   char *constant_type;
 
-  Immediate val;	// currently unused (constants use string instead)
-
   Label *label[2];	// before and after for loops (continue,break)
   Code	*code;
   Sym	*rval, *lval;
@@ -84,6 +67,7 @@ class AST : public Vec<AST *> {
 #define forv_AST(_x, _v) forv_Vec(AST, _x, _v)
 
 int ast_gen_if1(IF1 *if1, Vec<AST *> &av);
+int ast_constant_fold(IF1 *if1, AST *ast);
 void ast_print(FILE *fp, AST *a, int indent = 0);
 void ast_print_recursive(FILE *fp, AST *a, int indent = 0);
 void ast_write(AST *a, char *filename);
@@ -91,5 +75,7 @@ void ast_write(AST *a, char *filename);
 inline AST *ast_qualified_ident_ident(AST *x) { return x->v[x->n-1]; }
 Scope *ast_qualified_ident_scope(AST *qualified_ident, Scope *global);
 Sym *ast_qualified_ident_sym(AST *qualified_ident, Scope *global);
+
+Sym *new_sym(IF1 *i, Scope *scope, char *s = 0, Sym *sym = 0);
 
 #endif
