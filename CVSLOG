@@ -10125,3 +10125,24 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
 
+---------------------------------------------------------------------------
+
+11/22/04 12:18:04 -- deitz
+
+Log message:
+	Removed ClassSymbol.  Classes are now TypeSymbols.  This simplifies
+	the information associated with the symbol table.  Most of the
+	information associated with class types is now in the ClassType.
+	
+	Note that classes are TypeSymbols and objects are VarSymbols; the type
+	of each is a ClassType.
+	
+	Removed special parsing of classes from the compiler.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp nils.cpp symbol.cpp symtab.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h symtab.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+
