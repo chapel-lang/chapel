@@ -16382,3 +16382,19 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/03/05 10:22:32 -- jplevyak
+
+Log message:
+	Default parameters now implemented up to FnSymbol::default_wrapper.
+	Shifted the future on the test to Steve.
+	Added TRAVERSE(init, traversal, fails) to ParamSymbol::traverseDefSymbol
+	Cleanup of ASymbol::xsymbol -> ASymbol::symbol.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: analysis.h callbacks.h symbol.h 
+	chapel/test/functions/bradc/: defaultParam.future 
+
