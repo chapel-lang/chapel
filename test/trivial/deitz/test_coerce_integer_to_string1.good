@@ -1,0 +1,5 @@
+String s is hello
+Integer i is 12
+--- Assigning i to s ---
+String s is 12
+Integer i is 12

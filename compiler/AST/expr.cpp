@@ -999,7 +999,13 @@ void AssignOp::codegen(FILE* outfile) {
     fprintf(outfile, "_copy_string(&(");
     left->codegen(outfile);
     fprintf(outfile, "), ");
+    if (right->typeInfo() == dtInteger) {
+      fprintf(outfile, "_int_string(");
+    }
     right->codegen(outfile);
+    if (right->typeInfo() == dtInteger) {
+      fprintf(outfile, ")");
+    }
     fprintf(outfile, ")");
   } else {
     left->codegen(outfile);

@@ -1,0 +1,3 @@
+jplevyak
+
+Analysis says this is an assignment of mixed types, but it is an integer to string coercion for arrays.

@@ -164,7 +164,7 @@ char* lookupSetValue(char* varName, char* moduleName) {
 
 void installConfigVar(char* varName, char* value, char* moduleName) {
   unsigned hashValue;
-  char* description = glomstrings(2, "config table entry for ", varName);
+  char* description = _glom_strings(2, "config table entry for ", varName);
   configVarType* configVar = (configVarType*) 
     _chpl_calloc(1, sizeof(configVarType), description);
   _chpl_free(description);
