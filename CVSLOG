@@ -10288,3 +10288,15 @@ Modified files:
 	chapel/compiler/analysis/: fa.cpp pattern.cpp 
 	chapel/compiler/vparser/: parse_ast.cpp v.g 
 
+---------------------------------------------------------------------------
+
+11/24/04 08:37:40 -- shannon
+
+Log message:
+	Woops.  This didn't make it into yesterday's preholiday
+	commit.  This is a fix for pretty-printing complex
+	literals.
+
+Modified files:
+	chapel/compiler/include/: expr.h 
+
