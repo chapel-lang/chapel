@@ -29,14 +29,15 @@ if ($printusage == 1) {
 #
 # get uniquifiers
 #
-$id = getpgrp();
+$pid = getpgrp();
+$user = `whoami`;
+chomp($user);
 $today = `date +%w-%a`; chomp($today);
-
 
 #
 # directory locations
 #
-$tmpdir = "/tmp/chapel-nightly.$id.deleteme";
+$tmpdir = "/tmp/chapel-nightly-uw.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
 $logdir = "~bradc/chapel/test/Logs/Nightly";
@@ -88,13 +89,30 @@ delete($ENV{'CHPLDEVTMP'});
 delete($ENV{'CHPL_SYSTEM_DIR'});
 
 #mysystem("which chpl", "locating chpl", 0, 0);
-mysystem("env", "checking environment", 0, 0);
+#mysystem("env", "checking environment", 0, 0);
 
-
+ 
 #
 # checkout sources
 #
-mysystem("cd $tmpdir && cvs -d ~bradc/CVS checkout chapel", "cvs checkout", 1, 1);
+mysystem("cd $tmpdir && cvs -d :pserver:bradc\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot checkout chapel", "cvs checkout", 1, 1);
+
+
+#
+# make cache of UW distribution
+#
+if ($debug == 0) {
+  $todaydate = `date +%m%d%y`;
+  chomp($todaydate);
+  $lastmonth = `date -d"1 month ago" +%m%d%y`;
+  chomp($lastmonth);
+  $archivedir = "~bradc/UWchapel";
+
+  mysystem("cd $tmpdir && tar cvf chapel.tar chapel", "tarring chapel", 0, 1);
+  mysystem("cd $tmpdir && gzip chapel.tar", "gzipping chapel", 0, 1);
+  mysystem("cd $tmpdir && mv chapel.tar.gz $archivedir/chapel.$todaydate.tar.gz", "storing chapel", 0, 1);
+  mysystem("cd $archivedir && rm -f chapel.$lastmonth.tar.gz", "removing last month's chapel", 0, 0);
+}
 
 
 #
