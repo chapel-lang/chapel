@@ -106,9 +106,18 @@ void VarDefStmt::codegen(FILE* outfile) {
   
   while (aVar != NULL) {
     VarSymbol* nextVar = nextLink(VarSymbol, aVar);
-    if (init != NULL && !init->isNull()) {
+    if (typeid(*(aVar->type)) == typeid(ArrayType)) {
+      ArrayType* arrtype = (ArrayType*)(aVar->type);
+      fprintf(outfile, "_init");
+      arrtype->codegen(outfile);
+      fprintf(outfile, "(&(");
+      aVar->codegen(outfile);
+      fprintf(outfile, "), &(");
+      arrtype->domain->codegen(outfile);
+      fprintf(outfile, "));\n");
+    } else if (init != NULL && !init->isNull()) {
       if (typeid(*(aVar->type)) == typeid(DomainType)) {
-	DomainType* domtype = (DomainType*)aVar->type;
+	DomainType* domtype = (DomainType*)(aVar->type);
 	int rank = domtype->numdims ? domtype->numdims : 1; // BLC: hack!
 	fprintf(outfile, "_init_domain_%dD(&(", rank);
 	aVar->codegen(outfile);
@@ -126,10 +135,12 @@ void VarDefStmt::codegen(FILE* outfile) {
 	    initseq->hi->codegen(outfile);
 	    fprintf(outfile, ", ");
 	    initseq->str->codegen(outfile);
+
+	    initseq = nextLink(SimpleSeqExpr, initseq);
 	  }
 	}
 	fprintf(outfile, ");");
-      } else {
+     } else {
 	aVar->codegen(outfile);
 	fprintf(outfile, " = ");
 	init->codegen(outfile);
@@ -420,6 +431,8 @@ void ForLoopStmt::codegen(FILE* outfile) {
     fprintf(outfile, ", ");
     domain->codegen(outfile);
     fprintf(outfile, ", %d) {\n", i);
+
+    aVar = nextLink(VarSymbol, aVar);
   }
 
   body->codegen(outfile);

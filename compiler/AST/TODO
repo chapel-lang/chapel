@@ -39,6 +39,9 @@
 
 * organize and lump files better -- into a static class, e.g.
 
+* fix VarDefStmt::codegen() so that it asks the type whether it
+  needs to be initialized and then asks the type to generate
+  the arguments to the initialize method.
 
 
 SHANNON:

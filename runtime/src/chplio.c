@@ -22,6 +22,21 @@ void _write_domain1(FILE* outfile, char* format, _domain1 val) {
 }
 
 
+void _write_array1_integer64(FILE* outfile, char* format, _array1_integer64 arr) {
+  _domain1 dom;
+  int i, j;
+
+  dom = *(arr.domain);
+
+  for (i=dom.dim[0].lo; i<=dom.dim[0].hi; i+=dom.dim[0].str) {
+    fprintf(outfile, format, _ACC1(arr, i));
+    if (j<dom.dim[1].hi) {
+      fprintf(outfile, " ");
+    }
+  }
+}
+
+
 void _write_array2_float64(FILE* outfile, char* format, _array2_float64 arr) {
   _domain2 dom;
   int i, j;

@@ -151,6 +151,21 @@ Type* IntLiteral::typeInfo(void) {
 }
 
 
+void IntLiteral::codegen(FILE* outfile) {
+  // This is special cased to ensure that we don't generate C octal
+  // literals accidentally
+  int len = strlen(str);
+  int i;
+  for (i=0; i<len; i++) {
+    if (str[i] != '0') {
+      fprintf(outfile, "%s", str+i);
+      return;
+    }
+  }
+  fprintf(outfile, "0");
+}
+
+
 FloatLiteral::FloatLiteral(char* init_str, double init_val) :
   Literal(init_str),
   val(init_val) 
@@ -592,7 +607,11 @@ void DomainExpr::print(FILE* outfile) {
 }
 
 void DomainExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "This is DomainExpr's codegen method.\n");
+  if (domains->next != NULL) {
+    INT_FATAL(this, "Don't know how to codegen lists of domains yet");
+  } else {
+    domains->codegen(outfile);
+  }
 }
 
 

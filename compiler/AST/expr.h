@@ -61,6 +61,8 @@ class IntLiteral : public Literal {
   long intVal(void);
 
   Type* typeInfo(void);
+
+  void codegen(FILE* outfile);
 };
 
 
