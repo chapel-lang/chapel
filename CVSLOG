@@ -14258,3 +14258,20 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp clone.cpp fun.cpp 
 
+---------------------------------------------------------------------------
+
+01/10/05 16:29:28 -- jplevyak
+
+Log message:
+	Added is_scalar() and element_type() to ASymbol interface.  Currently
+	taking a switch on astType, and only handling TYPE_ARRAY for element_type().
+	Fixed regressions from last checkin.   Still have one
+	in enumarray which I am looking into.  It may be simply a difference
+	in functionality, or a real issue.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp fun.cpp 
+	                           pattern.cpp sym.cpp 
+	chapel/compiler/include/: analysis.h sym.h 
+	chapel/compiler/vparser/: parse_ast.cpp 
+
