@@ -10300,3 +10300,29 @@ Log message:
 Modified files:
 	chapel/compiler/include/: expr.h 
 
+---------------------------------------------------------------------------
+
+11/24/04 10:27:10 -- deitz
+
+Log message:
+	Added initial support for methods.  These don't work yet but are stored.
+	
+	The main addition in this checkin is a new pass MethodsToFunctions
+	that should eventually change method calls to function calls, or
+	something like that.
+	
+	Added a couple of tests in test/classes/deitz/future that will not yet
+	be run but show the initial code that I am trying to get to work.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
+	                               module.good tuples.good 
+Added files:
+	chapel/compiler/traversals/: methodsToFunctions.cpp 
+	                             methodsToFunctions.h 
+	chapel/test/classes/deitz/future/: NOTEST test_method1.chpl 
+	                                   test_method2.chpl 
+
