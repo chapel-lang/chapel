@@ -553,8 +553,28 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 
 Stmt* TypeDefStmt::copyStmt(CloneCallback* analysis_clone) {
   Type* newType = type->copy(analysis_clone);
-  Symboltable::define(type->name);
   return new TypeDefStmt(newType);
+}
+
+
+TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback) {
+  TypeDefStmt* this_copy = NULL;
+  static int uid = 1; // Unique ID for cloned functions
+  SymScope* save_scope;
+
+  save_scope = Symboltable::setCurrentScope(this->type->name->parentScope);
+  Stmt* stmt_copy = copy(clone_callback);
+  if (this_copy = dynamic_cast<TypeDefStmt*>(stmt_copy)) {
+    this_copy->type->name->cname =
+      glomstrings(3, this_copy->type->name->cname,
+		  "_clone_", intstring(uid++));
+    this->insertBefore(this_copy);
+  }
+  else {
+    INT_FATAL(this, "Unreachable statement in TypeDefStmt::clone reached");
+  }
+  Symboltable::setCurrentScope(save_scope);
+  return this_copy;
 }
 
 
@@ -602,9 +622,6 @@ Stmt* FnDefStmt::copyStmt(CloneCallback* analysis_clone) {
   // do this first to make sure symbols are defined before used when
   // body is copied
   Symbol* newformals = fn->formals->copyList(analysis_clone);
-  for (Symbol* tmp = newformals; tmp != NULL; tmp = nextLink(Symbol, tmp)) {
-    Symboltable::define(tmp);
-  }
   return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
 				  fn->body->copyListInternal(analysis_clone),
 				  fn->exportMe);

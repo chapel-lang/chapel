@@ -45,10 +45,6 @@ class Symboltable {
   static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, Stmt* body);
   static ModuleSymbol* startModuleDef(char* name, bool internal = false);
   static ModuleDefStmt* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
-  static TypeDefStmt* defineUserType(char* name, Type* definition, 
-				     Expr* initializer = nilExpr);
-  static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
-				   Type* type);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
 					    Expr* init = nilExpr, 
 					    varType vartag = VAR_NORMAL, 
@@ -62,7 +58,7 @@ class Symboltable {
 				      Expr* argExpr = nilExpr);
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
-  static FnSymbol* startFnDef(FnSymbol* fnsym, bool insert = true);
+  static FnSymbol* startFnDef(FnSymbol* fnsym);
   static FnDefStmt* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
 				Type* retType, Stmt* body, 
 				bool isExtern = false);

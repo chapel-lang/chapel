@@ -1,4 +1,4 @@
-function foo(type t; i : t) {
+function foo(type t, i : t) {
   writeln("The function foo has been called with actual value ", i);
 }
 

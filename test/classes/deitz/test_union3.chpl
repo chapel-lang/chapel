@@ -13,7 +13,7 @@ x.f = 2.2;
 
 writeln("x: (", x.f, ")");
 
-function set(out i : integer; value : integer) {
+function set(out i : integer, value : integer) {
   i = value;
 }
 

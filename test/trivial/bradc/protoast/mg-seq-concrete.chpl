@@ -1,3 +1,5 @@
+--SJD: note parameters to functions are wrong, remove commas
+
 -- problem size to run:
 
 enum classVals {S, W, A, B, C, D, O};
@@ -76,7 +78,7 @@ printResults(rnm2, initTimer.read(), benchTimer.read());
 
 -- Top-level functions:
 
-function initializeMG(out V: [Base] float;
+function initializeMG(out V: [Base] float,
                       out U, R: [lvl in Levels] [Hier(lvl)] float) {
   writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
   writeln(" Size: ", nx, "x", ny, "x", nz);
@@ -87,7 +89,7 @@ function initializeMG(out V: [Base] float;
 }
 
 
-function warmupMG(inout V: [Base] float;
+function warmupMG(inout V: [Base] float,
                   inout U, R: [lvl in Levels] [Hier(lvl)] float) {
   if (warmup) {
     mg3P(V, U, R);
@@ -98,7 +100,7 @@ function warmupMG(inout V: [Base] float;
 }
 
 
-function computeMG(in V: [Base] float;
+function computeMG(in V: [Base] float,
                    inout U, R: [lvl in Levels] [Hier(lvl)] float): float {
   resid(R(1), V, U(1));
   norm2u3(R(1));
@@ -151,7 +153,7 @@ function printResults(const rnm2, inittime, runtime: float) {
 
 -- Work for a single iteration:
 
-function mg3P(inout V: [Base] float;
+function mg3P(inout V: [Base] float,
               inout U, R: [lvl in Levels] [Hier(lvl)] float) {
   -- project up the hierarchy
   for lvl in (2..numLevels) {
@@ -179,7 +181,7 @@ function mg3P(inout V: [Base] float;
 
 -- Here's the meat: the four stencil routines:
 
-function psinv(inout U: [?DUR] float;
+function psinv(inout U: [?DUR] float,
                const R: [DUR] float) {
   static const c: coeff = initCValues();
   static const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
@@ -190,7 +192,7 @@ function psinv(inout U: [?DUR] float;
 }
 
 
-function resid(out R: [?DUR] float;
+function resid(out R: [?DUR] float,
                const V, U: [DUR] float) {
   static const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
   static const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
@@ -201,7 +203,7 @@ function resid(out R: [?DUR] float;
 }
 
 
-function rprj3(out S: [] float;
+function rprj3(out S: [] float,
                in R: [?DR] float) {
   static const w: coeff = (0.5, 0.25, 0.125, 0.0625);
   static const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
@@ -212,7 +214,7 @@ function rprj3(out S: [] float;
 }
 
 
-function interp(out R: [?DR] float;
+function interp(out R: [?DR] float,
                 const S: [?DS] float) {
   static const IDom: domain(3) = (-1..0, -1..0, -1..0);
   static const IStn: [(i,j,k) in IDom] domain(3) = (i..0, j..0, k..0);
@@ -240,7 +242,7 @@ function norm2u3(const R: [] float): (float, float) {
 
 -- Setup stuff
 
-function initArrays(out V: [Base] float;
+function initArrays(out V: [Base] float,
                     out U, R: [lvl in Levels] [Hier(lvl)] float) {
   -- conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
   -- but the following is minimal:
@@ -300,7 +302,7 @@ function longRandlc(const n: integer): float {
 }
 
 
-function randlc(inout x: float;
+function randlc(inout x: float,
                 const a: float): float {
   static const r23: float = 0.5**23;
   static const t23: float = 2**23;

@@ -394,42 +394,6 @@ ModuleDefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
 }
 
 
-TypeDefStmt* Symboltable::defineUserType(char* name, Type* definition, 
-					 Expr* initializer) {
-  UserType* newtype = new UserType(definition, initializer);
-  Symbol* typeSym = new TypeSymbol(name, newtype);
-  newtype->addName(typeSym);
-  define(typeSym);
-  return new TypeDefStmt(newtype);
-}
-
-
-ParamSymbol* Symboltable::defineParams(paramType intent, Symbol* idents, 
-				       Type* type) {
-  ParamSymbol* paramList;
-  ParamSymbol* newParam;
-  ParamSymbol* lastParam;
-
-  newParam = new ParamSymbol(intent, idents->name, type);
-  define(newParam);
-
-  paramList = newParam;
-  lastParam = newParam;
-
-  idents = nextLink(Symbol, idents);
-  while (idents != NULL) {
-    newParam = new ParamSymbol(intent, idents->name, type);
-    define(newParam);
-    lastParam->next = newParam;
-    lastParam = newParam;
-
-    idents = nextLink(Symbol, idents);
-  }
-
-  return paramList;
-}
-
-
 VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 				   varType vartag, bool isConst) {
   VarSymbol* varList;
@@ -443,7 +407,6 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   }
 
   newVar = new VarSymbol(idents->name, type, vartag, isConst);
-  define(newVar);
 
   varList = newVar;
   lastVar = newVar;
@@ -451,7 +414,6 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   idents = nextLink(Symbol, idents);
   while (idents != NULL) {
     newVar = new VarSymbol(idents->name, type, vartag, isConst);
-    define(newVar);    
     lastVar->next = newVar;
     lastVar = newVar;
 
@@ -546,17 +508,13 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
   sym->cname = copystring(cname);
   newType->addName(sym);
 
-  define(sym);
   builtinTypes.add(newType);
 
   return newType;
 }
 
 
-FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool insert) {
-  if (insert) {
-    define(fnsym);
-  }
+FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym) {
   currentFn = fnsym;
   Symboltable::pushScope(SCOPE_PARAM);
 
@@ -590,7 +548,6 @@ TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUni
   newdt = new ClassType(isValueClass, isUnion);
   newsym = new TypeSymbol(name, newdt);
   (newdt)->addName(newsym);
-  define(newsym);
   Symboltable::pushScope(SCOPE_CLASS);
 
   return newsym;
@@ -635,7 +592,6 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
 ForallExpr* Symboltable::defineQueryDomain(char* name) {
   DomainType* unknownDomType = new DomainType();
   VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, VAR_NORMAL, true);
-  define(newDomSym); // may need to postpone this until statement point --BLC
   Variable* newDom = new Variable(newDomSym);
 
   return new ForallExpr(newDom);

@@ -155,12 +155,13 @@ VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass,
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   isConst(init_isConst)
-{}
+{
+  Symboltable::define(this);
+}
 
 
 Symbol* VarSymbol::copySymbol(CloneCallback* analysis_clone) {
-  INT_FATAL(this, "VarSymbol::copySymbol() not implemented yet");
-  return nilSymbol;
+  return new VarSymbol(copystring(name), type, varClass, isConst);
 }
 
 
@@ -189,7 +190,9 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 			 Type* init_type) :
   Symbol(SYMBOL_PARAM, init_name, init_type),
   intent(init_intent)
-{}
+{
+  Symboltable::define(this);
+}
 
 
 Symbol* ParamSymbol::copySymbol(CloneCallback* analysis_clone) {
@@ -241,12 +244,13 @@ void ParamSymbol::codegenDef(FILE* outfile) {
 
 TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
   Symbol(SYMBOL_TYPE, init_name, init_definition)
-{}
+{
+  Symboltable::define(this);
+}
 
 
 Symbol* TypeSymbol::copySymbol(CloneCallback* analysis_clone) {
-  INT_FATAL(this, "TypeSymbol::copySymbol() not implemented yet");
-  return nilSymbol;
+  return new TypeSymbol(copystring(name), type);
 }
 
 
@@ -258,7 +262,9 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
   _this(0),
   body(init_body),
   overload(nilFnSymbol)
-{}
+{
+  Symboltable::define(this);
+}
 
  
 FnSymbol::FnSymbol(char* init_name) :
@@ -266,7 +272,9 @@ FnSymbol::FnSymbol(char* init_name) :
   formals(nilSymbol),
   _this(0),
   body(nilStmt)
-{}
+{
+  Symboltable::define(this);
+}
 
 
 void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
@@ -335,6 +343,7 @@ EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
   val(init_val)
 {
   SET_BACK(init);
+  Symboltable::define(this);
 }
 
 
@@ -355,7 +364,6 @@ void EnumSymbol::set_values(void) {
       tally = tmp->init->intVal();
     }
     tmp->val = tally++;
-    Symboltable::define(tmp);
     tmp = nextLink(EnumSymbol, tmp);
   }
 }

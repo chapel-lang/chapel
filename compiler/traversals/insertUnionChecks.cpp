@@ -19,7 +19,7 @@ void InsertUnionChecks::preProcessExpr(Expr* expr) {
 				     union_expr->base->typeInfo()->name->name,
 				     "_union_id_",
 				     union_expr->member->name);
-	  args->append(new Variable(new VarSymbol(id_tag)));
+	  args->append(new Variable(Symboltable::lookup(id_tag)));
 	  FnCall* set_function = 
 	    new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);
 	  ExprStmt* set_stmt = new ExprStmt(set_function);
@@ -31,13 +31,13 @@ void InsertUnionChecks::preProcessExpr(Expr* expr) {
 				     union_expr->base->typeInfo()->name->name,
 				     "_union_id_",
 				     union_expr->member->name);
-	  args->append(new Variable(new VarSymbol(id_tag)));
+	  args->append(new Variable(Symboltable::lookup(id_tag)));
 	  args->append(new StringLiteral(expr->filename));
 	  args->append(new IntLiteral(intstring(expr->lineno), expr->lineno));
 	  FnCall* check_function = 
 	    new FnCall(new Variable(Symboltable::lookupInternal("_UNION_CHECK")), args);
 	  ExprStmt* check_stmt = new ExprStmt(check_function);
-	  expr->stmt->insertBefore(check_stmt);  // Should be Before
+	  expr->stmt->insertBefore(check_stmt);
 	}
       }
     }

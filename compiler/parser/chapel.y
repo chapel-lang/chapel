@@ -1,11 +1,4 @@
-/*
- * A simple mini-Chapel parser developed from Shannon's
- * experiments teaching herself flex and bison, and used
- * to exercise a prototype Chapel AST.
- *
- * Brad Chamberlain, 6/2004
- *
- */
+/* The CHAPEL Parser */
 
 %{
 
@@ -102,10 +95,10 @@
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
-%type <psym> identsym formal nonemptyformals formals idlist indexlist
+%type <psym> identsym formal formals idlist indexlist
 %type <enumsym> enum_item enum_list
 %type <pexpr> simple_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
-%type <pexpr> reduction vardeclinit assignExpr
+%type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement decls decl vardecl 
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl 
@@ -188,7 +181,7 @@ vardecltype:
 ;
 
 
-vardeclinit:
+optional_init_expr:
   /* nothing */
     { $$ = nilExpr; }
 | TASSIGN expr
@@ -197,7 +190,7 @@ vardeclinit:
 
 
 vardecl:
-  vardecltag varconst idlist vardecltype vardeclinit TSEMI
+  vardecltag varconst idlist vardecltype optional_init_expr TSEMI
     { $$ = Symboltable::defineVarDefStmt($3, $4, $5, $1, $2); }
 ;
 
@@ -212,10 +205,13 @@ typedecl:
 
 
 typealias:
-  TTYPE identifier TCOLON type TSEMI
-    { $$ = Symboltable::defineUserType($2, $4); }
-| TTYPE identifier TCOLON type TASSIGN expr TSEMI
-    { $$ = Symboltable::defineUserType($2, $4, $6); }
+  TTYPE identifier TCOLON type optional_init_expr TSEMI
+    {
+      UserType* newtype = new UserType($4, $5);
+      Symbol* typeSym = new TypeSymbol($2, newtype);
+      newtype->addName(typeSym);
+      $$ = new TypeDefStmt(newtype);
+    }
 ;
 
 
@@ -223,11 +219,9 @@ enumdecl:
   TENUM identifier TLCBR enum_list TRCBR TSEMI
     {
       $4->set_values();
-      // EnumSymbol* enumlist = Symboltable::defineEnumList($4);      
       EnumType* pdt = new EnumType($4);
       Symbol* pst = new TypeSymbol($2, pdt);
       pdt->addName(pst);
-      Symboltable::define(pst);
       $$ = new TypeDefStmt(pdt);
     }
 ;
@@ -309,24 +303,20 @@ formaltag:
 
 
 formal:
-  formaltag idlist vardecltype
-    { $$ = Symboltable::defineParams($1, $2, $3); }
+  formaltag identifier vardecltype
+    { $$ = new ParamSymbol($1, $2, $3); }
 ;
 
-
-nonemptyformals:
-  formal
-| nonemptyformals TSEMI formal
-    {
-      $1->append($3);
-      $$ = $1;
-    }
-;
 
 formals:
   /* empty */
     { $$ = nilSymbol; }
-| nonemptyformals
+| formal
+| formals TCOMMA formal
+    {
+      $1->append($3);
+      $$ = $1;
+    }
 ;
 
 

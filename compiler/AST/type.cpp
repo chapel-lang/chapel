@@ -677,10 +677,9 @@ void ClassType::addDefinition(Stmt* init_definition) {
     /* create default constructor */
 
     char* constructorName = glomstrings(2, "_construct_", name->name);
-    FnSymbol* newFunSym = Symboltable::startFnDef(new FnSymbol(constructorName), false);
+    FnSymbol* newFunSym = Symboltable::startFnDef(new FnSymbol(constructorName));
     if (value || union_value) {
       VarSymbol* this_insert = new VarSymbol("this", this);
-      Symboltable::defineInScope(this_insert, Symboltable::getCurrentScope());
       VarDefStmt* body1 = new VarDefStmt(this_insert, nilExpr);
       ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
       body1->append(body2);
@@ -698,6 +697,20 @@ void ClassType::addDefinition(Stmt* init_definition) {
 			    )
 			  );
       constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
+    }
+    /** Add test tags for unions: This is a little ugly, it should
+	insert the enum statement that we generate in codegen before
+	the union def stmt.
+    **/
+    if (union_value) {
+      Stmt* tmpStmt = definition;
+
+      while (tmpStmt) {
+	if (VarDefStmt* varStmt = dynamic_cast<VarDefStmt*>(tmpStmt)) {
+	  new VarSymbol(glomstrings(4, "_", name->name, "_union_id_", varStmt->var->name));
+	}
+	tmpStmt = nextLink(Stmt, tmpStmt);
+      }
     }
   }
   constructor->back = &(Stmt*&)constructor; // UGH --SJD

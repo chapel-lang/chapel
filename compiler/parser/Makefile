@@ -31,10 +31,10 @@ lex.yy.c: chapel.lex chapel.tab.h
 #     - the second to get rid of some problematic generated code with a
 #       particular version of bison (will hopefully go away)
 chapel.tab.h chapel.tab.c: chapel.y
-	#@if [`grep return chapel.y | wc -l` -ne 0 ]; then echo "PROBLEM: chapel.y contains return"; grep zyxv chapel.y; fi;
 	bison -d -v -t chapel.y
 	cat chapel.tab.c | sed s/__attribute__/\\/\\// > chapel.tab.c.tmp
 	mv chapel.tab.c.tmp chapel.tab.c
+#	@if [`grep return chapel.y | wc -l` -ne 0 ]; then echo "PROBLEM: chapel.y contains return"; grep zyxv chapel.y; fi;
 
 
 FORCE:

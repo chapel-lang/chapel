@@ -5,7 +5,7 @@ class Array {
   function this(i) {
     return __primitive("array_index", this, i);
   }
-  function this(i; j) {
+  function this(i, j) {
     return __primitive("array_index", this, i, j);
   }
 }

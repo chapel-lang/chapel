@@ -3,6 +3,8 @@
 #include "nils.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "symtab.h"
+#include "symscope.h"
 
 ILink* nilILink = NULL;
 
@@ -18,6 +20,10 @@ ClassType* nilClassType = NULL;
 
 
 void initNils(void) {
+  SymScope* nilsScope = new SymScope(SCOPE_INTRINSIC, 0);
+  SymScope* saveScope = Symboltable::getCurrentScope();
+  Symboltable::setCurrentScope(nilsScope);
+
   nilILink = new ILink();
 
   nilStmt = new Stmt(STMT);
@@ -32,6 +38,9 @@ void initNils(void) {
   nilClassType->addDefinition(nilStmt);
 
   verifyNilsUncorrupted("initialized incorrectly");
+  if (saveScope) {
+    Symboltable::setCurrentScope(saveScope);
+  }
 }
 
 

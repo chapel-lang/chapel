@@ -1432,6 +1432,7 @@ ForallExpr::ForallExpr(Expr* init_domains, Symbol* init_indices,
 
 void ForallExpr::setForallExpr(Expr* exp) {
   forallExpr = exp;
+  SET_BACK(forallExpr);
 }
 
 

@@ -95,6 +95,7 @@ class TypeDefStmt : public Stmt {
 
   TypeDefStmt(Type* init_type);
   virtual Stmt* copyStmt(CloneCallback* analysis_clone);
+  TypeDefStmt* clone(CloneCallback* clone_callback);
 
   bool canLiveAtFileScope(void);
 
