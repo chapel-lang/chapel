@@ -13452,3 +13452,14 @@ Log message:
 Modified files:
 	./: Makefile 
 
+---------------------------------------------------------------------------
+
+01/04/05 16:52:43 -- deitz
+
+Log message:
+	Left my mark on the top-level Makefile to test committing at UW and
+	mailing at the list.
+
+Modified files:
+	./: Makefile 
+
