@@ -28,21 +28,6 @@ VarSymbol::VarSymbol(char* init_name, varType init_varClass, bool init_isConst,
 {}
 
 
-void VarSymbol::setType(Type* newType) {
-  type = newType;
-}
-
-
-void VarSymbol::setIsConst(bool init_isConst) {
-  isConst = init_isConst;
-}
-
-
-void VarSymbol::setVarClass(varType init_varClass) {
-  varClass = init_varClass;
-}
-
-
 void VarSymbol::printWithType(FILE* outfile) {
   print(outfile);
   if (type != NULL) {

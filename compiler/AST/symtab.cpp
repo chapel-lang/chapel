@@ -7,16 +7,82 @@ using namespace std;
 
 static map<string, Symbol*> table;
 
-void Symboltable::define(Symbol* sym) {
-  table[sym->name] = sym;
+
+class Scope {
+ public:
+  scopeType type;
+  Scope* parent;
+  Scope* children;
+  Scope* sibling;
+  map<string, Symbol*> table;
+
+  Scope(scopeType init_type);
+};
+
+
+Scope::Scope(scopeType init_type) :
+  type(init_type),
+  parent(NULL),
+  children(NULL),
+  sibling(NULL)
+{}
+
+
+static Scope* rootScope = new Scope(SCOPE_INTRINSIC);
+static Scope* currentScope = rootScope;
+
+
+void Symboltable::pushScope(scopeType type) {
+  if (currentScope->type == SCOPE_PARAM &&
+      type == SCOPE_LOCAL) {
+    type = SCOPE_FUNCTION;
+  }
+  Scope* newScope = new Scope(type);
+  Scope* children = currentScope->children;
+
+  if (children == NULL) {
+    currentScope->children = newScope;
+  } else {
+    while (children->sibling != NULL) {
+      children = children->sibling;
+    }
+    children->sibling = newScope;
+  }
+  newScope->parent = currentScope;
+  currentScope = newScope;
 }
 
-Symbol* Symboltable::lookup(char* name) {
-  if (table.find(name) == table.end()) {
-    return NULL;
+
+void Symboltable::popScope(void) {
+  Scope* prevScope = currentScope->parent;
+
+  if (prevScope == NULL) {
+    fprintf(stderr, "ERROR: popping too many scopes");
+    exit(1);
   } else {
-    return table[name];
+    currentScope = prevScope;
   }
+}
+
+
+void Symboltable::define(Symbol* sym) {
+  currentScope->table[sym->name] = sym;
+}
+
+
+Symbol* Symboltable::lookup(char* name) {
+  Scope* scope;
+  
+  scope = currentScope;
+  
+  while (scope != NULL) {
+    if (scope->table.find(name) != scope->table.end()) {
+      return scope->table[name];
+    }
+    scope = scope->parent;
+  }
+
+  return NULL;
 }
 
 

@@ -1,5 +1,8 @@
 * try to get return of append working better
+* and traversal of linked lists -- remove casting
 * take NULL out
 * move suspicious symbols into prelude file
 * fix precedence
-* make lists of variables, parameters work correctly
+* check necessity of print*() variants
+* remove char literals from chapel.y
+* deal with BLC comments

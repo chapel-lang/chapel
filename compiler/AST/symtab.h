@@ -4,9 +4,21 @@
 #include "link.h"
 #include "symbol.h"
 
+enum scopeType {
+  SCOPE_INTRINSIC,
+  SCOPE_FILE,
+  SCOPE_PARAM,
+  SCOPE_FUNCTION,
+  SCOPE_LOCAL
+};
+  
+
 class Symboltable : public Link {
  public:
-  Symboltable(void);
+  Symboltable(scopeType init_type);
+
+  static void pushScope(scopeType type);
+  static void popScope();
 
   static void define(Symbol* sym);
   static Symbol* lookup(char* name);
@@ -19,4 +31,3 @@ class Symboltable : public Link {
 };
 
 #endif
-

@@ -158,7 +158,7 @@ void SimpleSeqExpr::print(FILE* outfile) {
   lo->print(outfile);
   printf("..");
   hi->print(outfile);
-  if (str != NULL) {
+  if (!str->isNull()) {
     printf(" by ");
     str->print(outfile);
   }

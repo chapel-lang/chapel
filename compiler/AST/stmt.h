@@ -69,11 +69,11 @@ class ReturnStmt : public ExprStmt {
 };
 
 
-class LoopStmt : public Stmt {
+class BlockStmt : public Stmt {
  public:
   Stmt* body;
 
-  LoopStmt::LoopStmt(Stmt* init_body);
+  BlockStmt::BlockStmt(Stmt* init_body);
 
   void print(FILE* outfile);
 };
@@ -86,7 +86,7 @@ enum whileLoopType {
 };
 
 
-class WhileLoopStmt : public LoopStmt {
+class WhileLoopStmt : public BlockStmt {
  public:
   whileLoopType type;
   Expr* condition;
@@ -97,7 +97,7 @@ class WhileLoopStmt : public LoopStmt {
 };
 
 
-class ForLoopStmt : public LoopStmt {
+class ForLoopStmt : public BlockStmt {
  public:
   bool forall;
   Expr* index;

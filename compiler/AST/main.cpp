@@ -3,6 +3,7 @@
 #include "link.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "symtab.h"
 #include "yy.h"
 
 
@@ -33,7 +34,10 @@ int main(int argc, char* argv[]) {
   //  yydebug = 1;
 
   while (!feof(yyin)) {
+    Symboltable::pushScope(SCOPE_FILE);
     yyparse();
+    Symboltable::popScope();
+
     program->printList(stdout, "\n");
   }
 

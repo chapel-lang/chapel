@@ -106,7 +106,7 @@ ReturnStmt::ReturnStmt(Expr* retExpr) :
 void ReturnStmt::print(FILE* outfile) {
   fprintf(outfile, "\n");
   fprintf(outfile, "return");
-  if (expr != NULL) {
+  if (!expr->isNull()) {
     fprintf(outfile, " ");
     expr->print(outfile);
   }
@@ -114,12 +114,12 @@ void ReturnStmt::print(FILE* outfile) {
 }
 
 
-LoopStmt::LoopStmt(Stmt* init_body) :
+BlockStmt::BlockStmt(Stmt* init_body) :
   body(init_body)
 {}
 
 
-void LoopStmt::print(FILE* outfile) {
+void BlockStmt::print(FILE* outfile) {
   fprintf(outfile, "{\n");
   body->printList(outfile, "\n");
   fprintf(outfile, "\n");
@@ -130,7 +130,7 @@ void LoopStmt::print(FILE* outfile) {
 WhileLoopStmt::WhileLoopStmt(whileLoopType init_type, 
 			     Expr* init_cond, 
 			     Stmt* init_body) 
-  : LoopStmt(init_body), 
+  : BlockStmt(init_body), 
     type(init_type), 
     condition(init_cond) 
 {}
@@ -151,7 +151,7 @@ void WhileLoopStmt::print(FILE* outfile) {
     break;
   }
   
-  LoopStmt::print(outfile);
+  body->print(outfile);
 
   switch (type) {
   case LOOP_WHILEDO:
@@ -174,7 +174,7 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
 			 Expr* init_index,
 			 Expr* init_domain,
 			 Stmt* body)
-  : LoopStmt(body),
+  : BlockStmt(body),
     forall(init_forall),
     index(init_index),
     domain(init_domain) 

@@ -250,9 +250,14 @@ fnrettype:
 
 
 fndecl:
-  FUNCTION identifier '(' formals ')' fnrettype statement
+  FUNCTION identifier
     {
-      FunSymbol* fnpst = new FunSymbol($2, $4, $6, $7);
+      Symboltable::pushScope(SCOPE_PARAM);
+    }
+                      '(' formals ')' fnrettype statement
+    {
+      Symboltable::popScope();
+      FunSymbol* fnpst = new FunSymbol($2, $5, $7, $8);
       $$ = new FnDefStmt(fnpst);
     }
 ;
@@ -357,14 +362,19 @@ statement:
 | expr ';'
     { $$ = new ExprStmt($1); }
 | return
-| '{' statements '}'
-    { $$ = new LoopStmt($2); }
+| '{'
+    { Symboltable::pushScope(SCOPE_LOCAL); }
+      statements '}'
+    {
+      Symboltable::popScope();
+      $$ = new BlockStmt($3);
+    }
 ;
 
 
 return:
   RETURN ';'
-    { $$ = new ReturnStmt(NULL); }
+    { $$ = new ReturnStmt(new NullExpr()); }
 | RETURN expr ';'
     { $$ = new ReturnStmt($2); }
 ;

@@ -39,10 +39,6 @@ class VarSymbol : public Symbol {
   VarSymbol(char* init_name, varType init_varClass = VAR_NORMAL, 
 	    bool init_isConst = false, Type* init_type = dtUnknown);
   
-  void setType(Type* newType);
-  void setIsConst(bool init_isConst);
-  void setVarClass(varType init_varClass);
-
   void printWithType(FILE*);
 };
 

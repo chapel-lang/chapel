@@ -153,7 +153,7 @@ class SimpleSeqExpr : public Expr {
   Expr* hi;
   Expr* str;
 
-  SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str = NULL);
+  SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str = new NullExpr());
 
   void print(FILE* outfile);
 };
@@ -202,7 +202,7 @@ class ParenOpExpr : public Expr {
   Expr* baseExpr;
   Expr* argList;
 
-  ParenOpExpr(Expr* init_base, Expr* init_arg = NULL);
+  ParenOpExpr(Expr* init_base, Expr* init_arg = new NullExpr());
 
   virtual void print(FILE* outfile);
 };
