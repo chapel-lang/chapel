@@ -1893,3 +1893,14 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/d/: lex.c parse.c 
 
+---------------------------------------------------------------------------
+
+04/05/04 19:32:42 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	updated tests for changes in the grammar and parser.
+
+Modified files:
+	chapel/test/parsing/jplevyak/: literal.chk literal.v mat1.chk 
+	                               tuples.chk 
+
