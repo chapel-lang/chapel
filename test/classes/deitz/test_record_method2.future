@@ -1,4 +1,0 @@
-bradc
-
-This should start to work when inout is supported since
-"this" is passed as inout for record bound functiosn. -deitz

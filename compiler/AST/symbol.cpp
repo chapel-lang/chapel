@@ -195,7 +195,8 @@ static char* paramTypeNames[NUM_PARAM_TYPES] = {
   "in",
   "inout",
   "out",
-  "const"
+  "const",
+  "ref"
 };
 
 
@@ -222,7 +223,14 @@ void ParamSymbol::printDef(FILE* outfile) {
 
 
 bool ParamSymbol::requiresCPtr(void) {
-  return ((intent == PARAM_OUT || intent == PARAM_INOUT) && 
+  return ((intent == PARAM_OUT || intent == PARAM_INOUT || 
+	   intent == PARAM_REF) && 
+	  type->outParamNeedsPtr());
+}
+
+
+bool ParamSymbol::requiresCopyBack(void) {
+  return ((intent == PARAM_OUT || intent == PARAM_INOUT) &&
 	  type->outParamNeedsPtr());
 }
 

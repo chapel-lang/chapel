@@ -181,10 +181,11 @@ bool Type::requiresCParamTmp(paramType intent) {
   case PARAM_BLANK:
   case PARAM_IN:
   case PARAM_CONST:
-    return false;
   case PARAM_INOUT:
   case PARAM_OUT:
     return true;
+  case PARAM_REF:
+    return false;
   default:
     INT_FATAL(this, "case not handled in requiresCParamTmp");
     return false;
@@ -768,14 +769,6 @@ bool ClassType::isNull(void) {
   return (this == nilClassType);
 }
 
-
-paramType ClassType::intentForThisParam(void) {
-  if (value || union_value) {
-    return PARAM_INOUT;
-  } else {
-    return PARAM_BLANK;
-  }
-}
 
 void ClassType::codegen(FILE* outfile) {
   name->codegen(outfile);

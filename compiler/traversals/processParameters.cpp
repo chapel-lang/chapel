@@ -40,24 +40,26 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 
 	/* generate copy-in statements */
 	while (formal) {
-	  tmpsRequired = true;
+	  if (formal->requiresCTmp()) {
+	    tmpsRequired = true;
 
-	  Symbol* newActual;
-	  Expr* initializer;
-	  if (formal->intent == PARAM_OUT) {
-	    initializer = nilExpr;
-	  } else {
-	    initializer = actual->copy();
+	    Symbol* newActual;
+	    Expr* initializer;
+	    if (formal->intent == PARAM_OUT) {
+	      initializer = nilExpr;
+	    } else {
+	      initializer = actual->copy();
+	    }
+	    char* actualName = glomstrings(2, "_", formal->name);
+	    VarDefStmt* newActualDecl = 
+	      Symboltable::defineSingleVarDefStmt(actualName,
+						  formal->type, initializer,
+						  VAR_NORMAL, false, &newActual);
+	    Variable* newActualUse = new Variable(newActual);
+	    actual->replace(newActualUse);
+
+	    body = appendLink(body, newActualDecl);
 	  }
-	  char* actualName = glomstrings(2, "_", formal->name);
-	  VarDefStmt* newActualDecl = 
-	    Symboltable::defineSingleVarDefStmt(actualName,
-						formal->type, initializer,
-						VAR_NORMAL, false, &newActual);
-	  Variable* newActualUse = new Variable(newActual);
-	  actual->replace(newActualUse);
-
-	  body = appendLink(body, newActualDecl);
 	
 	  formal = nextLink(ParamSymbol, formal);
 	  actual = nextLink(Expr, actual);
@@ -76,7 +78,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	Expr* newActual = fncall->argList;
 	if (formal && actual) {
 	  while (formal) {
-	    if (formal->requiresCPtr()) {
+	    if (formal->requiresCopyBack()) {
 	      Expr* copyBack = new AssignOp(GETS_NORM, actual->copy(),
 					    newActual->copy());
 	      ExprStmt* copyBackStmt = new ExprStmt(copyBack);

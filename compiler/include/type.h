@@ -25,6 +25,7 @@ enum paramType {
   PARAM_INOUT,
   PARAM_OUT,
   PARAM_CONST,
+  PARAM_REF,
 
   NUM_PARAM_TYPES
 };
@@ -184,8 +185,6 @@ class ClassType : public Type {
   void traverseDefType(Traversal* traversal);
 
   bool isNull(void);
-
-  paramType intentForThisParam(void);
 
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);

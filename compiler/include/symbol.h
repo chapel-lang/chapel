@@ -87,6 +87,7 @@ class ParamSymbol : public Symbol {
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
   bool requiresCPtr(void);
+  bool requiresCopyBack(void);
   bool requiresCTmp(void);
 
   void printDef(FILE* outfile);
