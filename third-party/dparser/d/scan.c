@@ -9,7 +9,7 @@ scan_buffer(d_loc_t *aloc, D_State *parse_state, ShiftResult *results) {
   d_loc_t loc = *aloc, last_loc = *aloc;
   char *s = loc.s, *scol = 0;
   int col = loc.col, collast = col, line = loc.line;
-  int nresults = 0, i, j;
+  int nresults = 0, i = 0, j;
   D_Shift **shift = NULL, **shift_diff = 0;
 
   switch (parse_state->scanner_size) {

@@ -99,6 +99,7 @@ vec_add_internal(void *v, void *elem) {
   } else if (av->v == av->e) {
     av->v = (void**)MALLOC(INITIAL_VEC_SIZE * sizeof(void *));
     memcpy(av->v, av->e, av->n * sizeof(void *));
+    memset(&av->v[av->n], 0, sizeof(void *) * (INITIAL_VEC_SIZE - av->n));
   } else
     if ((av->n & (INITIAL_VEC_SIZE - 1)) == 0) {
       int l = av->n, nl = (1 + INITIAL_VEC_SHIFT);
@@ -108,6 +109,7 @@ vec_add_internal(void *v, void *elem) {
       if (!av->n || !l) {
 	nl = 1 << nl;
 	av->v = (void**)REALLOC(av->v, nl * sizeof(void *));
+        memset(&av->v[av->n], 0, sizeof(void *) * (nl - av->n));
       }
     }
   av->v[av->n++] = elem;
@@ -148,7 +150,7 @@ set_add(void *av, void *t) {
   int j, n = v->n;
   uint i;
   if (n) {
-    uint h = ((uint)t);
+    uint h = ((uintptr_t)t);
     h = h % n;
     for (i = h, j = 0; 
 	 i < v->n && j < SET_MAX_SEQUENTIAL; 

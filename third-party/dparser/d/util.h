@@ -97,9 +97,9 @@ while(0)
 #define stack_empty(_s) ((_s)->cur = (_s)->start)
 #define stack_depth(_s) ((_s)->cur - (_s)->start)
 #define stack_pop(_s) (*--((_s)->cur))
-#define stack_push(_s, _x) ((_s)->cur == (_s)->end ? \
-  stack_push_internal((AbstractStack*)((_s)), (void*)_x) : \
-  (void*)(*((_s)->cur)++ = (_x)))
+#define stack_push(_s, _x) do { if ((_s)->cur == (_s)->end ) \
+  stack_push_internal((AbstractStack*)((_s)), (void*)(uintptr_t)(_x)); else \
+  (*((_s)->cur)++ = (_x)); } while(0)
 void * stack_push_internal(AbstractStack*, void*);
 
 int buf_read(char *pathname, char **buf, int *len);

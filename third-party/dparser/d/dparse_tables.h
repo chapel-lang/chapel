@@ -61,6 +61,7 @@ typedef struct D_Shift {
   unsigned char		op_assoc;
   int			op_priority;
   int			term_priority;
+  int			action_index;
   D_ReductionCode	speculative_code;
 } D_Shift;
 
@@ -164,5 +165,7 @@ typedef struct D_ParserTables {
   D_Pass		*passes;
   unsigned int		save_parse_tree;
 } D_ParserTables;
+
+void parse_whitespace(struct D_Parser *p, d_loc_t *loc, void **p_globals);
 
 #endif

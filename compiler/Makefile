@@ -104,9 +104,9 @@ depend: $(DEPENDSUBDIRS) echocompilerdir $(PLATFORM_DIR)
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(CCDEP) -MM -MG $(CFLAGS) $$file >> $(CVS_DEPENDS); \
+	  $(CCDEP) -MM -MG $(CFLAGS) $$file -MF $(CVS_DEPENDS); \
 	done
-	@cat geysa.h | $(CCDEP) -E -MM -MG -MT GEYSA_INCLUDES $(CFLAGS) - | sed s/:/\ =/ >> $(CVS_DEPENDS)
+	@cat geysa.h | $(CCDEP) -E -MM -MG -MT GEYSA_INCLUDES $(CFLAGS) -MF - | sed s/:/\ =/ >> $(CVS_DEPENDS)
 
 test: FORCE
 	cd test && $(MAKE) test

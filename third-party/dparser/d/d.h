@@ -13,6 +13,9 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
+#include <stdint.h>
+#endif
 #include <limits.h>
 #include <sys/types.h>
 #ifndef __MINGW32__
@@ -75,7 +78,9 @@ typedef unsigned long long uint64;
 typedef short int16;
 typedef unsigned short uint16;
 #ifdef __MINGW32__
-typedef uint32 uint; /* already part of most systems */
+/* already part of most systems */
+typedef unsigned long ulong;
+typedef uint32 uint; 
 #endif
 
 #include "dparse.h"
@@ -86,7 +91,8 @@ typedef uint32 uint; /* already part of most systems */
 #include "lex.h"
 #include "scan.h"
 #include "parse.h"
-#include "write_ctables.h"
+#include "write_tables.h"
+#include "read_binary.h"
 
 #ifdef D_DEBUG
 #define DBG(_x) if (d_debug_level>1) { _x; }

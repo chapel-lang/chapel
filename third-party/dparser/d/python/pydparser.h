@@ -18,7 +18,6 @@ int my_D_ParseNode_end_get(D_ParseNode *dpn, D_Parser *dp);
 int my_D_ParseNode_end_skip_get(D_ParseNode *dpn, D_Parser *dp);
 PyObject *my_D_ParseNode_symbol_get(D_ParseNode *dpn, D_Parser *dp);
 
-
 void remove_parse_tree_viewer(D_Parser* dp);
 void add_parse_tree_viewer(D_Parser* dp);
 void del_parser(D_Parser *dp);
@@ -43,4 +42,5 @@ D_Parser *make_parser(int idpt,
 		      int dont_use_height_for_disambiguation,
 		      char *start_state);
 PyObject *run_parser(D_Parser *dp, PyObject* string, int buf_idx);
-void set_parser_functions(int idpt);
+int make_tables(char *grammar_pathname);
+int load_parser_tables(char *tables_name);

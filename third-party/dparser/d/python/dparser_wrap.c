@@ -33,8 +33,8 @@
  * and things like that.
  *
  * $Log$
- * Revision 1.3  2003/10/30 22:39:10  jplevyak
- * new python interface by Brian Sabbey
+ * Revision 1.5  2004/05/27 17:14:58  jplevyak
+ * Fix speculative shift actions for binary code
  *
  ************************************************************************/
 
@@ -916,16 +916,29 @@ static PyObject *_wrap_run_parser(PyObject *self, PyObject *args) {
     return _resultobj;
 }
 
-static PyObject *_wrap_set_parser_functions(PyObject *self, PyObject *args) {
+static PyObject *_wrap_make_tables(PyObject *self, PyObject *args) {
     PyObject * _resultobj;
-    int  _arg0;
+    int  _result;
+    char * _arg0;
 
     self = self;
-    if(!PyArg_ParseTuple(args,"i:set_parser_functions",&_arg0)) 
+    if(!PyArg_ParseTuple(args,"s:make_tables",&_arg0)) 
         return NULL;
-    set_parser_functions(_arg0);
-    Py_INCREF(Py_None);
-    _resultobj = Py_None;
+    _result = (int )make_tables(_arg0);
+    _resultobj = Py_BuildValue("i",_result);
+    return _resultobj;
+}
+
+static PyObject *_wrap_load_parser_tables(PyObject *self, PyObject *args) {
+    PyObject * _resultobj;
+    int  _result;
+    char * _arg0;
+
+    self = self;
+    if(!PyArg_ParseTuple(args,"s:load_parser_tables",&_arg0)) 
+        return NULL;
+    _result = (int )load_parser_tables(_arg0);
+    _resultobj = Py_BuildValue("i",_result);
     return _resultobj;
 }
 
@@ -1548,7 +1561,8 @@ static PyMethodDef dparser_swigcMethods[] = {
 	 { "d_get_number_of_children", _wrap_d_get_number_of_children, 1 },
 	 { "d_find_in_tree", _wrap_d_find_in_tree, 1 },
 	 { "d_get_child", _wrap_d_get_child, 1 },
-	 { "set_parser_functions", _wrap_set_parser_functions, 1 },
+	 { "load_parser_tables", _wrap_load_parser_tables, 1 },
+	 { "make_tables", _wrap_make_tables, 1 },
 	 { "run_parser", _wrap_run_parser, 1 },
 	 { "make_parser", _wrap_make_parser, 1 },
 	 { "del_parser", _wrap_del_parser, 1 },

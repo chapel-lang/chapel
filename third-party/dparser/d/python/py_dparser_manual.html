@@ -16,114 +16,123 @@ for more detailed information on DParser.
 </ul>
 <h2><A NAME="BI">Basic Ideas</a></h2>
 <p>
-A string placed as the first line of a Python function is the function's documentation string.  
-Productions are input to DParser using these strings.  The syntax of the string is the same as that of a DParser production.
-In order to let the interface know that you want it to use a specific function's documentation string 
-as a production, begin that function's name with "d_".  The function then becomes an action that is executed 
-when the production reduces.  For example,
+Grammar rules are input to DParser using Python function documentation strings.  (A string placed as the first line of a Python function is the function's documentation string.)
+In order to let DParser know that you want it to use a specific function's documentation string as part of your grammar, begin that function's name with "d_".  The function then becomes an action that is executed 
+whenever the production defined in the documentation string reduces.  For example,
 <pre>
-#...
 def d_action1(t):
-    "sentence : noun 'runs'"
+    " sentence : noun 'runs' "
     print 'found a sentence'
 #...
 </pre>
-This code specifies an action, <b>d_action1</b> and a production, <b>sentence</b>, to DParser.  If your input contains
-a <b>noun</b> (whatever you specify that to be) followed by <i>runs</i>, then DParser will call <b>d_action1</b>.
-
-<p>
-Each action takes at least one argument, an array.  The array consists of the return values of the elements
-making up the production, or, for terminal elements, the string the terminal matched.  In the above example, this
-array will contain the return value of <b>noun</b>'s action as the first element and the string <I>runs</I> as 
+This function specifies an action, <code>d_action1</code>, and a production, <code>sentence</code>, to DParser.  <code>d_action1</code> will be called when DParser recognizes a <code>sentence</code>.  The argument, <code>t</code>, to <code>d_action1</code> is an array.  The array consists of the return values of the elements
+making up the production, or, for terminal elements, the string the terminal matched.  In the above example, the array <code>t</code>
+array will contain the return value of <code>noun</code>'s action as the first element and the Python string <code>'runs'</code> as 
 the second.  
 <P>
-Regular expression are specified by enclosing the regular expression in double quotes.  
+Regular expression are specified by enclosing the regular expression in double quotes:
 <pre>
-#...
 def d_number(t):
-    r'number : "[0-9]+"'             # number matches some number of the digits 0-9
+    ' number : "[0-9]+" '            # match a positive integer
     return int(t[0])             # turn the matched string into an integer
 #...
 </pre>
-Make sure your documentation string is a Python raw string (precede it with the letter <b>r</b>) if it contains any <a href="http://www.python.org/doc/current/ref/strings.html">Python escape sequences</a>.
+Make sure your documentation string is a Python raw string (precede it with the letter <code>r</code>) if it contains any <a href="http://www.python.org/doc/current/ref/strings.html">Python escape sequences</a>.
 <P>
 For more advanced features of productions, such as priorities and associativites, see <a href="http://dparser.sourceforge.net/d/manual.html">the DParser manual</a>.
+<P>
+For a simple, complete example to add integers, go back to the <a href="index.html">home page</a>.
 <h2><A NAME="AA">Arguments to actions</a></h2>
 All actions take at least one argument, an array, as described above.  
 Other arguments are optional.  The interface recognizes which arguments you want based on the name you give the argument.  Possible
 names are:
-<dl><dt><b>spec</b>, <b>spec_only</b><dd>If an action takes <b>spec</b>, that action will be called for both speculative and final parses 
+<dl><dt><code>spec</code>, <code>spec_only</code><dd>If an action takes <code>spec</code>, that action will be called for both speculative and final parses 
 (otherwise, the action is only called for final parses).
-The value of <b>spec</b> indicates whether the parse is final or speculative (1 is speculative, 0 is final).  
-To reject a speculative parse, return dparser.Reject.
-If an action takes <b>spec_only</b>, the action will be called only for speculative parses.  The return value of the 
+The value of <code>spec</code> indicates whether the parse is final or speculative (1 is speculative, 0 is final).  
+To reject a speculative parse, return <code>dparser.Reject</code>.
+If an action takes <code>spec_only</code>, the action will be called only for speculative parses.  The return value of the 
 action for the final parse will be the same Python object that was returned for the speculative parse.
 <a href="test5.py">Complete example</a>.
-<dt><b>g</b><dd>DParser's global state.  <b>g</b> is actually an array, the first element of which is the
+<dt><code>g</code><dd>DParser's global state.  <code>g</code> is actually an array, the first element of which is the
 global state.  (Using a one-element array in this manner allows the action to change the global state.)
-<dt><b>s</b><dd>contains an array (a tree, really) of the strings that make up this reduction.  Useful if the purpose of your parser is to alter some text, leaving it mostly intact.  See <a href="test6.py">here</a> for a complete example.  
-<dt><b>nodes</b><dd> 
-an array of Python wrappers around the reduction's <b>D_ParseNode</b>s.  They contain information on line numbers and such.  See <a href="test7.py">here</a> for useful fields.
-<dt><b>this</b><dd> the <b>D_ParseNode</b> for the current production.  (<b>$$</b> in DParser.)  Again, see <a href="test7.py">this example</a>.
-<dt><b>parser</b><dd>
-your parser (somtimes useful if you're dealing with multiple modules).
+<dt><code>s</code><dd>contains an array (a tree, really) of the strings that make up this reduction.  <code>s</code> is useful if the purpose of your parser is to alter some text, leaving it mostly intact.  See <a href="test6.py">here</a> for a complete example.  
+<dt><code>nodes</code><dd> 
+an array of Python wrappers around the reduction's <code>D_ParseNode</code>s.  They contain information on line numbers and such.  See <a href="test7.py">here</a> for useful fields.
+<dt><code>this</code><dd> the <code>D_ParseNode</code> for the current production.  (<code>$$</code> in DParser.)  Again, see <a href="test7.py">this example</a>.
+<dt><code>parser</code><dd>
+your parser (sometimes useful if you're dealing with multiple files).
 </dl>
 
 
 <h2><A NAME="ADP">Arguments to dparser.Parser()</a></h2>
 All arguments are optional.
 <dl>
-<dt><b>modules</b>:
+<dt><code>modules</code>:
 	<dd>an array of modules containing the actions you want in your parser.  If this argument is not specified, the calling module will be used.
-<dt><b>file_prefix</b>:<dd>prefix for the filename of the parse table cache and other such files.  Defaults to "d_parser_mach_gen"
+<dt><code>file_prefix</code>:<dd>prefix for the filename of the parse table cache and other such files.  Defaults to "d_parser_mach_gen"
 </dl>
 
 <h2><A NAME="AP">Arguments to dparser.Parser.parse()</a></h2>
 The first argument to dparser.Parser.parse is always the string that is to be parsed.  All other arguments are optional.
 <dl>
-<dt><b>start_symbol</b>:
+<dt><code>start_symbol</code>:
 <dd>the start symbol.  Defaults to the topmost symbol defined. 
-<dt><b>print_debug_info</b>:
+<dt><code>print_debug_info</code>:
         <dd>prints a list of actions that are called if non-zero.  Question marks indicate the action is speculative.
-<dt><b>dont_fixup_internal_productions, dont_merge_epsilon_trees, commit_actions_interval, error_recovery</b>:
-<dd>correspond to the members of <b>D_Parser</b> (see the DParser manual)
-<dt><b>initial_skip_space_fn</b>:<dd>allows user-defined whitespace (as does the <b>whitespace</b> production,
+<dt><code>dont_fixup_internal_productions, dont_merge_epsilon_trees, commit_actions_interval, error_recovery</code>:
+<dd>correspond to the members of <code>D_Parser</code> (see the DParser manual)
+<dt><code>initial_skip_space_fn</code>:<dd>allows user-defined whitespace (as does the <code>whitespace</code> production,
 and instead of the built-in, c-like whitespace parser).
-Its argument is a <b>d_loc_t</b> structure.  This structure's member, <b>s</b>, is an index into the string that is being parsed.  Modify this index
+Its argument is a <code>d_loc_t</code> structure.  This structure's member, <code>s</code>, is an index into the string that is being parsed.  Modify this index
 to skip whitespace:
 <pre>
-#...
-def whitespace(loc):
+def whitespace(loc):    # no d_ prefix
    while loc.s < len(loc.buf) and loc.buf[loc.s:loc.s+2] == ':)':    # make smiley face the whitespace
       loc.s = loc.s + 2
 #...
-Parser().parser('int:)var:)=:)2', initial_skip_space_fn = whitespace)
+Parser().parse('int:)var:)=:)2', initial_skip_space_fn = whitespace)
 </pre>
-<dt><b>syntax_error_fn</b>:<dd> called on a syntax error.  By default an exception is raised.  It is passed a <b>d_loc_t</b> structure (see <b>initial_ skip_space_fn</b>)
-indicating the location of the error:
+<dt><code>syntax_error_fn</code>:<dd> called on a syntax error.  By default an exception is raised.  It is passed a <code>d_loc_t</code> structure (see <code>initial_skip_space_fn</code>)
+indicating the location of the error.  The function below will put '<--error' and a line break at the location of the error:
 <pre>
-#...
 def syntax_error(loc):
-    print 'syntax error, line:' + str(loc.line)
+    mn = max(loc.s - 10, 0)
+    mx = min(loc.s + 10, len(loc.buf))
+    begin = loc.buf[mn:loc.s]
+    end = loc.buf[loc.s:mx]
+    space = ' '*len(begin)
+    print begin + '\n' + space + '<--error' + '\n' + space + end
 #...
-Parser().parser('python is bad.', syntax_error_fn = syntax_error)
+Parser().parse('python is bad.', syntax_error_fn = syntax_error)
 </pre>
-<dt><b>ambiguity_fn</b>:<dd>resolves ambiguities.  It takes an array of <b>D_ParseNode</b>s and expects one of them to be returned.  By default a <b>dparser.AmbiguityException</b> is raised.
+<dt><code>ambiguity_fn</code>:<dd>resolves ambiguities.  It takes an array of <code>D_ParseNode</code>s and expects one of them to be returned.  By default a <code>dparser.AmbiguityException</code> is raised.
 </dl>
 
 <h2><A NAME="PF">Pitfalls and Tips</a></h2>
-Let me know if you run into a pitfall or have a tip, and I will put it here.  Passing <b>print_debug_info=1</b> to <b>Parser.parse()</b> might help if you are stuck.
-<dl><dt><b>Regular expressions:</b><dd>
+Let me know if you run into a pitfall or have a tip, and I will put it here.  
+
+<dl>
+<dt>Debugging a Grammar<dd>Pass <code>print_debug_info=1</code> to <code>Parser.parse()</code> to see a list of the actions that are being called (pass it 2 to see only final actions).  
+<p>Also, try looking at the grammar file that is created, d_parser_mach_gen.g.<p>
+<dt>Regular expressions:<dd>
 DParser does not understand all of the regular expressions understood by the Python regular expression module.  Make sure you are using regular expressions DParser can understand.  
-<p>Also, make sure your documentation string is a Python raw string (precede it with the letter <b>r</b>) if it contains any <a href="http://www.python.org/doc/current/ref/strings.html">Python escape sequences</a>.
-<dt><b>DParser specifiers/declarations:</b><dd>DParser can be passed declarations in documentation strings.  For example,
+<p>Also, make sure your documentation string is a Python raw string (precede it with the letter <code>r</code>) if it contains any <a href="http://www.python.org/doc/current/ref/strings.html">Python escape sequences</a>.
+<dt>Whitespace:<dt><dd>
+By default, DParser treats tabs, spaces, newlines and #line commands as whitespace.  If you want to deal with any of these yourself (especially be careful of the # character), you have to either create an <code>initial_skip_space_fn</code>, as shown above, or define the special <code>whitespace</code> production:
+<pre>
+def d_whitespace(t):
+   'whitespace : "[ \t\n]*" '     # treat space, tab and newline as whitespace, but treat the # character normally
+   print 'found whitespace:' + t[0]
+</pre>
+<dt>DParser specifiers/declarations:<dd>DParser can be passed declarations in documentation strings.  For example,
 <pre>
 from dparser import Parser
 def d_somefunc(t) : '${declare longest_match}'
 #...
 </pre>
 (see the DParser manual for an explanation of specifiers and declarations.)
-<dt><b>Multiple productions per action:</b><dd>You can put multiple productions (even your entire grammar) into one documentation string.  Just make sure to add semicolons after each production:
+<p>
+<dt>Multiple productions per action:<dd>You can put multiple productions (even your entire grammar) into one documentation string.  Just make sure to add semicolons after each production:
 <pre>
 from dparser import Parser
 

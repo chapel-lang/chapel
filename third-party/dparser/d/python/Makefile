@@ -6,13 +6,13 @@ install:
 	python setup.py install
 
 clean:
-	rm -rf build dparser.pyc d_parser_mach_gen.*
+	rm -rf build dparser.pyc tests/d_parser_mach_gen.*
 
 test:
-	python test.py
-	python test2.py
-	python test3.py
-	python test4.py
-	python test5.py
-	python test6.py
-	python test7.py
+	python tests/test.py
+	python tests/test2.py
+	python tests/test3.py
+	python tests/test4.py
+	python tests/test5.py
+	python tests/test6.py
+	python tests/test7.py

@@ -93,9 +93,9 @@ main(int argc, char *argv[]) {
   /* grammar writing options */
   strcpy(g->grammar_ident, grammar_ident);
   if (ident_from_filename) {
-    char *n = rindex(grammar_pathname, '/'), *e;
+    char *n = strrchr(grammar_pathname, '/'), *e;
     n = n ? n : grammar_pathname;
-    e = index(n, '.');
+    e = strchr(n, '.');
     e = e ? e : n + strlen(n);
     memcpy(g->grammar_ident, n, e-n);
     g->grammar_ident[e-n] = 0;

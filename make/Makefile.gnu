@@ -12,7 +12,7 @@ CC = g++
 # Flags
 #
 
-CFLAGS += -Wall
+CFLAGS += -Wall -Wno-invalid-offsetof
 
 ifdef DEBUG
 CFLAGS += -g -DDEBUG=1

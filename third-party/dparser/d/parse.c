@@ -63,7 +63,7 @@ xprint_paren(Parser *pp, PNode *p) {
   int i;
   char *c;
   if (!p->error_recovery) {
-    printf("[%X %s]", (int)p, pp->t->symbols[p->parse_node.symbol].name);
+    printf("[%p %s]", p, pp->t->symbols[p->parse_node.symbol].name);
     if (p->children.n) {
       printf("(");
       for (i = 0; i < p->children.n; i++)
@@ -127,7 +127,7 @@ d_ws_after(D_Parser *ap, D_ParseNode *apn) {
   return pn->ws_after;
 }
 
-#define SNODE_HASH(_s, _sc, _g) ((((uint)(_s)) << 12) + (((uint)(_sc))) + ((uint)(_g)))
+#define SNODE_HASH(_s, _sc, _g) ((((uintptr_t)(_s)) << 12) + (((uintptr_t)(_sc))) + ((uintptr_t)(_g)))
 
 SNode *
 find_SNode(Parser *p, uint state, D_Scope *sc, void *g) {
@@ -277,7 +277,7 @@ free_SNode(Parser *p, struct SNode *s) {
 #endif
 
 #define PNODE_HASH(_si, _ei, _s, _sc, _g) \
-((((uint)_si) << 8) + (((uint)_ei) << 16) + (((uint)_s)) + (((uint)_sc)) + (((uint)_g)))
+((((uintptr_t)_si) << 8) + (((uintptr_t)_ei) << 16) + (((uintptr_t)_s)) + (((uintptr_t)_sc)) + (((uintptr_t)_g)))
 
 PNode *
 find_PNode(Parser *p, char *start, char *end_skip, int symbol, D_Scope *sc, void *g, uint *hash) {
@@ -921,7 +921,11 @@ make_PNode(Parser *p, uint hash, int symbol, d_loc_t *start_loc, char *e, PNode 
   if (sh) {
     new_pn->op_assoc = sh->op_assoc;
     new_pn->op_priority = sh->op_priority;
-    if (sh->speculative_code)
+    if (sh->speculative_code && sh->action_index != -1) {
+      D_Reduction dummy;
+      memset(&dummy, 0, sizeof(dummy));
+      dummy.action_index = sh->action_index;
+      pn->reduction = &dummy;
       if (sh->speculative_code(
 	pn, (void**)&pn->children.v[0], pn->children.n,
 	(int)&((PNode*)(NULL))->parse_node, (D_Parser*)p)) 
@@ -929,6 +933,8 @@ make_PNode(Parser *p, uint hash, int symbol, d_loc_t *start_loc, char *e, PNode 
 	free_PNode(p, new_pn);
 	return NULL;
       }
+      pn->reduction = NULL;
+    }
   } else if (r) {
     if (path)
       for (i = path->n - 1; i >= 0; i--) {
@@ -1042,7 +1048,7 @@ set_find_znode(VecZNode *v, PNode *pn) {
 	return v->v[i];
     return NULL;
   }
-  h = ((uint)pn) % n;
+  h = ((uintptr_t)pn) % n;
   for (i = h, j = 0; 
        i < v->n && j < SET_MAX_SEQUENTIAL; 
        i = ((i + 1) % n), j++) 
@@ -1060,7 +1066,7 @@ set_add_znode_hash(VecZNode *v, ZNode *z) {
   VecZNode vv;
   int i, j, n = v->n;
   if (n) {
-    uint h = ((uint)z->pn) % n;
+    uint h = ((uintptr_t)z->pn) % n;
     for (i = h, j = 0; 
 	 i < v->n && j < SET_MAX_SEQUENTIAL; 
 	 i = ((i + 1) % n), j++) 
@@ -1119,10 +1125,10 @@ goto_PNode(Parser *p, d_loc_t *loc, PNode *pn, SNode *ps) {
   state = &p->t->state[state_index];
   new_ps = add_SNode(p, state, loc, pn->parse_node.scope, pn->parse_node.globals);
   new_ps->last_pn = pn;
-  DBG(printf("goto %d (%s) -> %d %X\n", 
-	     ps->state - p->t->state, 
+  DBG(printf("goto %d (%s) -> %d %p\n", 
+	     (int)(ps->state - p->t->state), 
 	     p->t->symbols[pn->parse_node.symbol].name,
-	     state_index, (uint)new_ps));
+	     state_index, new_ps));
   if (ps != new_ps && new_ps->depth < ps->depth + 1)
     new_ps->depth = ps->depth + 1;
   /* find/create ZNode */
@@ -1159,7 +1165,7 @@ goto_PNode(Parser *p, d_loc_t *loc, PNode *pn, SNode *ps) {
   return new_ps;
 }
 
-static void
+void
 parse_whitespace(D_Parser *ap, d_loc_t *loc, void **p_globals) {
   Parser *pp = ((Parser*)ap)->whitespace_parser;
   pp->start = loc->s;
@@ -1257,8 +1263,8 @@ shift_all(Parser *p, char *pos) {
     if (!r->shift)
       continue;
     p->shifts++;
-    DBG(printf("shift %d %X %d (%s)\n", 
-	       r->snode->state - p->t->state, (uint)r->snode, r->shift->symbol,
+    DBG(printf("shift %d %p %d (%s)\n", 
+	       (int)(r->snode->state - p->t->state), r->snode, r->shift->symbol,
 	       p->t->symbols[r->shift->symbol].name));
     new_pn = add_PNode(p, r->shift->symbol, &r->snode->loc, r->loc.s,
 		       r->snode->last_pn, NULL, NULL, r->shift);
@@ -1359,7 +1365,7 @@ reduce_one(Parser *p, Reduction *r) {
 			sn->loc.s, sn->last_pn, r->reduction, 0, 0)))
       goto_PNode(p, &sn->loc, pn, sn);
   } else {
-    DBG(printf("reduce %d %X %d\n", r->snode->state - p->t->state, (uint)sn, n));
+    DBG(printf("reduce %d %p %d\n", (int)(r->snode->state - p->t->state), sn, n));
     vec_clear(&paths);
     build_paths(r->znode, &paths, n);
     for (i = 0; i < paths.n; i++) {
@@ -1430,7 +1436,7 @@ static void
 print_stack(Parser *p, SNode *s, int indent) {
   int i,j;
 
-  printf("%d", s->state - p->t->state);
+  printf("%d", (int)(s->state - p->t->state));
   indent += 2;
   for (i = 0; i < s->zns.n; i++) {
     if (!s->zns.v[i])

@@ -28,3 +28,4 @@ typedef struct D_ParseNode {
 D_ParseNode *d_get_child(D_ParseNode *pn, int child);
 D_ParseNode *d_find_in_tree(D_ParseNode *pn, int symbol);
 int d_get_number_of_children(D_ParseNode *pn);
+

@@ -1,6 +1,7 @@
-# Copyright (c) 2003 Brian Sabbey
+# Copyright (c) 2003, 2004 Brian Sabbey
+# contributions by Milosz Krajewski
 
-import sys, types, dl, os, md5, dparser_swigc, string
+import sys, types, os, md5, dparser_swigc, string 
 
 class user_pyobjectsPtr :
     def __init__(self,this):
@@ -138,8 +139,24 @@ class SyntaxError(Exception):
     pass
 class AmbiguityException(Exception):
     pass
+
 def my_syntax_error_func(loc):
-    raise SyntaxError, "\nsyntax error, line:" + str(loc.line) + "\n"
+    ee = '...'
+    be = '...'
+    width = 25
+    mn = loc.s - width
+    if mn < 0:
+        mn = 0
+        be = ''
+    mx = loc.s + 25
+    if mx > len(loc.buf):
+        mx = len(loc.buf)
+        ee = ''
+    begin = loc.buf[mn:loc.s]
+    end = loc.buf[loc.s:mx]
+    string = '\n\nsyntax error, line:' + str(loc.line) + '\n\n' + be + begin +  '[syntax error]' + end + ee + '\n'
+    raise SyntaxError, string
+
 def my_ambiguity_func(nodes):
     raise AmbiguityException, "\nunresolved ambiguity.  Symbols:\n" + string.join([node.symbol for node in nodes], "\n")
 
@@ -148,6 +165,7 @@ class Parser:
         self.file_prefix = file_prefix
         self.actions = []
         sig = md5.new()
+        sig.update('1.10')
         
         if not modules:
             try:
@@ -170,10 +188,15 @@ class Parser:
             functions.extend(f)
         if len(functions) == 0:
             raise "\nno actions found.  Action names must start with 'd_'"
-        
-        self.filename = self.file_prefix + ".g"
+
+        app_path = os.path.dirname(sys.argv[0])
+        if len(app_path) == 0:
+            app_path = os.getcwd()
+        app_path = string.replace(app_path, '\\', '/')
+
+        self.filename = app_path + '/' + self.file_prefix + ".g"
         filename = self.filename
-        g_file = open(self.filename, "w")
+        g_file = open(self.filename, "wb") # 'binary' mode has been set to force \n on end of the line
         for f in functions:
             if f.__doc__:
                 g_file.write(f.__doc__)
@@ -206,25 +229,23 @@ class Parser:
                 elif var == 'parser':
                     arg_types.append(7)
                 else:
-                    raise "\nunknown varname:\n\t" + var + "\nin function:\n\t" + f.__name__
+                    raise "\nunknown argument name:\n\t" + var + "\nin function:\n\t" + f.__name__
             self.actions.append((f, arg_types, speculative, takes_strings))
         g_file.close()
-        
+
         if self.sig_changed(sig):
-            if os.system("make_dparser -A " + filename):
-                raise "\nmake_dparser error, see above"
-            command = "cc -I/usr/local/include -shared -fPIC -o " + filename + ".so " + filename + ".d_parser.c"
-            if os.system(command):
-                raise "\nerror running the command:\n\t%s" % command
-            open(self.file_prefix + ".md5", "w").write("%s\n" % repr(sig.digest()))
-            
-        self.dl_parser = dl.open("./" + filename + ".so")
-        self.tables = self.dl_parser.sym("parser_tables_gram")
-        dparser_swigc.set_parser_functions(self.tables)
-        
+            dparser_swigc.make_tables(filename)
+            sig_file = open(self.filename + ".md5", "w")
+            sig_file.write("%s\n" % repr(sig.digest()))
+            sig_file.close()
+
+        self.tables = dparser_swigc.load_parser_tables(filename + ".d_parser.dat")
+        #        dparser_swigc.set_parser_functions(self.tables)
     def sig_changed(self, sig):
         try:
-            line = open(self.file_prefix + ".md5", "r").readline()
+            sig_file = open(self.filename + ".md5", "r")
+            line = sig_file.readline()
+            sig_file.close()
             if line and eval(line) == sig.digest():
                 return 0
         except IOError, SyntaxError:
@@ -258,6 +279,8 @@ class Parser:
                                            dont_use_height_for_disambiguation,
                                            start_symbol)
         result = dparser_swigc.run_parser(parser, buf, buf_offset)
+        if result == None:
+            return None
         if len(result) == 3:
             self.s = result[2]
         self.top_node = result[1]

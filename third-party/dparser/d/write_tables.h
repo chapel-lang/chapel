@@ -3,3 +3,4 @@
 */
 
 int write_ctables(Grammar *g);
+int write_binary_tables(Grammar *g);

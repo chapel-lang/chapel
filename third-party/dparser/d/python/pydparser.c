@@ -1,4 +1,4 @@
-/* Copyright (c) 2003 Brian Sabbey */
+/* Copyright (c) 2003, 2004 Brian Sabbey */
 #include <Python.h>
 #include "pydparser.h"
 
@@ -247,9 +247,10 @@ make_parser(int idpt,
             int dont_use_eagerness_for_disambiguation,
             int dont_use_height_for_disambiguation,
 	    char *start_symbol) {
-  D_ParserTables *dpt = (D_ParserTables*)idpt;
+  D_ParserTables *dpt = (D_ParserTables*) idpt;
   D_ParserPyInterface *ppi;
   D_Parser *p = new_D_Parser(dpt, sizeof(D_ParseNode_User));
+  p->fixup_EBNF_productions = 1;
   p->save_parse_tree = 1;
   p->initial_scope = new_D_Scope(NULL);
   p->dont_fixup_internal_productions = dont_fixup_internal_productions;
@@ -310,19 +311,6 @@ make_parser(int idpt,
 }
 
 void 
-set_parser_functions(int idpt)
-{
-  D_ParserTables *dpt = (D_ParserTables*)idpt;
-  int i, j;
-  for (i = 0; i < dpt->nstates; i++)
-    for (j = 0; j < dpt->state[i].reductions.n; j++)
-      if (dpt->state[i].reductions.v[j]->action_index >= 0) {
-	dpt->state[i].reductions.v[j]->final_code = my_final_action;
-	dpt->state[i].reductions.v[j]->speculative_code = my_speculative_action;
-      }
-}
-
-void 
 del_parser(D_Parser *dp) {
   D_ParserPyInterface *ppi;
   ppi = d_interface(dp);
@@ -371,7 +359,7 @@ run_parser(D_Parser *dp, PyObject *string, int buf_idx) {
     return NULL;
   }
 
-  if (pn) {
+  if (pn && pn->user.t) {
       out = PyList_New(3);
       Py_INCREF(pn->user.t);
       PyList_SetItem(out, 0, pn->user.t);
@@ -388,7 +376,16 @@ run_parser(D_Parser *dp, PyObject *string, int buf_idx) {
   if (ppi->num_parse_tree_viewers == 0)
     del_parser(dp);
 
+  if (out == NULL) {
+    Py_INCREF(Py_None);
+    return Py_None;
+  }
   return out;
+}
+
+int has_deeper_nodes(D_Parser *parser, D_ParseNode *d) {
+    int kind = d_dpt(parser)->symbols[d->symbol].kind;
+    return kind == D_SYMBOL_INTERNAL || kind == D_SYMBOL_EBNF;
 }
 
 static PyObject *
@@ -410,8 +407,7 @@ static PyObject *
 make_pyobject_from_node(D_Parser *parser, D_ParseNode *d, int string) {
   PyObject *user = (PyObject *)(string ? d->user.s : d->user.t), *make_token;
   if (user == NULL) {
-    int kind = d_dpt(parser)->symbols[d->symbol].kind;
-    if (kind == D_SYMBOL_INTERNAL) {
+    if (has_deeper_nodes(parser, d)) {
       user = pylist_children(parser, d, string);
       if (user == NULL) {
 	return NULL;
@@ -446,8 +442,7 @@ check_for_strings(D_Parser *dp, D_ParseNode *dpn) {
   int i;
   for (i=0; i<n_children; i++) {
     D_ParseNode *child = d_get_child(dpn, i);
-    int kind = d_dpt(dp)->symbols[child->symbol].kind;
-    if (kind == D_SYMBOL_INTERNAL) {
+    if (has_deeper_nodes(dp, child)) {
       if (check_for_strings(dp, child)) {
 	return 1;
       }
@@ -464,8 +459,7 @@ inc_global_state(D_Parser *dp, D_ParseNode *dpn) {
   int i;
   for (i=0; i<n_children; i++) {
     D_ParseNode *child = d_get_child(dpn, i);
-    int kind = d_dpt(dp)->symbols[child->symbol].kind;
-    if (kind == D_SYMBOL_INTERNAL) {
+    if (has_deeper_nodes(dp, child)) {
       inc_global_state(dp, child);
     } else if (child->globals != NULL && !child->user.inced_global_state) {
       /* global state gets copied by dparser without increfing, fix */
@@ -525,7 +519,8 @@ my_action(void *new_ps, void **children, int n_children, int pn_offset,
     buf[len] = 0;
     action = PyTuple_GetItem(tuple, 0);
     string = PyObject_GetAttrString(action, "__name__");
-    printf("%30s%s:\t%s\n", PyString_AsString(string), speculative ? " ???" : "    ", buf);
+    if (!speculative || ppi->print_debug_info != 2)
+      printf("%30s%s:\t%s\n", PyString_AsString(string), speculative ? " ???" : "    ", buf);
     Py_DECREF(string);
   }
 
@@ -629,4 +624,14 @@ static int
 my_speculative_action(void *new_ps, void **children, int n_children, int pn_offset,
 		      struct D_Parser *parser) {
   return my_action(new_ps, children, n_children, pn_offset, parser, 1);
+}
+
+void
+d_version(char *v) {
+  v[0] = 0;
+}
+
+int 
+load_parser_tables(char *tables_name) {
+  return (int)read_binary_tables(tables_name, my_speculative_action, my_final_action);
 }

@@ -7,7 +7,7 @@ D_USE_GC=1
 #D_LEAK_DETECT=1
 
 MAJOR=1
-MINOR=9
+MINOR=10
 RELEASE=$(MAJOR).$(MINOR)
 
 CC = gcc
@@ -86,16 +86,16 @@ LIBS += -lm
 AUX_FILES = d/Makefile d/COPYRIGHT d/README d/CHANGES d/UPGRADING d/my.g d/my.c d/index.html d/manual.html d/faq.html d/make_dparser.1 d/make_dparser.cat
 TESTS = $(shell ls tests/*g tests/*[0-9] tests/*.check tests/*.flags)
 TEST_FILES = d/parser_tests d/baseline $(TESTS:%=d/%)
-PYTHON_FILES = d/python/Makefile d/python/*.py d/python/*.c d/python/*.h d/python/*.i d/python/README d/python/*.html
+PYTHON_FILES = d/python/Makefile d/python/*.py d/python/*.c d/python/*.h d/python/*.i d/python/README d/python/*.html d/python/contrib/d* d/python/tests/*.py
 VERILOG_FILES = d/verilog/Makefile d/verilog/verilog.g d/verilog/README d/verilog/ambig.c \
 d/verilog/main.c d/verilog/vparse.c d/verilog/vparse.h d/verilog/verilog_tests
 TAR_FILES = $(AUX_FILES) $(TEST_FILES) $(PYTHON_FILES) $(VERILOG_FILES) d/BUILD_VERSION \
 d/grammar.g d/sample.g d/my.g 
 
-LIB_SRCS = arg.c parse.c scan.c symtab.c util.c
+LIB_SRCS = arg.c parse.c scan.c symtab.c util.c read_binary.c
 LIB_OBJS = $(LIB_SRCS:%.c=%.o)
 
-MK_LIB_SRCS = write_ctables.c grammar.g.c gram.c lex.c lr.c
+MK_LIB_SRCS = write_tables.c grammar.g.c gram.c lex.c lr.c
 MK_LIB_OBJS = $(MK_LIB_SRCS:%.c=%.o)
 
 ifdef D_USE_GC
@@ -147,6 +147,12 @@ install:
 	cp $(INCLUDES) $(PREFIX)/include
 	cp $(INSTALL_LIBRARIES) $(PREFIX)/lib
 	cp $(MANPAGES) $(PREFIX)/man/man1
+
+deinstall:
+	rm $(EXECUTABLE_FILES:%=$(PREFIX)/bin/%)
+	rm $(INCLUDES:%=$(PREFIX)/include/%)
+	rm $(INSTALL_LIBRARIES:%=$(PREFIX)/lib/%)
+	rm $(MANPAGES:%=$(PREFIX)/man/man1/%)
 
 make_dparser: $(MAKE_PARSER_OBJS) $(LIBRARIES)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ version.c $(LIBS) 
