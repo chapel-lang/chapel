@@ -2353,3 +2353,13 @@ Log message:
 Modified files:
 	chapel/compiler/: TODO fa.cpp 
 
+---------------------------------------------------------------------------
+
+04/06/01 13:03:36 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	most of test/trivial/bradc/arrinit now "compile"
+
+Modified files:
+	chapel/compiler/: ast.cpp ast_kinds.h chpl.g 
+
