@@ -2973,3 +2973,13 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.h 
 
+---------------------------------------------------------------------------
+
+06/08/04 15:15:16 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Changes to support GCC 3.4
+
+Modified files:
+	chapel/compiler/: list.h log.h map.h ssu.cpp ssu.h 
+
