@@ -15113,3 +15113,48 @@ Removed files:
 	chapel/test/classes/deitz/: test_record_method2.future 
 	chapel/test/functions/bradc/: inferReturn.future intents.future 
 
+---------------------------------------------------------------------------
+
+01/20/05 13:14:38 -- deitz
+
+Log message:
+	Added a new compiler flag --devel that is to be used by Chapel
+	developers.  When used, it gives the filename and line number in the
+	compiler where the error happened and, for internal errors, gives the
+	description.  The environment variable CHPL_DEVELOPER can be set to
+	always use this flag.
+	
+	Updated start_test so that it doesn't look at CHPL_DEVELOPER.  Fixed a
+	bug in sub_test in which concatenating compopts and execopts was done
+	without an intermediary space.
+	
+	This should make debugging easier since we now print out the compiler
+	line number on user errors, e.g., undefined symbols.
+	
+	For example, the error on arrays/deitz/test_basic1d2.chpl looks like
+	
+	  Internal error: LIN0056 chpl Version 0.2.640
+	
+	without the developer flag, but
+	
+	  [../include/link.h:56] Internal error: Unexpected type in getElements (test_basic1d2.chpl:7)
+	
+	with the developer flag.
+	
+	This checkin updates the errors printed out for tests that use
+	USR_FATAL since I seem to have moved the filename after the error and
+	printed out "Error".
+
+Modified files:
+	chapel/compiler/include/: driver.h misc.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/traversals/: cleanup.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/: start_test sub_test 
+	chapel/test/functions/jplevyak/: intent-7-error.good 
+	chapel/test/modules/bradc/: nestedmodule.good 
+	chapel/test/modules/bradc/manymodules/: manymodules.good 
+	chapel/test/trivial/bradc/: redefinevar.good 
+	chapel/test/trivial/bradc/entrypoint/: twomains.good 
+	chapel/test/types/enum/deitz/: test_enum6.good 
+
