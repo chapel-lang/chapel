@@ -1719,7 +1719,7 @@ type_info(BaseAST *a, Symbol *s) {
 
 Type *
 return_type_info(FnSymbol *fn) {
-  return to_AST_type(type_info(NULL, fn->asymbol->ret));
+  return to_AST_type(fn->asymbol->ret->var->type);
 }
 
 void 
