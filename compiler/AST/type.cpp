@@ -1227,12 +1227,17 @@ void StructuralType::codegenDef(FILE* outfile) {
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   codegenStartDefFields(outfile);
+  bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   for (Stmt* tmp = declarationList; tmp; tmp = nextLink(Stmt, tmp)) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
       if (VarSymbol* var = def_stmt->varDef()) {
         var->codegenDef(outfile);
+        printedSomething = true;
       }
     }
+  }
+  if (!printedSomething) {
+    fprintf(outfile, "int _emptyStructPlaceholder;\n");
   }
   codegenStopDefFields(outfile);
   /*
