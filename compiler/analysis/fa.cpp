@@ -49,6 +49,7 @@ static Vec<ATypeViolation *> type_violations;
 static AType *make_AType(CreationSet *cs);
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
 		       Partial_kind partial);
+static void add_var_constraint(AVar *av);
 
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
@@ -109,6 +110,7 @@ CreationSet::CreationSet(CreationSet *cs) {
   atype = NULL;
   forv_AVar(v, cs->vars) {
     AVar *iv = unique_AVar(v->var, this);
+    add_var_constraint(iv);
     vars.add(iv);
     if (iv->var->sym->name)
       var_map.put(iv->var->sym->name, iv);
@@ -269,6 +271,7 @@ creation_point(AVar *v, Sym *s) {
   forv_Sym(h, s->has) {
     assert(h->var);
     AVar *iv = unique_AVar(h->var, cs);
+    add_var_constraint(iv);
     cs->vars.add(iv);
     if (h->name)
       cs->var_map.put(h->name, iv);
@@ -826,22 +829,25 @@ flow_var_type_permit(AVar *v, Sym *s) {
 }
 
 static void
-add_var_constraints(EntrySet *es) {
-  Fun *f = es->fun;
-  forv_Var(v, f->fa_Vars) {
-    AVar *av = make_AVar(v, es);
-    if (v->sym->type && !v->sym->is_pattern) {
-      if (v->sym->is_external && 
-	  (v->sym->type->num_kind || v->sym->type == sym_string || v->sym == sym_nil))
-	update_in(av, v->sym->type->abstract_type);
-      if (v->sym->is_constant) // for constants, the abstract type is the concrete type
-	update_in(av, make_abstract_type(v->sym));
-      if (v->sym->is_symbol || v->sym->is_fun) 
-	update_in(av, v->sym->abstract_type);
-      if (v->sym->type_kind != Type_NONE)
-	update_in(av, v->sym->meta_type->abstract_type);
-    }
+add_var_constraint(AVar *av) {
+  Sym *s = av->var->sym;
+  if (s->type && !s->is_pattern) {
+    if (s->is_external && 
+	(s->type->num_kind || s->type == sym_string || s == sym_nil))
+      update_in(av, s->type->abstract_type);
+    if (s->is_constant) // for constants, the abstract type is the concrete type
+      update_in(av, make_abstract_type(s));
+    if (s->is_symbol || s->is_fun) 
+      update_in(av, s->abstract_type);
+    if (s->type_kind != Type_NONE)
+      update_in(av, s->meta_type->abstract_type);
   }
+}
+
+static void
+add_var_constraints(EntrySet *es) {
+  forv_Var(v, es->fun->fa_Vars)
+    add_var_constraint(make_AVar(v, es));
 }
 
 void

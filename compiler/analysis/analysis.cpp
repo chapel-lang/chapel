@@ -380,6 +380,14 @@ finalize_symbols(IF1 *i) {
     else
       if (s->type_kind)
 	set_global_scope(s);
+    if (s->asymbol && s->asymbol->symbol && s->asymbol->symbol->astType == SYMBOL_VAR) {
+      VarSymbol *v = (VarSymbol*)s->asymbol->symbol;
+      if (v->type && v->type != dtUnknown) {
+	Sym *t = v->type->asymbol->sym;
+	if (t->num_kind)
+	  s->type = t;
+      }
+    }
   }
   finalized_symbols = i->allsyms.n;
 }
@@ -1839,9 +1847,8 @@ build_classes(Vec<BaseAST *> &syms) {
     printf("build_classes: %d classes\n", classes.n);
   forv_Vec(ClassType, c, classes) {
     Sym *csym = c->asymbol->sym;
-    forv_Vec(VarSymbol, tmp, c->fields) {
+    forv_Vec(VarSymbol, tmp, c->fields)
       csym->has.add(tmp->asymbol->sym);
-    }
   }
   return 0;
 }

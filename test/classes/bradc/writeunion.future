@@ -1,4 +1,9 @@
-jplevyak/deitz
+bradc
+
+Now there is only one clone, but the results
+of execution are incorrect...
+
+HISTORY
 
 It appears that when we have multiple instances
 of a union type, that union type is cloned for
