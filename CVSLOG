@@ -21878,3 +21878,111 @@ Modified files:
 	                                              constant_folding.good 
 	chapel/test/types/tuple/jplevyak/: tuple_index-2.future 
 
+---------------------------------------------------------------------------
+
+03/28/05 15:04:29 -- bradc
+
+Log message:
+	Implemented default I/O for classes, records, and unions.
+	These currently print out as follows:
+	
+	record myrecord {
+	  var c: integer;     =>     (c=1, d=1.2)
+	  var d: float;
+	}
+	
+	union myunion {
+	  var e: integer;     =>     (uninitialized)
+	  var f: float;       OR:    (e=1)
+	}                     OR:    (f=1.2)
+	
+	class myclass {
+	  var a: integer;     =>     nil
+	  var b: float;       OR:    {a=1, b=1.2}
+	}
+	
+	Feedback on these print formats would be appreciated; they
+	can easily be changed.  The record format was chosen because
+	it seemed it was so close to the record literal format; since
+	unions are also value types but can only have one active field
+	at a time, a similar format was used there, with the somewhat
+	ugly "(uninitialized)" standing in for a union that has never
+	been assigned.  The class format was meant to be distinguishable
+	from the record format but similar.  Another approach would be
+	to generate them as myclass(a=1, b=1.2) so it looked more like
+	a constructor...
+	
+	The intention is to support the user's ability to over-ride
+	these defaults by defining their own bound write() function,
+	but this doesn't work yet.  Once it does, the default format
+	matters somewhat less as long as its clear and succinct enough
+	that people might use it when they're being lazy.
+	
+	These functions are currently added after analysis has run
+	so that we can be sure about the types of everything.  Eventually,
+	we will probably want to move this before analysis and convert
+	IOCalls into dispatches to write() methods in order to have
+	analysis include the write() methods as part of its dead
+	code analysis.
+	
+	Added a bunch of tests, many of which are futures, but I'll
+	mail people about those separately.
+	
+	This check-in includes a few incidental changes:
+	
+	- added a new runtime union macro -- _UNION_CHECK_QUIET()
+	  that performs the union safe read check without generating
+	  an error if it's mismatched.  This can be used to create
+	  if-then-else's that check for all the union's cases
+	  without generating errors.  Also rewrote _UNION_CHECK()
+	  to use _UNION_CHECK_QUIET() in its definition and to
+	  write its error to stderr rather than stdout.
+	
+	- added a new state to unions which indicates that they
+	  are uninitialized so that we can distinguish this case
+	  from a union whose memory just happens to be initialized
+	  to zero.  Interestingly, I was guessing that this would
+	  result in a valgrind error, as I don't think we currently
+	  set a union's enum to 0, yet it didn't...  ?
+	
+	- refactored Steve's codegenIOCall() for sequences to be a
+	  method of sequence rather than a dynamic cast within
+	  ClassType
+	
+	- added a method that supports the ability to tack on an
+	  "else" clause to a CondStmt after it has been constructed
+	  in order to build cascading if-then-else's easily.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/include/: stmt.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/symtab/: insertWriteFns.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/runtime/include/: union.h 
+	chapel/test/classes/bradc/: writeclass.chpl writeclass.good 
+	                            writeclass2.future writeclass3.chpl 
+	                            writeclass3.good 
+Added files:
+	chapel/test/classes/bradc/: myrecord1a.good myrecord1b.good 
+	                            writeclass1a.chpl 
+	                            writeclass1a.future 
+	                            writeclass1a.good writeclass1b.chpl 
+	                            writeclass1b.future 
+	                            writeclass1b.good writeclass2a.chpl 
+	                            writeclass2a.future 
+	                            writeclass2a.good writerecord.chpl 
+	                            writerecord.good writerecord1a.chpl 
+	                            writerecord1a.future 
+	                            writerecord1a.good 
+	                            writerecord1b.chpl 
+	                            writerecord1b.future 
+	                            writerecord1b.good writerecord2.chpl 
+	                            writerecord2.future 
+	                            writerecord2.good 
+	                            writeunion-workaround.chpl 
+	                            writeunion-workaround.good 
+	                            writeunion.chpl writeunion.future 
+	                            writeunion.good 
+
