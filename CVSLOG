@@ -19004,3 +19004,51 @@ Modified files:
 Added files:
 	chapel/compiler/: Coverage.pl Coverage.readme 
 
+---------------------------------------------------------------------------
+
+03/07/05 16:40:43 -- deitz
+
+Log message:
+	Unified BreakStmt, ContinueStmt, and GotoStmt to be GotoStmt with an
+	enumeration as to whether it is a break, continue, or normal goto.
+	This cleans up the code since these will be handled identically for
+	the most part.
+	
+	Implemented codegen for break statements so that they act differently
+	than a continue and jump to the point after the loop.  Labels now
+	generate twice.  Before their statement, they generate the normal
+	label.  After their statement, they append _post to it.  This after
+	label is the target of a break statement.
+	
+	Changed the label name (char*) to be a Symbol that should resolve to a
+	new LabelSymbol (new AST symbol).  Like all symbols, these are
+	originally UnresolvedSymbols.
+	
+	Added functionality to the ScopeResolveSymbols traversal so that it
+	also resolves labels, matching the labels of GotoStmts to LabelSymbols
+	defined in LabelStmts.  Also, this traversal creates LabelStmts around
+	ForLoops and WhileLoops that have break or continue statements
+	(without labels) within them.  These are then made the target of the
+	break and continue statements without labels.
+	
+	Changed .good files for break-2 and break-3 tests since they seemed
+	wrong to me.
+	
+	Removed futures for break-1, break-2, break-3, break-4, break-5,
+	continue-2, and continue-4.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+	                             verifyASTType.cpp 
+	chapel/test/trivial/jplevyak/: break-2.good break-3.good 
+Removed files:
+	chapel/test/trivial/jplevyak/: break-1.future break-2.future 
+	                               break-3.future break-4.future 
+	                               break-5.future continue-2.future 
+	                               continue-4.future 
+
