@@ -19075,3 +19075,63 @@ Modified files:
 	chapel/compiler/traversals/: expandClassWiths.cpp 
 	                             insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+03/09/05 09:27:48 -- deitz
+
+Log message:
+	Added a new pass InsertFunctionTemps that inserts temporaries for
+	cases where multiple functions are called from the same statement.
+	This makes sure we use the right order of evaluation and makes it
+	easier to manipulate function calls.  This maybe should be changed
+	eventually to deal only with side-affecting functions.
+	
+	Added scope functions findEnclosingSymContext,
+	findEnclosingStmtContext, and findEnclosingExprContext to search up
+	from a scope looking for contexts.  Cleaned up code that did the same
+	thing by hand.
+	
+	Updated typeName array so that print_view works again.  I should add
+	something to make sure this stays up-to-date when new AST classes are
+	added or removed.
+	
+	Fixed, with a stopgap, the check in fixup for the parentSymbol
+	pointer.  This is now lenient allowing either the module or initFn to
+	be the parent for top-level code.  The __init function should be
+	inserted and then fixed up like other things.
+	
+	Added two new tests to look at deeply nesting function calls as in
+	
+	  foo(foo(foo(foo(foo(2)))))
+	  foo(foo(foo(foo(foo(2) + foo(2)) + foo(2)) + foo(2)) + foo(2)) + foo(2)
+	
+	Updated test_var_decl_init1 to obey new parsing rules for
+	if-statements.  Namely, if-statements must use a 'then' keyword or use
+	curly brackets.
+	
+	Removed futures for trivial/deitz/test_var_decl_init1 and
+	trivial/deitz/test_let8.  Note that the first test only works because
+	of the fntemps pass breaking up two function calls in a statement.
+	They are not side-affecting so don't have to be broken up.  The
+	ProcessParameters pass fails in that case though.  This is still a
+	problem.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp 
+	chapel/compiler/include/: symscope.h symtab.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share fixup.cpp 
+	                             processParameters.cpp 
+	chapel/test/trivial/deitz/: test_var_decl_init1.chpl 
+Added files:
+	chapel/compiler/traversals/: insertFunctionTemps.cpp 
+	                             insertFunctionTemps.h 
+	chapel/test/trivial/deitz/: test_nested_function_call.chpl 
+	                            test_nested_function_call.good 
+	                            test_nested_function_call2.chpl 
+	                            test_nested_function_call2.good 
+Removed files:
+	chapel/test/trivial/deitz/: test_let8.future 
+	                            test_var_decl_init1.future 
+
