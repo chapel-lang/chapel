@@ -51,16 +51,16 @@ class CreationSet : public gc {
  public:
   Sym 			*sym;
   Vec<AVar *> 		defs;
-  AType 		*as_AType;
+  AType 		*atype; 	// the type that this creation set belongs to
   Vec<AVar *>		vars;
   uint			clone_for_constants : 1;
   Vec<CreationSet*>	*equiv;		// used by clone.cpp & fa.cpp
   Vec<CreationSet*>	not_equiv;	// used by clone.cpp
   Sym 			*type;		// used by clone.cpp & fa.capp
 
-  CreationSet(Sym *s, AVar *def) : sym(s), as_AType(0), clone_for_constants(0), 
+  CreationSet(Sym *s, AVar *def) : sym(s), atype(0), clone_for_constants(0), 
     equiv(0) { defs.add(def); }
-  CreationSet(Sym *s) : sym(s), as_AType(0), clone_for_constants(0), equiv(0) { }
+  CreationSet(Sym *s) : sym(s), atype(0), clone_for_constants(0), equiv(0) { }
 };
 #define forv_CreationSet(_p, _v) forv_Vec(CreationSet, _p, _v)
 

@@ -105,7 +105,6 @@ operator(a:ref, #">>=", b:int): __primitive a #"=" (__primitive (__primitive #"*
 operator(a:ref, #"&=", b:int): __primitive a #"=" (__primitive (__primitive #"*" a) #"&" b);
 operator(a:ref, #"|=", b:int): __primitive a #"=" (__primitive (__primitive #"*" a) #"|" b);
 operator(a:ref, #"^=", b:int): __primitive a #"=" (__primitive (__primitive #"*" a) #"^" b);
-operator(a:int, #"..", b:int)		   : __primitive a #".." b;
 operator(a:any, #"->", b:symbol)	   : __primitive (__primitive #"*" a) #"." b;
 operator(a:any, #"->*", b:symbol)	   : __primitive (__primitive #"*" a) #"." b; 
 operator(a:anynum, #"^^", b:anynum)	   : __primitive a #"^^" b;

@@ -126,7 +126,7 @@ function operator(a:ref, #"|=", b:int)		{
 function operator(a:ref, #"^=", b:int)		{
   __primitive a #"=" (__primitive (__primitive #"*" a) #"^" b)
 }
-function operator(a:int, #"..", b:int)		{ __primitive a #".." b }
+function operator(a:int, #"..", b:int)		{ sequence(a, b) }
 function operator(a:any, #"->", b:symbol)	{ __primitive (__primitive #"*" a) #"." b }
 function operator(a:any, #"->*", b:symbol)	{ __primitive (__primitive #"*" a) #"." b; }
 function operator(a:anynum, #"^^", b:anynum)	{ __primitive a #"^^" b }
@@ -177,6 +177,16 @@ class domain(rank, distribute, target) {
   type distribute: distribution;
 }
 
+function domain::class(i : int) {
+}
+
+function domain::class(s1 : sequence) {
+  var d = new domain;
+  d.rank = 1;
+  d.index = s1;
+  return d;
+}
+
 function domain::class(s1 : sequence, s2 : sequence) {
   var d = new domain;
   d.rank = 2;
@@ -187,21 +197,21 @@ function domain::class(s1 : sequence, s2 : sequence) {
   return d;
 }
 
-function domain::operator(i : int) {
-  return domain(index(i));
-}
-
 class sequence {
   const first : tuple;
   const last : tuple;
   const step : tuple;
 }
 
-function sequence::operator(i : int) {
+function sequence::class(f : int, l : int) {
   var s = new sequence;
-  s.first = first(i);
-  s.last = last(i);
-  s.step = step(i);
+  s.first = f;
+  s.last = l;
+  s.step = 1;
   return s;
+}
+
+function operator(a:sequence, #"*", b:sequence) {
+  new sequence
 }
 

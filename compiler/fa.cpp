@@ -1,5 +1,5 @@
 /* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+ Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
 #include "geysa.h"
@@ -127,21 +127,19 @@ make_AVar(Var *v, AEdge *e) {
 
 static AType *
 make_AType(CreationSet *cs) {
-  if (cs->as_AType)
-    return cs->as_AType;
-  return cs->as_AType = type_cannonicalize(new AType(cs));
+  if (cs->atype)
+    return cs->atype;
+  return cs->atype = type_cannonicalize(new AType(cs));
 }
 
 static AType *
-make_AType(Sym *s) {
+make_abstract_type(Sym *s) {
   s = unalias_type(s);
-  AType *a = s->as_AType;
+  AType *a = s->abstract_type;
   if (a)
     return a;
-  CreationSet *cs = s->as_CreationSet;
-  if (!cs)
-    cs = s->as_CreationSet = new CreationSet(s);
-  return s->as_AType = make_AType(cs);
+  CreationSet *cs = new CreationSet(s);
+  return s->abstract_type = make_AType(cs);
 }
 
 static AType *
@@ -153,16 +151,16 @@ make_AType(Vec<CreationSet *> &css) {
 }
 
 static AType *
-make_AType(Sym *s, Var *v) {
+make_singular_AType(Sym *s, Var *v) {
+  assert(s == sym_symbol || s == sym_function); // otherwise use make_AType(Var *v) above
   if (v->as_AType)
     return v->as_AType;
-  assert(s == sym_symbol || s == sym_function); // otherwise use make_AType(Var *v) above
   v = v->sym->var;
   AType *a = v->as_AType;
   if (a)
     return a;
   CreationSet *cs = v->as_CreationSet;
-  if (!cs) // since v is unique within its scope, use the GLOBAL_CONTOUR
+  if (!cs) // since v is unique use the GLOBAL_CONTOUR
     cs = v->as_CreationSet = new CreationSet(s, unique_AVar(v, GLOBAL_CONTOUR));
   return v->as_AType = make_AType(cs);
 }
@@ -297,9 +295,9 @@ qsort_pointers(void **left, void **right) {
 #define NO_TOP ((Sym *)-1)
 static AType *
 type_cannonicalize(AType *t) {
-  t->sorted.clear();
-  t->union_map.clear();
-  t->intersection_map.clear();
+  assert(!t->sorted.n);
+  assert(!t->union_map.n);
+  assert(!t->intersection_map.n);
   forv_CreationSet(cs, *t)
     if (cs) t->sorted.add(cs);
   if (t->sorted.n > 1)
@@ -308,7 +306,8 @@ type_cannonicalize(AType *t) {
   for (int i = 0; i < t->sorted.n; i++)
     h = (uint)t->sorted.v[i] * open_hash_multipliers[i % 256];
   t->hash = h ? h : h + 1; // 0 is empty
-  AType * tt = cannonical_atypes.put(t);
+  AType *tt = cannonical_atypes.put(t);
+  if (!tt) tt = t;
   if (tt == t) {
     if (tt->sorted.n < 2)
       tt->top = tt;
@@ -329,7 +328,7 @@ type_cannonicalize(AType *t) {
       if (s == NO_TOP)
 	tt->top = bottom_type;
       else
-	tt->top = s->as_AType;
+	tt->top = s->abstract_type;
     }
   Ltop_done:;
   }
@@ -508,7 +507,7 @@ flow_var_type_restrict(AVar *v, AType *t) {
 
 static inline void
 flow_var_type_restrict(AVar *v, Sym *s) { 
-  flow_var_type_restrict(v, make_AType(s)); 
+  flow_var_type_restrict(v, make_abstract_type(s)); 
 }
 
 static void
@@ -516,19 +515,14 @@ add_var_constraints(EntrySet *es) {
   Fun *f = es->fun;
   forv_Var(v, f->fa_Vars) {
     AVar *av = make_AVar(v, es);
-    if (v->sym->as_AType) {
-      flow_var_type_restrict(av, v->sym->as_AType);
-      if (v->sym->constant)
-	update_var_in(av, v->sym->as_AType);
-      if (v->sym->symbol) 
-	update_var_in(av, make_AType(sym_symbol, v));
+    if (v->sym->type) {
+      flow_var_type_restrict(av, v->sym->type->abstract_type);
+      if (v->sym->constant) // for constants, the abstract type is the concrete type
+	update_var_in(av, v->sym->type->abstract_type);
+      if (v->sym->symbol || v->sym->fun) 
+	update_var_in(av, make_singular_AType(v->sym->type, v));
       if (v->sym->type_kind != Type_NONE)
-	creation_point(av, unalias_type(v->sym));
-    }
-    if (v->sym->fun) {
-      if (!v->sym->var)
-	v->sym->var = v;
-      update_var_in(av, make_AType(sym_function, v->sym->var));
+	creation_point(av, unalias_type(v->sym)); // this is somewhat more powerful than is required...
     }
   }
 }
@@ -646,7 +640,6 @@ add_send_constraints(EntrySet *es) {
 	case P_prim_continuation: prim_make(p, es, sym_continuation); break;
 	case P_prim_set: prim_make(p, es, sym_set); break;
 	case P_prim_ref: prim_make(p, es, sym_ref, 2); break;
-	case P_prim_range: prim_make(p, es, sym_sequence); break;
 	case P_prim_deref:
 	case P_prim_apply: 
 	case P_prim_period:
@@ -705,7 +698,7 @@ approx_pattern(AVar *a, Sym *b) {
   if (b->symbol)
     if (b != a->var->sym)
       return 0;
-  AType *t = make_AType(b->type);
+  AType *t = make_abstract_type(b->type);
   if (t == top_type)
     return 1;
   t = type_intersection(a->out, t);
@@ -731,8 +724,8 @@ add_funs_constraints(PNode *p, EntrySet *es, Vec<Fun *> *fns, Vec<AVar *> &a) {
       Vec<Sym *> *fargs = &f->sym->args;
       if (a.n == fargs->n) {
 	for (int j = 0; j < a.n; j++) {
-	  if (fargs->v[j]->as_AType && 
-	      (type_intersection(a.v[j]->out, make_AType(fargs->v[j]->type)) == bottom_type))
+	  if (fargs->v[j]->type && 
+	      (type_intersection(a.v[j]->out, make_abstract_type(fargs->v[j]->type)) == bottom_type))
 	    goto Lnext;
 	  if (fargs->v[j]->pattern && !approx_pattern(a.v[j], fargs->v[j]))
 	    goto Lnext;
@@ -1000,7 +993,7 @@ check_pattern(AVar *a, Sym *b) {
   if (!b->type)
     return top_type;
   Vec<CreationSet *> css;
-  AType *t = make_AType(b->type); 
+  AType *t = make_abstract_type(b->type); 
   if (t == top_type) 
     return a->out;
   t = type_intersection(a->out, t);
@@ -1165,23 +1158,25 @@ initialize(FA *fa) {
   element_var = new Var(if1_alloc_sym(
     fa->pdb->if1, if1_cannonicalize_string(fa->pdb->if1, "some element")));
   bottom_type = type_cannonicalize(new AType());
-  top_type = make_AType(sym_any);
-  bool_type = make_AType(sym_bool);
-  size_type = make_AType(sym_size);
-  symbol_type = make_AType(sym_symbol);
-  fun_type = make_AType(sym_function);
+  top_type = make_abstract_type(sym_any);
+  bool_type = make_abstract_type(sym_bool);
+  size_type = make_abstract_type(sym_size);
+  symbol_type = make_abstract_type(sym_symbol);
+  fun_type = make_abstract_type(sym_function);
   fun_symbol_type = type_union(symbol_type, fun_type);
-  anyint_type = make_AType(sym_anyint);
-  anynum_type = make_AType(sym_anynum);
+  anyint_type = make_abstract_type(sym_anyint);
+  anynum_type = make_abstract_type(sym_anynum);
   dispatch_table.clear();
   edge_worklist.clear();
   send_worklist.clear();
   build_dispatch_table(fa);
   forv_Sym(s, fa->pdb->if1->allsyms) {
     s->subtypes.set_add(s);
+    if (s->type_kind)
+      s->abstract_type = make_abstract_type(s);
     if (s->type) {
-      s->as_AType = make_AType(s->type);
-      s->type->subtypes.set_add(s);
+      if (s->type_kind)
+	s->type->subtypes.set_add(s);
     }
     forv_Sym(ss, s->implements)
       ss->subtypes.set_add(s);

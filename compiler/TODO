@@ -16,5 +16,16 @@
 - trailing context for regex to handle 1..n
 
 - AST rewrite to change '=' to '==' in expressions and to
-  make sure no other assignments are in expressions.
+  make sure no other assignments are in expressions. (??)
 
+- use inlining to simplify te program graph so that SSU conversion
+  is more effective.
+
+- differentiate abstract ATypes (which have a single CreationSet and no defs)
+  from concrete ones
+
+- do we need the power of the creation_point in add_var_constraints?
+
+- move build_map and add_vars out of prim_make
+  - handle ref variables
+  - maybe in creation_point?  

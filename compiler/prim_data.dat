@@ -44,7 +44,6 @@ prim_land "&&" 3 1 {PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B} {PRIM_TYPE_BOOL} ;
 prim_lor "||" 3 1 {PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B} {PRIM_TYPE_BOOL} ;
 prim_assign "=" 3 1 {PRIM_TYPE_REF, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_apply "^^" 3 1 {PRIM_TYPE_ANY, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
-prim_range ".." 3 1 {PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B} {PRIM_TYPE_ANY} ;
 prim_plus "+" 2 0 {PRIM_TYPE_ANY_NUM_A} {PRIM_TYPE_A} ;
 prim_minus "-" 2 0 {PRIM_TYPE_ANY_NUM_A} {PRIM_TYPE_A} ;
 prim_bnot "~" 1 0 {PRIM_TYPE_ANY_INT_A} {PRIM_TYPE_A} ;

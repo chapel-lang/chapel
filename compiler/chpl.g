@@ -215,7 +215,7 @@ vector_type : '[' (vector_index (',' vector_index)*)? ']';
 vector_index 
   : anyint 
 { $$.ast = new AST(AST_index, &$n); }
-  | anyint '..' anyint
+  | anyint '..' anyint ('by' anyint)?
 { $$.ast = new AST(AST_index, &$n); }
   ;
 
@@ -250,6 +250,7 @@ expression
     { $$.ast = op_AST($g->i, $n); }
   | expression ('.' $name "op period" | '->' $name "op arrow") symbol_identifier $left 9900
     { $$.ast = op_AST($g->i, $n); }
+  | expression '..' expression ('by' expression)? $left 8400
   | vector_immediate
   | list_immediate
   | paren_block
@@ -381,7 +382,6 @@ binary_operator
   | '&='        $binary_op_left 8500
   | '|='        $binary_op_left 8500
   | '^='        $binary_op_left 8500
-  | '..' 	$binary_op_left 8400 
   | ',' 	$binary_op_left 8300 
   | '->*'       $binary_op_left 9900
   | '^^' 	$binary_op_left 7000

@@ -81,8 +81,7 @@ class Sym : public gc {
   Scope 		*scope;			// used in ast.cpp
   LabelMap		*labelmap;		// used by ast.cpp
   Vec<Sym *>		subtypes;		// used by fa.cpp
-  AType			*as_AType;		// used by fa.cpp
-  CreationSet		*as_CreationSet;	// used by fa.cpp
+  AType			*abstract_type;		// used by fa.cpp
   Map<char *, Var *>	has_map;		// used by fa.cpp
   Vec<CreationSet *>	creators;		// used by fa.cpp
   Var			*var;			// used by fa.cpp
