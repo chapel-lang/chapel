@@ -13260,3 +13260,33 @@ Modified files:
 	chapel/compiler/backend/: dump.cpp graph.cpp 
 	chapel/compiler/include/: fa.h fun.h pattern.h 
 
+---------------------------------------------------------------------------
+
+12/29/04 15:06:19 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Finished intents as per our discussions.
+	Checked in a bunch of intent test cases.
+	These go through analysis, but fail in codegen.
+	Some of them are supposed to generate errors, but don't.
+
+Modified files:
+	chapel/compiler/analysis/: ast.cpp fa.cpp pattern.cpp 
+	chapel/compiler/include/: sym.h 
+	chapel/test/flowanalysis/jplevyak/: badcall.good badreturn.good 
+	                                    var.good 
+Added files:
+	chapel/test/functions/jplevyak/: intent-1.chpl intent-1.good 
+	                                 intent-2.chpl intent-2.good 
+	                                 intent-3.chpl intent-3.good 
+	                                 intent-4.chpl intent-4.good 
+	                                 intent-5-error.chpl 
+	                                 intent-5-error.good 
+	                                 intent-6-error.chpl 
+	                                 intent-6-error.good 
+	                                 intent-7-error.chpl 
+	                                 intent-7-error.good 
+	                                 intent-8-error.chpl 
+	                                 intent-8-error.good 
+	                                 intent-9.chpl intent-9.good 
+
