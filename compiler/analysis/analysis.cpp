@@ -178,7 +178,7 @@ map_symbols(Vec<BaseAST *> &syms) {
 	  case SCOPE_FUNCTION:
 	  case SCOPE_LOCAL:
 	  case SCOPE_FORLOOP:
-	  case SCOPE_FORALLEXPR:  // BLC: John, is this right?
+	  case SCOPE_FORALLEXPR:
 	    sym->asymbol->function_scope = 1;
 	    break;
 	  case SCOPE_CLASS: // handled as the symbols appears in code
