@@ -17265,3 +17265,17 @@ Added files:
 	                                test_tuple_simple2.future 
 	                                test_tuple_simple2.good 
 
+---------------------------------------------------------------------------
+
+02/11/05 09:59:45 -- deitz
+
+Log message:
+	Added a flag --ignore_errors which lets the compiler attempt to
+	continue past all errors, including internal errors.  This is useful
+	for development.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: misc.cpp 
+
