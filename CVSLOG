@@ -23130,3 +23130,27 @@ Added files:
 	                                   localType2.good 
 	                                   localType2.stdin 
 
+---------------------------------------------------------------------------
+
+04/01/05 14:46:07 -- bradc
+
+Log message:
+	Implemented union constructors so that they set the
+	union selection field to uninitialized and don't
+	try to set any of the component fields.  This fixes
+	two futures and I removed their .future files.
+	
+	Tucked the union's enumerated type tucked into
+	the ClassType class rather than dropping it on
+	the floor so that it can be referred to after
+	it's built.  Another reason to break UnionType
+	into its own class, which I might attempt next.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Removed files:
+	chapel/test/classes/bradc/: writeunion-workaround.future 
+	                            writeunion.future 
+
