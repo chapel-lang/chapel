@@ -23426,3 +23426,22 @@ Modified files:
 	chapel/third-party/boehmgc/: Makefile 
 	chapel/third-party/dparser/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/04/05 09:33:59 -- deitz
+
+Log message:
+	Rechecked in my code corresponding to the following checkin:
+	
+	  As a stopgap until VarInitExpr is working well, I fixed how
+	  constructors are made so that an assignment to a string is done with
+	  the _init_string function rather than assignment.  As a stopgap to
+	  this, I added a bail-out in ProcessParameters if the function is
+	  called _init_string.  This let me move on with the test I was writing
+	  and should fix the regression we've been seeing.
+	
+	This must have been accidentally lost in Brad's refactoring.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
