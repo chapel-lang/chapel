@@ -16563,3 +16563,18 @@ Added files:
 	                                         test_clone_class2a.future 
 	                                         test_clone_class2a.good 
 
+---------------------------------------------------------------------------
+
+02/04/05 10:23:38 -- deitz
+
+Log message:
+	Cloning of classes no longer copies the methods, just the fields.  For
+	methods, it creates a new FnDefStmt, but leaves the single FnSymbol.
+	
+	I expect problems down the road, after cloning is enabled, since I
+	think we will try to code-generate the same function twice.  Need to
+	think about this a little more.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
