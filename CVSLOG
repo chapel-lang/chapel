@@ -5721,3 +5721,13 @@ Modified files:
 	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
 	                                     mg-seq.good 
 
+---------------------------------------------------------------------------
+
+08/24/04 14:24:46 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added new ChainHashMap which is robuts with respect to hash collisions.
+
+Modified files:
+	chapel/compiler/: fa.cpp fa.h if1.h map.cpp map.h pattern.cpp 
+
