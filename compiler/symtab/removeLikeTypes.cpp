@@ -4,6 +4,10 @@
 
 void RemoveLikeTypes::processSymbol(Symbol* sym) {
   if (LikeType* like_type = dynamic_cast<LikeType*>(sym->type)) {
-    sym->type = like_type->expr->typeInfo();
+    Type* new_type = like_type->expr->typeInfo();
+    if (new_type == dtUnknown || new_type == NULL) {
+      USR_FATAL(sym, "Cannot resolve type, illegal use of 'like'");
+    }
+    sym->type = new_type;
   }
 }

@@ -1059,7 +1059,15 @@ void MemberAccess::traverseExpr(Traversal* traversal) {
 
 
 Type* MemberAccess::typeInfo(void) {
-  return member->type;
+  if (member->type != dtUnknown) {
+    return member->type;
+  } else if (ClassType* ctype = dynamic_cast<ClassType*>(base->typeInfo())) {
+    Symbol* sym = Symboltable::lookupInScope(member->name, ctype->classScope);
+    if (sym && sym->type) {
+      return sym->type;
+    }
+  }
+  return dtUnknown;
 }
 
 

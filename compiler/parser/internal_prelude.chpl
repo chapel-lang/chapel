@@ -93,8 +93,8 @@ class _seq {
   var length : integer;
   var first : _node;
   var last : _node;
-/*
-  function append(e : elementType) {
+
+/*  function append(e : elementType) {
     var new : _node = _node();
     new.element = e;
     if length > 0 {
@@ -123,7 +123,9 @@ class _seq {
   }
 
   function append_sequence(s like this) {
-
+    last.next = s.first;
+    length += s.length;
+    return this;
   }
 
   function copy() {
@@ -132,8 +134,7 @@ class _seq {
       new.append(e);
     }
     return new;
-  }
-*/
+  }*/
 }
 
 pragma "omit for noanalysis" function _seq_pound(s, e) {
@@ -144,7 +145,6 @@ pragma "omit for noanalysis" function _seq_pound(e, s) {
   s.prepend(e);
 }
 
-pragma "omit for noanalysis" function __seq_pound(s1 : _seq, s2 : _seq) {
-  s1.last.next = s2.first;
-  return s1;
+pragma "omit for noanalysis" function __seq_pound(s1, s2) {
+  s1.append_sequence(s2);
 }

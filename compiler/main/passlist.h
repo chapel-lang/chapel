@@ -39,6 +39,7 @@ PassInfo passlist[] = {
 #ifdef USE_EXPR_VARINIT
   RUN(ProcessDefs, ""),
 #endif
+  RUN(RemoveLikeTypes, ""),
 
   // passes to collect information for analysis
   RUN(Fixup, "verify"), // this is a sanity check
@@ -58,7 +59,6 @@ PassInfo passlist[] = {
   RUN(RemoveTypeVariableFormals, ""),
   RUN(ResolveOverloadedOperators, ""),
   RUN(RemoveNamedParameters, ""),
-  RUN(RemoveLikeTypes, ""),
 
   // passes to normalize the basic AST after analysis
   RUN(Fixup, "verify"), // this is a sanity check
