@@ -23906,3 +23906,15 @@ Modified files:
 	chapel/compiler/symtab/: removeDeadSymbols.cpp 
 	chapel/test/flowanalysis/newast/: enumarray.good 
 
+---------------------------------------------------------------------------
+
+04/05/05 10:17:14 -- bradc
+
+Log message:
+	Another default parameter test, but one with
+	a return value.
+
+Added files:
+	chapel/test/functions/bradc/: defaultParamWithReturn.chpl 
+	                              defaultParamWithReturn.good 
+
