@@ -11975,3 +11975,37 @@ Modified files:
 	                                  formatoutput.good 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+12/16/04 07:37:10 -- shannon
+
+Log message:
+	Added support for configuration variables of type enum,
+	set either on the command line or in a file.  Specifically:
+	
+	* type.cpp:  Added the codegenConfigVarRoutines and codegenStringToType
+	  methods to the necessary AST classes.
+	
+	* Added a bunch of tests.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/runtime/include/: config.h 
+	chapel/runtime/src/: config.c 
+Added files:
+	chapel/test/execflags/shannon/configs/: configVarBadEnum.chpl 
+	                                        configVarBadEnum.execopts 
+	                                        configVarBadEnum.good 
+	                                        configVarFileBadEnum.chpl 
+	                                        configVarFileBadEnum.execopts 
+	                                        configVarFileBadEnum.good 
+	                                        configVarFileBadEnum.input 
+	                                        configVarFileGoodEnum.chpl 
+	                                        configVarFileGoodEnum.execopts 
+	                                        configVarFileGoodEnum.good 
+	                                        configVarFileGoodEnum.input 
+	                                        configVarGoodEnum.chpl 
+	                                        configVarGoodEnum.execopts 
+	                                        configVarGoodEnum.good 
+
