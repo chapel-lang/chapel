@@ -139,4 +139,5 @@ numeric types which uses coerce_num
 - use inlining to simplify the program graph so that SSU conversion
   is more effective (??)
 - redo SSU conversion after simple inlining
+- constant folding for exponential (**)
 

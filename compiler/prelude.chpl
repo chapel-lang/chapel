@@ -78,6 +78,7 @@ var reply = #reply __name "reply";
 function new(a:any) { #__new ^^ a; }
 function operator(a:any, #".", b:symbol)	{ #__primitive ^^ a ^^ #"." ^^ b }
 function operator(a:any, #"*.", b:symbol)	{ #__primitive ^^ a ^^ #"." ^^ b }
+function operator(a:anynum, #"**", b:anynum)	{ #__primitive ^^ a ^^ #"**" ^^ b }
 function operator(a:anynum, #"*", b:anynum)	{ #__primitive ^^ a ^^ #"*" ^^ b }
 function operator(a:anynum, #"/", b:anynum)	{ #__primitive ^^ a ^^ #"/" ^^ b }
 function operator(a:anynum, #"%", b:anynum)	{ #__primitive ^^ a ^^ #"%" ^^ b }

@@ -389,6 +389,7 @@ control_flow
 
 binary_operator
   : '.*'        $binary_op_left 9900 
+  | '**'        $binary_op_right 9700
   | '*'         $binary_op_left 9600
   | '/'         $binary_op_left 9600
   | '%'         $binary_op_left 9600

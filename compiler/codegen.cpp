@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/types.h>
 #include "codegen.h"
 #include "files.h"
 #include "fun.h"
