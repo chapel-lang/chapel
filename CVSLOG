@@ -24291,3 +24291,26 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+04/06/05 13:53:49 -- bradc
+
+Log message:
+	Noticed another place where I hadn't updated the
+	copyrights, so unified how copyrights were handled
+	slightly to minimize the number of places where a
+	change is needed.
+	
+	Also, in debugging an internal error, tried to check
+	the compiler version number only to find that we
+	didn't have a --version flag, so added one.
+
+Modified files:
+	chapel/compiler/main/: Makefile driver.cpp 
+Added files:
+	chapel/test/compflags/bradc/noexec/: .cvsignore CLEANFILES 
+	                                     NOEXEC version.chpl 
+	                                     version.compopts 
+	                                     version.goodstart 
+	                                     version.prediff 
+
