@@ -3772,3 +3772,13 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+06/30/04 10:31:32 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	update flow analysis test
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/: cs4.good 
+
