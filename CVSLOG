@@ -9505,3 +9505,18 @@ Added files:
 	chapel/compiler/analysis/: dead.cpp 
 	chapel/compiler/include/: dead.h 
 
+---------------------------------------------------------------------------
+
+11/09/04 15:50:36 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Low level code generator now outputs code in SSU form instead of
+	  dropping the PHI and PHY functions.  This is a better test of the
+	  intermediate form.
+
+Modified files:
+	chapel/compiler/analysis/: cg.cpp 
+	chapel/compiler/include/: pnode.h 
+Added files:
+	chapel/test/lowlevelcg/jplevyak/: ssu.good ssu.v 
+
