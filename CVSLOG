@@ -23380,3 +23380,24 @@ Log message:
 Added files:
 	chapel/test/types/like/jplevyak/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/01/05 17:57:34 -- bradc
+
+Log message:
+	Whoopsee, I was in the wrong directory for that last checkin,
+	and my attempt to abort once I realized it didn't work out for
+	some reason...
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h symtab.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         insertWriteFns.cpp symscope.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertUnionChecks.cpp 
+	                             verifyASTType.cpp 
+
