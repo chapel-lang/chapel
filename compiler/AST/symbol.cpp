@@ -745,9 +745,46 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
 }
 
 
-FnSymbol* FnSymbol::order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals) {
-  INT_FATAL(this, "FnSymbol::order_wrapper not implemented");
-  return NULL;
+FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals) {
+  static int uid = 1; // Unique ID for wrapped functions
+
+  SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
+  FnSymbol* wrapper_fn = new FnSymbol(name);
+  wrapper_fn->cname = glomstrings(3, cname, "_ord_wrapper_", intstring(uid++));
+  wrapper_fn = Symboltable::startFnDef(wrapper_fn);
+
+  Symbol* wrapper_formals = NULL;
+  for (int i = 0; i < formals_to_actuals->n - 1; i++) {
+    Symbol* tmp = formals;
+    for (int j = 0; j < formals_to_actuals->n - 1; j++) {
+      if (formals_to_actuals->v[i].key == formals_to_actuals->v[j].value) {
+	wrapper_formals = appendLink(wrapper_formals, tmp->copy());
+      }
+      if (tmp->next) {
+	tmp = nextLink(Symbol, tmp);
+      }
+    }
+  }
+
+  Expr* actuals = NULL;
+  for (int i = 0; i < formals_to_actuals->n - 1; i++) {
+    Symbol* tmp = wrapper_formals;
+    for (int j = 0; j < formals_to_actuals->n - 1; j++) {
+      if (formals_to_actuals->v[i].value == formals_to_actuals->v[j].key) {
+	actuals = appendLink(actuals, new Variable(tmp));
+      }
+      if (tmp->next) {
+	tmp = nextLink(Symbol, tmp);
+      }
+    }
+  }
+
+  Stmt* fn_call = new ExprStmt(new FnCall(new Variable(this), actuals));
+  Stmt* body = new BlockStmt(fn_call);
+  DefExpr* def_expr = Symboltable::finishFnDef(wrapper_fn, wrapper_formals, retType, body);
+  dynamic_cast<DefExpr*>(defPoint)->insertBefore(def_expr);
+  Symboltable::setCurrentScope(save_scope);
+  return wrapper_fn;
 }
 
 
