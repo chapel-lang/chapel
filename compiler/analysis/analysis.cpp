@@ -126,7 +126,18 @@ AInfo::visible_functions(Sym *arg0) {
   else
     s = dynamic_cast<Stmt *>(this->xast);
   ScopeLookupCache *sym_cache = 0;
-  Symbol *symbol = Symboltable::lookupFromScope(name, s->parentSymbol->parentScope);
+
+  Symbol *symbol;
+  SymScope* scope;
+  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(s->parentSymbol)) {
+    scope = mod->modScope;
+  } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(s->parentSymbol)) {
+    scope = fn->paramScope;
+  }
+  else {
+    INT_FATAL(s, "Unexpected case");
+  }
+  symbol = Symboltable::lookupFromScope(name, scope);
   Symbol *internal_symbol = Symboltable::lookupInScope(name, internalScope);
   if (!symbol && !internal_symbol)
     v = new Vec<Fun *>;
