@@ -5572,3 +5572,32 @@ Modified files:
 	chapel/compiler/: .cvsignore Makefile 
 	chapel/compiler/AST/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+08/23/04 17:29:25 -- bradc
+
+Log message:
+	Added a new common base class for all AST (Stmt, Expr, Symbol, Type)
+	classes named "BaseAST".  Currently, this only has a single member
+	variable, "astType" which is an enumerated type (defined in baseAST.h)
+	indicating what class the class instance is.  This is designed to
+	avoid the overhead of using the typeid() feature and to support switch
+	statements over AST node types.
+	
+	Wrote a traversal routine that verifies that all classes have their
+	enumeration set as expected and ran this over the current test tree
+	to make sure I had set things up as intended, but then commented
+	this traversal out for the check-in.  Eventually we may want to make
+	this a flag or (better) support a passlist that can be specified
+	dynamically to indicate what passes should be run for a particular
+	test.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: Makefile.share chapel.lex chapel.y 
+	                      expr.cpp expr.h stmt.cpp stmt.h symbol.cpp 
+	                      symbol.h type.cpp type.h 
+Added files:
+	chapel/compiler/AST/: baseAST.cpp baseAST.h verifyASTType.cpp 
+	                      verifyASTType.h 
+
