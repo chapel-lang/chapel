@@ -10186,3 +10186,19 @@ Modified files:
 	chapel/compiler/include/: ast.h 
 	chapel/compiler/vparser/: ast_cf.cpp parse_ast.cpp 
 
+---------------------------------------------------------------------------
+
+11/22/04 16:49:45 -- deitz
+
+Log message:
+	Added a couple of test cases that create basic classes.  One of these
+	test cases tries to put executable code in the class definition.
+	Added parser support to identify this as a syntax error.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/classes/deitz/: test_badclass1.chpl 
+	                            test_badclass1.good test_class1.chpl 
+	                            test_class1.good 
+
