@@ -1,0 +1,72 @@
+#!/usr/bin/perl
+
+$pid = getpgrp();
+$user = `whoami`;
+chomp($user);
+$mailcommand = "| Mail -s \"Chapel: Debug Results\" $user\@cray.com";
+$tmpdir = "/tmp/chapel-tabsearch.$user.$pid.deleteme";
+$chpldir = "$tmpdir/chapel";
+
+$matchfile = "$tmpdir/match.out";
+
+mysystem("mkdir $tmpdir", "making tmp directory", 1, 1);
+mysystem("cd $tmpdir && cvs -d :pserver:$CHPL_UW_CVS_USERNAME\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot checkout chapel", "cvs checkout", 1, 1);
+mysystem("cd $chpldir && util/lookForTabs > $matchfile", "looking for tabs", 1, 1);
+$matches = `wc -l $matchfile`;
+chomp($matches);
+if ($matches != 0) {
+  print "matches!\n";
+  open(MAIL, "| Mail chapel_dev\@cray.com -s 'Chapel: Nightly TAB check'");
+    open(MESSAGE, "<$matchfile");
+    while (<MESSAGE>) {
+      my($line) = $_;
+      print MAIL "$line";
+    }
+  close(MAIL);
+} else {
+  print "no matches!\n";
+  open(MAIL, "| Mail bradc\@cray.com -s 'Chapel: Nightly TAB check'");
+    print MAIL "no TAB matches tonight";
+  close(MAIL);
+}
+system("rm -r $tmpdir");
+
+exit 0;
+
+
+#
+# subroutines
+#
+
+sub mysystem {
+    $command = $_[0];
+    $errorname = $_[1];
+    $fatal = $_[2];
+    $mailmsg = $_[3];
+
+    $status = system($command);
+    if ($status != 0) {
+	$somethingfailed = 1;
+        $status = $status / 256;
+	print "Error $_[1]: $status\n";
+
+	if ($mailmsg != 0) {
+	    open(MAIL, $mailcommand);
+	    print MAIL "=== Summary ===================================================\n";
+	    print MAIL "ERROR $_[1]: $status\n";
+	    print MAIL "(workspace left at $tmpdir)\n";
+	    print MAIL "===============================================================\n";
+	    close(MAIL);
+	}
+
+	if ($fatal != 0) {
+	    `echo "$statdate\t1" >> $statfile`;
+	    if ($debug == 0) {
+		`ci -l -m"automated nightly checkin" $statfile`;
+	    }
+	    `cd $statdir && ./makeplot`;
+	    exit 1;
+	}
+    }
+    $status;
+}
