@@ -5,6 +5,7 @@
 
 class RunAnalysis : public Pass {
  public:
+  static int isRunning;
   static int runCount;
   void run(ModuleSymbol* moduleList);
 };

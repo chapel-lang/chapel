@@ -11,6 +11,7 @@
 #include "symtab.h"
 #include "../traversals/fixup.h"
 #include "../traversals/updateSymbols.h"
+#include "../passes/runAnalysis.h"
 
 
 static char* cUnOp[NUM_UNOPS] = {
@@ -165,6 +166,10 @@ Expr* Expr::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 
   new_expr->lineno = lineno;
   new_expr->filename = filename;
+  //new_expr->pragmas = pragmas;
+  if (!RunAnalysis::isRunning) {
+    new_expr->ainfo = ainfo;
+  }
   if (analysis_clone) {
     analysis_clone->clone(this, new_expr);
   }

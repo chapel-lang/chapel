@@ -10,11 +10,6 @@ function +(p1 : point, p2 : point) : point {
   return p3;
 }
 
-function =(p1 : point, p2 : point) {
-  p1.x = p2.x;
-  p1.y = p2.y;
-}
-
 var a : point = point();
 a.x = 1;
 a.y = 1;

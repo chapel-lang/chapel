@@ -517,8 +517,8 @@ decls:
     { $$ = NULL; }
 | decls pragmas decl
     {
-      $3->pragmas = $2;
       $$ = appendLink($1, $3); 
+      $3->pragmas = $2;
     }
 ;
 

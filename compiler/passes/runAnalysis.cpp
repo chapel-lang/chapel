@@ -8,9 +8,11 @@
 #include "symtab.h"
 
 int RunAnalysis::runCount = 0;
+int RunAnalysis::isRunning = 0;
 
 void RunAnalysis::run(ModuleSymbol* moduleList) {
   if (analyzeAST) {
+    RunAnalysis::isRunning = 1;
     if1->callback = new ACallbacks;
     init_ast();
     Vec<Stmt *> stmts;
@@ -46,5 +48,6 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     }
 #endif
     runCount++;
+    RunAnalysis::isRunning = 0;
   }
 }

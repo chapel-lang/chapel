@@ -10,6 +10,7 @@
 #include "symtab.h"
 #include "../traversals/fixup.h"
 #include "../traversals/updateSymbols.h"
+#include "../passes/runAnalysis.h"
 
 
 Stmt::Stmt(astType_t astType) :
@@ -90,6 +91,10 @@ Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 
   new_stmt->lineno = lineno;
   new_stmt->filename = filename;
+  //new_stmt->pragmas = pragmas;
+  if (!RunAnalysis::isRunning) {
+    new_stmt->ainfo = ainfo;
+  }
   if (analysis_clone) {
     analysis_clone->clone(this, new_stmt);
   }
