@@ -116,6 +116,12 @@ UnresolvedSymbol::UnresolvedSymbol(char* init_name) :
 {}
 
 
+void UnresolvedSymbol::codegen(FILE* outfile) {
+  //  INT_FATAL(this, "ERROR:  Cannot codegen an unresolved symbol.");
+  Symbol::codegen(outfile);
+}
+
+
 Symbol* UnresolvedSymbol::copy(void) {
   return new UnresolvedSymbol(copystring(name));
 }

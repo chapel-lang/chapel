@@ -47,6 +47,8 @@ class UnresolvedSymbol : public Symbol {
  public:
   UnresolvedSymbol(char* init_name);
   virtual Symbol* copy(void);
+
+  void codegen(FILE* outfile);
 };
 
 

@@ -4,6 +4,7 @@ TRAVERSALS_SRCS = \
 	checkTypeInfo.cpp \
 	cloneAllFns.cpp \
 	findUnknownTypes.cpp \
+	findUnresolvedSymbols.cpp \
 	getstuff.cpp \
 	printAST.cpp \
 	setupStmtLinks.cpp \

@@ -10,6 +10,7 @@ REGISTER(CloneAllFns);
 REGISTER(Codegen);
 REGISTER(DummyPass);
 REGISTER(FindUnknownTypes);
+REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(GetStuff);
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST

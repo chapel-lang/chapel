@@ -12,6 +12,7 @@
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/cloneAllFns.h"
 #include "../traversals/findUnknownTypes.h"
+#include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/getstuff.h"
 #include "../traversals/printAST.h"
 #include "../traversals/setupStmtLinks.h"
