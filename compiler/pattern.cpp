@@ -129,7 +129,7 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
   Vec<Fun *> *funs = new Vec<Fun *>;
   a->arg_of_send.set_add(send);
   forv_CreationSet(cs, *a->out) if (cs) {
-    if (cs->sym == sym_tuple) {
+    if (cs->sym == sym_tuple && cs->vars.n) {
       p.push(1);
       Vec<Fun *> *push_funs = NULL;
       if (partial_matches.v[partial_matches.n-1])
@@ -203,7 +203,7 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
     return;
   Vec<Fun *> *funs = new Vec<Fun *>;
   forv_CreationSet(cs, *a->out) if (cs) {
-    if (cs->sym == sym_tuple) {
+    if (cs->sym == sym_tuple && cs->vars.n) {
       partial_matches.add(new Vec<Fun *>(*partial_matches.v[partial_matches.n-1]));
       if (!check_ambiguities) {
 	p.push(1);
