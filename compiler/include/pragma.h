@@ -3,7 +3,7 @@
 
 #include "baseAST.h"
 
-class Pragma : public BaseAST {
+class Pragma : public ILink {
  public:
   char *str;
   Pragma(char *string);

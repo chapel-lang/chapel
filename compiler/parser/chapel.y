@@ -34,6 +34,7 @@
   TypeSymbol* ptsym;
   FnSymbol* fnsym;
   ModuleSymbol* modsym;
+  Pragma *pragmas;
 }
 
 %token TBREAK
@@ -57,6 +58,7 @@
 %token TLET
 %token TMODULE
 %token TOUT
+%token TPRAGMA
 %token TRECORD
 %token TREF
 %token TRETURN
@@ -113,6 +115,7 @@
 %type <varstmt> vardecl vardecl_inner vardecl_inner_ls
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl block_stmt
 %type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl function_body_stmt
+%type <pragmas> pragma pragmas
 
 
 /* These are declared in increasing order of precedence. */
@@ -171,6 +174,11 @@ varconst:
 ident_symbol:
   identifier
     { $$ = new Symbol(SYMBOL, $1); }
+| pragmas identifier
+    { 
+      $$ = new Symbol(SYMBOL, $2); 
+      $$->pragmas = $1;
+    }
 ;
 
 
@@ -233,10 +241,11 @@ typedecl:
 
 
 typealias:
-  TTYPE identifier TCOLON type optional_init_expr TSEMI
+  TTYPE pragmas identifier TCOLON type optional_init_expr TSEMI
     {
-      UserType* newtype = new UserType($4, $5);
-      TypeSymbol* typeSym = new TypeSymbol($2, newtype);
+      UserType* newtype = new UserType($5, $6);
+      TypeSymbol* typeSym = new TypeSymbol($3, newtype);
+      typeSym->pragmas = $2;
       newtype->addSymbol(typeSym);
       $$ = new TypeDefStmt(typeSym);
       typeSym->setDefPoint($$);
@@ -245,10 +254,11 @@ typealias:
 
 
 typevardecl:
-  TTYPE identifier TSEMI
+  TTYPE pragmas identifier TSEMI
     {
       VariableType* new_type = new VariableType();
-      TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
+      TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
+      new_symbol->pragmas = $2;
       new_type->addSymbol(new_symbol);
       $$ = new TypeDefStmt(new_symbol);
       new_symbol->setDefPoint($$);
@@ -257,51 +267,55 @@ typevardecl:
 
 
 enumdecl:
-  TENUM identifier TLCBR enum_list TRCBR TSEMI
+  TENUM pragmas identifier TLCBR enum_list TRCBR TSEMI
     {
-      $4->set_values();
-      EnumType* pdt = new EnumType($4);
-      TypeSymbol* pst = new TypeSymbol($2, pdt);
+      $5->set_values();
+      EnumType* pdt = new EnumType($5);
+      TypeSymbol* pst = new TypeSymbol($3, pdt);
+      pst->pragmas = $2;
       pdt->addSymbol(pst);
       $$ = new TypeDefStmt(pst);
       pst->setDefPoint($$);
-      $4->setDefPoint($$);
+      $5->setDefPoint($$);
     }
 ;
 
 
 classdecl:
-  TCLASS identifier TLCBR
+  TCLASS pragmas identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($2, false, false);
+      $<ptsym>$ = Symboltable::startClassDef($3, false, false);
+      $<ptsym>$->pragmas = $2;
     }
                                 decls TRCBR
     {
-      $$ = Symboltable::finishClassDef($<ptsym>4, $5);
+      $$ = Symboltable::finishClassDef($<ptsym>5, $6);
     }
 ;
 
 
 recorddecl:
-  TRECORD identifier TLCBR
+  TRECORD pragmas identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($2, true, false);
+      $<ptsym>$ = Symboltable::startClassDef($3, true, false);
+      $<ptsym>$->pragmas = $2;
     }
                                 decls TRCBR
     {
-      $$ = Symboltable::finishClassDef($<ptsym>4, $5);
+      $$ = Symboltable::finishClassDef($<ptsym>5, $6);
     }
 ;
 
 
 uniondecl:
-  TUNION identifier TLCBR
+  TUNION pragmas identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($2, false, true);
+      $<ptsym>$ = Symboltable::startClassDef($3, false, true);
+      $<ptsym>$->pragmas = $2;
     }
                                 decls TRCBR
     {
-      $$ = Symboltable::finishClassDef($<ptsym>4, $5);
+      $$ = Symboltable::finishClassDef($<ptsym>5, $6);
     }
 ;
 
@@ -359,10 +373,11 @@ formal:
       $$ = Symboltable::defineParams($1, $2, $3, $4);
       //      $$ = new ParamSymbol($1, $2, $3);
     }
-| TTYPE identifier typevardecltype
+| TTYPE pragmas identifier typevardecltype
     {
-      VariableType* new_type = new VariableType($3);
-      $$ = new TypeSymbol($2, new_type);
+      VariableType* new_type = new VariableType($4);
+      $$ = new TypeSymbol($3, new_type);
+      $$->pragmas = $2;
       new_type->addSymbol($$);
     }
 ;
@@ -544,6 +559,11 @@ statement:
     { $$ = new ContinueStmt($2); }
 | TCONTINUE TSEMI
     { $$ = new ContinueStmt(); }
+| pragmas statement
+    { 
+      $2->pragmas = $1;
+      $$ = $2;
+    }
 | decl
 | assignment
 | conditional
@@ -555,6 +575,20 @@ statement:
 | block_stmt
 | error
     { printf("syntax error"); exit(1); }
+;
+
+
+pragmas:
+  /* empty */
+    { $$ = NULL; }
+| pragmas pragma
+    { $$ = appendLink($1, $2); }
+;
+
+
+pragma:
+  TPRAGMA STRINGLITERAL
+  { $$ = new Pragma($2); }
 ;
 
 

@@ -153,7 +153,7 @@ static char* internalErrorCode(char* filename, int lineno) {
 }
 
 
-void setupDevelError(char *filename, int lineno, bool fatal, bool user) {
+int setupDevelError(char *filename, int lineno, bool fatal, bool user) {
   if (developer) {
     fprintf(stderr, "[%s:%d] ", filename, lineno);
   }
@@ -186,6 +186,7 @@ void setupDevelError(char *filename, int lineno, bool fatal, bool user) {
   }
 
   isFatal = fatal;
+  return 1;
 }
 
 

@@ -4,6 +4,7 @@ AST_SRCS = \
 	link.cpp \
 	loc.cpp \
 	nils.cpp \
+	pragma.cpp \
 	stmt.cpp \
 	symbol.cpp \
 	type.cpp \

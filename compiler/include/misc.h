@@ -28,22 +28,18 @@ char *loc_string(d_loc_t &l);
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
 #define INT_FATAL \
-  setupDevelError(__FILE__, __LINE__, true , false); \
-  if (developer) printProblem
+  if (setupDevelError(__FILE__, __LINE__, true , false) && developer) printProblem
 
 #define INT_WARNING \
-  setupDevelError(__FILE__, __LINE__, false, false); \
-  if (developer) printProblem
+  if (setupDevelError(__FILE__, __LINE__, false , false) && developer) printProblem
 
 #define USR_FATAL \
-  setupDevelError(__FILE__, __LINE__, true , true ); \
-  printProblem
+  if (setupDevelError(__FILE__, __LINE__, true , true )) printProblem
 
 #define USR_WARNING \
-  setupDevelError(__FILE__, __LINE__, false, true ); \
-  printProblem
+  if (setupDevelError(__FILE__, __LINE__, false, true )) printProblem
 
-void setupDevelError(char* filename, int lineno, bool fatal, bool user);
+int setupDevelError(char* filename, int lineno, bool fatal, bool user);
 void printProblem(char* fmt, ...);
 void printProblem(AST* ast, char* fmt, ...);
 void printProblem(Loc* loc, char* fmt, ...);

@@ -60,6 +60,7 @@ module		return TMODULE;
 not             return TNOT;
 or              return TOR;
 out             return TOUT;
+pragma          return TPRAGMA;
 record          return TRECORD;
 reduce          return TREDUCE;
 return          return TRETURN;
@@ -195,6 +196,7 @@ with            return TWITH;
                     }
                   }
                 }
+
 
 %%
 

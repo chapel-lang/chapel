@@ -4,6 +4,7 @@
 #include "baseAST.h"
 #include "type.h"
 #include "analysis.h"
+#include "pragma.h"
 
 
 class Stmt;
@@ -23,6 +24,7 @@ class Symbol : public BaseAST {
   char* cname;   /* Name of symbol for generating C code */
   Type* type;
   BaseAST* defPoint; /* Point of definition in AST, A Stmt or Expr */
+  Pragma *pragmas;
 
   SymScope* parentScope;
   ASymbol *asymbol;

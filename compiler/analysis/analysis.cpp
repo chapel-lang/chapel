@@ -1622,9 +1622,8 @@ gen_fun(FnSymbol *f) {
     ast = expr->ainfo;
   else if (stmt = dynamic_cast<Stmt*>(f->defPoint)) 
     ast = stmt->ainfo;
-  else {
+  else
     INT_FATAL(f, "defPoint is not Stmt or Expr");
-  }
   Vec<Symbol *> args;
   Vec<Sym *> out_args;
   getLinkElements(args, f->formals);
@@ -1670,9 +1669,8 @@ init_function(FnSymbol *f) {
     ast = expr->ainfo;
   else if ((stmt = dynamic_cast<Stmt*>(f->defPoint)))
     ast = stmt->ainfo;
-  else {
+  else
     INT_FATAL(f, "defPoint is not Stmt or Expr");
-  }
   s->cont->ast = ast;
   s->ret = new_sym();
   s->ret->ast = ast;
@@ -1692,9 +1690,8 @@ build_function(FnSymbol *f) {
     ast = expr->ainfo;
   else if ((stmt = dynamic_cast<Stmt*>(f->defPoint)))
     ast = stmt->ainfo;
-  else {
+  else
     INT_FATAL(f, "defPoint is not Stmt or Expr");
-  }
   Label *return_label = ast->label[0] = if1_alloc_label(if1);
   if (resolve_labels(f->body, f->asymbol->sym->labelmap, return_label) < 0) return -1;
   if (gen_if1(f->body) < 0) return -1;
@@ -2103,13 +2100,11 @@ void
 call_info(ParenOpExpr* a, Vec<FnSymbol *> &fns) {
   FnSymbol* f = dynamic_cast<FnSymbol*>(a->stmt->parentSymbol);
   if (!f) {
-    if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(a->stmt->parentSymbol)) {
+    if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(a->stmt->parentSymbol))
       f = m->initFn;  // UGH!  SJD: parentSymbol is not set correctly
       // See checkin Feb 16, 2005, On my to do list
-    }
-    else {
+    else
       INT_FATAL(a, "Function called from something not a function");
-    }
   }
   fns.clear();
   Fun *ff = f->asymbol->sym->fun;
