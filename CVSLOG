@@ -2695,3 +2695,13 @@ Modified files:
 	chapel/compiler/: TODO chpl.g codegen.cpp prelude.chpl 
 	                  prim_data.dat 
 
+---------------------------------------------------------------------------
+
+06/04/04 13:36:25 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	fix mod, left and right shift
+
+Modified files:
+	chapel/compiler/: prelude.chpl prim_data.dat 
+
