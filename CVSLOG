@@ -6684,3 +6684,20 @@ Log message:
 Modified files:
 	chapel/compiler/: analysis.cpp driver.cpp 
 
+---------------------------------------------------------------------------
+
+09/09/04 11:38:48 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Use callbacks for all Sym allocations to ensure that we have the
+	  appropriate shadow variables for the new AST.
+	Apply the analysis to the internalPrelude, prelude and program.
+	Note: I changed the name of program to programStmts to be more
+	  in keeping with internalPreludeStmts and preludeStmts... hope that is OK.
+
+Modified files:
+	chapel/compiler/: analysis.cpp analysis.h ast.cpp callbacks.h 
+	                  createAST.cpp createAST.h driver.cpp fa.cpp 
+	                  if1.cpp if1.h parse_ast.cpp parse_ast.h 
+	                  sym.cpp 
+
