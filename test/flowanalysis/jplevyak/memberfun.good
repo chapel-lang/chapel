@@ -18,7 +18,7 @@ function new prelude.v:73
 function operator prelude.v:74
 function operator prelude.v:74
 function operator prelude.v:79
-function print prelude.v:128
+function print prelude.v:133
 globals
 new::a(prelude.v:73) ( A (memberfun.v:1) )
 new::o(prelude.v:73) ( A (memberfun.v:1) )
@@ -27,7 +27,7 @@ operator::a(prelude.v:74) ( A (memberfun.v:1) )
 operator::a(prelude.v:74) ( A (memberfun.v:1) )
 operator::a(prelude.v:79) ( int32 (prelude.v:29) )
 operator::b(prelude.v:79) ( int32 (prelude.v:29) )
-print::a(prelude.v:128) ( int32 (prelude.v:29) )
+print::a(prelude.v:133) ( int32 (prelude.v:29) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::A(memberfun.v:1) ( A (memberfun.v:1) )

@@ -93,6 +93,7 @@ operator(a:any, #"&&", b:any)		   : #__operator a #"&&" b;
 operator(a:any, #"||", b:any)		   : #__operator a #"||" b;
 operator(a:ref, #"=", b:any)		   : #__operator a #"=" b;
 operator(a:any, #"=", b:any)		   : b;
+operator(a:value, #"=", b:value)	   : #__operator a #"=" b;
 operator(a:anynum, #"*=", b:anynum)	   : #__operator a #"*" b;
 operator(a:anynum, #"/=", b:anynum)	   : #__operator a #"/" b;
 operator(a:anynum, #"%=", b:anynum)	   : #__operator a #"%" b;
@@ -122,6 +123,10 @@ operator(a:anynum, #"--")		   : a - 1;
 // tuples indexing
 
 tuple::self(a:anyint) : #__index self a;
+
+// vector indexing
+
+vector::self(a:anyint) : #__index self a;
 
 // generic printing
 

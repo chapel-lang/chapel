@@ -245,6 +245,12 @@ ParseAST::ParseAST(AST_kind k, D_ParseNode *pn) {
 }
 
 void
+ParseAST::set_location_and_add(D_ParseNode *pn) {
+  set_location(pn);
+  add(pn);
+}
+
+void
 ParseAST::add_below(D_ParseNode *pn) {
   for (int i = 0; i < d_get_number_of_children(pn); i++)
     dig_ast(this, d_get_child(pn, i));

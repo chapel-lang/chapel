@@ -37,22 +37,23 @@ loop_AST(D_ParseNode &loop, D_ParseNode &cond, D_ParseNode *before,
   ParseAST *b = body.user.ast;
   if (after) {
     b = new_AST(AST_block);
-    b->set_location(&body);
-    b->add(body.user.ast);
+    b->set_location_and_add(&body);
     b->add(after->user.ast);
   }
   ParseAST *l = new_AST(AST_loop), *a = l;
   l->set_location(&loop);
   if (before && before != &body) {
     a = new_AST(AST_block);
-    a->add(before->user.ast);
+    a->set_location_and_add(before);
     a->add(l);
   }
+  ParseAST *c = new_AST(AST_loop_cond);
+  c->set_location_and_add(&cond);
   if (before != &body)
-    l->add(new_AST(AST_loop_cond, &cond));
+    l->add(c);
   l->add(b);
   if (before == &body)
-    l->add(new_AST(AST_loop_cond, &cond));
+    l->add(c);
   return a;
 }
 

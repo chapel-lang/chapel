@@ -70,6 +70,7 @@ class ParseAST : public AST {
   void add(D_ParseNode *pn);
   void add_below(D_ParseNode *pn);
   void set_location(D_ParseNode *pn);
+  void set_location_and_add(D_ParseNode *pn);
   ParseAST *get(AST_kind k);
 
   Sym *symbol() { return rval ? rval : sym; } 

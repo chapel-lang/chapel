@@ -1,7 +1,7 @@
 # Makefile for D_Parser
 
-#D_DEBUG=1
-D_OPTIMIZE=1
+D_DEBUG=1
+#D_OPTIMIZE=1
 #D_PROFILE=1
 D_USE_GC=1
 #D_LEAK_DETECT=1

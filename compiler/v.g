@@ -411,14 +411,19 @@ null:
   { $$.ast = new_AST(AST_list); }
   ;
 
-curly_block: '{' [ ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RECURSIVE; ]
-              statement* expression? '}'
+curly_block: '{' curly_block_scope statement* expression? '}'
+[ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
 { 
   if ($#3)
     $$.ast = new_AST(AST_scope, &$n); 
   else
     $$.ast = new_AST(AST_object, &$n);
 };
+
+curly_block_scope : [ 
+    ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RECURSIVE; 
+  ]
+;
 
 paren_block: '(' statement* expression? ')' 
 { 
@@ -428,18 +433,20 @@ paren_block: '(' statement* expression? ')'
     $$.ast = new_AST(AST_list, &$n);
 };
 
-square_block: '[' 
-  [ 
-    ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_PARALLEL; 
-    $g->parallel_scope = ${scope};
-  ]
-  statement* expression? ']' 
+square_block: '[' square_block_scope statement* expression? ']' 
+[ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
 { 
   if ($#3)
     $$.ast = new_AST(AST_scope, &$n); 
   else
     $$.ast = new_AST(AST_vector, &$n);
 };
+
+square_block_scope : [ 
+    ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_PARALLEL; 
+    $g->parallel_scope = ${scope};
+  ]
+;
 
 constant : (char | int8 | uint8 | int16 | uint16 | 
 	    int32 | uint32 | int64 | uint64 | int | uint |
