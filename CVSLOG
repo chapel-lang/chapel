@@ -3541,3 +3541,15 @@ Modified files:
 	                      symbol.cpp symbol.h symtab.cpp symtab.h 
 	                      type.cpp yy.c 
 
+---------------------------------------------------------------------------
+
+06/18/04 18:19:20 -- bradc
+
+Log message:
+	Improved handling of def-before-use cases in AST prototype.
+
+Modified files:
+	chapel/compiler/AST/: TODO chapel.lex chapel.y expr.cpp expr.h 
+	                      main.cpp symbol.cpp symbol.h symtab.cpp 
+	                      symtab.h 
+
