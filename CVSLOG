@@ -21161,3 +21161,13 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_nomembers1.future 
 
+---------------------------------------------------------------------------
+
+03/23/05 15:36:34 -- jplevyak
+
+Log message:
+	Update future
+
+Modified files:
+	chapel/test/trivial/roxana/: test_dead_var_decl.future 
+
