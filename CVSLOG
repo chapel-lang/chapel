@@ -23546,3 +23546,23 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+04/04/05 11:26:05 -- bradc
+
+Log message:
+	I seem to have completely lost my ability to check in code.
+	
+	That last checkin should've included include/type.h and
+	AST/type.cpp, but I must've been in the wrong directory.
+	
+	Then, when checking those files in, I forgot that I had
+	mods to chapel.y until the commit log entry buffer came
+	up, and while I requested to abort the check-in, it
+	still got checked in.  Bummer.
+	
+	This checkin backs out my premature changes to chapel.y.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
