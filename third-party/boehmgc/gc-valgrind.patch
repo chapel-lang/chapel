@@ -1,0 +1,414 @@
+? gc-valgrind.patch
+? gc6.4
+? gc6.4-valgrind
+Index: gc6.3/malloc.c
+===================================================================
+RCS file: /gemelli3/chapelroot/chapel/third-party/boehmgc/gc6.3/malloc.c,v
+retrieving revision 1.1
+diff -c -r1.1 malloc.c
+*** gc6.3/malloc.c	29 Jul 2004 17:08:10 -0000	1.1
+--- gc6.3/malloc.c	1 Mar 2005 18:08:14 -0000
+***************
+*** 280,289 ****
+--- 280,293 ----
+  # endif
+  {
+  register ptr_t op;
++ register ptr_t return_value;
+  register ptr_t *opp;
+  register word lw;
+  DCL_LOCK_STATE;
+  
++ #if defined(GC_VALGRIND_SUPPORT)
++  lb += GC_VALGRIND_RED_ZONE;
++ #endif
+      if( EXPECT(SMALL_OBJ(lb), 1) ) {
+  #       ifdef MERGE_SIZES
+  	  lw = GC_size_map[lb];
+***************
+*** 294,300 ****
+  	FASTLOCK();
+          if( EXPECT(!FASTLOCK_SUCCEEDED() || (op = *opp) == 0, 0) ) {
+              FASTUNLOCK();
+!             return(GENERAL_MALLOC((word)lb, NORMAL));
+          }
+          /* See above comment on signals.	*/
+  	GC_ASSERT(0 == obj_link(op)
+--- 298,305 ----
+  	FASTLOCK();
+          if( EXPECT(!FASTLOCK_SUCCEEDED() || (op = *opp) == 0, 0) ) {
+              FASTUNLOCK();
+!             return_value = (GENERAL_MALLOC((word)lb, NORMAL));
+! 	    goto Lreturn;
+          }
+          /* See above comment on signals.	*/
+  	GC_ASSERT(0 == obj_link(op)
+***************
+*** 306,315 ****
+          obj_link(op) = 0;
+          GC_words_allocd += lw;
+          FASTUNLOCK();
+!         return((GC_PTR) op);
+     } else {
+!        return(GENERAL_MALLOC((word)lb, NORMAL));
+     }
+  }
+  
+  # ifdef REDIRECT_MALLOC
+--- 311,327 ----
+          obj_link(op) = 0;
+          GC_words_allocd += lw;
+          FASTUNLOCK();
+!         return_value = ((GC_PTR) op);
+     } else {
+!        return_value = (GENERAL_MALLOC((word)lb, NORMAL));
+     }
++  Lreturn:
++ #if defined(GC_VALGRIND_SUPPORT)
++     VALGRIND_MALLOCLIKE_BLOCK(return_value, lb - GC_VALGRIND_RED_ZONE, GC_VALGRIND_RED_ZONE, 1);
++     VALGRIND_MAKE_READABLE(&return_value, sizeof(return_value));
++     GC_set_alloced_bit(return_value);
++ #endif
++     return return_value;
+  }
+  
+  # ifdef REDIRECT_MALLOC
+***************
+*** 446,451 ****
+--- 458,466 ----
+          UNLOCK();
+          ENABLE_SIGNALS();
+      }
++ #if defined(GC_VALGRIND_SUPPORT)
++     VALGRIND_FREELIKE_BLOCK(p, GC_VALGRIND_RED_ZONE);
++ #endif
+  }
+  
+  /* Explicitly deallocate an object p when we already hold lock.		*/
+Index: gc6.3/mallocx.c
+===================================================================
+RCS file: /gemelli3/chapelroot/chapel/third-party/boehmgc/gc6.3/mallocx.c,v
+retrieving revision 1.1
+diff -c -r1.1 mallocx.c
+*** gc6.3/mallocx.c	29 Jul 2004 17:08:10 -0000	1.1
+--- gc6.3/mallocx.c	1 Mar 2005 18:08:14 -0000
+***************
+*** 83,88 ****
+--- 83,98 ----
+  int obj_kind;
+  
+      if (p == 0) return(GC_malloc(lb));	/* Required by ANSI */
++ #if defined(GC_VALGRIND_SUPPORT)
++     /* This code uses a different way to go from lb to the hhdr than GC_malloc.
++        In particular x = GC_malloc(16) where GC_all_interior_pointers == 1
++        GC_size_map[16] == 6 which converted to bytes is 24.
++        Following with GC_realloc(x, 20) will result in a BZERO
++        since even though the realloc'ed size is larger!
++     */
++     size_t orig_lb = lb;
++     lb = lb + GC_VALGRIND_RED_ZONE;
++ #endif
+      h = HBLKPTR(p);
+      hhdr = HDR(h);
+      sz = hhdr -> hb_sz;
+***************
+*** 111,128 ****
+--- 121,154 ----
+  	      /* Clear unneeded part of object to avoid bogus pointer */
+  	      /* tracing.					      */
+  	      /* Safe for stubborn objects.			      */
++ #if defined(GC_VALGRIND_SUPPORT)
++ 	        VALGRIND_MAKE_READABLE(p, orig_lb);
++ 	        BZERO(((ptr_t)p) + orig_lb - GC_VALGRIND_RED_ZONE, orig_sz - lb);
++ #else
+  	        BZERO(((ptr_t)p) + lb, orig_sz - lb);
++ #endif
+  	    }
+  	    return(p);
+  	} else {
+  	    /* shrink */
++ #if defined(GC_VALGRIND_SUPPORT)
++ 	      GC_PTR result =
++ 	      		GC_generic_or_special_malloc((word)orig_lb, obj_kind);
++ #else
+  	      GC_PTR result =
+  	      		GC_generic_or_special_malloc((word)lb, obj_kind);
++ #endif
+  
+  	      if (result == 0) return(0);
+  	          /* Could also return original object.  But this 	*/
+  	          /* gives the client warning of imminent disaster.	*/
++ #if defined(GC_VALGRIND_SUPPORT)
++ 	      /* conservative since the actual original size is not available */
++ 	      VALGRIND_MAKE_READABLE(p, sz - GC_VALGRIND_RED_ZONE);
++ 	      BCOPY(p, result, sz - GC_VALGRIND_RED_ZONE);
++ #else
+  	      BCOPY(p, result, lb);
++ #endif
+  #	      ifndef IGNORE_FREE
+  	        GC_free(p);
+  #	      endif
+***************
+*** 134,140 ****
+--- 160,173 ----
+  	  	GC_generic_or_special_malloc((word)lb, obj_kind);
+  
+  	  if (result == 0) return(0);
++ #if defined(GC_VALGRIND_SUPPORT)
++ 	      /* conservative since the actual original size is not available */
++ 	  VALGRIND_MAKE_READABLE(p, sz - GC_VALGRIND_RED_ZONE);
++ 	  BCOPY(p, result, sz - GC_VALGRIND_RED_ZONE);
++ #else
+  	  BCOPY(p, result, sz);
++ #endif
++ 
+  #	  ifndef IGNORE_FREE
+  	    GC_free(p);
+  #	  endif
+Index: gc6.3/mark.c
+===================================================================
+RCS file: /gemelli3/chapelroot/chapel/third-party/boehmgc/gc6.3/mark.c,v
+retrieving revision 1.1
+diff -c -r1.1 mark.c
+*** gc6.3/mark.c	29 Jul 2004 17:08:10 -0000	1.1
+--- gc6.3/mark.c	1 Mar 2005 18:08:15 -0000
+***************
+*** 137,144 ****
+--- 137,150 ----
+  {
+  #   ifdef USE_MARK_BYTES
+        BZERO(hhdr -> hb_marks, MARK_BITS_SZ);
++ #     ifdef GC_VALGRIND_SUPPORT
++         BZERO(hhdr -> hb_alloced, MARK_BITS_SZ);
++ #     endif
+  #   else
+        BZERO(hhdr -> hb_marks, MARK_BITS_SZ*sizeof(word));
++ #     ifdef GC_VALGRIND_SUPPORT
++         BZERO(hhdr -> hb_alloced, MARK_BITS_SZ*sizeof(word));
++ #     endif
+  #   endif
+  }
+  
+***************
+*** 209,214 ****
+--- 215,253 ----
+      return(mark_bit_from_hdr(hhdr, word_no));
+  }
+  
++ #ifdef GC_VALGRIND_SUPPORT
++ /* Slow but general routines for setting/clearing/asking about mark bits */
++ void GC_set_alloced_bit(p)
++ ptr_t p;
++ {
++     register struct hblk *h = HBLKPTR(p);
++     register hdr * hhdr = HDR(h);
++     register int word_no = (word *)p - (word *)h;
++     
++     set_mark_bit_from_hdr(hhdr, word_no);
++ }
++ 
++ void GC_clear_alloced_bit(p)
++ ptr_t p;
++ {
++     register struct hblk *h = HBLKPTR(p);
++     register hdr * hhdr = HDR(h);
++     register int word_no = (word *)p - (word *)h;
++     
++     clear_mark_bit_from_hdr(hhdr, word_no);
++ }
++ 
++ GC_bool GC_is_alloced(p)
++ ptr_t p;
++ {
++     register struct hblk *h = HBLKPTR(p);
++     register hdr * hhdr = HDR(h);
++     register int word_no = (word *)p - (word *)h;
++     
++     return(mark_bit_from_hdr(hhdr, word_no));
++ }
++ #endif
++ 
+  
+  /*
+   * Clear mark bits in all allocated heap blocks.  This invalidates
+Index: gc6.3/os_dep.c
+===================================================================
+RCS file: /gemelli3/chapelroot/chapel/third-party/boehmgc/gc6.3/os_dep.c,v
+retrieving revision 1.1
+diff -c -r1.1 os_dep.c
+*** gc6.3/os_dep.c	29 Jul 2004 17:08:13 -0000	1.1
+--- gc6.3/os_dep.c	1 Mar 2005 18:08:17 -0000
+***************
+*** 1581,1586 ****
+--- 1581,1590 ----
+      result = mmap(last_addr, bytes, PROT_READ | PROT_WRITE | OPT_PROT_EXEC,
+  		  GC_MMAP_FLAGS | OPT_MAP_ANON, zero_fd, 0/* offset */);
+      if (result == MAP_FAILED) return(0);
++ #   if defined(GC_VALGRIND_SUPPORT)
++     /* Tell valgrind that this memory is not yet accessible. */
++     VALGRIND_MAKE_NOACCESS(result, bytes);
++ #   endif
+      last_addr = (ptr_t)result + bytes + GC_page_size - 1;
+      last_addr = (ptr_t)((word)last_addr & ~(GC_page_size - 1));
+  #   if !defined(LINUX)
+Index: gc6.3/reclaim.c
+===================================================================
+RCS file: /gemelli3/chapelroot/chapel/third-party/boehmgc/gc6.3/reclaim.c,v
+retrieving revision 1.1
+diff -c -r1.1 reclaim.c
+*** gc6.3/reclaim.c	29 Jul 2004 17:08:15 -0000	1.1
+--- gc6.3/reclaim.c	1 Mar 2005 18:08:18 -0000
+***************
+*** 350,355 ****
+--- 350,362 ----
+  			*p++ = 0;
+  		      }
+  #		    endif
++ #if defined(GC_VALGRIND_SUPPORT)
++ 		      if (GC_is_alloced(list)) {
++ 			VALGRIND_FREELIKE_BLOCK(list, GC_VALGRIND_RED_ZONE);
++ 			GC_clear_alloced_bit(list);
++ 		      }
++ 		      
++ #endif
+  	    }
+  	    word_no += sz;
+  	}
+***************
+*** 482,487 ****
+--- 489,497 ----
+  		/* object is available - put on list */
+  		    obj_link(p) = list;
+  		    list = ((ptr_t)p);
++ #if defined(GC_VALGRIND_SUPPORT)
++ 		    //VALGRIND_FREELIKE_BLOCK(list, GC_VALGRIND_RED_ZONE);
++ #endif
+  	    }
+  	    p += sz;
+  	    word_no += sz;
+***************
+*** 672,678 ****
+      GC_remove_protection(hbp, 1, (hhdr)->hb_descr == 0 /* Pointer-free? */);
+      if (init) {
+        switch(sz) {
+! #      if !defined(SMALL_CONFIG) && !defined(USE_MARK_BYTES)
+          case 1:
+  	    /* We now issue the hint even if GC_nearly_full returned	*/
+  	    /* DONT_KNOW.						*/
+--- 682,688 ----
+      GC_remove_protection(hbp, 1, (hhdr)->hb_descr == 0 /* Pointer-free? */);
+      if (init) {
+        switch(sz) {
+! #      if !defined(SMALL_CONFIG) && !defined(USE_MARK_BYTES) && !defined(GC_VALGRIND_SUPPORT)
+          case 1:
+  	    /* We now issue the hint even if GC_nearly_full returned	*/
+  	    /* DONT_KNOW.						*/
+***************
+*** 692,698 ****
+      } else {
+        GC_ASSERT((hhdr)->hb_descr == 0 /* Pointer-free block */);
+        switch(sz) {
+! #      if !defined(SMALL_CONFIG) && !defined(USE_MARK_BYTES)
+          case 1:
+              result = GC_reclaim1(hbp, hhdr, list COUNT_ARG);
+              break;
+--- 702,708 ----
+      } else {
+        GC_ASSERT((hhdr)->hb_descr == 0 /* Pointer-free block */);
+        switch(sz) {
+! #      if !defined(SMALL_CONFIG) && !defined(USE_MARK_BYTES) && !defined(GC_VALGRIND_SUPPORT)
+          case 1:
+              result = GC_reclaim1(hbp, hhdr, list COUNT_ARG);
+              break;
+Index: gc6.3/include/private/gc_priv.h
+===================================================================
+RCS file: /gemelli3/chapelroot/chapel/third-party/boehmgc/gc6.3/include/private/gc_priv.h,v
+retrieving revision 1.1
+diff -c -r1.1 gc_priv.h
+*** gc6.3/include/private/gc_priv.h	29 Jul 2004 17:08:49 -0000	1.1
+--- gc6.3/include/private/gc_priv.h	1 Mar 2005 18:08:19 -0000
+***************
+*** 19,24 ****
+--- 19,34 ----
+  # ifndef GC_PRIVATE_H
+  # define GC_PRIVATE_H
+  
++ #define GC_VALGRIND_SUPPORT
++ 
++ #if defined(GC_VALGRIND_SUPPORT)
++ #define GC_VALGRIND_RED_ZONE		8
++ #endif
++ 
++ # if defined(GC_VALGRIND_SUPPORT)
++ #  include "valgrind/memcheck.h"
++ # endif
++ 
+  #if defined(mips) && defined(SYSTYPE_BSD) && defined(sony_news)
+      /* sony RISC NEWS, NEWSOS 4 */
+  #   define BSD_TIME
+***************
+*** 227,233 ****
+  # define EXTRA_BYTES 0
+  #endif
+  
+- 
+  # ifndef LARGE_CONFIG
+  #   define MINHINCR 16	 /* Minimum heap increment, in blocks of HBLKSIZE  */
+  			 /* Must be multiple of largest page size.	   */
+--- 237,242 ----
+***************
+*** 711,716 ****
+--- 720,728 ----
+  #   ifdef USE_MARK_BYTES
+        union {
+          char _hb_marks[MARK_BITS_SZ];
++ #ifdef GC_VALGRIND_SUPPORT
++         char _hb_alloced[MARK_BITS_SZ];
++ #endif
+  			    /* The i'th byte is 1 if the object 	*/
+  			    /* starting at word 2i is marked, 0 o.w.	*/
+  	word dummy;	/* Force word alignment of mark bytes. */
+***************
+*** 725,730 ****
+--- 737,745 ----
+  			    /* Unused bits are invalid, and are 	    */
+  			    /* occasionally set, e.g for uncollectable	    */
+  			    /* objects.					    */
++ #ifdef GC_VALGRIND_SUPPORT
++       word hb_alloced[MARK_BITS_SZ];
++ #endif
+  #   endif /* !USE_MARK_BYTES */
+  };
+  
+***************
+*** 1254,1259 ****
+--- 1269,1279 ----
+  # define mark_bit_from_hdr(hhdr,n) ((hhdr)->hb_marks[(n) >> 1])
+  # define set_mark_bit_from_hdr(hhdr,n) ((hhdr)->hb_marks[(n)>>1]) = 1
+  # define clear_mark_bit_from_hdr(hhdr,n) ((hhdr)->hb_marks[(n)>>1]) = 0
++ #  ifdef GC_VALGRIND_SUPPORT
++ #    define alloced_bit_from_hdr(hhdr,n) ((hhdr)->hb_alloced[(n) >> 1])
++ #    define set_alloced_bit_from_hdr(hhdr,n) ((hhdr)->hb_alloced[(n)>>1]) = 1
++ #    define clear_alloced_bit_from_hdr(hhdr,n) ((hhdr)->hb_alloced[(n)>>1]) = 0
++ #  endif
+  #else /* !USE_MARK_BYTES */
+  # define mark_bit_from_hdr(hhdr,n) (((hhdr)->hb_marks[divWORDSZ(n)] \
+  			    >> (modWORDSZ(n))) & (word)1)
+***************
+*** 1262,1267 ****
+--- 1282,1296 ----
+  				    (word)1 << modWORDSZ(n))
+  # define clear_mark_bit_from_hdr(hhdr,n) (hhdr)->hb_marks[divWORDSZ(n)] \
+  				&= ~((word)1 << modWORDSZ(n))
++ #  ifdef GC_VALGRIND_SUPPORT
++ #    define alloced_bit_from_hdr(hhdr,n) (((hhdr)->hb_alloced[divWORDSZ(n)] \
++ 			    >> (modWORDSZ(n))) & (word)1)
++ #    define set_alloced_bit_from_hdr(hhdr,n) \
++ 			    OR_WORD((hhdr)->hb_alloced+divWORDSZ(n), \
++ 				    (word)1 << modWORDSZ(n))
++ #     define clear_alloced_bit_from_hdr(hhdr,n) (hhdr)->hb_alloced[divWORDSZ(n)] \
++ 				&= ~((word)1 << modWORDSZ(n))
++ #  endif
+  #endif /* !USE_MARK_BYTES */
+  
+  /* Important internal collector routines */
