@@ -8548,3 +8548,61 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/test/flowanalysis/jplevyak/: cs3.good cs4.good 
 
+---------------------------------------------------------------------------
+
+10/01/04 15:18:03 -- shannon
+
+Log message:
+	Added functionality to the regression test harness so
+	that now the tester can supply a test.stdin file that
+	is piped into stdin when running the executable created
+	from the test.chpl file.  (Brad added this, I typed.)
+	
+	Generated read statement for ints and floats, and added
+	a test that uses the new test.stdin functionality.
+	Added the read() function to the prelude.chpl file.
+	
+	Changed the WriteCall class bool data member to an
+	enumeration to accommodate the added possibility of the
+	instance being a read.  Changed the name of the class
+	to IOCall.
+	
+	Changed several if-else statements to switch statements
+	to accommodate the added read.
+	
+	Added read versions of the default formats in
+	chpltypes.h, and changed the variable names to reflect
+	whether a read or write format.  Added a bool argument
+	to the Type::codegenDefaultFormat methods.  Changed the
+	default format of domains to a write default format for
+	now, since we cannot read domains.
+	
+	In IOCall::codegen changed the way that the argument list
+	is traversed so that the list pointer is advanced only
+	within the method.
+	
+	Removed extra semicolons generated at the end of certain
+	IO statements.
+	
+	Recklessly modified some of John's code using the
+	cut-and-paste method.  The read_transfer_function was
+	especially scary looking.  John, you might want to take
+	a peek at analysis.cpp.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h type.h 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/runtime/include/: chplio.h chpltypes.h domain.h 
+	chapel/runtime/src/: chplio.c 
+	chapel/test/: start_test sub_test 
+	chapel/test/flowanalysis/newast/: noop.good 
+Added files:
+	chapel/test/flowanalysis/jplevyak/constants/: .cvsignore 
+	chapel/test/flowanalysis/jplevyak/loop/: .cvsignore 
+	chapel/test/trivial/shannon/: readWriteFloatInt.chpl 
+	                              readWriteFloatInt.good 
+	                              readWriteFloatInt.stdin 
+
