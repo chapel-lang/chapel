@@ -12840,3 +12840,55 @@ Modified files:
 	                                  writen.good writetwo.good 
 	chapel/test/parsing/jplevyak/: module.good 
 
+---------------------------------------------------------------------------
+
+12/23/04 15:04:19 -- deitz
+
+Log message:
+	Moved resolution of ParenOpExpr function symbols after analysis.
+	Previously only resolution of MemberAccess symbols was done after
+	analysis.  In this post-analysis resolution, analysis's call_info
+	function is called to determine which function to resolve to.  This
+	supports overloading of functions.  For example, the test
+	test_overload_function1.chpl now works.
+	
+	Moved around a few test cases motivating type variables,
+	instantiation, and cloning.  These are now in a future directory,
+	though the overloading test is set to run.
+	
+	Made a slight change to call_info, directed by John, so that the
+	interface now only requires a ParenOpExpr, not a ParenOpExpr and the
+	containing function.  This is because the containing function can be
+	determined from the ParenOpExpr (it's statement's parentSymbol (which
+	is hopefullly a function and not a class--no function calls in class
+	definitions)).
+	
+	This checkin breaks one test:
+	[Error matching compiler output for trivial/deitz/test_write_return]
+	Here the problem is that we're not resolving this function until after
+	analysis.  Still, analysis should be able to give us the type?  I'm
+	going to look for this bug, but I'm checking in for help.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/traversals/: cleanup.cpp resolveSymbols.cpp 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function1.good 
+	                                         test_clone_function2.good 
+	                                         test_overload_function1.good 
+	chapel/test/types/type_variables/deitz/future/: NOTEST 
+	                                                test_clone_function3.chpl 
+	                                                test_typevar_function1.chpl 
+	                                                test_typevar_function2.chpl 
+	                                                test_typevar_function3.chpl 
+	                                                test_typevar_function4.chpl 
+Removed files:
+	chapel/test/types/type_variables/deitz/: NOTEST 
+	                                         test_clone_function3.chpl 
+	                                         test_typevar_function1.chpl 
+	                                         test_typevar_function2.chpl 
+	                                         test_typevar_function3.chpl 
+	                                         test_typevar_function4.chpl 
+
