@@ -7318,3 +7318,29 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+09/14/04 17:44:24 -- bradc
+
+Log message:
+	Checking in a small change to symtab.cpp in which member
+	accesses which are unresolvable without help from the
+	low-level analysis are made UseBeforeDef symbols rather
+	than unadorned symbols as they were before (note to self:
+	should really change this name to UnresolvedSymbol).
+	
+	Also checked a case into the test/Share directory for
+	John to look at -- it's a case where I don't/can't
+	do the resolution, so leave the field as a UseBeforeDef
+	symbol
+	
+	(note that when running in the current compiler,
+	a bunch of stuff is generated as integers incorrectly,
+	because of all my hacks which say "if type analysis
+	hasn't run, assume everything is an integer").
+
+Modified files:
+	chapel/compiler/AST/: symtab.cpp 
+Added files:
+	chapel/test/Share/: ambiguousclass.chpl 
+
