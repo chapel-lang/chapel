@@ -12612,3 +12612,19 @@ Added files:
 	                                         test_typevar_function3.chpl 
 	                                         test_typevar_function4.chpl 
 
+---------------------------------------------------------------------------
+
+12/22/04 11:59:00 -- deitz
+
+Log message:
+	Moved a few of the method tests that used to fail with analysis but now don't out of the future directory.
+
+Added files:
+	chapel/test/classes/deitz/: test_method4.chpl test_method4.good 
+	                            test_method5.chpl test_method5.good 
+	                            test_method6.chpl test_method6.good 
+Removed files:
+	chapel/test/classes/deitz/future/: test_method4.chpl 
+	                                   test_method5.chpl 
+	                                   test_method6.chpl 
+
