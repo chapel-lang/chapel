@@ -17064,3 +17064,18 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_integer_3d.chpl 
 	                           test_array_integer_3d.good 
 
+---------------------------------------------------------------------------
+
+02/09/05 12:20:53 -- jplevyak
+
+Log message:
+	Fix handling of constants: constants were requiring coersion wrappers.
+	Changed .v test cases so that they would not result in boxing (to be like Chapel).
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp pattern.cpp 
+	chapel/compiler/vparser/: parse_ast.cpp 
+	chapel/test/flowanalysis/jplevyak/: classvar.good classvar.v 
+	                                    tuples.good tuples.v 
+	chapel/test/parsing/jplevyak/: tuples.good tuples.v 
+
