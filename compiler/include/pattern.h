@@ -80,15 +80,16 @@ class Patterns : public gc {
 class Match : public gc {
  public:
   Fun *fun;
-  Map<MPosition *, AType *> all_filters;
-  Map<MPosition *, AType *> filters;
+  Map<MPosition *, AVar *> actuals;
+  Map<MPosition *, Sym *> formal_types;
+  Map<MPosition *, AType *> all_filters; // point-wise and includes named arguments
+  Map<MPosition *, AType *> filters;     // positional-only and takes into account all arguments
   Map<MPosition *, MPosition *> named_to_positional;
   Map<MPosition *, MPosition *> actual_to_formal_position;
   Map<MPosition *, MPosition *> formal_to_actual_position;
-  Map<MPosition *, AVar *> actuals;
   Vec<MPosition *> default_args;
-  Vec<MPosition *> generic_args;
-  Vec<MPosition *> pointwise_args;
+  Map<Sym *, Sym *> generic_substitutions;
+  Map<MPosition *, Sym *> pointwise_substitutions;
   int partial;
 
   Match(Fun *afun) : fun(afun), partial(0) {assert(afun);}
