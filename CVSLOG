@@ -9560,3 +9560,39 @@ Modified files:
 	                                     mvm-seq.chpl 
 	chapel/test/trivial/shannon/: compSampler.good 
 
+---------------------------------------------------------------------------
+
+11/15/04 17:11:57 -- deitz
+
+Log message:
+	Renamed all tokens in the parser so that they begin with a "T" which
+	stands for either token, terminal, or terminal token.  This change
+	will let us avoid name space collisions later and makes it easier to
+	read and work with the parser.
+	
+	Added all single-character tokens to the lexer.  We should eventually
+	remove the catch-all "." case but I left this in so that a bug will
+	regress (see below).
+	
+	Added the keyword "call" to the language.  This is optional and may
+	precede a function call at the statement level.
+	
+	Refactored how "by" is handled in the parser.  It is now not
+	associated with a range.  A range is an expression and it is already
+	associated with an expression.
+	
+	With this checkin, the number of shift-reduce errors has fallen to 123
+	from 185.
+	
+	This checkin seems to uncover a strange bug in the test case
+	classes/bradc/trivialclass and hopefully this will regress.  When I
+	run this bug with the command /users/deitz/chapel/compiler/chpl (as is
+	done by the test system when I call it), there is the fatal error
+	"program does not type."  When I run this test just using the command
+	chpl (shorter argv[0]), it works.  When I removed the "." case from
+	the file chapel.lex (see file), I got the error in the latter case,
+	but not the former.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+
