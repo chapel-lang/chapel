@@ -9120,3 +9120,15 @@ Added files:
 	chapel/compiler/traversals/: findUnresolvedSymbols.cpp 
 	                             findUnresolvedSymbols.h 
 
+---------------------------------------------------------------------------
+
+10/21/04 09:51:36 -- shannon
+
+Log message:
+	Added a test of read of a user-defined type.
+
+Added files:
+	chapel/test/trivial/shannon/: readWriteUserType.chpl 
+	                              readWriteUserType.good 
+	                              readWriteUserType.stdin 
+
