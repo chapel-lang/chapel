@@ -478,3 +478,16 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: seq.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/13 15:48:39 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	cleaned up instance variable handling and
+	updated instance variable test case
+
+Modified files:
+	chapel/compiler/: ast.cpp clone.cpp fa.cpp prelude.chpl 
+	                  prelude.v 
+	chapel/compiler/samples/: iv.chpl 
+
