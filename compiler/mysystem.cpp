@@ -2,7 +2,13 @@
 #include <stdlib.h>
 #include "geysa.h"
 
+int printSystemCommands;
+
 int mysystem(const char* command, char* description, int ignorestatus=0) {
+  if (printSystemCommands) {
+    printf("%s\n\n", command);
+  }
+
   int status = system(command);
 
   if (status == -1) {

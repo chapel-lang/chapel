@@ -110,6 +110,10 @@
 #    and execution options for that subdirectory.  NOTE: be sure
 #    not to end the file with a linefeed -- it should simply be a
 #    list of options on the first line, followed <eof>.
+#
+#  - also added support for a LASTCOMPOPTS file that contains
+#    compiler options to be added after the source file.  Thus:
+#    ./chpl <-compopts> <COMPOPTS> source.chpl <LASTCOMPOPTS>
 # 
 #  - if the subdirectory contains a CATFILES file, then the files
 #    listed in that file will be concatenated to the end of the

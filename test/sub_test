@@ -83,6 +83,12 @@ else
     set compopts = "$COMPOPTS"
 endif
 
+if (-r ./LASTCOMPOPTS) then
+    set lastcompopts = `cat ./LASTCOMPOPTS`
+else
+    set lastcompopts = ""
+endif
+
 if (-r ./EXECOPTS) then
     set execopts = "$EXECOPTS `cat ./EXECOPTS`"
 else
@@ -107,8 +113,8 @@ foreach chplsrc ($testsrc)
     set complog = $execfile.ihgfedcba.comp.out.tmp
     set execlog = $execfile.ihgfedcba.exec.out.tmp
 
-    echo \[Executing: \"$compiler $compopts $chplsrc\"\]
-    $timedexec $timeout $compiler $compopts $chplsrc >& $complog
+    echo \[Executing: \"$compiler $compopts $chplsrc $lastcompopts\"\]
+    $timedexec $timeout $compiler $compopts $chplsrc $lastcompopts >& $complog
 
     if ( $status != 0 || $CANNOT_CREATE_EXECUTABLES_YET == 1 ) then
 	# Compile unsuccessful

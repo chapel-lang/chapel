@@ -8,4 +8,6 @@ static const int BUILD_VERSION =
 #include "../BUILD_VERSION"
 ;
 
+void get_version(char *);
+
 #endif

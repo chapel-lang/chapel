@@ -5,6 +5,8 @@
 #define EXTERN
 #include "geysa.h"
 #include "codegen.h"
+#include "files.h"
+#include "mysystem.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -36,10 +38,13 @@ static ArgumentDescription arg_desc[] = {
  {"graph_constants", ' ', "Do not Graph Constants", "T", &fgraph_constants, "CHPL_GRAPH_FUN", NULL},
  {"log_dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'l', "Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
+ {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
+ {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
    "CHPL_PARSER_VERBOSE", NULL},
  {"parser_debug", 'D', "Parser Debug Level", "+", &d_debug_level, "CHPL_PARSER_DEBUG", NULL},
  {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
+ {"print-commands", ' ', "Print Subprocess Commands", "T", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"debug", 'd', "Debug Level", "+", &debug_level, "CHPL_DEBUG", NULL},
  {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},
  {"help", 'h', "Help (show this list)", NULL, NULL, NULL, help},
@@ -93,6 +98,7 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
 #include "COPYRIGHT"
 	  );
   fprintf(stderr, "\n\n");
+  exit(0);
 }
 
 static AST *

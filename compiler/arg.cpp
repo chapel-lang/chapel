@@ -2,6 +2,7 @@
  Copyright 1994-2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #include "geysa.h"
+#include "stringutil.h"
 
 static char *SPACES = "                                                                               ";
 static char *arg_types_keys = (char *)"IPSDfF+TL";
@@ -18,8 +19,24 @@ static char *arg_types_desc[] = {
   (char *)"        "
 };
 
+
+static void 
+bad_flag(char* flag) {
+  fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
+  exit(1);
+}
+
+
+static void 
+missing_arg(char* currentFlag) {
+  fprintf(stderr, "Missing argument for flag: '%s' (use '-h' for help)\n", 
+	  currentFlag);
+  exit(1);
+}
+
+
 void 
-process_arg(ArgumentState *arg_state, int i, char ***argv) {
+process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
   char * arg = NULL;
   ArgumentDescription *desc = arg_state->desc;
   if (desc[i].type) {
@@ -32,7 +49,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv) {
       (*(int *)desc[i].location)++;
     else {
       arg = *++(**argv) ? **argv : *++(*argv);
-      if (!arg) usage(arg_state, NULL);
+      if (!arg) missing_arg(currentFlag);
       switch (type) {
         case 'I':
           *(int *)desc[i].location = atoi(arg);
@@ -59,6 +76,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv) {
   if (desc[i].pfn)
     desc[i].pfn(arg_state, arg);
 }
+
 
 void
 process_args(ArgumentState *arg_state, char **argv) {
@@ -97,7 +115,7 @@ process_args(ArgumentState *arg_state, char **argv) {
       if ((*argv)[1] == '-') {
         for (i = 0;; i++) {
           if (!desc[i].name)
-            usage(arg_state,NULL);
+	    bad_flag(*argv);
 	  if ((end = strchr((*argv)+2, '=')))
 	    len = end - ((*argv) + 2);
 	  else
@@ -105,11 +123,12 @@ process_args(ArgumentState *arg_state, char **argv) {
           if (len == (int)strlen(desc[i].name) &&
 	      !strncmp(desc[i].name,(*argv)+2, len))
 	  {
+	    char* currentFlag = glomstrings(1, *argv);
 	    if (!end)
 	      *argv += strlen(*argv) - 1;
 	    else
 	      *argv = end;
-            process_arg(arg_state, i, &argv);
+            process_arg(arg_state, i, &argv, currentFlag);
             break;
           }
         }
@@ -117,9 +136,9 @@ process_args(ArgumentState *arg_state, char **argv) {
         while (*++(*argv))
           for (i = 0;; i++) {
             if (!desc[i].name)
-              usage(arg_state, NULL);
+	      bad_flag((*argv)-1);
             if (desc[i].key == **argv) {
-              process_arg(arg_state, i, &argv);
+              process_arg(arg_state, i, &argv, (*argv)-1);
               break;
             }
           }

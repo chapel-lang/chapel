@@ -6,29 +6,46 @@
 #include "mysystem.h"
 #include "stringutil.h"
 
-static const int MAX_CHARS_PER_PID = 32;
+char executableFilename[FILENAME_MAX] = "a.out";
+char saveCDir[FILENAME_MAX] = "";
+
 static char* tmpdirname = NULL;
+static char* intDirName; // directory for intermediates; tmpdir or saveCDir
+
+static const int MAX_CHARS_PER_PID = 32;
+
 static FILE* makefile;
+static char* strippedExeFilename;
 
-char* createtmpdir(void) {
-  const char* tmpdirprefix = "/tmp/chpl-deleteme.";
 
-  pid_t mypid = getpid();
+void createtmpdir(void) {
+  char* commandExplanation;
+
+  if (strcmp(saveCDir, "") == 0) {
+    const char* tmpdirprefix = "/tmp/chpl-deleteme.";
+
+    pid_t mypid = getpid();
 #ifdef DEBUGTMPDIR
-  mypid = 0;
+    mypid = 0;
 #endif
-  char mypidstr[MAX_CHARS_PER_PID];
-  snprintf(mypidstr, MAX_CHARS_PER_PID, "%d", mypid);
 
-  tmpdirname = glomstrings(2, tmpdirprefix, mypidstr);
+    char mypidstr[MAX_CHARS_PER_PID];
+    snprintf(mypidstr, MAX_CHARS_PER_PID, "%d", mypid);
+
+    tmpdirname = glomstrings(2, tmpdirprefix, mypidstr);
+
+    intDirName = tmpdirname;
+    commandExplanation = "making temporary directory";
+  } else {
+    intDirName = saveCDir;
+    commandExplanation = "ensuring --savec directory exists";
+  }
 
   const char* mkdircommand = "mkdir ";
-  const char* redirect = "> /dev/null 2>&1";
-  const char* command = glomstrings(3, mkdircommand, tmpdirname, redirect);
+  const char* redirect = " > /dev/null 2>&1";
+  const char* command = glomstrings(3, mkdircommand, intDirName, redirect);
 
-  mysystem(command, "making temporary directory", 1);
-
-  return tmpdirname;
+  mysystem(command, commandExplanation, 1);
 }
 
 
@@ -50,9 +67,9 @@ void deletetmpdir(void) {
 }
 
 
-static char* gentmpfilename(char* filename) {
+static char* genIntFilename(char* filename) {
   char* slash = "/";
-  char* newfilename = glomstrings(3, tmpdirname, slash, filename);
+  char* newfilename = glomstrings(3, intDirName, slash, filename);
 
   return newfilename;
 }
@@ -77,7 +94,7 @@ static char* stripdirectories(char* filename) {
 static char* genoutfilename(char* infilename) {
   char* infilenamebase = stripdirectories(infilename);
   
-  char* outfilename = gentmpfilename(infilenamebase);
+  char* outfilename = genIntFilename(infilenamebase);
 
   // assumes file suffix is .chpl
   char* finalsuffix = strrchr(outfilename, '.');
@@ -116,7 +133,7 @@ void closefile(FILE* thefile) {
 
 FILE* openoutfile(char* infilename) {
   char* outfilename = genoutfilename(infilename);
-  fprintf(makefile, "\t%s \\\n", outfilename);
+  fprintf(makefile, "\t%s \\\n", stripdirectories(outfilename));
 
   return openfile(outfilename);
 }
@@ -130,20 +147,20 @@ static char* compilerdir2runtimedir(char* compilerDir) {
 }
 
 
-static void genMakefileHeader(char* srcfilename, char* compilerDir,
-			      char* binName) {
+static void genMakefileHeader(char* srcfilename, char* compilerDir) {
   char* runtimedir = compilerdir2runtimedir(compilerDir);
 
-  fprintf(makefile, "BINNAME = %s\n", binName);
+  strippedExeFilename = stripdirectories(executableFilename);
+  fprintf(makefile, "BINNAME = %s\n", strippedExeFilename);
   fprintf(makefile, "CHPLRTDIR = %s\n", runtimedir);
   fprintf(makefile, "CHPLSRC = \\\n");
 }
 
 
-FILE* openMakefile(char* srcfilename, char* compilerDir, char* binName) {
-  char* makefilename = gentmpfilename("Makefile");
+FILE* openMakefile(char* srcfilename, char* compilerDir) {
+  char* makefilename = genIntFilename("Makefile");
   makefile = openfile(makefilename);
-  genMakefileHeader(srcfilename, compilerDir, binName);
+  genMakefileHeader(srcfilename, compilerDir);
 
   return makefile;
 }
@@ -155,3 +172,15 @@ void closeMakefile(void) {
 
   closefile(makefile);
 }
+
+
+void makeAndCopyBinary(void) {
+  char* command = glomstrings(3, "cd ", intDirName, " && make");
+  mysystem(command, "compiling generated source");
+  char* fullExeName = genIntFilename(strippedExeFilename);
+
+  command = glomstrings(4, "cp ", fullExeName, " ", executableFilename);
+  mysystem(command, "copying binary to final directory");
+}
+
+

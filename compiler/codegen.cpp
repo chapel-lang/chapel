@@ -172,24 +172,9 @@ static void genHeader(FILE* outfile) {
 }
 
 
-static void make(char* tmpdirname) {
-  char* command = glomstrings(3, "cd ", tmpdirname, " && make");
-
-  mysystem(command, "compiling generated source");
-}
-
-
-static void cpbin(char* tmpdirname, char* binName) {
-  char* command = glomstrings(5, "cp ", tmpdirname, "/", binName, " .");
-
-  mysystem(command, "copying binary to final directory");
-}
-
-
 void codegen(FA* fa, char* infilename, char* compilerDir) {
-  char* tmpdirname = createtmpdir();
-  char* binName = "a.out";
-  openMakefile(infilename, compilerDir, binName);
+  createtmpdir();
+  openMakefile(infilename, compilerDir);
 
   FILE* outfile = openoutfile(infilename);
 
@@ -199,8 +184,7 @@ void codegen(FA* fa, char* infilename, char* compilerDir) {
   closefile(outfile);
   closeMakefile();
 
-  make(tmpdirname);
-  cpbin(tmpdirname, binName);
+  makeAndCopyBinary();
 
   deletetmpdir();
 }
