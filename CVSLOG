@@ -9996,3 +9996,34 @@ Modified files:
 	                                     mg-seq.chpl mg-seq.good 
 	                                     mvm-seq.chpl test.good 
 
+---------------------------------------------------------------------------
+
+11/19/04 13:05:37 -- shannon
+
+Log message:
+	A few minor changes related to my recently-committed
+	config var code.
+	
+	* Changed how I handle the case where extra characters
+	  are tacked to the value given to a config var on
+	  the command line, e.g. "-sx=123garbage".  This is
+	  now an error.
+	
+	* Added a test case where I force a hash collision of
+	  the config var's names.  I wrote a test to determine
+	  what names would collide, and then used these variable
+	  names in the chapel test.
+	
+	* Made the error messages printed for incorrectly formatted
+	  config vars more specialized.
+
+Modified files:
+	chapel/runtime/src/: config.c 
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarDashSVarEquals.good 
+Added files:
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarHashCollision.chpl 
+	                                        configVarHashCollision.execopts 
+	                                        configVarHashCollision.good 
+
