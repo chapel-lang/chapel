@@ -20602,3 +20602,18 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+03/21/05 17:00:18 -- jplevyak
+
+Log message:
+	Add support for pointwise array operations (except == and != which I am not
+	clear on).
+	Removed the .future for the basic array addition test.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_assign3.future 
+
