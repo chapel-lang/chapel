@@ -10669,3 +10669,21 @@ Modified files:
 	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
 	                               module.good tuples.good 
 
+---------------------------------------------------------------------------
+
+11/30/04 15:39:55 -- deitz
+
+Log message:
+	Added a new pass that runs after analysis and resolves symbols that
+	were not resolved before analysis.  These include methods and fields
+	in MemberAccess variables.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: resolveSymbols2.cpp 
+	                             resolveSymbols2.h 
+
