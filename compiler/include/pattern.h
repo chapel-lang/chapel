@@ -87,12 +87,13 @@ class Match : public gc {
   Map<MPosition *, MPosition *> named_to_positional;
   Map<MPosition *, MPosition *> actual_to_formal_position;
   Map<MPosition *, MPosition *> formal_to_actual_position;
+  Map<MPosition *, MPosition *> order_substitutions;
   Vec<MPosition *> default_args;
   Map<Sym *, Sym *> generic_substitutions;
   Map<MPosition *, Sym *> coercion_substitutions;
   int partial;
 
-  Match(Fun *afun) : fun(afun), partial(0) {assert(afun);}
+  Match(Fun *afun) : fun(afun), partial(0) { assert(afun); }
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
 typedef MapElem<MPosition *, AType *> MapMPositionAType;

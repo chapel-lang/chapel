@@ -253,10 +253,6 @@ ACallbacks::new_Sym(char *name) {
   return new_ASymbol(name);
 }
 
-void
-AnalysisBuildCallback::clone(BaseAST *old_ast, BaseAST *new_ast) {
-}
-
 static Fun *
 install_new_function(FnDefStmt *f) {
   Vec<Stmt *> all_stmts;
@@ -295,52 +291,50 @@ install_new_function(FnDefStmt *f) {
 }
 
 Fun *
+ACallbacks::order_wrapper(Match *m) {
+  if (!m->fun->ast) 
+    return NULL;
+  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
+  FnDefStmt *f = fndef->order_wrapper(
+    m->formal_to_actual_position.n ? &m->formal_to_actual_position : 0);
+  return install_new_function(f);
+}
+
+Fun *
 ACallbacks::coercion_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  ASTCopyContext context;
-  AnalysisBuildCallback callback;
-  callback.context = &context;
   Map<MPosition *, Symbol *> coercions;
   form_MPositionSym(s, m->coercion_substitutions) {
     Type *type = dynamic_cast<Type*>(dynamic_cast<ASymbol*>(s->value)->xsymbol);
     coercions.put(s->key, type->name);
   }
   FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
-  FnDefStmt *f = fndef->coercion_wrapper(coercions.n ? &coercions : 0, (CloneCallback*)&callback);
-  assert(f);
+  FnDefStmt *f = fndef->coercion_wrapper(coercions.n ? &coercions : 0);
   return install_new_function(f);
 }
 
-#if 0
 Fun *
-ACallbacks::build(Match *m) {
+ACallbacks::default_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  ASTCopyContext context;
-  AnalysisBuildCallback callback;
-  callback.context = &context;
+  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
+  FnDefStmt *f = fndef->default_wrapper(m->default_args.n ? &m->default_args : 0);
+  return install_new_function(f);
+}
+
+Fun *
+ACallbacks::instantiate_generic(Match *m) {
+  if (!m->fun->ast) 
+    return NULL;
   Map<Symbol *, Symbol *> substitutions;
   form_SymSym(s, m->generic_substitutions)
     substitutions.put(dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->key)->xsymbol), 
 		      dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
-  Map<MPosition *, Symbol *> coercions;
-  form_MPositionSym(s, m->coercion_substitutions) {
-    Type *type = dynamic_cast<Type*>(dynamic_cast<ASymbol*>(s->value)->xsymbol);
-    coercions.put(s->key, type->name);
-  }
   FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
-  FnDefStmt *f = fndef->coersion_wrapper(
-    //substitutions.n ? &substitutions : 0,
-    //m->default_args.n ? &m->default_args : 0,
-    coercions.n ? &coercions : 0,
-    //m->formal_to_actual_position.n ? &m->formal_to_actual_position : 0,
-    (CloneCallback*)&callback);
-  assert(f);
-  assert(0); // temporary
+  FnDefStmt *f = fndef->instantiate_generic(substitutions.n ? &substitutions : 0);
   return install_new_function(f);
 }
-#endif
 
 static void
 fixup_from_cloning(AnalysisCloneCallback *c) {

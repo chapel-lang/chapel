@@ -253,6 +253,10 @@ int
 compar_last_position(const void *ai, const void *aj) {
   MPosition *i = *(MPosition**)ai;
   MPosition *j = *(MPosition**)aj;
+  if (i->pos.n > j->pos.n)
+    return 1;
+  else if (i->pos.n < j->pos.n)
+    return -1;
   int ii = Position2int(i->pos.v[i->pos.n-1]);
   int jj = Position2int(j->pos.v[j->pos.n-1]);
   return (ii > jj) ? 1 : ((ii < jj) ? -1 : 0);
@@ -413,39 +417,96 @@ Matcher::rebuild_Match(Match *m, Fun *f) {
     m->formal_to_actual_position.put(f->base_to_default_position.get(x->key), x->value);
 }
 
-typedef Map<MPosition *, Sym*> CoercionMap;
-class CoercionCacheHashFns  {
+template <class C>
+class MapCacheHashFns  {
  public:
-  static unsigned int hash(CoercionMap *a) {
-    unsigned int h = 0, i = 0;
-    form_MPositionSym(c, *a) {
-      h += open_hash_multipliers[i++ % 256] * (uintptr_t)c->key;
-      h += open_hash_multipliers[i++ % 256] * (uintptr_t)c->value;
+  static unsigned int hash(C a) {
+    unsigned int h = 0, x = 0;
+    for (int i = 0; i < a->n; i++) if (a->v[i].key) {
+      h += open_hash_multipliers[x++ % 256] * (uintptr_t)a->v[i].key;
+      h += open_hash_multipliers[x++ % 256] * (uintptr_t)a->v[i].value;
     }
     return h;
   }
-  static int equal(CoercionMap *a, CoercionMap *b) {
-    form_MPositionSym(c, *a)
-      if (b->get(c->key) != c->value)
+  static int equal(C a, C b) {
+    for (int i = 0; i < a->n; i++)
+      if (a->v[i].key && b->get(a->v[i].key) != a->v[i].value)
 	return 0;
-    form_MPositionSym(c, *b)
-      if (a->get(c->key) != c->value)
+    for (int i = 0; i < b->n; i++)
+      if (b->v[i].key && a->get(b->v[i].key) != b->v[i].value)
 	return 0;
     return 1;
   }
 };
-static HashMap<CoercionMap *, CoercionCacheHashFns, Fun *> coercion_cache;
+typedef Map<MPosition *, Sym*> CoercionMap;
+typedef Map<Sym *, Sym*> GenericMap;
+typedef Map<MPosition *, MPosition*> OrderMap;
+static HashMap<CoercionMap *, MapCacheHashFns<CoercionMap *>, Fun *> coercion_cache;
+static HashMap<GenericMap *, MapCacheHashFns<GenericMap *>, Fun *> generic_cache;
+static HashMap<OrderMap *, MapCacheHashFns<OrderMap *>, Fun *> order_cache;
+
+class DefaultCacheHashFns  {
+ public:
+  static unsigned int hash(Vec<MPosition*> *a) {
+    unsigned int h = 0, x = 0;
+    forv_MPosition(p, *a)
+      h += open_hash_multipliers[x++ % 256] * (uintptr_t)a;
+    return h;
+  }
+  static int equal(Vec<MPosition *> *a,  Vec<MPosition *> *b) {
+    if (a->n != b->n)
+      return 0;
+    for (int i = 0; i < a->n; i++)
+      if (a->v[i] != b->v[i])
+	return 0;
+    return 1;
+  }
+};
+static HashMap<Vec<MPosition*> *, DefaultCacheHashFns, Fun *> default_cache;
 
 Fun *
 Matcher::build(Match *m, Vec<Fun *> &matches) {
-  Fun *f = coercion_cache.get(&m->coercion_substitutions);
-  if (!f)
-    f = if1->callback->coercion_wrapper(m);
+  Fun *f = m->fun;
+  if (m->generic_substitutions.n) {
+    if (!(f = generic_cache.get(&m->generic_substitutions))) {
+      f = if1->callback->instantiate_generic(m);
+      generic_cache.put(&m->generic_substitutions, f);
+    }
+  }
+  if (m->default_args.n) {
+    qsort(m->default_args.v, m->default_args.n, sizeof(void*), compar_last_position);
+    if (!(f = default_cache.get(&m->default_args))) {
+      f = if1->callback->default_wrapper(m);
+      default_cache.put(&m->default_args, f);
+    }
+  }
+  if (m->coercion_substitutions.n) {
+    if (!(f = coercion_cache.get(&m->coercion_substitutions))) {
+      f = if1->callback->coercion_wrapper(m);
+      coercion_cache.put(&m->coercion_substitutions, f);
+    }
+  }
+  int order_change = 0;
+  form_MPositionMPosition(p, m->formal_to_actual_position) {
+    if (p->key->is_numeric() && p->value->is_numeric()) {
+      if (p->key != p->value)
+	order_change = 1;
+      m->order_substitutions.put(p->key, p->value);
+      break;
+    }
+  }
+  if (order_change) {
+    if (!(f = order_cache.get(&m->order_substitutions))) {
+      f = if1->callback->order_wrapper(m);
+      order_cache.put(&m->order_substitutions, f);
+    }
+  } else
+    m->order_substitutions.clear();
   // need to loop over filters and split Match for those elements of the filter
   // at cp which do not have the same concrete type as cs, install in matchmap
   // m = *am = new match;
-  rebuild_Match(m, f);
-  coercion_cache.put(&m->coercion_substitutions, f);
+  if (f !=  m->fun)
+    rebuild_Match(m, f);
   return f;
 }
 
@@ -454,8 +515,7 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
   Vec<Fun *> new_matches, complete;
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    if (m->default_args.n || m->generic_substitutions.n || m->coercion_substitutions.n)
-      f = build(m, matches);
+    f = build(m, matches);
     if (!m->partial)
       complete.add(f);
     new_matches.add(f);

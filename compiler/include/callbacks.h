@@ -9,7 +9,10 @@ class Callbacks : public gc {
 public:
   virtual void new_LUB_type(Sym *) = 0;
   virtual Sym *new_Sym(char *name) = 0;
-  virtual Fun* coercion_wrapper(Match *) = 0;
+  virtual Fun* order_wrapper(Match *) { return 0; }
+  virtual Fun* coercion_wrapper(Match *) { return 0; }
+  virtual Fun* default_wrapper(Match *) { return 0; }
+  virtual Fun* instantiate_generic(Match *) { return 0; }
 };
 
 #endif

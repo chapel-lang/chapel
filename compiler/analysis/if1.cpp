@@ -504,8 +504,8 @@ static char*Code_kind_string[] = {
   "SUB", "MOVE", "SEND", "IF", "LABEL", "GOTO", "SEQ", "CONC", "NOP"
 };
 
-static void
-print_code(FILE *fp, Code *code, int indent, int lf = 1) {
+void
+print_code(FILE *fp, Code *code, int indent, int lf) {
   if (indent > 40)
     indent = 40;
   switch (code->kind) {
@@ -573,7 +573,7 @@ print_code(FILE *fp, Code *code, int indent, int lf = 1) {
     fputs("\n", fp);
 }
 
-static void
+void
 print_syms(FILE *fp, Vec<Sym *> *syms) {
   Sym *s;
 

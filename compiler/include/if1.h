@@ -86,5 +86,7 @@ int	is_functional(IF1 *p, Code *code);
 extern IF1 *if1;
 
 static inline Sym *new_Sym(char *name = 0) { return if1->callback->new_Sym(name); }
+void print_syms(FILE *fp, Vec<Sym *> *syms);
+void print_code(FILE *fp, Code *code, int indent, int lf = 1);
 
 #endif
