@@ -3567,3 +3567,14 @@ Modified files:
 Added files:
 	chapel/compiler/AST/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+06/21/04 09:56:24 -- bradc
+
+Log message:
+	Shannon pointed out that my Makefile no longer worked from
+	a clean state.  This should fix it.
+
+Modified files:
+	chapel/compiler/AST/: Makefile 
+
