@@ -6408,3 +6408,43 @@ Added files:
 	                                  writen.chpl writen.good 
 	                                  writetwo.chpl writetwo.good 
 
+---------------------------------------------------------------------------
+
+09/02/04 15:14:07 -- bradc
+
+Log message:
+	Added some initial support for non-empty classes.  Classes can
+	currently have bodies that are a list of statements (no filtering is
+	done to determine if the statements are legal class body elements or
+	not as of yet).  Classes that have member variables but no methods
+	are currently code generated in a rudimentary fashion that works for
+	some simple cases.
+	
+	In making this change, I hoisted the "." operator out of the
+	SpecialBinOp case (which is a placeholder of sorts for things I
+	haven't had time to deal with yet) and into a new subclass of Expr
+	called MemberAccess which takes a base Expr and a Symbol member.
+	Thus, an expression like:
+	
+	  a.x
+	
+	would have a base variable expression representing "a" and a member
+	symbol represenging "x".  Note that x's symbol is not currently shared
+	with the original symbol from the class definition because in general
+	we can't determine a's type and therefore cannot find the correct x.
+	Type inference should be able to help with this moving forward, though
+	there are some cases that could be determined without type analysis
+	(we'll see who gets to them first... :)
+	
+	Killed the BINOP_DOT enumeration as a result of this change and
+	stubbed out code to handle this case in analysis.cpp for John to fix
+	up as appropriate.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+	chapel/compiler/AST/: TODO baseAST.h chapel.lex chapel.y 
+	                      expr.cpp expr.h nils.cpp stmt.cpp 
+	                      symtab.cpp symtab.h type.cpp type.h 
+	                      verifyASTType.cpp 
+	chapel/runtime/include/: stdchpl.h 
+
