@@ -35,7 +35,7 @@
 ::n(bitwise_assignment.chpl:17) ( int64 (<unknown>:0) )
 ::n(bitwise_assignment.chpl:24) ( int64 (<unknown>:0) )
 ::n(bitwise_assignment.chpl:5) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::test: m &= n(bitwise_assignment.chpl:8) ( string (<unknown>:0) )
 ::test: m ^= n(bitwise_assignment.chpl:15) ( string (<unknown>:0) )
 ::test: m |= n(bitwise_assignment.chpl:22) ( string (<unknown>:0) )

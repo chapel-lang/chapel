@@ -56,7 +56,7 @@ type enum_element __name "enum_element" = int;
 
 // builtin data
 
-null __name "null" : (); 
+type null __name "null";
 
 // global initialization
 

@@ -18,7 +18,7 @@
 ::a(codegen_test.chpl:10) ( int64 (<unknown>:0) )
 ::foo(<unknown>:0) ( foo (<unknown>:0) )
 ::foo(codegen_test.chpl:15) ( foo (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::x is: (codegen_test.chpl:14) ( string (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::x(codegen_test.chpl:14) ( int64 (<unknown>:0) )

@@ -9,7 +9,7 @@
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__init_var2(<internal>:0) ( __init_var2 (<unknown>:0) )
 ::__init_var2(<unknown>:0) ( __init_var2 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::x(var2.chpl:2) ( int64 (<unknown>:0) )
 ::x(var2.chpl:2) ( int64 (<unknown>:0) )

@@ -38,7 +38,7 @@
 ::n(unary_plusMinus.chpl:17) ( int64 (<unknown>:0) )
 ::n(unary_plusMinus.chpl:28) ( int64 (<unknown>:0) )
 ::n(unary_plusMinus.chpl:6) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::test: +m(unary_plusMinus.chpl:9) ( string (<unknown>:0) )
 ::test: +n(unary_plusMinus.chpl:15) ( string (<unknown>:0) )
 ::test: -m(unary_plusMinus.chpl:20) ( string (<unknown>:0) )

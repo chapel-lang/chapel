@@ -36,7 +36,7 @@
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(shift_ops.chpl:23) ( int64 (<unknown>:0) )
 ::n(shift_ops.chpl:6) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::test: m << 1(shift_ops.chpl:9) ( string (<unknown>:0) )
 ::test: m >> 1(shift_ops.chpl:15) ( string (<unknown>:0) )
 ::test: n >> 1(shift_ops.chpl:21) ( string (<unknown>:0) )

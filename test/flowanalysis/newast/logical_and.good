@@ -21,7 +21,7 @@
 ::answer(logical_and.chpl:6) ( int64 (<unknown>:0) )
 ::answer(logical_and.chpl:8) ( int64 (<unknown>:0) )
 ::answer(logical_and.chpl:9) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
 ::o(logical_and.chpl:11) ( int64 (<unknown>:0) )
 ::o(logical_and.chpl:5) ( int64 (<unknown>:0) )

@@ -67,7 +67,7 @@
 ::n(compSampler.chpl:26) ( int64 (<unknown>:0) )
 ::n(compSampler.chpl:31) ( int64 (<unknown>:0) )
 ::n(compSampler.chpl:6) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
 ::o(compSampler.chpl:11) ( int64 (<unknown>:0) )
 ::o(compSampler.chpl:16) ( int64 (<unknown>:0) )

@@ -50,7 +50,7 @@
 ::no really, I did!(conditional.chpl:96) ( string (<unknown>:0) )
 ::no really, I did(conditional.chpl:24) ( string (<unknown>:0) )
 ::no really, I did(conditional.chpl:76) ( string (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::took false path for !a(conditional.chpl:67) ( string (<unknown>:0) )
 ::took false path for !b(conditional.chpl:75) ( string (<unknown>:0) )
 ::took false path for !c(conditional.chpl:83) ( string (<unknown>:0) )

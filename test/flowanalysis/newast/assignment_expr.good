@@ -25,7 +25,7 @@
 ::n(assignment_expr.chpl:11) ( int64 (<unknown>:0) )
 ::n(assignment_expr.chpl:5) ( int64 (<unknown>:0) )
 ::n(assignment_expr.chpl:8) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::o = (assignment_expr.chpl:9) ( string (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
 ::o(assignment_expr.chpl:14) ( int64 (<unknown>:0) )

@@ -20,7 +20,7 @@
 ::here is the fourth...(writen.chpl:1) ( string (<unknown>:0) )
 ::here is the second\n(writen.chpl:1) ( string (<unknown>:0) )
 ::here is the third\n(writen.chpl:1) ( string (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::th...(writen.chpl:2) ( string (<unknown>:0) )
 function __entryPoint <internal>:0
 function __initIntPrelude <internal>:0

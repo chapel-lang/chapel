@@ -9,7 +9,7 @@
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__init_deadvar(<internal>:0) ( __init_deadvar (<unknown>:0) )
 ::__init_deadvar(<unknown>:0) ( __init_deadvar (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::x is (deadvar.chpl:4) ( string (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::x(deadvar.chpl:4) ( int64 (<unknown>:0) )

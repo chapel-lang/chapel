@@ -33,7 +33,7 @@
 ::i(<unknown>:0) ( Index (<unknown>:0) )
 ::i(formatoutput.chpl:11) ( Index (<unknown>:0) )
 ::i(internal_prelude.chpl:6) ( Index (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::self(internal_prelude.chpl:6) ( (<unknown>:0) )
 ::self(internal_prelude.chpl:7) ( (<unknown>:0) )
 ::x is: (formatoutput.chpl:3) ( string (<unknown>:0) )

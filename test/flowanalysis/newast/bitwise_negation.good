@@ -24,7 +24,7 @@
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(bitwise_negation.chpl:4) ( int64 (<unknown>:0) )
 ::m(bitwise_negation.chpl:9) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::test: ~answer(bitwise_negation.chpl:13) ( string (<unknown>:0) )
 ::test: ~m(bitwise_negation.chpl:7) ( string (<unknown>:0) )
 function __entryPoint <internal>:0

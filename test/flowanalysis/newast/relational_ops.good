@@ -64,7 +64,7 @@
 ::n(relational_ops.chpl:51) ( int64 (<unknown>:0) )
 ::n(relational_ops.chpl:57) ( int64 (<unknown>:0) )
 ::n(relational_ops.chpl:8) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::o = (relational_ops.chpl:9) ( string (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
 ::o(relational_ops.chpl:27) ( int64 (<unknown>:0) )

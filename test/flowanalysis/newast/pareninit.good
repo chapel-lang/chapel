@@ -11,7 +11,7 @@
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__init_pareninit(<internal>:0) ( __init_pareninit (<unknown>:0) )
 ::__init_pareninit(<unknown>:0) ( __init_pareninit (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::x(pareninit.chpl:2) ( int64 (<unknown>:0) )
 ::y(<unknown>:0) ( int64 (<unknown>:0) )

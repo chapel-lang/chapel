@@ -32,7 +32,7 @@
 ::foo(mutrec.chpl:19) ( foo (<unknown>:0) )
 ::in bar(mutrec.chpl:11) ( string (<unknown>:0) )
 ::in foo(mutrec.chpl:2) ( string (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 function __entryPoint <internal>:0
 function __initIntPrelude <internal>:0
 function __initPrelude <internal>:0

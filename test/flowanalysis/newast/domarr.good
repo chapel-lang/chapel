@@ -35,7 +35,7 @@
 ::m(domarr.chpl:4) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(domarr.chpl:4) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::self(internal_prelude.chpl:10) ( (<unknown>:0) )
 ::self(internal_prelude.chpl:9) ( (<unknown>:0) )
 function __entryPoint <internal>:0

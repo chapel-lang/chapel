@@ -5,5 +5,5 @@ function __init vector.v:3
 function __init__ <unknown>:0
 globals
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( tuple (prelude.v:14) )
+system::null(prelude.v:59) ( null (prelude.v:59) )
 user::__init(vector.v:3) ( __init (vector.v:3) )

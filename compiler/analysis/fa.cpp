@@ -1678,9 +1678,8 @@ initialize_symbols() {
     }
   }
   // map type_syms
-  forv_Sym(s, type_syms) {
+  forv_Sym(s, type_syms) if (!s->is_meta_class) {
     forv_Sym(ss, s->subtypes) if (ss) {
-      assert(ss->type_sym);
       s->type_sym->subtypes.set_add(ss->type_sym);
     }
   }

@@ -11,6 +11,6 @@ function print prelude.v:134
 globals
 print::a(prelude.v:134) ( int32 (prelude.v:24) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( tuple (prelude.v:14) )
+system::null(prelude.v:59) ( null (prelude.v:59) )
 user::A(dispatch4.v:1) ( A (dispatch4.v:1) )
 user::__init(dispatch4.v:1) ( __init (dispatch4.v:1) )

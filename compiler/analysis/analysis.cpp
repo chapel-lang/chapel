@@ -379,6 +379,7 @@ new_sum_type(Sym *&sym, char *name, ...)  {
     ss->implements.set_add(sym);
 }
 
+#if 0
 static void
 new_global_variable(Sym *&sym, char *name) {
   if (!sym)
@@ -386,6 +387,7 @@ new_global_variable(Sym *&sym, char *name) {
   sym->global_scope = 1;
   if1_set_builtin(if1, sym, name);
 }
+#endif
 
 static void
 builtin_Symbol(Type *dt, Sym **sym, char *name) {
@@ -467,7 +469,9 @@ build_builtin_symbols() {
     if1_set_builtin(if1, sym_new_object, "new_object");
   }
   
-  new_global_variable(sym_null, "null");
+  //new_global_variable(sym_null, "null");
+  new_primitive_type(sym_null, "null");
+
   sym_init = new_sym(); // placeholder
 
   ((ASymbol*)sym_void)->xsymbol = dtVoid;

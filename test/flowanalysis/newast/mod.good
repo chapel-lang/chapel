@@ -30,7 +30,7 @@
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(mod.chpl:13) ( int64 (<unknown>:0) )
 ::n(mod.chpl:7) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( void (<unknown>:0) )
+::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::o = (mod.chpl:8) ( string (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
 ::o(mod.chpl:19) ( int64 (<unknown>:0) )

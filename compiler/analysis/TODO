@@ -3,7 +3,9 @@
 
 -- dispatch-6.v nested functions NOT in outer scope
 
-
+-- recursive entry-sets and entry-creation-sets:
+  -- restrict finding/moving to within the recursive cycle (or 'above')
+  -- try to formalize
 
 ** High Priority
 

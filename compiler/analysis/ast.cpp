@@ -160,6 +160,7 @@ make_type_sym(Sym *s) {
 static void
 make_type_syms(IF1 *i) {
   sym_anyclass->type_sym = sym_anyclass;
+  sym_anyclass->is_meta_class = 1;
   forv_Sym(s, i->allsyms) {
     if (s->type_kind) {
       if (!s->type_sym)
@@ -170,7 +171,6 @@ make_type_syms(IF1 *i) {
 
 void
 finalize_types(IF1 *i) {
-  sym_null->type = sym_void;
   unalias_implements_constraints(i);
   closure_of_implements(i);
   include_instance_variables(i);
