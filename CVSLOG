@@ -20719,3 +20719,28 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_of_record1.future 
 
+---------------------------------------------------------------------------
+
+03/22/05 11:55:08 -- jplevyak
+
+Log message:
+	Added support for destructuring tuples in assignment.
+	Added simple test cases for this for 1 and 2 levels.
+	2 levels failed, put in .future for Steve.
+	Removed .futures for 2 of the test_tuple_simpleX cases.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp 
+	                           pattern.cpp 
+	chapel/compiler/include/: fa.h geysa.h map.h 
+	chapel/test/flowanalysis/jplevyak/constants/: const.good 
+	                                              constant_folding.good 
+Added files:
+	chapel/test/types/tuple/jplevyak/: destruct-1.chpl 
+	                                   destruct-1.good 
+	                                   destruct-2.chpl 
+	                                   destruct-2.good 
+Removed files:
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.future 
+	                                test_tuple_simple2.future 
+
