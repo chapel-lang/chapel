@@ -273,5 +273,9 @@ Sym::coerce_to(Sym *to) {
       return NULL;
     }
   }
+  if (s1) {
+    if (to == sym_string)
+      return to;
+  }
   return NULL;
 }

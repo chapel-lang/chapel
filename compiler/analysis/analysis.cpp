@@ -976,18 +976,22 @@ build_builtin_symbols() {
 
   // automatic promotions
 
+  sym_bool->specializes.add(sym_int8);
   sym_int8->specializes.add(sym_int16);
   sym_int16->specializes.add(sym_int32);
   sym_int32->specializes.add(sym_int64);
 
   sym_int32->specializes.add(sym_float32);
-
-  sym_int32->specializes.add(sym_float64);
   sym_int64->specializes.add(sym_float64);
 
   sym_float32->specializes.add(sym_complex32);
   sym_float64->specializes.add(sym_complex64);
   sym_float128->specializes.add(sym_complex128);
+
+  sym_complex32->specializes.add(sym_complex64);
+  sym_complex64->specializes.add(sym_complex128);
+
+  sym_complex128->specializes.add(sym_string);
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
