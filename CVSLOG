@@ -575,3 +575,19 @@ Modified files:
 	                  driver.cpp fa.cpp fa.h fa_extras.cpp fun.cpp 
 	                  prelude.chpl prelude.v sym.h vec.cpp 
 
+---------------------------------------------------------------------------
+
+04/02/26 16:26:33 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Completely new method for handling implicit references (lvals).
+	Differentiate using the class as a function (e.g. domain(1..n)) and
+	using objects of the class as a function (e.g. Mat(1)).
+	Added mvm1.chpl
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp ast.h fa.cpp fa.h if1.cpp 
+	                  prelude.chpl var.cpp var.h 
+Added files:
+	chapel/compiler/samples/: mvm1.chpl 
+
