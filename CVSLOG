@@ -8532,3 +8532,19 @@ Modified files:
 	chapel/test/flowanalysis/jplevyak/: COMPOPTS cs4.good cs5.good 
 	                                    cs6.good 
 
+---------------------------------------------------------------------------
+
+09/27/04 13:19:13 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed a bug in cloning where the out_edge_map was not getting
+	cleared of values cached between analysis passes before cloning,
+	resulting in unstable results.
+	Added a new option -m# for preallocating memory so as to change
+	memory hash values to help find such unstable bugs.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp 
+	chapel/compiler/main/: driver.cpp 
+	chapel/test/flowanalysis/jplevyak/: cs3.good cs4.good 
+
