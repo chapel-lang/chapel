@@ -19300,3 +19300,16 @@ Added files:
 	                            noinit.good weirdinit.chpl 
 	                            weirdinit.future weirdinit.good 
 
+---------------------------------------------------------------------------
+
+03/11/05 08:37:00 -- jplevyak
+
+Log message:
+	Remove bogus error message and the .future for the test which
+	illicited it.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Removed files:
+	chapel/test/classes/bradc/: noinit.chpl 
+
