@@ -58,6 +58,7 @@ enum astType_t {
   TYPE_ARRAY,
   TYPE_USER,
   TYPE_CLASS,
+  TYPE_TUPLE,
   
   AST_TYPE_END 
 };

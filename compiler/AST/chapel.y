@@ -33,6 +33,7 @@
   DomainExpr* pdexpr;
   Stmt* stmt;
   Type* pdt;
+  TupleType* tupledt;
   Symbol* psym;
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
@@ -86,7 +87,8 @@
 %type <vt> vardecltag
 %type <pt> formaltag
 
-%type <pdt> type types domainType indexType arrayType tupleType
+%type <pdt> type domainType indexType arrayType tupleType
+%type <tupledt> tupleTypes
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
 %type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
@@ -312,18 +314,19 @@ decl:
 ;
 
 
-types:
+tupleTypes:
   type
-| types ',' type
+    { $$ = new TupleType($1); }
+| tupleTypes ',' type
     { 
-      $1->append($3);
+      $1->addType($3);
       $$ = $1;
     }
 ;
 
 
 tupleType:
-  '(' types ')'
+  '(' tupleTypes ')'
     { $$ = $2; }
 ;
 

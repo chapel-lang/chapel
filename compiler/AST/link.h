@@ -15,7 +15,7 @@ class ILink : public Loc {
   ILink(void);
 
   virtual bool isNull(void);
-  virtual void traverse(Traversal* traversal);
+  virtual void traverse(Traversal* traversal, bool atTop);
 
   virtual void print(FILE* outfile);
   virtual void printList(FILE* outfile, char* separator = ", ");

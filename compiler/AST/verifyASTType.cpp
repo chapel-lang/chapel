@@ -287,6 +287,11 @@ void VerifyASTType::preProcessType(Type* type) {
       INT_FATAL(type, "Unexpected AST type type: TYPE_CLASS");
     }
     break;
+  case TYPE_TUPLE:
+    if (typeid(*type) != typeid(TupleType)) {
+      INT_FATAL(type, "Unexpected AST type type: TYPE_TUPLE");
+    }
+    break;
   default:
     INT_FATAL(type, "Unexpected AST type type: %d\n", type->astType);
   }

@@ -26,7 +26,7 @@ class Symbol : public BaseAST {
 
   bool isNull(void);
 
-  void traverse(Traversal* traverse);
+  void traverse(Traversal* traverse, bool atTop = true);
   virtual void traverseSymbol(Traversal* traverse);
 
   void print(FILE* outfile);

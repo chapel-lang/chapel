@@ -18,14 +18,29 @@ bool Stmt::isNull(void) {
 }
 
 
-void Stmt::traverse(Traversal* traversal) {
-  traversal->preProcessStmt(this);
-  if (traversal->exploreStmts) {
+void Stmt::traverse(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  }
+
+  // expore Stmt and components
+  bool exploreThis = atTop || traversal->exploreChildStmts;
+  // BLC: While these three conditionals may seem redundant,
+  // they allow for the pre/postProcess calls to modify the
+  // explore flag for use on this statement.
+  if (exploreThis) {
+    traversal->preProcessStmt(this);
+  }
+  if (atTop || traversal->exploreChildStmts) {
     this->traverseStmt(traversal);
   }
-  traversal->postProcessStmt(this);
-  if (next && !next->isNull()) {
-    next->traverse(traversal);
+  if (exploreThis) {
+    traversal->postProcessStmt(this);
+  }
+
+  // explore siblings
+  if (traversal->exploreSiblingStmts) {
+    next->traverse(traversal, atTop);
   }
 }
 
@@ -71,8 +86,8 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
 
 
 void VarDefStmt::traverseStmt(Traversal* traversal) {
-  var->traverse(traversal);
-  init->traverse(traversal);
+  var->traverse(traversal, false);
+  init->traverse(traversal, false);
 }
 
 
@@ -215,7 +230,7 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 
 
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
-  type->traverse(traversal);
+  type->traverse(traversal, false);
 }
 
 
@@ -252,7 +267,7 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 
 
 void FnDefStmt::traverseStmt(Traversal* traversal) {
-  fn->traverse(traversal);
+  fn->traverse(traversal, false);
 }
 
 
@@ -307,7 +322,7 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 
 
 void ExprStmt::traverseStmt(Traversal* traversal) {
-  expr->traverse(traversal);
+  expr->traverse(traversal, false);
 }
 
 
@@ -355,7 +370,7 @@ BlockStmt::BlockStmt(Stmt* init_body) :
 
 
 void BlockStmt::traverseStmt(Traversal* traversal) {
-  body->traverse(traversal);
+  body->traverse(traversal, false);
 }
 
 
@@ -399,11 +414,11 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 
 void WhileLoopStmt::traverseStmt(Traversal* traversal) {
   if (isWhileDo) {
-    condition->traverse(traversal);
-    body->traverse(traversal);
+    condition->traverse(traversal, false);
+    body->traverse(traversal, false);
   } else {
-    body->traverse(traversal);
-    condition->traverse(traversal);
+    body->traverse(traversal, false);
+    condition->traverse(traversal, false);
   }
 }
 
@@ -464,9 +479,9 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
 
 
 void ForLoopStmt::traverseStmt(Traversal* traversal) {
-  index->traverse(traversal);
-  domain->traverse(traversal);
-  body->traverse(traversal);
+  index->traverse(traversal, false);
+  domain->traverse(traversal, false);
+  body->traverse(traversal, false);
 }
 
 
@@ -549,9 +564,9 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
 
 
 void CondStmt::traverseStmt(Traversal* traversal) {
-  condExpr->traverse(traversal);
-  thenStmt->traverse(traversal);
-  elseStmt->traverse(traversal);
+  condExpr->traverse(traversal, false);
+  thenStmt->traverse(traversal, false);
+  elseStmt->traverse(traversal, false);
 }
 
 

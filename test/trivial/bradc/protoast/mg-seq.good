@@ -139,7 +139,7 @@ forall ioff in IDom {
 }
 
 
-function norm2u3(inout R: ???): float{
+function norm2u3(inout R: ???): (float, float){
 const rnm2: ??? = sqrt((reduce by sum (R**2)/((nx*ny)*nz)));
 const rnmu: ??? = reduce by max abs(R);
 

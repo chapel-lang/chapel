@@ -19,7 +19,7 @@ class Type : public BaseAST {
 
   bool isNull(void);
 
-  void traverse(Traversal* traversal);
+  void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseType(Traversal* traversal);
 
   virtual int rank(void);
@@ -143,6 +143,18 @@ class ClassType : public Type {
   int getTypes(Vec<BaseAST *> &asts);
 };
 
+
+class TupleType : public Type {
+ public:
+  Vec<Type*> components;
+
+  TupleType(Type* init_type);
+  void addType(Type* additionalType);
+
+  void traverseType(Traversal* traversal);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
 
 
 extern Type* dtUnknown;

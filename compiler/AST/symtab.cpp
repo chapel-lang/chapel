@@ -26,11 +26,7 @@ SymLink::SymLink(Symbol* init_pSym) :
 
 
 void SymLink::traverse(Traversal* traversal) {
-  traversal->preProcessSymbol(pSym);
-  traversal->postProcessSymbol(pSym);
-  if (next && !next->isNull()) {
-    next->traverse(traversal);
-  }
+  INT_FATAL(this, "traverse not yet implemented for SymLinks");
 }
 
 

@@ -15,7 +15,7 @@ class Stmt : public BaseAST {
 
   bool isNull(void);
 
-  void traverse(Traversal* traversal);
+  void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
 
   void codegenVarDefs(FILE* outfile);

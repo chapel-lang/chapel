@@ -14,8 +14,12 @@ bool ILink::isNull(void) {
 }
 
 
-void ILink::traverse(Traversal* traversal) {
-  INT_FATAL("Calling traverse() on an ILink");
+void ILink::traverse(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  } else {
+    INT_FATAL("Calling traverse() on an ILink");
+  }
 }
 
 

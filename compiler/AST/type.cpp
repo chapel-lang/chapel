@@ -39,14 +39,29 @@ bool Type::isNull(void) {
 }
 
 
-void Type::traverse(Traversal* traversal) {
-  traversal->preProcessType(this);
-  if (traversal->exploreTypes) {
+void Type::traverse(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  }
+
+  // expore Type and components
+  bool exploreThis = atTop || traversal->exploreChildTypes;
+  // BLC: While these three conditionals may seem redundant,
+  // they allow for the pre/postProcess calls to modify the
+  // explore flag for use on this statement.
+  if (exploreThis) {
+    traversal->preProcessType(this);
+  }
+  if (atTop || traversal->exploreChildTypes) {
     traverseType(traversal);
   }
-  traversal->postProcessType(this);
-  if (next && !next-isNull()) {
-    next->traverse(traversal);
+  if (exploreThis) {
+    traversal->postProcessType(this);
+  }
+
+  // explore siblings
+  if (traversal->exploreSiblingTypes) {
+    next->traverse(traversal, atTop);
   }
 }
 
@@ -131,10 +146,10 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 
 
 void EnumType::traverseType(Traversal* traversal) {
-  bool saveTraverseSymbols = traversal->exploreSymbols;
-  traversal->exploreSymbols = false;
-  valList->traverse(traversal);
-  traversal->exploreSymbols = saveTraverseSymbols;
+  bool saveTraverseChildSymbols = traversal->exploreChildSymbols;
+  traversal->exploreChildSymbols = false;
+  valList->traverse(traversal, false);
+  traversal->exploreChildSymbols = saveTraverseChildSymbols;
 }
 
 
@@ -315,8 +330,8 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 
 
 void ArrayType::traverseType(Traversal* traversal) {
-  domain->traverse(traversal);
-  elementType->traverse(traversal);
+  domain->traverse(traversal, false);
+  elementType->traverse(traversal, false);
 }
 
 
@@ -366,7 +381,7 @@ UserType::UserType(Type* init_definition) :
 
 
 void UserType::traverse(Traversal* traversal) {
-  definition->traverse(traversal);
+  definition->traverse(traversal, false);
 }
 
 
@@ -405,6 +420,42 @@ int
 ClassType::getTypes(Vec<BaseAST *> &asts) {
   asts.add(parentClass);
   return asts.n;
+}
+
+
+TupleType::TupleType(Type* firstType) :
+  Type(TYPE_TUPLE)
+{
+  components.add(firstType);
+}
+
+
+void TupleType::addType(Type* additionalType) {
+  components.add(additionalType);
+}
+
+
+void TupleType::traverseType(Traversal* traversal) {
+  for (int i=0; i<components.n; i++) {
+    components.v[i]->traverse(traversal);
+  }
+}
+
+
+void TupleType::print(FILE* outfile) {
+  fprintf(outfile, "(");
+  for (int i=0; i<components.n; i++) {
+    if (i) {
+      fprintf(outfile, ", ");
+    }
+    components.v[i]->print(outfile);
+  }
+  fprintf(outfile, ")");
+}
+
+
+void TupleType::codegen(FILE* outfile) {
+  INT_FATAL(this, "Cannot codegen Tuple types yet");
 }
 
 

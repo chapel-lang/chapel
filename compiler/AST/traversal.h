@@ -8,10 +8,14 @@ class Type;
 
 class Traversal {
  public:
-  bool exploreStmts;
-  bool exploreExprs;
-  bool exploreSymbols;
-  bool exploreTypes;
+  bool exploreSiblingStmts;
+  bool exploreChildStmts;
+  bool exploreSiblingExprs;
+  bool exploreChildExprs;
+  bool exploreSiblingSymbols;
+  bool exploreChildSymbols;
+  bool exploreSiblingTypes;
+  bool exploreChildTypes;
 
   Traversal(void);
 

@@ -71,14 +71,29 @@ bool Expr::isNull(void) {
 }
 
 
-void Expr::traverse(Traversal* traversal) {
-  traversal->preProcessExpr(this);
-  if (traversal->exploreExprs) {
+void Expr::traverse(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  }
+
+  // explore Expr and components
+  bool exploreThis = atTop || traversal->exploreChildExprs;
+  // BLC: While these three conditionals may seem redundant,
+  // they allow for the pre/postProcess calls to modify the
+  // explore flag for use on this statement.
+  if (exploreThis) {
+    traversal->preProcessExpr(this);
+  }
+  if (atTop || traversal->exploreChildExprs) {
     this->traverseExpr(traversal);
   }
-  traversal->postProcessExpr(this);
-  if (next && !next->isNull()) {
-    next->traverse(traversal);
+  if (exploreThis) {
+    traversal->postProcessExpr(this);
+  }
+
+  // explore siblings
+  if (traversal->exploreSiblingExprs) {
+    next->traverse(traversal, atTop);
   }
 }
 
@@ -245,7 +260,7 @@ UnOp::UnOp(unOpType init_type, Expr* op) :
 
 
 void UnOp::traverseExpr(Traversal* traversal) {
-  operand->traverse(traversal);
+  operand->traverse(traversal, false);
 }
 
 
@@ -286,8 +301,8 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 
 
 void BinOp::traverseExpr(Traversal* traversal) {
-  left->traverse(traversal);
-  right->traverse(traversal);
+  left->traverse(traversal, false);
+  right->traverse(traversal, false);
 }
 
 
@@ -367,9 +382,9 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
 
 
 void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
-  lo->traverse(traversal);
-  hi->traverse(traversal);
-  str->traverse(traversal);
+  lo->traverse(traversal, false);
+  hi->traverse(traversal, false);
+  str->traverse(traversal, false);
 }
 
 
@@ -459,8 +474,8 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 
 
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
-  baseExpr->traverse(traversal);
-  argList->traverse(traversal);
+  baseExpr->traverse(traversal, false);
+  argList->traverse(traversal, false);
 }
 
 
@@ -504,8 +519,8 @@ CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
 
 
 void CastExpr::traverseExpr(Traversal* traversal) {
-  castType->traverse(traversal);
-  argList->traverse(traversal);
+  castType->traverse(traversal, false);
+  argList->traverse(traversal, false);
 }
 
 
@@ -666,9 +681,9 @@ DomainExpr::DomainExpr(Expr* init_domains, VarSymbol* init_indices) :
 
 
 void DomainExpr::traverseExpr(Traversal* traversal) {
-  indices->traverse(traversal);
-  domains->traverse(traversal);
-  forallExpr->traverse(traversal);
+  indices->traverse(traversal, false);
+  domains->traverse(traversal, false);
+  forallExpr->traverse(traversal, false);
 }
 
 
@@ -743,9 +758,9 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
 
 
 void ReduceExpr::traverseExpr(Traversal* traversal) {
-  reduceType->traverse(traversal);
-  redDim->traverse(traversal);
-  argExpr->traverse(traversal);
+  reduceType->traverse(traversal, false);
+  redDim->traverse(traversal, false);
+  argExpr->traverse(traversal, false);
 }
 
 
