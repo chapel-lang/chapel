@@ -4149,3 +4149,15 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/protoast/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+07/20/04 14:04:54 -- bradc
+
+Log message:
+	Replaced all the bad casting code that I was using to traverse links
+	with a macro implemented using dynamic casts.
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp link.h stmt.cpp symbol.cpp 
+	                      symbol.h symtab.cpp type.cpp 
+
