@@ -2388,3 +2388,15 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+04/06/01 17:20:28 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	All of trivial/bradc/arrinit now parse.
+	There are typing issues which I am going to work on next.
+
+Modified files:
+	chapel/compiler/: chpl.g prelude.chpl 
+	chapel/test/parsing/jplevyak/: mat1.good vec.good 
+
