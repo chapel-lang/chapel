@@ -11801,3 +11801,94 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/04 12:10:35 -- deitz
+
+Log message:
+	Removed symbol resolution from the parser.  When the parser encounters
+	an identifier, it creates an unresolved symbol.  These will be
+	resolved in a new pass called Cleanup.  In addition, the parser does
+	not try to resolve member symbols in dot-expressions and does not try
+	to "classify" parentheses-expressions.  These are handled in CleanUp
+	as well.  This is a large, essential change to the compiler.
+	
+	Added a new pass called Cleanup (Name change? PostParse, CleanParsing)
+	that should be run after the parser.  This pass calls a bunch of small
+	traversals enumerated in order here:
+	
+	1. ApplyWith: This traversal expands with-statements that appear in
+	   class definitions; it replaces them with the definitions in the
+	   included class.  This traversal replaces ProcessWithStatements.
+	
+	2. InsertThis: This traversal inserts "this" as the first parameter in
+	   bound functions.  This traversal replaces half of
+	   FieldsToMemberAccesses.
+	
+	3. ResolveEasy: This traversal resolves unresolved symbols that are
+	   easy to resolve, i.e., functions and members where the base has
+	   unknown type are left to analysis.
+	
+	4. SpecializeParens: This traversal changes all ParenOpExpr that are
+	   arrays to ArrayRef and changes all ParenOpExpr that are write,
+	   writeln, and read to IOCall.  Also, this traversal corrects
+	   constructors.
+	
+	5. ApplyThis: This traversal changes all references to variables and
+	   functions defined in a class within the definitions of bound
+	   functions.  They are changed to MemberAccess objects where the base
+	   is "this" and the member is the variable or function.  This
+	   traversal replaces the other half of FieldsToMemberAccesses.
+	
+	Removed the following two traversals: ProcessWithStatements and
+	FieldsToMemberAccesses.
+	
+	Added replace functionality for symbols that is similar to the replace
+	functionality for expressions.  Namely, the current symbol being
+	traversed can now be replaced using static routine
+	Symbol::replace(old, new) which replaces old with new where old can be
+	the symbol being traversed.  This replacement does not change the
+	prev, next, and parent links like expression's replacement does since
+	the links mean something altogether different for symbols.
+	
+	Added a new procedure Symboltable::lookupFromScope which looks up a
+	symbol starting from a given scope.  It is similar to
+	Symboltable::lookup which uses the current scope as a starting place.
+	It is different from Symboltable::lookupInScope which looks up a
+	symbol by only looking in a given scope.  A name change is desirable.
+	
+	Removed strange procedure ParenOpExpr::classify which used to attempt
+	to determine what a parentheses-expression was doing, be it an I/O, a
+	constructor, an array reference.  This is now done in CleanUp's
+	SpecializeParens traversal.
+	
+	Removed strange procedure Symboltable::defineMemberAccess which used
+	to attempt to resolve member symbols in dot-expressions.  This is now
+	done in CleanUp's ResolveEasy traversal.
+	
+	Removed long-gone Symboltable::defineEnumList.
+	
+	Improved fixup which now can be called with the argument "verify"
+	which asks fixup to ensure that the AST does not need to be fixed up
+	rather than actually fixing it up.  Errors are reported fatally.
+	There are currently two calls to fixup in the compiler, one before
+	cleanup and one after cleanup.  The second one should be changed to a
+	verify-fixup but insertion needs to be modestly improved: The problem
+	is that when a copied list of statements is inserted into a new place
+	in the AST, its parents are not set.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp symtab.cpp 
+	chapel/compiler/include/: expr.h symbol.h symtab.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: Makefile.share fixup.cpp fixup.h 
+	                             resolveSymbols.cpp 
+Added files:
+	chapel/compiler/traversals/: cleanup.cpp cleanup.h 
+Removed files:
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+	                             fieldsToMemberAccesses.h 
+	                             processWithStatements.cpp 
+	                             processWithStatements.h 
+
