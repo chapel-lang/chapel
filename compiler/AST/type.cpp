@@ -34,19 +34,22 @@ bool Type::isComplex(void) {
 }
 
 
-Type* Type::copy(bool clone, CloneCallback* analysis_clone) {
-  Type* new_type = copyType(clone, analysis_clone);
+Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  Type* new_type = copyType(clone, map, analysis_clone);
 
   new_type->lineno = lineno;
   new_type->filename = filename;
   if (analysis_clone) {
     analysis_clone->clone(this, new_type);
   }
+  if (map) {
+    map->put(this, new_type);
+  }
   return new_type;
 }
 
 
-Type* Type::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* Type::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   INT_FATAL(this, "Unanticipated call to Type::copyType");
   return nilType;
 }
@@ -213,13 +216,13 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 }
 
 
-Type* EnumType::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* EnumType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy = new EnumType(valList);
   copy->addName(name);
   return copy;
 
     /*
-  Symbol* newSyms = valList->copyList(clone, analysis_clone);
+  Symbol* newSyms = valList->copyList(clone, map, analysis_clone);
 
   if (typeid(*newSyms) != typeid(EnumSymbol)) {
     INT_FATAL(this, "valList is not EnumSymbol in EnumType::copyType()");
@@ -439,12 +442,12 @@ DomainType::DomainType(int init_numdims) :
 {}
 
 
-Type* DomainType::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy;
   if (parent->isNull()) {
     copy = new DomainType(numdims);
   } else {
-    copy = new DomainType(parent->copy(clone, analysis_clone));
+    copy = new DomainType(parent->copy(clone, map, analysis_clone));
   }
   copy->addName(name);
   return copy;
@@ -490,12 +493,12 @@ IndexType::IndexType(int init_numdims) :
 }
 
 
-Type* IndexType::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy;
   if (parent->isNull()) {
     copy = new IndexType(numdims);
   } else {
-    copy = new IndexType(parent->copy(clone, analysis_clone));
+    copy = new IndexType(parent->copy(clone, map, analysis_clone));
   }
   copy->addName(name);
   return copy;
@@ -526,9 +529,9 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 }
 
 
-Type* ArrayType::copyType(bool clone, CloneCallback* analysis_clone) {
-  Type* copy = new ArrayType(domain->copy(clone, analysis_clone),
-			     elementType->copy(clone, analysis_clone));
+Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  Type* copy = new ArrayType(domain->copy(clone, map, analysis_clone),
+			     elementType->copy(clone, map, analysis_clone));
   copy->addName(name);
   return copy;
 }
@@ -588,9 +591,9 @@ UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
 {}
 
 
-Type* UserType::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* UserType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy = new UserType(definition,
-			    defaultVal->copy(clone, analysis_clone));
+			    defaultVal->copy(clone, map, analysis_clone));
   copy->addName(name);
   return copy;
 }
@@ -699,16 +702,16 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 }
 
 
-Type* ClassType::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   VarSymbol* classVarSymbolsCopy =
-    dynamic_cast<VarSymbol*>(classVarSymbols->copy(clone, analysis_clone));
+    dynamic_cast<VarSymbol*>(classVarSymbols->copy(clone, map, analysis_clone));
   if (classVarSymbols && !classVarSymbolsCopy) {
     INT_FATAL(this, "Error copying class variables");
   }
   Type* copy = new ClassType(value,
 			     union_value,
 			     parentClass,
-			     constructor->copy(clone, analysis_clone),
+			     constructor->copy(clone, map, analysis_clone),
 			     classScope,
 			     embeddedFnSymbols,
 			     classVarSymbolsCopy,
@@ -926,11 +929,11 @@ void TupleType::addType(Type* additionalType) {
 }
 
 
-Type* TupleType::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   TupleType* newTupleType =
-    new TupleType(components.v[0]->copy(clone, analysis_clone));
+    new TupleType(components.v[0]->copy(clone, map, analysis_clone));
   for (int i=1; i<components.n; i++) {
-    newTupleType->addType(components.v[i]->copy(clone, analysis_clone));
+    newTupleType->addType(components.v[i]->copy(clone, map, analysis_clone));
   }
   newTupleType->addName(name);
   return newTupleType;
@@ -967,7 +970,7 @@ VariableType::VariableType() :
 {}
 
 
-Type* VariableType::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* VariableType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new VariableType();
 }
 
@@ -983,7 +986,7 @@ UnresolvedType::UnresolvedType(char* init_name) :
 }
 
 
-Type* UnresolvedType::copyType(bool clone, CloneCallback* analysis_clone) {
+Type* UnresolvedType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new UnresolvedType(copystring(name->name));
 }
 

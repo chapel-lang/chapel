@@ -32,9 +32,9 @@ class Symbol : public BaseAST {
 
   bool isNull(void);
 
-  Symbol* copyList(bool clone = false, CloneCallback* analysis_clone = NULL);
-  Symbol* copy(bool clone = false, CloneCallback* analysis_clone = NULL);
-  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
+  Symbol* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
+  Symbol* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
+  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
@@ -58,7 +58,7 @@ extern Symbol* nilSymbol;
 class UnresolvedSymbol : public Symbol {
  public:
   UnresolvedSymbol(char* init_name, char* init_cname = NULL);
-  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -75,7 +75,7 @@ class VarSymbol : public Symbol {
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
 	    Expr* init_expr = nilExpr,
 	    varType init_varClass = VAR_NORMAL, bool init_isConst = false);
-  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -95,7 +95,7 @@ class ParamSymbol : public Symbol {
 
   ParamSymbol(paramType init_intent, char* init_name, 
 	      Type* init_type = dtUnknown);
-  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -112,7 +112,7 @@ class ParamSymbol : public Symbol {
 class TypeSymbol : public Symbol {
  public:
   TypeSymbol(char* init_name, Type* init_definition);
-  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);
 };
@@ -137,10 +137,10 @@ class FnSymbol : public Symbol {
   FnSymbol(char* init_name);
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
 		 SymScope* init_paramScope, bool init_exportMe=false);
-  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void traverseDefSymbol(Traversal* traverse);
 
-  FnSymbol* clone(CloneCallback* clone_callback);
+  FnSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
   FnSymbol* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals) { return 0; }
   FnSymbol* coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions);
   FnSymbol* default_wrapper(Vec<MPosition *> *defaults) { return 0; }
@@ -162,7 +162,7 @@ class EnumSymbol : public Symbol {
   int val;
 
   EnumSymbol(char* init_name, Expr* init_init, int init_val = 0);
-  virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
+  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void traverseDefSymbol(Traversal* traverse);
   void set_values(void);
   void codegenDef(FILE* outfile);

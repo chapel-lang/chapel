@@ -185,8 +185,9 @@ AST *
 AInfo::copy_tree(ASTCopyContext* context) {
   AnalysisCloneCallback callback;
   callback.context = context;
+  Map<BaseAST*,BaseAST*> clone_map;
   FnSymbol *orig_fn = dynamic_cast<FnDefStmt*>(xast)->fn;
-  FnSymbol *new_fn = orig_fn->clone(&callback);
+  FnSymbol *new_fn = orig_fn->clone(&callback, &clone_map);
   return new_fn->defPoint->ainfo;
 }
 
@@ -407,7 +408,8 @@ ASymbol::clone(CloneCallback *callback) {
     Type *type = dynamic_cast<Type*>(xsymbol);
     TypeSymbol *type_symbol = dynamic_cast<TypeSymbol*>(type->name);
     TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(type_symbol->defPoint);
-    old_stmt->clone(c);
+    Map<BaseAST*,BaseAST*> clone_map;
+    old_stmt->clone(c, &clone_map);
     return c->context->smap.get(type_symbol->asymbol->sym);
   }
 }

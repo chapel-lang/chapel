@@ -24,30 +24,30 @@ bool Stmt::isNull(void) {
 }
 
 
-Stmt* Stmt::copyList(bool clone, CloneCallback* analysis_clone) {
-  Stmt* newStmtList = copyListInternal(clone, analysis_clone);
+Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  Stmt* newStmtList = copyListInternal(clone, map, analysis_clone);
   newStmtList->back = &newStmtList;  // in case, replaced by cleanup
   call_cleanup_ls(newStmtList);
   return newStmtList;
 }
 
 
-Stmt* Stmt::copy(bool clone, CloneCallback* analysis_clone) {
-  Stmt* new_stmt = copyInternal(clone, analysis_clone);
+Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  Stmt* new_stmt = copyInternal(clone, map, analysis_clone);
   new_stmt->back = &new_stmt;  // in case, replaced by cleanup
   call_cleanup(new_stmt);
   return new_stmt;
 }
 
 
-Stmt* Stmt::copyListInternal(bool clone, CloneCallback* analysis_clone) {
+Stmt* Stmt::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Stmt* newStmtList = nilStmt;
   Stmt* oldStmt = this;
 
   if (!oldStmt->isNull()) {
     while (oldStmt) {
       newStmtList = appendLink(newStmtList, 
-			       oldStmt->copyInternal(clone, analysis_clone));
+			       oldStmt->copyInternal(clone, map, analysis_clone));
 
       oldStmt = nextLink(Stmt, oldStmt);
     }
@@ -57,19 +57,22 @@ Stmt* Stmt::copyListInternal(bool clone, CloneCallback* analysis_clone) {
 }
 
 
-Stmt* Stmt::copyInternal(bool clone, CloneCallback* analysis_clone) {
-  Stmt* new_stmt = copyStmt(clone, analysis_clone);
+Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  Stmt* new_stmt = copyStmt(clone, map, analysis_clone);
 
   new_stmt->lineno = lineno;
   new_stmt->filename = filename;
   if (analysis_clone) {
     analysis_clone->clone(this, new_stmt);
   }
+  if (map) {
+    map->put(this, new_stmt);
+  }
   return new_stmt;
 }
 
 
-Stmt* Stmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
+Stmt* Stmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (!this->isNull()) {
     INT_FATAL(this, "copy not implemented for Stmt subclass");
   }
@@ -287,7 +290,7 @@ NoOpStmt::NoOpStmt(void) :
 {}
 
 
-Stmt* NoOpStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
+Stmt* NoOpStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new NoOpStmt();
 }
 
@@ -337,8 +340,8 @@ ClassType* WithStmt::getClass(void) {
 }
 
 
-Stmt* WithStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
-  return new WithStmt(withExpr->copyInternal(clone, analysis_clone));
+Stmt* WithStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new WithStmt(withExpr->copyInternal(clone, map, analysis_clone));
 }
 
 
@@ -365,11 +368,11 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var) :
 {}
 
 
-Stmt* VarDefStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
+Stmt* VarDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (clone) {
     return
       Symboltable::defineVarDefStmt(var, var->type,
-				    var->init->copyInternal(clone, analysis_clone), 
+				    var->init->copyInternal(clone, map, analysis_clone), 
 				    var->varClass, var->isConst);
   }
   else {
@@ -518,19 +521,19 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 {}
 
 
-Stmt* TypeDefStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
-  Type* newType = type->copy(clone, analysis_clone);
+Stmt* TypeDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  Type* newType = type->copy(clone, map, analysis_clone);
   return new TypeDefStmt(newType);
 }
 
 
-TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback) {
+TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
   TypeDefStmt* this_copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
 
   save_scope = Symboltable::setCurrentScope(this->type->name->parentScope);
-  Stmt* stmt_copy = copy(true, clone_callback);
+  Stmt* stmt_copy = copy(true, map, clone_callback);
   if (this_copy = dynamic_cast<TypeDefStmt*>(stmt_copy)) {
     this_copy->type->name->cname =
       glomstrings(3, this_copy->type->name->cname,
@@ -578,15 +581,15 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 {}
 
 
-Stmt* FnDefStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
+Stmt* FnDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (clone) {
-    FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(clone, analysis_clone));
+    FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(clone, map, analysis_clone));
     //    return new FnDefStmt(fncopy);
 
     Symboltable::startFnDef(fncopy);
-    Symbol* newformals = fn->formals->copyList(clone, analysis_clone);
+    Symbol* newformals = fn->formals->copyList(clone, map, analysis_clone);
     return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
-				    fn->body->copyListInternal(clone, analysis_clone),
+				    fn->body->copyListInternal(clone, map, analysis_clone),
 				    fn->exportMe);
 
   }
@@ -683,8 +686,8 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 }
 
 
-Stmt* ExprStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
-  return new ExprStmt(expr->copyInternal(clone, analysis_clone));
+Stmt* ExprStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new ExprStmt(expr->copyInternal(clone, map, analysis_clone));
 }
 
 
@@ -720,8 +723,8 @@ ReturnStmt::ReturnStmt(Expr* retExpr) :
 }
 
 
-Stmt* ReturnStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
-  return new ReturnStmt(expr->copyInternal(clone, analysis_clone));
+Stmt* ReturnStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new ReturnStmt(expr->copyInternal(clone, map, analysis_clone));
 }
 
 
@@ -770,9 +773,9 @@ void BlockStmt::setBlkScope(SymScope* init_blkScope) {
 }
 
 
-Stmt* BlockStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
+Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Symboltable::pushScope(SCOPE_LOCAL);
-  Stmt* body_copy = body->copyListInternal(true, analysis_clone);
+  Stmt* body_copy = body->copyListInternal(true, map, analysis_clone);
   SymScope* block_scope = Symboltable::popScope();
   BlockStmt* block_copy = new BlockStmt(body_copy);
   block_copy->setBlkScope(block_scope);
@@ -822,8 +825,8 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 }
 
 
-Stmt* WhileLoopStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
-  return new WhileLoopStmt(isWhileDo, condition->copyInternal(clone, analysis_clone), body->copyInternal(clone, analysis_clone));
+Stmt* WhileLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new WhileLoopStmt(isWhileDo, condition->copyInternal(clone, map, analysis_clone), body->copyInternal(clone, map, analysis_clone));
 }
 
 
@@ -893,12 +896,12 @@ void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
 }
 
 
-Stmt* ForLoopStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
+Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Symboltable::pushScope(SCOPE_FORLOOP);
   VarSymbol* index_copy =
-    dynamic_cast<VarSymbol*>(index->copy(true, analysis_clone));
-  Expr* domain_copy = domain->copyInternal(true, analysis_clone);
-  Stmt* body_copy = body->copyInternal(true, analysis_clone);
+    dynamic_cast<VarSymbol*>(index->copy(true, map, analysis_clone));
+  Expr* domain_copy = domain->copyInternal(true, map, analysis_clone);
+  Stmt* body_copy = body->copyInternal(true, map, analysis_clone);
   SymScope* index_scope = Symboltable::popScope();
   ForLoopStmt* for_loop_stmt_copy =
     new ForLoopStmt(forall, index_copy, domain_copy, body_copy);
@@ -991,8 +994,8 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
 }
 
 
-Stmt* CondStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
-  return new CondStmt(condExpr->copyInternal(clone, analysis_clone), thenStmt->copyInternal(clone, analysis_clone), elseStmt->copyInternal(clone, analysis_clone));
+Stmt* CondStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new CondStmt(condExpr->copyInternal(clone, map, analysis_clone), thenStmt->copyInternal(clone, map, analysis_clone), elseStmt->copyInternal(clone, map, analysis_clone));
 }
 
 
