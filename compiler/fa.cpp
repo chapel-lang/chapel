@@ -16,6 +16,7 @@ static AType *anynum_type = 0;
 static AType *fun_type = 0;
 static AType *symbol_type = 0;
 static AType *fun_symbol_type = 0;
+static AType *anyclass_type = 0;
 
 static OpenHash<AType *, ATypeOpenHashFns> cannonical_atypes;
 static OpenHash<Setters *, SettersHashFns> cannonical_setters;
@@ -219,8 +220,10 @@ flow_vars(AVar *v, AVar *vv) {
 static CreationSet *
 creation_point(AVar *v, Sym *s) {
   CreationSet *cs = v->creation_set;
-  if (cs)
+  if (cs) {
+    assert(cs->sym == s);
     goto Ldone;
+  }
   forv_CreationSet(x, s->creators) {
     cs = x;
     if (v->contour == GLOBAL_CONTOUR) {
@@ -253,8 +256,8 @@ creation_point(AVar *v, Sym *s) {
  Ldone:
   if (v->contour_is_entry_set)
     ((EntrySet*)v->contour)->creates.set_add(cs);
-  update_in(v, make_AType(v->creation_set));
-  return v->creation_set;
+  update_in(v, make_AType(cs));
+  return cs;
 }
 
 //  all float combos become doubles
@@ -558,8 +561,12 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   if (!es->split) {
     forv_MPosition(p, e->match->fun->positions) {
       AVar *es_arg = es->args.get(p), *e_arg = e->args.get(p);
-      if (es_arg->out != e_arg->out)
-	return 0;
+      if (p->pos.n == 1 && p->pos.v[0] == 2 && es->fun->sym == sym_new_object) {
+	if (es_arg->out != e_arg->out)
+	  return -1;
+      } else
+	if (es_arg->out != e_arg->out)
+	  return 0;
     }
     assert(es->rets.n == e->rets.n);
     for (int i = 0; i < es->rets.n; i++) {
@@ -647,8 +654,11 @@ edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 static int
 entry_set_compatibility(AEdge *e, EntrySet *es) {
   int val = INT_MAX;
-  if (!edge_type_compatible_with_entry_set(e, es))
-    val -= 4;
+  switch (edge_type_compatible_with_entry_set(e, es)) {
+    case 1: break;
+    case 0: val -= 4; break;
+    case -1: return 0;
+  }
   if (!edge_sset_compatible_with_entry_set(e, es))
     val -= 2;
   if (e->match->fun->clone_for_constants)
@@ -671,7 +681,6 @@ set_entry_set(AEdge *e, EntrySet *es = 0) {
       Sym *s = e->match->fun->arg_syms.get(p);
       AVar *av = make_AVar(s->var, new_es);
       new_es->args.put(p, av);
-      av->restrict = bottom_type;
     }
   }
   fill_rets(new_es, e->pnode->lvals.n);
@@ -730,8 +739,19 @@ make_entry_set(AEdge *e, EntrySet *split = 0) {
 static void
 flow_var_type_permit(AVar *v, AType *t) {
   v->restrict = type_union(t, v->restrict);
-  v->out = type_intersection(v->in, v->restrict);
-  assert(v->out != top_type);
+  AType *tt = type_intersection(v->in, v->restrict);
+  if (tt != v->out) {
+    assert(tt != top_type);
+    v->out = tt;
+    forv_AVar(vv, v->arg_of_send) if (vv) {
+      if (!vv->in_send_worklist) {
+	vv->in_send_worklist = 1;
+	send_worklist.push(vv);
+      }
+    }
+    forv_AVar(vv, v->forward) if (vv)
+      update_in(vv, v->out);
+  }
 }
 
 static inline void
@@ -746,18 +766,26 @@ add_var_constraints(EntrySet *es) {
     AVar *av = make_AVar(v, es);
     if (v->sym->type && !v->sym->pattern) {
       if (!v->sym->external) {
+#if 0
 	if (v->sym->type_kind != Type_NONE)
 	  av->restrict = v->sym->type_sym->abstract_type;
 	else
 	  av->restrict = v->sym->type->abstract_type;
+#endif
       } else
 	update_in(av, v->sym->type->abstract_type);
       if (v->sym->constant) // for constants, the abstract type is the concrete type
 	update_in(av, make_abstract_type(v->sym));
       if (v->sym->symbol || v->sym->fun) 
 	update_in(av, v->sym->abstract_type);
-      else if (v->sym->type_kind != Type_NONE)
-	update_in(av, av->restrict);
+#if 0
+      else 
+	if (v->sym->type_kind != Type_NONE)
+	  update_in(av, av->restrict);
+#else
+      if (v->sym->type_kind != Type_NONE)
+	update_in(av, v->sym->type_sym->abstract_type);
+#endif
     }
   }
 }
@@ -957,7 +985,18 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
     e->pnode = p;
     e->from = from;
   }
-  e->match = m;
+  if (!e->match)
+    e->match = m;
+  else {
+    assert(e->match->fun == m->fun);
+    forv_MPosition(p, e->match->fun->positions) {
+      AType *t1 = e->match->filters.get(p), *t2 = m->filters.get(p);
+      if (t1 && t2)
+	e->match->filters.put(p, type_union(t1, t2));
+      else if (!t1 && t2)
+	e->match->filters.put(p, t2);
+    }
+  }
   from->out_edges.set_add(e);
   if (!e->in_edge_worklist) {
     e->in_edge_worklist = 1;
@@ -1048,6 +1087,9 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
       }
     } else 
       partial = 1;
+    if (!p->next_callees)
+      p->next_callees = new PNode::Callees;
+    p->next_callees->funs.set_add(m->fun);
   }
   return matches.n ? partial : -1;
 }
@@ -1198,6 +1240,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *ref = make_AVar(p->rvals.v[1], es);
 	AVar *val = make_AVar(p->rvals.v[3], es);
+	ref->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *ref->out) if (cs) {
 	  assert(cs->vars.n);
 	  AVar *av = cs->vars.v[0];
@@ -1220,6 +1263,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       case P_prim_new: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *thing = make_AVar(p->rvals.v[1], es);
+	thing->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *thing->out) if (cs)
 	  creation_point(result, cs->sym->type_sym); // recover original type
 	break;
@@ -1360,17 +1404,12 @@ collect_results() {
     fa->css.add(cs);
   // collect callees
   forv_Fun(f, fa->funs) {
-    forv_PNode(pnode, f->fa_send_PNodes)
-      if (pnode->callees) {
-	pnode->callees->funs.clear();
-	pnode->callees->positions.clear();
-      }
-    forv_EntrySet(es, f->ess) if (es) {
-      forv_AEdge(e, es->out_edges) if (e) {
-	if (!e->pnode->callees)
-	  e->pnode->callees = new PNode::Callees;
-	e->pnode->callees->funs.set_add(e->to->fun);
-	e->pnode->callees->positions.set_union(e->to->fun->positions);
+    forv_PNode(pnode, f->fa_send_PNodes) {
+      if (pnode->next_callees) {
+	pnode->callees = pnode->next_callees;
+	pnode->next_callees = 0;
+	forv_Fun(f, pnode->callees->funs)
+	  pnode->callees->positions.set_union(f->positions);
       }
     }
   }
@@ -1499,7 +1538,9 @@ initialize_symbols() {
   }
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && s != sym_any) {
-      if (s->value && (s != sym_value))
+      if (s->meta && (s != sym_anyclass))
+	subtype(sym_anyclass, s, types);
+      else if (s->value && (s != sym_value))
 	subtype(sym_value, s, types);
       else
 	subtype(sym_any, s, types);
@@ -1561,6 +1602,7 @@ initialize() {
   fun_symbol_type = type_union(symbol_type, fun_type);
   anyint_type = make_abstract_type(sym_anyint);
   anynum_type = make_abstract_type(sym_anynum);
+  anyclass_type = make_abstract_type(sym_anyclass);
   edge_worklist.clear();
   send_worklist.clear();
   initialize_symbols();
@@ -1971,9 +2013,11 @@ collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_
 static int
 split_css(Vec<AVar *> &starters) {
   int analyze_again = 0;
+  // build starter sets, groups of starters for the same CreationSet
   while (starters.n) {
-    // build starter sets, groups of starters for the same CreationSet
     CreationSet *cs = starters.v[0]->creation_set;
+    if (is_es_cs_recursive(cs))
+      continue;
     Vec<AVar *> save;
     Vec<AVar *> starter_set;
     forv_AVar(av, starters) {
@@ -1983,9 +2027,7 @@ split_css(Vec<AVar *> &starters) {
 	save.add(av);
     }
     starters.move(save);
-    if (is_es_cs_recursive(cs))
-      continue;
-    while (starter_set.n) {
+    while (starter_set.n > 1) {
       AVar *av = starter_set.v[0];
       Vec<AVar *> compatible_set;
       forv_AVar(v, starter_set) {

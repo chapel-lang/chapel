@@ -16,6 +16,7 @@ type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";
 type value __name "value";
+type anyclass __name "anyclass";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;
@@ -76,7 +77,7 @@ var reply = #reply __name "reply";
 #"=" __name "assign";
 
 // overloadable primitive operators
-function new(a:any) { #__new ^^ a; }
+function new(a:any) __name "new_object"		{ #__new ^^ a }
 function operator(a:any, #".", b:symbol)	{ #__primitive ^^ a ^^ #"." ^^ b }
 function operator(a:any, #"*.", b:symbol)	{ #__primitive ^^ a ^^ #"." ^^ b }
 function operator(a:anynum, #"**", b:anynum)	{ #__primitive ^^ a ^^ #"**" ^^ b }

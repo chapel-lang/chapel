@@ -4,7 +4,7 @@ __init::self(cs6.v:1) ( C (cs6.v:1) )
 __init::self(cs6.v:2) ( D (cs6.v:2) )
 __init::self(cs6.v:2) ( D (cs6.v:2) )
 function __init cs6.v:1 with 1 edges
-function __init cs6.v:1 with 3 edges
+function __init cs6.v:1 with 1 edges
 function __init cs6.v:2 with 1 edges
 function __init cs6.v:2 with 2 edges
 function __init prelude.v:7 with 1 edges
@@ -12,53 +12,53 @@ function __init__ <none>:0 with 1 edges
 function makeC cs6.v:3 with 1 edges
 function makeD cs6.v:4 with 1 edges
 function makeD cs6.v:4 with 1 edges
-function new prelude.v:83 with 1 edges
-function new prelude.v:83 with 1 edges
-function new prelude.v:83 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:89 with 1 edges
-function print prelude.v:138 with 1 edges
+function new prelude.v:85 with 1 edges
+function new prelude.v:85 with 1 edges
+function new prelude.v:85 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:91 with 1 edges
+function print prelude.v:140 with 1 edges
 globals
-makeC::a(cs6.v:3) ( int32 (prelude.v:28) )
+makeC::a(cs6.v:3) ( int32 (prelude.v:29) )
 makeC::c(cs6.v:3) ( C (cs6.v:1) )
 makeC::c(cs6.v:3) ( C (cs6.v:1) )
 makeD::a(cs6.v:4) ( C (cs6.v:1) )
-makeD::a(cs6.v:4) ( int32 (prelude.v:28) )
+makeD::a(cs6.v:4) ( int32 (prelude.v:29) )
 makeD::d(cs6.v:4) ( D (cs6.v:2) )
 makeD::d(cs6.v:4) ( D (cs6.v:2) )
 makeD::d(cs6.v:4) ( D (cs6.v:2) )
 makeD::d(cs6.v:4) ( D (cs6.v:2) )
-new::a(prelude.v:83) ( C (cs6.v:1) )
-new::a(prelude.v:83) ( D (cs6.v:2) )
-new::a(prelude.v:83) ( D (cs6.v:2) )
-new::o(prelude.v:83) ( C (cs6.v:1) )
-new::o(prelude.v:83) ( C (cs6.v:1) )
-new::o(prelude.v:83) ( D (cs6.v:2) )
-new::o(prelude.v:83) ( D (cs6.v:2) )
-new::o(prelude.v:83) ( D (cs6.v:2) )
-new::o(prelude.v:83) ( D (cs6.v:2) )
-operator::a(prelude.v:84) ( C (cs6.v:1) )
-operator::a(prelude.v:84) ( C (cs6.v:1) )
-operator::a(prelude.v:84) ( C (cs6.v:1) )
-operator::a(prelude.v:84) ( D (cs6.v:2) )
-operator::a(prelude.v:84) ( D (cs6.v:2) )
-operator::a(prelude.v:84) ( D (cs6.v:2) )
-operator::a(prelude.v:84) ( D (cs6.v:2) )
-operator::a(prelude.v:84) ( D (cs6.v:2) )
-operator::a(prelude.v:84) ( D (cs6.v:2) )
-operator::a(prelude.v:89) ( int32 (prelude.v:28) )
-operator::b(prelude.v:89) ( int32 (prelude.v:28) )
-print::a(prelude.v:138) ( int32 (prelude.v:28) )
+new::a(prelude.v:85) ( C (cs6.v:1) )
+new::a(prelude.v:85) ( D (cs6.v:2) )
+new::a(prelude.v:85) ( D (cs6.v:2) )
+new::o(prelude.v:85) ( C (cs6.v:1) )
+new::o(prelude.v:85) ( C (cs6.v:1) )
+new::o(prelude.v:85) ( D (cs6.v:2) )
+new::o(prelude.v:85) ( D (cs6.v:2) )
+new::o(prelude.v:85) ( D (cs6.v:2) )
+new::o(prelude.v:85) ( D (cs6.v:2) )
+operator::a(prelude.v:86) ( C (cs6.v:1) )
+operator::a(prelude.v:86) ( C (cs6.v:1) )
+operator::a(prelude.v:86) ( C (cs6.v:1) )
+operator::a(prelude.v:86) ( D (cs6.v:2) )
+operator::a(prelude.v:86) ( D (cs6.v:2) )
+operator::a(prelude.v:86) ( D (cs6.v:2) )
+operator::a(prelude.v:86) ( D (cs6.v:2) )
+operator::a(prelude.v:86) ( D (cs6.v:2) )
+operator::a(prelude.v:86) ( D (cs6.v:2) )
+operator::a(prelude.v:91) ( int32 (prelude.v:29) )
+operator::b(prelude.v:91) ( int32 (prelude.v:29) )
+print::a(prelude.v:140) ( int32 (prelude.v:29) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:57) ( tuple (prelude.v:13) )
+system::null(prelude.v:58) ( tuple (prelude.v:13) )
 user::__init(cs6.v:1) ( __init (cs6.v:1) )
 user::c1(cs6.v:5) ( C (cs6.v:1) )
 user::d1(cs6.v:6) ( D (cs6.v:2) )

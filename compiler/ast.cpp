@@ -1635,6 +1635,7 @@ finalize_types(IF1 *i) {
     if (s->type_kind) {
       if (!s->type_sym) {
 	s->type_sym = new_sym(i);
+	s->type_sym->meta = 1;
 	s->type_sym->in = s->in;
 	s->type_sym->name = s->name;
 	s->type_sym->type = s->type_sym;

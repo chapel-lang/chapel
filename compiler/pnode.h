@@ -49,6 +49,7 @@ class PNode : public gc {
 
   // Callees
   Callees *callees;
+  Callees *next_callees;
 
   // Temporary Space
   union {

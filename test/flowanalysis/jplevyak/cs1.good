@@ -1,27 +1,27 @@
-create::a(cs1.v:1) ( float64 (prelude.v:41) )
-create::a(cs1.v:1) ( int32 (prelude.v:28) )
-create::x(cs1.v:1) ( float64 (prelude.v:41) )
-create::x(cs1.v:1) ( int32 (prelude.v:28) )
+create::a(cs1.v:1) ( float64 (prelude.v:42) )
+create::a(cs1.v:1) ( int32 (prelude.v:29) )
+create::x(cs1.v:1) ( float64 (prelude.v:42) )
+create::x(cs1.v:1) ( int32 (prelude.v:29) )
 function __init cs1.v:1 with 1 edges
 function __init prelude.v:7 with 1 edges
 function __init__ <none>:0 with 1 edges
 function create cs1.v:1 with 1 edges
 function create cs1.v:1 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function operator prelude.v:84 with 1 edges
-function print prelude.v:138 with 1 edges
-function print prelude.v:138 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function operator prelude.v:86 with 1 edges
+function print prelude.v:140 with 1 edges
+function print prelude.v:140 with 1 edges
 globals
-operator::a(prelude.v:84) ( tuple (prelude.v:13) )
-operator::a(prelude.v:84) ( tuple (prelude.v:13) )
-operator::a(prelude.v:84) ( tuple (prelude.v:13) )
-operator::a(prelude.v:84) ( tuple (prelude.v:13) )
-print::a(prelude.v:138) ( float64 (prelude.v:41) )
-print::a(prelude.v:138) ( int32 (prelude.v:28) )
+operator::a(prelude.v:86) ( tuple (prelude.v:13) )
+operator::a(prelude.v:86) ( tuple (prelude.v:13) )
+operator::a(prelude.v:86) ( tuple (prelude.v:13) )
+operator::a(prelude.v:86) ( tuple (prelude.v:13) )
+print::a(prelude.v:140) ( float64 (prelude.v:42) )
+print::a(prelude.v:140) ( int32 (prelude.v:29) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:57) ( tuple (prelude.v:13) )
+system::null(prelude.v:58) ( tuple (prelude.v:13) )
 user::__init(cs1.v:1) ( __init (cs1.v:1) )
 user::x(cs1.v:2) ( tuple (prelude.v:13) )
 user::y(cs1.v:5) ( tuple (prelude.v:13) )

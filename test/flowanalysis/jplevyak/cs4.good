@@ -8,48 +8,48 @@ function makeC cs4.chpl:3 with 1 edges
 function makeD cs4.chpl:4 with 1 edges
 function makeD cs4.chpl:4 with 1 edges
 function makeD cs4.chpl:4 with 2 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:86 with 1 edges
-function operator prelude.chpl:86 with 1 edges
-function operator prelude.chpl:86 with 1 edges
-function writeln prelude.chpl:236 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:87 with 1 edges
+function operator prelude.chpl:87 with 1 edges
+function operator prelude.chpl:87 with 1 edges
+function writeln prelude.chpl:237 with 1 edges
 globals
 makeC::c(cs4.chpl:3) ( C (cs4.chpl:1) )
 makeC::c(cs4.chpl:3) ( C (cs4.chpl:1) )
 makeD::d(cs4.chpl:4) ( D (cs4.chpl:2) )
 makeD::d(cs4.chpl:4) ( D (cs4.chpl:2) )
 makeD::d(cs4.chpl:4) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:80) ( C (cs4.chpl:1) )
-operator::a(prelude.chpl:80) ( C (cs4.chpl:1) )
-operator::a(prelude.chpl:80) ( C (cs4.chpl:1) )
-operator::a(prelude.chpl:80) ( C (cs4.chpl:1) )
-operator::a(prelude.chpl:80) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:86) ( float64 (prelude.chpl:38) )
-operator::a(prelude.chpl:86) ( float64 (prelude.chpl:38) )
-operator::a(prelude.chpl:86) ( integer64 (prelude.chpl:26) )
-operator::b(prelude.chpl:86) ( float64 (prelude.chpl:38) )
-operator::b(prelude.chpl:86) ( float64 (prelude.chpl:38) )
-operator::b(prelude.chpl:86) ( float64 (prelude.chpl:38) )
+operator::a(prelude.chpl:81) ( C (cs4.chpl:1) )
+operator::a(prelude.chpl:81) ( C (cs4.chpl:1) )
+operator::a(prelude.chpl:81) ( C (cs4.chpl:1) )
+operator::a(prelude.chpl:81) ( C (cs4.chpl:1) )
+operator::a(prelude.chpl:81) ( D (cs4.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs4.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs4.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs4.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs4.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs4.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs4.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs4.chpl:2) )
+operator::a(prelude.chpl:87) ( float64 (prelude.chpl:39) )
+operator::a(prelude.chpl:87) ( float64 (prelude.chpl:39) )
+operator::a(prelude.chpl:87) ( integer64 (prelude.chpl:27) )
+operator::b(prelude.chpl:87) ( float64 (prelude.chpl:39) )
+operator::b(prelude.chpl:87) ( float64 (prelude.chpl:39) )
+operator::b(prelude.chpl:87) ( float64 (prelude.chpl:39) )
 system::__init(prelude.chpl:7) ( __init (prelude.chpl:7) )
-system::null(prelude.chpl:54) ( tuple (prelude.chpl:13) )
+system::null(prelude.chpl:55) ( tuple (prelude.chpl:13) )
 user::__init(cs4.chpl:1) ( __init (cs4.chpl:1) )
 user::c1(cs4.chpl:5) ( C (cs4.chpl:1) )
 user::c2(cs4.chpl:7) ( C (cs4.chpl:1) )
@@ -57,4 +57,4 @@ user::d1(cs4.chpl:6) ( D (cs4.chpl:2) )
 user::d2(cs4.chpl:8) ( D (cs4.chpl:2) )
 user::d3(cs4.chpl:9) ( D (cs4.chpl:2) )
 user::d4(cs4.chpl:10) ( D (cs4.chpl:2) )
-writeln::a(prelude.chpl:236) ( float64 (prelude.chpl:38) )
+writeln::a(prelude.chpl:237) ( float64 (prelude.chpl:39) )

@@ -116,23 +116,23 @@ class Setters : public Vec<AVar *> {
 
 class AVar : public gc {
  public:
-  Var			*var;
-  void			*contour;
-  Vec<AVar *>		forward;
-  Vec<AVar *>		backward;
-  AVar			*lvalue;
-  AType 		*in;
-  AType 		*out;
-  AType			*restrict;
-  AVar			*container;
-  Setters		*setters;
-  Setters		*setter_class;
-  CreationSet		*creation_set;
-  uint			in_send_worklist:1;
-  uint			contour_is_entry_set:1;
-  uint			is_lvalue:1;
-  Vec<AVar *>		arg_of_send;
-  SLink<AVar>		send_worklist_link;
+  Var				*var;
+  void				*contour;
+  Vec<AVar *>			forward;
+  Vec<AVar *>			backward;
+  AVar				*lvalue;
+  AType 			*in;
+  AType 			*out;
+  AType				*restrict;
+  AVar				*container;
+  Setters			*setters;
+  Setters			*setter_class;
+  CreationSet 			*creation_set;
+  uint				in_send_worklist:1;
+  uint				contour_is_entry_set:1;
+  uint				is_lvalue:1;
+  Vec<AVar *>			arg_of_send;
+  SLink<AVar>			send_worklist_link;
 
   AVar(Var *v, void *acontour);
 };

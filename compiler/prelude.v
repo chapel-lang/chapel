@@ -16,6 +16,7 @@ type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";
 type value __name "value";
+type anyclass __name "anyclass";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;
@@ -69,7 +70,8 @@ __init__ __name "init":0;
 #__primitive __name "primitive";
 #__new __name "new";
 #__index __name "index";
-#__print __name "print"; #__match __name "match";
+#__print __name "print"; 
+#__match __name "match";
 #operator __name "operator";
 #"." __name "period";
 #"=" __name "assign";
@@ -80,7 +82,7 @@ reply: #reply __name "reply";
 // overloadable primitive operators
 
 __init(a:any)				   : a; 
-new(a:any)				   : { o: #__new a; o.__init; o };
+new(a:anyclass) __name "new_object"	   : { o: #__new a; o.__init; o };
 operator(a:any, #".", b:symbol)		   : #__primitive a #"." b;
 operator(a:any, #"*.", b:symbol)	   : #__primitive a #"." b;
 operator(a:anynum, #"*", b:anynum)	   : #__primitive a #"*" b;

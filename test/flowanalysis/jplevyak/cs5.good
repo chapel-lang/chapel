@@ -6,33 +6,33 @@ function __init__ <none>:0 with 1 edges
 function makeC cs5.chpl:3 with 1 edges
 function makeD cs5.chpl:4 with 1 edges
 function makeD cs5.chpl:4 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:80 with 1 edges
-function operator prelude.chpl:86 with 1 edges
-function writeln prelude.chpl:236 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:81 with 1 edges
+function operator prelude.chpl:87 with 1 edges
+function writeln prelude.chpl:237 with 1 edges
 globals
-makeC::a(cs5.chpl:3) ( integer64 (prelude.chpl:26) )
+makeC::a(cs5.chpl:3) ( integer64 (prelude.chpl:27) )
 makeC::c(cs5.chpl:3) ( C (cs5.chpl:1) )
 makeD::a(cs5.chpl:4) ( C (cs5.chpl:1) )
-makeD::a(cs5.chpl:4) ( float64 (prelude.chpl:38) )
+makeD::a(cs5.chpl:4) ( float64 (prelude.chpl:39) )
 makeD::d(cs5.chpl:4) ( D (cs5.chpl:2) )
 makeD::d(cs5.chpl:4) ( D (cs5.chpl:2) )
-operator::a(prelude.chpl:80) ( C (cs5.chpl:1) )
-operator::a(prelude.chpl:80) ( C (cs5.chpl:1) )
-operator::a(prelude.chpl:80) ( D (cs5.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs5.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs5.chpl:2) )
-operator::a(prelude.chpl:80) ( D (cs5.chpl:2) )
-operator::a(prelude.chpl:86) ( integer64 (prelude.chpl:26) )
-operator::b(prelude.chpl:86) ( float64 (prelude.chpl:38) )
+operator::a(prelude.chpl:81) ( C (cs5.chpl:1) )
+operator::a(prelude.chpl:81) ( C (cs5.chpl:1) )
+operator::a(prelude.chpl:81) ( D (cs5.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs5.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs5.chpl:2) )
+operator::a(prelude.chpl:81) ( D (cs5.chpl:2) )
+operator::a(prelude.chpl:87) ( integer64 (prelude.chpl:27) )
+operator::b(prelude.chpl:87) ( float64 (prelude.chpl:39) )
 system::__init(prelude.chpl:7) ( __init (prelude.chpl:7) )
-system::null(prelude.chpl:54) ( tuple (prelude.chpl:13) )
+system::null(prelude.chpl:55) ( tuple (prelude.chpl:13) )
 user::__init(cs5.chpl:1) ( __init (cs5.chpl:1) )
 user::c1(cs5.chpl:5) ( C (cs5.chpl:1) )
 user::d1(cs5.chpl:6) ( D (cs5.chpl:2) )
 user::d3(cs5.chpl:7) ( D (cs5.chpl:2) )
-writeln::a(prelude.chpl:236) ( float64 (prelude.chpl:38) )
+writeln::a(prelude.chpl:237) ( float64 (prelude.chpl:39) )

@@ -239,10 +239,10 @@ pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
   {
     MPosition p;
     Vec<MPosition *> *allpositions = NULL;
-//    if (send->var->def->callees) {
-//      partial_matches.add(new Vec<Fun *>(send->var->def->callees->funs));
-//      allpositions = &send->var->def->callees->positions;
-//    } else
+    if (send->var->def->callees) {
+      partial_matches.add(new Vec<Fun *>(send->var->def->callees->funs));
+      allpositions = &send->var->def->callees->positions;
+    } else
       partial_matches.add(NULL);
     p.push(1);
     forv_AVar(av, args) {

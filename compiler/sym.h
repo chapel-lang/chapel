@@ -94,6 +94,7 @@ class Sym : public gc {
   unsigned int		external:1;		// Sym is "external", so constraints are type
   unsigned int		structure:1;		// Sym is a structure (C compatibility)
   unsigned int		internal:4;		// Sym is of a non-primitive 'internal' type 
+  unsigned int		meta:1;			// Sym is class of class
 
   unsigned int		num_type:2;		// used by if1.cpp
   unsigned int		num_index:3;		// used by if1.cpp
