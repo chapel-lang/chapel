@@ -14034,3 +14034,69 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp symtab.cpp 
 	chapel/compiler/include/: symtab.h 
 
+---------------------------------------------------------------------------
+
+01/07/05 11:38:04 -- bradc
+
+Log message:
+	NOTE: This commit requires an update -d in the compiler
+	directory
+	
+	Added a new type of Pass -- the SymtabTraversal -- which
+	traverses the symboltable's SymScopes in a preorder,
+	depth-first manner, traversing the Symbols in the order
+	that they were declared.  Users may specify routines to
+	pre- and post-process the SymScopes, and to process the
+	Symbols as they are encountered.  Note that the pre-
+	and post-processing of a scope is done before and after
+	its Symbols are traversed -- not before and after its
+	contained scopes are traversed.
+	
+	During traversal, the scopes encountered are pushed and
+	popped as the "current" scope from the Symboltable's
+	point of view (thus, insertions performed during a
+	traversal will be performed in the scope currently being
+	traversed).
+	
+	Like other traversals, SymtabTraversals must be registered
+	in the passlist.cpp file and may be included in the
+	passlist.h file.
+	
+	As part of this change, reorganized the Symboltable code
+	so that the component classes have been moved from
+	AST/symtab.cpp into a number of files (one per class)
+	in a new compiler directory symtab/.  This directory
+	also contains the SymtabTraversal code, and new
+	SymtabTraversals should be stored here, organizationally.
+	
+	Rewrote the PrintSymtab pass to be a SymtabTraversal as
+	proof-of-concept, though we may want more features as
+	time goes on (such as the ability to skip over internal
+	scopes, or have the pre- and post-processing steps take
+	place relative to the enclosed scopes, or to traverse
+	the Symboltable in different orders).
+	
+	One side change:
+	
+	- made the tmp directory created by the compiler embed
+	  the userid of the user so that users' tmp directories
+	  can never collide (if one is left around, stale, e.g.)
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: Makefile.share 
+	chapel/compiler/include/: symscope.h symtab.h 
+	chapel/compiler/main/: passlist.cpp 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/compiler/util/: files.cpp 
+Added files:
+	chapel/compiler/symtab/: Makefile Makefile.include 
+	                         Makefile.share printSymtab.cpp 
+	                         printSymtab.h symlink.cpp symlink.h 
+	                         symscope.cpp symtab.cpp 
+	                         symtabTraversal.cpp symtabTraversal.h 
+	chapel/test/execflags/shannon/configs/: .cvsignore 
+Removed files:
+	chapel/compiler/AST/: symtab.cpp 
+	chapel/compiler/passes/: printSymtab.cpp printSymtab.h 
+
