@@ -166,9 +166,32 @@ void closefile(fileinfo* thefile) {
 }
 
 
+static void genIfndef(FILE* outfile, char* filename) {
+  char* macroname = copystring(filename);
+  char* dot;
+  do {
+    dot = strchr(macroname, '.');
+    if (dot == NULL) {
+      dot = strchr(macroname, '-');
+    }
+    if (dot != NULL) {
+      *dot = '_';
+    }
+  } while (dot != NULL);
+  fprintf(outfile, "#ifndef _%s_\n", macroname);
+  fprintf(outfile, "#define _%s_\n", macroname);
+  fprintf(outfile, "\n");
+}
+
+
+static void genEndif(FILE* outfile) {
+  fprintf(outfile, "\n");
+  fprintf(outfile, "#endif\n");
+}
+
+
 void openCFiles(char* infilename, fileinfo* outfile,
 		fileinfo* extheadfile, fileinfo* intheadfile) {
-
   genCFilenames(infilename, &(outfile->filename),
 		&(extheadfile->filename), &(intheadfile->filename));
 
@@ -181,11 +204,17 @@ void openCFiles(char* infilename, fileinfo* outfile,
   outfile->fptr = openfile(outfile->pathname);
   extheadfile->fptr = openfile(extheadfile->pathname);
   intheadfile->fptr = openfile(intheadfile->pathname);
+
+  genIfndef(extheadfile->fptr, extheadfile->filename);
+  genIfndef(intheadfile->fptr, intheadfile->filename);
 }
 
 
 void closeCFiles(fileinfo* outfile, 
 		 fileinfo* extheadfile, fileinfo* intheadfile) {
+  genEndif(extheadfile->fptr);
+  genEndif(intheadfile->fptr);
+
   closefile(outfile->fptr);
   closefile(extheadfile->fptr);
   closefile(intheadfile->fptr);

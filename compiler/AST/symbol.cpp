@@ -38,6 +38,26 @@ void Symbol::printDefList(FILE* outfile, char* separator) {
 }
 
 
+void Symbol::codegenDef(FILE* outfile) {
+  type->codegen(outfile);
+  fprintf(outfile, " ");
+  this->codegen(outfile);
+}  
+
+
+void Symbol::codegenDefList(FILE* outfile, char* separator) {
+  Symbol* ptr;
+
+  codegenDef(outfile);
+  ptr = nextLink(Symbol, this);
+  while (ptr != NULL) {
+    fprintf(outfile, "%s", separator);
+    ptr->codegenDef(outfile);
+    ptr = nextLink(Symbol, ptr);
+  }
+}
+
+
 NullSymbol::NullSymbol(void) :
   Symbol("NullSymbol")
 {}
@@ -137,11 +157,33 @@ ReduceSymbol::ReduceSymbol(char* init_name, ClassType* init_class) :
 
 
 FunSymbol::FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-		     Stmt* init_body) :
+		     Stmt* init_body, bool init_exportMe) :
   Symbol(init_name, init_retType),
+  exportMe(init_exportMe),
   formals(init_formals),
   body(init_body)
 {}
+
+
+void FunSymbol::codegenDef(FILE* outfile) {
+  if (!exportMe) {
+    fprintf(outfile, "static ");
+  }
+  if (type->isNull()) {
+    fprintf(outfile, "void");
+  } else {
+    type->codegen(outfile);
+  }
+  fprintf(outfile, " ");
+  this->codegen(outfile);
+  fprintf(outfile, "(");
+  if (formals->isNull()) {
+    fprintf(outfile, "void");
+  } else {
+    formals->codegenDefList(outfile, ", ");
+  }
+  fprintf(outfile, ")");
+}
 
 
 EnumSymbol::EnumSymbol(char* init_name, int init_val) :

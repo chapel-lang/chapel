@@ -21,9 +21,11 @@ class Symbol : public ILink {
   Symbol(char* init_name, Type* init_type = dtUnknown);
 
   void print(FILE* outfile);
-  virtual void codegen(FILE* outfile);
   virtual void printDef(FILE* outfile);
   void printDefList(FILE* outfile, char* separator);
+  virtual void codegen(FILE* outfile);
+  virtual void codegenDef(FILE* outfile);
+  void codegenDefList(FILE* outfile, char* separator);
 };
 
 
@@ -112,11 +114,14 @@ class ReduceSymbol : public ClassSymbol {
 
 class FunSymbol : public Symbol {
  public:
+  bool exportMe;
   Symbol* formals;
   Stmt* body;
 
   FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-	    Stmt* init_body);
+	    Stmt* init_body, bool init_exportMe=false);
+
+  void codegenDef(FILE* outfile);
 };
 
 

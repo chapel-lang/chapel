@@ -71,7 +71,7 @@ static Stmt* createInitFun(Stmt* program) {
                                                  : new NullStmt());
   FunSymbol* initFun = Symboltable::defineFunction("__init", new NullSymbol(), 
 						   new NullType(), 
-						   initFunBody);
+						   initFunBody, true);
   FnDefStmt* initFunDef = new FnDefStmt(initFun);
 
   program->append(initFunDef);

@@ -21,4 +21,7 @@
 * refactor function implementation stuff into a helper function?
   (from parser and createAST.cpp)
 
-* get header files populated!
+* squelch init prototype
+
+* unify fun and fn as abbreviations for function
+

@@ -6,7 +6,7 @@ COMPILER_SUBDIR = AST
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-INCL = -I.. -I$(GC_ROOT)/include/gc -I$(D_PARSER_INC_DIR)
+INCL = -I. -I.. -I$(GC_ROOT)/include/gc -I$(D_PARSER_INC_DIR)
 CFLAGS = -g -Wall -Werror $(INCL) -DUSE_GC
 
 AST_OBJDIR = $(PLATFORM)

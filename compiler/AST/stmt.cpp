@@ -1,4 +1,5 @@
 #include <string.h>
+#include "codegen.h"
 #include "expr.h"
 #include "stmt.h"
 #include "yy.h"
@@ -140,20 +141,18 @@ void FnDefStmt::print(FILE* outfile) {
 
 
 void FnDefStmt::codegen(FILE* outfile) {
-  if (fun->type->isNull()) {
-    fprintf(outfile, "void");
+  FILE* headfile;
+
+  if (fun->exportMe) {
+    headfile = extheadfile;
   } else {
-    fun->type->codegen(outfile);
+    headfile = intheadfile;
   }
+  fun->codegenDef(headfile);
+  fprintf(headfile, ";\n");
+
+  fun->codegenDef(outfile);
   fprintf(outfile, " ");
-  fun->print(outfile);
-  fprintf(outfile, "(");
-  if (fun->formals->isNull()) {
-    fprintf(outfile, "void");
-  } else {
-    fun->formals->codegenList(outfile, ", ");
-  }
-  fprintf(outfile, ") ");
   fun->body->codegen(outfile);
   fprintf(outfile, "\n");
 }

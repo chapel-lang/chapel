@@ -360,8 +360,9 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
 
 
 FunSymbol* Symboltable::defineFunction(char* name, Symbol* formals, 
-				       Type* retType, Stmt* body) {
-  FunSymbol* newFun = new FunSymbol(name, formals, retType, body);
+				       Type* retType, Stmt* body, 
+				       bool isExtern) {
+  FunSymbol* newFun = new FunSymbol(name, formals, retType, body, isExtern);
   define(newFun);
 
   return newFun;
