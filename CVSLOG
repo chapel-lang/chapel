@@ -18640,3 +18640,52 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+03/02/05 13:40:31 -- jplevyak
+
+Log message:
+	Add support for label/goto/break/continue.
+	This support works through analysis and partially through
+	code generation.  There is a question as to how best to
+	store the resolved target of jumps.  I compute them
+	(I resolve them to build the IF1 representation), but I
+	don't know how you would like to store them.
+	
+	I have left the following .future files:
+	
+	deitz/bradc
+	
+	Support for basic control flow.  Need to resolve
+	the targets.  I can do this for you if you decide what
+	sort of data structure you want (e.g. do you
+	want a "Stmt *target" in GotoStmt, BreakStmt, ContinueStmt).
+	These things would have to be fixed up during copy and
+	inlining, so I have left it to you to decided how you
+	want to handle it.  The other alternative is to
+	uniquify the labels in some manner and to have different
+	labels for break and continue for each loop....
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+Added files:
+	chapel/compiler/include/: pragma.h 
+	chapel/test/trivial/jplevyak/: break-1.chpl break-1.good 
+	                               break-2.chpl break-2.good 
+	                               break-3.chpl break-3.good 
+	                               break-4.chpl break-4.good 
+	                               break-5.chpl break-5.good 
+	                               continue-1.chpl continue-1.good 
+	                               continue-2.chpl continue-2.good 
+	                               continue-3.chpl continue-3.good 
+	                               continue-4.chpl continue-4.good 
+	                               continue-5.chpl continue-5.good 
+	                               goto-1.chpl goto-1.good 
+	                               goto-2.chpl goto-2.good 
+	                               label-1.chpl label-1.good 
+	                               label-2.chpl label-2.good 
+
