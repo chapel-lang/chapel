@@ -541,3 +541,25 @@ Modified files:
 	                  make_prims.g prelude.chpl prelude.v prim.h 
 	                  prim_data.dat vec.cpp vec.h 
 
+---------------------------------------------------------------------------
+
+04/02/25 16:26:23 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	made forv_Vec (the basis for all the forv_XXX vector iterators) safe with respect to
+	changes to the underlying vector.
+	- added a new primitive "index_vector" used by the vector class for indexing.
+	- made calls on vectors into indexing into the vector, this will be inherited
+	by domains.
+	- specific symbols are now subtypes of "symbol", specific functions subtypes
+	of "function", and functions/methods whose pattern contains an initial symbol
+	are subtypes of that symbol (this permits the function to be pattern matched
+	to that symbol.
+	- fixed bugs in cloning, the type_diff function, etc.
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp builtin_symbols.h clone.cpp 
+	                  fa.cpp fa.h fa_extras.cpp if1.cpp pnode.h 
+	                  prelude.chpl prelude.v prim.cpp prim_data.dat 
+	                  vec.h 
+
