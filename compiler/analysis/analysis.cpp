@@ -162,7 +162,7 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
       new_s->asymbol = old_s->asymbol->copy();
       new_s->asymbol->symbol = new_s;
       context->smap.put(old_s->asymbol->sym, new_s->asymbol->sym);
-      if (old_s->asymbol->sym->var) {
+      if (context->vmap && old_s->asymbol->sym->var) {
 	new_s->asymbol->sym->var = context->vmap->get(old_s->asymbol->sym->var);
 	assert(new_s->asymbol->sym->var);
       }
@@ -430,6 +430,15 @@ ACallbacks::instantiate_generic(Match *m) {
   return fun;
 }
 
+void
+fixup_symbol_clone(Sym *sym, CloneCallback *callback) {
+  AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
+  if (callback) {
+    for (int i = 0; i < sym->has.n; i++)
+      sym->has.v[i] = c->context->smap.get(sym->has.v[i]);
+  }
+}
+
 Sym *
 ASymbol::clone(CloneCallback *callback) {
   AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
@@ -443,16 +452,9 @@ ASymbol::clone(CloneCallback *callback) {
     TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(type_symbol->defPoint);
     Map<BaseAST*,BaseAST*> clone_map;
     old_stmt->clone(c, &clone_map);
-    return c->context->smap.get(type_symbol->asymbol->sym);
-  }
-}
-
-void
-ASymbol::fixup(CloneCallback *callback) {
-  AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
-  if (callback) {
-    for (int i = 0; i < sym->has.n; i++)
-      sym->has.v[i] = c->context->smap.get(sym->has.v[i]);
+    Sym *newsym = c->context->smap.get(type_symbol->asymbol->sym);
+    fixup_symbol_clone(sym, callback);
+    return newsym;
   }
 }
 

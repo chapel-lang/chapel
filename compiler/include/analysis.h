@@ -47,7 +47,6 @@ class ASymbol : public gc {
  public:
   // Sym interface
   Sym *clone(CloneCallback *);
-  void fixup(CloneCallback *);
   char *pathname();
   int line();
   ASymbol *copy();

@@ -424,7 +424,8 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	char *name = 0;
 	AST *ast = 0;
 #ifdef CLONE
-	Sym *s = sym->clone(&callback);
+	int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
+	Sym *s = abstract ? sym->copy() : sym->clone(&callback);
 #else
 	Sym *s = sym->copy();
 #endif
@@ -455,7 +456,8 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	  cs->type = sym;
       } else {
 #ifdef CLONE
-	Sym *s = sym->clone(&callback);
+	int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
+	Sym *s = abstract ? sym->copy() : sym->clone(&callback);
 #else
 	Sym *s = sym->copy();
 #endif
@@ -531,7 +533,8 @@ resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	    forv_CreationSet(cs, *eqcss) if (cs) {
 	      AVar *av = cs->vars.v[i];
 	      if (!s) {
-		sym->has.v[i] = av->var->sym->copy();
+		if (!sym->has.v[i])
+		  sym->has.v[i] = av->var->sym->copy();
 		s = sym->has.v[i];
 	      }
 	      forv_CreationSet(x, *av->out) if (x)

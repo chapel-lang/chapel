@@ -18,8 +18,8 @@ class AST;
 class Code;
 class LabelMap;
 class CloneCallback;
-class ASymbol;
 class Sym;
+class ASymbol;
 
 enum IF1_num_kind {
   IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
@@ -159,7 +159,6 @@ class Sym : public BasicSym {
   int			line();
   char			*filename();
   Sym *			clone(CloneCallback *);
-  void			fixup(CloneCallback *);
 
   void			copy_values(Sym *);
   void 			inherits_add(Sym *);

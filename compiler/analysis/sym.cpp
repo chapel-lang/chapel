@@ -52,14 +52,12 @@ Sym::copy_values(Sym *s) {
 Sym *
 Sym::clone(CloneCallback *callback) {
   AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
+  if (asymbol)
+    return asymbol->clone(callback);
   Sym *new_sym = copy();
   if (callback)
     c->context->smap.put(this, new_sym);
   return new_sym;
-}
-
-void
-Sym::fixup(CloneCallback *callback) {
 }
 
 Sym *
