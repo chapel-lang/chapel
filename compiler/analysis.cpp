@@ -127,7 +127,28 @@ map_symbols(Vec<BaseAST *> &syms) {
     if (sym) {
       sym->asymbol = new_ASymbol(sym);
       sym->asymbol->xsymbol = sym;
-      sym->asymbol->function_scope = 1;
+      if (!sym->scope) {
+	printf("symbol %s has NULL ->scope\n", sym->name ? sym->name : "<unknown>");
+	sym->asymbol->global_scope = 1;
+      } else {
+	switch (sym->scope->type) {
+	  default: assert(0);
+	  case SCOPE_INTRINSIC:
+	  case SCOPE_INTERNAL_PRELUDE:
+	  case SCOPE_PRELUDE:
+	  case SCOPE_FILE:
+	    sym->asymbol->global_scope = 1;
+	    break;
+	  case SCOPE_PARAM:
+	  case SCOPE_FUNCTION:
+	  case SCOPE_LOCAL:
+	  case SCOPE_FORLOOP:
+	    sym->asymbol->function_scope = 1;
+	    break;
+	  case SCOPE_CLASS: // handled as the symbols appears in code
+	    break;
+	}
+      }
       symbols++;
       if (verbose_level > 1 && sym->name)
         printf("map_symbols: found Symbol '%s'\n", sym->name);
