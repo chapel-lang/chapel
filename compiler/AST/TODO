@@ -48,22 +48,19 @@
   for MemberAccess is a problem
 
 * tie off end of file parsing better: 
-    add new scope for new symbols,
-    fix up yyfilename, yylineno
+    add new scope for new symbols?
 
 * multifile compiles
 
-* module concept
-
-* move more stuff into pass list
-
 * write forall for link.cpp?
-
-* fix up unnecessary externs
 
 * preludes as modules?  Figure this out.
 
 * codegen standard libraries as a compiler invocation?
+
+* make a built-in types class
+
+* rename symbols prior to codegen
 
 
 SHANNON:

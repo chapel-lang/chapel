@@ -5,26 +5,30 @@
 #define EXTERN
 #include "geysa.h"
 #include "parse.h"
-#include "arg.h"
-#include "files.h"
-#include "misc.h"
-#include "module.h"
-#include "mysystem.h"
-#include "stringutil.h"
-#include "cg.h"
-#include "dump.h"
+
 #include "analysis.h"
+#include "arg.h"
+#include "cg.h"
 #include "clone.h"
 #include "dom.h"
 #include "driver.h"
+#include "dump.h"
+#include "files.h"
+#include "fa.h"
+#include "fun.h"
+#include "grammar.h"
 #include "graph.h"
 #include "inline.h"
-#include "grammar.h"
-#include "version.h"
+#include "misc.h"
+#include "module.h"
+#include "mysystem.h"
+#include "nils.h"
 #include "pdb.h"
-#include "fun.h"
-#include "fa.h"
 #include "runpasses.h"
+#include "stringutil.h"
+#include "symtab.h"
+#include "version.h"
+
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -290,6 +294,10 @@ compile_all(void) {
     if (is_test_lang(arg_state.file_argument[i])) noTestLangFiles = false;
 
   if (noTestLangFiles) {
+    initNils();
+    Symboltable::init();
+    initTypes(); // BLC : clean these up
+    initExpr();
     Module* moduleList = Module::createModules(arg_state.nfile_arguments,
 					       arg_state.file_argument);
     runPasses(passlist_filename, moduleList);

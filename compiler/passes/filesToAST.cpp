@@ -63,11 +63,6 @@ static Stmt* createInitFn(Stmt* program, char* fnNameArg = 0) {
 
 
 void FilesToAST::run(Module* moduleList) {
-  initNils();
-  Symboltable::init();
-  initTypes(); // BLC : clean these up
-  initExpr();
-
   Symboltable::parseInternalPrelude();
   char* preludePath = glomstrings(2, system_dir, 
 				  "/parser/internal_prelude.chpl");

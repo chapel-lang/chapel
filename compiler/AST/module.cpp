@@ -55,4 +55,3 @@ Module* Module::createModules(int numFilenames, char* filename[]) {
 
   return modules;
 }
-
