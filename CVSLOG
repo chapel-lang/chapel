@@ -3294,3 +3294,13 @@ Log message:
 Modified files:
 	chapel/compiler/: ast.cpp chpl.g 
 
+---------------------------------------------------------------------------
+
+06/14/04 13:16:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	update stupid counts again.
+
+Modified files:
+	chapel/test/parsing/jplevyak/: mat1.good vec.good 
+
