@@ -7266,3 +7266,15 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+09/14/04 15:23:12 -- bradc
+
+Log message:
+	Took out call from Expr::getTypes() to Expr::typeInfo(),
+	because typeInfo() may not be determinable until after
+	type analysis has run.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
