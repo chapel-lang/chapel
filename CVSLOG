@@ -14311,3 +14311,30 @@ Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 	chapel/compiler/include/: fun.h 
 
+---------------------------------------------------------------------------
+
+01/12/05 17:04:00 -- jplevyak
+
+Log message:
+	Added initial structural subtyping test (only on names at this time)
+	for records and unions.   Added some test cases... these fail, but
+	there are similar tests which are listed as "future" so I made these
+	future as well.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp pattern.cpp 
+	chapel/compiler/include/: sym.h 
+Added files:
+	chapel/test/classes/jplevyak/: record_type_hierarchy-1.chpl 
+	                               record_type_hierarchy-1.future 
+	                               record_type_hierarchy-1.good 
+	                               record_type_hierarchy-2.chpl 
+	                               record_type_hierarchy-2.future 
+	                               record_type_hierarchy-2.good 
+	                               union_type_hierarchy-1.chpl 
+	                               union_type_hierarchy-1.future 
+	                               union_type_hierarchy-1.good 
+	                               union_type_hierarchy-2.chpl 
+	                               union_type_hierarchy-2.future 
+	                               union_type_hierarchy-2.good 
+
