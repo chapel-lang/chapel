@@ -182,21 +182,29 @@ Matcher::find_arg_matches(AVar *a, MPosition &p, MPosition *positional_p,
   a->arg_of_send.set_add(send);
   if (cp && (!all_positions || all_positions->set_in(cp))) { // if known or in all for this pnode
     Vec<Fun *> funs;
-    forv_CreationSet(cs, *a->out) if (cs) {
-      Sym *sym = cs->sym;
-      if (a->var->sym->aspect) {
-	if (!a->var->sym->aspect->implementors.in(cs->sym))
-	  continue;
-	sym = a->var->sym->aspect;
-      }
+    if (!a->out->n) {
+      Vec<Fun *> new_funs;
       Vec<Sym *> done;
-      Vec<Fun *> new_funs, *new_funs_p = &new_funs;
-      if (!pattern_match_sym(sym, cp, *local_matches, new_funs, out_of_position, done))
-	continue;
-      update_match_map(a, cs, cp, positional_p, new_funs);
-      if (recurse && cs->vars.n)
-	find_all_matches(cs, cs->vars, &new_funs_p, p, out_of_position);
+      pattern_match_sym(sym_unknown, cp, *local_matches, new_funs, out_of_position, done);
+      update_match_map(a, sym_unknown->abstract_type->v[0], cp, positional_p, new_funs);
       funs.set_union(new_funs);
+    } else {
+      forv_CreationSet(cs, *a->out) if (cs) {
+	Sym *sym = cs->sym;
+	if (a->var->sym->aspect) {
+	  if (!a->var->sym->aspect->implementors.in(cs->sym))
+	    continue;
+	  sym = a->var->sym->aspect;
+	}
+	Vec<Sym *> done;
+	Vec<Fun *> new_funs, *new_funs_p = &new_funs;
+	if (!pattern_match_sym(sym, cp, *local_matches, new_funs, out_of_position, done))
+	  continue;
+	update_match_map(a, cs, cp, positional_p, new_funs);
+	if (recurse && cs->vars.n)
+	  find_all_matches(cs, cs->vars, &new_funs_p, p, out_of_position);
+	funs.set_union(new_funs);
+      }
     }
     if (!*local_matches) {
       *local_matches = new Vec<Fun *>(funs);
@@ -258,12 +266,14 @@ Matcher::build_positional_map(MPosition &p, Vec<Fun *> **funs) {
 	       named_actual_positions.v[inamed_actual_position]->pos.v[new_cp->pos.n - 1])
 	{
 	  m->actual_to_formal_position.put(new_cp, named_actual_positions.v[inamed_actual_position]);
+	  m->formal_to_actual_position.put(named_actual_positions.v[inamed_actual_position], new_cp);
 	  if (new_cp != named_actual_positions.v[inamed_actual_position])
 	    mapped_positions.put(new_cp, 1);
 	  inamed_actual_position++;
 	  new_p.inc();
 	}
 	m->actual_to_formal_position.put(new_cp, positional_formals.v[i]);
+	m->formal_to_actual_position.put(positional_formals.v[i], new_cp);
 	if (new_cp != positional_formals.v[i])
 	  mapped_positions.put(new_cp, 1);
 	new_p.inc();
@@ -530,9 +540,14 @@ Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs,
     find_best_cs_match(csargs, p, matches, result, top_level);
   else {
     csargs.fill(iarg + 1);
-    forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
-      csargs.v[iarg] = cs;
+    if (!args.v[iarg]->out->n) {
+      csargs.v[iarg] = sym_unknown->abstract_type->v[0];
       find_best_matches(args, csargs, matches, p, result, top_level, iarg + 1);
+    } else {
+      forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
+	csargs.v[iarg] = cs;
+	find_best_matches(args, csargs, matches, p, result, top_level, iarg + 1);
+      }
     }
   }
 }
@@ -619,7 +634,9 @@ build_arg(FA *fa, Fun *f, Sym *a, MPosition &p) {
     Sym *sel = a->is_symbol ? a : a->type;
     insert_fun(fa, f, a, sel, p);
   } else
-    insert_fun(fa, f, a, a->must_specialize ? a->must_specialize : sym_any, p);
+    insert_fun(fa, f, a, 
+	       is_Sym_OUT(a) ? sym_unknown : (a->must_specialize ? a->must_specialize : sym_any), 
+	       p);
   if (a->is_pattern) {
     p.push(1);
     forv_Sym(aa, a->has)
@@ -666,6 +683,8 @@ build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
     if (!a->var)
       a->var = new Var(a);
     f->arg_syms.put(cp, a);
+    if (is_Sym_OUT(a) && cp->is_numeric())
+      f->out_positions.add(cp);
     if (a->is_pattern) {
       MPosition pp(p);
       pp.push(1);

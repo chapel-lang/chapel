@@ -1467,25 +1467,34 @@ static void
 analyze_edge(AEdge *e) {
   make_entry_set(e);
   form_MPositionAVar(x, e->args) {
+    if (!x->key->is_numeric())
+      continue;
     MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
-    AVar *a = x->value, *b = e->to->args.get(p);
+    Var *v = e->to->fun->args.get(p), *filtered_v = e->to->fun->filtered_args.get(p);
+    AVar *a = x->value, *b = make_AVar(v, e->to), *filtered_b = make_AVar(filtered_v, e->to);
     AType *filter = e->match->filters.get(p);
     if (!filter)
       continue;
-    flow_var_type_permit(b, filter);
+    flow_var_type_permit(filtered_b, filter);
     forv_CreationSet(cs, *filter) if (cs)
       cs->ess.set_add(e->to);
-    // the paramter used to filter the input
-    flow_vars(a, b);
-    // the parameter used in then function
-    AVar *bb = make_AVar(b->var->sym->var, e->to);
-    flow_vars(b, bb);
+    flow_vars(a, filtered_b);
+    flow_vars(filtered_b, b);
     if (p->pos.n > 1)
-      set_container(b, e->to->args.get(p->parent));
+      set_container(filtered_b, e->to->args.get(p->parent));
   }
   creation_point(make_AVar(e->match->fun->sym->cont->var, e->to), sym_continuation);
   for (int i = 0; i < e->pnode->lvals.n; i++)
     flow_vars(e->to->rets.v[i], e->rets.v[i]);
+  int regular_rets = e->pnode->lvals.n;
+  fill_rets(e->to, regular_rets + e->match->fun->out_positions.n);
+  for (int o = 0; o < e->match->fun->out_positions.n; o++) {
+    MPosition *p = e->match->formal_to_actual_position.get(
+      e->match->fun->out_positions.v[o]);
+    p = p ? p : e->match->fun->out_positions.v[o];
+    AVar *actual = e->args.get(p);
+    flow_vars(e->to->rets.v[o + regular_rets], actual);
+  }
   if (!entry_set_done.set_in(e->to)) {
     entry_set_done.set_add(e->to);
     if (!e->match->fun->fa_collected)
@@ -1639,7 +1648,7 @@ collect_notype() {
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *av = make_AVar(v, es);
-      if (!av->var->is_internal && av->out == bottom_type)
+      if (!av->var->is_internal && av->out == bottom_type &&!is_Sym_OUT(av->var->sym))
 	type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
     }
   }

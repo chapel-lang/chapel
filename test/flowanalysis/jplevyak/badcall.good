@@ -4,6 +4,7 @@
   called from badcall.v:3
   called from badcall.v:4
   called from badcall.v:4
+  called from badcall.v:4
  called from 2 in __init at assign2.v:1
  called from 3 in f at assign2.v:3
  called from 3 in f at assign2.v:3
@@ -23,8 +24,6 @@ badcall.v:2: unresolved call 'f'
 badcall.v:3: expression has no type
 badcall.v:3: expression has no type
 badcall.v:4: expression has no type
-badcall.v:4: expression has no type
-badcall.v:4: unresolved call 'print'
 f::c2(assign2.v:3) ( C (assign2.v:1) )
 fail: fatal error, program does not type
 function __init assign2.v:1
@@ -48,6 +47,7 @@ operator::b(prelude.v:76) ( __init (prelude.v:74) )
 operator::b(prelude.v:76) ( c )
 operator::b(prelude.v:76) ( d )
 operator::b(prelude.v:81) ( int32 (prelude.v:25) )
+prelude.v:135: 'a' has no type
 print::a(prelude.v:135) ( int32 (prelude.v:25) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:60) ( null (prelude.v:60) )

@@ -43,7 +43,7 @@ enum Sym_Intent {
   Sym_INOUT,
   Sym_OUT
 }; 
-#define is_Sym_OUT(_x) ((_x)->intent == Sym_INOUT || (_x)->intent == Sym_OUT)
+#define is_Sym_OUT(_x) ((_x)->intent == Sym_OUT)
 
 #define CPP_IS_LAME {							\
   "NONE", "UNKNOWN", "LUB", "GLB", "PRODUCT", "RECORD", "VECTOR",	\

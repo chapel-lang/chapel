@@ -105,6 +105,7 @@ implement_and_specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
 void
 build_type_hierarchy() {
   Vec<Sym *> type_syms, types;
+  implement_and_specialize(sym_unknown, sym_any, types);
   forv_Sym(s, if1->allsyms) {
     // functions implement and specialize symbols (selectors) of the same name
     //   this permits overloading of selectors with multiple functions

@@ -13,10 +13,8 @@ __init::self(assign2.v:1) ( C (assign2.v:1) )
 badreturn.v:2: 'q' has no type
 badreturn.v:2: near 'q' unmatched type 'tuple'
 badreturn.v:3: expression has no type
-badreturn.v:3: expression has no type
 badreturn.v:3: illegal call argument type expression illegal: ( tuple ) 
 badreturn.v:3: unresolved call 'operator'
-badreturn.v:3: unresolved call 'print'
 error: expression has no type
 f::c2(assign2.v:3) ( C (assign2.v:1) )
 fail: fatal error, program does not type

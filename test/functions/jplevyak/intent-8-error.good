@@ -1,0 +1,4 @@
+intent-8-error.chpl:8: illegal call argument type expression illegal: ( int64 ) 
+intent-8-error.chpl:8: illegal call argument type 'foo' illegal: ( foo ) 
+intent-8-error.chpl:8: expression has no type
+fail: fatal error, program does not type
