@@ -2557,3 +2557,27 @@ Log message:
 Modified files:
 	./: CVSLOG 
 
+---------------------------------------------------------------------------
+
+06/04/04 12:44:43 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	trivial/bradc/arrinit now produces (reasonably) correct types
+	for domains and arrays.  There are some limitations, in particular
+	domains initialized from sequences are not converted into domains.
+	This will be corrected when the new function lookup code is implemented.
+	
+	Note: there are several new AST nodes.  These include
+	AST_array_descriptor, AST_domain and AST_cross_product.
+	
+	Again, the implementation of these codes is incomplete pending the
+	new function lookup code.  It is sufficient for the test cases
+	but likely little else.  If you want a particular test case to work
+	in the near term, tell me and I'll see if I can finess it.
+
+Modified files:
+	chapel/compiler/: ast.cpp ast_kinds.h builtin_symbols.h chpl.g 
+	                  fa.cpp prelude.chpl prelude.v sym.h 
+	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
+	chapel/test/parsing/jplevyak/: mat1.good 
+
