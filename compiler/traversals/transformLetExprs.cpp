@@ -34,39 +34,18 @@ void TransformLetExprs::run(ModuleSymbol* moduleList) {
 
 void TransformLetExprs::doTransformation(void) {
   static int uid = 1;
-  forv_Vec(LetExpr, let_expr, lets) {
+  forv_Vec(BaseAST, ast, lets) {
+    LetExpr* let_expr = dynamic_cast<LetExpr*>(ast);
+    if (!let_expr) {
+      INT_FATAL(ast, "LetExpr expected");
+    }
     SymScope* save_scope = Symboltable::setCurrentScope(let_expr->letScope->parent);
     Stmt* let_stmt = let_expr->stmt;
     Symbol* let_syms = let_expr->syms;
     SymScope* let_scope = let_expr->letScope;
-
-    Expr* inner_copy;
-    {
-      Map<BaseAST*,BaseAST*> map;
-      inner_copy = let_expr->innerExpr->copy(false, &map);
-      for (int j = 0; j < lets.n; j++) {
-	for (int i = 0; i < map.n; i++) {
-	  if (lets.v[j] == map.v[i].key) {
-	    LetExpr* copied_let_expr = dynamic_cast<LetExpr*>(map.v[i].value);
-	    lets.v[j] = copied_let_expr;
-	  }
-	}
-      }
-    }
+    Expr* inner_copy = let_expr->innerExpr->copy(false, NULL, NULL, &lets);
     let_expr->replace(inner_copy);
-    Stmt* let_stmt_copy;
-    {
-      Map<BaseAST*,BaseAST*> map;
-      let_stmt_copy = let_stmt->copy(false, &map);
-      for (int j = 0; j < lets.n; j++) {
-	for (int i = 0; i < map.n; i++) {
-	  if (lets.v[j] == map.v[i].key) {
-	    LetExpr* copied_let_expr = dynamic_cast<LetExpr*>(map.v[i].value);
-	    lets.v[j] = copied_let_expr;
-	  }
-	}
-      }
-    }
+    Stmt* let_stmt_copy = let_stmt->copy(false, NULL, NULL, &lets);
     BlockStmt* block_stmt = new BlockStmt(let_stmt_copy);
     let_scope->stmtContext = block_stmt;
     let_scope->exprContext = nilExpr;

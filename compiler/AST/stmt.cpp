@@ -24,22 +24,40 @@ bool Stmt::isNull(void) {
 }
 
 
-Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
   }
   Stmt* newStmtList = copyListInternal(clone, map, analysis_clone);
+  if (update_list) {
+    for (int j = 0; j < update_list->n; j++) {
+      for (int i = 0; i < map->n; i++) {
+	if (update_list->v[j] == map->v[i].key) {
+	  update_list->v[j] = map->v[i].value;
+	}
+      }
+    }
+  }
   newStmtList->back = &newStmtList;  // in case, replaced by cleanup
   TRAVERSE_LS(newStmtList, new UpdateSymbols(map), true);
   return newStmtList;
 }
 
 
-Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
   }
   Stmt* new_stmt = copyInternal(clone, map, analysis_clone);
+  if (update_list) {
+    for (int j = 0; j < update_list->n; j++) {
+      for (int i = 0; i < map->n; i++) {
+	if (update_list->v[j] == map->v[i].key) {
+	  update_list->v[j] = map->v[i].value;
+	}
+      }
+    }
+  }
   new_stmt->back = &new_stmt;  // in case, replaced by cleanup
   TRAVERSE(new_stmt, new UpdateSymbols(map), true);
   return new_stmt;

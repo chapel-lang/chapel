@@ -91,22 +91,40 @@ Expr::Expr(astType_t astType) :
 {}
 
 
-Expr* Expr::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Expr* Expr::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
   }
   Expr* newExprList = copyListInternal(clone, map, analysis_clone);
+  if (update_list) {
+    for (int j = 0; j < update_list->n; j++) {
+      for (int i = 0; i < map->n; i++) {
+	if (update_list->v[j] == map->v[i].key) {
+	  update_list->v[j] = map->v[i].value;
+	}
+      }
+    }
+  }
   newExprList->back = &newExprList;  // in case, replaced by cleanup
   TRAVERSE_LS(newExprList, new UpdateSymbols(map), true);
   return newExprList;
 }
 
 
-Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
   }
   Expr* new_expr = copyInternal(clone, map, analysis_clone);
+  if (update_list) {
+    for (int j = 0; j < update_list->n; j++) {
+      for (int i = 0; i < map->n; i++) {
+	if (update_list->v[j] == map->v[i].key) {
+	  update_list->v[j] = map->v[i].value;
+	}
+      }
+    }
+  }
   new_expr->back = &new_expr;  // in case, replaced by cleanup
   TRAVERSE(new_expr, new UpdateSymbols(map), true);
   return new_expr;
