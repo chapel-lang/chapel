@@ -46,7 +46,6 @@ type anyfloat __name "anyfloat" =
 
 type anynum __name "anynum" = anyint | anyfloat;
 type char __name "char" = uint8;
-type complex __name "complex";
 type size __name "size" = uint32;
 type bool __name "bool" = int;
 type string __name "string";

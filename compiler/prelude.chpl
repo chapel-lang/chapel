@@ -43,14 +43,10 @@ type anyfloat __name "anyfloat" =
 
 type anynum __name "anynum" = anyinteger | anyfloat;
 type char __name "char" = uinteger8;
-type complex __name "complex";
 type size __name "size" = uinteger;
 type bool __name "bool" = integer;
 type string __name "string";
 type enum_element __name "enum_element" = integer;
-
-// builtin constants
-0;
 
 // builtin value
 

@@ -167,6 +167,15 @@ Vec<C>::set_difference(Vec<C> &vv, Vec<C> &result) {
 } 
 
 template <class C> int
+Vec<C>::some_difference(Vec<C> &vv) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (!vv.set_in(v[i]))
+	return 1;
+  return 0;
+} 
+
+template <class C> int
 Vec<C>::set_count() {
   int n = 0;
   for (int i = 0; i < n; i++)

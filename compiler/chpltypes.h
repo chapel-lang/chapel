@@ -12,6 +12,5 @@ typedef unsigned short uint16;
 /* typedef uint32 uint; * already part of most systems */
 typedef float float32;
 typedef double float64;
-typedef struct { float64 real; float64 imag; } complex64;
 
 #endif

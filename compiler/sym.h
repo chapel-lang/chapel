@@ -50,7 +50,6 @@ union Immediate {
   int64 v_int64;
   float32 v_float32;
   float64 v_float64;
-  complex64 v_complex64;
   char *v_string;
 };
 

@@ -462,7 +462,7 @@ forall_indices: ident (',' ident)* {
 constant : (character | int8 | uint8 | int16 | uint16 | 
 	    int32 | uint32 | int64 | uint64 | int | uint |
 	    float32 | float64 | float128 | float | 
-	    string | symbol | complex) ('__name' string)?
+	    string | symbol) ('__name' string)?
 { 
   $$.ast = new AST(AST_const, &$n); 
   $$.ast->string = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
@@ -510,8 +510,6 @@ float	   ::= base_float "/[^\.]";
 anynum ::= character | int8 | uint8 | int16 | uint16 | 
            int32 | uint32 | int64 | uint64 | int | uint |
            float32 | float64 | float128 | float;
-
-complex	   ::= anynum "i" ;
 
 identifier : "[a-zA-Z_][a-zA-Z0-9_]*" $term -1;
 
