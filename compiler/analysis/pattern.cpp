@@ -33,7 +33,7 @@ class Matcher {
   void find_best_matches(Vec<AVar *> &, Vec<CreationSet *> &, Vec<Fun *> &, MPosition &, 
 			 Vec<Fun *> &, int, int iarg = 0);
   int covers_formals(Fun *, Vec<CreationSet *> &, MPosition &, int);
-  void default_arguments_and_partial_application(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &);
+  void instantiation_wrappers_and_partial_application(Vec<Fun *> &);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
   void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &);
   void cannonicalize_matches();
@@ -411,19 +411,17 @@ rebuild_Match(Match *m, Fun *f) {
 }
 
 void 
-Matcher::default_arguments_and_partial_application(
-  Vec<CreationSet *> &csargs, MPosition &p, Vec<Fun *> &matches)
-{
+Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
   Vec<Fun *> new_matches, complete;
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    if (m->default_args.n) {
-      // build new wrapper and put into new_matches
-      f = f->default_wrapper(m->default_args);
+    if (m->default_args.n || m->generic_substitutions.n || pointwise_substitutions.n) {
+      f = f->build(m);
       assert(f);
       rebuild_Match(m, f);
     }
-    complete.add(f);
+    if (!m->partial)
+      complete.add(f);
     new_matches.add(f);
   }
   if (complete.n > 1)
@@ -610,10 +608,8 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
     p.pop();
     matches.append(similar);
   }
-  if (top_level) {
-    default_arguments_and_partial_application(csargs, p, matches);
-    //generic_arguments(csargs, p, matches, top_level);
-  }
+  if (top_level)
+    instantiation_wrappers_and_partial_application(matches);
   set_filters(csargs, p, matches);
   result.set_union(matches);
 }
@@ -658,8 +654,6 @@ Matcher::cannonicalize_matches() {
       if (m->filters.v[i].key)
 	m->filters.v[i].value = make_AType(*m->filters.v[i].value);
     matches->add(m);
-    // build_wrappers
-    assert(!m->default_args.n && !m->generic_substitutions.n && !m->pointwise_substitutions.n);
   }
 }
 

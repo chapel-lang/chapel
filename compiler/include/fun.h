@@ -15,6 +15,7 @@ class Fun;
 class Sym;
 class PNode;
 class CreationSet;
+class Match;
 
 class CallPoint : public gc {
  public:
@@ -117,7 +118,7 @@ class Fun : public gc {
   Fun(Sym *afn, int aninit_function = 0);
   Fun() {}
   Fun *copy();
-  Fun *default_wrapper(Vec<MPosition *> &defaults) { return 0; }
+  Fun *build(Match *m) { return NULL; }
 };
 #define forv_Fun(_f, _v) forv_Vec(Fun, _f, _v)
 
