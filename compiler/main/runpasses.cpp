@@ -12,7 +12,6 @@ bool printPasses = false;
 
 struct PassInfo {
   char* name;
-  Pass* pass;
   char* args;
 };
 
@@ -33,9 +32,9 @@ struct PassInfo {
 #include "passlist.cpp"  
 
 
-#define FIRST {NULL, NULL, NULL}
-#define LAST {NULL, NULL, NULL}
-#define RUN(x, a) {#x, new x(), a}
+#define FIRST {NULL, NULL}
+#define LAST {NULL, NULL}
+#define RUN(x, a) {#x, a}
 #include "passlist.h"
 
 
@@ -119,7 +118,7 @@ void runPasses(char* passfilename) {
     PassInfo* pass = passlist+1;  // skip over FIRST
     
     while (pass->name != NULL) {
-      runPass(pass->name, pass->pass, pass->args);
+      runPass(pass->name, stringToPass(pass->name), pass->args);
       
       pass++;
     }
