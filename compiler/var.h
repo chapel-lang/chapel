@@ -35,7 +35,7 @@ class Var : public gc {
 #define forv_AVarMapElem(_p, _v) forv_Vec(AVarMapElem, _p, _v)
 
 #define Var_is_local(_v, _f) (!(_v)->sym->is_constant && (_v)->sym->in == (_f)->sym && \
-  !(_f)->init_function && !(_v)->sym->is_lvalue)
+  !(_f)->init_function && !(_v)->sym->is_lvalue && !(_v)->sym->is_var)
 
 typedef Map<Var *, Var *> VarMap;
 

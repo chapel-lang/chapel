@@ -62,7 +62,7 @@ class Sym : public gc {
  public:
   int			id;			// unique number
   char 			*name;			// user level name
-  Sym  			*in;			// containing module, class or function
+  Sym  			*in;			// containing module, class, function
   Sym 			*type;			// true type
   Sym  			*aspect;		// mascarade as type (e.g. superclass)
   Vec<Sym *>		*constraints;		// must-implement
@@ -82,9 +82,10 @@ class Sym : public gc {
   unsigned int		is_pattern:1;		// Sym is a pattern
   unsigned int		is_vararg:1;		// Sym is a vararg parameter
   unsigned int		is_external:1;		// Sym is "external", so constraints are type
+
   unsigned int		is_structure:1;		// Sym is a structure (C compatibility)
-  unsigned int		is_meta:1;		// Sym is class of class
-  unsigned int 		is_value:1;		// Sym is a value class
+  unsigned int		is_meta_class:1;	// Sym is class of class
+  unsigned int 		is_value_class:1;	// Sym is a value class
 
   unsigned int		global_scope:1;		// Sym is globally unique (file/module)
   unsigned int		function_scope:1;	// Sym is function unique

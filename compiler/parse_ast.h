@@ -30,8 +30,6 @@ enum AST_kind {
 
 enum Constructor { Make_TUPLE, Make_VECTOR, Make_SET };
 
-class LabelMap : public Map<char *, ParseAST *> {};
-
 class ParseAST : public AST {
  public:
   AST_kind kind;

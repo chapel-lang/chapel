@@ -22,14 +22,12 @@ function operator prelude.v:90
 function operator prelude.v:90
 function operator prelude.v:90
 function print prelude.v:144
-function print prelude.v:144
 globals
 operator::a(prelude.v:90) ( tuple (prelude.v:14) )
 operator::a(prelude.v:90) ( tuple (prelude.v:14) )
 operator::a(prelude.v:90) ( tuple (prelude.v:14) )
 operator::a(prelude.v:90) ( tuple (prelude.v:14) )
-print::a(prelude.v:144) ( float64 (prelude.v:42) )
-print::a(prelude.v:144) ( int32 (prelude.v:29) )
+print::a(prelude.v:144) ( int32 (prelude.v:29) float64 (prelude.v:42) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::__init(cs1.v:1) ( __init (cs1.v:1) )

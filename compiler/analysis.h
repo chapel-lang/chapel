@@ -9,6 +9,8 @@
 
 class Symbol;
 class BaseAST;
+class Label;
+class Code;
 
 class ASymbol : public Sym {
  public:
@@ -20,6 +22,9 @@ class ASymbol : public Sym {
 class AInfo : public AST {
  public:
   BaseAST *xast;
+  Code *code;
+  Label *label[2];	// before and after for loops (continue,break)
+  Sym *sym, *rval;
 
   char *pathname();
   int line();
@@ -29,6 +34,6 @@ class AInfo : public AST {
   AInfo();
 };
 
-void analyze_new_ast(BaseAST *s);
+int analyze_new_ast(BaseAST *s);
 
 #endif

@@ -2,6 +2,7 @@
   Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
+#include <typeinfo>
 #include "geysa.h"
 #include "analysis.h"
 #include "expr.h"
@@ -14,10 +15,13 @@
 #include "builtin.h"
 #include "if1.h"
 
+class LabelMap : public Map<char *, BaseAST *> {};
+
 ASymbol::ASymbol() : xsymbol(0) {
 }
 
-AInfo::AInfo() : xast(0) {
+AInfo::AInfo() : xast(0), code(0), sym(0), rval(0) {
+  label[0] = label[1] = 0;
 }
 
 char *AInfo::pathname() { 
@@ -39,8 +43,11 @@ AST *AInfo::copy(Map<PNode *, PNode*> *nmap) {
 static void
 close_symbols(BaseAST *a, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
-  set.set_add(a);
-  syms.add(a);
+  while (a) {
+    set.set_add(a);
+    syms.add(a);
+    a = dynamic_cast<BaseAST *>(a->next);
+  }
   forv_BaseAST(s, syms) {
     Vec<BaseAST *> moresyms;
     s->getBaseASTs(moresyms);
@@ -177,7 +184,7 @@ build_types(Vec<BaseAST *> &syms) {
 }
 
 static Sym *
-new_sym(char *name) {
+new_sym(char *name = 0) {
   return if1_alloc_sym(if1, name);
 }
 
@@ -305,27 +312,184 @@ build_builtin_symbols() {
 #undef S
 }
 
-static void
-build_functions(Vec<BaseAST *> &syms) {
-  Vec<FnSymbol *> fns;
-  forv_BaseAST(s, syms)
-    if (s->astType == SYMBOL_FN)
-      fns.add(dynamic_cast<FnSymbol*>(s)); 
+// FUTURE: support for goto or named break
+static int
+define_labels(BaseAST *ast, LabelMap *labelmap) {
+#if 0
+  Stmt *stmt = dynamic_cast<Stmt *>(ast);
+  switch (stmt->astType) {
+    case AST_label:
+      ast->label[0] = if1_alloc_label(i);
+      ast->label[1] = ast->label[0];
+      labelmap->put(ast->get(AST_ident)->string, ast);
+      break;
+    default: break;
+  }
+  Vec<BaseAST *> asts;
+  ast->getStmts(asts);
+  forv_BaseAST(a, asts)
+    define_labels(a, labelmap);
+#endif
+  return 0;
 }
 
-static void
-import_symbols(BaseAST *a) {
-  Vec<BaseAST *> syms;
-  close_symbols(a, syms);
+static int
+resolve_labels(BaseAST *ast, LabelMap *labelmap,
+	       Label *return_label, Label *break_label = 0, Label *continue_label = 0)
+{
+  Stmt *stmt = dynamic_cast<Stmt *>(ast);
+  switch (stmt->astType) {
+    case STMT_WHILELOOP:
+    case STMT_FORLOOP:
+      continue_label = stmt->ainfo->label[0] = if1_alloc_label(if1);
+      break_label = stmt->ainfo->label[1] = if1_alloc_label(if1);
+      break;
+    case STMT_RETURN:
+      stmt->ainfo->label[0] = return_label;
+      break;
+#if 0
+    case STMT_BREAK;
+      if ((target = ast->get(AST_ident))) {
+	target = labelmap->get(target->string);
+	ast->label[0] = target->label[1];
+      } else
+	ast->label[0] = break_label;
+      break;
+    case STMT_CONTINUE:
+      if ((target = ast->get(AST_ident))) {
+	target = labelmap->get(target->string);
+	ast->label[0] = target->label[0];
+      } else
+	ast->label[0] = continue_label;
+      break;
+    case STMT_GOTO:
+      target = labelmap->get(ast->get(AST_ident)->string);
+      ast->label[0] = target->label[0];
+      break;
+#endif
+    default: break;
+  }
+  Vec<BaseAST *> asts;
+  ast->getStmts(asts);
+  forv_BaseAST(a, asts)
+    if (resolve_labels(a, labelmap, return_label, break_label, continue_label) < 0)
+      return -1;
+  return 0;
+}
+
+static int
+gen_vardef(BaseAST *a) {
+  VarDefStmt *def = dynamic_cast<VarDefStmt*>(a);
+  VarSymbol *var = def->var;
+  Sym *s = var->asymbol;
+  def->ainfo->rval = def->ainfo->sym = s;
+  if (var->type) {
+    s->type = var->type->asymbol;
+    if (typeid(var->type) != typeid(ClassType))
+      s->is_var = 1;
+  }
+  if (def->init) {
+    if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
+    if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->rval, def->ainfo);
+  } else if (!s->is_var) {
+    show_error("missing value initializer", def->ainfo);
+    return -1;
+  }
+  return 0;
+}
+
+static int
+gen_expr_stmt(BaseAST *a) {
+  ExprStmt *expr = dynamic_cast<ExprStmt*>(a);
+  expr->ainfo->rval = expr->expr->ainfo->rval;
+  return 0;
+}
+
+static int
+gen_if1(BaseAST *ast) {
+  // bottom's up
+  Vec<BaseAST *> asts;
+  ast->getStmtExprs(asts);
+  forv_BaseAST(a, asts) 
+    if (gen_if1(a) < 0)
+      return -1;
+  switch (ast->astType) {
+    case STMT_NOOP: break;
+    case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
+    case STMT_TYPEDEF:
+    case STMT_FNDEF:
+      break;
+    case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
+#if 0
+    case STMT_RETURN:
+  STMT_BLOCK,
+  STMT_WHILELOOP,
+  STMT_FORLOOP,
+  STMT_COND,
+
+  EXPR_LITERAL,
+  EXPR_INTLITERAL,
+  EXPR_FLOATLITERAL,
+  EXPR_STRINGLITERAL,
+  EXPR_VARIABLE,
+  EXPR_UNOP,
+  EXPR_BINOP,
+  EXPR_SPECIALBINOP,
+  EXPR_ASSIGNOP,
+  EXPR_SIMPLESEQ,
+  EXPR_FLOOD,
+  EXPR_COMPLETEDIM,
+  EXPR_DOMAIN,
+  EXPR_PARENOP,
+  EXPR_CAST,
+  EXPR_FNCALL,
+  EXPR_WRITECALL,
+  EXPR_ARRAYREF,
+  EXPR_REDUCE,
+  EXPR_TUPLE,
+#endif
+    default: assert(0);
+  }
+  return 0;
+}
+
+static int
+build_functions(Vec<BaseAST *> &syms) {
+  Vec<FnDefStmt *> fns;
+  forv_BaseAST(s, syms)
+    if (s->astType == STMT_FNDEF)
+      fns.add(dynamic_cast<FnDefStmt*>(s)); 
+  forv_Vec(FnDefStmt, f, fns) {
+    Sym *s = f->fn->asymbol;
+    s->name = f->fn->name;
+    s->cont = new_sym();
+    s->cont->ast = f->ainfo;
+    s->labelmap = new LabelMap;
+  }
+  forv_Vec(FnDefStmt, f, fns) {
+    if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
+    Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
+    if (resolve_labels(f->fn->body, f->fn->asymbol->labelmap, return_label) < 0) return -1;
+    if (gen_if1(f) < 0) return -1;
+  }
+  return 0;
+}
+
+static int
+import_symbols(Vec<BaseAST *> &syms) {
   map_symbols(syms);
   build_builtin_symbols();
   build_types(syms);
-  build_functions(syms);
+  return 0;
 }
 
-void
+int
 analyze_new_ast(BaseAST* a) {
-  import_symbols(a);
+  Vec<BaseAST *> syms;
+  close_symbols(a, syms);
+  if (import_symbols(syms) < 0) return -1;
+  if (build_functions(syms) < 0) return -1;
+  return 0;
 }
 
 

@@ -12,7 +12,7 @@ typedef void code_fn_t(Code *);
 
 static void resolve_labels(Code *code);
 static void finalize_cfg(Fun *f);
-static PNode *build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont);
+static int build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont, int dead);
 
 // build CFG
 void  
@@ -22,7 +22,8 @@ Fun::build_cfg() {
   if (!sym->code || (sym->code->is_group() && !sym->code->sub.n))
     return;
   resolve_labels(sym->code);
-  entry = build_pn_cfg(pdb->if1, sym->code, NULL, NULL);
+  build_pn_cfg(pdb->if1, sym->code, NULL, NULL, 0);
+  entry = sym->code->pn;
   exit = sym->code->sub.v[sym->code->sub.n-1]->pn;
   finalize_cfg(this);
 }
@@ -64,9 +65,14 @@ get_cont(Code *code, Code *cont) {
   return code->cont = get_cont(code->sub.v[0], cont);
 }
 
-static PNode *
-build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont) {
-  PNode *pn = NULL, *tpn;
+static int
+build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont, int dead) {
+  PNode *pn = NULL;
+  if (dead) {
+    if (code->kind != Code_LABEL)
+      return dead;
+    dead = 0;
+  }
   if (!code->is_group()) {
     pn = code->pn;
     if (!pn) pn = code->pn = new PNode(code);
@@ -83,9 +89,11 @@ build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont) {
       case Code_IF:
 	pn->cfg_succ.add(build_PNode(pn, code->label[0]->code));
 	pn->cfg_succ.add(build_PNode(pn, code->label[1]->code));
+	dead = 1;
 	break;
       case Code_GOTO:
 	pn->cfg_succ.add(build_PNode(pn, code->label[0]->code));
+	dead = 1;
 	break;
       default:
 	if (cont)
@@ -102,11 +110,11 @@ build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont) {
 #endif
     for (Code **cc = code->sub.v; cc < code->sub.end(); cc++) {
       Code *new_cont = (cc + 1 < code->sub.end()) ? get_cont(cc[1], cont) : cont;
-      tpn = build_pn_cfg(if1, *cc, new_cont, new_conc_cont);
-      if (!pn)
-	pn = tpn;
+      dead = build_pn_cfg(if1, *cc, new_cont, new_conc_cont, dead);
     }
+    if (code->sub.n)
+      code->pn = code->sub.v[0]->pn;
   }
-  return pn;
+  return dead;
 }
 

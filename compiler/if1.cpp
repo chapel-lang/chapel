@@ -595,7 +595,7 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       fputs(" :CONT ", fp);
       if1_dump_sym(fp, s->cont);
     }
-    if (s->is_value)
+    if (s->is_value_class)
       fputs(" :VALUE true", fp);
     if (s->code) {
       fputs(" :CODE\n", fp);

@@ -213,7 +213,7 @@ flow_var_to_var(AVar *a, AVar *b) {
 }
 
 static void
-flow_vars_equal(AVar *v, AVar *vv) {
+flow_vars(AVar *v, AVar *vv) {
   if (v->lvalue) {
     if (vv->lvalue) {
       flow_var_to_var(v, vv);
@@ -226,19 +226,9 @@ flow_vars_equal(AVar *v, AVar *vv) {
     if (vv->lvalue) {
       flow_var_to_var(v, vv);
       flow_var_to_var(vv->lvalue, v);
-    } else {
-      assert(0);
-    }
+    } else
+      flow_var_to_var(v, vv);
   }
-}
-
-static void
-flow_vars(AVar *v, AVar *vv) {
-  if (vv->lvalue && v->lvalue) {
-    flow_var_to_var(v, vv);
-    flow_var_to_var(vv->lvalue, v->lvalue);
-  } else
-    flow_var_to_var(v, vv);
 }
 
 // Initially create a unique creation set for each
@@ -1016,8 +1006,9 @@ add_move_constraints(EntrySet *es) {
     for (int i = 0; i < p->rvals.n; i++) {
       AVar *lhs = make_AVar(p->lvals.v[i], es), *rhs = make_AVar(p->rvals.v[i], es);
       flow_var_to_var(rhs, lhs);
-      if (lhs->lvalue)
-	flow_var_to_var(rhs, lhs->lvalue);
+      if (lhs->lvalue) {
+	  flow_var_to_var(rhs, lhs->lvalue);
+      }
     }
   }
 }
@@ -1254,7 +1245,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	Sym *s;
 	forv_CreationSet(cs1, *a1->out)
 	  forv_CreationSet(cs2, *a2->out)
-	    if (cs1->sym->is_meta && cs2->sym->is_meta && 
+	    if (cs1->sym->is_meta_class && cs2->sym->is_meta_class && 
 		(s = meta_apply(cs1->sym->type_sym, cs2->sym->type_sym)))
 	      update_in(result, make_abstract_type(s));
 	    else
@@ -1285,14 +1276,14 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	  if (cs->sym == sym_tuple) {
 	    int i;
 	    if (index->type && index->imm_int(&i) == 0 && i >= 0 && i < cs->vars.n)
-	      flow_vars_equal(cs->vars.v[i], result);
+	      flow_vars(cs->vars.v[i], result);
 	    else { // assume the worst
 	      for (i = 0; i < cs->vars.n; i++)
-		flow_vars_equal(cs->vars.v[i], result);
+		flow_vars(cs->vars.v[i], result);
 	    }
 	  } else {
 	    AVar *elem = get_element_avar(cs);
-	    flow_vars_equal(elem, result);
+	    flow_vars(elem, result);
 	  }
 	}
 	break;
@@ -1317,7 +1308,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	  forv_CreationSet(cs, *obj->out) if (cs) {
 	    AVar *iv = cs->var_map.get(symbol);
 	    if (iv)
-	      flow_vars_equal(iv, result);
+	      flow_vars(iv, result);
 	    else {
 	      Vec<AVar *> args;
 	      args.add(selector);
@@ -1341,7 +1332,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	    assert(cs->vars.n);
 	    AVar *av = cs->vars.v[0];
 	    flow_vars(rhs, av);
-	    flow_vars_equal(rhs, result);
+	    flow_vars(rhs, result);
 	  } else {
 	    if (cs->sym->type->num_kind)
 	      update_in(result, cs->sym->type->abstract_type);
@@ -1356,7 +1347,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	set_container(result, ref);
 	forv_CreationSet(cs, *ref->out) if (cs) {
 	  AVar *av = cs->vars.v[0];
-	  flow_vars_equal(av, result);
+	  flow_vars(av, result);
 	}
 	break;
       }
@@ -1655,9 +1646,9 @@ initialize_symbols() {
   }
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && s != sym_any) {
-      if (s->is_meta && (s != sym_anyclass))
+      if (s->is_meta_class && (s != sym_anyclass))
 	subtype(sym_anyclass, s, types);
-      else if (s->is_value && (s != sym_value))
+      else if (s->is_value_class && (s != sym_value))
 	subtype(sym_value, s, types);
       else
 	subtype(sym_any, s, types);

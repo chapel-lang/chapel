@@ -85,7 +85,8 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 
 int
 Symbol::getTypes(Vec<BaseAST *> &asts) {
-  asts.add(type);
+  if (type)
+    asts.add(type);
   return asts.n;
 }
 

@@ -154,7 +154,7 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
     case P_prim_new: {
       assert(n->lvals.n == 1);
       fprintf(fp, "%s = ", n->lvals.v[0]->cg_string);
-      assert(n->rvals.v[1]->type->is_meta);
+      assert(n->rvals.v[1]->type->is_meta_class);
       fprintf(fp, "_CG_prim_new(%s);\n", n->lvals.v[0]->type->cg_string);
       break;
     }
