@@ -7,6 +7,7 @@
 #include "sym.h"
 #include "code.h"
 #include "num.h"
+#include "callbacks.h"
 
 class Scope;
 class Primitives;
@@ -34,6 +35,7 @@ class IF1 : public gc {
   Sym 			*float_types[IF1_FLOAT_TYPE_NUM];
   Sym 			*top;			// main function
   Primitives 		*primitives;
+  Callbacks		*callback;
   
   IF1();
 };
@@ -86,5 +88,7 @@ void	if1_dump_code(FILE *fp, Code *code, int indent);
 void	if1_dump_sym(FILE *fp, Sym *sym);
 
 extern IF1 *if1;
+
+static inline Sym *new_Sym() { return if1->callback->new_Sym(); }
 
 #endif

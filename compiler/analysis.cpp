@@ -83,12 +83,29 @@ set_global_scope(Sym *s) {
 }
 
 static ASymbol *
-new_ASymbol(Symbol *symbol) {
+new_ASymbol(Symbol *symbol = 0) {
   ASymbol *s = new ASymbol;
   char *name = 0;
-  if (!symbol->isNull())
+  if (symbol && !symbol->isNull())
     name = symbol->name;
   if1_register_sym(if1, s, name);
+  return s;
+}
+
+void
+ACallbacks::new_SUM_type(Sym *) {
+}
+
+Sym *
+ACallbacks::new_Sym() {
+  return new_ASymbol();
+}
+
+Sym *
+ASymbol::copy() {
+  ASymbol *s = new_ASymbol(); 
+  s->copy_values(this);
+  s->xsymbol = xsymbol;
   return s;
 }
 
@@ -1070,5 +1087,100 @@ print_AST_types() {
     FnDefStmt *def = dynamic_cast<FnDefStmt *>(a->xast);
     print_AST_Expr_types(def->fn->body);
   }
+}
+
+static void
+ast_sym_info(BaseAST *a, Symbol *s, AST **ast, Sym **sym) {
+  *ast = 0;
+  *sym = 0;
+  Expr *e = dynamic_cast<Expr *>(a);
+  if (e)
+    *ast = e->ainfo;
+  else {
+    Stmt *stmt = dynamic_cast<Stmt *>(a);
+    if (stmt)
+       *ast = stmt->ainfo;
+    else {
+      Symbol *symbol = dynamic_cast<Symbol *>(a);
+      if (symbol)
+        *sym = symbol->asymbol;
+      else {
+        Type *t = dynamic_cast<Type *>(a);
+        *sym = t->asymbol;
+      }
+    }
+  }
+  if (!sym)
+    *sym = s->asymbol;
+}
+
+Type *
+type_info(BaseAST *a, Symbol *s) {
+  AST *ast = 0;
+  Sym *sym = 0;
+  ast_sym_info(a, s, &ast, &sym);
+  Sym *type = 0;
+  if (ast) {
+    type = type_info(ast, sym);
+    goto Ldone;
+  }
+  assert(sym);
+  if (sym->var) {
+    type = sym->var->type;
+    goto Ldone;
+  }
+  if (sym->type) {
+    type = sym->type;
+    goto Ldone;
+  }
+ Ldone:
+  if (!type)
+    return dtUnknown;
+  ASymbol *asymbol = dynamic_cast<ASymbol *>(type);
+  BaseAST *atype = asymbol->xsymbol;
+  Type *btype = dynamic_cast<Type *>(atype);
+  assert(btype);
+  return btype;
+}
+
+void 
+call_info(FnSymbol *f, BaseAST *a, Vec<FnSymbol *> &fns) {
+  fns.clear();
+  Fun *ff = f->asymbol->fun;
+  AST *ast = 0;
+  Expr *e = dynamic_cast<Expr *>(a);
+  if (e)
+    ast = e->ainfo;
+  else {
+    Stmt *stmt = dynamic_cast<Stmt *>(a);
+    if (stmt)
+       ast = stmt->ainfo;
+  }
+  assert(ast);
+  Vec<Fun *> funs;
+  call_info(ff, ast, funs);
+  forv_Fun(f, funs) {
+    ASymbol *asymbol = dynamic_cast<ASymbol *>(f->sym);
+    FnSymbol *fs = dynamic_cast<FnSymbol *>(asymbol->xsymbol);
+    assert(fs);
+    fns.add(fs);
+  }
+}
+
+int 
+constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s) {
+  constants.clear();
+  AST *ast = 0;
+  Sym *sym = 0;
+  ast_sym_info(a, s, &ast, &sym);
+  Vec<Sym *> consts;
+  constant_info(ast, consts, sym);
+  forv_Sym(ss, consts) {
+    ASymbol *asymbol = dynamic_cast<ASymbol *>(ss);
+    Symbol *fs = dynamic_cast<Symbol *>(asymbol->xsymbol);
+    assert(fs);
+    constants.add(fs);
+  }
+  return constants.n;
 }
 

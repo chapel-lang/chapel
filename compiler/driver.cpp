@@ -283,6 +283,7 @@ compile_one(char *fn) {
   if (newAST && !dotVFile) {
     Stmt* program = fileToAST(fn, d_debug_level);
     if (analyzeNewAST) {
+      if1->callback = new ACallbacks;
       AST_to_IF1(program);
       do_analysis(fn);
     }
@@ -294,6 +295,7 @@ compile_one(char *fn) {
     }
     return 0;
   }
+  if1->callback = new PCallbacks;
   if (load_one(fn) < 0)
     return -1;
   do_analysis(fn);

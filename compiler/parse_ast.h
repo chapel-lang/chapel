@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "map.h"
 #include "scope.h"
+#include "callbacks.h"
 
 // C++'s manditory heap'o forward declarations
 struct D_ParseNode;
@@ -19,6 +20,12 @@ class Prim;
 class Label;
 class ParseAST;
 class PNode;
+
+class PCallbacks : public Callbacks {
+public:
+  void new_SUM_type(Sym *);
+  Sym *new_Sym();
+};
 
 // see ast_kinds.h for details
 enum AST_kind {

@@ -13,6 +13,7 @@
 #include "fa.h"
 #include "ast.h"
 #include "var.h"
+#include "callbacks.h"
 
 #define BAD_NAME ((char*)-1)
 #define BAD_AST ((AST*)-1)
@@ -389,7 +390,7 @@ define_concrete_types(CSSS &css_sets) {
 	// tuples use record type
 	char *name = 0;
 	AST *ast = 0;
-	Sym *s = if1_alloc_sym(fa->pdb->if1);
+	Sym *s = sym->copy();
 	s->type_kind = sym == sym_tuple ? Type_RECORD : Type_FUN;
 	s->incomplete = 1;
 	forv_CreationSet(cs, *eqcss) if (cs) {
@@ -414,7 +415,7 @@ define_concrete_types(CSSS &css_sets) {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
       } else {
-	Sym *s = if1_alloc_sym(fa->pdb->if1);
+	Sym *s = sym->copy();
 	char *name = 0;
 	s->type_kind = sym->type_kind;
 	s->incomplete = 1;
@@ -432,7 +433,7 @@ define_concrete_types(CSSS &css_sets) {
       }
     } else {
       // if different sym use sum type
-      sym = if1_alloc_sym(fa->pdb->if1);
+      sym = new_Sym();
       sym->type_kind = Type_SUM;
       sym->incomplete = 1;
       forv_CreationSet(cs, *eqcss) if (cs)
@@ -465,6 +466,7 @@ resolve_concrete_types(CSSS &css_sets) {
 	    sym->has.set_add(cs->sym);
 	  sym->has.set_to_vec();
 	  qsort(sym->has.v, sym->has.n, sizeof(sym->has.v[0]), compar_syms);
+	  if1->callback->new_SUM_type(sym);
 	  break;
 	}
 	case Type_RECORD:
@@ -487,10 +489,11 @@ resolve_concrete_types(CSSS &css_sets) {
 		s->type = t.v[0];
 	      else {
 		if (s->has.n != 0) {
-		  Sym *tt = if1_alloc_sym(if1);
+		  Sym *tt = new_Sym();
 		  tt->type_kind = Type_SUM;
 		  tt->has.copy(t);
 		  s->type = tt;
+                  if1->callback->new_SUM_type(tt);
 		} else
 		  s->type = sym_void;
 	      }
@@ -526,7 +529,7 @@ concretize_types(Fun *f) {
 	else {
 	  if (sym != cs->type) {
 	    if (!type) {
-	      type = if1_alloc_sym(fa->pdb->if1);
+	      type = new_Sym();
 	      type->type_kind = Type_SUM;
 	      type->has.set_add(sym);
 	    }
@@ -547,7 +550,7 @@ concretize_types(Fun *f) {
 	v->type = type->has.v[0];
       else {
 	v->type = type;
-	//return show_error("unable to build unique concrete type", v);
+        if1->callback->new_SUM_type(type);
       }
     }
   }

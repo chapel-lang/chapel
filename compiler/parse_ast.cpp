@@ -35,6 +35,17 @@ char *cannonical_folded = 0;
 Sym *operator_symbol = 0;
 Sym *print_symbol = 0;
 
+
+void 
+PCallbacks::new_SUM_type(Sym *) {
+}
+
+Sym *
+PCallbacks::new_Sym() {
+  return if1_alloc_sym(if1);
+}
+
+
 static void
 dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
   switch (a->kind) {

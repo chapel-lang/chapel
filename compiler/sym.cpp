@@ -34,11 +34,16 @@ Sym::line() {
   return 0;
 }
 
+void
+Sym::copy_values(Sym *s) {
+  name = s->name;
+  ast = s->ast;
+}
+
 Sym *
 Sym::copy() {
   Sym *s = if1_alloc_sym(if1);
-  s->name = name;
-  s->ast = ast;
+  s->copy_values(this);
   return s;
 }
 

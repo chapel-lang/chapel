@@ -129,9 +129,9 @@ class Sym : public gc {
   char			*filename();
   int			line();
 
-  Sym			*copy();
+  virtual Sym		*copy();
+  void			copy_values(Sym *);
 
-  Sym() { memset(this, 0, sizeof *this); }
   int imm_int(int *);
 };
 #define forv_Sym(_c, _v) forv_Vec(Sym, _c, _v)
