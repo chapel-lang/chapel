@@ -134,6 +134,7 @@ with            return TWITH;
 
                   while (1) {
                     while ((c = yyinput()) != '\"' && c != EOF) {
+		    FORCE_NEXT:
 		      stringbuffer[stringlen] = c;
                       stringlen++;
                       if (stringlen == bufflen) {
@@ -141,6 +142,55 @@ with            return TWITH;
                         stringbuffer = (char*)REALLOC(stringbuffer,
                                                       bufflen*sizeof(char));
                       }
+		      if (c == '\\') {
+			c = yyinput();
+			if (c != EOF) {
+			  goto FORCE_NEXT;
+			}
+		      }
+                    } /* eat up string */
+		    stringbuffer[stringlen] = '\0';
+                    if (c == EOF) {
+                      yyerror("EOF in string");
+                    } else {
+                      yylval.pch = stringbuffer;
+                      return STRINGLITERAL;
+                    }
+                  }
+                }
+
+"\'"            {
+                  register int c;
+                  int bufflen = 256;
+		  static char* stringbuffer = 
+                    (char*)MALLOC(bufflen*sizeof(char));
+                  int stringlen = 0;
+
+                  while (1) {
+                    while ((c = yyinput()) != '\'' && c != EOF) {
+		      if (c == '\"') {
+			stringbuffer[stringlen] = '\\';
+			stringlen++;
+			if (stringlen == bufflen) {
+			  bufflen *= 2;
+			  stringbuffer = (char*)REALLOC(stringbuffer,
+							bufflen*sizeof(char));
+			}
+		      }
+		    FORCE_NEXT2:
+		      stringbuffer[stringlen] = c;
+                      stringlen++;
+                      if (stringlen == bufflen) {
+                        bufflen *= 2;
+                        stringbuffer = (char*)REALLOC(stringbuffer,
+                                                      bufflen*sizeof(char));
+                      }
+		      if (c == '\\') {
+			c = yyinput();
+			if (c != EOF) {
+			  goto FORCE_NEXT2;
+			}
+		      }
                     } /* eat up string */
 		    stringbuffer[stringlen] = '\0';
                     if (c == EOF) {
