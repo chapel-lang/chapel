@@ -116,10 +116,10 @@ depend: $(DEPENDSUBDIRS) echocompilerdir $(PLATFORM_DIR)
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(CXX) -MM -MG $(CXXFLAGS) $$file | grep -v ^# >> $(CVS_DEPENDS); \
+	  $(CXX) -MM -MG $(CXXFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS); \
 	done
-	@$(CXX) -MM -MG -MT PARSE_INCLUDES $(CFLAGS) parse_incs.cpp | sed s/:\ parse_incs.cpp/\ =/ | grep -v ^# >> $(CVS_DEPENDS)
-	@$(CXX) -MM -MG -MT PRIM_DATA_INCLUDES $(CFLAGS) prim_data_incs.cpp | sed s/:\ prim_data_incs.cpp/\ =/ | grep -v ^# >> $(CVS_DEPENDS)
+	@$(CXX) -MM -MG -MT PARSE_INCLUDES $(CFLAGS) parse_incs.cpp | sed s/:\ parse_incs.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS)
+	@$(CXX) -MM -MG -MT PRIM_DATA_INCLUDES $(CFLAGS) prim_data_incs.cpp | sed s/:\ prim_data_incs.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS)
 
 test: FORCE
 	cd test && $(MAKE) test

@@ -82,6 +82,7 @@ else
 $(PLATFORM_DIR):
 	@echo linking $(PLATFORM) subdirectory
 	mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM)
+	rm -f $(PLATFORM)
 	ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM) .
 	@-touch $(PLATFORM_DIR)
 endif

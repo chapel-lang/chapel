@@ -13,5 +13,5 @@ depend: $(PLATFORM_DIR) $(DEPEND_DEPS)
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(CXX) -MM -MG $(CFLAGS) $$file | grep -v ^# >> $(CVS_DEPENDS); \
+	  $(CXX) -MM -MG $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS); \
 	done
