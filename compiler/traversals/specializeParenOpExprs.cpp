@@ -4,6 +4,8 @@
 #include "stringutil.h"
 #include "symtab.h"
 
+//#define NO_RESOLVE_CONSTRUCTOR
+
 void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
   Expr* paren_replacement = NULL;
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
@@ -21,7 +23,11 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
 	  fn = constructor->fnDef();
 	}
 	if (fn) {
+#ifdef NO_RESOLVE_CONSTRUCTOR
+	  paren_replacement = new FnCall(new Variable(new UnresolvedSymbol(fn->name)), paren->argList);
+#else
 	  paren_replacement = new FnCall(new Variable(fn), paren->argList);
+#endif
 	}
 	else {
 	  INT_FATAL(expr, "constructor does not have a DefStmt");
