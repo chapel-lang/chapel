@@ -245,6 +245,19 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
 	Type *ret = dynamic_cast<FnSymbol*>(s)->retType;
 	if (set.set_add(ret))
 	  syms.add(ret);
+	break;
+      }
+      case EXPR_LET: {
+	LetExpr *ss = dynamic_cast<LetExpr *>(s);
+	VarSymbol *vs = dynamic_cast<VarSymbol *>(ss->syms);
+	while (vs) {
+	  if (set.set_add(vs))
+	    syms.add(vs);
+	  if (set.set_add(vs->init))
+	    syms.add(vs->init);
+	  vs = dynamic_cast<VarSymbol*>(vs->next);
+	}
+	break;
       }
     }
   }
@@ -541,6 +554,7 @@ map_symbols(Vec<BaseAST *> &syms) {
 	  case SCOPE_POSTPARSE:
 	    sym->asymbol->sym->global_scope = 1;
 	    break;
+	  case SCOPE_LETEXPR:
 	  case SCOPE_PARAM:
 	  case SCOPE_FUNCTION:
 	  case SCOPE_LOCAL:
@@ -1135,6 +1149,15 @@ gen_if1(BaseAST *ast) {
     forv_BaseAST(a, getStuff.asts)
       if (gen_if1(a) < 0)
 	return -1;
+  if (ast->astType == EXPR_LET) {
+    LetExpr *s = dynamic_cast<LetExpr *>(ast);
+    VarSymbol *vs = dynamic_cast<VarSymbol *>(s->syms);
+      while (vs) {
+	if (gen_if1(vs->init) < 0)
+	  return -1;
+	vs = dynamic_cast<VarSymbol*>(vs->next);
+      }
+  }
   switch (ast->astType) {
     case STMT: assert(ast->isNull()); break;
     case STMT_NOOP: break;
@@ -1381,7 +1404,15 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_LET: {
-      INT_FATAL("Let expression encountered by analysis");
+      LetExpr *s = dynamic_cast<LetExpr *>(ast);
+      VarSymbol *vs = dynamic_cast<VarSymbol *>(s->syms);
+      while (vs) {
+	if1_gen(if1, &s->ainfo->code, vs->init->ainfo->code);
+	if1_move(if1, &s->ainfo->code, vs->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
+	vs = dynamic_cast<VarSymbol*>(vs->next);
+      }
+      if1_gen(if1, &s->ainfo->code, s->innerExpr->ainfo->code);
+      s->ainfo->rval = s->innerExpr->ainfo->rval;
       break;
     }
     case EXPR_FORALL: {
