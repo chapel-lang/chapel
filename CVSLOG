@@ -4094,3 +4094,58 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly tokencount.c 
 
+---------------------------------------------------------------------------
+
+07/20/04 13:12:44 -- bradc
+
+Log message:
+	* added more operators to the scanner, parser, and Expr classes (&=,
+	|=, ^=, <<, >>).
+	
+	* fixed op= operators so that the op is no longer dropped on the floor
+	and implemented code generation and pretty-printing for them.
+	Updated the protoast/mg tests appropriately.
+	
+	* refactored the "Type" field of Symbol's subclasses into Symbol.
+	Currently all Symbols are assumed to have a type of some sort,
+	though that type may be dtUnknown;
+	
+	* started implementing a type_info() method on the Expr classes which
+	will return the Type of that expression.  Currently this only works
+	for the most basic of expressions and dtUnknown is returned when we
+	don't know.
+	
+	* continued special casing write/writeln statements by making them a
+	subclass of FnCall.  Implemented codegen for them using the same
+	runtime mechanisms as the boostrap AST.
+	
+	* set up code generation framework for the new AST -- opened files,
+	set up init procedure, etc.  Codegen is not very implemented for the
+	new AST, so it would be naive to expect it to work.  The
+	--no-codegen flag is currently your friend (as is the fact that you
+	still only get the new AST with the --newast flag).  When using
+	--newast and --no-codegen, the code will pretty-print to the screen
+	as before.  It's worth noting that currently, the way that the init
+	procedure is generated is very naive -- all code is assumed to be in
+	init, which is just plain wrong.
+	
+	* put a rule into the Makefile that generates an error when "return"
+	is used in chapel.y, because it's a mistake that I often make
+	(rather than assigning to $$), and it sometimes takes me far too
+	long to realize why the parser has suddenly broken.
+	
+	* changed the generation of the emacs TAGS file to include new AST
+	sources.
+
+Modified files:
+	chapel/compiler/: Makefile codegen.cpp codegen.h createAST.cpp 
+	                  createAST.h driver.cpp 
+	chapel/compiler/AST/: Makefile TODO chapel.lex chapel.y expr.cpp 
+	                      expr.h stmt.cpp symbol.cpp symbol.h 
+	                      type.cpp type.h 
+	chapel/test/trivial/bradc/protoast/: COMPOPTS 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.good 
+Added files:
+	chapel/test/trivial/bradc/protoast/: .cvsignore 
+
