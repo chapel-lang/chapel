@@ -6963,3 +6963,16 @@ Removed files:
 	chapel/test/parsing/jplevyak/: mat1.chpl mat1.good vec.chpl 
 	                               vec.good 
 
+---------------------------------------------------------------------------
+
+09/13/04 12:20:03 -- bradc
+
+Log message:
+	Removed old code generation stuff made dead by removal of
+	the bootstrap AST.
+
+Modified files:
+	chapel/compiler/: cg.h codegen.cpp codegen.h 
+Removed files:
+	chapel/compiler/: cg_funs.cpp cg_funs.h 
+
