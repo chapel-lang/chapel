@@ -7,29 +7,7 @@
 #include "stringutil.h"
 #include "view.h"
 
-void InsertIndexType::preProcessStmt(Stmt* stmt) {
-  currentStmt = stmt;
-  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (Symbol* sym = def_stmt->typeDef()) {
-      currentScope = sym->parentScope;
-    }
-    else if (Symbol* sym = def_stmt->varDef()) {
-      currentScope = sym->parentScope;
-    } else {
-      currentScope = NULL;
-    }
-  }
-  else {
-    currentScope = NULL;
-  }
-}
-
-
 void InsertIndexType::preProcessType(Type* type) {
-  if (!currentScope || !currentStmt) {
-    return;
-  }
-
   DomainType* domain_type = dynamic_cast<DomainType*>(type);
 
   if (!domain_type) {
@@ -41,8 +19,8 @@ void InsertIndexType::preProcessType(Type* type) {
   IndexType* index_type = dynamic_cast<IndexType*>(domain_type->idxType);
   if (!index_type){
   	return;
-  }
-  
+  } 
+    
   Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);
   if (index_sym) {
     type = index_sym->type;
@@ -57,10 +35,4 @@ void InsertIndexType::preProcessType(Type* type) {
 		commonModule->stmts->insertBefore(def_stmt);
   	Symboltable::setCurrentScope(saveScope);
 	}
-}
-
-
-void InsertIndexType::postProcessStmt(Stmt* stmt) {
-  currentStmt = NULL;
-  currentScope = NULL;
 }
