@@ -2673,3 +2673,13 @@ Added files:
 	                                       declint.chpl declint.good 
 	                                       gdb.in 
 
+---------------------------------------------------------------------------
+
+06/04/04 13:17:49 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixes for ~shannon/CHAPEL/chapel/test/trivial/shannon/assignment_expr.chpl
+
+Modified files:
+	chapel/compiler/: prelude.chpl 
+
