@@ -22271,3 +22271,15 @@ Added files:
 Removed files:
 	chapel/test/domains/roxana/: test_intex_expr1.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 13:51:47 -- jplevyak
+
+Log message:
+	Fix the simple case of "like" where the expression is a variable of declared type.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Removed files:
+	chapel/test/types/like/deitz/: test_like1.future 
+
