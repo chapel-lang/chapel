@@ -6010,3 +6010,17 @@ Modified files:
 	chapel/compiler/AST/: chapel.y nils.cpp symbol.cpp symbol.h 
 	                      symtab.cpp symtab.h 
 
+---------------------------------------------------------------------------
+
+08/27/04 10:23:51 -- bradc
+
+Log message:
+	I believe I've just changed
+	  the CVS checkin scripts
+	    so that leading whitespace in log messages
+	      will be preserved.
+		This change has no other substance.
+
+Modified files:
+	./: Makefile 
+
