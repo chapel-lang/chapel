@@ -5,6 +5,7 @@
 #include "findUnknownTypes.h"
 #include "getstuff.h"
 #include "printAST.h"
+#include "checkIDs.h"
 #include "printProgram.h"
 #include "printSymtab.h"
 #include "runAnalysis.h"

@@ -3,6 +3,7 @@
    sure to also #include the header file defining the pass in
    passlist.h.  */
 
+REGISTER(CheckIDs);
 REGISTER(CheckTypeInfo);
 REGISTER(DummyPass);
 REGISTER(FindUnknownTypes);

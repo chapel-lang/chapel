@@ -1,4 +1,5 @@
 TRAVERSALS_SRCS = \
+	checkIDs.cpp \
 	checkTypeInfo.cpp \
 	findUnknownTypes.cpp \
 	getstuff.cpp \

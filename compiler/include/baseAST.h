@@ -73,6 +73,8 @@ class BaseAST : public ILink {
   astType_t astType;
   long id;
 
+  static long getNumIDs(void);
+
   int getBaseASTs(Vec<BaseAST *> &asts);
   int getSymbolTypes(Vec<BaseAST *> &asts);
   int getStmtExprs(Vec<BaseAST *> &asts);

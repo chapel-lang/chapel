@@ -2,6 +2,10 @@
 
 static long uid = 1;
 
+long BaseAST::getNumIDs(void) {
+  return uid;
+}
+
 BaseAST::BaseAST(void) {
   INT_FATAL("Base AST must be given a type");
 }
