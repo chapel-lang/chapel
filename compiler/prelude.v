@@ -1,4 +1,4 @@
-// V prelude, describing the initial environment
+// V Prelude: The Initial Environment
 
 in system __name "system";
 
@@ -45,8 +45,11 @@ type anyfloat __name "anyfloat" =
   float32 | float64 | float80 | float128;
 
 type anynum __name "anynum" = anyint | anyfloat;
+type char __name "char" = uint8;
+type complex __name "complex";
 type size __name "size" = uint32;
 type bool __name "bool" = int;
+type string __name "string";
 type enum_element __name "enum_element" = int;
 
 // builtin data
@@ -122,4 +125,6 @@ operator(#"(", a:symbol, b:any)		   : #__primitive #"(" a b;
 operator(a:ref, #"++"): #__primitive a #"=" ((#__primitive#"*" a) #"+" 1);
 operator(a:ref, #"--"): #__primitive a #"=" ((#__primitive#"*" a) #"-" 1);
 
+//
 
+write a : 0;

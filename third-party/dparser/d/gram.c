@@ -599,14 +599,16 @@ merge_identical_terminals(Grammar *g) {
 void
 print_term(Term *t) {
   char *s = t->string ? escape_string(t->string) : NULL;
-  if (t->kind == TERM_STRING) {
+  if (t->term_name)
+    printf("term_name(\"%s\") ", t->term_name);
+  else if (t->kind == TERM_STRING) {
     if (!t->string || !*t->string)
       printf("<EOF> ");
     else
       printf("string(\"%s\") ", s);
-  } else if (t->kind == TERM_REGEX)
+  } else if (t->kind == TERM_REGEX) {
     printf("regex(\"%s\") ", s);
-  else if (t->kind == TERM_CODE)
+  } else if (t->kind == TERM_CODE)
     printf("code(\"%s\") ", s);
   else if (t->kind == TERM_TOKEN)
     printf("token(\"%s\") ", s);
@@ -882,8 +884,7 @@ convert_regex_production_one(Grammar *g, Production *p) {
   t->regex_production = p;
   vec_add(&g->terminals, t);
   p->regex_term = t;
-  if (p->regex_term_name)
-    p->regex_term->term_name = p->regex_term_name;
+  p->regex_term->term_name = p->name;
   if (circular) { /* attempt to match to regex operators */
     if (p->rules.n != 2)
       Lfail: d_fail("unable to resolve circular regex production: '%s'", p->name);

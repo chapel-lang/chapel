@@ -1,3 +1,7 @@
+- how to support 'with' when the type isn't given??
+
+- check rank for multi-dimensional array accesses
+
 - support applications with more than required arguments as multiple-calls
   (add_application_constraints)
 
@@ -83,3 +87,5 @@
 - for pattern matching: handle parameterized types & structural types
   - probably by recursing down the actual argument and checking
     if it matches. Maybe cache the results as well: true/false/maybe
+
+- complex should have a size, same as float

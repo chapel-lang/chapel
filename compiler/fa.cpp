@@ -5,32 +5,19 @@
 #include "geysa.h"
 
 // TODO
-// use selectors to handle 'with'
-// finish check_pattern
-// handle multi-dimensional arrays (at least check tuple size)
 // cache 'AVar::constant()' ??
-// cache 'type' ??, store upper/lower constraints (could miss failures)
-// remove useless pnodes from all_PNodes
+// remove useless pnodes from all_PNodes ??
 // build has_map... must be filled with selectors (connonical names)
 //   convert things with multiple possible ->in to selectors...
 // handle vararg functions
-//
-// how language level symbols are handled:
-//   there is a table which takes char * -> Sym_t
-//   the creation sets for them are (sym__symbol, (the symbol's Sym_t)->var)
-//
 // preload the various as_CreationSet and atype's ?
 // add concept of extending a function with additional cases.... this
 //   to handle 'apply-style' polymorphism
 // add pattern matching
 // add ->extends to Sym_t which refers to previously scoped functions with the same name
-//   and handle with apply
+//   and handle with apply ??
 // use a map for symbols -> elements of a sym_tuple
-// primitives moved into if1.c
-// prune function calls at the call site?
-// check pattern_match
 // fix fa_dump_types to recognize nested functions
-// in concretize, what does it mean to pull up the symbols of the defs?
 // fixup coerce_type to handle subtyping... used in v.g
 
 static AType *bottom_type = 0;

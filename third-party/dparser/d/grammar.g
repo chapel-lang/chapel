@@ -74,11 +74,7 @@ production
   : production_name ':' rules ';' 
   | production_name regex_production rules ';'
   | ';';
-regex_production : '::=' ('$name' regex)? { 
-  if ($#1) {
-    D_ParseNode *pn = ${child 1, 0, 1};
-    $g->p->regex_term_name = dup_str(pn->start_loc.s+1, pn->end-1); 
-  }
+regex_production : '::=' { 
   $g->p->regex = 1; 
 }; 
 

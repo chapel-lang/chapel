@@ -42,8 +42,11 @@ type anyfloat __name "anyfloat" =
   float32 | float64 | float80 | float128;
 
 type anynum __name "anynum" = anyinteger | anyfloat;
+type char __name "char" = uint8;
+type complex __name "complex";
 type size __name "size" = uinteger;
 type bool __name "bool" = integer;
+type string __name "string";
 type enum_element __name "enum_element" = integer;
 
 // builtin constants

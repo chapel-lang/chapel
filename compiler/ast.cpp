@@ -245,6 +245,8 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     case Builtin_float64:
     case Builtin_float80:
     case Builtin_float128:
+    case Builtin_complex:
+    case Builtin_string:
       sym->type_kind = Type_PRIMITIVE;
       break;
     case Builtin_tuple: sym->type_kind = Type_PRODUCT; break;

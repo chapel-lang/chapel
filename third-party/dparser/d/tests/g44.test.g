@@ -1,3 +1,3 @@
 S: A;
-A ::= $name "int" B;
+A ::= B;
 B ::= "[0-9]+" $name "someint";

@@ -420,7 +420,7 @@ square_block: '['
     $$.ast = new AST(AST_vector, &$n);
 };
 
-constant : (character | int8 | uint8 | int16 | uint16 | 
+constant : (char | int8 | uint8 | int16 | uint16 | 
 	    int32 | uint32 | int64 | uint64 | int | uint |
 	    float32 | float64 | float128 | float | 
 	    string | symbol | complex) ('__name' string)?
@@ -440,20 +440,20 @@ symbol
 
 string ::= "\"([^\"\\]|\\[^])*\"";
 bracket_string ::= "<([^\>\\]|\\[^])*>";
-character ::= $name "character" "\'([^\'\\]|\\[^])*\'";
+char ::= "\'([^\'\\]|\\[^])*\'";
 
 base_int ::= "(0[0-7]*|(0x|0X)[0-9a-fA-F]+|[1-9][0-9]*)";
-int8	 ::= $name "int8" base_int "(b|B)";
-uint8	 ::= $name "uint8" base_int "((u|U)(b|B)|(b|B)(u|U)";
-int16	 ::= $name "int16" base_int "(s|S)";
-uint16	 ::= $name "uint16" base_int "(u|U)(s|S)|(s|S)(u|U)";
-int32	 ::= $name "int32" base_int "(w|W)";
-uint32	 ::= $name "uint32" base_int "(u|U)(w|W)|(w|W)(u|U)";
-int64	 ::= $name "int64" base_int "(l|L)";
-uint64	 ::= $name "uint64" base_int "(u|U)(l|L)|(u|U)(l|L)";
-int	 ::= $name "int" base_int;
-uint	 ::= $name "uint" base_int "(u|U)";
-anyint	 : character | int8 | uint8 | int16 | uint16 | 
+int8	 ::= base_int "(b|B)";
+uint8	 ::= base_int "(u|U)(b|B)|(b|B)(u|U)";
+int16	 ::= base_int "(s|S)";
+uint16	 ::= base_int "(u|U)(s|S)|(s|S)(u|U)";
+int32	 ::= base_int "(w|W)";
+uint32	 ::= base_int "(u|U)(w|W)|(w|W)(u|U)";
+int64	 ::= base_int "(l|L)";
+uint64	 ::= base_int "(u|U)(l|L)|(u|U)(l|L)";
+int	 ::= base_int;
+uint	 ::= base_int "(u|U)";
+anyint	 : char | int8 | uint8 | int16 | uint16 | 
            int32 | uint32 | int64 | uint64 | int | uint
 { 
   $$.ast = new AST(AST_const); 
@@ -462,13 +462,13 @@ anyint	 : character | int8 | uint8 | int16 | uint16 |
 };
 
 base_float ::= "(([0-9]+.[0-9]*|[0-9]*.[0-9]+)([eE][\-\+]?[0-9]+)?|[0-9]+[eE][\-\+]?[0-9]+)";
-float32	   ::= $name "float32" base_float "(f|F)";
-float64	   ::= $name "float64" base_float "(d|D)";
-float80	   ::= $name "float80" base_float "(t|T)";
-float128   ::= $name "float128" base_float "(l|L)";
-float	   ::= $name "float" base_float;
+float32	   ::= base_float "(f|F)";
+float64	   ::= base_float "(d|D)";
+float80	   ::= base_float "(t|T)";
+float128   ::= base_float "(l|L)";
+float	   ::= base_float;
 
-anynum ::= character | int8 | uint8 | int16 | uint16 | 
+anynum ::= char | int8 | uint8 | int16 | uint16 | 
            int32 | uint32 | int64 | uint64 | int | uint |
            float32 | float64 | float128 | float;
 

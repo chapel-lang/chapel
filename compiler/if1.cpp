@@ -36,6 +36,7 @@ if1_alloc_sym(IF1 *p, char *s, char *e) {
 
 Sym *
 if1_const(IF1 *p, Sym *type, char *constant) {
+  assert(type);
   char *c = if1_cannonicalize_string(p, constant);
   Sym *sym = p->constants.get(c);
   if (type)
@@ -714,7 +715,7 @@ void
 if1_set_float_type(IF1 *p, Sym *t, int size) {
   int ss = 0;
   size >>= 4;
-  while (size) { ss++; size >>= 1; }
+  ss = size - 1;
   p->float_types[ss] = t;
   t->num_type = IF1_NUM_TYPE_FLOAT;
   t->num_index = ss;
