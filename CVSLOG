@@ -22162,3 +22162,26 @@ Log message:
 Removed files:
 	chapel/test/classes/bradc/: writeclass.future writeclass3.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 11:47:11 -- roxana
+
+Log message:
+	Resolved types for IndexType->idxType. Improved code
+	generation for index types accordingly. However, assignments
+	between index types and tuple types do not work -- because
+	they are different types. Should they work? I inserted a future
+	test that expresses the question. For now, the test correctly
+	fails -- cannot assign tuple type to index type.
+
+Modified files:
+	chapel/compiler/traversals/: insertIndexType.cpp 
+	                             insertAnonymousTypes.cpp 
+	chapel/test/domains/roxana/: test_index_assign.good 
+	                             test_index_expr.good 
+	chapel/compiler/AST/: type.cpp 
+Added files:
+	chapel/test/domains/roxana/: test_index_expr1.chpl 
+	                             test_index_expr1.good 
+	                             test_intex_expr1.future 
+
