@@ -6674,3 +6674,13 @@ Modified files:
 Added files:
 	chapel/compiler/: callbacks.h 
 
+---------------------------------------------------------------------------
+
+09/08/04 12:23:12 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	OK, new AST type_info works on arithmentic_ops.chpl
+
+Modified files:
+	chapel/compiler/: analysis.cpp driver.cpp 
+
