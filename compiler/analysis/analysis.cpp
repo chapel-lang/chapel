@@ -298,7 +298,7 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       syms.add(t);
     if (t->symbol)
       if (set.set_add(t->symbol))
-	syms.add(t->symbol);
+        syms.add(t->symbol);
   }
 }
 
@@ -606,7 +606,7 @@ map_symbols(Vec<BaseAST *> &syms) {
       sym->asymbol = new_ASymbol(sym, basic);
       sym->asymbol->symbol = sym;
       if (sym->astType == SYMBOL_VAR && sym->type == dtNil) {
-	assert(!sym_nil);
+        assert(!sym_nil);
         sym_nil = sym->asymbol->sym;
       }
       if (!sym->parentScope) {

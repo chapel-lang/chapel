@@ -57,6 +57,7 @@ class Symbol : public BaseAST {
 
   virtual bool isConst(void);
   virtual bool isParam(void);
+  bool isThis(void);
 
   void print(FILE* outfile);
   virtual void printDef(FILE* outfile);

@@ -297,6 +297,14 @@ bool VarSymbol::isParam(void){
   return (consClass == VAR_PARAM);
 }
 
+bool Symbol::isThis(void) {
+  FnSymbol *f = dynamic_cast<FnSymbol*>(defPoint->stmt->parentSymbol);
+  if (!f || !f->_this)
+    return 0;
+  else
+    return f->_this == this;
+}
+
 void VarSymbol::codegenDef(FILE* outfile) {
   if (parentScope->type == SCOPE_MODULE) {
     outfile = intheadfile;
