@@ -1,0 +1,2 @@
+test_badclass1.chpl:4 ERROR: syntax error
+yytext is: f

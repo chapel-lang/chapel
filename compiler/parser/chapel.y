@@ -101,7 +101,7 @@
 %type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
 %type <pexpr> reduction vardeclinit
 %type <pdexpr> domainExpr
-%type <stmt> program statements statement decl vardecl assignment conditional
+%type <stmt> program statements statement decls decl vardecl assignment conditional
 %type <stmt> retStmt loop forloop whileloop enumdecl typealias typedecl fndecl
 %type <stmt> classdecl
 
@@ -236,7 +236,7 @@ classdecl:
     {
       $<ptsym>$ = Symboltable::startClassDef($2, $3);
     }
-                                statements TRCBR
+                                decls TRCBR
     {
       $$ = Symboltable::finishClassDef($<ptsym>5, $6);
     }
@@ -320,6 +320,14 @@ decl:
 ;
 
 
+decls:
+  /* empty */
+    { $$ = nilStmt; }
+| decls decl
+    { $$ = appendLink($1, $2); }
+;
+
+
 tupleTypes:
   type
     { $$ = new TupleType($1); }
@@ -395,7 +403,7 @@ statement:
 | assignment
 | conditional
 | loop
-| simple_lvalue TSEMI  /* This used to be "expr." Isn't this just for function calls? -SJD */
+| simple_lvalue TSEMI
     { $$ = new ExprStmt($1); }
 | TCALL simple_lvalue TSEMI
     { $$ = new ExprStmt($2); }
