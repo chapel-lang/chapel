@@ -1,8 +1,8 @@
 #include <typeinfo>
-#include "expr.h"
-#include "files.h"
 #include "createConfigVarTable.h"
+#include "expr.h"
 #include "stmt.h"
+#include "symscope.h"
 
 
 CreateConfigVarTable::CreateConfigVarTable(void) {
@@ -13,8 +13,6 @@ CreateConfigVarTable::CreateConfigVarTable(void) {
   fprintf(codefile, "#include \"stdchpl.h\"\n");
   fprintf(codefile, "\n");
   fprintf(codefile, "void CreateConfigVarTable(void) {\n");
-  fprintf(codefile, "int isDefaultValue = 1;\n");
-  fprintf(codefile, "\n");
   fprintf(codefile, "initConfigVarTable();\n");
 }
 
@@ -24,11 +22,12 @@ void CreateConfigVarTable::preProcessStmt(Stmt* stmt) {
 
   if (typeid(*stmt) == typeid(VarDefStmt)) {
     VarDefStmt* varDef = dynamic_cast<VarDefStmt*>(stmt);
+    char* moduleName = varDef->var->parentScope->symContext->name;
 
     if (varDef->var->varClass == VAR_CONFIG) {
       fprintf(codefile, "installConfigVar(\"%s\", ", varDef->var->name);
       varDef->init->printCfgInitString(codefile);
-      fprintf(codefile, ", isDefaultValue);\n");
+      fprintf(codefile, ", \"%s\");\n", moduleName);
     }
   }
 }

@@ -1,1 +1,6 @@
-***Error:  Program contains two config vars named "x"***
+module1's config vars:
+  x: 9 (default:  1)
+
+module2's config vars:
+  x: 88 (default:  2)
+  z: 8.8 (default:  2.2)

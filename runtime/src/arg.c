@@ -7,22 +7,38 @@
 
 
 
+static void parseModVarName(char* modVarName, char** moduleName, 
+			    char** varName) {
+  char* dot = strrchr(modVarName, '.');
+  if (dot) {
+    *dot = '\0';
+    *moduleName = modVarName;
+    *varName = dot + 1;
+  } else {
+    *moduleName = "";
+    *varName = modVarName;
+  }
+}
+
+
 static void parseSingleArg(char* currentArg) {
   char* equalsSign = strchr(currentArg, '=');	  
 
   if (equalsSign) {
     *equalsSign = '\0';
-    char* varName = currentArg;
     char* value = equalsSign + 1;
-    int isDefaultValue = 0;
-
+    
     if (value) {
+      char* moduleName;
+      char* varName;
+      parseModVarName(currentArg, &moduleName, &varName);
+
       if (*value == '\0') {
 	fprintf(stderr, "***Error:  Configuration variable \"%s\" is missing"
 		" its initialization value***\n", varName);
 	exit(0);
       }
-      installConfigVar(varName, value, isDefaultValue);
+      initSetValue(varName, value, moduleName);
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value***\n", value);
       exit(0);
@@ -35,8 +51,8 @@ static void parseSingleArg(char* currentArg) {
 }
 
 
-/* This function parses a config var of type string, and installs
-   it in the hash table.  
+/* This function parses a config var of type string, and sets its value in 
+   the hash table.  
 */
 static int aParsedString(FILE* argFile, char* setConfigBuffer) {
   char* equalsSign = strchr(setConfigBuffer, '=');
@@ -50,11 +66,13 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
     return 0;
   }
 
-  char* varName = setConfigBuffer;
   char* value = equalsSign + 2;
   *equalsSign = '\0';
   char lastChar = setConfigBuffer[stringLength - 1];
-  int isDefaultValue = 0;
+
+  char* moduleName;
+  char* varName;
+  parseModVarName(setConfigBuffer, &moduleName, &varName);
   
   if ((firstChar != lastChar) || (strlen(value) == 0)) {
     char nextChar = fgetc(argFile);
@@ -90,7 +108,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
     stringLength--;
   }
   setConfigBuffer[stringLength] = '\0';
-  installConfigVar(varName, value, isDefaultValue);
+  initSetValue(varName, value, moduleName);
   return 1;
 }
 

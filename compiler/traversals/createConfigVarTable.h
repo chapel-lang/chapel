@@ -1,6 +1,7 @@
 #ifndef _CREATE_CONFIG_VAR_TABLE_H_
 #define _CREATE_CONFIG_VAR_TABLE_H_
 
+#include "files.h"
 #include "traversal.h"
 
 

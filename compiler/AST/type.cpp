@@ -363,10 +363,10 @@ void EnumType::codegenConfigVarRoutines(FILE* outfile) {
   name->codegen(outfile);
   fprintf(outfile, "(char* varName, ");
   name->codegen(outfile);
-  fprintf(outfile, "* value) {\n");
+  fprintf(outfile, "* value, char* moduleName) {\n");
   fprintf(outfile, "int isDefaultValue = 0;\n");
   fprintf(outfile, "int varSet = 0;\n");
-  fprintf(outfile, "char* setValue = lookupSetValue(varName);\n");
+  fprintf(outfile, "char* setValue = lookupSetValue(varName, moduleName);\n");
   fprintf(outfile, "if (setValue) {\n");
   fprintf(outfile, "int validEnum = _convert_string_to_enum");
   name->codegen(outfile);

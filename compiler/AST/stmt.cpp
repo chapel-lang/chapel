@@ -480,9 +480,11 @@ void VarDefStmt::codegen(FILE* outfile) {
 	fprintf(outfile, ");");
       } else {
 	if (aVar->varClass == VAR_CONFIG) {
+	  char* moduleName = aVar->parentScope->symContext->name;
 	  fprintf(outfile, "if (!setInCommandLine");
 	  aVar->type->codegen(outfile);
-	  fprintf(outfile, "(\"%s\", &%s)) {\n", aVar->name, aVar->name);
+	  fprintf(outfile, "(\"%s\", &%s, \"%s\")) {\n", aVar->name, 
+		  aVar->name, moduleName);
 	}
 	// TODO: hoist this into a traversal that rewrites vardefs as
 	// assignments?

@@ -1,0 +1,6 @@
+module1's config vars:
+  x: this is a test (default:  that seems to work)
+
+module2's config vars:
+  x: 888 (default:  2)
+  z: no module name given (default:  this one doesn't require it)

@@ -8,10 +8,11 @@
 
 typedef struct _configVarType { /* table entry */
   char* varName;
+  char* moduleName;
   char* defaultValue;
   char* setValue;
- 
-  struct _configVarType* nextInList;
+
+  struct _configVarType* nextInBucket;
   struct _configVarType* nextInstalled;
 } configVarType;
 
@@ -43,20 +44,34 @@ static unsigned hash(char* varName) {
 void printConfigVarTable(void) {
   configVarType* configVar = NULL; 
   int longestName = 0;
+  char* moduleName = NULL;
 
   for (configVar = first;
        configVar != NULL;
        configVar = configVar->nextInstalled) {
+
     int thisName = strlen(configVar->varName);
     if (longestName < thisName)  {
       longestName = thisName;
     }
   }
+
   for (configVar = first; 
        configVar != NULL; 
        configVar = configVar->nextInstalled) {
-    fprintf(stdout, "%*s: ", longestName, configVar->varName);
 
+    if (moduleName == NULL) {
+      moduleName = configVar->moduleName;
+      if (strcmp(first->moduleName, last->moduleName) != 0) {
+	fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
+      }
+    }
+    if (strcmp(configVar->moduleName, moduleName) != 0) {
+      fprintf(stdout, "\n");
+      fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
+      moduleName = configVar->moduleName;
+    }
+    fprintf(stdout, "  %*s: ", longestName, configVar->varName);
     if (configVar->setValue) {
       fprintf(stdout, "%s (default:  %s)\n", configVar->setValue, 
 	       configVar->defaultValue);
@@ -68,27 +83,76 @@ void printConfigVarTable(void) {
 }
 
 
-static configVarType* lookupConfigVar(char* varName) {
-  configVarType* configVar;
+static configVarType _ambiguousConfigVar;
+static configVarType* ambiguousConfigVar = &_ambiguousConfigVar;
+
+static configVarType* lookupConfigVar(char* varName, char* moduleName) {
+  configVarType* configVar = NULL;
+  configVarType* foundConfigVar = NULL; 
   unsigned hashValue;
   hashValue = hash(varName);
+  int numTimesFound = 0;
 
   /* This loops walks through the list of configuration variables 
      hashed to this location in the table. */
   for (configVar = configVarTable[hashValue]; 
        configVar != NULL; 
-       configVar = configVar->nextInList) {
-    if (strcmp(varName, configVar->varName) == 0) {
-      return configVar;
+       configVar = configVar->nextInBucket) {
+
+    if (strcmp(configVar->varName, varName) == 0) {
+      if (strcmp(moduleName, "") == 0) {
+	numTimesFound++;
+	if (numTimesFound == 1) {
+	  foundConfigVar = configVar;
+	} else {
+	  foundConfigVar = ambiguousConfigVar;
+	}
+      } else {
+	if (strcmp(configVar->moduleName, moduleName) == 0) {
+	  foundConfigVar = configVar;
+	}
+      }
     }
   }
-  return NULL;
+  return foundConfigVar;
 }
 
 
-char* lookupSetValue(char* varName) {
+void initSetValue(char* varName, char* value, char* moduleName) {
+  if  (*varName == '\0') {
+    fprintf(stderr, "***Error:  No variable name given***\n");
+    exit(0);
+  }
+  configVarType* configVar = lookupConfigVar(varName, moduleName);
+  if (configVar == NULL) {
+    if (strcmp(moduleName, "") != 0) {
+      fprintf(stderr, "***Error:  There is no \"%s\" config var in %s***\n", 
+	      varName, moduleName);
+      exit(0);
+    } else {
+      fprintf(stderr, "***Error:  There is no config var \"%s\" in the "
+	      "program***\n", varName);
+      exit(0);
+    }
+  } else if (configVar == ambiguousConfigVar) {
+    fprintf(stderr, "***Error:  Config var \"%s\" is defined in more than one "
+	    "module.  Use \"-h\" for a list of config vars and \"-s<module>"
+	    ".%s\" to indicate which to use.***\n", varName, varName);
+    exit(0);
+  }
+  _copy_string(&configVar->setValue, value);
+}
+
+
+char* lookupSetValue(char* varName, char* moduleName) {
+  if (strcmp(moduleName, "") == 0) {
+    fprintf(stderr, "***Internal Error:  Attempted to lookup value with "
+	    "the module name an empty string***\n");
+    exit(0);
+  }
+
   configVarType* configVar;
-  configVar = lookupConfigVar(varName);
+  configVar = lookupConfigVar(varName, moduleName);
   if (configVar) {
     return configVar->setValue;
   } else {
@@ -97,59 +161,40 @@ char* lookupSetValue(char* varName) {
 }
 
 
-int installConfigVar(char* varName, char* value, int isDefaultValue) {
-  configVarType* configVar;
+int installConfigVar(char* varName, char* value, char* moduleName) {
   unsigned hashValue;
-
-  if (*varName == '\0') {
-    fprintf(stderr, "***Error:  \"%s\" is not a valid variable name***\n", 
-	    varName);
-    exit(0);
-  }
-  configVar = lookupConfigVar(varName);
-  if ((configVar == NULL) && !isDefaultValue) {
-    fprintf(stderr, "***Error:  \"%s\" is not a config var***\n", varName);
-    exit(0);
-  }
-  if (configVar && isDefaultValue) {
-    fprintf(stderr, "***Error:  Program contains two config vars named \"%s\""
-	    "***\n", varName);
-    exit(0);
-  }
-
-  if (configVar == NULL) {
-    configVar = (configVarType*) malloc(sizeof(configVarType));
-    configVar->varName = NULL;
-    configVar->defaultValue = NULL;
-    configVar->setValue = NULL;
-    configVar->nextInList = NULL;
-    configVar->nextInstalled = NULL;
-
-    hashValue = hash(varName);
-    configVar->nextInList = configVarTable[hashValue]; 
-    configVarTable[hashValue] = configVar;
-
-    if (first == NULL) {
-      first = configVar;
-    } else {
-      last->nextInstalled = configVar;
-    }
-    last = configVar;
-    _copy_string(&configVar->varName, varName);
-  } 
-
-  if (isDefaultValue) {
-    _copy_string(&configVar->defaultValue, value);
+  /* Note:  If we replace malloc with a zeroing version, all these NULL
+     initializations are unnecessary.
+  */
+  configVarType* configVar = (configVarType*) malloc(sizeof(configVarType));
+  configVar->varName       = NULL;
+  configVar->moduleName    = NULL;
+  configVar->defaultValue  = NULL;
+  configVar->setValue      = NULL;
+  configVar->nextInBucket    = NULL;
+  configVar->nextInstalled = NULL;
+  
+  hashValue = hash(varName);
+  configVar->nextInBucket = configVarTable[hashValue]; 
+  configVarTable[hashValue] = configVar;
+  if (first == NULL) {
+    first = configVar;
   } else {
-    _copy_string(&configVar->setValue, value);
+    last->nextInstalled = configVar;
   }
+  last = configVar;
+  _copy_string(&configVar->varName, varName);
+  _copy_string(&configVar->moduleName, moduleName);
+  _copy_string(&configVar->defaultValue, value);
+
   return 0;
-}
+} 
 
 
-int setInCommandLine_integer64(char* varName, _integer64* value) {
+int setInCommandLine_integer64(char* varName, _integer64* value, 
+			       char* moduleName) {
   int varSet = 0;
-  char *setValue = lookupSetValue(varName);
+  char *setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     char extraChars;
@@ -167,9 +212,10 @@ int setInCommandLine_integer64(char* varName, _integer64* value) {
 }
 
 
-int setInCommandLine_float64(char* varName, _float64* value) {
+int setInCommandLine_float64(char* varName, _float64* value, 
+			     char* moduleName) {
   int varSet = 0;
-  char* setValue = lookupSetValue(varName);
+  char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     char extraChars;
@@ -187,9 +233,10 @@ int setInCommandLine_float64(char* varName, _float64* value) {
 }
 
 
-int setInCommandLine_boolean(char* varName, _boolean* value) {
+int setInCommandLine_boolean(char* varName, _boolean* value, 
+			     char* moduleName) {
   int varSet = 0;
-  char* setValue = lookupSetValue(varName);
+  char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     int validBoolean = _string_to_boolean(setValue, value);
@@ -205,9 +252,9 @@ int setInCommandLine_boolean(char* varName, _boolean* value) {
 }
 
 
-int setInCommandLine_string(char* varName, _string* value) {
+int setInCommandLine_string(char* varName, _string* value, char* moduleName) {
   int varSet = 0;
-  char* setValue = lookupSetValue(varName);
+  char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     _copy_string(value, setValue);
@@ -217,9 +264,10 @@ int setInCommandLine_string(char* varName, _string* value) {
 }
 
 
-int setInCommandLine_complex128(char* varName, _complex128* value) {
+int setInCommandLine_complex128(char* varName, _complex128* value, 
+				char* moduleName) {
   int varSet = 0;
-  char* setValue = lookupSetValue(varName);
+  char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     char extraChars;
