@@ -11444,3 +11444,16 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+12/09/04 14:53:41 -- bradc
+
+Log message:
+	Oops -- I had a typo on the suppression on the last
+	checkin, but didn't notice because when I was testing
+	it, I forgot to use the -valgrind flag, so thought
+	everything was OK.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
