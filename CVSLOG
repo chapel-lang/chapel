@@ -8835,3 +8835,54 @@ Added files:
 	chapel/compiler/passes/: filesToAST.cpp filesToAST.h 
 	chapel/test/compflags/bradc/passlist/: NOEXEC 
 
+---------------------------------------------------------------------------
+
+10/13/04 13:54:53 -- bradc
+
+Log message:
+	* added a new AST node -- the Module.  This is meant to
+	  correspond to the language's module concept, though
+	  for the short-term, it's likely to correspond more
+	  closely with an input file.  Currently these are
+	  unused except at code generation time.  Eventually,
+	  this is what code will be parsed into, and modules
+	  will be passed to subsequent compiler passes.  Those
+	  of us working on codegen, note that the previously
+	  global variables intheadfile, extheadfile have been
+	  moved into the Module class, and can typically be
+	  accessed in codegen() methods via:
+	    currentModule->[int/ext]headfile
+	
+	* made codegen into a pass and moved the related code
+	  out of backend/codegen.cpp and into passes/codegen.cpp
+	  and the Module class respectively.
+	
+	* moved the pass.h and traversal.h files into passes/
+	  and traversals/ respectively, as that's where they
+	  really belong.
+	
+	* renamed main/pass.cpp into main/runpasses.cpp because
+	  the old filename impled to me that it implemented the
+	  (abstract) Pass class, and I could never find the
+	  runPass-related code.
+	
+	* corrected PrintSymtab from a Traversal to a Pass
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share stmt.cpp type.cpp 
+	chapel/compiler/backend/: Makefile.share 
+	chapel/compiler/include/: link.h symbol.h 
+	chapel/compiler/main/: Makefile.share driver.cpp passlist.cpp 
+	                       passlist.h 
+	chapel/compiler/passes/: Makefile.share printSymtab.h 
+Added files:
+	chapel/compiler/AST/: module.cpp 
+	chapel/compiler/include/: module.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/passes/: codegen.cpp codegen.h pass.h 
+	chapel/compiler/traversals/: traversal.h 
+Removed files:
+	chapel/compiler/backend/: codegen.cpp 
+	chapel/compiler/include/: codegen.h pass.h traversal.h 
+	chapel/compiler/main/: pass.cpp 
+
