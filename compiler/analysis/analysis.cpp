@@ -51,6 +51,8 @@ static void build_types(Vec<BaseAST *> &syms);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 
+static ScopeLookupCache universal_lookup_cache;
+
 ASymbol::ASymbol() : xsymbol(0) {
 }
 
@@ -110,31 +112,39 @@ AInfo::copy_node(ASTCopyContext* context) {
 }
 
 Vec<Fun *> *
-AInfo::visible_functions(char *name) {
-  if (scoping_test) {
-    Expr *e = dynamic_cast<Expr *>(this->xast);
-    Stmt *s = 0;
-    if (e)
-      s = e->stmt;
-    else
-      s = dynamic_cast<Stmt *>(this->xast);
-    Vec<Fun *> *v = 0;
-    ScopeLookupCache *cache = s->parentSymbol->parentScope->lookupCache;
-    if (cache && (v = cache->get(name))) 
+AInfo::visible_functions(Sym *arg0) {
+  char *name = sym->name;
+  if (!scoping_test)
+    return 0;
+  Expr *e = dynamic_cast<Expr *>(this->xast);
+  Stmt *s = 0;
+  if (e)
+    s = e->stmt;
+  else
+    s = dynamic_cast<Stmt *>(this->xast);
+  Vec<Fun *> *v = 0;
+  ScopeLookupCache *sym_cache = NULL;
+  Symbol *sym = Symboltable::lookupInScope(name, s->parentSymbol->parentScope);
+  if (!sym)
+    v = new Vec<Fun *>;
+  else {
+    sym_cache = sym->parentScope->lookupCache;
+    if (sym_cache && (v = sym_cache->get(name))) 
       return v;
-    Symbol *sym = Symboltable::lookupInScope(name, s->parentSymbol->parentScope);
     v = new Vec<Fun *>;
     FnSymbol *fn = dynamic_cast<FnSymbol*>(sym);
     while (fn) {
       v->set_add(fn->asymbol->fun);
       fn = fn->overload;
     }
-    if (!cache)
-      cache = s->parentSymbol->parentScope->lookupCache = new ScopeLookupCache;
-    cache->put(name, v);
-    return v;
-  } else 
-    return 0;
+  }
+  Vec<Fun *> *universal = universal_lookup_cache.get(name);
+  if (universal)
+    v->set_union(*universal);
+  if (!sym_cache)
+    sym_cache = sym->parentScope->lookupCache = new ScopeLookupCache;
+  sym_cache->put(name, v);
+  return v;
 }
 
 void
@@ -856,15 +866,20 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
 }
 
 static int
+is_reference_type(BaseAST *t) {
+  return (t && t->astType == TYPE_CLASS &&
+	  !dynamic_cast<ClassType*>(t)->union_value &&
+	  !dynamic_cast<ClassType*>(t)->value);
+}
+
+static int
 gen_vardef(BaseAST *a) {
   VarDefStmt *def = dynamic_cast<VarDefStmt*>(a);
   VarSymbol *var = def->var;
   Sym *s = var->asymbol;
   def->ainfo->sym = s;
   if (var->type && var->type != dtUnknown) {
-    if (var->type->astType != TYPE_CLASS ||
-	dynamic_cast<ClassType*>(var->type)->union_value ||
-	dynamic_cast<ClassType*>(var->type)->value) {
+    if (!is_reference_type(var->type)) {
       s->type = unalias_type(var->type->asymbol);
       s->is_var = 1;
     } else
@@ -1518,6 +1533,25 @@ build_functions(Vec<BaseAST *> &syms) {
         return -1;
   return 0;
 }
+
+void
+ACallbacks::compute_visible_functions() {
+  forv_Fun(fun, pdb->funs) {
+    char *name = fun->sym->has.v[0]->name;
+    assert(name);
+    forv_Sym(s, fun->sym->has)
+      if (s->must_specialize && 
+	  is_reference_type(((ASymbol*)s->must_specialize)->xsymbol)) 
+      {
+	Vec<Fun *> *v = universal_lookup_cache.get(name);
+	if (!v)
+	  v = new Vec<Fun *>;
+	v->add(fun);
+	universal_lookup_cache.put(name, v);
+      }
+  }
+}
+
 
 static void
 init_symbols() {

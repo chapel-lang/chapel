@@ -139,28 +139,31 @@ Matcher::pattern_match_sym(Sym *type, MPosition *cp, Vec<Fun *> *local_matches,
   }
 }
 
-static Vec<Fun *> *
-get_visible_functions(AVar *aarg0, AST *ast) {
-  return 0;
-}
-
 Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *amatches) {
   send = asend;
   arg0 = aarg0;
   partial = apartial;
   matches = amatches;
   matches->clear();
+  all_matches = 0;
   
   // use summary information from previous analysis iterations to restrict the search
   if (send->var->def->callees) {
     all_matches = new Vec<Fun *>(send->var->def->callees->funs);
     all_positions = &send->var->def->callees->arg_positions;
   } else {
-    if (aarg0->out->n == 1 && aarg0->out->v[0]->sym->is_symbol)
-      all_matches = send->var->def->code->ast->visible_functions(
-	aarg0->out->v[0]->sym->name);
-    else
-      all_matches = get_visible_functions(aarg0, send->var->def->code->ast);
+    if (aarg0->out->n == 1)
+      all_matches = send->var->def->code->ast->visible_functions(aarg0->out->v[0]->sym);
+    else {
+      forv_CreationSet(cs, *aarg0->out) {
+	Vec<Fun *> *v = send->var->def->code->ast->visible_functions(cs->sym);
+	if (v) {
+	  if (!all_matches)
+	    all_matches = new Vec<Fun *>;
+	  all_matches->set_union(*v);
+	}
+      }
+    }
     all_positions = 0;
   }
   if (all_matches)

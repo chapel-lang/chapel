@@ -1705,6 +1705,7 @@ initialize_primitives() {
 
 static void
 initialize() {
+  if1->callback->compute_visible_functions();
   element_var = new Var(new_Sym("some element"));
   bottom_type = type_cannonicalize(new AType());
   void_type = make_abstract_type(sym_void);

@@ -23,6 +23,7 @@ class ACallbacks : public Callbacks {
 public:
   void new_LUB_type(Sym *);
   Sym *new_Sym(char *name = 0);
+  void compute_visible_functions();
   Fun *order_wrapper(Match *);
   Fun *coercion_wrapper(Match *);
   Fun *default_wrapper(Match *);
@@ -65,7 +66,7 @@ class AInfo : public AST {
   Sym *symbol();  
   AST *copy_tree(ASTCopyContext* context);
   AST *copy_node(ASTCopyContext* context);
-  Vec<Fun *> *visible_functions(char *name);
+  Vec<Fun *> *visible_functions(Sym *arg0);
 
   BaseAST *xast;	// pointer to shadowed BaseAST
   Code *code;		// IF1 Code

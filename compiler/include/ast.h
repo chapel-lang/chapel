@@ -32,7 +32,7 @@ class AST : public gc {
   virtual char *pathname() = 0;
   virtual int line() = 0;
   virtual Sym *symbol() = 0;
-  virtual Vec<Fun *> *visible_functions(char *name) { return NULL; }
+  virtual Vec<Fun *> *visible_functions(Sym *arg0) { return NULL; }
   virtual AST *copy_tree(ASTCopyContext* context) = 0;
   virtual AST *copy_node(ASTCopyContext* context) = 0;
   virtual void dump(FILE *fp, Fun *f);
