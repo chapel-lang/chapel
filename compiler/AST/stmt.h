@@ -8,12 +8,6 @@ class Expr;
 
 class Stmt : public Link {
  public:
-  char* filename;
-  int lineno;
-
-  Stmt();
-
-  virtual void print(FILE* outfile) = 0;
 };
 
 

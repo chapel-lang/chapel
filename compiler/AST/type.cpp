@@ -132,7 +132,7 @@ static void newType(char* name, Type** dtHandle, Symbol** symHandle) {
 }
 
 
-void setupTypes(void) {
+void initType(void) {
   newType("boolean", &dtBoolean, &pstBoolean);
   newType("integer", &dtInteger, &pstInteger);
   newType("float", &dtFloat, &pstFloat);

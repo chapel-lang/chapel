@@ -2,3 +2,4 @@
 * take NULL out
 * move suspicious symbols into prelude file
 * fix precedence
+* make lists of variables, parameters work correctly

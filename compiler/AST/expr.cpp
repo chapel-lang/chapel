@@ -202,7 +202,7 @@ void DomainExpr::setForallExpr(Expr* exp) {
 
 void DomainExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
-  if (indices != NULL) {
+  if (!indices->isNull()) {
     indices->printList(outfile);
     fprintf(outfile, ":");
   }
@@ -248,4 +248,13 @@ void ReduceExpr::print(FILE* outfile) {
   reduceType->print(outfile);
   fprintf(outfile, " ");
   argExpr->print(outfile);
+}
+
+
+DomainExpr* unknownDomain;
+
+void initExpr(void) {
+  Symbol* pst = new Symbol("?anonDomain");
+  Variable* var = new Variable(pst);
+  unknownDomain = new DomainExpr(var);
 }

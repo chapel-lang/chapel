@@ -32,17 +32,39 @@ class NullSymbol : public Symbol {
 
 class VarSymbol : public Symbol {
  public:
-  bool isVar;
+  bool isConst;
   varType varClass;
   Type* type;
 
   VarSymbol(char* init_name, Type* init_type = dtUnknown);
   
   void setType(Type* newType);
-  void setIsVar(bool init_isVar);
+  void setIsConst(bool init_isConst);
   void setVarClass(varType init_varClass);
 
   void printWithType(FILE*);
+};
+
+
+enum paramType {
+  PARAM_IN = 0,
+  PARAM_INOUT,
+  PARAM_OUT,
+  PARAM_CONST,
+
+  NUM_PARAM_TYPES
+};
+
+
+class ParamSymbol : public Symbol {
+ public:
+  paramType usage;
+  Type* type;
+
+  ParamSymbol(paramType init_usage, char* init_name, 
+	      Type* init_type = dtUnknown);
+
+  void print(FILE* outfile);
 };
 
 

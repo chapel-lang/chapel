@@ -3,17 +3,6 @@
 #include "yy.h"
 
 
-Stmt::Stmt() :
-  filename(yyinfile),
-  lineno(yylineno) 
-{}
-
-
-void Stmt::print(FILE* outfile) {
-  fprintf(outfile, "(%s:%d) ", filename, lineno);
-}
-
-
 bool NullStmt::isNull(void) {
   return true;
 }
@@ -36,7 +25,7 @@ void VarDefStmt::print(FILE* outfile) {
     fprintf(outfile, "state ");
     break;
   }
-  if (var->isVar) {
+  if (var->isConst) {
     fprintf(outfile, "var ");
   } else {
     fprintf(outfile, "const ");
@@ -76,7 +65,7 @@ void FnDefStmt::print(FILE* outfile) {
   fprintf(outfile, "function ");
   fun->print(outfile);
   fprintf(outfile, "(");
-  fun->formals->printList(outfile);
+  fun->formals->printList(outfile, ";\n");
   fprintf(outfile, ")");
   if (fun->retType->isNull()) {
     fprintf(outfile, " ");
@@ -138,7 +127,6 @@ WhileLoopStmt::WhileLoopStmt(whileLoopType init_type,
 
 
 void WhileLoopStmt::print(FILE* outfile) {
-  Stmt::print(outfile);
   switch (type) {
   case LOOP_WHILEDO:
     fprintf(outfile, "while (");

@@ -11,6 +11,7 @@ CFLAGS = -g -Wall -Werror
 CXX_SRCS = \
 	expr.cpp \
 	link.cpp \
+	loc.cpp \
 	main.cpp \
 	stmt.cpp \
 	stringutil.cpp \

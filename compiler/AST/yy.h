@@ -14,7 +14,7 @@ extern "C" {
   extern FILE *yyin;
 
   extern char* yytext;
-  extern char* yyinfile;
+  extern char* yyfilename;
   extern int yylineno;
   
   int yyparse(void);

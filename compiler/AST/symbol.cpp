@@ -1,6 +1,8 @@
 #include "symbol.h"
 
+// BLC: Yuck
 Symbol* pstSumReduce = new Symbol("sum");
+
 
 Symbol::Symbol(char* init_name) :
   name(init_name)
@@ -28,8 +30,8 @@ void VarSymbol::setType(Type* newType) {
 }
 
 
-void VarSymbol::setIsVar(bool init_isVar) {
-  isVar = init_isVar;
+void VarSymbol::setIsConst(bool init_isConst) {
+  isConst = init_isConst;
 }
 
 
@@ -44,6 +46,30 @@ void VarSymbol::printWithType(FILE* outfile) {
     fprintf(outfile, ": ");
     type->print(outfile);
   }
+}
+
+
+static char* paramTypeNames[NUM_PARAM_TYPES] = {
+  "in",
+  "inout",
+  "out",
+  "const"
+};
+
+
+ParamSymbol::ParamSymbol(paramType init_usage, char* init_name, 
+			 Type* init_type) :
+  Symbol(init_name),
+  usage(init_usage),
+  type(init_type)
+{}
+
+
+void ParamSymbol::print(FILE* outfile) {
+  fprintf(outfile, "%s ", paramTypeNames[usage]);
+  Symbol::print(outfile);
+  fprintf(outfile, ": ");
+  type->print(outfile);
 }
 
 

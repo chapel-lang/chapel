@@ -48,6 +48,11 @@ type            return TYPE;
 enum            return ENUM;
 
 function        return FUNCTION;
+inout           return INOUT;
+in              return IN;
+out             return OUT;
+ref             return REF;
+val             return VAL;
 
 if              return IF;
 else            return ELSE;
@@ -55,7 +60,6 @@ elsif           return ELSIF;
 
 for             return FOR;
 forall          return FORALL;
-in              return IN;
 
 while           return WHILE;
 do              return DO;

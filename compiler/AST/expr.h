@@ -177,7 +177,7 @@ class DomainExpr : public Expr {
   Expr* indices;
   Expr* forallExpr;
 
-  DomainExpr(Expr* init_domains, Expr* init_indices = NULL);
+  DomainExpr(Expr* init_domains, Expr* init_indices = new NullExpr());
 
   void setForallExpr(Expr* exp);
 
@@ -228,5 +228,10 @@ class ReduceExpr : public Expr {
 
   void print(FILE* outfile);
 };
+
+
+extern DomainExpr* unknownDomain;
+
+void initExpr(void);
 
 #endif

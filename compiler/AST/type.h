@@ -98,6 +98,6 @@ extern Symbol* pstLocale;
 
 extern Symbol* pstUnknown;
 
-void setupTypes(void);
+void initType(void);
 
 #endif

@@ -2,8 +2,9 @@
 #define _LINK_H_
 
 #include <stdio.h>
+#include "loc.h"
 
-class Link {
+class Link : public Loc {
  public:
   Link* prev;
   Link* next;

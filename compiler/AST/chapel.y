@@ -24,6 +24,7 @@
   unOpType uot;
   binOpType bot;
   varType vt;
+  paramType pt;
 
   Expr* pexpr;
   DomainExpr* pdexpr;
@@ -46,6 +47,7 @@
 
 %token ENUM TYPE
 %token FUNCTION
+%token INOUT IN OUT REF VAL
 
 %token IDENT
 %token <ptsym> DEFINED_IDENT
@@ -76,6 +78,7 @@
 %type <bot> binop otherbinop
 %type <uot> unop
 %type <vt> vardecltag
+%type <pt> formaltag
 
 %type <pdt> type types domainType indexType arrayType tupleType weirdType
 %type <pdt> vardecltype fnrettype
@@ -119,9 +122,9 @@ vardecltag:
 
 varconst:
   VAR
-    { $$ = true; }
-| CONST
     { $$ = false; }
+| CONST
+    { $$ = true; }
 ;
 
 
@@ -138,7 +141,7 @@ idlist:
 
 vardecltype:
   /* nothing */
-    { $$ = NULL; }
+    { $$ = dtUnknown; }
 | ':' type
     { $$ = $2; }
 ;
@@ -155,7 +158,7 @@ vardeclinit:
 vardecl:
   vardecltag varconst idlist vardecltype vardeclinit ';'
     {
-      $3->setIsVar($2);
+      $3->setIsConst($2);
       $3->setType($4);
       $3->setVarClass($1);
       $$ = new VarDefStmt($3, $5);
@@ -203,15 +206,33 @@ enumList:
 ;
 
 
+formaltag:
+  /* nothing */
+    { $$ = PARAM_INOUT; }
+| IN
+    { $$ = PARAM_IN; }
+| INOUT
+    { $$ = PARAM_INOUT; }
+| OUT
+    { $$ = PARAM_OUT; }
+| CONST
+    { $$ = PARAM_CONST; }
+| REF
+    { $$ = PARAM_INOUT; }
+| VAL
+    { $$ = PARAM_IN; }
+;
+
+
 formal:
-  identifier
-    { $$ = new Symbol($1); }
+  formaltag idlist vardecltype
+    { $$ = new ParamSymbol(PARAM_INOUT, "???", $3); }
 ;
 
 
 nonemptyformals:
   formal
-| nonemptyformals ',' formal
+| nonemptyformals ';' formal
     {
       $1->append($3);
       $$ = $1;
@@ -314,7 +335,7 @@ indexType:
 
 arrayType:
   '[' ']' type
-    { $$ = new ArrayType(NULL, $3); }
+    { $$ = new ArrayType(unknownDomain, $3); }
 | '[' domainExpr ']' type
     { $$ = new ArrayType($2, $4); }
 ;
@@ -598,6 +619,8 @@ otherbinop:
 identifier:
   IDENT
     { $$ = copystring(yytext); }
+| '?' IDENT
+    { $$ = glomstrings(2, "?", yytext); }
 ;
 
 

@@ -2,34 +2,27 @@
 #include "expr.h"
 #include "link.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "yy.h"
 
 
 Stmt* program;
 Symbol* yypst;
 
-
-/*
-int main() {
-  Expr* ten = new Literal(10);
-  Expr* one = new Literal(1);
-  Expr* root = new BinOp(ten, one);
-
-  Stmt* stmt = new ExprStmt(root);
-
-  Stmt* loopstmt = new WhileLoopStmt(true, root, stmt);
-
-  loopstmt->print(stdout);
-}
-*/
+char* yyfilename;
+int yylineno;
 
 
 int main(int argc, char* argv[]) {
 
-  setupTypes();
+  initType();
+  initExpr();
+
+  yyfilename = copystring(argv[1]);
+  yylineno = 1;
 
   if (argc > 1) {
-    if ((yyin = fopen(argv[1], "r")) == NULL) {
+    if ((yyin = fopen(yyfilename, "r")) == NULL) {
       printf("Can't open file\n");
       exit(1);
     }
@@ -45,4 +38,6 @@ int main(int argc, char* argv[]) {
   }
 
   fclose (yyin);
+
+  return 0;
 }
