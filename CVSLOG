@@ -7507,3 +7507,14 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/test/flowanalysis/newast/: domarr.good enumarray.good 
 
+---------------------------------------------------------------------------
+
+09/16/04 08:21:49 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Failure caused by print order issue.
+	This addresses the symptom, I'll get to the cause tomorrow.
+
+Modified files:
+	chapel/test/flowanalysis/newast/: enumarray.good 
+
