@@ -3481,3 +3481,16 @@ Modified files:
 	chapel/test/trivial/bradc/: .cvsignore 
 	chapel/test/trivial/bradc/arrinit/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+06/16/04 17:55:41 -- bradc
+
+Log message:
+	Last checkin of the day -- minor stuff: fixed a valgrind-found
+	problem with the prototype AST, and commented some debug
+	printing out of start_test.
+
+Modified files:
+	chapel/compiler/AST/: .cvsignore expr.cpp 
+	chapel/test/: start_test 
+
