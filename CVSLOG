@@ -3959,3 +3959,23 @@ Log message:
 Added files:
 	chapel/util/tokencount/: checkdiff countrange tokctnightly 
 
+---------------------------------------------------------------------------
+
+07/13/04 14:30:53 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Cache upper limit on possible callees for each call.
+	Fixed bugs dealing with object creation.
+
+Modified files:
+	chapel/compiler/: ast.cpp builtin_symbols.h fa.cpp fa.h 
+	                  pattern.cpp pnode.h prelude.chpl prelude.v 
+	                  sym.h 
+	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
+	                                    cs4.good cs5.good cs6.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good review1.good 
+	                                    review2.good 
+
