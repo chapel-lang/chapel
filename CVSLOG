@@ -3714,3 +3714,13 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: review1.chpl review1.good 
 
+---------------------------------------------------------------------------
+
+06/23/04 14:47:49 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed a couple bugs in the graphing subsystem triggered by larger programs.
+
+Modified files:
+	chapel/compiler/: fa.cpp graph.cpp 
+
