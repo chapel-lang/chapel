@@ -23918,3 +23918,13 @@ Added files:
 	chapel/test/functions/bradc/: defaultParamWithReturn.chpl 
 	                              defaultParamWithReturn.good 
 
+---------------------------------------------------------------------------
+
+04/05/05 10:39:40 -- jplevyak
+
+Log message:
+	Fix bug which was causing intermittent failures of test_named_param3.chpl
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp 
+
