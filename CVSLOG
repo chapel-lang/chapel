@@ -526,3 +526,18 @@ Log message:
 Removed files:
 	chapel/third-party/dparser/: d-1.8-src.tar.gz 
 
+---------------------------------------------------------------------------
+
+04/02/20 10:00:47 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Add support for immediate sequences 1..n by m.
+	Reorganized primitive handling in type inference to support
+	more complicated transition function more easily.
+	Prep for more advanced splitting (type inference of abstract code).
+
+Modified files:
+	chapel/compiler/: ast.cpp cfg.cpp chpl.g fa.cpp fa.h grammar.cpp 
+	                  make_prims.g prelude.chpl prelude.v prim.h 
+	                  prim_data.dat vec.cpp vec.h 
+
