@@ -5483,3 +5483,23 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+08/18/04 17:55:39 -- shannon
+
+Log message:
+	Removed repeat...until from the scanner and parser, since
+	this is no longer supported.  Now that there are only
+	two types of while loops, while...do and do...while,
+	we no longer need to enumerate the type.  Changed this
+	to a boolean throughout.  Also changed the switch statement
+	to an if-else in the codegen and print methods of
+	whileLoopStmt for the same reason.  Added a test to the
+	suite.
+
+Modified files:
+	chapel/compiler/AST/: chapel.lex chapel.y expr.cpp stmt.cpp 
+	                      stmt.h 
+Added files:
+	chapel/test/trivial/shannon/: whileLoop.chpl whileLoop.good 
+
