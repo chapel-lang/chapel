@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#
+# either CHPLHOME must be set or this must be run from the root chapel
+# directory
+#
+
+pushd $CHPLHOME >& /dev/null
+
+find compiler -name "*.cpp" -exec grep --with-filename -P '\t' {} \;
+find compiler -name "*.c" -exec grep --with-filename -P '\t' {} \; | grep -v lex.yy.c | grep -v chapel.tab.c
+find compiler -name "*.h" -exec grep --with-filename -P '\t' {} \;
+find compiler -name "*.y" -exec grep --with-filename -P '\t' {} \;
+find compiler -name "*.lex" -exec grep --with-filename -P '\t' {} \;
+
+find runtime -name "*.cpp" -exec grep --with-filename -P '\t' {} \;
+find runtime -name "*.c" -exec grep --with-filename -P '\t' {} \;
+find runtime -name "*.h" -exec grep --with-filename -P '\t' {} \;
