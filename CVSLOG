@@ -10517,3 +10517,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp clone.cpp 
 
+---------------------------------------------------------------------------
+
+11/29/04 13:57:29 -- deitz
+
+Log message:
+	Made a few changes to MemberAccess::codegen to use John's
+	resolve_symbol function.  This makes no substantive changes (yet).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
