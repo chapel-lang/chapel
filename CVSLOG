@@ -14300,3 +14300,14 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
 	chapel/compiler/include/: analysis.h ast.h symscope.h 
 
+---------------------------------------------------------------------------
+
+01/12/05 15:46:31 -- jplevyak
+
+Log message:
+	move to new interface for combining wrappers and instantiation
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+	chapel/compiler/include/: fun.h 
+
