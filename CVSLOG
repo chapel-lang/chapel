@@ -17189,3 +17189,79 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+02/10/05 17:17:37 -- deitz
+
+Log message:
+	Added a field parentType to the Type class.  This field will store a
+	subtype relationship for a Type; The Type is a subtype of its
+	parentType.  This field is currently the nilType in all cases.
+	
+	Added two tuple future tests.  Failing in analysis and beyond
+	analysis.
+	
+	Improved parser support for tuples.  They can now be used on the left
+	hand side of assignment statements.  This resulted in the following
+	two changes to the Spec.
+	
+	1. The statement in a function definition must be one of the following:
+	  A compound statement ({ ... })
+	  An empty statement (;)
+	  A conditional statement (if ...)
+	  A for, forall, or while loop (for ..., forall ..., while ..., do ...)
+	  A call statement (call ...)
+	  A return statement (return ...)
+	
+	Rationale. I originally made it just a block statement to get around
+	the parser ambiguities.  David suggested it could also be a return
+	statement.  I added the rest (at least in the implementation for now).
+	
+	The ambiguity stems from starting assignment statements with tuples
+	clashing with the return type (domains and indexes) of the function:
+	  function foo() : domain(expr);
+	  function foo() : domain(i,j) = (k,l);
+	Types that can be qualified by expressions clash with the tuples
+	starting the next statement in one-lookahead parsers.
+	
+	2. The while-, for-, forall-, and if-statements now require a "do" or
+	"then" to avoid using curly brackets around the bodies of the loops or
+	the conditional "then" clause.
+	
+	The ambiguity can be seen in the example
+	  while foo(a,b) = (j,k);
+	Is foo a function call with actuals a and b or a boolean with a tuple
+	assignment as the body.  Of course, again, we know the answer, but
+	we're using a one-lookahead parser.
+	
+	Changed test cases to reflect language changes.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/arrays/deitz/: .cvsignore 
+	chapel/test/classes/jplevyak/: .cvsignore 
+	chapel/test/execflags/shannon/configs/: .cvsignore 
+	chapel/test/flowanalysis/newast/: compSampler.chpl 
+	                                  conditional.chpl 
+	                                  danglingelse.chpl domarr.chpl 
+	                                  domarr.good 
+	                                  multiple_return.chpl noop.chpl 
+	                                  noop.good whileLoop.chpl 
+	chapel/test/functions/jplevyak/scoping/: .cvsignore 
+	chapel/test/trivial/bradc/: conditional.chpl danglingelse.chpl 
+	                            noop.chpl 
+	chapel/test/trivial/bradc/domarr/: domarr.chpl 
+	chapel/test/trivial/deitz/: test_if_else.chpl 
+	                            test_if_then_else.chpl 
+	chapel/test/trivial/shannon/: whileLoop.chpl 
+Added files:
+	chapel/test/types/tuple/deitz/: .cvsignore 
+	                                test_tuple_simple1.chpl 
+	                                test_tuple_simple1.future 
+	                                test_tuple_simple1.good 
+	                                test_tuple_simple2.chpl 
+	                                test_tuple_simple2.future 
+	                                test_tuple_simple2.good 
+
