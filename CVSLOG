@@ -6287,3 +6287,38 @@ Modified files:
 	chapel/test/lowlevelcg/jplevyak/: review3.good 
 	chapel/test/parsing/jplevyak/: mat1.good vec.good 
 
+---------------------------------------------------------------------------
+
+08/31/04 18:07:09 -- bradc
+
+Log message:
+	Before making further changes to the parser, I wanted
+	to clean what we've got up a bit to reduce the number
+	of shift/reduce and reduce/reduce conflicts.  This
+	represents the result of struggling with it for a few
+	hours, and knocking the number of shift/reduces down by
+	about 25%.  The main substantive change is that I switched
+	to David's proposed cast syntax:
+	
+		expr : type
+	
+	rather than
+	
+		type(expr)
+	
+	for the time being.  Otherwise things should work about
+	the same.
+	
+	Some other minor changes go in along with this, but are
+	not worth mentioning, I think.
+
+Modified files:
+	chapel/compiler/: prim_data.dat 
+	chapel/compiler/AST/: chapel.y expr.cpp expr.h getstuff.cpp 
+	                      getstuff.h link.cpp symbol.cpp type.cpp 
+	                      type.h 
+	chapel/test/trivial/bradc/domarr/: enumarray.chpl 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+
