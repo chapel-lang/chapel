@@ -18152,3 +18152,26 @@ Added files:
 	                            test_let5.future test_let6.future 
 	                            test_let7.future 
 
+---------------------------------------------------------------------------
+
+02/28/05 10:45:34 -- deitz
+
+Log message:
+	Renamed field Type::name to Type::symbol to better differentiate it
+	from Symbol::name.  I've messed up because of these similarities so
+	I'm just taking the time to fix it.
+
+Modified files:
+	chapel/compiler/AST/: nils.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp 
+	                             insertAnonymousDomains.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertThisParameters.cpp 
+	                             insertUnionChecks.cpp 
+	                             insertVariableInitializations.cpp 
+	                             scopeResolveSymbols.cpp 
+
