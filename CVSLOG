@@ -22364,3 +22364,38 @@ Added files:
 	chapel/test/domains/roxana/: .cvsignore 
 	chapel/test/modules/bradc/manymodules/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/29/05 14:56:02 -- bradc
+
+Log message:
+	Changed RemoveDeadSymbols from a Traversal
+	to a SymtabTraversal in anticipation of some
+	upcoming changes.  This was pretty simple
+	with Steve's defpoint change from the other
+	day, and the main problem was that my previous
+	fix to allow SymtabTraversals to only iterate
+	over user symbols was only iterating over the
+	first user module (and it didn't show up until
+	now since so few tests use more than one module).
+	
+	Some changes vaguely related to this:
+	
+	- made Symboltable::getModuleList() take a boolean
+	  to indicate whether the person wants the user
+	  module list or the complete module list.
+	
+	- fixed a bug with print()-ing empty BlockStmts.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/main/: passlist.cpp runpasses.cpp 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	                         removeDeadSymbols.h symtab.cpp 
+	                         symtabTraversal.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: removeDeadSymbols.cpp 
+	                             removeDeadSymbols.h 
+
