@@ -1970,3 +1970,13 @@ Modified files:
 Added files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/05/07 17:20:43 -- bradc
+
+Log message:
+	Oops, accidentally introduced a typo in the start_test script.
+
+Modified files:
+	chapel/test/: start_test 
+
