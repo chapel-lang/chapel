@@ -2253,3 +2253,13 @@ Log message:
 Modified files:
 	chapel/test/trivial/bradc/: printempty.chpl 
 
+---------------------------------------------------------------------------
+
+04/05/26 14:17:01 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	new supression in boehm GC
+
+Modified files:
+	chapel/compiler/: valgrind.suppressions 
+
