@@ -11,6 +11,12 @@
  called from 22 in __entryPoint at mutrec.chpl:22
  called from 22 in __entryPoint at mutrec.chpl:22
  called from 4 in foo at mutrec.chpl:8
+::0(mutrec.chpl:12) ( int64 (<unknown>:0) )
+::0(mutrec.chpl:19) ( int64 (<unknown>:0) )
+::0(mutrec.chpl:20) ( int64 (<unknown>:0) )
+::0(mutrec.chpl:3) ( int64 (<unknown>:0) )
+::1(mutrec.chpl:13) ( int64 (<unknown>:0) )
+::1(mutrec.chpl:4) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (mutrec.chpl:22) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__init(mutrec.chpl:22) ( __init (<unknown>:0) )
@@ -25,9 +31,13 @@
 ::bar(<unknown>:0) ( bar (<unknown>:0) )
 ::bar(mutrec.chpl:20) ( bar (<unknown>:0) )
 ::bar(mutrec.chpl:4) ( bar (<unknown>:0) )
+::done with bar(mutrec.chpl:15) ( string (<unknown>:0) )
+::done with foo(mutrec.chpl:6) ( string (<unknown>:0) )
 ::foo(<unknown>:0) ( foo (<unknown>:0) )
 ::foo(mutrec.chpl:13) ( foo (<unknown>:0) )
 ::foo(mutrec.chpl:19) ( foo (<unknown>:0) )
+::in bar(mutrec.chpl:11) ( string (<unknown>:0) )
+::in foo(mutrec.chpl:2) ( string (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 bar(0);
 bar(1);

@@ -32,6 +32,7 @@ static Sym *expr_reduce_symbol = 0;
 static Sym *write_symbol = 0;
 static Sym *flood_symbol = 0;
 static Sym *completedim_symbol = 0;
+static Sym *array_index_symbol = 0;
 
 static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
@@ -284,9 +285,16 @@ build_types(Vec<BaseAST *> &syms) {
       case TYPE_INDEX: 
 	build_record_type(t, sym_tuple);
 	break;
-      case TYPE_ARRAY: 
-	  build_record_type(t, sym_array); 
+      case TYPE_ARRAY: {
+	ArrayType *at = dynamic_cast<ArrayType*>(t);
+	build_record_type(t, sym_array); 
+	Sym *s = at->asymbol;
+	s->element = new_sym();
+	s->element->type = at->elementType->asymbol;
+	s->element->is_var = 1;
+	s->element->is_external = 1;
 	break;
+      }
       case TYPE_TUPLE: {	
 	TupleType *tt = dynamic_cast<TupleType*>(t);
 	forv_Vec(Type, c, tt->components) {
@@ -534,7 +542,7 @@ gen_vardef(BaseAST *a) {
   def->ainfo->sym = s;
   if (var->type) {
     s->type = var->type->asymbol;
-    if (typeid(var->type) != typeid(ClassType))
+    if (var->type->astType != TYPE_CLASS)
       s->is_var = 1;
   }
   if (!def->init->isNull()) {
@@ -633,7 +641,7 @@ undef_or_fn_expr(Expr *ast) {
 
 static void
 gen_move(Expr *e, Sym *s) {
-  e->ainfo->rval = new_sym(s->name);
+  e->ainfo->rval = new_sym(s->name ? s->name : s->constant);
   e->ainfo->rval->ast = e->ainfo;
   if1_move(if1, &e->ainfo->code, s, e->ainfo->rval, e->ainfo);
 }
@@ -645,6 +653,8 @@ gen_move(Sym *s, Expr *e) {
   if1_move(if1, &e->ainfo->code, s, ss, e->ainfo);
   return ss;
 }
+
+static Sym *fnsym = 0;
 
 static int
 gen_if1(BaseAST *ast) {
@@ -663,9 +673,15 @@ gen_if1(BaseAST *ast) {
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
-      Sym *fn = s->parentFn->asymbol;
-      if (!s->expr->isNull())
-	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
+      //Sym *fn = s->parentFn->asymbol;
+      if (!s->expr->isNull()) {
+	if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
+	if (!fnsym->ret)
+	  fnsym->ret = s->expr->ainfo->rval;
+	else
+	  show_error("only one return currently allowed", s->ainfo);
+	//if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
+      }
       Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
       c->ast = s->ainfo;
       break;
@@ -721,7 +737,13 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
-      gen_move(s, s->var->asymbol);
+      Sym *sym = s->var->asymbol;
+      // hack
+      if (s->var->asymbol->name && 
+	  !strcmp(s->var->asymbol->name, "self")) {
+	sym = fnsym->self;
+      }
+      gen_move(s, sym);
       break;
     }
     case EXPR_UNOP: {
@@ -787,9 +809,17 @@ gen_if1(BaseAST *ast) {
       if1_gen(if1, &s->ainfo->code, s->base->ainfo->code);
       Sym *op = if1_make_symbol(if1, ".");
       Sym *selector = 0;
-      if (s->member->astType == SYMBOL ||
+      if (
+#if 0
+	s->member->astType == SYMBOL ||
 	  s->member->astType == SYMBOL_USEBEFOREDEF ||
-	  s->member->astType == SYMBOL_FN) 
+	  s->member->astType == SYMBOL_FN ||
+	  (s->member->astType == SYMBOL_VAR && 
+	   (((dynamic_cast<VarSymbol*>(s->member))->type->astType == TYPE_BUILTIN)))
+#else
+	1
+#endif
+)
       {
 	assert(s->member->asymbol->name);
 	selector = if1_make_symbol(if1, s->member->asymbol->name);
@@ -799,6 +829,7 @@ gen_if1(BaseAST *ast) {
 			 s->base->ainfo->rval, op, selector,
 			 s->ainfo->rval);
       c->ast = s->ainfo;
+      s->ainfo->rval->is_lvalue = 1;
       break;
     }
     case EXPR_ASSIGNOP: {
@@ -830,6 +861,7 @@ gen_if1(BaseAST *ast) {
 			   rval);
 	c->ast = s->ainfo;
       }
+      if1_move(if1, &s->ainfo->code, rval, s->left->ainfo->rval, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
       break;
     }
@@ -907,16 +939,24 @@ gen_if1(BaseAST *ast) {
 	args.n--;
       forv_Vec(Expr, a, args)
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+      int use_symbol = undef_or_fn_expr(s->baseExpr);
+      Sym *symbol = NULL;
+      if (!strcmp(s->baseExpr->ainfo->rval->name, "__primitive"))
+	symbol = sym_primitive;
+      else if (!strcmp(s->baseExpr->ainfo->rval->name, "__operator"))
+	symbol = sym_operator;
+      else if (use_symbol)
+	symbol = gen_move(if1_make_symbol(if1, s->baseExpr->ainfo->rval->name), s);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      if (undef_or_fn_expr(s->baseExpr)) {
-	Sym *ss = gen_move(if1_make_symbol(if1, s->baseExpr->ainfo->rval->name), s);
-	if1_add_send_arg(if1, send, ss);
-      } else
+      if (symbol)
+	if1_add_send_arg(if1, send, symbol);
+      else
 	if1_add_send_arg(if1, send, s->baseExpr->ainfo->rval);
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
+      s->ainfo->rval->is_lvalue = 1;
       break;
     }
     case EXPR_CAST: {
@@ -992,6 +1032,10 @@ static int
 gen_fun(FnDefStmt *f) {
   Sym *fn = f->fn->asymbol;
   Code *body = 0;
+  if (!fn->ret) {
+    fn->ret = new_sym();
+    fn->ret->ast = f->ainfo;
+  }
   if1_gen(if1, &body, f->fn->body->ainfo->code);
   AInfo *ast = f->ainfo;
   if1_move(if1, &body, sym_null, fn->ret, ast);
@@ -1003,12 +1047,8 @@ gen_fun(FnDefStmt *f) {
   Sym *as[args.n + 2];
   int iarg = 0;
   assert(f->fn->asymbol->name);
-  if (f->fn->scope->type == SCOPE_CLASS) {
-    fn->self = new_sym("self"); // hack
-    fn->self->ast = f->ainfo;
+  if (f->fn->scope->type == SCOPE_CLASS)
     as[iarg++] = fn->self;
-    fn->self->type = dynamic_cast<TypeSymbol *>(f->fn->scope->symContext)->type->asymbol;
-  }
   if (strcmp(f->fn->asymbol->name, "self") != 0) {
     as[iarg++] = new_sym(f->fn->asymbol->name);
     as[iarg-1]->type = if1_make_symbol(if1, f->fn->asymbol->name);
@@ -1034,13 +1074,17 @@ build_function(FnDefStmt *f) {
   s->type_sym = s;
   s->cont = new_sym();
   s->cont->ast = f->ainfo;
-  s->ret = new_sym();
-  s->ret->ast = f->ainfo;
   s->labelmap = new LabelMap;
+  if (f->fn->scope->type == SCOPE_CLASS) {
+    s->self = new_sym("self"); // hack
+    s->self->ast = f->ainfo;
+    s->self->type = dynamic_cast<TypeSymbol *>(f->fn->scope->symContext)->type->asymbol;
+  }
   set_global_scope(s);
   if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
   Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
   if (resolve_labels(f->fn->body, f->fn->asymbol->labelmap, return_label) < 0) return -1;
+  fnsym = f->fn->asymbol; // hack
   if (gen_if1(f->fn->body) < 0) return -1;
   if (gen_fun(f) < 0) return -1;
   return 0;
@@ -1055,13 +1099,18 @@ build_classes(Vec<BaseAST *> &syms) {
   if (verbose_level > 1)
     printf("build_classes: %d classes\n", classes.n);
   forv_Vec(ClassType, c, classes) {
+    Sym *csym = c->asymbol;
     Vec<Stmt *> stmts;
     getLinkElements(stmts, c->definition);
     forv_BaseAST(s, stmts) {
       switch (s->astType) {
 	default: break;
-	case STMT_VARDEF:
+	case STMT_VARDEF: {
+	  VarDefStmt *def = dynamic_cast<VarDefStmt*>(s);
+	  VarSymbol *var = def->var;
+	  csym->has.add(var->asymbol);
 	  break;
+	}
       }
     }
   }
@@ -1086,6 +1135,7 @@ init_symbols() {
   expr_domain_symbol = if1_make_symbol(if1, "expr_domain");
   expr_create_domain_symbol = if1_make_symbol(if1, "expr_create_domain");
   expr_reduce_symbol = if1_make_symbol(if1, "expr_reduce");
+  array_index_symbol = if1_make_symbol(if1, "array_index");
   write_symbol = if1_make_symbol(if1, "write");
   flood_symbol = if1_make_symbol(if1, "*");
   completedim_symbol = if1_make_symbol(if1, "..");
@@ -1207,6 +1257,19 @@ write_transfer_function(PNode *pn, EntrySet *es) {
   update_in(result, make_abstract_type(sym_int));
 }
 
+static void
+array_index(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *array = make_AVar(pn->rvals.v[2], es);
+  set_container(result, array);
+  forv_CreationSet(a, *array->out) if (a) {
+    if (a->sym->element) {
+      AVar *element = unique_AVar(a->sym->element->var, a);
+      flow_vars(element, result);
+    }
+  }
+}
+
 int
 AST_to_IF1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
@@ -1216,14 +1279,15 @@ AST_to_IF1(Vec<Stmt *> &stmts) {
   if (import_symbols(syms) < 0) return -1;
   if (build_classes(syms) < 0) return -1;
   if (build_functions(syms) < 0) return -1;
-  pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol, domain_start_index);
-  pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol, domain_next_index);
-  pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol, domain_valid_index);
-  pdb->fa->primitive_transfer_functions.put(expr_domain_symbol, expr_domain);
-  pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol, expr_reduce);
-  pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol, expr_simple_seq);
-  pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol, expr_create_domain);
-  pdb->fa->primitive_transfer_functions.put(write_symbol, write_transfer_function);
+  pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol->name, domain_start_index);
+  pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol->name, domain_next_index);
+  pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol->name, domain_valid_index);
+  pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol->name, expr_simple_seq);
+  pdb->fa->primitive_transfer_functions.put(expr_domain_symbol->name, expr_domain);
+  pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol->name, expr_create_domain);
+  pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol->name, expr_reduce);
+  pdb->fa->primitive_transfer_functions.put(write_symbol->name, write_transfer_function);
+  pdb->fa->primitive_transfer_functions.put(array_index_symbol->name, array_index);
   finalize_types(if1);
   sym_null->is_external = 1;	// hack
   finalize_symbols(if1);

@@ -6,6 +6,23 @@
  called from 27 in __entryPoint at globalref.chpl:27
  called from 27 in __entryPoint at globalref.chpl:27
  called from 27 in __entryPoint at globalref.chpl:27
+::  a is (globalref.chpl:15) ( string (<unknown>:0) )
+::  a is (globalref.chpl:23) ( string (<unknown>:0) )
+::  a is (globalref.chpl:8) ( string (<unknown>:0) )
+::  b is (globalref.chpl:16) ( string (<unknown>:0) )
+::  b is (globalref.chpl:24) ( string (<unknown>:0) )
+::  b is (globalref.chpl:9) ( string (<unknown>:0) )
+::  c is (globalref.chpl:10) ( string (<unknown>:0) )
+::  c is (globalref.chpl:17) ( string (<unknown>:0) )
+::  c is (globalref.chpl:25) ( string (<unknown>:0) )
+::1(globalref.chpl:20) ( int64 (<unknown>:0) )
+::10(globalref.chpl:1) ( int64 (<unknown>:0) )
+::20(globalref.chpl:2) ( int64 (<unknown>:0) )
+::3(globalref.chpl:6) ( int64 (<unknown>:0) )
+::30(globalref.chpl:3) ( int64 (<unknown>:0) )
+::In foo:(globalref.chpl:7) ( string (<unknown>:0) )
+::In main:(globalref.chpl:14) ( string (<unknown>:0) )
+::In main:(globalref.chpl:22) ( string (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (globalref.chpl:27) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__init(globalref.chpl:27) ( __init (<unknown>:0) )

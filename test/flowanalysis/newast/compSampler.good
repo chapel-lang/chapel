@@ -3,6 +3,19 @@
  called from 35 in __entryPoint at compSampler.chpl:35
  called from 35 in __entryPoint at compSampler.chpl:35
  called from 35 in __entryPoint at compSampler.chpl:35
+::**ERROR** =>  m % n + o(compSampler.chpl:33) ( string (<unknown>:0) )
+::**ERROR** =>  m + n % o(compSampler.chpl:28) ( string (<unknown>:0) )
+::**ERROR** =>  m + n - o(compSampler.chpl:8) ( string (<unknown>:0) )
+::**ERROR** =>  m + n / o(compSampler.chpl:18) ( string (<unknown>:0) )
+::**ERROR** =>  m - n + o(compSampler.chpl:13) ( string (<unknown>:0) )
+::**ERROR** =>  m / n + o(compSampler.chpl:23) ( string (<unknown>:0) )
+::0(compSampler.chpl:4) ( int64 (<unknown>:0) )
+::0(compSampler.chpl:8) ( int64 (<unknown>:0) )
+::2(compSampler.chpl:18) ( int64 (<unknown>:0) )
+::4(compSampler.chpl:13) ( int64 (<unknown>:0) )
+::5(compSampler.chpl:23) ( int64 (<unknown>:0) )
+::5(compSampler.chpl:28) ( int64 (<unknown>:0) )
+::7(compSampler.chpl:33) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (compSampler.chpl:35) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__init(compSampler.chpl:35) ( __init (<unknown>:0) )

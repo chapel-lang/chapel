@@ -15,6 +15,7 @@
 ::__initPrelude(noargs.chpl:6) ( __initPrelude (<unknown>:0) )
 ::foo(<unknown>:0) ( foo (<unknown>:0) )
 ::foo(noargs.chpl:5) ( foo (<unknown>:0) )
+::in foo!(noargs.chpl:2) ( string (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 foo();
 function __entryPoint noargs.chpl:6

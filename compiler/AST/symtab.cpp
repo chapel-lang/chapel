@@ -588,7 +588,8 @@ MemberAccess* Symboltable::defineMemberAccess(Expr* base, char* member) {
   Type* baseType = base->typeInfo();
   Symbol* memberSym;
 
-  if (baseType == dtUnknown) {
+extern int analyzeNewAST;
+  if (baseType == dtUnknown || analyzeNewAST) {
     memberSym = new UseBeforeDefSymbol(member);
   } else if (typeid(*baseType) == typeid(ClassType)) {
     ClassType* classType = (ClassType*)baseType;

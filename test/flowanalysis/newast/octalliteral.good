@@ -3,6 +3,7 @@
  called from 4 in __entryPoint at octalliteral.chpl:4
  called from 4 in __entryPoint at octalliteral.chpl:4
  called from 4 in __entryPoint at octalliteral.chpl:4
+::011(octalliteral.chpl:1) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (octalliteral.chpl:4) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__init(octalliteral.chpl:4) ( __init (<unknown>:0) )
@@ -11,6 +12,7 @@
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(octalliteral.chpl:4) ( __initPrelude (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
+::x is: (octalliteral.chpl:3) ( string (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::x(octalliteral.chpl:3) ( int64 (<unknown>:0) )
 function __entryPoint octalliteral.chpl:4

@@ -6,6 +6,9 @@
  called from 17 in __entryPoint at codegen_test.chpl:17
  called from 17 in __entryPoint at codegen_test.chpl:17
  called from 17 in __entryPoint at codegen_test.chpl:17
+::123(codegen_test.chpl:1) ( int64 (<unknown>:0) )
+::765(codegen_test.chpl:15) ( int64 (<unknown>:0) )
+::789(codegen_test.chpl:8) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (codegen_test.chpl:17) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__init(codegen_test.chpl:17) ( __init (<unknown>:0) )
@@ -13,15 +16,19 @@
 ::__initIntPrelude(codegen_test.chpl:17) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(codegen_test.chpl:17) ( __initPrelude (<unknown>:0) )
+::a is: (codegen_test.chpl:10) ( string (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(codegen_test.chpl:10) ( int64 (<unknown>:0) )
 ::foo(<unknown>:0) ( foo (<unknown>:0) )
 ::foo(codegen_test.chpl:15) ( foo (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
+::x is: (codegen_test.chpl:14) ( string (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::x(codegen_test.chpl:14) ( int64 (<unknown>:0) )
+::y is: (codegen_test.chpl:16) ( string (<unknown>:0) )
 ::y(<unknown>:0) ( int64 (<unknown>:0) )
 ::y(codegen_test.chpl:16) ( int64 (<unknown>:0) )
+::z is: (codegen_test.chpl:11) ( string (<unknown>:0) )
 ::z(<unknown>:0) ( int64 (<unknown>:0) )
 ::z(codegen_test.chpl:11) ( int64 (<unknown>:0) )
 foo(765);

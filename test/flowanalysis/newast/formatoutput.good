@@ -1,0 +1,74 @@
+
+
+ called from 11 in __init at formatoutput.chpl:17
+ called from 11 in __init at formatoutput.chpl:17
+ called from 17 in __entryPoint at formatoutput.chpl:17
+ called from 17 in __entryPoint at formatoutput.chpl:17
+ called from 17 in __entryPoint at formatoutput.chpl:17
+::%.2d(formatoutput.chpl:16) ( string (<unknown>:0) )
+::%.3d(formatoutput.chpl:5) ( string (<unknown>:0) )
+::%2d(formatoutput.chpl:15) ( string (<unknown>:0) )
+::%3d(formatoutput.chpl:4) ( string (<unknown>:0) )
+::1(formatoutput.chpl:7) ( int64 (<unknown>:0) )
+::1(formatoutput.chpl:7) ( int64 (<unknown>:0) )
+::10(formatoutput.chpl:1) ( int64 (<unknown>:0) )
+::3(formatoutput.chpl:11) ( int64 (<unknown>:0) )
+::4(formatoutput.chpl:7) ( int64 (<unknown>:0) )
+::A is: (formatoutput.chpl:14) ( string (<unknown>:0) )
+::A is: (formatoutput.chpl:15) ( string (<unknown>:0) )
+::A is: (formatoutput.chpl:16) ( string (<unknown>:0) )
+::A(<unknown>:0) ( (<unknown>:0) )
+::A(formatoutput.chpl:11) ( (<unknown>:0) )
+::A(formatoutput.chpl:14) ( (<unknown>:0) )
+::A(formatoutput.chpl:15) ( (<unknown>:0) )
+::A(formatoutput.chpl:16) ( (<unknown>:0) )
+::D(<unknown>:0) ( sequence (<unknown>:0) )
+::D(formatoutput.chpl:10) ( sequence (<unknown>:0) )
+::__entryPoint(<unknown>:0) ( __entryPoint (formatoutput.chpl:17) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(formatoutput.chpl:17) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(formatoutput.chpl:17) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(formatoutput.chpl:17) ( __initPrelude (<unknown>:0) )
+::array_index(internal_prelude.chpl:6) ( string (<unknown>:0) )
+::array_index(internal_prelude.chpl:9) ( string (<unknown>:0) )
+::i(<unknown>:0) ( Index (<unknown>:0) )
+::i(<unknown>:0) ( Index (<unknown>:0) )
+::i(<unknown>:0) ( Index (<unknown>:0) )
+::i(formatoutput.chpl:11) ( Index (<unknown>:0) )
+::i(internal_prelude.chpl:6) ( Index (<unknown>:0) )
+::i(internal_prelude.chpl:9) ( Index (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+::self(internal_prelude.chpl:10) ( (<unknown>:0) )
+::self(internal_prelude.chpl:6) ( (<unknown>:0) )
+::self(internal_prelude.chpl:7) ( (<unknown>:0) )
+::self(internal_prelude.chpl:9) ( (<unknown>:0) )
+::x is: (formatoutput.chpl:3) ( string (<unknown>:0) )
+::x is: (formatoutput.chpl:4) ( string (<unknown>:0) )
+::x is: (formatoutput.chpl:5) ( string (<unknown>:0) )
+::x(<unknown>:0) ( int64 (<unknown>:0) )
+::x(formatoutput.chpl:3) ( int64 (<unknown>:0) )
+::x(formatoutput.chpl:4) ( int64 (<unknown>:0) )
+::x(formatoutput.chpl:5) ( int64 (<unknown>:0) )
+A(i) = 3;
+forall i in D {
+function __entryPoint formatoutput.chpl:17
+function __init formatoutput.chpl:17
+function __init() {
+function __initIntPrelude formatoutput.chpl:17
+function __initPrelude formatoutput.chpl:17
+function self internal_prelude.chpl:10
+function self internal_prelude.chpl:7
+globals
+var A: [D] integer;
+var D: domain(1) = 1..4;
+var x: integer = 10;
+writeln("A is: ", ("%.2d", A));
+writeln("A is: ", ("%2d", A));
+writeln("A is: ", A);
+writeln("x is: ", ("%.3d", x));
+writeln("x is: ", ("%3d", x));
+writeln("x is: ", x);
+}
+}

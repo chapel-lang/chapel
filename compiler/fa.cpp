@@ -71,7 +71,7 @@ AType::AType(CreationSet *cs) {
   set_add(cs);
 }
 
-static AVar *
+AVar *
 unique_AVar(Var *v, void *contour) {
   assert(contour);
   AVar *av = v->avars.get(contour);
@@ -82,7 +82,7 @@ unique_AVar(Var *v, void *contour) {
   return av;
 }
 
-static AVar *
+AVar *
 unique_AVar(Var *v, EntrySet *es) {
   assert(es);
   AVar *av = v->avars.get(es);
@@ -808,7 +808,7 @@ add_var_constraints(EntrySet *es) {
   }
 }
 
-static void
+void
 set_container(AVar *av, AVar *container) {
   assert(!av->container || av->container == container);
   av->container = container;
@@ -848,7 +848,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
   }
 }
 
-static AVar *
+AVar *
 get_element_avar(CreationSet *cs) {
   AVar *elem = unique_AVar(element_var, cs);
   cs->added_element_var = 1;
@@ -1245,7 +1245,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     switch (p->prim->index) {
       default: break;
       case P_prim_primitive: {
-	PrimitiveTransferFunctionPtr fn = fa->primitive_transfer_functions.get(p->rvals.v[1]->sym);
+	PrimitiveTransferFunctionPtr fn = fa->primitive_transfer_functions.get(p->rvals.v[1]->sym->name);
 	if (!fn)
 	  fail("fatal error, undefined primitive transfer function '%s'", 
 	       p->rvals.v[1]->sym->name);
@@ -1652,6 +1652,8 @@ initialize_symbols() {
     forv_Sym(ss, s->has)
       if (!ss->var)
 	ss->var = new Var(ss);
+    if (s->element)
+      s->element->var = new Var(s->element);
     if (s->type_sym)
       type_syms.add(s);
   }

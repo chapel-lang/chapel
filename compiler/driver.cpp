@@ -38,7 +38,7 @@ extern int d_debug_level;
 static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
-static int analyzeNewAST = 0;
+int analyzeNewAST = 0;
 
 int fdce_if1 = 1;
 int finline = 0;

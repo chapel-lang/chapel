@@ -3,6 +3,13 @@
  called from 24 in __entryPoint at whileLoop.chpl:24
  called from 24 in __entryPoint at whileLoop.chpl:24
  called from 24 in __entryPoint at whileLoop.chpl:24
+:: (should be 3)(whileLoop.chpl:11) ( string (<unknown>:0) )
+:: (should be 3)(whileLoop.chpl:23) ( string (<unknown>:0) )
+::0(whileLoop.chpl:1) ( int64 (<unknown>:0) )
+::2(whileLoop.chpl:22) ( int64 (<unknown>:0) )
+::2(whileLoop.chpl:9) ( int64 (<unknown>:0) )
+::5(whileLoop.chpl:17) ( int64 (<unknown>:0) )
+::5(whileLoop.chpl:3) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (whileLoop.chpl:24) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__init(whileLoop.chpl:24) ( __init (<unknown>:0) )
@@ -10,6 +17,10 @@
 ::__initIntPrelude(whileLoop.chpl:24) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(whileLoop.chpl:24) ( __initPrelude (<unknown>:0) )
+::i = (whileLoop.chpl:11) ( string (<unknown>:0) )
+::i = (whileLoop.chpl:15) ( string (<unknown>:0) )
+::i = (whileLoop.chpl:23) ( string (<unknown>:0) )
+::i = (whileLoop.chpl:4) ( string (<unknown>:0) )
 ::i(<unknown>:0) ( int64 (<unknown>:0) )
 ::i(whileLoop.chpl:11) ( int64 (<unknown>:0) )
 ::i(whileLoop.chpl:15) ( int64 (<unknown>:0) )

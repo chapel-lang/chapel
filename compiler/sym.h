@@ -111,6 +111,7 @@ class Sym : public gc {
   Sym			*alias;			// alias of type
   Sym			*init;			// for modules & classes (default init function)
   Sym			*type_sym;		// the representative symbol for this type in code
+  Sym			*element;
 
   Scope 		*scope;			// used in ast.cpp
   LabelMap		*labelmap;		// used by ast.cpp

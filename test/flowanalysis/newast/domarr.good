@@ -1,0 +1,51 @@
+
+
+ called from 12 in __entryPoint at domarr.chpl:12
+ called from 12 in __entryPoint at domarr.chpl:12
+ called from 12 in __entryPoint at domarr.chpl:12
+ called from 9 in __init at domarr.chpl:12
+::0.0(domarr.chpl:9) ( float64 (<unknown>:0) )
+::1(domarr.chpl:4) ( int64 (<unknown>:0) )
+::1(domarr.chpl:4) ( int64 (<unknown>:0) )
+::4(domarr.chpl:1) ( int64 (<unknown>:0) )
+::A is:\n(domarr.chpl:11) ( string (<unknown>:0) )
+::A(<unknown>:0) ( (<unknown>:0) )
+::A(domarr.chpl:11) ( (<unknown>:0) )
+::A(domarr.chpl:9) ( (<unknown>:0) )
+::Mat(<unknown>:0) ( Domain (<unknown>:0) )
+::Mat(domarr.chpl:8) ( Domain (<unknown>:0) )
+::__entryPoint(<unknown>:0) ( __entryPoint (domarr.chpl:12) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(domarr.chpl:12) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(domarr.chpl:12) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(domarr.chpl:12) ( __initPrelude (<unknown>:0) )
+::array_index(internal_prelude.chpl:12) ( string (<unknown>:0) )
+::i(<unknown>:0) ( Index (<unknown>:0) )
+::i(<unknown>:0) ( Index (<unknown>:0) )
+::i(domarr.chpl:9) ( Index (<unknown>:0) )
+::i(internal_prelude.chpl:12) ( Index (<unknown>:0) )
+::j(<unknown>:0) ( Index (<unknown>:0) )
+::j(<unknown>:0) ( Index (<unknown>:0) )
+::j(domarr.chpl:9) ( Index (<unknown>:0) )
+::j(internal_prelude.chpl:12) ( Index (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(domarr.chpl:4) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+::self(internal_prelude.chpl:12) ( (<unknown>:0) )
+::self(internal_prelude.chpl:13) ( (<unknown>:0) )
+forall i in Mat A(i, j) = 0.0;
+function __entryPoint domarr.chpl:12
+function __init domarr.chpl:12
+function __init() {
+function __initIntPrelude domarr.chpl:12
+function __initPrelude domarr.chpl:12
+function self internal_prelude.chpl:13
+globals
+var A: [Mat] float;
+var Mat: domain(2) = [1..m, 1..n];
+var m: integer = 4;
+var n: integer = 8;
+writeln("A is:\n", A);
+}

@@ -10,6 +10,10 @@
 ::__initIntPrelude(writetwo.chpl:4) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(writetwo.chpl:4) ( __initPrelude (<unknown>:0) )
+::and another second(writetwo.chpl:2) ( string (<unknown>:0) )
+::here is another first\n(writetwo.chpl:2) ( string (<unknown>:0) )
+::here is the first string\n(writetwo.chpl:1) ( string (<unknown>:0) )
+::here is the second\n(writetwo.chpl:1) ( string (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 function __entryPoint writetwo.chpl:4
 function __init writetwo.chpl:4

@@ -1874,7 +1874,7 @@ print_transfer_function(PNode *pn, EntrySet *es) {
 
 static void
 add_primitive_transfer_functions() {
-  pdb->fa->primitive_transfer_functions.put(print_symbol, print_transfer_function);
+  pdb->fa->primitive_transfer_functions.put(print_symbol->name, print_transfer_function);
 }
 
 int
