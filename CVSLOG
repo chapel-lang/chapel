@@ -2705,3 +2705,13 @@ Log message:
 Modified files:
 	chapel/compiler/: prelude.chpl prim_data.dat 
 
+---------------------------------------------------------------------------
+
+06/04/04 13:45:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed up &&.
+
+Modified files:
+	chapel/compiler/: chpl.g 
+
