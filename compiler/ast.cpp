@@ -19,10 +19,6 @@ AST::get(AST_kind k) {
   for (int i = 0; i < n; i++)
     if (v[i]->kind == k)
       return v[i];
-  AST *res;
-  for (int i = 0; i < n; i++)
-    if ((res = v[i]->get(k)))
-      return res;
   return NULL;
 }
 
@@ -406,6 +402,7 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
            if (ast->v[i]->kind == AST_def_type_param || ast->v[i]->kind == AST_constraint) {
 	      // handled below
 	    } else { 
+	      ast->v[i]->sym = sym;
 	      ast->sym->type_kind = Type_ALIAS;
 	      goto Lkind_assigned;
 	    }
@@ -426,9 +423,18 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
       case AST_def_fun: // defer functions
 	funs.add(ast);
 	return 0;
-      case AST_declare_ident:
-	ast->sym = new_sym(i, scope, ast->get(AST_ident)->string, ast->sym);
+      case AST_declare_ident: {
+	Sym *sym = scope->get(ast->get(AST_ident)->string);
+	if (sym && sym->type_kind != Type_UNKNOWN)
+	  return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
+	if (!sym)
+	  sym = ast->sym = new_sym(i, scope, ast->get(AST_ident)->string, ast->sym);
+	else {
+	  assert(!ast->sym);;
+	  ast->sym = sym;
+	}
 	break;
+      }
       case AST_vector_type:
       case AST_ref_type:
       case AST_product_type:
@@ -494,7 +500,7 @@ resolve_parameterized_type(IF1 *i, AST *ast) {
       assert(ast->v[i]->kind == AST_type_param && ast->v[i]->sym);
       if (!(sym = checked_ast_qualified_ident_sym(ast->v[i]->get(AST_qualified_ident))))
 	return -1;
-      s->args.add(sym);
+      s->has.add(sym);
     }
     ast->sym = s;
   } else
@@ -597,8 +603,8 @@ scope_constraints(AST *ast, Sym *sym) {
 	return -1;
       sym->constraints.set_add(a->sym);
       sym->scope->add_dynamic(a->sym->scope);
-    } if (a->kind == AST_def_type_param) {
-      sym->args.add(a->sym);
+    } else if (a->kind == AST_def_type_param) {
+      sym->has.add(a->sym);
       if (verbose_level > 2)
 	printf("%s has param %s\n", sym->name, a->sym->name);
     }
@@ -659,6 +665,48 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
 }
 
 static int
+scope_idpattern(IF1 *i, AST *ast, Scope *scope) {
+  switch (ast->kind) {
+    case AST_ident: {
+      Sym *sym = scope->get(ast->string);
+      if (!sym || sym->type_kind != Type_UNKNOWN) {
+	ast->sym = new_sym(i, scope, ast->string, ast->sym);
+	ast->sym->ast = ast;
+      } else {
+	sym->type_kind = Type_NONE;
+	ast->sym = sym;
+      }
+    }
+    break;
+    case AST_pattern: {
+      ast->sym = new_sym(i, scope, ast->string, ast->sym);
+      AST *ptype = ast->get(AST_pattern_type);
+      if (ptype)
+	ast->sym->type = ptype->sym;
+      else
+	ast->sym->type = sym_tuple;
+      ast->sym->ast = ast;
+      forv_AST(a, *ast) if (a != ptype) {
+	if (a->kind == AST_constraint) {
+	  assert(!ast->sym->type);
+	  if (resolve_parameterized_type(i, a) < 0)
+	    return -1;
+	  ast->sym->type = a->sym;
+	} else {
+	  if (scope_idpattern(i, a, scope) < 0)
+	    return -1;
+	  assert(a->sym);
+	  ast->sym->has.add(a->sym);
+	}
+      }
+      break;
+    }
+    default: break;
+  }
+  return 0;
+}
+
+static int
 variables_and_nonrecursive_functions(IF1 *i, AST *ast, int skip = 0) {
   if (!skip)
     switch (ast->kind) {
@@ -670,9 +718,10 @@ variables_and_nonrecursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	break;
       }
       case AST_def_ident: {
-	AST *id = ast->get(AST_ident);
-	ast->sym = new_sym(i, ast->scope, id->string, id->sym);
-	ast->sym->ast = ast;
+	AST *id = ast->v[0];
+	if (scope_idpattern(i, id, ast->scope) < 0)
+	  return -1;
+	ast->sym = id->sym;
 	break;
       }
       case AST_def_fun:
@@ -741,7 +790,7 @@ build_types(IF1 *i, AST *ast) {
 	if (a->sym) {
 	  switch (a->kind) {
 	    case AST_type_param:
-	      ast->sym->args.add(a->sym);
+	      ast->sym->has.add(a->sym);
 	      break;
 	    case AST_inherits:
 	      ast->sym->implements.add(a->v[0]->sym);
@@ -767,17 +816,18 @@ build_types(IF1 *i, AST *ast) {
     case AST_def_type:
       for (int i = 1; i < ast->n; i++) {
 	if (ast->v[i]->kind != AST_def_type_param && ast->v[i]->kind != AST_constraint) {
-	  ast->sym->has.add(ast->v[i]->sym);
+	  assert(!ast->sym->alias);
+	  ast->sym->alias = ast->v[i]->sym;
 	  break;
 	}
       }
-      if (ast->sym->type_kind == Type_ALIAS && ast->sym->has.n) {
-	if (!ast->sym->has.v[0]->name)
-	  ast->sym->has.v[0]->name = ast->sym->name;
-	if (!ast->sym->has.v[0]->internal)
-	  ast->sym->has.v[0]->internal = ast->sym->internal;
-	if (!ast->sym->has.v[0]->value)
-	  ast->sym->has.v[0]->value = ast->is_value;
+      if (ast->sym->type_kind == Type_ALIAS && ast->sym->alias) {
+	if (!ast->sym->alias->name)
+	  ast->sym->alias->name = ast->sym->name;
+	if (!ast->sym->alias->internal)
+	  ast->sym->alias->internal = ast->sym->internal;
+	if (!ast->sym->alias->value)
+	  ast->sym->alias->value = ast->is_value;
       }
       break;
     case AST_constraint:
@@ -813,10 +863,12 @@ static int
 define_labels(IF1 *i, AST *ast, LabelMap *labelmap) {
   switch (ast->kind) {
     case AST_def_ident:
-      if (ast->def_ident_label) {
-	ast->label[0] = if1_alloc_label(i);
-	ast->label[1] = if1_alloc_label(i);
-	labelmap->put(ast->get(AST_ident)->string, ast);
+      if (!ast->get(AST_pattern)) {
+	if (ast->def_ident_label) {
+	  ast->label[0] = if1_alloc_label(i);
+	  ast->label[1] = if1_alloc_label(i);
+	  labelmap->put(ast->get(AST_ident)->string, ast);
+	}
       }
       break;
     case AST_in_module:
@@ -1413,6 +1465,7 @@ gen_container(IF1 *i, AST *ast) {
 static void
 gen_def_ident(IF1 *i, AST *ast) {
   AST *constraint = ast->get(AST_constraint);
+  AST *pattern = ast->get(AST_pattern);
   AST *val = ast->last();
   if (val == constraint)
     val = 0;
@@ -1427,8 +1480,13 @@ gen_def_ident(IF1 *i, AST *ast) {
     else {
       if (val)
 	if1_gen(i, &ast->code, val->code);
-      if (val && val->rval)
-	if1_move(i, &ast->code, val->rval, ast->rval, ast); 
+      if (val && val->rval) {
+	if (pattern) {
+	  Code *s = if1_send(i, &ast->code, 2, 1, sym_match, val->rval, ast->rval);
+	  s->ast = ast;
+	} else
+	  if1_move(i, &ast->code, val->rval, ast->rval, ast); 
+      }
     }
   }
   if (ast->is_var)

@@ -58,7 +58,6 @@ Scope::put(char *name, Sym *s) {
   MapElem<char *, Sym *> e(name, NULL);
   MapElem<char *, Sym *> *x = hash.set_in(e);
   if (x) {
-    s->next_sym = x->value;
     x->value = s;
   } else
     hash.put(name, s);

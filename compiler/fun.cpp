@@ -90,7 +90,7 @@ Fun::collect_Vars(Vec<Var *> &vars, Vec<PNode *> *nodes) {
       if (sv.set_add(p))
 	nodes->add(p);
   }
-  forv_Sym(s, sym->args)
+  forv_Sym(s, sym->has)
     vars.set_add(s->var);
   vars.set_add(sym->ret->var);
   vars.set_to_vec();

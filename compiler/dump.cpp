@@ -112,7 +112,6 @@ dump_sym(FILE *fp, Sym *t) {
   dump_sym_list(fp, t, t->constraints, "Constraints");
   dump_sym_list(fp, t, t->subtypes, "Subtypes");
   dump_sym_list(fp, t, t->has, "Has");
-  dump_sym_list(fp, t, t->args, "Args");
   dump_sub_sym(fp, t->self, "Self");
   dump_sub_sym(fp, t->ret, "Ret");
   dump_sub_sym(fp, t->cont, "Cont");
@@ -319,8 +318,6 @@ dump_symbols(FILE *fp, FA *fa) {
       forv_Sym(ss, s->dispatch_order) if (ss)
 	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->has) if (ss)
-	again = syms.set_add(ss) || again;
-      forv_Sym(ss, s->args) if (ss)
 	again = syms.set_add(ss) || again;
       if (s->self)
 	again = syms.set_add(s->self) || again;

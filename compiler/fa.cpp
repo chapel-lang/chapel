@@ -633,7 +633,7 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 	continue;
       forv_MPosition(p, e->match->fun->positions) {
 	AVar *eav = e->args.get(p), *eeav = ee->args.get(p);
-	if (eav || eeav)
+	if (eav && eeav)
 	  if (!sset_compatible(eav, eeav))
 	    return 0;
       }
@@ -904,17 +904,23 @@ make_closure(AVar *result) {
   EntrySet *es = (EntrySet*)result->contour;
   if (partial_application->prim) { // apply and period
     AVar *iv = unique_AVar(partial_application->rvals.v[1], cs);
-    flow_var_to_var(make_AVar(partial_application->rvals.v[1], es), iv);
+    AVar *v = make_AVar(partial_application->rvals.v[1], es);
+    set_container(v, result);
+    flow_var_to_var(v, iv);
     if (add)
       cs->vars.add(iv);
     iv = unique_AVar(partial_application->rvals.v[3], cs);
-    flow_var_to_var(make_AVar(partial_application->rvals.v[3], es), iv);
+    v = make_AVar(partial_application->rvals.v[3], es);
+    set_container(v, result);
+    flow_var_to_var(v, iv);
     if (add)
       cs->vars.add(iv);
   } else {
     for (int i = 0; i < partial_application->rvals.n; i++) {
       AVar *iv = unique_AVar(partial_application->rvals.v[i], cs);
+      AVar *v = make_AVar(partial_application->rvals.v[i], es);
       flow_var_to_var(make_AVar(partial_application->rvals.v[i], es), iv);
+      set_container(v, result);
       if (add)
 	cs->vars.add(iv);
     }
@@ -1051,7 +1057,7 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> &args) 
 }
 
 static void
-record_arg(AVar *a, Sym *s, Map<MPosition*,AVar*> &args, MPosition &p) {
+record_arg(AVar *a, Sym *s, AEdge *e, MPosition &p) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
   if (a->var->sym->name && !is_const(a->var->sym)) {
     MPosition pp(p);
@@ -1059,13 +1065,14 @@ record_arg(AVar *a, Sym *s, Map<MPosition*,AVar*> &args, MPosition &p) {
     cpname = cannonicalize_mposition(pp);
   }
   for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
-    args.put(cp, a);
+    e->args.put(cp, a);
     if (s->pattern) {
-      forv_CreationSet(cs, *a->out) {
+      AType *t = type_intersection(a->out, e->match->filters.get(cp));
+      forv_CreationSet(cs, *t) {
 	assert(s->has.n == cs->vars.n);
 	p.push(1);
 	for (int i = 0; i < s->has.n; i++) {
-	  record_arg(cs->vars.v[i], s->has.v[i], args, p);
+	  record_arg(cs->vars.v[i], s->has.v[i], e, p);
 	  p.inc();
 	}
 	p.pop();
@@ -1085,13 +1092,13 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
   AVar *send = make_AVar(p->lvals.v[0], es);
   pattern_match(fa, a, matches, send);
   forv_Match(m, matches) {
-    if (m->fun->sym->args.n == a.n) {
+    if (m->fun->sym->has.n == a.n) {
       AEdge *ee = make_AEdge(m, p, es);
       if (!ee->args.n) {
 	MPosition p;
 	p.push(1);
-	for (int i = 0; i < m->fun->sym->args.n; i++) {
-	  record_arg(a.v[i], m->fun->sym->args.v[i], ee->args, p);
+	for (int i = 0; i < m->fun->sym->has.n; i++) {
+	  record_arg(a.v[i], m->fun->sym->has.v[i], ee, p);
 	  p.inc();
 	}
       }
@@ -1178,6 +1185,10 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     // specifics
     switch (p->prim->index) {
       default: break;
+      case P_prim_match: {
+	//pattern_match(fa, a, matches, send);
+	break;
+      }
       case P_prim_print: {
 	AVar *ret = make_AVar(p->lvals.v[0], es);
 	update_in(ret, make_abstract_type(sym_int));
@@ -1541,8 +1552,8 @@ initialize_symbols() {
       subtype(ss, s, types);
     // functions are subtypes of the initial symbol in their pattern
     // which may be a constant or a constant contrainted variable
-    if (s->fun && s->args.n) {
-      Sym *a0 = s->args.v[0];
+    if (s->fun && s->has.n) {
+      Sym *a0 = s->has.v[0];
       if (a0->symbol)
 	subtype(a0, s, types);
       if (a0->type && a0->type->symbol)
@@ -1913,7 +1924,7 @@ clear_results() {
   forv_Fun(f, fa->funs) {
     forv_Var(v, f->fa_all_Vars)
       clear_var(v);
-    forv_Sym(v, f->sym->args)
+    forv_Sym(v, f->sym->has)
       if (v->var) clear_var(v->var);
     if (f->sym->ret->var)
       clear_var(f->sym->ret->var);

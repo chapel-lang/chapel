@@ -568,7 +568,7 @@ clone_functions() {
   Vec<Fun *> fs;
   fs.copy(fa->funs);
   forv_Fun(f, fs) {
-    forv_Sym(s, f->sym->args)
+    forv_Sym(s, f->sym->has)
       f->args.add(s->var);
     f->rets.add(f->sym->ret->var);
     if (f->equiv_sets.n == 1) {

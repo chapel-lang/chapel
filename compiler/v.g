@@ -256,13 +256,19 @@ with_scope : qualified_ident (',' qualified_ident)* ':'
 symbol_ident: identifier
 { $$.ast = symbol_AST($g->i, &$n); };
 
-def_ident: ident ('__name' string)? ':' 
+def_ident: idpattern ('__name' string)? ':' 
 {
   $$.ast = $0.ast;
   if ($#1)
     $$.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
 };
+
+idpattern
+  : ident
+  | '(' pattern_type? idpattern (',' idpattern)* ')'
+{ $$.ast = new AST(AST_pattern, &$n); };
+  ;
 
 def_function: qualified_ident pattern+ ('__name' string)? ':' 
 [ 

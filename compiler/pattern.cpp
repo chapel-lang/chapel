@@ -89,7 +89,7 @@ build(FA *fa) {
     MPosition p;
     p.push(1);
     insert_fun(fa, f, f->sym, f->sym, p);
-    forv_Sym(a, f->sym->args)
+    forv_Sym(a, f->sym->has)
       build_arg(fa, f, a, p);
   }
 }
@@ -108,6 +108,10 @@ pattern_match_sym(FA *fa, Sym *s, CreationSet *cs, Vec<Fun *> *funs, Vec<Fun *> 
 	fs = &ffs;
       }
       forv_Fun(f, *fs) if (f) {
+	found = 1;
+	Sym *fun_arg = f->arg_syms.get(cp);
+	if (fun_arg->pattern)
+	  continue;
 	Match *m = match_map.get(f);
 	if (!m) {
 	  m = new Match(f);
@@ -119,7 +123,6 @@ pattern_match_sym(FA *fa, Sym *s, CreationSet *cs, Vec<Fun *> *funs, Vec<Fun *> 
 	  m->filters.put(cp, t);
 	}
 	t->set_add(cs);
-	found = 1;
       }
       funs->set_union(*fs);
     }
@@ -174,6 +177,9 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
       p.pop();
       if (partial_matches.v[partial_matches.n-1]) {
 	forv_Fun(f, *partial_matches.v[partial_matches.n-1]) if (f) {
+	  Sym *fun_arg = f->arg_syms.get(cp);
+	  if (fun_arg->has.n != cs->vars.n) 
+	    continue;
 	  Match *m = match_map.get(f);
 	  if (!m) {
 	    m = new Match(f);
@@ -185,8 +191,8 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	    m->filters.put(cp, t);
 	  }
 	  t->set_add(cs);
+	  funs->set_add(f);
 	}
-	funs->set_union(*partial_matches.v[partial_matches.n-1]);
       }
       partial_matches.n--;
     }
@@ -235,10 +241,12 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
     Vec<Fun *> afuns, pfuns;
     forv_Fun(f, *partial_matches.v[partial_matches.n-1]) if (f) {
       Sym *fun_arg = f->arg_syms.get(cp);
-      if (fun_arg->pattern)
-	pfuns.set_add(f);
-      else
-	afuns.set_add(f);
+      if (fun_arg) {
+	if (fun_arg->pattern)
+	  pfuns.set_add(f);
+	else
+	  afuns.set_add(f);
+      }
     }
     best_match_sym(fa, cs->sym, cs, funs, &afuns, match_map, cp, done);
     if (cs->vars.n) {
@@ -380,7 +388,7 @@ build_positions(FA *fa) {
   forv_Fun(f, fa->pdb->funs) {
     MPosition p;
     p.push(1);
-    forv_Sym(a, f->sym->args) {
+    forv_Sym(a, f->sym->has) {
       build_arg_position(f, a, p);
       p.inc();
     }

@@ -37,7 +37,7 @@ show_sym(Sym *s, FILE *fp) {
 static void
 show_fun(Fun *f, FILE *fp) {
   fprintf(fp, "%s:%d: ", f->ast->pathname, f->ast->line);
-  forv_Sym(s, f->sym->args)
+  forv_Sym(s, f->sym->has)
     show_sym(s, fp);
 }
 

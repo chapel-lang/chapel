@@ -62,7 +62,7 @@ class Sym : public gc {
 
   Sym 			*type;			// true type
   Sym  			*aspect;		// mascarade as (e.g. superclass)
-  Sym			*type_sym;		// the representative symbol for this typ in code
+  Sym			*type_sym;		// the representative symbol for this type in code
                                                 // as opposed to the type itself
 
   char 			*constant;		// string representing constant value
@@ -73,14 +73,13 @@ class Sym : public gc {
   Vec<Sym *>		implements;
   Vec<Sym *>		includes;		// included code
   Vec<Sym *>		constraints;		// must-implement
-  Vec<Sym *>		has;			// instance variables
-  Vec<Sym *>		args;			// parameters of functions and types
+  Vec<Sym *>		has;			// sub variables (fun args / members)
+  Sym			*alias;			// alias of type
   Sym			*self;			// self variable for the function
   Sym			*ret;			// return value of functions
   Sym			*cont;			// continuation (function returning ret)
   Sym			*init;			// for modules & classes (default init function)
   Code			*code;			// for functions, Code
-  Sym 			*next_sym;	       	// in scope
   AST			*ast;			// AST node which defined this symbol
 
   unsigned int		read_only:1;		// Sym is an read only

@@ -346,7 +346,7 @@ if1_loop(IF1 *p, Code **t, Label *cont, Label *brk, Sym *cond_var,
 Sym *
 if1_closure(IF1 *p, Sym *f, Code *c, int nargs, Sym **args) {
   for (int i = 0; i < nargs; i++)
-    f->args.add(args[i]);
+    f->has.add(args[i]);
   f->code = c;
   p->allclosures.add(f);
   return f;
@@ -580,15 +580,6 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       }
       fputs(")", fp);
     }
-    if (s->args.n) {
-      fputs(" :ARGS (", fp);
-      for (int j = 0; j < s->args.n; j++) {
-	if (j)
-	  fprintf(fp, " ");
-	if1_dump_sym(fp, s->args.v[j]);
-      }
-      fputs(")", fp);
-    }
     if (s->ret) {
       fputs(" :RET ", fp);
       if1_dump_sym(fp, s->ret);
@@ -615,8 +606,6 @@ if1_simple_dead_code_elimination(IF1 *p) {
       mark_sym_live(p->allclosures.v[i]->ret);
     for (int j = 0; j < p->allclosures.v[i]->has.n; j++)
       mark_sym_live(p->allclosures.v[i]->has.v[j]);
-    for (int j = 0; j < p->allclosures.v[i]->args.n; j++)
-      mark_sym_live(p->allclosures.v[i]->args.v[j]);
   }
   int again = 1;
   while (again) {
@@ -801,9 +790,9 @@ unalias_type(Sym *s) {
   if (s->type_kind == Type_ALIAS) {
     Vec<Sym *> aliases;
     do {
-      if (!s->has.n)
+      if (!s->alias)
 	return 0;
-      Sym *ss = s->has.v[0];
+      Sym *ss = s->alias;
       if (aliases.set_in(ss))
 	fail("circular type alias");
       aliases.set_add(ss);
