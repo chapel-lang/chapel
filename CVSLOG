@@ -6175,3 +6175,14 @@ Modified files:
 	chapel/compiler/AST/: baseAST.h chapel.y type.cpp type.h 
 	                      verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/04 16:14:45 -- bradc
+
+Log message:
+	Minor change: unified printWithType with printDef for
+	variables...
+
+Modified files:
+	chapel/compiler/AST/: TODO stmt.cpp symbol.cpp symbol.h 
+
