@@ -158,3 +158,11 @@
    fun:GC_reclaim_small_nonempty_block
    fun:GC_continue_reclaim
 }
+{
+   boehm-memcheck21
+   Memcheck:Cond
+   fun:GC_reclaim_clear2
+   fun:GC_reclaim_generic
+   fun:GC_reclaim_small_nonempty_block
+   fun:GC_continue_reclaim
+}
