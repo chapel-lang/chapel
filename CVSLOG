@@ -23321,3 +23321,62 @@ Modified files:
 	                             insertIndexType.cpp 
 	                             insertThisParameters.cpp 
 
+---------------------------------------------------------------------------
+
+04/01/05 17:56:09 -- bradc
+
+Log message:
+	Refactored the storage of union types in the AST from
+	being a ClassType with its union_value boolean set to
+	true to being a subclass of ClassType called UnionType
+	(astType_t = TYPE_UNION).  In doing so, eliminated the
+	union_value field, but ensured that the value field in
+	ClassType is true for unions so that code that merely
+	wants to know whether a ClassType instance has value
+	semantics can check that flag (and there are lots of
+	instances).  If a piece of code wants to specifically
+	know that a ClassType instance is a union, it should use
+	a dynamic cast or check the astType field as usual.
+	
+	This refactoring cleaned up a lot of code, typically by
+	replacing conditionals outside of the ClassType methods
+	with calls to virtual functions now defined for the
+	ClassType hierarchy.
+	
+	- C code generation of field access operators
+	
+	- moved the building of constructor bodies out of
+	  buildClassConstructorsEtc.cpp (though the call to
+	  build them is still there, obviously)
+	
+	  NOTE to Steve/John: developers who want to flip the
+	        CONSTRUCTOR_WITH_PARAMETERS flag will now need
+	        to do so in type.cpp as well as buildClass...
+	        Steve assures me that this is OK and that it
+	        will go away soon anyway... :)
+	
+	- moved the building of the union type's enumeration
+	  used at runtime for type safety into the UnionType
+	  class.
+	
+	- built a function to compute the name of a union
+	  enumeration to the UnionType class to avoid so many
+	  separate calls to glomstrings() that have to match
+	  in order for everything to work properly.
+	
+	Other changes:
+	
+	- cleaned up the ClassType constructor, which had many
+	  arguments that were no longer being used (or never were)
+	
+	TODO: refactor classdecl, recorddecl, uniondecl in parser
+	      so that they are all one rule rather than three
+	      almost-identcal ones
+	
+	ALSO: move construction of _UNION_SET/CHECK/etc. into
+	      UnionType since it's virtually identical and done
+	      in a few places.
+
+Added files:
+	chapel/test/types/like/jplevyak/: .cvsignore 
+
