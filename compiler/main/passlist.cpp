@@ -13,7 +13,6 @@
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
-#include "../traversals/cloneAllFns.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/destructureTupleAssignments.h"
 #include "../traversals/expandClassWiths.h"
@@ -50,7 +49,6 @@ REGISTER(BuildBinary);
 REGISTER(CheckIDs);
 REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
-REGISTER(CloneAllFns);
 REGISTER(Codegen);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);

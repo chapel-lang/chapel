@@ -752,23 +752,19 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  TypeDefStmt* def_stmt = dynamic_cast<TypeDefStmt*>(symbol->defPoint);
-
+  DefStmt* def_stmt = dynamic_cast<DefStmt*>(symbol->defPoint);
   if (!def_stmt) {
-    INT_FATAL(this, "Attempt to copy ClassType not defined in TypeDefStmt");
+    INT_FATAL(this, "Attempt to copy ClassType not defined in DefStmt");
   }
-
-  //  static int uid = 0;
   ClassType* copy_type = new ClassType(value, union_value);
-  //  TypeSymbol* copy_symbol = new TypeSymbol(glomstrings(3, symbol->name, "_copy_", intstring(uid++)), copy_type);
-  //  copy_type->addSymbol(copy_symbol);
   Symboltable::pushScope(SCOPE_CLASS);
-
   Stmt* new_decls = NULL;
   Stmt* old_decls = declarationList;
   while (old_decls) {
-    if (FnDefStmt* def = dynamic_cast<FnDefStmt*>(old_decls)) {
-      copy_type->methods.add(def->fn);
+    DefStmt* def = dynamic_cast<DefStmt*>(old_decls);
+    FnSymbol* fn;
+    if (def && (fn = dynamic_cast<FnSymbol*>(def->def_sym))) {
+      copy_type->methods.add(fn);
       //Symboltable::define(def->fn);
     }
     else {
@@ -780,11 +776,6 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   SymScope* copy_scope = Symboltable::popScope();
   copy_type->setClassScope(copy_scope);
   copy_type->buildConstructor();
-
-  //  TypeDefStmt* copy_def = new TypeDefStmt(copy_symbol);
-  //  copy_symbol->setDefPoint(copy_def);
-  //  copy_scope->setContext(copy_def, copy_symbol);
-  //  def_stmt->insertBefore(copy_def);
   return copy_type;
 }
 
@@ -792,16 +783,20 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
   Stmt* tmp = newDeclarations;
   while (tmp) {
-    if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
-      fn_def_stmt->fn->classBinding = this->symbol;
-      fn_def_stmt->fn->method_type = PRIMARY_METHOD;
-      methods.add(fn_def_stmt->fn);
+    DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp);
+    FnSymbol* fn;
+    TypeSymbol* type_sym;
+    VarSymbol* var;
+    if (def_stmt && (fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym))) {
+      fn->classBinding = this->symbol;
+      fn->method_type = PRIMARY_METHOD;
+      methods.add(fn);
     }
-    else if (VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
-      fields.add(var_def_stmt->var);
+    else if (def_stmt && (type_sym = dynamic_cast<TypeSymbol*>(def_stmt->def_sym))) {
+      types.add(type_sym);
     }
-    else if (TypeDefStmt* type_def_stmt = dynamic_cast<TypeDefStmt*>(tmp)) {
-      types.add(type_def_stmt->type_sym);
+    else if (def_stmt && (var = dynamic_cast<VarSymbol*>(def_stmt->def_sym))) {
+      fields.add(var);
     }
     tmp = nextLink(Stmt, tmp);
   }
@@ -829,7 +824,7 @@ void ClassType::buildConstructor(void) {
     if (value || union_value) {
       BlockStmt* body = Symboltable::startCompoundStmt();
       VarSymbol* this_insert = new VarSymbol("this", this);
-      VarDefStmt* body1 = new VarDefStmt(this_insert);
+      DefStmt* body1 = new DefStmt(this_insert);
       this_insert->setDefPoint(body1);
       ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
       body1->append(body2);
@@ -924,8 +919,10 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "union _chpl_union_def {\n");
   }
   for (Stmt* tmp = declarationList; tmp; tmp = nextLink(Stmt, tmp)) {
-    if (VarDefStmt* def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
-      def_stmt->var->codegenDef(outfile);
+    if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->def_sym)) {
+	var->codegenDef(outfile);
+      }
     }
   }
   /*

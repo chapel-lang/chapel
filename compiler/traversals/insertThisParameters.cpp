@@ -5,13 +5,13 @@
 #include "symtab.h"
 
 void InsertThisParameters::preProcessStmt(Stmt* stmt) {
-  FnDefStmt* def = dynamic_cast<FnDefStmt*>(stmt);
+  DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt);
 
-  if (!def) {
+  if (!def_stmt) {
     return;
   }
 
-  FnSymbol* fn = dynamic_cast<FnSymbol*>(def->fn);
+  FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym);
 
   if (!fn) {
     return;
@@ -56,7 +56,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(fn->paramScope);
       Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);
-      this_insert->defPoint = def;
+      this_insert->defPoint = def_stmt;
       Symboltable::setCurrentScope(saveScope);
       this_insert = appendLink(this_insert, fn->formals);
       fn->formals = this_insert;

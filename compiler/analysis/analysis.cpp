@@ -223,7 +223,8 @@ AInfo::copy_tree(ASTCopyContext* context) {
   AnalysisCloneCallback callback;
   callback.context = context;
   Map<BaseAST*,BaseAST*> clone_map;
-  FnSymbol *orig_fn = dynamic_cast<FnDefStmt*>(xast)->fn;
+  DefStmt* def_stmt = dynamic_cast<DefStmt*>(xast);
+  FnSymbol* orig_fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym);
   FnSymbol *new_fn = orig_fn->clone(&callback, &clone_map);
   if (Expr* expr = dynamic_cast<Expr*>(new_fn->defPoint))
     return expr->ainfo;
@@ -375,9 +376,9 @@ static Fun *
 install_new_function(FnSymbol *f) {
   Vec<Stmt *> all_stmts;
   Vec<BaseAST *> all_syms, syms;
-  FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(f->defPoint);
+  DefStmt* def_stmt = dynamic_cast<DefStmt*>(f->defPoint);
   if (!def_stmt)
-    INT_FATAL(f, "Function not defined in FnDefStmt");
+    INT_FATAL(f, "Function not defined in DefStmt");
   all_stmts.add(def_stmt);
   all_syms.add(f);
   close_symbols(all_stmts, all_syms);	
@@ -1044,7 +1045,7 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 }
 
 static void
-gen_alloc(Sym *s, VarDefStmt *def, Sym *type) {
+gen_alloc(Sym *s, DefStmt *def, Sym *type) {
   Code **c = &def->ainfo->code;
   Code *send = if1_send(if1, c, 2, 1, sym_new, type, s);
   send->ast = def->ainfo;
@@ -1067,8 +1068,8 @@ is_reference_type(BaseAST *t) {
 
 static int
 gen_vardef(BaseAST *a) {
-  VarDefStmt *def = dynamic_cast<VarDefStmt*>(a);
-  for (VarSymbol *var = def->var;var;var = dynamic_cast<VarSymbol*>(var->next)) {
+  DefStmt *def = dynamic_cast<DefStmt*>(a);
+  for (VarSymbol *var = dynamic_cast<VarSymbol*>(def->def_sym);var;var = dynamic_cast<VarSymbol*>(var->next)) {
     Sym *s = var->asymbol->sym;
     def->ainfo->sym = s;
     if (var->type && var->type != dtUnknown) {
@@ -1222,7 +1223,8 @@ gen_if1(BaseAST *ast) {
   // bottom's up
   GetStuff getStuff(GET_STMTS|GET_EXPRS);
   TRAVERSE(ast, &getStuff, true);
-  if (ast->astType != STMT_FNDEF)
+  DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast);
+  if (!def_stmt || !def_stmt->isFnDef())
     forv_BaseAST(a, getStuff.asts)
       if (gen_if1(a) < 0)
 	return -1;
@@ -1243,11 +1245,11 @@ gen_if1(BaseAST *ast) {
     }
     case STMT_NOOP: break;
     case STMT_WITH: break;
-    case STMT_DEF: break;
-    case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
-    case STMT_TYPEDEF: break;
-    case STMT_FNDEF: break;
-    case STMT_MODDEF: break;
+    case STMT_DEF:
+      if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast)) {
+	if (def_stmt->isVarDef() && gen_vardef(def_stmt) < 0) return -1;
+      }
+      break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
@@ -1929,9 +1931,10 @@ debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
     forv_Stmt(s, stmts)
       print_one_baseast(s);
     forv_BaseAST(s, syms) {
-      if (s->astType == STMT_FNDEF)
-	print_ast(dynamic_cast<FnDefStmt*>(s)->fn->body); 
-      else { 
+      DefStmt* def_stmt = dynamic_cast<DefStmt*>(s);
+      if (def_stmt && def_stmt->isFnDef()) {
+	print_ast(dynamic_cast<FnSymbol*>(def_stmt->def_sym)->body);
+      }	else {
 	Type *t = dynamic_cast<Type*>(s); 
 	if (t) 
 	  printf("Type: %s cname %s\n", t->symbol->name, t->symbol->cname); 
@@ -2097,8 +2100,9 @@ void
 print_AST_types() {
   forv_Fun(f, pdb->fa->funs) {
     AInfo *a = dynamic_cast<AInfo *>(f->ast);
-    FnDefStmt *def = dynamic_cast<FnDefStmt *>(a->xast);
-    print_AST_Expr_types(def->fn->body);
+    DefStmt* def_stmt = dynamic_cast<DefStmt*>(a->xast);
+    FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym);
+    print_AST_Expr_types(fn->body);
   }
 }
 

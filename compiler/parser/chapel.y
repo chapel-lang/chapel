@@ -23,7 +23,7 @@
   Expr* pexpr;
   ForallExpr* pfaexpr;
   Stmt* stmt;
-  VarDefStmt* varstmt;
+  DefStmt* defstmt;
   ForLoopStmt* forstmt;
   BlockStmt* blkstmt;
   Type* pdt;
@@ -112,7 +112,7 @@
 %type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
-%type <varstmt> vardecl vardecl_inner vardecl_inner_ls
+%type <defstmt> vardecl vardecl_inner vardecl_inner_ls
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl block_stmt
 %type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl function_body_stmt
 %type <pragmas> pragma pragmas
@@ -249,7 +249,7 @@ typealias:
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
       typeSym->pragmas = $2;
       newtype->addSymbol(typeSym);
-      $$ = new TypeDefStmt(typeSym);
+      $$ = new DefStmt(typeSym);
       typeSym->setDefPoint($$);
     }
 ;
@@ -262,7 +262,7 @@ typevardecl:
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
       new_symbol->pragmas = $2;
       new_type->addSymbol(new_symbol);
-      $$ = new TypeDefStmt(new_symbol);
+      $$ = new DefStmt(new_symbol);
       new_symbol->setDefPoint($$);
     }
 ;
@@ -276,7 +276,7 @@ enumdecl:
       TypeSymbol* pst = new TypeSymbol($3, pdt);
       pst->pragmas = $2;
       pdt->addSymbol(pst);
-      $$ = new TypeDefStmt(pst);
+      $$ = new DefStmt(pst);
       pst->setDefPoint($$);
       $5->setDefPoint($$);
     }

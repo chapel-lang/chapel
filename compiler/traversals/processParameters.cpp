@@ -54,13 +54,13 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	      initializer = actual->copy();
 	    }
 	    char* newActualName = glomstrings(2, "_", formal->name);
-	    VarDefStmt* newActualDecl = 
+	    DefStmt* newActualDecl = 
 	      Symboltable::defineSingleVarDefStmt(newActualName,
 						  formal->type, initializer,
 						  VAR_NORMAL, false);
 	    body = appendLink(body, newActualDecl);
 
-	    newActualUse = new Variable(newActualDecl->var);
+	    newActualUse = new Variable(newActualDecl->def_sym);
 	  } else {
 	    newActualUse = actual->copy();
 	  }

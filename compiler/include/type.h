@@ -14,7 +14,6 @@ class FnSymbol;
 class Expr;
 class ASymbol;
 class SymScope;
-class FnDefStmt;
 
 
 enum paramType {

@@ -27,26 +27,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_DEF");
     }
     break;
-  case STMT_VARDEF:
-    if (typeid(*ast) != typeid(VarDefStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_VARDEF");
-    }
-    break;
-  case STMT_TYPEDEF:
-    if (typeid(*ast) != typeid(TypeDefStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_TYPEDEF");
-    }
-    break;
-  case STMT_FNDEF:
-    if (typeid(*ast) != typeid(FnDefStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_FNDEF");
-    }
-    break;
-  case STMT_MODDEF:
-    if (typeid(*ast) != typeid(ModuleDefStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_MODDEF");
-    }
-    break;
   case STMT_EXPR:
     if (typeid(*ast) != typeid(ExprStmt)) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_EXPR");

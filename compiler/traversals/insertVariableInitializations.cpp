@@ -14,18 +14,23 @@ static void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
 	dynamic_cast<BlockStmt*>(var->parentScope->stmtContext)) {
       block_stmt->body->insertBefore(init_stmt);
     }
-    else if (ModuleDefStmt* mod_stmt =
-	     dynamic_cast<ModuleDefStmt*>(var->parentScope->stmtContext)) {
-      if (BlockStmt* block_stmt =
-	  dynamic_cast<BlockStmt*>(mod_stmt->module->initFn->body)) {
-	block_stmt->body->insertBefore(init_stmt);
+    else if (DefStmt* def_stmt =
+	     dynamic_cast<DefStmt*>(var->parentScope->stmtContext)) {
+      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def_stmt->def_sym)) {
+	if (BlockStmt* block_stmt =
+	    dynamic_cast<BlockStmt*>(mod->initFn->body)) {
+	  block_stmt->body->insertBefore(init_stmt);
+	}
+	else {
+	  INT_FATAL(var, "SJD \"Where should I put the default init?\"");
+	}
+      }
+      else if (dynamic_cast<TypeSymbol*>(def_stmt->def_sym)) {
+	// Ignore case
       }
       else {
 	INT_FATAL(var, "SJD \"Where should I put the default init?\"");
       }
-    }
-    else if (dynamic_cast<TypeDefStmt*>(var->parentScope->stmtContext)) {
-      // Ignore case
     }
     else {
       INT_FATAL(var, "SJD \"Where should I put the default init?\"");
@@ -153,7 +158,7 @@ InsertVariableInitializations::InsertVariableInitializations() {
 
 
 void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
-  VarDefStmt* def_stmt = dynamic_cast<VarDefStmt*>(stmt);
+  DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt);
 
   if (!def_stmt) {
     return;
@@ -163,7 +168,11 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
     return;
   }
 
-  VarSymbol* var = def_stmt->var;
+  VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->def_sym);
+
+  if (!var) {
+    return;
+  }
 
   while (var) {
     if (dynamic_cast<ArrayType*>(var->type)) {

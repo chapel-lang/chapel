@@ -31,9 +31,13 @@ void Fixup::preProcessStmt(Stmt* stmt) {
     INT_FATAL(stmt, "Null Stmt ParentSymbol in Fixup");
   }
 
-  // SJD: HACK for FnDefStmts of secondary methods
-  FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(stmt);
-  if (!def_stmt || !def_stmt->fn->classBinding) {
+  // SJD: HACK for definitions of secondary methods
+  DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt);
+  FnSymbol* fn;
+  if (def_stmt) {
+    fn = dynamic_cast<FnSymbol*>(def_stmt->def_sym);
+  }
+  if (!def_stmt || !fn || !fn->classBinding) {
     if (!verify) {
       stmt->parentSymbol = parent;
     }
@@ -168,51 +172,35 @@ static void verifySymbolDefPoint(Symbol* sym) {
 
   BaseAST* defPoint = sym->defPoint;
   if (defPoint) {
-    if (VarDefStmt* stmt = dynamic_cast<VarDefStmt*>(defPoint)) {
-      Symbol* tmp = stmt->var;
+    if (DefStmt* stmt = dynamic_cast<DefStmt*>(defPoint)) {
+      Symbol* tmp = stmt->def_sym;
       while (tmp) {
 	if (tmp == sym) {
 	  return;
 	}
 	tmp = nextLink(Symbol, tmp);
       }
-      INT_FATAL(sym, "Incorrect VarDefStmt defPoint "
-		"for symbol '%s'", sym->name);
-    }
-    else if (TypeDefStmt* stmt = dynamic_cast<TypeDefStmt*>(defPoint)) {
-      if (stmt->type_sym == sym) {
-	return;
-      }
-      if (EnumType* enum_type = dynamic_cast<EnumType*>(stmt->type_sym->type)) {
-	EnumSymbol* tmp = enum_type->valList;
-	while (tmp) {
-	  if (tmp == sym) {
-	    return;
-	  }
-	  tmp = nextLink(EnumSymbol, tmp);
-	}
-      }
-      INT_FATAL(sym, "Incorrect TypeDefStmt defPoint "
-		"for symbol '%s'", sym->name);
-    }
-    else if (FnDefStmt* stmt = dynamic_cast<FnDefStmt*>(defPoint)) {
-      if (stmt->fn != sym) {
-	Symbol* formals = stmt->fn->formals;
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->def_sym)) {
+	Symbol* formals = fn->formals;
 	while (formals) {
 	  if (formals == sym) {
 	    return;
 	  }
 	  formals = nextLink(Symbol, formals);
 	}
-	INT_FATAL(sym, "Incorrect FnDefStmt defPoint "
-		  "for symbol '%s'", sym->name);
       }
-    }
-    else if (ModuleDefStmt* stmt = dynamic_cast<ModuleDefStmt*>(defPoint)) {
-      if (stmt->module != sym) {
-	INT_FATAL(sym, "Incorrect ModuleDefStmt defPoint "
-		  "for symbol '%s'", sym->name);
+      if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(stmt->def_sym)) {
+	if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
+	  EnumSymbol* tmp = enum_type->valList;
+	  while (tmp) {
+	    if (tmp == sym) {
+	      return;
+	    }
+	    tmp = nextLink(EnumSymbol, tmp);
+	  }
+	}
       }
+      INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
     }
     else if (ForLoopStmt* stmt = dynamic_cast<ForLoopStmt*>(defPoint)) {
       Symbol* tmp = stmt->index;

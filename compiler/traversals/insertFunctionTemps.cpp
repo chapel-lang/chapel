@@ -61,11 +61,11 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
 	char* temp_name = glomstrings(2, "_fntemp_", intstring(uid++));
 	Expr* temp_init = function->copy(false, NULL, NULL, &functions);
 	Type* temp_type = function->typeInfo();
-	VarDefStmt* def_stmt =
+	DefStmt* def_stmt =
 	  Symboltable::defineSingleVarDefStmt(temp_name, temp_type,
 					      temp_init, VAR_NORMAL, false);
 	copy_stmt->insertBefore(def_stmt);
-	function->replace(new Variable(def_stmt->var));
+	function->replace(new Variable(def_stmt->def_sym));
       }
     }
     SymScope* block_scope = Symboltable::popScope();

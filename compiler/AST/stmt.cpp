@@ -393,6 +393,24 @@ DefStmt::DefStmt(Symbol* init_def_sym) :
 
 Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (clone) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_sym)) {
+      FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(clone, map, analysis_clone));
+      Symboltable::startFnDef(fncopy);
+      Symbol* newformals = fn->formals->copyList(clone, map, analysis_clone);
+      return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
+				      fn->body->copyListInternal(clone, map, analysis_clone),
+				      fn->exportMe);
+    }
+    else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(def_sym)) {
+      TypeSymbol* sym_copy = dynamic_cast<TypeSymbol*>(type_sym->copy(clone, map, analysis_clone));
+      return new DefStmt(sym_copy);
+    }
+    else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_sym)) {
+      return
+	Symboltable::defineVarDefStmt(var, var->type,
+				      var->init->copyInternal(clone, map, analysis_clone), 
+				      var->varClass, var->isConstant);
+    }
     return NULL;
   }
   else {
@@ -407,6 +425,22 @@ void DefStmt::traverseStmt(Traversal* traversal) {
 
 
 void DefStmt::print(FILE* outfile) {
+  if (isFnDef()) {
+    def_sym->printDef(outfile);
+  } else if (isTypeDef()) {
+    def_sym->type->printDef(outfile);
+    fprintf(outfile, ";");
+  } else if (isVarDef()) {
+    Symbol* tmp = def_sym;
+    while (tmp) {
+      tmp->printDef(outfile);
+      fprintf(outfile, ";");
+      tmp = nextLink(Symbol, tmp);
+      if (tmp) {
+	fprintf(outfile, "\n");
+      }
+    }
+  }
 }
 
 
@@ -430,126 +464,6 @@ bool DefStmt::isTypeDef() {
 
 bool DefStmt::isModuleDef() {
   return dynamic_cast<ModuleSymbol*>(def_sym);
-}
-
-
-VarDefStmt::VarDefStmt(VarSymbol* init_var) :
-  Stmt(STMT_VARDEF),
-  var(init_var)
-{}
-
-
-Stmt* VarDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  if (clone) {
-    return
-      Symboltable::defineVarDefStmt(var, var->type,
-				    var->init->copyInternal(clone, map, analysis_clone), 
-				    var->varClass, var->isConstant);
-  }
-  else {
-    return new VarDefStmt(var);
-  }
-}
-
-
-void VarDefStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE_DEF_LS(var, traversal, false);
-}
-
-
-void VarDefStmt::print(FILE* outfile) {
-  VarSymbol* aVar = var;
-
-  while (aVar) {
-    aVar->printDef(outfile);
-    fprintf(outfile, ";");
-    aVar = nextLink(VarSymbol, aVar);
-    if (aVar) {
-      fprintf(outfile, "\n");
-    }
-  }
-}
-
-void VarDefStmt::codegen(FILE* outfile) { }
-
-
-TypeDefStmt::TypeDefStmt(TypeSymbol* init_type_sym) :
-  Stmt(STMT_TYPEDEF),
-  type_sym(init_type_sym)
-{}
-
-
-Stmt* TypeDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  if (clone) {
-    TypeSymbol* sym_copy = dynamic_cast<TypeSymbol*>(type_sym->copy(clone, map, analysis_clone));
-    return new TypeDefStmt(sym_copy);
-  }
-  else {
-    return new TypeDefStmt(type_sym);
-  }
-}
-
-
-void TypeDefStmt::traverseStmt(Traversal* traversal) {
-  type_sym->traverseDef(traversal, false);
-}
-
-
-void TypeDefStmt::print(FILE* outfile) {
-  type_sym->type->printDef(outfile);
-  fprintf(outfile, ";");
-}
-
-
-void TypeDefStmt::codegen(FILE* outfile) {
-}
-
-
-FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
-  Stmt(STMT_FNDEF),
-  fn(init_fn)
-{}
-
-
-Stmt* FnDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  if (clone) {
-    FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(clone, map, analysis_clone));
-    Symboltable::startFnDef(fncopy);
-    Symbol* newformals = fn->formals->copyList(clone, map, analysis_clone);
-    return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
-				    fn->body->copyListInternal(clone, map, analysis_clone),
-				    fn->exportMe);
-
-  }
-  else {
-    return new FnDefStmt(fn);
-  }
-}
-
-
-void FnDefStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE_DEF(fn, traversal, false);
-}
-
-
-void FnDefStmt::print(FILE* outfile) {
-  fn->printDef(outfile);
-}
-
-
-void FnDefStmt::codegen(FILE* outfile) { /* Noop */ }
-
-
-ModuleDefStmt::ModuleDefStmt(ModuleSymbol* init_module) :
-  Stmt(STMT_MODDEF),
-  module(init_module)
-{}
-
-
-void ModuleDefStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "/* module ");
-  module->codegen(outfile);
-  fprintf(outfile, " was declared here */");
 }
 
 

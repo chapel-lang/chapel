@@ -15,13 +15,16 @@ void SpecializeParenOpExprs::preProcessExpr(Expr* expr) {
 	if (!dynamic_cast<TypeSymbol*>(baseVar->var)) {
 	  USR_FATAL(expr, "Invalid class constructor");
 	}
-	if (FnDefStmt* constructor = 
-	    dynamic_cast<FnDefStmt*>(ctype->constructor)) {
-	  paren_replacement = new FnCall(new Variable(constructor->fn),
-					 paren->argList);
+	DefStmt* constructor = dynamic_cast<DefStmt*>(ctype->constructor);
+	FnSymbol* fn;
+	if (constructor) {
+	  fn = dynamic_cast<FnSymbol*>(constructor->def_sym);
+	}
+	if (fn) {
+	  paren_replacement = new FnCall(new Variable(fn), paren->argList);
 	}
 	else {
-	  INT_FATAL(expr, "constructor is not a FnDefStmt");
+	  INT_FATAL(expr, "constructor does not have a DefStmt");
 	}
       }
       else if (dynamic_cast<TupleType*>(paren->baseExpr->typeInfo())) {

@@ -80,58 +80,6 @@ public:
 };
 
 
-class VarDefStmt : public Stmt {
- public:
-  VarSymbol* var;
-
-  VarDefStmt(VarSymbol* init_var);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void traverseStmt(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class TypeDefStmt : public Stmt {
- public:
-  TypeSymbol* type_sym;
-
-  TypeDefStmt(TypeSymbol* init_type_sym);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void traverseStmt(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class FnDefStmt : public Stmt {
- public:
-  FnSymbol* fn;
-
-  FnDefStmt(FnSymbol* init_fn);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void traverseStmt(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class ModuleDefStmt : public Stmt {
- public:
-  ModuleSymbol* module;
-
-  ModuleDefStmt(ModuleSymbol* init_module);
-
-  void codegen(FILE* outfile);
-};
-
-
 class ExprStmt : public Stmt {
  public:
   Expr* expr;

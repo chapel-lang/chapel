@@ -47,7 +47,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 	  TypeSymbol* array_sym = new TypeSymbol(name, array_type);
 	  array_type->addSymbol(array_sym);
 	  array_type->domainType = domain_type;
-	  TypeDefStmt* array_type_def = new TypeDefStmt(array_sym);
+	  DefStmt* array_type_def = new DefStmt(array_sym);
 	  array_sym->setDefPoint(array_type_def);
 	  if (Symboltable::getCurrentScope() == commonModule->modScope) {
 	    commonModule->stmts->insertAfter(array_type_def);
@@ -100,7 +100,7 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
   else {
     TypeSymbol* tuple_sym = new TypeSymbol(name, tuple_type);
     tuple_type->addSymbol(tuple_sym);
-    TypeDefStmt* tuple_type_def = new TypeDefStmt(tuple_sym);
+    DefStmt* tuple_type_def = new DefStmt(tuple_sym);
     commonModule->stmts = appendLink(commonModule->stmts, tuple_type_def);
   }
   Symboltable::setCurrentScope(saveScope);
@@ -139,7 +139,7 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     TypeSymbol* domain_sym = new TypeSymbol(name, domain_type);
     domain_type->addSymbol(domain_sym);
-    TypeDefStmt* domain_type_def = new TypeDefStmt(domain_sym);
+    DefStmt* domain_type_def = new DefStmt(domain_sym);
     domain_sym->setDefPoint(domain_type_def);
     commonModule->stmts->insertBefore(domain_type_def);
     Symboltable::setCurrentScope(saveScope);
@@ -165,7 +165,9 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
 
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
-  if (VarDefStmt* var_def = dynamic_cast<VarDefStmt*>(stmt)) {
-    build_anon_type_def(stmt, &var_def->var->type);
+  if (DefStmt* var_def = dynamic_cast<DefStmt*>(stmt)) {
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(var_def->def_sym)) {
+      build_anon_type_def(stmt, &var->type);
+    }
   }
 }
