@@ -10054,3 +10054,17 @@ Added files:
 Removed files:
 	chapel/test/trivial/bradc/protoast/: badred.chpl badred.good 
 
+---------------------------------------------------------------------------
+
+11/19/04 15:47:57 -- bradc
+
+Log message:
+	Fixed C/C++ compilation flags so that gcc versions prior to
+	3.4 don't use the -Werror flag.  Also turned -Werror back on
+	for the runtime src directory.
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/make/: Makefile.gnu 
+	chapel/runtime/src/: Makefile 
+
