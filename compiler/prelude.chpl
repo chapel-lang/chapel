@@ -98,60 +98,33 @@ function operator(a:integer, #"^", b:integer)	{ #__primitive a #"^" b }
 function operator(a:integer, #"|", b:integer)	{ #__primitive a #"|" b }
 function operator(a:any, #"&&", b:any)		{ #__primitive a #"&&" b }
 function operator(a:any, #"||", b:any)		{ #__primitive a #"||" b }
-function operator(a:ref, #"=", b:any)		{ #__primitive a #"=" b; }
-function operator(a:ref, #"*=", b:anynum)	{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"*" b)
-}
-function operator(a:ref, #"/=", b:anynum)	{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"/" b)
-}
-function operator(a:ref, #"%=", b:anynum)	{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"%" b)
-}
-function operator(a:ref, #"+=", b:anynum)	{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"+" b)
-}
-function operator(a:ref, #"-=", b:anynum)	{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"-" b)
-}
-function operator(a:ref, #"<<=", b:integer)		{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"<<" b)
-}
-function operator(a:ref, #">>=", b:integer)		{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #">>" b)
-}
-function operator(a:ref, #"&=", b:integer)		{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"&" b)
-}
-function operator(a:ref, #"|=", b:integer)		{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"|" b)
-}
-function operator(a:ref, #"^=", b:integer)		{
-  #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"^" b)
-}
+function operator(a:ref, #"=", b:any)		{ #__primitive a #"=" b }
+function operator(a:any, #"=", b:any)		{ b }
+function operator(a:ref, #"*=", b:anynum)	{ #__primitive #"*" b }
+function operator(a:ref, #"/=", b:anynum)	{ #__primitive a #"/" b }
+function operator(a:ref, #"%=", b:anynum)	{ #__primitive a #"%" b }
+function operator(a:ref, #"+=", b:anynum)	{ #__primitive a #"+" b }
+function operator(a:ref, #"-=", b:anynum)	{ #__primitive a #"-" b }
+function operator(a:ref, #"<<=", b:integer)	{ #__primitive a #"<<" b }
+function operator(a:ref, #">>=", b:integer)	{ #__primitive a #">>" b }
+function operator(a:ref, #"&=", b:integer)	{ #__primitive a #"&" b }
+function operator(a:ref, #"|=", b:integer)	{ #__primitive a #"|" b } 
+function operator(a:ref, #"^=", b:integer)	{ #__primitive a #"^" b }
 function operator(a:any, #"->", b:symbol)	{ #__primitive (#__primitive #"*" a) #"." b }
-function operator(a:any, #"->*", b:symbol)	{ #__primitive (#__primitive #"*" a) #"." b; }
+function operator(a:any, #"->*", b:symbol)	{ #__primitive (#__primitive #"*" a) #"." b }
 function operator(a:anynum, #"^^", b:anynum)	{ #__primitive a #"^^" b }
-function operator(#"++", a:ref)			{
-   #__primitive a #"=" ((#__primitive #"*" a) #"+" 1)
-}
-function operator(#"--", a:ref)			{ 
-   #__primitive a #"=" ((#__primitive #"*" a) #"-" 1)
-}
+function operator(#"++", a:ref)			{ #__primitive a #"+" 1 }
+function operator(#"--", a:ref)			{ #__primitive a #"-" 1 }
 function operator(#"+", a:anynum)		{ #__primitive #"+" a }
 function operator(#"-", a:anynum)		{ #__primitive #"-" a }
 function operator(#"~", a:anynum)		{ #__primitive #"~" a }
 function operator(#"!", a:any)			{ #__primitive #"!" a }
 function operator(#"*", a:any)			{ #__primitive #"*" a }
-function operator(#"&", a:any)			{ #__primitive #"&" a }
+function operator(#"&", var a:any)		{ #__primitive #"&" a }
 function operator(a:anynum, #"|", b:anynum)	{ #__primitive a #"|" b }
 function operator(#"(", a:symbol, b:any)	{ #__primitive #"(" a b }
-function operator(a:ref, #"++")			{ 
-   #__primitive a #"=" ((#__primitive #"*" a) #"+" 1)
-}
-function operator(a:ref, #"--")			{ 
-   #__primitive a #"=" ((#__primitive #"*" a) #"-" 1)
-}
+function operator(a:ref, #"++")			{ #__primitive a #"+" 1 }
+function operator(a:ref, #"--")			{ #__primitive a #"-" 1 }
 
 // arrays
 

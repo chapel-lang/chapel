@@ -35,6 +35,7 @@ template <class C> class Vec : public gc {
   int set_intersection(Vec<C> &v);
   int some_intersection(Vec<C> &v);
   int some_disjunction(Vec<C> &v);
+  void set_disjunction(Vec<C> &v, Vec<C> &result);
   void set_difference(Vec<C> &v, Vec<C> &result);
   int set_count();
   inline C *in(C a);

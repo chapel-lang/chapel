@@ -1,5 +1,5 @@
 /*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+  Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #ifndef _fa_H_
 #define _fa_H_
@@ -33,6 +33,8 @@ class AType : public Vec<CreationSet *> {
   AType(CreationSet *cs);
   AType(AType &a);
   AType() : hash(0), top(0) {}
+
+  AType *constants();
 };
 #define forv_AType(_p, _v) forv_Vec(AType, _p, _v)
 
@@ -86,8 +88,6 @@ class AVar : public gc {
 
   Vec<AVar *>		arg_of_send;
   SLink<AVar>		send_worklist_link;
-
-  void *constant();
 
   AVar(Var *v, void *acontour);
 };
@@ -152,5 +152,7 @@ Sym *coerce_num(Sym *a, Sym *b);
 Sym *coerce_type(IF1 *i, Sym *a, Sym *b);
 Sym *type_info(AST *a, Sym *s = 0);
 void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
+int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
+int constant_info(Var *v, Vec<Sym *> &constants);
 
 #endif

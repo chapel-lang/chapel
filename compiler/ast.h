@@ -37,13 +37,15 @@ class AST : public Vec<AST *> {
   uint def_record_type:1;
   uint def_ident_label:1;
   uint op_index:1;
+  uint is_var:1;
+  uint is_const:1;
   uint in_tuple:1;
   uint in_apply:1;
-  uint is_const:1;
   uint is_assign:1;
   uint is_ref:1;
   uint is_application:1;
   uint is_comma:1;
+  uint is_inc_dec:1;
   uint rank;
   Sym *sym;
   char *string;
@@ -73,7 +75,6 @@ class AST : public Vec<AST *> {
 
 int ast_gen_if1(IF1 *if1, Vec<AST *> &av);
 int ast_constant_fold(IF1 *if1, AST *ast);
-int ast_constant_print(FILE *fp, AST *ast);
 void ast_print(FILE *fp, AST *a, int indent = 0);
 void ast_print_recursive(FILE *fp, AST *a, int indent = 0);
 void ast_write(AST *a, char *filename);

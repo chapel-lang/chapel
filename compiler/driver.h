@@ -7,6 +7,8 @@
 #define DEFAULT_SYSTEM_DIR	"."
 
 extern int fdce_if1;
+extern int fgraph;
+extern int fgraph_constants;
 extern char system_dir[FILENAME_MAX];
 
 #endif

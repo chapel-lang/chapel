@@ -16,7 +16,9 @@ extern int d_verbose_level;
 extern int d_debug_level;
 
 int fdce_if1 = 1;
-
+int fgraph = 0;
+int fgraph_constants = 0;
+int fgraphviz = 0;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 
 
@@ -26,6 +28,11 @@ static ArgumentDescription arg_desc[] = {
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
  {"write_c", ' ', "Write C", "T", &fwrite_c, "CHPL_WRITE_C", NULL},
  {"dump_html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_DUMP_HTML", NULL},
+ {"graph", 'G', "Graph Flow Analysis", "T", &fgraph, "CHPL_GRAPH", NULL},
+ {"graph_var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
+ {"graph_fun", ' ', "Limit Graph to Fun", "S80", graph_fun, "CHPL_GRAPH_FUN", NULL},
+ {"graphviz", ' ', "Graphviz Output", "T", &fgraphviz, "CHPL_GRAPHVIZ", NULL},
+ {"graph_constants", ' ', "Do not Graph Constants", "T", &fgraph_constants, "CHPL_GRAPH_FUN", NULL},
  {"log_dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'l', "Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
@@ -227,6 +234,8 @@ compile_one(char *fn) {
     }
     if (fdump_html)
       dump_html(fa, if1->top->fun, fn);
+    if (fgraph)
+      graph(fa, if1->top->fun, fn, fgraphviz ? GraphViz : VCG);
   } else
   Lfail:
     fail("fatal error, program does not type");
@@ -269,7 +278,7 @@ main(int argc, char *argv[]) {
   process_args(&arg_state, argv);
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
-  if (fdump_html || strcmp(log_flags, ""))
+  if (fdump_html || strcmp(log_flags, "") || fgraph)
     init_logs();
   init_system();
   for (int i = 0; i < arg_state.nfile_arguments; i++) 

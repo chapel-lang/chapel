@@ -1,5 +1,5 @@
 /* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+ Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
 void
@@ -28,6 +28,20 @@ fa_print_backward(AVar *v, FILE *fp) {
   }
 }
 
+static void
+show_type(Vec<CreationSet *> &t, FILE *fp) {
+  fprintf(fp, "( ");
+  forv_CreationSet(cs, t) if (cs) {
+    if (cs->sym->name)
+      fprintf(fp, "%s ", cs->sym->name);
+    else if (cs->sym->constant)
+      fprintf(fp, "\"%s\" ", cs->sym->constant);
+    else
+      fprintf(fp, "%d ", cs->sym->id);
+  }
+  fprintf(fp, ") ");
+}
+
 void
 fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
   Var *v = av->var;
@@ -52,14 +66,8 @@ fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
       fprintf(fp, "\" ");
     }
   }
-  fprintf(fp, "( ");
-  forv_CreationSet(cs, *av->out) if (cs) {
-    if (cs->sym->name)
-      fprintf(fp, "%s ", cs->sym->name);
-    else
-      fprintf(fp, "%d ", cs->sym->id);
-  }
-  fprintf(fp, ")\n");
+  show_type(*av->out, fp);
+  fprintf(fp, "\n");
 }
 
 void
@@ -89,18 +97,6 @@ fa_dump_types(FA *fa, FILE *fp) {
   fprintf(fp, "globals\n");
   forv_Var(v, gvars)
     fa_dump_var_types(unique_AVar(v, GLOBAL_CONTOUR), fp);
-}
-
-static void
-show_type(Vec<CreationSet *> &t, FILE *fp) {
-  fprintf(fp, "( ");
-  forv_CreationSet(cs, t) if (cs) {
-    if (cs->sym->name)
-      fprintf(fp, "%s ", cs->sym->name);
-    else
-      fprintf(fp, "%d ", cs->sym->id);
-  }
-  fprintf(fp, ") ");
 }
 
 static void

@@ -919,17 +919,17 @@ gen_op(IF1 *i, AST *ast) {
     get_apply_args(i, send, a0);
     if (a1)
       if1_add_send_arg(i, send, a1->rval);
-    if1_add_send_result(i, send, ast->rval);
+    if1_add_send_result(i, send, res);
+    res->lvalue = 1;
   } else {
     Sym *args = new_sym(i, ast->scope);
-    Sym *aa0;
-    if (ast->is_assign) {
-      aa0 = new_sym(i, a0->scope);
-      send = if1_send(i, &ast->code, 3, 1, sym_primitive, sym_doref, a0->rval, aa0);
-      send->ast = ast;
-    } else
-      aa0 = a0->rval;
+    Sym *aa0 = a0 ? a0->rval : 0;
     int binary = ast->n > 2;
+    int post_inc_dec = ast->is_inc_dec && ast->op_index == 1;
+    if (post_inc_dec) {
+      if1_move(i, c, a0->rval, res, ast);
+      res = new_sym(i, ast->scope);
+    }
     if (binary)
       send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->v[ast->op_index]->rval, a1->rval, args);
     else if (a0)
@@ -939,6 +939,11 @@ gen_op(IF1 *i, AST *ast) {
     send->ast = ast;
     send = if1_send(i, c, 2, 1, sym_operator, args, res);
     send->ast = ast;
+    res->lvalue = 1;
+    if (ast->is_ref)
+      a1->sym->lvalue = 1;
+    if (ast->is_assign)
+      if1_move(i, c, res, a0->rval, ast);
   }
 }
 
@@ -1043,9 +1048,9 @@ pre_gen_bottom_up(AST *ast) {
     }
     case AST_op: {
       char *op = ast->v[ast->op_index]->sym->name;
-      ast->is_assign = (op[1] == '=' && op[0] != '=') || (!op[1] && op[0] == '=') ||
-	(op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
-      ast->is_ref = ((op[0] == '.' && op[1] != '.') || (op[0] == '-' && op[1] == '>') || ast->is_assign);
+      ast->is_inc_dec = (op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
+      ast->is_assign = (op[1] == '=' && op[0] != '=') || (!op[1] && op[0] == '=') || ast->is_inc_dec;
+      ast->is_ref = op[0] == '&' && ast->op_index == 0;
       ast->is_application = (op[0] == '^' && op[1] == '^') || op[0] == '(';
       ast->is_comma = op[0] == ',';
       if (ast->is_comma) {
@@ -1082,6 +1087,10 @@ gen_if1(IF1 *i, AST *ast) {
 	  if1_move(i, &ast->code, val->rval, ast->sym, ast); 
       }
       ast->rval = ast->sym;
+      if (ast->is_var)
+	ast->rval->lvalue = 1;
+      if (ast->is_const)
+	ast->rval->single_assign = 1;
       break;
     }
     case AST_pattern: 
@@ -1094,6 +1103,8 @@ gen_if1(IF1 *i, AST *ast) {
     case AST_arg: 
     case AST_vararg: 
       ast->rval = ast->sym;
+      if (ast->is_var)
+	ast->rval->lvalue = 1;
       break;
     case AST_list:
     case AST_vector:

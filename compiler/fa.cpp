@@ -53,6 +53,7 @@ AVar::AVar(Var *v, void *acontour) :
   var(v), contour(acontour), in(bottom_type), out(bottom_type), restrict(top_type), 
   creation_set(0), in_send_worklist(0), contour_is_entry_set(0)
 {
+  (void)0;
 }
 
 AType::AType(AType &a) {
@@ -136,9 +137,18 @@ make_AType(Vec<CreationSet *> &css) {
   return type_cannonicalize(t);
 }
 
+AType *
+AType::constants() {
+  AType *t = new AType();
+  forv_CreationSet(cs, *this)
+    if (cs->sym->constant)
+      t->set_add(cs);
+  return type_cannonicalize(t);
+}
+
 static AType *
 make_singular_AType(Sym *s, Var *v) {
-  assert(s->symbol || s->fun); // otherwise use make_AType(Var *v) above
+  assert(s->symbol || s->fun || s->constant); // otherwise use make_AType(Var *v) above
   if (v->as_AType)
     return v->as_AType;
   CreationSet *cs = new CreationSet(s);
@@ -311,9 +321,15 @@ type_cannonicalize(AType *t) {
 	  s = cs->sym;
 	if (s == cs->sym)
 	  continue;
-	else if (!cs->defs.n && cs->sym->num_type) {
-	  s = coerce_num(s, cs->sym);
+	else if (!cs->defs.n) {
+	  if (cs->sym->num_type)
+	    s = coerce_num(s, cs->sym);
+	  else if (cs->sym->constant && cs->sym->type->num_type)
+	    s = coerce_num(s, cs->sym->type);
+	  else
+	    goto Ldone;
 	} else {
+	Ldone:
 	  tt->top = top_type;
 	  goto Ltop_done;
 	}
@@ -345,15 +361,28 @@ type_union(AType *a, AType *b) {
   return r;
 }
 
+static inline int
+subtype_of(Sym *a, Sym *b) {
+  if (a->constant) {
+    if (a == b)
+      return 1;
+    else
+      return b->subtypes.set_in(a->type) != 0;
+  }
+  else
+    return b->subtypes.set_in(a) != 0;
+}
+
 static AType *
 type_diff(AType *a, AType *b) {
   AType *r = new AType();
   forv_CreationSet(aa, *a) if (aa) {
     if (aa->defs.n && b->set_in(aa))
       continue;
-    forv_CreationSet(bb, *b)
-      if (bb && !bb->defs.n && bb->sym->subtypes.set_in(aa->sym))
+    forv_CreationSet(bb, *b) if (bb && !bb->defs.n) {
+      if (subtype_of(aa->sym, bb->sym))
 	goto Lnext;
+    }
     r->set_add(aa);
   Lnext:;
   }
@@ -384,20 +413,20 @@ type_intersection(AType *a, AType *b) {
 	    goto Lnexta;
 	  }
 	} else {
-	  if (bb->sym->subtypes.set_in(aa->sym)) {
+	  if (subtype_of(aa->sym, bb->sym)) {
 	    r->set_add(aa);
 	    goto Lnexta;
 	  }
 	}
       } else {
 	if (bb->defs.n) {
-	  if (aa->sym->subtypes.set_in(bb->sym))
+	  if (subtype_of(bb->sym, aa->sym))
 	    r->set_add(bb);
 	} else {
-	  if (bb->sym->subtypes.set_in(aa->sym)) {
+	  if (subtype_of(aa->sym, bb->sym)) {
 	    r->set_add(aa);
 	    goto Lnexta;
-	  } else if (aa->sym->subtypes.set_in(bb->sym))
+	  } else if (subtype_of(bb->sym, aa->sym))
 	    r->set_add(bb);
 	}
       }
@@ -408,20 +437,6 @@ type_intersection(AType *a, AType *b) {
  Ldone:
   a->intersection_map.put(b, r);
   return r;
-}
-
-void *
-AVar::constant() {
-  void *constant = 0;
-  forv_CreationSet(c, *out)
-    forv_AVar(d, c->defs)
-      if (!d->var->sym->constant)
-	return 0;
-      else if (!constant)
-	constant = d;
-      else if (constant != d->var->sym->constant)
-	return 0;
-  return constant;
 }
 
 #define COMPATIBLE_ARGS (INT_MAX - 1)
@@ -443,14 +458,22 @@ entry_set_compatibility(AEdge *e, EntrySet *es) {
       break;
     }
   }
-  if (e->fun->clone_for_constants)
+  if (e->fun->clone_for_constants) {
     for (int i = 0; i < n; i++) {
-      if (es->args.v[i]->var->clone_for_constants)
-	if (es->args.v[i]->constant() != e->args.v[i]->constant()) {
-	  val -= 1;
-	  break;
-	}
+      if (es->args.v[i]->var->clone_for_constants) {
+	Vec<CreationSet *> css;
+	// stupid C++ type system
+	((Vec<CreationSet*> *)es->args.v[i]->out)->set_disjunction(
+	  *((Vec<CreationSet*> *)e->args.v[i]->out), css);
+	forv_CreationSet(cs, css)
+	  if (cs->sym->constant) {
+	    val -= 1;
+	    goto Lconst_set_diff;
+	  }
+      }
     }
+  Lconst_set_diff:;
+  }
   return val;
 }
 
@@ -511,7 +534,7 @@ add_var_constraints(EntrySet *es) {
     if (v->sym->type) {
       flow_var_type_restrict(av, v->sym->type->abstract_type);
       if (v->sym->constant) // for constants, the abstract type is the concrete type
-	update_var_in(av, v->sym->type->abstract_type);
+	update_var_in(av, make_singular_AType(v->sym, v));
       if (v->sym->symbol || v->sym->fun) 
 	update_var_in(av, make_singular_AType(v->sym, v));
       else if (v->sym->type_kind != Type_NONE)
@@ -538,7 +561,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
     if (!cs->vars.v[i])
       cs->vars.v[i] = unique_AVar(v, cs);
     AVar *av = cs->vars.v[i];
-    if (!ref)
+    if (!ref && !v->sym->lvalue)
       flow_var_to_var(make_AVar(v, es), av);
     else
       flow_vars_equal(make_AVar(v, es), av);
@@ -987,7 +1010,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
 	ref->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *ref->out) if (cs) {
 	  AVar *av = cs->vars.v[0];
-	  flow_var_to_var(av, result);
+	  flow_vars_equal(av, result);
 	}
 	break;
       }
@@ -1052,8 +1075,12 @@ pattern_match(AVar *a, AVar *b, EntrySet *es) {
       if (cs->vars.n < s->has.n) // must have enough to cover args
 	continue;
       for (int i = 0; i < s->has.n; i++)
-	if (s->has.v[i]->var) // if used
-	  flow_var_to_var(cs->vars.v[i], make_AVar(s->has.v[i]->var, es));
+	if (s->has.v[i]->var) { // if used
+	  if (!s->has.v[i]->var->sym->lvalue)
+	    flow_var_to_var(cs->vars.v[i], make_AVar(s->has.v[i]->var, es));
+	  else
+	    flow_vars_equal(cs->vars.v[i], make_AVar(s->has.v[i]->var, es));
+	}
     }
   }
 }
@@ -1106,7 +1133,10 @@ analyze_edge(AEdge *e) {
   for (int i = 0; i < e->args.n; i++) {
     AVar *a = e->args.v[i], *b = e->to->args.v[i];
     flow_var_type_restrict(b, restrictions.v[i]);
-    flow_var_to_var(a, b);
+    if (!b->var->sym->lvalue)
+      flow_var_to_var(a, b);
+    else
+      flow_vars_equal(a, b);
     if (b->var->sym->pattern)
       pattern_match(a, b, e->to);
   }
@@ -1399,13 +1429,15 @@ split_entry_set(AVar *av) {
       do_edges.add(*ee);
   }
   int first = do_edges.n == nedges ? 1 : 0;
+  int split = 0;
   for (int i = first; i < do_edges.n; i++) {
     AEdge *e = do_edges.v[i];
     e->to = 0;
     es->edges.del(e);
     find_entry_set(e, 1);
+    split = 1;
   }
-  return 1;
+  return split;
 }
 
 static void
@@ -1492,11 +1524,8 @@ FA::analyze(Fun *top) {
   return type_violations.n || untyped ? -1 : 0;
 }
 
-// Given an AST node and a Sym, find the Sym which
-// corresponds to the concrete (post-cloning) type of the
-// variable corresponding to the Sym at that AST node.
-Sym *
-type_info(AST *a, Sym *s) {
+static Var *
+info_var(AST *a, Sym *s) {
   if (!s) 
     s = a->sym;
   if (!s)
@@ -1507,17 +1536,28 @@ type_info(AST *a, Sym *s) {
     forv_PNode(n, a->pnodes) {
       forv_Var(v, n->lvals)
 	if (v->sym == s)
-	  return v->type;
+	  return v;
       forv_Var(v, n->lvals)
 	if (v->sym == s)
-	  return v->type;
+	  return v;
       forv_Var(v, n->rvals)
 	if (v->sym == s)
-	  return v->type;
+	  return v;
     }
   } else
     if (s->var)
-      return s->var->type;
+      return s->var;
+  return 0;
+}
+
+// Given an AST node and a Sym, find the Sym which
+// corresponds to the concrete (post-cloning) type of the
+// variable corresponding to the Sym at that AST node.
+Sym *
+type_info(AST *a, Sym *s) {
+  Var *v = info_var(a, s);
+  if (v)
+    return v->type;
   return 0;
 }
 
@@ -1533,3 +1573,35 @@ call_info(Fun *f, AST *a, Vec<Fun *> &funs) {
   }	
   funs.set_to_vec();
 }
+
+
+int
+constant_info(Var *v, Vec<Sym *> &constants) {
+  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+    AVar *av = v->avars.v[i].value;
+    forv_CreationSet(cs, *av->out) {
+      if (cs->sym->constant)
+	constants.set_add(cs->sym);
+      else {
+	constants.clear();
+	return 0;
+      }
+    }
+  }
+  constants.set_to_vec();
+  return constants.n;
+}
+
+// Given an AST node and a Sym, find the set of
+// constants which could arrive at that point.
+// make sure that there is not some dominating
+// non-constant type.
+int
+constant_info(AST *a, Vec<Sym *> &constants, Sym *s) {
+  constants.clear();
+  Var *v = info_var(a, s);
+  if (v)
+    return constant_info(v, constants);
+  return 0;
+}
+

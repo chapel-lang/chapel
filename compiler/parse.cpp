@@ -103,3 +103,12 @@ set_primitive_types(IF1 *if1) {
   }
 }
 
+void 
+get_ast(Vec<AST *> &asts, D_ParseNode *pn) {
+  if (pn->user.ast)
+    asts.add(pn->user.ast);
+  else
+    for (int i = 0; i < d_get_number_of_children(pn); i++)
+      get_ast(asts, d_get_child(pn, i));
+}
+

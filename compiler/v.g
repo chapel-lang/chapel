@@ -220,6 +220,12 @@ expression
       $$.ast = new AST(AST_def_ident, &$n); 
       $$.ast->def_ident_label = 1;
     }
+  | 'var' def_ident expression $right 5100
+    { 
+      $$.ast = new AST(AST_def_ident, &$n); 
+      $$.ast->def_ident_label = 1;
+      $$.ast->is_var = 1;
+    }
   | anon_function expression
     [ ${scope} = enter_D_Scope(${scope}, $0.saved_scope); ]
     { $$.ast = new AST(AST_def_fun, &$n); }
@@ -295,6 +301,10 @@ anon_function: '\\' pattern+ ':'
 pattern
   : ident (':' constraint_type)?
 { $$.ast = new AST(AST_arg, &$n); }
+  | 'var' ident (':' constraint_type)?
+{ $$.ast = new AST(AST_arg, &$n); 
+  $$.ast->is_var = 1;
+}
   | constant
 { $$.ast = new AST(AST_arg, &$n); }
   | '(' (sub_pattern (',' sub_pattern)*)? ')'
@@ -303,7 +313,7 @@ pattern
 
 sub_pattern
   : pattern
-  | '...' (ident (':' type)?)?
+  | '...' (ident (':' constraint_type)?)?
 { $$.ast = new AST(AST_vararg, &$n); };
   ;
 

@@ -39,8 +39,7 @@ typedef int (*sym_pred_fn)(Sym *s);
 
 static int
 is_internal_type(Sym *s) {
-  //return s->type_kind == Type_SUM && !s->name;
-  return 0;
+  return s->type_kind == Type_SUM && !s->name;
 }
 
 static void
@@ -145,6 +144,16 @@ dump_var_type_list(FILE *fp, Vec<Var *> &vars) {
     dump_sym_name(fp, v->sym);
     fprintf(fp, " : ");
     dump_sym_name(fp, v->type);
+    Vec<Sym *> consts;
+    if (constant_info(v, consts)) {
+      fprintf(fp, " constants {");
+      forv_Sym(s, consts) {
+	fprintf(fp, " ");
+	print(fp, s->imm, s->type);
+      }
+      fprintf(fp, " }");
+      
+    }
   }
 }
 
@@ -188,7 +197,7 @@ dump_ast_tree(FILE *fp, Fun *f, AST *a, int indent = 0) {
 	fprintf(fp, " constant %s", a->sym->constant);
       else {
 	fprintf(fp, " constant ");
-	ast_constant_print(fp, a);
+	print(fp, a->sym->imm, a->sym->type);
       }
     } else if (a->sym->symbol)
       fprintf(fp, " symbol %s", a->sym->name);
@@ -209,6 +218,17 @@ dump_ast_tree(FILE *fp, Fun *f, AST *a, int indent = 0) {
     fprintf(fp, " %s", a->string);
   if (a->builtin)
     fprintf(fp, " builtin %s", a->builtin);
+  if (!a->sym || !a->sym->constant) {
+    Vec<Sym *> consts;
+    if (constant_info(a, consts, s)) {
+      fprintf(fp, " constants {");
+      forv_Sym(s, consts) {
+	fprintf(fp, " ");
+	print(fp, s->imm, s->type);
+      }
+      fprintf(fp, " }");
+    }
+  }
   Vec<Fun *> funs;
   call_info(f, a, funs);
   if (funs.n) {

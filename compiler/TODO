@@ -95,3 +95,12 @@
   in creation sets....
 
 - hash SUM types in clone.cpp concretize_types
+
+- prevent SUM types from being formed when boxing is different
+
+- declare type violations when boxing is different
+
+- when taking a reference, varaible cannot be put into SSU form
+
+- fix dispatch to take the most specific method for any given
+  set of arguments

@@ -25,6 +25,7 @@ GEYSA_CVS_SRCS = \
 	fa.cpp \
 	fun.cpp \
 	grammar.cpp \
+	graph.cpp \
 	if1.cpp \
 	list.cpp \
 	log.cpp \

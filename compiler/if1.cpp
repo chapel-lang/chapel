@@ -402,9 +402,12 @@ mark_live(IF1 *p, Code *code) {
 	changed = mark_sym_live(code->rvals.v[0]) || changed;
       break;
     case Code_SEND:
-      if (!code->lvals.n || code->lvals.v[0]->live || !is_functional(p, code))
+      if (!code->lvals.n || code->lvals.v[0]->live || !is_functional(p, code)) {
 	for (int i = 0; i < code->rvals.n; i++)
 	  changed = mark_sym_live(code->rvals.v[i]) || changed;
+	for (int i = 0; i < code->lvals.n; i++)
+	  changed = mark_sym_live(code->lvals.v[i]) || changed;
+      }
       break;
     default:
       for (int i = 0; i < code->sub.n; i++)
@@ -801,7 +804,7 @@ unalias_type(Sym *s) {
 }
 
 int 
-print(FILE *fp, Immediate &imm, Sym *type) {
+sprint(char *str, Immediate &imm, Sym *type) {
   int res = -1;
   switch (type->num_type) {
     case IF1_NUM_TYPE_NONE:
@@ -809,13 +812,13 @@ print(FILE *fp, Immediate &imm, Sym *type) {
     case IF1_NUM_TYPE_UINT: {
       switch (type->num_index) {
 	case IF1_INT_TYPE_8: 
-	  res = fprintf(fp, "%u", imm.v_uint8); break;
+	  res = sprintf(str, "%u", imm.v_uint8); break;
 	case IF1_INT_TYPE_16:
-	  res = fprintf(fp, "%u", imm.v_uint16); break;
+	  res = sprintf(str, "%u", imm.v_uint16); break;
 	case IF1_INT_TYPE_32:
-	  res = fprintf(fp, "%u", imm.v_uint32); break;
+	  res = sprintf(str, "%u", imm.v_uint32); break;
 	case IF1_INT_TYPE_64:
-	  res = fprintf(fp, "%llu", imm.v_uint64); break;
+	  res = sprintf(str, "%llu", imm.v_uint64); break;
 	default: assert(!"case");
       }
       break;
@@ -823,13 +826,13 @@ print(FILE *fp, Immediate &imm, Sym *type) {
     case IF1_NUM_TYPE_INT: {
       switch (type->num_index) {
 	case IF1_INT_TYPE_8: 
-	  res = fprintf(fp, "%d", imm.v_int8); break;
+	  res = sprintf(str, "%d", imm.v_int8); break;
 	case IF1_INT_TYPE_16:
-	  res = fprintf(fp, "%d", imm.v_int16); break;
+	  res = sprintf(str, "%d", imm.v_int16); break;
 	case IF1_INT_TYPE_32:
-	  res = fprintf(fp, "%d", imm.v_int32); break;
+	  res = sprintf(str, "%d", imm.v_int32); break;
 	case IF1_INT_TYPE_64:
-	  res = fprintf(fp, "%lld", imm.v_int64); break;
+	  res = sprintf(str, "%lld", imm.v_int64); break;
 	default: assert(!"case");
       }
       break;
@@ -837,13 +840,22 @@ print(FILE *fp, Immediate &imm, Sym *type) {
     case IF1_NUM_TYPE_FLOAT:
       switch (type->num_index) {
 	case IF1_FLOAT_TYPE_32:
-	  res = fprintf(fp, "%f", imm.v_float32); break;
+	  res = sprintf(str, "%f", imm.v_float32); break;
 	case IF1_FLOAT_TYPE_64:
-	  res = fprintf(fp, "%f", imm.v_float64); break;
+	  res = sprintf(str, "%f", imm.v_float64); break;
 	default: assert(!"case");
       }
       break;
   }
+  return res;
+}
+
+int 
+print(FILE *fp, Immediate &imm, Sym *type) {
+  char str[80];
+  int res;
+  if ((res = sprint(str, imm, type) >= 0))
+    fprintf(fp, str);
   return res;
 }
 

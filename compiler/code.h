@@ -14,6 +14,10 @@ enum Code_kind {
   Code_GOTO, Code_SEQ, Code_CONC, Code_NOP
 };
 
+#define CPP_IS_LAME { "SUB", "MOVE", "SEND", "IF", "LABEL", "GOTO", "SEQ", "CONC", "NOP" }
+EXTERN char *code_string[] EXTERN_INIT(CPP_IS_LAME);
+#undef CPP_IS_LAME
+
 class Code : public gc {
  public:
   Code_kind	kind;

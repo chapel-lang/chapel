@@ -6,5 +6,6 @@
 
 void no_preprocessor_whitespace(D_Parser *p, d_loc_t *loc, void **p_user_globals);
 void set_primitive_types(IF1 *if1);
+void get_ast(Vec<AST *> &asts, D_ParseNode *pn);
 
 #endif

@@ -52,7 +52,7 @@ static Sym *
 basic_type(FA *fa, AType *t, Sym *fail) {
   Sym non_basic;
   Sym *res = 0;
-  forv_CreationSet(cs, *t) {
+  forv_CreationSet(cs, *t) if (cs) {
     if (fa->basic_types.set_in(cs->sym)) {
       if (!res)
 	res = cs->sym;
@@ -114,7 +114,7 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
   if (a->fun->clone_for_constants) {
     for (int i = 0; i < a->args.n; i++)
       if (a->args.v[i]->var->clone_for_constants)
-	if (a->args.v[i]->constant() != a->args.v[i]->constant())
+	if (a->args.v[i]->out->constants() != a->args.v[i]->out->constants())
 	  return 0;
   }
   if (!equivalent_es_ivars(a, b))
@@ -252,7 +252,7 @@ determine_basic_clones() {
 	  }
 	  // if we are cloning for constants and the constants are different
 	  if (av1->var->clone_for_constants &&
-	      av1->constant() != av2->constant()) {
+	      av1->out->constants() != av2->out->constants()) {
 	    make_not_equiv(cs1, cs2);
 	    continue;
 	  }
@@ -377,6 +377,9 @@ define_concrete_types(CSSS &css_sets) {
       if (sym->type_kind == Type_PRIMITIVE || sym->fun) {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
+      } else if (sym->constant) {
+	forv_CreationSet(cs, *eqcss) if (cs)
+	  cs->type = sym->type;
       } else if (sym == sym_tuple) {
 	// tuples use record type
 	char *name = 0;
@@ -457,7 +460,7 @@ resolve_concrete_types(CSSS &css_sets) {
 	      AVar *av = cs->vars.v[i];
 	      if (!sym->has.v[i])
 		sym->has.v[i] = if1_alloc_sym(fa->pdb->if1);
-	      forv_CreationSet(x, *av->out) if (cs)
+	      forv_CreationSet(x, *av->out) if (x)
 		sym->has.v[i]->has.set_add(x->sym);
 	    }
 	  }
@@ -493,7 +496,7 @@ concretize_types(Fun *f) {
     for (int i = 0; i < v->avars.n; i++) {
       if (!v->avars.v[i].key)
 	continue;
-      forv_CreationSet(cs, *v->avars.v[i].value->out) {
+      forv_CreationSet(cs, *v->avars.v[i].value->out) if (cs) {
 	if (!sym)
 	  sym = cs->type;
 	else {
@@ -516,7 +519,7 @@ concretize_types(Fun *f) {
 	v->type = type->has.v[0];
       else {
 	v->type = type;
-	return show_error("unable to build unique concrete type", v);
+	//return show_error("unable to build unique concrete type", v);
       }
     }
   }

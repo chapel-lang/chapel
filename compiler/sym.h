@@ -74,6 +74,8 @@ class Sym : public gc {
   Sym 			*next_sym;	       	// in scope
   AST			*ast;			// AST node which defined this symbol
 
+  unsigned int		lvalue:1;		// Sym is an lvalue
+  unsigned int		single_assign:1;	// Sym is a single assignment variable
   unsigned int 		module:1;		// Sym is a module
   unsigned int 		symbol:1;		// Sym is a user level symbol
   unsigned int		pattern:1;		// Sym is a pattern
@@ -106,5 +108,6 @@ Sym *unalias_type(Sym *s);
 
 int pp(Immediate &imm, Sym *type);
 int print(FILE *fp, Immediate &imm, Sym *type);
+int sprint(char *s, Immediate &imm, Sym *type);
 
 #endif

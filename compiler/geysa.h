@@ -113,6 +113,7 @@ void myassert();
 #include "dump.h"
 #include "cg.h"
 #include "grammar.h"
+#include "graph.h"
 
 void get_version(char *);
 

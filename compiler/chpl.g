@@ -89,7 +89,14 @@ some_statement
   | some_type_statement
   ;
 
-var_declarations : ('var' | 'const')  var_declaration (',' var_declaration)* ;
+var_declarations 
+  : 'var' var_declaration_list
+{ Vec<AST *> asts; get_ast(asts, &$n); forv_AST(a, asts) a->is_var = 1; }
+  | 'const'  var_declaration_list
+{ Vec<AST *> asts; get_ast(asts, &$n); forv_AST(a, asts) a->is_const = 1; }
+  | 'let' var_declaration_list
+  ;
+var_declaration_list :  var_declaration (',' var_declaration)*;
 var_declaration : ident ('__name' string)? (':' constraint_type)? ('=' expression)?
 {
   $$.ast = new AST(AST_def_ident, &$n); 
@@ -321,6 +328,10 @@ anon_function: 'fun' pattern+
 pattern
   : ident (':' constraint_type)?
 { $$.ast = new AST(AST_arg, &$n); }
+  | 'var' ident (':' constraint_type)?
+{ $$.ast = new AST(AST_arg, &$n); 
+  $$.ast->is_var = 1;
+}
   | constant
 { $$.ast = new AST(AST_arg, &$n); }
   | '(' (sub_pattern (',' sub_pattern)*)? ')'
@@ -329,7 +340,7 @@ pattern
 
 sub_pattern
   : pattern
-  | '...' (ident (':' type)?)?
+  | '...' (ident (':' constraint_type)?)?
 { $$.ast = new AST(AST_vararg, &$n); };
   ;
 

@@ -78,7 +78,7 @@ reply: #reply __name "reply";
 
 // overloadable primitive operators
 
-new(a:any) : #__new a;
+new(a:any)				   : #__new a;
 operator(a:any, #".", b:symbol)		   : #__primitive a #"." b;
 operator(a:any, #"*.", b:symbol)	   : #__primitive a #"." b;
 operator(a:anynum, #"*", b:anynum)	   : #__primitive a #"*" b;
@@ -99,37 +99,38 @@ operator(a:int, #"^", b:int)		   : #__primitive a #"^" b;
 operator(a:int, #"|", b:int)		   : #__primitive a #"|" b;
 operator(a:any, #"&&", b:any)		   : #__primitive a #"&&" b;
 operator(a:any, #"||", b:any)		   : #__primitive a #"||" b;
-operator(a:ref, #"=", b:any): #__primitive a #"=" b;
-operator(a:ref, #"*=", b:anynum): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"*" b);
-operator(a:ref, #"/=", b:anynum): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"/" b);
-operator(a:ref, #"%=", b:anynum): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"%" b);
-operator(a:ref, #"+=", b:anynum): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"+" b);
-operator(a:ref, #"-=", b:anynum): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"-" b);
-operator(a:ref, #"<<=", b:int): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"<<" b);
-operator(a:ref, #">>=", b:int): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #">>" b);
-operator(a:ref, #"&=", b:int): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"&" b);
-operator(a:ref, #"|=", b:int): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"|" b);
-operator(a:ref, #"^=", b:int): #__primitive a #"=" (#__primitive (#__primitive #"*" a) #"^" b);
+operator(a:ref, #"=", b:any)		   : #__primitive a #"=" b;
+operator(a:any, #"=", b:any)		   : b;
+operator(a:anynum, #"*=", b:anynum)	   : #__primitive a #"*" b;
+operator(a:anynum, #"/=", b:anynum)	   : #__primitive a #"/" b;
+operator(a:anynum, #"%=", b:anynum)	   : #__primitive a #"%" b;
+operator(a:anynum, #"+=", b:anynum)	   : #__primitive a #"+" b;
+operator(a:anynum, #"-=", b:anynum)	   : #__primitive a #"-" b;
+operator(a:anynum, #"<<=", b:int)	   : #__primitive a #"<<" b;
+operator(a:anynum, #">>=", b:int)	   : #__primitive a #">>" b;
+operator(a:anynum, #"&=", b:int)	   : #__primitive a #"&" b;
+operator(a:anynum, #"|=", b:int)	   : #__primitive a #"|" b;
+operator(a:anynum, #"^=", b:int)	   : #__primitive a #"^" b;
 operator(a:any, #"->", b:symbol)	   : #__primitive (#__primitive #"*" a) #"." b;
 operator(a:any, #"->*", b:symbol)	   : #__primitive (#__primitive #"*" a) #"." b; 
 operator(a:anynum, #"^^", b:anynum)	   : #__primitive a #"^^" b;
-operator(#"++", a:ref): #__primitive a #"=" ((#__primitive#"*" a) #"+" 1);
-operator(#"--", a:ref): #__primitive a #"=" ((#__primitive#"*" a) #"-" 1);
+operator(#"++", a:anynum)		   : a #"+" 1;
+operator(#"--", a:anynum)		   : a #"-" 1;
 operator(#"+", a:anynum)		   : #__primitive #"+" a;
 operator(#"-", a:anynum)		   : #__primitive #"-" a;
 operator(#"~", a:anynum)		   : #__primitive #"~" a;
 operator(#"!", a:any)			   : #__primitive #"!" a;
 operator(#"*", a:any)			   : #__primitive #"*" a;
-operator(#"&", a:any)			   : #__primitive #"&" a;
+operator(#"&", var a:any)		   : #__primitive #"&" a;
 operator(a:anynum, #"|", b:anynum)	   : #__primitive a #"|" b;
 operator(#"(", a:symbol, b:any)		   : #__primitive #"(" a b;
-operator(a:ref, #"++"): #__primitive a #"=" ((#__primitive#"*" a) #"+" 1);
-operator(a:ref, #"--"): #__primitive a #"=" ((#__primitive#"*" a) #"-" 1);
+operator(a:anynum, #"++")		   : a #"+" 1;
+operator(a:anynum, #"--")		   : a #"-" 1;
 
 // tuples indexing
 
 tuple::self(a) : #__index self a;
 
-//
+// generic printing
 
 print a : #__print a;

@@ -145,6 +145,18 @@ Vec<C>::some_disjunction(Vec<C> &vv) {
 } 
 
 template <class C> void
+Vec<C>::set_disjunction(Vec<C> &vv, Vec<C> &result) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (!vv.set_in(v[i]))
+	result.set_add(v[i]);
+  for (int i = 0; i < vv.n; i++)
+    if (vv.v[i])
+      if (!set_in(vv.v[i]))
+	result.set_add(vv.v[i]);
+} 
+
+template <class C> void
 Vec<C>::set_difference(Vec<C> &vv, Vec<C> &result) {
   for (int i = 0; i < n; i++)
     if (v[i])
