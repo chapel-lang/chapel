@@ -14210,3 +14210,18 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/d/: Makefile 
 
+---------------------------------------------------------------------------
+
+01/10/05 12:01:14 -- bradc
+
+Log message:
+	Added a doc/ directory with an internal/ subdirectory, and
+	added the high-level (meaning parsing/AST/codegen-oriented)
+	SSCA2 task breakdown that Steve and I put together in
+	November.  This is both to provide a controlled version to
+	store it, and to support discussion on what our next
+	implementation tasks should be.
+
+Added files:
+	chapel/doc/internal/: SSCA2.HLtasks.txt 
+
