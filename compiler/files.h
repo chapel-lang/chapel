@@ -6,7 +6,6 @@
 extern char executableFilename[FILENAME_MAX];
 extern char saveCDir[FILENAME_MAX];
 
-void createTmpDir(void);
 void deleteTmpDir(void);
 
 FILE* openoutfile(char* infilename);
@@ -14,6 +13,8 @@ void closefile(FILE* thefile);
 
 void openMakefile(char* srcfilename, char* compilerDir);
 void closeMakefile(void);
+
+char* createGDBFile(int argc, char* argv[]);
 
 void makeAndCopyBinary(void);
 

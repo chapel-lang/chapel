@@ -23,7 +23,7 @@ static char *arg_types_desc[] = {
 static void 
 bad_flag(char* flag) {
   fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
-  exit(1);
+  clean_exit(1);
 }
 
 
@@ -31,7 +31,7 @@ static void
 missing_arg(char* currentFlag) {
   fprintf(stderr, "Missing argument for flag: '%s' (use '-h' for help)\n", 
 	  currentFlag);
-  exit(1);
+  clean_exit(1);
 }
 
 
@@ -67,7 +67,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
         default:
           fprintf(stderr, "%s:bad argument description\n", 
                  arg_state->program_name);
-          exit(1);
+          clean_exit(1);
           break;
       }
       **argv += strlen(**argv)-1;
@@ -79,9 +79,14 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
 
 
 void
-process_args(ArgumentState *arg_state, char **argv) {
-  int i = 0, len;
+process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
+  int i, len;
   char *end;
+  char** argv = (char**)MALLOC((argc+1)*sizeof(char*));
+  for (i=0; i<argc; i++) {
+    argv[i] = glomstrings(1, orig_argv[i]);
+  }
+  argv[i] = NULL;
   ArgumentDescription *desc = arg_state->desc;
   /* Grab Environment Variables */
   for (i = 0;; i++) {
@@ -211,7 +216,7 @@ usage(ArgumentState *arg_state, char *arg_unused) {
     }
     fprintf(stderr," %s\n",desc[i].description);
   }
-  exit(1);
+  clean_exit(1);
 }
 
 void

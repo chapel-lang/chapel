@@ -125,6 +125,11 @@
 #    compiler options to be added after the source file.  Thus:
 #    ./chpl <-compopts> <COMPOPTS> source.chpl <LASTCOMPOPTS>
 # 
+#  - if the subdirectory contains a COMPSTDIN file, the file named by
+#    COMPSTDIN will be piped into the execution of the compile step as
+#    stdin.  I can add a similar feature for the execution step as
+#    soon as there's need for it.
+#
 #  - if the subdirectory contains a CATFILES file, then the files
 #    listed in that file will be concatenated to the end of the
 #    compiler/execution output for each test.  For tests that

@@ -2,15 +2,21 @@
   Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
+#include <signal.h>
 #include "files.h"
 #include "geysa.h"
 
 int verbose_level = 0;
 int debug_level = 0;
 
-static void
-clean_exit(int status) {
+static void cleanup(void) {
   deleteTmpDir();
+  stopCatchingSignals();
+}
+
+void
+clean_exit(int status) {
+  cleanup();
   exit(status);
 }
 
@@ -152,4 +158,25 @@ void intFatal(AST* ast, char *fmt, ...) {
   fprintf(stderr, "\n\n");
 
   clean_exit(1);
+}
+
+
+static void handleInterrupt(int sig) {
+  fail("received interrupt");
+}
+
+static void handleSegFault(int sig) {
+  fail("seg fault");
+}
+
+
+void startCatchingSignals(void) {
+  signal(SIGINT, handleInterrupt);
+  signal(SIGSEGV, handleSegFault);
+}
+
+
+void stopCatchingSignals(void) {
+  signal(SIGINT, SIG_DFL);
+  signal(SIGSEGV, SIG_DFL);
 }

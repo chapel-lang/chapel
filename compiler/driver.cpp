@@ -6,7 +6,9 @@
 #include "geysa.h"
 #include "codegen.h"
 #include "files.h"
+#include "misc.h"
 #include "mysystem.h"
+#include "stringutil.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -18,6 +20,7 @@ extern int d_verbose_level;
 extern int d_debug_level;
 static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
+static int rungdb = 0;
 
 int fdce_if1 = 1;
 int finline = 0;
@@ -49,6 +52,7 @@ static ArgumentDescription arg_desc[] = {
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
+ {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
@@ -110,7 +114,7 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
 #include "COPYRIGHT"
 	  );
   fprintf(stderr, "\n\n");
-  exit(0);
+  clean_exit(0);
 }
 
 static AST *
@@ -250,7 +254,8 @@ init_system() {
 }
 
 static void
-compute_program_name_loc(char* argv0, char** name, char** loc) {
+compute_program_name_loc(char* orig_argv0, char** name, char** loc) {
+  char* argv0 = glomstrings(1, orig_argv0);
   char* lastslash = strrchr(argv0, '/');
   if (lastslash == NULL) {
     *name = argv0;
@@ -264,18 +269,33 @@ compute_program_name_loc(char* argv0, char** name, char** loc) {
   strcpy(system_dir, *loc);
 }
 
+
+void runCompilerInGDB(int argc, char* argv[]) {
+  char* gdbCommandFilename = createGDBFile(argc, argv);
+  char* command = glomstrings(4, "gdb -q ", argv[0]," -x ", gdbCommandFilename);
+  int status = mysystem(command, "running gdb", 0);
+
+  clean_exit(status);
+}
+
 int
 main(int argc, char *argv[]) {
+  startCatchingSignals();
+  
   compute_program_name_loc(argv[0], &(arg_state.program_name),
 			   &(arg_state.program_loc));
-  process_args(&arg_state, argv);
+  process_args(&arg_state, argc, argv);
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
+  if (rungdb) {
+    runCompilerInGDB(argc, argv);
+  }
   if (fdump_html || strcmp(log_flags, "") || fgraph)
     init_logs();
   init_system();
   for (int i = 0; i < arg_state.nfile_arguments; i++) 
     if (compile_one(arg_state.file_argument[i])) break;
   free_args(&arg_state);
+  clean_exit(0);
   return 0;
 }

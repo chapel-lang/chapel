@@ -8,6 +8,8 @@
 #include "dparse.h"
 #include "var.h"
 
+void clean_exit(int status);
+
 int show_error(char *str, d_loc_t &loc, ...);
 int show_error(char *str, AST *a, ...);
 int show_error(char *str, Var *v, ...);
@@ -27,5 +29,8 @@ char *loc_string(d_loc_t &l);
 
 void setupIntError(char* filename, int lineno);
 void intFatal(AST* ast, char* fmt, ...);
+
+void startCatchingSignals(void);
+void stopCatchingSignals(void);
 
 #endif

@@ -10,7 +10,7 @@ char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
 
 static char* tmpdirname = NULL;
-static char* intDirName; // directory for intermediates; tmpdir or saveCDir
+static char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
 
 static const int MAX_CHARS_PER_PID = 32;
 
@@ -18,7 +18,7 @@ static FILE* makefile;
 static char* intExeFilename;
 
 
-void createTmpDir(void) {
+static void createTmpDir(void) {
   char* commandExplanation;
 
   if (strcmp(saveCDir, "") == 0) {
@@ -78,6 +78,11 @@ void deleteTmpDir(void) {
 
 static char* genIntFilename(char* filename) {
   char* slash = "/";
+
+  if (intDirName == NULL) {
+    createTmpDir();    
+  }
+
   char* newfilename = glomstrings(3, intDirName, slash, filename);
 
   return newfilename;
@@ -179,6 +184,37 @@ void closeMakefile(void) {
   fprintf(makefile, "include $(CHPLRTDIR)/etc/Makefile.include\n");
 
   closefile(makefile);
+}
+
+
+char* createGDBFile(int argc, char* argv[]) {
+  char* gdbfilename = genIntFilename("gdb.commands");
+  FILE* gdbfile = openfile(gdbfilename);
+  int i;
+
+  fprintf(gdbfile, "set args");
+  for (i=1; i<argc; i++) {
+    if (strcmp(argv[i], "--gdb") != 0) {
+      fprintf(gdbfile, " %s", argv[i]);
+    }
+  }
+  fprintf(gdbfile, "\n");
+  fprintf(gdbfile, "set $_exitcode = 's'\n");
+  fprintf(gdbfile, "define hook-run\n");
+  fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
+  fprintf(gdbfile, "    call cleanup()\n");
+  fprintf(gdbfile, "  end\n");
+  fprintf(gdbfile, "  set $_exitcode = 'r'\n");
+  fprintf(gdbfile, "end\n");
+  fprintf(gdbfile, "define hook-quit\n");
+  fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
+  fprintf(gdbfile, "    call cleanup(0)\n");
+  fprintf(gdbfile, "  end\n");
+  fprintf(gdbfile, "end\n");
+
+  closefile(gdbfile);
+
+  return gdbfilename;
 }
 
 

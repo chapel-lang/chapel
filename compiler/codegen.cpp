@@ -1,5 +1,3 @@
-#include <assert.h>
-#include <signal.h>
 #include <stdio.h>
 #include "codegen.h"
 #include "files.h"
@@ -333,20 +331,8 @@ static void genHeader(FILE* outfile) {
 }
 
 
-static void handleInterrupt(int sig) {
-  fail("received interrupt");
-}
-
-static void handleSegFault(int sig) {
-  fail("seg fault");
-}
-
-
 void codegen(FA* fa, char* infilename, char* compilerDir) {
-  signal(SIGINT, handleInterrupt);
-  signal(SIGSEGV, handleSegFault);
 
-  createTmpDir();
   openMakefile(infilename, compilerDir);
 
   FILE* outfile = openoutfile(infilename);
@@ -363,8 +349,4 @@ void codegen(FA* fa, char* infilename, char* compilerDir) {
     makeAndCopyBinary();
   }
 
-  deleteTmpDir();
-
-  signal(SIGINT, SIG_DFL);
-  signal(SIGSEGV, SIG_DFL);
 }
