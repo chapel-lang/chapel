@@ -1,6 +1,0 @@
-bradc/deitz
-
-It seems that records' default field initializers are
-not utilized yet.  This probably isn't surprising and
-there may be other future tests written to exercise
-this already.
