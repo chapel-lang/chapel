@@ -1,0 +1,6 @@
+# Makefile.cygwin: contains cygwin-specific variables
+#
+
+EXE_SUFFIX=
+
+-include $(CHAPEL_ROOT)/make/Makefile.gnu

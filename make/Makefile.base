@@ -35,6 +35,9 @@ endif
 ifeq ($(OS_TYPE),Linux)
 	PLATFORM=linux
 endif
+ifeq ($(OS_TYPE),FreeBSD)
+	PLATFORM=freebsd
+endif
 ifndef PLATFORM
 	PLATFORM=unknown
 endif
