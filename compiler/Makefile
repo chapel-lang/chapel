@@ -19,6 +19,7 @@ SUBDIRS = \
 	main \
 	parser \
 	passes \
+	symtab \
 	traversals \
 	util \
 	vparser \
@@ -41,6 +42,7 @@ include backend/Makefile.include
 include main/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
+include symtab/Makefile.include
 include traversals/Makefile.include
 include util/Makefile.include
 include vparser/Makefile.include
@@ -56,6 +58,7 @@ CHPL_OBJS = \
 	$(MAIN_OBJS) \
 	$(PARSER_OBJS) \
 	$(PASSES_OBJS) \
+	$(SYMTAB_OBJS) \
 	$(TRAVERSALS_OBJS) \
 	$(UTIL_OBJS) \
 	$(VPARSER_OBJS) \

@@ -5,7 +5,6 @@ PASSES_SRCS = \
 	filesToAST.cpp \
 	pass.cpp \
 	printProgram.cpp \
-	printSymtab.cpp \
 	renameCSymbols.cpp \
 	runAnalysis.cpp \
 

@@ -1,0 +1,12 @@
+SYMTAB_SRCS = \
+	symlink.cpp \
+	symscope.cpp \
+        symtab.cpp \
+	symtabTraversal.cpp \
+	printSymtab.cpp
+
+CVS_SRCS = $(SYMTAB_SRCS)
+SRCS = $(CVS_SRCS)
+
+SYMTAB_OBJS = \
+	$(SYMTAB_SRCS:%.cpp=$(SYMTAB_OBJDIR)/%.o)

@@ -2,6 +2,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "misc.h"
+#include "printSymtab.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
@@ -17,225 +18,6 @@ enum parsePhaseType {
 };
 
 static parsePhaseType parsePhase = PARSING_PRE;
-
-
-class SymLink : public ILink {
-public:
-  Symbol* pSym;
-  
-  SymLink(Symbol* init_pSym = nilSymbol);
-
-  void traverse(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-SymLink::SymLink(Symbol* init_pSym) :
-  pSym(init_pSym)
-{}
-
-
-void SymLink::traverse(Traversal* traversal) {
-  INT_FATAL(this, "traverse not yet implemented for SymLinks");
-}
-
-
-void SymLink::print(FILE* outfile) {
-  pSym->print(outfile);
-}
-
-void SymLink::codegen(FILE* outfile) {
-  fprintf(outfile, "This is SymLink's codegen method.\n");
-}
-
-
-SymScope::SymScope(scopeType init_type, int init_level) :
-  type(init_type),
-  level(init_level),
-  stmtContext(nilStmt),
-  symContext(nilSymbol),
-  exprContext(nilExpr),
-  parent(NULL),
-  child(NULL),
-  sibling(NULL),
-  firstSym(NULL),
-  lastSym(NULL)
-{}
-
-
-void SymScope::setContext(Stmt* stmt, Symbol* sym, Expr* expr) {
-  stmtContext = stmt;
-  symContext = sym;
-  exprContext = expr;
-}
-
-
-bool SymScope::isEmpty(void) {
-  return (firstSym == NULL);
-}
-
-
-bool SymScope::isInternal(void) {
-  SymScope* scope = this;
-
-  while (scope != NULL) {
-    if (scope->type == SCOPE_INTERNAL_PRELUDE || 
-	scope->type == SCOPE_PRELUDE) {
-      return true;
-    }
-    scope = scope->parent;
-  }
-  return false;
-}
-
-
-void SymScope::insert(Symbol* sym) {
-  table.put(sym->name, sym);
-  sym->setParentScope(this);
-
-  SymLink* newLink = new SymLink(sym);
-
-  if (firstSym == NULL) {
-    firstSym = newLink;
-    lastSym = firstSym;
-  } else {
-    lastSym->append(newLink);
-    lastSym = newLink;
-  }
-}
-
-
-SymScope* SymScope::findEnclosingScopeType(scopeType t) {
-  if (type == t) {
-    return this;
-  } else {
-    if (parent == NULL) {
-      INT_FATAL("can't find scope");
-    }
-    return parent->findEnclosingScopeType(t);
-  }
-}
-
-
-static char* indentStr(FILE* outfile, scopeType type, int level) {
-  static char* spaces = "                                                     "
-                        "                          ";
-  int printLevel;
-  switch (type) {
-  case SCOPE_INTRINSIC:
-  case SCOPE_POSTPARSE:
-    printLevel = 0;
-    break;
-  case SCOPE_INTERNAL_PRELUDE:
-  case SCOPE_PRELUDE:
-    printLevel = 1;
-    break;
-  default:
-    printLevel = level+1;
-  }
-
-  int maxspaces = strlen(spaces);
-  int offset = maxspaces-(2*printLevel);
-  if (offset < 0) {
-    offset = 0;
-  }
-
-  return spaces + offset;
-}
-
-
-static bool printEmpty = false;
-
-
-void SymScope::print(FILE* outfile, bool tableOrder) {
-  char* indent = indentStr(outfile, type, level);
-
-  // don't bother printing empty scopes
-  if (firstSym == NULL && !printEmpty) {
-    return;
-  }
-
-  fprintf(outfile, "%s", indent);
-  fprintf(outfile, "======================================================\n");
-
-  fprintf(outfile, "%s", indent);
-  fprintf(outfile, "SCOPE: ");
-  switch (type) {
-  case SCOPE_INTRINSIC:
-    fprintf(outfile, "intrinsic");
-    break;
-  case SCOPE_INTERNAL_PRELUDE:
-    fprintf(outfile, "internal prelude");
-    break;
-  case SCOPE_PRELUDE:
-    fprintf(outfile, "prelude");
-    break;
-  case SCOPE_MODULE:
-    fprintf(outfile, "module");
-    break;
-  case SCOPE_PARAM:
-    fprintf(outfile, "parameters");
-    break;
-  case SCOPE_FUNCTION:
-    fprintf(outfile, "function");
-    break;
-  case SCOPE_LOCAL:
-    fprintf(outfile, "local");
-    break;
-  case SCOPE_FORLOOP:
-    fprintf(outfile, "for loop");
-    break;
-  case SCOPE_FORALLEXPR:
-    fprintf(outfile, "forall expression");
-    break;
-  case SCOPE_CLASS:
-    fprintf(outfile, "class");
-    break;
-  case SCOPE_POSTPARSE:
-    fprintf(outfile, "post parsing");
-    break;
-  }
-  Loc* scopeLoc = NULL;
-  if (!symContext->isNull()) {
-    fprintf(outfile, " ");
-    symContext->print(outfile);
-    scopeLoc = symContext;
-  } else if (!exprContext->isNull()) {
-    scopeLoc = exprContext;
-  } else if (!stmtContext->isNull()) {
-    scopeLoc = stmtContext;
-  }
-  if (scopeLoc) {
-    fprintf(outfile, " (%s)", scopeLoc->stringLoc());
-  }
-  fprintf(outfile, "\n");
-
-  fprintf(outfile, "%s", indent);
-  fprintf(outfile, "------------------------------------------------------\n");
-
-  if (tableOrder) {
-    int i;
-    Vec<Symbol*> symlist;
-
-    table.get_values(symlist);
-    for (i=0; i<symlist.n; i++) {
-      fprintf(outfile, "%s", indent);
-      symlist.v[i]->print(outfile);
-      fprintf(outfile, "\n");
-    }
-  } else {
-    if (firstSym != NULL) {
-      fprintf(outfile, "%s", indent);
-      firstSym->printList(outfile, glomstrings(2, "\n", indent));
-      fprintf(outfile, "\n");
-    }
-  }
-
-  fprintf(outfile, "%s", indent);
-  fprintf(outfile, "======================================================\n");
-}
 
 
 static int currentLevel = 0;
@@ -876,17 +658,25 @@ void Symboltable::print(FILE* outfile) {
 }
 
 
-static void dumpHelp(FILE* outfile, SymScope* scope) {
+void Symboltable::dump(FILE* outfile) {
+  PrintSymtab* printit = new PrintSymtab(outfile);
+  printit->run();
+}
+
+
+static void traverseSymtab(SymtabTraversal* traversal, SymScope* scope) {
   if (scope == NULL) {
     return;
   } else {
-    scope->print(outfile);
-    dumpHelp(outfile, scope->child);
-    dumpHelp(outfile, scope->sibling);
+    scope->traverse(traversal);
+    traverseSymtab(traversal, scope->child);
+    traverseSymtab(traversal, scope->sibling);
   }
 }
 
 
-void Symboltable::dump(FILE* outfile) {
-  dumpHelp(outfile, rootScope);
+void Symboltable::traverse(SymtabTraversal* traversal) {
+  traverseSymtab(traversal, rootScope);
 }
+
+

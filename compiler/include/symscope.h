@@ -20,6 +20,7 @@ enum scopeType {
 };
 
 class SymLink;
+class SymtabTraversal;
 
 class SymScope : public gc {
  public:
@@ -42,6 +43,8 @@ class SymScope : public gc {
   SymScope(scopeType init_type, int init_level = 0);
   void setContext(Stmt* stmt, Symbol* sym = nilSymbol, Expr* expr = nilExpr);
 
+  void traverse(SymtabTraversal* traversal);
+
   bool isEmpty(void);
   bool isInternal(void);
 
@@ -49,6 +52,12 @@ class SymScope : public gc {
   SymScope* findEnclosingScopeType(scopeType t);
 
   void print(FILE* outfile = stdout, bool tableOrder = false);
+
+  // these are "private"
+  char* indentStr(void);
+  void printHeader(FILE* outfile);
+  void printSymbols(FILE* outfile, bool tableOrder);
+  void printFooter(FILE* outfile);
 };
 
 #endif

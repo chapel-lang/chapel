@@ -1,0 +1,5 @@
+SYMTAB_OBJDIR = $(COMPILER_ROOT)/symtab/$(PLATFORM)
+
+ALL_SRCS += symtab/*.cpp
+
+include $(COMPILER_ROOT)/symtab/Makefile.share

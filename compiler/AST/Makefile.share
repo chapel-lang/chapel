@@ -6,7 +6,6 @@ AST_SRCS = \
 	nils.cpp \
 	stmt.cpp \
 	symbol.cpp \
-        symtab.cpp \
 	type.cpp \
 
 CVS_SRCS = $(AST_SRCS)

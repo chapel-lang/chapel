@@ -3,9 +3,10 @@
 #include "../passes/createEntryPoint.h"
 #include "../passes/filesToAST.h"
 #include "../passes/printProgram.h"
-#include "../passes/printSymtab.h"
 #include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
+
+#include "../symtab/printSymtab.h"
 
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkTypeInfo.h"
@@ -48,8 +49,8 @@ REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
+REGISTER(PrintSymtab);
 REGISTER(PrintStmts);
-REGISTER(PrintSymtab);     // BLC: prints out the whole symboltable
 REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis

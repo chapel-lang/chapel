@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <pwd.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -53,9 +54,17 @@ static void createTmpDir(void) {
 #endif
 
     char mypidstr[MAX_CHARS_PER_PID];
-    snprintf(mypidstr, MAX_CHARS_PER_PID, "%d", mypid);
+    snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", mypid);
 
-    tmpdirname = glomstrings(3, tmpdirprefix, mypidstr, tmpdirsuffix);
+    struct passwd* passwdinfo = getpwuid(geteuid());
+    char* userid;
+    if (passwdinfo == NULL) {
+      userid = "anon";
+    } else {
+      userid = passwdinfo->pw_name;
+    }
+
+    tmpdirname = glomstrings(4, tmpdirprefix, userid, mypidstr, tmpdirsuffix);
 
     intDirName = tmpdirname;
     commandExplanation = "making temporary directory";

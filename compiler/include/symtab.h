@@ -15,6 +15,8 @@ class Symboltable {
   static void doneParsingUserFiles(void);
   static bool parsingUserCode(void);
 
+  static void traverse(SymtabTraversal* traversal);
+
   static void pushScope(scopeType type);
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
