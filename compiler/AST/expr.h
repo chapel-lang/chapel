@@ -73,12 +73,34 @@ class UnOp : public Expr {
 };
 
 
+enum binOpType {
+  BINOP_PLUS,
+  BINOP_MINUS,
+  BINOP_MULT,
+  BINOP_DIV,
+  BINOP_MOD,
+  BINOP_EQUAL,
+  BINOP_LEQUAL,
+  BINOP_GEQUAL,
+  BINOP_GTHAN,
+  BINOP_LTHAN,
+  BINOP_NEQUALS,
+  BINOP_BITAND,
+  BINOP_BITOR,
+  BINOP_BITXOR,
+  BINOP_LOGAND,
+  BINOP_LOGOR,
+  BINOP_OTHER
+};
+
+
 class BinOp : public Expr {
  public:
+  binOpType type;
   Expr* left;
   Expr* right;
 
-  BinOp(Expr* l, Expr* r);
+  BinOp(binOpType init_type, Expr* l, Expr* r);
 
   void print(FILE* outfile);
 };
@@ -124,6 +146,20 @@ class FloodExpr : public Expr {
 
 class CompleteDimExpr : public Expr {
  public:
+  void print(FILE* outfile);
+};
+
+
+class DomainExpr : public Expr {
+ public:
+  Expr* domains;
+  Expr* indices;
+  Expr* forallExpr;
+
+  DomainExpr(Expr* init_domains, Expr* init_indices = NULL);
+
+  void setForallExpr(Expr* exp);
+
   void print(FILE* outfile);
 };
 

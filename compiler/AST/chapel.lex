@@ -73,7 +73,8 @@ dim             return DIM;
           
                   while (1) {
                     while ( (c = yyinput()) != '\n' && c != EOF ) {
-		      fflush(stdout);
+		      //		      printf("%c", c);
+		      //		      fflush(stdout);
                     }    /* eat up text of comment */
                     if (c == EOF) {
                       yyerror("EOF in comment");

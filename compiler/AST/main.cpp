@@ -36,6 +36,8 @@ int main(int argc, char* argv[]) {
     yyin = stdin;
   }
 
+  //  yydebug = 1;
+
   while (!feof(yyin)) {
     yyparse();
     program->printList(stdout);

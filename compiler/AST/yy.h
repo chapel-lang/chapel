@@ -21,9 +21,6 @@ extern "C" {
 #endif
 
 extern int yylex(void);
-
-
-/* int yydebug = 1; */
-
+extern int yydebug;
 
 #endif

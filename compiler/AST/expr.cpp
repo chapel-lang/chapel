@@ -1,6 +1,27 @@
 #include "expr.h"
 
 
+static char* cBinOp[] = {
+  "+",
+  "-",
+  "*",
+  "/",
+  "%",
+  "==",
+  "<=",
+  ">=",
+  ">",
+  "<",
+  "!=",
+  "&",
+  "|",
+  "^",
+  "&&",
+  "||",
+  "???"
+};
+
+
 Expr::Expr(void) :
   stmt(NULL),
   parent(NULL)
@@ -10,6 +31,7 @@ Expr::Expr(void) :
 void Expr::printList(FILE* outfile) {
   print(outfile);
   if (next != NULL) {
+    fprintf(outfile, ", ");
     next->printList(outfile);
   }
 }
@@ -62,7 +84,8 @@ void UnOp::print(FILE* outfile) {
 }
 
 
-BinOp::BinOp(Expr* l, Expr* r) :
+BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
+  type(init_type),
   left(l),
   right(r)
 {
@@ -72,14 +95,16 @@ BinOp::BinOp(Expr* l, Expr* r) :
 
 
 void BinOp::print(FILE* outfile) {
+  fprintf(outfile, "(");
   left->print(outfile);
-  fprintf(outfile, " + ");
+  fprintf(outfile, cBinOp[type]);
   right->print(outfile);
+  fprintf(outfile, ")");
 }
 
 
 AssignOp::AssignOp(Expr* l, Expr* r) :
-  BinOp(l,r) 
+  BinOp(BINOP_OTHER, l, r) 
 {}
 
 
@@ -129,4 +154,30 @@ void FloodExpr::print(FILE* outfile) {
 
 void CompleteDimExpr::print(FILE* outfile) {
   fprintf(outfile, "..");
+}
+
+
+DomainExpr::DomainExpr(Expr* init_domains, Expr* init_indices) :
+  domains(init_domains),
+  indices(init_indices)
+{}
+
+
+void DomainExpr::setForallExpr(Expr* exp) {
+  forallExpr = exp;
+}
+
+
+void DomainExpr::print(FILE* outfile) {
+  fprintf(outfile, "[");
+  if (indices != NULL) {
+    indices->printList(outfile);
+    fprintf(outfile, ":");
+  }
+  domains->printList(outfile);
+  fprintf(outfile, "]");
+  if (forallExpr) {
+    fprintf(outfile, " ");
+    forallExpr->print(outfile);
+  }
 }

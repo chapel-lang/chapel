@@ -16,12 +16,11 @@
 
 %}
 
-
-
-
 %union	{
   long intval;
+  binOpType bot;
   Expr* pexpr;
+  DomainExpr* pdexpr;
   Stmt* stmt;
   Type* pdt;
   char* pch;
@@ -55,10 +54,12 @@
 
 
 %type <intval> intliteral
+%type <bot> binop
 %type <pdt> type domainType arrayType
 %type <pch> identifier
-%type <pexpr> expr exprlist nonemptyExprlist arrayref literal range domainExpr
+%type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
 %type <pexpr> reduction
+%type <pdexpr> domainExpr
 %type <stmt> program statements statement decl assignment conditional loop
 
 
@@ -192,7 +193,7 @@ expr:
 | identifier
     { $$ = new Variable(new Symbol($1)); }
 | expr binop expr
-    { $$ = new BinOp($1, $3); }
+    { $$ = new BinOp($2, $1, $3); }
 | unop expr
     { $$ = new UnOp($2); }
 | reduction
@@ -203,7 +204,10 @@ expr:
 | '[' domainExpr ']'
     { $$ = $2; }
 | '[' domainExpr ']' expr
-    { $$ = $2; }
+    { 
+      $2->setForallExpr($4);
+      $$ = $2;
+    }
 ;
 
 
@@ -215,9 +219,9 @@ reduction:
 
 domainExpr:
   nonemptyExprlist
-    { $$ = $1; }
+    { $$ = new DomainExpr($1); }
 | nonemptyExprlist ':' nonemptyExprlist
-    { $$ = $3; }
+    { $$ = new DomainExpr($3, $1); }
 ;
 
 
@@ -257,21 +261,37 @@ unop:
 
 binop:
   '+'
+    { $$ = BINOP_PLUS; }
 | '-'
+    { $$ = BINOP_MINUS; }
 | '*'
+    { $$ = BINOP_MULT; }
 | '/'
+    { $$ = BINOP_DIV; }
 | '%'
+    { $$ = BINOP_MOD; }
 | EQUALS
+    { $$ = BINOP_EQUAL; }
 | LEQUALS
+    { $$ = BINOP_LEQUAL; }
 | GEQUALS
+    { $$ = BINOP_GEQUAL; }
 | GTHAN
+    { $$ = BINOP_GTHAN; }
 | LTHAN
+    { $$ = BINOP_LTHAN; }
 | NEQUALS
+    { $$ = BINOP_NEQUALS; }
 | BITAND
+    { $$ = BINOP_BITAND; }
 | BITOR
+    { $$ = BINOP_BITOR; }
 | BITXOR
+    { $$ = BINOP_BITXOR; }
 | LOGAND
+    { $$ = BINOP_LOGAND; }
 | LOGOR
+    { $$ = BINOP_LOGOR; }
 ;
 
 
