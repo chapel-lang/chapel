@@ -1,0 +1,11 @@
+m = 5
+n = 2
+
+test: m == n
+expected answer = 0
+actual answer = 0
+
+test: m != n
+expected answer = 1
+actual answer = 1
+

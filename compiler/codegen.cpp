@@ -15,6 +15,73 @@ static void genAST(FILE* outfile, AST* ast);
 
 static int hitUnknown = 0;
 
+struct binOp {
+  char* astSymName;
+  char* astString;
+  char* cName; 
+  int flag;
+
+};
+
+
+static binOp binOps[] = {
+  {"empty", "empty", "empty", 0}, /* I don't want to return an index of 0... */
+  {"*", "#*", "*", 0},
+  {"/", "#/", "/", 0},
+  {"%", "#%", "%", 0},
+  {"+", "#+", "+", 0},
+  {"-", "#-", "-", 0},
+  {"<<", "#<<", "<<", 0},
+  {">>", "#>>", ">>", 0},
+  {"<", "#<", "<", 0},
+  {"<=", "#<=", "<=", 0},
+  {">", "#>", ">", 0},
+  {">=", "#>=", ">=", 0},
+  {"==", "#==", "==", 0},
+  {"!=", "#!=", "!=", 0},
+  {"&", "#&", "&", 0},
+  {"^", "#^", "^", 0},
+  {"|", "#|", "|", 0},
+  {"&&", "#&&", "&&", 0},
+  {"||", "#||", "||", 0},
+  {"=", "#=", "=", 0},
+  {"*=", "#*=", "*=", 0},
+  {"/=", "#/=", "/=", 0},
+  {"%=", "#%=", "%=", 0},
+  {"+=", "#+=", "+=", 0},
+  {"-=", "#-=", "-=", 0},
+  {"<<=", "#<<=", "<<=", 0},
+  {">>=", "#>>=", ">>=", 0},
+  {"&=", "#&=", "&=", 0},
+  {"|=", "#|=", "|=", 0},
+  {"^=", "#^=", "^=", 0},
+  {",", "#,", ",", 0}
+
+};
+
+
+static int findBinOp(FILE* outfile, AST* ast) {
+  int i;
+  int numBinOps = sizeof(binOps) / sizeof(binOps[0]);
+
+  for (i = 0; i < numBinOps; i++) {
+    if (strcmp(ast->v[1]->sym->name, binOps[i].astSymName) == 0 &&
+        strcmp(ast->v[1]->string, binOps[i].astString) == 0) {
+      return i;
+    }
+  }
+  return 0;
+}
+
+
+static int genBinOp(FILE* outfile, AST* ast, int index) {
+  genAST(outfile, ast->v[0]);
+  fprintf(outfile, binOps[index].cName);
+  genAST(outfile, ast->v[2]);
+  return 0;
+}
+
+
 static void genDT(FILE* outfile, Sym* pdt) {
   if (pdt == NULL || pdt->name == NULL) {
     fprintf(outfile, "/* unknown type */");
@@ -190,6 +257,7 @@ static void genAST(FILE* outfile, AST* ast) {
   case AST_op:
     {
       int i;
+      int binOpsIndex = 0;
 
       if (strcmp(ast->v[1]->sym->name, "(") == 0 &&
 	  strcmp(ast->v[1]->string, "#(") == 0) {
@@ -202,25 +270,22 @@ static void genAST(FILE* outfile, AST* ast) {
 	  fprintf(outfile, ")");
 	}
 	break;
-      } else if (strcmp(ast->v[1]->sym->name, "+") == 0 &&
-		 strcmp(ast->v[1]->string, "#+") == 0) {
-	genAST(outfile, ast->v[0]);
-	fprintf(outfile, "+");
-	genAST(outfile, ast->v[2]);
+      }
+
+      binOpsIndex = findBinOp(outfile, ast);
+      if (binOpsIndex) {
+	genBinOp(outfile, ast, binOpsIndex);
 	break;
-      } else if (strcmp(ast->v[1]->sym->name, "*") == 0 &&
-		 strcmp(ast->v[1]->string, "#*") == 0) {
-	genAST(outfile, ast->v[0]);
-	fprintf(outfile, "*");
-	genAST(outfile, ast->v[2]);
-	break;
-      } else if (strcmp(ast->v[0]->sym->name, "!") == 0 &&
+      }
+
+      if (strcmp(ast->v[0]->sym->name, "!") == 0 &&
 		 strcmp(ast->v[0]->string, "#!") == 0) {
 	fprintf(outfile, "!");
 	genAST(outfile, ast->v[1]);
 	break;
       }
     }
+ 
     /* FALL THROUGH */
 
   default:
