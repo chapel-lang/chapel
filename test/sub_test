@@ -115,8 +115,8 @@ foreach chplsrc ($testsrc)
     # set execfile now since used in both if branches
     set execfile = $chplsrc:r
     set checkfile = $execfile.good
-    set complog = $execfile.ihgfedcba.comp.out.tmp
-    set execlog = $execfile.ihgfedcba.exec.out.tmp
+    set complog = $execfile.comp.out.tmp
+    set execlog = $execfile.exec.out.tmp
 
     echo \[Executing: \"$valgrnd$compiler $compopts $chplsrc $lastcompopts\"\]
     $timedexec $timeout $valgrnd$compiler $compopts $chplsrc $lastcompopts >& $complog
