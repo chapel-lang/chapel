@@ -2,7 +2,6 @@
 #define _stdchpl_H_
 
 #include "array.h"
-#include "chplboolean.h"
 #include "chplio.h"
 #include "chpltypes.h"
 #include "domain.h"

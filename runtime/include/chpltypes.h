@@ -1,6 +1,10 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
+enum _boolean {
+  false = 0,
+  true = 1
+};
 typedef long long _integer64;
 typedef double _float64;
 typedef char* _string;

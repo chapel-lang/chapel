@@ -36,7 +36,7 @@ depend: $(PLATFORM_DIR)
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(CCDEP) -MM -MG $(CFLAGS) $$file >> $(CVS_DEPENDS); \
+	  $(CC) -MM -MG $(CFLAGS) $$file | grep -v ^# >> $(CVS_DEPENDS); \
         done	
 
 $(CHPL_RT_LIB): $(CHPL_RT_OBJS)

@@ -73,7 +73,7 @@ void Type::codegen(FILE* outfile) {
   // BLC: Perhaps we should just rename the built-in types between
   // parsing and codegen?
   if (this == dtBoolean) {
-    fprintf(outfile, "boolean");
+    fprintf(outfile, "_boolean");
   } else if (this == dtInteger) {
     fprintf(outfile, "_integer64");
   } else if (this == dtFloat) {
