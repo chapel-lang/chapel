@@ -18786,3 +18786,30 @@ Modified files:
 	chapel/compiler/include/: expr.h 
 	chapel/compiler/parser/: Makefile chapel.y 
 
+---------------------------------------------------------------------------
+
+03/03/05 13:23:07 -- deitz
+
+Log message:
+	Added new Stmt called DefStmt.  This will replace TypeDefStmt,
+	ModuleDefStmt, VarDefStmt, and FnDefStmt bringing us more inline with
+	Brad's compiler architecture paper.  The real motivation behind this
+	change is to move over to DefExprs so that symbols defined in
+	ForallExprs and LetExprs will be defined via DefExprs along with all
+	other symbols.
+	
+	Moved print functionality into VarSymbol's and FnSymbol's printDef
+	routine and out of VarDefStmt's and FnDefStmt's printDef routine.
+	
+	Added a few .cvsignores.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h symbol.h 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/test/flowanalysis/newast/: .cvsignore 
+Added files:
+	chapel/test/trivial/jplevyak/: .cvsignore 
+	chapel/test/types/type_variables/jplevyak/: .cvsignore 
+
