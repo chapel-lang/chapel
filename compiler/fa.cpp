@@ -5,6 +5,9 @@
 #include "geysa.h"
 #include "pattern.h"
 
+static int avar_id = 1;
+static int creation_set_id = 1;
+
 static FA *fa = 0;
 
 static AType *bottom_type = 0;
@@ -26,8 +29,8 @@ static OpenHash<ATypeViolation *, ATypeViolationHashFuns> type_violation_hash;
 
 static Var *element_var = 0;
 
-static SList(AEdge, edge_worklist_link) edge_worklist;
-static SList(AVar, send_worklist_link) send_worklist;
+static Que(AEdge, edge_worklist_link) edge_worklist;
+static Que(AVar, send_worklist_link) send_worklist;
 static Vec<EntrySet *> entry_set_done;
 static Vec<ATypeViolation *> type_violations;
 
@@ -43,6 +46,7 @@ AVar::AVar(Var *v, void *acontour) :
   container(0), setters(0), setter_class(0), creation_set(0), in_send_worklist(0), 
   contour_is_entry_set(0)
 {
+  id = avar_id++;
 }
 
 AType::AType(AType &a) {
@@ -85,8 +89,13 @@ unique_AVar(Var *v, EntrySet *es) {
   return av;
 }
 
+CreationSet::CreationSet(Sym *s) : sym(s), clone_for_constants(0), atype(0), equiv(0) { 
+  id = creation_set_id++;
+}
+
 CreationSet::CreationSet(CreationSet *cs) {
   sym = cs->sym;
+  id = creation_set_id++;
   clone_for_constants = cs->clone_for_constants;
   atype = NULL;
   forv_AVar(v, cs->vars) {
@@ -97,6 +106,13 @@ CreationSet::CreationSet(CreationSet *cs) {
   }
   equiv = 0;
   type = 0;
+}
+
+int
+compar_creation_sets(const void *ai, const void *aj) {
+  int i = (*(CreationSet**)ai)->id;
+  int j = (*(CreationSet**)aj)->id;
+  return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
 static EntrySet *
@@ -166,7 +182,7 @@ update_in(AVar *v, AType *t) {
       forv_AVar(vv, v->arg_of_send) if (vv) {
 	if (!vv->in_send_worklist) {
 	  vv->in_send_worklist = 1;
-	  send_worklist.push(vv);
+	  send_worklist.enqueue(vv);
 	}
       }
       forv_AVar(vv, v->forward) if (vv)
@@ -756,7 +772,7 @@ flow_var_type_permit(AVar *v, AType *t) {
     forv_AVar(vv, v->arg_of_send) if (vv) {
       if (!vv->in_send_worklist) {
 	vv->in_send_worklist = 1;
-	send_worklist.push(vv);
+	send_worklist.enqueue(vv);
       }
     }
     forv_AVar(vv, v->forward) if (vv)
@@ -1021,7 +1037,7 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
   from->out_edges.set_add(e);
   if (!e->in_edge_worklist) {
     e->in_edge_worklist = 1;
-    edge_worklist.push(e);
+    edge_worklist.enqueue(e);
   }
   return e;
 }
@@ -1363,6 +1379,8 @@ collect_Vars_PNodes(Fun *f) {
   if (!f->entry)
     return;
   f->collect_Vars(f->fa_all_Vars, &f->fa_all_PNodes);
+  qsort(f->fa_all_Vars.v, f->fa_all_Vars.n, sizeof(f->fa_all_Vars.v[0]), compar_vars);
+  qsort(f->fa_all_PNodes.v, f->fa_all_PNodes.n, sizeof(f->fa_all_PNodes.v[0]), compar_pnodes);
   forv_Var(v, f->fa_all_Vars)
     if (is_fa_Var(v))
       f->fa_Vars.add(v);
@@ -1462,6 +1480,7 @@ collect_results() {
     fa->ess.add(es);
   }
   fa->funs.set_to_vec();
+  qsort(fa->funs.v, fa->funs.n, sizeof(fa->funs.v[0]), compar_funs);
   fa->ess_set.move(entry_set_done);
   // collect css and css_set
   fa->css.clear();
@@ -1475,6 +1494,7 @@ collect_results() {
   }
   forv_CreationSet(cs, fa->css_set) if (cs) 
     fa->css.add(cs);
+  qsort(fa->css.v, fa->css.n, sizeof(fa->css.v[0]), compar_creation_sets);
   // collect callees
   forv_Fun(f, fa->funs) {
     forv_PNode(pnode, f->fa_send_PNodes) {
@@ -2278,7 +2298,7 @@ FA::analyze(Fun *top) {
   top_edge = make_top_edge(top);
   do {
     initialize_pass();
-    edge_worklist.push(top_edge);
+    edge_worklist.enqueue(top_edge);
     while (edge_worklist.head || send_worklist.head) {
       while (AEdge *e = edge_worklist.pop()) {
 	e->in_edge_worklist = 0;

@@ -103,4 +103,6 @@ class Fun : public gc {
 };
 #define forv_Fun(_f, _v) forv_Vec(Fun, _f, _v)
 
+int compar_funs(const void *ai, const void *aj);
+
 #endif

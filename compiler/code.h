@@ -49,4 +49,5 @@ class Label : public gc {
   Label() { memset(this, 0, sizeof *this); }
 };
 
+
 #endif

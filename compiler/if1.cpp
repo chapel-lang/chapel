@@ -15,7 +15,6 @@ char *builtin_strings[] = {
 
 static int mark_sym_live(Sym *s);
 
-
 IF1::IF1() {
  memset(this, 0, sizeof *this); 
  primitives = new Primitives(this);

@@ -23,6 +23,7 @@ class PNode : public gc {
   };
 
   Code *code;
+  int id;
 
   Vec<Var *> lvals;
   Vec<Var *> rvals;
@@ -78,6 +79,7 @@ class PNode : public gc {
 #define forv_PNode(_p, _v) forv_Vec(PNode, _p, _v)
 
 void collect_Vars_PNode(PNode *n, Vec<Var *> &vars);
+int compar_pnodes(const void *ai, const void *aj);
 
 typedef Vec<PNode *> VecPNode;
 typedef Map<PNode *, VecPNode> MapPNVecPN;

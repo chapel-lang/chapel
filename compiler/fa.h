@@ -76,6 +76,7 @@ class EntrySet : public gc {
 class CreationSet : public gc {
  public:
   Sym 			*sym;
+  int			id;
   uint			clone_for_constants : 1;
   uint			added_element_var : 1;
   uint			dfs_color : 2;
@@ -90,7 +91,7 @@ class CreationSet : public gc {
   Vec<CreationSet *>	not_equiv;	// used by clone.cpp
   Sym 			*type;		// used by clone.cpp & fa.capp
 
-  CreationSet(Sym *s) : sym(s), clone_for_constants(0), atype(0), equiv(0) { }
+  CreationSet(Sym *s);
   CreationSet(CreationSet *cs);
 };
 #define forv_CreationSet(_p, _v) forv_Vec(CreationSet, _p, _v)
@@ -117,6 +118,7 @@ class Setters : public Vec<AVar *> {
 class AVar : public gc {
  public:
   Var				*var;
+  int				id;
   void				*contour;
   Vec<AVar *>			forward;
   Vec<AVar *>			backward;
@@ -132,7 +134,7 @@ class AVar : public gc {
   uint				contour_is_entry_set:1;
   uint				is_lvalue:1;
   Vec<AVar *>			arg_of_send;
-  SLink<AVar>			send_worklist_link;
+  Link<AVar>			send_worklist_link;
 
   AVar(Var *v, void *acontour);
 };
@@ -148,7 +150,7 @@ class AEdge : public gc {
   uint			in_edge_worklist : 1;
   uint			es_backedge : 1;
   uint			es_cs_backedge : 1;
-  SLink<AEdge>		edge_worklist_link;
+  Link<AEdge>		edge_worklist_link;
 
   AEdge() : from(0), to(0), pnode(0), match(0), in_edge_worklist(0) {}
 };
@@ -275,6 +277,7 @@ AType *make_AType(Vec<CreationSet *> &css);
 void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,
 		    Vec<Fun *> *funs = NULL);
 void log_var_types(Var *v, Fun *f);
+int compar_creation_sets(const void *ai, const void *aj);
 
 EXTERN int num_constants_per_variable EXTERN_INIT(DEFAULT_NUM_CONSTANTS_PER_VARIABLE);
 

@@ -29,6 +29,13 @@ Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   setup_ast();
 }
 
+int
+compar_funs(const void *ai, const void *aj) {
+  int i = (*(Fun**)ai)->id;
+  int j = (*(Fun**)aj)->id;
+  return (i > j) ? 1 : ((i < j) ? -1 : 0);
+}
+
 static void
 propagate_ast(AST *ast, Vec<PNode *> *nodes) {
   if (nodes && !ast->pnodes.n)
