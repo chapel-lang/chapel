@@ -10265,3 +10265,15 @@ Modified files:
 	chapel/compiler/analysis/: if1.cpp pattern.cpp 
 	chapel/compiler/backend/: dump.cpp 
 
+---------------------------------------------------------------------------
+
+11/23/04 16:51:07 -- bradc
+
+Log message:
+	Checking in code before the holidays: found with Shannon
+	that complex literals don't pretty-print properly, so
+	checked in a fix for that.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
