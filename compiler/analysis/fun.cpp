@@ -10,7 +10,8 @@
 
 Fun::Fun(Sym *asym, int aninit_function) {
   init_function = aninit_function;
-  clone_for_constants = 1;
+  clone_for_constants = 0;
+  clone_for_manifest_constants = 0;
   execution_frequency = 0.0;
   fa_collected = 0;
   sym = asym;

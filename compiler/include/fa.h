@@ -129,6 +129,7 @@ class AVar : public gc {
   Setters			*setters;
   Setters			*setter_class;
   CreationSet 			*creation_set;
+  Sym				*constant;
   int				ivar_offset;
   uint				in_send_worklist:1;
   uint				contour_is_entry_set:1;

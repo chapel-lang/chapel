@@ -2,12 +2,15 @@ class Index {
 }
 
 class Array {
+  pragma "clone_for_manifest_constants"      
   function this(i) {
     return __primitive("array_index", this, i);
   }
+  pragma "clone_for_manifest_constants"      
   function this(i, j) {
     return __primitive("array_index", this, i, j);
   }
+  pragma "clone_for_manifest_constants"      
   function this(i, j, k) {
     return __primitive("array_index", this, i, j, k);
   }
@@ -17,6 +20,7 @@ class Domain {
 }
 
 class Tuple {
+  pragma "clone_for_manifest_constants"      
   function this(i) {
     return __primitive("index_object", this, i);
   }

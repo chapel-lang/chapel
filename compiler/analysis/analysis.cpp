@@ -1733,13 +1733,16 @@ build_functions(Vec<BaseAST *> &syms) {
 void
 ACallbacks::finalize_functions() {
   forv_Fun(fun, pdb->funs) {
+    int added = 0;
     char *name = fun->sym->has.v[0]->name;
     assert(name);
     MPosition p;
     p.push(1);
     forv_Sym(s, fun->sym->has) {
       assert(!s->is_pattern); // not yet supported
-      if (s->must_specialize && 
+      // non-scoped lookup if any parameteter is specialized on a reference type
+      // (is dispatched)
+      if (!added && s->must_specialize && 
 	  is_reference_type(s->must_specialize->asymbol->symbol)) 
       {
 	Vec<Fun *> *v = universal_lookup_cache.get(name);
@@ -1747,7 +1750,9 @@ ACallbacks::finalize_functions() {
 	  v = new Vec<Fun *>;
 	v->add(fun);
 	universal_lookup_cache.put(name, v);
+	added = 1;
       }
+      // record default argument positions
       if (s->asymbol->symbol) {
 	ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
 	if (symbol && symbol->init && symbol->init != nilExpr) {
@@ -1756,6 +1761,21 @@ ACallbacks::finalize_functions() {
 	}
       }
       p.inc();
+    }
+    // check pragmas
+    Sym *fn = fun->sym;
+    FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
+    Pragma *pr = 0;
+    if (Expr *e = dynamic_cast<Expr*>(f->defPoint))
+      pr = e->pragmas;
+    else if (Stmt *s = dynamic_cast<Stmt*>(f->defPoint))
+      pr = s->pragmas;
+    else
+      INT_FATAL(f, "defPoint is not Stmt or Expr");
+    while (pr) {
+      if (!strcmp(pr->str, "clone_for_manifest_constants"))
+	fun->clone_for_manifest_constants = 1;
+      pr = dynamic_cast<Pragma *>(pr->next);
     }
   }
 }

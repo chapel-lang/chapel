@@ -452,8 +452,11 @@ decl:
 decls:
   /* empty */
     { $$ = nilStmt; }
-| decls decl
-    { $$ = appendLink($1, $2); }
+| decls pragmas decl
+    {
+      $3->pragmas = $2;
+      $$ = appendLink($1, $3); 
+    }
 ;
 
 

@@ -52,7 +52,7 @@ static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AV
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
   restrict(0), container(0), setters(0), setter_class(0), creation_set(0), 
-  in_send_worklist(0), contour_is_entry_set(0)
+  constant(0), ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0)
 {
   id = avar_id++;
 }
@@ -705,6 +705,14 @@ edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 }
 
 static int
+edge_manifest_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
+  forv_MPosition(p, e->match->fun->numeric_arg_positions)
+    if (es->args.get(p)->constant != e->args.get(p)->constant)
+      return 0;
+  return 1;
+}
+
+static int
 entry_set_compatibility(AEdge *e, EntrySet *es) {
   int val = INT_MAX;
   switch (edge_type_compatible_with_entry_set(e, es)) {
@@ -716,6 +724,9 @@ entry_set_compatibility(AEdge *e, EntrySet *es) {
     val -= 2;
   if (e->match->fun->clone_for_constants)
     if (!edge_constant_compatible_with_entry_set(e, es))
+      val -= 1;
+  if (e->match->fun->clone_for_manifest_constants)
+    if (!edge_manifest_constant_compatible_with_entry_set(e, es))
       val -= 1;
   return val;
 }
