@@ -1071,7 +1071,22 @@ is_reference_type(BaseAST *t) {
 }
 
 static void
-gen_alloc(Sym *s, DefStmt *def, Sym *type, AST *ast) {
+gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
+  Code **c = &ast->code;
+  Sym *index_sym = new_sym();
+  Code *start_index = if1_send(if1, c, 3, 1, sym_primitive, domain_start_index_symbol, 
+			       at->domainType->asymbol->sym, index_sym);
+  start_index->ast = ast;
+  Sym *element = new_sym();
+  Code *access_element = if1_send(if1, c, 4, 1, sym_primitive, array_index_symbol, 
+				  array, index_sym, element);
+  access_element->ast = ast;
+  element->is_lvalue = 1;
+  if1_move(if1, c, val, element, ast);
+}
+
+static void
+gen_alloc(Sym *s, DefStmt *def, Sym *type, AInfo *ast) {
   Code **c = &def->ainfo->code;
   Code *send = if1_send(if1, c, 2, 1, sym_new, type, s);
   send->ast = ast;
@@ -1084,16 +1099,7 @@ gen_alloc(Sym *s, DefStmt *def, Sym *type, AST *ast) {
       Sym *ret = new_sym();
       Code *new_element = if1_send(if1, c, 2, 1, sym_new, at->elementType->asymbol->sym, ret);
       new_element->ast = ast;
-      Sym *index_sym = new_sym();
-      Code *start_index = if1_send(if1, c, 3, 1, sym_primitive, domain_start_index_symbol, 
-				   at->domainType->asymbol->sym, index_sym);
-      start_index->ast = ast;
-      Sym *element = new_sym();
-      Code *access_element = if1_send(if1, c, 4, 1, sym_primitive, array_index_symbol, 
-				      s, index_sym, element);
-      access_element->ast = ast;
-      element->is_lvalue = 1;
-      if1_move(if1, c, ret, element, ast);
+      gen_set_array(s, at, ret, ast);
     }
   }
   send->ast = def->ainfo;
@@ -1124,14 +1130,21 @@ gen_vardef(BaseAST *a) {
       } else
 	s->is_var = 1;
       if (var->init) {
-	if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
-	Sym *val = var->init->ainfo->rval;
-	if (s->type) {
-	  if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
-	    val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
-	  // else show_error("missing constructor", def->ainfo);
+	if (s->is_var && var->type->astType == TYPE_ARRAY) {
+	  ArrayType *at = dynamic_cast<ArrayType*>(var->type->asymbol->symbol);
+	  if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
+	  gen_alloc(s, def, s->type, def->ainfo);
+	  gen_set_array(s, at, var->init->ainfo->rval, def->ainfo);
+	} else {
+	  if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
+	  Sym *val = var->init->ainfo->rval;
+	  if (s->type) {
+	    if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
+	      val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
+	    // else show_error("missing constructor", def->ainfo);
+	  }
+	  if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
 	}
-	if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
       } 
       else if (is_reference_type(var->type)) {
 	if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
