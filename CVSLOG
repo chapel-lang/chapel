@@ -4384,3 +4384,19 @@ Added files:
 	                                  review3.good sample.good 
 	                                  sample.v 
 
+---------------------------------------------------------------------------
+
+07/26/04 17:59:11 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed compilation warning in vec.cpp.
+	Fix CXXFLAGS which did not contain -Werror which would have prevented
+	the issue above from being checked in.
+	Fixed issue in the low level code generator and updated the tests.
+
+Modified files:
+	chapel/compiler/: cg.cpp clone.cpp fun.cpp map.h pattern.cpp 
+	chapel/test/flowanalysis/jplevyak/: review1.good review2.good 
+	                                    review3.good 
+	chapel/test/lowlevelcg/jplevyak/: review3.good 
+
