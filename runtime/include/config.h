@@ -9,8 +9,9 @@ int setInCommandLine_boolean(char* varName, _boolean* value);
 int setInCommandLine_string(char* varName, _string* value);
 int setInCommandLine_complex128(char* varName, _complex128* value);
 int initConfigVarTable(void);
-int installConfigVar(char* varName, char* value);
-char* lookupConfigVarValue(char* varName);
+void printConfigVarTable(void);
+int installConfigVar(char* varName, char* value, int isDefaultValue);
+char* lookupSetValue(char* varName);
 
 #endif
 

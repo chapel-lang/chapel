@@ -11,6 +11,7 @@
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/cleanup.h"
 #include "../traversals/cloneAllFns.h"
+#include "../traversals/createConfigVarTable.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
@@ -35,6 +36,7 @@ REGISTER(CheckTypeInfo);
 REGISTER(Cleanup);                // SJD: Post-parsing cleanup, e.g. resolve symbols, insert this
 REGISTER(CloneAllFns);
 REGISTER(Codegen);
+REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(DummyPass);
 REGISTER(FindUnknownTypes);

@@ -321,6 +321,12 @@ void Expr::codegenComplex(FILE* outfile, bool real) {
 }
 
 
+void Expr::printCfgInitString(FILE* outfile) {
+  fprintf(outfile, "\"");
+  print(outfile);
+  fprintf(outfile, "\"");
+}
+
 // BLC: Currently, this only handles simple real +/- imag cases
 Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
   if ((typeid(*l) == typeid(FloatLiteral) || typeid(*l) == typeid(IntLiteral))
@@ -517,6 +523,13 @@ void StringLiteral::print(FILE* outfile) {
 
 void StringLiteral::codegen(FILE* outfile) {
   fprintf(outfile, "\"%s\"", str);
+}
+
+
+void StringLiteral::printCfgInitString(FILE* outfile) {
+  fprintf(outfile, "\"");
+  fprintf(outfile, "%s", str);
+  fprintf(outfile, "\"");
 }
 
 

@@ -3,6 +3,7 @@ TRAVERSALS_SRCS = \
 	checkTypeInfo.cpp \
 	cleanup.cpp \
 	cloneAllFns.cpp \
+	createConfigVarTable.cpp \
 	defineSymbols.cpp \
 	findUnknownTypes.cpp \
 	findUnresolvedSymbols.cpp \

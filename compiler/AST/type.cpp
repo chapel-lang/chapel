@@ -331,21 +331,20 @@ void EnumType::codegenConfigVarRoutines(FILE* outfile) {
   fprintf(outfile, "(char* varName, ");
   name->codegen(outfile);
   fprintf(outfile, "* value) {\n");
+  fprintf(outfile, "int isDefaultValue = 0;\n");
   fprintf(outfile, "int varSet = 0;\n");
-  fprintf(outfile, "int validEnum = 0;\n");
-  fprintf(outfile, "char* configVarValue = NULL;\n\n");
-  fprintf(outfile, "configVarValue = lookupConfigVarValue(varName);\n");
-  fprintf(outfile, "if (configVarValue) {\n");
-  fprintf(outfile, "validEnum = _convert_string_to_enum");
+  fprintf(outfile, "char* setValue = lookupSetValue(varName);\n");
+  fprintf(outfile, "if (setValue) {\n");
+  fprintf(outfile, "int validEnum = _convert_string_to_enum");
   name->codegen(outfile);
-  fprintf(outfile, "(configVarValue, value);\n");
+  fprintf(outfile, "(setValue, value);\n");
   fprintf(outfile, "if (validEnum) {\n");
   fprintf(outfile, "varSet = 1;\n");
   fprintf(outfile, "} else {\n");
   fprintf(outfile, "fprintf(stderr, \"***Error: \\\"%%s\\\" is not a valid "
 	  "value for a config var \\\"%%s\\\" of type ");
   name->codegen(outfile);
-  fprintf(outfile, "***\\n\", configVarValue, varName);\n");
+  fprintf(outfile, "***\\n\", setValue, varName);\n");
   fprintf(outfile, "exit(0);\n");
   fprintf(outfile, "}\n");
   fprintf(outfile, "}\n");

@@ -5,16 +5,16 @@
 #include "chplio.h"
 #include "config.h"
 
-static void parseString(char* currentArg) {
-  char* equalsSign = NULL; 
-  char* varName = NULL;
-  char* value = NULL;
 
-  equalsSign = strchr(currentArg, '=');	  
+
+static void parseSingleArg(char* currentArg) {
+  char* equalsSign = strchr(currentArg, '=');	  
+
   if (equalsSign) {
     *equalsSign = '\0';
-    varName = currentArg;
-    value = equalsSign + 1;
+    char* varName = currentArg;
+    char* value = equalsSign + 1;
+    int isDefaultValue = 0;
 
     if (value) {
       if (*value == '\0') {
@@ -22,7 +22,7 @@ static void parseString(char* currentArg) {
 		" its initialization value***\n", varName);
 	exit(0);
       }
-      installConfigVar(varName, value);
+      installConfigVar(varName, value, isDefaultValue);
     } else {
       fprintf(stderr, "***Error:  \"%s\" is not a valid value***\n", value);
       exit(0);
@@ -34,27 +34,30 @@ static void parseString(char* currentArg) {
   }
 }
 
-static int installedString(FILE* argFile, char* setConfigBuffer) {
-  int stringLength = 0;
+
+/* This function parses a config var of type string, and installs
+   it in the hash table.  
+*/
+static int aParsedString(FILE* argFile, char* setConfigBuffer) {
   char* equalsSign = strchr(setConfigBuffer, '=');
-  stringLength = strlen(setConfigBuffer);
-  char firstChar = '\0';
-  char nextChar = '\0';
+  int stringLength = strlen(setConfigBuffer);
 
   if (!equalsSign || !(equalsSign + 1)) {
     return 0;
   }
-  firstChar = equalsSign[1];
+  char firstChar = equalsSign[1];
   if ((firstChar != '"') && (firstChar != '\'')) {
     return 0;
   }
+
   char* varName = setConfigBuffer;
   char* value = equalsSign + 2;
   *equalsSign = '\0';
   char lastChar = setConfigBuffer[stringLength - 1];
+  int isDefaultValue = 0;
   
   if ((firstChar != lastChar) || (strlen(value) == 0)) {
-    nextChar = fgetc(argFile);
+    char nextChar = fgetc(argFile);
     do {
       switch (nextChar) {
       case EOF:
@@ -87,21 +90,20 @@ static int installedString(FILE* argFile, char* setConfigBuffer) {
     stringLength--;
   }
   setConfigBuffer[stringLength] = '\0';
-  installConfigVar(varName, value);
+  installConfigVar(varName, value, isDefaultValue);
   return 1;
 }
 
 
 int parseArgs(int argc, char* argv[]) {
   int i;
-  initConfigVarTable();
   
   for (i = 1; i < argc; i++) {
     int argLength = 0;
     char* currentArg = argv[i];
     argLength = strlen(currentArg);
-    
-    if (argLength < 3) {
+
+    if (argLength < 2) {
       fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n", 
 	      currentArg);
       exit(0);
@@ -111,7 +113,12 @@ int parseArgs(int argc, char* argv[]) {
     case '-':
       switch (currentArg[1]) {
       case 's':
-	parseString(currentArg + 2);
+	if (argLength < 3) {
+	  fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n",
+		  currentArg);
+	  exit(0);
+	}
+	parseSingleArg(currentArg + 2);
 	break;
       case 'f':
 	{
@@ -127,13 +134,16 @@ int parseArgs(int argc, char* argv[]) {
 	    numScans = fscanf(argFile, _default_format_read_string, 
 			      setConfigBuffer);
 	    if (numScans == 1) {
-	      if (!installedString(argFile, setConfigBuffer)) {
-		parseString(setConfigBuffer);
+	      if (!aParsedString(argFile, setConfigBuffer)) {
+		parseSingleArg(setConfigBuffer);
 	      } 
 	    }
 	  }
 	  break;
 	}
+      case 'h':
+	printConfigVarTable();
+	break;
       default:
 	fprintf(stderr, "***Error: unexpected flag: '%s'\n", currentArg);
 	exit(0);
