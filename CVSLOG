@@ -1224,3 +1224,85 @@ Added files:
 	chapel/compiler/: graph.cpp graph.h 
 	chapel/compiler/samples/: ref.v tuples.v 
 
+---------------------------------------------------------------------------
+
+04/03/24 12:59:18 -- bradc
+
+Log message:
+	This checkin adds some crufty support for some trivial code
+	generation (disabled by default), but lays in support for
+	creating that source in a temporary directory, runtime
+	libraries to support the source, compiling the source against
+	the runtime libraries and moving the resulting binary back to
+	the current working directory.  So consider it more infrastructure
+	than any true support for code generation.
+	
+	Added new files to the compiler sources:
+	codegen.cpp : the seat of code generation, currently
+	files.cpp : utilities related to the tmp directory, int. files
+	mysystem.cpp : wrapper around system() for issuing subcommands
+	stringutil.cpp : some simple string utilities
+	
+	Notes:
+	
+	1) The tmp directory used for intermediates is stored in
+	/tmp/chpl-deleteme.<pid>, where <pid> is the process ID
+	of the compiler.  It currently isn't removed when compiles
+	fail (fail, show_error, INT_ERROR, etc.) because I have
+	a nasty fear of blowing away John's root directory again.
+	After gaining some confidence with this, it should be
+	blown away in these cases as well.  For the time being,
+	if you're messing with code generation, you may want to
+	monitor your /tmp directory and clean up by hand.  (Note
+	that since codegen is currently disabled, you won't get
+	these at all unless you take pains to enable them).
+	
+	2) Added some support for "internal errors" in misc.h/cpp via
+	the macro INT_FATAL(ast, format, ...), which takes an
+	AST* (or NULL if no obvious AST* is related), a printf-style
+	format string, and the supporting args.  This prints out
+	where in the compiler source the internal failure occurred,
+	the argument message, and the source location that the AST
+	corresponds to.  These are perhaps redundant with assert(),
+	but I've never been a big fan of assert() (hard to set
+	breakpoints on).  I'm open to persuasion for other approaches
+	or modifications to this one.
+	
+	3) mysystem() (defined in mysystem.cpp) is currently simply a
+	wrapper around C's system() to handle return codes, print
+	out messages to the user, etc.  Eventually, it'll also
+	print out the commands it's executing given an appropriate
+	flag once I get around to adding some flag.
+	
+	4) Currently the binary is always named a.out.  Something else
+	I need to add a flag for.
+	
+	5) stringutil.cpp contains a routine called glomstrings() that
+	takes the number of strings and a varags list of char*
+	pointers, mallocs the right amount of buffer space for
+	them, glomst them all together, and returns the new string.
+	Useful for building filenames and commands for mysystem().
+	
+	6) Factored the platform-decision stuff out of make/Makefile.base
+	in order to use it in building the generated sources as well.
+	
+	7) The runtime directory structure is currently organized:
+	
+	chapel/
+	runtime/
+	etc/ -- Makefiles and such for building generated code
+	include/ -- header files for generated code/runtime libs
+	src/ -- source code for runtime libs
+
+Modified files:
+	chapel/compiler/: Makefile driver.cpp misc.cpp misc.h 
+	chapel/make/: Makefile.base 
+Added files:
+	chapel/compiler/: FILES codegen.cpp codegen.h files.cpp files.h 
+	                  mysystem.cpp mysystem.h stringutil.cpp 
+	                  stringutil.h 
+	chapel/make/: Makefile.platform 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/include/: chplio.h chpltypes.h stdchpl.h 
+	chapel/runtime/src/: .cvsignore Makefile chplio.c main.c 
+
