@@ -101,26 +101,17 @@ reduce          return REDUCE;
 
 
 {ident}         {
-                  Symbol* sym;
                   if (yytext[0] == '?') {
                     return QUERY_IDENT;
-                  } else {
-                    sym = Symboltable::lookup(yytext, false);
                   }
-                  if (sym == NULL || typeid(*sym) == typeid(Symbol)) {
-                    return IDENT;
-                  } else {
-		    if (typeid(*sym) == typeid(TypeSymbol)) {
-		      yylval.ptsym = (TypeSymbol*)sym;
-		      return TYPE_IDENT;
-		    } else if (typeid(*sym) == typeid(EnumSymbol)) {
-		      return IDENT;
-		    } else if (typeid(*sym) == typeid(VarSymbol)) {
-		      return IDENT;
-		    } else {
-		      return IDENT;
-		    }
-                  }
+                  Symbol*  sym = Symboltable::lookup(yytext, true);
+
+		  if (typeid(*sym) == typeid(TypeSymbol)) {
+		    yylval.ptsym = (TypeSymbol*)sym;
+		    return TYPE_IDENT;
+		  } else {
+		    return IDENT;
+		  }
                 }
 {intLiteral}    return INTLITERAL;
 {floatLiteral}  return FLOATLITERAL;

@@ -32,6 +32,11 @@ NullSymbol::NullSymbol(void) :
 {}
 
 
+UseBeforeDefSymbol::UseBeforeDefSymbol(char* init_name) :
+  Symbol(init_name)
+{}
+
+
 VarSymbol::VarSymbol(char* init_name, varType init_varClass, bool init_isConst,
 		     Type* init_type) :
   Symbol(init_name),

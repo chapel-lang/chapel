@@ -8,6 +8,26 @@
 
 using namespace std;
 
+class SymLink : public Link {
+public:
+  Symbol* pSym;
+  
+  SymLink(Symbol* init_pSym = NULL);
+
+  void print(FILE* outfile);
+};
+
+
+SymLink::SymLink(Symbol* init_pSym) :
+  pSym(init_pSym)
+{}
+
+
+void SymLink::print(FILE* outfile) {
+  pSym->print(outfile);
+}
+
+
 class Scope {
  public:
   scopeType type;
@@ -18,11 +38,19 @@ class Scope {
 
   //  Symbol* firstSym;
   //  Symbol* lastSym;
+
+  SymLink* useBeforeDefSyms;
+
   map<string, Symbol*> table;
 
   Scope(scopeType init_type);
 
   void insert(Symbol* sym);
+  Scope* findFileScope(void);
+
+  void addUndefined(UseBeforeDefSymbol*);
+  void addUndefinedToFile(UseBeforeDefSymbol*);
+  void handleUndefined(void);
 
   void print(FILE* outfile = stdout);
 };
@@ -32,7 +60,8 @@ Scope::Scope(scopeType init_type) :
   type(init_type),
   parent(NULL),
   children(NULL),
-  sibling(NULL)
+  sibling(NULL),
+  useBeforeDefSyms(NULL)
   //  firstSym(NULL),
   //  lastSym(NULL)
 {}
@@ -68,6 +97,54 @@ void Scope::insert(Symbol* sym) {
   }
   fprintf(stderr, "--------\n");
   */
+}
+
+
+Scope* Scope::findFileScope(void) {
+  if (type == SCOPE_FILE) {
+    return this;
+  } else {
+    return parent->findFileScope();
+  }
+}
+
+
+void Scope::addUndefined(UseBeforeDefSymbol* sym) {
+  SymLink* newLink = new SymLink(sym);
+  if (useBeforeDefSyms == NULL) {
+    useBeforeDefSyms = newLink;
+  } else {
+    useBeforeDefSyms->append(newLink);
+  }
+}
+
+void Scope::addUndefinedToFile(UseBeforeDefSymbol* sym) {
+  Scope* fileScope = findFileScope();
+  
+  fileScope->addUndefined(sym);
+}
+
+
+void Scope::handleUndefined(void) {
+  SymLink* undefined = useBeforeDefSyms;
+
+  if (undefined) {
+    fprintf(stderr, "Undefined symbols in file %s:\n", yyfilename);
+    fprintf(stderr, "--------------------------------------------------\n");
+    while (undefined != NULL) {
+      char* name = undefined->pSym->name;
+      Symbol* sym = Symboltable::lookup(name, true);
+
+      if (typeid(*sym) == typeid(UseBeforeDefSymbol)) {
+	fprintf(stderr, "%s:%d ", undefined->filename, undefined->lineno);
+	undefined->print(stderr);
+	fprintf(stderr, "\n");
+      }
+
+      undefined = (SymLink*)(undefined->next);  // BLC: cast!
+    }
+    exit(1);
+  }
 }
 
 
@@ -139,6 +216,8 @@ void Symboltable::pushScope(scopeType type) {
 
 
 void Symboltable::popScope(void) {
+  //  currentScope->handleUndefined();
+
   Scope* prevScope = currentScope->parent;
 
   if (prevScope == NULL) {
@@ -155,7 +234,7 @@ void Symboltable::define(Symbol* sym) {
 }
 
 
-Symbol* Symboltable::lookup(char* name, bool genError) {
+Symbol* Symboltable::lookup(char* name, bool inLexer) {
   Scope* scope;
   
   scope = currentScope;
@@ -167,13 +246,21 @@ Symbol* Symboltable::lookup(char* name, bool genError) {
     scope = scope->parent;
   }
 
-  if (genError) {
+  if (!inLexer) {
     //    Symboltable::print(stderr);
-    // fprintf(stderr, "%s:%d '%s' used before defined\n", yyfilename, yylineno,
-    //	    name);
-    
+    /*
+    fprintf(stderr, "%s:%d '%s' used before defined\n", yyfilename, yylineno,
+	    name);
+    */
   }
-  return new Symbol(name);
+
+  UseBeforeDefSymbol* undefinedSym = new UseBeforeDefSymbol(name);
+
+  if (!inLexer) {
+    currentScope->addUndefinedToFile(undefinedSym);
+  }
+
+  return undefinedSym;
 }
 
 
@@ -276,9 +363,12 @@ void Symboltable::exitForLoop(void) {
 
 
 DomainExpr* Symboltable::defineQueryDomain(char* name) {
-  // BLC: TODO
-  //  VarSymbol* newDom = new VarSymbol(name, VAR_NORMAL, true, 
-  return unknownDomain;
+  DomainType* unknownDomType = new DomainType();
+  VarSymbol* newDomSym = new VarSymbol(name, VAR_NORMAL, true, unknownDomType);
+  define(newDomSym); // may need to postpone this until statement point --BLC
+  Variable* newDom = new Variable(newDomSym);
+
+  return new DomainExpr(newDom);
 }
 
 

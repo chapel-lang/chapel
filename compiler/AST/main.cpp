@@ -14,42 +14,54 @@ char* yyfilename;
 int yylineno;
 
 
+static char* preludeName = "prelude.chpl";
+
+
+static void ParseFile(char* filename) {
+  yyfilename = filename;
+  yylineno = 1;
+
+  if (filename != preludeName) {
+    Symboltable::pushScope(SCOPE_FILE);
+  }
+    
+
+  yyin = fopen(yyfilename, "r");
+  
+  if (yyin == NULL) {
+    fprintf(stderr, "ERROR: Can't open file %s\n", yyfilename);
+    exit(1);
+  }
+
+  yyparse();
+  fclose(yyin);
+
+  if (filename != preludeName) {
+    Symboltable::popScope();
+  }
+}
+
+
 int main(int argc, char* argv[]) {
+  int i;
 
   initType();
   initExpr();
 
-  yyfilename = "prelude.chpl";
-  yylineno = 1;
-
-  if ((yyin = fopen(yyfilename, "r")) == NULL) {
-    printf("Can't open file %s\n", yyfilename);
-  }
-  yyparse();
-  fclose(yyin);
-
-  Symboltable::pushScope(SCOPE_FILE);
-
-  yyfilename = copystring(argv[1]);
-  yylineno = 1;
-  if (argc > 1) {
-    if ((yyin = fopen(yyfilename, "r")) == NULL) {
-      printf("Can't open file\n");
-      exit(1);
-    }
-  } else {
-    yyin = stdin;
-  }
-
   //  yydebug = 1;
 
-  yyparse();
+  ParseFile(preludeName);
+  
+  if (argc > 1) {
+    for (i=1; i<argc; i++) {
+      ParseFile(argv[i]);
 
-  program->printList(stdout, "\n");
-
-  fclose (yyin);
-
-  Symboltable::popScope();
+      program->printList(stdout, "\n");
+    }
+  } else {
+    fprintf(stderr, "Usage: %s <filenames>\n", argv[0]);
+    exit(1);
+  }
 
   return 0;
 }

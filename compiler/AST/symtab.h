@@ -21,7 +21,7 @@ class Symboltable {
   static void popScope();
 
   static void define(Symbol* sym);
-  static Symbol* lookup(char* name, bool genError = true);
+  static Symbol* lookup(char* name, bool inLexer = false);
 
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);

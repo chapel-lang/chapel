@@ -202,6 +202,8 @@ class ParenOpExpr : public Expr {
   Expr* baseExpr;
   Expr* argList;
 
+  static ParenOpExpr* classify(Expr* base, Expr* arg);
+
   ParenOpExpr(Expr* init_base, Expr* init_arg = new NullExpr());
 
   virtual void print(FILE* outfile);
@@ -215,6 +217,18 @@ class CastExpr : public ParenOpExpr {
   CastExpr(Type* init_castType, Expr* init_argList);
 
   void print(FILE* outfile);
+};
+
+
+class FnCall : public ParenOpExpr {
+ public:
+  FnCall(Expr* init_base, Expr* init_arg = new NullExpr());
+};
+
+
+class ArrayRef : public ParenOpExpr {
+ public:
+  ArrayRef(Expr* init_base, Expr* init_arg = new NullExpr());
 };
 
 

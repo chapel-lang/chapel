@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include "expr.h"
 #include "stringutil.h"
 
@@ -165,6 +166,43 @@ void SimpleSeqExpr::print(FILE* outfile) {
 }
 
 
+ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
+  if (typeid(*base) == typeid(Variable)) {
+    Symbol* baseVar = ((Variable*)base)->var;
+
+    // ASSUMPTION: Anything used before it is defined is a function
+    if (typeid(*baseVar) == typeid(UseBeforeDefSymbol) ||
+	typeid(*baseVar) == typeid(FunSymbol)) {
+      /*
+      fprintf(stderr, "Found a function call: ");
+      base->print(stderr);
+      fprintf(stderr, "\n");
+      */
+
+      return new FnCall(base, arg);
+    } else {
+      /*
+      fprintf(stderr, "Found an array ref: ");
+      base->print(stderr);
+      fprintf(stderr, "\n");
+      */
+
+      return new ArrayRef(base, arg);
+    }
+  } else {
+    // assume all non-var expressions are array refs for now;
+    // disables methods and function pointers -- BLC
+    /*
+    fprintf(stderr, "Found an array ref: ");
+    base->print(stderr);
+    fprintf(stderr, "\n");
+    */
+    
+    return new ArrayRef(base, arg);
+  }
+}
+
+
 ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
   baseExpr(init_base),
   argList(init_arg) 
@@ -177,6 +215,30 @@ void ParenOpExpr::print(FILE* outfile) {
   argList->printList(outfile);
   fprintf(outfile, ")");
 }
+
+
+CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
+  ParenOpExpr(NULL, init_argList),
+  castType(init_castType)
+{}
+
+
+void CastExpr::print(FILE* outfile) {
+  castType->print(outfile);
+  fprintf(outfile, "(");
+  argList->printList(outfile);
+  fprintf(outfile, ")");
+}
+
+
+FnCall::FnCall(Expr* init_base, Expr* init_arg) :
+  ParenOpExpr(init_base, init_arg)
+{}
+
+
+ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
+  ParenOpExpr(init_base, init_arg)
+{}
 
 
 void FloodExpr::print(FILE* outfile) {
@@ -213,20 +275,6 @@ void DomainExpr::print(FILE* outfile) {
     fprintf(outfile, " ");
     forallExpr->print(outfile);
   }
-}
-
-
-CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
-  ParenOpExpr(NULL, init_argList),
-  castType(init_castType)
-{}
-
-
-void CastExpr::print(FILE* outfile) {
-  castType->print(outfile);
-  fprintf(outfile, "(");
-  argList->printList(outfile);
-  fprintf(outfile, ")");
 }
 
 

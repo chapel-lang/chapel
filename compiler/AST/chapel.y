@@ -84,7 +84,7 @@
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
 %type <psym> enumList formal nonemptyformals formals idlist indexlist
-%type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
+%type <pexpr> expr exprlist nonemptyExprlist arrayfun literal range
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional
@@ -340,7 +340,13 @@ arrayType:
   '[' ']' type
     { $$ = new ArrayType(unknownDomain, $3); }
 | '[' query_identifier ']' type
-    { $$ = new ArrayType(Symboltable::defineQueryDomain($2), $4); }
+    { 
+      Symboltable::defineQueryDomain($2);  // really need to tuck this into
+                                           // a var def stmt to be inserted
+                                           // as soon as the next stmt is
+                                           // defined  -- BLC
+      $$ = new ArrayType(unknownDomain, $4);
+    }
 | '[' domainExpr ']' type
     { $$ = new ArrayType($2, $4); }
 ;
@@ -506,7 +512,7 @@ expr:
 | unop expr
     { $$ = new UnOp($1, $2); }
 | reduction
-| arrayref
+| arrayfun
 | cast
 | memberaccess
 | range
@@ -656,9 +662,13 @@ query_identifier:
 ;
 
 
-arrayref:
+arrayfun:
   expr '(' exprlist ')'
-    { $$ = new ParenOpExpr($1, $3); }
+    { $$ = ParenOpExpr::classify($1, $3); }
+/*
+| expr '[' exprlist ']'
+    { $$ = new 
+*/
 ;
 
 

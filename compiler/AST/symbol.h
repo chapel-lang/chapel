@@ -32,6 +32,12 @@ class NullSymbol : public Symbol {
 };
 
 
+class UseBeforeDefSymbol : public Symbol {
+ public:
+  UseBeforeDefSymbol(char* init_name);
+};
+
+
 class VarSymbol : public Symbol {
  public:
   varType varClass;
