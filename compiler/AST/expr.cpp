@@ -394,7 +394,7 @@ Variable::Variable(Symbol* init_var) :
 
 
 Expr* Variable::copy(void) {
-  return new Variable(var);  // Symboltable::lookup(var->name, true));
+  return new Variable(var);
 }
 
 
@@ -662,23 +662,9 @@ void MemberAccess::print(FILE* outfile) {
 
 
 void MemberAccess::codegen(FILE* outfile) {
-  VarSymbol* field;
-  FnSymbol* method;
-
-  if (field = dynamic_cast<VarSymbol*>(member)) {
-    base->codegen(outfile);
-    fprintf(outfile, "->");
-    field->codegen(outfile);
-  }
-  else if (method = dynamic_cast<FnSymbol*>(member)) {
-    fprintf(outfile, "_stopgap_");
-    base->typeInfo()->codegen(outfile);
-    fprintf(outfile, "_");
-    method->codegen(outfile);
-  }
-  else {
-    INT_FATAL(this, "Unexpected case in MemberAccess::codegen");
-  }
+  base->codegen(outfile);
+  fprintf(outfile, "->");
+  member->codegen(outfile);
 }
 
 

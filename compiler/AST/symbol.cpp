@@ -11,6 +11,7 @@
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
   name(init_name),
+  cname(name),
   type(init_type),
   scope(Symboltable::getCurrentScope()),
   asymbol(0)
@@ -69,7 +70,7 @@ void Symbol::print(FILE* outfile) {
 }
 
 void Symbol::codegen(FILE* outfile) {
-  fprintf(outfile, "%s", name);
+  fprintf(outfile, "%s", cname);
 }
 
 

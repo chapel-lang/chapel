@@ -17,6 +17,7 @@ enum varType {
 class Symbol : public BaseAST {
  public:
   char* name;
+  char* cname; /* Name of symbol for generating C code */
   Type* type;
   SymScope* scope;
   ASymbol *asymbol;

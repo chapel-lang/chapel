@@ -28,5 +28,5 @@ static FnSymbol* ensureMainExists(ModuleSymbol* moduleList) {
 void RenameCSymbols::run(ModuleSymbol* moduleList) {
   FnSymbol* mainFn = ensureMainExists(moduleList);
 
-  mainFn->name = "_chpl_main";
+  mainFn->cname = "_chpl_main";
 }
