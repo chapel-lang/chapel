@@ -4,22 +4,6 @@
 
 #include "geysa.h"
 
-// TODO
-// cache 'AVar::constant()' ??
-// remove useless pnodes from all_PNodes ??
-// build has_map... must be filled with selectors (connonical names)
-//   convert things with multiple possible ->in to selectors...
-// handle vararg functions
-// preload the various as_CreationSet and atype's ?
-// add concept of extending a function with additional cases.... this
-//   to handle 'apply-style' polymorphism
-// add pattern matching
-// add ->extends to Sym_t which refers to previously scoped functions with the same name
-//   and handle with apply ??
-// use a map for symbols -> elements of a sym_tuple
-// fix fa_dump_types to recognize nested functions
-// fixup coerce_type to handle subtyping... used in v.g
-
 static FA *fa = 0;
 
 static AType *bottom_type = 0;
@@ -2039,11 +2023,11 @@ split_css(Vec<AVar *> &starters) {
 }
 
 static int
-analyze_setters(Vec<Setters *> &ss) {
+analyze_setters(Vec<Setters *> &ss, Map<AVar *, AVar *> &container_map) {
   forv_Setters(s, ss) {
     forv_AVar(av, *s) {
-      assert(av->container);
-      update_setters(av->container, s);
+      AVar *container = container_map.get(av);
+      update_setters(container, s);
     }
   }
   Vec<AVar *> sset_confluences, sset_starters;
@@ -2058,20 +2042,20 @@ analyze_setters(Vec<Setters *> &ss) {
 static int
 analyze_type_confluence(AVar *av) {
   Vec<Setters *> ss;
+  Map<AVar *, AVar *> container_map;
   Vec<AVar *> eqvars, eqvars_set;
   eqvars.add(av);
   eqvars_set.set_add(av);
   forv_AVar(v, eqvars) {
-    forv_AVar(x, v->backward) if (x) {//      if (v->forward.in(x) && eqvars_set.set_add(x)) {
-      if (x->out == av->out && eqvars_set.set_add(x)) {
-	assert(x->out == av->out);
+    forv_AVar(x, v->backward) if (x) {
+      if (v->forward.in(x) && eqvars_set.set_add(x))
 	eqvars.add(x);
-      }
     }
   }
   forv_AVar(v, eqvars) {
     forv_AVar(x, v->backward) if (x && !eqvars.in(x)) {
       assert(x->contour_is_entry_set);
+      container_map.put(x, v);
       for (int i = 0; i < ss.n; i++) {
 	forv_AVar(a, *ss.v[i]) {
 	  if (a->out == x->out) {
@@ -2087,7 +2071,7 @@ analyze_type_confluence(AVar *av) {
   } 
   for (int i = 0; i < ss.n; i++)
     ss.v[i] = setters_cannonicalize(ss.v[i]);
-  return analyze_setters(ss);
+  return analyze_setters(ss, container_map);
 }
 
 static int

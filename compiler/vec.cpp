@@ -467,4 +467,5 @@ template class Vec<MapElem<unsigned int, List<SSet *> > >;
 template class Vec<Setters *>;
 template class Vec<MapElem<unsigned int, List<Setters *> > >;
 template class Vec<MapElem<char *, AVar *> >;
+template class Vec<MapElem<AVar *, AVar *> >;
 

@@ -106,6 +106,21 @@
 - check rank for multi-dimensional array accesses... generally support these
     better
 - handle large array constants precisely
+- change sset to not partition them at the point where the
+  ssets are updated, but to instead check for the partitons
+  merging during confluence testing.   This will deal with
+  the problem of recursion and termination.
+- how to handle 
+value complex1(T) {
+      with T : float;
+      var real : T;
+      var imag : T;
+      complex1(r : T, i : T) : real(r), imag(i) {}
+}
+and make T the same for i & r... need to add constraints so
+that they are the same and implement a special merge for
+numeric types which uses coerce_num
+
 
 ** Cloning
 
