@@ -1176,9 +1176,9 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
       if (p->sym->must_specialize->specializers.in(cs->sym)) {
 	for (int i = 0; i < p->sym->has.n; i++) {
 	  AVar *av = NULL;
-	  if (p->sym->has.v[i]->alt_name)
+	  if (cs->sym != sym_tuple && p->sym->has.v[i]->alt_name)
 	    av = cs->var_map.get(p->sym->has.v[i]->alt_name);
-	  else if (i < cs->vars.n)
+	  else if (cs->sym == sym_tuple && i < cs->vars.n)
 	    av = cs->vars.v[i];
 	  if (!av) {
 	    violation = make_AVar(p->sym->has.v[i]->var, es);

@@ -1,6 +1,4 @@
-class A { a: 1; b: 2;};
-f() : new A;
-(:A x, y) : f();
+(x, y) : (1, 2.0);
 print(x + y);
 
 

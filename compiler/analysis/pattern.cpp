@@ -13,9 +13,6 @@
 // handle context sensitive lookups, like localized pattern matching
 //   - handle them with a unique symbol in a hidden first position to uniquify them
 //   - the pnode will have multiple return values
-// handle generalized partial type pattern matching
-//   - build nested structures like with sym->is_pattern
-//   - match an initial sym for the partial pattern (to differentiate from tuple and each other)
 // figure out what myclass does in Sather and Clu
 // optimize case of filters with no restrictions (sym_any) to prevent
 //   recomputation of dispatch functions
