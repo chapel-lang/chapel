@@ -1883,3 +1883,13 @@ Log message:
 Modified files:
 	chapel/compiler/: driver.cpp mysystem.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/04 19:25:23 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed bug with trailing context (use to handle 1..n)
+
+Modified files:
+	chapel/third-party/dparser/d/: lex.c parse.c 
+
