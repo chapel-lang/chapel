@@ -311,7 +311,7 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
   VarSymbol* aVar = var;
 
 /* if in module scope, hoist to internal header */  
-  if (aVar->scope->type == SCOPE_MODULE) { 
+  if (aVar->parentScope->type == SCOPE_MODULE) { 
     outfile = intheadfile;
   }
 
@@ -364,7 +364,7 @@ void TypeDefStmt::codegen(FILE* outfile) {
   FILE* deffile = outfile;
   /* if in file scope, hoist to internal header so that it will be
      defined before global variables at file scope. */  
-  if (type->name->scope->type == SCOPE_MODULE) { 
+  if (type->name->parentScope->type == SCOPE_MODULE) { 
     deffile = intheadfile;
   }
   type->codegenDef(deffile);
@@ -409,11 +409,19 @@ bool FnDefStmt::canLiveAtFileScope(void) {
 
 
 void FnDefStmt::traverseStmt(Traversal* traversal) {
-  // BLC: could move this into a traverseDef method?
+  SymScope* prevScope;
+
+  // BLC: could move all this into a traverseDef method?
   TRAVERSE(fn, traversal, false);
+  if (fn->paramScope) {
+    prevScope = Symboltable::setCurrentScope(fn->paramScope);
+  }
   TRAVERSE_LS(fn->formals, traversal, false);
   TRAVERSE(fn->type, traversal, false);
   TRAVERSE(fn->body, traversal, false);
+  if (fn->paramScope) {
+    Symboltable::setCurrentScope(prevScope);
+  }
 }
 
 
@@ -540,7 +548,8 @@ void ReturnStmt::codegen(FILE* outfile) {
 
 BlockStmt::BlockStmt(Stmt* init_body) :
   Stmt(STMT_BLOCK),
-  body(init_body)
+  body(init_body),
+  blkScope(NULL)
 {}
 
 
@@ -553,13 +562,25 @@ void BlockStmt::addBody(Stmt* init_body) {
 }
 
 
+void BlockStmt::setBlkScope(SymScope* init_blkScope) {
+  blkScope = init_blkScope;
+}
+
+
 Stmt* BlockStmt::copy(void) {
   return new BlockStmt(body->copyList());
 }
 
 
 void BlockStmt::traverseStmt(Traversal* traversal) {
+  SymScope* prevScope;
+  if (blkScope) {
+    prevScope = Symboltable::setCurrentScope(blkScope);
+  }
   TRAVERSE_LS(body, traversal, false);
+  if (blkScope) {
+    Symboltable::setCurrentScope(prevScope);
+  }
 }
 
 
@@ -653,9 +674,15 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
   : BlockStmt(body),
     forall(init_forall),
     index(init_index),
-    domain(init_domain) 
+    domain(init_domain),
+    indexScope(NULL)
 {
   astType = STMT_FORLOOP;
+}
+
+
+void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
+  indexScope = init_indexScope;
 }
 
 
@@ -671,9 +698,17 @@ bool ForLoopStmt::topLevelExpr(Expr* testExpr) {
 
 
 void ForLoopStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(index, traversal, false);
+  SymScope* prevScope;
+
   TRAVERSE(domain, traversal, false);
+  if (indexScope) {
+    prevScope = Symboltable::setCurrentScope(indexScope);
+  }
+  TRAVERSE(index, traversal, false);
   TRAVERSE(body, traversal, false);
+  if (indexScope) {
+    Symboltable::setCurrentScope(prevScope);
+  }
 }
 
 

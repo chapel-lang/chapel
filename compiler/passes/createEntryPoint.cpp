@@ -51,7 +51,18 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
     } else {
       fail("code defines multiple modules but no main function");
     }
+  } else {
+    // tack call to main fn module's init call onto main fn's body
+    ModuleSymbol* mainModule = 
+      dynamic_cast<ModuleSymbol*>(mainFn->parentScope->symContext);
+    if (!mainModule) {
+      INT_FATAL(mainFn, "main function's parent scope wasn't a module scope");
+    }
+    ExprStmt* initStmt = ExprStmt::createFnCallStmt(mainModule->initFn);
+    initStmt->append(mainFn->body);
+    mainFn->body = new BlockStmt(initStmt);
   }
+    
 
   // add a call to main to the entry point's body
   ExprStmt* mainCallStmt = ExprStmt::createFnCallStmt(mainFn);

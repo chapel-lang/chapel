@@ -590,13 +590,13 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 ClassType::ClassType(bool isValueClass,
 		     ClassType* init_parentClass, Stmt* init_definition,
-		     FnDefStmt* init_constructor, SymScope* init_scope) :
+		     FnDefStmt* init_constructor, SymScope* init_classScope) :
   Type(TYPE_CLASS, nilExpr),
   value(isValueClass),
   parentClass(init_parentClass),
   definition(init_definition),
   constructor(init_constructor),
-  scope(init_scope)
+  classScope(init_classScope)
 {}
 
 
@@ -640,15 +640,22 @@ void ClassType::addDefinition(Stmt* init_definition) {
 }
 
 
-void ClassType::addScope(SymScope* init_scope) {
-  scope = init_scope;
+void ClassType::setClassScope(SymScope* init_classScope) {
+  classScope = init_classScope;
 }
 
 
 void ClassType::traverseDefType(Traversal* traversal) {
+  SymScope* prevScope;
+  if (classScope) {
+    prevScope = Symboltable::setCurrentScope(classScope);
+  }
   TRAVERSE_LS(definition, traversal, false);
   TRAVERSE_LS(constructor, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
+  if (classScope) {
+    Symboltable::setCurrentScope(prevScope);
+  }
 }
 
 

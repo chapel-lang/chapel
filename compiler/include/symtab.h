@@ -30,14 +30,14 @@ class Symboltable {
       lookupFromScope checks the passed scope and then moves up the scopes
   **/
   static Symbol* lookupInScope(char* name, SymScope* scope);
-  static Symbol* lookupFromScope(char* name, SymScope* scope);
-
+  static Symbol* lookupFromScope(char* name, SymScope* scope, 
+				 bool genError = false);
 
   static Symbol* lookupInCurrentScope(char* name);
+  static Symbol* lookup(char* name, bool genError = false);
+
   static Symbol* lookupInternal(char* name, bool publicSym = false);
   static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
-  static Symbol* lookup(char* name, bool genError = false, 
-			bool inLexer = false);
 
   static BlockStmt* startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, Stmt* body);

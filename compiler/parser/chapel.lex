@@ -110,9 +110,9 @@ with            return TWITH;
                   if (yytext[0] == '?') {
                     return QUERY_IDENT;
                   }
-                  Symbol* sym = Symboltable::lookup(yytext, false, true);
+                  Symbol* sym = Symboltable::lookup(yytext, false);
 
-		  if (typeid(*sym) == typeid(TypeSymbol)) {
+		  if (sym && typeid(*sym) == typeid(TypeSymbol)) {
 		    yylval.ptsym = (TypeSymbol*)sym;
 		    return TYPE_IDENT;
 		  } else {
@@ -164,7 +164,7 @@ with            return TWITH;
                     if (c == EOF) {
                       yyerror("EOF in comment");
                     } else {
-                      yylineno++;
+		      yylineno++;
 		      break;
                     }
                   }
@@ -175,6 +175,9 @@ with            return TWITH;
           
                   while (1) {
                     while ((c = yyinput()) != '*' && c != EOF ) {
+		      if (c == '\n') {
+			yylineno++;
+		      }
                     }    /* eat up text of comment */
           
                     if ( c == '*' ) {
@@ -182,10 +185,10 @@ with            return TWITH;
                       }
                       if ( c == '/' ) {
                         break;    /* found the end */
-                      }
-                    }
-          
-                    if ( c == EOF ) {
+                      } else if (c == '\n') {
+			yylineno++;
+		      }
+                    } else {      // c == EOF
                       yyerror( "EOF in comment" );
                       break;
                     }

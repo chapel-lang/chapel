@@ -175,15 +175,15 @@ class ClassType : public Type {
   ClassType* parentClass;
   Stmt* definition;
   FnDefStmt* constructor;
-  SymScope* scope;
+  SymScope* classScope;
   
   ClassType(bool isValueClass,
             ClassType* init_parentClass = nilClassType, 
 	    Stmt* init_definition = nilStmt, 
 	    FnDefStmt* init_constructor = nilFnDefStmt,
-	    SymScope* init_scope = NULL);
+	    SymScope* init_classScope = NULL);
   void addDefinition(Stmt* init_definition);
-  void addScope(SymScope* init_scope);
+  void setClassScope(SymScope* init_classScope);
   virtual Type* copy(void);
 
   void traverseDefType(Traversal* traversal);

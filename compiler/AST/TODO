@@ -60,3 +60,9 @@
 
 * should module's init functions go in their scope?  Currently they
   aren't.
+
+* are all setCurrentScopes currently necessary?
+
+* can any of the lookupFrom... or lookupIn... calls be replaced by
+  lookup or lookupInCurrentScope?
+

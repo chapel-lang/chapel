@@ -1,7 +1,9 @@
+#include <string.h>
+#include <typeinfo>
 #include "fixup.h"
 #include "expr.h"
 #include "stmt.h"
-#include <string.h>
+#include "symtab.h"
 
 
 Fixup::Fixup(void) {
@@ -67,11 +69,42 @@ void Fixup::preProcessExpr(Expr* &expr) {
 }
 
 
+void Fixup::preProcessSymbol(Symbol* &sym) {
+  int verify = !strcmp(args, "verify");
+  if (verify) {
+    if (typeid(*sym) == typeid(UnresolvedSymbol)) {
+      return;
+    }
+
+    SymScope* parentScope = sym->parentScope;
+    if (parentScope) {
+      Symbol* match = Symboltable::lookupInScope(sym->name, parentScope);
+      if (match != sym) {
+	bool error = true;
+	FnSymbol* fnMatch = dynamic_cast<FnSymbol*>(match);
+	if (fnMatch) {
+	  while (fnMatch) {
+	    if (fnMatch == sym) {
+	      error = false;
+	    }
+	    fnMatch = fnMatch->overload;
+	  }
+	}
+	if (error) {
+	  INT_FATAL(sym, "Symbol '%s' and Scope don't refer to each other",
+		    sym->name);
+	}
+      }
+    }
+  }
+}
+
+
 void Fixup::run(ModuleSymbol* moduleList) {
   ModuleSymbol* mod = moduleList;
   while (mod) {
     stmtParent.add(mod);
-    TRAVERSE_LS(mod->stmts, this, true);
+    mod->startTraversal(this);
     if (mod != stmtParent.pop()) {
       INT_FATAL(mod, "Major error in Fixup traversal");
     }

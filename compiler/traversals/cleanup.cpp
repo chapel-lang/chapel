@@ -22,7 +22,7 @@ void ApplyWith::preProcessStmt(Stmt* &stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(symType->type)) {
-	Stmt* with_replacement = with->getClass()->definition->copyList(ctype->scope);
+	Stmt* with_replacement = with->getClass()->definition->copyList(ctype->classScope);
 	Stmt::replace(stmt, with_replacement);
 	return;
       }
@@ -54,7 +54,7 @@ void InsertThis::preProcessStmt(Stmt* &stmt) {
 	Stmt* next = nextLink(Stmt, stmt);
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
 	  Symbol* this_insert = new ParamSymbol(PARAM_INOUT, "this", ctype);
-	  this_insert->scope = method->fn->paramScope;
+	  this_insert->parentScope = method->fn->paramScope;
 	  Symboltable::defineInScope(this_insert, method->fn->paramScope);
 	  this_insert = appendLink(this_insert, method->fn->formals);
 	  method->fn->formals = this_insert;
@@ -96,7 +96,11 @@ void ResolveEasy::preProcessExpr(Expr* &expr) {
 void ResolveEasy::postProcessExpr(Expr* &expr) {
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
-      Symbol* member = Symboltable::lookupInScope(member_access->member->name, class_type->scope);
+      Symbol* member = Symboltable::lookupInScope(member_access->member->name, class_type->classScope);
+      if (member == NULL) {
+	INT_FATAL(expr, "member lookup of '%s' failed",
+		  member_access->member->name);
+      }
       member_access->member = member;
 
 //       printf("changing: ");
@@ -114,8 +118,8 @@ void ResolveEasy::postProcessExpr(Expr* &expr) {
 
 void ResolveEasy::preProcessSymbol(Symbol* &sym) {
   if (dynamic_cast<UnresolvedSymbol*>(sym)) {
-    Symbol* new_sym = Symboltable::lookupFromScope(sym->name, sym->scope);
-    if (!dynamic_cast<UnresolvedSymbol*>(new_sym)) {
+    Symbol* new_sym = Symboltable::lookup(sym->name);
+    if (new_sym) {
       sym = new_sym;
 
 //       printf("changing: ");
@@ -126,6 +130,8 @@ void ResolveEasy::preProcessSymbol(Symbol* &sym) {
 
     }
     else {
+      //      fprintf(stderr, "failed to lookup %s\n", sym->name);
+      //      Symboltable::print(stderr);
 
 //       printf("hi ");
 //       new_sym->codegen(stdout);
@@ -219,10 +225,14 @@ void ApplyThis::postProcessStmt(Stmt* &stmt) {
 void ApplyThis::preProcessExpr(Expr* &expr) {
   if (CurrentClass) {
     if (Variable* member = dynamic_cast<Variable*>(expr)) {
+      // BLC: Steve, shouldn't this be a pointer compare rather than
+      // a string compare?  Could the user declare their own this which
+      // shadows the built-in variable?
       if (!strcmp(member->var->name, "this")) {
 	return;
       }
-      if (Symboltable::lookupInScope(member->var->name, CurrentClass->scope)) {
+      if (Symboltable::lookupInScope(member->var->name, 
+				     CurrentClass->classScope)) {
 
 	/* replacement of expr variable by memberaccess */
 	if (FnSymbol* parentFn = dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
@@ -249,12 +259,12 @@ void Cleanup::run(ModuleSymbol* moduleList) {
   ApplyThis* apply_this = new ApplyThis();
   ModuleSymbol* mod = moduleList;
   while (mod) {
-    // TRAVERSE_LS(mod->stmts, this, true);
-    TRAVERSE_LS(mod->stmts, apply_with, true);
-    TRAVERSE_LS(mod->stmts, insert_this, true);
-    TRAVERSE_LS(mod->stmts, resolve_easy, true);
-    TRAVERSE_LS(mod->stmts, specialize_parens, true);
-    TRAVERSE_LS(mod->stmts, apply_this, true);
+    mod->startTraversal(apply_with);
+    mod->startTraversal(insert_this);
+    mod->startTraversal(resolve_easy);
+    mod->startTraversal(specialize_parens);
+    mod->startTraversal(apply_this);
+
     mod = nextLink(ModuleSymbol, mod);
   }
 }

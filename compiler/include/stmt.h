@@ -179,8 +179,11 @@ class BlockStmt : public Stmt {
  public:
   Stmt* body;
 
+  SymScope* blkScope;
+
   BlockStmt::BlockStmt(Stmt* init_body = nilStmt);
-  void addBody(Stmt* body);
+  void addBody(Stmt* init_body);
+  void setBlkScope(SymScope* init_blkScope);
   virtual Stmt* copy(void);
 
   void traverseStmt(Traversal* traversal);
@@ -215,8 +218,11 @@ class ForLoopStmt : public BlockStmt {
   VarSymbol* index;
   Expr* domain;
 
+  SymScope* indexScope;
+
   ForLoopStmt(bool init_forall, VarSymbol* init_index, Expr* init_domain,
 	      Stmt* body = nilStmt);
+  void setIndexScope(SymScope* init_indexScope);
   virtual Stmt* copy(void);
 
   bool topLevelExpr(Expr* testExpr);

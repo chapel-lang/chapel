@@ -61,8 +61,7 @@ SymScope::SymScope(scopeType init_type, int init_level) :
   child(NULL),
   sibling(NULL),
   firstSym(NULL),
-  lastSym(NULL),
-  useBeforeDefSyms(NULL)
+  lastSym(NULL)
 {}
 
 
@@ -78,8 +77,23 @@ bool SymScope::isEmpty(void) {
 }
 
 
+bool SymScope::isInternal(void) {
+  SymScope* scope = this;
+
+  while (scope != NULL) {
+    if (scope->type == SCOPE_INTERNAL_PRELUDE || 
+	scope->type == SCOPE_PRELUDE) {
+      return true;
+    }
+    scope = scope->parent;
+  }
+  return false;
+}
+
+
 void SymScope::insert(Symbol* sym) {
   table.put(sym->name, sym);
+  sym->setParentScope(this);
 
   SymLink* newLink = new SymLink(sym);
 
@@ -101,52 +115,6 @@ SymScope* SymScope::findEnclosingScopeType(scopeType t) {
       INT_FATAL("can't find scope");
     }
     return parent->findEnclosingScopeType(t);
-  }
-}
-
-
-void SymScope::addUndefined(UnresolvedSymbol* sym) {
-  SymLink* newLink = new SymLink(sym);
-  useBeforeDefSyms = appendLink(useBeforeDefSyms, newLink);
-}
-
-void SymScope::addUndefinedToFile(UnresolvedSymbol* sym) {
-  SymScope* scope = Symboltable::getCurrentScope();
-
-  switch (parsePhase) {
-  case PARSING_INTERNAL_PRELUDE:
-    scope = findEnclosingScopeType(SCOPE_INTERNAL_PRELUDE);
-    break;
-  case PARSING_PRELUDE:
-    INT_FATAL(sym, "undefined symbol in prelude: %s", sym->name);
-    break;
-  default:
-    scope = findEnclosingScopeType(SCOPE_MODULE);
-  }
-  
-  scope->addUndefined(sym);
-}
-
-
-void SymScope::handleUndefined(void) {
-  SymLink* undefined = useBeforeDefSyms;
-
-  if (undefined) {
-    fprintf(stdout, "Undefined symbols in file %s:\n", yyfilename);
-    fprintf(stdout, "--------------------------------------------------\n");
-    while (undefined != NULL) {
-      char* name = undefined->pSym->name;
-      Symbol* sym = Symboltable::lookup(name, false, true);
-
-      if (typeid(*sym) == typeid(UnresolvedSymbol)) {
-	fprintf(stdout, "%s:%d ", undefined->filename, undefined->lineno);
-	undefined->print(stdout);
-	fprintf(stdout, "\n");
-      }
-
-      undefined = nextLink(SymLink, undefined);
-    }
-    exit(1);
   }
 }
 
@@ -178,11 +146,14 @@ static char* indentStr(FILE* outfile, scopeType type, int level) {
 }
 
 
+static bool printEmpty = false;
+
+
 void SymScope::print(FILE* outfile, bool tableOrder) {
   char* indent = indentStr(outfile, type, level);
 
   // don't bother printing empty scopes
-  if (firstSym == NULL) {
+  if (firstSym == NULL && !printEmpty) {
     return;
   }
 
@@ -276,12 +247,10 @@ static SymScope* currentScope = NULL;
 static FnSymbol* currentFn = NULL;
 static ModuleSymbol* firstModule = NULL;
 static ModuleSymbol* currentModule = NULL;
-static Symbol* mainFn = NULL;
 
 
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);
-  mainFn = nilSymbol;
 
   currentScope = rootScope;
 
@@ -350,8 +319,6 @@ void Symboltable::pushScope(scopeType type) {
 
 
 SymScope* Symboltable::popScope(void) {
-  //  currentScope->handleUndefined();
-
   currentLevel--;
   SymScope* topScope = currentScope;
   SymScope* prevScope = currentScope->parent;
@@ -394,13 +361,24 @@ void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
   Symbol* prevDefInScope = Symboltable::lookupInScope(sym->name, scope);
   if (prevDefInScope) {
     // only allow redefinition of functions in a single scope currently
-    if (typeid(*sym) != typeid(FnSymbol) &&
-	typeid(*sym) != typeid(FnSymbol)) {
+    if (typeid(*sym) == typeid(FnSymbol) &&
+	typeid(*prevDefInScope) == typeid(FnSymbol)) {
+      FnSymbol* origFn = dynamic_cast<FnSymbol*>(prevDefInScope);
+      FnSymbol* newFn = dynamic_cast<FnSymbol*>(sym);
+      FnSymbol* lastOverload = origFn;
+      while (lastOverload->overload) {
+	lastOverload = lastOverload->overload;
+      }
+      // this is the equivalent of the .put above
+      lastOverload->overload = newFn;
+      newFn->setParentScope(origFn->parentScope);
+    } else {
       USR_FATAL(sym, "redefinition of symbol %s (previous definition at %s)",
 		sym->name, prevDefInScope->stringLoc());
     }
+  } else {
+    scope->insert(sym);
   }
-  scope->insert(sym);
 }
 
 
@@ -410,11 +388,18 @@ void Symboltable::define(Symbol* sym) {
 
 
 Symbol* Symboltable::lookupInScope(char* name, SymScope* scope) {
+  if (scope == NULL) {
+    INT_FATAL("NULL scope passed to lookupInScope()");
+  }
   return scope->table.get(name);
 }
 
 
-Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope) {
+Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
+				     bool genError) {
+  if (scope == NULL) {
+    INT_FATAL("NULL scope passed to lookupFromScope()");
+  }
   while (scope != NULL) {
     Symbol* sym = lookupInScope(name, scope);
     if (sym != NULL) {
@@ -423,9 +408,16 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope) {
     scope = scope->parent;
   }
 
-  UnresolvedSymbol* undefinedSym = new UnresolvedSymbol(name);
+  if (genError && strcmp(name, "__primitive") != 0) {
+    INT_FATAL("lookupFromScope failed for %s", name);
+  }
 
-  return undefinedSym;
+  return NULL;
+}
+
+
+Symbol* Symboltable::lookup(char* name, bool genError) {
+  return lookupFromScope(name, currentScope, genError);
 }
 
 
@@ -453,43 +445,6 @@ TypeSymbol* Symboltable::lookupInternalType(char* name, bool publicSym) {
 }
 
 
-Symbol* Symboltable::lookup(char* name, bool genError, bool inLexer) {
-  SymScope* scope;
-  
-  scope = currentScope;
-  
-  while (scope != NULL) {
-    Symbol* sym = lookupInScope(name, scope);
-    if (sym != NULL) {
-      return sym;
-    }
-
-    scope = scope->parent;
-  }
-
-  if (genError) {
-    Symboltable::dump(stderr);
-    fail("lookup of %s failed", name);
-  }
-
-  if (!inLexer) {
-    //    Symboltable::print(stdout);
-    /*
-    fprintf(stdout, "%s:%d '%s' used before defined\n", yyfilename, yylineno,
-	    name);
-    */
-  }
-
-  UnresolvedSymbol* undefinedSym = new UnresolvedSymbol(name);
-
-  if (!inLexer) {
-    currentScope->addUndefinedToFile(undefinedSym);
-  }
-
-  return undefinedSym;
-}
-
-
 BlockStmt* Symboltable::startCompoundStmt(void) {
   scopeType type = SCOPE_LOCAL;
   if (currentScope->type == SCOPE_PARAM) {
@@ -506,6 +461,7 @@ BlockStmt* Symboltable::finishCompoundStmt(BlockStmt* blkStmt, Stmt* body) {
 
   SymScope* stmtScope = Symboltable::popScope();
   stmtScope->setContext(blkStmt);
+  blkStmt->setBlkScope(stmtScope);
 
   return blkStmt;
 }
@@ -626,17 +582,18 @@ ModuleDefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
   if (!empty) {
     firstModule = appendLink(firstModule, mod);
 
-    // pop the module's scope
-    if (!mod->internal) {
-      SymScope* modScope = Symboltable::popScope();
-      modScope->setContext(modDefStmt, mod);
-    }
-
     // define the module's init function.  This should arguably go
     // in the module's scope, but that doesn't currently seem to
     // work.
     mod->stmts = definition;
     mod->createInitFn();
+
+    // pop the module's scope
+    if (!mod->internal) {
+      SymScope* modScope = Symboltable::popScope();
+      modScope->setContext(modDefStmt, mod);
+      mod->setModScope(modScope);
+    }
 
     // if this was a software scope within a file scope, we borrowed
     // its (empty) scope in startModuleDef.  Give it a new scope to
@@ -820,6 +777,7 @@ ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr,
 
   SymScope* forallScope = Symboltable::popScope();
   forallScope->setContext(nilStmt, nilSymbol, forallExpr);
+  forallExpr->setIndexScope(forallScope);
 
   return forallExpr;
 }
@@ -853,10 +811,9 @@ FnSymbol* Symboltable::startFnDef(char* name, bool insert) {
 FnDefStmt* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
 				    Type* retType, Stmt* body, bool isExtern) {
   SymScope* paramScope = Symboltable::popScope();
-  fnsym->finishDef(formals, retType, body, isExtern);
+  fnsym->finishDef(formals, retType, body, paramScope, isExtern);
   FnDefStmt* fnstmt = new FnDefStmt(fnsym);
   paramScope->setContext(fnstmt, fnsym);
-  fnsym->paramScope = paramScope;
   currentFn = currentFn->parentFn;
 
   return fnstmt;
@@ -890,7 +847,7 @@ TypeDefStmt* Symboltable::finishClassDef(TypeSymbol* classSym,
   SymScope *classScope = Symboltable::popScope();
 
   ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
-  classType->addScope(classScope);
+  classType->setClassScope(classScope);
   classType->addDefinition(definition);
   TypeDefStmt* classdefStmt = new TypeDefStmt(classType);
   
@@ -914,6 +871,7 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
 
   SymScope* forScope = Symboltable::popScope();
   forScope->setContext(forstmt);
+  forstmt->setIndexScope(forScope);
 
   return forstmt;
 }

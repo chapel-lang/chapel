@@ -13,9 +13,14 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   name(init_name),
   cname(name),
   type(init_type),
-  scope(Symboltable::getCurrentScope()),
+  parentScope(NULL),
   asymbol(0)
 {}
+
+
+void Symbol::setParentScope(SymScope* init_parentScope) {
+  parentScope = init_parentScope;
+}
 
 
 Symbol* Symbol::copy(void) {
@@ -103,8 +108,7 @@ UnresolvedSymbol::UnresolvedSymbol(char* init_name) :
 
 
 void UnresolvedSymbol::codegen(FILE* outfile) {
-  //  INT_FATAL(this, "ERROR:  Cannot codegen an unresolved symbol.");
-  Symbol::codegen(outfile);
+  INT_FATAL(this, "ERROR:  Cannot codegen an unresolved symbol.");
 }
 
 
@@ -194,7 +198,8 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
   formals(init_formals),
   _this(0),
   body(init_body),
-  parentFn(init_parentFn)
+  parentFn(init_parentFn),
+  overload(nilFnSymbol)
 {}
 
  
@@ -208,14 +213,17 @@ FnSymbol::FnSymbol(char* init_name, FnSymbol* init_parentFn) :
 
 
 void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
-			 Stmt* init_body, bool init_exportMe) {
+			 Stmt* init_body, SymScope* init_paramScope,
+			 bool init_exportMe) {
   formals = init_formals;
   type = init_retType;
   body = init_body;
   exportMe = init_exportMe;
+  paramScope = init_paramScope;
 
   if (strcmp(name, "main") == 0 && 
-      (scope->type == SCOPE_MODULE || scope->type == SCOPE_POSTPARSE) && 
+      (parentScope->type == SCOPE_MODULE || 
+       parentScope->type == SCOPE_POSTPARSE) && 
       formals->isNull()) {
     if (mainFn->isNull()) {
       mainFn = this;
@@ -298,8 +306,14 @@ ModuleSymbol::ModuleSymbol(char* init_name, bool init_internal) :
   Symbol(SYMBOL_MODULE, init_name),
   internal(init_internal),
   stmts(nilStmt),
-  initFn(nilFnSymbol)
+  initFn(nilFnSymbol),
+  modScope(NULL)
 {}
+
+
+void ModuleSymbol::setModScope(SymScope* init_modScope) {
+  modScope = init_modScope;
+}
 
 
 void ModuleSymbol::codegenDef(void) {
@@ -317,6 +331,19 @@ void ModuleSymbol::codegenDef(void) {
   stmts->codegenList(codefile, "\n");
 
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
+}
+
+
+void ModuleSymbol::startTraversal(Traversal* traversal) {
+  SymScope* prevScope;
+
+  if (modScope) {
+    prevScope = Symboltable::setCurrentScope(modScope);
+  }
+  TRAVERSE_LS(stmts, traversal, true);
+  if (modScope) {
+    Symboltable::setCurrentScope(prevScope);
+  }
 }
 
 
@@ -359,17 +386,6 @@ void ModuleSymbol::createInitFn(void) {
   definition = appendLink(definition, initFunDef);
 
   stmts = definition;
-
-  // if main() is defined in this module, prefix its body with call
-  // to the module's init function
-  FnSymbol* mainFn = FnSymbol::mainFn;
-  if (!mainFn->isNull()) {
-    if (mainFn->scope->symContext == this) {
-      ExprStmt* initStmt = ExprStmt::createFnCallStmt(initFn);
-      initStmt->append(mainFn->body);
-      mainFn->body = new BlockStmt(initStmt);
-    }
-  }
 }
 
 

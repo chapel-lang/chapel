@@ -162,10 +162,10 @@ map_symbols(Vec<BaseAST *> &syms) {
     if (sym) {
       sym->asymbol = new_ASymbol(sym);
       sym->asymbol->xsymbol = sym;
-      if (!sym->scope) {
+      if (!sym->parentScope) {
 	sym->asymbol->global_scope = 1;
       } else {
-	switch (sym->scope->type) {
+	switch (sym->parentScope->type) {
 	  default: assert(0);
 	  case SCOPE_INTRINSIC:
 	  case SCOPE_INTERNAL_PRELUDE:

@@ -495,9 +495,12 @@ class ForallExpr : public Expr {
   Symbol* indices;
   Expr* forallExpr;
 
+  SymScope* indexScope;
+
   ForallExpr(Expr* init_domains, Symbol* init_indices = nilVarSymbol,
 	     Expr* init_forallExpr = nilExpr);
   void setForallExpr(Expr* exp);
+  void setIndexScope(SymScope* init_indexScope);
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);

@@ -34,10 +34,12 @@ class Symbol : public BaseAST {
   char* name;
   char* cname; /* Name of symbol for generating C code */
   Type* type;
-  SymScope* scope;
+
+  SymScope* parentScope;
   ASymbol *asymbol;
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
+  void setParentScope(SymScope* init_parentScope);
   virtual Symbol* copy(void);
   Symbol* copyList(void);
 
@@ -132,13 +134,14 @@ class FnSymbol : public Symbol {
   SymScope* paramScope;
 
   FnSymbol* parentFn;
+  FnSymbol* overload;
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 	   Stmt* init_body, bool init_exportMe=false, 
 	   FnSymbol* init_parentFn = nilFnSymbol);
   FnSymbol(char* init_name, FnSymbol* init_parentFn = nilFnSymbol);
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
-		 bool init_exportMe=false);
+		 SymScope* init_paramScope, bool init_exportMe=false);
   virtual Symbol* copy(void);
 
   bool isNull(void);
@@ -169,7 +172,12 @@ class ModuleSymbol : public Symbol {
   Stmt* stmts;
   FnSymbol* initFn;
 
+  SymScope* modScope;
+
   ModuleSymbol(char* init_name, bool init_internal);
+  void setModScope(SymScope* init_modScope);
+
+  void startTraversal(Traversal* traversal);
 
   void codegenDef(void);
   void createInitFn(void);

@@ -1130,15 +1130,28 @@ void ForallExpr::setForallExpr(Expr* exp) {
 }
 
 
+void ForallExpr::setIndexScope(SymScope* init_indexScope) {
+  indexScope = init_indexScope;
+}
+
+
 Expr* ForallExpr::copy(void) {
   return new ForallExpr(domains->copy(), indices->copy(), forallExpr->copy());
 }
 
 
 void ForallExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE_LS(indices, traversal, false);
+  SymScope* prevScope;
+
   TRAVERSE_LS(domains, traversal, false);
+  if (indexScope) {
+    prevScope = Symboltable::setCurrentScope(indexScope);
+  }
+  TRAVERSE_LS(indices, traversal, false);
   TRAVERSE(forallExpr, traversal, false);
+  if (indexScope) {
+    Symboltable::setCurrentScope(prevScope);
+  }
 }
 
 

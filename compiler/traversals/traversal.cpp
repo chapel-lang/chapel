@@ -1,4 +1,5 @@
 #include "stmt.h"
+#include "symtab.h"
 #include "traversal.h"
 
 Traversal::Traversal(bool processThis, bool exploreByDefault) :
@@ -47,7 +48,7 @@ void Traversal::run(ModuleSymbol* moduleList) {
   ModuleSymbol* mod = moduleList;
   while (mod) {
     if (mod->internal == false || processInternalModules == true) {
-      TRAVERSE_LS(mod->stmts, this, true);
+      mod->startTraversal(this);
     }
     
     mod = nextLink(ModuleSymbol, mod);

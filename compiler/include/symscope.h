@@ -37,21 +37,16 @@ class SymScope : public gc {
   SymLink* firstSym;
   SymLink* lastSym;
 
-  SymLink* useBeforeDefSyms;
-
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(scopeType init_type, int init_level = 0);
   void setContext(Stmt* stmt, Symbol* sym = nilSymbol, Expr* expr = nilExpr);
 
   bool isEmpty(void);
+  bool isInternal(void);
 
   void insert(Symbol* sym);
   SymScope* findEnclosingScopeType(scopeType t);
-
-  void addUndefined(UnresolvedSymbol*);
-  void addUndefinedToFile(UnresolvedSymbol*);
-  void handleUndefined(void);
 
   void print(FILE* outfile = stdout, bool tableOrder = false);
 };
