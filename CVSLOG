@@ -317,3 +317,21 @@ Log message:
 Modified files:
 	./: BUILD_VERSION CVSLOG 
 
+---------------------------------------------------------------------------
+
+04/02/03 16:39:17 -- bradc
+
+Log message:
+	Updated the compiler's version machinery from
+	Makefile + -D-based technology to a header file
+	(version.h) that includes the automatically
+	updated BUILD_VERSION file in the parent
+	directory.
+
+Modified files:
+	chapel/compiler/: Makefile version.cpp 
+Added files:
+	chapel/compiler/: version.h 
+Removed files:
+	chapel/compiler/: BUILD_VERSION 
+
