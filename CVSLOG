@@ -19520,3 +19520,28 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+03/14/05 17:33:04 -- bradc
+
+Log message:
+	Changed configuration of third-party/boehmgc build
+	so that valgrind support is enabled only if
+	valgrind is available (determined by checking the
+	user's path for valgrind and assuming that the
+	include directory is ../include from there).  The
+	hope is that this will allow the compiler to be
+	built once again on platforms that don't support
+	valgrind (like cygwin and sun).
+	
+	John, if this doesn't work on your setup, please
+	let me know how it fails (and maybe send the full
+	result of a "make clean all" from the third-party
+	directory?).  I suspect that the old version
+	didn't work either due to the hard-coding of the
+	Cray valgrind path into the include path?
+
+Modified files:
+	chapel/third-party/boehmgc/gc6.3/: configure 
+	chapel/third-party/boehmgc/gc6.3/include/private/: gc_priv.h 
+
