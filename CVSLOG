@@ -3222,3 +3222,17 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+06/11/04 13:56:41 -- shannon
+
+Log message:
+	Implemented further testing of binary operator
+	code generation with the addition of two tests.
+	These files test the mod and logical not
+	operators.
+
+Added files:
+	chapel/test/trivial/shannon/: logical_not.chpl logical_not.good 
+	                              mod.chpl mod.good 
+
