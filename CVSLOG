@@ -3814,3 +3814,19 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp graph.cpp 
 
+---------------------------------------------------------------------------
+
+07/08/04 16:44:44 -- shannon
+
+Log message:
+	Added code generation using the new AST.  The double
+	operators, like assignment expressions or shift operators,
+	do not yet work.  Currently if type is not given explicitly
+	for a variable it is assumed to be an integer.  Other
+	types are generated using a string comparison.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp expr.h link.cpp link.h stmt.cpp 
+	                      stmt.h symbol.cpp symbol.h symtab.cpp 
+	                      type.cpp type.h 
+
