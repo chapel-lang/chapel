@@ -16857,3 +16857,25 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/05 15:46:10 -- jplevyak
+
+Log message:
+	1) #ifdef'd out the code in ResolveEasy::preProcessExprs
+	  at Steve's suggestion, I don't think this is necessary any more
+	2) changed MemberAccess::codegen to just use member->name as the
+	   struct field since MemberAccess::member is not being updated
+	   and doesn't have an analogous bit of data in the low level intermediate form,
+	   so it isn't clear how it might be updated (at least to me).
+	3) in resolve_symbols() handle the special case where the
+	   Stmt::parentSymbol points to a module instead of a function
+	   ... this is kind of lame, perhaps we should have a member
+	   parentFunction() which returns the parent function even for
+	   modules.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/traversals/: cleanup.cpp 
+
