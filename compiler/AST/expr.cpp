@@ -19,6 +19,7 @@ static char* cBinOp[] = {
   "^",
   "&&",
   "||",
+  "**",
   "???"
 };
 
@@ -192,3 +193,9 @@ void DomainExpr::print(FILE* outfile) {
     forallExpr->print(outfile);
   }
 }
+
+
+CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
+  ParenOpExpr(NULL, init_argList),
+  castType(init_castType)
+{}

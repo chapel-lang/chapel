@@ -39,6 +39,8 @@ integer         return INTEGER;
 float           return FLOAT;
 
 domain          return DOMAIN;
+index           return INDEX;
+
 locale          return LOCALE;
 timer           return TIMER;
 
@@ -54,22 +56,44 @@ elsif           return ELSIF;
 for             return FOR;
 forall          return FORALL;
 in              return IN;
+
+while           return WHILE;
+do              return DO;
+repeat          return REPEAT;
+until           return UNTIL;
+
 by              return BY;
 return          return RETURN;
 
 sum             return SUM;
 dim             return DIM;
+reduce          return REDUCE;
+
+"="             return GETS;
+"+="            return PLUSGETS;
+"-="            return MINUSGETS;
+"*="            return TIMESGETS;
+"/="            return DIVGETS;
+"<<="           return LSHGETS;
+">>="           return RSHGETS;
 
 ".."            return ELLIPSIS;
+
 "=="            return EQUALS;
 "!="            return NEQUALS;
 "<="            return LEQUALS;
 ">="            return GEQUALS;
+">"             return GTHAN;
+"<"             return LTHAN;
+
 "&&"            return LOGAND;
 "||"            return LOGOR;
+
 "&"             return BITAND;
 "|"             return BITOR;
 "^"             return BITXOR;
+
+"**"            return EXP;
 
 
 {ident}         {

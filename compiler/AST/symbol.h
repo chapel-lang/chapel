@@ -12,6 +12,8 @@ class Symbol : public Link {
   Symbol(char* init_name, Type* init_type);
   Symbol(char* init_name);
 
+  void setType(Type* newType);
+
   void print(FILE*);
   void printWithType(FILE*);
   void printList(FILE*) {}

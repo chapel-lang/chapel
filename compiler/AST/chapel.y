@@ -24,6 +24,7 @@
   Stmt* stmt;
   Type* pdt;
   char* pch;
+  Symbol* psym;
 }
 
 
@@ -34,6 +35,7 @@
 %token LOCALE TIMER
 
 %token DOMAIN
+%token INDEX
 
 %token ENUM TYPE
 %token FUNCTION
@@ -44,29 +46,33 @@
 
 %token IF ELSE ELSIF
 %token FOR FORALL IN
+%token WHILE REPEAT UNTIL DO
 %token RETURN
 
 %token BY
 %token ELLIPSIS
 
-%token EQUALS
+%token GETS PLUSGETS MINUSGETS TIMESGETS DIVGETS LSHGETS RSHGETS
 
-%token SUM DIM
+%token SUM DIM REDUCE
 
 %token EQUALS NEQUALS LEQUALS GEQUALS NEQUALS GTHAN LTHAN
 %token LOGOR LOGAND
 %token BITOR BITAND BITXOR
+%token EXP
 
 
 %type <intval> intliteral
 %type <bot> binop otherbinop
-%type <pdt> type domainType arrayType weirdType
-%type <pch> identifier
+%type <pdt> type types domainType indexType arrayType tupleType weirdType
+%type <pdt> vardecltype
+%type <pch> identifier 
+%type <psym> idlist
 %type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
-%type <pexpr> reduction memberaccess
+%type <pexpr> reduction memberaccess vardeclinit cast
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional 
-%type <stmt> return loop
+%type <stmt> return loop forloop whileloop
 
 
 /* These are declared in increasing order of precedence. */
@@ -87,7 +93,7 @@ program:
 ;
 
 
-vardecltype:
+vardecltag:
   /* nothing */
 | CONFIG
 | STATIC
@@ -100,11 +106,39 @@ varconst:
 ;
 
 
+idlist:
+  identifier
+    { $$ = new Symbol($1); }
+| idlist ',' identifier
+    {
+      $1->append(new Symbol($3));
+      $$ = $1;
+    }
+;
+
+
+vardecltype:
+  /* nothing */
+    { $$ = NULL; }
+| ':' type
+    { $$ = $2; }
+;
+
+
+vardeclinit:
+  /* nothing */
+    { $$ = new NullExpr(); }
+| GETS expr
+    { $$ = $2; }
+;
+
+
 vardecl:
-  vardecltype varconst identifier ':' type ';'
-    { $$ = new VarDefStmt(new Symbol($3, $5), NULL); }
-| vardecltype varconst identifier ':' type '=' expr ';'
-    { $$ = new VarDefStmt(new Symbol($3, $5), $7); }
+  vardecltag varconst idlist vardecltype vardeclinit ';'
+    {
+      $3->setType($4);
+      $$ = new VarDefStmt($3, $5);
+    }
 ;
 
 
@@ -114,12 +148,12 @@ typedecl:
 ;
 
 typealias:
-  TYPE identifier '=' type ';'
+  TYPE identifier GETS type ';'
     { Symboltable::define(new Symbol($2)); }
 ;
 
 enumdecl:
-  ENUM identifier '=' enumList ';'
+  ENUM identifier GETS enumList ';'
     { Symboltable::define(new Symbol($2)); }
 ;
 
@@ -160,6 +194,22 @@ decl:
 ;
 
 
+types:
+  type
+| types ',' type
+    { 
+      $1->append($3);
+      $$ = $1;
+    }
+;
+
+
+tupleType:
+  '(' types ')'
+    { $$ = $2; }
+;
+
+
 type:
   BOOLEAN
     { $$ = dtBoolean; }
@@ -167,10 +217,12 @@ type:
     { $$ = dtInteger; }
 | FLOAT
     { $$ = dtFloat; }
-|  domainType
-|  arrayType
-|  weirdType
-|  DEFINED_IDENT
+| domainType
+| indexType
+| arrayType
+| tupleType
+| weirdType
+| DEFINED_IDENT
     { $$ = NULL; }
 ;
 
@@ -189,6 +241,16 @@ domainType:
 | DOMAIN '(' intliteral ')'
     { $$ = new DomainType($3); }
 | DOMAIN '(' identifier ')'
+    { $$ = new DomainType(777); }
+;
+
+
+indexType:
+  INDEX
+    { $$ = new DomainType(); }
+| INDEX '(' intliteral ')'
+    { $$ = new DomainType($3); }
+| INDEX '(' identifier ')'
     { $$ = new DomainType(777); }
 ;
 
@@ -243,10 +305,27 @@ fortype:
 ;
 
 
-loop:
+forloop:
   fortype expr IN expr statement
     { $$ = new ForLoopStmt(true, $2, $4, $5); }
 ;
+
+
+whileloop:
+  WHILE expr statement
+    { $$ = new NullStmt(); }
+| DO statement WHILE expr ';'
+    { $$ = new NullStmt(); }
+| REPEAT statement UNTIL expr ';'
+    { $$ = new NullStmt(); }
+;
+
+
+loop:
+  forloop
+| whileloop
+;
+
 
 conditional:
   IF expr statement
@@ -283,8 +362,19 @@ withElse:
 */
 
 
+assignOp:
+  GETS
+| PLUSGETS
+| MINUSGETS
+| TIMESGETS
+| DIVGETS
+| LSHGETS
+| RSHGETS
+;
+
+
 assignment:
-  expr '=' expr ';'
+  expr assignOp expr ';'
     { $$ = new ExprStmt(new AssignOp($1, $3)); }
 ;
 
@@ -314,9 +404,10 @@ expr:
     { $$ = new UnOp($2); }
 | reduction
 | arrayref
+| cast
 | memberaccess
 | range
-| '(' expr ')' 
+| '(' nonemptyExprlist ')' 
     { $$ = $2; }
 | '[' domainExpr ']'
     { $$ = $2; }
@@ -329,14 +420,22 @@ expr:
 
 
 memberaccess:
-  expr '.' identifier '(' ')'
+  expr '.' expr
     { $$ = $1; }
 ;
 
 
+reduceDim:
+  /* empty */
+| '(' DIM GETS intliteral ')'
+;
+
+
 reduction:
-  SUM '(' DIM '=' intliteral ')' expr
-    { $$ = $7; }
+  SUM reduceDim expr
+    { $$ = $3; }
+| REDUCE reduceDim BY identifier expr
+    { $$ = $5; }
 ;
 
 
@@ -397,6 +496,8 @@ binop:
     { $$ = BINOP_MOD; }
 | EQUALS
     { $$ = BINOP_EQUAL; }
+| GETS
+    { $$ = BINOP_EQUAL; }
 | LEQUALS
     { $$ = BINOP_LEQUAL; }
 | GEQUALS
@@ -417,6 +518,8 @@ binop:
     { $$ = BINOP_LOGAND; }
 | LOGOR
     { $$ = BINOP_LOGOR; }
+| EXP
+    { $$ = BINOP_EXP; }
 ;
 
 
@@ -437,5 +540,10 @@ arrayref:
     { $$ = new ParenOpExpr($1, $3); }
 ;
 
+
+cast:
+  type '(' exprlist ')'
+    { $$ = new CastExpr($1, $3); }
+;
 
 %%

@@ -6,7 +6,7 @@
 class Symbol;
 class Expr;
 
-class Type {
+class Type : public Link {
  public:
   Symbol* name;
 
@@ -15,6 +15,7 @@ class Type {
   void addName(Symbol* newname);
 
   virtual void print(FILE*);
+  void printList(FILE*) {}
 };
 
 

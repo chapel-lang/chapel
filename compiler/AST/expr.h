@@ -100,6 +100,7 @@ enum binOpType {
   BINOP_BITXOR,
   BINOP_LOGAND,
   BINOP_LOGOR,
+  BINOP_EXP,
   BINOP_OTHER
 };
 
@@ -132,17 +133,6 @@ class SimpleSeqExpr : public Expr {
   Expr* str;
 
   SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str = NULL);
-
-  void print(FILE* outfile);
-};
-
-
-class ParenOpExpr : public Expr {
- public:
-  Expr* baseExpr;
-  Expr* argList;
-
-  ParenOpExpr(Expr* init_base, Expr* init_arg = NULL);
 
   void print(FILE* outfile);
 };
@@ -183,11 +173,25 @@ class FunCall : public ParenOpExpr {
 class ArrayRef : public ParenOpExpr {
  public:
 };
+*/
+
+
+class ParenOpExpr : public Expr {
+ public:
+  Expr* baseExpr;
+  Expr* argList;
+
+  ParenOpExpr(Expr* init_base, Expr* init_arg = NULL);
+
+  void print(FILE* outfile);
+};
 
 
 class CastExpr : public ParenOpExpr {
  public:
+  Type* castType;
+
+  CastExpr(Type* init_castType, Expr* init_argList);
 };
-*/
 
 #endif
