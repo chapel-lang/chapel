@@ -12079,3 +12079,34 @@ Removed files:
 	chapel/compiler/AST/: ast_util.cpp 
 	chapel/compiler/include/: ast_util.h 
 
+---------------------------------------------------------------------------
+
+12/17/04 09:54:35 -- deitz
+
+Log message:
+	Moved tests out of classes/deitz/future and into classes/deitz/ since
+	they now work with analysis.
+
+Added files:
+	chapel/test/classes/deitz/: test_method1.chpl test_method1.good 
+	                            test_method1a.chpl 
+	                            test_method1a.good test_method2.chpl 
+	                            test_method2.good test_method3.chpl 
+	                            test_method3.good test_record1.chpl 
+	                            test_record1.good 
+	                            test_record_method1.chpl 
+	                            test_record_method1.good 
+Removed files:
+	chapel/test/classes/deitz/future/: test_method1.chpl 
+	                                   test_method1.good 
+	                                   test_method1a.chpl 
+	                                   test_method1a.good 
+	                                   test_method2.chpl 
+	                                   test_method2.good 
+	                                   test_method3.chpl 
+	                                   test_method3.good 
+	                                   test_record1.chpl 
+	                                   test_record1.good 
+	                                   test_record_method1.chpl 
+	                                   test_record_method1.good 
+
