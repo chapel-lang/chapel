@@ -1527,3 +1527,18 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplio.c 
 
+---------------------------------------------------------------------------
+
+04/03/26 16:36:52 -- bradc
+
+Log message:
+	Fixed a bug in which running the compiler using a relative
+	directory was breaking the "make" of the generated code.
+	In doing so, turned up and fixed a subtle buffer overrun
+	error that I'd missed previously (in the one place that
+	I wasn't using the -- so far -- bulletproof "glomstrings()"
+	function... :)
+
+Modified files:
+	chapel/compiler/: files.cpp 
+
