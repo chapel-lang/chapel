@@ -1,3 +1,4 @@
-bradc
+deitz/bradc?
 
-We need to skip over any incorrect main signatures.
+It seems that parameters with anonymous domains don't work so
+well.
