@@ -21,6 +21,7 @@ TRAVERSALS_SRCS = \
 	processParameters.cpp \
 	methodsToFunctions.cpp \
 	removeDeadSymbols.cpp \
+	removeNamedParameters.cpp \
 	renameOverloadedFunctions.cpp \
 	resolveOverloadedOperators.cpp \
 	resolveSymbols.cpp \

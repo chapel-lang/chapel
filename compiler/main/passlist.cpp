@@ -32,6 +32,7 @@
 #include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/specializeParenOpExprs.h"
 #include "../traversals/removeDeadSymbols.h"
+#include "../traversals/removeNamedParameters.h"
 #include "../traversals/renameOverloadedFunctions.h"
 #include "../traversals/resolveOverloadedOperators.h"
 #include "../traversals/resolveSymbols.h"
@@ -74,6 +75,7 @@ REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(RemoveDeadSymbols);
+REGISTER(RemoveNamedParameters);
 REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen

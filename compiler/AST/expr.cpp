@@ -1810,11 +1810,9 @@ Type* NamedExpr::typeInfo(void) {
 
 void NamedExpr::print(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::print not implemented");
-  actual->print(outfile);
 }
 
 
 void NamedExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::codegen not implemented");
-  actual->codegen(outfile);
 }
