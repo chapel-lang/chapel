@@ -12153,3 +12153,19 @@ Log message:
 Added files:
 	chapel/test/classes/deitz/future/: test_class_with2.good 
 
+---------------------------------------------------------------------------
+
+12/17/04 15:10:16 -- bradc
+
+Log message:
+	Fixed a small problem I introduced in which the filename
+	passed to runAnalysis.cpp had changed from the user's
+	first filename to the first standard prelude due to the
+	inclusion of internal modules in the list passed to a
+	pass.  This is the reason that you've probably seen an
+	internal_prelude.chpl.c file in your parser/ directory
+	lately.  If you delete it now, it should not reappear.
+
+Modified files:
+	chapel/compiler/passes/: runAnalysis.cpp 
+
