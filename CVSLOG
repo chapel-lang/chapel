@@ -4805,3 +4805,17 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/protoast/codegen/: enum.chpl enum.good 
 
+---------------------------------------------------------------------------
+
+07/30/04 11:48:17 -- bradc
+
+Log message:
+	Updated lowlevelcg tests to squelch printing of gcc compile
+	line to make these tests more portable to different platforms
+	(in particular with different directories used for the include
+	paths...)
+
+Modified files:
+	chapel/test/lowlevelcg/jplevyak/: 1.good Makefile.cg 
+	                                  review3.good sample.good 
+
