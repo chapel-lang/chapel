@@ -15314,3 +15314,43 @@ Added files:
 	                                         test_overload_integerfloat3.future 
 	                                         test_overload_integerfloat4.future 
 
+---------------------------------------------------------------------------
+
+01/21/05 16:22:53 -- deitz
+
+Log message:
+	Removed the init expression for a variable from the VarDefStmt and put
+	it in the VarSymbol.  It seems to make more sense here because it has
+	little or nothing to do with the statement and everything to do with
+	VarSymbol.  This is motivated by changing the ClassType which now
+	stores a Stmt definition containing its variables, functions, and
+	types, but which will eventually contain individual vectors of
+	pointers to these symbols.
+	
+	Removed Stmt:: functions canLiveAtFileScope and topLevelExpr since
+	these are not necessary.
+	
+	Added a new future test for bradc on intents since Shannon removed
+	most of his other outstanding ones.  This test is called
+	trivial/deitz/test_var_decl_init1.chpl that makes two function calls
+	in the same statement.  (Their results are added together and
+	returned.)  The bug seems to be coming from ProcessParameters.
+	
+	Added a couple of other tests for initialization on variables.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h symbol.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: cleanup.cpp 
+	                             createConfigVarTable.cpp 
+Added files:
+	chapel/test/trivial/deitz/: test_var_decl_init1.chpl 
+	                            test_var_decl_init1.future 
+	                            test_var_decl_init1.good 
+	                            test_var_decl_init2.chpl 
+	                            test_var_decl_init2.good 
+	                            test_var_decl_init3.chpl 
+	                            test_var_decl_init3.good 
+
