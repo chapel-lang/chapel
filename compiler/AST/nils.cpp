@@ -35,7 +35,6 @@ void initNils(void) {
   nilFnSymbol = new FnSymbol("nilFnSymbol");
   nilFnDefStmt = new FnDefStmt(nilFnSymbol);
   nilClassType = new ClassType(false,false);
-  nilClassType->addDeclarations(nilStmt);
 
   verifyNilsUncorrupted("initialized incorrectly");
   if (saveScope) {

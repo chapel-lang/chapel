@@ -224,7 +224,6 @@ Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCall
 
 
 void VarSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(this, traversal, false);
   TRAVERSE(type, traversal, false);
   TRAVERSE(init, traversal, false);
 }

@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <sys/types.h>
 #include "chplalloc.h"
+#include "misc.h"
 
 // Simple Vector class, also supports open hashed sets
 
@@ -60,6 +61,7 @@ template <class C> class Vec : public gc {
   inline void fill(int n);
   inline void append(const Vec<C> &v);
   void reverse();
+  void insert(C old, C a); // insert a after old
   C* end() { return v + n; }
 
  private:
@@ -455,6 +457,23 @@ Vec<C>::reverse() {
     memcpy(s, e, sizeof(t));
     memcpy(e, &t, sizeof(t));
   }
+}
+
+template <class C> inline void
+Vec<C>::insert(C old, C a) {
+  add(a);
+  int i = n - 1;
+  do {
+    i--;
+    C *s = &v[i], *e = &v[i + 1];
+    C t;
+    memcpy(&t, s, sizeof(t));
+    memcpy(s, e, sizeof(t));
+    memcpy(e, &t, sizeof(t));
+    if (i == 0 && v[i + 1] != old) {
+      INT_FATAL("Error in Vec<C>::insert");
+    }
+  } while (v[i + 1] != old);
 }
 
 template <class C> void 

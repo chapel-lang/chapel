@@ -17,11 +17,27 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     if (UnresolvedSymbol* UnresolvedMember =
 	dynamic_cast<UnresolvedSymbol*>(dot->member)) {
       if (RunAnalysis::runCount > 0) {
+	Type* type;
+	int offset;
+	resolve_member_access(dot, &offset, &type);
+	if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
+	  dot->member = 
+	    Symboltable::lookupInScope(UnresolvedMember->name,
+				       class_type->classScope);
+	    /** Can I use offset here? **
+	    class_type->fields.v[offset]; offset = 0, 8, ...?
+	    Is this the offset in the generated type
+	    I guess I use lookupInScope here?
+	    */
+	}
+
+	    /*  OLD API
 	Symbol* ResolvedMember;
 	if (resolve_symbol(UnresolvedMember, dot, ResolvedMember)) {
 	  INT_FATAL(dot, "Major error resolving MemberAccess in ResolveSymbols");
 	}
 	dot->member = ResolvedMember;
+	    */
       }
       else {
 	if (Variable* var = dynamic_cast<Variable*>(dot->base)) {

@@ -776,7 +776,9 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 }
 
 
-void ClassType::addDeclarations(Stmt* newDeclarations) {
+void ClassType::addDeclarations(Stmt* newDeclarations,
+				Stmt* beforeStmt,
+				VarSymbol* beforeField) {
   Stmt* tmp = newDeclarations;
   while (tmp && !tmp->isNull()) {
     if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
@@ -785,7 +787,12 @@ void ClassType::addDeclarations(Stmt* newDeclarations) {
       methods.add(fn_def_stmt->fn);
     }
     else if (VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
-      fields.add(var_def_stmt->var);
+      if (beforeField) {
+	fields.insert(beforeField, var_def_stmt->var);
+      }
+      else {
+	fields.add(var_def_stmt->var);
+      }
     }
     else if (TypeDefStmt* type_def_stmt = dynamic_cast<TypeDefStmt*>(tmp)) {
       if (TypeSymbol* type_symbol =
@@ -800,12 +807,15 @@ void ClassType::addDeclarations(Stmt* newDeclarations) {
   }
   if (declarationList->isNull()) {
     declarationList = appendLink(declarationList, newDeclarations);
+    SET_BACK(declarationList);
+  }
+  else if (beforeStmt) {
+    beforeStmt->insertBefore(newDeclarations);
   }
   else {
     Stmt* last = dynamic_cast<Stmt*>(declarationList->tail());
     last->insertAfter(newDeclarations);
   }
-  SET_BACK(declarationList);
 }
 
 

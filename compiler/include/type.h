@@ -182,7 +182,9 @@ class ClassType : public Type {
             ClassType* init_parentClass = nilClassType, 
 	    Stmt* init_constructor = nilStmt,
 	    SymScope* init_classScope = NULL);
-  void addDeclarations(Stmt* newDeclarations);
+  void addDeclarations(Stmt* newDeclarations,
+		       Stmt* afterStmt = NULL,
+		       VarSymbol* afterField = NULL);
   void buildConstructor(void);
   void setClassScope(SymScope* init_classScope);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
