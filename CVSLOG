@@ -19865,3 +19865,40 @@ Added files:
 Removed files:
 	chapel/test/functions/deitz/: test_named_param1.future 
 
+---------------------------------------------------------------------------
+
+03/16/05 17:21:47 -- roxana
+
+Log message:
+	Added Support for parameters. They are treated as variable declaration
+	with different degrees of "constness": var, const, parameter. In
+	particular parameter should only be compile time constant. This does
+	not work perfectly now. In particular, parameter should have a
+	mandatory initializer, unlike variables which have an optional one. I
+	put this in a future test so that I can work on it without having CVS
+	insert in >>>> and === in my files.
+
+Modified files:
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/traversals/: checkSemantics.cpp 
+	                             insertFunctionTemps.cpp 
+	                             processParameters.cpp 
+	                             insertUnionChecks.h 
+	chapel/compiler/include/: code.h sym.h vec.h expr.h pnode.h 
+	                          baseAST.h symbol.h symtab.h symscope.h 
+	chapel/compiler/passes/: filesToAST.cpp runAnalysis.cpp 
+	chapel/third-party/dparser/d/: make_dparser.cat 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+Added files:
+	chapel/test/trivial/roxana/: test_param_decl.good 
+	                             test_param_decl1.chpl 
+	                             test_param_decl3.future 
+	                             test_param_init.chpl 
+	                             test_param_decl1.good 
+	                             test_dead_var_decl.future 
+	                             test_param_decl.chpl 
+	                             test_param_decl2.good 
+	                             test_param_decl2.chpl 
+
