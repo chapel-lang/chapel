@@ -241,6 +241,16 @@ void closeMakefile(void) {
 }
 
 
+FILE* openInputFile(char* filename) {
+  return openfile(filename, "r");
+}
+
+
+void closeInputFile(FILE* infile) {
+  closefile(infile);
+}
+
+
 char* createGDBFile(int argc, char* argv[]) {
   char* gdbfilename = genIntFilename("gdb.commands");
   FILE* gdbfile = openfile(gdbfilename);

@@ -90,6 +90,10 @@ void
 fail(char *str, ...) {
   char nstr[256];
   va_list ap;
+
+  fflush(stdout);
+  fflush(stderr);
+
   va_start(ap, str);
   snprintf(nstr, 255, "fail: %s\n", str);
   vfprintf(stderr, nstr, ap);

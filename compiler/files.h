@@ -27,6 +27,9 @@ void closeMakefile(void);
 void openfile(fileinfo* thefile, char* mode);
 void closefile(fileinfo* thefile);
 
+FILE* openInputFile(char* filename);
+void closeInputFile(FILE* infile);
+
 char* createGDBFile(int argc, char* argv[]);
 
 void makeAndCopyBinary(void);

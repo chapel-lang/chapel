@@ -10,6 +10,10 @@ COMPILER_SUBDIR =
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
+#
+# include source subdirectories here
+#
+include AST/Makefile.include
 
 
 GEYSA_CVS_SRCS = \
@@ -24,6 +28,7 @@ GEYSA_CVS_SRCS = \
 	cg_funs.cpp \
 	clone.cpp \
 	codegen.cpp \
+	createAST.cpp \
 	datatype.cpp \
 	dom.cpp \
 	driver.cpp \
@@ -58,7 +63,9 @@ GEYSA_GEN_SRCS = \
 
 CHPL = chpl$(EXE_SUFFIX)
 CHPL_SRCS = $(GEYSA_GEN_SRCS) $(GEYSA_CVS_SRCS)
-CHPL_OBJS = $(CHPL_SRCS:%.cpp=$(PLATFORM)/%.o)
+CHPL_OBJS = \
+	$(CHPL_SRCS:%.cpp=$(PLATFORM)/%.o) \
+	$(AST_OBJS)
 
 
 #
@@ -73,6 +80,7 @@ EXECS = $(CHPL)
 # subdirectories and false subdirectory-oriented targets to force recursion
 #
 SUBDIRS = \
+	AST \
 	cast \
 	make_prims \
 	test

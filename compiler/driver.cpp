@@ -5,6 +5,7 @@
 #define EXTERN
 #include "geysa.h"
 #include "codegen.h"
+#include "createAST.h"
 #include "files.h"
 #include "misc.h"
 #include "mysystem.h"
@@ -21,6 +22,7 @@ extern int d_debug_level;
 static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
+static int newAST = 0;
 
 int fdce_if1 = 1;
 int finline = 0;
@@ -58,6 +60,7 @@ static ArgumentDescription arg_desc[] = {
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
    "CHPL_PARSER_VERBOSE", NULL},
  {"parser_debug", 'D', "Parser Debug Level", "+", &d_debug_level, "CHPL_PARSER_DEBUG", NULL},
+ {"newast", ' ', "Use New AST", "F", &newAST, NULL, NULL},
  {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
@@ -205,6 +208,10 @@ load_one(char *fn) {
 
 static int
 compile_one(char *fn) {
+  if (newAST) {
+    fileToAST(fn);
+    return 0;
+  }
   IF1 *if1 = load_one(fn);
   if (!if1) return -1;
   PDB *pdb = new PDB(if1);

@@ -4,6 +4,8 @@
 #ifndef _driver_H_
 #define _driver_H_
 
+#include <stdio.h>
+
 #define DEFAULT_SYSTEM_DIR	"."
 
 extern int fdce_if1;
