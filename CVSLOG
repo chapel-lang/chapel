@@ -1935,3 +1935,26 @@ Log message:
 Modified files:
 	chapel/compiler/: TODO 
 
+---------------------------------------------------------------------------
+
+04/05/07 11:18:23 -- bradc
+
+Log message:
+	Found that the path to the javascript stuff in the HTML dump
+	was still not working for compiler invocations like:
+	
+	compiler/chpl -t foo.chpl
+	
+	so took a pass at fixing it.  I've tested the following four
+	variations and they all seem to be working:
+	
+	/users/.../chpl -t foo.chpl
+	compiler/chpl -t foo.chpl
+	chpl -t foo.chpl (where chpl is in cwd)
+	./chpl -t foo.chpl
+	
+	Hopefully I haven't broken any other cases.
+
+Modified files:
+	chapel/compiler/: dump.cpp 
+
