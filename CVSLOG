@@ -9054,3 +9054,20 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+10/15/04 17:45:22 -- bradc
+
+Log message:
+	Fixed a seg fault that was occurring when trying
+	to compile multiple files due to things not being
+	initialized in the right order.  Now multiple
+	files make it through the chapel compiler but
+	don't make it through the C compiler because
+	we generate an _init function per file.
+
+Modified files:
+	chapel/compiler/AST/: TODO module.cpp 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+
