@@ -792,8 +792,12 @@ build_types(Vec<BaseAST *> &syms) {
         }
         INT_FATAL(t, "No analysis support for 'like'");
       }
+      case TYPE_SEQ:
+        /* fall through */
       case TYPE_UNION:
-        t->asymbol->sym->is_union_class = 1;
+        if (t->astType != TYPE_SEQ) {
+          t->asymbol->sym->is_union_class = 1;
+        }
         /* fall through */
       case TYPE_CLASS: {
         ClassType *tt = dynamic_cast<ClassType*>(t);

@@ -275,10 +275,8 @@ class UnionType : public ClassType {
 class SeqType : public ClassType {
  public:
   Type* elementType;
-  ClassType* nodeType;
 
-  SeqType::SeqType(Type* init_elementType,
-                   ClassType* init_nodeClassType = NULL);
+  SeqType::SeqType(Type* init_elementType);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);

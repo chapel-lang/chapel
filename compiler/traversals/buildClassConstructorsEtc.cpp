@@ -54,11 +54,7 @@ static void build_constructor(ClassType* class_type) {
   class_type->constructor = new DefStmt(fn_def);
   SET_BACK(class_type->constructor);
   Symboltable::setCurrentScope(saveScope);
-  if (dynamic_cast<SeqType*>(class_type)) {
-    class_type->defaultVal = new FnCall(new Variable(fn), NULL);
-    SET_BACK(class_type->defaultVal);
-  }
-  if (class_type->value) {
+  if (dynamic_cast<SeqType*>(class_type) || class_type->value) {
     class_type->defaultVal = new FnCall(new Variable(class_type->symbol), NULL);
     SET_BACK(class_type->defaultVal);
   }

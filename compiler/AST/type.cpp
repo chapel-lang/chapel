@@ -8,6 +8,7 @@
 #include "symtab.h"
 #include "type.h"
 #include "sym.h"
+#include "../traversals/fixup.h"
 
 
 static void genIOReadWrite(FILE* outfile, ioCallType ioType) {
@@ -667,20 +668,16 @@ Type* IndexType::getType(){
   return idxType; 
 }
 
-SeqType::SeqType(Type* init_elementType,
-                 ClassType* init_nodeType):
+SeqType::SeqType(Type* init_elementType) :
   ClassType(false, TYPE_SEQ),
-  elementType(init_elementType),
-  nodeType(init_nodeType)
+  elementType(init_elementType)
 {
   astType = TYPE_SEQ;
 }
 
 
 Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Type* new_type =
-    new SeqType(elementType->copy(clone, map, analysis_clone),
-                dynamic_cast<ClassType*>(nodeType->copy(clone, map, analysis_clone)));
+  Type* new_type = new SeqType(elementType->copy(clone, map, analysis_clone));
   new_type->addSymbol(symbol);
   return new_type;
 }
@@ -688,6 +685,7 @@ Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
 
 void SeqType::traverseDefType(Traversal* traversal) {
   TRAVERSE(elementType, traversal, false);
+  ClassType::traverseDefType(traversal);
 }
 
 
@@ -753,7 +751,8 @@ void SeqType::buildImplementationClasses() {
   ClassType* _seq_type = dynamic_cast<ClassType*>(_seq->type);
   // look at next because first one is the variable type
   Stmt* decls = dynamic_cast<Stmt*>(_seq_type->declarationList->next);
-  addDeclarations(decls->copyList(true));
+  Stmt* new_decls = decls->copyList(true);
+  addDeclarations(new_decls);
 
   Symbol* _node = Symboltable::lookup("_node");
   _node->cname = glomstrings(2, symbol->name, _node->name);
@@ -765,6 +764,7 @@ void SeqType::buildImplementationClasses() {
 
   classScope = Symboltable::popScope();
   classScope->setContext(NULL, symbol, symbol->defPoint);
+  TRAVERSE_LS(symbol->defPoint->stmt, new Fixup(), true);
 }
 
 
@@ -1075,23 +1075,19 @@ void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
       fn->classBinding = this->symbol;
       fn->method_type = PRIMARY_METHOD;
       methods.add(fn);
-    }
-    else if (def_stmt && (type_sym = def_stmt->typeDef())) {
+    } else if (def_stmt && (type_sym = def_stmt->typeDef())) {
       types.add(type_sym);
-    }
-    else if (def_stmt && (var = def_stmt->varDef())) {
+    } else if (def_stmt && (var = def_stmt->varDef())) {
       fields.add(var);
     }
     tmp = nextLink(Stmt, tmp);
   }
   if (!declarationList) {
-    declarationList = appendLink(declarationList, newDeclarations);
+    declarationList = newDeclarations;
     SET_BACK(declarationList);
-  }
-  else if (beforeStmt) {
+  } else if (beforeStmt) {
     beforeStmt->insertBefore(newDeclarations);
-  }
-  else {
+  } else {
     Stmt* last = dynamic_cast<Stmt*>(declarationList->tail());
     last->insertAfter(newDeclarations);
   }
