@@ -9030,3 +9030,27 @@ Removed files:
 	chapel/compiler/include/: createAST.h 
 	chapel/compiler/main/: createAST.cpp 
 
+---------------------------------------------------------------------------
+
+10/15/04 17:30:10 -- bradc
+
+Log message:
+	Replaced some extern declarations in .cpp files
+	with inclusions of #include files.
+	
+	Also, forgot to mention on the last check-in
+	that I fixed the creation of AST nodes so that
+	if they are created by the compiler, they are
+	given the filename "<internal>" and the line
+	number 0 by default.  (Certain things like
+	cloning will want to override these defaults,
+	but this was an improvement over what used to
+	happen which is that they'd be listed as being
+	on the last line of the last file that was
+	parsed.  This resuled in cosmetic changes to all
+	of the flowanalysis/newast tests.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/passes/: codegen.cpp 
+
