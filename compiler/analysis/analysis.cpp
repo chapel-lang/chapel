@@ -104,7 +104,7 @@ AInfo::copy_node(ASTCopyContext* context) {
 
 Vec<Fun *> *
 AInfo::visible_functions(Sym *arg0) {
-  char *name = sym->name;
+  char *name = arg0->name;
   if (!scoping_test)
     return 0;
   Expr *e = dynamic_cast<Expr *>(this->xast);
@@ -115,15 +115,15 @@ AInfo::visible_functions(Sym *arg0) {
     s = dynamic_cast<Stmt *>(this->xast);
   Vec<Fun *> *v = 0;
   ScopeLookupCache *sym_cache = NULL;
-  Symbol *sym = Symboltable::lookupInScope(name, s->parentSymbol->parentScope);
-  if (!sym)
+  Symbol *symbol = Symboltable::lookupInScope(name, s->parentSymbol->parentScope);
+  if (!symbol)
     v = new Vec<Fun *>;
   else {
-    sym_cache = sym->parentScope->lookupCache;
+    sym_cache = symbol->parentScope->lookupCache;
     if (sym_cache && (v = sym_cache->get(name))) 
       return v;
     v = new Vec<Fun *>;
-    FnSymbol *fn = dynamic_cast<FnSymbol*>(sym);
+    FnSymbol *fn = dynamic_cast<FnSymbol*>(symbol);
     while (fn) {
       v->set_add(fn->asymbol->sym->fun);
       fn = fn->overload;
@@ -132,9 +132,10 @@ AInfo::visible_functions(Sym *arg0) {
   Vec<Fun *> *universal = universal_lookup_cache.get(name);
   if (universal)
     v->set_union(*universal);
-  if (!sym_cache)
-    sym_cache = sym->parentScope->lookupCache = new ScopeLookupCache;
-  sym_cache->put(name, v);
+  if (symbol && !sym_cache)
+    sym_cache = symbol->parentScope->lookupCache = new ScopeLookupCache;
+  if (sym_cache)
+    sym_cache->put(name, v);
   return v;
 }
 
