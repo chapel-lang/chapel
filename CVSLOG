@@ -17745,3 +17745,32 @@ Removed files:
 	                           test_basic1d3.future 
 	                           test_basic1d4.future 
 
+---------------------------------------------------------------------------
+
+02/17/05 13:45:50 -- deitz
+
+Log message:
+	Improved copy resolution.  (2/16 TO DO #1) This checkin changes the
+	way in which copied symbols are re-resolved after copy is called.
+	
+	At the end of copy, when called on an Expr or Stmt, a new traversal
+	called UpdateSymbols runs through the new Expr or Stmt, replacing
+	Variable references to old symbols with variable references to the new
+	symbols (if the symbol was copied).
+	
+	In support of this, copying of Variable expressions no longer make its
+	symbol unresolved.  They keep the symbol the same.
+	
+	This new way of handling copying things like block statements (things
+	that need their scopes copied) is much more sane.
+	
+	Removed functions call_cleanup and call_cleanup_ls which used to be
+	called by copy.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/traversals/: Makefile.share cleanup.cpp 
+	                             cleanup.h 
+Added files:
+	chapel/compiler/traversals/: updateSymbols.cpp updateSymbols.h 
+
