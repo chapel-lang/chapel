@@ -4161,3 +4161,23 @@ Modified files:
 	chapel/compiler/AST/: TODO expr.cpp link.h stmt.cpp symbol.cpp 
 	                      symbol.h symtab.cpp type.cpp 
 
+---------------------------------------------------------------------------
+
+07/20/04 16:49:07 -- bradc
+
+Log message:
+	* Fixed up implementation of init() routine by sorting
+	through all statements at the file scope and making
+	those that shouldn't be part of the global scope part
+	of the init() routine's body.  Updated tests in
+	trivial/bradc/protoast to reflect this.
+	
+	* Laid in a rough implementation of codegen for a FnDefStmt.
+
+Modified files:
+	chapel/compiler/: codegen.cpp createAST.cpp 
+	chapel/compiler/AST/: link.cpp link.h stmt.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+
