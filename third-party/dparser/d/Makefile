@@ -43,11 +43,13 @@ else
   AR_FLAGS = crv
 endif
 
-ifeq ($(OS_TYPE),CYGWIN)
-GC_CFLAGS += -L/usr/local/lib
-else
-GC_CFLAGS += -I/usr/local/include -L/usr/local/lib
+ifeq ($(OS_TYPE),Linux)
+  CFLAGS +=
+  LIBS += -lpthread -ldl
 endif
+
+
+GC_CFLAGS += -I$(GCROOT)/include -L$(GCROOT)/lib
 
 ifdef D_USE_GC
 CFLAGS += -DUSE_GC ${GC_CFLAGS}
