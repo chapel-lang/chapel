@@ -16398,3 +16398,13 @@ Modified files:
 	chapel/compiler/include/: analysis.h callbacks.h symbol.h 
 	chapel/test/functions/bradc/: defaultParam.future 
 
+---------------------------------------------------------------------------
+
+02/03/05 10:31:23 -- jplevyak
+
+Log message:
+	update the .future file to reflect what (I think) is the issue.
+
+Modified files:
+	chapel/test/classes/deitz/: test_secondary_method1.future 
+
