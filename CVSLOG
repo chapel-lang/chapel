@@ -14596,3 +14596,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 
+---------------------------------------------------------------------------
+
+01/14/05 18:02:26 -- bradc
+
+Log message:
+	Forgot to add symtab to the directories looked at in our
+	nightly token counts last week.
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly 
+
