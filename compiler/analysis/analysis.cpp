@@ -1612,7 +1612,7 @@ ACallbacks::finalize_functions() {
       }
       if (s->asymbol->symbol) {
 	ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
-	if (symbol->init && symbol->init != nilExpr) {
+	if (symbol && symbol->init && symbol->init != nilExpr) {
 	  assert(symbol->init->ainfo);
 	  fun->default_args.put(cannonicalize_mposition(p), symbol->init->ainfo);
 	}
