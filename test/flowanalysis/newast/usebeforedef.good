@@ -7,6 +7,7 @@
  called from 7 in __entryPoint at usebeforedef.chpl:7
  called from 7 in __entryPoint at usebeforedef.chpl:7
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 foo(5);
 function __entryPoint usebeforedef.chpl:7

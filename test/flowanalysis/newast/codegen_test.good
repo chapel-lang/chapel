@@ -7,9 +7,13 @@
  called from 17 in __entryPoint at codegen_test.chpl:17
  called from 17 in __entryPoint at codegen_test.chpl:17
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
+::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::y(<unknown>:0) ( int64 (<unknown>:0) )
+::y(<unknown>:0) ( int64 (<unknown>:0) )
+::z(<unknown>:0) ( int64 (<unknown>:0) )
 ::z(<unknown>:0) ( int64 (<unknown>:0) )
 foo(765);
 function __entryPoint codegen_test.chpl:17

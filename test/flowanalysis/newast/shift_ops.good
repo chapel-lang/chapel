@@ -4,7 +4,12 @@
  called from 25 in __entryPoint at shift_ops.chpl:25
  called from 25 in __entryPoint at shift_ops.chpl:25
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = (m<<1);

@@ -4,6 +4,11 @@
  called from 26 in __entryPoint at bitwise_assignment.chpl:26
  called from 26 in __entryPoint at bitwise_assignment.chpl:26
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 function __entryPoint bitwise_assignment.chpl:26

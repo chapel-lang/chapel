@@ -4,8 +4,12 @@
  called from 19 in __entryPoint at logical_not.chpl:19
  called from 19 in __entryPoint at logical_not.chpl:19
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
+::o(<unknown>:0) ( int64 (<unknown>:0) )
+::p(<unknown>:0) ( int64 (<unknown>:0) )
 ::p(<unknown>:0) ( int64 (<unknown>:0) )
 answer = (!o);
 answer = (!p);

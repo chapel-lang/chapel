@@ -13,6 +13,8 @@
  called from 4 in foo at mutrec.chpl:8
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 bar(0);
 bar(1);

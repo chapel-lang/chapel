@@ -6,9 +6,12 @@
  called from 22 in __entryPoint at noop.chpl:22
  called from 22 in __entryPoint at noop.chpl:22
  called from 22 in __entryPoint at noop.chpl:22
-::D(<unknown>:0) ( domain (<unknown>:0) )
+::D(<unknown>:0) ( Domain (<unknown>:0) )
+::D(<unknown>:0) ( Domain (<unknown>:0) )
 ::false(<unknown>:0) ( int64 (<unknown>:0) )
-::i(<unknown>:0) ( index (<unknown>:0) )
+::false(<unknown>:0) ( int64 (<unknown>:0) )
+::false(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( Index (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ;
 do ;while (false)

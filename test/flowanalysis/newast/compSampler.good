@@ -4,6 +4,18 @@
  called from 35 in __entryPoint at compSampler.chpl:35
  called from 35 in __entryPoint at compSampler.chpl:35
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = ((m%n)+o);
 answer = ((m+n)-o);

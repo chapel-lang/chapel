@@ -4,6 +4,14 @@
  called from 29 in __entryPoint at danglingelse.chpl:29
  called from 29 in __entryPoint at danglingelse.chpl:29
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::b(<unknown>:0) ( int64 (<unknown>:0) )
+::b(<unknown>:0) ( int64 (<unknown>:0) )
+::b(<unknown>:0) ( int64 (<unknown>:0) )
+::b(<unknown>:0) ( int64 (<unknown>:0) )
 ::b(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 a += 1;

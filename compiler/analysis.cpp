@@ -702,12 +702,8 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
-#if 0
       s->ainfo->rval = new_sym(s->var->asymbol->name);
       if1_move(if1, &s->ainfo->code, s->var->asymbol, s->ainfo->rval, s->ainfo);
-#else
-      s->ainfo->rval = s->var->asymbol;
-#endif
       break;
     }
     case EXPR_UNOP: {

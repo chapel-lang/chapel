@@ -4,6 +4,14 @@
  called from 24 in __entryPoint at whileLoop.chpl:24
  called from 24 in __entryPoint at whileLoop.chpl:24
 ::i(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( int64 (<unknown>:0) )
+::i(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 do i += 1;while ((i<=2))
 do {

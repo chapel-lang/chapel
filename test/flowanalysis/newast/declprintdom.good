@@ -4,10 +4,16 @@
  called from 12 in __entryPoint at declprintdom.chpl:12
  called from 12 in __entryPoint at declprintdom.chpl:12
 ::D1(<unknown>:0) ( sequence (<unknown>:0) )
+::D1(<unknown>:0) ( sequence (<unknown>:0) )
 ::D2(<unknown>:0) ( sequence (<unknown>:0) )
-::D3(<unknown>:0) ( domain (<unknown>:0) )
+::D2(<unknown>:0) ( sequence (<unknown>:0) )
+::D3(<unknown>:0) ( Domain (<unknown>:0) )
+::D3(<unknown>:0) ( Domain (<unknown>:0) )
+::m1(<unknown>:0) ( int64 (<unknown>:0) )
 ::m1(<unknown>:0) ( int64 (<unknown>:0) )
 ::m2(<unknown>:0) ( int64 (<unknown>:0) )
+::m2(<unknown>:0) ( int64 (<unknown>:0) )
+::m3(<unknown>:0) ( int64 (<unknown>:0) )
 ::m3(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 function __entryPoint declprintdom.chpl:12

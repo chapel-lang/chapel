@@ -12,6 +12,8 @@
  called from 3 in foo at chain.chpl:4
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 bar(5);
 bar(7);

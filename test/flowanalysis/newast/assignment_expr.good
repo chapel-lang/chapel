@@ -4,7 +4,11 @@
  called from 16 in __entryPoint at assignment_expr.chpl:16
  called from 16 in __entryPoint at assignment_expr.chpl:16
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
+::o(<unknown>:0) ( int64 (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
 function __entryPoint assignment_expr.chpl:16
 function __init assignment_expr.chpl:16

@@ -7,6 +7,7 @@
  called from 6 in __entryPoint at onearg.chpl:6
  called from 6 in __entryPoint at onearg.chpl:6
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 foo(5);
 function __entryPoint onearg.chpl:6

@@ -4,6 +4,9 @@
  called from 13 in __entryPoint at logical_and.chpl:13
  called from 13 in __entryPoint at logical_and.chpl:13
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = (o&&o);
 answer = (o&&p);

@@ -4,8 +4,12 @@
  called from 10 in __entryPoint at enum.chpl:10
  called from 10 in __entryPoint at enum.chpl:10
 ::B(<unknown>:0) ( B (<unknown>:0) )
+::B(<unknown>:0) ( B (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::x(<unknown>:0) ( B (<unknown>:0) )
+::x(<unknown>:0) ( B (<unknown>:0) )
+::x(<unknown>:0) ( B (<unknown>:0) )
+::y(<unknown>:0) ( B (<unknown>:0) )
 ::y(<unknown>:0) ( B (<unknown>:0) )
 enum classVals = S | W | A | B | C | D | O;
 function __entryPoint enum.chpl:10

@@ -4,7 +4,13 @@
  called from 33 in __entryPoint at unary_plusMinus.chpl:33
  called from 33 in __entryPoint at unary_plusMinus.chpl:33
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(<unknown>:0) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(<unknown>:0) ( int64 (<unknown>:0) )
+::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = (+m);
