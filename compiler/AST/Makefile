@@ -54,14 +54,14 @@ chapel.tab.h chapel.tab.c: chapel.y
 	mv chapel.tab.c.tmp chapel.tab.c
 
 
-$(PLATFORM)/chapel.tab.o: chapel.tab.c *.h
+$(PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) *.h
 	$(CC) -c -g -o $@ $<
 
-$(PLATFORM)/lex.yy.o: lex.yy.c *.h
+$(PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) *.h
 	$(CC) -c -g -o $@ $<
 
-$(PLATFORM)/yy.o: yy.c yy.h *.h
-	gcc -c -g -o $@ yy.c
+$(PLATFORM)/yy.o: yy.c $(PLATFORM_DIR) yy.h *.h
+	gcc -c -g -o $@ $<
 
 FORCE:
 
