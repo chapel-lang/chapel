@@ -19769,3 +19769,20 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+03/16/05 12:00:43 -- deitz
+
+Log message:
+	Added skeleton for a new pass ResolveOverloadedOperators that will
+	change uses of overloaded operators into function calls and mangle the
+	name of those functions so they can be generated in C.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	                             insertFunctionTemps.h 
+Added files:
+	chapel/compiler/traversals/: resolveOverloadedOperators.cpp 
+	                             resolveOverloadedOperators.h 
+
