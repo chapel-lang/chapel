@@ -22152,3 +22152,13 @@ Modified files:
 	chapel/test/classes/bradc/: writeclass2.future 
 	                            writeclass2a.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 09:54:14 -- bradc
+
+Log message:
+	Removing futures for some tests that are now working.
+
+Removed files:
+	chapel/test/classes/bradc/: writeclass.future writeclass3.future 
+
