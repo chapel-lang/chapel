@@ -206,10 +206,10 @@ void Expr::traverseExpr(Traversal* traversal) {
 
 
 static void call_fixup(Expr* expr) {
-  Fixup* fixup = new Fixup();
-
-  fixup->stmtParent.add(expr->stmt->parentSymbol);
-  TRAVERSE(expr->stmt, fixup, true);
+  if (!expr->stmt) {
+    INT_FATAL(expr, "Expr has no Stmt in call_fixup");
+  }
+  TRAVERSE(expr->stmt, new Fixup(), true);
 }
 
 

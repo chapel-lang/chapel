@@ -20,7 +20,6 @@ class HyperCopyReplace : public Traversal {
 
 Fixup::Fixup(void) {
   exprParent.add(NULL);
-  stmtParent.add(NULL);
 }
 
 
@@ -99,11 +98,7 @@ void Fixup::run(ModuleSymbol* moduleList) {
 
   ModuleSymbol* mod = moduleList;
   while (mod) {
-    stmtParent.add(mod);
     mod->startTraversal(this);
-    if (mod != stmtParent.pop()) {
-      INT_FATAL(mod, "Major error in Fixup traversal");
-    }
     mod = nextLink(ModuleSymbol, mod);
   }
 
@@ -113,11 +108,7 @@ void Fixup::run(ModuleSymbol* moduleList) {
 
     ModuleSymbol* mod = moduleList;
     while (mod) {
-      stmtParent.add(mod);
       mod->startTraversal(this);
-      if (mod != stmtParent.pop()) {
-	INT_FATAL(mod, "Major error in Fixup traversal");
-      }
       mod = nextLink(ModuleSymbol, mod);
     }
   }

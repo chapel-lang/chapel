@@ -7,7 +7,6 @@
 class Fixup : public Traversal {
  public:
   Vec<Stmt*> exprParent;
-  Vec<Symbol*> stmtParent;
   int verify;
 
   Fixup::Fixup();
