@@ -8051,3 +8051,41 @@ Added files:
 Removed files:
 	chapel/compiler/vparser/: v.g.d_parser.cpp 
 
+---------------------------------------------------------------------------
+
+09/20/04 16:21:11 -- bradc
+
+Log message:
+	Got John's analysis stuff working with the GetStuff pass
+	rather than the getXXXX() calls.  This involved some
+	tweaking of the way traversals are done (for the better)
+	since this is the most aggressive use of traversals so
+	far.  There are still some questions in my mind about
+	how far one wants to walk into types (should one walk
+	into their names?) and symbols (should one walk into
+	their types?) in order to get completeness without
+	ending up in loops or doing too much redundant work,
+	but this seems OK for now and we can improve it as
+	time goes on.
+	
+	The one thing I had to do that was a little funny was to
+	explicitly add nilClassType into John's list of symbols
+	because the traversal won't do anything at nil nodes.
+	This raises a question about whether the unspecified
+	parent class should be a non-nil sentinel rather than
+	a nil sentinel, and/or whether we should just add all
+	the nils into John's list in close_symbols.
+	
+	I didn't actually go so far as to pull out the getXXX()
+	calls yet, though I believe we now could.  I just wanted
+	to get this change out of my directory as it's been in
+	the way of other work for awhile now.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h symbol.h type.h 
+	chapel/compiler/main/: createAST.cpp 
+Added files:
+	chapel/compiler/vparser/: .cvsignore 
+
