@@ -19271,3 +19271,32 @@ Added files:
 	                              test_named_param2.future 
 	                              test_named_param2.good 
 
+---------------------------------------------------------------------------
+
+03/09/05 14:55:24 -- bradc
+
+Log message:
+	Checking in two future class tests that don't seem to be
+	working in weird ways:
+	
+	- noinit declares a class variable but doesn't initialize
+	  it, which causes analysis to complain.  Seems like this
+	  shouldn't be a problem, so I assigned this one to John
+	  for the time being.  John, let me know if I'm missing
+	  something here, please.
+	
+	- weirdinit declares a class variable and initializes it
+	  by calling it as though it was a constructor name. This
+	  was a typo on my part in another test that I didn't
+	  notice because -- amazingly! -- it worked.  Somehow
+	  the call to the class name became a call to the class
+	  constructor.  I assume that this is accidental, but
+	  don't know where the fault lies.  John, Steve, could you
+	  each look at this and let me know if you have any
+	  insights as to why it isn't causing an actual problem?
+
+Added files:
+	chapel/test/classes/bradc/: noinit.chpl noinit.future 
+	                            noinit.good weirdinit.chpl 
+	                            weirdinit.future weirdinit.good 
+
