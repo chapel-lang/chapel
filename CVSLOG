@@ -516,3 +516,13 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: vec.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/19 11:28:53 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	
+
+Removed files:
+	chapel/third-party/dparser/: d-1.8-src.tar.gz 
+
