@@ -13884,3 +13884,15 @@ Log message:
 Modified files:
 	./: Makefile 
 
+---------------------------------------------------------------------------
+
+01/07/05 08:09:47 -- shannon
+
+Log message:
+	Fixed a bug in my config var hash table generation code where
+	I forgot to initialize the data members of the configVar
+	class.
+
+Modified files:
+	chapel/runtime/src/: config.c 
+
