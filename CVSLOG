@@ -22919,3 +22919,15 @@ Modified files:
 	chapel/runtime/src/: arg.c chplio.c chplmem.c chplmem_tests.c 
 	                     chpltypes.c config.c 
 
+---------------------------------------------------------------------------
+
+03/31/05 11:01:31 -- jplevyak
+
+Log message:
+	.future test for "like"
+
+Added files:
+	chapel/test/types/like/jplevyak/: like-1.chpl like-1.future 
+	                                  like-1.good like-2.chpl 
+	                                  like-2.future like-2.good 
+
