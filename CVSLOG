@@ -22417,3 +22417,18 @@ Removed files:
 	chapel/test/arrays/deitz/: test_array_basic1.future 
 	                           test_array_of_record1.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 15:26:02 -- jplevyak
+
+Log message:
+	Fix initialization of records using the default constructor.
+	Put in a nasty kludge to prevent recursive constructor calls... need to fix
+	at some point.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Removed files:
+	chapel/test/classes/bradc/: writerecord.future 
+	chapel/test/classes/deitz/: test_record6.future 
+
