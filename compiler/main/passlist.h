@@ -22,6 +22,9 @@ PassInfo passlist[] = {
   RUN(Fixup, ""),
   RUN(Fixup, "verify"), // this is a sanity check
 
+  // passes to run if --noanalysis is used
+  RUN(OmitForNoAnalysis, ""),
+
   // passes to normalize the basic AST
   RUN(ExpandClassWiths, ""),
   RUN(InsertThisParameters, ""),

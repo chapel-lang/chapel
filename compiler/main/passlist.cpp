@@ -36,6 +36,7 @@
 #include "../traversals/insertUnionChecks.h"
 #include "../traversals/insertVariableInitializations.h"
 #include "../traversals/methodsToFunctions.h"
+#include "../traversals/omitForNoAnalysis.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processDefs.h"
 #include "../traversals/processParameters.h"
@@ -84,6 +85,7 @@ REGISTER(InsertVariableInitializations);
 REGISTER(InsertWriteFns);
 REGISTER(LegalizeCNames);
 REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
+REGISTER(OmitForNoAnalysis);
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);

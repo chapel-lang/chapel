@@ -122,6 +122,10 @@ class _seq {
     return this;
   }
 
+  function append_sequence(s like this) {
+
+  }
+
   function copy() {
     var new : _seq;
     for e in this {
@@ -132,7 +136,6 @@ class _seq {
 */
 }
 
-/*
 pragma "omit for noanalysis" function _seq_pound(s, e) {
   s.append(e);
 }
@@ -145,4 +148,3 @@ pragma "omit for noanalysis" function __seq_pound(s1 : _seq, s2 : _seq) {
   s1.last.next = s2.first;
   return s1;
 }
-*/
