@@ -1633,11 +1633,13 @@ gen_container(IF1 *i, ParseAST *ast) {
 static void
 gen_def_ident(IF1 *i, ParseAST *ast) {
   ParseAST *must_implement = ast->get(AST_must_implement);
+  ParseAST *must_specialize = ast->get(AST_must_specialize);
   ParseAST *pattern = ast->get(AST_pattern);
   ParseAST *var = ast->get(AST_var);
   ParseAST *val = 0;
   for (int x = 1; x < ast->children.n; x++)
     if (ast->children.v[x] != must_implement &&
+	ast->children.v[x] != must_specialize &&
 	ast->children.v[x] != pattern &&
 	ast->children.v[x] != var) {
       val = ast->children.v[x];

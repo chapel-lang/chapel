@@ -482,7 +482,7 @@ type_union(AType *a, AType *b) {
 }
 
 static inline int
-subtype_of(Sym *a, Sym *b) {
+specializer_of(Sym *a, Sym *b) {
   if (a->constant) {
     if (a == b)
       return 1;
@@ -500,7 +500,7 @@ type_diff(AType *a, AType *b) {
     if (aa->defs.n && b->set_in(aa))
       continue;
     forv_CreationSet(bb, *b) if (bb && !bb->defs.n) {
-      if (subtype_of(aa->sym, bb->sym))
+      if (specializer_of(aa->sym, bb->sym))
 	goto Lnext;
     }
     r->set_add(aa);
@@ -533,20 +533,20 @@ type_intersection(AType *a, AType *b) {
 	    goto Lnexta;
 	  }
 	} else {
-	  if (subtype_of(aa->sym, bb->sym)) {
+	  if (specializer_of(aa->sym, bb->sym)) {
 	    r->set_add(aa);
 	    goto Lnexta;
 	  }
 	}
       } else {
 	if (bb->defs.n) {
-	  if (subtype_of(bb->sym, aa->sym))
+	  if (specializer_of(bb->sym, aa->sym))
 	    r->set_add(bb);
 	} else {
-	  if (subtype_of(aa->sym, bb->sym)) {
+	  if (specializer_of(aa->sym, bb->sym)) {
 	    r->set_add(aa);
 	    goto Lnexta;
-	  } else if (subtype_of(bb->sym, aa->sym))
+	  } else if (specializer_of(bb->sym, aa->sym))
 	    r->set_add(bb);
 	}
       }

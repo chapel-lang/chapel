@@ -181,11 +181,11 @@ expression
          $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
    }
   | qualified_ident
-  | def_ident expression $right 5100 { 
+  | def_ident ':' expression $right 5100 { 
       $$.ast = new_AST(AST_def_ident, &$n); 
       $$.ast->def_ident_label = 1;
     }
-  | 'let' def_ident_list ('in' expression)? $right 5100 {
+  | 'let' let_list ('in' expression)? $right 5100 {
       if ($#2)
         $$.ast = new_AST(AST_scope, &$n); 
     }
@@ -226,56 +226,59 @@ with_scope : qualified_ident (',' qualified_ident)* ':'
 symbol_ident: identifier
   { $$.ast = symbol_AST($g->i, &$n); };
 
-def_ident: idpattern ('__name' string)? ':' {
+def_ident: idpattern ('__name' string)? {
   $$.ast = $0.ast;
   if ($#1)
     $$.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
 };
 
-var_ident: idpattern ('__name' string)? '=' {
-  $$.ast = $0.ast;
-  if ($#1)
-    $$.ast->builtin = if1_cannonicalize_string(
-      $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
-};
-
-def_ident_one
-  : def_ident expression 
+let_one
+  : ident def_suffix '=' expression 
     { $$.ast = new_AST(AST_def_ident, &$n); }
   | def_function unterminated_statement
     { $$.ast = new_AST(AST_def_fun, &$n); 
       $$.ast->scope_kind = Scope_RECURSIVE; }
   ; 
-def_ident_list
-  : def_ident_list ',' def_ident_list $left 10000
-  | def_ident_one;
+
+def_suffix :
+  ('@' must_specialize_type)? ('<' must_implement_type)? (':' must_implement_and_specialize_type)?
   ;
 
-def_ident_var_one
-  : var_ident expression { 
-      $$.ast = new_AST(AST_def_ident, &$n); 
-      $$.ast->add(new_AST(AST_var));
-    }
-  | idpattern {
-      $$.ast = new_AST(AST_def_ident, &$n); 
-      $$.ast->add(new_AST(AST_var));
-    }
+let_list
+  : let_list ',' let_list $left 10000
+  | let_one;
   ;
+
 def_ident_var_list
   : def_ident_var_list ',' def_ident_var_list $left 10000
-  | def_ident_var_one;
+  | var_ident def_suffix ('=' expression)? { 
+      $$.ast = new_AST(AST_def_ident, &$n); 
+      $$.ast->add(new_AST(AST_var));
+    }
   ;
 
-idpattern
-  : ident (':' identifier)?
-    { 
+var_ident: idpattern ('__name' string)? {
+  $$.ast = $0.ast;
+  if ($#1)
+    $$.ast->builtin = if1_cannonicalize_string(
+      $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
+};
+
+idpattern 
+  : ident
+  | '(' pattern_type? sub_idpattern (',' sub_idpattern)* ')'
+    { $$.ast = new_AST(AST_pattern, &$n); }
+  ;
+
+sub_idpattern
+  : ident def_suffix ('=' identifier)? { 
       $$.ast = $0.ast;
-      if ($#1)
+      if ($#2)
         $$.ast->alt_name = if1_cannonicalize_string(
-          $g->i, ${child 1, 0, 1}->start_loc.s, ${child 1, 0, 1}->end);
+          $g->i, ${child 2, 0, 1}->start_loc.s, ${child 2, 0, 1}->end);
     }
-  | '(' pattern_type? idpattern (',' idpattern)* ')'
+  | '(' pattern_type? sub_idpattern (',' sub_idpattern)* ')'
     { $$.ast = new_AST(AST_pattern, &$n); };
   ;
 
@@ -318,8 +321,7 @@ pattern_suffix :
   (':' must_implement_and_specialize_type)?  ('=' init_expression)?;
 
 sub_pattern
-  : intent? 'var'? ident pattern_suffix
-    { 
+  : intent? 'var'? ident pattern_suffix { 
       $$.ast = new_AST(AST_arg, &$n); 
       if ($#1) $$.ast->add(new_AST(AST_var));
     }
@@ -527,7 +529,7 @@ complex    ::= base_float "i";
 
 identifier : "[a-zA-Z_][a-zA-Z0-9_]*" $term -1;
 
-ident : identifier{ 
+ident : identifier {
   $$.ast = new_AST(AST_ident, &$n); 
   $$.ast->string = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
 };

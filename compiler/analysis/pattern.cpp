@@ -293,6 +293,20 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
   partial_matches.v[partial_matches.n-1] = funs;
 }
 
+#if 0
+static void
+find_named_argument_matches(FA *fa, Vec<AVar *> args, PartialMatches &partial_matches, 
+			    MatchMap &match_map, Vec<MPosition *> *all_positions) 
+{
+  MPosition p;
+  p.push(1);
+  forv_AVar(av, args) {
+    pattern_match_arg(fa, av, partial_matches, match_map, p, send, all_positions);
+    p.inc();
+  }
+}
+#endif
+
 // main dispatch entry point - given a vector of arguments return a vector of matches
 int
 pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
@@ -306,6 +320,13 @@ pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
     all_positions = &send->var->def->callees->arg_positions;
   } else
     partial_matches.add(NULL);
+#if 0
+  // find all named argument matches
+  find_named_argument_matches(fa, args, partial_matches, match_map, send, all_positions);
+  if (!partial_matches.v[0])
+    return 0;
+  build_positional_argument_maps(fa, args, partial_matches, match_map, send, all_positions);
+#endif
   // find all matches
   {
     MPosition p;
