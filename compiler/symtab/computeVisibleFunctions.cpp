@@ -26,7 +26,11 @@ void GetClassMethods::processSymbol(Symbol* sym) {
 	    method = method->overload;
 	  }
 	}
-	classMethods->set_add(class_type->defaultConstructor);
+	FnSymbol* constructor = class_type->defaultConstructor;
+	while (constructor) {
+	  classMethods->set_add(constructor);
+	  constructor = constructor->overload;
+	}
       }
     }
   }

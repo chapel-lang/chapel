@@ -391,6 +391,15 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
 	      method = method->overload;
 	    }
 	  }
+	  FnSymbol* constructor = class_type->defaultConstructor;
+	  while (constructor) {
+	    char *n = if1_cannonicalize_string(if1, constructor->name);
+	    Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+	    if (!fs) fs = new Vec<FnSymbol*>;
+	    fs->add(constructor);
+	    visibleFunctions.put(n, fs);
+	    constructor = constructor->overload;
+	  }
 	}
       }
     }
