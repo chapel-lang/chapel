@@ -24404,3 +24404,14 @@ Log message:
 Added files:
 	chapel/test/memory/shannon/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/06/05 14:49:38 -- bradc
+
+Log message:
+	Once again, a file escapes my commit process...  I think
+	I'm losing it.
+
+Modified files:
+	./: COPYRIGHT 
+
