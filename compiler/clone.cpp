@@ -640,12 +640,12 @@ log_test_fa(FA *fa) {
   Vec<Var *> gvars;
   forv_Fun(f, fa->funs) {
     log(LOG_TEST_FA, "function %s %s:%d\n", f->sym->name ? f->sym->name : "<anonymous>",
-	fn(f->sym->ast->pathname), f->sym->ast->line);
+	fn(f->sym->ast->pathname()), f->sym->ast->line());
     forv_CallPoint(cp, f->called) {
       Fun *ff = cp->fun;
-      log(LOG_TEST_FA, " called from %d in %s at %s:%d\n", cp->pnode->code->ast->line,
+      log(LOG_TEST_FA, " called from %d in %s at %s:%d\n", cp->pnode->code->ast->line(),
 	  ff->sym->name ? ff->sym->name : "<anonymous>",
-	  fn(ff->sym->ast->pathname), ff->sym->ast->line);	  
+	  fn(ff->sym->ast->pathname()), ff->sym->ast->line());
     }
     forv_Var(v, f->fa_all_Vars) {
       if (v->sym->in != f->sym) {

@@ -105,7 +105,7 @@ set_primitive_types(IF1 *if1) {
 }
 
 void 
-get_ast(Vec<AST *> &asts, D_ParseNode *pn) {
+get_ast(Vec<ParseAST *> &asts, D_ParseNode *pn) {
   if (pn->user.ast)
     asts.add(pn->user.ast);
   else

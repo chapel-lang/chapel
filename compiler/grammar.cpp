@@ -30,35 +30,35 @@ in_module(Globals *g, char *s, char *e, D_Scope **scope) {
   }
 }
 
-AST *
+ParseAST *
 loop_AST(D_ParseNode &loop, D_ParseNode &cond, D_ParseNode *before, 
 	 D_ParseNode *after, D_ParseNode &body) 
 {
-  AST *b = body.user.ast;
+  ParseAST *b = body.user.ast;
   if (after) {
-    b = new AST(AST_block);
+    b = new_AST(AST_block);
     b->set_location(&body);
     b->add(body.user.ast);
     b->add(after->user.ast);
   }
-  AST *l = new AST(AST_loop), *a = l;
+  ParseAST *l = new_AST(AST_loop), *a = l;
   l->set_location(&loop);
   if (before && before != &body) {
-    a = new AST(AST_block);
+    a = new_AST(AST_block);
     a->add(before->user.ast);
     a->add(l);
   }
   if (before != &body)
-    l->add(new AST(AST_loop_cond, &cond));
+    l->add(new_AST(AST_loop_cond, &cond));
   l->add(b);
   if (before == &body)
-    l->add(new AST(AST_loop_cond, &cond));
+    l->add(new_AST(AST_loop_cond, &cond));
   return a;
 }
 
-AST *
+ParseAST *
 symbol_AST(IF1 *if1, D_ParseNode *pn) {
-  AST *a = new AST(AST_const, pn); 
+  ParseAST *a = new_AST(AST_const, pn); 
   char *s;
   int l = pn->end - pn->start_loc.s;
   if (!l)
@@ -74,7 +74,7 @@ symbol_AST(IF1 *if1, D_ParseNode *pn) {
 }
 
 static
-int dig_add_ast(AST *op, D_ParseNode *pn) {
+int dig_add_ast(ParseAST *op, D_ParseNode *pn) {
   int n = 0;
   for (int i = 0; i < d_get_number_of_children(pn); i++) {
     D_ParseNode *c = d_get_child(pn, i);
@@ -87,9 +87,9 @@ int dig_add_ast(AST *op, D_ParseNode *pn) {
   return n;
 }
 
-AST *
+ParseAST *
 op_AST(IF1 *if1, D_ParseNode &pn) {
-  AST *op = new AST(AST_op);
+  ParseAST *op = new_AST(AST_op);
   op->set_location(&pn);
   int n = d_get_number_of_children(&pn);
   for (int i = 0; i < n; i++) {

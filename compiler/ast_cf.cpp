@@ -7,7 +7,7 @@
 #include "if1.h"
 #include "builtin.h"
 #include "fa.h"
-#include "ast.h"
+#include "parse_ast.h"
 
 static void
 cast(Sym *s, Sym *t, Immediate *im) {
@@ -179,18 +179,18 @@ cast(Sym *s, Sym *t, Immediate *im) {
       }
 
 static int
-fold_constant(IF1 *i, AST *ast) {
+fold_constant(IF1 *i, ParseAST *ast) {
   Sym *a, *b = 0;
   Sym *res_type;
   Immediate im1, im2;
   if (ast->prim->nargs == 3) {
-    a = ast->v[0]->sym;
-    b = ast->v[2]->sym;
+    a = ast->children.v[0]->sym;
+    b = ast->children.v[2]->sym;
   } else {
     if (ast->prim->pos == 0)
-      a = ast->v[1]->sym;
+      a = ast->children.v[1]->sym;
     else
-      a = ast->v[0]->sym;
+      a = ast->children.v[0]->sym;
   }
   switch (ast->prim->ret_types[0]) {
     default: return 0;
@@ -243,8 +243,8 @@ fold_constant(IF1 *i, AST *ast) {
 }
 
 int
-ast_constant_fold(IF1 *i, AST *ast) {
-  forv_AST(a, *ast)
+ast_constant_fold(IF1 *i, ParseAST *ast) {
+  forv_ParseAST(a, ast->children)
     if (ast_constant_fold(i, a) < 0)
       return -1;
   switch (ast->kind) {

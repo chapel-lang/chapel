@@ -40,16 +40,6 @@ compar_funs(const void *ai, const void *aj) {
   return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
-static void
-propagate_ast(AST *ast, Vec<PNode *> *nodes) {
-  if (nodes && !ast->pnodes.n)
-    ast->pnodes.copy(*nodes);
-  if (ast->pnodes.n)
-    nodes = &ast->pnodes;
-  forv_AST(a, *ast)
-    propagate_ast(a, nodes);
-}
-
 void
 Fun::setup_ast() {
   Vec<PNode *> nodes;
@@ -59,7 +49,7 @@ Fun::setup_ast() {
       n->code->ast->pnodes.add(n);
   }
   nodes.clear();
-  propagate_ast(ast, &nodes);
+  ast->propagate(&nodes);
 }
 
 void

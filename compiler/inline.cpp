@@ -11,7 +11,7 @@
 #include "pdb.h"
 #include "fun.h"
 #include "pnode.h"
-#include "ast.h"
+#include "parse_ast.h"
 
 #define LOOP_FREQUENCY 10.0
 
@@ -95,12 +95,12 @@ frequency_estimation(FA *fa) {
 static void
 splice_in_clone(Fun *f, AST **aast, Fun *target) {
   // splice AST
-  *aast = target->ast->last();
+  *aast = (dynamic_cast<ParseAST*>(target->ast))->last();
 }
 
 int 
 inline_call(FA *fa, Fun *f, AST **aa, Fun *target) {
-  AST *a = *aa;
+  ParseAST *a = dynamic_cast<ParseAST*>(*aa);
   if (!target) {
     Vec<Fun *> funs;
     call_info(f, a, funs);
@@ -126,7 +126,7 @@ inline_call(FA *fa, Fun *f, AST **aa, Fun *target) {
 
 static void
 inline_calls(FA *fa, Fun *f, AST **aast, int simple = 0) {
-  AST *ast = *aast;
+  ParseAST *ast = dynamic_cast<ParseAST*>(*aast);
   // ignore these subtrees
   switch (ast->kind) {
     case AST_def_fun:
@@ -137,8 +137,8 @@ inline_calls(FA *fa, Fun *f, AST **aast, int simple = 0) {
       break;
   }
   // recurse
-  for (int i = 0; i < ast->n; i++)
-    inline_calls(fa, f, &ast->v[i], simple);
+  for (int i = 0; i < ast->children.n; i++)
+    inline_calls(fa, f, (AST**)&ast->children.v[i], simple);
   // get target function to inline
   Vec<Fun *> funs;
   call_info(f, ast, funs);

@@ -9,6 +9,7 @@
 #include "pnode.h"
 #include "var.h"
 #include "ast.h"
+#include "parse_ast.h"
 
 Prim::Prim(int aindex, char *astring, char *aname, int anargs, int apos, 
 	   PrimType *aarg_types, PrimType *aret_types, int options) {
@@ -30,8 +31,8 @@ Prim *
 Primitives::find(Code *c) {
   if (c->kind != Code_SEND)
     return NULL;
-  if (c->ast && c->ast->prim)
-    return c->ast->prim;
+//  if (c->ast && c->ast->prim)
+//    return c->ast->prim;
   Sym *f = c->rvals.v[0];
   if (f->builtin) {
     char *name = if1->builtins_names.get(f);
@@ -101,34 +102,34 @@ compatible_type(PrimType pt, Sym *s) {
 }
 
 Prim *
-Primitives::find(AST *ast) {
-  if (ast->n < 2)
+Primitives::find(ParseAST *ast) {
+  if (ast->children.n < 2)
     return 0;
   Prim *prim = NULL;
-  if (ast->v[0]->sym && ast->v[0]->sym->builtin) {
-    char *name = if1->builtins_names.get(ast->v[0]->sym);
+  if (ast->children.v[0]->sym && ast->children.v[0]->sym->builtin) {
+    char *name = if1->builtins_names.get(ast->children.v[0]->sym);
     prim = prim_map[0][0].get(name);
   }
   if (!prim) {
-    int nargs = ast->n - 2;
+    int nargs = ast->children.n - 2;
     if (nargs < 0)
       nargs = 0;
-    if (ast->v[0]->sym && ast->v[0]->sym->symbol) {
-      prim = prim_map[nargs][0].get(ast->v[0]->sym->name);
+    if (ast->children.v[0]->sym && ast->children.v[0]->sym->symbol) {
+      prim = prim_map[nargs][0].get(ast->children.v[0]->sym->name);
       if (!prim)
 	return 0;
-      if (!compatible_type(prim->arg_types[0], ast->v[1]->sym))
+      if (!compatible_type(prim->arg_types[0], ast->children.v[1]->sym))
 	return 0;
     }
     else {
-      assert(ast->v[1]->sym && ast->v[1]->sym->symbol);
-      prim = prim_map[nargs][1].get(ast->v[1]->sym->name);
+      assert(ast->children.v[1]->sym && ast->children.v[1]->sym->symbol);
+      prim = prim_map[nargs][1].get(ast->children.v[1]->sym->name);
       if (!prim)
 	return 0;
-      if (!compatible_type(prim->arg_types[0], ast->v[0]->sym))
+      if (!compatible_type(prim->arg_types[0], ast->children.v[0]->sym))
 	return 0;
       if (nargs > 0)
-	if (!compatible_type(prim->arg_types[1], ast->v[2]->sym))
+	if (!compatible_type(prim->arg_types[1], ast->children.v[2]->sym))
 	  return 0;
     }
     assert(prim);

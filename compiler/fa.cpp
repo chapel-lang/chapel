@@ -1402,8 +1402,8 @@ collect_Vars_PNodes(Fun *f) {
     if (p->code->kind == Code_SEND) {
       p->prim = prim->find(p);
       f->fa_send_PNodes.add(p);
-      if (p->code && p->code->ast)
-	p->code->ast->prim = p->prim;
+//      if (p->code && p->code->ast)
+//	p->code->ast->prim = p->prim;
     }
   }
 }
@@ -2327,9 +2327,7 @@ FA::analyze(Fun *top) {
 static Var *
 info_var(AST *a, Sym *s) {
   if (!s)
-    s = a->rval;
-  if (!s) 
-    s = a->sym;
+    s = a->symbol();
   if (!s)
     return 0;
   if (a->pnodes.n) {

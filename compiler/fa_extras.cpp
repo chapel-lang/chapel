@@ -36,7 +36,7 @@ show_sym(Sym *s, FILE *fp) {
 
 static void
 show_fun(Fun *f, FILE *fp) {
-  fprintf(fp, "%s:%d: ", f->ast->pathname, f->ast->line);
+  fprintf(fp, "%s:%d: ", f->ast->pathname(), f->ast->line());
   forv_Sym(s, f->sym->has)
     show_sym(s, fp);
 }
@@ -152,10 +152,10 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
   depth++;
   if (depth > print_call_depth || !p->code)
     return;
-  if (depth > 1 && p->code->ast->pathname) {
+  if (depth > 1 && p->code->ast->pathname()) {
     for (int x = 0; x < depth; x++)
       fprintf(stderr, " ");
-    fprintf(stderr, "called from %s:%d\n", p->code->ast->pathname, p->code->ast->line);
+    fprintf(stderr, "called from %s:%d\n", p->code->ast->pathname(), p->code->ast->line());
   }
   AEdge **last = es->edges.last();
   for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
@@ -183,15 +183,15 @@ compar_tv_pos(const void *aa, const void *bb) {
     if (aast) return 1;
     return 0;
   }
-  if (!aast->pathname || !bast->pathname) {
-    if (bast->pathname) return -1;
-    if (aast->pathname) return 1;
+  if (!aast->pathname() || !bast->pathname()) {
+    if (bast->pathname()) return -1;
+    if (aast->pathname()) return 1;
   } else {
-    int x = strcmp(aast->pathname, bast->pathname);
+    int x = strcmp(aast->pathname(), bast->pathname());
     if (x) return x;
   }
-  int i = aast->line;
-  int j = bast->line;
+  int i = aast->line();
+  int j = bast->line();
   return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
@@ -205,11 +205,11 @@ show_violations(FA *fa, FILE *fp) {
     if (!verbose_level && !v->av->var->sym->name)
       continue;
     if (v->send)
-      fprintf(stderr, "%s:%d: ", v->send->var->def->code->ast->pathname, 
-	      v->send->var->def->code->ast->line);
+      fprintf(stderr, "%s:%d: ", v->send->var->def->code->ast->pathname(), 
+	      v->send->var->def->code->ast->line());
     else if (v->av->var->sym->ast)
-      fprintf(stderr, "%s:%d: ", v->av->var->sym->ast->pathname, 
-	      v->av->var->sym->ast->line);
+      fprintf(stderr, "%s:%d: ", v->av->var->sym->ast->pathname(), 
+	      v->av->var->sym->ast->line());
     else
       fprintf(stderr, "error: ");
     switch (v->kind) {
@@ -299,9 +299,9 @@ log_var_types(Var *v, Fun *f) {
   else
     log(LOG_TEST_FA, "%d::", v->sym->in->id);
   if (v->sym->name)
-    log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->ast->pathname), v->sym->ast->line);
+    log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->ast->pathname()), v->sym->ast->line());
   else
-    log(LOG_TEST_FA, "(%s:%d) ", fn(v->sym->ast->pathname), v->sym->ast->line);
+    log(LOG_TEST_FA, "(%s:%d) ", fn(v->sym->ast->pathname()), v->sym->ast->line());
   Vec<CreationSet *> css;
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
@@ -315,7 +315,7 @@ log_var_types(Var *v, Fun *f) {
       log(LOG_TEST_FA, "%s ", cs->sym->name);
     else if (cs->sym->constant)
       log(LOG_TEST_FA, "\"%s\" ", cs->sym->constant);
-    log(LOG_TEST_FA, "(%s:%d) ", fn(cs->sym->ast->pathname), cs->sym->ast->line);
+    log(LOG_TEST_FA, "(%s:%d) ", fn(cs->sym->ast->pathname()), cs->sym->ast->line());
   }
   log(LOG_TEST_FA, ")\n");
 }

@@ -68,8 +68,8 @@ graph_end(FILE *fp) {
   fclose(fp);
 }
 
-static void
-graph_node(FILE *fp, void *id, char *label, int options = 0) {
+void
+graph_node(FILE *fp, void *id, char *label, int options) {
   switch (graph_type) {
     case VCG:
       fprintf(fp, "node: {title:\"%p\" label:\"%s\"", id, label);
@@ -93,8 +93,8 @@ graph_node(FILE *fp, void *id, char *label, int options = 0) {
   }
 }
 
-static void
-graph_edge(FILE *fp, void *a, void *b, int options = 0) {
+void
+graph_edge(FILE *fp, void *a, void *b, int options) {
   switch (graph_type) {
     case VCG:
       fprintf(fp, "edge: {sourcename:\"%p\" targetname:\"%p\"", a, b);
@@ -120,41 +120,6 @@ graph_edge(FILE *fp, void *a, void *b, int options = 0) {
   }
 }
 
-static int 
-graph_it(AST *a) {
-  switch (a->kind) {
-    case AST_def_fun: return 0;
-    case AST_const: 
-    case AST_def_ident: 
-      if (!a->sym->var || !a->sym->var->avars.n)
-	return 0;
-      break;
-    case AST_def_type:
-      if (!unalias_type(a->sym)->creators.n)
-	return 0;
-      break;
-    default: break;
-  }
-  return 1;
-}
-
-static void
-graph_ast_nodes(FILE *fp, Fun *f, AST *a) {
-  graph_node(fp, a, AST_name[a->kind]);
-  forv_AST(aa, *a)
-    if (graph_it(aa))
-      graph_ast_nodes(fp, f, aa);
-}
-
-static void
-graph_ast_edges(FILE *fp, Fun *f, AST *a) {
-  forv_AST(aa, *a)
-    if (graph_it(aa)) {
-      graph_edge(fp, a, aa);
-      graph_ast_edges(fp, f, aa);
-    }
-}
-
 static int
 compar_fun_ids(const void *ai, const void *aj) {
   uint32 i = (*(Fun**)ai)->id;
@@ -165,15 +130,8 @@ compar_fun_ids(const void *ai, const void *aj) {
 static void 
 graph_ast(Vec<Fun *> &funs, char *fn) {
   FILE *fp = graph_start(fn, "ast", "Abstract Syntax Tree");
-  forv_Fun(f, funs) {
-    AST *ast;
-    if (f->ast->kind == AST_def_fun)
-      ast = f->ast->last();
-    else
-      ast = f->ast;
-    graph_ast_nodes(fp, f, ast);
-    graph_ast_edges(fp, f, ast);
-  }
+  forv_Fun(f, funs)
+    f->ast->graph(fp);
   graph_end(fp);
 }
 
@@ -535,10 +493,10 @@ graph_abstract_types(FA *fa, char *fn) {
       else
 	strcpy(pname, "<anonymous>");
       pname += strlen(pname);
-      if (s->fun->ast->pathname) {
-	char *pn = strrchr(s->fun->ast->pathname, '/');
-	if (!pn) pn = s->fun->ast->pathname; else pn++;
-	sprintf(pname, "%s:%d ", pn, s->fun->ast->line);
+      if (s->fun->ast->pathname()) {
+	char *pn = strrchr(s->fun->ast->pathname(), '/');
+	if (!pn) pn = s->fun->ast->pathname(); else pn++;
+	sprintf(pname, "%s:%d ", pn, s->fun->ast->line());
 	pname += strlen(pname);
       }
     } else if (s->name) {

@@ -7,7 +7,7 @@ struct D_Scope;
 
 class IF1;
 class Sym;
-class AST;
+class ParseAST;
 
 typedef struct ParseSym {
   uint type_id : 1;
@@ -16,7 +16,7 @@ typedef struct ParseSym {
 } ParseSym;
 #define D_UserSym ParseSym
 typedef struct ParseNode {
-  AST *ast;
+  ParseAST *ast;
   D_Sym *sym;
   D_Scope *saved_scope;
 } V_ParseNode;

@@ -3,7 +3,7 @@
 #include "datatype.h"
 #include "fun.h"
 #include "pattern.h"
-#include "ast.h"
+#include "parse_ast.h"
 
 static Fun* currentFunction;
 
@@ -55,8 +55,9 @@ static void genFunHead(FILE* outfile, Fun* fn) {
 
 
 static void genFun(FILE* outfile, Fun* fn) {
-  AST* root;
+  ParseAST* root, *fn_ast;
 
+  fn_ast = (ParseAST*)fn->ast;
   /* gen prototype */
   if (!funIsInit(fn)) {
     genFunHead(intheadfile, fn);
@@ -67,7 +68,7 @@ static void genFun(FILE* outfile, Fun* fn) {
   if (funIsInit(fn)) {
     fprintf(intheadfile, "\n");
     fprintf(intheadfile, "/* global variables to file */\n");
-    forv_AST(subtree, *(fn->ast)) {
+    forv_ParseAST(subtree, fn_ast->children) {
       genASTDecls(intheadfile, subtree);
     }
     fprintf(intheadfile, "\n");
@@ -77,10 +78,10 @@ static void genFun(FILE* outfile, Fun* fn) {
   genFunHead(outfile, fn);
   fprintf(outfile, " ");
 
-  if (fn->ast->kind == AST_def_fun) {
-    root = fn->ast->last();
+  if (fn_ast->kind == AST_def_fun) {
+    root = fn_ast->last();
   } else {
-    root = fn->ast;
+    root = fn_ast;
   }
   genAST(outfile, root);
   fprintf(outfile, "\n\n");

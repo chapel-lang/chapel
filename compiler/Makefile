@@ -48,6 +48,7 @@ GEYSA_CVS_SRCS = \
 	misc.cpp \
 	mysystem.cpp \
 	parse.cpp \
+	parse_ast.cpp \
 	pattern.cpp \
 	pdb.cpp \
 	pnode.cpp \

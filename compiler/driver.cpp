@@ -25,6 +25,7 @@
 #include "version.h"
 #include "pdb.h"
 #include "fun.h"
+#include "fa.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -142,10 +143,10 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
   clean_exit(0);
 }
 
-static AST *
+static ParseAST *
 load_file(char *fn, IF1 *if1, D_Scope **scope, FrontEnd *fe) {
   int len = 0;
-  AST *res = 0;
+  ParseAST *res = 0;
   D_ParseNode *pn = NULL;
   char *buf = NULL;
 
@@ -192,8 +193,8 @@ load_one(char *fn) {
   int l;
   char tmpfn[1024];
   IF1 *if1 = new IF1;
-  Vec<AST *> av;
-  AST *a;
+  Vec<ParseAST *> av;
+  ParseAST *a;
   D_Scope *scope = NULL;
   char *ext = strrchr(fn, '.');
   if (!ext)

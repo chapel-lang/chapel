@@ -100,8 +100,8 @@ dump_sym(FILE *fp, Sym *t) {
 	    t->in->name);
   else
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
-  if (t->ast && t->ast->pathname)
-    fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->ast->pathname, t->ast->line);
+    fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->ast->pathname(), t->ast->line());
+  if (t->ast && t->ast->pathname())
   if (t->internal)
     fprintf(fp, "<TR><TD><TD>internal<TD>%s\n", internal_string[t->internal]);
   if (t->builtin) {
@@ -144,7 +144,7 @@ compar_fun_ids(const void *ai, const void *aj) {
   return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
-static void
+void
 dump_sym_name(FILE *fp, Sym *s) {
   fprintf(fp, "<a href=\"#SYM_%d\">%s (%d)</a>", s->id, s->name ? s->name : ANON, s->id);
 }
@@ -190,86 +190,12 @@ dump_fun_name(FILE *fp, Fun *f) {
   fprintf(fp, "<a href=\"#FUN_%d\">%s::%s (%d)</a>", f->id, sname, name, f->id);
 }
 
-static void
+void
 dump_fun_list(FILE *fp, Vec<Fun *> &funs) {
   for (int i = 0; i < funs.n; i++) {
     if (i)
       fprintf(fp, ", ");
     dump_fun_name(fp, funs.v[i]);
-  }
-}
-
-static void
-dump_ast_tree(FILE *fp, Fun *f, AST *a, int indent = 0) {
-  switch (a->kind) {
-    case AST_def_fun: return;
-    case AST_const: 
-    case AST_def_ident: 
-      if (!a->sym->var || !a->sym->var->avars.n)
-	return;
-      break;
-    case AST_def_type:
-      if (!unalias_type(a->sym)->creators.n)
-	return;
-      break;
-    default: break;
-  }
-  for (int i = 0; i < indent; i++) putc(' ', fp);
-  fprintf(fp, "<LI>%s ", AST_name[a->kind]);
-  if (a->sym) {
-    if (a->sym->constant) {
-      if (!a->sym->type->num_type)
-	fprintf(fp, " constant %s", a->sym->constant);
-      else {
-	fprintf(fp, " constant ");
-	print(fp, a->sym->imm, a->sym->type);
-      }
-    } else if (a->sym->symbol)
-      fprintf(fp, " symbol %s", a->sym->name);
-    else if (a->sym->name)
-      fprintf(fp, " sym %s", a->sym->name);
-    else 
-      fprintf(fp, " id(%d)", a->sym->id);
-  }
-  Sym *s = a->sym;
-  if (!s)
-    s = a->rval;
-  Sym *t = type_info(a, s);
-  if (t) {
-    fprintf(fp, " : ");
-    dump_sym_name(fp, t);
-  }
-  if (a->string)
-    fprintf(fp, " %s", a->string);
-  if (a->builtin)
-    fprintf(fp, " builtin %s", a->builtin);
-  if (!a->sym || !a->sym->constant) {
-    Vec<Sym *> consts;
-    if (constant_info(a, consts, s)) {
-      fprintf(fp, " constants {");
-      forv_Sym(s, consts) {
-	fprintf(fp, " ");
-	print(fp, s->imm, s->type);
-      }
-      fprintf(fp, " }");
-    }
-  }
-  Vec<Fun *> funs;
-  call_info(f, a, funs);
-  if (funs.n) {
-    fprintf(fp, " calls ");
-    dump_fun_list(fp, funs);
-  }
-  if (a->prim)
-    fprintf(fp, " primitive %s", a->prim->name);
-  fputs("\n", fp);
-  if (a->n) {
-    for (int i = 0; i < indent; i++) putc(' ', fp);
-    fprintf(fp, "<UL>\n");
-    forv_AST(aa, *a)
-      dump_ast_tree(fp, f, aa, indent + 1);
-    for (int i = 0; i < indent; i++) putc(' ', fp);
-    fprintf(fp, "</UL>\n");
   }
 }
 
@@ -285,8 +211,8 @@ dump_functions(FILE *fp, FA *fa) {
     if (!sname) sname = ANON;
     fprintf(fp, "<b><A NAME=\"FUN_%d\">%s::%s (%d)</A></b>\n", f->id, sname, name, f->id);
     fprintf(fp, "<TABLE BORDER=0, CELLSPACING=0, CELLPADDING=0>\n");
-    if (f->ast && f->ast->pathname)
-      fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->ast->pathname, f->ast->line);
+    if (f->ast && f->ast->pathname())
+      fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->ast->pathname(), f->ast->line());
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>Args<TD>\n");
     dump_var_type_marg_positions(fp, f->arg_positions, f->args);
     fprintf(fp, "<TR><TD><TD>Rets<TD>\n");
@@ -309,10 +235,7 @@ dump_functions(FILE *fp, FA *fa) {
     fprintf(fp, "<a href=\"#\" onClick=\"collapseTree('funtree%d'); return false;\">[Collapse AST]</a>\n", f->id);
     fprintf(fp, "</TABLE>\n");
     fprintf(fp, "<UL CLASS =\"mktree\" ID=\"funtree%d\">\n", f->id);
-    if (f->ast->kind == AST_def_fun)
-      dump_ast_tree(fp, f, f->ast->last());
-    else
-      dump_ast_tree(fp, f, f->ast);
+    f->ast->dump(fp, f);
     fprintf(fp, "</UL><BR>\n");
   }
 }

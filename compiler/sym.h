@@ -85,7 +85,7 @@ class Sym : public gc {
   Sym			*cont;			// continuation (function returning ret)
   Sym			*init;			// for modules & classes (default init function)
   Code			*code;			// for functions, Code
-  AST			*ast;			//AST node which defined this symbol
+  AST			*ast;			// AST node which defined this symbol
 
   unsigned int		builtin:1;		// Sym is an read only
   unsigned int		read_only:1;		// Sym is an read only

@@ -50,7 +50,7 @@ show_error(char *str, AST *a, ...) {
   char nstr[1024];
   va_list ap;
   va_start(ap, a);
-  snprintf(nstr, 1023, "%s:%d: %s\n", a->pathname, a->line, str);
+  snprintf(nstr, 1023, "%s:%d: %s\n", a->pathname(), a->line(), str);
   vfprintf(stderr, nstr, ap);
   va_end(ap);
   return -1;
@@ -62,9 +62,9 @@ show_error(char *str, Var *v, ...) {
   va_list ap;
   va_start(ap, v);
   if (v->sym->ast)
-    snprintf(nstr, 1023, "%s:%d: %s\n", v->sym->ast->pathname, v->sym->ast->line, str);
+    snprintf(nstr, 1023, "%s:%d: %s\n", v->sym->ast->pathname(), v->sym->ast->line(), str);
   else if (v->def && v->def->code && v->def->code->ast)
-    snprintf(nstr, 1023, "%s:%d: %s\n", v->def->code->ast->pathname, v->def->code->ast->line, str);
+    snprintf(nstr, 1023, "%s:%d: %s\n", v->def->code->ast->pathname(), v->def->code->ast->line(), str);
   else
     snprintf(nstr, 1023, "error: %s\n", str);
   vfprintf(stderr, nstr, ap);
@@ -169,8 +169,8 @@ void intFatal(AST* ast, char *fmt, ...) {
   char *usrfilename = NULL;
 
   if (ast) {
-    usrlineno = ast->line;
-    usrfilename = ast->pathname;
+    usrlineno = ast->line();
+    usrfilename = ast->pathname();
   }
   
   va_start(args, fmt);

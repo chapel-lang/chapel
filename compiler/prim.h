@@ -8,6 +8,7 @@ class Prim;
 class IF1;
 class Code;
 class AST;
+class ParseAST;
 class PNode;
 class AType;
 
@@ -29,7 +30,7 @@ class Primitives : public gc {
  public:
   Map<char *, Prim *> prim_map[2][2];
   Vec<Prim *> prims;
-  Prim *find(AST *c);
+  Prim *find(ParseAST *c);
   Prim *find(Code *c);
   Prim *find(PNode *p);
   Primitives(IF1 *if1);

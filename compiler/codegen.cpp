@@ -9,7 +9,9 @@
 #include "mysystem.h"
 #include "num.h"
 #include "builtin.h"
-#include "ast.h"
+#include "parse_ast.h"
+#include "fa.h"
+#include "stmt.h"
 
 #define IO_WRITE   1
 #define IO_WRITELN 2
@@ -80,15 +82,15 @@ static int symDead(Sym* sym) {
 }
 
 
-static int findUnOp(FILE* outfile, AST* ast) {
+static int findUnOp(FILE* outfile, ParseAST* ast) {
   int i;
   int numUnOps = sizeof(unOps) / sizeof(unOps[0]);
 
-  if (ast->v[0] && ast->v[0]->sym && 
-      ast->v[0]->sym->name && ast->v[0]->string) {
+  if (ast->children.v[0] && ast->children.v[0]->sym && 
+      ast->children.v[0]->sym->name && ast->children.v[0]->string) {
 
-    char* symName   = ast->v[0]->sym->name;
-    char* symString = ast->v[0]->string;
+    char* symName   = ast->children.v[0]->sym->name;
+    char* symString = ast->children.v[0]->string;
 
     for (i = 1; i < numUnOps; i++) {
       if (strcmp(symName, unOps[i].astSymName) == 0 &&
@@ -102,15 +104,15 @@ static int findUnOp(FILE* outfile, AST* ast) {
 }
 
 
-static int findBinOp(FILE* outfile, AST* ast) {
+static int findBinOp(FILE* outfile, ParseAST* ast) {
   int i;
   int numBinOps = sizeof(binOps) / sizeof(binOps[0]);
 
-  if (ast->v[1] && ast->v[1]->sym && 
-      ast->v[1]->sym->name && ast->v[1]->string) {
+  if (ast->children.v[1] && ast->children.v[1]->sym && 
+      ast->children.v[1]->sym->name && ast->children.v[1]->string) {
     
-    char* symName   = ast->v[1]->sym->name;
-    char* symString = ast->v[1]->string;
+    char* symName   = ast->children.v[1]->sym->name;
+    char* symString = ast->children.v[1]->string;
 
     for (i = 1; i < numBinOps; i++) {
       if (strcmp(symName, binOps[i].astSymName) == 0 &&
@@ -124,17 +126,17 @@ static int findBinOp(FILE* outfile, AST* ast) {
 }
 
 
-static int genUnOp(FILE* outfile, AST* ast, int index) {
+static int genUnOp(FILE* outfile, ParseAST* ast, int index) {
   fprintf(outfile, "%s", unOps[index].cName);
-  genAST(outfile, ast->v[1]);
+  genAST(outfile, ast->children.v[1]);
   return 0;
 }
 
 
-static int genBinOp(FILE* outfile, AST* ast, int index) {
-  genAST(outfile, ast->v[0]);
+static int genBinOp(FILE* outfile, ParseAST* ast, int index) {
+  genAST(outfile, ast->children.v[0]);
   fprintf(outfile, "%s", binOps[index].cName);
-  genAST(outfile, ast->v[2]);
+  genAST(outfile, ast->children.v[2]);
   return 0;
 }
 
@@ -155,16 +157,16 @@ void genDT(FILE* outfile, Sym* pdt) {
 }
 
 
-static int isTupleArg(AST* ast) {
+static int isTupleArg(ParseAST* ast) {
   return (ast->kind == AST_op && 
-	  ast->v[1]->sym->name &&
-	  strcmp(ast->v[1]->sym->name, ",") == 0 &&
-	  ast->v[1]->string &&
-	  strcmp(ast->v[1]->string, "#,") == 0);
+	  ast->children.v[1]->sym->name &&
+	  strcmp(ast->children.v[1]->sym->name, ",") == 0 &&
+	  ast->children.v[1]->string &&
+	  strcmp(ast->children.v[1]->string, "#,") == 0);
 }
 
 
-static void genSingleWriteArg(FILE* outfile, AST* arg, int genSemi) {
+static void genSingleWriteArg(FILE* outfile, ParseAST* arg, int genSemi) {
   Sym* argdt = type_info(arg);
 
   if (!dtIsNullTuple(argdt) && arg->sym != sym_null) {
@@ -184,19 +186,19 @@ static void genSingleWriteArg(FILE* outfile, AST* arg, int genSemi) {
 }
 
 
-static void handleSingleWriteArg(FILE* outfile, AST* arg, int genSemi, 
+static void handleSingleWriteArg(FILE* outfile, ParseAST* arg, int genSemi, 
 				 int depth = 0) {
   if (isTupleArg(arg)) {
-    handleSingleWriteArg(outfile, arg->v[0], 1, depth+1);
-    handleSingleWriteArg(outfile, arg->v[2], depth ? 1 : genSemi, depth+1);
+    handleSingleWriteArg(outfile, arg->children.v[0], 1, depth+1);
+    handleSingleWriteArg(outfile, arg->children.v[2], depth ? 1 : genSemi, depth+1);
   } else {
     genSingleWriteArg(outfile, arg, genSemi);
   }
 }
 
 
-static int handleWrite(FILE* outfile, AST* ast) {
-  AST* fnast = ast->v[0];
+static int handleWrite(FILE* outfile, ParseAST* ast) {
+  ParseAST* fnast = ast->children.v[0];
   int writeType = 0;
 
   if (fnast->rval->name && strcmp(fnast->rval->name, "write") == 0) {
@@ -206,7 +208,7 @@ static int handleWrite(FILE* outfile, AST* ast) {
   }
 
   if (fnast->kind == AST_qualified_ident && writeType) {
-    handleSingleWriteArg(outfile, ast->v[2], (writeType == IO_WRITELN));
+    handleSingleWriteArg(outfile, ast->children.v[2], (writeType == IO_WRITELN));
 
     if (writeType == IO_WRITELN) {
       fprintf(outfile, "_write_linefeed(stdout)");
@@ -218,7 +220,7 @@ static int handleWrite(FILE* outfile, AST* ast) {
 }
 
 
-void genASTDecls(FILE* outfile, AST* ast) {
+void genASTDecls(FILE* outfile, ParseAST* ast) {
   if (ast->kind == AST_def_ident) {
     Sym* sym = ast->sym;
     
@@ -234,15 +236,15 @@ void genASTDecls(FILE* outfile, AST* ast) {
 }
 
 
-static void genDomValues(FILE* outfile, AST* ast) {
+static void genDomValues(FILE* outfile, ParseAST* ast) {
   if (ast->kind == AST_block) {
-    ast = ast->v[0];
+    ast = ast->children.v[0];
   }
   genAST(outfile, ast);
 }
 
 
-void genAST(FILE* outfile, AST* ast) {
+void genAST(FILE* outfile, ParseAST* ast) {
   if (ast == NULL) {
     INT_FATAL("Got NULL AST in genAST()\n");
   }
@@ -261,11 +263,11 @@ void genAST(FILE* outfile, AST* ast) {
       break;
     }
     if (!currentFunIsInit()) { /* we've already generated init vars */
-      forv_AST(subtree, *ast) {
+      forv_ParseAST(subtree, ast->children) {
 	genASTDecls(outfile, subtree);
       }
     }
-    forv_AST(subtree, *ast) {
+    forv_ParseAST(subtree, ast->children) {
       genAST(outfile, subtree);
       if (ast->scope_kind == 0) {
 	fprintf(outfile, ";\n");
@@ -288,11 +290,11 @@ void genAST(FILE* outfile, AST* ast) {
   case AST_scope:
     fprintf(outfile, "{\n");
     if (!currentFunIsInit()) { /* we've already generated init vars */
-      forv_AST(subtree, *ast) {
+      forv_ParseAST(subtree, ast->children) {
 	genASTDecls(outfile, subtree);
       }
     }
-    forv_AST(subtree, *ast) {
+    forv_ParseAST(subtree, ast->children) {
       genAST(outfile, subtree);
       fprintf(outfile, ";\n");
     }
@@ -311,13 +313,13 @@ void genAST(FILE* outfile, AST* ast) {
     {
       int i;
       
-      for (i=0; i<ast->n; i++) {
+      for (i=0; i<ast->children.n; i++) {
 	if (i) {
 	  fprintf(outfile, ", ");
 	}
-	genAST(outfile,ast->v[i]);
+	genAST(outfile,ast->children.v[i]);
       }
-      if (ast->n < 3) {
+      if (ast->children.n < 3) {
 	fprintf(outfile, ", 1");
       }
     }
@@ -327,11 +329,11 @@ void genAST(FILE* outfile, AST* ast) {
     {
       int i;
       
-      for (i=0; i<ast->n; i++) {
+      for (i=0; i<ast->children.n; i++) {
 	if (i) {
 	  fprintf(outfile, ", ");
 	}
-	genAST(outfile,ast->v[i]);
+	genAST(outfile,ast->children.v[i]);
       }
     }
     break;
@@ -350,18 +352,18 @@ void genAST(FILE* outfile, AST* ast) {
 	  int subtree;
 
 	  fprintf(outfile, "_init_domain_%dD(&(%s), ", rank, sym->name);
-	  if (ast->v[1]->kind == AST_constraint) {
+	  if (ast->children.v[1]->kind == AST_constraint) {
 	    subtree = 2;
 	  } else {
 	    subtree = 1;
 	  }
-	  genDomValues(outfile, ast->v[subtree]);
+	  genDomValues(outfile, ast->children.v[subtree]);
 	  fprintf(outfile, ")");
 	} else {
 	  fprintf(outfile, "%s", sym->name);
-	  if (ast->v[1]) {
+	  if (ast->children.v[1]) {
 	    fprintf(outfile, " = ");
-	    genAST(outfile, ast->v[1]);
+	    genAST(outfile, ast->children.v[1]);
 	  }
 	}
       }
@@ -374,14 +376,14 @@ void genAST(FILE* outfile, AST* ast) {
 
   case AST_if:
     fprintf(outfile, "if (");
-    genAST(outfile, ast->v[0]);
+    genAST(outfile, ast->children.v[0]);
     fprintf(outfile, ") {");
-    genAST(outfile, ast->v[1]);
+    genAST(outfile, ast->children.v[1]);
     fprintf(outfile, ";\n");
     fprintf(outfile, "}");
-    if (ast->n > 2) {
+    if (ast->children.n > 2) {
       fprintf(outfile, " else {");
-      genAST(outfile, ast->v[2]);
+      genAST(outfile, ast->children.v[2]);
       fprintf(outfile, ";\n");
       fprintf(outfile, "}");
     }
@@ -392,11 +394,11 @@ void genAST(FILE* outfile, AST* ast) {
       int i;
 
       fprintf(outfile, "/* object?!? */\n");
-      for (i = 0; i<ast->n; i++) {
+      for (i = 0; i<ast->children.n; i++) {
 	if (i) {
 	  fprintf(outfile, ";\n");
 	}
-	genAST(outfile, ast->v[i]);
+	genAST(outfile, ast->children.v[i]);
       }
     }
     break;
@@ -406,18 +408,18 @@ void genAST(FILE* outfile, AST* ast) {
       int i;
       int index = 0;
 
-      if (ast->v[1] && ast->v[1]->sym && 
-	  ast->v[1]->sym->name && ast->v[1]->string) {
-	if (strcmp(ast->v[1]->sym->name, "(") == 0 &&
-	    strcmp(ast->v[1]->string, "#(") == 0) {
+      if (ast->children.v[1] && ast->children.v[1]->sym && 
+	  ast->children.v[1]->sym->name && ast->children.v[1]->string) {
+	if (strcmp(ast->children.v[1]->sym->name, "(") == 0 &&
+	    strcmp(ast->children.v[1]->string, "#(") == 0) {
 	  if (!handleWrite(outfile, ast)) {
-	    genAST(outfile, ast->v[0]);
+	    genAST(outfile, ast->children.v[0]);
 	    fprintf(outfile, "(");
-	    for (i=2; i<ast->n; i++) {
-	      if (dtIsNullTuple(type_info(ast->v[i]))) {
+	    for (i=2; i<ast->children.n; i++) {
+	      if (dtIsNullTuple(type_info(ast->children.v[i]))) {
 		fprintf(outfile, "/* null tuple */");
 	      } else {
-		genAST(outfile, ast->v[i]);
+		genAST(outfile, ast->children.v[i]);
 	      }
 	    }
 	    fprintf(outfile, ")");
