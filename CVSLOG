@@ -10619,3 +10619,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+11/30/04 09:20:00 -- shannon
+
+Log message:
+	Moved a test from the Share directory, after John fixed the analysis
+	bug, to nightly testing.
+
+Modified files:
+	chapel/test/execflags/shannon/configs/: configVarComplex.chpl 
+Removed files:
+	chapel/test/Share/: configVarComplex.chpl 
+
