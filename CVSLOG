@@ -9315,3 +9315,153 @@ Modified files:
 	chapel/test/lowlevelcg/jplevyak/: sample.v 
 	chapel/test/parsing/jplevyak/: literal.good tuples.good 
 
+---------------------------------------------------------------------------
+
+11/05/04 19:14:07 -- bradc
+
+Log message:
+	Checking in some entry point work that I started on this
+	week, in part motivated by the "implement main()" item in
+	our SSCA2 task list, and in part because it seems wise to
+	get entry points working properly sooner rather than later.
+	We may still change our strategy on this, but since I'll
+	be at SC next week, I wanted to get this off my plate and
+	mind for now.
+	
+	The current implementation looks for a module-level function
+	called main() and uses that as the entry point for the
+	program if it exists (renaming it to _chpl_main() when
+	generating C code, and inserting a call to the module's
+	initialization routine at the top.  If there is no
+	module-level main(), it currently runs the module's
+	initialization routine which contains all module-level code
+	(thus, our current tests with no main() will still work).
+	If it finds two module-level main() functions, or two
+	modules but no main function, then it complains.  Added
+	tests to guard this behavior for now.  All of this may be
+	revisited depending on what we decide to do going forward.
+	
+	This change involved a number of changes:
+	
+	* changed the "Module" AST node that I checked in the other
+	  week into a "ModuleSymbol" subclass of Symbol since
+	  modules need to be treated as symbols in naming constructs
+	  (the original implementation was using Modules as a loose
+	  concept corresponding to files -- the new implementation
+	  is meant to be more related to modules in the true Chapel
+	  sense).  All passes now take a ModuleSymbol list as the
+	  argument to their run() routine...
+	
+	* moved the codegen output files (codefile, intheadfile,
+	  extheadfile) from instance variables of a module to global
+	  variables, since they only have a limited useful lifespan
+	  (only one module is codegen-ed at a time), and didn't seem
+	  to truly be part of a module (might make sense to make
+	  them part of some other structure/class, though...)
+	
+	* added a static class member to FnSymbol that keeps track
+	  of the "main" function.
+	
+	* changed SCOPE_FILE to SCOPE_MODULE since files are no
+	  longer a semantically meaningful concept in Chapel -- all
+	  files are treated as modules by default.
+	
+	* added a USR_FATAL call to match INT_FATAL because I couldn't
+	  find an appropriate error message generator.  We need to
+	  unify these moving forward (fail, str_error, USR_FATAL, etc.)
+	
+	* refactored the parsing code to return modules rather than
+	  statement lists.
+	
+	* added a pass RenameCSymbols that is intended to rename
+	  symbols that have special meaning in C (like main).  This
+	  should also be used eventually to rename Chapel's built-in
+	  types (like integer) to their Chapel runtime representation
+	  (like _integer64).
+	
+	* renamed a module's init function from __init to
+	  __init_<modulename> in anticipation of supporting multiple
+	  modules.  This required updating the output of all
+	  flowanalysis/ and protoast/ tests.
+	
+	* added a "halt" command to the gdb environment set up by the
+	  --gdb flag -- I was finding that in certain cases of
+	  infinite recursion the "quit" command wouldn't work.  The
+	  "halt" command is more heavy-handed -- will get you out
+	  no matter what, but won't clean up after itself (i.e.,
+	  you might have a /tmp directory to clean up by hand).
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share loc.cpp stmt.cpp symbol.cpp 
+	                      symtab.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h files.h loc.h misc.h 
+	                          parser.h symbol.h symscope.h symtab.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	                       runpasses.cpp runpasses.h 
+	chapel/compiler/parser/: parser.cpp 
+	chapel/compiler/passes/: Makefile.share codegen.cpp codegen.h 
+	                         filesToAST.cpp filesToAST.h pass.cpp 
+	                         pass.h printProgram.cpp printProgram.h 
+	                         printSymtab.cpp printSymtab.h 
+	                         runAnalysis.cpp runAnalysis.h 
+	chapel/compiler/traversals/: checkBackLinks.cpp checkBackLinks.h 
+	                             checkIDs.cpp checkIDs.h 
+	                             traversal.cpp traversal.h 
+	                             verifyASTType.cpp 
+	chapel/compiler/util/: files.cpp misc.cpp 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/src/: main.c 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  shift_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+Added files:
+	chapel/compiler/passes/: renameCSymbols.cpp renameCSymbols.h 
+	chapel/test/compflags/bradc/onebadfile/: LASTCOMPOPTS 
+	                                         badfile.chpl 
+	                                         badfile.good 
+	chapel/test/compflags/bradc/twomodulesnomain/: COMPOPTS 
+	                                               module1.chpl 
+	                                               module1.good 
+	chapel/test/compflags/bradc/twomodulesnomain/module2/: NOTEST 
+	                                                       module2.chpl 
+	chapel/test/trivial/bradc/entrypoint/: main.chpl main.good 
+	                                       nomain.chpl nomain.good 
+	                                       twomains.chpl 
+	                                       twomains.good 
+Removed files:
+	chapel/compiler/AST/: module.cpp 
+	chapel/compiler/include/: module.h 
+
