@@ -14905,3 +14905,14 @@ Modified files:
 	chapel/compiler/symtab/: symtab.cpp 
 	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
 
+---------------------------------------------------------------------------
+
+01/18/05 11:48:37 -- jplevyak
+
+Log message:
+	Tests for default promotion.
+
+Added files:
+	chapel/test/types/type_variables/jplevyak/: test_coerse2.chpl 
+	                                            test_coerse2.good 
+
