@@ -5731,3 +5731,13 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp fa.h if1.h map.cpp map.h pattern.cpp 
 
+---------------------------------------------------------------------------
+
+08/24/04 15:28:19 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	add ChainHashMap::get_keys and ChainHashMap::get_values
+
+Modified files:
+	chapel/compiler/: analysis.cpp map.cpp map.h 
+
