@@ -8507,3 +8507,13 @@ Modified files:
 	chapel/test/flowanalysis/newast/: COMPOPTS 
 	chapel/test/lowlevelcg/jplevyak/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+09/22/04 19:04:57 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add more suppressions to cover the collector when GC actually occurs.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
