@@ -18423,3 +18423,13 @@ Removed files:
 	                            test_let5.future test_let6.future 
 	                            test_let7.future 
 
+---------------------------------------------------------------------------
+
+03/01/05 08:49:10 -- jplevyak
+
+Log message:
+	Remove HAND_TRAVERSE_EXPR_LET define since traverse is now fixed.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
