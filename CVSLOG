@@ -17725,3 +17725,23 @@ Added files:
 	                            test_let7.good test_let8.chpl 
 	                            test_let8.future test_let8.good 
 
+---------------------------------------------------------------------------
+
+02/17/05 11:42:02 -- deitz
+
+Log message:
+	Added support for forall statements using the forall expression syntax
+	as in "[i in D] A(i) = B(i)."  This fixes three future array tests
+	(with some modifications requiring indices).
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/arrays/deitz/: test_basic1d2.chpl test_basic1d3.chpl 
+	                           test_basic1d4.chpl 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_basic1d2.future 
+	                           test_basic1d3.future 
+	                           test_basic1d4.future 
+
