@@ -451,8 +451,9 @@ ASymbol::clone(CloneCallback *callback) {
     TypeSymbol *type_symbol = dynamic_cast<TypeSymbol*>(type->name);
     TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(type_symbol->defPoint);
     Map<BaseAST*,BaseAST*> clone_map;
-    old_stmt->clone(c, &clone_map);
-    Sym *newsym = c->context->smap.get(type_symbol->asymbol->sym);
+    TypeDefStmt *new_stmt = old_stmt->clone(c, &clone_map);
+    assert(new_stmt);
+    Sym *newsym = c->context->smap.get(type_symbol->type->asymbol->sym);
     fixup_symbol_clone(sym, callback);
     return newsym;
   }
