@@ -11236,3 +11236,35 @@ Removed files:
 	chapel/compiler/traversals/: checkBackLinks.cpp checkBackLinks.h 
 	                             setupStmtLinks.cpp setupStmtLinks.h 
 
+---------------------------------------------------------------------------
+
+12/06/04 16:27:28 -- shannon
+
+Log message:
+	Added support for files of config vars.  The filename is passed via the
+	new -f option, e.g. "-ffilename".  The file should contain config var
+	initializations of the form "variableName=value" separated by whitespace.
+	
+	At this time the code for quoted strings doesn't work and is commented out.
+	
+	*  arg.c:  Added a function to handle the parsing of the argument string.
+	   This function breaks the string down into variable name and value, and
+	   installs these values into the config var hash table.  Added a switch
+	   statement to handle the now two known command-line flags, -s and -f.
+	
+	*  chplio.h:  Added a #define value for default string length which is
+	   now used by both chplio.c and arg.c.
+	
+	*  config.c:  Changed the malloc to sizeof(configVarType) instead of
+	   sizeof(*configVar).
+
+Modified files:
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: arg.c chplio.c config.c 
+	chapel/test/trivial/shannon/: readStringOverflow.good 
+Added files:
+	chapel/test/execflags/shannon/configs/: configVarFile.chpl 
+	                                        configVarFile.execopts 
+	                                        configVarFile.good 
+	                                        configVarFile.input 
+
