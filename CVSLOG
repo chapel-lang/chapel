@@ -21562,3 +21562,30 @@ Added files:
 	                                 member-2.chpl member-2.future 
 	                                 member-2.good 
 
+---------------------------------------------------------------------------
+
+03/25/05 10:40:01 -- deitz
+
+Log message:
+	Added support for like keyword as in
+	
+	var foo : integer;
+	var bar like foo;
+	
+	This creates a new Type LikeType.  It is removed after analysis when
+	the type of the expression is known.  Passed the future to John as it
+	works without analysis.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+Added files:
+	chapel/compiler/symtab/: removeLikeTypes.cpp removeLikeTypes.h 
+	chapel/test/types/like/deitz/: .cvsignore test_like1.chpl 
+	                               test_like1.future test_like1.good 
+
