@@ -6919,3 +6919,20 @@ Log message:
 Modified files:
 	chapel/compiler/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+09/11/04 09:38:53 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Remove debugging code which was messing up the tests
+	  (don't know how that happened, since I tested it before I checked
+	   in... and I retested when I saw the regression errors but
+	   after cvs update and build I get the same error, but it was
+	   something I checked in ?!?, so it should have been in my source tree!)
+	Added new test case for analysis of global variables.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+Added files:
+	chapel/test/flowanalysis/newast/: globalref.chpl globalref.good 
+
