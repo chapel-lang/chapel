@@ -1439,7 +1439,16 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       }
       case P_prim_coerce: {
 	assert(p->rvals.v[1]->sym->abstract_type);
-	update_in(result, p->rvals.v[1]->sym->abstract_type);
+	Sym *s = p->rvals.v[1]->sym;
+	AVar *rhs = make_AVar(p->rvals.v[2], es);
+	Vec<CreationSet *> css;
+	forv_CreationSet(cs, *rhs->out)
+	  if (cs->sym == p->rvals.v[1]->sym)
+	    css.set_add(cs);
+	if (css.n)
+	  update_in(result, make_AType(css));
+	else if (s->type->num_kind || s->type == sym_string || s->type->is_symbol)
+	  update_in(result, p->rvals.v[1]->sym->abstract_type);
 	break;
       }
       case P_prim_cast: {
