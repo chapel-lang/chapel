@@ -1,5 +1,3 @@
- called from 0 in __init__ at <unknown>:0
- called from 0 in __init__ at <unknown>:0
  called from 121 in operator at prelude.v:121
  called from 2 in f at loop2.v:1
  called from 2 in f at loop2.v:1
@@ -23,7 +21,6 @@ f::j(loop2.v:3) ( int32 (prelude.v:24) )
 f::j(loop2.v:3) ( int32 (prelude.v:24) )
 function __init loop2.v:1
 function __init prelude.v:7
-function __init__ <unknown>:0
 function f loop2.v:1
 function operator prelude.v:121
 function operator prelude.v:80

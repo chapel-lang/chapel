@@ -1,5 +1,3 @@
- called from 0 in __init__ at <unknown>:0
- called from 0 in __init__ at <unknown>:0
  called from 10 in __init at literal.v:7
  called from 11 in __init at literal.v:7
  called from 12 in __init at literal.v:7
@@ -20,7 +18,6 @@
  called from 9 in __init at literal.v:7
 function __init literal.v:7
 function __init prelude.v:7
-function __init__ <unknown>:0
 function print prelude.v:134
 function print prelude.v:134
 function print prelude.v:134

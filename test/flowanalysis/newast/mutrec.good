@@ -1,46 +1,40 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
  called from 13 in bar at mutrec.chpl:17
  called from 19 in __init_mutrec at mutrec.chpl:22
  called from 20 in __init_mutrec at mutrec.chpl:22
  called from 4 in foo at mutrec.chpl:8
-::0(mutrec.chpl:12) ( int64 (<unknown>:0) )
-::0(mutrec.chpl:19) ( int64 (<unknown>:0) )
-::0(mutrec.chpl:20) ( int64 (<unknown>:0) )
-::0(mutrec.chpl:3) ( int64 (<unknown>:0) )
-::1(mutrec.chpl:13) ( int64 (<unknown>:0) )
-::1(mutrec.chpl:4) ( int64 (<unknown>:0) )
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_mutrec(<internal>:0) ( __init_mutrec (<unknown>:0) )
-::__init_mutrec(<unknown>:0) ( __init_mutrec (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(mutrec.chpl:12) ( int64 (<unknown>:0) )
-::a(mutrec.chpl:3) ( int64 (<unknown>:0) )
-::bar(<unknown>:0) ( bar (<unknown>:0) )
-::bar(mutrec.chpl:20) ( bar (<unknown>:0) )
-::bar(mutrec.chpl:4) ( bar (<unknown>:0) )
-::done with bar(mutrec.chpl:15) ( string (<unknown>:0) )
-::done with foo(mutrec.chpl:6) ( string (<unknown>:0) )
-::foo(<unknown>:0) ( foo (<unknown>:0) )
-::foo(mutrec.chpl:13) ( foo (<unknown>:0) )
-::foo(mutrec.chpl:19) ( foo (<unknown>:0) )
-::in bar(mutrec.chpl:11) ( string (<unknown>:0) )
-::in foo(mutrec.chpl:2) ( string (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::0(mutrec.chpl:12) ( int64 )
+::0(mutrec.chpl:19) ( int64 )
+::0(mutrec.chpl:20) ( int64 )
+::0(mutrec.chpl:3) ( int64 )
+::1(mutrec.chpl:13) ( int64 )
+::1(mutrec.chpl:4) ( int64 )
+::__init_entryPoint ( __init_entryPoint )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_mutrec ( __init_mutrec )
+::__init_mutrec(mutrec.chpl:22) ( __init_mutrec )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::a(mutrec.chpl:1) ( int64 )
+::a(mutrec.chpl:10) ( int64 )
+::a(mutrec.chpl:12) ( int64 )
+::a(mutrec.chpl:3) ( int64 )
+::bar(mutrec.chpl:17) ( bar )
+::bar(mutrec.chpl:20) ( bar )
+::bar(mutrec.chpl:4) ( bar )
+::done with bar(mutrec.chpl:15) ( string )
+::done with foo(mutrec.chpl:6) ( string )
+::foo(mutrec.chpl:13) ( foo )
+::foo(mutrec.chpl:19) ( foo )
+::foo(mutrec.chpl:8) ( foo )
+::in bar(mutrec.chpl:11) ( string )
+::in foo(mutrec.chpl:2) ( string )
+::main ( main )
+::main ( main )
+::null ( null null )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_mutrec mutrec.chpl:22
 function __init_prelude prelude.chpl:54
-function bar mutrec.chpl:17
-function foo mutrec.chpl:8
-function main <internal>:0
+function bar mutrec.chpl:10
+function foo mutrec.chpl:1
 globals

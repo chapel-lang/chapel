@@ -26,6 +26,8 @@ class ASymbol : public Sym {
  public:
   // Sym interface
   Sym *copy();
+  char *pathname();
+  int line();
   
   BaseAST *xsymbol;
 

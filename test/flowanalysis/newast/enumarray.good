@@ -1,100 +1,85 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in __init_enumarray at enumarray.chpl:20
- called from 0 in main at <internal>:0
-::%.3d(enumarray.chpl:19) ( string (<unknown>:0) )
-::%3d(enumarray.chpl:17) ( string (<unknown>:0) )
-::) = (enumarray.chpl:17) ( string (<unknown>:0) )
-::012(enumarray.chpl:10) ( int64 (<unknown>:0) )
-::1(enumarray.chpl:3) ( int64 (<unknown>:0) )
-::123(enumarray.chpl:7) ( int64 (<unknown>:0) )
-::345(enumarray.chpl:11) ( int64 (<unknown>:0) )
-::456(enumarray.chpl:8) ( int64 (<unknown>:0) )
-::678(enumarray.chpl:12) ( int64 (<unknown>:0) )
-::789(enumarray.chpl:9) ( int64 (<unknown>:0) )
-::901(enumarray.chpl:13) ( int64 (<unknown>:0) )
-::A(<unknown>:0) ( A (<unknown>:0) )
-::A(enumarray.chpl:9) ( A (<unknown>:0) )
-::B(<unknown>:0) ( B (<unknown>:0) )
-::B(enumarray.chpl:10) ( B (<unknown>:0) )
-::C(<unknown>:0) ( C (<unknown>:0) )
-::C(enumarray.chpl:11) ( C (<unknown>:0) )
-::D(<unknown>:0) ( D (<unknown>:0) )
-::D(enumarray.chpl:12) ( D (<unknown>:0) )
-::DClass(<unknown>:0) ( Domain (<unknown>:0) )
-::DClass(enumarray.chpl:16) ( Domain (<unknown>:0) )
-::O(<unknown>:0) ( O (<unknown>:0) )
-::O(enumarray.chpl:13) ( O (<unknown>:0) )
-::O(enumarray.chpl:3) ( O (<unknown>:0) )
-::S(<unknown>:0) ( S (<unknown>:0) )
-::S(enumarray.chpl:15) ( S (<unknown>:0) )
-::S(enumarray.chpl:3) ( S (<unknown>:0) )
-::S(enumarray.chpl:7) ( S (<unknown>:0) )
-::W(<unknown>:0) ( W (<unknown>:0) )
-::W(enumarray.chpl:8) ( W (<unknown>:0) )
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_enumarray(<internal>:0) ( __init_enumarray (<unknown>:0) )
-::__init_enumarray(<unknown>:0) ( __init_enumarray (<unknown>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::array_index(internal_prelude.chpl:6) ( string (<unknown>:0) )
-::classVals(<unknown>:0) ( classVals (<unknown>:0) )
-::i(<unknown>:0) ( Index (<unknown>:0) )
-::i(<unknown>:0) ( Index (<unknown>:0) S (<unknown>:0) W (<unknown>:0) A (<unknown>:0) B (<unknown>:0) C (<unknown>:0) D (<unknown>:0) O (<unknown>:0) )
-::i(enumarray.chpl:17) ( Index (<unknown>:0) )
-::i(enumarray.chpl:17) ( Index (<unknown>:0) )
-::i(internal_prelude.chpl:6) ( Index (<unknown>:0) S (<unknown>:0) W (<unknown>:0) A (<unknown>:0) B (<unknown>:0) C (<unknown>:0) D (<unknown>:0) O (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-::probSize = (enumarray.chpl:19) ( string (<unknown>:0) )
-::probSize((enumarray.chpl:17) ( string (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<internal>:0) ( (<unknown>:0) )
-::probSize(<unknown>:0) ( (<unknown>:0) )
-::probSize(S) = (enumarray.chpl:15) ( string (<unknown>:0) )
-::probSize(enumarray.chpl:10) ( (<unknown>:0) )
-::probSize(enumarray.chpl:11) ( (<unknown>:0) )
-::probSize(enumarray.chpl:12) ( (<unknown>:0) )
-::probSize(enumarray.chpl:13) ( (<unknown>:0) )
-::probSize(enumarray.chpl:15) ( (<unknown>:0) )
-::probSize(enumarray.chpl:17) ( (<unknown>:0) )
-::probSize(enumarray.chpl:19) ( (<unknown>:0) )
-::probSize(enumarray.chpl:7) ( (<unknown>:0) )
-::probSize(enumarray.chpl:8) ( (<unknown>:0) )
-::probSize(enumarray.chpl:9) ( (<unknown>:0) )
-::this(<unknown>:0) ( (<unknown>:0) )
-::this(internal_prelude.chpl:6) ( (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::%.3d(enumarray.chpl:19) ( string )
+::%3d(enumarray.chpl:17) ( string )
+::) = (enumarray.chpl:17) ( string )
+::012(enumarray.chpl:10) ( int64 )
+::1(enumarray.chpl:3) ( int64 )
+::123(enumarray.chpl:7) ( int64 )
+::345(enumarray.chpl:11) ( int64 )
+::456(enumarray.chpl:8) ( int64 )
+::678(enumarray.chpl:12) ( int64 )
+::789(enumarray.chpl:9) ( int64 )
+::901(enumarray.chpl:13) ( int64 )
+::A(enumarray.chpl:1) ( A (enumarray.chpl:1) )
+::A(enumarray.chpl:9) ( A (enumarray.chpl:1) )
+::B(enumarray.chpl:1) ( B (enumarray.chpl:1) )
+::B(enumarray.chpl:10) ( B (enumarray.chpl:1) )
+::C(enumarray.chpl:1) ( C (enumarray.chpl:1) )
+::C(enumarray.chpl:11) ( C (enumarray.chpl:1) )
+::D(enumarray.chpl:1) ( D (enumarray.chpl:1) )
+::D(enumarray.chpl:12) ( D (enumarray.chpl:1) )
+::DClass(enumarray.chpl:16) ( Domain (internal_prelude.chpl:13) )
+::DClass(enumarray.chpl:3) ( Domain (internal_prelude.chpl:13) )
+::O(enumarray.chpl:1) ( O (enumarray.chpl:1) )
+::O(enumarray.chpl:13) ( O (enumarray.chpl:1) )
+::O(enumarray.chpl:3) ( O (enumarray.chpl:1) )
+::S(enumarray.chpl:1) ( S (enumarray.chpl:1) )
+::S(enumarray.chpl:15) ( S (enumarray.chpl:1) )
+::S(enumarray.chpl:3) ( S (enumarray.chpl:1) )
+::S(enumarray.chpl:7) ( S (enumarray.chpl:1) )
+::W(enumarray.chpl:1) ( W (enumarray.chpl:1) )
+::W(enumarray.chpl:8) ( W (enumarray.chpl:1) )
+::__init_entryPoint ( __init_entryPoint )
+::__init_enumarray ( __init_enumarray )
+::__init_enumarray(enumarray.chpl:20) ( __init_enumarray )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::array_index(internal_prelude.chpl:6) ( string )
+::classVals ( classVals )
+::i(enumarray.chpl:16) ( Index (internal_prelude.chpl:1) )
+::i(enumarray.chpl:17) ( Index (internal_prelude.chpl:1) )
+::i(enumarray.chpl:17) ( Index (internal_prelude.chpl:1) )
+::i(internal_prelude.chpl:5) ( Index (internal_prelude.chpl:1) S (enumarray.chpl:1) W (enumarray.chpl:1) A (enumarray.chpl:1) B (enumarray.chpl:1) C (enumarray.chpl:1) D (enumarray.chpl:1) O (enumarray.chpl:1) )
+::i(internal_prelude.chpl:6) ( Index (internal_prelude.chpl:1) S (enumarray.chpl:1) W (enumarray.chpl:1) A (enumarray.chpl:1) B (enumarray.chpl:1) C (enumarray.chpl:1) D (enumarray.chpl:1) O (enumarray.chpl:1) )
+::main ( main )
+::main ( main )
+::null ( null null )
+::probSize ( )
+::probSize ( )
+::probSize ( )
+::probSize ( )
+::probSize ( )
+::probSize ( )
+::probSize ( )
+::probSize ( )
+::probSize ( )
+::probSize = (enumarray.chpl:19) ( string )
+::probSize((enumarray.chpl:17) ( string )
+::probSize(S) = (enumarray.chpl:15) ( string )
+::probSize(enumarray.chpl:10) ( )
+::probSize(enumarray.chpl:11) ( )
+::probSize(enumarray.chpl:12) ( )
+::probSize(enumarray.chpl:13) ( )
+::probSize(enumarray.chpl:15) ( )
+::probSize(enumarray.chpl:17) ( )
+::probSize(enumarray.chpl:19) ( )
+::probSize(enumarray.chpl:5) ( )
+::probSize(enumarray.chpl:7) ( )
+::probSize(enumarray.chpl:8) ( )
+::probSize(enumarray.chpl:9) ( )
+::this ( )
+::this(internal_prelude.chpl:6) ( )
 function __init_enumarray enumarray.chpl:20
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
-function main <internal>:0
-function this internal_prelude.chpl:7
-function this internal_prelude.chpl:7
-function this internal_prelude.chpl:7
-function this internal_prelude.chpl:7
-function this internal_prelude.chpl:7
-function this internal_prelude.chpl:7
-function this internal_prelude.chpl:7
-function this internal_prelude.chpl:7
-function this internal_prelude.chpl:7
+function this internal_prelude.chpl:5
+function this internal_prelude.chpl:5
+function this internal_prelude.chpl:5
+function this internal_prelude.chpl:5
+function this internal_prelude.chpl:5
+function this internal_prelude.chpl:5
+function this internal_prelude.chpl:5
+function this internal_prelude.chpl:5
+function this internal_prelude.chpl:5
 globals

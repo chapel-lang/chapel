@@ -45,6 +45,22 @@ static Sym *sym_locale = 0;
 ASymbol::ASymbol() : xsymbol(0) {
 }
 
+char* 
+ASymbol::pathname() {
+  if (xsymbol && xsymbol->filename)
+    return xsymbol->filename;
+  else
+    return Sym::pathname();
+}
+
+int 
+ASymbol::line() {
+  if (xsymbol && xsymbol->lineno)
+    return xsymbol->lineno;
+  else
+    return Sym::line();
+}
+
 AInfo::AInfo() : xast(0), code(0), sym(0), rval(0) {
   label[0] = label[1] = 0;
 }
@@ -1160,8 +1176,10 @@ gen_fun(FnDefStmt *f) {
   int iarg = 0;
   assert(f->fn->asymbol->name);
   if (strcmp(f->fn->asymbol->name, "this") != 0) {
-    as[iarg++] = new_sym(f->fn->asymbol->name);
-    as[iarg-1]->must_specialize = if1_make_symbol(if1, f->fn->asymbol->name);
+    Sym *s = new_sym(f->fn->asymbol->name);
+    s->ast = ast;
+    s->must_specialize = if1_make_symbol(if1, f->fn->asymbol->name);
+    as[iarg++] = s;
   }
   for (int i = 0; i < args.n; i++)
     as[iarg++] = args.v[i]->asymbol;

@@ -1,23 +1,17 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
-::123(declprintint2.chpl:1) ( int64 (<unknown>:0) )
-::__init_declprintint2(<internal>:0) ( __init_declprintint2 (<unknown>:0) )
-::__init_declprintint2(<unknown>:0) ( __init_declprintint2 (<unknown>:0) )
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::myvariable(<unknown>:0) ( int64 (<unknown>:0) )
-::myvariable(declprintint2.chpl:3) ( int64 (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
+::123(declprintint2.chpl:1) ( int64 )
+::__init_declprintint2 ( __init_declprintint2 )
+::__init_declprintint2(declprintint2.chpl:4) ( __init_declprintint2 )
+::__init_entryPoint ( __init_entryPoint )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::main ( main )
+::main ( main )
+::myvariable(declprintint2.chpl:1) ( int64 )
+::myvariable(declprintint2.chpl:3) ( int64 )
+::null ( null null )
 function __init_declprintint2 declprintint2.chpl:4
-function __init_entryPoint <internal>:0
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
-function main <internal>:0
 globals

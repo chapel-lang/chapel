@@ -1,33 +1,27 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
  called from 8 in __init_multiple_return at multiple_return.chpl:9
-::1(multiple_return.chpl:8) ( int64 (<unknown>:0) )
-::2(multiple_return.chpl:8) ( int64 (<unknown>:0) )
-::3(multiple_return.chpl:8) ( int64 (<unknown>:0) )
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_multiple_return(<internal>:0) ( __init_multiple_return (<unknown>:0) )
-::__init_multiple_return(<unknown>:0) ( __init_multiple_return (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(multiple_return.chpl:2) ( int64 (<unknown>:0) )
-::b(<unknown>:0) ( int64 (<unknown>:0) )
-::b(multiple_return.chpl:3) ( int64 (<unknown>:0) )
-::c(<unknown>:0) ( int64 (<unknown>:0) )
-::c(multiple_return.chpl:5) ( int64 (<unknown>:0) )
-::f(<unknown>:0) ( f (<unknown>:0) )
-::f(multiple_return.chpl:8) ( f (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::1(multiple_return.chpl:8) ( int64 )
+::2(multiple_return.chpl:8) ( int64 )
+::3(multiple_return.chpl:8) ( int64 )
+::__init_entryPoint ( __init_entryPoint )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_multiple_return ( __init_multiple_return )
+::__init_multiple_return(multiple_return.chpl:9) ( __init_multiple_return )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::a(multiple_return.chpl:1) ( int64 )
+::a(multiple_return.chpl:2) ( int64 )
+::b(multiple_return.chpl:1) ( int64 )
+::b(multiple_return.chpl:3) ( int64 )
+::c(multiple_return.chpl:1) ( int64 )
+::c(multiple_return.chpl:5) ( int64 )
+::f(multiple_return.chpl:6) ( f )
+::f(multiple_return.chpl:8) ( f )
+::main ( main )
+::main ( main )
+::null ( null null )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_multiple_return multiple_return.chpl:9
 function __init_prelude prelude.chpl:54
-function f multiple_return.chpl:6
-function main <internal>:0
+function f multiple_return.chpl:1
 globals

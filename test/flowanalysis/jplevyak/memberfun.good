@@ -1,5 +1,3 @@
- called from 0 in __init__ at <unknown>:0
- called from 0 in __init__ at <unknown>:0
  called from 2 in f at memberfun.v:2
  called from 3 in __init at memberfun.v:1
  called from 4 in __init at memberfun.v:1
@@ -12,7 +10,6 @@ f::self(memberfun.v:2) ( A (memberfun.v:1) )
 function __init memberfun.v:1
 function __init memberfun.v:1
 function __init prelude.v:7
-function __init__ <unknown>:0
 function f memberfun.v:2
 function new prelude.v:74
 function operator prelude.v:75

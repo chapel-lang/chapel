@@ -1,29 +1,23 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
-::B(<unknown>:0) ( B (<unknown>:0) )
-::B(enum.chpl:3) ( B (<unknown>:0) )
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_enum(<internal>:0) ( __init_enum (<unknown>:0) )
-::__init_enum(<unknown>:0) ( __init_enum (<unknown>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-::x is: (enum.chpl:5) ( string (<unknown>:0) )
-::x(<unknown>:0) ( B (<unknown>:0) )
-::x(enum.chpl:5) ( B (<unknown>:0) )
-::x(enum.chpl:7) ( B (<unknown>:0) )
-::y is: (enum.chpl:9) ( string (<unknown>:0) )
-::y(<unknown>:0) ( B (<unknown>:0) )
-::y(enum.chpl:9) ( B (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::B(enum.chpl:1) ( B (enum.chpl:1) )
+::B(enum.chpl:3) ( B (enum.chpl:1) )
+::__init_entryPoint ( __init_entryPoint )
+::__init_enum ( __init_enum )
+::__init_enum(enum.chpl:10) ( __init_enum )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::main ( main )
+::main ( main )
+::null ( null null )
+::x is: (enum.chpl:5) ( string )
+::x(enum.chpl:3) ( B (enum.chpl:1) )
+::x(enum.chpl:5) ( B (enum.chpl:1) )
+::x(enum.chpl:7) ( B (enum.chpl:1) )
+::y is: (enum.chpl:9) ( string )
+::y(enum.chpl:7) ( B (enum.chpl:1) )
+::y(enum.chpl:9) ( B (enum.chpl:1) )
 function __init_enum enum.chpl:10
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
-function main <internal>:0
 globals

@@ -1,5 +1,3 @@
- called from 0 in __init__ at <unknown>:0
- called from 0 in __init__ at <unknown>:0
  called from 2 in __init at assign1.v:1
  called from 3 in __init at assign1.v:1
  called from 4 in __init at assign1.v:1
@@ -10,7 +8,6 @@ __init::self(assign1.v:1) ( C (assign1.v:1) )
 function __init assign1.v:1
 function __init assign1.v:1
 function __init prelude.v:7
-function __init__ <unknown>:0
 function new prelude.v:74
 function operator prelude.v:75
 function operator prelude.v:75
@@ -21,7 +18,7 @@ new::o(prelude.v:74) ( C (assign1.v:1) )
 operator::a(prelude.v:75) ( C (assign1.v:1) )
 operator::a(prelude.v:75) ( C (assign1.v:1) )
 operator::b(prelude.v:75) ( __init (prelude.v:73) )
-operator::b(prelude.v:75) ( c (<unknown>:0) )
+operator::b(prelude.v:75) ( c )
 print::a(prelude.v:134) ( int32 (prelude.v:24) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:59) ( null (prelude.v:59) )

@@ -1,34 +1,28 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
  called from 20 in __init_noop at noop.chpl:22
-::0(prelude.chpl:10) ( int64 (<unknown>:0) )
-::1(noop.chpl:7) ( int64 (<unknown>:0) )
-::1(noop.chpl:7) ( int64 (<unknown>:0) )
-::3(noop.chpl:7) ( int64 (<unknown>:0) )
-::D(<unknown>:0) ( Domain (<unknown>:0) )
-::D(noop.chpl:10) ( Domain (<unknown>:0) )
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_noop(<internal>:0) ( __init_noop (<unknown>:0) )
-::__init_noop(<unknown>:0) ( __init_noop (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::false(<unknown>:0) ( int64 (<unknown>:0) )
-::false(noop.chpl:13) ( int64 (<unknown>:0) )
-::false(noop.chpl:17) ( int64 (<unknown>:0) )
-::foo(<unknown>:0) ( foo (<unknown>:0) )
-::foo(noop.chpl:20) ( foo (<unknown>:0) )
-::i(<unknown>:0) ( Index (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::0(prelude.chpl:10) ( int64 )
+::1(noop.chpl:7) ( int64 )
+::1(noop.chpl:7) ( int64 )
+::3(noop.chpl:7) ( int64 )
+::D(noop.chpl:10) ( Domain (internal_prelude.chpl:13) )
+::D(noop.chpl:7) ( Domain (internal_prelude.chpl:13) )
+::__init_entryPoint ( __init_entryPoint )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_noop ( __init_noop )
+::__init_noop(noop.chpl:22) ( __init_noop )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::false(noop.chpl:13) ( int64 )
+::false(noop.chpl:17) ( int64 )
+::false(prelude.chpl:10) ( int64 )
+::foo(noop.chpl:20) ( foo )
+::foo(noop.chpl:5) ( foo )
+::i(noop.chpl:10) ( Index (internal_prelude.chpl:1) )
+::main ( main )
+::main ( main )
+::null ( null null )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_noop noop.chpl:22
 function __init_prelude prelude.chpl:54
-function foo noop.chpl:5
-function main <internal>:0
+function foo noop.chpl:4
 globals

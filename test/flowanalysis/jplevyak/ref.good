@@ -1,11 +1,8 @@
- called from 0 in __init__ at <unknown>:0
- called from 0 in __init__ at <unknown>:0
  called from 4 in __init at ref.v:2
  called from 6 in __init at ref.v:2
  called from 8 in __init at ref.v:2
 function __init prelude.v:7
 function __init ref.v:2
-function __init__ <unknown>:0
 function operator prelude.v:117
 function operator prelude.v:118
 function print prelude.v:134

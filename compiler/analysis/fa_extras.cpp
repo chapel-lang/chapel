@@ -153,7 +153,7 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
   depth++;
   if (depth > print_call_depth || !p->code)
     return;
-  if (depth > 1 && p->code->filename()) {
+  if (depth > 1 && p->code->filename() && p->code->line()) {
     for (int x = 0; x < depth; x++)
       fprintf(stderr, " ");
     fprintf(stderr, "called from %s:%d\n", p->code->filename(), p->code->line());
@@ -303,9 +303,12 @@ log_var_types(Var *v, Fun *f) {
     log(LOG_TEST_FA, "%s::", v->sym->in->name);
   else
     log(LOG_TEST_FA, "%d::", v->sym->in->id);
-  if (v->sym->name)
-    log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->filename()), v->sym->line());
-  else
+  if (v->sym->name) {
+    if (v->sym->line())
+      log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->filename()), v->sym->line());
+    else
+      log(LOG_TEST_FA, "%s ", v->sym->name);
+  } else
     log(LOG_TEST_FA, "(%s:%d) ", fn(v->sym->filename()), v->sym->line());
   Vec<CreationSet *> css;
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
@@ -325,7 +328,13 @@ log_var_types(Var *v, Fun *f) {
       log(LOG_TEST_FA, "%s ", s->name);
     else if (s->constant)
       log(LOG_TEST_FA, "\"%s\" ", s->constant);
-    log(LOG_TEST_FA, "(%s:%d) ", fn(s->filename()), s->line());
+    else if (s->is_constant) {
+      char c[128];
+      sprint(c, s->imm, s->type);
+      log(LOG_TEST_FA, "\"%s\" ", c);
+    }
+    if (s->line())
+      log(LOG_TEST_FA, "(%s:%d) ", fn(s->filename()), s->line());
   }
   log(LOG_TEST_FA, ")\n");
 }

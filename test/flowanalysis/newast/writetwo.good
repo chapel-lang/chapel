@@ -1,24 +1,18 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::__init_writetwo(<internal>:0) ( __init_writetwo (<unknown>:0) )
-::__init_writetwo(<unknown>:0) ( __init_writetwo (<unknown>:0) )
-::and another second(writetwo.chpl:2) ( string (<unknown>:0) )
-::here is another first\n(writetwo.chpl:2) ( string (<unknown>:0) )
-::here is the first string\n(writetwo.chpl:1) ( string (<unknown>:0) )
-::here is the second\n(writetwo.chpl:1) ( string (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::__init_entryPoint ( __init_entryPoint )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_writetwo ( __init_writetwo )
+::__init_writetwo(writetwo.chpl:4) ( __init_writetwo )
+::and another second(writetwo.chpl:2) ( string )
+::here is another first\n(writetwo.chpl:2) ( string )
+::here is the first string\n(writetwo.chpl:1) ( string )
+::here is the second\n(writetwo.chpl:1) ( string )
+::main ( main )
+::main ( main )
+::null ( null null )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
 function __init_writetwo writetwo.chpl:4
-function main <internal>:0
 globals

@@ -1,23 +1,17 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
-::(printempty.chpl:2) ( string (<unknown>:0) )
-::I'm about to print the empty string:\n(printempty.chpl:1) ( string (<unknown>:0) )
-::OK, I did it!\n(printempty.chpl:3) ( string (<unknown>:0) )
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::__init_printempty(<internal>:0) ( __init_printempty (<unknown>:0) )
-::__init_printempty(<unknown>:0) ( __init_printempty (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::(printempty.chpl:2) ( string )
+::I'm about to print the empty string:\n(printempty.chpl:1) ( string )
+::OK, I did it!\n(printempty.chpl:3) ( string )
+::__init_entryPoint ( __init_entryPoint )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_printempty ( __init_printempty )
+::__init_printempty(printempty.chpl:4) ( __init_printempty )
+::main ( main )
+::main ( main )
+::null ( null null )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
 function __init_printempty printempty.chpl:4
-function main <internal>:0
 globals

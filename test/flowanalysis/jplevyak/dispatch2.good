@@ -1,5 +1,3 @@
- called from 0 in __init__ at <unknown>:0
- called from 0 in __init__ at <unknown>:0
  called from 2 in f at dispatch2.v:2
  called from 3 in f at dispatch2.v:3
  called from 4 in __init at dispatch2.v:1
@@ -10,7 +8,6 @@ f::x(dispatch2.v:2) ( float64 (prelude.v:37) )
 f::x(dispatch2.v:3) ( int32 (prelude.v:24) )
 function __init dispatch2.v:1
 function __init prelude.v:7
-function __init__ <unknown>:0
 function f dispatch2.v:2
 function f dispatch2.v:3
 function g dispatch2.v:1

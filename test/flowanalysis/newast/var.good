@@ -1,25 +1,19 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
-::1(var.chpl:1) ( int64 (<unknown>:0) )
-::2.0(var.chpl:2) ( float64 (<unknown>:0) )
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::__init_var(<internal>:0) ( __init_var (<unknown>:0) )
-::__init_var(<unknown>:0) ( __init_var (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-::x(<unknown>:0) ( int64 (<unknown>:0) )
-::x(var.chpl:2) ( int64 (<unknown>:0) )
-::x(var.chpl:3) ( int64 (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::1(var.chpl:1) ( int64 )
+::2.0(var.chpl:2) ( float64 )
+::__init_entryPoint ( __init_entryPoint )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_var ( __init_var )
+::__init_var(var.chpl:4) ( __init_var )
+::main ( main )
+::main ( main )
+::null ( null null )
+::x(var.chpl:1) ( int64 )
+::x(var.chpl:2) ( int64 )
+::x(var.chpl:3) ( int64 )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
 function __init_var var.chpl:4
-function main <internal>:0
 globals

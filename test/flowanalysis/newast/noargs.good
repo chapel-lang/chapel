@@ -1,25 +1,19 @@
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in __init_entryPoint at <internal>:0
- called from 0 in main at <internal>:0
  called from 5 in __init_noargs at noargs.chpl:6
-::__init_entryPoint(<unknown>:0) ( __init_entryPoint (<internal>:0) )
-::__init_internal_prelude(<internal>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_internal_prelude(<unknown>:0) ( __init_internal_prelude (<unknown>:0) )
-::__init_noargs(<internal>:0) ( __init_noargs (<unknown>:0) )
-::__init_noargs(<unknown>:0) ( __init_noargs (<unknown>:0) )
-::__init_prelude(<internal>:0) ( __init_prelude (<unknown>:0) )
-::__init_prelude(<unknown>:0) ( __init_prelude (<unknown>:0) )
-::foo(<unknown>:0) ( foo (<unknown>:0) )
-::foo(noargs.chpl:5) ( foo (<unknown>:0) )
-::in foo!(noargs.chpl:2) ( string (<unknown>:0) )
-::main(<internal>:0) ( main (<unknown>:0) )
-::main(<unknown>:0) ( main (<unknown>:0) )
-::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-function __init_entryPoint <internal>:0
+::__init_entryPoint ( __init_entryPoint )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_noargs ( __init_noargs )
+::__init_noargs(noargs.chpl:6) ( __init_noargs )
+::__init_prelude ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::foo(noargs.chpl:3) ( foo )
+::foo(noargs.chpl:5) ( foo )
+::in foo!(noargs.chpl:2) ( string )
+::main ( main )
+::main ( main )
+::null ( null null )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_noargs noargs.chpl:6
 function __init_prelude prelude.chpl:54
-function foo noargs.chpl:3
-function main <internal>:0
+function foo noargs.chpl:1
 globals

@@ -1,5 +1,3 @@
- called from 0 in __init__ at <unknown>:0
- called from 0 in __init__ at <unknown>:0
  called from 10 in __init at constant_folding.v:7
  called from 11 in __init at constant_folding.v:7
  called from 15 in __init at constant_folding.v:7
@@ -8,10 +6,9 @@
  called from 7 in __init at constant_folding.v:7
  called from 8 in __init at constant_folding.v:7
  called from 9 in __init at constant_folding.v:7
-f::a(constant_folding.v:16) ( (<unknown>:0) )
+f::a(constant_folding.v:16) ( "2.000000" )
 function __init constant_folding.v:7
 function __init prelude.v:7
-function __init__ <unknown>:0
 function f constant_folding.v:16
 function print prelude.v:134
 function print prelude.v:134
@@ -21,18 +18,18 @@ function print prelude.v:134
 function print prelude.v:134
 function print prelude.v:134
 globals
-print::a(prelude.v:134) ( (<unknown>:0) )
-print::a(prelude.v:134) ( (<unknown>:0) )
-print::a(prelude.v:134) ( (<unknown>:0) )
-print::a(prelude.v:134) ( (<unknown>:0) )
-print::a(prelude.v:134) ( (<unknown>:0) )
-print::a(prelude.v:134) ( (<unknown>:0) )
-print::a(prelude.v:134) ( (<unknown>:0) )
+print::a(prelude.v:134) ( "1" )
+print::a(prelude.v:134) ( "1" )
+print::a(prelude.v:134) ( "2" )
+print::a(prelude.v:134) ( "2.000000" )
+print::a(prelude.v:134) ( "3" )
+print::a(prelude.v:134) ( "4" )
+print::a(prelude.v:134) ( "5.000000" )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:59) ( null (prelude.v:59) )
 user::__init(constant_folding.v:7) ( __init (constant_folding.v:7) )
-user::c1(constant_folding.v:7) ( (<unknown>:0) )
-user::c2(constant_folding.v:8) ( (<unknown>:0) )
-user::c3(constant_folding.v:9) ( (<unknown>:0) )
-user::c4(constant_folding.v:10) ( (<unknown>:0) )
-user::c50(constant_folding.v:11) ( (<unknown>:0) )
+user::c1(constant_folding.v:7) ( "1" )
+user::c2(constant_folding.v:8) ( "2" )
+user::c3(constant_folding.v:9) ( "1" )
+user::c4(constant_folding.v:10) ( "4" )
+user::c50(constant_folding.v:11) ( "5.000000" )

@@ -131,13 +131,11 @@ class Sym : public gc {
   Sym			*ret;			// return value of functions
   Sym			*cont;			// continuation (function returning ret)
 
-  char			*pathname();
+  virtual char		*pathname();
+  virtual int		line();
   char			*filename();
-  int			line();
-
   virtual Sym		*copy();
   void			copy_values(Sym *);
-
   void 			inherits_add(Sym *);
   void 			must_implement_and_specialize(Sym *);
 
