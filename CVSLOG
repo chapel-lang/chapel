@@ -21403,3 +21403,36 @@ Added files:
 	                                   tuple_index-2.future 
 	                                   tuple_index-2.good 
 
+---------------------------------------------------------------------------
+
+03/24/05 16:33:29 -- deitz
+
+Log message:
+	Should this result in an ambiguity?  One is a method and one is a
+	function.  I believe they both should work at the same time, but we
+	should make sure we all agree.
+	
+	class foo {
+	  var x : integer;
+	  function bar() {
+	    writeln("method bar ", x);
+	  }
+	}
+	
+	function bar(f : foo) {
+	  writeln("function bar ", f.x);
+	}
+	
+	var f : foo = foo();
+	
+	f.bar();
+	bar(f);
+
+Added files:
+	chapel/test/classes/deitz/: test_mf_class.chpl 
+	                            test_mf_class.future 
+	                            test_mf_class.good 
+	                            test_mf_record.chpl 
+	                            test_mf_record.future 
+	                            test_mf_record.good 
+
