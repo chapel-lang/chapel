@@ -3053,3 +3053,13 @@ Added files:
 	chapel/test/trivial/bradc/: declprintdom2.chpl 
 	                            declprintdom2.good 
 
+---------------------------------------------------------------------------
+
+06/08/04 17:34:22 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	updated for non-cloning of constants
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
+
