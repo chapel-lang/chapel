@@ -24233,3 +24233,15 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+04/06/05 12:45:57 -- jplevyak
+
+Log message:
+	Add an "any" type for internal use.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: type.h 
+
