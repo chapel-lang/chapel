@@ -1,5 +1,4 @@
 test_clone_class1a.chpl:1: class foo:: 'x' has mixed basic types: int64 float64
-  called from test_clone_class1a.chpl:6
 test_clone_class1a.chpl:4: expression has mixed basic types: int64 float64
   called from test_clone_class1a.chpl:12
   called from test_clone_class1a.chpl:16

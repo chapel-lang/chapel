@@ -60,7 +60,6 @@ class Type : public BaseAST {
   virtual void codegenIORoutines(FILE* outfile);
   virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
-  virtual void codegenConstructors(FILE* outfile);
 
   virtual bool outParamNeedsPtr(void);
   virtual bool requiresCParamTmp(paramType intent);
@@ -178,7 +177,6 @@ class ClassType : public Type {
 	    SymScope* init_classScope = NULL);
   void addDeclarations(Stmt* newDeclarations,
 		       Stmt* afterStmt = NULL);
-  void buildConstructor(void);
   void setClassScope(SymScope* init_classScope);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -187,7 +185,6 @@ class ClassType : public Type {
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
-  void codegenConstructors(FILE* outfile);
 
   virtual bool blankIntentImpliesRef(void);
 };

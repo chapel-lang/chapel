@@ -462,7 +462,6 @@ void TypeSymbol::codegenDef(FILE* outfile) {
   type->codegenStringToType(outfile);
   type->codegenIORoutines(outfile);
   type->codegenConfigVarRoutines(outfile);
-  type->codegenConstructors(outfile);
 }
 
 

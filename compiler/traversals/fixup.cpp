@@ -173,80 +173,79 @@ static void verifySymbolDefPoint(Symbol* sym) {
   if (typeid(*sym) == typeid(UnresolvedSymbol)) {
     return;
   }
+  if (typeid(*sym) == typeid(LabelSymbol)) {
+    return;
+  }
+  if (sym->parentScope->type == SCOPE_INTRINSIC) {
+    return;
+  }
 
   BaseAST* defPoint = sym->defPoint;
-  if (defPoint) {
-    if (DefExpr* expr = dynamic_cast<DefExpr*>(defPoint)) {
-      Symbol* tmp = expr->sym;
-      while (tmp) {
-	if (tmp == sym) {
+  if (DefExpr* expr = dynamic_cast<DefExpr*>(defPoint)) {
+    Symbol* tmp = expr->sym;
+    while (tmp) {
+      if (tmp == sym) {
+	return;
+      }
+      tmp = nextLink(Symbol, tmp);
+    }
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(expr->sym)) {
+      Symbol* formals = fn->formals;
+      while (formals) {
+	if (formals == sym) {
 	  return;
 	}
-	tmp = nextLink(Symbol, tmp);
+	formals = nextLink(Symbol, formals);
       }
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(expr->sym)) {
-	Symbol* formals = fn->formals;
-	while (formals) {
-	  if (formals == sym) {
+    }
+    if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(expr->sym)) {
+      if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
+	EnumSymbol* tmp = enum_type->valList;
+	while (tmp) {
+	  if (tmp == sym) {
 	    return;
 	  }
-	  formals = nextLink(Symbol, formals);
+	  tmp = nextLink(EnumSymbol, tmp);
 	}
       }
-      if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(expr->sym)) {
-	if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
-	  EnumSymbol* tmp = enum_type->valList;
-	  while (tmp) {
-	    if (tmp == sym) {
-	      return;
-	    }
-	    tmp = nextLink(EnumSymbol, tmp);
-	  }
-	}
+    }
+    INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
+  }
+  else if (ForLoopStmt* stmt = dynamic_cast<ForLoopStmt*>(defPoint)) {
+    Symbol* tmp = stmt->index;
+    while (tmp) {
+      if (tmp == sym) {
+	return;
       }
-      INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
+      tmp = nextLink(Symbol, tmp);
     }
-    else if (ForLoopStmt* stmt = dynamic_cast<ForLoopStmt*>(defPoint)) {
-      Symbol* tmp = stmt->index;
-      while (tmp) {
-	if (tmp == sym) {
-	  return;
-	}
-	tmp = nextLink(Symbol, tmp);
+    INT_FATAL(sym, "Incorrect ForLoopStmt defPoint "
+	      "for symbol '%s'", sym->name);
+  }
+  else if (ForallExpr* expr = dynamic_cast<ForallExpr*>(defPoint)) {
+    Symbol* tmp = expr->indices;
+    while (tmp) {
+      if (tmp == sym) {
+	return;
       }
-      INT_FATAL(sym, "Incorrect ForLoopStmt defPoint "
-		"for symbol '%s'", sym->name);
+      tmp = nextLink(Symbol, tmp);
     }
-    else if (ForallExpr* expr = dynamic_cast<ForallExpr*>(defPoint)) {
-      Symbol* tmp = expr->indices;
-      while (tmp) {
-	if (tmp == sym) {
-	  return;
-	}
-	tmp = nextLink(Symbol, tmp);
+    INT_FATAL(sym, "Incorrect ForallExpr defPoint "
+	      "for symbol '%s'", sym->name);
+  }
+  else if (LetExpr* expr = dynamic_cast<LetExpr*>(defPoint)) {
+    Symbol* tmp = expr->syms;
+    while (tmp) {
+      if (tmp == sym) {
+	return;
       }
-      INT_FATAL(sym, "Incorrect ForallExpr defPoint "
-		"for symbol '%s'", sym->name);
+      tmp = nextLink(Symbol, tmp);
     }
-    else if (LetExpr* expr = dynamic_cast<LetExpr*>(defPoint)) {
-      Symbol* tmp = expr->syms;
-      while (tmp) {
-	if (tmp == sym) {
-	  return;
-	}
-	tmp = nextLink(Symbol, tmp);
-      }
-      INT_FATAL(sym, "Incorrect LetExpr defPoint "
-		"for symbol '%s'", sym->name);
-    }
-    else if (!defPoint) {
-      if (sym->parentScope->type != SCOPE_INTRINSIC) {
-	INT_FATAL(sym, "No defPoint for symbol '%s'", sym->name);
-      }
-    }
-    else {
-      INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
-    }
+    INT_FATAL(sym, "Incorrect LetExpr defPoint "
+	      "for symbol '%s'", sym->name);
+  }
+  else {
+    INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
   }
 }
 

@@ -158,10 +158,6 @@ void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-void Type::codegenConstructors(FILE* outfile) {
-}
-
-
 bool Type::outParamNeedsPtr(void) {
   return true;
 }
@@ -775,7 +771,6 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   copy_type->addDeclarations(new_decls);
   SymScope* copy_scope = Symboltable::popScope();
   copy_type->setClassScope(copy_scope);
-  copy_type->buildConstructor();
   return copy_type;
 }
 
@@ -814,55 +809,6 @@ void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
 }
 
 
-void ClassType::buildConstructor(void) {
-  if (symbol && !symbol->parentScope->isInternal()) {
-    /* create default constructor */
-
-    char* constructorName = glomstrings(2, "_construct_", symbol->name);
-    FnSymbol* newFunSym = Symboltable::startFnDef(new FnSymbol(constructorName));
-    newFunSym->cname = glomstrings(2, "_construct_", symbol->cname);
-    if (value || union_value) {
-      BlockStmt* body = Symboltable::startCompoundStmt();
-      VarSymbol* this_insert = new VarSymbol("this", this);
-      DefExpr* def_expr = new DefExpr(this_insert);
-      DefStmt* body1 = new DefStmt(def_expr);
-      this_insert->setDefPoint(def_expr);
-      ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
-      body1->append(body2);
-      Symboltable::finishCompoundStmt(body, body1);
-      constructor = new DefStmt(Symboltable::finishFnDef(newFunSym, NULL, this, body));
-    }
-    else {
-      Expr* argList = new IntLiteral("1", 1);
-      argList = appendLink(argList, new SizeofExpr(this));
-      argList = appendLink(argList, new StringLiteral("string"));
-
-      BlockStmt* body = new BlockStmt(
-			  new ReturnStmt(
-			    new CastExpr(this, 
-			      new FnCall(
-			        new Variable(
-				  Symboltable::lookupInternal("_chpl_malloc")), 
-				argList))
-			    )
-			  );
-      constructor = new DefStmt(Symboltable::finishFnDef(newFunSym, NULL, this, body));
-    }
-    /** Add test tags for unions: This is a little ugly, it should
-	insert the enum statement that we generate in codegen before
-	the union def stmt.
-    **/
-    if (union_value) {
-      forv_Vec(VarSymbol, tmp, fields) {
-	EnumSymbol* idtag = new EnumSymbol(glomstrings(4, "_", symbol->name, "_union_id_", tmp->name), NULL);
-	idtag->setDefPoint(NULL); // SHOULD BE REAL statement for declaring this enum, UGH...short-term
-      }
-    }
-  }
-  SET_BACK(constructor);
-}
-
-
 void ClassType::setClassScope(SymScope* init_classScope) {
   classScope = init_classScope;
 }
@@ -888,28 +834,6 @@ void ClassType::codegen(FILE* outfile) {
 
 
 void ClassType::codegenDef(FILE* outfile) {
-  if (union_value) {
-    fprintf(outfile, "typedef enum _");
-    symbol->codegen(outfile);
-    fprintf(outfile, "_union_id_def {\n");
-    bool first = true;
-    forv_Vec(VarSymbol, tmp, fields) {
-      if (!first) {
-	if (tmp) {
-	  fprintf(outfile, ",");
-	}
-	fprintf(outfile, "\n");
-      }
-      else {
-	first = false;
-      }
-      fprintf(outfile, "_%s_union_id_", symbol->name);
-      tmp->codegen(outfile);
-    }
-    fprintf(outfile, "} _");
-    symbol->codegen(outfile);
-    fprintf(outfile, "_union_id;\n\n");
-  }
   fprintf(outfile, "typedef struct _");
   symbol->codegen(outfile);
   fprintf(outfile, "_def {\n");
@@ -947,19 +871,15 @@ void ClassType::codegenDef(FILE* outfile) {
     symbol->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }
+  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(constructor)) {
+    def_stmt->fnDef()->codegenDef(codefile);
+  }
   forv_Vec(FnSymbol, fn, methods) {
     // Check to see if this is where it is defined
     if (fn->parentScope->symContext->type == this) {
       fn->codegenDef(codefile);
     }
     fprintf(codefile, "\n");
-  }
-}
-
-
-void ClassType::codegenConstructors(FILE* outfile) {
-  if (constructor) {
-    constructor->codegenList(outfile, "\n");
   }
 }
 

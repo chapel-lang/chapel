@@ -1,0 +1,3 @@
+jplevyak
+
+If we start using a constructor with parameters that are used in a named fashion and also with default values, we need to insert the default wrapper function for constructors.  I don't think this is happening.  To use this, uncomment the #define CONSTRUCTOR_WITH_PARAMETERS

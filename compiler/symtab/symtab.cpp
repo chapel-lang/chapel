@@ -647,7 +647,6 @@ DefExpr* Symboltable::finishClassDef(TypeSymbol* classSym,
   classType->addDeclarations(definition);
   SymScope *classScope = Symboltable::popScope();
   classType->setClassScope(classScope);
-  classType->buildConstructor();
   DefExpr* classDefExpr = new DefExpr(classSym);
   classSym->setDefPoint(classDefExpr);
   classScope->setContext(NULL, classSym, classDefExpr);
