@@ -19447,3 +19447,23 @@ Modified files:
 	                              intents-classes3.chpl 
 	                              intents-classes4.chpl 
 
+---------------------------------------------------------------------------
+
+03/14/05 14:46:45 -- bradc
+
+Log message:
+	A few small Makefile changes:
+	
+	1) added support for "make depend" in the top-level runtime
+	   directory, as I always want this without cd-ing into the
+	   src/ subdirectory.
+	
+	2) added top-level targets for those of us who work on both
+	   the compiler and runtime directories: comprt will cd into
+	   both directories and build them.  depend will cd into both
+	   directories and build dependences for them.
+
+Modified files:
+	./: Makefile 
+	chapel/runtime/: Makefile 
+
