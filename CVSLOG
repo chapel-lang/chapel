@@ -21454,3 +21454,14 @@ Added files:
 	                                         test_overload_noanalysis1.chpl 
 	                                         test_overload_noanalysis1.good 
 
+---------------------------------------------------------------------------
+
+03/24/05 17:54:50 -- deitz
+
+Log message:
+	Fixed a couple of valgrind bugs on sequences.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/runtime/include/: seq.h 
+
