@@ -1,4 +1,3 @@
-::011(octalliteral.chpl:1) ( int64 )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
@@ -9,9 +8,7 @@
 ::main ( main )
 ::main ( main )
 ::null ( null null )
-::x is: (octalliteral.chpl:3) ( string )
 ::x(octalliteral.chpl:1) ( int64 )
-::x(octalliteral.chpl:3) ( int64 )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_octalliteral octalliteral.chpl:4
 function __init_prelude prelude.chpl:59

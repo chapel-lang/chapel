@@ -1,9 +1,4 @@
  called from 20 in __init_noop at noop.chpl:22
-::0(prelude.chpl:10) ( int64 )
-::1(noop.chpl:7) ( int64 )
-::1(noop.chpl:7) ( int64 )
-::3(noop.chpl:7) ( int64 )
-::D(noop.chpl:10) ( Domain (internal_prelude.chpl:13) )
 ::D(noop.chpl:7) ( Domain (internal_prelude.chpl:13) )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
@@ -12,8 +7,6 @@
 ::__init_noop(noop.chpl:22) ( __init_noop )
 ::__init_prelude ( __init_prelude )
 ::__init_prelude(prelude.chpl:59) ( __init_prelude )
-::false(noop.chpl:13) ( int64 )
-::false(noop.chpl:17) ( int64 )
 ::false(prelude.chpl:10) ( int64 )
 ::foo(noop.chpl:20) ( foo )
 ::foo(noop.chpl:5) ( foo )

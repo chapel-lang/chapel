@@ -201,6 +201,16 @@ map_symbols(Vec<BaseAST *> &syms) {
 	    break;
 	}
       }
+      if (sym->astType == SYMBOL_PARAM) {
+	ParamSymbol *s = dynamic_cast<ParamSymbol *>(sym);
+	switch (s->intent) {
+	  default: break;
+	  case PARAM_IN: sym->asymbol->intent = Sym_IN; break;
+	  case PARAM_INOUT: sym->asymbol->intent = Sym_INOUT; break;
+	  case PARAM_OUT: sym->asymbol->intent = Sym_OUT; break;
+	  case PARAM_CONST: sym->asymbol->is_read_only = 1; break;
+	}
+      }
       symbols++;
       if (verbose_level > 1 && sym->name)
         printf("map_symbols: found Symbol '%s'\n", sym->name);
@@ -253,8 +263,12 @@ build_symbols(Vec<BaseAST *> &syms) {
     if (s) { 
       switch (s->astType) {
 	case SYMBOL_PARAM: {
-	  if (s->type && s->type != nilType && s->type != dtUnknown)
-	    s->asymbol->must_implement_and_specialize(s->type->asymbol);
+	  if (s->type && s->type != nilType && s->type != dtUnknown) {
+	    if (s->asymbol->intent != Sym_OUT)
+	      s->asymbol->must_implement_and_specialize(s->type->asymbol);
+	    else
+	      s->asymbol->must_implement = s->type->asymbol;
+	  }
 	  break;
 	}
 	default: break;
@@ -299,7 +313,8 @@ build_types(Vec<BaseAST *> &syms) {
 	  t->asymbol->alias = sym_string;
 	} else if (t == dtLocale) {
 	} else if (t == dtUnknown) {
-	  t->asymbol->type_kind = Type_UNKNOWN;
+	  t->asymbol->type_kind = Type_ALIAS;
+	  t->asymbol->alias = sym_unknown;
 	} else
 	  assert(!"case");
 	break;
@@ -439,6 +454,7 @@ build_builtin_symbols() {
   new_primitive_type(sym_continuation, "continuation");
   new_primitive_type(sym_vector, "vector");
   new_primitive_type(sym_void, "void");
+  new_primitive_type(sym_unknown, "unknown");
   if (!sym_object)
     sym_object = new_sym("object", 1);
   sym_object->type_kind = Type_RECORD;
@@ -493,6 +509,7 @@ build_builtin_symbols() {
   sym_init = new_sym(); // placeholder
 
   ((ASymbol*)sym_void)->xsymbol = dtVoid;
+  ((ASymbol*)sym_unknown)->xsymbol = dtUnknown;
   ((ASymbol*)sym_bool)->xsymbol = dtBoolean;
   ((ASymbol*)sym_int64)->xsymbol = dtInteger;
   ((ASymbol*)sym_float64)->xsymbol = dtFloat;
@@ -597,20 +614,21 @@ gen_vardef(BaseAST *a) {
   VarSymbol *var = def->var;
   Sym *s = var->asymbol;
   def->ainfo->sym = s;
-  if (var->type) {
+  if (var->type && var->type != dtUnknown) {
     if (var->type->astType != TYPE_CLASS || dynamic_cast<ClassType*>(var->type)->value) {
       s->type = unalias_type(var->type->asymbol);
       s->is_var = 1;
     } else
       s->must_implement = unalias_type(var->type->asymbol);
-  }
+  } else
+    s->is_var = 1;
   if (!def->init->isNull()) {
     if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
     if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->sym, def->ainfo);
   } else if (!s->is_var)
     return show_error("missing initializer", def->ainfo);
   else if (!s->type && !s->must_implement)
-    return show_error("missing variable type", def->ainfo);
+    ; // return show_error("missing variable type", def->ainfo);
   else {
     if (s->type) {
       if (s->type->num_kind)
@@ -733,10 +751,14 @@ undef_or_fn_expr(Expr *ast) {
 }
 
 static void
-gen_move(Expr *e, Sym *s) {
+gen_expr(Expr *e, Sym *s) {
+#if 0
   e->ainfo->rval = new_sym(s->name ? s->name : s->constant);
   e->ainfo->rval->ast = e->ainfo;
   if1_move(if1, &e->ainfo->code, s, e->ainfo->rval, e->ainfo);
+#else
+  e->ainfo->rval = s;
+#endif
 }
 
 static Sym *
@@ -808,21 +830,21 @@ gen_if1(BaseAST *ast) {
       BoolLiteral *s = dynamic_cast<BoolLiteral*>(ast);
       Sym *c = if1_const(if1, sym_bool, s->str);
       c->imm.v_bool = s->val;
-      gen_move(s, c);
+      gen_expr(s, c);
       break;
     }
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
       Sym *c = if1_const(if1, sym_int64, s->str);
       c->imm.v_int64 = s->val;
-      gen_move(s, c);
+      gen_expr(s, c);
       break;
     }
     case EXPR_FLOATLITERAL: {
       FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
       Sym *c = if1_const(if1, sym_float64, s->str);
       c->imm.v_float64 = s->val;
-      gen_move(s, c);
+      gen_expr(s, c);
       break;
     }
     case EXPR_COMPLEXLITERAL: {
@@ -830,20 +852,20 @@ gen_if1(BaseAST *ast) {
       Sym *c = if1_const(if1, sym_complex64, s->str);
       c->imm.v_complex64.r = s->realVal;
       c->imm.v_complex64.i = s->imagVal;
-      gen_move(s, c);
+      gen_expr(s, c);
       break;
     }
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
       Sym *c = if1_const(if1, sym_string, s->str);
-      gen_move(s, c);
+      gen_expr(s, c);
       break;
     }
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
       Sym *sym = s->var->asymbol;
       s->ainfo->sym = sym;
-      gen_move(s, sym);
+      gen_expr(s, sym);
       break;
     }
     case EXPR_UNOP: {
@@ -1163,14 +1185,9 @@ gen_if1(BaseAST *ast) {
 static int
 gen_fun(FnDefStmt *f) {
   Sym *fn = f->fn->asymbol;
-  Code *body = 0;
-  if1_gen(if1, &body, f->fn->body->ainfo->code);
   AInfo *ast = f->ainfo;
-  if1_move(if1, &body, sym_null, fn->ret, ast);
-  if1_label(if1, &body, ast, ast->label[0]);
-  Code *c = if1_send(if1, &body, 3, 0, sym_reply, fn->cont, fn->ret);
-  c->ast = ast;
   Vec<Symbol *> args;
+  Vec<Sym *> out_args;
   getLinkElements(args, f->fn->formals);
   Sym *as[args.n + 2];
   int iarg = 0;
@@ -1181,8 +1198,19 @@ gen_fun(FnDefStmt *f) {
     s->must_specialize = if1_make_symbol(if1, f->fn->asymbol->name);
     as[iarg++] = s;
   }
-  for (int i = 0; i < args.n; i++)
+  for (int i = 0; i < args.n; i++) {
+    if (is_Sym_OUT(args.v[i]->asymbol))
+      out_args.add(args.v[i]->asymbol);
     as[iarg++] = args.v[i]->asymbol;
+  }
+  Code *body = 0;
+  if1_gen(if1, &body, f->fn->body->ainfo->code);
+  if1_move(if1, &body, sym_null, fn->ret, ast);
+  if1_label(if1, &body, ast, ast->label[0]);
+  Code *c = if1_send(if1, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+  forv_Sym(r, out_args)
+    if1_add_send_arg(if1, c, r);
+  c->ast = ast;
   if1_closure(if1, fn, body, iarg, as);
   fn->ast = ast;
   return 0;

@@ -99,7 +99,7 @@ Matcher::pattern_match_sym(Sym *type, MPosition *cp, Vec<Fun *> *local_matches,
     // for all the local possible matches, if the type is permitted at the argument
     Vec<Match *> matches;
     Vec<MPosition *> positions;
-    forv_Fun(f, *local_matches) {
+    forv_Fun(f, *local_matches) if (f) {
       Match *m = match_map.get(f);
       MPosition *m_cp = m->actual_to_formal_position.get(cp);
       Sym *m_sym = m->fun->arg_syms.get(m_cp);
@@ -146,7 +146,7 @@ Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *cp, MPosition *po
       m = new Match(f);
       match_map.put(f, m); 
     }
-    MPosition *m_cp = !positional_p ? m->actual_to_formal_position.get(cp) : cp;
+    MPosition *m_cp = !positional_p ? m->actual_to_formal_position.get(cp) : m_cp;
     m_cp = m_cp ? m_cp : cp;
     AType *t = m->all_filters.get(m_cp);
     if (!t) {
@@ -159,16 +159,16 @@ Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *cp, MPosition *po
   }
 }
 
-static int
+int
 named_position(CreationSet *cs, AVar *av, MPosition &p, MPosition *pp) {
   if (cs && cs->sym != sym_tuple && av->var->sym->name && 
       !av->var->sym->is_constant & !av->var->sym->is_symbol) {
     pp->copy(p);
     pp->set_top(av->var->sym->name);
     return 1;
-  } else if ((!cs || cs->sym == sym_tuple) && av->var->sym->alt_name) {
+  } else if ((!cs || cs->sym == sym_tuple) && av->var->sym->arg_name) {
     pp->copy(p);
-    pp->set_top(av->var->sym->alt_name);
+    pp->set_top(av->var->sym->arg_name);
     return 1;
   }
   return 0;

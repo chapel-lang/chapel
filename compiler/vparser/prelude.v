@@ -13,6 +13,7 @@ type continuation __name "continuation";
 type vector __name "vector";
 type tuple __name "tuple";
 type void __name "void";
+type unknown __name "unknown";
 type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";

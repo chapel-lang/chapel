@@ -200,7 +200,7 @@ expression
   | identifier ':=' expression	$left 8600 
     {
       $$.ast = $2.ast;
-      $$.ast->alt_name = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
+      $$.ast->arg_name = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
     }
   | square_block
   | paren_block
@@ -276,7 +276,7 @@ sub_idpattern
   : ident def_suffix (':=' identifier)? { 
       $$.ast = $0.ast;
       if ($#2)
-        $$.ast->alt_name = if1_cannonicalize_string(
+        $$.ast->destruct_name = if1_cannonicalize_string(
           $g->i, ${child 2, 0, 1}->start_loc.s, ${child 2, 0, 1}->end);
     }
   | '(' pattern_type? sub_idpattern (',' sub_idpattern)* ')'

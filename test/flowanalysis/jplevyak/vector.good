@@ -2,5 +2,5 @@ function __init prelude.v:7
 function __init vector.v:3
 globals
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::__init(vector.v:3) ( __init (vector.v:3) )

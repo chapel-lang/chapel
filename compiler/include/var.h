@@ -23,7 +23,8 @@ class Var : public gc {
   PNode			*def;
   AVarMap		avars;	// used by fa.cpp
   CreationSet		*as_CreationSet; // used by fa.cpp
-  unsigned int		clone_for_constants : 1;
+  unsigned int		clone_for_constants:1;
+  unsigned int		is_internal:1;
   char			*cg_string; // used by cg.cpp
 
   Var *copy();

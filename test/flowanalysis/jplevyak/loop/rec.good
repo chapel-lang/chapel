@@ -1,16 +1,16 @@
  called from 1 in f at rec.v:1
  called from 1 in f at rec.v:1
  called from 2 in __init at rec.v:1
-f::x(rec.v:1) ( int32 (prelude.v:24) )
-f::x(rec.v:1) ( int32 (prelude.v:24) )
-f::x(rec.v:1) ( int32 (prelude.v:24) )
+f::x(rec.v:1) ( int32 (prelude.v:25) )
+f::x(rec.v:1) ( int32 (prelude.v:25) )
+f::x(rec.v:1) ( int32 (prelude.v:25) )
 function __init prelude.v:7
 function __init rec.v:1
 function f rec.v:1
-function operator prelude.v:81
+function operator prelude.v:82
 globals
-operator::a(prelude.v:81) ( int32 (prelude.v:24) )
-operator::b(prelude.v:81) ( int32 (prelude.v:24) )
+operator::a(prelude.v:82) ( int32 (prelude.v:25) )
+operator::b(prelude.v:82) ( int32 (prelude.v:25) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::__init(rec.v:1) ( __init (rec.v:1) )

@@ -13,28 +13,28 @@ function __init multiplereturn.v:1
 function __init prelude.v:7
 function f multiplereturn.v:1
 function g multiplereturn.v:6
-function operator prelude.v:80
-function operator prelude.v:80
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
+function operator prelude.v:81
+function operator prelude.v:81
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
 globals
-operator::a(prelude.v:80) ( int32 (prelude.v:24) )
-operator::a(prelude.v:80) ( int32 (prelude.v:24) )
-operator::b(prelude.v:80) ( float64 (prelude.v:37) )
-operator::b(prelude.v:80) ( int32 (prelude.v:24) )
-print::a(prelude.v:134) ( float64 (prelude.v:37) )
-print::a(prelude.v:134) ( int32 (prelude.v:24) )
-print::a(prelude.v:134) ( tuple (prelude.v:14) )
+operator::a(prelude.v:81) ( int32 (prelude.v:25) )
+operator::a(prelude.v:81) ( int32 (prelude.v:25) )
+operator::b(prelude.v:81) ( float64 (prelude.v:38) )
+operator::b(prelude.v:81) ( int32 (prelude.v:25) )
+print::a(prelude.v:135) ( float64 (prelude.v:38) )
+print::a(prelude.v:135) ( int32 (prelude.v:25) )
+print::a(prelude.v:135) ( tuple (prelude.v:14) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::__init(multiplereturn.v:1) ( __init (multiplereturn.v:1) )
-user::a(multiplereturn.v:2) ( int32 (prelude.v:24) )
-user::b(multiplereturn.v:2) ( float64 (prelude.v:37) )
+user::a(multiplereturn.v:2) ( int32 (prelude.v:25) )
+user::b(multiplereturn.v:2) ( float64 (prelude.v:38) )
 user::c(multiplereturn.v:2) ( tuple (prelude.v:14) )
-user::s(multiplereturn.v:7) ( int32 (prelude.v:24) )
-user::t(multiplereturn.v:7) ( int32 (prelude.v:24) )
-user::u(multiplereturn.v:7) ( int32 (prelude.v:24) )
-user::v(multiplereturn.v:7) ( int32 (prelude.v:24) )
-user::w(multiplereturn.v:7) ( int32 (prelude.v:24) )
-user::x(multiplereturn.v:7) ( int32 (prelude.v:24) )
+user::s(multiplereturn.v:7) ( int32 (prelude.v:25) )
+user::t(multiplereturn.v:7) ( int32 (prelude.v:25) )
+user::u(multiplereturn.v:7) ( int32 (prelude.v:25) )
+user::v(multiplereturn.v:7) ( int32 (prelude.v:25) )
+user::w(multiplereturn.v:7) ( int32 (prelude.v:25) )
+user::x(multiplereturn.v:7) ( int32 (prelude.v:25) )

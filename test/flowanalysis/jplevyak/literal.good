@@ -18,47 +18,47 @@
  called from 9 in __init at literal.v:7
 function __init literal.v:7
 function __init prelude.v:7
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
-function print prelude.v:134
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
+function print prelude.v:135
 globals
-print::a(prelude.v:134) ( float32 (prelude.v:36) )
-print::a(prelude.v:134) ( float64 (prelude.v:37) )
-print::a(prelude.v:134) ( int16 (prelude.v:23) )
-print::a(prelude.v:134) ( int32 (prelude.v:24) )
-print::a(prelude.v:134) ( int64 (prelude.v:25) )
-print::a(prelude.v:134) ( int8 (prelude.v:22) )
-print::a(prelude.v:134) ( string (prelude.v:54) )
-print::a(prelude.v:134) ( uint16 (prelude.v:28) )
-print::a(prelude.v:134) ( uint32 (prelude.v:29) )
-print::a(prelude.v:134) ( uint64 (prelude.v:30) )
-print::a(prelude.v:134) ( uint8 (prelude.v:27) )
+print::a(prelude.v:135) ( float32 (prelude.v:37) )
+print::a(prelude.v:135) ( float64 (prelude.v:38) )
+print::a(prelude.v:135) ( int16 (prelude.v:24) )
+print::a(prelude.v:135) ( int32 (prelude.v:25) )
+print::a(prelude.v:135) ( int64 (prelude.v:26) )
+print::a(prelude.v:135) ( int8 (prelude.v:23) )
+print::a(prelude.v:135) ( string (prelude.v:55) )
+print::a(prelude.v:135) ( uint16 (prelude.v:29) )
+print::a(prelude.v:135) ( uint32 (prelude.v:30) )
+print::a(prelude.v:135) ( uint64 (prelude.v:31) )
+print::a(prelude.v:135) ( uint8 (prelude.v:28) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::__init(literal.v:7) ( __init (literal.v:7) )
-user::a_character1(literal.v:23) ( uint8 (prelude.v:27) )
-user::a_character2(literal.v:24) ( uint8 (prelude.v:27) )
-user::a_character3(literal.v:25) ( uint8 (prelude.v:27) )
-user::a_float(literal.v:17) ( float64 (prelude.v:37) )
-user::a_float32(literal.v:18) ( float32 (prelude.v:36) )
-user::a_float64(literal.v:19) ( float64 (prelude.v:37) )
-user::a_string1(literal.v:29) ( string (prelude.v:54) )
-user::a_string2(literal.v:30) ( string (prelude.v:54) )
-user::an_int(literal.v:7) ( int32 (prelude.v:24) )
-user::an_int16(literal.v:9) ( int16 (prelude.v:23) )
-user::an_int32(literal.v:10) ( int32 (prelude.v:24) )
-user::an_int64(literal.v:11) ( int64 (prelude.v:25) )
-user::an_int8(literal.v:8) ( int8 (prelude.v:22) )
-user::an_uint(literal.v:12) ( uint32 (prelude.v:29) )
-user::an_uint16(literal.v:14) ( uint16 (prelude.v:28) )
-user::an_uint32(literal.v:15) ( uint32 (prelude.v:29) )
-user::an_uint64(literal.v:16) ( uint64 (prelude.v:30) )
-user::an_uint8(literal.v:13) ( uint8 (prelude.v:27) )
+user::a_character1(literal.v:23) ( uint8 (prelude.v:28) )
+user::a_character2(literal.v:24) ( uint8 (prelude.v:28) )
+user::a_character3(literal.v:25) ( uint8 (prelude.v:28) )
+user::a_float(literal.v:17) ( float64 (prelude.v:38) )
+user::a_float32(literal.v:18) ( float32 (prelude.v:37) )
+user::a_float64(literal.v:19) ( float64 (prelude.v:38) )
+user::a_string1(literal.v:29) ( string (prelude.v:55) )
+user::a_string2(literal.v:30) ( string (prelude.v:55) )
+user::an_int(literal.v:7) ( int32 (prelude.v:25) )
+user::an_int16(literal.v:9) ( int16 (prelude.v:24) )
+user::an_int32(literal.v:10) ( int32 (prelude.v:25) )
+user::an_int64(literal.v:11) ( int64 (prelude.v:26) )
+user::an_int8(literal.v:8) ( int8 (prelude.v:23) )
+user::an_uint(literal.v:12) ( uint32 (prelude.v:30) )
+user::an_uint16(literal.v:14) ( uint16 (prelude.v:29) )
+user::an_uint32(literal.v:15) ( uint32 (prelude.v:30) )
+user::an_uint64(literal.v:16) ( uint64 (prelude.v:31) )
+user::an_uint8(literal.v:13) ( uint8 (prelude.v:28) )

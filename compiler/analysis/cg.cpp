@@ -281,7 +281,7 @@ get_target_fun(PNode *n, Fun *f) {
 static void
 write_c_fun_arg(FILE *fp, char *s, char *e, Sym *sym, int i) {
   if (i) fprintf(fp, ", ");
-  if (!i && sym->is_fun && !sym->fun && sym->has.n) {
+  if (!i && sym->type_kind == Type_FUN && !sym->fun && sym->has.n) {
     assert(0);
     for (int i = 0; i < sym->type->has.n; i++) {
       if (i) fprintf(fp, ", ");
@@ -356,8 +356,8 @@ write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
 	fputs("(", fp);
 	for (int i = 0; i < n->rvals.n; i++) {
 	  if (i) fprintf(fp, ", ");
-	  Sym *t = n->rvals.v[0]->type;
-	  if (!i && t->is_fun && !t->fun && t->has.n) {
+	  Sym *t = n->rvals.v[i]->type;
+	  if (!i && t->type_kind == Type_FUN && !t->fun && t->has.n) {
 	    char ss[4096];
 	    sprintf(ss, "%s", n->rvals.v[0]->cg_string);
 	    char *ee = ss + strlen(ss);

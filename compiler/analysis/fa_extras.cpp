@@ -295,7 +295,7 @@ static char *fn(char *s) {
 
 void
 log_var_types(Var *v, Fun *f) {
-  if (!v->sym->name || v->sym->is_symbol)
+  if (!v->sym->name || v->sym->is_symbol || v->is_internal)
     return;
   if (!v->sym->in)
     log(LOG_TEST_FA, "::");

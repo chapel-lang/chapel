@@ -8,7 +8,6 @@
 ::__init_prelude(prelude.chpl:59) ( __init_prelude )
 ::foo(noargs.chpl:3) ( foo )
 ::foo(noargs.chpl:5) ( foo )
-::in foo!(noargs.chpl:2) ( string )
 ::main ( main )
 ::main ( main )
 ::null ( null null )

@@ -934,11 +934,20 @@ prim_make_vector(PNode *p, EntrySet *es) {
 }
 
 static void
-make_closure_var(Var *v, EntrySet *es, CreationSet *cs, AVar*result, int add) {
+make_closure_var(Var *v, EntrySet *es, CreationSet *cs, AVar *result, int add, int i) {
   AVar *iv = unique_AVar(v, cs);
   AVar *av = make_AVar(v, es);
-  set_container(av, result);
-  flow_var_to_var(av, iv);
+  PNode *pn = result->var->def;
+  if (!pn->tvals.v[i]) {
+    pn->tvals.v[i] = new Var(v->sym);
+    pn->tvals.v[i]->is_internal = 1;
+    es->fun->fa_all_Vars.add(pn->tvals.v[i]);
+  }
+  AVar *cav = make_AVar(pn->tvals.v[i], es);
+  flow_vars(av, cav);
+  cav->copy_of = av;
+  set_container(cav, result);
+  flow_var_to_var(cav, iv);
   if (add)
     cs->vars.add(iv);
 }
@@ -946,16 +955,20 @@ make_closure_var(Var *v, EntrySet *es, CreationSet *cs, AVar*result, int add) {
 static void
 make_closure(AVar *result) {
   assert(result->contour_is_entry_set);
+  PNode *pn = result->var->def;
   CreationSet *cs = creation_point(result, sym_function);
   int add = !cs->vars.n;
   PNode *partial_application = result->var->def;
   EntrySet *es = (EntrySet*)result->contour;
   if (partial_application->prim) { // apply and period
-    make_closure_var(partial_application->rvals.v[3], es, cs, result, add);
-    make_closure_var(partial_application->rvals.v[1], es, cs, result, add);
-  } else
+    pn->tvals.fill(2);
+    make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 0);
+    make_closure_var(partial_application->rvals.v[1], es, cs, result, add, 1);
+  } else {
+    pn->tvals.fill(partial_application->rvals.n);
     for (int i = 0; i < partial_application->rvals.n; i++)
-      make_closure_var(partial_application->rvals.v[i], es, cs, result, add);
+      make_closure_var(partial_application->rvals.v[i], es, cs, result, add, i);
+  }
 }
 
 // for send nodes, add simple constraints which do not depend 
@@ -1089,13 +1102,10 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> &args, 
 }
 
 static void
-record_arg(AVar *a, Sym *s, AEdge *e, MPosition &p) {
-  MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
-  if (a->var->sym->name && !a->var->sym->is_constant && !a->var->sym->is_symbol) {
-    MPosition pp(p);
-    pp.set_top(a->var->sym->name);
-    cpname = cannonicalize_mposition(pp);
-  }
+record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
+  MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0, cpname_p;
+  if (named_position(cs, a, p, &cpname_p))
+    cpname = cannonicalize_mposition(cpname_p);
   for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
     e->args.put(cp, a);
     if (s->is_pattern) {
@@ -1104,7 +1114,7 @@ record_arg(AVar *a, Sym *s, AEdge *e, MPosition &p) {
 	assert(s->has.n == cs->vars.n);
 	p.push(1);
 	for (int i = 0; i < s->has.n; i++) {
-	  record_arg(cs->vars.v[i], s->has.v[i], e, p);
+	  record_arg(cs, cs->vars.v[i], s->has.v[i], e, p);
 	  p.inc();
 	}
 	p.pop();
@@ -1132,7 +1142,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 	  MPosition p;
 	  p.push(1);
 	  for (int i = 0; i < m->fun->sym->has.n; i++) {
-	    record_arg(a.v[i], m->fun->sym->has.v[i], ee, p);
+	    record_arg(0, a.v[i], m->fun->sym->has.v[i], ee, p);
 	    p.inc();
 	  }
 	}
@@ -1188,8 +1198,8 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
       if (p->sym->must_specialize->specializers.in(cs->sym)) {
 	for (int i = 0; i < p->sym->has.n; i++) {
 	  AVar *av = NULL;
-	  if (cs->sym != sym_tuple && p->sym->has.v[i]->alt_name)
-	    av = cs->var_map.get(p->sym->has.v[i]->alt_name);
+	  if (cs->sym != sym_tuple && p->sym->has.v[i]->destruct_name)
+	    av = cs->var_map.get(p->sym->has.v[i]->destruct_name);
 	  else if (cs->sym == sym_tuple && i < cs->vars.n)
 	    av = cs->vars.v[i];
 	  if (!av) {
@@ -1269,8 +1279,11 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     switch (p->prim->index) {
       default: break;
       case P_prim_primitive: {
-	RegisteredPrim *rp = 
-	  fa->primitive_transfer_functions.get(p->rvals.v[1]->sym->name);
+	char *name = p->rvals.v[1]->sym->name;
+	if (!name) name = p->rvals.v[1]->sym->constant;
+	if (!name)
+	  fail("fatal error, bad primitive transfer function");
+	RegisteredPrim *rp = fa->primitive_transfer_functions.get(name);
 	if (!rp)
 	  fail("fatal error, undefined primitive transfer function '%s'", 
 	       p->rvals.v[1]->sym->name);
@@ -1608,7 +1621,7 @@ collect_notype() {
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *av = make_AVar(v, es);
-      if (av->out == bottom_type)
+      if (!av->var->is_internal && av->out == bottom_type)
 	type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
     }
   }

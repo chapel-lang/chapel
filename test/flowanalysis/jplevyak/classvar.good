@@ -3,37 +3,37 @@
  called from 11 in __init at classvar.v:2
  called from 11 in __init at classvar.v:2
  called from 7 in __init at classvar.v:2
- called from 74 in new at prelude.v:74
- called from 75 in operator at prelude.v:75
+ called from 75 in new at prelude.v:75
+ called from 76 in operator at prelude.v:76
  called from 8 in __init at classvar.v:2
  called from 9 in __init at classvar.v:2
 __init::self(classvar.v:2) ( Vars (classvar.v:2) )
 function __init classvar.v:2
 function __init classvar.v:2
 function __init prelude.v:7
-function new prelude.v:74
-function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
-function print prelude.v:134
+function new prelude.v:75
+function operator prelude.v:76
+function operator prelude.v:76
+function operator prelude.v:76
+function operator prelude.v:76
+function operator prelude.v:76
+function print prelude.v:135
 globals
-new::a(prelude.v:74) ( Vars (classvar.v:2) )
-new::o(prelude.v:74) ( Vars (classvar.v:2) )
-operator::a(prelude.v:75) ( Vars (classvar.v:2) )
-operator::a(prelude.v:75) ( Vars (classvar.v:2) )
-operator::a(prelude.v:75) ( Vars (classvar.v:2) )
-operator::a(prelude.v:75) ( Vars (classvar.v:2) )
-operator::a(prelude.v:75) ( Vars (classvar.v:2) )
-operator::b(prelude.v:75) ( __init (prelude.v:73) )
-operator::b(prelude.v:75) ( x )
-operator::b(prelude.v:75) ( x )
-operator::b(prelude.v:75) ( y )
-operator::b(prelude.v:75) ( y )
-print::a(prelude.v:134) ( int32 (prelude.v:24) float64 (prelude.v:37) )
+new::a(prelude.v:75) ( Vars (classvar.v:2) )
+new::o(prelude.v:75) ( Vars (classvar.v:2) )
+operator::a(prelude.v:76) ( Vars (classvar.v:2) )
+operator::a(prelude.v:76) ( Vars (classvar.v:2) )
+operator::a(prelude.v:76) ( Vars (classvar.v:2) )
+operator::a(prelude.v:76) ( Vars (classvar.v:2) )
+operator::a(prelude.v:76) ( Vars (classvar.v:2) )
+operator::b(prelude.v:76) ( __init (prelude.v:74) )
+operator::b(prelude.v:76) ( x )
+operator::b(prelude.v:76) ( x )
+operator::b(prelude.v:76) ( y )
+operator::b(prelude.v:76) ( y )
+print::a(prelude.v:135) ( int32 (prelude.v:25) float64 (prelude.v:38) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::Vars(classvar.v:2) ( Vars (classvar.v:2) )
 user::__init(classvar.v:2) ( __init (classvar.v:2) )
 user::v(classvar.v:7) ( Vars (classvar.v:2) )

@@ -38,6 +38,13 @@ enum Type_kind {
   Type_ALIAS		// a type by another name, possible with constraints
 };
 
+enum Sym_Intent {
+  Sym_IN,
+  Sym_INOUT,
+  Sym_OUT
+}; 
+#define is_Sym_OUT(_x) ((_x)->intent == Sym_INOUT || (_x)->intent == Sym_OUT)
+
 #define CPP_IS_LAME {							\
   "NONE", "UNKNOWN", "LUB", "GLB", "PRODUCT", "RECORD", "VECTOR",	\
   "FUN", "REF", "TAGGED", "PRIMITIVE", "APPLICATION", "ALIAS"}
@@ -87,6 +94,8 @@ class Sym : public gc {
   unsigned int		is_rest:1;		// Sym is a rest (vararg) parameter
   unsigned int		is_external:1;		// Sym is "external", so constraints are type
 
+  unsigned int		intent:2;		// Sym is "in", "inout", or "out"
+
   unsigned int		global_scope:1;		// Sym is globally unique (file/module)
   unsigned int		function_scope:1;	// Sym is function unique
 
@@ -101,7 +110,8 @@ class Sym : public gc {
   unsigned int		num_kind:3;		// Sort of number class
   unsigned int		num_index:3;		// Precision of number class
 
-  char			*alt_name;		// alternative name (pattern/extern)
+  char			*destruct_name;		// name of related destructured element
+  char			*arg_name;		// argument name
 
   char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values

@@ -3,16 +3,16 @@
  called from 3 in __init at var.v:1
 function __init prelude.v:7
 function __init var.v:1
-function operator prelude.v:80
-function operator prelude.v:97
-function print prelude.v:134
+function operator prelude.v:81
+function operator prelude.v:98
+function print prelude.v:135
 globals
-operator::a(prelude.v:80) ( int32 (prelude.v:24) )
-operator::a(prelude.v:97) ( int32 (prelude.v:24) )
-operator::b(prelude.v:80) ( float64 (prelude.v:37) )
-operator::b(prelude.v:97) ( float64 (prelude.v:37) )
-print::a(prelude.v:134) ( int32 (prelude.v:24) )
+operator::a(prelude.v:81) ( int32 (prelude.v:25) )
+operator::a(prelude.v:98) ( int32 (prelude.v:25) )
+operator::b(prelude.v:81) ( float64 (prelude.v:38) )
+operator::b(prelude.v:98) ( float64 (prelude.v:38) )
+print::a(prelude.v:135) ( int32 (prelude.v:25) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::__init(var.v:1) ( __init (var.v:1) )
-user::x(var.v:1) ( int32 (prelude.v:24) )
+user::x(var.v:1) ( int32 (prelude.v:25) )

@@ -122,6 +122,7 @@ class AVar : public gc {
   Vec<AVar *>			forward;
   Vec<AVar *>			backward;
   AVar				*lvalue;
+  AVar				*copy_of;
   AType 			*in;
   AType 			*out;
   AType				*restrict;

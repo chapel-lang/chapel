@@ -2,26 +2,26 @@
  called from 3 in __init at assign1.v:1
  called from 4 in __init at assign1.v:1
  called from 4 in __init at assign1.v:1
- called from 74 in new at prelude.v:74
- called from 75 in operator at prelude.v:75
+ called from 75 in new at prelude.v:75
+ called from 76 in operator at prelude.v:76
 __init::self(assign1.v:1) ( C (assign1.v:1) )
 function __init assign1.v:1
 function __init assign1.v:1
 function __init prelude.v:7
-function new prelude.v:74
-function operator prelude.v:75
-function operator prelude.v:75
-function print prelude.v:134
+function new prelude.v:75
+function operator prelude.v:76
+function operator prelude.v:76
+function print prelude.v:135
 globals
-new::a(prelude.v:74) ( C (assign1.v:1) )
-new::o(prelude.v:74) ( C (assign1.v:1) )
-operator::a(prelude.v:75) ( C (assign1.v:1) )
-operator::a(prelude.v:75) ( C (assign1.v:1) )
-operator::b(prelude.v:75) ( __init (prelude.v:73) )
-operator::b(prelude.v:75) ( c )
-print::a(prelude.v:134) ( int32 (prelude.v:24) )
+new::a(prelude.v:75) ( C (assign1.v:1) )
+new::o(prelude.v:75) ( C (assign1.v:1) )
+operator::a(prelude.v:76) ( C (assign1.v:1) )
+operator::a(prelude.v:76) ( C (assign1.v:1) )
+operator::b(prelude.v:76) ( __init (prelude.v:74) )
+operator::b(prelude.v:76) ( c )
+print::a(prelude.v:135) ( int32 (prelude.v:25) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::C(assign1.v:1) ( C (assign1.v:1) )
 user::__init(assign1.v:1) ( __init (assign1.v:1) )
 user::c1(assign1.v:2) ( C (assign1.v:1) )

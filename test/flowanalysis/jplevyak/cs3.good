@@ -8,10 +8,10 @@
  called from 7 in __init at cs3.v:1
  called from 7 in __init at cs3.v:1
  called from 7 in __init at cs3.v:1
-aa::a(cs3.v:1) ( float64 (prelude.v:37) )
-aa::a(cs3.v:1) ( int32 (prelude.v:24) )
-aa::x(cs3.v:1) ( float64 (prelude.v:37) )
-aa::x(cs3.v:1) ( int32 (prelude.v:24) )
+aa::a(cs3.v:1) ( float64 (prelude.v:38) )
+aa::a(cs3.v:1) ( int32 (prelude.v:25) )
+aa::x(cs3.v:1) ( float64 (prelude.v:38) )
+aa::x(cs3.v:1) ( int32 (prelude.v:25) )
 bb::b(cs3.v:2) ( tuple (prelude.v:14) )
 bb::x(cs3.v:2) ( tuple (prelude.v:14) )
 function __init cs3.v:1
@@ -19,23 +19,23 @@ function __init prelude.v:7
 function aa cs3.v:1
 function aa cs3.v:1
 function bb cs3.v:2
-function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:80
-function print prelude.v:134
+function operator prelude.v:76
+function operator prelude.v:76
+function operator prelude.v:76
+function operator prelude.v:81
+function print prelude.v:135
 globals
-operator::a(prelude.v:75) ( tuple (prelude.v:14) )
-operator::a(prelude.v:75) ( tuple (prelude.v:14) )
-operator::a(prelude.v:75) ( tuple (prelude.v:14) )
-operator::a(prelude.v:80) ( int32 (prelude.v:24) )
-operator::b(prelude.v:75) ( a )
-operator::b(prelude.v:75) ( a )
-operator::b(prelude.v:75) ( b )
-operator::b(prelude.v:80) ( float64 (prelude.v:37) )
-print::a(prelude.v:134) ( float64 (prelude.v:37) )
+operator::a(prelude.v:76) ( tuple (prelude.v:14) )
+operator::a(prelude.v:76) ( tuple (prelude.v:14) )
+operator::a(prelude.v:76) ( tuple (prelude.v:14) )
+operator::a(prelude.v:81) ( int32 (prelude.v:25) )
+operator::b(prelude.v:76) ( a )
+operator::b(prelude.v:76) ( a )
+operator::b(prelude.v:76) ( b )
+operator::b(prelude.v:81) ( float64 (prelude.v:38) )
+print::a(prelude.v:135) ( float64 (prelude.v:38) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::__init(cs3.v:1) ( __init (cs3.v:1) )
 user::a1(cs3.v:3) ( tuple (prelude.v:14) )
 user::a2(cs3.v:5) ( tuple (prelude.v:14) )

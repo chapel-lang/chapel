@@ -14,6 +14,8 @@
 #include "pdb.h"
 #include "pnode.h"
 
+//#define COPY_PARAMS 1
+
 class LabelMap : public Map<char *, ParseAST *> {};
 
 char *AST_name[] = {
@@ -929,8 +931,8 @@ scope_idpattern(IF1 *i, ParseAST *ast, Scope *scope) {
 	sym->type_kind = Type_NONE;
 	ast->sym = sym;
       }
-      if (ast->alt_name)
-	ast->sym->alt_name = ast->alt_name;
+      if (ast->destruct_name)
+	ast->sym->destruct_name = ast->destruct_name;
       break;
     }
     case AST_pattern: {
@@ -1237,25 +1239,14 @@ gen_fun(IF1 *i, ParseAST *ast) {
   if1_move(i, &ast->code, fn, ast->rval, ast);
 }
 
-static void
-get_arg(IF1 *i, Code **c, ParseAST *ast, Vec<Sym *> &args) {
-  if (ast->kind != AST_qualified_ident || ast->rval->is_constant || ast->rval->is_symbol)
-    args.add(ast->rval);
-  else {
-    Sym *s = new_sym(i, ast->scope);
-    if1_move(i, c, ast->rval, s, ast);
-    args.add(s);
-  }
-}
-
 static int
 get_tuple_args(IF1 *i, Code **c, ParseAST *ast, Vec<Sym *> &args) {
   if (ast->kind == AST_op && ast->children.v[ast->op_index]->sym->name[0] == ',') {
     int r = get_tuple_args(i, c, ast->children.v[0], args);
-    get_arg(i, c, ast->children.v[2], args);
+    args.add(ast->children.v[2]->rval);
     return 1 + r;
   }
-  get_arg(i, c, ast, args);
+  args.add(ast->rval);
   return 1;
 }
 
@@ -1263,10 +1254,10 @@ static int
 get_apply_args(IF1 *i, Code **c, ParseAST *ast, Vec<Sym *> &args) {
   if (ast->is_application) {
     int r = get_apply_args(i, c, ast->children.v[0], args);
-    get_arg(i, c, ast->children.v[2], args);
+    args.add(ast->children.v[2]->rval);
     return 1 + r;
   }
-  get_arg(i, c, ast, args);
+  args.add(ast->rval);
   return 1;
 }
 
@@ -1301,7 +1292,7 @@ gen_comma_op(IF1 *i, ParseAST *ast, ParseAST *a0, ParseAST *a1) {
     return;
   Vec<Sym *> args;
   get_tuple_args(i, c, a0, args);
-  get_arg(i, c, a1, args);
+  args.add(a1->rval);
   Code *send = if1_send1(i, c);
   send->ast = ast;
   Sym *constructor;
@@ -1327,7 +1318,7 @@ gen_apply_op(IF1 *i, ParseAST *ast, ParseAST *a0, ParseAST *a1) {
   Vec<Sym *> args;
   get_apply_args(i, c, a0, args);
   if (a1)
-    get_arg(i, c, a1, args);
+    args.add(a1->rval);
   Code *send = if1_send1(i, c);
   send->ast = ast;
   forv_Sym(a, args)
@@ -1359,24 +1350,8 @@ gen_op(IF1 *i, ParseAST *ast) {
   } else {
     Sym *args = new_sym(i, ast->scope);
     Sym *aa0 = NULL, *aa1 = NULL;
-    if (a0) {
-      if (a0->rval->is_constant || a0->rval->is_symbol) {
-	aa0 = a0->rval;
-      } else {
-	Sym *s = new_sym(i, ast->scope);
-	if1_move(i, c, a0->rval, s, ast);
-	aa0 = s;
-      }
-    }
-    if (a1) {
-      if (a1->rval->is_constant || a1->rval->is_symbol) {
-	aa1 = a1->rval;
-      } else {
-	Sym *s = new_sym(i, ast->scope);
-	if1_move(i, c, a1->rval, s, ast);
-	aa1 = s;
-      }
-    }
+    if (a0) aa0 = a0->rval;
+    if (a1) aa1 = a1->rval;
     int binary = ast->children.n > 2;
     int post_inc_dec = ast->is_inc_dec && ast->op_index == 1;
     if (post_inc_dec) {
@@ -1777,11 +1752,11 @@ gen_if1(IF1 *i, ParseAST *ast) {
 
 static int
 post_gen_top_down(IF1 *i, ParseAST *ast) {
-  if (ast->alt_name) {
+  if (ast->arg_name) {
     if (ast->rval)
-      ast->rval->alt_name = ast->alt_name;
+      ast->rval->arg_name = ast->arg_name;
     if (ast->sym)
-      ast->sym->alt_name = ast->alt_name;
+      ast->sym->arg_name = ast->arg_name;
   }
   forv_ParseAST(a, ast->children)
     if (post_gen_top_down(i, a) < 0)

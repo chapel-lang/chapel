@@ -1,8 +1,3 @@
-::...and so on...\n(writen.chpl:1) ( string )
-::3rd...(writen.chpl:2) ( string )
-::4th...(writen.chpl:2) ( string )
-::5(writen.chpl:1) ( int64 )
-::5(writen.chpl:2) ( int64 )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
@@ -10,17 +5,9 @@
 ::__init_prelude(prelude.chpl:59) ( __init_prelude )
 ::__init_writen ( __init_writen )
 ::__init_writen(writen.chpl:3) ( __init_writen )
-::and another second...(writen.chpl:2) ( string )
-::etc.(writen.chpl:2) ( string )
-::here is another first\n(writen.chpl:2) ( string )
-::here is the first string\n(writen.chpl:1) ( string )
-::here is the fourth...(writen.chpl:1) ( string )
-::here is the second\n(writen.chpl:1) ( string )
-::here is the third\n(writen.chpl:1) ( string )
 ::main ( main )
 ::main ( main )
 ::null ( null null )
-::th...(writen.chpl:2) ( string )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:59
 function __init_writen writen.chpl:3

@@ -2,28 +2,28 @@
  called from 3 in __init at destruct2.v:1
  called from 4 in __init at destruct2.v:1
  called from 4 in __init at destruct2.v:1
- called from 74 in new at prelude.v:74
- called from 75 in operator at prelude.v:75
+ called from 75 in new at prelude.v:75
+ called from 76 in operator at prelude.v:76
 __init::self(destruct2.v:1) ( A (destruct2.v:1) )
 function __init destruct2.v:1
 function __init destruct2.v:1
 function __init prelude.v:7
 function f destruct2.v:2
-function new prelude.v:74
-function operator prelude.v:75
-function operator prelude.v:80
-function print prelude.v:134
+function new prelude.v:75
+function operator prelude.v:76
+function operator prelude.v:81
+function print prelude.v:135
 globals
-new::a(prelude.v:74) ( A (destruct2.v:1) )
-new::o(prelude.v:74) ( A (destruct2.v:1) )
-operator::a(prelude.v:75) ( A (destruct2.v:1) )
-operator::a(prelude.v:80) ( int32 (prelude.v:24) )
-operator::b(prelude.v:75) ( __init (prelude.v:73) )
-operator::b(prelude.v:80) ( float64 (prelude.v:37) )
-print::a(prelude.v:134) ( float64 (prelude.v:37) )
+new::a(prelude.v:75) ( A (destruct2.v:1) )
+new::o(prelude.v:75) ( A (destruct2.v:1) )
+operator::a(prelude.v:76) ( A (destruct2.v:1) )
+operator::a(prelude.v:81) ( int32 (prelude.v:25) )
+operator::b(prelude.v:76) ( __init (prelude.v:74) )
+operator::b(prelude.v:81) ( float64 (prelude.v:38) )
+print::a(prelude.v:135) ( float64 (prelude.v:38) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::A(destruct2.v:1) ( A (destruct2.v:1) )
 user::__init(destruct2.v:1) ( __init (destruct2.v:1) )
-user::x(destruct2.v:3) ( int32 (prelude.v:24) )
-user::y(destruct2.v:3) ( float64 (prelude.v:37) )
+user::x(destruct2.v:3) ( int32 (prelude.v:25) )
+user::y(destruct2.v:3) ( float64 (prelude.v:38) )

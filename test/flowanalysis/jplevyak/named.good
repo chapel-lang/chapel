@@ -3,25 +3,25 @@
  called from 1 in f at named.v:1
  called from 3 in __init at named.v:1
  called from 4 in __init at named.v:1
-f::a(named.v:1) ( float64 (prelude.v:37) )
-f::b(named.v:1) ( float64 (prelude.v:37) )
-f::c(named.v:1) ( int32 (prelude.v:24) )
-f::d(named.v:1) ( float64 (prelude.v:37) )
+f::a(named.v:1) ( float64 (prelude.v:38) )
+f::b(named.v:1) ( float64 (prelude.v:38) )
+f::c(named.v:1) ( int32 (prelude.v:25) )
+f::d(named.v:1) ( float64 (prelude.v:38) )
 function __init named.v:1
 function __init prelude.v:7
 function f named.v:1
-function operator prelude.v:80
-function operator prelude.v:80
-function print prelude.v:134
+function operator prelude.v:81
+function operator prelude.v:81
+function print prelude.v:135
 globals
-operator::a(prelude.v:80) ( float64 (prelude.v:37) )
-operator::a(prelude.v:80) ( float64 (prelude.v:37) )
-operator::b(prelude.v:80) ( float64 (prelude.v:37) )
-operator::b(prelude.v:80) ( int32 (prelude.v:24) )
-print::a(prelude.v:134) ( float64 (prelude.v:37) )
+operator::a(prelude.v:81) ( float64 (prelude.v:38) )
+operator::a(prelude.v:81) ( float64 (prelude.v:38) )
+operator::b(prelude.v:81) ( float64 (prelude.v:38) )
+operator::b(prelude.v:81) ( int32 (prelude.v:25) )
+print::a(prelude.v:135) ( float64 (prelude.v:38) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:59) ( null (prelude.v:59) )
+system::null(prelude.v:60) ( null (prelude.v:60) )
 user::__init(named.v:1) ( __init (named.v:1) )
-user::c(named.v:3) ( float64 (prelude.v:37) )
-user::d(named.v:3) ( int32 (prelude.v:24) )
-user::z(named.v:2) ( float64 (prelude.v:37) )
+user::c(named.v:3) ( float64 (prelude.v:38) )
+user::d(named.v:3) ( int32 (prelude.v:25) )
+user::z(named.v:2) ( float64 (prelude.v:38) )

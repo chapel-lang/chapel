@@ -1,6 +1,3 @@
-::(printempty.chpl:2) ( string )
-::I'm about to print the empty string:\n(printempty.chpl:1) ( string )
-::OK, I did it!\n(printempty.chpl:3) ( string )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )

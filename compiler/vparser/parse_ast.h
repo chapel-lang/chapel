@@ -62,7 +62,8 @@ class ParseAST : public AST {
   Vec<ParseAST *> children;
   Sym *sym;
   char *string;
-  char *alt_name;
+  char *destruct_name;
+  char *arg_name;
   char *builtin;
   Prim *prim;
   char *_pathname;
