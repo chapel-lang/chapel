@@ -19786,3 +19786,44 @@ Added files:
 	chapel/compiler/traversals/: resolveOverloadedOperators.cpp 
 	                             resolveOverloadedOperators.h 
 
+---------------------------------------------------------------------------
+
+03/16/05 13:59:15 -- deitz
+
+Log message:
+	Implemented post-analysis support for operator overloading.  There are
+	some issues, discussed below.
+	
+	The ResolveOverloadedOperator pass now mangles the C names of
+	functions that are overloading operators.  In addition, it replaces a
+	use of an overloaded operator with a function call using analysis's
+	recently-enhanced call_info function.
+	
+	Improved copy so that ainfo is copied (shallowly) when expressions or
+	statements are copied.  This didn't work always when analysis makes a
+	callback to do the copy.  So it is currently guarded against doing
+	this shallow copy when analysis is running, i.e., when we are in the
+	analysis pass.  I need it post-analysis to avoid a pass-ordering
+	problem between the passes that normalize the AST after analysis.  We
+	do copies in many of these passes and they all rely on the ainfo field
+	being maintained.  John, do you think this guard is necessary?  If
+	not, feel free to remove it, but then analysis fails on some cases.  I
+	don't have any objections to it.
+	
+	This checkin is currently special-casing the functions in the internal
+	prelude as if they all have the pragma that I added there.  I can't
+	seem to find the pragmas.  I tried maintaining pragmas when
+	expressions and statements are copied, but ran into some problems.
+	I'll look into this further.
+	
+	This fixes test_operator_overloading1 so I removed the future.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: runAnalysis.cpp runAnalysis.h 
+	chapel/compiler/traversals/: resolveOverloadedOperators.cpp 
+	chapel/test/functions/deitz/: test_operator_overloading1.chpl 
+Removed files:
+	chapel/test/functions/deitz/: test_operator_overloading1.future 
+
