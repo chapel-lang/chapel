@@ -14246,3 +14246,15 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp cleanup.h 
 	                             methodsToFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+01/10/05 14:01:22 -- jplevyak
+
+Log message:
+	Fixed types/type_variables/deitz/test_clone_function3/4
+	Fixed bug in cloning which used the old method Sym::in == Fun::sym to
+	determine that a variable was function local.  Switch to Sym::function_scope.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fun.cpp 
+
