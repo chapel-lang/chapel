@@ -13463,3 +13463,17 @@ Log message:
 Modified files:
 	./: Makefile 
 
+---------------------------------------------------------------------------
+
+01/04/05 18:30:54 -- bradc
+
+Log message:
+	Updated the nightly regression suite script to run
+	using UW's CVSROOT rather than Cray's.  Also
+	put in code to snag a copy of the sources every
+	night (deleting ones that are a month old), and
+	renamed the /tmp directory used slightly.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
