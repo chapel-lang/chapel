@@ -22968,3 +22968,18 @@ Log message:
 Added files:
 	chapel/util/: lookForTabs 
 
+---------------------------------------------------------------------------
+
+03/31/05 14:48:42 -- bradc
+
+Log message:
+	Removing futures for tests that are now working (and
+	seemingly for the right reasons).
+
+Modified files:
+	chapel/test/classes/bradc/: .cvsignore 
+Removed files:
+	chapel/test/classes/bradc/: writeclass2.future 
+	                            writeclass2a.future 
+	                            writerecord2.future 
+
