@@ -9823,3 +9823,30 @@ Removed files:
 	chapel/test/flowanalysis/newast/: shift_ops.chpl shift_ops.good 
 	chapel/test/trivial/shannon/: shift_ops.chpl shift_ops.good 
 
+---------------------------------------------------------------------------
+
+11/17/04 12:29:11 -- deitz
+
+Log message:
+	Changed the parser support for reductions so it more closely resembles
+	the syntax in the specification.  It remains slightly different but
+	can easily be changed since there is no implementation of reductions
+	yet.
+	
+	Continued to improve parsing.  Specifically, ranges that have
+	expressions in them are now parsed correctly.  The number of
+	shift-reduce errors is currently 30, down from 92.
+	
+	Added a small test case to see if identifiers only one character in
+	length work.  They do.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/trivial/bradc/protoast/: badred.chpl badred.good 
+	                                     mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+Added files:
+	chapel/test/trivial/deitz/: test_short_identifiers.chpl 
+	                            test_short_identifiers.good 
+
