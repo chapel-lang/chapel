@@ -51,6 +51,10 @@
     add new scope for new symbols,
     fix up yyfilename, yylineno
 
+* multifile compiles
+
+* module concept
+
 * move more stuff into pass list
 
 
