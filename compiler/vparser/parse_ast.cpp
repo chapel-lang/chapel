@@ -590,6 +590,7 @@ make_module(IF1 *i, char *mod_name, Scope *global, Sym *sym = 0) {
   if (sym != sym_system)
     sym->scope->add_dynamic(sym_system->scope);
   Sym *fun = new_sym(i, sym->scope, "__init");
+  fun->is_fun = 1;
   fun->scope = new Scope(sym->scope, Scope_RECURSIVE, fun);
   build_module(sym, fun);
   return sym;
@@ -800,27 +801,28 @@ define_function(IF1 *i, ParseAST *ast) {
   if (!fscope)
     return -1;
   ParseAST *fid = ast_qualified_ident_ident(fqid);
-  ast->sym = new_sym(i, fscope, fid->string, fqid->sym);
-  ast->sym->is_fun = 1;
+  Sym *fn = new_sym(i, fscope, fid->string, fqid->sym);
+  ast->sym = fn;
   Sym *tsym = new_sym(i, fscope, fid->string, if1_make_symbol(i, fid->string));
   tsym->ast = ast;
-  ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
+  fn->scope = new Scope(ast->scope, Scope_RECURSIVE, fn);
   if (fscope != ast->scope) {
-    ast->sym->self = new_sym(i, ast->sym->scope, cannonical_self);
-    ast->sym->self->is_read_only = 1;
-    ast->sym->self->ast = ast;
-    ast->sym->scope->add_dynamic(fscope, ast->sym->self);
+    fn->self = new_sym(i, fn->scope, cannonical_self);
+    fn->self->is_read_only = 1;
+    fn->self->ast = ast;
+    fn->scope->add_dynamic(fscope, fn->self);
   }
   for (int x = 1; x < ast->children.n - 1; x++)
-    if (scope_pattern(i, ast->children.v[x], ast->sym->scope) < 0)
+    if (scope_pattern(i, ast->children.v[x], fn->scope) < 0)
       return -1;
-  ast->sym->cont = new_sym(i, ast->sym->scope);
-  ast->sym->cont->ast = ast;
-  ast->sym->labelmap = new LabelMap;
-  ast->sym->ast = ast;
-  ast->sym->ret = new_sym(i, ast->sym->scope);
-  ast->sym->ret->ast = ast;
-  ast->sym->ret->is_lvalue = 1;
+  fn->is_fun = 1;
+  fn->cont = new_sym(i, fn->scope);
+  fn->cont->ast = ast;
+  fn->labelmap = new LabelMap;
+  fn->ast = ast;
+  fn->ret = new_sym(i, fn->scope);
+  fn->ret->ast = ast;
+  fn->ret->is_lvalue = 1;
   return 0;
 }
 
@@ -1230,9 +1232,6 @@ gen_fun(IF1 *i, ParseAST *ast) {
   for (int j = 0; j < n; j++)
     as[iarg + j] = args[j]->rval;
   if1_closure(i, fn, body, iarg + n, as);
-  fn->type_kind = Type_FUN;
-  fn->type = fn;
-  fn->type_sym = fn;
   fn->ast = ast;
   ast->rval = new_sym(i, ast->scope);
   if1_move(i, &ast->code, fn, ast->rval, ast);
@@ -1483,9 +1482,7 @@ define_type_init(IF1 *i, ParseAST *ast, Sym **container_scope, Sym **container) 
   if (rec) {
     Scope *scope = ast->sym->scope;
     Sym *fn = new_sym(i, scope, "__init");
-    fn->type_kind = Type_FUN;
-    fn->type = fn;
-    fn->type_sym = fn;
+    fn->is_fun = 1;
     fn->ast = ast;
     fn->scope = new Scope(ast->scope, Scope_RECURSIVE, fn);
     assert(!ast->sym->init);
@@ -1866,9 +1863,6 @@ ast_call(IF1 *i, int n, ...) {
 static void
 build_init(IF1 *i) {
   Sym *fn = sym_init;
-  fn->type_kind = Type_FUN;
-  fn->type = fn;
-  fn->type_sym = fn;
   fn->scope = new Scope((dynamic_cast<ParseAST*>(fn->ast))->scope, Scope_RECURSIVE, fn);
   Sym *rval = 0;
   Code *body = 0;
@@ -1983,6 +1977,7 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   build_modules(i);
   build_init(i);
   finalize_symbols(i);
+  build_type_hierarchy();
   add_primitive_transfer_functions();
   return 0;
 }

@@ -1610,126 +1610,26 @@ collect_notype() {
 }
 
 static void
-complete_pass() {
-  collect_results();
-  collect_argument_type_violations();
-  collect_notype();
-}
-
-static void
-implement(Sym *s, Sym *ss, Vec<Sym *> &types) {
-  assert(s != ss);
-  s->implementors.set_add(ss);
-  types.set_add(s);
-  types.set_add(ss);
-}
-
-static void
-specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
-  assert(s != ss);
-  if (s->specializers.set_add(ss))
-    ss->dispatch_order.add(s);
-  types.set_add(s);
-  types.set_add(ss);
-}
-
-static void
-implement_and_specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
-  implement(s, ss, types);
-  specialize(s, ss, types);
-}
-
-static void
 initialize_symbols() {
-  Vec<Sym *> type_syms, types;
   forv_Sym(s, fa->pdb->if1->allsyms) {
-    // functions implement and specialize symbols (selectors) of the same name
-    //   this permits overloading of selectors with multiple functions
-    if (s->is_symbol) {
+    if (s->is_symbol)
       s->abstract_type = make_abstract_type(s);
-      implement_and_specialize(sym_symbol, s, types);
-    }
-    // constants implement and specialize 'type'
-    if (s->is_constant) {
-      implement_and_specialize(s->type, s, types);
-      s->type_sym = s;
-    }
-    // functions implement and specialize of "function"
-    if (s->is_fun) {
+    if (s->is_fun)
       s->abstract_type = make_abstract_type(s);
-      implement_and_specialize(sym_function, s, types);
-    }
-    forv_Sym(ss, s->implements)
-      implement(ss, s, types);
-    forv_Sym(ss, s->specializes)
-      specialize(ss, s, types);
-    // functions implement and specializes of the initial symbol in their pattern
-    // which may be a constant or a constant constrainted variable
-    if (s->is_fun && s->has.n) {
-      Sym *a = s->self ? s->has.v[1] : s->has.v[0];
-      if (a->is_symbol && a->name == s->name)
-	implement_and_specialize(a, s, types);
-      else if (a->must_specialize && a->must_specialize->is_symbol && a->must_specialize->name == s->name)
-	implement_and_specialize(a->must_specialize, s, types);
-    }
-    if (s->type_kind) {
+    if (s->type_kind)
       s->abstract_type = make_abstract_type(s);
-      types.set_add(s);
-    }
     forv_Sym(ss, s->has)
       if (!ss->var)
 	ss->var = new Var(ss);
     if (s->element)
       s->element->var = new Var(s->element);
-    if (s->type_sym)
-      type_syms.add(s);
-  }
-  forv_Sym(s, types) if (s) {
-    if (!s->dispatch_order.n && s != sym_any && s != sym_void) {
-      if (s->is_meta_class && (s != sym_anyclass))
-	implement_and_specialize(sym_anyclass, s, types);
-      else if (s->is_value_class && (s != sym_value))
-	implement_and_specialize(sym_value, s, types);
-      else 
-	implement_and_specialize(sym_any, s, types);
-    }
-  }
-  // map subtyping and subclassing to type_syms
-  forv_Sym(s, type_syms) if (!s->is_meta_class) {
-    forv_Sym(ss, s->implementors) if (ss)
-      s->type_sym->implementors.set_add(ss->type_sym);
-    forv_Sym(ss, s->specializers) if (ss)
-      s->type_sym->specializers.set_add(ss->type_sym);
-  }
-  forv_Sym(s, types) if (s) {
-    s->implementors.set_add(s);
-    s->specializers.set_add(s);
-  }
-  // compute implementors closure
-  int changed = 1;
-  while (changed) {
-    changed = 0;
-    forv_Sym(s, types) if (s) {
-      forv_Sym(ss, s->implementors) if (ss) {
-	changed = s->implementors.set_union(ss->implementors) || changed;
-      }
-    }
-  }
-  // compute specializers closure
-  changed = 1;
-  while (changed) {
-    changed = 0;
-    forv_Sym(s, types) if (s) {
-      forv_Sym(ss, s->specializers) if (ss) {
-	changed = s->specializers.set_union(ss->specializers) || changed;
-      }
-    }
   }
 }
 
 static void
 initialize_primitives() {
   forv_Prim(p, fa->pdb->if1->primitives->prims) {
+    p->args.clear();
     int n = p->nargs < 0 ? -p->nargs : p->nargs;
     for (int i = 0; i < n - 1; i++) {
       switch (p->arg_types[i]) {
@@ -2368,6 +2268,13 @@ struct SetVoidFn { static void F(Var *v) {
 static void
 set_void_lub_types_to_void() {
   foreach_var<SetVoidFn>();
+}
+
+static void
+complete_pass() {
+  collect_results();
+  collect_argument_type_violations();
+  collect_notype();
 }
 
 int

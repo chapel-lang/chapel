@@ -45,6 +45,7 @@ if1_const(IF1 *p, Sym *type, char *constant) {
   sym->is_constant = 1;
   sym->constant = c;
   sym->type = type;
+  sym->type_sym = sym;
   p->constants.put(c, sym);
   return sym;
 }
@@ -346,6 +347,10 @@ if1_closure(IF1 *p, Sym *f, Code *c, int nargs, Sym **args) {
   for (int i = 0; i < nargs; i++)
     f->has.add(args[i]);
   f->code = c;
+  f->is_fun = 1;
+  f->type_kind = Type_FUN;
+  f->type = f;
+  f->type_sym = f;
   p->allclosures.add(f);
   return f;
 }

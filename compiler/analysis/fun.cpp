@@ -14,7 +14,6 @@ Fun::Fun(Sym *asym, int aninit_function) {
   fa_collected = 0;
   has_return = 0;
   sym = asym;
-  sym->is_fun = 1;
   asym->fun = this;
   ast = sym->ast;
   nmap = 0;

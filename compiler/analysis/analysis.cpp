@@ -1160,9 +1160,6 @@ build_function(FnDefStmt *f) {
     if1_set_builtin(if1, s, "init");
     sym_init = s;
   }
-  s->type_kind = Type_FUN;
-  s->type = s;
-  s->type_sym = s;
   s->cont = new_sym();
   s->cont->ast = f->ainfo;
   s->ret = new_sym();
@@ -1426,8 +1423,9 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   pdb->fa->primitive_transfer_functions.put(
     array_index_symbol->name, new RegisteredPrim(array_index));
   if1_set_primitive_types(if1);
-  finalize_types(if1);
   sym_null->is_external = 1;	// hack
+  finalize_types(if1);
+  build_type_hierarchy();
   finalize_symbols(if1);
   return 0;
 }

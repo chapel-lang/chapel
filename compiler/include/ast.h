@@ -32,5 +32,6 @@ void build_module(Sym *sym, Sym *init);
 void init_ast();
 void finalize_types(IF1 *);
 void make_type_sym(Sym *s);
+void build_type_hierarchy();
 
 #endif
