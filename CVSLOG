@@ -21121,3 +21121,16 @@ Added files:
 	chapel/test/trivial/bradc/entrypoint/: wrongmain2.chpl 
 	                                       wrongmain2.good 
 
+---------------------------------------------------------------------------
+
+03/23/05 14:22:09 -- deitz
+
+Log message:
+	Added a test of a class with no fields.  Analysis seems to clone this
+	class.  Left the future for John.
+
+Added files:
+	chapel/test/classes/deitz/: test_nomembers1.chpl 
+	                            test_nomembers1.future 
+	                            test_nomembers1.good 
+
