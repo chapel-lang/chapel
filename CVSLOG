@@ -2823,3 +2823,31 @@ Added files:
 	                                      usebeforedef.chpl 
 	                                      usebeforedef.good 
 
+---------------------------------------------------------------------------
+
+06/08/04 10:11:31 -- bradc
+
+Log message:
+	Added a new Share/ directory to the test system which will not
+	be run by default when start_test is run.  The intention of
+	this directory is to share tests with each other via CVS so
+	that we don't have to deal with cutting and pasting example
+	programs into and out of email, and so that John won't have
+	to log into a Cray machine to see files in our personal
+	directories.
+	
+	Currently, I haven't put any structure in place under the
+	Share directory -- if the idea proves to be useful and
+	popular and full of more tests than we can keep track of,
+	then we might imagine a structure in which subdirectories
+	were used to indicate the author of the test and/or the
+	person that the test is being published for.
+	
+	I'm checking a few codes into the Share/ directory for now
+	that I'll email John about in a bit.
+
+Modified files:
+	chapel/test/: start_test 
+Added files:
+	chapel/test/Share/: chain.chpl mutrec.chpl noargs.chpl 
+
