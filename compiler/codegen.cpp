@@ -8,14 +8,17 @@
 #include "mysystem.h"
 #include "num.h"
 
-static void genAST(FILE* outfile, AST* ast);
-
 #define IO_WRITE   1
 #define IO_WRITELN 2
+
+static void genAST(FILE* outfile, AST* ast);
+
+static int hitUnknown = 0;
 
 static void genDT(FILE* outfile, Sym* pdt) {
   if (pdt == NULL || pdt->name == NULL) {
     fprintf(outfile, "/* unknown type */");
+    hitUnknown = 1;
   } else {
     fprintf(outfile, "_%s", pdt->name);
   }
@@ -84,6 +87,7 @@ static void genAST(FILE* outfile, AST* ast) {
       break;
     default:
       fprintf(outfile, "/* unexpected scope kind (open) */");
+      hitUnknown = 1;
       break;
     }
     forv_AST(subtree, *ast) {
@@ -104,6 +108,7 @@ static void genAST(FILE* outfile, AST* ast) {
       break;
     default:
       fprintf(outfile, "/* unexpected scope kind (close) */");
+      hitUnknown = 1;
       break;
     }
     break;
@@ -163,6 +168,7 @@ static void genAST(FILE* outfile, AST* ast) {
     fprintf(outfile, "/* cannot yet handle: %s\n", AST_name[ast->kind]);
     ast_print_recursive(outfile, ast, 2);
     fprintf(outfile, "*/\n");
+    hitUnknown = 1;
   }
 }
 
@@ -211,6 +217,7 @@ static void handleInterrupt(int sig) {
 void codegen(FA* fa, char* infilename, char* compilerDir) {
   signal(SIGINT, handleInterrupt);
   signal(SIGSEGV, handleInterrupt);
+
   createTmpDir();
   openMakefile(infilename, compilerDir);
 
@@ -222,8 +229,14 @@ void codegen(FA* fa, char* infilename, char* compilerDir) {
   closefile(outfile);
   closeMakefile();
 
-  makeAndCopyBinary();
+  if (hitUnknown) {
+    INT_FATAL(NULL, "Hit AST nodes that codegen couldn't handle yet");
+  } else {
+    makeAndCopyBinary();
+  }
 
   deleteTmpDir();
+
   signal(SIGINT, SIG_DFL);
+  signal(SIGSEGV, SIG_DFL);
 }
