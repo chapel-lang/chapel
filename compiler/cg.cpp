@@ -37,10 +37,8 @@ write_c_fun_proto(FILE *fp, Fun *f, int type = 0) {
 
 static inline char *
 c_type(Var *v) {
-  if (v->type->cg_string)
-    return v->type->cg_string;
-  else
-    return v->type->var->type->cg_string;
+  assert(v->type->cg_string);
+  return v->type->cg_string;
 }
 
 static void
@@ -312,13 +310,16 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
   int index = 0;
   Vec<Var *> vars, defs;
   f->collect_Vars(vars);
+  forv_Var(v, vars)
+    if (Var_is_local(v->sym->var, f))
+      v->cg_string = v->sym->var->cg_string = NULL;
   forv_Var(v, vars) {
     if (Var_is_local(v->sym->var, f)) {
-	char s[100];
-	sprintf(s, "t%d", index++);
 	if (v->sym->var->cg_string)
 	  v->cg_string = v->sym->var->cg_string;
 	else {
+	  char s[100];
+	  sprintf(s, "t%d", index++);
 	  v->cg_string = dupstr(s);
 	  v->sym->var->cg_string = v->cg_string;
 	}

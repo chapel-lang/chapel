@@ -569,11 +569,6 @@ clone_functions() {
   Vec<Fun *> fs;
   fs.copy(fa->funs);
   forv_Fun(f, fs) {
-    forv_MPosition(p, f->positions) {
-      Sym *s = f->arg_syms.get(p);
-      f->args.put(p, s->var);
-    }
-    f->rets.add(f->sym->ret->var);
     if (f->equiv_sets.n == 1) {
       fixup_clone(f, f->equiv_sets.v[0]);
       if (concretize_types(f) < 0)

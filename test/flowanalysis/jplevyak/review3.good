@@ -172,7 +172,6 @@ function operator prelude.chpl:88
 function operator prelude.chpl:92
 function self prelude.chpl:203
 function self prelude.chpl:203
-function self prelude.chpl:203
 function self prelude.chpl:211
 g1::c1(review3.chpl:8) ( float64 (prelude.chpl:39) )
 g1::c2(review3.chpl:8) ( float64 (prelude.chpl:39) )
@@ -184,6 +183,7 @@ g2::c3(review3.chpl:9) ( integer64 (prelude.chpl:27) )
 g2::p1(review3.chpl:9) ( float64 (prelude.chpl:39) )
 g2::p2(review3.chpl:9) ( integer64 (prelude.chpl:27) )
 globals
+operator::a(prelude.chpl:103) ( domain (prelude.chpl:155) )
 operator::a(prelude.chpl:81) ( FParams (review3.chpl:16) )
 operator::a(prelude.chpl:81) ( FParams (review3.chpl:16) )
 operator::a(prelude.chpl:81) ( FParams (review3.chpl:16) )
@@ -237,9 +237,7 @@ operator::b(prelude.chpl:88) ( integer64 (prelude.chpl:27) )
 operator::b(prelude.chpl:92) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
-self::s(prelude.chpl:203) ( integer64 (prelude.chpl:27) )
 self::s(prelude.chpl:211) ( integer64 (prelude.chpl:27) )
-self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:203) ( vector (prelude.chpl:12) )
 self::self(prelude.chpl:211) ( array (prelude.chpl:206) )

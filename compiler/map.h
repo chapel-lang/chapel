@@ -131,9 +131,10 @@ template <class K, class C> inline MapElem<K,C> *
 Map<K,C>::put(K akey, C avalue) {
   MapElem<K,C> e(akey, avalue);
   MapElem<K,C> *x = set_in(e);
-  if (x)
+  if (x) {
     x->value = avalue;
-  else
+    return x;
+  } else
     return set_add(e);
 }
 

@@ -392,5 +392,10 @@ build_positions(FA *fa) {
       build_arg_position(f, a, p);
       p.inc();
     }
+    forv_MPosition(p, f->positions) {
+      Sym *s = f->arg_syms.get(p);
+      f->args.put(p, s->var);
+    }
+    f->rets.add(f->sym->ret->var);
   }
 }

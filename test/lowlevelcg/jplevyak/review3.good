@@ -1,5 +1,5 @@
 gcc -I../../../compiler/../third-party/dparser/linux/include -DUSE_GC -I../../../compiler/../third-party/boehmgc/linux/include/gc -Wall -g -DDEBUG=1 -I../../../compiler -DLANG_V=1 -DLANG_CHPL=1  -o a.out review3.chpl.c -L../../../compiler/../third-party/dparser/linux/lib -ldparse_gc ../../../compiler/../third-party/boehmgc/linux/lib/libgc.a
-review3.chpl.c: In function `_CG_f_compute_508_4':
-review3.chpl.c:810: warning: label `L80' defined but not used
-review3.chpl.c: In function `_CG_f_compute_508_24':
-review3.chpl.c:1610: warning: label `L80' defined but not used
+review3.chpl.c: In function `_CG_f_compute_508_12':
+review3.chpl.c:1235: warning: label `L80' defined but not used
+review3.chpl.c: In function `_CG_f_compute_508_33':
+review3.chpl.c:1831: warning: label `L80' defined but not used
