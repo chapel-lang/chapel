@@ -16976,3 +16976,91 @@ Modified files:
 	chapel/compiler/include/: fa.h fun.h var.h 
 	chapel/test/flowanalysis/jplevyak/: cs1.good 
 
+---------------------------------------------------------------------------
+
+02/09/05 12:04:15 -- deitz
+
+Log message:
+	Added initial support for generalized arrays and domains.  Arrays and
+	domains are supported currently up to rank three but can easily be
+	extended to any rank with few changes---additional access macros in
+	the array macros runtime header and additional "this" functions in the
+	internal prelude.
+	
+	Added a pass to InsertAnonymousTypes.  This handles array and domain
+	types put on variables.  Given
+	  var D : domain(1) = 1..n;
+	  var A : [D] integer;
+	It puts the following in commonModule for use by any modules.
+	  type _domain_1d = domain(1);
+	  type _array_integer_1d = [D] integer;
+	It does this when the array's type is a primitive.  If the array type
+	is defined by the programmer, the array type declaration follows that
+	declaration.
+	
+	Note that the type of D is part of the type of _array_integer_1d even
+	though D is not.
+	
+	Removed functionality of 2D arrays of floats and 1D arrays of integers
+	and 1D and 2D domains from the runtime files.  These are now generated
+	in the compiler.
+	
+	Added a test case for 3D array of integers.  Currently, arrays do not
+	seem to work if the elements are assigned values other than zero.
+	
+	The flowanalysis tests changed because of the change to the internal
+	prelude and because array and domain types are now in the compiler.
+	They have associated type symbols with real names.
+	
+	There is a fair amount of cleanup and generalization work left to do
+	but this checkin constitutes a significant portion of array/domain
+	support.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: files.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/include/: array.h chplio.h domain.h forall.h 
+	chapel/runtime/src/: chplio.c domain.c 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+Added files:
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             insertAnonymousTypes.h 
+	chapel/test/arrays/deitz/: test_array_integer_3d.chpl 
+	                           test_array_integer_3d.good 
+
