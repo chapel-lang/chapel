@@ -18319,3 +18319,15 @@ Modified files:
 	chapel/runtime/include/: chplrt.h 
 	chapel/runtime/src/: Makefile array.c domain.c 
 
+---------------------------------------------------------------------------
+
+02/28/05 16:10:09 -- jplevyak
+
+Log message:
+	Add support for let expressions.   This required hacking
+	my traversal code to traverse through the symbols and
+	expressions for the LET_EXPR.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
