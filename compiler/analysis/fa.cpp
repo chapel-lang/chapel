@@ -383,7 +383,7 @@ type_cannonicalize(AType *t) {
   int nconsts = 0, rebuild = 0;
   forv_CreationSet(cs, *t) if (cs) {
     // strip out constants if the base type is included
-    if (cs->sym->constant || (cs->sym->type->num_kind && cs->sym != cs->sym->type)) {
+    if (cs->sym->is_constant || (cs->sym->type->num_kind && cs->sym != cs->sym->type)) {
       CreationSet *base_cs = cs->sym->type->abstract_type->v[0];
       if (t->set_in(base_cs)) {
 	rebuild = 1;
@@ -397,7 +397,7 @@ type_cannonicalize(AType *t) {
     // compress constants into the base type
     rebuild = 1;
     for (int i = 0; i < t->sorted.n; i++)
-      if (t->sorted.v[i]->sym->constant || 
+      if (t->sorted.v[i]->sym->is_constant || 
 	  (t->sorted.v[i]->sym->type->num_kind && 
 	   t->sorted.v[i]->sym != t->sorted.v[i]->sym->type)) {
 	CreationSet *base_cs = t->sorted.v[i]->sym->type->abstract_type->v[0];

@@ -1,11 +1,11 @@
-::A(enumarray.chpl:1) ( A (enumarray.chpl:1) )
-::B(enumarray.chpl:1) ( B (enumarray.chpl:1) )
-::C(enumarray.chpl:1) ( C (enumarray.chpl:1) )
-::D(enumarray.chpl:1) ( D (enumarray.chpl:1) )
+::A(enumarray.chpl:1) ( classVals )
+::B(enumarray.chpl:1) ( classVals )
+::C(enumarray.chpl:1) ( classVals )
+::D(enumarray.chpl:1) ( classVals )
 ::DClass(enumarray.chpl:3) ( Domain (internal_prelude.chpl:13) )
-::O(enumarray.chpl:1) ( O (enumarray.chpl:1) )
-::S(enumarray.chpl:1) ( S (enumarray.chpl:1) )
-::W(enumarray.chpl:1) ( W (enumarray.chpl:1) )
+::O(enumarray.chpl:1) ( classVals )
+::S(enumarray.chpl:1) ( classVals )
+::W(enumarray.chpl:1) ( classVals )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_enumarray ( __init_enumarray )
 ::__init_enumarray(enumarray.chpl:20) ( __init_enumarray )
@@ -15,7 +15,7 @@
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::classVals ( classVals )
 ::i(enumarray.chpl:16) ( Index (internal_prelude.chpl:1) )
-::i(internal_prelude.chpl:5) ( Index (internal_prelude.chpl:1) S (enumarray.chpl:1) W (enumarray.chpl:1) A (enumarray.chpl:1) B (enumarray.chpl:1) C (enumarray.chpl:1) D (enumarray.chpl:1) O (enumarray.chpl:1) )
+::i(internal_prelude.chpl:5) ( Index (internal_prelude.chpl:1) classVals )
 ::main ( main )
 ::main ( main )
 ::null ( null null )
@@ -33,12 +33,5 @@
 function __init_enumarray enumarray.chpl:20
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_prelude prelude.chpl:54
-function this internal_prelude.chpl:5
-function this internal_prelude.chpl:5
-function this internal_prelude.chpl:5
-function this internal_prelude.chpl:5
-function this internal_prelude.chpl:5
-function this internal_prelude.chpl:5
-function this internal_prelude.chpl:5
 function this internal_prelude.chpl:5
 globals
