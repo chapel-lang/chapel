@@ -3164,3 +3164,13 @@ Log message:
 Modified files:
 	chapel/compiler/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+06/10/04 16:28:18 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	one last supression to get a clean run through the tests
+
+Modified files:
+	chapel/compiler/: valgrind.suppressions 
+
