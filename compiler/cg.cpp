@@ -252,6 +252,7 @@ write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
       fprintf(fp, "L%d:;\n", n->code->label[0]->id);
       break;
     case Code_GOTO:
+      fprintf(fp, "goto L%d;\n", n->code->label[0]->id);
       break;
     default: assert(!"case");
   }

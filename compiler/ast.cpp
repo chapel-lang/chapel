@@ -1337,7 +1337,8 @@ pre_gen_bottom_up(AST *ast) {
       char *op = ast->v[ast->op_index]->sym->name;
       ast->is_inc_dec = (op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
       ast->is_simple_assign = ((op[0] == '=') && !op[1]);
-      ast->is_assign = (op[1] == '=' && op[0] != '=') || ast->is_simple_assign || ast->is_inc_dec;
+      ast->is_assign = (op[1] == '=' && op[0] != '=' && op[0] != '<' && op[0] != '>') 
+	|| ast->is_simple_assign || ast->is_inc_dec;
       ast->is_ref = op[0] == '&' && ast->op_index == 0;
       ast->is_application = (op[0] == '^' && op[1] == '^') || op[0] == '(';
       ast->is_comma = op[0] == ',';
