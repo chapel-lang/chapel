@@ -15246,3 +15246,15 @@ Added files:
 	                            test_var_decl3.chpl 
 	                            test_var_decl3.good 
 
+---------------------------------------------------------------------------
+
+01/21/05 11:08:38 -- deitz
+
+Log message:
+	Removed futures for test_overload_integerfloat3 and 4.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overload_integerfloat3.future 
+	                                         test_overload_integerfloat4.future 
+
