@@ -74,6 +74,7 @@ class Sym : public gc {
   unsigned int		vararg:1;		// Sym is a vararg parameter
   unsigned int 		value:1;		// Sym is a value (immediate)
   unsigned int		structure:1;		// Sym is a structure (C compatibility)
+  unsigned int		class_static:1;		// Sym is 'class static'
 
   unsigned int		num_type:2;		// used by if1.cpp
   unsigned int		num_index:3;		// used by if1.cpp

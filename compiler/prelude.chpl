@@ -151,8 +151,8 @@ function operator(a:ref, #"--")			{
 
 // domains
 
-type domain;
 type sequence __name "sequence";
+type domain __name "domain";
 
 class distribution {
   type source_domain : domain;
@@ -210,6 +210,7 @@ function operator(a:sequence, #"*", b:sequence) {
 }
 
 function vector::self s { __index_vector self s }
+function domain::self s { new domain }
 
 /*
   David's old iterator and domain examples

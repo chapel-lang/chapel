@@ -53,6 +53,8 @@ collect_Vars_PNode(PNode *n, Vec<Var *> &vars) {
     vars.set_add(v);
   forv_Var(v, n->lvals)
     vars.set_add(v);
+  forv_Var(v, n->tvals)
+    vars.set_add(v);
   forv_PNode(p, n->phi)
     collect_Vars_PNode(p, vars);
   forv_PNode(p, n->phy)
@@ -83,6 +85,7 @@ copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
   PNode *n = new PNode(node->code);
   n->rvals.copy(node->rvals);
   n->lvals.copy(node->lvals);
+  n->tvals.copy(node->tvals);
   n->cfg_succ.copy(node->cfg_succ);
   n->cfg_pred.copy(node->cfg_pred);
   n->phi.copy(node->phi);

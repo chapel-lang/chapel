@@ -19,6 +19,7 @@ type ref __name "ref";
 type catagory __name "catagory";
 type set __name "set" : catagory;
 type sequence __name "sequence";
+type domain __name "domain";
 
 type int8 __name "int8";
 type int16 __name "int16";

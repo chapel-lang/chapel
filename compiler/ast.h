@@ -84,4 +84,7 @@ Sym *ast_qualified_ident_sym(AST *qualified_ident, Scope *global);
 
 Sym *new_sym(IF1 *i, Scope *scope, char *s = 0, Sym *sym = 0);
 
+extern char *cannonical_class;
+extern char *cannonical_self;
+
 #endif

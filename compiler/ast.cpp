@@ -10,8 +10,8 @@ char *AST_name[] = {
 #undef S
 };
 
-static char *cannonical_class = 0;
-static char *cannonical_self = 0;
+char *cannonical_class = 0;
+char *cannonical_self = 0;
 
 AST *
 AST::get(AST_kind k) {
@@ -524,7 +524,7 @@ define_function(IF1 *i, AST *ast) {
   ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
   if (fscope != ast->scope) {
     ast->sym->scope->dynamic.add(fscope);
-    ast->sym->self = new_sym(i, ast->sym->scope, if1_cannonicalize_string(i, "self"));
+    ast->sym->self = new_sym(i, ast->sym->scope, cannonical_self);
     ast->sym->self->type = ast->sym->in;
   }
   for (int x = 1; x < ast->n - 1; x++)
@@ -658,7 +658,7 @@ build_types(IF1 *i, AST *ast) {
     case AST_record_type:
       forv_AST(a, *ast)
 	if (a->sym) {
-	  switch (ast->kind) {
+	  switch (a->kind) {
 	    case AST_type_param:
 	      ast->sym->args.add(a->sym);
 	      break;
@@ -792,9 +792,10 @@ gen_fun(IF1 *i, AST *ast) {
   AST **args = &ast->v[1];
   Sym *as[n + 1];
   AST *fqid = ast->get(AST_qualified_ident);
-  if (fn->in && fn->name == cannonical_class || fn->name == cannonical_self)
+  if (fn->in && (fn->name == cannonical_class || fn->name == cannonical_self)) {
     as[0] = ast->sym->self;
-  else {
+    fn->class_static = fn->name == cannonical_class;
+  } else {
     as[0] = new_sym(i, fn->scope);
     as[0]->type = if1_make_symbol(i, fn->name);
   }

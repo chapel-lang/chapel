@@ -54,3 +54,16 @@
 
 - make_top_edge should call with the appropriate arguments.
   - should store the top level pnode in the database (somewhere)
+
+- generalize the "autoderef" charateristic of the "." operator
+and the vector(xx) call.  Perhaps attach it as a property to the
+function call? Alternatively, we could have two different calls...
+but how to specify?  Some sort of hidden variable "autoderef = true",
+or "is_lval = true"?
+
+- fixup methods "self" and "super" variables to work correctly
+
+- fixup clearing and collecting of variables and Pnodes... what 
+  are the phi and phy lists for?
+
+

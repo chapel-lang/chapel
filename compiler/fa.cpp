@@ -44,7 +44,8 @@ static AType *symbol_type = 0;
 static AType *fun_symbol_type = 0;
 
 typedef Vec<Map<char *,Vec<Fun *> *> *> TupleDispatchTable;
-static Vec<Map<char *,Vec<Fun *> *> *> dispatch_table;
+static Map<char *,Vec<Fun *> *> class_dispatch_table;
+static Map<char *,Vec<Fun *> *> self_dispatch_table;
 static Map<char *, TupleDispatchTable *> tuple_dispatch_table;
 static OpenHash<AType *, ATypeOpenHashFns> cannonical_atypes;
 
@@ -53,7 +54,7 @@ static Var *element_var = 0;
 static SList(AEdge, edge_worklist_link) edge_worklist;
 static SList(AVar, send_worklist_link) send_worklist;
 static Vec<EntrySet *> entry_set_done;
-static Vec<AVar *> type_violations;
+static Vec<ATypeViolation *> type_violations;
 
 static AType *type_union(AType *a, AType *b);
 static AType *type_diff(AType *a, AType *b);
@@ -203,19 +204,25 @@ creation_point(AVar *v, Sym *s) {
     return v->creation_set;
   }
   forv_CreationSet(cs, s->creators) {
-    forv_AVar(av, cs->defs) {
-      if (av->var != v->var)
+    if (v->contour == GLOBAL_CONTOUR) {
+      if (cs->defs.n)
 	goto LnextCreationSet;
+    } else {
+      forv_AVar(av, cs->defs)
+        if (av->var != v->var)
+          goto LnextCreationSet;
     }
-    cs->defs.add(v);
+    if (v->contour != GLOBAL_CONTOUR)
+      cs->defs.add(v);
     v->creation_set = cs;
     update_var_in(v, make_AType(v->creation_set));
     return v->creation_set;
   LnextCreationSet:;
   }
-  CreationSet *cs = new CreationSet(s, v);
+  CreationSet *cs = new CreationSet(s);
   s->creators.add(cs);
-  cs->defs.add(v);
+  if (v->contour != GLOBAL_CONTOUR)
+    cs->defs.add(v);
   v->creation_set = cs;
   forv_Sym(h, s->has)
     cs->vars.add(unique_AVar(h->var, cs));
@@ -749,15 +756,14 @@ add_funs_constraints(PNode *p, EntrySet *es, Vec<Fun *> *fns, Vec<AVar *> &a, Ve
 
 static int 
 special_dispatch(Vec<AVar *> &a) {
-  return a.n == 2 && a.v[0]->out->n == 1 && a.v[0]->out->v[0]->sym == sym_symbol &&
+  return a.n == 2 && a.v[0]->out->n == 1 && a.v[0]->out->v[0]->sym->symbol &&
     a.v[1]->out->n == 1 && 
     a.v[1]->out->v[0]->sym == sym_tuple;
 }
 
 static int 
 special_dispatch(Vec<Sym *> &a) {
-  return a.n == 2 && a.v[0]->type == sym_symbol && 
-    a.v[1]->type == sym_tuple;
+  return a.n == 2 && a.v[0]->type->symbol && a.v[1]->type == sym_tuple;
 }
 
 static int application_constraints(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args);
@@ -811,20 +817,19 @@ partial_application(PNode *p, EntrySet *es, CreationSet *s, Vec<AVar *> &args) {
 }
 
 static int
-function_dispatch(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args) {
+function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args) {
   Vec<AVar *> a;
   int some = 0;
-  a.add(fun);
+  a.add(a0);
   for (int j = args.n - 1; j >= 0; j--)
     a.add(args.v[j]);
   if (special_dispatch(a)) {
     // specialized dispatch: symbol(tuple)
-    TupleDispatchTable *at = 
-      tuple_dispatch_table.get(a.v[0]->out->v[0]->defs.v[0]->var->sym->name);
+    TupleDispatchTable *at = tuple_dispatch_table.get(a.v[0]->out->v[0]->sym->name);
     if (at) {
       CreationSet *tuple = a.v[1]->out->v[0];
       for(int i = 0; i < tuple->vars.n; i++) {
-	if (at->n > i && tuple->vars.v[i]->var->sym->type == sym_symbol) {
+	if (at->n > i && tuple->vars.v[i]->var->sym->symbol) {
 	  Vec<Fun *> *fns = at->v[i]->get(tuple->vars.v[i]->var->sym->name);
 	  some = 1;
 	  add_funs_constraints(p, es, fns, a);
@@ -834,35 +839,25 @@ function_dispatch(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *>
     if (some)
       return 0;
   } else {
-    // standard dispatch, first look for a symbol to index off
-    for (int i = 0; i < a.n && i < dispatch_table.n; i++) {
-      forv_CreationSet(cs, *a.v[i]->out) if (cs) {
-	if (cs->sym == sym_symbol) {
-	  Vec<Fun *> *fns = dispatch_table.v[i]->get(cs->defs.v[0]->var->sym->name);
-	  add_funs_constraints(p, es, fns, a);
-	  some = 1;
-	}
-      }
-    }
-    if (some)
-      return 0;
-    // next, index off the classes
-    for (int i = 0; i < a.n && i < dispatch_table.n; i++) {
-      forv_CreationSet(cs, *a.v[i]->out) if (cs) {
-	Vec<Fun *> *fns = dispatch_table.v[i]->get(cs->sym->name);
-	add_funs_constraints(p, es, fns, a);
-      }
+    // standard dispatch, on unique class (symbols, bare classes), and objects
+    forv_CreationSet(cs, *a0->out) if (cs) {
+      Vec<Fun *> *fns = 0;
+      if (!cs->defs.n)
+	fns = class_dispatch_table.get(cs->sym->name);
+      else
+	fns = self_dispatch_table.get(cs->sym->name);
+      add_funs_constraints(p, es, fns, a);
     }
   }
   return 0;
 }
 
 static int
-vector_application(PNode *p, EntrySet *es, AVar *vec, CreationSet *cs, Vec<AVar *> &args) {
-  Vec<Fun *> *fns = dispatch_table.v[0]->get(cs->sym->name);
+autoderef_application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args) {
+  Vec<Fun *> *fns = self_dispatch_table.get(cs->sym->name);
   if (fns) {
     Vec<AVar *> a, ret;
-    a.add(vec);
+    a.add(a0);
     for (int j = args.n - 1; j >= 0; j--)
       a.add(args.v[j]);
     if (p->code->ast->is_lval) {
@@ -871,8 +866,10 @@ vector_application(PNode *p, EntrySet *es, AVar *vec, CreationSet *cs, Vec<AVar 
     } else {
       p->tvals.fill(p->lvals.n);
       for (int i = 0; i < p->lvals.n; i++) {
-	if (!p->tvals.v[i])
+	if (!p->tvals.v[i]) {
 	  p->tvals.v[i] = new Var(p->lvals.v[i]->sym);
+          es->fun->fa_all_Vars.add(p->tvals.v[i]);
+        }
 	AVar *ref = make_AVar(p->tvals.v[i], es);
 	ret.add(ref);
 	AVar *result = make_AVar(p->lvals.v[i], es);
@@ -896,15 +893,14 @@ application_constraints(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<A
       return function_application(p, es, a0, cs, args);
     else
       return partial_application(p, es, cs, args);
-  } else if (sym_vector->subtypes.set_in(cs->sym))
-    return vector_application(p, es, a0, cs, args);
-  else
-    return function_dispatch(p, es, a0, cs, args);
+  } else if (cs->defs.n && sym_vector->subtypes.set_in(cs->sym))
+    return autoderef_application(p, es, a0, cs, args);
+  return function_dispatch(p, es, a0, cs, args);
 }
 
 static void
-type_violation(AVar *av) {
-  type_violations.add(av);
+type_violation(AVar *av, AType *type, PNode *pnode) {
+  type_violations.add(new ATypeViolation(av, type, pnode));
 }
 
 static void
@@ -931,7 +927,7 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
       if (i - start == p->prim->pos) continue;
       AVar *arg = make_AVar(p->rvals.v[i], es);
       if (type_diff(arg->out, p->prim->args.v[iarg]) != bottom_type)
-	type_violation(arg); // type is greater than that permitted by primitive
+	type_violation(arg, type_diff(arg->out, p->prim->args.v[iarg]), p); 
       switch (p->prim->arg_types[iarg]) {
 	default: break;
 	case PRIM_TYPE_ANY_NUM_A: a = arg; break;
@@ -1045,7 +1041,6 @@ is_fa_Var(Var *v) {
 
 static void
 collect_Vars_PNodes(Fun *f) {
-  Primitives *prim = f->pdb->if1->primitives;
   f->fa_collected = 1;
   if (!f->entry)
     return;
@@ -1053,6 +1048,7 @@ collect_Vars_PNodes(Fun *f) {
   forv_Var(v, f->fa_all_Vars)
     if (is_fa_Var(v))
       f->fa_Vars.add(v);
+  Primitives *prim = f->pdb->if1->primitives;
   forv_PNode(p, f->fa_all_PNodes) {
     if (p->code->kind == Code_MOVE)
       f->fa_move_PNodes.add(p);
@@ -1195,6 +1191,7 @@ collect_type_violations(FA *fa) {
       forv_AVar(c, av->arg_of_send) if (c) {
 	PNode *p = c->var->def;
 	if (p->prim) continue; // primitives handled elsewhere
+	if (p->lvals.n && p->lvals.v[0]->sym == av->var->sym) continue; // hack for autoderef
 	EntrySet *from = (EntrySet*)c->contour;
 	AType *t = av->out;
 	forv_AVar(a, av->forward) {
@@ -1210,7 +1207,7 @@ collect_type_violations(FA *fa) {
 	  t = type_diff(t, a->out);
 	}
 	if (t != bottom_type)
-	  type_violation(av);
+	  type_violation(av, t, p);
       }
     }
   }
@@ -1224,21 +1221,17 @@ complete_pass(FA *fa) {
 
 static void
 build_dispatch_table(FA *fa) {
+  class_dispatch_table.clear();
+  self_dispatch_table.clear();
   forv_Fun(f, fa->pdb->funs) {
-    if (dispatch_table.n < f->sym->args.n) {
-      int i = dispatch_table.n;
-      dispatch_table.fill(f->sym->args.n);
-      for (; i < dispatch_table.n; i++)
-	dispatch_table.v[i] = new Map<char *, Vec<Fun *> *>;
-    }
     if (special_dispatch(f->sym->args)) {
       int some = 0;
       Sym *a = f->sym->args.v[0];
-      TupleDispatchTable *at = tuple_dispatch_table.get(a->name);
+      TupleDispatchTable *at = tuple_dispatch_table.get(a->type->name);
       if (!at)
-	tuple_dispatch_table.put(a->name, (at = new TupleDispatchTable));
+	tuple_dispatch_table.put(a->type->name, (at = new TupleDispatchTable));
       for (int i = 0; i < f->sym->args.v[1]->has.n; i++) {
-	Sym * v = f->sym->args.v[1]->has.v[i];
+	Sym *v = f->sym->args.v[1]->has.v[i];
 	if (v->type->symbol) {
 	  at->fill(i + 1);
 	  if (!at->v[i])
@@ -1257,9 +1250,11 @@ build_dispatch_table(FA *fa) {
       for (int i = 0; i < f->sym->args.n; i++) {
 	Sym *a = f->sym->args.v[i];
 	if (a->type) {
-	  Vec<Fun *> *vf = dispatch_table.v[i]->get(a->type->name);
+	  Map<char *,Vec<Fun *> *> *table = 
+	    f->sym->class_static ? &class_dispatch_table : &self_dispatch_table;
+	  Vec<Fun *> *vf = table->get(a->type->name);
 	  if (!vf) 
-	    dispatch_table.v[i]->put(a->type->name, (vf = new Vec<Fun *>));
+	    table->put(a->type->name, (vf = new Vec<Fun *>));
 	  vf->add(f);
 	}
       }
@@ -1355,7 +1350,6 @@ initialize(FA *fa) {
   fun_symbol_type = type_union(symbol_type, fun_type);
   anyint_type = make_abstract_type(sym_anyint);
   anynum_type = make_abstract_type(sym_anynum);
-  dispatch_table.clear();
   edge_worklist.clear();
   send_worklist.clear();
   initialize_symbols(fa);

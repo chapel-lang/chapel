@@ -105,23 +105,25 @@ show_type(Vec<CreationSet *> &t, FILE *fp) {
 
 static void
 show_violations(FA *fa, FILE *fp) {
-  forv_AVar(av, type_violations) if (av) {
-    fprintf(stderr, "type error ");
+  forv_ATypeViolation(v, type_violations) if (v) {
+    AVar *av = v->av;
+    assert(v->pnode->code->ast);
+    fprintf(stderr, "%s:%d: ", v->pnode->code->ast->pathname, v->pnode->code->ast->line);
     if (av->var->sym->name)
       fprintf(stderr, "'%s' ", av->var->sym->name);
-    else if (av->var->def && av->var->def->code->ast && av->var->def->code->ast->pathname)
-      fprintf(stderr, "\"%s\":%d ", av->var->def->code->ast->pathname, 
-	      av->var->def->code->ast->line);
-    else
+    else if (verbose_level)
       fprintf(stderr, "expr:%d ", av->var->sym->id);
-    if (verbose_level)
+    else
+      fprintf(stderr, "expression ");
+    if (verbose_level) {
       fprintf(stderr, "id:%d ", av->var->sym->id);
-    if (av->out->n) {
-      fprintf(stderr, ": ");
-      show_type(*av->out, fp);
+      if (av->out->n) {
+	fprintf(stderr, ": ");
+	show_type(*av->out, fp);
+      }
     }
-    fprintf(stderr, "violations: ");
-    show_type(*type_diff(av->in, av->out), fp);
+    fprintf(stderr, "has illegal type: ");
+    show_type(*v->type, fp);
     fprintf(fp, "\n");
   }
 }
@@ -133,17 +135,22 @@ show_untyped(FA *fa) {
     forv_Var(v, es->fun->fa_all_Vars) {
       if (make_AVar(v, es)->out == bottom_type) {
 	res++;
-	fprintf(stderr, "type error ");
-	if (v->sym->name)
-	  fprintf(stderr, "'%s' ", v->sym->name);
-	else if (v->def && v->def->code && v->def->code->ast && v->def->code->ast->pathname)
-	  fprintf(stderr, "\"%s\":%d ", v->def->code->ast->pathname, 
+	if (v->def && v->def->code && v->def->code->ast && v->def->code->ast->pathname)
+	  fprintf(stderr, "%s:%d: ", v->def->code->ast->pathname, 
 		  v->def->code->ast->line);
 	else
-	  fprintf(stderr, "expr:%d ", v->sym->id);
-	if (verbose_level)
-	  fprintf(stderr, "id:%d ", v->sym->id);
-	fprintf(stderr, "no type\n");
+	  fprintf(stderr, "error: ");
+	if (v->sym->name)
+	  fprintf(stderr, "'%s' ", v->sym->name);
+	else
+	  fprintf(stderr, "expression ");
+	if (verbose_level) {
+	  if (!v->sym->name)
+	    fprintf(stderr, "expr:%d ", v->sym->id);
+	  else
+	    fprintf(stderr, "id:%d ", v->sym->id);
+	}
+	fprintf(stderr, "has no type\n");
       }
     }
   }

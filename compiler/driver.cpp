@@ -220,7 +220,7 @@ compile_one(char *fn) {
     }
   } else
   Lfail:
-    fail("fatal error: program does not type");
+    fail("fatal error, program does not type");
   return 0;
 }
 

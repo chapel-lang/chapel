@@ -58,8 +58,6 @@ class CreationSet : public gc {
   Vec<CreationSet*>	not_equiv;	// used by clone.cpp
   Sym 			*type;		// used by clone.cpp & fa.capp
 
-  CreationSet(Sym *s, AVar *def) : sym(s), atype(0), clone_for_constants(0), 
-    equiv(0) { defs.add(def); }
   CreationSet(Sym *s) : sym(s), atype(0), clone_for_constants(0), equiv(0) { }
 };
 #define forv_CreationSet(_p, _v) forv_Vec(CreationSet, _p, _v)
@@ -131,6 +129,16 @@ class ATypeOpenHashFns {
     return 1;
   }
 };
+
+class ATypeViolation {
+ public:
+  AVar *av;
+  AType *type;
+  PNode *pnode;
+  ATypeViolation(AVar *aav, AType *atype, PNode *apnode) : av(aav), type(atype), pnode(apnode) {}
+};
+#define forv_ATypeViolation(_p, _v) forv_Vec(ATypeViolation, _p, _v)
+
 
 AVar * make_AVar(Var *v, EntrySet *es);
 Sym *coerce_num(Sym *a, Sym *b);
