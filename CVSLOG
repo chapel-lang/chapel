@@ -16482,3 +16482,17 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_secondary_method2.future 
 
+---------------------------------------------------------------------------
+
+02/03/05 17:07:02 -- jplevyak
+
+Log message:
+	Checked in code which uses collect_asts (currently if-def'ed out
+	till we decided how to handle Type(s)).
+	Changed the order of precidence of type information in type_info.
+	Tweak of collectAST to use Vec::append
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/traversals/: collectASTS.cpp 
+
