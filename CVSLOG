@@ -9850,3 +9850,26 @@ Added files:
 	chapel/test/trivial/deitz/: test_short_identifiers.chpl 
 	                            test_short_identifiers.good 
 
+---------------------------------------------------------------------------
+
+11/17/04 14:43:15 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Work to separate the type, includes and specialization hierarchies.
+	Dispatch now uses the specialization hierarchy.  There are now
+	separate specialization and type constraints for arguments a la Cecil.
+	Initial work on building true LUB and GLB types.  Fixed a bug in low
+	level code gen which was trying to build names for types which where not
+	directly used (and currently unsupported) like float128.
+
+Modified files:
+	chapel/compiler/analysis/: TODO analysis.cpp ast.cpp cg.cpp 
+	                           clone.cpp fa.cpp if1.cpp pattern.cpp 
+	                           sym.cpp 
+	chapel/compiler/backend/: dump.cpp graph.cpp 
+	chapel/compiler/include/: analysis.h callbacks.h sym.h 
+	chapel/compiler/vparser/: ast_kinds.h parse_ast.cpp parse_ast.h 
+	                          v.g 
+	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
+	                               tuples.good 
+
