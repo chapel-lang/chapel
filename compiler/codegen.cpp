@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include "codegen.h"
+#include "datatype.h"
 #include "files.h"
 #include "fun.h"
 #include "misc.h"
@@ -86,7 +87,13 @@ static void genDT(FILE* outfile, Sym* pdt) {
     fprintf(outfile, "/* unknown type */");
     hitUnknown = 1;
   } else {
-    fprintf(outfile, "_%s", pdt->name);
+    int rank = dtIsDomain(pdt);
+
+    if (rank) {
+      fprintf(outfile, "_domain%d", rank);
+    } else {
+      fprintf(outfile, "_%s", pdt->name);
+    }
   }
 }
 
@@ -163,6 +170,14 @@ static void genASTDecls(FILE* outfile, AST* ast) {
 }
 
 
+static void genDomValues(FILE* outfile, AST* ast) {
+  if (ast->kind == AST_block) {
+    ast = ast->v[0];
+  }
+  genAST(outfile, ast);
+}
+
+
 static void genAST(FILE* outfile, AST* ast) {
   if (ast == NULL) {
     INT_FATAL(NULL, "Got NULL AST in genAST()\n");
@@ -208,14 +223,52 @@ static void genAST(FILE* outfile, AST* ast) {
     fprintf(outfile, "%s", ast->string);
     break;
 
+  case AST_index:
+    {
+      int i;
+      
+      for (i=0; i<ast->n; i++) {
+	if (i) {
+	  fprintf(outfile, ", ");
+	}
+	genAST(outfile,ast->v[i]);
+      }
+      if (ast->n < 3) {
+	fprintf(outfile, ", 1");
+      }
+    }
+    break;
+
+  case AST_cross_product:
+    {
+      int i;
+      
+      for (i=0; i<ast->n; i++) {
+	if (i) {
+	  fprintf(outfile, ", ");
+	}
+	genAST(outfile,ast->v[i]);
+      }
+    }
+    break;
+    
+
   case AST_def_ident:
     {
       Sym* sym = ast->sym;
-      
-      fprintf(outfile, "%s", sym->name);
-      if (ast->v[1]) {
-	fprintf(outfile, " = ");
-	genAST(outfile, ast->v[1]);
+      int rank;
+
+      rank = dtIsDomain(type_info(ast, sym));
+      if (rank) {
+	fprintf(outfile, "%s = _init_domain_%dD(", sym->name, rank);
+	genDomValues(outfile, ast->v[1]);
+	fprintf(outfile, ")");
+      } else {
+	fprintf(outfile, "%s", sym->name);
+	if (ast->v[1]) {
+	  fprintf(outfile, " = ");
+	  genAST(outfile, ast->v[1]);
+	}
       }
     }
     break;

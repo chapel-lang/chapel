@@ -3,6 +3,7 @@
 
 #include "chplio.h"
 #include "chpltypes.h"
+#include "domain.h"
 
 void __init(void);
 

@@ -1,12 +1,15 @@
 
 CHAPEL_ROOT = ../..
 include $(CHAPEL_ROOT)/make/Makefile.base
+include $(CHAPEL_ROOT)/runtime/etc/Makefile.macros
 
 CC = gcc
 CFLAGS += -I../include
 
 CHPL_RT_SRCS = \
-	chplio.c
+	chplio.c \
+	domain.c \
+
 CHPL_RT_OBJS = $(CHPL_RT_SRCS:%.c=$(PLATFORM)/%.o)
 CHPL_RT_LIB = $(PLATFORM)/libchpl.a
 

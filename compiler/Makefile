@@ -22,6 +22,7 @@ GEYSA_CVS_SRCS = \
 	cfg.cpp \
 	cg.cpp \
 	clone.cpp \
+	datatype.cpp \
 	dom.cpp \
 	driver.cpp \
 	dump.cpp \

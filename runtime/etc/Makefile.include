@@ -1,5 +1,7 @@
 
 include $(CHPLRTDIR)/../make/Makefile.platform
+include $(CHPLRTDIR)/etc/Makefile.macros
 
 all:
-	@gcc -o $(BINNAME) -I $(CHPLRTDIR)/include -L $(CHPLRTDIR)/src/$(PLATFORM) $(CHPLRTDIR)/src/$(PLATFORM)/main.o $(CHPLSRC) -lchpl
+	gcc $(CFLAGS) -o $(BINNAME) -I $(CHPLRTDIR)/include -L $(CHPLRTDIR)/src/$(PLATFORM) $(CHPLRTDIR)/src/$(PLATFORM)/main.o $(CHPLSRC) -lchpl
+
