@@ -21699,3 +21699,68 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_class_list1.future 
 
+---------------------------------------------------------------------------
+
+03/25/05 17:48:02 -- bradc
+
+Log message:
+	In the spirit of "capture information gleaned by analysis
+	in the AST" right after RunAnalysis is complete, I put an
+	"isDead" bit in the Symbol AST hierarchy and used this to
+	capture the result of the *_is_used() calls in the
+	removeDeadSymbols pass, rather than calling these calls
+	again at codegen.  (Doing the latter causes problems for
+	new functions that have been inserted because analysis
+	doesn't know about them and therefore calls them dead).
+	Every Symbols isDead bit is set to false by default
+	until explicitly set otherwise.
+	
+	In making this change, switched from a Stmt-based
+	traversal to an Expr-based traversal.  The Stmt-based
+	traversal revealed some problems in that the traversal
+	did not reach all DefExprs, and therefore did not mark
+	all dead things as dead.  It also had the problem of
+	removing a DefExpr's entire Stmt, which would cause
+	problem if the DefStmt included other DefExprs or
+	the DefExpr included other symbols.
+	
+	The Expr-based traversal fixes the first problem, but
+	not the second -- entire statements are still ripped
+	out.
+	
+	An alternate and simpler version is checked in with
+	this that uses the new AST_is_used() call.  However,
+	this over-aggressively prunes out things in the
+	common module, and we don't seem to have an easy way
+	to tell a traversal to skip over the common module,
+	so it doesn't work yet and is #ifdefed out.
+	
+	In doing all this, realized that what we really want
+	this to be is a Symtab traversal, so I wrote this
+	version, which also uses the AST_is_used call.  Here,
+	the common module is skipped over as appropriate.
+	However, the call says that several live variables
+	are dead, so this version doesn't work either.
+	Ultimately, this is the version that probably ought
+	to live on.  For that reason, I called the file
+	removeDeadSymbols (since CVS is bad at file renaming),
+	but the traversal itself is called removeDeadSymbols2
+	to avoid conflicts for now.
+	
+	As a minor change, I also hoisted the exportMe bit
+	out of the FnSymbol and into the Symbol hierarchy,
+	though I didn't change its use at all.  This is
+	something we've talked about doing for awhile.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+	chapel/compiler/main/: passlist.cpp 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: removeDeadSymbols.cpp 
+	                             removeDeadSymbols.h 
+	chapel/test/Bin/: nightly 
+Added files:
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	                         removeDeadSymbols.h 
+
