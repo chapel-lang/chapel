@@ -59,6 +59,7 @@
 %token TINOUT
 %token TLABEL
 %token TLET
+%token TLIKE
 %token TMODULE
 %token TNIL
 %token TOF
@@ -208,6 +209,8 @@ vardecltype:
     { $$ = dtUnknown; }
 | TCOLON type
     { $$ = $2; }
+| TLIKE expr
+    { $$ = new LikeType($2); }
 ;
 
 

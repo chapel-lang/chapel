@@ -56,6 +56,7 @@ index           return TINDEX;
 inout           return TINOUT;
 label           return TLABEL;
 let             return TLET;
+like            return TLIKE;
 mod             return TMOD;
 module		return TMODULE;
 nil             return TNIL;

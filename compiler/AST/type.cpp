@@ -925,6 +925,49 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
+LikeType::LikeType(Expr* init_expr) :
+  Type(TYPE_LIKE, NULL),
+  expr(init_expr)
+{
+  SET_BACK(expr);
+}
+
+
+Type* LikeType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  Type* copy = new LikeType(expr->copy(clone, map, analysis_clone));
+  copy->addSymbol(symbol);
+  return copy;
+}
+
+
+bool LikeType::isComplex(void) {
+  return expr->typeInfo()->isComplex();
+}
+
+
+void LikeType::traverseDefType(Traversal* traversal) {
+  TRAVERSE(expr, traversal, false);
+}
+
+
+void LikeType::printDef(FILE* outfile) {
+  fprintf(outfile, "like type ");
+  symbol->print(outfile);
+  fprintf(outfile, " = ");
+  expr->print(outfile);
+}
+
+
+void LikeType::codegen(FILE* outfile) {
+  INT_FATAL(this, "Unanticipated call to LikeType::codegen");
+}
+
+
+void LikeType::codegenDef(FILE* outfile) {
+  INT_FATAL(this, "Unanticipated call to LikeType::codegenDef");
+}
+
+
 ClassType::ClassType(bool isValueClass, bool isUnion,
 		     ClassType* init_parentClass,
 		     Stmt* init_constructor,

@@ -745,6 +745,9 @@ build_types(Vec<BaseAST *> &syms) {
 	t->asymbol->sym->alias = tt->definition->asymbol->sym;
 	break;
       }
+      case TYPE_LIKE: {
+	INT_FATAL(t, "No analysis support for 'like'");
+      }
       case TYPE_CLASS: {
 	ClassType *tt = dynamic_cast<ClassType*>(t);
 	t->asymbol->sym->type_kind = Type_RECORD;
@@ -1714,6 +1717,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
   case TYPE_SEQ:
   case TYPE_ARRAY:
   case TYPE_USER:
+  case TYPE_LIKE:
   case TYPE_CLASS:
   case TYPE_TUPLE:
   case TYPE_SUM:

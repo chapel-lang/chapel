@@ -188,6 +188,23 @@ class UserType : public Type {
 };
 
 
+class LikeType : public Type {
+ public:
+  Expr* expr;
+
+  LikeType(Expr* init_expr);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  bool isComplex(void);
+
+  void traverseDefType(Traversal* traversal);
+
+  void printDef(FILE* outfile);
+  void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
+};
+
+
 class ClassType : public Type {
  public:
   bool value; /* true if this is a value class (aka record) */

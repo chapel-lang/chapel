@@ -92,6 +92,7 @@ char* astTypeName[] = {
   "SeqType",
   "ArrayType",
   "UserType",
+  "LikeType",
   "ClassType",
   "TupleType",
   "SumType",

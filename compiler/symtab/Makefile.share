@@ -4,6 +4,7 @@ SYMTAB_SRCS = \
 	insertWriteFns.cpp \
 	legalizeCNames.cpp \
 	printSymtab.cpp \
+	removeLikeTypes.cpp \
 	renameOverloadedFunctions.cpp \
 	symlink.cpp \
 	symscope.cpp \
