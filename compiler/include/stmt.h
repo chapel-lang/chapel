@@ -12,7 +12,7 @@ class Stmt : public BaseAST {
  public:
   AInfo *ainfo;
 
-  FnSymbol* parentFn;
+  Symbol* parentSymbol;
 
   Stmt(astType_t astType);
   virtual Stmt* copy(void);

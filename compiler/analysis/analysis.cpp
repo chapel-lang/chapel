@@ -1586,7 +1586,7 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
   PNode *pn = ma->ainfo->pnodes.v[0];
   if (pn->code->kind != Code_SEND)
     return -2;
-  Vec<Fun *> *fns = ma->stmt->parentFn->asymbol->fun->calls.get(pn);
+  Vec<Fun *> *fns = ma->stmt->parentSymbol->asymbol->fun->calls.get(pn);
   if (!fns) {
     Sym *obj_type = pn->rvals.v[1]->type;
     char *sel = pn->rvals.v[3]->sym->name;
@@ -1617,7 +1617,7 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
 	pn = p->ainfo->pnodes.v[0];
 	if (pn->code->kind != Code_SEND)
 	  return -8;
-	fns = ma->stmt->parentFn->asymbol->fun->calls.get(pn);
+	fns = ma->stmt->parentSymbol->asymbol->fun->calls.get(pn);
 	if (!fns)
 	  return -9;
 	if (fns->n > 1)

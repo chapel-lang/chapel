@@ -52,8 +52,14 @@ void FieldsToMemberAccesses::preProcessExpr(Expr* expr) {
       if (Symboltable::lookupInScope(member->var->name, CurrentClass->scope)) {
 
 	/* replacement of expr variable by memberaccess */
-	MemberAccess* repl = new MemberAccess(new Variable(member->stmt->parentFn->formals), member->var);
-	expr->parent->replace(expr, repl);
+	if (FnSymbol* parentFn = dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
+	  MemberAccess* repl = new MemberAccess(new Variable(parentFn->formals),
+						member->var);
+	  expr->parent->replace(expr, repl);
+	}
+	else {
+	  INT_FATAL(expr, "Statement is not in method in FieldsToMemberAccesses");
+	}
       }
     }
   }

@@ -9,19 +9,18 @@
 #include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
 
-#include "../traversals/checkBackLinks.h"
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/cloneAllFns.h"
 #include "../traversals/fieldsToMemberAccesses.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
+#include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processWithStatements.h"
 #include "../traversals/resolveSymbols2.h"
-#include "../traversals/setupStmtLinks.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/verifyASTType.h"
 
@@ -34,8 +33,7 @@ Pass* passlist[] = {
 
   RUN(FilesToAST),
   RUN(CreateEntryPoint),
-  RUN(SetupStmtLinks),
-  RUN(CheckBackLinks),
+  RUN(Fixup),
   RUN(ProcessWithStatements),
   RUN(FieldsToMemberAccesses),
   RUN(RunAnalysis),

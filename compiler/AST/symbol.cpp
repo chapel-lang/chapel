@@ -365,10 +365,10 @@ void ModuleSymbol::createInitFn(void) {
   {
     Stmt* initstmt = initFunStmts;
     while (initstmt) {
-      initstmt->parentFn = initFn;
+      initstmt->parentSymbol = initFn;
       initstmt = nextLink(Stmt, initstmt);
     }
-    initFunBody->parentFn = initFn;
+    initFunBody->parentSymbol = initFn;
   }
 
   definition = appendLink(definition, initFunDef);

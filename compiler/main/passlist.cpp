@@ -3,7 +3,6 @@
    sure to also #include the header file defining the pass in
    passlist.h.  */
 
-REGISTER(CheckBackLinks);
 REGISTER(CheckIDs);
 REGISTER(CheckTypeInfo);
 REGISTER(CloneAllFns);
@@ -14,6 +13,7 @@ REGISTER(FieldsToMemberAccesses); // SJD: Convert fields in methods to MemberAcc
 REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
+REGISTER(Fixup);
 REGISTER(GetStuff);
 REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
@@ -24,7 +24,6 @@ REGISTER(ProcessWithStatements); // SJD: Copies with symbols into classes, etc.
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(ResolveSymbols2);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
-REGISTER(SetupStmtLinks);
 REGISTER(TestGetStuff);
 REGISTER(VerifyASTType);
 

@@ -10,8 +10,7 @@
 
 
 Stmt::Stmt(astType_t astType) :
-  BaseAST(astType),
-  parentFn(Symboltable::getCurrentFn())
+  BaseAST(astType)
 {}
 
 
