@@ -296,3 +296,12 @@ Modified files:
 Removed files:
 	./: BUILDNUM 
 
+---------------------------------------------------------------------------
+
+04/02/03 16:15:41 -- n10253
+
+Log message:
+        casting decision tree
+
+Added files:
+        chapel/compiler/: cast_code.cpp 
