@@ -44,16 +44,14 @@ void init_ast() {
 }
 
 static void
-unalias_implements_constraints(IF1 *i) {
-  // unalias
+unalias_syms(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     for (int x = 0; x < s->implements.n; x++)
-      if (s->implements.v[x])
-	s->implements.v[x] = unalias_type(s->implements.v[x]);
-    if (s->constraints)
-      for (int x = 0; x < s->constraints->n; x++)
-	if (s->constraints->v[x])
-	  s->constraints->v[x] = unalias_type(s->constraints->v[x]);
+      s->implements.v[x] = unalias_type(s->implements.v[x]);
+    if (s->must_implement)
+      for (int x = 0; x < s->must_implement->n; x++)
+	if (s->must_implement->v[x])
+	  s->must_implement->v[x] = unalias_type(s->must_implement->v[x]);
     s->type = unalias_type(s->type);
     s->in = unalias_type(s->in);
     if (s->type_kind != Type_NONE)
@@ -64,12 +62,13 @@ unalias_implements_constraints(IF1 *i) {
     if (s != us) {
       forv_Sym(ss, s->implements) if (ss) {
 	assert(ss != us);
-	us->implements.set_add(ss);
+	us->implements.add(ss);
       }
     }
   }
 }
 
+#if 0
 static void 
 closure_of_implements(IF1 *i) {
   int changed = 1;
@@ -87,6 +86,7 @@ closure_of_implements(IF1 *i) {
   forv_Sym(s, i->allsyms)
     s->implements.set_to_vec();
 }
+#endif
 
 static void
 collect_includes(Sym *s, Vec<Sym *> &include_set, Vec<Sym *> &includes, Vec<Sym *> &in_includes) {
@@ -171,8 +171,8 @@ make_type_syms(IF1 *i) {
 
 void
 finalize_types(IF1 *i) {
-  unalias_implements_constraints(i);
-  closure_of_implements(i);
+  unalias_syms(i);
+//  closure_of_implements(i);
   include_instance_variables(i);
   // unalias builtin symbols
 #define S(_n) sym_##_n = unalias_type(sym_##_n);

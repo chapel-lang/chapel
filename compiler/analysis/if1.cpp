@@ -371,10 +371,12 @@ mark_sym_live(Sym *s) {
       mark_sym_live(s->in);
     forv_Sym(ss, s->implements)
       mark_sym_live(ss);
+    forv_Sym(ss, s->specializes)
+      mark_sym_live(ss);
     forv_Sym(ss, s->includes)
       mark_sym_live(ss);
-    if (s->constraints)
-      forv_Sym(ss, *s->constraints)
+    if (s->must_implement)
+      forv_Sym(ss, *s->must_implement)
 	mark_sym_live(ss);
     forv_Sym(ss, s->has)
       mark_sym_live(ss);
@@ -610,6 +612,15 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
 	if (j)
 	  fprintf(fp, " ");
 	if1_dump_sym(fp, s->implements.v[j]);
+      }
+      fputs(")", fp);
+    }
+    if (s->specializes.n) {
+      fputs(" :SPECIALZES (", fp);
+      for (int j = 0; j < s->specializes.n; j++) {
+	if (j)
+	  fprintf(fp, " ");
+	if1_dump_sym(fp, s->specializes.v[j]);
       }
       fputs(")", fp);
     }

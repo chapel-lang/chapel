@@ -47,7 +47,7 @@ typedef int (*sym_pred_fn)(Sym *s);
 
 static int
 is_internal_type(Sym *s) {
-  return s->type_kind == Type_SUM && !s->name;
+  return s->type_kind == Type_LUB && !s->name;
 }
 
 static void
@@ -112,10 +112,10 @@ dump_sym(FILE *fp, Sym *t) {
       dump_sub_sym(fp, tt->type, "Type");
   }
   dump_sym_list(fp, t, t->implements, "Implements", is_internal_type);
+  dump_sym_list(fp, t, t->specializes, "Specializes");
   dump_sym_list(fp, t, t->includes, "Includes");
-  if (t->constraints)
-    dump_sym_list(fp, t, *t->constraints, "Constraints");
-  dump_sym_list(fp, t, t->subtypes, "Subtypes");
+  if (t->must_implement)
+    dump_sym_list(fp, t, *t->must_implement, "Must Implement");
   dump_sym_list(fp, t, t->has, "Has");
   dump_sub_sym(fp, t->self, "Self");
   dump_sub_sym(fp, t->ret, "Ret");
@@ -234,13 +234,13 @@ dump_symbols(FILE *fp, FA *fa) {
 	again = syms.set_add(s->type) || again;
       forv_Sym(ss, s->implements)
 	again = syms.set_add(ss) || again;
+      forv_Sym(ss, s->specializes)
+	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->includes)
 	again = syms.set_add(ss) || again;
-      if (s->constraints)
-	forv_Sym(ss, *s->constraints)
+      if (s->must_implement)
+	forv_Sym(ss, *s->must_implement)
 	  again = syms.set_add(ss) || again;
-      forv_Sym(ss, s->subtypes) if (ss)
-	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->dispatch_order) if (ss)
 	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->has) if (ss)

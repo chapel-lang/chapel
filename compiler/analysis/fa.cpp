@@ -484,10 +484,10 @@ subtype_of(Sym *a, Sym *b) {
     if (a == b)
       return 1;
     else
-      return b->allsubtypes.set_in(a->type) != 0;
+      return b->allspecializers.set_in(a->type) != 0;
   }
   else
-    return b->allsubtypes.set_in(a) != 0;
+    return b->allspecializers.set_in(a) != 0;
 }
 
 static AType *
@@ -1145,7 +1145,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 
 static int
 application_constraints(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args) {
-  if (sym_function->allsubtypes.set_in(cs->sym) && cs->defs.n)
+  if (sym_function->allimplementors.set_in(cs->sym) && cs->defs.n)
     return partial_application(p, es, cs, args);
   return function_dispatch(p, es, a0, cs, args);
 }
@@ -1613,47 +1613,64 @@ complete_pass() {
   collect_notype();
 }
 
-inline static void
-subtype(Sym *s, Sym *ss, Vec<Sym *> &types) {
+static void
+implement(Sym *s, Sym *ss, Vec<Sym *> &types) {
   assert(s != ss);
-  if (s->subtypes.set_add(ss))
+  s->implementors.set_add(ss);
+  types.set_add(s);
+  types.set_add(ss);
+}
+
+static void
+specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
+  assert(s != ss);
+  if (s->specializers.set_add(ss))
     ss->dispatch_order.add(s);
   types.set_add(s);
   types.set_add(ss);
 }
 
 static void
+implement_and_specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
+  implement(s, ss, types);
+  specialize(s, ss, types);
+}
+
+static void
 initialize_symbols() {
   Vec<Sym *> type_syms, types;
   forv_Sym(s, fa->pdb->if1->allsyms) {
-    // symbols (selectors) have all applicable functions as subtypes
+    // functions implement and specialize symbols (selectors) of the same name
+    //   this permits overloading of selectors with multiple functions
     if (s->is_symbol) {
       s->abstract_type = make_abstract_type(s);
-      subtype(sym_symbol, s, types);
+      implement_and_specialize(sym_symbol, s, types);
     }
+    // constants implement and specialize 'type'
     if (s->is_constant) {
-      subtype(s->type, s, types);
+      implement_and_specialize(s->type, s, types);
       s->type_sym = s;
     }
+    // functions implement and specialize of "function"
     if (s->is_fun) {
       s->abstract_type = make_abstract_type(s);
-      subtype(sym_function, s, types);
+      implement_and_specialize(sym_function, s, types);
     }
+    // things with a 'type' implement and specialize that type
     if (s->type && s->type_kind && s != s->type)
-      subtype(s->type, s, types);
+      implement_and_specialize(s->type, s, types);
     forv_Sym(ss, s->implements)
-      subtype(ss, s, types);
-    if (s->constraints)
-      forv_Sym(ss, *s->constraints)
-	subtype(ss, s, types);
-    // functions are subtypes of the initial symbol in their pattern
+      implement(ss, s, types);
+    forv_Sym(ss, s->specializes)
+      specialize(ss, s, types);
+    // functions are implement_and_specializes of the initial symbol in their pattern
     // which may be a constant or a constant contrainted variable
     if (s->is_fun && s->has.n) {
       Sym *a = s->self ? s->has.v[1] : s->has.v[0];
       if (a->is_symbol && a->name == s->name)
-	subtype(a, s, types);
+	implement_and_specialize(a, s, types);
       else if (a->type && a->type->is_symbol && a->type->name == s->name)
-	subtype(a->type, s, types);
+	implement_and_specialize(a->type, s, types);
     }
     if (s->type_kind) {
       s->abstract_type = make_abstract_type(s);
@@ -1670,30 +1687,44 @@ initialize_symbols() {
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && s != sym_any && s != sym_void) {
       if (s->is_meta_class && (s != sym_anyclass))
-	subtype(sym_anyclass, s, types);
+	implement_and_specialize(sym_anyclass, s, types);
       else if (s->is_value_class && (s != sym_value))
-	subtype(sym_value, s, types);
+	implement_and_specialize(sym_value, s, types);
       else 
-	subtype(sym_any, s, types);
+	implement_and_specialize(sym_any, s, types);
     }
   }
-  // map type_syms
+  // map subtyping and subclassing to type_syms
   forv_Sym(s, type_syms) if (!s->is_meta_class) {
-    forv_Sym(ss, s->subtypes) if (ss) {
-      s->type_sym->subtypes.set_add(ss->type_sym);
-    }
+    forv_Sym(ss, s->implementors) if (ss)
+      s->type_sym->implementors.set_add(ss->type_sym);
+    forv_Sym(ss, s->specializers) if (ss)
+      s->type_sym->specializers.set_add(ss->type_sym);
   }
-  // compute allsubtypes
+  // compute allimplementors
   forv_Sym(s, types) if (s) {
-    s->allsubtypes.set_add(s);
-    s->allsubtypes.set_union(s->subtypes);
+    s->allimplementors.set_add(s);
+    s->allimplementors.set_union(s->implementors);
+    s->allspecializers.set_add(s);
+    s->allspecializers.set_union(s->specializers);
   }
+  // compute allimplementors closure
   int changed = 1;
   while (changed) {
     changed = 0;
     forv_Sym(s, types) if (s) {
-      forv_Sym(ss, s->allsubtypes) if (ss) {
-	changed = s->allsubtypes.set_union(ss->allsubtypes) || changed;
+      forv_Sym(ss, s->allimplementors) if (ss) {
+	changed = s->allimplementors.set_union(ss->allimplementors) || changed;
+      }
+    }
+  }
+  // compute allspecializers closure
+  changed = 1;
+  while (changed) {
+    changed = 0;
+    forv_Sym(s, types) if (s) {
+      forv_Sym(ss, s->allspecializers) if (ss) {
+	changed = s->allspecializers.set_union(ss->allspecializers) || changed;
       }
     }
   }
@@ -2338,7 +2369,7 @@ struct SetVoidFn { static void F(Var *v) {
 } };
 
 static void
-set_void_sum_types_to_void() {
+set_void_lub_types_to_void() {
   foreach_var<SetVoidFn>();
 }
 
@@ -2362,7 +2393,7 @@ FA::analyze(Fun *top) {
     }
     complete_pass();
   } while (extend_analysis());
-  set_void_sum_types_to_void();
+  set_void_lub_types_to_void();
   show_violations(fa, stderr);
   return type_violations.n ? -1 : 0;
 }

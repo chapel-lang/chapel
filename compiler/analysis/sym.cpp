@@ -176,3 +176,9 @@ if1_set_float_type(IF1 *p, Sym *t, int size) {
   t->num_index = ss;
 }
 
+void
+Sym::inherits_add(Sym *s) {
+  implements.add(s);
+  specializes.add(s);
+  includes.add(s);
+}  

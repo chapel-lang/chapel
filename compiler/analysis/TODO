@@ -1,4 +1,7 @@
 
+check Sym::type
+cleanup ast.cc : closure of implements, move stuff from fa.cpp into here
+
 ** Dispatch list
 
 -- dispatch-6.v nested functions NOT in outer scope

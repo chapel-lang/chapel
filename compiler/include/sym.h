@@ -25,7 +25,8 @@ enum IF1_num_kind {
 enum Type_kind {
   Type_NONE,      	// Sym is not a type
   Type_UNKNOWN,     	// type is not given (e.g. type parameter, forward decl)
-  Type_SUM,  		// one thing or another (e.g. int | float)
+  Type_LUB,  		// one thing or another (e.g. int | float)
+  Type_GLB,  		// one thing and another (e.g. int & float)
   Type_PRODUCT, 	// two things together (e.g. (1, 2.0))
   Type_RECORD,    	// things with names (nominally unordered)
   Type_VECTOR,      	// multidimensional index type with monomorphic elements
@@ -67,7 +68,7 @@ class Sym : public gc {
   Sym  			*in;			// containing module, class, function
   Sym 			*type;			// true type
   Sym  			*aspect;		// mascarade as type (e.g. superclass)
-  Vec<Sym *>		*constraints;		// must-implement
+  Vec<Sym *>		*must_implement;	// type checking constraints
   AST			*ast;			// AST node which defined this symbol
   Var			*var;			// used by fa.cpp
   char 			*cg_string;		// used by cg.cpp
@@ -104,7 +105,8 @@ class Sym : public gc {
   char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values
 
-  Vec<Sym *>		implements;
+  Vec<Sym *>		implements;		// declared supertypes
+  Vec<Sym *>		specializes;		// declared superclasses
   Vec<Sym *>		includes;		// included code
   Vec<Sym *>		has;			// sub variables/members (currently fun args)
   Vec<Sym *>		arg;			// arg variables (currently just meta type args)
@@ -115,9 +117,11 @@ class Sym : public gc {
 
   Scope 		*scope;			// used in ast.cpp
   LabelMap		*labelmap;		// used by ast.cpp
+  Vec<Sym *>		implementors;		// used by fa.cpp, implementors
+  Vec<Sym *>		allimplementors;	// used by fa.cpp
+  Vec<Sym *>		specializers;		// used by fa.cpp, specializers
+  Vec<Sym *>		allspecializers;	// used by fa.cpp
   Vec<Sym *>		dispatch_order;		// used by fa.cpp, pattern.cpp
-  Vec<Sym *>		subtypes;		// used by fa.cpp
-  Vec<Sym *>		allsubtypes;		// used by fa.cpp
   MType	       		*match_type;		// used by pattern.cpp
   AType			*abstract_type;		// used by fa.cpp
   Vec<CreationSet *>	creators;		// used by fa.cpp
@@ -134,6 +138,8 @@ class Sym : public gc {
 
   virtual Sym		*copy();
   void			copy_values(Sym *);
+
+  void 			inherits_add(Sym *parent);
 
   int imm_int(int *);
 };

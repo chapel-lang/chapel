@@ -21,35 +21,38 @@ top_level_statement
   ;
 
 module_statement 
-  : 'in' ident ('__name' string)? ';' { 
-  $$.ast = new_AST(AST_in_module, &$n); 
-  if ($#2)
-    $$.ast->builtin = if1_cannonicalize_string(
-      $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
-}
+  : 'in' ident ('__name' string)? ';' 
+    { 
+      $$.ast = new_AST(AST_in_module, &$n); 
+      if ($#2)
+        $$.ast->builtin = if1_cannonicalize_string(
+          $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
+    }
   | 'use' ident ';'
-[ assert(!"unsupported"); ]
-{ $$.ast = new_AST(AST_use_module, &$n); }
+    [ assert(!"unsupported"); ]
+    { $$.ast = new_AST(AST_use_module, &$n); }
   | 'export' module_expression (',' module_expression)* ';'
-[ assert(!"unsupported"); ]
-{ $$.ast = new_AST(AST_export, &$n); }
+    [ assert(!"unsupported"); ]
+    { $$.ast = new_AST(AST_export, &$n); }
   | 'import' module_expression (',' module_expression)* ';'
-[ assert(!"unsupported"); ]
-{ $$.ast = new_AST(AST_import, &$n); }
+    [ assert(!"unsupported"); ]
+    { $$.ast = new_AST(AST_import, &$n); }
   ;
+
 module_expression
   : module_ident 
   | module_ident 'as' module_ident
-{ $$.ast = new_AST(AST_as, &$n); };
+    { $$.ast = new_AST(AST_as, &$n); };
+
 module_ident: qualified_ident ('.' ident)*;
 
 include "c.g"
 c_extern_statement
   : 'extern' ('"c"' | '"C"') c_declarator ';' 
-{ $$.ast = new_AST(AST_extern, &$n); }
+    { $$.ast = new_AST(AST_extern, &$n); }
   | 'extern' ('"c"' | '"C"') 'include' (string | bracket_string) ';'
-[ assert(!"unsupported"); ]
-{ $$.ast = new_AST(AST_extern_include, &$n); }
+    [ assert(!"unsupported"); ]
+    { $$.ast = new_AST(AST_extern_include, &$n); }
   ;
 
 statement
@@ -65,7 +68,7 @@ unterminated_statement
   | control_flow
   | type_statement
   | expression '=' expression $left 3000
-   { $$.ast = op_AST($g->i, $n); }
+    { $$.ast = op_AST($g->i, $n); }
   | 'var' def_ident_var_list $right 5100
   | 'with' with_scope unterminated_statement $right 5100
     { $$.ast = new_AST(AST_with, &$n); }
@@ -79,48 +82,50 @@ type_statement
 unqualified_type_statement
   : ('type' | 'subtype') type_definition (',' type_definition)* 
   | 'class' ident def_type_parameter_list? class_definition? 
-{ $$.ast = new_AST(AST_def_type, &$n); 
-  $$.ast->scope_kind = Scope_RECURSIVE; }
+    { $$.ast = new_AST(AST_def_type, &$n); 
+      $$.ast->scope_kind = Scope_RECURSIVE; }
   | 'enum' ident enum_definition? 
-{ $$.ast = new_AST(AST_def_type, &$n); 
-  $$.ast->scope_kind = Scope_RECURSIVE; }
+    { $$.ast = new_AST(AST_def_type, &$n); 
+      $$.ast->scope_kind = Scope_RECURSIVE; }
   ;
 
 type_definition : ident def_type_parameter_list? ('__name' string)? 
-		(':' constraint_type)? ('=' type)? {
+		(':' must_implement)? ('=' type)? {
   $$.ast = new_AST(AST_def_type, &$n); 
   if ($#2)
     $$.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
   $$.ast->scope_kind = Scope_RECURSIVE;
 };
-constraint_types: constraint_type (',' constraint_type)*;
-constraint_type: parameterized_type
-{ $$.ast = new_AST(AST_constraint, &$n); };
+must_implement: must_implement_type (',' must_implement_type)*;
+must_implement_type: parameterized_type
+  { $$.ast = new_AST(AST_must_implement, &$n); };
 
 def_type_parameter_list : '(' (def_type_parameter (',' def_type_parameter)*)? ')' ;
 def_type_parameter
   : ident
-{ $$.ast = new_AST(AST_def_type_param, &$n); }
+    { $$.ast = new_AST(AST_def_type_param, &$n); }
   | ident ':' type $binary_left 700 
-{ $$.ast = new_AST(AST_def_type_param, &$n); }
+    { $$.ast = new_AST(AST_def_type_param, &$n); }
   ;
 
 type
   : type vector_type 	$unary_left 800
-{ $$.ast = new_AST(AST_vector_type, &$n); }
-  | type '&'		$unary_left 700
-{ $$.ast = new_AST(AST_ref_type, &$n); }
+    { $$.ast = new_AST(AST_vector_type, &$n); }
+  | type '*'		$unary_left 700
+    { $$.ast = new_AST(AST_ref_type, &$n); }
   | type '*' type 	$binary_left 600
-{ $$.ast = new_AST(AST_product_type, &$n); }
+    { $$.ast = new_AST(AST_product_type, &$n); }
   | type '|' type	$binary_left 500
-{ $$.ast = new_AST(AST_sum_type, &$n); }
+    { $$.ast = new_AST(AST_lub_type, &$n); }
+  | type '&' type	$binary_left 500
+    { $$.ast = new_AST(AST_glb_type, &$n); }
   | type '->' type	$binary_left 400
-{ $$.ast = new_AST(AST_fun_type, &$n); }
+    { $$.ast = new_AST(AST_fun_type, &$n); }
   | ident 'of' type	$binary_right 300
-{ $$.ast = new_AST(AST_tagged_type, &$n); }
+    { $$.ast = new_AST(AST_tagged_type, &$n); }
   | type type_parameter_list $unary_left 200
-{ $$.ast = new_AST(AST_type_application, &$n); }
+    { $$.ast = new_AST(AST_type_application, &$n); }
   | '(' type  ')'
   | class_definition
   | qualified_ident
@@ -138,32 +143,35 @@ class_definition : class_modifiers '{' statement* '}' {
 class_modifiers : (class_modifier (',' class_modifiers)*)?;
 class_modifier  
   : (':'  | 'inherits') inherits_ident (',' inherits_ident)*
-  | (':>' | 'implements') implements_ident (',' implements_ident)*
-  | (':+' | 'includes') includes_ident (',' includes_ident)*
+  | ('>' | 'implements') implements_ident (',' implements_ident)*
+  | ('@' | 'specializes') specializes_ident (',' specializes_ident)*
+  | ('+' | 'includes') includes_ident (',' includes_ident)*
   ;
 inherits_ident: parameterized_type { $$.ast = new_AST(AST_inherits, &$n); };
 implements_ident: parameterized_type { $$.ast = new_AST(AST_implements, &$n); };
+specializes_ident: parameterized_type { $$.ast = new_AST(AST_specializes, &$n); };
 includes_ident: parameterized_type { $$.ast = new_AST(AST_includes, &$n); };
 parameterized_type
   : qualified_ident 
   | qualified_ident type_parameter_list
-{ $$.ast = new_AST(AST_type_application, &$n); };
+    { $$.ast = new_AST(AST_type_application, &$n); };
 
 enum_definition : '{' enumerator (',' enumerator)* '}';
-enumerator: ident ('=' expression)? 
-{ $$.ast = new_AST(AST_tagged_type, &$n); };
+enumerator: ident ('=' expression)? { 
+  $$.ast = new_AST(AST_tagged_type, &$n); 
+};
 
 vector_type : '[' (vector_index (',' vector_index)*)? ']';
 vector_index 
   : anyint 
-{ $$.ast = new_AST(AST_index, &$n); }
+    { $$.ast = new_AST(AST_index, &$n); }
   | anyint '..' anyint
-{ $$.ast = new_AST(AST_index, &$n); }
+    { $$.ast = new_AST(AST_index, &$n); }
   ;
 
 where_statement : 'where' where_type (',' where_type)*;
-where_type : qualified_ident (':' constraint_types)? ('=' type)?
-{ $$.ast = new_AST(AST_where, &$n); };
+where_type : qualified_ident (':' must_implement)? ('=' type)?
+  { $$.ast = new_AST(AST_where, &$n); };
 
 expression
   : constant ("__name" string)? { 
@@ -213,10 +221,10 @@ init_expression : expression
   ;
 
 with_scope : qualified_ident (',' qualified_ident)* ':'
-{ $$.ast = new_AST(AST_with_scope, &$n); };
+  { $$.ast = new_AST(AST_with_scope, &$n); };
 
 symbol_ident: identifier
-{ $$.ast = symbol_AST($g->i, &$n); };
+  { $$.ast = symbol_AST($g->i, &$n); };
 
 def_ident: idpattern ('__name' string)? ':' {
   $$.ast = $0.ast;
@@ -261,13 +269,14 @@ def_ident_var_list
 
 idpattern
   : ident (':' identifier)?
-{ $$.ast = $0.ast;
-  if ($#1)
-      $$.ast->alt_name = if1_cannonicalize_string(
-        $g->i, ${child 1, 0, 1}->start_loc.s, ${child 1, 0, 1}->end);
-}
+    { 
+      $$.ast = $0.ast;
+      if ($#1)
+        $$.ast->alt_name = if1_cannonicalize_string(
+          $g->i, ${child 1, 0, 1}->start_loc.s, ${child 1, 0, 1}->end);
+    }
   | '(' pattern_type? idpattern (',' idpattern)* ')'
-{ $$.ast = new_AST(AST_pattern, &$n); };
+    { $$.ast = new_AST(AST_pattern, &$n); };
   ;
 
 def_function: qualified_ident pattern+ ('__name' string)? ':' {
@@ -278,50 +287,62 @@ def_function: qualified_ident pattern+ ('__name' string)? ':' {
 
 anon_function: '\\' pattern+ ':';
 
+must_specialize_type: parameterized_type
+  { $$.ast = new_AST(AST_must_specialize, &$n); };
+
+must_implement_and_specialize_type: parameterized_type
+  { $$.ast = new_AST(AST_must_implement, &$n); 
+    $$.ast->add(new_AST(AST_must_specialize, &$n)); 
+  };
+
 pattern
   : ident
-{ $$.ast = new_AST(AST_arg, &$n); }
+    { $$.ast = new_AST(AST_arg, &$n); }
   | constant
-{ $$.ast = new_AST(AST_arg, &$n); }
+    { $$.ast = new_AST(AST_arg, &$n); }
   | '(' pattern_type? (sub_pattern (',' sub_pattern)*)? ')'
-{ $$.ast = new_AST(AST_pattern, &$n); };
+    { $$.ast = new_AST(AST_pattern, &$n); };
   ;
 
 pattern_type: ':' qualified_ident
-{ $$.ast = new_AST(AST_pattern_type, &$n); }
+    { $$.ast = new_AST(AST_pattern_type, &$n); }
   ;
 
+pattern_suffix :
+  ('@' must_specialize_type)? (':' must_implement_type)? ('=' init_expression)?;
+
 sub_pattern
-  : intent 'var'? ident (':' constraint_type)? ('=' init_expression)?
-{ $$.ast = new_AST(AST_arg, &$n); 
-  if ($#1) $$.ast->add(new_AST(AST_var));
-}
+  : intent? 'var'? ident pattern_suffix
+    { 
+      $$.ast = new_AST(AST_arg, &$n); 
+      if ($#1) $$.ast->add(new_AST(AST_var));
+    }
   | constant
-{ $$.ast = new_AST(AST_arg, &$n); }
-  | '...' (intent ident (':' constraint_type)?)?
-{ $$.ast = new_AST(AST_rest, &$n); };
+    { $$.ast = new_AST(AST_arg, &$n); }
+  | '...' (intent? ident pattern_suffix)?
+    { $$.ast = new_AST(AST_rest, &$n); };
   ;
 
 intent
   : 'const'
-{ $$.ast = new_AST(AST_intent, &$n); 
-  $$.ast->intent = Intent_const; }
+    { $$.ast = new_AST(AST_intent, &$n); 
+      $$.ast->intent = Intent_const; }
   | 'in'
-{ $$.ast = new_AST(AST_intent, &$n); 
-  $$.ast->intent = Intent_in; }
+    { $$.ast = new_AST(AST_intent, &$n); 
+      $$.ast->intent = Intent_in; }
   | 'out'
-{ $$.ast = new_AST(AST_intent, &$n); 
-  $$.ast->intent = Intent_out; }
+    { $$.ast = new_AST(AST_intent, &$n); 
+      $$.ast->intent = Intent_out; }
   | 'inout'
-{ $$.ast = new_AST(AST_intent, &$n); 
-  $$.ast->intent = Intent_inout; }
-  | ;
+    { $$.ast = new_AST(AST_intent, &$n); 
+      $$.ast->intent = Intent_inout; }
+  ;
 
 qualified_ident : global? (ident '::')* ident
-{ $$.ast = new_AST(AST_qualified_ident, &$n); };
+  { $$.ast = new_AST(AST_qualified_ident, &$n); };
 
 global: '::' 
-{ $$.ast = new_AST(AST_global, &$n); } ;
+  { $$.ast = new_AST(AST_global, &$n); } ;
 
 control_flow
   : 'goto' ident 
@@ -395,35 +416,34 @@ post_operator
   : '--'	$unary_op_left 9800
   | '++'	$unary_op_left 9800
   | '{' expression '}' $unary_op_left 9850
-  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
-  { $0.ast = symbol_AST($g->i, &$n0); }
+    [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+    { $0.ast = symbol_AST($g->i, &$n0); }
   | '{' '}' object $unary_op_left 9850
-  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
-  { $0.ast = symbol_AST($g->i, &$n0); }
+    [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+    { $0.ast = symbol_AST($g->i, &$n0); }
   | '(' expression ')' $unary_op_left 9850
-  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
-  { $0.ast = symbol_AST($g->i, &$n0); }
+    [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+    { $0.ast = symbol_AST($g->i, &$n0); }
   | '(' ')' null $unary_op_left 9850
-  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
-  { $0.ast = symbol_AST($g->i, &$n0); }
+    [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+    { $0.ast = symbol_AST($g->i, &$n0); }
   | '[' expression ']' $unary_op_left 9850
-  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
-  { $0.ast = symbol_AST($g->i, &$n0); }
+    [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+    { $0.ast = symbol_AST($g->i, &$n0); }
   | '[' ']' null $unary_op_left 9850
-  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
-  { $0.ast = symbol_AST($g->i, &$n0); }
+    [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+    { $0.ast = symbol_AST($g->i, &$n0); }
   ;
 
 object:
-  { $$.ast = new_AST(AST_object); }
+    { $$.ast = new_AST(AST_object); }
   ;
 
 null: 
-  { $$.ast = new_AST(AST_list); }
+    { $$.ast = new_AST(AST_list); }
   ;
 
-curly_block: '{' statement* expression? '}'
-{ 
+curly_block: '{' statement* expression? '}' { 
   if ($#2)
     $$.ast = new_AST(AST_scope, &$n); 
   else
@@ -431,16 +451,14 @@ curly_block: '{' statement* expression? '}'
   $$.ast->scope_kind = Scope_RECURSIVE;
 };
 
-paren_block: '(' statement* expression? ')' 
-{ 
+paren_block: '(' statement* expression? ')' { 
   if ($#2)
     $$.ast = new_AST(AST_block, &$n); 
   else
     $$.ast = new_AST(AST_list, &$n);
 };
 
-square_block: '[' statement* expression? ']' 
-{ 
+square_block: '[' statement* expression? ']' { 
   if ($#2)
     $$.ast = new_AST(AST_scope, &$n); 
   else
@@ -508,8 +526,7 @@ ident : identifier{
   $$.ast->string = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
 };
 
- _ : 
-{
+ _ : {
   if ($# == 1)
     $$.ast = $0.ast;
 };

@@ -517,7 +517,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
     Vec<Sym *> loopsyms;
     loopsyms.copy(allsyms);
     for (int i = 0; i < loopsyms.n; i++) 
-      if (loopsyms.v[i]) {
+      if (loopsyms.v[i] && !loopsyms.v[i]->type_kind) {
 	forv_Sym(s, loopsyms.v[i]->has) {
 	  again = allsyms.set_add(s) || again;
 	}

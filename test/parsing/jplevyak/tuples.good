@@ -1,2 +1,2 @@
-817 states 507 scans 158 shifts 337 reductions 6 compares 0 ambiguities
+827 states 512 scans 158 shifts 342 reductions 6 compares 0 ambiguities
 ((((( tuple0 ) : )( (  ) )) ; )((( print )( ( ( tuple0 ) ) )) ; )(((( tuple1 ) : )( ( (( 1 )) ) )) ; )((( print )( ( ( tuple1 ) ) )) ; )(((( tuple2 ) : )( ( ((( 1 )) , (( 2 ))) ) )) ; )((( print )( ( ( tuple2 ) ) )) ; )(((( tuple3 ) : )( ( (((( 1 )) , (( '2' ))) , (( 3.0 ))) ) )) ; )((( print )( ( ( tuple3 ) ) )) ; )(((( tuple4 ) : )( ( (( tuple3 ) , (( "4" ))) ) )) ; )((( print )( ( ( tuple4 ) ) )) ; )(((( anInt ) : )(( tuple3 )( ( (( 1 )) ) ))) ; ))

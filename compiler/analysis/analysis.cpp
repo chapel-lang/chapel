@@ -115,7 +115,7 @@ new_ASymbol(char *name) {
 }
 
 void
-ACallbacks::new_SUM_type(Sym *) {
+ACallbacks::new_LUB_type(Sym *) {
 }
 
 Sym *
@@ -212,17 +212,14 @@ map_symbols(Vec<BaseAST *> &syms) {
 static void 
 build_record_type(Type *t, Sym *parent = 0) {
   t->asymbol->type_kind = Type_RECORD;
-  if (parent) {
-    t->asymbol->implements.add(parent);
-    t->asymbol->includes.add(parent);
-  }
+  if (parent)
+    t->asymbol->inherits_add(parent);
 }
 
 static void
 build_enum_element(Sym *ss, int i) {
   ss->type_kind = Type_PRIMITIVE;
-  ss->implements.add(sym_enum_element);
-  ss->includes.add(sym_enum_element);
+  ss->inherits_add(sym_enum_element);
   ss->type_sym = ss;
   ss->imm.v_int32 = i;
 }
@@ -320,8 +317,7 @@ build_types(Vec<BaseAST *> &syms) {
 	  x->type = c->asymbol;
 	  t->asymbol->has.add(x);
 	}
-	t->asymbol->implements.add(sym_tuple);
-	t->asymbol->includes.add(sym_tuple);
+	t->asymbol->inherits_add(sym_tuple);
 	break;
       }
       case TYPE_USER: {
@@ -335,10 +331,8 @@ build_types(Vec<BaseAST *> &syms) {
 	ClassType *tt = dynamic_cast<ClassType*>(t);
 	t->asymbol->type_kind = Type_RECORD;
 	tt->name->asymbol = (ASymbol*)tt->asymbol->type_sym;
-	if (tt->parentClass) {
-	  t->asymbol->implements.add(tt->parentClass->asymbol);
-	  t->asymbol->includes.add(tt->parentClass->asymbol);
-	}
+	if (tt->parentClass)
+	  t->asymbol->inherits_add(tt->parentClass->asymbol);
 	break;
       }
     }
@@ -363,10 +357,10 @@ new_alias_type(Sym *&sym, char *name, Sym *alias) {
 }
 
 static void
-new_sum_type(Sym *&sym, char *name, ...)  {
+new_lub_type(Sym *&sym, char *name, ...)  {
   if (!sym)
     sym = new_sym(name, 1);
-  sym->type_kind = Type_SUM;
+  sym->type_kind = Type_LUB;
   if1_set_builtin(if1, sym, name);
   va_list ap;
   va_start(ap, name);
@@ -376,7 +370,7 @@ new_sum_type(Sym *&sym, char *name, ...)  {
       sym->has.add(s);
   } while (s);
   forv_Sym(ss, sym->has)
-    ss->implements.set_add(sym);
+    ss->inherits_add(sym);
 }
 
 #if 0
@@ -437,14 +431,14 @@ build_builtin_symbols() {
   new_primitive_type(sym_true, "true");
   new_primitive_type(sym_false, "false");
   new_primitive_type(sym_bool, "bool");
-  sym_true->implements.set_add(sym_bool);
-  sym_false->implements.set_add(sym_bool);
+  sym_true->inherits_add(sym_bool);
+  sym_false->inherits_add(sym_bool);
   new_primitive_type(sym_uint8, "uint8");
   new_primitive_type(sym_uint16, "uint16");
   new_primitive_type(sym_uint32, "uint32");
   new_primitive_type(sym_uint64, "uint64");
   new_alias_type(sym_uint, "uint", sym_uint64);
-  new_sum_type(sym_anyint, "anyint", 
+  new_lub_type(sym_anyint, "anyint", 
 	       sym_int8, sym_int16, sym_int32, sym_int64, sym_bool,
 	       sym_uint8, sym_uint16, sym_uint32, sym_uint64, 0);
   new_primitive_type(sym_size, "size");
@@ -453,15 +447,15 @@ build_builtin_symbols() {
   new_primitive_type(sym_float64, "float64");
   new_primitive_type(sym_float128, "float128");
   new_primitive_type(sym_float, "float");
-  new_sum_type(sym_anyfloat, "anyfloat", 
+  new_lub_type(sym_anyfloat, "anyfloat", 
 	       sym_float32, sym_float64, sym_float128, 0);
   new_primitive_type(sym_complex32, "complex32");
   new_primitive_type(sym_complex64, "complex64");
   new_primitive_type(sym_complex128, "complex128");
   new_primitive_type(sym_complex, "complex");
-  new_sum_type(sym_anycomplex, "anycomplex", 
+  new_lub_type(sym_anycomplex, "anycomplex", 
 	       sym_complex32, sym_complex64, sym_complex128, 0);
-  new_sum_type(sym_anynum, "anynum", sym_bool, sym_anyint, sym_anyfloat, sym_anycomplex, 0);
+  new_lub_type(sym_anynum, "anynum", sym_bool, sym_anyint, sym_anyfloat, sym_anycomplex, 0);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
   if (!sym_new_object) {
@@ -469,7 +463,6 @@ build_builtin_symbols() {
     if1_set_builtin(if1, sym_new_object, "new_object");
   }
   
-  //new_global_variable(sym_null, "null");
   new_primitive_type(sym_null, "null");
 
   sym_init = new_sym(); // placeholder

@@ -464,7 +464,7 @@ graph_abstract_types(FA *fa, char *fn) {
   Vec<Sym *> syms;
   syms.set_union(fa->patterns->types);
   forv_Sym(s, fa->patterns->types) if (s)
-    syms.set_union(s->allsubtypes);
+    syms.set_union(s->allimplementors);
   forv_Sym(s, syms) if (s && s->live && !s->constant) {
     char name[256], *pname = name;
     strcpy(pname, type_kind_string[s->type_kind]);
@@ -502,7 +502,7 @@ graph_abstract_types(FA *fa, char *fn) {
     graph_node(fp, s, name);
   }
   forv_Sym(s, syms) if (s && s->live && !s->constant)
-    forv_Sym(ss, s->subtypes) if (ss && ss->live && !ss->constant)
+    forv_Sym(ss, s->implements) if (ss && ss->live && !ss->constant)
       graph_edge(fp, s, ss);
   graph_end(fp);
 }

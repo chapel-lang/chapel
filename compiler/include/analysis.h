@@ -16,7 +16,7 @@ class Stmt;
 
 class ACallbacks : public Callbacks {
 public:
-  void new_SUM_type(Sym *);
+  void new_LUB_type(Sym *);
   Sym *new_Sym(char *name = 0);
 };
 

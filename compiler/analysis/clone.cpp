@@ -464,7 +464,7 @@ define_concrete_types(CSSS &css_sets) {
     } else {
       // if different sym use sum type
       sym = new_Sym();
-      sym->type_kind = Type_SUM;
+      sym->type_kind = Type_LUB;
       sym->incomplete = 1;
       forv_CreationSet(cs, *eqcss) if (cs)
 	cs->type = sym;
@@ -491,12 +491,12 @@ resolve_concrete_types(CSSS &css_sets) {
 	case Type_APPLICATION:
 	  assert(!"bad case");
 	  break;
-	case Type_SUM: {
+	case Type_LUB: {
 	  forv_CreationSet(cs, *eqcss) if (cs)
 	    sym->has.set_add(cs->sym);
 	  sym->has.set_to_vec();
 	  qsort(sym->has.v, sym->has.n, sizeof(sym->has.v[0]), compar_syms);
-	  if1->callback->new_SUM_type(sym);
+	  if1->callback->new_LUB_type(sym);
 	  break;
 	}
 	case Type_RECORD:
@@ -529,10 +529,10 @@ resolve_concrete_types(CSSS &css_sets) {
 	    else {
 	      if (s->has.n != 0) {
 		Sym *tt = new_Sym();
-		tt->type_kind = Type_SUM;
+		tt->type_kind = Type_LUB;
 		tt->has.copy(t);
 		s->type = tt;
-		if1->callback->new_SUM_type(tt);
+		if1->callback->new_LUB_type(tt);
 	      } else
 		s->type = sym_void;
 	    }
@@ -568,7 +568,7 @@ concretize_types(Fun *f) {
 	  if (sym != cs->type) {
 	    if (!type) {
 	      type = new_Sym();
-	      type->type_kind = Type_SUM;
+	      type->type_kind = Type_LUB;
 	      type->has.set_add(sym);
 	    }
 	    type->has.set_add(cs->type);
@@ -588,7 +588,7 @@ concretize_types(Fun *f) {
 	v->type = type->has.v[0];
       else {
 	v->type = type;
-        if1->callback->new_SUM_type(type);
+        if1->callback->new_LUB_type(type);
       }
     }
   }

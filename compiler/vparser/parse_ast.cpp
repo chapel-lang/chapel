@@ -30,7 +30,7 @@ Sym *print_symbol = 0;
 
 
 void 
-PCallbacks::new_SUM_type(Sym *) {
+PCallbacks::new_LUB_type(Sym *) {
 }
 
 Sym *
@@ -494,7 +494,7 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     case Builtin_function:
       sym->type_kind = Type_PRIMITIVE;
       break;
-    case Builtin_any: sym->type_kind = Type_SUM; break;
+    case Builtin_any: sym->type_kind = Type_LUB; break;
     case Builtin_tuple: sym->type_kind = Type_PRODUCT; break;
     case Builtin_vector: sym->type_kind = Type_VECTOR; break;
     case Builtin_void: sym->type_kind = Type_PRODUCT; break;
@@ -569,7 +569,8 @@ ast_to_type(ParseAST *ast) {
     case AST_vector_type: return Type_VECTOR;
     case AST_ref_type: return Type_REF;
     case AST_product_type: return Type_PRODUCT;
-    case AST_sum_type: return Type_SUM;
+    case AST_lub_type: return Type_LUB;
+    case AST_glb_type: return Type_GLB;
     case AST_fun_type: return Type_FUN;
     case AST_tagged_type: return Type_TAGGED;
     case AST_type_application: return Type_APPLICATION;
@@ -637,7 +638,7 @@ define_types(IF1 *i, ParseAST *ast, Vec<ParseAST *> &funs, Scope *scope, int ski
 	if (verbose_level > 2)
 	  printf("creating scope %X for %s\n", (int)ast->sym->scope, ast->sym->name);
 	switch (ast->last()->kind) {
-	  case AST_constraint:
+	  case AST_must_implement:
 	  case AST_def_type_param:
 	  case AST_ident:
 	  case AST_qualified_ident:
@@ -654,7 +655,7 @@ define_types(IF1 *i, ParseAST *ast, Vec<ParseAST *> &funs, Scope *scope, int ski
       case AST_vector_type:
       case AST_ref_type:
       case AST_product_type:
-      case AST_sum_type:
+      case AST_lub_type:
       case AST_fun_type:
       case AST_tagged_type:
       case AST_type_application:
@@ -752,7 +753,7 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       set_scope_recursive(ast, scope);
       ParseAST *c = ast->get(AST_const);
       ParseAST *id = ast->get(AST_ident);
-      ParseAST *ty = ast->get(AST_constraint);
+      ParseAST *ty = ast->get(AST_must_implement);
       ParseAST *var = ast->get(AST_var);
       ParseAST *init = ast->get(AST_init);
       if (ty)
@@ -827,12 +828,12 @@ scope_inherits(ParseAST *ast, Sym *sym) {
 static int
 scope_constraints(ParseAST *ast, Sym *sym) {
   forv_ParseAST(a, ast->children) {
-    if (a->kind == AST_constraint) {
+    if (a->kind == AST_must_implement) {
       if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
 	return -1;
-      if (!sym->constraints)
-	sym->constraints = new Vec<Sym *>;
-      sym->constraints->set_add(a->sym);
+      if (!sym->must_implement)
+	sym->must_implement = new Vec<Sym *>;
+      sym->must_implement->set_add(a->sym);
       sym->scope->add_dynamic(a->sym->scope);
     } else if (a->kind == AST_def_type_param) {
       sym->arg.add(a->sym);
@@ -856,6 +857,7 @@ resolve_types_and_define_recursive_functions(IF1 *i, ParseAST *ast, int skip = 0
       }
       case AST_inherits:
       case AST_implements:
+      case AST_specializes:
       case AST_includes:
 	if (resolve_parameterized_type(i, ast) < 0)
 	  return -1;
@@ -923,7 +925,7 @@ scope_idpattern(IF1 *i, ParseAST *ast, Scope *scope) {
 	ast->sym->type = sym_tuple;
       ast->sym->ast = ast;
       forv_ParseAST(a, ast->children) if (a != ptype) {
-	if (a->kind == AST_constraint) {
+	if (a->kind == AST_must_implement) {
 	  assert(!ast->sym->type);
 	  if (resolve_parameterized_type(i, a) < 0)
 	    return -1;
@@ -1022,11 +1024,13 @@ build_types(IF1 *i, ParseAST *ast) {
 	      ast->sym->has.add(a->sym);
 	      break;
 	    case AST_inherits:
-	      ast->sym->implements.add(a->children.v[0]->sym);
-	      ast->sym->includes.add(a->children.v[0]->sym);
+	      ast->sym->inherits_add(a->children.v[0]->sym);
 	      break;
 	    case AST_implements:
 	      ast->sym->implements.add(a->children.v[0]->sym);
+	      break;
+	    case AST_specializes:
+	      ast->sym->specializes.add(a->children.v[0]->sym);
 	      break;
 	    case AST_includes:
 	      ast->sym->includes.add(a->children.v[0]->sym);
@@ -1037,22 +1041,22 @@ build_types(IF1 *i, ParseAST *ast) {
 	  }
 	}
       break;
-    case AST_sum_type:
+    case AST_lub_type:
       forv_ParseAST(a, ast->children)
 	if (a->sym)
-	  a->sym->implements.set_add(ast->sym);
+	  a->sym->inherits_add(ast->sym);
       break;
     case AST_def_type: {
       ParseAST *last = ast->last();
       if (ast->sym->type_kind == Type_ALIAS) {
-	if (last->kind != AST_def_type_param && last->kind != AST_constraint)
+	if (last->kind != AST_def_type_param && last->kind != AST_must_implement)
 	  ast->sym->alias = last->sym;
 	else
 	  ast->sym->type_kind = Type_UNKNOWN; // can be resolved by a "where" statement
       }
       break;
     }
-    case AST_constraint:
+    case AST_must_implement:
       forv_ParseAST(a, ast->children)
 	if (!ast->sym)
 	  ast->sym = a->sym;
@@ -1067,7 +1071,7 @@ unalias_types(IF1 *i, ParseAST *ast) {
   forv_ParseAST(a, ast->children)
     if (unalias_types(i, a) < 0)
       return -1;
-  if (ast->sym && !ast->sym->constraints) {
+  if (ast->sym && !ast->sym->must_implement) {
     Sym *s = unalias_type(ast->sym);
     if (s != ast->sym) {
       s->scope = ast->sym->scope;
@@ -1611,12 +1615,12 @@ gen_container(IF1 *i, ParseAST *ast) {
 
 static void
 gen_def_ident(IF1 *i, ParseAST *ast) {
-  ParseAST *constraint = ast->get(AST_constraint);
+  ParseAST *must_implement = ast->get(AST_must_implement);
   ParseAST *pattern = ast->get(AST_pattern);
   ParseAST *var = ast->get(AST_var);
   ParseAST *val = 0;
   for (int x = 1; x < ast->children.n; x++)
-    if (ast->children.v[x] != constraint &&
+    if (ast->children.v[x] != must_implement &&
 	ast->children.v[x] != pattern &&
 	ast->children.v[x] != var) {
       val = ast->children.v[x];
@@ -1626,12 +1630,12 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
     ast->rval = gen_container(i, ast);
   else
     ast->rval = ast->sym;
-  if (constraint)
-    ast->sym->type = constraint->sym;
+  if (must_implement)
+    ast->sym->type = must_implement->sym;
   if (ast->sym != sym_init) { // don't init the initial function
     // declared to be a value type
-    if (constraint && constraint->sym->is_value_class) 
-      gen_def_ident_value(i, ast, constraint, val);
+    if (must_implement && must_implement->sym->is_value_class) 
+      gen_def_ident_value(i, ast, must_implement, val);
     else {
       if (val)
 	if1_gen(i, &ast->code, val->code);
