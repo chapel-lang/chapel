@@ -4336,3 +4336,51 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: chapel.lex 
 
+---------------------------------------------------------------------------
+
+07/26/04 17:33:46 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	1. Changed -lF to log the results after cloning.
+	2. Changed the Makefiles to have separate CXX and CXXFLAGS variables so
+	that we can compile straight C files using the C compiler and appropriate
+	flags.
+	3. Revived the low level code generator.  This was a great test for cloning
+	as it pointed out a couple minor issues with respect to the new features
+	(member functions, constructors).
+	4. Added 3 new test cases for the low level code generator, including review3.chpl
+
+Modified files:
+	chapel/compiler/: Makefile c_runtime.h cg.cpp cg.h cg_funs.cpp 
+	                  clone.cpp clone.h driver.cpp dump.cpp fa.cpp 
+	                  fa.h fa_extras.cpp fun.cpp fun.h geysa.h 
+	                  graph.cpp map.h pattern.h pnode.cpp pnode.h 
+	                  vec.cpp 
+	chapel/compiler/AST/: Makefile 
+	chapel/compiler/cast/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.subdirrules 
+	chapel/compiler/make_prims/: Makefile 
+	chapel/compiler/test/: Makefile 
+	chapel/make/: Makefile.base Makefile.gnu 
+	chapel/test/compflags/bradc/badflagdash/: COMPOPTS declint.good 
+	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
+	                                    cs4.good cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good 
+	                                    memberfun.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good review1.good 
+	                                    review2.good review3.good 
+	                                    structtype.good 
+Added files:
+	chapel/compiler/: Makefile.cg 
+	chapel/test/lowlevelcg/jplevyak/: 1.good 1.v COMPOPTS 
+	                                  Makefile.cg review3.chpl 
+	                                  review3.good sample.good 
+	                                  sample.v 
+
