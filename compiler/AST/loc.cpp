@@ -6,6 +6,12 @@ Loc::Loc(void) :
   lineno(yylineno)
 {}
 
+
+void Loc::printLoc(FILE* outfile) {
+  fprintf(outfile, "%s:%d", filename, lineno);
+}
+
+
 /*
 void user_error(Loc* loc, char* control, ...) {
   char linenostr[32];

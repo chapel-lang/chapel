@@ -2,14 +2,7 @@
 #include "expr.h"
 #include "getstuff.h"
 #include "stmt.h"
-#include "symbol.h"
-#include "traversal.h"
-#include "type.h"
-
-class TestGetStuff : public Traversal {
-  void preProcessStmt(Stmt* stmt);
-};
-
+#include "testGetStuff.h"
 
 void TestGetStuff::preProcessStmt(Stmt* stmt) {
   int i;

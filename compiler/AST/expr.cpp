@@ -1,9 +1,12 @@
 #include <typeinfo>
 #include <string.h>
+#include "analysis.h"
 #include "expr.h"
+#include "fa.h"
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "sym.h"
 #include "symscope.h"
 
 
@@ -605,10 +608,15 @@ void WriteCall::codegen(FILE* outfile) {
 
     fprintf(outfile, "_write");
     if (argdt == dtUnknown) {
-      dtInteger->codegen(outfile); // BLC: Hack until type inference works
-    } else {
-      argdt->codegen(outfile);
+      //      Sym* jsym = type_info(this->ainfo);
+      //      Symbol* bsym = jsym->xsymbol;
+      //      bsym->codegen(stderr);
+      //      if (jsym) {
+      //      }
+      //      INT_FATAL(this, "unknown type in write statement");
+      argdt = dtInteger; // BLC: Hack until type inference works
     }
+    argdt->codegen(outfile);
     fprintf(outfile, "(");
     fprintf(outfile, "stdout, ");
     if (format->isNull()) {

@@ -5,6 +5,9 @@
 #define _ast_H_
 
 #include <stdio.h>
+#include "gc_cpp.h"
+#include "map.h"
+#include "vec.h"
 
 class Fun;
 class PNode;

@@ -1,14 +1,14 @@
 #ifndef _TRAVERSAL_H_
 #define _TRAVERSAL_H_
 
-#include "gc_cpp.h"
+#include "pass.h"
 
 class Stmt;
 class Expr;
 class Symbol;
 class Type;
 
-class Traversal : public gc {
+class Traversal : public Pass {
  public:
   bool processTop;
   bool exploreChildStmts;
@@ -26,6 +26,8 @@ class Traversal : public gc {
   virtual void postProcessSymbol(Symbol* sym);
   virtual void preProcessType(Type* type);
   virtual void postProcessType(Type* type);
+
+  virtual void run(Stmt* program);
 };
 
 #endif

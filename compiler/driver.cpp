@@ -32,6 +32,7 @@ static void copyright(ArgumentState *arg_state, char *arg_unused);
 
 static int fdump_html = 0;
 static char prelude_filename[FILENAME_MAX] = "prelude";
+static char passlist_filename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 extern int d_verbose_level;
 extern int d_debug_level;
@@ -54,6 +55,7 @@ int print_call_depth = 2;
 
 static ArgumentDescription arg_desc[] = {
  {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
+ {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
  {"print_call_depth", 'C', "Print Call Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
@@ -296,6 +298,7 @@ compile_one(char *fn) {
       x();
 #endif
     }
+    runPasses(passlist_filename, programStmts);
     if (!suppress_codegen)
       codegen(fn, system_dir, programStmts);
     else {

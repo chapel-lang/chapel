@@ -39,3 +39,8 @@ void Traversal::preProcessType(Type* type) {
 
 void Traversal::postProcessType(Type* type) {
 }
+
+
+void Traversal::run(Stmt* program) {
+  program->traverseList(this);
+}
