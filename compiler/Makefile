@@ -102,7 +102,7 @@ EXECS = $(CHPL) $(TEST_LIB)
 all: $(EXECS) BUILD_VERSION
 
 clean:
-	rm -f ./$(PLATFORM)/*.o core *.core *.gmon *.a $(EXECS) $(MAKE_PRIMS) *.g.d_parser.cpp prim_data.h
+	rm -f ./$(PLATFORM)/*.o core *.core *.gmon *.a $(EXECS) $(MAKE_PRIMS) *.g.d_parser.cpp prim_data.h prim_data.cpp
 
 cleandepend:
 	rm -f ./$(PLATFORM)/*.dep
@@ -130,6 +130,8 @@ $(MAKE_PRIMS): $(MAKE_PRIMS_OBJS)
 
 prim_data.h: $(MAKE_PRIMS) prim_data.dat
 	$(MAKE_PRIMS) prim_data.dat
+
+prim_data.cpp: prim_data.h
 
 %.g.d_parser.cpp: %.g
 	$(MAKE_DPARSER) -v -Xcpp -I $<

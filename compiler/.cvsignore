@@ -3,3 +3,5 @@ linux
 sun
 *.g.d_parser.cpp
 prim_data.h
+prim_data.cpp
+prelude.v.ast
