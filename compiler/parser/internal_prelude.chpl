@@ -74,3 +74,6 @@ function _UNION_SET(u, tag);
 function _INIT_CONFIG(v, v_type, chapel_name, module_name);
 function _INIT_ARRAY(rank, arr, dom, elt_type);
 function _INIT_DOMAIN_DIM(dom, dim, lo, hi, str);
+
+function _SEQ_APPEND(s, t, type_name);
+function _SEQ_INIT_NIL(s);

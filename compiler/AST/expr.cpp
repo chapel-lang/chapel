@@ -41,6 +41,7 @@ static char* cBinOp[NUM_BINOPS] = {
   "||",
   "**",
 
+  "#",
   " by ",
 
   "???"
@@ -1520,6 +1521,41 @@ void ReduceExpr::print(FILE* outfile) {
 
 void ReduceExpr::codegen(FILE* outfile) {
   fprintf(outfile, "This is ReduceExpr's codegen method.\n");
+}
+
+
+SeqExpr::SeqExpr(Expr* init_exprls) :
+  Expr(EXPR_SEQ),
+  exprls(init_exprls)
+{
+  SET_BACK(exprls);
+}
+
+
+Expr* SeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new SeqExpr(exprls->copyListInternal(clone, map, analysis_clone));
+}
+
+
+void SeqExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(exprls, traversal, false);
+}
+
+
+Type* SeqExpr::typeInfo(void) {
+  return new SeqType(exprls->typeInfo());
+}
+
+
+void SeqExpr::print(FILE* outfile) {
+  printf("(/ ");
+  exprls->printList(outfile);
+  printf(" /)");
+}
+
+
+void SeqExpr::codegen(FILE* outfile) {
+  INT_FATAL(this, "Unanticipated call to SeqExpr::codegen");
 }
 
 

@@ -60,6 +60,7 @@ enum binOpType {
   BINOP_LOGOR,
   BINOP_EXP,
 
+  BINOP_SEQCAT,
   BINOP_BY,
 
   BINOP_OTHER,
@@ -454,6 +455,19 @@ class ReduceExpr : public Expr {
 
   void traverseExpr(Traversal* traversal);
 
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class SeqExpr : public Expr {
+ public:
+  Expr* exprls;
+
+  SeqExpr(Expr* init_exprls);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void traverseExpr(Traversal* traversal);
+  Type* typeInfo(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

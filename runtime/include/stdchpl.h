@@ -16,6 +16,7 @@
 #include "chpltypes.h"
 #include "domain.h"
 #include "forall.h"
+#include "seq.h"
 #include "union.h"
 
 #endif

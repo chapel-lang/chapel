@@ -19,6 +19,7 @@
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/destructureTupleAssignments.h"
 #include "../traversals/expandClassWiths.h"
+#include "../traversals/expandSeqExprAssignments.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
@@ -61,6 +62,7 @@ REGISTER(CreateEntryPoint);
 REGISTER(DestructureTupleAssignments);
 REGISTER(DummyPass);
 REGISTER(ExpandClassWiths);
+REGISTER(ExpandSeqExprAssignments);
 REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);

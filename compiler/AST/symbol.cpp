@@ -887,7 +887,7 @@ void FnSymbol::printDef(FILE* outfile) {
 
 
 void FnSymbol::codegenHeader(FILE* outfile) {
-  if (!exportMe) {
+  if (!exportMe && !parentScope->commonModuleIsFirst()) {
     fprintf(outfile, "static ");
   }
   retType->codegen(outfile);

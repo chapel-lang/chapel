@@ -63,6 +63,7 @@ PassInfo passlist[] = {
   RUN(ProcessParameters, ""),
   RUN(InsertVariableInitializations, ""),
   RUN(DestructureTupleAssignments, ""),
+  RUN(ExpandSeqExprAssignments, ""),
   RUN(InsertUnionChecks, ""),
   RUN(LegalizeCNames, ""), 
 

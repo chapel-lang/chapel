@@ -27,6 +27,9 @@ static void resolve_type_helper(Type* &type) {
   if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
     resolve_type_helper(array_type->elementType);
   }
+  if (SeqType* seq_type = dynamic_cast<SeqType*>(type)) {
+    resolve_type_helper(seq_type->elementType);
+  }
   if (TupleType* tuple_type = dynamic_cast<TupleType*>(type)) {
     for (int i = 0; i < tuple_type->components.n; i++) {
       resolve_type_helper(tuple_type->components.v[i]);

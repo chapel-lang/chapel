@@ -80,6 +80,9 @@ static void build_constructor(ClassType* class_type) {
   Symboltable::setCurrentScope(saveScope);
 #endif
   TRAVERSE(dynamic_cast<Expr*>(class_type->symbol->defPoint)->stmt, new Fixup(), true);
+  if (dynamic_cast<SeqType*>(class_type)) {
+    class_type->defaultVal = new FnCall(new Variable(fn), NULL);
+  }
 }
 
 

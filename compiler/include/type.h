@@ -206,6 +206,24 @@ class ClassType : public Type {
 };
 
 
+class SeqType : public ClassType {
+ public:
+  Type* elementType;
+  ClassType* nodeType;
+
+  SeqType::SeqType(Type* init_elementType,
+		   ClassType* init_nodeClassType = NULL);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void traverseDefType(Traversal* traversal);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
+  //void codegenPrototype(FILE* outfile);
+  void codegenDefaultFormat(FILE* outfile, bool isRead);
+  void buildImplementationClasses();
+};
+
+
 class TupleType : public Type {
  public:
   Vec<Type*> components;

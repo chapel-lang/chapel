@@ -1491,6 +1491,10 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       if1_move(if1, &s->ainfo->code, s->ainfo->rval, s->left->ainfo->sym, s->ainfo);
       break;
     }
+    case EXPR_SEQ: {
+      INT_FATAL(ast, "Sequences not handled in analysis yet");
+      break;
+    }
     case EXPR_SIMPLESEQ: {
       SimpleSeqExpr *s = dynamic_cast<SimpleSeqExpr *>(ast);
       s->ainfo->rval = new_sym();
@@ -1710,6 +1714,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
   case TYPE_ENUM:
   case TYPE_DOMAIN:
   case TYPE_INDEX:
+  case TYPE_SEQ:
   case TYPE_ARRAY:
   case TYPE_USER:
   case TYPE_CLASS:

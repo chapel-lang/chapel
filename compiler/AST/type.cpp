@@ -596,6 +596,119 @@ void IndexType::print(FILE* outfile) {
 }
 
 
+SeqType::SeqType(Type* init_elementType,
+		 ClassType* init_nodeType):
+  ClassType(false, false),
+  elementType(init_elementType),
+  nodeType(init_nodeType)
+{}
+
+
+Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  Type* new_type =
+    new SeqType(elementType->copy(clone, map, analysis_clone),
+		dynamic_cast<ClassType*>(nodeType->copy(clone, map, analysis_clone)));
+  new_type->addSymbol(symbol);
+  return new_type;
+}
+
+
+void SeqType::traverseDefType(Traversal* traversal) {
+  TRAVERSE(elementType, traversal, false);
+}
+
+
+void SeqType::print(FILE* outfile) {
+  fprintf(outfile, "seq(");
+  elementType->print(outfile);
+  fprintf(outfile, ")");
+}
+
+
+void SeqType::codegen(FILE* outfile) {
+  symbol->codegen(outfile);
+}
+
+
+void SeqType::codegenDef(FILE* outfile) {
+  /*
+  fprintf(outfile, "struct _");
+  symbol->codegen(outfile);
+  fprintf(outfile, " {\n");
+  fprintf(outfile, "  int length;\n");
+  fprintf(outfile, "  ");
+  nodeType->codegen(outfile);
+  fprintf(outfile, " first;\n");
+  fprintf(outfile, "  ");
+  nodeType->codegen(outfile);
+  fprintf(outfile, " last;\n");
+  fprintf(outfile, "};\n");
+  */
+  ClassType::codegenDef(outfile);
+
+  fprintf(outfile, "void _write");
+  symbol->codegen(outfile);
+  fprintf(outfile, "(FILE* F, char* format, ");
+  symbol->codegen(outfile);
+  fprintf(outfile, " seq);\n\n");
+
+  fprintf(codefile, "void _write");
+  symbol->codegen(codefile);
+  fprintf(codefile, "(FILE* F, char* format, ");
+  symbol->codegen(codefile);
+  fprintf(codefile, " seq) {\n");
+  symbol->codegen(codefile);
+  fprintf(codefile, "_node tmp = seq->first;\n");
+  fprintf(codefile, "while (tmp != NULL) {\n");
+  fprintf(codefile, "  fprintf(F, format, tmp->element);\n");
+  fprintf(codefile, "  tmp = tmp->next;\n");
+  fprintf(codefile, "  if (tmp != NULL) {\n");
+  fprintf(codefile, "  fprintf(F, \" \");\n");
+  fprintf(codefile, "}\n");
+  fprintf(codefile, "}\n");
+  fprintf(codefile, "}\n");
+}
+
+
+/*
+void SeqType::codegenPrototype(FILE* outfile) {
+  fprintf(outfile, "typedef struct _");
+  symbol->codegen(outfile);
+  fprintf(outfile, " *");
+  symbol->codegen(outfile);
+  fprintf(outfile, ";\n");
+}
+*/
+
+
+void SeqType::codegenDefaultFormat(FILE* outfile, bool isRead) {
+  elementType->codegenDefaultFormat(outfile, isRead);
+}
+
+
+void SeqType::buildImplementationClasses() {
+  char* nodeName = glomstrings(2, symbol->name, "_node");
+  TypeSymbol* node = Symboltable::startClassDef(nodeName, false, false);
+  DefStmt* decl = Symboltable::defineSingleVarDefStmt("element", elementType, NULL, VAR_NORMAL, VAR_VAR);
+  DefStmt* decl2 = Symboltable::defineSingleVarDefStmt("next", node->type, NULL, VAR_NORMAL, VAR_VAR);
+  decl->append(decl2);
+  DefStmt* def_stmt = new DefStmt(Symboltable::finishClassDef(node, decl));
+  dynamic_cast<DefExpr*>(symbol->defPoint)->stmt->insertBefore(def_stmt);
+  nodeType = dynamic_cast<ClassType*>(node->type);
+
+  Symboltable::pushScope(SCOPE_CLASS);
+  DefStmt* def = Symboltable::defineSingleVarDefStmt("length", dtInteger, NULL, VAR_NORMAL, VAR_VAR);
+  DefStmt* def2 = Symboltable::defineSingleVarDefStmt("first", nodeType, NULL, VAR_NORMAL, VAR_VAR);
+  DefStmt* def3 = Symboltable::defineSingleVarDefStmt("last", nodeType, NULL, VAR_NORMAL, VAR_VAR);
+  def->append(def2);
+  def2->append(def3);
+  addDeclarations(def);
+  classScope = Symboltable::popScope();
+  classScope->setContext(NULL, symbol, dynamic_cast<DefExpr*>(symbol->defPoint));
+
+}
+
+
 ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
   Type(TYPE_ARRAY, init_elementType->defaultVal),
   domain(init_domain),
@@ -987,6 +1100,10 @@ void ClassType::codegenPrototype(FILE* outfile) {
 
 void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
 			      Expr* format) {
+  if (dynamic_cast<SeqType*>(this)) {
+    Type::codegenIOCall(outfile, ioType, arg, format);
+    return;
+  }
   forv_Symbol(method, methods) {
     if (strcmp(method->name, "write") == 0) {
       method->codegen(outfile);

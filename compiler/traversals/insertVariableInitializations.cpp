@@ -149,6 +149,22 @@ static void insert_domain_init(Stmt* stmt, VarSymbol* var) {
 }
 
 
+/*
+static void insert_seq_init(Stmt* stmt, VarSymbol* var) {
+  SeqType* seq_type = dynamic_cast<SeqType*>(var->type);
+
+  if (!seq_type) {
+    INT_FATAL(var, "Seq type expected");
+  }
+
+  Symbol* init_seq = Symboltable::lookupInternal("_SEQ_INIT_NIL");
+  FnCall* call = new FnCall(new Variable(init_seq), new Variable(var));
+  ExprStmt* call_stmt = new ExprStmt(call);
+  insert_default_init_stmt(var, call_stmt);
+}
+*/
+
+
 static void insert_config_init(Stmt* stmt, VarSymbol* var) {
 
   // SJD: Note I want this to be a single macro INIT_CONFIG with the
@@ -156,10 +172,6 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var) {
   // but because complex literals can't be passed, can't do this.
   // Need a traversal to change complex literals into complex variable
   // temporaries for function calls.
-
-  // Idea: rewrite ProcessParameters and InsertParameterTemps using
-  // Let expressions.  These should be useful so we might want to
-  // implement it now.
 
   Expr* init_expr = var->init ? var->init : var->type->defaultVal;
   Expr* args = new Variable(var);
@@ -201,15 +213,17 @@ static void insert_user_init(Stmt* stmt, VarSymbol* var) {
 static void insert_init(Stmt* stmt, VarSymbol* var, Type* type) {
   if (dynamic_cast<ArrayType*>(type)) {
     insert_array_init(stmt, var, type);
-  }
-  else if (dynamic_cast<DomainType*>(type)) {
+  } else if (dynamic_cast<DomainType*>(type)) {
     insert_domain_init(stmt, var);
-  }
-  else if (var->varClass == VAR_CONFIG) {
+    /*
+  } else if (dynamic_cast<SeqType*>(type)) {
+    insert_seq_init(stmt, var);
+    insert_user_init(stmt, var);
+    */
+  } else if (var->varClass == VAR_CONFIG) {
     insert_default_init(stmt, var);
     insert_config_init(stmt, var);
-  }
-  else {
+  } else {
     insert_default_init(stmt, var);
     insert_user_init(stmt, var);
   }

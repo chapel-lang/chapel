@@ -350,3 +350,13 @@ void SymScope::codegen(FILE* outfile, char* separator) {
     }
   }
 }
+
+
+// hack to avoid static on commonModule until module use is supported
+bool SymScope::commonModuleIsFirst() {
+  if (type == SCOPE_MODULE) {
+    return commonModule->modScope == this;
+  } else {
+    return parent->commonModuleIsFirst();
+  }
+}

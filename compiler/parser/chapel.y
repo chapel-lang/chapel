@@ -61,11 +61,13 @@
 %token TLET
 %token TMODULE
 %token TNIL
+%token TOF
 %token TOUT
 %token TPRAGMA
 %token TRECORD
 %token TREF
 %token TRETURN
+%token TSEQ
 %token TSTATIC
 %token TTHEN
 %token TTYPE
@@ -93,6 +95,8 @@
 %token TDOT;
 %token TLP;
 %token TRP;
+%token TSEQBEGIN;
+%token TSEQEND;
 %token TLSBR;
 %token TRSBR;
 %token TLCBR;
@@ -107,13 +111,13 @@
 %type <vt> vardecltag
 %type <pt> formaltag
 
-%type <pdt> type domainType indexType arrayType tupleType
+%type <pdt> type domainType indexType arrayType tupleType seqType
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier fname
 %type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
 %type <enumsym> enum_item enum_list
-%type <pexpr> lvalue atom expr exprlist expr_list_item nonemptyExprlist literal range
+%type <pexpr> lvalue atom expr exprlist expr_list_item nonemptyExprlist literal range seq_expr
 %type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
@@ -553,6 +557,7 @@ type:
   domainType
 | indexType
 | arrayType
+| seqType
 | tupleType
 | identifier
     { $$ = new UnresolvedType($1); }
@@ -600,6 +605,14 @@ arrayType:
       Symboltable::finishForallExpr($1);
       $$ = new ArrayType($1, $2);
     }
+;
+
+
+seqType:
+  TSEQ TOF type
+    { $$ = new SeqType($3); }
+| TSEQ TLP type TRP
+    { $$ = new SeqType($3); }
 ;
 
 
@@ -852,6 +865,12 @@ atom:
 ;
 
 
+seq_expr:
+  TSEQBEGIN exprlist TSEQEND
+    { $$ = new SeqExpr($2); }
+;
+
+
 expr: 
   atom
 | TNIL
@@ -864,6 +883,7 @@ expr:
 | expr TCOLON type
     { $$ = new CastExpr($3, $1); }
 | range %prec TDOTDOT
+| seq_expr
 | forallExpr expr %prec TRSBR
     { $$ = Symboltable::finishForallExpr($1, $2); }
 | TPLUS expr %prec TUPLUS

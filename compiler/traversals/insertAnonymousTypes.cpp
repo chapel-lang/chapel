@@ -71,6 +71,50 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 }
 
 
+static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
+  SeqType* seq_type = dynamic_cast<SeqType*>(*type);
+
+  if (!seq_type) {
+    INT_FATAL(stmt, "Seq type expected");
+  }
+
+  if (seq_type->symbol) {
+    INT_FATAL(stmt, "Seq type already resolved");
+  }
+
+  SymScope* saveScope;
+  /** SJD: Why is SCOPE_INTRINSIC not internal? **/
+  if (seq_type->elementType->symbol->parentScope->isInternal() ||
+      !seq_type->elementType->symbol->defPoint) {
+    saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+  } else {
+    saveScope = Symboltable::setCurrentScope(seq_type->elementType->symbol->parentScope);
+  }
+
+  char* name = glomstrings(2, "_seq_", seq_type->elementType->symbol->name);
+  if (Symbol* seq_sym = Symboltable::lookupInCurrentScope(name)) {
+    *type = seq_sym->type;
+  } else {
+    TypeSymbol* seq_sym = new TypeSymbol(name, seq_type);
+    seq_type->addSymbol(seq_sym);
+    DefExpr* def_expr = new DefExpr(seq_sym);
+    DefStmt* seq_type_def = new DefStmt(def_expr);
+    seq_sym->setDefPoint(def_expr);
+    if (Symboltable::getCurrentScope() == commonModule->modScope) {
+      commonModule->stmts->insertAfter(seq_type_def);
+    } else {
+      Stmt* def_stmt = dynamic_cast<Stmt*>(dynamic_cast<DefExpr*>(seq_type->elementType->symbol->defPoint)->stmt);
+      if (!def_stmt) {
+	INT_FATAL(stmt, "Seq with anonymous type not declared in statement not handled");
+      }
+      def_stmt->insertAfter(seq_type_def);
+    }
+    seq_type->buildImplementationClasses();
+  }
+  Symboltable::setCurrentScope(saveScope);
+}
+
+
 static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
   /***  Note I'm assuming a tuple with component types that are all
    ***  primitive types and I'm declaring this thing with a mangled
@@ -164,6 +208,9 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
   }
   else if (typeid(**type) == typeid(TupleType)) {
     build_anon_tuple_type_def(stmt, type);
+  }
+  else if (typeid(**type) == typeid(SeqType)) {
+    build_anon_seq_type_def(stmt, type);
   }
 }
 

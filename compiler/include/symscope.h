@@ -72,6 +72,8 @@ class SymScope : public gc {
   void printFooter(FILE* outfile);
 
   void codegen(FILE* outfile, char* separator);
+
+  bool commonModuleIsFirst();
 };
 
 #endif

@@ -130,6 +130,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_ASSIGNOP");
     }
     break;
+  case EXPR_SEQ:
+    if (typeid(*ast) != typeid(SeqExpr)) {
+      INT_FATAL(ast, "Unexpected AST expression type: EXPR_SEQ");
+    }
+    break;
   case EXPR_SIMPLESEQ:
     if (typeid(*ast) != typeid(SimpleSeqExpr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_SIMPLESEQ");
@@ -276,6 +281,11 @@ static void verifyASTType(BaseAST* ast) {
   case TYPE_INDEX:
     if (typeid(*ast) != typeid(IndexType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_INDEX");
+    }
+    break;
+  case TYPE_SEQ:
+    if (typeid(*ast) != typeid(SeqType)) {
+      INT_FATAL(ast, "Unexpected AST type type: TYPE_SEQ");
     }
     break;
   case TYPE_ARRAY:
