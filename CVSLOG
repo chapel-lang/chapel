@@ -6040,3 +6040,41 @@ Modified files:
 Added files:
 	chapel/test/lowlevelcg/jplevyak/: cs2.good cs2.v 
 
+---------------------------------------------------------------------------
+
+08/27/04 12:40:18 -- bradc
+
+Log message:
+	Two changes here:
+	
+	(1) modified the Traversal class so that there are now two
+	    booleans per major AST class (Stmt, Expr, Symbol, Type):
+	    one that controls whether or not the class' siblings
+	    should be explored (e.g., exploreSiblingStmts) and a
+	    second which indicates whether children that are of a
+	    given class type should be explored (e.g., exploreChildStmts
+	    would control whether or not member variables that are
+	    statements would be explored).  The goal here is to
+	    offer more control over what is explored.  This may still
+	    not be quite right -- it could be that we want
+	    "exploreStmtChildren" instead, which would indicate whether
+	    or not to look at any of a statement's children rather than
+	    whether to explore children that are statements.  My goal
+	    is to write John's getXXXs() methods using traversals, which
+	    was the motivation for this change, and should probably
+	    make it clearer which is preferable.
+	
+	(2) introduced a new subclass of Type -- TupleType -- which
+	    stores the component types of a tuple type.  This doesn't
+	    do much yet, but improves upon the previous storage of
+	    tuple types by just linking the types together.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.h chapel.y expr.cpp expr.h 
+	                      link.cpp link.h stmt.cpp stmt.h symbol.cpp 
+	                      symbol.h symtab.cpp traversal.cpp 
+	                      traversal.h type.cpp type.h 
+	                      verifyASTType.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+
