@@ -2,6 +2,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "beautify.h"
+#include "files.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "stringutil.h"
@@ -114,8 +116,8 @@ static char* stripextension(char* filename) {
 }
 
 
-static void genOutfileNames(char* infilename, char** outfilename, 
-			    char** extheadfilename, char** intheadfilename) {
+static void genCFilenames(char* infilename, char** outfilename, 
+			  char** extheadfilename, char** intheadfilename) {
   static char* outfilesuffix = ".c";
   static char* extheadsuffix = ".h";
   static char* intheadsuffix = "-internal.h";
@@ -128,10 +130,10 @@ static void genOutfileNames(char* infilename, char** outfilename,
 }
 
 
-static FILE* openfile(char* outfilename) {
+static FILE* openfile(char* outfilename, char* mode = "w") {
   FILE* outfile;
 
-  outfile = fopen(outfilename, "w");
+  outfile = fopen(outfilename, mode);
   if (outfile == NULL) {
     char* errorstr = "opening ";
     char* errormsg = glomstrings(4, errorstr, outfilename, ": ", 
@@ -144,7 +146,7 @@ static FILE* openfile(char* outfilename) {
 }
 
 
-void closefile(FILE* thefile) {
+static void closefile(FILE* thefile) {
   if (fclose(thefile) != 0) {
     char* errorstr = "closing file: ";
     char* errormsg = glomstrings(2, errorstr, strerror(errno));
@@ -154,25 +156,54 @@ void closefile(FILE* thefile) {
 }
 
 
-FILE* openOutfiles(char* infilename, 
-		   char** extheadfilename, FILE** extheadfile,
-		   char** intheadfilename, FILE** intheadfile) {
-  char* outfilename;
-  FILE* outfile;
+void openfile(fileinfo* thefile, char* mode) {
+  thefile->fptr = openfile(thefile->pathname, mode);
+}
 
-  genOutfileNames(infilename, &outfilename, extheadfilename, intheadfilename);
 
-  char* fulloutfilename = genIntFilename(outfilename);
-  char* fullextheadfilename = genIntFilename(*extheadfilename);
-  char* fullintheadfilename = genIntFilename(*intheadfilename);
+void closefile(fileinfo* thefile) {
+  closefile(thefile->fptr);
+}
 
-  fprintf(makefile, "\t%s \\\n", fulloutfilename);
+
+void openCFiles(char* infilename, fileinfo* outfile,
+		fileinfo* extheadfile, fileinfo* intheadfile) {
+
+  genCFilenames(infilename, &(outfile->filename),
+		&(extheadfile->filename), &(intheadfile->filename));
+
+  outfile->pathname = genIntFilename(outfile->filename);
+  extheadfile->pathname = genIntFilename(extheadfile->filename);
+  intheadfile->pathname = genIntFilename(intheadfile->filename);
+
+  fprintf(makefile, "\t%s \\\n", outfile->pathname);
   
-  outfile = openfile(fulloutfilename);
-  *extheadfile = openfile(fullextheadfilename);
-  *intheadfile = openfile(fullintheadfilename);
+  outfile->fptr = openfile(outfile->pathname);
+  extheadfile->fptr = openfile(extheadfile->pathname);
+  intheadfile->fptr = openfile(intheadfile->pathname);
+}
 
-  return outfile;
+
+void closeCFiles(fileinfo* outfile, 
+		 fileinfo* extheadfile, fileinfo* intheadfile) {
+  closefile(outfile->fptr);
+  closefile(extheadfile->fptr);
+  closefile(intheadfile->fptr);
+
+  beautify(outfile);
+  beautify(extheadfile);
+  beautify(intheadfile);
+}
+
+
+fileinfo* openTmpFile(char* tmpfilename) {
+  fileinfo* newfile = (fileinfo*)MALLOC(sizeof(fileinfo));
+
+  newfile->filename = copystring(tmpfilename);
+  newfile->pathname = genIntFilename(tmpfilename);
+  openfile(newfile, "w");
+
+  return newfile;
 }
 
 
@@ -195,12 +226,10 @@ static void genMakefileHeader(char* srcfilename, char* compilerDir) {
 }
 
 
-FILE* openMakefile(char* srcfilename, char* compilerDir) {
+void openMakefile(char* srcfilename, char* compilerDir) {
   char* makefilename = genIntFilename("Makefile");
   makefile = openfile(makefilename);
   genMakefileHeader(srcfilename, compilerDir);
-
-  return makefile;
 }
 
 

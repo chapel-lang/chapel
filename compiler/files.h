@@ -6,15 +6,26 @@
 extern char executableFilename[FILENAME_MAX];
 extern char saveCDir[FILENAME_MAX];
 
+struct fileinfo {
+  FILE* fptr;
+  char* filename;
+  char* pathname;
+};
+
 void deleteTmpDir(void);
 
-FILE* openOutfiles(char* infilename, 
-		   char** intheadfilename, FILE** intheadfile,
-		   char** extheadfilename, FILE** extheadfile);
-void closefile(FILE* thefile);
+void openCFiles(char* infilename, fileinfo* outfile,
+		fileinfo* extheadfile, fileinfo* intheadfile);
+void closeCFiles(fileinfo* outfile, 
+		 fileinfo* extheadfile, fileinfo* intheadfile);
+
+fileinfo* openTmpFile(char* tmpfilename);
 
 void openMakefile(char* srcfilename, char* compilerDir);
 void closeMakefile(void);
+
+void openfile(fileinfo* thefile, char* mode);
+void closefile(fileinfo* thefile);
 
 char* createGDBFile(int argc, char* argv[]);
 

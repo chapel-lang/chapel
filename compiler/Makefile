@@ -16,6 +16,7 @@ GEYSA_CVS_SRCS = \
 	arg.cpp \
 	ast.cpp \
 	ast_cf.cpp \
+	beautify.cpp \
 	builtin.cpp \
 	cdb.cpp \
 	cfg.cpp \

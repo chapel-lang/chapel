@@ -401,20 +401,21 @@ static void genHeader(FILE* outfile, char* extheadfilename,
 
 
 void codegen(FA* fa, char* infilename, char* compilerDir) {
-  FILE* outfile;
-  char* intheadfilename;
-  char* extheadfilename;
+  fileinfo outfileinfo;
+  fileinfo extheadfileinfo;
+  fileinfo intheadfileinfo;
 
   openMakefile(infilename, compilerDir);
-  outfile = openOutfiles(infilename, &extheadfilename, &extheadfile, 
-                         &intheadfilename, &intheadfile);
+  openCFiles(infilename, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
 
-  genHeader(outfile, extheadfilename, intheadfilename);
+  FILE* outfile = outfileinfo.fptr;
+  extheadfile = extheadfileinfo.fptr;
+  intheadfile = intheadfileinfo.fptr;
+
+  genHeader(outfile, extheadfileinfo.filename, intheadfileinfo.filename);
   genFuns(outfile, fa);
 
-  closefile(outfile);
-  closefile(intheadfile);
-  closefile(extheadfile);
+  closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
   closeMakefile();
 
   if (hitUnknown) {
