@@ -7438,3 +7438,16 @@ Log message:
 Modified files:
 	chapel/compiler/: analysis.cpp fa.cpp 
 
+---------------------------------------------------------------------------
+
+09/15/04 15:45:33 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Make CastExpr the identify function for now.
+	enumarray.chpl is now working.
+	Made array accesses accept objects of any type (for now).
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+	chapel/compiler/AST/: internal_prelude.chpl 
+
