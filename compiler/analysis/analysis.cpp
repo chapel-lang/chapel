@@ -1098,12 +1098,12 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast) {
 	(at->elementType->astType == TYPE_ARRAY))
     {
       Sym *ret = new_sym();
-      if1_send(if1, c, 2, 1, sym_new, at->elementType->asymbol->sym, ret);
       if (at->elementType->astType == TYPE_ARRAY)
 	gen_alloc(ret, at->elementType->asymbol->sym, ast);
       else {
 	Code *new_element = 0;
-	new_element = if1_send(if1, c, 2, 1, sym_new, at->elementType->asymbol->sym, ret);
+	ClassType *ct = dynamic_cast<ClassType*>(at->elementType);
+	new_element = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, ret);
 	new_element->ast = ast;
       }
       gen_set_array(s, at, ret, ast);

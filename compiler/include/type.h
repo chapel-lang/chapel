@@ -219,6 +219,8 @@ class ClassType : public Type {
   Vec<VarSymbol*> fields;
   Vec<FnSymbol*> methods;
   Vec<TypeSymbol*> types;
+
+  FnSymbol *defaultConstructor;
   
   ClassType(bool isValueClass,
 	    bool isUnion,
@@ -231,6 +233,7 @@ class ClassType : public Type {
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
+
 
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);

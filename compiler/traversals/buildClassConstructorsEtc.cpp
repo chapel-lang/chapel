@@ -17,6 +17,7 @@ static void build_constructor(ClassType* class_type) {
 
   char* name = glomstrings(2, "_construct_", class_type->symbol->name);
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(name));
+  class_type->defaultConstructor = fn;
   fn->cname = glomstrings(2, "_construct_", class_type->symbol->cname);
 
   ParamSymbol* args = NULL;
