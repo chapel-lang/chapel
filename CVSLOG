@@ -8814,3 +8814,24 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: expr.h 
 
+---------------------------------------------------------------------------
+
+10/13/04 12:12:33 -- bradc
+
+Log message:
+	Made the code that parses files into the AST into a pass,
+	moving towards the goal of supporting multi-file
+	compilation.
+
+Modified files:
+	chapel/compiler/AST/: TODO 
+	chapel/compiler/include/: createAST.h pass.h 
+	chapel/compiler/main/: createAST.cpp driver.cpp pass.cpp 
+	                       passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/test/compflags/bradc/passlist/: COMPOPTS test.good 
+	chapel/test/trivial/bradc/protoast/: mypasslist.h 
+Added files:
+	chapel/compiler/passes/: filesToAST.cpp filesToAST.h 
+	chapel/test/compflags/bradc/passlist/: NOEXEC 
+
