@@ -15989,3 +15989,17 @@ Modified files:
 	chapel/compiler/AST/: stmt.cpp symbol.cpp 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+01/31/05 18:08:44 -- jplevyak
+
+Log message:
+	Removed unused functions related to point-wise function application.
+	Made is_function_used and return_type_info work with the
+	"no analysis" flag.
+
+Modified files:
+	chapel/compiler/analysis/: TODO analysis.cpp fun.cpp inline.cpp 
+	                           sym.cpp 
+	chapel/compiler/include/: analysis.h fun.h sym.h 
+
