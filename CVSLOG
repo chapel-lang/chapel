@@ -6078,3 +6078,18 @@ Modified files:
 	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
 	                                     mg-seq.good 
 
+---------------------------------------------------------------------------
+
+08/27/04 12:56:15 -- bradc
+
+Log message:
+	Added a back pointer for all statements "parentFn" that
+	points to the function that contains it.  This may
+	render the two context pointers yesterday redundant
+	(the statement pointer may now suffice), but I'm leaving
+	both in for now.
+
+Modified files:
+	chapel/compiler/AST/: loc.cpp stmt.cpp stmt.h symtab.cpp 
+	                      symtab.h 
+
