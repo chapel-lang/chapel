@@ -51,7 +51,7 @@ module_expression
   : module_ident 
   | module_ident 'as' module_ident
 { $$.ast = new AST(AST_as, &$n); };
-module_ident: qualified_ident ('.' ident)*;
+module_ident: qualified_ident ("\./[^\.\*]" ident)*;
 
 include "c.g"
 c_extern_statement
@@ -277,7 +277,7 @@ expression
     { $$.ast = op_AST($g->i, $n); }
   | expression binary_operator expression
     { $$.ast = op_AST($g->i, $n); }
-  | expression ('.' $name "op period" | '->' $name "op arrow") symbol_ident $left 9900
+  | expression ("\./[^\.\*]" $name "op period" | '->' $name "op arrow") symbol_ident $left 9900
     { $$.ast = op_AST($g->i, $n); }
   | expression '..' expression ('by' expression)? $left 8400
     { $$.ast = new AST(AST_index, &$n); }
@@ -390,25 +390,25 @@ control_flow
 binary_operator
   : '.*'        $binary_op_left 9900 
   | '**'        $binary_op_right 9700
-  | '*'         $binary_op_left 9600
-  | '/'         $binary_op_left 9600
+  | "\*/[^*]"	$binary_op_left 9600
+  | "\//[^=]"	$binary_op_left 9600
   | '%'         $binary_op_left 9600
-  | '+'         $binary_op_left 9500
-  | '-'         $binary_op_left 9500
-  | '<<'        $binary_op_left 9400
-  | '>>'        $binary_op_left 9400
-  | '<'         $binary_op_left 9300
+  | "\+/[^+]"	$binary_op_left 9500
+  | "-/[^\-]"	$binary_op_left 9500
+  | "<</[^=]"	$binary_op_left 9400
+  | ">>/[^="	$binary_op_left 9400
+  | "</[^<=]"	$binary_op_left 9300
   | '<='        $binary_op_left 9300
-  | '>'         $binary_op_left 9300
+  | ">/[^>=]"   $binary_op_left 9300
   | '>='        $binary_op_left 9300
   | '=='        $binary_op_left 9200
   | '!='        $binary_op_left 9200
-  | '&'         $binary_op_left 9100
-  | '^'         $binary_op_left 9000
-  | '|'		$binary_op_left 8900
+  | "&/[^&]"    $binary_op_left 9100
+  | "^/[^^]"	$binary_op_left 9000
+  | "\|/[^|]"	$binary_op_left 8900
   | '&&'        $binary_op_left 8800
   | '||'        $binary_op_left 8700
-  | '='		$binary_op_left 8500
+  | "=/[^=]"	$binary_op_left 8500
   | '*='        $binary_op_left 8500
   | '/='        $binary_op_left 8500
   | '%='        $binary_op_left 8500
@@ -427,12 +427,12 @@ binary_operator
 pre_operator
   : '++' 	 $unary_op_right 9800
   | '--' 	 $unary_op_right 9800
-  | "+/+"        $unary_op_right 9800
-  | "-/-"        $unary_op_right 9800
+  | "\+/[^+]"	 $unary_op_right 9800
+  | "-/[^\-]"	 $unary_op_right 9800
   | '~'          $unary_op_right 9800
   | '!'          $unary_op_right 9800
-  | '*/*'	 $unary_op_right 9800
-  | "&/&"        $unary_op_right 9800
+  | "\*/[^*]"	 $unary_op_right 9800
+  | "&/[^&]"	 $unary_op_right 9800
   | '(' type ')' $unary_op_right 9800
   | 'sizeof'     $unary_op_right 9900
   ;

@@ -978,8 +978,12 @@ gen_op(IF1 *i, AST *ast) {
     res->lvalue = 1;
     if (ast->is_ref)
       a1->sym->lvalue = 1;
-    if (ast->is_assign)
-      if1_move(i, c, res, a0->rval, ast);
+    if (ast->is_assign) {
+      if (a0)
+	if1_move(i, c, res, a0->rval, ast);
+      else
+	if1_move(i, c, res, a1->rval, ast);
+    }
   }
 }
 
