@@ -20221,3 +20221,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/18/05 13:21:08 -- jplevyak
+
+Log message:
+	Fixed a bug in handling named arguments which are constants.
+	Fixed a bug in the way destructured arguments are handled.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+
