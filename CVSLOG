@@ -23110,3 +23110,23 @@ Added files:
 	                                 equal-8.good equal-9.chpl 
 	                                 equal-9.future equal-9.good 
 
+---------------------------------------------------------------------------
+
+04/01/05 12:45:57 -- bradc
+
+Log message:
+	These are some type initialization tests that came up as
+	being interesting tests when Steve and I were playing
+	with different type initialization schemes yesterday.
+	They are meant to be incredibly low priority, but seemed
+	like interesting enough tests to be worth capturing.
+
+Added files:
+	chapel/test/types/typedefs/bradc/: .cvsignore localType.chpl 
+	                                   localType.future 
+	                                   localType.good 
+	                                   localType2.chpl 
+	                                   localType2.future 
+	                                   localType2.good 
+	                                   localType2.stdin 
+
