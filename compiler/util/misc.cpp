@@ -11,7 +11,6 @@
 #include "pnode.h"
 
 int verbose_level = 0;
-int debug_level = 0;
 int *assert_NULL_var = 0;
 
 static void cleanup(void) {

@@ -25,10 +25,6 @@
 #define numberof(_x) ((sizeof(_x))/(sizeof((_x)[0])))
 
 extern int verbose_level;
-extern int debug_level;
-
-#define dbg if (debug_level) printf
-#define DBG(_x) if (debug_level) { _x; }
 
 #include "extern.h"
 #include "list.h"

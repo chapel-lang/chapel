@@ -1,1 +1,1 @@
---constants_per_var 10 --no-codegen -lF
+--constants_per_var 10 --no-codegen --log F

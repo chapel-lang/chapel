@@ -24,6 +24,20 @@ static const int MAX_CHARS_PER_PID = 32;
 
 static FILE* makefile;
 static char* intExeFilename;
+static int numLibFlags = 0;
+static char** libFlag = NULL;
+
+
+void addLibInfo(char* libName) {
+  static int libSpace = 0;
+
+  numLibFlags++;
+  if (numLibFlags > libSpace) {
+    libSpace = 2*numLibFlags;
+    libFlag = (char**)REALLOC(libFlag, libSpace*sizeof(char*));
+  }
+  libFlag[numLibFlags-1] = copystring(libName);
+}
 
 
 static void createTmpDir(void) {
@@ -261,6 +275,12 @@ static void genMakefileHeader(char* srcfilename, char* compilerDir) {
   intExeFilename = genIntFilename(strippedExeFilename);
   fprintf(makefile, "BINNAME = %s\n", intExeFilename);
   fprintf(makefile, "CHPLRTDIR = %s\n", runtimedir);
+  fprintf(makefile, "LIBS =");
+  int i;
+  for (i=0; i<numLibFlags; i++) {
+    fprintf(makefile, " %s", libFlag[i]);
+  }
+  fprintf(makefile, "\n");
   fprintf(makefile, "CHPLSRC = \\\n");
 }
 

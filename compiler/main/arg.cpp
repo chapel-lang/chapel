@@ -175,9 +175,11 @@ usage(ArgumentState *arg_state, char *arg_unused) {
       break;
     if (!desc[i].description)
       continue;
-    fprintf(stderr,"  %c%c%c --%s%s%s", 
+    fprintf(stderr,"  %c%c%c %s%s%s%s", 
 	    desc[i].key != ' ' ? '-' : ' ', desc[i].key, 
-	    desc[i].key != ' ' ? ',' : ' ', desc[i].name,
+	    (desc[i].key != ' ' && desc[i].name && desc[i].name[0]) ? ',' : ' ', 
+	    (desc[i].name && desc[i].name[0] != '\0') ? "--" : "  ",
+	    desc[i].name,
             (strlen(desc[i].name) + 61 < 81) ?
              &SPACES[strlen(desc[i].name)+61] : "",
             arg_types_desc[desc[i].type?strchr(arg_types_keys,desc[i].type[0])-

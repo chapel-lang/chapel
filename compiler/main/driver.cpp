@@ -27,10 +27,14 @@
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
+static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
+static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
+
 
 static int fdump_html = 0;
 char prelude_filename[FILENAME_MAX] = "prelude";
 static char passlist_filename[FILENAME_MAX] = "";
+static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 extern int d_verbose_level;
 int parser_verbose_non_prelude = 0;
@@ -73,7 +77,9 @@ static ArgumentDescription arg_desc[] = {
  {"graph_frequencies", ' ', "Graph Frequencies", "T", &fgraph_frequencies, 
   "CHPL_GRAPH_FREQUENCIES", NULL},
  {"log_dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
- {"log", 'l', "Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
+ {"log", 'd', "Debug Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
+ {"", 'l', "Library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
+ {"", 'L', "Library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
@@ -87,7 +93,6 @@ static ArgumentDescription arg_desc[] = {
  {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
- {"debug", 'd', "Debug Level", "+", &debug_level, "CHPL_DEBUG", NULL},
  {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},
  {"help", 'h', "Help (show this list)", NULL, NULL, NULL, help},
  {0}
@@ -117,6 +122,17 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
 	  );
   clean_exit(0);
 }
+
+
+static void handleLibrary(ArgumentState* arg_state, char* arg_unused) {
+  addLibInfo(glomstrings(2, "-l", libraryFilename));
+}
+
+
+static void handleLibPath(ArgumentState* arg_state, char* arg_unused) {
+  addLibInfo(glomstrings(2, "-L", libraryFilename));
+}
+
 
 void
 do_analysis(char *fn) {

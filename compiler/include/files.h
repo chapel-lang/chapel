@@ -35,6 +35,7 @@ FILE* openInputFile(char* filename);
 void closeInputFile(FILE* infile);
 void testInputFiles(int numFilenames, char* filename[]);
 char* nthFilename(int i);
+void addLibInfo(char* filename);
 
 char* createGDBFile(int argc, char* argv[]);
 
