@@ -491,3 +491,13 @@ Modified files:
 	                  prelude.v 
 	chapel/compiler/samples/: iv.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/19 10:36:58 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Fixed a bug in d_ws_before
+
+Modified files:
+	chapel/third-party/dparser/d/: dparse_tables.h parse.c 
+
