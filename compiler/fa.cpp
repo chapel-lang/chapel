@@ -559,7 +559,7 @@ static int
 edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
-    forv_MPosition(p, e->match->fun->positions) {
+    forv_MPosition(p, e->match->fun->arg_positions) {
       AVar *es_arg = es->args.get(p), *e_arg = e->args.get(p);
       if (!e_arg)
 	continue;
@@ -582,7 +582,7 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
       AEdge *ee = *pee;
       if (!ee->args.n)	
 	continue;
-      forv_MPosition(p, e->match->fun->positions) {
+      forv_MPosition(p, e->match->fun->arg_positions) {
 	AVar *e_arg = e->args.get(p); 
 	AVar *ee_arg = ee->args.get(p);
 	if (!e_arg || !ee_arg)
@@ -615,7 +615,7 @@ static int
 edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
-    forv_MPosition(p, e->match->fun->positions) {
+    forv_MPosition(p, e->match->fun->arg_positions) {
       AVar *av = e->args.get(p);
       if (av)
 	if (!sset_compatible(av, es->args.get(p)))
@@ -631,7 +631,7 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
       AEdge *ee = *pee;
       if (!ee->args.n)	
 	continue;
-      forv_MPosition(p, e->match->fun->positions) {
+      forv_MPosition(p, e->match->fun->arg_positions) {
 	AVar *eav = e->args.get(p), *eeav = ee->args.get(p);
 	if (eav && eeav)
 	  if (!sset_compatible(eav, eeav))
@@ -648,7 +648,7 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 
 static int
 edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
-  forv_MPosition(p, e->match->fun->positions) {
+  forv_MPosition(p, e->match->fun->arg_positions) {
     AVar *av = es->args.get(p);
     if (av->var->clone_for_constants) {
       AType css;
@@ -687,7 +687,7 @@ set_entry_set(AEdge *e, EntrySet *es = 0) {
   e->to = new_es;
   new_es->edges.put(e);
   if (!es) {
-    forv_MPosition(p, e->match->fun->positions) {
+    forv_MPosition(p, e->match->fun->arg_positions) {
       Sym *s = e->match->fun->arg_syms.get(p);
       AVar *av = make_AVar(s->var, new_es);
       new_es->args.put(p, av);
@@ -1010,7 +1010,7 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
     e->match = m;
   else {
     assert(e->match->fun == m->fun);
-    forv_MPosition(p, e->match->fun->positions) {
+    forv_MPosition(p, e->match->fun->arg_positions) {
       AType *t1 = e->match->filters.get(p), *t2 = m->filters.get(p);
       if (t1 && t2)
 	e->match->filters.put(p, type_union(t1, t2));
@@ -1376,7 +1376,7 @@ collect_Vars_PNodes(Fun *f) {
 static void
 analyze_edge(AEdge *e) {
   make_entry_set(e);
-  forv_MPosition(p, e->match->fun->positions) {
+  forv_MPosition(p, e->match->fun->arg_positions) {
     AVar *a = e->args.get(p), *b = e->to->args.get(p);
     if (!a)
       continue;
@@ -1474,7 +1474,7 @@ collect_results() {
 	pnode->callees = pnode->next_callees;
 	pnode->next_callees = 0;
 	forv_Fun(f, pnode->callees->funs)
-	  pnode->callees->positions.set_union(f->positions);
+	  pnode->callees->arg_positions.set_union(f->arg_positions);
       }
     }
   }
@@ -1677,7 +1677,7 @@ initialize() {
   send_worklist.clear();
   initialize_symbols();
   initialize_primitives();
-  build_positions(fa);
+  build_arg_positions(fa);
   build_patterns(fa);
 }
 
@@ -1933,7 +1933,7 @@ clear_es(EntrySet *es) {
   for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee)
     clear_edge(*ee);
   es->out_edges.clear();
-  forv_MPosition(p, es->fun->positions)
+  forv_MPosition(p, es->fun->arg_positions)
     es->args.get(p)->restrict = bottom_type;
   es->backedges.clear();
   es->cs_backedges.clear();

@@ -441,7 +441,7 @@ static void
 graph_fun_node(FILE *fp, Fun *f) {
   char title[256] = "";
   strcat_sym_node(title, f->sym);
-  forv_MPosition(p, f->positions) {
+  forv_MPosition(p, f->arg_positions) {
     Var *a = f->args.get(p);
     strcat(title, " ");
     if (!a->sym->pattern)

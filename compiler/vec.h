@@ -233,6 +233,216 @@ Vec<C>::append(const Vec<C> &vv)  {
     add(*c);
 }
 
+template <class C> inline void 
+Vec<C>::addx() {
+  if (v == e) {
+    v = (C*)MALLOC(VEC_INITIAL_SIZE * sizeof(C));
+    memcpy(v, e, n * sizeof(C));
+  } else {
+    if ((n & (VEC_INITIAL_SIZE -1)) == 0) {
+      int l = n, nl = (1 + VEC_INITIAL_SHIFT);
+      l = l >> VEC_INITIAL_SHIFT;
+      while (!(l&1)) { l = l >> 1; nl++; }
+      l = l >> 1;
+      if (!l) {
+	void *vv = (void*)v;
+	nl = 1 << nl;
+	v = (C*)MALLOC(nl * sizeof(C));
+	memcpy(v, vv, n * sizeof(C));
+	memset(&v[n], 0, (nl - n) * sizeof(C));
+      }
+    }
+  }
+}
+
+template <class C> void 
+Vec<C>::add_internal(C a) {
+  addx();
+  v[n++] = a;
+}
+
+template <class C> C&
+Vec<C>::add_internal() {
+  addx();
+  return v[n++];
+}
+
+template <class C> void
+Vec<C>::set_expand() {
+  if (!n)
+    i = SET_INITIAL_INDEX;
+  else
+    i = i + 1;
+  n = prime2[i];
+  v = (C*)MALLOC(n * sizeof(C));
+  memset(v, 0, n * sizeof(C));
+}
+
+template <class C> C *
+Vec<C>::set_add_internal(C c) {
+  int j, k;
+  if (n) {
+    uint h = (uint)(uintptr_t)c;
+    h = h % n;
+    for (k = h, j = 0;
+         k < n && j < SET_MAX_SEQUENTIAL;
+         k = ((k + 1) % n), j++)
+    {
+      if (!v[k]) {
+        v[k] = c;
+        return &v[k];
+      } else if (v[k] == c)
+        return 0;
+    }
+  }
+  Vec<C> vv(*this);
+  set_expand();
+  if (vv.v)
+    set_union(vv);
+  return set_add(c);
+}
+
+template <class C> C *
+Vec<C>::set_in_internal(C c) {
+  int j, k;
+  if (n) {
+    uint h = (uint)(uintptr_t)c;
+    h = h % n;
+    for (k = h, j = 0;
+         k < n && j < SET_MAX_SEQUENTIAL;
+         k = ((k + 1) % n), j++)
+    {
+      if (!v[k])
+	return 0;
+      else if (v[k] == c)
+        return &v[k];
+    }
+  }
+  return 0;
+}
+
+template <class C> int
+Vec<C>::set_union(Vec<C> &vv) {
+  int changed = 0;
+  for (int i = 0; i < vv.n; i++)
+    if (vv.v[i])
+      changed = set_add(vv.v[i]) || changed;
+  return changed;
+} 
+
+template <class C> int
+Vec<C>::set_intersection(Vec<C> &vv) {
+  Vec<C> tv;
+  tv.move(*this);
+  int changed = 0;
+  for (int i = 0; i < tv.n; i++)
+    if (tv.v[i]) {
+      if (vv.set_in(tv.v[i]))
+	set_add(tv.v[i]);
+      else
+	changed = 1;
+    }
+  return changed;
+} 
+
+template <class C> int
+Vec<C>::some_intersection(Vec<C> &vv) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (vv.set_in(v[i]))
+	return 1;
+  return 0;
+} 
+
+template <class C> int
+Vec<C>::some_disjunction(Vec<C> &vv) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (!vv.set_in(v[i]))
+	return 1;
+  for (int i = 0; i < vv.n; i++)
+    if (vv.v[i])
+      if (!set_in(vv.v[i]))
+	return 1;
+  return 0;
+} 
+
+template <class C> void
+Vec<C>::set_intersection(Vec<C> &vv, Vec<C> &result) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (vv.set_in(v[i]))
+	result.set_add(v[i]);
+} 
+
+template <class C> void
+Vec<C>::set_disjunction(Vec<C> &vv, Vec<C> &result) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (!vv.set_in(v[i]))
+	result.set_add(v[i]);
+  for (int i = 0; i < vv.n; i++)
+    if (vv.v[i])
+      if (!set_in(vv.v[i]))
+	result.set_add(vv.v[i]);
+} 
+
+template <class C> void
+Vec<C>::set_difference(Vec<C> &vv, Vec<C> &result) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (!vv.set_in(v[i]))
+	result.set_add(v[i]);
+} 
+
+template <class C> int
+Vec<C>::some_difference(Vec<C> &vv) {
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      if (!vv.set_in(v[i]))
+	return 1;
+  return 0;
+} 
+
+template <class C> int
+Vec<C>::set_count() {
+  int n = 0;
+  for (int i = 0; i < n; i++)
+    if (v[i])
+      n++;
+  return n;
+} 
+
+template <class C> void
+Vec<C>::set_to_vec() {
+  Vec<C> vv(*this);
+  clear();
+  for (C *c = vv.v; c < vv.v + vv.n; c++)
+    if (*c)
+      add(*c);
+}
+
+template <class C>  void 
+Vec<C>::reverse() {
+  for (int i = 0; i < n/2; i++) {
+    C *s = &v[i], *e = &v[n - 1 - i];
+    C t;
+    memcpy(&t, s, sizeof(t));
+    memcpy(s, e, sizeof(t));
+    memcpy(e, &t, sizeof(t));
+  }
+}
+
+template <class C> void 
+Vec<C>::copy_internal(const Vec<C> &vv) {
+  int l = n, nl = (1 + VEC_INITIAL_SHIFT);
+  l = l >> VEC_INITIAL_SHIFT;
+  while (l) { l = l >> 1; nl++; }
+  nl = 1 << nl;
+  v = (C*)MALLOC(nl * sizeof(C));
+  memcpy(v, vv.v, n * sizeof(C));
+  memset(v + n, 0, (nl - n) * sizeof(C)); 
+}
 
 void test_vec();
 

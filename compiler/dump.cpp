@@ -164,9 +164,9 @@ dump_var_type_list(FILE *fp, Vec<Var *> &vars) {
 }
 
 static void
-dump_var_type_mpositions(FILE *fp, Vec<MPosition *> &positions, Map<MPosition *, Var *> &vars) {
+dump_var_type_marg_positions(FILE *fp, Vec<MPosition *> &arg_positions, Map<MPosition *, Var *> &vars) {
   int i = 0;
-  forv_MPosition(p, positions) {
+  forv_MPosition(p, arg_positions) {
     dump_var_type(fp, vars.get(p), i);
     i++;
   }
@@ -278,7 +278,7 @@ dump_functions(FILE *fp, FA *fa) {
     if (f->ast && f->ast->pathname)
       fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->ast->pathname, f->ast->line);
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>Args<TD>\n");
-    dump_var_type_mpositions(fp, f->positions, f->args);
+    dump_var_type_marg_positions(fp, f->arg_positions, f->args);
     fprintf(fp, "<TR><TD><TD>Rets<TD>\n");
     dump_var_type_list(fp, f->rets);
     fprintf(fp, "<TR><TD><TD>Calls<TD>\n");

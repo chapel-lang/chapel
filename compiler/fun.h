@@ -58,13 +58,11 @@ class Fun : public gc {
   Vec<PNode *> fa_send_PNodes;
 
   // pattern
-  Vec<MPosition *> positions;
+  Vec<MPosition *> arg_positions;
+  Map<MPosition*, Sym*> arg_syms;
+  Map<MPosition *, Var*> args;
+  Vec<Var *> rets;
 
-  // loop
-  LoopGraph *loops;
-  LoopNode *loop_node;
-  Dom *dom;
-  
   // clone
   Vec<EntrySet *> called_ess;
   Vec<CreationSet *> called_css;
@@ -73,14 +71,16 @@ class Fun : public gc {
   VarMap *vmap;
 
   // clone typings and call graph
-  Map<MPosition*, Sym*> arg_syms;
-  Map<MPosition *, Var*> args;
-  Vec<Var *> rets;
   Map<PNode *, Vec<Fun *> *> calls;
   void calls_funs(Vec<Fun *> &funs);
   Vec<CallPoint *> called;
   void called_by_funs(Vec<Fun *> &funs);
 
+  // loop
+  LoopGraph *loops;
+  LoopNode *loop_node;
+  Dom *dom;
+  
   // inline
   float execution_frequency;
   int size;

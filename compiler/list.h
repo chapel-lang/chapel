@@ -291,6 +291,17 @@ CountQueue<C, o>::append_clear(CountQueue<C, o> &q) {
   q.size = 0;
 }
 
+template <class C> void
+List<C>::reverse() {
+  ConsCell<C> *n, *t;
+  for (ConsCell<C> *p = head; p; p = n) {
+    n = p->cdr;
+    p->cdr = t;
+    t = p;
+  }
+  head = t;
+}
+
 void test_list();
 
 #endif

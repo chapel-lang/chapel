@@ -4,17 +4,6 @@
 
 #include "geysa.h"
 
-template <class C> void
-List<C>::reverse() {
-  ConsCell<C> *n, *t;
-  for (ConsCell<C> *p = head; p; p = n) {
-    n = p->cdr;
-    p->cdr = t;
-    t = p;
-  }
-  head = t;
-}
-
 #ifdef TEST_LIB
 class A {
  public:

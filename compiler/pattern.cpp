@@ -135,12 +135,12 @@ pattern_match_sym(FA *fa, Sym *s, CreationSet *cs, Vec<Fun *> *funs, Vec<Fun *> 
 
 static void
 pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches, 
-		  MatchMap &match_map, MPosition &p, AVar *send, Vec<MPosition *> *allpositions) 
+		  MatchMap &match_map, MPosition &p, AVar *send, Vec<MPosition *> *all_positions) 
 {
   MPosition *cp = cannonical_mposition.get(&p);
   if (!cp)
     return;
-  if (allpositions && !allpositions->set_in(cp))
+  if (all_positions && !all_positions->set_in(cp))
     return;
   Vec<Fun *> *funs = new Vec<Fun *>;
   a->arg_of_send.set_add(send);
@@ -166,9 +166,9 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	if (av->var->sym->name && !is_const(av->var->sym)) {
 	  MPosition pp(p);
 	  pp.set_top(av->var->sym->name);
-	  pattern_match_arg(fa, av, partial_matches, match_map, pp, send, allpositions);
+	  pattern_match_arg(fa, av, partial_matches, match_map, pp, send, all_positions);
 	} else
-	  pattern_match_arg(fa, av, partial_matches, match_map, p, send, allpositions);
+	  pattern_match_arg(fa, av, partial_matches, match_map, p, send, all_positions);
 	if (!partial_matches.v[partial_matches.n-1] ||
 	    !partial_matches.v[partial_matches.n-1]->n)
 	  break;
@@ -227,13 +227,13 @@ best_match_sym(FA *fa, Sym *s, CreationSet *cs, Vec<Fun *> *funs, Vec<Fun *> *pa
 
 static void
 best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches, 
-	       MatchMap &match_map, MPosition &p, Vec<MPosition *> *allpositions,
+	       MatchMap &match_map, MPosition &p, Vec<MPosition *> *all_positions,
 	       int check_ambiguities = 0) 
 {
   MPosition *cp = cannonical_mposition.get(&p);
   if (!cp)
     return;
-  if (allpositions && !allpositions->set_in(cp))
+  if (all_positions && !all_positions->set_in(cp))
     return;
   Vec<Fun *> *funs = new Vec<Fun *>;
   forv_CreationSet(cs, *a->out) if (cs) {
@@ -257,9 +257,9 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	  if (av->var->sym->name && !is_const(av->var->sym)) {
 	    MPosition pp(p);
 	    pp.set_top(av->var->sym->name);
-	    best_match_arg(fa, av, partial_matches, match_map, pp, allpositions, check_ambiguities);
+	    best_match_arg(fa, av, partial_matches, match_map, pp, all_positions, check_ambiguities);
 	  } else
-	    best_match_arg(fa, av, partial_matches, match_map, p, allpositions, check_ambiguities);
+	    best_match_arg(fa, av, partial_matches, match_map, p, all_positions, check_ambiguities);
 	  p.inc();
 	}
       } else {
@@ -269,9 +269,9 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	  if (av->var->sym->name && !is_const(av->var->sym)) {
 	    MPosition pp(p);
 	    pp.set_top(av->var->sym->name);
-	    best_match_arg(fa, av, partial_matches, match_map, pp, allpositions, check_ambiguities);
+	    best_match_arg(fa, av, partial_matches, match_map, pp, all_positions, check_ambiguities);
 	  } else
-	    best_match_arg(fa, av, partial_matches, match_map, p, allpositions, check_ambiguities);
+	    best_match_arg(fa, av, partial_matches, match_map, p, all_positions, check_ambiguities);
 	  p.dec();
 	}
       }
@@ -288,35 +288,35 @@ pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
   matches.clear();
   MatchMap match_map;
   PartialMatches partial_matches;
-  Vec<MPosition *> *allpositions = NULL;
+  Vec<MPosition *> *all_positions = NULL;
   // find all matches
   {
     if (send->var->def->callees) {
       partial_matches.add(new Vec<Fun *>(send->var->def->callees->funs));
-      allpositions = &send->var->def->callees->positions;
+      all_positions = &send->var->def->callees->arg_positions;
     } else
       partial_matches.add(NULL);
     MPosition p;
     p.push(1);
     forv_AVar(av, args) {
-      pattern_match_arg(fa, av, partial_matches, match_map, p, send, allpositions);
+      pattern_match_arg(fa, av, partial_matches, match_map, p, send, all_positions);
       p.inc();
     }
   }
   if (!partial_matches.v[0])
     return 0;
   Vec<Fun *> allfuns(*partial_matches.v[0]);
-  if (!allpositions) {
-    allpositions = new Vec<MPosition *>;
+  if (!all_positions) {
+    all_positions = new Vec<MPosition *>;
     forv_Fun(f, allfuns) if (f)
-      allpositions->set_union(f->positions);
+      all_positions->set_union(f->arg_positions);
   }
   // find best matches
   {
     MPosition p;
     p.push(1);
     forv_AVar(av, args) {
-      best_match_arg(fa, av, partial_matches, match_map, p, allpositions);
+      best_match_arg(fa, av, partial_matches, match_map, p, all_positions);
       p.inc();
     }
   }
@@ -328,7 +328,7 @@ pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
     p.push(args.n);
     for (int i = args.n - 1; i >= 0; i--) {
       AVar *av = args.v[i];
-      best_match_arg(fa, av, partial_matches, match_map, p, allpositions, true);
+      best_match_arg(fa, av, partial_matches, match_map, p, all_positions, true);
       p.dec();
     }
   }
@@ -367,7 +367,7 @@ build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
   }
   for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
     cp->parent = parent;
-    f->positions.add(cp);
+    f->arg_positions.add(cp);
     if (!a->var)
       a->var = new Var(a);
     f->arg_syms.put(cp, a);
@@ -384,7 +384,7 @@ build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
 }
 
 void
-build_positions(FA *fa) {
+build_arg_positions(FA *fa) {
   forv_Fun(f, fa->pdb->funs) {
     MPosition p;
     p.push(1);
@@ -392,7 +392,7 @@ build_positions(FA *fa) {
       build_arg_position(f, a, p);
       p.inc();
     }
-    forv_MPosition(p, f->positions) {
+    forv_MPosition(p, f->arg_positions) {
       Sym *s = f->arg_syms.get(p);
       f->args.put(p, s->var);
     }

@@ -19,7 +19,7 @@ class PNode : public gc {
   class Callees {
    public:
     Vec<Fun *> funs; 
-    Vec<MPosition *> positions; 
+    Vec<MPosition *> arg_positions; 
   };
 
   Code *code;

@@ -282,7 +282,7 @@ write_arg_position(FILE *fp, MPosition *p) {
 
 static void
 write_c_args(FILE *fp, Fun *f) {
-  forv_MPosition(p, f->positions) {
+  forv_MPosition(p, f->arg_positions) {
     for (int i = 0; i < p->pos.n; i++) 
       if (!is_intPosition(p->pos.v[i]))
 	goto Lnext;

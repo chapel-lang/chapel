@@ -71,7 +71,7 @@ class Match : public gc {
 
 
 void build_patterns(FA *fa);
-void build_positions(FA *fa);
+void build_arg_positions(FA *fa);
 int pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send);
 MPosition *cannonicalize_mposition(MPosition &p);
 
