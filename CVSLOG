@@ -20886,3 +20886,19 @@ Added files:
 	chapel/test/trivial/roxana/: test_dead_var_decl.chpl 
 	                             test_dead_var_decl.good 
 
+---------------------------------------------------------------------------
+
+03/22/05 17:42:14 -- bradc
+
+Log message:
+	Checking in some future tests that have been hanging
+	around in my directory, and which represent work I
+	want to do in the next week or so.
+
+Added files:
+	chapel/test/classes/bradc/: writeclass.chpl writeclass.future 
+	                            writeclass.good writeclass2.chpl 
+	                            writeclass2.future writeclass2.good 
+	                            writeclass3.chpl writeclass3.future 
+	                            writeclass3.good 
+
