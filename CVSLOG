@@ -662,3 +662,20 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: matassign1.chpl 
 
+---------------------------------------------------------------------------
+
+04/03/08 18:13:52 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Added samples/literals.v
+	Fixed some bugs with literal handling, added characters, complex and strings as
+	builtin types.
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp builtin_symbols.h chpl.g fa.cpp 
+	                  if1.cpp prelude.chpl prelude.v v.g 
+	chapel/third-party/dparser/d/: gram.c grammar.g grammar.g.c 
+	chapel/third-party/dparser/d/tests/: g44.test.g 
+Added files:
+	chapel/compiler/samples/: literal.v 
+
