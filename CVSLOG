@@ -17929,3 +17929,13 @@ Added files:
 	                           test_array_assign2.future 
 	                           test_array_assign2.good 
 
+---------------------------------------------------------------------------
+
+02/19/05 11:55:49 -- jplevyak
+
+Log message:
+	Fix off-by-one error found by valgrind + GC.
+
+Modified files:
+	chapel/compiler/vparser/: grammar.cpp 
+
