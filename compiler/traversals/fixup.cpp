@@ -6,7 +6,7 @@
 #include "symtab.h"
 
 
-//static void verifySymbolDefPoint(Symbol* sym);
+static void verifySymbolDefPoint(Symbol* sym);
 static void verifySymbolScope(Symbol* sym);
 
 
@@ -25,24 +25,17 @@ Fixup::Fixup(void) {
 
 
 void Fixup::preProcessStmt(Stmt* stmt) {
-  Symbol* parent;
-
-  SymScope* tmp = Symboltable::getCurrentScope();
-  while (tmp && tmp->symContext->isNull()) {
-    tmp = tmp->parent;
-  }
-  //  Symbol* tmp = stmtParent.v[stmtParent.n-1];
+  Symbol* tmp = stmtParent.v[stmtParent.n-1];
   if (tmp == NULL) {
     INT_FATAL(stmt, "NULL in Fixup()");
   }
-  parent = tmp->symContext;
   if (!verify) {
-    stmt->parentSymbol = parent;
+    stmt->parentSymbol = tmp;
   }
-  else if (stmt->parentSymbol != parent) {
+  else if (stmt->parentSymbol != tmp) {
     INT_FATAL(stmt, "Error during verification fixup: statement's parent is incorrect");
   }
-  /*
+
   if (FnDefStmt* fstmt = dynamic_cast<FnDefStmt*>(stmt)) {
     stmtParent.add(fstmt->fn);
   }
@@ -52,7 +45,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
       stmtParent.add(ctype->name);
     }
   }
-  */
+
   exprParent.add(stmt);
 
   if (!stmt->back || *stmt->back != stmt) {
@@ -62,7 +55,6 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
 
 void Fixup::postProcessStmt(Stmt* stmt) {
-  /*
   if (dynamic_cast<FnDefStmt*>(stmt)) {
     stmtParent.pop();
   }
@@ -72,7 +64,7 @@ void Fixup::postProcessStmt(Stmt* stmt) {
       stmtParent.pop();
     }
   }
-  */
+
   exprParent.pop();
 }
 
@@ -98,7 +90,7 @@ void Fixup::preProcessExpr(Expr* expr) {
 void Fixup::preProcessSymbol(Symbol* sym) {
   if (verify) {
     verifySymbolScope(sym);
-    //    verifySymbolDefPoint(sym);  //SJD: Remove defPoint
+    verifySymbolDefPoint(sym);
   }
 }
 
@@ -164,7 +156,7 @@ static void verifySymbolScope(Symbol* sym) {
   }
 }
 
-/***
+
 static void verifySymbolDefPoint(Symbol* sym) {
   if (typeid(*sym) == typeid(UnresolvedSymbol)) {
     return;
@@ -239,7 +231,7 @@ static void verifySymbolDefPoint(Symbol* sym) {
     }
   }
 }
-***/
+
 
 HyperCopyReplace::HyperCopyReplace(void) {
   processInternalModules = false;

@@ -36,9 +36,7 @@ class Symbol : public BaseAST {
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseSymbol(Traversal* traverse);
-  virtual void traverseDefSymbol(Traversal* traverse);
 
   void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
@@ -59,8 +57,6 @@ class UnresolvedSymbol : public Symbol {
   UnresolvedSymbol(char* init_name, char* init_cname = NULL);
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
-  virtual void traverseDefSymbol(Traversal* traverse);
-
   void codegen(FILE* outfile);
 };
 
@@ -75,10 +71,6 @@ class VarSymbol : public Symbol {
 	    Expr* init_expr = nilExpr,
 	    varType init_varClass = VAR_NORMAL, bool init_isConst = false);
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
-
-  virtual void traverseDefSymbol(Traversal* traverse);
-
-  virtual void codegenDef(FILE* outfile);
 
   bool isNull(void);
   
@@ -96,8 +88,6 @@ class ParamSymbol : public Symbol {
 	      Type* init_type = dtUnknown);
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 
-  virtual void traverseDefSymbol(Traversal* traverse);
-
   bool requiresCPtr(void);
   bool requiresCopyBack(void);
   bool requiresCTmp(void);
@@ -112,8 +102,6 @@ class TypeSymbol : public Symbol {
  public:
   TypeSymbol(char* init_name, Type* init_definition);
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
-  virtual void traverseDefSymbol(Traversal* traverse);
-  virtual void codegenDef(FILE* outfile);
 };
 
 
@@ -137,10 +125,9 @@ class FnSymbol : public Symbol {
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
 		 SymScope* init_paramScope, bool init_exportMe=false);
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
-  virtual void traverseDefSymbol(Traversal* traverse);
+
   bool isNull(void);
 
-  void codegenHeader(FILE* outfile);
   void codegenDef(FILE* outfile);
 
   static FnSymbol* mainFn;
@@ -155,9 +142,7 @@ class EnumSymbol : public Symbol {
 
   EnumSymbol(char* init_name, Expr* init_init, int init_val = 0);
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
-  virtual void traverseDefSymbol(Traversal* traverse);
   void set_values(void);
-  void codegenDef(FILE* outfile);
 };
 
 
@@ -171,7 +156,7 @@ class ModuleSymbol : public Symbol {
 
   ModuleSymbol(char* init_name, bool init_internal);
   void setModScope(SymScope* init_modScope);
-  virtual void traverseDefSymbol(Traversal* traverse);
+
   void startTraversal(Traversal* traversal);
 
   void codegenDef(void);

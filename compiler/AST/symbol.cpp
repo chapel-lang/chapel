@@ -6,7 +6,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
-#include "../symtab/symlink.h"
 
 
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
@@ -75,28 +74,7 @@ void Symbol::traverse(Traversal* traversal, bool atTop) {
     traversal->preProcessSymbol(this);
   }
   if (atTop || traversal->exploreChildSymbols) {
-    if (atTop) {
-      traverseDefSymbol(traversal);
-    }
-    else {
-      traverseSymbol(traversal);
-    }
-  }
-  if (traversal->processTop || !atTop) {
-    traversal->postProcessSymbol(this);
-  }
-}
-
-
-void Symbol::traverseDef(Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
-  if (traversal->processTop || !atTop) {
-    traversal->preProcessSymbol(this);
-  }
-  if (atTop || traversal->exploreChildTypes) {
-    traverseDefSymbol(traversal);
+    traverseSymbol(traversal);
   }
   if (traversal->processTop || !atTop) {
     traversal->postProcessSymbol(this);
@@ -108,10 +86,6 @@ void Symbol::traverseSymbol(Traversal* traversal) {
 }
 
 
-void Symbol::traverseDefSymbol(Traversal* traversal) {
-}
-
-
 void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
 }
@@ -120,11 +94,6 @@ void Symbol::codegen(FILE* outfile) {
   if (!isNull()) {
     fprintf(outfile, "%s", cname);
   }
-}
-
-
-void Symbol::codegenDef(FILE* outfile) {
-  INT_FATAL(this, "Unanticipated call to Symbol::codegenDef");
 }
 
 
@@ -144,6 +113,14 @@ void Symbol::printDefList(FILE* outfile, char* separator) {
     ptr = nextLink(Symbol, ptr);
   }
 }
+
+
+void Symbol::codegenDef(FILE* outfile) {
+  type->codegen(outfile);
+  fprintf(outfile, " ");
+  this->codegen(outfile);
+  type->codegenSafeInit(outfile);
+}  
 
 
 void Symbol::codegenDefList(FILE* outfile, char* separator) {
@@ -186,11 +163,6 @@ Symbol* UnresolvedSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) 
 }
 
 
-void UnresolvedSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(this, traversal, false);
-}
-
-
 VarSymbol::VarSymbol(char* init_name,
 		     Type* init_type,
 		     Expr* init_expr,
@@ -211,13 +183,6 @@ Symbol* VarSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
 }
 
 
-void VarSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(this, traversal, false);
-  TRAVERSE(type, traversal, false);
-  TRAVERSE(init, traversal, false);
-}
-
-
 bool VarSymbol::isNull(void) {
   return (this == nilVarSymbol);
 }
@@ -227,22 +192,6 @@ void VarSymbol::printDef(FILE* outfile) {
   print(outfile);
   fprintf(outfile, ": ");
   type->print(outfile);
-}
-
-
-void VarSymbol::codegenDef(FILE* outfile) {
-  if (parentScope->type == SCOPE_MODULE) {
-    outfile = intheadfile;
-    fprintf(outfile, "static ");
-  }
-  if (isConst) {
-    fprintf(outfile, "const ");
-  }
-  type->codegen(outfile);
-  fprintf(outfile, " ");
-  this->codegen(outfile);
-  type->codegenSafeInit(outfile);
-  fprintf(outfile, ";\n");
 }
 
 
@@ -267,12 +216,6 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 
 Symbol* ParamSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
   return new ParamSymbol(intent, copystring(name), type);
-}
-
-
-void ParamSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(this, traversal, false);
-  TRAVERSE(type, traversal, false);
 }
 
 
@@ -337,27 +280,6 @@ Symbol* TypeSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
 }
 
 
-void TypeSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE_DEF(type, traversal, false);
-}
-
-
-void TypeSymbol::codegenDef(FILE* outfile) {
-  FILE* deffile = outfile;
-  /* if in file scope, hoist to internal header so that it will be
-     defined before global variables at file scope. */  
-  if (type->name->parentScope->type == SCOPE_MODULE) { 
-    deffile = intheadfile;
-  }
-  type->codegenDef(deffile);
-
-  type->codegenStringToType(outfile);
-  type->codegenIORoutines(outfile);
-  type->codegenConfigVarRoutines(outfile);
-  type->codegenConstructors(outfile);
-}
-
-
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 		   Stmt* init_body, bool init_exportMe) :
   Symbol(SYMBOL_FN, init_name, init_retType),
@@ -415,29 +337,12 @@ Symbol* FnSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
 }
 
 
-void FnSymbol::traverseDefSymbol(Traversal* traversal) {
-  SymScope* saveScope;
-
-  TRAVERSE(this, traversal, false);
-  if (paramScope) {
-    saveScope = Symboltable::setCurrentScope(paramScope);
-  }
-  TRAVERSE_LS(formals, traversal, false);
-  TRAVERSE(type, traversal, false);
-  TRAVERSE(body, traversal, false);
-  TRAVERSE(retType, traversal, false);
-  if (paramScope) {
-    Symboltable::setCurrentScope(saveScope);
-  }
-}
-
-
 bool FnSymbol::isNull(void) {
   return (this == nilFnSymbol);
 }
 
 
-void FnSymbol::codegenHeader(FILE* outfile) {
+void FnSymbol::codegenDef(FILE* outfile) {
   if (!exportMe) {
     fprintf(outfile, "static ");
   }
@@ -451,30 +356,6 @@ void FnSymbol::codegenHeader(FILE* outfile) {
     formals->codegenDefList(outfile, ", ");
   }
   fprintf(outfile, ")");
-}
-
-
-void FnSymbol::codegenDef(FILE* outfile) {
-  FILE* headfile;
-
-  if (!function_is_used(this)) {
-    return;
-  }
-  if (exportMe) {
-    headfile = extheadfile;
-  } else {
-    headfile = intheadfile;
-  }
-  codegenHeader(headfile);
-  fprintf(headfile, ";\n");
-
-  codegenHeader(outfile);
-  fprintf(outfile, " ");
-  body->codegen(outfile);
-  fprintf(outfile, "\n\n");
-  if (overload) {
-    overload->codegenDef(outfile);
-  }
 }
 
 FnSymbol* FnSymbol::mainFn;
@@ -500,11 +381,6 @@ Symbol* EnumSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
 }
 
 
-void EnumSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(this, traversal, false);
-}
-
-
 void EnumSymbol::set_values(void) {
   EnumSymbol* tmp = this;
   int tally = 0;
@@ -519,11 +395,6 @@ void EnumSymbol::set_values(void) {
     tmp->val = tally++;
     tmp = nextLink(EnumSymbol, tmp);
   }
-}
-
-
-void EnumSymbol::codegenDef(FILE* outfile) {
-  /* Do nothing */
 }
 
 
@@ -554,7 +425,6 @@ void ModuleSymbol::codegenDef(void) {
   fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
   fprintf(codefile, "\n");
 
-  modScope->codegen(codefile, "\n");
   stmts->codegenList(codefile, "\n");
 
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
@@ -571,12 +441,6 @@ void ModuleSymbol::startTraversal(Traversal* traversal) {
   if (modScope) {
     Symboltable::setCurrentScope(prevScope);
   }
-}
-
-
-/** SJD: Makes sense for this to take place of above startTraversal **/
-void ModuleSymbol::traverseDefSymbol(Traversal* traversal) {
-  startTraversal(traversal);
 }
 
 

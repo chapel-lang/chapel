@@ -165,11 +165,6 @@ void Expr::traverse(Traversal* traversal, bool atTop) {
 }
 
 
-void Expr::traverseDef(Traversal* traversal, bool atTop) {
-  INT_FATAL(this, "Attempt to traverse the definition of an expression");
-}
-
-
 void Expr::traverseExpr(Traversal* traversal) {
 }
 

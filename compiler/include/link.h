@@ -19,8 +19,6 @@ class ILink : public Loc {
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   void traverseList(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
-  void traverseDefList(Traversal* traversal, bool atTop = true);
 
   virtual void print(FILE* outfile);
   void println(FILE* outfile);

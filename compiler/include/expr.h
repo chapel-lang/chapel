@@ -108,7 +108,6 @@ class Expr : public BaseAST {
   virtual Expr* copyExpr(bool clone, CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
 
   virtual Type* typeInfo(void);

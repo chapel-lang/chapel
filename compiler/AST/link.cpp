@@ -28,21 +28,6 @@ void ILink::traverseList(Traversal* traversal, bool atTop) {
 }
 
 
-void ILink::traverseDef(Traversal* traversal, bool atTop) {
-  if (isNull()) return;
-
-  INT_FATAL(this, "Cannot traverse definitions of ILink");
-}
-
-
-void ILink::traverseDefList(Traversal* traversal, bool atTop) {
-  if (isNull()) return;
-  TRAVERSE_DEF(this, traversal, atTop);
-  TRAVERSE_DEF_LS(this->next, traversal, atTop);
-}
-
-
-
 bool ILink::isNull(void) {
   return (this == nilILink);
 }

@@ -27,11 +27,13 @@ class Stmt : public BaseAST {
   virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
 
   void codegenVarDefs(FILE* outfile);
   virtual void codegenVarDef(FILE* outfile);
+
+  void codegenVarNames(FILE* outfile, char* premod, char* postmod);
+  virtual void codegenVarName(FILE* outfile, char* premod, char* postmod);
 
   void replace(Stmt* new_stmt);
   virtual void append(ILink* new_stmt);
@@ -79,6 +81,7 @@ class VarDefStmt : public Stmt {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenVarDef(FILE* outfile);
+  void codegenVarName(FILE* outfile, char* premod, char* postmod);
 };
 
 

@@ -1510,16 +1510,6 @@ build_classes(Vec<BaseAST *> &syms) {
     printf("build_classes: %d classes\n", classes.n);
   forv_Vec(ClassType, c, classes) {
     Sym *csym = c->asymbol;
-
-    /**** REPLACE BELOW  --SJD ****/
-
-    VarSymbol* tmp = c->classVarSymbols;
-    while (tmp && !tmp->isNull()) {
-      csym->has.add(tmp->asymbol);
-      tmp = nextLink(VarSymbol, tmp);
-    }
-
-    /*
     Vec<Stmt *> stmts;
     getLinkElements(stmts, c->definition);
     forv_BaseAST(s, stmts) {
@@ -1533,7 +1523,6 @@ build_classes(Vec<BaseAST *> &syms) {
 	}
       }
     }
-    */
   }
   return 0;
 }
