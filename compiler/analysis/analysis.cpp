@@ -321,7 +321,7 @@ ACallbacks::make_LUB_type(Sym *t) {
   tt->asymbol->sym = t;
   tt->asymbol->symbol = tt;
   assert(tt->asymbol->sym->type_kind == Type_LUB);
-  tt->name->asymbol = new_ASymbol(tt->name);
+  tt->symbol->asymbol = new_ASymbol(tt->symbol);
   return t;
 }
 
@@ -431,7 +431,7 @@ ACallbacks::coercion_wrapper(Match *m) {
   Map<MPosition *, Symbol *> coercions;
   form_MPositionSym(s, m->coercion_substitutions) {
     Type *type = dynamic_cast<Type*>(s->value->asymbol->symbol);
-    coercions.put(s->key, type->name);
+    coercions.put(s->key, type->symbol);
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->coercion_wrapper(&coercions);
@@ -484,14 +484,14 @@ ASymbol::clone(CloneCallback *callback) {
     return s;
   } else {
     Type *type = dynamic_cast<Type*>(symbol);
-    TypeSymbol *old_type_symbol = dynamic_cast<TypeSymbol*>(type->name);
+    TypeSymbol *old_type_symbol = dynamic_cast<TypeSymbol*>(type->symbol);
     TypeDefStmt *old_stmt = dynamic_cast<TypeDefStmt*>(old_type_symbol->defPoint);
     Map<BaseAST*,BaseAST*> clone_map;
     TypeDefStmt *new_stmt = old_stmt->clone(c, &clone_map);
     assert(new_stmt);
     Sym *new_type = c->context->smap.get(old_type_symbol->type->asymbol->sym);
     TypeSymbol *new_type_symbol = dynamic_cast<TypeSymbol*>(
-      dynamic_cast<Type*>(new_type->asymbol->symbol)->name);
+      dynamic_cast<Type*>(new_type->asymbol->symbol)->symbol);
     if (!new_type_symbol->asymbol) // SHOULD BE ASSERT
       callback->clone(old_type_symbol, new_type_symbol);
     new_type->meta_type = new_type_symbol->asymbol->sym;
@@ -514,7 +514,7 @@ new_sym(char *name = 0, int global = 0) {
 
 static void
 map_type(Type *t) {
-  t->asymbol = new_ASymbol(t->name->name);
+  t->asymbol = new_ASymbol(t->symbol->name);
   t->asymbol->symbol = t;
 }
 
@@ -704,7 +704,7 @@ build_types(Vec<BaseAST *> &syms) {
 	  t->asymbol->sym->is_value_class = 1;
 	if (tt->union_value)
 	  t->asymbol->sym->is_union_class = 1;
-	tt->name->asymbol = tt->asymbol->sym->meta_type->asymbol;
+	tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
 	if (tt->parentClass)
 	  t->asymbol->sym->inherits_add(tt->parentClass->asymbol->sym);
 	break;
@@ -1790,7 +1790,7 @@ debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       else { 
 	Type *t = dynamic_cast<Type*>(s); 
 	if (t) 
-	  printf("Type: %s cname %s\n", t->name->name, t->name->cname); 
+	  printf("Type: %s cname %s\n", t->symbol->name, t->symbol->cname); 
       }
     }
   }

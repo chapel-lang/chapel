@@ -61,7 +61,7 @@ void verifyNilsUncorrupted(char* message) {
     INT_FATAL("nilSymbol has been %s", message);
   }
   if (nilType->next != nilILink || nilType->prev != nilILink ||
-      nilType->name != nilSymbol || nilType->defaultVal != nilExpr) {
+      nilType->symbol != nilSymbol || nilType->defaultVal != nilExpr) {
     INT_FATAL("nilType has been %s", message);
   }
 
@@ -78,7 +78,7 @@ void verifyNilsUncorrupted(char* message) {
     INT_FATAL("nilFnDefStmt has been %s", message);
   }
   if (nilClassType->next != nilILink || nilClassType->prev != nilILink ||
-      nilClassType->name != nilSymbol || nilClassType->parentClass != NULL) {
+      nilClassType->symbol != nilSymbol || nilClassType->parentClass != NULL) {
     INT_FATAL("nilClassType has been %s", message);
   }
 }

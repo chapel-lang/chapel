@@ -231,7 +231,7 @@ typealias:
     {
       UserType* newtype = new UserType($4, $5);
       Symbol* typeSym = new TypeSymbol($2, newtype);
-      newtype->addName(typeSym);
+      newtype->addSymbol(typeSym);
       $$ = new TypeDefStmt(newtype);
       typeSym->setDefPoint($$);
     }
@@ -243,7 +243,7 @@ typevardecl:
     {
       VariableType* new_type = new VariableType();
       TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
-      new_type->addName(new_symbol);
+      new_type->addSymbol(new_symbol);
       $$ = new TypeDefStmt(new_type);
       new_symbol->setDefPoint($$);
     }
@@ -256,7 +256,7 @@ enumdecl:
       $4->set_values();
       EnumType* pdt = new EnumType($4);
       Symbol* pst = new TypeSymbol($2, pdt);
-      pdt->addName(pst);
+      pdt->addSymbol(pst);
       $$ = new TypeDefStmt(pdt);
       pst->setDefPoint($$);
       $4->setDefPoint($$);
@@ -349,7 +349,7 @@ formal:
     {
       VariableType* new_type = new VariableType();
       $$ = new TypeSymbol($2, new_type);
-      new_type->addName($$);
+      new_type->addSymbol($$);
     }
 ;
 

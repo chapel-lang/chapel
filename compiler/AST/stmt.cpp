@@ -463,7 +463,7 @@ TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback, Map<BaseAST*,Base
   //  static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
 
-  save_scope = Symboltable::setCurrentScope(this->type->name->parentScope);
+  save_scope = Symboltable::setCurrentScope(this->type->symbol->parentScope);
   Stmt* stmt_copy = copy(true, map, clone_callback);
   if (this_copy = dynamic_cast<TypeDefStmt*>(stmt_copy)) {
     /*

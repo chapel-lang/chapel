@@ -53,7 +53,7 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var) {
   Expr* args = new IntLiteral(intstring(rank), rank);
   args->append(new Variable(var));
   args->append(array_type->domain->copy());
-  args->append(new Variable(array_type->elementType->name));
+  args->append(new Variable(array_type->elementType->symbol));
   Symbol* init_array = Symboltable::lookupInternal("_INIT_ARRAY");
   FnCall* call = new FnCall(new Variable(init_array), args);
   ExprStmt* call_stmt = new ExprStmt(call);
@@ -112,7 +112,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var) {
 
   Expr* init_expr = !var->init->isNull() ? var->init : var->type->defaultVal;
   Expr* args = new Variable(var);
-  args->append(new Variable(var->type->name));
+  args->append(new Variable(var->type->symbol));
   args->append(new StringLiteral(copystring(var->name)));
   args->append(new StringLiteral(var->parentScope->symContext->name));
   //  args->append(init_expr->copy());

@@ -35,13 +35,13 @@ enum paramType {
 
 class Type : public BaseAST {
  public:
-  Symbol* name;
+  Symbol* symbol;
   Expr* defaultVal;
   ASymbol *asymbol;
   Type* parentType;
 
   Type(astType_t astType, Expr* init_defaultVal);
-  void addName(Symbol* newname);
+  void addSymbol(Symbol* newSymbol);
 
   bool isNull(void);
   virtual bool isComplex(void);
@@ -231,7 +231,7 @@ class VariableType : public Type {
 
 class UnresolvedType : public Type {
  public:
-  UnresolvedType(char* init_name);
+  UnresolvedType(char* init_symbol);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void codegen(FILE* outfile);
 };

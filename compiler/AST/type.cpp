@@ -12,7 +12,7 @@
 
 Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
-  name(nilSymbol),
+  symbol(nilSymbol),
   defaultVal(init_defaultVal),
   asymbol(NULL),
   parentType(nilType)
@@ -21,8 +21,8 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
 }
 
 
-void Type::addName(Symbol* newname) {
-  name = newname;
+void Type::addSymbol(Symbol* newsymbol) {
+  symbol = newsymbol;
 }
 
 
@@ -73,7 +73,7 @@ void Type::traverse(Traversal* traversal, bool atTop) {
     traversal->preProcessType(this);
   }
   if (atTop || traversal->exploreChildTypes) {
-    if (atTop || name == nilSymbol) {
+    if (atTop || symbol == nilSymbol) {
       traverseDefType(traversal);
     }
     else {
@@ -96,7 +96,7 @@ void Type::traverseDef(Traversal* traversal, bool atTop) {
     traversal->preProcessType(this);
   }
   if (atTop || traversal->exploreChildTypes) {
-    TRAVERSE(name, traversal, false);
+    TRAVERSE(symbol, traversal, false);
     traverseDefType(traversal);
   }
   if (traversal->processTop || !atTop) {
@@ -120,7 +120,7 @@ int Type::rank(void) {
 
 
 void Type::print(FILE* outfile) {
-  name->print(outfile);
+  symbol->print(outfile);
 }
 
 
@@ -129,7 +129,7 @@ void Type::printDef(FILE* outfile) {
 }
 
 void Type::codegen(FILE* outfile) {
-  name->codegen(outfile);
+  symbol->codegen(outfile);
 }
 
 
@@ -210,7 +210,7 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 
 Type* EnumType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy = new EnumType(valList);
-  copy->addName(name);
+  copy->addSymbol(symbol);
   return copy;
 
     /*
@@ -222,7 +222,7 @@ Type* EnumType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
   } else {
     EnumSymbol* newEnums = (EnumSymbol*)newSyms;
     Type* copy = new EnumType(newEnums);
-    copy->addName(name);
+    copy->addSymbol(symbol);
     return copy;
   }
     */
@@ -237,14 +237,14 @@ void EnumType::traverseDefType(Traversal* traversal) {
 
 void EnumType::printDef(FILE* outfile) {
   printf("enum ");
-  name->print(outfile);
+  symbol->print(outfile);
   printf(" = ");
   valList->printList(outfile, " | ");
 }
 
 
 void EnumType::codegen(FILE* outfile) {
-  name->codegen(outfile);
+  symbol->codegen(outfile);
 }
 
 
@@ -270,19 +270,19 @@ void EnumType::codegenDef(FILE* outfile) {
     fprintf(outfile, "\n");
   }
   fprintf(outfile, "} ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, ";\n\n");
 }
 
 
-static void codegenIOPrototype(FILE* outfile, Symbol* name, bool isRead) {
+static void codegenIOPrototype(FILE* outfile, Symbol* symbol, bool isRead) {
   fprintf(outfile, "void ");
   if (isRead) {
     fprintf(outfile, "_read");
   } else {
     fprintf(outfile, "_write");
   }
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "(FILE* ");
   if (isRead) {
     fprintf(outfile, "infile");
@@ -290,7 +290,7 @@ static void codegenIOPrototype(FILE* outfile, Symbol* name, bool isRead) {
     fprintf(outfile, "outfile");
   }
   fprintf(outfile, ", char* format, ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   if (isRead) {
     fprintf(outfile, "*");
   }
@@ -302,9 +302,9 @@ void EnumType::codegenStringToType(FILE* outfile) {
   EnumSymbol* enumSym = valList;
 
   fprintf(outfile, "int _convert_string_to_enum");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "(char* inputString, ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "* val) {\n");
   
   while (enumSym) {
@@ -328,31 +328,31 @@ void EnumType::codegenIORoutines(FILE* outfile) {
   bool isRead;
 
   isRead = true;
-  codegenIOPrototype(intheadfile, name, isRead);
+  codegenIOPrototype(intheadfile, symbol, isRead);
   fprintf(intheadfile, ";\n");
   
   isRead = false;
-  codegenIOPrototype(intheadfile, name, isRead);
+  codegenIOPrototype(intheadfile, symbol, isRead);
   fprintf(intheadfile, ";\n\n");
 
   isRead = true;
-  codegenIOPrototype(outfile, name, isRead);
+  codegenIOPrototype(outfile, symbol, isRead);
   fprintf(outfile, " {\n");
   fprintf(outfile, "char* inputString = NULL;\n");
   fprintf(outfile, "_read_string(stdin, format, &inputString);\n");
   fprintf(outfile, "if (!(_convert_string_to_enum");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "(inputString, val))) {\n");
   fprintf(outfile, "fflush(stdout);\n");
   fprintf(outfile, "fprintf (stderr, \"***ERROR:  Not of ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, " type***\\n\");\n");
   fprintf(outfile, "exit(0);\n");
   fprintf(outfile, "}\n");
   fprintf(outfile, "}\n\n");
 
   isRead = false;
-  codegenIOPrototype(outfile, name, isRead);
+  codegenIOPrototype(outfile, symbol, isRead);
   fprintf(outfile, " {\n");
   fprintf(outfile, "switch (val) {\n");
   while (enumSym) {
@@ -373,23 +373,23 @@ void EnumType::codegenIORoutines(FILE* outfile) {
 
 void EnumType::codegenConfigVarRoutines(FILE* outfile) {
   fprintf(outfile, "int setInCommandLine");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "(char* varName, ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "* value, char* moduleName) {\n");
   fprintf(outfile, "int isDefaultValue = 0;\n");
   fprintf(outfile, "int varSet = 0;\n");
   fprintf(outfile, "char* setValue = lookupSetValue(varName, moduleName);\n");
   fprintf(outfile, "if (setValue) {\n");
   fprintf(outfile, "int validEnum = _convert_string_to_enum");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "(setValue, value);\n");
   fprintf(outfile, "if (validEnum) {\n");
   fprintf(outfile, "varSet = 1;\n");
   fprintf(outfile, "} else {\n");
   fprintf(outfile, "fprintf(stderr, \"***Error: \\\"%%s\\\" is not a valid "
 	  "value for a config var \\\"%%s\\\" of type ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "***\\n\", setValue, varName);\n");
   fprintf(outfile, "exit(0);\n");
   fprintf(outfile, "}\n");
@@ -441,7 +441,7 @@ Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
   } else {
     copy = new DomainType(parent->copy(clone, map, analysis_clone));
   }
-  copy->addName(name);
+  copy->addSymbol(symbol);
   return copy;
 }
 
@@ -468,11 +468,11 @@ void DomainType::print(FILE* outfile) {
 
 void DomainType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef struct _");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   fprintf(outfile, "  _dom_perdim dim_info[%d];\n", numdims);
   fprintf(outfile, "} ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, ";\n\n");
 }
 
@@ -498,7 +498,7 @@ Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   } else {
     copy = new IndexType(parent->copy(clone, map, analysis_clone));
   }
-  copy->addName(name);
+  copy->addSymbol(symbol);
   return copy;
 }
 
@@ -530,7 +530,7 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy = new ArrayType(domain->copy(clone, map, analysis_clone),
 			     elementType->copy(clone, map, analysis_clone));
-  copy->addName(name);
+  copy->addSymbol(symbol);
   return copy;
 }
 
@@ -557,13 +557,13 @@ void ArrayType::print(FILE* outfile) {
 
 
 void ArrayType::codegen(FILE* outfile) {
-  name->codegen(outfile);
+  symbol->codegen(outfile);
 }
 
 
 void ArrayType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef struct _");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   fprintf(outfile, "  int elemsize;\n");
   fprintf(outfile, "  int size;\n");
@@ -578,19 +578,19 @@ void ArrayType::codegenDef(FILE* outfile) {
   fprintf(outfile, "* domain;\n");
   fprintf(outfile, "  _arr_perdim dim_info[%d];\n", domainType->numdims);
   fprintf(outfile, "} ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, ";\n");
 
   fprintf(outfile, "void _write");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "(FILE* F, char* format, ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, " arr);\n\n");
 
   fprintf(codefile, "void _write");
-  name->codegen(codefile);
+  symbol->codegen(codefile);
   fprintf(codefile, "(FILE* F, char* format, ");
-  name->codegen(codefile);
+  symbol->codegen(codefile);
   fprintf(codefile, " arr) {\n");
   for (int dim = 0; dim < domainType->numdims; dim++) {
     fprintf(codefile, "  int i%d;\n", dim);
@@ -634,7 +634,7 @@ UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
 Type* UserType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy = new UserType(definition,
 			    defaultVal->copy(clone, map, analysis_clone));
-  copy->addName(name);
+  copy->addSymbol(symbol);
   return copy;
 }
 
@@ -652,14 +652,14 @@ void UserType::traverseDefType(Traversal* traversal) {
 
 void UserType::printDef(FILE* outfile) {
   fprintf(outfile, "type ");
-  name->print(outfile);
+  symbol->print(outfile);
   fprintf(outfile, " = ");
   definition->print(outfile);
 }
 
 
 void UserType::codegen(FILE* outfile) {
-  name->codegen(outfile);
+  symbol->codegen(outfile);
 }
 
 
@@ -667,7 +667,7 @@ void UserType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef ");
   definition->codegen(outfile);
   fprintf(outfile, " ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, ";\n");
 }
 
@@ -676,8 +676,8 @@ void UserType::codegenDef(FILE* outfile) {
 // their own write routines and have UserType print its
 // definition's write routine
 
-static void codegenIOPrototypeBody(FILE* outfile, Symbol* name, Type* definition, bool isRead) {
-  codegenIOPrototype(outfile, name, isRead);
+static void codegenIOPrototypeBody(FILE* outfile, Symbol* symbol, Type* definition, bool isRead) {
+  codegenIOPrototype(outfile, symbol, isRead);
   fprintf(outfile, " {\n");
   if (isRead) {
     fprintf(outfile, " _read");
@@ -698,19 +698,19 @@ void UserType::codegenIORoutines(FILE* outfile) {
   bool isRead;
 
   isRead = true;
-  codegenIOPrototype(intheadfile, name, isRead);
+  codegenIOPrototype(intheadfile, symbol, isRead);
   fprintf(intheadfile, ";\n");
 
   isRead = false;
-  codegenIOPrototype(intheadfile, name, isRead);
+  codegenIOPrototype(intheadfile, symbol, isRead);
   fprintf(intheadfile, ";\n\n");
 
   isRead = true;
-  codegenIOPrototypeBody(outfile, name, definition, isRead);
+  codegenIOPrototypeBody(outfile, symbol, definition, isRead);
   fprintf(outfile, "\n\n");
 
   isRead = false;
-  codegenIOPrototypeBody(outfile, name, definition, isRead);
+  codegenIOPrototypeBody(outfile, symbol, definition, isRead);
 }
 
 
@@ -739,7 +739,7 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  TypeDefStmt* def_stmt = dynamic_cast<TypeDefStmt*>(name->defPoint);
+  TypeDefStmt* def_stmt = dynamic_cast<TypeDefStmt*>(symbol->defPoint);
 
   if (!def_stmt) {
     INT_FATAL(this, "Attempt to copy ClassType not defined in TypeDefStmt");
@@ -747,8 +747,8 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 
   static int uid = 0;
   ClassType* copy_type = new ClassType(value, union_value);
-  TypeSymbol* copy_symbol = new TypeSymbol(glomstrings(3, name->name, "_copy_", intstring(uid++)), copy_type);
-  copy_type->addName(copy_symbol);
+  TypeSymbol* copy_symbol = new TypeSymbol(glomstrings(3, symbol->name, "_copy_", intstring(uid++)), copy_type);
+  copy_type->addSymbol(copy_symbol);
   Symboltable::pushScope(SCOPE_CLASS);
 
   Stmt* new_decls = nilStmt;
@@ -780,7 +780,7 @@ void ClassType::addDeclarations(Stmt* newDeclarations) {
   Stmt* tmp = newDeclarations;
   while (tmp && !tmp->isNull()) {
     if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
-      fn_def_stmt->fn->classBinding = this->name;
+      fn_def_stmt->fn->classBinding = this->symbol;
       fn_def_stmt->fn->method_type = PRIMARY_METHOD;
       methods.add(fn_def_stmt->fn);
     }
@@ -789,7 +789,7 @@ void ClassType::addDeclarations(Stmt* newDeclarations) {
     }
     else if (TypeDefStmt* type_def_stmt = dynamic_cast<TypeDefStmt*>(tmp)) {
       if (TypeSymbol* type_symbol =
-	  dynamic_cast<TypeSymbol*>(type_def_stmt->type->name)) {
+	  dynamic_cast<TypeSymbol*>(type_def_stmt->type->symbol)) {
 	types.add(type_symbol);
       }
       else {
@@ -810,12 +810,12 @@ void ClassType::addDeclarations(Stmt* newDeclarations) {
 
 
 void ClassType::buildConstructor(void) {
-  if (!isNull() && !name->parentScope->isInternal()) {
+  if (!isNull() && !symbol->parentScope->isInternal()) {
     /* create default constructor */
 
-    char* constructorName = glomstrings(2, "_construct_", name->name);
+    char* constructorName = glomstrings(2, "_construct_", symbol->name);
     FnSymbol* newFunSym = Symboltable::startFnDef(new FnSymbol(constructorName));
-    newFunSym->cname = glomstrings(2, "_construct_", name->cname);
+    newFunSym->cname = glomstrings(2, "_construct_", symbol->cname);
     if (value || union_value) {
       BlockStmt* body = Symboltable::startCompoundStmt();
       VarSymbol* this_insert = new VarSymbol("this", this);
@@ -845,7 +845,7 @@ void ClassType::buildConstructor(void) {
     **/
     if (union_value) {
       forv_Vec(VarSymbol, tmp, fields) {
-	EnumSymbol* idtag = new EnumSymbol(glomstrings(4, "_", name->name, "_union_id_", tmp->name), nilExpr);
+	EnumSymbol* idtag = new EnumSymbol(glomstrings(4, "_", symbol->name, "_union_id_", tmp->name), nilExpr);
 	idtag->setDefPoint(NULL); // SHOULD BE REAL statement for declaring this enum, UGH...short-term
       }
     }
@@ -879,14 +879,14 @@ bool ClassType::isNull(void) {
 
 
 void ClassType::codegen(FILE* outfile) {
-  name->codegen(outfile);
+  symbol->codegen(outfile);
 }
 
 
 void ClassType::codegenDef(FILE* outfile) {
   if (union_value) {
     fprintf(outfile, "typedef enum _");
-    name->codegen(outfile);
+    symbol->codegen(outfile);
     fprintf(outfile, "_union_id_def {\n");
     bool first = true;
     forv_Vec(VarSymbol, tmp, fields) {
@@ -899,19 +899,19 @@ void ClassType::codegenDef(FILE* outfile) {
       else {
 	first = false;
       }
-      fprintf(outfile, "_%s_union_id_", name->name);
+      fprintf(outfile, "_%s_union_id_", symbol->name);
       tmp->codegen(outfile);
     }
     fprintf(outfile, "} _");
-    name->codegen(outfile);
+    symbol->codegen(outfile);
     fprintf(outfile, "_union_id;\n\n");
   }
   fprintf(outfile, "typedef struct _");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, "_def {\n");
   if (union_value) {
     fprintf(outfile, "_");
-    name->codegen(outfile);
+    symbol->codegen(outfile);
     fprintf(outfile, "_union_id _chpl_union_tag;\n");
     fprintf(outfile, "union _chpl_union_def {\n");
   }
@@ -924,14 +924,14 @@ void ClassType::codegenDef(FILE* outfile) {
   }
   fprintf(outfile, "} ");
   if (value || union_value) {
-    name->codegen(outfile);
+    symbol->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }
   else {
     fprintf(outfile, "_");
-    name->codegen(outfile);
+    symbol->codegen(outfile);
     fprintf(outfile,", *");
-    name->codegen(outfile);
+    symbol->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }
   forv_Vec(FnSymbol, fn, methods) {
@@ -953,20 +953,20 @@ void ClassType::codegenIORoutines(FILE* outfile) {
   bool isRead;
 
   isRead = true;
-  codegenIOPrototype(intheadfile, name, isRead);
+  codegenIOPrototype(intheadfile, symbol, isRead);
   fprintf(intheadfile, ";\n");
 
   isRead = false;
-  codegenIOPrototype(intheadfile, name, isRead);
+  codegenIOPrototype(intheadfile, symbol, isRead);
   fprintf(intheadfile, ";\n\n");
 
   isRead = true;
-  codegenIOPrototype(outfile, name, isRead);
+  codegenIOPrototype(outfile, symbol, isRead);
   fprintf(outfile, "{\n");
   fprintf(outfile, "}\n");
 
   isRead = false;
-  codegenIOPrototype(outfile, name, isRead);
+  codegenIOPrototype(outfile, symbol, isRead);
   fprintf(outfile, "{\n");
   fprintf(outfile, "}\n");
 }
@@ -1005,7 +1005,7 @@ Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   for (int i=1; i<components.n; i++) {
     newTupleType->addType(components.v[i]->copy(clone, map, analysis_clone));
   }
-  newTupleType->addName(name);
+  newTupleType->addSymbol(symbol);
   return newTupleType;
 }
 
@@ -1031,13 +1031,13 @@ void TupleType::print(FILE* outfile) {
 
 
 void TupleType::codegen(FILE* outfile) {
-  name->codegen(outfile);
+  symbol->codegen(outfile);
 }
 
 
 void TupleType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef struct _");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   int i = 0;
   forv_Vec(Type, component, components) {
@@ -1045,7 +1045,7 @@ void TupleType::codegenDef(FILE* outfile) {
     fprintf(outfile, " _field%d;\n", ++i);
   }
   fprintf(outfile, "} ");
-  name->codegen(outfile);
+  symbol->codegen(outfile);
   fprintf(outfile, ";\n\n");
 }
 
@@ -1077,14 +1077,14 @@ void VariableType::codegen(FILE* outfile) {
 }
 
 
-UnresolvedType::UnresolvedType(char* init_name) :
+UnresolvedType::UnresolvedType(char* init_symbol) :
   Type(TYPE_UNRESOLVED, nilExpr) {
-  name = new UnresolvedSymbol(init_name);
+  symbol = new UnresolvedSymbol(init_symbol);
 }
 
 
 Type* UnresolvedType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new UnresolvedType(copystring(name->name));
+  return new UnresolvedType(copystring(symbol->name));
 }
 
 

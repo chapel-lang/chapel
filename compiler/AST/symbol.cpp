@@ -384,7 +384,7 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* new_type = type->copy(clone, map, analysis_clone);
   TypeSymbol* new_type_symbol = new TypeSymbol(copystring(name), new_type);
-  new_type->addName(new_type_symbol);
+  new_type->addSymbol(new_type_symbol);
   return new_type_symbol;
 }
 
@@ -398,7 +398,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
   FILE* deffile = outfile;
   /* if in file scope, hoist to internal header so that it will be
      defined before global variables at file scope. */  
-  if (type->name->parentScope->type == SCOPE_MODULE) { 
+  if (type->symbol->parentScope->type == SCOPE_MODULE) { 
     deffile = intheadfile;
   }
   type->codegenDef(deffile);

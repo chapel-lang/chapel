@@ -15,18 +15,18 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(stmt, "Array type expected");
   }
 
-  if (!array_type->name->isNull()) {
+  if (!array_type->symbol->isNull()) {
     INT_FATAL(stmt, "Array type already resolved");
   }
 
   SymScope* saveScope;
   /** SJD: Why is SCOPE_INTRINSIC not internal? **/
-  if (array_type->elementType->name->parentScope->isInternal() ||
-      array_type->elementType->name->defPoint->isNull()) {
+  if (array_type->elementType->symbol->parentScope->isInternal() ||
+      array_type->elementType->symbol->defPoint->isNull()) {
     saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   }
   else {
-    saveScope = Symboltable::setCurrentScope(array_type->elementType->name->parentScope);
+    saveScope = Symboltable::setCurrentScope(array_type->elementType->symbol->parentScope);
   }
   if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
     if (Variable* var = dynamic_cast<Variable*>(forall->domains)) {
@@ -36,7 +36,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
       if (DomainType* domain_type = dynamic_cast<DomainType*>(var->var->type)) {
 	char* name = glomstrings(5,
 				 "_array_",
-				 array_type->elementType->name->name,
+				 array_type->elementType->symbol->name,
 				 "_",
 				 intstring(domain_type->numdims), 
 				 "d");
@@ -45,7 +45,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 	}
 	else {
 	  TypeSymbol* array_sym = new TypeSymbol(name, array_type);
-	  array_type->addName(array_sym);
+	  array_type->addSymbol(array_sym);
 	  array_type->domainType = domain_type;
 	  TypeDefStmt* array_type_def = new TypeDefStmt(array_type);
 	  array_sym->setDefPoint(array_type_def);
@@ -53,7 +53,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 	    commonModule->stmts->insertAfter(array_type_def);
 	  }
 	  else {
-	    Stmt* def_stmt = dynamic_cast<Stmt*>(array_type->elementType->name->defPoint);
+	    Stmt* def_stmt = dynamic_cast<Stmt*>(array_type->elementType->symbol->defPoint);
 	    if (!def_stmt) {
 	      INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
 	    }
@@ -84,7 +84,7 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(*type, "Tuple type expected");
   }
 
-  if (!tuple_type->name->isNull()) {
+  if (!tuple_type->symbol->isNull()) {
     INT_FATAL(tuple_type, "Tuple type already resolved");
   }
 
@@ -92,14 +92,14 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
   
   char* name = glomstrings(1, "_tuple");
   forv_Vec(Type, component, tuple_type->components) {
-    name = glomstrings(3, name, "_", component->name->name);
+    name = glomstrings(3, name, "_", component->symbol->name);
   }
   if (Symbol* tuple_sym = Symboltable::lookupInCurrentScope(name)) {
     *type = tuple_sym->type;
   }
   else {
     TypeSymbol* tuple_sym = new TypeSymbol(name, tuple_type);
-    tuple_type->addName(tuple_sym);
+    tuple_type->addSymbol(tuple_sym);
     TypeDefStmt* tuple_type_def = new TypeDefStmt(tuple_type);
     commonModule->stmts = appendLink(commonModule->stmts, tuple_type_def);
   }
@@ -118,7 +118,7 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(*type, "Domain type expected");
   }
 
-  if (!domain_type->name->isNull()) {
+  if (!domain_type->symbol->isNull()) {
     INT_FATAL(domain_type, "Domain type already resolved");
   }
 
@@ -138,7 +138,7 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
   else {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     domain_sym = new TypeSymbol(name, domain_type);
-    domain_type->addName(domain_sym);
+    domain_type->addSymbol(domain_sym);
     TypeDefStmt* domain_type_def = new TypeDefStmt(domain_type);
     domain_sym->setDefPoint(domain_type_def);
     commonModule->stmts->insertBefore(domain_type_def);

@@ -52,7 +52,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   
   if (TypeSymbol* class_symbol = dynamic_cast<TypeSymbol*>(fn->classBinding)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(class_symbol->type)) {
-      fn->cname = glomstrings(4, "_", class_type->name->cname, "_", fn->cname);
+      fn->cname = glomstrings(4, "_", class_type->symbol->cname, "_", fn->cname);
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(fn->paramScope);
       Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);

@@ -618,7 +618,7 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
   Type* newType = new Type(TYPE_BUILTIN, init);
   TypeSymbol* sym = new TypeSymbol(name, newType);
   sym->cname = copystring(cname);
-  newType->addName(sym);
+  newType->addSymbol(sym);
 
   builtinTypes.add(newType);
 
@@ -659,7 +659,7 @@ TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUni
 
   newdt = new ClassType(isValueClass, isUnion);
   newsym = new TypeSymbol(name, newdt);
-  (newdt)->addName(newsym);
+  (newdt)->addSymbol(newsym);
   Symboltable::pushScope(SCOPE_CLASS);
 
   return newsym;

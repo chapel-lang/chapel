@@ -195,7 +195,7 @@ static void verifySymbolDefPoint(Symbol* sym) {
 		"for symbol '%s'", sym->name);
     }
     else if (TypeDefStmt* stmt = dynamic_cast<TypeDefStmt*>(defPoint)) {
-      if (stmt->type->name == sym) {
+      if (stmt->type->symbol == sym) {
 	return;
       }
       if (EnumType* enum_type = dynamic_cast<EnumType*>(stmt->type)) {

@@ -16,7 +16,7 @@ void InsertUnionChecks::preProcessExpr(Expr* expr) {
 	if (expr->isWritten()) {
 	  Expr* args = union_expr->base->copy();
 	  char* id_tag = glomstrings(4, "_", 
-				     union_expr->base->typeInfo()->name->name,
+				     union_expr->base->typeInfo()->symbol->name,
 				     "_union_id_",
 				     union_expr->member->name);
 	  args->append(new Variable(Symboltable::lookup(id_tag)));
@@ -28,7 +28,7 @@ void InsertUnionChecks::preProcessExpr(Expr* expr) {
 	if (expr->isRead()) {
 	  Expr* args = union_expr->base->copy();
 	  char* id_tag = glomstrings(4, "_", 
-				     union_expr->base->typeInfo()->name->name,
+				     union_expr->base->typeInfo()->symbol->name,
 				     "_union_id_",
 				     union_expr->member->name);
 	  args->append(new Variable(Symboltable::lookup(id_tag)));
