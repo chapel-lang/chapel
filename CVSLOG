@@ -17939,3 +17939,13 @@ Log message:
 Modified files:
 	chapel/compiler/vparser/: grammar.cpp 
 
+---------------------------------------------------------------------------
+
+02/19/05 11:56:46 -- jplevyak
+
+Log message:
+	add chplalloc.h to catch stray malloc's if they are added.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
