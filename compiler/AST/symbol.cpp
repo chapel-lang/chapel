@@ -685,7 +685,13 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
     actuals = nextLink(Symbol, actuals);
   }
   Symboltable::pushScope(SCOPE_LOCAL);
-  Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(this), argList));
+  FnCall* fn_call = new FnCall(new Variable(this), argList);
+  Stmt* wrapper_body;
+  if (retType == dtVoid) {
+    wrapper_body = new ExprStmt(fn_call);
+  } else {
+    wrapper_body = new ReturnStmt(fn_call);
+  }
   for (int i = 0; i < defaults->n; i++) {
     int j = 1;
     MPosition p;
@@ -730,16 +736,15 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
   BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
   wrapper_block->setBlkScope(block_scope);
   block_scope->stmtContext = wrapper_block;
-  Type* wrapper_return_type = retType;
   DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-						   wrapper_return_type, wrapper_block);
+						   retType, wrapper_block);
   DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
 
   if (!def_expr) {
     INT_FATAL(this, "error in FnSymbol::default_wrapper");
   }
 
-  def_expr->insertBefore(wrapper_expr);
+  def_expr->insertAfter(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
 }
