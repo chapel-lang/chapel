@@ -23660,3 +23660,50 @@ Log message:
 Modified files:
 	chapel/test/: list_futures 
 
+---------------------------------------------------------------------------
+
+04/04/05 14:38:24 -- deitz
+
+Log message:
+	Fixed a problem in the traversal in which the formal arguments to a
+	function were traversed regularly not as if they were definitions
+	which they are.  Fixed a bug in which the back pointer was not set for
+	the initializing expression to formal arguments (default values).
+	Fixed a bug in which the default values were not copied if they were
+	used multiple times.
+	
+	Improved OmitForNoAnalysis to actually remove the symbols from the
+	linked lists in the SymScope and mangle the name in the hash table so
+	it is not found via lookup.  This works on children scopes if the
+	symbol's type is a class.  It does not work on children symbols or
+	scopes in functions, modules, and whatever else.  This is because
+	there is no good way to start a SymtabTraversal on a symbol or to grab
+	the child scope of a symbol.
+	
+	Uncommented the rest of my sequence code in the internal prelude.
+	This is not used yet.
+	
+	Made RemoveDeadSymbols work on all modules not just user modules.  For
+	symbols in the intrinsic scope, we bail.  What we really want is to do
+	this on all scopes but the intrinsic scope.  Or what I have is fine.
+	
+	Removed noanalysis test_seq tests since the sequence implementation is
+	starting to rely on analysis.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp symscope.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: omitForNoAnalysis.cpp 
+Removed files:
+	chapel/test/types/seq/deitz/noanalysis/: test_seq1.chpl 
+	                                         test_seq1.good 
+	                                         test_seq1a.chpl 
+	                                         test_seq1a.good 
+	                                         test_seq2.chpl 
+	                                         test_seq2.good 
+	                                         test_seq8.chpl 
+	                                         test_seq8.good 
+
