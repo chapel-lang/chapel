@@ -19467,3 +19467,32 @@ Modified files:
 	./: Makefile 
 	chapel/runtime/: Makefile 
 
+---------------------------------------------------------------------------
+
+03/14/05 15:07:26 -- bradc
+
+Log message:
+	Added a bunch of platforms to the compiler's .cvsignore
+	files.  At Cray, we tend to write our platform-specific
+	files out to a local directory partition using the
+	CHAPELDEVTMP environment variable, and the symbolic links
+	that are set up are ignored by cvs by default.  These
+	.cvsignore files should prevent such directories from
+	being paid attention to when this env var isn't used.
+
+Modified files:
+	chapel/compiler/AST/: .cvsignore 
+	chapel/compiler/analysis/: .cvsignore 
+	chapel/compiler/analysis/make_prims/: .cvsignore 
+	chapel/compiler/main/: .cvsignore 
+	chapel/compiler/parser/: .cvsignore 
+	chapel/compiler/vparser/: .cvsignore 
+	chapel/compiler/vparser/cast/: .cvsignore 
+Added files:
+	chapel/compiler/adt/: .cvsignore 
+	chapel/compiler/backend/: .cvsignore 
+	chapel/compiler/passes/: .cvsignore 
+	chapel/compiler/symtab/: .cvsignore 
+	chapel/compiler/traversals/: .cvsignore 
+	chapel/compiler/util/: .cvsignore 
+
