@@ -9952,3 +9952,47 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+11/19/04 10:52:23 -- deitz
+
+Log message:
+	Updated parsing of domains so that they can be initialized by
+	sequences but not by constructs enclosed in square brackets.  So
+	
+	  var D : domain(1) = (1..n);
+	
+	is legal but
+	
+	  var D : domain(1) = [1..n];
+	
+	is not.  This is more inline with the current thinking of Chapel.
+	
+	Added a stopgap measure to the parser function that creates variables
+	and constants.  If the variable or constant has a domain type, the
+	initializer expression is converted into a domain.  This is not the
+	place to handle this, but this meshes with how domains and sequences
+	are currently handled.
+	
+	This checking brings the total number of shift/reduce errors in the
+	parser down to zero.
+
+Modified files:
+	chapel/compiler/AST/: symtab.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/flowanalysis/newast/: declprintdom.chpl 
+	                                  declprintdom.good 
+	                                  declprintdom2.chpl 
+	                                  declprintdom2.good domarr.chpl 
+	                                  enumarray.good 
+	                                  formatoutput.good noop.chpl 
+	                                  protoast_test.good 
+	chapel/test/trivial/bradc/: declprintdom.chpl declprintdom2.chpl 
+	                            noop.chpl 
+	chapel/test/trivial/bradc/domarr/: domarr.chpl 
+	chapel/test/trivial/bradc/protoast/: badred.chpl 
+	                                     mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+	                                     mvm-seq.chpl test.good 
+
