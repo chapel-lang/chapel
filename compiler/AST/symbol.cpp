@@ -271,7 +271,10 @@ void VarSymbol::codegenDef(FILE* outfile) {
     outfile = intheadfile;
     fprintf(outfile, "static ");
   }
-  if (isConstant) {
+
+  // need to ensure that this can be realized in C as a const, and
+  // move its initializer here if it can be
+  if (0 && isConstant) {
     fprintf(outfile, "const ");
   }
   type->codegen(outfile);
