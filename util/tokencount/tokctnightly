@@ -64,71 +64,107 @@ mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 
 mysystem("cd $tmpdir && cvs -d ~bradc/CVS checkout -D \"$cvsdate\" chapel", "cvs checkout", 1, 1);
 
-mysystem("cd $tmpdir/chapel/compiler && $tokctr *.h cast/*.h make_prims/*.h > $tmpdir/comp-inc.ntoks");
-mysystem("cd $tmpdir/chapel/compiler && $tokctr *.cpp cast/*.cpp make_prims/*.cpp > $tmpdir/comp-src.ntoks");
-mysystem("cd $tmpdir/chapel/compiler/AST && $tokctr *.h > $tmpdir/fe-inc.ntoks");
-mysystem("cd $tmpdir/chapel/compiler/AST && $tokctr *.cpp > $tmpdir/fe-src.ntoks");
-mysystem("cd $tmpdir/chapel/runtime/include && $tokctr *.h > $tmpdir/rt-inc.ntoks");
-mysystem("cd $tmpdir/chapel/runtime/src && $tokctr *.c > $tmpdir/rt-src.ntoks");
-$compinctoks = `cat $tmpdir/comp-inc.ntoks`; chomp($compinctoks);
-$compsrctoks = `cat $tmpdir/comp-src.ntoks`; chomp($compsrctoks);
-$feinctoks = `cat $tmpdir/fe-inc.ntoks`; chomp($feinctoks);
-$fesrctoks = `cat $tmpdir/fe-src.ntoks`; chomp($fesrctoks);
-$rtinctoks = `cat $tmpdir/rt-inc.ntoks`; chomp($rtinctoks);
-$rtsrctoks = `cat $tmpdir/rt-src.ntoks`; chomp($rtsrctoks);
+$allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
+$compdir = "$tmpdir/chapel/compiler";
 
+# remove generated files
+mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis/prim_data.h analysis/prim_data.cpp");
 
-if ($compinctoks == "") {
-    $compinctoks = 0;
-}
-if ($compsrctoks == "") {
-    $compsrctoks = 0;
-}
-if ($feinctoks == "") {
-    $feinctoks = 0;
-}
-if ($fesrctoks == "") {
-    $fesrctoks = 0;
-}
-if ($rtinctoks == "") {
-    $rtinctoks = 0;
-}
-if ($rtsrctoks == "") {
-    $rtsrctoks = 0;
-}
+mysystem("cd $compdir/AST && $tokctr $allcppfiles > ../AST.ntoks");
+mysystem("cd $compdir/adt && $tokctr $allcppfiles > ../adt.ntoks");
+mysystem("cd $compdir/analysis && $tokctr $allcppfiles > ../analysis.ntoks");
+mysystem("cd $compdir/backend && $tokctr $allcppfiles > ../backend.ntoks");
+mysystem("cd $compdir/include && $tokctr $allcppfiles > ../include.ntoks");
+mysystem("cd $compdir/main && $tokctr $allcppfiles > ../main.ntoks");
+mysystem("cd $compdir/parser && $tokctr $allcppfiles > ../parser.ntoks");
+mysystem("cd $compdir/passes && $tokctr $allcppfiles > ../passes.ntoks");
+mysystem("cd $compdir/traversals && $tokctr $allcppfiles > ../traversals.ntoks");
+mysystem("cd $compdir/util && $tokctr $allcppfiles > ../util.ntoks");
+mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks");
+mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks");
 
-$comptoks = $compinctoks + $compsrctoks;
-$fetoks = $feinctoks + $fesrctoks;
-if ($fetoks != 0) {
-    $fetoks += $comptoks;
-}
-$rttoks = $rtinctoks + $rtsrctoks;
-if ($rttoks != 0) {
-    if ($fetoks != 0) {
-	$rttoks += $fetoks;
-    } else {
-	$rttoks += $comptoks;
-    }
-}
+$asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
+$adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
+$analysistoks = `cat $compdir/analysis.ntoks`; chomp($analysistoks);
+$backendtoks = `cat $compdir/backend.ntoks`; chomp($backendtoks);
+$includetoks = `cat $compdir/include.ntoks`; chomp($includetoks);
+$maintoks = `cat $compdir/main.ntoks`; chomp($maintoks);
+$parsertoks = `cat $compdir/parser.ntoks`; chomp($parsertoks);
+$passestoks = `cat $compdir/passes.ntoks`; chomp($passestoks);
+$traversalstoks = `cat $compdir/traversals.ntoks`; chomp($traversalstoks);
+$utiltoks = `cat $compdir/util.ntoks`; chomp($utiltoks);
+$vparsertoks = `cat $compdir/vparser.ntoks`; chomp($vparsertoks);
+$runtimetoks = `cat $tmpdir/chapel/runtime/runtime.ntoks`; chomp($runtimetoks);
 
-`echo -n "$statdate\t" >> $statfile`;
-if ($comptoks == 0) {
-    `echo -n "-" >> $statfile`;
-} else {
-    `echo -n "$comptoks" >> $statfile`;
+if ($asttoks == "") {
+    $asttoks = 0;
 }
-`echo -n "\t" >> $statfile`;
-if ($fetoks == 0) {
-    `echo -n "-" >> $statfile`;
-} else {
-    `echo -n "$fetoks" >> $statfile`;
+if ($adttoks == "") {
+    $adttoks = 0;
 }
-`echo -n "\t" >> $statfile`;
-if ($rttoks == 0) {
-    `echo -n "-" >> $statfile`;
-} else {
-    `echo -n "$rttoks" >> $statfile`;
+if ($analysistoks == "") {
+    $analysistoks = 0;
 }
+if ($backendtoks == "") {
+    $backendtoks = 0;
+}
+if ($includetoks == "") {
+    $includetoks = 0;
+}
+if ($maintoks == "") {
+    $maintoks = 0;
+}
+if ($parsertoks == "") {
+    $parsertoks = 0;
+}
+if ($passestoks == "") {
+    $passestoks = 0;
+}
+if ($traversalstoks == "") {
+    $traversalstoks = 0;
+}
+if ($utiltoks == "") {
+    $utiltoks = 0;
+}
+if ($vparsertoks == "") {
+    $vparsertoks = 0;
+}
+if ($runtimetoks == "") {
+    $runtimetoks = 0;
+}
+$comptoks = 0;
+$fetoks = 0;
+
+`echo -n "$statdate" >> $statfile`;
+`echo -n "\t-\t-\t-" >> $statfile`;
+
+$tot = 0;
+
+$tot += $utiltoks;
+emit($tot);
+$tot += $adttoks;
+emit($tot);
+$tot += $vparsertoks;
+emit($tot);
+$tot += $maintoks;
+emit($tot);
+$tot += $passestoks;
+emit($tot);
+$tot += $parsertoks;
+emit($tot);
+$tot += $asttoks;
+emit($tot);
+$tot += $traversalstoks;
+emit($tot);
+$tot += $analysistoks;
+emit($tot);
+$tot += $backendtoks;
+emit($tot);
+$tot += $includetoks;
+emit($tot);
+$tot += $runtimetoks;
+emit($tot);
+
 `echo -n "\n" >> $statfile`;
 
 
@@ -208,4 +244,15 @@ sub mysystem {
 	}
     }
     $status;
+}
+
+
+sub emit {
+    $toks = $_[0];
+    `echo -n "\t" >> $statfile`;
+    if ($toks == 0) {
+	`echo -n "-" >> $statfile`;
+    } else {
+	`echo -n "$toks" >> $statfile`;
+    }
 }
