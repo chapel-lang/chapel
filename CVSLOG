@@ -20044,3 +20044,68 @@ Modified files:
 	chapel/compiler/include/: fun.h pattern.h 
 	chapel/test/functions/deitz/: test_named_param2.future 
 
+---------------------------------------------------------------------------
+
+03/17/05 16:31:58 -- deitz
+
+Log message:
+	Extended BuildClassConstructorsEtc to build the class constructors.
+	These are no longer built from a call when the ClassType was created.
+	
+	The constructors now also initialize the members of a class.  For
+	classes that will be cloned and don't have all the type info for their
+	fields, we punt on initializing that field.  I think what we need to
+	do is actually not create the constructor for cloned classes until
+	they are cloned.  John, do you agree with this?
+	
+	I left commented a #define at the top of BuildClassConstructorsEtc
+	
+	   //#define CONSTRUCTOR_WITH_PARAMETERS 1
+	
+	When this is uncommented, the constructor is created with parameters
+	so that it can be called with parameters.  The parameters are given
+	default values.  However, I don't think a default wrapper is built for
+	constructors that are called without the parameters.
+	
+	I left a future classes/deitz/test_class3.future for John.  This
+	future uses the named parameters to call the class constructor.  If
+	you uncomment the above line, this test will succeed but all the tests
+	that call class constructors without arguments will fail.
+	
+	Reenabled checking in Fixup to make sure that the defPoint is
+	correctly set.  This was accidentally turned off in my removal of the
+	nils.
+	
+	I also extended BuildClassConstructorsEtc to create the enum of tag
+	ids for our typesafe unions.  These were previously hardcoded in code
+	generation.  One thing I had to do because of this was to force
+	codegen to codegen all enums before everything else.  I think we
+	should spend some time thinking about how we're going to codegen
+	things in an order so as to work with C.
+	
+	Moved BuildClassConstructorsEtc down a little in the passlist so that
+	the symbols are scope resolved first and so we know the types of
+	fields within classes.
+	
+	Passed .futures for record_equal-1,2 over to John as per my last
+	checkin of creating == for records.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             fixup.cpp 
+	chapel/test/classes/jplevyak/: record_equal-1.future 
+	                               record_equal-2.future 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/classes/deitz/: test_class2.chpl test_class2.good 
+	                            test_class3.chpl test_class3.future 
+	                            test_class3.good test_class4.chpl 
+	                            test_class4.good test_record4.chpl 
+	                            test_record4.good test_record5.chpl 
+	                            test_record5.good 
+
