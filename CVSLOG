@@ -3343,3 +3343,17 @@ Modified files:
 	chapel/compiler/AST/: chapel.lex chapel.y expr.cpp expr.h 
 	                      main.cpp yy.h 
 
+---------------------------------------------------------------------------
+
+06/15/04 12:54:59 -- bradc
+
+Log message:
+	AST Prototype checkpoint.
+
+Modified files:
+	chapel/compiler/AST/: Makefile chapel.lex chapel.y expr.cpp 
+	                      expr.h lexyacc.h stmt.cpp stmt.h type.cpp 
+	                      type.h 
+Added files:
+	chapel/compiler/AST/: .cvsignore symtab.cpp symtab.h 
+
