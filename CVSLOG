@@ -22646,3 +22646,17 @@ Log message:
 Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+03/30/05 11:56:56 -- jplevyak
+
+Log message:
+	"fix" writeunion/writeunion-workaround.
+	I think the remaining problem is in codegen or the test itself... assigned
+	  to Brad for further processing.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/classes/bradc/: writeunion-workaround.future 
+	                            writeunion.future 
+
