@@ -93,6 +93,10 @@ static void build_union_id_enum(ClassType* class_type) {
   }
 
   EnumSymbol* id_list = NULL;
+  char* id_name = glomstrings(4, "_", class_type->symbol->name, "_union_id_",
+			      "__uninitialized");
+  EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
+  id_list = appendLink(id_list, id_symbol);
   forv_Vec(VarSymbol, tmp, class_type->fields) {
     char* id_name =
       glomstrings(4, "_", class_type->symbol->name, "_union_id_", tmp->name);

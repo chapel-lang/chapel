@@ -804,6 +804,15 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
 }
 
 
+void CondStmt::addElseStmt(Stmt* init_elseStmt) {
+  if (elseStmt) {
+    INT_FATAL(this, "overwriting existing else Stmt");
+  }
+  elseStmt = init_elseStmt;
+  SET_BACK(elseStmt);
+}
+
+
 Stmt* CondStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new CondStmt(condExpr->copyInternal(clone, map, analysis_clone), thenStmt->copyInternal(clone, map, analysis_clone), elseStmt->copyInternal(clone, map, analysis_clone));
 }

@@ -70,6 +70,7 @@ function _chpl_realloc(memory, number, size, description: string);
 
 function _UNION_CHECK(u, tag, filename, lineno);
 function _UNION_SET(u, tag);
+function _UNION_CHECK_QUIET(u, tag): boolean;
 
 function _INIT_CONFIG(v, v_type, chapel_name, module_name);
 function _INIT_ARRAY(rank, arr, dom, elt_type);

@@ -254,6 +254,7 @@ class SeqType : public ClassType {
   void codegenDef(FILE* outfile);
   //void codegenPrototype(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
+  void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
   void buildImplementationClasses();
 };
 

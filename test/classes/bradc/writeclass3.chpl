@@ -6,9 +6,14 @@ class myclass {
 var a: myclass = myclass();
 var b: myclass = myclass();
 
-write("a is: ", a, "b is: ", b);
+writeln("a is: ", a, ", b is: ", b);
+
+a.x = 24;
+b.y = 2.4;
+
+writeln("a is: ", a, ", b is: ", b);
 
 a = nil;
 b = nil;
 
-write("a is: ", a, "b is: ", b);
+writeln("a is: ", a, ", b is: ", b);

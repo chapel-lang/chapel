@@ -1,10 +1,10 @@
-class myclass {
+record myrecord {
   var x: integer;
   var y: float;
 }
 
-var a: myclass = myclass();
-var b: myclass = myclass();
+var a: myrecord;
+var b: myrecord;
 
 writeln("a is: ", a, ", b is: ", b);
 

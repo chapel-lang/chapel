@@ -168,6 +168,7 @@ class CondStmt : public Stmt {
 
   CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
 	   Stmt* init_elseStmt = NULL);
+  void addElseStmt(Stmt* init_elseStmt);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseStmt(Traversal* traversal);

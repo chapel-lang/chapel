@@ -1,3 +1,7 @@
-bradc
+jplevyak
 
-Here, I wonder what happens if we write a nil class.
+It appears that when a class variable is never initialized,
+it causes problems in analysis rather than being considered
+a nil instance of the class (this may be related to the
+fact that John didn't realize this had been decided until
+last week?)

@@ -665,6 +665,12 @@ void SeqType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
+void SeqType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+			    Expr* format) {
+  Type::codegenIOCall(outfile, ioType, arg, format);
+}
+
+
 void SeqType::buildImplementationClasses() {
   Symboltable::pushScope(SCOPE_CLASS);
 
@@ -1123,16 +1129,22 @@ void ClassType::codegenPrototype(FILE* outfile) {
 
 void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
 			      Expr* format) {
-  if (dynamic_cast<SeqType*>(this)) {
-    Type::codegenIOCall(outfile, ioType, arg, format);
-    return;
-  }
   forv_Symbol(method, methods) {
     if (strcmp(method->name, "write") == 0) {
+      if (!value && !union_value) {
+	fprintf(outfile, "if (");
+	arg->codegen(outfile);
+	fprintf(outfile, " == nil) {\n");
+	fprintf(outfile, "fprintf(stdout, \"nil\");\n");
+	fprintf(outfile, "} else {\n");
+      }
       method->codegen(outfile);
       fprintf(outfile, "(&(");
       arg->codegen(outfile);
-      fprintf(outfile, "))");
+      fprintf(outfile, "));");
+      if (!value && !union_value) {
+	fprintf(outfile, "}\n");
+      }
       return;
     }
   }

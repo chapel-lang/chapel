@@ -1,6 +1,10 @@
 class myclass {
   var x: integer;
   var y: float;
+
+  function write(): void { 
+    write(x, " ", y);
+  }
 }
 
 var a: myclass = myclass();

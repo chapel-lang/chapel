@@ -1,0 +1,5 @@
+jplevyak/deitz
+
+It appears that when we have multiple instances
+of a union type, that union type is cloned for
+some reason.
