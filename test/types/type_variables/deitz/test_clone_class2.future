@@ -1,4 +1,16 @@
-jplevyak
+deitz
+
+OK, I took a look at the results with ANALYSIS_MATCH turned on, and 
+they look correct to me.  We get one "warning" at line 78, but that
+is for "f" being set to a cloned type (which it should be), and
+we get one warning at line 112 which is the return type of the cloned
+construct_foo function which is now returning the new cloned type
+(whioch it should be).
+
+
+HISTORY
+=======
+
 
 Uncommenting ANALYSIS_MATCH in findUnknownTypes.cpp, many types seem to be resolved in ways I would'nt expect.  The types for the member functions of the cloned classes are left Unresolved.
 
