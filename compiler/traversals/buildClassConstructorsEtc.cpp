@@ -111,21 +111,16 @@ static void build_record_equality_function(ClassType* class_type) {
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", class_type);
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", class_type);
   arg1->append(arg2);
-  BlockStmt* block_stmt = Symboltable::startCompoundStmt();
-  Stmt* body = NULL;
-  Variable* false_variable = new Variable(Symboltable::lookup("false"));
-  ReturnStmt* return_false = new ReturnStmt(false_variable);
+  Expr* cond = NULL;
   forv_Vec(VarSymbol, tmp, class_type->fields) {
-    MemberAccess* left = new MemberAccess(new Variable(arg1), tmp);
-    MemberAccess* right = new MemberAccess(new Variable(arg2), tmp);
-    BinOp* cond_expr = new BinOp(BINOP_NEQUAL, left, right);
-    CondStmt* cond_stmt = new CondStmt(cond_expr, return_false->copy());
-    body = appendLink(body, cond_stmt);
+    Expr* left = new MemberAccess(new Variable(arg1), tmp);
+    Expr* right = new MemberAccess(new Variable(arg2), tmp);
+    cond = (cond)
+      ? new BinOp(BINOP_LOGAND, cond, new BinOp(BINOP_EQUAL, left, right))
+      : new BinOp(BINOP_EQUAL, left, right);
   }
-  Variable* true_variable = new Variable(Symboltable::lookup("true"));
-  body = appendLink(body, new ReturnStmt(true_variable));
-  block_stmt = Symboltable::finishCompoundStmt(block_stmt, body);
-  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, block_stmt));
+  Stmt* body = new ReturnStmt(cond);
+  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
   dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
 }
 

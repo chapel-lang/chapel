@@ -922,10 +922,11 @@ void BinOp::codegen(FILE* outfile) {
 
   /** Use parens in these cases too **/
   if (parent &&
-      parent->precedence() == PREC_BITOR &&
-      parent->precedence() == PREC_BITXOR &&
-      parent->precedence() == PREC_BITAND &&
-      parent->precedence() == PREC_LOGOR) {
+      (parent->precedence() == PREC_BITOR ||
+       parent->precedence() == PREC_BITXOR ||
+       parent->precedence() == PREC_BITAND ||
+       parent->precedence() == PREC_LOGOR ||
+       parent->precedence() == PREC_LOGAND)) {
     parensRequired = true;
   }
 
@@ -1060,23 +1061,17 @@ void MemberAccess::print(FILE* outfile) {
 
 
 void MemberAccess::codegen(FILE* outfile) {
-  Variable* base_var; /* SJD: should get type using typeinfo once
-			 analysis works with records */
-  ClassType* base_type;
-
-  base->codegen(outfile);
-  if ((base_var = dynamic_cast<Variable*>(base)) &&
-      (base_type = dynamic_cast<ClassType*>(base_var->var->type))) {
-    if (base_type->value) {              /* record */
-      fprintf(outfile, ".");
-    } else if (base_type->union_value) { /* union */
-      fprintf(outfile, "._chpl_union.");
-    } else {                             /* class */
-      fprintf(outfile, "->");
-    }
+  ClassType* base_type = dynamic_cast<ClassType*>(base->typeInfo());
+  if (!base_type) {
+    INT_FATAL(this, "Dot applied to non-class/record/union");
   }
-  else {
-    INT_FATAL(this, "Dot applied to non-class/record");
+  base->codegen(outfile);
+  if (base_type->value) {              /* record */
+    fprintf(outfile, ".");
+  } else if (base_type->union_value) { /* union */
+    fprintf(outfile, "._chpl_union.");
+  } else {                             /* class */
+    fprintf(outfile, "->");
   }
   member->codegen(outfile);
 }

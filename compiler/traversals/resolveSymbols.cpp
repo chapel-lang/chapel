@@ -31,24 +31,32 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 	    Symboltable::lookupInScope(UnresolvedMember->name,
 				       class_type->classScope);
 	}
-      }
-      else {
+      } else {
 	if (Variable* var = dynamic_cast<Variable*>(dot->base)) {
 	  if (ClassType* class_type = dynamic_cast<ClassType*>(var->var->type)) {
 	    Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
 						     class_type->classScope);
 	    if (sym) {
 	      dot->member = sym;
-	    }
-	    else {
+	    } else {
 	      INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
 	    }
-	  }
-	  else {
+	  } else {
 	    INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
 	  }
-	}
-	else {
+	} else if (MemberAccess* outer = dynamic_cast<MemberAccess*>(dot->base)) {
+	  if (ClassType* class_type = dynamic_cast<ClassType*>(outer->member->type)) {
+	    Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
+						     class_type->classScope);
+	    if (sym) {
+	      dot->member = sym;
+	    } else {
+	      INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+	    }
+	  } else {
+	    INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
+	  }
+	} else {
 	  INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
 	}
       }
