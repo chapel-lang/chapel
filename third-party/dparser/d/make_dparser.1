@@ -1,0 +1,108 @@
+.TH make_dparser 1 "Mar 2003" Unix "User Manuals"
+.SH NAME
+.PP
+make_dparser \- D Parser Generator
+.SH SYNOPSIS
+.PP
+.B make_dparser
+[\fIoptions\fP] \fIgrammar\fP
+.SH DESCRIPTION
+.PP
+make_dparser is a scannerless GLR parser generator based on the Tomita
+algorithm. It is self-hosted and very easy to use. Grammars are written in a
+natural style of EBNF and regular expressions and support both speculative and
+final actions.
+.SH OPTIONS
+.PP
+.IP "-l"
+Toggle longest match lexical ambiguity resolution.
+When ON the scanner only recognizing the longest matching tokens
+in a given state. This provides an easy way to build
+grammars for languages which use longest match lexical
+ambiguity resolution (e.g. ANSI-C, C++). (OFF by default)
+.IP "-T"
+Toggle building of a tokenizer for START.  When ON, instead of generating 
+a unique scanner for each state (i.e. a 'scannerless' parser), 
+generate a single scanner (tokenizer) for the entire grammar.  This provides
+an easy way to build grammars for languages which assume a
+tokenizer (e.g. ANSI C). (OFF by default)
+.IP "-H \fI-1/0/1\fP"
+Write header, 0 : no, 1 : yes, -1 : only if not empty.
+.IP "-t \fI0/1\fP"
+Token type, 0 : #define, 1 : enum.
+.IP "-C"
+Toggle computing whitespace states.  If 'whitespace' is
+defined in the grammar, then use it as a subparser to 
+consume whitespace. (ON by default)
+.IP "-A"
+Toggle computing states for all non-terminals.  Ensures that there is a unique
+state for each non-terminal so that a subparsers can be invoked for
+that non-terminal. (OFF by default)
+.IP "-i \fItag\fP"
+Tag for grammar data structures so that multiple sets of tables can
+be included in one file/application. (defaults to 'gram')
+.IP "-b \fIblocks\fP"
+Number of blocks to which scanner tables are broken up into.
+Larger numbers permit more sharing with more overhead.  4 seems to be optimal
+for most grammars. (defaults to 4)
+files.
+.IP "-p"
+Toggle setting of operator priority from rules.  Setting of operator
+priorities on operator tokens can increase the size of the tables but 
+can permit unnecessary parse stacks to be pruned earlier. (OFF by default)
+.IP "-r"
+Toggle use of right recursion for EBNF productions.  Do not change this
+unless you really know what you are doing. (OFF by default) 
+.IP "-L"
+Toggle writing of line numbers.  Used to debug the parsing table
+generator itself. (ON by default)
+.IP "-X"
+Set the extension of the generated code file.  For C++ programs (for example)
+the extension can be set to .cpp with the option "-Xcpp".  ("-Xc" by default)
+.IP "-v"
+Increase verbosity.
+.IP "-d"
+Increase debugging.
+.IP "-h"
+Display help.
+.SH ENVIRONMENT
+.PP
+All the options are available through environment variables
+with the names:
+
+.na
+.nh
+D_MAKE_PARSER_HEADER,
+D_MAKE_PARSER_TOKEN,
+D_MAKE_PARSER_GRAMMAR_IDENT,
+D_MAKE_PARSER_SCANNER_BLOCKS,
+D_MAKE_PARSER_SET_PRIORITY,
+D_MAKE_PARSER_WRITE_LINE_DIRECTIVES,
+D_MAKE_PARSER_VERBOSE,
+D_MAKE_PARSER_DEBUG.
+.ad
+.hy
+.SH FEATURES
+.PP
+The features are covered in the documentation.  See the README file.
+.SH FILES
+.PP
+None.	
+.SH NO WARRANTIES
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+COPYRIGHT for more details.
+.SH SEE ALSO
+.PP
+.BR flex (1),
+.BR yacc (1),
+.BR bison (1)
+.PP
+D Parser Home Page: http://dparser.sourceforge.net/
+.PP
+The BSD General Public License.
+.SH AUTHOR
+.PP
+John Plevyak.  Use <jplevyak at users.sourceforge.net> to contact.
+

@@ -1,0 +1,20 @@
+This is the D scannerless GLR parser.  It uses to Tomita algorithm,
+and incorporates BNF production syntax, regular expression terminals,
+and a state-specific symbol table.
+
+It can be compiled to work with or without the Boehm Garbage Collector.
+To compile with GC, uncomment the line D_USE_GC=1 in the Makefile.
+
+The result is natural grammars and powerful parsing.
+
+To build: 'gmake'	       (only available with source code package)
+
+To test: 'gmake test'	       (only available with source code package)
+
+To install, 'gmake install'    (binary or source code packages)
+
+For python support, '(cd python; gmake install)'
+
+Refer to the manual for more information.
+
+See the UPGRADING for information on upgrading from previous version.

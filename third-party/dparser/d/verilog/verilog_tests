@@ -1,0 +1,10 @@
+#!/bin/csh
+#
+
+echo ==== TESTS ======= >! log.txt
+
+foreach file ( `find testsuite -name '*.v' -print` )
+	echo =================== $file ================ >> log.txt
+	./v $file >>& log.txt
+end
+

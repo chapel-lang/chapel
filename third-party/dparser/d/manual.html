@@ -1,0 +1,803 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>manual.html</title>
+</head>
+<body>
+<div style="text-align: center;">&nbsp; <big><big><span
+ style="font-weight: bold;">DParser Manual<br>
+</span></big></big>
+<div style="text-align: left;"><big><br>
+<br>
+<span style="font-weight: bold;">Contents</span><br>
+</big>
+<ol>
+  <li>Installation</li>
+  <li>Getting Started</li>
+  <li>Comments<br>
+  </li>
+  <li>Productions</li>
+  <li>Global Code<br>
+  </li>
+  <li>Terminals</li>
+  <ol>
+    <li>Strings</li>
+    <li>Regular Expressions</li>
+    <li>Naming tokens<br>
+    </li>
+    <li>External (C) scanners</li>
+    <li>Tokenizers</li>
+    <li>Longest Match<br>
+    </li>
+  </ol>
+  <li>Priorities and Associativity</li>
+  <ol>
+    <li>Token Priorities</li>
+    <li>Operator Priorities</li>
+    <li>Rule Priorities</li>
+  </ol>
+  <li>Actions</li>
+  <ol>
+    <li>Speculative Actions</li>
+    <li>Final Actions</li>
+    <li>Embedded<br>
+    </li>
+    <li>Pass Actions<br>
+    </li>
+    <li>Default Actions<br>
+    </li>
+  </ol>
+  <li>Attributes and Action Specifiers</li>
+  <ol>
+    <li>Global State</li>
+    <li>Parse Nodes</li>
+    <li>Misc</li>
+  </ol>
+  <li>Symbol Table</li>
+  <li>Whitespace</li>
+  <li>Ambiguities</li>
+  <li>Error Recovery</li>
+  <li>Parsing Options<br>
+  </li>
+  <li>Grammar Grammar<br>
+  </li>
+</ol>
+<span style="font-weight: bold;">1. Installation</span><br>
+&nbsp;&nbsp;&nbsp; <br>
+To build:
+'gmake'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(only available with source code package)<br>
+<br>
+To test: 'gmake
+test'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (only
+available with source code package)<br>
+<br>
+To install, 'gmake install'&nbsp;&nbsp;&nbsp; (binary or source code
+packages)<br>
+<br>
+<span style="font-weight: bold;">2. Getting Started<span
+ style="font-weight: bold;"></span><span style="font-weight: bold;"></span></span><span
+ style="font-weight: bold;"></span><br>
+<br>
+2.1. Create your grammar, for example, in the file "my.g":<br>
+&nbsp;&nbsp; <br>
+&nbsp;&nbsp; E: E '+' E | "[abc]";<br>
+&nbsp;&nbsp; <br>
+2.2. Convert grammar into parsing tables:<br>
+<br>
+&nbsp; % make_dparser -g my.g<br>
+<br>
+2.3. Create a driver program, for example, in the file
+"my.c":&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+#include &lt;stdio.h&gt;<br>
+#include &lt;dparse.h&gt;<br>
+extern D_ParserTables parser_tables_gram;<br>
+int<br>
+main(int argc, char *argv[]) {<br>
+&nbsp; char s[256], *ss;<br>
+&nbsp; D_Parser *p = new_D_Parser(&amp;parser_tables_gram, 0);<br>
+&nbsp; if (fgets(s,255,stdin) &amp;&amp; dparse(p, s, strlen(s))
+&amp;&amp; !p-&gt;syntax_errors)<br>
+&nbsp;&nbsp;&nbsp; printf("success\n");<br>
+&nbsp; else<br>
+&nbsp;&nbsp;&nbsp; printf("failure\n");<br>
+}<br>
+<br>
+2.4. Compile:<br>
+<br>
+&nbsp; % cc -I/usr/local/include my.c my.g.d_parser.c -L/usr/local/lib
+-ldparse<br>
+&nbsp; <br>
+2.5. Run:<br>
+&nbsp;&nbsp; <br>
+&nbsp; % a.out<br>
+&nbsp; a=<br>
+&nbsp; syntax error, '' line 1<br>
+&nbsp; failure<br>
+&nbsp; %<br>
+&nbsp;&nbsp; <br>
+&nbsp; % a.out<br>
+&nbsp; a+b<br>
+&nbsp; success<br>
+&nbsp; %<br>
+<br>
+&nbsp;We'll come back to this example later.<br>
+<br>
+<span style="font-weight: bold;">3. Comments</span><br>
+<br>
+&nbsp; Grammars can include C/C++ style comments.<br>
+<br>
+EXAMPLE<br>
+<br>
+// My first grammar<br>
+&nbsp;&nbsp; E: E '+' E | "[abc]";<br>
+/* is this right? */<br>
+<br>
+<span style="font-weight: bold;">4. Productions</span><br>
+<br>
+&nbsp; 4.1. The first production is the root of your grammar (what you
+will be trying to parse).<br>
+&nbsp; 4.2. Productions start with the non-terminal being defined
+followed by a colon ':', a set of right hand sides seperated by '|'
+(or)
+consisting of elements (non-terminals or terminals).<br>
+&nbsp; 4.3. Elements can be grouped with parens '(', and the normal
+regular expression symbols can be used ('+' '*' '?' '|').<br>
+<br>
+EXAMPLE<br>
+<br>
+program: statements+ | &nbsp;comment* (function | &nbsp;procedure)?;<br>
+<br>
+&nbsp; 4.4. <span style="font-weight: bold;">NOTE:</span> Instead of
+using '[' ']' for optional elements we use the more familar and
+consistent '?' operator. &nbsp;The square brackets are reserved for
+speculative actions (below).<br>
+<br>
+<span style="font-weight: bold;">5. Global Code</span><br>
+<br>
+Global (or static) C code can be intermixed with productions by
+surrounding the code with brackets '{'.<br>
+<br>
+EXAMPLE<br>
+<br>
+{ void dr_s() { printf("Dr. S\n"); }<br>
+S: 'the' 'cat' 'and' 'the' 'hat' { dr_s(); } | T;<br>
+{ void twain() { printf("Mark Twain\n"); }<br>
+T: 'Huck' 'Finn' { twain(); };<br>
+<br>
+<span style="font-weight: bold;">6. Terminals</span><br>
+<br>
+&nbsp; 6.1. Strings terminals are surrounded with single quotes.
+&nbsp;For example:<br>
+<br>
+<span style="font-weight: bold;"></span>block: '{' statements* '}';<br>
+whileblock: 'while' '(' expression ')' block;<br>
+<br>
+&nbsp; 6.2. Regular expressions are surrounded with double quotes.
+&nbsp;For example:<br>
+<br>
+hexint: "(0x|0X)[0-9a-fA-F]+[uUlL]?";<br>
+<br>
+&nbsp; <span style="font-weight: bold;">NOTE: </span>only the simple
+regular expression operators are currently supported (v1.3). &nbsp;This
+include parens, square parens, ranges, and '*', '+', '?'. &nbsp; If you
+need something more, request a feature or implement it yourself; the
+code is in scan.c.<br>
+<br>
+&nbsp; 6.3 Terminal modifiers<br>
+<br>
+&nbsp; Terminals can contain embbed escape codes.&nbsp; Including the
+standard C escape codes, the codes \x and \d permit inserting hex and
+decimal ASCII characters directly.<br>
+<br>
+&nbsp; Tokens can be given a name by appending the $name option.&nbsp;
+This is useful when you have several<br>
+&nbsp; tokens which which represent the same string (e.g.
+',').&nbsp;&nbsp; For example,<br>
+&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; function_call: function '(' parameter (
+',' $name 'parameter_comma' parameter) ')';<br>
+<br>
+&nbsp; It is now possible to use $0.symbol == ${string parameter_comma}
+to differentiate ParseNode ($0) between<br>
+a parameter comma node and say an initialization comma.<br>
+<br>
+&nbsp; Terminals ending in '/i' are case insensitive.&nbsp;&nbsp;&nbsp;
+For example 'hi'/i matches 'HI', 'Hi' and "hI' in addition to 'hi'.<br>
+<br>
+&nbsp; 6.3. External (C) Scanners<br>
+<br>
+&nbsp; There are two types of external scanners, those which read a
+single terminal, and those which are global (called for every
+terminal).
+&nbsp;Here is an example of a scanner for a single terminal.
+&nbsp;Notice how it can be mixed with regular string terminals.<br>
+<br>
+{<br>
+extern char *ops;<br>
+extern void *ops_cache;<br>
+int ops_scan(char *ops, void *ops_cache, char **as,<br>
+&nbsp;&nbsp;&nbsp; int *col, int *line, unsigned short *op_assoc, int
+*op_priority);<br>
+}<br>
+<br>
+X: '1' (${scan ops_scan(ops, ops_cache)} '2')*;<br>
+<br>
+&nbsp; The user provides the 'ops_scan' function. &nbsp;This example is
+from tests/g4.test.g in the source distribution.<br>
+<br>
+&nbsp; The second type of scanner is a global scanner:<br>
+<br>
+{<br>
+#include "g7.test.g.d_parser.h"<br>
+int myscanner(char **s, int *col, int *line, unsigned short *symbol,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int *term_priority, unsigned short
+*op_assoc, int *op_priority)<br>
+{<br>
+&nbsp; if (**s == 'a') {<br>
+&nbsp;&nbsp;&nbsp; (*s)++;<br>
+&nbsp;&nbsp;&nbsp; *symbol = A;<br>
+&nbsp;&nbsp;&nbsp; return 1;<br>
+&nbsp; } else if (**s == 'b') {<br>
+&nbsp;&nbsp;&nbsp; (*s)++;<br>
+&nbsp;&nbsp;&nbsp; *symbol = BB;<br>
+&nbsp;&nbsp;&nbsp; return 1;<br>
+&nbsp; } else if (**s == 'c') {<br>
+&nbsp;&nbsp;&nbsp; (*s)++;<br>
+&nbsp;&nbsp;&nbsp; *symbol = CCC;<br>
+&nbsp;&nbsp;&nbsp; return 1;<br>
+&nbsp; } else if (**s == 'd') {<br>
+&nbsp;&nbsp;&nbsp; (*s)++;<br>
+&nbsp;&nbsp;&nbsp; *symbol = DDDD;<br>
+&nbsp;&nbsp;&nbsp; return 1;<br>
+&nbsp; } else<br>
+&nbsp;&nbsp;&nbsp; return 0;<br>
+}<br>
+${scanner myscanner}<br>
+${token A BB CCC DDDD}<br>
+<br>
+S: A (BB CCC)+ SS;<br>
+SS: DDDD;<br>
+<br>
+&nbsp; Notice how the you need to include the header file generated by <span
+ style="font-weight: bold;">make_dparser</span> which contains the
+token
+definitions.<br>
+<br>
+6.4. Tokenizers<br>
+<br>
+&nbsp; Tokenizers are non-context sensitive global scanners which
+produce only one token for any given input string. &nbsp;Some
+programming languages (for example <span style="font-weight: bold;">C</span>)
+are easier to specify using a tokenizer because (for example) reserved
+words can be handled simply by lowering the terminal priority for
+identifiers.<br>
+<br>
+EXAMPLE:<br>
+<br>
+S : 'if' '(' S ')' S ';' | 'do' S 'while' '(' S ')' ';' | ident;<br>
+ident: "[a-z]+" $term -1;<br>
+<br>
+&nbsp; The sentence: <span style="font-weight: bold;">if ( while ) a;</span>
+is legal because <span style="font-weight: bold;">while</span> cannot
+appear at the start of <span style="font-weight: bold;">S</span> and
+so
+it doesn't conflict with the parsing of <span
+ style="font-weight: bold;">while</span>
+as an <span style="font-weight: bold;">ident</span> in that position.
+&nbsp;However, if a tokenizer is specified, all tokens will be possible
+at each position and the sentense will produce a syntax error.<br>
+<br>
+&nbsp; <span style="font-weight: bold;">DParser</span> provides two
+ways to specify tokenizers: globally as an option (-T) to <span
+ style="font-weight: bold;">make_dparser</span> and locally with a
+${declare tokenize ...} specifier (see the ANSI C grammar for an
+example). &nbsp;The ${declare tokenize ...} declartion allows a
+tokenizer to be specified over a subset of the parsing states so that
+(for example) ANSI C could be a subgrammar of another larger grammar.
+&nbsp;Currently the parse states are not split so that the productions
+for the substates must be disjoint.<br>
+<br>
+6.5 Longest Match<br>
+<br>
+&nbsp; Longest match lexical ambiguity resolution is a technique used
+by seperate phase lexers to help decide (along<br>
+with lexical priorities) which single token to select for a given input
+string.&nbsp; It is used in the definition of ANSI-C, but not in C++
+because of a snafu in the definition of templates whereby templates of
+templates (List&lt;List &lt;Int&gt;&gt;) can end with the right shift
+token ('&gt;&gt;").&nbsp; Since <span style="font-weight: bold;">DParser</span>
+does not have a seperate lexical phase, it does not require longest
+match disambiguation, but provides it as an option.<br>
+<br>
+&nbsp; There are two ways to specify longest match disabiguation:
+globally as an option (-l) to <span style="font-weight: bold;">make_dparser</span>
+or locally with with a ${declare ... longest_match}.&nbsp; If global
+longest match disambiguation is <span style="font-weight: bold;">ON</span>,
+it can be locally disabled with {$declare ... all_matches} .&nbsp; As
+with Tokenizers above, local declarations operate on disjoint subsets
+of
+parsing states.<br>
+<br>
+<span style="font-weight: bold;">7. Priorities and Associativity<br>
+<br>
+</span>&nbsp; Priorities can very from MININT to MAXINT and are
+specified as integers. &nbsp;Associativity can take the values:<br>
+<br>
+assoc : '$unary_op_right' | '$unary_op_left' | '$binary_op_right'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+'$binary_op_left' | '$unary_right' | '$unary_left'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+'$binary_right' | '$binary_left' | '$right' | '$left' ;<br>
+<br>
+7.1. Token Prioritites<br>
+<br>
+&nbsp; Termininal priorities apply after the set of matching strings
+has
+been found and the terminal(s) with the highest priority is selected.<br>
+&nbsp;
+Terminal priorities are introduced after a terminal by the specifier <span
+ style="font-weight: bold;">$term</span>. &nbsp;We saw an example of
+token priorities with the definition of <span
+ style="font-weight: bold;">ident</span>.<br>
+<br>
+EXAMPLE:<br>
+<br>
+S : 'if' '(' S ')' S ';' | 'do' S 'while' '(' S ')' ';' | ident;<br>
+ident: "[a-z]+" $term -1;<br>
+<br>
+7.2. Operator Priorities<br>
+<br>
+&nbsp; Operator priorities specify the priority of a operator symbol
+(either a terminal or a non-terminal). &nbsp;This corresponds to the <span
+ style="font-style: italic;">yacc</span> or <span
+ style="font-style: italic;">bison</span> <span
+ style="font-weight: bold;">%left</span> etc. declaration.
+&nbsp;However, since <span style="font-weight: bold;">DParser</span>
+is
+doesn't require a global tokenizer, operator priorities and
+associativities are specified on the reduction which creates the token.
+&nbsp;Moreover, the associativity includes the operator usage as well
+since it cannot be infered from rule context. &nbsp;Possible operator
+associativies are:<br>
+<br>
+operator_assoc : '$unary_op_right' | '$unary_op_left' |
+'$binary_op_right'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+'$binary_op_left' | '$unary_right' | '$unary_left'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+'$binary_right' | '$binary_left';<br>
+<br>
+EXAMPLE:<br>
+<br>
+E: ident op ident;<br>
+ident: '[a-z]+';<br>
+<span style="font-weight: bold;"></span>op: '*' $binary_op_left 2 |<br>
+&nbsp; &nbsp; &nbsp; '+' $binary_op_left 1;<br>
+<br>
+7.3. Rule Priorities<br>
+<br>
+&nbsp; Rule priorities specify the priority of the reduction itself and
+have the possible associativies:<br>
+<br>
+rule_assoc: '$right' | '$left';<br>
+<br>
+&nbsp; Rule and operator priorities can be intermixed and are
+interpreted at run time (<span style="font-weight: bold;">not</span>
+when
+the tables are built). &nbsp;This make it possible for user-defined
+scanners to return the associativities and priorities of tokens.<br>
+<br>
+<span style="font-weight: bold;">8. Actions<br>
+<br>
+</span>&nbsp; Actions are the bits of code which run when a reduction
+occurs.<br>
+<br>
+EXAMPLE<br>
+<br>
+S: this | that;<br>
+this: 'this' { printf("got this\n"); };<br>
+that: 'that' { printf("got that\n"); };<br>
+<br>
+8.1 Speculative Action<br>
+<br>
+&nbsp; Speculative actions occur when the reduction takes place during
+the speculative parsing process. &nbsp;It is possible<br>
+that the reduction will not be part of the final parse or that it will
+occur a different number of times. &nbsp;For example:<br>
+<br>
+S: this | that;<br>
+this: hi 'mom';<br>
+that: ho 'dad';<br>
+ho: 'hello' [ printf("ho\n"); ];<br>
+hi: 'hello' [ printf("hi\n"); ];<br>
+<br>
+Will print both 'hi' and 'ho' when given the input 'hello dad' because
+at the time hello is reduced, the following token is not known.<br>
+<br>
+8.2 Final Actions<br>
+<br>
+&nbsp; Final actions occur only when the reduction must be part of any
+legal final parse (committed). &nbsp;It is possible to do final actions
+during parsing or delay them till the entire parse tree is constructed
+(see Options). &nbsp;Final actions are executed in order and in number
+according the the single final unambiguous parse.<br>
+<br>
+S: A S 'b' | 'x';<br>
+A: [ printf("speculative e-reduce A\n"); ] <br>
+&nbsp;&nbsp; { printf("final e-reduce A\n"); };<br>
+<br>
+&nbsp; On input:<br>
+<br>
+xbbb<br>
+<br>
+&nbsp; Will produce:<br>
+<br>
+speculative e-reduce A<br>
+final e-reduce A<br>
+final e-reduce A<br>
+final e-reduce A<br>
+<br>
+8.3 Embedded Actions<br>
+<br>
+&nbsp; Actions can be embedded into rule. These actions are executed
+as if they were replaced with a synthetic production with a single null
+rule containing the actions.&nbsp; For example:<br>
+<br>
+S: A { printf("X"); } B;<br>
+A: 'a' { printf("a"); };<br>
+B: 'b' { printf("b"); };<br>
+<br>
+&nbsp; On input:<br>
+<br>
+ab<br>
+<br>
+&nbsp; Will produce:<br>
+<br>
+aXb<br>
+<br>
+8.4 Pass Actions<br>
+<br>
+&nbsp; <span style="font-weight: bold;">DParser</span> supports
+multiple pass compilation.&nbsp; The passes are declared at the top of
+the grammar, and the actions are associated with individual rules.<br>
+<br>
+EXAMPLE<br>
+<br>
+${pass sym for_all postorder}<br>
+${pass gen for_all postorder}<br>
+<br>
+translation_unit: statement*;<br>
+<br>
+statement<br>
+&nbsp; : expression ';' {<br>
+&nbsp;&nbsp;&nbsp; d_pass(${parser}, &amp;$n, ${pass sym});<br>
+&nbsp;&nbsp;&nbsp; d_pass(${parser}, &amp;$n, ${pass gen});<br>
+&nbsp; }<br>
+&nbsp; ;<br>
+<br>
+expression :&nbsp; integer<br>
+&nbsp; gen: { printf("gen integer\n"); }<br>
+&nbsp; sym: { printf("sym integer\n"); }<br>
+&nbsp; | expression '+' expression $right 2<br>
+&nbsp; sym: { printf("sym +\n"); }<br>
+&nbsp; ;<br>
+<br>
+&nbsp; A pass name then a colon indicate that the following action is
+associated with a particular pass. Passes can be either <span
+ style="font-weight: bold;">for_all</span> or <span
+ style="font-weight: bold;">for_undefined</span> (which means that the
+automatic traversal only applies to rules without actions defined for
+this pass).&nbsp;&nbsp; Furthermore, passes can be <span
+ style="font-weight: bold;">postorder</span>, <span
+ style="font-weight: bold;">preorder</span>, and <span
+ style="font-weight: bold;">manual</span> (you have to call <span
+ style="font-weight: bold;">d_pass</span> yourself).&nbsp; Passes can
+be initiated in the final action of any rule.<br>
+<br>
+8.5 Default Actions<br>
+<br>
+&nbsp; The special production "<span style="font-weight: bold;">_</span>"
+can be defined with a single rule whose actions become the default when
+no other action is specified.&nbsp; Default actions can be specified
+for speculative, final and pass actions and apply to each seperately.<br>
+<br>
+EXAMPLE<br>
+<br>
+_: { printf("final action"); }<br>
+&nbsp;&nbsp;&nbsp; gen: { printf("default gen action"); }<br>
+&nbsp;&nbsp;&nbsp; sym: { printf("default sym action"); }<br>
+&nbsp;&nbsp;&nbsp; ;<br>
+<span style="font-weight: bold;"></span><br>
+<span style="font-weight: bold;">9. Attributes and Action Specifiers</span><br>
+<br>
+9.1. &nbsp;Global State (<span style="font-weight: bold;">$g</span>)<br>
+<br>
+&nbsp; Global state is declared by <span style="font-weight: bold;">define</span>'ing<span
+ style="font-weight: bold;"> D_ParseNodeGlobals</span> (see the ANSI C
+grammar for a similar declaration for symbols). Global state can be
+accessed in any action with <span style="font-weight: bold;">$g</span>.
+&nbsp;Because <span style="font-weight: bold;">DParser</span> handles
+ambiguous parsing global state can be accessed on different speculative
+parses. &nbsp;In the future automatic splitting of global state may be
+implemented (if there is demand). Currently, the global state can be
+copied and assigned to <span style="font-weight: bold;">$g</span> to
+ensure that the changes made only effect subsequent speculative parses
+derived from the particular parse.<br>
+<br>
+EXAMPLE<br>
+<br>
+&nbsp; [ $g = copy_globals($g);<br>
+&nbsp;&nbsp;&nbsp; $g-&gt;my_variable = 1;<br>
+&nbsp; ]<br>
+<br>
+&nbsp; The symbol table (Section 10) can be used to manage state
+information safely for different speculative parses.<br>
+<br>
+9.2. Parse Node State<br>
+<br>
+&nbsp; Each parse node includes a set of system state variables and can
+have a set of user-defined state variables. &nbsp;User defined parse
+node state is declared by <span style="font-weight: bold;">define</span>'ing<span
+ style="font-weight: bold;"> D_ParseNodeUser</span>. &nbsp; Parse node
+state is accessed with:<br>
+<br>
+&nbsp;<span style="font-weight: bold;">$#</span> - number of child nodes<br>
+&nbsp;<span style="font-weight: bold;">$$</span> - user parse node
+state
+for parent node (non-terminal defined by the production)<br>
+&nbsp;<span style="font-weight: bold;">$X</span> (where X is a number)
+-
+the user parse node state of element X of the production<br>
+&nbsp;<span style="font-weight: bold;">$nX</span> - the system parse
+node state of element X of the production<br>
+<br>
+&nbsp; The system parse node state is defined in <span
+ style="font-weight: bold;">dparse.h</span> which is installed with <span
+ style="font-weight: bold;">DParser</span>. &nbsp;It contains such
+information as the symbol, the location of the parsed string, and
+pointers to the start and end of the parsed string.<br>
+<br>
+9.3. Misc<br>
+<br>
+&nbsp; <span style="font-weight: bold;">${scope}</span> - the current
+symbol table scope<br>
+&nbsp; <span style="font-weight: bold;">${reject}</span> - in
+speculative actions permits the current parse to be rejected<br>
+<br>
+<span style="font-weight: bold;">10. Symbol Table</span><br>
+<br>
+<span style="font-weight: bold;"></span>&nbsp; The symbol table can be
+updated down different speculative paths while sharing the bulk of the
+data. &nbsp;It defines the following functions in the file (dsymtab.h):<br>
+&nbsp; <br>
+struct D_Scope *new_D_Scope(struct D_Scope *st);<br>
+struct D_Scope *enter_D_Scope(struct D_Scope *current, struct D_Scope
+*scope);<br>
+D_Sym *NEW_D_SYM(struct D_Scope *st, char *name, char *end);<br>
+D_Sym *find_D_Sym(struct D_Scope *st, char *name, char *end);<br>
+D_Sym *UPDATE_D_SYM(struct D_Scope *st, D_Sym *sym);<br>
+D_Sym *current_D_Sym(struct D_Scope *st, D_Sym *sym);<br>
+D_Sym *find_D_Sym_in_Scope(struct D_Scope *st, char *name, char *end);<br>
+<br>
+'new_D_Scope' creates a new scope below 'st' or NULL for a 'top level'
+scope.&nbsp; 'enter_D_Scope' returns to a previous scoping level.&nbsp;
+NOTE: do not simply assign ${scope} to a previous scope as any updated
+symbol information will be lost.&nbsp; 'commit_D_Scope' can be used in
+final actions to compress the update list for the top level scope and
+improve efficiency.<br>
+<br>
+'find_D_Sym' finds the most current version of a symbol in a given
+scope.&nbsp; 'UPDATE_D_SYM' updates the value of symbol (creates a
+difference record on the current speculative parse path).&nbsp;
+'current_D_Sym' is used to retrive the current version of a symbol, the
+pointer to which may have been stored in some other attribute or
+variable.&nbsp; Symbols with the same name should not be created in the
+same scope.&nbsp; The function 'find_D_Sym_in_Scope' is provided to
+detect this case. <br>
+&nbsp; <br>
+&nbsp; User data can be attached to symbols by <span
+ style="font-weight: bold;">define</span>'ing <span
+ style="font-weight: bold;">D_UserSym</span>. &nbsp;See the ANSI C
+grammar for an example. <br>
+<br>
+Here is a full example of scope usage (from tests/g29.test.g):<br>
+<br>
+<span style="font-family: monospace;">#include &lt;stdio.h&gt;<br>
+<br>
+typedef struct My_Sym {<br>
+&nbsp; int value;<br>
+} My_Sym;<br>
+#define D_UserSym My_Sym<br>
+typedef struct My_ParseNode {<br>
+&nbsp; int value;<br>
+&nbsp; struct D_Scope *scope;<br>
+} My_ParseNode;<br>
+#define D_ParseNode_User My_ParseNode<br>
+}<br>
+<br>
+translation_unit: statement*;<br>
+&nbsp;<br>
+statement <br>
+&nbsp; : expression ';' <br>
+&nbsp; { printf("%d\n", $0.value); }<br>
+&nbsp; | '{' new_scope statement* '}'<br>
+&nbsp; [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]<br>
+&nbsp; { ${scope} = commit_D_Scope(${scope}); }<br>
+&nbsp; ;<br>
+<br>
+new_scope: [ ${scope} = new_D_Scope(${scope}); ];<br>
+<br>
+expression <br>
+&nbsp; : identifier ':' expression <br>
+&nbsp; [ <br>
+&nbsp;&nbsp;&nbsp; D_Sym *s;<br>
+&nbsp;&nbsp;&nbsp; if (find_D_Sym_in_Scope(${scope}, $n0.start_loc.s,
+$n0.end))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("duplicate identifier line %d\n",
+$n0.start_loc.line);<br>
+&nbsp;&nbsp;&nbsp; s = NEW_D_SYM(${scope}, $n0.start_loc.s, $n0.end);<br>
+&nbsp;&nbsp;&nbsp; s-&gt;user.value = $2.value;<br>
+&nbsp;&nbsp;&nbsp; $$.value = s-&gt;user.value;<br>
+&nbsp; ]<br>
+&nbsp; | identifier '=' expression<br>
+&nbsp; [ D_Sym *s = find_D_Sym(${scope}, $n0.start_loc.s, $n0.end);<br>
+&nbsp;&nbsp;&nbsp; s = UPDATE_D_SYM(${scope}, s);<br>
+&nbsp;&nbsp;&nbsp; s-&gt;user.value = $2.value;<br>
+&nbsp;&nbsp;&nbsp; $$.value = s-&gt;user.value;<br>
+&nbsp; ]<br>
+&nbsp; | integer <br>
+&nbsp; [ $$.value = atoi($n0.start_loc.s); ]<br>
+&nbsp; | identifier <br>
+&nbsp; [ D_Sym *s = find_D_Sym(${scope}, $n0.start_loc.s, $n0.end);<br>
+&nbsp;&nbsp;&nbsp; if (s)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $$.value = s-&gt;user.value;<br>
+&nbsp; ]<br>
+&nbsp; | expression '+' expression<br>
+&nbsp; [ $$.value = $0.value + $1.value; ]<br>
+&nbsp; ;<br>
+<br>
+integer: "-?([0-9]|0(x|X))[0-9]*(u|U|b|B|w|W|L|l)*" $term -1;<br>
+identifier: "[a-zA-Z_][a-zA-Z_0-9]*";<br>
+<br>
+</span> <br>
+<span style="font-weight: bold;">11. Whitespace</span><br>
+<br>
+&nbsp; Whitespace can be specified two ways: C function which can be
+user-defined, or as a subgrammar. &nbsp;The default whitespace parser
+is
+compatible with C/C++ #line directives and comments. &nbsp;It can be
+replaced with any user specified function as a parsing option (see
+Options).<br>
+<br>
+&nbsp; Additionally, if the (optionally) reserved production <span
+ style="font-weight: bold;">whitespace</span> is defined, the
+subgrammar
+it defines will be used to consume whitespace for the main grammar.
+&nbsp; This subgrammar can include normal actions.<br>
+<br>
+EXAMPLE<br>
+<br>
+<span style="font-weight: bold;"></span>S: 'a' 'b' 'c';<br>
+whitespace: "[ \t\n]*";<br>
+<br>
+&nbsp; Whitespace can be accessed on a per parse node basis using the
+functions: <span style="font-weight: bold;">d_ws_before</span> and <span
+ style="font-weight: bold;">d_ws_after</span>, which return the start
+of the whitespace before <span style="font-weight: bold;">start_loc.s</span>
+and after <span style="font-weight: bold;">end</span> respectively. <br>
+<br>
+<span style="font-weight: bold;">12. Ambiguities<br>
+</span> <br>
+&nbsp; Ambiguities are resolved automatically based on priorities and
+associativities. &nbsp;In addition, when the other resolution
+techniques
+fail, user defined ambiguity resolution is possible. &nbsp; The default
+ambiguity handler produces a fatal error on an unresolved
+ambiguity.&nbsp; This behavior can be replaced with a user defined
+resolvers the signature of which is provided in <span
+ style="font-weight: bold;">dparse.h</span>.<br>
+<br>
+&nbsp; If the <span style="font-weight: bold;">verbose_level</span>
+flag is set, the default ambiguity handler will print out parenthesized
+versions of the ambiguous parse trees.&nbsp;&nbsp; This may be of some
+assistence in disambiguating a grammar.<br>
+<br>
+<span style="font-weight: bold;">13. Error Recovery<br>
+<br>
+&nbsp; DParser</span> implements an error recovery scheme appropriate
+to
+scannerless parsers. &nbsp;I haven't had time to investigate all the
+prior work in this area, so I am not sure if it is novel. &nbsp;Suffice
+for now that it is optional and works well with C/C++ like grammars.<br>
+<br>
+<span style="font-weight: bold;">14. Parsing Options</span><br>
+<br>
+&nbsp; Parser are instantiated with the function <span
+ style="font-style: italic;">new_D_Parser<span
+ style="font-weight: bold;">. </span></span>&nbsp;The resulting data
+structure contains a number of user configurable options (see <span
+ style="font-weight: bold;">dparser.h</span>). &nbsp;These are provided
+reasonable default values and include:<br>
+<ul>
+  <li><span style="font-weight: bold;">initial_globals</span> - the
+initial global variables accessable through <span
+ style="font-weight: bold;">$g</span></li>
+  <li><span style="font-weight: bold;"></span><span
+ style="font-weight: bold;">initial_skip_space_fn</span> - the initial
+whitespace function</li>
+  <li><span style="font-family: monospace;"></span><span
+ style="font-weight: bold;">initial_scope</span> - the initial symbol
+table scope</li>
+  <li><span style="font-weight: bold;"></span><span
+ style="font-weight: bold;">syntax_error_fn</span> - the function
+called
+on a syntax error</li>
+  <li><span style="font-weight: bold;">ambiguity_fn</span> - the
+function called on an unresolved ambiguity</li>
+  <li><span style="font-weight: bold;">loc</span> - the initial
+location
+(set on an error).</li>
+</ul>
+In addtion, there are the following user configurables:<br>
+<ul>
+  <li><span style="font-weight: bold;">sizeof_user_parse_node</span> -
+the sizeof <span style="font-weight: bold;">D_ParseNodeUser</span></li>
+  <li><span style="font-weight: bold;">save_parse_tree</span> - whether
+or not the parse tree should be save once the final actions have been
+executed</li>
+  <li><span style="font-style: italic;"></span><span
+ style="font-weight: bold;">dont_fixup_internal_productions</span> - to
+not convert the Kleene star into a variable number of children from a
+tree of reductions</li>
+  <li><span style="font-weight: bold;">dont_merge_epsilon_trees</span>
+-
+to not automatically remove ambiguities which result from trees of
+epsilon reductions without actions</li>
+  <li><span style="font-weight: bold;">dont_use_eagerness_for_disambiguation</span>
+- do not use the rule that the longest parse which reduces to the same
+token should be used to disambiguate parses.&nbsp; This rule is used to
+handle the case (<span style="font-weight: bold;">if then else?</span>)
+relatively cleanly.</li>
+  <li><span style="font-weight: bold;">dont_use_height_for_disambiguation</span>
+- do not use the rule that the least deep parse which reduces to the
+same token should be used to disabiguate parses.&nbsp; This rule is
+used
+to handle recursive grammars relatiively cleanly.</li>
+  <li><span style="font-weight: bold;">dont_compare_stacks</span> -
+disables comparing stacks to handle certain exponential cases during
+ambiguous operator priority resolution.&nbsp; This feature is
+relatively
+new, and this disables the new code.<br>
+  </li>
+  <li><span style="font-weight: bold;">commit_actions_interval</span> -
+how often to commit final actions (0 is immediate, MAXINT is
+essentially
+not till the end of parsing)</li>
+  <li><span style="font-weight: bold;"></span><span
+ style="font-weight: bold;">error_recovery</span> - whether or not to
+use error recovery (defaults ON)</li>
+</ul>
+An the following result values:<br>
+<ul>
+  <li><span style="font-weight: bold;">syntax_errors</span> - how many
+syntax errors (if <span style="font-weight: bold;">error_recovery</span>
+was on)</li>
+</ul>
+This final value should be checked to see if parse was successful.<br>
+<br>
+<span style="font-weight: bold;">15. Grammar Grammar</span><br>
+<br>
+&nbsp; <span style="font-weight: bold;">DParser</span> is fully
+self-hosted (would you trust a parser generator which wasn't?). &nbsp;
+The grammar grammar is <a href="grammar.g">here (Grammar Grammar)</a>.
+&nbsp;<span style="font-weight: bold;"></span><br>
+<span style="font-weight: bold;"></span><br>
+<span style="font-weight: bold;"><br>
+</span><big><big><span style="font-weight: bold;"></span></big></big></div>
+</div>
+</body>
+</html>

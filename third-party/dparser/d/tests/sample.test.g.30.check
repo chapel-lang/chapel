@@ -1,0 +1,4 @@
+ref Sym 'a' line 1: not found
+ref Sym 'b' line 1: not found
+90 states 39 scans 27 shifts 60 reductions 0 compares 0 ambiguities
+(((((( 1 ( 2  +  3 ))( 4  +  5 ))( 6  +  7 ))( 8  +  9 ))( a  +  b )) ; )

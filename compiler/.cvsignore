@@ -1,0 +1,5 @@
+cygwin
+linux
+sun
+*.g.d_parser.cpp
+prim_data.h

@@ -1,0 +1,24 @@
+chapel
+- compiler             -- sources for Chapel-to-C translator
+  + cygwin             -- platform-specific subdirectories for .o's and .dep's
+  + linux
+  + sun
+- make
+  * Makefile.base      -- base Makefile to be included by all other Makefiles
+  * Makefile.cygwin    -- platform-specific Makefile options
+  * Makefile.linux
+  * Makefile.sun
+  * Makefile.gnu       -- gnu-specific settings
++ runtime              -- sources for the Chapel runtime will go here
++ test                 -- testing system will go here
+- third-party
+  - boehmgc            -- Boehm GC working directory
+    + gc6.2	       -- the unpacked GC source directories
+    + cygwin	       -- platform-specific installations
+    + linux
+    + sun
+  - dparser            -- D Parser distribution
+    + d		       -- the unpacked d parser source directories
+    + cygwin	       -- platform-specific installations
+    + linux
+    + sun

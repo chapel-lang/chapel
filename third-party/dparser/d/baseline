@@ -1,0 +1,7 @@
+#!/usr/local/bin/tcsh
+
+setenv MAKE gmake
+parser_tests
+foreach f (tests/*.out)
+  cp $f $f:r.check
+end

@@ -1,0 +1,4 @@
+ref Sym 'x' line 1: not found
+ref Sym 'y' line 1: not found
+24 states 12 scans 6 shifts 13 reductions 0 compares 0 ambiguities
+((( x  ++ ) .  y ) ; )

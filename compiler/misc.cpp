@@ -1,0 +1,84 @@
+/*
+  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+*/
+
+#include "geysa.h"
+
+int verbose_level = 0;
+int debug_level = 0;
+
+char *
+loc_string(d_loc_t &l) {
+  char nstr[1024];
+  snprintf(nstr, 1023, "%s:%d", l.pathname, l.line);
+  return dupstr(nstr);
+}
+
+int
+show_error(char *str, d_loc_t &loc, ...) {
+  char nstr[1024];
+  va_list ap;
+  va_start(ap, loc);
+  snprintf(nstr, 1023, "%s:%d: %s\n", loc.pathname, loc.line, str);
+  vfprintf(stderr, nstr, ap);
+  va_end(ap);
+  return -1;
+}
+
+int
+show_error(char *str, AST *a, ...) {
+  char nstr[1024];
+  va_list ap;
+  va_start(ap, a);
+  snprintf(nstr, 1023, "%s:%d: %s\n", a->pathname, a->line, str);
+  vfprintf(stderr, nstr, ap);
+  va_end(ap);
+  return -1;
+}
+
+int
+buf_read(char *pathname, char **buf, int *len) {
+  struct stat sb;
+  int fd;
+
+  *buf = 0;
+  *len = 0;
+  fd = open(pathname, O_RDONLY);
+  if (fd <= 0) 
+    return -1;
+  memset(&sb, 0, sizeof(sb));
+  fstat(fd, &sb);
+  *len = sb.st_size;
+  *buf = (char*)MALLOC(*len + 2);
+  (*buf)[*len] = 0;		/* terminator */
+  (*buf)[*len + 1] = 0;		/* sentinal */
+  read(fd, *buf, *len);
+  close(fd);
+  return *len;
+}
+
+void
+fail(char *str, ...) {
+  char nstr[256];
+  va_list ap;
+  va_start(ap, str);
+  snprintf(nstr, 255, "fail: %s\n", str);
+  vfprintf(stderr, nstr, ap);
+  va_end(ap);
+  exit(1);
+}
+
+char *
+dupstr(char *s, char *e) {
+  int l = e ? e-s : strlen(s);
+  char *ss = (char*)MALLOC(l+1);
+  memcpy(ss, s, l);
+  ss[l] = 0;
+  return ss;
+}
+
+void myassert() {
+  printf("assert\n");
+  *(int*)0 = 1;
+}
+

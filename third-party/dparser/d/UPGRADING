@@ -1,0 +1,10 @@
+
+from 1.1 to 1.2
+
+- new_D_Parser now requires sizeof_D_ParseNode_User as an
+  argument because setting this value incorrectly can result in
+  subtle and confusing bugs.
+
+- the parser now defaults to NOT doing longest match
+  disambiguation during scanning.  If you want this behavior
+  either specify -l to make_dparser or use ${declare longest_match ... }.

@@ -1,0 +1,89 @@
+#
+# Makefile.base: Defines general Makefile variables.  Set CHAPEL_ROOT
+# before using
+#
+
+MAKEFLAGS = --no-print-directory
+
+#
+# OS/ARCH/PLATFORM stuff
+#
+OS_TYPE = $(shell uname -s | awk '{ split($$1,a,"_"); printf("%s", a[1]);  }')
+
+OS_VERSION = $(shell uname -r | awk '{ split($$1,a,"."); sub("V","",a[1]); printf("%d%d%d",a[1],a[2],a[3]); }')
+
+ARCH = $(shell uname -m)
+ifeq ($(ARCH),i386)
+	ARCH = x86
+endif
+ifeq ($(ARCH),i486)
+	ARCH = x86
+endif
+ifeq ($(ARCH),i586)
+	ARCH = x86
+endif
+ifeq ($(ARCH),i686)
+	ARCH = x86
+endif
+
+ifeq ($(OS_TYPE),CYGWIN)
+	PLATFORM=cygwin
+endif
+ifeq ($(OS_TYPE),SunOS)
+	PLATFORM=sun
+endif
+ifeq ($(OS_TYPE),Linux)
+	PLATFORM=linux
+endif
+
+
+#
+# Directories, files, and locations
+#
+THIRD_PARTY = $(CHAPEL_ROOT)/third-party
+THIRD_GC_DIRNAME = boehmgc
+THIRD_DPARSE_DIRNAME = dparser
+
+GC_VERSION = 6.2
+GC_DIRNAME = gc$(GC_VERSION)
+GC_ROOT = $(THIRD_PARTY)/$(THIRD_GC_DIRNAME)/$(PLATFORM)
+
+D_PARSER_DIRNAME = d
+D_PARSER_ROOT = $(THIRD_PARTY)/$(THIRD_DPARSE_DIRNAME)/$(PLATFORM)
+D_PARSER_BIN_DIR = $(D_PARSER_ROOT)/bin
+D_PARSER_INC_DIR = $(D_PARSER_ROOT)/include
+D_PARSER_LIB_DIR = $(D_PARSER_ROOT)/lib
+
+
+#
+# add dparser stuff
+#
+ifdef USE_DPARSER
+CFLAGS += -I$(D_PARSER_INC_DIR)
+ifdef USE_GC
+LIBS += -L$(D_PARSER_LIB_DIR) -ldparse_gc
+else
+LIBS += $(D_PARSER_LIB_DIR)/libdparse.a
+endif
+endif
+
+
+#
+# add gc-related stuff
+#
+ifdef USE_GC
+CFLAGS += -DUSE_GC
+CFLAGS += -I$(GC_ROOT)/include/gc
+LIBS += -L $(GC_ROOT)/lib -lgc
+endif
+
+ifdef LEAK_DETECT
+CFLAGS += -DLEAK_DETECT -I$(GC_ROOT)/include
+LIBS += $(GC_ROOT)/lib/libleak.a
+endif
+
+
+#
+# include platform-specific settings
+#
+-include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)

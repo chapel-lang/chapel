@@ -1,0 +1,2 @@
+63 states 27 scans 17 shifts 38 reductions 0 compares 0 ambiguities
+(( a  1 )(( b  1 )( b  1 ))(( c  1 )( c  1 ))((( d  1 )( d  2 ))( d  1 )))

@@ -1,0 +1,6 @@
+ref Sym 'x' line 1: not found
+ref Sym 'y' line 1: not found
+ref Sym 'z' line 1: not found
+ref Sym 'zz' line 1: not found
+33 states 20 scans 14 shifts 15 reductions 0 compares 0 ambiguities
+(( if  (  x  ) ( if  (  y  ) ( if  (  z  )  zz ))) ; )

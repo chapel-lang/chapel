@@ -1,0 +1,6 @@
+(/* start */
+  )identifier( /*some a*/ )( /*after = before 1 */ )expression: integer( /* after 1 before ; */ )( /*some a*/ )= in expression( /*after = before 1 */ )(/* start */
+  )expression ;(
+/* end */
+)14 states 6 scans 4 shifts 8 reductions 0 compares 0 ambiguities
+(( a  =  1 ) ; )

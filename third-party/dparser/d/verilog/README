@@ -1,0 +1,29 @@
+
+This Verilog grammar was contributed by Thomas Skibo (thanx!).
+
+To make, type 'make'.
+
+To test, get the test suite from ftp://icarus.com/pub/eda/verilog/tests
+
+and untar into this directory, then type 'make test'.
+
+The result should be:
+
+./verilog_tests
+grep succeeded log.txt | wc -l
+     383
+grep failed log.txt | wc -l
+       8
+
+The failures represent unsupported features:
+
+testsuite/ivltests/always3.1.1K.v failed
+testsuite/ivltests/function3.11E.v failed
+testsuite/ivltests/signed1.v failed
+testsuite/ivltests/signed2.v failed
+testsuite/ivltests/signed3.v failed
+testsuite/ivltests/signed4.v failed
+testsuite/ivltests/wildsense.v failed
+testsuite/ivltests/specify_01.v failed
+
+see log.txt for details.

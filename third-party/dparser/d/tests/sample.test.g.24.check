@@ -1,0 +1,9 @@
+ref Sym 'x' line 1: not found
+ref Sym 'y' line 1: not found
+ref Sym 'z' line 1: not found
+ref Sym 'n' line 1: not found
+ref Sym 'q' line 1: not found
+ref Sym 's' line 1: not found
+ref Sym 't' line 1: not found
+65 states 34 scans 26 shifts 38 reductions 0 compares 0 ambiguities
+(( if  (  x  ) ( y  + ( z  *  n )) else ( q  + ( s  *  t ))) ; )

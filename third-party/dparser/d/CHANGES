@@ -1,0 +1,73 @@
+1.8	Added the ability to 'include' subgrammars
+	Add %< %> as global code indicators
+	Add $#n for number of children of element n
+	Add ${child 1,2,3} for 3rd child of 2nd child of 1st child
+	Added option for fixup_EBNF_productions
+	Changed the way fixups work to be more consistent
+	Add naming of regex productions
+	Add support for dynamic scoping to symtab
+	Improved line numbering of generated code
+	Add -I option identify grammar by filename
+ 	Fixed support for very large scanners
+
+1.7	Another fix for MINGW32
+	Fix to state splitting
+	Add start_state to table of symbols
+	Updated python interface (thanx to Brian Sabbey)
+	Added option terminal option $name to name terminals
+	Add option to set extension of generated code file
+
+1.6	Fixed missing test files
+ 	Fixed ${declare subparser XXX}
+	Fixed bug with multiple passes
+	Split states based on symboltable and globals
+	Added print_scope
+
+1.5	Fixed web pages
+        Fixed DEBUG compilation error
+        Fixed ${scan XXX} example (g4.test.g)
+        Fixed strings/chars in ANSI-C grammar 
+        Fixed OSX/Darwin compilation
+        Fixed ws_before/ws_after
+        Added support for \xNN \d00 escape sequences
+        Added support for /i (ignore case) strings/regexes
+        Added support for starting in arbitrary states
+
+1.4	Added embedded actions
+ 	Added default actions
+	Added support for multi-pass compilation
+        Added support for mixed all/longest scanners
+	Enhanced python interface
+
+1.3     Made GC version end in _gc
+	Fixed symtab, changed interface and added test cases
+        Fixed other bugs
+ 	Added verilog grammar
+ 	Added python grammar
+	Added support for regular expression 'productions'
+
+1.2	Fixed a bug in cmp_reduction_priorities that could result in crashes 
+	Fixed a bug which could result in ambiguity on final result
+          (thanx Thomas)
+	Fixed a bug in fixup of internal reductions which could result
+	  in incorrectly ordered actions (thanx Tomas)
+	Fixed a bug in stack comparison pruning which could result in
+	  incorrectly ruling out legal parses
+	Added python support (thanx to Brian Sabbey)
+	Added non-longest-match-only scanning
+
+1.1	Fixed bug in fixing up internal productions
+	Made the default using left recursion for EBNF internal productions
+
+1.0	Added full unambiguous ANSI C grammar
+	Added tokenizers (scanners shared over sets of states)
+ 	Added support for subparsers
+	Cleanup of header files
+	Fixed bugs in error recovery
+
+1.0b2	Improved memory utilization
+	Fixed bug with right epsilon grammars
+	Added simple error recovery
+	General bug fixes
+
+1.0b1	First release
