@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lexyacc.h"
+#include "chplalloc.h"
 
 %}
 
