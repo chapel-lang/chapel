@@ -297,8 +297,15 @@ void genAST(FILE* outfile, AST* ast) {
       } else {
 	rank = dtIsDomain(type_info(ast, sym));
 	if (rank) {
+	  int subtree;
+
 	  fprintf(outfile, "%s = _init_domain_%dD(", sym->name, rank);
-	  genDomValues(outfile, ast->v[1]);
+	  if (ast->v[1]->kind == AST_constraint) {
+	    subtree = 2;
+	  } else {
+	    subtree = 1;
+	  }
+	  genDomValues(outfile, ast->v[subtree]);
 	  fprintf(outfile, ")");
 	} else {
 	  fprintf(outfile, "%s", sym->name);
