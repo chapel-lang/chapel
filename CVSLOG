@@ -17465,3 +17465,70 @@ Added files:
 	                            test_var_decl_strange4.chpl 
 	                            test_var_decl_strange4.good 
 
+---------------------------------------------------------------------------
+
+02/15/05 13:04:28 -- deitz
+
+Log message:
+	Removed special-case code for initializing config variables and
+	variables of array or domain types.  Instead of assignments, it uses
+	function calls (runtime macros) and conditional assignments to
+	initialize these variables.
+	
+	VarDefStmt::codegen() does nothing now.  The pre-codegen pass
+	InsertVariableInitializations now removes VarDefStmts.
+	
+	Added a new test case to test using a config var before it is declared.
+	
+	Removed Type:: and ArrayType:: needsInit and generateInit.
+	
+	Made the CreateConfigVarTable traversal traverse the symboltable
+	instead of the AST since it is just collecting variables.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/compiler/symtab/: symtabTraversal.cpp 
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	                             createConfigVarTable.h 
+	                             insertVariableInitializations.cpp 
+	                             traversal.cpp 
+	chapel/runtime/include/: config.h 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+Added files:
+	chapel/test/trivial/deitz/: test_config_use_before_decl.chpl 
+	                            test_config_use_before_decl.good 
+
