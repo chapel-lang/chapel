@@ -22710,3 +22710,15 @@ Modified files:
 	chapel/compiler/traversals/: insertVariableInitializations.cpp 
 	chapel/runtime/include/: chpltypes.h 
 
+---------------------------------------------------------------------------
+
+03/30/05 15:00:33 -- deitz
+
+Log message:
+	Fixed the same bug Brad just fixed except instead of adding more gunk
+	to the name that caused the naming conflict, I got rid of the name
+	altogether.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
