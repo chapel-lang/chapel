@@ -8289,3 +8289,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+09/21/04 17:00:15 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add support and test case for multiple return sites.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Added files:
+	chapel/test/flowanalysis/newast/: multiple_return.chpl 
+	                                  multiple_return.good 
+
