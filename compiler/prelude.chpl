@@ -119,7 +119,7 @@ function operator(#"+", a:anynum)		{ #__primitive ^^ #"+" ^^ a }
 function operator(#"-", a:anynum)		{ #__primitive ^^ #"-" ^^ a }
 function operator(#"~", a:anynum)		{ #__primitive ^^ #"~" ^^ a }
 function operator(#"!", a:any)			{ #__primitive ^^ #"!" ^^ a }
-function operator(#"*", a:any)			{ #__primitive ^^ #"*" ^^ a }
+function operator(#"*", a:ref)			{ #__primitive ^^ #"*" ^^ a }
 function operator(#"&", var a:any)		{ #__primitive ^^ #"&" ^^ a }
 function operator(a:anynum, #"|", b:anynum)	{ #__primitive ^^ a ^^ #"|" ^^ b }
 function operator(#"(", a:symbol, b:any)	{ #__primitive ^^ #"(" ^^ a ^^ b }
