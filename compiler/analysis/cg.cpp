@@ -1,6 +1,7 @@
 /*
   Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
+#include <ctype.h>
 #include "geysa.h"
 #include "pattern.h"
 #include "cg.h"
@@ -75,6 +76,72 @@ write_c_apply_arg(FILE *fp, char *base, int n, int i) {
 }
 
 static int
+cg_writeln(FILE *fp, Vec<Var *> vars, int ln) {
+  fprintf(fp, "0; /* write/writeln */\n");
+  for (int i = 2; i < vars.n; i++) {
+    if (vars.v[i]->type == sym_int8 ||
+	vars.v[i]->type == sym_int16 ||
+	vars.v[i]->type == sym_int32)
+      fprintf(fp, "printf(\"%%d\", %s);\n", vars.v[i]->cg_string);
+    else if (vars.v[i]->type == sym_uint8 ||
+	     vars.v[i]->type == sym_uint16 ||
+	     vars.v[i]->type == sym_uint32)
+      fprintf(fp, "printf(\"%%u\", %s);\n", vars.v[i]->cg_string);
+    else if (vars.v[i]->type == sym_int64)
+      fprintf(fp, "printf(\"%%lld\", %s);\n", vars.v[i]->cg_string);
+    else if (vars.v[i]->type == sym_uint64)
+      fprintf(fp, "printf(\"%%llu\", %s);\n", vars.v[i]->cg_string);
+    else if (vars.v[i]->type == sym_float32 ||
+	     vars.v[i]->type == sym_float64)
+      fprintf(fp, "printf(\"%%g\", %s);\n", vars.v[i]->cg_string);
+    else if (vars.v[i]->type == sym_float64)
+      fprintf(fp, "printf(\"%%g\", %s);\n", vars.v[i]->cg_string);
+    else if (vars.v[i]->type == sym_string)
+      fprintf(fp, "printf(\"%%s\", %s);\n", vars.v[i]->cg_string);
+    else
+      fprintf(fp, "printf(\"<unsupported type>\");\n");
+  }
+  if (ln)
+    fprintf(fp, "printf(\"\\n\");\n");
+  return 0;
+}
+
+static char *
+num_string(Sym *s) {
+  switch (s->num_kind) {
+    default: assert(!"case");
+    case IF1_NUM_KIND_UINT:
+      switch (s->num_index) {
+	case IF1_INT_TYPE_1:  return "_CG_bool";
+	case IF1_INT_TYPE_8:  return "_CG_uint8";
+	case IF1_INT_TYPE_16: return "_CG_uint16";
+	case IF1_INT_TYPE_32: return "_CG_uint32";
+	case IF1_INT_TYPE_64: return "_CG_uint64";
+	default: assert(!"case");
+      }
+      break;
+    case IF1_NUM_KIND_INT:
+      switch (s->num_index) {
+	case IF1_INT_TYPE_8:  return "_CG_int8";
+	case IF1_INT_TYPE_16: return "_CG_int16";
+	case IF1_INT_TYPE_32: return "_CG_int32";
+	case IF1_INT_TYPE_64: return "_CG_int64";
+	default: assert(!"case");
+      }
+      break;
+    case IF1_NUM_KIND_FLOAT:
+      switch (s->num_index) {
+	case IF1_FLOAT_TYPE_32: return "_CG_float32";
+	case IF1_FLOAT_TYPE_64: return "_CG_float64";
+	default: assert(!"case");
+	  break;
+      }
+      break;
+  }
+  return 0;
+}
+
+static int
 write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
   switch (n->prim->index) {
     default: return 0;
@@ -86,7 +153,6 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
       break;
     }
     case P_prim_vector: {
-      //char *t = c_type(n->rvals.v[1]);
       if (n->rvals.n > 2) {
 	int rank = 0;
 	n->rvals.v[1]->sym->imm_int(&rank);
@@ -178,6 +244,31 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
       fputs(";\n", fp);
     }
 #endif
+    case P_prim_assign: {
+      fprintf(fp, "%s = (%s)", n->lvals.v[0]->cg_string, num_string(n->lvals.v[0]->type));
+      fprintf(fp, "%s;\n", n->rvals.v[3]->cg_string);
+      break;
+    }
+    case P_prim_primitive: {
+      if (n->lvals.n) {
+	assert(n->lvals.n == 1);
+	fprintf(fp, "%s = ", n->lvals.v[0]->cg_string);
+      }
+      if (!strcmp("write", n->rvals.v[1]->sym->name))
+	cg_writeln(fp, n->rvals, 0);
+      else if (!strcmp("writeln", n->rvals.v[1]->sym->name))
+	cg_writeln(fp, n->rvals, 1);
+      else if (!strcmp("print", n->rvals.v[1]->sym->name))
+	cg_writeln(fp, n->rvals, 1);
+      else {
+	fprintf(fp, "_CG_%s_%s(", n->prim->name, n->rvals.v[1]->sym->name);
+	for (int i = 2; i < n->rvals.n; i++) {
+	  if (i > 2) fprintf(fp, ", ");
+	  fputs(n->rvals.v[i]->cg_string, fp);
+	}
+	fputs(");\n", fp);
+      }
+    }
   }
   return 1;
 }
@@ -226,11 +317,11 @@ write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
       }
       if (n->prim) {
 	fprintf(fp, "_CG_%s(", n->prim->name);
-	for (int i = 0; i < n->rvals.n; i++)
-	  if (i) {
-	    if (i > 1) fprintf(fp, ", ");
-	    fputs(n->rvals.v[i]->cg_string, fp);
-	  }
+	for (int i = 1; i < n->rvals.n; i++) {
+	  if (i > 1) fprintf(fp, ", ");
+	  fputs(n->rvals.v[i]->cg_string, fp);
+	}
+	fputs(");\n", fp);
       } else {
 	Fun *target = get_target_fun(n, f);
 	fputs(target->cg_string, fp);
@@ -247,8 +338,8 @@ write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
 	  } else
 	    fputs(n->rvals.v[i]->cg_string, fp);
 	}
+	fputs(");\n", fp);
       }
-      fputs(");\n", fp);
       break;
     case Code_IF:
       fprintf(fp, "if (%s) goto L%d; else goto L%d;\n", 
@@ -351,40 +442,6 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
   fputs("}\n", fp);
 }
 
-static char *
-num_string(Sym *s) {
-  switch (s->num_kind) {
-    default: assert(!"case");
-    case IF1_NUM_KIND_UINT:
-      switch (s->num_index) {
-	case IF1_INT_TYPE_8:  return "uint8";
-	case IF1_INT_TYPE_16: return "uint16";
-	case IF1_INT_TYPE_32: return "uint32";
-	case IF1_INT_TYPE_64: return "uint64";
-	default: assert(!"case");
-      }
-      break;
-    case IF1_NUM_KIND_INT:
-      switch (s->num_index) {
-	case IF1_INT_TYPE_8:  return "int8";
-	case IF1_INT_TYPE_16: return "int16";
-	case IF1_INT_TYPE_32: return "int32";
-	case IF1_INT_TYPE_64: return "int64";
-	default: assert(!"case");
-      }
-      break;
-    case IF1_NUM_KIND_FLOAT:
-      switch (s->num_index) {
-	case IF1_FLOAT_TYPE_32: return "float32";
-	case IF1_FLOAT_TYPE_64: return "float64";
-	default: assert(!"case");
-	  break;
-      }
-      break;
-  }
-  return 0;
-}
-
 static int
 build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
   // build builtin map
@@ -427,7 +484,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
     for (int i = 0; i < loopsyms.n; i++) 
       if (loopsyms.v[i]) {
 	forv_Sym(s, loopsyms.v[i]->has) {
-	  again = allsyms.set_add(s->type) || again;
+	  again = allsyms.set_add(s) || again;
 //	  if (s->type->meta)
 //	    again = allsyms.set_add(s->type->type_sym) || again;
 	}
@@ -508,6 +565,58 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
   return 0;
 }
 
+#define tohex1(_x) \
+((((_x)&15) > 9) ? (((_x)&15) - 10 + 'A') : (((_x)&15) + '0'))
+#define tohex2(_x) \
+((((_x)>>4) > 9) ? (((_x)>>4) - 10 + 'A') : (((_x)>>4) + '0'))
+#define ESC(_c) *ss++ = '\\'; *ss++ = _c; break;
+char *
+escape_string(char *s) {
+  char *ss = (char*)MALLOC((strlen(s) + 3) * 4), *sss = ss;
+  *ss++ = '\"';
+  for (; *s; s++) {
+    switch (*s) {
+      case '\b': ESC('b');
+      case '\f': ESC('f');
+      case '\n': ESC('n');
+      case '\r': ESC('r');
+      case '\t': ESC('t');
+      case '\v': ESC('v');
+      case '\a': ESC('a');
+      case '\\': 
+      case '\"':
+	*ss++ = '\\';
+	*ss++ = *s; break;
+		
+      default:
+	if (isprint(*s)) {
+	  *ss++ = *s;
+	} else {
+	  *ss++ = '\\';
+	  *ss++ = 'x';
+	  *ss++ = tohex2(*s);
+	  *ss++ = tohex1(*s);
+	}
+	break;
+    }
+  }
+  *ss++ = '\"';
+  *ss = 0;
+  return sss;
+}
+
+char *
+quote_string(char *s) {
+  int l = strlen(s);
+  char *ss = (char*)MALLOC(l + 3), *sss = ss;
+  *ss++ = '"';
+  strcpy(ss, s);	
+  ss += l;
+  *ss++ = '"';
+  *ss++ = 0;
+  return sss;
+}
+
 void
 cg_print_c(FILE *fp, FA *fa, Fun *init) {
   Vec<Var *> globals;
@@ -518,15 +627,21 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
   if (globals.n)
     fputs("\n", fp);
   forv_Var(v, globals) {
-    if (v->sym->constant) 
-      v->cg_string = v->sym->constant;
-    else if (v->sym->is_symbol) {
+    if (v->sym->constant) {
+      if (v->type == sym_string)
+	v->cg_string = quote_string(v->sym->constant);
+      else
+	v->cg_string = v->sym->constant;
+    } else if (v->sym->is_symbol) {
       char s[100];
       sprintf(s, "_CG_Symbol(%d, \"%s\")", v->sym->id, v->sym->name);
       v->cg_string = dupstr(s);
     } else {
       char s[100];
-      sprintf(s, "g%d", index++);
+      if (v->sym->name)
+	sprintf(s, "/* %s %d */ g%d", v->sym->name, v->sym->id, index++);
+      else
+	sprintf(s, "/* %d */ g%d", v->sym->id, index++);
       v->cg_string = dupstr(s);
       write_c_type(fp, v);
       fputs(" ", fp);

@@ -19,8 +19,6 @@
 #include "pdb.h"
 #include "pnode.h"
 
-#define TEST_RETURN 1
-
 class LabelMap : public Map<char *, ParseAST *> {};
 
 char *AST_name[] = {
@@ -761,11 +759,9 @@ define_function(IF1 *i, ParseAST *ast) {
   ast->sym->cont->ast = ast;
   ast->sym->labelmap = new LabelMap;
   ast->sym->ast = ast;
-#ifdef TEST_RETURN
   ast->sym->ret = new_sym(i, ast->sym->scope);
   ast->sym->ret->ast = ast;
   ast->sym->ret->is_lvalue = 1;
-#endif
   return 0;
 }
 
@@ -1123,17 +1119,10 @@ gen_fun(IF1 *i, ParseAST *ast) {
   ParseAST *expr = ast->last();
   Code *body = NULL, *c;
   if1_gen(i, &body, expr->code);
-#ifdef TEST_RETURN
   if (expr->rval)
     if1_move(i, &body, expr->rval, fn->ret, ast);
   else
     if1_move(i, &body, sym_null, fn->ret, ast);
-#else 
-  if (expr->rval)
-    fn->ret = expr->rval;
-  else
-    fn->ret = sym_null;
-#endif
   if1_label(i, &body, ast, ast->label[0]);
   c = if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
   c->ast = ast;
@@ -1675,7 +1664,6 @@ gen_if1(IF1 *i, ParseAST *ast) {
     case AST_op: gen_op(i, ast); break;
     case AST_new: gen_new(i, ast); break;
     case AST_if: gen_if(i, ast); break;
-#ifdef TEST_RETURN
     case AST_return: {	
       if (ast->children.v[0]->code) {
 	if1_gen(i, &ast->code, ast->children.v[0]->code);
@@ -1690,7 +1678,6 @@ gen_if1(IF1 *i, ParseAST *ast) {
       c->ast = ast;
       break;
     }
-#endif
     default: 
       if (ast->children.n == 1) {
 	if (ast->code)
@@ -1896,7 +1883,7 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
 #undef S
-  set_primitive_types(i);
+  if1_set_primitive_types(i);
   make_module(i, sym_system->name, global, sym_system);
   forv_ParseAST(a, av)
     build_constant_syms(i, a);

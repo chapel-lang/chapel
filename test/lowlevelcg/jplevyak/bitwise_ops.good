@@ -1,0 +1,28 @@
+m = 10
+n = 12
+o = 0
+p = 1
+
+test: m & n
+expected answer = 8
+actual answer = 8
+
+test: m ^ n
+expected answer = 6
+actual answer = 6
+
+test: m | n
+expected answer = 14
+actual answer = 14
+
+test: o || p
+expected answer = 1
+actual answer = 1
+
+test: o || o
+expected answer = 0
+actual answer = 0
+
+test: p || p
+expected answer = 1
+actual answer = 1

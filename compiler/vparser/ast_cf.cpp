@@ -20,6 +20,8 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  break; \
 	case IF1_NUM_KIND_UINT: { \
 	  switch (res_type->num_index) { \
+	    case IF1_INT_TYPE_1:  \
+	      ast->sym->imm.v_bool = im1.v_bool _op im2.v_bool; break; \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
 	    case IF1_INT_TYPE_16: \
@@ -63,6 +65,8 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  break; \
 	case IF1_NUM_KIND_UINT: { \
 	  switch (res_type->num_index) { \
+	    case IF1_INT_TYPE_1:  \
+	      ast->sym->imm.v_bool = im1.v_bool _op im2.v_bool; break; \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
 	    case IF1_INT_TYPE_16: \
@@ -102,6 +106,8 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  break; \
 	case IF1_NUM_KIND_UINT: { \
 	  switch (res_type->num_index) { \
+	    case IF1_INT_TYPE_1:  \
+	      ast->sym->imm.v_bool = _op im1.v_bool; break; \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_uint8 = _op im1.v_uint8; break; \
 	    case IF1_INT_TYPE_16: \
@@ -145,6 +151,8 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  break; \
 	case IF1_NUM_KIND_UINT: { \
 	  switch (res_type->num_index) { \
+	    case IF1_INT_TYPE_1:  \
+	      ast->sym->imm.v_bool = _op im1.v_bool; break; \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_uint8 = _op im1.v_uint8; break; \
 	    case IF1_INT_TYPE_16: \

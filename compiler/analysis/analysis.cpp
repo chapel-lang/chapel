@@ -31,6 +31,7 @@ static Sym *expr_domain_symbol = 0;
 static Sym *expr_create_domain_symbol = 0;
 static Sym *expr_reduce_symbol = 0;
 static Sym *write_symbol = 0;
+static Sym *writeln_symbol = 0;
 static Sym *flood_symbol = 0;
 static Sym *completedim_symbol = 0;
 static Sym *array_index_symbol = 0;
@@ -388,10 +389,11 @@ new_global_variable(Sym *&sym, char *name) {
 }
 
 static void
-builtin_Symbol(Type *dt, Sym **sym) {
+builtin_Symbol(Type *dt, Sym **sym, char *name) {
   if (!dt->asymbol)
     map_type(dt);
   *sym = dt->asymbol;
+  if1_set_builtin(if1, *sym, name);
   if (!dt->asymbol->type_kind)
     dt->asymbol->type_kind = Type_PRIMITIVE;
   ((ASymbol*)*sym)->xsymbol = dt;
@@ -442,7 +444,9 @@ build_builtin_symbols() {
   new_primitive_type(sym_size, "size");
   new_primitive_type(sym_true, "true");
   new_primitive_type(sym_false, "false");
-  new_sum_type(sym_bool, "bool", sym_true, sym_false, 0);
+  new_primitive_type(sym_bool, "bool");
+  sym_true->implements.set_add(sym_bool);
+  sym_false->implements.set_add(sym_bool);
   new_primitive_type(sym_enum_element, "enum_element");
   new_primitive_type(sym_float32, "float32");
   new_primitive_type(sym_float64, "float64");
@@ -456,7 +460,7 @@ build_builtin_symbols() {
   new_primitive_type(sym_complex, "complex");
   new_sum_type(sym_anycomplex, "anycomplex", 
 	       sym_complex32, sym_complex64, sym_complex128, 0);
-  new_sum_type(sym_anynum, "anynum", sym_anyint, sym_anyfloat, sym_anycomplex, 0);
+  new_sum_type(sym_anynum, "anynum", sym_bool, sym_anyint, sym_anyfloat, sym_anycomplex, 0);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
   if (!sym_new_object) {
@@ -474,12 +478,12 @@ build_builtin_symbols() {
   ((ASymbol*)sym_complex64)->xsymbol = dtComplex;
   ((ASymbol*)sym_string)->xsymbol = dtString;
 
-  builtin_Symbol(dtTuple, &sym_tuple);
-  builtin_Symbol(dtIndex, &sym_index);
-  builtin_Symbol(dtDomain, &sym_domain);
-  builtin_Symbol(dtArray, &sym_array);
-  builtin_Symbol(dtLocale, &sym_locale);
-  builtin_Symbol(dtTimer, &sym_timer);
+  builtin_Symbol(dtTuple, &sym_tuple, "tuple");
+  builtin_Symbol(dtIndex, &sym_index, "index");
+  builtin_Symbol(dtDomain, &sym_domain, "domain");
+  builtin_Symbol(dtArray, &sym_array, "array");
+  builtin_Symbol(dtLocale, &sym_locale, "locale");
+  builtin_Symbol(dtTimer, &sym_timer, "timer");
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
@@ -769,6 +773,7 @@ gen_if1(BaseAST *ast) {
 	  !strcmp(s->var->asymbol->name, "self")) {
 	sym = fnsym->self;
       }
+      s->ainfo->sym = sym;
       gen_move(s, sym);
       break;
     }
@@ -832,6 +837,7 @@ gen_if1(BaseAST *ast) {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
+      s->ainfo->sym = s->ainfo->rval;
       if1_gen(if1, &s->ainfo->code, s->base->ainfo->code);
       Sym *op = if1_make_symbol(if1, ".");
       Sym *selector = 0;
@@ -862,6 +868,7 @@ gen_if1(BaseAST *ast) {
       AssignOp *s = dynamic_cast<AssignOp*>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
+      s->ainfo->sym = s->left->ainfo->sym;
       if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
       Sym *op = 0;
@@ -887,7 +894,18 @@ gen_if1(BaseAST *ast) {
 			   rval);
 	c->ast = s->ainfo;
       }
-      if1_move(if1, &s->ainfo->code, rval, s->left->ainfo->rval, s->ainfo);
+      if (!s->left->ainfo->sym)
+	show_error("assignment to non-lvalue", s->ainfo);
+      if (s->left->ainfo->sym->is_var) {
+	Sym *rrval = new_sym();
+	rrval->ast = s->ainfo;
+	Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
+			   s->left->ainfo->rval, sym_assign, rval,
+			   rrval);
+	c->ast = s->ainfo;
+	rval = rrval;
+      }
+      if1_move(if1, &s->ainfo->code, rval, s->left->ainfo->sym, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
       break;
     }
@@ -958,7 +976,10 @@ gen_if1(BaseAST *ast) {
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if1_add_send_arg(if1, send, sym_primitive);
-      if1_add_send_arg(if1, send, write_symbol);
+      if (s->writeln)
+	if1_add_send_arg(if1, send, writeln_symbol);
+      else
+	if1_add_send_arg(if1, send, write_symbol);
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
@@ -996,6 +1017,7 @@ gen_if1(BaseAST *ast) {
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
       s->ainfo->rval->is_lvalue = 1;
+      s->ainfo->sym = s->ainfo->rval;
       break;
     }
     case EXPR_CAST: {
@@ -1185,6 +1207,7 @@ init_symbols() {
   expr_reduce_symbol = if1_make_symbol(if1, "expr_reduce");
   array_index_symbol = if1_make_symbol(if1, "array_index");
   write_symbol = if1_make_symbol(if1, "write");
+  writeln_symbol = if1_make_symbol(if1, "writeln");
   flood_symbol = if1_make_symbol(if1, "*");
   completedim_symbol = if1_make_symbol(if1, "..");
 }
@@ -1318,7 +1341,8 @@ array_index(PNode *pn, EntrySet *es) {
   }
 }
 
-int ast_to_if1(Vec<Stmt *> &stmts) {
+int 
+ast_to_if1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
   close_symbols(stmts, syms);
   init_symbols();
@@ -1334,7 +1358,9 @@ int ast_to_if1(Vec<Stmt *> &stmts) {
   pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol->name, expr_create_domain);
   pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol->name, expr_reduce);
   pdb->fa->primitive_transfer_functions.put(write_symbol->name, write_transfer_function);
+  pdb->fa->primitive_transfer_functions.put(writeln_symbol->name, write_transfer_function);
   pdb->fa->primitive_transfer_functions.put(array_index_symbol->name, array_index);
+  if1_set_primitive_types(if1);
   finalize_types(if1);
   sym_null->is_external = 1;	// hack
   finalize_symbols(if1);
@@ -1376,12 +1402,6 @@ print_AST_types() {
     print_AST_Expr_types(def->fn->body);
   }
 }
-
-#if 0
-void x() {
-  print_AST_types();
-}
-#endif
 
 static void
 ast_sym_info(BaseAST *a, Symbol *s, AST **ast, Sym **sym) {

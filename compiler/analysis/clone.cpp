@@ -419,7 +419,6 @@ define_concrete_types(CSSS &css_sets) {
 	char *name = 0;
 	s->type_kind = sym->type_kind;
 	s->incomplete = 1;
-	//s->internal = sym->internal;
 	forv_CreationSet(cs, *eqcss) if (cs) {
 	  cs->type = s;
 	  if (!name)

@@ -312,7 +312,9 @@ coerce_num(Sym *a, Sym *b) {
     return sym_int32;
   else if (a->num_index >= IF1_INT_TYPE_16 || b->num_index >= IF1_INT_TYPE_16)
     return sym_int16;
-  return sym_int8;
+  else if (a->num_index >= IF1_INT_TYPE_8 || b->num_index >= IF1_INT_TYPE_8)
+    return sym_int8;
+  return sym_bool;
 }
 
 AType *

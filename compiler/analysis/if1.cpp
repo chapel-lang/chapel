@@ -185,7 +185,7 @@ if1_alloc_label(IF1 *p) {
 Label *
 if1_label(IF1 *p, Code **c, AST *ast, Label *l) {
   Code *cc = new Code(Code_LABEL);
-  cc->ast = 0;
+  cc->ast = ast;
   if (!l)
     cc->label[0] = if1_alloc_label(p);
   else
@@ -837,6 +837,41 @@ Code::line() {
   if (ast)
     return ast->line();
   return 0;
+}
+
+static char *int_type_names[IF1_INT_TYPE_NUM][2] = {
+  { "bool",   0 },
+  { "uint8",   "int8" },
+  { "uint16",  "int16" },
+  { "uint32",  "int32" },
+  { "uint64",  "int64" }
+};
+static char *float_type_names[IF1_FLOAT_TYPE_NUM] = {
+  "float32",  "float64", "float128"
+};
+static int float_type_sizes[IF1_FLOAT_TYPE_NUM] = {
+  32, 64, 128
+};
+
+void
+if1_set_primitive_types(IF1 *if1) {
+  for (int signd = 0; signd < 2; signd++)
+    for (int s = 0; s < IF1_INT_TYPE_NUM; s++) {
+      char *tt = int_type_names[s][signd];
+      if (tt) {
+	Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
+	if (!ss) fail("unable to find builtin type '%s'", tt);
+	if1_set_int_type(if1, ss, signd, 8 << (s-1));
+      }
+    }
+  for (int s = 0; s < IF1_FLOAT_TYPE_NUM; s++) {
+    char *tt = float_type_names[s];
+    if (tt) {
+      Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
+      if (!ss) fail("unable to find builtin type '%s'", tt);
+      if1_set_float_type(if1, ss, float_type_sizes[s]);
+    }
+  }
 }
 
 

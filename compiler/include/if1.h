@@ -80,11 +80,13 @@ void	if1_set_float_type(IF1 *p, Sym *t, int size);
 char	*if1_cannonicalize_string(IF1 *p, char *start, char *end = 0);
 void	if1_finalize(IF1 *p);
 void	if1_write(FILE *fp, IF1 *p);
+void	if1_set_primitive_types(IF1 *if1);
 
 // debugging
 void	if1_dump(FILE *fp, Code *c);
 void	if1_dump_code(FILE *fp, Code *code, int indent);
 void	if1_dump_sym(FILE *fp, Sym *sym);
+
 
 extern IF1 *if1;
 

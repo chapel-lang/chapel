@@ -45,6 +45,7 @@ EXTERN char *type_kind_string[] EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 union Immediate {
+  bool v_bool;
   uint8 v_uint8;
   int8 v_int8;
   uint16 v_uint16;

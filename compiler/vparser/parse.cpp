@@ -72,38 +72,6 @@ no_preprocessor_whitespace(D_Parser *p, d_loc_t *loc, void **p_user_globals) {
   return;
 }
 
-static char *v_int_type_names[IF1_INT_TYPE_NUM][2] = {
-  { "uint8",   "int8" },
-  { "uint16",  "int16" },
-  { "uint32",  "int32" },
-  { "uint64",  "int64" }
-};
-static char *v_float_type_names[IF1_FLOAT_TYPE_NUM] = {
-  "float32",  "float64", "float128"
-};
-static int v_float_type_sizes[IF1_FLOAT_TYPE_NUM] = {
-  32, 64, 128
-};
-
-void
-set_primitive_types(IF1 *if1) {
-  for (int signd = 0; signd < 2; signd++)
-    for (int s = 0; s < IF1_INT_TYPE_NUM; s++) {
-      char *tt = v_int_type_names[s][signd];
-      Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
-      if (!ss) fail("unable to find builtin type '%s'", tt);
-      if1_set_int_type(if1, ss, signd, 8 << (s-1));
-    }
-  for (int s = 0; s < IF1_FLOAT_TYPE_NUM; s++) {
-    char *tt = v_float_type_names[s];
-    if (tt) {
-      Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
-      if (!ss) fail("unable to find builtin type '%s'", tt);
-      if1_set_float_type(if1, ss, v_float_type_sizes[s]);
-    }
-  }
-}
-
 void 
 get_ast(Vec<ParseAST *> &asts, D_ParseNode *pn) {
   if (pn->user.ast)
