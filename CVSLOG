@@ -13981,3 +13981,34 @@ Removed files:
 	                                   test_record_method2.chpl 
 	                                   test_record_method2.good 
 
+---------------------------------------------------------------------------
+
+01/07/05 10:47:13 -- deitz
+
+Log message:
+	Moved some tests out of types/type_variables/deitz/future and into
+	types/type_variables/deitz with .future files.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function3.chpl 
+	                                         test_clone_function3.future 
+	                                         test_clone_function4.chpl 
+	                                         test_clone_function4.future 
+	                                         test_typevar_function1.chpl 
+	                                         test_typevar_function1.future 
+	                                         test_typevar_function2.chpl 
+	                                         test_typevar_function2.future 
+	                                         test_typevar_function3.chpl 
+	                                         test_typevar_function3.future 
+	                                         test_typevar_function4.chpl 
+	                                         test_typevar_function4.future 
+Removed files:
+	chapel/test/types/type_variables/deitz/future/: 
+	                                                test_clone_function3.chpl 
+	                                                test_clone_function4.chpl 
+	                                                test_typevar_function1.chpl 
+	                                                test_typevar_function2.chpl 
+	                                                test_typevar_function3.chpl 
+	                                                test_typevar_function4.chpl 
+
