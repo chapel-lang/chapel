@@ -3880,3 +3880,16 @@ Added files:
 	                                    badprimitive.v cs6.good 
 	                                    cs6.v 
 
+---------------------------------------------------------------------------
+
+07/09/04 12:02:26 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	new tests for dispatch system
+
+Added files:
+	chapel/test/flowanalysis/jplevyak/: dispatch1.good dispatch1.v 
+	                                    dispatch2.good dispatch2.v 
+	                                    dispatch3.good dispatch3.v 
+	                                    dispatch4.good dispatch4.v 
+
