@@ -18580,3 +18580,13 @@ Modified files:
 	                                   mark.c os_dep.c reclaim.c 
 	chapel/third-party/boehmgc/gc6.3/include/private/: gc_priv.h 
 
+---------------------------------------------------------------------------
+
+03/01/05 18:50:36 -- jplevyak
+
+Log message:
+	Patch to support valgrind.
+
+Added files:
+	chapel/third-party/boehmgc/: gc-valgrind.patch 
+
