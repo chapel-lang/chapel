@@ -74,6 +74,7 @@ char* astTypeName[] = {
   "MemberAccess",
   "Reduce",
   "Tuple",
+  "NamedExpr",
 
   "Symbol",
   "UnresolvedSymbol",

@@ -1709,3 +1709,37 @@ void LetExpr::print(FILE* outfile) {
 void LetExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "LetExpr::codegen not implemented");
 }
+
+
+NamedExpr::NamedExpr(char* init_name, Expr* init_actual) :
+  Expr(EXPR_NAMED),
+  name(init_name),
+  actual(init_actual)
+{
+  SET_BACK(actual);
+}
+
+
+Expr* NamedExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new NamedExpr(copystring(name), actual->copyInternal(clone, map, analysis_clone));
+}
+
+
+void NamedExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(actual, traversal, false);
+}
+
+
+Type* NamedExpr::typeInfo(void) {
+  return actual->typeInfo();
+}
+
+
+void NamedExpr::print(FILE* outfile) {
+  INT_FATAL(this, "NamedExpr::print not implemented");
+}
+
+
+void NamedExpr::codegen(FILE* outfile) {
+  INT_FATAL(this, "NamedExpr::codegen not implemented");
+}

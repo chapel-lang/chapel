@@ -533,4 +533,17 @@ class LetExpr : public Expr {
 };
 
 
+class NamedExpr : public Expr {
+ public:
+  char* name;
+  Expr* actual;
+  NamedExpr(char* init_name, Expr* init_actual);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void traverseExpr(Traversal* traversal);
+  Type* typeInfo(void);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 #endif

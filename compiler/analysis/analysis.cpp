@@ -1618,6 +1618,10 @@ gen_if1(BaseAST *ast) {
       send->ast = s->ainfo;
       break;
     }
+    case EXPR_NAMED: {
+      INT_FATAL(ast, "NamedExpr not handled in analysis");
+      break;
+    }
   case SYMBOL:
   case SYMBOL_UNRESOLVED:
   case SYMBOL_MODULE:

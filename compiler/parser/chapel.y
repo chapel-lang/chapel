@@ -108,7 +108,7 @@
 %type <pch> identifier query_identifier fname
 %type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
 %type <enumsym> enum_item enum_list
-%type <pexpr> lvalue atom expr exprlist nonemptyExprlist literal range
+%type <pexpr> lvalue atom expr exprlist expr_list_item nonemptyExprlist literal range
 %type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
@@ -147,6 +147,7 @@
 program: modulebody
     { yystmtlist = $$; }
 ;
+
 
 modulebody: 
   statements
@@ -805,10 +806,18 @@ exprlist:
 ;
 
 
+expr_list_item:
+  identifier TASSIGN expr
+    { $$ = new NamedExpr($1, $3); }
+| expr
+    { $$ = $1; }
+;
+
+
 nonemptyExprlist:
-  pragmas expr
+  pragmas expr_list_item
     { $2->pragmas = $1; $$ = $2; }
-| nonemptyExprlist TCOMMA pragmas expr
+| nonemptyExprlist TCOMMA pragmas expr_list_item
     { $4->pragmas = $3; $1->append($4); }
 ;
 

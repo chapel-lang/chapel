@@ -218,6 +218,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_TUPLE");
     }
     break;
+  case EXPR_NAMED:
+    if (typeid(*ast) != typeid(NamedExpr)) {
+      INT_FATAL(ast, "Unexpected AST expression type: EXPR_NAMED");
+    }
+    break;
   case SYMBOL:
     if (typeid(*ast) != typeid(Symbol)) {
       INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL");
