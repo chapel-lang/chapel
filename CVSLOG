@@ -15177,3 +15177,16 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/traversals/: fixup.cpp verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+01/20/05 17:11:28 -- deitz
+
+Log message:
+	Added a test case that clones the four possibilities of calling a
+	function with two parameters with strings and integers.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function_multiargs1.chpl 
+	                                         test_clone_function_multiargs1.good 
+
