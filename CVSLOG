@@ -12169,3 +12169,21 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runAnalysis.cpp 
 
+---------------------------------------------------------------------------
+
+12/17/04 16:29:57 -- bradc
+
+Log message:
+	Re-fixed dependences for v.g and v.g.d_parser.cpp -- all
+	#includes for v.g should now be specified in v.g.h (was
+	parse.h at some point, but that changed).  v.g_incs.cpp
+	is a C++ file that exists only for the sake of generating
+	dependences for v.g and should not be needed.
+
+Modified files:
+	chapel/compiler/vparser/: Makefile v.g 
+Added files:
+	chapel/compiler/vparser/: v.g.h v.g_incs.cpp 
+Removed files:
+	chapel/compiler/vparser/: parse_incs.cpp 
+
