@@ -20455,3 +20455,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+03/21/05 09:18:19 -- deitz
+
+Log message:
+	Added a commented out #define in specializeParenOpExprs.cpp:7. If this
+	is uncommented, the constructor call is an unresolved symbol.  John,
+	is this the right approach?  Analysis balks at this unresolved symbol
+	and I'm not sure why.
+
+Modified files:
+	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
+
