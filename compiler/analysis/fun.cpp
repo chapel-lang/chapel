@@ -189,7 +189,6 @@ Fun::copy() {
   f->fa_all_Vars.copy(fa_all_Vars);
   for (int i = 0; i < f->fa_all_Vars.n; i++) {
     Var *v = f->vmap->get(f->fa_all_Vars.v[i]);
-    //if (f->fa_all_Vars.v[i]->sym->function_scope) assert(v);
     if (v)
       f->fa_all_Vars.v[i] = v;
   }
@@ -200,8 +199,9 @@ Fun::copy() {
   ASTCopyContext context;
   context.nmap = f->nmap;
   context.vmap = f->vmap;
-  context.new_f = f;
+  context.fmap.put(this, f);
   f->ast = ast ? ast->copy_tree(&context) : 0;
+  f->sym = context.smap.get(f->sym);
   return f;
 }
 

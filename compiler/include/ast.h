@@ -18,9 +18,10 @@ class Var;
 
 class ASTCopyContext : public gc {
  public:
-  Fun *new_f;
+  Map<Fun *, Fun *> fmap;
   Map<PNode *, PNode *> *nmap;
   Map<Var *, Var *> *vmap;
+  Map<Sym *, Sym *> smap;
 };
 
 class AST : public gc {

@@ -159,9 +159,14 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
     if (old_s->asymbol) {
       new_s->asymbol = (ASymbol*)old_s->asymbol->copy();
       new_s->asymbol->xsymbol = new_s;
+      context->smap.put(old_s->asymbol, new_s->asymbol);
       if (old_s->asymbol->var) {
 	new_s->asymbol->var = context->vmap->get(old_s->asymbol->var);
 	assert(new_s->asymbol->var);
+      }
+      if (old_s->asymbol->fun) {
+	new_s->asymbol->fun = context->fmap.get(old_s->asymbol->fun);
+	assert(new_s->asymbol->fun);
       }
     }
   } else 
