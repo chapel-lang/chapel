@@ -28,9 +28,9 @@ static void build_constructor(ClassType* class_type) {
 
   BlockStmt* body = Symboltable::startCompoundStmt();
   Stmt* stmts = NULL;
-  VarSymbol* _this = new VarSymbol("this", class_type);
-  DefExpr* def_expr = new DefExpr(_this);
-  _this->setDefPoint(def_expr);
+  fn->_this = new VarSymbol("this", class_type);
+  DefExpr* def_expr = new DefExpr(fn->_this);
+  fn->_this->setDefPoint(def_expr);
   stmts = new DefStmt(def_expr);
   if (!(class_type->value || class_type->union_value)) {
     char* description = glomstrings(2, "instance of class ", class_type->symbol->name);
@@ -39,7 +39,7 @@ static void build_constructor(ClassType* class_type) {
     alloc_args = appendLink(alloc_args, new StringLiteral(description));
     Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");
     Expr* alloc_call = new FnCall(new Variable(alloc_sym), alloc_args);
-    Expr* alloc_lhs = new Variable(_this);
+    Expr* alloc_lhs = new Variable(fn->_this);
     Expr* alloc_rhs = new CastExpr(class_type, alloc_call);
     Expr* alloc_expr = new AssignOp(GETS_NORM, alloc_lhs, alloc_rhs);
     Stmt* alloc_stmt = new ExprStmt(alloc_expr);
@@ -49,7 +49,7 @@ static void build_constructor(ClassType* class_type) {
   ParamSymbol* ptmp = args;
 #endif
   forv_Vec(VarSymbol, tmp, class_type->fields) {
-    Expr* lhs = new MemberAccess(new Variable(_this), tmp);
+    Expr* lhs = new MemberAccess(new Variable(fn->_this), tmp);
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
     Expr* rhs = new Variable(ptmp);
 #else
@@ -70,7 +70,7 @@ static void build_constructor(ClassType* class_type) {
 #endif
   }
 
-  stmts = appendLink(stmts, new ReturnStmt(new Variable(_this)));
+  stmts = appendLink(stmts, new ReturnStmt(new Variable(fn->_this)));
   body = Symboltable::finishCompoundStmt(body, stmts);
   Expr* fn_def = Symboltable::finishFnDef(fn, args, class_type, body);
   class_type->constructor = new DefStmt(fn_def);

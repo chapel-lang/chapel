@@ -1087,12 +1087,12 @@ gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
 }
 
 static void
-gen_alloc(Sym *s, Sym *type, AInfo *ast, FnSymbol *f = 0) {
+gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
   Code **c = &ast->code;
   Code *send = 0;
   if (s->type->asymbol->symbol->astType == TYPE_CLASS) {
     ClassType *ct = dynamic_cast<ClassType*>(type->asymbol->symbol);
-    if (ct->value && f != ct->defaultConstructor)  // HACK!!
+    if (ct->value && s != _this)
       send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
   }
   if (!send) 
@@ -1174,7 +1174,7 @@ gen_vardef(BaseAST *a) {
 	    s->is_external = 1; // hack
 	  else {
 	    FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
-	    gen_alloc(s, s->type, def->ainfo, f);
+	    gen_alloc(s, s->type, def->ainfo, f->_this ? f->_this->asymbol->sym : 0);
 	  }
 	}
       }
@@ -1841,6 +1841,8 @@ gen_fun(FnSymbol *f) {
   c->ast = ast;
   if1_closure(if1, fn, body, iarg, as);
   fn->ast = ast;
+  if (f->_this && iarg > 1)  // HACK FOR CONSTRUCTORS WHICH SET _this
+    fn->self = f->_this->asymbol->sym;
   return 0;
 }
 
@@ -1860,8 +1862,6 @@ init_function(FnSymbol *f) {
   s->ret->ast = ast;
   s->ret->is_lvalue = 1;
   s->labelmap = new LabelMap;
-  if (f->_this)
-    s->self = f->_this->asymbol->sym;
   set_global_scope(s);
   return 0;
 }
