@@ -8,12 +8,15 @@ Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   pdb = apdb;
   init_function = aninit_function;
   clone_for_constants = 1;
+  execution_frequency = 0.0;
   fa_collected = 0;
+  has_return = 0;
   sym = asym;
   asym->fun = this;
   ast = sym->ast;
   nmap = 0;
   vmap = 0;
+  size = -1;
   cg_string = 0;
   if (verbose_level > 1)
     if (asym->name)
@@ -42,11 +45,10 @@ Fun::collect_PNodes(Vec<PNode *> &v) {
     return;
   v.add(exit);
   sv.set_add(exit);
-  for (int i = 0; i < v.n; i++) {
+  for (int i = 0; i < v.n; i++)
     forv_PNode(p, v.v[i]->cfg_pred)
       if (sv.set_add(p))
 	v.add(p);
-  }
 }
 
 void
@@ -54,8 +56,6 @@ collect_Vars_PNode(PNode *n, Vec<Var *> &vars) {
   forv_Var(v, n->rvals)
     vars.set_add(v);
   forv_Var(v, n->lvals)
-    vars.set_add(v);
-  forv_Var(v, n->tvals)
     vars.set_add(v);
   forv_PNode(p, n->phi)
     collect_Vars_PNode(p, vars);
@@ -99,7 +99,6 @@ copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
   PNode *n = new PNode(node->code);
   n->rvals.copy(node->rvals);
   n->lvals.copy(node->lvals);
-  n->tvals.copy(node->tvals);
   n->cfg_succ.copy(node->cfg_succ);
   n->cfg_pred.copy(node->cfg_pred);
   n->phi.copy(node->phi);
@@ -172,3 +171,20 @@ Fun::copy() {
   return f;
 }
 
+void
+Fun::calls_funs(Vec<Fun *> &calls_funs) {
+  calls_funs.clear();
+  Vec<Vec<Fun *> *> calls_funs_vecs;
+  calls.get_values(calls_funs_vecs);
+  for (int i = 0; i < calls_funs_vecs.n; i++)
+    calls_funs.set_union(*calls_funs_vecs.v[i]);
+  calls_funs.set_to_vec();
+}
+
+void
+Fun::called_by_funs(Vec<Fun *> &called_by) {
+  called_by.clear();
+  forv_CallPoint(c, called)
+    called_by.set_add(c->fun);
+  called_by.set_to_vec();
+}

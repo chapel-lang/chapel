@@ -35,6 +35,7 @@ static Map<char *,Vec<Fun *> *> class_dispatch_table;
 static Map<char *,Vec<Fun *> *> self_dispatch_table;
 static Map<char *, TupleDispatchTable *> tuple_dispatch_table;
 static OpenHash<AType *, ATypeOpenHashFns> cannonical_atypes;
+static OpenHash<ATypeFold *, ATypeFoldOpenHashFns> type_fold_cache;
 
 static Var *element_var = 0;
 
@@ -234,22 +235,30 @@ creation_point(AVar *v, Sym *s) {
 //  all int combos below 32 bits become signed 32 bits, above become signed 64 bits
 Sym *
 coerce_num(Sym *a, Sym *b) {
-  if (a->num_type == IF1_NUM_TYPE_FLOAT || b->num_type == IF1_NUM_TYPE_FLOAT
-      || a->num_index == IF1_INT_TYPE_64 || b->num_index == IF1_INT_TYPE_64)
-    return sym_float64;
-  else {
-    if (a->num_type == b->num_type) { // same sign
-      if (a->num_index > b->num_index)
-	return a;
-      else
-	return b;
-    } else { // mixed signed and unsigned
-      if (a->num_index < IF1_INT_TYPE_64 && b->num_index < IF1_INT_TYPE_64)
-	return sym_int32;
-      else
-	return sym_int64;
-    }
+  if (a->num_type == b->num_type) {
+    if (a->num_index > b->num_index)
+      return a;
+    else
+      return b;
   }
+  if (b->num_type == IF1_NUM_TYPE_FLOAT) {
+    Sym *t = b; b = a; a = t;
+  }
+  if (a->num_type == IF1_NUM_TYPE_FLOAT) {
+    if (int_type_precision[b->num_type] <= float_type_precision[a->num_type])
+      return a;
+    if (int_type_precision[b->num_type] >= 32)
+      return sym_float32;
+    return sym_float64;
+  }
+// mixed signed and unsigned
+  if (a->num_index >= IF1_INT_TYPE_64 || b->num_index >= IF1_INT_TYPE_64)
+    return sym_int64;
+  else if (a->num_index >= IF1_INT_TYPE_32 || b->num_index >= IF1_INT_TYPE_32)
+    return sym_int32;
+  else if (a->num_index >= IF1_INT_TYPE_16 || b->num_index >= IF1_INT_TYPE_16)
+    return sym_int16;
+  return sym_int8;
 }
 
 Sym *
@@ -262,6 +271,24 @@ coerce_type(IF1 *i, Sym *a, Sym *b) {
     return coerce_num(a, b);
   } else
     return sym_any;
+}
+
+AType *
+type_num_fold(Prim *p, AType *a, AType *b) {
+  (void) p; p = 0; // for now
+  if (a->n == 1 && b->n == 1)
+    return type_union(a->v[0]->sym->type->abstract_type, b->v[0]->sym->type->abstract_type)->top;
+  ATypeFold f(p, a, b), *ff;
+  if ((ff = type_fold_cache.get(&f)))
+    return ff->result;
+  AType *r = new AType();
+  forv_CreationSet(cs, *a)
+    r->set_add(cs->sym->type->abstract_type->v[0]);
+  forv_CreationSet(cs, *b)
+    r->set_add(cs->sym->type->abstract_type->v[0]);
+  r = type_cannonicalize(r)->top;
+  type_fold_cache.put(new ATypeFold(p, a, b, r));
+  return r;
 }
 
 static void
@@ -301,8 +328,15 @@ type_cannonicalize(AType *t) {
   assert(!t->sorted.n);
   assert(!t->union_map.n);
   assert(!t->intersection_map.n);
-  forv_CreationSet(cs, *t)
-    if (cs) t->sorted.add(cs);
+  forv_CreationSet(cs, *t) if (cs) {
+    // strip out constants if the base type is included
+    if (cs->sym != cs->sym->type) {
+      assert(cs->sym->type->abstract_type);
+      if (t->set_in(cs->sym->type->abstract_type->v[0]))
+	continue;
+    }
+    t->sorted.add(cs);
+  }
   if (t->sorted.n > 1)
     qsort_pointers((void**)&t->sorted.v[0], (void**)t->sorted.end());
   unsigned int h = 0;
@@ -322,10 +356,8 @@ type_cannonicalize(AType *t) {
 	if (s == cs->sym)
 	  continue;
 	else if (!cs->defs.n) {
-	  if (cs->sym->num_type)
-	    s = coerce_num(s, cs->sym);
-	  else if (cs->sym->constant && cs->sym->type->num_type)
-	    s = coerce_num(s, cs->sym->type);
+	  if (s->type->num_type && cs->sym->type->num_type)
+	    s = coerce_num(s->type, cs->sym);
 	  else
 	    goto Ldone;
 	} else {
@@ -921,7 +953,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
     }
     for (int i = 0; i < p->lvals.n; i++) {
       if (p->prim->ret_types[i] == PRIM_TYPE_ANY_NUM_AB)
-	update_var_in(make_AVar(p->lvals.v[i], es), type_union(a->out, b->out)->top);
+	update_var_in(make_AVar(p->lvals.v[i], es), type_num_fold(p->prim, a->out, b->out));
       if (p->prim->ret_types[i] == PRIM_TYPE_A)
 	flow_var_to_var(a, make_AVar(p->lvals.v[i], es));
     }
@@ -1573,7 +1605,6 @@ call_info(Fun *f, AST *a, Vec<Fun *> &funs) {
   }	
   funs.set_to_vec();
 }
-
 
 int
 constant_info(Var *v, Vec<Sym *> &constants) {

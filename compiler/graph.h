@@ -7,7 +7,7 @@
 
 enum GraphType { GraphViz, VCG };
 
-void graph(FA *fa, Fun *top, char *fn, int graph_type = VCG);
+void graph(FA *fa, char *fn, int graph_type = VCG);
 
 extern char graph_fun[80];
 extern char graph_var[80];

@@ -8,8 +8,6 @@
   References
   "The Program Structure Tree: Computing Control Regions in Linear Time"
     PLDI'94 by Johnson, Pearson, Pingali
-  "Static Single Information Form"
-    Masters Thesis C. Scott Ananian
 */
 
 #include "geysa.h"
@@ -156,13 +154,15 @@ nest_regions(PNode *n, Region *r) {
       Region *r1 = e->entry, *r2 = e->exit, *rn = r;
       if (r == r1 || r == r2)
 	rn = r->parent;
-      if (r1 && r1 != r) {
+      if (r1 && r1 != r && r1 != rn) {
 	r1->parent = rn;
+	r1->depth = rn->depth + 1;
 	rn->children.add(r1);
 	rn = r1;
       }
-      if (r2 && r2 != r) {
+      if (r2 && r2 != r && r2 != rn) {
 	r2->parent = rn;
+	r2->depth = rn->depth + 1;
 	rn->children.add(r2);
 	rn = r2;
       }
@@ -325,46 +325,29 @@ get_Var(Var *v, VarEnv &env, Fun *f) {
 }
 
 static void
-rename_edge(Fun *f, PNode *s, PNode *d, int di, VarEnv &env, EdgeSet &es) {
-  env.push();
-  es.set_add(&s->cfg_succ.v[di]);
-  forv_PNode(p, s->phy) {
-    Var *v = p->rvals.v[0]->sym->var;
-    p->lvals.v[di] = new_Var(v, env, f);
+rename_edge(Fun *f, PNode *d, VarEnv &env, Vec<PNode *> &nset) {
+  forv_PNode(p, d->phi)
+    p->lvals.v[0] = new_Var(p->rvals.v[0]->sym->var, env, f);
+  for (int i = 0; i < d->rvals.n; i++)
+    d->rvals.v[i] = get_Var(d->rvals.v[i]->sym->var, env, f);
+  for (int i = 0; i < d->lvals.n; i++)
+    d->lvals.v[i] = new_Var(d->lvals.v[i]->sym->var, env, f);
+  forv_PNode(p, d->phy)
+    p->rvals.v[0] = get_Var(p->rvals.v[0]->sym->var, env, f);
+  for (int i = 0; i < d->cfg_succ.n; i++) {
+    if (d->cfg_succ.n != 1 && d->cfg_pred.n != 1)
+      env.push();
+    PNode *dd = d->cfg_succ.v[i];
+    int di = dd->cfg_pred_index.get(d);
+    forv_PNode(p, d->phy)
+      p->lvals.v[i] = new_Var(p->rvals.v[0]->sym->var, env, f);
+    forv_PNode(p, dd->phi)
+      p->rvals.v[di] = get_Var(p->rvals.v[0]->sym->var, env, f);
+    if (nset.set_add(dd))
+      rename_edge(f, dd, env, nset);
+    if (d->cfg_succ.n != 1 && d->cfg_pred.n != 1)
+      env.pop();
   }
-  forv_PNode(p, d->phi) {
-    Var *v = p->rvals.v[0]->sym->var;
-    p->lvals.v[0] = new_Var(v, env, f);
-  }
-  do {
-    for (int i = 0; i < d->rvals.n; i++)
-      d->rvals.v[i] = get_Var(d->rvals.v[i]->sym->var, env, f);
-    for (int i = 0; i < d->lvals.n; i++)
-      d->lvals.v[i] = new_Var(d->lvals.v[i]->sym->var, env, f);
-    if (d->cfg_succ.n != 1) {
-      forv_PNode(p, d->phy) {
-	Var *v = p->rvals.v[0]->sym->var;
-	p->rvals.v[0] = get_Var(v, env, f);
-      }
-      break;
-    }
-    s = d->cfg_succ.v[0];
-    if (s->cfg_pred.n > 1) {
-      forv_PNode(p, s->phi) {
-	int x = s->cfg_pred_index.get(d);
-	Var *v = p->rvals.v[0]->sym->var;
-	p->rvals.v[x] = get_Var(v, env, f);
-      }
-      break;
-    }
-    d = s;
-  } while(1);
-  for(int i = 0; i < d->cfg_succ.n; i++) {
-    PNode *p = d->cfg_succ.v[i];
-    if (!es.set_in(&d->cfg_succ.v[i]))
-      rename_edge(f, d, p, i, env, es);
-  }
-  env.pop();
 }
 
 static void
@@ -373,14 +356,10 @@ rename_vars(Fun *f, Vec<PNode *> nodes) {
     for (int i = 0; i < n->cfg_pred.n; i++)
       n->cfg_pred_index.put(n->cfg_pred.v[i], i);
   VarEnv env;
-  EdgeSet es;
   env.push();
-  for (int i = 0; i < f->entry->lvals.n; i++)
-    f->entry->lvals.v[i] = new_Var(f->entry->lvals.v[i]->sym->var, env, f);
-  for(int i = 0; i < f->entry->cfg_succ.n; i++) {
-    PNode *p = f->entry->cfg_succ.v[i];
-    rename_edge(f, f->entry, p, i, env, es);
-  }
+  Vec<PNode *> nset;
+  nset.add(f->entry);
+  rename_edge(f, f->entry, env, nset);
 }
 
 static void
@@ -421,11 +400,15 @@ eliminate_unused_code(Fun *f, Vec<PNode *> &base_nodes) {
   // collect worklist and set variable definitions
   for (int i = 0; i < nodes.n; i++) {
     PNode *n = nodes.v[i];
-    forv_PNode(p, n->phi) nodes.add(p); 
-    forv_PNode(p, n->phy) nodes.add(p); 
-    forv_Var(v, n->lvals) 
-      if (v) 
-	v->def = n;
+    forv_PNode(p, n->phi) {
+      forv_Var(v, p->lvals) if (v) v->def = p;
+      nodes.add(p); 
+    }
+    forv_PNode(p, n->phy) { 
+      forv_Var(v, p->lvals) if (v) v->def = p;
+      nodes.add(p); 
+    }
+    forv_Var(v, n->lvals) if (v) v->def = n;
     if (has_sideeffects(n, f->sym)) {
       n->used = 1;
       worklist.push(n);

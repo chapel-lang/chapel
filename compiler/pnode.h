@@ -5,6 +5,8 @@
 #define _pn_H_
 
 class Prim;
+class Dom;
+class LoopNode;
 
 /* #define CONC_IMPLEMENTED 1 */
 
@@ -16,13 +18,11 @@ class PNode : public gc {
 
   Vec<Var *> lvals;
   Vec<Var *> rvals;
-  Vec<Var *> tvals;
 
   // Control-Flow Graph (CFG): cfg.cpp, ssu.cpp 
   int mark; // ssu.c
   Vec<PNode *> cfg_succ;
   Vec<PNode *> cfg_pred;
-  Map<PNode *, int> cfg_pred_index;  // temporary in ssu.cpp
 #ifdef CONC_IMPLEMENTED
   Vec<PNode *> conc_succ;
   Vec<PNode *> conc_pred;
@@ -35,23 +35,36 @@ class PNode : public gc {
   Vec<PNode *> phi;
   Vec<PNode *> phy;
 
-  // fa.cpp
+  // Primitive
   Prim *prim;
 
-  // temporary space
+  // Temporary Space
   union {
     UNode *unode; // ssu.cpp
     int	used; // ssu.cpp
-    BlockHash<Var *, PointerHashFns> *live_vars;
+    BlockHash<Var *, PointerHashFns> *live_vars; // ssu.cpp
+    LoopNode *loop_node; // loop.cpp
   };
   Vec<Var *> lvals_set; // ssu.cpp
+  Map<PNode *, int> cfg_pred_index;  // ssu.cpp
 
+  // Dominators
+  Dom *dom; // dom.cpp
+
+  // inline.cpp
+  float execution_frequency;
+  float false_branch_frequency;
+
+  // Constructors
   PNode(Code *c);
   PNode();
 };
 #define forv_PNode(_p, _v) forv_Vec(PNode, _p, _v)
 
 void collect_Vars_PNode(PNode *n, Vec<Var *> &vars);
+
+typedef Vec<PNode *> VecPNode;
+typedef Map<PNode *, VecPNode> MapPNVecPN;
 
 #endif
 

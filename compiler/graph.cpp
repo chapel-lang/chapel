@@ -1,13 +1,17 @@
 /* -*-Mode: c++;-*-
  Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
-nnn*/
+*/
 
 #include "geysa.h"
 
 #define G_BOX		(1<<0)
-#define G_BLUE		(1<<2)
-#define G_GREEN 	(1<<3)
-#define G_RED 		(1<<4)
+#define G_BLUE		(1<<1)
+#define G_GREEN 	(1<<2)
+#define G_RED 		(1<<3)
+
+// options to pnode print
+#define G_DOM		(1<<10)
+#define G_LOOP		(1<<11)
 
 char graph_fun[80];
 char graph_var[80];
@@ -36,7 +40,6 @@ graph_start(char *fn, char *tag, char *name) {
       fprintf(fp, 
 	      "\tedge.arrowsize: 15\n"
 	      "\tedge.thickness: 3\n"
-	      "\torientation: left_to_right\n"
 	);
       break;
     case GraphViz:
@@ -164,22 +167,22 @@ graph_ast(Vec<Fun *> &funs, char *fn) {
 }
 
 static void
-strcat_var_node(char *s, Var *v) {
-  if (v->sym->name)
-    strcat(s, v->sym->name);
+strcat_sym_node(char *s, Sym *sy) {
+  if (sy->name)
+    strcat(s, sy->name);
   else {
     char id[80];
-    sprintf(id, "_%d", v->sym->id);
+    sprintf(id, "_%d", sy->id);
     strcat(s, id);
   }
 }
 
 static void
-graph_pnode_node(FILE *fp, PNode *pn) {
-  char title[80] = "";
+graph_pnode_node(FILE *fp, PNode *pn, int options = 0) {
+  char title[256] = "";
   if (pn->lvals.n) {
     forv_Var(v, pn->lvals) {
-      strcat_var_node(title, v);
+      strcat_sym_node(title, v->sym);
       strcat(title, " ");
     }
     strcat(title, "= ");
@@ -188,15 +191,54 @@ graph_pnode_node(FILE *fp, PNode *pn) {
   strcat(title, code_string[kind]);
   forv_Var(v, pn->rvals) {
     strcat(title, " ");
-    strcat_var_node(title, v);
+    strcat_sym_node(title, v->sym);
   }
+  if (options & G_DOM) {
+    for (int i = 0; i < pn->dom->intervals.n; i += 2) {
+      sprintf(title + strlen(title), "[%d %d]", 
+	      pn->dom->intervals.v[i], pn->dom->intervals.v[i + 1]);
+    }
+  }
+  if (options & G_LOOP) {
+    sprintf(title + strlen(title), "C(%d %d)", 
+	    pn->loop_node->pre_dfs, pn->loop_node->post_dfs);
+    sprintf(title + strlen(title), "D(%d %d)", 
+	    pn->loop_node->pre_dom, pn->loop_node->post_dom);
+  }
+  if (fgraph_frequencies)
+    sprintf(title + strlen(title), "freq(%f)", pn->execution_frequency);
   graph_node(fp, (int)pn, title);
 }
 
 static void
-graph_pnode_edges(FILE *fp, PNode *pn) {
+graph_loop_node(FILE *fp, LoopNode *n) {
+  char title[256] = "";
+  sprintf(title, "%d-%d", n->pre_dom, n->post_dom);
+  graph_node(fp, (int)n, title);
+}
+
+static void
+graph_pnode_cfg_edges(FILE *fp, PNode *pn) {
   forv_PNode(ppn, pn->cfg_succ)
     graph_edge(fp, (int)pn, (int)ppn);
+}
+
+static void
+graph_loop_edges(FILE *fp, LoopNode *n) {
+  forv_LoopNode(nn, n->children)
+    graph_edge(fp, 
+	       n->node ? (int)n->node : (int)n, 
+	       nn->node ? (int)nn->node : (int)nn, G_BLUE);
+  forv_LoopNode(nn, n->loops)
+    graph_edge(fp, 
+	       n->node ? (int)n->node : (int)n, 
+	       nn->node ? (int)nn->node : (int)nn, G_RED);
+}
+
+static void
+graph_pnode_dom_edges(FILE *fp, PNode *pn) {
+  for (int i = 0; i < pn->dom->children.n; i++)
+    graph_edge(fp, (int)pn, (int)pn->dom->children.v[i]->node, G_BLUE);
 }
 
 static void
@@ -216,7 +258,41 @@ graph_cfg(Vec<Fun *> &funs, char *fn) {
     forv_PNode(p, pnodes)
       graph_pnode_node(fp, p);
     forv_PNode(p, pnodes)
-      graph_pnode_edges(fp, p);
+      graph_pnode_cfg_edges(fp, p);
+  }
+  graph_end(fp);
+}
+
+static void 
+graph_dom(Vec<Fun *> &funs, char *fn) {
+  FILE *fp = graph_start(fn, "dom", "Dominators Graph");
+  forv_Fun(f, funs) {
+    Vec<PNode *> pnodes;
+    f->collect_PNodes(pnodes);
+    forv_PNode(p, pnodes)
+      graph_pnode_node(fp, p, G_DOM);
+    forv_PNode(p, pnodes) {
+      graph_pnode_cfg_edges(fp, p);
+      graph_pnode_dom_edges(fp, p);
+    }
+  }
+  graph_end(fp);
+}
+
+static void 
+graph_loops(Vec<Fun *> &funs, char *fn) {
+  FILE *fp = graph_start(fn, "loops", "Loop Nests Graph");
+  forv_Fun(f, funs) if (f->loops->loops) {
+    forv_LoopNode(p, f->loops->nodes)
+      if (p->node)
+	graph_pnode_node(fp, (PNode*)p->node, G_LOOP);
+      else
+	graph_loop_node(fp, p);
+    forv_LoopNode(p, f->loops->nodes) {
+      if (p->node)
+        graph_pnode_cfg_edges(fp, (PNode*)p->node);
+      graph_loop_edges(fp, p);
+    }
   }
   graph_end(fp);
 }
@@ -224,15 +300,17 @@ graph_cfg(Vec<Fun *> &funs, char *fn) {
 static void
 graph_var_node(FILE *fp, Var *v, int options = 0) {
   char id[80] = "";
-  strcat_var_node(id, v);
-  Vec<Sym *> consts;
-  if (constant_info(v, consts)) {
-    strcat(id, " {");
-    forv_Sym(s, consts) {
-      strcat(id, " ");
-      sprint(id + strlen(id), s->imm, s->type);
+  strcat_sym_node(id, v->sym);
+  if (fgraph_constants) {
+    Vec<Sym *> consts;
+    if (constant_info(v, consts)) {
+      strcat(id, " {");
+      forv_Sym(s, consts) {
+	strcat(id, " ");
+	sprint(id + strlen(id), s->imm, s->type);
+      }
+      strcat(id, " }");
     }
-    strcat(id, " }");
   }
   graph_node(fp, (int)v, id, options | G_BLUE);
 }
@@ -283,7 +361,7 @@ graph_ssu(Vec<Fun *> &funs, char *fn) {
     }
     forv_PNode(p, pnodes) {
       graph_pnode_var_edges(fp, p);
-      graph_pnode_edges(fp, p);
+      graph_pnode_cfg_edges(fp, p);
       graph_phi_phy_edges(fp, p);
     }
   }
@@ -352,9 +430,73 @@ graph_avars(FA *fa, char *fn) {
   graph_end(fp);
 }
 
+static void
+strcat_pattern(char *title, Sym *s) {
+  strcat(title, "(");
+  forv_Sym(a, s->has) {
+    strcat(title, " ");
+    strcat_sym_node(title, a);
+  }
+  strcat(title, " )");
+}
+
+static void
+graph_fun_node(FILE *fp, Fun *f) {
+  char title[256] = "";
+  strcat_sym_node(title, f->sym);
+  forv_Var(a, f->args) {
+    strcat(title, " ");
+    if (!a->sym->pattern)
+      strcat_sym_node(title, a->sym);
+    else
+      strcat_pattern(title, a->sym);
+  }
+  if (fgraph_frequencies)
+    sprintf(title + strlen(title), "freq(%f)", f->execution_frequency);
+  graph_node(fp, (int)f, title);
+}
+
+static void
+graph_call(FILE *fp, Fun *f, Fun *ff) {
+  graph_edge(fp, (int)f, (int)ff);
+}
+
+static void
+graph_calls(FA *fa, char *fn) {
+  FILE *fp = graph_start(fn, "calls", "Call Graph");
+  forv_Fun(f, fa->funs)
+    graph_fun_node(fp, f);
+  forv_Fun(f, fa->funs) {
+    Vec<Fun *> calls;
+    f->calls_funs(calls);
+    forv_Fun(ff, calls)
+      graph_call(fp, f, ff);
+  }
+  graph_end(fp);
+}
+
+static void
+graph_rec(FA *fa, char *fn) {
+  FILE *fp = graph_start(fn, "rec", "Recursion (Interprocedural Loops)");
+  forv_LoopNode(n, fa->pdb->loops->nodes)
+    if (n->node)
+      graph_fun_node(fp, (Fun*)n->node);
+    else
+      graph_loop_node(fp, n);
+  forv_LoopNode(n, fa->pdb->loops->nodes)
+    if (n->node) {
+      Fun *f = (Fun*)n->node;
+      Vec<Fun *> calls;
+      f->calls_funs(calls);
+      forv_Fun(ff, calls)
+	graph_call(fp, f, ff);
+    } else
+      graph_loop_edges(fp, n);
+  graph_end(fp);
+}
+
 void 
-graph(FA *fa, Fun *top, char *fn, int agraph_type) {
-  (void) top;
+graph(FA *fa, char *fn, int agraph_type) {
   graph_type = agraph_type;
   Vec<Fun *> tfuns, funs;
   tfuns.copy(fa->funs);
@@ -369,5 +511,9 @@ graph(FA *fa, Fun *top, char *fn, int agraph_type) {
   graph_ast(funs, fn);
   graph_cfg(funs, fn);
   graph_ssu(funs, fn);
+  graph_dom(funs, fn);
+  graph_loops(funs, fn);
   graph_avars(fa, fn);
+  graph_calls(fa, fn);
+  graph_rec(fa, fn);
 }

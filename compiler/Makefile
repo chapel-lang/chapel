@@ -21,6 +21,7 @@ GEYSA_CVS_SRCS = \
 	cfg.cpp \
 	cg.cpp \
 	clone.cpp \
+	dom.cpp \
 	driver.cpp \
 	dump.cpp \
 	fa.cpp \
@@ -29,8 +30,10 @@ GEYSA_CVS_SRCS = \
 	grammar.cpp \
 	graph.cpp \
 	if1.cpp \
+	inline.cpp \
 	list.cpp \
 	log.cpp \
+	loop.cpp \
 	map.cpp \
 	misc.cpp \
 	mysystem.cpp \

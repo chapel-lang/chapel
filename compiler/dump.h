@@ -4,6 +4,6 @@
 #ifndef _dump_H_
 #define _dump_H_
 
-void dump_html(FA *pdb, Fun *top, char *fn);
+void dump_html(FA *pdb, char *fn);
 
 #endif

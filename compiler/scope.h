@@ -13,7 +13,7 @@ enum Scope_kind {
 
 class Scope : public gc {
  public:
-  uint			kind:2;
+  unsigned int		kind:2;
   Map<char *, Sym *>	hash;
   Vec<Scope*>		dynamic;
   Scope 		*up;
@@ -28,7 +28,7 @@ class Scope : public gc {
   Scope *		module();
   
   Scope() : kind(Scope_RECURSIVE), up(0), next(0) {}
-  Scope(Scope *s, uint k, Sym *an_in) : up(s), next(0), in(an_in) {
+  Scope(Scope *s, unsigned int k, Sym *an_in) : up(s), next(0), in(an_in) {
     if (k == Scope_INHERIT)
       kind = up->kind;
     else

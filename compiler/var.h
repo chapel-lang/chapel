@@ -20,7 +20,7 @@ class Var : public gc {
   AVarMap		avars;	// used by fa.cpp
   CreationSet		*as_CreationSet; // used by fa.cpp
   AType			*as_AType; // used by fa.cpp
-  uint			clone_for_constants : 1;
+  unsigned int		clone_for_constants : 1;
   char			*cg_string; // used by cg.cpp
 
   Var *copy();

@@ -67,6 +67,7 @@ void myassert();
 #include "ssu.h"
 #include "fa.h"
 #include "var.h"
+#include "dom.h"
 #include "pnode.h"
 #include "region.h"
 #include "fun.h"
@@ -76,6 +77,8 @@ void myassert();
 #include "dump.h"
 #include "cg.h"
 #include "grammar.h"
+#include "inline.h"
+#include "loop.h"
 #include "graph.h"
 #include "version.h"
 

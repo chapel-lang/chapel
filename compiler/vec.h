@@ -27,6 +27,7 @@ template <class C> class Vec : public gc {
   inline void add(C a);
   inline int add_exclusive(C a);
   inline C& add();
+  inline C pop();
   inline void clear();
   inline void set_clear();
   inline C *set_add(C a);
@@ -61,8 +62,31 @@ template <class C> class Vec : public gc {
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
                     ((int)(qq__##_p) < (_v).n) && ((_p = (_v).v[(int)qq__##_p]) || 1); qq__##_p = (_c*)(((int)qq__##_p) + 1))
 
+// Intervals store sets in interval format (e.g. [1..10][12..12]).
+// Inclusion test is by binary search on intervals.
+// Deletion is not supported
+class Intervals : public Vec<int> {
+ public:
+  void insert(int n);
+  int in(int n);
+};
 
-extern uint prime2[];
+// UnionFind supports fast unify and finding of
+// 'representitive elements'.
+// Elements are numbered from 0 to N-1.
+class UnionFind : public Vec<int> {
+ public:
+  // set number of elements, initialized to singletons, may be called repeatedly to increase size
+  void size(int n); 
+  // return representitive element
+  int find(int n);
+  // unify the sets containing the two elements
+  void unify(int n, int m);
+};
+
+extern unsigned int prime2[];
+
+
 
 /* IMPLEMENTATION */
 
@@ -95,6 +119,15 @@ Vec<C>::add() {
   else
     ret = &add_internal();
   return *ret;
+}
+
+template <class C> inline C
+Vec<C>::pop() {
+  n--;
+  C ret = v[n];
+  if (!n)
+    clear();
+  return ret;
 }
 
 template <class C> inline void

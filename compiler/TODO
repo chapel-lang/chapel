@@ -104,3 +104,21 @@
 
 - fix dispatch to take the most specific method for any given
   set of arguments
+
+- use simple_inline_calls to accelerate analysis
+
+- endless loops hang SSU conversion
+
+- splice_in_clone should fixup the IF1/CFG/SSU/AVARS etc.
+
+- handle goto, return etc. in gen_if1
+
+- set Fun::has_return in ast.cpp
+
+- when building types if t->type != t remove it if t->type is present
+
+- verify CDG nesting code
+
+- remove recursion from rename_edge (amoung others)
+
+- remove dom.h is_dominated_by and replace with dfs_pred/succ implementation

@@ -535,7 +535,7 @@ fixup_var(Var *v, Fun *f, Vec<EntrySet *> *ess) {
   v->avars.move(avs);
 }
 
-static void
+void
 fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
   f->ess.copy(*ess);
   forv_EntrySet(es, f->ess) if (es)
@@ -575,12 +575,14 @@ clone_functions() {
 	}
       }	
     }
-  }
+  }	
   // build cloned call graph
   // careful: only EntrySet::fun has been updated with the cloned function!
   // build Fun::calls
   forv_EntrySet(es, fa->ess) {
     Fun *f = es->fun;
+    Vec<AEdge *> used_edges;
+    used_edges.set_union(es->out_edges); // build set
     for (int i = 0; i < es->out_edge_map.n; i++) {
       if (es->out_edge_map.v[i].key) {
 	PNode *pnode = es->out_edge_map.v[i].key;
@@ -590,8 +592,9 @@ clone_functions() {
 	Vec<Fun *> *vf = f->calls.get(pnode);
 	if (!vf)
 	  f->calls.put(pnode, (vf = new Vec<Fun *>));
-	for (int j = 0; j < m->n; j++) if (m->v[j].key)
-	  vf->add(m->v[j].value->to->fun);
+	for (int j = 0; j < m->n; j++) 
+	  if (m->v[j].key && used_edges.set_in(m->v[j].value))
+	    vf->add(m->v[j].value->to->fun);
       }
     }
   }
@@ -606,7 +609,7 @@ clone_functions() {
 }
 
 int
-PDB::clone(FA *afa, Fun *top) {
+clone(FA *afa, Fun *top) {
   ::fa = afa;
   initialize();
   determine_clones();

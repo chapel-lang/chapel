@@ -19,9 +19,12 @@ extern int d_verbose_level;
 extern int d_debug_level;
 
 int fdce_if1 = 1;
+int finline = 0;
+int fsimple_inline = 0;
 int fgraph = 0;
 int fgraph_constants = 0;
-int fgraphviz = 0;
+int fgraph_frequencies = 0;
+int fgraph_vcg = 0;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 
 
@@ -29,13 +32,18 @@ static ArgumentDescription arg_desc[] = {
  {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
  {"sysdir", 'D', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
+ {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
+ {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
  {"write_c", ' ', "Write C", "T", &fwrite_c, "CHPL_WRITE_C", NULL},
  {"dump_html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_DUMP_HTML", NULL},
  {"graph", 'G', "Graph Flow Analysis", "T", &fgraph, "CHPL_GRAPH", NULL},
  {"graph_var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
  {"graph_fun", ' ', "Limit Graph to Fun", "S80", graph_fun, "CHPL_GRAPH_FUN", NULL},
- {"graphviz", ' ', "Graphviz Output", "T", &fgraphviz, "CHPL_GRAPHVIZ", NULL},
- {"graph_constants", ' ', "Do not Graph Constants", "T", &fgraph_constants, "CHPL_GRAPH_FUN", NULL},
+ {"graph_vcg", ' ', "VCG Output", "T", &fgraph_vcg, "CHPL_GRAPHVCG", NULL},
+ {"graph_constants", ' ', "Graph Constants", "T", &fgraph_constants, 
+  "CHPL_GRAPH_CONSTANTS", NULL},
+ {"graph_frequencies", ' ', "Graph Frequencies", "T", &fgraph_frequencies, 
+  "CHPL_GRAPH_FREQUENCIES", NULL},
  {"log_dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'l', "Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
@@ -231,7 +239,7 @@ compile_one(char *fn) {
   }
   FA *fa = pdb->analyze(if1->top->fun);
   if (fa) {
-    if (pdb->clone(fa, if1->top->fun) < 0)
+    if (clone(fa, if1->top->fun) < 0)
       goto Lfail;
     if (fwrite_c) {
       char cfn[512];
@@ -239,13 +247,20 @@ compile_one(char *fn) {
       strcat(cfn, ".c");
       my_write_c(fa, if1->top->fun, cfn);
     }
+    forv_Fun(f, fa->funs)
+      build_forward_cfg_dominators(f);
+    frequency_estimation(fa);
+    if (fgraph)
+      graph(fa, fn, !fgraph_vcg ? GraphViz : VCG);
+    if (finline)
+      inline_calls(fa);
+    else if (fsimple_inline)
+      simple_inline_calls(fa);
 #ifdef YEAH_I_REALLY_WANT_TO_ENABLE_CODEGEN
     codegen(fa, fn, system_dir);
 #endif
     if (fdump_html)
-      dump_html(fa, if1->top->fun, fn);
-    if (fgraph)
-      graph(fa, if1->top->fun, fn, fgraphviz ? GraphViz : VCG);
+      dump_html(fa, fn);
   } else
   Lfail:
     fail("fatal error, program does not type");
@@ -264,7 +279,6 @@ init_system() {
     strcat(system_dir, "/");
 }
 
-
 static void
 compute_program_name_loc(char* argv0, char** name, char** loc) {
   char* lastslash = strrchr(argv0, '/');
@@ -279,7 +293,6 @@ compute_program_name_loc(char* argv0, char** name, char** loc) {
   }
   strcpy(system_dir, *loc);
 }
-
 
 int
 main(int argc, char *argv[]) {

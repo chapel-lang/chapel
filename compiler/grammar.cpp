@@ -40,16 +40,19 @@ loop_AST(D_ParseNode &loop, D_ParseNode &cond, D_ParseNode *before,
     b->add(body.user.ast);
     b->add(after->user.ast);
   }
-  AST *a = new AST(AST_loop);
-  a->set_location(&loop);
-  if (before && before != &body)
+  AST *l = new AST(AST_loop), *a = l;
+  l->set_location(&loop);
+  if (before && before != &body) {
+    a = new AST(AST_block);
     a->add(before->user.ast);
+    a->add(l);
+  }
   if (before != &body)
-    a->add(new AST(AST_loop_cond, &cond));
-  a->add(b);
+    l->add(new AST(AST_loop_cond, &cond));
+  l->add(b);
   if (before == &body)
-    a->add(new AST(AST_loop_cond, &cond));
-  return NULL;
+    l->add(new AST(AST_loop_cond, &cond));
+  return a;
 }
 
 AST *

@@ -235,6 +235,8 @@ dump_ast_tree(FILE *fp, Fun *f, AST *a, int indent = 0) {
     fprintf(fp, " calls ");
     dump_fun_list(fp, funs);
   }
+  if (a->prim)
+    fprintf(fp, " primitive %s", a->prim->name);
   fputs("\n", fp);
   if (a->n) {
     for (int i = 0; i < indent; i++) putc(' ', fp);
@@ -387,7 +389,7 @@ dump_symbols(FILE *fp, FA *fa) {
 }
 
 void 
-dump_html(FA *fa, Fun *top, char *fn) {
+dump_html(FA *fa, char *fn) {
   char hfn[512];
   strcpy(hfn, log_dir);
   strcat(hfn, "dump.html");

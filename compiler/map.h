@@ -21,7 +21,7 @@ class MapElem {
   K	key;
   C	value;
   bool operator==(MapElem &e) { return e.key == key; }
-  operator uint(void) { return (uint)key; }
+  operator unsigned int(void) { return (unsigned int)key; }
   MapElem(unsigned int x) { assert(!x); key = 0; value = 0; }
   MapElem(K akey, C avalue) : key(akey), value(avalue) {}
   MapElem(MapElem &e) : key(e.key), value(e.value) {}
@@ -32,19 +32,22 @@ template <class K, class C> class Map : public Vec<MapElem<K,C> > {
  public:
   inline MapElem<K,C> *put(K akey, C avalue);
   inline C get(K akey);
+  inline void get_keys(Vec<K> &keys);
+  inline void get_values(Vec<C> &values);
 };
 
 template <class C> class HashFns {
  public:
-  static uint hash(C a);
+  static unsigned int hash(C a);
   static int equal(C a, C b);
 };
 
 class StringHashFns {
  public:
-  static uint hash(char *s) { 
-    uint h = 0;	
-    while (*s) h = h * 27 + (uint8)*s++;  // 31 changed to 27, to avoid prime2 in vec.cpp
+  static unsigned int hash(char *s) { 
+    unsigned int h = 0;	
+    // 31 changed to 27, to avoid prime2 in vec.cpp
+    while (*s) h = h * 27 + (unsigned char)*s++;  
     return h;
   }
   static int equal(char *a, char *b) { return !strcmp(a, b); }
@@ -52,11 +55,11 @@ class StringHashFns {
 
 class PointerHashFns {
  public:
-  static uint hash(void *s) { return (uint)s; }
+  static unsigned int hash(void *s) { return (unsigned int)s; }
   static int equal(void *a, void *b) { return a == b; }
 };
 
-template <class C, class AHashFns> class OpenHash : public Map<uint, List<C> > {
+template <class C, class AHashFns> class OpenHash : public Map<unsigned int, List<C> > {
  public:
   inline C put(C c);
   inline C get(C c);
@@ -105,7 +108,7 @@ class Env : public gc {
   inline List<C> *get_bucket(K akey);
 };
 
-extern uint open_hash_multipliers[256];
+extern unsigned int open_hash_multipliers[256];
 
 /* IMPLEMENTATION */
 
@@ -124,16 +127,31 @@ Map<K,C>::put(K akey, C avalue) {
   return set_add(e);
 }
 
+template <class K, class C> inline void
+Map<K,C>::get_keys(Vec<K> &keys) {
+  for (int i = 0; i < n; i++)
+    if (v[i].key)
+      keys.add(v[i].key);
+}
+
+template <class K, class C> inline void
+Map<K,C>::get_values(Vec<C> &values) {
+  for (int i = 0; i < n; i++)
+    if (v[i].key)
+      values.set_add(v[i].value);
+  values.set_to_vec();
+}
+
 template <class C, class AnOpenHashFns> C
 OpenHash<C, AnOpenHashFns>::put(C c) {
-  uint h = AnOpenHashFns::hash(c);
+  unsigned int h = AnOpenHashFns::hash(c);
   List<C> *l;
-  MapElem<uint,List<C> > e(h, (C)0);
-  MapElem<uint,List<C> > *x = set_in(e);
+  MapElem<unsigned int,List<C> > e(h, (C)0);
+  MapElem<unsigned int,List<C> > *x = set_in(e);
   if (x)
     l = &x->value;
   else
-    l = &Map<uint, List<C> >::put(h, c)->value;
+    l = &Map<unsigned int, List<C> >::put(h, c)->value;
   forc_List(C, x, *l)
     if (AnOpenHashFns::equal(c, x->car))
       return x->car;
@@ -143,9 +161,9 @@ OpenHash<C, AnOpenHashFns>::put(C c) {
 
 template <class C, class AnOpenHashFns> C
 OpenHash<C, AnOpenHashFns>::get(C c) {
-  uint h = AnOpenHashFns::hash(c);
-  MapElem<uint,List<C> > e(h, (C)0);
-  MapElem<uint,List<C> > *x = set_in(e);
+  unsigned int h = AnOpenHashFns::hash(c);
+  MapElem<unsigned int,List<C> > e(h, (C)0);
+  MapElem<unsigned int,List<C> > *x = set_in(e);
   if (!x)
     return 0;
   List<C> *l = &x->value;
@@ -158,15 +176,16 @@ OpenHash<C, AnOpenHashFns>::get(C c) {
 
 inline char *
 StringOpenHash::cannonicalize(char *s, char *e) {
-  uint h = 0;
+  unsigned int h = 0;
   char *a = s;
+  // 31 changed to 27, to avoid prime2 in vec.cpp
   if (e)
-    while (a != e) h = h * 27 + (uint8)*a++;  // 31 changed to 27, to avoid prime2 in vec.cpp
+    while (a != e) h = h * 27 + (unsigned char)*a++;  
   else
-    while (*a) h = h * 27 + (uint8)*a++;  // 31 changed to 27, to avoid prime2 in vec.cpp
+    while (*a) h = h * 27 + (unsigned char)*a++;  
   List<char*> *l;
-  MapElem<uint,List<char*> > me(h, (char*)0);
-  MapElem<uint,List<char*> > *x = set_in(me);
+  MapElem<unsigned int,List<char*> > me(h, (char*)0);
+  MapElem<unsigned int,List<char*> > *x = set_in(me);
   if (x) {
     l = &x->value;
     forc_List(char *, x, *l) {
@@ -243,7 +262,7 @@ NBlockHash<C, AHashFns, N>::last() {
 template <class C, class AHashFns, int N> inline C
 NBlockHash<C, AHashFns, N>::put(C c) {
   int a;
-  uint h = AHashFns::hash(c);
+  unsigned int h = AHashFns::hash(c);
   C *x = &v[(h % n) * N];
   for (a = 0; a < N; a++) {
     if (!x[a])
@@ -271,7 +290,7 @@ NBlockHash<C, AHashFns, N>::get(C c) {
   int a;
   if (!n)
     return (C)0;
-  uint h = AHashFns::hash(c);
+  unsigned int h = AHashFns::hash(c);
   C *x = &v[(h % n) * N];
   for (a = 0; a < N; a++) {
     if (!x[a])
@@ -287,7 +306,7 @@ NBlockHash<C, AHashFns, N>::del(C c) {
   int a, b;
   if (!n)
     return;
-  uint h = AHashFns::hash(c);
+  unsigned int h = AHashFns::hash(c);
   C *x = &v[(h % n) * N];
   for (a = 0; a < N; a++) {
     if (!x[a])

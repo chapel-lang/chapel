@@ -142,3 +142,19 @@
    fun:GC_reclaim_block
    fun:GC_apply_to_all_blocks
 }
+{
+   boehm-memcheck19
+   Memcheck:Cond
+   fun:GC_block_nearly_full1
+   fun:GC_block_nearly_full
+   fun:GC_reclaim_block
+   fun:GC_apply_to_all_blocks
+}
+{
+   boehm-memcheck20
+   Memcheck:Cond
+   fun:GC_reclaim_clear4
+   fun:GC_reclaim_generic
+   fun:GC_reclaim_small_nonempty_block
+   fun:GC_continue_reclaim
+}

@@ -15,6 +15,7 @@ class PDB : public gc {
   IF1 *if1;
   Map<char *, Sym *> global_map;
   Vec<Fun*> funs;
+  LoopGraph *loops;
 
   Sym *find_global(char *);
   void add(Fun *f) { f->id = funs.n; funs.add(f); }

@@ -17,10 +17,11 @@ class Region : public gc {
   Vec<UEdge *> edges;
   Region *parent;
   Vec<Region *> children;
+  int depth;
 
   Region *copy(PNodeMap &map);
-  Region(UEdge *aentry, UEdge *aexit) : entry(aentry), exit(aexit), parent(NULL) {}
-  Region() : entry(NULL), exit(NULL), parent(NULL) {}
+  Region(UEdge *aentry, UEdge *aexit) : entry(aentry), exit(aexit), parent(NULL), depth(0) {}
+  Region() : entry(NULL), exit(NULL), parent(NULL), depth(0) {}
 };
 #define forv_Region(_p, _v) forv_Vec(Region, _p, _v)
 

@@ -114,8 +114,8 @@ operator(a:anynum, #"^=", b:int)	   : #__primitive a #"^" b;
 operator(a:any, #"->", b:symbol)	   : #__primitive (#__primitive #"*" a) #"." b;
 operator(a:any, #"->*", b:symbol)	   : #__primitive (#__primitive #"*" a) #"." b; 
 operator(a:anynum, #"^^", b:anynum)	   : #__primitive a #"^^" b;
-operator(#"++", a:anynum)		   : a #"+" 1;
-operator(#"--", a:anynum)		   : a #"-" 1;
+operator(#"++", a:anynum)		   : a + 1;
+operator(#"--", a:anynum)		   : a - 1;
 operator(#"+", a:anynum)		   : #__primitive #"+" a;
 operator(#"-", a:anynum)		   : #__primitive #"-" a;
 operator(#"~", a:anynum)		   : #__primitive #"~" a;
@@ -124,8 +124,8 @@ operator(#"*", a:any)			   : #__primitive #"*" a;
 operator(#"&", var a:any)		   : #__primitive #"&" a;
 operator(a:anynum, #"|", b:anynum)	   : #__primitive a #"|" b;
 operator(#"(", a:symbol, b:any)		   : #__primitive #"(" a b;
-operator(a:anynum, #"++")		   : a #"+" 1;
-operator(a:anynum, #"--")		   : a #"-" 1;
+operator(a:anynum, #"++")		   : a + 1;
+operator(a:anynum, #"--")		   : a - 1;
 
 // tuples indexing
 

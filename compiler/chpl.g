@@ -279,9 +279,10 @@ expression
   | 'do' loop_scope expression 'while' expression $right 6300
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n4, &$n2, 0, $n2); }
-  | 'for' loop_scope '(' expression? ';' expression? ';' expression? ')' expression
+  | 'for' loop_scope '(' expression? ';' expression? ';' expression? ')'
+      expression $right 6400
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
-    { $$.ast = loop_AST($n0, $n3, &$n5, &$n7, $n9); }
+    { $$.ast = loop_AST($n0, $n5, &$n3, &$n7, $n9); }
   | 'with' with_scope expression $right 5100
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = new AST(AST_with, &$n); }

@@ -9,6 +9,9 @@
 
 class ESet;
 class AVar;
+class LoopGraph;
+class LoopNode;
+class Dom;
 
 class CallPoint : public gc {
  public:
@@ -32,6 +35,7 @@ class Fun : public gc {
   Region *region;
 
   uint init_function : 1; // everything is global
+  uint has_return : 1;
 
   // fa.cpp
   uint fa_collected : 1;
@@ -44,6 +48,11 @@ class Fun : public gc {
   Vec<PNode *> fa_phi_PNodes;
   Vec<PNode *> fa_phy_PNodes;
   Vec<PNode *> fa_send_PNodes;
+
+  // loop.cpp
+  LoopGraph *loops;
+  LoopNode *loop_node;
+  Dom *dom;
   
   // clone.cpp
   Vec<EntrySet *> called_ess;
@@ -56,11 +65,19 @@ class Fun : public gc {
   Vec<Var *> args;
   Vec<Var *> rets;
   Map<PNode *, Vec<Fun *> *> calls;
+  void calls_funs(Vec<Fun *> &funs);
   Vec<CallPoint *> called;
+  void called_by_funs(Vec<Fun *> &funs);
 
+  // inline.cpp
+  float execution_frequency;
+  
   // cg.cpp
   char *cg_string;
   char *cg_structural_string;
+
+  // inline.cpp
+  int size;
   
   void collect_PNodes(Vec<PNode *> &v);
   void collect_Vars(Vec<Var *> &v, Vec<PNode *> *vv = 0);

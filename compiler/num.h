@@ -16,6 +16,14 @@ enum IF1_float_type {
   IF1_FLOAT_TYPE_NUM
 };
 
+#define CPP_IS_LAME {8,16,32,64}
+EXTERN int int_type_precision[4] EXTERN_INIT(CPP_IS_LAME);
+#undef CPP_IS_LAME
+
+#define CPP_IS_LAME {16,32,48,64,80,96,112,128}
+EXTERN int float_type_precision[8] EXTERN_INIT(CPP_IS_LAME);
+#undef CPP_IS_LAME
+
 #define CPP_IS_LAME {{0,0,0,0,0,0,0,0}, {"uint8","uint16","uint32","uint64",0,0,0,0}, {"int8","int16","int32","int64",0,0,0,0}, {0,"float32",0,"float64",0,0,0,0}}
 EXTERN char *num_type_string[4][8] EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME

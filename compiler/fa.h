@@ -140,7 +140,7 @@ class ATypeOpenHashFns {
   }
 };
 
-class ATypeViolation {
+class ATypeViolation : public gc {
  public:
   AVar *av;
   AType *type;
@@ -149,6 +149,25 @@ class ATypeViolation {
 };
 #define forv_ATypeViolation(_p, _v) forv_Vec(ATypeViolation, _p, _v)
 
+class ATypeFold : public gc {
+ public:
+  Prim *p;
+  AType *a;
+  AType *b;
+  AType *result;
+  ATypeFold(Prim *ap, AType *aa, AType *ab, AType *aresult = 0) : p(ap), a(aa), b(ab), result(aresult) {}
+};
+#define forv_ATypeFold(_p, _v) forv_Vec(ATypeFold, _p, _v)
+
+class ATypeFoldOpenHashFns {
+ public:
+  static uint hash(ATypeFold *x) { 
+    return (uint)x->p + (1009 * (uint)x->a) + (100003 * (uint)x->b);
+  }
+  static int equal(ATypeFold *x, ATypeFold *y) {
+    return x->p == y->p && x->a == y->a && x->b == y->b;
+  }
+};
 
 AVar * make_AVar(Var *v, EntrySet *es);
 Sym *coerce_num(Sym *a, Sym *b);
