@@ -1,6 +1,7 @@
 #include "geysa.h"
 #include "ast.h"
 #include "if1.h"
+#include "fa.h"
 #include "builtin.h"
 
 Sym *
@@ -203,10 +204,28 @@ Sym::must_implement_and_specialize(Sym *s) {
 
 int
 Sym::is_scalar() {
-  return sym_anynum->specializers.set_in(type) != 0;
+  return type && type->num_kind;
+  //return sym_anynum->specializers.set_in(type) != 0;
 }
 
 Sym *
 Sym::element_type() {
   return element;
+}
+
+Sym *
+Sym::coerce_to(Sym *to) {
+  if (this->is_scalar() && to->is_scalar()) {
+    Sym *t = coerce_num(this->type, to->type);
+    if (t == to->type)
+      return to->type;
+    return NULL;
+  }
+  if (element && element->is_scalar() && to->is_scalar()) {
+    Sym *t = coerce_num(to->type, element->type);
+    if (t == to->type)
+      return to->type;
+    return NULL;
+  }
+  return NULL;
 }

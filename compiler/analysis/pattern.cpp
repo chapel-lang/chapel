@@ -415,7 +415,7 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
   Vec<Fun *> new_matches, complete;
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    if (m->default_args.n || m->generic_substitutions.n || m->pointwise_substitutions.n) {
+    if (m->default_args.n || m->generic_substitutions.n || m->coercion_substitutions.n) {
       f = f->build(m);
       assert(f);
       // need to loop over filters and split Match for those elements of the filter
@@ -492,14 +492,8 @@ generic_substitutions(Match **am, MPosition &p, Vec<CreationSet*> args) {
   p.pop();
 }
 
-static int
-is_scalar_aggregate(Sym *type) {
-  Sym *et = type->element_type();
-  return et && et->is_scalar();
-}
-
 static void
-point_wise_uses(Match **am, MPosition &p, Vec<CreationSet*> args) {
+coercion_uses(Match **am, MPosition &p, Vec<CreationSet*> args) {
   Match *m = *am;
   p.push(1);
   for (int i = 0; i < args.n; i++) {
@@ -508,9 +502,12 @@ point_wise_uses(Match **am, MPosition &p, Vec<CreationSet*> args) {
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     Sym *formal_type = m->formal_types.get(cp);
-    if (formal_type && formal_type->is_scalar() && is_scalar_aggregate(concrete_type)) {
-      m->pointwise_substitutions.put(cp, concrete_type);
-      m->formal_types.put(cp, concrete_type->element_type());
+    if (formal_type) {
+      Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
+      if (coerced_type) {
+	m->coercion_substitutions.put(cp, concrete_type);
+	m->formal_types.put(cp, coerced_type);
+      }
     }
     p.inc();
   }
@@ -551,7 +548,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
   // record generic substitutions and point-wise applications
   for (int i = 0; i < applicable.n; i++) {
     generic_substitutions(&applicable.v[i], p, csargs);
-    point_wise_uses(&applicable.v[i], p, csargs);
+    coercion_uses(&applicable.v[i], p, csargs);
   }
   Vec<Match *> unsubsumed, subsumed;
   // eliminate those which are subsumed by some other function

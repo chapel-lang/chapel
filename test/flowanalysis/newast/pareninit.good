@@ -4,7 +4,7 @@
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::int64 ( int64 )
 ::main ( main )
-::null ( null null )
+::null ( null )
 ::x(pareninit.chpl:1) ( int64 )
 ::y(pareninit.chpl:2) ( int64 )
 function __init_internal_prelude internal_prelude.chpl:24

@@ -6,7 +6,7 @@
 ::b(danglingelse.chpl:4) ( int64 )
 ::int64 ( int64 )
 ::main ( main )
-::null ( null null )
+::null ( null )
 function __init_danglingelse danglingelse.chpl:29
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_prelude prelude.chpl:54

@@ -7,7 +7,7 @@
 ::foo(codegen_test.chpl:12) ( foo )
 ::int64 ( int64 )
 ::main ( main )
-::null ( null null )
+::null ( null )
 ::x(codegen_test.chpl:1) ( int64 )
 ::y(codegen_test.chpl:3) ( int64 )
 ::z(codegen_test.chpl:7) ( int64 )

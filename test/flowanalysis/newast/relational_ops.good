@@ -7,7 +7,7 @@
 ::m(relational_ops.chpl:1) ( int64 )
 ::main ( main )
 ::n(relational_ops.chpl:2) ( int64 )
-::null ( null null )
+::null ( null )
 ::o(relational_ops.chpl:3) ( int64 )
 ::p(relational_ops.chpl:4) ( int64 )
 function __init_internal_prelude internal_prelude.chpl:24

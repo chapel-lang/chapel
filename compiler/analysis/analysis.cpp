@@ -243,6 +243,9 @@ Sym *
 ASymbol::copy() {
   ASymbol *s = new_ASymbol(); 
   s->copy_values(this);
+  TypeSymbol *type_symbol = dynamic_cast<TypeSymbol *>(xsymbol);
+  (void) type_symbol;
+  //TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback)  
   s->xsymbol = xsymbol;
   return s;
 }
@@ -619,6 +622,24 @@ build_builtin_symbols() {
   builtin_Symbol(dtDomain, &sym_domain, "domain");
   builtin_Symbol(dtArray, &sym_array, "array");
   builtin_Symbol(dtLocale, &sym_locale, "locale");
+
+  // automatic promotions
+
+#if 1
+  sym_int8->specializes.add(sym_int16);
+  sym_int16->specializes.add(sym_int32);
+  sym_int32->specializes.add(sym_int64);
+
+  sym_int32->specializes.add(sym_float32);
+
+  sym_int32->specializes.add(sym_float64);
+  sym_int64->specializes.add(sym_float64);
+
+  sym_float32->specializes.add(sym_complex32);
+  sym_float64->specializes.add(sym_complex64);
+  sym_float128->specializes.add(sym_complex128);
+#else
+#endif
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
@@ -1447,9 +1468,9 @@ debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
   if (verbose_level > 1) {
     forv_Stmt(s, stmts)
       print_baseast(s);
-    forv_BaseAST(s, syms)
+    forv_BaseAST(s, syms) {
       if (s->astType == STMT_FNDEF)
-	print_ast(dynamic_cast<FnDefStmt*>(s)->fn->body);
+	print_ast(dynamic_cast<FnDefStmt*>(s)->fn->body); else { Type *t = dynamic_cast<Type*>(s); if (t) printf("<type %s %s>\n", t->name->name, t->name->cname); }}
   }
 }
 

@@ -14,7 +14,7 @@
 ::i(enumarray.chpl:16) ( Index (internal_prelude.chpl:1) )
 ::i(internal_prelude.chpl:5) ( Index (internal_prelude.chpl:1) classVals )
 ::main ( main )
-::null ( null null )
+::null ( null )
 ::probSize(enumarray.chpl:5) ( )
 ::this ( )
 function __init_enumarray enumarray.chpl:20

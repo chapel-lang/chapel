@@ -825,7 +825,7 @@ add_var_constraints(EntrySet *es) {
   forv_Var(v, f->fa_Vars) {
     AVar *av = make_AVar(v, es);
     if (v->sym->type && !v->sym->is_pattern) {
-      if (v->sym->is_external)
+      if (v->sym->is_external && v->sym->type->num_kind)
 	update_in(av, v->sym->type->abstract_type);
       if (v->sym->is_constant) // for constants, the abstract type is the concrete type
 	update_in(av, make_abstract_type(v->sym));

@@ -7,7 +7,7 @@
 ::i(formatoutput.chpl:10) ( Index (internal_prelude.chpl:1) )
 ::i(internal_prelude.chpl:5) ( Index (internal_prelude.chpl:1) )
 ::main ( main )
-::null ( null null )
+::null ( null )
 ::this ( )
 ::x(formatoutput.chpl:1) ( int64 )
 function __init_formatoutput formatoutput.chpl:17

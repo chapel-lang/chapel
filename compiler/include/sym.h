@@ -150,6 +150,7 @@ class Sym : public gc {
   virtual Sym		*copy();
   virtual int		is_scalar();
   virtual Sym *		element_type();
+  virtual Sym *		coerce_to(Sym *);
 
   void			copy_values(Sym *);
   void 			inherits_add(Sym *);

@@ -7,7 +7,7 @@
 ::m(bitwise_ops.chpl:1) ( int64 )
 ::main ( main )
 ::n(bitwise_ops.chpl:2) ( int64 )
-::null ( null null )
+::null ( null )
 ::o(bitwise_ops.chpl:3) ( int64 )
 ::p(bitwise_ops.chpl:4) ( int64 )
 function __init_bitwise_ops bitwise_ops.chpl:46
