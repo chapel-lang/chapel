@@ -18399,3 +18399,14 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/28/05 17:21:36 -- jplevyak
+
+Log message:
+	Remove me from .future, I think I am done with this one... if I am
+	wrong tell me.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_let8.future 
+
