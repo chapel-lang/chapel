@@ -6,6 +6,8 @@
 #include "callbacks.h"
 
 class Symbol;
+class UnresolvedSymbol;
+class MemberAccess;
 class BaseAST;
 class Label;
 class Code;
@@ -50,5 +52,6 @@ int AST_to_IF1(Vec<Stmt *> &stmts);
 Type *type_info(BaseAST *a, Symbol *s = 0);
 void call_info(FnSymbol *f, BaseAST *a, Vec<FnSymbol *> &fns);
 int constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s = 0);
+int resolve_symbol(UnresolvedSymbol *us, MemberAccess *ma, Symbol *&sym);
 
 #endif

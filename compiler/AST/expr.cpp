@@ -659,6 +659,8 @@ void MemberAccess::codegen(FILE* outfile) {
   else if (dynamic_cast<UnresolvedSymbol*>(member)) {
     /* SJD: Analysis should help with these cases; the previous case
        shouldn't happen if analysis is run (I think) */
+    Symbol *sym;
+    assert(resolve_symbol(dynamic_cast<UnresolvedSymbol*>(member), this, sym) >= 0); 
     base->codegen(outfile);
     fprintf(outfile, "->");
     member->codegen(outfile);

@@ -1574,3 +1574,24 @@ constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s) {
   return constants.n;
 }
 
+int 
+resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
+  if (ma->ainfo->pnodes.n != 1)
+    return -1;
+  PNode *pn = ma->ainfo->pnodes.v[0];
+  if (pn->code->kind != Code_SEND)
+    return -2;
+  Vec<Fun *> *fns = ma->stmt->parentFn->asymbol->fun->calls.get(pn);
+  if (!fns) {
+    BaseAST *sym = ((ASymbol*)pn->rvals.v[1]->type->has.v[0])->xsymbol;
+    if (!sym)
+      return -3;
+    s = dynamic_cast<Symbol*>(sym);
+    if (!s)
+      return -4;
+  } else
+    return -5;
+  return 0;
+}
+
+
