@@ -12253,3 +12253,14 @@ Modified files:
 	                                    dispatch3.good 
 	chapel/test/parsing/jplevyak/: module.good 
 
+---------------------------------------------------------------------------
+
+12/21/04 12:31:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	enhance "no type" error message when -v is given to include expression number
+	which can be looked up in log.i
+
+Modified files:
+	chapel/compiler/analysis/: fa_extras.cpp 
+
