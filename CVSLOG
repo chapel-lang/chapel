@@ -3667,3 +3667,21 @@ Modified files:
 	                      symbol.cpp symbol.h symtab.cpp type.cpp 
 	                      type.h 
 
+---------------------------------------------------------------------------
+
+06/22/04 17:23:00 -- bradc
+
+Log message:
+	Generalized our handling of reductions by specifying
+	reduction classes in the standard prelude (which are
+	currently empty) and having the parser cue on these
+	rather than building "sum" in by hand as I was
+	previously and assuming that all other symbols used
+	in the reduction context were also reductions.
+
+Modified files:
+	chapel/compiler/: createAST.cpp createAST.h driver.cpp 
+	chapel/compiler/AST/: Makefile TODO chapel.lex chapel.y loc.cpp 
+	                      prelude.chpl symbol.cpp symbol.h 
+	                      symtab.cpp symtab.h type.cpp type.h 
+
