@@ -7887,3 +7887,40 @@ Modified files:
 	chapel/test/flowanalysis/jplevyak/: classvar.good 
 	chapel/test/flowanalysis/newast/: enumarray.good 
 
+---------------------------------------------------------------------------
+
+09/17/04 11:43:17 -- bradc
+
+Log message:
+	Took another pass over the Makefiles to clean up some stuff
+	from last night's check-in.  Printing of subdirectories now
+	makes more sense; recursive Makefile structure is now more
+	common across Makefiles.  Fixed dependences in analysis/Makefile
+	so that certain files are not rebuilt if two makes are done
+	back-to-back.  Moved John's recent changes to
+	make_prims/make_prims.g to analysis/make_prims.g and removed
+	the contents of cast/ and make_prims/ as I believe they are
+	no longer used.  Once I verify this, I'll pull the empty
+	directories from the CVSROOT.
+
+Modified files:
+	chapel/compiler/: .cvsignore Makefile 
+	chapel/compiler/AST/: Makefile expr.cpp type.cpp 
+	chapel/compiler/adt/: Makefile 
+	chapel/compiler/analysis/: Makefile Makefile.share 
+	chapel/compiler/analysis/make_prims/: Makefile make_prims.g 
+	chapel/compiler/backend/: Makefile 
+	chapel/compiler/main/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.subdirrules 
+	chapel/compiler/parser/: Makefile 
+	chapel/compiler/passes/: Makefile 
+	chapel/compiler/traversals/: Makefile 
+	chapel/compiler/util/: Makefile 
+	chapel/compiler/vparser/: Makefile Makefile.share 
+	chapel/compiler/vparser/cast/: Makefile 
+Removed files:
+	chapel/compiler/cast/: Makefile cast.cpp 
+	chapel/compiler/make_prims/: Makefile make_prims.cpp 
+	                             make_prims.g 
+
