@@ -6,7 +6,7 @@
 ::a(usebeforedef.chpl:3) ( int64 )
 ::foo(usebeforedef.chpl:5) ( foo )
 ::main ( main )
-::null ( null )
+::void ( void )
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_prelude prelude.chpl:54
 function __init_usebeforedef usebeforedef.chpl:7

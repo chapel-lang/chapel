@@ -5,7 +5,7 @@
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::int64 ( int64 )
 ::main ( main )
-::null ( null )
+::void ( void )
 ::x(enum.chpl:3) ( classVals (enum.chpl:1) )
 ::y(enum.chpl:7) ( int64 )
 function __init_enum enum.chpl:10

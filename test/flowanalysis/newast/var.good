@@ -4,7 +4,7 @@
 ::__init_var(var.chpl:4) ( __init_var )
 ::int64 ( int64 )
 ::main ( main )
-::null ( null )
+::void ( void )
 ::x(var.chpl:1) ( int64 )
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_prelude prelude.chpl:54

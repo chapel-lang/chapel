@@ -27,11 +27,6 @@ void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
   if (fnSym) {
     if (fnSym->retType == dtUnknown) {
       fnSym->retType = return_type_info(fnSym);
-      // BLC: this is a mini-hack, as analysis currently returns dtUnknown
-      // for things that don't return anything rather than dtVoid
-      if (fnSym->retType == dtUnknown) {
-	fnSym->retType = dtVoid;
-      }
     }
   }
 }

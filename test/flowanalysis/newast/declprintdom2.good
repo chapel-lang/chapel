@@ -15,7 +15,7 @@
 ::m8(declprintdom2.chpl:5) ( int64 )
 ::m9(declprintdom2.chpl:6) ( int64 )
 ::main ( main )
-::null ( null )
+::void ( void )
 function __init_declprintdom2 declprintdom2.chpl:22
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_prelude prelude.chpl:54

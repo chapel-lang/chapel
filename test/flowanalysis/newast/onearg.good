@@ -6,7 +6,7 @@
 ::a(onearg.chpl:1) ( int64 )
 ::foo(onearg.chpl:3) ( foo )
 ::main ( main )
-::null ( null )
+::void ( void )
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_onearg onearg.chpl:6
 function __init_prelude prelude.chpl:54

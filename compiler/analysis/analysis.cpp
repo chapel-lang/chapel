@@ -1377,7 +1377,7 @@ gen_fun(FnDefStmt *f) {
   }
   Code *body = 0;
   if1_gen(if1, &body, f->fn->body->ainfo->code);
-  if1_move(if1, &body, sym_null, fn->ret, ast);
+  if1_move(if1, &body, sym_void, fn->ret, ast);
   if1_label(if1, &body, ast, ast->label[0]);
   Code *c = if1_send(if1, &body, 3, 0, sym_reply, fn->cont, fn->ret);
   forv_Sym(r, out_args)
@@ -1748,6 +1748,8 @@ to_AST_type(Sym *type) {
     return dtUnknown;
   ASymbol *asymbol = dynamic_cast<ASymbol *>(type);
   BaseAST *atype = asymbol->xsymbol;
+  if (!atype)
+    atype = ((ASymbol*)asymbol->type_sym)->xsymbol;
   Type *btype = dynamic_cast<Type *>(atype);
 #ifdef COMPLETE_TYPING
   assert(btype);
@@ -1888,6 +1890,11 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
     }
   } 
   return -13;
+}
+
+int
+function_is_used(FnSymbol *fn) {
+  return fn->asymbol->fun->ess.n != 0;
 }
 
 

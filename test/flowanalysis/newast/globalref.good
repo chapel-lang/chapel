@@ -10,7 +10,7 @@
 ::c(globalref.chpl:6) ( int64 )
 ::foo(globalref.chpl:12) ( foo )
 ::main ( main )
-::null ( null )
+::void ( void )
 function __init_globalref globalref.chpl:27
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_prelude prelude.chpl:54
