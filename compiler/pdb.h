@@ -21,7 +21,6 @@ class PDB : public gc {
 
   Sym *find_global(char *);
   void add(Fun *f);
-  FA *analyze(Fun *top);
   int clone(FA *fa, Fun *top);
 
   PDB(IF1 *aif1);

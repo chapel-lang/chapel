@@ -69,7 +69,7 @@ class Match : public gc {
  public:
   Fun *fun;
   Map<MPosition *, AType *> filters;
-  Match(Fun *afun) : fun(afun) {}
+  Match(Fun *afun) : fun(afun) {assert(afun);}
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
 

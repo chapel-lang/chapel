@@ -34,6 +34,6 @@ class AInfo : public AST {
   AInfo();
 };
 
-int analyze_new_ast(BaseAST *s);
+int AST_to_IF1(BaseAST *s);
 
 #endif

@@ -39,7 +39,8 @@ class SymScope : public gc {
   void setContext(Stmt* stmt, Symbol* sym = nilSymbol);
 
   void insert(Symbol* sym);
-  SymScope* findFileScope(void);
+  SymScope* findEnclosingScopeType(scopeType t);
+  SymScope* findFileScope(void) { return findEnclosingScopeType(SCOPE_FILE); }
 
   void addUndefined(UseBeforeDefSymbol*);
   void addUndefinedToFile(UseBeforeDefSymbol*);

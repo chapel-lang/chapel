@@ -1,0 +1,27 @@
+
+
+
+
+
+
+ called from 10 in __init at chain.chpl:13
+ called from 11 in __init at chain.chpl:13
+ called from 3 in foo at chain.chpl:4
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(<unknown>:0) ( int64 (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+bar(5);
+bar(7);
+foo(3);
+function __init chain.chpl:13
+function __init() {
+function bar chain.chpl:8
+function bar(inout a: ???) {
+function foo chain.chpl:4
+function foo(inout a: ???) {
+globals
+writeln("in bar, a is ", a);
+writeln("in foo, a is ", a);
+}
+}
+}

@@ -16,6 +16,7 @@
 #include "if1.h"
 #include "fa.h"
 #include "pdb.h"
+#include "pnode.h"
 
 class LabelMap : public Map<char *, BaseAST *> {};
 
@@ -25,6 +26,7 @@ static Sym *domain_valid_index_symbol = 0;
 static Sym *expr_simple_seq_symbol = 0;
 static Sym *expr_domain_symbol = 0;
 static Sym *expr_reduce_symbol = 0;
+static Sym *write_symbol = 0;
 static Sym *flood_symbol = 0;
 static Sym *completedim_symbol = 0;
 
@@ -71,6 +73,19 @@ close_symbols(BaseAST *a, Vec<BaseAST *> &syms) {
 }
 
 static void
+set_global_scope(Sym *s) {
+  s->function_scope = 0;
+  s->global_scope = 1;
+}
+
+static ASymbol *
+new_ASymbol(char *name = 0) {
+  ASymbol *s = new ASymbol;
+  if1_register_sym(if1, s, name);
+  return s;
+}
+
+static void
 map_symbols(Vec<BaseAST *> &syms) {
   int symbols = 0, types = 0, exprs = 0, stmts = 0;
   if (verbose_level > 1)
@@ -78,16 +93,18 @@ map_symbols(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms) {
     Symbol *sym = dynamic_cast<Symbol *>(s);
     if (sym) {
-      sym->asymbol = new ASymbol;
+      sym->asymbol = new_ASymbol(sym->name);
       sym->asymbol->xsymbol = sym;
+      sym->asymbol->function_scope = 1;
       symbols++;
       if (verbose_level > 1 && sym->name)
         printf("map_symbols: found Symbol '%s'\n", sym->name);
     } else {
       Type *t = dynamic_cast<Type *>(s);
       if (t) {
-	t->asymbol = new ASymbol;
+	t->asymbol = new_ASymbol(t->name->name);
 	t->asymbol->xsymbol = t;
+	set_global_scope(t->asymbol);
 	types++;
       } else {
 	Expr *e = dynamic_cast<Expr *>(s);
@@ -193,30 +210,38 @@ build_types(Vec<BaseAST *> &syms) {
 }
 
 static Sym *
-new_sym(char *name = 0) {
-  return if1_alloc_sym(if1, name);
+new_sym(char *name = 0, int global = 0) {
+  Sym *s = if1_alloc_sym(if1, name);
+  if (!global)
+    s->function_scope = 1;
+  else
+    s->global_scope = 1;
+  return s;
 }
 
 static void
 new_primitive_type(Sym *&sym, char *name) {
   if (!sym)
-    sym = new_sym(name);
+    sym = new_sym(name, 1);
   sym->type_kind = Type_PRIMITIVE;
+  if1_set_builtin(if1, sym, name);
 }
 
 static void
 new_alias_type(Sym *&sym, char *name, Sym *alias) {
   if (!sym)
-    sym = new_sym(name);
+    sym = new_sym(name, 1);
   sym->type_kind = Type_ALIAS;
   sym->alias = alias;
+  if1_set_builtin(if1, sym, name);
 }
 
 static void
 new_sum_type(Sym *&sym, char *name, ...)  {
   if (!sym)
-    sym = new_sym(name);
+    sym = new_sym(name, 1);
   sym->type_kind = Type_SUM;
+  if1_set_builtin(if1, sym, name);
   va_list ap;
   va_start(ap, name);
   Sym *s = 0;
@@ -229,21 +254,23 @@ new_sum_type(Sym *&sym, char *name, ...)  {
 static void
 new_global_variable(Sym *&sym, char *name) {
   if (!sym)
-    sym = new_sym(name);
+    sym = new_sym(name, 1);
   sym->global_scope = 1;
+  if1_set_builtin(if1, sym, name);
 }
 
 static void
 build_builtin_symbols() {
-  if (!sym_system)
-    sym_system = new_sym("system");
+  if (!sym_system) {
+    sym_system = new_sym("system", 1);
+    if1_set_builtin(if1, sym_system, "system");
+  }
   if (!sym_system->init)
-    sym_system->init = new_sym("__init");
+    sym_system->init = new_sym("__init", 1);
   build_module(sym_system, sym_system->init);
 
   new_primitive_type(sym_anyclass, "anyclass");
   sym_anyclass->type_sym = sym_anyclass;
-  
   new_primitive_type(sym_any, "any");
   new_primitive_type(sym_module, "module");
   new_primitive_type(sym_symbol, "symbol");
@@ -254,8 +281,9 @@ build_builtin_symbols() {
   new_primitive_type(sym_tuple, "tuple");
   new_primitive_type(sym_void, "void");
   if (!sym_object)
-    sym_object = new_sym("object");
+    sym_object = new_sym("object", 1);
   sym_object->type_kind = Type_RECORD;
+  if1_set_builtin(if1, sym_object, "object");
   new_primitive_type(sym_list, "list");
   new_primitive_type(sym_ref, "ref");
   new_primitive_type(sym_value, "value");
@@ -290,10 +318,13 @@ build_builtin_symbols() {
   new_primitive_type(sym_anynum, "anynum");
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
-  if1_set_symbols_type(if1);
+  if (!sym_new_object) {
+    sym_new_object = new_sym("new_object", 1);
+    if1_set_builtin(if1, sym_new_object, "new_object");
+  }
   
   new_global_variable(sym_null, "null");
-  new_global_variable(sym_init, "init");
+  sym_init = new_sym(); // placeholder
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
 #undef S
@@ -459,14 +490,22 @@ gen_if1(BaseAST *ast) {
     if (gen_if1(a) < 0)
       return -1;
   switch (ast->astType) {
+    case STMT: assert(!"case"); break;
     case STMT_NOOP: break;
     case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
     case STMT_TYPEDEF: break;
     case STMT_FNDEF: break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
+    case STMT_RETURN: {
+      ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
+      Sym *fn = s->parentFn->asymbol;
+      if (!s->expr->isNull())
+	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
+      Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
+      c->ast = s->ainfo;
+      break;
+    }
 #if 0
-    case STMT_RETURN: 
-      if1_move(if1, &ast->ainfo->code, ast->expr->ainfo->rval, ast->scope->in->ret, ast);
       // fall through
     case STMT_BREAK:
     case STMT_CONTINUE:
@@ -476,32 +515,35 @@ gen_if1(BaseAST *ast) {
       break;
     }
 #endif
-    case STMT_BLOCK: break;
+    case STMT_BLOCK: {
+      BlockStmt *s = dynamic_cast<BlockStmt*>(ast);
+      Vec<Stmt *> stmts;
+      getLinkElements(stmts, s->body);
+      forv_Stmt(ss, stmts)
+	if1_gen(if1, &s->ainfo->code, ss->ainfo->code);
+      break;
+    }
     case STMT_WHILELOOP: gen_while(ast); break;
     case STMT_FORLOOP: gen_for(ast); break;
     case STMT_COND: gen_cond(ast); break;
       
+    case EXPR: assert(!"case"); break;
+    case EXPR_LITERAL: assert(!"case"); break;
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
-      s->ainfo->rval = new_sym(s->str);
-      s->ainfo->rval->constant = s->str;
-      s->ainfo->rval->type = sym_int64;
+      s->ainfo->rval = if1_const(if1, sym_int64, s->str);
       s->ainfo->rval->imm.v_int64 = s->val;
       break;
     }
     case EXPR_FLOATLITERAL: {
       FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
-      s->ainfo->rval = new_sym(s->str);
-      s->ainfo->rval->constant = s->str;
-      s->ainfo->rval->type = sym_float64;
+      s->ainfo->rval = if1_const(if1, sym_float64, s->str);
       s->ainfo->rval->imm.v_float64 = s->val;
       break;
     }
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
-      s->ainfo->rval = new_sym(s->str);
-      s->ainfo->rval->constant = s->str;
-      s->ainfo->rval->type = sym_string;
+      s->ainfo->rval = if1_const(if1, sym_string, s->str);
       break;
     }
     case EXPR_VARIABLE: {
@@ -621,8 +663,24 @@ gen_if1(BaseAST *ast) {
       send->ast = s->ainfo;
       break;
     }
+    case EXPR_WRITECALL: {
+      WriteCall *s = dynamic_cast<WriteCall *>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
+      Vec<Expr *> args;
+      getLinkElements(args, s->argList);
+      forv_Vec(Expr, a, args)
+	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+      Code *send = if1_send1(if1, &s->ainfo->code);
+      send->ast = s->ainfo;
+      if1_add_send_arg(if1, send, sym_primitive);
+      if1_add_send_arg(if1, send, write_symbol);
+      forv_Vec(Expr, a, args)
+	if1_add_send_arg(if1, send, a->ainfo->rval);
+      if1_add_send_result(if1, send, s->ainfo->rval);
+      break;
+    }
     case EXPR_FNCALL:
-    case EXPR_WRITECALL:
     case EXPR_ARRAYREF:
     case EXPR_PARENOP: {
       ParenOpExpr *s = dynamic_cast<ParenOpExpr *>(ast);
@@ -634,7 +692,8 @@ gen_if1(BaseAST *ast) {
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      if1_add_send_arg(if1, send, s->baseExpr->ainfo->rval);
+      assert(s->baseExpr->ainfo->rval->name);
+      if1_add_send_arg(if1, send, if1_make_symbol(if1, s->baseExpr->ainfo->rval->name));
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
@@ -681,8 +740,50 @@ gen_if1(BaseAST *ast) {
       if1_add_send_result(if1, send, s->ainfo->rval);
       break;
     }
-    default: assert(0);
+  case SYMBOL:
+  case SYMBOL_USEBEFOREDEF:
+  case SYMBOL_VAR:
+  case SYMBOL_PARAM:
+  case SYMBOL_TYPE:
+  case SYMBOL_CLASS:
+  case SYMBOL_REDUCE:
+  case SYMBOL_FN:
+  case SYMBOL_ENUM:
+  case TYPE:
+  case TYPE_BUILTIN:
+  case TYPE_ENUM:
+  case TYPE_DOMAIN:
+  case TYPE_INDEX:
+  case TYPE_ARRAY:
+  case TYPE_USER:
+  case TYPE_CLASS:
+  case TYPE_TUPLE:
+  case AST_TYPE_END:
+    assert(!"case");
+    break;
   }
+  return 0;
+}
+
+static int
+gen_fun(FnDefStmt *f) {
+  Sym *fn = f->fn->asymbol;
+  Code *body = 0;
+  if1_gen(if1, &body, f->fn->body->ainfo->code);
+  AInfo *ast = f->ainfo;
+  if1_move(if1, &body, sym_null, fn->ret, ast);
+  if1_label(if1, &body, ast, ast->label[0]);
+  Code *c = if1_send(if1, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+  c->ast = ast;
+  Vec<Symbol *> args;
+  getLinkElements(args, f->fn->formals);
+  Sym *as[args.n + 1];
+  assert(f->fn->asymbol->name);
+  as[0] = if1_make_symbol(if1, f->fn->asymbol->name);
+  for (int i = 1; i < args.n + 1; i++)
+    as[i] = args.v[i-1]->asymbol;
+  if1_closure(if1, fn, body, args.n + 1, as);
+  fn->ast = ast;
   return 0;
 }
 
@@ -695,15 +796,26 @@ build_functions(Vec<BaseAST *> &syms) {
   forv_Vec(FnDefStmt, f, fns) {
     Sym *s = f->fn->asymbol;
     s->name = f->fn->name;
+    if (s->name && !strcmp("__init", s->name)) {
+      if1_set_builtin(if1, s, "init");
+      sym_init = s;
+    }
+    s->type = sym_function;
+    s->type_kind = Type_FUN;
+    s->type_sym = s;
     s->cont = new_sym();
     s->cont->ast = f->ainfo;
+    s->ret = new_sym();
+    s->ret->ast = f->ainfo;
     s->labelmap = new LabelMap;
+    set_global_scope(s);
   }
   forv_Vec(FnDefStmt, f, fns) {
     if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
     Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
     if (resolve_labels(f->fn->body, f->fn->asymbol->labelmap, return_label) < 0) return -1;
-    if (gen_if1(f) < 0) return -1;
+    if (gen_if1(f->fn->body) < 0) return -1;
+    if (gen_fun(f) < 0) return -1;
   }
   return 0;
 }
@@ -724,6 +836,7 @@ init_symbols() {
   expr_simple_seq_symbol = if1_make_symbol(if1, "expr_simple_seq");
   expr_domain_symbol = if1_make_symbol(if1, "expr_domain");
   expr_reduce_symbol = if1_make_symbol(if1, "expr_reduce");
+  write_symbol = if1_make_symbol(if1, "write");
   flood_symbol = if1_make_symbol(if1, "*");
   completedim_symbol = if1_make_symbol(if1, "..");
 }
@@ -788,8 +901,45 @@ static void
 domain_start_index(PNode *pn, EntrySet *es) {
 }
 
+static void
+domain_next_index(PNode *pn, EntrySet *es) {
+}
+
+static void
+domain_valid_index(PNode *pn, EntrySet *es) {
+}
+
+static void
+expr_simple_seq(PNode *pn, EntrySet *es) {
+}
+
+static void
+expr_domain(PNode *pn, EntrySet *es) {
+}
+
+static void
+expr_reduce(PNode *pn, EntrySet *es) {
+}
+
+static void
+finalize_symbols(IF1 *i) {
+  forv_Sym(s, i->allsyms) {
+    if (s->is_constant || s->is_symbol)
+      s->function_scope = 1;
+    else
+      if (s->type_kind)
+	s->global_scope = 1;
+  }
+}
+
+static void
+write_transfer_function(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  update_in(result, make_abstract_type(sym_int));
+}
+
 int
-analyze_new_ast(BaseAST* a) {
+AST_to_IF1(BaseAST* a) {
   Vec<BaseAST *> syms;
   close_symbols(a, syms);
   init_symbols();
@@ -797,6 +947,15 @@ analyze_new_ast(BaseAST* a) {
   if (import_symbols(syms) < 0) return -1;
   if (build_functions(syms) < 0) return -1;
   pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol, domain_start_index);
+  pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol, domain_next_index);
+  pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol, domain_valid_index);
+  pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol, expr_simple_seq);
+  pdb->fa->primitive_transfer_functions.put(expr_domain_symbol, expr_domain);
+  pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol, expr_reduce);
+  pdb->fa->primitive_transfer_functions.put(write_symbol, write_transfer_function);
+  finalize_types(if1);
+  sym_null->is_external = 1;	// hack
+  finalize_symbols(if1);
   return 0;
 }
 

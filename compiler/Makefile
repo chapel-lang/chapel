@@ -130,7 +130,7 @@ test: FORCE
 #
 
 $(CHPL): $(PLATFORM)/$(CHPL)
-	cp $< $@
+	cp -f $< $@
 
 $(PLATFORM)/$(CHPL): $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)

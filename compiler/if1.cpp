@@ -39,6 +39,15 @@ if1_alloc_sym(IF1 *p, char *s, char *e) {
 }
 
 Sym *
+if1_register_sym(IF1 *p, Sym *sy, char *name) {
+  sy->id = p->allsyms.n;
+  p->allsyms.add(sy);
+  if (name)
+    sy->name = if1_cannonicalize_string(p, name);
+  return sy;
+}
+
+Sym *
 if1_const(IF1 *p, Sym *type, char *constant) {
   assert(type);
   char *c = if1_cannonicalize_string(p, constant);

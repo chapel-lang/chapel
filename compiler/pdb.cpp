@@ -21,13 +21,6 @@ PDB::find_global(char *s) {
   return if1_get_builtin(if1, s);
 }
 
-FA *
-PDB::analyze(Fun *top) {
-  if (fa->analyze(top) >= 0)
-    return fa;
-  return 0;
-}
-
 void 
 PDB::add(Fun *f) { 
   f->id = funs.n; 

@@ -74,14 +74,14 @@ void SymScope::insert(Symbol* sym) {
 }
 
 
-SymScope* SymScope::findFileScope(void) {
-  if (type == SCOPE_FILE) {
+SymScope* SymScope::findEnclosingScopeType(scopeType t) {
+  if (type == t) {
     return this;
   } else {
     if (parent == NULL) {
-      INT_FATAL("can't find file scope");
+      INT_FATAL("can't find scope");
     }
-    return parent->findFileScope();
+    return parent->findEnclosingScopeType(t);
   }
 }
 

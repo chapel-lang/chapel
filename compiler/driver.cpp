@@ -229,11 +229,49 @@ load_one(char *fn) {
   av.add(a);
   if (ast_gen_if1(if1, av) < 0)
     fail("fatal error, '%s'\n", fn);
-  if1_finalize(if1);
   free_D_Scope(scope, 1);
+  return 0;
+}
+
+static void
+do_analysis(char *fn) {
+  if1_finalize(if1);
   if (logging(LOG_IF1))
     if1_write(log_fp(LOG_IF1), if1);
-  return 0;
+  Sym *init = if1_get_builtin(if1, "init");
+  for (int i = 0; i < if1->allclosures.n; i++) {
+    Fun *f = new Fun(if1->allclosures.v[i], if1->allclosures.v[i] == init);
+    if (!f)
+      fail("fatal error, IF1 invalid");
+    pdb->add(f);
+  }
+  FA *fa = pdb->fa;
+  if (fa->analyze(if1->top->fun) < 0)
+    goto Lfail;
+  if (clone(fa, if1->top->fun) < 0)
+    goto Lfail;
+  if (logging(LOG_TEST_FA))
+    log_test_fa(fa);
+  forv_Fun(f, fa->funs)
+    build_forward_cfg_dominators(f);
+  frequency_estimation(fa);
+  if (fgraph)
+    graph(fa, fn, !fgraph_vcg ? GraphViz : VCG);
+  if (finline)
+    inline_calls(fa);
+  else if (fsimple_inline)
+    simple_inline_calls(fa);
+  if (fdump_html)
+    dump_html(fa, fn);
+  if (!newAST && !suppress_codegen)
+    codegen(fa, fn, system_dir);
+  if (fcg) {
+    cg_write_c(fa, if1->top->fun,  fn);
+    cg_compile(fn);
+  }
+  return;
+ Lfail:
+  fail("fatal error, program does not type");
 }
 
 static int
@@ -244,8 +282,10 @@ compile_one(char *fn) {
     dotVFile = true;
   if (newAST && !dotVFile) {
     Stmt* program = fileToAST(fn, d_debug_level);
-    if (analyzeNewAST)
-      analyze_new_ast(program);
+    if (analyzeNewAST) {
+      AST_to_IF1(program);
+      do_analysis(fn);
+    }
     if (!suppress_codegen)
       codegen(fn, system_dir, program);
     else {
@@ -256,40 +296,7 @@ compile_one(char *fn) {
   }
   if (load_one(fn) < 0)
     return -1;
-  Sym *init = if1_get_builtin(if1, "init");
-
-  for (int i = 0; i < if1->allclosures.n; i++) {
-    Fun *f = new Fun(if1->allclosures.v[i], if1->allclosures.v[i] == init);
-    if (!f)
-      return -1;
-    pdb->add(f);
-  }
-  FA *fa = pdb->analyze(if1->top->fun);
-  if (fa) {
-    if (clone(fa, if1->top->fun) < 0)
-      goto Lfail;
-    if (logging(LOG_TEST_FA))
-      log_test_fa(fa);
-    forv_Fun(f, fa->funs)
-      build_forward_cfg_dominators(f);
-    frequency_estimation(fa);
-    if (fgraph)
-      graph(fa, fn, !fgraph_vcg ? GraphViz : VCG);
-    if (finline)
-      inline_calls(fa);
-    else if (fsimple_inline)
-      simple_inline_calls(fa);
-    if (fdump_html)
-      dump_html(fa, fn);
-    if (!suppress_codegen)
-      codegen(fa, fn, system_dir);
-    if (fcg) {
-      cg_write_c(fa, if1->top->fun,  fn);
-      cg_compile(fn);
-    }
-  } else
-  Lfail:
-    fail("fatal error, program does not type");
+  do_analysis(fn);
   return 0;
 }
 

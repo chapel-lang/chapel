@@ -9,6 +9,7 @@
 class Fun;
 class PNode;
 class Sym;
+class IF1;
 
 class AST : public gc {
  public:
@@ -27,5 +28,6 @@ class AST : public gc {
 
 void build_module(Sym *sym, Sym *init);
 void init_ast();
+void finalize_types(IF1 *);
 
 #endif

@@ -109,9 +109,7 @@ fa_dump_types(FA *fa, FILE *fp) {
       Vec<Var *> vars;
       f->collect_Vars(vars);
       forv_Var(v, vars) {
-	assert(v);
-	assert(v->sym);
-	if (v->sym->in != f->sym) {
+	if (v->sym->global_scope) {
 	  gvars.set_add(v);
 	  continue;
 	}

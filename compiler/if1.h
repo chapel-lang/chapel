@@ -39,6 +39,7 @@ class IF1 : public gc {
 };
 
 Sym	*if1_alloc_sym(IF1 *p, char *s = 0, char *e = 0);
+Sym	*if1_register_sym(IF1 *p, Sym *, char *name = 0);
 Sym 	*if1_const(IF1 *p, Sym *typ, char *value);
 Sym 	*if1_make_symbol(IF1 *p, char *name, char *end = 0);
 void	if1_set_symbols_type(IF1 *p);
