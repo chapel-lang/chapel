@@ -1,20 +1,7 @@
-#ifndef _PASSLIST_H_
-#define _PASSLIST_H_
-
-#include "checkTypeInfo.h"
-#include "findUnknownTypes.h"
-#include "getstuff.h"
-#include "testGetStuff.h"
-#include "verifyASTType.h"
-
-
-/* This is the default list of passes that will be run by the
-   compiler.  The passes shown will be run in the order shown. */
-
-Pass* passlist[] = {
+PassInfo passlist[] = {
   FIRST,
-  RUN(DummyPass),
+
+  RUN(DummyPass, "hi there"),
+
   LAST
 };
-
-#endif

@@ -7,6 +7,9 @@ class ModuleSymbol;
 
 class Pass : public gc {
  public:
+  char* args;
+
+  void setArgs(char* init_args);
   virtual void run(ModuleSymbol* moduleList) = 0;
 };
 

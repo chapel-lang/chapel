@@ -93,6 +93,8 @@ static ArgumentDescription arg_desc[] = {
  {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
+ {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", 
+  NULL},
  {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},
  {"help", 'h', "Help (show this list)", NULL, NULL, NULL, help},
  {0}

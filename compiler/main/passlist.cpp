@@ -1,8 +1,32 @@
-/* any Passes or Traversals that are expected to be parsed as part of
-   a passlist.h file must be listed here in the format shown.  Make
-   sure to also #include the header file defining the pass in
-   passlist.h.  */
+#include "../passes/codegen.h"
+#include "../passes/createEntryPoint.h"
+#include "../passes/filesToAST.h"
+#include "../passes/printProgram.h"
+#include "../passes/printSymtab.h"
+#include "../passes/renameCSymbols.h"
+#include "../passes/runAnalysis.h"
 
+#include "../traversals/checkIDs.h"
+#include "../traversals/checkTypeInfo.h"
+#include "../traversals/cloneAllFns.h"
+#include "../traversals/fieldsToMemberAccesses.h"
+#include "../traversals/findUnknownTypes.h"
+#include "../traversals/findUnresolvedSymbols.h"
+#include "../traversals/fixup.h"
+#include "../traversals/getstuff.h"
+#include "../traversals/methodsToFunctions.h"
+#include "../traversals/printAST.h"
+#include "../traversals/processWithStatements.h"
+#include "../traversals/resolveSymbols2.h"
+#include "../traversals/testGetStuff.h"
+#include "../traversals/verifyASTType.h"
+
+/* any Passes or Traversals that are expected to be parsed as part of
+   a command-line specified passlist.h file must be listed here in the
+   format shown.  Make sure to also #include the header file defining
+   the pass above.  */
+
+START_PASSLIST_REGISTRATION
 REGISTER(CheckIDs);
 REGISTER(CheckTypeInfo);
 REGISTER(CloneAllFns);
@@ -26,4 +50,4 @@ REGISTER(ResolveSymbols2);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
 REGISTER(TestGetStuff);
 REGISTER(VerifyASTType);
-
+STOP_PASSLIST_REGISTRATION
