@@ -25,7 +25,7 @@ function do_op review2.chpl:7 with 1 edges
 function do_op review2.chpl:7 with 1 edges
 function merge review2.chpl:16 with 1 edges
 function merge review2.chpl:16 with 1 edges
-function modify1 review2.chpl:1 with 2 edges
+function modify1 review2.chpl:1 with 1 edges
 function modify2 review2.chpl:2 with 1 edges
 function operator prelude.chpl:103 with 1 edges
 function operator prelude.chpl:81 with 1 edges

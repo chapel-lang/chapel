@@ -2,7 +2,7 @@ A::A(memberfun.v:1) ( A (memberfun.v:1) )
 __init::self(memberfun.v:1) ( A (memberfun.v:1) )
 f::self(memberfun.v:2) ( A (memberfun.v:1) )
 function __init memberfun.v:1 with 1 edges
-function __init memberfun.v:1 with 2 edges
+function __init memberfun.v:1 with 1 edges
 function __init prelude.v:7 with 1 edges
 function __init__ <none>:0 with 1 edges
 function f memberfun.v:2 with 1 edges

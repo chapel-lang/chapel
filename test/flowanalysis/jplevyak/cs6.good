@@ -6,7 +6,7 @@ __init::self(cs6.v:2) ( D (cs6.v:2) )
 function __init cs6.v:1 with 1 edges
 function __init cs6.v:1 with 1 edges
 function __init cs6.v:2 with 1 edges
-function __init cs6.v:2 with 2 edges
+function __init cs6.v:2 with 1 edges
 function __init prelude.v:7 with 1 edges
 function __init__ <none>:0 with 1 edges
 function makeC cs6.v:3 with 1 edges
