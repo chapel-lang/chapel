@@ -282,9 +282,9 @@ type_num_fold(Prim *p, AType *a, AType *b) {
   if ((ff = type_fold_cache.get(&f)))
     return ff->result;
   AType *r = new AType();
-  forv_CreationSet(cs, *a)
+  forv_CreationSet(cs, *a) if (cs)
     r->set_add(cs->sym->type->abstract_type->v[0]);
-  forv_CreationSet(cs, *b)
+  forv_CreationSet(cs, *b) if (cs)
     r->set_add(cs->sym->type->abstract_type->v[0]);
   r = type_cannonicalize(r)->top;
   type_fold_cache.put(new ATypeFold(p, a, b, r));
