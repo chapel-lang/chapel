@@ -977,45 +977,46 @@ is_reference_type(BaseAST *t) {
 static int
 gen_vardef(BaseAST *a) {
   VarDefStmt *def = dynamic_cast<VarDefStmt*>(a);
-  VarSymbol *var = def->var;
-  Sym *s = var->asymbol->sym;
-  def->ainfo->sym = s;
-  if (var->type && var->type != dtUnknown) {
-    if (!is_reference_type(var->type)) {
-      s->type = unalias_type(var->type->asymbol->sym);
-      s->is_var = 1;
+  for (VarSymbol *var = def->var;var;var = dynamic_cast<VarSymbol*>(var->next)) {
+    Sym *s = var->asymbol->sym;
+    def->ainfo->sym = s;
+    if (var->type && var->type != dtUnknown) {
+      if (!is_reference_type(var->type)) {
+	s->type = unalias_type(var->type->asymbol->sym);
+	s->is_var = 1;
+      } else
+	s->must_implement = unalias_type(var->type->asymbol->sym);
     } else
-      s->must_implement = unalias_type(var->type->asymbol->sym);
-  } else
-    s->is_var = 1;
-  if (!def->var->init->isNull()) {
-    if1_gen(if1, &def->ainfo->code, def->var->init->ainfo->code);
-    Sym *val = def->var->init->ainfo->rval;
-    if (s->type) {
-      if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
-	val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
-      // else show_error("missing constructor", def->ainfo);
+      s->is_var = 1;
+    if (!var->init->isNull()) {
+      if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
+      Sym *val = var->init->ainfo->rval;
+      if (s->type) {
+	if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
+	  val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
+	// else show_error("missing constructor", def->ainfo);
+      }
+      if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
+    } else if (!s->is_var)
+      return show_error("missing initializer", def->ainfo);
+    else if (!s->type && !s->must_implement)
+      ; // return show_error("missing variable type", def->ainfo);
+    else {
+      if (s->type) {
+	if (s->type->num_kind || s->type == sym_string)
+	  s->is_external = 1; // hack
+	else
+	  gen_alloc(s, def, s->type);
+      }
     }
-    if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
-  } else if (!s->is_var)
-    return show_error("missing initializer", def->ainfo);
-  else if (!s->type && !s->must_implement)
-    ; // return show_error("missing variable type", def->ainfo);
-  else {
-    if (s->type) {
-      if (s->type->num_kind || s->type == sym_string)
-	s->is_external = 1; // hack
-      else
-	gen_alloc(s, def, s->type);
+    switch (var->varClass) {
+      case VAR_NORMAL: break;
+      case VAR_CONFIG: s->is_external = 1; break;
+      case VAR_STATE: assert(0); break;
     }
+    if (var->isConstant)
+      s->is_read_only = 1;
   }
-  switch (var->varClass) {
-    case VAR_NORMAL: break;
-    case VAR_CONFIG: s->is_external = 1; break;
-    case VAR_STATE: assert(0); break;
-  }
-  if (var->isConstant)
-    s->is_read_only = 1;
   return 0;
 }
 
