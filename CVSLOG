@@ -6976,3 +6976,13 @@ Modified files:
 Removed files:
 	chapel/compiler/: cg_funs.cpp cg_funs.h 
 
+---------------------------------------------------------------------------
+
+09/13/04 12:22:02 -- bradc
+
+Log message:
+	Whoops, forgot to check in the Makefile change.
+
+Modified files:
+	chapel/compiler/: Makefile 
+
