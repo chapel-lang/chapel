@@ -208,12 +208,7 @@ Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *acp, MPosition *a
 
 int
 positional_to_named(CreationSet *cs, AVar *av, MPosition &pp, MPosition *np) {
-  if (cs && cs->sym != sym_tuple && av->var->sym->name && 
-      !av->var->sym->is_constant & !av->var->sym->is_symbol) {
-    np->copy(pp);
-    np->set_top(av->var->sym->name);
-    return 1;
-  } else if ((!cs || cs->sym == sym_tuple) && av->var->sym->arg_name) {
+  if ((!cs || cs->sym == sym_tuple) && av->var->sym->arg_name) {
     np->copy(pp);
     np->set_top(av->var->sym->arg_name);
     return 1;
