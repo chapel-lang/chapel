@@ -3792,3 +3792,14 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+06/30/04 15:16:19 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	remove an incomplete (buggy) optimization
+
+Modified files:
+	chapel/compiler/: fa.cpp 
+	chapel/test/flowanalysis/jplevyak/: cs4.good 
+
