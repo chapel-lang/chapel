@@ -1958,3 +1958,15 @@ Log message:
 Modified files:
 	chapel/compiler/: dump.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/07 17:05:01 -- bradc
+
+Log message:
+	Started working on a script that will perform nightly regressions.
+
+Modified files:
+	chapel/test/: start_test 
+Added files:
+	chapel/test/Bin/: nightly 
+
