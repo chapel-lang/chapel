@@ -24195,3 +24195,29 @@ Removed files:
 	chapel/test/trivial/bradc/protoast/future/: NOTEST badred.chpl 
 	                                            badred.good 
 
+---------------------------------------------------------------------------
+
+04/06/05 12:31:04 -- jplevyak
+
+Log message:
+	This is the first in a series of checkins to get operator= working.
+	I am going to try to do it this way as integrating this and
+	VarInitExpr was becoming too much.
+	
+	The main change here is that all unknown variables are initialized to nil.
+	
+	NOTE: when we get VarInitExpr in this is going to change, so if it seems
+	a bit messy now don't worry about it, this is transition code.
+	
+	Updated 2 tests which were effected.  Added unistd.h to stdchpl.h
+	so as to get intptr_t.  Changed codeGen of assignment to handle
+	assigning numbers from nil.  Again, this is transitional code, please
+	bear with me.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
