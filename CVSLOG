@@ -19561,3 +19561,19 @@ Added files:
 	                               record_equal-2.future 
 	                               record_equal-2.good 
 
+---------------------------------------------------------------------------
+
+03/14/05 18:41:50 -- bradc
+
+Log message:
+	A slight improvement to my last checkin
+	that doesn't rely on the status code of
+	"which" being correct (as it seems that
+	the which command on our Sun boxes does
+	not set the status code).  Ammended the
+	scheme by also seeing if valgrind --help
+	works.
+
+Modified files:
+	chapel/third-party/boehmgc/gc6.3/: configure 
+
