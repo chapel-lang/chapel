@@ -22,4 +22,3 @@ chapel
     + cygwin	       -- platform-specific installations
     + linux
     + sun
-
