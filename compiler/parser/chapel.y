@@ -248,9 +248,7 @@ typedecl:
   typealias
 | typevardecl
 | enumdecl
-| classdecl
-| recorddecl
-| uniondecl
+| structdecl
 ;
 
 

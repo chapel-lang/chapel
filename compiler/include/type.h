@@ -112,27 +112,30 @@ class DomainType : public Type {
 //Roxana -- Index should not by subtype of Domain
 //class IndexType : public DomainType {
 class IndexType : public Type {
-  public:
-    //the expression this index is instantiated from: e.g., index(2)
-    //or
-    //pointer to the domain, set to NULL until index(D) is used.
-    //then domain is used for bounds check
-    Expr* idxExpr;
-    DomainType* domainType;
-    //the type of the index: k-tuple for arithmetic domains, scalar type, or enum, record, union of scalar type
-    //for indefinite and opaque domains.
-    //taken from the domain it is associated with, or created anew otherwise
-    Type* idxType;
+ public:
+  //the expression this index is instantiated from: e.g., index(2)
+  //or
+  //pointer to the domain, set to NULL until index(D) is used.
+  //then domain is used for bounds check
+  Expr* idxExpr;
+  DomainType* domainType;
+  //the type of the index: k-tuple for arithmetic domains, scalar type, or enum, record, union of scalar type
+  //for indefinite and opaque domains.
+  //taken from the domain it is associated with, or created anew otherwise
+  Type* idxType;
 
-    //IndexType();
-    IndexType(Expr* init_expr = NULL);
-    //IndexType(int init_numdims);
-    IndexType(Type* init_idxType);
-    virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-    void codegenDef(FILE* outfile);
-    void print(FILE* outfile);
-    void traverseDefType(Traversal* traversal);
-    Type* getType();
+  //IndexType();
+  IndexType(Expr* init_expr = NULL);
+  //IndexType(int init_numdims);
+  IndexType(Type* init_idxType);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void codegenDef(FILE* outfile);
+  void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, 
+                     Expr* format);
+  
+  void print(FILE* outfile);
+  void traverseDefType(Traversal* traversal);
+  Type* getType();
 };
 
 
@@ -284,6 +287,7 @@ class TupleType : public Type {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
+  void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
 };
 
 

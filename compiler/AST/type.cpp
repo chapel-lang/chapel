@@ -648,6 +648,13 @@ void IndexType::codegenDef(FILE* outfile) {
   }
 }
 
+
+void IndexType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+                              Expr* format) {
+  idxType->codegenIOCall(outfile, ioType, arg, format);
+}
+                          
+
 void IndexType::traverseDefType(Traversal* traversal) {
   if (!(typeid(*idxExpr) == typeid(IntLiteral))) {
     TRAVERSE(idxExpr, traversal, false);
@@ -1462,6 +1469,26 @@ void TupleType::codegenDef(FILE* outfile) {
   symbol->codegen(outfile);
   fprintf(outfile, ";\n\n");
 }
+
+
+void TupleType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+                              Expr* format) {
+  fprintf(outfile, "fprintf(stdout, \"(\");\n");
+  int compNum = 0;
+  char compNumStr[80];
+  forv_Vec(Type, component, components) {
+    if (compNum) {
+      fprintf(outfile, "fprintf(stdout, \", \");\n");
+    }
+
+    compNum++;
+    sprintf(compNumStr, "%d", compNum);
+    component->codegenIOCall(outfile, ioType, new TupleSelect(arg, new IntLiteral(compNumStr, compNum)));
+    fprintf(outfile, ";\n");
+  }
+  fprintf(outfile, "fprintf(stdout, \")\");\n");
+}
+
 
 
 SumType::SumType(Type* firstType) :
