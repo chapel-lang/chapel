@@ -813,8 +813,8 @@ gen_vardef(BaseAST *a) {
     if1_gen(if1, &def->ainfo->code, def->var->init->ainfo->code);
     Sym *val = def->var->init->ainfo->rval;
     if (s->type) {
-      if (s->type->num_kind && s->type != val->type)
-	val = gen_coerce( val, s->type, &def->ainfo->code, def->ainfo);
+      if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
+	val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
       // else show_error("missing constructor", def->ainfo);
     }
     if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
@@ -824,7 +824,7 @@ gen_vardef(BaseAST *a) {
     ; // return show_error("missing variable type", def->ainfo);
   else {
     if (s->type) {
-      if (s->type->num_kind)
+      if (s->type->num_kind || s->type == sym_string)
 	s->is_external = 1; // hack
       else
 	gen_alloc(s, def, s->type);

@@ -10,9 +10,11 @@
 #include "ast.h"
 #include "var.h"
 #include "callbacks.h"
+#include "analysis.h"
 
 #define BAD_NAME ((char*)-1)
 #define BAD_AST ((AST*)-1)
+//#define CLONE 1
 
 static FA *fa = 0;
 
@@ -396,7 +398,7 @@ determine_clones() {
 
 // sets cs->sym to the new concrete symbol
 static void
-define_concrete_types(CSSS &css_sets) {
+define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
   for (int i = 0; i < css_sets.n; i++) {
     Vec<CreationSet *> *eqcss = css_sets.v[i];
     Sym *sym = 0;
@@ -421,7 +423,11 @@ define_concrete_types(CSSS &css_sets) {
 	// tuples use record type
 	char *name = 0;
 	AST *ast = 0;
+#ifdef CLONE
+	Sym *s = sym->clone(&callback);
+#else
 	Sym *s = sym->copy();
+#endif
 	s->type_kind = sym == sym_tuple ? Type_RECORD : Type_FUN;
 	s->incomplete = 1;
 	forv_CreationSet(cs, *eqcss) if (cs) {
@@ -448,7 +454,11 @@ define_concrete_types(CSSS &css_sets) {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
       } else {
+#ifdef CLONE
+	Sym *s = sym->clone(&callback);
+#else
 	Sym *s = sym->copy();
+#endif
 	char *name = 0;
 	s->type_kind = sym->type_kind;
 	s->incomplete = 1;
@@ -477,7 +487,7 @@ define_concrete_types(CSSS &css_sets) {
 }
 
 static void
-resolve_concrete_types(CSSS &css_sets) {
+resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
   for (int i = 0; i < css_sets.n; i++) {
     Vec<CreationSet *> *eqcss = css_sets.v[i];
     Sym *sym = 0;
@@ -554,8 +564,11 @@ build_concrete_types() {
   forv_CreationSet(cs, fa->css)
     css_sets.set_add(cs->equiv);
   css_sets.set_to_vec();
-  define_concrete_types(css_sets);
-  resolve_concrete_types(css_sets);
+  AnalysisCloneCallback callback;
+  ASTCopyContext context;
+  callback.context = &context;
+  define_concrete_types(css_sets, callback);
+  resolve_concrete_types(css_sets, callback);
 }
 
 static int

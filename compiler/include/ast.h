@@ -22,6 +22,7 @@ class ASTCopyContext : public gc {
   Map<PNode *, PNode *> *nmap;
   Map<Var *, Var *> *vmap;
   Map<Sym *, Sym *> smap;
+  ASTCopyContext() : nmap(0), vmap(0) {}
 };
 
 class AST : public gc {

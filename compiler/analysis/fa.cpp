@@ -27,6 +27,7 @@ AType *anyint_type = 0;
 AType *anynum_kind = 0;
 AType *fun_type = 0;
 AType *symbol_type = 0;
+AType *string_type = 0;
 AType *fun_symbol_type = 0;
 AType *anyclass_type = 0;
 
@@ -825,7 +826,7 @@ add_var_constraints(EntrySet *es) {
   forv_Var(v, f->fa_Vars) {
     AVar *av = make_AVar(v, es);
     if (v->sym->type && !v->sym->is_pattern) {
-      if (v->sym->is_external && v->sym->type->num_kind)
+      if (v->sym->is_external && (v->sym->type->num_kind || v->sym->type == sym_string))
 	update_in(av, v->sym->type->abstract_type);
       if (v->sym->is_constant) // for constants, the abstract type is the concrete type
 	update_in(av, make_abstract_type(v->sym));
@@ -1717,6 +1718,7 @@ initialize() {
   bool_type = make_abstract_type(sym_bool);
   size_type = make_abstract_type(sym_size);
   symbol_type = make_abstract_type(sym_symbol);
+  string_type = make_abstract_type(sym_string);
   fun_type = make_abstract_type(sym_function);
   fun_symbol_type = type_union(symbol_type, fun_type);
   anyint_type = make_abstract_type(sym_anyint);
