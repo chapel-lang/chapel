@@ -62,7 +62,7 @@
 
 %token IF ELSE ELSIF
 %token FOR FORALL IN
-%token WHILE REPEAT UNTIL DO
+%token WHILE DO
 %token RETURN
 
 %token BY
@@ -449,11 +449,9 @@ forloop:
 
 whileloop:
   WHILE expr statement
-    { $$ = new WhileLoopStmt(LOOP_WHILEDO, $2, $3); }
+    { $$ = new WhileLoopStmt(true, $2, $3); }
 | DO statement WHILE expr ';'
-    { $$ = new WhileLoopStmt(LOOP_DOWHILE, $4, $2); }
-| REPEAT statement UNTIL expr ';'
-    { $$ = new WhileLoopStmt(LOOP_REPEAT, $4, $2); }
+    { $$ = new WhileLoopStmt(false, $4, $2); }
 ;
 
 

@@ -58,8 +58,6 @@ forall          return FORALL;
 
 while           return WHILE;
 do              return DO;
-repeat          return REPEAT;
-until           return UNTIL;
 
 by              return BY;
 return          return RETURN;

@@ -1,8 +1,9 @@
 #include <typeinfo>
+#include <string.h>
 #include "expr.h"
 #include "misc.h"
 #include "stringutil.h"
-#include "string.h"
+
 
 
 static char* cUnOp[NUM_UNOPS] = {

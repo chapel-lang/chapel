@@ -2,6 +2,7 @@
 #include <typeinfo>
 #include "codegen.h"
 #include "expr.h"
+#include "misc.h"
 #include "stmt.h"
 #include "yy.h"
 
@@ -318,17 +319,17 @@ void BlockStmt::codegen(FILE* outfile) {
 }
 
 
-WhileLoopStmt::WhileLoopStmt(whileLoopType init_type, 
+WhileLoopStmt::WhileLoopStmt(bool init_whileDo, 
 			     Expr* init_cond, 
 			     Stmt* init_body) 
   : BlockStmt(init_body), 
-    type(init_type), 
+    isWhileDo(init_whileDo), 
     condition(init_cond) 
 {}
 
 
 void WhileLoopStmt::traverseStmt(Traversal* traversal) {
-  if (type == LOOP_WHILEDO) {
+  if (isWhileDo) {
     condition->traverse(traversal);
     body->traverse(traversal);
   } else {
@@ -339,35 +340,36 @@ void WhileLoopStmt::traverseStmt(Traversal* traversal) {
 
 
 void WhileLoopStmt::print(FILE* outfile) {
-  switch (type) {
-  case LOOP_WHILEDO:
+
+  if (isWhileDo) {
     fprintf(outfile, "while (");
     condition->print(outfile);
     fprintf(outfile, ") ");
-    break;
-  case LOOP_DOWHILE:
+    body->print(outfile);
+  } else {
     fprintf(outfile, "do ");
-    break;
-  case LOOP_REPEAT:
-    fprintf(outfile, "repeat ");
-    break;
-  }
-  
-  body->print(outfile);
-
-  switch (type) {
-  case LOOP_WHILEDO:
-    break;
-  case LOOP_DOWHILE:
+    body->print(outfile);
     fprintf(outfile, "while (");
     condition->print(outfile);
     fprintf(outfile, ")");
-    break;
-  case LOOP_REPEAT:
-    fprintf(outfile, "until (");
-    condition->print(outfile);
-    fprintf(outfile, ")");
-    break;
+  }
+}
+
+
+void WhileLoopStmt::codegen(FILE* outfile) {
+
+  if (isWhileDo) {
+    fprintf(outfile, "while (");
+    condition->codegen(outfile);
+    fprintf(outfile, ") {\n");
+    body->codegen(outfile);
+    fprintf(outfile, "\n}");
+  } else { 
+    fprintf(outfile, "do {\n");
+    body->codegen(outfile);
+    fprintf(outfile, "\n} while (");
+    condition->codegen(outfile);
+    fprintf(outfile, ");\n");
   }
 }
 

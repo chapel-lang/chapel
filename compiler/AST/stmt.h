@@ -104,23 +104,17 @@ class BlockStmt : public Stmt {
 };
 
 
-enum whileLoopType {
-  LOOP_WHILEDO = 0,
-  LOOP_DOWHILE,
-  LOOP_REPEAT
-};
-
-
 class WhileLoopStmt : public BlockStmt {
  public:
-  whileLoopType type;
+  bool isWhileDo;
   Expr* condition;
 
-  WhileLoopStmt(whileLoopType init_type, Expr* init_cond, Stmt* body);
+  WhileLoopStmt(bool init_whileDo, Expr* init_cond, Stmt* body);
 
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
