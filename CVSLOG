@@ -15258,3 +15258,30 @@ Removed files:
 	                                         test_overload_integerfloat3.future 
 	                                         test_overload_integerfloat4.future 
 
+---------------------------------------------------------------------------
+
+01/21/05 15:29:53 -- shannon
+
+Log message:
+	Added a traversal that converts Chapel variable names that include a '?'
+	to valid C Names.  (A variable name may not start with a question mark.)
+	Filenames containing a '-' were also converted so they now generate
+	legal C.  Added a few tests.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.lex 
+	chapel/compiler/symtab/: Makefile.share 
+Added files:
+	chapel/compiler/symtab/: legalizeCNames.cpp legalizeCNames.h 
+	chapel/test/execflags/shannon/configs/: configVar-Dash.chpl 
+	                                        configVar-Dash.execopts 
+	                                        configVar-Dash.good 
+	                                        varNameEnumQM.chpl 
+	                                        varNameEnumQM.execopts 
+	                                        varNameEnumQM.good 
+	                                        varNameQMark.chpl 
+	                                        varNameQMark.execopts 
+	                                        varNameQMark.good 
+
