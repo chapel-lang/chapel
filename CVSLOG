@@ -20560,3 +20560,19 @@ Added files:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_assign2.future 
 
+---------------------------------------------------------------------------
+
+03/21/05 14:18:51 -- deitz
+
+Log message:
+	Passing these futures onto John.
+	
+	If you uncomment ANALYSIS_MATCH and ignore what it says about the main
+	and __init functions, there seem to be problems related to the cloned
+	classes.  Their members don't seem to get a type, for one.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class2.future 
+	                                         test_clone_class2a.future 
+
