@@ -35,14 +35,14 @@ PassInfo passlist[] = {
   RUN(RunAnalysis, ""),
   RUN(Fixup, "verify"),  // this is a sanity check
 
-  // passes to normalize the basic AST after analysis
-  RUN(TransformLetExprs, ""),
-
   // passes to capture analysis information in the AST
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
+
+  // passes to normalize the basic AST after analysis
+  RUN(TransformLetExprs, ""),
 
   // check the program's semantics
   RUN(CheckSemantics, ""),
