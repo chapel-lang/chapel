@@ -1134,7 +1134,7 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "_");
     symbol->codegen(outfile);
     fprintf(outfile, "_union_id _chpl_union_tag;\n");
-    fprintf(outfile, "union _chpl_union_def_%ld {\n", symbol->id);
+    fprintf(outfile, "union {\n");
   }
   for (Stmt* tmp = declarationList; tmp; tmp = nextLink(Stmt, tmp)) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
