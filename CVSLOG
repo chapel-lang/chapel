@@ -16369,3 +16369,16 @@ Added files:
 	                            test_secondary_method2.future 
 	                            test_secondary_method2.good 
 
+---------------------------------------------------------------------------
+
+02/03/05 08:11:59 -- jplevyak
+
+Log message:
+	"fixed" scoping-1.chpl so that it fails in the expected manner:
+	<internal>:0: unresolved call 'main'
+	<internal>:0: unresolved call '__init_internal_prelude'
+	<internal>:0: unresolved call '__init_prelude'
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
