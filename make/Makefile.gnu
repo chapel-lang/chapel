@@ -19,7 +19,7 @@ GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); pri
 
 ifeq ($(GNU_GCC_MAJOR_VERSION),3)
 ifeq ($(GNU_GCC_MINOR_VERSION),4)
-CFLAGS += -Wno-invalid-offsetof
+CFLAGS += -Wno-invalid-offsetof -Werror
 endif
 endif
 
