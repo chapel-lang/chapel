@@ -40,7 +40,7 @@
 EXTERN char log_dir[FILENAME_MAX] EXTERN_INIT("./log");
 EXTERN char log_tag[256];
 
-#define logging_level(_log, _level) (log_tag[_log] >= _level)
+#define logging_level(_log, _level) (log_tag[(unsigned char)(_log)] >= _level)
 #define logging(_log) logging_level(_log, 1)
 
 void init_logs();

@@ -57,7 +57,7 @@ class UNode : public gc {
 
   inline int p();
 
-  UNode(PNode *n) : dfs_num(-1), pn(n), dfs_parent(0), hi(0) {}
+  UNode(PNode *n = NULL) : dfs_num(-1), pn(n), dfs_parent(0), hi(0) {}
 };
 #define forv_UNode(_p, _v) forv_Vec(UNode, _p, _v)
 

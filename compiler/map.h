@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "chpltypes.h"
 #include "list.h"
 #include "vec.h"
@@ -30,6 +31,8 @@ class MapElem {
 
 template <class K, class C> class Map : public Vec<MapElem<K,C> > {
  public:
+  using Vec<MapElem<K, C> >::n;
+  using Vec<MapElem<K, C> >::v;
   inline MapElem<K,C> *put(K akey, C avalue);
   inline C get(K akey);
   inline void get_keys(Vec<K> &keys);

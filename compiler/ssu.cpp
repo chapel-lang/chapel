@@ -194,7 +194,9 @@ static UEdge *
 build_undirected_graph(Fun *f, Vec<PNode *> &nodes) {
   f->collect_PNodes(nodes);
   forv_PNode(n, nodes) {
-    n->unode = new UNode[2](n);
+    n->unode = new UNode[2];
+    n->unode[0].pn = n;
+    n->unode[1].pn = n;
     n->mark = 0;
   }
   forv_PNode(n, nodes) {

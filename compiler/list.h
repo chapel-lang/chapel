@@ -62,6 +62,7 @@ template <class C, int o> class DLL : public gc {
 
 template <class C, int o> class Queue : public DLL<C, o> {
  public:
+  using DLL<C, o>::head;
   C *tail;
   inline void push(C *e);
   inline C *pop();
