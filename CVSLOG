@@ -5327,3 +5327,13 @@ Modified files:
 	                                    structtype.good var.good 
 	                                    var2.good 
 
+---------------------------------------------------------------------------
+
+08/09/04 14:09:55 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add file for Sym methods
+
+Added files:
+	chapel/compiler/: sym.cpp 
+
