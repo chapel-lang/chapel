@@ -15,6 +15,8 @@
 #ifndef _list_H_
 #define _list_H_
 
+#include "chplalloc.h"
+
 template <class C> class SLink {
  public:
   C *next;

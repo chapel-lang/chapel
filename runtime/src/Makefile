@@ -31,7 +31,7 @@ depend: $(PLATFORM_DIR)
 	@echo Updating dependences...
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
-	  echo -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
+	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
 	  $(CCDEP) -MM -MG $(CFLAGS) $$file >> $(CVS_DEPENDS); \
         done	
 

@@ -4,6 +4,11 @@
 #ifndef _sym_h_
 #define _sym_h_
 
+#include "ast.h"
+#include "code.h"
+#include "extern.h"
+#include "scope.h"
+
 class Var;
 class Fun;
 class AType;

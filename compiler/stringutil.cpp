@@ -1,5 +1,7 @@
 #include <stdarg.h>
-#include "geysa.h"
+#include <string.h>
+#include "chplalloc.h"
+#include "misc.h"
 #include "stringutil.h"
 
 char* glomstrings(int numstrings, ...) {

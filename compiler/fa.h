@@ -4,6 +4,9 @@
 #ifndef _fa_H_
 #define _fa_H_
 
+#include "map.h"
+#include "sym.h"
+
 #define GLOBAL_CONTOUR ((void*)1)
 
 class Fun;

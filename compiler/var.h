@@ -9,7 +9,6 @@ class AVar;
 class CreationSet;
 class AType;
 typedef MapElem<void *, AVar *> AVarMapElem;
-typedef Map<Var *, Var *> VarMap;
 typedef Map<void *,AVar*> AVarMap;
 
 class Var : public gc {
@@ -33,5 +32,7 @@ class Var : public gc {
 
 #define Var_is_local(_v, _f) (!(_v)->sym->constant && (_v)->sym->in == (_f)->sym && \
   !(_f)->init_function && !(_v)->sym->lvalue)
+
+typedef Map<Var *, Var *> VarMap;
 
 #endif

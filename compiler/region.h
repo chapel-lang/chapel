@@ -5,6 +5,8 @@
 #ifndef _region_H_
 #define _region_H_
 
+#include "ssu.h"
+
 // Control Region
 
 class Region : public gc {

@@ -5,6 +5,10 @@
 #ifndef _map_H_
 #define _map_H_
 
+#include <stdlib.h>
+#include <string.h>
+#include "chpltypes.h"
+#include "list.h"
 #include "vec.h"
 
 char *dupstr(char *s, char *e = 0); // from misc.h

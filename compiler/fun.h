@@ -4,6 +4,9 @@
 #ifndef _fun_H_
 #define _fun_H_
 
+#include "region.h"
+#include "var.h"
+
 class ESet;
 class AVar;
 

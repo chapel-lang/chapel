@@ -96,7 +96,7 @@ depend: $(DEPENDSUBDIRS) echocompilerdir $(PLATFORM_DIR)
 	@echo Updating dependences...
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
-	  echo -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
+	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
 	  $(CCDEP) -MM -MG $(CFLAGS) $$file >> $(CVS_DEPENDS); \
 	done
 
@@ -115,7 +115,10 @@ $(CHPL): $(PLATFORM)/$(CHPL)
 $(PLATFORM)/$(CHPL): $(CHPL_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
-	@etags $(CHPL_SRCS) *.h
+	@etags $(CHPL_SRCS) *.h \
+		$(D_PARSER_SRC_DIR)/*.c $(D_PARSER_SRC_DIR)/*.h \
+		$(GC_SRC_DIR)/*.c $(GC_SRC_DIR)/*.h \
+		$(GC_SRC_DIR)/*/*.c $(GC_SRC_DIR)/*/*.h
 
 
 #

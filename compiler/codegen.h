@@ -1,7 +1,7 @@
 #ifndef _codegen_H_
 #define _codegen_H_
 
-#include "geysa.h"
+#include "fa.h"
 
 void codegen(FA* fa, char* filename, char* compilerDir);
 

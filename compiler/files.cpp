@@ -2,7 +2,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "geysa.h"
+#include "misc.h"
 #include "mysystem.h"
 #include "stringutil.h"
 

@@ -1,7 +1,10 @@
+#include <assert.h>
 #include <stdio.h>
 #include "codegen.h"
 #include "files.h"
+#include "fun.h"
 #include "mysystem.h"
+#include "num.h"
 #include "stringutil.h"
 
 // BLC -- TODO: 

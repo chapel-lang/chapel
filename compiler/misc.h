@@ -4,6 +4,10 @@
 #ifndef _misc_H_
 #define _misc_H_
 
+#include "ast.h"
+#include "dparse.h"
+#include "var.h"
+
 int show_error(char *str, d_loc_t &loc, ...);
 int show_error(char *str, AST *a, ...);
 int show_error(char *str, Var *v, ...);

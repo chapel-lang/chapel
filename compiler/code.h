@@ -4,10 +4,13 @@
 #ifndef _code_h_
 #define _code_h_
 
+#include "extern.h"
+
 class Label;
 class AST;
 class Prim;
 class PNode;
+class Sym;
 
 enum Code_kind { 
   Code_SUB = 0, Code_MOVE, Code_SEND, Code_IF, Code_LABEL, 

@@ -4,6 +4,10 @@
 #ifndef _ast_H_
 #define _ast_H_
 
+#include <stdio.h>
+#include "map.h"
+#include "scope.h"
+
 // C++'s manditory heap'o forward declarations
 class IF1;
 class Code;

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "geysa.h"
+#include "misc.h"
 
 int printSystemCommands;
 
