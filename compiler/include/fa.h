@@ -31,7 +31,9 @@ class Patterns;
 class Match;
 class MPosition;
 
-typedef Map<PNode *, Map<Fun *, AEdge *> *> EdgeMap;
+typedef MapElem<Fun *, AEdge *> FunAEdgeMapElem;
+typedef Map<Fun *, AEdge *> FunAEdgeMap;
+typedef Map<PNode *, FunAEdgeMap *> EdgeMap;
 typedef BlockHash<AEdge *, PointerHashFns> EdgeHash;
 typedef Vec<CreationSet *> VecCreationSet;
 typedef Vec<Vec<CreationSet *> *> CSSS;
@@ -43,6 +45,7 @@ class AType : public Vec<CreationSet *> {
   Vec<CreationSet *>	sorted;
   Map<AType *, AType *> union_map;
   Map<AType *, AType *> intersection_map;
+  Map<AType *, AType *> diff_map;
 
   AType(CreationSet *cs);
   AType(AType &a);

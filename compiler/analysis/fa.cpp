@@ -490,7 +490,14 @@ subsumed_by(Sym *a, Sym *b) {
 
 AType *
 type_diff(AType *a, AType *b) {
-  AType *r = new AType();
+  AType *r;
+  if ((r = a->diff_map.get(b)))
+    return r;
+  if (b == bottom_type) {
+    r = a;
+    goto Ldone;
+  }
+  r = new AType();
   forv_CreationSet(aa, *a) if (aa) {
     if (aa->defs.n && b->set_in(aa))
       continue;
@@ -502,6 +509,8 @@ type_diff(AType *a, AType *b) {
   Lnext:;
   }
   r = type_cannonicalize(r);
+ Ldone:
+  a->diff_map.put(b, r);
   return r;
 }
 
@@ -1975,6 +1984,16 @@ collect_results() {
     fa_dump_types(fa, stdout);
 }
 
+static int
+empty_type_minus_partial_applications(AType *a) {
+  forv_CreationSet(aa, *a) if (aa) {
+    if (aa->sym == sym_function && aa->defs.n)
+      continue;
+    return 0;
+  }
+  return 1;
+}
+
 static AType *
 type_minus_partial_applications(AType *a) {
   AType *r = new AType();
@@ -1993,26 +2012,18 @@ collect_avar_argument_type_violations(AVar *av) {
     PNode *p = c->var->def;
     if (p->prim) continue; // primitives handled elsewhere
     EntrySet *from = (EntrySet*)c->contour;
+    FunAEdgeMap *m = from->out_edge_map.get(p);
+    Vec<EntrySet *> ess;
+    form_Map(FunAEdgeMapElem, x, *m)
+      ess.set_add(x->value->to);
     AType *t = av->out;
-    forv_AVar(a, av->forward) if (a && a->var->is_filtered) {
-      assert(a->contour_is_entry_set);
-      EntrySet *xes = (EntrySet*)a->contour;
-      AEdge **last = xes->edges.last();
-      for (AEdge **x = xes->edges.first(); x < last; x++) if (*x) {
-	AEdge *ee = *x;
-	if (!ee->args.n)	
-	  continue;
-	if (ee->pnode == p && ee->from == from)
-	  goto Lfound;
-      }
-      continue;
-    Lfound:
+    forv_AVar(a, av->forward) if (a && a->var->is_filtered && ess.set_in((EntrySet*)a->contour))
       t = type_diff(t, a->out);
-    }
-    t = type_minus_partial_applications(t);
-    if (t != bottom_type)
+    if (!empty_type_minus_partial_applications(t)) {
+      t = type_minus_partial_applications(t);
       type_violation(ATypeViolation_SEND_ARGUMENT, av, t, 
 		     make_AVar(p->lvals.v[0], from));
+    }
   }
 }
 
