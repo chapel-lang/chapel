@@ -62,7 +62,7 @@ template <class C> C *
 Vec<C>::set_add_internal(C c) {
   int j, k;
   if (n) {
-    uint h = ((uint)c);
+    uint h = (uint)(uintptr_t)c;
     h = h % n;
     for (k = h, j = 0;
          k < n && j < SET_MAX_SEQUENTIAL;
@@ -86,7 +86,7 @@ template <class C> C *
 Vec<C>::set_in_internal(C c) {
   int j, k;
   if (n) {
-    uint h = ((uint)c);
+    uint h = (uint)(uintptr_t)c;
     h = h % n;
     for (k = h, j = 0;
          k < n && j < SET_MAX_SEQUENTIAL;

@@ -4,6 +4,9 @@
 #ifndef _geysa_H_
 #define _geysa_H_
 
+#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
+#include <stdint.h>
+#endif
 #include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>

@@ -58,10 +58,10 @@ graph_end(FILE *fp) {
 }
 
 static void
-graph_node(FILE *fp, int id, char *label, int options = 0) {
+graph_node(FILE *fp, void *id, char *label, int options = 0) {
   switch (graph_type) {
     case VCG:
-      fprintf(fp, "node: {title:\"%x\" label:\"%s\"", id, label);
+      fprintf(fp, "node: {title:\"%p\" label:\"%s\"", id, label);
       if (options & G_BLUE)
 	fprintf(fp, " color: blue");
       if (options & G_GREEN)
@@ -83,10 +83,10 @@ graph_node(FILE *fp, int id, char *label, int options = 0) {
 }
 
 static void
-graph_edge(FILE *fp, int a, int b, int options = 0) {
+graph_edge(FILE *fp, void *a, void *b, int options = 0) {
   switch (graph_type) {
     case VCG:
-      fprintf(fp, "edge: {sourcename:\"%x\" targetname:\"%x\"", a, b);
+      fprintf(fp, "edge: {sourcename:\"%p\" targetname:\"%p\"", a, b);
       if (options & G_BLUE)
 	fprintf(fp, " color: blue");
       if (options & G_GREEN)
@@ -129,7 +129,7 @@ graph_it(AST *a) {
 
 static void
 graph_ast_nodes(FILE *fp, Fun *f, AST *a) {
-  graph_node(fp, (int)a, AST_name[a->kind]);
+  graph_node(fp, a, AST_name[a->kind]);
   forv_AST(aa, *a)
     if (graph_it(aa))
       graph_ast_nodes(fp, f, aa);
@@ -139,7 +139,7 @@ static void
 graph_ast_edges(FILE *fp, Fun *f, AST *a) {
   forv_AST(aa, *a)
     if (graph_it(aa)) {
-      graph_edge(fp, (int)a, (int)aa);
+      graph_edge(fp, a, aa);
       graph_ast_edges(fp, f, aa);
     }
 }
@@ -207,46 +207,46 @@ graph_pnode_node(FILE *fp, PNode *pn, int options = 0) {
   }
   if (fgraph_frequencies)
     sprintf(title + strlen(title), "freq(%f)", pn->execution_frequency);
-  graph_node(fp, (int)pn, title);
+  graph_node(fp, pn, title);
 }
 
 static void
 graph_loop_node(FILE *fp, LoopNode *n) {
   char title[256] = "";
   sprintf(title, "%d-%d", n->pre_dom, n->post_dom);
-  graph_node(fp, (int)n, title);
+  graph_node(fp, n, title);
 }
 
 static void
 graph_pnode_cfg_edges(FILE *fp, PNode *pn) {
   forv_PNode(ppn, pn->cfg_succ)
-    graph_edge(fp, (int)pn, (int)ppn);
+    graph_edge(fp, pn, ppn);
 }
 
 static void
 graph_loop_edges(FILE *fp, LoopNode *n) {
   forv_LoopNode(nn, n->children)
     graph_edge(fp, 
-	       n->node ? (int)n->node : (int)n, 
-	       nn->node ? (int)nn->node : (int)nn, G_BLUE);
+	       n->node ? n->node : n, 
+	       nn->node ? nn->node : nn, G_BLUE);
   forv_LoopNode(nn, n->loops)
     graph_edge(fp, 
-	       n->node ? (int)n->node : (int)n, 
-	       nn->node ? (int)nn->node : (int)nn, G_RED);
+	       n->node ? n->node : n, 
+	       nn->node ? nn->node : nn, G_RED);
 }
 
 static void
 graph_pnode_dom_edges(FILE *fp, PNode *pn) {
   for (int i = 0; i < pn->dom->children.n; i++)
-    graph_edge(fp, (int)pn, (int)pn->dom->children.v[i]->node, G_BLUE);
+    graph_edge(fp, pn, pn->dom->children.v[i]->node, G_BLUE);
 }
 
 static void
 graph_phi_phy_edges(FILE *fp, PNode *pn) {
   forv_PNode(ppn, pn->phi)
-    graph_edge(fp, (int)pn, (int)ppn, G_RED);
+    graph_edge(fp, pn, ppn, G_RED);
   forv_PNode(ppn, pn->phy)
-    graph_edge(fp, (int)pn, (int)ppn, G_RED);
+    graph_edge(fp, pn, ppn, G_RED);
 }
 
 static void 
@@ -312,7 +312,7 @@ graph_var_node(FILE *fp, Var *v, int options = 0) {
       strcat(id, " }");
     }
   }
-  graph_node(fp, (int)v, id, options | G_BLUE);
+  graph_node(fp, v, id, options | G_BLUE);
 }
 
 static int 
@@ -329,14 +329,14 @@ static void
 graph_pnode_var_edges(FILE *fp, PNode *pn) {
   forv_Var(v, pn->lvals)
     if (graph_it(v))
-      graph_edge(fp, (int)pn, (int)v, G_BLUE);
+      graph_edge(fp, pn, v, G_BLUE);
   forv_Var(v, pn->rvals)
     if (graph_it(v))
-      graph_edge(fp, (int)v, (int)pn, G_BLUE);
+      graph_edge(fp, v, pn, G_BLUE);
   if (!pn->code || pn->code->kind == Code_MOVE) {
     forv_Var(a, pn->rvals) forv_Var(b, pn->lvals)      
       if (graph_it(a) && graph_it(b))
-	graph_edge(fp, (int)a, (int)b, G_GREEN);
+	graph_edge(fp, a, b, G_GREEN);
   }
 }
 
@@ -390,7 +390,7 @@ graph_avar_node(FILE *fp, AVar *av) {
     }
     strcat(label, " }");
   }
-  graph_node(fp, (int)av, label, av->var->sym->constant ? G_BOX : 0);
+  graph_node(fp, av, label, av->var->sym->constant ? G_BOX : 0);
 }
 
 static void 
@@ -425,7 +425,7 @@ graph_avars(FA *fa, char *fn) {
   }
   forv_AVar(av, todo) if (av) {
     forv_AVar(avv, av->forward)
-      graph_edge(fp, (int)av, (int)avv);
+      graph_edge(fp, av, avv);
   }
   graph_end(fp);
 }
@@ -453,12 +453,12 @@ graph_fun_node(FILE *fp, Fun *f) {
   }
   if (fgraph_frequencies)
     sprintf(title + strlen(title), "freq(%f)", f->execution_frequency);
-  graph_node(fp, (int)f, title);
+  graph_node(fp, f, title);
 }
 
 static void
 graph_call(FILE *fp, Fun *f, Fun *ff) {
-  graph_edge(fp, (int)f, (int)ff);
+  graph_edge(fp, f, ff);
 }
 
 static void

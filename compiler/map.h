@@ -5,6 +5,9 @@
 #ifndef _map_H_
 #define _map_H_
 
+#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
+#include <stdint.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -22,7 +25,7 @@ class MapElem {
   K	key;
   C	value;
   bool operator==(MapElem &e) { return e.key == key; }
-  operator unsigned int(void) { return (unsigned int)key; }
+  operator unsigned int(void) { return (unsigned int)(uintptr_t)key; }
   MapElem(unsigned int x) { assert(!x); key = 0; value = 0; }
   MapElem(K akey, C avalue) : key(akey), value(avalue) {}
   MapElem(MapElem &e) : key(e.key), value(e.value) {}
@@ -58,7 +61,7 @@ class StringHashFns {
 
 class PointerHashFns {
  public:
-  static unsigned int hash(void *s) { return (unsigned int)s; }
+  static unsigned int hash(void *s) { return (unsigned int)(uintptr_t)s; }
   static int equal(void *a, void *b) { return a == b; }
 };
 

@@ -30,9 +30,9 @@ fa_print_backward(AVar *v, FILE *fp) {
 	else
 	  fprintf(fp, "%d\n", v->var->sym->id);
       } else
-	fprintf(fp, "VAR %X\n", (int)v->var);
+	fprintf(fp, "VAR %p\n", v->var);
     } else
-      fprintf(fp, "AVAR %X\n", (int)v);
+      fprintf(fp, "AVAR %p\n", v);
     show_type(*v->out, fp); fprintf(fp, "\n");
     forv_AVar(vv, v->backward) if (vv) {
       if (!done.set_in(vv)) {

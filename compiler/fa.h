@@ -4,6 +4,9 @@
 #ifndef _fa_H_
 #define _fa_H_
 
+#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
+#include <stdint.h>
+#endif
 #include <sys/types.h>
 #include "map.h"
 #include "sym.h"
@@ -212,7 +215,7 @@ class ATypeFold : public gc {
 class ATypeFoldOpenHashFns {
  public:
   static uint hash(ATypeFold *x) { 
-    return (uint)x->p + (1009 * (uint)x->a) + (100003 * (uint)x->b);
+    return (uint)((uintptr_t)x->p + (1009 * (uintptr_t)x->a) + (100003 * (uintptr_t)x->b));
   }
   static int equal(ATypeFold *x, ATypeFold *y) {
     return x->p == y->p && x->a == y->a && x->b == y->b;

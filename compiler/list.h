@@ -22,14 +22,14 @@ template <class C> class SLink {
   C *next;
   SLink() : next(NULL) {};
 };
-#define GetSLinkNext(_c, _e, _o) (((SLink<_c> *)(void*)(((int)(void*)_e) + _o))->next)
+#define GetSLinkNext(_c, _e, _o) (((SLink<_c> *)(void*)(((intptr_t)(void*)_e) + _o))->next)
 
 template <class C> struct Link : SLink<C> {
   C *prev;
   Link() : prev(NULL) {}
 };
-#define GetLinkNext(_c, _e, _o) (((Link<_c> *)(void*)(((int)(void*)_e) + _o))->next)
-#define GetLinkPrev(_c, _e, _o) (((Link<_c> *)(void*)(((int)(void*)_e) + _o))->prev)
+#define GetLinkNext(_c, _e, _o) (((Link<_c> *)(void*)(((intptr_t)(void*)_e) + _o))->next)
+#define GetLinkPrev(_c, _e, _o) (((Link<_c> *)(void*)(((intptr_t)(void*)_e) + _o))->prev)
 
 template <class C, int o> class SLL : public gc {
  public:

@@ -43,12 +43,12 @@ static void
 print_pnode(PNode *n, char *s) {
   printf("  %s: used %d RVALS ", s, n->used);
   forv_Var(v, n->rvals) {
-    printf("%X:", (int)v);
+    printf("%p:", v);
     if1_dump_sym(stdout, v->sym);
   }
   printf(" LVALS ");
   forv_Var(v, n->lvals) {
-    printf("%X:", (int)v);
+    printf("%p:", v);
     if (v)
       if1_dump_sym(stdout, v->sym);
     else
