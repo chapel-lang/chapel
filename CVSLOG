@@ -3315,3 +3315,20 @@ Modified files:
 	chapel/compiler/: list.h 
 	chapel/compiler/make_prims/: make_prims.g 
 
+---------------------------------------------------------------------------
+
+06/15/04 09:54:32 -- bradc
+
+Log message:
+	This is a bunch of prototype code that I've been working on
+	to look at alternate AST structures.  It isn't anywhere near
+	prime-time, but I feel naked not having it checked into CVS,
+	so am dropping it in for the revision control features.
+
+Added files:
+	chapel/compiler/AST/: Makefile chapel.lex chapel.y expr.cpp 
+	                      expr.h lexyacc.h link.cpp link.h main.cpp 
+	                      stmt.cpp stmt.h stringutil.cpp 
+	                      stringutil.h symbol.cpp symbol.h type.cpp 
+	                      type.h yy.c yy.h 
+
