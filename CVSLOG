@@ -1438,3 +1438,13 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/d/: lr.c 
 
+---------------------------------------------------------------------------
+
+04/03/26 12:01:21 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Suppression file for use with the Boehm GC and valgrind vr 2.0.0
+
+Added files:
+	chapel/compiler/: valgrind.suppressions 
+
