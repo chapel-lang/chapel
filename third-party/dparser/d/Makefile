@@ -43,22 +43,23 @@ else
   AR_FLAGS = crv
 endif
 
-ifeq ($(OS_TYPE),CYGWIN)
-GC_CFLAGS += -L/usr/local/lib
-else
-GC_CFLAGS += -I/usr/local/include -L/usr/local/lib
-endif
+GC_CFLAGS += -I$(GCROOT)/include -L$(GCROOT)/lib
 
 ifdef D_USE_GC
 CFLAGS += -DUSE_GC ${GC_CFLAGS}
-LIBS += -lgc
+LIBS += $(GCROOT)/lib/libgc.a
 endif
 ifdef D_LEAK_DETECT
 CFLAGS += -DLEAK_DETECT  ${GC_CFLAGS}
 LIBS += -lleak
 endif
 
-D_BUILD_VERSION = $(shell cat BUILD_VERSION)
+BUILD_VERSION = $(shell touch BUILD_VERSION;cat BUILD_VERSION)
+ifeq ($(BUILD_VERSION),)
+D_BUILD_VERSION = 1
+else
+D_BUILD_VERSION = $(shell expr $(BUILD_VERSION) + 1)
+endif
 CFLAGS += -DD_MAJOR_VERSION=$(MAJOR) -DD_MINOR_VERSION=$(MINOR) -DD_BUILD_VERSION=$(D_BUILD_VERSION)
 
 CFLAGS += -Wall
@@ -142,7 +143,7 @@ test:
 	(MAKE=$(MAKE) ./parser_tests)
 
 install:
-	cp $(EXECUTABLES) $(PREFIX)/bin
+	cp $(EXECUTABLE_FILES) $(PREFIX)/bin
 	cp $(INCLUDES) $(PREFIX)/include
 	cp $(INSTALL_LIBRARIES) $(PREFIX)/lib
 	cp $(MANPAGES) $(PREFIX)/man/man1
