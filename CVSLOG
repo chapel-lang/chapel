@@ -3174,3 +3174,14 @@ Log message:
 Modified files:
 	chapel/compiler/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+06/10/04 16:29:09 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	added CHPL_VALGRIND_OPTIONS to permit valgrind-2.1.1 to work which
+	requires an extra argument.  Someday will have to generalize this.
+
+Modified files:
+	chapel/test/: sub_test 
+
