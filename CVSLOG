@@ -11497,3 +11497,46 @@ Modified files:
 Added files:
 	chapel/compiler/passes/: buildBinary.cpp buildBinary.h 
 
+---------------------------------------------------------------------------
+
+12/09/04 16:35:33 -- deitz
+
+Log message:
+	Fixed a bug in methodsToFunctions in which everything after the method
+	was removed from a class type, not just the function.  Added a new
+	method to ILink called extract which removes a statement from a
+	statement list.
+	
+	Improved the implementation of copy and copyList for statements.
+	These procedures can now take an optional scope.  If set, this is used
+	as the scope for the copied statements, expressions, symbols, and
+	types.
+	
+	Implemented a test against codegening with statements.
+	
+	Renamed ResolveSymbols2 to ResolveSymbols.  Originally this pass was
+	just going to run after analysis and a pass called ResolveSymbols1 was
+	going to run before analysis.  Now this single pass can be run
+	anywhere and it will behave differently if run before or after (in
+	that it will only use information gleaned from analysis after analysis
+	has run).  This pass currently only does anything after analysis; it
+	resolves members in MemberAccesses then.
+	
+	Added a static field to the RunAnalysis pass that records whether it
+	has been run or not.
+
+Modified files:
+	chapel/compiler/AST/: link.cpp stmt.cpp 
+	chapel/compiler/include/: link.h stmt.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: runAnalysis.cpp runAnalysis.h 
+	chapel/compiler/traversals/: Makefile.share cloneAllFns.cpp 
+	                             defineSymbols.cpp defineSymbols.h 
+	                             methodsToFunctions.cpp 
+	                             processWithStatements.cpp 
+Added files:
+	chapel/compiler/traversals/: resolveSymbols.cpp resolveSymbols.h 
+Removed files:
+	chapel/compiler/traversals/: resolveSymbols2.cpp 
+	                             resolveSymbols2.h 
+
