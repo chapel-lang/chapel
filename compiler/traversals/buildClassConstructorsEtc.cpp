@@ -30,8 +30,18 @@ static Stmt* buildClassConstructorBody(Stmt* stmts, ClassType* class_type,
       // cloned classes until they are cloned
     }
 #endif
-    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
-    Stmt* assign_stmt = new ExprStmt(assign_expr);
+    Stmt* assign_stmt;
+    if (tmp->type == dtString) {
+      Expr* args = lhs;
+      args->append(new MemberAccess(new Variable(_this), tmp));
+      args->append(rhs);
+      Symbol* init_string = Symboltable::lookupInternal("_init_string");
+      FnCall* call = new FnCall(new Variable(init_string), args);
+      assign_stmt = new ExprStmt(call);
+    } else {
+      Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
+      assign_stmt = new ExprStmt(assign_expr);
+    }
     stmts = appendLink(stmts, assign_stmt);
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
     ptmp = nextLink(ParamSymbol, ptmp);
@@ -194,6 +204,29 @@ static void build_record_inequality_function(ClassType* class_type) {
 }
 
 
+static void build_record_assignment_function(ClassType* class_type) {
+  if (!class_type->value) {
+    return;
+  }
+
+  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
+
+  ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", class_type);
+  ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", class_type);
+  arg1->append(arg2);
+  Stmt* body = NULL;
+  forv_Vec(VarSymbol, tmp, class_type->fields) {
+    Expr* left = new MemberAccess(new Variable(arg1), tmp);
+    Expr* right = new MemberAccess(new Variable(arg2), tmp);
+    Expr* assign_expr = new AssignOp(GETS_NORM, left, right);
+    body = appendLink(body, new ExprStmt(assign_expr));
+  }
+  Stmt* block_stmt = new BlockStmt(body);
+  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt));
+  class_type->symbol->defPoint->stmt->insertBefore(def_stmt);
+}
+
+
 static void build_tuple_assignment_function(TupleType* tuple_type) {
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
 
@@ -228,6 +261,7 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
       build_constructor(class_type);
       build_record_equality_function(class_type);
       build_record_inequality_function(class_type);
+      build_record_assignment_function(class_type);
     } else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type_symbol->type)) {
       build_tuple_assignment_function(tuple_type);
     }
