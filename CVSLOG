@@ -22258,3 +22258,16 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+03/29/05 13:29:23 -- roxana
+
+Log message:
+	Wrong name for the future test -- corrected that. Thanks to
+	Steve for pointing that out.
+
+Added files:
+	chapel/test/domains/roxana/: test_index_expr1.future 
+Removed files:
+	chapel/test/domains/roxana/: test_intex_expr1.future 
+
