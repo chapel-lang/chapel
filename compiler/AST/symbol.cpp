@@ -183,12 +183,36 @@ ReduceSymbol::ReduceSymbol(char* init_name, ClassType* init_class) :
 
 
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-		   Stmt* init_body, bool init_exportMe) :
+		   Stmt* init_body, bool init_exportMe, 
+		   FnSymbol* init_parentFn) :
   Symbol(SYMBOL_FN, init_name, init_retType),
   exportMe(init_exportMe),
   formals(init_formals),
-  body(init_body)
+  body(init_body),
+  parentFn(init_parentFn)
 {}
+
+
+FnSymbol::FnSymbol(char* init_name, FnSymbol* init_parentFn) :
+  Symbol(SYMBOL_FN, init_name, nilType),
+  formals(nilSymbol),
+  body(nilStmt),
+  parentFn(init_parentFn)
+{}
+
+
+void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
+			 Stmt* init_body, bool init_exportMe) {
+  formals = init_formals;
+  type = init_retType;
+  body = init_body;
+  exportMe = init_exportMe;
+}
+
+
+bool FnSymbol::isNull(void) {
+  return (this == nilFnSymbol);
+}
 
 
 void FnSymbol::traverseSymbol(Traversal* traversal) {

@@ -100,6 +100,7 @@ Stmt* fileToAST(char* filename, int debug) {
 
   if (preludePath == NULL) {
     initNils();
+    Symboltable::init();
     initType(); // BLC : clean these up
     initExpr();
 

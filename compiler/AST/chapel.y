@@ -36,6 +36,7 @@
   Symbol* psym;
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
+  FnSymbol* fnsym;
   ReduceSymbol* redsym;
   ClassSymbol* pcsym;
 }
@@ -295,23 +296,11 @@ fnrettype:
 fndecl:
   FUNCTION identifier
     {
-      Symboltable::pushScope(SCOPE_PARAM);
+      $<fnsym>$ = Symboltable::startFnDef($2);
     }
                       '(' formals ')' fnrettype statement
     {
-      SymScope* paramScope = Symboltable::popScope();
-      FnSymbol* fnpst = Symboltable::defineFunction($2, $5, $7, $8);
-      $$ = new FnDefStmt(fnpst);
-      paramScope->setContext($$, fnpst);
-      SymScope* fnScope = paramScope->child;
-
-      // BLC: If we set context for all SCOPE_LOCAL's, this should go away
-      if (fnScope) {
-	if (fnScope->type != SCOPE_FUNCTION) {
-	  INT_FATAL(fnpst, "Unexpected child scope type for paramScope");
-	}
-	fnScope->setContext($8, fnpst);
-      }
+      $$ = Symboltable::finishFnDef($<fnsym>3, $5, $7, $8);
     }
 ;
 
@@ -405,13 +394,9 @@ statement:
     { $$ = new ExprStmt($1); }
 | retStmt
 | '{'
-    { Symboltable::pushScope(SCOPE_LOCAL); }
+    { Symboltable::startCompoundStmt(); }
       statements '}'
-    {
-      SymScope* stmtScope = Symboltable::popScope();
-      $$ = new BlockStmt($3);
-      stmtScope->setContext($$);
-    }
+    { $$ = Symboltable::finishCompoundStmt($3); }
 ;
 
 
@@ -439,13 +424,11 @@ indexlist:
 forloop:
   fortype indexlist IN expr
     { 
-      $<pvsym>$ = Symboltable::enterForLoop($2);
+      $<pvsym>$ = Symboltable::startForLoop($2);
     }
                                  statement
     { 
-      SymScope* forScope = Symboltable::exitForLoop();
-      $$ = new ForLoopStmt(true, $<pvsym>5, $4, $6);
-      forScope->setContext($$);
+      $$ = Symboltable::finishForLoop(true, $<pvsym>5, $4, $6);
     }
 ;
 

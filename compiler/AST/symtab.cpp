@@ -173,13 +173,15 @@ void SymScope::print(FILE* outfile, bool alphabetical) {
 static int level = SCOPE_INTRINSIC;
 static SymScope* rootScope = new SymScope(SCOPE_INTRINSIC, level++);
 static SymScope* currentScope = rootScope;
+static FnSymbol* currentFn = NULL;
+
+
+void Symboltable::init(void) {
+  currentFn = nilFnSymbol;
+}
 
 
 void Symboltable::pushScope(scopeType type) {
-  if (currentScope->type == SCOPE_PARAM &&
-      type == SCOPE_LOCAL) {
-    type = SCOPE_FUNCTION;
-  }
   SymScope* newScope = new SymScope(type, level++);
   SymScope* child = currentScope->child;
 
@@ -265,6 +267,25 @@ ClassSymbol* Symboltable::lookupClass(char* name) {
   } else {
     return (ClassSymbol*)pst;
   }
+}
+
+
+void Symboltable::startCompoundStmt(void) {
+  scopeType type = SCOPE_LOCAL;
+  if (currentScope->type == SCOPE_PARAM) {
+    type = SCOPE_FUNCTION;
+  }
+
+  Symboltable::pushScope(type);
+}
+
+
+BlockStmt* Symboltable::finishCompoundStmt(Stmt* body) {
+  SymScope* stmtScope = Symboltable::popScope();
+  BlockStmt* newStmt = new BlockStmt(body);
+  stmtScope->setContext(newStmt, currentFn);
+
+  return newStmt;
 }
 
 
@@ -366,6 +387,28 @@ Type* Symboltable::defineBuiltinType(char* name, bool placeholder) {
 }
 
 
+FnSymbol* Symboltable::startFnDef(char* name) {
+  FnSymbol* newFn = new FnSymbol(name, currentFn);
+  define(newFn);
+  currentFn = newFn;
+  Symboltable::pushScope(SCOPE_PARAM);
+
+  return newFn;
+}
+
+
+FnDefStmt* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
+				    Type* retType, Stmt* body, bool isExtern) {
+  SymScope* paramScope = Symboltable::popScope();
+  fnsym->finishDef(formals, retType, body, isExtern);
+  FnDefStmt* fnstmt = new FnDefStmt(fnsym);
+  paramScope->setContext(fnstmt, fnsym);
+  currentFn = currentFn->parentFn;
+
+  return fnstmt;
+}
+
+
 FnSymbol* Symboltable::defineFunction(char* name, Symbol* formals, 
 				      Type* retType, Stmt* body, 
 				      bool isExtern) {
@@ -398,14 +441,19 @@ ClassType* Symboltable::defineClass(char* name, ClassSymbol* parent) {
 }
 
 
-VarSymbol* Symboltable::enterForLoop(Symbol* indices) {
+VarSymbol* Symboltable::startForLoop(Symbol* indices) {
   Symboltable::pushScope(SCOPE_FORLOOP);
   return defineVars(indices, dtInteger); // BLC: dtInteger is wrong
 }
 
 
-SymScope* Symboltable::exitForLoop(void) {
-  return Symboltable::popScope();
+ForLoopStmt* Symboltable::finishForLoop(bool forall, VarSymbol* index,
+					Expr* domain, Stmt* body) {
+  SymScope* forScope = Symboltable::popScope();
+  ForLoopStmt* newStmt = new ForLoopStmt(forall, index, domain, body);
+  forScope->setContext(newStmt, currentFn);
+
+  return newStmt;
 }
 
 

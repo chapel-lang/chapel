@@ -111,14 +111,25 @@ class ReduceSymbol : public ClassSymbol {
 };
 
 
+class FnSymbol;
+extern FnSymbol* nilFnSymbol;
+
 class FnSymbol : public Symbol {
  public:
   bool exportMe;
   Symbol* formals;
   Stmt* body;
 
+  FnSymbol* parentFn;
+
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-	    Stmt* init_body, bool init_exportMe=false);
+	   Stmt* init_body, bool init_exportMe=false, 
+	   FnSymbol* init_parentFn = nilFnSymbol);
+  FnSymbol(char* init_name, FnSymbol* init_parentFn = nilFnSymbol);
+  void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
+		 bool init_exportMe=false);
+
+  bool isNull(void);
 
   void traverseSymbol(Traversal*);
 
@@ -126,6 +137,7 @@ class FnSymbol : public Symbol {
   int getSymbols(Vec<BaseAST *> &stmts);
   int getStmts(Vec<BaseAST *> &stmts);
 };
+
 
 
 class EnumSymbol : public Symbol {
