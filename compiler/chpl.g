@@ -67,29 +67,44 @@ statement
   else
     $$.ast = $0.ast;
 }
+  | def_function function_body
+    [ ${scope} = enter_D_Scope(${scope}, $0.saved_scope); ]
+    { $$.ast = new AST(AST_def_fun, &$n); }
+  | 'class' def_type def_type_parameter_list? class_definition
+{ $$.ast = new AST(AST_def_type, &$n); }
+  | 'class' def_type def_type_parameter_list? ';'
+{ $$.ast = new AST(AST_def_type, &$n); }
   | identifier ':' ';'
 { $$.ast = new AST(AST_label, &$n); }
   | ';'
   ;
 
+function_body: '{' statement* expression? '}'
+{ $$.ast = new AST(AST_scope, &$n); };
+
 some_statement
   : expression
-  | def_function expression
-    [ ${scope} = enter_D_Scope(${scope}, $0.saved_scope); ]
-    { $$.ast = new AST(AST_def_fun, &$n); }
+  | var_declarations
   | control_flow
   | some_type_statement
   ;
 
-type_statement 
-  : some_type_statement ';'
-{ $$.ast = $0.ast; }
-  | ';'
-  ;
+var_declarations : ('var' | 'const')  var_declaration (',' var_declaration)* ;
+var_declaration : identifier ('__name' string)? (':' constraint_type)? ('=' expression)?
+{
+  $$.ast = new AST(AST_def_ident, &$n); 
+  if ($#1)
+    $$.ast->builtin = if1_cannonicalize_string(
+      $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
+};
 
 pure_type_statement 
   : some_pure_type_statement ';'
 { $$.ast = $0.ast; }
+  | 'class' def_type def_type_parameter_list? class_definition
+{ $$.ast = new AST(AST_def_type, &$n); }
+  | 'class' def_type def_type_parameter_list? ';'
+{ $$.ast = new AST(AST_def_type, &$n); }
   | ';'
   ;
 
@@ -105,8 +120,6 @@ some_pure_type_statement
 
 unqualified_type_statement
   : 'type' type_definition (',' type_definition)* 
-  | 'class' def_type def_type_parameter_list? class_definition? 
-{ $$.ast = new AST(AST_def_type, &$n); }
   | 'enum' def_type enum_definition? 
 { $$.ast = new AST(AST_def_type, &$n); }
   ;
@@ -115,6 +128,10 @@ unqualified_pure_type_statement
   : def_identifier type
 {  $$.ast = new AST(AST_declare_ident, &$n); }
   | unqualified_type_statement
+  | var_declarations
+  | def_function ':' type
+[ ${scope} = enter_D_Scope(${scope}, $0.saved_scope); ]
+{ $$.ast = new AST(AST_def_fun, &$n); }
   ;
 
 type_definition : def_type def_type_parameter_list? ('__name' string)? 
@@ -213,13 +230,15 @@ expression
        $$.ast->builtin = if1_cannonicalize_string(
          $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
    }
+  | 'new' expression
+    { $$.ast = new AST(AST_new, &$n); }
   | qualified_identifier
   | def_identifier expression $right 5100
     { 
       $$.ast = new AST(AST_def_ident, &$n); 
       $$.ast->def_ident_label = 1;
     }
-  | anon_function expression
+  | anon_function '{' statement* expression? '}'
     [ ${scope} = enter_D_Scope(${scope}, $0.saved_scope); ]
     { $$.ast = new AST(AST_def_fun, &$n); }
   | pre_operator expression 
@@ -230,9 +249,14 @@ expression
     { $$.ast = op_AST($g->i, $n); }
   | expression ('.' $name "op period" | '->' $name "op arrow") symbol_identifier $left 9900
     { $$.ast = op_AST($g->i, $n); }
-  | curly_block
+  | vector_immediate
+  | list_immediate
   | paren_block
   | curly_block
+  | square_forall
+  | 'forall' loop_scope forall_indices 'in' qualified_identifier expression
+    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
+    { $$.ast =  new AST(AST_forall, &$n); }
   | expression '?' expression ':' expression $right 8600
     { $$.ast = new AST(AST_if, &$n); }
   | 'if' '(' expression ')' expression $right 6000
@@ -240,10 +264,13 @@ expression
   | 'if' '(' expression ')' expression 'else' expression $right 6100
     { $$.ast = new AST(AST_if, &$n); }
   | 'while' loop_scope '(' expression ')' expression $right 6200
+    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n3, 0, 0, $n5); }
   | 'do' loop_scope expression 'while' expression $right 6300
+    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n4, &$n2, 0, $n2); }
   | 'for' loop_scope '(' expression? ';' expression? ';' expression? ')' expression
+    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n3, &$n5, &$n7, $n9); }
   | 'with' with_scope expression $right 5100
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
@@ -270,19 +297,19 @@ def_identifier: identifier ('__name' string)? ':'
       $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
 };
 
-def_function: qualified_identifier pattern+ ('__name' string)? ':' 
+def_function: 'function' qualified_identifier pattern+ ('__name' string)?
 [ 
   $$.saved_scope = ${scope}; 
   ${scope} = new_D_Scope(${scope}); 
   ${scope}->kind = D_SCOPE_RECURSIVE;
 ]
 {
-  if ($#2)
-    $0.ast->builtin = if1_cannonicalize_string(
-      $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
+  if ($#3)
+    $1.ast->builtin = if1_cannonicalize_string(
+      $g->i, ${child 3, 0, 1}->start_loc.s+1, ${child 3, 0, 1}->end-1);
 };
 
-anon_function: '\\' pattern+ ('__name' string)? ':' 
+anon_function: 'fun' pattern+
 [ 
   $$.saved_scope = ${scope}; 
   ${scope} = new_D_Scope(${scope}); 
@@ -353,7 +380,8 @@ binary_operator
   | '&='        $binary_op_left 8500
   | '|='        $binary_op_left 8500
   | '^='        $binary_op_left 8500
-  | ',' 	$binary_op_left 8400 
+  | '..' 	$binary_op_left 8400 
+  | ',' 	$binary_op_left 8300 
   | '->*'       $binary_op_left 9900
   | '^^' 	$binary_op_left 7000
   |     	$binary_op_left 7000
@@ -394,17 +422,20 @@ paren_block: '(' statement* expression? ')'
     $$.ast = new AST(AST_list, &$n);
 };
 
-square_block: '[' 
-  [ 
-    ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_PARALLEL; 
-    $g->parallel_scope = ${scope};
-  ]
-  statement* expression? ']' 
-{ 
-  if ($#3)
-    $$.ast = new AST(AST_scope, &$n); 
-  else
-    $$.ast = new AST(AST_vector, &$n);
+list_immediate: '#' '(' statement* expression? ')' { 
+  $$.ast = new AST(AST_list, &$n);
+};
+
+vector_immediate: '#' '[' statement* expression? ']' { 
+  $$.ast = new AST(AST_vector, &$n);
+};
+
+square_forall: '[' loop_scope forall_indices? qualified_identifier ']' expression 
+[ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
+{ $$.ast = new AST(AST_forall, &$n); };
+
+forall_indices: identifier (',' identifier)* ':' {
+  $$.ast = new AST(AST_indices, &$n);
 };
 
 constant : (character | int8 | uint8 | int16 | uint16 | 

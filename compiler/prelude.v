@@ -61,6 +61,7 @@ __make_vector(...) __name "make_vector":0;
 __make_set(...) __name "make_set":0;
 __make_continuation(...) __name "make_continuation":0;
 __primitive(...) __name "primitive":0;
+__new(...) __name "new":0;
 
 //   public
 reply(...) __name "reply":0;
@@ -102,6 +103,7 @@ operator(a:int, #">>=", b:int)		   : __primitive a #">>" b;
 operator(a:int, #"&=", b:int)		   : __primitive a #"&" b;
 operator(a:int, #"|=", b:int)		   : __primitive a #"|" b;
 operator(a:int, #"^=", b:int)		   : __primitive a #"^" b;
+operator(a:int, #"..", b:int)		   : __primitive a #".." b;
 operator(a:any, #"->", b:symbol)	   : __primitive (__primitive #"*" a) #"." b;
 operator(a:any, #"->*", b:symbol)	   : __primitive (__primitive #"*" a) #"." b; 
 operator(a:anynum, #"^^", b:anynum)	   : __primitive a #"^^" b;
@@ -130,6 +132,7 @@ type iteratable = {
 // domains
 
 type domain;
+type sequence __name "sequence";
 type decomposition;
 type arithmetic_domain(rank:symbol, distribute:decomposition, to:domain) : domain;
 type opaque_domain(distribute:decomposition, to:domain) : domain;

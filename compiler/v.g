@@ -230,7 +230,7 @@ expression
     { $$.ast = op_AST($g->i, $n); }
   | expression ('.' $name "op period" | '->' $name "op arrow") symbol_identifier $left 9900
     { $$.ast = op_AST($g->i, $n); }
-  | curly_block
+  | square_block
   | paren_block
   | curly_block
   | expression '?' expression ':' expression $right 8600
@@ -240,10 +240,13 @@ expression
   | 'if' '(' expression ')' expression 'else' expression $right 6100
     { $$.ast = new AST(AST_if, &$n); }
   | 'while' loop_scope '(' expression ')' expression $right 6200
+    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n3, 0, 0, $n5); }
   | 'do' loop_scope expression 'while' expression $right 6300
+    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n4, &$n2, 0, $n2); }
   | 'for' loop_scope '(' expression? ';' expression? ';' expression? ')' expression
+    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n3, &$n5, &$n7, $n9); }
   | 'with' with_scope expression $right 5100
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
@@ -282,7 +285,7 @@ def_function: qualified_identifier pattern+ ('__name' string)? ':'
       $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
 };
 
-anon_function: '\\' pattern+ ('__name' string)? ':' 
+anon_function: '\\' pattern+ ':' 
 [ 
   $$.saved_scope = ${scope}; 
   ${scope} = new_D_Scope(${scope}); 

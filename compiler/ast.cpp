@@ -80,7 +80,6 @@ AST::add_below(D_ParseNode *pn) {
     dig_ast(this, d_get_child(pn, i));
 }
 
-
 Scope *
 ast_qualified_ident_scope(AST *a) {
   int i = 0;
@@ -543,7 +542,7 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
     Lmore:
 	forv_AST(a, *ast) {
 	  if (a->kind == AST_constraint) {
-	    if (!(a->sym = ast_qualified_ident_sym(a->get(AST_qualified_ident))))
+	    if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
 	      return -1;
 	    sym->constraints.set_add(a->sym);
 	    sym->scope->dynamic.add(a->sym->scope);
@@ -571,6 +570,13 @@ static int
 variables_and_nonrecursive_functions(IF1 *i, AST *ast, int skip = 0) {
   if (!skip)
     switch (ast->kind) {
+      case AST_indices: {
+	forv_AST(a, *ast) {
+	  a->sym = new_sym(i, a->scope, a->string, a->sym);
+	  a->sym->ast = a;
+	}
+	break;
+      }
       case AST_def_ident: {
 	AST *id = ast->get(AST_ident);
 	ast->sym = new_sym(i, ast->scope, id->string, id->sym);
@@ -808,7 +814,7 @@ static void
 gen_op(IF1 *i, AST *ast) {
   char *op = ast->v[ast->op_index]->sym->name;
   int assign = op[1] == '=' && op[0] != '=';
-  int ref = op[0] == '.' || (op[0] == '-' && op[1] == '>');
+  int ref = (op[0] == '.' && op[1] != '.') || (op[0] == '-' && op[1] == '>');
   int binary = ast->n > 2;
   Code **c = &ast->code;
   AST *a0 = ast->op_index ? ast->v[0] : 0, *a1 = ast->n > (int)(1 + ast->op_index) ? ast->last() : 0;
@@ -863,6 +869,14 @@ gen_op(IF1 *i, AST *ast) {
 	send = if1_move(i, c, ast->rval, a1->lval, ast);
     }
   }
+}
+
+static void
+gen_forall(IF1 *i, AST *ast) {
+  AST *domain = ast->get(AST_qualified_ident);
+  AST *indices = ast->get(AST_indices);
+  AST *body = ast->last();
+  ast->rval = body->rval;
 }
 
 static void
@@ -928,8 +942,11 @@ gen_if1(IF1 *i, AST *ast) {
   switch (ast->kind) {
     case AST_def_fun: gen_fun(i, ast); break;
     case AST_def_ident: {
-      if1_gen(i, &ast->code, ast->v[1]->code);
-      if1_move(i, &ast->code, ast->v[1]->rval, ast->sym, ast); 
+      AST *val = ast->last();
+      if (val->kind != AST_constraint && ast->sym != sym_init) {
+	if1_gen(i, &ast->code, val->code);
+	if1_move(i, &ast->code, val->rval, ast->sym, ast); 
+      }
       ast->rval = ast->sym;
       break;
     }
@@ -954,6 +971,11 @@ gen_if1(IF1 *i, AST *ast) {
       break;
     case AST_qualified_ident: 
       ast->lval = ast->rval = ast->sym; break;
+    case AST_indices:
+      forv_AST(a, *ast)
+	a->rval = ast->sym;
+      break;
+    case AST_forall: gen_forall(i, ast); break;
     case AST_loop: gen_loop(i, ast); break;
     case AST_op: gen_op(i, ast); break;
     case AST_if: gen_if(i, ast); break;

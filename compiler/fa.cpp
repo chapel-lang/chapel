@@ -644,6 +644,7 @@ add_send_constraints(EntrySet *es) {
 	case P_prim_continuation: prim_make(p, es, sym_continuation); break;
 	case P_prim_set: prim_make(p, es, sym_set); break;
 	case P_prim_ref: prim_make(p, es, sym_ref, 2); break;
+	case P_prim_range: prim_make(p, es, sym_sequence); break;
 	case P_prim_deref:
 	case P_prim_apply: 
 	case P_prim_period:

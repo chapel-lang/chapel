@@ -1,4 +1,4 @@
-// V prelude, describing the initial environment
+// Chapel Prelude
 
 in system __name "system";
 
@@ -52,18 +52,19 @@ null __name "null" : ();
 
 // global initialization
 
-__init__ __name "init":0;
+__init__ __name "init" : 0;
 
 //   internal
-__make_tuple(...) __name "make_tuple":0;
-__make_list(...) __name "make_list":0;
-__make_vector(...) __name "make_vector":0;
-__make_set(...) __name "make_set":0;
-__make_continuation(...) __name "make_continuation":0;
-__primitive(...) __name "primitive":0;
+function __make_tuple(...) __name "make_tuple" { 0 };
+function __make_list(...) __name "make_list" { 0 } ;
+function __make_vector(...) __name "make_vector" { 0 } ;
+function __make_set(...) __name "make_set" { 0 } ;
+function __make_continuation(...) __name "make_continuation" { 0 };
+function __primitive(...) __name "primitive" { 0 } ;
+function __new(...) __name "new" { 0 };
 
 //   public
-reply(...) __name "reply":0;
+function reply(...) __name "reply" { 0 };
 
 // symbol builtins
 #operator __name "operator";
@@ -71,100 +72,91 @@ reply(...) __name "reply":0;
 
 // overloadable primitive operators
 
-operator(a:any, #".", b:symbol)		   : __primitive a #"." b;
-operator(a:any, #"*.", b:symbol)	   : __primitive a #"." b;
-operator(a:anynum, #"*", b:anynum)	   : __primitive a #"*" b;
-operator(a:anynum, #"/", b:anynum)	   : __primitive a #"/" b;
-operator(a:anynum, #"%", b:anynum)	   : __primitive a #"%" b;
-operator(a:anynum, #"+", b:anynum)	   : __primitive a #"+" b;
-operator(a:anynum, #"-", b:anynum)	   : __primitive a #"-" b;
-operator(a:int, #"<<", b:int)		   : __primitive a #"<<" b;
-operator(a:int, #">>", b:int)		   : __primitive a #">>" b;
-operator(a:anynum, #"<", b:anynum)	   : __primitive a #"<" b;
-operator(a:anynum, #"<=", b:anynum)	   : __primitive a #"<=" b;
-operator(a:anynum, #">", b:anynum)	   : __primitive a #">" b;
-operator(a:anynum, #">=", b:anynum)	   : __primitive a #">=" b;
-operator(a:anynum, #"==", b:anynum)	   : __primitive a #"==" b;
-operator(a:anynum, #"!=", b:anynum)	   : __primitive a #"!=" b;
-operator(a:int, #"&", b:int)		   : __primitive a #"&" b;
-operator(a:int, #"^", b:int)		   : __primitive a #"^" b;
-operator(a:int, #"|", b:int)		   : __primitive a #"|" b;
-operator(a:any, #"&&", b:any)		   : __primitive a #"&&" b;
-operator(a:any, #"||", b:any)		   : __primitive a #"||" b;
-operator(a:any, #"=", b:any)		   : b;
-operator(a:anynum, #"*=", b:anynum)	   : __primitive a #"*" b;
-operator(a:anynum, #"/=", b:anynum)	   : __primitive a #"/" b;
-operator(a:anynum, #"%=", b:anynum)	   : __primitive a #"%" b;
-operator(a:anynum, #"+=", b:anynum)	   : __primitive a #"+" b;
-operator(a:anynum, #"-=", b:anynum)	   : __primitive a #"-" b;
-operator(a:int, #"<<=", b:int)		   : __primitive a #"<<" b;
-operator(a:int, #">>=", b:int)		   : __primitive a #">>" b;
-operator(a:int, #"&=", b:int)		   : __primitive a #"&" b;
-operator(a:int, #"|=", b:int)		   : __primitive a #"|" b;
-operator(a:int, #"^=", b:int)		   : __primitive a #"^" b;
-operator(a:any, #"->", b:symbol)	   : __primitive (__primitive #"*" a) #"." b;
-operator(a:any, #"->*", b:symbol)	   : __primitive (__primitive #"*" a) #"." b; 
-operator(a:anynum, #"^^", b:anynum)	   : __primitive a #"^^" b;
-operator(#"++", a:anynum)		   : __primitive #"++" a;
-operator(#"--", a:anynum)		   : __primitive #"--" a;
-operator(#"+", a:anynum)		   : __primitive #"+" a;
-operator(#"-", a:anynum)		   : __primitive #"-" a;
-operator(#"~", a:anynum)		   : __primitive #"~" a;
-operator(#"!", a:any)			   : __primitive #"!" a;
-operator(#"*", a:any)			   : __primitive #"*" a;
-operator(#"&", a:any)			   : __primitive #"&" a;
-operator(a:anynum, #"|", b:anynum)	   : __primitive a #"|" b;
-operator(#"(", a:symbol, b:any)		   : __primitive #"(" a b;
-operator(a:anynum, #"++")		   : __primitive a #"++";
-operator(a:anynum, #"--")		   : __primitive a #"--";
-
-// iterators
-
-type iterator(a);
-type iteratable = {
-  type element_type;
-  elements : iterator(element_type);
-};
+function operator(a:any, #".", b:symbol)	{ __primitive a #"." b }
+function operator(a:any, #"*.", b:symbol)	{ __primitive a #"." b }
+function operator(a:anynum, #"*", b:anynum)	{ __primitive a #"*" b }
+function operator(a:anynum, #"/", b:anynum)	{ __primitive a #"/" b }
+function operator(a:anynum, #"%", b:anynum)	{ __primitive a #"%" b }
+function operator(a:anynum, #"+", b:anynum)	{ __primitive a #"+" b }
+function operator(a:anynum, #"-", b:anynum)	{ __primitive a #"-" b }
+function operator(a:int, #"<<", b:int)		{ __primitive a #"<<" b }
+function operator(a:int, #">>", b:int)		{ __primitive a #">>" b }
+function operator(a:anynum, #"<", b:anynum)	{ __primitive a #"<" b }
+function operator(a:anynum, #"<=", b:anynum)	{ __primitive a #"<=" b }
+function operator(a:anynum, #">", b:anynum)	{ __primitive a #">" b }
+function operator(a:anynum, #">=", b:anynum)	{ __primitive a #">=" b }
+function operator(a:anynum, #"==", b:anynum)	{ __primitive a #"==" b }
+function operator(a:anynum, #"!=", b:anynum)	{ __primitive a #"!=" b }
+function operator(a:int, #"&", b:int)		{ __primitive a #"&" b }
+function operator(a:int, #"^", b:int)		{ __primitive a #"^" b }
+function operator(a:int, #"|", b:int)		{ __primitive a #"|" b }
+function operator(a:any, #"&&", b:any)		{ __primitive a #"&&" b }
+function operator(a:any, #"||", b:any)		{ __primitive a #"||" b }
+function operator(a:any, #"=", b:any)		{ b }
+function operator(a:anynum, #"*=", b:anynum)	{ __primitive a #"*" b }
+function operator(a:anynum, #"/=", b:anynum)	{ __primitive a #"/" b }
+function operator(a:anynum, #"%=", b:anynum)	{ __primitive a #"%" b }
+function operator(a:anynum, #"+=", b:anynum)	{ __primitive a #"+" b }
+function operator(a:anynum, #"-=", b:anynum)	{ __primitive a #"-" b }
+function operator(a:int, #"<<=", b:int)		{ __primitive a #"<<" b }
+function operator(a:int, #">>=", b:int)		{ __primitive a #">>" b }
+function operator(a:int, #"&=", b:int)		{ __primitive a #"&" b }
+function operator(a:int, #"|=", b:int)		{ __primitive a #"|" b }
+function operator(a:int, #"^=", b:int)		{ __primitive a #"^" b }
+function operator(a:int, #"..", b:int)		{ __primitive a #".." b }
+function operator(a:any, #"->", b:symbol)	{ __primitive (__primitive #"*" a) #"." b }
+function operator(a:any, #"->*", b:symbol)	{ __primitive (__primitive #"*" a) #"." b; }
+function operator(a:anynum, #"^^", b:anynum)	{ __primitive a #"^^" b }
+function operator(#"++", a:anynum)		{ __primitive #"++" a }
+function operator(#"--", a:anynum)		{ __primitive #"--" a }
+function operator(#"+", a:anynum)		{ __primitive #"+" a }
+function operator(#"-", a:anynum)		{ __primitive #"-" a }
+function operator(#"~", a:anynum)		{ __primitive #"~" a }
+function operator(#"!", a:any)			{ __primitive #"!" a }
+function operator(#"*", a:any)			{ __primitive #"*" a }
+function operator(#"&", a:any)			{ __primitive #"&" a }
+function operator(a:anynum, #"|", b:anynum)	{ __primitive a #"|" b }
+function operator(#"(", a:symbol, b:any)	{ __primitive #"(" a b }
+function operator(a:anynum, #"++")		{ __primitive a #"++" }
+function operator(a:anynum, #"--")		{ __primitive a #"--" }
 
 
 // domains
 
 type domain;
-type decomposition;
-type arithmetic_domain(rank:symbol, distribute:decomposition, to:domain) : domain;
-type opaque_domain(distribute:decomposition, to:domain) : domain;
-type index(a:domain);
-type subdomain(a:domain) = {
-  size : int;
-  lbound : int -> int;
-  ubound : int -> int;
-};
+type sequence __name "sequence";
 
-type decomposition : catagory = {
-  type source : domain, target : domain;
-  locale : index(source) -> index(target);
-};
+class distribution {
+  type Source_domain : domain;
+  type Destination_domain : domain;
+  var source : Source_domain;
+  var destination : Destination_domain;
+  function local(i : sequence) : sequence;
+  function offset(i : sequence) : sequence;
+}
 
-type simple_block_decomposition : decomposition = {
-  where source : arithmetic_domain(1), target : arithmetic_domain(1);
-  s : source;
-  t : target;
-  chunk : int;
-  mod : int;
-};
+class Cyclic implements distribution {
+  var width : int;
+}
 
-simple_block_decomposition::local(i): {
-  k : i / chunk;
-  k : (i - s.lbound(1)) / chunk;
-  if (k < mod) 
-    k += 1;
-  k + t.lbound(1)
-};
+class domain(rank, distribute, target) {
+  const rank : int;
+  const index : sequence;
+  type target : domain;
+  type distribute: distribution;
+}
 
-type map(d: domain, a) : iteratable = {
-  elements : iterator(a);
-  indexes : iterator(index(d));
-  operator: #"[" * index(d) -> a &;
-};
+function domain(s1 : sequence, s2 : sequence) {
+  var s = new sequence;
+  s.first = s1.first * s2.first;
+  s.last = s1.last * s2.last;
+  s.step = s1.step * s2.step;
+  return s;
+}
 
-operator(a:map, #"[", b:index(map::d)): 0;
+class sequence {
+  const first : tuple;
+  const last : tuple;
+  const step : tuple;
+}
+
