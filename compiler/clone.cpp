@@ -471,7 +471,7 @@ resolve_concrete_types(CSSS &css_sets) {
 	      if (!sym->has.v[i])
 		sym->has.v[i] = if1_alloc_sym(fa->pdb->if1);
 	      forv_CreationSet(x, *av->out) if (x)
-		sym->has.v[i]->has.set_add(x->sym);
+		sym->has.v[i]->has.set_add(x->type);
 	    }
 	  }
 	  for (int i = 0; i < sym->has.n; i++) {
