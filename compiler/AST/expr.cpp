@@ -103,6 +103,13 @@ int Expr::rank(void) {
 }
 
 
+int
+Expr::getTypes(Vec<BaseAST *> &asts) {
+  asts.add(typeInfo());
+  return asts.n;
+}
+
+
 NullExpr::NullExpr(void) :
   Expr(EXPR_NULL)
 {}
@@ -232,6 +239,13 @@ void Variable::codegen(FILE* outfile) {
 }
 
 
+int
+Variable::getSymbols(Vec<BaseAST *> &asts) {
+  asts.add(var);
+  return asts.n;
+}
+
+
 UnOp::UnOp(unOpType init_type, Expr* op) :
   Expr(EXPR_UNOP),
   type(init_type),
@@ -261,6 +275,13 @@ void UnOp::codegen(FILE* outfile) {
 
 Type* UnOp::typeInfo(void) {
   return operand->typeInfo();
+}
+
+
+int
+UnOp::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(operand);
+  return asts.n;
 }
 
 
@@ -309,6 +330,14 @@ void BinOp::codegen(FILE* outfile) {
   fprintf(outfile, "%s", cBinOp[type]);
   right->codegen(outfile);
   fprintf(outfile, ")");
+}
+
+
+int
+BinOp::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(left);
+  asts.add(right);
+  return asts.n;
 }
 
 
@@ -376,6 +405,14 @@ void SimpleSeqExpr::codegen(FILE* outfile) {
   fprintf(outfile, "This is SimpleSeqExpr's codegen.\n");
 }
 
+
+int
+SimpleSeqExpr::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(lo);
+  asts.add(hi);
+  asts.add(str);
+  return asts.n;
+}
 
 
 ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
@@ -457,6 +494,18 @@ void ParenOpExpr::codegen(FILE* outfile) {
 }
 
 
+int
+ParenOpExpr::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(baseExpr);
+  BaseAST *l = argList;
+  while (l) {
+    asts.add(l);
+    l = dynamic_cast<BaseAST *>(l->next);
+  }
+  return asts.n;
+}
+
+
 CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
   ParenOpExpr(NULL, init_argList),
   castType(init_castType)
@@ -490,6 +539,14 @@ void CastExpr::codegen(FILE* outfile) {
   fprintf(outfile, ")(");
   argList->printList(outfile);
   fprintf(outfile, ")");
+}
+
+
+int
+CastExpr::getTypes(Vec<BaseAST *> &asts) {
+  Expr::getTypes(asts);
+  asts.add(castType);
+  return asts.n;
 }
 
 
@@ -671,6 +728,21 @@ void DomainExpr::codegen(FILE* outfile) {
 }
 
 
+int
+DomainExpr::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(domains);
+  asts.add(forallExpr);
+  return asts.n;
+}
+
+
+int
+DomainExpr::getSymbols(Vec<BaseAST *> &asts) {
+  asts.add(indices);
+  return asts.n;
+}
+
+
 ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
 		       Expr* init_argExpr) :
   Expr(EXPR_REDUCE),
@@ -705,6 +777,21 @@ void ReduceExpr::codegen(FILE* outfile) {
 }
 
 
+int
+ReduceExpr::getSymbols(Vec<BaseAST *> &asts) {
+  asts.add(reduceType);
+  return asts.n;
+}
+
+
+int
+ReduceExpr::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(redDim);
+  asts.add(argExpr);
+  return asts.n;
+}
+
+
 Tuple::Tuple(Expr* init_exprs) :
   Expr(EXPR_TUPLE),
   exprs(init_exprs)
@@ -728,6 +815,17 @@ void Tuple::print(FILE* outfile) {
 
 void Tuple::codegen(FILE* outfile) {
   INT_FATAL(this, "can't codegen tuples yet");
+}
+
+
+int
+Tuple::getExprs(Vec<BaseAST *> &asts) {
+  BaseAST *l = exprs;
+  while (l) {
+    asts.add(l);
+    l = dynamic_cast<BaseAST *>(l->next);
+  }
+  return asts.n;
 }
 
 

@@ -32,7 +32,9 @@ class Symbol : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   void codegenDefList(FILE* outfile, char* separator);
+  int getTypes(Vec<BaseAST *> &stmts);
 };
+#define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 
 class NullSymbol : public Symbol {
@@ -131,6 +133,8 @@ class FnSymbol : public Symbol {
   void traverseSymbol(Traversal*);
 
   void codegenDef(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &stmts);
+  int getStmts(Vec<BaseAST *> &stmts);
 };
 
 

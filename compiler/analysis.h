@@ -4,22 +4,26 @@
 #ifndef _analysis_H_
 #define _analysis_H_
 
-class Symbol;
-class Expr;
-class Stmt;
+#include "ast.h"
+#include "sym.h"
 
-class ASymbol {
-  void *symbol;
+class Symbol;
+class BaseAST;
+
+class ASymbol : public Sym {
+ public:
+  BaseAST *xsymbol;
   
   ASymbol();
 };
 
-class AInfo {
-  void *code;
+class AInfo : public AST {
+ public:
+  BaseAST *xast;
 
   AInfo();
 };
 
-void analyze_new_ast(Stmt *s);
+void analyze_new_ast(BaseAST *s);
 
 #endif

@@ -133,7 +133,7 @@ find_nesting_EntrySet(Fun *fn, EntrySet *e) {
 
 AVar *
 make_AVar(Var *v, EntrySet *es) {
-  if (v->sym->constant || v->sym->is_symbol || v->sym->in == es->fun->sym)
+  if (v->sym->is_constant || v->sym->is_symbol || v->sym->in == es->fun->sym)
     return unique_AVar(v, es);
   if (!v->sym->in || v->sym->in->is_module || v->sym->type_kind)
     return unique_AVar(v, GLOBAL_CONTOUR);

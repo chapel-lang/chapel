@@ -101,6 +101,14 @@ void Type::codegenDefaultFormat(FILE* outfile) {
 }
 
 
+int
+Type::getSymbols(Vec<BaseAST *> &asts) {
+  if (name)
+    asts.add(name);
+  return asts.n;
+} 
+
+
 NullType::NullType(void) :
   Type(TYPE_NULL)
 {}
@@ -162,6 +170,17 @@ void EnumType::codegenDef(FILE* outfile) {
   name->codegen(outfile);
   fprintf(outfile, ";\n\n");
 }
+
+
+int
+EnumType::getSymbols(Vec<BaseAST *> &asts) {
+  BaseAST *v = valList;
+  while (v) {
+    asts.add(v);
+    v = dynamic_cast<BaseAST *>(v->next);
+  }
+  return asts.n;
+} 
 
 
 static void codegenIOPrototype(FILE* outfile, Symbol* name) {
@@ -248,6 +267,13 @@ void SubDomainType::print(FILE* outfile) {
 }
 
 
+int
+SubDomainType::getSymbols(Vec<BaseAST *> &asts) {
+  asts.add(parent);
+  return asts.n;
+}
+
+
 IndexType::IndexType(int init_numdims) :
   DomainType(init_numdims)
 {
@@ -319,6 +345,20 @@ void ArrayType::codegenDefaultFormat(FILE* outfile) {
 }
 
 
+int
+ArrayType::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(domain);
+  return asts.n;
+}
+
+
+int
+ArrayType::getTypes(Vec<BaseAST *> &asts) {
+  asts.add(elementType);
+  return asts.n;
+}
+
+
 UserType::UserType(Type* init_definition) :
   Type(TYPE_USER),
   definition(init_definition)
@@ -338,6 +378,13 @@ void UserType::printDef(FILE* outfile) {
 }
 
 
+int
+UserType::getTypes(Vec<BaseAST *> &asts) {
+  asts.add(definition);
+  return asts.n;
+}
+
+
 ClassType::ClassType(ClassType* init_parentClass) :
   Type(TYPE_CLASS),
   parentClass(init_parentClass)
@@ -346,6 +393,13 @@ ClassType::ClassType(ClassType* init_parentClass) :
 
 void ClassType::print(FILE* outfile) {
   fprintf(outfile, "/* Classes not implemented yet */\n");
+}
+
+
+int
+ClassType::getTypes(Vec<BaseAST *> &asts) {
+  asts.add(parentClass);
+  return asts.n;
 }
 
 

@@ -25,7 +25,9 @@ class Type : public BaseAST {
   virtual void codegenDef(FILE* outfile);
   virtual void codegenIORoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &asts);
 };
+#define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
 
 class NullType : public Type {
@@ -49,6 +51,7 @@ class EnumType : public Type {
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &asts);
 };
 
 
@@ -72,6 +75,7 @@ class SubDomainType : public DomainType {
   SubDomainType(Symbol* init_parent);
 
   void print(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &asts);
 };
 
 
@@ -105,6 +109,8 @@ class ArrayType : public Type {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
+  int getTypes(Vec<BaseAST *> &asts);
 };
 
 
@@ -117,6 +123,7 @@ class UserType : public Type {
   void traverse(Traversal* traversal);
 
   void printDef(FILE* outfile);
+  int getTypes(Vec<BaseAST *> &asts);
 };
 
 
@@ -127,6 +134,7 @@ class ClassType : public Type {
   ClassType(ClassType* init_parentClass = NULL);
 
   void print(FILE* outfile);
+  int getTypes(Vec<BaseAST *> &asts);
 };
 
 

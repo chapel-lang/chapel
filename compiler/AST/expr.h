@@ -27,7 +27,9 @@ class Expr : public BaseAST {
 
   virtual void print(FILE* outfile) = 0;
   virtual void codegen(FILE* outfile) = 0;
+  int getTypes(Vec<BaseAST *> &asts);
 };
+#define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 
 
 class NullExpr : public Expr {
@@ -99,6 +101,7 @@ class Variable : public Expr {
   
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &asts);
 };
 
 
@@ -127,6 +130,7 @@ class UnOp : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 /************* IF CHANGING THIS, change cBinOp as well... *****************/
@@ -175,6 +179,7 @@ class BinOp : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -227,6 +232,7 @@ class SimpleSeqExpr : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -263,6 +269,8 @@ class DomainExpr : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
+  int getSymbols(Vec<BaseAST *> &asts);
 };
 
 
@@ -279,6 +287,7 @@ class ParenOpExpr : public Expr {
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -294,6 +303,7 @@ class CastExpr : public ParenOpExpr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getTypes(Vec<BaseAST *> &asts);
 };
 
 
@@ -337,6 +347,8 @@ class ReduceExpr : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &asts);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -348,6 +360,7 @@ class Tuple : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 

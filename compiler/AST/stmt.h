@@ -19,6 +19,7 @@ class Stmt : public BaseAST {
   void codegenVarDefs(FILE* outfile);
   virtual void codegenVarDef(FILE* outfile);
 };
+#define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 
 
 class NullStmt : public Stmt {
@@ -44,6 +45,8 @@ class VarDefStmt : public Stmt {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenVarDef(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &asts);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -57,6 +60,7 @@ class TypeDefStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getTypes(Vec<BaseAST *> &asts);
 };
 
 
@@ -70,6 +74,7 @@ class FnDefStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &asts);
 };
 
 
@@ -83,6 +88,7 @@ class ExprStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -104,6 +110,7 @@ class BlockStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getStmts(Vec<BaseAST *> &asts);
 };
 
 
@@ -118,6 +125,7 @@ class WhileLoopStmt : public BlockStmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -134,6 +142,8 @@ class ForLoopStmt : public BlockStmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getSymbols(Vec<BaseAST *> &asts);
+  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -150,6 +160,8 @@ class CondStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
+  int getStmts(Vec<BaseAST *> &asts);
 };
 
 #endif

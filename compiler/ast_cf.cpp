@@ -245,72 +245,78 @@ fold_constant(IF1 *i, ParseAST *ast) {
   return 0;
 }
 
+void
+convert_constant_to_immediate(Sym *sym) {
+  if (!sym->is_constant)	
+    return;
+  switch (sym->type->num_kind) {
+    case IF1_NUM_KIND_NONE:
+      break;
+    case IF1_NUM_KIND_UINT: {
+      switch (sym->type->num_index) {
+	case IF1_INT_TYPE_8: 
+	  if (sym->constant[0] != '\'')
+	    sym->imm.v_uint8 = strtoul(sym->constant, 0, 0);
+	  else {
+	    if (sym->constant[1] != '\\')
+	      sym->imm.v_uint8 = sym->constant[1];
+	    else
+	      sym->imm.v_uint8 = sym->constant[2];
+	  }
+	  break;
+	case IF1_INT_TYPE_16:
+	  sym->imm.v_uint16 = strtoul(sym->constant, 0, 0); break;
+	case IF1_INT_TYPE_32:
+	  sym->imm.v_uint32 = strtoul(sym->constant, 0, 0); break;
+	case IF1_INT_TYPE_64:
+	  sym->imm.v_uint64 = strtoull(sym->constant, 0, 0); break;
+	default: assert(!"case");
+      }
+      break;
+    }
+    case IF1_NUM_KIND_INT: {
+      switch (sym->type->num_index) {
+	case IF1_INT_TYPE_8: 
+	  if (sym->constant[0] != '\'')
+	    sym->imm.v_int8 = strtoul(sym->constant, 0, 0);
+	  else {
+	    if (sym->constant[1] != '\\')
+	      sym->imm.v_int8 = sym->constant[1];
+	    else
+	      sym->imm.v_int8 = sym->constant[2];
+	  }
+	  break;
+	case IF1_INT_TYPE_16:
+	  sym->imm.v_int16 = strtol(sym->constant, 0, 0); break;
+	case IF1_INT_TYPE_32:
+	  sym->imm.v_int32 = strtol(sym->constant, 0, 0); break;
+	case IF1_INT_TYPE_64:
+	  sym->imm.v_int64 = strtoll(sym->constant, 0, 0); break;
+	default: assert(!"case");
+      }
+      break;
+    }
+    case IF1_NUM_KIND_FLOAT:
+      switch (sym->type->num_index) {
+	case IF1_FLOAT_TYPE_32:
+	  sym->imm.v_float32 = strtod(sym->constant, 0); break;
+	case IF1_FLOAT_TYPE_64:
+	  sym->imm.v_float64 = strtod(sym->constant, 0); break;
+	default: assert(!"case");
+      }
+      break;
+  }
+}
+
 int
 ast_constant_fold(IF1 *i, ParseAST *ast) {
   forv_ParseAST(a, ast->children)
     if (ast_constant_fold(i, a) < 0)
       return -1;
   switch (ast->kind) {
-    case AST_const: {
-      switch (ast->sym->type->num_kind) {
-	case IF1_NUM_KIND_NONE:
-	  break;
-	case IF1_NUM_KIND_UINT: {
-	  switch (ast->sym->type->num_index) {
-	    case IF1_INT_TYPE_8: 
-	      if (ast->sym->constant[0] != '\'')
-		ast->sym->imm.v_uint8 = strtoul(ast->sym->constant, 0, 0);
-	      else {
-		if (ast->sym->constant[1] != '\\')
-		  ast->sym->imm.v_uint8 = ast->sym->constant[1];
-		else
-		  ast->sym->imm.v_uint8 = ast->sym->constant[2];
-	      }
-	      break;
-	    case IF1_INT_TYPE_16:
-	      ast->sym->imm.v_uint16 = strtoul(ast->sym->constant, 0, 0); break;
-	    case IF1_INT_TYPE_32:
-	      ast->sym->imm.v_uint32 = strtoul(ast->sym->constant, 0, 0); break;
-	    case IF1_INT_TYPE_64:
-	      ast->sym->imm.v_uint64 = strtoull(ast->sym->constant, 0, 0); break;
-	    default: assert(!"case");
-	  }
-	  break;
-	}
-	case IF1_NUM_KIND_INT: {
-	  switch (ast->sym->type->num_index) {
-	    case IF1_INT_TYPE_8: 
-	      if (ast->sym->constant[0] != '\'')
-		ast->sym->imm.v_int8 = strtoul(ast->sym->constant, 0, 0);
-	      else {
-		if (ast->sym->constant[1] != '\\')
-		  ast->sym->imm.v_int8 = ast->sym->constant[1];
-		else
-		  ast->sym->imm.v_int8 = ast->sym->constant[2];
-	      }
-	      break;
-	    case IF1_INT_TYPE_16:
-	      ast->sym->imm.v_int16 = strtol(ast->sym->constant, 0, 0); break;
-	    case IF1_INT_TYPE_32:
-	      ast->sym->imm.v_int32 = strtol(ast->sym->constant, 0, 0); break;
-	    case IF1_INT_TYPE_64:
-	      ast->sym->imm.v_int64 = strtoll(ast->sym->constant, 0, 0); break;
-	    default: assert(!"case");
-	  }
-	  break;
-	}
-	case IF1_NUM_KIND_FLOAT:
-	  switch (ast->sym->type->num_index) {
-	    case IF1_FLOAT_TYPE_32:
-	      ast->sym->imm.v_float32 = strtod(ast->sym->constant, 0); break;
-	    case IF1_FLOAT_TYPE_64:
-	      ast->sym->imm.v_float64 = strtod(ast->sym->constant, 0); break;
-	    default: assert(!"case");
-	  }
-	  break;
-      }
+    case AST_const:
+      convert_constant_to_immediate(ast->sym);
       break;
-    }
     case AST_op: {
       ast->prim = i->primitives->find(ast);
       if (ast->prim)

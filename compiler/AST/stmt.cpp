@@ -192,6 +192,20 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
 }
 
 
+int
+VarDefStmt::getSymbols(Vec<BaseAST *> &asts) {
+  asts.add(var);
+  return asts.n;
+}
+
+
+int
+VarDefStmt::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(init);
+  return asts.n;
+}
+
+
 TypeDefStmt::TypeDefStmt(Type* init_type) :
   Stmt(STMT_TYPEDEF),
   type(init_type)
@@ -219,6 +233,13 @@ void TypeDefStmt::codegen(FILE* outfile) {
   type->codegenDef(deffile);
 
   type->codegenIORoutines(outfile);
+}
+
+
+int
+TypeDefStmt::getTypes(Vec<BaseAST *> &asts) {
+  asts.add(type);
+  return asts.n;
 }
 
 
@@ -268,6 +289,13 @@ void FnDefStmt::codegen(FILE* outfile) {
 }
 
 
+int
+FnDefStmt::getSymbols(Vec<BaseAST *> &asts) {
+  asts.add(fn);
+  return asts.n;
+}
+
+
 ExprStmt::ExprStmt(Expr* init_expr) :
   Stmt(STMT_EXPR),
   expr(init_expr) 
@@ -288,6 +316,13 @@ void ExprStmt::print(FILE* outfile) {
 void ExprStmt::codegen(FILE* outfile) {
   expr->codegen(outfile);
   fprintf(outfile, ";");
+}
+
+
+int
+ExprStmt::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(expr);
+  return asts.n;
 }
 
 
@@ -333,6 +368,17 @@ void BlockStmt::codegen(FILE* outfile) {
   body->codegenList(outfile, "\n");
   fprintf(outfile, "\n");
   fprintf(outfile, "}");
+}
+
+
+int
+BlockStmt::getStmts(Vec<BaseAST *> &asts) {
+  BaseAST *b = body;
+  while (b) {
+    asts.add(b);
+    b = dynamic_cast<BaseAST*>(b->next);	
+  }
+  return asts.n;
 }
 
 
@@ -390,6 +436,13 @@ void WhileLoopStmt::codegen(FILE* outfile) {
     condition->codegen(outfile);
     fprintf(outfile, ");\n");
   }
+}
+
+
+int
+WhileLoopStmt::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(condition);
+  return asts.n;
 }
 
 
@@ -469,6 +522,19 @@ void ForLoopStmt::codegen(FILE* outfile) {
 }
 
 
+int
+ForLoopStmt::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(domain);
+  return asts.n;
+}
+
+
+int
+ForLoopStmt::getSymbols(Vec<BaseAST *> &asts) {
+  asts.add(index);
+  return asts.n;
+}
+
 CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt, 
 		   Stmt* init_elseStmt) :
   Stmt(STMT_COND),
@@ -507,4 +573,19 @@ void CondStmt::codegen(FILE* outfile) {
     elseStmt->codegen(outfile);
     fprintf(outfile, "\n}");
   }
+}
+
+
+int
+CondStmt::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(condExpr);
+  return asts.n;
+}
+
+
+int
+CondStmt::getStmts(Vec<BaseAST *> &asts) {
+  asts.add(thenStmt);
+  asts.add(elseStmt);
+  return asts.n;
 }

@@ -60,17 +60,32 @@ enum astType_t {
   TYPE_SUBINDEX,
   TYPE_ARRAY,
   TYPE_USER,
-  TYPE_CLASS
+  TYPE_CLASS,
+  
+  AST_TYPE_END 
 };
 
+#define isSomeStmt(_x) (((_x) > astType_t::STMT) && (_x) < astType_t::EXPR)
+#define isSomeExpr(_x) (((_x) > astType_t::EXPR) && (_x) < astType_t::SYMBOL)
+#define isSomeSymbol(_x) (((_x) > astType_t::SYMBOL) && (_x) < astType_t::TYPE)
+#define isSomeType(_x) (((_x) > astType_t::TYPE) && (_x) < astType_t::AST_TYPE_END)
 
 class BaseAST : public ILink {
  public:
   astType_t astType;
 
+  int getBaseASTs(Vec<BaseAST *> &asts);
+  int getSymbolTypes(Vec<BaseAST *> &asts);
+  int getStmtExprs(Vec<BaseAST *> &asts);
+  virtual int getSymbols(Vec<BaseAST *> &asts);
+  virtual int getTypes(Vec<BaseAST *> &asts);
+  virtual int getStmts(Vec<BaseAST *> &asts);
+  virtual int getExprs(Vec<BaseAST *> &asts);
+
   BaseAST(void);
   BaseAST(astType_t type);
 };
+#define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)
 
 #endif
 

@@ -77,6 +77,12 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 }
 
 
+int
+Symbol::getTypes(Vec<BaseAST *> &asts) {
+  asts.add(type);
+  return asts.n;
+}
+
 NullSymbol::NullSymbol(void) :
   Symbol(SYMBOL_NULL, "NullSymbol", new NullType())
 {}
@@ -224,6 +230,28 @@ void FnSymbol::codegenDef(FILE* outfile) {
     formals->codegenDefList(outfile, ", ");
   }
   fprintf(outfile, ")");
+}
+
+
+int
+FnSymbol::getSymbols(Vec<BaseAST *> &asts) {
+  BaseAST *f = formals;
+  while (f) {
+    asts.add(f);
+    f = dynamic_cast<BaseAST*>(f->next);
+  }
+  return asts.n;
+}
+
+
+int
+FnSymbol::getStmts(Vec<BaseAST *> &asts) {
+  BaseAST *s = body;
+  while (s) {
+    asts.add(s);
+    s = dynamic_cast<BaseAST*>(s->next);
+  }
+  return asts.n;
 }
 
 

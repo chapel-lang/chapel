@@ -64,7 +64,11 @@ class Sym : public gc {
   char 			*name;			// user level name
   Sym  			*in;			// containing module, class or function
   Sym 			*type;			// true type
+  Sym  			*aspect;		// mascarade as type (e.g. superclass)
   Vec<Sym *>		*constraints;		// must-implement
+  AST			*ast;			// AST node which defined this symbol
+  Var			*var;			// used by fa.cpp
+  char 			*cg_string;		// used by cg.cpp
 
   unsigned int		is_builtin:1;		// Sym is builtin to the compiler
   unsigned int		is_read_only:1;		// Sym is read only
@@ -92,8 +96,6 @@ class Sym : public gc {
 
   char			*alt_name;		// alternative name (pattern/extern)
 
-  Sym  			*aspect;		// mascarade as type (e.g. superclass)
-
   char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values
 
@@ -102,12 +104,8 @@ class Sym : public gc {
   Vec<Sym *>		has;			// sub variables/members (currently fun args)
   Vec<Sym *>		arg;			// arg variables (currently just meta type args)
   Sym			*alias;			// alias of type
-  Sym			*self;			// self variable for the function
-  Sym			*ret;			// return value of functions
-  Sym			*cont;			// continuation (function returning ret)
   Sym			*init;			// for modules & classes (default init function)
-  Code			*code;			// for functions, Code
-  AST			*ast;			// AST node which defined this symbol
+  Sym			*type_sym;		// the representative symbol for this type in code
 
   Scope 		*scope;			// used in ast.cpp
   LabelMap		*labelmap;		// used by ast.cpp
@@ -117,10 +115,12 @@ class Sym : public gc {
   MType	       		*match_type;		// used by pattern.cpp
   AType			*abstract_type;		// used by fa.cpp
   Vec<CreationSet *>	creators;		// used by fa.cpp
-  Var			*var;			// used by fa.cpp
-  Sym			*type_sym;		// the representative symbol for this type in code
+
   Fun			*fun;			// used by fa.cpp
-  char 			*cg_string;		// used by cg.cpp
+  Code			*code;			// for functions, Code
+  Sym			*self;			// self variable for the function
+  Sym			*ret;			// return value of functions
+  Sym			*cont;			// continuation (function returning ret)
 
   char			*pathname();
   char			*filename();
@@ -136,7 +136,7 @@ class Sym : public gc {
 Sym *unalias_type(Sym *s);
 Sym *meta_apply(Sym *fn, Sym *arg);
 
-int pp(Immediate &imm, Sym *type);
+void convert_constant_to_immediate(Sym *sym);
 int print(FILE *fp, Immediate &imm, Sym *type);
 int sprint(char *s, Immediate &imm, Sym *type);
 int compar_syms(const void *ai, const void *aj);

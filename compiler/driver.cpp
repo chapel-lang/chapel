@@ -153,7 +153,7 @@ g_option(ArgumentState *arg_state, char *arg_unused) {
 }
 
 static ParseAST *
-load_file(char *fn, IF1 *if1, D_Scope **scope, FrontEnd *fe) {
+load_file(char *fn, D_Scope **scope, FrontEnd *fe) {
   int len = 0;
   ParseAST *res = 0;
   D_ParseNode *pn = NULL;
@@ -197,11 +197,10 @@ load_file(char *fn, IF1 *if1, D_Scope **scope, FrontEnd *fe) {
   return res;
 }
 
-static IF1 *
+static int
 load_one(char *fn) {
   int l;
   char tmpfn[1024];
-  IF1 *if1 = new IF1;
   Vec<ParseAST *> av;
   ParseAST *a;
   D_Scope *scope = NULL;
@@ -218,14 +217,14 @@ load_one(char *fn) {
   strcat(tmpfn, prelude_filename);
   strcat(tmpfn, ".");
   strcat(tmpfn, langs[l].extension);
-  if (!(a = load_file(tmpfn, if1, &scope, &langs[l])))
-    return 0;
+  if (!(a = load_file(tmpfn, &scope, &langs[l])))
+    return -1;
   av.add(a);
   { 
     int save_parser_verbose = d_verbose_level;
     if (parser_verbose_non_prelude) d_verbose_level = parser_verbose_non_prelude;
-    if (!(a = load_file(fn, if1, &scope, &langs[l])))
-      return 0;	
+    if (!(a = load_file(fn, &scope, &langs[l])))
+      return -1;	
     if (parser_verbose_non_prelude) d_verbose_level = save_parser_verbose;
   }
   av.add(a);
@@ -235,7 +234,7 @@ load_one(char *fn) {
   free_D_Scope(scope, 1);
   if (logging(LOG_IF1))
     if1_write(log_fp(LOG_IF1), if1);
-  return if1;
+  return 0;
 }
 
 static int
@@ -254,12 +253,10 @@ compile_one(char *fn) {
       program->printList(stdout, "\n");
       printf("\n");
     }
-
     return 0;
   }
-  IF1 *if1 = load_one(fn);
-  if (!if1) return -1;
-  PDB *pdb = new PDB(if1);
+  if (load_one(fn) < 0)
+    return -1;
   Sym *init = if1_get_builtin(if1, "init");
 
   for (int i = 0; i < if1->allclosures.n; i++) {
@@ -299,6 +296,8 @@ compile_one(char *fn) {
 
 static void
 init_system() {
+  new IF1;
+  new PDB(if1);
   char cwd[FILENAME_MAX];
   if (system_dir[0] == '.' && (!system_dir[1] || system_dir[1] == '/')) {
     getcwd(cwd, FILENAME_MAX);
