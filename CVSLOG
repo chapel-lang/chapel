@@ -7063,3 +7063,39 @@ Modified files:
 	chapel/compiler/: createAST.cpp 
 	chapel/compiler/AST/: internal_prelude.chpl type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+09/13/04 17:17:36 -- bradc
+
+Log message:
+	Beefed up class support a slight bit.  First, created a link
+	from ClassType to the SymScope that contains its members,
+	and also initialized the SymScope's context to point back to
+	the class symbol and statement, which I had forgotten to do
+	when introducing the SCOPE_CLASS.
+	
+	Improved creation of the MemberAccess expression so that if
+	the base expression is a class and the member is a member
+	of that class, the member symbol refers to the original
+	symbol in the class and not a brand new symbol in limbo (as
+	was the case before).  If these conditions are not met, the
+	symbol-in-limbo approach is still taken.  Next step will be
+	to handle these cases more elegantly.
+	
+	Added a first test of classes with member variables but no
+	methods.
+	
+	As a side effect of this change, noticed that I'd never
+	implemented write() for floats, so tucked this in.
+
+Modified files:
+	chapel/compiler/: .cvsignore 
+	chapel/compiler/AST/: chapel.y expr.cpp expr.h symtab.cpp 
+	                      symtab.h type.cpp type.h 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+Added files:
+	chapel/test/: .cvsignore 
+	chapel/test/classes/bradc/: .cvsignore trivialclass.chpl 
+	                            trivialclass.good 
+
