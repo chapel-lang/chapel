@@ -4181,3 +4181,18 @@ Modified files:
 	                                     mg-seq.good mvm-seq.good 
 	                                     test.good 
 
+---------------------------------------------------------------------------
+
+07/20/04 17:05:09 -- bradc
+
+Log message:
+	Added a test to lock in some of my work today.  Fixed a small
+	bug in Shannon's VarDefStmt code generation in which the
+	semicolon was lost if the variable had no initializer.
+
+Modified files:
+	chapel/compiler/AST/: TODO stmt.cpp 
+Added files:
+	chapel/test/trivial/bradc/protoast/codegen/: .cvsignore COMPOPTS 
+	                                             test.chpl test.good 
+
