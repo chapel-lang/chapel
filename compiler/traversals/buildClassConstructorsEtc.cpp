@@ -52,10 +52,13 @@ static void build_constructor(ClassType* class_type) {
     Expr* rhs = new Variable(ptmp);
 #else
     Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
-    // hack for classes that are cloned; we don't actually want to
-    // build the constructor for cloned classes until they are cloned
-    if (!rhs) continue;
-    // end hack
+    if (!rhs) {
+      if (ClassType* nested_class_type = dynamic_cast<ClassType*>(tmp->type)) {
+	rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
+      } else continue; // hack for classes that are cloned; we don't
+                       // actually want to build the constructor for
+                       // cloned classes until they are cloned
+    }
 #endif
     Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
