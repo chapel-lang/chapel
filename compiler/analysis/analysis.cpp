@@ -1058,22 +1058,18 @@ gen_if1(BaseAST *ast) {
       CastExpr *s = dynamic_cast<CastExpr *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
-      Vec<Expr *> args;
-      getLinkElements(args, s->argList);
-      forv_Vec(Expr, a, args)
-	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+      Expr* a = s->expr;
+      if1_gen(if1, &s->ainfo->code, a->ainfo->code);
 #if 0
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      if1_add_send_arg(if1, send, s->castType->asymbol->type_sym);
-      forv_Vec(Expr, a, args)
-	if1_add_send_arg(if1, send, a->ainfo->rval);
+      if1_add_send_arg(if1, send, s->newType->asymbol->type_sym);
+      if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
 #else
       Code *send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, cast_symbol, 
-			    s->castType->asymbol->type_sym, s->ainfo->rval);
-      forv_Vec(Expr, a, args)
-	if1_add_send_arg(if1, send, a->ainfo->rval);
+			    s->newType->asymbol->type_sym, s->ainfo->rval);
+      if1_add_send_arg(if1, send, a->ainfo->rval);
       send->ast = s->ainfo;
 #endif
       break;

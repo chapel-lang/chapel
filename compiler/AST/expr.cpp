@@ -978,49 +978,44 @@ void SizeofExpr::codegen(FILE* outfile) {
 }
 
 
-CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
-  ParenOpExpr(nilExpr, init_argList),
-  castType(init_castType)
+CastExpr::CastExpr(Type* init_newType, Expr* init_expr) :
+  Expr(EXPR_CAST),
+  newType(init_newType),
+  expr(init_expr)
 {
-  astType = EXPR_CAST;
-
-  Expr* arg = argList;
-  while (arg) {
-    arg->parent = this;
-    arg = nextLink(Expr, arg);
-  }
+  expr->parent = this;
 }
 
 
 Expr* CastExpr::copy(void) {
-  return new CastExpr(castType->copy(), argList->copyList());
+  return new CastExpr(newType->copy(), expr->copy());
 }
 
 
 void CastExpr::traverseExpr(Traversal* traversal) {
-  castType->traverse(traversal, false);
-  argList->traverseList(traversal, false);
+  newType->traverse(traversal, false);
+  expr->traverse(traversal, false);
 }
 
 
 Type* CastExpr::typeInfo(void) {
-  return castType;
+  return newType;
 }
 
 
 void CastExpr::print(FILE* outfile) {
-  castType->print(outfile);
+  newType->print(outfile);
   fprintf(outfile, "(");
-  argList->printList(outfile);
+  expr->printList(outfile);
   fprintf(outfile, ")");
 }
 
 
 void CastExpr::codegen(FILE* outfile) {
   fprintf(outfile, "(");
-  castType->codegen(outfile);
+  newType->codegen(outfile);
   fprintf(outfile, ")(");
-  argList->codegenList(outfile);
+  expr->codegenList(outfile);
   fprintf(outfile, ")");
 }
 

@@ -378,11 +378,12 @@ class SizeofExpr : public Expr {
 };
 
 
-class CastExpr : public ParenOpExpr {
+class CastExpr : public Expr {
  public:
-  Type* castType;
+  Type* newType;
+  Expr* expr;
 
-  CastExpr(Type* init_castType, Expr* init_argList);
+  CastExpr(Type* init_newType, Expr* init_expr);
   virtual Expr* copy(void);
 
   void traverseExpr(Traversal* traversal);

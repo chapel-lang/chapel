@@ -39,8 +39,6 @@
 
 * add traversal that verifies that back pointers are non-nil.
 
-* refactor ParenOpExpr
-
 * make codegen for unresolved symbol cause problem to ensure all
   symbols are resolved
 
@@ -54,8 +52,6 @@
     fix up yyfilename, yylineno
 
 * move more stuff into pass list
-
-* get classes in expr.cpp in same order as expr.h
 
 
 SHANNON:
