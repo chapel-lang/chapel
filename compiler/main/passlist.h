@@ -20,7 +20,12 @@ PassInfo passlist[] = {
   RUN(Fixup, ""),
 
   // passes to normalize the basic AST
-  RUN(Cleanup, ""),
+  RUN(ExpandClassWiths, ""),
+  RUN(InsertThisParameters, ""),
+  RUN(ScopeResolveSymbols, ""),
+  RUN(RenameOverloadedFunctions, ""),
+  RUN(SpecializeParenOpExprs, ""),
+  RUN(ApplyThisParameters, ""),
 
   RUN(TransformLetExprs, ""),
 
@@ -40,11 +45,9 @@ PassInfo passlist[] = {
 
   // check the program's semantics
   RUN(CheckSemantics, ""),
-
   //  RUN(Fixup, "hyper verify"),  // hyper verification!
 
   // eventually, optimizations will go here
-
 
   // passes to prepare for C code generation
   RUN(MethodsToFunctions, ""),

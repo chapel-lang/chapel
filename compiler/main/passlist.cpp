@@ -9,24 +9,29 @@
 #include "../symtab/printSymtab.h"
 #include "../symtab/legalizeCNames.h"
 
+#include "../traversals/applyThisParameters.h"
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
-#include "../traversals/cleanup.h"
 #include "../traversals/cloneAllFns.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/destructureTupleAssignments.h"
+#include "../traversals/expandClassWiths.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
 #include "../traversals/insertAnonymousDomains.h"
 #include "../traversals/insertAnonymousTypes.h"
+#include "../traversals/insertThisParameters.h"
 #include "../traversals/insertUnionChecks.h"
 #include "../traversals/insertVariableInitializations.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processParameters.h"
+#include "../traversals/scopeResolveSymbols.h"
+#include "../traversals/specializeParenOpExprs.h"
+#include "../traversals/renameOverloadedFunctions.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/transformLetExprs.h"
@@ -38,17 +43,18 @@
    the pass above.  */
 
 START_PASSLIST_REGISTRATION
+REGISTER(ApplyThisParameters);
 REGISTER(BuildBinary);
 REGISTER(CheckIDs);
 REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
-REGISTER(Cleanup);                // SJD: Post-parsing cleanup, e.g. resolve symbols, insert this
 REGISTER(CloneAllFns);
 REGISTER(Codegen);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(DestructureTupleAssignments);
 REGISTER(DummyPass);
+REGISTER(ExpandClassWiths);
 REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
@@ -56,6 +62,7 @@ REGISTER(Fixup);
 REGISTER(GetStuff);
 REGISTER(InsertAnonymousDomains);
 REGISTER(InsertAnonymousTypes);
+REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);
 REGISTER(LegalizeCNames);
@@ -67,8 +74,11 @@ REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
+REGISTER(RenameOverloadedFunctions);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
+REGISTER(ScopeResolveSymbols);
+REGISTER(SpecializeParenOpExprs);
 REGISTER(TestGetStuff);
 REGISTER(TransformLetExprs);
 REGISTER(VerifyASTType);

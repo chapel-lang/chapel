@@ -38,7 +38,6 @@ Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
       }
     }
   }
-  newStmtList->back = &newStmtList;  // in case, replaced by cleanup
   TRAVERSE_LS(newStmtList, new UpdateSymbols(map), true);
   return newStmtList;
 }
@@ -58,7 +57,6 @@ Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
       }
     }
   }
-  new_stmt->back = &new_stmt;  // in case, replaced by cleanup
   TRAVERSE(new_stmt, new UpdateSymbols(map), true);
   return new_stmt;
 }

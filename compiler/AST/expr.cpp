@@ -105,7 +105,6 @@ Expr* Expr::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
       }
     }
   }
-  newExprList->back = &newExprList;  // in case, replaced by cleanup
   TRAVERSE_LS(newExprList, new UpdateSymbols(map), true);
   return newExprList;
 }
@@ -125,7 +124,6 @@ Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
       }
     }
   }
-  new_expr->back = &new_expr;  // in case, replaced by cleanup
   TRAVERSE(new_expr, new UpdateSymbols(map), true);
   return new_expr;
 }

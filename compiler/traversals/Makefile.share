@@ -1,24 +1,29 @@
 TRAVERSALS_SRCS = \
+	applyThisParameters.cpp \
 	checkIDs.cpp \
 	checkSemantics.cpp \
 	checkTypeInfo.cpp \
-	cleanup.cpp \
 	cloneAllFns.cpp \
 	collectASTS.cpp \
 	createConfigVarTable.cpp \
 	destructureTupleAssignments.cpp \
+	expandClassWiths.cpp \
 	findUnknownTypes.cpp \
 	findUnresolvedSymbols.cpp \
 	fixup.cpp \
 	getstuff.cpp \
 	insertAnonymousDomains.cpp \
 	insertAnonymousTypes.cpp \
+	insertThisParameters.cpp \
 	insertUnionChecks.cpp \
 	insertVariableInitializations.cpp \
 	printAST.cpp \
 	processParameters.cpp \
 	methodsToFunctions.cpp \
+	renameOverloadedFunctions.cpp \
 	resolveSymbols.cpp \
+	scopeResolveSymbols.cpp \
+	specializeParenOpExprs.cpp \
 	testGetStuff.cpp \
 	transformLetExprs.cpp \
 	traversal.cpp \
