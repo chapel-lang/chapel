@@ -18002,3 +18002,27 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_clone_class1.future 
 
+---------------------------------------------------------------------------
+
+02/22/05 12:08:07 -- jplevyak
+
+Log message:
+	Fix cloning so that the uncloned type is always the abstract one in cases
+	  where multiple clones are required.
+	Fix a bug where Sym(s) were registered twice during cloning.
+	Modified type_is_used and function_is_used to use a flag
+	  to check whether or not analysis was run (for safety).
+	
+	**************
+	Hacked type cloning to manually callback the callback for the TypeSymbol which
+	  was not being done.  Should this be removed????
+	**************
+	
+	Add type_is_used() to analysis.h/cpp
+	Add some #ifdef'd out test code into runAnalysis.cpp to call type_is_used();
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/passes/: runAnalysis.cpp 
+
