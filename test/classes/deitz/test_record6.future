@@ -1,0 +1,3 @@
+jplevyak
+
+default value of record is constructor.  It's called by default so should not be marked as dead.

@@ -34,6 +34,7 @@ PassInfo passlist[] = {
   RUN(ApplyThisParameters, ""),
 
   // passes to collect information for analysis
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ComputeVisibleFunctions, ""),
 
   // passes to run analysis

@@ -10,7 +10,10 @@
 
 
 static void insert_init(Stmt* stmt, VarSymbol* var, Type* type);
-
+static void insert_init_at_stmt(Stmt* stmt, VarSymbol* var, Type* type);
+static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type);
+static void insert_user_default_init(Stmt* stmt, VarSymbol* var, Type* type);
+static void insert_user_init(Stmt* stmt, VarSymbol* var);
 
 static void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
   if (var->parentScope->stmtContext) {
@@ -86,28 +89,28 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
   insert_user_init_stmt(stmt, call_stmt);
 
   ForallExpr* domain = dynamic_cast<ForallExpr*>(array_type->domain);
-
   Symbol* indices = dynamic_cast<DefExpr*>(domain->indices)->sym;
+  
+  // Here we create some indices (assuming arithmetic domain)
+  // This should eventually use the IndexType when that is in. --SJD
   if (!indices) {
-    // Here we create some indices (assuming arithmetic domain)
-    // This should eventually use the IndexType when that is in. --SJD
     DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
-
     if (!domain_type) {
       INT_FATAL(domain, "Domain has no type");
     }
-
     for (int i = 0; i < domain_type->numdims; i++) {
       char* name = glomstrings(2, "_ind_", intstring(i));
       indices = appendLink(indices, new Symbol(SYMBOL, name));
     }
   }
+
   ForLoopStmt* loop =
     Symboltable::startForLoop(true, indices, array_type->domain->copy());
   NoOpStmt* noop_stmt = new NoOpStmt();
-  loop = Symboltable::finishForLoop(loop, noop_stmt);
+  BlockStmt* block_stmt = new BlockStmt(noop_stmt);
+  loop = Symboltable::finishForLoop(loop, block_stmt);
   insert_user_init_stmt(stmt, loop);
-  insert_init(noop_stmt, var, array_type->elementType);
+  insert_init_at_stmt(noop_stmt, var, array_type->elementType);
   Symbol* indices_change = dynamic_cast<DefExpr*>(loop->indices)->sym;
   TRAVERSE(loop->body, new InsertElidedIndices(indices_change), true);
 }
@@ -150,22 +153,6 @@ static void insert_domain_init(Stmt* stmt, VarSymbol* var) {
 }
 
 
-/*
-static void insert_seq_init(Stmt* stmt, VarSymbol* var) {
-  SeqType* seq_type = dynamic_cast<SeqType*>(var->type);
-
-  if (!seq_type) {
-    INT_FATAL(var, "Seq type expected");
-  }
-
-  Symbol* init_seq = Symboltable::lookupInternal("_SEQ_INIT_NIL");
-  FnCall* call = new FnCall(new Variable(init_seq), new Variable(var));
-  ExprStmt* call_stmt = new ExprStmt(call);
-  insert_default_init_stmt(var, call_stmt);
-}
-*/
-
-
 static void insert_config_init(Stmt* stmt, VarSymbol* var) {
 
   // SJD: Note I want this to be a single macro INIT_CONFIG with the
@@ -189,13 +176,44 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var) {
 }
 
 
-static void insert_default_init(Stmt* stmt, VarSymbol* var) {
-  if (var->type->defaultVal) {
+static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
+
+  //
+  // SJD: This code squelches inserting the default init statement for
+  // classes within their own constructor.  This avoids generating
+  // code like the following which crashed my whole system:
+  //
+  //   ClassName _construct_ClassName(void) {
+  //     ClassName this;
+  //     this = _construct_ClassName();  <=== Squelched
+  //
+  if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
+    if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(class_type->constructor)) {
+      if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
+	if (def_expr->sym == stmt->parentSymbol) {
+	  return;
+	}
+      }
+    }
+  }
+
+  if (type->defaultVal) {
     AssignOp* assign_expr = new AssignOp(GETS_NORM,
 					 new Variable(var),
-					 var->type->defaultVal->copy());
+					 type->defaultVal->copy());
     ExprStmt* assign_stmt = new ExprStmt(assign_expr);
     insert_default_init_stmt(var, assign_stmt);
+  }
+}
+
+
+static void insert_user_default_init(Stmt* stmt, VarSymbol* var, Type* type) {
+  if (type->defaultVal) {
+    AssignOp* assign_expr = new AssignOp(GETS_NORM,
+					 new Variable(var),
+					 type->defaultVal->copy());
+    ExprStmt* assign_stmt = new ExprStmt(assign_expr);
+    stmt->insertBefore(assign_stmt);
   }
 }
 
@@ -216,16 +234,26 @@ static void insert_init(Stmt* stmt, VarSymbol* var, Type* type) {
     insert_array_init(stmt, var, type);
   } else if (dynamic_cast<DomainType*>(type)) {
     insert_domain_init(stmt, var);
-    /*
-  } else if (dynamic_cast<SeqType*>(type)) {
-    insert_seq_init(stmt, var);
-    insert_user_init(stmt, var);
-    */
   } else if (var->varClass == VAR_CONFIG) {
-    insert_default_init(stmt, var);
+    insert_default_init(stmt, var, type);
     insert_config_init(stmt, var);
   } else {
-    insert_default_init(stmt, var);
+    insert_default_init(stmt, var, type);
+    insert_user_init(stmt, var);
+  }
+}
+
+
+// used within nested array call to put default init in loop
+static void insert_init_at_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
+  if (dynamic_cast<ArrayType*>(type)) {
+    insert_array_init(stmt, var, type);
+  } else if (dynamic_cast<DomainType*>(type)) {
+    insert_domain_init(stmt, var);
+  } else if (var->varClass == VAR_CONFIG) {
+    INT_FATAL(stmt, "Array of configs?! or something");
+  } else {
+    insert_user_default_init(stmt, var, type);
     insert_user_init(stmt, var);
   }
 }

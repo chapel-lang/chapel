@@ -80,10 +80,15 @@ static void build_constructor(ClassType* class_type) {
 #ifndef CONSTRUCTOR_WITH_PARAMETERS
   Symboltable::setCurrentScope(saveScope);
 #endif
-  TRAVERSE(class_type->symbol->defPoint->stmt, new Fixup(), true);
   if (dynamic_cast<SeqType*>(class_type)) {
     class_type->defaultVal = new FnCall(new Variable(fn), NULL);
+    SET_BACK(class_type->defaultVal);
   }
+  if (class_type->value || class_type->union_value) {
+    class_type->defaultVal = new FnCall(new Variable(class_type->symbol), NULL);
+    SET_BACK(class_type->defaultVal);
+  }
+  TRAVERSE(class_type->symbol->defPoint->stmt, new Fixup(), true);
 }
 
 

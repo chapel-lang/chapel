@@ -215,7 +215,14 @@ static void call_fixup(Expr* expr) {
   if (!expr->stmt) {
     INT_FATAL(expr, "Expr has no Stmt in call_fixup");
   }
+  SymScope* saveScope = NULL;
+  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(expr->stmt->parentSymbol)) {
+    saveScope = Symboltable::setCurrentScope(mod->modScope);
+  }
   TRAVERSE(expr->stmt, new Fixup(), true);
+  if (saveScope) {
+    Symboltable::setCurrentScope(saveScope);
+  }
 }
 
 
