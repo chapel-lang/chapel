@@ -15692,3 +15692,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: stmt.cpp type.cpp 
 
+---------------------------------------------------------------------------
+
+01/25/05 16:16:37 -- jplevyak
+
+Log message:
+	Implemented caching for the 3 wrappers and instantiation.
+	Stubbed out the calls in stmt.h.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp if1.cpp pattern.cpp 
+	chapel/compiler/include/: analysis.h callbacks.h if1.h pattern.h 
+	                          stmt.h 
+	chapel/compiler/vparser/: parse_ast.h 
+
