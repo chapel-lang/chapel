@@ -63,6 +63,7 @@ __make_set(...) __name "make_set":0;
 __make_continuation(...) __name "make_continuation":0;
 __primitive(...) __name "primitive":0;
 __new(...) __name "new":0;
+__index_vector(...) __name "index_vector":0;
 
 //   public
 reply(...) __name "reply":0;

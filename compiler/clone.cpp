@@ -315,7 +315,7 @@ determine_clones() {
 	sets_by_f<AEdge, AEDGE_FN>(calls_edges, edge_sets);
 	for (int i = 0; i < edge_sets.n; i++)
 	  for (int j = 0; j < edge_sets.v[i]->n; j++)
-	    for (int k = 0; k < i; k++) {
+	    for (int k = 0; k < j; k++) {
 	      AEdge *e1 = edge_sets.v[i]->v[j], *e2 = edge_sets.v[i]->v[k];
 	      if (e1 && e2 && e1->fun == e2->fun && e1->to->equiv != e2->to->equiv) {
 		for (int a = 0; a < e1->args.n; a++) {
@@ -373,24 +373,9 @@ define_concrete_types(CSSS &css_sets) {
 	    def = (AVar *)-1;
 	}
       }
-      if (sym->type_kind == Type_PRIMITIVE) {
+      if (sym->type_kind == Type_PRIMITIVE || sym->fun) {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
-      } else if (sym == sym_function || sym == sym_symbol) {
-	// if one, use its sym
-	if (def != (AVar *)-1) {
-	  forv_CreationSet(cs, *eqcss) if (cs)
-	    cs-> type = def->var->sym;
-	} else { // if more than one, use sum type
-	  sym = if1_alloc_sym(fa->pdb->if1);
-	  sym->type_kind = Type_SUM;
-	  forv_CreationSet(cs, *eqcss) if (cs) {
-	    cs->type = sym;
-	    forv_AVar(av, cs->defs)
-	      sym->has.set_add(av->var->sym);
-	  }
-	  sym->has.set_to_vec();
-	}
       } else if (sym == sym_tuple) {
 	// tuples use record type
 	sym = if1_alloc_sym(fa->pdb->if1);

@@ -34,4 +34,23 @@
 
 - do constant propgation in fa.cpp
 
-- odd thing about vectors: #[1] is of undertermined rank !
+- odd thing about vectors: #[1] is rank 0 (make sense)
+
+- describe type hierarchy.  symbols < a symbol < functions with symbol as name
+-               classes as a separate hierarchy tied into the object
+                hierarchy
+
+         ObjectClass
+         / |
+   Object  |
+      |    |
+      |  AClass
+      | /  |
+      A    |
+      |    |
+      |  BClass
+      | /
+      B
+
+- make_top_edge should call with the appropriate arguments.
+  - should store the top level pnode in the database (somewhere)

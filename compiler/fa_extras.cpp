@@ -54,17 +54,9 @@ fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
   }
   fprintf(fp, "( ");
   forv_CreationSet(cs, *av->out) if (cs) {
-    if (cs->sym->name) {
-      if (cs->sym == sym_symbol)
-	fprintf(fp, "symbol(%s) ", cs->defs.v[0]->var->sym->name);
-      else if (cs->sym == sym_function) {
-	if (cs->defs.v[0]->var->sym->name)
-	  fprintf(fp, "function(%s(%d)) ", cs->defs.v[0]->var->sym->name, cs->defs.v[0]->var->sym->id);
-	else
-	  fprintf(fp, "function(%d) ", cs->defs.v[0]->var->sym->id);
-      } else 
-	fprintf(fp, "%s ", cs->sym->name);
-    } else
+    if (cs->sym->name)
+      fprintf(fp, "%s ", cs->sym->name);
+    else
       fprintf(fp, "%d ", cs->sym->id);
   }
   fprintf(fp, ")\n");
@@ -103,30 +95,9 @@ static void
 show_type(Vec<CreationSet *> &t, FILE *fp) {
   fprintf(fp, "( ");
   forv_CreationSet(cs, t) {
-    if (cs->sym->name) {
-      if (cs->sym == sym_symbol)
-	fprintf(fp, "symbol(%s) ", cs->defs.v[0]->var->sym->name);
-      else if (cs->sym == sym_function) {
-	int one = 0;
-	forv_AVar(def, cs->defs) {
-	  if (def->var->sym->name) {
-	    fprintf(fp, "function %s ", def->var->sym->name);
-	    one = 1;
-	  }
-	  PNode *p = def->var->def;
-	  if (p && p->code->ast && p->code->ast->pathname) {
-	    if (!def->var->sym->name) {
-	      fprintf(fp, "function ");
-	      one = 1;
-	    }
-	    fprintf(stderr, "\"%s\":%d ", p->code->ast->pathname, p->code->ast->line);
-	  }
-	}
-	if (!one)
-	  fprintf(fp, "function ");
-      } else 
-	fprintf(fp, "%s ", cs->sym->name);
-    } else
+    if (cs->sym->name)
+      fprintf(fp, "%s ", cs->sym->name);
+    else
       fprintf(fp, "%d ", cs->sym->id);
   }
   fprintf(fp, ") ");

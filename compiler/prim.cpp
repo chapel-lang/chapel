@@ -33,11 +33,12 @@ Primitives::find(Code *c) {
       int nargs = c->rvals.n - 3;
       if (nargs < 0)
 	nargs = 0;
-      if (c->rvals.v[1]->type == sym_symbol)
+      if (c->rvals.v[1]->symbol)
 	prim = prim_map[nargs][0].get(c->rvals.v[1]->name);
       else {
-	assert(c->rvals.v[2]->type == sym_symbol);
-	prim = prim_map[nargs][1].get(c->rvals.v[2]->name);
+	char *n = c->rvals.v[2]->symbol ? c->rvals.v[2]->name : c->rvals.v[2]->builtin;
+	assert(n);
+	prim = prim_map[nargs][1].get(n);
       }
       assert(prim);
     }
@@ -48,7 +49,6 @@ Primitives::find(Code *c) {
 
 Prim *
 Primitives::find(PNode *p) {
-#if 1
   Var *f = p->rvals.v[0];
   if (f->sym->builtin) {
     Prim *prim = prim_map[0][0].get(f->sym->builtin);
@@ -56,10 +56,10 @@ Primitives::find(PNode *p) {
       int nargs = p->rvals.n - 3;
       if (nargs < 0)
 	nargs = 0;
-      if (p->rvals.v[1]->sym->type == sym_symbol)
+      if (p->rvals.v[1]->sym->symbol)
 	prim = prim_map[nargs][0].get(p->rvals.v[1]->sym->name);
       else {
-	assert(p->rvals.v[2]->sym->type == sym_symbol);
+	assert(p->rvals.v[2]->sym->symbol);
 	prim = prim_map[nargs][1].get(p->rvals.v[2]->sym->name);
       }
       assert(prim);
@@ -67,9 +67,6 @@ Primitives::find(PNode *p) {
     return prim;
   }
   return NULL;
-#else
-  return p->code->ast->prim;
-#endif
 }
 
 static int
@@ -111,7 +108,7 @@ Primitives::find(AST *ast) {
 	return 0;
     }
     else {
-      assert(ast->v[1]->sym && ast->v[1]->sym->type == sym_symbol);
+      assert(ast->v[1]->sym && ast->v[1]->sym->symbol);
       prim = prim_map[nargs][1].get(ast->v[1]->sym->name);
       if (!prim)
 	return 0;

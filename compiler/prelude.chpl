@@ -62,6 +62,7 @@ function __make_set(...) __name "make_set" { 0 } ;
 function __make_continuation(...) __name "make_continuation" { 0 };
 function __primitive(...) __name "primitive" { 0 } ;
 function __new(...) __name "new" { 0 };
+function __index_vector(...) __name "index_vector" { 0 };
 
 //   public internal function
 function reply(...) __name "reply" { 0 };
@@ -128,10 +129,10 @@ function operator(a:any, #"->", b:symbol)	{ __primitive (__primitive #"*" a) #".
 function operator(a:any, #"->*", b:symbol)	{ __primitive (__primitive #"*" a) #"." b; }
 function operator(a:anynum, #"^^", b:anynum)	{ __primitive a #"^^" b }
 function operator(#"++", a:ref)			{
-   __primitive a #"=" ((__primitive#"*" a) #"+" 1)
+   __primitive a #"=" ((__primitive #"*" a) #"+" 1)
 }
 function operator(#"--", a:ref)			{ 
-   __primitive a #"=" ((__primitive#"*" a) #"-" 1)
+   __primitive a #"=" ((__primitive #"*" a) #"-" 1)
 }
 function operator(#"+", a:anynum)		{ __primitive #"+" a }
 function operator(#"-", a:anynum)		{ __primitive #"-" a }
@@ -142,10 +143,10 @@ function operator(#"&", a:any)			{ __primitive #"&" a }
 function operator(a:anynum, #"|", b:anynum)	{ __primitive a #"|" b }
 function operator(#"(", a:symbol, b:any)	{ __primitive #"(" a b }
 function operator(a:ref, #"++")			{ 
-   __primitive a #"=" ((__primitive#"*" a) #"+" 1)
+   __primitive a #"=" ((__primitive #"*" a) #"+" 1)
 }
 function operator(a:ref, #"--")			{ 
-   __primitive a #"=" ((__primitive#"*" a) #"-" 1)
+   __primitive a #"=" ((__primitive #"*" a) #"-" 1)
 }
 
 // domains
@@ -207,6 +208,8 @@ function sequence::class(f : int, l : int) {
 function operator(a:sequence, #"*", b:sequence) {
   new sequence
 }
+
+function vector::self s { __index_vector self s }
 
 /*
   David's old iterator and domain examples

@@ -59,6 +59,7 @@ if1_make_symbol(IF1 *p, char *name, char *end) {
     return s;
   s = if1_alloc_sym(p);
   s->name = name;
+  s->type_kind = Type_PRIMITIVE;
   s->type = sym_symbol;
   p->symbols.put(name, s);
   s->symbol = 1;

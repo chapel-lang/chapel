@@ -10,6 +10,9 @@ char *AST_name[] = {
 #undef S
 };
 
+static char *cannonical_class = 0;
+static char *cannonical_self = 0;
+
 AST *
 AST::get(AST_kind k) {
   for (int i = 0; i < n; i++)
@@ -789,10 +792,12 @@ gen_fun(IF1 *i, AST *ast) {
   AST **args = &ast->v[1];
   Sym *as[n + 1];
   AST *fqid = ast->get(AST_qualified_ident);
-  if (fn->in && fn->name == if1_cannonicalize_string(i, "class"))
+  if (fn->in && fn->name == cannonical_class || fn->name == cannonical_self)
     as[0] = ast->sym->self;
-  else
-    as[0] = if1_make_symbol(i, fn->name);
+  else {
+    as[0] = new_sym(i, fn->scope);
+    as[0]->type = if1_make_symbol(i, fn->name);
+  }
   for (int j = 0; j < n; j++)
     as[j + 1] = args[j]->rval;
   if1_closure(i, fn, body, n + 1, as);
@@ -1135,14 +1140,15 @@ static void
 build_modules(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     if (s->module) {
-      Sym *fun = s->init;
-      fun->ret = sym_null;
-      fun->cont = new_sym(i, fun->scope);
+      Sym *fn = s->init;
+      fn->ret = sym_null;
+      fn->cont = new_sym(i, fn->scope);
       Code *body = NULL;
-      if1_gen(i, &body, fun->code);
-      if1_send(i, &body, 3, 0, sym_reply, fun->cont, fun->ret);
-      Sym *as = if1_make_symbol(i, fun->name);
-      if1_closure(i, fun, body, 1, &as);
+      if1_gen(i, &body, fn->code);
+      if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+      Sym *as = new_sym(i, fn->scope);
+      as->type = if1_make_symbol(i, fn->name);
+      if1_closure(i, fn, body, 1, &as);
     }
   }
 }
@@ -1187,24 +1193,24 @@ ast_call(IF1 *i, int n, ...) {
 
 static void
 build_init(IF1 *i) {
-  Sym *fun = sym_init;
-  fun->scope = new Scope(fun->ast->scope, Scope_RECURSIVE, fun);
+  Sym *fn = sym_init;
+  fn->scope = new Scope(fn->ast->scope, Scope_RECURSIVE, fn);
   Sym *rval = 0;
   Code *body = 0;
   AST *ast = new AST(AST_block);
   forv_Sym(s, i->allsyms)
     if (s->module) {
-      rval = new_sym(i, fun->scope);
+      rval = new_sym(i, fn->scope);
       Code *send = if1_send(i, &body, 1, 1, s->init, rval);
       send->ast = ast_call(i, 1, s->init);
       ast->add(send->ast);
     }
-  fun->cont = new_sym(i, fun->scope);
-  fun->ret = sym_null;
-  if1_send(i, &body, 3, 0, sym_reply, fun->cont, fun->ret);
-  Sym *as = if1_make_symbol(i, fun->name);
-  if1_closure(i, fun, body, 1, &as);
-  fun->ast = ast;
+  fn->cont = new_sym(i, fn->scope);
+  fn->ret = sym_null;
+  if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+  Sym *as = if1_make_symbol(i, fn->name);
+  if1_closure(i, fn, body, 1, &as);
+  fn->ast = ast;
 }
 
 static void
@@ -1260,6 +1266,8 @@ finalize_types(IF1 *i) {
 int
 ast_gen_if1(IF1 *i, Vec<AST *> &av) {
   Scope *global = new Scope();
+  cannonical_class = if1_cannonicalize_string(i, "class");
+  cannonical_self = if1_cannonicalize_string(i, "self");
   global_asserts();
   forv_AST(a, av)
     build_builtin_syms(i, a);
