@@ -23640,3 +23640,23 @@ Modified files:
 	chapel/compiler/traversals/: applyThisParameters.cpp 
 	                             insertUnionChecks.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/05 14:10:58 -- bradc
+
+Log message:
+	Improved the list_futures script to take an optional
+	username as its argument.  If a username is given,
+	it only lists the futures that are assigned to that
+	username.  If no username is given, it works the same
+	as before (note that grepping for usernames out of
+	the original output gave mixed results since the
+	username could appear in the test path, and isn't
+	necessarily the first word on the line).
+	
+	Also, switched to a more generic perl installation
+	location for portability.
+
+Modified files:
+	chapel/test/: list_futures 
+
