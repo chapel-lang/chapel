@@ -224,7 +224,7 @@ function operator(a:sequence, #"*", b:sequence) {
   new sequence
 }
 
-function vector::self s { #__index_vector self s }
+function vector::self s { #__index self s }
 function domain::self s { new domain }
 
 class array {
@@ -232,12 +232,12 @@ class array {
   var v : vector;
 }
 
-function array::self s { #__index_vector self s }
+function array::self s { #__index self s }
 function array::class dd e { 
   var a = new array;
   a.d = dd;
   a.v = (#__make_vector dd.rank);
-  (#__index_vector a.v 0) = e;
+  (#__index a.v 0) = e;
   return a;
 }
 
