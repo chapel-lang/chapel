@@ -22722,3 +22722,38 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+03/30/05 17:47:00 -- bradc
+
+Log message:
+	This is a slightly revised implementation of
+	removeDeadSymbols that "resurrects" type
+	symbols that are considered dead by analysis,
+	but which are necessary to code generation.
+	A simple example of this would be:
+	
+		class myclass { ... }
+	
+		var c: myclass;
+	
+		if (c == nil) {
+		  writeln("c is nil!");
+		}
+	
+	Here, analysis considers myclass dead because
+	no instantiations of it are ever made.  However,
+	c is not dead, so it will be codegened to be
+	a C variable of type myclass.  Yet myclass would
+	not have been code generated.  So in this case,
+	c's liveness causes myclass to be resurrected.
+	
+	Unfortunately, having written this, I think
+	that my approach was too simple, as in general
+	we may need to iterate until we reach a fixed
+	point.  So this is a bit of a stopgap.
+
+Modified files:
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	                         removeDeadSymbols.h 
+
