@@ -8,10 +8,6 @@
 #include "symtab.h"
 #include "type.h"
 
-
-//#define ANALYSIS_MATCH
-
-
 /** Assumption: Analysis has run **/
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
@@ -151,9 +147,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 	      }
 	    }
 	  }
-	}
-#ifdef ANALYSIS_MATCH
-	else {
+	} else {
 	  if (strcmp(var->var->name, "__primitive")) { /** can't resolve that **/
 	    if (analyzeAST) {
 	      Vec<FnSymbol*> fns;
@@ -170,7 +164,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 	    }
 	  }
 	}
-#endif
       }
     }
   }
