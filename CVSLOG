@@ -1,0 +1,221 @@
+04/01/21 13:28:16 -- bradc
+
+Log message:
+	This is a test.
+
+Modified files:
+	./: structure.txt 
+
+04/01/21 14:13:02 -- bradc
+
+Log message:
+	Set the script up to mail both John (here at Cray) and me.
+
+Modified files:
+	./: loginfo 
+
+04/01/21 14:22:46 -- bradc
+
+Log message:
+	Still ashamed for my former sloppiness, made Makefile.base even more
+	bulletproof (perhaps overly so :).  Made a rule such that if PLATFORM
+	is set to unknown, it prints out a message indicating that the
+	platform is not recognized and exits.
+	
+	In order to make this rule not be the first (and therefore default)
+	rule in every Makefile that includes Makefile.base, I added a rule
+	"default:" that depends on "all".  Thus, "all" should be the first
+	target of every Makefile that we make (this seems to be the convention
+	we both favor anyway, so hopefully this isn't too much of an
+	imposition).
+	
+	Also added a Makefile to the make/ directory that prints out all the
+	PLATFORM/OS/ARCH information.
+
+Modified files:
+	chapel/make/: Makefile.base 
+Added files:
+	chapel/make/: Makefile 
+
+04/01/21 14:40:16 -- bradc
+
+Log message:
+	Got rid of remaining DOS linefeeds.
+
+Modified files:
+	chapel/compiler/: prim_data.dat 
+	chapel/make/: Makefile.cygwin Makefile.sun 
+
+04/01/22 09:58:44 -- bradc
+
+Log message:
+	Switched mailing list to chapel_dev@cray.com (should happen on
+	next check-in, not this one).
+
+Modified files:
+	./: loginfo 
+
+04/01/22 09:59:37 -- bradc
+
+Log message:
+	Just checking that mail to the new mailing list works.
+
+Modified files:
+	./: structure.txt 
+
+04/01/22 12:33:17 -- n10253
+
+Log message:
+	Continued work on type checking, parameterized
+	types and type constraints on other types (e.g. some_var : some_type).
+
+Modified files:
+	chapel/compiler/: ast.cpp ast_kinds.h clone.cpp fa.cpp if1.cpp 
+	                  sym.h v.g 
+Added files:
+	chapel/compiler/: TODO 
+
+04/01/22 13:48:26 -- bradc
+
+Log message:
+	Improved the Makefile so that clean would remove prim_data.cpp and so
+	that a clean build would work without being run twice (previously, it
+	seemed to trip over prim_data.cpp being missing the first time and
+	then worked the second time).
+	
+	Improved the .cvsignore files to ignore things created during the
+	run of the sample program.
+
+Modified files:
+	chapel/compiler/: .cvsignore Makefile 
+Added files:
+	chapel/compiler/samples/: .cvsignore 
+
+04/01/22 13:56:39 -- bradc
+
+Log message:
+	Took a cue from John's mail yesterday and removed the optional
+	inclusion of Makefile.$(PLATFORM) to create errors on an unknown
+	platform.  Then realized that by moving the rules I'd added to
+	Makefile.base to create a nice error message to Makefile.unknown, I
+	could still get nice error messages on an unknown platform.
+
+Modified files:
+	chapel/make/: Makefile.base 
+Added files:
+	chapel/make/: Makefile.unknown 
+
+04/01/22 13:58:47 -- bradc
+
+Log message:
+	Added dparser's created BUILD_VERSION file to the list of files to be
+	ignored in the d/ directory.
+
+Added files:
+	chapel/third-party/dparser/d/: .cvsignore 
+
+04/01/23 11:49:33 -- n10253
+
+Log message:
+	add the binaries and "freebsd"
+
+Modified files:
+	chapel/compiler/: .cvsignore 
+
+04/01/23 13:15:20 -- n10253
+
+Log message:
+	Little bug fixes in preparation for working on structural types.
+
+Modified files:
+	chapel/compiler/: fa.cpp if1.cpp 
+
+04/01/23 14:46:22 -- n10253
+
+Log message:
+	Handle more sorts of argument type constraints.
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp 
+
+04/01/26 11:30:18 -- n10253
+
+Log message:
+	freebsd build directory and a couple more executables into cvsignore
+
+Modified files:
+	chapel/third-party/boehmgc/: .cvsignore 
+	chapel/third-party/boehmgc/gc6.2/: .cvsignore 
+	chapel/third-party/dparser/: .cvsignore 
+	chapel/third-party/dparser/d/: .cvsignore 
+
+04/01/28 11:55:22 -- n10253
+
+Log message:
+	Added "path" argument type to args.*
+	Added logging system: see log.h for details.
+
+Modified files:
+	chapel/compiler/: Makefile arg.cpp driver.cpp fa.cpp geysa.h 
+	                  if1.cpp if1.h sym.h 
+Added files:
+	chapel/compiler/: log.cpp log.h 
+
+04/01/28 12:02:43 -- n10253
+
+Log message:
+	Fix minor grammar ambiguity.
+
+Modified files:
+	chapel/compiler/: TODO v.g 
+
+04/01/28 18:41:34 -- n10253
+
+Log message:
+	Implement constant folding.
+	Dead code elimination does not yet take constant folding into account.
+
+Modified files:
+	chapel/compiler/: Makefile ast.cpp ast.h driver.cpp fa.cpp if1.h 
+	                  prelude.v prim.cpp prim.h prim_data.dat sym.h 
+Added files:
+	chapel/compiler/: ast_cf.cpp cast.cpp 
+
+04/01/29 15:23:45 -- n10253
+
+Log message:
+	Constant folding complete: converts the AST node to an AST_const.
+	Abstracted v.g and made a copy in chpl.g in preparations for building
+	chapel grammar.
+
+Modified files:
+	chapel/compiler/: Makefile TODO ast.cpp ast_cf.cpp chpl.g 
+	                  driver.cpp fa_extras.cpp geysa.h if1.cpp map.h 
+	                  sym.h v.g 
+Added files:
+	chapel/compiler/: grammar.cpp grammar.h prelude.chpl 
+
+04/01/30 11:36:40 -- bradc
+
+Log message:
+	Establishing an examples/ directory for use in managing
+	chapel examples and tracking their evolution.  Checking
+	in matrix-vector multiplication-related milestone 0 codes,
+	including the official consensus code, some interesting
+	variations, and some baby steps that should help get us
+	there.
+
+Added files:
+	chapel/examples/milestone0/: mvm.chpl 
+	chapel/examples/milestone0/variations/: mvm_brad.chpl 
+	chapel/examples/pre-milestone0/: matadd.chpl matassign.chpl 
+	                                 matvectadd.chpl 
+
+04/02/03 13:48:58 -- n10253
+
+Log message:
+	fix bug in error recovery
+
+Modified files:
+	chapel/third-party/dparser/d/: parse.c 
+
