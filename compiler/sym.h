@@ -85,6 +85,7 @@ class Sym : public gc {
   unsigned int		pattern:1;		// Sym is a pattern
   unsigned int		vararg:1;		// Sym is a vararg parameter
   unsigned int 		value:1;		// Sym is a value 
+  unsigned int		external:1;
   unsigned int		structure:1;		// Sym is a structure (C compatibility)
   unsigned int		class_static:1;		// Sym is 'class static'
   unsigned int		internal:4;		// Sym is of a non-primitive 'internal' type 

@@ -7,21 +7,21 @@ function __init prelude.v:7 with 1 edges
 function __init__ <none>:0 with 1 edges
 function create cs1.v:1 with 1 edges
 function create cs1.v:1 with 1 edges
-function operator prelude.v:103 with 1 edges
-function operator prelude.v:103 with 1 edges
-function operator prelude.v:82 with 1 edges
-function operator prelude.v:82 with 1 edges
-function operator prelude.v:82 with 1 edges
-function operator prelude.v:82 with 1 edges
-function print prelude.v:136 with 2 edges
+function operator prelude.v:104 with 1 edges
+function operator prelude.v:104 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:83 with 1 edges
+function print prelude.v:137 with 2 edges
 globals
-operator::a(prelude.v:82) ( tuple (prelude.v:13) )
-operator::a(prelude.v:82) ( tuple (prelude.v:13) )
-operator::a(prelude.v:82) ( tuple (prelude.v:13) )
-operator::a(prelude.v:82) ( tuple (prelude.v:13) )
-operator::b(prelude.v:103) ( "3" (cs1.v:3) )
-operator::b(prelude.v:103) ( "4.0" (cs1.v:6) )
-print::a(prelude.v:136) ( "1" (cs1.v:2) "2.0" (cs1.v:5) "4.0" (cs1.v:6) "3" (cs1.v:3) )
+operator::a(prelude.v:83) ( tuple (prelude.v:13) )
+operator::a(prelude.v:83) ( tuple (prelude.v:13) )
+operator::a(prelude.v:83) ( tuple (prelude.v:13) )
+operator::a(prelude.v:83) ( tuple (prelude.v:13) )
+operator::b(prelude.v:104) ( "3" (cs1.v:3) )
+operator::b(prelude.v:104) ( "4.0" (cs1.v:6) )
+print::a(prelude.v:137) ( "1" (cs1.v:2) "2.0" (cs1.v:5) "4.0" (cs1.v:6) "3" (cs1.v:3) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:57) ( tuple (prelude.v:13) )
 user::__init(cs1.v:1) ( __init (cs1.v:1) )

@@ -72,6 +72,7 @@ var reply = #reply __name "reply";
 #__print __name "print";
 #operator __name "operator";
 #"&" __name "doref";
+#"=" __name "assign";
 
 // overloadable primitive operators
 function new(a:any) { #__new ^^ a; }
@@ -97,7 +98,7 @@ function operator(a:any, #"&&", b:any)		{ #__primitive ^^ a ^^ #"&&" ^^ b }
 function operator(a:any, #"||", b:any)		{ #__primitive ^^ a ^^ #"||" ^^ b }
 function operator(a:ref, #"=", b:any)		{ #__primitive ^^ a ^^ #"=" ^^ b }
 function operator(a:any, #"=", b:any)		{ b }
-// function operator(a:value, #"=", b:value)	{ primitive to assign numeric values }
+//function operator(a:value, #"=", b:value)	{ numeric assignment }
 function operator(a:ref, #"*=", b:anynum)	{ #__primitive ^^ #"*" ^^ b }
 function operator(a:ref, #"/=", b:anynum)	{ #__primitive ^^ a ^^ #"/" ^^ b }
 function operator(a:ref, #"%=", b:anynum)	{ #__primitive ^^ a ^^ #"%" ^^ b }
@@ -178,6 +179,7 @@ function domain::class(s : sequence, d : distribution) {
 }
 
 class sequence {
+  const rank : integer;
   const first : tuple;
   const last : tuple;
   const step : tuple;
@@ -185,6 +187,7 @@ class sequence {
 
 function sequence::class afirst alast astep {
   var s = new sequence;
+  s.rank = 1;
   s.first = afirst;
   s.last = alast;
   s.step = astep;
@@ -204,11 +207,19 @@ value array {
 }
 
 function array::self s { #__index ^^ self ^^ s }
+
 function array::class dd e { 
   var a = new array;
   a.d = dd;
   a.v = (#__make_vector ^^ dd.rank);
   (#__index ^^ a.v ^^ 0) = e;
+  return a;
+}
+
+function array::class dd { 
+  var a = new array;
+  a.d = dd;
+  a.v = (#__make_vector ^^ dd.rank);
   return a;
 }
 

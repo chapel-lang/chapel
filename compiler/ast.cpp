@@ -450,6 +450,15 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 	ast->sym = new_sym(i, scope, ast->get(AST_ident)->string);
 	ast->sym->type_kind = Type_UNKNOWN;
 	break;
+      case AST_array_descriptor:
+#if 0
+	ast->sym = new_sym(i, scope);
+	ast->sym->type_kind = Type_RECORD;
+	ast->sym->type = ast->sym;
+#else
+	ast->sym = sym_array;
+#endif
+	break;
       default:
 	break;
     }
@@ -721,7 +730,20 @@ build_types(IF1 *i, AST *ast) {
 	  ast->sym->has.v[0]->name = ast->sym->name;
 	if (!ast->sym->has.v[0]->internal)
 	  ast->sym->has.v[0]->internal = ast->sym->internal;
+	if (!ast->sym->has.v[0]->value)
+	  ast->sym->has.v[0]->value = ast->is_value;
       }
+      break;
+    case AST_constraint:
+      forv_AST(a, *ast)
+	if (!ast->sym)
+	  ast->sym = a->sym;
+      break;
+    case AST_array_descriptor:
+#if 0
+      ast->sym->implements.add(sym_array);
+      ast->sym->includes.add(sym_array);
+#endif
       break;
     default: break;
   }
@@ -961,21 +983,26 @@ gen_op(IF1 *i, AST *ast) {
 }
 
 static void
+gen_indices(IF1 *i, AST *ast, AST *indices, AST *domain) {
+  (void) domain;
+  Sym *index = new_sym(i, ast->scope);
+  index->type = sym_int;
+  index->external = 1;
+  forv_AST(a, *indices)
+    if1_move(i, &ast->code, index, a->sym);
+}
+
+static void
 gen_forall(IF1 *i, AST *ast) {
-  AST *domain = ast->get(AST_qualified_ident);
+  AST *domain = ast->get(AST_domain);
   AST *indices = ast->get(AST_indices);
   AST *body = ast->last();
-  if (body->rval->type_kind) { // creation
-    ast->rval = new_sym(i, ast->scope);
-    Code *send = if1_send(i, &ast->code, 3, 1, sym_array, domain->sym, body->rval, ast->rval);
-    send->ast = ast;
-  } else {
-    if (indices)
-      forv_AST(a, *indices)
-	if1_move(i, &ast->code, new_constant(i, "0", "int"), a->sym);
-    if1_gen(i, &ast->code, body->code);
-    ast->rval = body->rval;
-  }
+  if (indices)
+    gen_indices(i, ast, indices, domain);
+  if1_gen(i, &ast->code, body->code);
+  ast->rval = new_sym(i, ast->scope);
+  Code *send = if1_send(i, &ast->code, 3, 1, sym_array, domain->rval, body->rval, ast->rval);
+  send->ast = ast;
 }
 
 static void
@@ -1088,6 +1115,124 @@ pre_gen_bottom_up(AST *ast) {
   return 0;
 }
 
+static void
+gen_assign(IF1 *i, AST *ast, AST *val, Sym *in, Sym *out) {
+  Sym *args = new_sym(i, ast->scope);
+  Code *send = if1_send(i, &ast->code, 4, 1, sym_make_tuple, in, sym_assign, val->rval, args);
+  send->ast = ast;
+  send = if1_send(i, &ast->code, 2, 1, sym_operator, args, out);
+  send->ast = ast;
+}
+
+static Sym *
+value_type(IF1 *i, AST *ast, Sym *s) {
+  Sym *v = new_sym(i, ast->scope);
+  v->type = s;
+  v->external = 1;
+  return v;
+}
+
+static void
+gen_def_ident(IF1 *i, AST *ast) {
+  AST *constraint = ast->get(AST_constraint);
+  AST *val = ast->last();
+  if (val == constraint)
+    val = 0;
+  int block = ast->sym == sym_init || ast->sym->in == ast->sym->in->type;
+  ast->rval = ast->sym;
+
+  if (!block) { // don't init the initial function
+    // declared to be a value type
+    if (constraint && constraint->sym->value) {
+
+      // arrays
+      AST *arr = constraint->get(AST_array_descriptor);
+      if (arr) { 
+	Sym *rval = new_sym(i, ast->scope);
+	Sym *domain = NULL, *init = NULL;
+	AST *arr_dom = arr->get(AST_domain);  // if the domain is declared use it
+	if (arr_dom)
+	  domain = arr_dom->rval;
+	AST *indices = arr->get(AST_indices);
+	AST *element_type = constraint->last();
+	if (element_type != arr)
+	  init = value_type(i, ast, element_type->sym);
+	if (val != constraint) { // if we have a initializer
+	  if (!domain && val->kind == AST_forall) { // if it has a domain and we need one, use it
+	    AST *domain_ast = val->get(AST_domain);
+	    domain = domain_ast->rval;
+	    AST *element = val->last();
+	    if (!init && element != domain_ast && element->kind == AST_const)
+	      init = element->rval;
+	  } else if (!init && val->kind == AST_const) // if it has a scalar initializer, use it
+	    init = val->rval;
+	}
+	if (domain) {
+	  Code *send;
+	  if (init)
+	    send = if1_send(i, &ast->code, 3, 1, sym_array, domain, init, rval);
+	  else
+	    send = if1_send(i, &ast->code, 2, 1, sym_array, domain, rval);
+	  send->ast = ast;
+	} else {
+	  show_error("missing domain in array initializer", ast);
+	}
+	if (indices)
+	  gen_indices(i, ast, indices, arr_dom);
+	if ((!init || !init->constant) && val) {
+	  if (val)
+	    if1_gen(i, &ast->code, val->code);
+	  Sym *rrval = new_sym(i, ast->scope);
+	  gen_assign(i, ast, val, rval, rrval);
+	  rval = rrval;
+	}
+	if1_move(i, &ast->code, rval, ast->rval, ast);
+      }
+    
+      // other values
+      else { 
+	if (val)
+	  if1_gen(i, &ast->code, val->code);
+	Sym *declared_type = constraint->sym;
+	if (declared_type->num_type) { // numbers
+	  if (val != constraint && val->kind == AST_const && val->sym->type == declared_type)
+	    if1_move(i, &ast->code, val->sym, ast->sym, ast);
+	  else {
+	    Sym *rval = value_type(i, ast, declared_type);
+	    if (val) {
+	      Sym *rrval = new_sym(i, ast->scope);
+	      gen_assign(i, ast, val, rval, rrval);
+	      rval = rrval;
+	    }
+	    if1_move(i, &ast->code, rval, ast->rval, ast);
+	  }
+	} else {
+	  Sym *rval = new_sym(i, ast->scope);
+	  Code *send = if1_send(i, &ast->code, 2, 1, sym_new, declared_type, rval);
+	  send->ast = ast;
+	  if (val) {
+	    Sym *rrval = new_sym(i, ast->scope);
+	    gen_assign(i, ast, val, rval, rrval);
+	    rval = rrval;
+	  }
+	  if1_move(i, &ast->code, rval, ast->rval, ast);
+	}
+      }
+
+      // not known to be a value type
+    } else {
+      if (val)
+	if1_gen(i, &ast->code, val->code);
+      if (val && val->rval)
+	if1_move(i, &ast->code, val->rval, ast->sym, ast); 
+    }
+  }
+  if (ast->is_var)
+    ast->rval->lvalue = 1;
+  if (ast->is_const)
+    ast->rval->single_assign = 1;
+}
+
 static int
 gen_if1(IF1 *i, AST *ast) {
   // bottom's up
@@ -1096,20 +1241,7 @@ gen_if1(IF1 *i, AST *ast) {
       return -1;
   switch (ast->kind) {
     case AST_def_fun: gen_fun(i, ast); break;
-    case AST_def_ident: {
-      AST *val = ast->last();
-      if (val->kind != AST_constraint && ast->sym != sym_init) {
-	if1_gen(i, &ast->code, val->code);
-	if (val->rval)
-	  if1_move(i, &ast->code, val->rval, ast->sym, ast); 
-      }
-      ast->rval = ast->sym;
-      if (ast->is_var)
-	ast->rval->lvalue = 1;
-      if (ast->is_const)
-	ast->rval->single_assign = 1;
-      break;
-    }
+    case AST_def_ident: gen_def_ident(i, ast); break;
     case AST_pattern: 
       ast->rval = ast->sym; 
       if (ast->n > 1)
@@ -1138,6 +1270,13 @@ gen_if1(IF1 *i, AST *ast) {
     case AST_indices:
       forv_AST(a, *ast)
 	a->rval = ast->sym;
+      break;
+    case AST_cross_product:
+      if1_gen(i, &ast->code, ast->last()->code);
+      ast->rval = ast->last()->rval;
+      break;
+    case AST_domain:
+      ast->rval = ast->last()->rval;
       break;
     case AST_forall: gen_forall(i, ast); break;
     case AST_loop: gen_loop(i, ast); break;
@@ -1320,6 +1459,22 @@ finalize_types(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     if (s->num_type || s->value)
       s->implements.add(sym_value);
+  }
+  // set value for classes of value types
+  Vec<Sym *> implementers;
+  forv_Sym(s, i->allsyms) {
+    if (s->implements.n)
+      implementers.add(s);
+  }	
+  changed = 1;
+  while (changed) {
+    changed = 0;
+    forv_Sym(s, implementers)
+      forv_Sym(ss, s->implements)
+        if (ss->value && !s->value) { 
+          changed = 1;
+	  s->value = 1;
+        }
   }
   sym_value->value = 1;
 }

@@ -3,11 +3,11 @@ function __init cs2.v:1 with 1 edges
 function __init prelude.v:7 with 1 edges
 function __init__ <none>:0 with 1 edges
 function aa cs2.v:1 with 1 edges
-function operator prelude.v:82 with 1 edges
-function print prelude.v:136 with 1 edges
+function operator prelude.v:83 with 1 edges
+function print prelude.v:137 with 1 edges
 globals
-operator::a(prelude.v:82) ( tuple (prelude.v:13) )
-print::a(prelude.v:136) ( "1" (cs2.v:2) )
+operator::a(prelude.v:83) ( tuple (prelude.v:13) )
+print::a(prelude.v:137) ( "1" (cs2.v:2) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:57) ( tuple (prelude.v:13) )
 user::__init(cs2.v:1) ( __init (cs2.v:1) )

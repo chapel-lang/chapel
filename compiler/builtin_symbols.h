@@ -56,5 +56,6 @@ S(primitive)
 S(operator)
 S(print)
 S(doref)
+S(assign)
 S(init)
 

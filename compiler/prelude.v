@@ -72,6 +72,7 @@ __init__ __name "init":0;
 #__print __name "print";
 #operator __name "operator";
 #"&" __name "doref";
+#"=" __name "assign";
 
 //   public builtin functions
 reply: #reply __name "reply";

@@ -222,14 +222,14 @@ inherits_ident: parameterized_type { $$.ast = new AST(AST_inherits, &$n); };
 implements_ident: parameterized_type { $$.ast = new AST(AST_implements, &$n); };
 includes_ident: parameterized_type { $$.ast = new AST(AST_includes, &$n); };
 parameterized_type
-  :
-  | qualified_ident 
-  | array_descriptor parameterized_type $unary_right 100
-{ $$.ast = new AST(AST_array_descriptor, &$n); }
-  | parameterized_type type_parameter_list $unary_left 200
+  : qualified_ident 
+  | array_descriptor $right 100
+  | array_descriptor parameterized_type $unary_right 200
+  | parameterized_type type_parameter_list $unary_left 300
 { $$.ast = new AST(AST_type_application, &$n); };
 
-array_descriptor : '[' (indices_colon? ident)? ']';
+array_descriptor : '[' (indices_colon? domain)? ']'
+{ $$.ast = new AST(AST_array_descriptor, &$n); };
 
 indices_colon : indices ':';
 
@@ -286,7 +286,8 @@ expression
   | paren_block
   | curly_block
   | square_forall
-  | 'forall' loop_scope indices 'in' qualified_ident expression
+  | cross_product
+  | 'forall' sub_scope indices 'in' domain curly_block
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast =  new AST(AST_forall, &$n); }
   | expression '?' expression ':' expression $right 8600
@@ -295,13 +296,13 @@ expression
     { $$.ast = new AST(AST_if, &$n); }
   | 'if' expression 'then' expression 'else' expression $right 6100
     { $$.ast = new AST(AST_if, &$n); }
-  | 'while' loop_scope expression 'do' expression $right 6200
+  | 'while' sub_scope expression 'do' expression $right 6200
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n2, 0, 0, $n4); }
-  | 'do' loop_scope expression 'while' expression $right 6300
+  | 'do' sub_scope expression 'while' expression $right 6300
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n4, &$n2, 0, $n2); }
-  | 'for' loop_scope '(' expression? ';' expression? ';' expression? ')'
+  | 'for' sub_scope '(' expression? ';' expression? ';' expression? ')'
       expression $right 6400
     [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = loop_AST($n0, $n5, &$n3, &$n7, $n9); }
@@ -314,7 +315,7 @@ expression
     { $$.ast = new AST(AST_seq, &$n); }
   ;
 
-loop_scope: [ ${scope} = new_D_Scope(${scope}); ]; 
+sub_scope: [ ${scope} = new_D_Scope(${scope}); ]; 
 with_scope : expression (',' expression)* ':'
 [ ${scope} = new_D_Scope(${scope}); ] 
 { $$.ast = new AST(AST_with_scope, &$n); };
@@ -468,9 +469,16 @@ vector_immediate: '#' '[' statement* expression? ']' {
   $$.ast = new AST(AST_vector, &$n);
 };
 
-square_forall: '[' loop_scope indices_colon? expression ']' expression?
+square_forall: '[' sub_scope indices_colon? domain ']' expression
 [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
 { $$.ast = new AST(AST_forall, &$n); };
+
+cross_product : '[' sub_scope expression ']'
+[ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
+{ $$.ast = new AST(AST_cross_product, &$n); };
+
+domain: expression 
+{ $$.ast = new AST(AST_domain, &$n); };
 
 constant : (character | int8 | uint8 | int16 | uint16 | 
 	    int32 | uint32 | int64 | uint64 | int | uint |
