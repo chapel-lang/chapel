@@ -72,7 +72,7 @@ var reply = #reply __name "reply";
 #__print __name "print";
 #__match __name "match";
 #operator __name "operator";
-#"&" __name "doref";
+#"." __name "period";
 #"=" __name "assign";
 
 // overloadable primitive operators

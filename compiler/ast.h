@@ -61,6 +61,7 @@ class AST : public Vec<AST *> {
   int line;
   Scope *scope;
   char *constant_type;
+  Sym *container;
 
   Label *label[2];	// before and after for loops (continue,break)
   Code	*code;
@@ -84,10 +85,6 @@ int ast_constant_fold(IF1 *if1, AST *ast);
 void ast_print(FILE *fp, AST *a, int indent = 0);
 void ast_print_recursive(FILE *fp, AST *a, int indent = 0);
 void ast_write(AST *a, char *filename);
-
-inline AST *ast_qualified_ident_ident(AST *x) { return x->v[x->n-1]; }
-Scope *ast_qualified_ident_scope(AST *qualified_ident, Scope *global);
-Sym *ast_qualified_ident_sym(AST *qualified_ident, Scope *global);
 
 Sym *new_sym(IF1 *i, Scope *scope = 0, char *s = 0, Sym *sym = 0);
 

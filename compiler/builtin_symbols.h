@@ -56,7 +56,7 @@ S(primitive)
 S(operator)
 S(print)
 S(match)
-S(doref)
+S(period)
 S(assign)
 S(init)
 

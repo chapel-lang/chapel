@@ -801,6 +801,8 @@ unalias_type(Sym *s) {
   if (s->type_kind == Type_ALIAS) {
     Vec<Sym *> aliases;
     do {
+      if (!s->has.n)
+	return 0;
       Sym *ss = s->has.v[0];
       if (aliases.set_in(ss))
 	fail("circular type alias");

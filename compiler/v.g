@@ -68,7 +68,7 @@ statement
     $$.ast = $0.ast;
 }
   | ident ':' ';'
-{ $$.ast = new AST(AST_label, &$n); }
+{ $$.ast = new AST(AST_def_ident, &$n); }
   | ';'
   ;
 
@@ -87,19 +87,8 @@ type_statement
   | ';'
   ;
 
-pure_type_statement 
-  : some_pure_type_statement ';'
-{ $$.ast = $0.ast; }
-  | ';'
-  ;
-
 some_type_statement
   : unqualified_type_statement where_statement*
-  | where_statement+
-  ;
-
-some_pure_type_statement
-  : unqualified_pure_type_statement where_statement*
   | where_statement+
   ;
 
@@ -109,12 +98,6 @@ unqualified_type_statement
 { $$.ast = new AST(AST_def_type, &$n); }
   | 'enum' def_type enum_definition? 
 { $$.ast = new AST(AST_def_type, &$n); }
-  ;
-
-unqualified_pure_type_statement
-  : def_ident type
-{  $$.ast = new AST(AST_declare_ident, &$n); }
-  | unqualified_type_statement
   ;
 
 type_definition : def_type def_type_parameter_list? ('__name' string)? 
@@ -168,7 +151,7 @@ type
 type_parameter_list : '(' type_param (',' type_param)* ')' ;
 type_param: type { $$.ast = new AST(AST_type_param, &$n); };
 
-class_definition : class_modifiers '{' new_class_scope pure_type_statement* '}' 
+class_definition : class_modifiers '{' new_class_scope statement* '}' 
 [
   $$.saved_scope = ${scope};
   ${scope} = enter_D_Scope(${scope}, $n0.scope);
@@ -266,7 +249,7 @@ expression
   ;
 
 loop_scope: [ ${scope} = new_D_Scope(${scope}); ]; 
-with_scope : expression (',' expression)* ':'
+with_scope : qualified_ident (',' qualified_ident)* ':'
 [ ${scope} = new_D_Scope(${scope}); ] 
 { $$.ast = new AST(AST_with_scope, &$n); };
 
@@ -393,12 +376,26 @@ post_operator
   | '{' expression '}' $unary_op_left 9850
   [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
   { $0.ast = symbol_AST($g->i, &$n0); }
+  | '{' '}' object $unary_op_left 9850
+  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+  { $0.ast = symbol_AST($g->i, &$n0); }
   | '(' expression ')' $unary_op_left 9850
+  [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
+  { $0.ast = symbol_AST($g->i, &$n0); }
+  | '(' ')' null $unary_op_left 9850
   [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
   { $0.ast = symbol_AST($g->i, &$n0); }
   | '[' expression ']' $unary_op_left 9850
   [ if (d_ws_before(${parser}, &$n0) != $n0.start_loc.s) ${reject}; ]
   { $0.ast = symbol_AST($g->i, &$n0); }
+  ;
+
+object:
+  { $$.ast = new AST(AST_object); }
+  ;
+
+null: 
+  { $$.ast = new AST(AST_list); }
   ;
 
 curly_block: '{' [ ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RECURSIVE; ]

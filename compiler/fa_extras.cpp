@@ -183,8 +183,13 @@ compar_tv_pos(const void *aa, const void *bb) {
     if (aast) return 1;
     return 0;
   }
-  int x = strcmp(aast->pathname, bast->pathname);
-  if (x) return x;
+  if (!aast->pathname || !bast->pathname) {
+    if (bast->pathname) return -1;
+    if (aast->pathname) return 1;
+  } else {
+    int x = strcmp(aast->pathname, bast->pathname);
+    if (x) return x;
+  }
   int i = aast->line;
   int j = bast->line;
   return (i > j) ? 1 : ((i < j) ? -1 : 0);

@@ -198,9 +198,9 @@ static int handleWrite(FILE* outfile, AST* ast) {
   AST* fnast = ast->v[0];
   int writeType = 0;
 
-  if (strcmp(fnast->sym->name, "write") == 0) {
+  if (fnast->rval->name && strcmp(fnast->rval->name, "write") == 0) {
     writeType = IO_WRITE;
-  } else if (strcmp(fnast->sym->name, "writeln") == 0) {
+  } else if (fnast->rval->name && strcmp(fnast->rval->name, "writeln") == 0) {
     writeType = IO_WRITELN;
   }
 

@@ -15,18 +15,20 @@ class Scope : public gc {
  public:
   unsigned int		kind:2;
   Map<char *, Sym *>	hash;
-  Vec<Scope*>		dynamic;
   Scope 		*up;
   Scope			*next;
   
   Sym			*in;
-  Sym *			get(char *name);
-  Sym *			get_local(char *name);
+
+  Sym *			get(char *name, Sym **container = 0);
+  Sym *			get_local(char *name, Sym **container = 0);
   void			put(char *name, Sym *s);
+
+  void			add_dynamic(Scope *s, Sym *sy = 0);
 
   Scope *		global();
   Scope *		module();
-  
+
   Scope() : kind(Scope_RECURSIVE), up(0), next(0) {}
   Scope(Scope *s, unsigned int k, Sym *an_in) : up(s), next(0), in(an_in) {
     if (k == Scope_INHERIT)
@@ -34,6 +36,11 @@ class Scope : public gc {
     else
       kind = k;
   }
+
+  // private
+  Vec<Scope *>		dynamic;
+  Vec<Sym *>		dynamic_container;
+
 };
 #define forv_Scope(_x, _v) forv_Vec(Scope, _x, _v)
 

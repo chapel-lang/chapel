@@ -4,25 +4,38 @@
 
 #include "geysa.h"
 
+
+void 
+Scope::add_dynamic(Scope *s, Sym *sy) {
+  dynamic.add(s);
+  dynamic_container.add(sy);
+}
+
 Sym *
-Scope::get_local(char *name) {
+Scope::get_local(char *name, Sym **container) {
   Sym *s;
-  if ((s = hash.get(name)))
+  if ((s = hash.get(name))) {
+    if (container)
+      *container = 0;
     return s;
-  forv_Scope(sc, dynamic)
-    if ((s = sc->hash.get(name)))
+  }
+  for (int i = 0; i < dynamic.n; i++) {
+    if ((s = dynamic.v[i]->hash.get(name))) {
+      if (container)
+	*container = dynamic_container.v[i];
       return s;
+    }
+  }
   return NULL;
 }
 
-
 Sym *
-Scope::get(char *name) {
+Scope::get(char *name, Sym **container) {
   Sym *s;
-  if ((s = get_local(name)))
+  if ((s = get_local(name, container)))
     return s;
   if (up)
-    return up->get(name);
+    return up->get(name, container);
   return NULL;
 }
 

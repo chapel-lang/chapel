@@ -84,37 +84,12 @@ AST::add_below(D_ParseNode *pn) {
     dig_ast(this, d_get_child(pn, i));
 }
 
-Scope *
-ast_qualified_ident_scope(AST *a, Sym **rsym = 0) {
-  int i = 0;
-  Scope *s = a->scope;
-  if (a->v[0]->kind == AST_global) {
-    i = 1;
-    s = s->global();
-  }
-  for (int x = i; x < a->n - 1; x++) {
-    Sym *sym = s->get(a->v[x]->string);
-    if (!sym || !sym->scope) {
-      show_error("unresolved identifier qualifier '%s'", a, a->v[x]->string);
-      return 0;
-    }
-    s = sym->scope;
-    if (rsym)
-      *rsym = sym;
-  }
-  return s;
+static inline AST *
+ast_qualified_ident_ident(AST *x) { 
+  return x->v[x->n-1]; 
 }
 
-Sym *
-ast_qualified_ident_sym(AST *a) {
-  Scope *s = ast_qualified_ident_scope(a);
-  if (!s)
-    return NULL;
-  AST *id = ast_qualified_ident_ident(a);
-  return s->get(id->string);
-}
-
-char *
+static char *
 ast_qualified_ident_string(AST *ast) {
   char *s = ast->v[0]->string;
   s = s ? s : (char*)""; // global
@@ -128,9 +103,37 @@ ast_qualified_ident_string(AST *ast) {
   return s;
 }
 
+static Scope *
+ast_qualified_ident_scope(AST *a) {
+  int i = 0;
+  Scope *s = a->scope;
+  if (a->v[0]->kind == AST_global) {
+    i = 1;
+    s = s->global();
+  }
+  for (int x = i; x < a->n - 1; x++) {
+    Sym *sym = s->get(a->v[x]->string);
+    if (!sym || !sym->scope) {
+      show_error("unresolved identifier qualifier '%s'", a, a->v[x]->string);
+      return 0;
+    }
+    s = sym->scope;
+  }
+  return s;
+}
+
+static Sym *
+ast_qualified_ident_sym(AST *a, Sym **container) {
+  Scope *s = ast_qualified_ident_scope(a);
+  if (!s)
+    return NULL;
+  AST *id = ast_qualified_ident_ident(a);
+  return s->get(id->string, container);
+}
+
 Sym *
-checked_ast_qualified_ident_sym(AST *ast) {
-  Sym *sym = ast_qualified_ident_sym(ast);
+checked_ast_qualified_ident_sym(AST *ast, Sym **container = 0) {
+  Sym *sym = ast_qualified_ident_sym(ast, container);
   if (!sym) { 
     show_error("unresolved identifier '%s'", ast, ast_qualified_ident_string(ast));
     return NULL;
@@ -203,10 +206,12 @@ new_sym(IF1 *i, Scope *scope, char *s, Sym *sym) {
   if (!sym)
     sym = if1_alloc_sym(i, s);
   if (!sym->in && scope) {
-    // unnamed temporaries are local to the module
-    if (scope->in && scope->in->module && !s)
-      sym->in = scope->in->init;
-    else
+    Sym *scope_in = unalias_type(scope->in);
+    // unnamed temporaries are local to the class or module
+    if (scope_in && !scope_in->fun && scope_in->init && !s) {
+      sym->in = scope_in->init;
+      assert(sym->in);
+    } else
       sym->in = scope->in;
   }
   if (s && scope)
@@ -351,7 +356,7 @@ make_module(IF1 *i, char *mod_name, Scope *global, Sym *sym = 0) {
   sym->module = 1;
   sym->scope = new Scope(global, Scope_RECURSIVE, sym);
   if (sym != sym_system)
-    sym->scope->dynamic.add(sym_system->scope);
+    sym->scope->add_dynamic(sym_system->scope);
   sym->labelmap = new LabelMap;
 
   Sym *fun = new_sym(i, sym->scope, "__init");
@@ -520,7 +525,7 @@ scope_pattern(IF1 *i, AST *ast, Scope *scope) {
       }
       if (!ast->sym->has.n) {
 	ast->sym = new_sym(i, scope);
-	ast->sym->type = sym_void;
+	ast->sym->type = sym_tuple;
 	ast->sym->ast = ast;
       } else if (ast->sym->has.n == 1)
 	ast->sym = ast->sym->has.v[0];
@@ -565,9 +570,10 @@ define_function(IF1 *i, AST *ast) {
   tsym->ast = ast;
   ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
   if (fscope != ast->scope) {
-    ast->sym->scope->dynamic.add(fscope);
     ast->sym->self = new_sym(i, ast->sym->scope, cannonical_self);
+    ast->sym->self->read_only = 1;
     ast->sym->self->ast = ast;
+    ast->sym->scope->add_dynamic(fscope, ast->sym->self);
   }
   for (int x = 1; x < ast->n - 1; x++)
     if (scope_pattern(i, ast->v[x], ast->sym->scope) < 0)
@@ -576,6 +582,23 @@ define_function(IF1 *i, AST *ast) {
   ast->sym->cont->ast = ast;
   ast->sym->labelmap = new LabelMap;
   ast->sym->ast = ast;
+  return 0;
+}
+
+static int
+scope_constraints(AST *ast, Sym *sym) {
+  forv_AST(a, *ast) {
+    if (a->kind == AST_constraint) {
+      if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
+	return -1;
+      sym->constraints.set_add(a->sym);
+      sym->scope->add_dynamic(a->sym->scope);
+    } if (a->kind == AST_def_type_param) {
+      sym->args.add(a->sym);
+      if (verbose_level > 2)
+	printf("%s has param %s\n", sym->name, a->sym->name);
+    }
+  }
   return 0;
 }
 
@@ -594,29 +617,30 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	sym = ast->sym;
 	if (ast->is_value)
 	  sym->value = 1;
-	goto Lmore;
+	if (scope_constraints(ast, sym) < 0) return -1;
+	break;
       case AST_where:
 	if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
 	  return -1;
-    Lmore:
-	forv_AST(a, *ast) {
-	  if (a->kind == AST_constraint) {
-	    if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
-	      return -1;
-	    sym->constraints.set_add(a->sym);
-	    sym->scope->dynamic.add(a->sym->scope);
-	  } if (a->kind == AST_def_type_param) {
-	    sym->args.add(a->sym);
-	    if (verbose_level > 2)
-	      printf("%s has param %s\n", sym->name, a->sym->name);
-	  }
-	}
+	if (scope_constraints(ast, sym) < 0) return -1;
 	break;
       case AST_def_fun:
 	if (ast->scope->kind == Scope_RECURSIVE) 
 	  if (define_function(i, ast) < 0)
 	    return -1;
 	return 0; // defer
+      case AST_with: {
+	AST *with_scope = ast->get(AST_with_scope);
+	forv_AST(a, *with_scope) {
+	  if (!a->sym)
+	    if (!checked_ast_qualified_ident_sym(a))
+	      return -1;
+	  if (!a->sym->type)
+	    show_error("with without declared type", ast);
+	  sym->scope->add_dynamic(a->sym->type->scope, a->sym);
+	}
+	break;
+      }
       default: break;
     }
   forv_AST(a, *ast)
@@ -647,11 +671,15 @@ variables_and_nonrecursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	  if (define_function(i, ast) < 0)
 	    return -1;
 	return 0;
-      case AST_qualified_ident:
+      case AST_qualified_ident: {
+	Sym *container = 0;
 	if (!ast->sym)
-	  if (!checked_ast_qualified_ident_sym(ast))
+	  if (!checked_ast_qualified_ident_sym(ast, &container))
 	    return -1;
+	if (container)
+	  ast->container = container;
 	return 0;
+      }
       default: break;
     }
   forv_AST(a, *ast)
@@ -764,7 +792,11 @@ unalias_types(IF1 *i, AST *ast) {
   forv_AST(a, *ast)
     if (unalias_types(i, a) < 0)
       return -1;
-  ast->sym = unalias_type(ast->sym);
+  Sym *s = unalias_type(ast->sym);
+  if (s != ast->sym) {
+    s->scope = ast->sym->scope;
+    ast->sym = s;
+  }
   return 0;
 }
 
@@ -847,6 +879,10 @@ resolve_labels(IF1 *i, AST *ast, LabelMap *labelmap,
   return 0;
 }
 
+void
+setup_fun(IF1 *i, Sym *fn) {
+}
+
 static void
 gen_fun(IF1 *i, AST *ast) {
   Sym *fn = ast->sym;
@@ -862,27 +898,31 @@ gen_fun(IF1 *i, AST *ast) {
   c->ast = ast;
   int n = ast->n - 2;
   AST **args = &ast->v[1];
-  Sym *as[n + 1];
-  if (fn->in && (fn->name == cannonical_class || fn->name == cannonical_self)) {
-    as[0] = ast->sym->self;
+  Sym *as[n + 2];
+  int iarg = 0;
+  if (ast->sym->self) {
+    as[iarg] = ast->sym->self;
     if (fn->name == cannonical_class)
-      as[0]->type = ast->sym->in->type_sym;
+      as[iarg]->type = ast->sym->in->type_sym;
     else
-      as[0]->type = ast->sym->in;
-  } else {
-    as[0] = new_sym(i, fn->scope);
-    as[0]->ast = ast;
-    as[0]->type = if1_make_symbol(i, fn->name);
+      as[iarg]->type = ast->sym->in;
+    iarg++;
+  }
+  if (fn->name != cannonical_class && fn->name != cannonical_self) {
+    as[iarg] = new_sym(i, fn->scope);
+    as[iarg]->ast = ast;
+    as[iarg]->type = if1_make_symbol(i, fn->name);
+    iarg++;
   }
   for (int j = 0; j < n; j++)
-    as[j + 1] = args[j]->rval;
-  if1_closure(i, fn, body, n + 1, as);
+    as[iarg + j] = args[j]->rval;
+  if1_closure(i, fn, body, iarg + n, as);
   fn->type = sym_function;
   fn->type_kind = Type_FUN;
   fn->type_sym = fn;
   fn->ast = ast;
   ast->rval = new_sym(i, ast->scope);
-  c = if1_move(i, &ast->code, fn, ast->rval, ast);
+  if1_move(i, &ast->code, fn, ast->rval, ast);
 }
 
 static int
@@ -969,6 +1009,8 @@ gen_op(IF1 *i, AST *ast) {
     if1_add_send_result(i, send, res);
     res->lvalue = 1;
   } else if (ast->is_simple_assign) {
+    if (a0->rval->read_only)
+      show_error("assignment to read-only symbol", ast);
     if1_move(i, c, a1->rval, a0->rval, ast);
     if1_move(i, c, a1->rval, res, ast);
   } else {
@@ -1089,6 +1131,56 @@ gen_constructor(IF1 *i, AST *ast) {
 }
 
 static int
+define_type_init(IF1 *i, AST *ast, Sym **container_scope, Sym **container) {
+  AST *rec = ast->get(AST_record_type);
+  if (rec) {
+    Scope *scope = ast->sym->scope;
+    Sym *fn = new_sym(i, scope, "__init");
+    fn->ast = ast;
+    fn->scope = new Scope(ast->scope, Scope_RECURSIVE, fn);
+    assert(!ast->sym->init);
+    ast->sym->init = fn;
+    fn->ret = sym_null;
+    fn->cont = new_sym(i, fn->scope);
+    fn->cont->ast = ast;
+    fn->self = new_sym(i, fn->scope, cannonical_self);
+    fn->self->ast = ast;
+    fn->self->type = ast->sym->in;
+    fn->type = sym_function;
+    fn->type_kind = Type_FUN;
+    fn->type_sym = fn;
+    *container_scope = ast->sym;
+    *container = fn->self;
+  }
+  return 0;
+}
+
+static int
+pre_gen_top_down(IF1 *i, AST *ast, Sym *container_scope, Sym *container = 0) {
+  switch (ast->kind) {
+    default: break;
+    case AST_def_type: 
+      if (define_type_init(i, ast, &container_scope, &container) < 0)
+	return -1;
+      break;
+    case AST_def_fun:
+      container_scope = container = 0;
+      break;
+    case AST_def_ident:
+    case AST_qualified_ident:
+      if (container_scope && ast->sym->in == container_scope) {
+	assert(!ast->container);
+	ast->container = container;
+      }
+      break;
+  }
+  forv_AST(a, *ast)
+    if (pre_gen_top_down(i, a, container_scope, container) < 0)
+      return -1;
+  return 0;
+}
+
+static int
 pre_gen_bottom_up(AST *ast) {
   forv_AST(a, *ast)
     if (pre_gen_bottom_up(a) < 0)
@@ -1153,104 +1245,140 @@ value_type(IF1 *i, AST *ast, Sym *s) {
 }
 
 static void
-gen_def_ident(IF1 *i, AST *ast) {
-  AST *constraint = ast->get(AST_constraint);
-  AST *val = ast->last();
-  if (val == constraint)
-    val = 0;
-  int block = ast->sym == sym_init || ast->sym->in == ast->sym->in->type;
-  ast->rval = ast->sym;
-
-  if (!block) { // don't init the initial function
-    // declared to be a value type
-    if (constraint && constraint->sym->value) {
-
-      // arrays
-      AST *arr = constraint->get(AST_array_descriptor);
-      if (arr) { 
-	Sym *rval = new_sym(i, ast->scope);
-	Sym *domain = NULL, *init = NULL;
-	AST *arr_dom = arr->get(AST_domain);  // if the domain is declared use it
-	if (arr_dom)
-	  domain = arr_dom->rval;
-	AST *indices = arr->get(AST_indices);
-	AST *element_type = constraint->last();
-	if (element_type != arr)
-	  init = value_type(i, ast, element_type->sym);
-	if (val != constraint) { // if we have a initializer
-	  if (!domain && val->kind == AST_forall) { // if it has a domain and we need one, use it
-	    AST *domain_ast = val->get(AST_domain);
-	    domain = domain_ast->rval;
-	    AST *element = val->last();
-	    if (!init && element != domain_ast && element->kind == AST_const)
-	      init = element->rval;
-	  } else if (!init && val->kind == AST_const) // if it has a scalar initializer, use it
-	    init = val->rval;
-	}
-	if (domain) {
-	  Code *send;
-	  if (init)
-	    send = if1_send(i, &ast->code, 3, 1, sym_array, domain, init, rval);
-	  else
-	    send = if1_send(i, &ast->code, 2, 1, sym_array, domain, rval);
-	  send->ast = ast;
-	} else {
-	  show_error("missing domain in array initializer", ast);
-	}
-	if (indices)
-	  gen_indices(i, ast, indices, arr_dom);
-	if ((!init || !init->constant) && val) {
-	  if (val)
-	    if1_gen(i, &ast->code, val->code);
+gen_def_ident_value(IF1 *i, AST *ast, AST *constraint, AST *val) {
+  // arrays
+  AST *arr = constraint->get(AST_array_descriptor);
+  if (arr) { 
+    Sym *rval = new_sym(i, ast->scope);
+    Sym *domain = NULL, *init = NULL;
+    AST *arr_dom = arr->get(AST_domain);  // if the domain is declared use it
+    if (arr_dom)
+      domain = arr_dom->rval;
+    AST *indices = arr->get(AST_indices);
+    AST *element_type = constraint->last();
+    if (element_type != arr)
+      init = value_type(i, ast, element_type->sym);
+    if (val != constraint) { // if we have a initializer
+      if (!domain && val->kind == AST_forall) { // if it has a domain and we need one, use it
+	AST *domain_ast = val->get(AST_domain);
+	domain = domain_ast->rval;
+	AST *element = val->last();
+	if (!init && element != domain_ast && element->kind == AST_const)
+	  init = element->rval;
+      } else if (!init && val->kind == AST_const) // if it has a scalar initializer, use it
+	init = val->rval;
+    }
+    if (domain) {
+      Code *send;
+      if (init)
+	send = if1_send(i, &ast->code, 3, 1, sym_array, domain, init, rval);
+      else
+	send = if1_send(i, &ast->code, 2, 1, sym_array, domain, rval);
+      send->ast = ast;
+    } else {
+      show_error("missing domain in array initializer", ast);
+    }
+    if (indices)
+      gen_indices(i, ast, indices, arr_dom);
+    if ((!init || !init->constant) && val) {
+      if (val)
+	if1_gen(i, &ast->code, val->code);
+      Sym *rrval = new_sym(i, ast->scope);
+      gen_assign(i, ast, val, rval, rrval);
+      rval = rrval;
+    }
+    if1_move(i, &ast->code, rval, ast->rval, ast);
+  }
+    
+  // other values
+  else { 
+    if (val)
+      if1_gen(i, &ast->code, val->code);
+    Sym *declared_type = constraint->sym;
+    if (declared_type->num_type) { // numbers
+      if (val != constraint && val->kind == AST_const && val->sym->type == declared_type)
+	if1_move(i, &ast->code, val->sym, ast->sym, ast);
+      else {
+	Sym *rval = value_type(i, ast, declared_type);
+	if (val) {
 	  Sym *rrval = new_sym(i, ast->scope);
 	  gen_assign(i, ast, val, rval, rrval);
 	  rval = rrval;
 	}
 	if1_move(i, &ast->code, rval, ast->rval, ast);
       }
-    
-      // other values
-      else { 
-	if (val)
-	  if1_gen(i, &ast->code, val->code);
-	Sym *declared_type = constraint->sym;
-	if (declared_type->num_type) { // numbers
-	  if (val != constraint && val->kind == AST_const && val->sym->type == declared_type)
-	    if1_move(i, &ast->code, val->sym, ast->sym, ast);
-	  else {
-	    Sym *rval = value_type(i, ast, declared_type);
-	    if (val) {
-	      Sym *rrval = new_sym(i, ast->scope);
-	      gen_assign(i, ast, val, rval, rrval);
-	      rval = rrval;
-	    }
-	    if1_move(i, &ast->code, rval, ast->rval, ast);
-	  }
-	} else {
-	  Sym *rval = new_sym(i, ast->scope);
-	  Code *send = if1_send(i, &ast->code, 2, 1, sym_new, declared_type, rval);
-	  send->ast = ast;
-	  if (val) {
-	    Sym *rrval = new_sym(i, ast->scope);
-	    gen_assign(i, ast, val, rval, rrval);
-	    rval = rrval;
-	  }
-	  if1_move(i, &ast->code, rval, ast->rval, ast);
-	}
-      }
-
-      // not known to be a value type
     } else {
+      Sym *rval = new_sym(i, ast->scope);
+      Code *send = if1_send(i, &ast->code, 2, 1, sym_new, declared_type, rval);
+      send->ast = ast;
+      if (val) {
+	Sym *rrval = new_sym(i, ast->scope);
+	gen_assign(i, ast, val, rval, rrval);
+	rval = rrval;
+      }
+      if1_move(i, &ast->code, rval, ast->rval, ast);
+    }
+  }
+}
+
+static Sym *
+gen_container(IF1 *i, AST *ast) {
+  Sym *rval = new_sym(i, ast->scope);
+  Code *send = if1_send(i, &ast->code, 4, 1, sym_primitive, 
+			ast->container, sym_period, if1_make_symbol(i, ast->sym->name), 
+			rval);
+  send->ast = ast;
+  rval->lvalue = 1;
+  return rval;
+}
+
+static void
+gen_def_ident(IF1 *i, AST *ast) {
+  AST *constraint = ast->get(AST_constraint);
+  AST *val = ast->last();
+  if (val == constraint)
+    val = 0;
+  if (ast->container)
+    ast->rval = gen_container(i, ast);
+  else
+    ast->rval = ast->sym;
+  if (ast->sym != sym_init) { // don't init the initial function
+    // declared to be a value type
+    if (constraint && constraint->sym->value) 
+      gen_def_ident_value(i, ast, constraint, val);
+    else {
       if (val)
 	if1_gen(i, &ast->code, val->code);
       if (val && val->rval)
-	if1_move(i, &ast->code, val->rval, ast->sym, ast); 
+	if1_move(i, &ast->code, val->rval, ast->rval, ast); 
     }
   }
   if (ast->is_var)
     ast->rval->lvalue = 1;
   if (ast->is_const)
     ast->rval->single_assign = 1;
+}
+
+static void
+gen_type(IF1 *i, AST *ast) {
+  AST *rec = ast->get(AST_record_type);
+  if (rec) {
+    // build __init function
+    Sym *fn = ast->sym->init;
+    Code *body = NULL, *c;
+    if1_gen(i, &body, rec->code);
+    if1_label(i, &body, ast, ast->label[0]);
+    c = if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+    c->ast = ast;
+    Sym *as[2];
+    as[0] = fn->self;
+    as[1] = new_sym(i, fn->scope);
+    as[1]->ast = ast;
+    as[1]->type = if1_make_symbol(i, fn->name);
+    if1_closure(i, fn, body, 2, as);
+    ast->rval = new_sym(i, ast->scope);
+    if1_move(i, &ast->code, fn, ast->rval, ast);
+  }
 }
 
 static int
@@ -1260,6 +1388,7 @@ gen_if1(IF1 *i, AST *ast) {
     if (gen_if1(i, a) < 0)
       return -1;
   switch (ast->kind) {
+    case AST_def_type: gen_type(i, ast); break;
     case AST_def_fun: gen_fun(i, ast); break;
     case AST_def_ident: gen_def_ident(i, ast); break;
     case AST_pattern: 
@@ -1267,8 +1396,14 @@ gen_if1(IF1 *i, AST *ast) {
       if (ast->n > 1)
 	ast->rval->pattern = 1;
       break;
-    case AST_const:
     case AST_qualified_ident:
+      if (ast->container) {
+	ast->rval = gen_container(i, ast);
+	break;
+      } else
+	// fall through
+	;
+    case AST_const:
     case AST_arg: 
     case AST_vararg: 
       ast->rval = ast->sym;
@@ -1343,6 +1478,7 @@ static int
 build_functions(IF1 *i, AST *ast, Sym *mod) {
   if (define_labels(i, ast, mod->labelmap) < 0) return -1;
   if (resolve_labels(i, ast, mod->labelmap) < 0) return -1;
+  if (pre_gen_top_down(i, ast, 0, 0) < 0) return -1;
   if (pre_gen_bottom_up(ast) < 0) return -1;
   if (gen_if1(i, ast) < 0) return -1;
   collect_module_init(i, ast, mod->init);

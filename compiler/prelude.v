@@ -71,7 +71,7 @@ __init__ __name "init":0;
 #__index __name "index";
 #__print __name "print"; #__match __name "match";
 #operator __name "operator";
-#"&" __name "doref";
+#"." __name "period";
 #"=" __name "assign";
 
 //   public builtin functions
@@ -79,7 +79,8 @@ reply: #reply __name "reply";
 
 // overloadable primitive operators
 
-new(a:any)				   : #__new a;
+__init(a:any)				   : a; 
+new(a:any)				   : { o: #__new a; o.__init; o };
 operator(a:any, #".", b:symbol)		   : #__primitive a #"." b;
 operator(a:any, #"*.", b:symbol)	   : #__primitive a #"." b;
 operator(a:anynum, #"*", b:anynum)	   : #__primitive a #"*" b;

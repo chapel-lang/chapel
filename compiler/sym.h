@@ -83,6 +83,7 @@ class Sym : public gc {
   Sym 			*next_sym;	       	// in scope
   AST			*ast;			// AST node which defined this symbol
 
+  unsigned int		read_only:1;		// Sym is an read only
   unsigned int		lvalue:1;		// Sym is an lvalue
   unsigned int		single_assign:1;	// Sym is a single assignment variable
   unsigned int 		module:1;		// Sym is a module
