@@ -21802,3 +21802,18 @@ Added files:
 	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
 	                         computeVisibleFunctions.h 
 
+---------------------------------------------------------------------------
+
+03/28/05 11:24:52 -- jplevyak
+
+Log message:
+	Interm checkin for computeVisibleFunctions.... changes Vec to Map.
+
+Modified files:
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/symtab/: symscope.cpp 
+Added files:
+	chapel/test/functions/jplevyak/scoping/: visibility-1.chpl 
+	                                         visibility-1.future 
+	                                         visibility-1.good 
+
