@@ -3,8 +3,9 @@
 */
 
 #include <ctype.h>
-#include "geysa.h"
 #include "parse.h"
+#include "geysa.h"
+#include "if1.h"
 #include "scope.h"
 #include "internal.h"
 #include "ast.h"

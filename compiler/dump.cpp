@@ -11,6 +11,7 @@
 #include "if1.h"
 #include "fun.h"
 #include "fa.h"
+#include "ast.h"
 
 #define ANON "*anon*"
 

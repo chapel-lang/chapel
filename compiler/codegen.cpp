@@ -9,6 +9,7 @@
 #include "mysystem.h"
 #include "num.h"
 #include "builtin.h"
+#include "ast.h"
 
 #define IO_WRITE   1
 #define IO_WRITELN 2

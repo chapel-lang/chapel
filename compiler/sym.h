@@ -4,8 +4,8 @@
 #ifndef _sym_h_
 #define _sym_h_
 
+#include <stdio.h>
 #include "extern.h"
-#include "ast.h"
 #include "vec.h"
 #include "map.h"
 
@@ -17,6 +17,7 @@ class MType;
 class Scope;
 class AST;
 class Code;
+class LabelMap;
 
 enum IF1_num_type {
   IF1_NUM_TYPE_NONE, IF1_NUM_TYPE_UINT, IF1_NUM_TYPE_INT, IF1_NUM_TYPE_FLOAT

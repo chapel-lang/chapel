@@ -13,6 +13,7 @@
 #include "fun.h"
 #include "pnode.h"
 #include "if1.h"
+#include "ast.h"
 
 #define G_BOX		(1<<0)
 #define G_BLUE		(1<<1)

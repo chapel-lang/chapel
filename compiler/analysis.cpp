@@ -15,7 +15,7 @@
 ASymbol::ASymbol() : symbol(0) {
 }
 
-AInfo::AInfo() : expr(0), stmt(0) {
+AInfo::AInfo() : code(0) {
 }
 
 void

@@ -3,6 +3,7 @@
 #include "datatype.h"
 #include "fun.h"
 #include "pattern.h"
+#include "ast.h"
 
 static Fun* currentFunction;
 

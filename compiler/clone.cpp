@@ -11,6 +11,7 @@
 #include "fun.h"
 #include "pnode.h"
 #include "fa.h"
+#include "ast.h"
 
 #define BAD_NAME ((char*)-1)
 #define BAD_AST ((AST*)-1)

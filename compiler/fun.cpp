@@ -7,6 +7,7 @@
 #include "fun.h"
 #include "pnode.h"
 #include "if1.h"
+#include "ast.h"
 
 Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   pdb = apdb;

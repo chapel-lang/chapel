@@ -11,6 +11,7 @@
 #include "pdb.h"
 #include "fun.h"
 #include "pnode.h"
+#include "ast.h"
 
 #define LOOP_FREQUENCY 10.0
 

@@ -12,6 +12,7 @@
 #include "fun.h"
 #include "pnode.h"
 #include "fa.h"
+#include "ast.h"
 
 static int avar_id = 1;
 static int creation_set_id = 1;

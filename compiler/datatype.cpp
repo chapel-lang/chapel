@@ -1,3 +1,5 @@
+#include "geysa.h"
+#include "if1.h"
 #include "datatype.h"
 
 int dtIsDomain(Sym* pdt) {

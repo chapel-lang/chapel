@@ -6,7 +6,7 @@
 
 #include "geysa.h"
 #include "parse_structs.h"
-#include <dparse.h>
+#include "dparse.h"
 #include "if1.h"
 #include "ast.h"
 #include "grammar.h"

@@ -8,6 +8,7 @@
 #include "builtin.h"
 #include "pnode.h"
 #include "var.h"
+#include "ast.h"
 
 Prim::Prim(int aindex, char *astring, char *aname, int anargs, int apos, 
 	   PrimType *aarg_types, PrimType *aret_types, int options) {

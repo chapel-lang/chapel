@@ -9,14 +9,13 @@ class Expr;
 class Stmt;
 
 class ASymbol {
-  Symbol *symbol;
+  void *symbol;
   
   ASymbol();
 };
 
 class AInfo {
-  Expr *expr;
-  Stmt *stmt;
+  void *code;
 
   AInfo();
 };

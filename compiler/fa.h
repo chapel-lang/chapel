@@ -16,6 +16,7 @@
 
 #define GLOBAL_CONTOUR ((void*)1)
 
+class Prim;
 class Fun;
 class PNode;
 class PDB;

@@ -30,7 +30,7 @@ enum Contructor { Make_TUPLE, Make_VECTOR, Make_SET };
 
 extern char *AST_name[];
 
-typedef Map<char *, AST *> LabelMap;
+class LabelMap : public Map<char *, AST *> {};
 
 class AST : public Vec<AST *> {
  public:
