@@ -368,7 +368,6 @@ Type* Expr::typeInfo(void) {
   return dtUnknown;
 }
 
-
 bool Expr::isComputable(void) {
   return false;
 }
@@ -378,6 +377,10 @@ bool Expr::isConst(void) {
   return false;
 }
 
+//Roxana: tells if an expression is a compile-time constant
+bool Expr::isParam(void){
+  return this->isComputable();	
+}
 
 long Expr::intVal(void) {
   INT_FATAL(this, "intVal() called on non-computable/non-int expression");
@@ -716,6 +719,16 @@ bool Variable::isConst(void) {
   return var->isConst();
 }
 
+//Roxana
+bool Variable::isParam(void){
+	return var->isParam();
+}
+//Roxana
+bool Variable::isComputable(void){
+	VarSymbol* vs = dynamic_cast<VarSymbol*>(var);
+	if (vs && vs->init) return vs->init->isComputable();
+	return false;
+}
 
 void Variable::print(FILE* outfile) {
   var->print(outfile);
@@ -751,7 +764,7 @@ Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
       return
 	Symboltable::defineVarDef(var, var->type,
 				  var->init->copyInternal(clone, map, analysis_clone), 
-				  var->varClass, var->isConstant);
+				  var->varClass, var->consClass);
     }
     return NULL;
   }
@@ -871,6 +884,11 @@ Expr* BinOp::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* an
   return new BinOp(type, left->copyInternal(clone, map, analysis_clone), right->copyInternal(clone, map, analysis_clone));
 }
 
+bool BinOp::isComputable(void) {
+  return (left->isComputable() && right->isComputable() && type != BINOP_BITAND 
+  				&& type != BINOP_BITOR && type != BINOP_BITXOR);
+  							
+}
 
 void BinOp::traverseExpr(Traversal* traversal) {
   TRAVERSE(left, traversal, false);

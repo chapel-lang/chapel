@@ -12,10 +12,19 @@ class ASymbol;
 class SymScope;
 class MPosition;
 
+/*Roxana: added VAR_PARAM type*/
 enum varType {
+//R:Maybe this should be VAR_NOTHING
   VAR_NORMAL,
   VAR_CONFIG,
   VAR_STATE
+};
+
+enum consType {
+  //and this VAR_NOTMAL 
+  VAR_VAR,
+  VAR_CONST,
+  VAR_PARAM
 };
 
 class Symbol : public BaseAST {
@@ -26,6 +35,7 @@ class Symbol : public BaseAST {
   BaseAST* defPoint; /* Point of definition in AST, A Stmt or Expr */
   Pragma *pragmas;
 
+  //the scope in which the symbol was defined
   SymScope* parentScope;
   ASymbol *asymbol;
 
@@ -42,6 +52,7 @@ class Symbol : public BaseAST {
   virtual void traverseDefSymbol(Traversal* traverse);
 
   virtual bool isConst(void);
+  virtual bool isParam(void);
 
   void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
@@ -68,18 +79,24 @@ class UnresolvedSymbol : public Symbol {
 class VarSymbol : public Symbol {
  public:
   varType varClass;
-  bool isConstant;
+  /*bool isConstant;
+  bool isParameter;*/
+  //Replaced with
+  consType consClass;
   Expr* init;
-
+  //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
 	    Expr* init_expr = NULL,
-	    varType init_varClass = VAR_NORMAL, bool init_isConstant = false);
+	    varType init_varClass = VAR_NORMAL, consType init_consClass = VAR_VAR);
+	    
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void traverseDefSymbol(Traversal* traverse);
 
   bool initializable(void);
   bool isConst(void);
+  //Roxana
+  bool isParam(void);
 
   virtual void codegenDef(FILE* outfile);
 

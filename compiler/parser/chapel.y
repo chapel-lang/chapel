@@ -18,6 +18,7 @@
 
   getsOpType got;
   varType vt;
+  consType ct;
   paramType pt;
 
   Expr* pexpr;
@@ -43,6 +44,8 @@
 %token TCLASS
 %token TCONFIG
 %token TCONST
+/*Roxana*/
+%token TPARAM
 %token TCONTINUE
 %token TDO
 %token TDOMAIN
@@ -95,10 +98,12 @@
 %token TLCBR;
 %token TRCBR;
 
+
 %token TQUESTION;
 
-%type <boolval> varconst
-
+/*Roxana: changed*/
+%type <ct> varconst
+ 
 %type <got> assignOp
 %type <vt> vardecltag
 %type <pt> formaltag
@@ -155,7 +160,6 @@ modulebody:
   statements
 ;
 
-
 vardecltag:
   /* nothing */
     { $$ = VAR_NORMAL; }
@@ -168,12 +172,13 @@ vardecltag:
 
 varconst:
   TVAR
-    { $$ = false; }
+    { $$ = VAR_VAR; }
 | TCONST
-    { $$ = true; }
+    { $$ = VAR_CONST; }
+| TPARAM
+	{ $$ = VAR_PARAM; }
 ;
-
-
+	
 ident_symbol:
    pragma ident_symbol
     { 
@@ -184,7 +189,6 @@ ident_symbol:
 |  identifier
     { $$ = new Symbol(SYMBOL, $1); } 
 ;
-
 
 ident_symbol_ls:
   ident_symbol
@@ -232,7 +236,6 @@ vardecl:
   vardecltag varconst vardecl_inner_ls TSEMI
     { $$ = new DefStmt(Symboltable::defineVarDef2($3, $1, $2)); }
 ;
-
 
 typedecl:
   typealias
@@ -325,7 +328,6 @@ uniondecl:
       $$ = new DefStmt(Symboltable::finishClassDef($<ptsym>5, $6));
     }
 ;
-
 
 enum_item:
   identifier
@@ -510,7 +512,6 @@ decl:
 | fndecl
 | moduledecl
 ;
-
 
 decls:
   /* empty */
@@ -908,7 +909,6 @@ expr:
 | expr TBY expr
     { $$ = new SpecialBinOp(BINOP_BY, $1, $3); }
 ;
-
 
 reduction:
   identifier TREDUCE expr

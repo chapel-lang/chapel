@@ -1107,20 +1107,19 @@ gen_vardef(BaseAST *a) {
 	    gen_alloc(s, def, s->type);
 	}
       }
-      switch (var->varClass) {
+    switch (var->varClass) {
       case VAR_NORMAL: break;
       case VAR_CONFIG: s->is_external = 1; break;
       case VAR_STATE: assert(0); break;
       }
-      if (var->isConstant)
-	s->is_read_only = 1;
+    if (var->consClass == VAR_CONST)
+      s->is_read_only = 1;
     }
   }
   return 0;
 }
 
-static int
-gen_expr_stmt(BaseAST *a) {
+static int gen_expr_stmt(BaseAST *a) {
   ExprStmt *expr = dynamic_cast<ExprStmt*>(a);
   expr->ainfo->code = expr->expr->ainfo->code;
   return 0;

@@ -99,6 +99,7 @@ class Expr : public BaseAST {
   Expr** back;
   Pragma *pragmas;
 
+
   Expr(astType_t astType);
 
   Expr* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL, Vec<BaseAST*>* update_list = NULL);
@@ -113,6 +114,9 @@ class Expr : public BaseAST {
 
   virtual Type* typeInfo(void);
   virtual bool isComputable(void);
+  
+  virtual bool isParam(void);
+  
   virtual bool isConst(void);
   virtual long intVal(void);
   virtual int rank(void);
@@ -231,7 +235,9 @@ class Variable : public Expr {
 
   Type* typeInfo(void);
   virtual bool isConst(void);
-  
+  //Roxana
+  virtual bool isParam(void);
+  virtual bool isComputable();
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
@@ -281,7 +287,7 @@ class BinOp : public Expr {
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
-
+	bool isComputable(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   precedenceType precedence(void);

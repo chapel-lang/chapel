@@ -88,6 +88,7 @@ extern char* astTypeName[];
 
 class BaseAST : public ILink {
  public:
+  //what class this class instance is
   astType_t astType;
   long id;
 

@@ -34,6 +34,7 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     if (moduleList) {
       firstUserModuleName = moduleList->filename;
     }
+    //driver:do_analysis
     do_analysis(firstUserModuleName);
 #if 0
     // test type_is_used

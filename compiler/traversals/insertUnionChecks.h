@@ -3,6 +3,8 @@
 
 #include "traversal.h"
 
+//runtime type checking for union types
+
 class InsertUnionChecks : public Traversal {
  public:
   void preProcessExpr(Expr* expr);

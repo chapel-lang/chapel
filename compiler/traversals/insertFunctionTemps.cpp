@@ -63,7 +63,7 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
 	Type* temp_type = function->typeInfo();
 	DefStmt* def_stmt =
 	  Symboltable::defineSingleVarDefStmt(temp_name, temp_type,
-					      temp_init, VAR_NORMAL, false);
+					      temp_init, VAR_NORMAL, VAR_VAR);
 	copy_stmt->insertBefore(def_stmt);
 	function->replace(new Variable(def_stmt->varDef()));
       }

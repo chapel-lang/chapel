@@ -28,8 +28,9 @@ class PNode : public gc {
   Code *code;
   int id;
   uint	is_dead : 1;
-
+	//variables this node assigns
   Vec<Var *> lvals;
+  //variables this node reads
   Vec<Var *> rvals;
   Vec<Var *> tvals;
 
@@ -46,7 +47,9 @@ class PNode : public gc {
   Region *region;
 
   // Single-Static Value Functions
+  //MOVE nodes that logically follow this node
   Vec<PNode *> phi;
+  //MOVE nodes that logically precede this node
   Vec<PNode *> phy;
 
   // Primitive

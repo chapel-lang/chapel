@@ -33,8 +33,8 @@ OPTIONS
        -t 0/1 Token type, 0 : #define, 1 : enum.
 
        -C     Toggle computing whitespace states.  If 'whitespace' is  defined
-              in  the  grammar,  then  use it as a subparser to consume white-
-              space. (ON by default)
+              in  the  grammar,  then use it as a subparser to consume whites-
+              pace. (ON by default)
 
        -A     Toggle computing states for  all  non-terminals.   Ensures  that
               there  is  a  unique  state for each non-terminal so that a sub-

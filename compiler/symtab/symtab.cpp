@@ -287,7 +287,7 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
       // first software module, but then contains other file module
       // code after the first software module.
       if (newModule->isFileModule()) {
-	Symboltable::pushScope(SCOPE_MODULE);
+				Symboltable::pushScope(SCOPE_MODULE);
       } else {
 	if (!currentScope->isEmpty()) {
 	  USR_FATAL(newModule, "Can't handle nested modules yet");
@@ -395,9 +395,8 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
   return defExpr;
 }
 
-
 VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
-				   varType vartag, bool isConst) {
+				   varType vartag, consType constag) {
   VarSymbol* varList;
   VarSymbol* newVar;
   VarSymbol* lastVar;
@@ -407,15 +406,15 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   if (type == dtUnknown && init) {
     type = init->typeInfo();
   }
-
-  newVar = new VarSymbol(idents->name, type, init->copy(), vartag, isConst);
+  
+  newVar = new VarSymbol(idents->name, type, init->copy(), vartag, constag);
 
   varList = newVar;
   lastVar = newVar;
-
+  //link.h=> next cell in list
   idents = nextLink(Symbol, idents);
   while (idents != NULL) {
-    newVar = new VarSymbol(idents->name, type, init->copy(), vartag, isConst);
+    newVar = new VarSymbol(idents->name, type, init->copy(), vartag, constag);
     lastVar->next = newVar;
     lastVar = newVar;
 
@@ -424,7 +423,6 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 
   return varList;
 }
-
 
 ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
 				       Type* type, Expr* init) {
@@ -437,11 +435,9 @@ ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
   return list;
 }
 
-
 DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type, 
-				   Expr* init, varType vartag, 
-				   bool isConst) {
-
+				       Expr* init, varType vartag, 
+				       consType constag) {
   /** SJD: This is a stopgap measure to deal with changing sequences
       into domains when the type of a declared variable is a domain.
       It replaces the syntax of assigning domains using square
@@ -456,13 +452,11 @@ DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type,
       init = new ForallExpr(init);
     }
   }
-
-  VarSymbol* varList = defineVars(idents, type, init, vartag, isConst);
+  VarSymbol* varList = defineVars(idents, type, init, vartag, constag);
   DefExpr* expr = new DefExpr(varList);
   varList->setDefPoint(expr);
   return expr;
 }
-
 
 DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type, 
 				    Expr* init) {
@@ -472,6 +466,7 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
       It replaces the syntax of assigning domains using square
       brackets.
   **/
+  
   if (dynamic_cast<DomainType*>(type) &&
       !dynamic_cast<ForallExpr*>(init)) {
     if (dynamic_cast<Tuple*>(init)) {
@@ -488,15 +483,14 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
   return expr;
 }
 
-
 DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
-				    varType vartag, 
-				    bool isConst) {
+					varType vartag, 
+					consType constag) {
   DefExpr* expr = exprs;
   while (expr) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(expr->sym);
     while (var) {
-      var->isConstant = isConst;
+      var->consClass = constag;
       var->varClass = vartag;
       var = nextLink(VarSymbol, var);
     }
@@ -505,14 +499,12 @@ DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
   return exprs;
 }
 
-
 DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
 					     Expr* init, varType vartag, 
-					     bool isConst) {
+					     consType constag) {
   Symbol* sym = new Symbol(SYMBOL, name);
-  return new DefStmt(defineVarDef(sym, type, init, vartag, isConst));
+  return new DefStmt(defineVarDef(sym, type, init, vartag, constag));
 }
-
 
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
 static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
@@ -685,7 +677,7 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
 
 ForallExpr* Symboltable::defineQueryDomain(char* name) {
   DomainType* unknownDomType = new DomainType();
-  VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, NULL, VAR_NORMAL, true);
+  VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, NULL, VAR_NORMAL, VAR_CONST);
   Variable* newDom = new Variable(newDomSym);
 
   return new ForallExpr(newDom);

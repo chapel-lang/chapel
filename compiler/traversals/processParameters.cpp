@@ -57,7 +57,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	    DefStmt* newActualDecl = 
 	      Symboltable::defineSingleVarDefStmt(newActualName,
 						  formal->type, initializer,
-						  VAR_NORMAL, false);
+						  VAR_NORMAL, VAR_VAR);
 	    body = appendLink(body, newActualDecl);
 
 	    newActualUse = new Variable(newActualDecl->varDef());

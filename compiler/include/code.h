@@ -24,7 +24,9 @@ EXTERN char *code_string[] EXTERN_INIT(CPP_IS_LAME);
 class Code : public gc {
  public:
   Code_kind	kind;
+  //the variables this node reads
   Vec<Sym *> 	rvals;
+  //the variables this node assigns
   Vec<Sym *> 	lvals;
   Label		*label[2];
   Vec<Code *> 	sub;

@@ -11,7 +11,6 @@
 #include "fun.h"
 #include "pattern.h"
 
-
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
   name(init_name),
@@ -22,11 +21,13 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   asymbol(0)
 {}
 
-
 void Symbol::setParentScope(SymScope* init_parentScope) {
   parentScope = init_parentScope;
 }
 
+/*bool Symbol::isNull(void) {
+  return (this == nilSymbol);
+}*/
 
 Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Symbol* newSymbolList = NULL;
@@ -106,6 +107,10 @@ bool Symbol::isConst(void) {
   return true;
 }
 
+//Roxana: not all symbols are parameter symbols
+bool Symbol::isParam(){
+	return false;
+}
 
 void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
@@ -183,24 +188,24 @@ void UnresolvedSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(this, traversal, false);
 }
 
-
+//Roxana -- added initialization for isParameter
 VarSymbol::VarSymbol(char* init_name,
 		     Type* init_type,
 		     Expr* init_expr,
 		     varType init_varClass, 
-		     bool init_isConstant) :
+		     consType init_consClass) :
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
-  isConstant(init_isConstant),
+  consClass(init_consClass),
   init(init_expr)
 {
   Symboltable::define(this);
   SET_BACK(init);
+  //isParameter = false;
 }
 
-
 Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new VarSymbol(copystring(name), type, init, varClass, isConstant);
+  return new VarSymbol(copystring(name), type, init, varClass, consClass);
 }
 
 
@@ -217,8 +222,12 @@ void VarSymbol::printDef(FILE* outfile) {
   if (varClass == VAR_STATE) {
     fprintf(outfile, "state ");
   }
-  if (isConstant) {
+  //Roxana -- introduced various types of constness: const, param, nothing (var)
+  if (consClass == VAR_CONST) {
     fprintf(outfile, "const ");
+  }
+  if (consClass == VAR_PARAM){
+  	fprintf(outfile, "param");
   }
   else {
     fprintf(outfile, "var ");
@@ -260,11 +269,15 @@ bool VarSymbol::initializable(void) {
   return false;
 }
 
-
+//Roxana
 bool VarSymbol::isConst(void) {
-  return isConstant;
+  return (consClass == VAR_CONST);
 }
 
+//Roxana
+bool VarSymbol::isParam(void){
+	return (consClass == VAR_PARAM);
+}
 
 void VarSymbol::codegenDef(FILE* outfile) {
   if (parentScope->type == SCOPE_MODULE) {
@@ -274,7 +287,7 @@ void VarSymbol::codegenDef(FILE* outfile) {
 
   // need to ensure that this can be realized in C as a const, and
   // move its initializer here if it can be
-  if (0 && isConstant) {
+  if (0 && (consClass == VAR_CONST)) {
     fprintf(outfile, "const ");
   }
   type->codegen(outfile);
@@ -617,6 +630,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
 	  asymbol->sym->fun->numeric_arg_positions.e[j]) {
 	char* temp_name =
 	  glomstrings(2, "_coercion_temp_", formal_change->name);
+
 	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
 					       new Variable(formal_change));
 	DefExpr* temp_def_expr = new DefExpr(temp_symbol);
