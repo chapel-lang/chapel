@@ -407,7 +407,6 @@ binary_operator
   | ',' 	$binary_op_left 8300 
   | '->*'       $binary_op_left 9900
   | '^^' 	$binary_op_left 7000
-  |     	$binary_op_left 7000
   ;
 
 pre_operator
@@ -456,7 +455,7 @@ vector_immediate: '#' '[' statement* expression? ']' {
   $$.ast = new AST(AST_vector, &$n);
 };
 
-square_forall: '[' loop_scope indices_colon? expression ']' expression
+square_forall: '[' loop_scope indices_colon? expression ']' expression?
 [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
 { $$.ast = new AST(AST_forall, &$n); };
 

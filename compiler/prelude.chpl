@@ -73,54 +73,54 @@ var reply = #reply __name "reply";
 #"&" __name "doref";
 
 // overloadable primitive operators
-function new(a:any) { #__new a; }
-function operator(a:any, #".", b:symbol)	{ #__primitive a #"." b }
-function operator(a:any, #"*.", b:symbol)	{ #__primitive a #"." b }
-function operator(a:anynum, #"*", b:anynum)	{ #__primitive a #"*" b }
-function operator(a:anynum, #"/", b:anynum)	{ #__primitive a #"/" b }
-function operator(a:anynum, #"%", b:anynum)	{ #__primitive a #"%" b }
-function operator(a:anynum, #"+", b:anynum)	{ #__primitive a #"+" b }
-function operator(a:anynum, #"-", b:anynum)	{ #__primitive a #"-" b }
-function operator(a:integer, #"<<", b:integer)	{ #__primitive a #"<<" b }
-function operator(a:integer, #">>", b:integer)	{ #__primitive a #">>" b }
-function operator(a:anynum, #"<", b:anynum)	{ #__primitive a #"<" b }
-function operator(a:anynum, #"<=", b:anynum)	{ #__primitive a #"<=" b }
-function operator(a:anynum, #">", b:anynum)	{ #__primitive a #">" b }
-function operator(a:anynum, #">=", b:anynum)	{ #__primitive a #">=" b }
-function operator(a:anynum, #"==", b:anynum)	{ #__primitive a #"==" b }
-function operator(a:anynum, #"!=", b:anynum)	{ #__primitive a #"!=" b }
-function operator(a:integer, #"&", b:integer)	{ #__primitive a #"&" b }
-function operator(a:integer, #"^", b:integer)	{ #__primitive a #"^" b }
-function operator(a:integer, #"|", b:integer)	{ #__primitive a #"|" b }
-function operator(a:any, #"&&", b:any)		{ #__primitive a #"&&" b }
-function operator(a:any, #"||", b:any)		{ #__primitive a #"||" b }
-function operator(a:ref, #"=", b:any)		{ #__primitive a #"=" b }
+function new(a:any) { #__new ^^ a; }
+function operator(a:any, #".", b:symbol)	{ #__primitive ^^ a ^^ #"." ^^ b }
+function operator(a:any, #"*.", b:symbol)	{ #__primitive ^^ a ^^ #"." ^^ b }
+function operator(a:anynum, #"*", b:anynum)	{ #__primitive ^^ a ^^ #"*" ^^ b }
+function operator(a:anynum, #"/", b:anynum)	{ #__primitive ^^ a ^^ #"/" ^^ b }
+function operator(a:anynum, #"%", b:anynum)	{ #__primitive ^^ a ^^ #"%" ^^ b }
+function operator(a:anynum, #"+", b:anynum)	{ #__primitive ^^ a ^^ #"+" ^^ b }
+function operator(a:anynum, #"-", b:anynum)	{ #__primitive ^^ a ^^ #"-" ^^ b }
+function operator(a:integer, #"<<", b:integer)	{ #__primitive ^^ a ^^ #"<<" ^^ b }
+function operator(a:integer, #">>", b:integer)	{ #__primitive ^^ a ^^ #">>" ^^ b }
+function operator(a:anynum, #"<", b:anynum)	{ #__primitive ^^ a ^^ #"<" ^^ b }
+function operator(a:anynum, #"<=", b:anynum)	{ #__primitive ^^ a ^^ #"<=" ^^ b }
+function operator(a:anynum, #">", b:anynum)	{ #__primitive ^^ a ^^ #">" ^^ b }
+function operator(a:anynum, #">=", b:anynum)	{ #__primitive ^^ a ^^ #">=" ^^ b }
+function operator(a:anynum, #"==", b:anynum)	{ #__primitive ^^ a ^^ #"==" ^^ b }
+function operator(a:anynum, #"!=", b:anynum)	{ #__primitive ^^ a ^^ #"!=" ^^ b }
+function operator(a:integer, #"&", b:integer)	{ #__primitive ^^ a ^^ #"&" ^^ b }
+function operator(a:integer, #"^", b:integer)	{ #__primitive ^^ a ^^ #"^" ^^ b }
+function operator(a:integer, #"|", b:integer)	{ #__primitive ^^ a ^^ #"|" ^^ b }
+function operator(a:any, #"&&", b:any)		{ #__primitive ^^ a ^^ #"&&" ^^ b }
+function operator(a:any, #"||", b:any)		{ #__primitive ^^ a ^^ #"||" ^^ b }
+function operator(a:ref, #"=", b:any)		{ #__primitive ^^ a ^^ #"=" ^^ b }
 function operator(a:any, #"=", b:any)		{ b }
-function operator(a:ref, #"*=", b:anynum)	{ #__primitive #"*" b }
-function operator(a:ref, #"/=", b:anynum)	{ #__primitive a #"/" b }
-function operator(a:ref, #"%=", b:anynum)	{ #__primitive a #"%" b }
-function operator(a:ref, #"+=", b:anynum)	{ #__primitive a #"+" b }
-function operator(a:ref, #"-=", b:anynum)	{ #__primitive a #"-" b }
-function operator(a:ref, #"<<=", b:integer)	{ #__primitive a #"<<" b }
-function operator(a:ref, #">>=", b:integer)	{ #__primitive a #">>" b }
-function operator(a:ref, #"&=", b:integer)	{ #__primitive a #"&" b }
-function operator(a:ref, #"|=", b:integer)	{ #__primitive a #"|" b } 
-function operator(a:ref, #"^=", b:integer)	{ #__primitive a #"^" b }
-function operator(a:any, #"->", b:symbol)	{ #__primitive (#__primitive #"*" a) #"." b }
-function operator(a:any, #"->*", b:symbol)	{ #__primitive (#__primitive #"*" a) #"." b }
-function operator(a:anynum, #"^^", b:anynum)	{ #__primitive a #"^^" b }
-function operator(#"++", a:ref)			{ #__primitive a #"+" 1 }
-function operator(#"--", a:ref)			{ #__primitive a #"-" 1 }
-function operator(#"+", a:anynum)		{ #__primitive #"+" a }
-function operator(#"-", a:anynum)		{ #__primitive #"-" a }
-function operator(#"~", a:anynum)		{ #__primitive #"~" a }
-function operator(#"!", a:any)			{ #__primitive #"!" a }
-function operator(#"*", a:any)			{ #__primitive #"*" a }
-function operator(#"&", var a:any)		{ #__primitive #"&" a }
-function operator(a:anynum, #"|", b:anynum)	{ #__primitive a #"|" b }
-function operator(#"(", a:symbol, b:any)	{ #__primitive #"(" a b }
-function operator(a:ref, #"++")			{ #__primitive a #"+" 1 }
-function operator(a:ref, #"--")			{ #__primitive a #"-" 1 }
+function operator(a:ref, #"*=", b:anynum)	{ #__primitive ^^ #"*" ^^ b }
+function operator(a:ref, #"/=", b:anynum)	{ #__primitive ^^ a ^^ #"/" ^^ b }
+function operator(a:ref, #"%=", b:anynum)	{ #__primitive ^^ a ^^ #"%" ^^ b }
+function operator(a:ref, #"+=", b:anynum)	{ #__primitive ^^ a ^^ #"+" ^^ b }
+function operator(a:ref, #"-=", b:anynum)	{ #__primitive ^^ a ^^ #"-" ^^ b }
+function operator(a:ref, #"<<=", b:integer)	{ #__primitive ^^ a ^^ #"<<" ^^ b }
+function operator(a:ref, #">>=", b:integer)	{ #__primitive ^^ a ^^ #">>" ^^ b }
+function operator(a:ref, #"&=", b:integer)	{ #__primitive ^^ a ^^ #"&" ^^ b }
+function operator(a:ref, #"|=", b:integer)	{ #__primitive ^^ a ^^ #"|" ^^ b } 
+function operator(a:ref, #"^=", b:integer)	{ #__primitive ^^ a ^^ #"^" ^^ b }
+function operator(a:any, #"->", b:symbol)	{ #__primitive ^^ (#__primitive ^^ #"*" ^^ a) ^^ #"." ^^ b }
+function operator(a:any, #"->*", b:symbol)	{ #__primitive ^^ (#__primitive ^^ #"*" ^^ a) ^^ #"." ^^ b }
+function operator(a:anynum, #"^^", b:anynum)	{ #__primitive ^^ a ^^ #"^^" ^^ b }
+function operator(#"++", a:ref)			{ #__primitive ^^ a ^^ #"+" ^^ 1 }
+function operator(#"--", a:ref)			{ #__primitive ^^ a ^^ #"-" ^^ 1 }
+function operator(#"+", a:anynum)		{ #__primitive ^^ #"+" ^^ a }
+function operator(#"-", a:anynum)		{ #__primitive ^^ #"-" ^^ a }
+function operator(#"~", a:anynum)		{ #__primitive ^^ #"~" ^^ a }
+function operator(#"!", a:any)			{ #__primitive ^^ #"!" ^^ a }
+function operator(#"*", a:any)			{ #__primitive ^^ #"*" ^^ a }
+function operator(#"&", var a:any)		{ #__primitive ^^ #"&" ^^ a }
+function operator(a:anynum, #"|", b:anynum)	{ #__primitive ^^ a ^^ #"|" ^^ b }
+function operator(#"(", a:symbol, b:any)	{ #__primitive ^^ #"(" ^^ a ^^ b }
+function operator(a:ref, #"++")			{ #__primitive ^^ a ^^ #"+" ^^ 1 }
+function operator(a:ref, #"--")			{ #__primitive ^^ a ^^ #"-" ^^ 1 }
 
 // arrays
 
@@ -193,7 +193,7 @@ function operator(a:sequence, #"*", b:sequence) {
   new sequence
 }
 
-function vector::self s { #__index self s }
+function vector::self s { #__index ^^ self ^^ s }
 function domain::self s { new domain }
 
 class array {
@@ -201,12 +201,12 @@ class array {
   var v : vector;
 }
 
-function array::self s { #__index self s }
+function array::self s { #__index ^^ self ^^ s }
 function array::class dd e { 
   var a = new array;
   a.d = dd;
-  a.v = (#__make_vector dd.rank);
-  (#__index a.v 0) = e;
+  a.v = (#__make_vector ^^ dd.rank);
+  (#__index ^^ a.v ^^ 0) = e;
   return a;
 }
 
@@ -218,7 +218,7 @@ function reshape(l:locale, s:sequence) { l }
 
 function write(a) { 0 }
 function writeln(a) { 0 }
-function print(a) { #__print a; }
+function print(a) { #__print ^^ a; }
 
 /*
   David's old iterator and domain examples
