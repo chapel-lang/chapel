@@ -3,11 +3,11 @@
 D_DEBUG=1
 #D_OPTIMIZE=1
 #D_PROFILE=1
-D_USE_GC=1
+#D_USE_GC=1
 #D_LEAK_DETECT=1
 
 MAJOR=1
-MINOR=8
+MINOR=9
 RELEASE=$(MAJOR).$(MINOR)
 
 CC = gcc
@@ -43,23 +43,22 @@ else
   AR_FLAGS = crv
 endif
 
-GC_CFLAGS += -I$(GCROOT)/include -L$(GCROOT)/lib
+ifeq ($(OS_TYPE),CYGWIN)
+GC_CFLAGS += -L/usr/local/lib
+else
+GC_CFLAGS += -I/usr/local/include -L/usr/local/lib
+endif
 
 ifdef D_USE_GC
 CFLAGS += -DUSE_GC ${GC_CFLAGS}
-LIBS += $(GCROOT)/lib/libgc.a
+LIBS += -lgc
 endif
 ifdef D_LEAK_DETECT
 CFLAGS += -DLEAK_DETECT  ${GC_CFLAGS}
 LIBS += -lleak
 endif
 
-BUILD_VERSION = $(shell cat BUILD_VERSION)
-ifeq ($(BUILD_VERSION),)
-D_BUILD_VERSION = 1
-else
-D_BUILD_VERSION = $(shell expr $(BUILD_VERSION) + 1)
-endif
+D_BUILD_VERSION = $(shell cat BUILD_VERSION)
 CFLAGS += -DD_MAJOR_VERSION=$(MAJOR) -DD_MINOR_VERSION=$(MINOR) -DD_BUILD_VERSION=$(D_BUILD_VERSION)
 
 CFLAGS += -Wall
@@ -81,9 +80,7 @@ ifdef D_PROFILE
 CFLAGS += -pg
 endif
 
-CFLAGS += -I$(GCROOT)/include
-
-LIBS += -lm
+LIBS += -lm 
 
 AUX_FILES = d/Makefile d/COPYRIGHT d/README d/CHANGES d/UPGRADING d/my.g d/my.c d/index.html d/manual.html d/faq.html d/make_dparser.1 d/make_dparser.cat
 TESTS = $(shell ls tests/*g tests/*[0-9] tests/*.check tests/*.flags)
@@ -145,7 +142,7 @@ test:
 	(MAKE=$(MAKE) ./parser_tests)
 
 install:
-	cp $(EXECUTABLE_FILES) $(PREFIX)/bin
+	cp $(EXECUTABLES) $(PREFIX)/bin
 	cp $(INCLUDES) $(PREFIX)/include
 	cp $(INSTALL_LIBRARIES) $(PREFIX)/lib
 	cp $(MANPAGES) $(PREFIX)/man/man1

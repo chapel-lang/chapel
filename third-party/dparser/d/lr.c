@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 
 #include "d.h"
@@ -237,11 +237,15 @@ static int
 actioncmp(const void *aa, const void *bb) {
   Action *a = *(Action **)aa, *b = *(Action **)bb;
   int i, j;
-  if (a->kind == ACTION_SHIFT)
+  if (a->kind == ACTION_SHIFT_TRAILING)
+    i = a->term->index + 11000000;
+  else if (a->kind == ACTION_SHIFT)
     i = a->term->index + 1000000;
   else
     i = a->rule->index;
-  if (b->kind == ACTION_SHIFT)
+  if (b->kind == ACTION_SHIFT_TRAILING)
+    i = b->term->index + 11000000;
+  else if (b->kind == ACTION_SHIFT)
     j = b->term->index + 1000000;
   else
     j = b->rule->index;

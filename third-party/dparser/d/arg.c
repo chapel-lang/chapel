@@ -1,5 +1,5 @@
 /*
- Copyright 1994-2003 John Plevyak, All Rights Reserved
+ Copyright 1994-2004 John Plevyak, All Rights Reserved
 */
 #include "d.h"
 

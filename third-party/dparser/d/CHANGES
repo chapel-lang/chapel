@@ -1,3 +1,7 @@
+1.9	Fixed bug in error recovery
+	Added support for trailing context in regex ("foo/bar")
+        Fixed bug in longest match scanning
+
 1.8	Added the ability to 'include' subgrammars
 	Add %< %> as global code indicators
 	Add $#n for number of children of element n

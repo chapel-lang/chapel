@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 
 #include "d.h"
@@ -1234,19 +1234,27 @@ shift_all(Parser *p, char *pos) {
   }
   for (i = 0; i < nshifts; i++) {
     r = &p->shift_results[i];
-    if (!r->shift || !r->shift->term_priority)
+    if (!r->shift)
       continue;
-    /* potentially n^2 but typically small */
-    for (j = 0; j < nshifts; j++) {
-      if (!p->shift_results[j].shift)
-	continue;
-      if (r->loc.s == p->shift_results[j].loc.s && j != i) {
-	if (r->shift->term_priority < p->shift_results[j].shift->term_priority) {
-	  r->shift = 0;
-	  break;
-	}
-	if (r->shift->term_priority > p->shift_results[j].shift->term_priority)
+    if (r->shift->shift_kind == D_SCAN_TRAILING) {
+      for (j = i + 1; j < nshifts; j++) {
+	if (r->shift->symbol == p->shift_results[j].shift->symbol)
 	  p->shift_results[j].shift = 0;
+      }
+    }
+    if (r->shift->term_priority) {
+      /* potentially n^2 but typically small */
+      for (j = 0; j < nshifts; j++) {
+	if (!p->shift_results[j].shift)
+	  continue;
+	if (r->loc.s == p->shift_results[j].loc.s && j != i) {
+	  if (r->shift->term_priority < p->shift_results[j].shift->term_priority) {
+	    r->shift = 0;
+	    break;
+	  }
+	  if (r->shift->term_priority > p->shift_results[j].shift->term_priority)
+	    p->shift_results[j].shift = 0;
+	}
       }
     }
   }

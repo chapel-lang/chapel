@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 #include "d.h"
 
@@ -128,12 +128,12 @@ trans_scanner_block_fns = {
 
 static uint32
 shift_hash_fn(Action *sa, hash_fns_t *fns) {
-  return sa->term->index;
+  return sa->term->index + (sa->kind == ACTION_SHIFT_TRAILING ? 1000000 : 0);
 }
 
 static int
 shift_cmp_fn(Action *sa, Action *sb, hash_fns_t *fns) {
-  return sa->term->index !=  sb->term->index;
+  return (sa->term->index != sb->term->index) || (sa->kind != sb->kind);
 }
 
 hash_fns_t 
@@ -151,7 +151,6 @@ write_scanner_data_as_C(FILE *fp, Grammar *g, char *tag) {
   VecScannerBlock trans_scanner_block_hash[4], *ptrans_scanner_block_hash;
   VecAction shift_hash;
   int nvsblocks, ivsblock, i, j, k, x, xx;
-  Action *a;
   VecScanState *ss;
   char speculative_code[256];
   Term *t;
@@ -174,6 +173,18 @@ write_scanner_data_as_C(FILE *fp, Grammar *g, char *tag) {
 	    g->terminals.v[i]->term_priority,
 	    speculative_code);
     g->write_line++;
+    if (g->terminals.v[i]->trailing_context) {
+      fprintf(fp, 
+	      "D_Shift d_tshift_%d_%s = { %d, %d, %d, %d, %d, %s };\n",
+	      i, tag,
+	      g->terminals.v[i]->index + g->productions.n,
+	      D_SCAN_TRAILING,
+	      g->terminals.v[i]->op_assoc,
+	      g->terminals.v[i]->op_priority,
+	      g->terminals.v[i]->term_priority,
+	      speculative_code);
+      g->write_line++;
+    }
   }
   fprintf(fp,"\n"); g->write_line++;
   /* scanners */
@@ -197,24 +208,17 @@ write_scanner_data_as_C(FILE *fp, Grammar *g, char *tag) {
     if (s->same_shifts)
       continue;
     ss = &s->scanner.states;
-    /* build shifts */
-    if (s->shift_actions.n) {
-      fprintf(fp, "D_Shift *d_shifts_%d_%s[] = {\n", i, tag);
-      for (j = 0; j < s->shift_actions.n; j++) {
-	a = s->shift_actions.v[j];
-	fprintf(fp, "&d_shift_%d_%s%s", a->term->index, tag,
-		j == s->shift_actions.n - 1 ? ", NULL" : ", ");
-      }
-      fprintf(fp, "};\n\n");
-      g->write_line += 3;
-    }
     /* build accepts differences */
     for (j = 0; j < s->scanner.transitions.n; j++) {
       VecAction *va = &s->scanner.transitions.v[j]->accepts_diff;
       fprintf(fp, "D_Shift *d_accepts_diff_%d_%d_%s[] = {", 
 	      i, j, tag);
-      for (k = 0; k < va->n; k++)
-	fprintf(fp, "&d_shift_%d_%s,", va->v[k]->term->index, tag); 
+      for (k = 0; k < va->n; k++) {
+	if (va->v[k]->kind != ACTION_SHIFT_TRAILING)
+	  fprintf(fp, "&d_shift_%d_%s,", va->v[k]->term->index, tag); 
+	else
+	  fprintf(fp, "&d_tshift_%d_%s,", va->v[k]->term->index, tag); 
+      }
       fprintf(fp, "0};\n");
       g->write_line += 2;
     }
@@ -261,7 +265,7 @@ write_scanner_data_as_C(FILE *fp, Grammar *g, char *tag) {
 	    fprintf(fp, "};\n\n");
 	    g->write_line += 3;
 	  }
-	  if (s->scan_kind != D_SCAN_LONGEST) {
+	  if (s->scan_kind != D_SCAN_LONGEST || s->trailing_context) {
 	    /* output accept_diff scanner blocks */
 	    yv = set_add_fn(ptrans_scanner_block_hash, xv, 
 			    &trans_scanner_block_fns);
@@ -282,10 +286,10 @@ write_scanner_data_as_C(FILE *fp, Grammar *g, char *tag) {
 	}
 	/* output shifts */
 	if (ss->v[j]->accepts.n) {
+	  char tmp[256];
+	  sprintf(tmp, "d_shift_%d_%d_%s", i, j, tag);
 	  for (k = 0; k < ss->v[j]->accepts.n; k++) {
 	    Action *a = ss->v[j]->accepts.v[k], *aa;
-	    char tmp[256];
-	    sprintf(tmp, "d_shift_%d_%d_%s", i, j, tag);
 	    if (ss->v[j]->accepts.n == 1) {
 	      a->temp_string = strdup(tmp);
 	      aa = set_add_fn(&shift_hash, a, &shift_fns);
@@ -295,8 +299,12 @@ write_scanner_data_as_C(FILE *fp, Grammar *g, char *tag) {
 	    /* output shifts */
 	    if (!k) 
 	      fprintf(fp, "D_Shift *%s[] = { ", tmp);
-	    fprintf(fp, "&d_shift_%d_%s%s",
-		    a->term->index, tag, k == ss->v[j]->accepts.n - 1 ? ", NULL};\n\n" : ", ");
+	    if (a->kind != ACTION_SHIFT_TRAILING)
+	      fprintf(fp, "&d_shift_%d_%s%s",
+		      a->term->index, tag, k == ss->v[j]->accepts.n - 1 ? ", NULL};\n\n" : ", ");
+	    else
+	      fprintf(fp, "&d_tshift_%d_%s%s",
+		      a->term->index, tag, k == ss->v[j]->accepts.n - 1 ? ", NULL};\n\n" : ", ");
 	    if (k == ss->v[j]->accepts.n - 1)
 	      g->write_line += 2;
 	  }
@@ -352,7 +360,7 @@ write_scanner_data_as_C(FILE *fp, Grammar *g, char *tag) {
       }
       fprintf(fp, "};\n\n");
       g->write_line += 2;
-      if (s->scan_kind != D_SCAN_LONGEST) {
+      if (s->scan_kind != D_SCAN_LONGEST || s->trailing_context) {
 	/* output scanner accepts diffs tables */
 	fprintf(fp, "SB_trans_%s d_transition_%d_%s[%d] = {\n", 
 		scanner_u_type(s), i, tag, ss->n);
@@ -963,7 +971,7 @@ write_error_data_as_C(FILE *fp, Grammar *g, VecState *er_hash, char *tag) {
   }
 }
 
-static char *scan_kind_strings[] = {"D_SCAN_ALL", "D_SCAN_LONGEST", "D_SCAN_MIXED", NULL};
+static char *scan_kind_strings[] = {"D_SCAN_ALL", "D_SCAN_LONGEST", "D_SCAN_MIXED",  NULL};
 
 static void
 write_state_data_as_C(FILE *fp, Grammar *g, VecState *er_hash, char *tag) {
@@ -998,12 +1006,10 @@ write_state_data_as_C(FILE *fp, Grammar *g, VecState *er_hash, char *tag) {
 		s->error_recovery_hints.n, h->index, tag);
       } else
 	fprintf(fp, "{ 0, NULL}, ");
-      if (s->shift_actions.n)
-	fprintf(fp, "d_shifts_%d_%s, ", shifts->index, tag);
-      else if (s->scanner_code || (g->scanner.code && s->goto_on_token))
-	fprintf(fp, "D_SHIFTS_CODE, ");
+      if (s->shift_actions.n || s->scanner_code || (g->scanner.code && s->goto_on_token))
+	fprintf(fp, "1, ");
       else
-	fprintf(fp, "NULL, ");
+	fprintf(fp, "0, ");
       if (g->scanner.code) {
 	if (s->goto_on_token) 
 	  fprintf(fp, "%s, ", g->scanner.code);
@@ -1020,11 +1026,13 @@ write_state_data_as_C(FILE *fp, Grammar *g, VecState *er_hash, char *tag) {
       fprintf(fp, "sizeof(%s), ", scanner_type(s));
       fprintf(fp, s->accept ? "1, " : "0, ");
       fprintf(fp, "%s, ", scan_kind_strings[s->scan_kind]);
-      if (shifts->scan_kind != D_SCAN_LONGEST && shifts->scanner.states.n)
+      if ((shifts->scan_kind != D_SCAN_LONGEST || shifts->trailing_context)
+	  && shifts->scanner.states.n)
 	fprintf(fp, "(void*)d_transition_%d_%s, ", shifts->index, tag);
       else
 	fprintf(fp, "NULL, ");
-      if (shifts->scan_kind != D_SCAN_LONGEST && shifts->scanner.states.n)
+      if ((shifts->scan_kind != D_SCAN_LONGEST || shifts->trailing_context)
+	  && shifts->scanner.states.n)
 	fprintf(fp, "d_accepts_diff_%d_%s, ", shifts->index, tag);
       else
 	fprintf(fp, "(D_Shift***)NULL, ");

@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 
 #ifndef _gram_H_
@@ -31,7 +31,7 @@ typedef struct Goto {
 typedef Vec(Goto *) VecGoto;
 
 typedef enum ActionKind { 
-  ACTION_ACCEPT, ACTION_SHIFT, ACTION_REDUCE
+  ACTION_ACCEPT, ACTION_SHIFT, ACTION_REDUCE, ACTION_SHIFT_TRAILING
 } ActionKind;
 typedef struct Action {
   ActionKind		kind;
@@ -72,7 +72,8 @@ typedef struct State {
   uint		accept:1;
   uint		scanner_code:1;
   uint		goto_on_token:1;
-  uint		scan_kind:2;
+  uint		scan_kind:3;
+  uint		trailing_context:1;
   uint8		*goto_valid;
   int		goto_table_offset;
   struct State	*same_shifts;
@@ -137,6 +138,7 @@ typedef struct Term {
   int			string_len;
   uint			scan_kind:3;
   uint			ignore_case:1;
+  uint			trailing_context:1;
   struct Production	*regex_production;
 } Term;
 

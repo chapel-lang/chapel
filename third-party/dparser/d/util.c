@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 
 #include "d.h"
@@ -29,7 +29,7 @@ d_dup_pathname_str(char *s) {
 
 char *
 dup_str(char *s, char *e) {
-  int l = e-s;
+  int l = e ? e-s : strlen(s);
   char *ss = (char*)MALLOC(l+1);
   memcpy(ss, s, l);
   ss[l] = 0;

@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 
 #include "d.h"
@@ -1171,6 +1171,11 @@ propogate_declarations(Grammar *g) {
   Rule *r;
   Elem *e;
 
+  /* global defaults */ 	 
+   if (g->tokenizer) 	 
+     new_declaration(g, new_elem_nterm(g->productions.v[0], NULL), DECLARE_TOKENIZE); 	 
+   if (g->longest_match) 	 
+     new_declaration(g, new_elem_nterm(g->productions.v[0], NULL), DECLARE_LONGEST_MATCH);
   /* resolve declarations */
   for (i = 0; i < g->declarations.n; i++) {
     e = g->declarations.v[i]->elem;

@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 
 #include "d.h"
@@ -55,7 +55,7 @@ help(ArgumentState *arg_state, char *arg_unused) {
   char ver[30];
   d_version(ver);
   fprintf(stderr, "Sample DParser Version %s ", ver);
-  fprintf(stderr, "Copyright (c) 2002-2003 John Plevyak\n");
+  fprintf(stderr, "Copyright (c) 2002-2004 John Plevyak\n");
   usage(arg_state, arg_unused);
 }
 

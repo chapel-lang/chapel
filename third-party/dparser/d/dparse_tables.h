@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 #ifndef _dparse_tables_H_
 #define _dparse_tables_H_
@@ -94,7 +94,8 @@ typedef struct SB_trans_uint32 {
 #define D_SCAN_ALL	0
 #define D_SCAN_LONGEST	1
 #define D_SCAN_MIXED	2
-#define D_SCAN_RESERVED	3
+#define D_SCAN_TRAILING	3
+#define D_SCAN_RESERVED	4
 #define D_SCAN_DEFAULT	D_SCAN_ALL
 
 typedef struct D_State {
@@ -112,7 +113,7 @@ typedef struct D_State {
     unsigned int n;
     D_ErrorRecoveryHint *v;
   } 				error_recovery_hints;
-  D_Shift			**shifts;
+  int				shifts;
   D_ScanCode			scanner_code;
   void*				scanner_table;
   unsigned char			scanner_size;

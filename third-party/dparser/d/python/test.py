@@ -1,8 +1,8 @@
 from dparser import Parser
 
 def d_S(t):
-    '''S : (d '+' d)'''
-    return t[0][0] + t[0][2]
+    '''S : d '+' d'''
+    return t[0] + t[2]
 
 def d_number(t):
     '''d : "[0-9]+" '''

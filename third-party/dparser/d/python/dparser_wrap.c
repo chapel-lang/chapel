@@ -33,12 +33,6 @@
  * and things like that.
  *
  * $Log$
- * Revision 1.1.1.1  2004/01/19 19:53:02  bradc
- *
- * Initial import of Plevyak's source tree
- *
- *
- *
  * Revision 1.3  2003/10/30 22:39:10  jplevyak
  * new python interface by Brian Sabbey
  *

@@ -1,5 +1,5 @@
 /*
-  Copyright 2002-2003 John Plevyak, All Rights Reserved
+  Copyright 2002-2004 John Plevyak, All Rights Reserved
 */
 
 #include "d.h"
@@ -191,18 +191,19 @@ nfa_to_scanner(NFAState *n, Scanner *s) {
 }
 
 /* build a NFA for the regular expression */
-static void
-build_regex_nfa(LexState *ls, uint8 **areg, NFAState *pp, NFAState *nn) {
+static int
+build_regex_nfa(LexState *ls, uint8 **areg, NFAState *pp, NFAState *nn, Action *trailing) {
   uint8 c, pc, *reg = *areg;
   NFAState *p = pp, *s, *x, *n = nn;
-  int reversed, i;
+  int reversed, i, has_trailing = 0;
   uint8 mark[256];
 
   s = p;
   while ((c = *reg++)) {
     switch(c) {
       case '(':
-	build_regex_nfa(ls, &reg, s, (x = new_NFAState(ls)));
+	has_trailing = build_regex_nfa(ls, &reg, s, (x = new_NFAState(ls)), trailing) ||
+	  has_trailing;
 	p = s;
 	s = x;
 	break;
@@ -262,6 +263,10 @@ build_regex_nfa(LexState *ls, uint8 **areg, NFAState *pp, NFAState *nn) {
       case '+':
 	vec_add(&s->epsilon, p);
 	break;
+      case '/':
+	vec_add(&s->accepts, trailing);
+	has_trailing = 1;
+	break;
       case '\\':
 	c = *reg++;
 	if (!c)	
@@ -282,9 +287,10 @@ build_regex_nfa(LexState *ls, uint8 **areg, NFAState *pp, NFAState *nn) {
  Lreturn:
   vec_add(&s->epsilon, n);
   *areg = reg;
-  return;
+  return has_trailing;
  Lerror:
   d_fail("bad (part of) regex: %s\n", *areg);
+  return has_trailing;
 }
 
 static void
@@ -504,12 +510,18 @@ build_state_scanner(LexState *ls, State *s) {
   for (j = 0; j < s->shift_actions.n; j++) {
     a = s->shift_actions.v[j];
     if (a->kind == ACTION_SHIFT && a->term->kind == TERM_REGEX) {
+      Action *trailing_context = (Action *)malloc(sizeof(Action));
+      memcpy(trailing_context, a, sizeof(Action));
+      trailing_context->kind = ACTION_SHIFT_TRAILING;
       one = 1;
       reg = a->term->string;
       vec_add(&n->epsilon, (nnn = new_NFAState(ls)));
       nn = new_NFAState(ls);
       ls->ignore_case = a->term->ignore_case;
-      build_regex_nfa(ls, &reg, nnn, nn);
+      if (build_regex_nfa(ls, &reg, nnn, nn, trailing_context)) {
+	a->term->trailing_context = 1;
+	s->trailing_context = 1;
+      }
       vec_add(&nn->accepts, a);
     }
   }
