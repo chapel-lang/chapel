@@ -110,14 +110,7 @@ with            return TWITH;
                   if (yytext[0] == '?') {
                     return QUERY_IDENT;
                   }
-                  Symbol* sym = Symboltable::lookup(yytext, false);
-
-		  if (sym && typeid(*sym) == typeid(TypeSymbol)) {
-		    yylval.ptsym = (TypeSymbol*)sym;
-		    return TYPE_IDENT;
-		  } else {
-		    return TIDENT;
-		  }
+		  return TIDENT;
                 }
 {intLiteral}    return INTLITERAL;
 {floatLiteral}  return FLOATLITERAL;

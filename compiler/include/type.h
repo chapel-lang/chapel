@@ -211,6 +211,14 @@ class TupleType : public Type {
   void codegen(FILE* outfile);
 };
 
+class UnresolvedType : public Type {
+  TRAVERSABLE_TYPE(UnresolvedType);
+ public:
+  UnresolvedType(char* init_name);
+  virtual Type* copy(void);
+  void codegen(FILE* outfile);
+};
+
 #ifndef TYPE_EXTERN
 #define TYPE_EXTERN extern
 #endif

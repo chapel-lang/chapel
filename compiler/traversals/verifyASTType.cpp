@@ -278,6 +278,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_TUPLE");
     }
     break;
+  case TYPE_UNRESOLVED:
+    if (typeid(*ast) != typeid(UnresolvedType)) {
+      INT_FATAL(ast, "Unexpected AST type type: TYPE_UNRESOLVED");
+    }
+    break;
   case AST_TYPE_END:
     INT_FATAL(ast, "Unexpected AST type: AST_TYPE_END");
     break;

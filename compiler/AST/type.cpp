@@ -764,6 +764,24 @@ void TupleType::codegen(FILE* outfile) {
 }
 
 
+UnresolvedType::UnresolvedType(char* init_name) :
+  Type(TYPE_UNRESOLVED, nilExpr)
+{
+  name = new UnresolvedSymbol(init_name);
+}
+
+
+Type* UnresolvedType::copy(void) {
+  return new UnresolvedType(copystring(name->name));
+}
+
+
+void UnresolvedType::codegen(FILE* outfile) {
+  fprintf(outfile, name->name);
+  //  INT_FATAL(this, "ERROR:  Cannot codegen an unresolved type.");
+}
+
+
 void initTypes(void) {
   // define built-in types
   dtUnknown = Symboltable::defineBuiltinType("???", "???", nilExpr);

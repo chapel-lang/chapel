@@ -69,7 +69,6 @@
 %token TWITH
 
 %token TIDENT QUERY_IDENT
-%token <ptsym> TYPE_IDENT
 %token INTLITERAL FLOATLITERAL COMPLEXLITERAL
 %token <pch> STRINGLITERAL
 
@@ -350,8 +349,8 @@ moduledecl:
 
 
 decl:
-  TWITH TYPE_IDENT TSEMI
-    { $$ = new WithStmt(new Variable($2)); }
+  TWITH simple_lvalue TSEMI
+    { $$ = new WithStmt($2); }
 | vardecl
 | typedecl
 | fndecl
@@ -389,8 +388,8 @@ type:
 | indexType
 | arrayType
 | tupleType
-| TYPE_IDENT
-    { $$ = $1->type; }
+| identifier
+    { $$ = new UnresolvedType($1); }
 | query_identifier
     { $$ = dtUnknown; }
 ;
@@ -601,8 +600,6 @@ atom:
 
 expr: 
   atom
-| TYPE_IDENT TLP exprlist TRP
-    { $$ = new ParenOpExpr(new Variable($1), $3); }
 | reduction %prec TREDUCE
 | expr TCOLON type
     { $$ = new CastExpr($3, $1); }
@@ -665,8 +662,8 @@ expr:
 
 
 reduction:
-  TYPE_IDENT TREDUCE expr
-    { $$ = new ReduceExpr($1, nilExpr, $3); }
+  identifier TREDUCE expr
+    { $$ = new ReduceExpr(new UnresolvedSymbol($1), nilExpr, $3); }
 ;
 
 

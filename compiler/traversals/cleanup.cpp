@@ -68,75 +68,90 @@ void InsertThis::preProcessStmt(Stmt* &stmt) {
 
 
 /******************************************************************************
+ *** Resolve Easiest
+ ***
+ *** This traversal resolves unresolved symbols that are easy to
+ *** resolve, i.e., top-level, non-functions.
+ ***
+ ***/
+
+class ResolveEasiest : public Traversal {
+ public:
+  Expr* LastExpr;
+  ResolveEasiest::ResolveEasiest(void);
+  void preProcessExpr(Expr* &expr);
+  void preProcessSymbol(Symbol* &sym);
+};
+
+ResolveEasiest::ResolveEasiest(void) {
+  LastExpr = NULL;
+}
+
+static void resolve_type_helper(Type* &type) {
+  if (dynamic_cast<UnresolvedType*>(type)) {
+    Symbol* new_type = Symboltable::lookup(type->name->name);
+    if (new_type && !new_type->isNull()) {
+      if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
+	type = new_type->type;
+      }
+      else {
+	resolve_type_helper(new_type->type);
+	type = new_type->type;
+      }
+    }
+    else {
+      INT_FATAL(type, "Error resolving type");
+    }
+  }
+  if (UserType* user_type = dynamic_cast<UserType*>(type)) {
+    resolve_type_helper(user_type->definition);
+  }
+  if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
+    resolve_type_helper(array_type->elementType);
+  }
+}
+
+void ResolveEasiest::preProcessExpr(Expr* &expr) {
+  if (CastExpr* cast_expr = dynamic_cast<CastExpr*>(expr)) {
+    resolve_type_helper(cast_expr->newType);
+  }
+  LastExpr = expr;
+}
+
+void ResolveEasiest::preProcessSymbol(Symbol* &sym) {
+  if (dynamic_cast<UnresolvedSymbol*>(sym)) {
+    Symbol* new_sym = Symboltable::lookup(sym->name);
+    if (new_sym) {
+      sym = new_sym;
+    }
+  }
+  resolve_type_helper(sym->type);
+}
+
+
+
+/******************************************************************************
  *** Resolve Easy
  ***
  *** This traversal resolves unresolved symbols that are easy to
- *** resolve, i.e., functions and members where the base has unknown
- *** type are left to analysis.
+ *** resolve, i.e., dot-expressions where the base expression is of
+ *** known class type.
  ***
  ***/
 
 class ResolveEasy : public Traversal {
  public:
-  Expr* LastExpr;
-  ResolveEasy::ResolveEasy(void);
   void preProcessExpr(Expr* &expr);
-  void postProcessExpr(Expr* &expr);
-  void preProcessSymbol(Symbol* &sym);
 };
 
-ResolveEasy::ResolveEasy(void) {
-  LastExpr = NULL;
-}
-
 void ResolveEasy::preProcessExpr(Expr* &expr) {
-  LastExpr = expr;
-}
-
-void ResolveEasy::postProcessExpr(Expr* &expr) {
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
       Symbol* member = Symboltable::lookupInScope(member_access->member->name, class_type->classScope);
-      if (member == NULL) {
-	INT_FATAL(expr, "member lookup of '%s' failed",
-		  member_access->member->name);
-      }
       member_access->member = member;
-
-//       printf("changing: ");
-//       member_access->member->codegen(stdout);
-//       printf(" --> ");
-//       member->codegen(stdout);
-//       printf("\n");
-
     }
     else {
       INT_FATAL(expr, "Error resolving dot-expression");
-    }
-  }
-}
-
-void ResolveEasy::preProcessSymbol(Symbol* &sym) {
-  if (dynamic_cast<UnresolvedSymbol*>(sym)) {
-    Symbol* new_sym = Symboltable::lookup(sym->name);
-    if (new_sym) {
-      sym = new_sym;
-
-//       printf("changing: ");
-//       sym->codegen(stdout);
-//       printf(" --> ");
-//       new_sym->codegen(stdout);
-//       printf("\n");
-
-    }
-    else {
-      //      fprintf(stderr, "failed to lookup %s\n", sym->name);
-      //      Symboltable::print(stderr);
-
-//       printf("hi ");
-//       new_sym->codegen(stdout);
-//       printf("\n");
-
     }
   }
 }
@@ -252,6 +267,7 @@ void ApplyThis::preProcessExpr(Expr* &expr) {
 /******************************************************************************/
 
 void Cleanup::run(ModuleSymbol* moduleList) { 
+  ResolveEasiest* resolve_easiest = new ResolveEasiest();
   ApplyWith* apply_with = new ApplyWith();
   InsertThis* insert_this = new InsertThis();
   ResolveEasy* resolve_easy = new ResolveEasy();
@@ -259,12 +275,12 @@ void Cleanup::run(ModuleSymbol* moduleList) {
   ApplyThis* apply_this = new ApplyThis();
   ModuleSymbol* mod = moduleList;
   while (mod) {
-    mod->startTraversal(apply_with);
+    mod->startTraversal(resolve_easiest);
     mod->startTraversal(insert_this);
+    mod->startTraversal(apply_with);
     mod->startTraversal(resolve_easy);
     mod->startTraversal(specialize_parens);
     mod->startTraversal(apply_this);
-
     mod = nextLink(ModuleSymbol, mod);
   }
 }

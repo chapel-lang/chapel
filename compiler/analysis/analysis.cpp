@@ -1136,6 +1136,7 @@ gen_if1(BaseAST *ast) {
   case TYPE_USER:
   case TYPE_CLASS:
   case TYPE_TUPLE:
+  case TYPE_UNRESOLVED:
   case AST_TYPE_END:
     assert(!"case");
     break;
