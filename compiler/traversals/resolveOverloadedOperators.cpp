@@ -12,6 +12,14 @@
 static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
   static int uid = 0;
 
+  Pragma* pr = dynamic_cast<Expr*>(fn->defPoint)->stmt->pragmas;
+  while (pr) {
+    if (!strcmp(pr->str, "builtin")) {
+      return;
+    }
+    pr = dynamic_cast<Pragma *>(pr->next);
+  }
+
   if (!strcmp(fn->name, "+")) {
     fn->cname = glomstrings(2, "_plus", intstring(uid++));
   }
@@ -103,11 +111,16 @@ void ResolveOverloadedOperators::postProcessExpr(Expr* expr) {
     }
   }
 
-  /*** WANT TO USE PRAGMAS --SJD ***/
-  if (fns.e[0]->parentScope->type != SCOPE_INTERNAL_PRELUDE) {
-    Expr* args = op->left->copy();
-    args->append(op->right->copy());
-    FnCall* fn = new FnCall(new Variable(fns.e[0]), args);
-    expr->replace(fn);
+  Pragma* pr = dynamic_cast<Expr*>(fns.e[0]->defPoint)->stmt->pragmas;
+  while (pr) {
+    if (!strcmp(pr->str, "builtin")) {
+      return;
+    }
+    pr = dynamic_cast<Pragma *>(pr->next);
   }
+
+  Expr* args = op->left->copy();
+  args->append(op->right->copy());
+  FnCall* fn = new FnCall(new Variable(fns.e[0]), args);
+  expr->replace(fn);
 }
