@@ -102,21 +102,5 @@ endif
 #
 # include platform-specific settings
 #
--include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)
-
-#
-# this rule assumes that the first rule in any Makefile is all
-# and is here to ensure that the following rule is not run when
-# "make" is typed by itself.
-#
-default: all
-
-#
-# this rule generates an error message if we're running on an
-# unknown platform
-#
-$(CHAPEL_ROOT)/make/Makefile.unknown:
-	@echo Unknown platform... exiting
-	@exit 1
-
+include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)
 

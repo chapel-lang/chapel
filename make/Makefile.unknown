@@ -1,0 +1,8 @@
+
+unknown_default: all
+
+$(CHAPEL_ROOT)/make/Makefile.unknown: FORCE
+	@echo Unknown platform... exiting
+	@exit 1
+
+FORCE:
