@@ -912,16 +912,28 @@ gen_if1(BaseAST *ast) {
       DomainExpr *s = dynamic_cast<DomainExpr *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
-      if1_gen(if1, &s->ainfo->code, s->domains->ainfo->code);
+      Vec<Expr *> domains;
+      getLinkElements(domains, s->domains);
+      Vec<Symbol *> indices;
+      getLinkElements(indices, s->indices);
+      forv_Vec(Expr, d, domains)
+	if1_gen(if1, &s->ainfo->code, d->ainfo->code);
       Code *send = 0;
+      //assert(domains.n == 1 && "don't know now to handle multiple domains");
       if (!s->forallExpr->isNull()) { 
-	if1_gen(if1, &s->ainfo->code, s->forallExpr->ainfo->code);
-	send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_domain_symbol, 
-			s->domains->ainfo->rval, s->indices->asymbol, s->forallExpr->ainfo->rval, 
+	send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, expr_domain_symbol, 
+			s->forallExpr->ainfo->rval, 
 			s->ainfo->rval);
+	forv_Vec(Expr, d, domains)
+	  if1_add_send_arg(if1, send, d->ainfo->rval);
+	forv_Vec(Symbol, i, indices)
+	  if1_add_send_arg(if1, send, i->asymbol);
+	if1_gen(if1, &s->ainfo->code, s->forallExpr->ainfo->code);
       } else {
-	send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, expr_create_domain_symbol, 
-			s->domains->ainfo->rval, s->ainfo->rval);
+	send = if1_send(if1, &s->ainfo->code, 2, 1, sym_primitive, expr_create_domain_symbol, 
+			s->ainfo->rval);
+	forv_Vec(Expr, d, domains)
+	  if1_add_send_arg(if1, send, d->ainfo->rval);
       }
       send->ast = s->ainfo;
       break;

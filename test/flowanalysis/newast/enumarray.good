@@ -99,7 +99,7 @@ probSize(W) = 456;
 var DClass: domain(1) = S..O;
 var probSize: [DClass] integer;
 writeln("probSize = ", ("%.3d", probSize));
-writeln("probSize(", classVals(i), ") = ", ("%3d", _ACC1(probSize, i)));
+writeln("probSize(", classVals(i), ") = ", ("%3d", probSize(i)));
 writeln("probSize(S) = ", probSize(S));
 }
 }

@@ -831,7 +831,11 @@ void DomainExpr::codegen(FILE* outfile) {
 
 int
 DomainExpr::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(domains);
+  BaseAST *l = domains;
+  while (l) {
+    asts.add(l);
+    l = dynamic_cast<BaseAST *>(l->next);
+  }
   asts.add(forallExpr);
   return asts.n;
 }
@@ -839,7 +843,11 @@ DomainExpr::getExprs(Vec<BaseAST *> &asts) {
 
 int
 DomainExpr::getSymbols(Vec<BaseAST *> &asts) {
-  asts.add(indices);
+  BaseAST *l = indices;
+  while (l) {
+    asts.add(l);
+    l = dynamic_cast<BaseAST *>(l->next);
+  }
   return asts.n;
 }
 
