@@ -10068,3 +10068,21 @@ Modified files:
 	chapel/make/: Makefile.gnu 
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+11/20/04 13:14:14 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Functions and symbols are now true types in their own right, further unifying
+	  flow analysis and type inference.
+	Further separated out "must_implement" (type checking) and "must_specialize"
+	  dispatch constraints.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp if1.cpp 
+	chapel/compiler/backend/: dump.cpp 
+	chapel/compiler/include/: sym.h 
+	chapel/compiler/vparser/: parse_ast.cpp v.g 
+	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
+	                               tuples.good 
+
