@@ -17959,3 +17959,19 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+02/19/05 17:37:40 -- jplevyak
+
+Log message:
+	Iterate over the ->var->next field of a VarDefStmt.
+	In general how should I know which fields are lists?  Could
+	we rename the ones that are lists XXX_list.  In this
+	instance if we had VarDefStmt::var_list then I would
+	know to iterate over it.  Or should I iterate over every field?
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_assign1.future 
+
