@@ -5444,3 +5444,30 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/domarr/: enumarray.chpl enumarray.good 
 
+---------------------------------------------------------------------------
+
+08/16/04 18:11:39 -- bradc
+
+Log message:
+	Improved the testing system so that the -valgrind flag uses
+	valgrind not only to test the compiler, but also the generated
+	binary (when one is created by the test).  This new feature
+	may be suppressed for a particular subdirectory by adding a
+	NOVGRBIN file to the directory in question, which will suppress
+	the use of valgrind on the generated binary.  I added one of
+	these files to John's lowlevelcg directory since valgrinding
+	its binaries is not as important (and, since they use GC, it
+	raises difficulties even if we did want to valgrind it).
+	
+	With this change, found a subtle bug in some of the I/O code
+	for arrays that I had just checked in, and updated output
+	to reflect the fix.
+
+Modified files:
+	chapel/runtime/src/: chplio.c 
+	chapel/test/: start_test sub_test 
+	chapel/test/trivial/bradc/: formatoutput.good 
+	chapel/test/trivial/bradc/domarr/: enumarray.good 
+Added files:
+	chapel/test/lowlevelcg/jplevyak/: NOVGRBIN 
+
