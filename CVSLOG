@@ -20146,3 +20146,38 @@ Added files:
 Removed files:
 	chapel/test/types/tuple/deitz/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+03/18/05 10:35:43 -- deitz
+
+Log message:
+	Fixed a bug in which we tried but failed to put extra parentheses
+	around the following operators: or, and, |, ^, and &.
+	
+	Fixed a bug in codegening of MemberAccess in which the type of the
+	base expression was not found using the typeInfo facility but rather
+	done in limited way.
+	
+	Simplified the == function for records from something like
+	
+	  if (record1.field1 != record2.field1) return false;
+	  if (record1.field2 != record2.field2) return false;
+	  ...
+	  return true;
+	
+	to something like
+	
+	  return (record1.field1 == record2.field1) &&
+	         (record1.field2 == record2.field2) && ...;
+	
+	Fixed the --noanalysis symbol resolution to resolve MemberAccess
+	member symbols in a more robust way.
+	
+	Passed future for test_nested_record1 over to John.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             resolveSymbols.cpp 
+	chapel/test/classes/deitz/: test_nested_record1.future 
+
