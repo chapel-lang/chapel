@@ -5619,3 +5619,15 @@ Modified files:
 	                      stmt.cpp stmt.h symbol.cpp symbol.h 
 	                      type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+08/24/04 11:12:15 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Implemeneted HashMap, which is a map which takes hash and comparison functions
+	as a template parameter.
+
+Modified files:
+	chapel/compiler/: analysis.cpp map.cpp map.h misc.cpp 
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp type.h 
+
