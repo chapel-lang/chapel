@@ -101,7 +101,7 @@ reduce          return REDUCE;
                   if (sym == NULL) {
                     return IDENT;
                   } else {
-		    yypst = sym;
+		    yylval.ptsym = (TypeSymbol*)sym;  // BLC: cast == yuck!
                     return DEFINED_IDENT;
                   }
                 }
@@ -109,13 +109,26 @@ reduce          return REDUCE;
 {floatLiteral}  return FLOATLITERAL;
 "\""            {
                   register int c;
+                  int bufflen = 256;
+		  static char* stringbuffer = 
+                    (char*)malloc(bufflen*sizeof(char));
+                  int stringlen = 0;
 
                   while (1) {
                     while ((c = yyinput()) != '\"' && c != EOF) {
+		      stringbuffer[stringlen] = c;
+                      stringlen++;
+                      if (stringlen == bufflen) {
+                        bufflen *= 2;
+                        stringbuffer = (char*)realloc(stringbuffer,
+                                                      bufflen*sizeof(char));
+                      }
+                      stringbuffer[stringlen] = '\0';
                     } /* eat up string */
                     if (c == EOF) {
                       yyerror("EOF in string");
                     } else {
+                      yylval.pch = stringbuffer;
                       return STRINGLITERAL;
                     }
                   }

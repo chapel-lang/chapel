@@ -19,6 +19,7 @@
 %union	{
   bool boolval;
   long intval;
+  char* pch;
 
   unOpType uot;
   binOpType bot;
@@ -28,9 +29,9 @@
   DomainExpr* pdexpr;
   Stmt* stmt;
   Type* pdt;
-  char* pch;
   Symbol* psym;
   VarSymbol* pvsym;
+  TypeSymbol* ptsym;
 }
 
 
@@ -47,8 +48,9 @@
 %token FUNCTION
 
 %token IDENT
-%token DEFINED_IDENT
-%token INTLITERAL FLOATLITERAL STRINGLITERAL
+%token <ptsym> DEFINED_IDENT
+%token INTLITERAL FLOATLITERAL 
+%token <pch> STRINGLITERAL
 
 %token IF ELSE ELSIF
 %token FOR FORALL IN
@@ -278,7 +280,7 @@ type:
 | tupleType
 | weirdType
 | DEFINED_IDENT
-    { $$ = ((TypeSymbol*)yypst)->definition; }  // BLC: yuck! rtt?
+    { $$ = $1->definition; }
 ;
 
 
@@ -368,11 +370,11 @@ forloop:
 
 whileloop:
   WHILE expr statement
-    { $$ = new NullStmt(); }
+    { $$ = new WhileLoopStmt(LOOP_WHILEDO, $2, $3); }
 | DO statement WHILE expr ';'
-    { $$ = new NullStmt(); }
+    { $$ = new WhileLoopStmt(LOOP_DOWHILE, $4, $2); }
 | REPEAT statement UNTIL expr ';'
-    { $$ = new NullStmt(); }
+    { $$ = new WhileLoopStmt(LOOP_REPEAT, $4, $2); }
 ;
 
 
@@ -525,7 +527,7 @@ literal:
 | FLOATLITERAL
     { $$ = new FloatLiteral(yytext, atof(yytext)); }
 | STRINGLITERAL
-    { $$ = new StringLiteral(yytext); }
+    { $$ = new StringLiteral($1); }
 ;
 
 
@@ -589,8 +591,7 @@ binop:
 
 otherbinop:
   BY
-    { printf("Got a by at line %d\n", yylineno);
-      $$ = BINOP_BY; }
+    { $$ = BINOP_BY; }
 ;
 
 

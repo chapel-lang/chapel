@@ -144,7 +144,6 @@ void AssignOp::print(FILE* outfile) {
   left->print(outfile);
   fprintf(outfile, " = ");
   right->print(outfile);
-  fprintf(outfile, ";");
 }
 
 

@@ -85,12 +85,19 @@ class LoopStmt : public Stmt {
 };
 
 
+enum whileLoopType {
+  LOOP_WHILEDO = 0,
+  LOOP_DOWHILE,
+  LOOP_REPEAT
+};
+
+
 class WhileLoopStmt : public LoopStmt {
  public:
-  bool topTest;
+  whileLoopType type;
   Expr* condition;
 
-  WhileLoopStmt(bool init_topTest, Expr* init_cond, Stmt* body);
+  WhileLoopStmt(whileLoopType init_type, Expr* init_cond, Stmt* body);
 
   void print(FILE* outfile);
 };

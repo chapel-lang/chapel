@@ -77,6 +77,9 @@ class UserType : public Type {
   void printDef(FILE* outfile);
 };
 
+
+// BLC: move these to standard prelude
+
 extern Type* dtBoolean;
 extern Type* dtInteger;
 extern Type* dtFloat;

@@ -52,7 +52,7 @@ void VarDefStmt::print(FILE* outfile) {
       init->print(outfile);
     }
   }
-  fprintf(outfile, ";\n");
+  fprintf(outfile, ";");
 }
 
 
@@ -63,7 +63,7 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 
 void TypeDefStmt::print(FILE* outfile) {
   type->printDef(outfile);
-  fprintf(outfile, ";\n");
+  fprintf(outfile, ";");
 }
 
 
@@ -78,11 +78,14 @@ void FnDefStmt::print(FILE* outfile) {
   fprintf(outfile, "(");
   fun->formals->printList(outfile);
   fprintf(outfile, ")");
-  if (!fun->retType->isNull()) {
+  if (fun->retType->isNull()) {
+    fprintf(outfile, " ");
+  } else {
     fprintf(outfile, ": ");
     fun->retType->print(outfile);
   }
   fun->body->print(outfile);
+  fprintf(outfile, "\n\n");
 }
 
 
@@ -93,7 +96,7 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 
 void ExprStmt::print(FILE* outfile) {
   expr->print(outfile);
-  fprintf(outfile, "\n");
+  fprintf(outfile, ";");
 }
 
 
@@ -119,38 +122,52 @@ LoopStmt::LoopStmt(Stmt* init_body) :
 
 void LoopStmt::print(FILE* outfile) {
   fprintf(outfile, "{\n");
-  body->printList(outfile, "");
-  fprintf(outfile, "}\n");
+  body->printList(outfile, "\n");
+  fprintf(outfile, "\n");
+  fprintf(outfile, "}");
 }
 
 
-WhileLoopStmt::WhileLoopStmt(bool init_topTest, 
+WhileLoopStmt::WhileLoopStmt(whileLoopType init_type, 
 			     Expr* init_cond, 
 			     Stmt* init_body) 
   : LoopStmt(init_body), 
-    topTest(init_topTest), 
+    type(init_type), 
     condition(init_cond) 
 {}
 
 
 void WhileLoopStmt::print(FILE* outfile) {
   Stmt::print(outfile);
-  if (topTest) {
+  switch (type) {
+  case LOOP_WHILEDO:
     fprintf(outfile, "while (");
     condition->print(outfile);
     fprintf(outfile, ") ");
-  } else {
+    break;
+  case LOOP_DOWHILE:
     fprintf(outfile, "do ");
+    break;
+  case LOOP_REPEAT:
+    fprintf(outfile, "repeat ");
+    break;
   }
   
   LoopStmt::print(outfile);
 
-  if (topTest) {
-    fprintf(outfile, "\n");
-  } else {
-    fprintf(outfile, " while (");
+  switch (type) {
+  case LOOP_WHILEDO:
+    break;
+  case LOOP_DOWHILE:
+    fprintf(outfile, "while (");
     condition->print(outfile);
-    fprintf(outfile, ");\n");
+    fprintf(outfile, ")");
+    break;
+  case LOOP_REPEAT:
+    fprintf(outfile, "until (");
+    condition->print(outfile);
+    fprintf(outfile, ")");
+    break;
   }
 }
 
@@ -191,13 +208,10 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
 void CondStmt::print(FILE* outfile) {
   fprintf(outfile, "if (");
   condExpr->print(outfile);
-  fprintf(outfile, ") {\n");
+  fprintf(outfile, ") ");
   thenStmt->print(outfile);
-  fprintf(outfile, "}");
   if (!elseStmt->isNull()) {
-    fprintf(outfile, " else {\n");
+    fprintf(outfile, " else ");
     elseStmt->print(outfile);
-    fprintf(outfile, "}");
   }
-  fprintf(outfile, "\n");
 }
