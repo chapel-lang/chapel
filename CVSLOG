@@ -2488,3 +2488,20 @@ Log message:
 Modified files:
 	./: CVSLOG 
 
+---------------------------------------------------------------------------
+
+06/03/04 09:39:35 -- bradc
+
+Log message:
+	Reordered some actions in sub_test -- previously, if we
+	successfully built a binary but the .good file didn't
+	exist, we wouldn't bother running the binary.  I switched
+	the order around so that we'd run the binary (putting
+	its output in the *.exec.out.tmp file) then complain
+	about the missing .good file just before executing the
+	diff.  This allows us to inspect the output that was
+	generated to consider copying it into the .good file.
+
+Modified files:
+	chapel/test/: sub_test 
+
