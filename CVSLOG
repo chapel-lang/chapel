@@ -22350,3 +22350,17 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/test/arrays/deitz/: test_array_of_array1.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 14:50:01 -- bradc
+
+Log message:
+	Added a handful of .cvsignore files to the testing system
+	so that *.tmp files that are left by failing tests don't
+	show up in cvs -nq update listings.
+
+Added files:
+	chapel/test/arrays/jplevyak/: .cvsignore 
+	chapel/test/domains/roxana/: .cvsignore 
+	chapel/test/modules/bradc/manymodules/: .cvsignore 
+
