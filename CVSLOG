@@ -24393,3 +24393,14 @@ Added files:
 	                                         test_seq1a.chpl 
 	                                         test_seq1a.good 
 
+---------------------------------------------------------------------------
+
+04/06/05 14:23:38 -- shannon
+
+Log message:
+	Woops, forgot to include this with my last commit.  Two
+	tests generate log files.
+
+Added files:
+	chapel/test/memory/shannon/: .cvsignore 
+
