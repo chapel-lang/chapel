@@ -10609,3 +10609,13 @@ Removed files:
 	                                        configVarY.execopts 
 	                                        configVarY.good 
 
+---------------------------------------------------------------------------
+
+11/30/04 09:08:59 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed bug in LL code generation of COMPLEX and BOOLEAN literals.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
