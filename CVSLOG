@@ -14764,3 +14764,14 @@ Added files:
 	                                        configVarTwoModsNoneSpecified.execopts 
 	                                        configVarTwoModsNoneSpecified.good 
 
+---------------------------------------------------------------------------
+
+01/17/05 15:07:43 -- jplevyak
+
+Log message:
+	Put my notes under CVS.
+
+Added files:
+	chapel/doc/internal/: notes.callbacks notes.functioncalls 
+	                      notes.generics_pointwise notes.todo 
+
