@@ -13830,3 +13830,15 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+01/06/05 16:53:57 -- jplevyak
+
+Log message:
+	Interface to new clone() function... still not working.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fun.cpp 
+	chapel/compiler/include/: analysis.h ast.h 
+	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h 
+
