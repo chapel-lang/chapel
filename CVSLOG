@@ -14444,3 +14444,15 @@ Added files:
 	                                         test_overload_integerfloat4.future 
 	                                         test_overload_integerfloat4.good 
 
+---------------------------------------------------------------------------
+
+01/14/05 11:07:46 -- jplevyak
+
+Log message:
+	Fixed up another backpointer to get call_info to report the correct
+	clones.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fun.cpp 
+	chapel/compiler/include/: ast.h 
+
