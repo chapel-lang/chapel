@@ -7955,3 +7955,73 @@ Added files:
 	                                         loop_endless.v rec.good 
 	                                         rec.v 
 
+---------------------------------------------------------------------------
+
+09/20/04 13:02:37 -- bradc
+
+Log message:
+	Prior to this checkin, using the --no-codegen flag would cause
+	the AST to be pretty-printed to the console in lieu of code
+	generation.  This was a handy debugging tool early on, but has
+	become increasingly bothersome.  Now, --no-codegen simply means
+	don't do code generation.
+	
+	Added a pass PrintProgram which will print the program in the
+	same way that --no-codegen used to.  Set up the
+	test/trivial/protoast subdirectory to run this pass and only
+	this pass, since that's what this directory has been testing
+	up to this point ("can we parse and pretty-print out some
+	substantial programs").
+	
+	Modified John's flowanalysis test output, which also used
+	--no-codegen, so that the pretty-printed output is no
+	longer intermixed with his analysis pass' output.
+	
+	Moved the printAST.cpp file from passes to traversals, since
+	it actually is a traversal (I mistakenly put it in the wrong
+	place last week).
+
+Modified files:
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  shift_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+	chapel/test/trivial/bradc/protoast/: COMPOPTS 
+Added files:
+	chapel/compiler/include/: printProgram.h 
+	chapel/compiler/passes/: printProgram.cpp 
+	chapel/compiler/traversals/: printAST.cpp 
+	chapel/test/trivial/bradc/protoast/: mypasslist.h 
+Removed files:
+	chapel/compiler/passes/: printAST.cpp 
+
