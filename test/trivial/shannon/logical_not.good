@@ -1,10 +1,10 @@
 o = 0
 p = 1
 
-test: !o
+test: not o
 expected answer = 1
 actual answer = 1
 
-test: !p
+test: not p
 expected answer = 0
 actual answer = 0

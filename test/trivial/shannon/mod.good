@@ -2,10 +2,10 @@ m = 5
 n = 2
 o = 10
 
-test: m % n
+test: m mod n
 expected answer = 1
 actual answer = 1
 
-test: o % m
+test: o mod m
 expected answer = 0
 actual answer = 0

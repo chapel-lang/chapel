@@ -8,13 +8,13 @@ writeln("n = ", n);
 writeln("o = ", o);
 writeln();
 
-writeln("test: m % n");
+writeln("test: m mod n");
 writeln("expected answer = 1");
-answer = m % n;
+answer = m mod n;
 writeln("actual answer = ", answer);
 writeln();
 
-writeln("test: o % m");
+writeln("test: o mod m");
 writeln("expected answer = 0");
-answer = o % m;
+answer = o mod m;
 writeln("actual answer = ", answer);

@@ -703,7 +703,7 @@ block
      qualified_ident
       ident any
    arg
-    const #"&&"
+    const #"and"
    arg
     ident b
     constraint
@@ -718,7 +718,7 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"&&"
+     const #"and"
     const #^^
     qualified_ident
      ident b
@@ -732,7 +732,7 @@ block
      qualified_ident
       ident any
    arg
-    const #"||"
+    const #"or"
    arg
     ident b
     constraint
@@ -747,7 +747,7 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"||"
+     const #"or"
     const #^^
     qualified_ident
      ident b

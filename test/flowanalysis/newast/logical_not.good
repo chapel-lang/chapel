@@ -29,8 +29,8 @@
 ::p(<unknown>:0) ( int64 (<unknown>:0) )
 ::p(logical_not.chpl:17) ( int64 (<unknown>:0) )
 ::p(logical_not.chpl:6) ( int64 (<unknown>:0) )
-::test: !o(logical_not.chpl:9) ( string (<unknown>:0) )
-::test: !p(logical_not.chpl:15) ( string (<unknown>:0) )
+::test: not o(logical_not.chpl:9) ( string (<unknown>:0) )
+::test: not p(logical_not.chpl:15) ( string (<unknown>:0) )
 function __entryPoint <internal>:0
 function __initIntPrelude <internal>:0
 function __initPrelude <internal>:0

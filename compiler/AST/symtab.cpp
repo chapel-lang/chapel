@@ -536,6 +536,29 @@ ParamSymbol* Symboltable::copyParams(ParamSymbol* formals) {
 }
 
 
+/* Converts expressions like i and j in [(i,j) in D] to symbols */
+Symbol* Symboltable::exprToIndexSymbols(Expr* expr, Symbol* indices) {
+
+  for (Expr* tmp = expr; tmp && !(tmp->isNull()); tmp = nextLink(Expr, tmp)) {
+    Variable* varTmp = dynamic_cast<Variable*>(tmp);
+
+    if (!varTmp) {
+      Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
+      if (!tupTmp) {
+	USR_FATAL(tmp, "Index variable expected\n");
+      }
+      else {
+	return Symboltable::exprToIndexSymbols(tupTmp->exprs, indices);
+      }
+    }
+    else {
+      indices = appendLink(indices, new Symbol(SYMBOL, varTmp->var->name));
+    }
+  }
+  return indices;
+}
+
+
 VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 				   varType vartag, bool isConst) {
   VarSymbol* varList;

@@ -38,6 +38,7 @@ class Symboltable {
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);
   static ParamSymbol* copyParams(ParamSymbol* formals);
+  static Symbol* Symboltable::exprToIndexSymbols(Expr* expr, Symbol* indices=nilSymbol);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
 					    Expr* init = nilExpr, 
 					    varType vartag = VAR_NORMAL, 

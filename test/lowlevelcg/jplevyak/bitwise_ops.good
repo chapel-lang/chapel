@@ -15,14 +15,14 @@ test: m | n
 expected answer = 14
 actual answer = 14
 
-test: o || p
+test: o or p
 expected answer = 1
 actual answer = 1
 
-test: o || o
+test: o or o
 expected answer = 0
 actual answer = 0
 
-test: p || p
+test: p or p
 expected answer = 1
 actual answer = 1

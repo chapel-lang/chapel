@@ -2,11 +2,11 @@ var o =  0;
 var p =  1;
 var answer = 0;
 
-answer = o && o;
-writeln("0 && 0 = ", answer);
+answer = o and o;
+writeln("0 and 0 = ", answer);
 
-answer = p && p;
-writeln("1 && 1 = ", answer);
+answer = p and p;
+writeln("1 and 1 = ", answer);
 
-answer = o && p;
-writeln("0 && 1 = ", answer);
+answer = o and p;
+writeln("0 and 1 = ", answer);

@@ -5,7 +5,6 @@
  * Brad, 6/2004
  */
 
-
 %{
 
 #include <stdio.h>
@@ -75,11 +74,6 @@ while           return TWHILE;
 "^="            return TASSIGNBXOR;
 "<<="           return TASSIGNBSL;
 ">>="           return TASSIGNBSR;
-
-"&&"            return TAND;
-"||"            return TOR;
-"!"             return TNOT;
-"%"             return TMOD;
 
 ".."            return TDOTDOT;
 
@@ -167,10 +161,6 @@ while           return TWHILE;
 [ \t]           /* no action, eat spaces and tabs */
 \n              yylineno++;
 
-.               return (int) yytext[0]; /* This should be commented
-					   out */
-
-
 "--"            {
                   register int c;
           
@@ -209,8 +199,6 @@ while           return TWHILE;
                     }
                   }
                 }
-
-
 
 %%
 

@@ -1,3 +1,7 @@
+/** Remove bsl, bsr; Remove REDUCE_IDENT
+ **
+ **/
+
 /*
  * A simple mini-Chapel parser developed from Shannon's
  * experiments teaching herself flex and bison, and used
@@ -23,8 +27,6 @@
   long intval;
   char* pch;
 
-  unOpType uot;
-  binOpType bot;
   getsOpType got;
   varType vt;
   paramType pt;
@@ -88,7 +90,6 @@
 %token TASSIGNBSL;
 %token TASSIGNBSR;
 
-%token TCOLON;
 %token TSEMI;
 %token TCOMMA;
 %token TDOT;
@@ -103,8 +104,6 @@
 %type <intval> intliteral
 
 %type <got> assignOp
-/*%type <bot> otherbinop*/
-/*%type <uot> unop*/
 %type <vt> vardecltag
 %type <pt> formaltag
 
@@ -321,7 +320,7 @@ fndecl:
     {
       $<fnsym>$ = Symboltable::startFnDef($2);
     }
-                      TLP formals TRP fnrettype statement
+                       TLP formals TRP fnrettype statement
     {
       $$ = Symboltable::finishFnDef($<fnsym>3, $5, $7, $8);
     }
@@ -627,8 +626,6 @@ expr:
     { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
 | expr TEXP expr
     { $$ = new BinOp(BINOP_EXP, $1, $3); }
-
-/** Can "by" really apply to arbitrary expressions or just ranges and reductions? -SJD */
 | expr TBY expr
     { $$ = new SpecialBinOp(BINOP_BY, $1, $3); }
 ;
@@ -652,22 +649,24 @@ reduction:
 ;
 
 
-/* Here are the two reduce/reduce errors! nonemptyExprlist and indexlist -SJD */
 domainExpr:
   nonemptyExprlist
     { $$ = new DomainExpr($1); }
+| nonemptyExprlist TIN nonemptyExprlist                             // BLC: This is wrong vv
+    { $$ = new DomainExpr($3, Symboltable::defineVars(Symboltable::exprToIndexSymbols($1), dtInteger)); }
+/*
+  The above case replaces the following: (The first expressions must
+  be checked to make sure they are simply identifiers, e.g., [i,j in D].)
+
 | indexlist TIN nonemptyExprlist          // BLC: This is wrong vv
     { $$ = new DomainExpr($3, Symboltable::defineVars($1, dtInteger)); }
+*/
 ;
 
 
 range:
   expr TDOTDOT expr
     { $$ = new SimpleSeqExpr($1, $3); }
-/* MOVED to expr
-| expr TDOTDOT expr TBY expr
-    { $$ = new SimpleSeqExpr($1, $3, $5); }
-*/
 | TSTAR
     { $$ = new FloodExpr(); }
 | TDOTDOT
@@ -691,14 +690,6 @@ intliteral:
   INTLITERAL
     { $$ = atol(yytext); }
 ;
-
-
-/*
-otherbinop:
-  TBY
-    { $$ = BINOP_BY; }
-;
-*/
 
 
 identifier:
