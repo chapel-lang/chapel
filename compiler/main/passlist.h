@@ -40,6 +40,7 @@ PassInfo passlist[] = {
   RUN(FindUnknownTypes, ""),
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
+  RUN(ResolveOverloadedOperators, ""),
 
   // passes to normalize the basic AST after analysis
   RUN(Fixup, "verify"), // this is a sanity check

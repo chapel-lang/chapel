@@ -33,6 +33,7 @@
 #include "../traversals/specializeParenOpExprs.h"
 #include "../traversals/removeDeadSymbols.h"
 #include "../traversals/renameOverloadedFunctions.h"
+#include "../traversals/resolveOverloadedOperators.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/transformLetExprs.h"
@@ -77,6 +78,7 @@ REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(RenameOverloadedFunctions);
+REGISTER(ResolveOverloadedOperators);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
 REGISTER(ScopeResolveSymbols);

@@ -22,6 +22,7 @@ TRAVERSALS_SRCS = \
 	methodsToFunctions.cpp \
 	removeDeadSymbols.cpp \
 	renameOverloadedFunctions.cpp \
+	resolveOverloadedOperators.cpp \
 	resolveSymbols.cpp \
 	scopeResolveSymbols.cpp \
 	specializeParenOpExprs.cpp \
