@@ -38,6 +38,7 @@ extern int d_debug_level;
 static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
+static int pre_malloc = 0;
 int analyzeNewAST = 1;
 
 int fdce_if1 = 1;
@@ -52,6 +53,7 @@ char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int print_call_depth = 2;
 
 static ArgumentDescription arg_desc[] = {
+ {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
@@ -328,6 +330,8 @@ void runCompilerInGDB(int argc, char* argv[]) {
 
 int
 main(int argc, char *argv[]) {
+  if (pre_malloc)
+    (void)MALLOC(pre_malloc);
   startCatchingSignals();
   
   compute_program_name_loc(argv[0], &(arg_state.program_name),

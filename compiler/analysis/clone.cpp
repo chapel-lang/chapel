@@ -40,13 +40,22 @@ initialize() {
       es->equiv = new Vec<EntrySet *>();
       es->equiv->add(es);
     }
-    forv_EntrySet(es, f->ess) if (es)
-      forv_AEdge(e, es->out_edges) if (e)
+    forv_EntrySet(es, f->ess) if (es) {
+      es->out_edge_map.clear();
+      forv_AEdge(e, es->out_edges) if (e) {
+	// rebuild out_edge_map 
+	Map<Fun *, AEdge *> *f2e = es->out_edge_map.get(e->pnode);
+	if (!f2e)
+	  es->out_edge_map.put(e->pnode, (f2e = new Map<Fun *, AEdge *>()));
+	f2e->put(e->match->fun, e);
+	// build called_css
 	forv_MPosition(p, e->match->fun->arg_positions) {
 	  AVar *av = e->args.get(p);
 	  if (av)
 	    f->called_css.set_union(*av->out);
+	}
       }
+    }
   }
 }
 
@@ -252,18 +261,17 @@ make_not_equiv(CreationSet *a, CreationSet *b) {
 }
 
 static void
-determine_basic_clones() {
-  Vec<Vec<CreationSet *> *> css_sets;
-  sets_by_f<CreationSet, CS_SYM_FN>(fa->css, css_sets);
+determine_basic_clones(Vec<Vec<CreationSet *> *> &css_sets_by_sym) {
+  sets_by_f<CreationSet, CS_SYM_FN>(fa->css, css_sets_by_sym);
   // clone for unboxing of basic types
-  for (int i = 0; i < css_sets.n; i++) {
-    for (int j = 0; j < css_sets.v[i]->n; j++) {
-      if (!css_sets.v[i]->v[j])
+  for (int i = 0; i < css_sets_by_sym.n; i++) {
+    for (int j = 0; j < css_sets_by_sym.v[i]->n; j++) {
+      if (!css_sets_by_sym.v[i]->v[j])
 	continue;
       for (int k = 0; k < j; k++) {
-	if (!css_sets.v[i]->v[k])
+	if (!css_sets_by_sym.v[i]->v[k])
 	  continue;
-	CreationSet *cs1 = css_sets.v[i]->v[j], *cs2 = css_sets.v[i]->v[k];
+	CreationSet *cs1 = css_sets_by_sym.v[i]->v[j], *cs2 = css_sets_by_sym.v[i]->v[k];
 	// if different number of instance variables
 	if (cs1->vars.n != cs2->vars.n) {
 	  make_not_equiv(cs1, cs2);
@@ -288,6 +296,13 @@ determine_basic_clones() {
       }
     }
   }
+  Vec<Vec<CreationSet *> *> css_sets;
+  sets_by_f<CreationSet, CS_EQ_FN>(fa->css, css_sets);
+  for (int i = 0; i < css_sets_by_sym.n; i++) {
+    Vec<CreationSet *> *s = css_sets.v[i];
+    forv_CreationSet(cs, *s) if (cs)
+      cs->equiv = s;
+  }
 }
 
 // the core function: builds equiv_sets for entry sets and creation sets
@@ -298,7 +313,8 @@ determine_clones() {
   changed_ess.copy(fa->ess);
   changed_css.copy(fa->css);
 
-  determine_basic_clones();
+  Vec<Vec<CreationSet *> *> css_sets_by_sym;
+  determine_basic_clones(css_sets_by_sym);
 
   // find fixed point
   while (changed_css.n) {
@@ -367,14 +383,16 @@ determine_clones() {
       }
     }
     // recompute creation set equivalence from non-equivalence
-    Vec<Vec<CreationSet *> *> css_sets;
-    sets_by_f<CreationSet, CS_EQ_FN>(fa->css, css_sets);
-    for (int i = 0; i < css_sets.n; i++) {
-      Vec<CreationSet *> *s = css_sets.v[i];
-      forv_CreationSet(cs, *s) if (cs) {
-	if (cs->equiv->some_disjunction(*s))
-	  changed_css.set_add(cs);
-	cs->equiv = css_sets.v[i];
+    for (int i = 0; i < css_sets_by_sym.n; i++) {
+      Vec<Vec<CreationSet *> *> css_sets;
+      sets_by_f<CreationSet, CS_EQ_FN>(*css_sets_by_sym.v[i], css_sets);
+      for (int j = 0; i < css_sets.n; i++) {
+	Vec<CreationSet *> *s = css_sets.v[j];
+	forv_CreationSet(cs, *s) if (cs) {
+	  if (cs->equiv->some_disjunction(*s))
+	    changed_css.set_add(cs);
+	  cs->equiv = s;
+	}
       }
     }
   }

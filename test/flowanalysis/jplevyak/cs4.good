@@ -53,6 +53,8 @@ function makeC cs4.v:3
 function makeC cs4.v:3
 function makeD cs4.v:4
 function makeD cs4.v:4
+function makeD cs4.v:4
+function new prelude.v:74
 function new prelude.v:74
 function new prelude.v:74
 function new prelude.v:74
@@ -73,12 +75,15 @@ makeC::c(cs4.v:3) ( C (cs4.v:1) )
 makeC::c(cs4.v:3) ( C (cs4.v:1) )
 makeD::d(cs4.v:4) ( D (cs4.v:2) )
 makeD::d(cs4.v:4) ( D (cs4.v:2) )
+makeD::d(cs4.v:4) ( D (cs4.v:2) )
 new::a(prelude.v:74) ( C (cs4.v:1) )
 new::a(prelude.v:74) ( C (cs4.v:1) )
 new::a(prelude.v:74) ( D (cs4.v:2) )
 new::a(prelude.v:74) ( D (cs4.v:2) )
+new::a(prelude.v:74) ( D (cs4.v:2) )
 new::o(prelude.v:74) ( C (cs4.v:1) )
 new::o(prelude.v:74) ( C (cs4.v:1) )
+new::o(prelude.v:74) ( D (cs4.v:2) )
 new::o(prelude.v:74) ( D (cs4.v:2) )
 new::o(prelude.v:74) ( D (cs4.v:2) )
 operator::a(prelude.v:75) ( C (cs4.v:1) )
