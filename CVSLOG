@@ -13290,3 +13290,61 @@ Added files:
 	                                 intent-8-error.good 
 	                                 intent-9.chpl intent-9.good 
 
+---------------------------------------------------------------------------
+
+12/30/04 11:49:29 -- deitz
+
+Log message:
+	Added "back" to all AST pieces (though it is only used for expressions
+	and statements so far (and maybe that's the way it should be)).  This
+	field, in an expression or statement, contains a pointer to the
+	forward pointer to the expression or statement.  It is useful for
+	making modifications to the AST because it lets us keep all the
+	forward pointers correct and call fixup to reconnect the back
+	pointers.  The "back" field is maintained in Fixup.
+	
+	Changed preinsert to insertBefore and postinsert to insertAfter.
+	Robustified replace, insertBefore and insertAfter so that the forward
+	pointers are maintained and fixup is called.  Removed extra calls to
+	Fixup from the passlist though the last Fixup-verify is not called
+	because of a problem in MethodsToFunctions.
+	
+	There is a major problem with the interaction between the traversal
+	and insertBefore.  Advise using insertAfter for the time being.  This
+	problem has to do with what statement is traversed after the new
+	statements are inserted.  It turns out that the statement to which the
+	statement was inserted before is traversed again.  This can lead to
+	infinite loops if a traversal inserts something before a statement.
+	For example, it is a problem in the InsertUnionChecks traversal
+	because the checks should be inserted before any statement with a
+	union access.
+	
+	Fixed handling of unions in analysis by special-casing them similar to
+	how records are already special-cased.  The problem is with their
+	constructor.  Expect the handling of their constructors to be unified
+	with the handling of class constructors in the near term.
+	
+	Added a new test case for unions, test_union4.chpl.  This checkin
+	fixes two regressions:
+	  [Error matching compiler output for classes/deitz/test_union1]
+	  [Error matching compiler output for classes/deitz/test_union3]
+	
+	The new test and test_union2.chpl fail because insertBefore is not
+	working and the union checks use insertAfter instead.
+	
+	Added several .cvsignore files to the test directores.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp link.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: link.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: fixup.cpp insertUnionChecks.cpp 
+	                             processParameters.cpp 
+	chapel/test/trivial/deitz/: .cvsignore 
+Added files:
+	chapel/test/classes/deitz/: test_union4.chpl test_union4.good 
+	chapel/test/functions/bradc/: .cvsignore 
+	chapel/test/types/type_variables/deitz/: .cvsignore 
+	chapel/test/types/type_variables/deitz/future/: .cvsignore 
+
