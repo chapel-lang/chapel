@@ -56,12 +56,14 @@ int fgraph_vcg = 0;
 int fcg = 0;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int print_call_depth = 2;
+int scoping_test = 0;
 
 static ArgumentDescription arg_desc[] = {
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
+ {"scoping", ' ', "Scoping Test", "T", &scoping_test, "CHPL_SCOPING_TEST", NULL},
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
  {"print_call_depth", 'C', "Print Call Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
  {"constants_per_var", ' ', "# of Constants per Var", "I", &num_constants_per_variable, 

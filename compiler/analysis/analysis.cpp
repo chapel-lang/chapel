@@ -111,31 +111,30 @@ AInfo::copy_node(ASTCopyContext* context) {
 
 Vec<Fun *> *
 AInfo::visible_functions(char *name) {
-#if 0
-  Expr *e = dynamic_cast<Expr *>(this->xast);
-  Stmt *s = 0;
-  if (e)
-    s = e->stmt;
-  else
-    s = dynamic_cast<Stmt *>(this->xast);
-  Vec<Fun *> *v = 0;
-  ScopeLookupCache *cache = s->parentSymbol->parentScope->lookupCache;
-  if (cache && (v = cache->get(name))) 
+  if (scoping_test) {
+    Expr *e = dynamic_cast<Expr *>(this->xast);
+    Stmt *s = 0;
+    if (e)
+      s = e->stmt;
+    else
+      s = dynamic_cast<Stmt *>(this->xast);
+    Vec<Fun *> *v = 0;
+    ScopeLookupCache *cache = s->parentSymbol->parentScope->lookupCache;
+    if (cache && (v = cache->get(name))) 
+      return v;
+    Symbol *sym = Symboltable::lookupInScope(name, s->parentSymbol->parentScope);
+    v = new Vec<Fun *>;
+    FnSymbol *fn = dynamic_cast<FnSymbol*>(sym);
+    while (fn) {
+      v->set_add(fn->asymbol->fun);
+      fn = fn->overload;
+    }
+    if (!cache)
+      cache = s->parentSymbol->parentScope->lookupCache = new ScopeLookupCache;
+    cache->put(name, v);
     return v;
-  Symbol *sym = Symboltable::lookupInScope(name, s->parentSymbol->parentScope);
-  v = new Vec<Fun *>;
-  FnSymbol *fn = dynamic_cast<FnSymbol*>(sym);
-  while (fn) {
-    v->set_add(fn->asymbol->fun);
-    fn = fn->overload;
-  }
-  if (!cache)
-    cache = s->parentSymbol->parentScope->lookupCache = new ScopeLookupCache;
-  cache->put(name, v);
-  return v;
-#else
-  return 0;
-#endif
+  } else 
+    return 0;
 }
 
 void

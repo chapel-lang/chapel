@@ -21,6 +21,7 @@ extern int analyzeAST;
 extern int debugParserLevel;
 extern int suppressCodegen;
 extern int developer;
+extern int scoping_test;
 
 void do_analysis(char *fn);
 
