@@ -193,14 +193,12 @@ AInfo::copy_tree(ASTCopyContext* context) {
   Map<BaseAST*,BaseAST*> clone_map;
   FnSymbol *orig_fn = dynamic_cast<FnDefStmt*>(xast)->fn;
   FnSymbol *new_fn = orig_fn->clone(&callback, &clone_map);
-  if (Expr* expr = dynamic_cast<Expr*>(new_fn->defPoint)) {
+  if (Expr* expr = dynamic_cast<Expr*>(new_fn->defPoint))
     return expr->ainfo;
-  }
-  else if (Stmt* stmt = dynamic_cast<Stmt*>(new_fn->defPoint)) {
+  else if (Stmt* stmt = dynamic_cast<Stmt*>(new_fn->defPoint))
     return stmt->ainfo;
-  }
   else {
-    INT_FATAL(orig_fn, "defPoint is not Stmt or Expr");
+    fail("Function definition AST not Stmt or Expr");
     return 0;
   }
 }
@@ -689,6 +687,7 @@ build_types(Vec<BaseAST *> &syms) {
 	  x->type = c->asymbol->sym;
 	  t->asymbol->sym->has.add(x);
 	}
+	t->asymbol->sym->type_kind = Type_PRODUCT;
 	t->asymbol->sym->inherits_add(sym_tuple);
 	break;
       }
@@ -1439,7 +1438,7 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_ARRAYREF: // **************** CURRENTLY UNUSED ****************
-    case EXPR_TUPLESELECT: // *** ADDED 2/11/05 --SJD
+    case EXPR_TUPLESELECT:
     case EXPR_FNCALL:
     case EXPR_PARENOP: {
       ParenOpExpr *s = dynamic_cast<ParenOpExpr *>(ast);
@@ -1501,7 +1500,7 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_TUPLE: {
       Tuple *s = dynamic_cast<Tuple *>(ast);
-      s->ainfo->rval = new_sym();
+      s->ainfo->sym = s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> args;
       getLinkElements(args, s->exprs);
