@@ -14100,3 +14100,20 @@ Removed files:
 	chapel/compiler/AST/: symtab.cpp 
 	chapel/compiler/passes/: printSymtab.cpp printSymtab.h 
 
+---------------------------------------------------------------------------
+
+01/07/05 11:54:58 -- deitz
+
+Log message:
+	Added .good files for new future tests
+
+Added files:
+	chapel/test/classes/deitz/: test_nested_record1.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function3.good 
+	                                         test_clone_function4.good 
+	                                         test_typevar_function1.good 
+	                                         test_typevar_function2.good 
+	                                         test_typevar_function3.good 
+	                                         test_typevar_function4.good 
+
