@@ -18830,3 +18830,19 @@ Modified files:
 	chapel/compiler/include/: fa.h fun.h 
 	chapel/compiler/parser/: chapel.y internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+03/03/05 16:56:04 -- jplevyak
+
+Log message:
+	Added a new function to "finalize" the if1 representation by doing
+	dead code removal.   Lack of this was causing some instantiated functions to
+	fail (in particular pragm-4.chpl).
+	Remove the .future on pragma-4.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp if1.cpp 
+	chapel/compiler/include/: if1.h 
+Removed files:
+	chapel/test/trivial/jplevyak/: pragma-4.future 
+
