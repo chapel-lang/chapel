@@ -15588,3 +15588,13 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
 	chapel/compiler/include/: pattern.h 
 
+---------------------------------------------------------------------------
+
+01/24/05 17:05:17 -- jplevyak
+
+Log message:
+	Temporary assert to prevent memory thrashing for this test case.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
