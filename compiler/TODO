@@ -13,5 +13,8 @@
 
 - handle david's generics stuff
 
+- trailing context for regex to handle 1..n
 
+- AST rewrite to change '=' to '==' in expressions and to
+  make sure no other assignments are in expressions.
 
