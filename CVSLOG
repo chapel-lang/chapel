@@ -5352,3 +5352,15 @@ Modified files:
 	                  sym.cpp sym.h v.g var.h 
 	chapel/compiler/cast/: cast.cpp 
 
+---------------------------------------------------------------------------
+
+08/12/04 13:02:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix tests for latest change to Sym
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/: dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+
