@@ -438,3 +438,15 @@ Added files:
 	chapel/third-party/dparser/d/tests/: g46.test.g g46.test.g.1 
 	                                     g46.test.g.1.check 
 
+---------------------------------------------------------------------------
+
+04/02/12 15:38:21 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Fixed a bug in the trailing context code.
+	Updated test cases.
+
+Modified files:
+	chapel/third-party/dparser/d/: Makefile lex.c parse.c scan.c 
+	chapel/third-party/dparser/d/tests/: g36.test.g.1.check 
+
