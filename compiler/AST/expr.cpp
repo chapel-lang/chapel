@@ -345,6 +345,11 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
 {}
 
 
+Type* MemberAccess::typeInfo(void) {
+  return member->type;
+}
+
+
 void MemberAccess::print(FILE* outfile) {
   base->print(outfile);
   fprintf(outfile, ".");

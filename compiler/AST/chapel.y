@@ -522,7 +522,7 @@ simple_lvalue:
   identifier
     { $$ = new Variable(Symboltable::lookup($1)); }
 | simple_lvalue '.' identifier
-    { $$ = new MemberAccess($1, new Symbol(SYMBOL, $3)); }
+    { $$ = Symboltable::defineMemberAccess($1, $3); }
 | simple_lvalue '(' exprlist ')'
     { $$ = ParenOpExpr::classify($1, $3); }
 /*

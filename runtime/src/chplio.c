@@ -12,6 +12,11 @@ void _write_integer64(FILE* outfile, char* format, _integer64 val) {
 }
 
 
+void _write_float64(FILE* outfile, char* format, _float64 val) {
+  fprintf(outfile, format, val);
+}
+
+
 void _write_string(FILE* outfile, char* format, _string val) {
   fprintf(outfile, format, val);
 }

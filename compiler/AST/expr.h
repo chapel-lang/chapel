@@ -181,6 +181,8 @@ class MemberAccess : public Expr {
 
   MemberAccess(Expr* init_base, Symbol* init_member);
 
+  Type* typeInfo(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   int getExprs(Vec<BaseAST *> &asts);

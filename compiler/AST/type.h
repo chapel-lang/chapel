@@ -9,6 +9,7 @@ class EnumSymbol;
 class VarSymbol;
 class Expr;
 class ASymbol;
+class SymScope;
 extern Expr* nilExpr;
 
 class Type : public BaseAST {
@@ -119,11 +120,13 @@ extern ClassType* nilClassType;
 
 class ClassType : public Type {
  public:
-  Stmt* definition;
   ClassType* parentClass;
+  Stmt* definition;
+  SymScope* scope;
   
   ClassType(ClassType* init_parentClass = nilClassType);
   void addDefinition(Stmt* init_definition);
+  void addScope(SymScope* init_scope);
 
   bool isNull(void);
 

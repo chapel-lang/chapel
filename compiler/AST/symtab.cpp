@@ -555,12 +555,16 @@ ClassSymbol* Symboltable::startClassDef(char* name, ClassSymbol* parent) {
 
 TypeDefStmt* Symboltable::finishClassDef(ClassSymbol* classSym, 
 					 Stmt* definition) {
-  Symboltable::popScope();
+  SymScope* classScope = Symboltable::popScope();
 
   ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
+  classType->addScope(classScope);
   classType->addDefinition(definition);
+  TypeDefStmt* classdefStmt = new TypeDefStmt(classType);
+  
+  classScope->setContext(classdefStmt, classSym);
 
-  return new TypeDefStmt(classType);
+  return classdefStmt;
 }
 
 
@@ -577,6 +581,22 @@ ForLoopStmt* Symboltable::finishForLoop(bool forall, VarSymbol* index,
   forScope->setContext(newStmt, currentFn);
 
   return newStmt;
+}
+
+
+MemberAccess* Symboltable::defineMemberAccess(Expr* base, char* member) {
+  Type* baseType = base->typeInfo();
+  Symbol* memberSym;
+
+  if (baseType == dtUnknown) {
+    memberSym = new Symbol(SYMBOL, member);
+  } else if (typeid(*baseType) == typeid(ClassType)) {
+    ClassType* classType = (ClassType*)baseType;
+    memberSym = Symboltable::lookupInScope(member, classType->scope);
+  } else {
+    memberSym = new Symbol(SYMBOL, member);
+  }
+  return new MemberAccess(base, memberSym);
 }
 
 

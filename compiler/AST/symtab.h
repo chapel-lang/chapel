@@ -49,6 +49,8 @@ class Symboltable {
   static ForLoopStmt* finishForLoop(bool forall, VarSymbol* index,
 				    Expr* domain, Stmt* body);
 
+  static MemberAccess* defineMemberAccess(Expr* base, char* member);
+
   static DomainExpr* defineQueryDomain(char* name);
 
   static void print(FILE* outfile);

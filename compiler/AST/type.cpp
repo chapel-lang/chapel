@@ -375,13 +375,19 @@ UserType::getTypes(Vec<BaseAST *> &asts) {
 
 ClassType::ClassType(ClassType* init_parentClass) :
   Type(TYPE_CLASS),
+  parentClass(init_parentClass),
   definition(nilStmt),
-  parentClass(init_parentClass)
+  scope(NULL)
 {}
 
 
 void ClassType::addDefinition(Stmt* init_definition) {
   definition = init_definition;
+}
+
+
+void ClassType::addScope(SymScope* init_scope) {
+  scope = init_scope;
 }
 
 
