@@ -8886,3 +8886,13 @@ Removed files:
 	chapel/compiler/include/: codegen.h pass.h traversal.h 
 	chapel/compiler/main/: pass.cpp 
 
+---------------------------------------------------------------------------
+
+10/13/04 17:37:36 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Removed some dead code and move a few lines around... no real change.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
