@@ -1,0 +1,15 @@
+
+
+
+
+ called from 5 in __init at noargs.chpl:6
+::null(<unknown>:0) ( void (<unknown>:0) )
+foo();
+function __init noargs.chpl:6
+function __init() {
+function foo noargs.chpl:3
+function foo() {
+globals
+writeln("in foo!");
+}
+}

@@ -1,0 +1,15 @@
+
+
+::B(<unknown>:0) ( B (<unknown>:0) )
+::null(<unknown>:0) ( void (<unknown>:0) )
+::x(<unknown>:0) ( B (<unknown>:0) )
+::y(<unknown>:0) ( B (<unknown>:0) )
+enum classVals = S | W | A | B | C | D | O;
+function __init enum.chpl:10
+function __init() {
+globals
+var x: classVals = B;
+var y: integer = x;
+writeln("x is: ", x);
+writeln("y is: ", y);
+}
