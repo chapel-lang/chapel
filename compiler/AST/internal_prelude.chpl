@@ -2,13 +2,10 @@ class Index {
 }
 
 class Array {
-  function self(i: Index) {
+  function self(i) {
     return __primitive("array_index", self, i);
   }
-  function self(i: Index) {
-    return __primitive("array_index", self, i);
-  }
-  function self(i: Index; j : Index) {
+  function self(i; j) {
     return __primitive("array_index", self, i, j);
   }
 }
@@ -18,3 +15,4 @@ class Domain {
 
 class Tuple {
 }
+

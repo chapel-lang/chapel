@@ -982,6 +982,7 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_CAST: {
       CastExpr *s = dynamic_cast<CastExpr *>(ast);
+#if 0
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> args;
@@ -994,6 +995,10 @@ gen_if1(BaseAST *ast) {
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
+#else
+      if1_gen(if1, &s->ainfo->code, s->argList->ainfo->code);
+      s->ainfo->rval = s->argList->ainfo->rval;
+#endif
       break;
     }
     case EXPR_REDUCE: {
