@@ -1202,7 +1202,7 @@ Expr* TupleSelect::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
 Type* TupleSelect::typeInfo(void) {
   // Simple typeInfo  --SJD 2/11/05
 
-  TupleType* tuple_type = dynamic_cast<TupleType*>(baseExpr->typeInfo());
+  TupleType* tuple_type = dynamic_cast<TupleType*>(baseExpr->typeInfo()->getType());
 
   if (!tuple_type) {
     if (Tuple* tuple = dynamic_cast<Tuple*>(baseExpr)) {
@@ -1216,8 +1216,7 @@ Type* TupleSelect::typeInfo(void) {
       if (expr) {
         return expr->typeInfo();
       }
-    }
-
+    } 
     INT_FATAL(this, "Tuple indexing on something not a tuple");
   }
 

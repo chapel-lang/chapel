@@ -537,7 +537,7 @@ DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type,
 }
 
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
-static Expr* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
+static Expr* exprToIndexSymbols(Expr* expr, Expr* domain, Symbol* indices = NULL) {
   if (!expr) {
     DefExpr* def_expr = new DefExpr(indices);
     indices->setDefPoint(def_expr);
@@ -552,11 +552,11 @@ static Expr* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
       if (!tupTmp) {
         USR_FATAL(tmp, "Index variable expected");
       } else {
-        return exprToIndexSymbols(tupTmp->exprs, indices);
+        return exprToIndexSymbols(tupTmp->exprs, domain, indices);
       }
     } else {
       indices = appendLink(indices, new VarSymbol(varTmp->var->name, dtInteger));
-      //indices = appendLink(indices, new VarSymbol(varTmp->var->name, IndexType));
+      //indices = appendLink(indices, new VarSymbol(varTmp->var->name, new IndexType(domain)));
     }
   }
   DefExpr* def_expr = new DefExpr(indices);
@@ -590,8 +590,8 @@ Expr* Symboltable::finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_exp
 
 ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
-
-  Expr* indices = exprToIndexSymbols(indexExpr);
+  
+  Expr* indices = exprToIndexSymbols(indexExpr, domainExpr);
   // HACK: this is a poor assumption -- that all index variables are
   // integers
 
@@ -693,6 +693,7 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
   VarSymbol* indexVars = dynamic_cast<VarSymbol*>(indices);
   if (!indexVars) {
     indexVars = defineVars(indices, dtInteger);
+    //indexVars = defineVars(indices, new IndexType(domain));
   }
   DefExpr* indices_def = new DefExpr(indexVars);
   indexVars->setDefPoint(indices_def);

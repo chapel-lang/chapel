@@ -636,7 +636,7 @@ void IndexType::codegenDef(FILE* outfile) {
     int i = 0;
     forv_Vec(Type, component, tt->components) {
       component->codegen(outfile);
-      fprintf(outfile, " _i%d;\n", ++i);
+      fprintf(outfile, " _field%d;\n", ++i);
     }
     fprintf(outfile, "} ");
     symbol->codegen(outfile);
