@@ -5,6 +5,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "symscope.h"
 #include "type.h"
 
 
@@ -16,9 +17,15 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
   ClassType* ctype;
 
   if (tds = dynamic_cast<TypeDefStmt*>(stmt)) {
+    /** test cloning of classes
+    if (!tds->type->name->parentScope->isInternal()) {
+      Map<BaseAST*,BaseAST*> map;
+      tds->clone(NULL, &map);
+    }
+    **/
     if (ctype = dynamic_cast<ClassType*>(tds->type)) {
       forv_Vec(FnSymbol, fn, ctype->methods) {
-	fn->cname = glomstrings(4, "_", ctype->name->name, "_", fn->name);
+	fn->cname = glomstrings(4, "_", ctype->name->cname, "_", fn->cname);
       }
     }
   }

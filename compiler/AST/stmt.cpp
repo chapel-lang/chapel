@@ -533,16 +533,18 @@ Stmt* TypeDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
 TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
   map->clear();
   TypeDefStmt* this_copy = NULL;
-  static int uid = 1; // Unique ID for cloned functions
+  //  static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
 
   save_scope = Symboltable::setCurrentScope(this->type->name->parentScope);
   Stmt* stmt_copy = copy(true, map, clone_callback);
   if (this_copy = dynamic_cast<TypeDefStmt*>(stmt_copy)) {
+    /*
     this_copy->type->name->cname =
       glomstrings(3, this_copy->type->name->cname,
 		  "_clone_", intstring(uid++));
     this->insertBefore(this_copy);
+    */
   }
   else {
     INT_FATAL(this, "Unreachable statement in TypeDefStmt::clone reached");

@@ -595,6 +595,24 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
 }
 
 
+FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
+  INT_FATAL(this, "FnSymbol::default_wrapper not implemented");
+  return NULL;
+}
+
+
+FnSymbol* FnSymbol::order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals) {
+  INT_FATAL(this, "FnSymbol::order_wrapper not implemented");
+  return NULL;
+}
+
+
+FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutions) {
+  INT_FATAL(this, "FnSymbol::instantiate_generic not implemented");
+  return NULL;
+}
+
+
 bool FnSymbol::isNull(void) {
   return (this == nilFnSymbol);
 }

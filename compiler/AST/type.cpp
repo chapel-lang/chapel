@@ -699,25 +699,34 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  ClassType* copy = new ClassType(value,
-				  union_value,
-				  parentClass,
-				  constructor->copy(clone, map, analysis_clone),
-				  classScope);
+  static int uid = 0;
+  ClassType* copy_type = new ClassType(value, union_value);
+  TypeSymbol* copy_symbol = new TypeSymbol(glomstrings(3, name->name, "_copy_", intstring(uid++)), copy_type);
+  copy_type->addName(copy_symbol);
+  Symboltable::pushScope(SCOPE_CLASS);
+
   Stmt* new_decls = nilStmt;
   Stmt* old_decls = declarationList;
   while (old_decls && !old_decls->isNull()) {
-    if (dynamic_cast<FnDefStmt*>(old_decls)) {
-      new_decls = appendLink(new_decls, old_decls->copy(false, map, analysis_clone));
+    if (FnDefStmt* def = dynamic_cast<FnDefStmt*>(old_decls)) {
+      copy_type->methods.add(def->fn);
+      //Symboltable::define(def->fn);
     }
     else {
       new_decls = appendLink(new_decls, old_decls->copy(true, map, analysis_clone));
     }
     old_decls = nextLink(Stmt, old_decls);
   }
-  copy->addDeclarations(new_decls);
-  copy->addName(name);
-  return copy;
+  copy_type->addDeclarations(new_decls);
+  SymScope* copy_scope = Symboltable::popScope();
+  copy_type->setClassScope(copy_scope);
+  copy_type->buildConstructor();
+
+  TypeDefStmt* copy_def = new TypeDefStmt(copy_type);
+  copy_symbol->setDefPoint(copy_def);
+  copy_scope->setContext(copy_def, copy_symbol);
+  name->defPoint->insertBefore(copy_def);
+  return copy_type;
 }
 
 
@@ -755,11 +764,12 @@ void ClassType::addDeclarations(Stmt* newDeclarations) {
 
 
 void ClassType::buildConstructor(void) {
-  if (!isNull() && Symboltable::parsingUserCode()) {
+  if (!isNull() && !name->parentScope->isInternal()) {
     /* create default constructor */
 
     char* constructorName = glomstrings(2, "_construct_", name->name);
     FnSymbol* newFunSym = Symboltable::startFnDef(new FnSymbol(constructorName));
+    newFunSym->cname = glomstrings(2, "_construct_", name->cname);
     if (value || union_value) {
       BlockStmt* body = Symboltable::startCompoundStmt();
       VarSymbol* this_insert = new VarSymbol("this", this);
@@ -878,7 +888,10 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, ";\n\n");
   }
   forv_Vec(FnSymbol, fn, methods) {
-    fn->codegenDef(codefile);
+    // Check to see if this is where it is defined
+    if (fn->parentScope->symContext->type == this) {
+      fn->codegenDef(codefile);
+    }
     fprintf(codefile, "\n");
   }
 }
