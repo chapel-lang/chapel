@@ -15206,3 +15206,43 @@ Added files:
 	                            test_var_decl4.good 
 	                            test_var_decl4.future 
 
+---------------------------------------------------------------------------
+
+01/21/05 11:01:30 -- deitz
+
+Log message:
+	Added support for declaring multiple parameters of the same type as in
+	
+	  function foo(x y : integer);
+	
+	If a comma were between x and y, y would have type integer and x would
+	have no specified type.
+	
+	Updated variable definitions so that commas between variables
+	following a var have their own types.  So
+	
+	  var x y : integer;
+	
+	declares two integer variables x and y.  If a comma were between x and
+	y, y would have type integer and x would have no specified type.
+	
+	Fixed variable and function definitions in mg-seq and mg-seq-concrete.
+	Added few test cases to look at space separated variables and
+	parameters.
+	
+	This checkin fixes the mg-seq-concrete regression.
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_var_decl1.chpl 
+	                            test_var_decl1.good 
+	                            test_var_decl2.chpl 
+	                            test_var_decl2.good 
+	                            test_var_decl3.chpl 
+	                            test_var_decl3.good 
+
