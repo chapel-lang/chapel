@@ -70,9 +70,9 @@ int installConfigVar(char* varName, char* value) {
   }
   configVar = lookupConfigVar(varName);
   if (configVar == NULL) { /* not found */
-    configVar = (configVarType*) malloc(sizeof(*configVar));
+    configVar = (configVarType*) malloc(sizeof(configVarType));
     hashValue = hash(varName);
-    configVar->next   = configVarTable[hashValue]; 
+    configVar->next = configVarTable[hashValue]; 
     configVarTable[hashValue] = configVar;
     configVar->varName = varName;
   }

@@ -34,7 +34,7 @@ void _read_boolean(FILE* infile, char* format, _boolean* val) {
 
   if (!validBoolean) {
     fflush(stdout);
-    fprintf(stderr, "***ERROR:  Not of boolean type***\n");
+    fprintf(stderr, "***Error:  Not of boolean type***\n");
     exit(0);
   }
 }
@@ -70,13 +70,12 @@ void _write_float64(FILE* outfile, char* format, _float64 val) {
 
 
 void _read_string(FILE* infile, char* format, _string* val) {
-  /**** IF CHANGING THIS, change _default_format_read_string in chplio.h ****/
-  int DEFAULT_STRING_LENGTH = 256;
-  char localVal[DEFAULT_STRING_LENGTH];
+  char localVal[_default_string_length];
 
   fscanf(infile, format, localVal);
-  if (strlen(localVal) == (DEFAULT_STRING_LENGTH - 1)) {
-    fprintf(stderr, "***ERROR:  MAX STRING LENGTH is %d***\n", DEFAULT_STRING_LENGTH);
+  if (strlen(localVal) == (_default_string_length - 1)) {
+    fprintf(stderr, "***Error:  The maximum string length is %d***\n", 
+	    _default_string_length);
     exit(0);
   }
   _copy_string(val, localVal);
@@ -92,7 +91,7 @@ void _read_complex128(FILE* infile, char* format, _complex128* val) {
   // the complex number, with no intervening space.
   numScans = fscanf(infile, format, &(val->re), &(val->im), &imaginaryI);
   if ((imaginaryI != 'i') || (numScans < 2)) {
-    fprintf(stderr, "***ERROR:  Incorrect format for complex numbers***\n");
+    fprintf(stderr, "***Error:  Incorrect format for complex numbers***\n");
     exit(0);
   }
 }

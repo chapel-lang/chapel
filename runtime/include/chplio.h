@@ -22,7 +22,7 @@
 #define _default_format_read_complex128   "%lg  +  %lg%c"
 #define _default_format_write_complex128  "%g + %gi"
 
-/**** IF CHANGING THIS, change _read_string() in chplio.c as well ****/
+#define _default_string_length              256
 #define _default_format_read_string       "%255s"   
 #define _default_format_write_string      "%s"
 
