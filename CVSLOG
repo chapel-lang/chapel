@@ -21171,3 +21171,46 @@ Log message:
 Modified files:
 	chapel/test/trivial/roxana/: test_dead_var_decl.future 
 
+---------------------------------------------------------------------------
+
+03/23/05 16:46:52 -- bradc
+
+Log message:
+	Added some initial support for I/O on classes (and
+	types in general) via bound functions.  This isn't
+	at all ready for prime-time yet, but I got enough
+	done today (and it's stable enough) that I want
+	to check in.  The changes were:
+	
+	1) Added a new SymtabTraversal insertWriteFns that
+	traverses the Symboltable looking for classes that
+	don't have write functions declared.  When it
+	finds one, it creates a write function for it
+	(albeit one that does nothing useful other than
+	prove to me that it's been created -- since these
+	are created after analysis, they are considered
+	dead by default for now and don't get codegenerated).
+	
+	2) Refactored the I/O code so that it's more type-
+	oriented -- rather than handling I/O for all types
+	in IOExpr, pushed this code into the Type hierarchy
+	for simplicity.  Eventually, it'll probably be
+	removed from here as well, but for the time being,
+	this made it easier to deal with.
+	
+	3) Added a boolean to the SymtabTraversal pass
+	that allows you to skip over "internal" scopes,
+	which include the intrinsic scope, the prelude
+	scopes, and the common scope.  This is similar
+	to the controls we already have in the normal
+	Traversals to avoid certain parts of the program.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share symtab.cpp 
+	                         symtabTraversal.cpp symtabTraversal.h 
+Added files:
+	chapel/compiler/symtab/: insertWriteFns.cpp insertWriteFns.h 
+
