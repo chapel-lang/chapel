@@ -621,3 +621,13 @@ Modified files:
 	chapel/compiler/: TODO ast.cpp chpl.g fa.cpp if1.cpp 
 	                  prelude.chpl 
 
+---------------------------------------------------------------------------
+
+04/03/01 10:40:57 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Fix bug with handling of simple expressions in false forks of conditionals
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp if1.cpp 
+
