@@ -737,3 +737,15 @@ Added files:
 	chapel/compiler/: bullet.gif dump.cpp dump.h minus.gif 
 	                  mktree.css mktree.js plus.gif 
 
+---------------------------------------------------------------------------
+
+04/03/12 15:08:09 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	refactor headers for cast.cpp
+
+Modified files:
+	chapel/compiler/: TODO cast.cpp if1.h 
+Added files:
+	chapel/compiler/: num.h 
+
