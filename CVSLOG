@@ -20109,3 +20109,40 @@ Added files:
 	                            test_record4.good test_record5.chpl 
 	                            test_record5.good 
 
+---------------------------------------------------------------------------
+
+03/18/05 09:31:39 -- deitz
+
+Log message:
+	Fixed a bug in the creation of tuple types in which the default values
+	were not replaced correctly, i.e., with replace.
+	
+	Fixed a bug in inserting anonymous types in which the type definition
+	statements were not inserted correctly, i.e., with insertBefore.
+	
+	Fixed a bug in Fixup caused by secondary methods not always having a
+	parentScope.
+	
+	Removed the --noanalysis flag from my tuple tests directory.  Added a
+	new tuple test subdirectory called noanalysis which replicates these
+	tests.  This will make it so incomplete changes on my part will cause
+	regressions to the tuple tests even before analysis handles them.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/traversals/: fixup.cpp insertAnonymousTypes.cpp 
+Added files:
+	chapel/test/types/tuple/deitz/noanalysis/: COMPOPTS 
+	                                           test_tuple_simple1.chpl 
+	                                           test_tuple_simple1.good 
+	                                           test_tuple_simple2.chpl 
+	                                           test_tuple_simple2.good 
+	                                           test_tuple_simple3.chpl 
+	                                           test_tuple_simple3.good 
+	                                           test_tuple_simple4.chpl 
+	                                           test_tuple_simple4.good 
+	                                           test_tuple_simple5.chpl 
+	                                           test_tuple_simple5.good 
+Removed files:
+	chapel/test/types/tuple/deitz/: COMPOPTS 
+
