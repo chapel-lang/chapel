@@ -23,7 +23,6 @@ class Var : public gc {
   PNode			*def;
   AVarMap		avars;	// used by fa.cpp
   CreationSet		*as_CreationSet; // used by fa.cpp
-  unsigned int		clone_for_constants:1;
   unsigned int		is_internal:1;
   unsigned int		is_filtered:1;
   unsigned int		is_formal:1;
@@ -31,7 +30,7 @@ class Var : public gc {
 
   Var *copy();
   Var(Sym *s) : sym(s), mark(0), def(0), as_CreationSet(0),
-    clone_for_constants(0), cg_string(0) { id = var_id++; }
+		cg_string(0) { id = var_id++; }
 };
 #define forv_Var(_p, _v) forv_Vec(Var, _p, _v)
 #define forv_AVarMapElem(_p, _v) forv_Vec(AVarMapElem, _p, _v)

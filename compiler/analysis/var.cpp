@@ -8,7 +8,6 @@ Var::copy() {
   Var *v = new Var(sym);
   v->type = type;
   v->def = def;
-  v->clone_for_constants = clone_for_constants;
   v->is_internal = is_internal;
   v->avars.copy(avars);
   return v;

@@ -53,7 +53,6 @@ class Fun : public gc {
   // fa
   uint fa_collected : 1;
   uint clone_for_constants : 1;
-  uint clone_for_manifest_constants : 1;
   Vec<EntrySet *> ess;
   Vec<Var *> fa_Vars;
   Vec<Var *> fa_all_Vars;

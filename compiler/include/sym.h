@@ -115,6 +115,8 @@ class BasicSym : public gc {
   unsigned int		type_kind:4;
   unsigned int		num_kind:3;		// Sort of number class
   unsigned int		num_index:3;		// Precision of number class
+
+  unsigned int		clone_for_constants:1;  // analysis should attempt to make this a constant
 };
 
 class Sym : public BasicSym {

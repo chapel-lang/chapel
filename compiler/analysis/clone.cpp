@@ -169,7 +169,7 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
   if (a->fun->clone_for_constants) {
     forv_MPosition(p, a->fun->positional_arg_positions) {
       AVar *av = a->args.get(p);
-      if (av->var->clone_for_constants)
+      if (av->var->sym->clone_for_constants)
 	if (av->out->constants() != b->args.get(p)->out->constants())
 	  return 0;
     }
@@ -309,7 +309,7 @@ determine_basic_clones(Vec<Vec<CreationSet *> *> &css_sets_by_sym) {
 	    continue;
 	  }
 	  // if we are cloning for constants and the constants are different
-	  if (av1->var->clone_for_constants &&
+	  if (av1->var->sym->clone_for_constants &&
 	      av1->out->constants() != av2->out->constants()) {
 	    make_not_equiv(cs1, cs2);
 	    continue;

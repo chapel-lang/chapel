@@ -607,6 +607,13 @@ map_symbols(Vec<BaseAST *> &syms) {
 	  case PARAM_OUT: sym->asymbol->sym->intent = Sym_OUT; break;
 	  case PARAM_CONST: sym->asymbol->sym->is_read_only = 1; break;
 	}
+	// handle pragmas
+	Pragma *pr = sym->pragmas;
+	while (pr) {
+	  if (!strcmp(pr->str, "clone_for_constants"))
+	    s->asymbol->sym->clone_for_constants = 1;
+	  pr = dynamic_cast<Pragma *>(pr->next);
+	}
       }
       symbols++;
       if (verbose_level > 1 && sym->name)
@@ -1408,28 +1415,12 @@ gen_if1(BaseAST *ast) {
       s->ainfo->sym = s->ainfo->rval;
       if1_gen(if1, &s->ainfo->code, s->base->ainfo->code);
       Sym *op = if1_make_symbol(if1, ".");
-      Sym *selector = 0;
-      if (
-#if 0
-	s->member->astType == SYMBOL ||
-	  s->member->astType == SYMBOL_UNRESOLVED ||
-	  s->member->astType == SYMBOL_FN ||
-	  (s->member->astType == SYMBOL_VAR && 
-	   (((dynamic_cast<VarSymbol*>(s->member))->type->astType == TYPE_BUILTIN)))
-#else
-	1
-#endif
-)
-      {
-	assert(s->member->asymbol->sym->name);
-	selector = if1_make_symbol(if1, s->member->asymbol->sym->name);
-      } else
-	selector = s->member->asymbol->sym;
+      Sym *selector = if1_make_symbol(if1, s->member->asymbol->sym->name);
       Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
 			 s->base->ainfo->rval, op, selector,
 			 s->ainfo->rval);
       c->ast = s->ainfo;
-      c->partial = Partial_ALWAYS; // HACK
+      c->partial = Partial_ALWAYS;
       s->ainfo->rval->is_lvalue = 1;
       break;
     }
@@ -1849,6 +1840,7 @@ ACallbacks::finalize_functions() {
       }
       p.inc();
     }
+#if 0
     // check pragmas
     Sym *fn = fun->sym;
     FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
@@ -1864,6 +1856,7 @@ ACallbacks::finalize_functions() {
 	fun->clone_for_manifest_constants = 1;
       pr = dynamic_cast<Pragma *>(pr->next);
     }
+#endif
   }
 }
 
