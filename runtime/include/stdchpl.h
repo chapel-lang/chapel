@@ -11,6 +11,7 @@
 #include "config.h"
 #include "chplio.h"
 #include "chplmem.h"
+#include "chplmem_tests.h"
 #include "chplrt.h"
 #include "chpltypes.h"
 #include "domain.h"

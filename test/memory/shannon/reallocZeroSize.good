@@ -1,0 +1,15 @@
+================
+Allocated Memory
+================
+Size (in bytes):	Type:
+----------------	-----
+8			_integer64
+
+After a call to realloc with size equal to 0:
+
+================
+Allocated Memory
+================
+Size (in bytes):	Type:
+----------------	-----
+

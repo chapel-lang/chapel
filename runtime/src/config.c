@@ -24,12 +24,11 @@ static configVarType* configVarTable[HASHSIZE];
 static configVarType* first = NULL;
 static configVarType* last = NULL;
 
-int initConfigVarTable(void) {
+void initConfigVarTable(void) {
   int i;
   for (i = 0; i < HASHSIZE; i++) {
     configVarTable[i] = NULL;
   }
-  return 0;
 }
 
 
@@ -163,7 +162,7 @@ char* lookupSetValue(char* varName, char* moduleName) {
 }
 
 
-int installConfigVar(char* varName, char* value, char* moduleName) {
+void installConfigVar(char* varName, char* value, char* moduleName) {
   unsigned hashValue;
   configVarType* configVar = (configVarType*) 
     _chpl_calloc(1, sizeof(configVarType), "configVarType");
@@ -180,8 +179,6 @@ int installConfigVar(char* varName, char* value, char* moduleName) {
   _copy_string(&configVar->varName, varName);
   _copy_string(&configVar->moduleName, moduleName);
   _copy_string(&configVar->defaultValue, value);
-
-  return 0;
 } 
 
 

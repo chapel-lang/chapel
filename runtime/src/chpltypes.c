@@ -6,6 +6,6 @@
 
 
 void _copy_string(_string* lhs, _string rhs) {
-  *lhs = (char*)_chpl_realloc(*lhs, (strlen(rhs)+1), sizeof(char));
+  *lhs = (char*)_chpl_realloc(*lhs, (strlen(rhs)+1), sizeof(char), "string");
   strcpy(*lhs, rhs);
 }

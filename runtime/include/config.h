@@ -13,11 +13,11 @@
 #define _INIT_CONFIG(v, v_type, chapel_name, module_name) \
   (!setInCommandLine##v_type(chapel_name, &v, module_name))
 
-int initConfigVarTable(void);
+void initConfigVarTable(void);
 void printConfigVarTable(void);
 void initSetValue(char* varName, char* value, char* moduleName);
 char* lookupSetValue(char* varName, char* moduleName);
-int installConfigVar(char* varName, char* value, char* moduleName);
+void installConfigVar(char* varName, char* value, char* moduleName);
 int setInCommandLine_integer64(char* varName, _integer64* value, 
 			       char* moduleName);
 int setInCommandLine_float64(char* varName, _float64* value, char* moduleName);
