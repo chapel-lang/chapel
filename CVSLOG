@@ -16702,3 +16702,33 @@ Added files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_clone_class1a.future 
 
+---------------------------------------------------------------------------
+
+02/04/05 16:02:57 -- deitz
+
+Log message:
+	Cloning of classes no longer clones functions.  It mangles the name of
+	the class.  It builds a new constructor.
+	
+	Issues for when analysis calls clone:
+	
+	-When analysis clones methods, we're going to have to be able to
+	insert these methods into the class.
+	
+	-We need to handle the "this" pointer.  We need to make it possible to
+	call methods that were not cloned with "this" from the cloned class.
+	We need to make sure the common variables are at the top of the class.
+	
+	-It may be best to handle this via inheritance.
+	
+	Question. Can you override fields using implements or are they hidden
+	as in Java?
+	
+	If we need to clone a class should we do it twice so that we can use
+	inheritance without overriding?
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: methodsToFunctions.cpp 
+
