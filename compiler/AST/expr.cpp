@@ -1295,7 +1295,7 @@ void FnCall::codegen(FILE* outfile) {
       if (firstArg) {
 	firstArg = false;
       } else {
-	fprintf(outfile, ",");
+	fprintf(outfile, ", ");
       }
       bool ampersand = formals->requiresCPtr();
       if (ampersand) {

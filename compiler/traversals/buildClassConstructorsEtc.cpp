@@ -34,9 +34,10 @@ static void build_constructor(ClassType* class_type) {
   _this->setDefPoint(def_expr);
   stmts = new DefStmt(def_expr);
   if (!(class_type->value || class_type->union_value)) {
+    char* description = glomstrings(2, "instance of class ", class_type->symbol->name);
     Expr* alloc_args = new IntLiteral("1", 1);
     alloc_args = appendLink(alloc_args, new SizeofExpr(class_type));
-    alloc_args = appendLink(alloc_args, new StringLiteral("string"));
+    alloc_args = appendLink(alloc_args, new StringLiteral(description));
     Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");
     Expr* alloc_call = new FnCall(new Variable(alloc_sym), alloc_args);
     Expr* alloc_lhs = new Variable(_this);

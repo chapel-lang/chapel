@@ -27,7 +27,7 @@ typedef struct __arr_perdim {
     arr.size = arr.dim_info[0].blk \
       * ((dom.dim_info[__dim+1].hi - dom.dim_info[__dim+1].lo + 1) \
 	 / dom.dim_info[__dim+1].str); \
-    arr.base = (elemtype*)_chpl_malloc(arr.size, sizeof(elemtype), "array"); \
+    arr.base = (elemtype*)_chpl_malloc(arr.size, sizeof(elemtype), "array " #arr); \
   }
 
 #define _ACC1(arr, i0) \

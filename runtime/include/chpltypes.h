@@ -21,5 +21,6 @@ typedef char* _string;
 
 
 void _copy_string(_string* lhs, _string rhs);
+char* glomstrings(int numstrings, ...);
 
 #endif
