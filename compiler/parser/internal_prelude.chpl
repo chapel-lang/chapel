@@ -77,3 +77,57 @@ function _INIT_DOMAIN_DIM(dom, dim, lo, hi, str);
 
 function _SEQ_APPEND(s, t, type_name);
 function _SEQ_INIT_NIL(s);
+
+
+class _seq {
+  type elementType;
+  class _node {
+    var element : elementType;
+    var next : _node;
+  }
+  var length : integer;
+  var first : _node;
+  var last : _node;
+}
+/*
+function _seq_pound(s : _seq, e : elementType) {
+  var new like s.first;
+  new.element = e;
+  if length > 0 {
+    last.next = new;
+    last = last.next;
+  } else {
+    first = new;
+    last = first;
+  }
+  length += 1;
+  return s;
+}
+
+function _seq_pound(e : elementType, s : _seq) {
+  var new like s.first;
+  new.element = e;
+  if length > 0 {
+    new.next = first;
+    first = new;
+  } else {
+    first = new;
+    last = first;
+  }
+  length += 1;
+  return s;
+}
+
+function _seq_pound(s1 : _seq, s2 : _seq) {
+  s1.last.next = s2.first;
+  return s1;
+}
+
+function _seq_copy(s : _seq) {
+  var new like s; --assume compiler makes default value a new instance
+  for e in s {
+    new = _seq_pound(new, e);
+  }
+  return new;
+}
+*/

@@ -634,19 +634,6 @@ void SeqType::codegen(FILE* outfile) {
 
 
 void SeqType::codegenDef(FILE* outfile) {
-  /*
-  fprintf(outfile, "struct _");
-  symbol->codegen(outfile);
-  fprintf(outfile, " {\n");
-  fprintf(outfile, "  int length;\n");
-  fprintf(outfile, "  ");
-  nodeType->codegen(outfile);
-  fprintf(outfile, " first;\n");
-  fprintf(outfile, "  ");
-  nodeType->codegen(outfile);
-  fprintf(outfile, " last;\n");
-  fprintf(outfile, "};\n");
-  */
   ClassType::codegenDef(outfile);
 
   fprintf(outfile, "void _write");
@@ -673,42 +660,30 @@ void SeqType::codegenDef(FILE* outfile) {
 }
 
 
-/*
-void SeqType::codegenPrototype(FILE* outfile) {
-  fprintf(outfile, "typedef struct _");
-  symbol->codegen(outfile);
-  fprintf(outfile, " *");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n");
-}
-*/
-
-
 void SeqType::codegenDefaultFormat(FILE* outfile, bool isRead) {
   elementType->codegenDefaultFormat(outfile, isRead);
 }
 
 
 void SeqType::buildImplementationClasses() {
-  char* nodeName = glomstrings(2, symbol->name, "_node");
-  TypeSymbol* node = Symboltable::startClassDef(nodeName, false, false);
-  DefStmt* decl = Symboltable::defineSingleVarDefStmt("element", elementType, NULL, VAR_NORMAL, VAR_VAR);
-  DefStmt* decl2 = Symboltable::defineSingleVarDefStmt("next", node->type, NULL, VAR_NORMAL, VAR_VAR);
-  decl->append(decl2);
-  DefStmt* def_stmt = new DefStmt(Symboltable::finishClassDef(node, decl));
-  dynamic_cast<DefExpr*>(symbol->defPoint)->stmt->insertBefore(def_stmt);
-  nodeType = dynamic_cast<ClassType*>(node->type);
-
   Symboltable::pushScope(SCOPE_CLASS);
-  DefStmt* def = Symboltable::defineSingleVarDefStmt("length", dtInteger, NULL, VAR_NORMAL, VAR_VAR);
-  DefStmt* def2 = Symboltable::defineSingleVarDefStmt("first", nodeType, NULL, VAR_NORMAL, VAR_VAR);
-  DefStmt* def3 = Symboltable::defineSingleVarDefStmt("last", nodeType, NULL, VAR_NORMAL, VAR_VAR);
-  def->append(def2);
-  def2->append(def3);
-  addDeclarations(def);
+
+  Symbol* _seq = Symboltable::lookupInternal("_seq");
+  ClassType* _seq_type = dynamic_cast<ClassType*>(_seq->type);
+  // look at next because first one is the variable type
+  Stmt* decls = dynamic_cast<Stmt*>(_seq_type->declarationList->next);
+  addDeclarations(decls->copyList(true));
+
+  Symbol* _node = Symboltable::lookup("_node");
+  _node->cname = glomstrings(2, symbol->name, _node->name);
+  SymScope* _node_scope = dynamic_cast<ClassType*>(_node->type)->classScope;
+  Symboltable::lookupInScope("element", _node_scope)->type = elementType;
+  Symboltable::lookupInScope("next", _node_scope)->type = _node->type;
+  Symboltable::lookup("first")->type = _node->type;
+  Symboltable::lookup("last")->type = _node->type;
+
   classScope = Symboltable::popScope();
   classScope->setContext(NULL, symbol, dynamic_cast<DefExpr*>(symbol->defPoint));
-
 }
 
 
@@ -990,25 +965,19 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(symbol->defPoint);
-  if (!def_expr) {
-    INT_FATAL(this, "Attempt to copy ClassType not defined in DefExpr");
-  }
   ClassType* copy_type = new ClassType(value, union_value);
   Symboltable::pushScope(SCOPE_CLASS);
   Stmt* new_decls = NULL;
-  Stmt* old_decls = declarationList;
-  while (old_decls) {
+  for (Stmt* old_decls = declarationList;
+       old_decls;
+       old_decls = nextLink(Stmt, old_decls)) {
     DefStmt* def = dynamic_cast<DefStmt*>(old_decls);
     FnSymbol* fn;
     if (def && (fn = def->fnDef())) {
       copy_type->methods.add(fn);
-      //Symboltable::define(def->fn);
-    }
-    else {
+    } else {
       new_decls = appendLink(new_decls, old_decls->copy(true, map, analysis_clone));
     }
-    old_decls = nextLink(Stmt, old_decls);
   }
   copy_type->addDeclarations(new_decls);
   SymScope* copy_scope = Symboltable::popScope();
@@ -1080,9 +1049,9 @@ void ClassType::codegenDef(FILE* outfile) {
     type->codegenDef(outfile);
     fprintf(outfile, "\n");
   }
-  fprintf(outfile, "struct _");
+  fprintf(outfile, "struct __");
   symbol->codegen(outfile);
-  fprintf(outfile, "_def {\n");
+  fprintf(outfile, " {\n");
   if (union_value) {
     fprintf(outfile, "_");
     symbol->codegen(outfile);
@@ -1136,9 +1105,9 @@ void ClassType::codegenPrototype(FILE* outfile) {
     type->codegenPrototype(outfile);
     fprintf(outfile, "\n");
   }
-  fprintf(outfile, "typedef struct _");
+  fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
-  fprintf(outfile, "_def ");
+  fprintf(outfile, " ");
   if (value || union_value) {
     symbol->codegen(outfile);
   }
