@@ -15,6 +15,7 @@ enum varType {
 class Symbol : public ILink {
  public:
   char* name;
+  int level;
 
   Symbol(char* init_name);
 

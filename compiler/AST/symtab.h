@@ -1,6 +1,7 @@
 #ifndef _SYMTAB_H_
 #define _SYMTAB_H_
 
+#include "expr.h"
 #include "symbol.h"
 
 enum scopeType {
@@ -15,10 +16,9 @@ enum scopeType {
 
 class Symboltable {
  public:
-  Symboltable(scopeType init_type);
-
   static void pushScope(scopeType type);
-  static void popScope();
+  static void popScope(void);
+  static int getLevel(void);
 
   static void define(Symbol* sym);
   static Symbol* lookup(char* name, bool inLexer = false);

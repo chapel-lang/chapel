@@ -1,10 +1,12 @@
 #include <typeinfo>
 #include "misc.h"
 #include "symbol.h"
+#include "symtab.h"
 
 
 Symbol::Symbol(char* init_name) :
-  name(init_name)
+  name(init_name),
+  level(Symboltable::getLevel())
 {}
 
 

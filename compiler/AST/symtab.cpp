@@ -10,6 +10,8 @@
 
 using namespace std;
 
+static int level = 0;
+
 class SymLink : public ILink {
 public:
   Symbol* pSym;
@@ -33,6 +35,7 @@ void SymLink::print(FILE* outfile) {
 class SymScope {
  public:
   scopeType type;
+  int level;
 
   SymScope* parent;
   SymScope* children;
@@ -45,7 +48,7 @@ class SymScope {
 
   map<string, Symbol*> table;
 
-  SymScope(scopeType init_type);
+  SymScope(scopeType init_type, int init_level);
 
   void insert(Symbol* sym);
   SymScope* findFileScope(void);
@@ -58,8 +61,9 @@ class SymScope {
 };
 
 
-SymScope::SymScope(scopeType init_type) :
+SymScope::SymScope(scopeType init_type, int init_level) :
   type(init_type),
+  level(init_level),
   parent(NULL),
   children(NULL),
   sibling(NULL),
@@ -179,7 +183,7 @@ void SymScope::print(FILE* outfile, bool alphabetical) {
 }
 
 
-static SymScope* rootScope = new SymScope(SCOPE_INTRINSIC);
+static SymScope* rootScope = new SymScope(SCOPE_INTRINSIC, level);
 static SymScope* currentScope = rootScope;
 
 
@@ -188,7 +192,7 @@ void Symboltable::pushScope(scopeType type) {
       type == SCOPE_LOCAL) {
     type = SCOPE_FUNCTION;
   }
-  SymScope* newScope = new SymScope(type);
+  SymScope* newScope = new SymScope(type, level++);
   SymScope* children = currentScope->children;
 
   if (children == NULL) {
@@ -207,6 +211,7 @@ void Symboltable::pushScope(scopeType type) {
 void Symboltable::popScope(void) {
   //  currentScope->handleUndefined();
 
+  level--;
   SymScope* prevScope = currentScope->parent;
 
   if (prevScope == NULL) {
@@ -214,6 +219,11 @@ void Symboltable::popScope(void) {
   } else {
     currentScope = prevScope;
   }
+}
+
+
+int Symboltable::getLevel(void) {
+  return level;
 }
 
 
@@ -362,7 +372,8 @@ ClassType* Symboltable::defineClass(char* name, ClassSymbol* parent) {
   } else {
     newdt = new ClassType(parent->getType());
   }
-  if (strcmp(parent->name, "reduction") == 0) { // BLC; strcmp bad
+  if (parent->level == 0 && 
+      strcmp(parent->name, "reduction") == 0) {
     newsym = new ReduceSymbol(name, newdt);
   } else {
     newsym = new ClassSymbol(name, newdt);

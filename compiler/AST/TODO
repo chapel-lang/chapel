@@ -20,9 +20,3 @@
 * remove dead code (usually commented out)
 
 
-for reductions:
-
-* get rid of strcmp on reduction
-* keep track of a level in the symboltable and check against that plus
-  the "reduction" string?
-* or define a reduction symboltable pointer?
