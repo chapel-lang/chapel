@@ -1,5 +1,5 @@
 function f(a,b,c) {
-  if (a)
+  if (a) then
     return b;
   else
     return c;

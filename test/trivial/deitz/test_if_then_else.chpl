@@ -8,7 +8,7 @@ if b then
 if a then
   writeln("Good");
 
-if b writeln("Good");
+if b then writeln("Good");
 
 if a then
   if b then
@@ -17,13 +17,13 @@ else
   writeln("Correct");
 
 if a then
-  if b
+  if b then
     writeln("Wrong 1");
 else
   writeln("Correct");
 
-if true
-  if false
+if true then
+  if false then
     writeln("Wrong 1");
 else
   writeln("Correct");

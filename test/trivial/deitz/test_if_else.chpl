@@ -2,8 +2,8 @@
 /* note indenting is misleading */
 
 writeln("Start");
-if true
-  if false
+if true then
+  if false then
     writeln("Wrong 1");
 else
   writeln("Correct");

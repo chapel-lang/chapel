@@ -13,7 +13,8 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
   name(nilSymbol),
   defaultVal(init_defaultVal),
-  asymbol(NULL)
+  asymbol(NULL),
+  parentType(nilType)
 {
   SET_BACK(defaultVal);
 }

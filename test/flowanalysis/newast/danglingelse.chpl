@@ -5,14 +5,14 @@ while (a < 2) {
   while (b < 2) {
     write("when (a, b) is (", a, ", ", b, ") we end up...");
 
-    if (a)
-      if (b)
+    if (a) then 
+      if (b) then 
         write("in case 1 for conditional 1...");
       else
         write("in case 2 for conditional 1...");
 
-    if (a)
-      if (b)
+    if (a) then 
+      if (b) then 
         write("in case 1 for conditional 2");
       else
         write("in case 2 for conditional 2");

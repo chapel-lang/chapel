@@ -98,13 +98,13 @@
 %type <pch> identifier query_identifier
 %type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
 %type <enumsym> enum_item enum_list
-%type <pexpr> simple_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
+%type <pexpr> lvalue atom expr exprlist nonemptyExprlist literal range
 %type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
-%type <stmt> program modulebody statements statement decls decl typevardecl
+%type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
 %type <varstmt> vardecl vardecl_inner vardecl_inner_ls
-%type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl 
-%type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl
+%type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl block_stmt
+%type <stmt> typealias typedecl fndecl classdecl recorddecl uniondecl moduledecl function_body_stmt
 
 
 /* These are declared in increasing order of precedence. */
@@ -376,7 +376,7 @@ fndecl:
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2));
     }
-                       TLP formals TRP fnrettype statement
+                       TLP formals TRP fnrettype function_body_stmt
     {
       $$ = Symboltable::finishFnDef($<fnsym>3, $5, $7, $8);
     }
@@ -386,7 +386,7 @@ fndecl:
       $<fnsym>$ =
 	Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
     }
-                       TLP formals TRP fnrettype statement
+                       TLP formals TRP fnrettype function_body_stmt
     {
       $$ = Symboltable::finishFnDef($<fnsym>5, $7, $9, $10);
     }
@@ -406,7 +406,7 @@ moduledecl:
 
 
 decl:
-  TWITH simple_lvalue TSEMI
+  TWITH lvalue TSEMI
     { $$ = new WithStmt($2); }
 | vardecl
     { $$ = $1; }
@@ -503,24 +503,49 @@ statements:
 ;
 
 
+function_body_stmt:
+  noop_stmt
+| conditional
+| loop
+| call_stmt
+| retStmt
+| block_stmt
+;
+
+
 statement:
-  TSEMI
-    { $$ = new NoOpStmt(); }
+  noop_stmt
 | decl
 | assignment
 | conditional
 | loop
-| simple_lvalue TSEMI
+| call_stmt
+| lvalue TSEMI
     { $$ = new ExprStmt($1); }
-| TCALL simple_lvalue TSEMI
-    { $$ = new ExprStmt($2); }
 | retStmt
-| TLCBR
-    { $<blkstmt>$ = Symboltable::startCompoundStmt(); }
-      statements TRCBR
-    { $$ = Symboltable::finishCompoundStmt($<blkstmt>2, $3); }
+| block_stmt
 | error
     { printf("syntax error"); exit(1); }
+;
+
+
+call_stmt:
+  TCALL lvalue TSEMI
+    { $$ = new ExprStmt($2); }
+;
+
+
+noop_stmt:
+  TSEMI
+    { $$ = new NoOpStmt(); }
+;
+
+
+block_stmt:
+  TLCBR
+    { $<blkstmt>$ = Symboltable::startCompoundStmt(); }
+        statements TRCBR
+    { $$ = Symboltable::finishCompoundStmt($<blkstmt>2, $3); }
 ;
 
 
@@ -560,15 +585,25 @@ forloop:
     { 
       $<forstmt>$ = Symboltable::startForLoop(true, $2, $4);
     }
-                                 statement
+                             block_stmt
     { 
       $$ = Symboltable::finishForLoop($<forstmt>5, $6);
+    }
+| fortype indexlist TIN expr
+    { 
+      $<forstmt>$ = Symboltable::startForLoop(true, $2, $4);
+    }
+                             TDO statement
+    { 
+      $$ = Symboltable::finishForLoop($<forstmt>5, $7);
     }
 ;
 
 
 whileloop:
-  TWHILE expr statement
+TWHILE expr TDO statement
+    { $$ = new WhileLoopStmt(true, $2, $4); }
+| TWHILE expr block_stmt
     { $$ = new WhileLoopStmt(true, $2, $3); }
 | TDO statement TWHILE expr TSEMI
     { $$ = new WhileLoopStmt(false, $4, $2); }
@@ -582,11 +617,11 @@ loop:
 
 
 conditional:
-  TIF expr statement %prec TNOELSE
+  TIF expr block_stmt %prec TNOELSE
     { $$ = new CondStmt($2, $3); }
 | TIF expr TTHEN statement %prec TNOELSE
     { $$ = new CondStmt($2, $4); }
-| TIF expr statement TELSE statement
+| TIF expr block_stmt TELSE statement
     { $$ = new CondStmt($2, $3, $5); }
 | TIF expr TTHEN statement TELSE statement
     { $$ = new CondStmt($2, $4, $6); }
@@ -641,22 +676,21 @@ nonemptyExprlist:
 ;
 
 
-simple_lvalue:
+lvalue:
   identifier
     { $$ = new Variable(new UnresolvedSymbol($1)); }
-| simple_lvalue TDOT identifier
+| lvalue TDOT identifier
     { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
-| simple_lvalue TLP exprlist TRP
+| lvalue TLP exprlist TRP
     { $$ = new ParenOpExpr($1, $3); }
-/*
-| simple_lvalue TLSBR exprlist TRSBR
-    { $$ = new ParenOpExpr($1, $3); }
-*/
-;
-
-
-lvalue:
-  simple_lvalue
+| TLP nonemptyExprlist TRP 
+    { 
+      if ($2->next->isNull()) {
+        $$ = $2;
+      } else {
+        $$ = new Tuple($2);
+      }
+    }
 ;
 
 
@@ -672,14 +706,6 @@ expr:
 | expr TCOLON type
     { $$ = new CastExpr($3, $1); }
 | range %prec TDOTDOT
-| TLP nonemptyExprlist TRP 
-    { 
-      if ($2->next->isNull()) {
-        $$ = $2;
-      } else {
-        $$ = new Tuple($2);
-      }
-    }
 | forallExpr expr %prec TRSBR
     { $$ = Symboltable::finishForallExpr($1, $2); }
 | TPLUS expr %prec TUPLUS

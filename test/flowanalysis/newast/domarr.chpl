@@ -5,7 +5,7 @@ var Mat : domain(2) = (1..m, 1..n);
 
 var A : [Mat] float;
 
-forall i,j in Mat
+forall i,j in Mat do
   A(i,j) = 0.0;
 
 writeln("A is:\n", A);

@@ -1,15 +1,14 @@
 
 ;
 
-function foo()
-  ;
+function foo();
 
 var D = 1..3;
 
-for i in D
+for i in D do
   ;
 
-while false
+while false do
   ;
 
 do

@@ -38,6 +38,7 @@ class Type : public BaseAST {
   Symbol* name;
   Expr* defaultVal;
   ASymbol *asymbol;
+  Type* parentType;
 
   Type(astType_t astType, Expr* init_defaultVal);
   void addName(Symbol* newname);

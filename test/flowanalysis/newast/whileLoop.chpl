@@ -6,7 +6,7 @@ while (i <= 5) {
 }
 
 i = 0;
-while (i <= 2) 
+while (i <= 2) do
   i += 1;
 writeln("i = ", i, " (should be 3)");
 

@@ -25,13 +25,13 @@ if (b) {
 }
 writeln();
 
-if (c) 
+if (c) then 
   writeln("took true path for c");
 else
   writeln("took false path for c");
 writeln();
 
-if (d) 
+if (d) then 
   writeln("took true path for d");
 else {
   writeln("took false path for d");
@@ -46,7 +46,7 @@ if (e) {
   writeln("took false path for e");
 writeln();
 
-if (f) 
+if (f) then 
   writeln("took true path for f");
 writeln();
 
@@ -77,13 +77,13 @@ if (not b) {
 }
 writeln();
 
-if (not c) 
+if (not c) then 
   writeln("took true path for not c");
 else
   writeln("took false path for not c");
 writeln();
 
-if (not d) 
+if (not d) then 
   writeln("took true path for not d");
 else {
   writeln("took false path for not d");
@@ -98,7 +98,7 @@ if (not e) {
   writeln("took false path for not e");
 writeln();
 
-if (not f) 
+if (not f) then 
   writeln("took true path for not f");
 writeln();
 
