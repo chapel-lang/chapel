@@ -7113,3 +7113,58 @@ Modified files:
 	chapel/make/: Makefile.base 
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/13/04 18:32:06 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Support TYPE_TUPLE astType.
+	Make Expr return 'null'.
+	Add preliminary support for "self" methods in classes.
+	Analysis now treats forall variables as being of type Index
+	New dead code elimination for IF1 (more robuts).
+	Made entryPoint into a single statement which defines the function
+	__entryPoint (to be similar to __init).
+	Move definitions for Array, Tuple, Domain and Index into
+	  internal_prelude.chpl, and added a new function
+	  "findInternalTypes" which finds them instead of
+	  "initInternalTypes" which creates them.
+	Moved noop.chpl into list of working code.
+
+Modified files:
+	chapel/compiler/: analysis.cpp ast.cpp ast.h builtin_symbols.h 
+	                  cfg.cpp cg.cpp code.h createAST.cpp driver.cpp 
+	                  fa.cpp if1.cpp parse_ast.cpp prelude.v 
+	                  prim_data.dat 
+	chapel/compiler/AST/: internal_prelude.chpl prelude.chpl 
+	                      symtab.cpp type.cpp type.h 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good enum.good 
+	                                  equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  mutrec.good noargs.good 
+	                                  octalliteral.good onearg.good 
+	                                  pareninit.good printempty.good 
+	                                  printstring.good 
+	                                  relational_ops.good 
+	                                  shift_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+Added files:
+	chapel/test/flowanalysis/newast/: noop.chpl noop.good 
+
