@@ -3236,3 +3236,29 @@ Added files:
 	chapel/test/trivial/shannon/: logical_not.chpl logical_not.good 
 	                              mod.chpl mod.good 
 
+---------------------------------------------------------------------------
+
+06/11/04 17:10:37 -- shannon
+
+Log message:
+	Implemented code generation of the unary
+	operators.  Added a test for bitwise negation.
+	
+	Added conditions to the findUnOp and findBinOp
+	functions so that they can't dereference a
+	null pointer.
+	
+	Fixed a bug in my generation of the mod function
+	resulting from fprintf not printing my "%"
+	symbol since it is a special character.
+	
+	Inserted a couple of blank lines because I
+	accidentally committed a minute ago without
+	including this message.
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+Added files:
+	chapel/test/trivial/shannon/: bitwise_negation.chpl 
+	                              bitwise_negation.good 
+
