@@ -1,4 +1,4 @@
-enum month = jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec;
+enum month {jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec};
 
 var m : month = jan;
 var i : integer = m;

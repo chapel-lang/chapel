@@ -1,4 +1,4 @@
-enum aramaic = mene, tekel, upharsin;
+enum aramaic {mene, tekel, upharsin};
 var onTheWall: aramaic;
 
 read(onTheWall);

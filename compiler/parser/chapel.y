@@ -209,7 +209,7 @@ typealias:
 
 
 enumdecl:
-  TENUM identifier TASSIGN enum_list TSEMI
+  TENUM identifier TLCBR enum_list TRCBR TSEMI
     {
       $4->set_values();
       // EnumSymbol* enumlist = Symboltable::defineEnumList($4);      
