@@ -294,5 +294,13 @@
    fun:GC_mark_some
    fun:GC_stopped_mark
 }
+{
+   boehm-memcheck42
+   Memcheck:Cond
+   fun:GC_collect_or_expand
+   fun:GC_alloc_large
+   fun:GC_generic_malloc
+   fun:GC_malloc
+}
 
 
