@@ -5932,3 +5932,55 @@ Modified files:
 Removed files:
 	chapel/runtime/include/: chplboolean.h 
 
+---------------------------------------------------------------------------
+
+08/26/04 17:34:45 -- bradc
+
+Log message:
+	Started working on implementing SymScope context pointers
+	that link a SymScope back to the context in which it was
+	declared.  Each SymScope now has two context variables:
+	
+	stmtContext -> points to the statement context
+	symContext -> points to the symbol context
+	
+	For code like this:
+	
+	function foo(x, y) { /* scope 1 */
+	var a;
+	{ /* scope 2 */
+	var b;
+	
+	forall i { ... }
+	}
+	}
+	
+	These are currently set up as follows:
+	stmtContext           symContext
+	SCOPE_INTRINSIC   nilStmt               nilSymbol
+	SCOPE_FILE        nilStmt               nilSymbol
+	SCOPE_PARAM       foo's FnDefStmt       foo's FnSymbol
+	SCOPE_FUNCTION    scope 1's BlockStmt   foo's FnSymbol
+	SCOPE_LOCAL       scope 2's BlockStmt   nilSymbol
+	SCOPE_FORLOOP     forall stmt           nilSymbol
+	
+	Looking forward for classes:
+	
+	class bar { ... }
+	
+	we should imagine:
+	
+	SCOPE_CLASS       bar's TypeDefStmt     bar's ClassSymbol
+	
+	I'm toying with whether or not it would make sense to have
+	multiple subclasses of SymScope for each context so that
+	these pointers could be more specific than generic Stmt*
+	and Symbol* pointers, but am not convinced that it would
+	get rid of the necessity for dynamic casts (might just move
+	them from the access of the context variables to the grabbing
+	of the scope from the variable, which seems like it could be
+	a wash).  If anyone has a stronger opinion, let me know.
+
+Modified files:
+	chapel/compiler/AST/: chapel.y symscope.h symtab.cpp symtab.h 
+
