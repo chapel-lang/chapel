@@ -2040,7 +2040,7 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
   if (mod)
     fns = mod->initFn->asymbol->sym->fun->calls.get(pn);
   else
-    ma->stmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
+    fns = ma->stmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
   if (!fns) {
     Sym *obj_type = pn->rvals.v[1]->type;
     char *sel = pn->rvals.v[3]->sym->name;
