@@ -17605,3 +17605,123 @@ Added files:
 	chapel/runtime/include/: chplmem.h chplrt.h 
 	chapel/runtime/src/: chplmem.c 
 
+---------------------------------------------------------------------------
+
+02/16/05 14:48:40 -- deitz
+
+Log message:
+	Added robust support for let expressions from parsing to code
+	generation.
+	
+	Added a new traversal TransformLetExprs that hoists let expressions
+	into compound statements.  This traversal is called before analysis,
+	thus analysis need not even know let expressions exist.  I think we
+	may want to call this traversal again later if we can use let
+	expressions to make optimizations easier.
+	
+	Though multiple let expressions in the same statement and nested let
+	expressions work correctly, there is one case that is not handled
+	correctly (depending on the language definition):
+	   function foo(i : integer) : integer) {
+	     i += 1;
+	     return i;
+	   }
+	   writeln(foo(a) - let b = foo(a) in b)
+	If we are evaluating expressions left to right, this should output -1,
+	but it outputs 1.  The reason for this is that we move the let
+	expression into a compound statement outside the whole statement.
+	Thus the second foo is evaluated before the first foo, reading left to
+	right.
+	
+	Added a future test, test_let8, to capture this problem.
+	
+	Added 7 new test cases pertaining to let expressions that work:
+	... 128.0 * let x:float = a*b, y = x*x in 1.0/y ...
+	... let x = a*a in x*x ...
+	... let x = a*a in x*x ... let y = a+a in y*y ...
+	... let x = a*a in x*x ... let x = a+a in x*x ...
+	... let x : integer = a*a in x*x ... let x : integer = a+a in x*x ...
+	... let x : integer = a*a in x*x ...
+	... let x = a * b * c in let y = a * b in x * y ...
+	
+	Patched a bug encountered in analysis in which the parentSymbol was
+	incorrectly set to the module rather than the initFn.  Added a test
+	case, test_block_call, to guard for this.
+	
+	Updated setDefPoint to take a BaseAST rather than a Stmt since
+	sometimes it will be called with an Expr.  For example, ForallExpr and
+	LetExpr.
+	
+	To Do:
+	
+	1. Improve copy resolution.  When copying statements or expressions
+	that enter scopes, the symbols are copied.  For example, when copying
+	the compound statement given by
+	
+		{
+		  var x = 12;
+		  writeln(x);
+		}
+	
+	the symbol x is copied.  If copy did not re-resolve the symbols, the
+	copied compound statement's argument to writeln would refer to the
+	symbol in the old block statement, a potential problem in all but the
+	simplest of cases.
+	
+	The old copy resolution worked by calling cleanup's resolveSymbols
+	traversal.  This is overly complicated and easily broken.  For
+	example, if the name of the symbol that is copied is changed it can't
+	be re-resolved.
+	
+	The new copy resolution (future work) will use copy's Map argument to
+	replace uses of a symbol in the copied compound statement with the
+	copied symbols.  The advantages are numerous when we start doing more
+	complicated things.  Even now, it is advantageous because we do not
+	have to special-case the resolution depending on whether we are before
+	or after analysis.
+	
+	2. Add a new argument to copy (default NULL) that is a Vec of BaseAST
+	pointers.  These will be updated by the copy if they are copied.  So,
+	for example, the Vec may contain a bunch of LetExprs that were found
+	and will be transformed.  Then whenever anything is copied, the
+	LetExprs should be updated accordingly.  This is currently done by
+	hand at the call-site to copy but is general enough that it should be
+	moved inside.
+	
+	3. Add a preProcess and postProcess method to the Traversal class that
+	is called when atTop is true.  This will be very useful for traversals
+	that first collect information and then do transformations.  They can
+	do the transformations on the postProcess method.  The advantage to
+	not overloading run() (how it is done currently) is that the traversal
+	can be called on a subsection of the AST and it will still work.
+	
+	4. Fix parentSymbol fixup.  The parentSymbols are not always being set
+	up correctly.  In particular, functions that are nested in a scope
+	inside the module and not in a function, have the wrong parentSymbol.
+	This should be set to the initFn when this is put in.  I made a cheapo
+	fix in analysis.cpp until this is working.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h symbol.h symscope.h 
+	                          symtab.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share fixup.cpp 
+	                             traversal.cpp verifyASTType.cpp 
+Added files:
+	chapel/compiler/traversals/: transformLetExprs.cpp 
+	                             transformLetExprs.h 
+	chapel/test/trivial/deitz/: test_block_call.chpl 
+	                            test_block_call.good test_let1.chpl 
+	                            test_let1.good test_let2.chpl 
+	                            test_let2.good test_let3.chpl 
+	                            test_let3.good test_let4.chpl 
+	                            test_let4.good test_let5.chpl 
+	                            test_let5.good test_let6.chpl 
+	                            test_let6.good test_let7.chpl 
+	                            test_let7.good test_let8.chpl 
+	                            test_let8.future test_let8.good 
+
