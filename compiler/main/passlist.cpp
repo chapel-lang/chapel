@@ -6,6 +6,7 @@
 REGISTER(CheckBackLinks);
 REGISTER(CheckIDs);
 REGISTER(CheckTypeInfo);
+REGISTER(CloneAllFns);
 REGISTER(DummyPass);
 REGISTER(FindUnknownTypes);
 REGISTER(GetStuff);

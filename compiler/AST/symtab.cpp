@@ -90,12 +90,12 @@ SymScope* SymScope::findEnclosingScopeType(scopeType t) {
 }
 
 
-void SymScope::addUndefined(UseBeforeDefSymbol* sym) {
+void SymScope::addUndefined(UnresolvedSymbol* sym) {
   SymLink* newLink = new SymLink(sym);
   useBeforeDefSyms = appendLink(useBeforeDefSyms, newLink);
 }
 
-void SymScope::addUndefinedToFile(UseBeforeDefSymbol* sym) {
+void SymScope::addUndefinedToFile(UnresolvedSymbol* sym) {
   SymScope* scope = Symboltable::getCurrentScope();
 
   if (parsingInternalPrelude) {
@@ -118,9 +118,9 @@ void SymScope::handleUndefined(void) {
     fprintf(stdout, "--------------------------------------------------\n");
     while (undefined != NULL) {
       char* name = undefined->pSym->name;
-      Symbol* sym = Symboltable::lookup(name, true);
+      Symbol* sym = Symboltable::lookup(name, false, true);
 
-      if (typeid(*sym) == typeid(UseBeforeDefSymbol)) {
+      if (typeid(*sym) == typeid(UnresolvedSymbol)) {
 	fprintf(stdout, "%s:%d ", undefined->filename, undefined->lineno);
 	undefined->print(stdout);
 	fprintf(stdout, "\n");
@@ -321,6 +321,16 @@ SymScope* Symboltable::getCurrentScope(void) {
 }
 
 
+SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
+  SymScope* oldScope = currentScope;
+
+  currentScope = newScope;
+  level = newScope->level;
+
+  return oldScope;
+}
+
+
 FnSymbol* Symboltable::getCurrentFn(void) {
   return currentFn;
 }
@@ -355,7 +365,7 @@ TypeSymbol* Symboltable::lookupInternalType(char* name, bool publicSym) {
 }
 
 
-Symbol* Symboltable::lookup(char* name, bool inLexer) {
+Symbol* Symboltable::lookup(char* name, bool genError, bool inLexer) {
   SymScope* scope;
   
   scope = currentScope;
@@ -369,6 +379,11 @@ Symbol* Symboltable::lookup(char* name, bool inLexer) {
     scope = scope->parent;
   }
 
+  if (genError) {
+    Symboltable::dump(stderr);
+    fail("lookup of %s failed", name);
+  }
+
   if (!inLexer) {
     //    Symboltable::print(stdout);
     /*
@@ -377,7 +392,7 @@ Symbol* Symboltable::lookup(char* name, bool inLexer) {
     */
   }
 
-  UseBeforeDefSymbol* undefinedSym = new UseBeforeDefSymbol(name);
+  UnresolvedSymbol* undefinedSym = new UnresolvedSymbol(name);
 
   if (!inLexer) {
     currentScope->addUndefinedToFile(undefinedSym);
@@ -429,6 +444,7 @@ TypeDefStmt* Symboltable::defineUserType(char* name, Type* definition,
   return new TypeDefStmt(newtype);
 }
 
+
 ParamSymbol* Symboltable::defineParams(paramType formaltag, Symbol* idents, 
 				       Type* type) {
   ParamSymbol* paramList;
@@ -449,6 +465,31 @@ ParamSymbol* Symboltable::defineParams(paramType formaltag, Symbol* idents,
     lastParam = newParam;
 
     idents = nextLink(Symbol, idents);
+  }
+
+  return paramList;
+}
+
+
+ParamSymbol* Symboltable::copyParams(ParamSymbol* formals) {
+  ParamSymbol* paramList;
+  ParamSymbol* newParam;
+  ParamSymbol* lastParam;
+
+  newParam = dynamic_cast<ParamSymbol*>(formals->copy());
+  define(newParam);
+  
+  paramList = newParam;
+  lastParam = newParam;
+
+  formals = nextLink(ParamSymbol, formals);
+  while (formals != NULL) {
+    newParam = dynamic_cast<ParamSymbol*>(formals->copy());
+    define(newParam);
+    lastParam->next = newParam;
+    lastParam = newParam;
+
+    formals = nextLink(ParamSymbol, formals);
   }
 
   return paramList;
@@ -484,6 +525,14 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   }
 
   return varList;
+}
+
+
+VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
+					  Expr* init, varType vartag, 
+					  bool isConst) {
+  VarSymbol* varList = defineVars(idents, type, init, vartag, isConst);
+  return new VarDefStmt(varList, init);
 }
 
 
@@ -621,12 +670,12 @@ MemberAccess* Symboltable::defineMemberAccess(Expr* base, char* member) {
 
 extern int analyzeNewAST;
   if (baseType == dtUnknown || analyzeNewAST) {
-    memberSym = new UseBeforeDefSymbol(member);
+    memberSym = new UnresolvedSymbol(member);
   } else if (typeid(*baseType) == typeid(ClassType)) {
     ClassType* classType = (ClassType*)baseType;
     memberSym = Symboltable::lookupInScope(member, classType->scope);
   } else {
-    memberSym = new UseBeforeDefSymbol(member);
+    memberSym = new UnresolvedSymbol(member);
   }
   return new MemberAccess(base, memberSym);
 }

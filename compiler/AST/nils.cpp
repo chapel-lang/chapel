@@ -54,7 +54,7 @@ void verifyNilsUncorrupted(char* message) {
     INT_FATAL("nilSymbol has been %s", message);
   }
   if (nilType->next != nilILink || nilType->prev != nilILink ||
-      nilType->name != nilSymbol || nilType->initDefault != nilExpr) {
+      nilType->name != nilSymbol || nilType->defaultVal != nilExpr) {
     INT_FATAL("nilType has been %s", message);
   }
 

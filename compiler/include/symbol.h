@@ -23,6 +23,8 @@ class Symbol : public BaseAST {
   ASymbol *asymbol;
   
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
+  virtual Symbol* copy(void);
+  Symbol* copyList(void);
 
   bool isNull(void);
 
@@ -35,7 +37,6 @@ class Symbol : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   void codegenDefList(FILE* outfile, char* separator);
-  int getTypes(Vec<BaseAST *> &stmts);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -43,9 +44,10 @@ class Symbol : public BaseAST {
 extern Symbol* nilSymbol;
 
 
-class UseBeforeDefSymbol : public Symbol {
+class UnresolvedSymbol : public Symbol {
  public:
-  UseBeforeDefSymbol(char* init_name);
+  UnresolvedSymbol(char* init_name);
+  virtual Symbol* copy(void);
 };
 
 
@@ -56,6 +58,7 @@ class VarSymbol : public Symbol {
 
   VarSymbol(char* init_name, Type* init_type = dtUnknown, 
 	    varType init_varClass = VAR_NORMAL, bool init_isConst = false);
+  virtual Symbol* copy(void);
 
   bool isNull(void);
   
@@ -81,6 +84,7 @@ class ParamSymbol : public Symbol {
 
   ParamSymbol(paramType init_usage, char* init_name, 
 	      Type* init_type = dtUnknown);
+  virtual Symbol* copy(void);
 
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -90,12 +94,14 @@ class ParamSymbol : public Symbol {
 class TypeSymbol : public Symbol {
  public:
   TypeSymbol(char* init_name, Type* init_definition);
+  virtual Symbol* copy(void);
 };
 
 
 class ClassSymbol : public TypeSymbol {
  public:
   ClassSymbol(char* init_name, ClassType* init_class);
+  virtual Symbol* copy(void);
 
   bool isNull();
 
@@ -108,6 +114,7 @@ extern ClassSymbol* nilClassSymbol;
 class ReduceSymbol : public ClassSymbol {
  public:
   ReduceSymbol(char* init_name, ClassType* init_class);
+  virtual Symbol* copy(void);
 };
 
 
@@ -128,12 +135,11 @@ class FnSymbol : public Symbol {
   FnSymbol(char* init_name, FnSymbol* init_parentFn = nilFnSymbol);
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
 		 bool init_exportMe=false);
+  virtual Symbol* copy(void);
 
   bool isNull(void);
 
   void codegenDef(FILE* outfile);
-  int getSymbols(Vec<BaseAST *> &stmts);
-  int getStmts(Vec<BaseAST *> &stmts);
 };
 
 
@@ -143,6 +149,7 @@ class EnumSymbol : public Symbol {
   int val;
 
   EnumSymbol(char* init_name, int init_val);
+  virtual Symbol* copy(void);
 };
 
 #endif

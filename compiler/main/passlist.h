@@ -8,6 +8,7 @@
 #include "../traversals/checkBackLinks.h"
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkTypeInfo.h"
+#include "../traversals/cloneAllFns.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/getstuff.h"
 #include "../traversals/printAST.h"

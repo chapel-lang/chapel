@@ -9,16 +9,21 @@
 #include "type.h"
 
 
-Type::Type(astType_t astType, Expr* init_initDefault) :
+Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
   name(nilSymbol),
-  initDefault(init_initDefault),
+  defaultVal(init_defaultVal),
   asymbol(NULL)
 {}
 
 
 void Type::addName(Symbol* newname) {
   name = newname;
+}
+
+
+Type* Type::copy(void) {
+  return this;
 }
 
 
@@ -81,7 +86,7 @@ void Type::traverseType(Traversal* traversal) {
 
 
 void Type::traverseDefType(Traversal* traversal) {
-  initDefault->traverse(traversal, false);
+  defaultVal->traverse(traversal, false);
 }
 
 
@@ -169,14 +174,6 @@ void Type::generateInit(FILE* outfile, VarSymbol* var) {
 }
 
 
-int
-Type::getSymbols(Vec<BaseAST *> &asts) {
-  if (name)
-    asts.add(name);
-  return asts.n;
-} 
-
-
 EnumType::EnumType(EnumSymbol* init_valList) :
   Type(TYPE_ENUM, new Variable(init_valList)),
   valList(init_valList)
@@ -189,9 +186,22 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 }
 
 
+Type* EnumType::copy(void) {
+  Symbol* newSyms = valList->copyList();
+
+  if (typeid(*newSyms) != typeid(EnumSymbol)) {
+    INT_FATAL(this, "valList is not EnumSymbol in EnumType::copy()");
+    return nilType;
+  } else {
+    EnumSymbol* newEnums = (EnumSymbol*)newSyms;
+    return new EnumType(newEnums);
+  }
+}
+
+
 void EnumType::traverseDefType(Traversal* traversal) {
   valList->traverseList(traversal, false);
-  initDefault->traverse(traversal, false);
+  defaultVal->traverse(traversal, false);
 }
 
 
@@ -227,17 +237,6 @@ void EnumType::codegenDef(FILE* outfile) {
   name->codegen(outfile);
   fprintf(outfile, ";\n\n");
 }
-
-
-int
-EnumType::getSymbols(Vec<BaseAST *> &asts) {
-  BaseAST *v = valList;
-  while (v) {
-    asts.add(v);
-    v = dynamic_cast<BaseAST *>(v->next);
-  }
-  return asts.n;
-} 
 
 
 static void codegenIOPrototype(FILE* outfile, Symbol* name) {
@@ -302,11 +301,21 @@ DomainType::DomainType(Expr* init_expr) :
   }
 }
 
+
 DomainType::DomainType(int init_numdims) :
   Type(TYPE_DOMAIN, nilExpr),
   numdims(init_numdims),
   parent(nilExpr)
 {}
+
+
+Type* DomainType::copy(void) {
+  if (parent->isNull()) {
+    return new DomainType(numdims);
+  } else {
+    return new DomainType(parent->copy());
+  }
+}
 
 
 int DomainType::rank(void) {
@@ -341,6 +350,22 @@ IndexType::IndexType(Expr* init_expr) :
 }
 
 
+IndexType::IndexType(int init_numdims) :
+  DomainType(init_numdims)
+{
+  astType = TYPE_INDEX;
+}
+
+
+Type* IndexType::copy(void) {
+  if (parent->isNull()) {
+    return new IndexType(numdims);
+  } else {
+    return new IndexType(parent->copy());
+  }
+}
+
+
 void IndexType::print(FILE* outfile) {
   fprintf(outfile, "index(");
   if (parent->isNull()) {
@@ -357,16 +382,21 @@ void IndexType::print(FILE* outfile) {
 
 
 ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
-  Type(TYPE_ARRAY, init_elementType->initDefault),
+  Type(TYPE_ARRAY, init_elementType->defaultVal),
   domain(init_domain),
   elementType(init_elementType)
 {}
 
 
+Type* ArrayType::copy(void) {
+  return new ArrayType(domain->copy(), elementType->copy());
+}
+
+
 void ArrayType::traverseDefType(Traversal* traversal) {
   domain->traverse(traversal, false);
   elementType->traverse(traversal, false);
-  initDefault->traverse(traversal, false);
+  defaultVal->traverse(traversal, false);
 }
 
 
@@ -411,24 +441,15 @@ void ArrayType::generateInit(FILE* outfile, VarSymbol* sym) {
 }
 
 
-int
-ArrayType::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(domain);
-  return asts.n;
-}
-
-
-int
-ArrayType::getTypes(Vec<BaseAST *> &asts) {
-  asts.add(elementType);
-  return asts.n;
-}
-
-
-UserType::UserType(Type* init_definition, Expr* init_initDefault) :
-  Type(TYPE_USER, init_initDefault),
+UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
+  Type(TYPE_USER, init_defaultVal),
   definition(init_definition)
 {}
+
+
+Type* UserType::copy(void) {
+  return new UserType(definition->copy(), defaultVal->copy());
+}
 
 
 bool UserType::isComplex(void) {
@@ -438,7 +459,7 @@ bool UserType::isComplex(void) {
 
 void UserType::traverseDefType(Traversal* traversal) {
   definition->traverse(traversal, false);
-  initDefault->traverse(traversal, false);
+  defaultVal->traverse(traversal, false);
 }
 
 
@@ -485,20 +506,21 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-int
-UserType::getTypes(Vec<BaseAST *> &asts) {
-  asts.add(definition);
-  return asts.n;
-}
-
-
-ClassType::ClassType(ClassType* init_parentClass) :
+ClassType::ClassType(ClassType* init_parentClass, Stmt* init_definition,
+		     FnDefStmt* init_constructor, SymScope* init_scope) :
   Type(TYPE_CLASS, nilExpr),
   parentClass(init_parentClass),
-  definition(nilStmt),
-  scope(NULL),
-  constructor(nilFnDefStmt)
+  definition(init_definition),
+  constructor(init_constructor),
+  scope(init_scope)
 {}
+
+
+Type* ClassType::copy(void) {
+  FnDefStmt* newConstructor = dynamic_cast<FnDefStmt*>(constructor->copy());
+  ClassType* newParent = dynamic_cast<ClassType*>(parentClass->copy());
+  return new ClassType(newParent, definition->copyList(), newConstructor);
+}
 
 
 void ClassType::addDefinition(Stmt* init_definition) {
@@ -530,7 +552,7 @@ void ClassType::addScope(SymScope* init_scope) {
 void ClassType::traverseDefType(Traversal* traversal) {
   definition->traverseList(traversal, false);
   constructor->traverseList(traversal, false);
-  initDefault->traverse(traversal, false);
+  defaultVal->traverse(traversal, false);
 }
 
 
@@ -572,22 +594,6 @@ void ClassType::codegenIORoutines(FILE* outfile) {
 }
 
 
-int
-ClassType::getTypes(Vec<BaseAST *> &asts) {
-  asts.add(parentClass);
-  return asts.n;
-}
-
-
-int
-ClassType::getStmts(Vec<BaseAST *> &asts) {
-  Vec<BaseAST *> elements;
-  getLinkElements(elements, definition);
-  asts.append(elements);
-  return asts.n;
-}
-
-
 TupleType::TupleType(Type* firstType) :
   Type(TYPE_TUPLE, nilExpr)
 {
@@ -600,11 +606,21 @@ void TupleType::addType(Type* additionalType) {
 }
 
 
+Type* TupleType::copy(void) {
+  TupleType* newTupleType = new TupleType(components.v[0]->copy());
+  for (int i=1; i<components.n; i++) {
+    newTupleType->addType(components.v[i]->copy());
+  }
+  
+  return newTupleType;
+}
+
+
 void TupleType::traverseDefType(Traversal* traversal) {
   for (int i=0; i<components.n; i++) {
     components.v[i]->traverse(traversal, false);
   }
-  initDefault->traverse(traversal, false);
+  defaultVal->traverse(traversal, false);
 }
 
 

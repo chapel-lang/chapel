@@ -15,6 +15,8 @@ class Stmt : public BaseAST {
   FnSymbol* parentFn;
 
   Stmt(astType_t astType);
+  virtual Stmt* copy(void);
+  Stmt* copyList(void);
 
   bool isNull(void);
   virtual bool canLiveAtFileScope(void);
@@ -35,6 +37,7 @@ extern Stmt* nilStmt;
 class NoOpStmt : public Stmt {
  public:
   NoOpStmt(void);
+  virtual Stmt* copy(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -47,6 +50,7 @@ class VarDefStmt : public Stmt {
   Expr* init;
 
   VarDefStmt(VarSymbol* init_var, Expr* init_expr);
+  virtual Stmt* copy(void);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -55,8 +59,6 @@ class VarDefStmt : public Stmt {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenVarDef(FILE* outfile);
-  int getSymbols(Vec<BaseAST *> &asts);
-  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -65,6 +67,7 @@ class TypeDefStmt : public Stmt {
   Type* type;
 
   TypeDefStmt(Type* init_type);
+  virtual Stmt* copy(void);
 
   bool canLiveAtFileScope(void);
 
@@ -72,7 +75,6 @@ class TypeDefStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  int getTypes(Vec<BaseAST *> &asts);
 };
 
 
@@ -81,6 +83,8 @@ class FnDefStmt : public Stmt {
   FnSymbol* fn;
 
   FnDefStmt(FnSymbol* init_fn);
+  virtual Stmt* copy(void);
+  Stmt* clone(void);
 
   bool isNull(void);
   bool canLiveAtFileScope(void);
@@ -89,7 +93,6 @@ class FnDefStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  int getSymbols(Vec<BaseAST *> &asts);
 };
 
 extern FnDefStmt* nilFnDefStmt;
@@ -100,6 +103,7 @@ class ExprStmt : public Stmt {
   Expr* expr;
 
   ExprStmt(Expr* initExpr);
+  virtual Stmt* copy(void);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -107,13 +111,13 @@ class ExprStmt : public Stmt {
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
-  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
 class ReturnStmt : public ExprStmt {
  public:
   ReturnStmt(Expr* retExpr);
+  virtual Stmt* copy(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -125,12 +129,12 @@ class BlockStmt : public Stmt {
   Stmt* body;
 
   BlockStmt::BlockStmt(Stmt* init_body);
+  virtual Stmt* copy(void);
 
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  int getStmts(Vec<BaseAST *> &asts);
 };
 
 
@@ -140,6 +144,7 @@ class WhileLoopStmt : public BlockStmt {
   Expr* condition;
 
   WhileLoopStmt(bool init_whileDo, Expr* init_cond, Stmt* body);
+  virtual Stmt* copy(void);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -147,7 +152,6 @@ class WhileLoopStmt : public BlockStmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -159,6 +163,7 @@ class ForLoopStmt : public BlockStmt {
 
   ForLoopStmt(bool init_forall, VarSymbol* init_index, Expr* init_domain,
 	      Stmt* body);
+  virtual Stmt* copy(void);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -166,8 +171,6 @@ class ForLoopStmt : public BlockStmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  int getSymbols(Vec<BaseAST *> &asts);
-  int getExprs(Vec<BaseAST *> &asts);
 };
 
 
@@ -179,6 +182,7 @@ class CondStmt : public Stmt {
 
   CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
 	   Stmt* init_elseStmt = nilStmt);
+  virtual Stmt* copy(void);
 
   bool topLevelExpr(Expr* testExpr);
 
@@ -186,8 +190,6 @@ class CondStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  int getExprs(Vec<BaseAST *> &asts);
-  int getStmts(Vec<BaseAST *> &asts);
 };
 
 #endif

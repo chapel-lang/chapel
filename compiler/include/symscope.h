@@ -44,8 +44,8 @@ class SymScope : public gc {
   void insert(Symbol* sym);
   SymScope* findEnclosingScopeType(scopeType t);
 
-  void addUndefined(UseBeforeDefSymbol*);
-  void addUndefinedToFile(UseBeforeDefSymbol*);
+  void addUndefined(UnresolvedSymbol*);
+  void addUndefinedToFile(UnresolvedSymbol*);
   void handleUndefined(void);
 
   void print(FILE* outfile = stdout, bool tableOrder = false);

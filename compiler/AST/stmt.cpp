@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "misc.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symscope.h"
 #include "symtab.h"
 
@@ -12,6 +13,28 @@ Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
   parentFn(Symboltable::getCurrentFn())
 {}
+
+
+Stmt* Stmt::copy(void) {
+  if (!this->isNull()) {
+    INT_FATAL(this, "copy not implemented for Stmt subclass");
+  }
+  return nilStmt;
+}
+
+
+Stmt* Stmt::copyList(void) {
+  Stmt* newStmtList = nilStmt;
+  Stmt* oldStmt = this;
+
+  while (oldStmt) {
+    newStmtList = appendLink(newStmtList, oldStmt->copy());
+
+    oldStmt = nextLink(Stmt, oldStmt);
+  }
+
+  return newStmtList;
+}
 
 
 bool Stmt::isNull(void) {
@@ -70,6 +93,11 @@ NoOpStmt::NoOpStmt(void) :
 {}
 
 
+Stmt* NoOpStmt::copy(void) {
+  return new NoOpStmt();
+}
+
+
 void NoOpStmt::print(FILE* outfile) {
   fprintf(outfile, ";");
 }
@@ -85,6 +113,12 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
   var(init_var),
   init(init_init) 
 {}
+
+
+Stmt* VarDefStmt::copy(void) {
+  return Symboltable::defineVarDefStmt(var, var->type, init->copy(), 
+				       var->varClass, var->isConst);
+}
 
 
 bool VarDefStmt::topLevelExpr(Expr* testExpr) {
@@ -145,7 +179,7 @@ void VarDefStmt::codegen(FILE* outfile) {
   while (aVar) {
     VarSymbol* nextVar = nextLink(VarSymbol, aVar);
     if (init->isNull()) {
-      initExpr = aVar->type->initDefault;
+      initExpr = aVar->type->defaultVal;
     } else {
       initExpr = init;
     }
@@ -223,24 +257,17 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
 }
 
 
-int
-VarDefStmt::getSymbols(Vec<BaseAST *> &asts) {
-  asts.add(var);
-  return asts.n;
-}
-
-
-int
-VarDefStmt::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(init);
-  return asts.n;
-}
-
-
 TypeDefStmt::TypeDefStmt(Type* init_type) :
   Stmt(STMT_TYPEDEF),
   type(init_type)
 {}
+
+
+Stmt* TypeDefStmt::copy(void) {
+  Type* newType = type->copy();
+  Symboltable::define(type->name);
+  return new TypeDefStmt(newType);
+}
 
 
 bool TypeDefStmt::canLiveAtFileScope(void) {
@@ -273,17 +300,36 @@ void TypeDefStmt::codegen(FILE* outfile) {
 }
 
 
-int
-TypeDefStmt::getTypes(Vec<BaseAST *> &asts) {
-  asts.add(type);
-  return asts.n;
-}
-
-
 FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
   Stmt(STMT_FNDEF),
   fn(init_fn)
 {}
+
+
+Stmt* FnDefStmt::copy(void) {
+  FnSymbol* fncopy = Symboltable::startFnDef(glomstrings(3, "__", fn->name, "_clone"));
+  // do this first to make sure symbols are defined before used when body is
+  // copied
+  Symbol* newformals;
+  if (typeid(*(fn->formals)) == typeid(ParamSymbol)) {
+    ParamSymbol* oldformals = (ParamSymbol*)(fn->formals);
+    newformals = Symboltable::copyParams(oldformals);
+  } else {
+    newformals = nilSymbol;
+  }
+  return Symboltable::finishFnDef(fncopy, newformals, fn->type->copy(), 
+				  fn->body->copyList(), fn->exportMe);
+}
+
+
+Stmt* FnDefStmt::clone(void) {
+  SymScope* prevScope = Symboltable::setCurrentScope(fn->scope);
+  Stmt* newStmt = this->copy();
+  Symboltable::setCurrentScope(prevScope);
+  this->add(newStmt);
+
+  return newStmt;
+}
 
 
 bool FnDefStmt::isNull(void) {
@@ -342,17 +388,15 @@ void FnDefStmt::codegen(FILE* outfile) {
 }
 
 
-int
-FnDefStmt::getSymbols(Vec<BaseAST *> &asts) {
-  asts.add(fn);
-  return asts.n;
-}
-
-
 ExprStmt::ExprStmt(Expr* init_expr) :
   Stmt(STMT_EXPR),
   expr(init_expr) 
 {}
+
+
+Stmt* ExprStmt::copy(void) {
+  return new ExprStmt(expr->copy());
+}
 
 
 bool ExprStmt::topLevelExpr(Expr* testExpr) {
@@ -377,17 +421,15 @@ void ExprStmt::codegen(FILE* outfile) {
 }
 
 
-int
-ExprStmt::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(expr);
-  return asts.n;
-}
-
-
 ReturnStmt::ReturnStmt(Expr* retExpr) :
   ExprStmt(retExpr)
 {
   astType = STMT_RETURN;
+}
+
+
+Stmt* ReturnStmt::copy(void) {
+  return new ReturnStmt(expr->copy());
 }
 
 
@@ -418,6 +460,11 @@ BlockStmt::BlockStmt(Stmt* init_body) :
 {}
 
 
+Stmt* BlockStmt::copy(void) {
+  return new BlockStmt(body->copyList());
+}
+
+
 void BlockStmt::traverseStmt(Traversal* traversal) {
   body->traverseList(traversal, false);
 }
@@ -439,17 +486,6 @@ void BlockStmt::codegen(FILE* outfile) {
 }
 
 
-int
-BlockStmt::getStmts(Vec<BaseAST *> &asts) {
-  BaseAST *b = body;
-  while (b) {
-    asts.add(b);
-    b = dynamic_cast<BaseAST*>(b->next);	
-  }
-  return asts.n;
-}
-
-
 WhileLoopStmt::WhileLoopStmt(bool init_whileDo, 
 			     Expr* init_cond, 
 			     Stmt* init_body) 
@@ -458,6 +494,11 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
     condition(init_cond) 
 {
   astType = STMT_WHILELOOP;
+}
+
+
+Stmt* WhileLoopStmt::copy(void) {
+  return new WhileLoopStmt(isWhileDo, condition->copy(), body->copy());
 }
 
 
@@ -512,13 +553,6 @@ void WhileLoopStmt::codegen(FILE* outfile) {
 }
 
 
-int
-WhileLoopStmt::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(condition);
-  return asts.n;
-}
-
-
 ForLoopStmt::ForLoopStmt(bool init_forall,
 			 VarSymbol* init_index,
 			 Expr* init_domain,
@@ -529,6 +563,12 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
     domain(init_domain) 
 {
   astType = STMT_FORLOOP;
+}
+
+
+Stmt* ForLoopStmt::copy(void) {
+  return new ForLoopStmt(forall, dynamic_cast<VarSymbol*>(index->copy()), 
+			 domain->copy(), body->copy());
 }
 
 
@@ -600,19 +640,6 @@ void ForLoopStmt::codegen(FILE* outfile) {
 }
 
 
-int
-ForLoopStmt::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(domain);
-  return asts.n;
-}
-
-
-int
-ForLoopStmt::getSymbols(Vec<BaseAST *> &asts) {
-  asts.add(index);
-  return asts.n;
-}
-
 CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt, 
 		   Stmt* init_elseStmt) :
   Stmt(STMT_COND),
@@ -620,6 +647,11 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
   thenStmt(init_thenStmt),
   elseStmt(init_elseStmt)
 {}
+
+
+Stmt* CondStmt::copy(void) {
+  return new CondStmt(condExpr->copy(), thenStmt->copy(), elseStmt->copy());
+}
 
 
 bool CondStmt::topLevelExpr(Expr* testExpr) {
@@ -656,19 +688,4 @@ void CondStmt::codegen(FILE* outfile) {
     elseStmt->codegen(outfile);
     fprintf(outfile, "\n}");
   }
-}
-
-
-int
-CondStmt::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(condExpr);
-  return asts.n;
-}
-
-
-int
-CondStmt::getStmts(Vec<BaseAST *> &asts) {
-  asts.add(thenStmt);
-  asts.add(elseStmt);
-  return asts.n;
 }

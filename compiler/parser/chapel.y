@@ -178,10 +178,7 @@ vardeclinit:
 
 vardecl:
   vardecltag varconst idlist vardecltype vardeclinit ';'
-    {
-      VarSymbol* varList = Symboltable::defineVars($3, $4, $5, $1, $2);
-      $$ = new VarDefStmt(varList, $5);
-    }
+    { $$ = Symboltable::defineVarDefStmt($3, $4, $5, $1, $2); }
 ;
 
 

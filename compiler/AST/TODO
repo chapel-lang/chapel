@@ -41,6 +41,23 @@
 
 * refactor ParenOpExpr
 
+* make codegen for unresolved symbol cause problem to ensure all
+  symbols are resolved
+
+* remove hacks that assume dtUnknown is an integer
+
+* resolve question of whether or not resolving symbol in symtab.cpp
+  for MemberAccess is a problem
+
+* tie off end of file parsing better: 
+    add new scope for new symbols,
+    fix up yyfilename, yylineno
+
+* move more stuff into pass list
+
+* get classes in expr.cpp in same order as expr.h
+
+
 SHANNON:
 * fix type_info() for BinOp
 * implement isComputable() and intVal() better for Expr hierarchy

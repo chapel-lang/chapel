@@ -682,7 +682,7 @@ static int
 undef_or_fn_expr(Expr *ast) {
   if (ast->astType == EXPR_VARIABLE) { 
     Variable *v = dynamic_cast<Variable *>(ast);
-    if (v->var->astType == SYMBOL_USEBEFOREDEF || v->var->astType == SYMBOL_FN) {
+    if (v->var->astType == SYMBOL_UNRESOLVED || v->var->astType == SYMBOL_FN) {
       assert(ast->ainfo->rval->name);
       return 1;
     }
@@ -874,7 +874,7 @@ gen_if1(BaseAST *ast) {
       if (
 #if 0
 	s->member->astType == SYMBOL ||
-	  s->member->astType == SYMBOL_USEBEFOREDEF ||
+	  s->member->astType == SYMBOL_UNRESOLVED ||
 	  s->member->astType == SYMBOL_FN ||
 	  (s->member->astType == SYMBOL_VAR && 
 	   (((dynamic_cast<VarSymbol*>(s->member))->type->astType == TYPE_BUILTIN)))
@@ -1116,7 +1116,7 @@ gen_if1(BaseAST *ast) {
       break;
     }
   case SYMBOL:
-  case SYMBOL_USEBEFOREDEF:
+  case SYMBOL_UNRESOLVED:
   case SYMBOL_VAR:
   case SYMBOL_PARAM:
   case SYMBOL_TYPE:

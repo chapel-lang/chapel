@@ -188,8 +188,8 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL");
     }
     break;
-  case SYMBOL_USEBEFOREDEF:
-    if (typeid(*ast) != typeid(UseBeforeDefSymbol)) {
+  case SYMBOL_UNRESOLVED:
+    if (typeid(*ast) != typeid(UnresolvedSymbol)) {
       INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_USEBEFOREDEF");
     }
     break;

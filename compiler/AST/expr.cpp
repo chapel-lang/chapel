@@ -8,6 +8,7 @@
 #include "stringutil.h"
 #include "sym.h"
 #include "symscope.h"
+#include "symtab.h"
 
 
 
@@ -92,6 +93,28 @@ Expr::Expr(astType_t astType) :
   ainfo(NULL),
   parent(nilExpr)
 {}
+
+
+Expr* Expr::copy(void) {
+  if (!this->isNull()) {
+    INT_FATAL(this, "Expr::copy() not implemented yet");
+  }
+  return nilExpr;
+}
+
+
+Expr* Expr::copyList(void) {
+  Expr* newExprList = nilExpr;
+  Expr* oldExpr = this;
+
+  while (oldExpr) {
+    newExprList = appendLink(newExprList, oldExpr->copy());
+
+    oldExpr = nextLink(Expr, oldExpr);
+  }
+  
+  return newExprList;
+}
 
 
 bool Expr::isNull(void) {
@@ -189,16 +212,16 @@ Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
 }
 
 
-int
-Expr::getTypes(Vec<BaseAST *> &asts) {
-  return asts.n;
-}
-
-
 Literal::Literal(astType_t astType, char* init_str) :
   Expr(astType),
   str(copystring(init_str))
 {}
+
+
+Expr* Literal::copy(void) {
+  INT_FATAL(this, "Literal::copy() not implemented -- unanticipated");
+  return nilExpr;
+}
 
 
 bool Literal::isComputable(void) {
@@ -222,6 +245,11 @@ BoolLiteral::BoolLiteral(char* init_str, bool init_val) :
 {}
 
 
+Expr* BoolLiteral::copy(void) {
+  return new BoolLiteral(copystring(str), val);
+}
+
+
 bool BoolLiteral::boolVal(void) {
   return val;
 }
@@ -236,6 +264,11 @@ IntLiteral::IntLiteral(char* init_str, int init_val) :
   Literal(EXPR_INTLITERAL, init_str),
   val(init_val) 
 {}
+
+
+Expr* IntLiteral::copy(void) {
+  return new IntLiteral(copystring(str), val);
+}
 
 
 long IntLiteral::intVal(void) {
@@ -269,6 +302,11 @@ FloatLiteral::FloatLiteral(char* init_str, double init_val) :
 {}
 
 
+Expr* FloatLiteral::copy(void) {
+  return new FloatLiteral(str, val);
+}
+
+
 ComplexLiteral::ComplexLiteral(char* init_str, double init_imag, 
 			       double init_real, char* init_realStr) :
   Literal(EXPR_COMPLEXLITERAL, init_str),
@@ -285,6 +323,12 @@ void ComplexLiteral::addReal(FloatLiteral* init_real) {
     realVal = init_real->val;
     realStr = copystring(init_real->str);
   }
+}
+
+
+Expr* ComplexLiteral::copy(void) {
+  return new ComplexLiteral(copystring(str), imagVal, realVal, 
+			    copystring(realStr));
 }
 
 
@@ -323,6 +367,11 @@ StringLiteral::StringLiteral(char* init_val) :
 {}
 
 
+Expr* StringLiteral::copy(void) {
+  return new StringLiteral(copystring(str));
+}
+
+
 Type* StringLiteral::typeInfo(void) {
   return dtString;
 }
@@ -344,6 +393,11 @@ Variable::Variable(Symbol* init_var) :
 {}
 
 
+Expr* Variable::copy(void) {
+  return new Variable(Symboltable::lookup(var->name, true));
+}
+
+
 void Variable::traverseExpr(Traversal* traversal) {
   var->traverse(traversal, false);
 }
@@ -363,19 +417,17 @@ void Variable::codegen(FILE* outfile) {
 }
 
 
-int
-Variable::getSymbols(Vec<BaseAST *> &asts) {
-  asts.add(var);
-  return asts.n;
-}
-
-
 UnOp::UnOp(unOpType init_type, Expr* op) :
   Expr(EXPR_UNOP),
   type(init_type),
   operand(op) 
 {
   operand->parent = this;
+}
+
+
+Expr* UnOp::copy(void) {
+  return new UnOp(type, operand->copy());
 }
 
 
@@ -407,13 +459,6 @@ precedenceType UnOp::precedence(void) {
 }
 
 
-int
-UnOp::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(operand);
-  return asts.n;
-}
-
-
 BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
   Expr(EXPR_BINOP),
   type(init_type),
@@ -422,6 +467,11 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 {
   left->parent = this;
   right->parent = this;
+}
+
+
+Expr* BinOp::copy(void) {
+  return new BinOp(type, left->copy(), right->copy());
 }
 
 
@@ -491,32 +541,17 @@ precedenceType BinOp::precedence(void) {
 }
 
 
-int
-BinOp::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(left);
-  asts.add(right);
-  return asts.n;
-}
-
-
-SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
-  BinOp(init_type, l, r)
-{
-  astType = EXPR_SPECIALBINOP;
-}
-
-
-precedenceType SpecialBinOp::precedence(void) {
-  return PREC_LOWEST;
-}
-
-
 MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   Expr(EXPR_MEMBERACCESS),
   base(init_base),
   member(init_member)
 {
   base->parent = this;
+}
+
+
+Expr* MemberAccess::copy(void) {
+  return Symboltable::defineMemberAccess(base->copy(), member->name);
 }
 
 
@@ -545,17 +580,20 @@ void MemberAccess::codegen(FILE* outfile) {
 }
 
 
-int
-MemberAccess::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(base);
-  return asts.n;
+SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
+  BinOp(init_type, l, r)
+{
+  astType = EXPR_SPECIALBINOP;
 }
 
 
-int
-MemberAccess::getSymbols(Vec<BaseAST *> &asts) {
-  asts.add(member);
-  return asts.n;
+Expr* SpecialBinOp::copy(void) {
+  return new SpecialBinOp(type, left->copy(), right->copy());
+}
+
+
+precedenceType SpecialBinOp::precedence(void) {
+  return PREC_LOWEST;
 }
 
 
@@ -566,6 +604,11 @@ AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   astType = EXPR_ASSIGNOP;
   left->parent = this;
   right->parent = this;
+}
+
+
+Expr* AssignOp::copy(void) {
+  return new AssignOp(type, left->copy(), right->copy());
 }
 
 
@@ -613,6 +656,11 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
 {}
 
 
+Expr* SimpleSeqExpr::copy(void) {
+  return new SimpleSeqExpr(lo->copy(), hi->copy(), str->copy());
+}
+
+
 void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
   lo->traverse(traversal, false);
   hi->traverse(traversal, false);
@@ -642,19 +690,15 @@ void SimpleSeqExpr::codegen(FILE* outfile) {
 }
 
 
-int
-SimpleSeqExpr::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(lo);
-  asts.add(hi);
-  asts.add(str);
-  return asts.n;
-}
-
-
 SizeofExpr::SizeofExpr(Type* init_type) :
   Expr(EXPR_SIZEOF),
   type(init_type)
 {}
+
+
+Expr* SizeofExpr::copy(void) {
+  return new SizeofExpr(type->copy());
+}
 
 
 void SizeofExpr::traverseExpr(Traversal* traversal) {
@@ -689,7 +733,7 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
     Symbol* baseVar = ((Variable*)base)->var;
 
     // ASSUMPTION: Anything used before it is defined is a function
-    if (typeid(*baseVar) == typeid(UseBeforeDefSymbol) ||
+    if (typeid(*baseVar) == typeid(UnresolvedSymbol) ||
 	typeid(*baseVar) == typeid(FnSymbol) ||
 	typeid(*baseVar) == typeid(ClassSymbol)) {
 
@@ -760,6 +804,11 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 }
 
 
+Expr* ParenOpExpr::copy(void) {
+  return new ParenOpExpr(baseExpr->copy(), argList->copyList());
+}
+
+
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
   baseExpr->traverse(traversal, false);
   argList->traverseList(traversal, false);
@@ -785,18 +834,6 @@ void ParenOpExpr::codegen(FILE* outfile) {
 }
 
 
-int
-ParenOpExpr::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(baseExpr);
-  BaseAST *l = argList;
-  while (l) {
-    asts.add(l);
-    l = dynamic_cast<BaseAST *>(l->next);
-  }
-  return asts.n;
-}
-
-
 CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
   ParenOpExpr(nilExpr, init_argList),
   castType(init_castType)
@@ -808,6 +845,11 @@ CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
     arg->parent = this;
     arg = nextLink(Expr, arg);
   }
+}
+
+
+Expr* CastExpr::copy(void) {
+  return new CastExpr(castType->copy(), argList->copyList());
 }
 
 
@@ -839,14 +881,6 @@ void CastExpr::codegen(FILE* outfile) {
 }
 
 
-int
-CastExpr::getTypes(Vec<BaseAST *> &asts) {
-  Expr::getTypes(asts);
-  asts.add(castType);
-  return asts.n;
-}
-
-
 FnCall::FnCall(Expr* init_base, Expr* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {
@@ -855,11 +889,21 @@ FnCall::FnCall(Expr* init_base, Expr* init_arg) :
 }
 
 
+Expr* FnCall::copy(void) {
+  return new FnCall(baseExpr->copy(), argList->copyList());
+}
+
+
 IOCall::IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg) :
   FnCall(init_base, init_arg),
   ioType(init_iotype)
 {
   astType = EXPR_IOCALL;
+}
+
+
+Expr* IOCall::copy(void) {
+  return new IOCall(ioType, baseExpr->copy(), argList->copyList());
 }
 
 
@@ -945,6 +989,11 @@ ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
 }
 
 
+Expr* ArrayRef::copy(void) {
+  return new ArrayRef(baseExpr->copy(), argList->copy());
+}
+
+
 Type* ArrayRef::typeInfo(void) {
   // The Type of this expression may be a user type in which case we
   // need to walk past these names to the real definition of the array
@@ -981,6 +1030,11 @@ FloodExpr::FloodExpr(void) :
 {}
 
 
+Expr* FloodExpr::copy(void) {
+  return new FloodExpr();
+}
+
+
 void FloodExpr::print(FILE* outfile) {
   fprintf(outfile, "*");
 }
@@ -996,6 +1050,11 @@ CompleteDimExpr::CompleteDimExpr(void) :
 {}
 
 
+Expr* CompleteDimExpr::copy(void) {
+  return new CompleteDimExpr();
+}
+
+
 void CompleteDimExpr::print(FILE* outfile) {
   fprintf(outfile, "..");
 }
@@ -1005,23 +1064,29 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 }
 
 
-DomainExpr::DomainExpr(Expr* init_domains, VarSymbol* init_indices) :
+DomainExpr::DomainExpr(Expr* init_domains, Symbol* init_indices,
+		       Expr* init_forallExpr) :
   Expr(EXPR_DOMAIN),
   domains(init_domains),
   indices(init_indices),
-  forallExpr(nilExpr)
+  forallExpr(init_forallExpr)
 {}
+
+
+void DomainExpr::setForallExpr(Expr* exp) {
+  forallExpr = exp;
+}
+
+
+Expr* DomainExpr::copy(void) {
+  return new DomainExpr(domains->copy(), indices->copy(), forallExpr->copy());
+}
 
 
 void DomainExpr::traverseExpr(Traversal* traversal) {
   indices->traverseList(traversal, false);
   domains->traverseList(traversal, false);
   forallExpr->traverse(traversal, false);
-}
-
-
-void DomainExpr::setForallExpr(Expr* exp) {
-  forallExpr = exp;
 }
 
 
@@ -1066,29 +1131,6 @@ void DomainExpr::codegen(FILE* outfile) {
 }
 
 
-int
-DomainExpr::getExprs(Vec<BaseAST *> &asts) {
-  BaseAST *l = domains;
-  while (l) {
-    asts.add(l);
-    l = dynamic_cast<BaseAST *>(l->next);
-  }
-  asts.add(forallExpr);
-  return asts.n;
-}
-
-
-int
-DomainExpr::getSymbols(Vec<BaseAST *> &asts) {
-  BaseAST *l = indices;
-  while (l) {
-    asts.add(l);
-    l = dynamic_cast<BaseAST *>(l->next);
-  }
-  return asts.n;
-}
-
-
 ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
 		       Expr* init_argExpr) :
   Expr(EXPR_REDUCE),
@@ -1096,6 +1138,11 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
   redDim(init_redDim),
   argExpr(init_argExpr)
 {}
+
+
+Expr* ReduceExpr::copy(void) {
+  return new ReduceExpr(reduceType->copy(), redDim->copy(), argExpr->copy());
+}
 
 
 void ReduceExpr::traverseExpr(Traversal* traversal) {
@@ -1123,25 +1170,15 @@ void ReduceExpr::codegen(FILE* outfile) {
 }
 
 
-int
-ReduceExpr::getSymbols(Vec<BaseAST *> &asts) {
-  asts.add(reduceType);
-  return asts.n;
-}
-
-
-int
-ReduceExpr::getExprs(Vec<BaseAST *> &asts) {
-  asts.add(redDim);
-  asts.add(argExpr);
-  return asts.n;
-}
-
-
 Tuple::Tuple(Expr* init_exprs) :
   Expr(EXPR_TUPLE),
   exprs(init_exprs)
 {}
+
+
+Expr* Tuple::copy(void) {
+  return new Tuple(exprs->copyList());
+}
 
 
 void Tuple::traverseExpr(Traversal* traversal) {
@@ -1171,17 +1208,6 @@ void Tuple::print(FILE* outfile) {
 
 void Tuple::codegen(FILE* outfile) {
   INT_FATAL(this, "can't codegen tuples yet");
-}
-
-
-int
-Tuple::getExprs(Vec<BaseAST *> &asts) {
-  BaseAST *l = exprs;
-  while (l) {
-    asts.add(l);
-    l = dynamic_cast<BaseAST *>(l->next);
-  }
-  return asts.n;
 }
 
 

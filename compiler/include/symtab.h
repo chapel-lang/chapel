@@ -17,13 +17,15 @@ class Symboltable {
   static void pushScope(scopeType type);
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
+  static SymScope* setCurrentScope(SymScope* newScope);
   static FnSymbol* getCurrentFn(void);
 
   static void define(Symbol* sym);
   static Symbol* lookupInScope(char* name, SymScope* scope);
   static Symbol* lookupInternal(char* name, bool publicSym = false);
   static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
-  static Symbol* lookup(char* name, bool inLexer = false);
+  static Symbol* lookup(char* name, bool genError = false, 
+			bool inLexer = false);
   static ClassSymbol* lookupClass(char* name);
 
   static void startCompoundStmt(void);
@@ -32,10 +34,14 @@ class Symboltable {
 				     Expr* initializer = nilExpr);
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);
+  static ParamSymbol* copyParams(ParamSymbol* formals);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
 					    Expr* init = nilExpr, 
 					    varType vartag = VAR_NORMAL, 
 					    bool isConst = false);
+  static VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
+						   Expr* init, varType vartag, 
+						   bool isConst);
   static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, Expr* init,
 					      bool placeholder = false);
@@ -57,8 +63,8 @@ class Symboltable {
 
   static DomainExpr* defineQueryDomain(char* name);
 
-  static void print(FILE* outfile);
-  static void dump(FILE* outfile);
+  static void print(FILE* outfile = stderr);
+  static void dump(FILE* outfile = stderr);
 };
 
 #endif

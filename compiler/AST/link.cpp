@@ -97,13 +97,14 @@ void ILink::insert(ILink* newlink) {
 }
 */
 
-/*
+
 void ILink::add(ILink* newlink) {
   newlink->next = next;
   newlink->prev = this;
+  next->prev = newlink;
   next = newlink;
 }
-*/
+
 
 
 void ILink::append(ILink* newlink) {

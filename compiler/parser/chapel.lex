@@ -106,7 +106,7 @@ reduce          return REDUCE;
                   if (yytext[0] == '?') {
                     return QUERY_IDENT;
                   }
-                  Symbol* sym = Symboltable::lookup(yytext, true);
+                  Symbol* sym = Symboltable::lookup(yytext, false, true);
 
 		  if (typeid(*sym) == typeid(TypeSymbol)) {
 		    yylval.ptsym = (TypeSymbol*)sym;

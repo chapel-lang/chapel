@@ -2,6 +2,7 @@
 #include "analysis.h"
 #include "misc.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
 
@@ -13,6 +14,26 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   scope(Symboltable::getCurrentScope()),
   asymbol(0)
 {}
+
+
+Symbol* Symbol::copy(void) {
+  INT_FATAL(this, "Symbol::copy() not anticipated to be needed");
+  return nilSymbol;
+}
+
+
+Symbol* Symbol::copyList(void) {
+  Symbol* newSymbolList = nilSymbol;
+  Symbol* oldSymbol = this;
+
+  while (oldSymbol) {
+    newSymbolList = appendLink(newSymbolList, oldSymbol->copy());
+
+    oldSymbol = nextLink(Symbol, oldSymbol);
+  }
+  
+  return newSymbolList;
+}
 
 
 bool Symbol::isNull(void) {
@@ -90,17 +111,14 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 }
 
 
-int
-Symbol::getTypes(Vec<BaseAST *> &asts) {
-  if (type)
-    asts.add(type);
-  return asts.n;
-}
-
-
-UseBeforeDefSymbol::UseBeforeDefSymbol(char* init_name) :
-  Symbol(SYMBOL_USEBEFOREDEF, init_name)
+UnresolvedSymbol::UnresolvedSymbol(char* init_name) :
+  Symbol(SYMBOL_UNRESOLVED, init_name)
 {}
+
+
+Symbol* UnresolvedSymbol::copy(void) {
+  return new UnresolvedSymbol(copystring(name));
+}
 
 
 VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass, 
@@ -109,6 +127,12 @@ VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass,
   varClass(init_varClass),
   isConst(init_isConst)
 {}
+
+
+Symbol* VarSymbol::copy(void) {
+  INT_FATAL(this, "VarSymbol::copy() not implemented yet");
+  return nilSymbol;
+}
 
 
 bool VarSymbol::isNull(void) {
@@ -138,6 +162,11 @@ ParamSymbol::ParamSymbol(paramType init_usage, char* init_name,
 {}
 
 
+Symbol* ParamSymbol::copy(void) {
+  return new ParamSymbol(usage, copystring(name), type->copy());
+}
+
+
 void ParamSymbol::printDef(FILE* outfile) {
   fprintf(outfile, "%s ", paramTypeNames[usage]);
   Symbol::print(outfile);
@@ -162,10 +191,22 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 {}
 
 
+Symbol* TypeSymbol::copy(void) {
+  INT_FATAL(this, "TypeSymbol::copy() not implemented yet");
+  return nilSymbol;
+}
+
+
 ClassSymbol::ClassSymbol(char* init_name, ClassType* init_class) :
   TypeSymbol(init_name, init_class)
 {
   astType = SYMBOL_CLASS;
+}
+
+
+Symbol* ClassSymbol::copy(void) {
+  INT_FATAL(this, "ClassSymbol::copy() not implemented yet");
+  return nilSymbol;
 }
 
 
@@ -188,6 +229,11 @@ ReduceSymbol::ReduceSymbol(char* init_name, ClassType* init_class) :
   astType = SYMBOL_REDUCE;
 }
 
+
+Symbol* ReduceSymbol::copy(void) {
+  INT_FATAL(this, "ReduceSymbol::copy() not implemented yet");
+  return nilSymbol;
+}
 
 
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
@@ -218,6 +264,12 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 }
 
 
+Symbol* FnSymbol::copy(void) {
+  INT_FATAL(this, "ReduceSymbol::copy() not implemented yet");
+  return nilSymbol;
+}
+
+
 bool FnSymbol::isNull(void) {
   return (this == nilFnSymbol);
 }
@@ -240,29 +292,12 @@ void FnSymbol::codegenDef(FILE* outfile) {
 }
 
 
-int
-FnSymbol::getSymbols(Vec<BaseAST *> &asts) {
-  BaseAST *f = formals;
-  while (f) {
-    asts.add(f);
-    f = dynamic_cast<BaseAST*>(f->next);
-  }
-  return asts.n;
-}
-
-
-int
-FnSymbol::getStmts(Vec<BaseAST *> &asts) {
-  BaseAST *s = body;
-  while (s) {
-    asts.add(s);
-    s = dynamic_cast<BaseAST*>(s->next);
-  }
-  return asts.n;
-}
-
-
 EnumSymbol::EnumSymbol(char* init_name, int init_val) :
   Symbol(SYMBOL_ENUM, init_name),
   val(init_val)
 {}
+
+
+Symbol* EnumSymbol::copy(void) {
+  return new EnumSymbol(copystring(name), val);
+}

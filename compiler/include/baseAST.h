@@ -43,7 +43,7 @@ enum astType_t {
   EXPR_TUPLE,
 
   SYMBOL,
-  SYMBOL_USEBEFOREDEF,
+  SYMBOL_UNRESOLVED,
   SYMBOL_VAR,
   SYMBOL_PARAM,
   SYMBOL_TYPE,
@@ -76,14 +76,6 @@ class BaseAST : public ILink {
   long id;
 
   static long getNumIDs(void);
-
-  int getBaseASTs(Vec<BaseAST *> &asts);
-  int getSymbolTypes(Vec<BaseAST *> &asts);
-  int getStmtExprs(Vec<BaseAST *> &asts);
-  virtual int getSymbols(Vec<BaseAST *> &asts);
-  virtual int getTypes(Vec<BaseAST *> &asts);
-  virtual int getStmts(Vec<BaseAST *> &asts);
-  virtual int getExprs(Vec<BaseAST *> &asts);
 
   BaseAST(void);
   BaseAST(astType_t type);

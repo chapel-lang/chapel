@@ -2,6 +2,7 @@ TRAVERSALS_SRCS = \
 	checkBackLinks.cpp \
 	checkIDs.cpp \
 	checkTypeInfo.cpp \
+	cloneAllFns.cpp \
 	findUnknownTypes.cpp \
 	getstuff.cpp \
 	printAST.cpp \

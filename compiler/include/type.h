@@ -12,15 +12,18 @@ class ASymbol;
 class SymScope;
 class FnDefStmt;
 extern Expr* nilExpr;
+extern Stmt* nilStmt;
+extern FnDefStmt* nilFnDefStmt;
 
 class Type : public BaseAST {
  public:
   Symbol* name;
-  Expr* initDefault;
+  Expr* defaultVal;
   ASymbol *asymbol;
 
-  Type(astType_t astType, Expr* init_initDefault);
+  Type(astType_t astType, Expr* init_defaultVal);
   void addName(Symbol* newname);
+  virtual Type* copy(void);
 
   bool isNull(void);
   virtual bool isComplex(void);
@@ -42,7 +45,6 @@ class Type : public BaseAST {
   virtual void codegenConstructors(FILE* outfile);
   virtual bool needsInit(void);
   virtual void generateInit(FILE* outfile, VarSymbol* var);
-  int getSymbols(Vec<BaseAST *> &asts);
 };
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
@@ -54,6 +56,7 @@ class EnumType : public Type {
   EnumSymbol* valList;
 
   EnumType(EnumSymbol* init_valList);
+  virtual Type* copy(void);
 
   void traverseDefType(Traversal* traversal);
 
@@ -62,7 +65,6 @@ class EnumType : public Type {
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
-  int getSymbols(Vec<BaseAST *> &asts);
 };
 
 
@@ -73,6 +75,7 @@ class DomainType : public Type {
 
   DomainType(Expr* init_expr = nilExpr);
   DomainType(int init_numdims);
+  virtual Type* copy(void);
 
   int rank(void);
 
@@ -84,6 +87,8 @@ class DomainType : public Type {
 class IndexType : public DomainType {
  public:
   IndexType(Expr* init_expr = nilExpr);
+  IndexType(int init_numdims);
+  virtual Type* copy(void);
 
   void print(FILE* outfile);
 };
@@ -95,6 +100,7 @@ class ArrayType : public Type {
   Type* elementType;
 
   ArrayType(Expr* init_domain, Type* init_elementType);
+  virtual Type* copy(void);
 
   void traverseDefType(Traversal* traversal);
 
@@ -105,8 +111,6 @@ class ArrayType : public Type {
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool needsInit(void);
   void generateInit(FILE* outfile, VarSymbol* sym);
-  int getExprs(Vec<BaseAST *> &asts);
-  int getTypes(Vec<BaseAST *> &asts);
 };
 
 
@@ -114,7 +118,9 @@ class UserType : public Type {
  public:
   Type* definition;
 
-  UserType(Type* init_definition, Expr* init_initDefault = nilExpr);
+  UserType(Type* init_definition, Expr* init_defaultVal = nilExpr);
+  virtual Type* copy(void);
+
   bool isComplex(void);
 
   void traverseDefType(Traversal* traversal);
@@ -124,7 +130,6 @@ class UserType : public Type {
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
-  int getTypes(Vec<BaseAST *> &asts);
 };
 
 
@@ -136,12 +141,16 @@ class ClassType : public Type {
  public:
   ClassType* parentClass;
   Stmt* definition;
-  SymScope* scope;
   FnDefStmt* constructor;
+  SymScope* scope;
   
-  ClassType(ClassType* init_parentClass = nilClassType);
+  ClassType(ClassType* init_parentClass = nilClassType, 
+	    Stmt* init_definition = nilStmt, 
+	    FnDefStmt* init_constructor = nilFnDefStmt,
+	    SymScope* init_scope = NULL);
   void addDefinition(Stmt* init_definition);
   void addScope(SymScope* init_scope);
+  virtual Type* copy(void);
 
   void traverseDefType(Traversal* traversal);
 
@@ -151,9 +160,6 @@ class ClassType : public Type {
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
   void codegenConstructors(FILE* outfile);
-
-  int getTypes(Vec<BaseAST *> &asts);
-  int getStmts(Vec<BaseAST *> &asts);
 };
 
 
@@ -163,6 +169,7 @@ class TupleType : public Type {
 
   TupleType(Type* init_type);
   void addType(Type* additionalType);
+  virtual Type* copy(void);
 
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
