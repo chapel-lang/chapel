@@ -14580,3 +14580,19 @@ Modified files:
 	                                  relational_ops.good var.good 
 	                                  var2.good whileLoop.good 
 
+---------------------------------------------------------------------------
+
+01/14/05 17:20:01 -- bradc
+
+Log message:
+	For now, making all module global variables static in
+	the generated C code, to avoid conflicts between
+	multiple variables with the same name in different
+	modules.  Eventually, we'll need to take a more
+	sophisticated approach to this problem (either
+	munging the names, or being very careful about what
+	variables we allow to escape what scopes).
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+
