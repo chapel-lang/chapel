@@ -366,6 +366,7 @@ bool SymScope::commonModuleIsFirst() {
 
 void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   visibleFunctions.clear();
+
   for(SymLink* tmp = firstSym; tmp; tmp = nextLink(SymLink, tmp)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp->pSym)) {
       while (fn) {
@@ -430,7 +431,10 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
     }
   }
 
-  if (moreVisibleFunctions) {
+  //
+  // Include class methods and constructors in intrinsic
+  //
+  if (type == SCOPE_INTRINSIC) {
     forv_Vec(FnSymbol, fn, *moreVisibleFunctions) {
       char *n = if1_cannonicalize_string(if1, fn->name);
       Vec<FnSymbol*> *fs = visibleFunctions.get(n);

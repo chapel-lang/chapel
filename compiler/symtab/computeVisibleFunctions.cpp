@@ -22,13 +22,13 @@ void GetClassMethods::processSymbol(Symbol* sym) {
       if (!class_type->value && !class_type->union_value) {
 	forv_Vec(FnSymbol, method, class_type->methods) {
 	  while (method) {
-	    classMethods->set_add(method);
+	    classMethods->add(method);
 	    method = method->overload;
 	  }
 	}
 	FnSymbol* constructor = class_type->defaultConstructor;
 	while (constructor) {
-	  classMethods->set_add(constructor);
+	  classMethods->add(constructor);
 	  constructor = constructor->overload;
 	}
       }
