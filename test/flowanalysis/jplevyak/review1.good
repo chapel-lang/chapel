@@ -1,19 +1,19 @@
 array::array(prelude.chpl:205) ( array (prelude.chpl:205) )
+class::a(prelude.chpl:213) ( array (prelude.chpl:205) )
 class::afirst(prelude.chpl:189) ( integer64 (prelude.chpl:26) )
 class::alast(prelude.chpl:189) ( integer64 (prelude.chpl:26) )
-class::a(prelude.chpl:213) ( array (prelude.chpl:205) )
 class::astep(prelude.chpl:189) ( integer64 (prelude.chpl:26) )
 class::dd(prelude.chpl:212) ( sequence (prelude.chpl:182) )
 class::e(prelude.chpl:212) ( float64 (prelude.chpl:38) )
+class::s(prelude.chpl:190) ( sequence (prelude.chpl:182) )
 class::self(prelude.chpl:189) ( sequence (prelude.chpl:182) )
 class::self(prelude.chpl:212) ( array (prelude.chpl:205) )
-class::s(prelude.chpl:190) ( sequence (prelude.chpl:182) )
 domain::domain(prelude.chpl:154) ( domain (prelude.chpl:154) )
-function class prelude.chpl:189 with 1 edges
-function class prelude.chpl:212 with 1 edges
-function __init__ <none>:0 with 1 edges
 function __init prelude.chpl:7 with 1 edges
 function __init review1.chpl:1 with 1 edges
+function __init__ <none>:0 with 1 edges
+function class prelude.chpl:189 with 1 edges
+function class prelude.chpl:212 with 1 edges
 function merge review1.chpl:10 with 1 edges
 function modify review1.chpl:1 with 1 edges
 function operator prelude.chpl:101 with 1 edges
@@ -98,12 +98,12 @@ operator::b(prelude.chpl:82) ( integer64 (prelude.chpl:26) )
 operator::b(prelude.chpl:83) ( integer64 (prelude.chpl:26) )
 operator::b(prelude.chpl:85) ( float64 (prelude.chpl:38) )
 operator::b(prelude.chpl:90) ( integer64 (prelude.chpl:26) )
-self::self(prelude.chpl:202) ( vector (prelude.chpl:12) )
-self::self(prelude.chpl:202) ( vector (prelude.chpl:12) )
-self::self(prelude.chpl:210) ( array (prelude.chpl:205) )
 self::s(prelude.chpl:202) ( integer64 (prelude.chpl:26) )
 self::s(prelude.chpl:202) ( integer64 (prelude.chpl:26) )
 self::s(prelude.chpl:210) ( integer64 (prelude.chpl:26) )
+self::self(prelude.chpl:202) ( vector (prelude.chpl:12) )
+self::self(prelude.chpl:202) ( vector (prelude.chpl:12) )
+self::self(prelude.chpl:210) ( array (prelude.chpl:205) )
 sequence::sequence(prelude.chpl:182) ( sequence (prelude.chpl:182) )
 system::__init(prelude.chpl:7) ( __init (prelude.chpl:7) )
 system::null(prelude.chpl:54) ( tuple (prelude.chpl:13) )

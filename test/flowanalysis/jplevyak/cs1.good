@@ -13,7 +13,8 @@ function operator prelude.v:83 with 1 edges
 function operator prelude.v:83 with 1 edges
 function operator prelude.v:83 with 1 edges
 function operator prelude.v:83 with 1 edges
-function print prelude.v:137 with 2 edges
+function print prelude.v:137 with 1 edges
+function print prelude.v:137 with 1 edges
 globals
 operator::a(prelude.v:83) ( tuple (prelude.v:13) )
 operator::a(prelude.v:83) ( tuple (prelude.v:13) )
@@ -21,7 +22,8 @@ operator::a(prelude.v:83) ( tuple (prelude.v:13) )
 operator::a(prelude.v:83) ( tuple (prelude.v:13) )
 operator::b(prelude.v:104) ( float64 (prelude.v:41) )
 operator::b(prelude.v:104) ( int32 (prelude.v:28) )
-print::a(prelude.v:137) ( int32 (prelude.v:28) float64 (prelude.v:41) )
+print::a(prelude.v:137) ( float64 (prelude.v:41) )
+print::a(prelude.v:137) ( int32 (prelude.v:28) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:57) ( tuple (prelude.v:13) )
 user::__init(cs1.v:1) ( __init (cs1.v:1) )

@@ -1,8 +1,8 @@
 C::C(cs4.chpl:1) ( C (cs4.chpl:1) )
 D::D(cs4.chpl:2) ( D (cs4.chpl:2) )
 function __init cs4.chpl:1 with 1 edges
-function __init__ <none>:0 with 1 edges
 function __init prelude.chpl:7 with 1 edges
+function __init__ <none>:0 with 1 edges
 function makeC cs4.chpl:3 with 1 edges
 function makeC cs4.chpl:3 with 1 edges
 function makeD cs4.chpl:4 with 1 edges
@@ -64,11 +64,11 @@ operator::b(prelude.chpl:85) ( float64 (prelude.chpl:38) )
 operator::b(prelude.chpl:85) ( float64 (prelude.chpl:38) )
 system::__init(prelude.chpl:7) ( __init (prelude.chpl:7) )
 system::null(prelude.chpl:54) ( tuple (prelude.chpl:13) )
+user::__init(cs4.chpl:1) ( __init (cs4.chpl:1) )
 user::c1(cs4.chpl:5) ( C (cs4.chpl:1) )
 user::c2(cs4.chpl:7) ( C (cs4.chpl:1) )
 user::d1(cs4.chpl:6) ( D (cs4.chpl:2) )
 user::d2(cs4.chpl:8) ( D (cs4.chpl:2) )
 user::d3(cs4.chpl:9) ( D (cs4.chpl:2) )
 user::d4(cs4.chpl:10) ( D (cs4.chpl:2) )
-user::__init(cs4.chpl:1) ( __init (cs4.chpl:1) )
 writeln::a(prelude.chpl:235) ( float64 (prelude.chpl:38) )
