@@ -3505,3 +3505,15 @@ Modified files:
 	chapel/compiler/AST/: chapel.y stmt.cpp symbol.cpp symbol.h 
 	                      symtab.cpp symtab.h type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+06/17/04 15:49:49 -- bradc
+
+Log message:
+	Beefed up symboltable for prototype AST a bit; removed some NULLs.
+
+Modified files:
+	chapel/compiler/AST/: TODO chapel.y expr.cpp expr.h main.cpp 
+	                      stmt.cpp stmt.h symbol.cpp symbol.h 
+	                      symtab.cpp symtab.h 
+
