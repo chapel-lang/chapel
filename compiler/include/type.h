@@ -185,6 +185,8 @@ class ClassType : public Type {
 
   bool isNull(void);
 
+  paramType intentForThisParam(void);
+
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);

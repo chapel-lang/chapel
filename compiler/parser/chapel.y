@@ -322,7 +322,8 @@ formals:
 
 fnrettype:
   /* empty */
-    { $$ = dtVoid; }
+    { /* $$ = dtUnknown; */
+      $$ = dtVoid; }
 | TCOLON type
     { $$ = $2; }
 ;

@@ -56,7 +56,8 @@ void InsertThis::preProcessStmt(Stmt* stmt) {
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
 	  SymScope* saveScope = Symboltable::getCurrentScope();
 	  Symboltable::setCurrentScope(method->fn->paramScope);
-	  Symbol* this_insert = new ParamSymbol(PARAM_BLANK, "this", ctype);
+	  Symbol* this_insert = new ParamSymbol(ctype->intentForThisParam(), 
+						"this", ctype);
 	  Symboltable::setCurrentScope(saveScope);
 	  this_insert = appendLink(this_insert, method->fn->formals);
 	  method->fn->formals = this_insert;

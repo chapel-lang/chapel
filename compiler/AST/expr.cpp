@@ -109,10 +109,13 @@ Expr* Expr::copyListInternal(CloneCallback* analysis_clone) {
   Expr* newExprList = nilExpr;
   Expr* oldExpr = this;
 
-  while (oldExpr) {
-    newExprList = appendLink(newExprList, oldExpr->copyInternal(analysis_clone));
-
-    oldExpr = nextLink(Expr, oldExpr);
+  if (!oldExpr->isNull()) {
+    while (oldExpr) {
+      newExprList = appendLink(newExprList, 
+			       oldExpr->copyInternal(analysis_clone));
+      
+      oldExpr = nextLink(Expr, oldExpr);
+    }
   }
   
   return newExprList;
@@ -198,8 +201,15 @@ void Expr::replace(Expr* new_expr) {
       prev->next = first;
     }
   */
+  /* while nulling the following out would be cleaner and purer,
+     in many cases (traversals, loops), it is convenient to keep
+     these pointing to the old nodes; an alternative would be to
+     require the user to set them back to something non-nil if
+     that's what they wanted, but we are positing that this will
+     be the common case.  
   prev = nilExpr;
   next = nilExpr;
+  */
   call_fixup(this);
 }
 

@@ -741,6 +741,14 @@ bool ClassType::isNull(void) {
 }
 
 
+paramType ClassType::intentForThisParam(void) {
+  if (value || union_value) {
+    return PARAM_INOUT;
+  } else {
+    return PARAM_BLANK;
+  }
+}
+
 void ClassType::codegen(FILE* outfile) {
   name->codegen(outfile);
 }

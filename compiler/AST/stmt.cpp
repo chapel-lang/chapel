@@ -51,10 +51,13 @@ Stmt* Stmt::copyListInternal(CloneCallback* analysis_clone) {
   Stmt* newStmtList = nilStmt;
   Stmt* oldStmt = this;
 
-  while (oldStmt) {
-    newStmtList = appendLink(newStmtList, oldStmt->copyInternal(analysis_clone));
+  if (!oldStmt->isNull()) {
+    while (oldStmt) {
+      newStmtList = appendLink(newStmtList, 
+			       oldStmt->copyInternal(analysis_clone));
 
-    oldStmt = nextLink(Stmt, oldStmt);
+      oldStmt = nextLink(Stmt, oldStmt);
+    }
   }
 
   return newStmtList;
@@ -176,8 +179,15 @@ void Stmt::replace(Stmt* new_stmt) {
       prev->next = first;
     }
   */
+  /* while nulling the following out would be cleaner and purer,
+     in many cases (traversals, loops), it is convenient to keep
+     these pointing to the old nodes; an alternative would be to
+     require the user to set them back to something non-nil if
+     that's what they wanted, but we are positing that this will
+     be the common case.
   prev = nilStmt;
   next = nilStmt;
+  */
   call_fixup(this);
 }
 
