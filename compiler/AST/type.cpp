@@ -567,27 +567,11 @@ IndexType::IndexType(Expr* init_expr) :
   idxExpr(init_expr)
 {
 	if (!(typeid(*init_expr) == typeid(IntLiteral))) {
-      //
-      //printf("K-tuple integer index.\n");
-			//var i : index(k) does not have a domain
-			//associated with it
-      //domainType = NULL;
-      //} else {
-    	//printf("Index of a domain?");
-    	//under the assumption that we can only have
-    	//var i: index(k), or var i : index(D) kind of declarations
-    	//domainType = (DomainType*)idxExpr->typeInfo();
     	SET_BACK(idxExpr);
 	}
 }
 
 Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
- // Type* copy;
-/*  if (!parent) {
-    copy = new IndexType(numdims);
-  } else {
-    copy = new IndexType(parent->copy(clone, map, analysis_clone));
-  }*/
   Type* copy = new IndexType(idxType->copy(clone, map, analysis_clone));
   copy->addSymbol(symbol);
   return copy;
@@ -596,11 +580,7 @@ Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 
 void IndexType::print(FILE* outfile) {
   fprintf(outfile, "index(");
-  if (typeid(*idxExpr) == typeid(IntLiteral)) {
-      fprintf(outfile, "%d", idxExpr->intVal());
-  } else {
-    fprintf(outfile, "???");
-  }
+  idxExpr->print(outfile);
   fprintf(outfile, ")");
 }
 
@@ -608,13 +588,17 @@ void IndexType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef struct _");
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
-	//idxType->codegen(stdout);
-  //fprintf(outfile, " _type;\n");
   fprintf(outfile, "} ");
   symbol->codegen(outfile);
   fprintf(outfile, ";\n\n");
 }
 
+void IndexType::traverseDefType(Traversal* traversal) {
+	if (!(typeid(*idxExpr) == typeid(IntLiteral))) {
+  	TRAVERSE(idxExpr, traversal, false);
+	}
+  //TRAVERSE(idxType, traversal, false);
+}
 SeqType::SeqType(Type* init_elementType,
 		 ClassType* init_nodeType):
   ClassType(false, false),

@@ -36,8 +36,6 @@ void InsertIndexType::preProcessType(Type* type) {
     return;
   }
   
-	//this should be the initialization expression: numdims, class reference, etc.
-  //char* name = glomstrings(3, "_index_", intstring(domain_type->numdims));
   char* name = glomstrings(2, "_index_", domain_type->symbol->name);
   
   IndexType* index_type = dynamic_cast<IndexType*>(domain_type->idxType);

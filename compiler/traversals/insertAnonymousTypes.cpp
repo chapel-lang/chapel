@@ -192,7 +192,7 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
   }
 }
 
-void build_index_type_def(Stmt* stmt, Type** type, SymScope* scope) {
+void build_index_type_def(Stmt* stmt, Type** type) {
 	IndexType* index_type = dynamic_cast<IndexType*>(*type);
 	DomainType* domain_type;
   
@@ -203,15 +203,7 @@ void build_index_type_def(Stmt* stmt, Type** type, SymScope* scope) {
  	if (!(typeid(*index_type->idxExpr) == typeid(IntLiteral))){
  		Variable* var = dynamic_cast<Variable*>(index_type->idxExpr);
  		if (var){
- 			Symbol* domain_sym = Symboltable::lookupInScope(var->var->name, scope);
- 			if (domain_sym){
- 				domain_type = dynamic_cast<DomainType*>(domain_sym->type);
- 				if (!domain_type){
- 					INT_FATAL(domain_type, "Domain type expected");
- 				}
- 			} else {
- 				INT_FATAL(index_type, "Only index of domain supported for now.");
- 			}
+ 			domain_type = dynamic_cast<DomainType*>(var->var->type);
  		}
  	}
 	char *name; 
@@ -257,34 +249,15 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
   else if (typeid(**type) == typeid(SeqType)) {
     build_anon_seq_type_def(stmt, type);
   }
-}
-
-static void build_anon_type_def(Stmt* stmt, Type** type, SymScope* scope){
-	if (typeid(**type) == typeid(IndexType)){
-  	build_index_type_def(stmt, type, scope);
+  if (typeid(**type) == typeid(IndexType)){
+  	build_index_type_def(stmt, type);
 	}
 }
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
-	currentStmt = stmt;
-  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (Symbol* sym = def_stmt->typeDef()) {
-      currentScope = sym->parentScope;
-    }
-    else if (Symbol* sym = def_stmt->varDef()) {
-      currentScope = sym->parentScope;
-    } else {
-      currentScope = NULL;
-    }
-  }
-  else {
-    currentScope = NULL;
-  }
-  
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
     if (VarSymbol* var = def_stmt->varDef()) {
       build_anon_type_def(stmt, &var->type);
-      build_anon_type_def(stmt, &var->type, currentScope);
     }
   }
 }

@@ -142,6 +142,7 @@ class IndexType : public Type {
   	virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 		void codegenDef(FILE* outfile);
 	  void print(FILE* outfile);
+	  void traverseDefType(Traversal* traversal);
 };
 
 

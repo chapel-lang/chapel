@@ -7,4 +7,8 @@ var A : [D] float;
 var iD : index(D);
 var i2 : index(2);
 
+forall (i,j) in (1..n, 1..n) {
+  A(i,j) = 0;
+}
+
 writeln("A:\n", A);
