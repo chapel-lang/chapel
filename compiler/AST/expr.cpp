@@ -452,6 +452,11 @@ void CastExpr::traverseExpr(Traversal* traversal) {
 }
 
 
+Type* CastExpr::typeInfo(void) {
+  return castType;
+}
+
+
 void CastExpr::print(FILE* outfile) {
   castType->print(outfile);
   fprintf(outfile, "(");

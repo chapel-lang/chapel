@@ -267,9 +267,9 @@ class ParenOpExpr : public Expr {
 
   static ParenOpExpr* classify(Expr* base, Expr* arg);
 
-  void traverseExpr(Traversal* traversal);
-
   ParenOpExpr(Expr* init_base, Expr* init_arg = new NullExpr());
+
+  void traverseExpr(Traversal* traversal);
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
@@ -283,6 +283,8 @@ class CastExpr : public ParenOpExpr {
   CastExpr(Type* init_castType, Expr* init_argList);
 
   void traverseExpr(Traversal* traversal);
+
+  Type* typeInfo(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
