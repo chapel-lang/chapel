@@ -166,9 +166,15 @@ void UnOp::print(FILE* outfile) {
   fprintf(outfile, ")");
 }
 
+
 void UnOp::codegen(FILE* outfile) {
   fprintf(outfile, "%s", cUnOp[type]);
   operand->codegen(outfile);
+}
+
+
+Type* UnOp::type_info(void) {
+  return operand->type_info();
 }
 
 
@@ -191,9 +197,11 @@ void BinOp::print(FILE* outfile) {
 }
 
 void BinOp::codegen(FILE* outfile) {
+  fprintf(outfile, "(");
   left->codegen(outfile);
   fprintf(outfile, "%s", cBinOp[type]);
   right->codegen(outfile);
+  fprintf(outfile, ")");
 }
 
 

@@ -1,6 +1,6 @@
 function foo(a) {
   writeln("in foo, a is ", a);
-  bar(7)
+  bar(7);
 }
 
 function bar(a) {

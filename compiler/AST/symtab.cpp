@@ -309,6 +309,12 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   VarSymbol* newVar;
   VarSymbol* lastVar;
 
+  // BLC: Placeholder until low-level type inference is hooked in to
+  // handle some cases -- infer type from initializer if possible
+  if (type == dtUnknown) {
+    type = init->type_info();
+  }
+
   newVar = new VarSymbol(idents->name, vartag, isConst, type);
   define(newVar);
 

@@ -103,6 +103,8 @@ class UnOp : public Expr {
 
   UnOp(unOpType init_type, Expr* op);
 
+  Type* type_info(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
