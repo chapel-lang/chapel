@@ -3134,3 +3134,23 @@ Log message:
 Added files:
 	chapel/third-party/dparser/d/: read_binary.c read_binary.h 
 
+---------------------------------------------------------------------------
+
+06/10/04 14:21:05 -- bradc
+
+Log message:
+	Fixed up depend rules to work with g++ 3.4 -- used a new trick
+	to get geysa.h's dependences by adding an unused .cpp file that
+	#includes geysa.h.  For future reference, this is because (a)
+	g++ 3.3 (and previous) didn't allow the -M commands to be applied
+	to .h files, (b) because g++ 3.4 created a warning due to the
+	-Wno-invalid-offsetof flag, and (c) it uses a more similar CCDEP
+	command as the rest of our source files (which will make it easier
+	to refactor this when the day finally comes that I get around to it).
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.subdirrules 
+Added files:
+	chapel/compiler/: geysa.cpp 
+
