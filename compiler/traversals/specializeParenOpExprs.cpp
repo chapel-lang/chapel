@@ -12,6 +12,9 @@ void SpecializeParenOpExprs::preProcessExpr(Expr* expr) {
     }
     else if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(baseVar->var->type)) {
+	if (!dynamic_cast<TypeSymbol*>(baseVar->var)) {
+	  USR_FATAL(expr, "Invalid class constructor");
+	}
 	if (FnDefStmt* constructor = 
 	    dynamic_cast<FnDefStmt*>(ctype->constructor)) {
 	  paren_replacement = new FnCall(new Variable(constructor->fn),

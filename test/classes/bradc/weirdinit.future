@@ -1,6 +1,0 @@
-???
-
-The problem here is that a variable is used to initialize itself,
-which seems bogus.  The variable is also being used as though it
-was a legal constructor call, which also seems bogus to me.
-

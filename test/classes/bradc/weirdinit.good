@@ -1,3 +1,2 @@
-should generate an error message along the lines of "a used before
-defined" and/or "a cannot be used to initialize itself" and/or 
-"a does not support the parenthesis operator".
+Error: Invalid class constructor (weirdinit.chpl:7)
+
