@@ -683,13 +683,16 @@ FnDefStmt* FnDefStmt::coercion_wrapper(
 	  fn->asymbol->fun->numeric_arg_positions.e[j]) {
 	char* copy_name =
 	  glomstrings(3, formal_change->name, "_copy_", intstring(uid-1));
-	Symbol* copy_symbol = new VarSymbol(copy_name, formal_change->type);
+	VarSymbol* copy_symbol = new VarSymbol(copy_name, formal_change->type);
+	Stmt* copy_def_stmt = new VarDefStmt(copy_symbol);
+	copy_symbol->setDefPoint(copy_def_stmt);
 	Variable* copy_tmp = new Variable(copy_symbol);
 	Variable* copy_formal = new Variable(formal_change);
 	AssignOp* copy_assign = new AssignOp(GETS_NORM, copy_tmp, copy_formal);
 	ExprStmt* copy_stmt = new ExprStmt(copy_assign);
-	copy_stmt->append(wrapper_body);
-	wrapper_body = copy_stmt;
+	copy_def_stmt->append(copy_stmt);
+	copy_def_stmt->append(wrapper_body);
+	wrapper_body = copy_def_stmt;
 	formal_change->type = coercion_substitutions->e[i].value->type;
 	actual_change->var = copy_symbol;
       }
