@@ -23042,3 +23042,39 @@ Modified files:
 Removed files:
 	chapel/test/domains/roxana/: test_index_expr1.future 
 
+---------------------------------------------------------------------------
+
+03/31/05 17:12:53 -- deitz
+
+Log message:
+	This is a checkin of code that is not used by default.  There is a new
+	commented out #define in passlist.h called USE_EXPR_VARINIT which if
+	uncommented will use VarInitExprs as discussed below.
+	
+	Added a new pass called ProcessDefs that takes VarDefStmts and inserts
+	default and user initialization statements into the code.  This is
+	done before analysis.  Since the type of the variable may not be
+	known, the expr VarInitExpr of the VarSymbol is used to mark that
+	var->type->defaultVal should be used here when the defaultVal is
+	known.
+	
+	After analysis, this replacement is done.  It is currently done in
+	RemoveNamedParameters.
+	
+	I'm checking in so that John can get analysis going when he gets a
+	chance.  I think this is going to require a little work on my end so
+	I'm using the #define method.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share fixup.cpp 
+	                             insertVariableInitializations.cpp 
+	                             insertVariableInitializations.h 
+	                             removeNamedParameters.cpp 
+	                             verifyASTType.cpp 
+Added files:
+	chapel/compiler/traversals/: processDefs.cpp processDefs.h 
+
