@@ -45,6 +45,9 @@ static Sym *sym_locale = 0;
 
 static int init_function(FnDefStmt *f);
 static int build_function(FnDefStmt *f);
+static void map_symbols(Vec<BaseAST *> &syms);
+static void build_symbols(Vec<BaseAST *> &syms);
+static void build_types(Vec<BaseAST *> &syms);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 
@@ -277,9 +280,39 @@ ACallbacks::build(Match *m) {
 			      m->formal_to_actual_position.n ? &m->formal_to_actual_position : 0,
 			      (CloneCallback*)&callback);
   assert(f);
+  Vec<Stmt *> all_stmts;
+  Vec<BaseAST *> all_syms, syms;
+  all_stmts.add(f);
+  close_symbols(all_stmts, all_syms);	
+  forv_BaseAST(a, all_syms) {
+    Stmt *s = dynamic_cast<Stmt *>(a);
+    if (s && !s->ainfo)
+      syms.add(s);
+    else {
+      Expr *s = dynamic_cast<Expr *>(a);
+      if (s && !s->ainfo)
+	syms.add(s);
+      else {
+	Symbol *s = dynamic_cast<Symbol *>(a);
+	if (s && !s->asymbol)
+	  syms.add(s);
+	else {
+	  Type *s = dynamic_cast<Type *>(a);
+	  if (s && !s->asymbol)
+	    syms.add(s);
+	} 
+      } 
+    }
+  }
+  map_symbols(syms);
+  build_symbols(syms);
+  build_types(syms);
   if (init_function(f) < 0 || build_function(f) < 0) 
     assert(!"unable to instantiate generic/wrapper");
-  return f->fn->asymbol->fun;
+  Fun *fun = new Fun(f->fn->asymbol);
+  build_arg_positions(fun);
+  pdb->add(fun);
+  return fun;
 }
 
 static void

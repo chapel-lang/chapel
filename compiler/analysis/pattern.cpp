@@ -33,6 +33,7 @@ class Matcher {
   void find_best_matches(Vec<AVar *> &, Vec<CreationSet *> &, Vec<Fun *> &, MPosition &, 
 			 Vec<Fun *> &, int, int iarg = 0);
   int covers_formals(Fun *, Vec<CreationSet *> &, MPosition &, int);
+  void rebuild_Match(Match *m, Fun *f);
   void instantiation_wrappers_and_partial_application(Vec<Fun *> &);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
   void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &);
@@ -393,9 +394,10 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &p, Vec<Fun *> &match
   }
 }
 
-static void
-rebuild_Match(Match *m, Fun *f) {
+void
+Matcher::rebuild_Match(Match *m, Fun *f) {
   m->fun = f;
+  match_map.put(f, m);
   m->all_filters.clear(); // no longer needed
   Map<MPosition *, AType *> old_filters;
   old_filters.move(m->filters);
@@ -769,22 +771,26 @@ build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
 }
 
 void
-build_arg_positions(FA *fa) {
-  forv_Fun(f, fa->pdb->funs) {
-    MPosition p;
-    cannonicalize_mposition(p);
-    p.push(1);
-    forv_Sym(a, f->sym->has) {
-      build_arg_position(f, a, p);
-      p.inc();
-    }
-    forv_MPosition(p, f->numeric_arg_positions) {
-      Sym *s = f->arg_syms.get(p);
-      f->args.put(p, s->var);
-      Var *v = new Var(s); // new variable to handle filtering inputs
-      v->is_internal = 1;
-      f->filtered_args.put(p, v);
-    }
-    f->rets.add(f->sym->ret->var);
+build_arg_positions(Fun *f) {
+  MPosition p;
+  cannonicalize_mposition(p);
+  p.push(1);
+  forv_Sym(a, f->sym->has) {
+    build_arg_position(f, a, p);
+    p.inc();
   }
+  forv_MPosition(p, f->numeric_arg_positions) {
+    Sym *s = f->arg_syms.get(p);
+    f->args.put(p, s->var);
+    Var *v = new Var(s); // new variable to handle filtering inputs
+    v->is_internal = 1;
+    f->filtered_args.put(p, v);
+  }
+  f->rets.add(f->sym->ret->var);
+}
+
+void
+build_arg_positions(FA *fa) {
+  forv_Fun(f, fa->pdb->funs)
+    build_arg_positions(f);
 }

@@ -110,5 +110,6 @@ void build_arg_positions(FA *fa);
 int named_position(CreationSet *cs, AVar *av, MPosition &p, MPosition *result_p);
 int pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial_ok, Vec<Match *> *matches);
 MPosition *cannonicalize_mposition(MPosition &p);
+void build_arg_positions(Fun *f);
 
 #endif
