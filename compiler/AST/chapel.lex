@@ -134,8 +134,8 @@ reduce          return REDUCE;
                         stringbuffer = (char*)realloc(stringbuffer,
                                                       bufflen*sizeof(char));
                       }
-                      stringbuffer[stringlen] = '\0';
                     } /* eat up string */
+		    stringbuffer[stringlen] = '\0';
                     if (c == EOF) {
                       yyerror("EOF in string");
                     } else {
