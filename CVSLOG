@@ -3867,3 +3867,16 @@ Modified files:
 Added files:
 	chapel/compiler/: pattern.cpp pattern.h 
 
+---------------------------------------------------------------------------
+
+07/09/04 12:01:40 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	new test cases for dispatch system and error reporting
+
+Added files:
+	chapel/test/flowanalysis/jplevyak/: badcall.good badcall.v 
+	                                    badprimitive.good 
+	                                    badprimitive.v cs6.good 
+	                                    cs6.v 
+
