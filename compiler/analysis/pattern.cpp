@@ -328,8 +328,11 @@ Matcher::build_positional_map(MPosition &app, int nactuals, Vec<Fun *> **funs) {
 	  fpp.inc();
 	  continue;
 	}
-	m->actual_to_formal_position.put(unused_acpps.v[i], fcpp);
-	m->formal_to_actual_position.put(fcpp, unused_acpps.v[i]);
+	if (unused_acpps.v[i] != fcpp) {
+	  m->actual_to_formal_position.put(unused_acpps.v[i], fcpp);
+	  m->formal_to_actual_position.put(fcpp, unused_acpps.v[i]);
+	  mapped_positions.put(unused_acpps.v[i], 1);
+	}
 	fpp.inc();
       }
     }

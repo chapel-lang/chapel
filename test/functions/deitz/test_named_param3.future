@@ -1,3 +1,4 @@
-jplevyak
+deitz
 
-named parameter test has n = 3 with 3 parameters, should be 4?
+OK, now I only include in the map those positions which are different.
+So now both tests have 2 mappings.
