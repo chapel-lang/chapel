@@ -1,5 +1,16 @@
 - support applications with more than required arguments as multiple-calls
   (add_application_constraints)
 
-- handle structural types.  Generalize tuple handling to include ref etc. in patterns.
+- handle structural types.  Generalize tuple handling to include ref etc. in
+  patterns.
+
+- prototype Chapel grammar
+
+- constant folding (now required earlier to do generics)
+
+- inlining
+
+- handle david's generics stuff
+
+
 

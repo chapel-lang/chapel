@@ -553,7 +553,7 @@ base_float ::= "(([0-9]+.[0-9]*|[0-9]*.[0-9]+)([eE][\-\+]?[0-9]+)?|[0-9]+[eE][\-
 float32	   ::= $name "float32" base_float "(f|F)";
 float64	   ::= $name "float64" base_float "(d|D)";
 float80	   ::= $name "float80" base_float "(t|T)";
-float128   ::= $name "float128" base_float "(l|L)?";
+float128   ::= $name "float128" base_float "(l|L)";
 float	   ::= $name "float" base_float;
 anyfloat   : float32 | float64 | float128 | float;
 
