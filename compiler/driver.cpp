@@ -17,6 +17,7 @@ static char prelude_filename[FILENAME_MAX] = "prelude";
 static char log_flags[512] = "";
 extern int d_verbose_level;
 extern int d_debug_level;
+static int suppress_codegen = 0;
 
 int fdce_if1 = 1;
 int finline = 0;
@@ -48,6 +49,7 @@ static ArgumentDescription arg_desc[] = {
  {"log", 'l', "Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
+ {"no-codegen", ' ', "Suppress code generation", "T", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
    "CHPL_PARSER_VERBOSE", NULL},
  {"parser_debug", 'D', "Parser Debug Level", "+", &d_debug_level, "CHPL_PARSER_DEBUG", NULL},
@@ -257,9 +259,9 @@ compile_one(char *fn) {
       inline_calls(fa);
     else if (fsimple_inline)
       simple_inline_calls(fa);
-#ifdef YEAH_I_REALLY_WANT_TO_ENABLE_CODEGEN
-    codegen(fa, fn, system_dir);
-#endif
+    if (!suppress_codegen) {
+      codegen(fa, fn, system_dir);
+    }
     if (fdump_html)
       dump_html(fa, fn);
   } else

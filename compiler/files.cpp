@@ -183,7 +183,7 @@ void closeMakefile(void) {
 
 
 void makeAndCopyBinary(void) {
-  char* command = glomstrings(3, "make -f ", intDirName, "/Makefile");
+  char* command = glomstrings(3, "gmake -f ", intDirName, "/Makefile");
   mysystem(command, "compiling generated source");
 
   command = glomstrings(4, "cp ", intExeFilename, " ", executableFilename);
