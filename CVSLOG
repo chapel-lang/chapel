@@ -14181,3 +14181,20 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_union_method3.future 
 
+---------------------------------------------------------------------------
+
+01/10/05 10:29:49 -- deitz
+
+Log message:
+	Added more support for copied symbols.  In particular, function
+	symbols are now explicitly copied when function definition statements
+	are copied and the clone callback is used.  Note that this checkin
+	does not fix the problem with resolving symbols in copied statements
+	and expressions.  That's next.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+
