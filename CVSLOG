@@ -22399,3 +22399,21 @@ Removed files:
 	chapel/compiler/traversals/: removeDeadSymbols.cpp 
 	                             removeDeadSymbols.h 
 
+---------------------------------------------------------------------------
+
+03/29/05 15:03:07 -- jplevyak
+
+Log message:
+	Add "defaultConstructor" field to ClassType.
+	Use defaultConstructor field to call constructor for record
+	  types during array initialization.
+	Removed .futures for two effected tests.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_basic1.future 
+	                           test_array_of_record1.future 
+
