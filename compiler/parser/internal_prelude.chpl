@@ -17,6 +17,9 @@ class Domain {
 }
 
 class Tuple {
+  function this(i) {
+    return __primitive("index_object", this, i);
+  }
 }
 
 function malloc(size: integer);

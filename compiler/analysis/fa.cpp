@@ -274,8 +274,7 @@ creation_point(AVar *v, Sym *s) {
       cs->var_map.put(h->name, iv);
   }
  Lfound:
-  if (v->contour != GLOBAL_CONTOUR)
-    cs->defs.add(v);
+  cs->defs.add(v);
   v->creation_set = cs;
  Ldone:
   if (v->contour_is_entry_set)

@@ -1148,6 +1148,7 @@ gen_if1(BaseAST *ast) {
       Sym *fn = s->parentSymbol->asymbol->sym;
       if (!s->expr->isNull()) {
 	if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
+	s->expr->ainfo->rval->is_lvalue = 1;
 	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
       }
       Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
@@ -1351,8 +1352,8 @@ gen_if1(BaseAST *ast) {
       if (s->left->ainfo->sym->is_var)
 	if (s->left->ainfo->sym->type) 
 	  rval = gen_coerce(rval, s->left->ainfo->sym->type, &s->ainfo->code, s->ainfo);
-      if1_move(if1, &s->ainfo->code, rval, s->left->ainfo->sym, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
+      if1_move(if1, &s->ainfo->code, s->ainfo->rval, s->left->ainfo->sym, s->ainfo);
       break;
     }
     case EXPR_SIMPLESEQ: {
@@ -1454,9 +1455,14 @@ gen_if1(BaseAST *ast) {
       astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
       Sym *base = NULL;
       char *n = s->baseExpr->ainfo->rval->name;
-      if (n && !strcmp(n, "__primitive"))
-	base = sym_primitive;
-      else if (n && !strcmp(n, "__operator"))
+      if (n && !strcmp(n, "__primitive")) {
+	if (args.n > 0 && dynamic_cast<StringLiteral*>(args.v[0]) &&
+	    if1->primitives->prim_map[0][0].get(
+	      if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[0])->str)))
+	  base = 0;
+	else
+	  base = sym_primitive;
+      } else if (n && !strcmp(n, "__operator"))
 	base = sym_operator;
       else if (base_symbol == SYMBOL_UNRESOLVED) {
 	assert(n);
@@ -1467,7 +1473,8 @@ gen_if1(BaseAST *ast) {
 	base = s->baseExpr->ainfo->rval;
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      if1_add_send_arg(if1, send, base);
+      if (base)
+	if1_add_send_arg(if1, send, base);
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
