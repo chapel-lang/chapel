@@ -13,6 +13,7 @@ PDB *pdb = 0;
 PDB::PDB(IF1 *aif1) {
   if1 = aif1;
   pdb = this;
+  fa = new FA(this);
 }
 
 Sym *
@@ -22,7 +23,6 @@ PDB::find_global(char *s) {
 
 FA *
 PDB::analyze(Fun *top) {
-  FA *fa = new FA(this);
   if (fa->analyze(top) >= 0)
     return fa;
   return 0;

@@ -297,6 +297,7 @@ static void
 init_system() {
   new IF1;
   new PDB(if1);
+  init_ast();
   char cwd[FILENAME_MAX];
   if (system_dir[0] == '.' && (!system_dir[1] || system_dir[1] == '/')) {
     getcwd(cwd, FILENAME_MAX);

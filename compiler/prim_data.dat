@@ -1,5 +1,5 @@
 /* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved
+ Copyright 2003-2004 John Plevyak, All Rights Reserved
 */
 
 /* primitive descriptions
@@ -15,7 +15,6 @@
     nonfunctional - (can't be dead code eliminated if their lvals aren't used)
     
 */
-prim_primitive "primitive" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_operator "operator" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_period "." 3 1 {PRIM_TYPE_ANY, PRIM_TYPE_SYMBOL} {PRIM_TYPE_ANY} nonfunctional;
 prim_exp "**" 3 1 {PRIM_TYPE_ANY_NUM_A, PRIM_TYPE_ANY_NUM_B} {PRIM_TYPE_ANY_NUM_AB} ;
@@ -59,4 +58,6 @@ prim_meta_apply "meta_apply" 2 0 {PRIM_TYPE_ANY, PRIM_TYPE_ANY} {PRIM_TYPE_ANY};
 prim_destruct "destruct" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} nonfunctional;
 prim_set "make_set" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_list "make_list" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
-prim_print "print" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
+
+prim_primitive "primitive" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY };
+

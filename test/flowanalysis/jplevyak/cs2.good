@@ -9,11 +9,11 @@ function __init cs2.v:1
 function __init prelude.v:7
 function __init__ <unknown>:0
 function aa cs2.v:1
-function operator prelude.v:91
-function print prelude.v:145
+function operator prelude.v:74
+function print prelude.v:128
 globals
-operator::a(prelude.v:91) ( tuple (prelude.v:14) )
-print::a(prelude.v:145) ( int32 (prelude.v:29) )
+operator::a(prelude.v:74) ( tuple (prelude.v:14) )
+print::a(prelude.v:128) ( int32 (prelude.v:29) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::__init(cs2.v:1) ( __init (cs2.v:1) )

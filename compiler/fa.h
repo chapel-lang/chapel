@@ -250,6 +250,8 @@ class ATypeFoldChainHashFns {
   }
 };
 
+typedef void (*PrimitiveTransferFunctionPtr)(PNode *pn, EntrySet *es);
+
 class FA : public gc {
  public:
   PDB *pdb;
@@ -262,6 +264,8 @@ class FA : public gc {
   Vec<Sym *> basic_types;
   Vec<CreationSet *> css, css_set;
   Vec<AVar *> global_avars;
+  Map<Sym *, PrimitiveTransferFunctionPtr> primitive_transfer_functions;
+  
 
   FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0) {}
 
@@ -276,6 +280,8 @@ void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
 int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
 int constant_info(Var *v, Vec<Sym *> &constants);
 AType *make_AType(Vec<CreationSet *> &css);
+AType *make_abstract_type(Sym *s);
+void update_in(AVar *v, AType *t);
 void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,
 		    Vec<Fun *> *funs = NULL);
 void log_var_types(Var *v, Fun *f);
@@ -284,3 +290,5 @@ int compar_creation_sets(const void *ai, const void *aj);
 EXTERN int num_constants_per_variable EXTERN_INIT(DEFAULT_NUM_CONSTANTS_PER_VARIABLE);
 
 #endif
+
+

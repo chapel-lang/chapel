@@ -1,2 +1,0 @@
-assert builtin_symbols.h:48: sym_primitive
-fail: seg fault

@@ -25,20 +25,20 @@ function aa cs3.v:1
 function aa cs3.v:1
 function bb cs3.v:2
 function bb cs3.v:2
-function operator prelude.v:91
-function operator prelude.v:91
-function operator prelude.v:91
-function operator prelude.v:91
-function operator prelude.v:96
-function print prelude.v:145
+function operator prelude.v:74
+function operator prelude.v:74
+function operator prelude.v:74
+function operator prelude.v:74
+function operator prelude.v:79
+function print prelude.v:128
 globals
-operator::a(prelude.v:91) ( tuple (prelude.v:14) )
-operator::a(prelude.v:91) ( tuple (prelude.v:14) )
-operator::a(prelude.v:91) ( tuple (prelude.v:14) )
-operator::a(prelude.v:91) ( tuple (prelude.v:14) )
-operator::a(prelude.v:96) ( int32 (prelude.v:29) )
-operator::b(prelude.v:96) ( float64 (prelude.v:42) )
-print::a(prelude.v:145) ( float64 (prelude.v:42) )
+operator::a(prelude.v:74) ( tuple (prelude.v:14) )
+operator::a(prelude.v:74) ( tuple (prelude.v:14) )
+operator::a(prelude.v:74) ( tuple (prelude.v:14) )
+operator::a(prelude.v:74) ( tuple (prelude.v:14) )
+operator::a(prelude.v:79) ( int32 (prelude.v:29) )
+operator::b(prelude.v:79) ( float64 (prelude.v:42) )
+print::a(prelude.v:128) ( float64 (prelude.v:42) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::__init(cs3.v:1) ( __init (cs3.v:1) )

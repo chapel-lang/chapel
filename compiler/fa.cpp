@@ -152,7 +152,7 @@ make_AType(CreationSet *cs) {
   return cs->atype = type_cannonicalize(new AType(cs));
 }
 
-static AType *
+AType *
 make_abstract_type(Sym *s) {
   s = unalias_type(s);
   AType *a = s->abstract_type;
@@ -179,7 +179,7 @@ AType::constants() {
   return type_cannonicalize(t);
 }
 
-static void
+void
 update_in(AVar *v, AType *t) {
   AType *tt = type_union(v->in, t);
   if (tt != v->in) {
@@ -579,6 +579,7 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
       AVar *es_arg = es->args.get(p), *e_arg = e->args.get(p);
       if (!e_arg)
 	continue;
+      // always split the "new" method... should generalize this
       if (p->pos.n == 1 && p->pos.v[0] == int2Position(2) && es->fun->sym == sym_new_object) {
 	if (es_arg->out != e_arg->out)
 	  return -1;
@@ -1238,6 +1239,9 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     switch (p->prim->index) {
       default: break;
       case P_prim_primitive: {
+	PrimitiveTransferFunctionPtr fn = fa->primitive_transfer_functions.get(p->rvals.v[1]->sym);
+	assert(fn);
+	fn(p, es);
 	break;
       }
       case P_prim_meta_apply: {
@@ -1260,10 +1264,6 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	  destruct(av, p->lvals.v[i], es, result);
 	  av->arg_of_send.set_add(result);
 	}
-	break;
-      }
-      case P_prim_print: {
-	update_in(result, make_abstract_type(sym_int));
 	break;
       }
       case P_prim_vector:

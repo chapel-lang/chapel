@@ -24,7 +24,7 @@ typedef void *_CG_ref;
 #define _CG_prim_vector(_c, _n) (void*)GC_MALLOC(sizeof(_c*) * _n)
 #define _CG_prim_new(_c) (_c)GC_MALLOC(sizeof(*((_c)0)))
 #define _CG_prim_reply(_c, _r) return _r
-#define _CG_prim_print(_x) printf("%d\n", (unsigned int)(uintptr_t)_x);
+#define _CG_prim_primitive(_p, _x) printf("%d\n", (unsigned int)(uintptr_t)_x);
 #define _CG_prim_add(_a, _op, _b) ((_a) + (_b))
 #define _CG_prim_subtract(_a, _op, _b) ((_a) - (_b))
 #define _CG_prim_mult(_a, _op, _b) ((_a) * (_b))

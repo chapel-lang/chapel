@@ -5,8 +5,8 @@
  called from 4 in __init at memberfun.v:1
  called from 4 in __init at memberfun.v:1
  called from 4 in __init at memberfun.v:1
- called from 90 in new at prelude.v:90
- called from 91 in operator at prelude.v:91
+ called from 73 in new at prelude.v:73
+ called from 74 in operator at prelude.v:74
 __init::self(memberfun.v:1) ( A (memberfun.v:1) )
 f::self(memberfun.v:2) ( A (memberfun.v:1) )
 function __init memberfun.v:1
@@ -14,20 +14,20 @@ function __init memberfun.v:1
 function __init prelude.v:7
 function __init__ <unknown>:0
 function f memberfun.v:2
-function new prelude.v:90
-function operator prelude.v:91
-function operator prelude.v:91
-function operator prelude.v:96
-function print prelude.v:145
+function new prelude.v:73
+function operator prelude.v:74
+function operator prelude.v:74
+function operator prelude.v:79
+function print prelude.v:128
 globals
-new::a(prelude.v:90) ( A (memberfun.v:1) )
-new::o(prelude.v:90) ( A (memberfun.v:1) )
-new::o(prelude.v:90) ( A (memberfun.v:1) )
-operator::a(prelude.v:91) ( A (memberfun.v:1) )
-operator::a(prelude.v:91) ( A (memberfun.v:1) )
-operator::a(prelude.v:96) ( int32 (prelude.v:29) )
-operator::b(prelude.v:96) ( int32 (prelude.v:29) )
-print::a(prelude.v:145) ( int32 (prelude.v:29) )
+new::a(prelude.v:73) ( A (memberfun.v:1) )
+new::o(prelude.v:73) ( A (memberfun.v:1) )
+new::o(prelude.v:73) ( A (memberfun.v:1) )
+operator::a(prelude.v:74) ( A (memberfun.v:1) )
+operator::a(prelude.v:74) ( A (memberfun.v:1) )
+operator::a(prelude.v:79) ( int32 (prelude.v:29) )
+operator::b(prelude.v:79) ( int32 (prelude.v:29) )
+print::a(prelude.v:128) ( int32 (prelude.v:29) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::A(memberfun.v:1) ( A (memberfun.v:1) )

@@ -8,8 +8,8 @@
  called from 6 in __init at memberfun2.v:1
  called from 6 in __init at memberfun2.v:1
  called from 6 in __init at memberfun2.v:1
- called from 90 in new at prelude.v:90
- called from 91 in operator at prelude.v:91
+ called from 73 in new at prelude.v:73
+ called from 74 in operator at prelude.v:74
 A::__init(memberfun2.v:1) ( __init (memberfun2.v:1) )
 __init::self(memberfun2.v:1) ( B (memberfun2.v:2) )
 __init::self(memberfun2.v:2) ( B (memberfun2.v:2) )
@@ -21,24 +21,24 @@ function __init prelude.v:7
 function __init__ <unknown>:0
 function f memberfun2.v:3
 function g memberfun2.v:5
-function new prelude.v:90
-function operator prelude.v:91
-function operator prelude.v:91
-function operator prelude.v:96
-function operator prelude.v:96
-function print prelude.v:145
+function new prelude.v:73
+function operator prelude.v:74
+function operator prelude.v:74
+function operator prelude.v:79
+function operator prelude.v:79
+function print prelude.v:128
 g::self(memberfun2.v:5) ( B (memberfun2.v:2) )
 globals
-new::a(prelude.v:90) ( B (memberfun2.v:2) )
-new::o(prelude.v:90) ( B (memberfun2.v:2) )
-new::o(prelude.v:90) ( B (memberfun2.v:2) )
-operator::a(prelude.v:91) ( B (memberfun2.v:2) )
-operator::a(prelude.v:91) ( B (memberfun2.v:2) )
-operator::a(prelude.v:96) ( float64 (prelude.v:42) )
-operator::a(prelude.v:96) ( int32 (prelude.v:29) )
-operator::b(prelude.v:96) ( int32 (prelude.v:29) )
-operator::b(prelude.v:96) ( int32 (prelude.v:29) )
-print::a(prelude.v:145) ( float64 (prelude.v:42) )
+new::a(prelude.v:73) ( B (memberfun2.v:2) )
+new::o(prelude.v:73) ( B (memberfun2.v:2) )
+new::o(prelude.v:73) ( B (memberfun2.v:2) )
+operator::a(prelude.v:74) ( B (memberfun2.v:2) )
+operator::a(prelude.v:74) ( B (memberfun2.v:2) )
+operator::a(prelude.v:79) ( float64 (prelude.v:42) )
+operator::a(prelude.v:79) ( int32 (prelude.v:29) )
+operator::b(prelude.v:79) ( int32 (prelude.v:29) )
+operator::b(prelude.v:79) ( int32 (prelude.v:29) )
+print::a(prelude.v:128) ( float64 (prelude.v:42) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::B(memberfun2.v:2) ( B (memberfun2.v:2) )

@@ -61,23 +61,6 @@ null __name "null" : ();
 
 __init__ __name "init":0;
 
-// builtin functions/operators
-
-#__make_tuple __name "make_tuple";
-#__make_list __name "make_list";
-#__make_vector __name "make_vector";
-#__make_set __name "make_set";
-#__make_continuation __name "make_continuation";
-#__primitive __name "primitive";
-#__operator __name "operator";
-#__new __name "new";
-#__index __name "index";
-#__print __name "print"; 
-#__destruct __name "destruct";
-#__meta_apply __name "meta_apply";
-#"." __name "period";
-#"=" __name "assign";
-
 //   public builtin functions
 reply: #reply __name "reply";
 
@@ -142,4 +125,4 @@ tuple::self(a:anyint) : #__index self a;
 
 // generic printing
 
-print a : #__print a;
+print a : #__primitive #print a;

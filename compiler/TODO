@@ -4,6 +4,7 @@
   handle lvalue returns.  For INOUT parameters, have an additional return value.
 - generalize primitives, use strings and have a way to register the transfer
   functions.
+- generalize splitting of "new" call in edge_type_compatible_with_entry_set
 
 ** Front End
 

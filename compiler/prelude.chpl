@@ -61,22 +61,6 @@ __init__ __name "init" : 0;
 //   public internal function
 var reply = #reply __name "reply";
 
-// builtin symbols
-
-#__make_tuple __name "make_tuple";
-#__make_list __name "make_list";
-#__make_vector __name "make_vector";
-#__make_set __name "make_set";
-#__make_continuation __name "make_continuation";
-#__operator __name "operator";
-#__new __name "new";
-#__index __name "index";
-#__print __name "print";
-#__destruct __name "destruct";
-#__meta_apply __name "meta_apply";
-#"." __name "period";
-#"=" __name "assign";
-
 // overloadable primitive operators
 function new(a:any) __name "new_object"		{ #__new ^^ a }
 function operator(a:any, #".", b:symbol)	{ #__operator ^^ a ^^ #"." ^^ b }
@@ -235,7 +219,7 @@ function write() { 0 }
 function write(a) { 0 }
 function writeln() { 0 }
 function writeln(a) { 0 }
-function print(a) { #__print ^^ a; }
+function print(a) { #__primitive ^^ #print ^^ a; }
 
 /*
   David's old iterator and domain examples

@@ -16,11 +16,10 @@
 #include "var.h"
 #include "graph.h"
 #include "fun.h"
+#include "pdb.h"
+#include "pnode.h"
 
 //#define TEST_RETURN 1
-
-extern Sym *operator_symbol;
-
 
 class LabelMap : public Map<char *, ParseAST *> {};
 
@@ -34,6 +33,133 @@ char *cannonical_class = 0;
 char *cannonical_self = 0;
 char *cannonical_folded = 0;
 Sym *operator_symbol = 0;
+Sym *print_symbol = 0;
+
+static void
+dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
+  switch (a->kind) {
+    case AST_def_fun: return;
+    case AST_const: 
+    case AST_def_ident: 
+      if (!a->sym->var || !a->sym->var->avars.n)
+	return;
+      break;
+    case AST_def_type:
+      if (!unalias_type(a->sym)->creators.n)
+	return;
+      break;
+    default: break;
+  }
+  for (int i = 0; i < indent; i++) putc(' ', fp);
+  fprintf(fp, "<LI>%s ", AST_name[a->kind]);
+  if (a->sym) {
+    if (a->sym->constant) {
+      if (!a->sym->type->num_kind)
+	fprintf(fp, " constant %s", a->sym->constant);
+      else {
+	fprintf(fp, " constant ");
+	print(fp, a->sym->imm, a->sym->type);
+      }
+    } else if (a->sym->is_symbol)
+      fprintf(fp, " symbol %s", a->sym->name);
+    else if (a->sym->name)
+      fprintf(fp, " sym %s", a->sym->name);
+    else 
+      fprintf(fp, " id(%d)", a->sym->id);
+  }
+  Sym *s = a->sym;
+  if (!s)
+    s = a->rval;
+  Sym *t = type_info(a, s);
+  if (t) {
+    fprintf(fp, " : ");
+    dump_sym_name(fp, t);
+  }
+  if (a->string)
+    fprintf(fp, " %s", a->string);
+  if (a->builtin)
+    fprintf(fp, " builtin %s", a->builtin);
+  if (!a->sym || !a->sym->constant) {
+    Vec<Sym *> consts;
+    if (constant_info(a, consts, s)) {
+      fprintf(fp, " constants {");
+      forv_Sym(s, consts) {
+	fprintf(fp, " ");
+	print(fp, s->imm, s->type);
+      }
+      fprintf(fp, " }");
+    }
+  }
+  Vec<Fun *> funs;
+  call_info(f, a, funs);
+  if (funs.n) {
+    fprintf(fp, " calls ");
+    dump_fun_list(fp, funs);
+  }
+  if (a->prim)
+    fprintf(fp, " primitive %s", a->prim->name);
+  fputs("\n", fp);
+  if (a->children.n) {
+    for (int i = 0; i < indent; i++) putc(' ', fp);
+    fprintf(fp, "<UL>\n");
+    forv_ParseAST(aa, a->children)
+      dump_ast_tree(fp, f, aa, indent + 1);
+    for (int i = 0; i < indent; i++) putc(' ', fp);
+    fprintf(fp, "</UL>\n");
+  }
+}
+
+void
+ParseAST::dump(FILE *fp, Fun *f) {
+  if (kind == AST_def_fun)
+    dump_ast_tree(fp, f, last());
+  else
+    dump_ast_tree(fp, f, this);
+}
+
+static int 
+graph_it(ParseAST *a) {
+  switch (a->kind) {
+    case AST_def_fun: return 0;
+    case AST_const: 
+    case AST_def_ident: 
+      if (!a->sym->var || !a->sym->var->avars.n)
+	return 0;
+      break;
+    case AST_def_type:
+      if (!unalias_type(a->sym)->creators.n)
+	return 0;
+      break;
+    default: break;
+  }
+  return 1;
+}
+
+static void
+graph_ast_nodes(FILE *fp, ParseAST *a) {
+  graph_node(fp, a, AST_name[a->kind]);
+  forv_ParseAST(aa, a->children)
+    if (graph_it(aa))
+      graph_ast_nodes(fp, aa);
+}
+
+static void
+graph_ast_edges(FILE *fp, ParseAST *a) {
+  forv_ParseAST(aa, a->children)
+    if (graph_it(aa)) {
+      graph_edge(fp, a, aa);
+      graph_ast_edges(fp, aa);
+    }
+}
+
+void
+ParseAST::graph(FILE *fp) {
+  ParseAST *ast = this;
+  if (kind == AST_def_fun)
+    ast = last();
+  graph_ast_nodes(fp, ast);
+  graph_ast_edges(fp, ast);
+}
 
 char *
 ParseAST::pathname() {
@@ -1960,6 +2086,17 @@ finalize_symbols(IF1 *i) {
   }
 }
 
+static void
+print_transfer_function(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  update_in(result, make_abstract_type(sym_int));
+}
+
+static void
+add_primitive_transfer_functions() {
+  pdb->fa->primitive_transfer_functions.put(print_symbol, print_transfer_function);
+}
+
 int
 ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   Scope *global = new Scope();
@@ -1967,6 +2104,7 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   cannonical_self = if1_cannonicalize_string(i, "self");
   cannonical_folded = if1_cannonicalize_string(i, "< folded >");
   operator_symbol = if1_make_symbol(if1, "operator");
+  print_symbol = if1_make_symbol(if1, "print");
   global_asserts();
   forv_ParseAST(a, av)
     build_builtin_syms(i, a);
@@ -1998,133 +2136,7 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   build_modules(i);
   build_init(i);
   finalize_symbols(i);
+  add_primitive_transfer_functions();
   return 0;
 }
-
-static void
-dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
-  switch (a->kind) {
-    case AST_def_fun: return;
-    case AST_const: 
-    case AST_def_ident: 
-      if (!a->sym->var || !a->sym->var->avars.n)
-	return;
-      break;
-    case AST_def_type:
-      if (!unalias_type(a->sym)->creators.n)
-	return;
-      break;
-    default: break;
-  }
-  for (int i = 0; i < indent; i++) putc(' ', fp);
-  fprintf(fp, "<LI>%s ", AST_name[a->kind]);
-  if (a->sym) {
-    if (a->sym->constant) {
-      if (!a->sym->type->num_kind)
-	fprintf(fp, " constant %s", a->sym->constant);
-      else {
-	fprintf(fp, " constant ");
-	print(fp, a->sym->imm, a->sym->type);
-      }
-    } else if (a->sym->is_symbol)
-      fprintf(fp, " symbol %s", a->sym->name);
-    else if (a->sym->name)
-      fprintf(fp, " sym %s", a->sym->name);
-    else 
-      fprintf(fp, " id(%d)", a->sym->id);
-  }
-  Sym *s = a->sym;
-  if (!s)
-    s = a->rval;
-  Sym *t = type_info(a, s);
-  if (t) {
-    fprintf(fp, " : ");
-    dump_sym_name(fp, t);
-  }
-  if (a->string)
-    fprintf(fp, " %s", a->string);
-  if (a->builtin)
-    fprintf(fp, " builtin %s", a->builtin);
-  if (!a->sym || !a->sym->constant) {
-    Vec<Sym *> consts;
-    if (constant_info(a, consts, s)) {
-      fprintf(fp, " constants {");
-      forv_Sym(s, consts) {
-	fprintf(fp, " ");
-	print(fp, s->imm, s->type);
-      }
-      fprintf(fp, " }");
-    }
-  }
-  Vec<Fun *> funs;
-  call_info(f, a, funs);
-  if (funs.n) {
-    fprintf(fp, " calls ");
-    dump_fun_list(fp, funs);
-  }
-  if (a->prim)
-    fprintf(fp, " primitive %s", a->prim->name);
-  fputs("\n", fp);
-  if (a->children.n) {
-    for (int i = 0; i < indent; i++) putc(' ', fp);
-    fprintf(fp, "<UL>\n");
-    forv_ParseAST(aa, a->children)
-      dump_ast_tree(fp, f, aa, indent + 1);
-    for (int i = 0; i < indent; i++) putc(' ', fp);
-    fprintf(fp, "</UL>\n");
-  }
-}
-
-void
-ParseAST::dump(FILE *fp, Fun *f) {
-  if (kind == AST_def_fun)
-    dump_ast_tree(fp, f, last());
-  else
-    dump_ast_tree(fp, f, this);
-}
-
-static int 
-graph_it(ParseAST *a) {
-  switch (a->kind) {
-    case AST_def_fun: return 0;
-    case AST_const: 
-    case AST_def_ident: 
-      if (!a->sym->var || !a->sym->var->avars.n)
-	return 0;
-      break;
-    case AST_def_type:
-      if (!unalias_type(a->sym)->creators.n)
-	return 0;
-      break;
-    default: break;
-  }
-  return 1;
-}
-
-static void
-graph_ast_nodes(FILE *fp, ParseAST *a) {
-  graph_node(fp, a, AST_name[a->kind]);
-  forv_ParseAST(aa, a->children)
-    if (graph_it(aa))
-      graph_ast_nodes(fp, aa);
-}
-
-static void
-graph_ast_edges(FILE *fp, ParseAST *a) {
-  forv_ParseAST(aa, a->children)
-    if (graph_it(aa)) {
-      graph_edge(fp, a, aa);
-      graph_ast_edges(fp, aa);
-    }
-}
-
-void
-ParseAST::graph(FILE *fp) {
-  ParseAST *ast = this;
-  if (kind == AST_def_fun)
-    ast = last();
-  graph_ast_nodes(fp, ast);
-  graph_ast_edges(fp, ast);
-}
-
 

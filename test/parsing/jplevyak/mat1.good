@@ -1,4 +1,2 @@
 462 states 240 scans 94 shifts 257 reductions 4 compares 0 ambiguities
 (((( var (( m ( = (( 100 )))))) ; )(( var (( n ( = (( 200 )))))) ; )(( var (( Mat ( = (( domain )( ( (((( 1 )) .. ( m )) , ((( 1 )) .. ( n ))) ) )))))) ; )(( var (( A ( = ( [ ( Mat ) ] ( float )))))) ; )(( forall ( i ( ,  j )) in ( Mat )( { (((( A )( ( (( i ) , ( j )) ) )) = (( i ) == ( j ))) ; ) } )) ; )((( write )( ( ( A ) ) )) ; )))
-assert builtin_symbols.h:48: sym_primitive
-fail: seg fault
