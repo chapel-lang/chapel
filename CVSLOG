@@ -4675,3 +4675,13 @@ Added files:
 	                                         thread_leak_test.c 
 	                                         trace_test.c 
 
+---------------------------------------------------------------------------
+
+07/29/04 10:32:24 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix bad deallocation issue.
+
+Modified files:
+	chapel/compiler/: fa.cpp pnode.h 
+
