@@ -24280,3 +24280,14 @@ Added files:
 	                                         test_seq1c.chpl 
 	                                         test_seq1c.good 
 
+---------------------------------------------------------------------------
+
+04/06/05 13:52:37 -- bradc
+
+Log message:
+	Removed "NULL" from internal prelude since we now
+	have "nil" instead.
+
+Modified files:
+	chapel/compiler/parser/: internal_prelude.chpl 
+
