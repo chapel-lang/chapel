@@ -95,7 +95,7 @@ depend: $(DEPENDSUBDIRS) echocompilerdir $(PLATFORM_DIR)
 	done
 
 test: FORCE
-	cd test && make test
+	cd test && $(MAKE) test
 
 
 #
@@ -132,23 +132,23 @@ echocompilerdir:
 
 %.makedir:
 	@echo $(STARS) compiler/$* $(STARS)
-	@cd $* && make
+	@cd $* && $(MAKE)
 
 %.cleandir:
 	@echo $(STARS) compiler/$* $(STARS)
-	@cd $* && make clean
+	@cd $* && $(MAKE) clean
 
 %.cleandirdeps:
 	@echo $(STARS) compiler/$* $(STARS)
-	@cd $* && make cleandeps
+	@cd $* && $(MAKE) cleandeps
 
 %.clobberdir:
 	@echo $(STARS) compiler/$* $(STARS)
-	@cd $* && make clobber
+	@cd $* && $(MAKE) clobber
 
 %.dependdir:
 	@echo $(STARS) compiler/$* $(STARS)
-	@cd $* && make depend
+	@cd $* && $(MAKE) depend
 
 
 #
