@@ -20827,3 +20827,20 @@ Added files:
 	                           jacobi3.chpl jacobi3.future 
 	                           jacobi3.good 
 
+---------------------------------------------------------------------------
+
+03/22/05 17:10:07 -- deitz
+
+Log message:
+	Fixed parsing of ForallExpr to create VarSymbol indexes (currently of
+	type integer).
+	
+	Changed the traversal over VarSymbols if the type is an array so that
+	we can traverse the domain (for the index symbols).
+	
+	This fixes arrays_deitz_init2 which now fails in analysis.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+
