@@ -37,6 +37,14 @@ chapel.tab.h chapel.tab.c: chapel.y
 	mv chapel.tab.c.tmp chapel.tab.c
 
 
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+
+
 $(PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(CFLAGS) -Wno-error -o $@ $<
 
@@ -45,10 +53,3 @@ $(PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
 
 $(PLATFORM)/yy.o: yy.c $(PLATFORM_DIR)
 	$(CC) -c $(CFLAGS) -o $@ $<
-
-FORCE:
-
-#
-# standard footer
-#
-include $(COMPILER_ROOT)/make/Makefile.compiler.foot

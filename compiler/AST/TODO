@@ -39,6 +39,8 @@
 
 * add traversal that verifies that back pointers are non-nil.
 
+* refactor ParenOpExpr
+
 SHANNON:
 * fix type_info() for BinOp
 * implement isComputable() and intVal() better for Expr hierarchy

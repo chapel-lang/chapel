@@ -7,7 +7,7 @@
 #include "analysis.h"
 #include "expr.h"
 #include "files.h"
-#include "getstuff.h"
+#include "../traversals/getstuff.h"
 #include "link.h"
 #include "misc.h"
 #include "stmt.h"

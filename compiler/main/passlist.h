@@ -1,18 +1,19 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
-#include "checkBackLinks.h"
-#include "checkTypeInfo.h"
-#include "findUnknownTypes.h"
-#include "getstuff.h"
-#include "printAST.h"
-#include "checkIDs.h"
-#include "printProgram.h"
-#include "printSymtab.h"
-#include "runAnalysis.h"
-#include "setupStmtLinks.h"
-#include "testGetStuff.h"
-#include "verifyASTType.h"
+#include "../passes/printProgram.h"
+#include "../passes/printSymtab.h"
+#include "../passes/runAnalysis.h"
+
+#include "../traversals/checkBackLinks.h"
+#include "../traversals/checkIDs.h"
+#include "../traversals/checkTypeInfo.h"
+#include "../traversals/findUnknownTypes.h"
+#include "../traversals/getstuff.h"
+#include "../traversals/printAST.h"
+#include "../traversals/setupStmtLinks.h"
+#include "../traversals/testGetStuff.h"
+#include "../traversals/verifyASTType.h"
 
 
 /* This is the default list of passes that will be run by the
