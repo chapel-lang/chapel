@@ -17571,3 +17571,37 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
 	                             insertAnonymousTypes.cpp 
 
+---------------------------------------------------------------------------
+
+02/16/05 11:15:37 -- shannon
+
+Log message:
+	Added wrappers to the memory functions malloc, calloc,
+	realloc, and free.  At present the only benefit is error
+	checking with hopefully descriptive error messages,
+	but we have great plans for these functions in the future.
+	
+	The arguments to _chpl_malloc, _chpl_calloc, and _chpl_realloc
+	differ from the originals.  Instead of being passed the size
+	of the entire chunk of memory being requested they take the
+	number of elements and then the size of the element.
+	_chpl_malloc and _chpl_calloc also take a string which
+	is a description of the type of memory requested.
+	
+	Example:
+	--------
+	  arr.base = (elemtype*)_chpl_malloc(arr.size, sizeof(elemtype), "array")
+	
+	Corresponding error message:
+	----------------------------
+	  ***Error:  Out of memory allocating array***
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/runtime/include/: array.h stdchpl.h 
+	chapel/runtime/src/: Makefile arg.c chplio.c chpltypes.c 
+	                     config.c main.c 
+Added files:
+	chapel/runtime/include/: chplmem.h chplrt.h 
+	chapel/runtime/src/: chplmem.c 
+
