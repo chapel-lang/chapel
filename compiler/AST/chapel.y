@@ -660,7 +660,7 @@ binop:
 | expr LTHAN expr
     { $$ = new BinOp(BINOP_LTHAN, $1, $3); }
 | expr NEQUALS expr
-    { $$ = new BinOp(BINOP_NEQUALS, $1, $3); }
+    { $$ = new BinOp(BINOP_NEQUAL, $1, $3); }
 | expr BITAND expr
     { $$ = new BinOp(BINOP_BITAND, $1, $3); }
 | expr BITOR expr

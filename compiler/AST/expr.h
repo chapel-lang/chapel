@@ -8,6 +8,23 @@
 class Stmt;
 class AInfo;
 
+enum precedenceType {
+  PREC_LOWEST = 0,
+  PREC_LOGOR,
+  PREC_LOGAND,
+  PREC_BITOR,
+  PREC_BITXOR,
+  PREC_BITAND,
+  PREC_EQUALITY,
+  PREC_COMPARE,
+  PREC_BITS,
+  PREC_PLUSMINUS,
+  PREC_MULTDIV,
+  PREC_UNOP, 
+  PREC_HIGHEST
+};
+
+
 class Expr : public BaseAST {
  public:
   Stmt* stmt;
@@ -26,6 +43,7 @@ class Expr : public BaseAST {
   virtual bool isComputable(void);
   virtual long intVal(void);
   virtual int rank(void);
+  virtual precedenceType precedence(void);
 
   int getTypes(Vec<BaseAST *> &asts);
 };
@@ -122,6 +140,7 @@ class UnOp : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  precedenceType precedence(void);
   int getExprs(Vec<BaseAST *> &asts);
 };
 
@@ -137,7 +156,7 @@ enum binOpType {
   BINOP_GEQUAL,
   BINOP_GTHAN,
   BINOP_LTHAN,
-  BINOP_NEQUALS,
+  BINOP_NEQUAL,
   BINOP_BITAND,
   BINOP_BITOR,
   BINOP_BITXOR,
@@ -170,6 +189,7 @@ class BinOp : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  precedenceType precedence(void);
   int getExprs(Vec<BaseAST *> &asts);
 };
 
@@ -193,6 +213,8 @@ class MemberAccess : public Expr {
 class SpecialBinOp : public BinOp {
  public:
   SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
+
+  precedenceType precedence(void);
 };
 
 
@@ -221,6 +243,7 @@ class AssignOp : public BinOp {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  precedenceType precedence(void);
 };
 
 

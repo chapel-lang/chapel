@@ -60,6 +60,32 @@ static char* cGetsOp[NUM_GETS_OPS] = {
 };
 
 
+// Never change the ordering of this, since it's indexed using the 
+// binOpType enumeration.
+
+static precedenceType binOpPrecedence[NUM_BINOPS] = {
+  PREC_PLUSMINUS,     // BINOP_PLUS
+  PREC_PLUSMINUS,     // BINOP_MINUS
+  PREC_MULTDIV,       // BINOP_MULT
+  PREC_MULTDIV,       // BINOP_DIV
+  PREC_MULTDIV,       // BINOP_MOD
+  PREC_EQUALITY,      // BINOP_EQUAL
+  PREC_COMPARE,       // BINOP_LEQUAL
+  PREC_COMPARE,       // BINOP_GEQUAL
+  PREC_COMPARE,       // BINOP_GTHAN
+  PREC_COMPARE,       // BINOP_LTHAN
+  PREC_EQUALITY,      // BINOP_NEQUAL
+  PREC_BITAND,        // BINOP_BITAND
+  PREC_BITOR,         // BINOP_BITOR
+  PREC_BITXOR,        // BINOP_BITXOR
+  PREC_BITS,          // BINOP_BITSL
+  PREC_BITS,          // BINOP_BITSR
+  PREC_LOGAND,        // BINOP_LOGAND
+  PREC_LOGOR          // BINOP_LOGOR
+
+};
+
+
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
   stmt(nilStmt),
@@ -118,6 +144,10 @@ int Expr::rank(void) {
   return exprType->rank();
 }
 
+precedenceType Expr::precedence(void) {
+  return PREC_LOWEST;
+
+}
 
 int
 Expr::getTypes(Vec<BaseAST *> &asts) {
@@ -267,6 +297,11 @@ Type* UnOp::typeInfo(void) {
 }
 
 
+precedenceType UnOp::precedence(void) {
+  return PREC_UNOP;
+}
+
+
 int
 UnOp::getExprs(Vec<BaseAST *> &asts) {
   asts.add(operand);
@@ -304,7 +339,6 @@ Type* BinOp::typeInfo(void) {
   }
 }
 
-
 void BinOp::print(FILE* outfile) {
   fprintf(outfile, "(");
   left->print(outfile);
@@ -314,11 +348,30 @@ void BinOp::print(FILE* outfile) {
 }
 
 void BinOp::codegen(FILE* outfile) {
-  fprintf(outfile, "(");
+  bool parensRequired = this->precedence() <= parent->precedence();
+
+  bool parensRecommended = false;
+  if ((parent->precedence() == PREC_BITOR)  ||
+      (parent->precedence() == PREC_BITXOR) ||
+      (parent->precedence() == PREC_BITAND) ||
+      (parent->precedence() == PREC_LOGOR)) {
+    parensRecommended = true;
+  }    
+
+  if (parensRequired || parensRecommended) {
+    fprintf(outfile, "(");
+  }
   left->codegen(outfile);
   fprintf(outfile, "%s", cBinOp[type]);
   right->codegen(outfile);
-  fprintf(outfile, ")");
+  if (parensRequired || parensRecommended) {
+    fprintf(outfile, ")");
+  } 
+}
+
+
+precedenceType BinOp::precedence(void) {
+  return binOpPrecedence[this->type];
 }
 
 
@@ -334,6 +387,11 @@ SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
   BinOp(init_type, l, r)
 {
   astType = EXPR_SPECIALBINOP;
+}
+
+
+precedenceType SpecialBinOp::precedence(void) {
+  return PREC_LOWEST;
 }
 
 
@@ -397,6 +455,12 @@ void AssignOp::codegen(FILE* outfile) {
   fprintf(outfile, " %s ", cGetsOp[type]);
   right->codegen(outfile);
 }
+
+
+precedenceType AssignOp::precedence(void) {
+ return PREC_LOWEST;
+}
+
 
 SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
   Expr(EXPR_SIMPLESEQ),
@@ -839,7 +903,7 @@ void Tuple::print(FILE* outfile) {
   fprintf(outfile, "(");
   Expr* expr = exprs;
   while (expr) {
-    expr->codegen(outfile);
+    expr->print(outfile);
 
     expr = nextLink(Expr, expr);
     if (expr) {

@@ -805,7 +805,7 @@ gen_if1(BaseAST *ast) {
 	case BINOP_GEQUAL: op = if1_make_symbol(if1, ">="); break;
 	case BINOP_GTHAN: op = if1_make_symbol(if1, ">"); break;
 	case BINOP_LTHAN: op = if1_make_symbol(if1, "<"); break;
-	case BINOP_NEQUALS: op = if1_make_symbol(if1, "!="); break;
+	case BINOP_NEQUAL: op = if1_make_symbol(if1, "!="); break;
 	case BINOP_BITAND: op = if1_make_symbol(if1, "&"); break;
 	case BINOP_BITOR: op = if1_make_symbol(if1, "|"); break;
 	case BINOP_BITXOR: op = if1_make_symbol(if1, "^"); break;

@@ -3,32 +3,2331 @@ var n = 3;
 var o = 5;
 var answer = 0;
 
-answer = m + n - o;
+write("* and * permutations\n");
+writeln("=========================");
+answer = m * n * o;
 writeln(answer);
-if (answer != 0) writeln("**ERROR** =>  m + n - o");
-
-answer = 0;
-answer = m - n + o;
+answer = (m * n) * o;
 writeln(answer);
-if (answer != 4) writeln("**ERROR** =>  m - n + o");
+answer = m * (n * o);
+writeln(answer, "\n");
 
-answer = 0;
-answer = m + n / o;
+write("* and / permutations\n");
+writeln("=========================");
+answer = m * n / o;
 writeln(answer);
-if (answer != 2) writeln("**ERROR** =>  m + n / o");
+answer = (m * n) / o;
+writeln(answer);
+answer = m * (n / o);
+writeln(answer, "\n");
 
-answer = 0;
+write("* and % permutations\n");
+writeln("=========================");
+answer = m * n % o;
+writeln(answer);
+answer = (m * n) % o;
+writeln(answer);
+answer = m * (n % o);
+writeln(answer, "\n");
+
+write("* and + permutations\n");
+writeln("=========================");
+answer = m * n + o;
+writeln(answer);
+answer = (m * n) + o;
+writeln(answer);
+answer = m * (n + o);
+writeln(answer, "\n");
+
+write("* and - permutations\n");
+writeln("=========================");
+answer = m * n - o;
+writeln(answer);
+answer = (m * n) - o;
+writeln(answer);
+answer = m * (n - o);
+writeln(answer, "\n");
+
+write("* and < permutations\n");
+writeln("=========================");
+answer = m * n < o;
+writeln(answer);
+answer = (m * n) < o;
+writeln(answer);
+answer = m * (n < o);
+writeln(answer, "\n");
+
+write("* and <= permutations\n");
+writeln("=========================");
+answer = m * n <= o;
+writeln(answer);
+answer = (m * n) <= o;
+writeln(answer);
+answer = m * (n <= o);
+writeln(answer, "\n");
+
+write("* and > permutations\n");
+writeln("=========================");
+answer = m * n > o;
+writeln(answer);
+answer = (m * n) > o;
+writeln(answer);
+answer = m * (n > o);
+writeln(answer, "\n");
+
+write("* and >= permutations\n");
+writeln("=========================");
+answer = m * n >= o;
+writeln(answer);
+answer = (m * n) >= o;
+writeln(answer);
+answer = m * (n >= o);
+writeln(answer, "\n");
+
+write("* and == permutations\n");
+writeln("=========================");
+answer = m * n == o;
+writeln(answer);
+answer = (m * n) == o;
+writeln(answer);
+answer = m * (n == o);
+writeln(answer, "\n");
+
+write("* and != permutations\n");
+writeln("=========================");
+answer = m * n != o;
+writeln(answer);
+answer = (m * n) != o;
+writeln(answer);
+answer = m * (n != o);
+writeln(answer, "\n");
+
+write("* and & permutations\n");
+writeln("=========================");
+answer = m * n & o;
+writeln(answer);
+answer = (m * n) & o;
+writeln(answer);
+answer = m * (n & o);
+writeln(answer, "\n");
+
+write("* and ^ permutations\n");
+writeln("=========================");
+answer = m * n ^ o;
+writeln(answer);
+answer = (m * n) ^ o;
+writeln(answer);
+answer = m * (n ^ o);
+writeln(answer, "\n");
+
+write("* and | permutations\n");
+writeln("=========================");
+answer = m * n | o;
+writeln(answer);
+answer = (m * n) | o;
+writeln(answer);
+answer = m * (n | o);
+writeln(answer, "\n");
+
+write("* and && permutations\n");
+writeln("=========================");
+answer = m * n && o;
+writeln(answer);
+answer = (m * n) && o;
+writeln(answer);
+answer = m * (n && o);
+writeln(answer, "\n");
+
+write("* and || permutations\n");
+writeln("=========================");
+answer = m * n || o;
+writeln(answer);
+answer = (m * n) || o;
+writeln(answer);
+answer = m * (n || o);
+writeln(answer, "\n");
+
+write("/ and * permutations\n");
+writeln("=========================");
+answer = m / n * o;
+writeln(answer);
+answer = (m / n) * o;
+writeln(answer);
+answer = m / (n * o);
+writeln(answer, "\n");
+
+write("/ and / permutations\n");
+writeln("=========================");
+answer = m / n / o;
+writeln(answer);
+answer = (m / n) / o;
+writeln(answer);
+
+n = 10;
+answer = m / (n / o);
+writeln(answer, "\n");
+n = 3;
+
+write("/ and % permutations\n");
+writeln("=========================");
+answer = m / n % o;
+writeln(answer);
+answer = (m / n) % o;
+writeln(answer);
+answer = m / (n % o);
+writeln(answer, "\n");
+
+write("/ and + permutations\n");
+writeln("=========================");
 answer = m / n + o;
 writeln(answer);
-if (answer != 5) writeln("**ERROR** =>  m / n + o");
-
-answer = 0;
-answer = m + n % o;
+answer = (m / n) + o;
 writeln(answer);
-if (answer != 5) writeln("**ERROR** =>  m + n % o");
+answer = m / (n + o);
+writeln(answer, "\n");
 
-answer = 0;
+write("/ and - permutations\n");
+writeln("=========================");
+answer = m / n - o;
+writeln(answer);
+answer = (m / n) - o;
+writeln(answer);
+answer = m / (n - o);
+writeln(answer, "\n");
+
+write("/ and < permutations\n");
+writeln("=========================");
+answer = m / n < o;
+writeln(answer);
+answer = (m / n) < o;
+writeln(answer);
+answer = m / (n < o);
+writeln(answer, "\n");
+
+write("/ and <= permutations\n");
+writeln("=========================");
+answer = m / n <= o;
+writeln(answer);
+answer = (m / n) <= o;
+writeln(answer);
+answer = m / (n <= o);
+writeln(answer, "\n");
+
+write("/ and > permutations\n");
+writeln("=========================");
+answer = m / n > o;
+writeln(answer);
+answer = (m / n) > o;
+writeln(answer);
+
+n = 10;
+answer = m / (n > o);
+writeln(answer, "\n");
+n = 3;
+
+write("/ and >= permutations\n");
+writeln("=========================");
+answer = m / n >= o;
+writeln(answer);
+answer = (m / n) >= o;
+writeln(answer);
+
+n = 10;
+answer = m / (n >= o);
+writeln(answer, "\n");
+n = 3;
+
+write("/ and == permutations\n");
+writeln("=========================");
+answer = m / n == o;
+writeln(answer);
+answer = (m / n) == o;
+writeln(answer);
+
+n = 5;
+answer = m / (n == o);
+writeln(answer, "\n");
+n = 3;
+
+write("/ and != permutations\n");
+writeln("=========================");
+answer = m / n != o;
+writeln(answer);
+answer = (m / n) != o;
+writeln(answer);
+answer = m / (n != o);
+writeln(answer, "\n");
+
+write("/ and & permutations\n");
+writeln("=========================");
+answer = m / n & o;
+writeln(answer);
+answer = (m / n) & o;
+writeln(answer);
+answer = m / (n & o);
+writeln(answer, "\n");
+
+write("/ and ^ permutations\n");
+writeln("=========================");
+answer = m / n ^ o;
+writeln(answer);
+answer = (m / n) ^ o;
+writeln(answer);
+answer = m / (n ^ o);
+writeln(answer, "\n");
+
+write("/ and | permutations\n");
+writeln("=========================");
+answer = m / n | o;
+writeln(answer);
+answer = (m / n) | o;
+writeln(answer);
+answer = m / (n | o);
+writeln(answer, "\n");
+
+write("/ and && permutations\n");
+writeln("=========================");
+answer = m / n && o;
+writeln(answer);
+answer = (m / n) && o;
+writeln(answer);
+answer = m / (n && o);
+writeln(answer, "\n");
+
+write("/ and || permutations\n");
+writeln("=========================");
+answer = m / n || o;
+writeln(answer);
+answer = (m / n) || o;
+writeln(answer);
+answer = m / (n || o);
+writeln(answer, "\n");
+
+write("% and * permutations\n");
+writeln("=========================");
+answer = m % n * o;
+writeln(answer);
+answer = (m % n) * o;
+writeln(answer);
+answer = m % (n * o);
+writeln(answer, "\n");
+
+write("% and / permutations\n");
+writeln("=========================");
+answer = m % n / o;
+writeln(answer);
+answer = (m % n) / o;
+writeln(answer);
+
+n = 10;
+answer = m % (n / o);
+writeln(answer, "\n");
+n = 3;
+
+write("% and % permutations\n");
+writeln("=========================");
+answer = m % n % o;
+writeln(answer);
+answer = (m % n) % o;
+writeln(answer);
+answer = m % (n % o);
+writeln(answer, "\n");
+
+write("% and + permutations\n");
+writeln("=========================");
 answer = m % n + o;
 writeln(answer);
-if (answer != 7) writeln("**ERROR** =>  m % n + o");
+answer = (m % n) + o;
+writeln(answer);
+answer = m % (n + o);
+writeln(answer, "\n");
+
+write("% and - permutations\n");
+writeln("=========================");
+answer = m % n - o;
+writeln(answer);
+answer = (m % n) - o;
+writeln(answer);
+answer = m % (n - o);
+writeln(answer, "\n");
+
+write("% and < permutations\n");
+writeln("=========================");
+answer = m % n < o;
+writeln(answer);
+answer = (m % n) < o;
+writeln(answer);
+answer = m % (n < o);
+writeln(answer, "\n");
+
+write("% and <= permutations\n");
+writeln("=========================");
+answer = m % n <= o;
+writeln(answer);
+answer = (m % n) <= o;
+writeln(answer);
+answer = m % (n <= o);
+writeln(answer, "\n");
+
+write("% and > permutations\n");
+writeln("=========================");
+answer = m % n > o;
+writeln(answer);
+answer = (m % n) > o;
+writeln(answer);
+
+n = 10;
+answer = m % (n > o);
+writeln(answer, "\n");
+n = 3;
+
+write("% and >= permutations\n");
+writeln("=========================");
+answer = m % n >= o;
+writeln(answer);
+answer = (m % n) >= o;
+writeln(answer);
+
+n = 10;
+answer = m % (n >= o);
+writeln(answer, "\n");
+n = 3;
+
+write("% and == permutations\n");
+writeln("=========================");
+answer = m % n == o;
+writeln(answer);
+answer = (m % n) == o;
+writeln(answer);
+
+n = 5;
+answer = m % (n == o);
+writeln(answer, "\n");
+n = 3;
+
+write("% and != permutations\n");
+writeln("=========================");
+answer = m % n != o;
+writeln(answer);
+answer = (m % n) != o;
+writeln(answer);
+answer = m % (n != o);
+writeln(answer, "\n");
+
+write("% and & permutations\n");
+writeln("=========================");
+answer = m % n & o;
+writeln(answer);
+answer = (m % n) & o;
+writeln(answer);
+answer = m % (n & o);
+writeln(answer, "\n");
+
+write("% and ^ permutations\n");
+writeln("=========================");
+answer = m % n ^ o;
+writeln(answer);
+answer = (m % n) ^ o;
+writeln(answer);
+answer = m % (n ^ o);
+writeln(answer, "\n");
+
+write("% and | permutations\n");
+writeln("=========================");
+answer = m % n | o;
+writeln(answer);
+answer = (m % n) | o;
+writeln(answer);
+answer = m % (n | o);
+writeln(answer, "\n");
+
+write("% and && permutations\n");
+writeln("=========================");
+answer = m % n && o;
+writeln(answer);
+answer = (m % n) && o;
+writeln(answer);
+answer = m % (n && o);
+writeln(answer, "\n");
+
+write("% and || permutations\n");
+writeln("=========================");
+answer = m % n || o;
+writeln(answer);
+answer = (m % n) || o;
+writeln(answer);
+answer = m % (n || o);
+writeln(answer, "\n");
+
+write("+ and * permutations\n");
+writeln("=========================");
+answer = m + n * o;
+writeln(answer);
+answer = (m + n) * o;
+writeln(answer);
+answer = m + (n * o);
+writeln(answer, "\n");
+
+write("+ and / permutations\n");
+writeln("=========================");
+answer = m + n / o;
+writeln(answer);
+answer = (m + n) / o;
+writeln(answer);
+answer = m + (n / o);
+writeln(answer, "\n");
+
+write("+ and % permutations\n");
+writeln("=========================");
+answer = m + n % o;
+writeln(answer);
+answer = (m + n) % o;
+writeln(answer);
+answer = m + (n % o);
+writeln(answer, "\n");
+
+write("+ and + permutations\n");
+writeln("=========================");
+answer = m + n + o;
+writeln(answer);
+answer = (m + n) + o;
+writeln(answer);
+answer = m + (n + o);
+writeln(answer, "\n");
+
+write("+ and - permutations\n");
+writeln("=========================");
+answer = m + n - o;
+writeln(answer);
+answer = (m + n) - o;
+writeln(answer);
+answer = m + (n - o);
+writeln(answer, "\n");
+
+write("+ and < permutations\n");
+writeln("=========================");
+answer = m + n < o;
+writeln(answer);
+answer = (m + n) < o;
+writeln(answer);
+answer = m + (n < o);
+writeln(answer, "\n");
+
+write("+ and <= permutations\n");
+writeln("=========================");
+answer = m + n <= o;
+writeln(answer);
+answer = (m + n) <= o;
+writeln(answer);
+answer = m + (n <= o);
+writeln(answer, "\n");
+
+write("+ and > permutations\n");
+writeln("=========================");
+answer = m + n > o;
+writeln(answer);
+answer = (m + n) > o;
+writeln(answer);
+answer = m + (n > o);
+writeln(answer, "\n");
+
+write("+ and >= permutations\n");
+writeln("=========================");
+answer = m + n >= o;
+writeln(answer);
+answer = (m + n) >= o;
+writeln(answer);
+answer = m + (n >= o);
+writeln(answer, "\n");
+
+write("+ and == permutations\n");
+writeln("=========================");
+answer = m + n == o;
+writeln(answer);
+answer = (m + n) == o;
+writeln(answer);
+answer = m + (n == o);
+writeln(answer, "\n");
+
+write("+ and != permutations\n");
+writeln("=========================");
+answer = m + n != o;
+writeln(answer);
+answer = (m + n) != o;
+writeln(answer);
+answer = m + (n != o);
+writeln(answer, "\n");
+
+write("+ and & permutations\n");
+writeln("=========================");
+answer = m + n & o;
+writeln(answer);
+answer = (m + n) & o;
+writeln(answer);
+answer = m + (n & o);
+writeln(answer, "\n");
+
+write("+ and ^ permutations\n");
+writeln("=========================");
+answer = m + n ^ o;
+writeln(answer);
+answer = (m + n) ^ o;
+writeln(answer);
+answer = m + (n ^ o);
+writeln(answer, "\n");
+
+write("+ and | permutations\n");
+writeln("=========================");
+answer = m + n | o;
+writeln(answer);
+answer = (m + n) | o;
+writeln(answer);
+answer = m + (n | o);
+writeln(answer, "\n");
+
+write("+ and && permutations\n");
+writeln("=========================");
+answer = m + n && o;
+writeln(answer);
+answer = (m + n) && o;
+writeln(answer);
+answer = m + (n && o);
+writeln(answer, "\n");
+
+write("+ and || permutations\n");
+writeln("=========================");
+answer = m + n || o;
+writeln(answer);
+answer = (m + n) || o;
+writeln(answer);
+answer = m + (n || o);
+writeln(answer, "\n");
+
+write("- and * permutations\n");
+writeln("=========================");
+answer = m - n * o;
+writeln(answer);
+answer = (m - n) * o;
+writeln(answer);
+answer = m - (n * o);
+writeln(answer, "\n");
+
+write("- and / permutations\n");
+writeln("=========================");
+answer = m - n / o;
+writeln(answer);
+answer = (m - n) / o;
+writeln(answer);
+answer = m - (n / o);
+writeln(answer, "\n");
+
+write("- and % permutations\n");
+writeln("=========================");
+answer = m - n % o;
+writeln(answer);
+answer = (m - n) % o;
+writeln(answer);
+answer = m - (n % o);
+writeln(answer, "\n");
+
+write("- and + permutations\n");
+writeln("=========================");
+answer = m - n + o;
+writeln(answer);
+answer = (m - n) + o;
+writeln(answer);
+answer = m - (n + o);
+writeln(answer, "\n");
+
+write("- and - permutations\n");
+writeln("=========================");
+answer = m - n - o;
+writeln(answer);
+answer = (m - n) - o;
+writeln(answer);
+answer = m - (n - o);
+writeln(answer, "\n");
+
+write("- and < permutations\n");
+writeln("=========================");
+answer = m - n < o;
+writeln(answer);
+answer = (m - n) < o;
+writeln(answer);
+answer = m - (n < o);
+writeln(answer, "\n");
+
+write("- and <= permutations\n");
+writeln("=========================");
+answer = m - n <= o;
+writeln(answer);
+answer = (m - n) <= o;
+writeln(answer);
+answer = m - (n <= o);
+writeln(answer, "\n");
+
+write("- and > permutations\n");
+writeln("=========================");
+answer = m - n > o;
+writeln(answer);
+answer = (m - n) > o;
+writeln(answer);
+answer = m - (n > o);
+writeln(answer, "\n");
+
+write("- and >= permutations\n");
+writeln("=========================");
+answer = m - n >= o;
+writeln(answer);
+answer = (m - n) >= o;
+writeln(answer);
+answer = m - (n >= o);
+writeln(answer, "\n");
+
+write("- and == permutations\n");
+writeln("=========================");
+answer = m - n == o;
+writeln(answer);
+answer = (m - n) == o;
+writeln(answer);
+answer = m - (n == o);
+writeln(answer, "\n");
+
+write("- and != permutations\n");
+writeln("=========================");
+answer = m - n != o;
+writeln(answer);
+answer = (m - n) != o;
+writeln(answer);
+answer = m - (n != o);
+writeln(answer, "\n");
+
+write("- and & permutations\n");
+writeln("=========================");
+answer = m - n & o;
+writeln(answer);
+answer = (m - n) & o;
+writeln(answer);
+answer = m - (n & o);
+writeln(answer, "\n");
+
+write("- and ^ permutations\n");
+writeln("=========================");
+answer = m - n ^ o;
+writeln(answer);
+answer = (m - n) ^ o;
+writeln(answer);
+answer = m - (n ^ o);
+writeln(answer, "\n");
+
+write("- and | permutations\n");
+writeln("=========================");
+answer = m - n | o;
+writeln(answer);
+answer = (m - n) | o;
+writeln(answer);
+answer = m - (n | o);
+writeln(answer, "\n");
+
+write("- and && permutations\n");
+writeln("=========================");
+answer = m - n && o;
+writeln(answer);
+answer = (m - n) && o;
+writeln(answer);
+answer = m - (n && o);
+writeln(answer, "\n");
+
+write("- and || permutations\n");
+writeln("=========================");
+answer = m - n || o;
+writeln(answer);
+answer = (m - n) || o;
+writeln(answer);
+answer = m - (n || o);
+writeln(answer, "\n");
+
+write("< and * permutations\n");
+writeln("=========================");
+answer = m < n * o;
+writeln(answer);
+answer = (m < n) * o;
+writeln(answer);
+answer = m < (n * o);
+writeln(answer, "\n");
+
+write("< and / permutations\n");
+writeln("=========================");
+answer = m < n / o;
+writeln(answer);
+answer = (m < n) / o;
+writeln(answer);
+answer = m < (n / o);
+writeln(answer, "\n");
+
+write("< and % permutations\n");
+writeln("=========================");
+answer = m < n % o;
+writeln(answer);
+answer = (m < n) % o;
+writeln(answer);
+answer = m < (n % o);
+writeln(answer, "\n");
+
+write("< and + permutations\n");
+writeln("=========================");
+answer = m < n + o;
+writeln(answer);
+answer = (m < n) + o;
+writeln(answer);
+answer = m < (n + o);
+writeln(answer, "\n");
+
+write("< and - permutations\n");
+writeln("=========================");
+answer = m < n - o;
+writeln(answer);
+answer = (m < n) - o;
+writeln(answer);
+answer = m < (n - o);
+writeln(answer, "\n");
+
+write("< and < permutations\n");
+writeln("=========================");
+answer = m < n < o;
+writeln(answer);
+answer = (m < n) < o;
+writeln(answer);
+answer = m < (n < o);
+writeln(answer, "\n");
+
+write("< and <= permutations\n");
+writeln("=========================");
+answer = m < n <= o;
+writeln(answer);
+answer = (m < n) <= o;
+writeln(answer);
+answer = m < (n <= o);
+writeln(answer, "\n");
+
+write("< and > permutations\n");
+writeln("=========================");
+answer = m < n > o;
+writeln(answer);
+answer = (m < n) > o;
+writeln(answer);
+answer = m < (n > o);
+writeln(answer, "\n");
+
+write("< and >= permutations\n");
+writeln("=========================");
+answer = m < n >= o;
+writeln(answer);
+answer = (m < n) >= o;
+writeln(answer);
+answer = m < (n >= o);
+writeln(answer, "\n");
+
+write("< and == permutations\n");
+writeln("=========================");
+answer = m < n == o;
+writeln(answer);
+answer = (m < n) == o;
+writeln(answer);
+answer = m < (n == o);
+writeln(answer, "\n");
+
+write("< and != permutations\n");
+writeln("=========================");
+answer = m < n != o;
+writeln(answer);
+answer = (m < n) != o;
+writeln(answer);
+answer = m < (n != o);
+writeln(answer, "\n");
+
+write("< and & permutations\n");
+writeln("=========================");
+answer = m < n & o;
+writeln(answer);
+answer = (m < n) & o;
+writeln(answer);
+answer = m < (n & o);
+writeln(answer, "\n");
+
+write("< and ^ permutations\n");
+writeln("=========================");
+answer = m < n ^ o;
+writeln(answer);
+answer = (m < n) ^ o;
+writeln(answer);
+answer = m < (n ^ o);
+writeln(answer, "\n");
+
+write("< and | permutations\n");
+writeln("=========================");
+answer = m < n | o;
+writeln(answer);
+answer = (m < n) | o;
+writeln(answer);
+answer = m < (n | o);
+writeln(answer, "\n");
+
+write("< and && permutations\n");
+writeln("=========================");
+answer = m < n && o;
+writeln(answer);
+answer = (m < n) && o;
+writeln(answer);
+answer = m < (n && o);
+writeln(answer, "\n");
+
+write("< and || permutations\n");
+writeln("=========================");
+answer = m < n || o;
+writeln(answer);
+answer = (m < n) || o;
+writeln(answer);
+answer = m < (n || o);
+writeln(answer, "\n");
+
+write("<= and * permutations\n");
+writeln("=========================");
+answer = m <= n * o;
+writeln(answer);
+answer = (m <= n) * o;
+writeln(answer);
+answer = m <= (n * o);
+writeln(answer, "\n");
+
+write("<= and / permutations\n");
+writeln("=========================");
+answer = m <= n / o;
+writeln(answer);
+answer = (m <= n) / o;
+writeln(answer);
+answer = m <= (n / o);
+writeln(answer, "\n");
+
+write("<= and % permutations\n");
+writeln("=========================");
+answer = m <= n % o;
+writeln(answer);
+answer = (m <= n) % o;
+writeln(answer);
+answer = m <= (n % o);
+writeln(answer, "\n");
+
+write("<= and + permutations\n");
+writeln("=========================");
+answer = m <= n + o;
+writeln(answer);
+answer = (m <= n) + o;
+writeln(answer);
+answer = m <= (n + o);
+writeln(answer, "\n");
+
+write("<= and - permutations\n");
+writeln("=========================");
+answer = m <= n - o;
+writeln(answer);
+answer = (m <= n) - o;
+writeln(answer);
+answer = m <= (n - o);
+writeln(answer, "\n");
+
+write("<= and < permutations\n");
+writeln("=========================");
+answer = m <= n < o;
+writeln(answer);
+answer = (m <= n) < o;
+writeln(answer);
+answer = m <= (n < o);
+writeln(answer, "\n");
+
+write("<= and <= permutations\n");
+writeln("=========================");
+answer = m <= n <= o;
+writeln(answer);
+answer = (m <= n) <= o;
+writeln(answer);
+answer = m <= (n <= o);
+writeln(answer, "\n");
+
+write("<= and > permutations\n");
+writeln("=========================");
+answer = m <= n > o;
+writeln(answer);
+answer = (m <= n) > o;
+writeln(answer);
+answer = m <= (n > o);
+writeln(answer, "\n");
+
+write("<= and >= permutations\n");
+writeln("=========================");
+answer = m <= n >= o;
+writeln(answer);
+answer = (m <= n) >= o;
+writeln(answer);
+answer = m <= (n >= o);
+writeln(answer, "\n");
+
+write("<= and == permutations\n");
+writeln("=========================");
+answer = m <= n == o;
+writeln(answer);
+answer = (m <= n) == o;
+writeln(answer);
+answer = m <= (n == o);
+writeln(answer, "\n");
+
+write("<= and != permutations\n");
+writeln("=========================");
+answer = m <= n != o;
+writeln(answer);
+answer = (m <= n) != o;
+writeln(answer);
+answer = m <= (n != o);
+writeln(answer, "\n");
+
+write("<= and & permutations\n");
+writeln("=========================");
+answer = m <= n & o;
+writeln(answer);
+answer = (m <= n) & o;
+writeln(answer);
+answer = m <= (n & o);
+writeln(answer, "\n");
+
+write("<= and ^ permutations\n");
+writeln("=========================");
+answer = m <= n ^ o;
+writeln(answer);
+answer = (m <= n) ^ o;
+writeln(answer);
+answer = m <= (n ^ o);
+writeln(answer, "\n");
+
+write("<= and | permutations\n");
+writeln("=========================");
+answer = m <= n | o;
+writeln(answer);
+answer = (m <= n) | o;
+writeln(answer);
+answer = m <= (n | o);
+writeln(answer, "\n");
+
+write("<= and && permutations\n");
+writeln("=========================");
+answer = m <= n && o;
+writeln(answer);
+answer = (m <= n) && o;
+writeln(answer);
+answer = m <= (n && o);
+writeln(answer, "\n");
+
+write("<= and || permutations\n");
+writeln("=========================");
+answer = m <= n || o;
+writeln(answer);
+answer = (m <= n) || o;
+writeln(answer);
+answer = m <= (n || o);
+writeln(answer, "\n");
+
+write("> and * permutations\n");
+writeln("=========================");
+answer = m > n * o;
+writeln(answer);
+answer = (m > n) * o;
+writeln(answer);
+answer = m > (n * o);
+writeln(answer, "\n");
+
+write("> and / permutations\n");
+writeln("=========================");
+answer = m > n / o;
+writeln(answer);
+answer = (m > n) / o;
+writeln(answer);
+answer = m > (n / o);
+writeln(answer, "\n");
+
+write("> and % permutations\n");
+writeln("=========================");
+answer = m > n % o;
+writeln(answer);
+answer = (m > n) % o;
+writeln(answer);
+answer = m > (n % o);
+writeln(answer, "\n");
+
+write("> and + permutations\n");
+writeln("=========================");
+answer = m > n + o;
+writeln(answer);
+answer = (m > n) + o;
+writeln(answer);
+answer = m > (n + o);
+writeln(answer, "\n");
+
+write("> and - permutations\n");
+writeln("=========================");
+answer = m > n - o;
+writeln(answer);
+answer = (m > n) - o;
+writeln(answer);
+answer = m > (n - o);
+writeln(answer, "\n");
+
+write("> and < permutations\n");
+writeln("=========================");
+answer = m > n < o;
+writeln(answer);
+answer = (m > n) < o;
+writeln(answer);
+answer = m > (n < o);
+writeln(answer, "\n");
+
+write("> and <= permutations\n");
+writeln("=========================");
+answer = m > n <= o;
+writeln(answer);
+answer = (m > n) <= o;
+writeln(answer);
+answer = m > (n <= o);
+writeln(answer, "\n");
+
+write("> and > permutations\n");
+writeln("=========================");
+answer = m > n > o;
+writeln(answer);
+answer = (m > n) > o;
+writeln(answer);
+answer = m > (n > o);
+writeln(answer, "\n");
+
+write("> and >= permutations\n");
+writeln("=========================");
+answer = m > n >= o;
+writeln(answer);
+answer = (m > n) >= o;
+writeln(answer);
+answer = m > (n >= o);
+writeln(answer, "\n");
+
+write("> and == permutations\n");
+writeln("=========================");
+answer = m > n == o;
+writeln(answer);
+answer = (m > n) == o;
+writeln(answer);
+answer = m > (n == o);
+writeln(answer, "\n");
+
+write("> and != permutations\n");
+writeln("=========================");
+answer = m > n != o;
+writeln(answer);
+answer = (m > n) != o;
+writeln(answer);
+answer = m > (n != o);
+writeln(answer, "\n");
+
+write("> and & permutations\n");
+writeln("=========================");
+answer = m > n & o;
+writeln(answer);
+answer = (m > n) & o;
+writeln(answer);
+answer = m > (n & o);
+writeln(answer, "\n");
+
+write("> and ^ permutations\n");
+writeln("=========================");
+answer = m > n ^ o;
+writeln(answer);
+answer = (m > n) ^ o;
+writeln(answer);
+answer = m > (n ^ o);
+writeln(answer, "\n");
+
+write("> and | permutations\n");
+writeln("=========================");
+answer = m > n | o;
+writeln(answer);
+answer = (m > n) | o;
+writeln(answer);
+answer = m > (n | o);
+writeln(answer, "\n");
+
+write("> and && permutations\n");
+writeln("=========================");
+answer = m > n && o;
+writeln(answer);
+answer = (m > n) && o;
+writeln(answer);
+answer = m > (n && o);
+writeln(answer, "\n");
+
+write("> and || permutations\n");
+writeln("=========================");
+answer = m > n || o;
+writeln(answer);
+answer = (m > n) || o;
+writeln(answer);
+answer = m > (n || o);
+writeln(answer, "\n");
+
+write(">= and * permutations\n");
+writeln("=========================");
+answer = m >= n * o;
+writeln(answer);
+answer = (m >= n) * o;
+writeln(answer);
+answer = m >= (n * o);
+writeln(answer, "\n");
+
+write(">= and / permutations\n");
+writeln("=========================");
+answer = m >= n / o;
+writeln(answer);
+answer = (m >= n) / o;
+writeln(answer);
+answer = m >= (n / o);
+writeln(answer, "\n");
+
+write(">= and % permutations\n");
+writeln("=========================");
+answer = m >= n % o;
+writeln(answer);
+answer = (m >= n) % o;
+writeln(answer);
+answer = m >= (n % o);
+writeln(answer, "\n");
+
+write(">= and + permutations\n");
+writeln("=========================");
+answer = m >= n + o;
+writeln(answer);
+answer = (m >= n) + o;
+writeln(answer);
+answer = m >= (n + o);
+writeln(answer, "\n");
+
+write(">= and - permutations\n");
+writeln("=========================");
+answer = m >= n - o;
+writeln(answer);
+answer = (m >= n) - o;
+writeln(answer);
+answer = m >= (n - o);
+writeln(answer, "\n");
+
+write(">= and < permutations\n");
+writeln("=========================");
+answer = m >= n < o;
+writeln(answer);
+answer = (m >= n) < o;
+writeln(answer);
+answer = m >= (n < o);
+writeln(answer, "\n");
+
+write(">= and <= permutations\n");
+writeln("=========================");
+answer = m >= n <= o;
+writeln(answer);
+answer = (m >= n) <= o;
+writeln(answer);
+answer = m >= (n <= o);
+writeln(answer, "\n");
+
+write(">= and > permutations\n");
+writeln("=========================");
+answer = m >= n > o;
+writeln(answer);
+answer = (m >= n) > o;
+writeln(answer);
+answer = m >= (n > o);
+writeln(answer, "\n");
+
+write(">= and >= permutations\n");
+writeln("=========================");
+answer = m >= n >= o;
+writeln(answer);
+answer = (m >= n) >= o;
+writeln(answer);
+answer = m >= (n >= o);
+writeln(answer, "\n");
+
+write(">= and == permutations\n");
+writeln("=========================");
+answer = m >= n == o;
+writeln(answer);
+answer = (m >= n) == o;
+writeln(answer);
+answer = m >= (n == o);
+writeln(answer, "\n");
+
+write(">= and != permutations\n");
+writeln("=========================");
+answer = m >= n != o;
+writeln(answer);
+answer = (m >= n) != o;
+writeln(answer);
+answer = m >= (n != o);
+writeln(answer, "\n");
+
+write(">= and & permutations\n");
+writeln("=========================");
+answer = m >= n & o;
+writeln(answer);
+answer = (m >= n) & o;
+writeln(answer);
+answer = m >= (n & o);
+writeln(answer, "\n");
+
+write(">= and ^ permutations\n");
+writeln("=========================");
+answer = m >= n ^ o;
+writeln(answer);
+answer = (m >= n) ^ o;
+writeln(answer);
+answer = m >= (n ^ o);
+writeln(answer, "\n");
+
+write(">= and | permutations\n");
+writeln("=========================");
+answer = m >= n | o;
+writeln(answer);
+answer = (m >= n) | o;
+writeln(answer);
+answer = m >= (n | o);
+writeln(answer, "\n");
+
+write(">= and && permutations\n");
+writeln("=========================");
+answer = m >= n && o;
+writeln(answer);
+answer = (m >= n) && o;
+writeln(answer);
+answer = m >= (n && o);
+writeln(answer, "\n");
+
+write(">= and || permutations\n");
+writeln("=========================");
+answer = m >= n || o;
+writeln(answer);
+answer = (m >= n) || o;
+writeln(answer);
+answer = m >= (n || o);
+writeln(answer, "\n");
+
+write("== and * permutations\n");
+writeln("=========================");
+answer = m == n * o;
+writeln(answer);
+answer = (m == n) * o;
+writeln(answer);
+answer = m == (n * o);
+writeln(answer, "\n");
+
+write("== and / permutations\n");
+writeln("=========================");
+answer = m == n / o;
+writeln(answer);
+answer = (m == n) / o;
+writeln(answer);
+answer = m == (n / o);
+writeln(answer, "\n");
+
+write("== and % permutations\n");
+writeln("=========================");
+answer = m == n % o;
+writeln(answer);
+answer = (m == n) % o;
+writeln(answer);
+answer = m == (n % o);
+writeln(answer, "\n");
+
+write("== and + permutations\n");
+writeln("=========================");
+answer = m == n + o;
+writeln(answer);
+answer = (m == n) + o;
+writeln(answer);
+answer = m == (n + o);
+writeln(answer, "\n");
+
+write("== and - permutations\n");
+writeln("=========================");
+answer = m == n - o;
+writeln(answer);
+answer = (m == n) - o;
+writeln(answer);
+answer = m == (n - o);
+writeln(answer, "\n");
+
+write("== and < permutations\n");
+writeln("=========================");
+answer = m == n < o;
+writeln(answer);
+answer = (m == n) < o;
+writeln(answer);
+answer = m == (n < o);
+writeln(answer, "\n");
+
+write("== and <= permutations\n");
+writeln("=========================");
+answer = m == n <= o;
+writeln(answer);
+answer = (m == n) <= o;
+writeln(answer);
+answer = m == (n <= o);
+writeln(answer, "\n");
+
+write("== and > permutations\n");
+writeln("=========================");
+answer = m == n > o;
+writeln(answer);
+answer = (m == n) > o;
+writeln(answer);
+answer = m == (n > o);
+writeln(answer, "\n");
+
+write("== and >= permutations\n");
+writeln("=========================");
+answer = m == n >= o;
+writeln(answer);
+answer = (m == n) >= o;
+writeln(answer);
+answer = m == (n >= o);
+writeln(answer, "\n");
+
+write("== and == permutations\n");
+writeln("=========================");
+answer = m == n == o;
+writeln(answer);
+answer = (m == n) == o;
+writeln(answer);
+answer = m == (n == o);
+writeln(answer, "\n");
+
+write("== and != permutations\n");
+writeln("=========================");
+answer = m == n != o;
+writeln(answer);
+answer = (m == n) != o;
+writeln(answer);
+answer = m == (n != o);
+writeln(answer, "\n");
+
+write("== and & permutations\n");
+writeln("=========================");
+answer = m == n & o;
+writeln(answer);
+answer = (m == n) & o;
+writeln(answer);
+answer = m == (n & o);
+writeln(answer, "\n");
+
+write("== and ^ permutations\n");
+writeln("=========================");
+answer = m == n ^ o;
+writeln(answer);
+answer = (m == n) ^ o;
+writeln(answer);
+answer = m == (n ^ o);
+writeln(answer, "\n");
+
+write("== and | permutations\n");
+writeln("=========================");
+answer = m == n | o;
+writeln(answer);
+answer = (m == n) | o;
+writeln(answer);
+answer = m == (n | o);
+writeln(answer, "\n");
+
+write("== and && permutations\n");
+writeln("=========================");
+answer = m == n && o;
+writeln(answer);
+answer = (m == n) && o;
+writeln(answer);
+answer = m == (n && o);
+writeln(answer, "\n");
+
+write("== and || permutations\n");
+writeln("=========================");
+answer = m == n || o;
+writeln(answer);
+answer = (m == n) || o;
+writeln(answer);
+answer = m == (n || o);
+writeln(answer, "\n");
+
+write("!= and * permutations\n");
+writeln("=========================");
+answer = m != n * o;
+writeln(answer);
+answer = (m != n) * o;
+writeln(answer);
+answer = m != (n * o);
+writeln(answer, "\n");
+
+write("!= and / permutations\n");
+writeln("=========================");
+answer = m != n / o;
+writeln(answer);
+answer = (m != n) / o;
+writeln(answer);
+answer = m != (n / o);
+writeln(answer, "\n");
+
+write("!= and % permutations\n");
+writeln("=========================");
+answer = m != n % o;
+writeln(answer);
+answer = (m != n) % o;
+writeln(answer);
+answer = m != (n % o);
+writeln(answer, "\n");
+
+write("!= and + permutations\n");
+writeln("=========================");
+answer = m != n + o;
+writeln(answer);
+answer = (m != n) + o;
+writeln(answer);
+answer = m != (n + o);
+writeln(answer, "\n");
+
+write("!= and - permutations\n");
+writeln("=========================");
+answer = m != n - o;
+writeln(answer);
+answer = (m != n) - o;
+writeln(answer);
+answer = m != (n - o);
+writeln(answer, "\n");
+
+write("!= and < permutations\n");
+writeln("=========================");
+answer = m != n < o;
+writeln(answer);
+answer = (m != n) < o;
+writeln(answer);
+answer = m != (n < o);
+writeln(answer, "\n");
+
+write("!= and <= permutations\n");
+writeln("=========================");
+answer = m != n <= o;
+writeln(answer);
+answer = (m != n) <= o;
+writeln(answer);
+answer = m != (n <= o);
+writeln(answer, "\n");
+
+write("!= and > permutations\n");
+writeln("=========================");
+answer = m != n > o;
+writeln(answer);
+answer = (m != n) > o;
+writeln(answer);
+answer = m != (n > o);
+writeln(answer, "\n");
+
+write("!= and >= permutations\n");
+writeln("=========================");
+answer = m != n >= o;
+writeln(answer);
+answer = (m != n) >= o;
+writeln(answer);
+answer = m != (n >= o);
+writeln(answer, "\n");
+
+write("!= and == permutations\n");
+writeln("=========================");
+answer = m != n == o;
+writeln(answer);
+answer = (m != n) == o;
+writeln(answer);
+answer = m != (n == o);
+writeln(answer, "\n");
+
+write("!= and != permutations\n");
+writeln("=========================");
+answer = m != n != o;
+writeln(answer);
+answer = (m != n) != o;
+writeln(answer);
+answer = m != (n != o);
+writeln(answer, "\n");
+
+write("!= and & permutations\n");
+writeln("=========================");
+answer = m != n & o;
+writeln(answer);
+answer = (m != n) & o;
+writeln(answer);
+answer = m != (n & o);
+writeln(answer, "\n");
+
+write("!= and ^ permutations\n");
+writeln("=========================");
+answer = m != n ^ o;
+writeln(answer);
+answer = (m != n) ^ o;
+writeln(answer);
+answer = m != (n ^ o);
+writeln(answer, "\n");
+
+write("!= and | permutations\n");
+writeln("=========================");
+answer = m != n | o;
+writeln(answer);
+answer = (m != n) | o;
+writeln(answer);
+answer = m != (n | o);
+writeln(answer, "\n");
+
+write("!= and && permutations\n");
+writeln("=========================");
+answer = m != n && o;
+writeln(answer);
+answer = (m != n) && o;
+writeln(answer);
+answer = m != (n && o);
+writeln(answer, "\n");
+
+write("!= and || permutations\n");
+writeln("=========================");
+answer = m != n || o;
+writeln(answer);
+answer = (m != n) || o;
+writeln(answer);
+answer = m != (n || o);
+writeln(answer, "\n");
+
+write("& and * permutations\n");
+writeln("=========================");
+answer = m & n * o;
+writeln(answer);
+answer = (m & n) * o;
+writeln(answer);
+answer = m & (n * o);
+writeln(answer, "\n");
+
+write("& and / permutations\n");
+writeln("=========================");
+answer = m & n / o;
+writeln(answer);
+answer = (m & n) / o;
+writeln(answer);
+answer = m & (n / o);
+writeln(answer, "\n");
+
+write("& and % permutations\n");
+writeln("=========================");
+answer = m & n % o;
+writeln(answer);
+answer = (m & n) % o;
+writeln(answer);
+answer = m & (n % o);
+writeln(answer, "\n");
+
+write("& and + permutations\n");
+writeln("=========================");
+answer = m & n + o;
+writeln(answer);
+answer = (m & n) + o;
+writeln(answer);
+answer = m & (n + o);
+writeln(answer, "\n");
+
+write("& and - permutations\n");
+writeln("=========================");
+answer = m & n - o;
+writeln(answer);
+answer = (m & n) - o;
+writeln(answer);
+answer = m & (n - o);
+writeln(answer, "\n");
+
+write("& and < permutations\n");
+writeln("=========================");
+answer = m & n < o;
+writeln(answer);
+answer = (m & n) < o;
+writeln(answer);
+answer = m & (n < o);
+writeln(answer, "\n");
+
+write("& and <= permutations\n");
+writeln("=========================");
+answer = m & n <= o;
+writeln(answer);
+answer = (m & n) <= o;
+writeln(answer);
+answer = m & (n <= o);
+writeln(answer, "\n");
+
+write("& and > permutations\n");
+writeln("=========================");
+answer = m & n > o;
+writeln(answer);
+answer = (m & n) > o;
+writeln(answer);
+answer = m & (n > o);
+writeln(answer, "\n");
+
+write("& and >= permutations\n");
+writeln("=========================");
+answer = m & n >= o;
+writeln(answer);
+answer = (m & n) >= o;
+writeln(answer);
+answer = m & (n >= o);
+writeln(answer, "\n");
+
+write("& and == permutations\n");
+writeln("=========================");
+answer = m & n == o;
+writeln(answer);
+answer = (m & n) == o;
+writeln(answer);
+answer = m & (n == o);
+writeln(answer, "\n");
+
+write("& and != permutations\n");
+writeln("=========================");
+answer = m & n != o;
+writeln(answer);
+answer = (m & n) != o;
+writeln(answer);
+answer = m & (n != o);
+writeln(answer, "\n");
+
+write("& and & permutations\n");
+writeln("=========================");
+answer = m & n & o;
+writeln(answer);
+answer = (m & n) & o;
+writeln(answer);
+answer = m & (n & o);
+writeln(answer, "\n");
+
+write("& and ^ permutations\n");
+writeln("=========================");
+answer = m & n ^ o;
+writeln(answer);
+answer = (m & n) ^ o;
+writeln(answer);
+answer = m & (n ^ o);
+writeln(answer, "\n");
+
+write("& and | permutations\n");
+writeln("=========================");
+answer = m & n | o;
+writeln(answer);
+answer = (m & n) | o;
+writeln(answer);
+answer = m & (n | o);
+writeln(answer, "\n");
+
+write("& and && permutations\n");
+writeln("=========================");
+answer = m & n && o;
+writeln(answer);
+answer = (m & n) && o;
+writeln(answer);
+answer = m & (n && o);
+writeln(answer, "\n");
+
+write("& and || permutations\n");
+writeln("=========================");
+answer = m & n || o;
+writeln(answer);
+answer = (m & n) || o;
+writeln(answer);
+answer = m & (n || o);
+writeln(answer, "\n");
+
+write("^ and * permutations\n");
+writeln("=========================");
+answer = m ^ n * o;
+writeln(answer);
+answer = (m ^ n) * o;
+writeln(answer);
+answer = m ^ (n * o);
+writeln(answer, "\n");
+
+write("^ and / permutations\n");
+writeln("=========================");
+answer = m ^ n / o;
+writeln(answer);
+answer = (m ^ n) / o;
+writeln(answer);
+answer = m ^ (n / o);
+writeln(answer, "\n");
+
+write("^ and % permutations\n");
+writeln("=========================");
+answer = m ^ n % o;
+writeln(answer);
+answer = (m ^ n) % o;
+writeln(answer);
+answer = m ^ (n % o);
+writeln(answer, "\n");
+
+write("^ and + permutations\n");
+writeln("=========================");
+answer = m ^ n + o;
+writeln(answer);
+answer = (m ^ n) + o;
+writeln(answer);
+answer = m ^ (n + o);
+writeln(answer, "\n");
+
+write("^ and - permutations\n");
+writeln("=========================");
+answer = m ^ n - o;
+writeln(answer);
+answer = (m ^ n) - o;
+writeln(answer);
+answer = m ^ (n - o);
+writeln(answer, "\n");
+
+write("^ and < permutations\n");
+writeln("=========================");
+answer = m ^ n < o;
+writeln(answer);
+answer = (m ^ n) < o;
+writeln(answer);
+answer = m ^ (n < o);
+writeln(answer, "\n");
+
+write("^ and <= permutations\n");
+writeln("=========================");
+answer = m ^ n <= o;
+writeln(answer);
+answer = (m ^ n) <= o;
+writeln(answer);
+answer = m ^ (n <= o);
+writeln(answer, "\n");
+
+write("^ and > permutations\n");
+writeln("=========================");
+answer = m ^ n > o;
+writeln(answer);
+answer = (m ^ n) > o;
+writeln(answer);
+answer = m ^ (n > o);
+writeln(answer, "\n");
+
+write("^ and >= permutations\n");
+writeln("=========================");
+answer = m ^ n >= o;
+writeln(answer);
+answer = (m ^ n) >= o;
+writeln(answer);
+answer = m ^ (n >= o);
+writeln(answer, "\n");
+
+write("^ and == permutations\n");
+writeln("=========================");
+answer = m ^ n == o;
+writeln(answer);
+answer = (m ^ n) == o;
+writeln(answer);
+answer = m ^ (n == o);
+writeln(answer, "\n");
+
+write("^ and != permutations\n");
+writeln("=========================");
+answer = m ^ n != o;
+writeln(answer);
+answer = (m ^ n) != o;
+writeln(answer);
+answer = m ^ (n != o);
+writeln(answer, "\n");
+
+write("^ and & permutations\n");
+writeln("=========================");
+answer = m ^ n & o;
+writeln(answer);
+answer = (m ^ n) & o;
+writeln(answer);
+answer = m ^ (n & o);
+writeln(answer, "\n");
+
+write("^ and ^ permutations\n");
+writeln("=========================");
+answer = m ^ n ^ o;
+writeln(answer);
+answer = (m ^ n) ^ o;
+writeln(answer);
+answer = m ^ (n ^ o);
+writeln(answer, "\n");
+
+write("^ and | permutations\n");
+writeln("=========================");
+answer = m ^ n | o;
+writeln(answer);
+answer = (m ^ n) | o;
+writeln(answer);
+answer = m ^ (n | o);
+writeln(answer, "\n");
+
+write("^ and && permutations\n");
+writeln("=========================");
+answer = m ^ n && o;
+writeln(answer);
+answer = (m ^ n) && o;
+writeln(answer);
+answer = m ^ (n && o);
+writeln(answer, "\n");
+
+write("^ and || permutations\n");
+writeln("=========================");
+answer = m ^ n || o;
+writeln(answer);
+answer = (m ^ n) || o;
+writeln(answer);
+answer = m ^ (n || o);
+writeln(answer, "\n");
+
+write("| and * permutations\n");
+writeln("=========================");
+answer = m | n * o;
+writeln(answer);
+answer = (m | n) * o;
+writeln(answer);
+answer = m | (n * o);
+writeln(answer, "\n");
+
+write("| and / permutations\n");
+writeln("=========================");
+answer = m | n / o;
+writeln(answer);
+answer = (m | n) / o;
+writeln(answer);
+answer = m | (n / o);
+writeln(answer, "\n");
+
+write("| and % permutations\n");
+writeln("=========================");
+answer = m | n % o;
+writeln(answer);
+answer = (m | n) % o;
+writeln(answer);
+answer = m | (n % o);
+writeln(answer, "\n");
+
+write("| and + permutations\n");
+writeln("=========================");
+answer = m | n + o;
+writeln(answer);
+answer = (m | n) + o;
+writeln(answer);
+answer = m | (n + o);
+writeln(answer, "\n");
+
+write("| and - permutations\n");
+writeln("=========================");
+answer = m | n - o;
+writeln(answer);
+answer = (m | n) - o;
+writeln(answer);
+answer = m | (n - o);
+writeln(answer, "\n");
+
+write("| and < permutations\n");
+writeln("=========================");
+answer = m | n < o;
+writeln(answer);
+answer = (m | n) < o;
+writeln(answer);
+answer = m | (n < o);
+writeln(answer, "\n");
+
+write("| and <= permutations\n");
+writeln("=========================");
+answer = m | n <= o;
+writeln(answer);
+answer = (m | n) <= o;
+writeln(answer);
+answer = m | (n <= o);
+writeln(answer, "\n");
+
+write("| and > permutations\n");
+writeln("=========================");
+answer = m | n > o;
+writeln(answer);
+answer = (m | n) > o;
+writeln(answer);
+answer = m | (n > o);
+writeln(answer, "\n");
+
+write("| and >= permutations\n");
+writeln("=========================");
+answer = m | n >= o;
+writeln(answer);
+answer = (m | n) >= o;
+writeln(answer);
+answer = m | (n >= o);
+writeln(answer, "\n");
+
+write("| and == permutations\n");
+writeln("=========================");
+answer = m | n == o;
+writeln(answer);
+answer = (m | n) == o;
+writeln(answer);
+answer = m | (n == o);
+writeln(answer, "\n");
+
+write("| and != permutations\n");
+writeln("=========================");
+answer = m | n != o;
+writeln(answer);
+answer = (m | n) != o;
+writeln(answer);
+answer = m | (n != o);
+writeln(answer, "\n");
+
+write("| and & permutations\n");
+writeln("=========================");
+answer = m | n & o;
+writeln(answer);
+answer = (m | n) & o;
+writeln(answer);
+answer = m | (n & o);
+writeln(answer, "\n");
+
+write("| and ^ permutations\n");
+writeln("=========================");
+answer = m | n ^ o;
+writeln(answer);
+answer = (m | n) ^ o;
+writeln(answer);
+answer = m | (n ^ o);
+writeln(answer, "\n");
+
+write("| and | permutations\n");
+writeln("=========================");
+answer = m | n | o;
+writeln(answer);
+answer = (m | n) | o;
+writeln(answer);
+answer = m | (n | o);
+writeln(answer, "\n");
+
+write("| and && permutations\n");
+writeln("=========================");
+answer = m | n && o;
+writeln(answer);
+answer = (m | n) && o;
+writeln(answer);
+answer = m | (n && o);
+writeln(answer, "\n");
+
+write("| and || permutations\n");
+writeln("=========================");
+answer = m | n || o;
+writeln(answer);
+answer = (m | n) || o;
+writeln(answer);
+answer = m | (n || o);
+writeln(answer, "\n");
+
+write("&& and * permutations\n");
+writeln("=========================");
+answer = m && n * o;
+writeln(answer);
+answer = (m && n) * o;
+writeln(answer);
+answer = m && (n * o);
+writeln(answer, "\n");
+
+write("&& and / permutations\n");
+writeln("=========================");
+answer = m && n / o;
+writeln(answer);
+answer = (m && n) / o;
+writeln(answer);
+answer = m && (n / o);
+writeln(answer, "\n");
+
+write("&& and % permutations\n");
+writeln("=========================");
+answer = m && n % o;
+writeln(answer);
+answer = (m && n) % o;
+writeln(answer);
+answer = m && (n % o);
+writeln(answer, "\n");
+
+write("&& and + permutations\n");
+writeln("=========================");
+answer = m && n + o;
+writeln(answer);
+answer = (m && n) + o;
+writeln(answer);
+answer = m && (n + o);
+writeln(answer, "\n");
+
+write("&& and - permutations\n");
+writeln("=========================");
+answer = m && n - o;
+writeln(answer);
+answer = (m && n) - o;
+writeln(answer);
+answer = m && (n - o);
+writeln(answer, "\n");
+
+write("&& and < permutations\n");
+writeln("=========================");
+answer = m && n < o;
+writeln(answer);
+answer = (m && n) < o;
+writeln(answer);
+answer = m && (n < o);
+writeln(answer, "\n");
+
+write("&& and <= permutations\n");
+writeln("=========================");
+answer = m && n <= o;
+writeln(answer);
+answer = (m && n) <= o;
+writeln(answer);
+answer = m && (n <= o);
+writeln(answer, "\n");
+
+write("&& and > permutations\n");
+writeln("=========================");
+answer = m && n > o;
+writeln(answer);
+answer = (m && n) > o;
+writeln(answer);
+answer = m && (n > o);
+writeln(answer, "\n");
+
+write("&& and >= permutations\n");
+writeln("=========================");
+answer = m && n >= o;
+writeln(answer);
+answer = (m && n) >= o;
+writeln(answer);
+answer = m && (n >= o);
+writeln(answer, "\n");
+
+write("&& and == permutations\n");
+writeln("=========================");
+answer = m && n == o;
+writeln(answer);
+answer = (m && n) == o;
+writeln(answer);
+answer = m && (n == o);
+writeln(answer, "\n");
+
+write("&& and != permutations\n");
+writeln("=========================");
+answer = m && n != o;
+writeln(answer);
+answer = (m && n) != o;
+writeln(answer);
+answer = m && (n != o);
+writeln(answer, "\n");
+
+write("&& and & permutations\n");
+writeln("=========================");
+answer = m && n & o;
+writeln(answer);
+answer = (m && n) & o;
+writeln(answer);
+answer = m && (n & o);
+writeln(answer, "\n");
+
+write("&& and ^ permutations\n");
+writeln("=========================");
+answer = m && n ^ o;
+writeln(answer);
+answer = (m && n) ^ o;
+writeln(answer);
+answer = m && (n ^ o);
+writeln(answer, "\n");
+
+write("&& and | permutations\n");
+writeln("=========================");
+answer = m && n | o;
+writeln(answer);
+answer = (m && n) | o;
+writeln(answer);
+answer = m && (n | o);
+writeln(answer, "\n");
+
+write("&& and && permutations\n");
+writeln("=========================");
+answer = m && n && o;
+writeln(answer);
+answer = (m && n) && o;
+writeln(answer);
+answer = m && (n && o);
+writeln(answer, "\n");
+
+write("&& and || permutations\n");
+writeln("=========================");
+answer = m && n || o;
+writeln(answer);
+answer = (m && n) || o;
+writeln(answer);
+answer = m && (n || o);
+writeln(answer, "\n");
+
+write("|| and * permutations\n");
+writeln("=========================");
+answer = m || n * o;
+writeln(answer);
+answer = (m || n) * o;
+writeln(answer);
+answer = m || (n * o);
+writeln(answer, "\n");
+
+write("|| and / permutations\n");
+writeln("=========================");
+answer = m || n / o;
+writeln(answer);
+answer = (m || n) / o;
+writeln(answer);
+answer = m || (n / o);
+writeln(answer, "\n");
+
+write("|| and % permutations\n");
+writeln("=========================");
+answer = m || n % o;
+writeln(answer);
+answer = (m || n) % o;
+writeln(answer);
+answer = m || (n % o);
+writeln(answer, "\n");
+
+write("|| and + permutations\n");
+writeln("=========================");
+answer = m || n + o;
+writeln(answer);
+answer = (m || n) + o;
+writeln(answer);
+answer = m || (n + o);
+writeln(answer, "\n");
+
+write("|| and - permutations\n");
+writeln("=========================");
+answer = m || n - o;
+writeln(answer);
+answer = (m || n) - o;
+writeln(answer);
+answer = m || (n - o);
+writeln(answer, "\n");
+
+write("|| and < permutations\n");
+writeln("=========================");
+answer = m || n < o;
+writeln(answer);
+answer = (m || n) < o;
+writeln(answer);
+answer = m || (n < o);
+writeln(answer, "\n");
+
+write("|| and <= permutations\n");
+writeln("=========================");
+answer = m || n <= o;
+writeln(answer);
+answer = (m || n) <= o;
+writeln(answer);
+answer = m || (n <= o);
+writeln(answer, "\n");
+
+write("|| and > permutations\n");
+writeln("=========================");
+answer = m || n > o;
+writeln(answer);
+answer = (m || n) > o;
+writeln(answer);
+answer = m || (n > o);
+writeln(answer, "\n");
+
+write("|| and >= permutations\n");
+writeln("=========================");
+answer = m || n >= o;
+writeln(answer);
+answer = (m || n) >= o;
+writeln(answer);
+answer = m || (n >= o);
+writeln(answer, "\n");
+
+write("|| and == permutations\n");
+writeln("=========================");
+answer = m || n == o;
+writeln(answer);
+answer = (m || n) == o;
+writeln(answer);
+answer = m || (n == o);
+writeln(answer, "\n");
+
+write("|| and != permutations\n");
+writeln("=========================");
+answer = m || n != o;
+writeln(answer);
+answer = (m || n) != o;
+writeln(answer);
+answer = m || (n != o);
+writeln(answer, "\n");
+
+write("|| and & permutations\n");
+writeln("=========================");
+answer = m || n & o;
+writeln(answer);
+answer = (m || n) & o;
+writeln(answer);
+answer = m || (n & o);
+writeln(answer, "\n");
+
+write("|| and ^ permutations\n");
+writeln("=========================");
+answer = m || n ^ o;
+writeln(answer);
+answer = (m || n) ^ o;
+writeln(answer);
+answer = m || (n ^ o);
+writeln(answer, "\n");
+
+write("|| and | permutations\n");
+writeln("=========================");
+answer = m || n | o;
+writeln(answer);
+answer = (m || n) | o;
+writeln(answer);
+answer = m || (n | o);
+writeln(answer, "\n");
+
+write("|| and && permutations\n");
+writeln("=========================");
+answer = m || n && o;
+writeln(answer);
+answer = (m || n) && o;
+writeln(answer);
+answer = m || (n && o);
+writeln(answer, "\n");
+
+write("|| and || permutations\n");
+writeln("=========================");
+answer = m || n || o;
+writeln(answer);
+answer = (m || n) || o;
+writeln(answer);
+answer = m || (n || o);
+writeln(answer, "\n");
 
