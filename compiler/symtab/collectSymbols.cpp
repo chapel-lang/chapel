@@ -1,4 +1,3 @@
-#include <typeinfo>
 #include "collectSymbols.h"
 #include "symbol.h"
 

@@ -10,11 +10,4 @@ class CollectFunctions : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
-void collect_functions(Vec<FnSymbol*>* functions);
-
-// USAGE:
-//   #include "../symtab/collectFunctions.h"
-//   Vec<FnSymbol*> all_functions;
-//   collect_functions(&all_functions);
-
 #endif

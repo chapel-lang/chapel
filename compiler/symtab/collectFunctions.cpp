@@ -1,4 +1,3 @@
-#include <typeinfo>
 #include "collectFunctions.h"
 #include "symbol.h"
 
