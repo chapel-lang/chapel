@@ -128,7 +128,7 @@ void Expr::replace(Expr* &old_expr, Expr* new_expr) {
       etmp->parent = old_expr->parent;
     }
     else {
-      INT_FATAL(old_expr, "Non-expression in expression list encountered in Expr::replace");
+      INT_FATAL(old_expr, "Non-Expr in Expr list in Expr::replace");
     }
   }
 

@@ -21,19 +21,16 @@ PassInfo passlist[] = {
 
   // passes to normalize the basic AST
   RUN(Cleanup, ""),
-  RUN(Fixup, ""),        // BLC: why is this necessary?  SJD: Won't be
-                         // when fixup is run on replaced and inserted
-                         // statements, expressions, etc.
 
   // passes to run analysis
   RUN(Fixup, "verify"),  // this is a sanity check
   RUN(RunAnalysis, ""),
+  RUN(Fixup, "verify"),  // this is a sanity check
 
   // passes to rewrite AST after analysis
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
   RUN(MethodsToFunctions, ""),
-  RUN(Fixup, ""),  // SJD: Need this until replace is calling it...
   //  RUN(ProcessParameters, ""),
 
   // passes to generate code and compile

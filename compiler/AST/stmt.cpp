@@ -120,7 +120,7 @@ void Stmt::replace(Stmt* &old_stmt, Stmt* new_stmt) {
       stmp->parentSymbol = old_stmt->parentSymbol;
     }
     else {
-      INT_FATAL(old_stmt, "Non-statement in statement list encountered in Stmt::replace");
+      INT_FATAL(old_stmt, "Non-Stmt in Stmt list in Stmt::replace");
     }
   }
 
@@ -452,7 +452,7 @@ FnDefStmt* FnDefStmt::clone(void) {
   if (FnDefStmt* this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
     this_copy->fn->cname =
       glomstrings(3, this_copy->fn->cname, "_clone_", intstring(uid++));
-    this->preinsert(this_copy);
+    this->insertBefore(this_copy);
   }
   else {
     INT_FATAL(this, "Unreachable statement in FnDefStmt::clone reached");

@@ -111,16 +111,16 @@ void ProcessParameters::postProcessExpr(Expr* &expr) {
 
 	/* so instead we do this */
 	if (nextStmt && !nextStmt->isNull()) {
-	  nextStmt->preinsert(blkStmt);
+	  nextStmt->insertBefore(blkStmt);
 	} else if (prevStmt && !prevStmt->isNull()) {
-	  prevStmt->postinsert(blkStmt);
+	  prevStmt->insertAfter(blkStmt);
 	} else {
 	  INT_FATAL("Brad really needs to implement statement lists as "
 		    "a template class");
 	}
 
 	/*
-	expr->stmt->preinsert(blkStmt);
+	expr->stmt->insertBefore(blkStmt);
 	Stmt* newFnCallStmt = expr->stmt;
 	newFnCallStmt->extract();
 	Expr::replace(expr, newFnCall);

@@ -368,7 +368,7 @@ build_types(Vec<BaseAST *> &syms) {
 	// ClassType::definition handled below in build_classes()
 	ClassType *tt = dynamic_cast<ClassType*>(t);
 	t->asymbol->type_kind = Type_RECORD;
-	if (tt->value)
+	if (tt->value || tt->union_value)
 	  t->asymbol->is_value_class = 1;
 	tt->name->asymbol = (ASymbol*)tt->asymbol->type_sym;
 	if (tt->parentClass)
@@ -615,7 +615,9 @@ gen_vardef(BaseAST *a) {
   Sym *s = var->asymbol;
   def->ainfo->sym = s;
   if (var->type && var->type != dtUnknown) {
-    if (var->type->astType != TYPE_CLASS || dynamic_cast<ClassType*>(var->type)->value) {
+    if (var->type->astType != TYPE_CLASS ||
+	dynamic_cast<ClassType*>(var->type)->union_value ||
+	dynamic_cast<ClassType*>(var->type)->value) {
       s->type = unalias_type(var->type->asymbol);
       s->is_var = 1;
     } else
