@@ -33,7 +33,18 @@
 * remove hack that assumes domains of unknown rank are 1 (stmt.cpp
   and type.cpp)
 
-Shannon:
+* remove reduce/reduce and scan/reduce conflicts
+
+* should do export control of variables, types, all symbols
+
+* organize and lump files better
+
+
+
+SHANNON:
 * implement codegen for Conditional
 * fix type_info() for BinOp
 * implement isComputable() and intVal() better for Expr hierarchy
+* operator precedence
+* add read routines for enumerated types?
+

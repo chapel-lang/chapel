@@ -1,4 +1,6 @@
+#include "codegen.h"
 #include "expr.h"
+#include "misc.h"
 #include "symbol.h"
 #include "type.h"
 
@@ -60,6 +62,22 @@ void Type::codegen(FILE* outfile) {
 }
 
 
+void Type::codegenDef(FILE* outfile) {
+  INT_FATAL(this, "Don't know how to codegenDef() for all types yet");
+}
+
+
+void Type::codegenIORoutines(FILE* outfile) {
+  INT_FATAL(this, "Don't know how to codegenIORoutines() for all types yet");
+}
+
+
+void Type::codegenDefaultFormat(FILE* outfile) {
+  fprintf(outfile, "_default_format");
+  this->codegen(outfile);
+}
+
+
 NullType::NullType(void) {
 }
 
@@ -68,7 +86,7 @@ bool NullType::isNull(void) {
 }
 
 
-EnumType::EnumType(Symbol* init_valList) :
+EnumType::EnumType(EnumSymbol* init_valList) :
   valList(init_valList)
 {
   Symbol* val = valList;
@@ -84,6 +102,73 @@ void EnumType::printDef(FILE* outfile) {
   name->print(outfile);
   printf(" = ");
   valList->printList(outfile, " | ");
+}
+
+
+void EnumType::codegen(FILE* outfile) {
+  name->codegen(outfile);
+}
+
+
+void EnumType::codegenDef(FILE* outfile) {
+  EnumSymbol* enumSym;
+
+  fprintf(outfile, "typedef enum {\n");
+  enumSym = valList;
+  while (enumSym != NULL) {
+    enumSym->printDef(outfile);
+
+    enumSym = nextLink(EnumSymbol, enumSym);
+
+    if (enumSym) {
+      fprintf(outfile, ",");
+    }
+    fprintf(outfile, "\n");
+  }
+  fprintf(outfile, "} ");
+  name->codegen(outfile);
+  fprintf(outfile, ";\n\n");
+}
+
+
+static void codegenIOPrototype(FILE* outfile, Symbol* name) {
+  fprintf(outfile, "void _write");
+  name->codegen(outfile);
+  fprintf(outfile, "(FILE* outfile, char* format, ");
+  name->codegen(outfile);
+  fprintf(outfile, " val)");
+}
+
+
+void EnumType::codegenIORoutines(FILE* outfile) {
+  EnumSymbol* enumSym;
+
+  codegenIOPrototype(intheadfile, name);
+  fprintf(intheadfile, ";\n\n");
+
+  codegenIOPrototype(outfile, name);
+  fprintf(outfile, " {\n");
+
+  fprintf(outfile, "switch (val) {\n");
+  enumSym = valList;
+  while (enumSym != NULL) {
+    fprintf(outfile, "case ");
+    enumSym->codegen(outfile);
+    fprintf(outfile, ":\n");
+    fprintf(outfile, "fprintf(outfile, format, \"");
+    enumSym->codegen(outfile);
+    fprintf(outfile, "\");\n");
+    fprintf(outfile, "break;\n");
+
+    enumSym = nextLink(EnumSymbol, enumSym);
+  }
+  fprintf(outfile, "}\n");
+  fprintf(outfile, "}\n\n");
+}
+
+
+void EnumType::codegenDefaultFormat(FILE* outfile) {
+  fprintf(outfile, "_default_format_enum");
 }
 
 

@@ -264,6 +264,7 @@ class CastExpr : public ParenOpExpr {
   CastExpr(Type* init_castType, Expr* init_argList);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 

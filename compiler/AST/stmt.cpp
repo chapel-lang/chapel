@@ -160,7 +160,15 @@ void TypeDefStmt::print(FILE* outfile) {
 }
 
 void TypeDefStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "This is TypeDefStmt's codegen method.\n");
+  FILE* deffile = outfile;
+  /* if in file scope, hoist to internal header so that it will be
+     defined before global variables at file scope. */  
+  if (type->name->level == 1) { 
+    deffile = intheadfile;
+  }
+  type->codegenDef(deffile);
+
+  type->codegenIORoutines(outfile);
 }
 
 

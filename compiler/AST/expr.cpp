@@ -386,6 +386,15 @@ void CastExpr::print(FILE* outfile) {
 }
 
 
+void CastExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "(");
+  castType->print(outfile);
+  fprintf(outfile, ")(");
+  argList->printList(outfile);
+  fprintf(outfile, ")");
+}
+
+
 FnCall::FnCall(Expr* init_base, Expr* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {}
@@ -405,8 +414,7 @@ void WriteCall::codegen(FILE* outfile) {
     argdt->codegen(outfile);
     fprintf(outfile, "(");
     fprintf(outfile, "stdout, ");
-    fprintf(outfile, "_default_format");
-    argdt->codegen(outfile);
+    argdt->codegenDefaultFormat(outfile);
     fprintf(outfile, ", ");
     argList->codegen(outfile);
     fprintf(outfile, ");\n");

@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 class Symbol;
+class EnumSymbol;
 class Expr;
 
 class Type : public ILink {
@@ -17,6 +18,9 @@ class Type : public ILink {
   virtual void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
   virtual void codegen(FILE* outfile);
+  virtual void codegenDef(FILE* outfile);
+  virtual void codegenIORoutines(FILE* outfile);
+  virtual void codegenDefaultFormat(FILE* outfile);
 };
 
 
@@ -30,11 +34,15 @@ class NullType : public Type {
 
 class EnumType : public Type {
  public:
-  Symbol* valList;
+  EnumSymbol* valList;
 
-  EnumType(Symbol* init_valList);
+  EnumType(EnumSymbol* init_valList);
 
   void printDef(FILE* outfile);
+  void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
+  void codegenIORoutines(FILE* outfile);
+  void codegenDefaultFormat(FILE* outfile);
 };
 
 
