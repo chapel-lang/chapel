@@ -23707,3 +23707,23 @@ Removed files:
 	                                         test_seq8.chpl 
 	                                         test_seq8.good 
 
+---------------------------------------------------------------------------
+
+04/04/05 15:59:19 -- deitz
+
+Log message:
+	Cleaned up sequence code but didn't get anything working yet.  I'm
+	having a phase-ordering problem wanting to treat the base sequence
+	class as a with-inclusion even though I want to do it later than
+	with-inclusion is done.
+	
+	Moved ExpandSeqExprAssignments up before analysis so analysis should
+	never see sequence literals, I think.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
