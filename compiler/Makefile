@@ -195,13 +195,14 @@ install:
 PLATFORM_DIR = $(PLATFORM)/.timestamp
 
 $(PLATFORM_DIR):
-	mkdir $(PLATFORM) > /dev/null 2>&1 && date > $(PLATFORM_DIR) || echo ""
+	-mkdir $(PLATFORM) > /dev/null 2>&1
+	-touch $(PLATFORM_DIR)
 
 $(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 $(PLATFORM)/%.dep: %.cpp $(PLATFORM_DIR)
-	$(CC) -M -MG $(CFLAGS) -MT $(PLATFORM)/$*.o -MT $(PLATFORM)/$*.dep -MF $@ $<
+	$(CCDEP) -M -MG $(CFLAGS) -MT $(PLATFORM)/$*.o -MT $(PLATFORM)/$*.dep -MF $@ $<
 
 # |& grep -v "invalid access to non-static data member" | grep -v offsetof
 
