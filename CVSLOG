@@ -21031,3 +21031,18 @@ Removed files:
 	chapel/compiler/traversals/: renameOverloadedFunctions.cpp 
 	                             renameOverloadedFunctions.h 
 
+---------------------------------------------------------------------------
+
+03/23/05 12:17:10 -- deitz
+
+Log message:
+	Added support for arrays of arrays.  Added one test case that fails in
+	analysis.
+
+Modified files:
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_array_of_array1.chpl 
+	                           test_array_of_array1.future 
+	                           test_array_of_array1.good 
+
