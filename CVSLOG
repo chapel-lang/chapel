@@ -892,3 +892,22 @@ Modified files:
 	chapel/compiler/: TODO ast.cpp clone.cpp dump.cpp fa.cpp if1.cpp 
 	                  misc.cpp misc.h sym.h 
 
+---------------------------------------------------------------------------
+
+04/03/17 13:22:30 -- bradc
+
+Log message:
+	Broke argv[0] down into the program's name and its directory
+	location.  Added a field for the latter in the ArgumentState
+	descriptor, and used it to initialize the system_dir option.
+	Eliminated a static variable in driver.cpp that duplicated
+	the former.
+	
+	If a directory name isn't given in argv[0], "." is assumed
+	(whereas the better behavior would be to search the path).
+	I may add this in the future, but for now it seems no worse
+	than it was before in such cases.
+
+Modified files:
+	chapel/compiler/: arg.cpp arg.h driver.cpp 
+
