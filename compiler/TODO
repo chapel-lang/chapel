@@ -1,6 +1,5 @@
 - support applications with more than required arguments as multiple-calls
   (add_application_constraints)
 
-- fixup AST_arg the sym->type should handle constarints computed from
-  AST_constraint and set in fa.cpp
+- handle structural types.  Generalize tuple handling to include ref etc. in patterns.
 

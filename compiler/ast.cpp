@@ -433,6 +433,34 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 }
 
 static int
+resolve_parameterized_type(IF1 *i, AST *ast) {
+  Sym *sym;
+  if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
+    return -1;
+  if (ast->n > 1) {
+    Sym *s = new_sym(i, ast->scope);
+    s->type_kind = Type_APPLICATION;
+    s->has.add(sym);
+    for (int i = 1; i < ast->n; i++) {
+      assert(ast->v[i]->kind == AST_type_param && ast->v[i]->sym);
+      if (!(sym = checked_ast_qualified_ident_sym(ast->v[i]->get(AST_qualified_ident))))
+	return -1;
+      s->args.add(sym);
+    }
+    ast->sym = s;
+  } else
+    ast->sym = sym;
+  return 0;
+}
+
+static void
+set_scope_recursive(AST *ast, Scope *scope) {
+  ast->scope = scope;
+  forv_AST(a, *ast)
+    set_scope_recursive(a, scope);
+}
+
+static int
 scope_pattern(IF1 *i, AST *ast, Scope *scope) {
   switch (ast->kind) {
     case AST_pattern:
@@ -444,18 +472,18 @@ scope_pattern(IF1 *i, AST *ast, Scope *scope) {
 	assert(a->sym);
 	ast->sym->has.add(a->sym);
       }
+      if (ast->sym->has.n == 1)
+	ast->sym = ast->sym->has.v[0];
       break;
     case AST_arg:
     case AST_vararg: {
+      set_scope_recursive(ast, scope);
       AST *c = ast->get(AST_const);
       AST *id = ast->get(AST_ident);
-      AST *ty = ast->get(AST_qualified_ident);
-      Sym *ty_sym = 0;
-      if (ty) {
-	ty->scope = scope;
-	if (!(ty_sym = checked_ast_qualified_ident_sym(ty)))
+      AST *ty = ast->get(AST_constraint);
+      if (ty)
+	if (resolve_parameterized_type(i, ty) < 0)
 	  return -1;
-      }
       if (id)
 	ast->sym = id->sym = new_sym(i, scope, id->string);
       else if (c)
@@ -464,8 +492,8 @@ scope_pattern(IF1 *i, AST *ast, Scope *scope) {
 	ast->sym = new_sym(i, scope);
       if (ast->kind == AST_vararg)
 	ast->sym->vararg = 1;
-      if (ty_sym)
-	ast->sym->type = ty_sym;
+      if (ty)
+	ast->sym->type = ty->sym;
       break;
     }
     default: break;
@@ -496,38 +524,10 @@ define_function(IF1 *i, AST *ast) {
 }
 
 static int
-resolve_parameterized_type(IF1 *i, AST *ast) {
-  Sym *sym;
-  if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
-    return -1;
-  if (ast->n > 1) {
-    Sym *s = new_sym(i, ast->scope);
-    s->type_kind = Type_APPLICATION;
-    s->has.add(sym);
-    for (int i = 1; i < ast->n; i++) {
-      assert(ast->v[i]->kind == AST_type_param && ast->v[i]->sym);
-      if (!(sym = checked_ast_qualified_ident_sym(ast->v[i]->get(AST_qualified_ident))))
-	return -1;
-      s->args.add(sym);
-    }
-    ast->sym = s;
-  } else
-    ast->sym = sym;
-  return 0;
-}
-
-static int
 resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
   Sym *sym;
   if (!skip)
     switch (ast->kind) {
-      case AST_arg: {
-	AST *a = ast->get(AST_constraint);
-	if (a)
-	  if (resolve_parameterized_type(i, a) < 0)
-	    return -1;
-	break;
-      }
       case AST_inherits:
       case AST_implements:
       case AST_includes:
@@ -548,7 +548,7 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	    sym->constraints.set_add(a->sym);
 	    sym->scope->dynamic.add(a->sym->scope);
 	  } if (a->kind == AST_def_type_param) {
-	    sym->args.set_add(a->sym);
+	    sym->args.add(a->sym);
 	    if (verbose_level)
 	      printf("%s has param %s\n", sym->name, a->sym->name);
 	  }
@@ -939,6 +939,7 @@ gen_if1(IF1 *i, AST *ast) {
       break;
     case AST_const:
     case AST_arg: 
+    case AST_vararg: 
       ast->rval = ast->sym; break;
     case AST_list:
     case AST_vector:
@@ -1094,6 +1095,7 @@ finalize_types(IF1 *i) {
     for (int x = 0; x < s->constraints.n; x++)
       if (s->constraints.v[x])
 	s->constraints.v[x] = unalias_type(s->constraints.v[x]);
+    s->type = unalias_type(s->type);
   }
   forv_Sym(s, i->allsyms) {
     Sym *us = unalias_type(s);
