@@ -1651,6 +1651,24 @@ ast_sym_info(BaseAST *a, Symbol *s, AST **ast, Sym **sym) {
     *sym = s->asymbol;
 }
 
+static Type *
+to_AST_type(Sym *type) {
+#ifdef COMPLETE_TYPING
+  assert(type);
+#endif
+  if (!type)
+    return dtUnknown;
+  ASymbol *asymbol = dynamic_cast<ASymbol *>(type);
+  BaseAST *atype = asymbol->xsymbol;
+  Type *btype = dynamic_cast<Type *>(atype);
+#ifdef COMPLETE_TYPING
+  assert(btype);
+#endif
+  if (!btype)
+    return dtUnknown;
+  return btype;
+}
+
 Type *
 type_info(BaseAST *a, Symbol *s) {
   AST *ast = 0;
@@ -1675,20 +1693,12 @@ type_info(BaseAST *a, Symbol *s) {
     goto Ldone;
   }
  Ldone:
-#ifdef COMPLETE_TYPING
-  assert(type);
-#endif
-  if (!type)
-    return dtUnknown;
-  ASymbol *asymbol = dynamic_cast<ASymbol *>(type);
-  BaseAST *atype = asymbol->xsymbol;
-  Type *btype = dynamic_cast<Type *>(atype);
-#ifdef COMPLETE_TYPING
-  assert(btype);
-#endif
-  if (!btype)
-    return dtUnknown;
-  return btype;
+  return to_AST_type(type);
+}
+
+Type *
+return_type_info(FnSymbol *fn) {
+  return to_AST_type(type_info(NULL, fn->asymbol->ret));
 }
 
 void 
