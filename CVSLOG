@@ -19387,3 +19387,36 @@ Modified files:
 	chapel/compiler/include/: fun.h symtab.h 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+03/14/05 13:57:47 -- deitz
+
+Log message:
+	Fixed a bug in which a new TypeSymbol was not created for a new
+	SumType when one was created.
+	
+	Fixed a bug in which the context for the scope for a cloned class was
+	not set.
+	
+	Put in an error for generating constructors when none exist.
+	
+	Added a new pass (unfinished) to remove dead functions and types after
+	analysis has run.
+	
+	Added a commented out #define of ANALYSIS_MATCH that when uncommented
+	makes sure the types that analysis returns via type_info match the
+	types in the AST and are not unknown.  John, try uncommenting this.
+	It breaks every test because __init and _main are said to have unknown
+	return type.  It also catches some errors in the class cloning tests,
+	test_class_clone2.chpl, in which there are numerous errors on both
+	sides of analysis.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share findUnknownTypes.cpp 
+	                             resolveSymbols.cpp 
+Added files:
+	chapel/compiler/traversals/: removeDeadSymbols.cpp 
+	                             removeDeadSymbols.h 
+
