@@ -25,7 +25,6 @@
 ::y is: (codegen_test.chpl:16) ( string (<unknown>:0) )
 ::y(<unknown>:0) ( int64 (<unknown>:0) )
 ::y(codegen_test.chpl:16) ( int64 (<unknown>:0) )
-::y(codegen_test.chpl:5) ( int64 (<unknown>:0) )
 ::z is: (codegen_test.chpl:11) ( string (<unknown>:0) )
 ::z(<unknown>:0) ( int64 (<unknown>:0) )
 ::z(codegen_test.chpl:11) ( int64 (<unknown>:0) )

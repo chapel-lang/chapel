@@ -241,7 +241,6 @@ fold_constant(IF1 *i, ParseAST *ast) {
     case P_prim_not: DO_FOLD1(!); break;
     default: return 0;
   }
-  ast->sym->constant = cannonical_folded;	
   ast->sym->is_constant = 1;
   ast->sym->in = 0;
   ast->sym->type = res_type;

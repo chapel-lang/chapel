@@ -98,7 +98,6 @@ void ast_print_recursive(FILE *fp, ParseAST *a, int indent = 0);
 int ast_gen_if1(IF1 *if1, Vec<ParseAST *> &av);
 int ast_constant_fold(IF1 *if1, ParseAST *ast);
 
-extern char *cannonical_folded;
 extern char *AST_name[];
 
 #endif

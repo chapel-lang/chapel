@@ -217,11 +217,12 @@ build_record_type(Type *t, Sym *parent = 0) {
 }
 
 static void
-build_enum_element(Sym *ss, int i) {
-  ss->type_kind = Type_PRIMITIVE;
-  ss->inherits_add(sym_enum_element);
-  ss->type_sym = ss;
-  ss->imm.v_int32 = i;
+build_enum_element(Sym *enum_sym, Sym *element_sym, int i) {
+  element_sym->inherits_add(enum_sym);
+  element_sym->type = enum_sym;
+  element_sym->type_sym = element_sym;
+  element_sym->imm.v_int64 = i;
+  element_sym->is_constant = 1;
 }
 
 static void
@@ -283,12 +284,13 @@ build_types(Vec<BaseAST *> &syms) {
 	break;
       case TYPE_ENUM: {
 	t->asymbol->type_kind = Type_TAGGED;
+	t->asymbol->inherits_add(sym_enum_element);
 	GetSymbols* getSymbols = new GetSymbols();
 	t->traverseList(getSymbols);
 	for (int i = 0; i < getSymbols->symbols.n; i++) {
 	  BaseAST *s = getSymbols->symbols.v[i];
 	  Sym *ss = dynamic_cast<Symbol*>(s)->asymbol;
-	  build_enum_element(ss, i);
+	  build_enum_element(t->asymbol, ss, i);
 	  t->asymbol->has.add(ss);
 	}
 	break;
@@ -441,12 +443,12 @@ build_builtin_symbols() {
   new_lub_type(sym_anyint, "anyint", 
 	       sym_int8, sym_int16, sym_int32, sym_int64, sym_bool,
 	       sym_uint8, sym_uint16, sym_uint32, sym_uint64, 0);
-  new_primitive_type(sym_size, "size");
-  new_primitive_type(sym_enum_element, "enum_element");
+  new_alias_type(sym_size, "size", sym_int64);
+  new_alias_type(sym_enum_element, "enum_element", sym_int64);
   new_primitive_type(sym_float32, "float32");
   new_primitive_type(sym_float64, "float64");
   new_primitive_type(sym_float128, "float128");
-  new_primitive_type(sym_float, "float");
+  new_alias_type(sym_float, "float", sym_float64);
   new_lub_type(sym_anyfloat, "anyfloat", 
 	       sym_float32, sym_float64, sym_float128, 0);
   new_primitive_type(sym_complex32, "complex32");
@@ -930,7 +932,7 @@ gen_if1(BaseAST *ast) {
 	Sym *rrval = new_sym();
 	rrval->ast = s->ainfo;
 	Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
-			   s->left->ainfo->rval, sym_assign, rval,
+			   s->left->ainfo->sym, sym_assign, rval,
 			   rrval);
 	c->ast = s->ainfo;
 	rval = rrval;

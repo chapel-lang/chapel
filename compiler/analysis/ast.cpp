@@ -43,6 +43,27 @@ void init_ast() {
 static void
 unalias_syms(IF1 *i) {
   forv_Sym(s, i->allsyms) {
+    Sym *us = unalias_type(s);
+    if (s != us) {
+      forv_Sym(ss, s->specializes) if (ss) {
+	assert(ss != us);
+	us->specializes.add(ss);
+      }
+      forv_Sym(ss, s->includes) if (ss) {
+	assert(ss != us);
+	us->includes.add(ss);
+      }
+      forv_Sym(ss, s->implements) if (ss) {
+	assert(ss != us);
+	us->implements.add(ss);
+      }
+    }
+  }
+  forv_Sym(s, i->allsyms) {
+    for (int x = 0; x < s->specializes.n; x++)
+      s->specializes.v[x] = unalias_type(s->specializes.v[x]);
+    for (int x = 0; x < s->includes.n; x++)
+      s->includes.v[x] = unalias_type(s->includes.v[x]);
     for (int x = 0; x < s->implements.n; x++)
       s->implements.v[x] = unalias_type(s->implements.v[x]);
     if (s->must_specialize)
@@ -54,15 +75,6 @@ unalias_syms(IF1 *i) {
     if (s->type_kind != Type_NONE) {
       assert(!s->type || s->type == s);
       s->type = s;
-    }
-  }
-  forv_Sym(s, i->allsyms) {
-    Sym *us = unalias_type(s);
-    if (s != us) {
-      forv_Sym(ss, s->implements) if (ss) {
-	assert(ss != us);
-	us->implements.add(ss);
-      }
     }
   }
 }

@@ -24,7 +24,6 @@ char *AST_name[] = {
 
 char *cannonical_class = 0;
 char *cannonical_self = 0;
-char *cannonical_folded = 0;
 Sym *operator_symbol = 0;
 Sym *print_symbol = 0;
 
@@ -1946,7 +1945,6 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   Scope *global = new Scope();
   cannonical_class = if1_cannonicalize_string(i, "class");
   cannonical_self = if1_cannonicalize_string(i, "self");
-  cannonical_folded = if1_cannonicalize_string(i, "< folded >");
   operator_symbol = if1_make_symbol(if1, "operator");
   print_symbol = if1_make_symbol(if1, "print");
   forv_ParseAST(a, av)

@@ -13,7 +13,6 @@
 ::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::x(var.chpl:2) ( int64 (<unknown>:0) )
-::x(var.chpl:2) ( int64 (<unknown>:0) )
 ::x(var.chpl:3) ( int64 (<unknown>:0) )
 function __entryPoint <internal>:0
 function __initIntPrelude <internal>:0

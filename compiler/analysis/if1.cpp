@@ -596,7 +596,7 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       if1_dump_sym(fp, s->must_implement);
     }
     if (s->is_constant) {
-      if (s->type && s->constant[0] != '<')
+      if (s->type && s->constant)
 	fprintf(fp, " :CONSTANT %s", (char*)s->constant);
       else {
 	fprintf(fp, " :CONSTANT ");
