@@ -11769,3 +11769,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
 
+---------------------------------------------------------------------------
+
+12/14/04 11:23:25 -- deitz
+
+Log message:
+	Updated two tests which took an argument but shouldn't
+
+Modified files:
+	chapel/test/classes/deitz/future/future/: test_method4.chpl 
+	                                          test_method6.chpl 
+
