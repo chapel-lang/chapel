@@ -1,4 +1,4 @@
-union_type_hierarchy-3-error.chpl:16: illegal call argument type 'b' illegal: ( D ) 
 union_type_hierarchy-3-error.chpl:16: unresolved call 'f'
+union_type_hierarchy-3-error.chpl:16: illegal call argument type 'b' illegal: ( D ) 
 union_type_hierarchy-3-error.chpl:16: expression has no type
 fail: fatal error, program does not type

@@ -2006,36 +2006,43 @@ type_minus_partial_applications(AType *a) {
   return r;
 }
 
-static void
-collect_avar_argument_type_violations(AVar *av) {
-  forv_AVar(c, av->arg_of_send) if (c) {
-    PNode *p = c->var->def;
-    if (p->prim) continue; // primitives handled elsewhere
-    EntrySet *from = (EntrySet*)c->contour;
-    FunAEdgeMap *m = from->out_edge_map.get(p);
-    Vec<EntrySet *> ess;
-    if (m)
-      form_Map(FunAEdgeMapElem, x, *m)
-	ess.set_add(x->value->to);
-    AType *t = av->out;
-    forv_AVar(a, av->forward) if (a && a->var->is_filtered && ess.set_in((EntrySet*)a->contour))
-      t = type_diff(t, a->out);
-    if (!empty_type_minus_partial_applications(t)) {
-      t = type_minus_partial_applications(t);
-      type_violation(ATypeViolation_SEND_ARGUMENT, av, t, 
-		     make_AVar(p->lvals.v[0], from));
-    }
-  }
-}
-
 // for each call site, check that all args are covered
 static void
 collect_argument_type_violations() {
-  forv_EntrySet(es, fa->ess) {
-    forv_Var(v, es->fun->fa_all_Vars) {
-      AVar *xav = make_AVar(v, es);
-      for (AVar *av = xav; av; av = av->lvalue)
-	collect_avar_argument_type_violations(av);
+  forv_Fun(f, fa->funs) {
+    forv_PNode(p, f->fa_send_PNodes) {
+      if (p->prim) continue; // primitives handled elsewhere
+      forv_EntrySet(from, f->ess) {
+	FunAEdgeMap *m = from->out_edge_map.get(p);
+	if (!m) {
+	  forv_Var(v, p->rvals) {
+	    AVar *av = make_AVar(v, from);
+	    type_violation(ATypeViolation_SEND_ARGUMENT, av, av->out, make_AVar(p->lvals.v[0], from));
+	  }
+	} else {
+	  AEdge *base_e = 0;
+	  form_Map(FunAEdgeMapElem, me, *m) {
+	    base_e = me->value;
+	    break;
+	  }
+	  form_MPositionAVar(x, base_e->args) {
+	    if (!x->key->is_numeric())
+	      continue;
+	    AVar *av = x->value;
+	    AType *t = av->out;
+	    form_Map(FunAEdgeMapElem, me, *m) {
+	      AEdge *e = me->value;
+	      MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
+	      AVar *filtered = e->filtered_args.get(p);
+	      t = type_diff(t, filtered->out);
+	    }
+	    if (!empty_type_minus_partial_applications(t)) {
+	      t = type_minus_partial_applications(t);
+	      type_violation(ATypeViolation_SEND_ARGUMENT, av, t, make_AVar(p->lvals.v[0], from));
+	    }
+	  }
+	}
+      }
     }
   }
 }

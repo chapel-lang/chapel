@@ -15,6 +15,7 @@ badcall.v:3: expression has no type
 badcall.v:3: expression has no type
 badcall.v:4: expression has no type
 badcall.v:4: expression has no type
+badcall.v:4: illegal call argument type expression illegal: ( ) 
 badcall.v:4: unresolved call 'print'
 f::c2(assign2.v:3) ( C (assign2.v:1) )
 fail: fatal error, program does not type
