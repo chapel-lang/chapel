@@ -665,7 +665,6 @@ void MemberAccess::codegen(FILE* outfile) {
   VarSymbol* field;
   FnSymbol* method;
 
-  /**** ARE these first two cases unnecessary??? ****/
   if (field = dynamic_cast<VarSymbol*>(member)) {
     base->codegen(outfile);
     fprintf(outfile, "->");
@@ -676,29 +675,6 @@ void MemberAccess::codegen(FILE* outfile) {
     base->typeInfo()->codegen(outfile);
     fprintf(outfile, "_");
     method->codegen(outfile);
-  }
-  else if (dynamic_cast<UnresolvedSymbol*>(member)) {
-    /* SJD: Analysis should help with these cases; the previous case
-       shouldn't happen if analysis is run (I think) */
-    Symbol* ResolvedMember;
-
-    if (resolve_symbol(dynamic_cast<UnresolvedSymbol*>(member), this, ResolvedMember)) {
-      INT_FATAL(this, "Major error resolving symbol");
-    }
-    if (field = dynamic_cast<VarSymbol*>(ResolvedMember)) {
-      base->codegen(outfile);
-      fprintf(outfile, "->");
-      field->codegen(outfile);
-    }
-    else if (method = dynamic_cast<FnSymbol*>(ResolvedMember)) {
-      fprintf(outfile, "_stopgap_");
-      base->typeInfo()->codegen(outfile);
-      fprintf(outfile, "_");
-      method->codegen(outfile);
-    }
-    else {
-      INT_FATAL(this, "Unexpected resolved case in MemberAccess::codegen");
-    }
   }
   else {
     INT_FATAL(this, "Unexpected case in MemberAccess::codegen");

@@ -19,6 +19,7 @@ REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintStmts);
 REGISTER(PrintSymtab);     // BLC: prints out the whole symboltable
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
+REGISTER(ResolveSymbols2);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
 REGISTER(SetupStmtLinks);
 REGISTER(TestGetStuff);

@@ -20,7 +20,7 @@ class Symbol : public BaseAST {
   Type* type;
   SymScope* scope;
   ASymbol *asymbol;
-  
+
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
   virtual Symbol* copy(void);
   Symbol* copyList(void);
