@@ -692,11 +692,23 @@ void ClassType::codegen(FILE* outfile) {
 
 
 void ClassType::codegenDef(FILE* outfile) {
+  if (union_value) {
+    fprintf(outfile, "typedef enum _");
+    name->codegen(outfile);
+    fprintf(outfile, "_union_id_def {\n");
+    definition->codegenVarNames(outfile, 
+				glomstrings(3, "_", name->name, "_union_id_"), "");
+    fprintf(outfile, "} _");
+    name->codegen(outfile);
+    fprintf(outfile, "_union_id;\n\n");
+  }
   fprintf(outfile, "typedef struct _");
   name->codegen(outfile);
   fprintf(outfile, "_def {\n");
   if (union_value) {
-    fprintf(outfile, "int _chpl_union_tag;\n");
+    fprintf(outfile, "_");
+    name->codegen(outfile);
+    fprintf(outfile, "_union_id _chpl_union_tag;\n");
     fprintf(outfile, "union _chpl_union_def {\n");
   }
   definition->codegenVarDefs(outfile);

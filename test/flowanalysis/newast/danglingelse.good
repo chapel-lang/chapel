@@ -12,7 +12,7 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_prelude(prelude.chpl:59) ( __init_prelude )
 ::a(danglingelse.chpl:14) ( int64 )
 ::a(danglingelse.chpl:2) ( int64 )
 ::a(danglingelse.chpl:27) ( int64 )
@@ -36,5 +36,5 @@
 ::when (a, b) is ((danglingelse.chpl:6) ( string )
 function __init_danglingelse danglingelse.chpl:29
 function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:54
+function __init_prelude prelude.chpl:59
 globals

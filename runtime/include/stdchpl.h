@@ -12,6 +12,7 @@
 #include "chpltypes.h"
 #include "domain.h"
 #include "forall.h"
+#include "union.h"
 
 #endif
 

@@ -25,7 +25,7 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_prelude(prelude.chpl:59) ( __init_prelude )
 ::answer(compSampler.chpl:12) ( int64 )
 ::answer(compSampler.chpl:13) ( int64 )
 ::answer(compSampler.chpl:17) ( int64 )
@@ -65,5 +65,5 @@
 ::o(compSampler.chpl:6) ( int64 )
 function __init_compSampler compSampler.chpl:35
 function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:54
+function __init_prelude prelude.chpl:59
 globals

@@ -15,6 +15,7 @@
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
+#include "../traversals/insertUnionChecks.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processParameters.h"
@@ -41,6 +42,7 @@ REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
 REGISTER(GetStuff);
+REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program

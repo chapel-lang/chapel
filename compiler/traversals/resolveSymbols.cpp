@@ -7,6 +7,7 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
+#include "../passes/runAnalysis.h"
 
 /** Assumption: Analysis has run **/
 
@@ -29,13 +30,41 @@ void ResolveSymbols::preProcessExpr(Expr* &expr) {
 	if (UnresolvedSymbol* call = 
 	    dynamic_cast<UnresolvedSymbol*>(var->var)) {
 	  if (strcmp(call->name, "__primitive")) { /** can't resolve that **/
-	    Vec<FnSymbol*> fns;
-	    call_info(paren, fns);
-	    if (fns.n != 1) {
-	      INT_FATAL(expr, "Trouble resolving function call");
+
+	    if (RunAnalysis::runCount > 0) {
+	      Vec<FnSymbol*> fns;
+	      call_info(paren, fns);
+	      if (fns.n != 1) {
+		INT_FATAL(expr, "Trouble resolving function call");
+	      }
+	      FnCall* fn = new FnCall(new Variable(fns.e[0]),
+				      paren->argList->copyList());
+	      Expr::replace(expr, fn);
 	    }
-	    FnCall* fn = new FnCall(new Variable(fns.e[0]), paren->argList->copyList());
-	    Expr::replace(expr, fn);
+	    else {
+	      if (Symbol* sym = Symboltable::lookup(call->name)) {
+		if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+		  if (!fn->overload) {
+		    FnCall* fn_call = new FnCall(new Variable(fn),
+					    paren->argList->copyList());
+		    Expr::replace(expr, fn_call);
+		  }
+		  else {
+		    INT_FATAL(expr, 
+			      "Unable to resolve overloaded"
+			      "function without analysis");
+		  }
+		}
+		else {
+		  INT_FATAL(expr,
+			    "Unable to resolve 'strange' function without analysis");
+		}
+	      }
+	      else {
+		INT_FATAL(expr,
+			  "Unable to resolve unknownfunction without analysis");
+	      }
+	    }
 	  }
 	}
       }

@@ -7,7 +7,7 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_prelude(prelude.chpl:59) ( __init_prelude )
 ::__init_relational_ops ( __init_relational_ops )
 ::__init_relational_ops(relational_ops.chpl:59) ( __init_relational_ops )
 ::actual answer = (relational_ops.chpl:16) ( string )
@@ -75,6 +75,6 @@
 ::test: m >= p(relational_ops.chpl:31) ( string )
 ::test: o >= m(relational_ops.chpl:25) ( string )
 function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:54
+function __init_prelude prelude.chpl:59
 function __init_relational_ops relational_ops.chpl:59
 globals

@@ -3,13 +3,13 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_prelude(prelude.chpl:59) ( __init_prelude )
 ::__init_printstring ( __init_printstring )
 ::__init_printstring(printstring.chpl:2) ( __init_printstring )
 ::main ( main )
 ::main ( main )
 ::null ( null null )
 function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:54
+function __init_prelude prelude.chpl:59
 function __init_printstring printstring.chpl:2
 globals

@@ -92,8 +92,25 @@ void Stmt::codegenVarDefs(FILE* outfile) {
 }
 
 
-void Stmt::codegenVarDef(FILE* outfile) {
+void Stmt::codegenVarDef(FILE* outfile) { }
+
+
+/* printing out vardefs in a list, names modified by premod and postmod */
+void Stmt::codegenVarNames(FILE* outfile, char* premod, char* postmod) {
+  Stmt* nextStmt = this;
+
+  do {
+    nextStmt->codegenVarName(outfile, premod, postmod);
+    nextStmt = nextLink(Stmt, nextStmt);
+    if (nextStmt) {
+      fprintf(outfile, ",\n");
+    }
+  } while (nextStmt);
+  fprintf(outfile, "\n");
 }
+
+
+void Stmt::codegenVarName(FILE* outfile, char* premod, char* postmod) { }
 
 
 void Stmt::replace(Stmt* &old_stmt, Stmt* new_stmt) {
@@ -339,6 +356,21 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
 
     fprintf(outfile, ";\n");
     aVar = nextLink(VarSymbol, aVar);
+  }
+}
+
+
+void VarDefStmt::codegenVarName(FILE* outfile, char* premod, char* postmod) {
+  VarSymbol* vsym = var;
+
+  while (vsym) {
+    fprintf(outfile, premod);
+    vsym->codegen(outfile);
+    fprintf(outfile, postmod);
+    vsym = nextLink(VarSymbol, vsym);
+    if (vsym) {
+      fprintf(outfile, ",\n");
+    }
   }
 }
 

@@ -7,7 +7,7 @@
 ::__init_logical_not ( __init_logical_not )
 ::__init_logical_not(logical_not.chpl:19) ( __init_logical_not )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:54) ( __init_prelude )
+::__init_prelude(prelude.chpl:59) ( __init_prelude )
 ::actual answer = (logical_not.chpl:12) ( string )
 ::actual answer = (logical_not.chpl:18) ( string )
 ::answer(logical_not.chpl:12) ( int64 )
@@ -30,5 +30,5 @@
 ::test: not p(logical_not.chpl:15) ( string )
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_logical_not logical_not.chpl:19
-function __init_prelude prelude.chpl:54
+function __init_prelude prelude.chpl:59
 globals

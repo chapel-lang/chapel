@@ -30,6 +30,9 @@ class Stmt : public BaseAST {
   void codegenVarDefs(FILE* outfile);
   virtual void codegenVarDef(FILE* outfile);
 
+  void codegenVarNames(FILE* outfile, char* premod, char* postmod);
+  virtual void codegenVarName(FILE* outfile, char* premod, char* postmod);
+
   static void replace(Stmt* &old_stmt, Stmt* new_stmt);
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
@@ -78,6 +81,7 @@ class VarDefStmt : public Stmt {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenVarDef(FILE* outfile);
+  void codegenVarName(FILE* outfile, char* premod, char* postmod);
 };
 
 

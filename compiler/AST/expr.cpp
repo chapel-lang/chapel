@@ -638,7 +638,7 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
 
 
 Expr* MemberAccess::copy(void) {
-  return new MemberAccess(base->copy(), member->copy());
+  return new MemberAccess(base->copy(), member);
 }
 
 

@@ -99,12 +99,23 @@ void ILink::preinsert(ILink* newlink) {
 
 
 void ILink::postinsert(ILink* newlink) {
-  if (!prev->isNull()) {
-    prev->next = newlink;
+  ILink* first;
+  ILink* last;
+
+  first = newlink;
+  while (first->prev && !first->prev->isNull()) {
+    first = first->prev;
   }
-  newlink->prev = prev;
-  newlink->next = this;
-  prev = newlink;
+  last = newlink;
+  while (last->next && !last->next->isNull()) {
+    last = last->next;
+  }
+  if (!next->isNull()) {
+    next->prev = last;
+  }
+  last->next = next;
+  next = first;
+  first->prev = this;
 }
 
 
