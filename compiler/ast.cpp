@@ -553,7 +553,8 @@ define_function(IF1 *i, AST *ast) {
     return -1;
   AST *fid = ast_qualified_ident_ident(fqid);
   ast->sym = new_sym(i, fscope, fid->string, fqid->sym);
-  new_sym(i, fscope, fid->string, if1_make_symbol(i, fid->string));
+  Sym *tsym = new_sym(i, fscope, fid->string, if1_make_symbol(i, fid->string));
+  tsym->ast = ast;
   ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
   if (fscope != ast->scope) {
     ast->sym->scope->dynamic.add(fscope);

@@ -1307,8 +1307,12 @@ pattern_match(AVar *a, AVar *b, EntrySet *es) {
       if (cs->vars.n < s->has.n) // must have enough to cover args
 	continue;
       for (int i = 0; i < s->has.n; i++)
-	if (s->has.v[i]->var) // if used
-	  flow_vars(cs->vars.v[i], make_AVar(s->has.v[i]->var, es));
+	if (s->has.v[i]->var)  { // if used
+	  AVar *aa = cs->vars.v[i], *bb = make_AVar(s->has.v[i]->var, es);
+	  flow_vars(aa, bb);
+	  if (s->has.v[i]->var->sym->pattern)
+	    pattern_match(aa, bb, es);
+	}
     }
   }
 }
@@ -1490,7 +1494,7 @@ build_dispatch_table() {
 	tuple_dispatch_table.put(a->type->name, (at = new TupleDispatchTable));
       for (int i = 0; i < f->sym->args.v[1]->has.n; i++) {
 	Sym *v = f->sym->args.v[1]->has.v[i];
-	if (v->type->symbol) {
+	if (v->type && v->type->symbol) {
 	  at->fill(i + 1);
 	  if (!at->v[i])
 	    at->v[i] = new Map<char *, Vec<Fun *> *>;
