@@ -1,4 +1,29 @@
-#!/opt/cpkg/v3/all/bin/perl
+#!/usr/bin/perl
+
+$printusage = 0;
+
+$username = "";
+if (@ARGV) {
+    $flag = shift @ARGV;
+    if ($flag eq "--help" || $flag eq "-h") {
+        $printusage = 1;
+    } else {
+        $username = $flag;
+    }
+    if (@ARGV) {
+        $printusage = 1;
+    }
+}
+
+if ($printusage) {
+    print "list_futures [<username>]\n";
+    exit 0;
+}
+
+if ($username ne "") {
+    print "***running for user: $username\n";
+}
+
 
 @fnames = `find \* | grep \'\\\.future\$\'`;
 
@@ -7,5 +32,7 @@ foreach $fname (@fnames) {
   $worker = `head -n 1 $fname`;
   chomp $worker;
   $fname =~ s/(.*)\.future$/$1/;
-  print "$worker [$fname]\n";
+  if (index($worker, $username) != -1) {
+      print "$worker [$fname]\n";
+  }
 }
