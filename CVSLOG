@@ -22432,3 +22432,16 @@ Removed files:
 	chapel/test/classes/bradc/: writerecord.future 
 	chapel/test/classes/deitz/: test_record6.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 15:36:32 -- deitz
+
+Log message:
+	Added the constructor to the list of visible functions.  Modified
+	slightly what happens with building a constructor with arguments.
+
+Modified files:
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             specializeParenOpExprs.cpp 
+
