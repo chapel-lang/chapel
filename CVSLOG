@@ -9272,3 +9272,28 @@ Added files:
 	                                        configVarY.execopts 
 	                                        configVarY.good 
 
+---------------------------------------------------------------------------
+
+11/04/04 17:07:08 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Reorganize files to better compartmentalize the test parser since
+	no parts of the system should depend on it other than a call in the
+	driver.
+
+Modified files:
+	chapel/compiler/analysis/: Makefile.share inline.cpp prim.cpp 
+	chapel/compiler/include/: builtin.h driver.h if1.h parse.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/compiler/vparser/: Makefile.share grammar.cpp parse.cpp 
+	                          parse_ast.cpp v.g 
+Added files:
+	chapel/compiler/analysis/: builtin.cpp 
+	chapel/compiler/vparser/: ast_kinds.h parse_ast.h 
+	                          parse_structs.h scope.h 
+Removed files:
+	chapel/compiler/include/: ast_kinds.h parse_ast.h 
+	                          parse_structs.h scope.h 
+	chapel/compiler/vparser/: builtin.cpp 
+
