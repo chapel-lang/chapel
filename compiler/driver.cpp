@@ -259,9 +259,8 @@ compile_one(char *fn) {
       inline_calls(fa);
     else if (fsimple_inline)
       simple_inline_calls(fa);
-    if (!suppress_codegen) {
+    if (!suppress_codegen)
       codegen(fa, fn, system_dir);
-    }
     if (fdump_html)
       dump_html(fa, fn);
   } else

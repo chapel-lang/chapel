@@ -103,9 +103,9 @@ static char* genoutfilename(char* infilename) {
   
   char* outfilename = genIntFilename(infilenamebase);
 
-  // assumes file suffix is .chpl
   char* finalsuffix = strrchr(outfilename, '.');
-  finalsuffix+=2;
+  finalsuffix++;
+  *finalsuffix++ = 'c';
   *finalsuffix = '\0';
 
   return outfilename;
