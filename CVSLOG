@@ -20631,3 +20631,23 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_method_noparens.future 
 
+---------------------------------------------------------------------------
+
+03/21/05 18:38:28 -- bradc
+
+Log message:
+	Added the ability to specify a test-specific timeout
+	value (e.g., foo.timeout for a test foo.chpl), in
+	addition to the current directory-specific timeout
+	(using a TIMEOUT file), and added such a timeout
+	value for the compSampler test.  Didn't do anything to
+	make the timeout valgrind-specific vs. not (could
+	either have timeout files list two timeout values,
+	or we could have different files for the different
+	types).
+
+Modified files:
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/test/trivial/shannon/: compSampler.timeout 
+
