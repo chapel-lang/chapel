@@ -88,8 +88,29 @@ void ILink::codegenList(FILE* outfile, char* separator) {
   }
 }
 
-/*
-void ILink::insert(ILink* newlink) {
+
+void ILink::preinsert(ILink* newlink) {
+  ILink* first;
+  ILink* last;
+
+  first = newlink;
+  while (first->prev && !first->prev->isNull()) {
+    first = first->prev;
+  }
+  last = newlink;
+  while (last->next && !last->next->isNull()) {
+    last = last->next;
+  }
+  if (!prev->isNull()) {
+    prev->next = first;
+  }
+  first->prev = prev;
+  prev = last;
+  last->next = this;
+}
+
+
+void ILink::postinsert(ILink* newlink) {
   if (!prev->isNull()) {
     prev->next = newlink;
   }
@@ -97,7 +118,6 @@ void ILink::insert(ILink* newlink) {
   newlink->next = this;
   prev = newlink;
 }
-*/
 
 
 void ILink::add(ILink* newlink) {
@@ -106,7 +126,6 @@ void ILink::add(ILink* newlink) {
   next->prev = newlink;
   next = newlink;
 }
-
 
 
 void ILink::append(ILink* newlink) {

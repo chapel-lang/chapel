@@ -25,7 +25,8 @@ class ILink : public Loc {
   virtual void codegen(FILE* outfile);
   virtual void codegenList(FILE* outfile, char* separator = ", ");
 
-  //  void insert(ILink* newlink);
+  void preinsert(ILink* newlink);
+  void postinsert(ILink* newlink);
   void add(ILink* newlink);
   void append(ILink* newlink);
 
