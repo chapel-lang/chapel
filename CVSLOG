@@ -4897,3 +4897,14 @@ Log message:
 Modified files:
 	chapel/compiler/make_prims/: make_prims.g 
 
+---------------------------------------------------------------------------
+
+08/04/04 11:45:54 -- bradc
+
+Log message:
+	Improved dependences for make_prims.o which depends on geysa.h
+	and all the header files that it includes.
+
+Modified files:
+	chapel/compiler/: Makefile 
+
