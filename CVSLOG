@@ -3304,3 +3304,14 @@ Log message:
 Modified files:
 	chapel/test/parsing/jplevyak/: mat1.good vec.good 
 
+---------------------------------------------------------------------------
+
+06/14/04 14:23:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	minor FreeBSD compatibility issues
+
+Modified files:
+	chapel/compiler/: list.h 
+	chapel/compiler/make_prims/: make_prims.g 
+
