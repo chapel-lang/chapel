@@ -1597,3 +1597,17 @@ Modified files:
 Added files:
 	chapel/test/Samples/ex1-astlog/: NOEXEC 
 
+---------------------------------------------------------------------------
+
+04/04/01 17:07:05 -- bradc
+
+Log message:
+	Broke version number stuff out into its own header file because
+	the way I previously set it up, everything got recompiled
+	whenever BUILD_NUMBER changed.  Now only version.cpp will be.
+
+Modified files:
+	chapel/compiler/: version.cpp version.h 
+Added files:
+	chapel/compiler/: version_num.h 
+
