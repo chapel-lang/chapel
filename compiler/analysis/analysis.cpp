@@ -2121,8 +2121,7 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
 	return -6;
       return 0;
     }
-    if (pn->lvals.v[0]->type->type_kind == Type_FUN && 
-	ma->parent && ma->parent->astType == EXPR_PARENOP) {
+    if (ma->parent && ma->parent->astType == EXPR_PARENOP) {
       ParenOpExpr *p = dynamic_cast<ParenOpExpr*>(ma->parent);
       if (p->baseExpr == ma) {
 	if (p->ainfo->pnodes.n != 1)

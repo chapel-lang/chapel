@@ -1,18 +1,11 @@
-deitz/jplevyak
+deitz
 
-If you uncomment the #define CLONE 1
-at the top of analysis/clone.cpp this
-code will crash because TypeDefStmt::clone
-is trying to clone all the statements below
-the type and not just the type.   We may
-need to change the interface or have a
-new interface, in any case I can make
-the new call when it becomes available.
+The problem here is that classes have already been cloned, but 
+the original class (from which the clones were derived) still
+exists in the AST via the TypeDefStmt.  Like unused functions
+there will be unused types which should not be resolved.
 
-I am assigning this to deitz/jplevyak
-until we get this clone/members thing
-resolved since Steve and I need to work
-it out.
+If you need an interface to query which types are actually
+used in the program, ask me.
 
---john
-
+john
