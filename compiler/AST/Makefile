@@ -9,6 +9,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 INCL = -I.. -I$(GC_ROOT)/include/gc
 CFLAGS = -g -Wall -Werror $(INCL)
 
+AST_OBJDIR = $(PLATFORM)
 include Makefile.share
 
 all: $(AST_OBJS)
