@@ -1,0 +1,31 @@
+ called from 0 in __init__ at <unknown>:0
+ called from 0 in __init__ at <unknown>:0
+ called from 1 in f at loop1.v:1
+ called from 1 in f at loop1.v:1
+ called from 1 in f at loop1.v:1
+ called from 121 in operator at prelude.v:121
+ called from 2 in __init at loop1.v:1
+f::a(loop1.v:1) ( int32 (prelude.v:24) )
+f::j(loop1.v:1) ( int32 (prelude.v:24) )
+f::j(loop1.v:1) ( int32 (prelude.v:24) )
+f::j(loop1.v:1) ( int32 (prelude.v:24) )
+f::j(loop1.v:1) ( int32 (prelude.v:24) )
+f::j(loop1.v:1) ( int32 (prelude.v:24) )
+function __init loop1.v:1
+function __init prelude.v:7
+function __init__ <unknown>:0
+function f loop1.v:1
+function operator prelude.v:121
+function operator prelude.v:80
+function operator prelude.v:84
+function print prelude.v:134
+globals
+operator::a(prelude.v:121) ( int32 (prelude.v:24) )
+operator::a(prelude.v:80) ( int32 (prelude.v:24) )
+operator::a(prelude.v:84) ( int32 (prelude.v:24) )
+operator::b(prelude.v:80) ( int32 (prelude.v:24) )
+operator::b(prelude.v:84) ( int32 (prelude.v:24) )
+print::a(prelude.v:134) ( int32 (prelude.v:24) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:59) ( tuple (prelude.v:14) )
+user::__init(loop1.v:1) ( __init (loop1.v:1) )

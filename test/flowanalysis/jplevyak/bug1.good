@@ -1,0 +1,19 @@
+ called from 0 in __init__ at <unknown>:0
+ called from 0 in __init__ at <unknown>:0
+ called from 3 in __init at bug1.v:1
+ called from 4 in __init at bug1.v:1
+function __init bug1.v:1
+function __init prelude.v:7
+function __init__ <unknown>:0
+function operator prelude.v:80
+function print prelude.v:134
+globals
+operator::a(prelude.v:80) ( int32 (prelude.v:24) )
+operator::b(prelude.v:80) ( float64 (prelude.v:37) )
+print::a(prelude.v:134) ( float64 (prelude.v:37) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:59) ( tuple (prelude.v:14) )
+user::__init(bug1.v:1) ( __init (bug1.v:1) )
+user::a(bug1.v:1) ( int32 (prelude.v:24) )
+user::b(bug1.v:2) ( float64 (prelude.v:37) )
+user::c(bug1.v:3) ( float64 (prelude.v:37) )

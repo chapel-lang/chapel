@@ -1,0 +1,32 @@
+ called from 0 in __init__ at <unknown>:0
+ called from 0 in __init__ at <unknown>:0
+ called from 14 in __init at sample.v:1
+ called from 5 in f at sample.v:3
+ called from 6 in f at sample.v:3
+f::a(sample.v:3) ( int32 (prelude.v:24) )
+f::a(sample.v:3) ( int32 (prelude.v:24) )
+f::a(sample.v:3) ( int32 (prelude.v:24) )
+f::a(sample.v:3) ( int32 (prelude.v:24) )
+f::a(sample.v:3) ( int32 (prelude.v:24) )
+f::a(sample.v:3) ( int32 (prelude.v:24) )
+f::b(sample.v:3) ( tuple (prelude.v:14) )
+f::b(sample.v:3) ( tuple (prelude.v:14) )
+f::b(sample.v:3) ( tuple (prelude.v:14) )
+f::b(sample.v:3) ( tuple (prelude.v:14) )
+f::b(sample.v:3) ( tuple (prelude.v:14) )
+function __init prelude.v:7
+function __init sample.v:1
+function __init__ <unknown>:0
+function f sample.v:3
+function operator prelude.v:75
+function operator prelude.v:75
+globals
+operator::a(prelude.v:75) ( tuple (prelude.v:14) )
+operator::a(prelude.v:75) ( tuple (prelude.v:14) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:59) ( tuple (prelude.v:14) )
+user::__init(sample.v:1) ( __init (sample.v:1) )
+user::a(sample.v:2) ( int32 (prelude.v:24) )
+user::aa(sample.v:1) ( int32 (prelude.v:24) )
+user::b(sample.v:2) ( int32 (prelude.v:24) )
+user::bb(sample.v:2) ( tuple (prelude.v:14) )

@@ -1662,7 +1662,6 @@ gen_if1(IF1 *i, ParseAST *ast) {
     case AST_list:
     case AST_vector:
     case AST_object:
-    case AST_index:
        gen_constructor(i, ast); break;
     case AST_scope:
     case AST_block:

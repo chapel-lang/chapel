@@ -1,0 +1,9 @@
+ called from 0 in __init__ at <unknown>:0
+ called from 0 in __init__ at <unknown>:0
+function __init prelude.v:7
+function __init vector.v:3
+function __init__ <unknown>:0
+globals
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:59) ( tuple (prelude.v:14) )
+user::__init(vector.v:3) ( __init (vector.v:3) )
