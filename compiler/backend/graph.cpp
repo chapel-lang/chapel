@@ -407,7 +407,7 @@ graph_fun_node(FILE *fp, Fun *f) {
   char title[256] = "";
   strcat_sym_node(title, f->sym);
   forv_MPosition(p, f->arg_positions) {
-    Var *a = f->filtered_args.get(p);
+    Var *a = f->args.get(p);
     strcat(title, " ");
     if (!a->sym->is_pattern)
       strcat_sym_node(title, a->sym);

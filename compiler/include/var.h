@@ -25,6 +25,8 @@ class Var : public gc {
   CreationSet		*as_CreationSet; // used by fa.cpp
   unsigned int		clone_for_constants:1;
   unsigned int		is_internal:1;
+  unsigned int		is_filtered:1;
+  unsigned int		is_formal:1;
   char			*cg_string; // used by cg.cpp
 
   Var *copy();

@@ -64,7 +64,6 @@ class Fun : public gc {
   Vec<MPosition *> arg_positions;
   Vec<MPosition *> numeric_arg_positions;
   Map<MPosition*, Sym*> arg_syms;
-  Map<MPosition *, Var*> filtered_args;
   Map<MPosition *, Var*> args;
   Vec<Var *> rets;
   Vec<MPosition *> out_positions;

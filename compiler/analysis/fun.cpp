@@ -89,10 +89,8 @@ Fun::collect_Vars(Vec<Var *> &vars, Vec<PNode *> *nodes) {
       if (sv.set_add(p))
 	nodes->add(p);
   }
-  forv_MPosition(p, numeric_arg_positions) {
-    vars.set_add(filtered_args.get(p));
+  forv_MPosition(p, numeric_arg_positions)
     vars.set_add(args.get(p));
-  }
   forv_Var(v, rets)
     vars.set_add(v);
   vars.set_to_vec();
@@ -171,10 +169,7 @@ Fun::copy() {
   f->arg_positions.copy(arg_positions);
   f->numeric_arg_positions.copy(numeric_arg_positions);
   forv_MPosition(p, f->numeric_arg_positions) {
-    Var *v = filtered_args.get(p);
-    copy_var(&v, *f->vmap);
-    f->filtered_args.put(p, v);
-    v = args.get(p);
+    Var *v = args.get(p);
     copy_var(&v, *f->vmap);
     f->args.put(p, v);
   }

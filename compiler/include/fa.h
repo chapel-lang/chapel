@@ -146,6 +146,7 @@ class AEdge : public gc {
   EntrySet		*from, *to;
   PNode			*pnode;
   Map<MPosition*,AVar*> args;
+  Map<MPosition*,AVar*> filtered_args;
   Vec<AVar *>		rets;
   Match			*match;
   uint			in_edge_worklist : 1;

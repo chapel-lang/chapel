@@ -16,19 +16,15 @@ function create cs1.v:1
 function create cs1.v:1
 function operator prelude.v:76
 function operator prelude.v:76
-function operator prelude.v:76
-function operator prelude.v:76
+function print prelude.v:135
 function print prelude.v:135
 globals
 operator::a(prelude.v:76) ( tuple (prelude.v:14) )
 operator::a(prelude.v:76) ( tuple (prelude.v:14) )
-operator::a(prelude.v:76) ( tuple (prelude.v:14) )
-operator::a(prelude.v:76) ( tuple (prelude.v:14) )
 operator::b(prelude.v:76) ( a )
 operator::b(prelude.v:76) ( a )
-operator::b(prelude.v:76) ( a )
-operator::b(prelude.v:76) ( a )
-print::a(prelude.v:135) ( int32 (prelude.v:25) float64 (prelude.v:38) )
+print::a(prelude.v:135) ( float64 (prelude.v:38) )
+print::a(prelude.v:135) ( int32 (prelude.v:25) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:60) ( null (prelude.v:60) )
 user::__init(cs1.v:1) ( __init (cs1.v:1) )

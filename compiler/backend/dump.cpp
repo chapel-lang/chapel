@@ -196,7 +196,7 @@ dump_functions(FILE *fp, FA *fa) {
     if (f->ast && f->filename())
       fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->filename(), f->line());
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>Args<TD>\n");
-    dump_var_type_marg_positions(fp, f->numeric_arg_positions, f->filtered_args);
+    dump_var_type_marg_positions(fp, f->numeric_arg_positions, f->args);
     fprintf(fp, "<TR><TD><TD>Rets<TD>\n");
     dump_var_type_list(fp, f->rets);
     fprintf(fp, "<TR><TD><TD>Calls<TD>\n");

@@ -732,7 +732,7 @@ set_entry_set(AEdge *e, EntrySet *es = 0) {
   new_es->edges.put(e);
   if (!es) {
     forv_MPosition(p, e->match->fun->numeric_arg_positions) {
-      Var *v = e->match->fun->filtered_args.get(p);
+      Var *v = e->match->fun->args.get(p);
       AVar *av = make_AVar(v, new_es);
       new_es->args.put(p, av);
     }
@@ -1465,6 +1465,18 @@ collect_Vars_PNodes(Fun *f) {
   }
 }
 
+static AVar *
+get_filtered(AEdge *e, MPosition *p, AVar *av) {
+  AVar *filtered = e->filtered_args.get(p);
+  if (!filtered) {
+    Var *filtered_v = new Var(av->var->sym);
+    filtered_v->is_internal = 1;
+    filtered_v->is_filtered = 1;
+    e->filtered_args.put(p, (filtered = unique_AVar(filtered_v, e->to)));
+  }
+  return filtered;
+}
+
 static void
 analyze_edge(AEdge *e) {
   make_entry_set(e);
@@ -1472,18 +1484,18 @@ analyze_edge(AEdge *e) {
     if (!x->key->is_numeric())
       continue;
     MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
-    Var *v = e->to->fun->args.get(p), *filtered_v = e->to->fun->filtered_args.get(p);
-    AVar *a = x->value, *b = make_AVar(v, e->to), *filtered_b = unique_AVar(filtered_v, e->to);
+    AVar *actual = x->value, *formal = make_AVar(e->to->fun->args.get(p), e->to),
+      *filtered = get_filtered(e, p, formal);
     AType *filter = e->match->filters.get(p);
     if (!filter)
       continue;
-    flow_var_type_permit(filtered_b, filter);
-    forv_CreationSet(cs, *filter) if (cs)
+    flow_var_type_permit(filtered, filter);
+    forv_CreationSet(cs, *filter) if (cs) 
       cs->ess.set_add(e->to);
-    flow_vars(a, filtered_b);
-    flow_vars(filtered_b, b);
+    flow_vars(actual, filtered);
+    flow_vars(filtered, formal);
     if (p->pos.n > 1)
-      set_container(filtered_b, e->to->args.get(p->parent));
+      set_container(filtered, get_filtered(e, p->parent, e->to->args.get(p->parent)));
   }
   creation_point(make_AVar(e->match->fun->sym->cont->var, e->to), sym_continuation);
   for (int i = 0; i < e->pnode->lvals.n; i++)
@@ -1516,6 +1528,7 @@ refresh_top_edge(AEdge *e) {
   e->match->filters.put(cp, any_type);
   AVar *av = make_AVar(sym_init->var, e->to);
   e->args.put(cp, av);
+  e->filtered_args.put(cp, av);
   update_in(av, av->var->sym->abstract_type);
 }
 
@@ -1530,6 +1543,7 @@ make_top_edge(Fun *top) {
   return e;
 }
 
+#if 0
 static inline int
 is_formal_argument(AVar *av) {
   forv_AVar(v, av->backward) if (v) {
@@ -1538,6 +1552,7 @@ is_formal_argument(AVar *av) {
   }
   return 0;
 }
+#endif
 
 static inline int
 is_return_value(AVar *av) {
@@ -1968,9 +1983,8 @@ collect_avar_argument_type_violations(AVar *av) {
     if (p->prim) continue; // primitives handled elsewhere
     EntrySet *from = (EntrySet*)c->contour;
     AType *t = av->out;
-    forv_AVar(a, av->forward) if (a) {
-      if (!a->contour_is_entry_set)
-	continue;
+    forv_AVar(a, av->forward) if (a && a->var->is_filtered) {
+      assert(a->contour_is_entry_set);
       EntrySet *xes = (EntrySet*)a->contour;
       AEdge **last = xes->edges.last();
       for (AEdge **x = xes->edges.first(); x < last; x++) if (*x) {
@@ -2020,7 +2034,7 @@ collect_var_type_violations() {
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *av = make_AVar(v, es);
-      if (!av->var->is_internal && av->out == bottom_type &&!is_Sym_OUT(av->var->sym))
+      if (!av->var->is_internal && av->out == bottom_type && !is_Sym_OUT(av->var->sym))
 	type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
     }
   }
@@ -2281,6 +2295,7 @@ split_entry_set(AVar *av, int fsetters = 0) {
   for (int i = first; i < do_edges.n; i++) {
     AEdge *e = do_edges.v[i];
     e->to = 0;
+    e->filtered_args.clear();
     es->edges.del(e);
     make_entry_set(e, es);
     if (e->to != es)
@@ -2295,7 +2310,7 @@ split_ess_type(Vec<AVar *> &confluences) {
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
-	if (is_formal_argument(av))
+	if (av->var->is_formal)
 	  if (split_entry_set(av, 0))
 	    analyze_again = 1;
       } else {
@@ -2320,7 +2335,7 @@ split_ess_setters(Vec<AVar *> &confluences) {
 	    analyze_again = 1;
       } else {
 	AVar *aav = unique_AVar(av->var, av->contour);
-	if (is_formal_argument(aav))
+	if (aav->var->is_formal)
 	  if (split_entry_set(aav, 1))
 	    analyze_again = 1;
       }
@@ -2356,6 +2371,8 @@ clear_edge(AEdge *e) {
   e->args.clear();
   e->rets.clear();
   e->match->filters.clear();
+  form_MPositionAVar(x, e->filtered_args)
+    clear_avar(x->value);
 }
 
 static void
