@@ -1051,22 +1051,19 @@ gen_if1(BaseAST *ast) {
       forv_Vec(Expr, a, args)
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       int use_symbol = undef_or_fn_expr(s->baseExpr);
-      Sym *symbol = NULL;
+      Sym *base = NULL;
       char *n = s->baseExpr->ainfo->rval->name;
       if (n && !strcmp(n, "__primitive"))
-	symbol = sym_primitive;
+	base = sym_primitive;
       else if (n && !strcmp(n, "__operator"))
-	symbol = sym_operator;
+	base = sym_operator;
       else if (use_symbol)
-	symbol = gen_move(if1_make_symbol(if1, n), s);
+	base = gen_move(if1_make_symbol(if1, n), s);
+      if (!base)
+	base = gen_move(s->baseExpr->ainfo->rval, s);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      if (symbol)
-	if1_add_send_arg(if1, send, symbol);
-      else {
-	Sym *temp = gen_move(s->baseExpr->ainfo->rval, s);
-	if1_add_send_arg(if1, send, temp);
-      }
+      if1_add_send_arg(if1, send, base);
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);

@@ -387,7 +387,8 @@ pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
     for (int i = 0; i < m->filters.n; i++)
       if (m->filters.v[i].key)
 	m->filters.v[i].value = make_AType(*m->filters.v[i].value);
-    matches.add(m);
+    if (m->fun->sym->has.n >= args.n)
+      matches.add(m);
   }
   return matches.n;
 }
