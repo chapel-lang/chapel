@@ -22787,3 +22787,135 @@ Log message:
 Modified files:
 	chapel/runtime/include/: array.h chplio.h 
 
+---------------------------------------------------------------------------
+
+03/30/05 19:14:13 -- bradc
+
+Log message:
+	This change removes all tabs from code, replacing them
+	with 8 spaces (the same as emacs windows will tend to
+	show by default).
+	
+	We've decided to disallow the use of tabs in code for
+	all Chapel source in order to make the code appear
+	identical in all editors.  New code should not introduce
+	new tabs.  Code should be indented using spaces, and the
+	default indentation amount is two spaces per line.
+	
+	By default, emacs compresses groups of 8 spaces into a
+	tab when you hit tab in certain editing modes, so most
+	of us have been inserting tabs all along without knowing
+	it.
+	
+	If you are an emacs user, drop the following line into
+	your .emacs file *now*:
+	
+	     (setq-default indent-tabs-mode nil)
+	
+	(John, note that this is slightly different than what
+	I think we mailed the other day, which only sets it
+	for the current buffer).
+	
+	If you have modifications in progress currently, you
+	will want to remove the tabs from it.  In order to
+	see whether the code has tabs, do:
+	
+	    grep -P '\t' <filename>
+	
+	In order to remove the tabs from the code, you can either:
+	
+	   load into emacs, select the whole file (Ctrl-space then
+	   Ctrl->), then do M-x untabify
+	
+	Or:
+	
+	   run expand from the unix command line on the file, piping
+	   the result to a temporary file, then copying the temporary
+	   file back into place (the following script does this:
+	-----------------------------------------------
+	#!/bin/csh
+	
+	if ($# == 0) then
+	  echo "Usage: $0 <filename>"
+	  exit 0
+	endif
+	
+	expand $1 > /tmp/tmp.tmp && cp /tmp/tmp.tmp $1
+	-----------------------------------------------
+	
+	If you need to do a bunch of files, put the script above
+	into an exeutable location, name it tabs2spaces, and run
+	a command like the following from your root chapel directory:
+	
+	          find compiler -name "*.cpp" -exec tabs2spaces {} \;
+	
+	Repeat this, replacing "*.cpp" with "*.h" and "*.c", and
+	"compiler" with "runtime"
+	
+	I haven't yet set up a cron job to make sure new tabs aren't
+	introduced into the code, but will hope to do so tomorrow.
+	
+	The command:
+	
+	    cvs diff -t <filename>
+	
+	may also be of use as it tends to show the diffing lines
+	in a clearer manner (but does not remove the fact that
+	there's a difference).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp link.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/adt/: vec.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp cdb.h cfg.cpp 
+	                           cg.cpp clone.cpp dead.cpp dom.cpp 
+	                           fa.cpp fun.cpp if1.cpp inline.cpp 
+	                           loop.cpp pattern.cpp prim.cpp ssu.cpp 
+	                           sym.cpp 
+	chapel/compiler/analysis/make_prims/: make_prims.cpp 
+	chapel/compiler/backend/: beautify.cpp dump.cpp graph.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/compiler/include/: analysis.h code.h driver.h expr.h fa.h 
+	                          files.h fun.h grammar.h if1.h inline.h 
+	                          list.h log.h loop.h map.h pattern.h 
+	                          pnode.h prim.h stmt.h sym.h symbol.h 
+	                          symscope.h symtab.h type.h var.h vec.h 
+	chapel/compiler/main/: arg.cpp driver.cpp runpasses.cpp 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp filesToAST.cpp 
+	                         runAnalysis.cpp 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         insertWriteFns.cpp legalizeCNames.cpp 
+	                         renameOverloadedFunctions.cpp 
+	                         symscope.cpp symtab.cpp 
+	chapel/compiler/test/: beautify.cpp files.cpp map.cpp misc.cpp 
+	                       vec.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             buildClassConstructorsEtc.cpp 
+	                             checkSemantics.cpp 
+	                             expandClassWiths.cpp 
+	                             findUnknownTypes.cpp fixup.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertElidedLoops.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertIndexType.cpp 
+	                             insertThisParameters.cpp 
+	                             insertUnionChecks.cpp 
+	                             insertVariableInitializations.cpp 
+	                             methodsToFunctions.cpp 
+	                             processParameters.cpp 
+	                             resolveOverloadedOperators.cpp 
+	                             resolveSymbols.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+	                             transformLetExprs.cpp 
+	                             updateSymbols.cpp 
+	chapel/compiler/util/: files.cpp misc.cpp 
+	chapel/compiler/vparser/: ast_cf.cpp grammar.cpp parse.cpp 
+	                          parse_ast.cpp parse_ast.h scope.cpp 
+	                          scope.h 
+	chapel/compiler/vparser/cast/: cast.cpp 
+	chapel/runtime/include/: array.h chplmem.h config.h 
+	chapel/runtime/src/: arg.c chplio.c chplmem.c chplmem_tests.c 
+	                     chpltypes.c config.c 
+
