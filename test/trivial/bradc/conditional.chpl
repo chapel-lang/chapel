@@ -14,7 +14,7 @@ if (a) then {
 } else {
   writeln("took false path for a");
 };
-write("\n");
+writeln();
 
 if (b) then {
   writeln("took true path for b");
@@ -23,13 +23,13 @@ if (b) then {
   writeln("took false path for b");
   writeln("no really, I did");
 };
-write("\n");
+writeln();
 
 if (c) then
   writeln("took true path for c")
 else
   writeln("took false path for c");
-write("\n");
+writeln();
 
 if (d) then
   writeln("took true path for d")
@@ -37,36 +37,36 @@ else {
   writeln("took false path for d");
   writeln("no really, I did!");
 };
-write("\n");
+writeln();
 
 if (e) then {
   writeln("took true path for e");
   writeln("no really, I did!");
 } else
   writeln("took false path for e");
-write("\n");
+writeln();
 
 if (f) then
   writeln("took true path for f");
-write("\n");
+writeln();
 
 if (g) then {
   writeln("took true path for g");
 };
-write("\n");
+writeln();
 
 if (h) then {
   writeln("took true path for h");
   writeln("no really, I did!");
 };
-write("\n");
+writeln();
 
 if (!a) then {
   writeln("took true path for !a");
 } else {
   writeln("took false path for !a");
 };
-write("\n");
+writeln();
 
 if (!b) then {
   writeln("took true path for !b");
@@ -75,13 +75,13 @@ if (!b) then {
   writeln("took false path for !b");
   writeln("no really, I did");
 };
-write("\n");
+writeln();
 
 if (!c) then
   writeln("took true path for !c")
 else
   writeln("took false path for !c");
-write("\n");
+writeln();
 
 if (!d) then
   writeln("took true path for !d")
@@ -89,26 +89,26 @@ else {
   writeln("took false path for !d");
   writeln("no really, I did!");
 };
-write("\n");
+writeln();
 
 if (!e) then {
   writeln("took true path for !e");
   writeln("no really, I did!");
 } else
   writeln("took false path for !e");
-write("\n");
+writeln();
 
 if (!f) then
   writeln("took true path for !f");
-write("\n");
+writeln();
 
 if (!g) then {
   writeln("took true path for !g");
 };
-write("\n");
+writeln();
 
 if (!h) then {
   writeln("took true path for !h");
   writeln("no really, I did!");
 };
-write("\n");
+writeln();

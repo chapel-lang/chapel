@@ -117,17 +117,19 @@ static int isTupleArg(AST* ast) {
 static void genSingleWriteArg(FILE* outfile, AST* arg, int genSemi) {
   Sym* argdt = type_info(arg);
 
-  fprintf(outfile, "_write");
-  genDT(outfile, argdt);
-  fprintf(outfile, "(");
-  fprintf(outfile, "stdout, ");
-  fprintf(outfile, "_default_format");
-  genDT(outfile, argdt);
-  fprintf(outfile, ", ");
-  genAST(outfile, arg);
-  fprintf(outfile, ")");
-  if (genSemi) {
-    fprintf(outfile, ";\n");
+  if (!dtIsNullTuple(argdt)) {
+    fprintf(outfile, "_write");
+    genDT(outfile, argdt);
+    fprintf(outfile, "(");
+    fprintf(outfile, "stdout, ");
+    fprintf(outfile, "_default_format");
+    genDT(outfile, argdt);
+    fprintf(outfile, ", ");
+    genAST(outfile, arg);
+    fprintf(outfile, ")");
+    if (genSemi) {
+      fprintf(outfile, ";\n");
+    }
   }
 }
 
@@ -353,7 +355,11 @@ void genAST(FILE* outfile, AST* ast) {
 	  genAST(outfile, ast->v[0]);
 	  fprintf(outfile, "(");
 	  for (i=2; i<ast->n; i++) {
-	    genAST(outfile, ast->v[i]);
+	    if (dtIsNullTuple(type_info(ast->v[i]))) {
+	      fprintf(outfile, "/* null tuple */");
+	    } else {
+	      genAST(outfile, ast->v[i]);
+	    }
 	  }
 	  fprintf(outfile, ")");
 	}
@@ -416,5 +422,4 @@ void codegen(FA* fa, char* infilename, char* compilerDir) {
   } else {
     makeAndCopyBinary();
   }
-
 }

@@ -8,3 +8,11 @@ int dtIsDomain(Sym* pdt) {
   }
   return 0;
 }
+
+
+int dtIsNullTuple(Sym* pdt) {
+  if (pdt == NULL) {
+    INT_FATAL(NULL, "unexpected NULL datatype in dtIsNullTuple");
+  }
+  return (pdt->type_kind == Type_RECORD) && (pdt->has.n == 0);
+}

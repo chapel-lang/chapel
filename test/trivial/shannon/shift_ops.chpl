@@ -4,19 +4,19 @@ var answer = 0;
 
 writeln("m = ", m);
 writeln("n = ", n);
-writeln("");
+writeln();
 
 writeln("test: m << 1");
 writeln("expected answer = 20");
 answer = m << 1; 
 writeln("actual answer = ", answer);
-writeln("");
+writeln();
 
 writeln("test: m >> 1");
 writeln("expected answer = 5");
 answer = m >> 1;
 writeln("actual answer = ", answer);
-writeln("");
+writeln();
  
 writeln("test: n >> 1");
 writeln("expected answer = 2");

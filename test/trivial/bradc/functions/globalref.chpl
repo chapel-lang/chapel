@@ -8,14 +8,14 @@ function foo(a) {
   writeln("  a is ", a);
   writeln("  b is ", b);
   writeln("  c is ", c);
-  writeln("");
+  writeln();
 }
 
 writeln("In main:");
 writeln("  a is ", a);
 writeln("  b is ", b);
 writeln("  c is ", c);
-writeln("");
+writeln();
 
 foo(1);
 
@@ -23,4 +23,4 @@ writeln("In main:");
 writeln("  a is ", a);
 writeln("  b is ", b);
 writeln("  c is ", c);
-writeln("");
+writeln();

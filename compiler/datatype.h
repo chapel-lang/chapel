@@ -5,5 +5,6 @@
 #include "sym.h"
 
 int dtIsDomain(Sym*);
+int dtIsNullTuple(Sym*);
 
 #endif

@@ -1,5 +1,6 @@
 #include "cg_funs.h"
 #include "codegen.h"
+#include "datatype.h"
 #include "fun.h"
 
 static Fun* currentFunction;
@@ -29,7 +30,8 @@ static void genFunHead(FILE* outfile, Fun* fn) {
   /* formal parameter list */
   fprintf(outfile, "(");
   numargs = fn->args.n;
-  if (numargs == 1) {
+  if (numargs < 2 ||
+      numargs == 2 && dtIsNullTuple(fn->args.v[1]->type)) {
     fprintf(outfile, "void");
   } else {
     for (i=1; i<numargs; i++) {

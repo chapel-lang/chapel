@@ -13,31 +13,31 @@ writeln("test: m & n");
 writeln("expected answer = 8");
 answer = m & n;
 writeln("actual answer = ", answer);
-writeln("");
+writeln();
 
 writeln("test: m ^ n");
 writeln("expected answer = 6");
 answer = m ^ n;
 writeln("actual answer = ", answer);
-writeln("");
+writeln();
 
 writeln("test: m | n"); 
 writeln("expected answer = 14");
 answer = m | n;
 writeln("actual answer = ", answer);
-writeln("");
+writeln();
 
 writeln("test: o || p");
 writeln("expected answer = 1");
 answer = o || p;
 writeln("actual answer = ", answer);
-writeln("");
+writeln();
 
 writeln("test: o || o");
 writeln("expected answer = 0");
 answer = o || o;
 writeln("actual answer = ", answer);
-writeln("");
+writeln();
 
 writeln("test: p || p");
 writeln("expected answer = 1");
