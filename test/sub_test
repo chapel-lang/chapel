@@ -110,7 +110,7 @@ endif
 set testsrc = `ls *.{chpl,v}`
 
 if ($CHPLTESTVGRND == "on") then
-set valgrnd = "valgrind --suppressions=$testdir/../compiler/valgrind.suppressions -q "
+set valgrnd = "valgrind ${CHPL_VALGRIND_OPTIONS} --suppressions=$testdir/../compiler/valgrind.suppressions -q "
 else
 set valgrnd = ""
 endif
