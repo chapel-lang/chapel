@@ -1990,3 +1990,14 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/05/10 09:10:50 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add handling of value "clases" as per David's mail to TODO list
+	Fix bug in setter path computation flow analysis
+
+Modified files:
+	chapel/compiler/: TODO fa.cpp vec.cpp 
+
