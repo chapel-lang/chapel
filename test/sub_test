@@ -103,6 +103,12 @@ endif
 # get all the source files
 set testsrc = `ls *.chpl`
 
+if ($CHPLTESTVGRND == "on") then
+set valgrnd = "valgrind --suppressions=$testdir/../compiler/valgrind.suppressions -q "
+else
+set valgrnd = ""
+endif
+
 # compile, execute, and compare each source file
 foreach chplsrc ($testsrc)
 
@@ -112,8 +118,8 @@ foreach chplsrc ($testsrc)
     set complog = $execfile.ihgfedcba.comp.out.tmp
     set execlog = $execfile.ihgfedcba.exec.out.tmp
 
-    echo \[Executing: \"$compiler $compopts $chplsrc $lastcompopts\"\]
-    $timedexec $timeout $compiler $compopts $chplsrc $lastcompopts >& $complog
+    echo \[Executing: \"$valgrnd$compiler $compopts $chplsrc $lastcompopts\"\]
+    $timedexec $timeout $valgrnd$compiler $compopts $chplsrc $lastcompopts >& $complog
 
     if ( $status != 0 || $execute == "no") then
 	# Compile unsuccessful

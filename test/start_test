@@ -38,6 +38,7 @@
 #   -execopts  <option list>          ""
 #   -startdir  <test subdir>          .
 #   -logfile   <log filename>         ./Logs/<username>.log
+#   -valgrind
 #
 # The -compiler option allows the user to specify the compiler to test
 # if it is something other than the obvious one in the current CVS
@@ -64,6 +65,9 @@
 # run whether you want to delete that file or not.  At the end of
 # the run, a second log file named <logfile>.summary will be
 # generated containing only the Errors that were logged.
+#
+# The -valgrind option specifies that the compiler should be run
+# under valgrind in order to find errors.
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
@@ -164,17 +168,6 @@
 
 set user = `whoami`
 
-if ( ($#argv % 2) == 1 ) then
-	echo Usage and defaults\:
-	echo "     start_test"
-	echo "          -compiler ../compiler/chpl"
-	echo "          -compopts" \"\"
-        echo "          -execopts" \"\"
-	echo "          -startdir ."
-	echo "          -logfile ./Logs/$user.log"
-	exit 0
-endif
-
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 
 ## tester does
@@ -194,6 +187,7 @@ set compiler = "../compiler/chpl"
 set compopts = ""
 set startdir = "$testdir"
 set logfile = "$testdir/Logs/$user.log"
+set valgrind = 0
 
 while ( $#argv > 0 )
 	switch ( $argv[1] )
@@ -226,6 +220,23 @@ while ( $#argv > 0 )
 		set logfile = $argv[1]
 		# echo \[log-file: \"$logfile\"\] |& tee -a $logtmp
 		shift
+		breaksw
+	case -valgrind:
+		shift
+		set valgrind = 1
+		breaksw
+	case -h:
+	case -help:
+		echo Usage and defaults\:
+		echo "     start_test"
+		echo "          -compiler ../compiler/chpl"
+		echo "          -compopts" \"\"
+		echo "          -execopts" \"\"
+		echo "          -startdir ."
+		echo "          -logfile ./Logs/$user.log"
+		echo "          -valgrind"
+		echo "          -h, -help"
+		exit 0
 		breaksw
 	default:
 		echo \[ERROR: Unknown command line parameter \"$argv[1]\", aborting.\] |& tee -a $logtmp
@@ -275,6 +286,14 @@ else
 	echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
 		|& tee -a $logtmp
 	exit 1
+endif
+
+if ($valgrind) then
+    echo \[valgrind: ON\]
+    setenv CHPLTESTVGRND on
+else
+    echo \[valgrind: OFF\]
+    setenv CHPLTESTVGRND off
 endif
 
 
