@@ -105,7 +105,7 @@
 %type <pdt> type domainType indexType arrayType tupleType
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype typevardecltype fnrettype
-%type <pch> identifier query_identifier
+%type <pch> identifier query_identifier fname
 %type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
 %type <enumsym> enum_item enum_list
 %type <pexpr> lvalue atom expr exprlist nonemptyExprlist literal range
@@ -403,9 +403,58 @@ fnrettype:
     { $$ = $2; }
 ;
 
+fname:
+  identifier
+| TASSIGN 
+  { $$ = "="; } 
+| TASSIGNPLUS
+  { $$ = "+="; } 
+| TASSIGNMINUS
+  { $$ = "-="; } 
+| TASSIGNMULTIPLY
+  { $$ = "*="; } 
+| TASSIGNDIVIDE
+  { $$ = "/="; } 
+| TASSIGNBAND
+  { $$ = "&="; } 
+| TASSIGNBOR
+  { $$ = "|="; } 
+| TASSIGNBXOR
+  { $$ = "^="; } 
+| TBAND
+  { $$ = "&"; } 
+| TBOR
+  { $$ = "|"; } 
+| TBXOR
+  { $$ = "^"; } 
+| TBNOT
+  { $$ = "~"; } 
+| TEQUAL
+  { $$ = "=="; } 
+| TNOTEQUAL
+  { $$ = "!="; } 
+| TLESSEQUAL
+  { $$ = "<="; } 
+| TGREATEREQUAL
+  { $$ = ">="; } 
+| TLESS
+  { $$ = "<"; } 
+| TGREATER
+  { $$ = ">"; } 
+| TPLUS 
+  { $$ = "+"; } 
+| TMINUS
+  { $$ = "-"; } 
+| TSTAR
+  { $$ = "*"; } 
+| TDIVIDE
+  { $$ = "/"; } 
+| TEXP
+  { $$ = "**"; } 
+  ;
 
 fndecl:
-  TFUNCTION identifier
+  TFUNCTION fname
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2));
     }
@@ -414,7 +463,7 @@ fndecl:
       $$ = Symboltable::finishFnDef($<fnsym>3, $5, $7, $8);
     }
 |
-  TFUNCTION identifier TDOT identifier
+  TFUNCTION identifier TDOT fname
     {
       $<fnsym>$ =
 	Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
