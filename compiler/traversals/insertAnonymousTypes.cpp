@@ -155,6 +155,8 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
  ***/
 static void build_anon_type_def(Stmt* stmt, Type** type) {
   if (typeid(**type) == typeid(ArrayType)) {
+    ArrayType* array_type = dynamic_cast<ArrayType*>(*type);
+    build_anon_type_def(stmt, &array_type->elementType);
     build_anon_array_type_def(stmt, type);
   }
   else if (typeid(**type) == typeid(DomainType)) {
