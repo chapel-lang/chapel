@@ -761,10 +761,10 @@ Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
       return new DefExpr(sym_copy);
     }
     else if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
-      return
-	Symboltable::defineVarDef(var, var->type,
-				  var->init->copyInternal(clone, map, analysis_clone), 
-				  var->varClass, var->consClass);
+      VarSymbol* sym_copy = dynamic_cast<VarSymbol*>(var->copyList(clone, map, analysis_clone));
+      DefExpr* def_expr = new DefExpr(sym_copy);
+      sym_copy->setDefPoint(def_expr);
+      return def_expr;
     }
     return NULL;
   }

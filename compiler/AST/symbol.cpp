@@ -209,7 +209,7 @@ VarSymbol::VarSymbol(char* init_name,
 
 
 Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new VarSymbol(copystring(name), type, init, varClass, consClass);
+  return new VarSymbol(copystring(name), type, init->copy(clone, map, analysis_clone), varClass, consClass);
 }
 
 
@@ -435,10 +435,10 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
 
   map->clear();
 
-
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
 
-  ClassType* new_class_type = dynamic_cast<ClassType*>(type->copy(true, map, clone_callback));
+  ClassType* new_class_type =
+    dynamic_cast<ClassType*>(type->copy(true, map, clone_callback));
 
   if (!new_class_type) {
     INT_FATAL(this, "Major error in TypeSymbol::clone");
