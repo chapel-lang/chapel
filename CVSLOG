@@ -2927,3 +2927,29 @@ Log message:
 Modified files:
 	chapel/compiler/: fun.cpp 
 
+---------------------------------------------------------------------------
+
+06/08/04 13:17:45 -- bradc
+
+Log message:
+	Got code generation for zero-argument functions working.
+	Added a test to check this behavior and removed the
+	sample from the Share/ directory.  Also changed instances
+	of writeln("") and write("\n") to writeln() in tests
+	that used these other idioms (and weren't testing
+	that they worked).
+
+Modified files:
+	chapel/compiler/: cg_funs.cpp codegen.cpp datatype.cpp 
+	                  datatype.h 
+	chapel/test/trivial/bradc/: conditional.chpl 
+	chapel/test/trivial/bradc/functions/: globalref.chpl 
+	chapel/test/trivial/shannon/: arithmetic_ops.chpl 
+	                              bitwise_assignment.chpl 
+	                              bitwise_ops.chpl equality_ops.chpl 
+	                              relational_ops.chpl shift_ops.chpl 
+Added files:
+	chapel/test/trivial/bradc/functions/: noargs.good 
+Removed files:
+	chapel/test/Share/: noargs.chpl 
+
