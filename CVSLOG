@@ -21148,3 +21148,16 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+03/23/05 15:35:07 -- jplevyak
+
+Log message:
+	Fix test_nomembers1.  Preventing cloning in this case.
+	Don't know why it should have caused a problem however.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp 
+Removed files:
+	chapel/test/classes/deitz/: test_nomembers1.future 
+
