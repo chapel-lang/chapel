@@ -18846,3 +18846,13 @@ Modified files:
 Removed files:
 	chapel/test/trivial/jplevyak/: pragma-4.future 
 
+---------------------------------------------------------------------------
+
+03/04/05 10:19:31 -- jplevyak
+
+Log message:
+	Fixed another issue with generic instantiation having to do with constants.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
