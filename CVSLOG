@@ -21661,3 +21661,16 @@ Removed files:
 	chapel/test/classes/deitz/: test_mf_class.future 
 	                            test_mf_record.future 
 
+---------------------------------------------------------------------------
+
+03/25/05 14:59:30 -- deitz
+
+Log message:
+	Fixed a #ifdef in buildClassConstructorsEtc.  By uncommenting the
+	#define in buildClassConstructorsEtc.cpp and specializeParenOps.cpp,
+	the constructors should be scoped outside of the class and have named
+	parameters with default values.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
