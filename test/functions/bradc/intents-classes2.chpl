@@ -41,7 +41,7 @@ function callblank(x: pair) {
 
 
 function main() {
-  var a: pair = a();
+  var a: pair = pair();
 
   a.a = 10;
   a.b = 2.3;

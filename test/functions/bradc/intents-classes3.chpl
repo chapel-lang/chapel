@@ -4,7 +4,7 @@ class pair {
   var b: float;
 }
 
-var a: pair = a();
+var a: pair = pair();
 
 function callin(in x: pair) {
   writeln("in callin, x is: ", x.a, " ", x.b);
