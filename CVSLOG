@@ -23797,3 +23797,54 @@ Modified files:
 	                             specializeParenOpExprs.cpp 
 	                             verifyASTType.cpp verifyASTType.h 
 
+---------------------------------------------------------------------------
+
+04/04/05 17:48:31 -- shannon
+
+Log message:
+	Implemented the --memtrace and --memthreshold runtime options.
+	"--memtrace=<filename>" prints a memory trace to the given
+	filename.  For instance:
+	
+	        "malloc" called for "49" items of size "8" for \
+	                 "array A":  0x804f300
+	
+	The memory threshold option is always called with memory trace,
+	"--memtrace=<filename> --memthreshold=<n>", and squelches prints
+	to the log for memory sizes less than 'n'.
+	
+	Also updated the help message, sorting the flags by type and
+	printing them under headings.  The config var table is printed
+	at the bottom of the help message.
+	
+	Changed the print of the memory table to include both the number
+	and size (in bytes) of the memory requested, along with the
+	memory description.
+	
+	Added functionality to the test harness so that a test can
+	specify its own CATFILES, e.g. foo.catfiles.
+
+Modified files:
+	chapel/runtime/include/: arg.h chplmem.h config.h 
+	chapel/runtime/src/: arg.c chplmem.c config.c main.c 
+	chapel/test/: start_test sub_test 
+	chapel/test/execflags/shannon/configs/: configVar-Dash.good 
+	                                        configVarHelp.good 
+	                                        configVarModStrings1.good 
+	                                        configVarModStrings2.good 
+	                                        configVarSetOver.good 
+	                                        configVarSetTwoTypes.good 
+	                                        configVarTwoModules.good 
+	                                        varNameEnumQM.good 
+	                                        varNameQMark.good 
+	chapel/test/memory/shannon/: freedMalloc.good 
+	                             reallocZeroSize.good 
+Added files:
+	chapel/test/memory/shannon/: CLEANFILES configVarFile.catfiles 
+	                             configVarFile.chpl 
+	                             configVarFile.execopts 
+	                             configVarFile.good 
+	                             configVarFile.input jacobi.catfiles 
+	                             jacobi.chpl jacobi.execopts 
+	                             jacobi.good 
+
