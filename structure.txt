@@ -1,5 +1,3 @@
-
-
 chapel
 - compiler             -- sources for Chapel-to-C translator
   + cygwin             -- platform-specific subdirectories for .o's and .dep's
