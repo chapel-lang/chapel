@@ -28,7 +28,8 @@ Vec<C>::addx() {
 	void *vv = (void*)v;
 	nl = 1 << nl;
 	v = (C*)MALLOC(nl * sizeof(C));
-	memcpy(v, vv, nl * sizeof(C));
+	memcpy(v, vv, n * sizeof(C));
+	memset(&v[n], 0, (nl - n) * sizeof(C));
       }
     }
   }

@@ -204,7 +204,10 @@ StringOpenHash::cannonicalize(char *s, char *e) {
     }
   }
   s = dupstr(s, e);
-  return put(s);
+  char *ss = put(s);
+  if (ss)
+    return ss;
+  return s;
 }
 
 template <class K, class C> inline C 
