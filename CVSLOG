@@ -15676,3 +15676,19 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+01/25/05 15:03:50 -- deitz
+
+Log message:
+	Removed usage of clone_callback from the coercion wrapper creation
+	routine.  Also cleaned it up a little; removed the assignment to the
+	temp, folding that in to the initializer, and made the temp names a
+	little more descriptive.  This cleans up the intermediate C code a
+	bit.
+	
+	Made a superficial change to the ClassType constructor.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+
