@@ -2101,3 +2101,15 @@ Log message:
 Modified files:
 	chapel/compiler/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/12 12:37:19 -- bradc
+
+Log message:
+	Removed purposeful bug in driver.cpp and checking in new
+	nightly test script that handles build errors gracefully.
+
+Modified files:
+	chapel/compiler/: driver.cpp 
+	chapel/test/Bin/: nightly 
+
