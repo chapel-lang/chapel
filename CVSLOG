@@ -4715,3 +4715,15 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+07/29/04 15:22:50 -- bradc
+
+Log message:
+	Added .cvsignore files for new version of boehmgc.
+
+Added files:
+	chapel/third-party/boehmgc/gc6.3/: .cvsignore 
+	chapel/third-party/boehmgc/gc6.3/doc/: .cvsignore 
+	chapel/third-party/boehmgc/gc6.3/include/: .cvsignore 
+
