@@ -2066,3 +2066,27 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/05/11 14:20:14 -- bradc
+
+Log message:
+	Added a new feature to the testing scripts -- if a subdirectory
+	contains an executable PREDIFF script, that script will be run
+	prior to performing the diff for each test in the directory.
+	The name of the test being run and the name of the log file
+	being diffed will be passed to the scripts as parameters.
+	
+	Added a use of this to John's flowanalysis directory which
+	previously printed things out in a platform-specific order.
+	The PREDIFF script in that directory sorts the log file
+	prior to doing the diff (and compares against new, sorted
+	.chk files) to ensure that the test's result is not influenced
+	by this platform-specific order.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+	chapel/test/flowanalysis/jplevyak/: cs1.chk cs2.chk cs3.chk 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: PREDIFF 
+
