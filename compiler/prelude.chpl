@@ -1,8 +1,8 @@
 // Chapel Prelude
 
-in system __name "system";
+in system __name "system"; // system module
 
-// simple builtin types
+// builtin types
 
 type symbol __name "symbol";
 type function __name "function";
@@ -13,7 +13,7 @@ type vector __name "vector";
 type tuple __name "tuple";
 type void __name "void" : tuple;
 type object __name "object" = { };
-type list(a) __name "list";
+type list __name "list";
 type ref __name "ref";
 
 type catagory __name "catagory";
@@ -46,15 +46,15 @@ type size __name "size" = uint32;
 type bool __name "bool" = int;
 type enum_element __name "enum_element" = int;
 
-// builtin data
+// builtin value
 
 null __name "null" : (); 
 
-// global initialization
+// global initialization function
 
 __init__ __name "init" : 0;
 
-//   internal
+//   private internal functions
 function __make_tuple(...) __name "make_tuple" { 0 };
 function __make_list(...) __name "make_list" { 0 } ;
 function __make_vector(...) __name "make_vector" { 0 } ;
@@ -63,10 +63,10 @@ function __make_continuation(...) __name "make_continuation" { 0 };
 function __primitive(...) __name "primitive" { 0 } ;
 function __new(...) __name "new" { 0 };
 
-//   public
+//   public internal function
 function reply(...) __name "reply" { 0 };
 
-// symbol builtins
+// builtin symbols
 #operator __name "operator";
 #"*" __name "deref";
 #"&" __name "doref";
@@ -93,9 +93,7 @@ function operator(a:int, #"^", b:int)		{ __primitive a #"^" b }
 function operator(a:int, #"|", b:int)		{ __primitive a #"|" b }
 function operator(a:any, #"&&", b:any)		{ __primitive a #"&&" b }
 function operator(a:any, #"||", b:any)		{ __primitive a #"||" b }
-function operator(a:ref, #"=", b:any)		{
-  __primitive a #"=" b;
-}
+function operator(a:ref, #"=", b:any)		{ __primitive a #"=" b; }
 function operator(a:ref, #"*=", b:anynum)	{
   __primitive a #"=" (__primitive (__primitive #"*" a) #"*" b)
 }
@@ -126,7 +124,6 @@ function operator(a:ref, #"|=", b:int)		{
 function operator(a:ref, #"^=", b:int)		{
   __primitive a #"=" (__primitive (__primitive #"*" a) #"^" b)
 }
-function operator(a:int, #"..", b:int)		{ sequence(a, b) }
 function operator(a:any, #"->", b:symbol)	{ __primitive (__primitive #"*" a) #"." b }
 function operator(a:any, #"->*", b:symbol)	{ __primitive (__primitive #"*" a) #"." b; }
 function operator(a:anynum, #"^^", b:anynum)	{ __primitive a #"^^" b }
@@ -157,10 +154,10 @@ type domain;
 type sequence __name "sequence";
 
 class distribution {
-  type Source_domain : domain;
-  type Destination_domain : domain;
-  var source : Source_domain;
-  var destination : Destination_domain;
+  type source_domain : domain;
+  type destination_domain : domain;
+  var source : source_domain;
+  var destination : destination_domain;
   function local(i : sequence) : sequence;
   function offset(i : sequence) : sequence;
 }
@@ -169,14 +166,11 @@ class cyclic implements distribution {
   var width : int;
 }
 
-class domain(rank, distribute, target) {
+class domain(rank, distribute, target) : vector {
   const rank : int;
   const index : sequence;
   type target : domain;
   type distribute: distribution;
-}
-
-function domain::class(i : int) {
 }
 
 function domain::class(s1 : sequence) {
@@ -213,4 +207,60 @@ function sequence::class(f : int, l : int) {
 function operator(a:sequence, #"*", b:sequence) {
   new sequence
 }
+
+/*
+  David's old iterator and domain examples
+
+// iterators
+
+type iterator(a);
+type iteratable = {
+  type element_type;
+  elements : iterator(element_type);
+};
+
+
+// domains
+
+type domain;
+type sequence __name "sequence";
+type decomposition;
+type arithmetic_domain(rank:symbol, distribute:decomposition, to:domain) : domain;
+type opaque_domain(distribute:decomposition, to:domain) : domain;
+type index(a:domain);
+type subdomain(a:domain) = {
+  size : int;
+  lbound : int -> int;
+  ubound : int -> int;
+};
+
+type decomposition : catagory = {
+  type source : domain, target : domain;
+  locale : index(source) -> index(target);
+};
+
+type simple_block_decomposition : decomposition = {
+  where source : arithmetic_domain(1), target : arithmetic_domain(1);
+  s : source;
+  t : target;
+  chunk : int;
+  mod : int;
+};
+
+simple_block_decomposition::local(i): {
+  k : i / chunk;
+  k : (i - s.lbound(1)) / chunk;
+  if (k < mod) 
+    k += 1;
+  k + t.lbound(1)
+};
+
+type map(d: domain, a) : iteratable = {
+  elements : iterator(a);
+  indexes : iterator(index(d));
+  operator: #"[" * index(d) -> a &;
+};
+
+operator(a:map, #"[", b:index(map::d)): 0;
+*/
 

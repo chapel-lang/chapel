@@ -87,7 +87,8 @@ AST *
 op_AST(IF1 *if1, D_ParseNode &pn) {
   AST *op = new AST(AST_op);
   op->set_location(&pn);
-  for (int i = 0; i < d_get_number_of_children(&pn); i++) {
+  int n = d_get_number_of_children(&pn);
+  for (int i = 0; i < n; i++) {
     D_ParseNode *c = d_get_child(&pn, i);
     if (c->user.ast)
       op->add(c->user.ast);

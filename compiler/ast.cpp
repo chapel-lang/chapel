@@ -373,9 +373,7 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 	if (ast->sym->type_kind == Type_NONE || ast->sym->type_kind == Type_UNKNOWN) {
 	  int i = 1;
 	  for (; i < ast->n; i++) {
-	    if (ast->v[i]->kind == AST_def_type_param ||
-		ast->v[i]->kind == AST_constraint) 
-	    {
+           if (ast->v[i]->kind == AST_def_type_param || ast->v[i]->kind == AST_constraint) {
 	      // handled below
 	    } else { 
 	      ast->sym->type_kind = Type_ALIAS;
@@ -946,8 +944,8 @@ gen_if(IF1 *i, AST *ast) {
 static void
 gen_constructor(IF1 *i, AST *ast) {
   Sym *constructor;
-  for (int x = 0; x < ast->n; x++)
-    if1_gen(i, &ast->code, ast->v[x]->code);
+  forv_AST(a, *ast)
+    if1_gen(i, &ast->code, a->code);
   Code *send = if1_send1(i, &ast->code);
   send->ast = ast;
   ast->rval = new_sym(i, ast->scope);
@@ -968,12 +966,19 @@ gen_constructor(IF1 *i, AST *ast) {
     case AST_vector: 
       constructor = sym_make_vector; 
       break;
+    case AST_index:
+      constructor = sym_new;
+      break;
   }
   if1_add_send_arg(i, send, constructor);
   if (ast->kind == AST_vector)
     if1_add_send_arg(i, send, make_int(i, ast->rank));
-  for (int x = 0; x < ast->n; x++)
-    if1_add_send_arg(i, send, ast->v[x]->rval);
+  if (ast->kind == AST_index)
+    if1_add_send_arg(i, send, sym_sequence);
+  forv_AST(a, *ast)
+    if1_add_send_arg(i, send, a->rval);
+  if (ast->kind == AST_index && ast->n < 3)
+    if1_add_send_arg(i, send, make_int(i, 1));
   if1_add_send_result(i, send, ast->rval);
 }
 
@@ -1054,11 +1059,12 @@ gen_if1(IF1 *i, AST *ast) {
     case AST_list:
     case AST_vector:
     case AST_object:
+    case AST_index:
        gen_constructor(i, ast); break;
     case AST_scope:
     case AST_block:
-      for (int x = 0; x < ast->n; x++)
-	if1_gen(i, &ast->code, ast->v[x]->code);
+      forv_AST(a, *ast)
+	if1_gen(i, &ast->code, a->code);
       if (ast->n)
 	ast->rval = ast->last()->rval; 
       break;
@@ -1087,8 +1093,8 @@ gen_if1(IF1 *i, AST *ast) {
 	  ast->code = ast->v[0]->code;
 	ast->rval = ast->v[0]->rval;
       } else
-	for (int x = 0; x < ast->n; x++)
-	  if1_gen(i, &ast->code, ast->v[x]->code);
+	forv_AST(a, *ast)
+	  if1_gen(i, &ast->code, a->code);
       break;
   }
   return 0;

@@ -24,6 +24,7 @@ enum PrimOptions {
 class Primitives : public gc {
  public:
   Map<char *, Prim *> prim_map[2][2];
+  Vec<Prim *> prims;
   Prim *find(AST *c);
   Prim *find(Code *c);
   Prim *find(PNode *p);
@@ -40,9 +41,11 @@ class Prim : public gc {
   uint nonfunctional:1;
   PrimType *arg_types; // vector excluding primitive symbol
   PrimType *ret_types;
+  Vec<AType *> args;
   Prim(int aindex, char *astring, char *aname, int anargs, int apos, 
        PrimType *aarg_types, PrimType *aret_types, int options);
 };
+#define forv_Prim(_c, _v) forv_Vec(Prim, _c, _v)
 
 #include "prim_data.h"
 

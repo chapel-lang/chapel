@@ -77,6 +77,7 @@ P: name string nargs pos argtypes rettypes optional ';'
     nargs -= 2;
     if (nargs < 0)
       nargs = 0;
+    fprintf(fp, "  p->prims.add(%s);\n", STR($n0));
     fprintf(fp, "  p->prim_map[%d][%s].put(n, %s);\n", nargs, STR($n3), STR($n0));
   }
 ;

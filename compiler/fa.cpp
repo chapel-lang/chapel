@@ -64,7 +64,7 @@ static AType *make_AType(CreationSet *cs);
 
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), in(bottom_type), out(bottom_type), restrict(top_type), 
-  creation_set(0), in_send_worklist(0), contour_is_entry_set(0), entry_set_argument(0)
+  creation_set(0), in_send_worklist(0), contour_is_entry_set(0)
 {
 }
 
@@ -98,8 +98,8 @@ unique_AVar(Var *v, EntrySet *es) {
   if (av)
     return av;
   av = new AVar(v, es);
-  av->contour_is_entry_set = 1;
   v->avars.put(es, av);
+  av->contour_is_entry_set = 1;
   return av;
 }
 
@@ -112,10 +112,10 @@ find_nesting_EntrySet(Fun *fn, EntrySet *e) {
 AVar *
 make_AVar(Var *v, EntrySet *es) {
   assert(!v->sym->constant || !v->sym->in);
-  if (!v->sym->in || v->sym->in->module)
-    return unique_AVar(v, GLOBAL_CONTOUR);
   if (v->sym->in == es->fun->sym)
     return unique_AVar(v, es);
+  if (!v->sym->in || v->sym->in->module || v->sym->type_kind)
+    return unique_AVar(v, GLOBAL_CONTOUR);
   return unique_AVar(v, find_nesting_EntrySet(v->sym->in->fun, es));
 }
 
@@ -497,12 +497,6 @@ find_entry_set(AEdge *e, int require_compatible_args = 0) {
 }
 
 static void
-flow_var_type_of(AVar *v, AType *t) {
-  v->restrict = t;
-  v->out = type_intersection(v->in, v->restrict);
-}
-
-static void
 flow_var_type_restrict(AVar *v, AType *t) {
   v->restrict = type_intersection(t, v->restrict);
   v->out = type_intersection(v->in, v->restrict);
@@ -602,73 +596,37 @@ prim_make_vector(PNode *p, EntrySet *es, AVar *ret) {
 static void
 add_send_constraints(EntrySet *es) {
   forv_PNode(p, es->fun->fa_send_PNodes) {
-    if (!p->prim) {
-      // normal send
+    if (!p->prim) { // normal send
       AVar *retv = make_AVar(p->lvals.v[0], es);
       forv_Var(v, p->rvals)
 	make_AVar(v, es)->arg_of_send.set_add(retv);
-    } else {
-      // primitive
-      Prim *prim = p->prim;
-      PrimType *t = prim->arg_types;
-      int vargs = prim->nargs < 0, n = vargs ? -prim->nargs : prim->nargs;
-      AVar *a = 0, *b = 0;
+    } else { // primitive
+      int n = p->prim->nargs < 0 ? -p->prim->nargs : p->prim->nargs;
       // argument constraints
-      int start = 0;
+      int start = 0, iarg = 0;
       if (p->rvals.v[0]->sym == sym_primitive)
 	start = 1;
       for (int i = start; i < p->rvals.n; i++) {
-	if (i - start == prim->pos) continue;
-	switch (*t) {
-	  case PRIM_TYPE_ANY: break;
-	  case PRIM_TYPE_SYMBOL:
-	    flow_var_type_restrict(make_AVar(p->rvals.v[i], es), sym_symbol);
-	    break;
-	  case PRIM_TYPE_CONT:
-	    flow_var_type_restrict(make_AVar(p->rvals.v[i], es), sym_continuation);
-	    break;
-	  case PRIM_TYPE_REF: flow_var_type_restrict(make_AVar(p->rvals.v[i], es), sym_ref); break;
-	  case PRIM_TYPE_ANY_NUM_A:
-	    a = make_AVar(p->rvals.v[i], es);
-	    flow_var_type_restrict(a, anynum_type);
-	    break;
-	  case PRIM_TYPE_ANY_NUM_B:
-	    b = make_AVar(p->rvals.v[i], es);
-	    flow_var_type_restrict(b, anynum_type);
-	    break;
-	  case PRIM_TYPE_ANY_INT_A:
-	    a = make_AVar(p->rvals.v[i], es);
-	    flow_var_type_restrict(a, anyint_type);
-	    break;
-	  case PRIM_TYPE_ANY_INT_B:
-	    b = make_AVar(p->rvals.v[i], es);
-	    flow_var_type_restrict(b, anyint_type);
-	    break;
-	  default: assert(!"case"); break;
-	}
-	if (i < n) t++;
+	if (i - start == p->prim->pos) continue;
+	flow_var_type_restrict(make_AVar(p->rvals.v[i], es), p->prim->args.v[iarg]);
+	if (i - start < n - 1) iarg++;
       }
       // return constraints
-      t = prim->ret_types;
       assert(p->lvals.n < 2);
       for (int i = 0; i < p->lvals.n; i++) {
-	switch (*t) {
+	switch (p->prim->ret_types[i]) {
 	  case PRIM_TYPE_ANY: break;
-	  case PRIM_TYPE_A: 
-	    flow_var_to_var(a, make_AVar(p->lvals.v[i], es)); 
-	    break;
-	  case PRIM_TYPE_BOOL:
-	    update_var_in(make_AVar(p->lvals.v[i], es), bool_type);
-	    break;
-	  case PRIM_TYPE_SIZE:
-	    update_var_in(make_AVar(p->lvals.v[i], es), size_type);
-	    break;
+	  case PRIM_TYPE_BOOL: update_var_in(make_AVar(p->lvals.v[i], es), bool_type); break;
+	  case PRIM_TYPE_SIZE: update_var_in(make_AVar(p->lvals.v[i], es), size_type); break;
 	  case PRIM_TYPE_ANY_NUM_AB:
-	    update_var_in(make_AVar(p->lvals.v[i], es), type_union(a->out, b->out)->top);
+	  case PRIM_TYPE_A: {
+	    for (int j = start; j < p->rvals.n; j++)
+	      if (j - start != p->prim->pos) 
+		make_AVar(p->rvals.v[j], es)->arg_of_send.set_add(make_AVar(p->lvals.v[0], es));
 	    break;
+	  }
 	  default: assert(!"case"); break;
 	}
-	if (i < n) t++;
       }
       // specifics
       switch (p->prim->index) {
@@ -948,6 +906,30 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
     if (incomplete)
       creation_point(make_AVar(p->lvals.v[0], es), sym_function);
   } else {
+    // argument and return constraints
+    int n = p->prim->nargs < 0 ? -p->prim->nargs : p->prim->nargs;
+    AVar *a = 0, *b = 0;
+    int start = 0, iarg = 0;
+    if (p->rvals.v[0]->sym == sym_primitive)
+      start = 1;
+    for (int i = start; i < p->rvals.n; i++) {
+      if (i - start == p->prim->pos) continue;
+      switch (p->prim->arg_types[iarg]) {
+	default: break;
+	case PRIM_TYPE_ANY_NUM_A: a = make_AVar(p->rvals.v[i], es); break;
+	case PRIM_TYPE_ANY_NUM_B: b = make_AVar(p->rvals.v[i], es); break;
+	case PRIM_TYPE_ANY_INT_A: a = make_AVar(p->rvals.v[i], es); break;
+	case PRIM_TYPE_ANY_INT_B: b = make_AVar(p->rvals.v[i], es); break;
+      }
+      if (i - start < n - 1) iarg++;
+    }
+    for (int i = 0; i < p->lvals.n; i++) {
+      if (p->prim->ret_types[i] == PRIM_TYPE_ANY_NUM_AB)
+	update_var_in(make_AVar(p->lvals.v[i], es), type_union(a->out, b->out)->top);
+      if (p->prim->ret_types[i] == PRIM_TYPE_A)
+	flow_var_to_var(a, make_AVar(p->lvals.v[i], es));
+    }
+    // specifics
     switch (p->prim->index) {
       default: break;
       case P_prim_vector: {
@@ -1122,12 +1104,11 @@ analyze_edge(AEdge *e) {
   for (int i = 0; i < e->args.n; i++) {
     AVar *a = e->args.v[i], *b = e->to->args.v[i];
     if (!b->var->sym->symbol) {
-      flow_var_type_of(b, restrictions.v[i]);
+      flow_var_type_restrict(b, restrictions.v[i]);
       flow_var_to_var(a, b);
       if (b->var->sym->pattern)
 	pattern_match(a, b, e->to);
     }
-    b->entry_set_argument = 1;
   }
   creation_point(make_AVar(e->fun->sym->cont->var, e->to), sym_continuation);
   for (int i = 0; i < e->send->lvals.n; i++) {
@@ -1174,13 +1155,15 @@ static void
 complete_pass(FA *fa) {
   collect_functions(fa);
   // collect type violations
+#if 0
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
-      AVar * av = make_AVar(v, es);
-      if (!av->entry_set_argument && av->out != av->in)
+     AVar * av = make_AVar(v, es);
+      if (av->out != av->in)
 	type_violations.set_add(av);
     }
   }
+#endif
 }
 
 static void
@@ -1238,22 +1221,7 @@ build_dispatch_table(FA *fa) {
 }
 
 static void
-initialize(FA *fa) {
-  element_var = new Var(if1_alloc_sym(
-    fa->pdb->if1, if1_cannonicalize_string(fa->pdb->if1, "some element")));
-  bottom_type = type_cannonicalize(new AType());
-  top_type = make_abstract_type(sym_any);
-  bool_type = make_abstract_type(sym_bool);
-  size_type = make_abstract_type(sym_size);
-  symbol_type = make_abstract_type(sym_symbol);
-  fun_type = make_abstract_type(sym_function);
-  fun_symbol_type = type_union(symbol_type, fun_type);
-  anyint_type = make_abstract_type(sym_anyint);
-  anynum_type = make_abstract_type(sym_anynum);
-  dispatch_table.clear();
-  edge_worklist.clear();
-  send_worklist.clear();
-  build_dispatch_table(fa);
+initialize_symbols(FA *fa) {
   forv_Sym(s, fa->pdb->if1->allsyms) {
     s->subtypes.set_add(s);
     if (s->type_kind)
@@ -1286,6 +1254,47 @@ initialize(FA *fa) {
 }
 
 static void
+initialize_primitives(FA *fa) {
+  forv_Prim(p, fa->pdb->if1->primitives->prims) {
+    int n = p->nargs < 0 ? -p->nargs : p->nargs;
+    for (int i = 0; i < n - 1; i++) {
+      switch (p->arg_types[i]) {
+	case PRIM_TYPE_ANY:		p->args.add(top_type); break;
+	case PRIM_TYPE_SYMBOL:		p->args.add(symbol_type); break;
+	case PRIM_TYPE_CONT:		p->args.add(make_abstract_type(sym_continuation)); break;
+	case PRIM_TYPE_REF:		p->args.add(make_abstract_type(sym_ref)); break;
+	case PRIM_TYPE_ANY_NUM_A:	p->args.add(anynum_type); break;
+	case PRIM_TYPE_ANY_NUM_B:	p->args.add(anynum_type); break;
+	case PRIM_TYPE_ANY_INT_A:	p->args.add(anyint_type); break;
+	case PRIM_TYPE_ANY_INT_B:	p->args.add(anyint_type); break;
+	default: assert(!"case");	break;
+      }
+    }
+  }
+}
+
+static void
+initialize(FA *fa) {
+  element_var = new Var(if1_alloc_sym(
+    fa->pdb->if1, if1_cannonicalize_string(fa->pdb->if1, "some element")));
+  bottom_type = type_cannonicalize(new AType());
+  top_type = make_abstract_type(sym_any);
+  bool_type = make_abstract_type(sym_bool);
+  size_type = make_abstract_type(sym_size);
+  symbol_type = make_abstract_type(sym_symbol);
+  fun_type = make_abstract_type(sym_function);
+  fun_symbol_type = type_union(symbol_type, fun_type);
+  anyint_type = make_abstract_type(sym_anyint);
+  anynum_type = make_abstract_type(sym_anynum);
+  dispatch_table.clear();
+  edge_worklist.clear();
+  send_worklist.clear();
+  initialize_symbols(fa);
+  initialize_primitives(fa);
+  build_dispatch_table(fa);
+}
+
+static void
 initialize_pass(FA *fa) {
   type_violations.clear();
   entry_set_done.clear();
@@ -1312,7 +1321,7 @@ collect_type_confluences(FA *fa, Vec<AVar *> &type_confluences) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *av = make_AVar(v, es);
       forv_AVar(x, av->backward) {
-	if (x->out != av->in) {
+	if (type_diff(av->in, x->out) != bottom_type) {
 	  type_confluences.set_add(av);
 	  break;
 	}
@@ -1403,13 +1412,22 @@ clear_results(FA *fa) {
 }
 
 static int
+is_formal_argument(AVar *av) {
+  forv_AVar(v, av->backward) {
+    if (v->arg_of_send.n)
+      return 1;
+  }
+  return 0;
+}
+
+static int
 extend_analysis(FA *fa) {
   int analyze_again = 0;
   compute_recursive_entry_sets(fa);
   Vec<AVar *> type_confluences;
   collect_type_confluences(fa, type_confluences);
   forv_AVar(av, type_confluences)
-    if (av->contour_is_entry_set && av->entry_set_argument) {
+    if (av->contour_is_entry_set && is_formal_argument(av)) {
       if (split_entry_set(av))
 	analyze_again = 1;
     }
@@ -1488,3 +1506,6 @@ call_info(Fun *f, AST *a, Vec<Fun *> &funs) {
   }	
   funs.set_to_vec();
 }
+
+
+

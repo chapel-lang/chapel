@@ -80,7 +80,6 @@ class AVar : public gc {
 
   uint			in_send_worklist:1;
   uint			contour_is_entry_set:1;
-  uint			entry_set_argument:1;
 
   Vec<AVar *>		arg_of_send;
   SLink<AVar>		send_worklist_link;

@@ -251,6 +251,7 @@ expression
   | expression ('.' $name "op period" | '->' $name "op arrow") symbol_ident $left 9900
     { $$.ast = op_AST($g->i, $n); }
   | expression '..' expression ('by' expression)? $left 8400
+    { $$.ast = new AST(AST_index, &$n); }
   | vector_immediate
   | list_immediate
   | paren_block

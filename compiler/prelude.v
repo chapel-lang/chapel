@@ -18,6 +18,7 @@ type ref __name "ref";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;
+type sequence __name "sequence";
 
 type int8 __name "int8";
 type int16 __name "int16";
@@ -121,54 +122,4 @@ operator(#"(", a:symbol, b:any)		   : __primitive #"(" a b;
 operator(a:ref, #"++"): __primitive a #"=" ((__primitive#"*" a) #"+" 1);
 operator(a:ref, #"--"): __primitive a #"=" ((__primitive#"*" a) #"-" 1);
 
-// iterators
 
-type iterator(a);
-type iteratable = {
-  type element_type;
-  elements : iterator(element_type);
-};
-
-
-// domains
-
-type domain;
-type sequence __name "sequence";
-type decomposition;
-type arithmetic_domain(rank:symbol, distribute:decomposition, to:domain) : domain;
-type opaque_domain(distribute:decomposition, to:domain) : domain;
-type index(a:domain);
-type subdomain(a:domain) = {
-  size : int;
-  lbound : int -> int;
-  ubound : int -> int;
-};
-
-type decomposition : catagory = {
-  type source : domain, target : domain;
-  locale : index(source) -> index(target);
-};
-
-type simple_block_decomposition : decomposition = {
-  where source : arithmetic_domain(1), target : arithmetic_domain(1);
-  s : source;
-  t : target;
-  chunk : int;
-  mod : int;
-};
-
-simple_block_decomposition::local(i): {
-  k : i / chunk;
-  k : (i - s.lbound(1)) / chunk;
-  if (k < mod) 
-    k += 1;
-  k + t.lbound(1)
-};
-
-type map(d: domain, a) : iteratable = {
-  elements : iterator(a);
-  indexes : iterator(index(d));
-  operator: #"[" * index(d) -> a &;
-};
-
-operator(a:map, #"[", b:index(map::d)): 0;

@@ -69,8 +69,8 @@ build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont) {
 
 #ifdef CONC_IMPLEMENTED
     get_conservative_conc_dependence_succ(pn->conc_succ, code, data_cont);
-    for (int i = 0; i < pn->conc_succ.n; i++)
-      pn->conc_succ.v[i]->conc_pred.set_add(pn);
+    forv_PNode(x, pn->conc_succ)
+      x->conc_pred.set_add(pn);
 #else
     (void)conc_cont;
 #endif

@@ -57,8 +57,8 @@ template <class C> class Vec : public gc {
   void addx();
 };
 
-#define forv_Vec(_c, _p, _v) if ((_v).n) for (_c **v__##_p  = (_v).v, *_p = *v__##_p; \
-                    ((v__##_p) < (_v).end()) && ((_p = *v__##_p) || 1); v__##_p++)
+#define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *v__##_p = (_c*)0, *_p = (_v).v[(int)v__##_p]; \
+                    ((int)(v__##_p) < (_v).n) && ((_p = (_v).v[(int)v__##_p]) || 1); v__##_p = (_c*)(((int)v__##_p) + 1))
 
 
 extern uint prime2[];
