@@ -24245,3 +24245,38 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+04/06/05 13:21:24 -- deitz
+
+Log message:
+	Made major improvements to sequences.  Rather than withing in the base
+	_seq class to create the anonymous sequence type, the class is cloned
+	(methods and all).
+	
+	Fixed a number of bugs in update in copy.  This will help us with
+	class cloning eventually.
+	
+	Modified the code for _seq.  This checkin gets test_seq1b and
+	test_seq1c working with --noanalysis.
+	
+	Updated the hard-coded write function for sequences to use nil instead
+	of NULL because nil != NULL.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             expandSeqExprAssignments.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             updateSymbols.cpp updateSymbols.h 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq1b.chpl test_seq1b.future 
+	                              test_seq1b.good test_seq1c.chpl 
+	                              test_seq1c.future test_seq1c.good 
+	chapel/test/types/seq/deitz/noanalysis/: test_seq1b.chpl 
+	                                         test_seq1b.good 
+	                                         test_seq1c.chpl 
+	                                         test_seq1c.good 
+
