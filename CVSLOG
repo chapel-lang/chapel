@@ -3284,3 +3284,13 @@ Log message:
 Added files:
 	chapel/test/Share/: increment.chpl unary_plusMinus.chpl 
 
+---------------------------------------------------------------------------
+
+06/14/04 12:47:25 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix up trivial/shannon/{increment.chpl,unary_plusMinus.chpl}.
+
+Modified files:
+	chapel/compiler/: ast.cpp chpl.g 
+
