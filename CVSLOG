@@ -21263,3 +21263,16 @@ Removed files:
 	chapel/test/trivial/bradc/entrypoint/: twomains2.future 
 	                                       twomains2a.future 
 
+---------------------------------------------------------------------------
+
+03/24/05 14:04:48 -- deitz
+
+Log message:
+	Added test to build a linked list out of classes.  This fails because
+	nil is not yet recognized by analysis.
+
+Added files:
+	chapel/test/classes/deitz/: test_class_list1.chpl 
+	                            test_class_list1.future 
+	                            test_class_list1.good 
+
