@@ -8896,3 +8896,22 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/04 14:21:14 -- shannon
+
+Log message:
+	Generated read statement for enumerations.  I continued
+	with the arbitrary maximum string size of 256 for the
+	enums that I used when reading strings.  Added a test.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/runtime/include/: chplio.h stdchpl.h 
+	chapel/test/: .cvsignore 
+Added files:
+	./: .cvsignore 
+	chapel/test/trivial/shannon/: readWriteEnum.chpl 
+	                              readWriteEnum.good 
+	                              readWriteEnum.stdin 
+
