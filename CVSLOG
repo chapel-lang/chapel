@@ -15446,3 +15446,69 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+01/24/05 14:54:39 -- jplevyak
+
+Log message:
+	return_type_info() now correctly return dtVoid for those
+	functions which do not return a value.
+	
+	In making this change, 2 regressions have occured, both
+	of which I have make .future and assigned to Brad.
+	
+	   test/classes/deitz/test_class_with2.future
+	   test/modules/bradc/manymodules/flatmodules.future
+	
+	The issue here is that we are trying to generate code for functions
+	which are never used.  Analysis will tell you the types
+	for functions which are called, but dtUnknown for things in functions which
+	are never called.  I can tell you if a function is never called
+	so that you can avoid generating code.
+	
+	I have added a new function to analysis.h:
+	
+	int function_is_used(FnSymbol *fn);
+	
+	for this purpose.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+Added files:
+	chapel/test/classes/deitz/: test_class_with2.future 
+	chapel/test/modules/bradc/manymodules/: flatmodules.future 
+
