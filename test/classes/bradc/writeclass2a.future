@@ -1,4 +1,10 @@
-jplevyak
+jplevyak/bradc
+
+The class is not used since no instance is created,
+however it is possible to "know" the class since it
+is composed of only "known" members (e.g. primitive types).
+
+HISTORY
 
 writeclass is incorrectly being marked as being dead in 
 this example.

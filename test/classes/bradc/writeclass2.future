@@ -1,4 +1,12 @@
-jplevyak
+bradc
+
+It makes it through analysis now.  I am stripping out the
+Null class typing before cloning so you won't be getting
+Null as a type for the variable.  Hope that is OK.
+
+-- john
+
+HISTORY
 
 It appears that when a class variable is never initialized,
 it causes problems in analysis rather than being considered

@@ -2003,6 +2003,8 @@ empty_type_minus_partial_applications(AType *a) {
   forv_CreationSet(aa, *a) if (aa) {
     if (aa->sym == sym_function && aa->defs.n)
       continue;
+    if (aa == null_type->v[0])
+      continue;
     return 0;
   }
   return 1;
@@ -2031,7 +2033,8 @@ collect_argument_type_violations() {
 	if (!m) {
 	  forv_Var(v, p->rvals) {
 	    AVar *av = make_AVar(v, from);
-	    type_violation(ATypeViolation_SEND_ARGUMENT, av, av->out, make_AVar(p->lvals.v[0], from));
+	    type_violation(ATypeViolation_SEND_ARGUMENT, av, av->out, 
+			   make_AVar(p->lvals.v[0], from));
 	  }
 	} else {
 	  AEdge *base_e = 0;
@@ -2046,7 +2049,8 @@ collect_argument_type_violations() {
 	    AType *t = av->out;
 	    form_Map(FunAEdgeMapElem, me, *m) {
 	      AEdge *e = me->value;
-	      MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
+	      MPosition *pp = e->match->actual_to_formal_position.get(x->key), 
+		*p = pp ? pp : x->key;
 	      AVar *filtered = e->filtered_args.get(p);
 	      t = type_diff(t, filtered->out);
 	    }

@@ -1116,7 +1116,9 @@ gen_vardef(BaseAST *a) {
 	}
 	if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
       } 
-      else if (!s->is_var)
+      else if (is_reference_type(var->type)) {
+	if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
+      } else if (!s->is_var)
 	; // return show_error("missing initializer", def->ainfo);
       else if (!s->type && !s->must_implement)
 	; // return show_error("missing variable type", def->ainfo);
