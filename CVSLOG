@@ -6461,3 +6461,52 @@ Modified files:
 	chapel/compiler/: createAST.cpp 
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+09/03/04 11:46:03 -- bradc
+
+Log message:
+	Added an internal_prelude concept which will allow us
+	to add symbols that are for internal use only and not
+	visible to the user's code.  Currently this is populated
+	with a coarse approximation to the array method that John
+	requested (the precise definition couldn't be added
+	currently due to lack of syntactic support in the
+	front-end for method definitions outside of a class
+	definition...  Consider this a placeholder.  The file
+	currently lives in compiler/AST/internal_prelude.chpl.
+	
+	This internal prelude is stored in the symboltable as
+	follows:
+	
+	  SCOPE_INTERNAL --sib-> SCOPE_INTRINSIC
+	    --child-> ...          --child-> ...prelude symbols...
+	                           --child-> SCOPE_FILE
+	                                     ...userfile symbols...
+	                           --child-> SCOPE_FILE
+	                                     ...userfile symbols...
+	
+	Added a Symboltable::dump() method that will print out
+	not just the currently visible symbols (as
+	Symboltable::print() does), but all scopes defined in
+	the symboltable; also added indentation for symboltable
+	scopes when they are printed out to help parse them
+	visually.
+	
+	Typical Symboltable::lookup() steps will only search up
+	the scopes on the right until they hit the intrinsic
+	scope.  To look up a symbol from the internal scope,
+	use Symboltable::lookupInternal().
+	
+	This check-in also introduces new scopes for class
+	definitions -- SCOPE_CLASS.  Instance variables and
+	methods for classes will be defined in this scope.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: chapel.y nils.cpp symscope.h symtab.cpp 
+	                      symtab.h type.cpp type.h 
+Added files:
+	chapel/compiler/AST/: internal_prelude.chpl 
+	chapel/test/flowanalysis/newast/: .cvsignore 
+
