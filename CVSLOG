@@ -10478,3 +10478,31 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+11/29/04 13:39:21 -- deitz
+
+Log message:
+	Extended the intVal and isComputable functions to work on unary
+	expressions so expressions like -1 are now computable.  Made the
+	decision that the unary operators -, +, and ! on computable integers
+	return computable integers but that the unary operator ~ does not.  Is
+	this a good choice?  My reasoning is for cross-compilation and
+	portability.
+	
+	Added a couple more tests on enumerated types in which the enumerator
+	value is negative or not computable.  In the latter case, the compiler
+	generates a descriptive error message.
+	
+	Changed the USR_FATAL function so it now prints out a newline at the
+	end of the error message.  Removed newline symbols from the calls to
+	this function.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp symtab.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/util/: misc.cpp 
+Added files:
+	chapel/test/types/enum/deitz/: test_enum5.chpl test_enum5.good 
+	                               test_enum6.chpl test_enum6.good 
+
