@@ -545,8 +545,6 @@ same_eq_classes(Setters *s, Setters *ss) {
     return 1;
   if (!s || !ss)
     return 0;
-  if (s->eq_classes && ss->eq_classes)
-    return s->eq_classes == ss->eq_classes; 
   Vec<Setters *> sc1, sc2;
   forv_AVar(av, *s) {
     assert(av->setter_class);
@@ -1925,6 +1923,8 @@ setters_cannonicalize(Setters *s) {
   return ss;
 }
 
+#if 0
+// Eventual Optimization
 static SettersClasses *
 setters_classes_cannonicalize(SettersClasses *s) {
   assert(!s->sorted.n);
@@ -1939,6 +1939,7 @@ setters_classes_cannonicalize(SettersClasses *s) {
   if (!ss) ss = s;
   return ss;
 }
+#endif
 
 static int
 update_setter(AVar *av, AVar *s) {
@@ -2065,60 +2066,42 @@ split_for_setters() {
 
 static void
 split_eq_class(Setters *eq_class, Vec<AVar *> &diff) {
-  Setters *new_class = new Setters, *old_class = new Setters;
-  new_class->copy(diff);
-  new_class->set_difference(*eq_class, diff);
-  new_class = setters_cannonicalize(new_class);
-  eq_class->set_difference(*new_class, diff);
-  old_class->copy(diff);
-  old_class = setters_cannonicalize(old_class);
-  forv_AVar(x, *new_class) if (x)
-    x->setter_class = new_class;
-  forv_AVar(x, *old_class) if (x)
-    x->setter_class = old_class;
+  Setters *diff_class = new Setters, *remaining_class = new Setters;
+  diff_class->set_union(diff);
+  diff_class = setters_cannonicalize(diff_class);
+  eq_class->set_difference(diff, *remaining_class);
+  remaining_class = setters_cannonicalize(remaining_class);
+  forv_AVar(x, *diff_class) if (x)
+    x->setter_class = diff_class;
+  forv_AVar(x, *remaining_class) if (x)
+    x->setter_class = remaining_class;
 }
 
+// AVar->setter_class is the smallest set of setter AVars which
+// are equivalent (have the same ->out and equivalent ->setters)
+// On a new partition off setters this function recomputes the equiv sets
 static void
 recompute_eq_classes(Vec<Setters *> &ss) {
   forv_Setters(s, ss) {
-    SettersClasses *new_sc = s->eq_classes;
-    if (!s->eq_classes)
-      new_sc = new SettersClasses;
-    forv_AVar(v, *s) if (v) {
-      if (v->setter_class) {
-	if (!s->eq_classes)
-	  new_sc->set_add(v->setter_class);
-      }  else {
-	assert(!s->eq_classes || s->eq_classes->in(s));
-	v->setter_class = s;
-	if (!s->eq_classes)
-	  new_sc->set_add(s);
+    // build new class for unclassed setters
+    Setters *new_s = NULL;
+    forv_AVar(v, *s) if (v)
+      if (!v->setter_class) {
+	if (!new_s)
+	  new_s = new Setters;
+	new_s->set_add(v);
       }
-      if (!s->eq_classes) {
-	new_sc = setters_classes_cannonicalize(new_sc);
-	s->eq_classes = new_sc;
-	new_sc->used_by.put(s);
-      }
-    }
-    int changed = 0;
-    forv_Setters(x, *s->eq_classes) if (x) {
-      Vec<AVar *> diff;
-      x->set_difference(*s, diff);
-      if (diff.n) {
-	split_eq_class(x, diff);
-	changed = 1;
+    new_s = setters_cannonicalize(new_s);
+    forv_AVar(v, *new_s) if (v)
+      v->setter_class = new_s;
+    // reparition existing classes
+    forv_AVar(v, *s) {
+      if (v->setter_class != new_s) {
+	Vec<AVar *> diff;
+	v->setter_class->set_difference(*s, diff);
+	split_eq_class(v->setter_class, diff);
       }
     }
-    if (changed) {
-      new_sc = new SettersClasses;
-      forv_AVar(v, *s) if (v)
-	new_sc->set_add(v->setter_class);
-      new_sc = setters_classes_cannonicalize(new_sc);
-      s->eq_classes->used_by.del(s);
-      s->eq_classes = new_sc;
-      new_sc->used_by.put(s);
-    }
-    assert(s->eq_classes);
   }
 }
 
