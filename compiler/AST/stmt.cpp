@@ -478,30 +478,6 @@ Stmt* TypeDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
 }
 
 
-TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
-  map->clear();
-  TypeDefStmt* this_copy = NULL;
-  //  static int uid = 1; // Unique ID for cloned functions
-  SymScope* save_scope;
-
-  save_scope = Symboltable::setCurrentScope(this->type->symbol->parentScope);
-  Stmt* stmt_copy = copy(true, map, clone_callback);
-  if (this_copy = dynamic_cast<TypeDefStmt*>(stmt_copy)) {
-    /*
-    this_copy->type->name->cname =
-      glomstrings(3, this_copy->type->name->cname,
-		  "_clone_", intstring(uid++));
-    this->insertBefore(this_copy);
-    */
-  }
-  else {
-    INT_FATAL(this, "Unreachable statement in TypeDefStmt::clone reached");
-  }
-  Symboltable::setCurrentScope(save_scope);
-  return this_copy;
-}
-
-
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
   type->traverseDef(traversal, false);
 }
@@ -514,18 +490,6 @@ void TypeDefStmt::print(FILE* outfile) {
 
 
 void TypeDefStmt::codegen(FILE* outfile) {
-//   FILE* deffile = outfile;
-//   /* if in file scope, hoist to internal header so that it will be
-//      defined before global variables at file scope. */  
-//   if (type->name->parentScope->type == SCOPE_MODULE) { 
-//     deffile = intheadfile;
-//   }
-//   type->codegenDef(deffile);
-
-//   type->codegenStringToType(outfile);
-//   type->codegenIORoutines(outfile);
-//   type->codegenConfigVarRoutines(outfile);
-//   type->codegenConstructors(outfile);
 }
 
 
@@ -538,8 +502,6 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 Stmt* FnDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (clone) {
     FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(clone, map, analysis_clone));
-    //    return new FnDefStmt(fncopy);
-
     Symboltable::startFnDef(fncopy);
     Symbol* newformals = fn->formals->copyList(clone, map, analysis_clone);
     return Symboltable::finishFnDef(fncopy, newformals, fn->type, 

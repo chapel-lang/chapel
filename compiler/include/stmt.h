@@ -84,7 +84,6 @@ class TypeDefStmt : public Stmt {
 
   TypeDefStmt(Type* init_type);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-  TypeDefStmt* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
 
   void traverseStmt(Traversal* traversal);
 

@@ -121,6 +121,7 @@ class TypeSymbol : public Symbol {
  public:
   TypeSymbol(char* init_name, Type* init_definition);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  TypeSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
   virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);
 };

@@ -386,6 +386,31 @@ Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCal
 }
 
 
+TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
+  static int uid = 1; // Unique ID for cloned classes
+  TypeDefStmt* def_stmt = dynamic_cast<TypeDefStmt*>(defPoint);
+
+  if (!def_stmt) {
+    INT_FATAL(this, "Attempt to clone class not defined in TypeDefStmt");
+  }
+
+  map->clear();
+  TypeDefStmt* this_copy = NULL;
+  SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
+  Stmt* stmt_copy = def_stmt->copy(true, map, clone_callback);
+  if (this_copy = dynamic_cast<TypeDefStmt*>(stmt_copy)) {
+    this_copy->type->symbol->cname =
+      glomstrings(3, this_copy->type->symbol->cname, "_clone_", intstring(uid++));
+    def_stmt->insertBefore(this_copy);
+  }
+  else {
+    INT_FATAL(this, "Unreachable statement in TypeDefStmt::clone reached");
+  }
+  Symboltable::setCurrentScope(save_scope);
+  return dynamic_cast<TypeSymbol*>(this_copy->type->symbol);
+}
+
+
 void TypeSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE_DEF(type, traversal, false);
 }
@@ -520,6 +545,7 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
+  static int uid = 1; // Unique ID for cloned functions
   FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(defPoint);
 
   if (!def_stmt) {
@@ -528,9 +554,7 @@ FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>*
 
   map->clear();
   FnDefStmt* this_copy = NULL;
-  static int uid = 1; // Unique ID for cloned functions
-  SymScope* save_scope;
-  save_scope = Symboltable::setCurrentScope(parentScope);
+  SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   Stmt* stmt_copy = def_stmt->copy(true, map, clone_callback);
   if (this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
     this_copy->fn->cname =
