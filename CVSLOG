@@ -2167,3 +2167,17 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/05/19 17:31:05 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Remove builtin complex (will be implemented in standard header)
+	and updated tests.
+
+Modified files:
+	chapel/compiler/: ast.cpp builtin_symbols.h chpl.g chpltypes.h 
+	                  prelude.chpl prelude.v sym.h vec.cpp vec.h 
+	chapel/compiler/samples/: sample.chpl 
+	chapel/test/flowanalysis/jplevyak/: cs1.chk cs2.chk cs3.chk 
+
