@@ -20509,3 +20509,17 @@ Added files:
 	chapel/test/trivial/deitz/: test_function_question_mark.chpl 
 	                            test_function_question_mark.good 
 
+---------------------------------------------------------------------------
+
+03/21/05 11:16:55 -- deitz
+
+Log message:
+	Added support for != over records using an automatically-generated !=
+	function that wraps around the == function.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_record_equal2.chpl 
+	                            test_record_equal2.good 
+
