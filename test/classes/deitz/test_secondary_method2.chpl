@@ -3,13 +3,14 @@ function foo.secondary() {
 }
 
 class foo {
-  var i : integer = 4;
+  var i : integer;
   function primary() {
     writeln("primary method call; i is ", i);
   }
 }
 
 var f : foo = foo();
+f.i = 4;
 
 f.primary();
 f.secondary();
