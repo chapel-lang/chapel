@@ -19673,3 +19673,16 @@ Modified files:
 	chapel/compiler/util/: files.cpp 
 	chapel/test/: start_test sub_clean sub_test 
 
+---------------------------------------------------------------------------
+
+03/15/05 12:24:41 -- deitz
+
+Log message:
+	Added new test for operator overloading.  This is a basic test to see
+	if we can code generate a call to the overloaded function.
+
+Added files:
+	chapel/test/functions/deitz/: test_operator_overloading1.chpl 
+	                              test_operator_overloading1.future 
+	                              test_operator_overloading1.good 
+
