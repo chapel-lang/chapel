@@ -28,4 +28,5 @@ typedef struct Globals {
 } Globals;
 #define D_ParseNode_Globals Globals
 
+#include "dparse.h"
 

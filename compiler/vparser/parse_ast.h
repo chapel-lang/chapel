@@ -10,6 +10,7 @@
 #include "map.h"
 #include "scope.h"
 #include "callbacks.h"
+#include "builtin.h"
 
 // C++'s manditory heap'o forward declarations
 struct D_ParseNode;

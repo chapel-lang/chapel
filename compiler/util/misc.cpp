@@ -7,7 +7,9 @@
 #include <sys/stat.h>
 #include "files.h"
 #include "geysa.h"
-#include "parse.h"
+#include "../vparser/parse_structs.h"
+#include "ast.h"
+#include "if1.h"
 #include "loc.h"
 #include "var.h"
 #include "pnode.h"

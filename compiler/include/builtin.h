@@ -11,6 +11,13 @@ class Sym;
 #include "builtin_symbols.h"
 #undef S
 
+enum Builtin {
+#define S(_x) Builtin_##_x,
+#include "builtin_symbols.h"
+#undef S
+  Builtin_MAX
+};
+
 void initialize_symbols(PDB *pdb);
 
 #endif

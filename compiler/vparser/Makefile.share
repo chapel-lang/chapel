@@ -1,6 +1,5 @@
 VPARSER_SRCS = \
 	ast_cf.cpp \
-	builtin.cpp \
 	grammar.cpp \
 	parse.cpp \
 	parse_ast.cpp \

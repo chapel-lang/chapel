@@ -11,7 +11,7 @@
 #include "pdb.h"
 #include "fun.h"
 #include "pnode.h"
-#include "parse_ast.h"
+#include "../vparser/parse_ast.h"
 
 #define LOOP_FREQUENCY 10.0
 

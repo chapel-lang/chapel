@@ -4,6 +4,9 @@
 
 #include "geysa.h"
 #include "parse.h"
+#include "parse_structs.h"
+#include "parse_ast.h"
+#include "if1.h"
 #include "grammar.h"
 
 char *

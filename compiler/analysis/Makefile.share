@@ -1,6 +1,7 @@
 ANALYSIS_SRCS = \
 	analysis.cpp \
 	ast.cpp \
+	builtin.cpp \
 	cdb.cpp \
 	cfg.cpp \
 	cg.cpp \

@@ -12,13 +12,6 @@
 class Scope;
 class Primitives;
 
-enum Builtin {
-#define S(_x) Builtin_##_x,
-#include "builtin_symbols.h"
-#undef S
-  Builtin_MAX
-};
-
 extern char *builtin_strings[];
 
 class IF1 : public gc {

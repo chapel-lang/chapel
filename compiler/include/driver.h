@@ -13,8 +13,10 @@ extern int finline;
 extern int fgraph;
 extern int fgraph_constants;
 extern int fgraph_frequencies;
+extern char prelude_filename[FILENAME_MAX];
 extern char system_dir[FILENAME_MAX];
 extern int print_call_depth;
+extern int parser_verbose_non_prelude;
 
 extern int analyzeNewAST;
 extern int debugParserLevel;

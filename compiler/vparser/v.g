@@ -3,7 +3,11 @@
 */
 
 %<
-#include "parse.h"
+#include "geysa.h"
+#include "parse_structs.h"
+#include "grammar.h"
+#include "parse_ast.h"
+#include "if1.h"
 
 extern D_ParserTables parser_tables_v;
 extern D_Symbol d_symbols_v[];
