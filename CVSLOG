@@ -15512,3 +15512,17 @@ Added files:
 	chapel/test/classes/deitz/: test_class_with2.future 
 	chapel/test/modules/bradc/manymodules/: flatmodules.future 
 
+---------------------------------------------------------------------------
+
+01/24/05 15:09:32 -- deitz
+
+Log message:
+	Initial interface support for wrappers for type coercions in function
+	calls.  This creates the wrapper function through John's build call
+	from analysis, but the body of the wrapper function is not correctly
+	created yet.  Just its formals.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+
