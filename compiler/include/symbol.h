@@ -109,6 +109,7 @@ class FnSymbol : public Symbol {
   Symbol* formals;
   Symbol* _this;
   Stmt* body;
+  SymScope* paramScope;
 
   FnSymbol* parentFn;
 

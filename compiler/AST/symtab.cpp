@@ -868,6 +868,7 @@ FnDefStmt* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals,
   fnsym->finishDef(formals, retType, body, isExtern);
   FnDefStmt* fnstmt = new FnDefStmt(fnsym);
   paramScope->setContext(fnstmt, fnsym);
+  fnsym->paramScope = paramScope;
   currentFn = currentFn->parentFn;
 
   return fnstmt;
