@@ -24153,3 +24153,45 @@ Added files:
 	                              returnFnCallIntents.future 
 	                              returnFnCallIntents.good 
 
+---------------------------------------------------------------------------
+
+04/05/05 16:10:11 -- bradc
+
+Log message:
+	Cleaning up old email, moved a bunch of tests
+	out of the trivial/ directory (where I used
+	to stack them up for fear of creating new
+	directories) into more appropriate subdirectories.
+
+Added files:
+	chapel/test/arrays/bradc/: .cvsignore domarr.chpl domarr.good 
+	                           domarr1a.chpl domarr1a.future 
+	                           domarr1a.good domarr2.chpl 
+	                           domarr2.future domarr2.good 
+	                           enumarray.chpl enumarray.good 
+	chapel/test/classes/bradc/: badred.chpl badred.future 
+	                            badred.good 
+	chapel/test/functions/bradc/: chain.chpl chain.good 
+	                              globalref.chpl globalref.good 
+	                              mutrec.chpl mutrec.good 
+	                              noargs.chpl noargs.good 
+	                              onearg.chpl onearg.good 
+	                              retstmt.chpl retstmt.good 
+	                              usebeforedef.chpl 
+	                              usebeforedef.good 
+Removed files:
+	chapel/test/trivial/bradc/domarr/: .cvsignore domarr.chpl 
+	                                   domarr.good enumarray.chpl 
+	                                   enumarray.good 
+	chapel/test/trivial/bradc/functions/: .cvsignore chain.chpl 
+	                                      chain.good globalref.chpl 
+	                                      globalref.good mutrec.chpl 
+	                                      mutrec.good noargs.chpl 
+	                                      noargs.good onearg.chpl 
+	                                      onearg.good retstmt.chpl 
+	                                      retstmt.good 
+	                                      usebeforedef.chpl 
+	                                      usebeforedef.good 
+	chapel/test/trivial/bradc/protoast/future/: NOTEST badred.chpl 
+	                                            badred.good 
+
