@@ -26,7 +26,6 @@ GEYSA_CVS_SRCS = \
 	cdb.cpp \
 	cfg.cpp \
 	cg.cpp \
-	cg_funs.cpp \
 	clone.cpp \
 	codegen.cpp \
 	createAST.cpp \
