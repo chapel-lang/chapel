@@ -101,7 +101,7 @@ static void genAST(FILE* outfile, AST* ast) {
 
   default:
     fprintf(outfile, "/* cannot yet handle: %s\n", AST_name[ast->kind]);
-    ast_print_recursive(stdout, ast, 2);
+    //    ast_print_recursive(outfile, ast, 2);
     fprintf(outfile, "*/\n");
   }
 }
