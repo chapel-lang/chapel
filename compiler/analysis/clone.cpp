@@ -56,13 +56,30 @@ equivalent_es_ivars(EntrySet *a, EntrySet *b) {
   return 1;
 }
 
+static Sym *
+to_basic_type(Sym *t) {
+  if (t == sym_symbol)
+    return t;
+  if (t == sym_string)
+    return t;
+  if (t->num_kind)
+    return t;
+  if (t->is_constant)
+    return t->type;
+  if (t->is_symbol)
+    return sym_symbol;
+  return 0;
+}
+
 // return the Sym of some basic type, fail if basics are mixed or with non basics
+// and NULL if basic
 Sym *
 basic_type(FA *fa, AType *t, Sym *fail) {
   Sym non_basic;
   Sym *res = 0;
   forv_CreationSet(cs, *t) if (cs) {
-    if (fa->basic_types.set_in(cs->sym)) {
+    Sym *t = 0;
+    if ((t = to_basic_type(cs->sym))) {
       if (!res)
 	res = cs->sym;
       else
@@ -76,7 +93,7 @@ basic_type(FA *fa, AType *t, Sym *fail) {
     }
   }
   if (res == &non_basic)
-    res = fail;
+    res = NULL;
   return res;
 }
 
@@ -474,28 +491,36 @@ resolve_concrete_types(CSSS &css_sets) {
 	case Type_FUN:
 	case Type_PRODUCT:
 	case Type_TAGGED: {
+	  int n = 0;
 	  forv_CreationSet(cs, *eqcss) if (cs) {
-	    sym->has.fill(cs->vars.n);
-	    for (int i = 0; i < cs->vars.n; i++) {
+	    assert(!n || n == cs->vars.n);
+	    n = cs->vars.n;
+	  }
+	  sym->has.fill(n);
+	  for (int i = 0; i < n; i++) {
+	    Vec<Sym *> t;
+	    Sym *s = 0;
+	    forv_CreationSet(cs, *eqcss) if (cs) {
 	      AVar *av = cs->vars.v[i];
-	      assert(!sym->has.v[i]);
-	      Sym *s = sym->has.v[i] = av->var->sym->copy();
-	      Vec<Sym *> t;
+	      if (!s) {
+		sym->has.v[i] = av->var->sym->copy();
+		s = sym->has.v[i];
+	      }
 	      forv_CreationSet(x, *av->out) if (x)
 		t.set_add(x->type);
-	      t.set_to_vec();
-	      if (t.n == 1)
-		s->type = t.v[0];
-	      else {
-		if (s->has.n != 0) {
-		  Sym *tt = new_Sym();
-		  tt->type_kind = Type_SUM;
-		  tt->has.copy(t);
-		  s->type = tt;
-                  if1->callback->new_SUM_type(tt);
-		} else
-		  s->type = sym_void;
-	      }
+	    }
+	    t.set_to_vec();
+	    if (t.n == 1)
+	      s->type = t.v[0];
+	    else {
+	      if (s->has.n != 0) {
+		Sym *tt = new_Sym();
+		tt->type_kind = Type_SUM;
+		tt->has.copy(t);
+		s->type = tt;
+		if1->callback->new_SUM_type(tt);
+	      } else
+		s->type = sym_void;
 	    }
 	  }
 	  break;

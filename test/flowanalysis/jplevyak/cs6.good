@@ -40,10 +40,6 @@ function operator prelude.v:75
 function operator prelude.v:75
 function operator prelude.v:75
 function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
 function operator prelude.v:80
 function print prelude.v:134
 globals
@@ -60,11 +56,7 @@ new::o(prelude.v:74) ( C (cs6.v:1) )
 new::o(prelude.v:74) ( D (cs6.v:2) )
 new::o(prelude.v:74) ( D (cs6.v:2) )
 operator::a(prelude.v:75) ( C (cs6.v:1) )
-operator::a(prelude.v:75) ( C (cs6.v:1) )
-operator::a(prelude.v:75) ( C (cs6.v:1) )
-operator::a(prelude.v:75) ( D (cs6.v:2) )
-operator::a(prelude.v:75) ( D (cs6.v:2) )
-operator::a(prelude.v:75) ( D (cs6.v:2) )
+operator::a(prelude.v:75) ( C (cs6.v:1) D (cs6.v:2) )
 operator::a(prelude.v:75) ( D (cs6.v:2) )
 operator::a(prelude.v:75) ( D (cs6.v:2) )
 operator::a(prelude.v:75) ( D (cs6.v:2) )

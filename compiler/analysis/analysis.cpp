@@ -36,6 +36,7 @@ static Sym *flood_symbol = 0;
 static Sym *completedim_symbol = 0;
 static Sym *array_index_symbol = 0;
 static Sym *sizeof_symbol = 0;
+static Sym *cast_symbol = 0;
 
 static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
@@ -725,7 +726,7 @@ gen_if1(BaseAST *ast) {
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
-      Sym *fn = s->parentFn->asymbol;
+      Sym *fn = fnsym; // s->parentFn->asymbol;
       if (!s->expr->isNull()) {
 	if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
 	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
@@ -1035,13 +1036,13 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_CAST: {
       CastExpr *s = dynamic_cast<CastExpr *>(ast);
-#if 0
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
       forv_Vec(Expr, a, args)
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+#if 0
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if1_add_send_arg(if1, send, s->castType->asymbol->type_sym);
@@ -1049,8 +1050,11 @@ gen_if1(BaseAST *ast) {
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
 #else
-      if1_gen(if1, &s->ainfo->code, s->argList->ainfo->code);
-      s->ainfo->rval = s->argList->ainfo->rval;
+      Code *send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, cast_symbol, 
+			    s->castType->asymbol->type_sym, s->ainfo->rval);
+      forv_Vec(Expr, a, args)
+	if1_add_send_arg(if1, send, a->ainfo->rval);
+      send->ast = s->ainfo;
 #endif
       break;
     }
@@ -1223,6 +1227,7 @@ init_symbols() {
   expr_create_domain_symbol = if1_make_symbol(if1, "expr_create_domain");
   expr_reduce_symbol = if1_make_symbol(if1, "expr_reduce");
   sizeof_symbol = if1_make_symbol(if1, "sizeof");
+  cast_symbol = if1_make_symbol(if1, "cast");
   write_symbol = if1_make_symbol(if1, "write");
   writeln_symbol = if1_make_symbol(if1, "writeln");
   array_index_symbol = if1_make_symbol(if1, "array_index");
@@ -1321,6 +1326,20 @@ integer_result(PNode *pn, EntrySet *es) {
 }
 
 static void
+cast_value(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *t = make_AVar(pn->rvals.v[2], es);
+  assert(pn->rvals.n == 4);
+  Sym *ts = t->var->sym->type_sym;
+  if (ts) {
+    if (ts->num_kind)
+      update_in(result, make_abstract_type(ts));
+    else
+      creation_point(result, ts);
+  }
+}
+
+static void
 expr_domain(PNode *pn, EntrySet *es) {
   assert(0);
 }
@@ -1378,6 +1397,7 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol->name, expr_create_domain);
   pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol->name, expr_reduce);
   pdb->fa->primitive_transfer_functions.put(sizeof_symbol->name, integer_result);
+  pdb->fa->primitive_transfer_functions.put(cast_symbol->name, cast_value);
   pdb->fa->primitive_transfer_functions.put(write_symbol->name, write_transfer_function);
   pdb->fa->primitive_transfer_functions.put(writeln_symbol->name, write_transfer_function);
   pdb->fa->primitive_transfer_functions.put(array_index_symbol->name, array_index);

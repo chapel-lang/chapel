@@ -48,6 +48,7 @@
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(enumarray.chpl:20) ( __initPrelude (<unknown>:0) )
 ::array_index(internal_prelude.chpl:6) ( string (<unknown>:0) )
+::classVals(<unknown>:0) ( classVals (<unknown>:0) )
 ::i(<unknown>:0) ( Index (<unknown>:0) )
 ::i(<unknown>:0) ( Index (<unknown>:0) S (<unknown>:0) W (<unknown>:0) A (<unknown>:0) B (<unknown>:0) C (<unknown>:0) D (<unknown>:0) O (<unknown>:0) )
 ::i(enumarray.chpl:17) ( Index (<unknown>:0) )

@@ -30,17 +30,11 @@ function new prelude.v:74
 function operator prelude.v:75
 function operator prelude.v:75
 function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
-function operator prelude.v:75
 function operator prelude.v:80
 function print prelude.v:134
 globals
 new::a(prelude.v:74) ( C (assign2.v:1) )
 new::o(prelude.v:74) ( C (assign2.v:1) )
-operator::a(prelude.v:75) ( C (assign2.v:1) )
-operator::a(prelude.v:75) ( C (assign2.v:1) )
-operator::a(prelude.v:75) ( C (assign2.v:1) )
 operator::a(prelude.v:75) ( C (assign2.v:1) )
 operator::a(prelude.v:75) ( C (assign2.v:1) )
 operator::a(prelude.v:75) ( C (assign2.v:1) )

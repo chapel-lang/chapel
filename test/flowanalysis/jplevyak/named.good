@@ -15,13 +15,10 @@ function __init__ <unknown>:0
 function f named.v:1
 function operator prelude.v:80
 function operator prelude.v:80
-function operator prelude.v:80
 function print prelude.v:134
 globals
 operator::a(prelude.v:80) ( float64 (prelude.v:37) )
 operator::a(prelude.v:80) ( float64 (prelude.v:37) )
-operator::a(prelude.v:80) ( float64 (prelude.v:37) )
-operator::b(prelude.v:80) ( float64 (prelude.v:37) )
 operator::b(prelude.v:80) ( float64 (prelude.v:37) )
 operator::b(prelude.v:80) ( int32 (prelude.v:24) )
 print::a(prelude.v:134) ( float64 (prelude.v:37) )
