@@ -1,6 +1,5 @@
 MAIN_SRCS = \
 	arg.cpp \
-	createAST.cpp \
 	driver.cpp \
 	runpasses.cpp \
 	version.cpp \

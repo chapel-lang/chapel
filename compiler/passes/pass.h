@@ -2,23 +2,19 @@
 #define _PASS_H_
 
 #include "gc_cpp.h"
-#include "vec.h"
 
+class Module;
 class Stmt;
 
 class Pass : public gc {
  public:
-  char* filename;
-
-  virtual void run(Stmt* program) = 0;
+  virtual void run(Module* moduleList) = 0;
 };
 
 class DummyPass : public Pass {
  public:
-  virtual void run(Stmt* program);
+  virtual void run(Module* moduleList);
 };
-
-void runPasses(char* passfilename, char* filename);
 
 #endif
 

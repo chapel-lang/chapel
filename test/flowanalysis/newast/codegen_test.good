@@ -1,18 +1,18 @@
- called from 15 in __init at codegen_test.chpl:17
- called from 17 in __entryPoint at codegen_test.chpl:17
- called from 17 in __entryPoint at codegen_test.chpl:17
- called from 17 in __entryPoint at codegen_test.chpl:17
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
+ called from 15 in __init at <internal>:0
 ::123(codegen_test.chpl:1) ( int64 (<unknown>:0) )
 ::456(codegen_test.chpl:5) ( int64 (<unknown>:0) )
 ::765(codegen_test.chpl:15) ( int64 (<unknown>:0) )
 ::789(codegen_test.chpl:8) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (codegen_test.chpl:17) )
+::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
+::__init(<internal>:0) ( __init (<unknown>:0) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
-::__init(codegen_test.chpl:17) ( __init (<unknown>:0) )
+::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(codegen_test.chpl:17) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(codegen_test.chpl:17) ( __initPrelude (<unknown>:0) )
 ::a is: (codegen_test.chpl:10) ( string (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(codegen_test.chpl:10) ( int64 (<unknown>:0) )
@@ -29,9 +29,9 @@
 ::z is: (codegen_test.chpl:11) ( string (<unknown>:0) )
 ::z(<unknown>:0) ( int64 (<unknown>:0) )
 ::z(codegen_test.chpl:11) ( int64 (<unknown>:0) )
-function __entryPoint codegen_test.chpl:17
-function __init codegen_test.chpl:17
-function __initIntPrelude codegen_test.chpl:17
-function __initPrelude codegen_test.chpl:17
+function __entryPoint <internal>:0
+function __init <internal>:0
+function __initIntPrelude <internal>:0
+function __initPrelude <internal>:0
 function foo codegen_test.chpl:12
 globals

@@ -6,9 +6,9 @@
 #include "geysa.h"
 #include "parse.h"
 #include "arg.h"
-#include "createAST.h"
 #include "files.h"
 #include "misc.h"
+#include "module.h"
 #include "mysystem.h"
 #include "stringutil.h"
 #include "cg.h"
@@ -24,6 +24,7 @@
 #include "pdb.h"
 #include "fun.h"
 #include "fa.h"
+#include "runpasses.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -33,12 +34,12 @@ static char prelude_filename[FILENAME_MAX] = "prelude";
 static char passlist_filename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 extern int d_verbose_level;
-extern int d_debug_level;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
 static int pre_malloc = 0;
 int analyzeNewAST = 1;
 int suppressCodegen = 0;
+int debugParserLevel = 0;
 
 int fdce_if1 = 1;
 int finline = 0;
@@ -83,7 +84,7 @@ static ArgumentDescription arg_desc[] = {
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
    "CHPL_PARSER_VERBOSE", NULL},
- {"parser_debug", 'D', "Parser Debug Level", "+", &d_debug_level, "CHPL_PARSER_DEBUG", NULL},
+ {"parser_debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
@@ -271,6 +272,8 @@ do_analysis(char *fn) {
 
 static int
 compile_one_test_file(char *fn) {
+extern int d_debug_level;
+   d_debug_level = debugParserLevel;
   if1->callback = new PCallbacks;
   init_ast();
   if (load_one(fn) < 0)
@@ -287,8 +290,9 @@ compile_all(void) {
     if (is_test_lang(arg_state.file_argument[i])) noTestLangFiles = false;
 
   if (noTestLangFiles) {
-    char* fn = arg_state.file_argument[0];
-    runPasses(passlist_filename, fn);
+    Module* moduleList = Module::createModules(arg_state.nfile_arguments,
+					       arg_state.file_argument);
+    runPasses(passlist_filename, moduleList);
   } else
     for (int i = 0; i < arg_state.nfile_arguments; i++) 
       if (compile_one_test_file(arg_state.file_argument[i])) break;

@@ -3,8 +3,12 @@
 
 #include "pass.h"
 
+extern Stmt* internalPreludeStmts;
+extern Stmt* preludeStmts;
+extern Stmt* entryPoint;
+
 class FilesToAST : public Pass {
-  void run(Stmt* program);
+  void run(Module* moduleList);
 };
 
 #endif

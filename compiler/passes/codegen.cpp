@@ -8,15 +8,19 @@ extern int suppressCodegen;
 extern char system_dir[];
 
 
-void Codegen::run(Stmt* program) {
+void Codegen::run(Module* moduleList) {
   if (suppressCodegen) {
     return;
   }
 
-  openMakefile(filename, system_dir);
-  currentModule = new Module();
-  currentModule->stmts = program;
-  currentModule->codegen();
+  openMakefile(moduleList->filename, system_dir);
+
+  currentModule = moduleList;
+  while (currentModule) {
+    currentModule->codegen();
+
+    currentModule = nextLink(Module, currentModule);
+  }
     
   verifyNilsUncorrupted();
 

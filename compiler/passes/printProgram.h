@@ -2,5 +2,5 @@
 
 class PrintProgram : public Pass {
  public:
-  void run(Stmt* program);
+  void run(Module* moduleList);
 };

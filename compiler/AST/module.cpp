@@ -1,14 +1,20 @@
 #include "files.h"
 #include "module.h"
+#include "stringutil.h"
 
 Module* currentModule = NULL;
 
-Module::Module(void) :
+
+Module::Module(char* inFilename) :
   codefile(NULL),
   extheadfile(NULL),
   intheadfile(NULL),
   stmts(nilStmt)
-{}
+{
+  filename = copystring(inFilename);
+  FILE* testfile = openInputFile(filename);
+  closeInputFile(testfile);
+}
 
 
 static void genHeader(FILE* outfile, char* extheadfilename, 
@@ -37,3 +43,16 @@ void Module::codegen(void) {
 
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
 }
+
+
+Module* Module::createModules(int numFilenames, char* filename[]) {
+  Module* modules = NULL;
+
+  for (int i=0; i<numFilenames; i++) {
+    Module* newModule = new Module(filename[i]);
+    modules = appendLink(modules, newModule);
+  }
+
+  return modules;
+}
+

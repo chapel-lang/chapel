@@ -1,24 +1,24 @@
- called from 1 in __init at usebeforedef.chpl:7
- called from 7 in __entryPoint at usebeforedef.chpl:7
- called from 7 in __entryPoint at usebeforedef.chpl:7
- called from 7 in __entryPoint at usebeforedef.chpl:7
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
+ called from 1 in __init at <internal>:0
 ::5(usebeforedef.chpl:1) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (usebeforedef.chpl:7) )
+::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
+::__init(<internal>:0) ( __init (<unknown>:0) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
-::__init(usebeforedef.chpl:7) ( __init (<unknown>:0) )
+::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(usebeforedef.chpl:7) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(usebeforedef.chpl:7) ( __initPrelude (<unknown>:0) )
 ::a is (usebeforedef.chpl:4) ( string (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(usebeforedef.chpl:4) ( int64 (<unknown>:0) )
 ::foo(<unknown>:0) ( foo (<unknown>:0) )
 ::foo(usebeforedef.chpl:1) ( foo (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
-function __entryPoint usebeforedef.chpl:7
-function __init usebeforedef.chpl:7
-function __initIntPrelude usebeforedef.chpl:7
-function __initPrelude usebeforedef.chpl:7
+function __entryPoint <internal>:0
+function __init <internal>:0
+function __initIntPrelude <internal>:0
+function __initPrelude <internal>:0
 function foo usebeforedef.chpl:5
 globals

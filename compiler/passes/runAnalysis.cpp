@@ -1,19 +1,26 @@
 #include "analysis.h"
-#include "createAST.h"
 #include "driver.h"
+#include "filesToAST.h"
 #include "if1.h"
+#include "module.h"
 #include "runAnalysis.h"
 
-void RunAnalysis::run(Stmt* program) {
+void RunAnalysis::run(Module* moduleList) {
   if (analyzeNewAST) {
     if1->callback = new ACallbacks;
     init_ast();
     Vec<Stmt *> stmts;
     stmts.add(internalPreludeStmts);
     stmts.add(preludeStmts);
-    stmts.add(programStmts);
+    Module* mod = moduleList;
+    while (mod) {
+      stmts.add(mod->stmts);
+
+      mod = nextLink(Module, mod);
+    }
     stmts.add(entryPoint);
     AST_to_IF1(stmts);
-    do_analysis(filename);
+    // JOHN: what filename should be passed in for multiple modules?
+    do_analysis(moduleList->filename);
   }
 }

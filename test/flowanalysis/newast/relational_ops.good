@@ -1,18 +1,18 @@
- called from 59 in __entryPoint at relational_ops.chpl:59
- called from 59 in __entryPoint at relational_ops.chpl:59
- called from 59 in __entryPoint at relational_ops.chpl:59
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
 ::0(relational_ops.chpl:5) ( int64 (<unknown>:0) )
 ::2(relational_ops.chpl:2) ( int64 (<unknown>:0) )
 ::30(relational_ops.chpl:3) ( int64 (<unknown>:0) )
 ::5(relational_ops.chpl:1) ( int64 (<unknown>:0) )
 ::5(relational_ops.chpl:4) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (relational_ops.chpl:59) )
+::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
+::__init(<internal>:0) ( __init (<unknown>:0) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
-::__init(relational_ops.chpl:59) ( __init (<unknown>:0) )
+::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(relational_ops.chpl:59) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(relational_ops.chpl:59) ( __initPrelude (<unknown>:0) )
 ::actual answer = (relational_ops.chpl:16) ( string (<unknown>:0) )
 ::actual answer = (relational_ops.chpl:22) ( string (<unknown>:0) )
 ::actual answer = (relational_ops.chpl:28) ( string (<unknown>:0) )
@@ -83,8 +83,8 @@
 ::test: m > p(relational_ops.chpl:19) ( string (<unknown>:0) )
 ::test: m >= p(relational_ops.chpl:31) ( string (<unknown>:0) )
 ::test: o >= m(relational_ops.chpl:25) ( string (<unknown>:0) )
-function __entryPoint relational_ops.chpl:59
-function __init relational_ops.chpl:59
-function __initIntPrelude relational_ops.chpl:59
-function __initPrelude relational_ops.chpl:59
+function __entryPoint <internal>:0
+function __init <internal>:0
+function __initIntPrelude <internal>:0
+function __initPrelude <internal>:0
 globals

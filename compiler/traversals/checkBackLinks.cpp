@@ -53,9 +53,9 @@ void CheckBackLinks::preProcessSymbol(Symbol* symbol) {
 }
 
 
-void CheckBackLinks::run(Stmt* program) {
+void CheckBackLinks::run(Module* moduleList) {
   error = false;
-  Traversal::run(program);
+  Traversal::run(moduleList);
   if (error) {
     INT_WARNING("Problems were found in back links");
   }

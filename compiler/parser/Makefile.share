@@ -1,4 +1,5 @@
 PARSER_SRCS = \
+	parser.cpp \
 
 C_SRCS = \
 	yy.c \

@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
-#include "createAST.h"
 #include "files.h"
 #include "misc.h"
+#include "runpasses.h"
 #include "stringutil.h"
 #include "../passes/pass.h"
 
@@ -25,13 +25,12 @@ static Pass* stringToPass(char* passname) {
 }
 
 
-static void runPass(Pass* pass, Stmt* program, char* filename) {
-  pass->filename = filename;
-  pass->run(program);
+static void runPass(Pass* pass, Module* moduleList) {
+  pass->run(moduleList);
 }
 
 
-static void parsePassFile(char* passfilename, char* filename) {
+static void parsePassFile(char* passfilename, Module* moduleList) {
   FILE* passfile = openInputFile(passfilename);
   char passname[80];
   int readword;
@@ -50,28 +49,23 @@ static void parsePassFile(char* passfilename, char* filename) {
       int passnameLen = strlen(passnameStart);
       passnameStart[passnameLen-2] = '\0';
       Pass* pass = stringToPass(passnameStart);
-      runPass(pass, programStmts, filename);
+      runPass(pass, moduleList);
     }
   } while (readword == 1 && !done);
   closeInputFile(passfile);
 }
 
 
-void runPasses(char* passfilename, char* filename) {
+void runPasses(char* passfilename, Module* moduleList) {
   if (strcmp(passfilename, "") == 0) {
     Pass** pass = passlist+1;  // skip over FIRST
     
     while ((*pass) != NULL) {
-      runPass(*pass, programStmts, filename);
+      runPass(*pass, moduleList);
       
       pass++;
     }
   } else {
-    parsePassFile(passfilename, filename);
+    parsePassFile(passfilename, moduleList);
   }
-}
-
-
-void DummyPass::run(Stmt* program) {
-  fprintf(stdout, "Running dummy pass\n");
 }

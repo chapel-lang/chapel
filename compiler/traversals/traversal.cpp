@@ -1,3 +1,4 @@
+#include "module.h"
 #include "stmt.h"
 #include "traversal.h"
 
@@ -42,6 +43,11 @@ void Traversal::postProcessType(Type* type) {
 }
 
 
-void Traversal::run(Stmt* program) {
-  program->traverseList(this);
+void Traversal::run(Module* moduleList) {
+  Module* mod = moduleList;
+  while (mod) {
+    mod->stmts->traverseList(this);
+    
+    mod = nextLink(Module, mod);
+  }
 }

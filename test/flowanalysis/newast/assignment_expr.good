@@ -1,16 +1,16 @@
- called from 16 in __entryPoint at assignment_expr.chpl:16
- called from 16 in __entryPoint at assignment_expr.chpl:16
- called from 16 in __entryPoint at assignment_expr.chpl:16
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
 ::2(assignment_expr.chpl:2) ( int64 (<unknown>:0) )
 ::30(assignment_expr.chpl:3) ( int64 (<unknown>:0) )
 ::5(assignment_expr.chpl:1) ( int64 (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (assignment_expr.chpl:16) )
+::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
+::__init(<internal>:0) ( __init (<unknown>:0) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
-::__init(assignment_expr.chpl:16) ( __init (<unknown>:0) )
+::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(assignment_expr.chpl:16) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(assignment_expr.chpl:16) ( __initPrelude (<unknown>:0) )
 ::m = (assignment_expr.chpl:12) ( string (<unknown>:0) )
 ::m = (assignment_expr.chpl:15) ( string (<unknown>:0) )
 ::m = (assignment_expr.chpl:6) ( string (<unknown>:0) )
@@ -31,8 +31,8 @@
 ::o(assignment_expr.chpl:14) ( int64 (<unknown>:0) )
 ::o(assignment_expr.chpl:8) ( int64 (<unknown>:0) )
 ::o(assignment_expr.chpl:9) ( int64 (<unknown>:0) )
-function __entryPoint assignment_expr.chpl:16
-function __init assignment_expr.chpl:16
-function __initIntPrelude assignment_expr.chpl:16
-function __initPrelude assignment_expr.chpl:16
+function __entryPoint <internal>:0
+function __init <internal>:0
+function __initIntPrelude <internal>:0
+function __initPrelude <internal>:0
 globals

@@ -1,7 +1,7 @@
- called from 12 in __entryPoint at domarr.chpl:12
- called from 12 in __entryPoint at domarr.chpl:12
- called from 12 in __entryPoint at domarr.chpl:12
- called from 9 in __init at domarr.chpl:12
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
+ called from 0 in __entryPoint at <internal>:0
+ called from 9 in __init at <internal>:0
 ::0.0(domarr.chpl:9) ( float64 (<unknown>:0) )
 ::1(domarr.chpl:4) ( int64 (<unknown>:0) )
 ::1(domarr.chpl:4) ( int64 (<unknown>:0) )
@@ -15,13 +15,13 @@
 ::A(domarr.chpl:9) ( (<unknown>:0) )
 ::Mat(<unknown>:0) ( Domain (<unknown>:0) )
 ::Mat(domarr.chpl:8) ( Domain (<unknown>:0) )
-::__entryPoint(<unknown>:0) ( __entryPoint (domarr.chpl:12) )
+::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
+::__init(<internal>:0) ( __init (<unknown>:0) )
 ::__init(<unknown>:0) ( __init (<unknown>:0) )
-::__init(domarr.chpl:12) ( __init (<unknown>:0) )
+::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
-::__initIntPrelude(domarr.chpl:12) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
-::__initPrelude(domarr.chpl:12) ( __initPrelude (<unknown>:0) )
 ::array_index(internal_prelude.chpl:9) ( string (<unknown>:0) )
 ::i(<unknown>:0) ( Index (<unknown>:0) )
 ::i(<unknown>:0) ( Index (<unknown>:0) )
@@ -38,9 +38,9 @@
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::self(internal_prelude.chpl:10) ( (<unknown>:0) )
 ::self(internal_prelude.chpl:9) ( (<unknown>:0) )
-function __entryPoint domarr.chpl:12
-function __init domarr.chpl:12
-function __initIntPrelude domarr.chpl:12
-function __initPrelude domarr.chpl:12
+function __entryPoint <internal>:0
+function __init <internal>:0
+function __initIntPrelude <internal>:0
+function __initPrelude <internal>:0
 function self internal_prelude.chpl:10
 globals

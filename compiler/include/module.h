@@ -12,9 +12,11 @@ class Module : public ILink {
 
   Stmt* stmts;
 
-  Module(void);
+  Module(char*);
 
   void codegen(void);
+
+  static Module* createModules(int numFilenames, char* filename[]);
 };
 
 extern Module* currentModule;

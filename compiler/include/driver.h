@@ -17,6 +17,8 @@ extern char system_dir[FILENAME_MAX];
 extern int print_call_depth;
 
 extern int analyzeNewAST;
+extern int debugParserLevel;
+
 void do_analysis(char *fn);
 
 #endif
