@@ -1120,7 +1120,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
     } else 
       partial = 1;
     if (!p->next_callees)
-      p->next_callees = new PNode::Callees;
+      p->next_callees = new Callees;
     p->next_callees->funs.set_add(m->fun);
   }
   return matches.n ? partial : -1;

@@ -14,14 +14,14 @@ class MPosition;
 
 // Program node
 
+class Callees : public gc {
+ public:
+  Vec<Fun *> funs; 
+  Vec<MPosition *> arg_positions; 
+};
+
 class PNode : public gc {
  public:
-  class Callees {
-   public:
-    Vec<Fun *> funs; 
-    Vec<MPosition *> arg_positions; 
-  };
-
   Code *code;
   int id;
 
