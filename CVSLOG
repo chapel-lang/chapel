@@ -6701,3 +6701,114 @@ Modified files:
 	                  if1.cpp if1.h parse_ast.cpp parse_ast.h 
 	                  sym.cpp 
 
+---------------------------------------------------------------------------
+
+09/09/04 17:41:19 -- bradc
+
+Log message:
+	Added rudimentary support for running compiler passes
+	over the AST.  This was motivated by the fact that I've
+	been writing more and more traversals, but have been
+	calling them by explicitly inserting calls to the
+	traversal into the code somewhere between parsing and
+	code generation.  The passlist concept is designed to
+	make it easy to select what passes/traversals are
+	applied to the AST in what order.
+	
+	Currently every pass is an instance of a class Pass
+	that supports a "run()" method which takes the program
+	statements (Stmt*) passed in as their single argument.
+	I expect this interface to get richer as the needs and
+	abilities of passes are improved.
+	
+	Traversals have been reconceived as a subclass of Pass,
+	where the default run method calls into the traversal
+	machinery on the program.  Thus, every Traversal is a
+	legal pass.
+	
+	The passes that are run by the compiler are specified
+	in the passlist.h file.  This file has the general
+	structure:
+	
+	  Pass* passlist[] = {
+	    FIRST,
+	    ...
+	    LAST
+	  };
+	
+	where "..." represents the list of passes that should
+	be run.  For example, to run a pass called "Foo",
+	followed by a pass called "Bar", one would use:
+	
+	  Pass* passlist[] = {
+	    FIRST,
+	    RUN(Foo),
+	    RUN(Bar),
+	    LAST
+	  };
+	
+	where Foo and Bar are the names of Pass or Traversal
+	subclasses (or subclasses of either).
+	
+	Passlists may also be specified dynamically without
+	recompiling the compiler.  This is done with the
+	--passlist flag and a specification of a file with
+	the same structure as the passlist.h file.  Thus,
+	imagine that the passlist shown above is the one
+	that is compiled into the compiler and I wanted to
+	run a new pass BradsDebugPass between Foo and Bar.
+	I could do this by making a copy of passlist.h (call
+	it mypasslist.h) and editing it to read:
+	
+	  Pass* passlist[] = {
+	    FIRST,
+	    RUN(Foo),
+	    RUN(BradsDebugPass),
+	    RUN(Bar),
+	    LAST
+	  };
+	
+	By running the compiler using "--passlist mypasslist.h",
+	the passes Foo, BradsDebugPass, and Bar would be run on
+	the AST.
+	
+	Currently, no passes are used (because all the ones that
+	I've implemented are debugging traversals), but if you
+	uncomment out the CheckTypeInfo pass listed in
+	passlist.h, you'll run a simple pass that walks the AST
+	looking for expressions that have a NULL type_info according
+	to John's type inference engine.  The TestGetStuff pass was
+	written to test the GetStuff pass, and will walk the AST
+	printing things out as it goes.  Neither of these are meant
+	to be particularly deep or meaningful, just things I've
+	written along the way.
+	
+	To add a new pass to be supported by the dynamic passlist
+	feature:
+	
+	(1) create your pass/traversal class by subclassing either
+	    Pass or Traversal.
+	
+	(2) edit passlist.h to #include the header file that defines
+	    the class.
+	
+	(3) register the pass by adding a REGISTER(PassName) line
+	    to the passlist.cpp file.  This registers the pass as
+	    being a legal pass to appear in a dynamically-specified
+	    passlist.h file.
+	
+	(4) *ONLY IF YOU WANT THE PASS TO BE RUN AS PART OF THE
+	    STANDARD COMPILE*, add a RUN(PassName) line to the
+	    passlist.h file in the appropriate position(s) in the list.
+
+Modified files:
+	chapel/compiler/: Makefile ast.h driver.cpp 
+	chapel/compiler/AST/: Makefile.share expr.cpp loc.cpp loc.h 
+	                      testGetStuff.cpp traversal.cpp traversal.h 
+	chapel/test/flowanalysis/jplevyak/: .cvsignore 
+	chapel/third-party/dparser/d/: .cvsignore 
+Added files:
+	chapel/compiler/: pass.cpp pass.h passlist.cpp passlist.h 
+	chapel/compiler/AST/: checkTypeInfo.cpp checkTypeInfo.h 
+	                      testGetStuff.h 
+
