@@ -5146,3 +5146,33 @@ Removed files:
 	chapel/test/trivial/bradc/write/: COMPOPTS 
 	chapel/test/trivial/shannon/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+08/06/04 14:09:10 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Moved ParseAST implementation into parse_ast.cpp
+	Encapsulated ->pathname and ->line into Sym and Code.
+
+Modified files:
+	chapel/compiler/: ast.cpp ast.h clone.cpp code.h dump.cpp 
+	                  fa_extras.cpp fun.cpp fun.h graph.cpp if1.cpp 
+	                  misc.cpp parse_ast.cpp parse_ast.h sym.h 
+	chapel/test/flowanalysis/jplevyak/: badcall.good badreturn.good 
+	                                    classvar.good cs1.good 
+	                                    cs2.good cs3.good cs4.good 
+	                                    cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good 
+	                                    memberfun.good 
+	                                    memberfun2.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good review1.good 
+	                                    review2.good review3.good 
+	                                    structtype.good var.good 
+	                                    var2.good 
+
