@@ -531,7 +531,7 @@ Symbol* Symboltable::exprToIndexSymbols(Expr* expr, Symbol* indices) {
     if (!varTmp) {
       Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
       if (!tupTmp) {
-	USR_FATAL(tmp, "Index variable expected\n");
+	USR_FATAL(tmp, "Index variable expected");
       }
       else {
 	return Symboltable::exprToIndexSymbols(tupTmp->exprs, indices);

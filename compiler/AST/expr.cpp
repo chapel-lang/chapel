@@ -431,6 +431,26 @@ Expr* UnOp::copy(void) {
 }
 
 
+bool UnOp::isComputable(void) {
+  return (operand->isComputable() && type != UNOP_BITNOT);
+}
+
+
+long UnOp::intVal(void) {
+  switch (type) {
+  case UNOP_PLUS:
+    return operand->intVal();
+  case UNOP_MINUS:
+    return -operand->intVal();
+  case UNOP_LOGNOT:
+    return !operand->intVal();
+  default:
+    INT_FATAL(this, "intVal() called on non-computable/non-int unary expression");
+    return 0;
+  }
+}
+
+
 void UnOp::traverseExpr(Traversal* traversal) {
   operand->traverse(traversal, false);
 }

@@ -210,7 +210,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
   parentFn(init_parentFn)
 {}
 
-
+ 
 FnSymbol::FnSymbol(char* init_name, FnSymbol* init_parentFn) :
   Symbol(SYMBOL_FN, init_name, nilType),
   formals(nilSymbol),
@@ -232,7 +232,7 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
       mainFn = this;
       exportMe = true;
     } else {
-      USR_FATAL(this, "main multiply defined -- first occurrence at %s\n",
+      USR_FATAL(this, "main multiply defined -- first occurrence at %s",
 		mainFn->stringLoc());
     }
   }
@@ -292,6 +292,9 @@ void EnumSymbol::set_values(void) {
 
   while (tmp) {
     if (tmp->init) {
+      if (tmp->init->isComputable() == false) {
+	USR_FATAL(tmp->init, "Enumerator value for %s must be integer parameter", tmp->name);
+      }
       tally = tmp->init->intVal();
     }
     tmp->val = tally++;

@@ -222,6 +222,7 @@ void USR_FATAL(Loc* loc, char* fmt, ...) {
   fprintf(stderr, ": ");
   vfprintf(stderr, fmt, ap);
   va_end(ap);
+  fprintf(stderr, "\n");
   clean_exit(1);
 }
 

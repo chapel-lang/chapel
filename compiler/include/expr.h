@@ -228,6 +228,8 @@ class UnOp : public Expr {
 
   UnOp(unOpType init_type, Expr* op);
   virtual Expr* copy(void);
+  bool isComputable(void);
+  long intVal(void);
 
   void traverseExpr(Traversal* traversal);
 
