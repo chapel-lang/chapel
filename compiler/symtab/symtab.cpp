@@ -698,9 +698,7 @@ void Symboltable::dump(FILE* outfile) {
 
 
 static void traverseSymtab(SymtabTraversal* traversal, SymScope* scope) {
-  if (scope == NULL) {
-    return;
-  } else {
+  if (scope != NULL) {
     scope->traverse(traversal);
     traverseSymtab(traversal, scope->child);
     traverseSymtab(traversal, scope->sibling);
@@ -713,3 +711,10 @@ void Symboltable::traverse(SymtabTraversal* traversal) {
 }
 
 
+void Symboltable::traverseFromScope(SymtabTraversal* traversal,
+				    SymScope* scope) {
+  if (scope != NULL) {
+    scope->traverse(traversal);
+    traverseSymtab(traversal, scope->child);
+  }
+}

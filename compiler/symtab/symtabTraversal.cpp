@@ -21,3 +21,8 @@ void SymtabTraversal::run(void) {
 void SymtabTraversal::run(ModuleSymbol* moduleList) {
   run();
 }
+
+
+void SymtabTraversal::run(FnSymbol* function) {
+  Symboltable::traverseFromScope(this, function->paramScope);
+}

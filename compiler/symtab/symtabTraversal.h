@@ -10,8 +10,9 @@ class SymtabTraversal : public Pass {
   virtual void postProcessScope(SymScope*);
   virtual void processSymbol(Symbol*);
 
-  virtual void run(ModuleSymbol* moduleList);
   virtual void run(void);
+  virtual void run(ModuleSymbol* moduleList);
+  virtual void run(FnSymbol* function);
 };
 
 #endif
