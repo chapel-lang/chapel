@@ -9,6 +9,7 @@
 #include "type.h"
 #include "sym.h"
 #include "../traversals/fixup.h"
+#include "../traversals/updateSymbols.h"
 
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
@@ -721,10 +722,10 @@ void SeqType::codegenDef(FILE* outfile) {
   fprintf(codefile, " seq) {\n");
   symbol->codegen(codefile);
   fprintf(codefile, "_node tmp = seq->first;\n");
-  fprintf(codefile, "while (tmp != NULL) {\n");
+  fprintf(codefile, "while (tmp != nil) {\n");
   fprintf(codefile, "  fprintf(F, format, tmp->element);\n");
   fprintf(codefile, "  tmp = tmp->next;\n");
-  fprintf(codefile, "  if (tmp != NULL) {\n");
+  fprintf(codefile, "  if (tmp != nil) {\n");
   fprintf(codefile, "  fprintf(F, \" \");\n");
   fprintf(codefile, "}\n");
   fprintf(codefile, "}\n");
@@ -755,17 +756,35 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   Symboltable::pushScope(SCOPE_CLASS);
   Stmt* new_decls = dynamic_cast<Stmt*>(_seq_type->declarationList->next)->copyList(true);
   new_seq_type->addDeclarations(new_decls);
+  SymScope* new_seq_scope = Symboltable::popScope();
+  new_seq_type->setScope(new_seq_scope);
 
-  Symbol* _node = Symboltable::lookup("_node");
+  TypeSymbol* new_seq_sym = new TypeSymbol(new_seq_name, new_seq_type);
+  new_seq_type->addSymbol(new_seq_sym);
+
+  /*** set class bindings and this ***/
+  forv_Vec(FnSymbol, method, new_seq_type->methods) {
+    method->classBinding = new_seq_sym;
+    method->_this = method->formals;
+    /** mangle cname **/
+    method->cname = glomstrings(3, new_seq_sym->name, "_", method->cname);
+  }
+
+  /*** update _seq type to new type ***/
+  Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
+  map->put(_seq, new_seq_sym);
+  map->put(_seq_type, new_seq_type);
+  map->put(_seq_type->types.v[0]->type, new_seq_type->elementType);
+  TRAVERSE_LS(new_decls, new UpdateSymbols(map), true);
+
+  Symbol* _node = Symboltable::lookupInScope("_node", new_seq_scope);
   _node->cname = glomstrings(2, new_seq_name, _node->name);
   SymScope* _node_scope = dynamic_cast<StructuralType*>(_node->type)->structScope;
   Symboltable::lookupInScope("element", _node_scope)->type = new_seq_type->elementType;
   Symboltable::lookupInScope("next", _node_scope)->type = _node->type;
-  Symboltable::lookup("first")->type = _node->type;
-  Symboltable::lookup("last")->type = _node->type;
+  Symboltable::lookupInScope("first", new_seq_scope)->type = _node->type;
+  Symboltable::lookupInScope("last", new_seq_scope)->type = _node->type;
 
-  SymScope* new_seq_scope = Symboltable::popScope();
-  new_seq_type->setScope(new_seq_scope);
   return new_seq_type;
 }
 

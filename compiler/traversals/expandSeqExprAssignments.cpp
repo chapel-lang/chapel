@@ -27,9 +27,13 @@ void ExpandSeqExprAssignments::postProcessStmt(Stmt* stmt) {
   for (Expr* tmp = seq_expr->exprls; tmp; tmp = nextLink(Expr, tmp)) {
     Expr* args = assign_expr->left->copy();
     args->append(tmp->copy());
-    args->append(new Variable(assign_expr->left->typeInfo()->symbol));
+
+
+
     Expr* seq_append =
-      new FnCall(new Variable(Symboltable::lookupInternal("_SEQ_APPEND")), args);
+      new ParenOpExpr(
+                 new MemberAccess(assign_expr->left->copy(), 
+                                  new UnresolvedSymbol("append")), tmp->copy());
 
     ExprStmt* new_stmt = new ExprStmt(seq_append);
     stmt->insertBefore(new_stmt);

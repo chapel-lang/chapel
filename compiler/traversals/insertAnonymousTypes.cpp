@@ -94,10 +94,8 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
     *type = seq_sym->type;
   } else {
     SeqType* new_seq_type = SeqType::createSeqType(name, seq_type->elementType);
-    TypeSymbol* seq_sym = new TypeSymbol(name, new_seq_type);
-    new_seq_type->addSymbol(seq_sym);
-    DefExpr* def_expr = new DefExpr(seq_sym);
-    new_seq_type->structScope->setContext(NULL, seq_sym, def_expr);
+    DefExpr* def_expr = new DefExpr(new_seq_type->symbol);
+    new_seq_type->structScope->setContext(NULL, new_seq_type->symbol, def_expr);
     DefStmt* seq_type_def = new DefStmt(def_expr);
     if (Symboltable::getCurrentScope() == commonModule->modScope) {
       commonModule->stmts->insertAfter(seq_type_def);

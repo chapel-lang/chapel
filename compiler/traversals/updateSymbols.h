@@ -19,6 +19,7 @@ class UpdateSymbols : public Traversal {
   Map<BaseAST*,BaseAST*>* copy_map;
   UpdateSymbols(Map<BaseAST*,BaseAST*>* init_copy_map);
   void preProcessExpr(Expr* expr);
+  void preProcessSymbol(Symbol* symbol);
 };
 
 #endif

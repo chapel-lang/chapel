@@ -19,10 +19,6 @@ PassInfo passlist[] = {
   RUN(CreateEntryPoint, ""),
   RUN(Fixup, ""),
 
-  // passes to run if --noanalysis is used
-  RUN(Fixup, "verify"), // this is a sanity check
-  RUN(OmitForNoAnalysis, ""),
-
   // passes to normalize the basic AST
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(ExpandClassWiths, ""),
@@ -47,6 +43,10 @@ PassInfo passlist[] = {
   // passes to run analysis
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(RunAnalysis, ""),
+
+  // passes to run if --noanalysis is used
+  RUN(Fixup, "verify"), // this is a sanity check
+  RUN(OmitForNoAnalysis, ""),
 
   // passes to capture analysis information in the AST
   RUN(Fixup, "verify"), // this is a sanity check

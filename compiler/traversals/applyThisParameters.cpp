@@ -50,9 +50,6 @@ void ApplyThisParameters::preProcessExpr(Expr* expr) {
           repl->filename = expr->filename;
           expr->replace(repl);
         }
-        else {
-          INT_FATAL(expr, "Statement is not in method in ApplyThisParameters");
-        }
       }
     }
   }

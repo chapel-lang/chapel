@@ -94,8 +94,9 @@ pragma "omit for noanalysis" class _seq {
   var first : _node;
   var last : _node;
 
-  function append(e : elementType) {
-    var new : _node = _node();
+  function append(e : elementType) : _seq {
+    var new : _node;
+    new = _node();
     new.element = e;
     if length > 0 {
       last.next = new;
@@ -105,11 +106,11 @@ pragma "omit for noanalysis" class _seq {
       last = new;
     }
     length += 1;
-    return this;
   }
 
-  function prepend(e : elementType) {
-    var new : _node = _node();
+  function prepend(e : elementType) : _seq {
+    var new : _node;
+    new = _node();
     new.element = e;
     if length > 0 {
       new.next = first;
@@ -122,29 +123,31 @@ pragma "omit for noanalysis" class _seq {
     return this;
   }
 
-  function append_sequence(s like this) {
+  function append_sequence(s : _seq) : _seq {
     last.next = s.first;
     length += s.length;
     return this;
   }
 
-  function copy() {
-    var new : _seq;
+  function copy() : _seq {
+    var new : _seq = _seq();
     for e in this {
       new.append(e);
     }
     return new;
   }
+
 }
 
-pragma "omit for noanalysis" function _seq_pound(s, e) {
+pragma "omit for noanalysis" function _seq_append(s, e) {
   s.append(e);
 }
-
+/*
 pragma "omit for noanalysis" function _seq_pound(e, s) {
   s.prepend(e);
 }
 
-pragma "omit for noanalysis" function __seq_pound(s1, s2) {
+pragma "omit for noanalysis" function _seq_pound(s1, s2) {
   s1.append_sequence(s2);
 }
+*/
