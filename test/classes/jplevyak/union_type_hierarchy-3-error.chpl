@@ -7,10 +7,10 @@ union D {
   var y : integer;
 }
 
-function f(a : D) {
+function f(a : C) {
   return 1;
 }
 
-var b = C();
+var b = D();
 
 writeln(f(b));

@@ -1,8 +1,8 @@
-union C {
+record C {
   var x : integer;
 }
 
-union D {
+record D {
   var x : integer;
   var y : integer;
 }
