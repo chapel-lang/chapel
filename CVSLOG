@@ -2141,3 +2141,29 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/05/14 10:03:21 -- bradc
+
+Log message:
+	I believe the nightly regressions are now working well
+	enough that it's safe to send the results to chapel_dev
+	without bothering anyone, so I turned that on by
+	default.  This should result in a regressions test
+	status message showing up in the middle of the night
+	every night.
+	
+	You can see the running tally of tests run, tests passing,
+	and tests passing with valgrind at:
+	
+	http://insidecray.mw.cray.com/~bradc/chapel.html
+	
+	It's not all that interesting now, but should look good
+	as we continue to add tests.  John, if you're reading
+	this far, I haven't yet had a chance to look into the
+	one valgrind run that's currently failing to see if
+	it's a real problem or something else needing suppressing.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
