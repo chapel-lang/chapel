@@ -22552,3 +22552,13 @@ Modified files:
 	                         computeVisibleFunctions.h symscope.cpp 
 	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
 
+---------------------------------------------------------------------------
+
+03/30/05 11:24:22 -- jplevyak
+
+Log message:
+	Switch over to using collect_asts() instead of my hack.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
