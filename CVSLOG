@@ -4076,3 +4076,21 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+07/19/04 14:36:24 -- bradc
+
+Log message:
+	Two small fixes to token-counting scripts:
+	
+	1) Made tokctnightly take the cast/ and make_prims/ subdirectories
+	into account, because they were being overlooked before.
+	
+	2) Made tokencount.c work better in the presence of wildcards
+	which the shell doesn't expand (which sh doesn't seem to do
+	when there are no matches) -- previously this was causing a
+	seg fault.
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly tokencount.c 
+
