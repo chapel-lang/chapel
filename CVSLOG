@@ -6635,3 +6635,15 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/d/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/07/04 17:15:24 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add test code to print out types of Expresions in Functions for the
+	new AST.
+	Fix bug in type_info which prevented types form being found in new AST.
+
+Modified files:
+	chapel/compiler/: analysis.cpp analysis.h parse_ast.h 
+
