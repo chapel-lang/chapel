@@ -36,6 +36,13 @@ ifeq ($(OS_TYPE),Linux)
 	PLATFORM=linux
 endif
 
+#
+# Permit override of compiler used for generating dependencies
+#
+ifndef CCDEP
+CCDEP = $(CC)
+endif
+
 
 #
 # Directories, files, and locations
