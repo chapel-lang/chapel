@@ -10242,3 +10242,13 @@ Modified files:
 	chapel/test/flowanalysis/jplevyak/loop/: COMPOPTS 
 	chapel/test/flowanalysis/newast/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+11/22/04 17:59:23 -- bradc
+
+Log message:
+	Oops, missed this one because I hadn't updated -d in awhile.
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/config/: COMPOPTS 
+
