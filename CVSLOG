@@ -10277,3 +10277,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+11/23/04 20:25:25 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Some cleanup of naming and the test parser.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp pattern.cpp 
+	chapel/compiler/vparser/: parse_ast.cpp v.g 
+
