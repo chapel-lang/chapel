@@ -181,7 +181,9 @@
 #  - if the subdirectory contains a TIMEOUT file, then that file
 #    will be read to determine the number of seconds that the tests
 #    in the directory should be allowed to run before being killed.
-#    The default is currently 5 minutes.
+#    The default is currently 5 minutes.  A test foo.chpl can also
+#    override the timeout just for itself by supplying a timeout
+#    value in a foo.timeout file.
 #
 #  - subdirectory-specific .cvsignore files can also be very 
 #    helpful so that files generated during testing won't clutter

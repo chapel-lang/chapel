@@ -50,9 +50,9 @@ endif
 #  will only allow a program to execute for a certain number
 #  of seconds ($timeout).
 if (-r ./TIMEOUT) then
-    set timeout = "$TIMEOUT"
+    set globalTimeout = "`cat ./TIMEOUT`"
 else
-    set timeout = 300
+    set globalTimeout = 300
 endif
 set timedexec = "$testdir/Bin/timedexec"
 if ( ! -f $timedexec || ! -x $timedexec ) then
@@ -156,6 +156,12 @@ foreach chplsrc ($testsrc)
 	set execopts = "$globalExecopts `cat ./$execfile.execopts`"
     else
         set execopts = "$globalExecopts"
+    endif
+
+    if (-r ./$execfile.timeout) then
+        set timeout = "`cat ./$execfile.timeout`"
+    else
+        set timeout = "$globalTimeout"
     endif
 
     if (-r ./$execfile.future) then
