@@ -121,7 +121,6 @@ int Expr::rank(void) {
 
 int
 Expr::getTypes(Vec<BaseAST *> &asts) {
-  asts.add(typeInfo());
   return asts.n;
 }
 
