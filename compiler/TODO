@@ -1,45 +1,22 @@
-- how to support 'with' when the type isn't given??
-
-- check rank for multi-dimensional array accesses
-
-- support applications with more than required arguments as multiple-calls
-  (add_application_constraints)
-
-- handle structural types.  Generalize tuple handling to include ref etc. in
-  patterns.
-
-- constant propogation & generalized splitting
-  also handle things like __make_vector which require constants
-  in generic code
-
-- inlining
-
+** Front End
+ 
 - handle david's generics stuff
-
-- AST rewrite to change '=' to '==' in expressions and to
-  make sure no other assignments are in expressions. (??)
-
-- use inlining to simplify te program graph so that SSU conversion
-  is more effective.
-
-- differentiate abstract ATypes (which have a single CreationSet and no defs)
-  from concrete ones
-
-- do we need the power of the creation_point in add_var_constraints?
-
-- move build_map and add_vars out of prim_make
-  - handle ref variables
-  - maybe in creation_point?  
-
-- handle constants in vector_application
-
-- do constant propgation in fa.cpp
-
-- odd thing about vectors: #[1] is rank 0 (make sense)
-
+- how to support 'with' when the type isn't given??
+- document and do examples for functions returning lvals
+- handle goto, return etc. in gen_if1
+- merge structually equivalent types (same type_kind) unless internal doesn't match
+- set Fun::has_return in ast.cpp
+- when taking a reference, varaible cannot be put into SSU form
+- prevent SUM types from being formed when boxing is different (??)
+- remove SUM types from implements etc.
+- check handling of inheritance
+- handle bulltin constants so that they default to the default size (?? done?)
+- make the dispatch tables visibility specific ???
+- figure out why adding $right 5200 to 'new' causes problems
+- add ast arg to if1_send
+- fixup methods "self" and "super" variables to work correctly
 - describe type hierarchy.  symbols < a symbol < functions with symbol as name
--               classes as a separate hierarchy tied into the object
-                hierarchy
+    classes as a separate hierarchy tied into the object hierarchy
 
          ObjectClass
          / |
@@ -52,110 +29,98 @@
       |  BClass
       | /
       B
+- describe vector ranks: vectors: #[1] is rank 0
+- AST rewrite to change '=' to '==' in expressions and to
+  make sure no other assignments are in expressions. (??)
 
-- make_top_edge should call with the appropriate arguments.
-  - should store the top level pnode in the database (somewhere)
+** Language features
 
-- fixup methods "self" and "super" variables to work correctly
+- handle vector initializers more precisely and more efficiently
+- support complex32 complex64 etc.
+- handle mismatched number of arguments (e.g. entry_set_compatiblity, matching etc).
+- support applications with more than required arguments as multiple-calls
+  (add_application_constraints)
+- subclass tuple for argument-tuple to add things like named arguments etc.
+- structural types in matching
+- setters?
+ fix negative integers in 'index' in vector-type
 
-- add ast arg to if1_send
+** Incrementalism
 
-- figure out why adding $right 5200 to 'new' causes problems
+- finish cdb.cpp reading and writing
+- implement fa.cpp check_es_db
+- look at sumarization techniques (research)
 
-- optimize function dispatch
-- deal with "class_static"
+** Alias Analysis
 
-- make the dispatch tables visibility specific ???
+- research methods: Andersens, Steensgaard, Das
+- research proving user annotations correct: Jeffry Foster, Alex Aiken
+- implement basic alias analysis
+- research "must alias" analysis
+- implement "must alias" analysis
+- implement user annotation analysis ??
 
-- document and do examples for functions returning lvals
-
-- fix A(i,j) = (if (i==j) 1 else 0)
-
-- handle bulltin constants so that they default to the default size
-
-- debug type inference when dead code elimination is off.... or remove
-  the flag
-
-- for pattern matching: handle parameterized types & structural types
-  - probably by recursing down the actual argument and checking
-    if it matches. Maybe cache the results as well: true/false/maybe
-
-- complex should have a size, same as float
-
-- implements, includes, contraints for cloned types
-
-- check handling of inheritance
-
-- remove SUM types from implements etc.
+** Flow Analysis
 
 - deal with "tuple" having having "has" for all possible tuples
-
 - constant propogation and folding in fa.cpp.  Deal with indexing tuples
-  with those constants.  Probably make a Sym per constant instance and use
-  in creation sets....
-
-- hash SUM types in clone.cpp concretize_types
-
-- prevent SUM types from being formed when boxing is different
-
+    with those constants.  Probably make a Sym per constant instance and use
+    in creation sets....
 - declare type violations when boxing is different
-
-- when taking a reference, varaible cannot be put into SSU form
-
 - fix dispatch to take the most specific method for any given
-  set of arguments
-
+    set of arguments
 - use simple_inline_calls to accelerate analysis
+- remove useless pnodes from all_PNodes ??
+- build has_map... must be filled with selectors (connonical names)
+    convert things with multiple possible ->in to selectors...
+- handle vararg functions
+- preload the various as_CreationSet and atype's ?
+- add concept of extending a function with additional cases.... this
+    to handle 'apply-style' polymorphism
+- add pattern matching
+- add ->extends to Sym_t which refers to previously scoped functions with the same name
+    and handle with apply ??
+- use a map for symbols -> elements of a sym_tuple
+- fix fa_dump_types to recognize nested functions
+- fixup coerce_type to handle subtyping... used in v.g
+- handle recursively analyzing setters for setter confluces on instance variables
+- use clone.h basic_type to pre-split entry-sets ?? recursion could be a problem ... no more than 1 deep
+- add complex restrictions for pattern arguments (structural types) & 
+    clear those complex restrictions in clear_results
+    - probably by recursing down the actual argument and checking
+       if it matches. Maybe cache the results as well: true/false/maybe
+- add simple type restrictions to non-pattern arguments in analyze_edge
+- look into fa.cpp split() for phi nodes and maybe instance variables/globals
+    (research: Dolby)
+- collect together elements of es-cs recursion so that we can verify that the corresponding
+   cs is part of the es-cs loop for the es being split
+- debug type inference when dead code elimination is off.... or remove
+  the flag
+- optimize function dispatch
+- make_top_edge should call with the appropriate arguments.
+  - should store the top level pnode in the database (somewhere)
+- handle constants in vector_application
+- do we need the power of the creation_point in add_var_constraints?
+- differentiate abstract ATypes (which have a single CreationSet and no defs)
+  from concrete ones
+- check rank for multi-dimensional array accesses... generally support these
+    better
+- handle large array constants precisely
 
-- endless loops hang SSU conversion
+** Cloning
 
 - splice_in_clone should fixup the IF1/CFG/SSU/AVARS etc.
+- hash SUM types in clone.cpp concretize_types
+- implements, includes, contraints for cloned types
 
-- handle goto, return etc. in gen_if1
-
-- set Fun::has_return in ast.cpp
-
-- when building types if t->type != t remove it if t->type is present
-
-- verify CDG nesting code
-
-- remove recursion from rename_edge (amoung others)
+** Other
 
 - remove dom.h is_dominated_by and replace with dfs_pred/succ implementation
+- remove recursion from rename_edge (amoung others)
+- verify CDG nesting code
+- when building types if t->type != t remove it if t->type is present
+- deal with "class_static"
+- use inlining to simplify the program graph so that SSU conversion
+  is more effective (??)
+- redo SSU conversion after simple inlining
 
-- fix negative integers in 'index' in vector-type
-
-- merge structually equivalent types (same type_kind) unless internal doesn't match
-
-- use setters?
-
--- handle additional cases for entry set contour is fa.cpp extend_analysis
-
--- collect together elements of es-cs recursion so that we can verify that the corresponding
-   cs is part of the es-cs loop for the es being split
-
--- splitting for sset is on return values... do splitting correctly to pull out different
-   ssets for different return values.
-
--- check handling of structural types in matching
-
--- subclass tuple for argument-tuple to add things like named arguments etc.
-
--- handle mismatched number of arguments (e.g. entry_set_compatiblity, matching etc).
-
--- look into fa.cpp split() for phi nodes and maybe instance variables/globals
-
--- trailing context is problematic
-
--- add simple type restrictions to non-pattern arguments in analyze_edge
-
--- add complex restrictions for pattern arguments
-
--- clear those complex restrictions in clear_results
-
--- use clone.h basic_type to pre-split entry-sets ?? recursion could be a problem ... no more than 1 deep
-
--- handle recursively analyzing setters for setter confluces
-   on instance variables
-
--- handle vector initializers more precisely and more efficiently
