@@ -16303,3 +16303,13 @@ Added files:
 Removed files:
 	chapel/test/classes/jplevyak/: record_type_hierarchy-1.future 
 
+---------------------------------------------------------------------------
+
+02/02/05 13:41:49 -- jplevyak
+
+Log message:
+	Fixed BlockHash's which were not using GC.
+
+Modified files:
+	chapel/compiler/include/: map.h 
+
