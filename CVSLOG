@@ -4196,3 +4196,21 @@ Added files:
 	chapel/test/trivial/bradc/protoast/codegen/: .cvsignore COMPOPTS 
 	                                             test.chpl test.good 
 
+---------------------------------------------------------------------------
+
+07/21/04 14:23:49 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Work on adding support for destructring return arguments (not done).
+	Added new review3.chpl test case.
+	Make sure that tuples sizes match during destructuring.
+
+Modified files:
+	chapel/compiler/: ast.cpp clone.cpp dump.cpp fa.cpp 
+	                  fa_extras.cpp fun.cpp if1.cpp pattern.cpp 
+	                  prim_data.dat scope.cpp sym.h v.g 
+	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
+	                               module.good tuples.good 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: review3.chpl review3.good 
+
