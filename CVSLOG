@@ -22030,3 +22030,33 @@ Log message:
 Modified files:
 	chapel/test/arrays/deitz/: test_array_init2.future 
 
+---------------------------------------------------------------------------
+
+03/28/05 16:50:17 -- deitz
+
+Log message:
+	This checkin changes the indices in ForallExprs, the indices in
+	ForallLoops, and the variables in LetExprs to be defined within
+	DefExprs rather than to have symbols right there.  It paves the way
+	for defPoint to be a DefExpr* rather than a BaseAST*.
+	
+	Fixed a bug in the traversal of sequences.
+	
+	Added ability to print out integer literal in print_view function.
+	
+	Updated mg-seq etc protoast tests because the indices in a for loop
+	are now printed out as variable definitions.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp 
+	                             insertAnonymousDomains.cpp 
+	                             insertElidedLoops.cpp 
+	                             insertVariableInitializations.cpp 
+	                             transformLetExprs.cpp view.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good test.good 
+
