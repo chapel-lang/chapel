@@ -13758,3 +13758,14 @@ Added files:
 	                                 intent-8-error.future 
 	                                 intent-9.future 
 
+---------------------------------------------------------------------------
+
+01/06/05 16:25:20 -- deitz
+
+Log message:
+	Made new class CloneCallback in my last checkin a subclass of gc so
+	that it is garbage collected.
+
+Modified files:
+	chapel/compiler/include/: analysis.h 
+
