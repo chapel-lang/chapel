@@ -9873,3 +9873,27 @@ Modified files:
 	chapel/test/parsing/jplevyak/: for1.good for2.good literal.good 
 	                               tuples.good 
 
+---------------------------------------------------------------------------
+
+11/17/04 15:03:33 -- shannon
+
+Log message:
+	Refactored much of the code implemented previously for
+	integer configuration variable code generation.
+	
+	All of the code but one line was moved out of main into
+	separate files.  Main calls the parseArgs function (in arg.c)
+	which parses the command-line argument and stores it in
+	a hash table.  The hash table is made up of configVar structs
+	with the variable name and value stored as strings.
+	
+	The setInCommandLine function (in config.c) now simply checks
+	the table to determine if the variable has been set.
+
+Modified files:
+	chapel/runtime/include/: chplio.h stdchpl.h 
+	chapel/runtime/src/: Makefile main.c 
+Added files:
+	chapel/runtime/include/: arg.h config.h 
+	chapel/runtime/src/: arg.c config.c 
+
