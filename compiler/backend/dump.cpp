@@ -17,9 +17,9 @@ dump_header(FILE *fp, char *fn) {
   fprintf(fp, "<HTML>\n");
   fprintf(fp, "<HEAD>\n");
   fprintf(fp, "<TITLE> Program Dump for %s </TITLE>\n", fn);
-  fprintf(fp, "<SCRIPT SRC=\"%s%smktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
+  fprintf(fp, "<SCRIPT SRC=\"%s%s/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
 	  relative ? "../" : "", system_dir);
-  fprintf(fp, "<LINK REL=\"stylesheet\" HREF=\"%s%smktree.css\">", 
+  fprintf(fp, "<LINK REL=\"stylesheet\" HREF=\"%s%s/etc/www/mktree.css\">", 
 	  relative ? "../" : "", system_dir);
   fprintf(fp, "</HEAD>\n");
   fprintf(fp, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");

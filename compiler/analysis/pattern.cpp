@@ -230,6 +230,7 @@ best_match_sym(FA *fa, Sym *s, CreationSet *cs, Vec<Fun *> *funs, Vec<Fun *> *pa
   return 0;
 }
 
+// for a given argument (a) at position (p) 
 static void
 best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches, 
 	       MatchMap &match_map, MPosition &p, Vec<MPosition *> *all_positions,
@@ -292,19 +293,21 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
   partial_matches.v[partial_matches.n-1] = funs;
 }
 
+// main dispatch entry point - given a vector of arguments return a vector of matches
 int
 pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
   matches.clear();
   MatchMap match_map;
   PartialMatches partial_matches;
   Vec<MPosition *> *all_positions = NULL;
+  // use summary information from previous analysis iterations to restrict the search
+  if (send->var->def->callees) {
+    partial_matches.add(new Vec<Fun *>(send->var->def->callees->funs));
+    all_positions = &send->var->def->callees->arg_positions;
+  } else
+    partial_matches.add(NULL);
   // find all matches
   {
-    if (send->var->def->callees) {
-      partial_matches.add(new Vec<Fun *>(send->var->def->callees->funs));
-      all_positions = &send->var->def->callees->arg_positions;
-    } else
-      partial_matches.add(NULL);
     MPosition p;
     p.push(1);
     forv_AVar(av, args) {
@@ -315,6 +318,7 @@ pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
   if (!partial_matches.v[0])
     return 0;
   Vec<Fun *> allfuns(*partial_matches.v[0]);
+  // build all_positions if necessary
   if (!all_positions) {
     all_positions = new Vec<MPosition *>;
     forv_Fun(f, allfuns) if (f)
@@ -360,12 +364,14 @@ pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send) {
   return matches.n;
 }
 
+// build dispatch tables
 void
 build_patterns(FA *fa) {
   fa->patterns = new Patterns;
   build(fa);
 }
 
+// build a Fun::arg_position - positional and named argument Positions for an arg or pattern
 static void
 build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
@@ -392,6 +398,8 @@ build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
   }
 }
 
+// build Fun::arg_positions - vec of positional and named argument Positions
+// build Fun::args - map from Position's to Var's
 void
 build_arg_positions(FA *fa) {
   forv_Fun(f, fa->pdb->funs) {

@@ -587,6 +587,14 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       fputs(" :TYPE ", fp);
       if1_dump_sym(fp, s->type);
     }
+    if (s->must_specialize) {
+      fputs(" :MUST_SPECIALIZE ", fp);
+      if1_dump_sym(fp, s->must_specialize);
+    }
+    if (s->must_implement) {
+      fputs(" :MUST_IMPLEMENT ", fp);
+      if1_dump_sym(fp, s->must_implement);
+    }
     if (s->is_constant) {
       if (s->type && s->constant[0] != '<')
 	fprintf(fp, " :CONSTANT %s", (char*)s->constant);
@@ -647,6 +655,16 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       fputs(" :CONT ", fp);
       if1_dump_sym(fp, s->cont);
     }
+    if (s->is_var)
+      fputs(" :VAR true", fp);
+    if (s->is_constant)
+      fputs(" :IS_CONSTANT true", fp);
+    if (s->is_external)
+      fputs(" :EXTERNAL true", fp);
+    if (s->global_scope)
+      fputs(" :GLOBAL true", fp);
+    if (s->is_meta_class)
+      fputs(" :META_CLASS true", fp);
     if (s->is_value_class)
       fputs(" :VALUE true", fp);
     if (s->code) {
