@@ -51,18 +51,11 @@ S(fun_type)
 S(ref_type)
 S(tagged_type)
 S(type_application)
-// arrays
-S(array_descriptor)
-// domains
-S(cross_product)
 // expression
 S(op)
 S(if)
 S(loop)
 S(loop_cond)
-S(forall)
-S(indices)
-S(domain)
 S(block)
 S(conc)
 S(seq)

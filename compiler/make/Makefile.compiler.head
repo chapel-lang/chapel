@@ -22,18 +22,13 @@ CFLAGS += -I$(COMPILER_ROOT) -I$(COMPILER_ROOT)/AST
 
 
 #
-# source languages accepted by the tool and settings based on them
+# test languages accepted by the tool and settings based on them
 #
 LANG_V = 1
-LANG_CHPL = 1
 
 ifdef LANG_V
 LANGS += v
 CFLAGS += -DLANG_V=1
-endif
-ifdef LANG_CHPL
-LANGS += chpl
-CFLAGS += -DLANG_CHPL=1
 endif
 
 

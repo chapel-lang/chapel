@@ -639,15 +639,6 @@ define_types(IF1 *i, ParseAST *ast, Vec<ParseAST *> &funs, Scope *scope, int ski
 	ast->sym = new_sym(i, scope, ast->get(AST_ident)->string);
 	ast->sym->type_kind = Type_UNKNOWN;
 	break;
-      case AST_array_descriptor:
-#if 0
-	ast->sym = new_sym(i, scope);
-	ast->sym->type_kind = Type_RECORD;
-	ast->sym->type = ast->sym;
-#else
-	ast->sym = sym_array;
-#endif
-	break;
       default:
 	break;
     }
@@ -910,13 +901,6 @@ static int
 variables_and_nonrecursive_functions(IF1 *i, ParseAST *ast, int skip = 0) {
   if (!skip)
     switch (ast->kind) {
-      case AST_indices: {
-	forv_ParseAST(a, ast->children) {
-	  a->sym = new_sym(i, a->scope, a->string, a->sym);
-	  a->sym->ast = a;
-	}
-	break;
-      }
       case AST_def_ident: {
 	ParseAST *id = ast->children.v[0];
 	if (scope_idpattern(i, id, ast->scope) < 0)
@@ -1027,12 +1011,6 @@ build_types(IF1 *i, ParseAST *ast) {
       forv_ParseAST(a, ast->children)
 	if (!ast->sym)
 	  ast->sym = a->sym;
-      break;
-    case AST_array_descriptor:
-#if 0
-      ast->sym->implements.add(sym_array);
-      ast->sym->includes.add(sym_array);
-#endif
       break;
     default: break;
   }
@@ -1353,29 +1331,6 @@ gen_op(IF1 *i, ParseAST *ast) {
 }
 
 static void
-gen_indices(IF1 *i, ParseAST *ast, ParseAST *indices, ParseAST *domain) {
-  (void) domain;
-  Sym *index = new_sym(i, ast->scope);
-  index->type = sym_int;
-  index->is_external = 1; // hack to make non-constant
-  forv_ParseAST(a, indices->children)
-    if1_move(i, &ast->code, index, a->sym);
-}
-
-static void
-gen_forall(IF1 *i, ParseAST *ast) {
-  ParseAST *domain = ast->get(AST_domain);
-  ParseAST *indices = ast->get(AST_indices);
-  ParseAST *body = ast->last();
-  if (indices)
-    gen_indices(i, ast, indices, domain);
-  if1_gen(i, &ast->code, body->code);
-  ast->rval = new_sym(i, ast->scope);
-  Code *send = if1_send(i, &ast->code, 3, 1, sym_array, domain->rval, body->rval, ast->rval);
-  send->ast = ast;
-}
-
-static void
 gen_loop(IF1 *i, ParseAST *ast) {
   ParseAST *cond = ast->get(AST_loop_cond);
   int dowhile = cond == ast->last();
@@ -1564,71 +1519,14 @@ value_type(IF1 *i, ParseAST *ast, Sym *s) {
 
 static void
 gen_def_ident_value(IF1 *i, ParseAST *ast, ParseAST *constraint, ParseAST *val) {
-  // arrays
-  ParseAST *arr = constraint->get(AST_array_descriptor);
-  if (arr) { 
-    Sym *rval = new_sym(i, ast->scope);
-    Sym *domain = NULL, *init = NULL;
-    ParseAST *arr_dom = arr->get(AST_domain);  // if the domain is declared use it
-    if (arr_dom)
-      domain = arr_dom->rval;
-    ParseAST *indices = arr->get(AST_indices);
-    ParseAST *element_type = constraint->last();
-    if (element_type != arr)
-      init = value_type(i, ast, element_type->sym);
-    if (val) {
-      if (!domain && val->kind == AST_forall) { // if it has a domain and we need one, use it
-	ParseAST *domain_ast = val->get(AST_domain);
-	domain = domain_ast->rval;
-	ParseAST *element = val->last();
-	if (!init && element != domain_ast && element->kind == AST_const)
-	  init = element->rval;
-      } else if (!init && val->kind == AST_const) // if it has a scalar initializer, use it
-	init = val->rval;
-    }
-    if (domain) {
-      Code *send;
-      if (init)
-	send = if1_send(i, &ast->code, 3, 1, sym_array, domain, init, rval);
-      else
-	send = if1_send(i, &ast->code, 2, 1, sym_array, domain, rval);
-      send->ast = ast;
-    } else {
-      show_error("missing domain in array initializer", ast);
-    }
-    if (indices)
-      gen_indices(i, ast, indices, arr_dom);
-    if ((!init || !init->constant) && val) {
-      if (val)
-	if1_gen(i, &ast->code, val->code);
-      Sym *rrval = new_sym(i, ast->scope);
-      gen_assign(i, ast, val, rval, rrval);
-      rval = rrval;
-    }
-    if1_move(i, &ast->code, rval, ast->rval, ast);
-  }
-    
-  // other values
-  else { 
-    if (val)
-      if1_gen(i, &ast->code, val->code);
-    Sym *declared_type = constraint->sym;
-    if (declared_type->num_kind) { // numbers
-      if (val && val->kind == AST_const && val->sym->type == declared_type)
-	if1_move(i, &ast->code, val->sym, ast->sym, ast);
-      else {
-	Sym *rval = value_type(i, ast, declared_type);
-	if (val) {
-	  Sym *rrval = new_sym(i, ast->scope);
-	  gen_assign(i, ast, val, rval, rrval);
-	  rval = rrval;
-	}
-	if1_move(i, &ast->code, rval, ast->rval, ast);
-      }
-    } else {
-      Sym *rval = new_sym(i, ast->scope);
-      Code *send = if1_send(i, &ast->code, 2, 1, sym_new, declared_type, rval);
-      send->ast = ast;
+  if (val)
+    if1_gen(i, &ast->code, val->code);
+  Sym *declared_type = constraint->sym;
+  if (declared_type->num_kind) { // numbers
+    if (val && val->kind == AST_const && val->sym->type == declared_type)
+      if1_move(i, &ast->code, val->sym, ast->sym, ast);
+    else {
+      Sym *rval = value_type(i, ast, declared_type);
       if (val) {
 	Sym *rrval = new_sym(i, ast->scope);
 	gen_assign(i, ast, val, rval, rrval);
@@ -1636,6 +1534,16 @@ gen_def_ident_value(IF1 *i, ParseAST *ast, ParseAST *constraint, ParseAST *val) 
       }
       if1_move(i, &ast->code, rval, ast->rval, ast);
     }
+  } else {
+    Sym *rval = new_sym(i, ast->scope);
+    Code *send = if1_send(i, &ast->code, 2, 1, sym_new, declared_type, rval);
+    send->ast = ast;
+    if (val) {
+      Sym *rrval = new_sym(i, ast->scope);
+      gen_assign(i, ast, val, rval, rrval);
+      rval = rrval;
+    }
+    if1_move(i, &ast->code, rval, ast->rval, ast);
   }
 }
 
@@ -1763,18 +1671,6 @@ gen_if1(IF1 *i, ParseAST *ast) {
       if (ast->children.n)
 	ast->rval = ast->last()->rval; 
       break;
-    case AST_indices:
-      forv_ParseAST(a, ast->children)
-	a->rval = ast->sym;
-      break;
-    case AST_cross_product:
-      if1_gen(i, &ast->code, ast->last()->code);
-      ast->rval = ast->last()->rval;
-      break;
-    case AST_domain:
-      ast->rval = ast->last()->rval;
-      break;
-    case AST_forall: gen_forall(i, ast); break;
     case AST_loop: gen_loop(i, ast); break;
     case AST_op: gen_op(i, ast); break;
     case AST_new: gen_new(i, ast); break;

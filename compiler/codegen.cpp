@@ -326,6 +326,7 @@ void genAST(FILE* outfile, ParseAST* ast) {
     }
     break;
 
+#if 0
   case AST_cross_product:
     {
       int i;
@@ -338,7 +339,7 @@ void genAST(FILE* outfile, ParseAST* ast) {
       }
     }
     break;
-    
+#endif    
 
   case AST_def_ident:
     {

@@ -7,6 +7,7 @@
 - generalize splitting of "new" call in edge_type_compatible_with_entry_set
 - why doesn't if1_label set the ast?
 - Sym::type... can we use as type for var things?  set in add_var_constraints?
+- revisit constants and symbols as "function local"
 
 ** Front End
 

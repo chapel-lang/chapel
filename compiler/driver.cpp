@@ -26,7 +26,6 @@
 #include "fun.h"
 #include "fa.h"
 
-static void g_option(ArgumentState *arg_state, char *arg_unused);
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
 
@@ -39,7 +38,6 @@ extern int d_debug_level;
 static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
-static bool newAST = true;
 static int analyzeNewAST = 0;
 
 int fdce_if1 = 1;
@@ -64,7 +62,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
  {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
- {"lowlevel_cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", g_option},
+ {"lowlevel_cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
  {"graph", 'G', "Dump Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
  {"graph_var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
  {"graph_fun", ' ', "Limit Graph to Fun", "S80", graph_fun, "CHPL_GRAPH_FUN", NULL},
@@ -78,7 +76,6 @@ static ArgumentDescription arg_desc[] = {
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"oldast", ' ', "Use Old AST", "f", &newAST, NULL, NULL},
  {"analyzenewast", ' ', "Analyze New AST", "F", &analyzeNewAST, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
@@ -113,19 +110,23 @@ extern D_ParserTables parser_tables_v;
 extern D_Symbol d_symbols_v[];
 #endif
 
-#ifdef LANG_CHPL
-extern D_ParserTables parser_tables_chpl;
-extern D_Symbol d_symbols_chpl[];
-#endif
-
 FrontEnd langs[] = {
 #ifdef LANG_V
   {"v", &parser_tables_v, no_preprocessor_whitespace},
 #endif
-#ifdef LANG_CHPL
-  {"chpl", &parser_tables_chpl, no_preprocessor_whitespace},
-#endif
 };
+
+int 
+is_test_lang(char *fn) {
+  char *ext = strrchr(fn, '.');
+  if (!ext)
+    return 0;
+  ext++;
+  for (int i = 0; i < (int)numberof(langs); i++)
+    if (!strcmp(langs[i].extension, ext))
+      return 1;
+  return 0;
+}
 
 static void
 help(ArgumentState *arg_state, char *arg_unused) {
@@ -143,14 +144,6 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
 	  );
   fprintf(stderr, "\n\n");
   clean_exit(0);
-}
-
-static void
-g_option(ArgumentState *arg_state, char *arg_unused) {
-  if (fcg) {
-    newAST = 0;
-    suppress_codegen = 1;
-  }
 }
 
 static ParseAST *
@@ -265,8 +258,6 @@ do_analysis(char *fn) {
     simple_inline_calls(fa);
   if (fdump_html)
     dump_html(fa, fn);
-  if (!newAST && !suppress_codegen)
-    codegen(fa, fn, system_dir);
   if (fcg) {
     cg_write_c(fa, if1->top->fun,  fn);
     cg_compile(fn);
@@ -278,11 +269,8 @@ do_analysis(char *fn) {
 
 static int
 compile_one(char *fn) {
-  bool dotVFile = false;
-  int fnLen = strlen(fn);
-  if (fnLen >= 2 && strcmp((fn+fnLen-2), ".v") == 0)
-    dotVFile = true;
-  if (newAST && !dotVFile) {
+  bool test_lang = is_test_lang(fn);
+  if (!test_lang) {
     fileToAST(fn, d_debug_level);
     if (analyzeNewAST) {
       if1->callback = new ACallbacks;
@@ -293,10 +281,6 @@ compile_one(char *fn) {
       stmts.add(programStmts);
       AST_to_IF1(stmts);
       do_analysis(fn);
-#if 0
-      extern void x();
-      x();
-#endif
     }
     runPasses(passlist_filename, programStmts);
     if (!suppress_codegen)
@@ -306,13 +290,14 @@ compile_one(char *fn) {
       printf("\n");
     }
     return 0;
+  } else {
+    if1->callback = new PCallbacks;
+    init_ast();
+    if (load_one(fn) < 0)
+      return -1;
+    do_analysis(fn);
+    return 0;
   }
-  if1->callback = new PCallbacks;
-  init_ast();
-  if (load_one(fn) < 0)
-    return -1;
-  do_analysis(fn);
-  return 0;
 }
 
 static void
@@ -363,9 +348,8 @@ main(int argc, char *argv[]) {
   process_args(&arg_state, argc, argv);
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
-  if (rungdb) {
+  if (rungdb)
     runCompilerInGDB(argc, argv);
-  }
   if (fdump_html || strcmp(log_flags, "") || fgraph)
     init_logs();
   init_system();
