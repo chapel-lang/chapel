@@ -121,6 +121,7 @@
 /* These are declared in increasing order of precedence. */
 
 %left TBY
+%left TDOTDOT
 %left TOR
 %left TAND
 %right TNOT
@@ -131,8 +132,7 @@
 %left TBAND
 %left TPLUS TMINUS
 %left TSTAR TDIVIDE TMOD
-%right TUPLUS TUMINUS
-%right TBNOT
+%right TUPLUS TUMINUS TREDUCE TBNOT
 %right TEXP
 %left TCOLON
 
@@ -553,10 +553,10 @@ atom:
 
 expr: 
   atom
-| reduction
+| reduction %prec TREDUCE
 | expr TCOLON type
     { $$ = new CastExpr($3, $1); }
-| range
+| range %prec TDOTDOT
 | TLP nonemptyExprlist TRP 
     { 
       if ($2->next->isNull()) {
@@ -620,10 +620,8 @@ expr:
 
 
 reduction:
-  REDUCE_IDENT expr
-    { $$ = new ReduceExpr($1, nilExpr, $2); }
-| TREDUCE TBY REDUCE_IDENT expr
-    { $$ = new ReduceExpr($3, nilExpr, $4); }
+  REDUCE_IDENT TREDUCE expr
+    { $$ = new ReduceExpr($1, nilExpr, $3); }
 ;
 
 

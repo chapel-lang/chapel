@@ -1,2 +1,2 @@
-badred.chpl:15 ERROR: syntax error
-yytext is: foo
+badred.chpl:13 ERROR: syntax error
+yytext is: reduce

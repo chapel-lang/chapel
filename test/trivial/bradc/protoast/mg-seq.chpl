@@ -182,7 +182,7 @@ function psinv(U, R) {
   const RD = R.Domain;
   const Rstr = R.stride;
 
-  U += [ijk in RD] sum [off in Stencil] (c3d * R(ijk + Rstr*off));
+  U += [ijk in RD] sum reduce [off in Stencil] (c3d * R(ijk + Rstr*off));
 }
 
 
@@ -193,7 +193,7 @@ function resid(R, V, U) {
   const UD = U.Domain;
   const Ustr = U.stride;
 
-  R = V - [ijk in UD] sum [off in Stencil] (a3d * U(ijk + Ustr*off));
+  R = V - [ijk in UD] sum reduce [off in Stencil] (a3d * U(ijk + Ustr*off));
 }
 
 
@@ -204,7 +204,7 @@ function rprj3(S, R) {
   const RD = R.Domain;
   const Rstr = R.stride;
 
-  S = [ijk in RD] sum [off in Stencil] (w3d * R(ijk + Rstr*off));
+  S = [ijk in RD] sum reduce [off in Stencil] (w3d * R(ijk + Rstr*off));
 }
 
 
@@ -219,7 +219,7 @@ function interp(R, S) {
 
   forall ioff in IDom {
     [ijk in SD] R(ijk + Rstr*ioff) 
-               += w(ioff) * sum [off in IStn(ioff)] S(ijk + Sstr*off);
+               += w(ioff) * sum reduce [off in IStn(ioff)] S(ijk + Sstr*off);
   }
 }
 
@@ -227,8 +227,8 @@ function interp(R, S) {
 -- Calculates approximate norms:
 
 function norm2u3(R): (float, float) {
-  const rnm2 = sqrt((sum R**2)/(nx*ny*nz));
-  const rnmu = reduce by max abs(R);
+  const rnm2 = sqrt((sum reduce R**2)/(nx*ny*nz));
+  const rnmu = max reduce abs(R);
 
   return (rnm2, rnmu);
 }
@@ -257,8 +257,8 @@ function zran3(V) {
 
   -- BLC: would make sense to replace this with a user-defined reduction
   for i in (1..ncharge) {
-    POS(i) = reduce by maxloc V;
-    NEG(i) = reduce by minloc V;
+    POS(i) = maxloc reduce V;
+    NEG(i) = minloc reduce V;
   }
 
   V = 0.0;

@@ -186,7 +186,7 @@ function psinv(inout U: [?DUR] float;
 
   const Rstr: [1..3] integer = DUR.stride;
 
-  U += [ijk in DUR] sum [off in Stencil] (c3d * R(ijk + Rstr*off));
+  U += [ijk in DUR] sum reduce [off in Stencil] (c3d * R(ijk + Rstr*off));
 }
 
 
@@ -197,7 +197,7 @@ function resid(out R: [?DUR] float;
 
   const Ustr: [1..3] integer = DUR.stride;
 
-  R = V - [ijk in DUR] sum [off in Stencil] (a3d * U(ijk + Ustr*off));
+  R = V - [ijk in DUR] sum reduce [off in Stencil] (a3d * U(ijk + Ustr*off));
 }
 
 
@@ -208,7 +208,7 @@ function rprj3(out S: [] float;
 
   const Rstr: [1..3] integer = R.stride;
 
-  S = [ijk in DR] sum [off in Stencil] (w3d * R(ijk + Rstr*off));
+  S = [ijk in DR] sum reduce [off in Stencil] (w3d * R(ijk + Rstr*off));
 }
 
 
@@ -223,7 +223,7 @@ function interp(out R: [?DR] float;
 
   forall ioff in IDom {
     [ijk in DS] R(ijk + Rstr*ioff) 
-               += w(ioff) * sum [off in IStn(ioff)] S(ijk + Sstr*off);
+               += w(ioff) * sum reduce [off in IStn(ioff)] S(ijk + Sstr*off);
   }
 }
 
@@ -231,8 +231,8 @@ function interp(out R: [?DR] float;
 -- Calculates approximate norms:
 
 function norm2u3(const R: [] float): (float, float) {
-  const rnm2: float = sqrt((sum R**2)/(nx*ny*nz));
-  const rnmu: float = reduce by max abs(R);
+  const rnm2: float = sqrt((sum reduce R**2)/(nx*ny*nz));
+  const rnmu: float = max reduce abs(R);
 
   return (rnm2, rnmu);
 }
@@ -262,8 +262,8 @@ function zran3(out V: [Base] float) {
 
   -- BLC: would make sense to replace this with a user-defined reduction
   for i in (1..ncharge) {
-    POS(i) = reduce by maxloc V;
-    NEG(i) = reduce by minloc V;
+    POS(i) = maxloc reduce V;
+    NEG(i) = minloc reduce V;
   }
 
   V = 0.0;
