@@ -14198,3 +14198,15 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+01/10/05 11:43:16 -- bradc
+
+Log message:
+	Made a small change (fixed a thinko?) in the dparser
+	Makefile to make it work on cygwin, in preparation
+	for this week's travel.
+
+Modified files:
+	chapel/third-party/dparser/d/: Makefile 
+
