@@ -18506,3 +18506,30 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: stmt.h symbol.h 
 
+---------------------------------------------------------------------------
+
+03/01/05 15:55:15 -- deitz
+
+Log message:
+	Changed the contents of TypeDefStmt from a Type to a TypeSymbol.  This
+	brings it more inline with FnDefStmt, VarDefStmt, and ModuleDefStmt.
+	All of these contain the symbols they define.
+	
+	Reworked TypeSymbol::clone so that it creates a new name for the type
+	symbol.  Previously this was hacky and done in the copy mechanism.
+	
+	There is a deep difference between TypeSymbol::clone used to clone
+	classes and FnSymbol::clone used to clone functions.  When a class is
+	cloned, the name is changed.  When a function is cloned, the name is
+	not changed, the clone is treated like any other overloaded function,
+	and the cname is changed.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp 
+	                             insertAnonymousDomains.cpp 
+	                             insertAnonymousTypes.cpp 
+
