@@ -67,8 +67,6 @@ unterminated_statement
       $$.ast->scope_kind = Scope_RECURSIVE; }
   | control_flow
   | type_statement
-  | expression '=' expression $left 3000
-    { $$.ast = op_AST($g->i, $n); }
   | 'var' def_ident_var_list $right 5100
   | 'with' with_scope unterminated_statement $right 5100
     { $$.ast = new_AST(AST_with, &$n); }
@@ -180,7 +178,12 @@ expression
        $$.ast->builtin = if1_cannonicalize_string(
          $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
    }
-  | qualified_ident
+  | qualified_ident ('=>' identifier)? {
+      $$.ast = $0.ast;
+      if ($#1)
+        $$.ast->alt_name = if1_cannonicalize_string(
+          $g->i, ${child 1, 0, 1}->start_loc.s, ${child 1, 0, 1}->end);
+    }
   | def_ident ':' expression $right 5100 { 
       $$.ast = new_AST(AST_def_ident, &$n); 
       $$.ast->def_ident_label = 1;
@@ -272,7 +275,7 @@ idpattern
   ;
 
 sub_idpattern
-  : ident def_suffix ('=' identifier)? { 
+  : ident def_suffix ('=>' identifier)? { 
       $$.ast = $0.ast;
       if ($#2)
         $$.ast->alt_name = if1_cannonicalize_string(
@@ -390,7 +393,7 @@ binary_operator
   | '|'		$binary_op_left 8900
   | '&&'        $binary_op_left 8800
   | '||'        $binary_op_left 8700
-  | ':='	$binary_op_left 8500
+  | '='		$binary_op_left 8500
   | '*='        $binary_op_left 8500
   | '/='        $binary_op_left 8500
   | '%='        $binary_op_left 8500
