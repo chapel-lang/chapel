@@ -1,8 +1,6 @@
     dispatch3.v:1: : f( x : anynum, y : int32) : tuple
     dispatch3.v:2: : f( x : int32, y : anynum) : tuple
   called from <unknown>:0
-  called from <unknown>:0
-  called from <unknown>:0
   candidate functions:
  called from 0 in __init__ at <unknown>:0
  called from 0 in __init__ at <unknown>:0
@@ -13,8 +11,6 @@
  called from 5 in __init at dispatch2.v:1
  called from 5 in __init at dispatch2.v:1
 dispatch3.v:3: ambiguous call 'f'
-dispatch3.v:3: unresolved call 'f'
-dispatch3.v:3: unresolved call 'print'
 f::x(dispatch2.v:2) ( float64 (prelude.v:37) )
 f::x(dispatch2.v:3) ( int32 (prelude.v:24) )
 fail: fatal error, program does not type

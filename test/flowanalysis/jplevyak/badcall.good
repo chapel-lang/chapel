@@ -1,5 +1,12 @@
   called from <unknown>:0
+  called from <unknown>:0
+  called from <unknown>:0
   called from badcall.v:3
+  called from badcall.v:3
+  called from badcall.v:3
+  called from badcall.v:3
+  called from badcall.v:4
+  called from badcall.v:4
  called from 0 in __init__ at <unknown>:0
  called from 0 in __init__ at <unknown>:0
  called from 2 in __init at assign2.v:1
@@ -14,7 +21,14 @@
  called from 74 in new at prelude.v:74
  called from 75 in operator at prelude.v:75
 __init::self(assign2.v:1) ( C (assign2.v:1) )
+badcall.v:2: expression has no type
+badcall.v:2: expression has no type
+badcall.v:2: illegal call argument type expression illegal: ( float64 ) 
 badcall.v:2: unresolved call 'f'
+badcall.v:3: expression has no type
+badcall.v:3: expression has no type
+badcall.v:4: expression has no type
+badcall.v:4: expression has no type
 badcall.v:4: unresolved call 'print'
 f::c2(assign2.v:3) ( C (assign2.v:1) )
 fail: fatal error, program does not type
