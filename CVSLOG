@@ -19363,3 +19363,27 @@ Added files:
 Removed files:
 	chapel/test/classes/bradc/: noinit.future 
 
+---------------------------------------------------------------------------
+
+03/14/05 11:30:08 -- jplevyak
+
+Log message:
+	Complete function visibility code.
+	All PRIMARY_MEMBER functions are universally available
+	(this works for classes where all members are universally available
+	 and for records and unions because the primary method signature is
+	 part of the type and hence any primary method will selected during dispatch).
+	
+	NOTE: I believe this exposes a bug in the symbol table as
+	  trivial/deitz/test_block_call is failing.  Steve: you can
+	  set a breakpoint in AInfo::visibile_functions in analysis.cpp
+	  and wait for arg0->name to be "foo" and then watch the call
+	  to Symboltable::lookupFromScope.  It is returning NULL.
+	  Take a look and tell me what you see and if you think it is
+	  a bug or not.  Thanx.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fun.cpp 
+	chapel/compiler/include/: fun.h symtab.h 
+	chapel/compiler/symtab/: symtab.cpp 
+
