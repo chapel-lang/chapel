@@ -15574,3 +15574,17 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 
+---------------------------------------------------------------------------
+
+01/24/05 16:29:56 -- jplevyak
+
+Log message:
+	Fixup the symbols after a ->build call (this was causing
+	crashes for Steve during the test_overload_integerfloat3 test.
+	Those tests now fail because of an unresolved call in the
+	wrapper (which I think is to be expected at this point?).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+	chapel/compiler/include/: pattern.h 
+
