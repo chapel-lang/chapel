@@ -15,6 +15,7 @@ enum scopeType {
   SCOPE_FUNCTION,
   SCOPE_LOCAL,
   SCOPE_FORLOOP,
+  SCOPE_FORALLEXPR,
   SCOPE_CLASS,
 };
 
@@ -27,6 +28,7 @@ class SymScope : public gc {
 
   Stmt* stmtContext;
   Symbol* symContext;
+  Expr* exprContext;
 
   SymScope* parent;
   SymScope* child;
@@ -40,7 +42,7 @@ class SymScope : public gc {
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(scopeType init_type, int init_level = 0);
-  void setContext(Stmt* stmt, Symbol* sym = nilSymbol);
+  void setContext(Stmt* stmt, Symbol* sym = nilSymbol, Expr* expr = nilExpr);
 
   bool isEmpty(void);
 

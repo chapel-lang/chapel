@@ -174,6 +174,7 @@ map_symbols(Vec<BaseAST *> &syms) {
 	  case SCOPE_FUNCTION:
 	  case SCOPE_LOCAL:
 	  case SCOPE_FORLOOP:
+	  case SCOPE_FORALLEXPR:  // BLC: John, is this right?
 	    sym->asymbol->function_scope = 1;
 	    break;
 	  case SCOPE_CLASS: // handled as the symbols appears in code
@@ -967,8 +968,8 @@ gen_if1(BaseAST *ast) {
       s->ainfo->rval = completedim_symbol;
       break;
     }
-    case EXPR_DOMAIN: {
-      DomainExpr *s = dynamic_cast<DomainExpr *>(ast);
+    case EXPR_FORALL: {
+      ForallExpr *s = dynamic_cast<ForallExpr *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> domains;

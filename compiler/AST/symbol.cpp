@@ -70,7 +70,9 @@ void Symbol::print(FILE* outfile) {
 }
 
 void Symbol::codegen(FILE* outfile) {
-  fprintf(outfile, "%s", cname);
+  if (!isNull()) {
+    fprintf(outfile, "%s", cname);
+  }
 }
 
 

@@ -140,7 +140,8 @@ class BlockStmt : public Stmt {
  public:
   Stmt* body;
 
-  BlockStmt::BlockStmt(Stmt* init_body);
+  BlockStmt::BlockStmt(Stmt* init_body = nilStmt);
+  void addBody(Stmt* body);
   virtual Stmt* copy(void);
 
   void traverseStmt(Traversal* traversal);
@@ -174,7 +175,7 @@ class ForLoopStmt : public BlockStmt {
   Expr* domain;
 
   ForLoopStmt(bool init_forall, VarSymbol* init_index, Expr* init_domain,
-	      Stmt* body);
+	      Stmt* body = nilStmt);
   virtual Stmt* copy(void);
 
   bool topLevelExpr(Expr* testExpr);

@@ -1241,39 +1241,39 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 }
 
 
-DomainExpr::DomainExpr(Expr* init_domains, Symbol* init_indices,
+ForallExpr::ForallExpr(Expr* init_domains, Symbol* init_indices,
 		       Expr* init_forallExpr) :
-  Expr(EXPR_DOMAIN),
+  Expr(EXPR_FORALL),
   domains(init_domains),
   indices(init_indices),
   forallExpr(init_forallExpr)
 {}
 
 
-void DomainExpr::setForallExpr(Expr* exp) {
+void ForallExpr::setForallExpr(Expr* exp) {
   forallExpr = exp;
 }
 
 
-Expr* DomainExpr::copy(void) {
-  return new DomainExpr(domains->copy(), indices->copy(), forallExpr->copy());
+Expr* ForallExpr::copy(void) {
+  return new ForallExpr(domains->copy(), indices->copy(), forallExpr->copy());
 }
 
 
-void DomainExpr::traverseExpr(Traversal* traversal) {
+void ForallExpr::traverseExpr(Traversal* traversal) {
   indices->traverseList(traversal, false);
   domains->traverseList(traversal, false);
   forallExpr->traverse(traversal, false);
 }
 
 
-void DomainExpr::replace(Expr* old_expr, Expr* new_expr) {
+void ForallExpr::replace(Expr* old_expr, Expr* new_expr) {
   replace_helper(&domains, old_expr, new_expr);
   replace_helper(&forallExpr, old_expr, new_expr);
 }
 
 
-Type* DomainExpr::typeInfo(void) {
+Type* ForallExpr::typeInfo(void) {
   Type* exprType = domains->typeInfo();
 
   if (typeid(*exprType) == typeid(DomainType)) {
@@ -1290,7 +1290,7 @@ Type* DomainExpr::typeInfo(void) {
 }
 
 
-void DomainExpr::print(FILE* outfile) {
+void ForallExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
   if (!indices->isNull()) {
     indices->printList(outfile);
@@ -1305,7 +1305,7 @@ void DomainExpr::print(FILE* outfile) {
 }
 
 
-void DomainExpr::codegen(FILE* outfile) {
+void ForallExpr::codegen(FILE* outfile) {
   if (domains->next->isNull()) {
     domains->codegen(outfile);
   } else {
@@ -1314,10 +1314,10 @@ void DomainExpr::codegen(FILE* outfile) {
 }
 
 
-DomainExpr* unknownDomain;
+ForallExpr* unknownDomain;
 
 void initExpr(void) {
   Symbol* pst = new Symbol(SYMBOL, "?anonDomain");
   Variable* var = new Variable(pst);
-  unknownDomain = new DomainExpr(var);
+  unknownDomain = new ForallExpr(var);
 }

@@ -459,13 +459,13 @@ class CompleteDimExpr : public Expr {
 };
 
 
-class DomainExpr : public Expr {
+class ForallExpr : public Expr {
  public:
   Expr* domains;
   Symbol* indices;
   Expr* forallExpr;
 
-  DomainExpr(Expr* init_domains, Symbol* init_indices = nilVarSymbol,
+  ForallExpr(Expr* init_domains, Symbol* init_indices = nilVarSymbol,
 	     Expr* init_forallExpr = nilExpr);
   void setForallExpr(Expr* exp);
   virtual Expr* copy(void);
@@ -480,7 +480,7 @@ class DomainExpr : public Expr {
 };
 
 
-extern DomainExpr* unknownDomain;
+extern ForallExpr* unknownDomain;
 
 void initExpr(void);
 

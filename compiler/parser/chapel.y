@@ -27,8 +27,10 @@
   paramType pt;
 
   Expr* pexpr;
-  DomainExpr* pdexpr;
+  ForallExpr* pfaexpr;
   Stmt* stmt;
+  ForLoopStmt* forstmt;
+  BlockStmt* blkstmt;
   Type* pdt;
   TupleType* tupledt;
   EnumSymbol* enumsym;
@@ -101,9 +103,9 @@
 %type <pch> identifier query_identifier
 %type <psym> identsym formal nonemptyformals formals idlist indexlist
 %type <enumsym> enum_item enum_list
-%type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
-%type <pexpr> reduction vardeclinit
-%type <pdexpr> domainExpr
+%type <pexpr> simple_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
+%type <pexpr> reduction vardeclinit assignExpr
+%type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement decls decl vardecl 
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl 
 %type <stmt> typealias typedecl fndecl classdecl recorddecl moduledecl
@@ -410,6 +412,14 @@ indexType:
 ;
 
 
+forallExpr:
+  TLSBR nonemptyExprlist TRSBR
+    { $$ = Symboltable::startForallExpr($2); }
+| TLSBR nonemptyExprlist TIN nonemptyExprlist TRSBR
+    { $$ = Symboltable::startForallExpr($4, $2); }
+;
+
+
 arrayType:
   TLSBR TRSBR type
     { $$ = new ArrayType(unknownDomain, $3); }
@@ -421,8 +431,11 @@ arrayType:
                                            // defined  -- BLC
       $$ = new ArrayType(unknownDomain, $4);
     }
-| TLSBR domainExpr TRSBR type
-    { $$ = new ArrayType($2, $4); }
+| forallExpr type
+    {
+      Symboltable::finishForallExpr($1);
+      $$ = new ArrayType($1, $2);
+    }
 ;
 
 
@@ -447,9 +460,9 @@ statement:
     { $$ = new ExprStmt($2); }
 | retStmt
 | TLCBR
-    { Symboltable::startCompoundStmt(); }
+    { $<blkstmt>$ = Symboltable::startCompoundStmt(); }
       statements TRCBR
-    { $$ = Symboltable::finishCompoundStmt($3); }
+    { $$ = Symboltable::finishCompoundStmt($<blkstmt>2, $3); }
 | error
     { printf("syntax error"); exit(1); }
 ;
@@ -479,11 +492,11 @@ indexlist:
 forloop:
   fortype indexlist TIN expr
     { 
-      $<pvsym>$ = Symboltable::startForLoop($2);
+      $<forstmt>$ = Symboltable::startForLoop(true, $2, $4);
     }
                                  statement
     { 
-      $$ = Symboltable::finishForLoop(true, $<pvsym>5, $4, $6);
+      $$ = Symboltable::finishForLoop($<forstmt>5, $6);
     }
 ;
 
@@ -534,19 +547,17 @@ assignOp:
 ;
 
 
-assign_lvalue:
-  lvalue
-| TLSBR domainExpr TRSBR lvalue
-  {
-    $2->setForallExpr($4);
-    $$ = $2;
-  }
+assignExpr:
+  lvalue assignOp expr
+    { $$ = new AssignOp($2, $1, $3); }
+| forallExpr assignExpr
+    { $$ = Symboltable::finishForallExpr($1, $2); }
 ;
 
 
 assignment:
-  assign_lvalue assignOp expr TSEMI
-    { $$ = new ExprStmt(new AssignOp($2, $1, $3)); }
+  assignExpr TSEMI
+    { $$ = new ExprStmt($1); }
 ;
 
 
@@ -605,11 +616,8 @@ expr:
         $$ = new Tuple($2);
       }
     }
-| TLSBR domainExpr TRSBR expr
-    {
-      $2->setForallExpr($4);
-      $$ = $2;
-    }
+| forallExpr expr %prec TRSBR
+    { $$ = Symboltable::finishForallExpr($1, $2); }
 | TPLUS expr %prec TUPLUS
     { $$ = new UnOp(UNOP_PLUS, $2); }
 | TMINUS expr %prec TUMINUS
@@ -660,21 +668,6 @@ expr:
 reduction:
   TYPE_IDENT TREDUCE expr
     { $$ = new ReduceExpr($1, nilExpr, $3); }
-;
-
-
-domainExpr:
-  nonemptyExprlist
-    { $$ = new DomainExpr($1); }
-| nonemptyExprlist TIN nonemptyExprlist                             // BLC: This is wrong vv
-    { $$ = new DomainExpr($3, Symboltable::defineVars(Symboltable::exprToIndexSymbols($1), dtInteger)); }
-/*
-  The above case replaces the following: (The first expressions must
-  be checked to make sure they are simply identifiers, e.g., [i,j in D].)
-
-| indexlist TIN nonemptyExprlist          // BLC: This is wrong vv
-    { $$ = new DomainExpr($3, Symboltable::defineVars($1, dtInteger)); }
-*/
 ;
 
 

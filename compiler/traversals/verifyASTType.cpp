@@ -140,9 +140,9 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_COMPLETEDIM");
     }
     break;
-  case EXPR_DOMAIN:
-    if (typeid(*ast) != typeid(DomainExpr)) {
-      INT_FATAL(ast, "Unexpected AST expression type: EXPR_DOMAIN");
+  case EXPR_FORALL:
+    if (typeid(*ast) != typeid(ForallExpr)) {
+      INT_FATAL(ast, "Unexpected AST expression type: EXPR_FORALL");
     }
     break;
   case EXPR_PARENOP:

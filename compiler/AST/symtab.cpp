@@ -56,6 +56,7 @@ SymScope::SymScope(scopeType init_type, int init_level) :
   level(init_level),
   stmtContext(nilStmt),
   symContext(nilSymbol),
+  exprContext(nilExpr),
   parent(NULL),
   child(NULL),
   sibling(NULL),
@@ -65,9 +66,10 @@ SymScope::SymScope(scopeType init_type, int init_level) :
 {}
 
 
-void SymScope::setContext(Stmt* stmt, Symbol* sym) {
+void SymScope::setContext(Stmt* stmt, Symbol* sym, Expr* expr) {
   stmtContext = stmt;
   symContext = sym;
+  exprContext = expr;
 }
 
 
@@ -191,36 +193,53 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
   fprintf(outfile, "SCOPE: ");
   switch (type) {
   case SCOPE_INTRINSIC:
-    fprintf(outfile, "intrinsic\n");
+    fprintf(outfile, "intrinsic");
     break;
   case SCOPE_INTERNAL_PRELUDE:
-    fprintf(outfile, "internal prelude\n");
+    fprintf(outfile, "internal prelude");
     break;
   case SCOPE_PRELUDE:
-    fprintf(outfile, "prelude\n");
+    fprintf(outfile, "prelude");
     break;
   case SCOPE_MODULE:
-    fprintf(outfile, "module\n");
+    fprintf(outfile, "module");
     break;
   case SCOPE_PARAM:
-    fprintf(outfile, "parameters\n");
+    fprintf(outfile, "parameters");
     break;
   case SCOPE_FUNCTION:
-    fprintf(outfile, "function\n");
+    fprintf(outfile, "function");
     break;
   case SCOPE_LOCAL:
-    fprintf(outfile, "local\n");
+    fprintf(outfile, "local");
     break;
   case SCOPE_FORLOOP:
-    fprintf(outfile, "for loop\n");
+    fprintf(outfile, "for loop");
+    break;
+  case SCOPE_FORALLEXPR:
+    fprintf(outfile, "forall expression");
     break;
   case SCOPE_CLASS:
-    fprintf(outfile, "class\n");
+    fprintf(outfile, "class");
     break;
   case SCOPE_POSTPARSE:
-    fprintf(outfile, "post parsing\n");
+    fprintf(outfile, "post parsing");
     break;
   }
+  Loc* scopeLoc = NULL;
+  if (!symContext->isNull()) {
+    fprintf(outfile, " ");
+    symContext->print(outfile);
+    scopeLoc = symContext;
+  } else if (!exprContext->isNull()) {
+    scopeLoc = exprContext;
+  } else if (!stmtContext->isNull()) {
+    scopeLoc = stmtContext;
+  }
+  if (scopeLoc) {
+    fprintf(outfile, " (%s)", scopeLoc->stringLoc());
+  }
+  fprintf(outfile, "\n");
 
   fprintf(outfile, "%s", indent);
   fprintf(outfile, "------------------------------------------------------\n");
@@ -377,10 +396,8 @@ void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
     // only allow redefinition of functions in a single scope currently
     if (typeid(*sym) != typeid(FnSymbol) &&
 	typeid(*sym) != typeid(FnSymbol)) {
-      /* currently the protoast tests fail because of this
       USR_FATAL(sym, "redefinition of symbol %s (previous definition at %s)",
 		sym->name, prevDefInScope->stringLoc());
-      */
     }
   }
   scope->insert(sym);
@@ -458,22 +475,24 @@ Symbol* Symboltable::lookup(char* name, bool genError, bool inLexer) {
 }
 
 
-void Symboltable::startCompoundStmt(void) {
+BlockStmt* Symboltable::startCompoundStmt(void) {
   scopeType type = SCOPE_LOCAL;
   if (currentScope->type == SCOPE_PARAM) {
     type = SCOPE_FUNCTION;
   }
 
   Symboltable::pushScope(type);
+  return new BlockStmt();
 }
 
 
-BlockStmt* Symboltable::finishCompoundStmt(Stmt* body) {
-  SymScope* stmtScope = Symboltable::popScope();
-  BlockStmt* newStmt = new BlockStmt(body);
-  stmtScope->setContext(newStmt, currentFn);
+BlockStmt* Symboltable::finishCompoundStmt(BlockStmt* blkStmt, Stmt* body) {
+  blkStmt->addBody(body);
 
-  return newStmt;
+  SymScope* stmtScope = Symboltable::popScope();
+  stmtScope->setContext(blkStmt);
+
+  return blkStmt;
 }
 
 
@@ -588,11 +607,13 @@ ModuleDefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
     }
   }
 
+  ModuleDefStmt* modDefStmt = new ModuleDefStmt(mod);
+
   if (!empty) {
     // pop the module's scope
     if (!mod->internal) {
       SymScope* modScope = Symboltable::popScope();
-      modScope->setContext(nilStmt, mod);
+      modScope->setContext(modDefStmt, mod);
     }
 
     // define the module's init function.  This should arguably go
@@ -614,7 +635,7 @@ ModuleDefStmt* Symboltable::finishModuleDef(ModuleSymbol* mod,
   // HACK: should actually look at parent module in general case
   currentModule = NULL;
 
-  return new ModuleDefStmt(mod);
+  return modDefStmt;
 }
 
 
@@ -679,29 +700,6 @@ ParamSymbol* Symboltable::copyParams(ParamSymbol* formals) {
 }
 
 
-/* Converts expressions like i and j in [(i,j) in D] to symbols */
-Symbol* Symboltable::exprToIndexSymbols(Expr* expr, Symbol* indices) {
-
-  for (Expr* tmp = expr; tmp && !(tmp->isNull()); tmp = nextLink(Expr, tmp)) {
-    Variable* varTmp = dynamic_cast<Variable*>(tmp);
-
-    if (!varTmp) {
-      Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
-      if (!tupTmp) {
-	USR_FATAL(tmp, "Index variable expected");
-      }
-      else {
-	return Symboltable::exprToIndexSymbols(tupTmp->exprs, indices);
-      }
-    }
-    else {
-      indices = appendLink(indices, new Symbol(SYMBOL, varTmp->var->name));
-    }
-  }
-  return indices;
-}
-
-
 VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 				   varType vartag, bool isConst) {
   VarSymbol* varList;
@@ -744,18 +742,72 @@ VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type,
       brackets.
   **/
   if (dynamic_cast<DomainType*>(type) &&
-      !dynamic_cast<DomainExpr*>(init)) {
+      !dynamic_cast<ForallExpr*>(init)) {
     if (dynamic_cast<Tuple*>(init)) {
-      init = new DomainExpr(dynamic_cast<Tuple*>(init)->exprs);
+      init = new ForallExpr(dynamic_cast<Tuple*>(init)->exprs);
     }
     else {
-      init = new DomainExpr(init);
+      init = new ForallExpr(init);
     }
   }
 
   VarSymbol* varList = defineVars(idents, type, init, vartag, isConst);
   return new VarDefStmt(varList, init);
 }
+
+
+/* Converts expressions like i and j in [(i,j) in D] to symbols */
+static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = nilSymbol) {
+
+  for (Expr* tmp = expr; tmp && !(tmp->isNull()); tmp = nextLink(Expr, tmp)) {
+    Variable* varTmp = dynamic_cast<Variable*>(tmp);
+
+    if (!varTmp) {
+      Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
+      if (!tupTmp) {
+	USR_FATAL(tmp, "Index variable expected");
+      }
+      else {
+	return exprToIndexSymbols(tupTmp->exprs, indices);
+      }
+    }
+    else {
+      indices = appendLink(indices, new Symbol(SYMBOL, varTmp->var->name));
+    }
+  }
+  return indices;
+}
+
+
+ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
+  Symboltable::pushScope(SCOPE_FORALLEXPR);
+
+  VarSymbol* indexVars;
+  if (indexExpr->isNull()) {
+    indexVars = nilVarSymbol;
+  } else {
+    Symbol* newSyms = exprToIndexSymbols(indexExpr);
+    // HACK: this is a poor assumption -- that all index variables are
+    // integers
+    indexVars = Symboltable::defineVars(newSyms, dtInteger);
+  }
+
+  return new ForallExpr(domainExpr, indexVars);
+}
+
+
+ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr, 
+					  Expr* argExpr) {
+  if (!argExpr->isNull()) {
+    forallExpr->setForallExpr(argExpr);
+  }
+
+  SymScope* forallScope = Symboltable::popScope();
+  forallScope->setContext(nilStmt, nilSymbol, forallExpr);
+
+  return forallExpr;
+}
+
 
 /*** Replaced by EnumSymbol::set_values ------------------
 EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
@@ -858,19 +910,22 @@ TypeDefStmt* Symboltable::finishClassDef(TypeSymbol* classSym,
 }
 
 
-VarSymbol* Symboltable::startForLoop(Symbol* indices) {
+ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices, 
+				       Expr* domain) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  return defineVars(indices, dtInteger); // BLC: dtInteger is wrong
+  // HACK: dtInteger is wrong -- same as with forallExpr HACK
+  VarSymbol* indexVars = defineVars(indices, dtInteger);
+  return new ForLoopStmt(forall, indexVars, domain);
 }
 
 
-ForLoopStmt* Symboltable::finishForLoop(bool forall, VarSymbol* index,
-					Expr* domain, Stmt* body) {
-  SymScope* forScope = Symboltable::popScope();
-  ForLoopStmt* newStmt = new ForLoopStmt(forall, index, domain, body);
-  forScope->setContext(newStmt, currentFn);
+ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
+  forstmt->addBody(body);
 
-  return newStmt;
+  SymScope* forScope = Symboltable::popScope();
+  forScope->setContext(forstmt);
+
+  return forstmt;
 }
 
 
@@ -890,13 +945,13 @@ MemberAccess* Symboltable::defineMemberAccess(Expr* base, char* member) {
 }
 
 
-DomainExpr* Symboltable::defineQueryDomain(char* name) {
+ForallExpr* Symboltable::defineQueryDomain(char* name) {
   DomainType* unknownDomType = new DomainType();
   VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, VAR_NORMAL, true);
   define(newDomSym); // may need to postpone this until statement point --BLC
   Variable* newDom = new Variable(newDomSym);
 
-  return new DomainExpr(newDom);
+  return new ForallExpr(newDom);
 }
 
 

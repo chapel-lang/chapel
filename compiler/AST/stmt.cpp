@@ -198,8 +198,8 @@ void VarDefStmt::codegen(FILE* outfile) {
 	fprintf(outfile, "_init_domain_%dD(&(", rank);
 	aVar->codegen(outfile);
 	fprintf(outfile, ")");
-	if (typeid(*initExpr) == typeid(DomainExpr)) {
-	  initExpr = ((DomainExpr*)initExpr)->domains;
+	if (typeid(*initExpr) == typeid(ForallExpr)) {
+	  initExpr = ((ForallExpr*)initExpr)->domains;
 	}
 	if (typeid(*initExpr) == typeid(SimpleSeqExpr)) {
 	  SimpleSeqExpr* initseq = (SimpleSeqExpr*)initExpr;
@@ -483,6 +483,15 @@ BlockStmt::BlockStmt(Stmt* init_body) :
   Stmt(STMT_BLOCK),
   body(init_body)
 {}
+
+
+void BlockStmt::addBody(Stmt* init_body) {
+  if (body->isNull()) {
+    body = init_body;
+  } else {
+    INT_FATAL(this, "Adding a body to a for loop that already has one");
+  }
+}
 
 
 Stmt* BlockStmt::copy(void) {

@@ -31,8 +31,8 @@ class Symboltable {
   static Symbol* lookup(char* name, bool genError = false, 
 			bool inLexer = false);
 
-  static void startCompoundStmt(void);
-  static BlockStmt* finishCompoundStmt(Stmt* body);
+  static BlockStmt* startCompoundStmt(void);
+  static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, Stmt* body);
   static ModuleSymbol* startModuleDef(char* name, bool internal = false);
   static ModuleDefStmt* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
   static TypeDefStmt* defineUserType(char* name, Type* definition, 
@@ -40,7 +40,6 @@ class Symboltable {
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);
   static ParamSymbol* copyParams(ParamSymbol* formals);
-  static Symbol* Symboltable::exprToIndexSymbols(Expr* expr, Symbol* indices=nilSymbol);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
 					    Expr* init = nilExpr, 
 					    varType vartag = VAR_NORMAL, 
@@ -48,6 +47,10 @@ class Symboltable {
   static VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
 						   Expr* init, varType vartag, 
 						   bool isConst);
+  static ForallExpr* startForallExpr(Expr* domainExpr, 
+				     Expr* indexExpr = nilExpr);
+  static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 
+				      Expr* argExpr = nilExpr);
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(char* name, bool insert = true);
@@ -60,13 +63,12 @@ class Symboltable {
   static TypeSymbol* startClassDef(char* name, bool isValueClass);
   static TypeDefStmt* finishClassDef(TypeSymbol* classSym, Stmt* definition);
 
-  static VarSymbol* startForLoop(Symbol* indices);
-  static ForLoopStmt* finishForLoop(bool forall, VarSymbol* index,
-				    Expr* domain, Stmt* body);
+  static ForLoopStmt* startForLoop(bool forall, Symbol* indices, Expr* domain);
+  static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);
 
   static MemberAccess* defineMemberAccess(Expr* base, char* member);
 
-  static DomainExpr* defineQueryDomain(char* name);
+  static ForallExpr* defineQueryDomain(char* name);
 
   static void print(FILE* outfile = stderr);
   static void dump(FILE* outfile = stderr);
