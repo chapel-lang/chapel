@@ -12,6 +12,7 @@
 #include "fun.h"
 #include "fa.h"
 #include "ast.h"
+#include "var.h"
 
 #define ANON "*anon*"
 
@@ -96,7 +97,7 @@ dump_sym(FILE *fp, Sym *t) {
 #endif
   if (t->in && t->in->name)
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>%s %s\n", 
-	    t->in->module ? "module" : (t->type_kind != Type_NONE ? "type" : "function"), 
+	    t->in->is_module ? "module" : (t->type_kind != Type_NONE ? "type" : "function"), 
 	    t->in->name);
   else
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
@@ -104,7 +105,7 @@ dump_sym(FILE *fp, Sym *t) {
   if (t->ast && t->filename())
   if (t->internal)
     fprintf(fp, "<TR><TD><TD>internal<TD>%s\n", internal_string[t->internal]);
-  if (t->builtin) {
+  if (t->is_builtin) {
     char *name = if1->builtins_names.get(t);
     fprintf(fp, "<TR><TD><TD>Builtin<TD>%s\n", name);
   }
@@ -113,14 +114,15 @@ dump_sym(FILE *fp, Sym *t) {
     fprintf(fp, "<TR><TD><TD>Type Kind<TD>%s\n", type_kind_string[t->type_kind]);
   if (t->type) {
     Sym *tt = t->type;
-    if (t->type == t && t->symbol)
+    if (t->type == t && t->is_symbol)
       tt = sym_symbol;
     if (t != tt)
       dump_sub_sym(fp, tt->type, "Type");
   }
   dump_sym_list(fp, t, t->implements, "Implements", is_internal_type);
   dump_sym_list(fp, t, t->includes, "Includes");
-  dump_sym_list(fp, t, t->constraints, "Constraints");
+  if (t->constraints)
+    dump_sym_list(fp, t, *t->constraints, "Constraints");
   dump_sym_list(fp, t, t->subtypes, "Subtypes");
   dump_sym_list(fp, t, t->has, "Has");
   dump_sub_sym(fp, t->self, "Self");
@@ -242,8 +244,9 @@ dump_symbols(FILE *fp, FA *fa) {
 	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->includes)
 	again = syms.set_add(ss) || again;
-      forv_Sym(ss, s->constraints)
-	again = syms.set_add(ss) || again;
+      if (s->constraints)
+	forv_Sym(ss, *s->constraints)
+	  again = syms.set_add(ss) || again;
       forv_Sym(ss, s->subtypes) if (ss)
 	again = syms.set_add(ss) || again;
       forv_Sym(ss, s->dispatch_order) if (ss)
@@ -263,7 +266,7 @@ dump_symbols(FILE *fp, FA *fa) {
 
   tmp.move(concrete_types);
   forv_Sym(s, tmp) if (s)
-    if (!s->symbol && !s->fun)
+    if (!s->is_symbol && !s->is_fun)
       concrete_types.set_add(s);
   
   syms.set_difference(concrete_types, other);
@@ -285,7 +288,7 @@ dump_symbols(FILE *fp, FA *fa) {
   syms.set_intersection(tmp);
 
   forv_Sym(s, syms)
-    if (s && (!s->in || s->in->module))
+    if (s && (!s->in || s->in->is_module))
       globals.set_add(s);
   syms.set_difference(globals, other);
   globals.set_to_vec();

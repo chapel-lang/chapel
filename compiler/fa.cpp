@@ -13,6 +13,7 @@
 #include "pnode.h"
 #include "fa.h"
 #include "ast.h"
+#include "var.h"
 
 static int avar_id = 1;
 static int creation_set_id = 1;
@@ -24,7 +25,7 @@ static AType *top_type = 0;
 static AType *bool_type = 0;
 static AType *size_type = 0;
 static AType *anyint_type = 0;
-static AType *anynum_type = 0;
+static AType *anynum_kind = 0;
 static AType *fun_type = 0;
 static AType *symbol_type = 0;
 static AType *fun_symbol_type = 0;
@@ -90,7 +91,7 @@ unique_AVar(Var *v, EntrySet *es) {
   av = new AVar(v, es);
   v->avars.put(es, av);
   av->contour_is_entry_set = 1;
-  if (v->sym->lvalue) {
+  if (v->sym->is_lvalue) {
     av->lvalue = new AVar(v, es);
     av->lvalue->is_lvalue = 1;
     av->lvalue->contour_is_entry_set = 1;
@@ -132,9 +133,9 @@ find_nesting_EntrySet(Fun *fn, EntrySet *e) {
 
 AVar *
 make_AVar(Var *v, EntrySet *es) {
-  if (v->sym->constant || v->sym->symbol || v->sym->in == es->fun->sym)
+  if (v->sym->constant || v->sym->is_symbol || v->sym->in == es->fun->sym)
     return unique_AVar(v, es);
-  if (!v->sym->in || v->sym->in->module || v->sym->type_kind)
+  if (!v->sym->in || v->sym->in->is_module || v->sym->type_kind)
     return unique_AVar(v, GLOBAL_CONTOUR);
   return unique_AVar(v, find_nesting_EntrySet(v->sym->in->fun, es));
 }
@@ -290,19 +291,19 @@ creation_point(AVar *v, Sym *s) {
 //  all int combos below 32 bits become signed 32 bits, above become signed 64 bits
 Sym *
 coerce_num(Sym *a, Sym *b) {
-  if (a->num_type == b->num_type) {
+  if (a->num_kind == b->num_kind) {
     if (a->num_index > b->num_index)
       return a;
     else
       return b;
   }
-  if (b->num_type == IF1_NUM_TYPE_FLOAT) {
+  if (b->num_kind == IF1_NUM_KIND_FLOAT) {
     Sym *t = b; b = a; a = t;
   }
-  if (a->num_type == IF1_NUM_TYPE_FLOAT) {
-    if (int_type_precision[b->num_type] <= float_type_precision[a->num_type])
+  if (a->num_kind == IF1_NUM_KIND_FLOAT) {
+    if (int_type_precision[b->num_kind] <= float_type_precision[a->num_kind])
       return a;
-    if (int_type_precision[b->num_type] >= 32)
+    if (int_type_precision[b->num_kind] >= 32)
       return sym_float32;
     return sym_float64;
   }
@@ -319,8 +320,8 @@ coerce_num(Sym *a, Sym *b) {
 AType *
 type_num_fold(Prim *p, AType *a, AType *b) {
   (void) p; p = 0; // for now
-  a = type_intersection(a, anynum_type);
-  b = type_intersection(b, anynum_type);
+  a = type_intersection(a, anynum_kind);
+  b = type_intersection(b, anynum_kind);
   if (a->n == 1 && b->n == 1)
     return type_union(a->v[0]->sym->type->abstract_type, b->v[0]->sym->type->abstract_type)->top;
   ATypeFold f(p, a, b), *ff;
@@ -376,7 +377,7 @@ type_cannonicalize(AType *t) {
   int nconsts = 0, rebuild = 0;
   forv_CreationSet(cs, *t) if (cs) {
     // strip out constants if the base type is included
-    if (cs->sym->constant || (cs->sym->type->num_type && cs->sym != cs->sym->type)) {
+    if (cs->sym->constant || (cs->sym->type->num_kind && cs->sym != cs->sym->type)) {
       CreationSet *base_cs = cs->sym->type->abstract_type->v[0];
       if (t->set_in(base_cs)) {
 	rebuild = 1;
@@ -390,7 +391,7 @@ type_cannonicalize(AType *t) {
     // compress constants into the base type
     rebuild = 1;
     for (int i = 0; i < t->sorted.n; i++)
-      if (t->sorted.v[i]->sym->constant || (t->sorted.v[i]->sym->type->num_type && t->sorted.v[i]->sym != t->sorted.v[i]->sym->type)) {
+      if (t->sorted.v[i]->sym->constant || (t->sorted.v[i]->sym->type->num_kind && t->sorted.v[i]->sym != t->sorted.v[i]->sym->type)) {
 	CreationSet *base_cs = t->sorted.v[i]->sym->type->abstract_type->v[0];
 	if (!t->set_in(base_cs)) {
 	  t->sorted.v[i] = base_cs;
@@ -423,7 +424,7 @@ type_cannonicalize(AType *t) {
 	if (s == cs->sym)
 	  continue;
 	else if (!cs->defs.n) {
-	  if (s->type->num_type && cs->sym->type->num_type)
+	  if (s->type->num_kind && cs->sym->type->num_kind)
 	    s = coerce_num(s->type, cs->sym);
 	  else
 	    goto Ldone;
@@ -799,12 +800,12 @@ add_var_constraints(EntrySet *es) {
   Fun *f = es->fun;
   forv_Var(v, f->fa_Vars) {
     AVar *av = make_AVar(v, es);
-    if (v->sym->type && !v->sym->pattern) {
-      if (v->sym->external)
+    if (v->sym->type && !v->sym->is_pattern) {
+      if (v->sym->is_external)
 	update_in(av, v->sym->type->abstract_type);
-      if (v->sym->constant) // for constants, the abstract type is the concrete type
+      if (v->sym->is_constant) // for constants, the abstract type is the concrete type
 	update_in(av, make_abstract_type(v->sym));
-      if (v->sym->symbol || v->sym->fun) 
+      if (v->sym->is_symbol || v->sym->is_fun) 
 	update_in(av, v->sym->abstract_type);
       if (v->sym->type_kind != Type_NONE)
 	update_in(av, v->sym->type_sym->abstract_type);
@@ -832,7 +833,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
     AVar *av = make_AVar(v, es);
     if (!p->tvals.v[i]) {
       Sym *s = if1_alloc_sym(fa->pdb->if1);
-      s->lvalue = v->sym->lvalue;
+      s->is_lvalue = v->sym->is_lvalue;
       s->in = es->fun->sym;
       p->tvals.v[i] = new Var(s);
       s->var = p->tvals.v[i];
@@ -881,7 +882,7 @@ vector_elems(int rank, PNode *p, AVar *ae, AVar *elem, AVar *container, int n = 
       e = make_AVar(p->tvals.v[n-1], es);
     else {
       Sym *s = if1_alloc_sym(fa->pdb->if1);
-      assert(!e->var->sym->lvalue);
+      assert(!e->var->sym->is_lvalue);
       s->in = es->fun->sym;
       Var *v = new Var(s);
       s->var = v;
@@ -1079,14 +1080,14 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> &args) 
 static void
 record_arg(AVar *a, Sym *s, AEdge *e, MPosition &p) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
-  if (a->var->sym->name && !is_const(a->var->sym)) {
+  if (a->var->sym->name && !a->var->sym->is_constant && !a->var->sym->is_symbol) {
     MPosition pp(p);
     pp.set_top(a->var->sym->name);
     cpname = cannonicalize_mposition(pp);
   }
   for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
     e->args.put(cp, a);
-    if (s->pattern) {
+    if (s->is_pattern) {
       AType *t = type_intersection(a->out, e->match->filters.get(cp));
       forv_CreationSet(cs, *t) {
 	assert(s->has.n == cs->vars.n);
@@ -1165,8 +1166,8 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
       if (cs->sym == p->sym->type) {
 	for (int i = 0; i < p->sym->has.n; i++) {
 	  AVar *av = NULL;
-	  if (p->sym->has.v[i]->alt)
-	    av = cs->var_map.get(p->sym->has.v[i]->alt);
+	  if (p->sym->has.v[i]->alt_name)
+	    av = cs->var_map.get(p->sym->has.v[i]->alt_name);
 	  else if (i < cs->vars.n)
 	    av = cs->vars.v[i];
 	  if (!av) {
@@ -1251,7 +1252,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	Sym *s;
 	forv_CreationSet(cs1, *a1->out)
 	  forv_CreationSet(cs2, *a2->out)
-	    if (cs1->sym->meta && cs2->sym->meta && 
+	    if (cs1->sym->is_meta && cs2->sym->is_meta && 
 		(s = meta_apply(cs1->sym->type_sym, cs2->sym->type_sym)))
 	      update_in(result, make_abstract_type(s));
 	    else
@@ -1340,7 +1341,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	    flow_vars(rhs, av);
 	    flow_vars_equal(rhs, result);
 	  } else {
-	    if (cs->sym->type->num_type)
+	    if (cs->sym->type->num_kind)
 	      update_in(result, cs->sym->type->abstract_type);
 	    else
 	      type_violation(ATypeViolation_MATCH, lhs, make_AType(cs), result);
@@ -1379,7 +1380,7 @@ add_send_edges(AEdge *e) {
 
 static inline int
 is_fa_Var(Var *v) { 
-  return v->sym->type || v->sym->aspect || v->sym->constant || v->sym->symbol;
+  return v->sym->type || v->sym->aspect || v->sym->is_constant || v->sym->is_symbol;
 }
 
 static void
@@ -1393,7 +1394,7 @@ collect_Vars_PNodes(Fun *f) {
   forv_Var(v, f->fa_all_Vars)
     if (is_fa_Var(v))
       f->fa_Vars.add(v);
-  Primitives *prim = f->pdb->if1->primitives;
+  Primitives *prim = if1->primitives;
   forv_PNode(p, f->fa_all_PNodes) {
     if (p->code->kind == Code_MOVE)
       f->fa_move_PNodes.add(p);
@@ -1402,8 +1403,6 @@ collect_Vars_PNodes(Fun *f) {
     if (p->code->kind == Code_SEND) {
       p->prim = prim->find(p);
       f->fa_send_PNodes.add(p);
-//      if (p->code && p->code->ast)
-//	p->code->ast->prim = p->prim;
     }
   }
 }
@@ -1614,15 +1613,15 @@ initialize_symbols() {
   Vec<Sym *> type_syms, types;
   forv_Sym(s, fa->pdb->if1->allsyms) {
     // symbols (selectors) have all applicable functions as subtypes
-    if (s->symbol) {
+    if (s->is_symbol) {
       s->abstract_type = make_abstract_type(s);
       subtype(sym_symbol, s, types);
     }
-    if (s->constant) {
+    if (s->is_constant) {
       subtype(s->type, s, types);
       s->type_sym = s;
     }
-    if (s->fun) {
+    if (s->is_fun) {
       s->abstract_type = make_abstract_type(s);
       subtype(sym_function, s, types);
     }
@@ -1630,15 +1629,16 @@ initialize_symbols() {
       subtype(s->type, s, types);
     forv_Sym(ss, s->implements)
       subtype(ss, s, types);
-    forv_Sym(ss, s->constraints)
-      subtype(ss, s, types);
+    if (s->constraints)
+      forv_Sym(ss, *s->constraints)
+	subtype(ss, s, types);
     // functions are subtypes of the initial symbol in their pattern
     // which may be a constant or a constant contrainted variable
-    if (s->fun && s->has.n) {
+    if (s->is_fun && s->has.n) {
       Sym *a = s->self ? s->has.v[1] : s->has.v[0];
-      if (a->symbol && a->name == s->name)
+      if (a->is_symbol && a->name == s->name)
 	subtype(a, s, types);
-      else if (a->type && a->type->symbol && a->type->name == s->name)
+      else if (a->type && a->type->is_symbol && a->type->name == s->name)
 	subtype(a->type, s, types);
     }
     if (s->type_kind) {
@@ -1653,9 +1653,9 @@ initialize_symbols() {
   }
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && s != sym_any) {
-      if (s->meta && (s != sym_anyclass))
+      if (s->is_meta && (s != sym_anyclass))
 	subtype(sym_anyclass, s, types);
-      else if (s->value && (s != sym_value))
+      else if (s->is_value && (s != sym_value))
 	subtype(sym_value, s, types);
       else
 	subtype(sym_any, s, types);
@@ -1694,8 +1694,8 @@ initialize_primitives() {
 	case PRIM_TYPE_SYMBOL:		p->args.add(symbol_type); break;
 	case PRIM_TYPE_CONT:		p->args.add(make_abstract_type(sym_continuation)); break;
 	case PRIM_TYPE_REF:		p->args.add(make_abstract_type(sym_ref)); break;
-	case PRIM_TYPE_ANY_NUM_A:	p->args.add(anynum_type); break;
-	case PRIM_TYPE_ANY_NUM_B:	p->args.add(anynum_type); break;
+	case PRIM_TYPE_ANY_NUM_A:	p->args.add(anynum_kind); break;
+	case PRIM_TYPE_ANY_NUM_B:	p->args.add(anynum_kind); break;
 	case PRIM_TYPE_ANY_INT_A:	p->args.add(anyint_type); break;
 	case PRIM_TYPE_ANY_INT_B:	p->args.add(anyint_type); break;
 	default: assert(!"case");	break;
@@ -1716,7 +1716,7 @@ initialize() {
   fun_type = make_abstract_type(sym_function);
   fun_symbol_type = type_union(symbol_type, fun_type);
   anyint_type = make_abstract_type(sym_anyint);
-  anynum_type = make_abstract_type(sym_anynum);
+  anynum_kind = make_abstract_type(sym_anynum);
   anyclass_type = make_abstract_type(sym_anyclass);
   edge_worklist.clear();
   send_worklist.clear();

@@ -18,7 +18,7 @@ show_type(Vec<CreationSet *> &t, FILE *fp) {
 
 static void
 show_sym(Sym *s, FILE *fp) {
-  if (s->pattern) {
+  if (s->is_pattern) {
     fprintf(fp, "( ");
     forv_Sym(ss, s->has) {
       if (ss != s->has.v[0])
@@ -122,7 +122,7 @@ fa_dump_types(FA *fa, FILE *fp) {
   gvars.set_to_vec();
   fprintf(fp, "globals\n");
   forv_Var(v, gvars)
-    if (!v->sym->constant && !v->sym->symbol)
+    if (!v->sym->is_constant && !v->sym->is_symbol)
       fa_dump_var_types(unique_AVar(v, GLOBAL_CONTOUR), fp);
 }
 
@@ -219,7 +219,7 @@ show_violations(FA *fa, FILE *fp) {
 	show_illegal_type(fp, v);
 	break;
       case ATypeViolation_SEND_ARGUMENT:
-	if (v->av->var->sym->symbol &&
+	if (v->av->var->sym->is_symbol &&
 	    v->send->var->def->rvals.v[0] == v->av->var)
 	  fprintf(stderr, "unresolved call '%s'\n", v->av->var->sym->name);
 	else {

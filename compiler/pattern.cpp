@@ -10,6 +10,7 @@
 #include "fun.h"
 #include "pnode.h"
 #include "fa.h"
+#include "var.h"
 
 
 // TODO
@@ -17,7 +18,7 @@
 //   - handle them with a unique symbol in a hidden first position to uniquify them
 //   - the pnode will have multiple return values
 // handle generalized partial type pattern matching
-//   - build nested structures like with sym->pattern
+//   - build nested structures like with sym->is_pattern
 //   - match an initial sym for the partial pattern (to differentiate from tuple and each other)
 // figure out what myclass does in Sather and Clu
 // optimize case of filters with no restrictions (sym_any) to prevent
@@ -51,7 +52,7 @@ cannonicalize_mposition(MPosition &p) {
 static void
 insert_fun(FA *fa, Fun *f, Sym *arg, Sym *s, MPosition &p) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
-  if (arg->name && !is_const(arg)) {
+  if (arg->name && !arg->is_constant && !arg->is_symbol) {
     MPosition pp(p);
     pp.set_top(arg->name);
     cpname = cannonicalize_mposition(pp);
@@ -74,12 +75,12 @@ insert_fun(FA *fa, Fun *f, Sym *arg, Sym *s, MPosition &p) {
 
 static void
 build_arg(FA *fa, Fun *f, Sym *a, MPosition &p) {
-  if ((a->symbol || (a->type && a->type->symbol))) {
-    Sym *sel = a->symbol ? a : a->type;
+  if ((a->is_symbol || (a->type && a->type->is_symbol))) {
+    Sym *sel = a->is_symbol ? a : a->type;
     insert_fun(fa, f, a, sel, p);
   } else
     insert_fun(fa, f, a, a->type ? a->type : sym_any, p);
-  if (a->pattern) {
+  if (a->is_pattern) {
     p.push(1);
     forv_Sym(aa, a->has)
       build_arg(fa, f, aa, p);
@@ -115,7 +116,7 @@ pattern_match_sym(FA *fa, Sym *s, CreationSet *cs, Vec<Fun *> *funs, Vec<Fun *> 
       forv_Fun(f, *fs) if (f) {
 	found = 1;
 	Sym *fun_arg = f->arg_syms.get(cp);
-	if (fun_arg->pattern)
+	if (fun_arg->is_pattern)
 	  continue;
 	Match *m = match_map.get(f);
 	if (!m) {
@@ -161,7 +162,7 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
       Vec<Fun *> pfuns;
       forv_Fun(f, afuns) if (f) {
 	Sym *fun_arg = f->arg_syms.get(cp);
-	if (fun_arg->pattern)
+	if (fun_arg->is_pattern)
 	  pfuns.set_add(f);
 	else
 	  funs->set_add(f);
@@ -171,7 +172,7 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	Vec<Fun *> *push_funs = new Vec<Fun *>(pfuns);
 	partial_matches.add(push_funs);
 	forv_AVar(av, cs->vars) {
-	  if (av->var->sym->name && !is_const(av->var->sym)) {
+	  if (av->var->sym->name && !av->var->sym->is_constant && !av->var->sym->is_symbol) {
 	    MPosition pp(p);
 	    pp.set_top(av->var->sym->name);
 	    pattern_match_arg(fa, av, partial_matches, match_map, pp, send, all_positions);
@@ -248,7 +249,7 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
       forv_Fun(f, *partial_matches.v[partial_matches.n-1]) if (f) {
 	Sym *fun_arg = f->arg_syms.get(cp);
 	if (fun_arg) {
-	  if (fun_arg->pattern)
+	  if (fun_arg->is_pattern)
 	    pfuns.set_add(f);
 	  else
 	    afuns.set_add(f);
@@ -266,7 +267,7 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	if (!check_ambiguities) {
 	  p.push(1);
 	  forv_AVar(av, cs->vars) {
-	    if (av->var->sym->name && !is_const(av->var->sym)) {
+	    if (av->var->sym->name && !av->var->sym->is_constant & !av->var->sym->is_symbol) {
 	      MPosition pp(p);
 	      pp.set_top(av->var->sym->name);
 	      best_match_arg(fa, av, partial_matches, match_map, pp, all_positions, check_ambiguities);
@@ -278,7 +279,7 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	  p.push(cs->vars.n);
 	  for (int i = cs->vars.n - 1; i >= 0; i--) {
 	    AVar *av = cs->vars.v[i];
-	    if (av->var->sym->name && !is_const(av->var->sym)) {
+	    if (av->var->sym->name && !av->var->sym->is_constant & !av->var->sym->is_symbol) {
 	      MPosition pp(p);
 	      pp.set_top(av->var->sym->name);
 	      best_match_arg(fa, av, partial_matches, match_map, pp, all_positions, check_ambiguities);
@@ -373,7 +374,7 @@ build_patterns(FA *fa) {
 static void
 build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
-  if (a->name && !is_const(a)) {
+  if (a->name && !a->is_constant && !a->is_symbol) {
     MPosition pp(p);
     pp.set_top(a->name);
     cpname = cannonicalize_mposition(pp);
@@ -384,7 +385,7 @@ build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
     if (!a->var)
       a->var = new Var(a);
     f->arg_syms.put(cp, a);
-    if (a->pattern) {
+    if (a->is_pattern) {
       MPosition pp(p);
       pp.push(1);
       forv_Sym(aa, a->has) {

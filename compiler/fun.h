@@ -4,9 +4,6 @@
 #ifndef _fun_H_
 #define _fun_H_
 
-#include "region.h"
-#include "var.h"
-
 class PDB;
 class ESet;
 class AVar;
@@ -18,6 +15,9 @@ class MPosition;
 class Region;
 class EntrySet;
 class Fun;
+class Sym;
+class PNode;
+class CreationSet;
 
 class CallPoint : public gc {
  public:
@@ -31,10 +31,9 @@ class CallPoint : public gc {
 
 class Fun : public gc {
  public:
-  PDB *pdb;
+  int id;
   Sym *sym;
   AST *ast;
-  int id;
 
   PNode *entry;
   PNode *exit;
@@ -72,7 +71,7 @@ class Fun : public gc {
   Vec<CreationSet *> called_css;
   Vec<Vec<EntrySet *> *> equiv_sets;
   Map<PNode *, PNode*> *nmap;
-  VarMap *vmap;
+  Map<Var *, Var*> *vmap;
 
   // clone typings and call graph
   Map<PNode *, Vec<Fun *> *> calls;
@@ -105,7 +104,7 @@ class Fun : public gc {
 
   void setup_ast();
 
-  Fun(PDB *apdb, Sym *afn, int aninit_function = 0);
+  Fun(Sym *afn, int aninit_function = 0);
   Fun() {}
   Fun *copy();
 };

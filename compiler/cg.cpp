@@ -11,6 +11,7 @@
 #include "fun.h"
 #include "pnode.h"
 #include "fa.h"
+#include "var.h"
 
 static void
 write_c_fun_proto(FILE *fp, Fun *f, int type = 0) {
@@ -153,7 +154,7 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
     case P_prim_new: {
       assert(n->lvals.n == 1);
       fprintf(fp, "%s = ", n->lvals.v[0]->cg_string);
-      assert(n->rvals.v[1]->type->meta);
+      assert(n->rvals.v[1]->type->is_meta);
       fprintf(fp, "_CG_prim_new(%s);\n", n->lvals.v[0]->type->cg_string);
       break;
     }
@@ -296,7 +297,7 @@ write_c_args(FILE *fp, Fun *f) {
     {
       Sym *s = f->arg_syms.get(p);
       Var *v = f->args.get(p);
-      if (v->cg_string && !s->symbol) {
+      if (v->cg_string && !s->is_symbol) {
 	fprintf(fp, "%s = ", v->cg_string);
 	write_arg_position(fp, p);
 	fprintf(fp, ";\n");
@@ -352,9 +353,9 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
 
 static char *
 num_string(Sym *s) {
-  switch (s->num_type) {
+  switch (s->num_kind) {
     default: assert(!"case");
-    case IF1_NUM_TYPE_UINT:
+    case IF1_NUM_KIND_UINT:
       switch (s->num_index) {
 	case IF1_INT_TYPE_8:  return "uint8";
 	case IF1_INT_TYPE_16: return "uint16";
@@ -363,7 +364,7 @@ num_string(Sym *s) {
 	default: assert(!"case");
       }
       break;
-    case IF1_NUM_TYPE_INT:
+    case IF1_NUM_KIND_INT:
       switch (s->num_index) {
 	case IF1_INT_TYPE_8:  return "int8";
 	case IF1_INT_TYPE_16: return "int16";
@@ -372,7 +373,7 @@ num_string(Sym *s) {
 	default: assert(!"case");
       }
       break;
-    case IF1_NUM_TYPE_FLOAT:
+    case IF1_NUM_KIND_FLOAT:
       switch (s->num_index) {
 	case IF1_FLOAT_TYPE_32: return "float32";
 	case IF1_FLOAT_TYPE_64: return "float64";
@@ -435,9 +436,9 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
   globals.set_to_vec();
   // assign creation sets C type strings
   forv_Sym(s, allsyms) if (s) {
-    if (s->num_type)
+    if (s->num_kind)
       s->cg_string = num_string(s);
-    else if (s->symbol) {
+    else if (s->is_symbol) {
       s->cg_string = "_CG_symbol";
     } else {
       if (s->cg_string) {
@@ -519,7 +520,7 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
   forv_Var(v, globals) {
     if (v->sym->constant) 
       v->cg_string = v->sym->constant;
-    else if (v->sym->symbol) {
+    else if (v->sym->is_symbol) {
       char s[100];
       sprintf(s, "_CG_Symbol(%d, \"%s\")", v->sym->id, v->sym->name);
       v->cg_string = dupstr(s);

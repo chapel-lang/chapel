@@ -12,6 +12,7 @@
 #include "pnode.h"
 #include "fa.h"
 #include "ast.h"
+#include "var.h"
 
 #define BAD_NAME ((char*)-1)
 #define BAD_AST ((AST*)-1)
@@ -650,7 +651,7 @@ log_test_fa(FA *fa) {
   gvars.set_to_vec();
   log(LOG_TEST_FA, "globals\n");
   forv_Var(v, gvars)
-    if (!v->sym->constant && !v->sym->symbol)
+    if (!v->sym->constant && !v->sym->is_symbol)
       log_var_types(v, 0);
 }
 

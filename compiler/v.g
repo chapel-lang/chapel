@@ -266,7 +266,7 @@ idpattern
   : ident (':' identifier)?
 { $$.ast = $0.ast;
   if ($#1)
-      $$.ast->alt = if1_cannonicalize_string(
+      $$.ast->alt_name = if1_cannonicalize_string(
         $g->i, ${child 1, 0, 1}->start_loc.s, ${child 1, 0, 1}->end);
 }
   | '(' pattern_type? idpattern (',' idpattern)* ')'

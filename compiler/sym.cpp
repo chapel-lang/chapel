@@ -52,9 +52,9 @@ compar_syms(const void *ai, const void *aj) {
 int
 Sym::imm_int(int *result) {
   int i = 0;
-  switch (type->num_type) {
+  switch (type->num_kind) {
     default: return -1;
-    case IF1_NUM_TYPE_UINT: {
+    case IF1_NUM_KIND_UINT: {
       switch (type->num_index) {
 	case IF1_INT_TYPE_8: i = imm.v_uint8; break;
 	case IF1_INT_TYPE_16: i = imm.v_uint16; break;
@@ -64,7 +64,7 @@ Sym::imm_int(int *result) {
       }
       break;
     }
-    case IF1_NUM_TYPE_INT: {
+    case IF1_NUM_KIND_INT: {
       switch (type->num_index) {
 	case IF1_INT_TYPE_8: i = imm.v_int8; break;
 	case IF1_INT_TYPE_16: i = imm.v_int16; break;
@@ -101,10 +101,10 @@ unalias_type(Sym *s) {
 int 
 sprint(char *str, Immediate &imm, Sym *type) {
   int res = -1;
-  switch (type->num_type) {
-    case IF1_NUM_TYPE_NONE:
+  switch (type->num_kind) {
+    case IF1_NUM_KIND_NONE:
       break;
-    case IF1_NUM_TYPE_UINT: {
+    case IF1_NUM_KIND_UINT: {
       switch (type->num_index) {
 	case IF1_INT_TYPE_8: 
 	  res = sprintf(str, "%u", imm.v_uint8); break;
@@ -118,7 +118,7 @@ sprint(char *str, Immediate &imm, Sym *type) {
       }
       break;
     }
-    case IF1_NUM_TYPE_INT: {
+    case IF1_NUM_KIND_INT: {
       switch (type->num_index) {
 	case IF1_INT_TYPE_8: 
 	  res = sprintf(str, "%d", imm.v_int8); break;
@@ -132,7 +132,7 @@ sprint(char *str, Immediate &imm, Sym *type) {
       }
       break;
     }
-    case IF1_NUM_TYPE_FLOAT:
+    case IF1_NUM_KIND_FLOAT:
       switch (type->num_index) {
 	case IF1_FLOAT_TYPE_32:
 	  res = sprintf(str, "%f", imm.v_float32); break;
@@ -160,7 +160,7 @@ if1_set_int_type(IF1 *p, Sym *t, int signd, int size) {
   size >>= 3;
   while (size) { ss++; size >>= 1; }
   p->int_types[ss][signd] = t;
-  t->num_type = signd ? IF1_NUM_TYPE_INT : IF1_NUM_TYPE_UINT;
+  t->num_kind = signd ? IF1_NUM_KIND_INT : IF1_NUM_KIND_UINT;
   t->num_index = ss;
 }
 
@@ -170,7 +170,7 @@ if1_set_float_type(IF1 *p, Sym *t, int size) {
   size >>= 4;
   ss = size - 1;
   p->float_types[ss] = t;
-  t->num_type = IF1_NUM_TYPE_FLOAT;
+  t->num_kind = IF1_NUM_KIND_FLOAT;
   t->num_index = ss;
 }
 

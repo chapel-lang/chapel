@@ -15,10 +15,10 @@ cast(Sym *s, Sym *t, Immediate *im) {
 }
 
 #define DO_FOLD(_op) \
-      switch (res_type->num_type) { \
-	case IF1_NUM_TYPE_NONE: \
+      switch (res_type->num_kind) { \
+	case IF1_NUM_KIND_NONE: \
 	  break; \
-	case IF1_NUM_TYPE_UINT: { \
+	case IF1_NUM_KIND_UINT: { \
 	  switch (res_type->num_index) { \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
@@ -32,7 +32,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  } \
 	  break; \
 	} \
-	case IF1_NUM_TYPE_INT: { \
+	case IF1_NUM_KIND_INT: { \
 	  switch (res_type->num_index) { \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_int8 = im1.v_int8 _op im2.v_int8; break; \
@@ -46,7 +46,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  } \
 	  break; \
 	} \
-	case IF1_NUM_TYPE_FLOAT: \
+	case IF1_NUM_KIND_FLOAT: \
 	  switch (res_type->num_index) { \
 	    case IF1_FLOAT_TYPE_32: \
 	      ast->sym->imm.v_float32 = im1.v_float32 _op im2.v_float32; break; \
@@ -58,10 +58,10 @@ cast(Sym *s, Sym *t, Immediate *im) {
       }
 
 #define DO_FOLDI(_op) \
-      switch (res_type->num_type) { \
-	case IF1_NUM_TYPE_NONE: \
+      switch (res_type->num_kind) { \
+	case IF1_NUM_KIND_NONE: \
 	  break; \
-	case IF1_NUM_TYPE_UINT: { \
+	case IF1_NUM_KIND_UINT: { \
 	  switch (res_type->num_index) { \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
@@ -75,7 +75,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  } \
 	  break; \
 	} \
-	case IF1_NUM_TYPE_INT: { \
+	case IF1_NUM_KIND_INT: { \
 	  switch (res_type->num_index) { \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_int8 = im1.v_int8 _op im2.v_int8; break; \
@@ -89,7 +89,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  } \
 	  break; \
 	} \
-	case IF1_NUM_TYPE_FLOAT: \
+	case IF1_NUM_KIND_FLOAT: \
 	  switch (res_type->num_index) { \
 	    default: assert(!"case"); \
 	  } \
@@ -97,10 +97,10 @@ cast(Sym *s, Sym *t, Immediate *im) {
       }
 
 #define DO_FOLD1(_op) \
-      switch (res_type->num_type) { \
-	case IF1_NUM_TYPE_NONE: \
+      switch (res_type->num_kind) { \
+	case IF1_NUM_KIND_NONE: \
 	  break; \
-	case IF1_NUM_TYPE_UINT: { \
+	case IF1_NUM_KIND_UINT: { \
 	  switch (res_type->num_index) { \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_uint8 = _op im1.v_uint8; break; \
@@ -114,7 +114,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  } \
 	  break; \
 	} \
-	case IF1_NUM_TYPE_INT: { \
+	case IF1_NUM_KIND_INT: { \
 	  switch (res_type->num_index) { \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_int8 = _op im1.v_int8; break; \
@@ -128,7 +128,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  } \
 	  break; \
 	} \
-	case IF1_NUM_TYPE_FLOAT: \
+	case IF1_NUM_KIND_FLOAT: \
 	  switch (res_type->num_index) { \
 	    case IF1_FLOAT_TYPE_32: \
 	      ast->sym->imm.v_float32 = _op im1.v_float32; break; \
@@ -140,10 +140,10 @@ cast(Sym *s, Sym *t, Immediate *im) {
       }
 
 #define DO_FOLD1I(_op) \
-      switch (res_type->num_type) { \
-	case IF1_NUM_TYPE_NONE: \
+      switch (res_type->num_kind) { \
+	case IF1_NUM_KIND_NONE: \
 	  break; \
-	case IF1_NUM_TYPE_UINT: { \
+	case IF1_NUM_KIND_UINT: { \
 	  switch (res_type->num_index) { \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_uint8 = _op im1.v_uint8; break; \
@@ -157,7 +157,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  } \
 	  break; \
 	} \
-	case IF1_NUM_TYPE_INT: { \
+	case IF1_NUM_KIND_INT: { \
 	  switch (res_type->num_index) { \
 	    case IF1_INT_TYPE_8:  \
 	      ast->sym->imm.v_int8 = _op im1.v_int8; break; \
@@ -171,7 +171,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
 	  } \
 	  break; \
 	} \
-	case IF1_NUM_TYPE_FLOAT: \
+	case IF1_NUM_KIND_FLOAT: \
 	  switch (res_type->num_index) { \
 	    default: assert(!"case"); \
 	  } \
@@ -205,6 +205,8 @@ fold_constant(IF1 *i, ParseAST *ast) {
       res_type = sym_bool;
       break;
   }
+  if (!a->is_constant || (b && !b->is_constant))
+    return 0;
   cast(a, res_type, &im1);
   if (b)
     cast(b, res_type, &im2);
@@ -235,7 +237,8 @@ fold_constant(IF1 *i, ParseAST *ast) {
     case P_prim_not: DO_FOLD1(!); break;
     default: return 0;
   }
-  ast->sym->constant = cannonical_folded;
+  ast->sym->constant = cannonical_folded;	
+  ast->sym->is_constant = 1;
   ast->sym->in = 0;
   ast->sym->type = res_type;
   ast->kind = AST_const;
@@ -249,10 +252,10 @@ ast_constant_fold(IF1 *i, ParseAST *ast) {
       return -1;
   switch (ast->kind) {
     case AST_const: {
-      switch (ast->sym->type->num_type) {
-	case IF1_NUM_TYPE_NONE:
+      switch (ast->sym->type->num_kind) {
+	case IF1_NUM_KIND_NONE:
 	  break;
-	case IF1_NUM_TYPE_UINT: {
+	case IF1_NUM_KIND_UINT: {
 	  switch (ast->sym->type->num_index) {
 	    case IF1_INT_TYPE_8: 
 	      if (ast->sym->constant[0] != '\'')
@@ -274,7 +277,7 @@ ast_constant_fold(IF1 *i, ParseAST *ast) {
 	  }
 	  break;
 	}
-	case IF1_NUM_TYPE_INT: {
+	case IF1_NUM_KIND_INT: {
 	  switch (ast->sym->type->num_index) {
 	    case IF1_INT_TYPE_8: 
 	      if (ast->sym->constant[0] != '\'')
@@ -296,7 +299,7 @@ ast_constant_fold(IF1 *i, ParseAST *ast) {
 	  }
 	  break;
 	}
-	case IF1_NUM_TYPE_FLOAT:
+	case IF1_NUM_KIND_FLOAT:
 	  switch (ast->sym->type->num_index) {
 	    case IF1_FLOAT_TYPE_32:
 	      ast->sym->imm.v_float32 = strtod(ast->sym->constant, 0); break;

@@ -14,6 +14,7 @@
 #include "pnode.h"
 #include "if1.h"
 #include "ast.h"
+#include "var.h"
 
 #define G_BOX		(1<<0)
 #define G_BLUE		(1<<1)
@@ -289,7 +290,7 @@ graph_it(Var *v) {
   if (graph_var[0]) 
     if (!v->sym->name || strcmp(v->sym->name, graph_var))
       return 0;
-  if (!fgraph_constants && (v->sym->constant || v->sym->symbol))
+  if (!fgraph_constants && (v->sym->is_constant || v->sym->is_symbol))
     return 0;	
   return 1;
 }
@@ -412,7 +413,7 @@ graph_fun_node(FILE *fp, Fun *f) {
   forv_MPosition(p, f->arg_positions) {
     Var *a = f->args.get(p);
     strcat(title, " ");
-    if (!a->sym->pattern)
+    if (!a->sym->is_pattern)
       strcat_sym_node(title, a->sym);
     else
       strcat_pattern(title, a->sym);
@@ -474,11 +475,11 @@ graph_abstract_types(FA *fa, char *fn) {
     pname += strlen(pname);
     *pname++ = ' ';
     *pname = 0;
-    if (s->symbol) {
+    if (s->is_symbol) {
       *pname++ = '#';
       strcpy(pname, s->name);
       pname += strlen(pname);
-    } else if (s->pattern) {
+    } else if (s->is_pattern) {
       strcpy(pname, "pattern ");
       pname += strlen(pname);
       if (s->name)

@@ -50,6 +50,7 @@ if1_const(IF1 *p, Sym *type, char *constant) {
     return sym;
   }
   sym = if1_alloc_sym(p);
+  sym->is_constant = 1;
   sym->constant = c;
   sym->type = type;
   p->constants.put(c, sym);
@@ -70,7 +71,7 @@ if1_make_symbol(IF1 *p, char *name, char *end) {
   s->type = sym_symbol;
   s->type_sym = s;
   p->symbols.put(name, s);
-  s->symbol = 1;
+  s->is_symbol = 1;
   return s;
 }
 
@@ -91,7 +92,7 @@ if1_set_builtin(IF1 *p, Sym *s, char *name, char *end) {
     return;
   if (ss)
     fail("duplicate builtin '%s'", name);
-  s->builtin = 1;
+  s->is_builtin = 1;
   p->builtins.put(name, s);
   p->builtins_names.put(s, name);
 }
@@ -380,8 +381,9 @@ mark_sym_live(Sym *s) {
       mark_sym_live(ss);
     forv_Sym(ss, s->includes)
       mark_sym_live(ss);
-    forv_Sym(ss, s->constraints)
-      mark_sym_live(ss);
+    if (s->constraints)
+      forv_Sym(ss, *s->constraints)
+	mark_sym_live(ss);
     forv_Sym(ss, s->has)
       mark_sym_live(ss);
     return 1;
@@ -542,7 +544,7 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       fputs(" :TYPE ", fp);
       if1_dump_sym(fp, s->type);
     }
-    if (s->constant) {
+    if (s->is_constant) {
       if (s->type && s->constant[0] != '<')
 	fprintf(fp, " :CONSTANT %s", (char*)s->constant);
       else {
@@ -593,7 +595,7 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       fputs(" :CONT ", fp);
       if1_dump_sym(fp, s->cont);
     }
-    if (s->value)
+    if (s->is_value)
       fputs(" :VALUE true", fp);
     if (s->code) {
       fputs(" :CODE\n", fp);

@@ -183,9 +183,9 @@ ast_print(FILE *fp, ParseAST *a, int indent) {
   SP(fp, indent);
   fprintf(fp, "%s", AST_name[a->kind]);
   if (a->sym) {
-    if (a->sym->constant)
+    if (a->sym->is_constant)
       fprintf(fp, " constant %s", a->sym->constant);
-    else if (a->sym->symbol)
+    else if (a->sym->is_symbol)
       fprintf(fp, " symbol %s", a->sym->name);
     else if (a->sym->name)
       fprintf(fp, " sym %s", a->sym->name);
@@ -385,7 +385,7 @@ static Sym *
 make_module(IF1 *i, char *mod_name, Scope *global, Sym *sym = 0) {
   sym = new_sym(i, global, mod_name, sym);
   sym->type = sym_module;
-  sym->module = 1;
+  sym->is_module = 1;
   sym->scope = new Scope(global, Scope_RECURSIVE, sym);
   if (sym != sym_system)
     sym->scope->add_dynamic(sym_system->scope);
@@ -591,7 +591,7 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
 	ast->sym = new_sym(i, scope);
       ast->sym->ast = ast;
       if (ast->kind == AST_vararg)
-	ast->sym->vararg = 1;
+	ast->sym->is_vararg = 1;
       if (ty)
 	ast->sym->type = ty->sym;
       break;
@@ -615,7 +615,7 @@ define_function(IF1 *i, ParseAST *ast) {
   ast->sym->scope = new Scope(ast->scope, Scope_RECURSIVE, ast->sym);
   if (fscope != ast->scope) {
     ast->sym->self = new_sym(i, ast->sym->scope, cannonical_self);
-    ast->sym->self->read_only = 1;
+    ast->sym->self->is_read_only = 1;
     ast->sym->self->ast = ast;
     ast->sym->scope->add_dynamic(fscope, ast->sym->self);
   }
@@ -647,7 +647,9 @@ scope_constraints(ParseAST *ast, Sym *sym) {
     if (a->kind == AST_constraint) {
       if (!(a->sym = checked_ast_qualified_ident_sym(a->get(AST_qualified_ident))))
 	return -1;
-      sym->constraints.set_add(a->sym);
+      if (!sym->constraints)
+	sym->constraints = new Vec<Sym *>;
+      sym->constraints->set_add(a->sym);
       sym->scope->add_dynamic(a->sym->scope);
     } else if (a->kind == AST_def_type_param) {
       sym->arg.add(a->sym);
@@ -680,7 +682,7 @@ resolve_types_and_define_recursive_functions(IF1 *i, ParseAST *ast, int skip = 0
 	break;
       case AST_def_type:
 	if (ast->is_value)
-	  ast->sym->value = 1;
+	  ast->sym->is_value = 1;
 	if (scope_constraints(ast, ast->sym) < 0) return -1;
 	break;
       case AST_where: {
@@ -727,8 +729,8 @@ scope_idpattern(IF1 *i, ParseAST *ast, Scope *scope) {
 	sym->type_kind = Type_NONE;
 	ast->sym = sym;
       }
-      if (ast->alt)
-	ast->sym->alt = ast->alt;
+      if (ast->alt_name)
+	ast->sym->alt_name = ast->alt_name;
     }
     break;
     case AST_pattern: {
@@ -897,7 +899,7 @@ unalias_types(IF1 *i, ParseAST *ast) {
   forv_ParseAST(a, ast->children)
     if (unalias_types(i, a) < 0)
       return -1;
-  if (ast->sym && !ast->sym->constraints.n) {
+  if (ast->sym && !ast->sym->constraints) {
     Sym *s = unalias_type(ast->sym);
     if (s != ast->sym) {
       s->scope = ast->sym->scope;
@@ -1036,7 +1038,7 @@ gen_fun(IF1 *i, ParseAST *ast) {
 
 static void
 get_arg(IF1 *i, Code **c, ParseAST *ast, Vec<Sym *> &args) {
-  if (ast->kind != AST_qualified_ident || is_const(ast->rval))
+  if (ast->kind != AST_qualified_ident || ast->rval->is_constant || ast->rval->is_symbol)
     args.add(ast->rval);
   else {
     Sym *s = new_sym(i, ast->scope);
@@ -1130,7 +1132,7 @@ gen_apply_op(IF1 *i, ParseAST *ast, ParseAST *a0, ParseAST *a1) {
   forv_Sym(a, args)
     if1_add_send_arg(i, send, a);
   if1_add_send_result(i, send, res);
-  res->lvalue = 1;
+  res->is_lvalue = 1;
 }
 
 static void
@@ -1148,7 +1150,7 @@ gen_op(IF1 *i, ParseAST *ast) {
   else if (ast->is_application) 
     gen_apply_op(i, ast, a0, a1);
   else if (ast->is_simple_assign && !a0->rval->is_var) {
-    if (a0->rval->read_only)
+    if (a0->rval->is_read_only)
       show_error("assignment to read-only symbol", ast);
     if1_move(i, c, a1->rval, a0->rval, ast);
     if1_move(i, c, a1->rval, res, ast);
@@ -1156,7 +1158,7 @@ gen_op(IF1 *i, ParseAST *ast) {
     Sym *args = new_sym(i, ast->scope);
     Sym *aa0 = NULL, *aa1 = NULL;
     if (a0) {
-      if (is_const(a0->rval)) {
+      if (a0->rval->is_constant || a0->rval->is_symbol) {
 	aa0 = a0->rval;
       } else {
 	Sym *s = new_sym(i, ast->scope);
@@ -1165,7 +1167,7 @@ gen_op(IF1 *i, ParseAST *ast) {
       }
     }
     if (a1) {
-      if (is_const(a1->rval)) {
+      if (a1->rval->is_constant || a1->rval->is_symbol) {
 	aa1 = a1->rval;
       } else {
 	Sym *s = new_sym(i, ast->scope);
@@ -1188,9 +1190,9 @@ gen_op(IF1 *i, ParseAST *ast) {
     send->ast = ast;
     send = if1_send(i, c, 2, 1, sym_operator, args, res);
     send->ast = ast;
-    res->lvalue = 1;
+    res->is_lvalue = 1;
     if (ast->is_ref)
-      aa1->lvalue = 1;
+      aa1->is_lvalue = 1;
     if (ast->is_assign) {
       if (a0)
 	if1_move(i, c, res, a0->rval, ast);
@@ -1205,7 +1207,7 @@ gen_indices(IF1 *i, ParseAST *ast, ParseAST *indices, ParseAST *domain) {
   (void) domain;
   Sym *index = new_sym(i, ast->scope);
   index->type = sym_int;
-  index->external = 1;
+  index->is_external = 1; // hack to make non-constant
   forv_ParseAST(a, indices->children)
     if1_move(i, &ast->code, index, a->sym);
 }
@@ -1250,7 +1252,7 @@ gen_constructor(IF1 *i, ParseAST *ast) {
   Sym *constructor;
   Vec<Sym *> args;
   forv_ParseAST(a, ast->children) {
-    if (a->kind != AST_qualified_ident || is_const(a->rval)) {
+    if (a->kind != AST_qualified_ident || a->rval->is_constant || a->rval->is_symbol) {
       if1_gen(i, &ast->code, a->code);
       args.add(a->rval); 
       assert(a->rval);
@@ -1406,7 +1408,7 @@ static Sym *
 value_type(IF1 *i, ParseAST *ast, Sym *s) {
   Sym *v = new_sym(i, ast->scope);
   v->type = s;
-  v->external = 1;
+  v->is_external = 1; // force non-specific type
   return v;
 }
 
@@ -1461,7 +1463,7 @@ gen_def_ident_value(IF1 *i, ParseAST *ast, ParseAST *constraint, ParseAST *val) 
     if (val)
       if1_gen(i, &ast->code, val->code);
     Sym *declared_type = constraint->sym;
-    if (declared_type->num_type) { // numbers
+    if (declared_type->num_kind) { // numbers
       if (val && val->kind == AST_const && val->sym->type == declared_type)
 	if1_move(i, &ast->code, val->sym, ast->sym, ast);
       else {
@@ -1494,7 +1496,7 @@ gen_container(IF1 *i, ParseAST *ast) {
 			ast->container, sym_period, if1_make_symbol(i, ast->sym->name), 
 			rval);
   send->ast = ast;
-  rval->lvalue = 1;
+  rval->is_lvalue = 1;
   return rval;
 }
 
@@ -1520,7 +1522,7 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
   }
   if (ast->sym != sym_init) { // don't init the initial function
     // declared to be a value type
-    if (constraint && constraint->sym->value) 
+    if (constraint && constraint->sym->is_value) 
       gen_def_ident_value(i, ast, constraint, val);
     else {
       if (val)
@@ -1535,11 +1537,11 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
     }
   }
   if (ast->is_var) {
-    ast->rval->lvalue = 1;
+    ast->rval->is_lvalue = 1;
     ast->rval->is_var = 1;
   }
   if (ast->is_const)
-    ast->rval->single_assign = 1;
+    ast->rval->is_single_assign = 1;
 }
 
 static void
@@ -1586,7 +1588,7 @@ gen_if1(IF1 *i, ParseAST *ast) {
       ast->rval = ast->sym; 
       ParseAST *ptype = ast->get(AST_pattern_type);
       if (ast->children.n > (ptype ? 2 : 1))
-	ast->rval->pattern = 1;
+	ast->rval->is_pattern = 1;
       break;
     }
     case AST_qualified_ident:
@@ -1601,7 +1603,7 @@ gen_if1(IF1 *i, ParseAST *ast) {
     case AST_vararg: 
       ast->rval = ast->sym;
       if (ast->is_var)
-	ast->rval->lvalue = 1;
+	ast->rval->is_lvalue = 1;
       break;
     case AST_list:
     case AST_vector:
@@ -1681,7 +1683,7 @@ build_functions(IF1 *i, ParseAST *ast, Sym *mod) {
 static void
 build_modules(IF1 *i) {
   forv_Sym(s, i->allsyms) {
-    if (s->module) {
+    if (s->is_module) {
       Sym *fn = s->init;
       fn->ret = sym_null;
       fn->cont = new_sym(i, fn->scope);
@@ -1746,7 +1748,7 @@ build_init(IF1 *i) {
   Code *body = 0;
   ParseAST *ast = new_AST(AST_block);
   forv_Sym(s, i->allsyms)
-    if (s->module) {
+    if (s->is_module) {
       rval = new_sym(i, fn->scope);
       Code *send = if1_send(i, &body, 1, 1, s->init, rval);
       ParseAST *a = ast_call(i, 1, s->init);
@@ -1776,9 +1778,10 @@ unalias_implements_constraints(IF1 *i) {
     for (int x = 0; x < s->implements.n; x++)
       if (s->implements.v[x])
 	s->implements.v[x] = unalias_type(s->implements.v[x]);
-    for (int x = 0; x < s->constraints.n; x++)
-      if (s->constraints.v[x])
-	s->constraints.v[x] = unalias_type(s->constraints.v[x]);
+    if (s->constraints)
+      for (int x = 0; x < s->constraints->n; x++)
+	if (s->constraints->v[x])
+	  s->constraints->v[x] = unalias_type(s->constraints->v[x]);
     s->type = unalias_type(s->type);
     s->in = unalias_type(s->in);
     if (s->type_kind != Type_NONE)
@@ -1851,8 +1854,8 @@ include_instance_variables(IF1 *i) {
 
 static void
 set_value_for_value_classes(IF1 *i) {
-  sym_value->value = 1;
-  sym_anynum->value = 1;
+  sym_value->is_value = 1;
+  sym_anynum->is_value = 1;
   Vec<Sym *> implementers;
   forv_Sym(s, i->allsyms) {
     if (s->implements.n)
@@ -1863,9 +1866,9 @@ set_value_for_value_classes(IF1 *i) {
     changed = 0;
     forv_Sym(s, implementers)
       forv_Sym(ss, s->implements)
-        if (ss->value && !s->value) { 
+        if (ss->is_value && !s->is_value) { 
           changed = 1;
-	  s->value = 1;
+	  s->is_value = 1;
         }
   }
 }
@@ -1877,7 +1880,7 @@ make_type_syms(IF1 *i) {
     if (s->type_kind) {
       if (!s->type_sym) {
 	s->type_sym = new_sym(i);
-	s->type_sym->meta = 1;
+	s->type_sym->is_meta = 1;
 	s->type_sym->in = s->in;
 	s->type_sym->name = s->name;
 	s->type_sym->type = s->type_sym;
@@ -1961,13 +1964,13 @@ dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
   fprintf(fp, "<LI>%s ", AST_name[a->kind]);
   if (a->sym) {
     if (a->sym->constant) {
-      if (!a->sym->type->num_type)
+      if (!a->sym->type->num_kind)
 	fprintf(fp, " constant %s", a->sym->constant);
       else {
 	fprintf(fp, " constant ");
 	print(fp, a->sym->imm, a->sym->type);
       }
-    } else if (a->sym->symbol)
+    } else if (a->sym->is_symbol)
       fprintf(fp, " symbol %s", a->sym->name);
     else if (a->sym->name)
       fprintf(fp, " sym %s", a->sym->name);

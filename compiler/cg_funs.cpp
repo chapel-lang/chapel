@@ -4,6 +4,7 @@
 #include "fun.h"
 #include "pattern.h"
 #include "parse_ast.h"
+#include "var.h"
 
 static Fun* currentFunction;
 

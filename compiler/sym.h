@@ -19,8 +19,8 @@ class AST;
 class Code;
 class LabelMap;
 
-enum IF1_num_type {
-  IF1_NUM_TYPE_NONE, IF1_NUM_TYPE_UINT, IF1_NUM_TYPE_INT, IF1_NUM_TYPE_FLOAT
+enum IF1_num_kind {
+  IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT
 };
 
 enum Type_kind {
@@ -60,23 +60,45 @@ union Immediate {
 
 class Sym : public gc {
  public:
-  char 			*name;			// user level name
   int			id;			// unique number
+  char 			*name;			// user level name
   Sym  			*in;			// containing module, class or function
-  char			*alt;			// alternative name (pattern/extern)
-
   Sym 			*type;			// true type
-  Sym  			*aspect;		// mascarade as (e.g. superclass)
-  Sym			*type_sym;		// the representative symbol for this type in code
-                                                // as opposed to the type itself
+  Vec<Sym *>		*constraints;		// must-implement
+
+  unsigned int		is_builtin:1;		// Sym is builtin to the compiler
+  unsigned int		is_read_only:1;		// Sym is read only
+  unsigned int		is_constant:1;		// Sym is a constant
+  unsigned int		is_lvalue:1;		// Sym is an lvalue
+  unsigned int		is_var:1;		// Sym is a variable (as opposed to let bound)
+  unsigned int		is_single_assign:1;	// Sym is a single assignment variable
+  unsigned int 		is_module:1;		// Sym is a module
+  unsigned int		is_fun:1;		// Sym is a function
+  unsigned int 		is_symbol:1;		// Sym is a user level symbol
+  unsigned int		is_pattern:1;		// Sym is a pattern
+  unsigned int		is_vararg:1;		// Sym is a vararg parameter
+  unsigned int		is_external:1;		// Sym is "external", so constraints are type
+  unsigned int		is_structure:1;		// Sym is a structure (C compatibility)
+  unsigned int		is_meta:1;		// Sym is class of class
+  unsigned int 		is_value:1;		// Sym is a value class
+
+  unsigned int		live:1;			// used by if1.cpp
+  unsigned int		incomplete:1;		// used by clone.cpp
+
+  unsigned int		type_kind:4;
+  unsigned int		num_kind:2;		// Sort of number class
+  unsigned int		num_index:3;		// Precision of number class
+  unsigned int		internal:4;		// Non-primitive 'internal' type 
+
+  char			*alt_name;		// alternative name (pattern/extern)
+
+  Sym  			*aspect;		// mascarade as type (e.g. superclass)
 
   char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values
 
-  Type_kind		type_kind;
   Vec<Sym *>		implements;
   Vec<Sym *>		includes;		// included code
-  Vec<Sym *>		constraints;		// must-implement
   Vec<Sym *>		has;			// sub variables/members (currently fun args)
   Vec<Sym *>		arg;			// arg variables (currently just meta type args)
   Sym			*alias;			// alias of type
@@ -87,25 +109,6 @@ class Sym : public gc {
   Code			*code;			// for functions, Code
   AST			*ast;			// AST node which defined this symbol
 
-  unsigned int		builtin:1;		// Sym is an read only
-  unsigned int		read_only:1;		// Sym is an read only
-  unsigned int		lvalue:1;		// Sym is an lvalue
-  unsigned int		is_var:1;		// Sym refers to a variable (as opposed to let bound)
-  unsigned int		single_assign:1;	// Sym is a single assignment variable
-  unsigned int 		module:1;		// Sym is a module
-  unsigned int 		symbol:1;		// Sym is a user level symbol
-  unsigned int		pattern:1;		// Sym is a pattern
-  unsigned int		vararg:1;		// Sym is a vararg parameter
-  unsigned int		external:1;		// Sym is "external", so constraints are type
-  unsigned int		structure:1;		// Sym is a structure (C compatibility)
-  unsigned int		internal:4;		// Sym is of a non-primitive 'internal' type 
-  unsigned int		meta:1;			// Sym is class of class
-  unsigned int 		value:1;		// Sym is a value class
-
-  unsigned int		num_type:2;		// used by if1.cpp
-  unsigned int		num_index:3;		// used by if1.cpp
-  unsigned int		live:1;			// used by if1.cpp
-  unsigned int		incomplete:1;		// used by clone.cpp
   Scope 		*scope;			// used in ast.cpp
   LabelMap		*labelmap;		// used by ast.cpp
   Vec<Sym *>		dispatch_order;		// used by fa.cpp, pattern.cpp
@@ -115,6 +118,7 @@ class Sym : public gc {
   AType			*abstract_type;		// used by fa.cpp
   Vec<CreationSet *>	creators;		// used by fa.cpp
   Var			*var;			// used by fa.cpp
+  Sym			*type_sym;		// the representative symbol for this type in code
   Fun			*fun;			// used by fa.cpp
   char 			*cg_string;		// used by cg.cpp
 
@@ -131,7 +135,6 @@ class Sym : public gc {
 
 Sym *unalias_type(Sym *s);
 Sym *meta_apply(Sym *fn, Sym *arg);
-static inline int is_const(Sym *s) { return s->constant || s->symbol; }
 
 int pp(Immediate &imm, Sym *type);
 int print(FILE *fp, Immediate &imm, Sym *type);

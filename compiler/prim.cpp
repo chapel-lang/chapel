@@ -31,20 +31,18 @@ Prim *
 Primitives::find(Code *c) {
   if (c->kind != Code_SEND)
     return NULL;
-//  if (c->ast && c->ast->prim)
-//    return c->ast->prim;
   Sym *f = c->rvals.v[0];
-  if (f->builtin) {
+  if (f->is_builtin) {
     char *name = if1->builtins_names.get(f);
     Prim *prim = prim_map[0][0].get(name);
     if (prim == prim_primitive) {
       int nargs = c->rvals.n - 3;
       if (nargs < 0)
 	nargs = 0;
-      if (c->rvals.v[1]->symbol)
+      if (c->rvals.v[1]->is_symbol)
 	prim = prim_map[nargs][0].get(c->rvals.v[1]->name);
       else {
-	char *n = c->rvals.v[2]->symbol ? c->rvals.v[2]->name : 0;
+	char *n = c->rvals.v[2]->is_symbol ? c->rvals.v[2]->name : 0;
 	if (!n)
 	  n = if1->builtins_names.get(c->rvals.v[2]);
 	assert(n);
@@ -60,17 +58,17 @@ Primitives::find(Code *c) {
 Prim *
 Primitives::find(PNode *p) {
   Var *f = p->rvals.v[0];
-  if (f->sym->builtin) {
+  if (f->sym->is_builtin) {
     char *name = if1->builtins_names.get(f->sym);
     Prim *prim = prim_map[0][0].get(name);
     if (prim == prim_primitive) {
       int nargs = p->rvals.n - 3;
       if (nargs < 0)
 	nargs = 0;
-      if (p->rvals.v[1]->sym->symbol)
+      if (p->rvals.v[1]->sym->is_symbol)
 	prim = prim_map[nargs][0].get(p->rvals.v[1]->sym->name);
       else {
-	assert(p->rvals.v[2]->sym->symbol);
+	assert(p->rvals.v[2]->sym->is_symbol);
 	prim = prim_map[nargs][1].get(p->rvals.v[2]->sym->name);
       }
       assert(prim);
@@ -89,11 +87,11 @@ compatible_type(PrimType pt, Sym *s) {
     case PRIM_TYPE_CONT: if (s && s->type == sym_continuation) return 1; break;
     case PRIM_TYPE_ANY_NUM_A:
     case PRIM_TYPE_ANY_NUM_B: 
-      if (s && s->type && s->type->num_type != IF1_NUM_TYPE_NONE) return 1; break;
+      if (s && s->type && s->type->num_kind != IF1_NUM_KIND_NONE) return 1; break;
     case PRIM_TYPE_ANY_INT_A:
     case PRIM_TYPE_ANY_INT_B: 
       if (s && s->type && 
-	  (s->type->num_type == IF1_NUM_TYPE_INT || s->type->num_type == IF1_NUM_TYPE_UINT))
+	  (s->type->num_kind == IF1_NUM_KIND_INT || s->type->num_kind == IF1_NUM_KIND_UINT))
 	return 1;
       break;
     default: assert(!"case"); break;
@@ -106,7 +104,7 @@ Primitives::find(ParseAST *ast) {
   if (ast->children.n < 2)
     return 0;
   Prim *prim = NULL;
-  if (ast->children.v[0]->sym && ast->children.v[0]->sym->builtin) {
+  if (ast->children.v[0]->sym && ast->children.v[0]->sym->is_builtin) {
     char *name = if1->builtins_names.get(ast->children.v[0]->sym);
     prim = prim_map[0][0].get(name);
   }
@@ -114,7 +112,7 @@ Primitives::find(ParseAST *ast) {
     int nargs = ast->children.n - 2;
     if (nargs < 0)
       nargs = 0;
-    if (ast->children.v[0]->sym && ast->children.v[0]->sym->symbol) {
+    if (ast->children.v[0]->sym && ast->children.v[0]->sym->is_symbol) {
       prim = prim_map[nargs][0].get(ast->children.v[0]->sym->name);
       if (!prim)
 	return 0;
@@ -122,7 +120,7 @@ Primitives::find(ParseAST *ast) {
 	return 0;
     }
     else {
-      assert(ast->children.v[1]->sym && ast->children.v[1]->sym->symbol);
+      assert(ast->children.v[1]->sym && ast->children.v[1]->sym->is_symbol);
       prim = prim_map[nargs][1].get(ast->children.v[1]->sym->name);
       if (!prim)
 	return 0;

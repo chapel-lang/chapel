@@ -8,15 +8,17 @@
 #include "pnode.h"
 #include "if1.h"
 #include "ast.h"
+#include "var.h"
+#include "region.h"
 
-Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
-  pdb = apdb;
+Fun::Fun(Sym *asym, int aninit_function) {
   init_function = aninit_function;
   clone_for_constants = 1;
   execution_frequency = 0.0;
   fa_collected = 0;
   has_return = 0;
   sym = asym;
+  sym->is_fun = 1;
   asym->fun = this;
   ast = sym->ast;
   nmap = 0;
@@ -134,7 +136,6 @@ copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
 Fun *
 Fun::copy() {
   Fun *f = new Fun();
-  f->pdb = pdb;
   f->sym = sym;
   f->init_function = init_function;
   f->nmap = new Map<PNode *, PNode*>;

@@ -263,7 +263,7 @@ compile_one(char *fn) {
   Sym *init = if1_get_builtin(if1, "init");
 
   for (int i = 0; i < if1->allclosures.n; i++) {
-    Fun *f = new Fun(pdb, if1->allclosures.v[i], if1->allclosures.v[i] == init);
+    Fun *f = new Fun(if1->allclosures.v[i], if1->allclosures.v[i] == init);
     if (!f)
       return -1;
     pdb->add(f);
