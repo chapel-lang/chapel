@@ -661,17 +661,19 @@ void MemberAccess::print(FILE* outfile) {
 
 
 void MemberAccess::codegen(FILE* outfile) {
-  Variable* base_var; /* SJD: should get type using typeinfo once analysis works with records */
+  Variable* base_var; /* SJD: should get type using typeinfo once
+			 analysis works with records */
   ClassType* base_type;
 
   base->codegen(outfile);
   if ((base_var = dynamic_cast<Variable*>(base)) &&
       (base_type = dynamic_cast<ClassType*>(base_var->var->type))) {
-    if (!base_type->value) {
-      fprintf(outfile, "->");
-    }
-    else {
+    if (base_type->value) {              /* record */
       fprintf(outfile, ".");
+    } else if (base_type->union_value) { /* union */
+      fprintf(outfile, "._chpl_union.");
+    } else {                             /* class */
+      fprintf(outfile, "->");
     }
   }
   else {

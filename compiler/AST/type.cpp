@@ -609,11 +609,12 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-ClassType::ClassType(bool isValueClass,
+ClassType::ClassType(bool isValueClass, bool isUnion,
 		     ClassType* init_parentClass, Stmt* init_definition,
 		     FnDefStmt* init_constructor, SymScope* init_classScope) :
   Type(TYPE_CLASS, nilExpr),
   value(isValueClass),
+  union_value(isUnion),
   parentClass(init_parentClass),
   definition(init_definition),
   constructor(init_constructor),
@@ -624,7 +625,7 @@ ClassType::ClassType(bool isValueClass,
 Type* ClassType::copy(void) {
   FnDefStmt* newConstructor = dynamic_cast<FnDefStmt*>(constructor->copy());
   ClassType* newParent = dynamic_cast<ClassType*>(parentClass->copy());
-  return new ClassType(value, newParent, definition->copyList(), newConstructor);
+  return new ClassType(value, union_value, newParent, definition->copyList(), newConstructor);
 }
 
 
@@ -636,7 +637,16 @@ void ClassType::addDefinition(Stmt* init_definition) {
 
     char* constructorName = glomstrings(2, "_construct_", name->name);
     FnSymbol* newFunSym = Symboltable::startFnDef(constructorName, false);
-    if (!value) {
+    if (value || union_value) {
+      VarSymbol* this_insert = new VarSymbol("this", this);
+      Symboltable::defineInScope(this_insert, Symboltable::getCurrentScope());
+      VarDefStmt* body1 = new VarDefStmt(this_insert, nilExpr);
+      ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
+      body1->append(body2);
+      BlockStmt* body = new BlockStmt(body1);
+      constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
+    }
+    else {
       BlockStmt* body = new BlockStmt(
 			  new ReturnStmt(
 			    new CastExpr(this, 
@@ -646,15 +656,6 @@ void ClassType::addDefinition(Stmt* init_definition) {
 			        new SizeofExpr(this)))
 			    )
 			  );
-      constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
-    }
-    else {
-      VarSymbol* this_insert = new VarSymbol("this", this);
-      Symboltable::defineInScope(this_insert, Symboltable::getCurrentScope());
-      VarDefStmt* body1 = new VarDefStmt(this_insert, nilExpr);
-      ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
-      body1->append(body2);
-      BlockStmt* body = new BlockStmt(body1);
       constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
     }
   }
@@ -694,16 +695,23 @@ void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef struct _");
   name->codegen(outfile);
   fprintf(outfile, "_def {\n");
+  if (union_value) {
+    fprintf(outfile, "int _chpl_union_tag;\n");
+    fprintf(outfile, "union _chpl_union_def {\n");
+  }
   definition->codegenVarDefs(outfile);
+  if (union_value) {
+    fprintf(outfile, "} _chpl_union;\n");
+  }
   fprintf(outfile, "} ");
-  if (!value) {
-    fprintf(outfile, "_");
-    name->codegen(outfile);
-    fprintf(outfile,", *");
+  if (value || union_value) {
     name->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }
   else {
+    fprintf(outfile, "_");
+    name->codegen(outfile);
+    fprintf(outfile,", *");
     name->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }

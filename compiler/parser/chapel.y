@@ -236,7 +236,7 @@ enumdecl:
 classdecl:
   TCLASS identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($2, false);
+      $<ptsym>$ = Symboltable::startClassDef($2, false, false);
     }
                                 decls TRCBR
     {
@@ -248,7 +248,7 @@ classdecl:
 recorddecl:
   TRECORD identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($2, true);
+      $<ptsym>$ = Symboltable::startClassDef($2, true, false);
     }
                                 decls TRCBR
     {
@@ -260,7 +260,7 @@ recorddecl:
 uniondecl:
   TUNION identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($2, true);
+      $<ptsym>$ = Symboltable::startClassDef($2, false, true);
     }
                                 decls TRCBR
     {

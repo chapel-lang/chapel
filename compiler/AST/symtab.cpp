@@ -827,11 +827,11 @@ FnDefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 }
 
 
-TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass) {
+TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUnion) {
   ClassType* newdt;
   TypeSymbol* newsym;
 
-  newdt = new ClassType(isValueClass);
+  newdt = new ClassType(isValueClass, isUnion);
   newsym = new TypeSymbol(name, newdt);
   (newdt)->addName(newsym);
   define(newsym);

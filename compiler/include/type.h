@@ -168,12 +168,14 @@ class ClassType : public Type {
   TRAVERSABLE_TYPE(ClassType);
  public:
   bool value; /* true if this is a value class (aka record) */
+  bool union_value; /* true if this is a union */
   ClassType* parentClass;
   Stmt* definition;
   FnDefStmt* constructor;
   SymScope* classScope;
   
   ClassType(bool isValueClass,
+	    bool isUnion,
             ClassType* init_parentClass = nilClassType, 
 	    Stmt* init_definition = nilStmt, 
 	    FnDefStmt* init_constructor = nilFnDefStmt,

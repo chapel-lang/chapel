@@ -28,7 +28,7 @@ void initNils(void) {
   nilVarSymbol = new VarSymbol("nilVarSymbol", nilType);
   nilFnSymbol = new FnSymbol("nilFnSymbol");
   nilFnDefStmt = new FnDefStmt(nilFnSymbol);
-  nilClassType = new ClassType(nilClassType);
+  nilClassType = new ClassType(false,false);
   nilClassType->addDefinition(nilStmt);
 
   verifyNilsUncorrupted("initialized incorrectly");
