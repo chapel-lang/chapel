@@ -22237,3 +22237,24 @@ Modified files:
 	                                         test_clone_class2.future 
 	                                         test_clone_class2a.future 
 
+---------------------------------------------------------------------------
+
+03/29/05 12:53:47 -- bradc
+
+Log message:
+	Continuing to try and whip nightly regression script into
+	better shape.  These changes attempt to make it not so
+	hard-coded to my username:
+	
+	- cleaned up existing options a bit as well as help message
+	  that describes them
+	
+	- set the CHPLHOME variable (if you don't already) to indicate where
+	  your Chapel installation is
+	
+	- set CHPL_UW_CVS_USERNAME to indicate your pseudo-username on
+	  gemelli (if you don't already)
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
