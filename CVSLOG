@@ -21986,3 +21986,27 @@ Added files:
 	                            writeunion.chpl writeunion.future 
 	                            writeunion.good 
 
+---------------------------------------------------------------------------
+
+03/28/05 15:37:11 -- jplevyak
+
+Log message:
+	Use new visibility calculations.... however the new
+	calculation doesn't take into account shadowing of functions with
+	identical signatures.   Currently I have this assigned to Steve, but
+	if he wants to punt it to me we are going to have to give all functions
+	in the program a "priority" which indicates how close they are.  That
+	is assuming that functions with identical signatures in the same scope
+	is not an error.  In that case perhaps it would be best done during
+	visibileFunctions() calculation since that has access to the actual
+	scoping.   Alternatively we could tag functions with their scoping
+	depth as well as their priority and I could issue an error when
+	I do the visibility lookup, however this would only occur if the function
+	was used, so it would permit erroneous programs where bogus functions
+	defintions could persist assuming that they were never called.
+	This is the case with other sorts of ambiguous calls though so it
+	might now be so bad.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
