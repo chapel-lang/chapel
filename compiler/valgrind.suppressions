@@ -198,4 +198,11 @@
    fun:GC_alloc_large
    fun:GC_generic_malloc
 }
-
+{
+   boehm-memcheck24
+   Memcheck:Cond
+   fun:GC_promote_black_lists
+   fun:GC_try_to_collect_inner
+   fun:GC_collect_or_expand
+   fun:GC_alloc_large
+}
