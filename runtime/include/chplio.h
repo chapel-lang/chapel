@@ -29,10 +29,6 @@ extern char* _default_format_write_float64; //     "%g"   // double
 #define _default_format_read_enum         "%255s"
 #define _default_format_write_enum        "%s"
 
-/*
-#define _default_format_write_domain1 "%d..%d by %d"
-void _write_domain1(FILE* outfile, char* format, _domain1 val);
-*/
 #define _write_domain(F, dom) \
   fprintf(F, "%d..%d by %d", dom.dim_info[0].lo, dom.dim_info[0].hi, dom.dim_info[0].str)
 

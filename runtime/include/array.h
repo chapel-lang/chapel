@@ -43,22 +43,5 @@ typedef struct __arr_perdim {
            ((i1)-arr.dim_info[1].off)*arr.dim_info[1].blk + \
            ((i2)-arr.dim_info[2].off)*arr.dim_info[2].blk]
 
-/*** OLD ***/
-#define _DECL_ARRAY(elemtype, rank) \
-  typedef struct __array##rank##elemtype { \
-    int elemsize; \
-    int size; \
-    elemtype* base; \
-    elemtype* origin; \
-    _domain##rank* domain; \
-    _arr_perdim dim[rank]; \
-  } _array##rank##elemtype
-
-/*** OLD ***/
-_DECL_ARRAY(_integer64, 1);
-_DECL_ARRAY(_float64, 2);
-void _init_array1_integer64(_array1_integer64* newarr, _domain1* dom);
-void _init_array2_float64(_array2_float64* newarr, _domain2* dom);
-
 #endif
 
