@@ -903,9 +903,7 @@ build_builtin_symbols() {
   new_lub_type(sym_anyclass, "anyclass", 0);
   sym_anyclass->meta_type = sym_anyclass;
   new_lub_type(sym_any, "any", 0);
-  sym_null->meta_type = sym_null; 
-  sym_null->type = sym_null;
-  if1_set_builtin(if1, sym_null, "null");
+  new_primitive_type(sym_null, "null");
   new_primitive_type(sym_module, "module");
   new_primitive_type(sym_symbol, "symbol");
   if1_set_symbols_type(if1);

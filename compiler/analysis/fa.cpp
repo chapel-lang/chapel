@@ -1994,8 +1994,8 @@ collect_results() {
       if (pnode->next_callees) {
         pnode->callees = pnode->next_callees;
         pnode->next_callees = 0;
-        forv_Fun(f, pnode->callees->funs)
-          pnode->callees->arg_positions.set_union(f->arg_positions);
+        forv_Fun(x, pnode->callees->funs) if (x)
+          pnode->callees->arg_positions.set_union(x->arg_positions);
       }
     }
   }
@@ -2803,7 +2803,7 @@ struct RemoveNullFn { static void F(Var *v) {
   CreationSet *s = null_type->v[0];
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
-    if (av->out->in(s))
+    if (av->out != s->sym->abstract_type && av->out->in(s))
       av->out = type_diff(av->out, s->sym->abstract_type);
   }
 } };
