@@ -1904,3 +1904,23 @@ Modified files:
 	chapel/test/parsing/jplevyak/: literal.chk literal.v mat1.chk 
 	                               tuples.chk 
 
+---------------------------------------------------------------------------
+
+04/05/05 13:00:24 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Begin support for incremnetalization: cdb.{h,cpp} save cloning info
+	between compiles
+	Fixed code which maps AST -> flow analysis information
+	Added support for relative system_dir paths in dump.cpp
+	Added support for cloning of data structures dependant on
+	the typing of other data structures (currently 1 level)
+	Fixed several bugs in type inference discovered when implementing above
+
+Modified files:
+	chapel/compiler/: Makefile TODO ast.cpp clone.cpp clone.h 
+	                  dump.cpp fa.cpp fa.h fa_extras.cpp fun.cpp 
+	                  fun.h pnode.h sym.h v.g vec.cpp 
+Added files:
+	chapel/compiler/: cdb.cpp cdb.h 
+
