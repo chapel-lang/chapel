@@ -3,6 +3,7 @@
 
 #include "checkTypeInfo.h"
 #include "findUnknownTypes.h"
+#include "filesToAST.h"
 #include "getstuff.h"
 #include "printAST.h"
 #include "printSymtab.h"
@@ -18,6 +19,7 @@
 Pass* passlist[] = {
   FIRST,
 
+  RUN(FilesToAST),
   RUN(PrintProgram),
 
   LAST

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "createAST.h"
 #include "files.h"
 #include "misc.h"
 #include "pass.h"
@@ -30,7 +31,7 @@ static void runPass(Pass* pass, Stmt* program, char* filename) {
 }
 
 
-static void parsePassFile(char* passfilename, Stmt* program, char* filename) {
+static void parsePassFile(char* passfilename, char* filename) {
   FILE* passfile = openInputFile(passfilename);
   char passname[80];
   int readword;
@@ -49,24 +50,24 @@ static void parsePassFile(char* passfilename, Stmt* program, char* filename) {
       int passnameLen = strlen(passnameStart);
       passnameStart[passnameLen-2] = '\0';
       Pass* pass = stringToPass(passnameStart);
-      runPass(pass, program, filename);
+      runPass(pass, programStmts, filename);
     }
   } while (readword == 1 && !done);
   closeInputFile(passfile);
 }
 
 
-void runPasses(char* passfilename, Stmt* program, char* filename) {
+void runPasses(char* passfilename, char* filename) {
   if (strcmp(passfilename, "") == 0) {
     Pass** pass = passlist+1;  // skip over FIRST
     
     while ((*pass) != NULL) {
-      runPass(*pass, program, filename);
+      runPass(*pass, programStmts, filename);
       
       pass++;
     }
   } else {
-    parsePassFile(passfilename, program, filename);
+    parsePassFile(passfilename, filename);
   }
 }
 

@@ -1,6 +1,7 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
+#include "../passes/filesToAST.h"
 #include "../passes/printProgram.h"
 #include "../passes/printSymtab.h"
 #include "../passes/runAnalysis.h"
@@ -23,6 +24,7 @@
 Pass* passlist[] = {
   FIRST,
 
+  RUN(FilesToAST),
   RUN(SetupStmtLinks),
   RUN(CheckBackLinks),
   RUN(RunAnalysis),

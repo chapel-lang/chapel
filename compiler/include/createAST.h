@@ -8,6 +8,6 @@ extern Stmt* preludeStmts;
 extern Stmt* programStmts;
 extern Stmt* entryPoint;
 
-Stmt* fileToAST(char* filename, int debug);
+void fileToAST(char* filename, int debug);
 
 #endif

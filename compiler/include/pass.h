@@ -18,7 +18,7 @@ class DummyPass : public Pass {
   virtual void run(Stmt* program);
 };
 
-void runPasses(char* passfilename, Stmt* program, char* filename);
+void runPasses(char* passfilename, char* filename);
 
 #endif
 

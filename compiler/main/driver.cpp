@@ -271,23 +271,32 @@ do_analysis(char *fn) {
 }
 
 static int
-compile_one(char *fn) {
-  bool test_lang = is_test_lang(fn);
-  if (!test_lang) {
-    fileToAST(fn, d_debug_level);
-    runPasses(passlist_filename, programStmts, fn);
+compile_one_test_file(char *fn) {
+  if1->callback = new PCallbacks;
+  init_ast();
+  if (load_one(fn) < 0)
+    return -1;
+  do_analysis(fn);
+  return 0;
+}
+
+
+static void
+compile_all(void) {
+  bool noTestLangFiles = true;
+  for (int i = 0; i < arg_state.nfile_arguments; i++) 
+    if (is_test_lang(arg_state.file_argument[i])) noTestLangFiles = false;
+
+  if (noTestLangFiles) {
+    char* fn = arg_state.file_argument[0];
+    runPasses(passlist_filename, fn);
     if (!suppress_codegen)
       codegen(fn, system_dir, programStmts);
-    return 0;
-  } else {
-    if1->callback = new PCallbacks;
-    init_ast();
-    if (load_one(fn) < 0)
-      return -1;
-    do_analysis(fn);
-    return 0;
-  }
+  } else
+    for (int i = 0; i < arg_state.nfile_arguments; i++) 
+      if (compile_one_test_file(arg_state.file_argument[i])) break;
 }
+
 
 static void
 init_system() {
@@ -344,8 +353,7 @@ main(int argc, char *argv[]) {
   if (fdump_html || strcmp(log_flags, "") || fgraph)
     init_logs();
   init_system();
-  for (int i = 0; i < arg_state.nfile_arguments; i++) 
-    if (compile_one(arg_state.file_argument[i])) break;
+  compile_all();
   free_args(&arg_state);
   clean_exit(0);
   return 0;

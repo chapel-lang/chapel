@@ -100,7 +100,7 @@ static Stmt* createInitFn(Stmt* program, char* fnNameArg = 0) {
 }
 
 
-Stmt* fileToAST(char* filename, int debug) {
+void fileToAST(char* filename, int debug) {
   static char* preludePath = NULL;
 
   if (preludePath == NULL) {
@@ -128,6 +128,4 @@ Stmt* fileToAST(char* filename, int debug) {
   preludeStmts = createInitFn(preludeStmts, "__initPrelude");
   programStmts = createInitFn(programStmts, "__init");
   entryPoint = createInitFn(entryPoint);
-
-  return programStmts;
 }
