@@ -9596,3 +9596,93 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y 
 
+---------------------------------------------------------------------------
+
+11/15/04 18:22:15 -- bradc
+
+Log message:
+	A bunch of changes related to copyright messages and
+	notices, in anticipation of (a) sending a tarball to
+	Roxana as soon as I get clearance and (b) moving the
+	CVS tree to UW.
+	
+	* Added a top-level COPYRIGHT and LICENSE file, replacing
+	  the file that was previously in the compiler/ directory,
+	  and making Cray the copyright owner.
+	
+	* Made the build conver the LICENSE file into #include-able
+	  C++ code rather than storing it in that format in CVS
+	
+	* Removed copyright messages from all code apart from
+	  vec/list/arg, which retain John's copyright message (minus
+	  the all rights reserved part) and the beautify code which
+	  retains the ZPL copyright message.
+	
+	* In .cpp files, also removed the Mode comment, since emacs
+	  can be set up to automatically go into this mode.  Let me
+	  know if anyone needs this .emacs text, or if I've made too
+	  strong of an assumption in pulling this out.  I resisted
+	  pulling them out in .h files that contain them, since one
+	  might want to make emacs load .h files in C mode (I use
+	  C++ for all .h files as well...).
+	
+	* Added some top level make targets: tarball, which builds
+	  a tarball of the CVS tree, pulling out the CVS directories,
+	  and adding the COPYRIGHT line to the tops of all .cpp, .c,
+	  .h, .y, .l, .lex, .g, and Make* files as a comment.  Also
+	  release, which builds a similar tarball, but blows away
+	  certain directories and files (and should probably do more...
+	  this is a placeholder to be revisited when we actually
+	  start doing releases).  Added a prepend script to the util/
+	  directory to help with this.
+	
+	* Switched order of actions in sub_test so that a PREDIFF
+	  script could construct a test's .good file.
+	
+	* Changed the test of --copyright to create the .good output
+	  from the LICENSE file to make sure the two messages match.
+	
+	* Added some new .cvsignore entries to the test directory to
+	  keep cvs -nq update clean
+
+Modified files:
+	./: Makefile 
+	chapel/compiler/adt/: list.cpp map.cpp vec.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp builtin.cpp 
+	                           cdb.cpp cdb.h cfg.cpp cg.cpp 
+	                           clone.cpp dead.cpp dom.cpp fa.cpp 
+	                           fa_extras.cpp fun.cpp if1.cpp 
+	                           inline.cpp loop.cpp pattern.cpp 
+	                           pdb.cpp pnode.cpp prim.cpp 
+	                           prim_data.dat prim_data_incs.h 
+	                           region.cpp region.h ssu.cpp ssu.h 
+	                           ssu_extra.cpp sym.cpp var.cpp 
+	chapel/compiler/analysis/make_prims/: make_prims.cpp 
+	chapel/compiler/backend/: dump.cpp graph.cpp 
+	chapel/compiler/include/: analysis.h ast.h builtin.h 
+	                          builtin_symbols.h callbacks.h cg.h 
+	                          clone.h code.h dead.h dom.h driver.h 
+	                          dump.h fa.h fun.h geysa.h grammar.h 
+	                          graph.h if1.h inline.h list.h log.h 
+	                          loop.h map.h misc.h num.h parse.h 
+	                          pattern.h pdb.h pnode.h prim.h sym.h 
+	                          var.h vec.h 
+	chapel/compiler/main/: Makefile arg.cpp arg.h driver.cpp 
+	                       version.cpp 
+	chapel/compiler/test/: list.cpp map.cpp misc.cpp vec.cpp 
+	chapel/compiler/util/: log.cpp misc.cpp 
+	chapel/compiler/vparser/: ast_cf.cpp ast_kinds.h grammar.cpp 
+	                          parse.cpp parse_ast.cpp parse_ast.h 
+	                          parse_structs.h scope.cpp scope.h v.g 
+	chapel/test/: .cvsignore sub_test 
+Added files:
+	./: COPYRIGHT LICENSE 
+	chapel/compiler/main/: .cvsignore 
+	chapel/make/: Makefile.release 
+	chapel/test/compflags/bradc/copyright/: .cvsignore PREDIFF 
+	chapel/test/dispatch/jplevyak/: .cvsignore 
+	chapel/util/: prepend 
+Removed files:
+	chapel/compiler/: COPYRIGHT 
+	chapel/test/compflags/bradc/copyright/: declint.good 
+
