@@ -178,7 +178,6 @@ type
 { $$.ast = new AST(AST_type_application, &$n); }
   | '(' type  ')'
   | class_definition
-{ $$.ast = new AST(AST_record_type, &$n); }
   | qualified_identifier
   | constant
   ;
@@ -186,10 +185,12 @@ type
 type_parameter_list : '(' type_param (',' type_param)* ')' ;
 type_param: type { $$.ast = new AST(AST_type_param, &$n); };
 
-class_definition : class_modifiers '{' new_class_scope pure_type_statement* '}' [
+class_definition : class_modifiers '{' new_class_scope pure_type_statement* '}' 
+[
   $$.saved_scope = ${scope};
   ${scope} = enter_D_Scope(${scope}, $n0.scope);
-];
+]
+{ $$.ast = new AST(AST_record_type, &$n); };
 new_class_scope: [ ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RECURSIVE; ];
 
 class_modifiers : (class_modifier (',' class_modifiers)*)?;

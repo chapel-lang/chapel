@@ -81,7 +81,7 @@ AST::add_below(D_ParseNode *pn) {
 }
 
 Scope *
-ast_qualified_ident_scope(AST *a) {
+ast_qualified_ident_scope(AST *a, Sym **rsym = 0) {
   int i = 0;
   Scope *s = a->scope;
   if (a->v[0]->kind == AST_global) {
@@ -95,6 +95,8 @@ ast_qualified_ident_scope(AST *a) {
       return 0;
     }
     s = sym->scope;
+    if (rsym)
+      *rsym = sym;
   }
   return s;
 }
@@ -239,7 +241,12 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
       break;
     case Builtin_tuple: sym->type_kind = Type_PRODUCT; break;
     case Builtin_vector: sym->type_kind = Type_VECTOR; break;
-    case Builtin_ref: sym->type_kind = Type_REF; break;
+    case Builtin_ref: 
+      sym->type_kind = Type_REF; 
+      sym->has.add(if1_alloc_sym(i, if1_cannonicalize_string(i, "ref value")));
+      sym->has.v[0]->type = sym_any;
+      assert(sym_any); // make sure sym_any is defined before sym_ref
+      break;
     case Builtin_symbol: 
       if1_set_symbols_type(i); 
       sym->type_kind = Type_PRIMITIVE;
@@ -776,7 +783,12 @@ gen_fun(IF1 *i, AST *ast) {
   int n = ast->n - 2;
   AST **args = &ast->v[1];
   Sym *as[n + 1];
-  as[0] = if1_make_symbol(i, fn->name);
+  AST *fqid = ast->get(AST_qualified_ident);
+  if (fn->in && fn->name == if1_cannonicalize_string(i, "class")) {
+    as[0] = new_sym(i, fqid->scope, fn->name);
+    as[0]->type = fn->in;
+  } else
+    as[0] = if1_make_symbol(i, fn->name);
   for (int j = 0; j < n; j++)
     as[j + 1] = args[j]->rval;
   if1_closure(i, fn, body, n + 1, as);
@@ -811,10 +823,21 @@ get_apply_args(IF1 *i, Code *send, AST *ast) {
 }
 
 static void
+gen_new(IF1 *i, AST *ast) {
+  Code **c = &ast->code;
+  forv_AST(a, *ast)
+    if1_gen(i, c, a->code);
+  ast->rval = new_sym(i, ast->scope);
+  Code *send = if1_send(i, c, 2, 1, sym_new, ast->last()->rval, ast->rval);
+  send->ast = ast;
+}
+
+static void
 gen_op(IF1 *i, AST *ast) {
   char *op = ast->v[ast->op_index]->sym->name;
-  int assign = op[1] == '=' && op[0] != '=';
-  int ref = (op[0] == '.' && op[1] != '.') || (op[0] == '-' && op[1] == '>');
+  int assign = (op[1] == '=' && op[0] != '=') || (!op[1] && op[0] == '=') ||
+    (op[0] == '+' && op[1] == '+') || (op[0] == '-' && op[1] == '-');
+  int ref = ((op[0] == '.' && op[1] != '.') || (op[0] == '-' && op[1] == '>') || assign);
   int binary = ast->n > 2;
   Code **c = &ast->code;
   AST *a0 = ast->op_index ? ast->v[0] : 0, *a1 = ast->n > (int)(1 + ast->op_index) ? ast->last() : 0;
@@ -849,24 +872,26 @@ gen_op(IF1 *i, AST *ast) {
     Sym *args = new_sym(i, ast->scope);
     Sym *res = ref ? new_sym(i, ast->scope) : ast->rval;
     Code *send;
+    Sym *aa0 = assign ? a0->lval : a0->rval; 
     if (binary)
-      send = if1_send(i, c, 4, 1, sym_make_tuple, a0->rval, ast->v[ast->op_index]->rval, a1->rval, args);
+      send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->v[ast->op_index]->rval, a1->rval, args);
     else if (a0)
-      send = if1_send(i, c, 3, 1, sym_make_tuple, a0->rval, ast->v[ast->op_index]->rval, args);
+      send = if1_send(i, c, 3, 1, sym_make_tuple, aa0, ast->v[ast->op_index]->rval, args);
     else
       send = if1_send(i, c, 3, 1, sym_make_tuple, ast->v[ast->op_index]->rval, a1->rval, args);
     send->ast = ast;
     send = if1_send(i, c, 2, 1, sym_operator, args, res);
     send->ast = ast;
     if (ref) {
+      ast->lval = res;
       send = if1_send(i, c, 3, 1, sym_primitive, sym_deref, res, ast->rval);
       send->ast = ast;
     }
     if (assign) {
       if (a0)
-	send = if1_move(i, c, ast->rval, a0->lval, ast);
+	send = if1_move(i, c, a0->lval, ast->rval, ast);
       else
-	send = if1_move(i, c, ast->rval, a1->lval, ast);
+	send = if1_move(i, c, a1->lval, ast->rval, ast);
     }
   }
 }
@@ -945,7 +970,8 @@ gen_if1(IF1 *i, AST *ast) {
       AST *val = ast->last();
       if (val->kind != AST_constraint && ast->sym != sym_init) {
 	if1_gen(i, &ast->code, val->code);
-	if1_move(i, &ast->code, val->rval, ast->sym, ast); 
+	if (val->rval)
+	  if1_move(i, &ast->code, val->rval, ast->sym, ast); 
       }
       ast->rval = ast->sym;
       break;
@@ -969,8 +995,14 @@ gen_if1(IF1 *i, AST *ast) {
       if (ast->n)
 	ast->rval = ast->last()->rval; 
       break;
-    case AST_qualified_ident: 
-      ast->lval = ast->rval = ast->sym; break;
+    case AST_qualified_ident: {
+      ast->lval = new_sym(i, ast->scope);
+      Code *send = if1_send(i, &ast->code, 3, 1, sym_primitive, 
+			    sym_doref, ast->sym, ast->lval);
+      send->ast = ast;
+      ast->rval = ast->sym; 
+      break;
+    }
     case AST_indices:
       forv_AST(a, *ast)
 	a->rval = ast->sym;
@@ -978,6 +1010,7 @@ gen_if1(IF1 *i, AST *ast) {
     case AST_forall: gen_forall(i, ast); break;
     case AST_loop: gen_loop(i, ast); break;
     case AST_op: gen_op(i, ast); break;
+    case AST_new: gen_new(i, ast); break;
     case AST_if: gen_if(i, ast); break;
     default: 
       if (ast->n == 1) {
@@ -1118,6 +1151,8 @@ finalize_types(IF1 *i) {
       if (s->constraints.v[x])
 	s->constraints.v[x] = unalias_type(s->constraints.v[x]);
     s->type = unalias_type(s->type);
+    if (s->type_kind != Type_NONE)
+      s->type = s;
   }
   forv_Sym(s, i->allsyms) {
     Sym *us = unalias_type(s);
@@ -1143,6 +1178,10 @@ finalize_types(IF1 *i) {
   }
   forv_Sym(s, i->allsyms)
     s->implements.set_to_vec();
+  // unalias builtin symbols
+#define S(_n) sym_##_n = unalias_type(sym_##_n);
+#include "builtin_symbols.h"
+#undef S
 }
 
 int

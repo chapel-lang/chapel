@@ -53,7 +53,7 @@ fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
     }
   }
   fprintf(fp, "( ");
-  forv_CreationSet(cs, *av->out) {
+  forv_CreationSet(cs, *av->out) if (cs) {
     if (cs->sym->name) {
       if (cs->sym == sym_symbol)
 	fprintf(fp, "symbol(%s) ", cs->defs.v[0]->var->sym->name);

@@ -14,7 +14,7 @@ type tuple __name "tuple";
 type void __name "void" : tuple;
 type object __name "object" = { };
 type list(a) __name "list" = a * list | void;
-type ref(a) __name "ref";
+type ref __name "ref";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;
@@ -69,9 +69,10 @@ function reply(...) __name "reply" { 0 };
 // symbol builtins
 #operator __name "operator";
 #"*" __name "deref";
+#"&" __name "doref";
 
 // overloadable primitive operators
-
+function new(a:any) { __new a; }
 function operator(a:any, #".", b:symbol)	{ __primitive a #"." b }
 function operator(a:any, #"*.", b:symbol)	{ __primitive a #"." b }
 function operator(a:anynum, #"*", b:anynum)	{ __primitive a #"*" b }
@@ -92,23 +93,49 @@ function operator(a:int, #"^", b:int)		{ __primitive a #"^" b }
 function operator(a:int, #"|", b:int)		{ __primitive a #"|" b }
 function operator(a:any, #"&&", b:any)		{ __primitive a #"&&" b }
 function operator(a:any, #"||", b:any)		{ __primitive a #"||" b }
-function operator(a:any, #"=", b:any)		{ b }
-function operator(a:anynum, #"*=", b:anynum)	{ __primitive a #"*" b }
-function operator(a:anynum, #"/=", b:anynum)	{ __primitive a #"/" b }
-function operator(a:anynum, #"%=", b:anynum)	{ __primitive a #"%" b }
-function operator(a:anynum, #"+=", b:anynum)	{ __primitive a #"+" b }
-function operator(a:anynum, #"-=", b:anynum)	{ __primitive a #"-" b }
-function operator(a:int, #"<<=", b:int)		{ __primitive a #"<<" b }
-function operator(a:int, #">>=", b:int)		{ __primitive a #">>" b }
-function operator(a:int, #"&=", b:int)		{ __primitive a #"&" b }
-function operator(a:int, #"|=", b:int)		{ __primitive a #"|" b }
-function operator(a:int, #"^=", b:int)		{ __primitive a #"^" b }
+function operator(a:ref, #"=", b:any)		{
+  __primitive a #"=" b;
+}
+function operator(a:ref, #"*=", b:anynum)	{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"*" b)
+}
+function operator(a:ref, #"/=", b:anynum)	{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"/" b)
+}
+function operator(a:ref, #"%=", b:anynum)	{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"%" b)
+}
+function operator(a:ref, #"+=", b:anynum)	{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"+" b)
+}
+function operator(a:ref, #"-=", b:anynum)	{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"-" b)
+}
+function operator(a:ref, #"<<=", b:int)		{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"<<" b)
+}
+function operator(a:ref, #">>=", b:int)		{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #">>" b)
+}
+function operator(a:ref, #"&=", b:int)		{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"&" b)
+}
+function operator(a:ref, #"|=", b:int)		{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"|" b)
+}
+function operator(a:ref, #"^=", b:int)		{
+  __primitive a #"=" (__primitive (__primitive #"*" a) #"^" b)
+}
 function operator(a:int, #"..", b:int)		{ __primitive a #".." b }
 function operator(a:any, #"->", b:symbol)	{ __primitive (__primitive #"*" a) #"." b }
 function operator(a:any, #"->*", b:symbol)	{ __primitive (__primitive #"*" a) #"." b; }
 function operator(a:anynum, #"^^", b:anynum)	{ __primitive a #"^^" b }
-function operator(#"++", a:anynum)		{ __primitive #"++" a }
-function operator(#"--", a:anynum)		{ __primitive #"--" a }
+function operator(#"++", a:ref)			{
+   __primitive a #"=" ((__primitive#"*" a) #"+" 1)
+}
+function operator(#"--", a:ref)			{ 
+   __primitive a #"=" ((__primitive#"*" a) #"-" 1)
+}
 function operator(#"+", a:anynum)		{ __primitive #"+" a }
 function operator(#"-", a:anynum)		{ __primitive #"-" a }
 function operator(#"~", a:anynum)		{ __primitive #"~" a }
@@ -117,8 +144,12 @@ function operator(#"*", a:any)			{ __primitive #"*" a }
 function operator(#"&", a:any)			{ __primitive #"&" a }
 function operator(a:anynum, #"|", b:anynum)	{ __primitive a #"|" b }
 function operator(#"(", a:symbol, b:any)	{ __primitive #"(" a b }
-function operator(a:anynum, #"++")		{ __primitive a #"++" }
-function operator(a:anynum, #"--")		{ __primitive a #"--" }
+function operator(a:ref, #"++")			{ 
+   __primitive a #"=" ((__primitive#"*" a) #"+" 1)
+}
+function operator(a:ref, #"--")			{ 
+   __primitive a #"=" ((__primitive#"*" a) #"-" 1)
+}
 
 
 // domains
@@ -135,7 +166,7 @@ class distribution {
   function offset(i : sequence) : sequence;
 }
 
-class Cyclic implements distribution {
+class cyclic implements distribution {
   var width : int;
 }
 
@@ -146,17 +177,31 @@ class domain(rank, distribute, target) {
   type distribute: distribution;
 }
 
-function domain(s1 : sequence, s2 : sequence) {
-  var s = new sequence;
-  s.first = s1.first * s2.first;
-  s.last = s1.last * s2.last;
-  s.step = s1.step * s2.step;
-  return s;
+function domain::class(s1 : sequence, s2 : sequence) {
+  var d = new domain;
+  d.rank = 2;
+  d.index = new sequence;
+  d.index.first = s1.first * s2.first;
+  d.index.last = s1.last * s2.last;
+  d.index.step = s1.step * s2.step;
+  return d;
+}
+
+function domain::operator(i : int) {
+  return domain(index(i));
 }
 
 class sequence {
   const first : tuple;
   const last : tuple;
   const step : tuple;
+}
+
+function sequence::operator(i : int) {
+  var s = new sequence;
+  s.first = first(i);
+  s.last = last(i);
+  s.step = step(i);
+  return s;
 }
 

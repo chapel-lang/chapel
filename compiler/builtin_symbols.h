@@ -49,5 +49,6 @@ S(new)
 S(primitive)
 S(operator)
 S(deref)
+S(doref)
 S(init)
 

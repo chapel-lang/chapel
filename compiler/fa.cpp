@@ -522,6 +522,8 @@ add_var_constraints(EntrySet *es) {
 	update_var_in(av, v->sym->as_AType);
       if (v->sym->symbol) 
 	update_var_in(av, make_AType(sym_symbol, v));
+      if (v->sym->type_kind != Type_NONE)
+	creation_point(av, unalias_type(v->sym));
     }
     if (v->sym->fun) {
       if (!v->sym->var)
@@ -767,7 +769,8 @@ add_application_constraints(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, V
   int incomplete = 0;
   Fun *f;
   Sym *fs;
-  if ((f = (fs = s->defs.v[0]->var->sym)->fun)) { // function value... build the edge
+  if (s->defs.n && (f = (fs = s->defs.v[0]->var->sym)->fun)) { 
+    // first argument is a function value
     if (fs->args.n - 1 == args.n) {
       AEdge *ee = make_AEdge(f, p, es);
       if (!ee->args.n) {
@@ -782,7 +785,8 @@ add_application_constraints(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, V
     } else if (fs->args.n - 1 > args.n)
       incomplete = 1;
     // else type_violation(fun); could be a problem depending on control flow
-  } else if (sym_function->subtypes.set_in(s->sym)) { // partial application... recurse
+  } else if (sym_function->subtypes.set_in(s->sym)) { 
+    // partial application... recurse
     AVar *result = make_AVar(p->lvals.v[0], es);
     PNode *partial_application = s->defs.v[0]->var->def;
     void *contour = s->defs.v[0]->contour;
@@ -799,17 +803,21 @@ add_application_constraints(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, V
     }
     AVar *fun = unique_AVar(partial_application->rvals.v[0], contour);
     flow_var_type_restrict(fun, fun_symbol_type);
-    forv_CreationSet(cs, *fun->out)
+    forv_CreationSet(cs, *fun->out) if (cs)
       incomplete = add_application_constraints(p, es, fun, cs, args) || incomplete;
-  } else { // dispatch
+  } else { // function dispatch
     Vec<AVar *> a;
     int some = 0;
-    a.add(s->defs.v[0]);
+    if (s->sym == sym_symbol)
+      a.add(s->defs.v[0]);
+    else
+      a.add(fun);
     for (int j = args.n - 1; j >= 0; j--)
       a.add(args.v[j]);
-    // specialized dispatch
     if (special_dispatch(a)) {
-      TupleDispatchTable *at = tuple_dispatch_table.get(a.v[0]->out->v[0]->defs.v[0]->var->sym->name);
+      // specialized dispatch: symbol(tuple)
+      TupleDispatchTable *at = 
+	tuple_dispatch_table.get(a.v[0]->out->v[0]->defs.v[0]->var->sym->name);
       if (at) {
 	CreationSet *tuple = a.v[1]->out->v[0];
 	for(int i = 0; i < tuple->vars.n; i++) {
@@ -820,20 +828,32 @@ add_application_constraints(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, V
 	  }
 	}
       }
-      if (!some)
-	goto Lstandard;
+      if (some)
+	goto Ldone;
     } else {
-    Lstandard:
+      // standard dispatch
+      // first, look for a symbol to index off
       for (int i = 0; i < a.n && i < dispatch_table.n; i++) {
-	forv_CreationSet(cs, *a.v[i]->out) {
+	forv_CreationSet(cs, *a.v[i]->out) if (cs) {
 	  if (cs->sym == sym_symbol) {
 	    Vec<Fun *> *fns = dispatch_table.v[i]->get(cs->defs.v[0]->var->sym->name);
 	    add_funs_constraints(p, es, fns, a);
+	    some = 1;
 	  }
+	}
+      }
+      if (some)
+	goto Ldone;
+      // next, index off the classes
+      for (int i = 0; i < a.n && i < dispatch_table.n; i++) {
+	forv_CreationSet(cs, *a.v[i]->out) if (cs) {
+	  Vec<Fun *> *fns = dispatch_table.v[i]->get(cs->sym->name);
+	  add_funs_constraints(p, es, fns, a);
 	}
       }
     }
   }
+ Ldone:
   return incomplete;
 }
 
@@ -846,7 +866,7 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
     for (int i = p->rvals.n - 1; i > 0; i--)
       args.add(make_AVar(p->rvals.v[i], es));
     AVar *fun = make_AVar(p->rvals.v[0], es);
-    forv_CreationSet(f, *fun->out)
+    forv_CreationSet(f, *fun->out) if (f)
       incomplete = add_application_constraints(p, es, fun, f, args) || incomplete;
     if (incomplete)
       creation_point(make_AVar(p->lvals.v[0], es), sym_function);
@@ -860,7 +880,7 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
 	AVar *fun = make_AVar(p->rvals.v[1], es);
 	AVar *a1 = make_AVar(p->rvals.v[3], es);
 	args.add(a1);
-	forv_CreationSet(f, *fun->out)
+	forv_CreationSet(f, *fun->out) if (f)
 	  incomplete = add_application_constraints(p, es, fun, f, args) || incomplete;
 	if (incomplete)
 	  creation_point(make_AVar(p->lvals.v[0], es), sym_function);
@@ -870,27 +890,49 @@ add_send_edges_PNode(PNode *p, EntrySet *es, int initial = 0) {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *obj = make_AVar(p->rvals.v[1], es);
 	AVar *selector = make_AVar(p->rvals.v[3], es);
-	forv_CreationSet(sym, *selector->out) {
+	forv_CreationSet(sym, *selector->out) if (sym) {
 	  assert(sym->defs.n == 1);
 	  char *symbol = sym->defs.v[0]->var->sym->name; assert(symbol);
-	  forv_CreationSet(cs, *obj->out) {
+	  forv_CreationSet(cs, *obj->out) if (cs) {
 	    Var *v = cs->sym->has_map.get(symbol);
-	    CreationSet *ref_cs = creation_point(result, sym_ref);
-	    AVar *ref_var = unique_AVar(element_var, ref_cs);
-	    if (!ref_cs->vars.n)
-	      ref_cs->vars.add(ref_var);
-	    flow_vars_equal(unique_AVar(v, cs), ref_var);
+	    if (!v)
+	      flow_var_type_restrict(obj, cs->sym);
+	    else {
+	      CreationSet *ref_cs = creation_point(result, sym_ref);
+	      AVar *ref_var = unique_AVar(element_var, ref_cs);
+	      if (!ref_cs->vars.n)
+		ref_cs->vars.add(ref_var);
+	      flow_vars_equal(unique_AVar(v, cs), ref_var);
+	    }
 	  }
 	}
+	break;
+      }
+      case P_prim_assign: {
+	AVar *result = make_AVar(p->lvals.v[0], es);
+	AVar *ref = make_AVar(p->rvals.v[1], es);
+	AVar *val = make_AVar(p->rvals.v[3], es);
+	forv_CreationSet(cs, *ref->out) if (cs) {
+	  AVar *av = cs->vars.v[0];
+	  flow_var_to_var(val, av);
+	}
+	flow_var_to_var(ref, result);
 	break;
       }
       case P_prim_deref: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *ref = make_AVar(p->rvals.v[2], es);
-	forv_CreationSet(cs, *ref->out) {
+	forv_CreationSet(cs, *ref->out) if (cs) {
 	  AVar *av = cs->vars.v[0];
 	  flow_var_to_var(av, result);
 	}
+	break;
+      }
+      case P_prim_new: {
+	AVar *result = make_AVar(p->lvals.v[0], es);
+	AVar *thing = make_AVar(p->rvals.v[1], es);
+	forv_CreationSet(cs, *thing->out) if (cs)
+	  creation_point(result, cs->sym);
 	break;
       }
       case P_prim_cast: {
@@ -939,7 +981,7 @@ collect_Vars_PNodes(Fun *f) {
 // a is an actual argument, b is a formal argument
 static void
 pattern_match(AVar *a, AVar *b, EntrySet *es) {
-  forv_CreationSet(cs, *a->out) {
+  forv_CreationSet(cs, *a->out) if (cs) {
     Sym *s = b->var->sym;
     if (s->type && s->type != cs->sym)
       continue;
@@ -972,7 +1014,7 @@ check_pattern(AVar *a, Sym *b) {
       continue;
     for (int i = 0; i < b->has.n; i++)
       if (b->has.v[i]->type) 
-	if (!check_pattern(cs->vars.v[i], b->has.v[i]))
+	if (!check_pattern(cs->vars.v[i], b->has.v[i]->type))
 	  goto Lcontinue;
     css.add(cs);
   Lcontinue:;
@@ -1052,15 +1094,7 @@ collect_functions(FA *fa) {
 static void
 complete_pass(FA *fa) {
   collect_functions(fa);
-  forv_Sym(s, fa->pdb->if1->allsyms) {
-    forv_CreationSet(cs, s->creators) {
-      if (!cs->vars.n) {
-	forv_Sym(ss, s->has) {
-	  cs->vars.add(unique_AVar(ss->var, cs));
-        }
-      }
-    }
-  }
+  // collect type violations
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar * av = make_AVar(v, es);
@@ -1111,6 +1145,15 @@ build_dispatch_table(FA *fa) {
 	  vf->add(f);
 	}
       }
+      for (int i = 0; i < f->sym->args.n; i++) {
+	Sym *a = f->sym->args.v[i];
+	if (a->type) {
+	  Vec<Fun *> *vf = dispatch_table.v[i]->get(a->type->name);
+	  if (!vf) 
+	    dispatch_table.v[i]->put(a->type->name, (vf = new Vec<Fun *>));
+	  vf->add(f);
+	}
+      }
     }
   }
 }
@@ -1143,8 +1186,11 @@ initialize(FA *fa) {
     forv_Sym(ss, s->implements)
       ss->subtypes.set_add(s);
     forv_Sym(ss, s->has)
-      if (ss->name)
+      if (ss->name) {
+	if (!ss->var)
+	  ss->var = new Var(ss);
 	s->has_map.put(ss->name, ss->var);
+      }
   }
   forv_Sym(s, fa->pdb->if1->allsyms) {
     if (s->constraints.n) {

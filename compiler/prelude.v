@@ -14,7 +14,7 @@ type tuple __name "tuple";
 type void __name "void" : tuple;
 type object __name "object" = { };
 type list(a) __name "list" = a * list | void;
-type ref(a) __name "ref";
+type ref __name "ref";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;
@@ -69,9 +69,11 @@ reply(...) __name "reply":0;
 // symbol builtins
 #operator __name "operator";
 #"*" __name "deref";
+#"&" __name "doref";
 
 // overloadable primitive operators
 
+new(a:any) : __new a;
 operator(a:any, #".", b:symbol)		   : __primitive a #"." b;
 operator(a:any, #"*.", b:symbol)	   : __primitive a #"." b;
 operator(a:anynum, #"*", b:anynum)	   : __primitive a #"*" b;
@@ -92,23 +94,23 @@ operator(a:int, #"^", b:int)		   : __primitive a #"^" b;
 operator(a:int, #"|", b:int)		   : __primitive a #"|" b;
 operator(a:any, #"&&", b:any)		   : __primitive a #"&&" b;
 operator(a:any, #"||", b:any)		   : __primitive a #"||" b;
-operator(a:any, #"=", b:any)		   : b;
-operator(a:anynum, #"*=", b:anynum)	   : __primitive a #"*" b;
-operator(a:anynum, #"/=", b:anynum)	   : __primitive a #"/" b;
-operator(a:anynum, #"%=", b:anynum)	   : __primitive a #"%" b;
-operator(a:anynum, #"+=", b:anynum)	   : __primitive a #"+" b;
-operator(a:anynum, #"-=", b:anynum)	   : __primitive a #"-" b;
-operator(a:int, #"<<=", b:int)		   : __primitive a #"<<" b;
-operator(a:int, #">>=", b:int)		   : __primitive a #">>" b;
-operator(a:int, #"&=", b:int)		   : __primitive a #"&" b;
-operator(a:int, #"|=", b:int)		   : __primitive a #"|" b;
-operator(a:int, #"^=", b:int)		   : __primitive a #"^" b;
+operator(a:ref, #"=", b:any): __primitive a #"=" b;
+operator(a:ref, #"*=", b:anynum): __primitive a #"=" (__primitive (__primitive #"*" a) #"*" b);
+operator(a:ref, #"/=", b:anynum): __primitive a #"=" (__primitive (__primitive #"*" a) #"/" b);
+operator(a:ref, #"%=", b:anynum): __primitive a #"=" (__primitive (__primitive #"*" a) #"%" b);
+operator(a:ref, #"+=", b:anynum): __primitive a #"=" (__primitive (__primitive #"*" a) #"+" b);
+operator(a:ref, #"-=", b:anynum): __primitive a #"=" (__primitive (__primitive #"*" a) #"-" b);
+operator(a:ref, #"<<=", b:int): __primitive a #"=" (__primitive (__primitive #"*" a) #"<<" b);
+operator(a:ref, #">>=", b:int): __primitive a #"=" (__primitive (__primitive #"*" a) #">>" b);
+operator(a:ref, #"&=", b:int): __primitive a #"=" (__primitive (__primitive #"*" a) #"&" b);
+operator(a:ref, #"|=", b:int): __primitive a #"=" (__primitive (__primitive #"*" a) #"|" b);
+operator(a:ref, #"^=", b:int): __primitive a #"=" (__primitive (__primitive #"*" a) #"^" b);
 operator(a:int, #"..", b:int)		   : __primitive a #".." b;
 operator(a:any, #"->", b:symbol)	   : __primitive (__primitive #"*" a) #"." b;
 operator(a:any, #"->*", b:symbol)	   : __primitive (__primitive #"*" a) #"." b; 
 operator(a:anynum, #"^^", b:anynum)	   : __primitive a #"^^" b;
-operator(#"++", a:anynum)		   : __primitive #"++" a;
-operator(#"--", a:anynum)		   : __primitive #"--" a;
+operator(#"++", a:ref): __primitive a #"=" ((__primitive#"*" a) #"+" 1);
+operator(#"--", a:ref): __primitive a #"=" ((__primitive#"*" a) #"-" 1);
 operator(#"+", a:anynum)		   : __primitive #"+" a;
 operator(#"-", a:anynum)		   : __primitive #"-" a;
 operator(#"~", a:anynum)		   : __primitive #"~" a;
@@ -117,8 +119,8 @@ operator(#"*", a:any)			   : __primitive #"*" a;
 operator(#"&", a:any)			   : __primitive #"&" a;
 operator(a:anynum, #"|", b:anynum)	   : __primitive a #"|" b;
 operator(#"(", a:symbol, b:any)		   : __primitive #"(" a b;
-operator(a:anynum, #"++")		   : __primitive a #"++";
-operator(a:anynum, #"--")		   : __primitive a #"--";
+operator(a:ref, #"++"): __primitive a #"=" ((__primitive#"*" a) #"+" 1);
+operator(a:ref, #"--"): __primitive a #"=" ((__primitive#"*" a) #"-" 1);
 
 // iterators
 

@@ -21,6 +21,7 @@ prim_list "make_list" -1 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_vector "make_vector" -1 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_continuation "make_continuation" -1 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_set "make_set" -1 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
+prim_new "new" -1 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_primitive "primitive" -1 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_period "." 3 1 {PRIM_TYPE_ANY, PRIM_TYPE_SYMBOL} {PRIM_TYPE_ANY} ;
 prim_mult "*" 3 1 {PRIM_TYPE_ANY_NUM_A, PRIM_TYPE_ANY_NUM_B} {PRIM_TYPE_ANY_NUM_AB} ;
@@ -41,10 +42,9 @@ prim_xor "^" 3 1 {PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B} {PRIM_TYPE_ANY_NUM_A
 prim_or "|" 3 1 {PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B} {PRIM_TYPE_ANY_NUM_AB} ;
 prim_land "&&" 3 1 {PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B} {PRIM_TYPE_BOOL} ;
 prim_lor "||" 3 1 {PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B} {PRIM_TYPE_BOOL} ;
+prim_assign "=" 3 1 {PRIM_TYPE_REF, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_apply "^^" 3 1 {PRIM_TYPE_ANY, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_range ".." 3 1 {PRIM_TYPE_ANY_INT_A, PRIM_TYPE_ANY_INT_B} {PRIM_TYPE_ANY} ;
-prim_preinc "++" 2 0 {PRIM_TYPE_ANY_INT_A} {PRIM_TYPE_A} ;
-prim_predec "--" 2 0 {PRIM_TYPE_ANY_INT_A} {PRIM_TYPE_A} ;
 prim_plus "+" 2 0 {PRIM_TYPE_ANY_NUM_A} {PRIM_TYPE_A} ;
 prim_minus "-" 2 0 {PRIM_TYPE_ANY_NUM_A} {PRIM_TYPE_A} ;
 prim_bnot "~" 1 0 {PRIM_TYPE_ANY_INT_A} {PRIM_TYPE_A} ;
@@ -53,5 +53,4 @@ prim_deref "*" 2 0 {PRIM_TYPE_REF} {PRIM_TYPE_ANY} ;
 prim_ref "&" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_cast "(" 3 0 {PRIM_TYPE_SYMBOL, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_sizeof "sizeof" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_SIZE} ;
-prim_postdec "--" 2 1 {PRIM_TYPE_ANY_INT_A} {PRIM_TYPE_A} ;
-prim_postinc "++" 2 1 {PRIM_TYPE_ANY_INT_A} {PRIM_TYPE_A} ;
+

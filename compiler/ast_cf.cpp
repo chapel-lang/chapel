@@ -224,14 +224,10 @@ fold_constant(IF1 *i, AST *ast, char *foldstr) {
     case P_prim_or: DO_FOLD(||); break;
     case P_prim_land: DO_FOLDI(&); break;
     case P_prim_lor: DO_FOLDI(|); break;
-    case P_prim_preinc: DO_FOLD1(++); break;
-    case P_prim_predec: DO_FOLD1(--); break;
     case P_prim_plus: DO_FOLD1(+); break;
     case P_prim_minus: DO_FOLD1(-); break;
     case P_prim_bnot: DO_FOLD1I(~); break;
     case P_prim_not: DO_FOLD1(!); break;
-    case P_prim_postinc: DO_FOLD1(++); break;
-    case P_prim_postdec: DO_FOLD1(--); break;
     default: return 0;
   }
   ast->sym->constant = foldstr;
