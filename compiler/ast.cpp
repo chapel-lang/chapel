@@ -234,6 +234,12 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
   }
   switch (x) {
     default: break;
+    case Builtin_domain:
+      sym->internal = Internal_Domain;
+      break;
+    case Builtin_sequence:
+      sym->internal = Internal_Sequence;
+      break;
     case Builtin_int8:
     case Builtin_int16:
     case Builtin_int32:
@@ -707,8 +713,12 @@ build_types(IF1 *i, AST *ast) {
 	  break;
 	}
       }
-      if (ast->sym->type_kind == Type_ALIAS && ast->sym->has.n && !ast->sym->has.v[0]->name)
-	ast->sym->has.v[0]->name = ast->sym->name;
+      if (ast->sym->type_kind == Type_ALIAS && ast->sym->has.n) {
+	if (!ast->sym->has.v[0]->name)
+	  ast->sym->has.v[0]->name = ast->sym->name;
+	if (!ast->sym->has.v[0]->internal)
+	  ast->sym->has.v[0]->internal = ast->sym->internal;
+      }
       break;
     default: break;
   }

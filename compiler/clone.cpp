@@ -407,10 +407,20 @@ define_concrete_types(CSSS &css_sets) {
 	  sym->ast = ast;
       } else {
 	Sym *s = if1_alloc_sym(fa->pdb->if1);
+	char *name = 0;
 	s->type_kind = sym->type_kind;
 	s->incomplete = 1;
-	forv_CreationSet(cs, *eqcss) if (cs)
+	s->internal = sym->internal;
+	forv_CreationSet(cs, *eqcss) if (cs) {
 	  cs->type = s;
+	  if (!name)
+	    name = cs->sym->name;
+	  else
+	    if (cs->sym->name != name)
+	      name = BAD_NAME;
+	}
+	if (name && name != BAD_NAME)
+	  s->name = name;
       }
     } else {
       // if different sym use sum type
@@ -469,8 +479,12 @@ resolve_concrete_types(CSSS &css_sets) {
 	    s->has.set_to_vec();
 	    if (s->has.n == 1)
 	      sym->has.v[i] = s->has.v[0];
-	    else
-	      s->type_kind = Type_SUM;
+	    else {
+	      if (s->has.n != 0)
+		s->type_kind = Type_SUM;
+	      else
+		sym->has.v[i] = sym_null;
+	    }
 	  }
 	  break;
 	}

@@ -122,3 +122,7 @@
 - remove recursion from rename_edge (amoung others)
 
 - remove dom.h is_dominated_by and replace with dfs_pred/succ implementation
+
+- fix negative integers in 'index' in vector-type
+
+- merge structually equivalent types (same type_kind) unless internal doesn't match

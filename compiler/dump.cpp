@@ -90,7 +90,8 @@ dump_sym(FILE *fp, Sym *t) {
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
   if (t->ast && t->ast->pathname)
     fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->ast->pathname, t->ast->line);
-
+  if (t->internal)
+    fprintf(fp, "<TR><TD><TD>internal<TD>%s\n", internal_string[t->internal]);
   if (t->builtin)
     fprintf(fp, "<TR><TD><TD>Builtin<TD>%s\n", t->builtin);
   dump_sub_sym(fp, t->aspect, "Aspect");
@@ -360,6 +361,7 @@ dump_symbols(FILE *fp, FA *fa) {
   qsort(concrete_types.v, concrete_types.n, sizeof(concrete_types.v[0]), compar_sym_ids);
   qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_sym_ids);
   qsort(other.v, other.n, sizeof(other.v[0]), compar_sym_ids);
+  qsort(globals.v, globals.n, sizeof(globals.v[0]), compar_sym_ids);
   // Concrete Types
   fprintf(fp, "<H1><A NAME=\"CONCRETE_TYPES\">Concrete Types</A></H1>\n\n");
   forv_Sym(t, concrete_types)

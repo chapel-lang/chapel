@@ -465,7 +465,7 @@ uint64	 ::= base_int "(u|U)(l|L)|(u|U)(l|L)";
 int	 ::= base_int;
 uint	 ::= base_int "(u|U)";
 anyint	 : char | int8 | uint8 | int16 | uint16 | 
-           int32 | uint32 | int64 | uint64 | int | uint
+	   int32 | uint32 | int64 | uint64 | int | uint
 { 
   $$.ast = new AST(AST_const); 
   $$.ast->string = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);

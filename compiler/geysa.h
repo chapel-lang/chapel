@@ -77,6 +77,7 @@ void myassert();
 #include "dump.h"
 #include "cg.h"
 #include "grammar.h"
+#include "internal.h"
 #include "inline.h"
 #include "loop.h"
 #include "graph.h"

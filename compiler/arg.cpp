@@ -92,10 +92,11 @@ process_args(ArgumentState *arg_state, char **argv) {
       char * env = getenv(desc[i].env);
       if (!env) continue;
       switch (type) {
-	case 'A':
+	case '+': (*(int *)desc[i].location)++; break;
 	case 'f': 
 	case 'F': 
-	  break;
+	  *(int *)desc[i].location = type=='F'?1:0; break;
+        case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
 	case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
 	case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
 	case 'L': *(int64 *)desc[i].location = strtoll(env, NULL, 0); break;

@@ -18,6 +18,7 @@ static char log_flags[512] = "";
 extern int d_verbose_level;
 extern int d_debug_level;
 static int suppress_codegen = 0;
+static int parser_verbose_non_prelude = 0;
 
 int fdce_if1 = 1;
 int finline = 0;
@@ -50,6 +51,8 @@ static ArgumentDescription arg_desc[] = {
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"no-codegen", ' ', "Suppress code generation", "T", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
+ {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
+  &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
    "CHPL_PARSER_VERBOSE", NULL},
  {"parser_debug", 'D', "Parser Debug Level", "+", &d_debug_level, "CHPL_PARSER_DEBUG", NULL},
@@ -181,8 +184,13 @@ load_one(char *fn) {
   if (!(a = load_file(tmpfn, if1, &scope, &langs[l])))
     return 0;
   av.add(a);
-  if (!(a = load_file(fn, if1, &scope, &langs[l])))
-    return 0;
+  { 
+    int save_parser_verbose = d_verbose_level;
+    if (parser_verbose_non_prelude) d_verbose_level = parser_verbose_non_prelude;
+    if (!(a = load_file(fn, if1, &scope, &langs[l])))
+      return 0;	
+    if (parser_verbose_non_prelude) d_verbose_level = save_parser_verbose;
+  }
   av.add(a);
   if (ast_gen_if1(if1, av) < 0)
     fail("fatal error, '%s'\n", fn);
