@@ -13419,3 +13419,14 @@ Modified files:
 	chapel/compiler/AST/: link.cpp 
 	chapel/compiler/passes/: pass.cpp pass.h 
 
+---------------------------------------------------------------------------
+
+01/04/05 09:04:00 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed occasionally uninitialized variable which was causing
+	regression failure for structype test case.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+
