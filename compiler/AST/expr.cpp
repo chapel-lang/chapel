@@ -35,8 +35,6 @@ static char* cBinOp[NUM_BINOPS] = {
   "&",
   "|",
   "^",
-  "<<",
-  ">>",
   "&&",
   "||",
   "**",
@@ -55,9 +53,7 @@ static char* cGetsOp[NUM_GETS_OPS] = {
   "/=",
   "&=",
   "|=",
-  "^=",
-  "<<=",
-  ">>="
+  "^="
 };
 
 
@@ -79,8 +75,6 @@ static precedenceType binOpPrecedence[NUM_BINOPS] = {
   PREC_BITAND,        // BINOP_BITAND
   PREC_BITOR,         // BINOP_BITOR
   PREC_BITXOR,        // BINOP_BITXOR
-  PREC_BITS,          // BINOP_BITSL
-  PREC_BITS,          // BINOP_BITSR
   PREC_LOGAND,        // BINOP_LOGAND
   PREC_LOGOR,         // BINOP_LOGOR
   PREC_EXP            // BINOP_EXP

@@ -239,7 +239,7 @@ return (((-3.0)/17.0), (1.0/33.0), ((-1.0)/61.0), 0.0);
 function lg2(inout x: integer): integer{
 var lg: integer = (-1);
 while (x) {
-x >>= 1;
+x *= 2;
 lg += 1;
 }
 

@@ -852,8 +852,6 @@ gen_if1(BaseAST *ast) {
 	case BINOP_BITAND: op = if1_make_symbol(if1, "&"); break;
 	case BINOP_BITOR: op = if1_make_symbol(if1, "|"); break;
 	case BINOP_BITXOR: op = if1_make_symbol(if1, "^"); break;
-	case BINOP_BITSL: op = if1_make_symbol(if1, "<<"); break;
-	case BINOP_BITSR: op = if1_make_symbol(if1, ">>"); break;
 	case BINOP_LOGAND: op = if1_make_symbol(if1, "&&"); break;
 	case BINOP_LOGOR: op = if1_make_symbol(if1, "||"); break;
 	case BINOP_EXP: op = if1_make_symbol(if1, "**"); break;
@@ -915,8 +913,6 @@ gen_if1(BaseAST *ast) {
 	case GETS_BITAND: op = if1_make_symbol(if1, "&"); break;
 	case GETS_BITOR: op = if1_make_symbol(if1, "|"); break;
 	case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
-	case GETS_BITSL: op = if1_make_symbol(if1, "<<"); break;
-	case GETS_BITSR: op = if1_make_symbol(if1, ">>"); break;
       }
       if (op) {
 	rval = new_sym();

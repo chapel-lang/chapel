@@ -9,7 +9,6 @@ var y: [Col] float;
 var x: [Row] float;
 A = [i, j:Mat] (((i-1)*n)+j);
 y = [i:Col] i;
-x = reduce (dim=2) by sum [Mat] (A*y);
 }
 
 

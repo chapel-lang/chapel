@@ -338,7 +338,7 @@ function initCValues(Class): coeff {
 function lg2(x): integer {
   var lg: integer = -1;
   while (x) {
-    x >>= 1;
+    x *= 2;
     lg += 1;
   }
   return lg;

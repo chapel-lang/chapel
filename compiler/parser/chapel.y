@@ -48,7 +48,6 @@
 %token TCLASS
 %token TCONFIG
 %token TCONST
-%token TDIM
 %token TDO
 %token TDOMAIN
 %token TELSE
@@ -87,8 +86,6 @@
 %token TASSIGNBAND;
 %token TASSIGNBOR;
 %token TASSIGNBXOR;
-%token TASSIGNBSL;
-%token TASSIGNBSR;
 
 %token TSEMI;
 %token TCOMMA;
@@ -114,7 +111,7 @@
 %type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
 %type <pcsym> subclass
 %type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
-%type <pexpr> reduction vardeclinit reduceDim
+%type <pexpr> reduction vardeclinit
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional
 %type <stmt> retStmt loop forloop whileloop enumdecl typealias typedecl fndecl
@@ -129,7 +126,6 @@
 %right TNOT
 %left TEQUAL TNOTEQUAL
 %left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
-%left TBSL TBSR
 %left TBOR
 %left TBXOR
 %left TBAND
@@ -497,10 +493,6 @@ assignOp:
     { $$ = GETS_BITOR; }
 | TASSIGNBXOR
     { $$ = GETS_BITXOR; }
-| TASSIGNBSL
-    { $$ = GETS_BITSL; }
-| TASSIGNBSR
-    { $$ = GETS_BITSR; }
 ;
 
 
@@ -616,10 +608,6 @@ expr:
     { $$ = new BinOp(BINOP_BITOR, $1, $3); }
 | expr TBXOR expr
     { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
-| expr TBSL expr
-    { $$ = new BinOp(BINOP_BITSL, $1, $3); }
-| expr TBSR expr
-    { $$ = new BinOp(BINOP_BITSR, $1, $3); }
 | expr TAND expr
     { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
 | expr TOR expr
@@ -631,21 +619,11 @@ expr:
 ;
 
 
-reduceDim:
-  /* empty */
-    { $$ = nilExpr; }
-| TLP expr TRP
-    { $$ = $2; }
-| TLP TDIM TASSIGN expr TRP
-    { $$ = $4; }
-;
-
-
 reduction:
-  REDUCE_IDENT reduceDim expr
-    { $$ = new ReduceExpr($1, $2, $3); }
-| TREDUCE reduceDim TBY REDUCE_IDENT expr
-    { $$ = new ReduceExpr($4, $2, $5); }
+  REDUCE_IDENT expr
+    { $$ = new ReduceExpr($1, nilExpr, $2); }
+| TREDUCE TBY REDUCE_IDENT expr
+    { $$ = new ReduceExpr($3, nilExpr, $4); }
 ;
 
 

@@ -39,7 +39,6 @@ call            return TCALL;
 class           return TCLASS;
 config          return TCONFIG;
 const           return TCONST;
-dim             return TDIM;
 do              return TDO;
 domain          return TDOMAIN;
 else            return TELSE;
@@ -72,13 +71,9 @@ while           return TWHILE;
 "&="            return TASSIGNBAND;
 "|="            return TASSIGNBOR;
 "^="            return TASSIGNBXOR;
-"<<="           return TASSIGNBSL;
-">>="           return TASSIGNBSR;
 
 ".."            return TDOTDOT;
 
-"<<"            return TBSL;
-">>"            return TBSR;
 "&"             return TBAND;
 "|"             return TBOR;
 "^"             return TBXOR;
