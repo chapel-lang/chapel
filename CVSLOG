@@ -3357,3 +3357,24 @@ Modified files:
 Added files:
 	chapel/compiler/AST/: .cvsignore symtab.cpp symtab.h 
 
+---------------------------------------------------------------------------
+
+06/15/04 13:33:52 -- shannon
+
+Log message:
+	Added a condition to the top of the AST_op case to
+	check for NULL ast pointers.
+	
+	Added two tests of the +, -, ++, and -- unary
+	operators to the test/trivial/shannon directory,
+	and removed them from the test/Share directory.
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+Added files:
+	chapel/test/trivial/shannon/: increment.chpl increment.good 
+	                              unary_plusMinus.chpl 
+	                              unary_plusMinus.good 
+Removed files:
+	chapel/test/Share/: increment.chpl unary_plusMinus.chpl 
+
