@@ -1401,3 +1401,30 @@ Modified files:
 	              Makefile.sun 
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/03/26 11:45:53 -- bradc
+
+Log message:
+	Minor changes.  codegen is still off by default:
+	
+	1) fixed the generation of write() calls to use the type_info of its
+	arguments in generating the routine name (previously it was
+	hard-wired to integer64).
+	
+	2) changed the runtime library's write() implementation to take a
+	format flag in expectation of this need down the road.
+	
+	3) added a clean_exit() routine to use in place of exit() that blows
+	away the /tmp directory created by code generation (if it exists)
+	and switched error routines over to using this routine.  Also
+	added a catch of SIGINT that calls fail() and will similarly blow
+	away the /tmp directory (should probably add more signals, but
+	I'm too lazy to try and come up with a portable list of signals
+	that we'd want to catch today.
+
+Modified files:
+	chapel/compiler/: codegen.cpp files.cpp files.h misc.cpp 
+	chapel/runtime/include/: chplio.h chpltypes.h 
+	chapel/runtime/src/: chplio.c 
+
