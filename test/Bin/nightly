@@ -63,7 +63,11 @@ $prevstdsummary = "$logdir/last-std.log.sorted";
 $prevvgrsummary = "$logdir/last-vgr.log.sorted";
 
 
-$mailcommand = "| Mail -s \"Chapel: Nightly Results\" bradc\@cray.com";
+if ($debug == 1) {
+    $mailcommand = "| Mail -s \"Chapel: Debug Results\" bradc\@cray.com";
+} else {
+    $mailcommand = "| Mail -s \"Chapel: Nightly Results\" chapel_dev\@cray.com";
+}
 $somethingfailed = 0;
 
 #
