@@ -6199,3 +6199,15 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/: danglingelse.chpl danglingelse.good 
 
+---------------------------------------------------------------------------
+
+08/30/04 17:06:31 -- bradc
+
+Log message:
+	Small refactoring of function definition functions to simplify
+	things slightly.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: TODO symtab.cpp symtab.h 
+
