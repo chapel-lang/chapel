@@ -18099,3 +18099,14 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp fa.cpp 
 	chapel/compiler/parser/: internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+02/23/05 10:30:46 -- jplevyak
+
+Log message:
+	Change the "index_object" primitive to index into anything derived
+	from "Tuple" (i.e. Tuple subtypes).
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
