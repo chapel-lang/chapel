@@ -1,8 +1,8 @@
 CHAPEL_ROOT = ../..
+CHAPEL_SUBDIR = third-party/dparser
 include $(CHAPEL_ROOT)/make/Makefile.base
 
-all:
-	mkdir -p ./$(PLATFORM)
+all: $(PLATFORM_DIR)
 	mkdir -p ./$(PLATFORM)/bin
 	mkdir -p ./$(PLATFORM)/include
 	mkdir -p ./$(PLATFORM)/lib
@@ -13,3 +13,6 @@ all:
 clean:
 	cd $(D_PARSER_DIRNAME) && $(MAKE) clean
 	rm -rf ./$(PLATFORM)/*
+
+clobber:
+	rm -rf ./$(PLATFORM)

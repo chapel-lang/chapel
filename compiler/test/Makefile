@@ -3,6 +3,7 @@
 #
 
 COMPILER_ROOT = ..
+COMPILER_SUBDIR = test
 
 #
 # standard header
@@ -52,7 +53,11 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 # target-specific rules
 #
 
-$(TEST_LIB): $(TEST_OBJS)
+$(TEST_LIB): $(PLATFORM)/$(TEST_LIB)
+	rm -f $@
+	ln -s $< $@
+
+$(PLATFORM)/$(TEST_LIB): $(TEST_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 

@@ -13,6 +13,7 @@ USE_DPARSER=1
 #
 
 CHAPEL_ROOT = $(COMPILER_ROOT)/..
+CHAPEL_SUBDIR = compiler/$(COMPILER_SUBDIR)
 
 include $(CHAPEL_ROOT)/make/Makefile.base
 
@@ -55,10 +56,9 @@ CLOBBER_TARGS = \
 
 
 #
-# platform-specific subdirectory rules
+# platform-specific subdirectory targets
 #
 
-PLATFORM_DIR = ./$(PLATFORM)/.timestamp
 CVS_DEPENDS = ./$(PLATFORM)/Makefile.cvs.depend
 
 

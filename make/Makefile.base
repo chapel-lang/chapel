@@ -109,3 +109,26 @@ endif
 #
 include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)
 
+#
+# how to make a platform-specific subdirectory
+#
+
+default: all
+
+PLATFORM_DIR = ./$(PLATFORM)/.timestamp
+
+ifndef CHPLDEVTMP
+$(PLATFORM_DIR):
+	@echo making $(PLATFORM) subdirectory
+	@-mkdir $(PLATFORM) > /dev/null 2>&1
+	@-touch $(PLATFORM_DIR)
+else
+$(PLATFORM_DIR):
+	@echo linking $(PLATFORM) subdirectory
+	mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM)
+	ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM) .
+	@-touch $(PLATFORM_DIR)
+endif
+
+
+

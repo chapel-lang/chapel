@@ -3,6 +3,7 @@
 #
 
 COMPILER_ROOT=.
+COMPILER_SUBDIR = 
 
 #
 # include standard header for compiler
@@ -102,7 +103,11 @@ test: FORCE
 # target-based rules
 #
 
-$(CHPL): $(CHPL_OBJS)
+$(CHPL): $(PLATFORM)/$(CHPL)
+	rm -f $@
+	ln -s $< $@
+
+$(PLATFORM)/$(CHPL): $(CHPL_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
 	@etags $(CHPL_SRCS) *.h

@@ -1,15 +1,4 @@
 #
-# how to make the platform-specific subdirectory
-#
-
-$(PLATFORM_DIR):
-	@echo making $(PLATFORM) subdirectory
-	@-mkdir $(PLATFORM) > /dev/null 2>&1
-	@-touch $(PLATFORM_DIR)
-
-
-
-#
 # pattern-based rules
 #
 
