@@ -18567,3 +18567,16 @@ Modified files:
 	chapel/compiler/analysis/: sym.cpp 
 	chapel/compiler/include/: sym.h 
 
+---------------------------------------------------------------------------
+
+03/01/05 18:48:11 -- jplevyak
+
+Log message:
+	GC patches to support valgrind.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+	chapel/third-party/boehmgc/gc6.3/: configure malloc.c mallocx.c 
+	                                   mark.c os_dep.c reclaim.c 
+	chapel/third-party/boehmgc/gc6.3/include/private/: gc_priv.h 
+
