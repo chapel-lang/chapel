@@ -1754,3 +1754,48 @@ Log message:
 Modified files:
 	chapel/compiler/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/09 18:09:50 -- bradc
+
+Log message:
+	Wrote a bunch of simple programs that declare and initialize
+	a 1D domain and array using a variety of notations to serve
+	as initial codes.  Generated expected output by hand which
+	(if I got them all right) approximates what we might expect
+	from the compiler (and might need to be updated later if I
+	got them wrong).
+	
+	Similarly, maybe some of these programs are illegal for one
+	reason or another.  They reflect my current understanding
+	of how one might program such things, so to the extent
+	that they cause problems, we should discuss which should
+	perhaps be illegal, result in compile errors, etc.
+
+Added files:
+	chapel/test/trivial/bradc/arrinit/: NOTEST README 
+	                                    arrinit.notype.notype.chk 
+	                                    arrinit.notype.notype.chpl 
+	                                    arrinit.notypep.notype.chk 
+	                                    arrinit.notypep.notype.chpl 
+	                                    arrinit.notypep.notypeind.chk 
+	                                    arrinit.notypep.notypeind.chpl 
+	                                    arrinit.notypep.notypeind2.chk 
+	                                    arrinit.notypep.notypeind2.chpl 
+	                                    arrinit.notypep.typepr.chk 
+	                                    arrinit.notypep.typepr.chpl 
+	                                    arrinit.notypep.typeprind.chk 
+	                                    arrinit.notypep.typeprind.chpl 
+	                                    arrinit.notypep.typeprind2.chk 
+	                                    arrinit.notypep.typeprind2.chpl 
+	                                    arrinit.type.notype.chk 
+	                                    arrinit.type.notype.chpl 
+	                                    arrinit.typep.notype.chk 
+	                                    arrinit.typep.notype.chpl 
+	                                    arrinit.typep.type.chk 
+	                                    arrinit.typep.type.chpl 
+	                                    arrinit.typep.typeind.chk 
+	                                    arrinit.typep.typeind.chpl 
+	                                    arrinit.typep.typepr.chk 
+	                                    arrinit.typep.typepr.chpl 
+
