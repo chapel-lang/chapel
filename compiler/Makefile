@@ -200,5 +200,7 @@ $(PLATFORM)/%.dep: %.cpp
 
 # |& grep -v "invalid access to non-static data member" | grep -v offsetof
 
+$(PLATFORM)/v.g.d_parser.o $(PLATFORM)/v.g.d_parser.dep: prim_data.h
+
 -include $(PLATFORM)/*.dep
 
