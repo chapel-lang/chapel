@@ -1,7 +1,6 @@
+#include <typeinfo>
+#include "misc.h"
 #include "symbol.h"
-
-// BLC: Yuck
-Symbol* pstSumReduce = new Symbol("sum");
 
 
 Symbol::Symbol(char* init_name) :
@@ -103,6 +102,35 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
   Symbol(init_name),
   definition(init_definition)
 {}
+
+
+ClassSymbol::ClassSymbol(char* init_name, ClassType* init_class) :
+  TypeSymbol(init_name, init_class)
+{}
+
+
+NullClassSymbol::NullClassSymbol(void) :
+  ClassSymbol("NullClass", NULL)
+{}
+
+
+bool NullClassSymbol::isNull(void) {
+  return true;
+}
+
+
+ClassType* ClassSymbol::getType(void) {
+  if (typeid(*definition) != typeid(ClassType)) {
+    INT_FATAL(NULL, "ClassSymbol has non-ClassType");
+  }
+  return (ClassType*)definition;
+}
+
+
+ReduceSymbol::ReduceSymbol(char* init_name, ClassType* init_class) :
+  ClassSymbol(init_name, init_class)
+{}
+
 
 
 FunSymbol::FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,

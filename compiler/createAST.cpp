@@ -42,7 +42,7 @@ static void ParseFile(char* filename, bool prelude = false) {
 }
 
 
-void fileToAST(char* filename) {
+void fileToAST(char* filename, int debug) {
   static char* preludePath = NULL;
 
   if (preludePath == NULL) {
@@ -53,6 +53,7 @@ void fileToAST(char* filename) {
     ParseFile(preludePath, true);
   }
 
+  yydebug = debug;
   ParseFile(filename);
 
   program->printList(stdout, "\n");

@@ -89,6 +89,28 @@ class TypeSymbol : public Symbol {
 };
 
 
+class ClassSymbol : public TypeSymbol {
+ public:
+  ClassSymbol(char* init_name, ClassType* init_class);
+
+  ClassType* getType(void);
+};
+
+
+class NullClassSymbol : public ClassSymbol {
+ public:
+  NullClassSymbol(void);
+  
+  bool isNull(void);
+};
+
+
+class ReduceSymbol : public ClassSymbol {
+ public:
+  ReduceSymbol(char* init_name, ClassType* init_class);
+};
+
+
 class FunSymbol : public Symbol {
  public:
   Symbol* formals;

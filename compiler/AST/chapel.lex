@@ -40,6 +40,7 @@ timer           return TIMER;
 
 type            return TYPE;
 enum            return ENUM;
+class           return CLASS;
 
 function        return FUNCTION;
 inout           return INOUT;
@@ -63,7 +64,6 @@ until           return UNTIL;
 by              return BY;
 return          return RETURN;
 
-sum             return SUM;
 dim             return DIM;
 reduce          return REDUCE;
 
@@ -103,6 +103,9 @@ reduce          return REDUCE;
 		  if (typeid(*sym) == typeid(TypeSymbol)) {
 		    yylval.ptsym = (TypeSymbol*)sym;
 		    return TYPE_IDENT;
+		  } else if (typeid(*sym) == typeid(ReduceSymbol)) {
+		    yylval.redsym = (ReduceSymbol*)sym;
+		    return REDUCE_IDENT;
 		  } else {
 		    return IDENT;
 		  }

@@ -22,6 +22,7 @@ class Symboltable {
 
   static void define(Symbol* sym);
   static Symbol* lookup(char* name, bool inLexer = false);
+  static ClassSymbol* lookupClass(char* name);
 
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);
@@ -32,6 +33,7 @@ class Symboltable {
   static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static FunSymbol* defineFunction(char* name, Symbol* formals, Type* retType, 
 				   Stmt* body);
+  static ClassType* defineClass(char* name, ClassSymbol* parent);
 
   static VarSymbol* enterForLoop(Symbol* indices);
   static void exitForLoop(void);

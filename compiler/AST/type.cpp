@@ -157,6 +157,16 @@ void ArrayType::print(FILE* outfile) {
 }
 
 
+ClassType::ClassType(ClassType* init_parentClass) :
+  parentClass(init_parentClass)
+{}
+
+
+void ClassType::print(FILE* outfile) {
+  fprintf(outfile, "/* Classes not implemented yet */\n");
+}
+
+
 static void newType(char* name, Type** dtHandle, Symbol** symHandle) {
   *dtHandle = new Type();
   *symHandle = new TypeSymbol(name, *dtHandle);

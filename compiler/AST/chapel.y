@@ -33,6 +33,8 @@
   Symbol* psym;
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
+  ReduceSymbol* redsym;
+  ClassSymbol* pcsym;
 }
 
 
@@ -45,12 +47,13 @@
 %token DOMAIN
 %token INDEX
 
-%token ENUM TYPE
+%token ENUM TYPE CLASS
 %token FUNCTION
 %token INOUT IN OUT REF VAL
 
-%token IDENT QUERY_IDENT
+%token IDENT QUERY_IDENT REDUCE_IDENT
 %token <ptsym> TYPE_IDENT
+%token <redsym> REDUCE_IDENT
 %token INTLITERAL FLOATLITERAL 
 %token <pch> STRINGLITERAL
 
@@ -64,7 +67,7 @@
 
 %token GETS PLUSGETS MINUSGETS TIMESGETS DIVGETS LSHGETS RSHGETS
 
-%token SUM DIM REDUCE
+%token DIM REDUCE
 
 %token EQUALS NEQUALS LEQUALS GEQUALS NEQUALS GTHAN LTHAN
 %token LOGOR LOGAND
@@ -84,11 +87,13 @@
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
 %type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
+%type <pcsym> subclass
 %type <pexpr> expr exprlist nonemptyExprlist arrayfun literal range
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim binop
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional
 %type <stmt> return loop forloop whileloop enumdecl typealias typedecl fndecl
+%type <stmt> classdecl
 
 
 /* These are declared in increasing order of precedence. */
@@ -171,6 +176,7 @@ vardecl:
 typedecl:
   typealias
 | enumdecl
+| classdecl
 ;
 
 
@@ -197,6 +203,26 @@ enumdecl:
       $$ = new TypeDefStmt(pdt);
     }
 ;
+
+
+subclass:
+  /* nothing */
+    { $$ = new NullClassSymbol(); }
+| ':' identifier
+    {
+      $$ = Symboltable::lookupClass($2);
+    }
+;
+
+
+classdecl:
+  CLASS identifier subclass '{' '}'
+    {
+      ClassType* pdt = Symboltable::defineClass($2, $3);
+      $$ = new TypeDefStmt(pdt);
+    }
+;
+
 
 enumList:
   identsym
@@ -548,10 +574,10 @@ reduceDim:
 
 
 reduction:
-  SUM reduceDim expr
-    { $$ = new ReduceExpr(pstSumReduce, $2, $3); }
-| REDUCE reduceDim BY identifier expr
-    { $$ = new ReduceExpr(new Symbol($4), $2, $5); }
+  REDUCE_IDENT reduceDim expr
+    { $$ = new ReduceExpr($1, $2, $3); }
+| REDUCE reduceDim BY REDUCE_IDENT expr
+    { $$ = new ReduceExpr($4, $2, $5); }
 ;
 
 

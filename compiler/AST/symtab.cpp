@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "misc.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symtab.h"
 #include "yy.h"
 
@@ -87,6 +88,9 @@ SymScope* SymScope::findFileScope(void) {
   if (type == SCOPE_FILE) {
     return this;
   } else {
+    if (parent == NULL) {
+      INT_FATAL(NULL, "can't find file scope");
+    }
     return parent->findFileScope();
   }
 }
@@ -248,6 +252,20 @@ Symbol* Symboltable::lookup(char* name, bool inLexer) {
 }
 
 
+ClassSymbol* Symboltable::lookupClass(char* name) {
+  Symbol* pst = lookup(name);
+  
+  if (typeid(*pst) != typeid(ClassSymbol)) {
+    char* error = glomstrings(3, "Expected '", name, 
+			      "' to be a class but it's not");
+    yyerror(error);
+    return NULL;
+  } else {
+    return (ClassSymbol*)pst;
+  }
+}
+
+
 ParamSymbol* Symboltable::defineParams(paramType formaltag, Symbol* idents, 
 				       Type* type) {
   ParamSymbol* paramList;
@@ -332,6 +350,27 @@ FunSymbol* Symboltable::defineFunction(char* name, Symbol* formals,
   define(newFun);
 
   return newFun;
+}
+
+
+ClassType* Symboltable::defineClass(char* name, ClassSymbol* parent) {
+  ClassType* newdt;
+  ClassSymbol* newsym;
+
+  if (parent->isNull()) {
+    newdt = new ClassType();
+  } else {
+    newdt = new ClassType(parent->getType());
+  }
+  if (strcmp(parent->name, "reduction") == 0) { // BLC; strcmp bad
+    newsym = new ReduceSymbol(name, newdt);
+  } else {
+    newsym = new ClassSymbol(name, newdt);
+  }
+  (newdt)->addName(newsym);
+  define(newsym);
+
+  return newdt;
 }
 
 

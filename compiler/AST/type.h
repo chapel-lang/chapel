@@ -94,6 +94,16 @@ class UserType : public Type {
 };
 
 
+class ClassType : public Type {
+ public:
+  ClassType* parentClass;
+  
+  ClassType(ClassType* init_parentClass = NULL);
+
+  void print(FILE* outfile);
+};
+
+
 // BLC: move these to standard prelude
 
 extern Type* dtBoolean;
