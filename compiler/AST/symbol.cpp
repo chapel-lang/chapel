@@ -101,9 +101,7 @@ void Symbol::traverseDef(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
     traversal->preProcessSymbol(this);
   }
-  if (atTop || traversal->exploreChildTypes) {
-    traverseDefSymbol(traversal);
-  }
+  traverseDefSymbol(traversal);
   if (traversal->processTop || !atTop) {
     traversal->postProcessSymbol(this);
   }

@@ -22,7 +22,7 @@
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 
-#define HAND_TRAVERSE_EXPR_LET      	1
+//#define HAND_TRAVERSE_EXPR_LET      	1
 
 class LabelMap : public Map<char *, BaseAST *> {};
 

@@ -95,10 +95,8 @@ void Type::traverseDef(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
     traversal->preProcessType(this);
   }
-  if (atTop || traversal->exploreChildTypes) {
-    TRAVERSE(symbol, traversal, false);
-    traverseDefType(traversal);
-  }
+  TRAVERSE(symbol, traversal, false);
+  traverseDefType(traversal);
   if (traversal->processTop || !atTop) {
     traversal->postProcessType(this);
   }
