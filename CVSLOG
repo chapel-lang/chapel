@@ -20590,3 +20590,15 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_anon_domain2.future 
 
+---------------------------------------------------------------------------
+
+03/21/05 16:23:57 -- jplevyak
+
+Log message:
+	Removed unnecessary code (old BREAK and CONTINUE code).
+	Hacked IF1 translation to treat VARIABLE->var == SYMBOL_TYPE
+	differently when it is part of a MEMBER_ACCESS.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
