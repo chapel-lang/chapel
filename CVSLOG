@@ -7866,3 +7866,24 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/17/04 11:14:52 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	1. Sort classes before writing flow analysis log so as to prevent
+	   random "diff" mismatches in the regressions.
+	2. Checked in new test files with the sorted lists.
+	3. Use inttypes.h instead of stdint.h which is only a C99 standard and
+	   not available on all platforms.
+	4. worked around compilation errors in compiler/parser by commenting
+	   out a check and adding -Wno-error to the parser table compilation line.
+
+Modified files:
+	chapel/compiler/analysis/: fa_extras.cpp 
+	chapel/compiler/include/: vec.h 
+	chapel/compiler/make_prims/: make_prims.g 
+	chapel/compiler/parser/: Makefile 
+	chapel/test/flowanalysis/jplevyak/: classvar.good 
+	chapel/test/flowanalysis/newast/: enumarray.good 
+
