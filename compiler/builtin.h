@@ -5,6 +5,7 @@
 #define _builtin_H_
 
 class PDB;
+class Sym;
 
 #define S(_n) extern Sym *sym_##_n;
 #include "builtin_symbols.h"

@@ -11,6 +11,7 @@
 #include "mysystem.h"
 #include "stringutil.h"
 #include "cg.h"
+#include "analysis.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -24,6 +25,7 @@ static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
 static int newAST = 0;
+static int analyzeNewAST = 0;
 
 int fdce_if1 = 1;
 int finline = 0;
@@ -61,6 +63,7 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"newast", ' ', "Use New AST", "F", &newAST, NULL, NULL},
+ {"analyzenewast", ' ', "Analyze New AST", "F", &analyzeNewAST, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
@@ -216,6 +219,8 @@ static int
 compile_one(char *fn) {
   if (newAST) {
     Stmt* program = fileToAST(fn, d_debug_level);
+    if (analyzeNewAST)
+      analyze_new_ast(program);
     if (!suppress_codegen)
       codegen(fn, system_dir, program);
     else {

@@ -1,7 +1,9 @@
 /* -*-Mode: c++;-*-
  Copyright 1994-2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
-#include "geysa.h"
+#include <stdio.h>
+#include "arg.h"
+#include "misc.h"
 #include "stringutil.h"
 
 static char *SPACES = "                                                                               ";

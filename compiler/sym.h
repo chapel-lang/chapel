@@ -6,14 +6,13 @@
 
 #include "ast.h"
 #include "code.h"
-#include "extern.h"
-#include "scope.h"
 
 class Var;
 class Fun;
 class AType;
 class CreationSet;
 class MType;
+class Scope;
 
 enum IF1_num_type {
   IF1_NUM_TYPE_NONE, IF1_NUM_TYPE_UINT, IF1_NUM_TYPE_INT, IF1_NUM_TYPE_FLOAT

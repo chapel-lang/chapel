@@ -5,7 +5,8 @@
 
 ILink::ILink(void) :
   prev(NULL),
-  next(NULL)
+  next(NULL),
+  ainfo(NULL)
 {}
 
 

@@ -114,6 +114,6 @@ read_cdb(FA *fa) {
 int
 write_cdb(FA *fa) {
   (void) fa;
-  // use a temporary file ane link for atomicity
+  // use a temporary file and link for atomicity
   return -1;
 }

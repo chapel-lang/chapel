@@ -17,6 +17,7 @@ include AST/Makefile.include
 
 
 GEYSA_CVS_SRCS = \
+	analysis.cpp \
 	arg.cpp \
 	ast.cpp \
 	ast_cf.cpp \

@@ -5,6 +5,8 @@
 #ifndef _num_h_
 #define _num_h_
 
+#include "extern.h"
+
 enum IF1_int_type { 
   IF1_INT_TYPE_8, IF1_INT_TYPE_16, IF1_INT_TYPE_32, IF1_INT_TYPE_64, 
   IF1_INT_TYPE_NUM
