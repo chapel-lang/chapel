@@ -3448,3 +3448,18 @@ Modified files:
 	chapel/compiler/AST/: chapel.lex chapel.y expr.cpp main.cpp 
 	                      stmt.cpp stmt.h type.h 
 
+---------------------------------------------------------------------------
+
+06/16/04 17:22:43 -- bradc
+
+Log message:
+	Almost end-of-day prototype AST checkin.
+
+Modified files:
+	chapel/compiler/AST/: Makefile TODO chapel.lex chapel.y expr.cpp 
+	                      expr.h link.h main.cpp stmt.cpp stmt.h 
+	                      symbol.cpp symbol.h type.cpp type.h yy.c 
+	                      yy.h 
+Added files:
+	chapel/compiler/AST/: loc.cpp loc.h 
+
