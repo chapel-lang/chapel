@@ -5,8 +5,12 @@
 #define _pattern_H_
 
 #include <sys/types.h>
-#include "sym.h"
-#include "fa.h"
+
+class Sym;
+class FA;
+class Fun;
+class AType;
+class AVar;
 
 #define MAX_ARGS 1000
 

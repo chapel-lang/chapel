@@ -1,12 +1,16 @@
 /*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+  Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
 #include <signal.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "files.h"
 #include "geysa.h"
 #include "parse.h"
 #include "loc.h"
+#include "var.h"
+#include "pnode.h"
 
 int verbose_level = 0;
 int debug_level = 0;

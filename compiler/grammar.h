@@ -5,6 +5,8 @@
 #ifndef _grammar_H_
 #define _grammar_H_
 
+#include "extern.h"
+
 #define internal_D_Sym(_x) \
   EXTERN char *_x##_start EXTERN_INIT(#_x); \
   EXTERN char *_x##_end EXTERN_INIT(_x##_start + sizeof(#_x) - 1)

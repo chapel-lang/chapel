@@ -7,7 +7,10 @@
 #include "pattern.h"
 #include "internal.h"
 #include "prim.h"
+#include "builtin.h"
 #include "if1.h"
+#include "fun.h"
+#include "fa.h"
 
 #define ANON "*anon*"
 

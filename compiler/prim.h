@@ -6,6 +6,10 @@
 
 class Prim;
 class IF1;
+class Code;
+class AST;
+class PNode;
+class AType;
 
 enum PrimType {
   PRIM_TYPE_ANY,

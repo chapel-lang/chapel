@@ -6,6 +6,7 @@
 #include "driver.h"
 #include "prim.h"
 #include "if1.h"
+#include "builtin.h"
 
 char *builtin_strings[] = {
 #define S(_x) #_x,

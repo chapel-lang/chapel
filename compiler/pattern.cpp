@@ -6,6 +6,11 @@
 #include "pattern.h"
 #include "pdb.h"
 #include "if1.h"
+#include "builtin.h"
+#include "fun.h"
+#include "pnode.h"
+#include "fa.h"
+
 
 // TODO
 // handle context sensitive lookups, like localized pattern matching

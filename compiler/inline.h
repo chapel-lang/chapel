@@ -4,6 +4,9 @@
 #ifndef _inline_H_
 #define _inline_H_
 
+class FA;
+class Fun;
+class AST;
 
 #define DEFAULT_INLINE_PNODES			50
 #define SIMPLE_INLINE_PNODES_BELOW		10

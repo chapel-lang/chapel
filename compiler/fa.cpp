@@ -7,6 +7,11 @@
 #include "driver.h"
 #include "prim.h"
 #include "if1.h"
+#include "builtin.h"
+#include "pdb.h"
+#include "fun.h"
+#include "pnode.h"
+#include "fa.h"
 
 static int avar_id = 1;
 static int creation_set_id = 1;

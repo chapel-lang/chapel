@@ -13,15 +13,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <sys/types.h>
-#include <sys/mman.h>
-#include <sys/uio.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <ctype.h>
 #include <string.h>
 
 #include "chplalloc.h"
@@ -44,13 +36,7 @@ extern int debug_level;
 #include "list.h"
 #include "vec.h"
 #include "map.h"
-#include "builtin.h"
 #include "misc.h"
-#include "fa.h"
-#include "var.h"
-#include "pnode.h"
-#include "fun.h"
-#include "pdb.h"
 #include "log.h"
 
 #if defined(__CYGWIN__) || 1

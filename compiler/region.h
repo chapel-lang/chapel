@@ -6,6 +6,7 @@
 #define _region_H_
 
 class UEdge;
+class PNode;
 
 // Control Region
 
@@ -19,7 +20,7 @@ class Region : public gc {
   Vec<Region *> children;
   int depth;
 
-  Region *copy(PNodeMap &map);
+  Region *copy(Map<PNode *, PNode *> &map);
   Region(UEdge *aentry, UEdge *aexit) : entry(aentry), exit(aexit), parent(NULL), depth(0) {}
   Region() : entry(NULL), exit(NULL), parent(NULL), depth(0) {}
 };

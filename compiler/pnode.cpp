@@ -3,6 +3,9 @@
 */
 
 #include "geysa.h"
+#include "if1.h"
+#include "pnode.h"
+#include "var.h"
 
 static int pnode_id = 1;
 

@@ -4,6 +4,8 @@
 #ifndef _loop_H_
 #define _loop_H_
 
+class FA;
+
 struct LoopNode : public gc {
   int 			index;
   void			*node;

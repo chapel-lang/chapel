@@ -7,7 +7,6 @@
 #include "extern.h"
 
 class Label;
-class AST;
 class Prim;
 class PNode;
 class Sym;

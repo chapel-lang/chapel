@@ -3,8 +3,11 @@
 */
 
 #include "geysa.h"
-#include "cdb.h"
 #include "if1.h"
+#include "fa.h"
+#include "pdb.h"
+#include "cdb.h"
+#include "fun.h"
 
 static char *
 cdb_filename(FA *fa) {

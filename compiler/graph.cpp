@@ -4,10 +4,15 @@
 
 #include "geysa.h"
 #include "driver.h"
+#include "fa.h"
 #include "dom.h"
 #include "loop.h"
 #include "graph.h"
 #include "pattern.h"
+#include "pdb.h"
+#include "fun.h"
+#include "pnode.h"
+#include "if1.h"
 
 #define G_BOX		(1<<0)
 #define G_BLUE		(1<<1)

@@ -17,7 +17,6 @@ class Prim;
 class Label;
 class AST;
 class PNode;
-typedef Map<PNode *, PNode *> PNodeMap;
 
 // see ast_kinds.h for details
 enum AST_kind {
@@ -75,7 +74,7 @@ class AST : public Vec<AST *> {
   void set_location(D_ParseNode *pn);
   AST *get(AST_kind k);
 
-  AST *copy(PNodeMap *nmap = 0);
+  AST *copy(Map<PNode *, PNode *> *nmap = 0);
   AST(AST_kind k, D_ParseNode *pn = 0);
 };
 #define forv_AST(_x, _v) forv_Vec(AST, _x, _v)

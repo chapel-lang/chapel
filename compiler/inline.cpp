@@ -3,10 +3,14 @@
 */
 
 #include "geysa.h"
+#include "fa.h"
 #include "inline.h"
 #include "loop.h"
 #include "clone.h"
 #include "if1.h"
+#include "pdb.h"
+#include "fun.h"
+#include "pnode.h"
 
 #define LOOP_FREQUENCY 10.0
 

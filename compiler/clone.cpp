@@ -1,11 +1,16 @@
 /* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+ Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
 #include "geysa.h"
 #include "pattern.h"
 #include "prim.h"
 #include "if1.h"
+#include "builtin.h"
+#include "pdb.h"
+#include "fun.h"
+#include "pnode.h"
+#include "fa.h"
 
 #define BAD_NAME ((char*)-1)
 #define BAD_AST ((AST*)-1)

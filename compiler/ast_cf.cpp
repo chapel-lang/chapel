@@ -5,6 +5,8 @@
 #include "geysa.h"
 #include "prim.h"
 #include "if1.h"
+#include "builtin.h"
+#include "fa.h"
 
 static void
 cast(Sym *s, Sym *t, Immediate *im) {

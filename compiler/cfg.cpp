@@ -4,6 +4,9 @@
 
 #include "geysa.h"
 #include "if1.h"
+#include "pdb.h"
+#include "fun.h"
+#include "pnode.h"
 
 typedef void code_fn_t(Code *);
 

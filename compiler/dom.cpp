@@ -2,8 +2,11 @@
 Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #include "geysa.h"
-#include "dom.h"
 #include "if1.h"
+#include "fa.h"
+#include "dom.h"
+#include "fun.h"
+#include "pnode.h"
 
 /*
  Fast Dominator Algorithm from Tarjan.

@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include "map.h"
 #include "sym.h"
+#include "extern.h"
 
 #define DEFAULT_NUM_CONSTANTS_PER_VARIABLE	0
 

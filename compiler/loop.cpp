@@ -6,6 +6,10 @@
 #include "loop.h"
 #include "dom.h"
 #include "if1.h"
+#include "fa.h"
+#include "pdb.h"
+#include "fun.h"
+#include "pnode.h"
 
 // "Identifying Loops in Almost Linear Time" by G. Ramalingam
 // Modified Sreedhar-Gao-Lee Algorithm

@@ -4,7 +4,10 @@
 #ifndef _pdb_H_
 #define _pdb_H_
 
+class FA;
 class Fun;
+class IF1;
+class LoopGraph;
 
 // Program Database, stores the set of all functions
 
@@ -16,7 +19,7 @@ class PDB : public gc {
   LoopGraph *loops;
 
   Sym *find_global(char *);
-  void add(Fun *f) { f->id = funs.n; funs.add(f); }
+  void add(Fun *f);
   FA *analyze(Fun *top);
   int clone(FA *fa, Fun *top);
 

@@ -4,6 +4,9 @@
 
 #include "geysa.h"
 #include "pattern.h"
+#include "fun.h"
+#include "pnode.h"
+#include "if1.h"
 
 Fun::Fun(PDB *apdb, Sym *asym, int aninit_function) {
   pdb = apdb;
@@ -144,7 +147,7 @@ Fun::copy() {
   f->pdb = pdb;
   f->sym = sym;
   f->init_function = init_function;
-  f->nmap = new PNodeMap;
+  f->nmap = new Map<PNode *, PNode*>;
   f->vmap = new VarMap;
 
   Vec<PNode *> nodes;

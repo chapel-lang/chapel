@@ -4,6 +4,9 @@
 
 #include "geysa.h"
 #include "if1.h"
+#include "fa.h"
+#include "pdb.h"
+#include "fun.h"
 
 PDB *pdb = 0;
 
@@ -24,3 +27,10 @@ PDB::analyze(Fun *top) {
     return fa;
   return 0;
 }
+
+void 
+PDB::add(Fun *f) { 
+  f->id = funs.n; 
+  funs.add(f); 
+}
+

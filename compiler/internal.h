@@ -4,6 +4,8 @@
 #ifndef _internal_h_
 #define _internal_h_
 
+#include "extern.h"
+
 enum Internal {
   Internal_NONE = 0,
   Internal_Domain, 

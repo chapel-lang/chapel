@@ -4,8 +4,10 @@
 #ifndef _sym_h_
 #define _sym_h_
 
+#include "extern.h"
 #include "ast.h"
-#include "code.h"
+#include "vec.h"
+#include "map.h"
 
 class Var;
 class Fun;
@@ -14,6 +16,7 @@ class CreationSet;
 class MType;
 class Scope;
 class AST;
+class Code;
 
 enum IF1_num_type {
   IF1_NUM_TYPE_NONE, IF1_NUM_TYPE_UINT, IF1_NUM_TYPE_INT, IF1_NUM_TYPE_FLOAT

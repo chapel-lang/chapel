@@ -7,6 +7,7 @@
 #include "region.h"
 #include "var.h"
 
+class PDB;
 class ESet;
 class AVar;
 class LoopGraph;
@@ -15,6 +16,8 @@ class Dom;
 class CDB_EntrySet;
 class MPosition;
 class Region;
+class EntrySet;
+class Fun;
 
 class CallPoint : public gc {
  public:
@@ -68,7 +71,7 @@ class Fun : public gc {
   Vec<EntrySet *> called_ess;
   Vec<CreationSet *> called_css;
   Vec<Vec<EntrySet *> *> equiv_sets;
-  PNodeMap *nmap;
+  Map<PNode *, PNode*> *nmap;
   VarMap *vmap;
 
   // clone typings and call graph

@@ -2,12 +2,14 @@
   Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
+#include <ctype.h>
 #include "geysa.h"
 #include "parse.h"
 #include "scope.h"
 #include "internal.h"
 #include "ast.h"
 #include "prim.h"
+#include "builtin.h"
 
 char *AST_name[] = {
 #define S(_x) #_x,
@@ -60,7 +62,7 @@ AST::set_location(D_ParseNode *pn) {
 }
 
 AST *
-AST::copy(PNodeMap *nmap) {
+AST::copy(Map<PNode *, PNode*> *nmap) {
   AST *a = new AST(*this);
   if (nmap)
     for (int i = 0; i < a->pnodes.n; i++)

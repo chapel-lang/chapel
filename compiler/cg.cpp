@@ -1,11 +1,16 @@
 /*
-  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+  Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #include "geysa.h"
 #include "pattern.h"
 #include "cg.h"
 #include "prim.h"
 #include "if1.h"
+#include "builtin.h"
+#include "pdb.h"
+#include "fun.h"
+#include "pnode.h"
+#include "fa.h"
 
 static void
 write_c_fun_proto(FILE *fp, Fun *f, int type = 0) {

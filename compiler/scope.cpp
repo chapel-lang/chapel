@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "scope.h"
 
 
 void 

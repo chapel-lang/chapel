@@ -3,9 +3,10 @@
 */
 
 #include "geysa.h"
+#include "region.h"
 
 // unimplemented
 Region* 
-Region::copy(PNodeMap &map) {
+Region::copy(Map<PNode *, PNode*> &map) {
   return NULL;
 }

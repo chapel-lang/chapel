@@ -13,6 +13,10 @@
 #include "geysa.h"
 #include "ssu.h"
 #include "region.h"
+#include "fun.h"
+#include "pnode.h"
+#include "var.h"
+
 #include "ssu_extra.cpp"
 
 inline int 

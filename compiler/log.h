@@ -5,7 +5,7 @@
 #ifndef _log_H_
 #define _log_H_
 
-class ArgumentState;
+#include "extern.h"
 
 /*
   To add a new log type, add a new LOG_XXX with a unique letter:
@@ -34,6 +34,8 @@ class ArgumentState;
     chpl -laai
   specifies AST log level 2 and IF1 log level 1
  */
+
+class ArgumentState;
 
 #define LOG_AST		'a'
 #define LOG_IF1		'i'

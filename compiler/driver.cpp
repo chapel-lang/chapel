@@ -23,6 +23,8 @@
 #include "internal.h"
 #include "grammar.h"
 #include "version.h"
+#include "pdb.h"
+#include "fun.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);

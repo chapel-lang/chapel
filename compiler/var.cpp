@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "var.h"
 
 int var_id = 1;
 

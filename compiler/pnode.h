@@ -4,6 +4,7 @@
 #ifndef _pn_H_
 #define _pn_H_
 
+class Code;
 class Prim;
 class Dom;
 class LoopNode;
@@ -11,6 +12,7 @@ class Fun;
 class MPosition;
 class Region;
 class UNode;
+class Sym;
 
 /* #define CONC_IMPLEMENTED 1 */
 
