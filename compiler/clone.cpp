@@ -433,7 +433,6 @@ resolve_concrete_types(CSSS &css_sets) {
 	case Type_PRODUCT:
 	case Type_PRIMITIVE:
 	case Type_APPLICATION:
-	case Type_ABSTRACTION:
 	  assert(!"bad case");
 	  break;
 	case Type_FORWARD:

@@ -1,8 +1,8 @@
 /* -*-Mode: c++;-*-
  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
-#ifndef _Code_h_
-#define _Code_h_
+#ifndef _code_h_
+#define _code_h_
 
 class Label;
 class AST;

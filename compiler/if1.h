@@ -4,8 +4,8 @@
 #ifndef _IF1_h_
 #define _IF1_h_
 
-#include "Sym.h"
-#include "Code.h"
+#include "sym.h"
+#include "code.h"
 
 class Scope;
 class Primitives;

@@ -158,7 +158,7 @@ ast_print(FILE *fp, AST *a, int indent) {
 
 void
 ast_print_recursive(FILE *fp, AST *a, int indent) {
-  ast_print_recursive(fp, a, indent);
+  ast_print(fp, a, indent);
   forv_AST(aa, *a)
     ast_print_recursive(fp, aa, indent + 1);
 }
@@ -166,7 +166,7 @@ ast_print_recursive(FILE *fp, AST *a, int indent) {
 void
 ast_write(AST *a, char *filename) {
   FILE *fp = fopen(filename, "w");
-  ast_print(fp, a);
+  ast_print_recursive(fp, a);
   fclose(fp);
 }
 
@@ -362,11 +362,9 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 	if (ast->sym->type_kind == Type_NONE || ast->sym->type_kind == Type_FORWARD) {
 	  int i = 1;
 	  for (; i < ast->n; i++) {
-	    if (ast->v[i]->kind == AST_def_type_param) {
-	      ast->sym->type_kind = Type_ABSTRACTION;
-	      // incomplete
-	      goto Lkind_assigned;
-	    } else if (ast->v[i]->kind == AST_super_type) {
+	    if (ast->v[i]->kind == AST_def_type_param ||
+		ast->v[i]->kind == AST_super_type) 
+	    {
 	      // handled below
 	    } else { 
 	      ast->sym->type_kind = Type_ALIAS;
@@ -514,8 +512,10 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	      return -1;
 	    sym->supertypes.set_add(a->sym);
 	    sym->scope->dynamic.add(a->sym->scope);
+	  } if (a->kind == AST_def_type_param) {
+	    sym->args.set_add(a->sym);
 	    if (verbose_level)
-	      printf("%s has super %s\n", sym->name, a->sym->name);
+	      printf("%s has param %s\n", sym->name, a->sym->name);
 	  }
 	}
 	break;
@@ -783,9 +783,10 @@ gen_op(IF1 *i, AST *ast) {
     Code *send = if1_send1(i, c);
     send->ast = ast;
     get_apply_args(i, send, a0);
-    if1_add_send_arg(i, send, a1->rval);
+    if (a1)
+      if1_add_send_arg(i, send, a1->rval);
     if1_add_send_result(i, send, ast->rval);
-  } else if (a0->rval != sym_primitive) {
+  } else {
     Sym *args = new_sym(i, ast->scope);
     Sym *res = ref ? new_sym(i, ast->scope) : ast->rval;
     Code *send;
@@ -808,10 +809,6 @@ gen_op(IF1 *i, AST *ast) {
       else
 	send = if1_move(i, c, ast->rval, a1->lval, ast);
     }
-  } else {
-    assert(binary && op[0] == '^');
-    Code *send = if1_send(i, c, 2, 1, sym_primitive, a1->rval, ast->rval);
-    send->ast = ast;
   }
 }
 

@@ -1,8 +1,8 @@
 /* -*-Mode: c++;-*-
  Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
-#ifndef _Sym_h_
-#define _Sym_h_
+#ifndef _sym_h_
+#define _sym_h_
 
 class Var;
 class Fun;
@@ -25,8 +25,7 @@ enum Type_kind {
   Type_REF,  		// pointer
   Type_TAGGED, 		// tag + type (used for variant types)
   Type_PRIMITIVE, 	// builtin things (e.g. int and float)
-  Type_ABSTRACTION, 	// parameterized type
-  Type_APPLICATION, 	// application of a Type_ABSTRACTION
+  Type_APPLICATION, 	// application of a Type_ALIAS with args
   Type_ALIAS		// a type by another name
 };
 
@@ -45,7 +44,7 @@ class Sym : public gc {
   Vec<Sym *>		supertypes;		// implemented interfaces/is of types
   Vec<Sym *>		includes;		// included code
   Vec<Sym *>		has;			// instance variables
-  Vec<Sym *>		args;			// parameters of functions and classes
+  Vec<Sym *>		args;			// parameters of functions and types
   Sym			*ret;			// return value of functions
   Sym			*cont;			// continuation (function returning ret)
   Sym			*init;			// for modules & classes (default init function)
