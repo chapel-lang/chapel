@@ -9,8 +9,8 @@
 
 
 /***
- ***  Change fields and methods within class methods to _this.field
- ***  Adds _this to formal argument list for methods
+ ***  Change fields and methods within class methods to this.field
+ ***  Adds this to formal argument list for methods
  ***/
 
 
@@ -26,7 +26,8 @@ void FieldsToMemberAccesses::preProcessStmt(Stmt* stmt) {
       while (stmt) {
 	Stmt* next = nextLink(Stmt, stmt);
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
-	  Symbol* this_insert = new ParamSymbol(PARAM_INOUT, "_this", ctype);
+	  Symbol* this_insert = new ParamSymbol(PARAM_INOUT, "this", ctype);
+	  Symboltable::defineInScope(this_insert, method->fn->scope);
 	  this_insert = appendLink(this_insert, method->fn->formals);
 	  method->fn->formals = this_insert;
 	}

@@ -26,4 +26,9 @@ void DefineSymbols::preProcessStmt(Stmt* stmt) {
   if (VarDefStmt* def = dynamic_cast<VarDefStmt*>(stmt)) {
     Symboltable::defineInScope(def->var, scope);
   }
+
+  if (FnDefStmt* def = dynamic_cast<FnDefStmt*>(stmt)) {
+    Symboltable::defineInScope(def->fn, scope);
+  }
+
 }

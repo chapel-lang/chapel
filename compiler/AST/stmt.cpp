@@ -351,7 +351,7 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 
 
 Stmt* FnDefStmt::copy(void) {
-  FnSymbol* fncopy = Symboltable::startFnDef(glomstrings(3, "__", fn->name, "_clone"));
+  FnSymbol* fncopy = Symboltable::startFnDef(fn->name);  //glomstrings(3, "__", fn->name, "_clone"));
   // do this first to make sure symbols are defined before used when body is
   // copied
   Symbol* newformals;

@@ -31,14 +31,7 @@ void Fixup::postProcessType(Type* type) {
 void Fixup::preProcessStmt(Stmt* stmt) {
   Symbol* tmp = stmtParent.v[stmtParent.n-1];
   if (tmp == NULL) {
-    /** SJD: We want this eventually, but right now it seems that were
-	not in a module to point back to.  In this case let's set the
-	stmt parent to NilSymbol
-
     INT_FATAL(stmt, "NULL in Fixup()");
-
-     **/
-    stmt->parentSymbol = nilSymbol;
   }
   stmt->parentSymbol = tmp;
 
@@ -65,4 +58,17 @@ void Fixup::preProcessExpr(Expr* expr) {
     INT_FATAL(expr, "NULL in Fixup()");
   }
   expr->stmt = tmp;
+}
+
+
+void Fixup::run(ModuleSymbol* moduleList) {
+  ModuleSymbol* mod = moduleList;
+  while (mod) {
+    stmtParent.add(mod);
+    mod->stmts->traverseList(this);
+    if (mod != stmtParent.pop()) {
+      INT_FATAL(mod, "Major error in Fixup traversal");
+    }
+    mod = nextLink(ModuleSymbol, mod);
+  }
 }
