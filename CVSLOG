@@ -19052,3 +19052,26 @@ Removed files:
 	                               break-5.future continue-2.future 
 	                               continue-4.future 
 
+---------------------------------------------------------------------------
+
+03/07/05 17:23:26 -- deitz
+
+Log message:
+	Simplified ClassType so that the order of the fields is defined by the
+	order of the statements in the DeclarationList.  The fields vector no
+	longer needs to be in order.
+	
+	Removed less-than-robust Vec template insert method.
+	
+	Simplified ExpandClassWiths.
+	
+	Short-circuited InsertVariableInitializations for variables declared
+	within class types.  These will have to be put treated specially and
+	put in the constructor.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h vec.h 
+	chapel/compiler/traversals/: expandClassWiths.cpp 
+	                             insertVariableInitializations.cpp 
+
