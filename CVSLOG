@@ -3114,3 +3114,13 @@ Removed files:
 	                                      test2.py test3.py test4.py 
 	                                      test5.py test6.py test7.py 
 
+---------------------------------------------------------------------------
+
+06/10/04 12:38:32 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	only add the -Wno-invalid-offsetof for gcc 3.4
+
+Modified files:
+	chapel/make/: Makefile.gnu 
+
