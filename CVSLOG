@@ -10113,3 +10113,15 @@ Modified files:
 	                                    memberfun2.good sample.good 
 	                                    structtype.good 
 
+---------------------------------------------------------------------------
+
+11/22/04 11:46:57 -- bradc
+
+Log message:
+	Removed three hacks that assumed variables of unknown types were
+	integers which stemmed from the days before the analysis pass was
+	running.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+
