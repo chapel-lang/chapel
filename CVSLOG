@@ -631,3 +631,18 @@ Log message:
 Modified files:
 	chapel/compiler/: TODO ast.cpp if1.cpp 
 
+---------------------------------------------------------------------------
+
+04/03/01 11:07:13 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Chapel syntax for conditionals now: "if" expression "then" expression "else" expression
+	Syntax for while loops now: "while" expression "do" expression
+	Added samples/mat1.chpl.
+
+Modified files:
+	chapel/compiler/: TODO chpl.g 
+	chapel/compiler/samples/: mvm1.chpl 
+Added files:
+	chapel/compiler/samples/: mat1.chpl 
+
