@@ -19711,3 +19711,15 @@ Modified files:
 	chapel/test/trivial/bradc/: formatoutput.chpl 
 	chapel/test/trivial/bradc/domarr/: enumarray.chpl 
 
+---------------------------------------------------------------------------
+
+03/15/05 14:55:39 -- jplevyak
+
+Log message:
+	Make handling of coerce more robust, fixes functions/deitz/test_operator_overloading1
+	Change .future since it now fails in codegen.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/test/functions/deitz/: test_operator_overloading1.future 
+
