@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include "codegen.h"
 #include "expr.h"
 #include "misc.h"
@@ -230,10 +231,25 @@ void EnumType::codegenDefaultFormat(FILE* outfile) {
 }
 
 
-DomainType::DomainType(int init_numdims, Expr* init_parent) :
+DomainType::DomainType(Expr* init_expr) :
   Type(TYPE_DOMAIN),
-  numdims(init_numdims),
-  parent(init_parent)
+  numdims(0),
+  parent(nilExpr)
+{
+  if (!init_expr->isNull()) {
+    if (typeid(*init_expr) == typeid(IntLiteral)) {
+      numdims = init_expr->intVal();
+    } else {
+      numdims = init_expr->rank();
+      parent = init_expr;
+    }
+  }
+}
+
+  DomainType::DomainType(int init_numdims) :
+    Type(TYPE_DOMAIN),
+    numdims(init_numdims),
+    parent(nilExpr)
 {}
 
 
@@ -262,8 +278,8 @@ void DomainType::codegen(FILE* outfile) {
 }
 
 
-IndexType::IndexType(int init_numdims, Expr* init_parent) :
-  DomainType(init_numdims, init_parent)
+IndexType::IndexType(Expr* init_expr) :
+  DomainType(init_expr)
 {
   astType = TYPE_INDEX;
 }

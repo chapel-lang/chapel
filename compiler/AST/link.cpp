@@ -48,12 +48,14 @@ void ILink::print(FILE* outfile) {
 void ILink::printList(FILE* outfile, char* separator) {
   ILink* ptr;
 
-  print(outfile);
-  ptr = next;
-  while (!ptr->isNull()) {
-    fprintf(outfile, "%s", separator);
-    ptr->print(outfile);
-    ptr = ptr->next;
+  if (!isNull()) {
+    print(outfile);
+    ptr = next;
+    while (!ptr->isNull()) {
+      fprintf(outfile, "%s", separator);
+      ptr->print(outfile);
+      ptr = ptr->next;
+    }
   }
 }
 

@@ -61,7 +61,8 @@ class DomainType : public Type {
   int numdims;
   Expr* parent;
 
-  DomainType(int init_numdims = 0, Expr* init_parent = nilExpr);
+  DomainType(Expr* init_expr = nilExpr);
+  DomainType(int init_numdims);
 
   int rank(void);
 
@@ -72,7 +73,7 @@ class DomainType : public Type {
 
 class IndexType : public DomainType {
  public:
-  IndexType(int init_rank = 0, Expr* init_parent = nilExpr);
+  IndexType(Expr* init_expr = nilExpr);
 
   void print(FILE* outfile);
 };

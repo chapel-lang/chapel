@@ -1,4 +1,8 @@
+#include "expr.h"
 #include "getstuff.h"
+#include "stmt.h"
+#include "symbol.h"
+#include "type.h"
 
 GetStuff::GetStuff(int flags) :
   Traversal(false, false),
@@ -11,6 +15,7 @@ GetStuff::GetStuff(int flags) :
 
 void GetStuff::preProcessStmt(Stmt* stmt) {
   if (getStmts) {
+    asts.add(stmt);
     stmts.add(stmt);
   }
 }
@@ -18,6 +23,7 @@ void GetStuff::preProcessStmt(Stmt* stmt) {
 
 void GetStuff::preProcessExpr(Expr* expr) {
   if (getExprs) {
+    asts.add(expr);
     exprs.add(expr);
   }
 }
@@ -25,6 +31,7 @@ void GetStuff::preProcessExpr(Expr* expr) {
 
 void GetStuff::preProcessSymbol(Symbol* sym) {
   if (getSymbols) {
+    asts.add(sym);
     symbols.add(sym);
   }
 }
@@ -32,12 +39,14 @@ void GetStuff::preProcessSymbol(Symbol* sym) {
 
 void GetStuff::preProcessType(Type* type) {
   if (getTypes) {
+    asts.add(type);
     types.add(type);
   }
 }
 
 
 void GetStuff::clear(void) {
+  asts.clear();
   stmts.clear();
   exprs.clear();
   symbols.clear();

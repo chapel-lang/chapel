@@ -224,6 +224,7 @@ bool FnSymbol::isNull(void) {
 
 void FnSymbol::traverseSymbol(Traversal* traversal) {
   formals->traverseList(traversal, false);
+  type->traverse(traversal, false);
   body->traverse(traversal, false);
 }
 

@@ -3,6 +3,7 @@
 
 #include "traversal.h"
 #include "vec.h"
+class BaseAST;
 class Stmt;
 class Expr;
 class Symbol;
@@ -22,6 +23,7 @@ class GetStuff : public Traversal {
   bool getExprs;
   bool getSymbols;
   bool getTypes;
+  Vec<BaseAST*> asts;
   Vec<Stmt*> stmts;
   Vec<Expr*> exprs;
   Vec<Symbol*> symbols;
@@ -39,21 +41,25 @@ class GetStuff : public Traversal {
 
 
 class GetStmts : public GetStuff {
+ public:
   GetStmts(void);
 };
 
 
 class GetExprs : public GetStuff {
+ public:
   GetExprs(void);
 };
 
 
 class GetSymbols : public GetStuff {
+ public:
   GetSymbols(void);
 };
 
 
 class GetTypes : public GetStuff {
+ public:
   GetTypes(void);
 };
 

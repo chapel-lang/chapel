@@ -336,6 +336,19 @@ SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
 }
 
 
+void SpecialBinOp::print(FILE* outfile) {
+  switch (type) {
+  case BINOP_DOT:
+    left->print(outfile);
+    fprintf(outfile, ".");
+    right->print(outfile);
+    break;
+  default:
+    BinOp::print(outfile);
+  }
+}
+
+
 AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   BinOp(BINOP_OTHER, l, r),
   type(init_type)
@@ -437,15 +450,13 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
       return new ArrayRef(base, arg);
     }
   } else {
-    // assume all non-var expressions are array refs for now;
-    // disables methods and function pointers -- BLC
     /*
-    printf("Found an array ref: ");
+    printf("Found an unknown paren op expr: ");
     base->print(stdout);
     printf("\n");
     */
     
-    return new ArrayRef(base, arg);
+    return new ParenOpExpr(base, arg);
   }
 }
 

@@ -178,6 +178,8 @@ class BinOp : public Expr {
 class SpecialBinOp : public BinOp {
  public:
   SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
+  
+  void print(FILE* outfile);
 };
 
 

@@ -53,13 +53,13 @@
 %token FUNCTION
 %token INOUT IN OUT REF VAL
 
-%token IDENT QUERY_IDENT REDUCE_IDENT
+%token IDENT QUERY_IDENT
 %token <ptsym> TYPE_IDENT
 %token <redsym> REDUCE_IDENT
 %token INTLITERAL FLOATLITERAL 
 %token <pch> STRINGLITERAL
 
-%token IF ELSE ELSIF
+%token IF ELSE
 %token FOR FORALL IN
 %token WHILE DO
 %token RETURN
@@ -93,8 +93,8 @@
 %type <pch> identifier query_identifier
 %type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
 %type <pcsym> subclass
-%type <pexpr> expr exprlist nonemptyExprlist arrayfun literal range
-%type <pexpr> reduction memberaccess vardeclinit cast reduceDim binop
+%type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
+%type <pexpr> reduction vardeclinit cast reduceDim binop
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional
 %type <stmt> retStmt loop forloop whileloop enumdecl typealias typedecl fndecl
@@ -345,20 +345,16 @@ type:
 domainType:
   DOMAIN
     { $$ = new DomainType(); }
-| DOMAIN '(' intliteral ')'
-    { $$ = new DomainType($3); }
 | DOMAIN '(' expr ')'
-    { $$ = new DomainType($3->rank(), $3); }
+    { $$ = new DomainType($3); }
 ;
 
 
 indexType:
   INDEX
     { $$ = new IndexType(); }
-| INDEX '(' intliteral ')'
-    { $$ = new IndexType($3); }
 | INDEX '(' expr ')'
-    { $$ = new IndexType($3->rank(), $3); }
+    { $$ = new IndexType($3); }
 ;
 
 
@@ -482,8 +478,18 @@ assignOp:
 ;
 
 
+assign_lvalue:
+  lvalue
+| '[' domainExpr ']' lvalue
+  {
+    $2->setForallExpr($4);
+    $$ = $2;
+  }
+;
+
+
 assignment:
-  expr assignOp expr ';'
+  assign_lvalue assignOp expr ';'
     { $$ = new ExprStmt(new AssignOp($2, $1, $3)); }
 ;
 
@@ -497,24 +503,46 @@ exprlist:
 
 nonemptyExprlist:
   expr
-| exprlist ',' expr
+| nonemptyExprlist ',' expr
     { $1->append($3); }
 ;
 
 
-expr: 
-  literal
-| identifier
+simple_lvalue:
+  identifier
     { $$ = new Variable(Symboltable::lookup($1)); }
+| simple_lvalue '.' identifier
+    { $$ = new SpecialBinOp(BINOP_DOT, $1, new Variable(Symboltable::lookup($3))); }
+| simple_lvalue '(' exprlist ')'
+    { $$ = ParenOpExpr::classify($1, $3); }
+/*
+| simple_lvalue '[' exprlist ']'
+    { $$ = ParenOpExpr::classify($1, $3); }
+*/
+;
+
+
+lvalue:
+  simple_lvalue
+;
+
+
+atom:
+  literal
+| lvalue
+;
+
+
+
+expr: 
+  atom
 | binop
 | expr otherbinop expr
     { $$ = new SpecialBinOp($2, $1, $3); }
 | unop expr
     { $$ = new UnOp($1, $2); }
 | reduction
-| arrayfun
 | cast
-| memberaccess
 | range
 | '(' nonemptyExprlist ')' 
     { 
@@ -527,16 +555,10 @@ expr:
 | '[' domainExpr ']'
     { $$ = $2; }
 | '[' domainExpr ']' expr
-    { 
+    {
       $2->setForallExpr($4);
       $$ = $2;
     }
-;
-
-
-memberaccess:
-  expr '.' expr
-    { $$ = new SpecialBinOp(BINOP_DOT, $1, $3); }
 ;
 
 
@@ -666,19 +688,9 @@ query_identifier:
 ;
 
 
-arrayfun:
-  expr '(' exprlist ')'
-    { $$ = ParenOpExpr::classify($1, $3); }
-/*
-| expr '[' exprlist ']'
-    { $$ = ParenOpExpr::classify($1, $3); }
-*/
-;
-
-
 cast:
-  type '(' exprlist ')'
-    { $$ = new CastExpr($1, $3); }
+  expr ':' type
+    { $$ = new CastExpr($3, $1); }
 ;
 
 %%

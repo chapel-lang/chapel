@@ -310,17 +310,17 @@ function randlc(inout x: float;
   var t1, t2, t3, t4, a1, a2, x1, x2, y: float;
 
   t1 = r23 * x;
-  a1 = integer(t1);
+  a1 = t1: integer;
   a2 = a - t23 * a1;
 
   t1 = r23 * x;
-  x1 = integer(t1);
+  x1 = t1: integer;
   x2 = x - t23 * x1;
   t1 = a1 * x2 + a2 * x1;
-  t2 = integer(r23 * t1);
+  t2 = (r23 * t1): integer;
   y = t1 - t23 * t2;
   t3 = t23 * y + a2 * x2;
-  t3 = integer(r46 * t3);
+  t3 = (r46 * t3): integer;
   x = t3 - t46 * t4;
 
   return r46 * x;

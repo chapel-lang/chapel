@@ -98,8 +98,8 @@ function psinv(inout U: ???;
 inout R: ???) {
 state const c: coeff = initCValues();
 state const c3d: [i, j, k:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
-const RD: ??? = (R.Domain);
-const Rstr: ??? = (R.stride);
+const RD: ??? = R.Domain;
+const Rstr: ??? = R.stride;
 U += [ijk:RD] reduce by sum [off:Stencil] (c3d*R((ijk+(Rstr*off))));
 }
 
@@ -109,8 +109,8 @@ inout V: ???;
 inout U: ???) {
 state const a: coeff = (-(8.0/3.0), 0.0, (1.0/6.0), (1.0/12.0));
 state const a3d: [i, j, k:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
-const UD: ??? = (U.Domain);
-const Ustr: ??? = (U.stride);
+const UD: ??? = U.Domain;
+const Ustr: ??? = U.stride;
 R = (V-[ijk:UD] reduce by sum [off:Stencil] (a3d*U((ijk+(Ustr*off)))));
 }
 
@@ -119,8 +119,8 @@ function rprj3(inout S: ???;
 inout R: ???) {
 state const w: coeff = (0.5, 0.25, 0.125, 0.0625);
 state const w3d: [i, j, k:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
-const RD: ??? = (R.Domain);
-const Rstr: ??? = (R.stride);
+const RD: ??? = R.Domain;
+const Rstr: ??? = R.stride;
 S = [ijk:RD] reduce by sum [off:Stencil] (w3d*R((ijk+(Rstr*off))));
 }
 
@@ -129,10 +129,10 @@ function interp(inout R: ???;
 inout S: ???) {
 state const IDom: domain(3) = [(-1..0), (-1..0), (-1..0)];
 state const IStn: [i, j, k:IDom] domain(3) = [i..0, j..0, k..0];
-state const w: [ijk:IDom] float = (1.0/(IStn.size()));
-const SD: ??? = (S.Domain());
-const Rstr: ??? = (R.stride);
-const Sstr: ??? = (S.stride);
+state const w: [ijk:IDom] float = (1.0/IStn.size());
+const SD: ??? = S.Domain();
+const Rstr: ??? = R.stride;
+const Sstr: ??? = S.stride;
 forall ioff in IDom {
 [ijk:SD] R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
 }
@@ -152,9 +152,9 @@ inout U: ???;
 inout R: ???) {
 zran3(V);
 U(1) = 0.0;
-(V.outOfBounds(wrap));
-(U.outOfBounds(wrap));
-(R.outOfBounds(wrap));
+V.outOfBounds(wrap);
+U.outOfBounds(wrap);
+R.outOfBounds(wrap);
 }
 
 
@@ -272,17 +272,17 @@ const Hier: [lvl:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
 const Stencil: domain(3) = [(-1..1), (-1..1), (-1..1)];
 var initTimer: timer;
 var benchTimer: timer;
-(initTimer.start());
+initTimer.start();
 var V: [Base] float;
 var U: [lvl:Levels] [Hier(lvl)] float;
 var R: [lvl:Levels] [Hier(lvl)] float;
 initializeMG();
 inittime = warmupMG(V, U, R);
-(initTimer.stop());
-(benchTimer.start());
+initTimer.stop();
+benchTimer.start();
 var rnm2: float = computeMG(V, U, R);
-(benchTimer.stop());
-printResults(rnm2, (initTimer.read()), (benchTimer.read()));
+benchTimer.stop();
+printResults(rnm2, initTimer.read(), benchTimer.read());
 }
 
 
