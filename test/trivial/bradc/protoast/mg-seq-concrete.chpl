@@ -48,7 +48,7 @@ type coeff: [0..3] float;
 
 const Levels: domain(1) = (1..numLevels);
 const Base: domain(3) = [1..nx, 1..ny, 1..nz];
-const Hier: [lvl: Levels] domain(Base) = Base by -2**(lvl-1);
+const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
 const Stencil: domain(3) = [-1..1, -1..1, -1..1];
 
 
@@ -60,8 +60,8 @@ var benchTimer: timer;
 initTimer.start();
   -- main arrays:
   var V: [Base] float;
-  var U: [lvl: Levels] [Hier(lvl)] float;
-  var R: [lvl: Levels] [Hier(lvl)] float;
+  var U: [lvl in Levels] [Hier(lvl)] float;
+  var R: [lvl in Levels] [Hier(lvl)] float;
 
   initializeMG();
   warmupMG(V, U, R);
@@ -77,7 +77,7 @@ printResults(rnm2, initTimer.read(), benchTimer.read());
 -- Top-level functions:
 
 function initializeMG(out V: [Base] float;
-                      out U, R: [lvl: Levels] [Hier(lvl)] float) {
+                      out U, R: [lvl in Levels] [Hier(lvl)] float) {
   writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
   writeln(" Size: ", nx, "x", ny, "x", nz);
   writeln(" Iterations: ", nit);
@@ -88,7 +88,7 @@ function initializeMG(out V: [Base] float;
 
 
 function warmupMG(inout V: [Base] float;
-                  inout U, R: [lvl: Levels] [Hier(lvl)] float) {
+                  inout U, R: [lvl in Levels] [Hier(lvl)] float) {
   if (warmup) {
     mg3P(V, U, R);
     resid(R(1), V, U(1));
@@ -99,7 +99,7 @@ function warmupMG(inout V: [Base] float;
 
 
 function computeMG(in V: [Base] float;
-                   inout U, R: [lvl: Levels] [Hier(lvl)] float): float {
+                   inout U, R: [lvl in Levels] [Hier(lvl)] float): float {
   resid(R(1), V, U(1));
   norm2u3(R(1));
   for it in (1..nit) {
@@ -152,7 +152,7 @@ function printResults(const rnm2, inittime, runtime: float) {
 -- Work for a single iteration:
 
 function mg3P(inout V: [Base] float;
-              inout U, R: [lvl: Levels] [Hier(lvl)] float) {
+              inout U, R: [lvl in Levels] [Hier(lvl)] float) {
   -- project up the hierarchy
   for lvl in (2..numLevels) {
     rprj3(R(lvl), R(lvl-1));
@@ -182,48 +182,48 @@ function mg3P(inout V: [Base] float;
 function psinv(inout U: [?DUR] float;
                const R: [DUR] float) {
   static const c: coeff = initCValues();
-  static const c3d: [(i,j,k): Stencil] float = c((i!=0) + (j!=0) + (k!=0));
+  static const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
 
   const Rstr: [1..3] integer = DUR.stride;
 
-  U += [ijk:DUR] sum [off:Stencil] (c3d * R(ijk + Rstr*off));
+  U += [ijk in DUR] sum [off in Stencil] (c3d * R(ijk + Rstr*off));
 }
 
 
 function resid(out R: [?DUR] float;
                const V, U: [DUR] float) {
   static const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
-  static const a3d: [(i,j,k): Stencil] float = a((i!=0) + (j!=0) + (k!=0));
+  static const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
 
   const Ustr: [1..3] integer = DUR.stride;
 
-  R = V - [ijk:DUR] sum [off:Stencil] (a3d * U(ijk + Ustr*off));
+  R = V - [ijk in DUR] sum [off in Stencil] (a3d * U(ijk + Ustr*off));
 }
 
 
 function rprj3(out S: [] float;
                in R: [?DR] float) {
   static const w: coeff = (0.5, 0.25, 0.125, 0.0625);
-  static const w3d: [(i,j,k): Stencil] float = w((i!=0) + (j!=0) + (k!=0));
+  static const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
 
   const Rstr: [1..3] integer = R.stride;
 
-  S = [ijk: DR] sum [off:Stencil] (w3d * R(ijk + Rstr*off));
+  S = [ijk in DR] sum [off in Stencil] (w3d * R(ijk + Rstr*off));
 }
 
 
 function interp(out R: [?DR] float;
                 const S: [?DS] float) {
   static const IDom: domain(3) = [-1..0, -1..0, -1..0];
-  static const IStn: [(i,j,k):IDom] domain(3) = [i..0, j..0, k..0];
-  static const w: [ijk:IDom] float = 1.0 / IStn.size();
+  static const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
+  static const w: [ijk in IDom] float = 1.0 / IStn.size();
 
   const Rstr: [1..3] integer = DR.stride;
   const Sstr: [1..3] integer = DS.stride;
 
   forall ioff in IDom {
-    [ijk:DS] R(ijk + Rstr*ioff) 
-               += w(ioff) * sum [off: IStn(ioff)] S(ijk + Sstr*off);
+    [ijk in DS] R(ijk + Rstr*ioff) 
+               += w(ioff) * sum [off in IStn(ioff)] S(ijk + Sstr*off);
   }
 }
 
@@ -241,7 +241,7 @@ function norm2u3(const R: [] float): (float, float) {
 -- Setup stuff
 
 function initArrays(out V: [Base] float;
-                    out U, R: [lvl: Levels] [Hier(lvl)] float) {
+                    out U, R: [lvl in Levels] [Hier(lvl)] float) {
   -- conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
   -- but the following is minimal:
   zran3(V);
@@ -258,7 +258,7 @@ function zran3(out V: [Base] float) {
   var POS: [1..ncharge] index(Base);
   var NEG: [1..ncharge] index(Base);
 
-  V = [i,j,k: Base] longRandlc((i-1) + (j-1)*nx + (k-1)*nx*ny);
+  V = [i,j,k in Base] longRandlc((i-1) + (j-1)*nx + (k-1)*nx*ny);
 
   -- BLC: would make sense to replace this with a user-defined reduction
   for i in (1..ncharge) {

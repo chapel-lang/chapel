@@ -15,7 +15,7 @@ var A : [Mat] float;
 var y : [Col] float;
 var x : [Row] float;
 
-A = [i,j:Mat]  (i-1)*n + j; -- (if i=j then 1 else 0);
-y = [i:Col] i;
+A = [i,j in Mat]  (i-1)*n + j; -- (if i=j then 1 else 0);
+y = [i in Col] i;
 
 x = sum(dim=2) [Mat] A*y;

@@ -48,7 +48,7 @@ type coeff: [0..3] float;
 
 const Levels: domain(1) = (1..numLevels);
 const Base: domain(3) = [1..nx, 1..ny, 1..nz];
-const Hier: [lvl: Levels] domain(Base) = Base by -2**(lvl-1);
+const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
 const Stencil: domain(3) = [-1..1, -1..1, -1..1];
 
 
@@ -60,8 +60,8 @@ var benchTimer: timer;
 initTimer.start();
   -- main arrays:
   var V: [Base] float;
-  var U: [lvl: Levels] [Hier(lvl)] float;
-  var R: [lvl: Levels] [Hier(lvl)] float;
+  var U: [lvl in Levels] [Hier(lvl)] float;
+  var R: [lvl in Levels] [Hier(lvl)] float;
 
   initializeMG();
   inittime = warmupMG(V, U, R);
@@ -177,49 +177,49 @@ function mg3P(V, U, R) {
 
 function psinv(U, R) {
   static const c: coeff = initCValues();
-  static const c3d: [(i,j,k): Stencil] float = c((i!=0) + (j!=0) + (k!=0));
+  static const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
 
   const RD = R.Domain;
   const Rstr = R.stride;
 
-  U += [ijk:RD] sum [off:Stencil] (c3d * R(ijk + Rstr*off));
+  U += [ijk in RD] sum [off in Stencil] (c3d * R(ijk + Rstr*off));
 }
 
 
 function resid(R, V, U) {
   static const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
-  static const a3d: [(i,j,k): Stencil] float = a((i!=0) + (j!=0) + (k!=0));
+  static const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
 
   const UD = U.Domain;
   const Ustr = U.stride;
 
-  R = V - [ijk:UD] sum [off:Stencil] (a3d * U(ijk + Ustr*off));
+  R = V - [ijk in UD] sum [off in Stencil] (a3d * U(ijk + Ustr*off));
 }
 
 
 function rprj3(S, R) {
   static const w: coeff = (0.5, 0.25, 0.125, 0.0625);
-  static const w3d: [(i,j,k): Stencil] float = w((i!=0) + (j!=0) + (k!=0));
+  static const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
 
   const RD = R.Domain;
   const Rstr = R.stride;
 
-  S = [ijk: RD] sum [off:Stencil] (w3d * R(ijk + Rstr*off));
+  S = [ijk in RD] sum [off in Stencil] (w3d * R(ijk + Rstr*off));
 }
 
 
 function interp(R, S) {
   static const IDom: domain(3) = [-1..0, -1..0, -1..0];
-  static const IStn: [(i,j,k):IDom] domain(3) = [i..0, j..0, k..0];
-  static const w: [ijk:IDom] float = 1.0 / IStn.size();
+  static const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
+  static const w: [ijk in IDom] float = 1.0 / IStn.size();
 
   const SD = S.Domain();
   const Rstr = R.stride;
   const Sstr = S.stride;
 
   forall ioff in IDom {
-    [ijk:SD] R(ijk + Rstr*ioff) 
-               += w(ioff) * sum [off: IStn(ioff)] S(ijk + Sstr*off);
+    [ijk in SD] R(ijk + Rstr*ioff) 
+               += w(ioff) * sum [off in IStn(ioff)] S(ijk + Sstr*off);
   }
 }
 
@@ -253,7 +253,7 @@ function zran3(V) {
   var POS: [1..ncharge] index(Base);
   var NEG: [1..ncharge] index(Base);
 
-  V = [i,j,k: Base] longRandlc((i-1) + (j-1)*nx + (k-1)*nx*ny);
+  V = [i,j,k in Base] longRandlc((i-1) + (j-1)*nx + (k-1)*nx*ny);
 
   -- BLC: would make sense to replace this with a user-defined reduction
   for i in (1..ncharge) {

@@ -84,7 +84,7 @@
 
 %type <got> assignOp
 %type <bot> otherbinop
-%type <uot> unop
+/*%type <uot> unop*/
 %type <vt> vardecltag
 %type <pt> formaltag
 
@@ -95,7 +95,7 @@
 %type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
 %type <pcsym> subclass
 %type <pexpr> simple_lvalue assign_lvalue lvalue atom expr exprlist nonemptyExprlist literal range
-%type <pexpr> reduction vardeclinit cast reduceDim binop
+%type <pexpr> reduction vardeclinit reduceDim
 %type <pdexpr> domainExpr
 %type <stmt> program statements statement decl vardecl assignment conditional
 %type <stmt> retStmt loop forloop whileloop enumdecl typealias typedecl fndecl
@@ -107,15 +107,19 @@
 %left LOGOR
 %left LOGAND
 %right '!'
+%left EQUALS NEQUALS
+%left LTHAN LEQUALS GTHAN GEQUALS
+%left BITSL BITSR
 %left BITOR
 %left BITXOR
 %left BITAND
-%left EQUALS NEQUALS
-%left LTHAN LEQUALS GTHAN GEQUALS
 %left '+' '-'
-%right UMINUS '~'
 %left '*' '/' '%'
+%right TUMINUS TUPLUS
+%right '~'
 %right EXP
+%left TBY
+%left ':'
 
 %% 
 
@@ -216,10 +220,6 @@ subclass:
 | ':' identifier
     {
       $$ = Symboltable::lookupClass($2);
-    }
-| ':' CLASS_IDENT
-    {
-      $$ = $2;
     }
 ;
 
@@ -392,13 +392,15 @@ statement:
 | assignment
 | conditional
 | loop
-| expr ';'
+| simple_lvalue ';'  /* This used to be "expr." Isn't this just for function calls? -SJD */
     { $$ = new ExprStmt($1); }
 | retStmt
 | '{'
     { Symboltable::startCompoundStmt(); }
       statements '}'
     { $$ = Symboltable::finishCompoundStmt($3); }
+| error
+    { printf("syntax error"); exit(1); }
 ;
 
 
@@ -536,16 +538,11 @@ atom:
 ;
 
 
-
 expr: 
   atom
-| binop
-| expr otherbinop expr
-    { $$ = new SpecialBinOp($2, $1, $3); }
-| unop expr
-    { $$ = new UnOp($1, $2); }
 | reduction
-| cast
+| expr ':' type
+    { $$ = new CastExpr($3, $1); }
 | range
 | '(' nonemptyExprlist ')' 
     { 
@@ -562,6 +559,57 @@ expr:
       $2->setForallExpr($4);
       $$ = $2;
     }
+| '+' expr                                     %prec TUPLUS
+    { $$ = new UnOp(UNOP_PLUS, $2); }
+| '-' expr                                     %prec TUMINUS
+    { $$ = new UnOp(UNOP_MINUS, $2); }
+| '!' expr
+    { $$ = new UnOp(UNOP_LOGNOT, $2); }
+| '~' expr
+    { $$ = new UnOp(UNOP_BITNOT, $2); }
+| expr '+' expr
+    { $$ = Expr::newPlusMinus(BINOP_PLUS, $1, $3); }
+| expr '-' expr
+    { $$ = Expr::newPlusMinus(BINOP_MINUS, $1, $3); }
+| expr '*' expr
+    { $$ = new BinOp(BINOP_MULT, $1, $3); }
+| expr '/' expr
+    { $$ = new BinOp(BINOP_DIV, $1, $3); }
+| expr '%' expr
+    { $$ = new BinOp(BINOP_MOD, $1, $3); }
+| expr EQUALS expr
+    { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
+| expr NEQUALS expr
+    { $$ = new BinOp(BINOP_NEQUAL, $1, $3); }
+| expr LEQUALS expr
+    { $$ = new BinOp(BINOP_LEQUAL, $1, $3); }
+| expr GEQUALS expr
+    { $$ = new BinOp(BINOP_GEQUAL, $1, $3); }
+| expr GTHAN expr
+    { $$ = new BinOp(BINOP_GTHAN, $1, $3); }
+| expr LTHAN expr
+    { $$ = new BinOp(BINOP_LTHAN, $1, $3); }
+| expr BITAND expr
+    { $$ = new BinOp(BINOP_BITAND, $1, $3); }
+| expr BITOR expr
+    { $$ = new BinOp(BINOP_BITOR, $1, $3); }
+| expr BITXOR expr
+    { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
+| expr BITSL expr
+    { $$ = new BinOp(BINOP_BITSL, $1, $3); }
+| expr BITSR expr
+    { $$ = new BinOp(BINOP_BITSR, $1, $3); }
+| expr LOGAND expr
+    { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
+| expr LOGOR expr
+    { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
+| expr EXP expr
+    { $$ = new BinOp(BINOP_EXP, $1, $3); }
+
+/** Can "by" really apply to arbitrary expressions or just ranges and reductions? -SJD */
+
+| expr otherbinop expr                           %prec TBY
+    { $$ = new SpecialBinOp($2, $1, $3); }
 ;
 
 
@@ -583,10 +631,11 @@ reduction:
 ;
 
 
+/* Here are the other three reduce/reduce errors! nonemptyExprlist and indexlist -SJD */
 domainExpr:
   nonemptyExprlist
     { $$ = new DomainExpr($1); }
-| indexlist ':' nonemptyExprlist          // BLC: This is wrong vv
+| indexlist IN nonemptyExprlist          // BLC: This is wrong vv
     { $$ = new DomainExpr($3, Symboltable::defineVars($1, dtInteger)); }
 ;
 
@@ -621,60 +670,6 @@ intliteral:
 ;
 
 
-unop:
-  '+'
-    { $$ = UNOP_PLUS; }
-| '-'
-    { $$ = UNOP_MINUS; }
-| '!'
-    { $$ = UNOP_LOGNOT; }
-| '~'
-    { $$ = UNOP_BITNOT; }
-;
-
-
-binop:
-  expr '+' expr
-    { $$ = Expr::newPlusMinus(BINOP_PLUS, $1, $3); }
-| expr '-' expr
-    { $$ = Expr::newPlusMinus(BINOP_MINUS, $1, $3); }
-| expr '*' expr
-    { $$ = new BinOp(BINOP_MULT, $1, $3); }
-| expr '/' expr
-    { $$ = new BinOp(BINOP_DIV, $1, $3); }
-| expr '%' expr
-    { $$ = new BinOp(BINOP_MOD, $1, $3); }
-| expr EQUALS expr
-    { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
-| expr LEQUALS expr
-    { $$ = new BinOp(BINOP_LEQUAL, $1, $3); }
-| expr GEQUALS expr
-    { $$ = new BinOp(BINOP_GEQUAL, $1, $3); }
-| expr GTHAN expr
-    { $$ = new BinOp(BINOP_GTHAN, $1, $3); }
-| expr LTHAN expr
-    { $$ = new BinOp(BINOP_LTHAN, $1, $3); }
-| expr NEQUALS expr
-    { $$ = new BinOp(BINOP_NEQUAL, $1, $3); }
-| expr BITAND expr
-    { $$ = new BinOp(BINOP_BITAND, $1, $3); }
-| expr BITOR expr
-    { $$ = new BinOp(BINOP_BITOR, $1, $3); }
-| expr BITXOR expr
-    { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
-| expr BITSL expr
-    { $$ = new BinOp(BINOP_BITSL, $1, $3); }
-| expr BITSR expr
-    { $$ = new BinOp(BINOP_BITSR, $1, $3); }
-| expr LOGAND expr
-    { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
-| expr LOGOR expr
-    { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
-| expr EXP expr
-    { $$ = new BinOp(BINOP_EXP, $1, $3); }
-;
-
-
 otherbinop:
   BY
     { $$ = BINOP_BY; }
@@ -694,10 +689,5 @@ query_identifier:
     { $$ = copystring(yytext+1); }
 ;
 
-
-cast:
-  expr ':' type
-    { $$ = new CastExpr($3, $1); }
-;
 
 %%
