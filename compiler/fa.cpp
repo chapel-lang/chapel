@@ -183,7 +183,7 @@ void
 update_in(AVar *v, AType *t) {
   AType *tt = type_union(v->in, t);
   if (tt != v->in) {
-    assert(tt != top_type);
+    assert(tt && tt != top_type);
     v->in = tt;
     tt = type_intersection(v->in, v->restrict);
     if (tt != v->out) {

@@ -38,6 +38,8 @@ static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
 static Sym *sym_array = 0;
 static Sym *sym_sequence = 0;
+static Sym *sym_locale = 0;
+static Sym *sym_timer = 0;
 
 ASymbol::ASymbol() : xsymbol(0) {
 }
@@ -134,6 +136,13 @@ new_sym(char *name = 0, int global = 0) {
 }
 
 static void
+map_type(Type *t) {
+  t->asymbol = new_ASymbol(t->name);
+  t->asymbol->xsymbol = t;
+  set_global_scope(t->asymbol);
+}
+
+static void
 map_symbols(Vec<BaseAST *> &syms) {
   int symbols = 0, types = 0, exprs = 0, stmts = 0;
   if (verbose_level > 1)
@@ -170,9 +179,8 @@ map_symbols(Vec<BaseAST *> &syms) {
     } else {
       Type *t = dynamic_cast<Type *>(s);
       if (t) {
+	map_type(t);
 	t->asymbol = new_ASymbol(t->name);
-	t->asymbol->xsymbol = t;
-	set_global_scope(t->asymbol);
 	types++;
       } else {
 	Expr *e = dynamic_cast<Expr *>(s);
@@ -238,6 +246,7 @@ build_types(Vec<BaseAST *> &syms) {
       types.add(t);
   }
   forv_Type(t, types) {
+    make_type_sym(t->asymbol);
     switch (t->astType) {
       default: assert(!"case");
       case TYPE:
@@ -262,6 +271,8 @@ build_types(Vec<BaseAST *> &syms) {
 	} else if (t == dtString) {
 	  t->asymbol->type_kind = Type_ALIAS;
 	  t->asymbol->alias = sym_string;
+	} else if (t == dtLocale) {
+	} else if (t == dtTimer) {
 	} else if (t == dtUnknown) {
 	  t->asymbol->type_kind = Type_UNKNOWN;
 	} else
@@ -317,6 +328,7 @@ build_types(Vec<BaseAST *> &syms) {
 	// ClassType::definition handled below in build_classes()
 	ClassType *tt = dynamic_cast<ClassType*>(t);
 	t->asymbol->type_kind = Type_RECORD;
+	tt->name->asymbol = (ASymbol*)tt->asymbol->type_sym;
 	if (tt->parentClass) {
 	  t->asymbol->implements.add(tt->parentClass->asymbol);
 	  t->asymbol->includes.add(tt->parentClass->asymbol);
@@ -324,7 +336,6 @@ build_types(Vec<BaseAST *> &syms) {
 	break;
       }
     }
-    make_type_sym(t->asymbol);
   }
 }
 
@@ -368,6 +379,16 @@ new_global_variable(Sym *&sym, char *name) {
     sym = new_sym(name, 1);
   sym->global_scope = 1;
   if1_set_builtin(if1, sym, name);
+}
+
+static void
+builtin_Symbol(Type *dt, Sym **sym) {
+  if (!dt->asymbol)
+    map_type(dt);
+  *sym = dt->asymbol;
+  if (!dt->asymbol->type_kind)
+    dt->asymbol->type_kind = Type_PRIMITIVE;
+  ((ASymbol*)*sym)->xsymbol = dt;
 }
 
 static void
@@ -439,22 +460,21 @@ build_builtin_symbols() {
   
   new_global_variable(sym_null, "null");
   sym_init = new_sym(); // placeholder
+
   ((ASymbol*)sym_void)->xsymbol = dtVoid;
   ((ASymbol*)sym_bool)->xsymbol = dtBoolean;
   ((ASymbol*)sym_int64)->xsymbol = dtInteger;
   ((ASymbol*)sym_float64)->xsymbol = dtFloat;
   ((ASymbol*)sym_complex64)->xsymbol = dtComplex;
   ((ASymbol*)sym_string)->xsymbol = dtString;
-  sym_tuple = dtTuple->asymbol;
-  ((ASymbol*)sym_tuple)->xsymbol = dtTuple;
-  sym_index = dtIndex->asymbol;
-  ((ASymbol*)sym_index)->xsymbol = dtIndex;
-  sym_domain = dtDomain->asymbol;
-  ((ASymbol*)sym_domain)->xsymbol = dtDomain;
-  sym_array = dtArray->asymbol;
-  ((ASymbol*)sym_array)->xsymbol = dtArray;
-  // locale
-  // timer
+
+  builtin_Symbol(dtTuple, &sym_tuple);
+  builtin_Symbol(dtIndex, &sym_index);
+  builtin_Symbol(dtDomain, &sym_domain);
+  builtin_Symbol(dtArray, &sym_array);
+  builtin_Symbol(dtLocale, &sym_locale);
+  builtin_Symbol(dtTimer, &sym_timer);
+
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
 #undef S
@@ -941,12 +961,13 @@ gen_if1(BaseAST *ast) {
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       int use_symbol = undef_or_fn_expr(s->baseExpr);
       Sym *symbol = NULL;
-      if (!strcmp(s->baseExpr->ainfo->rval->name, "__primitive"))
+      char *n = s->baseExpr->ainfo->rval->name;
+      if (n && !strcmp(n, "__primitive"))
 	symbol = sym_primitive;
-      else if (!strcmp(s->baseExpr->ainfo->rval->name, "__operator"))
+      else if (n && !strcmp(n, "__operator"))
 	symbol = sym_operator;
       else if (use_symbol)
-	symbol = gen_move(if1_make_symbol(if1, s->baseExpr->ainfo->rval->name), s);
+	symbol = gen_move(if1_make_symbol(if1, n), s);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if (symbol)
@@ -1270,8 +1291,7 @@ array_index(PNode *pn, EntrySet *es) {
   }
 }
 
-int
-AST_to_IF1(Vec<Stmt *> &stmts) {
+int ast_to_if1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
   close_symbols(stmts, syms);
   init_symbols();
@@ -1291,6 +1311,13 @@ AST_to_IF1(Vec<Stmt *> &stmts) {
   finalize_types(if1);
   sym_null->is_external = 1;	// hack
   finalize_symbols(if1);
+  return 0;
+}
+
+int
+AST_to_IF1(Vec<Stmt *> &stmts) {
+  if (ast_to_if1(stmts) < 0)
+    fail("unable to analyze AST\n");
   return 0;
 }
 
