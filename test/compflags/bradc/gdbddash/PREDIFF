@@ -1,0 +1,9 @@
+#!/bin/csh -f
+set testname = $1
+set outfile = $2
+
+set tmpfile = $outfile.raw.tmp
+
+mv $outfile $tmpfile
+grep -v "Using host libthread_db library" $tmpfile > $outfile
+rm $tmpfile
