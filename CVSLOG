@@ -19723,3 +19723,37 @@ Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 	chapel/test/functions/deitz/: test_operator_overloading1.future 
 
+---------------------------------------------------------------------------
+
+03/16/05 11:22:47 -- deitz
+
+Log message:
+	Added DefExpr.  All symbols that were previously defined through
+	DefStmts are now defined through DefExprs within DefStmts.  Symbols
+	defined in Forall expressions and statements, let expression, and
+	formal parameters are still defined without DefExprs.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h symtab.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp fixup.cpp 
+	                             insertAnonymousDomains.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             removeDeadSymbols.cpp 
+	                             renameOverloadedFunctions.cpp 
+	                             renameOverloadedFunctions.h 
+	                             specializeParenOpExprs.cpp 
+	                             specializeParenOpExprs.h 
+	                             transformLetExprs.cpp 
+	                             verifyASTType.cpp 
+
