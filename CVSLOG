@@ -2243,3 +2243,13 @@ Log message:
 Modified files:
 	chapel/compiler/: map.h vec.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/26 11:47:16 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Missing semi-colon
+
+Modified files:
+	chapel/test/trivial/bradc/: printempty.chpl 
+
