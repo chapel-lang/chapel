@@ -18963,3 +18963,30 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: view.cpp view.h 
 
+---------------------------------------------------------------------------
+
+03/04/05 15:39:41 -- jplevyak
+
+Log message:
+	Switch over to using overloaded operators for all binary
+	operations.  These are dispatched through system defined
+	functions using the new "numeric" type (dtNumeric) in
+	the internal_prelude.
+	This will permit us to define operators over strings/arrays/domsin
+	etc. in the future.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp cg.cpp 
+	chapel/compiler/parser/: chapel.y internal_prelude.chpl 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_ops.good 
+	                                  compSampler.good 
+	                                  danglingelse.good 
+	                                  equality_ops.good 
+	                                  logical_and.good mod.good 
+	                                  mutrec.good pareninit.good 
+	                                  relational_ops.good var.good 
+	                                  var2.good whileLoop.good 
+
