@@ -10632,3 +10632,13 @@ Modified files:
 Removed files:
 	chapel/test/Share/: configVarComplex.chpl 
 
+---------------------------------------------------------------------------
+
+11/30/04 09:26:49 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	SEGV in debug output of some constants
+
+Modified files:
+	chapel/compiler/analysis/: fa_extras.cpp 
+
