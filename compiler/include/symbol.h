@@ -4,19 +4,6 @@
 #include "baseAST.h"
 #include "type.h"
 
-#define TRAVERSABLE_SYMBOL(name)                                                        \
- public:                                                                                \
-  void traverse(name* &_this, Traversal* traversal, bool atTop = true) {        \
-    if (isNull()) return;                                                               \
-    if (traversal->processTop || !atTop) traversal->preProcessSymbol((Symbol*&)_this);  \
-    if (atTop || traversal->exploreChildSymbols) _this->traverseSymbol(traversal);      \
-    if (traversal->processTop || !atTop) traversal->postProcessSymbol((Symbol*&)_this); \
-  };                                                                                    \
-  void traverseList(name* &_this, Traversal* traversal, bool atTop = true) {    \
-    if (isNull()) return;                                                               \
-    TRAVERSE(_this, traversal, atTop);                                                  \
-    TRAVERSE_LS(_this->next, traversal, atTop);                                         \
-  }
 
 class Stmt;
 class ASymbol;

@@ -5,26 +5,6 @@
 #include "baseAST.h"
 #include "vec.h"
 
-#define TRAVERSABLE_TYPE(typename)                                                       \
- public:                                                                                 \
-  void traverse(typename* &_this, Traversal* traversal, bool atTop = true) {     \
-    if (isNull()) return;                                                                \
-    if (traversal->processTop || !atTop) traversal->preProcessType((Type*&)_this);       \
-    if (atTop || traversal->exploreChildTypes) {                                         \
-      if (atTop || _this->name == nilSymbol) {                                           \
-	_this->traverseDefType(traversal);                                               \
-      } else {                                                                           \
-	_this->traverseType(traversal);                                                  \
-      }                                                                                  \
-    }                                                                                    \
-    if (traversal->processTop || !atTop) traversal->postProcessType((Type*&)_this);      \
-  };                                                                                     \
-  void traverseList(typename* &_this, Traversal* traversal, bool atTop = true) { \
-    if (isNull()) return;                                                                \
-    TRAVERSE(_this, traversal, atTop);                                                   \
-    TRAVERSE_LS(_this->next, traversal, atTop);                                          \
-  }
-
 class Symbol;
 class EnumSymbol;
 class VarSymbol;

@@ -7,20 +7,6 @@
 #include "vec.h"
 #include "../traversals/traversal.h"
 
-#define TRAVERSE(link, traversal, atTop) \
-  link->traverse(link, traversal, atTop)
-
-#define TRAVERSE_LS(link, traversal, atTop) \
-  link->traverseList(link, traversal, atTop)
-
-#define TRAVERSABLE_ILINK(name)                                                      \
- public:                                                                             \
-  void traverse(name* &_this, Traversal* traversal, bool atTop = true);              \
-  void traverseList(name* &_this, Traversal* traversal, bool atTop = true) {         \
-    if (isNull()) return;                                                            \
-    TRAVERSE(_this, traversal, atTop);                                               \
-    TRAVERSE_LS(_this->next, traversal, atTop);                                      \
-  }
 
 class ILink : public Loc {
   TRAVERSABLE_ILINK(ILink);

@@ -5,20 +5,6 @@
 #include "baseAST.h"
 #include "symbol.h"
 
-#define TRAVERSABLE_STMT(name)                                                       \
- public:                                                                             \
-  void traverse(name* &_this, Traversal* traversal, bool atTop = true) {             \
-    if (isNull()) return;                                                            \
-    if (traversal->processTop || !atTop) traversal->preProcessStmt((Stmt*&)_this);   \
-    if (atTop || traversal->exploreChildStmts) _this->traverseStmt(traversal);       \
-    if (traversal->processTop || !atTop) traversal->postProcessStmt((Stmt*&)_this);  \
-  };                                                                                 \
-  void traverseList(name* &_this, Traversal* traversal, bool atTop = true) {         \
-    if (isNull()) return;                                                            \
-    TRAVERSE(_this, traversal, atTop);                                               \
-    TRAVERSE_LS(_this->next, traversal, atTop);                                      \
-  }
-
 class Expr;
 class AInfo;
 
