@@ -146,11 +146,11 @@ close(MAIL);
 
 
 #
-# write stats
+# write stats and build new graph
 #
 `echo "$statdate\t$newnumtests\t$newstdsucc\t$newvgrsucc" >> $statdir/tests.dat`;
 `ci -l -m"automated nightly checkin" $statdir/tests.dat`;
-
+`cd $statdir && ./makeplot`;
 
 #
 # clean up
