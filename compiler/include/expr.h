@@ -511,9 +511,29 @@ class ForallExpr : public Expr {
   void codegen(FILE* outfile);
 };
 
-
 extern ForallExpr* unknownDomain;
 
 void initExpr(void);
+
+class LetExpr : public Expr {
+ public:
+  Symbol* syms;
+  Expr* innerExpr;
+
+  SymScope* letScope;
+
+  LetExpr(Symbol* init_syms, Expr* init_innerExpr);
+  void setInnerExpr(Expr* expr);
+  void setLetScope(SymScope* init_letScope);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void traverseExpr(Traversal* traversal);
+
+  Type* typeInfo(void);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
 
 #endif

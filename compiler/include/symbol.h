@@ -49,7 +49,7 @@ class Symbol : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   void codegenDefList(FILE* outfile, char* separator);
-  void setDefPoint(Stmt* stmt);
+  void setDefPoint(BaseAST* stmt);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 

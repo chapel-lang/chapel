@@ -50,6 +50,7 @@ if              return TIF;
 in              return TIN;
 index           return TINDEX;
 inout           return TINOUT;
+let             return TLET;
 mod             return TMOD;
 module		return TMODULE;
 not             return TNOT;

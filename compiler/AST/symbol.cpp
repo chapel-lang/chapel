@@ -111,6 +111,7 @@ void Symbol::traverseDef(Traversal* traversal, bool atTop) {
 
 
 void Symbol::traverseSymbol(Traversal* traversal) {
+  
 }
 
 
@@ -169,10 +170,10 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
   }
 }
 
-void Symbol::setDefPoint(Stmt* stmt) {
+void Symbol::setDefPoint(BaseAST* init_defPoint) {
   Symbol* tmp = this;
   while (tmp) {
-    tmp->defPoint = stmt;
+    tmp->defPoint = init_defPoint;
     tmp = nextLink(Symbol, tmp);
   }
 }

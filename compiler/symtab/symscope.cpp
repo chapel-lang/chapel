@@ -205,6 +205,9 @@ void SymScope::printHeader(FILE* outfile) {
   case SCOPE_FORALLEXPR:
     fprintf(outfile, "forall expression");
     break;
+  case SCOPE_LETEXPR:
+    fprintf(outfile, "let expression");
+    break;
   case SCOPE_CLASS:
     fprintf(outfile, "class");
     break;

@@ -28,6 +28,7 @@
 #include "../traversals/processParameters.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
+#include "../traversals/transformLetExprs.h"
 #include "../traversals/verifyASTType.h"
 
 /* any Passes or Traversals that are expected to be parsed as part of
@@ -67,5 +68,6 @@ REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
 REGISTER(TestGetStuff);
+REGISTER(TransformLetExprs);
 REGISTER(VerifyASTType);
 STOP_PASSLIST_REGISTRATION

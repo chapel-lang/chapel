@@ -45,6 +45,9 @@ class Symboltable {
   static Symbol* lookupInternal(char* name, bool publicSym = false);
   static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
 
+  static Expr* startLetExpr(void);
+  static Expr* finishLetExpr(Expr* let_expr, VarDefStmt* stmts,
+			     Expr* inner_expr);
   static BlockStmt* startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, Stmt* body);
   static ModuleSymbol* startModuleDef(char* name, bool internal = false);

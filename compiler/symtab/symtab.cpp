@@ -511,6 +511,9 @@ VarDefStmt* Symboltable::defineVarDefStmt2(VarDefStmt* stmts,
 }
 
 
+
+
+
 VarDefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
 						Expr* init, varType vartag, 
 						bool isConst, 
@@ -550,6 +553,35 @@ static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = nilSymbol) {
 }
 
 
+Expr* Symboltable::startLetExpr(void) {
+  Symboltable::pushScope(SCOPE_LETEXPR);
+  return new LetExpr(nilSymbol, nilExpr);
+}
+
+
+Expr* Symboltable::finishLetExpr(Expr* let_expr, VarDefStmt* stmts, Expr* inner_expr) {
+  LetExpr* let = dynamic_cast<LetExpr*>(let_expr);
+
+  if (!let) {
+    INT_FATAL(let_expr, "LetExpr expected");
+  }
+
+  VarDefStmt* stmt = stmts;
+  while (stmt) {
+    let->syms = appendLink(let->syms, stmt->var);
+    stmt = nextLink(VarDefStmt, stmt);
+  }
+
+  let->setInnerExpr(inner_expr);
+
+  SymScope* let_scope = Symboltable::popScope();
+  let_scope->setContext(nilStmt, nilSymbol, let);
+  let->setLetScope(let_scope);
+  let->syms->setDefPoint(let);
+  return let;
+}
+
+
 ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
 
@@ -566,10 +598,10 @@ ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr,
   if (!argExpr->isNull()) {
     forallExpr->setForallExpr(argExpr);
   }
-
   SymScope* forallScope = Symboltable::popScope();
   forallScope->setContext(nilStmt, nilSymbol, forallExpr);
   forallExpr->setIndexScope(forallScope);
+  forallExpr->indices->setDefPoint(forallExpr);
 
   return forallExpr;
 }

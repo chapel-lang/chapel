@@ -1653,3 +1653,53 @@ void initExpr(void) {
   Variable* var = new Variable(pst);
   unknownDomain = new ForallExpr(var);
 }
+
+
+LetExpr::LetExpr(Symbol* init_syms, Expr* init_innerExpr) :
+  Expr(EXPR_LET),
+  syms(init_syms),
+  innerExpr(init_innerExpr)
+{
+  SET_BACK(innerExpr);
+}
+
+
+void LetExpr::setInnerExpr(Expr* expr) {
+  innerExpr = expr;
+  SET_BACK(innerExpr);
+}
+
+
+void LetExpr::setLetScope(SymScope* init_letScope) {
+  letScope = init_letScope;
+}
+
+
+Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  LetExpr* copy = new LetExpr(syms, innerExpr->copyInternal(clone, map, analysis_clone));
+  copy->setLetScope(letScope);
+  return copy;
+}
+
+
+void LetExpr::traverseExpr(Traversal* traversal) {
+  SymScope* saveScope = Symboltable::setCurrentScope(letScope);
+  TRAVERSE_DEF_LS(syms, traversal, false);
+  TRAVERSE(innerExpr, traversal, false);
+  Symboltable::setCurrentScope(saveScope);
+}
+
+
+Type* LetExpr::typeInfo(void) {
+  return innerExpr->typeInfo();
+}
+
+
+void LetExpr::print(FILE* outfile) {
+  INT_FATAL(this, "LetExpr::print not implemented");
+}
+
+
+void LetExpr::codegen(FILE* outfile) {
+  INT_FATAL(this, "LetExpr::codegen not implemented");
+}

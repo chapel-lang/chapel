@@ -19,6 +19,7 @@ TRAVERSALS_SRCS = \
 	methodsToFunctions.cpp \
 	resolveSymbols.cpp \
 	testGetStuff.cpp \
+	transformLetExprs.cpp \
 	traversal.cpp \
 	verifyASTType.cpp
 

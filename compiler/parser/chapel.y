@@ -49,6 +49,7 @@
 %token TIN
 %token TINDEX
 %token TINOUT
+%token TLET
 %token TMODULE
 %token TOUT
 %token TRECORD
@@ -113,6 +114,7 @@
 %left TELSE
 
 %left TRSBR
+%left TIN
 %left TBY
 %left TDOTDOT
 %left TOR
@@ -702,6 +704,10 @@ atom:
 
 expr: 
   atom
+| TLET
+    { $<pexpr>$ = Symboltable::startLetExpr(); }
+       vardecl_inner_ls TIN expr
+    { $$ = Symboltable::finishLetExpr($<pexpr>2, $3, $5); }
 | reduction %prec TREDUCE
 | expr TCOLON type
     { $$ = new CastExpr($3, $1); }

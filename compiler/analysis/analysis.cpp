@@ -1372,6 +1372,10 @@ gen_if1(BaseAST *ast) {
       s->ainfo->rval = completedim_symbol;
       break;
     }
+    case EXPR_LET: {
+      INT_FATAL("Let expression encountered by analysis");
+      break;
+    }
     case EXPR_FORALL: {
       ForallExpr *s = dynamic_cast<ForallExpr *>(ast);
       s->ainfo->rval = new_sym();
@@ -2037,7 +2041,13 @@ void
 call_info(ParenOpExpr* a, Vec<FnSymbol *> &fns) {
   FnSymbol* f = dynamic_cast<FnSymbol*>(a->stmt->parentSymbol);
   if (!f) {
-    INT_FATAL(a, "Function called from something not a function");
+    if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(a->stmt->parentSymbol)) {
+      f = m->initFn;  // UGH!  SJD: parentSymbol is not set correctly
+      // See checkin Feb 16, 2005, On my to do list
+    }
+    else {
+      INT_FATAL(a, "Function called from something not a function");
+    }
   }
   fns.clear();
   Fun *ff = f->asymbol->sym->fun;

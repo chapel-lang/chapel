@@ -251,6 +251,17 @@ static void verifySymbolDefPoint(Symbol* sym) {
       INT_FATAL(sym, "Incorrect ForallExpr defPoint "
 		"for symbol '%s'", sym->name);
     }
+    else if (LetExpr* expr = dynamic_cast<LetExpr*>(defPoint)) {
+      Symbol* tmp = expr->syms;
+      while (tmp) {
+	if (tmp == sym) {
+	  return;
+	}
+	tmp = nextLink(Symbol, tmp);
+      }
+      INT_FATAL(sym, "Incorrect LetExpr defPoint "
+		"for symbol '%s'", sym->name);
+    }
     else if (defPoint->isNull()) {
       if (sym->parentScope->type != SCOPE_INTRINSIC) {
 	INT_FATAL(sym, "Nil defPoint for symbol '%s'", sym->name);
