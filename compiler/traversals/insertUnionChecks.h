@@ -5,11 +5,7 @@
 
 class InsertUnionChecks : public Traversal {
  public:
-  int writing;
-  InsertUnionChecks::InsertUnionChecks(void);
-  void preProcessStmt(Stmt* stmt);
   void preProcessExpr(Expr* expr);
-  void postProcessExpr(Expr* expr);
 };
 
 #endif

@@ -371,6 +371,61 @@ Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
 }
 
 
+typedef enum _EXPR_RW { expr_r, expr_w, expr_rw } EXPR_RW;
+
+static EXPR_RW expr_read_written(Expr* expr) {
+  if (expr->parent && !expr->parent->isNull()) {
+    Expr* parent = expr->parent;
+    if (dynamic_cast<MemberAccess*>(parent)) {
+      return expr_read_written(parent);
+    }
+    if (dynamic_cast<Tuple*>(parent)) {
+      return expr_read_written(parent);
+    }
+    if (ArrayRef* array_expr = dynamic_cast<ArrayRef*>(parent)) {
+      if (*expr->back == array_expr->baseExpr) {
+	return expr_read_written(parent);
+      }
+    }
+    if (AssignOp* assignment = dynamic_cast<AssignOp*>(parent)) {
+      if (assignment->left == expr) {
+	return expr_w;
+      }
+    }
+    if (FnCall* fn_call = dynamic_cast<FnCall*>(parent)) {
+      if (typeid(*fn_call) == typeid(FnCall)) {
+	FnSymbol* fn = fn_call->findFnSymbol();
+	Symbol* formal = fn->formals;
+	for(Expr* actual = fn_call->argList;
+	    actual && !actual->isNull();
+	    actual = nextLink(Expr, actual)) {
+	  if (actual == expr) {
+	    if (ParamSymbol* formal_param = dynamic_cast<ParamSymbol*>(formal)) {
+	      if (formal_param->intent == PARAM_OUT) {
+		return expr_w;
+	      }
+	      else if (formal_param->intent == PARAM_INOUT) {
+		return expr_rw;
+	      }
+	    }
+	  }
+	  formal = nextLink(Symbol, formal);
+	}
+      }
+    }
+  }
+  return expr_r;
+}
+
+bool Expr::isRead() {
+  return expr_read_written(this) != expr_w;
+}
+
+bool Expr::isWritten() {
+  return expr_read_written(this) != expr_r;
+}
+
+
 Literal::Literal(astType_t astType, char* init_str) :
   Expr(astType),
   str(copystring(init_str))

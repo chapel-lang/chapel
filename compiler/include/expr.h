@@ -124,6 +124,9 @@ class Expr : public BaseAST {
   void insertAfter(Expr* new_expr);
   virtual void append(ILink* new_expr);
   Expr* extract(void);
+
+  bool isRead(void);
+  bool isWritten(void);
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 
