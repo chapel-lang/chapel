@@ -16546,3 +16546,20 @@ Added files:
 	chapel/compiler/traversals/: checkSemantics.cpp checkSemantics.h 
 	chapel/test/functions/jplevyak/scoping/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+02/04/05 09:55:50 -- deitz
+
+Log message:
+	Added two more class cloning tests.  In one, a member of the same
+	instance is assigned a float and an integer.  It becomes a float
+	correctly.  In the other one, a class needs to be cloned because one
+	instance treats a field as a string and the other as a float.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.chpl 
+	                                         test_clone_class1a.good 
+	                                         test_clone_class2a.chpl 
+	                                         test_clone_class2a.future 
+	                                         test_clone_class2a.good 
+
