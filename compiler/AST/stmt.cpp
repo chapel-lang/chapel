@@ -49,6 +49,8 @@ Stmt* Stmt::copyList(CloneCallback* analysis_clone) {
 Stmt* Stmt::copy(CloneCallback* analysis_clone) {
   Stmt* new_stmt = copyStmt(analysis_clone);
 
+  new_stmt->lineno = lineno;
+  new_stmt->filename = filename;
   if (analysis_clone) {
     analysis_clone->clone(this, new_stmt);
   }

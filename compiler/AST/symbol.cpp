@@ -49,6 +49,9 @@ Symbol* Symbol::copy(CloneCallback* analysis_clone) {
 
   Symbol* new_symbol = copySymbol(analysis_clone);
 
+  new_symbol->lineno = lineno;
+  new_symbol->filename = filename;
+
   if (analysis_clone) {
     analysis_clone->clone(this, new_symbol);
   }

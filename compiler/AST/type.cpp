@@ -37,6 +37,8 @@ bool Type::isComplex(void) {
 Type* Type::copy(CloneCallback* analysis_clone) {
   Type* new_type = copyType(analysis_clone);
 
+  new_type->lineno = lineno;
+  new_type->filename = filename;
   if (analysis_clone) {
     analysis_clone->clone(this, new_type);
   }

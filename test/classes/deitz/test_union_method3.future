@@ -1,5 +1,0 @@
-deitz
-
-Line number prints out wrong in union test.
-
-This is because copy drops the line numbers.

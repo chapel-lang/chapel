@@ -107,6 +107,8 @@ Expr* Expr::copyList(CloneCallback* analysis_clone) {
 Expr* Expr::copy(CloneCallback* analysis_clone) {
   Expr* new_expr = copyExpr(analysis_clone);
 
+  new_expr->lineno = lineno;
+  new_expr->filename = filename;
   if (analysis_clone) {
     analysis_clone->clone(this, new_expr);
   }

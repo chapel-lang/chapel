@@ -290,6 +290,8 @@ void ApplyThis::preProcessExpr(Expr* expr) {
 	if (FnSymbol* parentFn = dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
 	  MemberAccess* repl = new MemberAccess(new Variable(parentFn->formals),
 						member->var);
+	  repl->lineno = expr->lineno;
+	  repl->filename = expr->filename;
 	  expr->replace(repl);
 	}
 	else {
