@@ -11674,3 +11674,88 @@ Log message:
 Modified files:
 	chapel/compiler/vparser/: Makefile.share 
 
+---------------------------------------------------------------------------
+
+12/14/04 10:35:35 -- deitz
+
+Log message:
+	Beefed up the traversal mechanism so that changes can easily be made
+	during a traversal.  The preProcess* and postProcess* routines now
+	take their arguments by reference so that they can be changed.  For
+	example, this is used in the fieldsToMemberAccesses traversal in which
+	fields of a class accessed within a bound function are changed to
+	member accesses where the base is "this."
+	
+	This change was complicated by the fact that these routines were
+	always called with "this" as a parameter and "this" cannot be changed
+	(or passed as a reference).  Thus traversals now take this as a
+	reference parameter alongside their call.  The proper usage is
+	redundantly specified as
+	
+	  expr->traverse(expr, traversal, atTop);
+	
+	where _expr_ is the expression that will be traversed by _traversal_
+	and _atTop_ is the boolean saying whether this is the first node in
+	the traversal or not.
+	
+	To make this easier to call, especially since the parameters now have
+	to match more exactly (because of the first parameter), I added two
+	routines in a new file AST/ast_util.cpp (header: include/ast_util.h)
+	{I don't like these locations, suggestions?}.  These routines called
+	TRAVERSE and TRAVERSE_LS let you specify a call to a traversal without
+	the redundancy.  They also resolve more dynamically using dynamic
+	casts to Expr*, Stmt*, Symbol*, or Type*.  The above example would be
+	called as
+	
+	  TRAVERSE(expr, traversal, atTop);
+	
+	Removed the old replace methods for Expr and its subtypes that needed
+	it.  This mechanism only worked when the expression being replaced had
+	a parent that was also an expression.  This failed when, for example,
+	the expression was attached to a return statement.  The new mechanism
+	replaces the reference passed into a traversal using a static replace
+	function associated with Expr.
+	
+	Added a static replace function to Expr that replaces one expression
+	(passed as a reference) with another.  This function updates the prev,
+	next, and parent pointers if necessary.
+	
+	Added three new tests to classes/deitz/future/future/ that try to
+	print the return values of bound functions, but don't currently work.
+	Added a test case trivial/deitz/test_write_return that prints the
+	return values of a function.  This does work.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share expr.cpp link.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h link.h stmt.h symbol.h type.h 
+	chapel/compiler/traversals/: checkIDs.cpp checkIDs.h 
+	                             checkTypeInfo.cpp checkTypeInfo.h 
+	                             cloneAllFns.cpp cloneAllFns.h 
+	                             defineSymbols.cpp defineSymbols.h 
+	                             fieldsToMemberAccesses.cpp 
+	                             fieldsToMemberAccesses.h 
+	                             findUnknownTypes.cpp 
+	                             findUnknownTypes.h 
+	                             findUnresolvedSymbols.cpp 
+	                             findUnresolvedSymbols.h fixup.cpp 
+	                             fixup.h getstuff.cpp getstuff.h 
+	                             methodsToFunctions.cpp 
+	                             methodsToFunctions.h printAST.cpp 
+	                             printAST.h 
+	                             processWithStatements.cpp 
+	                             processWithStatements.h 
+	                             resolveSymbols.cpp resolveSymbols.h 
+	                             testGetStuff.cpp testGetStuff.h 
+	                             traversal.cpp traversal.h 
+	                             verifyASTType.cpp verifyASTType.h 
+Added files:
+	chapel/compiler/AST/: ast_util.cpp 
+	chapel/compiler/include/: ast_util.h 
+	chapel/test/classes/deitz/future/future/: test_method4.chpl 
+	                                          test_method5.chpl 
+	                                          test_method6.chpl 
+	chapel/test/trivial/deitz/: test_write_return.chpl 
+	                            test_write_return.good 
+
