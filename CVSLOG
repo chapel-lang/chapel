@@ -414,3 +414,27 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: iv.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/12 10:48:45 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Add support for trailing context to scanner
+
+Modified files:
+	chapel/third-party/dparser/d/: CHANGES COPYRIGHT Makefile README 
+	                               arg.c arg.h d.h dparse.h 
+	                               dparse_tables.h dsymtab.h gram.c 
+	                               gram.h gramgram.h grammar.g.c 
+	                               index.html lex.c lex.h lr.c lr.h 
+	                               make_dparser.c parse.c parse.h 
+	                               sample_parser.c scan.c scan.h 
+	                               symtab.c util.c util.h version.c 
+	                               write_ctables.c write_ctables.h 
+	chapel/third-party/dparser/d/python/: dparser_wrap.c test.py 
+	chapel/third-party/dparser/d/verilog/: Makefile ambig.c main.c 
+	                                       vparse.c 
+Added files:
+	chapel/third-party/dparser/d/tests/: g46.test.g g46.test.g.1 
+	                                     g46.test.g.1.check 
+
