@@ -1,0 +1,17 @@
+f::x(dispatch2.v:2) ( float64 (prelude.v:41) )
+f::x(dispatch2.v:3) ( int32 (prelude.v:28) )
+function __init dispatch2.v:1 with 1 edges
+function __init prelude.v:7 with 1 edges
+function __init__ <none>:0 with 1 edges
+function f dispatch2.v:2 with 1 edges
+function f dispatch2.v:3 with 1 edges
+function g dispatch2.v:1 with 1 edges
+function print prelude.v:137 with 1 edges
+function print prelude.v:137 with 1 edges
+g::x(dispatch2.v:1) ( float64 (prelude.v:41) )
+globals
+print::a(prelude.v:137) ( float64 (prelude.v:41) )
+print::a(prelude.v:137) ( int32 (prelude.v:28) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:57) ( tuple (prelude.v:13) )
+user::__init(dispatch2.v:1) ( __init (dispatch2.v:1) )

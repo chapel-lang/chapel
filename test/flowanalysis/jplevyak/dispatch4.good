@@ -1,0 +1,12 @@
+A::A(dispatch4.v:1) ( A (dispatch4.v:1) )
+class::self(dispatch4.v:3) ( A (dispatch4.v:1) )
+function __init dispatch4.v:1 with 1 edges
+function __init prelude.v:7 with 1 edges
+function __init__ <none>:0 with 1 edges
+function class dispatch4.v:3 with 1 edges
+function print prelude.v:137 with 1 edges
+globals
+print::a(prelude.v:137) ( int32 (prelude.v:28) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:57) ( tuple (prelude.v:13) )
+user::__init(dispatch4.v:1) ( __init (dispatch4.v:1) )
