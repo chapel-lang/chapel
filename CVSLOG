@@ -5000,3 +5000,18 @@ Modified files:
 	chapel/compiler/: chpl.g parse.h v.g 
 	chapel/compiler/make_prims/: make_prims.g 
 
+---------------------------------------------------------------------------
+
+08/04/04 16:09:38 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	make inclusion of ast.h explicit for all files so that this can
+	be abstracted to allow for different types of AST's.
+
+Modified files:
+	chapel/compiler/: analysis.cpp analysis.h ast.cpp ast.h 
+	                  ast_cf.cpp cg_funs.cpp clone.cpp codegen.cpp 
+	                  datatype.cpp datatype.h dump.cpp fa.cpp fa.h 
+	                  fun.cpp graph.cpp inline.cpp parse.h prim.cpp 
+	                  sym.h 
+
