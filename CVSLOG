@@ -15917,3 +15917,28 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: stmt.h sym.h symbol.h 
 
+---------------------------------------------------------------------------
+
+01/31/05 14:51:57 -- deitz
+
+Log message:
+	Basically a re-checkin of my big backed-out checkin.  Modest changes
+	to keep methods working.
+	
+	Downgrades the idea of *DefStmt AST structures to be worked out
+	eventually.
+	
+	Note that with this checkin, cloning of classes no longer copies the
+	functions.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp link.cpp nils.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h link.h stmt.h symbol.h 
+	                          symscope.h type.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
+	                             methodsToFunctions.cpp traversal.h 
+
