@@ -845,25 +845,6 @@ undef_or_fn_expr(Expr *ast) {
   return 0;
 }
 
-static void
-gen_expr(Expr *e, Sym *s) {
-#if 0
-  e->ainfo->rval = new_sym(s->name ? s->name : s->constant);
-  e->ainfo->rval->ast = e->ainfo;
-  if1_move(if1, &e->ainfo->code, s, e->ainfo->rval, e->ainfo);
-#else
-  e->ainfo->rval = s;
-#endif
-}
-
-static Sym *
-gen_move(Sym *s, Expr *e) {
-  Sym *ss = new_sym(s->name);
-  ss->ast = e->ainfo;
-  if1_move(if1, &e->ainfo->code, s, ss, e->ainfo);
-  return ss;
-}
-
 static int
 gen_if1(BaseAST *ast) {
   // bottom's up
@@ -926,21 +907,21 @@ gen_if1(BaseAST *ast) {
       BoolLiteral *s = dynamic_cast<BoolLiteral*>(ast);
       Sym *c = if1_const(if1, sym_bool, s->str);
       c->imm.v_bool = s->val;
-      gen_expr(s, c);
+      s->ainfo->rval = c;
       break;
     }
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
       Sym *c = if1_const(if1, sym_int64, s->str);
       c->imm.v_int64 = s->val;
-      gen_expr(s, c);
+      s->ainfo->rval = c;
       break;
     }
     case EXPR_FLOATLITERAL: {
       FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
       Sym *c = if1_const(if1, sym_float64, s->str);
       c->imm.v_float64 = s->val;
-      gen_expr(s, c);
+      s->ainfo->rval = c;
       break;
     }
     case EXPR_COMPLEXLITERAL: {
@@ -948,20 +929,20 @@ gen_if1(BaseAST *ast) {
       Sym *c = if1_const(if1, sym_complex64, s->str);
       c->imm.v_complex64.r = s->realVal;
       c->imm.v_complex64.i = s->imagVal;
-      gen_expr(s, c);
+      s->ainfo->rval = c;
       break;
     }
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
       Sym *c = if1_const(if1, sym_string, s->str);
-      gen_expr(s, c);
+      s->ainfo->rval = c;
       break;
     }
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
       Sym *sym = s->var->asymbol;
       s->ainfo->sym = sym;
-      gen_expr(s, sym);
+      s->ainfo->rval = sym;
       break;
     }
     case EXPR_UNOP: {
@@ -1192,9 +1173,9 @@ gen_if1(BaseAST *ast) {
       else if (n && !strcmp(n, "__operator"))
 	base = sym_operator;
       else if (use_symbol)
-	base = gen_move(if1_make_symbol(if1, n), s);
+	base = if1_make_symbol(if1, n);
       if (!base)
-	base = gen_move(s->baseExpr->ainfo->rval, s);
+	base = s->baseExpr->ainfo->rval;
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if1_add_send_arg(if1, send, base);

@@ -1,15 +1,10 @@
  called from 5 in __init_onearg at onearg.chpl:6
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
-::__init_onearg ( __init_onearg )
 ::__init_onearg(onearg.chpl:6) ( __init_onearg )
-::__init_prelude ( __init_prelude )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::a(onearg.chpl:1) ( int64 )
 ::foo(onearg.chpl:3) ( foo )
-::foo(onearg.chpl:5) ( foo )
-::main ( main )
 ::main ( main )
 ::null ( null null )
 function __init_internal_prelude internal_prelude.chpl:24
