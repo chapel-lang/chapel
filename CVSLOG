@@ -16313,3 +16313,21 @@ Log message:
 Modified files:
 	chapel/compiler/include/: map.h 
 
+---------------------------------------------------------------------------
+
+02/02/05 14:44:34 -- jplevyak
+
+Log message:
+	dded option to decrease memory usage by Sym(s) objects
+	(currently disabled).
+	
+	Turns out that valgrind does not detect accesses outside the object
+	in the heap when we use the Boehm GC.  This is a bit of a problem,
+	and it makes detecting errors in this optimization difficult (hence
+	the disabled status).  I am looking into that problem.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp cg.cpp clone.cpp 
+	                           fa.cpp if1.cpp 
+	chapel/compiler/include/: sym.h 
+
