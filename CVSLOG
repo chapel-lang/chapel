@@ -16917,3 +16917,28 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp resolveSymbols.cpp 
 	                             resolveSymbols.h 
 
+---------------------------------------------------------------------------
+
+02/08/05 14:30:08 -- jplevyak
+
+Log message:
+	Added a pass to determine when a variable is inferred to be of
+	mixed primitive types (e.g. float + integer).
+	Fixed the test cases to show the correct error messages.
+	Remove 2 .future files for the test cases.
+	Integrated fa_extras.cpp and ssu_extras.cpp.
+	  Turns out that GDB 6.3 doesn't have problems with #includes of code....
+	  but for those stuck with 6.1, this should fix the problem.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp ssu.cpp 
+	chapel/compiler/include/: fa.h 
+	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Removed files:
+	chapel/compiler/analysis/: fa_extras.cpp ssu_extra.cpp 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1a.future 
+	                                         test_clone_class1b.future 
+
