@@ -12733,3 +12733,36 @@ Added files:
 	                                         test_clone_function2.chpl 
 	                                         test_clone_function3.chpl 
 
+---------------------------------------------------------------------------
+
+12/23/04 13:09:54 -- deitz
+
+Log message:
+	Added pre-analysis and post-analysis support for overloaded functions.
+	That said, the new test case works incorrectly because both calls to
+	the overloaded function resolve to the same one.  Cleanup's
+	ResolveEasiest traversal modifies the "cname" fields of every function
+	that is overloaded with a unique string _user_overload_# where # is a
+	unique integer increasing from 1.  Note that this simple name mangling
+	scheme is not foolproof.
+	
+	Added a new string utility routine char* intstring(int i) that returns
+	a string whose contents are the digits in an integer i.
+	
+	Removed the parentFn pointer from FnSymbol because it does not
+	currently do anything.  It may later be generalized to something that
+	points to a parent function for nested functions.  Nested functions
+	are not currently supported.
+	
+	Added a new test case test_overload_function1.chpl that tests a simple
+	overloaded function on integers and floats.
+
+Modified files:
+	chapel/compiler/AST/: nils.cpp symbol.cpp symtab.cpp 
+	chapel/compiler/include/: stringutil.h symbol.h 
+	chapel/compiler/traversals/: cleanup.cpp 
+	chapel/compiler/util/: stringutil.cpp 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overload_function1.chpl 
+
