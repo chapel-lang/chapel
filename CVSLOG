@@ -14480,3 +14480,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+01/14/05 12:50:24 -- jplevyak
+
+Log message:
+	Works no.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overload_integerfloat2.future 
+
