@@ -2,7 +2,15 @@
 #include "stringutil.h"
 
 
-static char* cBinOp[] = {
+static char* cUnOp[NUM_UNOPS] = {
+  "+",
+  "-",
+  "!",
+  "~"
+};
+
+
+static char* cBinOp[NUM_BINOPS] = {
   "+",
   "-",
   "*",
@@ -20,6 +28,10 @@ static char* cBinOp[] = {
   "&&",
   "||",
   "**",
+
+  " by ",
+  ".",
+
   "???"
 };
 
@@ -28,15 +40,6 @@ Expr::Expr(void) :
   stmt(NULL),
   parent(NULL)
 {}
-
-
-void Expr::printList(FILE* outfile) {
-  print(outfile);
-  if (next != NULL) {
-    fprintf(outfile, ", ");
-    next->printList(outfile);
-  }
-}
 
 
 bool NullExpr::isNull(void) {
@@ -93,7 +96,8 @@ void Variable::print(FILE* outfile) {
 }
 
 
-UnOp::UnOp(Expr* op) :
+UnOp::UnOp(unOpType init_type, Expr* op) :
+  type(init_type),
   operand(op) 
 {
   operand->parent = this;
@@ -101,7 +105,9 @@ UnOp::UnOp(Expr* op) :
 
 
 void UnOp::print(FILE* outfile) {
+  fprintf(outfile, "(%s", cUnOp[type]);
   operand->print(outfile);
+  fprintf(outfile, ")");
 }
 
 
@@ -118,10 +124,15 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 void BinOp::print(FILE* outfile) {
   fprintf(outfile, "(");
   left->print(outfile);
-  fprintf(outfile, cBinOp[type]);
+  fprintf(outfile, "%s", cBinOp[type]);
   right->print(outfile);
   fprintf(outfile, ")");
 }
+
+
+SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
+  BinOp(init_type, l, r)
+{}
 
 
 AssignOp::AssignOp(Expr* l, Expr* r) :
@@ -209,6 +220,14 @@ CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
   ParenOpExpr(NULL, init_argList),
   castType(init_castType)
 {}
+
+
+void CastExpr::print(FILE* outfile) {
+  castType->print(outfile);
+  fprintf(outfile, "(");
+  argList->printList(outfile);
+  fprintf(outfile, ")");
+}
 
 
 ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 

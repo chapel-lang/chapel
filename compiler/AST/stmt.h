@@ -14,7 +14,6 @@ class Stmt : public Link {
   Stmt();
 
   virtual void print(FILE* outfile) = 0;
-  void printList(FILE* outfile);
 };
 
 
@@ -43,6 +42,16 @@ class TypeDefStmt : public Stmt {
   Type* type;
 
   TypeDefStmt(Type* init_type);
+
+  void print(FILE* outfile);
+};
+
+
+class FnDefStmt : public Stmt {
+ public:
+  FunSymbol* fun;
+
+  FnDefStmt(FunSymbol* init_fun);
 
   void print(FILE* outfile);
 };

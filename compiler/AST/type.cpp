@@ -48,6 +48,10 @@ void Type::printDef(FILE* outfile) {
 }
 
 
+NullType::NullType(void) {
+}
+
+
 EnumType::EnumType(Symbol* init_valList) :
   valList(init_valList)
 {}
@@ -57,7 +61,7 @@ void EnumType::printDef(FILE* outfile) {
   printf("enum ");
   name->print(outfile);
   printf(" = ");
-  valList->printList(outfile);
+  valList->printList(outfile, " | ");
 }
 
 

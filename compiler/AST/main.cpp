@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 
   while (!feof(yyin)) {
     yyparse();
-    program->printList(stdout);
+    program->printList(stdout, "");
   }
 
   fclose (yyin);

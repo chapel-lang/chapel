@@ -16,7 +16,6 @@ class Expr : public Link {
   Expr(void);
 
   virtual void print(FILE* outfile) = 0;
-  void printList(FILE* outfile);
 };
 
 
@@ -72,18 +71,29 @@ class Variable : public Expr {
 };
 
 
+enum unOpType {
+  UNOP_PLUS = 0,
+  UNOP_MINUS,
+  UNOP_LOGNOT,
+  UNOP_BITNOT,
+
+  NUM_UNOPS
+};
+
+
 class UnOp : public Expr {
  public:
+  unOpType type;
   Expr* operand;
 
-  UnOp(Expr* op);
+  UnOp(unOpType init_type, Expr* op);
 
   void print(FILE* outfile);
 };
 
 
 enum binOpType {
-  BINOP_PLUS,
+  BINOP_PLUS = 0,
   BINOP_MINUS,
   BINOP_MULT,
   BINOP_DIV,
@@ -100,7 +110,13 @@ enum binOpType {
   BINOP_LOGAND,
   BINOP_LOGOR,
   BINOP_EXP,
-  BINOP_OTHER
+
+  BINOP_BY,
+  BINOP_DOT,
+
+  BINOP_OTHER,
+
+  NUM_BINOPS
 };
 
 
@@ -113,6 +129,12 @@ class BinOp : public Expr {
   BinOp(binOpType init_type, Expr* l, Expr* r);
 
   void print(FILE* outfile);
+};
+
+
+class SpecialBinOp : public BinOp {
+ public:
+  SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
 };
 
 
@@ -182,7 +204,7 @@ class ParenOpExpr : public Expr {
 
   ParenOpExpr(Expr* init_base, Expr* init_arg = NULL);
 
-  void print(FILE* outfile);
+  virtual void print(FILE* outfile);
 };
 
 
@@ -191,6 +213,8 @@ class CastExpr : public ParenOpExpr {
   Type* castType;
 
   CastExpr(Type* init_castType, Expr* init_argList);
+
+  void print(FILE* outfile);
 };
 
 

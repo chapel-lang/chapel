@@ -14,18 +14,6 @@ void Stmt::print(FILE* outfile) {
 }
 
 
-void Stmt::printList(FILE* outfile) {
-  Link* ptr;
-
-  print(outfile);
-  ptr = next;
-  while (ptr != NULL) {
-    ptr->print(outfile);
-    ptr = ptr->next;
-  }
-}
-
-
 bool NullStmt::isNull(void) {
   return true;
 }
@@ -79,6 +67,25 @@ void TypeDefStmt::print(FILE* outfile) {
 }
 
 
+FnDefStmt::FnDefStmt(FunSymbol* init_fun) :
+  fun(init_fun)
+{}
+
+
+void FnDefStmt::print(FILE* outfile) {
+  fprintf(outfile, "function ");
+  fun->print(outfile);
+  fprintf(outfile, "(");
+  fun->formals->printList(outfile);
+  fprintf(outfile, ")");
+  if (!fun->retType->isNull()) {
+    fprintf(outfile, ": ");
+    fun->retType->print(outfile);
+  }
+  fun->body->print(outfile);
+}
+
+
 ExprStmt::ExprStmt(Expr* init_expr) :
   expr(init_expr) 
 {}
@@ -112,7 +119,7 @@ LoopStmt::LoopStmt(Stmt* init_body) :
 
 void LoopStmt::print(FILE* outfile) {
   fprintf(outfile, "{\n");
-  body->printList(outfile);
+  body->printList(outfile, "");
   fprintf(outfile, "}\n");
 }
 

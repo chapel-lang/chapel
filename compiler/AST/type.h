@@ -16,7 +16,14 @@ class Type : public Link {
 
   virtual void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
-  void printList(FILE* outfile) {}
+};
+
+
+class NullType : public Type {
+ public:
+  NullType(void);
+
+  bool isNull(void) { return true; }
 };
 
 

@@ -11,7 +11,7 @@ class Link {
   Link(void);
 
   virtual void print(FILE*) = 0;
-  virtual void printList(FILE*) = 0;
+  virtual void printList(FILE* outfile, char* separator = ", ");
   virtual bool isNull(void);
 
   void insert(Link* newlink);

@@ -20,6 +20,7 @@
   bool boolval;
   long intval;
 
+  unOpType uot;
   binOpType bot;
   varType vt;
 
@@ -71,18 +72,19 @@
 %type <intval> intliteral
 
 %type <bot> binop otherbinop
+%type <uot> unop
 %type <vt> vardecltag
 
 %type <pdt> type types domainType indexType arrayType tupleType weirdType
-%type <pdt> vardecltype
+%type <pdt> vardecltype fnrettype
 %type <pch> identifier 
 %type <pvsym> idlist
-%type <psym> enumList
+%type <psym> enumList formal nonemptyformals formals
 %type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim
 %type <pdexpr> domainExpr
-%type <stmt> program statements statement decl vardecl assignment conditional 
-%type <stmt> return loop forloop whileloop enumdecl typealias typedecl
+%type <stmt> program statements statement decl vardecl assignment conditional
+%type <stmt> return loop forloop whileloop enumdecl typealias typedecl fndecl
 
 
 /* These are declared in increasing order of precedence. */
@@ -201,23 +203,42 @@ enumList:
 
 formal:
   identifier
+    { $$ = new Symbol($1); }
 ;
 
 
 nonemptyformals:
   formal
 | nonemptyformals ',' formal
+    {
+      $1->append($3);
+      $$ = $1;
+    }
 ;
 
 formals:
   /* empty */
+    { $$ = new NullSymbol(); }
 | nonemptyformals
 ;
 
 
+fnrettype:
+  /* empty */
+    { $$ = new NullType(); }
+| ':'
+    { $$ = dtUnknown; }
+| ':' type
+    { $$ = $2; }
+;
+
+
 fndecl:
-  FUNCTION identifier '(' formals ')' statement
-| FUNCTION identifier '(' formals ')' ':' type statement
+  FUNCTION identifier '(' formals ')' fnrettype statement
+    {
+      FunSymbol* fnpst = new FunSymbol($2, $4, $6, $7);
+      $$ = new FnDefStmt(fnpst);
+    }
 ;
 
 
@@ -225,7 +246,6 @@ decl:
   vardecl
 | typedecl
 | fndecl
-    { $$ = new NullStmt(); }
 ;
 
 
@@ -435,8 +455,9 @@ expr:
 | expr binop expr
     { $$ = new BinOp($2, $1, $3); }
 | expr otherbinop expr
+    { $$ = new SpecialBinOp($2, $1, $3); }
 | unop expr
-    { $$ = new UnOp($2); }
+    { $$ = new UnOp($1, $2); }
 | reduction
 | arrayref
 | cast
@@ -456,7 +477,7 @@ expr:
 
 memberaccess:
   expr '.' expr
-    { $$ = $1; }
+    { $$ = new SpecialBinOp(BINOP_DOT, $1, $3); }
 ;
 
 
@@ -516,9 +537,13 @@ intliteral:
 
 unop:
   '+'
+    { $$ = UNOP_PLUS; }
 | '-'
+    { $$ = UNOP_MINUS; }
 | '!'
+    { $$ = UNOP_LOGNOT; }
 | '~'
+    { $$ = UNOP_BITNOT; }
 ;
 
 
@@ -564,7 +589,8 @@ binop:
 
 otherbinop:
   BY
-    { $$ = BINOP_OTHER; }
+    { printf("Got a by at line %d\n", yylineno);
+      $$ = BINOP_BY; }
 ;
 
 

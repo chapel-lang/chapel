@@ -13,6 +13,19 @@ bool Link::isNull(void) {
 }
 
 
+void Link::printList(FILE* outfile, char* separator) {
+  Link* ptr;
+
+  print(outfile);
+  ptr = next;
+  while (ptr != NULL) {
+    fprintf(outfile, "%s", separator);
+    ptr->print(outfile);
+    ptr = ptr->next;
+  }
+}
+
+
 void Link::insert(Link* newlink) {
   if (prev != NULL) {
     prev->next = newlink;

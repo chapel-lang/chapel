@@ -4,6 +4,8 @@
 #include "link.h"
 #include "type.h"
 
+class Stmt;
+
 enum varType {
   VAR_NORMAL,
   VAR_CONFIG,
@@ -17,7 +19,14 @@ class Symbol : public Link {
   Symbol(char* init_name);
 
   void print(FILE*);
-  void printList(FILE*);
+};
+
+
+class NullSymbol : public Symbol {
+ public:
+  NullSymbol(void);
+
+  bool isNull(void) { return true; }
 };
 
 
@@ -42,6 +51,17 @@ class TypeSymbol : public Symbol {
   Type* definition;
 
   TypeSymbol(char* init_name, Type* init_definition);
+};
+
+
+class FunSymbol : public Symbol {
+ public:
+  Symbol* formals;
+  Type* retType;
+  Stmt* body;
+
+  FunSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
+	    Stmt* init_body);
 };
 
 
