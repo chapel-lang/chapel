@@ -13947,3 +13947,18 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+01/07/05 10:29:06 -- deitz
+
+Log message:
+	Proving that no change is too small to make it worth testing...
+	
+	Updated the InsertUnionChecks traversal to lookup the symbols
+	internally (since they moved to the internal prelude).  Fixed one last
+	.good file in a flowanalysis test.
+
+Modified files:
+	chapel/compiler/traversals/: insertUnionChecks.cpp 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+
