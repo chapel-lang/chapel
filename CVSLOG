@@ -6222,3 +6222,34 @@ Modified files:
 	chapel/compiler/AST/: TODO expr.cpp 
 	chapel/test/trivial/bradc/domarr/: domarr.chpl 
 
+---------------------------------------------------------------------------
+
+08/31/04 11:27:33 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added traversal and print code using getXXX functions.
+	 -- test on chain.chpl with options chpl -vv --analyzenewast chain.chpl
+	Finished code generation for Expr's (untested).
+
+Modified files:
+	chapel/compiler/: FILES analysis.cpp builtin_symbols.h fa.cpp 
+	                  prelude.v prim_data.dat 
+	chapel/test/flowanalysis/jplevyak/: classvar.good cs1.good 
+	                                    cs2.good cs3.good cs4.good 
+	                                    cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good 
+	                                    memberfun.good 
+	                                    memberfun2.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good review1.good 
+	                                    review2.good review3.good 
+	                                    structtype.good var.good 
+	                                    var2.good 
+	chapel/test/lowlevelcg/jplevyak/: review3.good 
+	chapel/test/parsing/jplevyak/: mat1.good vec.good 
+
