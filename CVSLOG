@@ -932,3 +932,172 @@ Log message:
 Modified files:
 	chapel/compiler/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+04/03/18 15:34:43 -- bradc
+
+Log message:
+	First version of the regression test system.
+	
+	Instructions for use (from the top of the start_test script):
+	
+	--------------------
+	
+	Executive Summary: The overall flow of the testing system is that it
+	will recursively descend into subdirectories looking for Chapel
+	programs to compile and run (*.chpl) as well as for other tests to
+	run (sub_test).  The output of these runs will typically be logged
+	in a file stored in the Logs/ subdirectory, as will a summary of the
+	errors reported (determined by grepping for the string "[Error", so
+	don't have your program print this out.
+	
+	Here's the directory structure:
+	
+	Bin/     -- contains binary files/scripts required by the testing
+	system, such as the timedexec script which kills a
+	test if it takes too long
+	Logs/    -- logs of testing runs go here by default
+	Samples/ -- sample tests go here; these are for illustration only
+	and won't be run by default.  To try running the
+	test system against these samples, use:
+	start_test -startdir ./Samples
+	*/       -- all other directories will contain tests
+	
+	The start_test script kicks off all the action.  With no arguments,
+	it will run all the tests using the defaults.  The '-h' option lists
+	the options that the script accepts and the default values.  Current
+	options are:
+	
+	option     argument               default value
+	---------  ---------------------  -------------
+	-compiler  <compiler executable>  ../compiler/chpl
+	-compopts  <option list>          ""
+	-execopts  <option list>          ""
+	-startdir  <test subdir>          .
+	-logfile   <log filename>         ./Logs/<username>.log
+	
+	The -compiler option allows the user to specify the compiler to test
+	if it is something other than the obvious one in the current CVS
+	structure.  This lets one run other people's compilers, old copies
+	of compilers, etc.
+	
+	The -compopts option allows the user to specify a set of compiler
+	options that should be used on every invocation to the compiler.
+	Additional compiler options can be specified on a directory-by-
+	directory basis.
+	
+	The -execopts option allows the user to specify a set of execution
+	options that should be used on every invocation of a program.  As
+	with compiler options, these can be ammended in each subdirectory.
+	
+	The -startdir option allows the user to specify a subdirectory of
+	the testing system to start in (and limit itself to).  Assuming
+	that tests are sorted into subdirectories by useful features, this
+	allows you to run a subset of the tests easily.
+	
+	The -logfile option indicates where the log of the test run should
+	be kept.  By default it's based on the user's name.  If the log
+	file already exists, you will be prompted at the beginning of the
+	run whether you want to delete that file or not.  At the end of
+	the run, a second log file named <logfile>.summary will be
+	generated containing only the Errors that were logged.
+	
+	By default, setting up a subdirectory for testing simply consists
+	of creating the directory, putting Chapel (.chpl) source files
+	into it and an expected output file (.chk) for each source file
+	(using the same base name).  Upon reaching such a directory, the
+	testing system will run the specified compiler on each Chapel
+	source file using the specified compiler options, then (assuming
+	the compile completed successfully, execute the resulting program
+	using the specified execution options.  The output from both the
+	compilation and the execution are concatenated and diff'd against
+	the .chk file.  This allows programs that are supposed to generate
+	errors, warnings, and correct programs to all be tested using the
+	same mechanisms.
+	
+	Particular subdirectories can also be customized if necessary.
+	Note that such customizations are not inherited recursively by
+	further subdirectories, but apply only to the directory in
+	question (we might consider changing this in future versions).
+	The customizations are as follows:
+	
+	- if the subdirectory contains an executable sub_test script,
+	that script will be used to run the tests in that directory
+	rather than the default sub_test script (located in this
+	directory).  A sub_test script may take whatever actions it
+	wants, and is simply expected to generate any errors using
+	the "[Error ...]" format so that it will show up in the
+	summary.  Similarly, the script should generate any warnings
+	or successful tests using "[Warning ...]" "[Success ...]"
+	messages for consistency.  The sub_test script will be
+	sent two arguments: (1) the compiler to use, and (2) the
+	location of this main test/ directory.  The compiler and
+	execution options will be stored in environment variables
+	named COMPOPTS and EXECOPTS, respectively.
+	
+	- if the subdirectory contains a NOTEST file, that directory
+	will not be considered for testing.  This can be useful for
+	disabling subdirectories containing tests that don't work
+	yet, or subdirectories that contain input files for other
+	tests (though they will also be ignored if they fail to
+	contain any .chpl files...)
+	
+	- if the subdirectory contains a COMPOPTS or EXECOPTS file,
+	the options listed in that file will be added to the compiler
+	and execution options for that subdirectory.  NOTE: be sure
+	not to end the file with a linefeed -- it should simply be a
+	list of options on the first line, followed <eof>.
+	
+	- if the subdirectory contains a CATFILES file, then the files
+	listed in that file will be concatenated to the end of the
+	compiler/execution output for each test.  For tests that
+	generate files (either as a result of the compilation or
+	as part of the executable's behavior), this can be used to
+	ensure that the generated file's contents are correct without
+	writing a specialized sub_test script.  Again, this file should
+	be a single line with no linefeeds.
+	
+	- if the subdirectory contains a TIMEOUT file, then that file
+	will be read to determine the number of seconds that the tests
+	in the directory should be allowed to run before being killed.
+	The default is currently 5 minutes.
+	
+	- subdirectory-specific .cvsignore files can also be very
+	helpful so that files generated during testing won't clutter
+	the results of a cvs -nq update command.
+	
+	Also worth describing here is the start_clean script which walks
+	the directory structure in a similar manner and cleans up --
+	removing the generated executables, core files, and *.tmp files
+	which store any mismatching output.  The user can also specify
+	subdirectory-specific things to clean up usinng a CLEANFILES
+	file that lists other targets to remove (called with the -rf
+	flag, so subdirectories will work here as well).  The idea is
+	that after start_clean runs, the testing system should be left
+	in a state pretty close to what's checked into the CVS tree.
+	
+	Again, to see a sample run of the testing system, look through
+	the Samples/ directory, then run:
+	
+	./start_test -startdir Samples
+	
+	and inspect the Samples/ and Logs/ subdirectories to see what
+	was generated.  Then use:
+	
+	./start_clean -startdir Samples
+	
+	to clean back up again.
+	
+	--------------
+
+Added files:
+	chapel/test/: start_clean start_test sub_clean sub_test 
+	chapel/test/Bin/: timedexec 
+	chapel/test/Logs/: .keepme 
+	chapel/test/Samples/ex1-astlog/: .cvsignore CATFILES CLEANFILES 
+	                                 COMPOPTS astlog1.chk 
+	                                 astlog1.chpl 
+	chapel/test/Samples/ex2-notest/: NOTEST illegal.chk illegal.chpl 
+	chapel/test/Samples/ex3-fails/: .cvsignore intendedToFail.chk 
+	                                intendedToFail.chpl 
+
