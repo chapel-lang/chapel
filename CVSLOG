@@ -23445,3 +23445,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/05 10:15:48 -- roxana
+
+Log message:
+	Changed the tuple assignment test to be more compelling. This
+	is in response to John's observation that checking in dead code
+	is not such a good idea.
+
+Modified files:
+	chapel/test/domains/roxana/: test_index_expr1.chpl 
+	                             test_index_expr1.good 
+Added files:
+	chapel/test/domains/roxana/: test_index_expr1.future 
+
