@@ -15,6 +15,7 @@
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/getstuff.h"
+#include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
 #include "../traversals/setupStmtLinks.h"
 #include "../traversals/testGetStuff.h"
@@ -32,6 +33,7 @@ Pass* passlist[] = {
   RUN(CheckBackLinks),
   RUN(RunAnalysis),
   RUN(FindUnknownTypes),
+  RUN(MethodsToFunctions),
   RUN(RenameCSymbols),
   RUN(Codegen),
 

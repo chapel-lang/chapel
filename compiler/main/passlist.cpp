@@ -13,6 +13,7 @@ REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(GetStuff);
+REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintStmts);
