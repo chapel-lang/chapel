@@ -16125,3 +16125,29 @@ Modified files:
 	                                  formatoutput.good 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+02/01/05 15:05:40 -- deitz
+
+Log message:
+	Added the following interface parameter to clone:
+	
+	  Map<BaseAST*,BaseAST*>* map
+	
+	This results in the following cloning interfaces:
+	
+	  TypeDefStmt* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
+	  FnSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
+	
+	Currently, clone_callback is used by analysis but, with this checkin,
+	map is ready to be used instead.  It contains a mapping of everything
+	that was copied in the clone call.
+	
+	Souped up the copying mechanism to create a mapping between everything
+	that is duplicated if the map parameter is not NULL.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h stmt.h symbol.h type.h 
+
