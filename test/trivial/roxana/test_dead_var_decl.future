@@ -1,3 +1,4 @@
-var x = 2;
-var y = 3;
-var z = x + y;
+jplevyak/deitz/bradc
+
+Need to handle code generation of dead variables more
+gracefully.
