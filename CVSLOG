@@ -20468,3 +20468,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
 
+---------------------------------------------------------------------------
+
+03/21/05 10:53:30 -- deitz
+
+Log message:
+	In the commented-out section of this code, constructors are now
+	MemberAccesses where the base is the TypeSymbol of the class.
+
+Modified files:
+	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
+
