@@ -11,4 +11,8 @@
   s->last->next = NULL; \
   s->length++
 
+#define _FOR_S(e, s, type) \
+  type##_node __tmp; \
+  for (__tmp = s->first; (__tmp && (e = __tmp->element)); __tmp = __tmp->next)
+
 #endif

@@ -112,6 +112,7 @@
 %type <vt> vardecltag
 %type <pt> formaltag
 
+%type <boolval> fortype
 %type <pdt> type domainType indexType arrayType tupleType seqType
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype typevardecltype fnrettype
@@ -712,7 +713,9 @@ retStmt:
 
 fortype:
   TFOR
+    { $$ = false; }
 | TFORALL
+    { $$ = true; }
 ;
 
 
@@ -736,7 +739,7 @@ indexlist:
 forloop:
   fortype indexlist TIN expr
     { 
-      $<forstmt>$ = Symboltable::startForLoop(true, $2, $4);
+      $<forstmt>$ = Symboltable::startForLoop($1, $2, $4);
     }
                              block_stmt
     { 
@@ -744,7 +747,7 @@ forloop:
     }
 | fortype indexlist TIN expr
     { 
-      $<forstmt>$ = Symboltable::startForLoop(true, $2, $4);
+      $<forstmt>$ = Symboltable::startForLoop($1, $2, $4);
     }
                              TDO statement
     { 

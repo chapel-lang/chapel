@@ -700,6 +700,27 @@ void ForLoopStmt::print(FILE* outfile) {
 
 
 void ForLoopStmt::codegen(FILE* outfile) {
+  if (dynamic_cast<SeqType*>(domain->typeInfo())) {
+    fprintf(outfile, "{\n");
+    index->codegenDef(outfile);
+    fprintf(outfile, "_FOR");
+    if (forall) {
+      fprintf(outfile, "ALL");
+    }
+    fprintf(outfile, "_S(");
+    index->codegen(outfile);
+    fprintf(outfile, ", ");
+    domain->codegen(outfile);
+    fprintf(outfile, ", ");
+    domain->typeInfo()->codegen(outfile);
+    fprintf(outfile, ") {\n");
+    body->codegen(outfile);
+    fprintf(outfile, "\n");
+    fprintf(outfile, "}\n");
+    fprintf(outfile, "}\n");
+    return;
+  }
+
   VarSymbol* aVar = index;
   fprintf(outfile, "{\n");
   int rank = 0;
