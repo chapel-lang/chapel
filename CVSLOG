@@ -17774,3 +17774,35 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: updateSymbols.cpp updateSymbols.h 
 
+---------------------------------------------------------------------------
+
+02/17/05 14:37:24 -- deitz
+
+Log message:
+	[#2 on 2/16/05 TO DO]
+	
+	Extended the copy interface to take another optional parameter,
+	update_list.  This Vec<BaseAST*>* contains a list of BaseAST pointers.
+	They are updated by copy so that if any point to a BaseAST that is
+	copied, it will point to the copied BaseAST.
+	
+	This parameter is used by the TransformLetExprs traversal.  This
+	traversal finds all the let expressions in the AST.  Then it changes
+	these LetExprs into BlockStmts.  Because there could be nested
+	LetExprs it is useful to update the list of LetExprs when any are
+	copied.
+	
+	This should be a fairly general implementation strategy.  Hi ho.
+	
+	Just musing here, but it's too bad C++ makes you put the default
+	parameters at the end and only not specify starting from the back.
+	For copy, there are three sets of parameters that it would be nice to
+	specify any of these sets in different situations.  Chapel's named
+	default parameters will be perfect when we're ready to bootstrap.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+	chapel/compiler/traversals/: transformLetExprs.cpp 
+	                             transformLetExprs.h 
+
