@@ -20534,3 +20534,29 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+03/21/05 14:16:30 -- deitz
+
+Log message:
+	Added a new pass InsertElidedLoops that inserts forall loops around
+	statements like array assignment.  This should eventually do something
+	for sequence assignment too, I imagine.
+	
+	This fixes test_array_assign2.  I added a new test test_array_assign3
+	that tries to assign arrays by writing A = B + C.  This fails in
+	analysis so I handed the future to John.  I'm pretty sure I know what
+	he is going to say but not completely.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: insertElidedLoops.cpp 
+	                             insertElidedLoops.h 
+	chapel/test/arrays/deitz/: test_array_assign3.chpl 
+	                           test_array_assign3.future 
+	                           test_array_assign3.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_assign2.future 
+
