@@ -9167,3 +9167,26 @@ Added files:
 	                    typevar-2.chpl union-1.chpl union-2.chpl 
 	                    union-3.chpl with-1.chpl with-2.chpl 
 
+---------------------------------------------------------------------------
+
+10/25/04 16:41:41 -- bradc
+
+Log message:
+	Checking in some code I penciled in Friday, but didn't get
+	to check in due to networks going down.
+	
+	Revamped some symboltable stuff to make the type/level
+	components of a SymScope to be more appropriate and rely
+	less on the integer values of the scope types.  Added a
+	scope after all user code is parsed so that if new
+	symbols are added after parsing they will be put into this
+	scope by default.  We may want to put in an assertion that
+	this scope is empty at codegen time, but I haven't done
+	so yet.
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp stmt.cpp symtab.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symscope.h symtab.h 
+	chapel/compiler/passes/: filesToAST.cpp 
+
