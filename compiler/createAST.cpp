@@ -3,15 +3,12 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
-// #include "getstuff.h"
-// #include "findUnknownTypes.h"
 #include "link.h"
 #include "misc.h"
 #include "nils.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
-//#include "verifyASTType.h"
 #include "yy.h"
 
 
@@ -19,6 +16,7 @@ Stmt* yystmtlist = NULL;
 Stmt* internalPreludeStmts = NULL;
 Stmt* preludeStmts = NULL;
 Stmt* programStmts = NULL;
+Stmt* entryPoint = NULL;
 
 char* yyfilename;
 int yylineno;
@@ -89,16 +87,10 @@ static Stmt* createInitFn(Stmt* program, char* fnName = "__init") {
 
   program = appendLink(program, initFunDef);
 
-  //  program->traverseList(new FindUnknownTypes());
-  //  program->traverse(new PrintStmts());
-  //  program->traverse(new VerifyASTType());
-  /*
-  Vec<Stmt*> stmts;
-  getLinkElements(stmts, program);
-  for (int i=0; i<stmts.n; i++) {
-    stmts.e[i]->print(stdout);
-  }
-  */
+  FnSymbol* initFunSym = initFunDef->fn;
+  FnCall* initFunCall = new FnCall(new Variable(initFunSym));
+  ExprStmt* initFunCallStmt = new ExprStmt(initFunCall);
+  entryPoint = appendLink(entryPoint, initFunCallStmt);
 
   return program;
 }
@@ -127,23 +119,9 @@ Stmt* fileToAST(char* filename, int debug) {
   yydebug = debug;
   programStmts = ParseFile(filename);
 
-  //  extern void testGetStuff(Stmt*);
-  //  testGetStuff(program);
-
   internalPreludeStmts = createInitFn(internalPreludeStmts, "__initIntPrelude");
   preludeStmts = createInitFn(preludeStmts, "__initPrelude");
   programStmts = createInitFn(programStmts);
-
-  /*
-  fprintf(stderr, "-------------------------------------\n");
-  internalPreludeStmts->printList(stderr, "\n");
-  fprintf(stderr, "-------------------------------------\n");
-  preludeStmts->printList(stderr, "\n");
-  fprintf(stderr, "-------------------------------------\n");
-  */
-  
-
-  //  Symboltable::dump(stdout);
 
   return programStmts;
 }
