@@ -261,6 +261,28 @@ class BinOp : public Expr {
 };
 
 
+class AssignOp : public BinOp {
+ public:
+  getsOpType type;
+
+  AssignOp(getsOpType init_type, Expr* l, Expr* r);
+  virtual Expr* copy(void);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+  precedenceType precedence(void);
+};
+
+
+class SpecialBinOp : public BinOp {
+ public:
+  SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
+  virtual Expr* copy(void);
+
+  precedenceType precedence(void);
+};
+
+
 class MemberAccess : public Expr {
  public:
   Expr* base;
@@ -278,25 +300,113 @@ class MemberAccess : public Expr {
 };
 
 
-class SpecialBinOp : public BinOp {
+class ParenOpExpr : public Expr {
  public:
-  SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
+  Expr* baseExpr;
+  Expr* argList;
+
+  ParenOpExpr(Expr* init_base, Expr* init_arg = nilExpr);
   virtual Expr* copy(void);
 
-  precedenceType precedence(void);
+  void traverseExpr(Traversal* traversal);
+
+  virtual void print(FILE* outfile);
+  virtual void codegen(FILE* outfile);
+
+  static ParenOpExpr* classify(Expr* base, Expr* arg);
 };
 
 
-class AssignOp : public BinOp {
+class ArrayRef : public ParenOpExpr {
  public:
-  getsOpType type;
-
-  AssignOp(getsOpType init_type, Expr* l, Expr* r);
+  ArrayRef(Expr* init_base, Expr* init_arg = nilExpr);
   virtual Expr* copy(void);
+
+  Type* typeInfo();
+
+  void codegen(FILE* outfile);
+};
+
+
+class FnCall : public ParenOpExpr {
+ public:
+  FnCall(Expr* init_base, Expr* init_arg = nilExpr);
+  virtual Expr* copy(void);
+};
+
+
+class IOCall : public FnCall {
+ public:
+  ioCallType ioType;
+
+  IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg);
+  virtual Expr* copy(void);
+
+  Type* typeInfo(void);
+
+  void codegen(FILE* outfile);
+};
+
+
+class Tuple : public Expr {
+ public:
+  Expr* exprs;
+
+  Tuple(Expr* init_exprs);
+  virtual Expr* copy(void);
+
+  void traverseExpr(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  precedenceType precedence(void);
+};
+
+
+class SizeofExpr : public Expr {
+ public:
+  Type* type;
+
+  SizeofExpr(Type* init_type);
+  virtual Expr* copy(void);
+
+  void traverseExpr(Traversal* traversal);
+  
+  Type* typeInfo(void);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class CastExpr : public ParenOpExpr {
+ public:
+  Type* castType;
+
+  CastExpr(Type* init_castType, Expr* init_argList);
+  virtual Expr* copy(void);
+
+  void traverseExpr(Traversal* traversal);
+
+  Type* typeInfo(void);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class ReduceExpr : public Expr {
+ public:
+  Symbol* reduceType;
+  Expr* redDim;
+  Expr* argExpr;
+
+  ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, Expr* init_argExpr);
+  virtual Expr* copy(void);
+
+  void traverseExpr(Traversal* traversal);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -353,116 +463,6 @@ class DomainExpr : public Expr {
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class SizeofExpr : public Expr {
- public:
-  Type* type;
-
-  SizeofExpr(Type* init_type);
-  virtual Expr* copy(void);
-
-  void traverseExpr(Traversal* traversal);
-  
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class ParenOpExpr : public Expr {
- public:
-  Expr* baseExpr;
-  Expr* argList;
-
-  ParenOpExpr(Expr* init_base, Expr* init_arg = nilExpr);
-  virtual Expr* copy(void);
-
-  void traverseExpr(Traversal* traversal);
-
-  virtual void print(FILE* outfile);
-  virtual void codegen(FILE* outfile);
-
-  static ParenOpExpr* classify(Expr* base, Expr* arg);
-};
-
-
-class CastExpr : public ParenOpExpr {
- public:
-  Type* castType;
-
-  CastExpr(Type* init_castType, Expr* init_argList);
-  virtual Expr* copy(void);
-
-  void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class FnCall : public ParenOpExpr {
- public:
-  FnCall(Expr* init_base, Expr* init_arg = nilExpr);
-  virtual Expr* copy(void);
-};
-
-
-class IOCall : public FnCall {
- public:
-  ioCallType ioType;
-
-  IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg);
-  virtual Expr* copy(void);
-
-  Type* typeInfo(void);
-
-  void codegen(FILE* outfile);
-};
-
-
-class ArrayRef : public ParenOpExpr {
- public:
-  ArrayRef(Expr* init_base, Expr* init_arg = nilExpr);
-  virtual Expr* copy(void);
-
-  Type* typeInfo();
-
-  void codegen(FILE* outfile);
-};
-
-
-class ReduceExpr : public Expr {
- public:
-  Symbol* reduceType;
-  Expr* redDim;
-  Expr* argExpr;
-
-  ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, Expr* init_argExpr);
-  virtual Expr* copy(void);
-
-  void traverseExpr(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class Tuple : public Expr {
- public:
-  Expr* exprs;
-
-  Tuple(Expr* init_exprs);
-  virtual Expr* copy(void);
-
-  void traverseExpr(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);

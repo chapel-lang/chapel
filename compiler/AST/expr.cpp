@@ -541,62 +541,6 @@ precedenceType BinOp::precedence(void) {
 }
 
 
-MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
-  Expr(EXPR_MEMBERACCESS),
-  base(init_base),
-  member(init_member)
-{
-  base->parent = this;
-}
-
-
-Expr* MemberAccess::copy(void) {
-  return Symboltable::defineMemberAccess(base->copy(), member->name);
-}
-
-
-void MemberAccess::traverseExpr(Traversal* traversal) {
-  base->traverse(traversal, false);
-  member->traverse(traversal, false);
-}
-
-
-Type* MemberAccess::typeInfo(void) {
-  return member->type;
-}
-
-
-void MemberAccess::print(FILE* outfile) {
-  base->print(outfile);
-  fprintf(outfile, ".");
-  member->print(outfile);
-}
-
-
-void MemberAccess::codegen(FILE* outfile) {
-  base->codegen(outfile);
-  fprintf(outfile, "->");
-  member->print(outfile);
-}
-
-
-SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
-  BinOp(init_type, l, r)
-{
-  astType = EXPR_SPECIALBINOP;
-}
-
-
-Expr* SpecialBinOp::copy(void) {
-  return new SpecialBinOp(type, left->copy(), right->copy());
-}
-
-
-precedenceType SpecialBinOp::precedence(void) {
-  return PREC_LOWEST;
-}
-
-
 AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   BinOp(BINOP_OTHER, l, r),
   type(init_type)
@@ -648,82 +592,105 @@ precedenceType AssignOp::precedence(void) {
 }
 
 
-SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
-  Expr(EXPR_SIMPLESEQ),
-  lo(init_lo),
-  hi(init_hi),
-  str(init_str) 
-{}
-
-
-Expr* SimpleSeqExpr::copy(void) {
-  return new SimpleSeqExpr(lo->copy(), hi->copy(), str->copy());
+SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
+  BinOp(init_type, l, r)
+{
+  astType = EXPR_SPECIALBINOP;
 }
 
 
-void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
-  lo->traverse(traversal, false);
-  hi->traverse(traversal, false);
-  str->traverse(traversal, false);
+Expr* SpecialBinOp::copy(void) {
+  return new SpecialBinOp(type, left->copy(), right->copy());
 }
 
 
-Type* SimpleSeqExpr::typeInfo(void) {
-  return new DomainType(1);
+precedenceType SpecialBinOp::precedence(void) {
+  return PREC_LOWEST;
 }
 
 
-void SimpleSeqExpr::print(FILE* outfile) {
-  lo->print(outfile);
-  printf("..");
-  hi->print(outfile);
-  if (str->isComputable() && str->typeInfo() == dtInteger && 
-      str->intVal() != 1) {
-    printf(" by ");
-    str->print(outfile);
+MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
+  Expr(EXPR_MEMBERACCESS),
+  base(init_base),
+  member(init_member)
+{
+  base->parent = this;
+}
+
+
+Expr* MemberAccess::copy(void) {
+  return Symboltable::defineMemberAccess(base->copy(), member->name);
+}
+
+
+void MemberAccess::traverseExpr(Traversal* traversal) {
+  base->traverse(traversal, false);
+  member->traverse(traversal, false);
+}
+
+
+Type* MemberAccess::typeInfo(void) {
+  return member->type;
+}
+
+
+void MemberAccess::print(FILE* outfile) {
+  base->print(outfile);
+  fprintf(outfile, ".");
+  member->print(outfile);
+}
+
+
+void MemberAccess::codegen(FILE* outfile) {
+  base->codegen(outfile);
+  fprintf(outfile, "->");
+  member->print(outfile);
+}
+
+
+ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
+  Expr(EXPR_PARENOP),
+  baseExpr(init_base),
+  argList(init_arg) 
+{
+  if (!baseExpr->isNull()) {
+    baseExpr->parent = this;
+  }
+  Expr* arg = argList;
+  while (arg && !arg->isNull()) {
+    arg->parent = this;
+    arg = nextLink(Expr, arg);
   }
 }
 
 
-void SimpleSeqExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "This is SimpleSeqExpr's codegen.\n");
+Expr* ParenOpExpr::copy(void) {
+  return new ParenOpExpr(baseExpr->copy(), argList->copyList());
 }
 
 
-SizeofExpr::SizeofExpr(Type* init_type) :
-  Expr(EXPR_SIZEOF),
-  type(init_type)
-{}
-
-
-Expr* SizeofExpr::copy(void) {
-  return new SizeofExpr(type->copy());
+void ParenOpExpr::traverseExpr(Traversal* traversal) {
+  baseExpr->traverse(traversal, false);
+  argList->traverseList(traversal, false);
 }
 
 
-void SizeofExpr::traverseExpr(Traversal* traversal) {
-  type->traverse(traversal, false);
-}
-
-
-Type* SizeofExpr::typeInfo(void) {
-  return dtInteger;
-}
-
-
-void SizeofExpr::print(FILE* outfile) {
-  fprintf(outfile, "sizeof(");
-  type->print(outfile);
+void ParenOpExpr::print(FILE* outfile) {
+  baseExpr->print(outfile);
+  fprintf(outfile, "(");
+  if (!argList->isNull()) {
+    argList->printList(outfile);
+  }
   fprintf(outfile, ")");
 }
 
 
-void SizeofExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "sizeof(");
-  if (typeid(*type) == typeid(ClassType)) {
-    fprintf(outfile, "_");
+void ParenOpExpr::codegen(FILE* outfile) {
+  baseExpr->codegen(outfile);
+  fprintf(outfile, "(");
+  if (!argList->isNull()) {
+    argList->codegenList(outfile, ", ");
   }
-  type->codegen(outfile);
   fprintf(outfile, ")");
 }
 
@@ -788,95 +755,45 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
 }
 
 
-ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
-  Expr(EXPR_PARENOP),
-  baseExpr(init_base),
-  argList(init_arg) 
+ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
+  ParenOpExpr(init_base, init_arg)
 {
-  if (!baseExpr->isNull()) {
-    baseExpr->parent = this;
+  astType = EXPR_ARRAYREF;
+}
+
+
+Expr* ArrayRef::copy(void) {
+  return new ArrayRef(baseExpr->copy(), argList->copy());
+}
+
+
+Type* ArrayRef::typeInfo(void) {
+  // The Type of this expression may be a user type in which case we
+  // need to walk past these names to the real definition of the array
+  // type
+  Type* baseExprType = baseExpr->typeInfo();
+  while (typeid(*baseExprType) == typeid(UserType)) {
+    baseExprType = ((UserType*)baseExprType)->definition;
   }
-  Expr* arg = argList;
-  while (arg && !arg->isNull()) {
-    arg->parent = this;
-    arg = nextLink(Expr, arg);
+  // At this point, if we don't have an array type, we shouldn't
+  // be in an array reference...
+  ArrayType* arrayType = dynamic_cast<ArrayType*>(baseExprType);
+  if (!arrayType) {
+    INT_FATAL(this, "array type is Null?");
   }
+  // BLC: Assumes that each array index fully indexes array.
+  // This isn't how David thinks about it, and more care would
+  // need to be taken to get that scheme implemented.  Just
+  // trying to get something reasonable implemented now.
+  return arrayType->elementType;
 }
 
 
-Expr* ParenOpExpr::copy(void) {
-  return new ParenOpExpr(baseExpr->copy(), argList->copyList());
-}
-
-
-void ParenOpExpr::traverseExpr(Traversal* traversal) {
-  baseExpr->traverse(traversal, false);
-  argList->traverseList(traversal, false);
-}
-
-
-void ParenOpExpr::print(FILE* outfile) {
-  baseExpr->print(outfile);
-  fprintf(outfile, "(");
-  if (!argList->isNull()) {
-    argList->printList(outfile);
-  }
-  fprintf(outfile, ")");
-}
-
-void ParenOpExpr::codegen(FILE* outfile) {
+void ArrayRef::codegen(FILE* outfile) {
+  fprintf(outfile, "_ACC%d(", baseExpr->rank());
   baseExpr->codegen(outfile);
-  fprintf(outfile, "(");
-  if (!argList->isNull()) {
-    argList->codegenList(outfile, ", ");
-  }
-  fprintf(outfile, ")");
-}
-
-
-CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
-  ParenOpExpr(nilExpr, init_argList),
-  castType(init_castType)
-{
-  astType = EXPR_CAST;
-
-  Expr* arg = argList;
-  while (arg) {
-    arg->parent = this;
-    arg = nextLink(Expr, arg);
-  }
-}
-
-
-Expr* CastExpr::copy(void) {
-  return new CastExpr(castType->copy(), argList->copyList());
-}
-
-
-void CastExpr::traverseExpr(Traversal* traversal) {
-  castType->traverse(traversal, false);
-  argList->traverseList(traversal, false);
-}
-
-
-Type* CastExpr::typeInfo(void) {
-  return castType;
-}
-
-
-void CastExpr::print(FILE* outfile) {
-  castType->print(outfile);
-  fprintf(outfile, "(");
-  argList->printList(outfile);
-  fprintf(outfile, ")");
-}
-
-
-void CastExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "(");
-  castType->codegen(outfile);
-  fprintf(outfile, ")(");
-  argList->codegenList(outfile);
+  fprintf(outfile, ", ");
+  argList->codegenList(outfile, ", ");
   fprintf(outfile, ")");
 }
 
@@ -982,46 +899,210 @@ void IOCall::codegen(FILE* outfile) {
 }
 
 
-ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
-  ParenOpExpr(init_base, init_arg)
-{
-  astType = EXPR_ARRAYREF;
+Tuple::Tuple(Expr* init_exprs) :
+  Expr(EXPR_TUPLE),
+  exprs(init_exprs)
+{}
+
+
+Expr* Tuple::copy(void) {
+  return new Tuple(exprs->copyList());
 }
 
 
-Expr* ArrayRef::copy(void) {
-  return new ArrayRef(baseExpr->copy(), argList->copy());
-}
+void Tuple::traverseExpr(Traversal* traversal) {
+  Expr* expr = exprs;
+  while (expr) {
+    expr->traverse(traversal, false);
 
-
-Type* ArrayRef::typeInfo(void) {
-  // The Type of this expression may be a user type in which case we
-  // need to walk past these names to the real definition of the array
-  // type
-  Type* baseExprType = baseExpr->typeInfo();
-  while (typeid(*baseExprType) == typeid(UserType)) {
-    baseExprType = ((UserType*)baseExprType)->definition;
+    expr = nextLink(Expr, expr);
   }
-  // At this point, if we don't have an array type, we shouldn't
-  // be in an array reference...
-  ArrayType* arrayType = dynamic_cast<ArrayType*>(baseExprType);
-  if (!arrayType) {
-    INT_FATAL(this, "array type is Null?");
-  }
-  // BLC: Assumes that each array index fully indexes array.
-  // This isn't how David thinks about it, and more care would
-  // need to be taken to get that scheme implemented.  Just
-  // trying to get something reasonable implemented now.
-  return arrayType->elementType;
 }
 
 
-void ArrayRef::codegen(FILE* outfile) {
-  fprintf(outfile, "_ACC%d(", baseExpr->rank());
-  baseExpr->codegen(outfile);
-  fprintf(outfile, ", ");
-  argList->codegenList(outfile, ", ");
+void Tuple::print(FILE* outfile) {
+  fprintf(outfile, "(");
+  Expr* expr = exprs;
+  while (expr) {
+    expr->print(outfile);
+
+    expr = nextLink(Expr, expr);
+    if (expr) {
+      fprintf(outfile, ", ");
+    }
+  }
   fprintf(outfile, ")");
+}
+
+
+void Tuple::codegen(FILE* outfile) {
+  INT_FATAL(this, "can't codegen tuples yet");
+}
+
+
+SizeofExpr::SizeofExpr(Type* init_type) :
+  Expr(EXPR_SIZEOF),
+  type(init_type)
+{}
+
+
+Expr* SizeofExpr::copy(void) {
+  return new SizeofExpr(type->copy());
+}
+
+
+void SizeofExpr::traverseExpr(Traversal* traversal) {
+  type->traverse(traversal, false);
+}
+
+
+Type* SizeofExpr::typeInfo(void) {
+  return dtInteger;
+}
+
+
+void SizeofExpr::print(FILE* outfile) {
+  fprintf(outfile, "sizeof(");
+  type->print(outfile);
+  fprintf(outfile, ")");
+}
+
+
+void SizeofExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "sizeof(");
+  if (typeid(*type) == typeid(ClassType)) {
+    fprintf(outfile, "_");
+  }
+  type->codegen(outfile);
+  fprintf(outfile, ")");
+}
+
+
+CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
+  ParenOpExpr(nilExpr, init_argList),
+  castType(init_castType)
+{
+  astType = EXPR_CAST;
+
+  Expr* arg = argList;
+  while (arg) {
+    arg->parent = this;
+    arg = nextLink(Expr, arg);
+  }
+}
+
+
+Expr* CastExpr::copy(void) {
+  return new CastExpr(castType->copy(), argList->copyList());
+}
+
+
+void CastExpr::traverseExpr(Traversal* traversal) {
+  castType->traverse(traversal, false);
+  argList->traverseList(traversal, false);
+}
+
+
+Type* CastExpr::typeInfo(void) {
+  return castType;
+}
+
+
+void CastExpr::print(FILE* outfile) {
+  castType->print(outfile);
+  fprintf(outfile, "(");
+  argList->printList(outfile);
+  fprintf(outfile, ")");
+}
+
+
+void CastExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "(");
+  castType->codegen(outfile);
+  fprintf(outfile, ")(");
+  argList->codegenList(outfile);
+  fprintf(outfile, ")");
+}
+
+
+ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
+		       Expr* init_argExpr) :
+  Expr(EXPR_REDUCE),
+  reduceType(init_reduceType),
+  redDim(init_redDim),
+  argExpr(init_argExpr)
+{}
+
+
+Expr* ReduceExpr::copy(void) {
+  return new ReduceExpr(reduceType->copy(), redDim->copy(), argExpr->copy());
+}
+
+
+void ReduceExpr::traverseExpr(Traversal* traversal) {
+  reduceType->traverse(traversal, false);
+  redDim->traverseList(traversal, false);
+  argExpr->traverse(traversal, false);
+}
+
+
+void ReduceExpr::print(FILE* outfile) {
+  fprintf(outfile, "reduce ");
+  if (!redDim->isNull()) {
+    fprintf(outfile, "(dim=");
+    redDim->print(outfile);
+    fprintf(outfile, ") ");
+  }
+  fprintf(outfile, "by ");
+  reduceType->print(outfile);
+  fprintf(outfile, " ");
+  argExpr->print(outfile);
+}
+
+void ReduceExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "This is ReduceExpr's codegen method.\n");
+}
+
+
+SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
+  Expr(EXPR_SIMPLESEQ),
+  lo(init_lo),
+  hi(init_hi),
+  str(init_str) 
+{}
+
+
+Expr* SimpleSeqExpr::copy(void) {
+  return new SimpleSeqExpr(lo->copy(), hi->copy(), str->copy());
+}
+
+
+void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
+  lo->traverse(traversal, false);
+  hi->traverse(traversal, false);
+  str->traverse(traversal, false);
+}
+
+
+Type* SimpleSeqExpr::typeInfo(void) {
+  return new DomainType(1);
+}
+
+
+void SimpleSeqExpr::print(FILE* outfile) {
+  lo->print(outfile);
+  printf("..");
+  hi->print(outfile);
+  if (str->isComputable() && str->typeInfo() == dtInteger && 
+      str->intVal() != 1) {
+    printf(" by ");
+    str->print(outfile);
+  }
+}
+
+
+void SimpleSeqExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "This is SimpleSeqExpr's codegen.\n");
 }
 
 
@@ -1128,86 +1209,6 @@ void DomainExpr::codegen(FILE* outfile) {
   } else {
     INT_FATAL(this, "Don't know how to codegen lists of domains yet");
   }
-}
-
-
-ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
-		       Expr* init_argExpr) :
-  Expr(EXPR_REDUCE),
-  reduceType(init_reduceType),
-  redDim(init_redDim),
-  argExpr(init_argExpr)
-{}
-
-
-Expr* ReduceExpr::copy(void) {
-  return new ReduceExpr(reduceType->copy(), redDim->copy(), argExpr->copy());
-}
-
-
-void ReduceExpr::traverseExpr(Traversal* traversal) {
-  reduceType->traverse(traversal, false);
-  redDim->traverseList(traversal, false);
-  argExpr->traverse(traversal, false);
-}
-
-
-void ReduceExpr::print(FILE* outfile) {
-  fprintf(outfile, "reduce ");
-  if (!redDim->isNull()) {
-    fprintf(outfile, "(dim=");
-    redDim->print(outfile);
-    fprintf(outfile, ") ");
-  }
-  fprintf(outfile, "by ");
-  reduceType->print(outfile);
-  fprintf(outfile, " ");
-  argExpr->print(outfile);
-}
-
-void ReduceExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "This is ReduceExpr's codegen method.\n");
-}
-
-
-Tuple::Tuple(Expr* init_exprs) :
-  Expr(EXPR_TUPLE),
-  exprs(init_exprs)
-{}
-
-
-Expr* Tuple::copy(void) {
-  return new Tuple(exprs->copyList());
-}
-
-
-void Tuple::traverseExpr(Traversal* traversal) {
-  Expr* expr = exprs;
-  while (expr) {
-    expr->traverse(traversal, false);
-
-    expr = nextLink(Expr, expr);
-  }
-}
-
-
-void Tuple::print(FILE* outfile) {
-  fprintf(outfile, "(");
-  Expr* expr = exprs;
-  while (expr) {
-    expr->print(outfile);
-
-    expr = nextLink(Expr, expr);
-    if (expr) {
-      fprintf(outfile, ", ");
-    }
-  }
-  fprintf(outfile, ")");
-}
-
-
-void Tuple::codegen(FILE* outfile) {
-  INT_FATAL(this, "can't codegen tuples yet");
 }
 
 

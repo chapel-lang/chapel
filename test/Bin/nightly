@@ -51,8 +51,13 @@ if ($debug == 1) {
 #
 # test log filenames
 #
-$rawstdlog = "$logdir/day$today-std.log";
-$rawvgrlog = "$logdir/day$today-vgr.log";
+if ($debug == 1) {
+  $rawstdlog = "$logdir/debug-std.log";
+  $rawvgrlog = "$logdir/debug-vgr.log";
+} else {
+  $rawstdlog = "$logdir/day$today-std.log";
+  $rawvgrlog = "$logdir/day$today-vgr.log";
+}
 $rawstdsummary = "$rawstdlog.summary";
 $rawvgrsummary = "$rawvgrlog.summary";
 
