@@ -1340,62 +1340,16 @@ void IOCall::codegen(FILE* outfile) {
   while (arg) {
     Expr* format = NULL;
 
+    // grab formatting string if there is one
     if (typeid(*arg) == typeid(Tuple)) {
       Tuple* tupleArg = dynamic_cast<Tuple*>(arg);
       format = tupleArg->exprs;
       arg = nextLink(Expr, format);
     }
 
+    // print out call for this argument expression
     Type* argdt = arg->typeInfo();
-
-    switch (ioType) {
-    case IO_WRITE:
-    case IO_WRITELN:
-      fprintf(outfile, "_write");
-      break;
-    case IO_READ:
-      fprintf(outfile, "_read");
-      break;
-    }
-
-    if (argdt == dtUnknown) {
-      INT_FATAL(arg, "unknown type encountered in codegen");
-      argdt = type_info(arg);  // We used to do this but shouldn't -SJD
-    }
-    else if (dynamic_cast<DomainType*>(argdt)) {
-      fprintf(outfile, "_domain");
-    }
-    else {
-      argdt->codegen(outfile);
-    }
-    fprintf(outfile, "(");
-
-    switch (ioType) {
-    case IO_WRITE:
-    case IO_WRITELN:
-      fprintf(outfile, "stdout, ");
-      break;
-    case IO_READ:
-      fprintf(outfile, "stdin, ");
-      break;
-    }
-
-    if (!dynamic_cast<DomainType*>(argdt)) {
-      if (!format) {
-	bool isRead = (ioType == IO_READ);
-	argdt->codegenDefaultFormat(outfile, isRead);
-      } else {
-	format->codegen(outfile);
-      }
-      fprintf(outfile, ", ");
-    }
-
-    if (ioType == IO_READ) {
-      fprintf(outfile, "&");
-    }
-
-    arg->codegen(outfile);
-    fprintf(outfile, ")");
+    argdt->codegenIOCall(outfile, ioType, arg, format);
 
     arg = nextLink(Expr, arg);
     if (arg || (ioType == IO_WRITELN)) {

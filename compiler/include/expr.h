@@ -27,12 +27,6 @@ enum precedenceType {
   PREC_HIGHEST
 };
 
-enum ioCallType {
-  IO_WRITE = 0, 
-  IO_WRITELN, 
-  IO_READ
-};
-
 
 /************* IF CHANGING THIS, change cUnOp as well... *****************/
 enum unOpType {

@@ -6,6 +6,8 @@
 
 class SymtabTraversal : public Pass {
  public:
+  bool skipInternalScopes;
+
   virtual void preProcessScope(SymScope*);
   virtual void postProcessScope(SymScope*);
   virtual void processSymbol(Symbol*);

@@ -46,6 +46,7 @@ PassInfo passlist[] = {
 
   // passes to normalize the basic AST after analysis
   RUN(Fixup, "verify"), // this is a sanity check
+  //  RUN(InsertWriteFns, ""),
   RUN(InsertFunctionTemps, ""),
   RUN(TransformLetExprs, ""),
   RUN(InsertElidedLoops, ""),

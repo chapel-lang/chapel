@@ -618,7 +618,8 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
   if (noparens) {
     if (getCurrentScope()->type != SCOPE_CLASS &&
 	fnsym->classBinding == NULL) {
-      USR_FATAL(fnsym, "Non-member functions must have parenthesized argument lists");
+      USR_FATAL(fnsym, 
+		"Non-member functions must have parenthesized argument lists");
     }
   }
 

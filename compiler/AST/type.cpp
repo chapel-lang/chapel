@@ -10,6 +10,31 @@
 #include "sym.h"
 
 
+static void genIOReadWrite(FILE* outfile, ioCallType ioType) {
+  switch (ioType) {
+  case IO_WRITE:
+  case IO_WRITELN:
+    fprintf(outfile, "_write");
+    break;
+  case IO_READ:
+    fprintf(outfile, "_read");
+    break;
+  }
+}
+
+static void genIODefaultFile(FILE* outfile, ioCallType ioType) {
+  switch (ioType) {
+  case IO_WRITE:
+  case IO_WRITELN:
+    fprintf(outfile, "stdout, ");
+    break;
+  case IO_READ:
+    fprintf(outfile, "stdin, ");
+    break;
+  }
+}
+
+
 Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
   symbol(NULL),
@@ -158,6 +183,36 @@ void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
     fprintf(outfile, "_write");
   }
   this->codegen(outfile);
+}
+
+
+void Type::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+			 Expr* format) {
+  genIOReadWrite(outfile, ioType);
+  
+  if (this == dtUnknown) {
+    INT_FATAL(format, "unknown type encountered in codegen");
+  }
+
+  this->codegen(outfile);
+  fprintf(outfile, "(");
+
+  genIODefaultFile(outfile, ioType);
+
+  if (!format) {
+    bool isRead = (ioType == IO_READ);
+    codegenDefaultFormat(outfile, isRead);
+  } else {
+    format->codegen(outfile);
+  }
+  fprintf(outfile, ", ");
+
+  if (ioType == IO_READ) {
+    fprintf(outfile, "&");
+  }
+
+  arg->codegen(outfile);
+  fprintf(outfile, ")");
 }
 
 
@@ -474,6 +529,24 @@ void DomainType::codegenDef(FILE* outfile) {
   fprintf(outfile, "} ");
   symbol->codegen(outfile);
   fprintf(outfile, ";\n\n");
+}
+
+
+void DomainType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+			       Expr* format) {
+  genIOReadWrite(outfile, ioType);
+
+  fprintf(outfile, "_domain");
+  fprintf(outfile, "(");
+
+  genIODefaultFile(outfile, ioType);
+
+  if (ioType == IO_READ) {
+    fprintf(outfile, "&");
+  }
+
+  arg->codegen(outfile);
+  fprintf(outfile, ")");
 }
 
 
@@ -912,26 +985,18 @@ void ClassType::codegenPrototype(FILE* outfile) {
 }
 
 
-void ClassType::codegenIORoutines(FILE* outfile) {
-  bool isRead;
-
-  isRead = true;
-  codegenIOPrototype(intheadfile, symbol, isRead);
-  fprintf(intheadfile, ";\n");
-
-  isRead = false;
-  codegenIOPrototype(intheadfile, symbol, isRead);
-  fprintf(intheadfile, ";\n\n");
-
-  isRead = true;
-  codegenIOPrototype(outfile, symbol, isRead);
-  fprintf(outfile, "{\n");
-  fprintf(outfile, "}\n");
-
-  isRead = false;
-  codegenIOPrototype(outfile, symbol, isRead);
-  fprintf(outfile, "{\n");
-  fprintf(outfile, "}\n");
+void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+			      Expr* format) {
+  forv_Symbol(method, methods) {
+    if (strcmp(method->name, "write") == 0) {
+      method->codegen(outfile);
+      fprintf(outfile, "(&(");
+      arg->codegen(outfile);
+      fprintf(outfile, "))");
+      return;
+    }
+  }
+  INT_FATAL("Couldn't find the IO call for a class");
 }
 
 

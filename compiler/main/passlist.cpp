@@ -6,8 +6,9 @@
 #include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
 
-#include "../symtab/printSymtab.h"
+#include "../symtab/insertWriteFns.h"
 #include "../symtab/legalizeCNames.h"
+#include "../symtab/printSymtab.h"
 #include "../symtab/renameOverloadedFunctions.h"
 
 #include "../traversals/applyThisParameters.h"
@@ -72,6 +73,7 @@ REGISTER(InsertFunctionTemps);
 REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);
+REGISTER(InsertWriteFns);
 REGISTER(LegalizeCNames);
 REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST

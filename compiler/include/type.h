@@ -16,6 +16,7 @@ class ASymbol;
 class SymScope;
 
 
+// neither of these really seem like they should be here
 enum paramType {
   PARAM_BLANK = 0,
   PARAM_IN,
@@ -26,6 +27,13 @@ enum paramType {
 
   NUM_PARAM_TYPES
 };
+
+enum ioCallType {
+  IO_WRITE = 0, 
+  IO_WRITELN, 
+  IO_READ
+};
+
 
 
 class Type : public BaseAST {
@@ -61,6 +69,8 @@ class Type : public BaseAST {
   virtual void codegenIORoutines(FILE* outfile);
   virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
+  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+			     Expr* format = NULL);
 
   virtual bool outParamNeedsPtr(void);
   virtual bool requiresCParamTmp(paramType intent);
@@ -102,6 +112,8 @@ class DomainType : public Type {
 
   void print(FILE* outfile);
   void codegenDef(FILE* outfile);
+  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+			     Expr* format = NULL);
 
   virtual bool blankIntentImpliesRef(void);
 };
@@ -187,7 +199,8 @@ class ClassType : public Type {
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenPrototype(FILE* outfile);
-  void codegenIORoutines(FILE* outfile);
+  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+			     Expr* format = NULL);
 
   virtual bool blankIntentImpliesRef(void);
 };
