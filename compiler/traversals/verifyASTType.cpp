@@ -22,6 +22,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_WITH");
     }
     break;
+  case STMT_DEF:
+    if (typeid(*ast) != typeid(DefStmt)) {
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_DEF");
+    }
+    break;
   case STMT_VARDEF:
     if (typeid(*ast) != typeid(VarDefStmt)) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_VARDEF");

@@ -233,9 +233,31 @@ bool VarSymbol::isNull(void) {
 
 
 void VarSymbol::printDef(FILE* outfile) {
+  if (varClass == VAR_CONFIG) {
+    fprintf(outfile, "config ");
+  }
+  if (varClass == VAR_STATE) {
+    fprintf(outfile, "state ");
+  }
+  if (isConstant) {
+    fprintf(outfile, "const ");
+  }
+  else {
+    fprintf(outfile, "var ");
+  }
   print(outfile);
   fprintf(outfile, ": ");
   type->print(outfile);
+  if (!init->isNull()) {
+    fprintf(outfile, " = ");
+    if (init->next->isNull()) {
+      init->print(outfile);
+    } else {
+      fprintf(outfile, "(");
+      init->printList(outfile);
+      fprintf(outfile, ")");
+    }
+  }
 }
 
 
@@ -778,6 +800,26 @@ FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutio
 
 bool FnSymbol::isNull(void) {
   return (this == nilFnSymbol);
+}
+
+
+void FnSymbol::printDef(FILE* outfile) {
+  fprintf(outfile, "function ");
+  print(outfile);
+  fprintf(outfile, "(");
+  if (!formals->isNull()) {
+    formals->printDefList(outfile, ";\n");
+  }
+  fprintf(outfile, ")");
+  if (retType == dtVoid) {
+    fprintf(outfile, " ");
+  } else {
+    fprintf(outfile, ": ");
+    type->print(outfile);
+    fprintf(outfile, " ");
+  }
+  body->print(outfile);
+  fprintf(outfile, "\n\n");
 }
 
 

@@ -311,11 +311,6 @@ Stmt* Stmt::extract(void) {
   next = nilStmt;
   prev = nilStmt;
   */
-  /*
-  if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(this)) {
-    back = &fn_def_stmt->fn->defPoint; // SJD: UGH YUCK
-  }
-  */
   return this;
 }
 
@@ -398,6 +393,54 @@ void WithStmt::codegen(FILE* outfile) {
 }
 
 
+DefStmt::DefStmt(Symbol* init_def_sym) :
+  Stmt(STMT_DEF),
+  def_sym(init_def_sym)
+{}
+
+
+Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  if (clone) {
+    return NULL;
+  }
+  else {
+    return new DefStmt(def_sym);
+  }
+}
+
+
+void DefStmt::traverseStmt(Traversal* traversal) {
+  TRAVERSE_DEF_LS(def_sym, traversal, false);
+}
+
+
+void DefStmt::print(FILE* outfile) {
+}
+
+
+void DefStmt::codegen(FILE* outfile) { /* Noop */ }
+
+
+bool DefStmt::isVarDef() {
+  return dynamic_cast<VarSymbol*>(def_sym);
+}
+
+
+bool DefStmt::isFnDef() {
+  return dynamic_cast<FnSymbol*>(def_sym);
+}
+
+
+bool DefStmt::isTypeDef() {
+  return dynamic_cast<TypeSymbol*>(def_sym);
+}
+
+
+bool DefStmt::isModuleDef() {
+  return dynamic_cast<ModuleSymbol*>(def_sym);
+}
+
+
 VarDefStmt::VarDefStmt(VarSymbol* init_var) :
   Stmt(STMT_VARDEF),
   var(init_var)
@@ -426,34 +469,8 @@ void VarDefStmt::print(FILE* outfile) {
   VarSymbol* aVar = var;
 
   while (aVar) {
-    switch (aVar->varClass) {
-    case VAR_NORMAL:
-      break;
-    case VAR_CONFIG:
-      fprintf(outfile, "config ");
-      break;
-    case VAR_STATE:
-      fprintf(outfile, "state ");
-      break;
-    }
-    if (aVar->isConstant) {
-      fprintf(outfile, "const ");
-    } else {
-      fprintf(outfile, "var ");
-    }
     aVar->printDef(outfile);
-    if (!var->init->isNull()) {
-      fprintf(outfile, " = ");
-      if (var->init->next->isNull()) {
-	var->init->print(outfile);
-      } else {
-	fprintf(outfile, "(");
-	var->init->printList(outfile);
-	fprintf(outfile, ")");
-      }
-    }
     fprintf(outfile, ";");
-
     aVar = nextLink(VarSymbol, aVar);
     if (aVar) {
       fprintf(outfile, "\n");
@@ -529,47 +546,11 @@ void FnDefStmt::traverseStmt(Traversal* traversal) {
 
 
 void FnDefStmt::print(FILE* outfile) {
-  fprintf(outfile, "function ");
-  fn->print(outfile);
-  fprintf(outfile, "(");
-  if (!fn->formals->isNull()) {
-    fn->formals->printDefList(outfile, ";\n");
-  }
-  fprintf(outfile, ")");
-  if (fn->retType == dtVoid) {
-    fprintf(outfile, " ");
-  } else {
-    fprintf(outfile, ": ");
-    fn->type->print(outfile);
-    fprintf(outfile, " ");
-  }
-  fn->body->print(outfile);
-  fprintf(outfile, "\n\n");
+  fn->printDef(outfile);
 }
 
 
-void FnDefStmt::codegen(FILE* outfile) {
-  /*
-  FILE* headfile;
-
-  if (!function_is_used(fn)) {
-    return;
-  }
-
-  if (fn->exportMe) {
-    headfile = extheadfile;
-  } else {
-    headfile = intheadfile;
-  }
-  fn->codegenDef(headfile);
-  fprintf(headfile, ";\n");
-
-  fn->codegenDef(outfile);
-  fprintf(outfile, " ");
-  fn->body->codegen(outfile);
-  fprintf(outfile, "\n");
-  */
-}
+void FnDefStmt::codegen(FILE* outfile) { /* Noop */ }
 
 
 ModuleDefStmt::ModuleDefStmt(ModuleSymbol* init_module) :

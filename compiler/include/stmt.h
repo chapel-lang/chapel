@@ -66,6 +66,23 @@ class WithStmt : public Stmt {
 };
 
 
+class DefStmt : public Stmt {
+public:
+  Symbol* def_sym;
+
+  DefStmt(Symbol* init_def_sym);
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void traverseStmt(Traversal* traversal);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+
+  bool isVarDef();
+  bool isFnDef();
+  bool isTypeDef();
+  bool isModuleDef();
+};
+
+
 class VarDefStmt : public Stmt {
  public:
   VarSymbol* var;

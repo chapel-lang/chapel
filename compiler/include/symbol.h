@@ -171,6 +171,8 @@ class FnSymbol : public Symbol {
   void codegenHeader(FILE* outfile);
   void codegenDef(FILE* outfile);
 
+  void printDef(FILE* outfile);
+
   static FnSymbol* mainFn;
   static void init(void);
 };

@@ -1187,6 +1187,7 @@ gen_if1(BaseAST *ast) {
     }
     case STMT_NOOP: break;
     case STMT_WITH: break;
+    case STMT_DEF: break;
     case STMT_VARDEF: if (gen_vardef(ast) < 0) return -1; break;
     case STMT_TYPEDEF: break;
     case STMT_FNDEF: break;
