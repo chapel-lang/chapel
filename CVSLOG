@@ -9190,3 +9190,26 @@ Modified files:
 	chapel/compiler/include/: symscope.h symtab.h 
 	chapel/compiler/passes/: filesToAST.cpp 
 
+---------------------------------------------------------------------------
+
+10/27/04 15:38:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added support for complex numbers in vparser and low level CG.
+	Fixed bug in "return" handling in vparser.
+	Added test cases for dispatch covering basic overloading.
+	  I am going to get them working with the test front-end then
+	  translate them to Chapel when we are ready for that.
+
+Modified files:
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/compiler/vparser/: parse_ast.cpp v.g 
+Added files:
+	chapel/test/dispatch/jplevyak/: COMPOPTS Makefile.cg NOVGRBIN 
+	                                dispatch-1.good dispatch-1.v 
+	                                dispatch-2.good dispatch-2.v 
+	                                dispatch-3.good dispatch-3.v 
+	                                dispatch-4.good dispatch-4.v 
+	                                dispatch-5.good dispatch-5.v 
+	                                dispatch-6.good dispatch-6.v 
+
