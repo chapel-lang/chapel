@@ -25,9 +25,46 @@ static void genDT(FILE* outfile, Sym* pdt) {
 }
 
 
+static int isTupleArg(AST* ast) {
+  return (ast->kind == AST_op && 
+	  ast->v[1]->sym->name &&
+	  strcmp(ast->v[1]->sym->name, ",") == 0 &&
+	  ast->v[1]->string &&
+	  strcmp(ast->v[1]->string, "#,") == 0);
+}
+
+
+static void genSingleWriteArg(FILE* outfile, AST* arg, int genSemi) {
+  Sym* argdt = type_info(arg);
+
+  fprintf(outfile, "_write");
+  genDT(outfile, argdt);
+  fprintf(outfile, "(");
+  fprintf(outfile, "stdout, ");
+  fprintf(outfile, "_default_format");
+  genDT(outfile, argdt);
+  fprintf(outfile, ", ");
+  genAST(outfile, arg);
+  fprintf(outfile, ")");
+  if (genSemi) {
+    fprintf(outfile, ";\n");
+  }
+}
+
+
+static void handleSingleWriteArg(FILE* outfile, AST* arg, int genSemi, 
+				 int depth = 0) {
+  if (isTupleArg(arg)) {
+    handleSingleWriteArg(outfile, arg->v[0], 1, depth+1);
+    handleSingleWriteArg(outfile, arg->v[2], depth ? 1 : genSemi, depth+1);
+  } else {
+    genSingleWriteArg(outfile, arg, genSemi);
+  }
+}
+
+
 static int handleWrite(FILE* outfile, AST* ast) {
   AST* fnast = ast->v[0];
-  int i;
   int writeType = 0;
 
   if (strcmp(fnast->sym->name, "write") == 0) {
@@ -37,23 +74,8 @@ static int handleWrite(FILE* outfile, AST* ast) {
   }
 
   if (fnast->kind == AST_qualified_ident && writeType) {
-    for (i=2; i<ast->n; i++) {
-      AST* arg = ast->v[i];
-      Sym* argdt = type_info(arg);
+    handleSingleWriteArg(outfile, ast->v[2], (writeType == IO_WRITELN));
 
-      fprintf(outfile, "_write");
-      genDT(outfile, argdt);
-      fprintf(outfile, "(");
-      fprintf(outfile, "stdout, ");
-      fprintf(outfile, "_default_format");
-      genDT(outfile, argdt);
-      fprintf(outfile, ", ");
-      genAST(outfile, arg);
-      fprintf(outfile, ")");
-      if (i < ast->n-1 || writeType == IO_WRITELN) {
-	fprintf(outfile, ";\n");
-      }
-    }
     if (writeType == IO_WRITELN) {
       fprintf(outfile, "_write_linefeed(stdout)");
     }
