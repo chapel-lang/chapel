@@ -18257,3 +18257,17 @@ Added files:
 	                                            typevar_constraint-1.future 
 	                                            typevar_constraint-1.good 
 
+---------------------------------------------------------------------------
+
+02/28/05 12:09:29 -- deitz
+
+Log message:
+	Fixed a bug in how fixup is called after modifications to the AST are
+	made.
+	
+	Updated enumarray.good.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/test/flowanalysis/newast/: enumarray.good 
+
