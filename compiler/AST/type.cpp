@@ -2,28 +2,24 @@
 #include "expr.h"
 #include "misc.h"
 #include "symbol.h"
+#include "symtab.h"
 #include "type.h"
-
-Type* dtVoid = 0;
-Type* dtBoolean = 0;
-Type* dtInteger = 0;
-Type* dtFloat = 0;
-Type* dtString = 0;
-
-Type* dtTimer = 0;
-Type* dtLocale = 0;
 
 Type* dtUnknown = 0;
 
-Symbol* pstVoid = 0;
-Symbol* pstInteger = 0;
-Symbol* pstFloat = 0;
-Symbol* pstString = 0;
+Type* dtBoolean = 0;
+Type* dtVoid = 0;
+Type* dtInteger = 0;
+Type* dtFloat = 0;
+Type* dtComplex = 0;
+Type* dtString = 0;
 
-Symbol* pstTimer = 0;
-Symbol* pstLocale = 0;
+Type* dtLocale = 0;
 
-Symbol* pstUnknown = 0;
+Type* dtTimer = 0;
+
+Vec<Type*> builtinTypes;
+
 
 
 Type::Type(astType_t astType) :
@@ -76,7 +72,9 @@ void Type::printDef(FILE* outfile) {
 void Type::codegen(FILE* outfile) {
   // BLC: Perhaps we should just rename the built-in types between
   // parsing and codegen?
-  if (this == dtInteger) {
+  if (this == dtBoolean) {
+    fprintf(outfile, "boolean");
+  } else if (this == dtInteger) {
     fprintf(outfile, "_integer64");
   } else if (this == dtFloat) {
     fprintf(outfile, "_float64");
@@ -410,19 +408,18 @@ ClassType::getTypes(Vec<BaseAST *> &asts) {
 }
 
 
-static void newType(char* name, Type** dtHandle, Symbol** symHandle) {
-  *dtHandle = new Type(TYPE_BUILTIN);
-  *symHandle = new TypeSymbol(name, *dtHandle);
-  (*dtHandle)->addName(*symHandle);
-}
-
-
 void initType(void) {
-  newType("void", &dtVoid, &pstVoid);
-  newType("integer", &dtInteger, &pstInteger);
-  newType("float", &dtFloat, &pstFloat);
-  newType("string", &dtString, &pstString);
-  newType("locale", &dtLocale, &pstLocale);
-  newType("timer", &dtTimer, &pstTimer);
-  newType("???", &dtUnknown, &pstUnknown);
+  // define built-in types
+  dtUnknown = Symboltable::defineBuiltinType("???");
+  dtVoid = Symboltable::defineBuiltinType("void");
+  dtBoolean = Symboltable::defineBuiltinType("boolean");
+  dtInteger = Symboltable::defineBuiltinType("integer");
+  dtFloat = Symboltable::defineBuiltinType("float");
+  dtComplex = Symboltable::defineBuiltinType("complex");
+  dtString = Symboltable::defineBuiltinType("string");
+
+  dtLocale = Symboltable::defineBuiltinType("locale");
+
+  // this needs to be moved into the prelude
+  dtTimer = Symboltable::defineBuiltinType("timer", false);
 }

@@ -342,6 +342,20 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
 }
 
 
+Type* Symboltable::defineBuiltinType(char* name, bool placeholder) {
+  Type* newType = new Type(TYPE_BUILTIN);
+  TypeSymbol* sym = new TypeSymbol(name, newType);
+  newType->addName(sym);
+
+  define(sym);
+  if (!placeholder) {
+    builtinTypes.add(newType);
+  }
+
+  return newType;
+}
+
+
 FnSymbol* Symboltable::defineFunction(char* name, Symbol* formals, 
 				      Type* retType, Stmt* body, 
 				      bool isExtern) {

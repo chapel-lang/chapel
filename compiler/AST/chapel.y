@@ -44,9 +44,6 @@
 %token CONFIG STATIC
 %token VAR CONST
 
-%token BOOLEAN INTEGER FLOAT
-%token LOCALE TIMER
-
 %token DOMAIN
 %token INDEX
 
@@ -88,7 +85,7 @@
 %type <vt> vardecltag
 %type <pt> formaltag
 
-%type <pdt> type types domainType indexType arrayType tupleType weirdType
+%type <pdt> type types domainType indexType arrayType tupleType
 %type <pdt> vardecltype fnrettype
 %type <pch> identifier query_identifier
 %type <psym> identsym enumList formal nonemptyformals formals idlist indexlist
@@ -333,29 +330,15 @@ tupleType:
 
 
 type:
-  INTEGER
-    { $$ = dtInteger; }
-| FLOAT
-    { $$ = dtFloat; }
-| domainType
+  domainType
 | indexType
 | arrayType
 | tupleType
-| weirdType
 | TYPE_IDENT
     { $$ = $1->type; }
 | query_identifier
     { $$ = dtUnknown; }
 ;
-
-
-weirdType:
-  LOCALE
-    { $$ = dtLocale; }
-| TIMER
-    { $$ = dtTimer; }
-;
-
 
 domainType:
   DOMAIN

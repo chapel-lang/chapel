@@ -6,8 +6,8 @@ function writeln() {}
 
 -- intrinsic types
 
-enum boolean = true | false;
-
+const false: boolean = 0;
+const true: boolean = 1;
 
 
 -- math

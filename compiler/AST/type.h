@@ -2,6 +2,7 @@
 #define _TYPE_H_
 
 #include <stdio.h>
+#include "vec.h"
 
 class Symbol;
 class EnumSymbol;
@@ -34,6 +35,7 @@ class Type : public BaseAST {
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
 extern Type* nilType;
+extern Vec<Type*> builtinTypes;
 
 
 class EnumType : public Type {
@@ -143,29 +145,16 @@ class ClassType : public Type {
 
 
 
-// BLC: move these to standard prelude
-
+extern Type* dtUnknown;
 extern Type* dtVoid;
 extern Type* dtBoolean;
 extern Type* dtInteger;
 extern Type* dtFloat;
+extern Type* dtComplex;
 extern Type* dtString;
-
-extern Type* dtTimer;
 extern Type* dtLocale;
+extern Type* dtTimer;
 
-extern Type* dtUnknown;
-
-extern Symbol* pstVoid;
-extern Symbol* pstBoolean;
-extern Symbol* pstInteger;
-extern Symbol* pstFloat;
-extern Symbol* pstString;
-
-extern Symbol* pstTimer;
-extern Symbol* pstLocale;
-
-extern Symbol* pstUnknown;
 
 void initType(void);
 

@@ -29,14 +29,8 @@ static          return STATIC;
 var             return VAR;
 const           return CONST;
 
-integer         return INTEGER;
-float           return FLOAT;
-
 domain          return DOMAIN;
 index           return INDEX;
-
-locale          return LOCALE;
-timer           return TIMER;
 
 type            return TYPEDEF;
 enum            return ENUM;
