@@ -20651,3 +20651,35 @@ Modified files:
 Added files:
 	chapel/test/trivial/shannon/: compSampler.timeout 
 
+---------------------------------------------------------------------------
+
+03/22/05 09:48:53 -- deitz
+
+Log message:
+	Added codegenPrototype routines for arrays, classes, records, and
+	unions.  This allows these to be declared after they are used.  This
+	currently shows up because of the way arrays are created but could
+	show up if the user declares them after they are used.
+	
+	Improved support for arrays of records/classes/unions.  The test for
+	array of records test is currently failing in analysis, but the test
+	of an array of classes passes.
+	
+	Fixed a bug in the _INIT_ARRAY macro which would fail if the domain or
+	array were named "d" because it used a local variable named d as well.
+	This local variable is now called "__dim".
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             resolveSymbols.cpp 
+	chapel/runtime/include/: array.h 
+Added files:
+	chapel/test/arrays/deitz/: test_array_of_class1.chpl 
+	                           test_array_of_class1.good 
+	                           test_array_of_record1.chpl 
+	                           test_array_of_record1.future 
+	                           test_array_of_record1.good 
+
