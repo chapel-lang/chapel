@@ -55,6 +55,7 @@ class Type : public BaseAST {
   virtual void printDef(FILE* outfile);
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
+  virtual void codegenPrototype(FILE* outfile);
   virtual void codegenSafeInit(FILE* outfile);
   virtual void codegenStringToType(FILE* outfile);
   virtual void codegenIORoutines(FILE* outfile);
@@ -132,6 +133,7 @@ class ArrayType : public Type {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
+  void codegenPrototype(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
 
   virtual bool blankIntentImpliesRef(void);
@@ -184,6 +186,7 @@ class ClassType : public Type {
 
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
+  void codegenPrototype(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
 
   virtual bool blankIntentImpliesRef(void);

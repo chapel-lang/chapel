@@ -13,20 +13,20 @@ typedef struct __arr_perdim {
 
 #define _INIT_ARRAY(rank, arr, dom, elemtype) \
   { \
-    int d; \
+    int __dim; \
     arr.elemsize = sizeof(elemtype); \
     arr.domain = &dom; \
     arr.dim_info[rank-1].off = dom.dim_info[rank-1].lo; \
     arr.dim_info[rank-1].blk = 1; \
-    for (d=rank-2; d>=0; d--) { \
-      arr.dim_info[d].off = dom.dim_info[d].lo; \
-      arr.dim_info[d].blk = arr.dim_info[d+1].blk \
-	* ((dom.dim_info[d+1].hi - dom.dim_info[d+1].lo + 1)  \
-	   / dom.dim_info[d+1].str); \
+    for (__dim=rank-2; __dim>=0; __dim--) { \
+      arr.dim_info[__dim].off = dom.dim_info[__dim].lo; \
+      arr.dim_info[__dim].blk = arr.dim_info[__dim+1].blk \
+	* ((dom.dim_info[__dim+1].hi - dom.dim_info[__dim+1].lo + 1)  \
+	   / dom.dim_info[__dim+1].str); \
     } \
     arr.size = arr.dim_info[0].blk \
-      * ((dom.dim_info[d+1].hi - dom.dim_info[d+1].lo + 1) \
-	 / dom.dim_info[d+1].str); \
+      * ((dom.dim_info[__dim+1].hi - dom.dim_info[__dim+1].lo + 1) \
+	 / dom.dim_info[__dim+1].str); \
     arr.base = (elemtype*)_chpl_malloc(arr.size, sizeof(elemtype), "array"); \
   }
 

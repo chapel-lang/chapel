@@ -126,6 +126,9 @@ void Symbol::codegenDef(FILE* outfile) {
 }
 
 
+void Symbol::codegenPrototype(FILE* outfile) { }
+
+
 void Symbol::printDef(FILE* outfile) {
   print(outfile);
 }
@@ -443,6 +446,21 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
 
 void TypeSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE_DEF(type, traversal, false);
+}
+
+
+void TypeSymbol::codegenPrototype(FILE* outfile) {
+  if (!type_is_used(this)) {
+    return;
+  }
+
+  FILE* deffile = outfile;
+  /* if in file scope, hoist to internal header so that it will be
+     defined before global variables at file scope. */  
+  if (type->symbol->parentScope->type == SCOPE_MODULE) { 
+    deffile = intheadfile;
+  }
+  type->codegenPrototype(deffile);
 }
 
 

@@ -328,6 +328,14 @@ void SymScope::codegen(FILE* outfile, char* separator) {
       }
     }
   }
+
+  // Now let's codegen prototypes if they exist.
+  for (SymLink* tmp = firstSym;
+       tmp;
+       tmp = nextLink(SymLink, tmp)) {
+    tmp->pSym->codegenPrototype(outfile);
+  }
+
   for (SymLink* tmp = firstSym;
        tmp;
        tmp = nextLink(SymLink, tmp)) {

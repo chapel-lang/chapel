@@ -54,7 +54,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 	    commonModule->stmts->insertAfter(array_type_def);
 	  }
 	  else {
-	    Stmt* def_stmt = dynamic_cast<Stmt*>(array_type->elementType->symbol->defPoint);
+	    Stmt* def_stmt = dynamic_cast<Stmt*>(dynamic_cast<DefExpr*>(array_type->elementType->symbol->defPoint)->stmt);
 	    if (!def_stmt) {
 	      INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
 	    }

@@ -32,8 +32,16 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 				       class_type->classScope);
 	}
       } else {
-	if (Variable* var = dynamic_cast<Variable*>(dot->base)) {
-	  if (ClassType* class_type = dynamic_cast<ClassType*>(var->var->type)) {
+	Expr* base = dot->base;
+	while (ArrayRef* array_ref = dynamic_cast<ArrayRef*>(base)) {
+	  base = array_ref->baseExpr;
+	}
+	if (Variable* var = dynamic_cast<Variable*>(base)) {
+	  Type* type = var->var->type;
+	  while (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
+	    type = array_type->elementType;
+	  }
+	  if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
 	    Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
 						     class_type->classScope);
 	    if (sym) {
@@ -44,7 +52,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 	  } else {
 	    INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
 	  }
-	} else if (MemberAccess* outer = dynamic_cast<MemberAccess*>(dot->base)) {
+	} else if (MemberAccess* outer = dynamic_cast<MemberAccess*>(base)) {
 	  if (ClassType* class_type = dynamic_cast<ClassType*>(outer->member->type)) {
 	    Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
 						     class_type->classScope);

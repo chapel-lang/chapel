@@ -126,6 +126,9 @@ void Type::codegenDef(FILE* outfile) {
 }
 
 
+void Type::codegenPrototype(FILE* outfile) { }
+
+
 void Type::codegenSafeInit(FILE* outfile) {
   if (this == dtString) {
     fprintf(outfile, " = NULL");
@@ -564,7 +567,7 @@ void ArrayType::codegen(FILE* outfile) {
 
 
 void ArrayType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef struct _");
+  fprintf(outfile, "struct _");
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   fprintf(outfile, "  int elemsize;\n");
@@ -579,9 +582,7 @@ void ArrayType::codegenDef(FILE* outfile) {
   domainType->codegen(outfile);
   fprintf(outfile, "* domain;\n");
   fprintf(outfile, "  _arr_perdim dim_info[%d];\n", domainType->numdims);
-  fprintf(outfile, "} ");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n");
+  fprintf(outfile, "};\n");
 
   fprintf(outfile, "void _write");
   symbol->codegen(outfile);
@@ -619,6 +620,15 @@ void ArrayType::codegenDef(FILE* outfile) {
     fprintf(codefile, "}\n");
   }
   fprintf(codefile, "}\n");
+}
+
+
+void ArrayType::codegenPrototype(FILE* outfile) {
+  fprintf(outfile, "typedef struct _");
+  symbol->codegen(outfile);
+  fprintf(outfile, " ");
+  symbol->codegen(outfile);
+  fprintf(outfile, ";\n");
 }
 
 
@@ -834,7 +844,7 @@ void ClassType::codegen(FILE* outfile) {
 
 
 void ClassType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef struct _");
+  fprintf(outfile, "struct _");
   symbol->codegen(outfile);
   fprintf(outfile, "_def {\n");
   if (union_value) {
@@ -859,7 +869,8 @@ void ClassType::codegenDef(FILE* outfile) {
   if (union_value) {
     fprintf(outfile, "} _chpl_union;\n");
   }
-  fprintf(outfile, "} ");
+  fprintf(outfile, "};\n\n");
+  /*
   if (value || union_value) {
     symbol->codegen(outfile);
     fprintf(outfile, ";\n\n");
@@ -870,7 +881,7 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile,", *");
     symbol->codegen(outfile);
     fprintf(outfile, ";\n\n");
-  }
+    }*/
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(constructor)) {
     def_stmt->fnDef()->codegenDef(codefile);
   }
@@ -881,6 +892,23 @@ void ClassType::codegenDef(FILE* outfile) {
     }
     fprintf(codefile, "\n");
   }
+}
+
+
+void ClassType::codegenPrototype(FILE* outfile) {
+  fprintf(outfile, "typedef struct _");
+  symbol->codegen(outfile);
+  fprintf(outfile, "_def ");
+  if (value || union_value) {
+    symbol->codegen(outfile);
+  }
+  else {
+    fprintf(outfile, "_");
+    symbol->codegen(outfile);
+    fprintf(outfile,", *");
+    symbol->codegen(outfile);
+  }
+  fprintf(outfile, ";\n");
 }
 
 

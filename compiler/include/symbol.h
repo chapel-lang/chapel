@@ -59,6 +59,7 @@ class Symbol : public BaseAST {
   void printDefList(FILE* outfile, char* separator);
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
+  virtual void codegenPrototype(FILE* outfile);
   void codegenDefList(FILE* outfile, char* separator);
   void setDefPoint(BaseAST* stmt);
 };
@@ -134,6 +135,7 @@ class TypeSymbol : public Symbol {
   TypeSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
   virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);
+  virtual void codegenPrototype(FILE* outfile);
 };
 
 
