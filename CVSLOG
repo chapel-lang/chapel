@@ -8773,3 +8773,21 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: cloneAllFns.cpp cloneAllFns.h 
 
+---------------------------------------------------------------------------
+
+10/13/04 09:56:53 -- bradc
+
+Log message:
+	Reordered classes in expr.cpp and expr.h to prepare for
+	some refactoring. I'm checking this in separately in
+	order to make the cvs diff for the refactoring changes
+	readable.
+	
+	Also changed nightly regression test script to use a
+	different log filename when it is run in debug mode.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/test/Bin/: nightly 
+
