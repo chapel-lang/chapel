@@ -12200,3 +12200,32 @@ Log message:
 Modified files:
 	chapel/compiler/util/: files.cpp 
 
+---------------------------------------------------------------------------
+
+12/20/04 15:52:23 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	1. Complete rewrite of the dispatch code to support generic
+	   instantiation, default arguments, destructring (better)
+	   and point-wise evaluation.  This just restores the original
+	   functionality with hooks for the new features.
+	
+	2. Error messages are now produced for intermediate expressions
+	   which fail to type correctly so that better error messages
+	   are produced for things like the currently failing 0-arity
+	   functions.
+	
+	3. reogainized the util directory to get it to compile test_lib
+	   which had gone stagnent.
+	
+	4. Added a form_Map which allows iteration over maps more
+	   easily.
+
+Modified files:
+	chapel/compiler/adt/: map.cpp 
+	chapel/compiler/analysis/: fa.cpp fa_extras.cpp fun.cpp 
+	                           pattern.cpp 
+	chapel/compiler/include/: ast.h fa.h fun.h map.h pattern.h vec.h 
+	chapel/compiler/test/: Makefile files.cpp map.cpp misc.cpp 
+	chapel/compiler/util/: misc.cpp 
+
