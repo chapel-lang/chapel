@@ -18604,3 +18604,13 @@ Log message:
 Modified files:
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+03/02/05 09:40:06 -- bradc
+
+Log message:
+	Restoring enumarray.chpl back to its preferred form.
+
+Modified files:
+	chapel/test/trivial/bradc/domarr/: enumarray.chpl 
+
