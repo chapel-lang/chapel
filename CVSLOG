@@ -5067,3 +5067,27 @@ Added files:
 Removed files:
 	chapel/compiler/: geysa.cpp 
 
+---------------------------------------------------------------------------
+
+08/05/04 16:43:51 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	massive reorganization
+	created new ParseAST as a subclass of the abstract superclass AST which
+	will encapsulate the new AST (and the old AST) from the point of view of
+	analysis, graphing, and dumping.
+	Many files are converted, but a few functions still have to
+	be reorganized.  In particular, codegen and inlining.  I have
+	tried to callout these cases by using dynamic_cast<ParseAST*>
+
+Modified files:
+	chapel/compiler/: Makefile ast.cpp ast.h ast_cf.cpp cg_funs.cpp 
+	                  chpl.g clone.cpp clone.h codegen.cpp codegen.h 
+	                  driver.cpp dump.cpp dump.h fa.cpp 
+	                  fa_extras.cpp fun.cpp grammar.cpp grammar.h 
+	                  graph.cpp graph.h inline.cpp misc.cpp 
+	                  parse.cpp parse.h parse_structs.h prim.cpp 
+	                  prim.h sym.h v.g 
+Added files:
+	chapel/compiler/: parse_ast.cpp parse_ast.h 
+
