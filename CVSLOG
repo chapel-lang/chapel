@@ -19653,3 +19653,23 @@ Modified files:
 Removed files:
 	chapel/test/functions/bradc/: intents-classes3.future 
 
+---------------------------------------------------------------------------
+
+03/15/05 12:19:58 -- bradc
+
+Log message:
+	A few changes to make the compiler work on the Sun boxes
+	again.  Added an explicit cast to files.cpp, made some of
+	the commands executed by the test scripts more portable.
+	
+	The one change that might affect users is that the
+	test environment variable CHPL_VALGRIND_OPTIONS was
+	shortened to CHPL_VALGRIND_OPTS because the former name
+	was too long for the Sun boxes.  John, I think you might
+	have used this at one point when we had a version skew?
+	I'm not sure whether you still do or not.
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+	chapel/test/: start_test sub_clean sub_test 
+
