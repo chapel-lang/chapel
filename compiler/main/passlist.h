@@ -42,7 +42,11 @@ PassInfo passlist[] = {
   RUN(RemoveTypeVariableFormals, ""),
 
   // passes to normalize the basic AST after analysis
+  RUN(Fixup, "verify"),
+  RUN(InsertFunctionTemps, ""),
+  RUN(Fixup, "verify"),
   RUN(TransformLetExprs, ""),
+  RUN(Fixup, "verify"),
 
   // check the program's semantics
   RUN(CheckSemantics, ""),

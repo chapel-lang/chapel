@@ -521,13 +521,10 @@ VarDefStmt* Symboltable::defineVarDefStmt2(VarDefStmt* stmts,
 
 VarDefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
 						Expr* init, varType vartag, 
-						bool isConst, 
-						Symbol** newVar) {
+						bool isConst) {
   Symbol* newVarAsSym = new Symbol(SYMBOL, name);
   VarDefStmt* retval = defineVarDefStmt(newVarAsSym, type, init, vartag, 
 					isConst);
-  *newVar = retval->var;
-
   return retval;
 }
 

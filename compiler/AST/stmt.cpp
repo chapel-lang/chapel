@@ -131,15 +131,12 @@ void Stmt::traverseStmt(Traversal* traversal) {
 static void call_fixup(Stmt* stmt) {
   Fixup* fixup = new Fixup();
 
-  SymScope* tmp = Symboltable::getCurrentScope();
-  while (tmp && !tmp->symContext) {
-    tmp = tmp->parent;
-  }
   if (!stmt->parentSymbol) {
-    if (!tmp) {
-      INT_FATAL(stmt, "Error calling fixup");
+    Symbol* sym = Symboltable::getCurrentScope()->findEnclosingSymContext();
+    if (!sym) {
+      INT_FATAL(stmt, "Problem calling fixup");
     }
-    TRAVERSE_DEF(tmp->symContext, fixup, true);
+    TRAVERSE_DEF(sym, fixup, true);
   }
   else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->parentSymbol)) {
     TRAVERSE_LS(fn->body, fixup, true);
@@ -172,9 +169,9 @@ void Stmt::replace(Stmt* new_stmt) {
 
   last->next = next;
   if (next) {
-    next->prev = last;
-    Stmt* tmp = dynamic_cast<Stmt*>(next);
-    tmp->back = &(Stmt*&)last->next; // UGH --SJD
+    Stmt* next_stmt = dynamic_cast<Stmt*>(next);
+    next_stmt->prev = last;
+    next_stmt->back = &(Stmt*&)last->next; // UGH --SJD
   }
   first->prev = prev;
   first->back = back;

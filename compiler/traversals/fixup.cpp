@@ -25,45 +25,32 @@ Fixup::Fixup(void) {
 
 
 void Fixup::preProcessStmt(Stmt* stmt) {
-  Symbol* parent;
+  Symbol* parent = Symboltable::getCurrentScope()->findEnclosingSymContext();
 
-  SymScope* tmp = Symboltable::getCurrentScope();
-  while (tmp && !tmp->symContext) {
-    tmp = tmp->parent;
+  if (!parent) {
+    INT_FATAL(stmt, "Null Stmt ParentSymbol in Fixup");
   }
-  //  Symbol* tmp = stmtParent.v[stmtParent.n-1];
-  if (tmp == NULL) {
-    INT_FATAL(stmt, "NULL in Fixup()");
-  }
-  parent = tmp->symContext;
 
   // SJD: HACK for FnDefStmts of secondary methods
-  bool ignore = false;
-  if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(stmt)) {
-    if (fn_def_stmt->fn->classBinding) {
-      ignore = true;
-    }
-  }
-
-  if (!ignore) {
+  FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(stmt);
+  if (!def_stmt || !def_stmt->fn->classBinding) {
     if (!verify) {
       stmt->parentSymbol = parent;
     }
     else if (stmt->parentSymbol != parent) {
-      INT_FATAL(stmt, "Error during verification fixup: statement's parent is incorrect");
+      // SJD hack because of __init function
+      bool ignore = false;
+      if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
+	if (m->initFn == parent) {
+	  ignore = true;
+	}
+      }
+      if (!ignore) {
+	INT_FATAL(stmt, "Statement's parent is incorrect");
+      }
     }
-  }
-  /*
-  if (FnDefStmt* fstmt = dynamic_cast<FnDefStmt*>(stmt)) {
-    stmtParent.add(fstmt->fn);
   }
 
-  if (TypeDefStmt* tstmt = dynamic_cast<TypeDefStmt*>(stmt)) {
-    if (ClassType* ctype = dynamic_cast<ClassType*>(tstmt->type)) {
-      stmtParent.add(ctype->name);
-    }
-  }
-  */
   exprParent.add(stmt);
 
   if (!stmt->back || *stmt->back != stmt) {
@@ -73,17 +60,6 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
 
 void Fixup::postProcessStmt(Stmt* stmt) {
-  /*
-  if (dynamic_cast<FnDefStmt*>(stmt)) {
-    stmtParent.pop();
-  }
-
-  if (TypeDefStmt* tstmt = dynamic_cast<TypeDefStmt*>(stmt)) {
-    if (dynamic_cast<ClassType*>(tstmt->type)) {
-      stmtParent.pop();
-    }
-  }
-  */
   exprParent.pop();
 }
 
@@ -97,7 +73,7 @@ void Fixup::preProcessExpr(Expr* expr) {
     expr->stmt = tmp;
   }
   else if (expr->stmt != tmp) {
-    INT_FATAL(expr, "Error during verification fixup: expression's statement is incorrect");
+    INT_FATAL(expr, "Expression's statement is incorrect");
   }
 
   if (!expr->back || *expr->back != expr) {

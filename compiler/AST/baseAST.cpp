@@ -46,8 +46,6 @@ char* astTypeName[] = {
   "CondStmt",
   "LabelStmt",
   "GotoStmt",
-  "BreakStmt",
-  "ContinueStmt",
 
   "Expr",
   "Literal",
@@ -85,6 +83,7 @@ char* astTypeName[] = {
   "TypeSymbol",
   "FnSymbol",
   "EnumSymbol",
+  "LabelSymbol",
 
   "Type",
   "BuiltinType",

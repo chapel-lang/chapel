@@ -56,6 +56,10 @@ class SymScope : public gc {
   //void remove(Symbol* sym);
   SymScope* findEnclosingScopeType(scopeType t);
 
+  Symbol* findEnclosingSymContext();
+  Stmt* findEnclosingStmtContext();
+  Expr* findEnclosingExprContext();
+
   void print(FILE* outfile = stdout, bool tableOrder = false);
 
   // these are "private"

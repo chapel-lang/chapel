@@ -71,8 +71,7 @@ class Symboltable {
 							 Type* type,
 							 Expr* init,
 							 varType vartag,
-							 bool isConst,
-							 Symbol** newVar);
+							 bool isConst);
   static ForallExpr* startForallExpr(Expr* domainExpr, 
 				     Expr* indexExpr = NULL);
   static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 

@@ -139,6 +139,45 @@ SymScope* SymScope::findEnclosingScopeType(scopeType t) {
 }
 
 
+Symbol* SymScope::findEnclosingSymContext() {
+  if (symContext) {
+    return symContext;
+  }
+  else if (parent == NULL) {
+    return NULL;
+  }
+  else {
+    return parent->findEnclosingSymContext();
+  }
+}
+
+
+Stmt* SymScope::findEnclosingStmtContext() {
+  if (stmtContext) {
+    return stmtContext;
+  }
+  else if (parent == NULL) {
+    return NULL;
+  }
+  else {
+    return parent->findEnclosingStmtContext();
+  }
+}
+
+
+Expr* SymScope::findEnclosingExprContext() {
+  if (exprContext) {
+    return exprContext;
+  }
+  else if (parent == NULL) {
+    return NULL;
+  }
+  else {
+    return parent->findEnclosingExprContext();
+  }
+}
+
+
 char* SymScope::indentStr(void) {
   static char* spaces = "                                                     "
                         "                          ";
