@@ -574,6 +574,8 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	break;
       case AST_def_type:
 	sym = ast->sym;
+	if (ast->is_value)
+	  sym->value = 1;
 	goto Lmore;
       case AST_where:
 	if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
@@ -1314,6 +1316,12 @@ finalize_types(IF1 *i) {
 #define S(_n) sym_##_n = unalias_type(sym_##_n);
 #include "builtin_symbols.h"
 #undef S
+  // make value types subclasses of "value"
+  forv_Sym(s, i->allsyms) {
+    if (s->num_type || s->value)
+      s->implements.add(sym_value);
+  }
+  sym_value->value = 1;
 }
 
 int

@@ -271,7 +271,7 @@ void codegen(FA* fa, char* infilename, char* compilerDir) {
   closeMakefile();
 
   if (hitUnknown) {
-    INT_FATAL(NULL, "Hit AST nodes that codegen couldn't handle yet");
+    INT_FATAL(NULL, "hit AST nodes that codegen couldn't handle yet");
   } else {
     makeAndCopyBinary();
   }

@@ -121,6 +121,7 @@ numeric types which uses coerce_num
   the recursive loop.  Should do this after computing
   the full set of setters so as not to get into trouble.
   How to ensure termination???
+- figure out why can't remove lvalue test from Var_is_local
 
 ** Cloning
 

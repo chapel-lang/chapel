@@ -6,6 +6,14 @@
 #include "geysa.h"
 
 extern D_Symbol d_symbols_chpl[];
+
+static AST *def_class(D_ParseNode *pn) {
+  AST *a = new AST(AST_def_type, pn); 
+  D_ParseNode *p = d_get_child(d_get_child(pn, 0), 0);
+  if (p->symbol == ${string value})
+    a->is_value = 1;
+  return a;
+}
 %>
 
 program : [ ${scope}->kind = D_SCOPE_RECURSIVE; ] top_level_statement* 
@@ -69,13 +77,18 @@ statement
   | def_function function_body
     [ ${scope} = enter_D_Scope(${scope}, $0.saved_scope); ]
     { $$.ast = new AST(AST_def_fun, &$n); }
-  | 'class' def_type def_type_parameter_list? class_definition
-{ $$.ast = new AST(AST_def_type, &$n); }
-  | 'class' def_type def_type_parameter_list? ';'
-{ $$.ast = new AST(AST_def_type, &$n); }
+  | class def_type def_type_parameter_list? class_definition
+{ $$.ast = def_class(&$n); }
+  | class def_type def_type_parameter_list? ';'
+{ $$.ast = def_class(&$n); }
   | ident ':' ';'
 { $$.ast = new AST(AST_label, &$n); }
   | ';'
+  ;
+
+class 
+  : 'class'
+  | 'value'
   ;
 
 function_body: '{' statement* expression? '}'
@@ -107,10 +120,10 @@ var_declaration : ident ('__name' string)? (':' constraint_type)? ('=' expressio
 pure_type_statement 
   : some_pure_type_statement ';'
 { $$.ast = $0.ast; }
-  | 'class' def_type def_type_parameter_list? class_definition
-{ $$.ast = new AST(AST_def_type, &$n); }
-  | 'class' def_type def_type_parameter_list? ';'
-{ $$.ast = new AST(AST_def_type, &$n); }
+  | class def_type def_type_parameter_list? class_definition
+{ $$.ast = def_class(&$n); }
+  | class def_type def_type_parameter_list? ';'
+{ $$.ast = def_class(&$n); }
   | ';'
   ;
 

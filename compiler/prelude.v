@@ -15,6 +15,7 @@ type void __name "void" : tuple;
 type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";
+type value __name "value";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;

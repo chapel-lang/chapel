@@ -43,6 +43,7 @@ class AST : public Vec<AST *> {
   unsigned int op_index:1;
   unsigned int is_var:1;
   unsigned int is_const:1;
+  unsigned int is_value:1;
   unsigned int in_tuple:1;
   unsigned int in_apply:1;
   unsigned int is_assign:1;

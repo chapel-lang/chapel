@@ -127,7 +127,7 @@ void intFatal(AST* ast, char *fmt, ...) {
     usrfilename = ast->pathname;
   }
   
-  fprintf(stderr, "INTERNAL ERROR in %s (%d): ", 
+  fprintf(stderr, "%s:%d: internal error: ", 
 	  interrorfile, interrorline);
 
   va_start(args, fmt);

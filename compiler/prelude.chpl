@@ -15,6 +15,7 @@ type void __name "void" : tuple;
 type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";
+type value __name "value";
 
 type catagory __name "catagory";
 type set __name "set" : catagory;
@@ -96,6 +97,7 @@ function operator(a:any, #"&&", b:any)		{ #__primitive ^^ a ^^ #"&&" ^^ b }
 function operator(a:any, #"||", b:any)		{ #__primitive ^^ a ^^ #"||" ^^ b }
 function operator(a:ref, #"=", b:any)		{ #__primitive ^^ a ^^ #"=" ^^ b }
 function operator(a:any, #"=", b:any)		{ b }
+// function operator(a:value, #"=", b:value)	{ primitive to assign numeric values }
 function operator(a:ref, #"*=", b:anynum)	{ #__primitive ^^ #"*" ^^ b }
 function operator(a:ref, #"/=", b:anynum)	{ #__primitive ^^ a ^^ #"/" ^^ b }
 function operator(a:ref, #"%=", b:anynum)	{ #__primitive ^^ a ^^ #"%" ^^ b }
@@ -147,7 +149,7 @@ class cyclic implements distribution {
 var block2 = new distribution;
 function distribution::class(d:distribution, l:locale) { d }  
 
-class domain(rank, distribute, target) : vector {
+value domain(rank, distribute, target) : vector {
   const rank : integer;
   const index : sequence;
   type target : domain;
@@ -196,7 +198,7 @@ function operator(a:sequence, #"*", b:sequence) {
 function vector::self s { #__index ^^ self ^^ s }
 function domain::self s { new domain }
 
-class array {
+value array {
   var d : domain;
   var v : vector;
 }
