@@ -8,6 +8,9 @@
 #include "stringutil.h"
 
 
+static void insert_init(Stmt* stmt, VarSymbol* var, Type* type);
+
+
 static void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
   if (var->parentScope->stmtContext) {
     if (BlockStmt* block_stmt =
@@ -64,8 +67,8 @@ static void insert_user_init_stmt(Stmt* stmt, Stmt* init_stmt) {
 }
 
 
-static void insert_array_init(Stmt* stmt, VarSymbol* var) {
-  ArrayType* array_type = dynamic_cast<ArrayType*>(var->type);
+static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
+  ArrayType* array_type = dynamic_cast<ArrayType*>(type);
 
   if (!array_type) {
     INT_FATAL(var, "Array type expected");
@@ -80,6 +83,14 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var) {
   FnCall* call = new FnCall(new Variable(init_array), args);
   ExprStmt* call_stmt = new ExprStmt(call);
   insert_user_init_stmt(stmt, call_stmt);
+  /*
+  ForLoopStmt* loop =
+    Symboltable::startForLoop(true, NULL, array_type->domain->copy());
+  NoOpStmt* noop_stmt = new NoOpStmt();
+  loop = Symboltable::finishForLoop(loop, noop_stmt);
+  insert_user_init_stmt(stmt, loop);
+  insert_init(noop_stmt, var, array_type->elementType);
+  */
 }
 
 
@@ -169,6 +180,24 @@ static void insert_user_init(Stmt* stmt, VarSymbol* var) {
 }
 
 
+static void insert_init(Stmt* stmt, VarSymbol* var, Type* type) {
+  if (dynamic_cast<ArrayType*>(type)) {
+    insert_array_init(stmt, var, type);
+  }
+  else if (dynamic_cast<DomainType*>(type)) {
+    insert_domain_init(stmt, var);
+  }
+  else if (var->varClass == VAR_CONFIG) {
+    insert_default_init(stmt, var);
+    insert_config_init(stmt, var);
+  }
+  else {
+    insert_default_init(stmt, var);
+    insert_user_init(stmt, var);
+  }
+}
+
+
 InsertVariableInitializations::InsertVariableInitializations() {
   processInternalModules = false;
 }
@@ -192,20 +221,7 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
   }
 
   while (var) {
-    if (dynamic_cast<ArrayType*>(var->type)) {
-      insert_array_init(stmt, var);
-    }
-    else if (dynamic_cast<DomainType*>(var->type)) {
-      insert_domain_init(stmt, var);
-    }
-    else if (var->varClass == VAR_CONFIG) {
-      insert_default_init(stmt, var);
-      insert_config_init(stmt, var);
-    }
-    else {
-      insert_default_init(stmt, var);
-      insert_user_init(stmt, var);
-    }
+    insert_init(stmt, var, var->type);
     var = nextLink(VarSymbol, var);
   }
 

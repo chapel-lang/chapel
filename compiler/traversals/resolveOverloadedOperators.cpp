@@ -20,7 +20,10 @@ static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
     pr = dynamic_cast<Pragma *>(pr->next);
   }
 
-  if (!strcmp(fn->name, "+")) {
+  if (!strcmp(fn->name, "=")) {
+    fn->cname = glomstrings(2, "_assign", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "+")) {
     fn->cname = glomstrings(2, "_plus", intstring(uid++));
   }
   else if (!strcmp(fn->name, "-")) {

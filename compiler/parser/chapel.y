@@ -743,14 +743,6 @@ forloop:
     { 
       $$ = Symboltable::finishForLoop($<forstmt>6, $7);
     }
-| TLSBR identifier TRSBR
-    { 
-      $<forstmt>$ = Symboltable::startForLoop(true, NULL, new Variable(new UnresolvedSymbol($2)));
-    }
-                   statement
-    { 
-      $$ = Symboltable::finishForLoop($<forstmt>4, $5);
-    }
 ;
 
 

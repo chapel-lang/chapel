@@ -24,11 +24,11 @@ PassInfo passlist[] = {
   RUN(InsertThisParameters, ""),
   RUN(ScopeResolveSymbols, ""),
   RUN(RenameOverloadedFunctions, ""),
+  RUN(InsertAnonymousDomains, ""),
+  RUN(InsertAnonymousTypes, ""),
   RUN(BuildClassConstructorsEtc, ""),
   RUN(SpecializeParenOpExprs, ""),
   RUN(ApplyThisParameters, ""),
-  RUN(InsertAnonymousDomains, ""),
-  RUN(InsertAnonymousTypes, ""),
 
   // passes to run analysis
   RUN(Fixup, "verify"), // this is a sanity check

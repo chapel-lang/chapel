@@ -156,6 +156,27 @@ static void build_record_inequality_function(ClassType* class_type) {
 }
 
 
+static void build_tuple_assignment_function(TupleType* tuple_type) {
+  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
+
+  ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", tuple_type);
+  ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", tuple_type);
+  arg1->append(arg2);
+  Stmt* body = NULL;
+  for (int i = 1; i <= tuple_type->components.n; i++) {
+    Expr* left =
+      new TupleSelect(new Variable(arg1), new IntLiteral(intstring(i), i));
+    Expr* right =
+      new TupleSelect(new Variable(arg2), new IntLiteral(intstring(i), i));
+    Expr* assign_expr = new AssignOp(GETS_NORM, left, right);
+    body = appendLink(body, new ExprStmt(assign_expr));
+  }
+  BlockStmt* block_stmt = new BlockStmt(body);
+  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt));
+  dynamic_cast<DefExpr*>(tuple_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
+}
+
+
 BuildClassConstructorsEtc::BuildClassConstructorsEtc(void) {
   processInternalModules = false;
 }
@@ -174,6 +195,8 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
       build_union_id_enum(class_type);
       build_record_equality_function(class_type);
       build_record_inequality_function(class_type);
+    } else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type_symbol->type)) {
+      build_tuple_assignment_function(tuple_type);
     }
   }
 }
