@@ -4263,3 +4263,16 @@ Added files:
 	chapel/test/flowanalysis/jplevyak/: destruct.good destruct.v 
 	                                    destruct2.good destruct2.v 
 
+---------------------------------------------------------------------------
+
+07/23/04 16:57:47 -- bradc
+
+Log message:
+	Changes made yesterday (and reflected in last night's test) to
+	make the cron job depend less on CHPL* environment variables
+	and my personal chapel environment (this change also involved
+	changing my crontab entries).
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
