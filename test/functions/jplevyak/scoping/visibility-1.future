@@ -1,1 +1,4 @@
-jplevyak/deitz
+deitz
+
+The visibility calculation doesn't seem to take into account
+shadowing.
