@@ -116,6 +116,7 @@ CreationSet::CreationSet(CreationSet *cs) {
   }
   equiv = 0;
   type = 0;
+  sym->creators.add(this);
 }
 
 int

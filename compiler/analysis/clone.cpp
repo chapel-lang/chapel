@@ -122,7 +122,7 @@ equivalent_es_pnode(PNode *n, EntrySet *a, EntrySet *b) {
   for(int i = 0; i < vb->n; i++)
     if (vb->v[i].key)
       cb.set_add(vb->v[i].value->to->equiv);
-  if (va->some_disjunction(*vb))
+  if (ca.some_disjunction(cb))
     return 0;
   return 1;
 }
@@ -157,9 +157,9 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
     if (n->lvals.n) {
       AVar *av = make_AVar(n->lvals.v[0], a);
       AVar *bv = make_AVar(n->lvals.v[0], b);
-      if (av->creation_set && bv->creation_set &&
-	  make_AVar(n->lvals.v[0], a)->creation_set->equiv != 
-	  make_AVar(n->lvals.v[0], b)->creation_set->equiv)
+      if ((av->creation_set || bv->creation_set))
+	if (!av->creation_set || !bv->creation_set ||
+	    av->creation_set->equiv != bv->creation_set->equiv)
 	return 0;
     }
     if (n->prim) {
