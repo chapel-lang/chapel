@@ -6909,3 +6909,13 @@ Modified files:
 	chapel/compiler/: analysis.cpp fa.cpp 
 	chapel/compiler/AST/: type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+09/10/04 16:28:37 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed up scoping of global variables.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+
