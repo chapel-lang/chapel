@@ -12229,3 +12229,13 @@ Modified files:
 	chapel/compiler/test/: Makefile files.cpp map.cpp misc.cpp 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+12/20/04 15:54:57 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	removed verified question comment
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
