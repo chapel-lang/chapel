@@ -4,6 +4,8 @@
 
 #define EXTERN
 #include "geysa.h"
+#include "parse.h"
+#include "arg.h"
 #include "codegen.h"
 #include "createAST.h"
 #include "files.h"
@@ -11,7 +13,16 @@
 #include "mysystem.h"
 #include "stringutil.h"
 #include "cg.h"
+#include "dump.h"
 #include "analysis.h"
+#include "clone.h"
+#include "dom.h"
+#include "driver.h"
+#include "graph.h"
+#include "inline.h"
+#include "internal.h"
+#include "grammar.h"
+#include "version.h"
 
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);

@@ -4,13 +4,10 @@
 #include <stdio.h>
 #include "loc.h"
 
-class AInfo; // analysis information
-
 class ILink : public Loc {
  public:
   ILink* prev;
   ILink* next;
-  AInfo* ainfo;
 
   ILink(void);
 

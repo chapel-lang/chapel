@@ -13,6 +13,7 @@ class AType;
 class CreationSet;
 class MType;
 class Scope;
+class AST;
 
 enum IF1_num_type {
   IF1_NUM_TYPE_NONE, IF1_NUM_TYPE_UINT, IF1_NUM_TYPE_INT, IF1_NUM_TYPE_FLOAT
@@ -68,7 +69,6 @@ class Sym : public gc {
   char 			*constant;		// string representing constant value
   Immediate		imm;			// constant and folded constant immediate values
 
-  char 			*builtin;		// one of builtin_symbols.h
   Type_kind		type_kind;
   Vec<Sym *>		implements;
   Vec<Sym *>		includes;		// included code
@@ -81,8 +81,9 @@ class Sym : public gc {
   Sym			*cont;			// continuation (function returning ret)
   Sym			*init;			// for modules & classes (default init function)
   Code			*code;			// for functions, Code
-  AST			*ast;			// AST node which defined this symbol
+  AST			*ast;			//AST node which defined this symbol
 
+  unsigned int		builtin:1;		// Sym is an read only
   unsigned int		read_only:1;		// Sym is an read only
   unsigned int		lvalue:1;		// Sym is an lvalue
   unsigned int		is_var:1;		// Sym refers to a variable (as opposed to let bound)

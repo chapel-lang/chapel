@@ -2,6 +2,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "chplalloc.h"
+#include "chpltypes.h"
 #include "beautify.h"
 #include "files.h"
 #include "misc.h"

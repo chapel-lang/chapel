@@ -11,6 +11,8 @@
 */
 
 #include "geysa.h"
+#include "ssu.h"
+#include "region.h"
 #include "ssu_extra.cpp"
 
 inline int 

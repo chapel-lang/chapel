@@ -5,6 +5,8 @@
 #ifndef _log_H_
 #define _log_H_
 
+class ArgumentState;
+
 /*
   To add a new log type, add a new LOG_XXX with a unique letter:
      #define LOG_AST 'a'

@@ -64,4 +64,3 @@ test_list() {
 }
 #endif
 
-template class List<D_Sym *>;

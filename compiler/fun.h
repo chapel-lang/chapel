@@ -14,6 +14,7 @@ class LoopNode;
 class Dom;
 class CDB_EntrySet;
 class MPosition;
+class Region;
 
 class CallPoint : public gc {
  public:

@@ -4,6 +4,23 @@
 #ifndef _analysis_H_
 #define _analysis_H_
 
+class Symbol;
+class Expr;
+class Stmt;
+
+class ASymbol {
+  Symbol *symbol;
+  
+  ASymbol();
+};
+
+class AInfo {
+  Expr *expr;
+  Stmt *stmt;
+
+  AInfo();
+};
+
 void analyze_new_ast(Stmt *s);
 
 #endif

@@ -4,9 +4,12 @@
 #include <stdio.h>
 #include "link.h"
 #include "symbol.h"
+
 class Expr;
+class AInfo;
 
 class Stmt : public ILink {
+  AInfo *ainfo;
  public:
   void codegenVarDefs(FILE* outfile);
   virtual void codegenVarDef(FILE* outfile);

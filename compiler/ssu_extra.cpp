@@ -1,6 +1,8 @@
 /* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+ Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
+
+#include "if1.h"
 
 static void
 print_classes_nodes(Vec<CQClass*> &cq_classes) {

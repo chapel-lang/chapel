@@ -9,6 +9,8 @@ class Dom;
 class LoopNode;
 class Fun;
 class MPosition;
+class Region;
+class UNode;
 
 /* #define CONC_IMPLEMENTED 1 */
 

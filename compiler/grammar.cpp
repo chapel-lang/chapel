@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "parse.h"
 #include "grammar.h"
 
 char *

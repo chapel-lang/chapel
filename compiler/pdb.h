@@ -4,9 +4,7 @@
 #ifndef _pdb_H_
 #define _pdb_H_
 
-#include "fun.h"
-
-class Primitives;
+class Fun;
 
 // Program Database, stores the set of all functions
 
@@ -24,5 +22,7 @@ class PDB : public gc {
 
   PDB(IF1 *aif1);
 };
+
+extern PDB *pdb;
 
 #endif

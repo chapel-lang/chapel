@@ -1,11 +1,11 @@
 /* -*-Mode: c++;-*-
- Copyright 2003 John Plevyak, All Rights Reserved, see COPYRIGHT file
+ Copyright 2003-2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
 #include "geysa.h"
-
-// TODO
-//   extend is_functional
+#include "driver.h"
+#include "prim.h"
+#include "if1.h"
 
 char *builtin_strings[] = {
 #define S(_x) #_x,
@@ -15,9 +15,12 @@ char *builtin_strings[] = {
 
 static int mark_sym_live(Sym *s);
 
+IF1 *if1 = 0;
+
 IF1::IF1() {
  memset(this, 0, sizeof *this); 
  primitives = new Primitives(this);
+ if1 = this;
 }
 
 Sym *
@@ -86,8 +89,9 @@ if1_set_builtin(IF1 *p, Sym *s, char *name, char *end) {
     return;
   if (ss)
     fail("duplicate builtin '%s'", name);
-  s->builtin = name;
+  s->builtin = 1;
   p->builtins.put(name, s);
+  p->builtins_names.put(s, name);
 }
 
 Sym *

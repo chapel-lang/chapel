@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "analysis.h"
 #include "expr.h"
 #include "files.h"
 #include "link.h"
@@ -10,6 +11,12 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
+
+ASymbol::ASymbol() : symbol(0) {
+}
+
+AInfo::AInfo() : expr(0), stmt(0) {
+}
 
 void
 analyze_new_ast(Stmt* s) {

@@ -5,7 +5,7 @@
 #ifndef _region_H_
 #define _region_H_
 
-#include "ssu.h"
+class UEdge;
 
 // Control Region
 

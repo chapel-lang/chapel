@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "chplalloc.h"
+#include "chpltypes.h"
 
 #define round2(_x,_n) ((_x + ((_n)-1)) & ~((_n)-1))
 #define tohex1(_x) \
@@ -33,11 +34,6 @@
 ((((_x)>>4) > 9) ? (((_x)>>4) - 10 + 'A') : (((_x)>>4) + '0'))
 #define numberof(_x) ((sizeof(_x))/(sizeof((_x)[0])))
 
-#include "chpltypes.h"
-
-
-#define NUM_ELEMENTS(_x) (sizeof(_x)/sizeof((_x)[0]))
-
 extern int verbose_level;
 extern int debug_level;
 
@@ -45,38 +41,17 @@ extern int debug_level;
 #define DBG(_x) if (debug_level) { _x; }
 
 #include "extern.h"
-
 #include "list.h"
 #include "vec.h"
 #include "map.h"
-#include "scope.h"
-#include "ast.h"
-#include "parse_structs.h"
-#include <dparse.h>
-#include "arg.h"
-#include "driver.h"
-#include "if1.h"
-#include "prim.h"
 #include "builtin.h"
 #include "misc.h"
-#include "parse.h"
-#include "ssu.h"
 #include "fa.h"
 #include "var.h"
-#include "dom.h"
 #include "pnode.h"
-#include "region.h"
 #include "fun.h"
 #include "pdb.h"
-#include "clone.h"
 #include "log.h"
-#include "dump.h"
-#include "grammar.h"
-#include "internal.h"
-#include "inline.h"
-#include "loop.h"
-#include "graph.h"
-#include "version.h"
 
 #if defined(__CYGWIN__) || 1
 #undef assert

@@ -3,7 +3,11 @@
 */
 
 #include "geysa.h"
+#include "driver.h"
 #include "pattern.h"
+#include "internal.h"
+#include "prim.h"
+#include "if1.h"
 
 #define ANON "*anon*"
 
@@ -96,8 +100,10 @@ dump_sym(FILE *fp, Sym *t) {
     fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->ast->pathname, t->ast->line);
   if (t->internal)
     fprintf(fp, "<TR><TD><TD>internal<TD>%s\n", internal_string[t->internal]);
-  if (t->builtin)
-    fprintf(fp, "<TR><TD><TD>Builtin<TD>%s\n", t->builtin);
+  if (t->builtin) {
+    char *name = if1->builtins_names.get(t);
+    fprintf(fp, "<TR><TD><TD>Builtin<TD>%s\n", name);
+  }
   dump_sub_sym(fp, t->aspect, "Aspect");
   if (t->type_kind != Type_NONE)
     fprintf(fp, "<TR><TD><TD>Type Kind<TD>%s\n", type_kind_string[t->type_kind]);

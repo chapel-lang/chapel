@@ -6,10 +6,12 @@
 #include "symbol.h"
 
 class Stmt;
+class AInfo;
 
 class Expr : public ILink {
  public:
   Stmt* stmt;
+  AInfo *ainfo;
 
   Expr* parent;
 

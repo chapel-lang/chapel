@@ -3,9 +3,13 @@
 */
 
 #include "geysa.h"
+#include "if1.h"
+
+PDB *pdb = 0;
 
 PDB::PDB(IF1 *aif1) {
   if1 = aif1;
+  pdb = this;
 }
 
 Sym *

@@ -32,6 +32,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
+#include "chplalloc.h"
+#include "chpltypes.h"
 #include "beautify.h"
 #include "files.h"
 #include "misc.h"

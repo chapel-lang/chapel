@@ -3,6 +3,11 @@
 */
 
 #include "geysa.h"
+#include "parse.h"
+#include "scope.h"
+#include "internal.h"
+#include "ast.h"
+#include "prim.h"
 
 char *AST_name[] = {
 #define S(_x) #_x,

@@ -4,10 +4,10 @@
 #ifndef _misc_H_
 #define _misc_H_
 
-#include "ast.h"
-#include "dparse.h"
-#include "loc.h"
-#include "var.h"
+class d_loc_t;
+class AST;
+class Var;
+class Loc;
 
 void clean_exit(int status);
 

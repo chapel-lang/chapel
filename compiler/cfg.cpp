@@ -3,6 +3,7 @@
 */
 
 #include "geysa.h"
+#include "if1.h"
 
 typedef void code_fn_t(Code *);
 

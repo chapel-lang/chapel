@@ -162,4 +162,5 @@ numeric types which uses coerce_num
   Probably with callbacks into the AST.
 - curry functions: handle SEND where the whole set of arguments doesn't
   resolve... perhaps just don't group arguments in the front end.
+- extend "is_functional" in if1.cpp
 

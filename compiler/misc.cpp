@@ -5,6 +5,8 @@
 #include <signal.h>
 #include "files.h"
 #include "geysa.h"
+#include "parse.h"
+#include "loc.h"
 
 int verbose_level = 0;
 int debug_level = 0;

@@ -4,6 +4,8 @@
 
 #include "geysa.h"
 #include "pattern.h"
+#include "prim.h"
+#include "if1.h"
 
 #define BAD_NAME ((char*)-1)
 #define BAD_AST ((AST*)-1)

@@ -5,6 +5,8 @@
 #include "arg.h"
 #include "misc.h"
 #include "stringutil.h"
+#include "chpltypes.h"
+#include "chplalloc.h"
 
 static char *SPACES = "                                                                               ";
 static char *arg_types_keys = (char *)"IPSDfF+TL";

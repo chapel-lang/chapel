@@ -4,6 +4,9 @@
 
 #include "geysa.h"
 #include "pattern.h"
+#include "driver.h"
+#include "prim.h"
+#include "if1.h"
 
 static int avar_id = 1;
 static int creation_set_id = 1;

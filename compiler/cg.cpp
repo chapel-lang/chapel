@@ -4,6 +4,8 @@
 #include "geysa.h"
 #include "pattern.h"
 #include "cg.h"
+#include "prim.h"
+#include "if1.h"
 
 static void
 write_c_fun_proto(FILE *fp, Fun *f, int type = 0) {

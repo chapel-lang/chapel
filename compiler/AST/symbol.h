@@ -5,6 +5,7 @@
 #include "type.h"
 
 class Stmt;
+class ASymbol;
 
 enum varType {
   VAR_NORMAL,
@@ -17,7 +18,8 @@ class Symbol : public ILink {
   char* name;
   Type* type;
   int level;
-
+  ASymbol *asymbol;
+  
   Symbol(char* init_name, Type* init_type = dtUnknown);
 
   void print(FILE* outfile);

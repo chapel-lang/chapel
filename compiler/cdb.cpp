@@ -4,6 +4,7 @@
 
 #include "geysa.h"
 #include "cdb.h"
+#include "if1.h"
 
 static char *
 cdb_filename(FA *fa) {

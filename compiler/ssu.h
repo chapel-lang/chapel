@@ -10,6 +10,7 @@ class BracketList;
 class Region;
 class CQClass;
 class UNode;
+class Region;
 
 // internal classes used during SSU conversion
 //   UEdge - undirected CFG graph edge for computing Control Regions

@@ -7,9 +7,7 @@ struct D_Scope;
 
 class IF1;
 class Sym;
-class Code;
-class Label;
-class VWith;
+class AST;
 
 typedef struct ParseSym {
   uint type_id : 1;

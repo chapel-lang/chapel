@@ -2,6 +2,8 @@
 Copyright 2004 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 #include "geysa.h"
+#include "dom.h"
+#include "if1.h"
 
 /*
  Fast Dominator Algorithm from Tarjan.
@@ -211,5 +213,5 @@ build_call_dominators(FA *fa) {
     forv_Fun(ff, calls)
       f->dom->pred.add(ff->dom);
   }
-  build_dominators(fa->pdb->if1->top->fun->dom);
+  build_dominators(if1->top->fun->dom);
 }

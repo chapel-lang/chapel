@@ -25,6 +25,7 @@ class IF1 : public gc {
   StringOpenHash	strings;		// unique strings
   Map<char *, Sym *>	symbols;		// language level symbols
   Map<char *, Sym *>	builtins;		// symbols builtin to the compiler
+  Map<Sym *, char *>	builtins_names;		// names of symbols builtin to the compiler
   Map<char *, Sym *>	constants;		// unique constants (by string)
   Vec<Sym *>		allsyms;
   Vec<Label *>		alllabels; 
@@ -83,5 +84,6 @@ void	if1_dump(FILE *fp, Code *c);
 void	if1_dump_code(FILE *fp, Code *code, int indent);
 void	if1_dump_sym(FILE *fp, Sym *sym);
 
+extern IF1 *if1;
 
 #endif

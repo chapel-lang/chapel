@@ -3,6 +3,8 @@
 */
 
 #include "geysa.h"
+#include "prim.h"
+#include "if1.h"
 
 static void
 cast(Sym *s, Sym *t, Immediate *im) {

@@ -3,6 +3,10 @@
 */
 
 #include "geysa.h"
+#include "driver.h"
+#include "dom.h"
+#include "loop.h"
+#include "graph.h"
 #include "pattern.h"
 
 #define G_BOX		(1<<0)

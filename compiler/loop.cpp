@@ -3,6 +3,9 @@
 */
 
 #include "geysa.h"
+#include "loop.h"
+#include "dom.h"
+#include "if1.h"
 
 // "Identifying Loops in Almost Linear Time" by G. Ramalingam
 // Modified Sreedhar-Gao-Lee Algorithm
