@@ -1374,3 +1374,30 @@ Added files:
 	                                              declint.chk 
 	                                              declint.chpl 
 
+---------------------------------------------------------------------------
+
+04/03/25 17:05:43 -- bradc
+
+Log message:
+	Incidental changes.  Did some work in starting to make header files
+	stand more independently so that if one wanted to write code using
+	the "AST" type, they could #include "ast.h" without having to worry
+	so much about what it depended on.  This is by no means complete,
+	but will be a lazy-evaluation background task.
+	
+	Also found that "echo -n" didn't work by default on the Suns, which
+	created illegal dependence files, so reworked the Makefiles so that
+	platforms could define their own ECHO target for use with echo -n
+	(lazily, I only changed those echo commands in Makefiles that actually
+	use -n...)
+
+Modified files:
+	chapel/compiler/: Makefile ast.h code.h codegen.cpp codegen.h 
+	                  fa.h files.cpp fun.h list.h map.h misc.h 
+	                  mysystem.cpp region.h stringutil.cpp sym.h 
+	                  var.h 
+	chapel/compiler/make/: Makefile.compiler.subdirrules 
+	chapel/make/: Makefile.base Makefile.freebsd Makefile.linux 
+	              Makefile.sun 
+	chapel/runtime/src/: Makefile 
+
