@@ -1,3 +1,4 @@
+#include "stmt.h"
 #include "traversal.h"
 
 Traversal::Traversal(bool processThis, bool exploreByDefault) :

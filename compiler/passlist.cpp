@@ -4,6 +4,7 @@
    passlist.h.  */
 
 REGISTER(CheckTypeInfo);
+REGISTER(DummyPass);
 REGISTER(FindUnknownTypes);
 REGISTER(GetStuff);
 REGISTER(PrintStmts);

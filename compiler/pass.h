@@ -11,6 +11,11 @@ class Pass : public gc {
   virtual void run(Stmt* program) = 0;
 };
 
+class DummyPass : public Pass {
+ public:
+  virtual void run(Stmt* program);
+};
+
 void runPasses(char* passfilename, Stmt* program);
 
 #endif

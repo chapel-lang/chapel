@@ -49,11 +49,9 @@ static void parsePassFile(char* passfilename, Stmt* program) {
       passnameStart[passnameLen-2] = '\0';
       Pass* pass = stringToPass(passnameStart);
       runPass(pass, program);
-      fprintf(stderr, "PASS: %s\n", passnameStart);
     }
   } while (readword == 1 && !done);
   closeInputFile(passfile);
-  INT_FATAL("Don't know how to parse a pass file yet");
 }
 
 
@@ -72,4 +70,6 @@ void runPasses(char* passfilename, Stmt* program) {
 }
 
 
-
+void DummyPass::run(Stmt* program) {
+  fprintf(stdout, "Running dummy pass\n");
+}
