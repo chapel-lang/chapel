@@ -65,7 +65,7 @@ class PNode : public gc {
     LoopNode *loop_node; // loop.cpp
   };
   Vec<Var *> lvals_set; // ssu.cpp
-  Map<PNode *, int> cfg_pred_index;  // ssu.cpp
+  Map<PNode *, int> cfg_pred_index;  // ssu.cpp, cg.cpp
 
   // Dominators
   Dom *dom; // dom.cpp

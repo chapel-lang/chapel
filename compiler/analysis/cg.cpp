@@ -298,16 +298,44 @@ write_c_fun_arg(FILE *fp, char *s, char *e, Sym *sym, int i) {
 }
 
 static void
+simple_move(FILE *fp, Var *lhs, Var *rhs) {
+    if (!rhs->sym->fun)
+      fprintf(fp, "%s = (%s)%s;\n", lhs->cg_string, c_type(lhs), rhs->cg_string);
+    else
+      fprintf(fp, "%s = (_GC_fun)&%s;\n", lhs->cg_string, rhs->cg_string);
+}
+
+static void do_phi_nodes(FILE *fp, PNode *n, int isucc) {
+  if (n->cfg_succ.n) {
+    PNode *succ = n->cfg_succ.v[isucc];
+    if (succ->phi.n) {
+      int i = succ->cfg_pred_index.get(n);
+      forv_PNode(pp, succ->phi)
+	simple_move(fp, pp->lvals.v[0], pp->rvals.v[i]);
+    }
+  }
+}
+
+static void
 write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
+  if (n->code->kind == Code_LABEL)
+    fprintf(fp, "L%d:;\n", n->code->label[0]->id);
+  // PHY Nodes
+  forv_PNode(prev, n->cfg_pred) {
+    if (prev->phy.n) {
+      for (int i = 0; i < prev->cfg_succ.n; i++) {
+	if (n == prev->cfg_succ.v[i]) {
+	  forv_PNode(pp, prev->phy)
+	    simple_move(fp, pp->lvals.v[i], pp->rvals.v[0]);
+	}
+      }
+    }
+  }
   switch (n->code->kind) {
-    case Code_MOVE:
+    case Code_LABEL: break;
+    case Code_MOVE: 
       for (int i = 0; i < n->lvals.n; i++)
-	if (!n->rvals.v[i]->sym->fun)
-	  fprintf(fp, "%s = (%s)%s;\n", 
-		  n->lvals.v[i]->cg_string, c_type(n->lvals.v[i]), 
-		  n->rvals.v[i]->cg_string);
-	else
-	  fprintf(fp, "%s = (_GC_fun)&%s;\n", n->lvals.v[i]->cg_string, n->rvals.v[i]->cg_string);
+	simple_move(fp, n->lvals.v[i], n->rvals.v[i]); 
       break;
     case Code_SEND:
       if (n->prim)
@@ -342,20 +370,27 @@ write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
 	}
 	fputs(");\n", fp);
       }
-      break;
     case Code_IF:
-      fprintf(fp, "if (%s) goto L%d; else goto L%d;\n", 
-	      n->rvals.v[0]->cg_string,
-	      n->code->label[0]->id,
-	      n->code->label[1]->id);
-      break;
-    case Code_LABEL:
-      fprintf(fp, "L%d:;\n", n->code->label[0]->id);
-      break;
     case Code_GOTO:
-      fprintf(fp, "goto L%d;\n", n->code->label[0]->id);
       break;
     default: assert(!"case");
+  }
+  switch (n->code->kind) {
+    case Code_IF:
+      fprintf(fp, "if (%s) {\n", n->rvals.v[0]->cg_string);
+      do_phi_nodes(fp, n, 0);
+      fprintf(fp, "goto L%d;\n}\n", n->code->label[0]->id);
+      fprintf(fp, "else {\n");
+      do_phi_nodes(fp, n, 1);
+      fprintf(fp, "goto L%d;\n}\n", n->code->label[1]->id);
+      break;
+    case Code_GOTO:
+      do_phi_nodes(fp, n, 0);
+      fprintf(fp, "goto L%d;\n", n->code->label[0]->id);
+      break;
+    default:
+      do_phi_nodes(fp, n, 0);
+      break;
   }
   int extra_goto = n->cfg_succ.n == 1 && n->code->kind != Code_GOTO && n->code->kind != Code_LABEL;
   forv_PNode(p, n->cfg_succ)
@@ -435,6 +470,12 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
       if (v->sym->fun)
 	fprintf(fp, "%s = %s;\n", v->cg_string, v->sym->fun->cg_string);
   write_c_args(fp, f);
+  // rebuild cfg_pred_index
+  forv_PNode(n, f->fa_all_PNodes) {
+    n->cfg_pred_index.clear();
+    for (int i = 0; i < n->cfg_pred.n; i++)
+      n->cfg_pred_index.put(n->cfg_pred.v[i], i);
+  }
   Vec<PNode *> done;
   done.set_add(f->entry);
   write_c_pnode(fp, fa, f, f->entry, done);
