@@ -183,6 +183,8 @@ class MemberAccess : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  int getExprs(Vec<BaseAST *> &asts);
+  int getSymbols(Vec<BaseAST *> &asts);
 };
 
 

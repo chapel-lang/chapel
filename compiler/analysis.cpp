@@ -65,7 +65,7 @@ close_symbols(BaseAST *a, Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms) {
     Vec<BaseAST *> moresyms;
     s->getBaseASTs(moresyms);
-    forv_BaseAST(ss, moresyms) {
+    forv_BaseAST(ss, moresyms) if (ss) {
       assert(ss);
       if (set.set_add(ss))
         syms.add(ss);
@@ -205,8 +205,10 @@ build_types(Vec<BaseAST *> &syms) {
       case TYPE_CLASS: {
 	ClassType *tt = dynamic_cast<ClassType*>(t);
 	t->asymbol->type_kind = Type_RECORD;
-	t->asymbol->implements.add(tt->parentClass->asymbol);
-	t->asymbol->includes.add(tt->parentClass->asymbol);
+	if (tt->parentClass) {
+	  t->asymbol->implements.add(tt->parentClass->asymbol);
+	  t->asymbol->includes.add(tt->parentClass->asymbol);
+	}
 	break;
       }
     }
@@ -490,6 +492,18 @@ gen_cond(BaseAST *a) {
 }
 
 static int
+undef_or_fn_expr(Expr *ast) {
+  if (ast->astType == EXPR_VARIABLE) { 
+    Variable *v = dynamic_cast<Variable *>(ast);
+    if (v->var->astType == SYMBOL_USEBEFOREDEF || v->var->astType == SYMBOL_FN) {
+      assert(ast->ainfo->rval->name);
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static int
 gen_if1(BaseAST *ast) {
   // bottom's up
   Vec<BaseAST *> asts;
@@ -613,18 +627,23 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_MEMBERACCESS: {
-      INT_FATAL(ast, "Analysis not yet implemented for '.'");
-      /* loosely interpreted from BinOp:
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       s->ainfo->rval = new_sym();
       if1_gen(if1, &s->ainfo->code, s->base->ainfo->code);
-      if1_gen(if1, &s->ainfo->code, s->member->asymbol->code);
       Sym *op = if1_make_symbol(if1, ".");
+      Sym *selector = 0;
+      if (s->member->astType == SYMBOL ||
+	  s->member->astType == SYMBOL_USEBEFOREDEF ||
+	  s->member->astType == SYMBOL_FN) 
+      {
+	assert(s->member->asymbol->name);
+	selector = if1_make_symbol(if1, s->member->asymbol->name);
+      } else
+	selector = s->member->asymbol;
       Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
-			 s->base->ainfo->rval, op, s->member->asymbol->rval,
+			 s->base->ainfo->rval, op, selector,
 			 s->ainfo->rval);
       c->ast = s->ainfo;
-      */
       break;
     }
     case EXPR_ASSIGNOP: {
@@ -729,16 +748,10 @@ gen_if1(BaseAST *ast) {
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      if (s->baseExpr->astType == EXPR_VARIABLE) { 
-	Variable *v = dynamic_cast<Variable *>(s->baseExpr);
-	if (v->var->astType == SYMBOL_USEBEFOREDEF || v->var->astType == SYMBOL_FN) {
-	  assert(s->baseExpr->ainfo->rval->name);
-	  if1_add_send_arg(if1, send, if1_make_symbol(if1, s->baseExpr->ainfo->rval->name));
-	  goto LexprParenOpBaseDone;
-	}
-      }
-      if1_add_send_arg(if1, send, s->baseExpr->ainfo->rval);
-    LexprParenOpBaseDone:
+      if (undef_or_fn_expr(s->baseExpr))
+	if1_add_send_arg(if1, send, if1_make_symbol(if1, s->baseExpr->ainfo->rval->name));
+      else
+	if1_add_send_arg(if1, send, s->baseExpr->ainfo->rval);
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
@@ -838,6 +851,8 @@ build_functions(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms)
     if (s->astType == STMT_FNDEF)
       fns.add(dynamic_cast<FnDefStmt*>(s)); 
+  if (verbose_level > 1)
+    printf("build_functions: %d functions\n", fns.n);
   forv_Vec(FnDefStmt, f, fns) {
     Sym *s = f->fn->asymbol;
     s->name = f->fn->name;
@@ -854,6 +869,8 @@ build_functions(Vec<BaseAST *> &syms) {
     s->ret->ast = f->ainfo;
     s->labelmap = new LabelMap;
     set_global_scope(s);
+    if (verbose_level > 1 && s->name)
+      printf("build_functions: %s\n", s->name);
   }
   forv_Vec(FnDefStmt, f, fns) {
     if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
@@ -921,7 +938,7 @@ print_baseast(BaseAST *a, Vec<BaseAST *> &asts) {
   a->getBaseASTs(aa);
   if (aa.n)
     printf(" ");
-  forv_BaseAST(b, aa)
+  forv_BaseAST(b, aa) if (b)
     print_baseast(b, asts);
   printf(")");
 }

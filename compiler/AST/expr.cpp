@@ -356,6 +356,20 @@ void MemberAccess::codegen(FILE* outfile) {
 }
 
 
+int
+MemberAccess::getExprs(Vec<BaseAST *> &asts) {
+  asts.add(base);
+  return asts.n;
+}
+
+
+int
+MemberAccess::getSymbols(Vec<BaseAST *> &asts) {
+  asts.add(member);
+  return asts.n;
+}
+
+
 AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   BinOp(BINOP_OTHER, l, r),
   type(init_type)
