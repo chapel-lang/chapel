@@ -21817,3 +21817,13 @@ Added files:
 	                                         visibility-1.future 
 	                                         visibility-1.good 
 
+---------------------------------------------------------------------------
+
+03/28/05 12:00:53 -- deitz
+
+Log message:
+	Added support for finding visible functions in the internal prelude.
+
+Modified files:
+	chapel/compiler/symtab/: symscope.cpp 
+
