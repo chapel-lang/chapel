@@ -23,7 +23,7 @@ class NullExpr : public Expr {
  public:
   bool isNull(void);
   
-  void print(FILE* outfile) {}
+  void print(FILE* outfile);
 };
 
 

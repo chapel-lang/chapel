@@ -6,17 +6,12 @@
 * check necessity of print*() variants
 * move char literals from chapel.y to chapel.lex
 * deal with BLC comments
-* get working with GC
-* get working with main compiler?  (e.g., via flag)
-* pull stderr uses to match compiler
 
 * Need to insert iterator indices into own scope (e.g., [i:D] i) rather
   than parent's
 * Check for redefinition of symbol within same scope
 
 * support for classes/methods
-
-* remove code from headers  (e.g., isNull definitions)
 
 * subdomain/subindex expressions are wrong (idents rather than expressions)
 

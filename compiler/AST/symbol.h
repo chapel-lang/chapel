@@ -19,7 +19,7 @@ class Symbol : public ILink {
   Symbol(char* init_name);
 
   void print(FILE* outfile);
-  virtual void printDef(FILE* outfile) { print(outfile); }
+  virtual void printDef(FILE* outfile);
   void printDefList(FILE* outfile, char* separator);
 };
 
@@ -28,7 +28,7 @@ class NullSymbol : public Symbol {
  public:
   NullSymbol(void);
 
-  bool isNull(void) { return true; }
+  bool isNull(void);
 };
 
 
@@ -55,7 +55,7 @@ class NullVarSymbol : public VarSymbol {
  public:
   NullVarSymbol(void);
 
-  bool isNull(void) { return true; }
+  bool isNull(void);
 };
 
 

@@ -23,7 +23,7 @@ class NullType : public Type {
  public:
   NullType(void);
 
-  bool isNull(void) { return true; }
+  bool isNull(void);
 };
 
 

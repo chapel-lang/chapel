@@ -29,7 +29,7 @@ static void ParseFile(char* filename) {
   yyin = fopen(yyfilename, "r");
   
   if (yyin == NULL) {
-    fprintf(stderr, "ERROR: Can't open file %s\n", yyfilename);
+    fprintf(stdout, "ERROR: Can't open file %s\n", yyfilename);
     exit(1);
   }
 
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
       program->printList(stdout, "\n");
     }
   } else {
-    fprintf(stderr, "Usage: %s <filenames>\n", argv[0]);
+    fprintf(stdout, "Usage: %s <filenames>\n", argv[0]);
     exit(1);
   }
 

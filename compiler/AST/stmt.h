@@ -16,7 +16,7 @@ class NullStmt : public Stmt {
 
   bool isNull(void);
   
-  void print(FILE* outfile) { fprintf(outfile, "Null Statement\n"); }
+  void print(FILE* outfile);
 };
 
 

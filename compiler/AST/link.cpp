@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "link.h"
+#include "misc.h"
 
 ILink::ILink(void) :
   prev(NULL),
@@ -52,7 +53,4 @@ void ILink::append(ILink* newlink) {
   }
   lastlink->next = newlink;
   newlink->prev = lastlink;
-  if (newlink->next != NULL) {
-    //    fprintf(stderr, "WARNING: linked\n");
-  }
 }

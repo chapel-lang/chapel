@@ -2,6 +2,7 @@
 #include <string>
 #include <typeinfo>
 #include "expr.h"
+#include "misc.h"
 #include "stmt.h"
 #include "symtab.h"
 #include "yy.h"
@@ -28,13 +29,13 @@ void SymLink::print(FILE* outfile) {
 }
 
 
-class Scope {
+class SymScope {
  public:
   scopeType type;
 
-  Scope* parent;
-  Scope* children;
-  Scope* sibling;
+  SymScope* parent;
+  SymScope* children;
+  SymScope* sibling;
 
   SymLink* firstSym;
   SymLink* lastSym;
@@ -43,10 +44,10 @@ class Scope {
 
   map<string, Symbol*> table;
 
-  Scope(scopeType init_type);
+  SymScope(scopeType init_type);
 
   void insert(Symbol* sym);
-  Scope* findFileScope(void);
+  SymScope* findFileScope(void);
 
   void addUndefined(UseBeforeDefSymbol*);
   void addUndefinedToFile(UseBeforeDefSymbol*);
@@ -56,7 +57,7 @@ class Scope {
 };
 
 
-Scope::Scope(scopeType init_type) :
+SymScope::SymScope(scopeType init_type) :
   type(init_type),
   parent(NULL),
   children(NULL),
@@ -67,7 +68,7 @@ Scope::Scope(scopeType init_type) :
 {}
 
 
-void Scope::insert(Symbol* sym) {
+void SymScope::insert(Symbol* sym) {
   table[sym->name] = sym;
 
   SymLink* newLink = new SymLink(sym);
@@ -82,7 +83,7 @@ void Scope::insert(Symbol* sym) {
 }
 
 
-Scope* Scope::findFileScope(void) {
+SymScope* SymScope::findFileScope(void) {
   if (type == SCOPE_FILE) {
     return this;
   } else {
@@ -91,7 +92,7 @@ Scope* Scope::findFileScope(void) {
 }
 
 
-void Scope::addUndefined(UseBeforeDefSymbol* sym) {
+void SymScope::addUndefined(UseBeforeDefSymbol* sym) {
   SymLink* newLink = new SymLink(sym);
   if (useBeforeDefSyms == NULL) {
     useBeforeDefSyms = newLink;
@@ -100,27 +101,27 @@ void Scope::addUndefined(UseBeforeDefSymbol* sym) {
   }
 }
 
-void Scope::addUndefinedToFile(UseBeforeDefSymbol* sym) {
-  Scope* fileScope = findFileScope();
+void SymScope::addUndefinedToFile(UseBeforeDefSymbol* sym) {
+  SymScope* fileScope = findFileScope();
   
   fileScope->addUndefined(sym);
 }
 
 
-void Scope::handleUndefined(void) {
+void SymScope::handleUndefined(void) {
   SymLink* undefined = useBeforeDefSyms;
 
   if (undefined) {
-    fprintf(stderr, "Undefined symbols in file %s:\n", yyfilename);
-    fprintf(stderr, "--------------------------------------------------\n");
+    fprintf(stdout, "Undefined symbols in file %s:\n", yyfilename);
+    fprintf(stdout, "--------------------------------------------------\n");
     while (undefined != NULL) {
       char* name = undefined->pSym->name;
       Symbol* sym = Symboltable::lookup(name, true);
 
       if (typeid(*sym) == typeid(UseBeforeDefSymbol)) {
-	fprintf(stderr, "%s:%d ", undefined->filename, undefined->lineno);
-	undefined->print(stderr);
-	fprintf(stderr, "\n");
+	fprintf(stdout, "%s:%d ", undefined->filename, undefined->lineno);
+	undefined->print(stdout);
+	fprintf(stdout, "\n");
       }
 
       undefined = (SymLink*)(undefined->next);  // BLC: cast!
@@ -130,7 +131,7 @@ void Scope::handleUndefined(void) {
 }
 
 
-void Scope::print(FILE* outfile, bool alphabetical) {
+void SymScope::print(FILE* outfile, bool alphabetical) {
   fprintf(outfile, "======================================================\n");
   fprintf(outfile, "SCOPE: ");
   switch (type) {
@@ -174,8 +175,8 @@ void Scope::print(FILE* outfile, bool alphabetical) {
 }
 
 
-static Scope* rootScope = new Scope(SCOPE_INTRINSIC);
-static Scope* currentScope = rootScope;
+static SymScope* rootScope = new SymScope(SCOPE_INTRINSIC);
+static SymScope* currentScope = rootScope;
 
 
 void Symboltable::pushScope(scopeType type) {
@@ -183,8 +184,8 @@ void Symboltable::pushScope(scopeType type) {
       type == SCOPE_LOCAL) {
     type = SCOPE_FUNCTION;
   }
-  Scope* newScope = new Scope(type);
-  Scope* children = currentScope->children;
+  SymScope* newScope = new SymScope(type);
+  SymScope* children = currentScope->children;
 
   if (children == NULL) {
     currentScope->children = newScope;
@@ -202,11 +203,10 @@ void Symboltable::pushScope(scopeType type) {
 void Symboltable::popScope(void) {
   //  currentScope->handleUndefined();
 
-  Scope* prevScope = currentScope->parent;
+  SymScope* prevScope = currentScope->parent;
 
   if (prevScope == NULL) {
-    fprintf(stderr, "ERROR: popping too many scopes");
-    exit(1);
+    INT_FATAL(NULL, "ERROR: popping too many scopes");
   } else {
     currentScope = prevScope;
   }
@@ -219,7 +219,7 @@ void Symboltable::define(Symbol* sym) {
 
 
 Symbol* Symboltable::lookup(char* name, bool inLexer) {
-  Scope* scope;
+  SymScope* scope;
   
   scope = currentScope;
   
@@ -231,9 +231,9 @@ Symbol* Symboltable::lookup(char* name, bool inLexer) {
   }
 
   if (!inLexer) {
-    //    Symboltable::print(stderr);
+    //    Symboltable::print(stdout);
     /*
-    fprintf(stderr, "%s:%d '%s' used before defined\n", yyfilename, yylineno,
+    fprintf(stdout, "%s:%d '%s' used before defined\n", yyfilename, yylineno,
 	    name);
     */
   }
@@ -356,7 +356,7 @@ DomainExpr* Symboltable::defineQueryDomain(char* name) {
 }
 
 
-static void printHelp(FILE* outfile, Scope* aScope) {
+static void printHelp(FILE* outfile, SymScope* aScope) {
   if (aScope == NULL) {
     return;
   } else {

@@ -14,6 +14,11 @@ void Symbol::print(FILE* outfile) {
 }
 
 
+void Symbol::printDef(FILE* outfile) {
+  print(outfile);
+}
+
+
 void Symbol::printDefList(FILE* outfile, char* separator) {
   Symbol* ptr;
 
@@ -28,8 +33,13 @@ void Symbol::printDefList(FILE* outfile, char* separator) {
 
 
 NullSymbol::NullSymbol(void) :
-  Symbol("")
+  Symbol("NullSymbol")
 {}
+
+
+bool NullSymbol::isNull(void) {
+  return true;
+}
 
 
 UseBeforeDefSymbol::UseBeforeDefSymbol(char* init_name) :
@@ -56,8 +66,13 @@ void VarSymbol::printWithType(FILE* outfile) {
 
 
 NullVarSymbol::NullVarSymbol() :
-  VarSymbol("nullvar")
+  VarSymbol("NullVarSymbol")
 {}
+
+
+bool NullVarSymbol::isNull(void) {
+  return true;
+}
 
 
 static char* paramTypeNames[NUM_PARAM_TYPES] = {

@@ -48,6 +48,11 @@ bool NullExpr::isNull(void) {
 }
 
 
+void NullExpr::print(FILE* outfile) {
+  printf("/* NULLExpr! */\n");
+}
+
+
 Literal::Literal(char* init_str) :
   str(copystring(init_str))
 {}
@@ -174,17 +179,17 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
     if (typeid(*baseVar) == typeid(UseBeforeDefSymbol) ||
 	typeid(*baseVar) == typeid(FunSymbol)) {
       /*
-      fprintf(stderr, "Found a function call: ");
-      base->print(stderr);
-      fprintf(stderr, "\n");
+      printf("Found a function call: ");
+      base->print(stdout);
+      printf("\n");
       */
 
       return new FnCall(base, arg);
     } else {
       /*
-      fprintf(stderr, "Found an array ref: ");
-      base->print(stderr);
-      fprintf(stderr, "\n");
+      printf("Found an array ref: ");
+      base->print(stdout);
+      printf("\n");
       */
 
       return new ArrayRef(base, arg);
@@ -193,9 +198,9 @@ ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
     // assume all non-var expressions are array refs for now;
     // disables methods and function pointers -- BLC
     /*
-    fprintf(stderr, "Found an array ref: ");
-    base->print(stderr);
-    fprintf(stderr, "\n");
+    printf("Found an array ref: ");
+    base->print(stdout);
+    printf("\n");
     */
     
     return new ArrayRef(base, arg);
@@ -212,7 +217,9 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 void ParenOpExpr::print(FILE* outfile) {
   baseExpr->print(outfile);
   fprintf(outfile, "(");
-  argList->printList(outfile);
+  if (!argList->isNull()) {
+    argList->printList(outfile);
+  }
   fprintf(outfile, ")");
 }
 

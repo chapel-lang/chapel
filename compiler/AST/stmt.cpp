@@ -8,6 +8,11 @@ bool NullStmt::isNull(void) {
 }
 
 
+void NullStmt::print(FILE* outfile) {
+  fprintf(outfile, "/* NullStmt!! */\n");
+}
+
+
 VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
   var(init_var),
   init(init_init) 

@@ -49,6 +49,10 @@ void Type::printDef(FILE* outfile) {
 NullType::NullType(void) {
 }
 
+bool NullType::isNull(void) {
+  return true;
+}
+
 
 EnumType::EnumType(Symbol* init_valList) :
   valList(init_valList)
