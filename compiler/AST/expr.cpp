@@ -421,8 +421,13 @@ void Expr::printCfgInitString(FILE* outfile) {
 Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
   if ((typeid(*l) == typeid(FloatLiteral) || typeid(*l) == typeid(IntLiteral))
       && typeid(*r) == typeid(ComplexLiteral)) {
-    ComplexLiteral* rcomplex = (ComplexLiteral*)r;
-    FloatLiteral* lfloat = (FloatLiteral*)l;
+    ComplexLiteral* rcomplex = dynamic_cast<ComplexLiteral*>(r);
+    FloatLiteral* lfloat = dynamic_cast<FloatLiteral*>(l);
+    if (lfloat == NULL) {
+      Literal* llit = dynamic_cast<Literal*>(l);
+      lfloat = new FloatLiteral(glomstrings(2, llit->str, ".0"), 
+				atof(llit->str));
+    }
     if (rcomplex->realVal == 0.0) {
       rcomplex->addReal(lfloat);
       if (op == BINOP_MINUS) {
