@@ -20923,3 +20923,32 @@ Added files:
 	                                       wrongmain.future 
 	                                       wrongmain.good 
 
+---------------------------------------------------------------------------
+
+03/22/05 18:13:21 -- bradc
+
+Log message:
+	Checking in some initial work on implementing the
+	"nil" keyword, as well as some minor text cleanups
+	and stuff like that.  For the most part this is a
+	placeholder check-in.  Updated my test that I was
+	working on, but it still isn't ready to be a non-
+	future.
+	
+	The one substantive change is that I changed the
+	interface to Symboltable::lookupInternal() to
+	take one of SCOPE_INTRINSIC, SCOPE_INTERNAL_PRELUDE,
+	or SCOPE_PRELUDE rather than the boolean (which
+	selected between the latter two) as before.  The
+	default is SCOPE_INTERNAL_PRELUDE (as before).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h symtab.h 
+	chapel/compiler/parser/: chapel.lex chapel.y prelude.chpl 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/functions/bradc/: intents-classes4.chpl 
+	                              intents-classes4.good 
+
