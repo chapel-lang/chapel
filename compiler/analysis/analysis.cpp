@@ -265,13 +265,13 @@ build_types(Vec<BaseAST *> &syms) {
 	  t->asymbol->alias = sym_bool;
 	} else if (t == dtInteger) {
 	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_int;
+	  t->asymbol->alias = sym_int64;
 	} else if (t == dtFloat) {
 	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_float;
+	  t->asymbol->alias = sym_float64;
 	} else if (t == dtComplex) {
 	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_complex;
+	  t->asymbol->alias = sym_complex64;
 	} else if (t == dtString) {
 	  t->asymbol->type_kind = Type_ALIAS;
 	  t->asymbol->alias = sym_string;
