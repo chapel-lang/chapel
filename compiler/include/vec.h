@@ -52,6 +52,7 @@ template <class C> class Vec : public gc {
   void set_expand();
   inline int index(C a);
   void set_to_vec();
+  void vec_to_set();
   inline void move(Vec<C> &v);
   void copy_internal(const Vec<C> &v);
   inline void copy(const Vec<C> &v);
@@ -425,6 +426,14 @@ Vec<C>::set_to_vec() {
   for (C *c = vv.v; c < vv.v + vv.n; c++)
     if (*c)
       add(*c);
+}
+
+template <class C> void
+Vec<C>::vec_to_set() {
+  Vec<C> vv(*this);
+  clear();
+  for (C *c = vv.v; c < vv.v + vv.n; c++)
+    set_add(*c);
 }
 
 template <class C>  void 

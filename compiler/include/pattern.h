@@ -19,10 +19,11 @@ class MPosition : public gc {
  public:
   Vec<void*> pos;
   MPosition *parent;
+  void copy(MPosition &p);
   void set_top(void *p) { pos.v[pos.n-1] = p; }
   void push(int i) { pos.add(int2Position(i)); }
   void push(void *p) { pos.add(p); }
-  void pop() { pos.n--; }
+  void pop() { pos.pop(); }
   void inc() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) + 1); }
   void dec() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) - 1); }
   MPosition() : parent(0) {}
@@ -65,15 +66,22 @@ class Patterns : public gc {
 class Match : public gc {
  public:
   Fun *fun;
+  Map<MPosition *, AType *> all_filters;
   Map<MPosition *, AType *> filters;
-  Match(Fun *afun) : fun(afun) {assert(afun);}
+  Map<MPosition *, MPosition *> named_to_positional;
+  Map<MPosition *, MPosition *> actual_to_formal_position;
+  Vec<MPosition *> default_args;
+  Vec<MPosition *> generic_args;
+  Vec<MPosition *> pointwise_args;
+  int partial;
+  Match(Fun *afun) : fun(afun), partial(0) {assert(afun);}
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
 
 
 void build_patterns(FA *fa);
 void build_arg_positions(FA *fa);
-int pattern_match(FA *fa, Vec<AVar *> &args, Vec<Match *> &matches, AVar *send);
+int pattern_match(Vec<AVar *> &args, AVar *send, int partial_ok, Vec<Match *> *matches);
 MPosition *cannonicalize_mposition(MPosition &p);
 
 #endif

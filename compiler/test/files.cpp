@@ -13,6 +13,10 @@
 char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
 
+FILE* codefile;
+FILE* extheadfile;
+FILE* intheadfile;
+
 static char* tmpdirname = NULL;
 static char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
 
@@ -20,6 +24,20 @@ static const int MAX_CHARS_PER_PID = 32;
 
 static FILE* makefile;
 static char* intExeFilename;
+static int numLibFlags = 0;
+static char** libFlag = NULL;
+
+
+void addLibInfo(char* libName) {
+  static int libSpace = 0;
+
+  numLibFlags++;
+  if (numLibFlags > libSpace) {
+    libSpace = 2*numLibFlags;
+    libFlag = (char**)REALLOC(libFlag, libSpace*sizeof(char*));
+  }
+  libFlag[numLibFlags-1] = copystring(libName);
+}
 
 
 static void createTmpDir(void) {
@@ -108,27 +126,15 @@ static char* stripdirectories(char* filename) {
 }
 
 
-static char* stripextension(char* filename) {
-  char* newfilename = copystring(filename);
-  char* suffix = strrchr(newfilename, '.');
-  if (suffix != NULL) {
-    *suffix = '\0';
-  }
-  return newfilename;
-}
-
-
-static void genCFilenames(char* infilename, char** outfilename, 
+static void genCFilenames(char* modulename, char** outfilename, 
 			  char** extheadfilename, char** intheadfilename) {
   static char* outfilesuffix = ".c";
   static char* extheadsuffix = ".h";
   static char* intheadsuffix = "-internal.h";
 
-  char* infilenamebase = stripextension(stripdirectories(infilename));
-
-  *outfilename = glomstrings(2, infilenamebase, outfilesuffix);
-  *extheadfilename = glomstrings(2, infilenamebase, extheadsuffix);
-  *intheadfilename = glomstrings(2, infilenamebase, intheadsuffix);
+  *outfilename = glomstrings(2, modulename, outfilesuffix);
+  *extheadfilename = glomstrings(2, modulename, extheadsuffix);
+  *intheadfilename = glomstrings(2, modulename, intheadsuffix);
 }
 
 
@@ -192,23 +198,27 @@ static void genEndif(FILE* outfile) {
 }
 
 
-void openCFiles(char* infilename, fileinfo* outfile,
-		fileinfo* extheadfile, fileinfo* intheadfile) {
-  genCFilenames(infilename, &(outfile->filename),
-		&(extheadfile->filename), &(intheadfile->filename));
+void openCFiles(char* modulename, fileinfo* outfile,
+		fileinfo* extheader, fileinfo* intheader) {
+  genCFilenames(modulename, &(outfile->filename),
+		&(extheader->filename), &(intheader->filename));
 
   outfile->pathname = genIntFilename(outfile->filename);
-  extheadfile->pathname = genIntFilename(extheadfile->filename);
-  intheadfile->pathname = genIntFilename(intheadfile->filename);
+  extheader->pathname = genIntFilename(extheader->filename);
+  intheader->pathname = genIntFilename(intheader->filename);
 
   fprintf(makefile, "\t%s \\\n", outfile->pathname);
   
   outfile->fptr = openfile(outfile->pathname);
-  extheadfile->fptr = openfile(extheadfile->pathname);
-  intheadfile->fptr = openfile(intheadfile->pathname);
+  extheader->fptr = openfile(extheader->pathname);
+  intheader->fptr = openfile(intheader->pathname);
 
-  genIfndef(extheadfile->fptr, extheadfile->filename);
-  genIfndef(intheadfile->fptr, intheadfile->filename);
+  codefile = outfile->fptr;
+  extheadfile = extheader->fptr;
+  intheadfile = intheader->fptr;
+
+  genIfndef(extheader->fptr, extheader->filename);
+  genIfndef(intheader->fptr, intheader->filename);
 }
 
 
@@ -253,6 +263,12 @@ static void genMakefileHeader(char* srcfilename, char* compilerDir) {
   intExeFilename = genIntFilename(strippedExeFilename);
   fprintf(makefile, "BINNAME = %s\n", intExeFilename);
   fprintf(makefile, "CHPLRTDIR = %s\n", runtimedir);
+  fprintf(makefile, "LIBS =");
+  int i;
+  for (i=0; i<numLibFlags; i++) {
+    fprintf(makefile, " %s", libFlag[i]);
+  }
+  fprintf(makefile, "\n");
   fprintf(makefile, "CHPLSRC = \\\n");
 }
 
@@ -282,6 +298,26 @@ void closeInputFile(FILE* infile) {
 }
 
 
+static char** inputFilenames = {NULL};
+
+
+void testInputFiles(int numFilenames, char* filename[]) {
+  inputFilenames = (char**)MALLOC((numFilenames+1)*sizeof(char*));
+  int i;
+  for (i=0; i<numFilenames; i++) {
+    FILE* testfile = openInputFile(filename[i]);
+    closeInputFile(testfile);
+    inputFilenames[i] = copystring(filename[i]);
+  }
+  inputFilenames[i] = NULL;
+}
+
+
+char* nthFilename(int i) {
+  return inputFilenames[i];
+}
+
+
 char* createGDBFile(int argc, char* argv[]) {
   char* gdbfilename = genIntFilename("gdb.commands");
   FILE* gdbfile = openfile(gdbfilename);
@@ -305,6 +341,10 @@ char* createGDBFile(int argc, char* argv[]) {
   fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
   fprintf(gdbfile, "    call cleanup(0)\n");
   fprintf(gdbfile, "  end\n");
+  fprintf(gdbfile, "end\n");
+  fprintf(gdbfile, "define halt\n");
+  fprintf(gdbfile, "  set $_exitcode = 'h'\n");
+  fprintf(gdbfile, "  quit\n");
   fprintf(gdbfile, "end\n");
 
   closefile(gdbfile);

@@ -37,8 +37,35 @@ uint open_hash_multipliers[256] = {
 };
 
 #ifdef TEST_LIB
+
+#define xxx(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
+             ((intptr_t)(qq__##_p) < (_v).n) && (_v).v[(intptr_t)qq__##_p].key && \
+             ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+
 void
 test_map() {
+  typedef Map<char *, char *> SSMap;
+  typedef MapElem<char *, char *> SSMapElem;
+#define form_SSMap(_p, _v) form_Map(SSMapElem, _p, _v)
+  SSMap ssm;
+  ssm.put("a", "A");
+  ssm.put("b", "B");
+  ssm.put("c", "C");
+  ssm.put("d", "D");
+
+  if ((ssm).n) 
+    for (
+      MapElem<char *, char*> *qq__x = (MapElem<char *, char*>*)(void*)0, 
+	    *x = &(ssm).v[0]; 
+      ((intptr_t)(qq__x) < (ssm).n) && (ssm).v[(intptr_t)qq__x].key && 
+         ((x = &(ssm).v[(intptr_t)qq__x]) || 1);
+      qq__x = (MapElem<char *, char*>*)(((intptr_t)qq__x) + 1))
+    printf("%s -> %s\n", x->key, x->value);
+
+
+  form_SSMap(x, ssm)
+    printf("%s -> %s\n", x->key, x->value);
+
   StringChainHash h;
   char *hi = "hi", *ho = "ho", *hum = "hum", *hhi = "hhi";
   hhi++;
@@ -99,7 +126,7 @@ test_map() {
   assert(ssh.get(hum) == 3);
   assert(ssh.get("af") == 10);
   assert(ssh.get("ac") == 7);
-
+  
   Vec<int> ints;
   ssh.get_values(ints);
   assert(ints.n == 9);

@@ -4,13 +4,13 @@
 
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = test
+USE_DPARSER = 1
+CFLAGS += -DTEST_LIB
 
 #
 # standard header
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
-
-CFLAGS += -DTEST_LIB
 
 
 #
@@ -55,7 +55,6 @@ test: $(TEST_LIB)
 	./$(TEST_LIB)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
-
 
 #
 # target-specific rules

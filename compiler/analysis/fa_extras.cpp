@@ -203,8 +203,10 @@ show_violations(FA *fa, FILE *fp) {
     vv.add(v);
   qsort(vv.v, vv.n, sizeof(vv.v[0]), compar_tv_pos);
   forv_ATypeViolation(v, vv) if (v) {
+#if 0
     if (!verbose_level && !v->av->var->sym->name)
       continue;
+#endif
     if (v->send)
       fprintf(stderr, "%s:%d: ", v->send->var->def->code->filename(), 
 	      v->send->var->def->code->line());

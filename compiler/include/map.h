@@ -58,6 +58,10 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
   inline void get_values(Vec<C> &values);
 };
 
+#define form_Map(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = &(_v).v[0]; \
+             ((intptr_t)(qq__##_p) < (_v).n) && (_v).v[(intptr_t)qq__##_p].key && \
+             ((_p = &(_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+
 class StringHashFns {
  public:
   static unsigned int hash(char *s) { 

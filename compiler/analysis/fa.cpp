@@ -1121,27 +1121,30 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
     a.add(args.v[j]);
   Vec<Match *> matches;
   AVar *send = make_AVar(p->lvals.v[0], es);
-  pattern_match(fa, a, matches, send);
-  forv_Match(m, matches) {
-    if (m->fun->sym->has.n == a.n) {
-      AEdge *ee = make_AEdge(m, p, es);
-      if (!ee->args.n) {
-	MPosition p;
-	p.push(1);
-	for (int i = 0; i < m->fun->sym->has.n; i++) {
-	  record_arg(a.v[i], m->fun->sym->has.v[i], ee, p);
-	  p.inc();
+  if (pattern_match(a, send, 1, &matches)) {
+    forv_Match(m, matches) {
+      if (m->fun->sym->has.n == a.n) {
+	AEdge *ee = make_AEdge(m, p, es);
+	if (!ee->args.n) {
+	  MPosition p;
+	  p.push(1);
+	  for (int i = 0; i < m->fun->sym->has.n; i++) {
+	    record_arg(a.v[i], m->fun->sym->has.v[i], ee, p);
+	    p.inc();
+	  }
 	}
-      }
-      if (!ee->rets.n) {
-	for (int i = 0; i < p->lvals.n; i++)
-	  ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
-      }
-    } else 
-      partial = 1;
-    if (!p->next_callees)
-      p->next_callees = new Callees;
-    p->next_callees->funs.set_add(m->fun);
+	if (!ee->rets.n) {
+	  for (int i = 0; i < p->lvals.n; i++)
+	    ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
+	}
+      } else 
+	partial = 1;
+      if (!p->next_callees)
+	p->next_callees = new Callees;
+      Fun *f = m->fun;
+      while (f->wraps) f = f->wraps;
+      p->next_callees->funs.set_add(f);
+    }
   }
   return matches.n ? partial : -1;
 }
@@ -1161,8 +1164,12 @@ type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send, Vec
     v->type = type;
   else
     v->type = type_union(v->type, type);
-  if (funs)
-    v->funs = funs;  // overwrite is OK as funs is monotonic
+  if (funs) {
+    if (v->funs)
+      v->funs->set_union(*funs);
+    else
+      v->funs = new Vec<Fun *>(*funs);
+  }
   type_violations.set_add(v);
 }
 

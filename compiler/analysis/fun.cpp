@@ -16,6 +16,7 @@ Fun::Fun(Sym *asym, int aninit_function) {
   sym = asym;
   asym->fun = this;
   ast = sym->ast;
+  wraps = 0;
   nmap = 0;
   vmap = 0;
   size = -1;

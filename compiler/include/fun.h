@@ -62,6 +62,12 @@ class Fun : public gc {
   Map<MPosition*, Sym*> arg_syms;
   Map<MPosition *, Var*> args;
   Vec<Var *> rets;
+  Map<MPosition *, AST *> default_args;
+  Vec<MPosition *> generic_arguments;
+  
+  // generic/default/pointwise wrappers
+  Fun *wraps;
+  Vec<Fun *> wrappers;
 
   // clone
   Vec<EntrySet *> called_ess;

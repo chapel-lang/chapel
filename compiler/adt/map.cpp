@@ -37,8 +37,19 @@ uint open_hash_multipliers[256] = {
 };
 
 #ifdef TEST_LIB
+
 void
 test_map() {
+  typedef Map<char *, char *> SSMap;
+  typedef MapElem<char *, char *> SSMapElem;
+#define form_SSMap(_p, _v) form_Map(SSMapElem, _p, _v)
+  SSMap ssm;
+  ssm.put("a", "A");
+  ssm.put("b", "B");
+  ssm.put("c", "C");
+  ssm.put("d", "D");
+  form_SSMap(x, ssm) ;
+
   StringChainHash h;
   char *hi = "hi", *ho = "ho", *hum = "hum", *hhi = "hhi";
   hhi++;
@@ -99,7 +110,7 @@ test_map() {
   assert(ssh.get(hum) == 3);
   assert(ssh.get("af") == 10);
   assert(ssh.get("ac") == 7);
-
+  
   Vec<int> ints;
   ssh.get_values(ints);
   assert(ints.n == 9);

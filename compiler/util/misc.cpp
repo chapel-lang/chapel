@@ -4,6 +4,8 @@
 #include "files.h"
 #include "geysa.h"
 #include "../vparser/parse_structs.h"
+#include "dparse.h"
+#include "dparse_tables.h"
 #include "ast.h"
 #include "if1.h"
 #include "loc.h"
