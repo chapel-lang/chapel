@@ -517,12 +517,12 @@ class CompleteDimExpr : public Expr {
 class ForallExpr : public Expr {
  public:
   Expr* domains;
-  Symbol* indices;
+  Expr* indices;    /* DefExpr of indices */
   Expr* forallExpr;
 
   SymScope* indexScope;
 
-  ForallExpr(Expr* init_domains, Symbol* init_indices = NULL,
+  ForallExpr(Expr* init_domains, Expr* init_indices = NULL,
 	     Expr* init_forallExpr = NULL);
   void setForallExpr(Expr* exp);
   void setIndexScope(SymScope* init_indexScope);
@@ -542,13 +542,14 @@ void initExpr(void);
 
 class LetExpr : public Expr {
  public:
-  Symbol* syms;
+  Expr* symDefs;
   Expr* innerExpr;
 
   SymScope* letScope;
 
-  LetExpr(Symbol* init_syms, Expr* init_innerExpr);
+  LetExpr(Expr* init_symDefs, Expr* init_innerExpr);
   void setInnerExpr(Expr* expr);
+  void setSymDefs(Expr* expr);
   void setLetScope(SymScope* init_letScope);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 

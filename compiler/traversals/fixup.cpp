@@ -211,39 +211,6 @@ static void verifySymbolDefPoint(Symbol* sym) {
     }
     INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
   }
-  else if (ForLoopStmt* stmt = dynamic_cast<ForLoopStmt*>(defPoint)) {
-    Symbol* tmp = stmt->index;
-    while (tmp) {
-      if (tmp == sym) {
-	return;
-      }
-      tmp = nextLink(Symbol, tmp);
-    }
-    INT_FATAL(sym, "Incorrect ForLoopStmt defPoint "
-	      "for symbol '%s'", sym->name);
-  }
-  else if (ForallExpr* expr = dynamic_cast<ForallExpr*>(defPoint)) {
-    Symbol* tmp = expr->indices;
-    while (tmp) {
-      if (tmp == sym) {
-	return;
-      }
-      tmp = nextLink(Symbol, tmp);
-    }
-    INT_FATAL(sym, "Incorrect ForallExpr defPoint "
-	      "for symbol '%s'", sym->name);
-  }
-  else if (LetExpr* expr = dynamic_cast<LetExpr*>(defPoint)) {
-    Symbol* tmp = expr->syms;
-    while (tmp) {
-      if (tmp == sym) {
-	return;
-      }
-      tmp = nextLink(Symbol, tmp);
-    }
-    INT_FATAL(sym, "Incorrect LetExpr defPoint "
-	      "for symbol '%s'", sym->name);
-  }
   else {
     INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
   }

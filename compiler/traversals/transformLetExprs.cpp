@@ -41,7 +41,6 @@ void TransformLetExprs::doTransformation(void) {
     }
     SymScope* save_scope = Symboltable::setCurrentScope(let_expr->letScope->parent);
     Stmt* let_stmt = let_expr->stmt;
-    Symbol* let_syms = let_expr->syms;
     SymScope* let_scope = let_expr->letScope;
     Expr* inner_copy = let_expr->innerExpr->copy(false, NULL, NULL, &lets);
     let_expr->replace(inner_copy);
@@ -51,21 +50,18 @@ void TransformLetExprs::doTransformation(void) {
     let_scope->exprContext = NULL;
     let_scope->type = SCOPE_LOCAL;
     block_stmt->setBlkScope(let_scope);
-    Symbol* tmp = let_syms;
-    while (tmp) {
-      Symbol* next = nextLink(Symbol, tmp);
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(tmp)) {
-	var->prev = NULL;
-	var->next = NULL;
-	DefStmt* def_stmt = new DefStmt(new DefExpr(var));
-	var->cname = glomstrings(3, var->cname, "_let_", intstring(uid++));
-	var->setDefPoint(def_stmt->defExprList);
-	let_stmt_copy->insertBefore(def_stmt);
+    DefStmt* def_stmt = new DefStmt(let_expr->symDefs);
+    let_stmt_copy->insertBefore(def_stmt);
+
+
+    DefExpr* def_expr = dynamic_cast<DefExpr*>(let_expr->symDefs);
+    while (def_expr) {
+      Symbol* tmp = def_expr->sym;
+      while (tmp) {
+	tmp->cname = glomstrings(3, tmp->cname, "_let_", intstring(uid++));
+	tmp = nextLink(Symbol, tmp);
       }
-      else {
-	INT_FATAL(tmp, "Case not handled in TransformLetExprs");
-      }
-      tmp = next;
+      def_expr = nextLink(DefExpr, def_expr);
     }
     let_stmt->replace(block_stmt);
     Symboltable::setCurrentScope(save_scope);

@@ -32,6 +32,9 @@ void View::preProcessExpr(Expr* expr) {
   }
   printf("(%s", astTypeName[expr->astType]);
   indent += 2;
+  if (IntLiteral* e = dynamic_cast<IntLiteral*>(expr)) {
+    printf(" '%ld'", e->val);
+  }
 }
 
 void View::postProcessExpr(Expr* expr) {

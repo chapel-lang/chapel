@@ -636,16 +636,17 @@ void WhileLoopStmt::codegen(FILE* outfile) {
 
 
 ForLoopStmt::ForLoopStmt(bool init_forall,
-			 VarSymbol* init_index,
+			 Expr* init_indices,
 			 Expr* init_domain,
 			 Stmt* body)
   : BlockStmt(body),
     forall(init_forall),
-    index(init_index),
+    indices(init_indices),
     domain(init_domain),
     indexScope(NULL)
 {
   astType = STMT_FORLOOP;
+  SET_BACK(indices);
   SET_BACK(domain);
 }
 
@@ -657,14 +658,12 @@ void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
 
 Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  VarSymbol* index_copy =
-    dynamic_cast<VarSymbol*>(index->copy(true, map, analysis_clone));
+  Expr* indices_copy = indices->copyInternal(true, map, analysis_clone);
   Expr* domain_copy = domain->copyInternal(true, map, analysis_clone);
   Stmt* body_copy = body->copyInternal(true, map, analysis_clone);
   SymScope* index_scope = Symboltable::popScope();
   ForLoopStmt* for_loop_stmt_copy =
-    new ForLoopStmt(forall, index_copy, domain_copy, body_copy);
-  index_copy->setDefPoint(for_loop_stmt_copy);
+    new ForLoopStmt(forall, indices_copy, domain_copy, body_copy);
   for_loop_stmt_copy->setIndexScope(index_scope);
   return for_loop_stmt_copy;
 }
@@ -677,7 +676,7 @@ void ForLoopStmt::traverseStmt(Traversal* traversal) {
   if (indexScope) {
     prevScope = Symboltable::setCurrentScope(indexScope);
   }
-  TRAVERSE(index, traversal, false);
+  TRAVERSE(indices, traversal, false);
   TRAVERSE(body, traversal, false);
   if (indexScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -691,7 +690,7 @@ void ForLoopStmt::print(FILE* outfile) {
     fprintf(outfile, "all");
   }
   fprintf(outfile, " ");
-  index->print(outfile);
+  indices->print(outfile);
   fprintf(outfile, " in ");
   domain->print(outfile);
   fprintf(outfile, " ");
@@ -700,15 +699,21 @@ void ForLoopStmt::print(FILE* outfile) {
 
 
 void ForLoopStmt::codegen(FILE* outfile) {
+  DefExpr* indices_def = dynamic_cast<DefExpr*>(indices);
+
+  if (indices && !indices_def) {
+    INT_FATAL(this, "Indices in ForLoopStmt not defined in DefExpr");
+  }
+
   if (dynamic_cast<SeqType*>(domain->typeInfo())) {
     fprintf(outfile, "{\n");
-    index->codegenDef(outfile);
+    indices_def->sym->codegenDef(outfile);
     fprintf(outfile, "_FOR");
     if (forall) {
       fprintf(outfile, "ALL");
     }
     fprintf(outfile, "_S(");
-    index->codegen(outfile);
+    indices_def->sym->codegen(outfile);
     fprintf(outfile, ", ");
     domain->codegen(outfile);
     fprintf(outfile, ", ");
@@ -721,7 +726,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
     return;
   }
 
-  VarSymbol* aVar = index;
+  VarSymbol* aVar = dynamic_cast<VarSymbol*>(indices_def->sym);
   fprintf(outfile, "{\n");
   int rank = 0;
 
@@ -735,7 +740,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
   }
   fprintf(outfile, "\n");
   
-  aVar = index;
+  aVar = dynamic_cast<VarSymbol*>(indices_def->sym);
 
   Tuple* tuple = dynamic_cast<Tuple*>(domain);
 

@@ -143,12 +143,12 @@ class WhileLoopStmt : public BlockStmt {
 class ForLoopStmt : public BlockStmt {
  public:
   bool forall;
-  VarSymbol* index;
+  Expr* indices; // DefExpr* containing local index variables
   Expr* domain;
 
   SymScope* indexScope;
 
-  ForLoopStmt(bool init_forall, VarSymbol* init_index, Expr* init_domain,
+  ForLoopStmt(bool init_forall, Expr* init_indices, Expr* init_domain,
 	      Stmt* body = NULL);
   void setIndexScope(SymScope* init_indexScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

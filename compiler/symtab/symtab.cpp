@@ -471,6 +471,7 @@ DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type,
   return expr;
 }
 
+
 DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type, 
 				    Expr* init) {
 
@@ -523,9 +524,11 @@ DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type,
 }
 
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
-static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
+static Expr* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
   if (!expr) {
-    return indices;
+    DefExpr* def_expr = new DefExpr(indices);
+    indices->setDefPoint(def_expr);
+    return def_expr;
   }
 
   for (Expr* tmp = expr; tmp; tmp = nextLink(Expr, tmp)) {
@@ -535,16 +538,16 @@ static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
       Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
       if (!tupTmp) {
 	USR_FATAL(tmp, "Index variable expected");
-      }
-      else {
+      } else {
 	return exprToIndexSymbols(tupTmp->exprs, indices);
       }
-    }
-    else {
+    } else {
       indices = appendLink(indices, new VarSymbol(varTmp->var->name, dtInteger));
     }
   }
-  return indices;
+  DefExpr* def_expr = new DefExpr(indices);
+  indices->setDefPoint(def_expr);
+  return def_expr;
 }
 
 
@@ -561,18 +564,12 @@ Expr* Symboltable::finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_exp
     INT_FATAL(let_expr, "LetExpr expected");
   }
 
-  DefExpr* expr = exprs;
-  while (expr) {
-    let->syms = appendLink(let->syms, expr->sym);
-    expr = nextLink(DefExpr, expr);
-  }
-
+  let->setSymDefs(exprs);
   let->setInnerExpr(inner_expr);
 
   SymScope* let_scope = Symboltable::popScope();
   let_scope->setContext(NULL, NULL, let);
   let->setLetScope(let_scope);
-  let->syms->setDefPoint(let);
   return let;
 }
 
@@ -580,7 +577,7 @@ Expr* Symboltable::finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_exp
 ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
 
-  Symbol* indices = exprToIndexSymbols(indexExpr);
+  Expr* indices = exprToIndexSymbols(indexExpr);
   // HACK: this is a poor assumption -- that all index variables are
   // integers
 
@@ -596,7 +593,6 @@ ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr,
   SymScope* forallScope = Symboltable::popScope();
   forallScope->setContext(NULL, NULL, forallExpr);
   forallExpr->setIndexScope(forallScope);
-  forallExpr->indices->setDefPoint(forallExpr);
 
   return forallExpr;
 }
@@ -684,8 +680,9 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
   if (!indexVars) {
     indexVars = defineVars(indices, dtInteger);
   }
-  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, indexVars, domain);
-  indexVars->setDefPoint(for_loop_stmt);
+  DefExpr* indices_def = new DefExpr(indexVars);
+  indexVars->setDefPoint(indices_def);
+  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, indices_def, domain);
   return for_loop_stmt;
 }
 

@@ -87,7 +87,7 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
   ForallExpr* domain = dynamic_cast<ForallExpr*>(array_type->domain);
 
-  Symbol* indices = domain->indices;
+  Symbol* indices = dynamic_cast<DefExpr*>(domain->indices)->sym;
   if (!indices) {
     // Here we create some indices (assuming arithmetic domain)
     // This should eventually use the IndexType when that is in. --SJD
@@ -108,7 +108,8 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
   loop = Symboltable::finishForLoop(loop, noop_stmt);
   insert_user_init_stmt(stmt, loop);
   insert_init(noop_stmt, var, array_type->elementType);
-  TRAVERSE(loop->body, new InsertElidedIndices(loop->index), true);
+  Symbol* indices_change = dynamic_cast<DefExpr*>(loop->indices)->sym;
+  TRAVERSE(loop->body, new InsertElidedIndices(indices_change), true);
 }
 
 
@@ -246,15 +247,18 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
     return;
   }
 
-  VarSymbol* var = def_stmt->varDef();
-
-  if (!var) {
+  if (!def_stmt->varDef()) {
     return;
   }
 
-  while (var) {
-    insert_init(stmt, var, var->type);
-    var = nextLink(VarSymbol, var);
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList);
+  while (def_expr) {
+    VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym);
+    while (var) {
+      insert_init(stmt, var, var->type);
+      var = nextLink(VarSymbol, var);
+    }
+    def_expr = nextLink(DefExpr, def_expr);
   }
 
   def_stmt->extract();

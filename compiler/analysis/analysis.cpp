@@ -1222,7 +1222,8 @@ gen_for(BaseAST *a) {
   forv_Stmt(ss, body_stmts)
     if1_gen(if1, &body, ss->ainfo->code);
   Vec<Symbol*> indices;
-  getLinkElements(indices, s->index);
+  DefExpr* index_def = dynamic_cast<DefExpr*>(s->indices);
+  getLinkElements(indices, index_def->sym);
   Vec<Expr*> domains;
   domains.add(s->domain);
   return gen_forall_internal(s->ainfo, body, indices, domains);
@@ -1544,11 +1545,15 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
     }
     case EXPR_LET: {
       LetExpr *s = dynamic_cast<LetExpr *>(ast);
-      VarSymbol *vs = dynamic_cast<VarSymbol *>(s->syms);
-      while (vs) {
-	if1_gen(if1, &s->ainfo->code, vs->init->ainfo->code);
-	if1_move(if1, &s->ainfo->code, vs->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
-	vs = dynamic_cast<VarSymbol*>(vs->next);
+      DefExpr* def_expr = dynamic_cast<DefExpr*>(s->symDefs);
+      while (def_expr) {
+	VarSymbol *vs = dynamic_cast<VarSymbol*>(def_expr->sym);
+	while (vs) {
+	  if1_gen(if1, &s->ainfo->code, vs->init->ainfo->code);
+	  if1_move(if1, &s->ainfo->code, vs->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
+	  vs = dynamic_cast<VarSymbol*>(vs->next);
+	}
+	def_expr = nextLink(DefExpr, def_expr);
       }
       if1_gen(if1, &s->ainfo->code, s->innerExpr->ainfo->code);
       s->ainfo->rval = s->innerExpr->ainfo->rval;
@@ -1561,7 +1566,9 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       Vec<Expr *> domains;
       getLinkElements(domains, s->domains);
       Vec<Symbol *> indices;
-      getLinkElements(indices, s->indices);
+      DefExpr* def_expr = dynamic_cast<DefExpr*>(s->indices);
+      Symbol* indices_syms = def_expr ? def_expr->sym : 0;
+      getLinkElements(indices, indices_syms);
       if (s->forallExpr) { // forall expression
 	Code *body = 0;
 	forv_Vec(Expr, d, domains)

@@ -1538,7 +1538,7 @@ Expr* SeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
 
 
 void SeqExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(exprls, traversal, false);
+  TRAVERSE_LS(exprls, traversal, false);
 }
 
 
@@ -1644,7 +1644,7 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 }
 
 
-ForallExpr::ForallExpr(Expr* init_domains, Symbol* init_indices,
+ForallExpr::ForallExpr(Expr* init_domains, Expr* init_indices,
 		       Expr* init_forallExpr) :
   Expr(EXPR_FORALL),
   domains(init_domains),
@@ -1652,6 +1652,7 @@ ForallExpr::ForallExpr(Expr* init_domains, Symbol* init_indices,
   forallExpr(init_forallExpr)
 {
   SET_BACK(domains);
+  SET_BACK(indices);
   SET_BACK(forallExpr);
 }
 
@@ -1668,7 +1669,9 @@ void ForallExpr::setIndexScope(SymScope* init_indexScope) {
 
 
 Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new ForallExpr(domains->copyListInternal(clone, map, analysis_clone), indices, forallExpr->copyInternal(clone, map, analysis_clone));
+  return new ForallExpr(domains->copyListInternal(clone, map, analysis_clone),
+			indices->copyInternal(clone, map, analysis_clone),
+			forallExpr->copyInternal(clone, map, analysis_clone));
 }
 
 
@@ -1679,7 +1682,7 @@ void ForallExpr::traverseExpr(Traversal* traversal) {
   if (indexScope) {
     prevScope = Symboltable::setCurrentScope(indexScope);
   }
-  TRAVERSE_DEF_LS(indices, traversal, false);
+  TRAVERSE(indices, traversal, false);
   TRAVERSE(forallExpr, traversal, false);
   if (indexScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -1706,8 +1709,9 @@ Type* ForallExpr::typeInfo(void) {
 
 void ForallExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
-  if (indices) {
-    indices->printList(outfile);
+  DefExpr* indices_defs = dynamic_cast<DefExpr*>(indices);
+  if (indices_defs && indices_defs->sym) {
+    indices_defs->sym->printList(outfile);
     fprintf(outfile, ":");
   }
   domains->printList(outfile);
@@ -1740,11 +1744,12 @@ void initExpr(void) {
 }
 
 
-LetExpr::LetExpr(Symbol* init_syms, Expr* init_innerExpr) :
+LetExpr::LetExpr(Expr* init_symDefs, Expr* init_innerExpr) :
   Expr(EXPR_LET),
-  syms(init_syms),
+  symDefs(init_symDefs),
   innerExpr(init_innerExpr)
 {
+  SET_BACK(symDefs);
   SET_BACK(innerExpr);
 }
 
@@ -1755,13 +1760,21 @@ void LetExpr::setInnerExpr(Expr* expr) {
 }
 
 
+void LetExpr::setSymDefs(Expr* expr) {
+  symDefs = expr;
+  SET_BACK(symDefs);
+}
+
+
 void LetExpr::setLetScope(SymScope* init_letScope) {
   letScope = init_letScope;
 }
 
 
 Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  LetExpr* copy = new LetExpr(syms, innerExpr->copyInternal(clone, map, analysis_clone));
+  LetExpr* copy =
+    new LetExpr(symDefs->copyListInternal(clone, map, analysis_clone),
+		innerExpr->copyInternal(clone, map, analysis_clone));
   copy->setLetScope(letScope);
   return copy;
 }
@@ -1769,7 +1782,7 @@ Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
 
 void LetExpr::traverseExpr(Traversal* traversal) {
   SymScope* saveScope = Symboltable::setCurrentScope(letScope);
-  TRAVERSE_DEF_LS(syms, traversal, false);
+  TRAVERSE_LS(symDefs, traversal, false);
   TRAVERSE(innerExpr, traversal, false);
   Symboltable::setCurrentScope(saveScope);
 }
