@@ -4301,3 +4301,15 @@ Modified files:
 	                      symtab.cpp symtab.h 
 	chapel/test/trivial/bradc/protoast/codegen/: test.good 
 
+---------------------------------------------------------------------------
+
+07/26/04 10:45:28 -- bradc
+
+Log message:
+	Trivial update: renamed Fun* to Fn* in my code for uniformity.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: chapel.y expr.cpp stmt.cpp stmt.h 
+	                      symbol.cpp symbol.h symtab.cpp symtab.h 
+
