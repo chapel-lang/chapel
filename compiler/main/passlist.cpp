@@ -7,6 +7,7 @@
 #include "../passes/runAnalysis.h"
 
 #include "../symtab/printSymtab.h"
+#include "../symtab/legalizeCNames.h"
 
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkTypeInfo.h"
@@ -46,6 +47,7 @@ REGISTER(FilesToAST);
 REGISTER(Fixup);
 REGISTER(GetStuff);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
+REGISTER(LegalizeCNames);
 REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program

@@ -503,7 +503,7 @@ void VarDefStmt::codegen(FILE* outfile) {
 	  fprintf(outfile, "if (!setInCommandLine");
 	  aVar->type->codegen(outfile);
 	  fprintf(outfile, "(\"%s\", &%s, \"%s\")) {\n", aVar->name, 
-		  aVar->name, moduleName);
+		  aVar->cname, moduleName);
 	}
 	// TODO: hoist this into a traversal that rewrites vardefs as
 	// assignments?

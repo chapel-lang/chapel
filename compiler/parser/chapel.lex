@@ -27,7 +27,7 @@
 
 digit           [0-9]
 letter          [_a-zA-Z]
-ident           \??{letter}({letter}|{digit})*
+ident           \??{letter}({letter}|{digit}|\?)*
 intLiteral      {digit}+{digit}*      
 floatLiteral    {digit}+"."{digit}+
 

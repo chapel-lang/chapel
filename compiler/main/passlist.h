@@ -35,8 +35,8 @@ PassInfo passlist[] = {
 
   RUN(MethodsToFunctions, ""),
   RUN(ProcessParameters, ""),
-
   RUN(InsertUnionChecks, ""),
+  RUN(LegalizeCNames, ""), 
 
   // passes to generate code and compile
   RUN(Fixup, "verify"),
