@@ -18,3 +18,6 @@ class Tuple {
 
 function malloc(size: integer) {
 }
+
+function _UNION_CHECK(u, tag, filename, lineno) { }
+function _UNION_SET(u, tag) { }

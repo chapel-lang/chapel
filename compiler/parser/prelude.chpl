@@ -51,8 +51,3 @@ class timer {
   function stop();
   function read(): float;
 }
-
-
-
-function _UNION_CHECK(u, tag, filename, lineno) { }
-function _UNION_SET(u, tag) { }
