@@ -1478,3 +1478,21 @@ Log message:
 Added files:
 	chapel/test/Logs/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/03/26 15:02:02 -- bradc
+
+Log message:
+	Enabled the testing system to run binaries produced by the
+	compiler by default when testing a directory.  Also added
+	support for a new feature:  When a NOEXEC file is placed
+	in a subdirectory of the testing system, the source files
+	in that directory will only be compiled and the compiler's
+	output will be diff'd against the expected output -- any
+	generated executables will not be run.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/test/compflags/bradc/copyright/: NOEXEC 
+
