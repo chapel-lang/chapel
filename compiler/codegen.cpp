@@ -60,6 +60,11 @@ static binOp binOps[] = {
 };
 
 
+static int symDead(Sym* sym) {
+  return (sym->var == NULL);
+}
+
+
 static int findBinOp(FILE* outfile, AST* ast) {
   int i;
   int numBinOps = sizeof(binOps) / sizeof(binOps[0]);
@@ -162,10 +167,15 @@ static int handleWrite(FILE* outfile, AST* ast) {
 static void genASTDecls(FILE* outfile, AST* ast) {
   if (ast->kind == AST_def_ident) {
     Sym* sym = ast->sym;
-    Sym* dt = type_info(ast, sym);
+    
+    if (symDead(sym)) {
+      fprintf(outfile, "/* dead variable %s declared here */\n", sym->name);
+    } else {
+      Sym* dt = type_info(ast, sym);
       
-    genDT(outfile, dt);
-    fprintf(outfile, " %s;\n", sym->name);
+      genDT(outfile, dt);
+      fprintf(outfile, " %s;\n", sym->name);
+    }
   }
 }
 
@@ -257,17 +267,21 @@ static void genAST(FILE* outfile, AST* ast) {
     {
       Sym* sym = ast->sym;
       int rank;
-
-      rank = dtIsDomain(type_info(ast, sym));
-      if (rank) {
-	fprintf(outfile, "%s = _init_domain_%dD(", sym->name, rank);
-	genDomValues(outfile, ast->v[1]);
-	fprintf(outfile, ")");
+      if (symDead(sym)) {
+	fprintf(outfile, "/* dead variable %s would be initialized here */\n",
+		sym->name);
       } else {
-	fprintf(outfile, "%s", sym->name);
-	if (ast->v[1]) {
-	  fprintf(outfile, " = ");
-	  genAST(outfile, ast->v[1]);
+	rank = dtIsDomain(type_info(ast, sym));
+	if (rank) {
+	  fprintf(outfile, "%s = _init_domain_%dD(", sym->name, rank);
+	  genDomValues(outfile, ast->v[1]);
+	  fprintf(outfile, ")");
+	} else {
+	  fprintf(outfile, "%s", sym->name);
+	  if (ast->v[1]) {
+	    fprintf(outfile, " = ");
+	    genAST(outfile, ast->v[1]);
+	  }
 	}
       }
     }
