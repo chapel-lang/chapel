@@ -16770,3 +16770,39 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/05 10:23:13 -- jplevyak
+
+Log message:
+	Sum Type support checkin.
+	
+	1. Added basic SumType class in type.h and type.cpp patterned after
+	   TupleType.
+	
+	2. modified enumarray.chpl to cast before indexing:
+	   writeln("probSize(", i:classVals, ") = ", ("%3d", probSize(i:classVals)));
+	                                                              ^^^^^^^^^^^
+	since the domain of probSize is integer... is this correct/necessary?
+	
+	3. Added Vec::first() to vec.h
+	
+	4. added comapr_baseasts to permit qsort to be used over all BaseASTs::id
+	
+	5. added find_or_make_sum_type to type.h  look in type.cpp for
+	   a block of comments describing the issue of making sure that
+	   sum types are treated structurally (the same type when summed over
+	   the same types).
+	
+	6. Fixed some issues handling enums in flow analysis and cloning
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp 
+	chapel/compiler/include/: analysis.h baseAST.h callbacks.h 
+	                          clone.h fa.h type.h vec.h 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/compiler/vparser/: parse_ast.cpp 
+	chapel/test/flowanalysis/newast/: enumarray.chpl enumarray.good 
+	chapel/test/trivial/bradc/domarr/: enumarray.chpl 
+
