@@ -8277,3 +8277,15 @@ Added files:
 	                                  bitwise_ops.chpl 
 	                                  bitwise_ops.good 
 
+---------------------------------------------------------------------------
+
+09/21/04 16:48:04 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Unify my handling of forall loops and EXPR_DOMAIN.
+	Handle multiple domains (naively).
+	Move GetStuff to the stack.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
