@@ -37,6 +37,22 @@ show_error(char *str, AST *a, ...) {
 }
 
 int
+show_error(char *str, Var *v, ...) {
+  char nstr[1024];
+  va_list ap;
+  va_start(ap, v);
+  if (v->sym->ast)
+    snprintf(nstr, 1023, "%s:%d: %s\n", v->sym->ast->pathname, v->sym->ast->line, str);
+  else if (v->def && v->def->code && v->def->code->ast)
+    snprintf(nstr, 1023, "%s:%d: %s\n", v->def->code->ast->pathname, v->def->code->ast->line, str);
+  else
+    snprintf(nstr, 1023, "error: %s\n", str);
+  vfprintf(stderr, nstr, ap);
+  va_end(ap);
+  return -1;
+}
+
+int
 buf_read(char *pathname, char **buf, int *len) {
   struct stat sb;
   int fd;

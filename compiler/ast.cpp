@@ -308,8 +308,10 @@ build_constant_syms(IF1 *i, AST *ast) {
   switch (ast->kind) {
     case AST_const:
       assert(!ast->n);
-      if (!ast->sym)
+      if (!ast->sym) {
 	ast->sym = new_constant(i, ast->string, ast->constant_type);
+	ast->sym->ast = ast;
+      }
       break;
     default:
       break;

@@ -98,7 +98,7 @@ class Sym : public gc {
   char 			*cg_string;		// used by cg.cpp
 
   Sym() { memset(this, 0, sizeof *this); }
-  int imm_int();
+  int imm_int(int *);
 };
 #define forv_Sym(_c, _v) forv_Vec(Sym, _c, _v)
 

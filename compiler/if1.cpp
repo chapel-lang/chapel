@@ -852,31 +852,32 @@ int pp(Immediate &imm, Sym *type) {
 }
 
 int
-Sym::imm_int() {
+Sym::imm_int(int *result) {
   int i = 0;
   switch (type->num_type) {
-    default: break;
-	case IF1_NUM_TYPE_UINT: {
-	  switch (type->num_index) {
-	    case IF1_INT_TYPE_8: i = imm.v_uint8; break;
-	    case IF1_INT_TYPE_16: i = imm.v_uint16; break;
-	    case IF1_INT_TYPE_32: i = imm.v_uint32; break;
-	    case IF1_INT_TYPE_64: i = imm.v_uint64; break;
-	    default: assert(!"case");
-	  }
-	  break;
-	}
-	case IF1_NUM_TYPE_INT: {
-	  switch (type->num_index) {
-	    case IF1_INT_TYPE_8: i = imm.v_int8; break;
-	    case IF1_INT_TYPE_16: i = imm.v_int16; break;
-	    case IF1_INT_TYPE_32: i = imm.v_int32; break;
-	    case IF1_INT_TYPE_64: i = imm.v_int64; break;
-	    default: assert(!"case");
-	  }
-	  break;
-	}
+    default: return -1;
+    case IF1_NUM_TYPE_UINT: {
+      switch (type->num_index) {
+	case IF1_INT_TYPE_8: i = imm.v_uint8; break;
+	case IF1_INT_TYPE_16: i = imm.v_uint16; break;
+	case IF1_INT_TYPE_32: i = imm.v_uint32; break;
+	case IF1_INT_TYPE_64: i = imm.v_uint64; break;
+	default: return -1;
+      }
+      break;
+    }
+    case IF1_NUM_TYPE_INT: {
+      switch (type->num_index) {
+	case IF1_INT_TYPE_8: i = imm.v_int8; break;
+	case IF1_INT_TYPE_16: i = imm.v_int16; break;
+	case IF1_INT_TYPE_32: i = imm.v_int32; break;
+	case IF1_INT_TYPE_64: i = imm.v_int64; break;
+	default: return -1;
+      }
+      break;
+    }
   }
-  return i;
+  *result = i;
+  return 0;
 }
 

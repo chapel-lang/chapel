@@ -39,7 +39,8 @@ typedef int (*sym_pred_fn)(Sym *s);
 
 static int
 is_internal_type(Sym *s) {
-  return s->type_kind == Type_SUM && !s->name;
+  //return s->type_kind == Type_SUM && !s->name;
+  return 0;
 }
 
 static void

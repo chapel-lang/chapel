@@ -578,7 +578,8 @@ prim_make_vector(PNode *p, EntrySet *es, AVar *ret) {
   CreationSet *cs = creation_point(make_AVar(p->lvals.v[0], es), sym_vector);
   AVar *elem = unique_AVar(element_var, cs);
   if (p->rvals.n > 2) {
-    int rank = p->rvals.v[1]->sym->imm_int();
+    int rank = 0;
+    p->rvals.v[1]->sym->imm_int(&rank);
     for (int i = 0; i < p->rvals.n - 2; i++) {
       Var *v = p->rvals.v[2 + i];
       AVar *av = make_AVar(v, es);
@@ -917,15 +918,21 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
       case P_prim_index: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *vec = make_AVar(p->rvals.v[1], es);
+	Sym *index = p->rvals.v[2]->sym;
 	vec->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *vec->out) if (cs) {
-#if 0
 	  if (cs->sym == sym_tuple) {
+	    int i;
+	    if (index->type && index->imm_int(&i) == 0 && i >= 0 && i < cs->vars.n)
+	      flow_vars_equal(cs->vars.v[i], result);
+	    else { // assume the worst
+	      for (i = 0; i < cs->vars.n; i++)
+		flow_vars_equal(cs->vars.v[i], result);
+	    }
+	  } else {
 	    AVar *elem = unique_AVar(element_var, cs);
+	    flow_vars_equal(elem, result);
 	  }
-#endif
-	  AVar *elem = unique_AVar(element_var, cs);
-	  flow_vars_equal(elem, result);
 	}
 	break;
       }

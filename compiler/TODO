@@ -89,3 +89,9 @@
 - remove SUM types from implements etc.
 
 - deal with "tuple" having having "has" for all possible tuples
+
+- constant propogation and folding in fa.cpp.  Deal with indexing tuples
+  with those constants.  Probably make a Sym per constant instance and use
+  in creation sets....
+
+- hash SUM types in clone.cpp concretize_types

@@ -486,7 +486,7 @@ build_concrete_types() {
   resolve_concrete_types(css_sets);
 }
 
-static void
+static int
 concretize_types(Fun *f) {
   forv_Var(v, f->fa_all_Vars) {
     Sym *sym = 0, *type = 0;
@@ -514,10 +514,13 @@ concretize_types(Fun *f) {
       type->has.set_to_vec();
       if (type->has.n == 1)
 	v->type = type->has.v[0];
-      else
+      else {
 	v->type = type;
+	return show_error("unable to build unique concrete type", v);
+      }
     }
   }
+  return 0;
 }
 
 static void
@@ -545,7 +548,7 @@ fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
   }
 }
 
-static void
+static int
 clone_functions() {
   Vec<Fun *> fs;
   fs.copy(fa->funs);
@@ -555,12 +558,14 @@ clone_functions() {
     f->rets.add(f->sym->ret->var);
     if (f->equiv_sets.n == 1) {
       fixup_clone(f, f->equiv_sets.v[0]);
-      concretize_types(f);
+      if (concretize_types(f) < 0)
+	return -1;
     } else {
       for (int i = 0; i < f->equiv_sets.n; i++) {
 	Fun *ff = (i == f->equiv_sets.n - 1) ? f : f->copy();
 	fixup_clone(ff, f->equiv_sets.v[i]);
-	concretize_types(ff);
+	if (concretize_types(ff) < 0)
+	  return -1;
 	if (i != f->equiv_sets.n - 1) {
 	  fa->pdb->add(ff);
 	  fa->funs.add(ff);
@@ -594,6 +599,7 @@ clone_functions() {
 	ff->called.add(new CallPoint(f, f->calls.v[i].key));
     }
   }
+  return 0;
 }
 
 int
@@ -602,6 +608,7 @@ PDB::clone(FA *afa, Fun *top) {
   initialize();
   determine_clones();
   build_concrete_types();
-  clone_functions();
+  if (clone_functions() < 0)
+    return -1;
   return 0;
 }
