@@ -52,6 +52,7 @@ test_map() {
   assert(h.put(hhi) == hi);
   assert(h.get(hhi) == hi && h.get(hi) == hi && h.get(ho) == ho);
   assert(h.get("he") == 0 && h.get("hee") == 0);
+
   StringBlockHash hh;
   hh.put(hi);
   hh.put(ho);
@@ -71,6 +72,17 @@ test_map() {
   assert(sh.get(hi) == 4);
   assert(sh.get(ho) == 2);
   assert(sh.get(hum) == 3);
+  sh.put("aa", 5);
+  sh.put("ab", 6);
+  sh.put("ac", 7);
+  sh.put("ad", 8);
+  sh.put("ae", 9);
+  sh.put("af", 10);
+  assert(sh.get(hi) == 4);
+  assert(sh.get(ho) == 2);
+  assert(sh.get(hum) == 3);
+  assert(sh.get("af") == 10);
+  assert(sh.get("ac") == 7);
 }
 #endif
 

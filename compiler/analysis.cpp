@@ -18,6 +18,22 @@ ASymbol::ASymbol() : xsymbol(0) {
 AInfo::AInfo() : xast(0) {
 }
 
+char *AInfo::pathname() { 
+  return xast->filename;
+}
+
+int AInfo::line() {
+  return xast->lineno;
+}
+
+Sym *AInfo::symbol() {
+  return NULL;
+}
+
+AST *AInfo::copy(Map<PNode *, PNode*> *nmap) {
+  return NULL;
+}
+
 static void
 close_symbols(BaseAST *a, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
@@ -54,19 +70,17 @@ map_symbols(Vec<BaseAST *> &syms) {
 	t->asymbol->xsymbol = t;
 	types++;
       } else {
-#if 0
-	if (e) {
 	Expr *e = dynamic_cast<Expr *>(s);
+	if (e) {
 	  e->ainfo = new AInfo;
 	  e->ainfo->xast = e;
 	  exprs++;
 	} else {
-	  Stmt *s = dynamic_cast<Stmt *>(s);
-	  s->ainfo = new AInfo;
-	  s->ainfo->xast = s;
+	  Stmt *st = dynamic_cast<Stmt *>(s);
+	  st->ainfo = new AInfo;
+	  st->ainfo->xast = s;
 	  stmts++;
 	}
-#endif	
       }
     }
   }
@@ -76,10 +90,37 @@ map_symbols(Vec<BaseAST *> &syms) {
 }
 
 static void
+build_types(Vec<BaseAST *> &syms) {
+  Vec<Type *> types;
+  forv_BaseAST(s, syms) {
+    Type *t = dynamic_cast<Type *>(s);
+    if (t) 
+      types.add(t);
+  }
+  forv_Type(t, types) {
+    switch (t->astType) {
+      default: assert(!"case");
+      case TYPE_NULL:
+      case TYPE_BUILTIN:
+      case TYPE_ENUM:
+      case TYPE_DOMAIN:
+      case TYPE_SUBDOMAIN:
+      case TYPE_INDEX:
+      case TYPE_SUBINDEX:
+      case TYPE_ARRAY:
+      case TYPE_USER:
+      case TYPE_CLASS:
+	break;
+    }
+  }
+}
+
+static void
 import_symbols(BaseAST *a) {
   Vec<BaseAST *> syms;
   close_symbols(a, syms);
   map_symbols(syms);
+  build_types(syms);
 }
 
 void

@@ -21,6 +21,11 @@ class AInfo : public AST {
  public:
   BaseAST *xast;
 
+  char *pathname();
+  int line();
+  Sym *symbol();
+  AST *copy(Map<PNode *, PNode*> *nmap = 0);
+
   AInfo();
 };
 

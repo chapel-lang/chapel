@@ -5,3 +5,7 @@
 #include "geysa.h"
 #include "ast.h"
 
+
+void AST::dump(FILE *fp, Fun *f) { }
+
+void AST::graph(FILE *fp) { }

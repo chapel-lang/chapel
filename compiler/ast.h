@@ -20,8 +20,8 @@ class AST : public gc {
 
   virtual AST *copy(Map<PNode *, PNode*> *nmap = 0) = 0;
 
-  virtual void dump(FILE *fp, Fun *f) = 0;
-  virtual void graph(FILE *fp) = 0;
+  virtual void dump(FILE *fp, Fun *f);
+  virtual void graph(FILE *fp);
 };
 #define forv_AST(_x, _v) forv_Vec(AST, _x, _v)
 

@@ -52,6 +52,7 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
  public:
   using Map<K, C>::n;
   using Map<K, C>::v;
+  using Map<K, C>::e;
   inline MapElem<K,C> *get_internal(K akey);
   inline C get(K akey);
   inline MapElem<K,C> *put(K akey, C avalue);
@@ -170,8 +171,9 @@ HashMap<K,AHashFns,C>::get_internal(K akey) {
     return 0;
   if (n <= VEC_INTEGRAL_SIZE) {
     for (MapElem<K,C> *c = v; c < v + n; c++)
-      if (AHashFns::equal(akey, c->key))
-	return c;
+      if (c->key)
+	if (AHashFns::equal(akey, c->key))
+	  return c;
     return 0;
   }
   unsigned int h = AHashFns::hash(akey);
@@ -203,9 +205,35 @@ HashMap<K,AHashFns,C>::put(K akey, C avalue) {
     x->value = avalue;
     return x;
   } else {
-    MapElem<K,C> e(akey, avalue);
-    return set_add(e);
+    if (n < VEC_INTEGRAL_SIZE) {
+      if (!v)
+	v = e;
+      v[n].key = akey;
+      v[n].value = avalue;
+      n++;
+      return &v[n-1];
+    }
+    if (n > VEC_INTEGRAL_SIZE) {
+      unsigned int h = AHashFns::hash(akey);
+      h = h % n;
+      for (int k = h, j = 0;
+	   k < n && j < SET_MAX_SEQUENTIAL;
+	   k = ((k + 1) % n), j++)
+      {
+	if (!v[k].key) {
+	  v[k].key = akey;
+	  v[k].value = avalue;
+	  return &v[k];
+	}
+      }
+    }
   }
+  HashMap<K,AHashFns,C> vv(*this);
+  Map<K,C>::set_expand();
+  for (int i = 0; i < vv.n; i++)
+    if (vv.v[i].key)
+      put(vv.v[i].key, vv.v[i].value);
+  return put(akey, avalue);
 }
 
 template <class K, class AHashFns, class C> inline void

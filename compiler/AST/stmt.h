@@ -9,8 +9,8 @@ class Expr;
 class AInfo;
 
 class Stmt : public BaseAST {
-  AInfo *ainfo;
  public:
+  AInfo *ainfo;
   Stmt(astType_t astType);
 
   void traverse(Traversal* traversal);
