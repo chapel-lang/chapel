@@ -308,12 +308,17 @@ log_var_types(Var *v, Fun *f) {
   }
   assert(css.n);
   log(LOG_TEST_FA, "( ");
-  forv_CreationSet(cs, css) if (cs) {
-    if (cs->sym->name)
-      log(LOG_TEST_FA, "%s ", cs->sym->name);
-    else if (cs->sym->constant)
-      log(LOG_TEST_FA, "\"%s\" ", cs->sym->constant);
-    log(LOG_TEST_FA, "(%s:%d) ", fn(cs->sym->filename()), cs->sym->line());
+  Vec<Sym *> syms;
+  forv_CreationSet(cs, css) if (cs)
+    syms.set_add(cs->sym);
+  syms.set_to_vec();
+  qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_syms);
+  forv_Sym(s, syms) {
+    if (s->name)
+      log(LOG_TEST_FA, "%s ", s->name);
+    else if (s->constant)
+      log(LOG_TEST_FA, "\"%s\" ", s->constant);
+    log(LOG_TEST_FA, "(%s:%d) ", fn(s->filename()), s->line());
   }
   log(LOG_TEST_FA, ")\n");
 }
