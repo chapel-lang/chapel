@@ -16331,3 +16331,41 @@ Modified files:
 	                           fa.cpp if1.cpp 
 	chapel/compiler/include/: sym.h 
 
+---------------------------------------------------------------------------
+
+02/02/05 16:04:10 -- deitz
+
+Log message:
+	Added initial support for secondary methods, bound functions that are
+	not embedded in a class.
+	
+	Beefed up the noanalysis flag so that class member accesses can now be
+	resolved most of the time without analysis and so that functions that
+	don't return anything don't require analysis to determine this.
+	
+	Added several test cases of secondary methods.  These are not
+	supported in analysis yet.  And one of the tests still has problems
+	without analysis.  Futures are set.
+	
+	Fixed collect_asts to call collect_symbols.  John: This is the code I
+	sent you.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h symscope.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: cleanup.cpp collectASTS.cpp 
+	                             findUnknownTypes.cpp fixup.cpp 
+	                             methodsToFunctions.cpp 
+	                             resolveSymbols.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_primary_method1.chpl 
+	                            test_primary_method1.good 
+	                            test_secondary_method1.chpl 
+	                            test_secondary_method1.future 
+	                            test_secondary_method1.good 
+	                            test_secondary_method2.chpl 
+	                            test_secondary_method2.future 
+	                            test_secondary_method2.good 
+
