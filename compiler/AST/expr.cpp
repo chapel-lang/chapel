@@ -191,7 +191,8 @@ void CompleteDimExpr::print(FILE* outfile) {
 
 DomainExpr::DomainExpr(Expr* init_domains, Expr* init_indices) :
   domains(init_domains),
-  indices(init_indices)
+  indices(init_indices),
+  forallExpr(new NullExpr())
 {}
 
 
@@ -208,7 +209,7 @@ void DomainExpr::print(FILE* outfile) {
   }
   domains->printList(outfile);
   fprintf(outfile, "]");
-  if (forallExpr) {
+  if (!forallExpr->isNull()) {
     fprintf(outfile, " ");
     forallExpr->print(outfile);
   }

@@ -344,8 +344,8 @@ set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | gr
 # gotta add ./ on in case -startdir is specified
 set dirs = (./ $dirs)
 
-echo "dirs is $dirs"
-echo "cwd is $cwd"
+#echo "dirs is $dirs"
+#echo "cwd is $cwd"
 
 foreach dir ($dirs)
 	if ( -x $dir ) then
