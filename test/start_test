@@ -169,7 +169,9 @@
 #    as part of the executable's behavior), this can be used to
 #    ensure that the generated file's contents are correct without
 #    writing a specialized sub_test script.  Again, this file should
-#    be a single line with no linefeeds.
+#    be a single line with no linefeeds.  In addition, a test named 
+#    foo.chpl can add its own concatenation files by specifying them 
+#    in foo.catfiles.
 #
 #  - if the subdirectory contains an executable PREDIFF file, that
 #    file will be executed prior to running any diff command and
@@ -193,7 +195,7 @@
 # the directory structure in a similar manner and cleans up --
 # removing the generated executables, core files, and *.tmp files
 # which store any mismatching output.  The user can also specify
-# subdirectory-specific things to clean up usinng a CLEANFILES
+# subdirectory-specific things to clean up using a CLEANFILES
 # file that lists other targets to remove (called with the -rf
 # flag, so subdirectories will work here as well).  The idea is
 # that after start_clean runs, the testing system should be left

@@ -2,9 +2,16 @@
 #define _chplmem_H_
 
 #include <stddef.h>
+#include "arg.h"
+#include "chpltypes.h"
 
 void initMemTable(void);
 void printMemTable(void);
+
+void setMemmax(_integer64 value);
+void setMemthreshold(_integer64 value);
+void setMemtrace(char* memLogname);
+
 void installMemory(void* memPtr, size_t number, size_t size, 
                    char* description);
 void removeMemory(void* memPtr);

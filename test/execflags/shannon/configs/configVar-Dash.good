@@ -1,3 +1,21 @@
+
+FLAGS:
+======
+  -h                    -- print this message
+
+CONFIG VAR FLAGS:
+=================
+  -s<configVar>=<value> -- set the value of a config var
+  -f<filename>          -- read in a file of config var assignments
+
+MEMORY FLAGS:
+=============
+  --memmax=<n>          -- simulate 'n' bytes of memory available
+  --memtrace=<filename> -- write memory trace to filename
+  --memthreshold=<n>    -- filter memtrace for sizes >= 'n' bytes
+
+CONFIG VARS:
+============
    x: 111 (default:  1)
   y?: i wanted to see it work again (default:  why not?)
    z: 99.9 (default:  2.2)

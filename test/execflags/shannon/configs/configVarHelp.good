@@ -1,3 +1,21 @@
+
+FLAGS:
+======
+  -h                    -- print this message
+
+CONFIG VAR FLAGS:
+=================
+  -s<configVar>=<value> -- set the value of a config var
+  -f<filename>          -- read in a file of config var assignments
+
+MEMORY FLAGS:
+=============
+  --memmax=<n>          -- simulate 'n' bytes of memory available
+  --memtrace=<filename> -- write memory trace to filename
+  --memthreshold=<n>    -- filter memtrace for sizes >= 'n' bytes
+
+CONFIG VARS:
+============
   Thursday: night (default:  Rain and snow.)
   Possible: snow (default:  accumulation)
      ofOne: inch.

@@ -30,8 +30,12 @@ static memTableEntry* memTable[HASHSIZE];
 static memTableEntry* first = NULL;
 static memTableEntry* last = NULL;
 
+static int memTableOn = 0;
+
+
 void initMemTable(void) {
   int i;
+  memTableOn = 1;
   for (i = 0; i < HASHSIZE; i++) {
     memTable[i] = NULL;
   }
@@ -51,21 +55,63 @@ static unsigned hash(void* memAlloc) {
 }
 
 
+static int memmax = 0;
+static int memthreshold = 0;
+static FILE* memLog = NULL;
+static _integer64 memmaxValue = 0;
+static _integer64 memthresholdValue = 0;
+
+
+void setMemmax(_integer64 value) {
+  memmax = 1;
+  memmaxValue = value;
+}
+
+
+void setMemthreshold(_integer64 value) {
+  memthreshold = 1;
+  memthresholdValue = value;
+}
+
+
+void setMemtrace(char* memLogname) {
+  if (memLogname) {
+    memLog = fopen(memLogname, "w");
+    if (!memLog) {
+      fprintf(stderr, "***Error:  Unable to open \"%s\"***\n", memLogname);
+      exit(0);
+    }
+  } 
+}
+
+
 void printMemTable(void) {
   memTableEntry* memEntry = NULL;
  
   fprintf(stdout, "================\n"); 
   fprintf(stdout, "Allocated Memory\n");
   fprintf(stdout, "================\n");
-  fprintf(stdout, "Size (in bytes):\tType:\n");
-  fprintf(stdout, "----------------\t-----\n");
+
+  char* column1    = "Size (in bytes):";
+  char* underline1 = "----------------";
+  char* column2    = "Number:";
+  char* underline2 = "-------";
+  char* column3    = "Description:";
+  char* underline3 = "------------";
+  int columnLength = 20;
+
+  fprintf(stdout, "%-*s%-*s%-*s\n", columnLength, column1, columnLength, 
+          column2, columnLength, column3);
+  fprintf(stdout, "%-*s%-*s%-*s\n", columnLength, underline1,columnLength, 
+          underline2, columnLength, underline3);
 
   for (memEntry = first;
        memEntry != NULL;
        memEntry = memEntry->nextInstalled) {
 
-    size_t chunk = memEntry->number * memEntry->size;
-    fprintf(stdout, "%u\t\t\t%s\n", chunk, memEntry->description);
+    fprintf(stdout, "%-*u%-*u%-*s\n", columnLength, memEntry->size, 
+            columnLength, memEntry->number, columnLength, 
+            memEntry->description);
   }
   fprintf(stdout, "\n");
 }
@@ -88,7 +134,7 @@ static memTableEntry* lookupMemory(void* memAlloc) {
 
 
 void installMemory(void* memAlloc, size_t number, size_t size, 
-                  char* description) {
+                   char* description) {
   unsigned hashValue;
   memTableEntry* memEntry = lookupMemory(memAlloc);
 
@@ -99,6 +145,7 @@ void installMemory(void* memAlloc, size_t number, size_t size,
               "***\n", description);
       exit(0);
     }
+
     hashValue = hash(memAlloc);
     memEntry->nextInBucket = memTable[hashValue];
     memTable[hashValue] = memEntry;
@@ -110,6 +157,7 @@ void installMemory(void* memAlloc, size_t number, size_t size,
       memEntry->prevInstalled = last;
     }
     last = memEntry;
+
     memEntry->description = (char*) malloc((strlen(description) + 1)
                                            * sizeof(char));
     strcpy(memEntry->description, description);
@@ -135,7 +183,6 @@ void removeMemory(void* memAlloc) {
       if (memEntry->nextInstalled) {
         memEntry->nextInstalled->prevInstalled = memEntry->prevInstalled;
       } else {
-        // there is no next, which means this one is last.  must reset last.
         last = memEntry->prevInstalled;
       } 
     }
@@ -179,35 +226,55 @@ static void confirm(void* memAlloc, char* description) {
 }
 
 
+static void printToMemLog(size_t number, size_t size, char* description, 
+                          char* memType, void* memAlloc, void* moreMemAlloc) {
+  size_t chunk = number * size;
+  
+  if (chunk >= memthresholdValue) {
+    if (moreMemAlloc && (moreMemAlloc != memAlloc)) {
+      fprintf(memLog, "\"%s\" called for \"%u\" items of size \"%u\""
+              " for \"%s\":  0x%x -> 0x%x\n", memType, number, size, 
+              description, (unsigned)memAlloc, (unsigned)moreMemAlloc);     
+    } else {
+      fprintf(memLog, "\"%s\" called for \"%u\" items of size \"%u\""
+              " for \"%s\":  0x%x\n", memType, number, size, description, 
+              (unsigned)memAlloc);       
+    }
+  }
+}
+
+
 void* _chpl_malloc(size_t number, size_t size, char* description) {
   size_t chunk = number * size;
   void* memAlloc = malloc(chunk);
   confirm(memAlloc, description);
-  installMemory(memAlloc, number, size, description);
+  if (memTableOn) {
+    installMemory(memAlloc, number, size, description);  
+  }
+  if (memLog) {
+    printToMemLog(number, size, description, "malloc", memAlloc, NULL);
+  }
   return memAlloc;
 }
-
-
-/*
-static void memzero(void* memory, size_t chunk) {
-  size_t i;
-  for (i = 0; i < chunk; i++) {
-    *(char*)(memory + i) = 0;
-  }
-}
-*/
 
 
 void* _chpl_calloc(size_t number, size_t size, char* description) {
   void* memAlloc = calloc(number, size);
   confirm(memAlloc, description);
-  installMemory(memAlloc, number, size, description);
+  if (memTableOn) {
+    installMemory(memAlloc, number, size, description);
+  }
+  if (memLog) {
+    printToMemLog(number, size, description, "calloc", memAlloc, NULL);
+  }
   return memAlloc;
 }
 
 
 void _chpl_free(void* memAlloc) {
-  removeMemory(memAlloc);
+  if (memTableOn) {
+    removeMemory(memAlloc);
+  }
   free(memAlloc);
 }
 
@@ -219,18 +286,25 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
     _chpl_free(memAlloc);
     return NULL;
   }
-
-  memTableEntry* memEntry = lookupMemory(memAlloc);
-  if (!memEntry && (memAlloc != NULL)) {
-    fprintf(stderr, "***Error:  Attempting to realloc memory for %s that "
-            "wasn't allocated***\n", description);
-    exit(0);
+  if (memTableOn) {
+    memTableEntry* memEntry = lookupMemory(memAlloc);
+    if (!memEntry && (memAlloc != NULL)) {
+      fprintf(stderr, "***Error:  Attempting to realloc memory for %s that "
+              "wasn't allocated***\n", description);
+      exit(0);
+    }
   }
   void* moreMemAlloc = realloc(memAlloc, chunk);
   confirm(moreMemAlloc, description);
-  if ((memAlloc != NULL)  && (moreMemAlloc != memAlloc)) {
-    removeMemory(memAlloc);
+  if (memTableOn) {
+    if ((memAlloc != NULL)  && (moreMemAlloc != memAlloc)) {
+      removeMemory(memAlloc);
+    }
+    installMemory(moreMemAlloc, number, size, description);
   }
-  installMemory(moreMemAlloc, number, size, description);
+  if (memLog) {
+    printToMemLog(number, size, description, "realloc", memAlloc, 
+                  moreMemAlloc);
+  }
   return moreMemAlloc;
 }

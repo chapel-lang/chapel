@@ -47,6 +47,11 @@ void printConfigVarTable(void) {
   int longestName = 0;
   char* moduleName = NULL;
 
+  if (first) {
+    fprintf(stdout, "CONFIG VARS:\n");
+    fprintf(stdout, "============\n");
+  }
+
   for (configVar = first;
        configVar != NULL;
        configVar = configVar->nextInstalled) {
