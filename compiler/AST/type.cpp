@@ -642,15 +642,12 @@ void initTypes(void) {
   
 
   dtLocale = Symboltable::defineBuiltinType("locale", nilExpr);
-
-  // this needs to be moved into the standard prelude
-  dtTimer = Symboltable::defineBuiltinType("timer", nilExpr, false);
 }
 
 
 void findInternalTypes(void) {
-  dtTuple = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Tuple"))->type;
-  dtIndex = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Index"))->type;
-  dtDomain = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Domain"))->type;
-  dtArray = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Array"))->type;
+  dtTuple = Symboltable::lookupInternalType("Tuple")->type;
+  dtIndex = Symboltable::lookupInternalType("Index")->type;
+  dtDomain = Symboltable::lookupInternalType("Domain")->type;
+  dtArray = Symboltable::lookupInternalType("Array")->type;
 }

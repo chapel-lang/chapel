@@ -22,6 +22,7 @@ class Symboltable {
   static void define(Symbol* sym);
   static Symbol* lookupInScope(char* name, SymScope* scope);
   static Symbol* lookupInternal(char* name, bool publicSym = false);
+  static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
   static Symbol* lookup(char* name, bool inLexer = false);
   static ClassSymbol* lookupClass(char* name);
 

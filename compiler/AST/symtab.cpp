@@ -345,6 +345,16 @@ Symbol* Symboltable::lookupInternal(char* name, bool publicSym) {
 }
 
 
+TypeSymbol* Symboltable::lookupInternalType(char* name, bool publicSym) {
+  Symbol* sym = lookupInternal(name, publicSym);
+  TypeSymbol* retsym = dynamic_cast<TypeSymbol *>(sym);
+  if (retsym == NULL) {
+    INT_FATAL("lookupInternalType failed");
+  }
+  return retsym;
+}
+
+
 Symbol* Symboltable::lookup(char* name, bool inLexer) {
   SymScope* scope;
   

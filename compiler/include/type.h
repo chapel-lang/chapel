@@ -192,7 +192,6 @@ TYPE_EXTERN Type* dtArray;
 
 // other funny types
 TYPE_EXTERN Type* dtLocale;
-TYPE_EXTERN Type* dtTimer;
 
 // vector of built-in types
 TYPE_EXTERN Vec<Type*> builtinTypes;

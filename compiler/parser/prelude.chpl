@@ -43,3 +43,11 @@ class maxloc : reduction {
 class minloc : reduction {
 }
 
+
+-- timers
+
+class timer {
+  function start();
+  function stop();
+  function read(): float;
+}

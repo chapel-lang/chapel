@@ -44,7 +44,6 @@ static Sym *sym_domain = 0;
 static Sym *sym_array = 0;
 static Sym *sym_sequence = 0;
 static Sym *sym_locale = 0;
-static Sym *sym_timer = 0;
 
 ASymbol::ASymbol() : xsymbol(0) {
 }
@@ -282,7 +281,6 @@ build_types(Vec<BaseAST *> &syms) {
 	  t->asymbol->type_kind = Type_ALIAS;
 	  t->asymbol->alias = sym_string;
 	} else if (t == dtLocale) {
-	} else if (t == dtTimer) {
 	} else if (t == dtUnknown) {
 	  t->asymbol->type_kind = Type_UNKNOWN;
 	} else
@@ -486,7 +484,6 @@ build_builtin_symbols() {
   builtin_Symbol(dtDomain, &sym_domain, "domain");
   builtin_Symbol(dtArray, &sym_array, "array");
   builtin_Symbol(dtLocale, &sym_locale, "locale");
-  builtin_Symbol(dtTimer, &sym_timer, "timer");
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
