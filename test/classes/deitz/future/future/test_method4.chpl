@@ -3,7 +3,7 @@ class foo {
   function setx(i : integer) {
     x = i;
   }
-  function getx(i : integer) : integer {
+  function getx() : integer {
     return x;
   }
 }
