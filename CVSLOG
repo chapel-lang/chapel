@@ -15371,3 +15371,16 @@ Added files:
 	                              test_out_parameter1.chpl 
 	                              test_out_parameter1.good 
 
+---------------------------------------------------------------------------
+
+01/24/05 10:14:02 -- bradc
+
+Log message:
+	Removed future indicators for intent tests that are
+	now working.
+
+Removed files:
+	chapel/test/functions/jplevyak/: intent-1.future intent-2.future 
+	                                 intent-3.future intent-4.future 
+	                                 intent-9.future 
+
