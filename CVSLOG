@@ -395,3 +395,22 @@ Modified files:
 	chapel/examples/milestone0/: mvm.chpl 
 	chapel/examples/milestone0/variations/: mvm_brad.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/10 14:53:16 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	Extensive changes to the way assignment occurs.
+	Assignment is now mediated through methods.  All variables
+	are converted to references to be assigned.  This permits
+	complex left-hand sides to be type infered correctly, e.g.
+	
+	a.b.c.d = 5;
+
+Modified files:
+	chapel/compiler/: ast.cpp ast_cf.cpp builtin_symbols.h chpl.g 
+	                  fa.cpp fa_extras.cpp prelude.chpl prelude.v 
+	                  prim_data.dat v.g 
+Added files:
+	chapel/compiler/samples/: iv.chpl 
+
