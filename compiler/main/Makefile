@@ -12,6 +12,7 @@ MAIN_OBJDIR = $(PLATFORM)
 include Makefile.share
 
 TARGETS = COPYRIGHT \
+	LICENSE \
 	$(MAIN_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
@@ -23,5 +24,8 @@ FORCE:
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
-COPYRIGHT: ../../LICENSE
+LICENSE: ../../LICENSE
+	cat $< | sed s/\"/\\\\\"/g | sed s/^/\"/g | sed s/\$$/\\\\n\"/g > $@
+
+COPYRIGHT: ../../COPYRIGHT
 	cat $< | sed s/\"/\\\\\"/g | sed s/^/\"/g | sed s/\$$/\\\\n\"/g > $@

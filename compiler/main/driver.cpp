@@ -24,6 +24,7 @@
 #include "version.h"
 
 
+static void version(ArgumentState *arg_state, char *arg_unused);
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
@@ -102,6 +103,7 @@ static ArgumentDescription arg_desc[] = {
   "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", 
   NULL},
+ {"version", ' ', "Show Version", NULL, NULL, NULL, version},
  {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},
  {"help", 'h', "Help (show this list)", NULL, NULL, NULL, help},
  {0}
@@ -115,23 +117,39 @@ static ArgumentState arg_state = {
 };
 
 static void
-help(ArgumentState *arg_state, char *arg_unused) {
-  char ver[30];
-  get_version(ver);
-  fprintf(stderr, "%s Version %s ", arg_state->program_name, ver);  
-  fprintf(stderr, "Copyright (c) 2004, Cray Inc. (see LICENSE file for more details)\n");  
-  usage(arg_state, arg_unused);
-}
-
-static void
 copyright(ArgumentState *arg_state, char *arg_unused) {
   fprintf(stderr, "\n"
-#include "COPYRIGHT"
+#include "LICENSE"
           "\n"
           );
   clean_exit(0);
 }
 
+
+static void printShortCopyright(void) {
+  fprintf(stderr, "\n"
+#include "COPYRIGHT"
+          );
+}
+
+
+static void printVersion(ArgumentState* arg_state) {
+  char ver[30];
+  get_version(ver);
+  fprintf(stderr, "%s Version %s", arg_state->program_name, ver);  
+  printShortCopyright();
+}
+
+static void version(ArgumentState* arg_state, char* arg_unused) {
+  printVersion(arg_state);
+  exit(0);
+}
+
+static void
+help(ArgumentState *arg_state, char *arg_unused) {
+  printVersion(arg_state);
+  usage(arg_state, arg_unused);
+}
 
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(glomstrings(2, "-l", libraryFilename));
