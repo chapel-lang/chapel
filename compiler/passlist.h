@@ -4,6 +4,8 @@
 #include "checkTypeInfo.h"
 #include "findUnknownTypes.h"
 #include "getstuff.h"
+#include "printAST.h"
+#include "printSymtab.h"
 #include "testGetStuff.h"
 #include "verifyASTType.h"
 

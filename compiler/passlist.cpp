@@ -7,6 +7,9 @@ REGISTER(CheckTypeInfo);
 REGISTER(DummyPass);
 REGISTER(FindUnknownTypes);
 REGISTER(GetStuff);
+REGISTER(PrintAST);        // BLC: pretty-prints the AST
 REGISTER(PrintStmts);
+REGISTER(PrintSymtab);     // BLC: prints out the whole symboltable
 REGISTER(TestGetStuff);
 REGISTER(VerifyASTType);
+
