@@ -1,0 +1,5 @@
+roxana
+
+It seems that an index(1) is being stored as a tuple rather than
+as a simple integer (though this is just a guess based on the
+output of destructureTupleAssignments.cpp).
