@@ -21346,3 +21346,36 @@ Added files:
 	                                         test_seq2.chpl 
 	                                         test_seq2.good 
 
+---------------------------------------------------------------------------
+
+03/24/05 15:14:02 -- roxana
+
+Log message:
+	Added/modified IndexType. This is the type of an index of a domain. It
+	could be a k-tuple integer, or a user-defined class reference (and
+	everything that the specification allows for indefinite and opaque
+	domains). Modified the DomainType to contain its index type. Added one
+	and a half pass to add implicit index types for domains and explicit
+	index types. The first is done by insertIndexType pass. The second is
+	crammed into insertAnonymousTypes pass.
+	
+	This is not complete (especially the code generation part), since type
+	support is needed.
+	
+	Anonymous domains are not handled -- I need to talk to Steve about how
+	to handle them.
+
+Modified files:
+	chapel/compiler/traversals/: insertAnonymousTypes.h 
+	                             insertAnonymousDomains.cpp 
+	                             Makefile.share 
+	                             insertAnonymousTypes.cpp fixup.cpp 
+	chapel/compiler/main/: passlist.h passlist.cpp 
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+Added files:
+	chapel/compiler/traversals/: insertIndexType.cpp 
+	                             insertIndexType.h 
+	chapel/test/domains/roxana/: test_index_expr.good 
+	                             test_index_expr.chpl 
+
