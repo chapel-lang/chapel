@@ -32,7 +32,7 @@ char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 
 static ArgumentDescription arg_desc[] = {
  {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
- {"sysdir", 'D', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
+ {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
  {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
