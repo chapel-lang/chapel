@@ -18026,3 +18026,15 @@ Modified files:
 	chapel/compiler/include/: analysis.h 
 	chapel/compiler/passes/: runAnalysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/22/05 15:45:54 -- jplevyak
+
+Log message:
+	Some work on tuples.
+	TypeType maps to the PRODUCT type of analysis.
+	Set the AST::sym for EXPR_TUPLE.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
