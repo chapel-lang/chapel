@@ -19631,3 +19631,25 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: cloneAllFns.cpp cloneAllFns.h 
 
+---------------------------------------------------------------------------
+
+03/15/05 11:20:47 -- jplevyak
+
+Log message:
+	Add "object" type which is the builtin parent of all "class" objects.
+	Use the "object" type to implement == and != as pointer == and !=.
+	Remove test/functions/bradc/intents-classes3.future which now passes.
+	Added support for named arguments.
+	Named arguments now fail in codegen.
+	Moved the .future files for named arguments over to Steve.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/test/functions/deitz/: test_named_param1.future 
+	                              test_named_param2.future 
+Removed files:
+	chapel/test/functions/bradc/: intents-classes3.future 
+
