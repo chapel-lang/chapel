@@ -23091,3 +23091,22 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/01/05 12:34:21 -- jplevyak
+
+Log message:
+	New test cases for overloaded assignment.
+
+Added files:
+	chapel/test/functions/jplevyak/: equal-1.chpl equal-1.good 
+	                                 equal-2.chpl equal-2.good 
+	                                 equal-3.chpl equal-3.good 
+	                                 equal-4.chpl equal-4.good 
+	                                 equal-5.chpl equal-5.good 
+	                                 equal-6.chpl equal-6.good 
+	                                 equal-7.chpl equal-7.good 
+	                                 equal-8.chpl equal-8.future 
+	                                 equal-8.good equal-9.chpl 
+	                                 equal-9.future equal-9.good 
+
