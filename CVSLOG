@@ -18385,3 +18385,17 @@ Log message:
 Modified files:
 	chapel/compiler/main/: passlist.h 
 
+---------------------------------------------------------------------------
+
+02/28/05 17:12:04 -- deitz
+
+Log message:
+	Commented out HAND_TRAVERSE_EXPR_LET.
+	
+	Fixed two small but major bugs in traversals of symbols and types.  A
+	little surprised it was working.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+
