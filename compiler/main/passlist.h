@@ -34,7 +34,7 @@ PassInfo passlist[] = {
   //  RUN(Fixup, "hyper verify"),  // hyper verification!
 
   RUN(MethodsToFunctions, ""),
-  //  RUN(ProcessParameters, ""),
+  RUN(ProcessParameters, ""),
 
   RUN(InsertUnionChecks, ""),
 

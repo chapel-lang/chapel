@@ -41,20 +41,19 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	/* generate copy-in statements */
 	while (formal) {
 	  tmpsRequired = true;
-	  Symbol* newActual = new Symbol(SYMBOL, 
-					 glomstrings(2, "_", formal->name));
+
+	  Symbol* newActual;
 	  Expr* initializer;
 	  if (formal->intent == PARAM_OUT) {
 	    initializer = nilExpr;
 	  } else {
 	    initializer = actual->copy();
 	  }
+	  char* actualName = glomstrings(2, "_", formal->name);
 	  VarDefStmt* newActualDecl = 
-	    Symboltable::defineVarDefStmt(newActual,
-					  formal->type,
-					  initializer,
-					  VAR_NORMAL,
-					  false);
+	    Symboltable::defineSingleVarDefStmt(actualName,
+						formal->type, initializer,
+						VAR_NORMAL, false, &newActual);
 	  Variable* newActualUse = new Variable(newActual);
 	  actual->replace(newActualUse);
 

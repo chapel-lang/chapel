@@ -450,6 +450,19 @@ VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type,
 }
 
 
+VarDefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
+						Expr* init, varType vartag, 
+						bool isConst, 
+						Symbol** newVar) {
+  Symbol* newVarAsSym = new Symbol(SYMBOL, name);
+  VarDefStmt* retval = defineVarDefStmt(newVarAsSym, type, init, vartag, 
+					isConst);
+  *newVar = retval->var;
+
+  return retval;
+}
+
+
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
 static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = nilSymbol) {
 

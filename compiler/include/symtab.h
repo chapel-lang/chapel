@@ -52,6 +52,12 @@ class Symboltable {
   static VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
 						   Expr* init, varType vartag, 
 						   bool isConst);
+  static VarDefStmt* Symboltable::defineSingleVarDefStmt(char* name, 
+							 Type* type,
+							 Expr* init,
+							 varType vartag,
+							 bool isConst,
+							 Symbol** newVar);
   static ForallExpr* startForallExpr(Expr* domainExpr, 
 				     Expr* indexExpr = nilExpr);
   static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 

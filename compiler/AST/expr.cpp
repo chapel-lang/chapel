@@ -654,7 +654,13 @@ Expr* Variable::copyExpr(bool clone, CloneCallback* analysis_clone) {
     return new Variable(var);
   }
   else {
-    return new Variable(new UnresolvedSymbol(var->name, var->cname));
+    Symbol* sym;
+    if (clone) {
+      sym = new UnresolvedSymbol(var->name, var->cname);
+    } else {
+      sym = var;
+    }
+    return new Variable(sym);
   }
 }
 
@@ -1047,6 +1053,7 @@ FnCall::FnCall(Expr* init_base, Expr* init_arg) :
 
 
 Type* FnCall::typeInfo(void) {
+  //  return findFnSymbol()->retType;
   return findFnSymbol()->type;
 }
 
