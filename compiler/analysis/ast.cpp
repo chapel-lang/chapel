@@ -136,7 +136,7 @@ build_type_hierarchy() {
       type_syms.add(s);
   }
   forv_Sym(s, types) if (s) {
-    if (!s->dispatch_order.n && s != sym_any && s != sym_void) {
+    if (!s->dispatch_order.n && s != sym_any && s != sym_void && s != sym_unknown) {
       if (s->is_meta_class && (s != sym_anyclass))
 	implement_and_specialize(sym_anyclass, s, types);
       else if (s->is_value_class && (s != sym_value))
