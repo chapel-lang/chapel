@@ -3,13 +3,20 @@
  called from 26 in __entryPoint at bitwise_assignment.chpl:26
  called from 26 in __entryPoint at bitwise_assignment.chpl:26
  called from 26 in __entryPoint at bitwise_assignment.chpl:26
+::__entryPoint(<unknown>:0) ( __entryPoint (bitwise_assignment.chpl:26) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(bitwise_assignment.chpl:26) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(bitwise_assignment.chpl:26) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(bitwise_assignment.chpl:26) ( __initPrelude (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
-::m(<unknown>:0) ( int64 (<unknown>:0) )
-::m(<unknown>:0) ( int64 (<unknown>:0) )
-::m(<unknown>:0) ( int64 (<unknown>:0) )
-::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(bitwise_assignment.chpl:11) ( int64 (<unknown>:0) )
+::m(bitwise_assignment.chpl:18) ( int64 (<unknown>:0) )
+::m(bitwise_assignment.chpl:25) ( int64 (<unknown>:0) )
+::m(bitwise_assignment.chpl:4) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
-::n(<unknown>:0) ( int64 (<unknown>:0) )
+::n(bitwise_assignment.chpl:5) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 function __entryPoint bitwise_assignment.chpl:26
 function __init bitwise_assignment.chpl:26

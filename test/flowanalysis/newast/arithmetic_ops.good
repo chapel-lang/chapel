@@ -3,18 +3,25 @@
  called from 33 in __entryPoint at arithmetic_ops.chpl:33
  called from 33 in __entryPoint at arithmetic_ops.chpl:33
  called from 33 in __entryPoint at arithmetic_ops.chpl:33
+::__entryPoint(<unknown>:0) ( __entryPoint (arithmetic_ops.chpl:33) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(arithmetic_ops.chpl:33) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(arithmetic_ops.chpl:33) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(arithmetic_ops.chpl:33) ( __initPrelude (<unknown>:0) )
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(arithmetic_ops.chpl:14) ( int64 (<unknown>:0) )
+::answer(arithmetic_ops.chpl:20) ( int64 (<unknown>:0) )
+::answer(arithmetic_ops.chpl:26) ( int64 (<unknown>:0) )
+::answer(arithmetic_ops.chpl:32) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
-::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(arithmetic_ops.chpl:6) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
-::n(<unknown>:0) ( int64 (<unknown>:0) )
+::n(arithmetic_ops.chpl:7) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
-::o(<unknown>:0) ( int64 (<unknown>:0) )
+::o(arithmetic_ops.chpl:8) ( int64 (<unknown>:0) )
 answer = (m*n);
 answer = (m+n);
 answer = (m-n);

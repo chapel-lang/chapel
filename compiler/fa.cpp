@@ -1446,7 +1446,9 @@ refresh_top_edge(AEdge *e) {
   p.push(1);
   cp = cannonicalize_mposition(p);
   e->match->filters.put(cp, top_type);
-  e->args.put(cp, make_AVar(sym_init->var, e->to));
+  AVar *av = make_AVar(sym_init->var, e->to);
+  e->args.put(cp, av);
+  update_in(av, av->var->sym->abstract_type);
 }
 
 static AEdge *

@@ -10,10 +10,22 @@
  called from 13 in __entryPoint at chain.chpl:13
  called from 13 in __entryPoint at chain.chpl:13
  called from 3 in foo at chain.chpl:4
+::__entryPoint(<unknown>:0) ( __entryPoint (chain.chpl:13) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(chain.chpl:13) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(chain.chpl:13) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(chain.chpl:13) ( __initPrelude (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(chain.chpl:2) ( int64 (<unknown>:0) )
+::a(chain.chpl:7) ( int64 (<unknown>:0) )
+::bar(<unknown>:0) ( bar (<unknown>:0) )
+::bar(chain.chpl:11) ( bar (<unknown>:0) )
+::bar(chain.chpl:3) ( bar (<unknown>:0) )
+::foo(<unknown>:0) ( foo (<unknown>:0) )
+::foo(chain.chpl:10) ( foo (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 bar(5);
 bar(7);

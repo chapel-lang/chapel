@@ -3,16 +3,23 @@
  called from 29 in __entryPoint at danglingelse.chpl:29
  called from 29 in __entryPoint at danglingelse.chpl:29
  called from 29 in __entryPoint at danglingelse.chpl:29
+::__entryPoint(<unknown>:0) ( __entryPoint (danglingelse.chpl:29) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(danglingelse.chpl:29) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(danglingelse.chpl:29) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(danglingelse.chpl:29) ( __initPrelude (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(danglingelse.chpl:14) ( int64 (<unknown>:0) )
+::a(danglingelse.chpl:3) ( int64 (<unknown>:0) )
+::a(danglingelse.chpl:6) ( int64 (<unknown>:0) )
+::a(danglingelse.chpl:8) ( int64 (<unknown>:0) )
 ::b(<unknown>:0) ( int64 (<unknown>:0) )
-::b(<unknown>:0) ( int64 (<unknown>:0) )
-::b(<unknown>:0) ( int64 (<unknown>:0) )
-::b(<unknown>:0) ( int64 (<unknown>:0) )
-::b(<unknown>:0) ( int64 (<unknown>:0) )
+::b(danglingelse.chpl:15) ( int64 (<unknown>:0) )
+::b(danglingelse.chpl:5) ( int64 (<unknown>:0) )
+::b(danglingelse.chpl:6) ( int64 (<unknown>:0) )
+::b(danglingelse.chpl:9) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 a += 1;
 b += 1;

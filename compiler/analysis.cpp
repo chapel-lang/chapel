@@ -291,6 +291,7 @@ build_types(Vec<BaseAST *> &syms) {
 	TupleType *tt = dynamic_cast<TupleType*>(t);
 	forv_Vec(Type, c, tt->components) {
 	  Sym *x = new_sym();
+	  x->ast = c->asymbol->ast;
 	  x->type = c->asymbol;
 	  t->asymbol->has.add(x);
 	}
@@ -630,6 +631,21 @@ undef_or_fn_expr(Expr *ast) {
   return 0;
 }
 
+static void
+gen_move(Expr *e, Sym *s) {
+  e->ainfo->rval = new_sym(s->name);
+  e->ainfo->rval->ast = e->ainfo;
+  if1_move(if1, &e->ainfo->code, s, e->ainfo->rval, e->ainfo);
+}
+
+static Sym *
+gen_move(Sym *s, Expr *e) {
+  Sym *ss = new_sym(s->name);
+  ss->ast = e->ainfo;
+  if1_move(if1, &e->ainfo->code, s, ss, e->ainfo);
+  return ss;
+}
+
 static int
 gen_if1(BaseAST *ast) {
   // bottom's up
@@ -685,30 +701,33 @@ gen_if1(BaseAST *ast) {
     case EXPR_LITERAL: assert(!"case"); break;
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
-      s->ainfo->rval = if1_const(if1, sym_int64, s->str);
-      s->ainfo->rval->imm.v_int64 = s->val;
+      Sym *c = if1_const(if1, sym_int64, s->str);
+      c->imm.v_int64 = s->val;
+      gen_move(s, c);
       break;
     }
     case EXPR_FLOATLITERAL: {
       FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
-      s->ainfo->rval = if1_const(if1, sym_float64, s->str);
-      s->ainfo->rval->imm.v_float64 = s->val;
+      Sym *c = if1_const(if1, sym_float64, s->str);
+      c->imm.v_float64 = s->val;
+      gen_move(s, c);
       break;
     }
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
-      s->ainfo->rval = if1_const(if1, sym_string, s->str);
+      Sym *c = if1_const(if1, sym_string, s->str);
+      gen_move(s, c);
       break;
     }
     case EXPR_VARIABLE: {
       Variable *s = dynamic_cast<Variable*>(ast);
-      s->ainfo->rval = new_sym(s->var->asymbol->name);
-      if1_move(if1, &s->ainfo->code, s->var->asymbol, s->ainfo->rval, s->ainfo);
+      gen_move(s, s->var->asymbol);
       break;
     }
     case EXPR_UNOP: {
       UnOp *s = dynamic_cast<UnOp*>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->operand->ainfo->code);
       Sym *op = 0;
       switch (s->type) {
@@ -718,6 +737,7 @@ gen_if1(BaseAST *ast) {
 	case UNOP_LOGNOT: op = if1_make_symbol(if1, "!"); break;
 	case UNOP_BITNOT: op = if1_make_symbol(if1, "~"); break;
       }
+      
       Code *c = if1_send(if1, &s->ainfo->code, 3, 1, sym_operator, op, 
 			 s->operand->ainfo->rval, s->ainfo->rval);
       c->ast = s->ainfo;
@@ -727,6 +747,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_BINOP: {
       BinOp *s = dynamic_cast<BinOp*>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
       Sym *op = 0;
@@ -762,6 +783,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->base->ainfo->code);
       Sym *op = if1_make_symbol(if1, ".");
       Sym *selector = 0;
@@ -782,6 +804,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_ASSIGNOP: {
       AssignOp *s = dynamic_cast<AssignOp*>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
       Sym *op = 0;
@@ -801,6 +824,7 @@ gen_if1(BaseAST *ast) {
       }
       if (op) {
 	rval = new_sym();
+	rval->ast = s->ainfo;
 	Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
 			   s->left->ainfo->rval, op, s->right->ainfo->rval,
 			   rval);
@@ -812,6 +836,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_SIMPLESEQ: {
       SimpleSeqExpr *s = dynamic_cast<SimpleSeqExpr *>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->lo->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->hi->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->str->ainfo->code);
@@ -834,6 +859,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_DOMAIN: {
       DomainExpr *s = dynamic_cast<DomainExpr *>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->domains->ainfo->code);
       Code *send = 0;
       if (!s->forallExpr->isNull()) { 
@@ -851,6 +877,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_WRITECALL: {
       WriteCall *s = dynamic_cast<WriteCall *>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
@@ -872,6 +899,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_PARENOP: {
       ParenOpExpr *s = dynamic_cast<ParenOpExpr *>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
@@ -881,9 +909,10 @@ gen_if1(BaseAST *ast) {
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      if (undef_or_fn_expr(s->baseExpr))
-	if1_add_send_arg(if1, send, if1_make_symbol(if1, s->baseExpr->ainfo->rval->name));
-      else
+      if (undef_or_fn_expr(s->baseExpr)) {
+	Sym *ss = gen_move(if1_make_symbol(if1, s->baseExpr->ainfo->rval->name), s);
+	if1_add_send_arg(if1, send, ss);
+      } else
 	if1_add_send_arg(if1, send, s->baseExpr->ainfo->rval);
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
@@ -893,6 +922,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_CAST: {
       CastExpr *s = dynamic_cast<CastExpr *>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
       forv_Vec(Expr, a, args)
@@ -908,6 +938,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_REDUCE: {
       ReduceExpr *s = dynamic_cast<ReduceExpr *>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->redDim->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->argExpr->ainfo->code);
       Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_reduce_symbol, 
@@ -919,6 +950,7 @@ gen_if1(BaseAST *ast) {
     case EXPR_TUPLE: {
       Tuple *s = dynamic_cast<Tuple *>(ast);
       s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> args;
       getLinkElements(args, s->exprs);
       forv_Vec(Expr, a, args)
@@ -973,11 +1005,14 @@ gen_fun(FnDefStmt *f) {
   assert(f->fn->asymbol->name);
   if (f->fn->scope->type == SCOPE_CLASS) {
     fn->self = new_sym("self"); // hack
+    fn->self->ast = f->ainfo;
     as[iarg++] = fn->self;
     fn->self->type = dynamic_cast<TypeSymbol *>(f->fn->scope->symContext)->type->asymbol;
   }
-  if (strcmp(f->fn->asymbol->name, "self"))
-    as[iarg++] = if1_make_symbol(if1, f->fn->asymbol->name);
+  if (strcmp(f->fn->asymbol->name, "self") != 0) {
+    as[iarg++] = new_sym(f->fn->asymbol->name);
+    as[iarg-1]->type = if1_make_symbol(if1, f->fn->asymbol->name);
+  }
   for (int i = 0; i < args.n; i++)
     as[iarg++] = args.v[i]->asymbol;
   if1_closure(if1, fn, body, iarg, as);
@@ -1117,10 +1152,10 @@ static void
 finalize_symbols(IF1 *i) {
   forv_Sym(s, i->allsyms) {
     if (s->is_constant || s->is_symbol)
-      s->function_scope = 1;
+      set_global_scope(s);
     else
       if (s->type_kind)
-	s->global_scope = 1;
+	set_global_scope(s);
   }
 }
 

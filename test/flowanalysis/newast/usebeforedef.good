@@ -6,8 +6,17 @@
  called from 7 in __entryPoint at usebeforedef.chpl:7
  called from 7 in __entryPoint at usebeforedef.chpl:7
  called from 7 in __entryPoint at usebeforedef.chpl:7
+::__entryPoint(<unknown>:0) ( __entryPoint (usebeforedef.chpl:7) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(usebeforedef.chpl:7) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(usebeforedef.chpl:7) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(usebeforedef.chpl:7) ( __initPrelude (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(usebeforedef.chpl:4) ( int64 (<unknown>:0) )
+::foo(<unknown>:0) ( foo (<unknown>:0) )
+::foo(usebeforedef.chpl:1) ( foo (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 foo(5);
 function __entryPoint usebeforedef.chpl:7

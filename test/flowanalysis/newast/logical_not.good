@@ -3,14 +3,21 @@
  called from 19 in __entryPoint at logical_not.chpl:19
  called from 19 in __entryPoint at logical_not.chpl:19
  called from 19 in __entryPoint at logical_not.chpl:19
+::__entryPoint(<unknown>:0) ( __entryPoint (logical_not.chpl:19) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(logical_not.chpl:19) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(logical_not.chpl:19) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(logical_not.chpl:19) ( __initPrelude (<unknown>:0) )
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(logical_not.chpl:12) ( int64 (<unknown>:0) )
+::answer(logical_not.chpl:18) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
-::o(<unknown>:0) ( int64 (<unknown>:0) )
+::o(logical_not.chpl:5) ( int64 (<unknown>:0) )
 ::p(<unknown>:0) ( int64 (<unknown>:0) )
-::p(<unknown>:0) ( int64 (<unknown>:0) )
+::p(logical_not.chpl:6) ( int64 (<unknown>:0) )
 answer = (!o);
 answer = (!p);
 function __entryPoint logical_not.chpl:19

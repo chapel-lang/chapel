@@ -3,10 +3,17 @@
  called from 13 in __entryPoint at logical_and.chpl:13
  called from 13 in __entryPoint at logical_and.chpl:13
  called from 13 in __entryPoint at logical_and.chpl:13
+::__entryPoint(<unknown>:0) ( __entryPoint (logical_and.chpl:13) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(logical_and.chpl:13) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(logical_and.chpl:13) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(logical_and.chpl:13) ( __initPrelude (<unknown>:0) )
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(logical_and.chpl:12) ( int64 (<unknown>:0) )
+::answer(logical_and.chpl:6) ( int64 (<unknown>:0) )
+::answer(logical_and.chpl:9) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = (o&&o);
 answer = (o&&p);

@@ -3,16 +3,23 @@
  called from 21 in __entryPoint at mod.chpl:21
  called from 21 in __entryPoint at mod.chpl:21
  called from 21 in __entryPoint at mod.chpl:21
+::__entryPoint(<unknown>:0) ( __entryPoint (mod.chpl:21) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(mod.chpl:21) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(mod.chpl:21) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(mod.chpl:21) ( __initPrelude (<unknown>:0) )
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(mod.chpl:14) ( int64 (<unknown>:0) )
+::answer(mod.chpl:20) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
-::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(mod.chpl:6) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
-::n(<unknown>:0) ( int64 (<unknown>:0) )
+::n(mod.chpl:7) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::o(<unknown>:0) ( int64 (<unknown>:0) )
-::o(<unknown>:0) ( int64 (<unknown>:0) )
+::o(mod.chpl:8) ( int64 (<unknown>:0) )
 answer = (m%n);
 answer = (o%m);
 function __entryPoint mod.chpl:21

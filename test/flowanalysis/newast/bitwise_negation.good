@@ -3,11 +3,18 @@
  called from 17 in __entryPoint at bitwise_negation.chpl:17
  called from 17 in __entryPoint at bitwise_negation.chpl:17
  called from 17 in __entryPoint at bitwise_negation.chpl:17
+::__entryPoint(<unknown>:0) ( __entryPoint (bitwise_negation.chpl:17) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(bitwise_negation.chpl:17) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(bitwise_negation.chpl:17) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(bitwise_negation.chpl:17) ( __initPrelude (<unknown>:0) )
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(bitwise_negation.chpl:10) ( int64 (<unknown>:0) )
+::answer(bitwise_negation.chpl:16) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
-::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(bitwise_negation.chpl:4) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = (~answer);
 answer = (~m);

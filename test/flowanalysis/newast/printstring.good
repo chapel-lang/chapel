@@ -3,6 +3,13 @@
  called from 2 in __entryPoint at printstring.chpl:2
  called from 2 in __entryPoint at printstring.chpl:2
  called from 2 in __entryPoint at printstring.chpl:2
+::__entryPoint(<unknown>:0) ( __entryPoint (printstring.chpl:2) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(printstring.chpl:2) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(printstring.chpl:2) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(printstring.chpl:2) ( __initPrelude (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 function __entryPoint printstring.chpl:2
 function __init printstring.chpl:2

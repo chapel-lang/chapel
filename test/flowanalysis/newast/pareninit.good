@@ -3,11 +3,18 @@
  called from 5 in __entryPoint at pareninit.chpl:5
  called from 5 in __entryPoint at pareninit.chpl:5
  called from 5 in __entryPoint at pareninit.chpl:5
+::__entryPoint(<unknown>:0) ( __entryPoint (pareninit.chpl:5) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(pareninit.chpl:5) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(pareninit.chpl:5) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(pareninit.chpl:5) ( __initPrelude (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
-::x(<unknown>:0) ( int64 (<unknown>:0) )
+::x(pareninit.chpl:2) ( int64 (<unknown>:0) )
 ::y(<unknown>:0) ( int64 (<unknown>:0) )
-::y(<unknown>:0) ( int64 (<unknown>:0) )
+::y(pareninit.chpl:4) ( int64 (<unknown>:0) )
 function __entryPoint pareninit.chpl:5
 function __init pareninit.chpl:5
 function __init() {

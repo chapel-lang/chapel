@@ -3,9 +3,16 @@
  called from 4 in __entryPoint at var.chpl:4
  called from 4 in __entryPoint at var.chpl:4
  called from 4 in __entryPoint at var.chpl:4
+::__entryPoint(<unknown>:0) ( __entryPoint (var.chpl:4) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(var.chpl:4) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(var.chpl:4) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(var.chpl:4) ( __initPrelude (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
-::x(<unknown>:0) ( int64 (<unknown>:0) )
+::x(var.chpl:3) ( int64 (<unknown>:0) )
 function __entryPoint var.chpl:4
 function __init var.chpl:4
 function __init() {

@@ -3,14 +3,21 @@
  called from 25 in __entryPoint at shift_ops.chpl:25
  called from 25 in __entryPoint at shift_ops.chpl:25
  called from 25 in __entryPoint at shift_ops.chpl:25
+::__entryPoint(<unknown>:0) ( __entryPoint (shift_ops.chpl:25) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(shift_ops.chpl:25) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(shift_ops.chpl:25) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(shift_ops.chpl:25) ( __initPrelude (<unknown>:0) )
 ::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
-::answer(<unknown>:0) ( int64 (<unknown>:0) )
+::answer(shift_ops.chpl:12) ( int64 (<unknown>:0) )
+::answer(shift_ops.chpl:18) ( int64 (<unknown>:0) )
+::answer(shift_ops.chpl:24) ( int64 (<unknown>:0) )
 ::m(<unknown>:0) ( int64 (<unknown>:0) )
-::m(<unknown>:0) ( int64 (<unknown>:0) )
+::m(shift_ops.chpl:5) ( int64 (<unknown>:0) )
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
-::n(<unknown>:0) ( int64 (<unknown>:0) )
+::n(shift_ops.chpl:6) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 answer = (m<<1);
 answer = (m>>1);

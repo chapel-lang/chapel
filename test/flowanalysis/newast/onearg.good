@@ -6,8 +6,17 @@
  called from 6 in __entryPoint at onearg.chpl:6
  called from 6 in __entryPoint at onearg.chpl:6
  called from 6 in __entryPoint at onearg.chpl:6
+::__entryPoint(<unknown>:0) ( __entryPoint (onearg.chpl:6) )
+::__init(<unknown>:0) ( __init (<unknown>:0) )
+::__init(onearg.chpl:6) ( __init (<unknown>:0) )
+::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
+::__initIntPrelude(onearg.chpl:6) ( __initIntPrelude (<unknown>:0) )
+::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__initPrelude(onearg.chpl:6) ( __initPrelude (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
-::a(<unknown>:0) ( int64 (<unknown>:0) )
+::a(onearg.chpl:2) ( int64 (<unknown>:0) )
+::foo(<unknown>:0) ( foo (<unknown>:0) )
+::foo(onearg.chpl:5) ( foo (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 foo(5);
 function __entryPoint onearg.chpl:6
