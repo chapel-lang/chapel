@@ -325,8 +325,7 @@ formals:
 
 fnrettype:
   /* empty */
-    { /* $$ = dtUnknown; */
-      $$ = dtVoid; }
+    { $$ = dtUnknown; }
 | TCOLON type
     { $$ = $2; }
 ;

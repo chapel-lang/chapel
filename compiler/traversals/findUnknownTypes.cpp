@@ -4,6 +4,11 @@
 #include "stmt.h"
 
 
+FindUnknownTypes::FindUnknownTypes(void) {
+  processInternalModules = false;
+}
+
+
 void FindUnknownTypes::preProcessStmt(Stmt* stmt) {
   //  fprintf(stderr, "STMT:\n");
   //  stmt->print(stderr);
@@ -20,8 +25,14 @@ void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
   }
   FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym);
   if (fnSym) {
-    Type *retType = return_type_info(fnSym);
-    (void) retType;
+    if (fnSym->retType == dtUnknown) {
+      fnSym->retType = return_type_info(fnSym);
+      // BLC: this is a mini-hack, as analysis currently returns dtUnknown
+      // for things that don't return anything rather than dtVoid
+      if (fnSym->retType == dtUnknown) {
+	fnSym->retType = dtVoid;
+      }
+    }
   }
 }
 

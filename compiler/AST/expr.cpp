@@ -1053,8 +1053,7 @@ FnCall::FnCall(Expr* init_base, Expr* init_arg) :
 
 
 Type* FnCall::typeInfo(void) {
-  //  return findFnSymbol()->retType;
-  return findFnSymbol()->type;
+  return findFnSymbol()->retType;
 }
 
 

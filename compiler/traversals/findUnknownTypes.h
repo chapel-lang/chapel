@@ -5,6 +5,8 @@
 
 class FindUnknownTypes : public Traversal {
  public:
+  FindUnknownTypes(void);
+
   void preProcessStmt(Stmt* stmt);
   void postProcessStmt(Stmt* stmt);
   void preProcessSymbol(Symbol* sym);

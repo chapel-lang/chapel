@@ -109,6 +109,7 @@ class FnSymbol : public Symbol {
  public:
   bool exportMe;
   Symbol* formals;
+  Type* retType;
   Symbol* _this;
   Stmt* body;
   SymScope* paramScope;

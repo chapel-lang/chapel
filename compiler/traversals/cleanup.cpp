@@ -146,6 +146,10 @@ void ResolveEasiest::preProcessExpr(Expr* expr) {
 
 void ResolveEasiest::preProcessSymbol(Symbol* sym) {
   resolve_type_helper(sym->type);
+  FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym);
+  if (fnSym) {
+    resolve_type_helper(fnSym->retType);
+  }
 }
 
 

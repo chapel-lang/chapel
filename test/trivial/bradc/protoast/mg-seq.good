@@ -2,7 +2,7 @@ enum classVals = S | W | A | B | C | D | O;
 type coeff = [0..3] float;
 function initializeMG( V: ???;
  U: ???;
- R: ???) {
+ R: ???): ??? {
 writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
 writeln(" Size: ", nx, "x", ny, "x", nz);
 writeln(" Iterations: ", nit);
@@ -13,7 +13,7 @@ initArrays(V, U, R);
 
 function warmupMG( V: ???;
  U: ???;
- R: ???) {
+ R: ???): ??? {
 if (warmup) {
 mg3P(V, U, R);
 resid(R(1), V, U(1));
@@ -24,7 +24,7 @@ initArrays(V, U, R);
 
 function computeMG( V: ???;
  U: ???;
- R: ???): float{
+ R: ???): float {
 resid(R(1), V, U(1));
 norm2u3(R(1));
 forall it in 1..nit {
@@ -39,7 +39,7 @@ return rnm2;
 
 function printResults( rnm2: ???;
  inittime: ???;
- runtime: ???) {
+ runtime: ???): ??? {
 var verified: boolean;
 if ((verifyValue!=0.0)) {
 const epsilon: float = 0.00000001;
@@ -76,7 +76,7 @@ writeln(" Version = 2.4");
 
 function mg3P( V: ???;
  U: ???;
- R: ???) {
+ R: ???): ??? {
 forall lvl in 2..numLevels {
 rprj3(R(lvl), R((lvl-1)));
 }
@@ -95,7 +95,7 @@ psinv(U(1), R(1));
 
 
 function psinv( U: ???;
- R: ???) {
+ R: ???): ??? {
 state const c: coeff = initCValues();
 state const c3d: [i, j, k:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
 const RD: ??? = R.Domain;
@@ -106,7 +106,7 @@ U += [ijk:RD] reduce by sum [off:Stencil] (c3d*R((ijk+(Rstr*off))));
 
 function resid( R: ???;
  V: ???;
- U: ???) {
+ U: ???): ??? {
 state const a: coeff = (((-8.0)/3.0), 0.0, (1.0/6.0), (1.0/12.0));
 state const a3d: [i, j, k:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
 const UD: ??? = U.Domain;
@@ -116,7 +116,7 @@ R = (V-[ijk:UD] reduce by sum [off:Stencil] (a3d*U((ijk+(Ustr*off)))));
 
 
 function rprj3( S: ???;
- R: ???) {
+ R: ???): ??? {
 state const w: coeff = (0.5, 0.25, 0.125, 0.0625);
 state const w3d: [i, j, k:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
 const RD: ??? = R.Domain;
@@ -126,7 +126,7 @@ S = [ijk:RD] reduce by sum [off:Stencil] (w3d*R((ijk+(Rstr*off))));
 
 
 function interp( R: ???;
- S: ???) {
+ S: ???): ??? {
 state const IDom: domain(3) = [(-1)..0, (-1)..0, (-1)..0];
 state const IStn: [i, j, k:IDom] domain(3) = (i..0, j..0, k..0);
 state const w: [ijk:IDom] float = (1.0/IStn.size());
@@ -139,7 +139,7 @@ forall ioff in IDom {
 }
 
 
-function norm2u3( R: ???): (float, float){
+function norm2u3( R: ???): (float, float) {
 const rnm2: ??? = sqrt((reduce by sum (R**2)/((nx*ny)*nz)));
 const rnmu: ??? = reduce by max abs(R);
 
@@ -149,7 +149,7 @@ return (rnm2, rnmu);
 
 function initArrays( V: ???;
  U: ???;
- R: ???) {
+ R: ???): ??? {
 zran3(V);
 U(1) = 0.0;
 V.outOfBounds(wrap);
@@ -158,7 +158,7 @@ R.outOfBounds(wrap);
 }
 
 
-function zran3( V: ???) {
+function zran3( V: ???): ??? {
 const ncharge: integer = 10;
 var POS: [1..ncharge] index(Base);
 var NEG: [1..ncharge] index(Base);
@@ -175,7 +175,7 @@ V(NEG(i)) = (-1.0);
 }
 
 
-function longRandlc( n: ???): float{
+function longRandlc( n: ???): float {
 state const s: float = 314159265.0;
 state const arand: float = (5.0**13);
 var kk: integer = n;
@@ -198,7 +198,7 @@ return randlc(t1, arand);
 
 
 function randlc( x: ???;
- a: ???): float{
+ a: ???): float {
 state const r23: float = (0.5**23);
 state const t23: float = (2**23);
 state const r46: float = (0.5**46);
@@ -229,7 +229,7 @@ return (r46*x);
 }
 
 
-function initCValues( Class: ???): coeff{
+function initCValues( Class: ???): coeff {
 if ((((Class==A)||(Class==S))||(Class==W))) {
 
 return (((-3.0)/8.0), (1.0/32.0), ((-1.0)/64.0), 0.0);
@@ -240,7 +240,7 @@ return (((-3.0)/17.0), (1.0/33.0), ((-1.0)/61.0), 0.0);
 }
 
 
-function lg2( x: ???): integer{
+function lg2( x: ???): integer {
 var lg: integer = (-1);
 while (x) {
 x *= 2;

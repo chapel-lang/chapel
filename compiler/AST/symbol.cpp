@@ -272,6 +272,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
   Symbol(SYMBOL_FN, init_name, init_retType),
   exportMe(init_exportMe),
   formals(init_formals),
+  retType(init_retType),
   _this(0),
   body(init_body),
   overload(nilFnSymbol)
@@ -283,6 +284,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 FnSymbol::FnSymbol(char* init_name) :
   Symbol(SYMBOL_FN, init_name, nilType),
   formals(nilSymbol),
+  retType(nilType),
   _this(0),
   body(nilStmt)
 {
@@ -295,6 +297,7 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 			 bool init_exportMe) {
   formals = init_formals;
   type = init_retType;
+  retType = init_retType;
   body = init_body;
   SET_BACK(body);
   exportMe = init_exportMe;
@@ -330,7 +333,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
   if (!exportMe) {
     fprintf(outfile, "static ");
   }
-  type->codegen(outfile);
+  retType->codegen(outfile);
   fprintf(outfile, " ");
   this->codegen(outfile);
   fprintf(outfile, "(");

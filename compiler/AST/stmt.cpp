@@ -709,11 +709,12 @@ void FnDefStmt::print(FILE* outfile) {
     fn->formals->printDefList(outfile, ";\n");
   }
   fprintf(outfile, ")");
-  if (fn->type == dtVoid) {
+  if (fn->retType == dtVoid) {
     fprintf(outfile, " ");
   } else {
     fprintf(outfile, ": ");
     fn->type->print(outfile);
+    fprintf(outfile, " ");
   }
   fn->body->print(outfile);
   fprintf(outfile, "\n\n");
