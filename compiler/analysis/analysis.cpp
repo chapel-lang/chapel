@@ -389,6 +389,7 @@ install_new_function(FnSymbol *f) {
   build_types(syms);
   if (init_function(f) < 0 || build_function(f) < 0) 
     assert(!"unable to instantiate generic/wrapper");
+  if1_finalize_closure(if1, f->asymbol->sym);
   Fun *fun = new Fun(f->asymbol->sym);
   build_arg_positions(fun);
   pdb->add(fun);
@@ -419,7 +420,7 @@ ACallbacks::order_wrapper(Match *m) {
     return NULL;
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->order_wrapper(&m->formal_to_actual_position);
-  Fun *fun =  install_new_function(f);
+  Fun *fun = install_new_function(f);
   fun->wraps = m->fun;
   return fun;
 }
@@ -435,7 +436,7 @@ ACallbacks::coercion_wrapper(Match *m) {
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->coercion_wrapper(&coercions);
-  Fun *fun =  install_new_function(f);
+  Fun *fun = install_new_function(f);
   fun->wraps = m->fun;
   return fun;
 }
@@ -446,7 +447,7 @@ ACallbacks::default_wrapper(Match *m) {
     return NULL;
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->default_wrapper(&m->default_args);
-  Fun *fun =  install_new_function(f);
+  Fun *fun = install_new_function(f);
   fun->wraps = m->fun;
   return fun;
 }
@@ -461,7 +462,7 @@ ACallbacks::instantiate_generic(Match *m) {
 		      dynamic_cast<Type*>(s->value->asymbol->symbol));
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->instantiate_generic(&substitutions);
-  Fun *fun =  install_new_function(f);
+  Fun *fun = install_new_function(f);
   fun->wraps = m->fun;
   return fun;
 }
@@ -469,10 +470,9 @@ ACallbacks::instantiate_generic(Match *m) {
 void
 fixup_symbol_clone(Sym *sym, CloneCallback *callback) {
   AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
-  if (callback) {
+  if (callback)
     for (int i = 0; i < sym->has.n; i++)
       sym->has.v[i] = c->context->smap.get(sym->has.v[i]);
-  }
 }
 
 Sym *
@@ -1840,7 +1840,7 @@ print_baseast(BaseAST *a, Vec<BaseAST *> &asts) {
 }
 
 static void
-print_baseast(BaseAST *a) {
+print_one_baseast(BaseAST *a) {
   Vec<BaseAST *> asts;
   print_baseast(a, asts);
   printf("\n");
@@ -1850,7 +1850,7 @@ static void
 debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
   if (verbose_level > 1) {
     forv_Stmt(s, stmts)
-      print_baseast(s);
+      print_one_baseast(s);
     forv_BaseAST(s, syms) {
       if (s->astType == STMT_FNDEF)
 	print_ast(dynamic_cast<FnDefStmt*>(s)->fn->body); 

@@ -684,6 +684,7 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
 static void
 if1_simple_dead_code_elimination(IF1 *p) {
   for (int i = 0; i < p->allclosures.n; i++) {
+    
     mark_sym_live(p->allclosures.v[i]);
     if (p->allclosures.v[i]->ret) 
       mark_sym_live(p->allclosures.v[i]->ret);
@@ -775,6 +776,26 @@ if1_finalize(IF1 *p) {
     if (f->code)
       if1_flatten_code(f->code, Code_CONC, NULL);
   }
+}
+
+void
+if1_finalize_closure(IF1 *p, Sym *c) {
+  mark_sym_live(c);
+  if (c->ret) 
+    mark_sym_live(c->ret);
+  for (int j = 0; j < c->has.n; j++)
+    mark_sym_live(c->has.v[j]);
+  if (c->code) {
+    int code_live = 1;
+    while (mark_code_live(p,c->code, code_live));
+    int again = 1;
+    while (again) {
+      again = 0;
+      again = mark_live(p, c->code) || again;
+    }
+    mark_dead(p, c->code);
+  }
+  if1_flatten_code(c->code, Code_CONC, NULL);
 }
 
 void

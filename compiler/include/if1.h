@@ -75,6 +75,7 @@ void	if1_set_complex_type(IF1 *p, Sym *t, int size);
 int	if1_numeric_size(IF1 *p, Sym *t);
 char	*if1_cannonicalize_string(IF1 *p, char *start, char *end = 0);
 void	if1_finalize(IF1 *p);
+void 	if1_finalize_closure(IF1 *p, Sym *c);
 void	if1_write(FILE *fp, IF1 *p);
 void	if1_set_primitive_types(IF1 *if1);
 
