@@ -29,8 +29,8 @@ class MPosition : public gc {
   void inc() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) + 1); }
   void dec() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) - 1); }
   void *last() { return pos.v[pos.n -1]; }
-  int is_numeric() { for (int i = 0; i < pos.n; i++) if (!is_intPosition(pos.v[i])) return 0; return 1; }
-  int last_is_numeric() { return is_intPosition(last()); }
+  int is_positional() { for (int i = 0; i < pos.n; i++) if (!is_intPosition(pos.v[i])) return 0; return 1; }
+  int last_is_positional() { return is_intPosition(last()); }
   int prefix_to_last(MPosition &p);
   MPosition() : parent(0) {}
   MPosition(MPosition &p);
@@ -82,15 +82,15 @@ class Match : public gc {
   Fun *fun;
   Map<MPosition *, AVar *> actuals;
   Map<MPosition *, Sym *> formal_dispatch_types;
-  Map<MPosition *, AType *> all_filters; // point-wise and includes named arguments
-  Map<MPosition *, AType *> filters;     // positional-only and takes into account all arguments
-  Map<MPosition *, MPosition *> named_to_positional;
+  Map<MPosition *, AType *> actual_filters; // actual -> type, point-wise and includes named arguments
+  Map<MPosition *, AType *> formal_filters; // formal -> type, positional-only and takes into account all arguments
+  Map<MPosition *, MPosition *> actual_named_to_positional;
   Map<MPosition *, MPosition *> actual_to_formal_position;
   Map<MPosition *, MPosition *> formal_to_actual_position;
-  Map<MPosition *, MPosition *> order_substitutions;
-  Vec<MPosition *> default_args;
+  Map<MPosition *, MPosition *> order_substitutions;  // formal position -> actual position
+  Vec<MPosition *> default_args; // formal positions
   Map<Sym *, Sym *> generic_substitutions;
-  Map<MPosition *, Sym *> coercion_substitutions;
+  Map<MPosition *, Sym *> coercion_substitutions; // formal position -> coercion symbol
   int partial;
 
   Match(Fun *afun) : fun(afun), partial(0) { assert(afun); }
@@ -108,7 +108,7 @@ typedef MapElem<MPosition *, Sym *> MapMPositionSym;
 
 void build_patterns(FA *fa);
 void build_arg_positions(FA *fa);
-int named_position(CreationSet *cs, AVar *av, MPosition &p, MPosition *result_p);
+int positional_to_named(CreationSet *cs, AVar *av, MPosition &p, MPosition *result_p);
 int pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial_ok, Vec<Match *> *matches);
 MPosition *cannonicalize_mposition(MPosition &p);
 void build_arg_positions(Fun *f);

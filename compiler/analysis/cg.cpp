@@ -418,7 +418,7 @@ write_arg_position(FILE *fp, MPosition *p) {
 
 static void
 write_c_args(FILE *fp, Fun *f) {
-  forv_MPosition(p, f->numeric_arg_positions) {
+  forv_MPosition(p, f->positional_arg_positions) {
     Var *v = f->args.get(p);
     Sym *s = v->sym;
     if (v->cg_string && !s->is_symbol) {

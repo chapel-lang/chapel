@@ -624,9 +624,9 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
     MPosition p;
     Symbol* formal_change = wrapper_formals;
     Variable* actual_change = argList;
-    forv_MPosition(p, asymbol->sym->fun->numeric_arg_positions) {
+    forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
       if (coercion_substitutions->e[i].key ==
-	  asymbol->sym->fun->numeric_arg_positions.e[j]) {
+	  asymbol->sym->fun->positional_arg_positions.e[j]) {
 	char* temp_name =
 	  glomstrings(2, "_coercion_temp_", formal_change->name);
 
@@ -692,9 +692,9 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
     MPosition p;
     Symbol* formal_change = wrapper_formals;
     Variable* actual_change = argList;
-    forv_MPosition(p, asymbol->sym->fun->numeric_arg_positions) {
+    forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
       if (defaults->v[i] ==
-	  asymbol->sym->fun->numeric_arg_positions.e[j]) {
+	  asymbol->sym->fun->positional_arg_positions.e[j]) {
 	char* temp_name =
 	  glomstrings(2, "_default_param_temp_", formal_change->name);
 	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,

@@ -66,7 +66,8 @@ class Fun : public gc {
   // pattern
   Vec<Fun *> *vec_of_one;
   Vec<MPosition *> arg_positions;
-  Vec<MPosition *> numeric_arg_positions;
+  Vec<MPosition *> positional_arg_positions;
+  Map<MPosition *, MPosition *> named_to_positional;
   Map<MPosition*, Sym*> arg_syms;
   Map<MPosition *, Var*> args;
   Vec<Var *> rets;

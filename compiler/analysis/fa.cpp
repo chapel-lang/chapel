@@ -606,7 +606,7 @@ static int
 edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
-    forv_MPosition(p, e->match->fun->numeric_arg_positions) {
+    forv_MPosition(p, e->match->fun->positional_arg_positions) {
       AVar *es_arg = es->args.get(p), *e_arg = e->args.get(p);
       if (!e_arg)
 	continue;
@@ -665,7 +665,7 @@ static int
 edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
-    forv_MPosition(p, e->match->fun->numeric_arg_positions) {
+    forv_MPosition(p, e->match->fun->positional_arg_positions) {
       AVar *av = e->args.get(p);
       if (av)
 	if (!sset_compatible(av, es->args.get(p)))
@@ -700,7 +700,7 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 
 static int
 edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
-  forv_MPosition(p, e->match->fun->numeric_arg_positions) {
+  forv_MPosition(p, e->match->fun->positional_arg_positions) {
     AVar *av = es->args.get(p);
     if (av->var->clone_for_constants) {
       AType css;
@@ -715,7 +715,7 @@ edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 
 static int
 edge_manifest_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
-  forv_MPosition(p, e->match->fun->numeric_arg_positions)
+  forv_MPosition(p, e->match->fun->positional_arg_positions)
     if (es->args.get(p)->constant != e->args.get(p)->constant)
       return 0;
   return 1;
@@ -750,7 +750,7 @@ set_entry_set(AEdge *e, EntrySet *es = 0) {
   e->to = new_es;
   new_es->edges.put(e);
   if (!es) {
-    forv_MPosition(p, e->match->fun->numeric_arg_positions) {
+    forv_MPosition(p, e->match->fun->positional_arg_positions) {
       Var *v = e->match->fun->args.get(p);
       AVar *av = make_AVar(v, new_es);
       new_es->args.put(p, av);
@@ -1091,12 +1091,12 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
     e->match = m;
   else {
     assert(e->match->fun == m->fun);
-    forv_MPosition(p, e->match->fun->numeric_arg_positions) {
-      AType *t1 = e->match->filters.get(p), *t2 = m->filters.get(p);
+    forv_MPosition(p, e->match->fun->positional_arg_positions) {
+      AType *t1 = e->match->formal_filters.get(p), *t2 = m->formal_filters.get(p);
       if (t1 && t2)
-	e->match->filters.put(p, type_union(t1, t2));
+	e->match->formal_filters.put(p, type_union(t1, t2));
       else if (!t1 && t2)
-	e->match->filters.put(p, t2);
+	e->match->formal_filters.put(p, t2);
     }
   }
   from->out_edges.set_add(e);
@@ -1135,12 +1135,12 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> &args, 
 static void
 record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0, cpname_p;
-  if (named_position(cs, a, p, &cpname_p))
+  if (positional_to_named(cs, a, p, &cpname_p))
     cpname = cannonicalize_mposition(cpname_p);
   for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
     e->args.put(cp, a);
     if (s->is_pattern) {
-      AType *t = type_intersection(a->out, e->match->filters.get(cp));
+      AType *t = type_intersection(a->out, e->match->formal_filters.get(cp));
       forv_CreationSet(cs, *t) {
 	assert(s->has.n == cs->vars.n);
 	p.push(1);
@@ -1510,12 +1510,12 @@ static void
 analyze_edge(AEdge *e) {
   make_entry_set(e);
   form_MPositionAVar(x, e->args) {
-    if (!x->key->is_numeric())
+    if (!x->key->is_positional())
       continue;
     MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
     AVar *actual = x->value, *formal = make_AVar(e->to->fun->args.get(p), e->to),
       *filtered = get_filtered(e, p, formal);
-    AType *filter = e->match->filters.get(p);
+    AType *filter = e->match->formal_filters.get(p);
     if (!filter)
       continue;
     flow_var_type_permit(filtered, filter);
@@ -1554,7 +1554,7 @@ refresh_top_edge(AEdge *e) {
   MPosition p, *cp;
   p.push(1);
   cp = cannonicalize_mposition(p);
-  e->match->filters.put(cp, any_type);
+  e->match->formal_filters.put(cp, any_type);
   AVar *av = make_AVar(sym_init->var, e->to);
   e->args.put(cp, av);
   e->filtered_args.put(cp, av);
@@ -2035,7 +2035,7 @@ collect_argument_type_violations() {
 	    break;
 	  }
 	  form_MPositionAVar(x, base_e->args) {
-	    if (!x->key->is_numeric())
+	    if (!x->key->is_positional())
 	      continue;
 	    AVar *av = x->value;
 	    AType *t = av->out;
@@ -2409,7 +2409,7 @@ clear_edge(AEdge *e) {
   e->es_cs_backedge = 0;
   e->args.clear();
   e->rets.clear();
-  e->match->filters.clear();
+  e->match->formal_filters.clear();
   form_MPositionAVar(x, e->filtered_args)
     clear_avar(x->value);
 }

@@ -9,6 +9,17 @@
 #include "var.h"
 #include "ast.h"
 
+// Key to names of position variables
+//  ABCD 
+//   A = a | f, actual or formal (MANDITORY)
+//   B = c, cannonical (OPTIONAL) 
+//   C = p, positional (OPTIONAL) 
+//   D = p, position (MANDITORY) 
+// Examples:
+//  acpp - actual, cannonical, positional position
+//  acnp - actual, cannonical, named position
+//  ap - actual non-cannonical, positional or named position
+
 typedef Map<Fun *, Match *> MatchMap;
 
 class Matcher {
@@ -24,10 +35,10 @@ class Matcher {
 
   // C++'s manditory redundant declarations
   int pattern_match_sym(Sym *, MPosition *, Vec<Fun *> *, Vec<Fun *> &, int, Vec<Sym *> &);
-  void build_positional_map(MPosition &, Vec<Fun *> **);
+  void build_positional_map(MPosition &, int, Vec<Fun *> **);
   void update_match_map(AVar *, CreationSet *, MPosition *, MPosition *, Vec<Fun *> &);
-  void find_arg_matches(AVar *, MPosition &, MPosition *, Vec<Fun *> **, int, int);
-  void find_all_matches(CreationSet *, Vec<AVar *> &, Vec<Fun *> **, MPosition &p, int);
+  void find_arg_matches(AVar *, MPosition &, MPosition *, MPosition *, Vec<Fun *> **, int, int);
+  void find_all_matches(CreationSet *, Vec<AVar *> &, Vec<Fun *> **, MPosition &, int);
   void record_all_positions();
   void find_best_cs_match(Vec<CreationSet *> &, MPosition &p, Vec<Fun *> &, Vec<Fun *> &, int);
   void find_best_matches(Vec<AVar *> &, Vec<CreationSet *> &, Vec<Fun *> &, MPosition &, 
@@ -80,33 +91,34 @@ cannonicalize_mposition(MPosition &p) {
 }
 
 static MPosition *
-to_formal(MPosition *p, Match *m) {
-  MPosition *acp = m->actual_to_formal_position.get(p);
-  p = acp ? acp : p;
-  return p;
+to_formal(MPosition *acp, Match *m) {
+  MPosition *fcp = m->actual_to_formal_position.get(acp);
+  MPosition *result = fcp ? fcp : acp;
+  return result;
 }
 
 static MPosition *
-to_actual(MPosition *p, Match *m) {
-  MPosition *acp = m->formal_to_actual_position.get(p);
-  p = acp ? acp : p;
-  return p;
+to_actual(MPosition *fcp, Match *m) {
+  MPosition *acp = m->formal_to_actual_position.get(fcp);
+  MPosition *result = acp ? acp : fcp;
+  return result;
 }
 
 static MPosition *
-cannonicalize_formal(MPosition &p, Match *m) {
-  return to_formal(cannonical_mposition.get(&p), m);
+cannonicalize_to_formal(MPosition &ap, Match *m) {
+  return to_formal(cannonical_mposition.get(&ap), m);
 }
 
 // Given type, cp, partial_matches, return funs, using done
 int 
-Matcher::pattern_match_sym(Sym *type, MPosition *cp, Vec<Fun *> *local_matches,
+Matcher::pattern_match_sym(Sym *type, MPosition *acp, Vec<Fun *> *local_matches,
 			   Vec<Fun *> &funs, int out_of_position, Vec<Sym *> &done) 
 {
-  if (!out_of_position) {
+  if (!out_of_position) {	// actual == formal
+    MPosition *fcp = acp;
     int found = 0;
     if (type->match_type) {
-      Vec<Fun *> *fs = type->match_type->funs.get(cp);
+      Vec<Fun *> *fs = type->match_type->funs.get(fcp);
       if (fs) {
 	Vec<Fun *> ffs;
 	if (local_matches) {
@@ -119,17 +131,17 @@ Matcher::pattern_match_sym(Sym *type, MPosition *cp, Vec<Fun *> *local_matches,
     }
     forv_Sym(tt, type->dispatch_order)
       if (done.set_add(tt))
-	found = pattern_match_sym(tt, cp, local_matches, funs, 0, done) || found;
+	found = pattern_match_sym(tt, acp, local_matches, funs, 0, done) || found;
     return found;
-  } else {
+  } else {			// actual != formal
     int found = 0;
     // for all the local possible matches, if the type is permitted at the argument
     Vec<Match *> matches;
     Vec<MPosition *> positions;
     forv_Fun(f, *local_matches) if (f) {
       Match *m = match_map.get(f);
-      MPosition *m_cp = m->actual_to_formal_position.get(cp);
-      Sym *m_type = dispatch_type(m->fun->arg_syms.get(m_cp));
+      MPosition *fcp = m->actual_to_formal_position.get(acp);
+      Sym *m_type = dispatch_type(m->fun->arg_syms.get(fcp));
       if (m_type->specializers.set_in(type)) {
 	funs.set_add(m->fun);
 	found = 1;
@@ -173,7 +185,7 @@ Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *
 }
 
 void
-Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *cp, MPosition *positional_p,
+Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *acp, MPosition *acpp,
 			  Vec<Fun *> &new_matches) 
 {
   forv_Fun(f, new_matches) if (f) {
@@ -182,48 +194,45 @@ Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *cp, MPosition *po
       m = new Match(f);
       match_map.put(f, m); 
     }
-    MPosition *positional_cp = positional_p ? to_formal(positional_p, m) : 0;
-    MPosition *m_cp = !positional_p ? to_formal(cp, m) : positional_cp;
-    AType *t = m->all_filters.get(m_cp);
+    AType *t = m->actual_filters.get(acp);
     if (!t) {
       t = new AType; 
-      m->all_filters.put(m_cp, t);
-      if (positional_p)
-	m->named_to_positional.put(m_cp, positional_cp);
+      m->actual_filters.put(acp, t);
+      if (acp != acpp)
+	m->actual_named_to_positional.put(acp, acpp);
     }
     t->set_add(cs);
-    m->actuals.put(m_cp, a);
+    m->actuals.put(acpp, a);
   }
 }
 
 int
-named_position(CreationSet *cs, AVar *av, MPosition &p, MPosition *pp) {
+positional_to_named(CreationSet *cs, AVar *av, MPosition &pp, MPosition *np) {
   if (cs && cs->sym != sym_tuple && av->var->sym->name && 
       !av->var->sym->is_constant & !av->var->sym->is_symbol) {
-    pp->copy(p);
-    pp->set_top(av->var->sym->name);
+    np->copy(pp);
+    np->set_top(av->var->sym->name);
     return 1;
   } else if ((!cs || cs->sym == sym_tuple) && av->var->sym->arg_name) {
-    pp->copy(p);
-    pp->set_top(av->var->sym->arg_name);
+    np->copy(pp);
+    np->set_top(av->var->sym->arg_name);
     return 1;
   }
   return 0;
 }
 
 void
-Matcher::find_arg_matches(AVar *a, MPosition &p, MPosition *positional_p, 
+Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *cp, MPosition *cpp, 
 			  Vec<Fun *> **local_matches, int recurse, int out_of_position)
 {
-  MPosition *cp = cannonical_mposition.get(&p); // cannonicalize against all known positions
   a->arg_of_send.set_add(send);
-  if (cp && (!all_positions || all_positions->set_in(cp))) { // if known or in all for this pnode
+  if (!all_positions || all_positions->set_in(cp)) {
     Vec<Fun *> funs;
     if (!a->out->n) {
       Vec<Fun *> new_funs;
       Vec<Sym *> done;
       pattern_match_sym(sym_unknown, cp, *local_matches, new_funs, out_of_position, done);
-      update_match_map(a, sym_unknown->abstract_type->v[0], cp, positional_p, new_funs);
+      update_match_map(a, sym_unknown->abstract_type->v[0], cp, cpp, new_funs);
       funs.set_union(new_funs);
     } else {
       forv_CreationSet(cs, *a->out) if (cs) {
@@ -237,9 +246,9 @@ Matcher::find_arg_matches(AVar *a, MPosition &p, MPosition *positional_p,
 	Vec<Fun *> new_funs, *new_funs_p = &new_funs;
 	if (!pattern_match_sym(sym, cp, *local_matches, new_funs, out_of_position, done))
 	  continue;
-	update_match_map(a, cs, cp, positional_p, new_funs);
-	if (recurse && cs->vars.n)
-	  find_all_matches(cs, cs->vars, &new_funs_p, p, out_of_position);
+	update_match_map(a, cs, cp, cpp, new_funs);
+	if (recurse && cs->vars.n) // for recursive ap == app !!
+	  find_all_matches(cs, cs->vars, &new_funs_p, ap, out_of_position);
 	funs.set_union(new_funs);
       }
     }
@@ -273,51 +282,55 @@ compar_last_position(const void *ai, const void *aj) {
 }
 
 void
-Matcher::build_positional_map(MPosition &p, Vec<Fun *> **funs) {
+Matcher::build_positional_map(MPosition &app, int nactuals, Vec<Fun *> **funs) {
   if (*funs) {
     forv_Fun(f, **funs) if (f) {
       Match *m = match_map.get(f);
-      Vec<MPosition *> named_actuals, named_actual_positions, positional_formals;
-      // collect named argument positions at this level
-      for (int i = 0; i < m->all_filters.n; i++) {
-	MPosition *pp = m->all_filters.v[i].key;
-	if (pp && pp->prefix_to_last(p)) {
-	  named_actuals.add(pp);
-	  named_actual_positions.add(m->named_to_positional.get(pp));
+      Vec<MPosition *> fcpps_for_fcnps, acpps_for_acnps, unused_acpps, unused_fcpps;
+      // map and collect named argument positions (at this level)
+      for (int i = 0; i < m->actual_filters.n; i++) {
+	MPosition *acp = m->actual_filters.v[i].key;
+	if (acp && !acp->last_is_positional() && acp->prefix_to_last(app)) {
+	  MPosition *acnp = acp;
+	  MPosition fnp;
+	  if (acp->parent)
+	    fnp.copy(*to_formal(acp->parent, m));
+	  fnp.push(acp->last());
+	  MPosition *fcnp = cannonicalize_mposition(fnp);
+	  MPosition *acpp = m->actual_named_to_positional.get(acnp);
+	  MPosition *fcpp = f->named_to_positional.get(fcnp);
+	  acpps_for_acnps.set_add(acpp);
+	  fcpps_for_fcnps.set_add(fcpp);
+	  if (acpp != fcpp) {
+	    m->actual_to_formal_position.put(acpp, fcpp);
+	    m->formal_to_actual_position.put(fcpp, acpp);
+	    mapped_positions.put(acpp, 1);
+	  }
 	}
       }
-      // collect formal positions not used by named arguments at this level
-      for (int i = 0; i < f->arg_positions.n; i++) {
-	MPosition *pp = f->arg_positions.v[i];
-	if (pp->prefix_to_last(p) && is_intPosition(pp->last()) &&
-	    !named_actual_positions.set_in(pp))
-	  positional_formals.add(pp);
+      app.push(1);
+      // collect actual positions not used by named arguments (at this level)
+      for (int i = 0; i < nactuals; i++) {
+	MPosition *acpp = cannonicalize_mposition(app);
+	if (!acpps_for_acnps.set_in(acpp))
+	  unused_acpps.add(acpp);
+	app.inc();
       }
-      // sort remaining formal argument positions and named actual positions
-      qsort(positional_formals.v, positional_formals.n, sizeof(void*), compar_last_position);
-      qsort(named_actual_positions.v, named_actual_positions.n, sizeof(void*), compar_last_position);
-      // build a map from actual positionals to formal positionals
-      MPosition new_p(p);
-      new_p.push(1);
-      int inamed_actual_position = 0;
-      for (int i = 0; i < positional_formals.n; i++) {
-	MPosition *new_cp = cannonicalize_mposition(new_p);
-	while (inamed_actual_position < named_actual_positions.n &&
-	       new_cp->pos.v[new_cp->pos.n - 1] == 
-	       named_actual_positions.v[inamed_actual_position]->pos.v[new_cp->pos.n - 1])
-	{
-	  m->actual_to_formal_position.put(new_cp, named_actual_positions.v[inamed_actual_position]);
-	  m->formal_to_actual_position.put(named_actual_positions.v[inamed_actual_position], new_cp);
-	  if (new_cp != named_actual_positions.v[inamed_actual_position])
-	    mapped_positions.put(new_cp, 1);
-	  inamed_actual_position++;
-	  new_p.inc();
+      app.pop();
+      // sort unused positions
+      qsort(unused_acpps.v, unused_acpps.n, sizeof(void*), compar_last_position);
+      // build a maps for actual positionals <-> formal positionals
+      MPosition fpp(*cannonicalize_to_formal(app, m));
+      fpp.push(1);
+      for (int i = 0; i < unused_acpps.n; i++) {
+	MPosition *fcpp = cannonicalize_mposition(fpp);
+	if (fcpps_for_fcnps.set_in(fcpp)) {
+	  fpp.inc();
+	  continue;
 	}
-	m->actual_to_formal_position.put(new_cp, positional_formals.v[i]);
-	m->formal_to_actual_position.put(positional_formals.v[i], new_cp);
-	if (new_cp != positional_formals.v[i])
-	  mapped_positions.put(new_cp, 1);
-	new_p.inc();
+	m->actual_to_formal_position.put(unused_acpps.v[i], fcpp);
+	m->formal_to_actual_position.put(fcpp, unused_acpps.v[i]);
+	fpp.inc();
       }
     }
   }
@@ -325,46 +338,52 @@ Matcher::build_positional_map(MPosition &p, Vec<Fun *> **funs) {
 
 void
 Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<Fun *> **funs, 
-			  MPosition &p, int out_of_position) 
+			  MPosition &app, int out_of_position) 
 {
   // determine named arguments
   int some_named = 0;
-  p.push(1);
+  app.push(1);
   forv_AVar(av, args) {
-    MPosition named_p;
-    if (named_position(cs, av, p, &named_p)) {
-      MPosition *pp = cannonicalize_mposition(p);
-      find_arg_matches(av, named_p, pp, funs, 0, out_of_position);
-      some_named = 1;
+    MPosition anp;
+    if (positional_to_named(cs, av, app, &anp)) {
+      MPosition *acpp = cannonicalize_mposition(app);
+      if (acpp) {
+	MPosition *acnp = cannonicalize_mposition(anp);
+	find_arg_matches(av, anp, acnp, acpp, funs, 0, out_of_position);
+	some_named = 1;
+      }
     }
-    p.inc();
+    app.inc();
   }
   // build positional map
-  p.pop();
+  app.pop();
   if (some_named)
-    build_positional_map(p, funs);
+    build_positional_map(app, args.n, funs);
   // match all arguments
-  p.push(1);
+  app.push(1);
   forv_AVar(av, args) {
-    int local_out_of_position = out_of_position;
-    if (!local_out_of_position) {
-      MPosition *cp = cannonicalize_mposition(p);
-      if (mapped_positions.get(cp))
-	local_out_of_position = 1;
+    MPosition *acpp = cannonicalize_mposition(app);
+    if (acpp) {
+      int local_out_of_position = out_of_position;
+      if (!local_out_of_position) {
+	if (mapped_positions.get(acpp))
+	  local_out_of_position = 1;
+      }
+      find_arg_matches(av, app, acpp, acpp, funs, 1, local_out_of_position);
     }
-    find_arg_matches(av, p, 0, funs, 1, local_out_of_position);
-    p.inc();
+    app.inc();
   }
-  p.pop();
+  app.pop();
 }
 
 int
-subsumes(Match *x, Match *y, MPosition p, int nargs) {
+subsumes(Match *x, Match *y, MPosition &app, int nargs) {
   int result = 0;
-  p.push(1);
+  app.push(1);
   for (int i = 0; i < nargs; i++) {
-    Sym *xtype = x->formal_dispatch_types.get(cannonicalize_formal(p, x));
-    Sym *ytype = y->formal_dispatch_types.get(cannonicalize_formal(p, y));
+    MPosition *acpp = cannonicalize_mposition(app);
+    Sym *xtype = x->formal_dispatch_types.get(to_formal(acpp, x));
+    Sym *ytype = y->formal_dispatch_types.get(to_formal(acpp, y));
     if (xtype == ytype)
       goto Lnext;
     if (xtype->specializers.set_in(ytype)) {
@@ -383,29 +402,29 @@ subsumes(Match *x, Match *y, MPosition p, int nargs) {
       }
     }
   Lnext:
-    p.inc();
+    app.inc();
   }
  Lreturn:
-  p.pop();
+  app.pop();
   return result;
 }
 
 void
-Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &p, Vec<Fun *> &matches) {
+Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &matches) {
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    p.push(1);
+    app.push(1);
     for (int i = 0; i < csargs.n; i++) {
-      MPosition *cp = cannonicalize_formal(p, m);
-      AType *t = m->filters.get(cp);
+      MPosition *fcpp = cannonicalize_to_formal(app, m);
+      AType *t = m->formal_filters.get(fcpp);
       if (!t) {
 	t = new AType; 
-	m->filters.put(cp, t);
+	m->formal_filters.put(fcpp, t);
       }
       t->set_add(csargs.v[i]);
-      p.inc();
+      app.inc();
     }
-    p.pop();
+    app.pop();
   }
 }
 
@@ -498,11 +517,10 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
   }
   int order_change = 0;
   form_MPositionMPosition(p, m->formal_to_actual_position) {
-    if (p->key->is_numeric() && p->value->is_numeric()) {
+    if (p->key->is_positional() && p->value->is_positional()) {
       if (p->key != p->value)
 	order_change = 1;
       m->order_substitutions.put(p->key, p->value);
-      break;
     }
   }
   if (order_change) {
@@ -514,7 +532,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
     }
   } else
     m->order_substitutions.clear();
-  if (f !=  m->fun)
+  if (f != m->fun)
     build_Match(f, m);
   return f;
 }
@@ -542,14 +560,14 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
   Vec<MPosition *> formals;
   p.push(1);
   for (int i = 0; i < csargs.n; i++) {
-    MPosition *cp = cannonicalize_formal(p, m);
+    MPosition *cp = cannonicalize_to_formal(p, m);
     formals.set_add(cp);
     p.inc();
   }
   p.pop();
   for (int i = 0; i < f->arg_positions.n; i++) {
     MPosition *pp = f->arg_positions.v[i];
-    if (pp->prefix_to_last(p) && pp->last_is_numeric()) {
+    if (pp->prefix_to_last(p) && pp->last_is_positional()) {
       if (formals.set_in(pp))
 	continue;
       if (f->default_args.get(pp)) {
@@ -607,49 +625,51 @@ instantiate_formal_types(Match *m) {
 }
 
 static int
-generic_substitutions(Match **am, MPosition &p, Vec<CreationSet*> args) {
-  MPosition local_p(p);
+generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> args) {
+  MPosition local_app(app);
   Match *m = *am;
-  local_p.push(1);
+  local_app.push(1);
   for (int i = 0; i < args.n; i++) {
-    MPosition *cp = cannonicalize_formal(local_p, m);
-    AVar *a = m->actuals.get(cp);
+    MPosition *acpp = cannonicalize_mposition(local_app);
+    MPosition *fcpp = to_formal(acpp, m);
+    AVar *a = m->actuals.get(acpp);
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
-    Sym *type = m->fun->arg_syms.get(cp)->must_specialize;
+    Sym *type = m->fun->arg_syms.get(fcpp)->must_specialize;
     if (type && is_generic_type(type)) {
       if (!unify_generic_type(type, concrete_type, m->generic_substitutions))
 	return 0;
       instantiate_formal_types(m);
     }
-    local_p.inc();
+    local_app.inc();
   }
   return 1;
 }
 
 static void
-coercion_uses(Match **am, MPosition &p, Vec<CreationSet*> args) {
+coercion_uses(Match **am, MPosition &app, Vec<CreationSet*> args) {
   Match *m = *am;
-  p.push(1);
+  app.push(1);
   for (int i = 0; i < args.n; i++) {
-    MPosition *cp = cannonicalize_formal(p, m);
-    AVar *a = m->actuals.get(cp);
+    MPosition *acpp = cannonicalize_mposition(app);
+    MPosition *fcpp = to_formal(acpp, m);
+    AVar *a = m->actuals.get(acpp);
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     concrete_type = concrete_type->type;
-    Sym *formal_type = m->formal_dispatch_types.get(cp);
+    Sym *formal_type = m->formal_dispatch_types.get(fcpp);
     Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
     if (coerced_type && concrete_type != coerced_type) {
-      m->coercion_substitutions.put(cp, concrete_type);
-      m->formal_dispatch_types.put(cp, coerced_type);
+      m->coercion_substitutions.put(fcpp, concrete_type);
+      m->formal_dispatch_types.put(fcpp, coerced_type);
     }
-    p.inc();
+    app.inc();
   }
-  p.pop();
+  app.pop();
 }
 
 void
-Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p, 
+Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app, 
 			    Vec<Fun *> &local_matches, 
 			    Vec<Fun *> &result, int top_level)
 {
@@ -657,23 +677,24 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
   // collect the matches which cover the argument CreationSets
   forv_Fun(f, local_matches) if (f) {
     Match *m = match_map.get(f);
-    p.push(1);
+    app.push(1);
     for (int i = 0; i < csargs.n; i++) {
-      MPosition *cp = cannonicalize_formal(p, m);
-      AType *t = m->all_filters.get(cp);
+      MPosition *acpp = cannonicalize_mposition(app);
+      MPosition *fcpp = to_formal(acpp, m);
+      AType *t = m->actual_filters.get(acpp);
       // is each actual handled
       if (!t || !t->set_in(csargs.v[i])) {
-	p.pop();
+	app.pop();
 	goto LnextFun;
       }
-      Sym *formal = m->fun->arg_syms.get(cp);
+      Sym *formal = m->fun->arg_syms.get(fcpp);
       Sym *formal_type = dispatch_type(formal);
-      m->formal_dispatch_types.put(cp, formal_type);
-      p.inc();
+      m->formal_dispatch_types.put(fcpp, formal_type);
+      app.inc();
     }
-    p.pop();
+    app.pop();
     // do they cover all the formals
-    if (covers_formals(f, csargs, p, top_level))
+    if (covers_formals(f, csargs, app, top_level))
       covered.set_add(m);
   LnextFun:;
   }
@@ -682,9 +703,9 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
  Vec<Match *> applicable;
   // record generic substitutions and point-wise applications
   for (int i = 0; i < covered.n; i++) {
-    if (!generic_substitutions(&covered.v[i], p, csargs))
+    if (!generic_substitutions(&covered.v[i], app, csargs))
       continue;
-    coercion_uses(&covered.v[i], p, csargs);
+    coercion_uses(&covered.v[i], app, csargs);
     applicable.add(covered.v[i]);
   }
   Vec<Match *> unsubsumed, subsumed;
@@ -693,7 +714,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
     if (subsumed.set_in(applicable.v[i]))
       continue;
     for (int j = i + 1; j < applicable.n; j++) if (applicable.v[j]) {
-      switch (subsumes(applicable.v[i], applicable.v[j], p, csargs.n)) {
+      switch (subsumes(applicable.v[i], applicable.v[j], app, csargs.n)) {
 	case -1: subsumed.set_add(applicable.v[j]); break;
 	case 0: break;
 	case 1: goto LnextApplicable;
@@ -713,59 +734,59 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
       Match *y = unsubsumed.v[j];
       if (done.set_in(y->fun))
 	continue;
-      p.push(1);
+      app.push(1);
       for (int k = 0; k < csargs.n; k++) {
-	Sym *xarg = x->fun->arg_syms.get(cannonicalize_formal(p, x));
-	Sym *yarg = y->fun->arg_syms.get(cannonicalize_formal(p, y));
+	Sym *xarg = x->fun->arg_syms.get(cannonicalize_to_formal(app, x));
+	Sym *yarg = y->fun->arg_syms.get(cannonicalize_to_formal(app, y));
 	Sym *xtype = dispatch_type(xarg);
 	Sym *ytype = dispatch_type(yarg);
 	if (xtype != ytype || xarg->is_pattern != yarg->is_pattern)
 	  goto LnextUnsubsumed;
-	p.inc();
+	app.inc();
       }
       similar.add(y->fun); done.set_add(y->fun);
     LnextUnsubsumed:;
-      p.pop();
+      app.pop();
     }
     // for similar functions recurse for patterns to check for subsumption and ambiguities
-    p.push(1);
+    app.push(1);
     for (int i = 0; i < csargs.n; i++) {
-      Sym *arg = similar.v[0]->arg_syms.get(cannonicalize_formal(p, match_map.get(similar.v[0])));
+      Sym *arg = similar.v[0]->arg_syms.get(cannonicalize_to_formal(app, match_map.get(similar.v[0])));
       if (arg->is_pattern) {
 	Vec<CreationSet *> local_csargs;
 	Vec<Fun *> local_result;
-	find_best_matches(csargs.v[i]->vars, local_csargs, similar, p, local_result, 0);
+	find_best_matches(csargs.v[i]->vars, local_csargs, similar, app, local_result, 0);
 	similar.copy(local_result);
       }
-      p.inc();
+      app.inc();
     }
-    p.pop();
+    app.pop();
     matches.append(similar);
   }
   if (top_level)
     instantiation_wrappers_and_partial_application(matches);
-  set_filters(csargs, p, matches);
+  set_filters(csargs, app, matches);
   result.set_union(matches);
 }
 
 void
 Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs, 
-			   Vec<Fun *> &matches, MPosition &p, 
+			   Vec<Fun *> &matches, MPosition &app, 
 			   Vec<Fun *> &result, 
 			   int top_level,
 			   int iarg) 
 {
   if (iarg >= args.n)
-    find_best_cs_match(csargs, p, matches, result, top_level);
+    find_best_cs_match(csargs, app, matches, result, top_level);
   else {
     csargs.fill(iarg + 1);
     if (!args.v[iarg]->out->n) {
       csargs.v[iarg] = sym_unknown->abstract_type->v[0];
-      find_best_matches(args, csargs, matches, p, result, top_level, iarg + 1);
+      find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
     } else {
       forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
 	csargs.v[iarg] = cs;
-	find_best_matches(args, csargs, matches, p, result, top_level, iarg + 1);
+	find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
       }
     }
   }
@@ -784,9 +805,9 @@ void
 Matcher::cannonicalize_matches() {
   forv_Fun(f, *partial_matches) if (f) {
     Match *m = match_map.get(f);
-    for (int i = 0; i < m->filters.n; i++)
-      if (m->filters.v[i].key)
-	m->filters.v[i].value = make_AType(*m->filters.v[i].value);
+    for (int i = 0; i < m->formal_filters.n; i++)
+      if (m->formal_filters.v[i].key)
+	m->formal_filters.v[i].value = make_AType(*m->formal_filters.v[i].value);
     matches->add(m);
   }
 }
@@ -798,17 +819,17 @@ int
 pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial, Vec<Match *> *matches) {
   Matcher matcher(send, args.v[0], partial, matches);
   {
-    MPosition p;
-    matcher.find_all_matches(0, args, &matcher.partial_matches, p, 0);
+    MPosition app;
+    matcher.find_all_matches(0, args, &matcher.partial_matches, app, 0);
     if (!matcher.partial_matches || !matcher.partial_matches->n)
       return 0;
   }
   matcher.record_all_positions();
   {
-    MPosition p;
+    MPosition app;
     Vec<CreationSet *> csargs;
     Vec<Fun *> result;
-    matcher.find_best_matches(args, csargs, *matcher.partial_matches, p, result, 1);
+    matcher.find_best_matches(args, csargs, *matcher.partial_matches, app, result, 1);
     matcher.partial_matches->copy(result);
     if (!matcher.partial_matches->n)
       return 0;
@@ -879,46 +900,48 @@ build_patterns(FA *fa) {
 // 
 
 static void
-build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
-  MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
+build_arg_position(Fun *f, Sym *a, MPosition &fpp, MPosition *parent = 0) {
+  MPosition *fcpp = cannonicalize_mposition(fpp), *fcnp = 0;
   if (a->name && !a->is_constant && !a->is_symbol) {
-    MPosition pp(p);
-    pp.set_top(a->name);
-    cpname = cannonicalize_mposition(pp);
+    MPosition fnp(fpp);
+    fnp.set_top(a->name);
+    fcnp = cannonicalize_mposition(fnp);
+    f->named_to_positional.put(fcnp, fcpp);
   }
-  for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
-    cp->parent = parent;
-    f->arg_positions.add(cp);
-    if (cp->is_numeric())
-      f->numeric_arg_positions.add(cp);
+  for (MPosition *fcp = fcpp; fcp; fcp = fcnp, fcnp = 0) { 
+    fcp->parent = parent;
+    f->arg_positions.add(fcp);
     if (!a->var)
       a->var = new Var(a);
     a->var->is_formal = 1;
-    f->arg_syms.put(cp, a);
-    if (is_Sym_OUT(a) && cp->is_numeric())
-      f->out_positions.add(cp);
-    if (a->is_pattern) {
-      MPosition pp(p);
-      pp.push(1);
-      forv_Sym(aa, a->has) {
-	build_arg_position(f, aa, pp, cp);
-	pp.inc();
+    f->arg_syms.put(fcp, a);
+    if (fcp == fcpp) {
+      if (is_Sym_OUT(a))
+	f->out_positions.add(fcpp);
+      f->positional_arg_positions.add(fcpp);
+      if (a->is_pattern) {
+	MPosition local_fpp(fpp);
+	local_fpp.push(1);
+	forv_Sym(aa, a->has) {
+	  build_arg_position(f, aa, local_fpp, fcp);
+	  local_fpp.inc();
+	}
+	local_fpp.pop();
       }
-      pp.pop();
     }
   }
 }
 
 void
 build_arg_positions(Fun *f) {
-  MPosition p;
-  cannonicalize_mposition(p);
-  p.push(1);
+  MPosition fpp;
+  cannonicalize_mposition(fpp);
+  fpp.push(1);
   forv_Sym(a, f->sym->has) {
-    build_arg_position(f, a, p);
-    p.inc();
+    build_arg_position(f, a, fpp);
+    fpp.inc();
   }
-  forv_MPosition(p, f->numeric_arg_positions) {
+  forv_MPosition(p, f->positional_arg_positions) {
     Sym *s = f->arg_syms.get(p);
     f->args.put(p, s->var);
   }
