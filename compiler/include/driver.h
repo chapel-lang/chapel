@@ -18,6 +18,7 @@ extern int print_call_depth;
 
 extern int analyzeNewAST;
 extern int debugParserLevel;
+extern int suppressCodegen;
 
 void do_analysis(char *fn);
 

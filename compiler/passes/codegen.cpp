@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include "codegen.h"
+#include "driver.h"
 #include "files.h"
 #include "module.h"
 #include "nils.h"
-
-extern int suppressCodegen;
-extern char system_dir[];
 
 
 void Codegen::run(Module* moduleList) {
