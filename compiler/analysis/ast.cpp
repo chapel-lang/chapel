@@ -3,6 +3,7 @@
 #include "sym.h"
 #include "builtin.h"
 #include "if1.h"
+#include "pattern.h"
 
 void AST::dump(FILE *fp, Fun *f) { }
 
@@ -102,6 +103,77 @@ implement_and_specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
   specialize(s, ss, types);
 }
 
+#define E(_x) ((Vec<void *>*)(_x)->temp)
+
+static void 
+compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
+  Vec<Vec<Sym *>*> by_size;
+  // collect by size & build set of elements
+  forv_Sym(s, types) {
+    by_size.fill(s->has.n + 1);
+    if (!by_size.v[s->has.n])
+      by_size.v[s->has.n] = new Vec<Sym *>;
+    by_size.v[s->has.n]->add(s);
+    s->temp = (void*)new Vec<void *>;
+    for (int i = 0; i < s->has.n; i++) {
+      if (s->has.v[i]->name)
+	E(s)->set_add(s->has.v[i]->name);
+      else
+	E(s)->set_add(int2Position(i));
+    }
+  }
+  // naive n**2 algorithm
+  for (int i = 1; i < by_size.n; i++) {
+    if (by_size.v[i]) {
+      forv_Sym(s, *by_size.v[i]) {
+	for (int j = i; j < by_size.n; j++) {
+	  forv_Sym(ss, *by_size.v[j]) {
+	    if (s != ss) {
+	      if (!E(s)->some_difference(*E(ss))) {
+		if (!is_union) {
+		  if (s->specializers.set_add(ss))
+		    ss->dispatch_order.add(s);
+		} else {
+		  if (ss->specializers.set_add(s))
+		    s->dispatch_order.add(ss);
+		}
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+  // handle empty records
+  if (by_size.n && by_size.v[0]) {
+    forv_Sym(s, *by_size.v[0]) {
+      forv_Sym(ss, types) {
+	if (s != ss)
+	  if (s->specializers.set_add(ss))
+	    ss->dispatch_order.add(s);
+      }
+    }
+  }
+  // clear temp storage
+  forv_Sym(s, types)
+    s->temp = 0;
+}
+
+static void 
+compute_structural_type_hierarchy(Vec<Sym *> types) {
+  Vec<Sym *> record_types, union_types;
+  forv_Sym(s, types) if (s) {
+    if (s->type_kind == Type_RECORD && s->is_value_class) {
+      if (!s->is_union_class)
+	record_types.add(s);
+      else
+	union_types.add(s);
+    }
+  }
+  compute_single_structural_type_hierarchy(record_types, 0);
+  compute_single_structural_type_hierarchy(union_types, 1);
+}
+
 void
 build_type_hierarchy() {
   Vec<Sym *> type_syms, types;
@@ -176,6 +248,7 @@ build_type_hierarchy() {
       }
     }
   }
+  compute_structural_type_hierarchy(types);
 }
 
 static void

@@ -415,9 +415,12 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
   Vec<Fun *> new_matches, complete;
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    if (m->default_args.n || m->generic_substitutions.n || pointwise_substitutions.n) {
+    if (m->default_args.n || m->generic_substitutions.n || m->pointwise_substitutions.n) {
       f = f->build(m);
       assert(f);
+      // need to loop over filters and split Match for those elements of the filter
+      // at cp which do not have the same concrete type as cs, install in matchmap
+      // m = *am = new match;
       rebuild_Match(m, f);
     }
     if (!m->partial)
@@ -482,9 +485,6 @@ generic_substitutions(Match **am, MPosition &p, Vec<CreationSet*> args) {
     Sym *formal_type = m->formal_types.get(cp);
     if (formal_type && is_generic_type(formal_type)) {
       Sym *t = unify_generic_type(formal_type, concrete_type, m->generic_substitutions);
-      // need to loop over filters and split Match for those elements of the filter
-      // at cp which do not have the same concrete type as cs, install in matchmap
-      // m = *am = new match;
       m->formal_types.put(cp, t);
     }
     p.inc();

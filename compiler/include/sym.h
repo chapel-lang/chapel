@@ -102,6 +102,7 @@ class Sym : public gc {
   unsigned int		is_structure:1;		// Sym is a structure (C compatibility)
   unsigned int		is_meta_class:1;	// Sym is class of class
   unsigned int 		is_value_class:1;	// Sym is a value class
+  unsigned int 		is_union_class:1;	// Sym is a union
 
   unsigned int		live:1;			// used by if1.cpp
   unsigned int		incomplete:1;		// used by clone.cpp
@@ -140,6 +141,8 @@ class Sym : public gc {
   Sym			*self;			// self variable for the function
   Sym			*ret;			// return value of functions
   Sym			*cont;			// continuation (function returning ret)
+
+  void			*temp;			// algorithmic temp
 
   virtual char		*pathname();
   virtual int		line();

@@ -461,6 +461,8 @@ build_types(Vec<BaseAST *> &syms) {
 	t->asymbol->type_kind = Type_RECORD;
 	if (tt->value || tt->union_value)
 	  t->asymbol->is_value_class = 1;
+	if (tt->union_value)
+	  t->asymbol->is_union_class = 1;
 	tt->name->asymbol = (ASymbol*)tt->asymbol->type_sym;
 	if (tt->parentClass)
 	  t->asymbol->inherits_add(tt->parentClass->asymbol);
