@@ -3389,3 +3389,14 @@ Modified files:
 	chapel/compiler/AST/: chapel.lex chapel.y expr.cpp expr.h 
 	                      symbol.cpp symbol.h type.h 
 
+---------------------------------------------------------------------------
+
+06/16/04 10:27:57 -- bradc
+
+Log message:
+	AST prototyping -- some minor cleanup and fixes.
+
+Modified files:
+	chapel/compiler/AST/: chapel.y expr.cpp expr.h stmt.cpp 
+	                      symbol.cpp symbol.h type.cpp 
+
