@@ -22139,3 +22139,16 @@ Added files:
 	chapel/test/arrays/jplevyak/: ranks-1.chpl ranks-1.future 
 	                              ranks-1.good 
 
+---------------------------------------------------------------------------
+
+03/29/05 09:49:21 -- jplevyak
+
+Log message:
+	Fix writeclass2
+	Redo the .futures of writeclass2 and writeclass2a with extended notes.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/test/classes/bradc/: writeclass2.future 
+	                            writeclass2a.future 
+
