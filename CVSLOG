@@ -5091,3 +5091,21 @@ Modified files:
 Added files:
 	chapel/compiler/: parse_ast.cpp parse_ast.h 
 
+---------------------------------------------------------------------------
+
+08/05/04 19:58:01 -- shannon
+
+Log message:
+	Added the codegen method for the if-then-else statement.  Updated
+	the tests to reflect the currently-supported syntax for
+	conditionals.  Added the --newast compiler option to several
+	more test directories.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/test/trivial/bradc/: conditional.chpl 
+Added files:
+	chapel/test/trivial/bradc/: COMPOPTS 
+	chapel/test/trivial/bradc/arrinit/: COMPOPTS 
+	chapel/test/trivial/bradc/write/: COMPOPTS 
+
