@@ -23496,3 +23496,30 @@ Log message:
 Added files:
 	chapel/doc/internal/: SSCA2.features 
 
+---------------------------------------------------------------------------
+
+04/04/05 10:49:57 -- bradc
+
+Log message:
+	Added some preliminary support for writing out tuples
+	and index types in order to help Roxana write tests
+	more easily.  Checked in some simple tests that
+	do some simple writes of homogeneous and heterogeneous
+	tuple types, as well as a 2D index.
+	
+	Also checked in a future test of declaring and assigning
+	a 1D index.  This doesn't seem to work, apparently
+	because it's stored as a tuple rather than a flat
+	integer.
+
+Modified files:
+	chapel/test/dispatch/jplevyak/: .cvsignore 
+	chapel/test/flowanalysis/jplevyak/: .cvsignore 
+	chapel/test/flowanalysis/newast/: .cvsignore 
+Added files:
+	chapel/test/domains/bradc/: .cvsignore writeIndex.chpl 
+	                            writeIndex.future writeIndex.good 
+	                            writeIndex2.chpl writeIndex2.good 
+	chapel/test/types/tuple/bradc/: .cvsignore writeTuple.chpl 
+	                                writeTuple.good 
+
