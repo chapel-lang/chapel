@@ -16942,3 +16942,37 @@ Removed files:
 	                                         test_clone_class1a.future 
 	                                         test_clone_class1b.future 
 
+---------------------------------------------------------------------------
+
+02/09/05 11:40:06 -- jplevyak
+
+Log message:
+	Fixed the way argument types are filtered as the actuals are passed to the
+	formals.  The old technique used a single filter at the head of the function.
+	This could result in some values being permitted which should not have been
+	be permitted:
+	
+	function f(x, y) ... // f1
+	function f(x:A, y:A) .. // f2
+	
+	var a = A();
+	var b = B();
+	var c = ... ? then A() : B();
+	
+	f(a,c); // c1
+	f(b,c); // c2
+	
+	Here in the old technique, c2 would have cause the single
+	filter on f1.y to permit both A's and B's so that the call
+	c1 would pass both values to f1.  In the new technique all
+	the filters are independent, so that c1 correctly passes
+	only the x : { A }, y : { B } types to f1 instead of
+	x : { A }, y : { A, B } which includes the combination
+	x : { A }, y : { A } which is handled by f2.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp fun.cpp pattern.cpp 
+	chapel/compiler/backend/: dump.cpp graph.cpp 
+	chapel/compiler/include/: fa.h fun.h var.h 
+	chapel/test/flowanalysis/jplevyak/: cs1.good 
+
