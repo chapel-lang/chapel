@@ -6936,3 +6936,30 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/newast/: globalref.chpl globalref.good 
 
+---------------------------------------------------------------------------
+
+09/13/04 11:07:27 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Remove old Chapel front end and all support files
+	  This is to cleanup the directories in preparation for the reorg
+	  The files are still in CVS if anyone wants to consult them
+	  I did not remove the codegen routines for the old AST since I
+	    dont' know all the files which are involved.
+	Removed the last couple tests which used the old Chapel front end.
+	  These will get rewritten/ported to the new front end as part of the
+	    coverage suite I am going to write.
+
+Modified files:
+	chapel/compiler/: TODO ast_kinds.h codegen.cpp driver.cpp 
+	                  parse_ast.cpp 
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/test/flowanalysis/jplevyak/: COMPOPTS 
+	chapel/test/lowlevelcg/jplevyak/: COMPOPTS 
+	chapel/test/parsing/jplevyak/: COMPOPTS 
+Removed files:
+	chapel/compiler/: chpl.g prelude.chpl 
+	chapel/test/lowlevelcg/jplevyak/: review3.chpl review3.good 
+	chapel/test/parsing/jplevyak/: mat1.chpl mat1.good vec.chpl 
+	                               vec.good 
+
