@@ -3724,3 +3724,19 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp graph.cpp 
 
+---------------------------------------------------------------------------
+
+06/23/04 18:03:13 -- bradc
+
+Log message:
+	Improved identification of reductions in the parser.  In doing
+	so, added a new field to class Symbol that keeps track of the
+	scope level in which it was introduced.  Symbols of scope level
+	0 are defined in the standard prelude.
+
+Modified files:
+	chapel/compiler/AST/: TODO symbol.cpp symbol.h symtab.cpp 
+	                      symtab.h 
+Added files:
+	chapel/test/trivial/bradc/protoast/: badred.chpl badred.good 
+
