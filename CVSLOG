@@ -14225,3 +14225,24 @@ Log message:
 Added files:
 	chapel/doc/internal/: SSCA2.HLtasks.txt 
 
+---------------------------------------------------------------------------
+
+01/10/05 13:27:53 -- deitz
+
+Log message:
+	Improved support for copying the AST.  Copied statements and
+	expressions are now cleaned.  This means that variables that are
+	copied are re-resolved.  So, for example, if a function is cloned,
+	expressions in the new clone are resolved against the new parameter
+	list.
+	
+	Is it possible that inside a symbol constructor, the symbol should be
+	defined?  Definining symbols in the symboltable currently seems ad
+	hoc.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+	chapel/compiler/traversals/: cleanup.cpp cleanup.h 
+	                             methodsToFunctions.cpp 
+
