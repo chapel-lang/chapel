@@ -1,21 +1,35 @@
  called from 0 in __init__ at <unknown>:0
  called from 0 in __init__ at <unknown>:0
- called from 2 in __init at var2.chpl:1
- called from 2 in __init at var2.chpl:1
- called from 3 in __init at var2.chpl:1
-function __init prelude.chpl:7
-function __init var2.chpl:1
+ called from 2 in __init at structtype.v:1
+ called from 3 in f at structtype.v:3
+ called from 4 in __init at structtype.v:1
+ called from 4 in __init at structtype.v:1
+ called from 90 in new at prelude.v:90
+ called from 91 in operator at prelude.v:91
+__init::self(structtype.v:1) ( A (structtype.v:1) )
+assert builtin_symbols.h:48: sym_primitive
+f::a(structtype.v:3) ( int32 (prelude.v:29) )
+f::b(structtype.v:3) ( float64 (prelude.v:42) )
+fail: seg fault
+function __init prelude.v:7
+function __init structtype.v:1
+function __init structtype.v:1
 function __init__ <unknown>:0
-function operator prelude.chpl:104
-function operator prelude.chpl:88
-function print prelude.chpl:238
+function f structtype.v:3
+function new prelude.v:90
+function operator prelude.v:91
+function operator prelude.v:96
+function print prelude.v:145
 globals
-operator::a(prelude.chpl:104) ( integer64 (prelude.chpl:27) )
-operator::a(prelude.chpl:88) ( integer64 (prelude.chpl:27) )
-operator::b(prelude.chpl:104) ( float64 (prelude.chpl:39) )
-operator::b(prelude.chpl:88) ( float64 (prelude.chpl:39) )
-print::a(prelude.chpl:238) ( integer64 (prelude.chpl:27) )
-system::__init(prelude.chpl:7) ( __init (prelude.chpl:7) )
-system::null(prelude.chpl:55) ( tuple (prelude.chpl:14) )
-user::__init(var2.chpl:1) ( __init (var2.chpl:1) )
-user::x(var2.chpl:1) ( integer64 (prelude.chpl:27) )
+new::a(prelude.v:90) ( A (structtype.v:1) )
+new::o(prelude.v:90) ( A (structtype.v:1) )
+new::o(prelude.v:90) ( A (structtype.v:1) )
+operator::a(prelude.v:91) ( A (structtype.v:1) )
+operator::a(prelude.v:96) ( int32 (prelude.v:29) )
+operator::b(prelude.v:96) ( float64 (prelude.v:42) )
+print::a(prelude.v:145) ( float64 (prelude.v:42) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:58) ( tuple (prelude.v:14) )
+user::A(structtype.v:1) ( A (structtype.v:1) )
+user::__init(structtype.v:1) ( __init (structtype.v:1) )
+user::a(structtype.v:2) ( A (structtype.v:1) )

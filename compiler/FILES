@@ -1,5 +1,43 @@
 Description of files in this directory:
 
+arg.cpp		: command line argument processing (lib)
+ast.cpp		: abstract AST used by analysis (analysis)
+ast_cf.cpp	: constant folding an parse_ast (parser)
+cast_code.cpp	: code used to cast immediates (analysis ???)
+cdb.cpp		: code database for incrementalization of analysis (analysis)
+cfg.cpp		: control flow graph (analysis)
+cg.cpp		: low level code generation (analysis)
+clone.cpp	: cloning (analysis)
+dom.cpp		: generic dominators computation (??)
+dump.cpp	: html dump ... (??)
+fa.cpp		: flow analysis (analysis)
+fa_extras.cpp	: more flow analysis helper functions
+fun.cpp 	: low level representation functions (analysis)
+grammar.cpp	: parser helper functions (parser)
+graph.cpp	: generic graph output (??)
+if1.cpp		: IF1 (analysis)
+inline.cpp	: inlining on low level representation (??)
+list.cpp	: list container (lib)
+log.cpp		: generic logging (lib ??)
+loop.cpp	: generic loop analysis (??)
+map.cpp		: map container (lib)
+parse.cpp	: parser helper functions (parser)
+parse_ast.cpp	: parser AST (parser)
+pattern.cpp	: pattern matching (analysis)
+pdb.cpp		: program database for low level representation (analysis)
+pnode.cpp	: program node class (analysis)
+prim.cpp	: primitives (analysis)
+prim_data.cpp	: primitives from prim_data.dat (analysis)
+region.cpp	: control dependence regions (analysis)
+scope.cpp	: scopes for parsing (parser)
+ssu.cpp		: Single Static Use form (analysis)
+ssu_extras.cpp  : ""
+sym.cpp		: low level representation symbols (analysis)
+var.cpp		: low level representation variables (analysis)
+vec.cpp		: vector container (lib)
+version.cpp	: version of the compiler (compiler/driver)
+
+
 cg_funs.cpp    : code generation for functions
 codegen.cpp    : starting point for back-end code generation
 datatype.cpp   : datatype-related utilities

@@ -1,84 +1,50 @@
  called from 0 in __init__ at <unknown>:0
  called from 0 in __init__ at <unknown>:0
- called from 10 in __init at cs4.chpl:1
- called from 10 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 11 in __init at cs4.chpl:1
- called from 5 in __init at cs4.chpl:1
- called from 5 in __init at cs4.chpl:1
- called from 6 in __init at cs4.chpl:1
- called from 6 in __init at cs4.chpl:1
- called from 7 in __init at cs4.chpl:1
- called from 7 in __init at cs4.chpl:1
- called from 8 in __init at cs4.chpl:1
- called from 8 in __init at cs4.chpl:1
- called from 9 in __init at cs4.chpl:1
- called from 9 in __init at cs4.chpl:1
-function __init cs4.chpl:1
-function __init prelude.chpl:7
+ called from 3 in __init at cs3.v:1
+ called from 4 in __init at cs3.v:1
+ called from 5 in __init at cs3.v:1
+ called from 6 in __init at cs3.v:1
+ called from 7 in __init at cs3.v:1
+ called from 7 in __init at cs3.v:1
+ called from 7 in __init at cs3.v:1
+ called from 7 in __init at cs3.v:1
+ called from 7 in __init at cs3.v:1
+ called from 7 in __init at cs3.v:1
+aa::a(cs3.v:1) ( float64 (prelude.v:42) )
+aa::a(cs3.v:1) ( int32 (prelude.v:29) )
+aa::x(cs3.v:1) ( float64 (prelude.v:42) )
+aa::x(cs3.v:1) ( int32 (prelude.v:29) )
+assert builtin_symbols.h:48: sym_primitive
+bb::b(cs3.v:2) ( tuple (prelude.v:14) )
+bb::b(cs3.v:2) ( tuple (prelude.v:14) )
+bb::x(cs3.v:2) ( tuple (prelude.v:14) )
+bb::x(cs3.v:2) ( tuple (prelude.v:14) )
+fail: seg fault
+function __init cs3.v:1
+function __init prelude.v:7
 function __init__ <unknown>:0
-function makeC cs4.chpl:3
-function makeC cs4.chpl:3
-function makeD cs4.chpl:4
-function makeD cs4.chpl:4
-function makeD cs4.chpl:4
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:82
-function operator prelude.chpl:88
-function operator prelude.chpl:88
-function operator prelude.chpl:88
-function writeln prelude.chpl:237
+function aa cs3.v:1
+function aa cs3.v:1
+function bb cs3.v:2
+function bb cs3.v:2
+function operator prelude.v:91
+function operator prelude.v:91
+function operator prelude.v:91
+function operator prelude.v:91
+function operator prelude.v:96
+function print prelude.v:145
 globals
-makeC::c(cs4.chpl:3) ( C (cs4.chpl:1) )
-makeC::c(cs4.chpl:3) ( C (cs4.chpl:1) )
-makeD::d(cs4.chpl:4) ( D (cs4.chpl:2) )
-makeD::d(cs4.chpl:4) ( D (cs4.chpl:2) )
-makeD::d(cs4.chpl:4) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:82) ( C (cs4.chpl:1) )
-operator::a(prelude.chpl:82) ( C (cs4.chpl:1) )
-operator::a(prelude.chpl:82) ( C (cs4.chpl:1) )
-operator::a(prelude.chpl:82) ( C (cs4.chpl:1) )
-operator::a(prelude.chpl:82) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:82) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:82) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:82) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:82) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:82) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:82) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:82) ( D (cs4.chpl:2) )
-operator::a(prelude.chpl:88) ( float64 (prelude.chpl:39) )
-operator::a(prelude.chpl:88) ( float64 (prelude.chpl:39) )
-operator::a(prelude.chpl:88) ( integer64 (prelude.chpl:27) )
-operator::b(prelude.chpl:88) ( float64 (prelude.chpl:39) )
-operator::b(prelude.chpl:88) ( float64 (prelude.chpl:39) )
-operator::b(prelude.chpl:88) ( float64 (prelude.chpl:39) )
-system::__init(prelude.chpl:7) ( __init (prelude.chpl:7) )
-system::null(prelude.chpl:55) ( tuple (prelude.chpl:14) )
-user::C(cs4.chpl:1) ( C (cs4.chpl:1) )
-user::D(cs4.chpl:2) ( D (cs4.chpl:2) )
-user::__init(cs4.chpl:1) ( __init (cs4.chpl:1) )
-user::c1(cs4.chpl:5) ( C (cs4.chpl:1) )
-user::c2(cs4.chpl:7) ( C (cs4.chpl:1) )
-user::d1(cs4.chpl:6) ( D (cs4.chpl:2) )
-user::d2(cs4.chpl:8) ( D (cs4.chpl:2) )
-user::d3(cs4.chpl:9) ( D (cs4.chpl:2) )
-user::d4(cs4.chpl:10) ( D (cs4.chpl:2) )
-writeln::a(prelude.chpl:237) ( float64 (prelude.chpl:39) )
+operator::a(prelude.v:91) ( tuple (prelude.v:14) )
+operator::a(prelude.v:91) ( tuple (prelude.v:14) )
+operator::a(prelude.v:91) ( tuple (prelude.v:14) )
+operator::a(prelude.v:91) ( tuple (prelude.v:14) )
+operator::a(prelude.v:96) ( int32 (prelude.v:29) )
+operator::b(prelude.v:96) ( float64 (prelude.v:42) )
+print::a(prelude.v:145) ( float64 (prelude.v:42) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:58) ( tuple (prelude.v:14) )
+user::__init(cs3.v:1) ( __init (cs3.v:1) )
+user::a1(cs3.v:3) ( tuple (prelude.v:14) )
+user::a2(cs3.v:5) ( tuple (prelude.v:14) )
+user::b1(cs3.v:4) ( tuple (prelude.v:14) )
+user::b2(cs3.v:6) ( tuple (prelude.v:14) )

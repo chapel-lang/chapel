@@ -1237,6 +1237,9 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     // specifics
     switch (p->prim->index) {
       default: break;
+      case P_prim_primitive: {
+	break;
+      }
       case P_prim_meta_apply: {
 	AVar *a1 = make_AVar(p->rvals.v[1], es);
 	AVar *a2 = make_AVar(p->rvals.v[2], es);

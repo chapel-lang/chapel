@@ -14,15 +14,15 @@ function __init__ <unknown>:0
 function f dispatch2.v:2
 function f dispatch2.v:3
 function g dispatch2.v:1
-function operator prelude.v:95
-function print prelude.v:144
-function print prelude.v:144
+function operator prelude.v:96
+function print prelude.v:145
+function print prelude.v:145
 g::x(dispatch2.v:1) ( float64 (prelude.v:42) )
 globals
-operator::a(prelude.v:95) ( int32 (prelude.v:29) )
-operator::b(prelude.v:95) ( int32 (prelude.v:29) )
-print::a(prelude.v:144) ( float64 (prelude.v:42) )
-print::a(prelude.v:144) ( int32 (prelude.v:29) )
+operator::a(prelude.v:96) ( int32 (prelude.v:29) )
+operator::b(prelude.v:96) ( int32 (prelude.v:29) )
+print::a(prelude.v:145) ( float64 (prelude.v:42) )
+print::a(prelude.v:145) ( int32 (prelude.v:29) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:58) ( tuple (prelude.v:14) )
 user::__init(dispatch2.v:1) ( __init (dispatch2.v:1) )

@@ -17,9 +17,14 @@
 
 class LabelMap : public Map<char *, BaseAST *> {};
 
-Sym *__domain_start_index = 0;
-Sym *__domain_next_index = 0;
-Sym *__domain_valid_index = 0;
+static Sym *__domain_start_index = 0;
+static Sym *__domain_next_index = 0;
+static Sym *__domain_valid_index = 0;
+static Sym *__expr_simple_seq = 0;
+static Sym *__expr_domain = 0;
+static Sym *__expr_reduce = 0;
+static Sym *__flood_symbol = 0;
+static Sym *__completedim_symbol = 0;
 
 ASymbol::ASymbol() : xsymbol(0) {
 }
@@ -292,6 +297,7 @@ build_builtin_symbols() {
   if1_set_symbols_type(if1);
   
   new_global_variable(sym_null, "null");
+  new_symbol(sym_primitive, "__primitive");
   new_symbol(sym_reply, "reply");
   new_symbol(sym_make_tuple, "make_tuple");
   new_symbol(sym_make_vector, "make_vector");
@@ -301,7 +307,7 @@ build_builtin_symbols() {
   new_symbol(sym_new, "new");
   new_symbol(sym_new_object, "new_object");
   new_symbol(sym_index, "index");
-  new_symbol(sym_operator, "operator");
+  new_symbol(sym_operator, "__operator");
   new_symbol(sym_print, "print");
   new_symbol(sym_destruct, "destruct");
   new_symbol(sym_meta_apply, "meta_apply");
@@ -432,15 +438,18 @@ gen_for(BaseAST *a) {
   Sym *index = new_sym();
   Code *setup_code = 0;
   if1_gen(if1, &setup_code, s->domain->ainfo->code);
-  send = if1_send(if1, &setup_code, 2, 1, __domain_start_index, s->domain->ainfo->rval, index);
+  send = if1_send(if1, &setup_code, 3, 1, sym_primitive, __domain_start_index, s->domain->ainfo->rval, 
+		  index);
   send->ast = s->ainfo;
   Sym *condition_rval = 0;
   Code *condition_code = 0;
-  send = if1_send(if1, &condition_code, 3, 1, __domain_valid_index, 
-	   s->domain->ainfo->rval, index, condition_rval);
+  send = if1_send(if1, &condition_code, 4, 1, sym_primitive, __domain_valid_index,
+		  s->domain->ainfo->rval, index,
+		  condition_rval);
   send->ast = s->ainfo;
-  send =if1_send(if1, &body_code, 3, 1, __domain_next_index, 
-	   s->domain->ainfo->rval, index, condition_rval);
+  send = if1_send(if1, &body_code, 4, 1, sym_primitive, __domain_next_index, 
+		  s->domain->ainfo->rval, index, 
+		  condition_rval);
   send->ast = s->ainfo;
   if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
 	   condition_rval, setup_code, 
@@ -599,19 +608,99 @@ gen_if1(BaseAST *ast) {
       c->ast = s->ainfo;
       break;
     }
-#if 0
-  EXPR_SIMPLESEQ,
-  EXPR_FLOOD,
-  EXPR_COMPLETEDIM,
-  EXPR_DOMAIN,
-  EXPR_PARENOP,
-  EXPR_CAST,
-  EXPR_FNCALL,
-  EXPR_WRITECALL,
-  EXPR_ARRAYREF,
-  EXPR_REDUCE,
-  EXPR_TUPLE,
-#endif
+    case EXPR_SIMPLESEQ: {
+      SimpleSeqExpr *s = dynamic_cast<SimpleSeqExpr *>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->lo->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->hi->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->str->ainfo->code);
+      Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, __expr_simple_seq, 
+			    s->lo->ainfo->rval, s->hi->ainfo->rval, s->str->ainfo->rval, 
+			    s->ainfo->rval);
+      send->ast = s->ainfo;
+      break;
+    }
+    case EXPR_FLOOD: {
+      FloodExpr *s = dynamic_cast<FloodExpr *>(ast);
+      s->ainfo->rval = __flood_symbol;
+      break;
+    }
+    case EXPR_COMPLETEDIM: {
+      CompleteDimExpr *s = dynamic_cast<CompleteDimExpr *>(ast);
+      s->ainfo->rval = __completedim_symbol;
+      break;
+    }
+    case EXPR_DOMAIN: {
+      DomainExpr *s = dynamic_cast<DomainExpr *>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->domains->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->forallExpr->ainfo->code);
+      Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, __expr_domain, 
+			    s->domains->ainfo->rval, s->indices->asymbol, s->forallExpr->ainfo->rval, 
+			    s->ainfo->rval);
+      send->ast = s->ainfo;
+      break;
+    }
+    case EXPR_FNCALL:
+    case EXPR_WRITECALL:
+    case EXPR_ARRAYREF:
+    case EXPR_PARENOP: {
+      ParenOpExpr *s = dynamic_cast<ParenOpExpr *>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
+      Vec<Expr *> args;
+      getLinkElements(args, s->argList);
+      forv_Vec(Expr, a, args)
+	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+      Code *send = if1_send1(if1, &s->ainfo->code);
+      send->ast = s->ainfo;
+      if1_add_send_arg(if1, send, s->baseExpr->ainfo->rval);
+      forv_Vec(Expr, a, args)
+	if1_add_send_arg(if1, send, a->ainfo->rval);
+      if1_add_send_result(if1, send, s->ainfo->rval);
+      break;
+    }
+    case EXPR_CAST: {
+      CastExpr *s = dynamic_cast<CastExpr *>(ast);
+      s->ainfo->rval = new_sym();
+      Vec<Expr *> args;
+      getLinkElements(args, s->argList);
+      forv_Vec(Expr, a, args)
+	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+      Code *send = if1_send1(if1, &s->ainfo->code);
+      send->ast = s->ainfo;
+      if1_add_send_arg(if1, send, s->castType->asymbol->type_sym);
+      forv_Vec(Expr, a, args)
+	if1_add_send_arg(if1, send, a->ainfo->rval);
+      if1_add_send_result(if1, send, s->ainfo->rval);
+      break;
+    }
+    case EXPR_REDUCE: {
+      ReduceExpr *s = dynamic_cast<ReduceExpr *>(ast);
+      s->ainfo->rval = new_sym();
+      if1_gen(if1, &s->ainfo->code, s->redDim->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->argExpr->ainfo->code);
+      Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, __expr_reduce, 
+			    s->reduceType->asymbol, s->redDim->ainfo->rval, s->argExpr->ainfo->rval, 
+			    s->ainfo->rval);
+      send->ast = s->ainfo;
+      break;
+    }
+    case EXPR_TUPLE: {
+      Tuple *s = dynamic_cast<Tuple *>(ast);
+      s->ainfo->rval = new_sym();
+      Vec<Expr *> args;
+      getLinkElements(args, s->exprs);
+      forv_Vec(Expr, a, args)
+	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+      Code *send = if1_send1(if1, &s->ainfo->code);
+      send->ast = s->ainfo;
+      if1_add_send_arg(if1, send, sym_make_tuple);
+      forv_Vec(Expr, a, args)
+	if1_add_send_arg(if1, send, a->ainfo->rval);
+      if1_add_send_result(if1, send, s->ainfo->rval);
+      break;
+    }
     default: assert(0);
   }
   return 0;
@@ -652,6 +741,57 @@ init_symbols() {
   __domain_start_index = if1_make_symbol(if1, "__domain_start_index");
   __domain_next_index = if1_make_symbol(if1, "__domain_next_index");
   __domain_valid_index = if1_make_symbol(if1, "__domain_valid_index");
+  __expr_simple_seq = if1_make_symbol(if1, "__expr_simple_seq");
+  __expr_domain = if1_make_symbol(if1, "__expr_domain");
+  __expr_reduce = if1_make_symbol(if1, "__expr_reduce");
+  __flood_symbol = if1_make_symbol(if1, "*");
+  __completedim_symbol = if1_make_symbol(if1, "..");
+}
+
+static void
+print_ast(BaseAST *a, Vec<BaseAST *> &asts) {
+  if (!asts.set_add(a)) {
+    printf("(%d *)", (int)a->astType);
+    return;
+  }
+  printf("(%d", (int)a->astType);
+  Vec<BaseAST *> aa;
+  a->getStmtExprs(aa);
+  if (aa.n)
+    printf(" ");
+  forv_BaseAST(b, aa)
+    print_ast(b, asts);
+  printf(")");
+}
+
+static void
+print_ast(BaseAST *a) {
+  Vec<BaseAST *> asts;
+  print_ast(a, asts);
+  printf("\n");
+}
+
+static void
+print_baseast(BaseAST *a, Vec<BaseAST *> &asts) {
+  if (!asts.set_add(a)) {
+    printf("(%d *)", (int)a->astType);
+    return;
+  }
+  printf("(%d", (int)a->astType);
+  Vec<BaseAST *> aa;
+  a->getBaseASTs(aa);
+  if (aa.n)
+    printf(" ");
+  forv_BaseAST(b, aa)
+    print_baseast(b, asts);
+  printf(")");
+}
+
+static void
+print_baseast(BaseAST *a) {
+  Vec<BaseAST *> asts;
+  print_baseast(a, asts);
+  printf("\n");
 }
 
 int
@@ -659,6 +799,12 @@ analyze_new_ast(BaseAST* a) {
   Vec<BaseAST *> syms;
   close_symbols(a, syms);
   init_symbols();
+  if (verbose_level > 1) {
+    print_baseast(a);
+    forv_BaseAST(s, syms)
+      if (s->astType == STMT_FNDEF)
+	print_ast(dynamic_cast<FnDefStmt*>(s)->fn->body);
+  }
   if (import_symbols(syms) < 0) return -1;
   if (build_functions(syms) < 0) return -1;
   return 0;

@@ -68,6 +68,7 @@ __init__ __name "init":0;
 #__make_vector __name "make_vector";
 #__make_set __name "make_set";
 #__make_continuation __name "make_continuation";
+#__primitive __name "primitive";
 #__operator __name "operator";
 #__new __name "new";
 #__index __name "index";
