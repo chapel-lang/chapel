@@ -24,6 +24,8 @@
 #               and won't be run by default.  To try running the
 #               test system against these samples, use:
 #                      start_test -startdir ./Samples
+#   Share/   -- a place to put codes to share with other developers.
+#               These will not be run by default.
 #   */       -- all other directories will contain tests
 #
 # The start_test script kicks off all the action.  With no arguments,
@@ -336,7 +338,7 @@ endif
 #   Don't include output or RCS directories (-v says don't include)
 #   Take off : with sed
 #
-set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | sed 's/://g'`
+set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | grep -v Share | sed 's/://g'`
 # gotta add ./ on in case -startdir is specified
 set dirs = (./ $dirs)
 
