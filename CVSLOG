@@ -7002,3 +7002,30 @@ Added files:
 	                                  onearg.good usebeforedef.chpl 
 	                                  usebeforedef.good 
 
+---------------------------------------------------------------------------
+
+09/13/04 14:21:49 -- bradc
+
+Log message:
+	Improved the FindUnknownTypes pass so that it not only finds
+	symbols of unknown type, but also uses John's type_info pass
+	to fill in the type of such symbols, if it knows.  This pass
+	is currently run by default, but of course will only add any
+	information to the AST if --analyzenewast is used.  If it is
+	not, John's work returns dtUnknown, so no substantive change
+	is made.  Once --analyzenewast is the default, this pass
+	should allow us to remove most of our type-oriented hacks
+	involving dtUnknown.
+	
+	Also added a println() method to links which prints a newline
+	after printing the AST node.
+
+Modified files:
+	chapel/compiler/: passlist.h 
+	chapel/compiler/AST/: checkTypeInfo.cpp expr.cpp 
+	                      findUnknownTypes.cpp findUnknownTypes.h 
+	                      link.cpp link.h symbol.cpp 
+	chapel/test/flowanalysis/newast/: chain.good globalref.good 
+	                                  mutrec.good onearg.good 
+	                                  usebeforedef.good 
+
