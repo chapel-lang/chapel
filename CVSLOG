@@ -2413,3 +2413,31 @@ Modified files:
 	                  codegen.cpp misc.cpp prelude.chpl prelude.v 
 	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
 
+---------------------------------------------------------------------------
+
+04/06/02 13:20:01 -- bradc
+
+Log message:
+	Improved dependences for *.g.d_parser.o files.  These are
+	dependent on geysa.h and all the things that it includes,
+	but this dependence wasn't reflected in the Makefiles due
+	to the challenges in listing the dependences of a dynamically-
+	generated source file.
+	
+	The approach I took was to run g++ -MM on geysa.h, fudging
+	the output format so that it defines a Makefile variable
+	giving all the include files it includes rather than
+	generating a standard dependence rule (which would have
+	had no effect since geysa.h would be considered up-to-date
+	since there's no rule to rebuild it).  Then, by giving
+	this variable name in the rule to build *.g.d_parser.o,
+	it will be recompiled whenever the any of the component
+	header files change.  This should take care of most of
+	the recent cases where a "make clean" was required.  If
+	you come across more (and can reproduce them), please
+	let me know.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+
