@@ -5783,3 +5783,91 @@ Modified files:
 Removed files:
 	chapel/compiler/: internal.h 
 
+---------------------------------------------------------------------------
+
+08/25/04 17:04:34 -- bradc
+
+Log message:
+	Reworked the way I was handling "NullClasses", based on my continuing
+	worries that I'd taken a bad approach and discussions with John
+	yesterday that made me more sure of it the more I thought about it.
+	The goal behind this work (both the past approach and my new one) was
+	to avoid using NULL pointers as much as possible in hopes of catching
+	erroneous conditions via method calls to inappropriate objects rather
+	than Seg Faults.  Thus, anywhere one would normally use a "NULL"
+	pointer value, the idea was that you'd use this mechanism to protect
+	yourself.
+	
+	My approach up until today had been to have a subclass of any such
+	class that I was concerned about.  So for example, the Expr class had
+	a NullExpr class which would indicate a Null Expr pointer.  All
+	classes had an isNull() method which would indicate whether or not
+	they were a NullClass (defined to return false at one of the base
+	classes, and over-ridden by all of the NullClasses).
+	
+	The disadvantages to this approach that were becoming increasingly
+	apparent to me were: (1) there was a fair amount of effort to
+	implementing one of these NullClasses -- the class definition,
+	defining a bunch of standard virtual functions, etc.  This was bad
+	enough that at some point I started getting very lazy about
+	introducing them and using NULL instead, defeating the entire point;
+	(2) the runtime overhead of storing a new class instance every time I
+	wanted one of these NULL classes (I would create them dynamically on
+	an as-needed basis; and (3) as John noticed yesterday, I wasn't being
+	particularly careful about when I used them, and started using them in
+	places other than where I'd originally intended (in particular to
+	indicate void return types -- though I'm still waffling on that one --
+	and to represent no-op statements).
+	
+	For these reasons, I revisited the uses, thought about it a lot last
+	night, and have removed all NullClasses from the compiler.  What I've
+	done instead is create a single, special instance of each class in
+	question called "nil<Class>" (e.g., nilExpr).  The name is not meant
+	to be anything deep, but is meant to be easily distinguished from
+	NullClass, and partially to reflect David's concept of "nil" in
+	Chapel.
+	
+	The isBool() methods are still supported, but are now implemented by
+	comparison via the appropriate nil variable rather than via overridden
+	functions that simply return true or false.  This approach seems to be
+	lighter weight to implement (addressing problem 1 above), eliminates
+	all but O(1) of the runtime overhead, supports quick pointer
+	comparisons if desired, and caused me to revisit all uses of the
+	NullClasses to see if they made sense.  In doing so, I'm now thinking
+	more and more that John is probably right about the thought that
+	dtVoid and nilType are really the same thing (assuming we have no
+	"void" type in Chapel), but haven't made that change yet.
+	
+	The main disadvantage to this approach is the possibility that nil
+	variables might be corrupted by compiler bugs, leading to subtle
+	internal problems downstream.  I'm optimistically hoping that this
+	won't be the case, but have implemented a verifyNilsUncorrupted()
+	function (in nils.cpp) which can be run to assert that the nil
+	variables still have the values they ought to (this is currently run
+	after codegen(), but can obviously be inserted by developers in other
+	places as an assertion while debugging).
+	
+	The main semantic change that goes into this switch is that I've now
+	introduced a NoOpStmt class, since NullStmt was overloaded for this
+	purpose previously.  As with dtVoid, there's some question as to
+	whether this is overkill, but for now I decided to represent no-ops in
+	the user code explicitly rather than using nilStmt.
+	
+	As a side change to this, I introduced an "id" field to the BaseAST
+	class so that all objects created in the AST will be uniquely
+	identified.  No current plans for this, but it seemed like a good
+	thing to have in place before it is needed.
+
+Modified files:
+	chapel/compiler/: analysis.cpp codegen.cpp createAST.cpp 
+	chapel/compiler/AST/: Makefile.share baseAST.cpp baseAST.h 
+	                      chapel.y expr.cpp expr.h link.cpp link.h 
+	                      main.cpp stmt.cpp stmt.h symbol.cpp 
+	                      symbol.h symtab.cpp symtab.h type.cpp 
+	                      type.h verifyASTType.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+Added files:
+	chapel/compiler/AST/: nils.cpp nils.h 
+
