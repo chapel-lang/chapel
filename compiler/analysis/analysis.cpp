@@ -755,6 +755,8 @@ build_types(Vec<BaseAST *> &syms) {
 	}
 	if (tt->parentClass)
 	  t->asymbol->sym->inherits_add(tt->parentClass->asymbol->sym);
+	else
+	  t->asymbol->sym->inherits_add(sym_object);
 	break;
       }
       case TYPE_VARIABLE: {
@@ -842,6 +844,7 @@ build_builtin_symbols() {
   sym_complex64 = dtComplex->asymbol->sym;
   sym_string = dtString->asymbol->sym;
   sym_anynum = dtNumeric->asymbol->sym;
+  sym_object = dtObject->asymbol->sym; 
 
   new_lub_type(sym_anyclass, "anyclass", 0);
   sym_anyclass->meta_type = sym_anyclass;
@@ -1653,7 +1656,9 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_NAMED: {
-      INT_FATAL(ast, "NamedExpr not handled in analysis");
+      NamedExpr *s = dynamic_cast<NamedExpr *>(ast);
+      s->ainfo->rval = s->actual->ainfo->rval;
+      s->ainfo->rval->arg_name = if1_cannonicalize_string(if1, s->name);
       break;
     }
   case SYMBOL:
@@ -2026,6 +2031,18 @@ array_index(PNode *pn, EntrySet *es) {
   }
 }
 
+static void
+ptr_eq(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  update_in(result, make_abstract_type(sym_int));
+}
+
+static void
+ptr_neq(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  update_in(result, make_abstract_type(sym_int));
+}
+
 int 
 ast_to_if1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
@@ -2038,32 +2055,21 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   sym_null->is_external = 1;	// hack
   finalize_types(if1);
   if (build_functions(syms) < 0) return -1;
-  pdb->fa->primitive_transfer_functions.put(
-    domain_start_index_symbol->name, new RegisteredPrim(domain_start_index));
-  pdb->fa->primitive_transfer_functions.put(
-    domain_next_index_symbol->name, new RegisteredPrim(domain_next_index));
-  pdb->fa->primitive_transfer_functions.put(
-    domain_valid_index_symbol->name, new RegisteredPrim(integer_result));
-  pdb->fa->primitive_transfer_functions.put(
-    expr_simple_seq_symbol->name, new RegisteredPrim(expr_simple_seq));
-  pdb->fa->primitive_transfer_functions.put(
-    expr_domain_symbol->name, new RegisteredPrim(expr_domain));
-  pdb->fa->primitive_transfer_functions.put(
-    expr_create_domain_symbol->name, new RegisteredPrim(expr_create_domain));
-  pdb->fa->primitive_transfer_functions.put(
-    expr_reduce_symbol->name, new RegisteredPrim(expr_reduce));
-  pdb->fa->primitive_transfer_functions.put(
-    sizeof_symbol->name, new RegisteredPrim(integer_result));
-  pdb->fa->primitive_transfer_functions.put(
-    cast_symbol->name, new RegisteredPrim(cast_value));
-  pdb->fa->primitive_transfer_functions.put(
-    write_symbol->name, new RegisteredPrim(write_transfer_function));
-  pdb->fa->primitive_transfer_functions.put(
-    writeln_symbol->name, new RegisteredPrim(write_transfer_function));
-  pdb->fa->primitive_transfer_functions.put(
-    read_symbol->name, new RegisteredPrim(read_transfer_function));
-  pdb->fa->primitive_transfer_functions.put(
-    array_index_symbol->name, new RegisteredPrim(array_index));
+  pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol->name, new RegisteredPrim(domain_start_index));
+  pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol->name, new RegisteredPrim(domain_next_index));
+  pdb->fa->primitive_transfer_functions.put(domain_valid_index_symbol->name, new RegisteredPrim(integer_result));
+  pdb->fa->primitive_transfer_functions.put(expr_simple_seq_symbol->name, new RegisteredPrim(expr_simple_seq));
+  pdb->fa->primitive_transfer_functions.put(expr_domain_symbol->name, new RegisteredPrim(expr_domain));
+  pdb->fa->primitive_transfer_functions.put(expr_create_domain_symbol->name, new RegisteredPrim(expr_create_domain));
+  pdb->fa->primitive_transfer_functions.put(expr_reduce_symbol->name, new RegisteredPrim(expr_reduce));
+  pdb->fa->primitive_transfer_functions.put(sizeof_symbol->name, new RegisteredPrim(integer_result));
+  pdb->fa->primitive_transfer_functions.put(cast_symbol->name, new RegisteredPrim(cast_value));
+  pdb->fa->primitive_transfer_functions.put(write_symbol->name, new RegisteredPrim(write_transfer_function));
+  pdb->fa->primitive_transfer_functions.put(writeln_symbol->name, new RegisteredPrim(write_transfer_function));
+  pdb->fa->primitive_transfer_functions.put(read_symbol->name, new RegisteredPrim(read_transfer_function));
+  pdb->fa->primitive_transfer_functions.put(array_index_symbol->name, new RegisteredPrim(array_index));
+  pdb->fa->primitive_transfer_functions.put(if1_cannonicalize_string(if1, "ptr_eq"), new RegisteredPrim(ptr_eq));
+  pdb->fa->primitive_transfer_functions.put(if1_cannonicalize_string(if1, "ptr_neq"), new RegisteredPrim(ptr_neq));
   build_type_hierarchy();
   finalize_symbols(if1);
   return 0;

@@ -665,7 +665,7 @@ static int
 edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
-    forv_MPosition(p, e->match->fun->arg_positions) {
+    forv_MPosition(p, e->match->fun->numeric_arg_positions) {
       AVar *av = e->args.get(p);
       if (av)
 	if (!sset_compatible(av, es->args.get(p)))

@@ -47,6 +47,8 @@ function and(a : numeric, b : numeric) { return __primitive(a, "&&", b); }
 function or(a : numeric, b : numeric) { return __primitive(a, "||", b); }
 function **(a : numeric, b : numeric) { return __primitive(a, "**", b); }
 function by(a : numeric, b : numeric) { return __primitive(a, "by", b); }
+function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
+function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
 
 function _chpl_malloc(number, size, description: string);
 function _chpl_calloc(number, size, description: string);
