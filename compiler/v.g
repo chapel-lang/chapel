@@ -218,15 +218,17 @@ unqualified_pure_type_statement
   | unqualified_type_statement
   ;
 
-type_definition : def_type def_type_parameter_list? ('__name' string)? (':' super_type)? ('=' type)? { 
+type_definition : def_type def_type_parameter_list? ('__name' string)? 
+		(':' constraint_type)? ('=' type)? 
+{
   $$.ast = new AST(AST_def_type, &$n); 
   if ($#2)
     $$.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
 };
-super_types: super_type (',' super_type)*;
-super_type: parameterized_type
-{ $$.ast = new AST(AST_super_type, &$n); };
+constraint_types: constraint_type (',' constraint_type)*;
+constraint_type: parameterized_type
+{ $$.ast = new AST(AST_constraint, &$n); };
 
 def_type: identifier 
 [
@@ -280,7 +282,7 @@ class_modifier
   | (':>' | 'implements') implements_identifier (',' implements_identifier)*
   | (':+' | 'includes') includes_identifier (',' includes_identifier)*
   ;
-inherits_identifier: parameterized_type { $$.ast = new AST(AST_super_type, &$n); };
+inherits_identifier: parameterized_type { $$.ast = new AST(AST_inherits, &$n); };
 implements_identifier: parameterized_type { $$.ast = new AST(AST_implements, &$n); };
 includes_identifier: parameterized_type { $$.ast = new AST(AST_includes, &$n); };
 parameterized_type
@@ -301,7 +303,7 @@ vector_index
   ;
 
 where_statement : 'where' where_type (',' where_type)*;
-where_type : qualified_identifier (':' super_types)? ('=' type)?
+where_type : qualified_identifier (':' constraint_types)? ('=' type)?
 { $$.ast = new AST(AST_where, &$n); };
 
 expression
@@ -388,7 +390,7 @@ anon_function: '\\' pattern+ ('__name' string)? ':'
 ];
 
 pattern
-  : identifier (':' type)?
+  : identifier (':' constraint_type)?
 { $$.ast = new AST(AST_arg, &$n); }
   | constant
 { $$.ast = new AST(AST_arg, &$n); }

@@ -129,6 +129,7 @@ checked_ast_qualified_ident_sym(AST *ast) {
     show_error("unresolved identifier '%s'", ast, ast_qualified_ident_string(ast));
     return NULL;
   }
+  ast->sym = sym;
   return sym;
 }
 
@@ -351,7 +352,7 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
       }
       case AST_def_type: {
 	Sym *sym = scope->get(ast->get(AST_ident)->string);
-	if (sym && sym->type_kind != Type_FORWARD)
+	if (sym && sym->type_kind != Type_UNKNOWN)
 	  return show_error("duplicate identifier '%s'", ast, ast->get(AST_ident)->string);
 	if (!sym)
 	  ast->sym = new_sym(i, scope, ast->get(AST_ident)->string, ast->sym);
@@ -359,11 +360,11 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 	  assert(!ast->sym);
 	  ast->sym = sym;
 	}
-	if (ast->sym->type_kind == Type_NONE || ast->sym->type_kind == Type_FORWARD) {
+	if (ast->sym->type_kind == Type_NONE || ast->sym->type_kind == Type_UNKNOWN) {
 	  int i = 1;
 	  for (; i < ast->n; i++) {
 	    if (ast->v[i]->kind == AST_def_type_param ||
-		ast->v[i]->kind == AST_super_type) 
+		ast->v[i]->kind == AST_constraint) 
 	    {
 	      // handled below
 	    } else { 
@@ -371,7 +372,7 @@ define_types(IF1 *i, AST *ast, Vec<AST *> &funs, Scope *scope, int skip = 0) {
 	      goto Lkind_assigned;
 	    }
 	  }
-	  ast->sym->type_kind = Type_FORWARD;
+	  ast->sym->type_kind = Type_UNKNOWN;
 	Lkind_assigned:;
 	}
 	scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, ast->sym);
@@ -495,10 +496,44 @@ define_function(IF1 *i, AST *ast) {
 }
 
 static int
+resolve_parameterized_type(IF1 *i, AST *ast) {
+  Sym *sym;
+  if (!(sym = checked_ast_qualified_ident_sym(ast->get(AST_qualified_ident))))
+    return -1;
+  if (ast->n > 1) {
+    Sym *s = new_sym(i, ast->scope);
+    s->type_kind = Type_APPLICATION;
+    s->has.add(sym);
+    for (int i = 1; i < ast->n; i++) {
+      assert(ast->v[i]->kind == AST_type_param && ast->v[i]->sym);
+      if (!(sym = checked_ast_qualified_ident_sym(ast->v[i]->get(AST_qualified_ident))))
+	return -1;
+      s->args.add(sym);
+    }
+    ast->sym = s;
+  } else
+    ast->sym = sym;
+  return 0;
+}
+
+static int
 resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
   Sym *sym;
   if (!skip)
     switch (ast->kind) {
+      case AST_arg: {
+	AST *a = ast->get(AST_constraint);
+	if (a)
+	  if (resolve_parameterized_type(i, a) < 0)
+	    return -1;
+	break;
+      }
+      case AST_inherits:
+      case AST_implements:
+      case AST_includes:
+	if (resolve_parameterized_type(i, ast) < 0)
+	  return -1;
+	break;
       case AST_def_type:
 	sym = ast->sym;
 	goto Lmore;
@@ -507,10 +542,10 @@ resolve_types_and_define_recursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	  return -1;
     Lmore:
 	forv_AST(a, *ast) {
-	  if (a->kind == AST_super_type) {
+	  if (a->kind == AST_constraint) {
 	    if (!(a->sym = ast_qualified_ident_sym(a->get(AST_qualified_ident))))
 	      return -1;
-	    sym->supertypes.set_add(a->sym);
+	    sym->constraints.set_add(a->sym);
 	    sym->scope->dynamic.add(a->sym->scope);
 	  } if (a->kind == AST_def_type_param) {
 	    sym->args.set_add(a->sym);
@@ -549,7 +584,7 @@ variables_and_nonrecursive_functions(IF1 *i, AST *ast, int skip = 0) {
 	return 0;
       case AST_qualified_ident:
 	if (!ast->sym)
-	  if (!(ast->sym = checked_ast_qualified_ident_sym(ast)))
+	  if (!checked_ast_qualified_ident_sym(ast))
 	    return -1;
 	return 0;
       default: break;
@@ -601,17 +636,35 @@ build_types(IF1 *i, AST *ast) {
     case AST_type_application:
     case AST_record_type:
       forv_AST(a, *ast)
-	if (a->sym)
-	  ast->sym->has.add(a->sym);
+	if (a->sym) {
+	  switch (ast->kind) {
+	    case AST_type_param:
+	      ast->sym->args.add(a->sym);
+	      break;
+	    case AST_inherits:
+	      ast->sym->implements.add(a->v[0]->sym);
+	      ast->sym->includes.add(a->v[0]->sym);
+	      break;
+	    case AST_implements:
+	      ast->sym->implements.add(a->v[0]->sym);
+	      break;
+	    case AST_includes:
+	      ast->sym->includes.add(a->v[0]->sym);
+	      break;
+	    default:
+	      ast->sym->has.add(a->sym);
+	      break;
+	  }
+	}
       break;
     case AST_sum_type:
       forv_AST(a, *ast)
 	if (a->sym)
-	  a->sym->supertypes.set_add(ast->sym);
+	  a->sym->implements.set_add(ast->sym);
       break;
     case AST_def_type:
       for (int i = 1; i < ast->n; i++) {
-	if (ast->v[i]->kind != AST_def_type_param && ast->v[i]->kind != AST_super_type) {
+	if (ast->v[i]->kind != AST_def_type_param && ast->v[i]->kind != AST_constraint) {
 	  ast->sym->has.add(ast->v[i]->sym);
 	  break;
 	}
@@ -1033,36 +1086,39 @@ global_asserts() {
 
 static void
 finalize_types(IF1 *i) {
-  // unalias supertypes
-  forv_Sym(s, i->allsyms)
-    for (int x = 0; x < s->supertypes.n; x++)
-      if (s->supertypes.v[x])
-	s->supertypes.v[x] = unalias_type(s->supertypes.v[x]);
+  // unalias
+  forv_Sym(s, i->allsyms) {
+    for (int x = 0; x < s->implements.n; x++)
+      if (s->implements.v[x])
+	s->implements.v[x] = unalias_type(s->implements.v[x]);
+    for (int x = 0; x < s->constraints.n; x++)
+      if (s->constraints.v[x])
+	s->constraints.v[x] = unalias_type(s->constraints.v[x]);
+  }
   forv_Sym(s, i->allsyms) {
     Sym *us = unalias_type(s);
     if (s != us) {
-      forv_Sym(ss, s->supertypes) if (ss) {
+      forv_Sym(ss, s->implements) if (ss) {
 	assert(ss != us);
-	us->supertypes.set_add(ss);
+	us->implements.set_add(ss);
       }
     }
   }
-  // transitive closure of supertyping
+  // transitive closure of implements
   int changed = 1;
   while (changed) {
     changed = 0;
     forv_Sym(s, i->allsyms) {
-      if (s->supertypes.n) {
-	Vec<Sym *> supers(s->supertypes);
-	forv_Sym(ss, supers) if (ss && ss != s) {
-	  forv_Sym(sss, ss->supertypes) if (sss && sss != s)
-	    changed = sss->supertypes.set_add(s) || changed;
-	}
+      if (s->implements.n) {
+	Vec<Sym *> supers(s->implements);
+	forv_Sym(ss, supers) if (ss)
+	  forv_Sym(sss, ss->implements) if (sss)
+	    changed = s->implements.set_add(sss) || changed;
       }
     }
   }
   forv_Sym(s, i->allsyms)
-    s->supertypes.set_to_vec();
+    s->implements.set_to_vec();
 }
 
 int

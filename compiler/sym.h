@@ -15,8 +15,7 @@ enum IF1_num_type {
 
 enum Type_kind {
   Type_NONE,      	// Sym is not a type
-  Type_UNKNOWN,     	// Type is not given (e.g. type parameter)
-  Type_FORWARD,  	// Forward declaration (like UNKNOWN but allow redefinition)
+  Type_UNKNOWN,     	// Type is not given (e.g. type parameter, forward decl)
   Type_SUM,  		// one thing or another (e.g. int | float)
   Type_PRODUCT, 	// two things together (e.g. (1, 2.0))
   Type_RECORD,    	// things with names (nominally unordered)
@@ -34,15 +33,15 @@ class Sym : public gc {
   char 			*name;			// user level name
   int			id;			// unique number
   Sym 			*type;			// true type
-  Sym 			*declared_type;		// type constraint (may be subtype)
   char 			*constant;		// string representing constant value
   Sym  			*aspect;		// mascarade as (e.g. superclass)
   Sym  			*in;			// containing module, class or function
 
   char 			*builtin;		// one of builtin_symbols.h
   Type_kind		type_kind;
-  Vec<Sym *>		supertypes;		// implemented interfaces/is of types
+  Vec<Sym *>		implements;
   Vec<Sym *>		includes;		// included code
+  Vec<Sym *>		constraints;		// must-implement
   Vec<Sym *>		has;			// instance variables
   Vec<Sym *>		args;			// parameters of functions and types
   Sym			*ret;			// return value of functions

@@ -435,8 +435,6 @@ resolve_concrete_types(CSSS &css_sets) {
 	case Type_APPLICATION:
 	  assert(!"bad case");
 	  break;
-	case Type_FORWARD:
-	  break;
 	case Type_SUM: {
 	  forv_CreationSet(cs, *eqcss) if (cs)
 	    sym->has.set_add(cs->sym);

@@ -537,12 +537,21 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       }
       fputs(")", fp);
     }
-    if (s->supertypes.n) {
-      fputs(" :SUPERTYPES (", fp);
-      for (int j = 0; j < s->supertypes.n; j++) {
+    if (s->implements.n) {
+      fputs(" :IMPLEMENTS (", fp);
+      for (int j = 0; j < s->implements.n; j++) {
 	if (j)
 	  fprintf(fp, " ");
-	if1_dump_sym(fp, s->supertypes.v[j]);
+	if1_dump_sym(fp, s->implements.v[j]);
+      }
+      fputs(")", fp);
+    }
+    if (s->includes.n) {
+      fputs(" :INCLUDES (", fp);
+      for (int j = 0; j < s->includes.n; j++) {
+	if (j)
+	  fprintf(fp, " ");
+	if1_dump_sym(fp, s->includes.v[j]);
       }
       fputs(")", fp);
     }

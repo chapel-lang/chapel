@@ -1128,32 +1128,8 @@ initialize(FA *fa) {
   symbol_type = make_AType(sym_symbol);
   fun_type = make_AType(sym_function);
   fun_symbol_type = type_union(symbol_type, fun_type);
-#if 0
-  anyint_type = bottom_type;
-  for (int i = 0; i < IF1_INT_TYPE_NUM; i++)
-    for (int s = 0; s < 2; s++) {
-      Sym *ts = fa->pdb->if1->int_types[i][s];
-      if (ts) {
-	AType *t = make_AType(ts);
-	ts->as_AType = t;
-	anyint_type = type_union(anyint_type, t);
-	fa->basic_types.set_add(ts);
-      }
-    }
-  anynum_type = anyint_type;
-  for (int i = 0; i < IF1_FLOAT_TYPE_NUM; i++) {
-    Sym *ts = fa->pdb->if1->float_types[i];
-    if (ts) {
-      AType *t = make_AType(ts);
-      ts->as_AType = t;
-      anynum_type = type_union(anynum_type, t);
-      fa->basic_types.set_add(ts);
-    }
-  }
-#else
   anyint_type = make_AType(sym_anyint);
   anynum_type = make_AType(sym_anynum);
-#endif
   dispatch_table.clear();
   edge_worklist.clear();
   send_worklist.clear();
@@ -1164,11 +1140,22 @@ initialize(FA *fa) {
       s->as_AType = make_AType(s->type);
       s->type->subtypes.set_add(s);
     }
-    forv_Sym(ss, s->supertypes)
+    forv_Sym(ss, s->implements)
       ss->subtypes.set_add(s);
     forv_Sym(ss, s->has)
       if (ss->name)
 	s->has_map.put(ss->name, ss->var);
+  }
+  forv_Sym(s, fa->pdb->if1->allsyms) {
+    if (s->constraints.n) {
+      for (int i = 0; i < s->constraints.n; i++) {
+	if (!i && s->type_kind == Type_UNKNOWN) {
+	  s->subtypes.copy(s->constraints.v[i]->subtypes);
+	  continue;
+	}
+	s->subtypes.set_intersection(s->constraints.v[i]->subtypes);
+      }
+    }
   }
 }
 
