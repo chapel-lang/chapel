@@ -3,12 +3,7 @@
 #include "chplio.h"
 #include "domain.h"
 
-/*char* _default_format_read_float64   = "%lg";  // double*/
 char* _default_format_write_float64  = "%g";   // double
-/*
-char* _default_format_read_float128  = "%llg"; // long double
-char* _default_format_write_float128 = "%Lg";  // long double 
-*/
 
 void _write_linefeed(FILE* outfile) {
   fprintf(outfile, "\n");
