@@ -146,6 +146,8 @@ do_analysis(char *fn) {
   if1_finalize(if1);
   if (logging(LOG_IF1))
     if1_write(log_fp(LOG_IF1), if1);
+  if (!fdce_if1)
+    fail("unable to translate dead code... terminating");
   Sym *init = if1_get_builtin(if1, "init");
   for (int i = 0; i < if1->allclosures.n; i++) {
     Fun *f = new Fun(if1->allclosures.v[i], if1->allclosures.v[i] == init);
