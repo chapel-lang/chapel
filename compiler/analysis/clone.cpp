@@ -455,8 +455,11 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
     if (sym != (Sym*)-1) {
       if (sym != sym_tuple && sym != sym_function) {
 	Vec<CreationSet *> creators;
-	creators.set_union(sym->creators);
-	if (!creators.some_disjunction(*eqcss)) {
+	if (sym->abstract_type)
+	  eqcss->set_difference(*sym->abstract_type, creators);
+	else
+	  creators.copy(*eqcss);
+	if (!sym->creators.some_difference(creators)) {
 	  forv_CreationSet(cs, *eqcss) if (cs)
 	    cs->type = sym;
 	  continue;
