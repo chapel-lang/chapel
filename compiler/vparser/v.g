@@ -335,6 +335,7 @@ control_flow
 
 binary_operator
   : '.*'        $binary_op_left 9900 
+  | '**'        $binary_op_left 9700
   | '*'         $binary_op_left 9600
   | '/'         $binary_op_left 9600
   | '%'         $binary_op_left 9600
@@ -451,6 +452,7 @@ square_block_scope : [
 constant : (char | int8 | uint8 | int16 | uint16 | 
 	    int32 | uint32 | int64 | uint64 | int | uint |
 	    float32 | float64 | float128 | float | 
+	    complex32 | complex64 | complex128 | complex |
 	    string | symbol) ('__name' string)?
 { 
   $$.ast = new_AST(AST_const, &$n); 
@@ -494,6 +496,11 @@ float32	   ::= base_float "(f|F)";
 float64	   ::= base_float "(d|D)";
 float128   ::= base_float "(l|L)";
 float	   ::= base_float "/[^\.]";
+
+complex32  ::= float32 "i";
+complex64  ::= float64 "i";
+complex128 ::= float128 "i";
+complex    ::= base_float "i";
 
 identifier : "[a-zA-Z_][a-zA-Z0-9_]*" $term -1;
 

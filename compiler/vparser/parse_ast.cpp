@@ -1348,12 +1348,15 @@ gen_if(IF1 *i, ParseAST *ast) {
 static void
 gen_constructor(IF1 *i, ParseAST *ast) {
   Sym *constructor;
+  int no_value = 0;
   Vec<Sym *> args;
   forv_ParseAST(a, ast->children) {
     if (a->kind != AST_qualified_ident || a->rval->is_constant || a->rval->is_symbol) {
       if1_gen(i, &ast->code, a->code);
-      args.add(a->rval); 
-      assert(a->rval);
+      if (!a->rval)
+	no_value = 1;
+      else
+	args.add(a->rval); 
     } else {
       if1_gen(i, &ast->code, a->code);
       Sym *s = new_sym(i, ast->scope);
@@ -1361,6 +1364,8 @@ gen_constructor(IF1 *i, ParseAST *ast) {
       args.add(s); 
     }
   }
+  if (no_value)
+    return;
   Code *send = if1_send1(i, &ast->code);
   send->ast = ast;
   ast->rval = new_sym(i, ast->scope);
@@ -1665,7 +1670,7 @@ gen_if1(IF1 *i, ParseAST *ast) {
     case AST_new: gen_new(i, ast); break;
     case AST_if: gen_if(i, ast); break;
     case AST_return: {	
-      if (ast->children.v[0]->code) {
+      if (ast->children.n) {
 	if1_gen(i, &ast->code, ast->children.v[0]->code);
 	Sym *fn = ast->scope->function()->in;
 	if1_move(i, &ast->code, ast->last()->rval, fn->ret, ast);
