@@ -22511,3 +22511,44 @@ Modified files:
 	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
 	                         symscope.cpp 
 
+---------------------------------------------------------------------------
+
+03/30/05 10:29:49 -- deitz
+
+Log message:
+	Moved the initialization of ComputeVisibleFunctions out of its
+	constructor and into a run procedure.  This is because the constructor
+	is called at the beginning of compilation if the --passlist compiler
+	option is not used.  Brad may change this soon and then I'll move it
+	back into its constructor.  Another reason I think it is better to do
+	the initialization in the constructor rather than the run is that if
+	you want to use the traversal just on some section of the AST, the run
+	function won't be called but the constructor will be.  In addition,
+	for Symtab traversals, there are a few run functions and we don't want
+	to need to replicate the initialization.  An alternative is to have an
+	initialize function.
+	
+	Cleaned up the SymScope::setVisibleFunctions code so that the visible
+	functions aren't replicated in the prelude, being copied in from both
+	the intrinsic and the intrinsic via the internal prelude.
+	
+	Fixed a minor bug in specializeParenOpExprs in which the commented out
+	constructor was created in a FnCall (and then not resolved) rather
+	than in a ParenOp (and then resolved).
+	
+	Improved FnCall::findFnSymbol to print out error messages if it cannot
+	find them all the time.
+	
+	Though the #defines in specializeParenOpExprs and
+	buildClassConstructorsEtc remain commented out, this checkin goes a
+	long way in getting named parameters to work with class constructors.
+	We were really close.  There are other tests that fail, but both
+	test_class1 and test_class3 in classes/deitz now work if these lines
+	are uncommented.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         computeVisibleFunctions.h symscope.cpp 
+	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
+
