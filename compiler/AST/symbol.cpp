@@ -1,4 +1,5 @@
 #include <typeinfo>
+#include "analysis.h"
 #include "misc.h"
 #include "stmt.h"
 #include "symbol.h"

@@ -18,9 +18,9 @@ foo(1);
 function __init mutrec.chpl:22
 function __init() {
 function bar mutrec.chpl:17
-function bar(inout a: ???) {
+function bar(inout a: integer) {
 function foo mutrec.chpl:8
-function foo(inout a: ???) {
+function foo(inout a: integer) {
 globals
 if ((a==0)) {
 if ((a==0)) {

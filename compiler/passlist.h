@@ -16,8 +16,7 @@
 Pass* passlist[] = {
   FIRST,
 
-  //  RUN(TestGetStuff),
-  //  RUN(CheckTypeInfo),
+  RUN(FindUnknownTypes),
 
   LAST
 };

@@ -12,15 +12,19 @@ CheckTypeInfo::CheckTypeInfo(void) :
 
 
 void CheckTypeInfo::preProcessExpr(Expr* expr) {
-  if (expr->ainfo == NULL) {
-    expr->printLoc(stderr);
-    fprintf(stderr, " ainfo is NULL for:\n");
-    expr->print(stderr);
-    fprintf(stderr, "\n\n");
-  } else if (type_info(expr->ainfo) == NULL) {
-    expr->printLoc(stderr);
-    fprintf(stderr, " type_info() is NULL for:\n");
-    expr->print(stderr);
-    fprintf(stderr, "\n\n");
+  if (expr->ainfo) {
+    Type* exprType = type_info(expr);
+    if (exprType == NULL) {
+      expr->printLoc(stderr);
+      fprintf(stderr, " type_info() is NULL for:\n");
+      expr->println(stderr);
+      fprintf(stderr, "\n");
+    } else {
+      fprintf(stderr, "type of: ");
+      expr->print(stderr);
+      fprintf(stderr, " is: ");
+      exprType->println(stderr);
+      fprintf(stderr, "\n");
+    }
   }
 }

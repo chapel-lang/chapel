@@ -608,13 +608,10 @@ void WriteCall::codegen(FILE* outfile) {
 
     fprintf(outfile, "_write");
     if (argdt == dtUnknown) {
-      //      Sym* jsym = type_info(this->ainfo);
-      //      Symbol* bsym = jsym->xsymbol;
-      //      bsym->codegen(stderr);
-      //      if (jsym) {
-      //      }
-      //      INT_FATAL(this, "unknown type in write statement");
-      argdt = dtInteger; // BLC: Hack until type inference works
+      argdt = type_info(this);
+      if (argdt == dtUnknown) {
+	argdt = dtInteger; // BLC: hack!  Remove once type_info() working
+      }
     }
     argdt->codegen(outfile);
     fprintf(outfile, "(");

@@ -9,7 +9,7 @@ foo(5);
 function __init onearg.chpl:6
 function __init() {
 function foo onearg.chpl:3
-function foo(inout a: ???) {
+function foo(inout a: integer) {
 globals
 writeln("a is ", a);
 }

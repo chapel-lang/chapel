@@ -45,6 +45,12 @@ void ILink::print(FILE* outfile) {
 }
 
 
+void ILink::println(FILE* outfile) {
+  this->print(outfile);
+  fprintf(outfile, "\n");
+}
+
+
 void ILink::printList(FILE* outfile, char* separator) {
   ILink* ptr;
 

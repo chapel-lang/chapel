@@ -9,7 +9,7 @@ foo(5);
 function __init usebeforedef.chpl:7
 function __init() {
 function foo usebeforedef.chpl:5
-function foo(inout a: ???) {
+function foo(inout a: integer) {
 globals
 writeln("a is ", a);
 }

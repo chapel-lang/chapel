@@ -13,7 +13,7 @@ foo(1);
 function __init globalref.chpl:27
 function __init() {
 function foo globalref.chpl:12
-function foo(inout a: ???) {
+function foo(inout a: integer) {
 globals
 var a: integer = 10;
 var b: integer = 20;

@@ -19,6 +19,7 @@ class ILink : public Loc {
   virtual void traverseList(Traversal* traversal, bool atTop = true);
 
   virtual void print(FILE* outfile);
+  void println(FILE* outfile);
   virtual void printList(FILE* outfile, char* separator = ", ");
   virtual void codegen(FILE* outfile);
   virtual void codegenList(FILE* outfile, char* separator = ", ");

@@ -1,10 +1,7 @@
+#include "analysis.h"
 #include "expr.h"
 #include "findUnknownTypes.h"
 #include "stmt.h"
-
-FindUnknownTypes::FindUnknownTypes(void) :
-  Traversal()
-{}
 
 
 void FindUnknownTypes::preProcessStmt(Stmt* stmt) {
@@ -19,8 +16,7 @@ void FindUnknownTypes::postProcessStmt(Stmt* stmt) {
 
 void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
   if (sym->type == dtUnknown) {
-    fprintf(stderr, "Found symbol with unknown type: %s (%s:%d)\n",
-	    sym->name, sym->filename, sym->lineno);
+    sym->type = type_info(sym);
   }
 }
 
