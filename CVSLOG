@@ -14137,3 +14137,16 @@ Added files:
 	                            test_union_method3.future 
 	                            test_union_method3.good 
 
+---------------------------------------------------------------------------
+
+01/07/05 14:20:39 -- deitz
+
+Log message:
+	Removed .future for test_typevar_function3 which uses ?t for a type in
+	the parameter to a function.  Since the function is not cloned (only
+	called once), it works.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_function3.future 
+
