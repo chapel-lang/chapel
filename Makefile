@@ -38,6 +38,3 @@ clobber: FORCE
 -include make/Makefile.release
 
 FORCE:
-
-
-# shannon was here
