@@ -12,7 +12,7 @@
 ::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::classVals ( classVals (enumarray.chpl:1) )
 ::i(enumarray.chpl:16) ( Index (internal_prelude.chpl:1) )
-::i(internal_prelude.chpl:5) ( Index (internal_prelude.chpl:1) classVals (enumarray.chpl:1) )
+::i(internal_prelude.chpl:5) ( classVals (enumarray.chpl:1) )
 ::main ( main )
 ::nilSymbol(enumarray.chpl:5) ( nilSymbol )
 ::probSize(enumarray.chpl:5) ( nilSymbol (enumarray.chpl:5) )

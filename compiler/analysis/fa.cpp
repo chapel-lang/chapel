@@ -50,7 +50,7 @@ static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AV
 
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
-  restrict(top_type), container(0), setters(0), setter_class(0), creation_set(0), 
+  restrict(0), container(0), setters(0), setter_class(0), creation_set(0), 
   in_send_worklist(0), contour_is_entry_set(0)
 {
   id = avar_id++;
@@ -183,7 +183,8 @@ update_in(AVar *v, AType *t) {
   if (tt != v->in) {
     assert(tt && tt != top_type);
     v->in = tt;
-    tt = type_intersection(v->in, v->restrict);
+    if (v->restrict)
+      tt = type_intersection(v->in, v->restrict);
     if (tt != v->out) {
       assert(tt != top_type);
       v->out = tt;
@@ -336,7 +337,7 @@ type_num_fold(Prim *p, AType *a, AType *b) {
   return r;
 }
 
-static void
+void
 qsort_pointers(void **left, void **right) {
  Lagain:
   if (right - left < 5) {
@@ -481,15 +482,10 @@ type_union(AType *a, AType *b) {
 }
 
 static inline int
-specializer_of(Sym *a, Sym *b) {
-  if (a->constant) {
-    if (a == b)
-      return 1;
-    else
-      return b->specializers.set_in(a->type) != 0;
-  }
-  else
-    return b->specializers.set_in(a) != 0;
+subsumed_by(Sym *a, Sym *b) {
+  if (b->type_kind == Type_LUB || a->is_symbol)
+    return b->specializers.set_in(a->type) != 0;
+  else return a == b || a->type == b;
 }
 
 AType *
@@ -499,7 +495,7 @@ type_diff(AType *a, AType *b) {
     if (aa->defs.n && b->set_in(aa))
       continue;
     forv_CreationSet(bb, *b) if (bb && !bb->defs.n) {
-      if (specializer_of(aa->sym, bb->sym))
+      if (subsumed_by(aa->sym, bb->sym))
 	goto Lnext;
     }
     r->set_add(aa);
@@ -532,20 +528,20 @@ type_intersection(AType *a, AType *b) {
 	    goto Lnexta;
 	  }
 	} else {
-	  if (specializer_of(aa->sym, bb->sym)) {
+	  if (subsumed_by(aa->sym, bb->sym)) {
 	    r->set_add(aa);
 	    goto Lnexta;
 	  }
 	}
       } else {
 	if (bb->defs.n) {
-	  if (specializer_of(bb->sym, aa->sym))
+	  if (subsumed_by(bb->sym, aa->sym))
 	    r->set_add(bb);
 	} else {
-	  if (specializer_of(aa->sym, bb->sym)) {
+	  if (subsumed_by(aa->sym, bb->sym)) {
 	    r->set_add(aa);
 	    goto Lnexta;
-	  } else if (specializer_of(bb->sym, aa->sym))
+	  } else if (subsumed_by(bb->sym, aa->sym))
 	    r->set_add(bb);
 	}
       }
@@ -795,7 +791,10 @@ make_entry_set(AEdge *e, EntrySet *split = 0) {
 
 static void
 flow_var_type_permit(AVar *v, AType *t) {
-  v->restrict = type_union(t, v->restrict);
+  if (!v->restrict)
+    v->restrict = t;
+  else
+    v->restrict = type_union(t, v->restrict);
   AType *tt = type_intersection(v->in, v->restrict);
   if (tt != v->out) {
     assert(tt != top_type);
@@ -1949,7 +1948,7 @@ clear_avar(AVar *av) {
   av->out = bottom_type;
   av->setters = 0;
   av->setter_class = 0;
-  av->restrict = top_type;
+  av->restrict = 0;
   av->backward.clear();
   av->forward.clear();
   av->arg_of_send.clear();
@@ -1978,8 +1977,6 @@ clear_es(EntrySet *es) {
   for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee)
     clear_edge(*ee);
   es->out_edges.clear();
-  forv_MPosition(p, es->fun->numeric_arg_positions)
-    es->args.get(p)->restrict = bottom_type;
   es->backedges.clear();
   es->cs_backedges.clear();
   es->creates.clear();

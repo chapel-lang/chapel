@@ -14,6 +14,7 @@ int clone(FA *fa, Fun *top);
 void fixup_clone(Fun *f, Vec<EntrySet *> *ess);
 Sym *basic_type(FA *fa, AType *t, Sym *fail);
 void log_test_fa(FA *fa);
+Sym *to_basic_type(Sym *);
 
 
 #endif

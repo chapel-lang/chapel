@@ -295,6 +295,7 @@ int compar_creation_sets(const void *, const void *);
 void set_container(AVar *av, AVar *container);
 AVar * unique_AVar(Var *v, void *contour);
 AVar *unique_AVar(Var *v, EntrySet *es);
+void qsort_pointers(void **left, void **right);
 
 extern AType *bottom_type;
 extern AType *void_type;

@@ -18,3 +18,13 @@ BaseAST::BaseAST(astType_t type) :
   astType(type),
   id(uid++)
 {}
+
+int compar_baseast(const void *ai, const void *aj) {
+  BaseAST *i = *(BaseAST**)ai;
+  BaseAST *j = *(BaseAST**)aj;
+  if (i->id > j->id)
+    return 1;
+  else if (i->id < j->id)
+    return -1;
+  return 0;
+}

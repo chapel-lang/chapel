@@ -973,6 +973,18 @@ void TupleType::codegen(FILE* outfile) {
 }
 
 
+SumType::SumType(Type* firstType) :
+  Type(TYPE_SUM, nilExpr)
+{
+  components.add(firstType);
+}
+
+
+void SumType::addType(Type* additionalType) {
+  components.add(additionalType);
+}
+
+
 VariableType::VariableType() :
   Type(TYPE_VARIABLE, nilExpr)
 {}
@@ -1031,3 +1043,46 @@ void findInternalTypes(void) {
   dtDomain = Symboltable::lookupInternalType("Domain")->type;
   dtArray = Symboltable::lookupInternalType("Array")->type;
 }
+
+#if 0
+
+// you can use something like the following cache to 
+// find an existing SumType.
+
+// eventually this sort of a cache will have to be
+// implemented over all 'structural' types, e.g.
+// records
+
+class LUBCacheHashFns {
+ public:
+  static unsigned int hash(Symbol *a) {
+    unsigned int h = 0;
+    Sym *s = a->asymbol->sym;
+    for (int i = 0; i < s->has.n; i++)
+      h += open_hash_multipliers[i % 256] * (uintptr_t)s->has.v[i];
+    return h;
+  }
+  static int equal(Symbol *aa, Symbol *ab) { 
+    Sym *a = aa->asymbol->sym, *b = ab->asymbol->sym;
+    if (a->has.n != b->has.n)
+      return 0;
+    for (int i = 0; i < a->has.n; i++)
+      if (a->has.v[i] != b->has.v[i])
+	return 0;
+    return 1;
+  }
+};
+
+static class BlockHash<Symbol *, LUBCacheHashFns> lub_cache;
+
+// make sure you sort the types before putting them into
+// the SumType
+qsort(types.v, types.n, sizeof(types.v[0]), compar_baseast);
+
+#endif
+
+Type *find_or_make_sum_type(Vec<Type *> *types) {
+  assert(!"implemented"); 
+  return 0; 
+}
+

@@ -213,6 +213,14 @@ class TupleType : public Type {
   void codegen(FILE* outfile);
 };
 
+class SumType : public Type {
+ public:
+  Vec<Type*> components;
+
+  SumType(Type* init_type);
+  void addType(Type* additionalType);
+};
+
 class VariableType : public Type {
  public:
   VariableType();
@@ -257,5 +265,6 @@ TYPE_EXTERN Vec<Type*> builtinTypes;
 
 void initTypes(void);
 void findInternalTypes(void);
+Type *find_or_make_sum_type(Vec<Type *> *types);
 
 #endif

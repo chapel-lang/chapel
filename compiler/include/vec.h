@@ -48,6 +48,7 @@ template <class C> class Vec : public gc {
   int set_count();
   inline C *in(C a);
   inline C *set_in(C a);
+  inline C first();
   C *set_in_internal(C a);
   void set_expand();
   inline int index(C a);
@@ -190,6 +191,14 @@ Vec<C>::set_in(C a) {
   if (n <= VEC_INTEGRAL_SIZE)
     return in(a);
   return set_in_internal(a);
+}
+
+template <class C> inline C
+Vec<C>::first() {
+  for (C *c = v; c < v + n; c++)
+    if (*c)
+      return *c;
+  return 0;
 }
 
 template <class C> inline int

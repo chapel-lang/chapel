@@ -18,6 +18,7 @@
 #include "fun.h"
 #include "prim.h"
 #include "pattern.h"
+#include "clone.h"
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 
@@ -52,8 +53,8 @@ static void build_symbols(Vec<BaseAST *> &syms);
 static void build_types(Vec<BaseAST *> &syms);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
-
 static ScopeLookupCache universal_lookup_cache;
+
 
 ASymbol::ASymbol() : symbol(0), sym(0) {
 }
@@ -289,8 +290,32 @@ ASymbol::copy() {
   return s;
 }
 
-void
-ACallbacks::new_LUB_type(Sym *) {
+Sym *
+ACallbacks::make_LUB_type(Sym *t) {
+  Vec<Type *> types;
+  Sym *basic = 0;
+  forv_Sym(s, t->has) {
+    Sym *b = to_basic_type(s);
+    if (b) {
+      if (!basic)
+	basic = b;
+      else if (basic != b)
+	fail("mixed primitive types");
+    }
+    Type *ttt = dynamic_cast<Type *>(s->asymbol->symbol);
+    assert(ttt);
+    types.set_add(ttt);
+  }
+  types.set_to_vec();
+  Type *tt = find_or_make_sum_type(&types);
+  if (tt->asymbol)
+    return tt->asymbol->sym;
+  tt->asymbol = new ASymbol;
+  tt->asymbol->sym = t;
+  tt->asymbol->symbol = tt;
+  assert(tt->asymbol->sym->type_kind == Type_LUB);
+  tt->name->asymbol = new_ASymbol(tt->name);
+  return t;
 }
 
 Sym *
@@ -748,9 +773,9 @@ build_builtin_symbols() {
   sym_complex64 = dtComplex->asymbol->sym;
   sym_string = dtString->asymbol->sym;
 
-  new_primitive_type(sym_anyclass, "anyclass");
+  new_lub_type(sym_anyclass, "anyclass", 0);
   sym_anyclass->meta_type = sym_anyclass;
-  new_primitive_type(sym_any, "any");
+  new_lub_type(sym_any, "any", 0);
   new_primitive_type(sym_module, "module");
   new_primitive_type(sym_symbol, "symbol");
   if1_set_symbols_type(if1);
@@ -1488,6 +1513,7 @@ gen_if1(BaseAST *ast) {
   case TYPE_USER:
   case TYPE_CLASS:
   case TYPE_TUPLE:
+  case TYPE_SUM:
   case TYPE_VARIABLE:
   case TYPE_UNRESOLVED:
   case AST_TYPE_END:

@@ -62,6 +62,7 @@ enum astType_t {
   TYPE_USER,
   TYPE_CLASS,
   TYPE_TUPLE,
+  TYPE_SUM,
   TYPE_VARIABLE,
   TYPE_UNRESOLVED,
   
@@ -108,6 +109,9 @@ void collect_asts(Vec<BaseAST*>* asts, FnSymbol* function);
 //   Vec<BaseAST*> all_asts;
 //   FnSymbol* function = ...;
 //   collect_asts(&all_asts, function);
+
+int compar_baseast(const void *ai, const void *aj);
+// for use with qsort
 
 #endif
 

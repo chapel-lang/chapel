@@ -29,9 +29,9 @@ char *cannonical_self = 0;
 Sym *operator_symbol = 0;
 Sym *print_symbol = 0;
 
-
-void 
-PCallbacks::new_LUB_type(Sym *) {
+void
+PCallbacks::new_LUB_type(Sym *s) {
+  assert(s->type_kind == Type_LUB);
 }
 
 Sym *

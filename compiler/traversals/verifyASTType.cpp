@@ -278,6 +278,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_TUPLE");
     }
     break;
+  case TYPE_SUM:
+    if (typeid(*ast) != typeid(SumType)) {
+      INT_FATAL(ast, "Unexpected AST type type: TYPE_SUM");
+    }
+    break;
   case TYPE_VARIABLE:
     if (typeid(*ast) != typeid(VariableType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_VARIABLE");

@@ -22,7 +22,7 @@ class Sym;
 class ACallbacks : public Callbacks {
 public:
   void finalize_functions();
-  void new_LUB_type(Sym *);
+  Sym *make_LUB_type(Sym *);
   Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
   Sym *new_Sym(char *name = 0);
   Fun *order_wrapper(Match *);

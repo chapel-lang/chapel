@@ -8,7 +8,7 @@ class Fun;
 class Callbacks : public gc {
 public:
   virtual void finalize_functions() {}
-  virtual void new_LUB_type(Sym *) = 0;
+  virtual Sym *make_LUB_type(Sym *s) { return s; }
   virtual Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions) { return 0; }
   virtual Sym *new_Sym(char *name) = 0;
   virtual Fun* order_wrapper(Match *) { return 0; }

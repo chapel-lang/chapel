@@ -63,7 +63,7 @@ equivalent_es_ivars(EntrySet *a, EntrySet *b) {
   return 1;
 }
 
-static Sym *
+Sym *
 to_basic_type(Sym *t) {
   if (t == sym_symbol)
     return t;
@@ -75,6 +75,8 @@ to_basic_type(Sym *t) {
     return t->type;
   if (t->is_symbol)
     return sym_symbol;
+  if (t->type_kind == Type_TAGGED)
+    return t->specializes.v[0];
   return 0;
 }
 
@@ -449,8 +451,9 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	  s->name = name;
 	if (ast && ast != BAD_AST)
 	  s->ast = ast;
-      } else if (sym->type_kind == Type_PRIMITIVE || sym->is_symbol 
-		 || sym->is_constant || sym->is_fun) 
+      } else if (sym->type_kind == Type_PRIMITIVE ||
+		 sym->type_kind == Type_TAGGED || 
+		 sym->is_symbol || sym->is_constant || sym->is_fun) 
       {
 	forv_CreationSet(cs, *eqcss) if (cs)
 	  cs->type = sym;
@@ -482,21 +485,19 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
       sym = new_Sym();
       sym->type_kind = Type_LUB;
       sym->incomplete = 1;
-      forv_CreationSet(cs, *eqcss) if (cs)
+      forv_CreationSet(cs, *eqcss) if (cs) {
 	cs->type = sym;
+	sym->creators.add(cs);
+      }
     }
   }
 }
 
-static void
+static int
 resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
   for (int i = 0; i < css_sets.n; i++) {
     Vec<CreationSet *> *eqcss = css_sets.v[i];
-    Sym *sym = 0;
-    forv_CreationSet(cs, *eqcss) if (cs) {
-      sym = cs->type;
-      break;
-    }
+    Sym *sym = eqcss->first()->type;
     if (sym->incomplete) {
       sym->incomplete = 0;
       switch (sym->type_kind) {
@@ -512,7 +513,9 @@ resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	    sym->has.set_add(cs->sym);
 	  sym->has.set_to_vec();
 	  qsort(sym->has.v, sym->has.n, sizeof(sym->has.v[0]), compar_syms);
-	  if1->callback->new_LUB_type(sym);
+	  sym = if1->callback->make_LUB_type(sym);
+	  forv_CreationSet(cs, *eqcss) if (cs)
+	    cs->type = sym;
 	  break;
 	}
 	case Type_RECORD:
@@ -544,12 +547,14 @@ resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 	    if (t.n == 1)
 	      s->type = t.v[0];
 	    else {
-	      if (s->has.n != 0) {
+	      if (t.n != 0) {
 		Sym *tt = new_Sym();
 		tt->type_kind = Type_LUB;
-		tt->has.copy(t);
+		tt->has.append(t);
+		tt = if1->callback->make_LUB_type(tt);
+		forv_CreationSet(cs, *eqcss) if (cs)
+		  cs->type = tt;
 		s->type = tt;
-		if1->callback->new_LUB_type(tt);
 	      } else
 		s->type = sym_void;
 	    }
@@ -559,9 +564,10 @@ resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
       }
     }
   }
+  return 0;
 }
 
-static void
+static int
 build_concrete_types() {
   CSSS css_sets;
   forv_CreationSet(cs, fa->css)
@@ -571,7 +577,9 @@ build_concrete_types() {
   ASTCopyContext context;
   callback.context = &context;
   define_concrete_types(css_sets, callback);
-  resolve_concrete_types(css_sets, callback);
+  if (resolve_concrete_types(css_sets, callback) < 0)
+    return -1;
+  return 0;
 }
 
 static int
@@ -606,10 +614,8 @@ concretize_types(Fun *f) {
       type->has.set_to_vec();
       if (type->has.n == 1)
 	v->type = type->has.v[0];
-      else {
-	v->type = type;
-        if1->callback->new_LUB_type(type);
-      }
+      else
+        v->type = if1->callback->make_LUB_type(type);
     }
   }
   return 0;
@@ -728,7 +734,8 @@ clone(FA *afa, Fun *top) {
   ::fa = afa;
   initialize();
   determine_clones();
-  build_concrete_types();
+  if (build_concrete_types() < 0)
+    return -1;
   if (clone_functions() < 0)
     return -1;
   return 0;
