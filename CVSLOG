@@ -3906,3 +3906,23 @@ Added files:
 	chapel/util/tokencount/: .cvsignore Makefile tokencount.c 
 	                         tokencount.h tokencount.l tokencount.y 
 
+---------------------------------------------------------------------------
+
+07/12/04 16:27:49 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Member function support (as opposed to multi-methods).
+	Class initialize support (0 args currently).
+
+Modified files:
+	chapel/compiler/: ast.cpp ast.h builtin_symbols.h codegen.cpp 
+	                  fa.cpp fa_extras.cpp if1.cpp pattern.cpp 
+	                  prelude.chpl prelude.v prim_data.dat scope.cpp 
+	                  scope.h sym.h v.g 
+	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
+	                                    cs6.good cs6.v 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good 
+
