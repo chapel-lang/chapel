@@ -1,5 +1,7 @@
 #include <map>
 #include <string>
+#include <typeinfo>
+#include "expr.h"
 #include "stmt.h"
 #include "symtab.h"
 #include "yy.h"
@@ -71,21 +73,25 @@ void Scope::insert(Symbol* sym) {
 
 void Scope::print(FILE* outfile) {
   fprintf(outfile, "======================================================\n");
+  fprintf(outfile, "SCOPE: ");
   switch (type) {
   case SCOPE_INTRINSIC:
-    fprintf(outfile, "SCOPE: global, standard, intrinsic\n");
+    fprintf(outfile, "global, standard, intrinsic\n");
     break;
   case SCOPE_FILE:
-    fprintf(outfile, "SCOPE: file\n");
+    fprintf(outfile, "file\n");
     break;
   case SCOPE_PARAM:
-    fprintf(outfile, "SCOPE: parameters\n");
+    fprintf(outfile, "parameters\n");
     break;
   case SCOPE_FUNCTION:
-    fprintf(outfile, "SCOPE: function\n");
+    fprintf(outfile, "function\n");
     break;
   case SCOPE_LOCAL:
-    fprintf(outfile, "SCOPE: local\n");
+    fprintf(outfile, "local\n");
+    break;
+  case SCOPE_FORLOOP:
+    fprintf(outfile, "for loop\n");
     break;
   }
   /*
@@ -163,8 +169,8 @@ Symbol* Symboltable::lookup(char* name, bool genError) {
 
   if (genError) {
     //    Symboltable::print(stderr);
-    fprintf(stderr, "%s:%d '%s' used before defined\n", yyfilename, yylineno,
-	    name);
+    // fprintf(stderr, "%s:%d '%s' used before defined\n", yyfilename, yylineno,
+    //	    name);
     
   }
   return new Symbol(name);
@@ -175,28 +181,9 @@ ParamSymbol* Symboltable::defineParams(paramType formaltag, Symbol* idents,
 				       Type* type) {
   ParamSymbol* paramList;
   ParamSymbol* newParam;
+  ParamSymbol* lastParam;
 
-  paramList = new ParamSymbol(PARAM_INOUT, idents->name, type);
-  newParam = paramList;
-  idents = (Symbol*)(idents->next); // BLC: yuck!
-  while (idents != NULL) {
-    newParam->next = new ParamSymbol(PARAM_INOUT, idents->name, type);
-    newParam = (ParamSymbol*)(newParam->next);  // BLC: yuck!
-    idents = (Symbol*)(idents->next); // BLC: yuck!
-  }
-
-  return paramList;
-}
-
-
-Stmt* Symboltable::defineVars(varType vartag, bool isConst, 
-			      Symbol* idents, Type* type, Expr* init) {
-  
-  VarSymbol* paramList;
-  VarSymbol* newParam;
-  VarSymbol* lastParam;
-
-  newParam = new VarSymbol(idents->name, vartag, isConst, type);
+  newParam = new ParamSymbol(PARAM_INOUT, idents->name, type);
   define(newParam);
 
   paramList = newParam;
@@ -204,15 +191,41 @@ Stmt* Symboltable::defineVars(varType vartag, bool isConst,
 
   idents = (Symbol*)(idents->next); // BLC: yuck!
   while (idents != NULL) {
-    newParam = new VarSymbol(idents->name, vartag, isConst, type);
-    define(newParam);    
+    newParam = new ParamSymbol(PARAM_INOUT, idents->name, type);
+    define(newParam);
     lastParam->next = newParam;
     lastParam = newParam;
 
     idents = (Symbol*)(idents->next); // BLC: yuck!
   }
 
-  return new VarDefStmt(paramList, init);
+  return paramList;
+}
+
+
+VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
+				   varType vartag, bool isConst) {
+  VarSymbol* varList;
+  VarSymbol* newVar;
+  VarSymbol* lastVar;
+
+  newVar = new VarSymbol(idents->name, vartag, isConst, type);
+  define(newVar);
+
+  varList = newVar;
+  lastVar = newVar;
+
+  idents = (Symbol*)(idents->next); // BLC: yuck!
+  while (idents != NULL) {
+    newVar = new VarSymbol(idents->name, vartag, isConst, type);
+    define(newVar);    
+    lastVar->next = newVar;
+    lastVar = newVar;
+
+    idents = (Symbol*)(idents->next); // BLC: yuck!
+  }
+
+  return varList;
 }
 
 
@@ -239,6 +252,33 @@ EnumSymbol* Symboltable::defineEnumList(Symbol* symList) {
   }
 
   return enumList;
+}
+
+
+FunSymbol* Symboltable::defineFunction(char* name, Symbol* formals, 
+				       Type* retType, Stmt* body) {
+  FunSymbol* newFun = new FunSymbol(name, formals, retType, body);
+  define(newFun);
+
+  return newFun;
+}
+
+
+VarSymbol* Symboltable::enterForLoop(Symbol* indices) {
+  Symboltable::pushScope(SCOPE_FORLOOP);
+  return defineVars(indices, dtInteger); // BLC: dtInteger is wrong
+}
+
+
+void Symboltable::exitForLoop(void) {
+  Symboltable::popScope();
+}
+
+
+DomainExpr* Symboltable::defineQueryDomain(char* name) {
+  // BLC: TODO
+  //  VarSymbol* newDom = new VarSymbol(name, VAR_NORMAL, true, 
+  return unknownDomain;
 }
 
 

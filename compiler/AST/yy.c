@@ -3,7 +3,7 @@
 
 
 void yyerror(const char *str) {
-  fprintf(stderr, "error on line %d: %s\n", yylineno, str);
+  fprintf(stderr, "%s:%d ERROR: %s\n", yyfilename, yylineno, str);
   fprintf(stderr, "yytext is: %s\n", yytext);
   exit(1);
 }

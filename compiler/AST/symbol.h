@@ -18,7 +18,9 @@ class Symbol : public Link {
 
   Symbol(char* init_name);
 
-  void print(FILE*);
+  void print(FILE* outfile);
+  virtual void printDef(FILE* outfile) { print(outfile); }
+  void printDefList(FILE* outfile, char* separator);
 };
 
 
@@ -39,7 +41,15 @@ class VarSymbol : public Symbol {
   VarSymbol(char* init_name, varType init_varClass = VAR_NORMAL, 
 	    bool init_isConst = false, Type* init_type = dtUnknown);
   
-  void printWithType(FILE*);
+  void printWithType(FILE* outfile);
+};
+
+
+class NullVarSymbol : public VarSymbol {
+ public:
+  NullVarSymbol(void);
+
+  bool isNull(void) { return true; }
 };
 
 
@@ -61,7 +71,7 @@ class ParamSymbol : public Symbol {
   ParamSymbol(paramType init_usage, char* init_name, 
 	      Type* init_type = dtUnknown);
 
-  void print(FILE* outfile);
+  void printDef(FILE* outfile);
 };
 
 

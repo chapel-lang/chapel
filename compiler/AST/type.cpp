@@ -2,7 +2,6 @@
 #include "symbol.h"
 #include "type.h"
 
-Type* dtBoolean;
 Type* dtInteger;
 Type* dtFloat;
 
@@ -11,7 +10,6 @@ Type* dtLocale;
 
 Type* dtUnknown;
 
-Symbol* pstBoolean;
 Symbol* pstInteger;
 Symbol* pstFloat;
 
@@ -163,7 +161,6 @@ static void newType(char* name, Type** dtHandle, Symbol** symHandle) {
 
 
 void initType(void) {
-  newType("boolean", &dtBoolean, &pstBoolean);
   newType("integer", &dtInteger, &pstInteger);
   newType("float", &dtFloat, &pstFloat);
   newType("locale", &dtLocale, &pstLocale);

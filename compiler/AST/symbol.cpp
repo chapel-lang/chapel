@@ -14,6 +14,19 @@ void Symbol::print(FILE* outfile) {
 }
 
 
+void Symbol::printDefList(FILE* outfile, char* separator) {
+  Symbol* ptr;
+
+  printDef(outfile);
+  ptr = (Symbol*)next;  // BLC: switch to dynamic cast
+  while (ptr != NULL) {
+    fprintf(outfile, "%s", separator);
+    ptr->printDef(outfile);
+    ptr = (Symbol*)(ptr->next);  // BLC: switch to dynamic cast
+  }
+}
+
+
 NullSymbol::NullSymbol(void) :
   Symbol("")
 {}
@@ -37,6 +50,11 @@ void VarSymbol::printWithType(FILE* outfile) {
 }
 
 
+NullVarSymbol::NullVarSymbol() :
+  VarSymbol("nullvar")
+{}
+
+
 static char* paramTypeNames[NUM_PARAM_TYPES] = {
   "in",
   "inout",
@@ -53,7 +71,7 @@ ParamSymbol::ParamSymbol(paramType init_usage, char* init_name,
 {}
 
 
-void ParamSymbol::print(FILE* outfile) {
+void ParamSymbol::printDef(FILE* outfile) {
   fprintf(outfile, "%s ", paramTypeNames[usage]);
   Symbol::print(outfile);
   fprintf(outfile, ": ");

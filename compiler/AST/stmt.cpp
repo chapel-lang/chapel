@@ -74,7 +74,7 @@ void FnDefStmt::print(FILE* outfile) {
   fprintf(outfile, "function ");
   fun->print(outfile);
   fprintf(outfile, "(");
-  fun->formals->printList(outfile, ";\n");
+  fun->formals->printDefList(outfile, ";\n");
   fprintf(outfile, ")");
   if (fun->retType->isNull()) {
     fprintf(outfile, " ");
@@ -171,7 +171,7 @@ void WhileLoopStmt::print(FILE* outfile) {
 
 
 ForLoopStmt::ForLoopStmt(bool init_forall,
-			 Expr* init_index,
+			 VarSymbol* init_index,
 			 Expr* init_domain,
 			 Stmt* body)
   : BlockStmt(body),

@@ -53,6 +53,6 @@ void Link::append(Link* newlink) {
   lastlink->next = newlink;
   newlink->prev = lastlink;
   if (newlink->next != NULL) {
-    fprintf(stderr, "WARNING: linked\n");
+    //    fprintf(stderr, "WARNING: linked\n");
   }
 }

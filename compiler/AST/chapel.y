@@ -31,6 +31,7 @@
   Stmt* stmt;
   Type* pdt;
   Symbol* psym;
+  VarSymbol* pvsym;
   TypeSymbol* ptsym;
 }
 
@@ -48,7 +49,7 @@
 %token FUNCTION
 %token INOUT IN OUT REF VAL
 
-%token IDENT
+%token IDENT QUERY_IDENT
 %token <ptsym> TYPE_IDENT
 %token INTLITERAL FLOATLITERAL 
 %token <pch> STRINGLITERAL
@@ -81,8 +82,8 @@
 
 %type <pdt> type types domainType indexType arrayType tupleType weirdType
 %type <pdt> vardecltype fnrettype
-%type <pch> identifier 
-%type <psym> enumList formal nonemptyformals formals idlist
+%type <pch> identifier query_identifier
+%type <psym> enumList formal nonemptyformals formals idlist indexlist
 %type <pexpr> expr exprlist nonemptyExprlist arrayref literal range
 %type <pexpr> reduction memberaccess vardeclinit cast reduceDim
 %type <pdexpr> domainExpr
@@ -155,7 +156,10 @@ vardeclinit:
 
 vardecl:
   vardecltag varconst idlist vardecltype vardeclinit ';'
-    { $$ = Symboltable::defineVars($1, $2, $3, $4, $5); }
+    {
+      VarSymbol* varList = Symboltable::defineVars($3, $4, $5, $1, $2);
+      $$ = new VarDefStmt(varList, $5);
+    }
 ;
 
 
@@ -258,7 +262,7 @@ fndecl:
                       '(' formals ')' fnrettype statement
     {
       Symboltable::popScope();
-      FunSymbol* fnpst = new FunSymbol($2, $5, $7, $8);
+      FunSymbol* fnpst = Symboltable::defineFunction($2, $5, $7, $8);
       $$ = new FnDefStmt(fnpst);
     }
 ;
@@ -288,9 +292,7 @@ tupleType:
 
 
 type:
-  BOOLEAN
-    { $$ = dtBoolean; }
-| INTEGER
+  INTEGER
     { $$ = dtInteger; }
 | FLOAT
     { $$ = dtFloat; }
@@ -301,6 +303,8 @@ type:
 | weirdType
 | TYPE_IDENT
     { $$ = $1->definition; }
+| query_identifier
+    { $$ = dtUnknown; }
 ;
 
 
@@ -335,6 +339,8 @@ indexType:
 arrayType:
   '[' ']' type
     { $$ = new ArrayType(unknownDomain, $3); }
+| '[' query_identifier ']' type
+    { $$ = new ArrayType(Symboltable::defineQueryDomain($2), $4); }
 | '[' domainExpr ']' type
     { $$ = new ArrayType($2, $4); }
 ;
@@ -387,9 +393,23 @@ fortype:
 ;
 
 
+indexlist:
+  idlist
+| '(' idlist ')'
+  { $$ = $2; }
+;
+
+
 forloop:
-  fortype expr IN expr statement
-    { $$ = new ForLoopStmt(true, $2, $4, $5); }
+  fortype indexlist IN expr
+    { 
+      $<pvsym>$ = Symboltable::enterForLoop($2);
+    }
+                                 statement
+    { 
+      Symboltable::exitForLoop();
+      $$ = new ForLoopStmt(true, $<pvsym>5, $4, $6);
+    }
 ;
 
 
@@ -529,8 +549,8 @@ reduction:
 domainExpr:
   nonemptyExprlist
     { $$ = new DomainExpr($1); }
-| nonemptyExprlist ':' nonemptyExprlist
-    { $$ = new DomainExpr($3, $1); }
+| indexlist ':' nonemptyExprlist          // BLC: This is wrong vv
+    { $$ = new DomainExpr($3, Symboltable::defineVars($1, dtInteger)); }
 ;
 
 
@@ -623,8 +643,16 @@ otherbinop:
 identifier:
   IDENT
     { $$ = copystring(yytext); }
+/*
 | '?' IDENT
     { $$ = glomstrings(2, "?", yytext); }
+*/
+;
+
+
+query_identifier:
+  QUERY_IDENT
+    { $$ = copystring(yytext+1); }
 ;
 
 

@@ -174,10 +174,10 @@ class CompleteDimExpr : public Expr {
 class DomainExpr : public Expr {
  public:
   Expr* domains;
-  Expr* indices;
+  VarSymbol* indices;
   Expr* forallExpr;
 
-  DomainExpr(Expr* init_domains, Expr* init_indices = new NullExpr());
+  DomainExpr(Expr* init_domains, VarSymbol* init_indices = new NullVarSymbol());
 
   void setForallExpr(Expr* exp);
 

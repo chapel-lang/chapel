@@ -8,7 +8,8 @@ enum scopeType {
   SCOPE_FILE,
   SCOPE_PARAM,
   SCOPE_FUNCTION,
-  SCOPE_LOCAL
+  SCOPE_LOCAL,
+  SCOPE_FORLOOP
 };
   
 
@@ -24,10 +25,18 @@ class Symboltable {
 
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,
 				   Type* type);
-  static Stmt* Symboltable::defineVars(varType vartag, bool isConst, 
-				       Symbol* idents, Type* type, 
-				       Expr* init);
+  static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
+					    Expr* init = NULL, 
+					    varType vartag = VAR_NORMAL, 
+					    bool isConst = false);
   static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
+  static FunSymbol* defineFunction(char* name, Symbol* formals, Type* retType, 
+				   Stmt* body);
+
+  static VarSymbol* enterForLoop(Symbol* indices);
+  static void exitForLoop(void);
+
+  static DomainExpr* defineQueryDomain(char* name);
 
   static void print(FILE* outfile);
 };

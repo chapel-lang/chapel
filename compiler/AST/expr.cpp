@@ -189,7 +189,7 @@ void CompleteDimExpr::print(FILE* outfile) {
 }
 
 
-DomainExpr::DomainExpr(Expr* init_domains, Expr* init_indices) :
+DomainExpr::DomainExpr(Expr* init_domains, VarSymbol* init_indices) :
   domains(init_domains),
   indices(init_indices),
   forallExpr(new NullExpr())

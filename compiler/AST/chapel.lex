@@ -24,7 +24,7 @@
 
 digit           [0-9]
 letter          [_a-zA-Z]
-ident           {letter}({letter}|{digit})*
+ident           \??{letter}({letter}|{digit})*
 intLiteral      {digit}+{digit}*      
 floatLiteral    {digit}+"."{digit}+
 
@@ -35,7 +35,6 @@ static          return STATIC;
 var             return VAR;
 const           return CONST;
 
-boolean         return BOOLEAN;
 integer         return INTEGER;
 float           return FLOAT;
 
@@ -102,7 +101,12 @@ reduce          return REDUCE;
 
 
 {ident}         {
-                  Symbol* sym = Symboltable::lookup(yytext, false);
+                  Symbol* sym;
+                  if (yytext[0] == '?') {
+                    return QUERY_IDENT;
+                  } else {
+                    sym = Symboltable::lookup(yytext, false);
+                  }
                   if (sym == NULL || typeid(*sym) == typeid(Symbol)) {
                     return IDENT;
                   } else {
@@ -112,6 +116,8 @@ reduce          return REDUCE;
 		    } else if (typeid(*sym) == typeid(EnumSymbol)) {
 		      return IDENT;
 		    } else if (typeid(*sym) == typeid(VarSymbol)) {
+		      return IDENT;
+		    } else {
 		      return IDENT;
 		    }
                   }

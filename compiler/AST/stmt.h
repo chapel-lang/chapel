@@ -100,10 +100,10 @@ class WhileLoopStmt : public BlockStmt {
 class ForLoopStmt : public BlockStmt {
  public:
   bool forall;
-  Expr* index;
+  VarSymbol* index;
   Expr* domain;
 
-  ForLoopStmt(bool init_forall, Expr* init_index, Expr* init_domain,
+  ForLoopStmt(bool init_forall, VarSymbol* init_index, Expr* init_domain,
 	      Stmt* body);
 
   void print(FILE* outfile);
