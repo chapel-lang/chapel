@@ -12264,3 +12264,21 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa_extras.cpp 
 
+---------------------------------------------------------------------------
+
+12/21/04 12:56:15 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added the ability to determine how application and partial appplication are
+	allowed on a SEND by SEND bases: Partial_OK, Partial_NEVER, Partial_ALWAYS.
+	Currently x.foo is turned into a Partial_ALWAYS which means that
+	x.foo() is the only way to call a member function (since the () is required
+	to evaluate the resulting partially applied closure).   For other
+	function calls in Chapel, Partial_NEVER is set.  When we get support
+	for =>, this will set Partial_ALWAYS.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
+	                           prim_data.dat 
+	chapel/compiler/include/: code.h pattern.h 
+
