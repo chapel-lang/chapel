@@ -11051,3 +11051,23 @@ Added files:
 	chapel/test/classes/deitz/future/: test_record1.chpl 
 	                                   test_record1.good 
 
+---------------------------------------------------------------------------
+
+12/02/04 15:47:31 -- deitz
+
+Log message:
+	Fixed a bug in which methods with no arguments were handled
+	incorrectly.  Added a couple test cases to test methods with no
+	arguments for both classes and records.  Note that methods with
+	records work except for the case where they access their fields.
+
+Modified files:
+	chapel/compiler/AST/: link.cpp 
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+	                             methodsToFunctions.cpp 
+Added files:
+	chapel/test/classes/deitz/future/: test_method1a.chpl 
+	                                   test_method1a.good 
+	                                   test_record_method1.chpl 
+	                                   test_record_method1.good 
+
