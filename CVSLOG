@@ -21046,3 +21046,32 @@ Added files:
 	                           test_array_of_array1.future 
 	                           test_array_of_array1.good 
 
+---------------------------------------------------------------------------
+
+03/23/05 13:17:08 -- deitz
+
+Log message:
+	Added future tests for sequences and complex variables.  Following
+	suit of Brad, these are my personal futures.
+
+Modified files:
+	chapel/test/types/complex/bradc/: .cvsignore 
+Added files:
+	chapel/test/types/complex/deitz/: .cvsignore test_complex1.chpl 
+	                                  test_complex1.good 
+	                                  test_complex2.chpl 
+	                                  test_complex2.future 
+	                                  test_complex2.good 
+	chapel/test/types/seq/deitz/: .cvsignore test_seq1.chpl 
+	                              test_seq1.future test_seq1.good 
+	                              test_seq2.chpl test_seq2.future 
+	                              test_seq2.good test_seq3.chpl 
+	                              test_seq3.future test_seq3.good 
+	                              test_seq4.chpl test_seq4.future 
+	                              test_seq4.good test_seq5.chpl 
+	                              test_seq5.future test_seq5.good 
+	                              test_seq6.chpl test_seq6.future 
+	                              test_seq6.good test_seq7.chpl 
+	                              test_seq7.future test_seq7.good 
+	chapel/test/types/tuple/jplevyak/: .cvsignore 
+
