@@ -10363,3 +10363,48 @@ Added files:
 	chapel/test/types/enum/deitz/: test_enum1.chpl test_enum1.good 
 	chapel/test/types/enum/deitz/future/: NOTEST test_enum2.chpl 
 
+---------------------------------------------------------------------------
+
+11/25/04 09:07:38 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Enum now inherit from "eum_element" which is an alias for int64.
+	"size" is now an alias to int64 for Chapel (I don't know if we are
+	going to have a "sizeof" for structures, but if we do we should have
+	a "size" type).
+	unaliasing of types now correctly unaliases 'specializes' and 'includes'.
+	For variable assignment, the LHS is not unnecessarily copied.
+	Sym::constant is now a documentation string and can be NULL
+	  (instead of having "<folded>" or some other indicator of where the
+	   constant came from)
+	Updated tests for the above changes.
+	
+	Fix analysis of Steve's test_enum2.chpl.
+	
+	I did this by extending the builtin = primitive.  In the future
+	we should implement operator overloading which would make it possible
+	to solve these problems in a perlude.
+	
+	We need to implement operator overloading anyway, and doing it
+	now rather than increasing the number of special cases would save
+	time overall.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp 
+	                           fa_extras.cpp if1.cpp 
+	chapel/compiler/vparser/: ast_cf.cpp parse_ast.cpp parse_ast.h 
+	chapel/test/flowanalysis/jplevyak/constants/: 
+	                                              constant_folding.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  equality_ops.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  relational_ops.good 
+	                                  unary_plusMinus.good var.good 
+	                                  var2.good whileLoop.good 
+
