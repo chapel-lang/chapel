@@ -20576,3 +20576,17 @@ Modified files:
 	                                         test_clone_class2.future 
 	                                         test_clone_class2a.future 
 
+---------------------------------------------------------------------------
+
+03/21/05 15:46:40 -- deitz
+
+Log message:
+	Improved support for multi-dimensional anonymous domains and removed
+	test_anon_domain2.future.  The rank of the anonymous arithmetic domain
+	is now computed based on the number of SimpleSeqExprs in the Expr list.
+
+Modified files:
+	chapel/compiler/traversals/: insertAnonymousDomains.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: test_anon_domain2.future 
+
