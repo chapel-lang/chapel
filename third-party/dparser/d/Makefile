@@ -44,15 +44,14 @@ else
 endif
 
 ifeq ($(OS_TYPE),CYGWIN)
-GC_CFLAGS += -L/usr/local/lib -I$(GCROOT)/include
+GC_CFLAGS += -L/usr/local/lib
 else
-GC_CFLAGS += -I/usr/local/include -L/usr/local/lib -I$(GCROOT)/include
+GC_CFLAGS += -I/usr/local/include -L/usr/local/lib
 endif
 
 ifdef D_USE_GC
-GCVER = 6.2
 CFLAGS += -DUSE_GC ${GC_CFLAGS}
-LIBS += -L$(GCROOT)/lib -lgc
+LIBS += $(GCROOT)/lib/libgc.a
 endif
 ifdef D_LEAK_DETECT
 CFLAGS += -DLEAK_DETECT  ${GC_CFLAGS}
@@ -81,7 +80,9 @@ ifdef D_PROFILE
 CFLAGS += -pg
 endif
 
-LIBS += -lm 
+CFLAGS += -I$(GCROOT)/include
+
+LIBS += -lm
 
 AUX_FILES = d/Makefile d/COPYRIGHT d/README d/CHANGES d/UPGRADING d/my.g d/my.c d/index.html d/manual.html d/faq.html d/make_dparser.1 d/make_dparser.cat
 TESTS = $(shell ls tests/*g tests/*[0-9] tests/*.check tests/*.flags)
