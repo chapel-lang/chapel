@@ -33,7 +33,6 @@ PassInfo passlist[] = {
   RUN(ApplyThisParameters, ""),
   RUN(ProcessDefs, ""),
   RUN(RemoveLikeTypes, ""),
-  RUN(ExpandSeqExprAssignments, ""),
 
   // passes to collect information for analysis
   RUN(Fixup, "verify"), // this is a sanity check
@@ -77,6 +76,7 @@ PassInfo passlist[] = {
   RUN(ProcessParameters, ""),
   RUN(InsertVariableInitializations, ""),
   RUN(DestructureTupleAssignments, ""),
+  RUN(ExpandSeqExprAssignments, ""),
   RUN(InsertUnionChecks, ""),
   RUN(LegalizeCNames, ""), 
 

@@ -24,19 +24,23 @@ void ExpandSeqExprAssignments::postProcessStmt(Stmt* stmt) {
     return;
   }
 
+  SeqType* seq_type = dynamic_cast<SeqType*>(assign_expr->left->typeInfo());
+
+  if (!seq_type) {
+    INT_FATAL(stmt, "Sequence type not found in assignment of sequence literal");
+  }
+
   for (Expr* tmp = seq_expr->exprls; tmp; tmp = nextLink(Expr, tmp)) {
+    Symbol* fn = Symboltable::lookupInScope("append", seq_type->structScope);
+
+    if (!fn) {
+      INT_FATAL(seq_type, "Cannot find append function in sequence type");
+    }
+
     Expr* args = assign_expr->left->copy();
     args->append(tmp->copy());
-
-
-
-    Expr* seq_append =
-      new ParenOpExpr(
-                 new MemberAccess(assign_expr->left->copy(), 
-                                  new UnresolvedSymbol("append")), tmp->copy());
-
-    ExprStmt* new_stmt = new ExprStmt(seq_append);
-    stmt->insertBefore(new_stmt);
+    Expr* append_expr = new FnCall(new Variable(fn), args);
+    stmt->insertBefore(new ExprStmt(append_expr));
   }
   stmt->extract();
 }
