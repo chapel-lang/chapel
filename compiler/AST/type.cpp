@@ -460,6 +460,15 @@ ClassType::getTypes(Vec<BaseAST *> &asts) {
 }
 
 
+int
+ClassType::getStmts(Vec<BaseAST *> &asts) {
+  Vec<BaseAST *> elements;
+  getLinkElements(elements, definition);
+  asts.append(elements);
+  return asts.n;
+}
+
+
 TupleType::TupleType(Type* firstType) :
   Type(TYPE_TUPLE)
 {

@@ -136,6 +136,7 @@ class ClassType : public Type {
   void generateInit(FILE* outfile, VarSymbol* var);
 
   int getTypes(Vec<BaseAST *> &asts);
+  int getStmts(Vec<BaseAST *> &asts);
 };
 
 

@@ -231,6 +231,7 @@ build_types(Vec<BaseAST *> &syms) {
 	break;
       }
       case TYPE_CLASS: {
+	// ClassType::definition handled below in build_classes()
 	ClassType *tt = dynamic_cast<ClassType*>(t);
 	t->asymbol->type_kind = Type_RECORD;
 	if (tt->parentClass) {
@@ -880,39 +881,59 @@ gen_fun(FnDefStmt *f) {
 }
 
 static int
+build_function(FnDefStmt *f) {
+  Sym *s = f->fn->asymbol;
+  if (verbose_level > 1 && f->fn->name)
+    printf("build_functions: %s\n", f->fn->name);
+  if (s->name && !strcmp("__init", s->name)) {
+    if1_set_builtin(if1, s, "init");
+    sym_init = s;
+  }
+  s->type = sym_function;
+  s->type_kind = Type_FUN;
+  s->type_sym = s;
+  s->cont = new_sym();
+  s->cont->ast = f->ainfo;
+  s->ret = new_sym();
+  s->ret->ast = f->ainfo;
+  s->labelmap = new LabelMap;
+  set_global_scope(s);
+  if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
+  Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
+  if (resolve_labels(f->fn->body, f->fn->asymbol->labelmap, return_label) < 0) return -1;
+  if (gen_if1(f->fn->body) < 0) return -1;
+  if (gen_fun(f) < 0) return -1;
+  return 0;
+}
+
+static int
+build_classes(Vec<BaseAST *> &syms) {
+  Vec<ClassType *> classes;
+  forv_BaseAST(s, syms)
+    if (s->astType == TYPE_CLASS)
+      classes.add(dynamic_cast<ClassType*>(s)); 
+  if (verbose_level > 1)
+    printf("build_classes: %d classes\n", classes.n);
+  forv_Vec(ClassType, c, classes) {
+    Vec<Stmt *> stmts;
+    getLinkElements(stmts, c->definition);
+    forv_BaseAST(s, stmts) {
+      switch (s->astType) {
+	default: break;
+	case STMT_VARDEF:
+	  break;
+      }
+    }
+  }
+  return 0;
+}
+
+static int
 build_functions(Vec<BaseAST *> &syms) {
-  Vec<FnDefStmt *> fns;
   forv_BaseAST(s, syms)
     if (s->astType == STMT_FNDEF)
-      fns.add(dynamic_cast<FnDefStmt*>(s)); 
-  if (verbose_level > 1)
-    printf("build_functions: %d functions\n", fns.n);
-  forv_Vec(FnDefStmt, f, fns) {
-    Sym *s = f->fn->asymbol;
-    s->name = f->fn->name;
-    if (s->name && !strcmp("__init", s->name)) {
-      if1_set_builtin(if1, s, "init");
-      sym_init = s;
-    }
-    s->type = sym_function;
-    s->type_kind = Type_FUN;
-    s->type_sym = s;
-    s->cont = new_sym();
-    s->cont->ast = f->ainfo;
-    s->ret = new_sym();
-    s->ret->ast = f->ainfo;
-    s->labelmap = new LabelMap;
-    set_global_scope(s);
-    if (verbose_level > 1 && s->name)
-      printf("build_functions: %s\n", s->name);
-  }
-  forv_Vec(FnDefStmt, f, fns) {
-    if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
-    Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
-    if (resolve_labels(f->fn->body, f->fn->asymbol->labelmap, return_label) < 0) return -1;
-    if (gen_if1(f->fn->body) < 0) return -1;
-    if (gen_fun(f) < 0) return -1;
-  }
+      if (build_function(dynamic_cast<FnDefStmt*>(s)) < 0)
+        return -1;
   return 0;
 }
 
@@ -1060,6 +1081,7 @@ AST_to_IF1(Vec<Stmt *> &stmts) {
   init_symbols();
   debug_new_ast(stmts, syms);
   if (import_symbols(syms) < 0) return -1;
+  if (build_classes(syms) < 0) return -1;
   if (build_functions(syms) < 0) return -1;
   pdb->fa->primitive_transfer_functions.put(domain_start_index_symbol, domain_start_index);
   pdb->fa->primitive_transfer_functions.put(domain_next_index_symbol, domain_next_index);
@@ -1145,7 +1167,11 @@ type_info(BaseAST *a, Symbol *s) {
     type = type_info(ast, sym);
     goto Ldone;
   }
+#ifdef COMPLETE_TYPING
   assert(sym);
+#endif
+  if (!sym)
+    return dtUnknown;
   if (sym->var) {
     type = sym->var->type;
     goto Ldone;
@@ -1155,12 +1181,19 @@ type_info(BaseAST *a, Symbol *s) {
     goto Ldone;
   }
  Ldone:
+#ifdef COMPLETE_TYPING
+  assert(type);
+#endif
   if (!type)
     return dtUnknown;
   ASymbol *asymbol = dynamic_cast<ASymbol *>(type);
   BaseAST *atype = asymbol->xsymbol;
   Type *btype = dynamic_cast<Type *>(atype);
+#ifdef COMPLETE_TYPING
   assert(btype);
+#endif
+  if (!btype)
+    return dtUnknown;
   return btype;
 }
 

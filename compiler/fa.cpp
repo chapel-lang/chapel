@@ -329,6 +329,7 @@ type_num_fold(Prim *p, AType *a, AType *b) {
 
 static void
 qsort_pointers(void **left, void **right) {
+ Lagain:
   if (right - left < 5) {
     for (void **y = right - 1; y > left; y--) {
       for (void **x = left; x < y; x++) {
@@ -340,21 +341,24 @@ qsort_pointers(void **left, void **right) {
       } 
     }
   } else {
-    void  **i = left, **j = right - 1, **x = left + ((right - left) / 2);
-    do {
-      while (i <= x && *i < *x) i++;
-      while (j >= x && *x < *j) j--;
-      if (i < j) {
-	void *t = *i;
-	*i = *j;
-	*j = t;
-	i++; j--;
-	continue;
-      }
-      break;
-    } while (1);
+    void  **i = left + 1, **j = right - 1, *x = *left;
+    for (;;) {
+      while (x < *j) j--;
+      while (i < j && *i < x) i++;
+      if (i >= j) break;
+      void *t = *i;
+      *i = *j;
+      *j = t;
+      i++; j--;
+    }
+    if (j == right - 1) {
+      *left = *(right - 1);
+      *(right - 1) = x;
+      right--;
+      goto Lagain;
+    }
     if (left < j) qsort_pointers(left, j + 1);
-    if (i < right) qsort_pointers(i, right);
+    if (j + 2 < right) qsort_pointers(j + 1, right);
   }
 }
 
