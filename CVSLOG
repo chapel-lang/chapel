@@ -16032,3 +16032,33 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+02/01/05 11:31:37 -- deitz
+
+Log message:
+	Added two support functions:
+	
+	void collect_symbols(Vec<Symbol*>* syms);
+	void collect_functions(Vec<FnSymbol*>* functions);
+	
+	The first one collects all the symbols in the program.  The second one
+	collects all the functions in the program.  The results are returned
+	in a vector of symbol or function symbol pointers.
+	
+	Usage:
+	
+	 #include "../symtab/collectSymbols.h"
+	 Vec<Symbol*> all_syms;
+	 collect_symbols(&all_syms);
+	
+	 #include "../symtab/collectFunctions.h"
+	 Vec<FnSymbol*> all_functions;
+	 collect_functions(&all_functions);
+
+Modified files:
+	chapel/compiler/symtab/: Makefile.share 
+Added files:
+	chapel/compiler/symtab/: collectFunctions.cpp collectFunctions.h 
+	                         collectSymbols.cpp collectSymbols.h 
+
