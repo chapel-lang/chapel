@@ -2014,8 +2014,9 @@ collect_avar_argument_type_violations(AVar *av) {
     EntrySet *from = (EntrySet*)c->contour;
     FunAEdgeMap *m = from->out_edge_map.get(p);
     Vec<EntrySet *> ess;
-    form_Map(FunAEdgeMapElem, x, *m)
-      ess.set_add(x->value->to);
+    if (m)
+      form_Map(FunAEdgeMapElem, x, *m)
+	ess.set_add(x->value->to);
     AType *t = av->out;
     forv_AVar(a, av->forward) if (a && a->var->is_filtered && ess.set_in((EntrySet*)a->contour))
       t = type_diff(t, a->out);
