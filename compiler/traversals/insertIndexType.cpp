@@ -27,7 +27,7 @@ void InsertIndexType::preProcessType(Type* type) {
   if (!index_type){
   	return;
   } 
-    
+  
   Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);
   if (index_sym) {
     type = index_sym->type;
