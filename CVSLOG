@@ -7099,3 +7099,17 @@ Added files:
 	chapel/test/classes/bradc/: .cvsignore trivialclass.chpl 
 	                            trivialclass.good 
 
+---------------------------------------------------------------------------
+
+09/13/04 18:16:26 -- bradc
+
+Log message:
+	Fixed "make depend" rule to work on Suns (and, I expect, other
+	non-bash platforms?).
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.subdirrules 
+	chapel/make/: Makefile.base 
+	chapel/runtime/src/: Makefile 
+
