@@ -20,8 +20,11 @@ class SymScope {
   scopeType type;
   int level;
 
+  Stmt* stmtContext;
+  Symbol* symContext;
+
   SymScope* parent;
-  SymScope* children;
+  SymScope* child;
   SymScope* sibling;
 
   SymLink* firstSym;
@@ -32,6 +35,7 @@ class SymScope {
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(scopeType init_type, int init_level);
+  void setContext(Stmt* stmt, Symbol* sym = nilSymbol);
 
   void insert(Symbol* sym);
   SymScope* findFileScope(void);

@@ -299,9 +299,19 @@ fndecl:
     }
                       '(' formals ')' fnrettype statement
     {
-      Symboltable::popScope();
+      SymScope* paramScope = Symboltable::popScope();
       FnSymbol* fnpst = Symboltable::defineFunction($2, $5, $7, $8);
       $$ = new FnDefStmt(fnpst);
+      paramScope->setContext($$, fnpst);
+      SymScope* fnScope = paramScope->child;
+
+      // BLC: If we set context for all SCOPE_LOCAL's, this should go away
+      if (fnScope) {
+	if (fnScope->type != SCOPE_FUNCTION) {
+	  INT_FATAL(fnpst, "Unexpected child scope type for paramScope");
+	}
+	fnScope->setContext($8, fnpst);
+      }
     }
 ;
 
@@ -398,8 +408,9 @@ statement:
     { Symboltable::pushScope(SCOPE_LOCAL); }
       statements '}'
     {
-      Symboltable::popScope();
+      SymScope* stmtScope = Symboltable::popScope();
       $$ = new BlockStmt($3);
+      stmtScope->setContext($$);
     }
 ;
 
@@ -432,8 +443,9 @@ forloop:
     }
                                  statement
     { 
-      Symboltable::exitForLoop();
+      SymScope* forScope = Symboltable::exitForLoop();
       $$ = new ForLoopStmt(true, $<pvsym>5, $4, $6);
+      forScope->setContext($$);
     }
 ;
 

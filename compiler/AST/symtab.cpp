@@ -46,13 +46,21 @@ void SymLink::codegen(FILE* outfile) {
 SymScope::SymScope(scopeType init_type, int init_level) :
   type(init_type),
   level(init_level),
+  stmtContext(nilStmt),
+  symContext(nilSymbol),
   parent(NULL),
-  children(NULL),
+  child(NULL),
   sibling(NULL),
   firstSym(NULL),
   lastSym(NULL),
   useBeforeDefSyms(NULL)
 {}
+
+
+void SymScope::setContext(Stmt* stmt, Symbol* sym) {
+  stmtContext = stmt;
+  symContext = sym;
+}
 
 
 void SymScope::insert(Symbol* sym) {
@@ -173,25 +181,26 @@ void Symboltable::pushScope(scopeType type) {
     type = SCOPE_FUNCTION;
   }
   SymScope* newScope = new SymScope(type, level++);
-  SymScope* children = currentScope->children;
+  SymScope* child = currentScope->child;
 
-  if (children == NULL) {
-    currentScope->children = newScope;
+  if (child == NULL) {
+    currentScope->child = newScope;
   } else {
-    while (children->sibling != NULL) {
-      children = children->sibling;
+    while (child->sibling != NULL) {
+      child = child->sibling;
     }
-    children->sibling = newScope;
+    child->sibling = newScope;
   }
   newScope->parent = currentScope;
   currentScope = newScope;
 }
 
 
-void Symboltable::popScope(void) {
+SymScope* Symboltable::popScope(void) {
   //  currentScope->handleUndefined();
 
   level--;
+  SymScope* topScope = currentScope;
   SymScope* prevScope = currentScope->parent;
 
   if (prevScope == NULL) {
@@ -199,6 +208,7 @@ void Symboltable::popScope(void) {
   } else {
     currentScope = prevScope;
   }
+  return topScope;
 }
 
 
@@ -394,8 +404,8 @@ VarSymbol* Symboltable::enterForLoop(Symbol* indices) {
 }
 
 
-void Symboltable::exitForLoop(void) {
-  Symboltable::popScope();
+SymScope* Symboltable::exitForLoop(void) {
+  return Symboltable::popScope();
 }
 
 

@@ -8,7 +8,7 @@
 class Symboltable {
  public:
   static void pushScope(scopeType type);
-  static void popScope(void);
+  static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
 
   static void define(Symbol* sym);
@@ -29,7 +29,7 @@ class Symboltable {
   static ClassType* defineClass(char* name, ClassSymbol* parent);
 
   static VarSymbol* enterForLoop(Symbol* indices);
-  static void exitForLoop(void);
+  static SymScope* exitForLoop(void);
 
   static DomainExpr* defineQueryDomain(char* name);
 
