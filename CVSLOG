@@ -12187,3 +12187,16 @@ Added files:
 Removed files:
 	chapel/compiler/vparser/: parse_incs.cpp 
 
+---------------------------------------------------------------------------
+
+12/20/04 12:14:39 -- bradc
+
+Log message:
+	Added a rerun command to our set of gdb commands available
+	when using the --gdb flag.  "rerun" runs the compiler without
+	cleaning up after itself (i.e., the /tmp directory it created
+	may need to be cleaned up by hand).
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+
