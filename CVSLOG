@@ -14409,3 +14409,38 @@ Added files:
 	                                         test_clone_function5.future 
 	                                         test_clone_function5.good 
 
+---------------------------------------------------------------------------
+
+01/13/05 14:52:34 -- deitz
+
+Log message:
+	Added a few tests, three new futures.
+	
+	The test test_method7 calls an overloaded function from within a
+	method.  It currently works.
+	
+	The overload_integerfloat tests test overloading foo(i, i), foo(i, f),
+	and foo(f, f) where f is a float and i is an integer.  One problem
+	with these is that when a float is initialized with an integer value,
+	it is taken to be an integer by analysis even though it should be
+	taken to be a float.  The declared type should override the inferred
+	type from initialization.  Right?
+	
+	The second problem is that when foo is called as in foo(f, i), it
+	fails to resolve even though it should resolve to foo(f, f).  Right?
+
+Added files:
+	chapel/test/classes/deitz/: test_method7.chpl test_method7.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overload_integerfloat1.chpl 
+	                                         test_overload_integerfloat1.good 
+	                                         test_overload_integerfloat2.chpl 
+	                                         test_overload_integerfloat2.future 
+	                                         test_overload_integerfloat2.good 
+	                                         test_overload_integerfloat3.chpl 
+	                                         test_overload_integerfloat3.future 
+	                                         test_overload_integerfloat3.good 
+	                                         test_overload_integerfloat4.chpl 
+	                                         test_overload_integerfloat4.future 
+	                                         test_overload_integerfloat4.good 
+
