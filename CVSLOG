@@ -1101,3 +1101,14 @@ Added files:
 	chapel/test/Samples/ex3-fails/: .cvsignore intendedToFail.chk 
 	                                intendedToFail.chpl 
 
+---------------------------------------------------------------------------
+
+04/03/18 15:36:22 -- bradc
+
+Log message:
+	Added a command to run etags on the chapel compiler sources after
+	chapel is linked.
+
+Modified files:
+	chapel/compiler/: Makefile 
+
