@@ -6852,3 +6852,27 @@ Log message:
 Modified files:
 	chapel/compiler/: createAST.cpp 
 
+---------------------------------------------------------------------------
+
+09/10/04 12:43:27 -- bradc
+
+Log message:
+	Added two debugging passes:
+	
+	  PrintAST : pretty-prints the AST to stdout using
+	             print() methods for each statement
+	  PrintSymtab : dumps the entire symboltable to stdout
+	
+	These passes also got my local compiler into the state
+	where it would seg fault on review3.chpl.  Don't know
+	how reproducible that will be for others...
+	
+	-Brad
+
+Modified files:
+	chapel/compiler/: passlist.cpp passlist.h 
+	chapel/compiler/AST/: Makefile.share 
+Added files:
+	chapel/compiler/AST/: printAST.cpp printAST.h printSymtab.cpp 
+	                      printSymtab.h 
+
