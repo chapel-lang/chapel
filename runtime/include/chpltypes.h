@@ -1,6 +1,8 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
+extern void* nil;
+
 typedef enum __boolean {
   false = 0,
   true = 1
@@ -20,6 +22,4 @@ typedef char* _string;
 
 void _copy_string(_string* lhs, _string rhs);
 
-
 #endif
-

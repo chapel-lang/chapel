@@ -742,7 +742,7 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 		     SymScope* init_classScope) :
   Type(TYPE_CLASS, ((isValueClass || isUnion) ? 
                     NULL : // BLC: needs to eventually change
-                    new Variable(Symboltable::lookupInternal("NULL")))),
+                    new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))),
   value(isValueClass),
   union_value(isUnion),
   parentClass(init_parentClass),

@@ -1744,6 +1744,10 @@ void initExpr(void) {
   Symbol* pst = new Symbol(SYMBOL, "?anonDomain");
   Variable* var = new Variable(pst);
   unknownDomain = new ForallExpr(var);
+  
+  pst = new Symbol(SYMBOL, "nil");
+  Symbol* object = Symboltable::lookupInternal("object", SCOPE_INTRINSIC);
+  Symboltable::defineVars(pst, object->type, NULL, VAR_NORMAL, VAR_CONST);
 }
 
 

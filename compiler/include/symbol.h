@@ -12,7 +12,6 @@ class ASymbol;
 class SymScope;
 class MPosition;
 
-/*Roxana: added VAR_PARAM type*/
 enum varType {
 //R:Maybe this should be VAR_NOTHING
   VAR_NORMAL,

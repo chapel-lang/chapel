@@ -5,7 +5,7 @@ function writeln() {}
 function read() {}
 
 
--- intrinsic types
+-- intrinsic type values
 
 const false: boolean = 0;
 const true: boolean = 1;

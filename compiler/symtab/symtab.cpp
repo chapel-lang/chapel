@@ -222,22 +222,32 @@ Symbol* Symboltable::lookupInCurrentScope(char* name) {
 }
 
 
-Symbol* Symboltable::lookupInternal(char* name, bool publicSym) {
-  Symbol* sym;
-  if (publicSym) {
-    sym = lookupInScope(name, preludeScope);
-  } else {
+Symbol* Symboltable::lookupInternal(char* name, scopeType scope) {
+  Symbol* sym = NULL;
+
+  switch (scope) {
+  case SCOPE_INTRINSIC:
+    sym = lookupInScope(name, rootScope);
+    break;
+  case SCOPE_INTERNAL_PRELUDE:
     sym = lookupInScope(name, internalScope);
+    break;
+  case SCOPE_PRELUDE:
+    sym = lookupInScope(name, preludeScope);
+    break;
+  default:
+    INT_FATAL("lookupInternal called with bad scope type");
   }
   if (!sym) {
     INT_FATAL("lookupInternal failed on %s", name);
   }
+
   return sym;
 }
 
 
-TypeSymbol* Symboltable::lookupInternalType(char* name, bool publicSym) {
-  Symbol* sym = lookupInternal(name, publicSym);
+TypeSymbol* Symboltable::lookupInternalType(char* name) {
+  Symbol* sym = lookupInternal(name, SCOPE_INTERNAL_PRELUDE);
   TypeSymbol* retsym = dynamic_cast<TypeSymbol *>(sym);
   if (retsym == NULL) {
     INT_FATAL("lookupInternalType failed");

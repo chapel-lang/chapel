@@ -43,8 +43,9 @@ class Symboltable {
   static Symbol* lookupInCurrentScope(char* name);
   static Symbol* lookup(char* name, bool genError = false);
 
-  static Symbol* lookupInternal(char* name, bool publicSym = false);
-  static TypeSymbol* lookupInternalType(char* name, bool publicSym = false);
+  static Symbol* lookupInternal(char* name, 
+				scopeType scope = SCOPE_INTERNAL_PRELUDE);
+  static TypeSymbol* lookupInternalType(char* name);
 
   static Expr* startLetExpr(void);
   static Expr* finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_expr);

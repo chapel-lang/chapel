@@ -26,15 +26,15 @@ function callin(in x: pair) {
 
 
 function callout(out x: pair) {
-  if (x == a) {
-    writeln("a and x are the same on the way in");
-  } else {
-    writeln("a and x differ on the way in");
-  }
   if (x == nil) {
     writeln("x is nil on the way in as it should be");
   } else {
     writeln("x is not nil!!!");
+  }
+  if (x == a) {
+    writeln("a and x are the same on the way in");
+  } else {
+    writeln("a and x differ on the way in");
   }
   x = pair();
   x.a = 12;

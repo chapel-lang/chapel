@@ -1,11 +1,11 @@
+in callin, x is: 10 2.3
 a and x are the same on the way in
 a and x differ on the way out
 re-assigned to be new instance: 11 3.4
 back at callsite, a is: 10 2.3
 
-in callout, x is: 10 2.3
-a and x differ on the way in
 x is nil on the way in as it should be
+a and x differ on the way in
 a and x differ on the way out
 re-assigned to be new instance: 12 4.5
 back at callsite, a is: 12 4.5

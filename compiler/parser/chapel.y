@@ -44,7 +44,6 @@
 %token TCLASS
 %token TCONFIG
 %token TCONST
-/*Roxana*/
 %token TPARAM
 %token TCONTINUE
 %token TDO
@@ -61,6 +60,7 @@
 %token TLABEL
 %token TLET
 %token TMODULE
+%token TNIL
 %token TOUT
 %token TPRAGMA
 %token TRECORD
@@ -101,7 +101,6 @@
 
 %token TQUESTION;
 
-/*Roxana: changed*/
 %type <ct> varconst
  
 %type <got> assignOp
@@ -176,7 +175,7 @@ varconst:
 | TCONST
     { $$ = VAR_CONST; }
 | TPARAM
-	{ $$ = VAR_PARAM; }
+    { $$ = VAR_PARAM; }
 ;
 	
 ident_symbol:
@@ -855,6 +854,8 @@ atom:
 
 expr: 
   atom
+| TNIL
+    { $$ = new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)); }
 | TLET
     { $<pexpr>$ = Symboltable::startLetExpr(); }
        vardecl_inner_ls TIN expr

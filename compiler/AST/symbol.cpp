@@ -25,9 +25,6 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
   parentScope = init_parentScope;
 }
 
-/*bool Symbol::isNull(void) {
-  return (this == nilSymbol);
-}*/
 
 Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Symbol* newSymbolList = NULL;
