@@ -244,7 +244,7 @@ actioncmp(const void *aa, const void *bb) {
   else
     i = a->rule->index;
   if (b->kind == ACTION_SHIFT_TRAILING)
-    i = b->term->index + 11000000;
+    j = b->term->index + 11000000;
   else if (b->kind == ACTION_SHIFT)
     j = b->term->index + 1000000;
   else
