@@ -20,6 +20,8 @@ class ILink : public Loc {
   void insert(ILink* newlink);
   void add(ILink* newlink);
   void append(ILink* newlink);
+
+  void filter(bool filter(ILink*), ILink** truelinks, ILink** falselinks);
 };
 
 #define prevLink(type, node) (dynamic_cast<type*>((node)->prev))

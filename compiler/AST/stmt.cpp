@@ -140,7 +140,22 @@ void FnDefStmt::print(FILE* outfile) {
 
 
 void FnDefStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "This is FnDefStmt's codegen method.\n");
+  if (fun->type->isNull()) {
+    fprintf(outfile, "void");
+  } else {
+    fun->type->codegen(outfile);
+  }
+  fprintf(outfile, " ");
+  fun->print(outfile);
+  fprintf(outfile, "(");
+  if (fun->formals->isNull()) {
+    fprintf(outfile, "void");
+  } else {
+    fun->formals->codegenList(outfile, ", ");
+  }
+  fprintf(outfile, ") ");
+  fun->body->codegen(outfile);
+  fprintf(outfile, "\n");
 }
 
 
@@ -190,7 +205,10 @@ void BlockStmt::print(FILE* outfile) {
 }
 
 void BlockStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "This is BlockStmt's codegen method.\n");
+  fprintf(outfile, "{\n");
+  body->codegenList(outfile, "\n");
+  fprintf(outfile, "\n");
+  fprintf(outfile, "}");
 }
 
 

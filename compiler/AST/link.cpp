@@ -66,3 +66,34 @@ void ILink::append(ILink* newlink) {
   lastlink->next = newlink;
   newlink->prev = lastlink;
 }
+
+
+void ILink::filter(bool filter(ILink*), ILink** truelinks, 
+		   ILink** falselinks) {
+  ILink* link = this;
+  ILink* nextlink;
+  *truelinks = NULL;
+  *falselinks = NULL;
+
+  while (link) {
+    nextlink = link->next;
+    link->next = NULL;
+    if (nextlink) {
+      nextlink->prev = NULL;
+    }
+    if (filter(link)) {
+      if (*truelinks) {
+	(*truelinks)->append(link);
+      } else {
+	*truelinks = link;
+      }
+    } else {
+      if (*falselinks) {
+	(*falselinks)->append(link);
+      } else {
+	*falselinks = link;
+      }
+    }
+    link = nextlink;
+  }
+}

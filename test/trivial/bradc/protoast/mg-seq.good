@@ -20,17 +20,10 @@ const Hier: [lvl:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
 const Stencil: domain(3) = [(-1..1), (-1..1), (-1..1)];
 var initTimer: timer;
 var benchTimer: timer;
-(initTimer.start());
 var V: [Base] float;
 var U: [lvl:Levels] [Hier(lvl)] float;
 var R: [lvl:Levels] [Hier(lvl)] float;
-initializeMG();
-inittime = warmupMG(V, U, R);
-(initTimer.stop());
-(benchTimer.start());
 var rnm2: float = computeMG(V, U, R);
-(benchTimer.stop());
-printResults(rnm2, (initTimer.read()), (benchTimer.read()));
 function initializeMG(inout V: ???;
 inout U: ???;
 inout R: ???) {
@@ -279,6 +272,17 @@ lg += 1;
 }
 
 return lg;
+}
+
+
+function __init(NullSymbol) {
+(initTimer.start());
+initializeMG();
+inittime = warmupMG(V, U, R);
+(initTimer.stop());
+(benchTimer.start());
+(benchTimer.stop());
+printResults(rnm2, (initTimer.read()), (benchTimer.read()));
 }
 
 

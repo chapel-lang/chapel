@@ -498,9 +498,7 @@ void codegen(char* infilename, char* compilerDir, Stmt* program) {
   intheadfile = intheadfileinfo.fptr;
 
   genHeader(outfile, extheadfileinfo.filename, intheadfileinfo.filename);
-  fprintf(outfile, "void __init(void) {\n");
   program->codegenList(outfile, "\n");
-  fprintf(outfile, "}\n");
 
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
   closeMakefile();

@@ -6,6 +6,10 @@ var Row: domain(2) = [1..m, *];
 var A: [Mat] float;
 var y: [Col] float;
 var x: [Row] float;
+function __init(NullSymbol) {
 A = [i, j:Mat] (((i-1)*n)+j);
 y = [i:Col] i;
 x = reduce (dim=2) by sum [Mat] (A*y);
+}
+
+
