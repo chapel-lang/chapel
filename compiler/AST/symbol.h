@@ -59,7 +59,7 @@ class VarSymbol : public Symbol {
 
   bool isNull(void);
   
-  void printWithType(FILE* outfile);
+  void printDef(FILE* outfile);
 };
 
 extern VarSymbol* nilVarSymbol;

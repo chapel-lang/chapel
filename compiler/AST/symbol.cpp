@@ -115,7 +115,7 @@ bool VarSymbol::isNull(void) {
 }
 
 
-void VarSymbol::printWithType(FILE* outfile) {
+void VarSymbol::printDef(FILE* outfile) {
   print(outfile);
   fprintf(outfile, ": ");
   type->print(outfile);

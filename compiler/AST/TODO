@@ -1,6 +1,4 @@
-* take all instances of NULL out
 * move suspicious symbols into prelude file
-* fix precedence problems (and there are lots)
 * check necessity of print*() variants
 * move char literals from chapel.y to chapel.lex
 * deal with BLC comments

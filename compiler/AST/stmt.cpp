@@ -103,7 +103,7 @@ void VarDefStmt::print(FILE* outfile) {
     } else {
       fprintf(outfile, "var ");
     }
-    aVar->printWithType(outfile);
+    aVar->printDef(outfile);
     if (!init->isNull()) {
       fprintf(outfile, " = ");
       if (init->next->isNull()) {
