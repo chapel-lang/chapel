@@ -6107,3 +6107,14 @@ Modified files:
 	                  prim.cpp prim_data.dat 
 	chapel/test/flowanalysis/jplevyak/: badprimitive.v 
 
+---------------------------------------------------------------------------
+
+08/27/04 16:45:59 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Got the basic Expr's converted.
+
+Modified files:
+	chapel/compiler/: TODO analysis.cpp if1.cpp parse_ast.cpp 
+	                  prim_data.dat 
+
