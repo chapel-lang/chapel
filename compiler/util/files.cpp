@@ -346,6 +346,10 @@ char* createGDBFile(int argc, char* argv[]) {
   fprintf(gdbfile, "  set $_exitcode = 'h'\n");
   fprintf(gdbfile, "  quit\n");
   fprintf(gdbfile, "end\n");
+  fprintf(gdbfile, "define rerun\n");
+  fprintf(gdbfile, "  set $_exitcode = 'r'\n");
+  fprintf(gdbfile, "  run\n");
+  fprintf(gdbfile, "end\n");
 
   closefile(gdbfile);
 
