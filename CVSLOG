@@ -20982,3 +20982,14 @@ Added files:
 	chapel/test/trivial/bradc/entrypoint/: .cvsignore 
 	chapel/test/trivial/roxana/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/23/05 11:15:37 -- deitz
+
+Log message:
+	Fixed a bug in which VarSymbols were not copied with callbacks to
+	analysis.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+
