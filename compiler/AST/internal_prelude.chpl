@@ -2,7 +2,7 @@
 -- Here is a function which I can use to call a primitive if an array is
 -- used as a function and applied to an Index (tuple)
 
-class Array {
+class _Array {
   function self(i: index) {
     return __primitive("array_index", i);
   }

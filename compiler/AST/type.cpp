@@ -1,26 +1,11 @@
 #include <typeinfo>
+#define TYPE_EXTERN
 #include "codegen.h"
 #include "expr.h"
 #include "misc.h"
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
-
-Type* dtUnknown = 0;
-
-Type* dtBoolean = 0;
-Type* dtVoid = 0;
-Type* dtInteger = 0;
-Type* dtFloat = 0;
-Type* dtComplex = 0;
-Type* dtString = 0;
-
-Type* dtLocale = 0;
-
-Type* dtTimer = 0;
-
-Vec<Type*> builtinTypes;
-
 
 
 Type::Type(astType_t astType) :
@@ -505,18 +490,28 @@ void TupleType::codegen(FILE* outfile) {
 }
 
 
-void initType(void) {
+void initTypes(void) {
   // define built-in types
   dtUnknown = Symboltable::defineBuiltinType("???");
   dtVoid = Symboltable::defineBuiltinType("void");
+
   dtBoolean = Symboltable::defineBuiltinType("boolean");
   dtInteger = Symboltable::defineBuiltinType("integer");
   dtFloat = Symboltable::defineBuiltinType("float");
   dtComplex = Symboltable::defineBuiltinType("complex");
   dtString = Symboltable::defineBuiltinType("string");
 
+
   dtLocale = Symboltable::defineBuiltinType("locale");
 
-  // this needs to be moved into the prelude
+  // this needs to be moved into the standard prelude
   dtTimer = Symboltable::defineBuiltinType("timer", false);
+}
+
+
+void initInternalTypes(void) {
+  dtTuple = Symboltable::defineBuiltinType("Tuple");
+  dtIndex = Symboltable::defineBuiltinType("Index");
+  dtDomain = Symboltable::defineBuiltinType("Domain");
+  dtArray = Symboltable::defineBuiltinType("Array");
 }

@@ -39,7 +39,6 @@ class Type : public BaseAST {
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
 extern Type* nilType;
-extern Vec<Type*> builtinTypes;
 
 
 class EnumType : public Type {
@@ -152,18 +151,36 @@ class TupleType : public Type {
   void codegen(FILE* outfile);
 };
 
+#ifndef TYPE_EXTERN
+#define TYPE_EXTERN extern
+#endif
 
-extern Type* dtUnknown;
-extern Type* dtVoid;
-extern Type* dtBoolean;
-extern Type* dtInteger;
-extern Type* dtFloat;
-extern Type* dtComplex;
-extern Type* dtString;
-extern Type* dtLocale;
-extern Type* dtTimer;
+// null-ish types
+TYPE_EXTERN Type* dtUnknown;
+TYPE_EXTERN Type* dtVoid;
+
+// built-in types
+TYPE_EXTERN Type* dtBoolean;
+TYPE_EXTERN Type* dtInteger;
+TYPE_EXTERN Type* dtFloat;
+TYPE_EXTERN Type* dtComplex;
+TYPE_EXTERN Type* dtString;
+
+// abstract base types
+TYPE_EXTERN Type* dtTuple;
+TYPE_EXTERN Type* dtIndex;
+TYPE_EXTERN Type* dtDomain;
+TYPE_EXTERN Type* dtArray;
+
+// other funny types
+TYPE_EXTERN Type* dtLocale;
+TYPE_EXTERN Type* dtTimer;
+
+// vector of built-in types
+TYPE_EXTERN Vec<Type*> builtinTypes;
 
 
-void initType(void);
+void initTypes(void);
+void initInternalTypes(void);
 
 #endif
