@@ -19902,3 +19902,13 @@ Added files:
 	                             test_param_decl2.good 
 	                             test_param_decl2.chpl 
 
+---------------------------------------------------------------------------
+
+03/16/05 18:00:06 -- roxana
+
+Log message:
+	Commented out a debugging statement.
+
+Modified files:
+	chapel/compiler/traversals/: checkSemantics.cpp 
+
