@@ -556,8 +556,10 @@ void BlockStmt::traverseStmt(Traversal* traversal) {
 
 void BlockStmt::print(FILE* outfile) {
   fprintf(outfile, "{\n");
-  body->printList(outfile, "\n");
+  if (body) {
+    body->printList(outfile, "\n");
   fprintf(outfile, "\n");
+  }
   fprintf(outfile, "}");
 }
 

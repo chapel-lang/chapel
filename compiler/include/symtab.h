@@ -26,7 +26,7 @@ class Symboltable {
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);
-  static ModuleSymbol* getModuleList(void);
+  static ModuleSymbol* getModuleList(bool userModulesOnly);
   static FnSymbol* getCurrentFn(void);
 
   static void defineInScope(Symbol* sym, SymScope* scope);

@@ -40,7 +40,6 @@
 #include "../traversals/processParameters.h"
 #include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/specializeParenOpExprs.h"
-#include "../traversals/removeDeadSymbols.h"
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/resolveOverloadedOperators.h"
 #include "../traversals/resolveSymbols.h"
@@ -89,7 +88,6 @@ REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(RemoveDeadSymbols);
-REGISTER(RemoveDeadSymbols2);  // BLC: eventually this one should win out
 REGISTER(RemoveLikeTypes);
 REGISTER(RemoveNamedParameters);
 REGISTER(RemoveTypeVariableActuals);

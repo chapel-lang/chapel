@@ -27,6 +27,7 @@ static SymScope* preludeScope = NULL;
 static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
 static ModuleSymbol* firstModule = NULL;
+static ModuleSymbol* firstUserModule = NULL;
 static ModuleSymbol* currentModule = NULL;
 
 ModuleSymbol* commonModule = NULL;
@@ -148,8 +149,12 @@ SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
 }
 
 
-ModuleSymbol* Symboltable::getModuleList(void) {
-  return firstModule;
+ModuleSymbol* Symboltable::getModuleList(bool userModulesOnly) {
+  if (userModulesOnly) {
+    return firstUserModule;
+  } else {
+    return firstModule;
+  }
 }
 
 
@@ -307,6 +312,11 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
   }
 
   currentModule = newModule;
+
+  if (!internal && firstUserModule == NULL) {
+    firstUserModule = newModule;
+  }
+    
 
   return newModule;
 }

@@ -51,7 +51,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
     fflush(stderr);
     gettimeofday(&startTime, &timezone);
   }
-  pass->run(Symboltable::getModuleList());
+  pass->run(Symboltable::getModuleList(false));
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
     fprintf(stderr, "%8.3f seconds\n",  

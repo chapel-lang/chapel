@@ -17,7 +17,12 @@ void SymtabTraversal::run(void) {
   if (skipInternalScopes) {
     // BLC: took a wild stab at what scope we should start at, but am
     // still not clear at how the common module is inserted
-    Symboltable::traverseFromScope(this, commonModule->modScope->child);
+    ModuleSymbol* mod = Symboltable::getModuleList(true);
+    while (mod) {
+      Symboltable::traverseFromScope(this, mod->modScope);
+
+      mod = nextLink(ModuleSymbol, mod);
+    }
   } else {
     Symboltable::traverse(this);
   }

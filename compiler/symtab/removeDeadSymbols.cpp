@@ -5,12 +5,13 @@
 #include "../traversals/view.h"
 
 
-RemoveDeadSymbols2::RemoveDeadSymbols2(void) {
+RemoveDeadSymbols::RemoveDeadSymbols(void) {
   skipInternalScopes = true;
 }
 
 
-void RemoveDeadSymbols2::processSymbol(Symbol* sym) {
+void RemoveDeadSymbols::processSymbol(Symbol* sym) {
+#ifdef USE_AST_IS_USED
   if (!AST_is_used(sym)) {
     sym->isDead = true;
 
@@ -20,4 +21,25 @@ void RemoveDeadSymbols2::processSymbol(Symbol* sym) {
     }
     fprintf(stderr, "%s is dead\n", sym->name);
   }
+#else
+  if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
+    if (!type_is_used(typeSym)) {
+      typeSym->isDead = true;
+      
+      // BLC: this is a bad assumption: that if one DefExpr is dead
+      // then the whole statement can be extracted; instead, we
+      // should pull just the defExpr (but this breaks other stuff
+      // that assumes that every defStmt).
+
+      sym->defPoint->stmt->extract();
+    }
+  }
+  if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {
+    if (!function_is_used(fnSym)) {
+      fnSym->isDead = true;
+      // BLC: see comment on previous conditional
+      sym->defPoint->stmt->extract();
+    }
+  }
+#endif
 }
