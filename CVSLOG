@@ -14607,3 +14607,16 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+01/14/05 18:06:25 -- bradc
+
+Log message:
+	
+
+Added files:
+	chapel/test/arrays/deitz/: .cvsignore 
+	chapel/test/classes/jplevyak/: .cvsignore 
+	chapel/test/modules/bradc/: twomodulessamevar.chpl 
+	                            twomodulessamevar.good 
+
