@@ -1516,3 +1516,14 @@ Log message:
 Modified files:
 	chapel/runtime/include/: chplio.h chpltypes.h 
 
+---------------------------------------------------------------------------
+
+04/03/26 15:29:31 -- bradc
+
+Log message:
+	Oops, I'm getting too fast.  This should've gone with the
+	last checkin.
+
+Modified files:
+	chapel/runtime/src/: chplio.c 
+
