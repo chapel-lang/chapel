@@ -15436,3 +15436,13 @@ Log message:
 Modified files:
 	chapel/compiler/backend/: dump.cpp 
 
+---------------------------------------------------------------------------
+
+01/24/05 14:04:31 -- jplevyak
+
+Log message:
+	Fix casting bug in coercion_substitutions calculationstitutions calculation
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
