@@ -26,7 +26,7 @@ class PCallbacks : public Callbacks {
 public:
   void new_LUB_type(Sym *);
   Sym *new_Sym(char *name = 0);
-  Fun *build(Match *m);
+  Fun *coercion_wrapper(Match *m) { return 0; }
 };
 
 // see ast_kinds.h for details

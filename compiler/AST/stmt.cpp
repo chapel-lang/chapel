@@ -653,11 +653,10 @@ FnDefStmt* FnDefStmt::clone(CloneCallback* clone_callback) {
 }
 
 
-FnDefStmt* FnDefStmt::build(Map<Symbol *, Symbol *> *generic_substitutions,
-			    Vec<MPosition *> *default_set,
-			    Map<MPosition *, Symbol *> *coercion_substitutions,
-			    Map<MPosition *, MPosition *> *formal_to_actual_order_map,
-			    CloneCallback *clone_callback) {
+FnDefStmt* FnDefStmt::coercion_wrapper(
+  Map<MPosition *, Symbol *> *coercion_substitutions,
+  CloneCallback *clone_callback) 
+{
   FnDefStmt* wrapper_stmt = NULL;
   static int uid = 1; // Unique ID for wrapped functions
   FnSymbol* wrapper_symbol = (FnSymbol*)fn->copy(true, clone_callback); //new FnSymbol(fn->name);

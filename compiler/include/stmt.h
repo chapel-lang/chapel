@@ -107,11 +107,7 @@ class FnDefStmt : public Stmt {
   FnDefStmt(FnSymbol* init_fn);
   virtual Stmt* copyStmt(bool clone, CloneCallback* analysis_clone);
   FnDefStmt* clone(CloneCallback* clone_callback);
-  FnDefStmt* build(Map<Symbol *, Symbol *> *generic_substitutions,
-		   Vec<MPosition *> *default_set,
-		   Map<MPosition *, Symbol *> *coercion_substitutions,
-		   Map<MPosition *, MPosition *> *formal_to_actual_order_map,
-		   CloneCallback *clone_callback);
+  FnDefStmt* coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions, CloneCallback *clone_callback);
 
   bool isNull(void);
 

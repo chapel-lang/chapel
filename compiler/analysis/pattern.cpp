@@ -35,6 +35,7 @@ class Matcher {
   int covers_formals(Fun *, Vec<CreationSet *> &, MPosition &, int);
   void rebuild_Match(Match *m, Fun *f);
   void instantiation_wrappers_and_partial_application(Vec<Fun *> &);
+  Fun *build(Match *m, Vec<Fun *> &matches);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
   void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &);
   void cannonicalize_matches();
@@ -412,18 +413,49 @@ Matcher::rebuild_Match(Match *m, Fun *f) {
     m->formal_to_actual_position.put(f->base_to_default_position.get(x->key), x->value);
 }
 
+typedef Map<MPosition *, Sym*> CoercionMap;
+class CoercionCacheHashFns  {
+ public:
+  static unsigned int hash(CoercionMap *a) {
+    unsigned int h = 0, i = 0;
+    form_MPositionSym(c, *a) {
+      h += open_hash_multipliers[i++ % 256] * (uintptr_t)c->key;
+      h += open_hash_multipliers[i++ % 256] * (uintptr_t)c->value;
+    }
+    return h;
+  }
+  static int equal(CoercionMap *a, CoercionMap *b) {
+    form_MPositionSym(c, *a)
+      if (b->get(c->key) != c->value)
+	return 0;
+    form_MPositionSym(c, *b)
+      if (a->get(c->key) != c->value)
+	return 0;
+    return 1;
+  }
+};
+static HashMap<CoercionMap *, CoercionCacheHashFns, Fun *> coercion_cache;
+
+Fun *
+Matcher::build(Match *m, Vec<Fun *> &matches) {
+  Fun *f = coercion_cache.get(&m->coercion_substitutions);
+  if (!f)
+    f = if1->callback->coercion_wrapper(m);
+  // need to loop over filters and split Match for those elements of the filter
+  // at cp which do not have the same concrete type as cs, install in matchmap
+  // m = *am = new match;
+  rebuild_Match(m, f);
+  coercion_cache.put(&m->coercion_substitutions, f);
+  return f;
+}
+
 void 
 Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
   Vec<Fun *> new_matches, complete;
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    if (m->default_args.n || m->generic_substitutions.n || m->coercion_substitutions.n) {
-      f = if1->callback->build(m);
-      // need to loop over filters and split Match for those elements of the filter
-      // at cp which do not have the same concrete type as cs, install in matchmap
-      // m = *am = new match;
-      rebuild_Match(m, f);
-    }
+    if (m->default_args.n || m->generic_substitutions.n || m->coercion_substitutions.n)
+      f = build(m, matches);
     if (!m->partial)
       complete.add(f);
     new_matches.add(f);
