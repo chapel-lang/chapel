@@ -2056,3 +2056,13 @@ Added files:
 	chapel/test/flowanalysis/jplevyak/: .cvsignore 
 	chapel/test/parsing/jplevyak/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/05/11 13:57:56 -- bradc
+
+Log message:
+	Added generation of graph showing regression status.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
