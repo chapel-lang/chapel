@@ -4685,3 +4685,13 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp pnode.h 
 
+---------------------------------------------------------------------------
+
+07/29/04 12:28:29 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	New valgrind suppressions for v6.3
+
+Modified files:
+	chapel/compiler/: valgrind.suppressions 
+
