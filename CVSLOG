@@ -24042,3 +24042,51 @@ Log message:
 Modified files:
 	chapel/test/: start_test sub_test 
 
+---------------------------------------------------------------------------
+
+04/05/05 13:02:27 -- bradc
+
+Log message:
+	Fixed the Makefile strategy for compiler-generated code
+	so that the Makefile is responsible for putting the
+	generated binary in the correct place rather than the
+	Chapel compiler (previously, the Makefile would leave
+	the generated binary in the /tmp or --savec directory,
+	and the compiler would copy it out).
+	
+	This allows developers who using the --savec flag to
+	inspect and edit generated code to recompile it by
+	typing:
+	
+	        make -f <savec-dir>/Makefile
+	
+	which avoids the need to remember to run
+	<savec-dir>/a.out rather than simply ./a.out
+	
+	An interesting note that I'll forget about the next
+	time I look at this code if I don't mention it is
+	that it's tempting to simply put the final filename
+	(say, a.out) into the back-end C compiler's link
+	line, but this causes a manyfold slowdown in compile
+	time for the test system (apparently because the C
+	compiler won't write the binary out to tmp space and
+	then copy it over to the -o location?).  So instead,
+	we have it link the binary to the /tmp --savec
+	location and then copy it out as a separate step.
+
+Modified files:
+	chapel/compiler/include/: files.h 
+	chapel/compiler/passes/: buildBinary.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/etc/: Makefile.include 
+Added files:
+	chapel/test/compflags/bradc/nameoutput/: .cvsignore CLEANFILES 
+	                                         localname.chpl 
+	                                         localname.compopts 
+	                                         localname.good 
+	                                         localname.preexec 
+	                                         localnamesavec.chpl 
+	                                         localnamesavec.compopts 
+	                                         localnamesavec.good 
+	                                         localnamesavec.preexec 
+
