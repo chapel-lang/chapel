@@ -24361,3 +24361,35 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/06/05 14:22:28 -- deitz
+
+Log message:
+	Moved ExpandSeqExprAssignments which transforms something like
+	
+	  s = (/ 1, 3, 4 /);
+	
+	into something like
+	
+	  s = s # 1;
+	  s = s # 3;
+	  s = s # 4;
+	
+	though "#" is not yet supported all the way down in the passlist (now
+	after analysis).  This means analysis will need to deal with SeqExpr
+	(sequence literals of the form (/ ... /)) though this was to be
+	expected.
+	
+	Added test_seq1 and test_seq1a to my noanalysis sequence testing
+	directory as these are now working with --noanalysis.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: expandSeqExprAssignments.cpp 
+Added files:
+	chapel/test/types/seq/deitz/noanalysis/: test_seq1.chpl 
+	                                         test_seq1.good 
+	                                         test_seq1a.chpl 
+	                                         test_seq1a.good 
+
