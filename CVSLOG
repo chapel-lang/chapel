@@ -21764,3 +21764,18 @@ Added files:
 	chapel/compiler/symtab/: removeDeadSymbols.cpp 
 	                         removeDeadSymbols.h 
 
+---------------------------------------------------------------------------
+
+03/25/05 18:54:38 -- roxana
+
+Log message:
+	Added a test for index assignment. Modified the traversals so
+	that it passes.
+
+Modified files:
+	chapel/compiler/traversals/: insertIndexType.cpp 
+	                             insertAnonymousTypes.cpp 
+Added files:
+	chapel/test/domains/roxana/: test_index_assign.good 
+	                             test_index_assign.chpl 
+
