@@ -127,6 +127,55 @@ void Stmt::codegenVarDef(FILE* outfile) {
 }
 
 
+void Stmt::replace(Stmt* &old_stmt, Stmt* new_stmt) {
+
+  /* Find first statement in new list */
+  ILink* first = new_stmt;
+  while (first->prev && !first->prev->isNull()) {
+    first = first->prev;
+  }
+
+  /* If first is not new statement, is this an error? */
+  if (first != new_stmt) {
+    INT_FATAL(old_stmt, "ERROR? You are replacing a statement where the new\n"
+                        "statement is in the middle of a statement list");
+  }
+
+  /* Find last statement in new list */
+  ILink* last = new_stmt;
+  while (last->next && !last->next->isNull()) {
+    last = last->next;
+  }
+
+  /* Set prev link */
+  first->prev = old_stmt->prev;
+  if ((old_stmt->prev) && (!(old_stmt->prev->isNull()))) {
+    old_stmt->prev->next = first;
+  }
+
+  /* Set next link */
+  last->next = old_stmt->next;
+  if ((old_stmt->next) && (!(old_stmt->next->isNull()))) {
+    old_stmt->next->prev = last;
+  }
+
+  /* Set parent symbols */
+  for (ILink* tmp = new_stmt; tmp != NULL && !tmp->isNull(); tmp = tmp->next) {
+    if (Stmt* stmp = dynamic_cast<Stmt*>(tmp)) {
+      stmp->parentSymbol = old_stmt->parentSymbol;
+    }
+    else {
+      INT_FATAL(old_stmt, "Non-statement in statement list encountered in Stmt::replace");
+    }
+  }
+
+  //  old_stmt->extract();
+
+  /* Replace reference */
+  old_stmt = new_stmt;
+}
+
+
 NoOpStmt::NoOpStmt(void) :
   Stmt(STMT_NOOP)
 {}

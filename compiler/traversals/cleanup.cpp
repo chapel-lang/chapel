@@ -23,9 +23,10 @@ void ApplyWith::preProcessStmt(Stmt* &stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
       if (ClassType* ctype = dynamic_cast<ClassType*>(symType->type)) {
-	Stmt* defStmt = with->getClass()->definition->copyList(ctype->scope);
-	with->preinsert(defStmt);
-	// Todo: The with-statement needs to be removed at this point.
+	Stmt::replace(stmt, with->getClass()->definition->copyList(ctype->scope));
+	//	Stmt* defStmt = with->getClass()->definition->copyList(ctype->scope);
+	//	with->preinsert(defStmt);
+	//      Todo: The with-statement needs to be removed at this point.
 	return;
       }
     }
@@ -56,6 +57,7 @@ void InsertThis::preProcessStmt(Stmt* &stmt) {
 	Stmt* next = nextLink(Stmt, stmt);
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
 	  Symbol* this_insert = new ParamSymbol(PARAM_INOUT, "this", ctype);
+	  this_insert->scope = method->fn->paramScope;
 	  Symboltable::defineInScope(this_insert, method->fn->paramScope);
 	  this_insert = appendLink(this_insert, method->fn->formals);
 	  method->fn->formals = this_insert;
@@ -99,6 +101,13 @@ void ResolveEasy::postProcessExpr(Expr* &expr) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
       Symbol* member = Symboltable::lookupInScope(member_access->member->name, class_type->scope);
       member_access->member = member;
+
+//       printf("changing: ");
+//       member_access->member->codegen(stdout);
+//       printf(" --> ");
+//       member->codegen(stdout);
+//       printf("\n");
+
     }
     else {
       INT_FATAL(expr, "Error resolving dot-expression");
@@ -111,20 +120,20 @@ void ResolveEasy::preProcessSymbol(Symbol* &sym) {
     Symbol* new_sym = Symboltable::lookupFromScope(sym->name, sym->scope);
     if (!dynamic_cast<UnresolvedSymbol*>(new_sym)) {
       Symbol::replace(sym, new_sym);
-      /*
-      printf("changing: ");
-      sym->codegen(stdout);
-      printf(" --> ");
-      new_sym->codegen(stdout);
-      printf("\n");
-      */
+
+//       printf("changing: ");
+//       sym->codegen(stdout);
+//       printf(" --> ");
+//       new_sym->codegen(stdout);
+//       printf("\n");
+
     }
     else {
-      /*
-      printf("hi ");
-      new_sym->codegen(stdout);
-      printf("\n");
-      */
+
+//       printf("hi ");
+//       new_sym->codegen(stdout);
+//       printf("\n");
+
     }
   }
 }

@@ -1,8 +1,8 @@
+ called from 0 in __init_domarr at domarr.chpl:12
  called from 0 in __init_entryPoint at <internal>:0
  called from 0 in __init_entryPoint at <internal>:0
  called from 0 in __init_entryPoint at <internal>:0
  called from 0 in main at <internal>:0
- called from 9 in __init_domarr at domarr.chpl:12
 ::0.0(domarr.chpl:9) ( float64 (<unknown>:0) )
 ::1(domarr.chpl:4) ( int64 (<unknown>:0) )
 ::1(domarr.chpl:4) ( int64 (<unknown>:0) )
@@ -11,6 +11,7 @@
 ::4(domarr.chpl:1) ( int64 (<unknown>:0) )
 ::8(domarr.chpl:2) ( int64 (<unknown>:0) )
 ::A is:\n(domarr.chpl:11) ( string (<unknown>:0) )
+::A(<internal>:0) ( (<unknown>:0) )
 ::A(<unknown>:0) ( (<unknown>:0) )
 ::A(domarr.chpl:11) ( (<unknown>:0) )
 ::A(domarr.chpl:9) ( (<unknown>:0) )
@@ -39,12 +40,12 @@
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(domarr.chpl:4) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-::self(internal_prelude.chpl:10) ( (<unknown>:0) )
-::self(internal_prelude.chpl:9) ( (<unknown>:0) )
+::this(<unknown>:0) ( (<unknown>:0) )
+::this(internal_prelude.chpl:9) ( (<unknown>:0) )
 function __init_domarr domarr.chpl:12
 function __init_entryPoint <internal>:0
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
 function main <internal>:0
-function self internal_prelude.chpl:10
+function this internal_prelude.chpl:10
 globals

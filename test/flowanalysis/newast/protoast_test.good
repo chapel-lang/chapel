@@ -1,11 +1,12 @@
  called from 0 in __init_entryPoint at <internal>:0
  called from 0 in __init_entryPoint at <internal>:0
  called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_protoast_test at protoast_test.chpl:12
  called from 0 in main at <internal>:0
- called from 10 in __init_protoast_test at protoast_test.chpl:12
 ::1(protoast_test.chpl:5) ( int64 (<unknown>:0) )
 ::1(protoast_test.chpl:5) ( int64 (<unknown>:0) )
 ::999(protoast_test.chpl:3) ( int64 (<unknown>:0) )
+::A(<internal>:0) ( (<unknown>:0) )
 ::A(<unknown>:0) ( (<unknown>:0) )
 ::A(protoast_test.chpl:10) ( (<unknown>:0) )
 ::D(<unknown>:0) ( Domain (<unknown>:0) )
@@ -28,12 +29,12 @@
 ::n(<unknown>:0) ( int64 (<unknown>:0) )
 ::n(protoast_test.chpl:5) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-::self(internal_prelude.chpl:6) ( (<unknown>:0) )
-::self(internal_prelude.chpl:7) ( (<unknown>:0) )
+::this(<unknown>:0) ( (<unknown>:0) )
+::this(internal_prelude.chpl:6) ( (<unknown>:0) )
 function __init_entryPoint <internal>:0
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
 function __init_protoast_test protoast_test.chpl:12
 function main <internal>:0
-function self internal_prelude.chpl:7
+function this internal_prelude.chpl:7
 globals

@@ -1,8 +1,8 @@
  called from 0 in __init_entryPoint at <internal>:0
  called from 0 in __init_entryPoint at <internal>:0
  called from 0 in __init_entryPoint at <internal>:0
+ called from 0 in __init_formatoutput at formatoutput.chpl:17
  called from 0 in main at <internal>:0
- called from 11 in __init_formatoutput at formatoutput.chpl:17
 ::%.2d(formatoutput.chpl:16) ( string (<unknown>:0) )
 ::%.3d(formatoutput.chpl:5) ( string (<unknown>:0) )
 ::%2d(formatoutput.chpl:15) ( string (<unknown>:0) )
@@ -15,6 +15,7 @@
 ::A is: (formatoutput.chpl:14) ( string (<unknown>:0) )
 ::A is: (formatoutput.chpl:15) ( string (<unknown>:0) )
 ::A is: (formatoutput.chpl:16) ( string (<unknown>:0) )
+::A(<internal>:0) ( (<unknown>:0) )
 ::A(<unknown>:0) ( (<unknown>:0) )
 ::A(formatoutput.chpl:11) ( (<unknown>:0) )
 ::A(formatoutput.chpl:14) ( (<unknown>:0) )
@@ -37,8 +38,8 @@
 ::main(<internal>:0) ( main (<unknown>:0) )
 ::main(<unknown>:0) ( main (<unknown>:0) )
 ::null(<unknown>:0) ( null (<unknown>:0) null (<unknown>:0) )
-::self(internal_prelude.chpl:6) ( (<unknown>:0) )
-::self(internal_prelude.chpl:7) ( (<unknown>:0) )
+::this(<unknown>:0) ( (<unknown>:0) )
+::this(internal_prelude.chpl:6) ( (<unknown>:0) )
 ::x is: (formatoutput.chpl:3) ( string (<unknown>:0) )
 ::x is: (formatoutput.chpl:4) ( string (<unknown>:0) )
 ::x is: (formatoutput.chpl:5) ( string (<unknown>:0) )
@@ -51,5 +52,5 @@ function __init_formatoutput formatoutput.chpl:17
 function __init_internal_prelude internal_prelude.chpl:21
 function __init_prelude prelude.chpl:54
 function main <internal>:0
-function self internal_prelude.chpl:7
+function this internal_prelude.chpl:7
 globals
