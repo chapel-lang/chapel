@@ -1867,7 +1867,6 @@ add_to_universal_lookup_cache(char *name, Fun *fun) {
 void
 ACallbacks::finalize_functions() {
   pdb->fa->method_token = unique_AVar(new Var(method_symbol), GLOBAL_CONTOUR);
-  pdb->fa->method_token->out = make_abstract_type(method_symbol);
   forv_Fun(fun, pdb->funs) {
     int added = 0;
     char *name = fun->sym->has.v[0]->name;

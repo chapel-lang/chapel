@@ -2172,6 +2172,8 @@ initialize_pass() {
   type_violation_hash.clear();
   entry_set_done.clear();
   refresh_top_edge(fa->top_edge);
+  if (fa->method_token)
+    fa->method_token->out = make_abstract_type(fa->method_token->var->sym);
 }
 
 enum { DFS_white = 0, DFS_grey, DFS_black };
@@ -2463,6 +2465,8 @@ clear_results() {
   for (int i = 0; i < cannonical_setters.n; i++)
     forc_List(Setters *, x, cannonical_setters.v[i].value)
       x->car->eq_classes = NULL;
+  if (fa->method_token)
+    clear_var(fa->method_token->var);
 }
 
 static Setters *
