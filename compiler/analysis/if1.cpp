@@ -875,6 +875,13 @@ Code::line() {
   return 0;
 }
 
+int
+Code::log_line() {
+  if (strstr(filename(), "prelude"))
+    return 0;
+  return line();
+}
+
 static char *int_type_names[IF1_INT_TYPE_NUM][2] = {
   { "bool",   0 },
   { "uint8",   "int8" },

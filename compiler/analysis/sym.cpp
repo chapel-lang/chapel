@@ -42,6 +42,13 @@ Sym::line() {
   return l;
 }
 
+int
+Sym::log_line() {
+  if (strstr(filename(), "prelude"))
+    return 0;
+  return line();
+}
+
 void
 Sym::copy_values(Sym *s) {
   int temp_id = id;

@@ -1,17 +1,11 @@
- called from 2 in __init at multipledef.v:1
- called from 2 in __init at multipledef.v:1
- called from 2 in __init at multipledef.v:1
 function __init multipledef.v:1
-function __init prelude.v:7
-function operator prelude.v:81
-function print prelude.v:135
 globals
-operator::a(prelude.v:81) ( int32 (prelude.v:25) )
-operator::b(prelude.v:81) ( int32 (prelude.v:25) )
-print::a(prelude.v:135) ( int32 (prelude.v:25) )
-system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:60) ( null (prelude.v:60) )
+operator::a(prelude.v:0) ( int32 )
+operator::b(prelude.v:0) ( int32 )
+print::a(prelude.v:0) ( int32 )
+system::__init(prelude.v:0) ( __init )
+system::null(prelude.v:0) ( null )
 user::__init(multipledef.v:1) ( __init (multipledef.v:1) )
-user::a(multipledef.v:1) ( int32 (prelude.v:25) )
-user::b(multipledef.v:1) ( int32 (prelude.v:25) )
-user::c(multipledef.v:1) ( int32 (prelude.v:25) )
+user::a(multipledef.v:1) ( int32 )
+user::b(multipledef.v:1) ( int32 )
+user::c(multipledef.v:1) ( int32 )

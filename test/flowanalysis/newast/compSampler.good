@@ -1,10 +1,10 @@
 ::__init_compSampler(compSampler.chpl:35) ( __init_compSampler (compSampler.chpl:35) )
 ::__init_compSampler(compSampler.chpl:35) ( __init_compSampler (compSampler.chpl:35) )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
 ::answer(compSampler.chpl:4) ( int64 )
 ::int64 ( int64 )
 ::m(compSampler.chpl:1) ( int64 )
@@ -14,6 +14,4 @@
 ::o(compSampler.chpl:3) ( int64 )
 ::void ( void )
 function __init_compSampler compSampler.chpl:35
-function __init_internal_prelude internal_prelude.chpl:30
-function __init_prelude prelude.chpl:54
 globals

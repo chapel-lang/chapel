@@ -1,10 +1,10 @@
 ::__init_bitwise_assignment(bitwise_assignment.chpl:26) ( __init_bitwise_assignment (bitwise_assignment.chpl:26) )
 ::__init_bitwise_assignment(bitwise_assignment.chpl:26) ( __init_bitwise_assignment (bitwise_assignment.chpl:26) )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
 ::int64 ( int64 )
 ::m(bitwise_assignment.chpl:1) ( int64 )
 ::main ( main )
@@ -12,6 +12,4 @@
 ::n(bitwise_assignment.chpl:2) ( int64 )
 ::void ( void )
 function __init_bitwise_assignment bitwise_assignment.chpl:26
-function __init_internal_prelude internal_prelude.chpl:30
-function __init_prelude prelude.chpl:54
 globals

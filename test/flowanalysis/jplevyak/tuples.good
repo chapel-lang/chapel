@@ -1,20 +1,12 @@
- called from 13 in __init at tuples.v:7
- called from 14 in __init at tuples.v:7
- called from 7 in __init at tuples.v:7
- called from 8 in __init at tuples.v:7
- called from 9 in __init at tuples.v:7
-function __init prelude.v:7
 function __init tuples.v:7
-function print prelude.v:135
-function print prelude.v:135
 globals
-print::a(prelude.v:135) ( int32 (prelude.v:25) )
-print::a(prelude.v:135) ( tuple (prelude.v:14) )
-system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:60) ( null (prelude.v:60) )
+print::a(prelude.v:0) ( int32 )
+print::a(prelude.v:0) ( tuple )
+system::__init(prelude.v:0) ( __init )
+system::null(prelude.v:0) ( null )
 user::__init(tuples.v:7) ( __init (tuples.v:7) )
-user::tuple0(tuples.v:7) ( tuple (prelude.v:14) )
-user::tuple1(tuples.v:8) ( int32 (prelude.v:25) )
-user::tuple2(tuples.v:9) ( tuple (prelude.v:14) )
-user::tuple3(tuples.v:13) ( tuple (prelude.v:14) )
-user::tuple4(tuples.v:14) ( tuple (prelude.v:14) )
+user::tuple0(tuples.v:7) ( tuple )
+user::tuple1(tuples.v:8) ( int32 )
+user::tuple2(tuples.v:9) ( tuple )
+user::tuple3(tuples.v:13) ( tuple )
+user::tuple4(tuples.v:14) ( tuple )

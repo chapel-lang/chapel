@@ -4,10 +4,10 @@
 ::__init_declprintdom(declprintdom.chpl:12) ( __init_declprintdom (declprintdom.chpl:12) )
 ::__init_declprintdom(declprintdom.chpl:12) ( __init_declprintdom (declprintdom.chpl:12) )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
 ::m1(declprintdom.chpl:1) ( int64 )
 ::m2(declprintdom.chpl:2) ( int64 )
 ::m3(declprintdom.chpl:3) ( int64 )
@@ -15,6 +15,4 @@
 ::main ( main )
 ::void ( void )
 function __init_declprintdom declprintdom.chpl:12
-function __init_internal_prelude internal_prelude.chpl:30
-function __init_prelude prelude.chpl:54
 globals

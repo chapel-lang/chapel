@@ -1,16 +1,16 @@
-::D4(declprintdom2.chpl:9) ( Domain (internal_prelude.chpl:16) )
-::D5(declprintdom2.chpl:10) ( Domain (internal_prelude.chpl:16) )
-::D6(declprintdom2.chpl:11) ( Domain (internal_prelude.chpl:16) )
-::D7(declprintdom2.chpl:12) ( Domain (internal_prelude.chpl:16) )
-::D8(declprintdom2.chpl:13) ( Domain (internal_prelude.chpl:16) )
-::D9(declprintdom2.chpl:14) ( Domain (internal_prelude.chpl:16) )
+::D4(declprintdom2.chpl:9) ( Domain )
+::D5(declprintdom2.chpl:10) ( Domain )
+::D6(declprintdom2.chpl:11) ( Domain )
+::D7(declprintdom2.chpl:12) ( Domain )
+::D8(declprintdom2.chpl:13) ( Domain )
+::D9(declprintdom2.chpl:14) ( Domain )
 ::__init_declprintdom2(declprintdom2.chpl:22) ( __init_declprintdom2 (declprintdom2.chpl:22) )
 ::__init_declprintdom2(declprintdom2.chpl:22) ( __init_declprintdom2 (declprintdom2.chpl:22) )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
 ::m4(declprintdom2.chpl:1) ( int64 )
 ::m5(declprintdom2.chpl:2) ( int64 )
 ::m6(declprintdom2.chpl:3) ( int64 )
@@ -21,6 +21,4 @@
 ::main ( main )
 ::void ( void )
 function __init_declprintdom2 declprintdom2.chpl:22
-function __init_internal_prelude internal_prelude.chpl:30
-function __init_prelude prelude.chpl:54
 globals

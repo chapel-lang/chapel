@@ -1,17 +1,10 @@
- called from 4 in __init at ref.v:2
- called from 6 in __init at ref.v:2
- called from 8 in __init at ref.v:2
-function __init prelude.v:7
 function __init ref.v:2
-function operator prelude.v:118
-function operator prelude.v:119
-function print prelude.v:135
 globals
-operator::a(prelude.v:118) ( ref (prelude.v:19) )
-operator::a(prelude.v:119) ( int32 (prelude.v:25) )
-print::a(prelude.v:135) ( int32 (prelude.v:25) )
-system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:60) ( null (prelude.v:60) )
+operator::a(prelude.v:0) ( int32 )
+operator::a(prelude.v:0) ( ref )
+print::a(prelude.v:0) ( int32 )
+system::__init(prelude.v:0) ( __init )
+system::null(prelude.v:0) ( null )
 user::__init(ref.v:2) ( __init (ref.v:2) )
-user::a(ref.v:2) ( int32 (prelude.v:25) )
-user::b(ref.v:4) ( ref (prelude.v:19) )
+user::a(ref.v:2) ( int32 )
+user::b(ref.v:4) ( ref )

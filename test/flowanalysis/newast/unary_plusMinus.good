@@ -1,8 +1,8 @@
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
-::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_prelude(prelude.chpl:0) ( __init_prelude )
 ::__init_unary_plusMinus(unary_plusMinus.chpl:33) ( __init_unary_plusMinus (unary_plusMinus.chpl:33) )
 ::__init_unary_plusMinus(unary_plusMinus.chpl:33) ( __init_unary_plusMinus (unary_plusMinus.chpl:33) )
 ::answer(unary_plusMinus.chpl:3) ( int64 )
@@ -12,7 +12,5 @@
 ::main ( main )
 ::n(unary_plusMinus.chpl:2) ( int64 )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:30
-function __init_prelude prelude.chpl:54
 function __init_unary_plusMinus unary_plusMinus.chpl:33
 globals

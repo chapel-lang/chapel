@@ -1,25 +1,18 @@
  called from 2 in f at dispatch2.v:2
- called from 3 in f at dispatch2.v:3
- called from 4 in __init at dispatch2.v:1
  called from 4 in __init at dispatch2.v:1
  called from 5 in __init at dispatch2.v:1
- called from 5 in __init at dispatch2.v:1
-f::x(dispatch2.v:2) ( float64 (prelude.v:38) )
-f::x(dispatch2.v:3) ( int32 (prelude.v:25) )
+f::x(dispatch2.v:2) ( float64 )
+f::x(dispatch2.v:3) ( int32 )
 function __init dispatch2.v:1
-function __init prelude.v:7
 function f dispatch2.v:2
 function f dispatch2.v:3
 function g dispatch2.v:1
-function operator prelude.v:81
-function print prelude.v:135
-function print prelude.v:135
-g::x(dispatch2.v:1) ( float64 (prelude.v:38) )
+g::x(dispatch2.v:1) ( float64 )
 globals
-operator::a(prelude.v:81) ( int32 (prelude.v:25) )
-operator::b(prelude.v:81) ( int32 (prelude.v:25) )
-print::a(prelude.v:135) ( float64 (prelude.v:38) )
-print::a(prelude.v:135) ( int32 (prelude.v:25) )
-system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:60) ( null (prelude.v:60) )
+operator::a(prelude.v:0) ( int32 )
+operator::b(prelude.v:0) ( int32 )
+print::a(prelude.v:0) ( float64 )
+print::a(prelude.v:0) ( int32 )
+system::__init(prelude.v:0) ( __init )
+system::null(prelude.v:0) ( null )
 user::__init(dispatch2.v:1) ( __init (dispatch2.v:1) )

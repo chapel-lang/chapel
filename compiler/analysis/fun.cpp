@@ -238,3 +238,10 @@ Fun::line() {
   return ast->line(); 
 }
 
+int
+Fun::log_line() {
+  if (strstr(filename(), "prelude"))
+    return 0;
+  return line();
+}
+

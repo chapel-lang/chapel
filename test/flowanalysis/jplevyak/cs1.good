@@ -1,32 +1,21 @@
  called from 2 in __init at cs1.v:1
- called from 3 in __init at cs1.v:1
- called from 4 in __init at cs1.v:1
- called from 4 in __init at cs1.v:1
  called from 5 in __init at cs1.v:1
- called from 6 in __init at cs1.v:1
- called from 7 in __init at cs1.v:1
- called from 7 in __init at cs1.v:1
-create::a(cs1.v:1) ( float64 (prelude.v:38) )
-create::a(cs1.v:1) ( int32 (prelude.v:25) )
-create::x(cs1.v:1) ( float64 (prelude.v:38) )
-create::x(cs1.v:1) ( int32 (prelude.v:25) )
+create::a(cs1.v:1) ( float64 )
+create::a(cs1.v:1) ( int32 )
+create::x(cs1.v:1) ( float64 )
+create::x(cs1.v:1) ( int32 )
 function __init cs1.v:1
-function __init prelude.v:7
 function create cs1.v:1
 function create cs1.v:1
-function operator prelude.v:76
-function operator prelude.v:76
-function print prelude.v:135
-function print prelude.v:135
 globals
-operator::a(prelude.v:76) ( tuple (prelude.v:14) )
-operator::a(prelude.v:76) ( tuple (prelude.v:14) )
-operator::b(prelude.v:76) ( a )
-operator::b(prelude.v:76) ( a )
-print::a(prelude.v:135) ( float64 (prelude.v:38) )
-print::a(prelude.v:135) ( int32 (prelude.v:25) )
-system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:60) ( null (prelude.v:60) )
+operator::a(prelude.v:0) ( tuple )
+operator::a(prelude.v:0) ( tuple )
+operator::b(prelude.v:0) ( a )
+operator::b(prelude.v:0) ( a )
+print::a(prelude.v:0) ( float64 )
+print::a(prelude.v:0) ( int32 )
+system::__init(prelude.v:0) ( __init )
+system::null(prelude.v:0) ( null )
 user::__init(cs1.v:1) ( __init (cs1.v:1) )
-user::x(cs1.v:2) ( tuple (prelude.v:14) )
-user::y(cs1.v:5) ( tuple (prelude.v:14) )
+user::x(cs1.v:2) ( tuple )
+user::y(cs1.v:5) ( tuple )

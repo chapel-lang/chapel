@@ -78,7 +78,7 @@ class BasicSym : public gc {
   char 			*name;			// user level name
   Sym  			*in;			// containing module, class, function
   Sym 			*type;			// type of the symbol
-  Sym  			*aspect;		// mascarade as type (e.g. superclass)
+  Sym  			*aspect;		// masquarade as type (e.g. superclass)
   Sym			*must_specialize;	// dispatch constraints
   Sym			*must_implement;	// type checking constraints
   AST			*ast;			// AST node which defined this symbol
@@ -158,6 +158,7 @@ class Sym : public BasicSym {
   Sym *			coerce_to(Sym *);
   char			*pathname();
   int			line();
+  int			log_line();		// squelch line numbers of prelude in log
   char			*filename();
   Sym *			clone(CloneCallback *);
 

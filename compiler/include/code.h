@@ -34,6 +34,7 @@ class Code : public gc {
   char 		*pathname();
   char 		*filename();
   int 		line();
+  int 		log_line(); // squelch line number in prelude (for testing)
 
   unsigned int	partial:2;
   unsigned int  live:1;
