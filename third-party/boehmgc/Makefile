@@ -12,8 +12,8 @@ all: $(PLATFORM_DIR)
 
 clean:
 	cd $(GC_DIRNAME) && make clean
-	rm -rf ./$(PLATFORM)/*
 
 clobber:
+	cd $(GC_DIRNAME) && make clean
 	rm -rf ./$(PLATFORM)
 

@@ -12,7 +12,7 @@ all: $(PLATFORM_DIR)
 
 clean:
 	cd $(D_PARSER_DIRNAME) && $(MAKE) clean
-	rm -rf ./$(PLATFORM)/*
 
 clobber:
+	cd $(D_PARSER_DIRNAME) && $(MAKE) clean
 	rm -rf ./$(PLATFORM)
