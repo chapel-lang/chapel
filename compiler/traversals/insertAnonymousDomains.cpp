@@ -46,7 +46,7 @@ void InsertAnonymousDomains::preProcessType(Type* type) {
 
   char* name = glomstrings(2, "_anon_domain_", intstring(uid++));
 
-  DomainType* domain_type = new DomainType(1);
+  DomainType* domain_type = new DomainType(forall->domains->length());
 
   SymScope* saveScope = Symboltable::setCurrentScope(currentScope);
   VarSymbol* domain_sym = new VarSymbol(name, domain_type, forall->copy());
