@@ -613,6 +613,8 @@ map_symbols(Vec<BaseAST *> &syms) {
 	  pr = dynamic_cast<Pragma *>(pr->next);
 	}
       }
+      if (sym->type == dtNil)
+	sym_nil = sym->asymbol->sym;
       symbols++;
       if (verbose_level > 1 && sym->name)
 	printf("map_symbols: found Symbol '%s'\n", sym->name);
@@ -849,6 +851,7 @@ build_builtin_symbols() {
   build_module(sym_system, sym_system->init);
 
   sym_void = dtVoid->asymbol->sym;
+  sym_null = dtNil->asymbol->sym;
   sym_unknown = dtUnknown->asymbol->sym;
   sym_bool = dtBoolean->asymbol->sym;
   sym_int64 = dtInteger->asymbol->sym;
@@ -861,6 +864,9 @@ build_builtin_symbols() {
   new_lub_type(sym_anyclass, "anyclass", 0);
   sym_anyclass->meta_type = sym_anyclass;
   new_lub_type(sym_any, "any", 0);
+  sym_null->meta_type = sym_null; 
+  sym_null->type = sym_null;
+  if1_set_builtin(if1, sym_null, "null");
   new_primitive_type(sym_module, "module");
   new_primitive_type(sym_symbol, "symbol");
   if1_set_symbols_type(if1);
@@ -918,7 +924,9 @@ build_builtin_symbols() {
     if1_set_builtin(if1, sym_new_object, "new_object");
   }
   
-  new_primitive_type(sym_null, "null");
+  sym_nil->type = sym_null;
+  sym_nil->is_external = 1;
+  if1_set_builtin(if1, sym_nil, "nil");
 
   sym_init = new_sym(); // placeholder
 
@@ -1323,7 +1331,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
     case EXPR: {
       Expr *e = dynamic_cast<Expr*>(ast);
       assert(!ast); 
-      e->ainfo->rval = sym_null;
+      e->ainfo->rval = sym_nil;
       break;
     }
     case EXPR_LITERAL: assert(!"case"); break;
@@ -2122,7 +2130,6 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   if (import_symbols(syms) < 0) return -1;
   if1_set_primitive_types(if1);
   if (build_classes(syms) < 0) return -1;
-  sym_null->is_external = 1;	// hack
   finalize_types(if1);
   if (build_functions(syms) < 0) return -1;
 #define REG(_n, _f) pdb->fa->primitive_transfer_functions.put(_n, new RegisteredPrim(_f));

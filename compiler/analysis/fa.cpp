@@ -19,6 +19,7 @@ static FA *fa = 0;
 
 AType *bottom_type = 0;
 AType *void_type = 0;
+AType *null_type = 0;
 AType *unknown_type = 0;
 AType *top_type = 0;
 AType *any_type = 0;
@@ -830,7 +831,8 @@ add_var_constraints(EntrySet *es) {
   forv_Var(v, f->fa_Vars) {
     AVar *av = make_AVar(v, es);
     if (v->sym->type && !v->sym->is_pattern) {
-      if (v->sym->is_external && (v->sym->type->num_kind || v->sym->type == sym_string))
+      if (v->sym->is_external && 
+	  (v->sym->type->num_kind || v->sym->type == sym_string || v->sym == sym_nil))
 	update_in(av, v->sym->type->abstract_type);
       if (v->sym->is_constant) // for constants, the abstract type is the concrete type
 	update_in(av, make_abstract_type(v->sym));
@@ -1382,6 +1384,8 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	forv_CreationSet(sel, *selector->out) if (sel) {
 	  char *symbol = sel->sym->name; assert(symbol);
 	  forv_CreationSet(cs, *obj->out) if (cs) {
+	    if (cs == null_type->v[0])
+	      continue;
 	    AVar *iv = cs->var_map.get(symbol);
 	    if (iv)
 	      flow_vars(iv, result);
@@ -2158,6 +2162,7 @@ initialize() {
   anyint_type = make_abstract_type(sym_anyint);
   anynum_kind = make_abstract_type(sym_anynum);
   anyclass_type = make_abstract_type(sym_anyclass);
+  null_type = make_abstract_type(sym_null);
   edge_worklist.clear();
   send_worklist.clear();
   initialize_symbols();
@@ -2770,6 +2775,20 @@ set_void_lub_types_to_void() {
   foreach_var<SetVoidFn>();
 }
 
+struct RemoveNullFn { static void F(Var *v) { 
+  CreationSet *s = null_type->v[0];
+  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+    AVar *av = v->avars.v[i].value;
+    if (av->out->in(s))
+      av->out = type_diff(av->out, s->sym->abstract_type);
+  }
+} };
+
+static void
+remove_null_types() {
+  foreach_var<RemoveNullFn>();
+}
+
 static void
 complete_pass() {
   collect_results();
@@ -2798,6 +2817,7 @@ FA::analyze(Fun *top) {
     complete_pass();
   } while (extend_analysis());
   set_void_lub_types_to_void();
+  remove_null_types();
   show_violations(fa, stderr);
   return type_violations.n ? -1 : 0;
 }
