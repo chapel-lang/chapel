@@ -4727,3 +4727,45 @@ Added files:
 	chapel/third-party/boehmgc/gc6.3/doc/: .cvsignore 
 	chapel/third-party/boehmgc/gc6.3/include/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+07/29/04 16:05:04 -- bradc
+
+Log message:
+	* implemented some basic code generation for domains in the
+	new AST.  This isn't guaranteed to work for much more than
+	simple 1D domains for the time being...
+	
+	* started adding some new methods to the Expr hierarchy, though
+	didn't implement them for many subclasses:
+	isComputable() -- indicates whether the expression's value
+	is computable at runtime
+	intVal() -- returns the computable value for integer
+	expressions
+	
+	* added better support for INT_FATAL() macro -- can still send
+	in an AST* as the first argument, but can also send in a Loc*
+	(root-ish class from the new AST that defines a filename and
+	linenumber), or leave off any location indicator (previously,
+	lots of calls sent in NULL...).
+	
+	* renamed type_info() to typeInfo() in new AST stuff and did
+	a little more implementation of it for
+	
+	* changed default stride expression for SimpleSeqExpr from a
+	NullExpr to stride "1" in hopes of reducing special cases.
+	
+	* fixed up generation of types in variable declarations
+	(Shannon, this was the note that I was referring to when
+	we talked on Tuesday.  I couldn't hold off any longer, but
+	it would be worth doing a diff between these two files to
+	see waht I did and why -- look for your name in the old
+	version of the file).
+
+Modified files:
+	chapel/compiler/: beautify.cpp codegen.cpp createAST.cpp 
+	                  datatype.cpp files.cpp misc.cpp misc.h 
+	                  stringutil.cpp 
+	chapel/compiler/AST/: TODO expr.cpp expr.h stmt.cpp symbol.cpp 
+	                      symtab.cpp type.cpp type.h 
+
