@@ -7,4 +7,4 @@ function foo(in x) {
 
 var y = 1;
 foo(y);
-writeln("expect 7 ", y);
+writeln("expect 1 ", y);
