@@ -12720,3 +12720,16 @@ Modified files:
 	chapel/compiler/traversals/: traversal.h 
 	chapel/compiler/include/: expr.h link.h stmt.h symbol.h type.h 
 
+---------------------------------------------------------------------------
+
+12/23/04 11:19:41 -- deitz
+
+Log message:
+	A few test cases for function cloning, two of these work because only one clone is made, the third needs two clones.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_function1.chpl 
+	                                         test_clone_function2.chpl 
+	                                         test_clone_function3.chpl 
+
