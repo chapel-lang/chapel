@@ -12,6 +12,7 @@ char *AST_name[] = {
 
 char *cannonical_class = 0;
 char *cannonical_self = 0;
+char *cannonical_folded = 0;
 
 AST *
 AST::get(AST_kind k) {
@@ -1292,6 +1293,7 @@ ast_gen_if1(IF1 *i, Vec<AST *> &av) {
   Scope *global = new Scope();
   cannonical_class = if1_cannonicalize_string(i, "class");
   cannonical_self = if1_cannonicalize_string(i, "self");
+  cannonical_folded = if1_cannonicalize_string(i, "< folded >");
   global_asserts();
   forv_AST(a, av)
     build_builtin_syms(i, a);

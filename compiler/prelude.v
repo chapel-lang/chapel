@@ -68,7 +68,7 @@ __init__ __name "init":0;
 #__make_continuation __name "make_continuation";
 #__primitive __name "primitive";
 #__new __name "new";
-#__index_vector __name "index_vector";
+#__index __name "index";
 #__print __name "print";
 #operator __name "operator";
 #"&" __name "doref";
@@ -125,6 +125,10 @@ operator(a:anynum, #"|", b:anynum)	   : #__primitive a #"|" b;
 operator(#"(", a:symbol, b:any)		   : #__primitive #"(" a b;
 operator(a:ref, #"++"): #__primitive a #"=" ((#__primitive#"*" a) #"+" 1);
 operator(a:ref, #"--"): #__primitive a #"=" ((#__primitive#"*" a) #"-" 1);
+
+// tuples indexing
+
+tuple::self(a) : #__index self a;
 
 //
 

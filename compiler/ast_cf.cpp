@@ -174,7 +174,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
       }
 
 static int
-fold_constant(IF1 *i, AST *ast, char *foldstr) {
+fold_constant(IF1 *i, AST *ast) {
   Sym *a, *b = 0;
   Sym *res_type;
   Immediate im1, im2;
@@ -230,17 +230,17 @@ fold_constant(IF1 *i, AST *ast, char *foldstr) {
     case P_prim_not: DO_FOLD1(!); break;
     default: return 0;
   }
-  ast->sym->constant = foldstr;
+  ast->sym->constant = cannonical_folded;
   ast->sym->in = 0;
   ast->sym->type = res_type;
   ast->kind = AST_const;
   return 0;
 }
 
-static int
-ast_constant_fold_internal(IF1 *i, AST *ast, char *foldstr) {
+int
+ast_constant_fold(IF1 *i, AST *ast) {
   forv_AST(a, *ast)
-    if (ast_constant_fold_internal(i, a, foldstr) < 0)
+    if (ast_constant_fold(i, a) < 0)
       return -1;
   switch (ast->kind) {
     case AST_const: {
@@ -250,7 +250,15 @@ ast_constant_fold_internal(IF1 *i, AST *ast, char *foldstr) {
 	case IF1_NUM_TYPE_UINT: {
 	  switch (ast->sym->type->num_index) {
 	    case IF1_INT_TYPE_8: 
-	      ast->sym->imm.v_uint8 = strtoul(ast->sym->constant, 0, 0); break;
+	      if (ast->sym->constant[0] != '\'')
+		ast->sym->imm.v_uint8 = strtoul(ast->sym->constant, 0, 0);
+	      else {
+		if (ast->sym->constant[1] != '\\')
+		  ast->sym->imm.v_uint8 = ast->sym->constant[1];
+		else
+		  ast->sym->imm.v_uint8 = ast->sym->constant[2];
+	      }
+	      break;
 	    case IF1_INT_TYPE_16:
 	      ast->sym->imm.v_uint16 = strtoul(ast->sym->constant, 0, 0); break;
 	    case IF1_INT_TYPE_32:
@@ -264,7 +272,15 @@ ast_constant_fold_internal(IF1 *i, AST *ast, char *foldstr) {
 	case IF1_NUM_TYPE_INT: {
 	  switch (ast->sym->type->num_index) {
 	    case IF1_INT_TYPE_8: 
-	      ast->sym->imm.v_int8 = strtol(ast->sym->constant, 0, 0); break;
+	      if (ast->sym->constant[0] != '\'')
+		ast->sym->imm.v_int8 = strtoul(ast->sym->constant, 0, 0);
+	      else {
+		if (ast->sym->constant[1] != '\\')
+		  ast->sym->imm.v_int8 = ast->sym->constant[1];
+		else
+		  ast->sym->imm.v_int8 = ast->sym->constant[2];
+	      }
+	      break;
 	    case IF1_INT_TYPE_16:
 	      ast->sym->imm.v_int16 = strtol(ast->sym->constant, 0, 0); break;
 	    case IF1_INT_TYPE_32:
@@ -290,7 +306,7 @@ ast_constant_fold_internal(IF1 *i, AST *ast, char *foldstr) {
     case AST_op: {
       ast->prim = i->primitives->find(ast);
       if (ast->prim)
-	if (fold_constant(i, ast, foldstr) < 0)
+	if (fold_constant(i, ast) < 0)
 	  return -1;
       break;
     }
@@ -300,6 +316,48 @@ ast_constant_fold_internal(IF1 *i, AST *ast, char *foldstr) {
 }
 
 int
-ast_constant_fold(IF1 *i, AST *ast) {
-  return ast_constant_fold_internal(i, ast, if1_cannonicalize_string(i, "< folded >"));
+ast_constant_print(FILE *fp, AST *ast) {
+  Sym *s = ast->sym->type;
+  switch (s->num_type) {
+    case IF1_NUM_TYPE_NONE:
+      break;
+    case IF1_NUM_TYPE_UINT: {
+      switch (s->num_index) {
+	case IF1_INT_TYPE_8:
+	  return fprintf(fp, "%u", ast->sym->imm.v_uint8);
+	case IF1_INT_TYPE_16:
+	  return fprintf(fp, "%u", ast->sym->imm.v_uint16);
+	case IF1_INT_TYPE_32:
+	  return fprintf(fp, "%u", ast->sym->imm.v_uint32);
+	case IF1_INT_TYPE_64:
+	  return fprintf(fp, "%llu", ast->sym->imm.v_uint64);
+	default: assert(!"case");
+      }
+      break;
+    }
+    case IF1_NUM_TYPE_INT: {
+      switch (s->num_index) {
+	case IF1_INT_TYPE_8:
+	  return fprintf(fp, "%d", ast->sym->imm.v_int8);
+	case IF1_INT_TYPE_16:
+	  return fprintf(fp, "%d", ast->sym->imm.v_int16);
+	case IF1_INT_TYPE_32:
+	  return fprintf(fp, "%d", ast->sym->imm.v_int32);
+	case IF1_INT_TYPE_64:
+	  return fprintf(fp, "%lld", ast->sym->imm.v_int64);
+	default: assert(!"case");
+      }
+      break;
+    }
+    case IF1_NUM_TYPE_FLOAT:
+      switch (s->num_index) {
+	case IF1_FLOAT_TYPE_32:
+	  return fprintf(fp, "%f", ast->sym->imm.v_float32);
+	case IF1_FLOAT_TYPE_64: 
+	  return fprintf(fp, "%f", ast->sym->imm.v_float64);
+	default: assert(!"case");
+      }
+      break;
+  }
+  return -1;
 }

@@ -182,9 +182,14 @@ dump_ast_tree(FILE *fp, Fun *f, AST *a, int indent = 0) {
   for (int i = 0; i < indent; i++) putc(' ', fp);
   fprintf(fp, "<LI>%s ", AST_name[a->kind]);
   if (a->sym) {
-    if (a->sym->constant)
-      fprintf(fp, " constant %s", a->sym->constant);
-    else if (a->sym->symbol)
+    if (a->sym->constant) {
+      if (!a->sym->type->num_type)
+	fprintf(fp, " constant %s", a->sym->constant);
+      else {
+	fprintf(fp, " constant ");
+	ast_constant_print(fp, a);
+      }
+    } else if (a->sym->symbol)
       fprintf(fp, " symbol %s", a->sym->name);
     else if (a->sym->name)
       fprintf(fp, " sym %s", a->sym->name);

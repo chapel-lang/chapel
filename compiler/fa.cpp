@@ -914,11 +914,16 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
 	prim_make_vector(p, es, ret); 
 	break;
       }
-      case P_prim_index_vector: {
+      case P_prim_index: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *vec = make_AVar(p->rvals.v[1], es);
 	vec->arg_of_send.set_add(result);
 	forv_CreationSet(cs, *vec->out) if (cs) {
+#if 0
+	  if (cs->sym == sym_tuple) {
+	    AVar *elem = unique_AVar(element_var, cs);
+	  }
+#endif
 	  AVar *elem = unique_AVar(element_var, cs);
 	  flow_vars_equal(elem, result);
 	}

@@ -71,7 +71,7 @@ var reply = #reply __name "reply";
 #__make_continuation __name "make_continuation";
 #__primitive __name "primitive";
 #__new __name "new";
-#__index_vector __name "index_vector";
+#__index __name "index";
 #__print __name "print";
 #operator __name "operator";
 #"&" __name "doref";

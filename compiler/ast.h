@@ -73,6 +73,7 @@ class AST : public Vec<AST *> {
 
 int ast_gen_if1(IF1 *if1, Vec<AST *> &av);
 int ast_constant_fold(IF1 *if1, AST *ast);
+int ast_constant_print(FILE *fp, AST *ast);
 void ast_print(FILE *fp, AST *a, int indent = 0);
 void ast_print_recursive(FILE *fp, AST *a, int indent = 0);
 void ast_write(AST *a, char *filename);
@@ -85,5 +86,6 @@ Sym *new_sym(IF1 *i, Scope *scope, char *s = 0, Sym *sym = 0);
 
 extern char *cannonical_class;
 extern char *cannonical_self;
+extern char *cannonical_folded;
 
 #endif
