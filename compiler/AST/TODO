@@ -18,4 +18,7 @@
 
 * remove dead code (usually commented out)
 
-* fix insertion of code into init procedure
+* refactor function implementation stuff into a helper function?
+  (from parser and createAST.cpp)
+
+* get header files populated!

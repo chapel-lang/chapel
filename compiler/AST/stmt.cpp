@@ -92,8 +92,8 @@ void VarDefStmt::codegen(FILE* outfile) {
     if (init != NULL && !init->isNull()) {
       fprintf(outfile, " = ");
       init->codegen(outfile);
-      fprintf(outfile, ";");
     }
+    fprintf(outfile, ";");
 
     aVar = nextLink(VarSymbol, aVar);
     if (aVar) {

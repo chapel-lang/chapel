@@ -1,0 +1,5 @@
+output/test.c:7: warning: function declaration isn't a prototype
+x is: 123
+a is: 789
+z is: 765
+y is: 456
