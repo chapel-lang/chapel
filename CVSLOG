@@ -18713,3 +18713,30 @@ Added files:
 	chapel/test/trivial/jplevyak/: string-1.chpl string-1.future 
 	                               string-1.good 
 
+---------------------------------------------------------------------------
+
+03/02/05 17:30:54 -- jplevyak
+
+Log message:
+	Add pragmas.  These are stored off of Stmt(s) and Symbol(s) and use the
+	syntax
+	  pragma "inline" function foo(pragma "register" x) { ... }
+	which is to say they are currently strings.  Most Symbol definition
+	situations allow pragmas, in particular variable and and parameter
+	definitions.  If there is interest we can attach them to Expr(s) as well.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: misc.h pragma.h symbol.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/util/: misc.cpp 
+Added files:
+	chapel/test/trivial/jplevyak/: pragma-1.chpl pragma-1.good 
+	                               pragma-2.chpl pragma-2.good 
+	                               pragma-3.chpl pragma-3.good 
+	                               pragma-4.chpl pragma-4.future 
+	                               pragma-4.good pragma-5.chpl 
+	                               pragma-5.good pragma-6.chpl 
+	                               pragma-6.good 
+
