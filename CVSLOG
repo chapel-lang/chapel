@@ -13036,3 +13036,124 @@ Modified files:
 	chapel/compiler/include/: symtab.h type.h 
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+12/28/04 16:00:13 -- deitz
+
+Log message:
+	Added support for runtime type checking of union types.  A union is
+	declared as a struct which contains a C union of the variables in the
+	union and a tag that is of an enumerated type based on the names of
+	the variables in the union.  This tag is set on writes to the union
+	variable and checked on reads of the union variable.  A write is taken
+	to be the LHS of an assignment statement or an OUT or INOUT parameter
+	to a function.  A read is taken to be an INOUT parameter to a function
+	and anything else that is not a write.
+	
+	The current implementation of determining whether an expression is
+	being read, written, or both, is lacking.  A known bug--the indexing
+	expression of a LHS array access.  The current mechanism simply checks
+	for assignment and INOUT/OUT actuals during the traversal.  The
+	improved mechanism may be a separate traversal but I have to think
+	about this a little more.  I'd like to write it without having to
+	write too much difficult-to-maintain code.
+	
+	Added two macros to new runtime file union.h _SET_UNION and
+	_CHECK_UNION which implement the runtime type check.  The traversal
+	that adds the runtime checks is called InsertUnionChecks.  This uses
+	the replace function (see discussion below) to insert calls to
+	_SET_UNION and _CHECK_UNION.
+	
+	Added a bit of code to ResolveSymbols that is only used if analysis
+	has not been run.  This code tries to resolve functions, and does a
+	decent job if the functions are not overloaded.  This improves
+	stability of codes being compiled with --noanalysis.
+	
+	Fixed a bug in MemberAccess copy in which it attempted to copy the
+	member symbol.
+	
+	Added a Fixup pass after MethodsToFunctions because this uses the
+	replace mechanism and that does not currently fixup the new inserted
+	AST.
+	
+	Implemented a bad version of postinsert.  It is similar to preinsert.
+	These either need to be robustified like replace was or, given that
+	replace still needs some work, they should be implemented with
+	replace.  For example, rather than using preinsert and postinsert in
+	InsertUnionChecks, the following substitutions are done:
+	     expr->stmt->postinsert(set_stmt);
+	  IS
+	     Stmt* copy_stmt = expr->stmt->copy();
+	     copy_stmt->append(set_stmt);
+	     Stmt::replace(expr->stmt, copy_stmt);
+	  AND
+	     expr->stmt->preinsert(check_stmt);
+	  IS
+	     check_stmt->append(expr->stmt->copy());
+	     Stmt::replace(expr->stmt, check_stmt);
+	The advantage to this approach is that it uses a single mechanism that
+	we can make really stable.  The disadvantage is that it's a bit of
+	rigmarole.
+	
+	Implemented a support procedure for VarDefStmt classes called
+	codegenVarNames.  This procedure prints out the variable names that
+	are declared in a statement list as a list of names separated by
+	commas.  Additional parameters premod and postmod allow for strings to
+	be prepended and appended to the names.  This procedure is currently
+	used to create the enumerated type for unions containing the names of
+	the variables in a union.  The runtime type checking tag is then based
+	on these names.
+	
+	Updated flowanalysis test cases because line numbers have changed in
+	the prelude.
+	
+	Added 3 tests, one for records that is exactly like a union but works
+	with analysis, and two that test the runtime type checking of unions.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp link.cpp stmt.cpp type.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: Makefile.share resolveSymbols.cpp 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+Added files:
+	chapel/compiler/traversals/: insertUnionChecks.cpp 
+	                             insertUnionChecks.h 
+	chapel/runtime/include/: union.h 
+	chapel/test/classes/deitz/: test_record2.chpl test_record2.good 
+	                            test_union2.chpl test_union2.good 
+	                            test_union3.chpl test_union3.good 
+
