@@ -5631,3 +5631,15 @@ Modified files:
 	chapel/compiler/: analysis.cpp map.cpp map.h misc.cpp 
 	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+08/24/04 12:12:31 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed bug in HashMap.
+
+Modified files:
+	chapel/compiler/: analysis.cpp analysis.h ast.cpp ast.h map.cpp 
+	                  map.h 
+	chapel/compiler/AST/: stmt.h 
+
