@@ -18763,3 +18763,26 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: stmt.cpp type.cpp 
 
+---------------------------------------------------------------------------
+
+03/03/05 12:06:22 -- jplevyak
+
+Log message:
+	Cleaned up all the conflicts in the grammar.
+	Made the compile fail if there are conflicts in the grammar.
+	Added pragmas to Expressions.
+	
+	All pragmas are prefixes:
+	
+	  pragma "foo" pragma "bar" writeln(1);  // on statements
+	  var pragma "biz" pragma "baz" x = 4;   // on symbols (the symbol "x")
+	  x = (pragma "tiz" 45 + 76 ); // on expressions "45 + 76"
+	
+	Note: for expressions pragmas must appear after an opening paran or a ',' comman
+	      and then they refer to the following expression.  To make sure you
+	      are getting the right one, just add some parans.
+
+Modified files:
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: Makefile chapel.y 
+
