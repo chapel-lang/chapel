@@ -4214,3 +4214,22 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: review3.chpl review3.good 
 
+---------------------------------------------------------------------------
+
+07/21/04 16:47:39 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Support for destructuring of return values.
+	Test case for destructuring of return values.
+	Test case for multiple definitions in one statement.
+
+Modified files:
+	chapel/compiler/: ast.cpp builtin_symbols.h fa.cpp fa.h 
+	                  fa_extras.cpp prelude.chpl prelude.v 
+	                  prim_data.dat 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: multipledef.good 
+	                                    multipledef.v 
+	                                    multiplereturn.good 
+	                                    multiplereturn.v 
+
