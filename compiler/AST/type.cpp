@@ -7,6 +7,7 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
+#include "sym.h"
 
 
 Type::Type(astType_t astType, Expr* init_defaultVal) :
@@ -1125,8 +1126,6 @@ void findInternalTypes(void) {
   dtArray = Symboltable::lookupInternalType("Array")->type;
 }
 
-#if 0
-
 // you can use something like the following cache to 
 // find an existing SumType.
 
@@ -1134,7 +1133,7 @@ void findInternalTypes(void) {
 // implemented over all 'structural' types, e.g.
 // records
 
-class LUBCacheHashFns {
+class LUBCacheHashFns : public gc {
  public:
   static unsigned int hash(Symbol *a) {
     unsigned int h = 0;
@@ -1156,14 +1155,15 @@ class LUBCacheHashFns {
 
 static class BlockHash<Symbol *, LUBCacheHashFns> lub_cache;
 
-// make sure you sort the types before putting them into
-// the SumType
-qsort(types.v, types.n, sizeof(types.v[0]), compar_baseast);
-
-#endif
 
 Type *find_or_make_sum_type(Vec<Type *> *types) {
-  INT_FATAL("find_or_make_sum_type not implemented");
-  return NULL;
+  if (types->n < 2) {
+    INT_FATAL("Trying to create sum_type of less than 2 types");
+  }
+  qsort(types->v, types->n, sizeof(types->v[0]), compar_baseast);
+  SumType* new_sum_type = new SumType(types->v[0]);
+  for (int i = 1; i <= types->n; i++) {
+    new_sum_type->addType(types->v[i]);
+  }
+  return new_sum_type;
 }
-
