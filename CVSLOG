@@ -16689,3 +16689,16 @@ Added files:
 	                                         test_clone_class1b.future 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+02/04/05 13:46:13 -- deitz
+
+Log message:
+	Added future to test_clone_class1a and an error message
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1a.future 
+
