@@ -7464,3 +7464,31 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/newast/: enumarray.chpl enumarray.good 
 
+---------------------------------------------------------------------------
+
+09/15/04 16:41:44 -- shannon
+
+Log message:
+	Changed the enumerated binOpType BINOP_EQUALS to BINOP_EQUAL
+	for naming consistency.
+	
+	Modified code generation of parentheses.  In the past we were
+	parenthesizing all code generated binary expressions to ensure
+	precedence correctness.  Now they are only generated when necessary
+	or to suppress warnings from the C compiler.
+	
+	Wrote a test generator which generates all combinations of pairs of
+	binary operators with and without parentheses.  It generates either
+	C or Chapel code.  Generated and ran C and Chapel versions of the
+	test in order to compare output.
+
+Modified files:
+	chapel/compiler/: analysis.cpp 
+	chapel/compiler/AST/: chapel.y expr.cpp expr.h 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+	chapel/test/trivial/shannon/: compSampler.chpl compSampler.good 
+Added files:
+	chapel/test/trivial/shannon/gentest/: NOTEST compTest.c 
+	                                      genCompTest.c 
+
