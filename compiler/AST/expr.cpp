@@ -757,7 +757,7 @@ void WriteCall::codegen(FILE* outfile) {
 
     fprintf(outfile, "_write");
     if (argdt == dtUnknown) {
-      argdt = type_info(this);
+      argdt = type_info(arg);
       if (argdt == dtUnknown) {
 	argdt = dtInteger; // BLC: hack!  Remove once type_info() working
       }

@@ -38,7 +38,7 @@ extern int d_debug_level;
 static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
-int analyzeNewAST = 0;
+int analyzeNewAST = 1;
 
 int fdce_if1 = 1;
 int finline = 0;
@@ -76,7 +76,7 @@ static ArgumentDescription arg_desc[] = {
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"analyzenewast", ' ', "Analyze New AST", "F", &analyzeNewAST, NULL, NULL},
+ {"analyzenewast", ' ', "Analyze New AST", "f", &analyzeNewAST, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppress_codegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},

@@ -435,20 +435,20 @@ build_builtin_symbols() {
   new_primitive_type(sym_int32, "int32");
   new_primitive_type(sym_int64, "int64");
   new_alias_type(sym_int, "int", sym_int64);
+  new_primitive_type(sym_true, "true");
+  new_primitive_type(sym_false, "false");
+  new_primitive_type(sym_bool, "bool");
+  sym_true->implements.set_add(sym_bool);
+  sym_false->implements.set_add(sym_bool);
   new_primitive_type(sym_uint8, "uint8");
   new_primitive_type(sym_uint16, "uint16");
   new_primitive_type(sym_uint32, "uint32");
   new_primitive_type(sym_uint64, "uint64");
   new_alias_type(sym_uint, "uint", sym_uint64);
   new_sum_type(sym_anyint, "anyint", 
-	       sym_int8, sym_int16, sym_int32, sym_int64,
+	       sym_int8, sym_int16, sym_int32, sym_int64, sym_bool,
 	       sym_uint8, sym_uint16, sym_uint32, sym_uint64, 0);
   new_primitive_type(sym_size, "size");
-  new_primitive_type(sym_true, "true");
-  new_primitive_type(sym_false, "false");
-  new_primitive_type(sym_bool, "bool");
-  sym_true->implements.set_add(sym_bool);
-  sym_false->implements.set_add(sym_bool);
   new_primitive_type(sym_enum_element, "enum_element");
   new_primitive_type(sym_float32, "float32");
   new_primitive_type(sym_float64, "float64");
