@@ -1565,7 +1565,11 @@ type_info(BaseAST *a, Symbol *s) {
 }
 
 void 
-call_info(FnSymbol *f, BaseAST *a, Vec<FnSymbol *> &fns) {
+call_info(ParenOpExpr* a, Vec<FnSymbol *> &fns) {
+  FnSymbol* f = dynamic_cast<FnSymbol*>(a->stmt->parentSymbol);
+  if (!f) {
+    INT_FATAL(a, "Function called from something not a function");
+  }
   fns.clear();
   Fun *ff = f->asymbol->fun;
   AST *ast = 0;

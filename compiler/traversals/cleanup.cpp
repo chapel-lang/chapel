@@ -120,15 +120,33 @@ void ResolveEasiest::preProcessExpr(Expr* &expr) {
 }
 
 void ResolveEasiest::preProcessSymbol(Symbol* &sym) {
-  static int uid = 1; // Unique ID for user-overloaded functions
-
   if (dynamic_cast<UnresolvedSymbol*>(sym)) {
     Symbol* new_sym = Symboltable::lookup(sym->name);
-    if (new_sym) {
+    if (new_sym && !dynamic_cast<FnSymbol*>(new_sym)) {
       sym = new_sym;
     }
   }
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+  resolve_type_helper(sym->type);
+}
+
+
+/******************************************************************************
+ *** Rename Overloaded
+ ***
+ *** This traversal mangles the c name for overloaded functions.
+ ***
+ ***/
+
+class RenameOverloaded : public Traversal {
+ public:
+  void preProcessStmt(Stmt* &stmt);
+};
+
+void RenameOverloaded::preProcessStmt(Stmt* &stmt) {
+  static int uid = 1; // Unique ID for user-overloaded functions
+
+  if (FnDefStmt* fndef = dynamic_cast<FnDefStmt*>(stmt)) {
+    FnSymbol* fn = fndef->fn;
     if (fn->overload) {
       FnSymbol* tmp = fn;
 
@@ -141,9 +159,7 @@ void ResolveEasiest::preProcessSymbol(Symbol* &sym) {
       }
     }
   }
-  resolve_type_helper(sym->type);
 }
-
 
 
 /******************************************************************************
@@ -283,9 +299,10 @@ void ApplyThis::preProcessExpr(Expr* &expr) {
 /******************************************************************************/
 
 void Cleanup::run(ModuleSymbol* moduleList) { 
+  ApplyWith* apply_with = new ApplyWith();
   InsertThis* insert_this = new InsertThis();
   ResolveEasiest* resolve_easiest = new ResolveEasiest();
-  ApplyWith* apply_with = new ApplyWith();
+  RenameOverloaded* rename_overloaded = new RenameOverloaded();
   ResolveEasy* resolve_easy = new ResolveEasy();
   SpecializeParens* specialize_parens = new SpecializeParens();
   ApplyThis* apply_this = new ApplyThis();
@@ -294,6 +311,7 @@ void Cleanup::run(ModuleSymbol* moduleList) {
     mod->startTraversal(apply_with);
     mod->startTraversal(insert_this);
     mod->startTraversal(resolve_easiest);
+    mod->startTraversal(rename_overloaded);
     mod->startTraversal(resolve_easy);
     mod->startTraversal(specialize_parens);
     mod->startTraversal(apply_this);
