@@ -1448,3 +1448,23 @@ Log message:
 Added files:
 	chapel/compiler/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+04/03/26 14:15:38 -- bradc
+
+Log message:
+	Found some portability problems on the Sun with the Makefiles
+	and regression tests, so fixed these.  Updated some other
+	files.
+
+Modified files:
+	./: Makefile 
+	chapel/make/: Makefile Makefile.platform 
+	chapel/test/: DIRS start_test sub_test 
+Added files:
+	./: DIRS 
+	chapel/runtime/: Makefile 
+Removed files:
+	./: structure.txt 
+	chapel/make/: Makefile.gcc 
+
