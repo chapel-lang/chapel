@@ -1,6 +1,10 @@
+chpl
+make_prims
+test_lib
 cygwin
 linux
 sun
+freebsd
 *.g.d_parser.cpp
 prim_data.h
 prim_data.cpp
