@@ -13,6 +13,8 @@ all:
 
 everything: third-party compiler runtime
 
+comprt: compiler runtime
+
 compiler: FORCE
 	cd compiler && $(MAKE)
 
@@ -34,6 +36,10 @@ clobber: FORCE
 	cd compiler && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
+
+depend: FORCE
+	cd compiler && $(MAKE) depend
+	cd runtime && $(MAKE) depend
 
 -include make/Makefile.release
 

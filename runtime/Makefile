@@ -10,3 +10,6 @@ clean:
 
 clobber:
 	cd src && $(MAKE) clobber
+
+depend:
+	cd src && $(MAKE) depend
