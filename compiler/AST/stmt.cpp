@@ -24,6 +24,15 @@ bool Stmt::isNull(void) {
 }
 
 
+FnSymbol *Stmt::parentFunction() {
+  ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(parentSymbol);
+  if (mod)
+    return mod->initFn;
+  else
+    return dynamic_cast<FnSymbol*>(parentSymbol);
+}
+
+
 Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();

@@ -29,6 +29,7 @@ class IF1 : public gc {
   Sym 			*top;			// main function
   Primitives 		*primitives;
   Callbacks		*callback;
+  int			pointer_size;		// defaults to sizeof(void *)
   
   IF1();
 };
@@ -71,6 +72,7 @@ Sym   	*if1_closure(IF1 *p, Sym *f, Code *c, int nargs, Sym **args);
 void	if1_set_int_type(IF1 *p, Sym *t, int signd, int size);
 void	if1_set_float_type(IF1 *p, Sym *t, int size);
 void	if1_set_complex_type(IF1 *p, Sym *t, int size);
+int	if1_numeric_size(IF1 *p, Sym *t);
 char	*if1_cannonicalize_string(IF1 *p, char *start, char *end = 0);
 void	if1_finalize(IF1 *p);
 void	if1_write(FILE *fp, IF1 *p);

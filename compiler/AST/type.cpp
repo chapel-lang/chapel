@@ -1062,8 +1062,9 @@ void SumType::addType(Type* additionalType) {
 }
 
 
-VariableType::VariableType() :
-  Type(TYPE_VARIABLE, nilExpr)
+VariableType::VariableType(Type *init_type) :
+  Type(TYPE_VARIABLE, nilExpr), 
+  type(init_type)
 {}
 
 

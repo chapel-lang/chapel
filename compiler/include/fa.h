@@ -122,7 +122,6 @@ class AVar : public gc {
   Vec<AVar *>			forward;
   Vec<AVar *>			backward;
   AVar				*lvalue;
-  AVar				*copy_of;
   AType 			*in;
   AType 			*out;
   AType				*restrict;
@@ -130,6 +129,7 @@ class AVar : public gc {
   Setters			*setters;
   Setters			*setter_class;
   CreationSet 			*creation_set;
+  int				ivar_offset;
   uint				in_send_worklist:1;
   uint				contour_is_entry_set:1;
   uint				is_lvalue:1;
@@ -270,9 +270,10 @@ class FA : public gc {
   ChainHashMap<char*, StringHashFns, RegisteredPrim*> primitive_transfer_functions;
   
   bool permit_boxing;
+  bool no_unused_instance_variables;
 
   FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0),
-    permit_boxing(0) {}
+    permit_boxing(0), no_unused_instance_variables(0) {}
 
   int analyze(Fun *f);
   int concretize();

@@ -224,7 +224,8 @@ class SumType : public Type {
 
 class VariableType : public Type {
  public:
-  VariableType();
+  Type* type;
+  VariableType(Type *init_type = nilType);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void codegen(FILE* outfile);
 };

@@ -88,6 +88,8 @@
 %token TLCBR;
 %token TRCBR;
 
+%token TQUESTION;
+
 %type <boolval> varconst
 
 %type <got> assignOp
@@ -96,7 +98,7 @@
 
 %type <pdt> type domainType indexType arrayType tupleType
 %type <tupledt> tupleTypes
-%type <pdt> vardecltype fnrettype
+%type <pdt> vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier
 %type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
 %type <enumsym> enum_item enum_list
@@ -339,15 +341,23 @@ formaltag:
 ;
 
 
+typevardecltype:
+  /* nothing */
+    { $$ = nilType; }
+| TCOLON type
+    { $$ = $2; }
+;
+
+
 formal:
   formaltag ident_symbol_ls vardecltype optional_init_expr
     {
       $$ = Symboltable::defineParams($1, $2, $3, $4);
       //      $$ = new ParamSymbol($1, $2, $3);
     }
-| TTYPE identifier
+| TTYPE identifier typevardecltype
     {
-      VariableType* new_type = new VariableType();
+      VariableType* new_type = new VariableType($3);
       $$ = new TypeSymbol($2, new_type);
       new_type->addSymbol($$);
     }

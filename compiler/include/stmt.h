@@ -18,6 +18,7 @@ class Stmt : public BaseAST {
   Stmt(astType_t astType);
 
   bool isNull(void);
+  FnSymbol *parentFunction();
 
   Stmt* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL, Vec<BaseAST*>* update_list = NULL);
   Stmt* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL, Vec<BaseAST*>* update_list = NULL);

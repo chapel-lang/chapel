@@ -108,6 +108,8 @@ with            return TWITH;
 "{"             return TLCBR;
 "}"             return TRCBR;
 
+"?"		return TQUESTION;
+
 {ident}         {
                   if (yytext[0] == '?') {
                     return QUERY_IDENT;

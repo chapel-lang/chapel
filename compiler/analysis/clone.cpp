@@ -135,6 +135,25 @@ equivalent_es_pnode(PNode *n, EntrySet *a, EntrySet *b) {
   return 1;
 }
 
+static int
+prim_period_offset(PNode *p, EntrySet *es) {
+  AVar *obj = make_AVar(p->rvals.v[1], es);
+  AVar *selector = make_AVar(p->rvals.v[3], es);
+  int offset = -1;
+  forv_CreationSet(sel, *selector->out) if (sel) {
+    char *symbol = sel->sym->name; assert(symbol);
+    forv_CreationSet(cs, *obj->out) if (cs) {
+      AVar *iv = cs->var_map.get(symbol);
+      if (iv) {
+	if (offset >= 0 && offset != iv->ivar_offset)
+	  fail("missmatched offsets");
+	offset = iv->ivar_offset;
+      }
+    }
+  }
+  return offset;
+}
+
 class ES_FN { public: static int inline equivalent(EntrySet *a, EntrySet *b); };
 
 // The definition is:
@@ -143,6 +162,8 @@ class ES_FN { public: static int inline equivalent(EntrySet *a, EntrySet *b); };
 // 3) all objects are created equivalent CreationSets
 // 4) if constant cloning is used, all constants must be the same
 // 5) '.' and ')' (cast) primitives must have unique symbols
+//    and the layouts of the '.' targets are compatible at the
+//    symbol (same offset)
 inline int
 ES_FN::equivalent(EntrySet *a, EntrySet *b) {
   if (a->fun->clone_for_constants) {
@@ -177,7 +198,9 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
 	  assert(n->prim->arg_types[1] == PRIM_TYPE_SYMBOL);
 	  AVar *av = make_AVar(n->rvals.v[3], a);
 	  AVar *bv = make_AVar(n->rvals.v[3], b);
-	  if (av->out->some_disjunction(*bv->out))
+	  if (av->out != bv->out)
+	    return 0;
+	  if (prim_period_offset(n, a) != prim_period_offset(n, b))
 	    return 0;
 	  break;
 	}
@@ -185,7 +208,7 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
 	  assert(n->prim->arg_types[0] == PRIM_TYPE_SYMBOL);
 	  AVar *av = make_AVar(n->rvals.v[2], a);
 	  AVar *bv = make_AVar(n->rvals.v[2], b);
-	  if (av->out->some_disjunction(*bv->out))
+	  if (av->out != bv->out)
 	    return 0;
 	  break;
 	}
@@ -301,6 +324,23 @@ determine_basic_clones(Vec<Vec<CreationSet *> *> &css_sets_by_sym) {
     Vec<CreationSet *> *s = css_sets.v[i];
     forv_CreationSet(cs, *s) if (cs)
       cs->equiv = s;
+  }
+}
+
+static void
+determine_layouts() {
+  forv_CreationSet(cs, fa->css) {
+    int offset = 0;
+    forv_AVar(iv, cs->vars) {
+      int size = 0;
+      forv_CreationSet(x, *iv->out) {
+	if (size && x->sym->size != size)
+	  fail("mismatched field sizes");
+	size = x->sym->size;
+      }
+      iv->ivar_offset = offset;
+      offset += size;
+    }
   }
 }
 
@@ -765,6 +805,7 @@ int
 clone(FA *afa, Fun *top) {
   ::fa = afa;
   initialize();
+  determine_layouts();
   determine_clones();
   build_concrete_types();
   clone_functions();

@@ -18,6 +18,7 @@ IF1 *if1 = 0;
 IF1::IF1() {
  memset(this, 0, sizeof *this); 
  primitives = new Primitives(this);
+ pointer_size = sizeof(void *);
  if1 = this;
 }
 

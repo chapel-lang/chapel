@@ -712,6 +712,7 @@ build_types(Vec<BaseAST *> &syms) {
       case TYPE_VARIABLE: {
 	VariableType *tt = dynamic_cast<VariableType*>(t);
 	tt->asymbol->sym->type_kind = Type_VARIABLE;
+	break;
       }
     }
   }
@@ -2181,4 +2182,41 @@ type_is_used(TypeSymbol *t) {
     return true; // analysis not run   
 }
 
+static void
+member_info(Sym *t, char *name, int *offset, Type **type) {
+  int oresult = -1;
+  Vec<Sym *> ttypes, *types = 0;
+  if (t->type_kind == Type_LUB)
+    types = &t->has;
+  else {
+    ttypes.add(t);
+    types = &ttypes;
+  }
+  forv_Sym(s, *types) {
+    forv_CreationSet(cs, s->creators) {
+      AVar *iv = cs->var_map.get(name);
+      if (iv) {
+	if (oresult >= 0 && oresult != iv->ivar_offset)
+	  fail("missmatched offsets");
+	oresult = iv->ivar_offset;
+      }
+    }
+  }
+  *offset = oresult;
+  *type = dynamic_cast<Type *>(t->asymbol->symbol);
+}
 
+void
+resolve_member_access(MemberAccess *ma, int *offset, Type **type) {
+  assert(ma->ainfo->pnodes.n == 1);
+  PNode *pn = ma->ainfo->pnodes.v[0];
+  assert(pn->code->kind == Code_SEND);
+  Sym *obj_type = pn->rvals.v[1]->type;
+  char *sel = pn->rvals.v[3]->sym->name;
+  member_info(obj_type, sel, offset, type);
+}
+
+void
+resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type) {
+  member_info(t->asymbol->sym, v->name, offset, type);
+}

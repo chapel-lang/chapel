@@ -562,10 +562,31 @@ is_generic_type(Sym *t) {
   return t->type_kind == Type_VARIABLE;
 }
 
-static void
+static int
 unify_generic_type(Sym *gtype, Sym *type, Map<Sym *, Sym *> &substitutions) {
-  if (gtype->type_kind == Type_VARIABLE)
-    substitutions.put(gtype, type);
+  int result = 1;
+  switch (gtype->type_kind) {
+    case Type_LUB: 
+    case Type_GLB: 
+    case Type_PRODUCT:
+    case Type_RECORD:
+    case Type_VECTOR:
+    case Type_FUN:
+    case Type_REF:
+    case Type_TAGGED:
+    case Type_PRIMITIVE:
+    case Type_APPLICATION:
+      return gtype == type;
+    case Type_VARIABLE:
+      substitutions.put(gtype, type);
+      break;
+    case Type_NONE: 
+    case Type_UNKNOWN: 
+    case Type_ALIAS:
+      assert(!"bad case");
+      return 0;
+  }
+  return result;
 }
 
 static void
@@ -577,23 +598,25 @@ instantiate_formal_types(Match *m) {
   }
 }
 
-static void
+static int
 generic_substitutions(Match **am, MPosition &p, Vec<CreationSet*> args) {
+  MPosition local_p(p);
   Match *m = *am;
-  p.push(1);
+  local_p.push(1);
   for (int i = 0; i < args.n; i++) {
-    MPosition *cp = cannonicalize_formal(p, m);
+    MPosition *cp = cannonicalize_formal(local_p, m);
     AVar *a = m->actuals.get(cp);
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     Sym *type = m->fun->arg_syms.get(cp)->must_specialize;
     if (type && is_generic_type(type)) {
-      unify_generic_type(type, concrete_type, m->generic_substitutions);
+      if (!unify_generic_type(type, concrete_type, m->generic_substitutions))
+	return 0;
       instantiate_formal_types(m);
     }
-    p.inc();
+    local_p.inc();
   }
-  p.pop();
+  return 1;
 }
 
 static void
@@ -622,7 +645,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
 			    Vec<Fun *> &local_matches, 
 			    Vec<Fun *> &result, int top_level)
 {
-  Vec<Match *> applicable;
+  Vec<Match *> covered;
   // collect the matches which cover the argument CreationSets
   forv_Fun(f, local_matches) if (f) {
     Match *m = match_map.get(f);
@@ -643,15 +666,18 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &p,
     p.pop();
     // do they cover all the formals
     if (covers_formals(f, csargs, p, top_level))
-      applicable.set_add(m);
+      covered.set_add(m);
   LnextFun:;
   }
-  if (!applicable.n)
+  if (!covered.n)
     return;
+ Vec<Match *> applicable;
   // record generic substitutions and point-wise applications
-  for (int i = 0; i < applicable.n; i++) {
-    generic_substitutions(&applicable.v[i], p, csargs);
-    coercion_uses(&applicable.v[i], p, csargs);
+  for (int i = 0; i < covered.n; i++) {
+    if (!generic_substitutions(&covered.v[i], p, csargs))
+      continue;
+    coercion_uses(&covered.v[i], p, csargs);
+    applicable.add(covered.v[i]);
   }
   Vec<Match *> unsubsumed, subsumed;
   // eliminate those which are subsumed by some other function

@@ -16,5 +16,4 @@ Sym *basic_type(FA *fa, AType *t, Sym *fail);
 void log_test_fa(FA *fa);
 Sym *to_basic_type(Sym *);
 
-
 #endif

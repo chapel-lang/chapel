@@ -216,6 +216,21 @@ if1_set_complex_type(IF1 *p, Sym *t, int size) {
   t->num_index = ss;
 }
 
+int
+if1_numeric_size(IF1 *p, Sym *t) {
+  switch (t->num_kind) {
+    case IF1_NUM_KIND_NONE: assert(!"bad case"); break;
+    case IF1_NUM_KIND_INT:
+    case IF1_NUM_KIND_UINT:
+      return 1 << (t->num_index ? t->num_index : 1) - 1; // bool takes 1 byte
+    case IF1_NUM_KIND_FLOAT:
+      return 2 + (2 * t->num_index);
+    case IF1_NUM_KIND_COMPLEX:
+      return 2 * (2 + (2 * t->num_index));
+  }
+  return 0;
+}
+
 void
 Sym::inherits_add(Sym *s) {
   implements.add(s);

@@ -957,7 +957,6 @@ make_closure_var(Var *v, EntrySet *es, CreationSet *cs, AVar *result, int add, i
   }
   AVar *cav = make_AVar(pn->tvals.v[i], es);
   flow_vars(av, cav);
-  cav->copy_of = av;
   set_container(cav, result);
   flow_var_to_var(cav, iv);
   if (add)
@@ -2055,14 +2054,14 @@ collect_var_type_violations() {
       }
     }
   }
-#if 0
-  forv_CreationSet(cs, fa->css) {
-    forv_AVar(av, cs->vars) {
-      if (av->out == bottom_type)
-	type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
+  if (fa->no_unused_instance_variables) {
+    forv_CreationSet(cs, fa->css) {
+      forv_AVar(av, cs->vars) {
+	if (av->out == bottom_type)
+	  type_violation(ATypeViolation_NOTYPE, av, av->out, 0, 0);
+      }
     }
   }
-#endif
 }
 
 static void
