@@ -110,7 +110,8 @@ copy_var(Var **av, Sym *fsym, VarMap &vmap) {
 
 static PNode *
 copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
-  PNode *n = new PNode(node->code);
+  PNode *n = new PNode();
+  n->code = node->code;
   n->rvals.copy(node->rvals);
   n->lvals.copy(node->lvals);
   n->tvals.copy(node->tvals);
@@ -144,16 +145,18 @@ Fun::copy() {
     nodes.add(p);
     f->nmap->put(n, p);
     for (int i = 0; i < n->phi.n; i++) {
-      PNode *p = copy_pnode(n->phi.v[i], f, *f->vmap);
-      nodes.add(p);
-      f->nmap->put(n, p);
-      p->phi.v[i] = p;
+      PNode *nn = n->phi.v[i];
+      PNode *pp = copy_pnode(nn, f, *f->vmap);
+      nodes.add(pp);
+      f->nmap->put(nn, pp);
+      p->phi.v[i] = pp;
     }
     for (int i = 0; i < n->phy.n; i++) {
-      PNode *p = copy_pnode(n->phy.v[i], f, *f->vmap);
-      nodes.add(p);
-      f->nmap->put(n, p);
-      p->phy.v[i] = p;
+      PNode *nn = n->phy.v[i];
+      PNode *pp = copy_pnode(nn, f, *f->vmap);
+      nodes.add(pp);
+      f->nmap->put(nn, pp);
+      p->phy.v[i] = pp;
     }
   }
   forv_PNode(n, nodes) {
