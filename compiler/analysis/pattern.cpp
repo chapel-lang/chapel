@@ -23,7 +23,6 @@
 // figure out what myclass does in Sather and Clu
 // optimize case of filters with no restrictions (sym_any) to prevent
 //   recomputation of dispatch functions
-// dispatch on (declared) return type and number!
 // used MPosition to handle destructuring of return values
 // handle generalized structural types
 // optimize case where only 1 function is possible (just check)

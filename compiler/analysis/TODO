@@ -1,3 +1,10 @@
+
+** Dispatch list
+
+-- dispatch-6.v nested functions NOT in outer scope
+
+
+
 ** High Priority
 
 - remove AVar->lvalue stuff, and have an additional "lvalue_ret" field to

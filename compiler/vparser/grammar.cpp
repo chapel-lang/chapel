@@ -15,21 +15,6 @@ constant_type(D_ParseNode &pn, D_Symbol *d_symbols) {
   return d_symbols[child->symbol].name;
 }
 
-void
-in_module(Globals *g, char *s, char *e, D_Scope **scope) {
-  D_Scope *global = global_D_Scope(*scope);
-  D_Sym *sym = find_D_Sym(global, s, e);
-  if (!sym)
-    sym = NEW_D_SYM(global, s, e);
-  if (sym->user.scope)
-    *scope = enter_D_Scope(*scope, sym->user.scope);
-  else {
-    *scope = sym->user.scope = new_D_Scope(global);
-    D_Sym *s = new_internal(*scope, __module);
-    s->user.sym = sym;
-  }
-}
-
 ParseAST *
 loop_AST(D_ParseNode &loop, D_ParseNode &cond, D_ParseNode *before, 
 	 D_ParseNode *after, D_ParseNode &body) 

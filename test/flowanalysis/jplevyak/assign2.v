@@ -1,4 +1,4 @@
-class C { c:; d:; };
+class C { var c, d; };
 c1 : new C;
 f c2 : if (c1.c) return (c1.c) else return (c1.d); 
 (f c1) = 1;

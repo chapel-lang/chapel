@@ -1,5 +1,5 @@
-class C { c:; };
-class D { d:; };
+class C { var c; };
+class D { var d; };
 makeC() : { c : new C; c };
 makeD() : { d : new D; d };
 c1 : makeC(); c1.c = 1;

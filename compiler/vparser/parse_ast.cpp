@@ -712,6 +712,7 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       ParseAST *c = ast->get(AST_const);
       ParseAST *id = ast->get(AST_ident);
       ParseAST *ty = ast->get(AST_constraint);
+      ParseAST *init = ast->get(AST_pattern_init);
       if (ty)
 	if (resolve_parameterized_type(i, ty) < 0)
 	  return -1;
@@ -726,6 +727,8 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
 	ast->sym->is_vararg = 1;
       if (ty)
 	ast->sym->type = ty->sym;
+      if (init)
+	ast->sym->is_default_arg = 1;
       break;
     }
     default: break;
@@ -1033,6 +1036,18 @@ unalias_types(IF1 *i, ParseAST *ast) {
 }
 
 static int
+set_scope_kind(IF1 *i, ParseAST *ast, int scope_kind) {
+  if (ast->scope_kind == Scope_INHERIT)
+    ast->scope_kind = scope_kind;
+  else
+    scope_kind = ast->scope_kind;
+  forv_ParseAST(a, ast->children)
+    if (set_scope_kind(i, a, scope_kind) < 0)
+      return -1;
+  return 0;
+}
+
+static int
 define_labels(IF1 *i, ParseAST *ast, LabelMap *labelmap) {
   switch (ast->kind) {
     case AST_def_ident:
@@ -1098,12 +1113,14 @@ resolve_labels(IF1 *i, ParseAST *ast, LabelMap *labelmap,
     case AST_op:
       if (ast->children.v[ast->op_index]->sym->name[0] == ',')
 	ast->children.v[0]->in_tuple = 1;
-      if (ast->children.v[ast->op_index]->sym->name[0] == '^' && ast->children.v[ast->op_index]->sym->name[1] == '^')
+      if (ast->children.v[ast->op_index]->sym->name[0] == '^' && 
+	  ast->children.v[ast->op_index]->sym->name[1] == '^')
 	ast->children.v[0]->in_apply = 1;
       break;
     case AST_scope:
       forv_ParseAST(a, ast->children)
-	a->constructor = ast->scope->kind == Scope_PARALLEL ? Make_VECTOR : Make_SET;
+	a->constructor = a->scope->kind == Scope_PARALLEL ? Make_VECTOR : 
+	  (a->scope->kind == Scope_SEQUENTIAL ? Make_TUPLE : Make_SET);
       break;
     default: break;
   }
@@ -1348,15 +1365,11 @@ gen_if(IF1 *i, ParseAST *ast) {
 static void
 gen_constructor(IF1 *i, ParseAST *ast) {
   Sym *constructor;
-  int no_value = 0;
   Vec<Sym *> args;
   forv_ParseAST(a, ast->children) {
     if (a->kind != AST_qualified_ident || a->rval->is_constant || a->rval->is_symbol) {
       if1_gen(i, &ast->code, a->code);
-      if (!a->rval)
-	no_value = 1;
-      else
-	args.add(a->rval); 
+      args.add(a->rval); 
     } else {
       if1_gen(i, &ast->code, a->code);
       Sym *s = new_sym(i, ast->scope);
@@ -1364,8 +1377,6 @@ gen_constructor(IF1 *i, ParseAST *ast) {
       args.add(s); 
     }
   }
-  if (no_value)
-    return;
   Code *send = if1_send1(i, &ast->code);
   send->ast = ast;
   ast->rval = new_sym(i, ast->scope);
@@ -1591,8 +1602,6 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
   }
   if (ast->is_var)
     ast->rval->is_var = 1;
-  if (ast->is_const)
-    ast->rval->is_single_assign = 1;
 }
 
 static void
@@ -1656,8 +1665,8 @@ gen_if1(IF1 *i, ParseAST *ast) {
       break;
     case AST_list:
     case AST_vector:
-    case AST_object:
-       gen_constructor(i, ast); break;
+    case AST_object: 
+      gen_constructor(i, ast); break;
     case AST_scope:
     case AST_block:
       forv_ParseAST(a, ast->children)
@@ -1703,10 +1712,7 @@ collect_module_init(IF1 *i, ParseAST *ast, Sym *mod) {
   forv_ParseAST(a, ast->children) 
     switch (a->kind) {
       case AST_in_module: 
-	mod = a->sym->init; break;
-      case AST_block: 
-	forv_ParseAST(a, ast->children)
-	  mod = collect_module_init(i, a, mod);
+	mod = a->sym->init; 
 	break;
       default: 
 	if1_gen(i, &mod->code, a->code);
@@ -1721,6 +1727,7 @@ collect_module_init(IF1 *i, ParseAST *ast, Sym *mod) {
 
 static int
 build_functions(IF1 *i, ParseAST *ast, Sym *mod) {
+  if (set_scope_kind(i, ast, Scope_RECURSIVE) < 0) return -1;
   if (define_labels(i, ast, mod->labelmap) < 0) return -1;
   if (resolve_labels(i, ast, mod->labelmap) < 0) return -1;
   if (pre_gen_top_down(i, ast, 0, 0) < 0) return -1;
@@ -1816,12 +1823,6 @@ build_init(IF1 *i) {
 }
 
 static void
-global_asserts() {
-  assert(Scope_INHERIT == D_SCOPE_INHERIT && Scope_RECURSIVE == D_SCOPE_RECURSIVE);
-  assert(Scope_PARALLEL == D_SCOPE_PARALLEL && Scope_SEQUENTIAL == D_SCOPE_SEQUENTIAL);
-}
-
-static void
 finalize_sym(Sym *f, Sym *s) {
   if (s->in == f)
     s->function_scope = 1;
@@ -1882,7 +1883,6 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   cannonical_folded = if1_cannonicalize_string(i, "< folded >");
   operator_symbol = if1_make_symbol(if1, "operator");
   print_symbol = if1_make_symbol(if1, "print");
-  global_asserts();
   forv_ParseAST(a, av)
     build_builtin_syms(i, a);
 #define S(_n) assert(sym_##_n);

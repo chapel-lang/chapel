@@ -78,7 +78,7 @@ class Sym : public gc {
   unsigned int		is_constant:1;		// Sym is a constant
   unsigned int		is_lvalue:1;		// Sym is an lvalue
   unsigned int		is_var:1;		// Sym is a variable (as opposed to let bound)
-  unsigned int		is_single_assign:1;	// Sym is a single assignment variable
+  unsigned int		is_default_arg:1;	// Sym is a default argument
   unsigned int 		is_module:1;		// Sym is a module
   unsigned int		is_fun:1;		// Sym is a function
   unsigned int 		is_symbol:1;		// Sym is a user level symbol
@@ -86,12 +86,12 @@ class Sym : public gc {
   unsigned int		is_vararg:1;		// Sym is a vararg parameter
   unsigned int		is_external:1;		// Sym is "external", so constraints are type
 
+  unsigned int		global_scope:1;		// Sym is globally unique (file/module)
+  unsigned int		function_scope:1;	// Sym is function unique
+
   unsigned int		is_structure:1;		// Sym is a structure (C compatibility)
   unsigned int		is_meta_class:1;	// Sym is class of class
   unsigned int 		is_value_class:1;	// Sym is a value class
-
-  unsigned int		global_scope:1;		// Sym is globally unique (file/module)
-  unsigned int		function_scope:1;	// Sym is function unique
 
   unsigned int		live:1;			// used by if1.cpp
   unsigned int		incomplete:1;		// used by clone.cpp

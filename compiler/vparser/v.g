@@ -9,22 +9,19 @@ extern D_ParserTables parser_tables_v;
 extern D_Symbol d_symbols_v[];
 %>
 
-program : [ ${scope}->kind = D_SCOPE_RECURSIVE; ] top_level_statement* 
-{ $$.ast = new_AST(AST_block, &$n); };
+program : top_level_statement* { 
+  $$.ast = new_AST(AST_block, &$n); 
+  $$.ast->scope_kind = Scope_RECURSIVE; 
+};
 
-top_level_statement: some_top_level_statement
-[ ${scope} = commit_D_Scope(${scope}); ];
-
-some_top_level_statement
+top_level_statement
   : module_statement 
   | c_extern_statement
   | statement
   ;
 
 module_statement 
-  : 'in' ident ('__name' string)? ';' 
-[ in_module($g, $n1.start_loc.s, $n1.end, &${scope}); ]
-{ 
+  : 'in' ident ('__name' string)? ';' { 
   $$.ast = new_AST(AST_in_module, &$n); 
   if ($#2)
     $$.ast->builtin = if1_cannonicalize_string(
@@ -55,73 +52,52 @@ c_extern_statement
 { $$.ast = new_AST(AST_extern_include, &$n); }
   ;
 
-statement 
-  : some_statement ';'
-[
-  if ($n0.scope->kind == D_SCOPE_PARALLEL)
-    ${scope} = enter_D_Scope(${scope}, $g->parallel_scope);
-]
-{ 
-  if ($n0.scope->kind == D_SCOPE_PARALLEL)
-    $$.ast = new_AST(AST_scope, &$n); 
-  else
-    $$.ast = $0.ast;
-}
-  | ident ':' ';'
-{ $$.ast = new_AST(AST_def_ident, &$n); }
+statement
+  : unterminated_statement ';'
   | ';'
   ;
 
-some_statement
+unterminated_statement
   : expression
   | def_function expression
-    [ ${scope} = enter_D_Scope(${scope}, $0.saved_scope); ]
-    { $$.ast = new_AST(AST_def_fun, &$n); }
+    { $$.ast = new_AST(AST_def_fun, &$n); 
+      $$.ast->scope_kind = Scope_RECURSIVE; }
   | control_flow
-  | some_type_statement
+  | type_statement
   ;
 
-some_type_statement
+type_statement
   : unqualified_type_statement where_statement*
   | where_statement+
   ;
 
 unqualified_type_statement
   : 'type' type_definition (',' type_definition)* 
-  | 'class' def_type def_type_parameter_list? class_definition? 
-{ $$.ast = new_AST(AST_def_type, &$n); }
-  | 'enum' def_type enum_definition? 
-{ $$.ast = new_AST(AST_def_type, &$n); }
+  | 'class' ident def_type_parameter_list? class_definition? 
+{ $$.ast = new_AST(AST_def_type, &$n); 
+  $$.ast->scope_kind = Scope_RECURSIVE; }
+  | 'enum' ident enum_definition? 
+{ $$.ast = new_AST(AST_def_type, &$n); 
+  $$.ast->scope_kind = Scope_RECURSIVE; }
   ;
 
-type_definition : def_type def_type_parameter_list? ('__name' string)? 
-		(':' constraint_type)? ('=' type)? 
-[
-  $$.saved_scope = ${scope};
-  ${scope} = enter_D_Scope(${scope}, $n0.scope);
-]
-{
+type_definition : ident def_type_parameter_list? ('__name' string)? 
+		(':' constraint_type)? ('=' type)? {
   $$.ast = new_AST(AST_def_type, &$n); 
   if ($#2)
     $$.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
+  $$.ast->scope_kind = Scope_RECURSIVE;
 };
 constraint_types: constraint_type (',' constraint_type)*;
 constraint_type: parameterized_type
 { $$.ast = new_AST(AST_constraint, &$n); };
 
-def_type: ident 
-[
-  $$.saved_scope = ${scope};
-  ${scope} = new_D_Scope(${scope});
-  ${scope}->kind = D_SCOPE_RECURSIVE;
-];
-
 def_type_parameter_list : '(' (def_type_parameter (',' def_type_parameter)*)? ')' ;
 def_type_parameter
-  : def_type
+  : ident
 { $$.ast = new_AST(AST_def_type_param, &$n); }
-  | def_type ':' type $binary_left 700 
+  | ident ':' type $binary_left 700 
 { $$.ast = new_AST(AST_def_type_param, &$n); }
   ;
 
@@ -149,13 +125,10 @@ type
 type_parameter_list : '(' type_param (',' type_param)* ')' ;
 type_param: type { $$.ast = new_AST(AST_type_param, &$n); };
 
-class_definition : class_modifiers '{' new_class_scope statement* '}' 
-[
-  $$.saved_scope = ${scope};
-  ${scope} = enter_D_Scope(${scope}, $n0.scope);
-]
-{ $$.ast = new_AST(AST_record_type, &$n); };
-new_class_scope: [ ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RECURSIVE; ];
+class_definition : class_modifiers '{' statement* '}' { 
+  $$.ast = new_AST(AST_record_type, &$n); 
+  $$.ast->scope_kind = Scope_RECURSIVE; 
+};
 
 class_modifiers : (class_modifier (',' class_modifiers)*)?;
 class_modifier  
@@ -188,28 +161,26 @@ where_type : qualified_ident (':' constraint_types)? ('=' type)?
 { $$.ast = new_AST(AST_where, &$n); };
 
 expression
-  : constant ("__name" string)?
-   { 
+  : constant ("__name" string)? { 
      $$.ast = $0.ast; 
      if ($#1)
        $$.ast->builtin = if1_cannonicalize_string(
          $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
    }
   | qualified_ident
-  | def_ident expression $right 5100
-    { 
+  | def_ident expression $right 5100 { 
       $$.ast = new_AST(AST_def_ident, &$n); 
       $$.ast->def_ident_label = 1;
     }
-  | 'var' def_ident expression $right 5100
-    { 
-      $$.ast = new_AST(AST_def_ident, &$n); 
-      $$.ast->def_ident_label = 1;
-      $$.ast->is_var = 1;
+  | 'let' def_ident_list ('in' expression)? $right 5100 {
+      if ($#2)
+        $$.ast = new_AST(AST_scope, &$n); 
     }
-  | anon_function expression
-    [ ${scope} = enter_D_Scope(${scope}, $0.saved_scope); ]
-    { $$.ast = new_AST(AST_def_fun, &$n); }
+  | 'var' def_ident_var_list $right 5100
+  | anon_function expression { 
+      $$.ast = new_AST(AST_def_fun, &$n);
+      $$.ast->scope_kind = Scope_RECURSIVE; 
+    }
   | pre_operator expression 
     { $$.ast = op_AST($g->i, $n); }
   | expression post_operator 
@@ -223,22 +194,17 @@ expression
   | curly_block
   | expression '?' expression ':' expression $right 8600
     { $$.ast = new_AST(AST_if, &$n); }
-  | 'if' '(' expression ')' some_statement $right 6000
+  | 'if' '(' expression ')' unterminated_statement $right 6000
     { $$.ast = new_AST(AST_if, &$n); }
-  | 'if' '(' expression ')' some_statement 'else' some_statement $right 6100
+  | 'if' '(' expression ')' unterminated_statement 'else' unterminated_statement $right 6100
     { $$.ast = new_AST(AST_if, &$n); }
-  | 'while' loop_scope '(' expression ')' expression $right 6200
-    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
-    { $$.ast = loop_AST($n0, $n3, 0, 0, $n5); }
-  | 'do' loop_scope expression 'while' expression $right 6300
-    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
-    { $$.ast = loop_AST($n0, $n4, &$n2, 0, $n2); }
-  | 'for' loop_scope '(' expression? ';' expression? ';' expression? ')'
-      expression $right 6400
-    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
-    { $$.ast = loop_AST($n0, $n5, &$n3, &$n7, $n9); }
+  | 'while' '(' expression ')' expression $right 6200
+    { $$.ast = loop_AST($n0, $n2, 0, 0, $n4); }
+  | 'do' expression 'while' expression $right 6300
+    { $$.ast = loop_AST($n0, $n3, &$n1, 0, $n1); }
+  | 'for' '(' expression? ';' expression? ';' expression? ')' expression $right 6400
+    { $$.ast = loop_AST($n0, $n4, &$n2, &$n6, $n8); }
   | 'with' with_scope expression $right 5100
-    [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
     { $$.ast = new_AST(AST_with, &$n); }
   | 'conc' expression $right 5000
     { $$.ast = new_AST(AST_conc, &$n); }
@@ -246,21 +212,45 @@ expression
     { $$.ast = new_AST(AST_seq, &$n); }
   ;
 
-loop_scope: [ ${scope} = new_D_Scope(${scope}); ]; 
 with_scope : qualified_ident (',' qualified_ident)* ':'
-[ ${scope} = new_D_Scope(${scope}); ] 
 { $$.ast = new_AST(AST_with_scope, &$n); };
 
 symbol_ident: identifier
 { $$.ast = symbol_AST($g->i, &$n); };
 
-def_ident: idpattern ('__name' string)? ':' 
-{
+def_ident: idpattern ('__name' string)? ':' {
   $$.ast = $0.ast;
   if ($#1)
     $$.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
 };
+
+def_ident_one
+  : def_ident expression 
+    { $$.ast = new_AST(AST_def_ident, &$n); }
+  | def_function expression
+    { $$.ast = new_AST(AST_def_fun, &$n); 
+      $$.ast->scope_kind = Scope_RECURSIVE; }
+  ; 
+def_ident_list
+  : def_ident_list ',' def_ident_list $left 10000
+  | def_ident_one;
+  ;
+
+def_ident_var_one
+  : def_ident expression { 
+      $$.ast = new_AST(AST_def_ident, &$n); 
+      $$.ast->is_var = 1;
+    }
+  | ident {
+      $$.ast = new_AST(AST_def_ident, &$n); 
+      $$.ast->is_var = 1;
+    }
+  ;
+def_ident_var_list
+  : def_ident_var_list ',' def_ident_var_list $left 10000
+  | def_ident_var_one;
+  ;
 
 idpattern
   : ident (':' identifier)?
@@ -273,31 +263,17 @@ idpattern
 { $$.ast = new_AST(AST_pattern, &$n); };
   ;
 
-def_function: qualified_ident pattern+ ('__name' string)? ':' 
-[ 
-  $$.saved_scope = ${scope}; 
-  ${scope} = new_D_Scope(${scope}); 
-  ${scope}->kind = D_SCOPE_RECURSIVE;
-]
-{
+def_function: qualified_ident pattern+ ('__name' string)? ':' {
   if ($#2)
     $0.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 2, 0, 1}->start_loc.s+1, ${child 2, 0, 1}->end-1);
 };
 
-anon_function: '\\' pattern+ ':' 
-[ 
-  $$.saved_scope = ${scope}; 
-  ${scope} = new_D_Scope(${scope}); 
-];
+anon_function: '\\' pattern+ ':';
 
 pattern
-  : ident (':' constraint_type)?
+  : ident
 { $$.ast = new_AST(AST_arg, &$n); }
-  | 'var' ident (':' constraint_type)?
-{ $$.ast = new_AST(AST_arg, &$n); 
-  $$.ast->is_var = 1;
-}
   | constant
 { $$.ast = new_AST(AST_arg, &$n); }
   | '(' pattern_type? (sub_pattern (',' sub_pattern)*)? ')'
@@ -309,9 +285,36 @@ pattern_type: ':' qualified_ident
   ;
 
 sub_pattern
-  : pattern
-  | '...' (ident (':' constraint_type)?)?
+  : intent ident (':' constraint_type)? ('=' init_expression)?
+{ $$.ast = new_AST(AST_arg, &$n); }
+  | constant
+{ $$.ast = new_AST(AST_arg, &$n); }
+  | intent 'var' ident (':' constraint_type)?
+{ $$.ast = new_AST(AST_arg, &$n); 
+  $$.ast->is_var = 1;
+}
+  | '...' (intent ident (':' constraint_type)?)?
 { $$.ast = new_AST(AST_vararg, &$n); };
+  ;
+
+intent
+  : 'const'
+{ $$.ast = new_AST(AST_pattern_intent, &$n); 
+  $$.ast->intent = Intent_const; }
+  | 'in'
+{ $$.ast = new_AST(AST_pattern_intent, &$n); 
+  $$.ast->intent = Intent_in; }
+  | 'out'
+{ $$.ast = new_AST(AST_pattern_intent, &$n); 
+  $$.ast->intent = Intent_out; }
+  | 'inout'
+{ $$.ast = new_AST(AST_pattern_intent, &$n); 
+  $$.ast->intent = Intent_inout; }
+  | ;
+
+init_expression
+  : expression
+{ $$.ast = new_AST(AST_pattern_init, &$n); }
   ;
 
 qualified_ident : global? (ident '::')* ident
@@ -319,8 +322,6 @@ qualified_ident : global? (ident '::')* ident
 
 global: '::' 
 { $$.ast = new_AST(AST_global, &$n); } ;
-
-with_scope : expression (',' expression)* ':' ;
 
 control_flow
   : 'goto' ident 
@@ -412,19 +413,14 @@ null:
   { $$.ast = new_AST(AST_list); }
   ;
 
-curly_block: '{' curly_block_scope statement* expression? '}'
-[ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
+curly_block: '{' statement* expression? '}'
 { 
-  if ($#3)
+  if ($#2)
     $$.ast = new_AST(AST_scope, &$n); 
   else
     $$.ast = new_AST(AST_object, &$n);
+  $$.ast->scope_kind = Scope_RECURSIVE;
 };
-
-curly_block_scope : [ 
-    ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_RECURSIVE; 
-  ]
-;
 
 paren_block: '(' statement* expression? ')' 
 { 
@@ -434,20 +430,14 @@ paren_block: '(' statement* expression? ')'
     $$.ast = new_AST(AST_list, &$n);
 };
 
-square_block: '[' square_block_scope statement* expression? ']' 
-[ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
+square_block: '[' statement* expression? ']' 
 { 
-  if ($#3)
+  if ($#2)
     $$.ast = new_AST(AST_scope, &$n); 
   else
     $$.ast = new_AST(AST_vector, &$n);
+  $$.ast->scope_kind = Scope_PARALLEL;
 };
-
-square_block_scope : [ 
-    ${scope} = new_D_Scope(${scope}); ${scope}->kind = D_SCOPE_PARALLEL; 
-    $g->parallel_scope = ${scope};
-  ]
-;
 
 constant : (char | int8 | uint8 | int16 | uint16 | 
 	    int32 | uint32 | int64 | uint64 | int | uint |
@@ -510,10 +500,6 @@ ident : identifier{
 };
 
  _ : 
-[
-  if ($# == 1)
-    $$.saved_scope = $0.saved_scope;
-]
 {
   if ($# == 1)
     $$.ast = $0.ast;

@@ -36,12 +36,14 @@ enum AST_kind {
 };
 
 enum Constructor { Make_TUPLE, Make_VECTOR, Make_SET };
+enum Intent { Intent_const, Intent_in, Intent_out, Intent_inout };
 
 class ParseAST : public AST {
  public:
   AST_kind kind;
-  unsigned int scope_kind:2;       // 0 = {}, 1 = () (BLC:???)
+  unsigned int scope_kind:2; // Scope_kind from scope.h
   unsigned int constructor:2;
+  unsigned int intent:2;
   unsigned int def_ident_label:1;
   unsigned int op_index:1;
   unsigned int is_var:1;

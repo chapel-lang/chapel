@@ -153,7 +153,7 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
 }
 
 static ParseAST *
-load_file(char *fn, D_Scope **scope, FrontEnd *fe) {
+load_file(char *fn, FrontEnd *fe) {
   int len = 0;
   ParseAST *res = 0;
   D_ParseNode *pn = NULL;
@@ -168,20 +168,13 @@ load_file(char *fn, D_Scope **scope, FrontEnd *fe) {
   p->initial_globals = (Globals*)MALLOC(sizeof(Globals));
   memset(p->initial_globals, 0, sizeof(Globals));
   p->initial_globals->i = if1;
-  if (*scope)
-    p->initial_scope = *scope;
 
   if (buf_read(fn, &buf, &len) > 0)
     pn = dparse(p, buf, len);
   else 
     fail("unable to read file '%s'", fn);
-  if (pn) {
-    if (*scope)
-      (*scope)->owned_by_user = 0;
-    *scope = pn->scope;
-    (*scope)->owned_by_user = 1;
+  if (pn)
     free_D_ParseNode(p, pn);
-  }
   if (!pn || p->initial_globals->errors || p->syntax_errors) {
     fn = d_dup_pathname_str(p->loc.pathname);
     if (!pn)
@@ -203,7 +196,6 @@ load_one(char *fn) {
   char tmpfn[1024];
   Vec<ParseAST *> av;
   ParseAST *a;
-  D_Scope *scope = NULL;
   char *ext = strrchr(fn, '.');
   if (!ext)
     fail("no file extension '%s'", fn);
@@ -218,20 +210,19 @@ load_one(char *fn) {
   strcat(tmpfn, prelude_filename);
   strcat(tmpfn, ".");
   strcat(tmpfn, langs[l].extension);
-  if (!(a = load_file(tmpfn, &scope, &langs[l])))
+  if (!(a = load_file(tmpfn, &langs[l])))
     return -1;
   av.add(a);
   { 
     int save_parser_verbose = d_verbose_level;
     if (parser_verbose_non_prelude) d_verbose_level = parser_verbose_non_prelude;
-    if (!(a = load_file(fn, &scope, &langs[l])))
+    if (!(a = load_file(fn, &langs[l])))
       return -1;	
     if (parser_verbose_non_prelude) d_verbose_level = save_parser_verbose;
   }
   av.add(a);
   if (ast_gen_if1(if1, av) < 0)
     fail("fatal error, '%s'\n", fn);
-  free_D_Scope(scope, 1);
   return 0;
 }
 
