@@ -29,8 +29,7 @@ class SymScope {
 
   SymLink* useBeforeDefSyms;
 
-  HashMap<char*, StringHashFns, Symbol*> table;
-  //  Map<char*, Symbol*> table;
+  ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(scopeType init_type, int init_level);
 

@@ -144,12 +144,12 @@ void SymScope::print(FILE* outfile, bool alphabetical) {
 
   if (alphabetical) {
     int i;
+    Vec<Symbol*> symlist;
 
-    for (i=0; i<table.n; i++) {
-      if (table.v[i].key) {
-	table.v[i].value->print(outfile);
-	fprintf(outfile, "\n");
-      }
+    table.get_values(symlist);
+    for (i=0; i<symlist.n; i++) {
+      symlist.v[i]->print(outfile);
+      fprintf(outfile, "\n");
     }
   } else {
     if (firstSym != NULL) {
