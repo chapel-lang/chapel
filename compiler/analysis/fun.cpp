@@ -201,7 +201,9 @@ Fun::copy() {
   context.vmap = f->vmap;
   context.fmap.put(this, f);
   f->ast = ast ? ast->copy_tree(&context) : 0;
-  f->sym = context.smap.get(f->sym);
+  Sym *new_sym = context.smap.get(f->sym);
+  if (new_sym)
+    f->sym = new_sym;
   return f;
 }
 
