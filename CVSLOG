@@ -5392,3 +5392,40 @@ Added files:
 	chapel/test/trivial/bradc/domarr/: .cvsignore domarr.chpl 
 	                                   domarr.good 
 
+---------------------------------------------------------------------------
+
+08/16/04 17:06:14 -- bradc
+
+Log message:
+	Added a Tuple subclass to the Expr class hierarchy.  Currently,
+	parenthesized, comma-separated expressions are stored as Tuples.
+	Eventually, we'll want to relax the requirement that parenthesis
+	be used to define a tuple, but I didn't do it this time around.
+	
+	Added the ability to format expressions fed to a write statement
+	by supporting a 2-tuple argument format in which the first
+	element of the tuple is a format string and the second element
+	is the argument.  Thus:
+	
+	write(a, b, c);
+	
+	will write out the a, b, and c arguments using some reasonable
+	default formatting.  If the user wanted to control this
+	formatting better, they could use:
+	
+	write(("%.2d", a), b, ("%12.6f", c));
+	
+	which would format a as a %.2d integer, use the default formatting
+	for b, and format c as a %12.6f float.  The formats are currently
+	identical to those supported by C.  Note that if the argument
+	expression (a or c in this example) is an array, the formatting
+	is applied to every element in the array.
+
+Modified files:
+	chapel/compiler/AST/: chapel.y expr.cpp expr.h 
+	chapel/test/trivial/bradc/domarr/: .cvsignore 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+Added files:
+	chapel/test/trivial/bradc/: formatoutput.chpl formatoutput.good 
+
