@@ -114,7 +114,7 @@ foreach chplsrc ($testsrc)
 
     # set execfile now since used in both if branches
     set execfile = $chplsrc:r
-    set checkfile = $execfile.chk
+    set checkfile = $execfile.good
     set complog = $execfile.ihgfedcba.comp.out.tmp
     set execlog = $execfile.ihgfedcba.exec.out.tmp
 

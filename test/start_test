@@ -71,14 +71,14 @@
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
-# into it and an expected output file (.chk) for each source file
+# into it and an expected output file (.good) for each source file
 # (using the same base name).  Upon reaching such a directory, the
 # testing system will run the specified compiler on each Chapel
 # source file using the specified compiler options, then (assuming
 # the compile completed successfully, execute the resulting program 
 # using the specified execution options.  The output from both the
 # compilation and the execution are concatenated and diff'd against
-# the .chk file.  This allows programs that are supposed to generate
+# the .good file.  This allows programs that are supposed to generate
 # errors, warnings, and correct programs to all be tested using the
 # same mechanisms.
 #
