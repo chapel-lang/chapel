@@ -2163,21 +2163,23 @@ static void
 ast_sym_info(BaseAST *a, Symbol *s, AST **ast, Sym **sym) {
   *ast = 0;
   *sym = 0;
-  Expr *e = dynamic_cast<Expr *>(a);
-  if (e)
-    *ast = e->ainfo;
-  else {
-    Stmt *stmt = dynamic_cast<Stmt *>(a);
-    if (stmt)
-       *ast = stmt->ainfo;
+  if (a) {
+    Expr *e = dynamic_cast<Expr *>(a);
+    if (e)
+      *ast = e->ainfo;
     else {
-      Symbol *symbol = dynamic_cast<Symbol *>(a);
-      if (symbol) {
-	if (symbol->asymbol)
-	  *sym = symbol->asymbol->sym;
-      } else {
-        Type *t = dynamic_cast<Type *>(a);
-        *sym = t->asymbol->sym;
+      Stmt *stmt = dynamic_cast<Stmt *>(a);
+      if (stmt)
+	*ast = stmt->ainfo;
+      else {
+	Symbol *symbol = dynamic_cast<Symbol *>(a);
+	if (symbol) {
+	  if (symbol->asymbol)
+	    *sym = symbol->asymbol->sym;
+	} else {
+	  Type *t = dynamic_cast<Type *>(a);
+	  *sym = t->asymbol->sym;
+	}
       }
     }
   }
@@ -2370,6 +2372,20 @@ type_is_used(TypeSymbol *t) {
       return false;
   } else
     return true; // analysis not run   
+}
+
+int
+AST_is_used(BaseAST *a, Symbol *s) {
+  AST *ast = 0;
+  Sym *sym = 0;
+  ast_sym_info(a, s, &ast, &sym);
+  if (ast && !type_info(ast, sym))
+    return 0;
+  if (!sym)
+    return 0;
+  if (!sym->var)
+    return 0;
+  return sym->type != 0;
 }
 
 static void
