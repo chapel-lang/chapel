@@ -13962,3 +13962,22 @@ Modified files:
 	chapel/compiler/traversals/: insertUnionChecks.cpp 
 	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
 
+---------------------------------------------------------------------------
+
+01/07/05 10:41:34 -- deitz
+
+Log message:
+	Moved two tests out of classes/deitz/future and into classes/deitz
+	with .future files.
+
+Added files:
+	chapel/test/classes/deitz/: test_nested_record1.chpl 
+	                            test_nested_record1.future 
+	                            test_record_method2.chpl 
+	                            test_record_method2.future 
+	                            test_record_method2.good 
+Removed files:
+	chapel/test/classes/deitz/future/: test_record2.chpl 
+	                                   test_record_method2.chpl 
+	                                   test_record_method2.good 
+
