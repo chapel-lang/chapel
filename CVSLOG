@@ -12533,3 +12533,40 @@ Log message:
 Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+12/21/04 16:30:25 -- deitz
+
+Log message:
+	Removed TYPE_IDENT from the parser.  Type identifiers are now good old
+	identifiers.
+	
+	Added UnresolvedType as a new kind of type that is somewhat symmetric
+	to UnresolvedSymbol.  The name field, a Symbol, for an UnresolvedType
+	always points to an UnresolvedSymbol.  When that symbol is resolved,
+	the UnresolvedType is resolved.  The new UnresolvedType is created
+	during parsing and resolved during Cleanup's ResolveEasiest traversal.
+	
+	Broke up the ResolveEasy traversal in the Cleanup Pass into two
+	traversals: ResolveEasiest and ResolveEasy.  ResolveEasiest tries to
+	resolve top-level symbols.  ResolveEasy tries to resolve members in
+	dot-expressions by looking at the type of the base.  Extended
+	ResolveEasiest to also try to resolve UnresolvedTypes.
+	
+	The following errors regress (whenn analysis is run):
+	[Error matching compiler output for flowanalysis/newast/domarr]
+	[Error matching compiler output for flowanalysis/newast/enumarray]
+	[Error matching compiler output for flowanalysis/newast/formatoutput]
+	[Error matching compiler output for flowanalysis/newast/noop]
+	[Error matching compiler output for flowanalysis/newast/protoast_test]
+	[Error matching compiler output for trivial/bradc/formatoutput]
+	[Error matching compiler output for trivial/bradc/domarr/domarr]
+	[Error matching compiler output for trivial/bradc/domarr/enumarray]
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: cleanup.cpp verifyASTType.cpp 
+
