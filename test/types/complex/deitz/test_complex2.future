@@ -1,0 +1,3 @@
+deitz
+
+Implement complex by creating a record and overloading.  Have a traversal that creates temps for complex literals with two assignment statements to initialize them.  This should remove all complex literals.
