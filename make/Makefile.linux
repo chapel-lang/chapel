@@ -3,5 +3,7 @@
 
 EXE_SUFFIX=
 
+LIBS += -ldl -lpthread
+
 -include $(CHAPEL_ROOT)/make/Makefile.gnu
 
