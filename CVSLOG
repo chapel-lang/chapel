@@ -19496,3 +19496,17 @@ Added files:
 	chapel/compiler/traversals/: .cvsignore 
 	chapel/compiler/util/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/14/05 16:57:23 -- jplevyak
+
+Log message:
+	Some algorithmic improvements to the code which detects incompletely
+	covered argument types.  This is what was causing the problem with
+	compSample running out of time.  The new algorithm is still not linear
+	in the size of the program, but I will continue to work on it.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/compiler/include/: fa.h 
+
