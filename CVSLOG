@@ -15750,3 +15750,15 @@ Modified files:
 	                           pattern.cpp 
 	chapel/compiler/include/: fa.h fun.h 
 
+---------------------------------------------------------------------------
+
+01/27/05 10:35:13 -- deitz
+
+Log message:
+	Passed futures for these tests to John.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_function1.future 
+	                                         test_typevar_function2.future 
+
