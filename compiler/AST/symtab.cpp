@@ -107,11 +107,7 @@ SymScope* SymScope::findFileScope(void) {
 
 void SymScope::addUndefined(UseBeforeDefSymbol* sym) {
   SymLink* newLink = new SymLink(sym);
-  if (useBeforeDefSyms == NULL) {
-    useBeforeDefSyms = newLink;
-  } else {
-    useBeforeDefSyms->append(newLink);
-  }
+  useBeforeDefSyms = appendLink(useBeforeDefSyms, newLink);
 }
 
 void SymScope::addUndefinedToFile(UseBeforeDefSymbol* sym) {

@@ -1,4 +1,3 @@
-* try to get return of append working better
 * take all instances of NULL out
 * move suspicious symbols into prelude file
 * fix precedence problems (and there are lots)

@@ -82,17 +82,9 @@ void ILink::filter(bool filter(ILink*), ILink** truelinks,
       nextlink->prev = NULL;
     }
     if (filter(link)) {
-      if (*truelinks) {
-	(*truelinks)->append(link);
-      } else {
-	*truelinks = link;
-      }
+      *truelinks = appendLink(*truelinks, link);
     } else {
-      if (*falselinks) {
-	(*falselinks)->append(link);
-      } else {
-	*falselinks = link;
-      }
+      *falselinks = appendLink(*falselinks, link);
     }
     link = nextlink;
   }

@@ -27,4 +27,8 @@ class ILink : public Loc {
 #define prevLink(type, node) (dynamic_cast<type*>((node)->prev))
 #define nextLink(type, node) (dynamic_cast<type*>((node)->next))
 
+#define appendLink(list, node) (((list) != NULL && !(list)->isNull()) ? \
+                                (list)->append(node), (list) : \
+                                (node))
+
 #endif

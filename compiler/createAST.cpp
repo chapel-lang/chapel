@@ -74,7 +74,7 @@ static Stmt* createInitFn(Stmt* program) {
 						   initFunBody, true);
   FnDefStmt* initFunDef = new FnDefStmt(initFun);
 
-  program->append(initFunDef);
+  program = appendLink(program, initFunDef);
 
   return program;
 }

@@ -391,14 +391,7 @@ statements:
   /* empty */
     { $$ = new NullStmt(); }
 | statements statement
-    {
-      if ($1->isNull()) {
-        $$ = $2;
-      } else {
-        $1->append($2);
-        $$ = $1;
-      }
-    }
+    { $$ = appendLink($1, $2); }
 ;
 
 
