@@ -2887,3 +2887,33 @@ Added files:
 	chapel/test/trivial/bradc/functions/: globalref.chpl 
 	                                      globalref.good 
 
+---------------------------------------------------------------------------
+
+06/08/04 11:30:30 -- shannon
+
+Log message:
+	Implemented further testing of binary operator
+	code generation with the addition of four tests.
+	These files test the assignment operators such
+	as "+=", as well as the "&&", "<<", and ">>"
+	operators.
+	
+	Also cleaned up my prior tests using the new
+	functionality of write() and writeln().
+	Added further testing of boundary conditions.
+
+Modified files:
+	chapel/test/trivial/shannon/: arithmetic_ops.chpl 
+	                              bitwise_ops.chpl bitwise_ops.good 
+	                              equality_ops.chpl 
+	                              equality_ops.good 
+	                              relational_ops.chpl 
+	                              relational_ops.good 
+Added files:
+	chapel/test/trivial/shannon/: assignment_expr.chpl 
+	                              assignment_expr.good 
+	                              bitwise_assignment.chpl 
+	                              bitwise_assignment.good 
+	                              logical_and.chpl logical_and.good 
+	                              shift_ops.chpl shift_ops.good 
+
