@@ -11457,3 +11457,43 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+12/09/04 16:10:00 -- bradc
+
+Log message:
+	Changed passes so that they are passed the complete
+	list of modules including the two internal modules
+	corresponding to the internal prelude and standard
+	prelude by default.  A pass may then choose to
+	ignore the internal modules in its run() method by
+	checking the "internal" flag that's set on a module
+	symbol if it's internal.
+	
+	Added a mechanism for traversals so that if they
+	want to use the default run() method, but want to
+	skip the internal modules, then they can set their
+	Traversal::processInternalModules flag to false
+	at constructor time.
+	
+	Used this flag for fieldsToMemberAccesses, which
+	currently doesn't work when called on internal
+	modules (but Steve will hopefully have it in working
+	order soon enough).
+	
+	Also, moved the compilation of the generated C code
+	into its own pass -- buildBinary -- previously this
+	was part of the Codegen pass, which seems inappropriate.
+
+Modified files:
+	chapel/compiler/AST/: symtab.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share codegen.cpp 
+	                         createEntryPoint.cpp printProgram.cpp 
+	                         runAnalysis.cpp 
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+	                             fieldsToMemberAccesses.h 
+	                             traversal.cpp traversal.h 
+Added files:
+	chapel/compiler/passes/: buildBinary.cpp buildBinary.h 
+
