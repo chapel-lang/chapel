@@ -464,7 +464,7 @@ compute_transitions(LexState *ls, Scanner *s) {
 }
 
 static void
-build_state_scanner(LexState *ls, State *s) {
+build_state_scanner(Grammar *g, LexState *ls, State *s) {
   NFAState *n, *nn, *nnn;
   Action *a;
   uint8 *c, *reg; 
@@ -513,6 +513,7 @@ build_state_scanner(LexState *ls, State *s) {
       Action *trailing_context = (Action *)MALLOC(sizeof(Action));
       memcpy(trailing_context, a, sizeof(Action));
       trailing_context->kind = ACTION_SHIFT_TRAILING;
+      trailing_context->index = g->action_count++;
       one = 1;
       reg = a->term->string;
       vec_add(&n->epsilon, (nnn = new_NFAState(ls)));
@@ -576,7 +577,7 @@ build_scanners(Grammar *g) {
       if (s->same_shifts)
 	s->scanner = s->same_shifts->scanner;
       else 
-	build_state_scanner(ls, s);
+	build_state_scanner(g, ls, s);
     }
   }
   if (d_verbose_level)

@@ -1225,9 +1225,12 @@ shift_all(Parser *p, char *pos) {
       continue;
     if (r->shift->shift_kind == D_SCAN_TRAILING) {
       int symbol = r->shift->symbol;
+      SNode *sn = r->snode;
       r->shift = 0;
       for (j = i + 1; j < nshifts; j++) {
-	if (p->shift_results[j].shift && symbol == p->shift_results[j].shift->symbol) {
+	if (p->shift_results[j].shift && 
+	    sn == p->shift_results[j].snode &&
+	    symbol == p->shift_results[j].shift->symbol) {
 	  r->shift = p->shift_results[j].shift;
 	  p->shift_results[j].shift = 0;
 	}
