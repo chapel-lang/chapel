@@ -20617,3 +20617,17 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_assign3.future 
 
+---------------------------------------------------------------------------
+
+03/21/05 17:55:19 -- jplevyak
+
+Log message:
+	Fixup 0-arity member function calls.  Really need to have this clarified
+	by David, but I am doing a checkin to get the CVS record.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+Removed files:
+	chapel/test/classes/deitz/: test_method_noparens.future 
+
