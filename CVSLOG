@@ -23591,3 +23591,18 @@ Modified files:
 Removed files:
 	chapel/test/types/like/jplevyak/: like-1.future like-2.future 
 
+---------------------------------------------------------------------------
+
+04/04/05 12:24:52 -- bradc
+
+Log message:
+	Wrapping up one of my TODO's from Friday afternoon's
+	checkin, refactored parsing of unions, classes, and
+	records to use the same rule rather than three nearly-
+	identical rules.
+
+Modified files:
+	chapel/compiler/include/: symtab.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+
