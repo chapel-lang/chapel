@@ -1,6 +1,3 @@
-const NULL: integer = 0;  -- this needs to precede any class definitions
-
-
 class Index {
 }
 
