@@ -13576,3 +13576,75 @@ Modified files:
 	chapel/compiler/include/: fun.h pattern.h 
 	chapel/test/flowanalysis/newast/: enumarray.good 
 
+---------------------------------------------------------------------------
+
+01/06/05 07:59:01 -- shannon
+
+Log message:
+	Wrote a traversal that creates and populates a config var
+	hash table.  This traversal generates the rtconfig.c file
+	containing the CreateConfigVarTable function which in turn
+	calls initConfigVarTable() and installConfigVar().
+	
+	Specifically:
+	
+	* arg.c:  Minor cleanup.  Changed some function names to
+	  make their use more apparent and moved variable declarations
+	  closer to their usage.
+	
+	* codegen.cpp:  Created and called a new createConfigVarTable
+	  traversal.
+	
+	* config.c:  Added another data member to the configVarType
+	  structure, setValue, and changed the name of value to
+	  defaultValue.  Also added another pointer so I could make
+	  a list of config vars in the order they were installed in
+	  the hash table.  Added the printConfigVarTable function which
+	  prints out the config vars with both set and default values
+	  in the order they were declared.
+	
+	* config.h:  Minor changes.  Changed some function names and
+	  removed a flag that was no longer necessary.
+	
+	* createConfigVarTable.cpp,h:  Added the CreateConfigVarTable
+	  traversal.
+	
+	* expr.cpp,h:  Added the printCfgInitString method to the Expr
+	  and StringLiteral classes.  This was necessary so that I
+	  could generate strings as arguments to installConfigVar
+	  in the rtconfig.c file without double quotes.
+	
+	* type.cpp:  Made some minor changes in code generation of the
+	  setInCommandLine function for type enum.  Changed some
+	  function names and removed an unnecessary flag.
+	
+	* Added a bunch of tests.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/main/: passlist.cpp 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/runtime/include/: config.h 
+	chapel/runtime/src/: arg.c config.c main.c 
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarInvalidComplex.chpl 
+Added files:
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	                             createConfigVarTable.h 
+	chapel/test/execflags/shannon/configs/: configVarHelp.chpl 
+	                                        configVarHelp.execopts 
+	                                        configVarHelp.good 
+	                                        configVarNonLiteralConfigs.chpl 
+	                                        configVarNonLiteralConfigs.execopts 
+	                                        configVarNonLiteralConfigs.good 
+	                                        configVarNonLiteralInit.chpl 
+	                                        configVarNonLiteralInit.good 
+	                                        configVarSetNotDeclared.chpl 
+	                                        configVarSetNotDeclared.execopts 
+	                                        configVarSetNotDeclared.good 
+	                                        configVarTwoModules.chpl 
+	                                        configVarTwoModules.execopts 
+	                                        configVarTwoModules.good 
+
