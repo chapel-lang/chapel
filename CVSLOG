@@ -1679,3 +1679,19 @@ Log message:
 Modified files:
 	chapel/compiler/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/05 13:22:34 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add Sym::internal field which is defined in internal.h which covers
+	internal non-primitive types (currently Domain and Sequence).
+	Print out the internal type in dump.html
+	Handle toggle environment variables in arg.c
+
+Modified files:
+	chapel/compiler/: TODO arg.cpp ast.cpp clone.cpp driver.cpp 
+	                  dump.cpp geysa.h sym.h v.g 
+Added files:
+	chapel/compiler/: internal.h 
+
