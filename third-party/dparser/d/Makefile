@@ -145,7 +145,7 @@ test:
 	(MAKE=$(MAKE) ./parser_tests)
 
 install:
-	cp $(EXECUTABLES) $(PREFIX)/bin
+	cp $(EXECUTABLE_FILES) $(PREFIX)/bin
 	cp $(INCLUDES) $(PREFIX)/include
 	cp $(INSTALL_LIBRARIES) $(PREFIX)/lib
 	cp $(MANPAGES) $(PREFIX)/man/man1
