@@ -1,8 +1,8 @@
  called from 19 in __init_noop at noop.chpl:21
 ::D(noop.chpl:6) ( Domain (internal_prelude.chpl:16) )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
 ::__init_noop(noop.chpl:21) ( __init_noop (noop.chpl:21) )
 ::__init_noop(noop.chpl:21) ( __init_noop (noop.chpl:21) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
@@ -14,7 +14,7 @@
 ::main ( main )
 ::main ( main )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:27
+function __init_internal_prelude internal_prelude.chpl:30
 function __init_noop noop.chpl:21
 function __init_prelude prelude.chpl:54
 function foo noop.chpl:4

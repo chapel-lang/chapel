@@ -17,18 +17,16 @@ CreateConfigVarTable::CreateConfigVarTable(void) {
 }
 
 
-void CreateConfigVarTable::preProcessStmt(Stmt* stmt) {
+void CreateConfigVarTable::processSymbol(Symbol* symbol) {
   codefile = outfileinfo.fptr;
 
-  if (typeid(*stmt) == typeid(VarDefStmt)) {
-    VarDefStmt* varDef = dynamic_cast<VarDefStmt*>(stmt);
-    char* moduleName = varDef->var->parentScope->symContext->name;
+  VarSymbol* var = dynamic_cast<VarSymbol*>(symbol);
 
-    if (varDef->var->varClass == VAR_CONFIG) {
-      fprintf(codefile, "installConfigVar(\"%s\", ", varDef->var->name);
-      varDef->var->init->printCfgInitString(codefile);
-      fprintf(codefile, ", \"%s\");\n", moduleName);
-    }
+  if (var && var->varClass == VAR_CONFIG) {
+    char* moduleName = var->parentScope->symContext->name;
+    fprintf(codefile, "installConfigVar(\"%s\", ", var->name);
+    var->init->printCfgInitString(codefile);
+    fprintf(codefile, ", \"%s\");\n", moduleName);
   }
 }
 

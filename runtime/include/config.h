@@ -3,6 +3,15 @@
 
 #include "chpltypes.h"
 
+/*** WANT:
+#define _INIT_CONFIG(v, v_type, chapel_name, module_name, default_init) \
+  if (!setInCommandLine##v_type(chapel_name, &v, module_name)) { \
+    v = default_init; \
+  }
+***/
+
+#define _INIT_CONFIG(v, v_type, chapel_name, module_name) \
+  (!setInCommandLine##v_type(chapel_name, &v, module_name))
 
 int initConfigVarTable(void);
 void printConfigVarTable(void);

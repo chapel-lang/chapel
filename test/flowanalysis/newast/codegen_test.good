@@ -2,8 +2,8 @@
 ::__init_codegen_test(codegen_test.chpl:17) ( __init_codegen_test (codegen_test.chpl:17) )
 ::__init_codegen_test(codegen_test.chpl:17) ( __init_codegen_test (codegen_test.chpl:17) )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
 ::a(codegen_test.chpl:8) ( int64 )
@@ -16,7 +16,7 @@
 ::y(codegen_test.chpl:3) ( int64 )
 ::z(codegen_test.chpl:7) ( int64 )
 function __init_codegen_test codegen_test.chpl:17
-function __init_internal_prelude internal_prelude.chpl:27
+function __init_internal_prelude internal_prelude.chpl:30
 function __init_prelude prelude.chpl:54
 function foo codegen_test.chpl:7
 globals

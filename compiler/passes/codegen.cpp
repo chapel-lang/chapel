@@ -38,15 +38,15 @@ void Codegen::run(ModuleSymbol* moduleList) {
   ModuleSymbol* currentModule = moduleList;
 
   CreateConfigVarTable* createConfigVarTable = new CreateConfigVarTable();
+  createConfigVarTable->run(currentModule);
+  createConfigVarTable->closeCFile();
 
   while (currentModule) {
     if (!currentModule->internal) {
       currentModule->codegenDef();
-      currentModule->startTraversal(createConfigVarTable);
     }
     currentModule = nextLink(ModuleSymbol, currentModule);
   }
-  createConfigVarTable->closeCFile();
 
   verifyNilsUncorrupted();
 

@@ -68,9 +68,6 @@ class Type : public BaseAST {
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
   virtual void codegenConstructors(FILE* outfile);
 
-  virtual bool needsInit(void);
-  virtual void generateInit(FILE* outfile, VarSymbol* var);
-
   virtual bool outParamNeedsPtr(void);
   virtual bool requiresCParamTmp(paramType intent);
 };
@@ -141,8 +138,6 @@ class ArrayType : public Type {
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
-  bool needsInit(void);
-  void generateInit(FILE* outfile, VarSymbol* sym);
 };
 
 

@@ -174,16 +174,6 @@ void Type::codegenConstructors(FILE* outfile) {
 }
 
 
-bool Type::needsInit(void) {
-  return false;
-}
-
-
-void Type::generateInit(FILE* outfile, VarSymbol* var) {
-  INT_FATAL(this, "Don't know how to generateInit() for all types yet");
-}
-
-
 bool Type::outParamNeedsPtr(void) {
   return true;
 }
@@ -632,23 +622,6 @@ void ArrayType::codegenDef(FILE* outfile) {
 
 void ArrayType::codegenDefaultFormat(FILE* outfile, bool isRead) {
   elementType->codegenDefaultFormat(outfile, isRead);
-}
-
-
-bool ArrayType::needsInit(void) {
-  return true;
-}
-
-
-void ArrayType::generateInit(FILE* outfile, VarSymbol* sym) {
-  fprintf(outfile, "_INIT_ARRAY(");
-  fprintf(outfile, "%d, ", domainType->numdims);
-  sym->codegen(outfile);
-  fprintf(outfile, ", ");
-  domain->codegen(outfile);
-  fprintf(outfile, ", ");
-  elementType->codegen(outfile);
-  fprintf(outfile, ");\n");
 }
 
 

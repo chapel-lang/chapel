@@ -9,8 +9,8 @@
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_enumarray(enumarray.chpl:20) ( __init_enumarray (enumarray.chpl:20) )
 ::__init_enumarray(enumarray.chpl:20) ( __init_enumarray (enumarray.chpl:20) )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
 ::_array_integer_1d(enumarray.chpl:5) ( _array_integer_1d )
@@ -23,7 +23,7 @@
 ::this ( _array_integer_1d (enumarray.chpl:5) )
 ::void ( void )
 function __init_enumarray enumarray.chpl:20
-function __init_internal_prelude internal_prelude.chpl:27
+function __init_internal_prelude internal_prelude.chpl:30
 function __init_prelude prelude.chpl:54
 function this internal_prelude.chpl:5
 globals

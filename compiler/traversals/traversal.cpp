@@ -54,4 +54,3 @@ void Traversal::run(ModuleSymbol* moduleList) {
     mod = nextLink(ModuleSymbol, mod);
   }
 }
-

@@ -20,6 +20,7 @@ void SymtabTraversal::run(void) {
 
 void SymtabTraversal::run(ModuleSymbol* moduleList) {
   run();
+  //  Symboltable::traverseFromScope(this, moduleList->modScope);
 }
 
 

@@ -1,7 +1,7 @@
  called from 8 in __init_multiple_return at multiple_return.chpl:9
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
 ::__init_multiple_return(multiple_return.chpl:9) ( __init_multiple_return (multiple_return.chpl:9) )
 ::__init_multiple_return(multiple_return.chpl:9) ( __init_multiple_return (multiple_return.chpl:9) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
@@ -13,7 +13,7 @@
 ::main ( main )
 ::main ( main )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:27
+function __init_internal_prelude internal_prelude.chpl:30
 function __init_multiple_return multiple_return.chpl:9
 function __init_prelude prelude.chpl:54
 function f multiple_return.chpl:1

@@ -1,8 +1,8 @@
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_equality_ops(equality_ops.chpl:33) ( __init_equality_ops (equality_ops.chpl:33) )
 ::__init_equality_ops(equality_ops.chpl:33) ( __init_equality_ops (equality_ops.chpl:33) )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
 ::answer(equality_ops.chpl:4) ( int64 )
@@ -14,6 +14,6 @@
 ::o(equality_ops.chpl:3) ( int64 )
 ::void ( void )
 function __init_equality_ops equality_ops.chpl:33
-function __init_internal_prelude internal_prelude.chpl:27
+function __init_internal_prelude internal_prelude.chpl:30
 function __init_prelude prelude.chpl:54
 globals

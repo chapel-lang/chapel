@@ -3,8 +3,8 @@
  called from 20 in __init_mutrec at mutrec.chpl:22
  called from 4 in foo at mutrec.chpl:8
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
-::__init_internal_prelude(internal_prelude.chpl:27) ( __init_internal_prelude (internal_prelude.chpl:27) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
+::__init_internal_prelude(internal_prelude.chpl:30) ( __init_internal_prelude (internal_prelude.chpl:30) )
 ::__init_mutrec(mutrec.chpl:22) ( __init_mutrec (mutrec.chpl:22) )
 ::__init_mutrec(mutrec.chpl:22) ( __init_mutrec (mutrec.chpl:22) )
 ::__init_prelude(prelude.chpl:54) ( __init_prelude (prelude.chpl:54) )
@@ -16,7 +16,7 @@
 ::main ( main )
 ::main ( main )
 ::void ( void )
-function __init_internal_prelude internal_prelude.chpl:27
+function __init_internal_prelude internal_prelude.chpl:30
 function __init_mutrec mutrec.chpl:22
 function __init_prelude prelude.chpl:54
 function bar mutrec.chpl:10

@@ -417,72 +417,7 @@ void VarDefStmt::print(FILE* outfile) {
   }
 }
 
-void VarDefStmt::codegen(FILE* outfile) {
-  VarSymbol* aVar = var;
-  Expr* initExpr;
-  
-  while (aVar) {
-    VarSymbol* nextVar = nextLink(VarSymbol, aVar);
-    if (aVar->init->isNull()) {
-      initExpr = aVar->type->defaultVal;
-    } else {
-      initExpr = aVar->init;
-    }
-    if (aVar->type->needsInit()) {
-      aVar->type->generateInit(outfile, aVar);
-      if (!initExpr->isNull()) {
-	fprintf(outfile, "/* init is: ");
-	initExpr->codegen(outfile);
-	fprintf(outfile, "*/\n");
-      }
-    } else if (!initExpr->isNull()) {
-
-      if (typeid(*(aVar->type)) == typeid(DomainType)) {
-	DomainType* domtype = (DomainType*)(aVar->type);
-	int rank = domtype->numdims;
-	if (rank == 0) {
-	  INT_FATAL(this, "Rank 0 domain encountered");
-	}
-	if (typeid(*initExpr) == typeid(ForallExpr)) {
-	  initExpr = ((ForallExpr*)initExpr)->domains;
-	}
-	if (typeid(*initExpr) == typeid(SimpleSeqExpr)) {
-	  SimpleSeqExpr* initseq = (SimpleSeqExpr*)initExpr;
-
-	  for (int i=0; i<rank; i++) {
-	    fprintf(outfile, "_INIT_DOMAIN_DIM(");
-	    aVar->codegen(outfile);
-	    fprintf(outfile, ", %d, ", i);
-	    initseq->lo->codegen(outfile);
-	    fprintf(outfile, ", ");
-	    initseq->hi->codegen(outfile);
-	    fprintf(outfile, ", ");
-	    initseq->str->codegen(outfile);
-	    fprintf(outfile, ");\n");
-	    initseq = nextLink(SimpleSeqExpr, initseq);
-	  }
-	}
-      } else {
-	if (aVar->varClass == VAR_CONFIG) {
-	  char* moduleName = aVar->parentScope->symContext->name;
-	  fprintf(outfile, "if (!setInCommandLine");
-	  aVar->type->codegen(outfile);
-	  fprintf(outfile, "(\"%s\", &%s, \"%s\")) {\n", aVar->name, 
-		  aVar->cname, moduleName);
-	  AssignOp* assignment = new AssignOp(GETS_NORM, new Variable(aVar), 
-					      initExpr);
-	  assignment->codegen(outfile);
-	  fprintf(outfile, ";");
-	  fprintf(outfile, "\n}");
-	}
-      }
-      if (nextVar) {
-	fprintf(outfile, "\n");
-      }
-    }
-    aVar = nextVar;
-  }
-}
+void VarDefStmt::codegen(FILE* outfile) { }
 
 
 TypeDefStmt::TypeDefStmt(Type* init_type) :
