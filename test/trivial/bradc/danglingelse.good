@@ -1,0 +1,4 @@
+when (a, b) is (0, 0) we end up...in case 3 for conditional 2
+when (a, b) is (0, 1) we end up...in case 3 for conditional 2
+when (a, b) is (1, 0) we end up...in case 2 for conditional 1...in case 2 for conditional 2
+when (a, b) is (1, 1) we end up...in case 1 for conditional 1...in case 1 for conditional 2

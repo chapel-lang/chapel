@@ -45,7 +45,6 @@ val             return VAL;
 
 if              return IF;
 else            return ELSE;
-elsif           return ELSIF;
 
 for             return FOR;
 forall          return FORALL;
@@ -66,8 +65,8 @@ reduce          return REDUCE;
 "&="            return BITANDGETS;
 "|="            return BITORGETS;
 "^="            return BITXORGETS;
-"<<="           return LSHGETS;
-">>="           return RSHGETS;
+"<<="           return BITSLGETS;
+">>="           return BITSRGETS;
 
 ".."            return ELLIPSIS;
 

@@ -68,7 +68,7 @@
 %token ELLIPSIS
 
 %token GETS PLUSGETS MINUSGETS TIMESGETS DIVGETS BITANDGETS BITORGETS 
-%token BITXORGETS LSHGETS RSHGETS
+%token BITXORGETS BITSLGETS BITSRGETS
 
 %token DIM REDUCE
 
@@ -455,34 +455,7 @@ conditional:
     { $$ = new CondStmt($2, $3); }
 | IF expr statement ELSE statement
     { $$ = new CondStmt($2, $3, $5); }
-| IF expr statement elsifstmt
-    { $$ = new CondStmt($2, $3); }  /* BLC: Todo: elsifstmt */
 ;
-
-elsifstmt:
-  ELSIF expr statement
-    { printf("conditional 4\n"); }
-| ELSIF expr statement ELSE statement
-    { printf("conditional 5\n"); }
-| ELSIF expr statement elsifstmt
-    { printf("conditional 6\n"); }
-;
-
-
-/*
-conditional:
-  IF expr statement
-    {printf("found an if-then statement\n");}
-| IF expr withElse ELSE statement
-    {printf("found an if-then-else statement\n");}
-;
-
-
-withElse:
-  IF expr withElse ELSE withElse
-| statement
-;
-*/
 
 
 assignOp:
@@ -502,9 +475,9 @@ assignOp:
     { $$ = GETS_BITOR; }
 | BITXORGETS
     { $$ = GETS_BITXOR; }
-| LSHGETS
+| BITSLGETS
     { $$ = GETS_BITSL; }
-| RSHGETS
+| BITSRGETS
     { $$ = GETS_BITSR; }
 ;
 
@@ -646,10 +619,6 @@ binop:
     { $$ = new BinOp(BINOP_MOD, $1, $3); }
 | expr EQUALS expr
     { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
-/*
-| expr GETS expr
-    { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
-*/
 | expr LEQUALS expr
     { $$ = new BinOp(BINOP_LEQUAL, $1, $3); }
 | expr GEQUALS expr
@@ -688,10 +657,6 @@ otherbinop:
 identifier:
   IDENT
     { $$ = copystring(yytext); }
-/*
-| '?' IDENT
-    { $$ = glomstrings(2, "?", yytext); }
-*/
 ;
 
 
