@@ -2,7 +2,6 @@
 #define _analysis_H_
 
 #include "ast.h"
-#include "expr.h"
 #include "sym.h"
 #include "callbacks.h"
 
@@ -10,6 +9,7 @@ class Symbol;
 class UnresolvedSymbol;
 class MemberAccess;
 class BaseAST;
+class ParenOpExpr;
 class Label;
 class Code;
 class Type;
@@ -50,6 +50,11 @@ class AInfo : public AST {
   Sym *sym, *rval;	// IF1 Syms
 
   AInfo();
+};
+
+class CloneCallback {
+ public:
+  virtual void clone(BaseAST* old_ast, BaseAST* new_ast);
 };
 
 int AST_to_IF1(Vec<Stmt *> &stmts);

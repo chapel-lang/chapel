@@ -24,11 +24,6 @@ void Type::addName(Symbol* newname) {
 }
 
 
-Type* Type::copy(void) {
-  return this;
-}
-
-
 bool Type::isNull(void) {
   return (this == nilType);
 }
@@ -36,6 +31,21 @@ bool Type::isNull(void) {
 
 bool Type::isComplex(void) {
   return (this == dtComplex);
+}
+
+
+Type* Type::copy(CloneCallback* analysis_clone) {
+  Type* new_type = copyType(analysis_clone);
+
+  if (analysis_clone) {
+    analysis_clone->clone(this, new_type);
+  }
+  return new_type;
+}
+
+
+Type* Type::copyType(CloneCallback* analysis_clone) {
+  return this;
 }
 
 
@@ -191,11 +201,11 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 }
 
 
-Type* EnumType::copy(void) {
-  Symbol* newSyms = valList->copyList();
+Type* EnumType::copyType(CloneCallback* analysis_clone) {
+  Symbol* newSyms = valList->copyList(analysis_clone);
 
   if (typeid(*newSyms) != typeid(EnumSymbol)) {
-    INT_FATAL(this, "valList is not EnumSymbol in EnumType::copy()");
+    INT_FATAL(this, "valList is not EnumSymbol in EnumType::copyType()");
     return nilType;
   } else {
     EnumSymbol* newEnums = (EnumSymbol*)newSyms;
@@ -409,11 +419,11 @@ DomainType::DomainType(int init_numdims) :
 {}
 
 
-Type* DomainType::copy(void) {
+Type* DomainType::copyType(CloneCallback* analysis_clone) {
   if (parent->isNull()) {
     return new DomainType(numdims);
   } else {
-    return new DomainType(parent->copy());
+    return new DomainType(parent->copy(analysis_clone));
   }
 }
 
@@ -457,11 +467,11 @@ IndexType::IndexType(int init_numdims) :
 }
 
 
-Type* IndexType::copy(void) {
+Type* IndexType::copyType(CloneCallback* analysis_clone) {
   if (parent->isNull()) {
     return new IndexType(numdims);
   } else {
-    return new IndexType(parent->copy());
+    return new IndexType(parent->copy(analysis_clone));
   }
 }
 
@@ -490,8 +500,8 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 }
 
 
-Type* ArrayType::copy(void) {
-  return new ArrayType(domain->copy(), elementType->copy());
+Type* ArrayType::copyType(CloneCallback* analysis_clone) {
+  return new ArrayType(domain->copy(analysis_clone), elementType->copy(analysis_clone));
 }
 
 
@@ -549,8 +559,8 @@ UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
 {}
 
 
-Type* UserType::copy(void) {
-  return new UserType(definition->copy(), defaultVal->copy());
+Type* UserType::copyType(CloneCallback* analysis_clone) {
+  return new UserType(definition->copy(analysis_clone), defaultVal->copy(analysis_clone));
 }
 
 
@@ -650,10 +660,10 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 }
 
 
-Type* ClassType::copy(void) {
-  FnDefStmt* newConstructor = dynamic_cast<FnDefStmt*>(constructor->copy());
-  ClassType* newParent = dynamic_cast<ClassType*>(parentClass->copy());
-  return new ClassType(value, union_value, newParent, definition->copyList(), newConstructor);
+Type* ClassType::copyType(CloneCallback* analysis_clone) {
+  FnDefStmt* newConstructor = dynamic_cast<FnDefStmt*>(constructor->copy(analysis_clone));
+  ClassType* newParent = dynamic_cast<ClassType*>(parentClass->copy(analysis_clone));
+  return new ClassType(value, union_value, newParent, definition->copyList(analysis_clone), newConstructor);
 }
 
 
@@ -800,10 +810,10 @@ void TupleType::addType(Type* additionalType) {
 }
 
 
-Type* TupleType::copy(void) {
-  TupleType* newTupleType = new TupleType(components.v[0]->copy());
+Type* TupleType::copyType(CloneCallback* analysis_clone) {
+  TupleType* newTupleType = new TupleType(components.v[0]->copy(analysis_clone));
   for (int i=1; i<components.n; i++) {
-    newTupleType->addType(components.v[i]->copy());
+    newTupleType->addType(components.v[i]->copy(analysis_clone));
   }
   
   return newTupleType;
@@ -842,7 +852,7 @@ UnresolvedType::UnresolvedType(char* init_name) :
 }
 
 
-Type* UnresolvedType::copy(void) {
+Type* UnresolvedType::copyType(CloneCallback* analysis_clone) {
   return new UnresolvedType(copystring(name->name));
 }
 

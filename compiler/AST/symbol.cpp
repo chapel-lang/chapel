@@ -23,18 +23,17 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 }
 
 
-Symbol* Symbol::copy(void) {
-  INT_FATAL(this, "Symbol::copy() not anticipated to be needed");
-  return nilSymbol;
+bool Symbol::isNull(void) {
+  return (this == nilSymbol);
 }
 
 
-Symbol* Symbol::copyList(void) {
+Symbol* Symbol::copyList(CloneCallback* analysis_clone) {
   Symbol* newSymbolList = nilSymbol;
   Symbol* oldSymbol = this;
 
   while (oldSymbol) {
-    newSymbolList = appendLink(newSymbolList, oldSymbol->copy());
+    newSymbolList = appendLink(newSymbolList, oldSymbol->copy(analysis_clone));
 
     oldSymbol = nextLink(Symbol, oldSymbol);
   }
@@ -43,8 +42,19 @@ Symbol* Symbol::copyList(void) {
 }
 
 
-bool Symbol::isNull(void) {
-  return (this == nilSymbol);
+Symbol* Symbol::copy(CloneCallback* analysis_clone) {
+  Symbol* new_symbol = copySymbol(analysis_clone);
+
+  if (analysis_clone) {
+    analysis_clone->clone(this, new_symbol);
+  }
+  return new_symbol;
+}
+
+
+Symbol* Symbol::copySymbol(CloneCallback* analysis_clone) {
+  INT_FATAL(this, "Symbol::copySymbol() not anticipated to be needed");
+  return nilSymbol;
 }
 
 
@@ -128,7 +138,7 @@ void UnresolvedSymbol::codegen(FILE* outfile) {
 }
 
 
-Symbol* UnresolvedSymbol::copy(void) {
+Symbol* UnresolvedSymbol::copySymbol(CloneCallback* analysis_clone) {
   return new UnresolvedSymbol(copystring(name));
 }
 
@@ -141,8 +151,8 @@ VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass,
 {}
 
 
-Symbol* VarSymbol::copy(void) {
-  INT_FATAL(this, "VarSymbol::copy() not implemented yet");
+Symbol* VarSymbol::copySymbol(CloneCallback* analysis_clone) {
+  INT_FATAL(this, "VarSymbol::copySymbol() not implemented yet");
   return nilSymbol;
 }
 
@@ -175,7 +185,7 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 {}
 
 
-Symbol* ParamSymbol::copy(void) {
+Symbol* ParamSymbol::copySymbol(CloneCallback* analysis_clone) {
   return new ParamSymbol(intent, copystring(name), type);
 }
 
@@ -227,8 +237,8 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 {}
 
 
-Symbol* TypeSymbol::copy(void) {
-  INT_FATAL(this, "TypeSymbol::copy() not implemented yet");
+Symbol* TypeSymbol::copySymbol(CloneCallback* analysis_clone) {
+  INT_FATAL(this, "TypeSymbol::copySymbol() not implemented yet");
   return nilSymbol;
 }
 
@@ -278,8 +288,8 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 }
 
 
-Symbol* FnSymbol::copy(void) {
-  INT_FATAL(this, "ReduceSymbol::copy() not implemented yet");
+Symbol* FnSymbol::copySymbol(CloneCallback* analysis_clone) {
+  INT_FATAL(this, "ReduceSymbol::copySymbol() not implemented yet");
   return nilSymbol;
 }
 
@@ -322,8 +332,8 @@ EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
 }
 
 
-Symbol* EnumSymbol::copy(void) {
-  return new EnumSymbol(copystring(name), init->copy(), val);
+Symbol* EnumSymbol::copySymbol(CloneCallback* analysis_clone) {
+  return new EnumSymbol(copystring(name), init->copy(analysis_clone), val);
 }
 
 

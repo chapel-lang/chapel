@@ -17,55 +17,6 @@ Stmt::Stmt(astType_t astType) :
 {}
 
 
-Stmt* Stmt::copy(void) {
-  if (!this->isNull()) {
-    INT_FATAL(this, "copy not implemented for Stmt subclass");
-  }
-  return nilStmt;
-}
-
-
-Stmt* Stmt::copy(SymScope* new_scope) {
-  SymScope* prevScope = Symboltable::setCurrentScope(new_scope);
-  Stmt* newStmt = this->copy();
-  Symboltable::setCurrentScope(prevScope);
-
-  return newStmt;
-}
-
-
-Stmt* Stmt::copyList(void) {
-  Stmt* newStmtList = nilStmt;
-  Stmt* oldStmt = this;
-
-  while (oldStmt) {
-    newStmtList = appendLink(newStmtList, oldStmt->copy());
-
-    oldStmt = nextLink(Stmt, oldStmt);
-  }
-
-  return newStmtList;
-}
-
-
-Stmt* Stmt::copyList(SymScope* new_scope) {
-  SymScope* prevScope = Symboltable::setCurrentScope(new_scope);
-
-  Stmt* newStmtList = nilStmt;
-  Stmt* oldStmt = this;
-
-  while (oldStmt) {
-    newStmtList = appendLink(newStmtList, oldStmt->copy());
-
-    oldStmt = nextLink(Stmt, oldStmt);
-  }
-
-  Symboltable::setCurrentScope(prevScope);
-
-  return newStmtList;
-}
-
-
 bool Stmt::isNull(void) {
   return (this == nilStmt);
 }
@@ -78,6 +29,38 @@ bool Stmt::canLiveAtFileScope(void) {
 
 bool Stmt::topLevelExpr(Expr* expr) {
   return false;
+}
+
+
+Stmt* Stmt::copyList(CloneCallback* analysis_clone) {
+  Stmt* newStmtList = nilStmt;
+  Stmt* oldStmt = this;
+
+  while (oldStmt) {
+    newStmtList = appendLink(newStmtList, oldStmt->copy(analysis_clone));
+
+    oldStmt = nextLink(Stmt, oldStmt);
+  }
+
+  return newStmtList;
+}
+
+
+Stmt* Stmt::copy(CloneCallback* analysis_clone) {
+  Stmt* new_stmt = copyStmt(analysis_clone);
+
+  if (analysis_clone) {
+    analysis_clone->clone(this, new_stmt);
+  }
+  return new_stmt;
+}
+
+
+Stmt* Stmt::copyStmt(CloneCallback* analysis_clone) {
+  if (!this->isNull()) {
+    INT_FATAL(this, "copy not implemented for Stmt subclass");
+  }
+  return nilStmt;
 }
 
 
@@ -297,7 +280,7 @@ NoOpStmt::NoOpStmt(void) :
 {}
 
 
-Stmt* NoOpStmt::copy(void) {
+Stmt* NoOpStmt::copyStmt(CloneCallback* analysis_clone) {
   return new NoOpStmt();
 }
 
@@ -347,8 +330,8 @@ ClassType* WithStmt::getClass(void) {
 }
 
 
-Stmt* WithStmt::copy(void) {
-  return new WithStmt(withExpr->copy());
+Stmt* WithStmt::copyStmt(CloneCallback* analysis_clone) {
+  return new WithStmt(withExpr->copy(analysis_clone));
 }
 
 
@@ -378,8 +361,8 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
 }
 
 
-Stmt* VarDefStmt::copy(void) {
-  return Symboltable::defineVarDefStmt(var, var->type, init->copy(), 
+Stmt* VarDefStmt::copyStmt(CloneCallback* analysis_clone) {
+  return Symboltable::defineVarDefStmt(var, var->type, init->copy(analysis_clone), 
 				       var->varClass, var->isConst);
 }
 
@@ -548,8 +531,8 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 {}
 
 
-Stmt* TypeDefStmt::copy(void) {
-  Type* newType = type->copy();
+Stmt* TypeDefStmt::copyStmt(CloneCallback* analysis_clone) {
+  Type* newType = type->copy(analysis_clone);
   Symboltable::define(type->name);
   return new TypeDefStmt(newType);
 }
@@ -593,7 +576,7 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 {}
 
 
-Stmt* FnDefStmt::copy(void) {
+Stmt* FnDefStmt::copyStmt(CloneCallback* analysis_clone) {
   FnSymbol* fncopy = Symboltable::startFnDef(fn->name);
   // do this first to make sure symbols are defined before used when body is
   // copied
@@ -605,17 +588,17 @@ Stmt* FnDefStmt::copy(void) {
     newformals = nilSymbol;
   }
   return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
-				  fn->body->copyList(), fn->exportMe);
+				  fn->body->copyList(analysis_clone), fn->exportMe);
 }
 
 
-FnDefStmt* FnDefStmt::clone(void) {
+FnDefStmt* FnDefStmt::clone(CloneCallback* clone_callback) {
   FnDefStmt* this_copy = NULL;
-  static int uid = 1; // Unique ID for analysis-cloned functions
+  static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
 
   save_scope = Symboltable::setCurrentScope(this->fn->parentScope);
-  Stmt* stmt_copy = copy();
+  Stmt* stmt_copy = copy(clone_callback);
   if (FnDefStmt* this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
     this_copy->fn->cname =
       glomstrings(3, this_copy->fn->cname, "_clone_", intstring(uid++));
@@ -714,8 +697,8 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 }
 
 
-Stmt* ExprStmt::copy(void) {
-  return new ExprStmt(expr->copy());
+Stmt* ExprStmt::copyStmt(CloneCallback* analysis_clone) {
+  return new ExprStmt(expr->copy(analysis_clone));
 }
 
 
@@ -753,8 +736,8 @@ ReturnStmt::ReturnStmt(Expr* retExpr) :
 }
 
 
-Stmt* ReturnStmt::copy(void) {
-  return new ReturnStmt(expr->copy());
+Stmt* ReturnStmt::copyStmt(CloneCallback* analysis_clone) {
+  return new ReturnStmt(expr->copy(analysis_clone));
 }
 
 
@@ -803,8 +786,8 @@ void BlockStmt::setBlkScope(SymScope* init_blkScope) {
 }
 
 
-Stmt* BlockStmt::copy(void) {
-  return new BlockStmt(body->copyList());
+Stmt* BlockStmt::copyStmt(CloneCallback* analysis_clone) {
+  return new BlockStmt(body->copyList(analysis_clone));
 }
 
 
@@ -848,8 +831,8 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 }
 
 
-Stmt* WhileLoopStmt::copy(void) {
-  return new WhileLoopStmt(isWhileDo, condition->copy(), body->copy());
+Stmt* WhileLoopStmt::copyStmt(CloneCallback* analysis_clone) {
+  return new WhileLoopStmt(isWhileDo, condition->copy(analysis_clone), body->copy(analysis_clone));
 }
 
 
@@ -924,9 +907,9 @@ void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
 }
 
 
-Stmt* ForLoopStmt::copy(void) {
-  return new ForLoopStmt(forall, dynamic_cast<VarSymbol*>(index->copy()), 
-			 domain->copy(), body->copy());
+Stmt* ForLoopStmt::copyStmt(CloneCallback* analysis_clone) {
+  return new ForLoopStmt(forall, dynamic_cast<VarSymbol*>(index->copy(analysis_clone)), 
+			 domain->copy(analysis_clone), body->copy(analysis_clone));
 }
 
 
@@ -1019,8 +1002,8 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
 }
 
 
-Stmt* CondStmt::copy(void) {
-  return new CondStmt(condExpr->copy(), thenStmt->copy(), elseStmt->copy());
+Stmt* CondStmt::copyStmt(CloneCallback* analysis_clone) {
+  return new CondStmt(condExpr->copy(analysis_clone), thenStmt->copy(analysis_clone), elseStmt->copy(analysis_clone));
 }
 
 

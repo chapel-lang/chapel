@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include "baseAST.h"
+#include "analysis.h"
 #include "vec.h"
 
 class Symbol;
@@ -37,10 +38,12 @@ class Type : public BaseAST {
 
   Type(astType_t astType, Expr* init_defaultVal);
   void addName(Symbol* newname);
-  virtual Type* copy(void);
 
   bool isNull(void);
   virtual bool isComplex(void);
+
+  Type* copy(CloneCallback* analysis_clone = NULL);
+  virtual Type* copyType(CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   void traverseDef(Type* _this, Traversal* traversal, bool atTop = true);
@@ -76,7 +79,7 @@ class EnumType : public Type {
   EnumSymbol* valList;
 
   EnumType(EnumSymbol* init_valList);
-  virtual Type* copy(void);
+  virtual Type* copyType(CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
@@ -97,7 +100,7 @@ class DomainType : public Type {
 
   DomainType(Expr* init_expr = nilExpr);
   DomainType(int init_numdims);
-  virtual Type* copy(void);
+  virtual Type* copyType(CloneCallback* analysis_clone);
 
   int rank(void);
 
@@ -110,7 +113,7 @@ class IndexType : public DomainType {
  public:
   IndexType(Expr* init_expr = nilExpr);
   IndexType(int init_numdims);
-  virtual Type* copy(void);
+  virtual Type* copyType(CloneCallback* analysis_clone);
 
   void print(FILE* outfile);
 };
@@ -122,7 +125,7 @@ class ArrayType : public Type {
   Type* elementType;
 
   ArrayType(Expr* init_domain, Type* init_elementType);
-  virtual Type* copy(void);
+  virtual Type* copyType(CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
@@ -141,7 +144,7 @@ class UserType : public Type {
   Type* definition;
 
   UserType(Type* init_definition, Expr* init_defaultVal = nilExpr);
-  virtual Type* copy(void);
+  virtual Type* copyType(CloneCallback* analysis_clone);
 
   bool isComplex(void);
 
@@ -176,7 +179,7 @@ class ClassType : public Type {
 	    SymScope* init_classScope = NULL);
   void addDefinition(Stmt* init_definition);
   void setClassScope(SymScope* init_classScope);
-  virtual Type* copy(void);
+  virtual Type* copyType(CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
@@ -195,7 +198,7 @@ class TupleType : public Type {
 
   TupleType(Type* init_type);
   void addType(Type* additionalType);
-  virtual Type* copy(void);
+  virtual Type* copyType(CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
@@ -205,7 +208,7 @@ class TupleType : public Type {
 class UnresolvedType : public Type {
  public:
   UnresolvedType(char* init_name);
-  virtual Type* copy(void);
+  virtual Type* copyType(CloneCallback* analysis_clone);
   void codegen(FILE* outfile);
 };
 

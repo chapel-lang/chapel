@@ -22,8 +22,8 @@ class ApplyWith : public Traversal {
 void ApplyWith::preProcessStmt(Stmt* stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
-      if (ClassType* ctype = dynamic_cast<ClassType*>(symType->type)) {
-	Stmt* with_replacement = with->getClass()->definition->copyList(ctype->classScope);
+      if (dynamic_cast<ClassType*>(symType->type)) {
+	Stmt* with_replacement = with->getClass()->definition->copyList();
 	stmt->replace(with_replacement);
 	return;
       }
@@ -156,7 +156,7 @@ void RenameOverloaded::preProcessStmt(Stmt* stmt) {
 
     /* for testing clone function, clone foo
     else if (strcmp(fn->cname, "foo") == 0) {
-      fndef->clone();
+      fndef->clone(NULL);
     }
     uncomment above for testing cloning --SJD */
 

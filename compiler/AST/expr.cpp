@@ -90,25 +90,35 @@ Expr::Expr(astType_t astType) :
 {}
 
 
-Expr* Expr::copy(void) {
-  if (!this->isNull()) {
-    INT_FATAL(this, "Expr::copy() not implemented yet");
-  }
-  return nilExpr;
-}
-
-
-Expr* Expr::copyList(void) {
+Expr* Expr::copyList(CloneCallback* analysis_clone) {
   Expr* newExprList = nilExpr;
   Expr* oldExpr = this;
 
   while (oldExpr) {
-    newExprList = appendLink(newExprList, oldExpr->copy());
+    newExprList = appendLink(newExprList, oldExpr->copy(analysis_clone));
 
     oldExpr = nextLink(Expr, oldExpr);
   }
   
   return newExprList;
+}
+
+
+Expr* Expr::copy(CloneCallback* analysis_clone) {
+  Expr* new_expr = copyExpr(analysis_clone);
+
+  if (analysis_clone) {
+    analysis_clone->clone(this, new_expr);
+  }
+  return new_expr;
+}
+
+
+Expr* Expr::copyExpr(CloneCallback* analysis_clone) {
+  if (!this->isNull()) {
+    INT_FATAL(this, "Expr::copy() not implemented yet");
+  }
+  return nilExpr;
 }
 
 
@@ -367,8 +377,8 @@ Literal::Literal(astType_t astType, char* init_str) :
 {}
 
 
-Expr* Literal::copy(void) {
-  INT_FATAL(this, "Literal::copy() not implemented -- unanticipated");
+Expr* Literal::copyExpr(CloneCallback* analysis_clone) {
+  INT_FATAL(this, "Literal::copyExpr() not implemented -- unanticipated");
   return nilExpr;
 }
 
@@ -394,7 +404,7 @@ BoolLiteral::BoolLiteral(char* init_str, bool init_val) :
 {}
 
 
-Expr* BoolLiteral::copy(void) {
+Expr* BoolLiteral::copyExpr(CloneCallback* analysis_clone) {
   return new BoolLiteral(copystring(str), val);
 }
 
@@ -415,7 +425,7 @@ IntLiteral::IntLiteral(char* init_str, int init_val) :
 {}
 
 
-Expr* IntLiteral::copy(void) {
+Expr* IntLiteral::copyExpr(CloneCallback* analysis_clone) {
   return new IntLiteral(copystring(str), val);
 }
 
@@ -451,7 +461,7 @@ FloatLiteral::FloatLiteral(char* init_str, double init_val) :
 {}
 
 
-Expr* FloatLiteral::copy(void) {
+Expr* FloatLiteral::copyExpr(CloneCallback* analysis_clone) {
   return new FloatLiteral(str, val);
 }
 
@@ -475,7 +485,7 @@ void ComplexLiteral::addReal(FloatLiteral* init_real) {
 }
 
 
-Expr* ComplexLiteral::copy(void) {
+Expr* ComplexLiteral::copyExpr(CloneCallback* analysis_clone) {
   return new ComplexLiteral(copystring(str), imagVal, realVal, 
 			    copystring(realStr));
 }
@@ -522,7 +532,7 @@ StringLiteral::StringLiteral(char* init_val) :
 {}
 
 
-Expr* StringLiteral::copy(void) {
+Expr* StringLiteral::copyExpr(CloneCallback* analysis_clone) {
   return new StringLiteral(copystring(str));
 }
 
@@ -555,7 +565,7 @@ Variable::Variable(Symbol* init_var) :
 {}
 
 
-Expr* Variable::copy(void) {
+Expr* Variable::copyExpr(CloneCallback* analysis_clone) {
   return new Variable(var);
 }
 
@@ -589,8 +599,8 @@ UnOp::UnOp(unOpType init_type, Expr* op) :
 }
 
 
-Expr* UnOp::copy(void) {
-  return new UnOp(type, operand->copy());
+Expr* UnOp::copyExpr(CloneCallback* analysis_clone) {
+  return new UnOp(type, operand->copy(analysis_clone));
 }
 
 
@@ -655,8 +665,8 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 }
 
 
-Expr* BinOp::copy(void) {
-  return new BinOp(type, left->copy(), right->copy());
+Expr* BinOp::copyExpr(CloneCallback* analysis_clone) {
+  return new BinOp(type, left->copy(analysis_clone), right->copy(analysis_clone));
 }
 
 
@@ -736,8 +746,8 @@ AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
 }
 
 
-Expr* AssignOp::copy(void) {
-  return new AssignOp(type, left->copy(), right->copy());
+Expr* AssignOp::copyExpr(CloneCallback* analysis_clone) {
+  return new AssignOp(type, left->copy(analysis_clone), right->copy(analysis_clone));
 }
 
 
@@ -784,8 +794,8 @@ SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
 }
 
 
-Expr* SpecialBinOp::copy(void) {
-  return new SpecialBinOp(type, left->copy(), right->copy());
+Expr* SpecialBinOp::copyExpr(CloneCallback* analysis_clone) {
+  return new SpecialBinOp(type, left->copy(analysis_clone), right->copy(analysis_clone));
 }
 
 
@@ -804,8 +814,8 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
 }
 
 
-Expr* MemberAccess::copy(void) {
-  return new MemberAccess(base->copy(), member);
+Expr* MemberAccess::copyExpr(CloneCallback* analysis_clone) {
+  return new MemberAccess(base->copy(analysis_clone), member);
 }
 
 
@@ -870,8 +880,8 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 }
 
 
-Expr* ParenOpExpr::copy(void) {
-  return new ParenOpExpr(baseExpr->copy(), argList->copyList());
+Expr* ParenOpExpr::copyExpr(CloneCallback* analysis_clone) {
+  return new ParenOpExpr(baseExpr->copy(analysis_clone), argList->copyList(analysis_clone));
 }
 
 
@@ -903,8 +913,8 @@ ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
 }
 
 
-Expr* ArrayRef::copy(void) {
-  return new ArrayRef(baseExpr->copy(), argList->copy());
+Expr* ArrayRef::copyExpr(CloneCallback* analysis_clone) {
+  return new ArrayRef(baseExpr->copy(analysis_clone), argList->copy(analysis_clone));
 }
 
 
@@ -952,8 +962,8 @@ Type* FnCall::typeInfo(void) {
 }
 
 
-Expr* FnCall::copy(void) {
-  return new FnCall(baseExpr->copy(), argList->copyList());
+Expr* FnCall::copyExpr(CloneCallback* analysis_clone) {
+  return new FnCall(baseExpr->copy(analysis_clone), argList->copyList(analysis_clone));
 }
 
 
@@ -1011,8 +1021,8 @@ IOCall::IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg) :
 }
 
 
-Expr* IOCall::copy(void) {
-  return new IOCall(ioType, baseExpr->copy(), argList->copyList());
+Expr* IOCall::copyExpr(CloneCallback* analysis_clone) {
+  return new IOCall(ioType, baseExpr->copy(analysis_clone), argList->copyList(analysis_clone));
 }
 
 
@@ -1097,8 +1107,8 @@ Tuple::Tuple(Expr* init_exprs) :
 }
 
 
-Expr* Tuple::copy(void) {
-  return new Tuple(exprs->copyList());
+Expr* Tuple::copyExpr(CloneCallback* analysis_clone) {
+  return new Tuple(exprs->copyList(analysis_clone));
 }
 
 
@@ -1133,7 +1143,7 @@ SizeofExpr::SizeofExpr(Type* init_type) :
 {}
 
 
-Expr* SizeofExpr::copy(void) {
+Expr* SizeofExpr::copyExpr(CloneCallback* analysis_clone) {
   return new SizeofExpr(type);
 }
 
@@ -1175,8 +1185,8 @@ CastExpr::CastExpr(Type* init_newType, Expr* init_expr) :
 }
 
 
-Expr* CastExpr::copy(void) {
-  return new CastExpr(newType, expr->copy());
+Expr* CastExpr::copyExpr(CloneCallback* analysis_clone) {
+  return new CastExpr(newType, expr->copy(analysis_clone));
 }
 
 
@@ -1220,8 +1230,8 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
 }
 
 
-Expr* ReduceExpr::copy(void) {
-  return new ReduceExpr(reduceType->copy(), redDim->copy(), argExpr->copy());
+Expr* ReduceExpr::copyExpr(CloneCallback* analysis_clone) {
+  return new ReduceExpr(reduceType->copy(analysis_clone), redDim->copy(analysis_clone), argExpr->copy(analysis_clone));
 }
 
 
@@ -1262,8 +1272,8 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
 }
 
 
-Expr* SimpleSeqExpr::copy(void) {
-  return new SimpleSeqExpr(lo->copy(), hi->copy(), str->copy());
+Expr* SimpleSeqExpr::copyExpr(CloneCallback* analysis_clone) {
+  return new SimpleSeqExpr(lo->copy(analysis_clone), hi->copy(analysis_clone), str->copy(analysis_clone));
 }
 
 
@@ -1301,7 +1311,7 @@ FloodExpr::FloodExpr(void) :
 {}
 
 
-Expr* FloodExpr::copy(void) {
+Expr* FloodExpr::copyExpr(CloneCallback* analysis_clone) {
   return new FloodExpr();
 }
 
@@ -1321,7 +1331,7 @@ CompleteDimExpr::CompleteDimExpr(void) :
 {}
 
 
-Expr* CompleteDimExpr::copy(void) {
+Expr* CompleteDimExpr::copyExpr(CloneCallback* analysis_clone) {
   return new CompleteDimExpr();
 }
 
@@ -1357,8 +1367,8 @@ void ForallExpr::setIndexScope(SymScope* init_indexScope) {
 }
 
 
-Expr* ForallExpr::copy(void) {
-  return new ForallExpr(domains->copy(), indices->copy(), forallExpr->copy());
+Expr* ForallExpr::copyExpr(CloneCallback* analysis_clone) {
+  return new ForallExpr(domains->copy(analysis_clone), indices->copy(analysis_clone), forallExpr->copy(analysis_clone));
 }
 
 

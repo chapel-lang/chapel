@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "baseAST.h"
 #include "symbol.h"
+#include "analysis.h"
 
 class Stmt;
 class AInfo;
@@ -97,10 +98,12 @@ class Expr : public BaseAST {
   Expr** back;
 
   Expr(astType_t astType);
-  virtual Expr* copy(void);
-  Expr* copyList(void);
 
   bool isNull(void);
+
+  Expr* copyList(CloneCallback* analysis_clone = NULL);
+  Expr* copy(CloneCallback* analysis_clone = NULL);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
@@ -133,7 +136,7 @@ class Literal : public Expr {
   char* str;
 
   Literal(astType_t astType, char* init_str);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   bool isComputable(void);
 
@@ -147,7 +150,7 @@ class BoolLiteral : public Literal {
   bool val;
 
   BoolLiteral(char* init_str, bool init_val);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   bool boolVal(void);
   
@@ -160,7 +163,7 @@ class IntLiteral : public Literal {
   long val;
 
   IntLiteral(char* init_str, int init_val);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   long intVal(void);
 
@@ -175,7 +178,7 @@ class FloatLiteral : public Literal {
   double val;
 
   FloatLiteral(char* init_str, double init_val);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 };
 
 
@@ -188,7 +191,7 @@ class ComplexLiteral : public Literal {
   ComplexLiteral(char* init_str, double init_imag, double init_real = 0.0,
 		 char* init_realStr = "");
   void addReal(FloatLiteral* init_real);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void negateImag(void);
 
@@ -203,7 +206,7 @@ class ComplexLiteral : public Literal {
 class StringLiteral : public Literal {
  public:
   StringLiteral(char* init_val);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   Type* typeInfo(void);
 
@@ -218,7 +221,7 @@ class Variable : public Expr {
   Symbol* var;
 
   Variable(Symbol* init_var);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 
@@ -235,7 +238,7 @@ class UnOp : public Expr {
   Expr* operand;
 
   UnOp(unOpType init_type, Expr* op);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
   bool isComputable(void);
   long intVal(void);
 
@@ -256,7 +259,7 @@ class BinOp : public Expr {
   Expr* right;
 
   BinOp(binOpType init_type, Expr* l, Expr* r);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 
@@ -273,7 +276,7 @@ class AssignOp : public BinOp {
   getsOpType type;
 
   AssignOp(getsOpType init_type, Expr* l, Expr* r);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -284,7 +287,7 @@ class AssignOp : public BinOp {
 class SpecialBinOp : public BinOp {
  public:
   SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   precedenceType precedence(void);
 };
@@ -296,7 +299,7 @@ class MemberAccess : public Expr {
   Symbol* member;
 
   MemberAccess(Expr* init_base, Symbol* init_member);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 
@@ -313,7 +316,7 @@ class ParenOpExpr : public Expr {
   Expr* argList;
 
   ParenOpExpr(Expr* init_base, Expr* init_arg = nilExpr);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 
@@ -325,7 +328,7 @@ class ParenOpExpr : public Expr {
 class ArrayRef : public ParenOpExpr {
  public:
   ArrayRef(Expr* init_base, Expr* init_arg = nilExpr);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   Type* typeInfo();
 
@@ -336,7 +339,7 @@ class ArrayRef : public ParenOpExpr {
 class FnCall : public ParenOpExpr {
  public:
   FnCall(Expr* init_base, Expr* init_arg = nilExpr);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   Type* typeInfo(void);
 
@@ -351,7 +354,7 @@ class IOCall : public FnCall {
   ioCallType ioType;
 
   IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   Type* typeInfo(void);
 
@@ -364,7 +367,7 @@ class Tuple : public Expr {
   Expr* exprs;
 
   Tuple(Expr* init_exprs);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 
@@ -378,7 +381,7 @@ class SizeofExpr : public Expr {
   Type* type;
 
   SizeofExpr(Type* init_type);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
   
@@ -395,7 +398,7 @@ class CastExpr : public Expr {
   Expr* expr;
 
   CastExpr(Type* init_newType, Expr* init_expr);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 
@@ -413,7 +416,7 @@ class ReduceExpr : public Expr {
   Expr* argExpr;
 
   ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, Expr* init_argExpr);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 
@@ -430,7 +433,7 @@ class SimpleSeqExpr : public Expr {
 
   SimpleSeqExpr(Expr* init_lo, Expr* init_hi, 
                 Expr* init_str = new IntLiteral("1", 1));
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 
@@ -444,7 +447,7 @@ class SimpleSeqExpr : public Expr {
 class FloodExpr : public Expr {
  public:
   FloodExpr(void);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -454,7 +457,7 @@ class FloodExpr : public Expr {
 class CompleteDimExpr : public Expr {
  public:
   CompleteDimExpr(void);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -473,7 +476,7 @@ class ForallExpr : public Expr {
 	     Expr* init_forallExpr = nilExpr);
   void setForallExpr(Expr* exp);
   void setIndexScope(SymScope* init_indexScope);
-  virtual Expr* copy(void);
+  virtual Expr* copyExpr(CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);
 

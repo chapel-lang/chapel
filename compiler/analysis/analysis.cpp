@@ -86,6 +86,10 @@ AST* AInfo::copy_node(ASTCopyContext* contex) {
   return NULL;
 }
 
+void CloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
+  
+}
+
 static void
 close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
