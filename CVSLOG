@@ -3641,3 +3641,14 @@ Added files:
 	                                     mvm-seq.chpl mvm-seq.good 
 	                                     test.chpl test.good 
 
+---------------------------------------------------------------------------
+
+06/21/04 17:04:56 -- bradc
+
+Log message:
+	Dang, broke my own build right before checking in!  This
+	should fix it.
+
+Modified files:
+	chapel/compiler/AST/: Makefile 
+
