@@ -3517,3 +3517,14 @@ Modified files:
 	                      stmt.cpp stmt.h symbol.cpp symbol.h 
 	                      symtab.cpp symtab.h 
 
+---------------------------------------------------------------------------
+
+06/18/04 13:02:59 -- bradc
+
+Log message:
+	Lunch break.  Continued populating symboltable.
+
+Modified files:
+	chapel/compiler/AST/: TODO chapel.lex chapel.y link.cpp 
+	                      symbol.cpp symbol.h symtab.cpp symtab.h 
+
