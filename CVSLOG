@@ -14775,3 +14775,14 @@ Added files:
 	chapel/doc/internal/: notes.callbacks notes.functioncalls 
 	                      notes.generics_pointwise notes.todo 
 
+---------------------------------------------------------------------------
+
+01/17/05 15:19:44 -- jplevyak
+
+Log message:
+	Update notes.callbacks to include wrapper interfaces covering
+	promotions.
+
+Modified files:
+	chapel/doc/internal/: notes.callbacks 
+
