@@ -1712,3 +1712,14 @@ Added files:
 	                               module.v tuples.chk tuples.v 
 	                               vec.chk vec.chpl 
 
+---------------------------------------------------------------------------
+
+04/04/05 15:52:28 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix building of concrete types so that instance variables point
+	to the concrete type instead of the abstract one!
+
+Modified files:
+	chapel/compiler/: clone.cpp 
+
