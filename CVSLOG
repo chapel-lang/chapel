@@ -16112,3 +16112,16 @@ Added files:
 	chapel/test/trivial/deitz/: test_a_few_functions.chpl 
 	                            test_a_few_functions.good 
 
+---------------------------------------------------------------------------
+
+02/01/05 14:42:11 -- jplevyak
+
+Log message:
+	Cleanup mapping of types in analysis.cpp
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good enumarray.good 
+	                                  formatoutput.good 
+	                                  protoast_test.good 
+
