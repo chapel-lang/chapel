@@ -4,7 +4,7 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 
 all:
 	@echo No default target defined
-	@echo Try making 'compiler', 'runtime', 'test', or 'third-party'
+	@echo Try making 'compiler', 'runtime', 'test', 'third-party', or 'clean'
 
 compiler: FORCE
 	cd compiler && $(MAKE)
@@ -17,5 +17,10 @@ test: FORCE
 
 third-party: FORCE
 	cd third-party && $(MAKE)
+
+clean: FORCE
+	cd compiler && $(MAKE) clean
+	cd runtime && $(MAKE) clean
+	cd third-party && $(MAKE) clean
 
 FORCE:
