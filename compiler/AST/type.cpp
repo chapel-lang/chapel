@@ -640,6 +640,7 @@ bool ArrayType::needsInit(void) {
 
 void ArrayType::generateInit(FILE* outfile, VarSymbol* sym) {
   fprintf(outfile, "_INIT_ARRAY(");
+  fprintf(outfile, "%d, ", domainType->numdims);
   sym->codegen(outfile);
   fprintf(outfile, ", ");
   domain->codegen(outfile);

@@ -9,10 +9,9 @@ typedef struct __arr_perdim {
   int blk;
 } _arr_perdim;
 
-#define _INIT_ARRAY(arr, dom, elemtype) \
+#define _INIT_ARRAY(rank, arr, dom, elemtype) \
   { \
     int d; \
-    const int rank = 1; \
     arr.elemsize = sizeof(elemtype); \
     arr.domain = &dom; \
     arr.dim_info[rank-1].off = dom.dim_info[rank-1].lo; \
