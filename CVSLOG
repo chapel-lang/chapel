@@ -8937,3 +8937,96 @@ Log message:
 Removed files:
 	./: .cvsignore 
 
+---------------------------------------------------------------------------
+
+10/15/04 17:24:37 -- bradc
+
+Log message:
+	Increased the use of modules in the compiler by creating
+	a module per file at the outset of compilation (if all
+	of the files use the .chpl extension), and then passing
+	the resulting list of modules to all subsequent passes.
+	Haven't actually tested this for multiple files yet (and
+	it wouldn't necessarily do anything useful even if it
+	did all work), but I believe the structure is what we
+	want going forward (with the caveat that a file may
+	contain multiple modules, so the one module per file
+	assumption is currently a limited one).
+	
+	Some changes that are folded in with this:
+	
+	* all files are opened before any are processed and an
+	  error message is generated if there are any problems.
+	  Inserted a test to guard this behavior.
+	
+	* moved all the createAST.cpp code either into parser.cpp,
+	  a new file that parses a .chpl file, or into the
+	  filesToAST pass.
+	
+	* made all passes and traversals take a Module* list
+	  rather than a Stmt* list.  The only one of these
+	  that I think has an open question is that the
+	  RunAnalysis pass that calls John's analysis code
+	  passes a filename to that routine, so it wasn't
+	  clear what to do in the presence of multiple files.
+	  For now, I just pass in the first filename
+	  arbitrarily.  To the extent that I looked at this,
+	  it seems to be used mostly to create new filenames
+	  (for dumps and graphs), so maybe this is acceptable?
+
+Modified files:
+	chapel/compiler/AST/: TODO module.cpp 
+	chapel/compiler/include/: driver.h module.h 
+	chapel/compiler/main/: Makefile.share driver.cpp runpasses.cpp 
+	chapel/compiler/parser/: Makefile.share 
+	chapel/compiler/passes/: Makefile.share codegen.cpp codegen.h 
+	                         filesToAST.cpp filesToAST.h pass.h 
+	                         printProgram.cpp printProgram.h 
+	                         printSymtab.cpp printSymtab.h 
+	                         runAnalysis.cpp runAnalysis.h 
+	chapel/compiler/traversals/: checkBackLinks.cpp checkBackLinks.h 
+	                             checkIDs.cpp checkIDs.h 
+	                             traversal.cpp traversal.h 
+	chapel/test/flowanalysis/newast/: .cvsignore arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  shift_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+Added files:
+	chapel/compiler/include/: parser.h 
+	chapel/compiler/main/: runpasses.h 
+	chapel/compiler/parser/: parser.cpp 
+	chapel/compiler/passes/: pass.cpp 
+	chapel/test/compflags/bradc/missinginfile/: COMPOPTS test.chpl 
+	                                            test.good 
+Removed files:
+	chapel/compiler/include/: createAST.h 
+	chapel/compiler/main/: createAST.cpp 
+
