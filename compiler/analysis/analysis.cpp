@@ -724,14 +724,10 @@ gen_if1(BaseAST *ast) {
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
-      //Sym *fn = s->parentFn->asymbol;
+      Sym *fn = s->parentFn->asymbol;
       if (!s->expr->isNull()) {
 	if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
-	if (!fnsym->ret)
-	  fnsym->ret = s->expr->ainfo->rval;
-	else
-	  show_error("only one return currently allowed", s->ainfo);
-	//if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
+	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
       }
       Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
       c->ast = s->ainfo;
@@ -1118,10 +1114,6 @@ static int
 gen_fun(FnDefStmt *f) {
   Sym *fn = f->fn->asymbol;
   Code *body = 0;
-  if (!fn->ret) {
-    fn->ret = new_sym();
-    fn->ret->ast = f->ainfo;
-  }
   if1_gen(if1, &body, f->fn->body->ainfo->code);
   AInfo *ast = f->ainfo;
   if1_move(if1, &body, sym_null, fn->ret, ast);
@@ -1160,6 +1152,9 @@ build_function(FnDefStmt *f) {
   s->type_sym = s;
   s->cont = new_sym();
   s->cont->ast = f->ainfo;
+  s->ret = new_sym();
+  s->ret->ast = f->ainfo;
+  s->ret->is_lvalue = 1;
   s->labelmap = new LabelMap;
   if (f->fn->scope->type == SCOPE_CLASS) {
     s->self = new_sym("self"); // hack
