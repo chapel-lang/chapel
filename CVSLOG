@@ -9758,3 +9758,47 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+11/16/04 16:12:01 -- deitz
+
+Log message:
+	Removed operators &&, ||, !, and % from the compiler, replacing them
+	with "and", "or", "not", and "mod" as per the language spec.  Note mod
+	is not in the language spec.  Updated some test cases to reflect this
+	change.
+	
+	Eliminated the last two reduce-reduce errors in the parser.  These had
+	to do with problems parsing index variables in domains.  They are now
+	parsed as expressions and it is made sure that they are just tuples or
+	variables.  For example, [i,j in D] and [(i,j) in D] are legal, but
+	[i+j in D] is not.
+
+Modified files:
+	chapel/compiler/AST/: symtab.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/test/Samples/ex1-astlog/: astlog1.good 
+	chapel/test/Samples/ex2-notest/: illegal.chpl 
+	chapel/test/flowanalysis/newast/: bitwise_ops.chpl 
+	                                  bitwise_ops.good 
+	                                  compSampler.chpl 
+	                                  conditional.chpl 
+	                                  conditional.good 
+	                                  logical_and.chpl 
+	                                  logical_and.good 
+	                                  logical_not.chpl 
+	                                  logical_not.good mod.chpl 
+	                                  mod.good 
+	chapel/test/lowlevelcg/jplevyak/: bitwise_ops.chpl 
+	                                  bitwise_ops.good 
+	chapel/test/trivial/bradc/: conditional.chpl conditional.good 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq.chpl 
+	chapel/test/trivial/shannon/: bitwise_ops.chpl bitwise_ops.good 
+	                              compSampler.chpl compSampler.good 
+	                              logical_and.chpl logical_and.good 
+	                              logical_not.chpl logical_not.good 
+	                              mod.chpl mod.good 
+	                              readWriteBool.chpl 
+
