@@ -12987,3 +12987,26 @@ Modified files:
 	chapel/compiler/include/: expr.h 
 	chapel/compiler/traversals/: methodsToFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+12/27/04 14:33:22 -- deitz
+
+Log message:
+	Added a clone function
+	
+	  FnDefStmt* FnDefStmt::clone(void)
+	
+	that clones a function definition.  This function can be called during
+	analysis to create a cloned function where necessary.  As a first test
+	that I'd like to get working, we can look at
+	
+	  test/types/type_variables/deitz/future/test_clone_function4.chpl
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/traversals/: cleanup.cpp 
+Added files:
+	chapel/test/types/type_variables/deitz/future/: 
+	                                                test_clone_function4.chpl 
+
