@@ -629,7 +629,7 @@ void ClassType::addDefinition(Stmt* init_definition) {
     }
     else {
       VarSymbol* this_insert = new VarSymbol("this", this);
-      Symboltable::defineInScope(this_insert, newFunSym->scope);
+      Symboltable::defineInScope(this_insert, Symboltable::getCurrentScope());
       VarDefStmt* body1 = new VarDefStmt(this_insert, nilExpr);
       ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
       body1->append(body2);
