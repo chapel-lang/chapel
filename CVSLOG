@@ -5516,3 +5516,26 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/20/04 14:16:20 -- bradc
+
+Log message:
+	Two very minor changes:
+	
+	* made it so that when the compiler is built, it is copied from
+	the platform-specific subdirectory to the compiler directory
+	(rather than being symbolically linked).  This was causing
+	shannon and me some grief since our platform-specific
+	directories are stored on /ptmp which isn't exported.
+	
+	* added no-op statements to the compiler and a test for them.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: chapel.y stmt.cpp 
+	chapel/runtime/include/: stdchpl.h 
+Added files:
+	chapel/runtime/include/: chplboolean.h 
+	chapel/test/trivial/bradc/: noop.chpl noop.good 
+
