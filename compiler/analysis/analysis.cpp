@@ -1001,19 +1001,17 @@ gen_if1(BaseAST *ast) {
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
       if1_add_send_arg(if1, send, sym_primitive);
-
       switch (s->ioType) {
-      case IO_WRITELN:
-	if1_add_send_arg(if1, send, writeln_symbol);
-	break;
-      case IO_WRITE:
-	if1_add_send_arg(if1, send, write_symbol);
-	break;
-      case IO_READ:
-	if1_add_send_arg(if1, send, read_symbol); 
-	break;
+	case IO_WRITELN:
+	  if1_add_send_arg(if1, send, writeln_symbol);
+	  break;
+	case IO_WRITE:
+	  if1_add_send_arg(if1, send, write_symbol);
+	  break;
+	case IO_READ:
+	  if1_add_send_arg(if1, send, read_symbol); 
+	  break;
       }
-
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
@@ -1058,20 +1056,10 @@ gen_if1(BaseAST *ast) {
       CastExpr *s = dynamic_cast<CastExpr *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
-      Expr* a = s->expr;
-      if1_gen(if1, &s->ainfo->code, a->ainfo->code);
-#if 0
-      Code *send = if1_send1(if1, &s->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
+      Code *send = if1_send(if1, &s->ainfo->code, 4, 1, sym_primitive, cast_symbol, 
+			    s->newType->asymbol->type_sym, s->expr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
-      if1_add_send_arg(if1, send, s->newType->asymbol->type_sym);
-      if1_add_send_arg(if1, send, a->ainfo->rval);
-      if1_add_send_result(if1, send, s->ainfo->rval);
-#else
-      Code *send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, cast_symbol, 
-			    s->newType->asymbol->type_sym, s->ainfo->rval);
-      if1_add_send_arg(if1, send, a->ainfo->rval);
-      send->ast = s->ainfo;
-#endif
       break;
     }
     case EXPR_REDUCE: {
@@ -1384,9 +1372,6 @@ write_transfer_function(PNode *pn, EntrySet *es) {
   update_in(result, make_abstract_type(sym_int));
 }
 
-// John:  I copied this directly from the 
-// write_transfer_function above, but don't have any 
-// confidence that it's correct.  shannon
 static void
 read_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
