@@ -1165,3 +1165,62 @@ Modified files:
 	chapel/third-party/boehmgc/: Makefile 
 	chapel/third-party/dparser/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/03/22 17:26:17 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	This is a big checkin.
+	
+	1. Added graphing of internal data structures.
+	2. Added interprocedural constant propogation
+	3. The HTML dump and graphing show reaching interprocedural constants.
+	Currently I am not limiting these... when the overhead get's too high
+	I'll get around to writing the code to convert them into "some integer"
+	which is already supported.
+	4. Changed the way assignment works so that SSU form is useful (I was using
+	references for all assignment).
+	5. Added support for "inout" parameters, currently used for the
+	(overloaded) make-reference operator.  This is indicated by
+	putting a 'var' before the parameter.
+	6. Added some support for 'const' to the Chapel grammar.  Now the AST is
+	decorated with 'constness'.
+	7. Added 'let' to the Chapel grammar.  This permits simple bindings instead
+	of just non-SSA 'var' style bindings.  We can remove this if everyone
+	hates it, but it is useful for testing.
+	
+	Graphing
+	
+	-G turns on graphing, graphs are put in the log directory
+	two formats are supported, VCG and GraphViz.
+	
+	VCG is interactive, and let's you collapse and limit the
+	graph dynamically.  It is described and the source code
+	is available at:
+	
+	http://rw4.cs.uni-sb.de/users/sander/html/gsvcg1.html
+	
+	GraphViz is static, but it produces somewhat more pleasing
+	files and outputs to postscript (amoung other formats).
+	
+	It is described and the source code is available at:
+	
+	http://www.research.att.com/sw/tools/graphviz/
+	
+	The output defaults to VCG, GraphViz is supported
+	by --graphviz.
+	
+	Currently you can output the AST, the CFG, the SSU graph and
+	the flow variables.
+
+Modified files:
+	chapel/compiler/: Makefile TODO ast.cpp ast.h ast_cf.cpp chpl.g 
+	                  clone.cpp code.h driver.cpp driver.h dump.cpp 
+	                  fa.cpp fa.h fa_extras.cpp geysa.h if1.cpp 
+	                  parse.cpp parse.h prelude.chpl prelude.v 
+	                  prim.cpp prim_data.dat sym.h v.g var.h vec.cpp 
+	                  vec.h 
+Added files:
+	chapel/compiler/: graph.cpp graph.h 
+	chapel/compiler/samples/: ref.v tuples.v 
+
