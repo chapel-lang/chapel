@@ -129,9 +129,8 @@ AInfo::visible_functions(Sym *arg0) {
   else
     s = dynamic_cast<Stmt *>(this->xast);
   ScopeLookupCache *sym_cache = 0;
-
-  Symbol *symbol;
-  SymScope* scope;
+  Symbol *symbol = 0;
+  SymScope* scope = 0;
   if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(s->parentSymbol)) {
     scope = mod->modScope;
   } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(s->parentSymbol)) {
@@ -140,6 +139,7 @@ AInfo::visible_functions(Sym *arg0) {
   else {
     INT_FATAL(s, "Unexpected case");
   }
+#if 0
   symbol = Symboltable::lookupFromScope(name, scope);
   Symbol *internal_symbol = Symboltable::lookupInScope(name, internalScope);
   if (!symbol && !internal_symbol)
@@ -165,11 +165,21 @@ AInfo::visible_functions(Sym *arg0) {
       }
     }
   }
+#else
+  sym_cache = scope->lookupCache;
+  if (sym_cache && (v = sym_cache->get(name))) 
+    return v;
+  Vec<FnSymbol *> *fss = scope->visibleFunctions.get(name);
+  v = new Vec<Fun *>;
+  if (fss)
+    forv_Vec(FnSymbol, x, *fss)
+      v->set_add(x->asymbol->sym->fun);
+#endif
   Vec<Fun *> *universal = universal_lookup_cache.get(name);
   if (universal)
     v->set_union(*universal);
   if (symbol && !sym_cache)
-    sym_cache = symbol->parentScope->lookupCache = new ScopeLookupCache;
+    sym_cache = scope->lookupCache = new ScopeLookupCache;
   if (sym_cache)
     sym_cache->put(name, v);
   return v;
