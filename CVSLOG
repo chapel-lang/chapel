@@ -6118,3 +6118,34 @@ Modified files:
 	chapel/compiler/: TODO analysis.cpp if1.cpp parse_ast.cpp 
 	                  prim_data.dat 
 
+---------------------------------------------------------------------------
+
+08/27/04 17:47:08 -- bradc
+
+Log message:
+	Took another pass at cleaning up the Traversal mechanism, motivated by
+	the work in the next paragraph.  Rather than continuing to document
+	each incremental change, let me wait until I've converged slightly
+	better, and I'll document it at that point.
+	
+	Used the new Traversal mechanism to write a GetStuff traversal which
+	will walk around the AST grabbing Stmts/Exprs/Symbols/Types as
+	directed by the client.  This is intended as a replacement of John's
+	GetXXXX() routines if I can get them to a state which he finds
+	reasonable and useful.  Again, I'll hold off on documenting this until
+	I'm more sure that we've reached that reasonable state (it's currently
+	not in use, and I'm checking it in simply as a sanity check before the
+	weekend).
+	
+	Turned GC on for a few AST classes for which it had slipped through
+	the cracks.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: Makefile.share baseAST.cpp expr.cpp 
+	                      link.cpp link.h stmt.cpp symbol.cpp 
+	                      symscope.h traversal.cpp traversal.h 
+	                      type.cpp 
+Added files:
+	chapel/compiler/AST/: getstuff.cpp getstuff.h testGetStuff.cpp 
+
