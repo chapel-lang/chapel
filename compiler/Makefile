@@ -27,7 +27,7 @@ VERFLAGS = -DMAJOR_VERSION=$(MAJOR) -DMINOR_VERSION=$(MINOR) -DBUILD_VERSION=$(B
 # source languages accepted by the tool and settings based on them
 #
 LANG_V = 1
-#LANG_CHPL = 1
+LANG_CHPL = 1
 
 ifdef LANG_V
 LANGS += v
@@ -64,6 +64,7 @@ GEYSA_SRCS = \
 	driver.cpp \
 	fa.cpp \
 	fun.cpp \
+	grammar.cpp \
 	if1.cpp \
 	log.cpp \
 	parse.cpp \

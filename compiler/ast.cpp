@@ -1146,12 +1146,12 @@ ast_gen_if1(IF1 *i, Vec<AST *> &av) {
       return -1;
   finalize_types(i);
   forv_AST(a, av)
+    if (ast_constant_fold(i, a) < 0)
+      return -1;
+  forv_AST(a, av)
     if (build_functions(i, a, user_mod) < 0) 
       return -1;
   build_modules(i);
   build_init(i);
-  forv_AST(a, av)
-    if (ast_constant_fold(i, a) < 0)
-      return -1;
   return 0;
 }

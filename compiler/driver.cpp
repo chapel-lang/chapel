@@ -69,7 +69,7 @@ help(ArgumentState *arg_state, char *arg_unused) {
   char ver[30];
   get_version(ver);
   fprintf(stderr, "%s Version %s ", program_name, ver);  
-  fprintf(stderr, "Copyright (c) 1994-2003 John Plevyak\n");  
+  fprintf(stderr, "Copyright (c) 1994-2004 John Plevyak\n");  
   usage(arg_state, arg_unused);
 }
 

@@ -95,4 +95,7 @@ class Sym : public gc {
 
 Sym *unalias_type(Sym *s);
 
+int pp(Immediate &imm, Sym *type);
+int print(FILE *fp, Immediate &imm, Sym *type);
+
 #endif

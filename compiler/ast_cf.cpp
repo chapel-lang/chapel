@@ -174,7 +174,7 @@ cast(Sym *s, Sym *t, Immediate *im) {
       }
 
 static int
-fold_constant(IF1 *i, AST *ast) {
+fold_constant(IF1 *i, AST *ast, char *foldstr) {
   Sym *a, *b = 0;
   Sym *res_type;
   Immediate im1, im2;
@@ -234,14 +234,17 @@ fold_constant(IF1 *i, AST *ast) {
     case P_prim_postdec: DO_FOLD1(--); break;
     default: return 0;
   }
+  ast->sym->constant = foldstr;
+  ast->sym->in = 0;
   ast->sym->type = res_type;
+  ast->kind = AST_const;
   return 0;
 }
 
-int
-ast_constant_fold(IF1 *i, AST *ast) {
+static int
+ast_constant_fold_internal(IF1 *i, AST *ast, char *foldstr) {
   forv_AST(a, *ast)
-    if (ast_constant_fold(i, a) < 0)
+    if (ast_constant_fold_internal(i, a, foldstr) < 0)
       return -1;
   switch (ast->kind) {
     case AST_const: {
@@ -291,11 +294,16 @@ ast_constant_fold(IF1 *i, AST *ast) {
     case AST_op: {
       ast->prim = i->primitives->find(ast);
       if (ast->prim)
-	if (fold_constant(i, ast) < 0)
+	if (fold_constant(i, ast, foldstr) < 0)
 	  return -1;
       break;
     }
     default: break;
   }
   return 0;
+}
+
+int
+ast_constant_fold(IF1 *i, AST *ast) {
+  return ast_constant_fold_internal(i, ast, if1_cannonicalize_string(i, "< folded >"));
 }

@@ -1,113 +1,12 @@
 /*
-  Copyright 2003 John Plevyak, All Rights Reserved
+  Copyright 2003-4 John Plevyak, All Rights Reserved, see COPYRIGHT file
 */
 
 %<
 #include "geysa.h"
-%>
-
-%<
-
-#define internal_D_Sym(_x) \
-  char *_x##_start = #_x; \
-  char *_x##_end = _x##_start + sizeof(#_x) - 1
-
-internal_D_Sym(__module);
-
-#define find_internal(_s, _x) find_D_Sym(_s, _x##_start, _x##_end)
-#define new_internal(_s, _x) NEW_D_SYM(_s, _x##_start, _x##_end)
 
 extern D_ParserTables parser_tables_v;
 extern D_Symbol d_symbols_v[];
-
-static char *
-constant_type(D_ParseNode &pn) {
-  D_ParseNode *child = d_get_child(&pn, 0);
-  while (d_symbols_v[child->symbol].kind != D_SYMBOL_REGEX && 
-	 d_symbols_v[child->symbol].kind != D_SYMBOL_NTERM)
-    child = d_get_child(child, 0);
-  return d_symbols_v[child->symbol].name;
-}
-
-D_Sym *
-new_sym(Globals *g, char *s, char *e, D_Scope **scope, int scope_kind = D_SCOPE_INHERIT) {
-  D_Sym *sym = NEW_D_SYM(*scope, s, e);
-  if (scope_kind == D_SCOPE_INHERIT)
-    scope_kind = (*scope)->kind;
-  if (scope_kind == D_SCOPE_SEQUENTIAL)
-    *scope = enter_D_Scope(*scope, *scope);
-  return sym;
-}
-
-void
-in_module(Globals *g, char *s, char *e, D_Scope **scope) {
-  D_Scope *global = global_D_Scope(*scope);
-  D_Sym *sym = find_D_Sym(global, s, e);
-  if (!sym)
-    sym = NEW_D_SYM(global, s, e);
-  if (sym->user.scope)
-    *scope = enter_D_Scope(*scope, sym->user.scope);
-  else {
-    *scope = sym->user.scope = new_D_Scope(global);
-    D_Sym *s = new_internal(*scope, __module);
-    s->user.sym = sym;
-  }
-}
-
-AST *
-loop_AST(D_ParseNode &loop, D_ParseNode &cond, D_ParseNode *before, D_ParseNode *after, D_ParseNode &body) {
-  AST *b = body.user.ast;
-  if (after) {
-    b = new AST(AST_block);
-    b->set_location(&body);
-    b->add(body.user.ast);
-    b->add(after->user.ast);
-  }
-  AST *a = new AST(AST_loop);
-  a->set_location(&loop);
-  if (before && before != &body)
-    a->add(before->user.ast);
-  if (before != &body)
-    a->add(new AST(AST_loop_cond, &cond));
-  a->add(b);
-  if (before == &body)
-    a->add(new AST(AST_loop_cond, &cond));
-  return NULL;
-}
-
-AST *
-symbol_AST(IF1 *if1, D_ParseNode *pn) {
-  AST *a = new AST(AST_const, pn); 
-  char *s;
-  int l = pn->end - pn->start_loc.s;
-  if (!l)
-    s = "#^^";
-  else {
-    s =  (char*)MALLOC(l + 1);
-    memcpy(s+1, pn->start_loc.s, l);
-    s[0] = '#';
-  }
-  a->string = if1_cannonicalize_string(if1, s);
-  a->constant_type = "symbol";
-  return a;
-}
-
-AST *
-op_AST(IF1 *if1, D_ParseNode &pn) {
-  AST *op = new AST(AST_op);
-  op->set_location(&pn);
-  for (int i = 0; i < d_get_number_of_children(&pn); i++) {
-    D_ParseNode *c = d_get_child(&pn, i);
-    if (c->user.ast)
-      op->add(c->user.ast);
-    else {
-      op->op_index = i;
-      op->add(symbol_AST(if1, c));
-    }
-  }
-  return op;
-}
-
 %>
 
 program : [ ${scope}->kind = D_SCOPE_RECURSIVE; ] top_level_statement* 
@@ -515,7 +414,7 @@ constant : (character | int8 | uint8 | int16 | uint16 |
 { 
   $$.ast = new AST(AST_const, &$n); 
   $$.ast->string = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
-  $$.ast->constant_type = constant_type($n);
+  $$.ast->constant_type = constant_type($n, d_symbols_v);
   if ($#1)
     $$.ast->builtin = if1_cannonicalize_string(
       $g->i, ${child 1, 0, 1}->start_loc.s+1, ${child 1, 0, 1}->end-1);
@@ -546,7 +445,7 @@ anyint	 : character | int8 | uint8 | int16 | uint16 |
 { 
   $$.ast = new AST(AST_const); 
   $$.ast->string = if1_cannonicalize_string($g->i, $n0.start_loc.s, $n0.end);
-  $$.ast->constant_type = constant_type($n);
+  $$.ast->constant_type = constant_type($n, d_symbols_v);
 };
 
 base_float ::= "(([0-9]+.[0-9]*|[0-9]*.[0-9]+)([eE][\-\+]?[0-9]+)?|[0-9]+[eE][\-\+]?[0-9]+)";

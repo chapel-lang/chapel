@@ -154,32 +154,33 @@ OpenHash<C, AnOpenHashFns>::get(C c) {
 
 inline char *
 StringOpenHash::cannonicalize(char *s, char *e) {
-  if (e) {
-    uint h = 0;
-    char *a = s;
+  uint h = 0;
+  char *a = s;
+  if (e)
     while (a != e) h = h * 27 + (uint8)*a++;  // 31 changed to 27, to avoid prime2 in vec.cpp
-    List<char*> *l;
-    MapElem<uint,List<char*> > me(h, (char*)0);
-    MapElem<uint,List<char*> > *x = set_in(me);
-    if (x) {
-      l = &x->value;
-      forc_List(char *, x, *l) {
-	a = s;
-	char *b = x->car;
-	while (1) {
-	  if (!*b) {
-	    if (a == e)
-	      return x->car;
-	    break;
-	  }
-	  if (a >= e || *a != *b)
-	    break;
-	  a++; b++;
+  else
+    while (*a) h = h * 27 + (uint8)*a++;  // 31 changed to 27, to avoid prime2 in vec.cpp
+  List<char*> *l;
+  MapElem<uint,List<char*> > me(h, (char*)0);
+  MapElem<uint,List<char*> > *x = set_in(me);
+  if (x) {
+    l = &x->value;
+    forc_List(char *, x, *l) {
+      a = s;
+      char *b = x->car;
+      while (1) {
+	if (!*b) {
+	  if (a == e)
+	    return x->car;
+	  break;
 	}
+	if (a >= e || *a != *b)
+	  break;
+	a++; b++;
       }
     }
-    s = dupstr(s, e);
   }
+  s = dupstr(s, e);
   return put(s);
 }
 

@@ -111,6 +111,7 @@ void myassert();
 #include "clone.h"
 #include "log.h"
 #include "cg.h"
+#include "grammar.h"
 
 void get_version(char *);
 
