@@ -723,8 +723,11 @@ gen_vardef(BaseAST *a) {
   } else
     s->is_var = 1;
   if (!def->init->isNull()) {
-    if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
-    if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->sym, def->ainfo);
+    if (!s->type || !s->type->num_kind) {
+      if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
+      if1_move(if1, &def->ainfo->code, def->init->ainfo->rval, def->ainfo->sym, def->ainfo);
+    } else
+      s->is_external = 1; // hack
   } else if (!s->is_var)
     return show_error("missing initializer", def->ainfo);
   else if (!s->type && !s->must_implement)
