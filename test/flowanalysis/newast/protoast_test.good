@@ -1,4 +1,4 @@
-::A(protoast_test.chpl:7) ( (protoast_test.chpl:7) )
+::A(protoast_test.chpl:7) ( nilSymbol (protoast_test.chpl:7) )
 ::D(protoast_test.chpl:5) ( Domain (internal_prelude.chpl:13) )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
@@ -8,7 +8,8 @@
 ::i(protoast_test.chpl:9) ( Index (internal_prelude.chpl:1) )
 ::main ( main )
 ::n(protoast_test.chpl:3) ( int64 )
-::this ( (protoast_test.chpl:7) )
+::nilSymbol(protoast_test.chpl:7) ( nilSymbol )
+::this ( nilSymbol (protoast_test.chpl:7) )
 ::void ( void )
 function __init_internal_prelude internal_prelude.chpl:24
 function __init_prelude prelude.chpl:54

@@ -1,4 +1,4 @@
-::A(formatoutput.chpl:8) ( (formatoutput.chpl:8) )
+::A(formatoutput.chpl:8) ( nilSymbol (formatoutput.chpl:8) )
 ::D(formatoutput.chpl:7) ( Domain (internal_prelude.chpl:13) )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_formatoutput(formatoutput.chpl:17) ( __init_formatoutput )
@@ -7,7 +7,8 @@
 ::i(formatoutput.chpl:10) ( Index (internal_prelude.chpl:1) )
 ::i(internal_prelude.chpl:5) ( Index (internal_prelude.chpl:1) )
 ::main ( main )
-::this ( (formatoutput.chpl:8) )
+::nilSymbol(formatoutput.chpl:8) ( nilSymbol )
+::this ( nilSymbol (formatoutput.chpl:8) )
 ::void ( void )
 ::x(formatoutput.chpl:1) ( int64 )
 function __init_formatoutput formatoutput.chpl:17

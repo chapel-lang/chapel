@@ -1,4 +1,4 @@
-::A(domarr.chpl:6) ( (domarr.chpl:6) )
+::A(domarr.chpl:6) ( nilSymbol (domarr.chpl:6) )
 ::Mat(domarr.chpl:4) ( Domain (internal_prelude.chpl:13) )
 ::__init_domarr(domarr.chpl:12) ( __init_domarr )
 ::__init_entryPoint ( __init_entryPoint )
@@ -11,7 +11,8 @@
 ::m(domarr.chpl:1) ( int64 )
 ::main ( main )
 ::n(domarr.chpl:2) ( int64 )
-::this ( (domarr.chpl:6) )
+::nilSymbol(domarr.chpl:6) ( nilSymbol )
+::this ( nilSymbol (domarr.chpl:6) )
 ::void ( void )
 function __init_domarr domarr.chpl:12
 function __init_internal_prelude internal_prelude.chpl:24

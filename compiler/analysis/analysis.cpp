@@ -433,9 +433,8 @@ new_sym(char *name = 0, int global = 0) {
 
 static void
 map_type(Type *t) {
-  t->asymbol = new_ASymbol(t->name);
+  t->asymbol = new_ASymbol(t->name->name);
   t->asymbol->xsymbol = t;
-  set_global_scope(t->asymbol->sym);
 }
 
 static void
@@ -483,13 +482,11 @@ map_symbols(Vec<BaseAST *> &syms) {
       }
       symbols++;
       if (verbose_level > 1 && sym->name)
-        printf("map_symbols: found Symbol '%s'\n", sym->name);
+	printf("map_symbols: found Symbol '%s'\n", sym->name);
     } else {
       Type *t = dynamic_cast<Type *>(s);
       if (t) {
 	map_type(t);
-	t->asymbol = new_ASymbol(t->name);
-	t->asymbol->xsymbol = t;
 	types++;
       } else {
 	Expr *e = dynamic_cast<Expr *>(s);
@@ -501,7 +498,7 @@ map_symbols(Vec<BaseAST *> &syms) {
 	  Stmt *st = dynamic_cast<Stmt *>(s);
 	  st->ainfo = new AInfo;
 	  st->ainfo->xast = s;
-	  stmts++;
+	  stmts++; 
 	}
       }
     }
