@@ -28,7 +28,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
   Symbol* parent;
 
   SymScope* tmp = Symboltable::getCurrentScope();
-  while (tmp && tmp->symContext->isNull()) {
+  while (tmp && !tmp->symContext) {
     tmp = tmp->parent;
   }
   //  Symbol* tmp = stmtParent.v[stmtParent.n-1];
@@ -40,7 +40,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
   // SJD: HACK for FnDefStmts of secondary methods
   bool ignore = false;
   if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(stmt)) {
-    if (!fn_def_stmt->fn->classBinding->isNull()) {
+    if (fn_def_stmt->fn->classBinding) {
       ignore = true;
     }
   }
@@ -262,9 +262,9 @@ static void verifySymbolDefPoint(Symbol* sym) {
       INT_FATAL(sym, "Incorrect LetExpr defPoint "
 		"for symbol '%s'", sym->name);
     }
-    else if (defPoint->isNull()) {
+    else if (!defPoint) {
       if (sym->parentScope->type != SCOPE_INTRINSIC) {
-	INT_FATAL(sym, "Nil defPoint for symbol '%s'", sym->name);
+	INT_FATAL(sym, "No defPoint for symbol '%s'", sym->name);
       }
     }
     else {

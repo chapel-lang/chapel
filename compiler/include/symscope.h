@@ -45,7 +45,7 @@ class SymScope : public gc {
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(scopeType init_type, int init_level = 0);
-  void setContext(Stmt* stmt, Symbol* sym = nilSymbol, Expr* expr = nilExpr);
+  void setContext(Stmt* stmt, Symbol* sym = NULL, Expr* expr = NULL);
 
   void traverse(SymtabTraversal* traversal);
 

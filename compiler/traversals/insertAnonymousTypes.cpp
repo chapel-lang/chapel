@@ -15,14 +15,14 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(stmt, "Array type expected");
   }
 
-  if (!array_type->symbol->isNull()) {
+  if (array_type->symbol) {
     INT_FATAL(stmt, "Array type already resolved");
   }
 
   SymScope* saveScope;
   /** SJD: Why is SCOPE_INTRINSIC not internal? **/
   if (array_type->elementType->symbol->parentScope->isInternal() ||
-      array_type->elementType->symbol->defPoint->isNull()) {
+      !array_type->elementType->symbol->defPoint) {
     saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   }
   else {
@@ -30,7 +30,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
   }
   if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
     if (Variable* var = dynamic_cast<Variable*>(forall->domains)) {
-      if (!var->next->isNull()) {
+      if (var->next) {
 	INT_FATAL(stmt, "Multiple domains not handled in declarations");
       }
       if (DomainType* domain_type = dynamic_cast<DomainType*>(var->var->type)) {
@@ -84,7 +84,7 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(*type, "Tuple type expected");
   }
 
-  if (!tuple_type->symbol->isNull()) {
+  if (tuple_type->symbol) {
     INT_FATAL(tuple_type, "Tuple type already resolved");
   }
 
@@ -118,11 +118,11 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(*type, "Domain type expected");
   }
 
-  if (!domain_type->symbol->isNull()) {
+  if (domain_type->symbol) {
     INT_FATAL(domain_type, "Domain type already resolved");
   }
 
-  if (!domain_type->parent->isNull()) {
+  if (domain_type->parent) {
     INT_FATAL(domain_type, "Only supporting arithmetic domains for now");
   }
 

@@ -203,7 +203,7 @@ vardecltype:
 
 optional_init_expr:
   /* nothing */
-    { $$ = nilExpr; }
+    { $$ = NULL; }
 | TASSIGN expr
     { $$ = $2; }
 ;
@@ -324,7 +324,7 @@ uniondecl:
 enum_item:
   identifier
     {
-      $$ = new EnumSymbol($1, nilExpr);
+      $$ = new EnumSymbol($1, NULL);
     }
 | identifier TASSIGN expr
     {
@@ -362,7 +362,7 @@ formaltag:
 
 typevardecltype:
   /* nothing */
-    { $$ = nilType; }
+    { $$ = NULL; }
 | TCOLON type
     { $$ = $2; }
 ;
@@ -386,7 +386,7 @@ formal:
 
 formals:
   /* empty */
-    { $$ = nilSymbol; }
+    { $$ = NULL; }
 | formal
 | formals TCOMMA formal
     {
@@ -451,7 +451,7 @@ decl:
 
 decls:
   /* empty */
-    { $$ = nilStmt; }
+    { $$ = NULL; }
 | decls pragmas decl
     {
       $3->pragmas = $2;
@@ -533,7 +533,7 @@ arrayType:
 
 statements:
   /* empty */
-    { $$ = nilStmt; }
+    { $$ = NULL; }
 | statements pragmas statement
     { 
       $$ = appendLink($1, $3); 
@@ -616,7 +616,7 @@ block_stmt:
 
 retStmt:
   TRETURN TSEMI
-    { $$ = new ReturnStmt(nilExpr); }
+    { $$ = new ReturnStmt(NULL); }
 | TRETURN expr TSEMI
     { $$ = new ReturnStmt($2); }
 ;
@@ -672,7 +672,7 @@ forloop:
     }
 | TLSBR identifier TRSBR
     { 
-      $<forstmt>$ = Symboltable::startForLoop(true, nilSymbol, new Variable(new UnresolvedSymbol($2)));
+      $<forstmt>$ = Symboltable::startForLoop(true, NULL, new Variable(new UnresolvedSymbol($2)));
     }
                    statement
     { 
@@ -743,7 +743,7 @@ assignment:
 
 exprlist:
   /* empty */
-    { $$ = nilExpr; }
+    { $$ = NULL; }
 | nonemptyExprlist
 ;
 
@@ -765,7 +765,7 @@ lvalue:
     { $$ = new ParenOpExpr($1, $3); }
 | TLP nonemptyExprlist TRP 
     { 
-      if ($2->next->isNull()) {
+      if (!$2->next) {
         $$ = $2;
       } else {
         $$ = new Tuple($2);
@@ -841,7 +841,7 @@ expr:
 
 reduction:
   identifier TREDUCE expr
-    { $$ = new ReduceExpr(new UnresolvedSymbol($1), nilExpr, $3); }
+    { $$ = new ReduceExpr(new UnresolvedSymbol($1), NULL, $3); }
 ;
 
 

@@ -2,7 +2,6 @@
 #include "codegen.h"
 #include "driver.h"
 #include "files.h"
-#include "nils.h"
 #include "../traversals/createConfigVarTable.h"
 #include "symbol.h"
 #include "symtab.h"
@@ -27,8 +26,6 @@ void Codegen::run(ModuleSymbol* moduleList) {
     }
     currentModule = nextLink(ModuleSymbol, currentModule);
   }
-
-  verifyNilsUncorrupted();
 
   closeMakefile();
 }

@@ -207,11 +207,6 @@ AInfo::copy_tree(ASTCopyContext* context) {
 static void
 close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
-  // Have to add nilClassType by hand because traversals skip
-  // over it since isNull() is true.  Perhaps the abstract
-  // parent class should not be a nil?
-  if (set.set_add(nilClassType))
-    syms.add(nilClassType);
   forv_Stmt(a, stmts)
     while (a) {
       set.set_add(a);
@@ -274,7 +269,7 @@ new_ASymbol(char *name) {
 static ASymbol *
 new_ASymbol(Symbol *symbol, int basic = 0) {
   char *name = 0;
-  if (symbol && !symbol->isNull())
+  if (symbol)
     name = symbol->name;
   ASymbol *s = new ASymbol;
   if (basic)
@@ -526,8 +521,14 @@ new_sym(char *name = 0, int global = 0) {
 
 static void
 map_type(Type *t) {
-  t->asymbol = new_ASymbol(t->symbol->name);
-  t->asymbol->symbol = t;
+  if (t->symbol) {
+    t->asymbol = new_ASymbol(t->symbol->name);
+    t->asymbol->symbol = t;
+  }
+  else {
+    t->asymbol = new_ASymbol("BOGUS");
+    t->asymbol->symbol = t;
+  }
 }
 
 static void
@@ -632,7 +633,7 @@ build_symbols(Vec<BaseAST *> &syms) {
 	  break;
 	}
 	case SYMBOL_PARAM: {
-	  if (s->type && s->type != nilType && s->type != dtUnknown) {
+	  if (s->type && s->type != dtUnknown) {
 	    if (s->asymbol->sym->intent != Sym_OUT)
 	      s->asymbol->sym->must_implement_and_specialize(s->type->asymbol->sym);
 	    else
@@ -717,7 +718,9 @@ build_types(Vec<BaseAST *> &syms) {
 	  t->asymbol->sym->is_value_class = 1;
 	if (tt->union_value)
 	  t->asymbol->sym->is_union_class = 1;
-	tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
+	if (tt->symbol) {
+	  tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
+	}
 	if (tt->parentClass)
 	  t->asymbol->sym->inherits_add(tt->parentClass->asymbol->sym);
 	break;
@@ -911,7 +914,7 @@ label_target(Stmt *stmt) {
   Stmt *target = stmt;
   while (target && target->astType == STMT_LABEL)
     target = dynamic_cast<LabelStmt*>(target)->stmt;
-  if (!target || target == nilStmt)
+  if (!target)
     target = stmt;
   return target;
 }
@@ -1042,7 +1045,7 @@ gen_vardef(BaseAST *a) {
 	s->must_implement = unalias_type(var->type->asymbol->sym);
     } else
       s->is_var = 1;
-    if (!var->init->isNull()) {
+    if (var->init) {
       if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
       Sym *val = var->init->ainfo->rval;
       if (s->type) {
@@ -1156,8 +1159,13 @@ gen_for(BaseAST *a) {
 static int
 gen_cond(BaseAST *a) {
   CondStmt *s = dynamic_cast<CondStmt*>(a);
-  AInfo *ifelse = s->elseStmt->ainfo;
-  if (s->elseStmt == nilStmt) ifelse = 0;
+  AInfo *ifelse;
+  if (!s->elseStmt) {
+    ifelse = 0;
+  }
+  else {
+    ifelse = s->elseStmt->ainfo;
+  }
   if1_if(if1, &s->ainfo->code, s->condExpr->ainfo->code, s->condExpr->ainfo->rval, 
 	 s->thenStmt->ainfo->code, s->thenStmt->ainfo->rval, ifelse ? ifelse->code : 0, 
 	 ifelse ? ifelse->rval : 0, 
@@ -1184,7 +1192,7 @@ gen_if1(BaseAST *ast) {
       if (gen_if1(a) < 0)
 	return -1;
   switch (ast->astType) {
-    case STMT: assert(ast->isNull()); break;
+    case STMT: assert(!ast); break;
     case STMT_LABEL: {
       LabelStmt *s = dynamic_cast<LabelStmt*>(ast);
       Stmt *target = label_target(s);
@@ -1211,7 +1219,7 @@ gen_if1(BaseAST *ast) {
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
       Sym *fn = s->parentSymbol->asymbol->sym;
-      if (!s->expr->isNull()) {
+      if (s->expr) {
 	if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
 	s->expr->ainfo->rval->is_lvalue = 1;
 	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
@@ -1244,7 +1252,7 @@ gen_if1(BaseAST *ast) {
       
     case EXPR: {
       Expr *e = dynamic_cast<Expr*>(ast);
-      assert(ast->isNull()); 
+      assert(!ast); 
       e->ainfo->rval = sym_null;
       break;
     }
@@ -1464,7 +1472,7 @@ gen_if1(BaseAST *ast) {
       getLinkElements(domains, s->domains);
       Vec<Symbol *> indices;
       getLinkElements(indices, s->indices);
-      if (!s->forallExpr->isNull()) { // forall expression
+      if (s->forallExpr) { // forall expression
 	Code *body = 0;
 	forv_Vec(Expr, d, domains)
 	  if1_gen(if1, &body, d->ainfo->code);
@@ -1488,7 +1496,7 @@ gen_if1(BaseAST *ast) {
       if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
-      if (args.n == 1 && args.v[0]->isNull())
+      if (args.n == 1 && !args.v[0])
 	args.n--;
       forv_Vec(Expr, a, args)
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
@@ -1521,7 +1529,7 @@ gen_if1(BaseAST *ast) {
       if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
       Vec<Expr *> args;
       getLinkElements(args, s->argList);
-      if (args.n == 1 && args.v[0]->isNull())
+      if (args.n == 1 && !args.v[0])
 	args.n--;
       forv_Vec(Expr, a, args)
 	if1_gen(if1, &s->ainfo->code, a->ainfo->code);
@@ -1770,7 +1778,7 @@ ACallbacks::finalize_functions() {
       // record default argument positions
       if (s->asymbol->symbol) {
 	ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
-	if (symbol && symbol->init && symbol->init != nilExpr) {
+	if (symbol && symbol->init) {
 	  assert(symbol->init->ainfo);
 	  fun->default_args.put(cannonicalize_mposition(p), symbol->init->ainfo);
 	}

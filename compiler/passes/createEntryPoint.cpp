@@ -15,7 +15,7 @@ void CreateEntryPoint::addModuleInitToEntryPoint(ModuleSymbol* module) {
 static ModuleSymbol* findUniqueUserModule(ModuleSymbol* moduleList) {
   ModuleSymbol* userModule = NULL;
 
-  while (moduleList && !moduleList->isNull()) {
+  while (moduleList) {
     if (!moduleList->internal && moduleList != commonModule) {
       if (userModule == NULL) {
 	userModule = moduleList;
@@ -38,14 +38,14 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
 
   // find main function if it exists; create one if not
   FnSymbol* mainFn = FnSymbol::mainFn;
-  if (mainFn->isNull()) {
+  if (!mainFn) {
     ModuleSymbol* userModule = findUniqueUserModule(moduleList);
     if (userModule) {
       ExprStmt* initStmt = ExprStmt::createFnCallStmt(userModule->initFn);
       BlockStmt* mainBody = new BlockStmt(initStmt);
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(userModule->modScope);
-      FnDefStmt* maindefstmt = Symboltable::defineFunction("main", nilSymbol, 
+      FnDefStmt* maindefstmt = Symboltable::defineFunction("main", NULL, 
 							   dtVoid, mainBody, 
 							   true);
       Symboltable::setCurrentScope(saveScope);

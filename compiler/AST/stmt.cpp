@@ -19,11 +19,6 @@ Stmt::Stmt(astType_t astType) :
 {}
 
 
-bool Stmt::isNull(void) {
-  return (this == nilStmt);
-}
-
-
 FnSymbol *Stmt::parentFunction() {
   ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(parentSymbol);
   if (mod)
@@ -72,16 +67,14 @@ Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
 
 
 Stmt* Stmt::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Stmt* newStmtList = nilStmt;
+  Stmt* newStmtList = NULL;
   Stmt* oldStmt = this;
 
-  if (!oldStmt->isNull()) {
-    while (oldStmt) {
-      newStmtList = appendLink(newStmtList, 
-			       oldStmt->copyInternal(clone, map, analysis_clone));
-
-      oldStmt = nextLink(Stmt, oldStmt);
-    }
+  while (oldStmt) {
+    newStmtList = appendLink(newStmtList, 
+			     oldStmt->copyInternal(clone, map, analysis_clone));
+    
+    oldStmt = nextLink(Stmt, oldStmt);
   }
 
   return newStmtList;
@@ -104,17 +97,12 @@ Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 
 
 Stmt* Stmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  if (!this->isNull()) {
-    INT_FATAL(this, "copy not implemented for Stmt subclass");
-  }
-  return nilStmt;
+  INT_FATAL(this, "copy not implemented for Stmt subclass");
+  return NULL;
 }
 
 
 void Stmt::traverse(Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessStmt(this);
   }
@@ -140,7 +128,7 @@ static void call_fixup(Stmt* stmt) {
   Fixup* fixup = new Fixup();
 
   SymScope* tmp = Symboltable::getCurrentScope();
-  while (tmp && tmp->symContext->isNull()) {
+  while (tmp && !tmp->symContext) {
     tmp = tmp->parent;
   }
   if (!stmt->parentSymbol) {
@@ -179,7 +167,7 @@ void Stmt::replace(Stmt* new_stmt) {
   }
 
   last->next = next;
-  if (next && !next->isNull()) {
+  if (next) {
     next->prev = last;
     Stmt* tmp = dynamic_cast<Stmt*>(next);
     tmp->back = &(Stmt*&)last->next; // UGH --SJD
@@ -188,18 +176,18 @@ void Stmt::replace(Stmt* new_stmt) {
   first->back = back;
   *back = first;
   /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev && !prev->isNull()) {
+    if (prev) {
       prev->next = first;
     }
   */
   /* while nulling the following out would be cleaner and purer,
      in many cases (traversals, loops), it is convenient to keep
      these pointing to the old nodes; an alternative would be to
-     require the user to set them back to something non-nil if
+     require the user to set them back to something non-NULL if
      that's what they wanted, but we are positing that this will
      be the common case.
-  prev = nilStmt;
-  next = nilStmt;
+  prev = NULL;
+  next = NULL;
   */
   call_fixup(this);
 }
@@ -221,7 +209,7 @@ void Stmt::insertBefore(Stmt* new_stmt) {
   first->back = back;
   *back = first;
   /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev && !prev->isNull()) {
+    if (prev) {
       prev->next = first;
     }
   */
@@ -247,7 +235,7 @@ void Stmt::insertAfter(Stmt* new_stmt) {
   }
 
   last->next = next;
-  if (next && !next->isNull()) {
+  if (next) {
     next->prev = last;
     Stmt* tmp = dynamic_cast<Stmt*>(next);
     tmp->back = &(Stmt*&)last->next; // UGH --SJD
@@ -261,7 +249,7 @@ void Stmt::insertAfter(Stmt* new_stmt) {
 
 
 void Stmt::append(ILink* new_stmt) {
-  if (new_stmt->isNull()) {
+  if (!new_stmt) {
     return;
   }
 
@@ -282,20 +270,17 @@ void Stmt::append(ILink* new_stmt) {
   first->prev = append_point;
   // UGH!! --SJD
   first->back = &(Stmt*&)append_point->next;
-  if ((*first->back)->isNull()) {
-    INT_FATAL(this, "major error in back");
-  }
 }
 
 
 Stmt* Stmt::extract(void) {
-  if (next && !next->isNull()) {
+  if (next) {
     if (Stmt* next_stmt = dynamic_cast<Stmt*>(next)) { 
       next_stmt->prev = prev;
       next_stmt->back = back;
       *back = next_stmt;
       /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-	 if (prev && !prev->isNull()) {
+	 if (prev) {
 	 prev->next = next;
 	 }
       */
@@ -305,11 +290,11 @@ Stmt* Stmt::extract(void) {
     }
   }
   else {
-    *back = nilStmt;
+    *back = NULL;
   }
   /* SEE NOTE IN REPLACE
-  next = nilStmt;
-  prev = nilStmt;
+  next = NULL;
+  prev = NULL;
   */
   return this;
 }
@@ -535,11 +520,6 @@ Stmt* FnDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 }
 
 
-bool FnDefStmt::isNull(void) {
-  return (this == nilFnDefStmt);
-}
-
-
 void FnDefStmt::traverseStmt(Traversal* traversal) {
   TRAVERSE_DEF(fn, traversal, false);
 }
@@ -619,7 +599,7 @@ Stmt* ReturnStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 void ReturnStmt::print(FILE* outfile) {
   fprintf(outfile, "\n");
   fprintf(outfile, "return");
-  if (!expr->isNull()) {
+  if (expr) {
     fprintf(outfile, " ");
     expr->print(outfile);
   }
@@ -629,7 +609,7 @@ void ReturnStmt::print(FILE* outfile) {
 
 void ReturnStmt::codegen(FILE* outfile) {
   fprintf(outfile, "return");
-  if (!expr->isNull()) {
+  if (expr) {
     fprintf(outfile, " ");
     expr->codegen(outfile);
   }
@@ -647,7 +627,7 @@ BlockStmt::BlockStmt(Stmt* init_body) :
 
 
 void BlockStmt::addBody(Stmt* init_body) {
-  if (body->isNull()) {
+  if (!body) {
     body = init_body;
     SET_BACK(body); // SJD: Eliminate please.
   } else {
@@ -696,7 +676,7 @@ void BlockStmt::codegen(FILE* outfile) {
   if (blkScope) {
     blkScope->codegen(outfile, "\n");
   }
-  body->codegenList(outfile, "\n");
+  if (body) body->codegenList(outfile, "\n");
   fprintf(outfile, "\n");
   fprintf(outfile, "}");
 }
@@ -930,7 +910,7 @@ void CondStmt::print(FILE* outfile) {
   condExpr->print(outfile);
   fprintf(outfile, ") ");
   thenStmt->print(outfile);
-  if (!elseStmt->isNull()) {
+  if (elseStmt) {
     fprintf(outfile, " else ");
     elseStmt->print(outfile);
   }
@@ -942,7 +922,7 @@ void CondStmt::codegen(FILE* outfile) {
   fprintf(outfile, ") {\n");
   thenStmt->codegen(outfile);
   fprintf(outfile, "\n}");
-  if (!elseStmt->isNull()) {
+  if (elseStmt) {
     fprintf(outfile, " else {\n");
     elseStmt->codegen(outfile);
     fprintf(outfile, "\n}");

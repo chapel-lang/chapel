@@ -15,10 +15,6 @@ class Expr;
 class ASymbol;
 class SymScope;
 class FnDefStmt;
-extern Expr* nilExpr;
-extern Stmt* nilStmt;
-extern Symbol* nilSymbol;
-extern FnDefStmt* nilFnDefStmt;
 
 
 enum paramType {
@@ -43,7 +39,6 @@ class Type : public BaseAST {
   Type(astType_t astType, Expr* init_defaultVal);
   void addSymbol(Symbol* newSymbol);
 
-  bool isNull(void);
   virtual bool isComplex(void);
 
   Type* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
@@ -74,7 +69,6 @@ class Type : public BaseAST {
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
-extern Type* nilType;
 
 class EnumType : public Type {
  public:
@@ -100,7 +94,7 @@ class DomainType : public Type {
   int numdims;
   Expr* parent;
 
-  DomainType(Expr* init_expr = nilExpr);
+  DomainType(Expr* init_expr = NULL);
   DomainType(int init_numdims);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -113,7 +107,7 @@ class DomainType : public Type {
 
 class IndexType : public DomainType {
  public:
-  IndexType(Expr* init_expr = nilExpr);
+  IndexType(Expr* init_expr = NULL);
   IndexType(int init_numdims);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -145,7 +139,7 @@ class UserType : public Type {
  public:
   Type* definition;
 
-  UserType(Type* init_definition, Expr* init_defaultVal = nilExpr);
+  UserType(Type* init_definition, Expr* init_defaultVal = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   bool isComplex(void);
@@ -159,10 +153,6 @@ class UserType : public Type {
   void codegenDefaultFormat(FILE* outfile, bool isRead);
 };
 
-
-class ClassType;
-
-extern ClassType* nilClassType;
 
 class ClassType : public Type {
  public:
@@ -179,8 +169,8 @@ class ClassType : public Type {
   
   ClassType(bool isValueClass,
 	    bool isUnion,
-            ClassType* init_parentClass = nilClassType, 
-	    Stmt* init_constructor = nilStmt,
+            ClassType* init_parentClass = NULL, 
+	    Stmt* init_constructor = NULL,
 	    SymScope* init_classScope = NULL);
   void addDeclarations(Stmt* newDeclarations,
 		       Stmt* afterStmt = NULL,
@@ -190,8 +180,6 @@ class ClassType : public Type {
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
-
-  bool isNull(void);
 
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -227,7 +215,7 @@ class SumType : public Type {
 class VariableType : public Type {
  public:
   Type* type;
-  VariableType(Type *init_type = nilType);
+  VariableType(Type *init_type = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void codegen(FILE* outfile);
 };

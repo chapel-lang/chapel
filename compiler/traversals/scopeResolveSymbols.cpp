@@ -7,7 +7,7 @@
 static void resolve_type_helper(Type* &type) {
   if (dynamic_cast<UnresolvedType*>(type)) {
     Symbol* new_type = Symboltable::lookup(type->symbol->name);
-    if (new_type && !new_type->isNull()) {
+    if (new_type) {
       if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
 	type = new_type->type;
       }

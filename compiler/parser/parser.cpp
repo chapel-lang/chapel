@@ -35,7 +35,7 @@ ModuleSymbol* ParseFile(char* filename, bool prelude) {
   yylineno = 1;
   yyin = openInputFile(filename);
   
-  yystmtlist = nilStmt;
+  yystmtlist = NULL;
   yyparse();
 
   closeInputFile(yyin);

@@ -19,7 +19,6 @@ class Stmt : public BaseAST {
 
   Stmt(astType_t astType);
 
-  bool isNull(void);
   FnSymbol *parentFunction();
 
   Stmt* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL, Vec<BaseAST*>* update_list = NULL);
@@ -39,8 +38,6 @@ class Stmt : public BaseAST {
   Stmt* extract(void);
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
-
-extern Stmt* nilStmt;
 
 
 class NoOpStmt : public Stmt {
@@ -118,15 +115,11 @@ class FnDefStmt : public Stmt {
   FnDefStmt(FnSymbol* init_fn);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
-  bool isNull(void);
-
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
-
-extern FnDefStmt* nilFnDefStmt;
 
 
 class ModuleDefStmt : public Stmt {
@@ -151,7 +144,7 @@ class ExprStmt : public Stmt {
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
 
-  static ExprStmt* createFnCallStmt(FnSymbol* fnSym, Expr* argList = nilExpr);
+  static ExprStmt* createFnCallStmt(FnSymbol* fnSym, Expr* argList = NULL);
 };
 
 
@@ -171,7 +164,7 @@ class BlockStmt : public Stmt {
 
   SymScope* blkScope;
 
-  BlockStmt::BlockStmt(Stmt* init_body = nilStmt);
+  BlockStmt::BlockStmt(Stmt* init_body = NULL);
   void addBody(Stmt* init_body);
   void setBlkScope(SymScope* init_blkScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
@@ -207,7 +200,7 @@ class ForLoopStmt : public BlockStmt {
   SymScope* indexScope;
 
   ForLoopStmt(bool init_forall, VarSymbol* init_index, Expr* init_domain,
-	      Stmt* body = nilStmt);
+	      Stmt* body = NULL);
   void setIndexScope(SymScope* init_indexScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -225,7 +218,7 @@ class CondStmt : public Stmt {
   Stmt* elseStmt;
 
   CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
-	   Stmt* init_elseStmt = nilStmt);
+	   Stmt* init_elseStmt = NULL);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseStmt(Traversal* traversal);

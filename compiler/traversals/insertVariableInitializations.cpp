@@ -9,7 +9,7 @@
 
 
 static void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
-  if (!var->parentScope->stmtContext->isNull()) {
+  if (var->parentScope->stmtContext) {
     if (BlockStmt* block_stmt =
 	dynamic_cast<BlockStmt*>(var->parentScope->stmtContext)) {
       block_stmt->body->insertBefore(init_stmt);
@@ -110,7 +110,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var) {
   // Let expressions.  These should be useful so we might want to
   // implement it now.
 
-  Expr* init_expr = !var->init->isNull() ? var->init : var->type->defaultVal;
+  Expr* init_expr = var->init ? var->init : var->type->defaultVal;
   Expr* args = new Variable(var);
   args->append(new Variable(var->type->symbol));
   args->append(new StringLiteral(copystring(var->name)));
@@ -126,7 +126,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var) {
 
 
 static void insert_default_init(Stmt* stmt, VarSymbol* var) {
-  if (var->type->defaultVal && !var->type->defaultVal->isNull()) {
+  if (var->type->defaultVal) {
     AssignOp* assign_expr = new AssignOp(GETS_NORM,
 					 new Variable(var),
 					 var->type->defaultVal->copy());
@@ -137,7 +137,7 @@ static void insert_default_init(Stmt* stmt, VarSymbol* var) {
 
 
 static void insert_user_init(Stmt* stmt, VarSymbol* var) {
-  if (var->init && !var->init->isNull()) {
+  if (var->init) {
     AssignOp* assign_expr = new AssignOp(GETS_NORM,
 					 new Variable(var),
 					 var->init->copy());
@@ -161,7 +161,7 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
 
   VarSymbol* var = def_stmt->var;
 
-  while (var && !var->isNull()) {
+  while (var) {
     if (dynamic_cast<ArrayType*>(var->type)) {
       insert_array_init(stmt, var);
     }

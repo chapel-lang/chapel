@@ -25,7 +25,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
       ParamSymbol* formal = dynamic_cast<ParamSymbol*>(fnSym->formals);
       Expr* actualList = fncall->argList;
       Expr* actual = actualList;
-      Expr* newActuals = nilExpr;
+      Expr* newActuals = NULL;
       if (formal && actual) {
 
 	/*
@@ -36,14 +36,14 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	// BLC: pushes scope into wrong place if the current symboltable
 	// scope is an expression scope?
 	BlockStmt* blkStmt = Symboltable::startCompoundStmt(); 
-	Stmt* body = nilStmt;
+	Stmt* body = NULL;
 	bool tmpsRequired = false;
 
 	/* generate copy-in statements */
 	while (formal) {
-	  Expr* newActualUse = nilExpr;
+	  Expr* newActualUse = NULL;
 
-	  bool actualElided = actual->isNull();
+	  bool actualElided = !actual;
 	  if (formal->requiresCTmp() || actualElided) {
 	    tmpsRequired = true;
 
@@ -88,7 +88,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	Expr* newActual = fncall->argList;
 	if (formal && actual) {
 	  while (formal) {
-	    if (formal->requiresCopyBack() && !actual->isNull()) {
+	    if (formal->requiresCopyBack() && actual) {
 	      Expr* copyBack = new AssignOp(GETS_NORM, actual->copy(),
 					    newActual->copy());
 	      ExprStmt* copyBackStmt = new ExprStmt(copyBack);
@@ -96,7 +96,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 	    }
 
 	    formal = nextLink(ParamSymbol, formal);
-	    if (!actual->isNull()) {
+	    if (actual) {
 	      actual = nextLink(Expr, actual);
 	    }
 	    newActual = nextLink(Expr, newActual);

@@ -12,10 +12,10 @@
 
 Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
-  symbol(nilSymbol),
+  symbol(NULL),
   defaultVal(init_defaultVal),
   asymbol(NULL),
-  parentType(nilType)
+  parentType(NULL)
 {
   SET_BACK(defaultVal);
 }
@@ -23,11 +23,6 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
 
 void Type::addSymbol(Symbol* newsymbol) {
   symbol = newsymbol;
-}
-
-
-bool Type::isNull(void) {
-  return (this == nilType);
 }
 
 
@@ -53,7 +48,7 @@ Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
 
 Type* Type::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   INT_FATAL(this, "Unanticipated call to Type::copyType");
-  return nilType;
+  return NULL;
 }
 
 Type *Type::instantiate_generic(Map<Type *, Type *> &substitutions) {
@@ -66,14 +61,11 @@ Type *Type::instantiate_generic(Map<Type *, Type *> &substitutions) {
 }
 
 void Type::traverse(Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessType(this);
   }
   if (atTop || traversal->exploreChildTypes) {
-    if (atTop || symbol == nilSymbol) {
+    if (atTop || symbol == NULL) {
       traverseDefType(traversal);
     }
     else {
@@ -87,11 +79,6 @@ void Type::traverse(Traversal* traversal, bool atTop) {
 
 
 void Type::traverseDef(Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
-
-  // expore Type and components
   if (traversal->processTop || !atTop) {
     traversal->preProcessType(this);
   }
@@ -219,7 +206,7 @@ Type* EnumType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 
   if (typeid(*newSyms) != typeid(EnumSymbol)) {
     INT_FATAL(this, "valList is not EnumSymbol in EnumType::copyType()");
-    return nilType;
+    return NULL;
   } else {
     EnumSymbol* newEnums = (EnumSymbol*)newSyms;
     Type* copy = new EnumType(newEnums);
@@ -412,11 +399,11 @@ void EnumType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 
 DomainType::DomainType(Expr* init_expr) :
-  Type(TYPE_DOMAIN, nilExpr),
+  Type(TYPE_DOMAIN, NULL),
   numdims(0),
-  parent(nilExpr)
+  parent(NULL)
 {
-  if (!init_expr->isNull()) {
+  if (init_expr) {
     if (typeid(*init_expr) == typeid(IntLiteral)) {
       numdims = init_expr->intVal();
     } else {
@@ -429,15 +416,15 @@ DomainType::DomainType(Expr* init_expr) :
 
 
 DomainType::DomainType(int init_numdims) :
-  Type(TYPE_DOMAIN, nilExpr),
+  Type(TYPE_DOMAIN, NULL),
   numdims(init_numdims),
-  parent(nilExpr)
+  parent(NULL)
 {}
 
 
 Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy;
-  if (parent->isNull()) {
+  if (!parent) {
     copy = new DomainType(numdims);
   } else {
     copy = new DomainType(parent->copy(clone, map, analysis_clone));
@@ -454,7 +441,7 @@ int DomainType::rank(void) {
 
 void DomainType::print(FILE* outfile) {
   fprintf(outfile, "domain(");
-  if (parent->isNull()) {
+  if (!parent) {
     if (numdims != 0) {
       fprintf(outfile, "%d", numdims);
     } else {
@@ -494,7 +481,7 @@ IndexType::IndexType(int init_numdims) :
 
 Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy;
-  if (parent->isNull()) {
+  if (!parent) {
     copy = new IndexType(numdims);
   } else {
     copy = new IndexType(parent->copy(clone, map, analysis_clone));
@@ -506,7 +493,7 @@ Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 
 void IndexType::print(FILE* outfile) {
   fprintf(outfile, "index(");
-  if (parent->isNull()) {
+  if (!parent) {
     if (numdims != 0) {
       fprintf(outfile, "%d", numdims);
     } else {
@@ -724,14 +711,14 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 		     ClassType* init_parentClass,
 		     Stmt* init_constructor,
 		     SymScope* init_classScope) :
-  Type(TYPE_CLASS, nilExpr),
+  Type(TYPE_CLASS, NULL),
   value(isValueClass),
   union_value(isUnion),
   parentClass(init_parentClass),
   constructor(init_constructor),
   classScope(init_classScope)
 {
-  declarationList = nilStmt;
+  declarationList = NULL;
   fields.clear();
   methods.clear();
   types.clear();
@@ -752,9 +739,9 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   //  copy_type->addSymbol(copy_symbol);
   Symboltable::pushScope(SCOPE_CLASS);
 
-  Stmt* new_decls = nilStmt;
+  Stmt* new_decls = NULL;
   Stmt* old_decls = declarationList;
-  while (old_decls && !old_decls->isNull()) {
+  while (old_decls) {
     if (FnDefStmt* def = dynamic_cast<FnDefStmt*>(old_decls)) {
       copy_type->methods.add(def->fn);
       //Symboltable::define(def->fn);
@@ -781,7 +768,7 @@ void ClassType::addDeclarations(Stmt* newDeclarations,
 				Stmt* beforeStmt,
 				VarSymbol* beforeField) {
   Stmt* tmp = newDeclarations;
-  while (tmp && !tmp->isNull()) {
+  while (tmp) {
     if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
       fn_def_stmt->fn->classBinding = this->symbol;
       fn_def_stmt->fn->method_type = PRIMARY_METHOD;
@@ -800,7 +787,7 @@ void ClassType::addDeclarations(Stmt* newDeclarations,
     }
     tmp = nextLink(Stmt, tmp);
   }
-  if (declarationList->isNull()) {
+  if (!declarationList) {
     declarationList = appendLink(declarationList, newDeclarations);
     SET_BACK(declarationList);
   }
@@ -815,7 +802,7 @@ void ClassType::addDeclarations(Stmt* newDeclarations,
 
 
 void ClassType::buildConstructor(void) {
-  if (!isNull() && !symbol->parentScope->isInternal()) {
+  if (symbol && !symbol->parentScope->isInternal()) {
     /* create default constructor */
 
     char* constructorName = glomstrings(2, "_construct_", symbol->name);
@@ -829,7 +816,7 @@ void ClassType::buildConstructor(void) {
       ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
       body1->append(body2);
       Symboltable::finishCompoundStmt(body, body1);
-      constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
+      constructor = Symboltable::finishFnDef(newFunSym, NULL, this, body);
     }
     else {
       Expr* argList = new IntLiteral("1", 1);
@@ -845,7 +832,7 @@ void ClassType::buildConstructor(void) {
 				argList))
 			    )
 			  );
-      constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
+      constructor = Symboltable::finishFnDef(newFunSym, NULL, this, body);
     }
     /** Add test tags for unions: This is a little ugly, it should
 	insert the enum statement that we generate in codegen before
@@ -853,7 +840,7 @@ void ClassType::buildConstructor(void) {
     **/
     if (union_value) {
       forv_Vec(VarSymbol, tmp, fields) {
-	EnumSymbol* idtag = new EnumSymbol(glomstrings(4, "_", symbol->name, "_union_id_", tmp->name), nilExpr);
+	EnumSymbol* idtag = new EnumSymbol(glomstrings(4, "_", symbol->name, "_union_id_", tmp->name), NULL);
 	idtag->setDefPoint(NULL); // SHOULD BE REAL statement for declaring this enum, UGH...short-term
       }
     }
@@ -878,11 +865,6 @@ void ClassType::traverseDefType(Traversal* traversal) {
   if (classScope) {
     Symboltable::setCurrentScope(prevScope);
   }
-}
-
-
-bool ClassType::isNull(void) {
-  return (this == nilClassType);
 }
 
 
@@ -981,7 +963,7 @@ void ClassType::codegenIORoutines(FILE* outfile) {
 
 
 TupleType::TupleType(Type* firstType) :
-  Type(TYPE_TUPLE, nilExpr)
+  Type(TYPE_TUPLE, NULL)
 {
   components.add(firstType);
   defaultVal = new Tuple(firstType->defaultVal->copy());
@@ -998,7 +980,7 @@ void TupleType::addType(Type* additionalType) {
 
 
 void TupleType::rebuildDefaultVal(void) {
-  Tuple* tuple = new Tuple(nilExpr);
+  Tuple* tuple = new Tuple(NULL);
   forv_Vec(Type, component, components) {
     tuple->exprs = appendLink(tuple->exprs, component->defaultVal->copy());
   }
@@ -1059,7 +1041,7 @@ void TupleType::codegenDef(FILE* outfile) {
 
 
 SumType::SumType(Type* firstType) :
-  Type(TYPE_SUM, nilExpr)
+  Type(TYPE_SUM, NULL)
 {
   components.add(firstType);
 }
@@ -1071,7 +1053,7 @@ void SumType::addType(Type* additionalType) {
 
 
 VariableType::VariableType(Type *init_type) :
-  Type(TYPE_VARIABLE, nilExpr), 
+  Type(TYPE_VARIABLE, NULL), 
   type(init_type)
 {}
 
@@ -1087,7 +1069,7 @@ void VariableType::codegen(FILE* outfile) {
 
 
 UnresolvedType::UnresolvedType(char* init_symbol) :
-  Type(TYPE_UNRESOLVED, nilExpr) {
+  Type(TYPE_UNRESOLVED, NULL) {
   symbol = new UnresolvedSymbol(init_symbol);
 }
 
@@ -1104,8 +1086,8 @@ void UnresolvedType::codegen(FILE* outfile) {
 
 void initTypes(void) {
   // define built-in types
-  dtUnknown = Symboltable::defineBuiltinType("???", "???", nilExpr);
-  dtVoid = Symboltable::defineBuiltinType("void", "void", nilExpr);
+  dtUnknown = Symboltable::defineBuiltinType("???", "???", NULL);
+  dtVoid = Symboltable::defineBuiltinType("void", "void", NULL);
 
   dtBoolean = Symboltable::defineBuiltinType("boolean", "_boolean",
 					     new BoolLiteral("false", false));
@@ -1117,9 +1099,9 @@ void initTypes(void) {
 					     new FloatLiteral("0.0", 0.0));
   dtString = Symboltable::defineBuiltinType("string", "_string", 
 					    new StringLiteral(""));
-  dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", nilExpr);
+  dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
 
-  dtLocale = Symboltable::defineBuiltinType("locale", "_locale", nilExpr);
+  dtLocale = Symboltable::defineBuiltinType("locale", "_locale", NULL);
 }
 
 

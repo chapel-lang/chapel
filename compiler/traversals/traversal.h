@@ -32,15 +32,15 @@ class Traversal : public Pass {
 };
 
 #define TRAVERSE(link, traversal, atTop) \
-  link->traverse(traversal, atTop)
+  if (link) link->traverse(traversal, atTop)
 
 #define TRAVERSE_LS(link, traversal, atTop) \
-  link->traverseList(traversal, atTop)
+  if (link) link->traverseList(traversal, atTop)
 
 #define TRAVERSE_DEF(link, traversal, atTop) \
-  link->traverseDef(traversal, atTop)
+  if (link) link->traverseDef(traversal, atTop)
 
 #define TRAVERSE_DEF_LS(link, traversal, atTop) \
-  link->traverseDefList(traversal, atTop)
+  if (link) link->traverseDefList(traversal, atTop)
 
 #endif

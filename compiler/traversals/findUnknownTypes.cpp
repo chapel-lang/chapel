@@ -25,7 +25,7 @@ void FindReturn::preProcessStmt(Stmt* stmt) {
 void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
   if (FnCall* call = dynamic_cast<FnCall*>(expr)) {
     Expr* arg = call->argList;
-    while (arg && !arg->isNull()) {
+    while (arg) {
       Expr* next_arg = nextLink(Expr, arg);
       if (Variable* var_arg = dynamic_cast<Variable*>(arg)) {
 	if (dynamic_cast<TypeSymbol*>(var_arg->var)) {
@@ -40,11 +40,11 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
 void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     Symbol* old_formals = fn->formals;
-    Symbol* new_formals = nilSymbol;
-    while (old_formals && !old_formals->isNull()) {
+    Symbol* new_formals = NULL;
+    while (old_formals) {
       Symbol* next_old_formals = nextLink(Symbol, old_formals);
-      old_formals->next = nilSymbol;
-      old_formals->prev = nilSymbol;
+      old_formals->next = NULL;
+      old_formals->prev = NULL;
       if (dynamic_cast<ParamSymbol*>(old_formals)) {
 	new_formals = appendLink(new_formals, old_formals);
       }

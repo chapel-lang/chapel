@@ -82,7 +82,7 @@ enum astType_t {
 #define isSomeType(_x) (((_x) >= TYPE) && (_x) < AST_TYPE_END)
 
 #define SET_BACK(ast) \
-  (ast)->back = &(ast)
+  if (ast) (ast)->back = &(ast)
 
 class BaseAST : public ILink {
  public:

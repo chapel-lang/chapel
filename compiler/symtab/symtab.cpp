@@ -68,7 +68,7 @@ void Symboltable::doneParsingPreludes(void) {
   commonModule = new ModuleSymbol("_CommonModule", false);
   commonModule->setModScope(new SymScope(SCOPE_MODULE));
   commonModule->modScope->parent = preludeScope;
-  commonModule->modScope->setContext(nilStmt, commonModule);
+  commonModule->modScope->setContext(NULL, commonModule);
 
   preludeScope->child = commonModule->modScope;
   currentScope = commonModule->modScope;
@@ -307,12 +307,9 @@ static bool ModuleDefIsInteresting(Stmt* def) {
   Stmt* stmt = def;
 
   while (stmt) {
-    if (!stmt->isNull()) {
-      if (typeid(*stmt) != typeid(ModuleDefStmt)) {
-	return true;
-      }
+    if (typeid(*stmt) != typeid(ModuleDefStmt)) {
+      return true;
     }
-    
     stmt = nextLink(Stmt, stmt);
   }
   return false;
@@ -324,10 +321,8 @@ static bool ModuleDefContainsOnlyNestedModules(Stmt* def) {
   Stmt* stmt = def;
 
   while (stmt) {
-    if (!stmt->isNull()) {
-      if (typeid(*stmt) != typeid(ModuleDefStmt)) {
-	return false;
-      }
+    if (typeid(*stmt) != typeid(ModuleDefStmt)) {
+      return false;
     }
     
     stmt = nextLink(Stmt, stmt);
@@ -340,10 +335,8 @@ static Stmt* ModuleDefContainsNestedModules(Stmt* def) {
   Stmt* stmt = def;
 
   while (stmt) {
-    if (!stmt->isNull()) {
-      if (typeid(*stmt) == typeid(ModuleDefStmt)) {
-	return stmt;
-      }
+    if (typeid(*stmt) == typeid(ModuleDefStmt)) {
+      return stmt;
     }
     
     stmt = nextLink(Stmt, stmt);
@@ -421,7 +414,7 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 
   // BLC: Placeholder until low-level type inference is hooked in to
   // handle some cases -- infer type from initializer if possible
-  if (type == dtUnknown) {
+  if (type == dtUnknown && init) {
     type = init->typeInfo();
   }
 
@@ -540,12 +533,12 @@ VarDefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type,
 
 
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
-static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = nilSymbol) {
-  if (expr->isNull()) {
+static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = NULL) {
+  if (!expr) {
     return indices;
   }
 
-  for (Expr* tmp = expr; tmp && !(tmp->isNull()); tmp = nextLink(Expr, tmp)) {
+  for (Expr* tmp = expr; tmp; tmp = nextLink(Expr, tmp)) {
     Variable* varTmp = dynamic_cast<Variable*>(tmp);
 
     if (!varTmp) {
@@ -567,7 +560,7 @@ static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = nilSymbol) {
 
 Expr* Symboltable::startLetExpr(void) {
   Symboltable::pushScope(SCOPE_LETEXPR);
-  return new LetExpr(nilSymbol, nilExpr);
+  return new LetExpr(NULL, NULL);
 }
 
 
@@ -587,7 +580,7 @@ Expr* Symboltable::finishLetExpr(Expr* let_expr, VarDefStmt* stmts, Expr* inner_
   let->setInnerExpr(inner_expr);
 
   SymScope* let_scope = Symboltable::popScope();
-  let_scope->setContext(nilStmt, nilSymbol, let);
+  let_scope->setContext(NULL, NULL, let);
   let->setLetScope(let_scope);
   let->syms->setDefPoint(let);
   return let;
@@ -607,11 +600,11 @@ ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
 
 ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr, 
 					  Expr* argExpr) {
-  if (!argExpr->isNull()) {
+  if (argExpr) {
     forallExpr->setForallExpr(argExpr);
   }
   SymScope* forallScope = Symboltable::popScope();
-  forallScope->setContext(nilStmt, nilSymbol, forallExpr);
+  forallScope->setContext(NULL, NULL, forallExpr);
   forallExpr->setIndexScope(forallScope);
   forallExpr->indices->setDefPoint(forallExpr);
 
@@ -710,7 +703,7 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
 
 ForallExpr* Symboltable::defineQueryDomain(char* name) {
   DomainType* unknownDomType = new DomainType();
-  VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, nilExpr, VAR_NORMAL, true);
+  VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, NULL, VAR_NORMAL, true);
   Variable* newDom = new Variable(newDomSym);
 
   return new ForallExpr(newDom);

@@ -17,7 +17,7 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   name(init_name),
   cname(name),
   type(init_type),
-  defPoint(nilStmt),
+  defPoint(NULL),
   parentScope(NULL),
   asymbol(0)
 {}
@@ -28,16 +28,11 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 }
 
 
-bool Symbol::isNull(void) {
-  return (this == nilSymbol);
-}
-
-
 Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Symbol* newSymbolList = nilSymbol;
+  Symbol* newSymbolList = NULL;
   Symbol* oldSymbol = this;
 
-  while (oldSymbol && !oldSymbol->isNull()) {
+  while (oldSymbol) {
     newSymbolList = appendLink(newSymbolList, oldSymbol->copy(clone, map, analysis_clone));
 
     oldSymbol = nextLink(Symbol, oldSymbol);
@@ -48,10 +43,6 @@ Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 
 
 Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  if (isNull()) {
-    return this;
-  }
-
   Symbol* new_symbol = copySymbol(clone, map, analysis_clone);
 
   new_symbol->lineno = lineno;
@@ -69,14 +60,11 @@ Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
 
 Symbol* Symbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   INT_FATAL(this, "Symbol::copySymbol() not anticipated to be needed");
-  return nilSymbol;
+  return NULL;
 }
 
 
 void Symbol::traverse(Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessSymbol(this);
   }
@@ -95,9 +83,6 @@ void Symbol::traverse(Traversal* traversal, bool atTop) {
 
 
 void Symbol::traverseDef(Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessSymbol(this);
   }
@@ -127,9 +112,7 @@ void Symbol::print(FILE* outfile) {
 }
 
 void Symbol::codegen(FILE* outfile) {
-  if (!isNull()) {
-    fprintf(outfile, "%s", cname);
-  }
+  fprintf(outfile, "%s", cname);
 }
 
 
@@ -161,7 +144,7 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 
   codegenDef(outfile);
   ptr = nextLink(Symbol, this);
-  while (ptr && !ptr->isNull()) {
+  while (ptr) {
     fprintf(outfile, "%s", separator);
     ptr->codegenDef(outfile);
     ptr = nextLink(Symbol, ptr);
@@ -227,11 +210,6 @@ void VarSymbol::traverseDefSymbol(Traversal* traversal) {
 }
 
 
-bool VarSymbol::isNull(void) {
-  return (this == nilVarSymbol);
-}
-
-
 void VarSymbol::printDef(FILE* outfile) {
   if (varClass == VAR_CONFIG) {
     fprintf(outfile, "config ");
@@ -248,9 +226,9 @@ void VarSymbol::printDef(FILE* outfile) {
   print(outfile);
   fprintf(outfile, ": ");
   type->print(outfile);
-  if (!init->isNull()) {
+  if (init) {
     fprintf(outfile, " = ");
-    if (init->next->isNull()) {
+    if (!init->next) {
       init->print(outfile);
     } else {
       fprintf(outfile, "(");
@@ -481,7 +459,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
   _this(0),
   body(init_body),
   classBinding(init_classBinding),
-  overload(nilFnSymbol)
+  overload(NULL)
 {
   if (!dynamic_cast<UnresolvedSymbol*>(classBinding)) {
     Symboltable::define(this);
@@ -491,11 +469,11 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
 
  
 FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
-  Symbol(SYMBOL_FN, init_name, nilType),
-  formals(nilSymbol),
-  retType(nilType),
+  Symbol(SYMBOL_FN, init_name, NULL),
+  formals(NULL),
+  retType(NULL),
   _this(0),
-  body(nilStmt),
+  body(NULL),
   classBinding(init_classBinding)
 {
   if (!dynamic_cast<UnresolvedSymbol*>(classBinding)) {
@@ -518,9 +496,9 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 
   if (strcmp(name, "main") == 0 && 
       (parentScope->type == SCOPE_MODULE || 
-       parentScope->type == SCOPE_POSTPARSE) && 
-      formals->isNull()) {
-    if (mainFn->isNull()) {
+       parentScope->type == SCOPE_POSTPARSE) &&
+      !formals) {
+    if (!mainFn) {
       mainFn = this;
       exportMe = true;
       cname = copystring("_chpl_main");
@@ -644,10 +622,10 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
 	formal_change->type = coercion_substitutions->e[i].value->type;
 	actual_change->var = temp_symbol;
       }
-      if (!formal_change->next->isNull()) {
+      if (formal_change->next) {
 	formal_change = nextLink(Symbol, formal_change);
       }
-      if (!actual_change->next->isNull()) {
+      if (actual_change->next) {
 	actual_change = nextLink(Variable, actual_change);
       }
       j++;
@@ -712,20 +690,20 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
 	if (formal_change == wrapper_formals) {
 	  wrapper_formals = nextLink(Symbol, formal_change);
 	  if (!wrapper_formals) {
-	    wrapper_formals = nilSymbol;
+	    wrapper_formals = NULL;
 	  }
 	}
-	if (!formal_change->prev->isNull()) {
+	if (formal_change->prev) {
 	  formal_change->prev->next = formal_change->next;
 	}
-	if (!formal_change->next->isNull()) {
+	if (formal_change->next) {
 	  formal_change->next->prev = formal_change->prev;
 	}
       }
-      if (!formal_change->next->isNull()) {
+      if (formal_change->next) {
 	formal_change = nextLink(Symbol, formal_change);
       }
-      if (!actual_change->next->isNull()) {
+      if (actual_change->next) {
 	actual_change = nextLink(Variable, actual_change);
       }
       j++;
@@ -798,16 +776,11 @@ FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutio
 }
 
 
-bool FnSymbol::isNull(void) {
-  return (this == nilFnSymbol);
-}
-
-
 void FnSymbol::printDef(FILE* outfile) {
   fprintf(outfile, "function ");
   print(outfile);
   fprintf(outfile, "(");
-  if (!formals->isNull()) {
+  if (formals) {
     formals->printDefList(outfile, ";\n");
   }
   fprintf(outfile, ")");
@@ -831,7 +804,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   fprintf(outfile, " ");
   this->codegen(outfile);
   fprintf(outfile, "(");
-  if (formals->isNull()) {
+  if (!formals) {
     fprintf(outfile, "void");
   } else {
     formals->codegenDefList(outfile, ", ");
@@ -871,7 +844,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
 FnSymbol* FnSymbol::mainFn;
 
 void FnSymbol::init(void) {
-  mainFn = nilFnSymbol;
+  mainFn = NULL;
 }
 
 
@@ -901,7 +874,7 @@ void EnumSymbol::set_values(void) {
   int tally = 0;
 
   while (tmp) {
-    if (!tmp->init->isNull()) {
+    if (tmp->init) {
       if (tmp->init->isComputable() == false) {
 	USR_FATAL(tmp->init, "Enumerator value for %s must be integer parameter", tmp->name);
       }
@@ -921,8 +894,8 @@ void EnumSymbol::codegenDef(FILE* outfile) {
 ModuleSymbol::ModuleSymbol(char* init_name, bool init_internal) :
   Symbol(SYMBOL_MODULE, init_name),
   internal(init_internal),
-  stmts(nilStmt),
-  initFn(nilFnSymbol),
+  stmts(NULL),
+  initFn(NULL),
   modScope(NULL)
 {}
 
@@ -995,9 +968,9 @@ void ModuleSymbol::createInitFn(void) {
   Stmt* initFunStmts = dynamic_cast<Stmt*>(initstmts);
   definition = dynamic_cast<Stmt*>(globstmts);
   Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
-                                                 : nilStmt);
+                                                 : NULL);
   //SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  FnDefStmt* initFunDef = Symboltable::defineFunction(fnName, nilSymbol, 
+  FnDefStmt* initFunDef = Symboltable::defineFunction(fnName, NULL, 
 						      dtVoid, initFunBody, 
 						      true);
   //Symboltable::setCurrentScope(saveScope);

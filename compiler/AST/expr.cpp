@@ -84,14 +84,18 @@ static precedenceType binOpPrecedence[NUM_BINOPS] = {
 
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
-  stmt(nilStmt),
+  stmt(NULL),
   ainfo(NULL),
-  parent(nilExpr),
+  parent(NULL),
   back(NULL)
 {}
 
 
 Expr* Expr::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
+  if (!this) {
+    return this;
+  }
+
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
   }
@@ -111,6 +115,10 @@ Expr* Expr::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
 
 
 Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
+  if (!this) {
+    return this;
+  }
+
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
   }
@@ -130,16 +138,18 @@ Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
 
 
 Expr* Expr::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Expr* newExprList = nilExpr;
+  if (!this) {
+    return this;
+  }
+
+  Expr* newExprList = NULL;
   Expr* oldExpr = this;
 
-  if (!oldExpr->isNull()) {
-    while (oldExpr) {
-      newExprList = appendLink(newExprList, 
-			       oldExpr->copyInternal(clone, map, analysis_clone));
-      
-      oldExpr = nextLink(Expr, oldExpr);
-    }
+  while (oldExpr) {
+    newExprList = appendLink(newExprList, 
+			     oldExpr->copyInternal(clone, map, analysis_clone));
+    
+    oldExpr = nextLink(Expr, oldExpr);
   }
   
   return newExprList;
@@ -147,6 +157,10 @@ Expr* Expr::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 
 
 Expr* Expr::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  if (!this) {
+    return this;
+  }
+
   Expr* new_expr = copyExpr(clone, map, analysis_clone);
 
   new_expr->lineno = lineno;
@@ -162,22 +176,14 @@ Expr* Expr::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 
 
 Expr* Expr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  if (!this->isNull()) {
+  if (this) {
     INT_FATAL(this, "Expr::copy() not implemented yet");
   }
-  return nilExpr;
-}
-
-
-bool Expr::isNull(void) {
-  return (this == nilExpr);
+  return NULL;
 }
 
 
 void Expr::traverse(Traversal* traversal, bool atTop) {
-  if (isNull()) {
-    return;
-  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessExpr(this);
   }
@@ -220,7 +226,7 @@ void Expr::replace(Expr* new_expr) {
   }
 
   last->next = next;
-  if (next && !next->isNull()) {
+  if (next) {
     next->prev = last;
     Expr* tmp = dynamic_cast<Expr*>(next);
     tmp->back = &(Expr*&)last->next; // UGH --SJD
@@ -229,18 +235,18 @@ void Expr::replace(Expr* new_expr) {
   first->back = back;
   *back = first;
   /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev && !prev->isNull()) {
+    if (prev) {
       prev->next = first;
     }
   */
   /* while nulling the following out would be cleaner and purer,
      in many cases (traversals, loops), it is convenient to keep
      these pointing to the old nodes; an alternative would be to
-     require the user to set them back to something non-nil if
+     require the user to set them back to something non-NULL if
      that's what they wanted, but we are positing that this will
      be the common case.  
-  prev = nilExpr;
-  next = nilExpr;
+  prev = NULL;
+  next = NULL;
   */
   call_fixup(this);
 }
@@ -262,7 +268,7 @@ void Expr::insertBefore(Expr* new_expr) {
   first->back = back;
   *back = first;
   /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev && !prev->isNull()) {
+    if (prev) {
       prev->next = first;
     }
   */
@@ -288,7 +294,7 @@ void Expr::insertAfter(Expr* new_expr) {
   }
 
   last->next = next;
-  if (next && !next->isNull()) {
+  if (next) {
     next->prev = last;
     Expr* tmp = dynamic_cast<Expr*>(next);
     tmp->back = &(Expr*&)last->next; // UGH --SJD
@@ -302,7 +308,7 @@ void Expr::insertAfter(Expr* new_expr) {
 
 
 void Expr::append(ILink* new_expr) {
-  if (new_expr->isNull()) {
+  if (!new_expr) {
     return;
   }
 
@@ -323,20 +329,17 @@ void Expr::append(ILink* new_expr) {
   first->prev = append_point;
   // UGH!! --SJD
   first->back = &(Expr*&)append_point->next;
-  if ((*first->back)->isNull()) {
-    INT_FATAL(this, "major error in back");
-  }
 }
 
 
 Expr* Expr::extract(void) {
-  if (next && !next->isNull()) {
+  if (next) {
     if (Expr* next_expr = dynamic_cast<Expr*>(next)) { 
       next_expr->prev = prev;
       next_expr->back = back;
       *back = next_expr;
       /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-	 if (prev && !prev->isNull()) {
+	 if (prev) {
 	 prev->next = next;
 	 }
       */
@@ -348,8 +351,8 @@ Expr* Expr::extract(void) {
   else {
     *back = NULL;
   }
-  next = nilExpr;
-  prev = nilExpr;
+  next = NULL;
+  prev = NULL;
   back = NULL;
 
   return this;
@@ -443,7 +446,7 @@ Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
 typedef enum _EXPR_RW { expr_r, expr_w, expr_rw } EXPR_RW;
 
 static EXPR_RW expr_read_written(Expr* expr) {
-  if (expr->parent && !expr->parent->isNull()) {
+  if (expr->parent) {
     Expr* parent = expr->parent;
     if (dynamic_cast<MemberAccess*>(parent)) {
       return expr_read_written(parent);
@@ -466,7 +469,7 @@ static EXPR_RW expr_read_written(Expr* expr) {
 	FnSymbol* fn = fn_call->findFnSymbol();
 	Symbol* formal = fn->formals;
 	for(Expr* actual = fn_call->argList;
-	    actual && !actual->isNull();
+	    actual;
 	    actual = nextLink(Expr, actual)) {
 	  if (actual == expr) {
 	    if (ParamSymbol* formal_param = dynamic_cast<ParamSymbol*>(formal)) {
@@ -503,7 +506,7 @@ Literal::Literal(astType_t astType, char* init_str) :
 
 Expr* Literal::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   INT_FATAL(this, "Illegal call to Literal::copyExpr");
-  return nilExpr;
+  return NULL;
 }
 
 
@@ -827,18 +830,18 @@ void BinOp::print(FILE* outfile) {
 }
 
 void BinOp::codegen(FILE* outfile) {
-  precedenceType parentPrecedence = parent->precedence();
-  bool parensRequired = this->precedence() <= parentPrecedence;
+  bool parensRequired = parent ? precedence() <= parent->precedence() : true;
 
-  bool parensRecommended = false;
-  if ((parentPrecedence == PREC_BITOR)  ||
-      (parentPrecedence == PREC_BITXOR) ||
-      (parentPrecedence == PREC_BITAND) ||
-      (parentPrecedence == PREC_LOGOR)) {
-    parensRecommended = true;
-  }    
+  /** Use parens in these cases too **/
+  if (parent &&
+      parent->precedence() == PREC_BITOR &&
+      parent->precedence() == PREC_BITXOR &&
+      parent->precedence() == PREC_BITAND &&
+      parent->precedence() == PREC_LOGOR) {
+    parensRequired = true;
+  }
 
-  if (parensRequired || parensRecommended) {
+  if (parensRequired) {
     fprintf(outfile, "(");
   }
 
@@ -854,7 +857,7 @@ void BinOp::codegen(FILE* outfile) {
     right->codegen(outfile);
   }
 
-  if (parensRequired || parensRecommended) {
+  if (parensRequired) {
     fprintf(outfile, ")");
   } 
 }
@@ -997,9 +1000,9 @@ void MemberAccess::codegen(FILE* outfile) {
 ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
   Expr(EXPR_PARENOP),
   baseExpr(init_base),
-  argList(nilExpr) 
+  argList(NULL) 
 {
-  if (!baseExpr->isNull()) {
+  if (baseExpr) {
     baseExpr->parent = this;
     SET_BACK(baseExpr);
   }
@@ -1009,7 +1012,7 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 
 void ParenOpExpr::setArgs(Expr* init_arg) {
   // if argList already exists, unlink it
-  if (!argList->isNull()) {
+  if (argList) {
     argList->back = NULL;
   }
 
@@ -1017,10 +1020,10 @@ void ParenOpExpr::setArgs(Expr* init_arg) {
   argList = init_arg;
 
   // setup back pointers for args
-  if (!argList->isNull()) {
+  if (argList) {
     SET_BACK(argList);
     Expr* arg = argList;
-    while (arg && !arg->isNull()) {
+    while (arg) {
       arg->parent = this;
       arg = nextLink(Expr, arg);
     }
@@ -1042,7 +1045,7 @@ void ParenOpExpr::traverseExpr(Traversal* traversal) {
 void ParenOpExpr::print(FILE* outfile) {
   baseExpr->print(outfile);
   fprintf(outfile, "(");
-  if (!argList->isNull()) {
+  if (argList) {
     argList->printList(outfile);
   }
   fprintf(outfile, ")");
@@ -1209,7 +1212,7 @@ void FnCall::codegen(FILE* outfile) {
   fprintf(outfile, "(");
 
   Expr* actuals = argList;
-  if (!actuals->isNull()) {
+  if (actuals) {
     FnSymbol* fnSym = findFnSymbol();
     ParamSymbol* formals = dynamic_cast<ParamSymbol*>(fnSym->formals);
     bool firstArg = true;
@@ -1260,8 +1263,8 @@ Type* IOCall::typeInfo(void) {
 void IOCall::codegen(FILE* outfile) {
   Expr* arg = argList;
 
-  while (arg && !arg->isNull()) {
-    Expr* format = nilExpr;
+  while (arg) {
+    Expr* format = NULL;
 
     if (typeid(*arg) == typeid(Tuple)) {
       Tuple* tupleArg = dynamic_cast<Tuple*>(arg);
@@ -1304,7 +1307,7 @@ void IOCall::codegen(FILE* outfile) {
     }
 
     if (!dynamic_cast<DomainType*>(argdt)) {
-      if (format->isNull()) {
+      if (!format) {
 	bool isRead = (ioType == IO_READ);
 	argdt->codegenDefaultFormat(outfile, isRead);
       } else {
@@ -1477,7 +1480,7 @@ void ReduceExpr::traverseExpr(Traversal* traversal) {
 
 void ReduceExpr::print(FILE* outfile) {
   fprintf(outfile, "reduce ");
-  if (!redDim->isNull()) {
+  if (redDim) {
     fprintf(outfile, "(dim=");
     redDim->print(outfile);
     fprintf(outfile, ") ");
@@ -1640,13 +1643,13 @@ Type* ForallExpr::typeInfo(void) {
 
 void ForallExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
-  if (!indices->isNull()) {
+  if (indices) {
     indices->printList(outfile);
     fprintf(outfile, ":");
   }
   domains->printList(outfile);
   fprintf(outfile, "]");
-  if (!forallExpr->isNull()) {
+  if (forallExpr) {
     fprintf(outfile, " ");
     forallExpr->print(outfile);
   }
@@ -1654,7 +1657,7 @@ void ForallExpr::print(FILE* outfile) {
 
 
 void ForallExpr::codegen(FILE* outfile) {
-  if (domains->next->isNull()) {
+  if (!domains->next) {
     domains->codegen(outfile);
   } else {
     INT_FATAL(this, "Don't know how to codegen lists of domains yet");

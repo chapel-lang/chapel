@@ -8,7 +8,7 @@ class SymLink : public ILink {
 public:
   Symbol* pSym;
   
-  SymLink(Symbol* init_pSym = nilSymbol);
+  SymLink(Symbol* init_pSym = NULL);
 
   void traverse(Traversal* traversal);
   //  void traverseLinks(SymtabTraversal* traversal);

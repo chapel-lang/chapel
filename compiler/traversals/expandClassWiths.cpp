@@ -10,7 +10,7 @@ void ExpandClassWiths::preProcessStmt(Stmt* stmt) {
       if (ClassType* class_type = dynamic_cast<ClassType*>(symType->type)) {
 	VarSymbol* field = NULL;
 	Stmt* tmp = with;
-	while (tmp && !tmp->isNull()) {
+	while (tmp) {
 	  if (VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
 	    field = var_def_stmt->var;
 	    break;

@@ -53,7 +53,7 @@ class Symboltable {
   static ModuleSymbol* startModuleDef(char* name, bool internal = false);
   static ModuleDefStmt* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
-					    Expr* init = nilExpr, 
+					    Expr* init = NULL, 
 					    varType vartag = VAR_NORMAL, 
 					    bool isConst = false);
   static ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
@@ -74,9 +74,9 @@ class Symboltable {
 							 bool isConst,
 							 Symbol** newVar);
   static ForallExpr* startForallExpr(Expr* domainExpr, 
-				     Expr* indexExpr = nilExpr);
+				     Expr* indexExpr = NULL);
   static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 
-				      Expr* argExpr = nilExpr);
+				      Expr* argExpr = NULL);
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(FnSymbol* fnsym);

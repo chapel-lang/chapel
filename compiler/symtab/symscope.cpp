@@ -10,9 +10,9 @@
 SymScope::SymScope(scopeType init_type, int init_level) :
   type(init_type),
   level(init_level),
-  stmtContext(nilStmt),
-  symContext(nilSymbol),
-  exprContext(nilExpr),
+  stmtContext(NULL),
+  symContext(NULL),
+  exprContext(NULL),
   parent(NULL),
   child(NULL),
   sibling(NULL),
@@ -104,11 +104,11 @@ void SymScope::remove(Symbol* sym) {
       if (tmp->pSym == sym) {
 	if (tmp == firstSym) {
 	  firstSym = dynamic_cast<SymLink*>(tmp->next);
-	  firstSym->prev = nilILink;
+	  firstSym->prev = NULL;
 	}
 	else if (tmp == lastSym) {
 	  lastSym = dynamic_cast<SymLink*>(tmp->prev);
-	  lastSym->next = nilILink;
+	  lastSym->next = NULL;
 	}
 	else {
 	  tmp->prev->next = tmp->next;
@@ -216,13 +216,13 @@ void SymScope::printHeader(FILE* outfile) {
     break;
   }
   Loc* scopeLoc = NULL;
-  if (!symContext->isNull()) {
+  if (symContext) {
     fprintf(outfile, " ");
     symContext->print(outfile);
     scopeLoc = symContext;
-  } else if (!exprContext->isNull()) {
+  } else if (exprContext) {
     scopeLoc = exprContext;
-  } else if (!stmtContext->isNull()) {
+  } else if (stmtContext) {
     scopeLoc = stmtContext;
   }
   if (scopeLoc) {
@@ -276,7 +276,7 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
 
 void SymScope::codegen(FILE* outfile, char* separator) {
   for (SymLink* tmp = firstSym;
-       tmp && !tmp->isNull();
+       tmp;
        tmp = nextLink(SymLink, tmp)) {
     if (dynamic_cast<FnSymbol*>(tmp->pSym)) {
       tmp->pSym->codegenDefList(outfile, "\n");

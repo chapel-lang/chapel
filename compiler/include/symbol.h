@@ -32,8 +32,6 @@ class Symbol : public BaseAST {
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
   void setParentScope(SymScope* init_parentScope);
 
-  bool isNull(void);
-
   Symbol* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
   Symbol* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
@@ -56,9 +54,6 @@ class Symbol : public BaseAST {
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 
-extern Symbol* nilSymbol;
-
-
 class UnresolvedSymbol : public Symbol {
  public:
   UnresolvedSymbol(char* init_name, char* init_cname = NULL);
@@ -77,7 +72,7 @@ class VarSymbol : public Symbol {
   Expr* init;
 
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
-	    Expr* init_expr = nilExpr,
+	    Expr* init_expr = NULL,
 	    varType init_varClass = VAR_NORMAL, bool init_isConstant = false);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -88,12 +83,8 @@ class VarSymbol : public Symbol {
 
   virtual void codegenDef(FILE* outfile);
 
-  bool isNull(void);
-  
   void printDef(FILE* outfile);
 };
-
-extern VarSymbol* nilVarSymbol;
 
 
 class ParamSymbol : public Symbol {
@@ -102,7 +93,7 @@ class ParamSymbol : public Symbol {
   Expr* init;
 
   ParamSymbol(paramType init_intent, char* init_name, 
-	      Type* init_type = dtUnknown, Expr* init_init = nilExpr);
+	      Type* init_type = dtUnknown, Expr* init_init = NULL);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, 
 			     CloneCallback* analysis_clone);
 
@@ -129,9 +120,6 @@ class TypeSymbol : public Symbol {
 };
 
 
-class FnSymbol;
-extern FnSymbol* nilFnSymbol;
-
 typedef enum __method_type {
   NON_METHOD,
   PRIMARY_METHOD,
@@ -153,8 +141,8 @@ class FnSymbol : public Symbol {
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 	   Stmt* init_body, bool init_exportMe=false,
-	   Symbol* init_classBinding = nilSymbol);
-  FnSymbol(char* init_name, Symbol* init_classBinding = nilSymbol);
+	   Symbol* init_classBinding = NULL);
+  FnSymbol(char* init_name, Symbol* init_classBinding = NULL);
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
 		 SymScope* init_paramScope, bool init_exportMe=false);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
@@ -165,8 +153,6 @@ class FnSymbol : public Symbol {
   FnSymbol* coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions);
   FnSymbol* default_wrapper(Vec<MPosition *> *defaults);
   FnSymbol* instantiate_generic(Map<Type *, Type *> *generic_substitutions);
-
-  bool isNull(void);
 
   void codegenHeader(FILE* outfile);
   void codegenDef(FILE* outfile);

@@ -48,15 +48,15 @@ void TransformLetExprs::doTransformation(void) {
     Stmt* let_stmt_copy = let_stmt->copy(false, NULL, NULL, &lets);
     BlockStmt* block_stmt = new BlockStmt(let_stmt_copy);
     let_scope->stmtContext = block_stmt;
-    let_scope->exprContext = nilExpr;
+    let_scope->exprContext = NULL;
     let_scope->type = SCOPE_LOCAL;
     block_stmt->setBlkScope(let_scope);
     Symbol* tmp = let_syms;
-    while (tmp && !tmp->isNull()) {
+    while (tmp) {
       Symbol* next = nextLink(Symbol, tmp);
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(tmp)) {
-	var->prev = nilSymbol;
-	var->next = nilSymbol;
+	var->prev = NULL;
+	var->next = NULL;
 	VarDefStmt* def_stmt = new VarDefStmt(var);
 	var->cname = glomstrings(3, var->cname, "_let_", intstring(uid++));
 	var->setDefPoint(def_stmt);

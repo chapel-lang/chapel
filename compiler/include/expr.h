@@ -101,8 +101,6 @@ class Expr : public BaseAST {
 
   Expr(astType_t astType);
 
-  bool isNull(void);
-
   Expr* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL, Vec<BaseAST*>* update_list = NULL);
   Expr* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL, Vec<BaseAST*>* update_list = NULL);
   Expr* copyListInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
@@ -135,9 +133,6 @@ class Expr : public BaseAST {
   bool isWritten(void);
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
-
-
-extern Expr* nilExpr;
 
 
 class Literal : public Expr {
@@ -341,7 +336,7 @@ class ParenOpExpr : public Expr {
   Expr* baseExpr;
   Expr* argList;
 
-  ParenOpExpr(Expr* init_base, Expr* init_arg = nilExpr);
+  ParenOpExpr(Expr* init_base, Expr* init_arg = NULL);
   void setArgs(Expr* init_arg);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -354,7 +349,7 @@ class ParenOpExpr : public Expr {
 
 class ArrayRef : public ParenOpExpr {
  public:
-  ArrayRef(Expr* init_base, Expr* init_arg = nilExpr);
+  ArrayRef(Expr* init_base, Expr* init_arg = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   
   bool isConst(void);
@@ -379,7 +374,7 @@ class TupleSelect : public ParenOpExpr {
 
 class FnCall : public ParenOpExpr {
  public:
-  FnCall(Expr* init_base, Expr* init_arg = nilExpr);
+  FnCall(Expr* init_base, Expr* init_arg = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   Type* typeInfo(void);
@@ -499,8 +494,8 @@ class ForallExpr : public Expr {
 
   SymScope* indexScope;
 
-  ForallExpr(Expr* init_domains, Symbol* init_indices = nilSymbol,
-	     Expr* init_forallExpr = nilExpr);
+  ForallExpr(Expr* init_domains, Symbol* init_indices = NULL,
+	     Expr* init_forallExpr = NULL);
   void setForallExpr(Expr* exp);
   void setIndexScope(SymScope* init_indexScope);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

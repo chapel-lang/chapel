@@ -15,8 +15,6 @@ class ILink : public Loc {
 
   ILink(void);
 
-  virtual bool isNull(void);
-
   virtual void traverse(Traversal* traversal, bool atTop = true);
   void traverseList(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
@@ -38,21 +36,18 @@ class ILink : public Loc {
   ILink* get(int);
 };
 
-extern ILink* nilILink;
-
 #define prevLink(type, node) (dynamic_cast<type*>((node)->prev))
 #define nextLink(type, node) (dynamic_cast<type*>((node)->next))
 
-#define appendLink(list, node) ((((list) == NULL) || (list)->isNull()) ? \
-                                (node) : \
-                                ((list)->append(node), (list)))
+#define appendLink(list, node) \
+  ((!(list)) ? (node) : ((list)->append(node), (list)))
 
 template <class astType>
 void getLinkElements(Vec<astType*>& elements, ILink* link) {
   astType* element;
 
   elements.clear();
-  while (!link->isNull()) {
+  while (link) {
     element = dynamic_cast<astType*>(link);
     if (element) {
       elements.add(element);

@@ -10,7 +10,7 @@ ApplyThisParameters::ApplyThisParameters(void) {
 
 void ApplyThisParameters::preProcessStmt(Stmt* stmt) {
   if (FnDefStmt* fds = dynamic_cast<FnDefStmt*>(stmt)) {
-    if (!fds->fn->classBinding->isNull()) {
+    if (fds->fn->classBinding) {
       CurrentClass = dynamic_cast<ClassType*>(fds->fn->classBinding->type);
     }
   }
@@ -18,7 +18,7 @@ void ApplyThisParameters::preProcessStmt(Stmt* stmt) {
 
 void ApplyThisParameters::postProcessStmt(Stmt* stmt) {
   if (FnDefStmt* fds = dynamic_cast<FnDefStmt*>(stmt)) {
-    if (!fds->fn->classBinding->isNull()) {
+    if (fds->fn->classBinding) {
       CurrentClass = NULL;
     }
   }
