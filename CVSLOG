@@ -22757,3 +22757,22 @@ Modified files:
 	chapel/compiler/symtab/: removeDeadSymbols.cpp 
 	                         removeDeadSymbols.h 
 
+---------------------------------------------------------------------------
+
+03/30/05 18:12:52 -- bradc
+
+Log message:
+	This essentially backs out my last change and uses
+	a technique that Steve suggested in which we assume
+	that variables that are not dead of class types that
+	are dead can only take on the value "nil" and
+	therefore generate them to be void* types instead.
+	I also had to squelch the generation of their I/O
+	routines a bit, but overall this seems more
+	satisfactory than the previous approach.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	                         removeDeadSymbols.h 
+
