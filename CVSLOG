@@ -10539,3 +10539,73 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+11/30/04 08:04:29 -- shannon
+
+Log message:
+	Added support for configuration variables of type float64,
+	boolean, complex128, and string.  Specifically:
+	
+	* in stmt.cpp changed the code generation for the
+	  setInCommandLine function to append the name of the variable
+	  type to the function.
+	
+	* in chplio.c added a function, _string_to_boolean, which converts
+	  a string to boolean type.
+	
+	* in sub_test fixed a bug with handling a quoted string as an
+	  execution option.
+	
+	* in start_test added a comment to explain the prior addition of
+	  test-specific compilation and execution options.
+	
+	* added a bunch of tests.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/runtime/include/: chplio.h config.h 
+	chapel/runtime/src/: chplio.c config.c 
+	chapel/test/: start_test sub_test 
+	chapel/test/execflags/shannon/configs/: configVar.execopts 
+	                                        configVarDashS.execopts 
+	                                        configVarDashSVarEquals.execopts 
+	                                        configVarDashSVarEquals.good 
+	                                        configVarHashCollision.chpl 
+	                                        configVarHashCollision.execopts 
+	                                        configVarHashCollision.good 
+	                                        configVarWithSpaces.execopts 
+Added files:
+	chapel/test/Share/: configVarComplex.chpl 
+	chapel/test/execflags/shannon/configs/: configVarBoolean.chpl 
+	                                        configVarBoolean.execopts 
+	                                        configVarBoolean.good 
+	                                        configVarComplex.chpl 
+	                                        configVarComplex.execopts 
+	                                        configVarComplex.good 
+	                                        configVarFloat.chpl 
+	                                        configVarFloat.execopts 
+	                                        configVarFloat.good 
+	                                        configVarInvalidBoolean.chpl 
+	                                        configVarInvalidBoolean.execopts 
+	                                        configVarInvalidBoolean.good 
+	                                        configVarInvalidComplex.chpl 
+	                                        configVarInvalidComplex.execopts 
+	                                        configVarInvalidComplex.good 
+	                                        configVarInvalidFloat.chpl 
+	                                        configVarInvalidFloat.execopts 
+	                                        configVarInvalidFloat.good 
+	                                        configVarInvalidInteger.chpl 
+	                                        configVarInvalidInteger.execopts 
+	                                        configVarInvalidInteger.good 
+	                                        configVarInvalidName.chpl 
+	                                        configVarInvalidName.execopts 
+	                                        configVarInvalidName.good 
+	                                        configVarString.chpl 
+	                                        configVarString.execopts 
+	                                        configVarString.good 
+Removed files:
+	chapel/test/execflags/shannon/configs/: EXECOPTS configVarY.chpl 
+	                                        configVarY.execopts 
+	                                        configVarY.good 
+
