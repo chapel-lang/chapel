@@ -5295,3 +5295,35 @@ Added files:
 	chapel/compiler/AST/: findUnknownTypes.cpp findUnknownTypes.h 
 	                      traversal.cpp traversal.h 
 
+---------------------------------------------------------------------------
+
+08/09/04 14:03:07 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed regression problem by using filenames instead of pathnames
+	for the flow analysis log.
+	Continued work on connecting analysis to new AST with Sym regorganization.
+
+Modified files:
+	chapel/compiler/: Makefile c_runtime.h cg.cpp clone.cpp code.h 
+	                  driver.cpp dump.cpp fa.cpp fa_extras.cpp 
+	                  fun.cpp fun.h graph.cpp if1.cpp parse_ast.cpp 
+	                  prelude.v sym.h 
+	chapel/test/flowanalysis/jplevyak/: classvar.good cs1.good 
+	                                    cs2.good cs2.v cs3.good 
+	                                    cs3.v cs4.good cs5.good 
+	                                    cs6.good destruct.good 
+	                                    destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good 
+	                                    memberfun.good 
+	                                    memberfun2.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good review1.good 
+	                                    review2.good review3.good 
+	                                    structtype.good var.good 
+	                                    var2.good 
+
