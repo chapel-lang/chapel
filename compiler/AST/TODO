@@ -16,14 +16,12 @@
   - and/or specialize name of init procedure to file and make a top-level
     init file
 
-* improve type_info() for DomainExpr
-
 * improve variable initialization for domains -- generalize for
   nontrivial initializations, and remove some of the typeid stuff
   by factoring into class hierarchy?
 
 * remove hack that assumes domains of unknown rank are 1 (stmt.cpp
-  and type.cpp)
+  and type.cpp) -- trivial/bradc/declprintdom2.chpl is an example
 
 * remove reduce/reduce and scan/reduce conflicts
 

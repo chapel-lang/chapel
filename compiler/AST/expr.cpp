@@ -182,13 +182,6 @@ FloatLiteral::FloatLiteral(char* init_str, double init_val) :
 {}
 
 
-/*
-void FloatLiteral::print(FILE* outfile) {
-  fprintf(outfile, "%lf", val);
-}
-*/
-
-
 StringLiteral::StringLiteral(char* init_val) :
   Literal(EXPR_STRINGLITERAL, init_val)
 {}
@@ -625,8 +618,6 @@ Type* ArrayRef::typeInfo(void) {
 
 void ArrayRef::codegen(FILE* outfile) {
   fprintf(outfile, "_ACC%d(", baseExpr->rank());
-  //  this->typeInfo()->codegen(outfile);
-  //  fprintf(outfile, ", ");
   baseExpr->codegen(outfile);
   fprintf(outfile, ", ");
   argList->codegenList(outfile, ", ");
