@@ -2993,3 +2993,14 @@ Log message:
 Added files:
 	chapel/test/trivial/bradc/functions/: noargs.chpl 
 
+---------------------------------------------------------------------------
+
+06/08/04 15:39:36 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Turn off cloning for constants as requirested by brad.
+	We can figure out an interface for specifying this later.
+
+Modified files:
+	chapel/compiler/: fa.cpp fa.h 
+
