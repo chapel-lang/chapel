@@ -17,6 +17,8 @@
 #include "fa.h"
 #include "pdb.h"
 #include "pnode.h"
+#include "var.h"
+#include "fun.h"
 
 class LabelMap : public Map<char *, BaseAST *> {};
 
@@ -47,7 +49,8 @@ int AInfo::line() {
 }
 
 Sym *AInfo::symbol() {
-  return NULL;
+  if (rval) return rval;
+  return sym;
 }
 
 AST *AInfo::copy(Map<PNode *, PNode*> *nmap) {
@@ -1042,4 +1045,30 @@ AST_to_IF1(BaseAST* a) {
   return 0;
 }
 
+void 
+print_AST_Expr_types(BaseAST *ast) {
+  Vec<BaseAST *> asts;
+  ast->getStmtExprs(asts);
+  forv_BaseAST(a, asts) 
+    print_AST_Expr_types(a);
+  Expr *x = dynamic_cast<Expr*>(ast);
+  if (x) {
+    if (x->ainfo->rval && x->ainfo->rval->var) {
+      printf("%s %d %s %d\n", x->ainfo->rval->name ? x->ainfo->rval->name : "", 
+                           x->ainfo->rval->id, 
+                           x->ainfo->rval->var->type->name ?  x->ainfo->rval->var->type->name : "", 
+                           x->ainfo->rval->var->type->id);
+      printf("%X\n", (int)type_info(x->ainfo));
+    }
+  }
+}
+
+void 
+print_AST_types() {
+  forv_Fun(f, pdb->fa->funs) {
+    AInfo *a = dynamic_cast<AInfo *>(f->ast);
+    FnDefStmt *def = dynamic_cast<FnDefStmt *>(a->xast);
+    print_AST_Expr_types(def->fn->body);
+  }
+}
 

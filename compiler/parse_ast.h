@@ -78,7 +78,7 @@ class ParseAST : public AST {
   char *pathname();
   int line();
   void propagate(Vec<PNode *> *nodes);
-    void dump(FILE *fp, Fun *f);
+  void dump(FILE *fp, Fun *f);
   void graph(FILE *fp);
 
   ParseAST(AST_kind k, D_ParseNode *pn = 0);

@@ -35,5 +35,7 @@ class AInfo : public AST {
 };
 
 int AST_to_IF1(BaseAST *s);
+void print_AST_Expr_types(BaseAST *s);
+void print_AST_types();
 
 #endif
