@@ -104,9 +104,9 @@ depend: $(DEPENDSUBDIRS) echocompilerdir $(PLATFORM_DIR)
 	@echo > $(CVS_DEPENDS)
 	@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(CCDEP) -MM -MG $(CFLAGS) $$file -MF $(CVS_DEPENDS); \
+	  $(CCDEP) -MM -MG $(CFLAGS) $$file | grep -v ^# >> $(CVS_DEPENDS); \
 	done
-	@cat geysa.h | $(CCDEP) -E -MM -MG -MT GEYSA_INCLUDES $(CFLAGS) -MF - | sed s/:/\ =/ >> $(CVS_DEPENDS)
+	@$(CCDEP) -MM -MG -MT GEYSA_INCLUDES $(CFLAGS) geysa.cpp | sed s/:\ geysa.cpp/\ =/ | grep -v ^# >> $(CVS_DEPENDS)
 
 test: FORCE
 	cd test && $(MAKE) test
@@ -180,9 +180,12 @@ echocompilerdir:
 
 $(PLATFORM)/ast_cf.o: cast_code.cpp
 
-# Here, prim_data.h needs to be mentioned explicitly to get prim_data.h created before we try to create %.g.d_parser.cpp,
-# just in case the user hasn't already run a "make depend" (in which case GEYSA_INCLUDES will be set and the dependences
-# in the generated file will capture this information redundantly.
+# Here, prim_data.h needs to be mentioned explicitly to get
+# prim_data.h created before we try to create %.g.d_parser.cpp, just
+# in case the user hasn't already run a "make depend" (in which case
+# GEYSA_INCLUDES will be set and the dependences in the generated file
+# will capture this information redundantly.
+
 $(PLATFORM)/v.g.d_parser.o: prim_data.h
 $(PLATFORM)/chpl.g.d_parser.o: prim_data.h
 
