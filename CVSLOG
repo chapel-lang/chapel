@@ -21075,3 +21075,24 @@ Added files:
 	                              test_seq7.future test_seq7.good 
 	chapel/test/types/tuple/jplevyak/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/23/05 13:24:17 -- deitz
+
+Log message:
+	Added another array of record test for John to look at:
+	test_array_basic1.
+	
+	Added the last two of my local future tests.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_basic1.chpl 
+	                           test_array_basic1.future 
+	                           test_array_basic1.good 
+	chapel/test/functions/deitz/: test_operator_overloading2.chpl 
+	                              test_operator_overloading2.future 
+	                              test_operator_overloading2.good 
+	chapel/test/types/tuple/deitz/: test_tuple_of_tuples.chpl 
+	                                test_tuple_of_tuples.future 
+	                                test_tuple_of_tuples.good 
+
