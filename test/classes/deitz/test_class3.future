@@ -1,3 +1,31 @@
-jplevyak
+deitz
 
-If we start using a constructor with parameters that are used in a named fashion and also with default values, we need to insert the default wrapper function for constructors.  I don't think this is happening.  To use this, uncomment the #define CONSTRUCTOR_WITH_PARAMETERS
+This test will work if CONSTRUCTOR_WITH_PARAMETERS is undefined.
+However, lots of other tests will fail because the wrapper which
+is created doesn't return the result of the call to the
+wrapped function.
+
+The result is that "void" is coming back from the "construct" wrapper:
+
+b:compiler [649] % chpl ../test/classes/bradc/noinit.chpl
+noinit.chpl:9: unresolved member 'x'  class 'void'
+noinit.chpl:10: unresolved member 'y'  class 'void'
+noinit.chpl:11: unresolved member 'x'  class 'void'
+noinit.chpl:11: expression has no type
+noinit.chpl:11: unresolved member 'y'  class 'void'
+noinit.chpl:11: expression has no type
+fail: fatal error, program does not type
+
+The IF1 code is:
+
+(SYMBOL (var "_construct_pair" 592) :TYPE_KIND FUN :TYPE (var "_construct_pair" 592) :HAS ((var "_construct_pair" 599)) :RET (temp 596) :CONT (temp 595) :GLOBAL true :CODE
+ (CONC
+  (MOVE (const "0.0" 597) (var "_default_param_temp_y" 593))
+  (MOVE (const "0" 526) (var "_default_param_temp_x" 594))
+  (SEND (FUTURE (temp 598)) (var "_construct_pair" 196) (var "_default_param_temp_x" 594) (var "_default_param_temp_y" 593))
+  (MOVE (var "void" 138) (temp 596))
+  (SEND (var "reply" 1) (temp 595) (temp 596))))
+
+which is returning "void"
+
+I am assuming this is Steve's problem... if it isn't assign it back to me :)
