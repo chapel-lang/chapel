@@ -225,40 +225,6 @@ void RenameOverloaded::preProcessStmt(Stmt* stmt) {
 
 
 /******************************************************************************
- *** Resolve Easy
- ***
- *** This traversal resolves unresolved symbols that are easy to
- *** resolve, i.e., dot-expressions where the base expression is of
- *** known class type.
- ***
- ***/
-
-class ResolveEasy : public Traversal {
- public:
-  void preProcessExpr(Expr* expr);
-};
-
-void ResolveEasy::preProcessExpr(Expr* expr) {
-#if 0
-  if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
-    if (ClassType* class_type = dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
-      Symbol* member = Symboltable::lookupInScope(member_access->member->name, class_type->classScope);
-      if (member) {
-	member_access->member = member;
-      }
-      else {
-	INT_FATAL(expr, "Error resolving dot-expression");
-      }
-    }
-    else {
-      INT_FATAL(expr, "Error resolving dot-expression");
-    }
-  }
-#endif
-}
-
-
-/******************************************************************************
  *** SpecializeParens
  ***
  *** This traversal changes all ParenOpExpr that are arrays to
@@ -382,7 +348,6 @@ void Cleanup::run(ModuleSymbol* moduleList) {
   InsertThis* insert_this = new InsertThis();
   ResolveEasiest* resolve_easiest = new ResolveEasiest();
   RenameOverloaded* rename_overloaded = new RenameOverloaded();
-  ResolveEasy* resolve_easy = new ResolveEasy();
   SpecializeParens* specialize_parens = new SpecializeParens();
   ApplyThis* apply_this = new ApplyThis();
   ModuleSymbol* mod = moduleList;
@@ -393,7 +358,6 @@ void Cleanup::run(ModuleSymbol* moduleList) {
     mod->startTraversal(insert_this);
     mod->startTraversal(resolve_easiest);
     mod->startTraversal(rename_overloaded);
-    mod->startTraversal(resolve_easy);
     mod->startTraversal(specialize_parens);
     mod->startTraversal(apply_this);
     mod = nextLink(ModuleSymbol, mod);
@@ -403,7 +367,6 @@ void Cleanup::run(ModuleSymbol* moduleList) {
 void call_cleanup(BaseAST* ast) {
   if (all_parsed) { // Don't want to resolve if not all parsed
     TRAVERSE(ast, new ResolveEasiest(), true);
-    TRAVERSE(ast, new ResolveEasy(), true);
     TRAVERSE(ast, new SpecializeParens(), true);
   }
 }
@@ -411,7 +374,6 @@ void call_cleanup(BaseAST* ast) {
 void call_cleanup_ls(BaseAST* ast) {
   if (all_parsed) { // Don't want to resolve if not all parsed
     TRAVERSE_LS(ast, new ResolveEasiest(), true);
-    TRAVERSE_LS(ast, new ResolveEasy(), true);
     TRAVERSE_LS(ast, new SpecializeParens(), true);
   }
 }

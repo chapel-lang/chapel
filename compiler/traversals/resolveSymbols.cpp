@@ -11,7 +11,7 @@
 
 /** Assumption: Analysis has run **/
 
-void ResolveSymbols::preProcessExpr(Expr* expr) {
+void ResolveSymbols::postProcessExpr(Expr* expr) {
 
   if (MemberAccess* dot = dynamic_cast<MemberAccess*>(expr)) {
     if (UnresolvedSymbol* UnresolvedMember =
