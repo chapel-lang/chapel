@@ -16161,3 +16161,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: stmt.cpp symbol.cpp 
 
+---------------------------------------------------------------------------
+
+02/01/05 16:19:12 -- bradc
+
+Log message:
+	Steve's recent checkins have fixed this future,
+	saving me some work.
+
+Removed files:
+	chapel/test/trivial/bradc/: testAllScopes2.future 
+
