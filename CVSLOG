@@ -5891,3 +5891,29 @@ Modified files:
 	chapel/compiler/make_prims/: Makefile 
 	chapel/compiler/test/: .cvsignore Makefile 
 
+---------------------------------------------------------------------------
+
+08/26/04 15:44:30 -- bradc
+
+Log message:
+	Added a table of built-in types (builtinTypes) for
+	John's benefit.  These are types which are built
+	into the language, and currently includes booleans,
+	integers, floats, complexes, strings, and locales.
+	I also threw in the "unknown" type placeholder,
+	though am not certain that this should go into the
+	table (John, let me know if you have an opinion),
+	as well as the "void" type (which I continue to
+	think should be switched to nilType as John suggested).
+	
+	As part of this addition, I pulled all the type
+	keywords out of the lexer and parser, introduced
+	them as symbols in the implicit scope, and moved
+	boolean from being an enumerated type defined in
+	the prelude to being a built-in type (it was
+	sortof straddling the two erroneously previously).
+
+Modified files:
+	chapel/compiler/AST/: chapel.lex chapel.y prelude.chpl 
+	                      symtab.cpp symtab.h type.cpp type.h 
+
