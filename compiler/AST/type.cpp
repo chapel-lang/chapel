@@ -934,8 +934,8 @@ void TupleType::rebuildDefaultVal(void) {
   forv_Vec(Type, component, components) {
     tuple->exprs = appendLink(tuple->exprs, component->defaultVal->copy());
   }
-  defaultVal = tuple;
-  SET_BACK(defaultVal);
+  SET_BACK(tuple->exprs);
+  defaultVal->replace(tuple);
 }
 
 

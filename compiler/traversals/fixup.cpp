@@ -176,7 +176,7 @@ static void verifySymbolDefPoint(Symbol* sym) {
   if (typeid(*sym) == typeid(LabelSymbol)) {
     return;
   }
-  if (sym->parentScope->type == SCOPE_INTRINSIC) {
+  if (sym->parentScope && sym->parentScope->type == SCOPE_INTRINSIC) {
     return;
   }
 

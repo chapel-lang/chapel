@@ -103,7 +103,7 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
     tuple_type->addSymbol(tuple_sym);
     DefStmt* tuple_type_def = new DefStmt(new DefExpr(tuple_sym));
     tuple_sym->setDefPoint(tuple_type_def->defExprList);
-    commonModule->stmts = appendLink(commonModule->stmts, tuple_type_def);
+    commonModule->stmts->insertBefore(tuple_type_def);
   }
   Symboltable::setCurrentScope(saveScope);
 }
