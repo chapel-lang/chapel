@@ -4908,3 +4908,28 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+08/04/04 14:17:26 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	second part of massive header reorganization
+	geysa.h is now a minimal environment containing
+	some basic containers, GC, types etc, but nothing
+	particular to any module (new AST, analysis, etc.)
+	Header files are now as independant as reasonable, and
+	most headers are accessed directly in the .cpp files.
+	This should improve recompilation time for small changes.
+
+Modified files:
+	chapel/compiler/: ast.cpp ast.h ast_cf.cpp cdb.cpp cfg.cpp 
+	                  cg.cpp clone.cpp code.h dom.cpp driver.cpp 
+	                  dump.cpp fa.cpp fa.h fun.cpp fun.h geysa.h 
+	                  grammar.h graph.cpp if1.cpp inline.cpp 
+	                  inline.h internal.h log.cpp log.h loop.cpp 
+	                  loop.h misc.cpp pattern.cpp pattern.h pdb.cpp 
+	                  pdb.h pnode.cpp pnode.h prim.cpp prim.h 
+	                  region.cpp region.h scope.cpp ssu.cpp sym.h 
+	                  var.cpp 
+	chapel/compiler/make/: Makefile.compiler.head 
+
