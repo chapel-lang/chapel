@@ -3211,3 +3211,14 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+06/10/04 17:54:33 -- bradc
+
+Log message:
+	Added the -Werror flag when using g++ 3.4 to guard against
+	future warnings.
+
+Modified files:
+	chapel/make/: Makefile.gnu 
+
