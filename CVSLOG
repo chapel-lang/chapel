@@ -17544,3 +17544,30 @@ Modified files:
 	chapel/runtime/include/: array.h chplio.h domain.h 
 	chapel/runtime/src/: array.c domain.c 
 
+---------------------------------------------------------------------------
+
+02/15/05 14:56:00 -- deitz
+
+Log message:
+	Made ForallExpr store indices as Symbol* rather than Stmt* of
+	VarDefStmts.  This gets rid of the Stmts in Exprs.  Made defPoint in
+	Symbol point to BaseAST rather than Stmt since it may point to either
+	an Expr or a Stmt now.
+	
+	Made Fixup-verify once again check to make sure that all defPoints are
+	correct.
+	
+	In coping with this change, modified analysis to see whether the
+	defPoint is an Expr or a Stmt before grabbing the ainfo.  This is a
+	tad verbose but seems necessary.  The other option is to put ainfo and
+	asymbol in BaseAST and have them only active for Expr/Stmt and
+	Symbol/Type respectively.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
+	                             insertAnonymousTypes.cpp 
+
