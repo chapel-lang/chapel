@@ -1,5 +1,5 @@
-aa::a(cs3.v:1) ( "1" (cs3.v:3) )
-aa::a(cs3.v:1) ( "2.0" (cs3.v:5) )
+aa::a(cs3.v:1) ( float64 (prelude.v:41) )
+aa::a(cs3.v:1) ( int32 (prelude.v:28) )
 bb::b(cs3.v:2) ( tuple (prelude.v:13) )
 function __init cs3.v:1 with 1 edges
 function __init prelude.v:7 with 1 edges
@@ -18,8 +18,8 @@ operator::a(prelude.v:83) ( tuple (prelude.v:13) )
 operator::a(prelude.v:83) ( tuple (prelude.v:13) )
 operator::a(prelude.v:83) ( tuple (prelude.v:13) )
 operator::a(prelude.v:83) ( tuple (prelude.v:13) )
-operator::a(prelude.v:88) ( "1" (cs3.v:3) "2.0" (cs3.v:5) )
-operator::b(prelude.v:88) ( "1" (cs3.v:3) "2.0" (cs3.v:5) )
+operator::a(prelude.v:88) ( int32 (prelude.v:28) float64 (prelude.v:41) )
+operator::b(prelude.v:88) ( int32 (prelude.v:28) float64 (prelude.v:41) )
 print::a(prelude.v:137) ( float64 (prelude.v:41) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
 system::null(prelude.v:57) ( tuple (prelude.v:13) )
