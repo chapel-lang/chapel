@@ -17,8 +17,7 @@ char *dupstr(char *s, char *e = 0); // from misc.h
 
 // Simple direct mapped Map (pointer hash table) and Environment
 
-template <class K, class C>
-class MapElem : public gc {
+template <class K, class C> class MapElem : public gc {
  public:
   K	key;
   C	value;
@@ -106,7 +105,7 @@ class StringChainHash : public ChainHash<char *, StringHashFns> {
   inline char *cannonicalize(char *s, char *e);
 };
 
-template <class C, class AHashFns, int N> class NBlockHash {
+template <class C, class AHashFns, int N> class NBlockHash : public gc {
  public:
   int n;
   int i;
@@ -129,8 +128,7 @@ template <class C, class ABlockHashFns> class BlockHash :
   public NBlockHash<C, ABlockHashFns, DEFAULT_BLOCK_HASH_SIZE> {};
 typedef BlockHash<char *, StringHashFns> StringBlockHash;
 
-template <class K, class C> 
-class Env : public gc {
+template <class K, class C> class Env : public gc {
  public:
   inline void put(K akey, C avalue);
   inline C get(K akey);
