@@ -27,15 +27,23 @@ void DestructureTupleAssignments::postProcessStmt(Stmt* stmt) {
     return;
   }
 
+  if (!left_type && !left_tuple) {
+    INT_FATAL(stmt, "Tuple to non-tuple assignment should be caught earlier");
+  }
+
+  if (!right_type && !right_tuple) {
+    INT_FATAL(stmt, "Non-tuple to tuple assignment should be caught earlier");
+  }
+
   int left_n =
     (left_type) 
-    ? left_n = left_type->components.n 
-    : left_n = left_tuple->exprs->length();
+    ? left_type->components.n 
+    : left_tuple->exprs->length();
 
   int right_n =
     (right_type) 
-    ? right_n = right_type->components.n 
-    : right_n = right_tuple->exprs->length();
+    ? right_type->components.n 
+    : right_tuple->exprs->length();
 
   if (left_n != right_n) {
     INT_FATAL(stmt, "Non-matching tuple assign should be caught earlier");

@@ -22,6 +22,7 @@
 #include "../traversals/getstuff.h"
 #include "../traversals/insertAnonymousTypes.h"
 #include "../traversals/insertUnionChecks.h"
+#include "../traversals/insertVariableInitializations.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processParameters.h"
@@ -53,6 +54,7 @@ REGISTER(Fixup);
 REGISTER(GetStuff);
 REGISTER(InsertAnonymousTypes);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
+REGISTER(InsertVariableInitializations);
 REGISTER(LegalizeCNames);
 REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST

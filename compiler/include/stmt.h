@@ -29,9 +29,6 @@ class Stmt : public BaseAST {
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
 
-  void codegenVarDefs(FILE* outfile);
-  virtual void codegenVarDef(FILE* outfile);
-
   void replace(Stmt* new_stmt);
   virtual void append(ILink* new_stmt);
   void insertBefore(Stmt* new_stmt);
@@ -77,7 +74,6 @@ class VarDefStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  void codegenVarDef(FILE* outfile);
 };
 
 

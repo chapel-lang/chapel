@@ -589,6 +589,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   SymScope* block_scope = Symboltable::popScope();
   BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
   wrapper_block->setBlkScope(block_scope);
+  block_scope->stmtContext = wrapper_block;
   Type* wrapper_return_type = retType;
   wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
 					  wrapper_return_type, wrapper_block);

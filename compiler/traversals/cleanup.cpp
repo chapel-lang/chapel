@@ -151,6 +151,7 @@ static void resolve_type_helper(Type* &type) {
     for (int i = 0; i < tuple_type->components.n; i++) {
       resolve_type_helper(tuple_type->components.v[i]);
     }
+    tuple_type->rebuildDefaultVal();
   }
 }
 

@@ -209,6 +209,7 @@ class TupleType : public Type {
 
   TupleType(Type* init_type);
   void addType(Type* additionalType);
+  void rebuildDefaultVal(void);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);

@@ -996,11 +996,26 @@ TupleType::TupleType(Type* firstType) :
   Type(TYPE_TUPLE, nilExpr)
 {
   components.add(firstType);
+  defaultVal = new Tuple(firstType->defaultVal->copy());
+  SET_BACK(defaultVal);
 }
 
 
 void TupleType::addType(Type* additionalType) {
   components.add(additionalType);
+  if (Tuple* tuple = dynamic_cast<Tuple*>(defaultVal)) {
+    tuple->exprs = appendLink(tuple->exprs, additionalType->defaultVal->copy());
+  }
+}
+
+
+void TupleType::rebuildDefaultVal(void) {
+  Tuple* tuple = new Tuple(nilExpr);
+  forv_Vec(Type, component, components) {
+    tuple->exprs = appendLink(tuple->exprs, component->defaultVal->copy());
+  }
+  defaultVal = tuple;
+  SET_BACK(defaultVal);
 }
 
 

@@ -105,19 +105,6 @@ void Stmt::traverseStmt(Traversal* traversal) {
 }
 
 
-void Stmt::codegenVarDefs(FILE* outfile) {
-  Stmt* nextStmt = this;
-
-  do {
-    nextStmt->codegenVarDef(outfile);
-    nextStmt = nextLink(Stmt, nextStmt);
-  } while (nextStmt);
-}
-
-
-void Stmt::codegenVarDef(FILE* outfile) { }
-
-
 static void call_fixup(Stmt* stmt) {
   Fixup* fixup = new Fixup();
 
@@ -482,14 +469,10 @@ void VarDefStmt::codegen(FILE* outfile) {
 	  aVar->type->codegen(outfile);
 	  fprintf(outfile, "(\"%s\", &%s, \"%s\")) {\n", aVar->name, 
 		  aVar->cname, moduleName);
-	}
-	// TODO: hoist this into a traversal that rewrites vardefs as
-	// assignments?
-	AssignOp* assignment = new AssignOp(GETS_NORM, new Variable(aVar), 
-					    initExpr);
-	assignment->codegen(outfile);
-	fprintf(outfile, ";");
-	if (aVar->varClass == VAR_CONFIG) {
+	  AssignOp* assignment = new AssignOp(GETS_NORM, new Variable(aVar), 
+					      initExpr);
+	  assignment->codegen(outfile);
+	  fprintf(outfile, ";");
 	  fprintf(outfile, "\n}");
 	}
       }
@@ -498,24 +481,6 @@ void VarDefStmt::codegen(FILE* outfile) {
       }
     }
     aVar = nextVar;
-  }
-}
-
-
-void VarDefStmt::codegenVarDef(FILE* outfile) {
-  VarSymbol* aVar = var;
-
-/* if in module scope, hoist to internal header */  
-  if (aVar->parentScope->type == SCOPE_MODULE) { 
-    outfile = intheadfile;
-  }
-
-  // TODO: for certain cases, we could use a C initializer inline rather
-  // than separating the variable declaration from its initialization.
-
-  while (aVar) {
-    aVar->codegenDef(outfile);
-    aVar = nextLink(VarSymbol, aVar);
   }
 }
 
@@ -787,6 +752,7 @@ Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   SymScope* block_scope = Symboltable::popScope();
   BlockStmt* block_copy = new BlockStmt(body_copy);
   block_copy->setBlkScope(block_scope);
+  block_scope->setContext(block_copy);
   return block_copy;
 }
 

@@ -1,6 +1,0 @@
-bradc/deitz
-
-This test fails because we don't initialize variables as soon as
-their C declaration has been passed, only once their chapel
-VarDeclStmt has been passed.  This is similar to the vardecls
-test, but a bit more complete in terms of types.

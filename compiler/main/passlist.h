@@ -44,9 +44,10 @@ PassInfo passlist[] = {
 
 
   // passes to prepare for C code generation
-  RUN(DestructureTupleAssignments, ""),
   RUN(MethodsToFunctions, ""),
   RUN(ProcessParameters, ""),
+  RUN(InsertVariableInitializations, ""),
+  RUN(DestructureTupleAssignments, ""),
   RUN(InsertUnionChecks, ""),
   RUN(LegalizeCNames, ""), 
 

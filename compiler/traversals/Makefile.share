@@ -13,6 +13,7 @@ TRAVERSALS_SRCS = \
 	getstuff.cpp \
 	insertAnonymousTypes.cpp \
 	insertUnionChecks.cpp \
+	insertVariableInitializations.cpp \
 	printAST.cpp \
 	processParameters.cpp \
 	methodsToFunctions.cpp \

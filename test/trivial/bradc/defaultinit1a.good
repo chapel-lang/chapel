@@ -7,5 +7,5 @@ e is:
 a is: true
 b is: 1
 c is: 1.2
-d is: 1.2 + 3.4
+d is: 1.2 + 3.4i
 e is: nonempty
