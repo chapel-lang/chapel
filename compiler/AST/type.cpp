@@ -810,14 +810,7 @@ void ClassType::traverseDefType(Traversal* traversal) {
     prevScope = Symboltable::setCurrentScope(classScope);
   }
   if (classTypeSymbols) TRAVERSE_DEF_LS(classTypeSymbols, traversal, false);
-  if (classVarSymbols) {
-    VarSymbol* tmp = classVarSymbols;
-    while (tmp && !tmp->isNull()) {
-      TRAVERSE(tmp->defPoint, traversal, false);
-      tmp = nextLink(VarSymbol, tmp);
-    }
-    // SJD) WANT: TRAVERSE_DEF_LS(classVarSymbols, traversal, false);
-  }
+  if (classVarSymbols) TRAVERSE_DEF_LS(classVarSymbols, traversal, false);
   if (embeddedFnSymbols) {
     FnSymbol* tmp = embeddedFnSymbols;
     while (tmp && !tmp->isNull()) {
