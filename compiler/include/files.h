@@ -40,7 +40,7 @@ void addLibInfo(char* filename);
 
 char* createGDBFile(int argc, char* argv[]);
 
-void makeAndCopyBinary(void);
+void makeBinary(void);
 
 #endif
 

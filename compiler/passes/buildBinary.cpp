@@ -4,6 +4,6 @@
 
 void BuildBinary::run(ModuleSymbol* moduleList) {
   if (!suppressCodegen) {
-    makeAndCopyBinary();
+    makeBinary();
   }
 }

@@ -277,7 +277,20 @@ static void genMakefileHeader(char* srcfilename, char* compilerDir) {
 
   char* strippedExeFilename = stripdirectories(executableFilename);
   intExeFilename = genIntFilename(strippedExeFilename);
-  fprintf(makefile, "BINNAME = %s\n", intExeFilename);
+  // BLC: This condtitional is done so that cp won't complain if
+  // the source and destination are the same file
+  if (strcmp(executableFilename, intExeFilename) == 0) {
+    intExeFilename = glomstrings(2, intExeFilename, ".tmp");
+  }
+  // BLC: We generate a TMPBINNAME which is the name that will be used
+  // by the C compiler in creating the executable, and is in the
+  // --savec directory (a /tmp directory by default).  We then copy it
+  // over to BINNAME -- the name given by the user, or a.out by
+  // default -- after linking is done.  As it turns out, this saves a
+  // factor of 5 or so in time in running the test system, as opposed
+  // to specifying BINNAME on the C compiler command line.
+  fprintf(makefile, "BINNAME = %s\n", executableFilename);
+  fprintf(makefile, "TMPBINNAME = %s\n", intExeFilename);
   fprintf(makefile, "CHPLRTDIR = %s\n", runtimedir);
   fprintf(makefile, "LIBS =");
   int i;
@@ -373,14 +386,11 @@ char* createGDBFile(int argc, char* argv[]) {
 }
 
 
-void makeAndCopyBinary(void) {
+void makeBinary(void) {
   const char* gmakeflags = printSystemCommands ? "-f " : "-s -f ";
   char* command = glomstrings(4, "gmake ", gmakeflags, intDirName, 
                               "/Makefile");
   mysystem(command, "compiling generated source");
-
-  command = glomstrings(4, "cp ", intExeFilename, " ", executableFilename);
-  mysystem(command, "copying binary to final directory");
 }
 
 

@@ -1,0 +1,2 @@
+#!/bin/sh
+mv output/c.out a.out

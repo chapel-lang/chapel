@@ -3,5 +3,6 @@ include $(CHPLRTDIR)/../make/Makefile.platform
 include $(CHPLRTDIR)/etc/Makefile.macros
 
 all:
-	gcc $(CFLAGS) -o $(BINNAME) -I $(CHPLRTDIR)/include -L $(CHPLRTDIR)/src/$(PLATFORM) $(CHPLRTDIR)/src/$(PLATFORM)/main.o $(CHPLSRC) -lchpl -lm $(LIBS)
+	gcc $(CFLAGS) -o $(TMPBINNAME) -I $(CHPLRTDIR)/include -L $(CHPLRTDIR)/src/$(PLATFORM) $(CHPLRTDIR)/src/$(PLATFORM)/main.o $(CHPLSRC) -lchpl -lm $(LIBS)
+	cp $(TMPBINNAME) $(BINNAME)
 
