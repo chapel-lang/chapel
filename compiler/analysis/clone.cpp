@@ -615,7 +615,7 @@ fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
     es->fun = f;
   // fixup local variables
   forv_Var(v, f->fa_all_Vars)
-    if (v->sym->in == f->sym)
+    if (v->sym->function_scope)
       fixup_var(v, f, ess);
 }
 
@@ -693,7 +693,7 @@ log_test_fa(FA *fa) {
       }
     }
     forv_Var(v, f->fa_all_Vars) {
-      if (v->sym->in != f->sym) {
+      if (!v->sym->function_scope) {
 	gvars.set_add(v);
 	continue;
       } else

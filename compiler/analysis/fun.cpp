@@ -99,9 +99,9 @@ Fun::collect_Vars(Vec<Var *> &vars, Vec<PNode *> *nodes) {
 }
 
 static void
-copy_var(Var **av, Sym *fsym, VarMap &vmap) {
+copy_var(Var **av, VarMap &vmap) {
   Var *v = *av;
-  if (v->sym->in == fsym) {
+  if (v->sym->function_scope) {
     if (!(v = vmap.get(*av))) {
       v = (*av)->copy();
       vmap.put(*av, v);
@@ -111,7 +111,7 @@ copy_var(Var **av, Sym *fsym, VarMap &vmap) {
 }
 
 static PNode *
-copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
+copy_pnode(PNode *node, VarMap &vmap) {
   PNode *n = new PNode();
   n->code = node->code;
   n->rvals.copy(node->rvals);
@@ -123,11 +123,11 @@ copy_pnode(PNode *node, Fun *f, VarMap &vmap) {
   n->phy.copy(node->phy);
   n->prim = node->prim;
   for (int i = 0; i < n->rvals.n; i++)
-    copy_var(&n->rvals.v[i], f->sym, vmap);
+    copy_var(&n->rvals.v[i], vmap);
   for (int i = 0; i < n->lvals.n; i++)
-    copy_var(&n->lvals.v[i], f->sym, vmap);
+    copy_var(&n->lvals.v[i], vmap);
   for (int i = 0; i < n->tvals.n; i++)
-    copy_var(&n->tvals.v[i], f->sym, vmap);
+    copy_var(&n->tvals.v[i], vmap);
   return n;
 }
 
@@ -142,19 +142,19 @@ Fun::copy() {
   Vec<PNode *> nodes;
 
   forv_PNode(n, fa_all_PNodes) {
-    PNode *p = copy_pnode(n, f, *f->vmap);
+    PNode *p = copy_pnode(n, *f->vmap);
     nodes.add(p);
     f->nmap->put(n, p);
     for (int i = 0; i < n->phi.n; i++) {
       PNode *nn = n->phi.v[i];
-      PNode *pp = copy_pnode(nn, f, *f->vmap);
+      PNode *pp = copy_pnode(nn, *f->vmap);
       nodes.add(pp);
       f->nmap->put(nn, pp);
       p->phi.v[i] = pp;
     }
     for (int i = 0; i < n->phy.n; i++) {
       PNode *nn = n->phy.v[i];
-      PNode *pp = copy_pnode(nn, f, *f->vmap);
+      PNode *pp = copy_pnode(nn, *f->vmap);
       nodes.add(pp);
       f->nmap->put(nn, pp);
       p->phy.v[i] = pp;
@@ -171,15 +171,15 @@ Fun::copy() {
   f->numeric_arg_positions.copy(numeric_arg_positions);
   forv_MPosition(p, f->numeric_arg_positions) {
     Var *v = filtered_args.get(p);
-    copy_var(&v, f->sym, *f->vmap);
+    copy_var(&v, *f->vmap);
     f->filtered_args.put(p, v);
     v = args.get(p);
-    copy_var(&v, f->sym, *f->vmap);
+    copy_var(&v, *f->vmap);
     f->args.put(p, v);
   }
   f->rets.copy(rets);
   for (int i = 0; i < f->rets.n; i++)
-    copy_var(&f->rets.v[i], f->sym, *f->vmap);
+    copy_var(&f->rets.v[i], *f->vmap);
   for (int i = 0; i < f->vmap->n; i++)
     if (f->vmap->v[i].key)
       f->vmap->v[i].value->def = f->nmap->get(f->vmap->v[i].value->def);

@@ -117,7 +117,10 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
     if (old_s->asymbol) {
       new_s->asymbol = (ASymbol*)old_s->asymbol->copy();
       new_s->asymbol->xsymbol = new_s;
-      new_s->asymbol->var = context->vmap->get(old_s->asymbol->var);
+      if (old_s->asymbol->var) {
+	new_s->asymbol->var = context->vmap->get(old_s->asymbol->var);
+	assert(new_s->asymbol->var);
+      }
     }
   } else 
     assert(!"clone of Type unsupported");
@@ -129,7 +132,6 @@ AInfo::copy_tree(ASTCopyContext* context) {
   callback.context = context;
   FnDefStmt *orig_fn = dynamic_cast<FnDefStmt*>(xast);  
   FnDefStmt *new_fn = orig_fn->clone(&callback);
-  //new_fn->fn->asymbol = (ASymbol*)context->new_f->sym;
   return new_fn->ainfo;
 }
 
