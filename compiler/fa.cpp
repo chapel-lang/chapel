@@ -1730,6 +1730,8 @@ collect_es_type_confluences(Vec<AVar *> &type_confluences) {
       AVar *xav = make_AVar(v, es);
       for (AVar *av = xav; av; av = av->lvalue)
 	forv_AVar(x, av->backward) if (x) {
+	  if (!x->out->n)
+	    continue;
 	  if (type_diff(av->in, x->out) != bottom_type) {
 	    type_confluences.set_add(av);
 	    break;
@@ -1746,6 +1748,8 @@ collect_cs_type_confluences(Vec<AVar *> &type_confluences) {
   forv_CreationSet(cs, fa->css) {
     forv_AVar(av, cs->vars) {
       forv_AVar(x, av->backward) if (x) {
+	if (!x->out->n)
+	  continue;
 	if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
 	  if (type_diff(av->in, x->out) != bottom_type) {
 	    type_confluences.set_add(av);
@@ -2125,6 +2129,8 @@ analyze_confluence(AVar *av, int fsetter = 0) {
   Vec<AVar *> *dir = fsetter ? &av->forward : &av->backward;
   forv_AVar(x, *dir) if (x) {
     assert(x->contour_is_entry_set);
+    if (!fsetter && !x->out)
+      continue;
     for (int i = 0; i < ss.n; i++) {
       forv_AVar(a, *ss.v[i]) if (a) {
 	if ((!fsetter && a->out == x->out) || 
