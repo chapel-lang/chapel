@@ -20404,3 +20404,25 @@ Removed files:
 	chapel/test/functions/deitz/: test_named_param2.future 
 	                              test_named_param3.future 
 
+---------------------------------------------------------------------------
+
+03/18/05 15:59:36 -- deitz
+
+Log message:
+	Improved support for nested records so that within the constructor to
+	the outer instance, the constructor to the inner instance is called.
+	
+	Removed future for test_nested_record1.
+	
+	Added a new test test_nested_record2 that creates the same nested
+	record but then uses == on it.  It passes.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/classes/deitz/: test_nested_record1.good 
+Added files:
+	chapel/test/classes/deitz/: test_nested_record2.chpl 
+	                            test_nested_record2.good 
+Removed files:
+	chapel/test/classes/deitz/: test_nested_record1.future 
+
