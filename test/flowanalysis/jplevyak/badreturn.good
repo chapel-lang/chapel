@@ -1,3 +1,6 @@
+  called from <unknown>:0
+  called from <unknown>:0
+  called from <unknown>:0
 badreturn.v:2: 'q' has no type
 badreturn.v:2: near 'q' unmatched type 'tuple'
 badreturn.v:3: unresolved call 'operator'

@@ -100,8 +100,8 @@ dump_sym(FILE *fp, Sym *t) {
 	    t->in->name);
   else
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
-    fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->ast->pathname(), t->ast->line());
-  if (t->ast && t->ast->pathname())
+    fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->pathname(), t->line());
+  if (t->ast && t->pathname())
   if (t->internal)
     fprintf(fp, "<TR><TD><TD>internal<TD>%s\n", internal_string[t->internal]);
   if (t->builtin) {
@@ -211,8 +211,8 @@ dump_functions(FILE *fp, FA *fa) {
     if (!sname) sname = ANON;
     fprintf(fp, "<b><A NAME=\"FUN_%d\">%s::%s (%d)</A></b>\n", f->id, sname, name, f->id);
     fprintf(fp, "<TABLE BORDER=0, CELLSPACING=0, CELLPADDING=0>\n");
-    if (f->ast && f->ast->pathname())
-      fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->ast->pathname(), f->ast->line());
+    if (f->ast && f->pathname())
+      fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->pathname(), f->line());
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>Args<TD>\n");
     dump_var_type_marg_positions(fp, f->arg_positions, f->args);
     fprintf(fp, "<TR><TD><TD>Rets<TD>\n");

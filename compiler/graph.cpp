@@ -493,10 +493,10 @@ graph_abstract_types(FA *fa, char *fn) {
       else
 	strcpy(pname, "<anonymous>");
       pname += strlen(pname);
-      if (s->fun->ast->pathname()) {
-	char *pn = strrchr(s->fun->ast->pathname(), '/');
-	if (!pn) pn = s->fun->ast->pathname(); else pn++;
-	sprintf(pname, "%s:%d ", pn, s->fun->ast->line());
+      if (s->fun->pathname()) {
+	char *pn = strrchr(s->fun->pathname(), '/');
+	if (!pn) pn = s->fun->pathname(); else pn++;
+	sprintf(pname, "%s:%d ", pn, s->fun->line());
 	pname += strlen(pname);
       }
     } else if (s->name) {

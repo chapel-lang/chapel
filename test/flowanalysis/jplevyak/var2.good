@@ -1,14 +1,14 @@
- called from 0 in __init__ at <none>:0
- called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <unknown>:0
+ called from 0 in __init__ at <unknown>:0
  called from 2 in __init at var2.chpl:1
  called from 2 in __init at var2.chpl:1
  called from 3 in __init at var2.chpl:1
-function __init prelude.chpl:7
+function __init /home/jplevyak/chapel/compiler/prelude.chpl:7
 function __init var2.chpl:1
-function __init__ <none>:0
-function operator prelude.chpl:104
-function operator prelude.chpl:88
-function print prelude.chpl:238
+function __init__ <unknown>:0
+function operator /home/jplevyak/chapel/compiler/prelude.chpl:104
+function operator /home/jplevyak/chapel/compiler/prelude.chpl:88
+function print /home/jplevyak/chapel/compiler/prelude.chpl:238
 globals
 operator::a(prelude.chpl:104) ( integer64 (prelude.chpl:27) )
 operator::a(prelude.chpl:88) ( integer64 (prelude.chpl:27) )

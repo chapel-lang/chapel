@@ -51,6 +51,7 @@ class ParseAST : public AST {
   unsigned int is_comma:1;
   unsigned int is_inc_dec:1;
   unsigned int rank;
+  ParseAST *parent;
   Vec<ParseAST *> children;
   Sym *sym;
   char *string;
@@ -75,8 +76,8 @@ class ParseAST : public AST {
 
   Sym *symbol() { return rval ? rval : sym; } 
   AST *copy(Map<PNode *, PNode*> *nmap = 0);
-  char *pathname() { return _pathname; }
-  int line() { return _line; }
+  char *pathname();
+  int line();
   void propagate(Vec<PNode *> *nodes);
     void dump(FILE *fp, Fun *f);
   void graph(FILE *fp);

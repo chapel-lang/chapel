@@ -1,5 +1,5 @@
- called from 0 in __init__ at <none>:0
- called from 0 in __init__ at <none>:0
+ called from 0 in __init__ at <unknown>:0
+ called from 0 in __init__ at <unknown>:0
  called from 2 in __init at cs1.v:1
  called from 3 in __init at cs1.v:1
  called from 4 in __init at cs1.v:1
@@ -12,17 +12,17 @@ create::a(cs1.v:1) ( float64 (prelude.v:42) )
 create::a(cs1.v:1) ( int32 (prelude.v:29) )
 create::x(cs1.v:1) ( float64 (prelude.v:42) )
 create::x(cs1.v:1) ( int32 (prelude.v:29) )
+function __init /home/jplevyak/chapel/compiler/prelude.v:7
 function __init cs1.v:1
-function __init prelude.v:7
-function __init__ <none>:0
+function __init__ <unknown>:0
 function create cs1.v:1
 function create cs1.v:1
-function operator prelude.v:90
-function operator prelude.v:90
-function operator prelude.v:90
-function operator prelude.v:90
-function print prelude.v:144
-function print prelude.v:144
+function operator /home/jplevyak/chapel/compiler/prelude.v:90
+function operator /home/jplevyak/chapel/compiler/prelude.v:90
+function operator /home/jplevyak/chapel/compiler/prelude.v:90
+function operator /home/jplevyak/chapel/compiler/prelude.v:90
+function print /home/jplevyak/chapel/compiler/prelude.v:144
+function print /home/jplevyak/chapel/compiler/prelude.v:144
 globals
 operator::a(prelude.v:90) ( tuple (prelude.v:14) )
 operator::a(prelude.v:90) ( tuple (prelude.v:14) )

@@ -1,3 +1,4 @@
+  called from <unknown>:0
   called from badcall.v:3
 badcall.v:2: unresolved call 'f'
 badcall.v:4: unresolved call 'print'

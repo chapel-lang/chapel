@@ -49,7 +49,6 @@ Fun::setup_ast() {
       n->code->ast->pnodes.add(n);
   }
   nodes.clear();
-  ast->propagate(&nodes);
 }
 
 void
@@ -214,4 +213,14 @@ Fun::called_by_funs(Vec<Fun *> &called_by) {
   forv_CallPoint(c, called)
     called_by.set_add(c->fun);
   called_by.set_to_vec();
+}
+
+char *
+Fun::pathname() {
+  return ast->pathname();
+}
+
+int
+Fun::line() {
+  return ast->line(); 
 }

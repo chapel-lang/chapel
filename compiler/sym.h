@@ -118,6 +118,9 @@ class Sym : public gc {
   Fun			*fun;			// used by fa.cpp
   char 			*cg_string;		// used by cg.cpp
 
+  char			*pathname();
+  int			line();
+
   Sym() { memset(this, 0, sizeof *this); }
   int imm_int(int *);
 };

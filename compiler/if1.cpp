@@ -7,6 +7,7 @@
 #include "prim.h"
 #include "if1.h"
 #include "builtin.h"
+#include "ast.h"
 
 char *builtin_strings[] = {
 #define S(_x) #_x,
@@ -903,3 +904,33 @@ meta_apply(Sym *fn, Sym *arg) {
   assert(0);
   return 0;
 }
+
+char *
+Sym::pathname() {
+  if (ast)
+    return ast->pathname();
+  return "<unknown>";
+}
+
+int
+Sym::line() {
+  if (ast)
+    return ast->line();
+  return 0;
+}
+
+char *
+Code::pathname() {
+  if (ast)
+    return ast->pathname();
+  return "<unknown>";
+}
+
+int
+Code::line() {
+  if (ast)
+    return ast->line();
+  return 0;
+}
+
+

@@ -30,6 +30,9 @@ class Code : public gc {
   AST		*ast;
   Prim		*prim;
 
+  char 		*pathname();
+  int 		line();
+
   unsigned int	dead:1;	// used by if1.cpp
   Code		*cont;	// used by cfg.cpp
   PNode		*pn;	// used by cfg.cpp

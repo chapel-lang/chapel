@@ -14,11 +14,12 @@ class AST : public gc {
  public:
   Vec<PNode *> pnodes;
 
-  virtual Sym *symbol() = 0;
   virtual char *pathname() = 0;
   virtual int line() = 0;
+  virtual Sym *symbol() = 0;
+
   virtual AST *copy(Map<PNode *, PNode*> *nmap = 0) = 0;
-  virtual void propagate(Vec<PNode *> *nodes) = 0;
+
   virtual void dump(FILE *fp, Fun *f) = 0;
   virtual void graph(FILE *fp) = 0;
 };
