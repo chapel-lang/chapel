@@ -11945,3 +11945,33 @@ Added files:
 	chapel/compiler/traversals/: processParameters.cpp 
 	                             processParameters.h 
 
+---------------------------------------------------------------------------
+
+12/15/04 16:03:42 -- deitz
+
+Log message:
+	Added new (broken?) replace functionality for statements.  I'm
+	checking in for synching purposes.  It works fine for the checked in
+	tests.  Next step: Unify replace across the different AST subtypes
+	(statements, expressions, symbols, types, etc.) and make sure they are
+	right.
+	
+	Changed with resolution to use new statement replace.  This gets rid
+	of the with-statement (which was previously left).  It works as well
+	as the other way of doing it.
+	
+	Fixed a bug in which the scope of "this" added to bound function
+	parameter lists was incorrectly set.  It is now set to the parameter
+	scope (where it is defined).  Hopefully this won't be decoupled for
+	too much longer--See Brad's next checkin.
+	
+	This checkin resolves seven of the nine failures we've been having.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/traversals/: cleanup.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good enumarray.good 
+	                                  formatoutput.good 
+	                                  protoast_test.good 
+
