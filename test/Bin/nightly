@@ -33,16 +33,17 @@ $prevstdsummary = "$logdir/last-std.log.sorted";
 $prevvgrsummary = "$logdir/last-vgr.log.sorted";
 
 
+$mailcommand = "| Mail -s \"Chapel: Nightly Results\" bradc\@cray.com";
+
 #
 # make temp directory
 #
-system("mkdir $tmpdir > /dev/null");
-$redirect = "| tee -a $tmpdir/LOG 2>&1";
+mysystem("mkdir $tmpdir > /dev/null", "creating temp dir");
 
 #
 # checkout sources
 #
-system("cd $tmpdir && cvs -d ~bradc/CVS checkout chapel $redirect");
+mysystem("cd $tmpdir && cvs -d ~bradc/CVS checkout chapel", "cvs checkout");
 
 
 #
@@ -53,16 +54,16 @@ delete($ENV{'CHPLDEVTMP'});
 #
 # build stuff
 #
-system("cd $chapeldir && make third-party $redirect");
-system("cd $chapeldir && make compiler $redirect");
-system("cd $chapeldir && make runtime $redirect");
+mysystem("cd $chapeldir && make third-party", "making third-party");
+mysystem("cd $chapeldir && make compiler", "making chapel compiler");
+mysystem("cd $chapeldir && make runtime", "making chapel runtime");
 
 #
 # run tests
 #
 `rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
-system("cd $testdir && ./start_test -logfile $rawstdlog $redirect");
-system("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog $redirect");
+mysystem("cd $testdir && ./start_test -logfile $rawstdlog", "running standard tests");
+mysystem("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog", "running valgrind tests");
 
 
 #
@@ -102,7 +103,7 @@ $delvgrfail = &delta($oldvgrfail, $newvgrfail);
 #
 # send mail
 #
-open(MAIL, "| Mail -s \"Chapel: Nightly Results\" bradc\@cray.com");
+open(MAIL, $mailcommand);
 
 print MAIL "=== Summary ===================================================\n";
 print MAIL "$newnumtests Tests ($deltests)\n";
@@ -148,14 +149,14 @@ close(MAIL);
 #
 # write stats and build new graph
 #
-`echo "$statdate\t$newnumtests\t$newstdsucc\t$newvgrsucc" >> $statdir/tests.dat`;
+`echo "$statdate\t-\t$newnumtests\t$newstdsucc\t$newvgrsucc" >> $statdir/tests.dat`;
 `ci -l -m"automated nightly checkin" $statdir/tests.dat`;
 `cd $statdir && ./makeplot`;
 
 #
 # clean up
 #
-system("rm -rf $tmpdir");
+mysystem("rm -rf $tmpdir", "removing temp dir");
 
 exit 0;
 
@@ -163,6 +164,26 @@ exit 0;
 #
 # subroutines
 #
+
+sub mysystem {
+    $status = system($_[0]);
+    if ($status != 0) {
+        $status = $status / 256;
+	print "Error $_[1]: $status\n";
+
+	open(MAIL, $mailcommand);
+	print MAIL "=== Summary ===================================================\n";
+	print MAIL "ERROR $_[1]: $status\n";
+	print MAIL "(workspace left at $tmpdir)\n";
+	print MAIL "===============================================================\n";
+	close(MAIL);
+
+	`echo "$statdate\t1" >> $statdir/tests.dat`;
+	`ci -l -m"automated nightly checkin" $statdir/tests.dat`;
+	`cd $statdir && ./makeplot`;
+	exit 1;
+    }
+}
 
 sub numsuccesses {
   $mystr = $_[0];

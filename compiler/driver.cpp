@@ -19,8 +19,6 @@ extern int d_debug_level;
 static int suppress_codegen = 0;
 static int parser_verbose_non_prelude = 0;
 
-goop
-
 int fdce_if1 = 1;
 int finline = 0;
 int fsimple_inline = 0;
