@@ -5,6 +5,7 @@
 #include "symscope.h"
 #include "symtab.h"
 #include "symtabTraversal.h"
+#include "if1.h"
 
 
 SymScope::SymScope(scopeType init_type, int init_level) :
@@ -367,7 +368,12 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   for(SymLink* tmp = firstSym; tmp; tmp = nextLink(SymLink, tmp)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp->pSym)) {
       while (fn) {
-	visibleFunctions.set_add(fn);
+	char *n = if1_cannonicalize_string(if1, fn->name);
+	Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+	if (!fs) fs = new Vec<FnSymbol*>;
+	fs->add(fn);
+	visibleFunctions.put(n, fs);
+	//visibleFunctions.set_add(fn);
 	fn = fn->overload;
       }
     } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
@@ -375,7 +381,12 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
 	if (class_type->value || class_type->union_value) {
 	  forv_Vec(FnSymbol, method, class_type->methods) {
 	    while (method) {
-	      visibleFunctions.set_add(method);
+	      char *n = if1_cannonicalize_string(if1, method->name);
+	      Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+	      if (!fs) fs = new Vec<FnSymbol*>;
+	      fs->add(method);
+	      visibleFunctions.put(n, fs);
+	      //visibleFunctions.set_add(method);
 	      method = method->overload;
 	    }
 	  }
@@ -384,19 +395,39 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
     }
   }
   if (parent) {
-    visibleFunctions.set_union(parent->visibleFunctions);
+    for (int i = 0; i < parent->visibleFunctions.n; i++) {
+      Vec<FnSymbol *> *fs = visibleFunctions.get(parent->visibleFunctions.v[i].key);
+      if (!fs)
+	fs = parent->visibleFunctions.v[i].value;
+      else
+	fs->append(*parent->visibleFunctions.v[i].value);
+      visibleFunctions.put(parent->visibleFunctions.v[i].key, fs);
+      
+    }
+    //visibleFunctions.set_union(parent->visibleFunctions);
   }
   if (moreVisibleFunctions) {
-    visibleFunctions.set_union(*moreVisibleFunctions);
+    forv_Vec(FnSymbol, fn, *moreVisibleFunctions) {
+      char *n = if1_cannonicalize_string(if1, fn->name);
+      Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+      if (!fs) fs = new Vec<FnSymbol*>;
+      fs->add(fn);
+      visibleFunctions.put(n, fs);
+    }
   }
 }
 
 
 void SymScope::printVisibleFunctions() {
-  forv_Vec(FnSymbol, fn, visibleFunctions) {
-    if (fn) {
-      fn->print(stdout);
-      printf("\n");
+  for (int i = 0; i < visibleFunctions.n; i++) {
+    Vec<FnSymbol *> *fs = visibleFunctions.v[i].value;
+    if (fs) {
+      forv_Vec(FnSymbol, fn, *fs) {
+	if (fn) {
+	  fn->print(stdout);
+	  printf("\n");
+	}
+      }
     }
   }
 }
