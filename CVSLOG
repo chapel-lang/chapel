@@ -13157,3 +13157,90 @@ Added files:
 	                            test_union2.chpl test_union2.good 
 	                            test_union3.chpl test_union3.good 
 
+---------------------------------------------------------------------------
+
+12/28/04 20:20:08 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Initial set of changes to support intents.
+	- separate out arg_name (for named arguments) from
+	  destruct_name (for destructuring assignment)
+	- remove extra moves for parameters which were used
+	  to allow each parameter to be tagged to a particular
+	  call site.  The tagging is now done internal to analysis
+	- added a notion of "internal" analysis variables which are
+	  not reported as having no type.
+	- added intents to Sym, and copy the intents from Symbol's
+	- unified the way named arguments are handled in pattern
+	  matching and analysis
+	- fixed a bug in low level code generation with the handling
+	  of closures
+	- the true type of INOUT and OUT parameter arguments are not
+	  considered for dispatch purposes since it is quite possible for
+	  such variables to be uninitialized.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp cg.cpp fa.cpp 
+	                           fa_extras.cpp pattern.cpp var.cpp 
+	chapel/compiler/include/: builtin_symbols.h fa.h pattern.h sym.h 
+	                          var.h 
+	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h prelude.v 
+	                          v.g 
+	chapel/test/flowanalysis/jplevyak/: assign1.good assign2.good 
+	                                    badcall.good 
+	                                    badprimitive.good 
+	                                    badreturn.good bug1.good 
+	                                    classvar.good cs1.good 
+	                                    cs2.good cs3.good cs4.good 
+	                                    cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good literal.good 
+	                                    memberfun.good 
+	                                    memberfun2.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good ref.good 
+	                                    sample.good structtype.good 
+	                                    tuples.good var.good 
+	                                    vector.good 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/jplevyak/constants/: const.good 
+	                                              constant_folding.good 
+	chapel/test/flowanalysis/jplevyak/loop/: loop1.good loop2.good 
+	                                         loop_endless.good 
+	                                         rec.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+
