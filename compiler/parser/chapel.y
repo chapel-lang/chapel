@@ -172,13 +172,14 @@ varconst:
 
 
 ident_symbol:
-  identifier
-    { $$ = new Symbol(SYMBOL, $1); }
-| pragmas identifier
+   pragma ident_symbol
     { 
-      $$ = new Symbol(SYMBOL, $2); 
+      $$ = $2; 
+      $1->next = $$->pragmas;
       $$->pragmas = $1;
-    }
+    } 
+|  identifier
+    { $$ = new Symbol(SYMBOL, $1); } 
 ;
 
 
@@ -530,8 +531,11 @@ arrayType:
 statements:
   /* empty */
     { $$ = nilStmt; }
-| statements statement
-    { $$ = appendLink($1, $2); }
+| statements pragmas statement
+    { 
+      $$ = appendLink($1, $3); 
+      $3->pragmas = $2;
+    }
 ;
 
 
@@ -559,11 +563,6 @@ statement:
     { $$ = new ContinueStmt($2); }
 | TCONTINUE TSEMI
     { $$ = new ContinueStmt(); }
-| pragmas statement
-    { 
-      $2->pragmas = $1;
-      $$ = $2;
-    }
 | decl
 | assignment
 | conditional
@@ -747,9 +746,10 @@ exprlist:
 
 
 nonemptyExprlist:
-  expr
-| nonemptyExprlist TCOMMA expr
-    { $1->append($3); }
+  pragmas expr
+    { $2->pragmas = $1; $$ = $2; }
+| nonemptyExprlist TCOMMA pragmas expr
+    { $4->pragmas = $3; $1->append($4); }
 ;
 
 

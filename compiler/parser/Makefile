@@ -34,6 +34,7 @@ chapel.tab.h chapel.tab.c: chapel.y
 	bison -d -v -t chapel.y
 	cat chapel.tab.c | sed s/__attribute__/\\/\\// > chapel.tab.c.tmp
 	mv chapel.tab.c.tmp chapel.tab.c
+	@if [ `grep "conflicts:" chapel.output | wc -l` -ne 0 ]; then echo "PROBLEM: chapel.y contains conflicts"; exit 1; fi;
 #	@if [`grep return chapel.y | wc -l` -ne 0 ]; then echo "PROBLEM: chapel.y contains return"; grep zyxv chapel.y; fi;
 
 

@@ -5,6 +5,7 @@
 #include "baseAST.h"
 #include "symbol.h"
 #include "analysis.h"
+#include "pragma.h"
 
 class Stmt;
 class AInfo;
@@ -96,6 +97,7 @@ class Expr : public BaseAST {
   AInfo *ainfo;
   Expr* parent;
   Expr** back;
+  Pragma *pragmas;
 
   Expr(astType_t astType);
 
