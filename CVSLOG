@@ -13564,3 +13564,15 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp stmt.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/05 16:35:17 -- jplevyak
+
+Log message:
+	More work on handling generics and point-wise application.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+	chapel/compiler/include/: fun.h pattern.h 
+	chapel/test/flowanalysis/newast/: enumarray.good 
+
