@@ -1,6 +1,6 @@
 class foo {
   var i : integer;
- function f() { return 10 + i; } 
+  function f() { return 10 + i; } 
 }
 
 function f(x : foo) {

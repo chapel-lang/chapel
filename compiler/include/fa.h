@@ -269,12 +269,13 @@ class FA : public gc {
   Vec<CreationSet *> css, css_set;
   Vec<AVar *> global_avars;
   ChainHashMap<char*, StringHashFns, RegisteredPrim*> primitive_transfer_functions;
-  
+
+  AVar *method_token;
   bool permit_boxing;
   bool no_unused_instance_variables;
 
   FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0),
-    permit_boxing(0), no_unused_instance_variables(0) {}
+    method_token(0), permit_boxing(0), no_unused_instance_variables(0) {}
 
   int analyze(Fun *f);
   int concretize();

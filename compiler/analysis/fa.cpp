@@ -981,9 +981,16 @@ make_closure(AVar *result) {
   PNode *partial_application = result->var->def;
   EntrySet *es = (EntrySet*)result->contour;
   if (partial_application->prim) { // apply and period
-    pn->tvals.fill(2);
-    make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 0);
-    make_closure_var(partial_application->rvals.v[1], es, cs, result, add, 1);
+    if (pn->prim == prim_period && fa->method_token) {
+      pn->tvals.fill(3);
+      make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 0);
+      make_closure_var(fa->method_token->var, es, cs, result, add, 1);
+      make_closure_var(partial_application->rvals.v[1], es, cs, result, add, 2);
+    } else {
+      pn->tvals.fill(2);
+      make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 0);
+      make_closure_var(partial_application->rvals.v[1], es, cs, result, add, 1);
+    }
   } else {
     pn->tvals.fill(partial_application->rvals.n);
     for (int i = 0; i < partial_application->rvals.n; i++)
@@ -1381,6 +1388,8 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
 	    else {
 	      Vec<AVar *> args;
 	      args.add(obj);
+	      if (fa->method_token)
+		args.add(fa->method_token);
 	      int res = application(p, es, selector, cs, args, (Partial_kind)p->code->partial);
 	      if (res > 0)
 		partial = 1;

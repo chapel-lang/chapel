@@ -22,6 +22,8 @@
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 
+#define FORCE_RECORD_METHODS_GLOBAL 1
+
 class LabelMap : public Map<char *, Stmt *> {};
 
 static Sym *domain_start_index_symbol = 0;
@@ -39,6 +41,7 @@ static Sym *completedim_symbol = 0;
 static Sym *array_index_symbol = 0;
 static Sym *sizeof_symbol = 0;
 static Sym *cast_symbol = 0;
+static Sym *method_symbol = 0;
 
 static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
@@ -1744,7 +1747,7 @@ gen_fun(FnSymbol *f) {
   Vec<Symbol *> args;
   Vec<Sym *> out_args;
   getLinkElements(args, f->formals);
-  Sym *as[args.n + 2];
+  Sym *as[args.n + 3];
   int iarg = 0;
   assert(f->asymbol->sym->name);
   if (strcmp(f->asymbol->sym->name, "this") != 0) {
@@ -1752,6 +1755,12 @@ gen_fun(FnSymbol *f) {
     s->ast = ast;
     s->must_specialize = if1_make_symbol(if1, f->asymbol->sym->name);
     as[iarg++] = s;
+    if (f->method_type != NON_METHOD) {
+      Sym *s = new_sym(method_symbol->name);
+      s->ast = ast;
+      s->must_specialize = method_symbol;
+      as[iarg++] = s;
+    }
   }
   for (int i = 0; i < args.n; i++) {
     if (is_Sym_OUT(args.v[i]->asymbol->sym))
@@ -1857,14 +1866,24 @@ add_to_universal_lookup_cache(char *name, Fun *fun) {
 
 void
 ACallbacks::finalize_functions() {
+  pdb->fa->method_token = unique_AVar(new Var(method_symbol), GLOBAL_CONTOUR);
+  pdb->fa->method_token->out = make_abstract_type(method_symbol);
   forv_Fun(fun, pdb->funs) {
     int added = 0;
     char *name = fun->sym->has.v[0]->name;
     assert(name);
     FnSymbol *fs = dynamic_cast<FnSymbol*>(fun->sym->asymbol->symbol);
-    if (fs->method_type == PRIMARY_METHOD) {
-      add_to_universal_lookup_cache(name, fun);
-      added = 1;
+    if (fs->classBinding && fs->classBinding->type) {
+      if (
+#ifdef FORCE_RECORD_METHODS_GLOBAL
+	1 || 
+#endif
+	  is_reference_type(fs->classBinding->asymbol->symbol)) {
+	if (fs->method_type != NON_METHOD) {
+	  add_to_universal_lookup_cache(name, fun);
+	  added = 1;
+	}
+      }
     }
     MPosition p;
     p.push(1);
@@ -1920,6 +1939,7 @@ init_symbols() {
   expr_reduce_symbol = if1_make_symbol(if1, "expr_reduce");
   sizeof_symbol = if1_make_symbol(if1, "sizeof");
   cast_symbol = if1_make_symbol(if1, "cast");
+  method_symbol = if1_make_symbol(if1, "__method");
   write_symbol = if1_make_symbol(if1, "write");
   writeln_symbol = if1_make_symbol(if1, "writeln");
   read_symbol = if1_make_symbol(if1, "read");
