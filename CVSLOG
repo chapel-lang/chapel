@@ -2963,3 +2963,13 @@ Log message:
 Modified files:
 	chapel/test/parsing/jplevyak/: mat1.good vec.good 
 
+---------------------------------------------------------------------------
+
+06/08/04 15:12:37 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	FreeBSD fix
+
+Modified files:
+	chapel/compiler/: fa.h 
+
