@@ -1870,3 +1870,16 @@ Log message:
 Modified files:
 	./: CVSLOG 
 
+---------------------------------------------------------------------------
+
+04/05/03 13:01:43 -- bradc
+
+Log message:
+	Changed some of my flags (--nocodgen, --print-commands) from
+	toggles to "set true" flags to avoid problems with double-
+	toggling them via an environment variable (as that seems like
+	the preferable semantics for these).
+
+Modified files:
+	chapel/compiler/: driver.cpp mysystem.cpp 
+
