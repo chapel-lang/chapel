@@ -2001,3 +2001,20 @@ Log message:
 Modified files:
 	chapel/compiler/: TODO fa.cpp vec.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/10 10:59:22 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added new log for flow analysis testing
+	Added 3 new test cases for flow analysis using new log
+	Increased support for .v files in test/sub_test
+
+Modified files:
+	chapel/compiler/: ast.cpp driver.cpp fa.h fa_extras.cpp log.h 
+	chapel/test/: start_test 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: CATFILES CLEANFILES COMPOPTS 
+	                                    NOEXEC cs1.chk cs1.v cs2.chk 
+	                                    cs2.v cs3.chk cs3.v 
+
