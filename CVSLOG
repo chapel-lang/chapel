@@ -15942,3 +15942,28 @@ Modified files:
 	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
 	                             methodsToFunctions.cpp traversal.h 
 
+---------------------------------------------------------------------------
+
+01/31/05 15:13:20 -- jplevyak
+
+Log message:
+	Added support for simple type_variables in a form sufficien to handle
+	test_typevar_function{1,2}.chpl to analysis.
+	
+	I have put a simple implementation of Type::instantiate_generic
+	in place which is sufficient for this test case.
+	I have also made a stub for FnSymbol::instantiate_generic
+	which currently returns NULL.  This causes these
+	two test cases to SEGV.  The implementation (which
+	I am leaving to Steve) could be a modification
+	of FnSymbol::clone() (or perhaps a call to a shared
+	produced).
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+	chapel/compiler/include/: analysis.h callbacks.h symbol.h type.h 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_function1.future 
+	                                         test_typevar_function2.future 
+
