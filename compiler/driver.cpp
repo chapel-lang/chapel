@@ -286,6 +286,10 @@ compile_one(char *fn) {
       if1->callback = new ACallbacks;
       AST_to_IF1(program);
       do_analysis(fn);
+      extern void x();
+#if 0
+      x();
+#endif
     }
     if (!suppress_codegen)
       codegen(fn, system_dir, program);

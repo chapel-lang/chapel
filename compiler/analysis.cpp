@@ -92,6 +92,13 @@ new_ASymbol(Symbol *symbol = 0) {
   return s;
 }
 
+static ASymbol *
+new_ASymbol(char *name) {
+  ASymbol *s = new ASymbol;
+  if1_register_sym(if1, s, name);
+  return s;
+}
+
 void
 ACallbacks::new_SUM_type(Sym *) {
 }
@@ -237,7 +244,7 @@ build_types(Vec<BaseAST *> &syms) {
 
 static Sym *
 new_sym(char *name = 0, int global = 0) {
-  Sym *s = if1_alloc_sym(if1, name);
+  Sym *s = new_ASymbol(name);
   if (!global)
     s->function_scope = 1;
   else
@@ -356,6 +363,12 @@ build_builtin_symbols() {
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
 #undef S
+
+  ((ASymbol*)sym_int64)->xsymbol = dtInteger;
+  ((ASymbol*)sym_float64)->xsymbol = dtFloat;
+  ((ASymbol*)sym_string)->xsymbol = dtString;
+  ((ASymbol*)sym_bool)->xsymbol = dtBoolean;
+  ((ASymbol*)sym_void)->xsymbol = dtVoid;
 }
 
 // FUTURE: support for goto or named break
@@ -1077,6 +1090,8 @@ print_AST_Expr_types(BaseAST *ast) {
                            x->ainfo->rval->var->type->id);
       printf("%X\n", (int)type_info(x->ainfo));
     }
+    Type *t = type_info(ast);
+    assert(t);
   }
 }
 
@@ -1088,6 +1103,12 @@ print_AST_types() {
     print_AST_Expr_types(def->fn->body);
   }
 }
+
+#if 0
+void x() {
+  print_AST_types();
+}
+#endif
 
 static void
 ast_sym_info(BaseAST *a, Symbol *s, AST **ast, Sym **sym) {
