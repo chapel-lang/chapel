@@ -12497,3 +12497,28 @@ Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 	chapel/compiler/include/: vec.h 
 
+---------------------------------------------------------------------------
+
+12/21/04 15:14:47 -- bradc
+
+Log message:
+	Forgot to check in my test with my last checkin related
+	to Symboltable stuff.
+	
+	As long as I'm at it, here is a guide to the different
+	SymScope types and the contexts which they currently
+	store, to indicate what they are associated with:
+	
+	Scope Type        Stmt           Expr       Symbol
+	-------------------------------------------------------
+	SCOPE_MODULE      ModuleDefStmt  ---        ModuleSymbol
+	SCOPE_CLASS       ClassDefStmt   ---        TypeSymbol
+	SCOPE_PARAM       FnDefStmt      ---        FnSymbol
+	SCOPE_FORLOOP     ForLoopStmt    ---        ---
+	SCOPE_LOCAL*      BlockStmt      ---        ---
+	SCOPE_FORALLEXPR  ---            ForallExpr ---
+
+Added files:
+	chapel/test/trivial/bradc/: testAllScopes.chpl 
+	                            testAllScopes.good 
+
