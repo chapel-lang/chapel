@@ -4705,3 +4705,13 @@ Log message:
 Modified files:
 	chapel/compiler/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+07/29/04 12:39:42 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added support for running valgrind on x86_64 on 32 bit executables.
+
+Modified files:
+	chapel/test/: sub_test 
+
