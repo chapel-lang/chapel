@@ -8,10 +8,10 @@ var m9 = 90;
 
 var D4: domain(1) = 1..m4;
 var D5: domain(1) = (1..m5);
-var D6: domain(1) = [1..m6];
+var D6: domain(1) = 1..m6;
 var D7: domain = 1..m7;
 var D8: domain = (1..m8);
-var D9: domain = [1..m9];
+var D9: domain = 1..m9;
 
 writeln("D4 is: ", D4);
 writeln("D5 is: ", D5);

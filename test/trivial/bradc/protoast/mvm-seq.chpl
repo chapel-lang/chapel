@@ -7,9 +7,9 @@
 var m : integer = 100; 
 var n : integer = 200;
 
-var Mat : domain(2) = [1..m, 1..n];
-var Col : domain(2) = [*, 1..n];
-var Row : domain(2) = [1..m, *];
+var Mat : domain(2) = (1..m, 1..n);
+var Col : domain(2) = (*, 1..n);
+var Row : domain(2) = (1..m, *);
 
 var A : [Mat] float;
 var y : [Col] float;

@@ -4,7 +4,7 @@
 function foo()
   ;
 
-var D = [1..3];
+var D : domain(1) = 1..3;
 
 for i in D
   ;

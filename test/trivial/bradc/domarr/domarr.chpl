@@ -1,7 +1,7 @@
 var m : integer = 4; 
 var n : integer = 8;
 
-var Mat : domain(2) = [1..m, 1..n];
+var Mat : domain(2) = (1..m, 1..n);
 
 var A : [Mat] float;
 

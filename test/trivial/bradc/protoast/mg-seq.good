@@ -128,7 +128,7 @@ S = [ijk:RD] reduce by sum [off:Stencil] (w3d*R((ijk+(Rstr*off))));
 function interp(inout R: ???;
 inout S: ???) {
 state const IDom: domain(3) = [(-1)..0, (-1)..0, (-1)..0];
-state const IStn: [i, j, k:IDom] domain(3) = [i..0, j..0, k..0];
+state const IStn: [i, j, k:IDom] domain(3) = (i..0, j..0, k..0);
 state const w: [ijk:IDom] float = (1.0/IStn.size());
 const SD: ??? = S.Domain();
 const Rstr: ??? = R.stride;
@@ -266,7 +266,7 @@ config const verifyValue: float = checksum(Class);
 config const warmup: boolean = true;
 config const verbose: boolean = false;
 config const debug: boolean = false;
-const Levels: domain(1) = 1..numLevels;
+const Levels: domain(1) = [1..numLevels];
 const Base: domain(3) = [1..nx, 1..ny, 1..nz];
 const Hier: [lvl:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
 const Stencil: domain(3) = [(-1)..1, (-1)..1, (-1)..1];

@@ -1,7 +1,3 @@
-/** Remove bsl, bsr; Remove REDUCE_IDENT
- **
- **/
-
 /*
  * A simple mini-Chapel parser developed from Shannon's
  * experiments teaching herself flex and bison, and used
@@ -120,6 +116,7 @@
 
 /* These are declared in increasing order of precedence. */
 
+%left TRSBR
 %left TBY
 %left TDOTDOT
 %left TOR
@@ -570,8 +567,6 @@ expr:
         $$ = new Tuple($2);
       }
     }
-| TLSBR domainExpr TRSBR
-    { $$ = $2; }
 | TLSBR domainExpr TRSBR expr
     {
       $2->setForallExpr($4);

@@ -594,6 +594,22 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type, 
 					  Expr* init, varType vartag, 
 					  bool isConst) {
+
+  /** SJD: This is a stopgap measure to deal with changing sequences
+      into domains when the type of a declared variable is a domain.
+      It replaces the syntax of assigning domains using square
+      brackets.
+  **/
+  if (dynamic_cast<DomainType*>(type) &&
+      !dynamic_cast<DomainExpr*>(init)) {
+    if (dynamic_cast<Tuple*>(init)) {
+      init = new DomainExpr(dynamic_cast<Tuple*>(init)->exprs);
+    }
+    else {
+      init = new DomainExpr(init);
+    }
+  }
+
   VarSymbol* varList = defineVars(idents, type, init, vartag, isConst);
   return new VarDefStmt(varList, init);
 }

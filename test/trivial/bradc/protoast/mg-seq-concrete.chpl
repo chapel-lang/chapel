@@ -47,9 +47,9 @@ type coeff: [0..3] float;
 -- domains:
 
 const Levels: domain(1) = (1..numLevels);
-const Base: domain(3) = [1..nx, 1..ny, 1..nz];
+const Base: domain(3) = (1..nx, 1..ny, 1..nz);
 const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
-const Stencil: domain(3) = [-1..1, -1..1, -1..1];
+const Stencil: domain(3) = (-1..1, -1..1, -1..1);
 
 
 -- Entry point:
@@ -214,8 +214,8 @@ function rprj3(out S: [] float;
 
 function interp(out R: [?DR] float;
                 const S: [?DS] float) {
-  static const IDom: domain(3) = [-1..0, -1..0, -1..0];
-  static const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
+  static const IDom: domain(3) = (-1..0, -1..0, -1..0);
+  static const IStn: [(i,j,k) in IDom] domain(3) = (i..0, j..0, k..0);
   static const w: [ijk in IDom] float = 1.0 / IStn.size();
 
   const Rstr: [1..3] integer = DR.stride;
