@@ -239,24 +239,71 @@ void EnumType::codegenDef(FILE* outfile) {
 }
 
 
-static void codegenIOPrototype(FILE* outfile, Symbol* name) {
-  fprintf(outfile, "void _write");
+static void codegenIOPrototype(FILE* outfile, Symbol* name, bool isRead) {
+  fprintf(outfile, "void ");
+  if (isRead) {
+    fprintf(outfile, "_read");
+  } else {
+    fprintf(outfile, "_write");
+  }
   name->codegen(outfile);
-  fprintf(outfile, "(FILE* outfile, char* format, ");
+  fprintf(outfile, "(FILE* ");
+  if (isRead) {
+    fprintf(outfile, "infile");
+  } else {
+    fprintf(outfile, "outfile");
+  }
+  fprintf(outfile, ", char* format, ");
   name->codegen(outfile);
+  if (isRead) {
+    fprintf(outfile, "*");
+  }
   fprintf(outfile, " val)");
 }
 
 
 void EnumType::codegenIORoutines(FILE* outfile) {
   EnumSymbol* enumSym;
+  bool isRead;
 
-  codegenIOPrototype(currentModule->intheadfile, name);
+  isRead = true;
+  codegenIOPrototype(currentModule->intheadfile, name, isRead);
+  fprintf(currentModule->intheadfile, ";\n");
+  
+  isRead = false;
+  codegenIOPrototype(currentModule->intheadfile, name, isRead);
   fprintf(currentModule->intheadfile, ";\n\n");
 
-  codegenIOPrototype(outfile, name);
+  isRead = true;
+  codegenIOPrototype(outfile, name, isRead);
   fprintf(outfile, " {\n");
+  fprintf(outfile, "char* inputString = NULL;\n");
+  fprintf(outfile, "_read_string(stdin, format, &inputString);\n");
 
+  enumSym = valList;
+  while (enumSym) {
+    fprintf(outfile, "if (strcmp(inputString, \"");
+    enumSym->codegen(outfile);
+    fprintf(outfile, "\") == 0) {\n");
+    fprintf(outfile, "*val = ");
+    enumSym->codegen(outfile);
+    fprintf(outfile, ";\n");
+    fprintf(outfile, "} ");
+    fprintf(outfile, "else ");
+    enumSym = nextLink(EnumSymbol, enumSym);
+  }
+  fprintf(outfile, "{ \n");
+  fprintf(outfile, "fflush(stdout);\n");
+  fprintf(outfile, "fprintf (stderr, \"***ERROR:  Not of ");
+  name->codegen(outfile);
+  fprintf(outfile, " type***\\n\");\n");
+  fprintf(outfile, "exit(0);\n");
+  fprintf(outfile, "}\n");
+  fprintf(outfile, "}\n\n\n");
+
+  isRead = false;
+  codegenIOPrototype(outfile, name, isRead);
+  fprintf(outfile, " {\n");
   fprintf(outfile, "switch (val) {\n");
   enumSym = valList;
   while (enumSym) {
@@ -488,16 +535,42 @@ void UserType::codegenDef(FILE* outfile) {
 // TODO: We should probably instead have types print out
 // their own write routines and have UserType print its
 // definition's write routine
-void UserType::codegenIORoutines(FILE* outfile) {
-  codegenIOPrototype(currentModule->intheadfile, name);
-  fprintf(currentModule->intheadfile, ";\n\n");
-  
-  codegenIOPrototype(outfile, name);
+
+static void codegenIOPrototypeBody(FILE* outfile, Symbol* name, Type* definition, bool isRead) {
+  codegenIOPrototype(outfile, name, isRead);
   fprintf(outfile, " {\n");
+  if (isRead) {
+    fprintf(outfile, " _read");
+  } else {
   fprintf(outfile, "  _write");
-  definition->codegen(outfile);
-  fprintf(outfile, "(outfile, format, val);\n");
+  }
+  definition->codegen(outfile);  
+  if (isRead) {
+    fprintf(outfile, "(infile, format, val);\n");
+  } else {
+    fprintf(outfile, "(outfile, format, val);\n");
+  }    
   fprintf(outfile, "}\n");
+}    
+
+
+void UserType::codegenIORoutines(FILE* outfile) {
+  bool isRead;
+
+  //  isRead = true;
+  //  codegenIOPrototype(currentModule->intheadfile, name, isRead);
+  //  fprintf(currentModule->intheadfile, ";\n");
+
+  isRead = false;
+  codegenIOPrototype(currentModule->intheadfile, name, isRead);
+  fprintf(currentModule->intheadfile, ";\n\n");
+
+  //  isRead = true;
+  //  codegenIOPrototypeBody(outfile, name, definition, isRead);
+  //  fprintf(outfile, "\n\n");
+
+  isRead = false;
+  codegenIOPrototypeBody(outfile, name, definition, isRead);
 }
 
 
@@ -585,10 +658,23 @@ void ClassType::codegenConstructors(FILE* outfile) {
 
 
 void ClassType::codegenIORoutines(FILE* outfile) {
-  codegenIOPrototype(currentModule->intheadfile, name);
+  bool isRead;
+
+  isRead = true;
+  codegenIOPrototype(currentModule->intheadfile, name, isRead);
+  fprintf(currentModule->intheadfile, ";\n");
+
+  isRead = false;
+  codegenIOPrototype(currentModule->intheadfile, name, isRead);
   fprintf(currentModule->intheadfile, ";\n\n");
 
-  codegenIOPrototype(outfile, name);
+  isRead = true;
+  codegenIOPrototype(outfile, name, isRead);
+  fprintf(outfile, "{\n");
+  fprintf(outfile, "}\n");
+
+  isRead = false;
+  codegenIOPrototype(outfile, name, isRead);
   fprintf(outfile, "{\n");
   fprintf(outfile, "}\n");
 }

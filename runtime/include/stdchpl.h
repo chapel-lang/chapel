@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "array.h"
 #include "chplio.h"
 #include "chpltypes.h"

@@ -24,7 +24,7 @@
 #define _default_format_read_string       "%255s"   
 #define _default_format_write_string      "%s"
 
-#define _default_format_read_enum         "%s"
+#define _default_format_read_enum         "%255s"
 #define _default_format_write_enum        "%s"
 
 #define _default_format_write_domain1 "%d..%d by %d"
