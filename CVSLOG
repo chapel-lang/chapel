@@ -8624,3 +8624,51 @@ Removed files:
 	chapel/compiler/analysis/: prim_data.cpp prim_data.h 
 	chapel/compiler/vparser/: cast_code.cpp 
 
+---------------------------------------------------------------------------
+
+10/05/04 15:39:23 -- bradc
+
+Log message:
+	* added a notion of a Type having a default initializer because I've
+	  been concerned about stuff being uninitialized, and the language
+	  spec now has a reasonably accepted proposal for this.  Currently the
+	  implementation isn't as rich as in David's proposal, but built-in
+	  types now have default initializers and user types have support for
+	  simple initializers (ones that are independent of where they are
+	  evaluated).
+	
+	* In doing this, I made several incidental changes:
+	
+	  - added a notion of a BoolLiteral (which is fairly useless) and a
+	    ComplexLiteral to the AST.
+	
+	  - added support for parsing complex (imaginary) literals, and for
+	    folding trivial additions and subtractions of float literals into
+	    a single complex literal with real and imaginary parts.
+	
+	  - added a codegenComplex() method to expressions which will print
+	    out the real or imaginary portion of an expression, based on the
+	    toggle passed in.  This is implemented only for the simplest of
+	    cases, and will rely on some good hoisting of tricky complex
+	    expressions to work in general.
+	
+	  - added better support for UserType's -- codegen now supported
+	
+	  - changed exponentiation to be right- rather than left-associative
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp nils.cpp stmt.cpp symbol.cpp 
+	                      symtab.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h symtab.h type.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/runtime/include/: chplio.h chpltypes.h domain.h 
+	chapel/runtime/src/: Makefile chplio.c 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq.chpl 
+Added files:
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/trivial/bradc/: defaultinit.chpl defaultinit.good 
+	                            defaultinit2.chpl defaultinit2.good 
+
