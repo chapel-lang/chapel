@@ -20211,3 +20211,13 @@ Added files:
 	                              test_named_param3.future 
 	                              test_named_param3.good 
 
+---------------------------------------------------------------------------
+
+03/18/05 12:21:02 -- jplevyak
+
+Log message:
+	remove some cluttern from named argument handling
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+
