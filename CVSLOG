@@ -2274,3 +2274,71 @@ Log message:
 Modified files:
 	chapel/compiler/: fa.cpp fa.h vec.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/27 14:41:54 -- bradc
+
+Log message:
+	Changed the test system to use .good files to store the expected
+	output rather than .chk files to avoid the common prefix conflict
+	with the .chpl files.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/test/Samples/ex1-astlog/: astlog1.good 
+	chapel/test/Samples/ex2-notest/: illegal.good 
+	chapel/test/Samples/ex3-fails/: intendedToFail.good 
+	chapel/test/compflags/bradc/badflagdash/: declint.good 
+	chapel/test/compflags/bradc/badflagddash/: declint.good 
+	chapel/test/compflags/bradc/copyright/: declint.good 
+	chapel/test/compflags/bradc/missingargdash/: declint.good 
+	chapel/test/compflags/bradc/missingargddash/: declint.good 
+	chapel/test/flowanalysis/jplevyak/: cs1.good cs2.good cs3.good 
+	chapel/test/parsing/jplevyak/: extern.good for1.good for2.good 
+	                               literal.good mat1.good 
+	                               module.good tuples.good vec.good 
+	chapel/test/trivial/bradc/: conditional.good declprintint.good 
+	                            declprintint2.good pareninit.good 
+	                            printempty.good printstring.good 
+	chapel/test/trivial/bradc/arrinit/: arrinit.notype.notype.good 
+	                                    arrinit.notypep.notype.good 
+	                                    arrinit.notypep.notypeind.good 
+	                                    arrinit.notypep.notypeind2.good 
+	                                    arrinit.notypep.typepr.good 
+	                                    arrinit.notypep.typeprind.good 
+	                                    arrinit.notypep.typeprind2.good 
+	                                    arrinit.type.notype.good 
+	                                    arrinit.typep.notype.good 
+	                                    arrinit.typep.type.good 
+	                                    arrinit.typep.typeind.good 
+	                                    arrinit.typep.typepr.good 
+Removed files:
+	chapel/test/Samples/ex1-astlog/: astlog1.chk 
+	chapel/test/Samples/ex2-notest/: illegal.chk 
+	chapel/test/Samples/ex3-fails/: intendedToFail.chk 
+	chapel/test/compflags/bradc/badflagdash/: declint.chk 
+	chapel/test/compflags/bradc/badflagddash/: declint.chk 
+	chapel/test/compflags/bradc/copyright/: declint.chk 
+	chapel/test/compflags/bradc/missingargdash/: declint.chk 
+	chapel/test/compflags/bradc/missingargddash/: declint.chk 
+	chapel/test/flowanalysis/jplevyak/: cs1.chk cs2.chk cs3.chk 
+	chapel/test/parsing/jplevyak/: extern.chk for1.chk for2.chk 
+	                               literal.chk mat1.chk module.chk 
+	                               tuples.chk vec.chk 
+	chapel/test/trivial/bradc/: conditional.chk declprintint.chk 
+	                            declprintint2.chk pareninit.chk 
+	                            printempty.chk printstring.chk 
+	chapel/test/trivial/bradc/arrinit/: arrinit.notype.notype.chk 
+	                                    arrinit.notypep.notype.chk 
+	                                    arrinit.notypep.notypeind.chk 
+	                                    arrinit.notypep.notypeind2.chk 
+	                                    arrinit.notypep.typepr.chk 
+	                                    arrinit.notypep.typeprind.chk 
+	                                    arrinit.notypep.typeprind2.chk 
+	                                    arrinit.type.notype.chk 
+	                                    arrinit.typep.notype.chk 
+	                                    arrinit.typep.type.chk 
+	                                    arrinit.typep.typeind.chk 
+	                                    arrinit.typep.typepr.chk 
+
