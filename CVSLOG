@@ -18553,3 +18553,17 @@ Added files:
 	                                     overview.fig symtab.eps 
 	                                     symtab.fig tokctnightly.eps 
 
+---------------------------------------------------------------------------
+
+03/01/05 17:25:39 -- jplevyak
+
+Log message:
+	Improve notion of "scalar" to include things derived from scalars.
+	This handles cases like:
+	  type myinteger : integer = 5;
+	as well as enumerations.
+
+Modified files:
+	chapel/compiler/analysis/: sym.cpp 
+	chapel/compiler/include/: sym.h 
+
