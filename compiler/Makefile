@@ -102,13 +102,13 @@ EXECS = $(CHPL) $(TEST_LIB)
 all: $(EXECS) BUILD_VERSION
 
 clean:
-	rm -f $(PLATFORM)/*.o core *.core *.gmon *.a $(EXECS) $(MAKE_PRIMS) *.g.d_parser.cpp prim_data.h
+	rm -f ./$(PLATFORM)/*.o core *.core *.gmon *.a $(EXECS) $(MAKE_PRIMS) *.g.d_parser.cpp prim_data.h
 
 cleandepend:
-	rm -f $(PLATFORM)/*.dep
+	rm -f ./$(PLATFORM)/*.dep
 
 clobber: clean
-	rm -rf $(PLATFORM)
+	rm -rf ./$(PLATFORM)
 
 depend: $(ALL_DEPS)
 

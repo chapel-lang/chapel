@@ -1,8 +1,9 @@
 CHAPEL_ROOT = ../..
 include $(CHAPEL_ROOT)/make/Makefile.base
 
+
 all:
-	mkdir -p $(PLATFORM)
+	mkdir -p ./$(PLATFORM)
 	cd $(GC_DIRNAME); \
 	./configure --prefix='$(CURDIR)/$(PLATFORM)'; \
 	make; \
@@ -11,5 +12,5 @@ all:
 
 clean:
 	cd $(GC_DIRNAME) && make clean
-	rm -rf $(PLATFORM)/*
+	rm -rf ./$(PLATFORM)/*
 
