@@ -18080,3 +18080,22 @@ Added files:
 Removed files:
 	chapel/compiler/traversals/: cleanup.cpp cleanup.h 
 
+---------------------------------------------------------------------------
+
+02/22/05 17:04:05 -- jplevyak
+
+Log message:
+	More prep work for tuples and overloaded =.
+	Added support for calling builtin primitives using the __primitive
+	  extension in the preludes.
+	Changed the way global variables are analyzed so that their
+	  types are tracked more precisely.
+	Changed the way return values work so that multiple returns of
+	  lvalue expressions will work.
+	Changed the way assignment works so that the RHS is moved to a temporarly
+	  to clear its ability to pass lvalues.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+
