@@ -19206,3 +19206,16 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/traversals/: fixup.cpp fixup.h 
 
+---------------------------------------------------------------------------
+
+03/09/05 11:59:08 -- deitz
+
+Log message:
+	Moved the setup of Expr's parent pointer (which points to its parent
+	expr) to Fixup with a corresponding checkin in Fixup-Verify.  This was
+	previously done in some constructors and was not always correct.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: fixup.cpp fixup.h 
+
