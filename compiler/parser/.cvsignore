@@ -1,3 +1,7 @@
+cygwin
+freebsd
+linux
+sun
 chapel.output
 chapel.tab.c
 chapel.tab.h

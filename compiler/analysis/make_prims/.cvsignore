@@ -1,2 +1,6 @@
+cygwin
+freebsd
+linux
+sun
 make_prims
 make_prims.g.d_parser.cpp

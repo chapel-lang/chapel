@@ -1,2 +1,6 @@
+cygwin
+freebsd
+linux
+sun
 prim_data.cpp
 prim_data.h
