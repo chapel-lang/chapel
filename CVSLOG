@@ -14786,3 +14786,43 @@ Log message:
 Modified files:
 	chapel/doc/internal/: notes.callbacks 
 
+---------------------------------------------------------------------------
+
+01/17/05 17:20:31 -- bradc
+
+Log message:
+	Continued working on parameter intents.  Got integers
+	and records passed with various intents working except
+	for the fact that FnCall::copy() causes a function to
+	be unresolved (Steve and I are working on this issue).
+	Thus, processParameters is still not enabled in
+	passlist.h and intent-based tests still do not work,
+	though we're closer.
+	
+	Some changes made to help this happen:
+	
+	* Fixed the parameter intent of the "this parameter" for
+	ClassTypes (fixing the break I made in the broken code
+	previously).  For records and unions, "this" is passed
+	as an inout parameter; for classes, it is passed as a
+	blank intent parameter (which we take to mean by reference).
+	
+	* Made Expr::copyListInternal() bail if it gets a nilExpr --
+	previously it would try to copy the nilExpr.
+	
+	* Made Stmt:: and Expr::replace() no longer nil-out the
+	next and prev pointers in the node.  This used to be done
+	for cleanliness, but it tends to trim traversals and loops
+	over the nodes unless they take pains to cache the values
+	prior to calling replace().  We posit that the common case
+	will be to continue the traversal/loop after the replace()
+	has been performed, so leave them as-is.  (A sanity check
+	that a node is still part of a list would therefore be to
+	see if next->prev == this and prev->next == this).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: cleanup.cpp processParameters.cpp 
+
