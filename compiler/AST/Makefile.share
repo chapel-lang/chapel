@@ -2,12 +2,14 @@ CXX_SRCS = \
 	baseAST.cpp \
 	expr.cpp \
 	findUnknownTypes.cpp \
+	getstuff.cpp \
 	link.cpp \
 	loc.cpp \
 	nils.cpp \
 	stmt.cpp \
 	symbol.cpp \
         symtab.cpp \
+	testGetStuff.cpp \
 	traversal.cpp \
 	type.cpp \
 	verifyASTType.cpp

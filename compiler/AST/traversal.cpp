@@ -1,14 +1,11 @@
 #include "traversal.h"
 
-Traversal::Traversal(void) :
-  exploreSiblingStmts(true),
-  exploreChildStmts(true),
-  exploreSiblingExprs(true),
-  exploreChildExprs(true),
-  exploreSiblingSymbols(true),
-  exploreChildSymbols(true),
-  exploreSiblingTypes(true),
-  exploreChildTypes(true)
+Traversal::Traversal(bool processThis, bool exploreByDefault) :
+  processTop(processThis),
+  exploreChildStmts(exploreByDefault),
+  exploreChildExprs(exploreByDefault),
+  exploreChildSymbols(exploreByDefault),
+  exploreChildTypes(exploreByDefault)
 {}
 
 

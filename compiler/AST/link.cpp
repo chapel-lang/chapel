@@ -23,6 +23,19 @@ void ILink::traverse(Traversal* traversal, bool atTop) {
 }
 
 
+void ILink::traverseList(Traversal* traversal, bool atTop) {
+  if (isNull()) {
+    return;
+  } else {
+    // explore this
+    traverse(traversal, atTop);
+
+    // explore siblings
+    next->traverseList(traversal, atTop);
+  }
+}
+
+
 void ILink::print(FILE* outfile) {
   if (isNull()) {
     INT_FATAL("Calling print() on a Null AST");
@@ -65,7 +78,7 @@ void ILink::codegenList(FILE* outfile, char* separator) {
   }
 }
 
-
+/*
 void ILink::insert(ILink* newlink) {
   if (!prev->isNull()) {
     prev->next = newlink;
@@ -74,13 +87,15 @@ void ILink::insert(ILink* newlink) {
   newlink->next = this;
   prev = newlink;
 }
+*/
 
-
+/*
 void ILink::add(ILink* newlink) {
   newlink->next = next;
   newlink->prev = this;
   next = newlink;
 }
+*/
 
 
 void ILink::append(ILink* newlink) {

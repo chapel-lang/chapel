@@ -25,23 +25,14 @@ void Symbol::traverse(Traversal* traversal, bool atTop) {
   }
 
   // explore Symbol and components
-  bool exploreThis = atTop || traversal->exploreChildSymbols;
-  // BLC: While these three conditionals may seem redundant,
-  // they allow for the pre/postProcess calls to modify the
-  // explore flag for use on this statement.
-  if (exploreThis) {
+  if (traversal->processTop || !atTop) {
     traversal->preProcessSymbol(this);
   }
   if (atTop || traversal->exploreChildSymbols) {
     traverseSymbol(traversal);
   }
-  if (exploreThis) {
+  if (traversal->processTop || !atTop) {
     traversal->postProcessSymbol(this);
-  }
-
-  // explore siblings
-  if (traversal->exploreSiblingSymbols) {
-    next->traverse(traversal, atTop);
   }
 }
 
@@ -232,7 +223,7 @@ bool FnSymbol::isNull(void) {
 
 
 void FnSymbol::traverseSymbol(Traversal* traversal) {
-  formals->traverse(traversal, false);
+  formals->traverseList(traversal, false);
   body->traverse(traversal, false);
 }
 

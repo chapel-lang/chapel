@@ -3,6 +3,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+// #include "getstuff.h"
 // #include "findUnknownTypes.h"
 #include "link.h"
 #include "misc.h"
@@ -110,6 +111,9 @@ Stmt* fileToAST(char* filename, int debug) {
 
   yydebug = debug;
   ParseFile(filename);
+
+  //  extern void testGetStuff(Stmt*);
+  //  testGetStuff(program);
 
   program = createInitFn(program);
 

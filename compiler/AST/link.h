@@ -15,15 +15,16 @@ class ILink : public Loc {
   ILink(void);
 
   virtual bool isNull(void);
-  virtual void traverse(Traversal* traversal, bool atTop);
+  virtual void traverse(Traversal* traversal, bool atTop = true);
+  virtual void traverseList(Traversal* traversal, bool atTop = true);
 
   virtual void print(FILE* outfile);
   virtual void printList(FILE* outfile, char* separator = ", ");
   virtual void codegen(FILE* outfile);
   virtual void codegenList(FILE* outfile, char* separator = ", ");
 
-  void insert(ILink* newlink);
-  void add(ILink* newlink);
+  //  void insert(ILink* newlink);
+  //  void add(ILink* newlink);
   void append(ILink* newlink);
 
   void filter(bool filter(ILink*), ILink** truelinks, ILink** falselinks);

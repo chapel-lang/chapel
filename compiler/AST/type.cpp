@@ -45,23 +45,14 @@ void Type::traverse(Traversal* traversal, bool atTop) {
   }
 
   // expore Type and components
-  bool exploreThis = atTop || traversal->exploreChildTypes;
-  // BLC: While these three conditionals may seem redundant,
-  // they allow for the pre/postProcess calls to modify the
-  // explore flag for use on this statement.
-  if (exploreThis) {
+  if (traversal->processTop || !atTop) {
     traversal->preProcessType(this);
   }
   if (atTop || traversal->exploreChildTypes) {
     traverseType(traversal);
   }
-  if (exploreThis) {
+  if (traversal->processTop || !atTop) {
     traversal->postProcessType(this);
-  }
-
-  // explore siblings
-  if (traversal->exploreSiblingTypes) {
-    next->traverse(traversal, atTop);
   }
 }
 
@@ -148,7 +139,7 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 void EnumType::traverseType(Traversal* traversal) {
   bool saveTraverseChildSymbols = traversal->exploreChildSymbols;
   traversal->exploreChildSymbols = false;
-  valList->traverse(traversal, false);
+  valList->traverseList(traversal, false);
   traversal->exploreChildSymbols = saveTraverseChildSymbols;
 }
 
@@ -437,7 +428,7 @@ void TupleType::addType(Type* additionalType) {
 
 void TupleType::traverseType(Traversal* traversal) {
   for (int i=0; i<components.n; i++) {
-    components.v[i]->traverse(traversal);
+    components.v[i]->traverse(traversal, false);
   }
 }
 

@@ -77,23 +77,14 @@ void Expr::traverse(Traversal* traversal, bool atTop) {
   }
 
   // explore Expr and components
-  bool exploreThis = atTop || traversal->exploreChildExprs;
-  // BLC: While these three conditionals may seem redundant,
-  // they allow for the pre/postProcess calls to modify the
-  // explore flag for use on this statement.
-  if (exploreThis) {
+  if (traversal->processTop || !atTop) {
     traversal->preProcessExpr(this);
   }
   if (atTop || traversal->exploreChildExprs) {
     this->traverseExpr(traversal);
   }
-  if (exploreThis) {
+  if (traversal->processTop || !atTop) {
     traversal->postProcessExpr(this);
-  }
-
-  // explore siblings
-  if (traversal->exploreSiblingExprs) {
-    next->traverse(traversal, atTop);
   }
 }
 
@@ -475,7 +466,7 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
   baseExpr->traverse(traversal, false);
-  argList->traverse(traversal, false);
+  argList->traverseList(traversal, false);
 }
 
 
@@ -520,7 +511,7 @@ CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
 
 void CastExpr::traverseExpr(Traversal* traversal) {
   castType->traverse(traversal, false);
-  argList->traverse(traversal, false);
+  argList->traverseList(traversal, false);
 }
 
 
@@ -681,8 +672,8 @@ DomainExpr::DomainExpr(Expr* init_domains, VarSymbol* init_indices) :
 
 
 void DomainExpr::traverseExpr(Traversal* traversal) {
-  indices->traverse(traversal, false);
-  domains->traverse(traversal, false);
+  indices->traverseList(traversal, false);
+  domains->traverseList(traversal, false);
   forallExpr->traverse(traversal, false);
 }
 
@@ -759,7 +750,7 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
 
 void ReduceExpr::traverseExpr(Traversal* traversal) {
   reduceType->traverse(traversal, false);
-  redDim->traverse(traversal, false);
+  redDim->traverseList(traversal, false);
   argExpr->traverse(traversal, false);
 }
 

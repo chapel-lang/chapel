@@ -1,23 +1,22 @@
 #ifndef _TRAVERSAL_H_
 #define _TRAVERSAL_H_
 
+#include "gc_cpp.h"
+
 class Stmt;
 class Expr;
 class Symbol;
 class Type;
 
-class Traversal {
+class Traversal : public gc {
  public:
-  bool exploreSiblingStmts;
+  bool processTop;
   bool exploreChildStmts;
-  bool exploreSiblingExprs;
   bool exploreChildExprs;
-  bool exploreSiblingSymbols;
   bool exploreChildSymbols;
-  bool exploreSiblingTypes;
   bool exploreChildTypes;
 
-  Traversal(void);
+  Traversal(bool processThis = true, bool exploreByDefault = true);
 
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);

@@ -25,24 +25,15 @@ void Stmt::traverse(Traversal* traversal, bool atTop) {
     return;
   }
 
-  // expore Stmt and components
-  bool exploreThis = atTop || traversal->exploreChildStmts;
-  // BLC: While these three conditionals may seem redundant,
-  // they allow for the pre/postProcess calls to modify the
-  // explore flag for use on this statement.
-  if (exploreThis) {
+  // explore Stmt and components
+  if (traversal->processTop || !atTop) {
     traversal->preProcessStmt(this);
   }
   if (atTop || traversal->exploreChildStmts) {
     this->traverseStmt(traversal);
   }
-  if (exploreThis) {
+  if (traversal->processTop || !atTop) {
     traversal->postProcessStmt(this);
-  }
-
-  // explore siblings
-  if (traversal->exploreSiblingStmts) {
-    next->traverse(traversal, atTop);
   }
 }
 
@@ -88,7 +79,7 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
 
 
 void VarDefStmt::traverseStmt(Traversal* traversal) {
-  var->traverse(traversal, false);
+  var->traverseList(traversal, false);
   init->traverse(traversal, false);
 }
 
@@ -372,7 +363,7 @@ BlockStmt::BlockStmt(Stmt* init_body) :
 
 
 void BlockStmt::traverseStmt(Traversal* traversal) {
-  body->traverse(traversal, false);
+  body->traverseList(traversal, false);
 }
 
 

@@ -1,6 +1,7 @@
 #ifndef _SYMSCOPE_H_
 #define _SYMSCOPE_H_
 
+#include "gc_cpp.h"
 #include "map.h"
 #include "symbol.h"
 
@@ -15,7 +16,7 @@ enum scopeType {
 
 class SymLink;
 
-class SymScope {
+class SymScope : public gc {
  public:
   scopeType type;
   int level;

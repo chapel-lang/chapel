@@ -3,7 +3,7 @@
 static long uid = 1;
 
 BaseAST::BaseAST(void) {
-  INT_FATAL("Base AST must be given type");
+  INT_FATAL("Base AST must be given a type");
 }
 
 
