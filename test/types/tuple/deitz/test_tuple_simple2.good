@@ -2,6 +2,7 @@ i is 2
 j is 3
 k is 4
 l is 5
+tuple assignment (i, j) = (k, l)
 i is 4
 j is 5
 k is 4
