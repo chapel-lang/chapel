@@ -19432,3 +19432,18 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+03/14/05 14:30:37 -- bradc
+
+Log message:
+	Steve points out that I failed to fix the
+	initializers for my classes in these tests
+	after filing the weirdinit.chpl test the
+	other day.
+
+Modified files:
+	chapel/test/functions/bradc/: intents-classes2.chpl 
+	                              intents-classes3.chpl 
+	                              intents-classes4.chpl 
+
