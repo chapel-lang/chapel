@@ -8672,3 +8672,15 @@ Added files:
 	chapel/test/trivial/bradc/: defaultinit.chpl defaultinit.good 
 	                            defaultinit2.chpl defaultinit2.good 
 
+---------------------------------------------------------------------------
+
+10/05/04 15:51:51 -- bradc
+
+Log message:
+	Oops, forgot to check in the test of operator associativity
+	that I'd written.
+
+Added files:
+	chapel/test/trivial/bradc/: opAssociativity.chpl 
+	                            opAssociativity.good 
+
