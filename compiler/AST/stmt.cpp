@@ -579,7 +579,8 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 
 
 Stmt* FnDefStmt::copyStmt(CloneCallback* analysis_clone) {
-  FnSymbol* fncopy = Symboltable::startFnDef(fn->name);
+  FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(analysis_clone));
+  Symboltable::startFnDef(fncopy);
   // do this first to make sure symbols are defined before used when
   // body is copied
   Symbol* newformals = fn->formals->copyList(analysis_clone);

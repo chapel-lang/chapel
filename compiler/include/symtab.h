@@ -62,7 +62,7 @@ class Symboltable {
 				      Expr* argExpr = nilExpr);
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
-  static FnSymbol* startFnDef(char* name, bool insert = true);
+  static FnSymbol* startFnDef(FnSymbol* fnsym, bool insert = true);
   static FnDefStmt* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
 				Type* retType, Stmt* body, 
 				bool isExtern = false);

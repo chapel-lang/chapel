@@ -296,8 +296,7 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 
 
 Symbol* FnSymbol::copySymbol(CloneCallback* analysis_clone) {
-  INT_FATAL(this, "ReduceSymbol::copySymbol() not implemented yet");
-  return nilSymbol;
+  return new FnSymbol(name);
 }
 
 

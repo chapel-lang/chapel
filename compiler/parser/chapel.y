@@ -341,7 +341,7 @@ fnrettype:
 fndecl:
   TFUNCTION identifier
     {
-      $<fnsym>$ = Symboltable::startFnDef($2);
+      $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2));
     }
                        TLP formals TRP fnrettype statement
     {

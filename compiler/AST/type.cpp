@@ -677,7 +677,7 @@ void ClassType::addDefinition(Stmt* init_definition) {
     /* create default constructor */
 
     char* constructorName = glomstrings(2, "_construct_", name->name);
-    FnSymbol* newFunSym = Symboltable::startFnDef(constructorName, false);
+    FnSymbol* newFunSym = Symboltable::startFnDef(new FnSymbol(constructorName), false);
     if (value || union_value) {
       VarSymbol* this_insert = new VarSymbol("this", this);
       Symboltable::defineInScope(this_insert, Symboltable::getCurrentScope());

@@ -553,15 +553,14 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
 }
 
 
-FnSymbol* Symboltable::startFnDef(char* name, bool insert) {
-  FnSymbol* newFn = new FnSymbol(name);
+FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool insert) {
   if (insert) {
-    define(newFn);
+    define(fnsym);
   }
-  currentFn = newFn;
+  currentFn = fnsym;
   Symboltable::pushScope(SCOPE_PARAM);
 
-  return newFn;
+  return fnsym;
 }
 
 
@@ -579,7 +578,7 @@ FnDefStmt* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals,
 FnDefStmt* Symboltable::defineFunction(char* name, Symbol* formals, 
 				       Type* retType, Stmt* body, 
 				       bool isExtern) {
-  FnSymbol* fnsym = startFnDef(name);
+  FnSymbol* fnsym = startFnDef(new FnSymbol(name));
   return finishFnDef(fnsym, formals, retType, body, isExtern);
 }
 
