@@ -10528,3 +10528,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+11/29/04 14:47:51 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Handle simple member function resolution in resolve_symbol.
+	Handles test_method1.chpl
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
