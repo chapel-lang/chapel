@@ -1112,3 +1112,56 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/03/22 16:43:30 -- bradc
+
+Log message:
+	Learned that the time to build on an NFS-mounted directory was
+	painfully slow (10x slowdown for some commands), so added the
+	option to set an environment variable CHPLDEVTMP which, when
+	set, gives a root directory for writing .o's, .a's, and
+	executables.  For example, on lotus, I set CHPLDEVTMP
+	to /ptmp.  When compiling, rather than creating linux/
+	subdirectories in the various directories, the Makefiles
+	create a directory /ptmp/chapel-bradc/, mirror my source tree's
+	structure under that point, and then sets up symbolic links
+	to these directories for my linux/ subdirectories.  If CHPLDEVTMP
+	is not set, things behave as they previously did.
+	
+	Well, almost... Two other changes made by this check-in:
+	
+	1) binaries are now built in the platform-specific subdirectories
+	first.  Thus, your link line will look something like:
+	
+	g++ -o linux/chpl foo.o boo.o goo.o ...
+	
+	Then, a symbolic link to the binary is set up in the directory
+	you're working in.  (Could switch this to a copy if anyone
+	prefers).
+	
+	2) I defined the rule for how to build or build&link a platform-
+	specific subdirectory in the make/Makefile.base file, included
+	by all our other Makefiles, so added a rule prior to it:
+	
+	default: all
+	
+	so that when make is typed in any of these directories, you
+	get the same behavior as before (previously, the first target
+	in each of our Makefiles was "all").  One effect this has is
+	that if you're hacking on a local Makefile and insert a rule
+	before all, thinking that it will be the default, you'll be
+	wrong (unless you also put it before the include Makefile.base).
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/cast/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.head 
+	chapel/compiler/make_prims/: Makefile 
+	chapel/compiler/test/: Makefile 
+	chapel/make/: Makefile.base 
+	chapel/third-party/: Makefile 
+	chapel/third-party/boehmgc/: Makefile 
+	chapel/third-party/dparser/: Makefile 
+
