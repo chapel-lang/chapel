@@ -1924,3 +1924,14 @@ Modified files:
 Added files:
 	chapel/compiler/: cdb.cpp cdb.h 
 
+---------------------------------------------------------------------------
+
+04/05/05 16:20:56 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	updated TODO list
+	now I just need to do all those things :)
+
+Modified files:
+	chapel/compiler/: TODO 
+
