@@ -19950,3 +19950,19 @@ Log message:
 Modified files:
 	chapel/test/trivial/roxana/: test_param_decl2.good 
 
+---------------------------------------------------------------------------
+
+03/17/05 10:32:34 -- roxana
+
+Log message:
+	Improved support for parameters to require an initializer upon
+	declaration.
+
+Modified files:
+	chapel/compiler/symtab/: symtab.cpp 
+Added files:
+	chapel/test/trivial/roxana/: test_param_decl3.chpl 
+	                             test_param_decl3.good 
+Removed files:
+	chapel/test/trivial/roxana/: test_param_decl3.future 
+
