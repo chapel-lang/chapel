@@ -501,3 +501,18 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/d/: dparse_tables.h parse.c 
 
+---------------------------------------------------------------------------
+
+04/02/19 11:22:35 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	added support for analyzing vectors and vector operations
+	added samples/vec.chpl as vector test case
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp ast.h chpl.g fa.cpp grammar.cpp 
+	                  if1.cpp prelude.chpl prim.cpp sym.h v.g 
+	chapel/compiler/samples/: iv.chpl 
+Added files:
+	chapel/compiler/samples/: vec.chpl 
+
