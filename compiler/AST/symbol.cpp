@@ -702,27 +702,27 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 void FnSymbol::codegenDef(FILE* outfile) {
   FILE* headfile;
 
-  if (!function_is_used(this)) {
-    return;
-  }
-  if (exportMe) {
-    headfile = extheadfile;
-  } else {
-    headfile = intheadfile;
-  }
-  codegenHeader(headfile);
-  fprintf(headfile, ";\n");
+  if (function_is_used(this)) {
 
-  codegenHeader(outfile);
-  // need an extra set of curly braces in case (a) body is
-  // non-compound statement, or (b) formal parameters share same name
-  // as local variable
-  fprintf(outfile, " {\n");
-  body->codegen(outfile);
-  fprintf(outfile, "\n");
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "\n\n");
-  if (overload) {
+    if (exportMe) {
+      headfile = extheadfile;
+    } else {
+      headfile = intheadfile;
+    }
+    codegenHeader(headfile);
+    fprintf(headfile, ";\n");
+
+    codegenHeader(outfile);
+    // need an extra set of curly braces in case (a) body is
+    // non-compound statement, or (b) formal parameters share same name
+    // as local variable
+    fprintf(outfile, " {\n");
+    body->codegen(outfile);
+    fprintf(outfile, "\n");
+    fprintf(outfile, "}\n");
+    fprintf(outfile, "\n\n");
+  }
+ if (overload) {
     overload->codegenDef(outfile);
   }
 }
