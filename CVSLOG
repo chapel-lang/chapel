@@ -5176,3 +5176,122 @@ Modified files:
 	                                    structtype.good var.good 
 	                                    var2.good 
 
+---------------------------------------------------------------------------
+
+08/06/04 16:32:46 -- bradc
+
+Log message:
+	Implemented an AST traversal framework and a few tiny
+	tests to convince myself that it was working at least
+	a little bit.  The scheme is as follows:
+	
+	ILink is a superclass of all the new AST classes.  It
+	would've been called "Link" except that John had already
+	used that name.  The "I" stands for "inheritance-based"
+	(because template-based would be the other way to do it,
+	but I've been trying to avoid templates).
+	
+	The ILink class now supports a traverse() method which
+	is meant to walk around things in a reasonably
+	intelligent manner.  Call it on a statement, and it
+	will traverse the components of that statement (Exprs,
+	Symbols, Types), as well as the statements that follow
+	it.  Call it on an Expr, Symbol, or Type, and it will
+	do similarly.
+	
+	The traverse() method takes a single argument which is
+	an instance of a subclass of the Traversal class
+	(implemented in the new files traversal.h and traversal.cpp).
+	The idea is that anyone who wants to write a traversal of
+	the AST will subclass Traversal, implementing methods that
+	implement the traversal they want to do.  The Traversal
+	class is quite abstract and looks like this:
+	
+	class Traversal {
+	public:
+	bool exploreStmts;
+	bool exploreExprs;
+	bool exploreSymbols;
+	bool exploreTypes;
+	
+	Traversal(void);
+	
+	virtual void preProcessStmt(Stmt* stmt);
+	virtual void postProcessStmt(Stmt* stmt);
+	virtual void preProcessExpr(Expr* expr);
+	virtual void postProcessExpr(Expr* expr);
+	virtual void preProcessSymbol(Symbol* sym);
+	virtual void postProcessSymbol(Symbol* sym);
+	virtual void preProcessType(Type* type);
+	virtual void postProcessType(Type* type);
+	};
+	
+	Note that the methods are not pure virtual, so
+	that you don't have to define all of these methods.
+	
+	Each of the four main components of the AST
+	(Stmt, Expr, Symbol, and Type) has two methods
+	associated with it: one that processes the
+	class before all the things it contains, and a
+	second that processes it after all the things
+	it contains.  Thus, one can initialize state in
+	the "pre" method and analyze it in the "post"
+	method, or simply use pre alone (or post alone),
+	or ...
+	
+	The four booleans indicate whether or not to
+	explore the components that make the thing up.
+	By default they are all set to true.  For
+	example, if you merely wanted to explore a list
+	of statements without diving into all of their
+	internals, you would set exploreStmts to false,
+	which would cause the traversal to merely walk
+	the statement list that you point it at.  If
+	you wanted to dive into certain statement types
+	(say "write()" statements) but not others, you
+	could do that explicitly by making your pre-/post-
+	ProcessStmt() calls traverse the arguments
+	explicitly.  In simple traversals, these booleans
+	will probably be set once in the constructor and
+	never changed.  More complex ones could change
+	them as they go, though the concept frightens me
+	a bit.
+	
+	Note that the traversal may contain cycles that
+	I haven't debugged yet.  I found a few, but haven't
+	run traversals on all the codes that we've written
+	(and obviously there are lots of codes we haven't
+	written yet).  There's also a chance that it may
+	iterate over things in a weird order or multiple
+	times, though I think I've weeded out the most
+	egregious examples of this.
+	
+	The files findUnknownTypes.cpp/h contain two
+	sample traversals -- one simply prints statements
+	as the traversal comes to them; the second is
+	slightly more interesting -- it walks around
+	looking for symbols of type dtUnknown and complains
+	about them (eventually, this is intended to call
+	down to the low-level stuff when it finds such
+	symbols to ask it what their types should be and
+	fix them up, but for now it just complains).  It
+	also has a method that will print out expressions
+	whose typeInfo() method returns dtUnknown, but
+	that is currently commented out.
+	
+	Feel free to try out at your own peril -- I think
+	you should get something interesting and useful,
+	but perhaps not something perfect.  When I get
+	back, I'll continue to make use of this and debug
+	it in the process.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: Makefile.share expr.cpp expr.h link.h 
+	                      stmt.cpp stmt.h symbol.cpp symbol.h 
+	                      symtab.cpp type.cpp type.h 
+	chapel/test/trivial/bradc/protoast/codegen/: .cvsignore 
+Added files:
+	chapel/compiler/AST/: findUnknownTypes.cpp findUnknownTypes.h 
+	                      traversal.cpp traversal.h 
+
