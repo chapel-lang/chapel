@@ -5917,3 +5917,18 @@ Modified files:
 	chapel/compiler/AST/: chapel.lex chapel.y prelude.chpl 
 	                      symtab.cpp symtab.h type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+08/26/04 15:57:02 -- bradc
+
+Log message:
+	Minor check-in renaming boolean in the runtime and fixing
+	"make depend" for the runtime.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/runtime/include/: chpltypes.h stdchpl.h 
+	chapel/runtime/src/: Makefile 
+Removed files:
+	chapel/runtime/include/: chplboolean.h 
+
