@@ -1542,3 +1542,41 @@ Log message:
 Modified files:
 	chapel/compiler/: files.cpp 
 
+---------------------------------------------------------------------------
+
+04/03/31 19:01:09 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added dominator computation a la Tarjan
+	Added loop recognition a la modified Sreedhar-Gao-Lee Algorithm
+	Added simple inlining
+	Added interprocedural constant propogation
+	Added new graph types:
+	loops (procudural loops)
+	rec (interprocedural loops)
+	dom (dominators)
+	calls (call graph)
+	Added frequency estimation based on loop analysis
+	Added the ability to annotate the graphs with frequency estimates.
+	
+	You may be wondering why I did procedural loop analysis instead
+	of using the AST.  Well, in addition to being able to recognize
+	loops constructed from goto and the like, I needed to do interprocedural
+	loop recognition to handle recursion, and it is the same algorithm.
+	
+	Fixed a number of bugs in numeric coersion, constrol region nesting,
+	SSU conversion, the grammars, etc.
+
+Modified files:
+	chapel/compiler/: Makefile TODO ast.h chpl.g clone.cpp clone.h 
+	                  driver.cpp driver.h dump.cpp dump.h fa.cpp 
+	                  fa.h fun.cpp fun.h geysa.h grammar.cpp 
+	                  graph.cpp graph.h map.h num.h pdb.h pnode.cpp 
+	                  pnode.h prelude.v region.h scope.h ssu.cpp v.g 
+	                  valgrind.suppressions var.h vec.cpp vec.h 
+Added files:
+	chapel/compiler/: dom.cpp dom.h inline.cpp inline.h loop.cpp 
+	                  loop.h 
+	chapel/compiler/samples/: bug1.v const.v inline.v loop1.v 
+	                          loop2.v loop_endless.v rec.v 
+
