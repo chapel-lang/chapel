@@ -4453,3 +4453,15 @@ Added files:
 	                                    var.chpl var.good var2.chpl 
 	                                    var2.good 
 
+---------------------------------------------------------------------------
+
+07/28/04 10:59:37 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	sorted many of the internal data structures so as to limit the effects
+	of hash table locations on the intermediate results of analysis.
+
+Modified files:
+	chapel/compiler/: code.h fa.cpp fa.h fun.cpp fun.h if1.cpp 
+	                  pnode.cpp pnode.h var.cpp var.h 
+
