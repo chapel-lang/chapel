@@ -32,6 +32,10 @@ PassInfo passlist[] = {
   RUN(BuildClassConstructorsEtc, ""),
   RUN(SpecializeParenOpExprs, ""),
   RUN(ApplyThisParameters, ""),
+
+  // passes to collect information for analysis
+  RUN(ComputeVisibleFunctions, ""),
+
   // passes to run analysis
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(RunAnalysis, ""),

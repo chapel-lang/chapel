@@ -360,3 +360,43 @@ bool SymScope::commonModuleIsFirst() {
     return parent->commonModuleIsFirst();
   }
 }
+
+
+void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
+  visibleFunctions.clear();
+  for(SymLink* tmp = firstSym; tmp; tmp = nextLink(SymLink, tmp)) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp->pSym)) {
+      while (fn) {
+	visibleFunctions.set_add(fn);
+	fn = fn->overload;
+      }
+    } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
+      if (ClassType* class_type = dynamic_cast<ClassType*>(type_sym->type)) {
+	if (class_type->value || class_type->union_value) {
+	  forv_Vec(FnSymbol, method, class_type->methods) {
+	    while (method) {
+	      visibleFunctions.set_add(method);
+	      method = method->overload;
+	    }
+	  }
+	}
+      }
+    }
+  }
+  if (parent) {
+    visibleFunctions.set_union(parent->visibleFunctions);
+  }
+  if (moreVisibleFunctions) {
+    visibleFunctions.set_union(*moreVisibleFunctions);
+  }
+}
+
+
+void SymScope::printVisibleFunctions() {
+  forv_Vec(FnSymbol, fn, visibleFunctions) {
+    if (fn) {
+      fn->print(stdout);
+      printf("\n");
+    }
+  }
+}

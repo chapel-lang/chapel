@@ -6,6 +6,7 @@
 #include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
 
+#include "../symtab/computeVisibleFunctions.h"
 #include "../symtab/insertWriteFns.h"
 #include "../symtab/legalizeCNames.h"
 #include "../symtab/printSymtab.h"
@@ -60,6 +61,7 @@ REGISTER(CheckIDs);
 REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
 REGISTER(Codegen);
+REGISTER(ComputeVisibleFunctions);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(DestructureTupleAssignments);

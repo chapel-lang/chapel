@@ -45,6 +45,8 @@ class SymScope : public gc {
   SymLink* firstSym;
   SymLink* lastSym;
 
+  Vec<FnSymbol*> visibleFunctions;
+
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(scopeType init_type, int init_level = 0);
@@ -74,6 +76,8 @@ class SymScope : public gc {
   void codegen(FILE* outfile, char* separator);
 
   bool commonModuleIsFirst();
+  void setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions);
+  void printVisibleFunctions();
 };
 
 #endif
