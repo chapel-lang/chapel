@@ -27,6 +27,6 @@ var s : [Row] float;
 A = [i,j:Mat] (i=j);
 v = [*,i:Col] i;
 
-s = sum(dim=1) [Mat] A*v;
+s = sum(dim=2) [Mat] A*v;
 
 write(v);

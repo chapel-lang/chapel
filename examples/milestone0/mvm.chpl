@@ -22,4 +22,4 @@ var x : array Row of float;
 A = [i,j:Mat] (if i=j then 1 else 0);
 y = [i:Col] i;
 
-x = sum(dim=1) [Mat] A*y(*,..);
+x = sum(dim=2) [Mat] A*y(*,..);
