@@ -1,36 +1,188 @@
 #!/usr/bin/perl
 
+#
+# get uniquifiers
+#
 $id = getpgrp();
+$today = `date +%w-%a`; chomp($today);
+$statdate = `date +%D`; chomp($statdate);
+
+
+#
+# directory locations
+#
 $tmpdir = "/tmp/chapel-nightly.$id.deleteme";
-
-system("mkdir $tmpdir > /dev/null");
-
-$redirect = "| tee -a $tmpdir/LOG 2>&1";
-
-system("cd $tmpdir && cvs checkout chapel $redirect");
-
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
+$logdir = "~bradc/chapel/test/Logs/Nightly";
+$statdir = "$logdir/Stats";
 
+
+#
+# test log filenames
+#
+$rawstdlog = "$logdir/day$today-std.log";
+$rawvgrlog = "$logdir/day$today-vgr.log";
+$rawstdsummary = "$rawstdlog.summary";
+$rawvgrsummary = "$rawvgrlog.summary";
+
+$sortedstdsummary = "$rawstdlog.sorted";
+$sortedvgrsummary = "$rawvgrlog.sorted";
+
+$prevstdsummary = "$logdir/last-std.log.sorted";
+$prevvgrsummary = "$logdir/last-vgr.log.sorted";
+
+
+#
+# make temp directory
+#
+system("mkdir $tmpdir > /dev/null");
+$redirect = "| tee -a $tmpdir/LOG 2>&1";
+
+#
+# checkout sources
+#
+system("cd $tmpdir && cvs -d ~bradc/CVS checkout chapel $redirect");
+
+
+#
+# make sure CHPLDEVTMP environment variable is unset
+#
 delete($ENV{'CHPLDEVTMP'});
+
+#
+# build stuff
+#
 system("cd $chapeldir && make third-party $redirect");
 system("cd $chapeldir && make compiler $redirect");
 system("cd $chapeldir && make runtime $redirect");
-system("cd $testdir && start_test -logfile ./Logs/nightly.log $redirect");
-system("cd $testdir && start_test -valgrind -logfile ./Logs/nightly-valgrind.log $redirect");
 
+#
+# run tests
+#
+`rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
+system("cd $testdir && ./start_test -logfile $rawstdlog $redirect");
+system("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog $redirect");
+
+
+#
+# sort output
+#
+`cat $rawstdsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedstdsummary`;
+`cat $rawvgrsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedvgrsummary`;
+
+
+#
+# count stuff
+#
+$oldstdsummary = `grep Summary: $prevstdsummary`; chomp($oldstdsummary);
+$oldvgrsummary = `grep Summary: $prevvgrsummary`; chomp($oldvgrsummary);
+$newstdsummary = `grep Summary: $sortedstdsummary`; chomp($newstdsummary);
+$newvgrsummary = `grep Summary: $sortedvgrsummary`; chomp($newvgrsummary);
+
+$oldstdsucc = &numsuccesses($oldstdsummary);
+$oldstdfail = &numfailures($oldstdsummary);
+$oldvgrsucc = &numsuccesses($oldvgrsummary);
+$oldvgrfail = &numfailures($oldvgrsummary);
+$newstdsucc = &numsuccesses($newstdsummary);
+$newstdfail = &numfailures($newstdsummary);
+$newvgrsucc = &numsuccesses($newvgrsummary);
+$newvgrfail = &numfailures($newvgrsummary);
+
+$oldnumtests = $oldstdsucc + $oldstdfail;
+$newnumtests = $newstdsucc + $newstdfail;
+$deltests = &delta($oldnumtests, $newnumtests);
+
+$delstdsucc = &delta($oldstdsucc, $newstdsucc);
+$delstdfail = &delta($oldstdfail, $newstdfail);
+$delvgrsucc = &delta($oldvgrsucc, $newvgrsucc);
+$delvgrfail = &delta($oldvgrfail, $newvgrfail);
+
+
+#
+# send mail
+#
 open(MAIL, "| Mail -s \"Chapel: Nightly Results\" bradc\@cray.com");
 
-print MAIL "results from standard run:\n";
-print MAIL "==========================\n";
-print MAIL `grep Summary: $testdir/Logs/nightly.log.summary`;
+print MAIL "=== Summary ===================================================\n";
+print MAIL "$newnumtests Tests ($deltests)\n";
+print MAIL "standard run: $newstdsucc Successes ($delstdsucc), $newstdfail Failures ($delstdfail)\n";
+print MAIL "valgrind run: $newvgrsucc Successes ($delvgrsucc), $newvgrfail Failures ($delvgrfail)\n";
+print MAIL "===============================================================\n";
 print MAIL "\n";
 
-print MAIL "results from valgrind run:\n";
-print MAIL "==========================\n";
-print MAIL `grep Summary: $testdir/Logs/nightly-valgrind.log.summary`;
+print MAIL "--- New Errors (standard) -------------------------------------\n";
+print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+print MAIL "\n";
+
+print MAIL "--- New Errors (valgrind) -------------------------------------\n";
+print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
+print MAIL "\n";
+
+print MAIL "--- Resolved Errors (standard) --------------------------------\n";
+print MAIL `comm -23 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+print MAIL "\n";
+
+print MAIL "--- Resolved Errors (valgrind) --------------------------------\n";
+print MAIL `comm -23 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
+print MAIL "\n";
+
+print MAIL "--- Unresolved Errors (standard) ------------------------------\n";
+print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+print MAIL "\n";
+
+print MAIL "--- Unresolved Errors (valgrind) ------------------------------\n";
+print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
 print MAIL "\n";
 
 close(MAIL);
 
+
+#
+# tuck this run's output away for comparison tomorrow
+#
+`cp $sortedstdsummary $prevstdsummary`;
+`cp $sortedvgrsummary $prevvgrsummary`;
+
+
+#
+# write stats
+#
+`echo "$statdate\t$newnumtests\t$newstdsucc\t$newvgrsucc" >> $statdir/tests.dat`;
+`ci -l -m"automated nightly checkin" $statdir/tests.dat`;
+
+
+#
+# clean up
+#
 system("rm -rf $tmpdir");
+
+exit 0;
+
+
+#
+# subroutines
+#
+
+sub numsuccesses {
+  $mystr = $_[0];
+  $mystr =~ s/.* #Successes = //;
+  $mystr =~ s/ \|.*//;
+  $mystr;
+}
+
+sub numfailures {
+  $mystr = $_[0];
+  $mystr =~ s/.* #Failures = //;
+  $mystr =~ s/]//;
+  $mystr;
+}
+
+sub delta {
+  $delta = $_[1] - $_[0];
+  if ($delta >= 0) {
+      $delta = "+$delta";
+  }
+  $delta;
+}
+
