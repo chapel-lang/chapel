@@ -270,6 +270,8 @@ show_violations(FA *fa, FILE *fp) {
       case ATypeViolation_NOTYPE:
 	if (v->av->var->sym->name)
 	  fprintf(stderr, "'%s' ", v->av->var->sym->name);
+	else if (verbose_level)
+	  fprintf(stderr, "expr:%d ", v->av->var->sym->id);
 	else
 	  fprintf(stderr, "expression ");
 	fprintf(stderr, "has no type\n");
