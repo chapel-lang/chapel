@@ -843,3 +843,15 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.base 
 
+---------------------------------------------------------------------------
+
+04/03/12 16:26:36 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	change recursive make invocations to use $(MAKE) so as to
+	use the same version of make as the original invocation
+	(necessary on FreeBSD where the default make is not gmake)
+
+Modified files:
+	chapel/compiler/: Makefile 
+
