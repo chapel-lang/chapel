@@ -609,3 +609,15 @@ Modified files:
 	                  fa.h fa_extras.cpp fun.cpp if1.cpp 
 	                  prelude.chpl prelude.v ssu_extra.cpp vec.cpp 
 
+---------------------------------------------------------------------------
+
+04/02/27 16:43:00 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	- add samples/mat1.chpl
+	- tweeks to handle samples/mat.chpl
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp chpl.g fa.cpp if1.cpp 
+	                  prelude.chpl 
+
