@@ -21436,3 +21436,21 @@ Added files:
 	                            test_mf_record.future 
 	                            test_mf_record.good 
 
+---------------------------------------------------------------------------
+
+03/24/05 17:11:09 -- deitz
+
+Log message:
+	Added the ability to resolve overloaded functions even when
+	--noanalysis is used.  Note that resolution in all but the simplest
+	cases may be wrong.  It is a stopgap measure, like the --noanalysis
+	flag itself, to allow me to continue supporting sequences before
+	analysis.
+
+Modified files:
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+Added files:
+	chapel/test/types/seq/deitz/noanalysis/: 
+	                                         test_overload_noanalysis1.chpl 
+	                                         test_overload_noanalysis1.good 
+
