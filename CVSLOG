@@ -14997,3 +14997,38 @@ Modified files:
 	chapel/compiler/traversals/: processParameters.cpp 
 	chapel/test/classes/deitz/: test_record_method2.good 
 
+---------------------------------------------------------------------------
+
+01/19/05 16:57:23 -- jplevyak
+
+Log message:
+	Interm checkin.
+	
+	1. Fixed a bug in ExprStmt::createFnCallStmt where the ->stmt
+	   of the expression was not being set to the surrounding statement.
+	   Since it was still nilStmt, this prevented the code which
+	   determined which functions were in scope from working.
+	
+	2. Implemented function scoping during dispatch.  Prior to this
+	   all functions were global.
+	
+	3. Added a great deal of support for cloning of types.
+	   This code is not being called yet because the underlying AST
+	   call is cloning the functions with the type and this is
+	   causing problems.
+	
+	4. Added code in findUnknownTypes which is based on what Brad
+	   was doing to show that the return_type_info call works.
+	
+	   Brad: you should remove this when you get the conflict :)
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp sym.cpp 
+	chapel/compiler/include/: analysis.h baseAST.h sym.h 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good enum.good 
+	                                  enumarray.good 
+	                                  formatoutput.good 
+	                                  protoast_test.good 
+
