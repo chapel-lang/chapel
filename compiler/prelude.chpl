@@ -46,6 +46,9 @@ type size __name "size" = uint32;
 type bool __name "bool" = int;
 type enum_element __name "enum_element" = int;
 
+// builtin constants
+0;
+
 // builtin value
 
 null __name "null" : (); 
@@ -227,6 +230,8 @@ function array::class dd e {
 function operator(a:array, s:symbol, b:array) {
   operator(a.v(0), s, b.v(0));
 }
+
+function write(a) { 0 }
 
 /*
   David's old iterator and domain examples

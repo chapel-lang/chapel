@@ -39,7 +39,7 @@ if1_const(IF1 *p, Sym *type, char *constant) {
   char *c = if1_cannonicalize_string(p, constant);
   Sym *sym = p->constants.get(c);
   if (sym) {
-    assert(type == sym->type);
+    assert(sym->type == type);
     return sym;
   }
   sym = if1_alloc_sym(p);

@@ -6,8 +6,9 @@
 
 - prototype Chapel grammar
 
-- constant folding (now required earlier to do generics)
-  + remove dead (folded) code 
+- constant propogation & generalized splitting
+  also handle things like __make_vector which require constants
+  in generic code
 
 - inlining
 
@@ -55,18 +56,7 @@
 - make_top_edge should call with the appropriate arguments.
   - should store the top level pnode in the database (somewhere)
 
-- generalize the "autoderef" charateristic of the "." operator
-and the vector(xx) call.  Perhaps attach it as a property to the
-function call? Alternatively, we could have two different calls...
-but how to specify?  Some sort of hidden variable "autoderef = true",
-or "is_lval = true"?
-
 - fixup methods "self" and "super" variables to work correctly
-
-- fixup clearing and collecting of variables and Pnodes... what 
-  are the phi and phy lists for?
-
-- remove lval and is_val
 
 - add ast arg to if1_send
 
@@ -74,9 +64,13 @@ or "is_lval = true"?
 
 - figure out why adding $right 5200 to 'new' causes problems
 
-- remove "next_sym"
-
 - optimize function dispatch
 - deal with "class_static"
 
+- make the dispatch tables visibility specific ???
+
 - document and do examples for functions returning lvals
+
+- fix A(i,j) = (if (i==j) 1 else 0)
+
+- handle bulltin constants so that they default to the default size

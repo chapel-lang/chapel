@@ -435,11 +435,15 @@ vector_immediate: '#' '[' statement* expression? ']' {
   $$.ast = new AST(AST_vector, &$n);
 };
 
-square_forall: '[' loop_scope forall_indices? qualified_ident ']' expression 
+square_forall: '[' loop_scope square_forall_indices? qualified_ident ']' expression 
 [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
 { $$.ast = new AST(AST_forall, &$n); };
 
-forall_indices: ident (',' ident)* ':' {
+square_forall_indices: ident (',' ident)* ':' {
+  $$.ast = new AST(AST_indices, &$n);
+};
+
+forall_indices: ident (',' ident)* {
   $$.ast = new AST(AST_indices, &$n);
 };
 

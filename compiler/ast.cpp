@@ -943,6 +943,9 @@ gen_forall(IF1 *i, AST *ast) {
     Code *send = if1_send(i, &ast->code, 3, 1, sym_array, domain->sym, body->rval, ast->rval);
     send->ast = ast;
   } else {
+    forv_AST(a, *indices)
+      if1_move(i, &ast->code, new_constant(i, "0", "int32"), a->sym);
+    if1_gen(i, &ast->code, body->code);
     ast->rval = body->rval;
   }
 }

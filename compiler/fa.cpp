@@ -863,6 +863,8 @@ type_violation(AVar *av, AType *type, PNode *pnode) {
   ATypeViolation *v = av->violations->get(pnode);
   if (!v)
     av->violations->put(pnode, (v = new ATypeViolation(av, type, pnode)));
+  else
+    v->type = type_union(v->type, type);
   type_violations.set_add(v);
 }
 
