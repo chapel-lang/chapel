@@ -1659,3 +1659,13 @@ Added files:
 	chapel/test/trivial/bradc/: declprintint.chk declprintint.chpl 
 	                            printstring.chk printstring.chpl 
 
+---------------------------------------------------------------------------
+
+04/04/02 16:29:03 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed issue with assuming the suffix was ".chpl"
+
+Modified files:
+	chapel/compiler/: driver.cpp files.cpp 
+
