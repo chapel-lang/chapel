@@ -18813,3 +18813,20 @@ Added files:
 	chapel/test/trivial/jplevyak/: .cvsignore 
 	chapel/test/types/type_variables/jplevyak/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/03/05 15:46:12 -- jplevyak
+
+Log message:
+	Support pragmas on decls.
+	Add support for cloning for manifest constants.
+	Added "clone_for_manifest_constants" pragma to functions
+	  in the internal_prelude.
+	Fixed a bug : needed to dupstr the pragma string.
+
+Modified files:
+	chapel/compiler/AST/: pragma.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp fun.cpp 
+	chapel/compiler/include/: fa.h fun.h 
+	chapel/compiler/parser/: chapel.y internal_prelude.chpl 
+
