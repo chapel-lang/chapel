@@ -22112,3 +22112,19 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/traversals/: processParameters.cpp 
 
+---------------------------------------------------------------------------
+
+03/28/05 18:00:21 -- bradc
+
+Log message:
+	Continuing to improve parameter passing, marked parameters
+	that we implement using pointers (inout for scalars, e.g.)
+	as being const in hopes of providing more information to
+	the back-end C compiler.  Being able to mark them restrict
+	would be even better, but would of course require more
+	aliasing analysis than we currently have (or at least,
+	than I currently know about).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
