@@ -1580,3 +1580,20 @@ Added files:
 	chapel/compiler/samples/: bug1.v const.v inline.v loop1.v 
 	                          loop2.v loop_endless.v rec.v 
 
+---------------------------------------------------------------------------
+
+04/04/01 16:08:10 -- bradc
+
+Log message:
+	Updated the astlog example a bit to (1) get the log file in
+	synch with, well, my latest version of the compiler (I still
+	haven't merged in John's latest changes), and (2) now that
+	we're looking for an executable to run, added the NOEXEC file
+	to indicate that this test is only meant to be compiled, not
+	run.
+
+Modified files:
+	chapel/test/Samples/ex1-astlog/: .cvsignore astlog1.chk 
+Added files:
+	chapel/test/Samples/ex1-astlog/: NOEXEC 
+
