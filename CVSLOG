@@ -14537,3 +14537,22 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+01/14/05 15:16:28 -- jplevyak
+
+Log message:
+	Implement numeric coercions on initialization to a typed 'var'.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp 
+	                           prim_data.dat 
+	chapel/compiler/include/: builtin_symbols.h sym.h 
+	chapel/compiler/vparser/: ast_cf.cpp 
+	chapel/test/flowanalysis/newast/: enum.good noop.good 
+	                                  pareninit.good 
+	                                  unary_plusMinus.good 
+Added files:
+	chapel/test/types/type_variables/jplevyak/: test_coerse1.chpl 
+	                                            test_coerse1.good 
+
