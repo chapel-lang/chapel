@@ -1,6 +1,8 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
+//#define USE_EXPR_VARINIT
+
 /* This is the default list of passes that will be run by the
    compiler.  The passes shown will be run in the order shown,
    and their arguments will be set to the quoted string that
@@ -32,6 +34,9 @@ PassInfo passlist[] = {
   RUN(BuildClassConstructorsEtc, ""),
   RUN(SpecializeParenOpExprs, ""),
   RUN(ApplyThisParameters, ""),
+#ifdef USE_EXPR_VARINIT
+  RUN(ProcessDefs, ""),
+#endif
 
   // passes to collect information for analysis
   RUN(Fixup, "verify"), // this is a sanity check
@@ -69,7 +74,9 @@ PassInfo passlist[] = {
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(MethodsToFunctions, ""),
   RUN(ProcessParameters, ""),
+#ifndef USE_EXPR_VARINIT
   RUN(InsertVariableInitializations, ""),
+#endif
   RUN(DestructureTupleAssignments, ""),
   RUN(ExpandSeqExprAssignments, ""),
   RUN(InsertUnionChecks, ""),

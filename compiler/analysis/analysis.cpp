@@ -1459,6 +1459,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       s->ainfo->rval = sym;
       break;
     }
+    case EXPR_VARINIT: break;
     case EXPR_DEF: break;
     case EXPR_UNOP: {
       UnOp *s = dynamic_cast<UnOp*>(ast);

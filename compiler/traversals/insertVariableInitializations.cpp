@@ -15,7 +15,7 @@ static void insert_default_init(Stmt* stmt, VarSymbol* var, Type* type);
 static void insert_user_default_init(Stmt* stmt, VarSymbol* var, Type* type);
 static void insert_user_init(Stmt* stmt, VarSymbol* var);
 
-static void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
+void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
   if (var->parentScope->stmtContext) {
     if (BlockStmt* block_stmt =
         dynamic_cast<BlockStmt*>(var->parentScope->stmtContext)) {

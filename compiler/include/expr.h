@@ -575,4 +575,16 @@ class NamedExpr : public Expr {
 };
 
 
+class VarInitExpr : public Expr {
+ public:
+  Symbol* var;
+  VarInitExpr(Symbol* init_var);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void traverseExpr(Traversal* traversal);
+  Type* typeInfo(void);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 #endif

@@ -45,12 +45,12 @@ void Fixup::preProcessStmt(Stmt* stmt) {
       // SJD hack because of __init function
       bool ignore = false;
       if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
-                                if (m->initFn == parent) {
-                                ignore = true;
-                                }
+        if (m->initFn == parent) {
+          ignore = true;
+        }
       }
       if (!ignore) {
-                                INT_FATAL(stmt, "Statement's parent is incorrect");
+        INT_FATAL(stmt, "Statement's parent is incorrect");
       }
     }
   }

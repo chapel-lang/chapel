@@ -37,6 +37,7 @@
 #include "../traversals/insertVariableInitializations.h"
 #include "../traversals/methodsToFunctions.h"
 #include "../traversals/printAST.h"
+#include "../traversals/processDefs.h"
 #include "../traversals/processParameters.h"
 #include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/specializeParenOpExprs.h"
@@ -86,6 +87,7 @@ REGISTER(MethodsToFunctions);    // SJD: Convert methods to functions
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
+REGISTER(ProcessDefs);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(RemoveDeadSymbols);
 REGISTER(RemoveLikeTypes);

@@ -1842,3 +1842,38 @@ void NamedExpr::print(FILE* outfile) {
 void NamedExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::codegen not implemented");
 }
+
+
+VarInitExpr::VarInitExpr(Symbol* init_var) :
+  Expr(EXPR_VARINIT),
+  var(init_var)
+{}
+
+
+Expr* VarInitExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new VarInitExpr(var);
+}
+
+
+void VarInitExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(var, traversal, false);
+}
+
+
+Type* VarInitExpr::typeInfo(void) {
+  return var->type;
+}
+
+
+void VarInitExpr::print(FILE* outfile) {
+  fprintf(outfile, "DefaultInit(");
+  var->print(outfile);
+  fprintf(outfile, ")");
+}
+
+
+void VarInitExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "/*** VarInit of ");
+  var->print(outfile);
+  fprintf(outfile, "**/");
+}

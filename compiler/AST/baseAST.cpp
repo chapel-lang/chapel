@@ -51,6 +51,7 @@ char* astTypeName[] = {
   "ComplexLiteral",
   "StringLiteral",
   "Variable",
+  "VarInit",
   "DefExpr",
   "UnOp",
   "BinOp",
