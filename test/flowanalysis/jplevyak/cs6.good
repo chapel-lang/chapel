@@ -1,0 +1,47 @@
+C::C(cs6.v:1) ( C (cs6.v:1) )
+D::D(cs6.v:2) ( D (cs6.v:2) )
+function __init cs6.v:1 with 1 edges
+function __init prelude.v:7 with 1 edges
+function __init__ <none>:0 with 1 edges
+function makeC cs6.v:3 with 1 edges
+function makeD cs6.v:4 with 1 edges
+function makeD cs6.v:4 with 1 edges
+function new prelude.v:82 with 1 edges
+function new prelude.v:82 with 1 edges
+function new prelude.v:82 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:83 with 1 edges
+function operator prelude.v:88 with 1 edges
+function print prelude.v:137 with 1 edges
+globals
+makeC::a(cs6.v:3) ( int32 (prelude.v:28) )
+makeC::c(cs6.v:3) ( C (cs6.v:1) )
+makeC::c(cs6.v:3) ( C (cs6.v:1) )
+makeD::a(cs6.v:4) ( C (cs6.v:1) )
+makeD::a(cs6.v:4) ( int32 (prelude.v:28) )
+makeD::d(cs6.v:4) ( D (cs6.v:2) )
+makeD::d(cs6.v:4) ( D (cs6.v:2) )
+makeD::d(cs6.v:4) ( D (cs6.v:2) )
+makeD::d(cs6.v:4) ( D (cs6.v:2) )
+new::a(prelude.v:82) ( C (cs6.v:1) )
+new::a(prelude.v:82) ( D (cs6.v:2) )
+new::a(prelude.v:82) ( D (cs6.v:2) )
+operator::a(prelude.v:83) ( C (cs6.v:1) )
+operator::a(prelude.v:83) ( C (cs6.v:1) )
+operator::a(prelude.v:83) ( D (cs6.v:2) )
+operator::a(prelude.v:83) ( D (cs6.v:2) )
+operator::a(prelude.v:83) ( D (cs6.v:2) )
+operator::a(prelude.v:83) ( D (cs6.v:2) )
+operator::a(prelude.v:88) ( int32 (prelude.v:28) )
+operator::b(prelude.v:88) ( int32 (prelude.v:28) )
+print::a(prelude.v:137) ( int32 (prelude.v:28) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:57) ( tuple (prelude.v:13) )
+user::__init(cs6.v:1) ( __init (cs6.v:1) )
+user::c1(cs6.v:5) ( C (cs6.v:1) )
+user::d1(cs6.v:6) ( D (cs6.v:2) )
+user::d3(cs6.v:7) ( D (cs6.v:2) )
