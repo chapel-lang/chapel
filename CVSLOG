@@ -15563,3 +15563,14 @@ Removed files:
 	chapel/test/classes/deitz/: test_class_with2.future 
 	chapel/test/modules/bradc/manymodules/: flatmodules.future 
 
+---------------------------------------------------------------------------
+
+01/24/05 16:09:02 -- deitz
+
+Log message:
+	Initial implementation of wrapper function for implicit type
+	coercions in function calls.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+
