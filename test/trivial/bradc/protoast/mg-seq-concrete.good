@@ -180,7 +180,7 @@ var t2: float = arand;
 var t3: float;
 while ((kk!=0)) {
 var ik: integer = (kk/2);
-if ((2*(ik!=kk))) {
+if (((2*ik)!=kk)) {
 t3 = randlc(t1, t2);
 }
 if ((kk>0)) {
@@ -226,7 +226,7 @@ return (r46*x);
 
 
 function initCValues(inout Class: classVals): coeff{
-if ((Class==(A||(Class==(S||(Class==W)))))) {
+if ((((Class==A)||(Class==S))||(Class==W))) {
 
 return (-(3.0/8.0), (1.0/32.0), -(1.0/64.0), 0.0);
 } else {
