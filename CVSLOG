@@ -4850,3 +4850,20 @@ Modified files:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: memberfun2.good memberfun2.v 
 
+---------------------------------------------------------------------------
+
+08/03/04 12:30:46 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add new option "analyzenewast" to complement "newast".
+	Added field in ILink "AInfo *ainfo" initailize to NULL.
+	Add placeholder "analysis.{cpp,h}" files.
+	Cleanup some of the header includes to include fewer files.
+
+Modified files:
+	chapel/compiler/: Makefile arg.cpp builtin.cpp builtin.h cdb.cpp 
+	                  driver.cpp if1.cpp num.h sym.h 
+	chapel/compiler/AST/: link.cpp link.h 
+Added files:
+	chapel/compiler/: analysis.cpp analysis.h 
+
