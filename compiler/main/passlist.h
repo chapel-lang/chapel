@@ -30,12 +30,14 @@ PassInfo passlist[] = {
   // passes to rewrite AST after analysis
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
+
   RUN(MethodsToFunctions, ""),
   //  RUN(ProcessParameters, ""),
 
-  // passes to generate code and compile
-  //  RUN(Fixup, "verify"),  // BLC: We want this, but it doesn't work yet
   RUN(InsertUnionChecks, ""),
+
+  // passes to generate code and compile
+  RUN(Fixup, "verify"),
   RUN(Codegen, ""),
   RUN(BuildBinary, ""),
 

@@ -26,7 +26,7 @@ void MethodsToFunctions::preProcessStmt(Stmt* &stmt) {
 	  method->fn->cname = 
 	    glomstrings(4, "_", ctype->name->name, "_", method->fn->name);
 	  method->extract();
-	  tds->append(method);
+	  tds->insertAfter(method);
 	}
 	stmt = next;
       }

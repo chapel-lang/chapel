@@ -28,7 +28,6 @@ class ILink : public Loc {
 
   void add(ILink* newlink);
   void append(ILink* newlink);
-  ILink* extract(void);
 
   void filter(bool filter(ILink*), ILink** truelinks, ILink** falselinks);
 
@@ -45,6 +44,8 @@ class ILink : public Loc {
    ***  expressions, symbols, or types _after_ a single statement,
    ***  expression, symbol, or type (respectively) in the AST.  The
    ***  inserted part of the AST _will_ be traversed.
+   ***
+   ***  The extract method removes a statement from the AST.
    ***
    ***  The static replace method (called via Stmt::replace,
    ***  Expr::replace, Symbol::replace, or Type::replace) replaces a
@@ -64,6 +65,7 @@ class ILink : public Loc {
    ***/
   void insertBefore(ILink* new_link);
   void insertAfter(ILink* new_link);
+  ILink* extract(void);
   static void replace(ILink* old_link, ILink* new_link);
 };
 

@@ -104,19 +104,6 @@ void ILink::append(ILink* newlink) {
 }
 
 
-ILink* ILink::extract(void) {
-  if (prev && !prev->isNull()) {
-    prev->next = next;
-  }
-  if (next && !next->isNull()) {
-    next->prev = prev;
-  }
-  next = nilILink;
-  prev = nilILink;
-  return this;
-}
-
-
 void ILink::filter(bool filter(ILink*), ILink** truelinks, 
 		   ILink** falselinks) {
   ILink* link = this;
@@ -158,27 +145,21 @@ static ILink* find_end_of_list(ILink* list) {
 }
 
 
-static void call_fixup(ILink* old_link, ILink* new_link) {
+static void call_fixup(ILink* link) {
   Fixup* fixup = new Fixup();
   fixup->setArgs("");
 
-  if (Expr* expr = dynamic_cast<Expr*>(old_link)) {
-    if (!dynamic_cast<Expr*>(new_link)) {
-      INT_FATAL(old_link, "Cannot insertAfter Non-Expr in Expr list");
-    }
+  if (Expr* expr = dynamic_cast<Expr*>(link)) {
     fixup->stmtParent.add(expr->stmt->parentSymbol);
     TRAVERSE(expr->stmt, fixup, true);
   }
-  else if (Stmt* stmt = dynamic_cast<Stmt*>(old_link)) {
-    if (!dynamic_cast<Stmt*>(new_link)) {
-      INT_FATAL(old_link, "Cannot insertAfter Non-Stmt in Stmt list");
-    }
+  else if (Stmt* stmt = dynamic_cast<Stmt*>(link)) {
     fixup->stmtParent.add(stmt->parentSymbol);
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(stmt->parentSymbol)) {
-      TRAVERSE(fn->body, fixup, true);
+      TRAVERSE_LS(fn->body, fixup, true);
     }
     else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
-      TRAVERSE(mod->stmts, fixup, true);
+      TRAVERSE_LS(mod->stmts, fixup, true);
     }
     else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(stmt->parentSymbol)) {
       if (ClassType* class_type = dynamic_cast<ClassType*>(type->type)) {
@@ -187,7 +168,7 @@ static void call_fixup(ILink* old_link, ILink* new_link) {
     }
   }
   else {
-    INT_FATAL(old_link, "Symbol and Types not supported for any of the following:\n"
+    INT_FATAL(link, "Symbol and Types not supported for any of the following:\n"
                         "  insertBefore, insertAfter, replace\n");
   }
 }
@@ -213,7 +194,7 @@ void ILink::insertBefore(ILink* new_link) {
   prev = last;
   last->next = this;
 
-  call_fixup(this, new_link);
+  call_fixup(this);
 }
 
 
@@ -232,7 +213,27 @@ void ILink::insertAfter(ILink* new_link) {
   next = first;
   first->prev = this;
 
-  call_fixup(this, new_link);
+  call_fixup(this);
+}
+
+
+ILink* ILink::extract(void) {
+  if (next && !next->isNull()) {
+    next->prev = prev;
+    next->back = back;
+  }
+  *back = next;
+  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
+    if (prev && !prev->isNull()) {
+      prev->next = next;
+    }
+  */
+
+  next = nilILink;
+  prev = nilILink;
+  back = NULL;
+
+  return this;
 }
 
 
@@ -259,5 +260,5 @@ void ILink::replace(ILink* old_link, ILink* new_link) {
   old_link->prev = nilILink;
   old_link->next = nilILink;
 
-  call_fixup(old_link, new_link);
+  call_fixup(old_link);
 }
