@@ -305,3 +305,15 @@ Log message:
 
 Added files:
         chapel/compiler/: cast_code.cpp 
+---------------------------------------------------------------------------
+
+04/02/03 16:29:46 -- bradc
+
+Log message:
+	John's last checkin failed to update these files due to a
+	permission problem I created, so I've updated them by hand
+	as penance.
+
+Modified files:
+	./: BUILD_VERSION CVSLOG 
+
