@@ -6,6 +6,7 @@
 
 #include "ast.h"
 #include "dparse.h"
+#include "loc.h"
 #include "var.h"
 
 void clean_exit(int status);
@@ -28,7 +29,9 @@ char *loc_string(d_loc_t &l);
 #define INT_FATAL setupIntError(__FILE__, __LINE__); intFatal
 
 void setupIntError(char* filename, int lineno);
+void intFatal(char* fmt, ...);
 void intFatal(AST* ast, char* fmt, ...);
+void intFatal(Loc* loc, char* fmt, ...);
 void myassert(char *file, int line, char *str);
 
 void startCatchingSignals(void);

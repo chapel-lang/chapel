@@ -34,7 +34,7 @@ char* glomstrings(int numstrings, ...) {
   }
 
   if (strlen(newstring) > totlen) {
-    INT_FATAL(NULL, "glomstrings() buffer overflow");
+    INT_FATAL("glomstrings() buffer overflow");
   }
 
   return newstring;

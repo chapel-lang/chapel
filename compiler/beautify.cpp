@@ -91,7 +91,7 @@ static void update_state(char *line) {
     case '{':
       if (!inquote && !intick) {
 	if (oldstuff == -1) {
-	  INT_FATAL(NULL,"Unbalanced curly braces:\n\t%s",line);
+	  INT_FATAL("Unbalanced curly braces:\n\t%s",line);
 	}
 	oldstuff = 0;	/* assume all parens have been closed */
 	stuff = 0;
@@ -104,7 +104,7 @@ static void update_state(char *line) {
     case '}':
       if (!inquote && !intick) {
 	if (oldstuff == -1) {
-	  INT_FATAL(NULL,"Unbalanced curly braces:\n\t%s",line);
+	  INT_FATAL("Unbalanced curly braces:\n\t%s",line);
 	}
 	oldstuff = 0;	/* assume all parens have been closed */
 	stuff = 0;
@@ -118,7 +118,7 @@ static void update_state(char *line) {
       if (!inquote && !intick) {
 	justification.add(oldstuff);
 	if (oldstuff == -1) {
-	  INT_FATAL(NULL,"Unbalanced parentheses:\n\t%s",line);
+	  INT_FATAL("Unbalanced parentheses:\n\t%s",line);
 	}
 	oldoldstuff = oldstuff;
 	oldstuff = oldoldstuff + stuff + 1;
@@ -260,7 +260,7 @@ void beautify(fileinfo* origfile) {
   mysystem(command, "moving beautified file");
   
   if (justification.n != 0) {
-    INT_FATAL(NULL, "Parentheses or curly braces are not balanced in codegen.");
+    INT_FATAL( "Parentheses or curly braces are not balanced in codegen.");
   }
 
 }

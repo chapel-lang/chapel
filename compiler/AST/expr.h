@@ -15,7 +15,9 @@ class Expr : public ILink {
 
   Expr(void);
 
-  virtual Type* type_info(void) { return dtUnknown; }
+  virtual Type* typeInfo(void);
+  virtual bool isComputable(void);
+  virtual long intVal(void);
 
   virtual void print(FILE* outfile) = 0;
   virtual void codegen(FILE* outfile) = 0;
@@ -37,6 +39,8 @@ class Literal : public Expr {
 
   Literal(char* init_str);
 
+  bool isComputable(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
@@ -48,7 +52,9 @@ class IntLiteral : public Literal {
 
   IntLiteral(char* init_str, int init_val);
 
-  Type* type_info(void);
+  long intVal(void);
+
+  Type* typeInfo(void);
 };
 
 
@@ -64,7 +70,7 @@ class StringLiteral : public Literal {
  public:
   StringLiteral(char* init_val);
 
-  Type* type_info(void);
+  Type* typeInfo(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -77,7 +83,7 @@ class Variable : public Expr {
 
   Variable(Symbol* init_var);
 
-  Type* type_info(void);
+  Type* typeInfo(void);
   
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -103,7 +109,7 @@ class UnOp : public Expr {
 
   UnOp(unOpType init_type, Expr* op);
 
-  Type* type_info(void);
+  Type* typeInfo(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -148,6 +154,8 @@ class BinOp : public Expr {
   Expr* right;
 
   BinOp(binOpType init_type, Expr* l, Expr* r);
+
+  Type* typeInfo(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -194,7 +202,10 @@ class SimpleSeqExpr : public Expr {
   Expr* hi;
   Expr* str;
 
-  SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str = new NullExpr());
+  SimpleSeqExpr(Expr* init_lo, Expr* init_hi, 
+                Expr* init_str = new IntLiteral("1", 1));
+
+  Type* typeInfo(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -224,6 +235,8 @@ class DomainExpr : public Expr {
   DomainExpr(Expr* init_domains, VarSymbol* init_indices = new NullVarSymbol());
 
   void setForallExpr(Expr* exp);
+
+  Type* typeInfo(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);

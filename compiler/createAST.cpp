@@ -46,7 +46,7 @@ static bool stmtIsGlob(ILink* link) {
   Stmt* stmt = dynamic_cast<Stmt*>(link);
 
   if (stmt == NULL) {
-    INT_FATAL(NULL, "Non-Stmt found in StmtIsGlob");
+    INT_FATAL("Non-Stmt found in StmtIsGlob");
   }
   if (stmt->isNull() ||
       (dynamic_cast<ExprStmt*>(stmt) != NULL) ||

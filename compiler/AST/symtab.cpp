@@ -98,7 +98,7 @@ SymScope* SymScope::findFileScope(void) {
     return this;
   } else {
     if (parent == NULL) {
-      INT_FATAL(NULL, "can't find file scope");
+      INT_FATAL("can't find file scope");
     }
     return parent->findFileScope();
   }
@@ -216,7 +216,7 @@ void Symboltable::popScope(void) {
   SymScope* prevScope = currentScope->parent;
 
   if (prevScope == NULL) {
-    INT_FATAL(NULL, "ERROR: popping too many scopes");
+    INT_FATAL("ERROR: popping too many scopes");
   } else {
     currentScope = prevScope;
   }
@@ -312,7 +312,7 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   // BLC: Placeholder until low-level type inference is hooked in to
   // handle some cases -- infer type from initializer if possible
   if (type == dtUnknown) {
-    type = init->type_info();
+    type = init->typeInfo();
   }
 
   newVar = new VarSymbol(idents->name, vartag, isConst, type);

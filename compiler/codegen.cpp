@@ -243,7 +243,7 @@ static void genDomValues(FILE* outfile, AST* ast) {
 
 void genAST(FILE* outfile, AST* ast) {
   if (ast == NULL) {
-    INT_FATAL(NULL, "Got NULL AST in genAST()\n");
+    INT_FATAL("Got NULL AST in genAST()\n");
   }
   switch (ast->kind) {
   case AST_block:
@@ -478,7 +478,7 @@ void codegen(FA* fa, char* infilename, char* compilerDir) {
   closeMakefile();
 
   if (hitUnknown) {
-    INT_FATAL(NULL, "hit AST nodes that codegen couldn't handle yet");
+    INT_FATAL("hit AST nodes that codegen couldn't handle yet");
   } else {
     makeAndCopyBinary();
   }

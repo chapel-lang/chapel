@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include "expr.h"
+#include "misc.h"
 #include "stringutil.h"
 #include "string.h"
 
@@ -60,6 +61,23 @@ Expr::Expr(void) :
 {}
 
 
+Type* Expr::typeInfo(void) {
+  return dtUnknown;
+}
+
+
+bool Expr::isComputable(void) {
+  return false;
+}
+
+
+long Expr::intVal(void) {
+  INT_FATAL(this, "intVal() called on non-computable/non-int expression");
+
+  return 0;
+}
+
+
 bool NullExpr::isNull(void) {
   return true;
 }
@@ -80,6 +98,11 @@ Literal::Literal(char* init_str) :
 {}
 
 
+bool Literal::isComputable(void) {
+  return true;
+}
+
+
 void Literal::print(FILE* outfile) {
   fprintf(outfile, "%s", str);
 }
@@ -95,7 +118,12 @@ IntLiteral::IntLiteral(char* init_str, int init_val) :
 {}
 
 
-Type* IntLiteral::type_info(void) {
+long IntLiteral::intVal(void) {
+  return val;
+}
+
+
+Type* IntLiteral::typeInfo(void) {
   return dtInteger;
 }
 
@@ -118,7 +146,7 @@ StringLiteral::StringLiteral(char* init_val) :
 {}
 
 
-Type* StringLiteral::type_info(void) {
+Type* StringLiteral::typeInfo(void) {
   return dtString;
 }
 
@@ -138,7 +166,7 @@ Variable::Variable(Symbol* init_var) :
 {}
 
 
-Type* Variable::type_info(void) {
+Type* Variable::typeInfo(void) {
   return var->type;
 }
 
@@ -173,8 +201,8 @@ void UnOp::codegen(FILE* outfile) {
 }
 
 
-Type* UnOp::type_info(void) {
-  return operand->type_info();
+Type* UnOp::typeInfo(void) {
+  return operand->typeInfo();
 }
 
 
@@ -185,6 +213,20 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 {
   left->parent = this;
   right->parent = this;
+}
+
+
+Type* BinOp::typeInfo(void) {
+  Type* leftType = left->typeInfo();
+  Type* rightType = right->typeInfo();
+
+  // TODO: This is a silly placeholder until we get type inference
+  // hooked in or implement something better here.
+  if (leftType != dtUnknown) {
+    return leftType;
+  } else {
+    return rightType;
+  }
 }
 
 
@@ -236,19 +278,27 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
 {}
 
 
+Type* SimpleSeqExpr::typeInfo(void) {
+  return new DomainType(1);
+}
+
+
 void SimpleSeqExpr::print(FILE* outfile) {
   lo->print(outfile);
   printf("..");
   hi->print(outfile);
-  if (!str->isNull()) {
+  if (str->isComputable() && str->typeInfo() == dtInteger && 
+      str->intVal() != 1) {
     printf(" by ");
     str->print(outfile);
   }
 }
 
+
 void SimpleSeqExpr::codegen(FILE* outfile) {
   fprintf(outfile, "This is SimpleSeqExpr's codegen.\n");
 }
+
 
 ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
   if (typeid(*base) == typeid(Variable)) {
@@ -349,7 +399,7 @@ WriteCall::WriteCall(bool init_writeln, Expr* init_base, Expr* init_arg) :
 
 void WriteCall::codegen(FILE* outfile) {
   while (argList != NULL && !argList->isNull()) {
-    Type* argdt = argList->type_info();
+    Type* argdt = argList->typeInfo();
 
     fprintf(outfile, "_write");
     argdt->codegen(outfile);
@@ -400,6 +450,11 @@ DomainExpr::DomainExpr(Expr* init_domains, VarSymbol* init_indices) :
 
 void DomainExpr::setForallExpr(Expr* exp) {
   forallExpr = exp;
+}
+
+
+Type* DomainExpr::typeInfo(void) {
+  return new DomainType();  // BLC: This is incomplete
 }
 
 

@@ -119,12 +119,41 @@ void myassert(char *file, int line, char *str) {
 
 // Support for internal errors, adopted from ZPL compiler
 
-static char *interrorfile;
-static int interrorline;
-
 void setupIntError(char *filename, int lineno) {
-  interrorfile = filename;
-  interrorline = lineno;
+  fprintf(stderr, "%s:%d: internal error: ", filename, lineno);
+}
+
+
+static void printUsrLocation(char* filename, int lineno) {
+  if (filename || lineno) {
+    fprintf(stderr, " (");
+    if (filename) {
+      fprintf(stderr, "%s", filename);
+    }
+    if (lineno) {
+      if (filename) {
+	fprintf(stderr, ":");
+      } else {
+	fprintf(stderr, "line ");
+      }
+      fprintf(stderr, "%d", lineno);
+    }
+    fprintf(stderr, ")");
+  }
+  fprintf(stderr, "\n\n");
+}
+
+
+void intFatal(char *fmt, ...) {
+  va_list args;
+
+  va_start(args, fmt);
+  vfprintf(stderr, fmt, args);
+  va_end(args);
+
+  printUsrLocation(NULL, 0);
+
+  clean_exit(1);
 }
 
 
@@ -138,29 +167,31 @@ void intFatal(AST* ast, char *fmt, ...) {
     usrfilename = ast->pathname;
   }
   
-  fprintf(stderr, "%s:%d: internal error: ", 
-	  interrorfile, interrorline);
-
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
   va_end(args);
 
-  if (usrfilename || usrlineno) {
-    fprintf(stderr, " (");
-    if (usrfilename) {
-      fprintf(stderr, "%s", usrfilename);
-    }
-    if (usrlineno) {
-      if (usrfilename) {
-	fprintf(stderr, ":");
-      } else {
-	fprintf(stderr, "line ");
-      }
-      fprintf(stderr, "%d", usrlineno);
-    }
-    fprintf(stderr, ")");
+  printUsrLocation(usrfilename, usrlineno);
+
+  clean_exit(1);
+}
+
+
+void intFatal(Loc* loc, char *fmt, ...) {
+  va_list args;
+  int usrlineno = 0;
+  char *usrfilename = NULL;
+
+  if (loc) {
+    usrfilename = loc->filename;
+    usrlineno = loc->lineno;
   }
-  fprintf(stderr, "\n\n");
+  
+  va_start(args, fmt);
+  vfprintf(stderr, fmt, args);
+  va_end(args);
+
+  printUsrLocation(usrfilename, usrlineno);
 
   clean_exit(1);
 }

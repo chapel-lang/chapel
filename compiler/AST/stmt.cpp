@@ -1,4 +1,5 @@
 #include <string.h>
+#include <typeinfo>
 #include "codegen.h"
 #include "expr.h"
 #include "stmt.h"
@@ -82,17 +83,43 @@ void VarDefStmt::codegen(FILE* outfile) {
   VarSymbol* aVar = var;
   
   while (aVar != NULL) {
+    VarSymbol* nextVar = nextLink(VarSymbol, aVar);
     if (init != NULL && !init->isNull()) {
-      aVar->codegen(outfile);
-      fprintf(outfile, " = ");
-      init->codegen(outfile);
-    }
-    fprintf(outfile, ";");
+      if (typeid(*(aVar->type)) == typeid(DomainType)) {
+	DomainType* domtype = (DomainType*)aVar->type;
+	int rank = domtype->rank ? domtype->rank : 1; // BLC: hack!
+	fprintf(outfile, "_init_domain_%dD(&(", rank);
+	aVar->codegen(outfile);
+	fprintf(outfile, ")");
+	if (typeid(*init) == typeid(DomainExpr)) {
+	  init = ((DomainExpr*)init)->domains;
+	}
+	if (typeid(*init) == typeid(SimpleSeqExpr)) {
+	  SimpleSeqExpr* initseq = (SimpleSeqExpr*)init;
 
-    aVar = nextLink(VarSymbol, aVar);
-    if (aVar) {
-      fprintf(outfile, "\n");
+	  for (int i=0; i<rank; i++) {
+	    fprintf(outfile, ", ");
+	    initseq->lo->codegen(outfile);
+	    fprintf(outfile, ", ");
+	    initseq->hi->codegen(outfile);
+	    fprintf(outfile, ", ");
+	    initseq->str->codegen(outfile);
+	  }
+	}
+	fprintf(outfile, ");");
+      } else {
+	aVar->codegen(outfile);
+	fprintf(outfile, " = ");
+	init->codegen(outfile);
+	fprintf(outfile, ";");
+      }
+
+      if (nextVar) {
+	fprintf(outfile, "\n");
+      }
     }
+
+    aVar = nextVar;
   }
 }
 
@@ -112,21 +139,8 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
       fprintf(outfile, "const ");
     }
 
-    // SHANNON: These should be replaced by calls to aVar->type->codegen()
-    if (aVar->type != NULL) {
-      if (strcmp(aVar->type->name->name, "integer") == 0) {
-	fprintf(outfile, "int ");
-      } 
-      else if (strcmp(aVar->type->name->name, "float") == 0) {
-	fprintf(outfile, "float ");
-      }
-
-    }
-
-    if (strcmp(aVar->type->name->name, "???") == 0) {
-      fprintf(outfile, "int ");
-    }
-
+    aVar->type->codegen(outfile);
+    fprintf(outfile, " ");
     aVar->codegen(outfile);
 
     fprintf(outfile, ";\n");

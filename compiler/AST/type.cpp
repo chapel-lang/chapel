@@ -103,6 +103,11 @@ void DomainType::print(FILE* outfile) {
 }
 
 
+void DomainType::codegen(FILE* outfile) {
+  fprintf(outfile, "_domain%d", rank ? rank : 1);  // BLC: hack!
+}
+
+
 SubDomainType::SubDomainType(Symbol* init_parent) :
   parent(init_parent)
 {

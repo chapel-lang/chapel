@@ -65,7 +65,7 @@ void deleteTmpDir(void) {
     if (strlen(tmpdirname) < 1 ||
 	strchr(tmpdirname, '*') != NULL ||
 	strcmp(tmpdirname, "//") == 0) {
-      INT_FATAL(NULL, "tmp directory name looks fishy");
+      INT_FATAL("tmp directory name looks fishy");
     }
     const char* rmdircommand = "rm -r ";
     char* command = glomstrings(2, rmdircommand, tmpdirname);

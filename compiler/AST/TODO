@@ -23,3 +23,17 @@
 * squelch init prototype
   - and/or specialize name of init procedure to file and make a top-level
     init file
+
+* improve type_info() for DomainExpr
+
+* improve variable initialization for domains -- generalize for
+  nontrivial initializations, and remove some of the typeid stuff
+  by factoring into class hierarchy?
+
+* remove hack that assumes domains of unknown rank are 1 (stmt.cpp
+  and type.cpp)
+
+Shannon:
+* implement codegen for Conditional
+* fix type_info() for BinOp
+* implement isComputable() and intVal() better for Expr hierarchy

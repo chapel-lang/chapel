@@ -144,7 +144,7 @@ bool NullClassSymbol::isNull(void) {
 
 ClassType* ClassSymbol::getType(void) {
   if (typeid(*type) != typeid(ClassType)) {
-    INT_FATAL(NULL, "ClassSymbol has non-ClassType");
+    INT_FATAL(this, "ClassSymbol has non-ClassType");
   }
   return (ClassType*)type;
 }

@@ -45,6 +45,7 @@ class DomainType : public Type {
   DomainType(int init_rank = 0);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
