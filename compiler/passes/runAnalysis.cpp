@@ -22,7 +22,15 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     stmts.add(CreateEntryPoint::entryPoint);
     AST_to_IF1(stmts);
     // BLC: John, what filename should be passed in for multiple modules?
-    do_analysis(moduleList->filename);
+    // I'm just passing in the first non-internal module's filename
+    char* firstUserModuleName = NULL;
+    while (moduleList && moduleList->internal) {
+      moduleList = nextLink(ModuleSymbol, moduleList);
+    }
+    if (moduleList) {
+      firstUserModuleName = moduleList->filename;
+    }
+    do_analysis(firstUserModuleName);
     runCount++;
   }
 }
