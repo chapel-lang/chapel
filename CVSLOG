@@ -23566,3 +23566,28 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+04/04/05 11:43:21 -- deitz
+
+Log message:
+	Moved the RemoveLikeTypes traversal before analysis.  Added an error
+	message if we cannot resolve the type of a like expression before
+	analysis.
+	
+	Improved typeInfo() on MemberAccess expressions so that if it is run
+	before analysis it checks to see if it can resolve the type anyway.
+	Alternative: This can be moved to ScopeResolve symbols in this case.
+	
+	Removed futures for like-1 and like-2.  Fixed good output file of
+	like-1.  Hopefully this doesn't break our test-case policy.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/symtab/: removeLikeTypes.cpp 
+	chapel/test/types/like/jplevyak/: like-1.good 
+Removed files:
+	chapel/test/types/like/jplevyak/: like-1.future like-2.future 
+
