@@ -2055,6 +2055,8 @@ collect_argument_type_violations() {
             AType *t = av->out;
             form_Map(FunAEdgeMapElem, me, *m) {
               AEdge *e = me->value;
+              if (!from->out_edges.set_in(e))
+                continue;
               MPosition *pp = e->match->actual_to_formal_position.get(x->key), 
                 *p = pp ? pp : x->key;
               AVar *filtered = e->filtered_args.get(p);
@@ -2943,6 +2945,3 @@ symbol_info(Var *v, Vec<Sym *> &symbols) {
   symbols.set_to_vec();
   return symbols.n;
 }
-
-
-
