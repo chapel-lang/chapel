@@ -26,6 +26,8 @@ enum consType {
   VAR_PARAM
 };
 
+class DefExpr;
+
 class Symbol : public BaseAST {
  public:
   char* name;
@@ -33,7 +35,7 @@ class Symbol : public BaseAST {
   Type* type;
   bool exportMe;
   bool isDead;
-  BaseAST* defPoint; /* Point of definition in AST, A Stmt or Expr */
+  DefExpr* defPoint; /* Point of definition */
   Pragma *pragmas;
 
   //the scope in which the symbol was defined
@@ -63,7 +65,7 @@ class Symbol : public BaseAST {
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
   void codegenDefList(FILE* outfile, char* separator);
-  void setDefPoint(BaseAST* stmt);
+  void setDefPoint(DefExpr* init_defPoint);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 

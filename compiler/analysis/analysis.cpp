@@ -239,14 +239,7 @@ AInfo::copy_tree(ASTCopyContext* context) {
   DefExpr* def_expr = dynamic_cast<DefExpr*>(xast);
   FnSymbol* orig_fn = dynamic_cast<FnSymbol*>(def_expr->sym);
   FnSymbol *new_fn = orig_fn->clone(&callback, &clone_map);
-  if (Expr* expr = dynamic_cast<Expr*>(new_fn->defPoint))
-    return expr->ainfo;
-  else if (Stmt* stmt = dynamic_cast<Stmt*>(new_fn->defPoint))
-    return stmt->ainfo;
-  else {
-    fail("Function definition AST not Stmt or Expr");
-    return 0;
-  }
+  return new_fn->defPoint->ainfo;
 }
 
 static void
@@ -395,10 +388,7 @@ static Fun *
 install_new_function(FnSymbol *f) {
   Vec<Stmt *> all_stmts;
   Vec<BaseAST *> all_syms, syms;
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(f->defPoint);
-  if (!def_expr)
-    INT_FATAL(f, "Function not defined in DefStmt");
-  all_stmts.add(def_expr->stmt);
+  all_stmts.add(f->defPoint->stmt);
   all_syms.add(f);
   close_symbols(all_stmts, all_syms);	
   forv_BaseAST(a, all_syms) {
@@ -1767,13 +1757,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
 static int
 gen_fun(FnSymbol *f) {
   Sym *fn = f->asymbol->sym;
-  AInfo* ast; Expr *expr; Stmt *stmt;
-  if (expr = dynamic_cast<Expr*>(f->defPoint))
-    ast = expr->ainfo;
-  else if (stmt = dynamic_cast<Stmt*>(f->defPoint)) 
-    ast = stmt->ainfo;
-  else
-    INT_FATAL(f, "defPoint is not Stmt or Expr");
+  AInfo* ast = f->defPoint->ainfo;
   Vec<Symbol *> args;
   Vec<Sym *> out_args;
   getLinkElements(args, f->formals);
@@ -1820,13 +1804,7 @@ init_function(FnSymbol *f) {
     sym_init = s;
   }
   s->cont = new_sym();
-  AInfo* ast; Expr *expr; Stmt *stmt;
-  if ((expr = dynamic_cast<Expr*>(f->defPoint)))
-    ast = expr->ainfo;
-  else if ((stmt = dynamic_cast<Stmt*>(f->defPoint)))
-    ast = stmt->ainfo;
-  else
-    INT_FATAL(f, "defPoint is not Stmt or Expr");
+  AInfo* ast = f->defPoint->ainfo;
   s->cont->ast = ast;
   s->ret = new_sym();
   s->ret->ast = ast;
@@ -1841,13 +1819,7 @@ init_function(FnSymbol *f) {
 static int
 build_function(FnSymbol *f) {
   if (define_labels(f->body, f->asymbol->sym->labelmap) < 0) return -1;
-  AInfo* ast; Expr *expr; Stmt *stmt;
-  if ((expr = dynamic_cast<Expr*>(f->defPoint)))
-    ast = expr->ainfo;
-  else if ((stmt = dynamic_cast<Stmt*>(f->defPoint)))
-    ast = stmt->ainfo;
-  else
-    INT_FATAL(f, "defPoint is not Stmt or Expr");
+  AInfo* ast = f->defPoint->ainfo;
   Label *return_label = ast->label[0] = if1_alloc_label(if1);
   if (resolve_labels(f->body, f->asymbol->sym->labelmap, return_label) < 0) return -1;
   if (gen_if1(f->body) < 0) return -1;
@@ -1940,13 +1912,7 @@ ACallbacks::finalize_functions() {
     // check pragmas
     Sym *fn = fun->sym;
     FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
-    Pragma *pr = 0;
-    if (Expr *e = dynamic_cast<Expr*>(f->defPoint))
-      pr = e->pragmas;
-    else if (Stmt *s = dynamic_cast<Stmt*>(f->defPoint))
-      pr = s->pragmas;
-    else
-      INT_FATAL(f, "defPoint is not Stmt or Expr");
+    Pragma *pr = f->defPoint->pragmas;
     while (pr) {
       if (!strcmp(pr->str, "clone_for_manifest_constants"))
 	fun->clone_for_manifest_constants = 1;

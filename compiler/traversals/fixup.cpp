@@ -180,40 +180,34 @@ static void verifySymbolDefPoint(Symbol* sym) {
     return;
   }
 
-  BaseAST* defPoint = sym->defPoint;
-  if (DefExpr* expr = dynamic_cast<DefExpr*>(defPoint)) {
-    Symbol* tmp = expr->sym;
-    while (tmp) {
-      if (tmp == sym) {
+  Symbol* tmp = sym->defPoint->sym;
+  while (tmp) {
+    if (tmp == sym) {
+      return;
+    }
+    tmp = nextLink(Symbol, tmp);
+  }
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
+    Symbol* formals = fn->formals;
+    while (formals) {
+      if (formals == sym) {
 	return;
       }
-      tmp = nextLink(Symbol, tmp);
+      formals = nextLink(Symbol, formals);
     }
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(expr->sym)) {
-      Symbol* formals = fn->formals;
-      while (formals) {
-	if (formals == sym) {
+  }
+  if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym->defPoint->sym)) {
+    if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
+      EnumSymbol* tmp = enum_type->valList;
+      while (tmp) {
+	if (tmp == sym) {
 	  return;
 	}
-	formals = nextLink(Symbol, formals);
+	tmp = nextLink(EnumSymbol, tmp);
       }
     }
-    if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(expr->sym)) {
-      if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
-	EnumSymbol* tmp = enum_type->valList;
-	while (tmp) {
-	  if (tmp == sym) {
-	    return;
-	  }
-	  tmp = nextLink(EnumSymbol, tmp);
-	}
-      }
-    }
-    INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
   }
-  else {
-    INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
-  }
+  INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
 }
 
 

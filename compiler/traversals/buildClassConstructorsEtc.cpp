@@ -80,7 +80,7 @@ static void build_constructor(ClassType* class_type) {
 #ifndef CONSTRUCTOR_WITH_PARAMETERS
   Symboltable::setCurrentScope(saveScope);
 #endif
-  TRAVERSE(dynamic_cast<Expr*>(class_type->symbol->defPoint)->stmt, new Fixup(), true);
+  TRAVERSE(class_type->symbol->defPoint->stmt, new Fixup(), true);
   if (dynamic_cast<SeqType*>(class_type)) {
     class_type->defaultVal = new FnCall(new Variable(fn), NULL);
   }
@@ -113,7 +113,7 @@ static void build_union_id_enum(ClassType* class_type) {
   enum_symbol->setDefPoint(def_expr);
   id_list->setDefPoint(def_expr);
   DefStmt* def_stmt = new DefStmt(def_expr);
-  dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
+  class_type->symbol->defPoint->stmt->insertBefore(def_stmt);
 }
 
 
@@ -136,7 +136,7 @@ static void build_record_equality_function(ClassType* class_type) {
   }
   Stmt* body = new ReturnStmt(cond);
   DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
-  dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
+  class_type->symbol->defPoint->stmt->insertBefore(def_stmt);
 }
 
 
@@ -160,7 +160,7 @@ static void build_record_inequality_function(ClassType* class_type) {
   }
   Stmt* body = new ReturnStmt(cond);
   DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
-  dynamic_cast<DefExpr*>(class_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
+  class_type->symbol->defPoint->stmt->insertBefore(def_stmt);
 }
 
 
@@ -181,7 +181,7 @@ static void build_tuple_assignment_function(TupleType* tuple_type) {
   }
   BlockStmt* block_stmt = new BlockStmt(body);
   DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt));
-  dynamic_cast<DefExpr*>(tuple_type->symbol->defPoint)->stmt->insertBefore(def_stmt);
+  tuple_type->symbol->defPoint->stmt->insertBefore(def_stmt);
 }
 
 

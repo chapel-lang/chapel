@@ -53,7 +53,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 	    commonModule->stmts->insertAfter(array_type_def);
 	  }
 	  else {
-	    Stmt* def_stmt = dynamic_cast<Stmt*>(dynamic_cast<DefExpr*>(array_type->elementType->symbol->defPoint)->stmt);
+	    Stmt* def_stmt = array_type->elementType->symbol->defPoint->stmt;
 	    if (!def_stmt) {
 	      INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
 	    }
@@ -102,7 +102,7 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
     if (Symboltable::getCurrentScope() == commonModule->modScope) {
       commonModule->stmts->insertAfter(seq_type_def);
     } else {
-      Stmt* def_stmt = dynamic_cast<Stmt*>(dynamic_cast<DefExpr*>(seq_type->elementType->symbol->defPoint)->stmt);
+      Stmt* def_stmt = seq_type->elementType->symbol->defPoint->stmt;
       if (!def_stmt) {
 	INT_FATAL(stmt, "Seq with anonymous type not declared in statement not handled");
       }
@@ -144,8 +144,9 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
   else {
     TypeSymbol* tuple_sym = new TypeSymbol(name, tuple_type);
     tuple_type->addSymbol(tuple_sym);
-    DefStmt* tuple_type_def = new DefStmt(new DefExpr(tuple_sym));
-    tuple_sym->setDefPoint(tuple_type_def->defExprList);
+    DefExpr* def_expr = new DefExpr(tuple_sym);
+    DefStmt* tuple_type_def = new DefStmt(def_expr);
+    tuple_sym->setDefPoint(def_expr);
     commonModule->stmts->insertBefore(tuple_type_def);
   }
   Symboltable::setCurrentScope(saveScope);
@@ -184,8 +185,9 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     TypeSymbol* domain_sym = new TypeSymbol(name, domain_type);
     domain_type->addSymbol(domain_sym);
-    DefStmt* domain_type_def = new DefStmt(new DefExpr(domain_sym));
-    domain_sym->setDefPoint(domain_type_def->defExprList);
+    DefExpr* def_expr = new DefExpr(domain_sym);
+    DefStmt* domain_type_def = new DefStmt(def_expr);
+    domain_sym->setDefPoint(def_expr);
     commonModule->stmts->insertBefore(domain_type_def);
     Symboltable::setCurrentScope(saveScope);
     *type = domain_type;
@@ -228,8 +230,9 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     TypeSymbol* index_sym = new TypeSymbol(name, index_type);
     index_type->addSymbol(index_sym);
-    DefStmt* index_type_def = new DefStmt(new DefExpr(index_sym));
-    index_sym->setDefPoint(index_type_def->defExprList);
+    DefExpr* def_expr = new DefExpr(index_sym);
+    DefStmt* index_type_def = new DefStmt(def_expr);
+    index_sym->setDefPoint(def_expr);
     commonModule->stmts->insertBefore(index_type_def);
     Symboltable::setCurrentScope(saveScope);
     *type = index_type;

@@ -12,7 +12,7 @@
 static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
   static int uid = 0;
 
-  Pragma* pr = dynamic_cast<Expr*>(fn->defPoint)->stmt->pragmas;
+  Pragma* pr = fn->defPoint->stmt->pragmas;
   while (pr) {
     if (!strcmp(pr->str, "builtin")) {
       return;
@@ -114,7 +114,7 @@ void ResolveOverloadedOperators::postProcessExpr(Expr* expr) {
     }
   }
 
-  Pragma* pr = dynamic_cast<Expr*>(fns.e[0]->defPoint)->stmt->pragmas;
+  Pragma* pr = fns.e[0]->defPoint->stmt->pragmas;
   while (pr) {
     if (!strcmp(pr->str, "builtin")) {
       return;

@@ -689,7 +689,7 @@ void SeqType::buildImplementationClasses() {
   Symboltable::lookup("last")->type = _node->type;
 
   classScope = Symboltable::popScope();
-  classScope->setContext(NULL, symbol, dynamic_cast<DefExpr*>(symbol->defPoint));
+  classScope->setContext(NULL, symbol, symbol->defPoint);
 }
 
 

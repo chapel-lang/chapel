@@ -159,7 +159,7 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
   }
 }
 
-void Symbol::setDefPoint(BaseAST* init_defPoint) {
+void Symbol::setDefPoint(DefExpr* init_defPoint) {
   Symbol* tmp = this;
   while (tmp) {
     tmp->defPoint = init_defPoint;
@@ -430,12 +430,6 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
     INT_FATAL(this, "Attempt to clone non-class type");
   }
 
-  DefExpr* old_def_expr = dynamic_cast<DefExpr*>(defPoint);
-
-  if (!old_def_expr) {
-    INT_FATAL(this, "Attempt to clone class not defined in DefStmt");
-  }
-
   map->clear();
 
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
@@ -453,7 +447,7 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
   DefExpr* new_def_expr = new DefExpr(new_type_sym);
   new_type_sym->setDefPoint(new_def_expr);
   new_class_type->classScope->setContext(NULL, new_type_sym, new_def_expr);
-  old_def_expr->insertBefore(new_def_expr);
+  defPoint->insertBefore(new_def_expr);
 
   Symboltable::setCurrentScope(save_scope);
   return new_type_sym;
@@ -608,20 +602,14 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 
 FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned functions
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
-
-  if (!def_expr) {
-    INT_FATAL(this, "Attempt to clone function not defined in DefStmt");
-  }
-
   map->clear();
   DefExpr* this_copy = NULL;
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
-  Expr* expr_copy = def_expr->copy(true, map, clone_callback);
+  Expr* expr_copy = defPoint->copy(true, map, clone_callback);
   if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
     this_copy->sym->cname =
       glomstrings(3, this_copy->sym->cname, "_clone_", intstring(uid++));
-    def_expr->insertBefore(this_copy);
+    defPoint->insertBefore(this_copy);
   }
   else {
     INT_FATAL(this, "Unreachable statement in FnSymbol::clone reached");
@@ -688,13 +676,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   Type* wrapper_return_type = retType;
   DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
 						   wrapper_return_type, wrapper_block);
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
-
-  if (!def_expr) {
-    INT_FATAL(this, "Attempt to make coercion wrapper for function not defined in DefExpr");
-  }
-
-  def_expr->insertBefore(wrapper_expr);
+  defPoint->insertBefore(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
 }
@@ -771,13 +753,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
   block_scope->stmtContext = wrapper_block;
   DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
 						   retType, wrapper_block);
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
-
-  if (!def_expr) {
-    INT_FATAL(this, "error in FnSymbol::default_wrapper");
-  }
-
-  def_expr->insertAfter(wrapper_expr);
+  defPoint->insertAfter(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
 }
@@ -820,25 +796,19 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
   Stmt* fn_call = new ExprStmt(new FnCall(new Variable(this), actuals));
   Stmt* body = new BlockStmt(fn_call);
   DefExpr* def_expr = Symboltable::finishFnDef(wrapper_fn, wrapper_formals, retType, body);
-  dynamic_cast<DefExpr*>(defPoint)->insertBefore(def_expr);
+  defPoint->insertBefore(def_expr);
   Symboltable::setCurrentScope(save_scope);
   return wrapper_fn;
 }
 
 
 FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutions) {
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(defPoint);
-
-  if (!def_expr) {
-    INT_FATAL(this, "Attempt to instantiate generic function not defined in DefExpr");
-  }
-
   DefExpr* this_copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
   save_scope = Symboltable::setCurrentScope(parentScope);
   Map<BaseAST*,BaseAST*> map;
-  Expr* expr_copy = def_expr->copy(true, &map);
+  Expr* expr_copy = defPoint->copy(true, &map);
   if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
     for (int i = 0; i < map.n; i++) {
       if (map.v[i].key) {
@@ -858,7 +828,7 @@ FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutio
     }
     this_copy->sym->cname =
       glomstrings(3, this_copy->sym->cname, "_instantiate_", intstring(uid++));
-    def_expr->insertBefore(this_copy);
+    defPoint->insertBefore(this_copy);
   }
   else {
     INT_FATAL(this, "Error in FnSymbol::instantiate_generic");
