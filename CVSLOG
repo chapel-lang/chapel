@@ -14556,3 +14556,27 @@ Added files:
 	chapel/test/types/type_variables/jplevyak/: test_coerse1.chpl 
 	                                            test_coerse1.good 
 
+---------------------------------------------------------------------------
+
+01/14/05 15:54:43 -- jplevyak
+
+Log message:
+	Coercion of numerics during assignment supported along with test cases.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp cg.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  danglingelse.good 
+	                                  equality_ops.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  relational_ops.good var.good 
+	                                  var2.good whileLoop.good 
+
