@@ -120,13 +120,11 @@ class FnSymbol : public Symbol {
   Stmt* body;
   SymScope* paramScope;
 
-  FnSymbol* parentFn;
   FnSymbol* overload;
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-	   Stmt* init_body, bool init_exportMe=false, 
-	   FnSymbol* init_parentFn = nilFnSymbol);
-  FnSymbol(char* init_name, FnSymbol* init_parentFn = nilFnSymbol);
+	   Stmt* init_body, bool init_exportMe=false);
+  FnSymbol(char* init_name);
   void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
 		 SymScope* init_paramScope, bool init_exportMe=false);
   virtual Symbol* copy(void);

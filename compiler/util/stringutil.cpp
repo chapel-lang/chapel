@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 #include "chplalloc.h"
 #include "misc.h"
@@ -43,4 +44,12 @@ char* glomstrings(int numstrings, ...) {
 
 char* copystring(char* str) {
   return glomstrings(1, str);
+}
+
+
+char* intstring(int i) {
+  char scratch[8];
+
+  sprintf(scratch, "%d", i);
+  return glomstrings(1, scratch);
 }

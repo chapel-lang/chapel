@@ -61,8 +61,7 @@ void verifyNilsUncorrupted(char* message) {
     INT_FATAL("nilVarSymbol has been %s", message);
   }
   if (nilFnSymbol->next != nilILink || nilFnSymbol->prev != nilILink ||
-      nilFnSymbol->formals != nilSymbol || nilFnSymbol->body != nilStmt ||
-      nilFnSymbol->parentFn != NULL) {
+      nilFnSymbol->formals != nilSymbol || nilFnSymbol->body != nilStmt) {
     INT_FATAL("nilFnSymbol has been %s", message);
   }
   if (nilFnDefStmt->next != nilILink || nilFnDefStmt->prev != nilILink ||

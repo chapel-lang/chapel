@@ -3,6 +3,7 @@
 
 char* glomstrings(int numstrings, ...);
 char* copystring(char* str);
+char* intstring(int i);
 
 #endif
 

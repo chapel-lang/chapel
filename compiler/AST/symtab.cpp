@@ -797,7 +797,7 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
 
 
 FnSymbol* Symboltable::startFnDef(char* name, bool insert) {
-  FnSymbol* newFn = new FnSymbol(name, currentFn);
+  FnSymbol* newFn = new FnSymbol(name);
   if (insert) {
     define(newFn);
   }
@@ -814,7 +814,6 @@ FnDefStmt* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals,
   fnsym->finishDef(formals, retType, body, paramScope, isExtern);
   FnDefStmt* fnstmt = new FnDefStmt(fnsym);
   paramScope->setContext(fnstmt, fnsym);
-  currentFn = currentFn->parentFn;
 
   return fnstmt;
 }

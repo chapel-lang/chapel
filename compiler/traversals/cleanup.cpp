@@ -1,6 +1,7 @@
 #include "cleanup.h"
 #include "expr.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symtab.h"
 
 
@@ -119,10 +120,25 @@ void ResolveEasiest::preProcessExpr(Expr* &expr) {
 }
 
 void ResolveEasiest::preProcessSymbol(Symbol* &sym) {
+  static int uid = 1; // Unique ID for user-overloaded functions
+
   if (dynamic_cast<UnresolvedSymbol*>(sym)) {
     Symbol* new_sym = Symboltable::lookup(sym->name);
     if (new_sym) {
       sym = new_sym;
+    }
+  }
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    if (fn->overload) {
+      FnSymbol* tmp = fn;
+
+      while (tmp) {
+	if (!strstr(tmp->cname, "_user_overload_")) {
+	  tmp->cname =
+	    glomstrings(3, tmp->cname, "_user_overload_", intstring(uid++));
+	}
+	tmp = tmp->overload;
+      }
     }
   }
   resolve_type_helper(sym->type);

@@ -191,24 +191,21 @@ Symbol* TypeSymbol::copy(void) {
 
 
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-		   Stmt* init_body, bool init_exportMe, 
-		   FnSymbol* init_parentFn) :
+		   Stmt* init_body, bool init_exportMe) :
   Symbol(SYMBOL_FN, init_name, init_retType),
   exportMe(init_exportMe),
   formals(init_formals),
   _this(0),
   body(init_body),
-  parentFn(init_parentFn),
   overload(nilFnSymbol)
 {}
 
  
-FnSymbol::FnSymbol(char* init_name, FnSymbol* init_parentFn) :
+FnSymbol::FnSymbol(char* init_name) :
   Symbol(SYMBOL_FN, init_name, nilType),
   formals(nilSymbol),
   _this(0),
-  body(nilStmt),
-  parentFn(init_parentFn)
+  body(nilStmt)
 {}
 
 
