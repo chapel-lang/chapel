@@ -21,11 +21,14 @@ enum scopeType {
 
 class SymLink;
 class SymtabTraversal;
+class ScopeLookupCache;
 
 class SymScope : public gc {
  public:
   scopeType type;
   int level;
+  
+  ScopeLookupCache *lookupCache;
 
   Stmt* stmtContext;
   Symbol* symContext;

@@ -130,6 +130,11 @@ Matcher::pattern_match_sym(Sym *type, MPosition *cp, Vec<Fun *> *local_matches,
   }
 }
 
+static Vec<Fun *> *
+get_visible_functions(AVar *aarg0, AST *ast) {
+  return 0;
+}
+
 Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *amatches) {
   send = asend;
   arg0 = aarg0;
@@ -142,7 +147,11 @@ Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *
     all_matches = new Vec<Fun *>(send->var->def->callees->funs);
     all_positions = &send->var->def->callees->arg_positions;
   } else {
-    all_matches = send->var->def->code->ast->visible_functions();
+    if (aarg0->out->n == 1 && aarg0->out->v[0]->sym->is_symbol)
+      all_matches = send->var->def->code->ast->visible_functions(
+	aarg0->out->v[0]->sym->name);
+    else
+      all_matches = get_visible_functions(aarg0, send->var->def->code->ast);
     all_positions = 0;
   }
   if (all_matches)

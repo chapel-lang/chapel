@@ -42,6 +42,8 @@ static Sym *sym_array = 0;
 static Sym *sym_sequence = 0;
 static Sym *sym_locale = 0;
 
+class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
+
 ASymbol::ASymbol() : xsymbol(0) {
 }
 
@@ -98,6 +100,35 @@ AInfo::copy_node(ASTCopyContext* context) {
   for (int i = 0; i < a->pnodes.n; i++)
     a->pnodes.v[i] = context->nmap->get(a->pnodes.v[i]);
   return a;
+}
+
+Vec<Fun *> *
+AInfo::visible_functions(char *name) {
+#if 0
+  Expr *e = dynamic_cast<Expr *>(this->xast);
+  Stmt *s = 0;
+  if (e)
+    s = e->stmt;
+  else
+    s = dynamic_cast<Stmt *>(this->xast);
+  Vec<Fun *> *v = 0;
+  ScopeLookupCache *cache = s->parentSymbol->parentScope->lookupCache;
+  if (cache && (v = cache->get(name))) 
+    return v;
+  Symbol *sym = Symboltable::lookupInScope(name, s->parentSymbol->parentScope);
+  v = new Vec<Fun *>;
+  FnSymbol *fn = dynamic_cast<FnSymbol*>(sym);
+  while (fn) {
+    v->set_add(fn->asymbol->fun);
+    fn = fn->overload;
+  }
+  if (!cache)
+    cache = s->parentSymbol->parentScope->lookupCache = new ScopeLookupCache;
+  cache->put(name, v);
+  return v;
+#else
+  return 0;
+#endif
 }
 
 class AnalysisCloneCallback : public CloneCallback {
@@ -836,9 +867,10 @@ gen_if1(BaseAST *ast) {
   // bottom's up
   GetStuff getStuff(GET_STMTS|GET_EXPRS);
   TRAVERSE(ast, &getStuff, true);
-  forv_BaseAST(a, getStuff.asts)
-    if (gen_if1(a) < 0)
-      return -1;
+  if (ast->astType != STMT_FNDEF)
+    forv_BaseAST(a, getStuff.asts)
+      if (gen_if1(a) < 0)
+	return -1;
   switch (ast->astType) {
     case STMT: assert(ast->isNull()); break;
     case STMT_NOOP: break;
@@ -1279,7 +1311,7 @@ gen_fun(FnDefStmt *f) {
 }
 
 static int
-build_function(FnDefStmt *f) {
+init_function(FnDefStmt *f) {
   Sym *s = f->fn->asymbol;
   if (verbose_level > 1 && f->fn->name)
     printf("build_functions: %s\n", f->fn->name);
@@ -1296,6 +1328,11 @@ build_function(FnDefStmt *f) {
   if (f->fn->_this)
     s->self = f->fn->_this->asymbol;
   set_global_scope(s);
+  return 0;
+}
+
+static int
+build_function(FnDefStmt *f) {
   if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
   Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
   if (resolve_labels(f->fn->body, f->fn->asymbol->labelmap, return_label) < 0) return -1;
@@ -1333,6 +1370,10 @@ build_classes(Vec<BaseAST *> &syms) {
 
 static int
 build_functions(Vec<BaseAST *> &syms) {
+  forv_BaseAST(s, syms)
+    if (s->astType == STMT_FNDEF)
+      if (init_function(dynamic_cast<FnDefStmt*>(s)) < 0)
+        return -1;
   forv_BaseAST(s, syms)
     if (s->astType == STMT_FNDEF)
       if (build_function(dynamic_cast<FnDefStmt*>(s)) < 0)

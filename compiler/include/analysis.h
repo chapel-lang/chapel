@@ -47,6 +47,7 @@ class AInfo : public AST {
   Sym *symbol();  
   AST *copy_tree(ASTCopyContext* context);
   AST *copy_node(ASTCopyContext* context);
+  Vec<Fun *> *visible_functions(char *name);
 
   BaseAST *xast;	// pointer to shadowed BaseAST
   Code *code;		// IF1 Code
