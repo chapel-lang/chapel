@@ -268,7 +268,7 @@ ACallbacks::build(Match *m) {
   Map<MPosition *, Symbol *> coercions;
   form_MPositionSym(s, m->coercion_substitutions)
     coercions.put(s->key, dynamic_cast<Symbol*>(dynamic_cast<ASymbol*>(s->value)->xsymbol));
-  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(m->fun->ast);
+  FnDefStmt *fndef = dynamic_cast<FnDefStmt *>(((AInfo*)m->fun->ast)->xast);
   FnDefStmt *f = fndef->build(substitutions.n ? &substitutions : 0,
 			      m->default_args.n ? &m->default_args : 0,
 			      coercions.n ? &coercions : 0,
