@@ -399,7 +399,7 @@ void ParamSymbol::codegen(FILE* outfile) {
 void ParamSymbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
   if (requiresCPtr()) {
-    fprintf(outfile, "*");
+    fprintf(outfile, "* const");
   }
   fprintf(outfile, " ");
   Symbol::codegen(outfile);
