@@ -1,0 +1,62 @@
+#
+# Makefile: builds stuff related to compiler's unit tests
+#
+
+COMPILER_ROOT = ..
+
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
+CFLAGS += -DTEST_LIB
+
+
+#
+# cast-specific variables
+#
+
+TEST_LIB = test_lib$(EXE_SUFFIX)
+TEST_CVS_SRCS = \
+	../list.cpp \
+	../map.cpp \
+	../misc.cpp \
+	../vec.cpp \
+	test_lib.cpp
+TEST_SRCS = $(TEST_CVS_SRCS)
+TEST_OBJS = $(TEST_SRCS:%.cpp=$(PLATFORM)/%.o)
+
+
+#
+# standard subdirectory variables
+#
+
+CVS_SRCS = $(TEST_CVS_SRCS)
+GEN_SRCS = 
+EXECS = $(TEST_LIB)
+
+
+#
+# rules
+#
+
+all:
+
+test: $(TEST_LIB)
+	./$(TEST_LIB)
+
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+
+#
+# target-specific rules
+#
+
+$(TEST_LIB): $(TEST_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

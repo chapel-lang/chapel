@@ -1,0 +1,17 @@
+
+clean:
+	rm -f $(CLEAN_TARGS)
+
+cleandeps:
+	rm -f $(CVS_DEPENDS)
+
+clobber: 
+	rm -rf ./$(CLOBBER_TARGS)
+
+depend: $(PLATFORM_DIR)
+	@echo Updating dependences...
+	@echo > $(CVS_DEPENDS)
+	@for file in $(CVS_SRCS); do \
+	  echo -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
+	  $(CCDEP) -MM -MG $(CFLAGS) $$file >> $(CVS_DEPENDS); \
+	done

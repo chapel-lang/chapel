@@ -1,0 +1,51 @@
+In recursive Makefile structure...
+
+1) Should leave targets where they are built rather than moving them.
+   If sub-make moves it, parent Makefile won't know that it has
+   been created.  If parent Makefile moves it, then we have an
+   ordering problem because it needs to be copied down before other
+   subdirectories can refer to it.
+
+2) Should eplicitly iterate over subdirectories and execute commands
+   in them rather than having missing targets cause building in a
+   subdirectory.  While the latter approach is attractive, it is
+   problemsome because we either have to give all the dependences of
+   the subdirectory's target in the parent Makefile (yuck!) or we
+   have to always do a make in the subdirectory to ensure that the
+   target is up-to-date (potentially each time that the subtarget
+   is needed).
+
+3) Running make depend from a clean build is problemsome because not
+   all of the sources will exist yet.  This doesn't only apply to C
+   files that don't exist yet, but also to headers that don't exist
+   yet.  Either the make depend will complain that they don't exist
+   or, if the -MG flag is used, it will assume that they live in the
+   current directory, which may or may not be accurate.  This seems
+   to imply that we should check dependences into the CVS tree.  Ugh.
+
+   Alternatively, you can use the -MP flag, which sets up a fake
+   dependence for the header file and makes the problem go away,
+   (though the depdences for the file will not be completely
+   accurate).
+
+   Or, you could have make depend always call make all first...
+
+   Or, you could have all generated source files be generated in the
+   directory that they will be assumed to live in if they are missing.
+
+4) Don't give a rule that tells how to make files that are included,
+   as it will be called way way too often (this is assuming that you
+   want to update dependences manually, not automatically).
+
+
+
+In holistic Makefile structure...
+
+1) Paths need to be explicitly given for all targets and subdirectory
+   Makefiles.
+
+2) Doesn't seem to support compartmentalization of code.
+
+3) I decided not to pursue this option for these reasons.  It may have
+   been the wrong choice.
+

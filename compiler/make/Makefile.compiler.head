@@ -1,0 +1,65 @@
+#
+# settings for the build
+#
+DEBUG=1
+#OPTIMIZE=1
+#PROFILE=1
+USE_GC=1
+USE_DPARSER=1
+#LEAK_DETECT=1
+
+#
+# include the standard Chapel Makefile.base
+#
+
+CHAPEL_ROOT = $(COMPILER_ROOT)/..
+
+include $(CHAPEL_ROOT)/make/Makefile.base
+
+
+CFLAGS += -I$(COMPILER_ROOT)
+
+
+#
+# source languages accepted by the tool and settings based on them
+#
+LANG_V = 1
+LANG_CHPL = 1
+
+ifdef LANG_V
+LANGS += v
+CFLAGS += -DLANG_V=1
+endif
+ifdef LANG_CHPL
+LANGS += chpl
+CFLAGS += -DLANG_CHPL=1
+endif
+
+
+#
+# clean and clobber targets
+#
+CLEAN_TARGS = \
+	./$(PLATFORM)/*.o \
+	core \
+	*.core \
+	*.gmon \
+	*.a \
+	$(GEN_SRCS) \
+	$(EXECS)
+
+CLOBBER_TARGS = \
+	$(CLEAN_TARGS) \
+	./$(PLATFORM) \
+	*~
+
+
+#
+# platform-specific subdirectory rules
+#
+
+PLATFORM_DIR = ./$(PLATFORM)/.timestamp
+CVS_DEPENDS = ./$(PLATFORM)/Makefile.cvs.depend
+
+
+
