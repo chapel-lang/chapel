@@ -98,7 +98,7 @@ static void createWriteFn(ClassType* classType) {
                                                    new Symbol(SYMBOL, "_this"),
                                                    classType, NULL);
   
-  bool useParens = (classType->value || classType->union_value);
+  bool useParens = classType->value;
   Stmt* bodyStmts = NULL;
 
   if (useParens) {
@@ -107,7 +107,7 @@ static void createWriteFn(ClassType* classType) {
     bodyStmts = addIOStmt(bodyStmts, "{");
   }
 
-  if (classType->union_value) {
+  if (dynamic_cast<UnionType*>(classType)) {
     bodyStmts = createUnionBody(bodyStmts, classType, thisArg);
   } else {
     bodyStmts = createClassRecordBody(bodyStmts, classType, thisArg);

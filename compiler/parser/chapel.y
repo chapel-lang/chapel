@@ -324,7 +324,7 @@ recorddecl:
 uniondecl:
   TUNION pragmas identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startClassDef($3, false, true);
+      $<ptsym>$ = Symboltable::startUnionDef($3);
       $<ptsym>$->pragmas = $2;
     }
                                 decls TRCBR

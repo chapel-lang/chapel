@@ -654,16 +654,23 @@ DefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 }
 
 
-TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUnion) {
-  ClassType* newdt;
-  TypeSymbol* newsym;
-
-  newdt = new ClassType(isValueClass, isUnion);
-  newsym = new TypeSymbol(name, newdt);
+static TypeSymbol* startClassHelp(char* name, ClassType* newdt) {
+  TypeSymbol* newsym = new TypeSymbol(name, newdt);
   (newdt)->addSymbol(newsym);
   Symboltable::pushScope(SCOPE_CLASS);
 
   return newsym;
+}
+  
+
+
+TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUnion) {
+  return startClassHelp(name, new ClassType(isValueClass));
+}
+
+
+TypeSymbol* Symboltable::startUnionDef(char* name) {
+  return startClassHelp(name, new UnionType());
 }
 
 

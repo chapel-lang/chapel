@@ -11,61 +11,6 @@
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
 
-static Stmt* buildClassConstructorBody(Stmt* stmts, ClassType* class_type,
-                                       Symbol* _this) {
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
-  ParamSymbol* ptmp = args;
-#endif
-  forv_Vec(VarSymbol, tmp, class_type->fields) {
-    Expr* lhs = new MemberAccess(new Variable(_this), tmp);
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
-    Expr* rhs = new Variable(ptmp);
-#else
-    Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
-    if (!rhs) {
-      if (ClassType* nested_class_type = dynamic_cast<ClassType*>(tmp->type)) {
-        rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
-      } else continue; // hack for classes that are cloned; we don't
-      // actually want to build the constructor for
-      // cloned classes until they are cloned
-    }
-#endif
-    Stmt* assign_stmt;
-    if (tmp->type == dtString) {
-      Expr* args = lhs;
-      args->append(new MemberAccess(new Variable(_this), tmp));
-      args->append(rhs);
-      Symbol* init_string = Symboltable::lookupInternal("_init_string");
-      FnCall* call = new FnCall(new Variable(init_string), args);
-      assign_stmt = new ExprStmt(call);
-    } else {
-      Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
-      assign_stmt = new ExprStmt(assign_expr);
-    }
-    stmts = appendLink(stmts, assign_stmt);
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
-    ptmp = nextLink(ParamSymbol, ptmp);
-#endif
-  }
-  return stmts;
-}
-
-
-static Stmt* buildUnionConstructorBody(Stmt* stmts, ClassType* class_type, 
-                                       Symbol* _this) {
-  Expr* arg1 = new Variable(_this);
-  Expr* arg2 = new Variable(class_type->fieldSelector->valList);
-  arg1 = appendLink(arg1, arg2);
-  FnCall* init_function = 
-    new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), 
-               arg1);
-  ExprStmt* init_stmt = new ExprStmt(init_function);
-  stmts = appendLink(stmts, init_stmt);
-  
-  return stmts;
-}
-
-
 static void build_constructor(ClassType* class_type) {
   SymScope* saveScope = Symboltable::setCurrentScope(class_type->classScope);
 
@@ -88,7 +33,7 @@ static void build_constructor(ClassType* class_type) {
   fn->_this = new VarSymbol("this", class_type);
   DefExpr* def_expr = new DefExpr(fn->_this);
   stmts = new DefStmt(def_expr);
-  if (!(class_type->value || class_type->union_value)) {
+  if (!class_type->value) {
     char* description = glomstrings(2, "instance of class ", class_type->symbol->name);
     Expr* alloc_args = new IntLiteral("1", 1);
     alloc_args = appendLink(alloc_args, new SizeofExpr(class_type));
@@ -101,11 +46,7 @@ static void build_constructor(ClassType* class_type) {
     Stmt* alloc_stmt = new ExprStmt(alloc_expr);
     stmts = appendLink(stmts, alloc_stmt);
   }
-  if (class_type->union_value) {
-    stmts = buildUnionConstructorBody(stmts, class_type, fn->_this);
-  } else {
-    stmts = buildClassConstructorBody(stmts, class_type, fn->_this);
-  }
+  class_type->buildConstructorBody(stmts, fn->_this);
 
   stmts = appendLink(stmts, new ReturnStmt(new Variable(fn->_this)));
   body = Symboltable::finishCompoundStmt(body, stmts);
@@ -117,7 +58,7 @@ static void build_constructor(ClassType* class_type) {
     class_type->defaultVal = new FnCall(new Variable(fn), NULL);
     SET_BACK(class_type->defaultVal);
   }
-  if (class_type->value || class_type->union_value) {
+  if (class_type->value) {
     class_type->defaultVal = new FnCall(new Variable(class_type->symbol), NULL);
     SET_BACK(class_type->defaultVal);
   }
@@ -126,32 +67,10 @@ static void build_constructor(ClassType* class_type) {
 
 
 static void build_union_id_enum(ClassType* class_type) {
-  if (!class_type->union_value) {
-    return;
+  UnionType* unionType = dynamic_cast<UnionType*>(class_type);
+  if (unionType) {
+    unionType->buildFieldSelector();
   }
-
-  EnumSymbol* id_list = NULL;
-  char* id_name = glomstrings(4, "_", class_type->symbol->name, "_union_id_",
-                              "__uninitialized");
-  EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
-  id_list = appendLink(id_list, id_symbol);
-  forv_Vec(VarSymbol, tmp, class_type->fields) {
-    char* id_name =
-      glomstrings(4, "_", class_type->symbol->name, "_union_id_", tmp->name);
-    EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
-    id_list = appendLink(id_list, id_symbol);
-  }
-  id_list->set_values();
-  EnumType* enum_type = new EnumType(id_list);
-  char* enum_name =
-    glomstrings(3, "_", class_type->symbol->name, "_union_id");
-  TypeSymbol* enum_symbol = new TypeSymbol(enum_name, enum_type);
-  enum_type->addSymbol(enum_symbol);
-  class_type->addFieldSelector(enum_type);
-  DefExpr* def_expr = new DefExpr(enum_symbol);
-  id_list->setDefPoint(def_expr); /* SJD: Should enums have their own DefExprs? */
-  DefStmt* def_stmt = new DefStmt(def_expr);
-  class_type->symbol->defPoint->stmt->insertBefore(def_stmt);
 }
 
 

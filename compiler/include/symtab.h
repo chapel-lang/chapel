@@ -90,6 +90,7 @@ class Symboltable {
                                  Stmt* body, bool isExtern = false);
 
   static TypeSymbol* startClassDef(char* name, bool isValueClass, bool isUnion);
+  static TypeSymbol* startUnionDef(char* name);
   static DefExpr* finishClassDef(TypeSymbol* classSym, Stmt* definition);
 
   static ForLoopStmt* startForLoop(bool forall, Symbol* indices, Expr* domain);

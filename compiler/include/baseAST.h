@@ -72,6 +72,7 @@ enum astType_t {
   TYPE_USER,
   TYPE_LIKE,
   TYPE_CLASS,
+  TYPE_UNION,
   TYPE_TUPLE,
   TYPE_SUM,
   TYPE_VARIABLE,

@@ -1081,15 +1081,10 @@ void MemberAccess::codegen(FILE* outfile) {
     INT_FATAL(this, "Dot applied to non-class/record/union");
   }
   base->codegen(outfile);
-  if (base_type->value) {              /* record */
-    fprintf(outfile, ".");
-  } else if (base_type->union_value) { /* union */
-    fprintf(outfile, "._chpl_union.");
-  } else {                             /* class */
-    fprintf(outfile, "->");
-  }
+  base_type->codegenMemberAccessOp(outfile);
   member->codegen(outfile);
 }
+
 
 
 ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :

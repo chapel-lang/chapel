@@ -317,6 +317,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_CLASS");
     }
     break;
+  case TYPE_UNION:
+    if (typeid(*ast) != typeid(UnionType)) {
+      INT_FATAL(ast, "Unexpected AST type type: TYPE_UNION");
+    }
+    break;
   case TYPE_TUPLE:
     if (typeid(*ast) != typeid(TupleType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_TUPLE");

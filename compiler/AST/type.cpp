@@ -662,7 +662,7 @@ Type* IndexType::getType(){
 
 SeqType::SeqType(Type* init_elementType,
                  ClassType* init_nodeType):
-  ClassType(false, false),
+  ClassType(false, TYPE_SEQ),
   elementType(init_elementType),
   nodeType(init_nodeType)
 {
@@ -1017,20 +1017,16 @@ void LikeType::codegenDef(FILE* outfile) {
 }
 
 
-ClassType::ClassType(bool isValueClass, bool isUnion,
-                     ClassType* init_parentClass,
-                     Stmt* init_constructor,
-                     SymScope* init_classScope) :
-  Type(TYPE_CLASS, ((isValueClass || isUnion) ? 
-                    NULL : // SJD: Set to be constructor when that is built
-                    new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))),
+ClassType::ClassType(bool isValueClass,
+                     astType_t astType) :
+  Type(astType, ((isValueClass) ? 
+                 NULL : // SJD: Set to be constructor when that is built
+                 new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))),
   value(isValueClass),
-  union_value(isUnion),
-  parentClass(init_parentClass),
-  constructor(init_constructor),
-  classScope(init_classScope),
-  declarationList(NULL),
-  fieldSelector(NULL)
+  parentClass(NULL),
+  constructor(NULL),
+  classScope(NULL),
+  declarationList(NULL)
 {
   fields.clear();
   methods.clear();
@@ -1040,7 +1036,7 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  ClassType* copy_type = new ClassType(value, union_value);
+  ClassType* copy_type = new ClassType(value);
   Symboltable::pushScope(SCOPE_CLASS);
   Stmt* new_decls = NULL;
   for (Stmt* old_decls = declarationList;
@@ -1095,13 +1091,39 @@ void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
 }
 
 
-void ClassType::setClassScope(SymScope* init_classScope) {
-  classScope = init_classScope;
+//#define CONSTRUCTOR_WITH_PARAMETERS
+
+Stmt* ClassType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
+  ParamSymbol* ptmp = args;
+#endif
+  forv_Vec(VarSymbol, tmp, fields) {
+    Expr* lhs = new MemberAccess(new Variable(_this), tmp);
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
+    Expr* rhs = new Variable(ptmp);
+#else
+    Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
+    if (!rhs) {
+      if (ClassType* nested_class_type = dynamic_cast<ClassType*>(tmp->type)) {
+        rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
+      } else continue; // hack for classes that are cloned; we don't
+      // actually want to build the constructor for
+      // cloned classes until they are cloned
+    }
+#endif
+    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
+    Stmt* assign_stmt = new ExprStmt(assign_expr);
+    stmts = appendLink(stmts, assign_stmt);
+#ifdef CONSTRUCTOR_WITH_PARAMETERS
+    ptmp = nextLink(ParamSymbol, ptmp);
+#endif
+  }
+  return stmts;
 }
 
 
-void ClassType::addFieldSelector(EnumType* init_fieldSelector) {
-  fieldSelector = init_fieldSelector;
+void ClassType::setClassScope(SymScope* init_classScope) {
+  classScope = init_classScope;
 }
 
 
@@ -1130,6 +1152,11 @@ void ClassType::codegen(FILE* outfile) {
 }
 
 
+void ClassType::codegenStartDefFields(FILE* outfile) {}
+
+void ClassType::codegenStopDefFields(FILE* outfile) {}
+
+
 void ClassType::codegenDef(FILE* outfile) {
   forv_Vec(TypeSymbol, type, types) {
     type->codegenDef(outfile);
@@ -1138,12 +1165,7 @@ void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, "struct __");
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
-  if (union_value) {
-    fprintf(outfile, "_");
-    symbol->codegen(outfile);
-    fprintf(outfile, "_union_id _chpl_union_tag;\n");
-    fprintf(outfile, "union {\n");
-  }
+  codegenStartDefFields(outfile);
   for (Stmt* tmp = declarationList; tmp; tmp = nextLink(Stmt, tmp)) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
       if (VarSymbol* var = def_stmt->varDef()) {
@@ -1151,15 +1173,13 @@ void ClassType::codegenDef(FILE* outfile) {
       }
     }
   }
+  codegenStopDefFields(outfile);
   /*
   forv_Vec(VarSymbol, tmp, fields) {
     tmp->codegenDef(outfile);
     fprintf(outfile, "\n");
   }
   */
-  if (union_value) {
-    fprintf(outfile, "} _chpl_union;\n");
-  }
   fprintf(outfile, "};\n\n");
   /*
   if (value || union_value) {
@@ -1186,15 +1206,8 @@ void ClassType::codegenDef(FILE* outfile) {
 }
 
 
-void ClassType::codegenPrototype(FILE* outfile) {
-  forv_Vec(TypeSymbol, type, types) {
-    type->codegenPrototype(outfile);
-    fprintf(outfile, "\n");
-  }
-  fprintf(outfile, "typedef struct __");
-  symbol->codegen(outfile);
-  fprintf(outfile, " ");
-  if (value || union_value) {
+void ClassType::codegenStructName(FILE* outfile) {
+  if (value) {
     symbol->codegen(outfile);
   }
   else {
@@ -1203,6 +1216,18 @@ void ClassType::codegenPrototype(FILE* outfile) {
     fprintf(outfile,", *");
     symbol->codegen(outfile);
   }
+}
+
+
+void ClassType::codegenPrototype(FILE* outfile) {
+  forv_Vec(TypeSymbol, type, types) {
+    type->codegenPrototype(outfile);
+    fprintf(outfile, "\n");
+  }
+  fprintf(outfile, "typedef struct __");
+  symbol->codegen(outfile);
+  fprintf(outfile, " ");
+  codegenStructName(outfile);
   fprintf(outfile, ";\n");
 }
 
@@ -1211,7 +1236,7 @@ void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
                               Expr* format) {
   forv_Symbol(method, methods) {
     if (strcmp(method->name, "write") == 0) {
-      if (!value && !union_value) {
+      if (!value) {
         if (symbol->isDead) {
           // BLC: theoretically, this should only happen if no
           // instantiations of a class are ever made
@@ -1228,7 +1253,7 @@ void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
       fprintf(outfile, "(&(");
       arg->codegen(outfile);
       fprintf(outfile, "));");
-      if (!value && !union_value) {
+      if (!value) {
         fprintf(outfile, "}\n");
       }
       return;
@@ -1238,8 +1263,17 @@ void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
 }
 
 
+void ClassType::codegenMemberAccessOp(FILE* outfile) {
+  if (value) {              /* record */
+    fprintf(outfile, ".");
+  } else {                             /* class */
+    fprintf(outfile, "->");
+  }
+}
+
+
 bool ClassType::blankIntentImpliesRef(void) {
-  if (value || union_value) {
+  if (value) {
     return false;
   } else {
     return true;
@@ -1248,11 +1282,93 @@ bool ClassType::blankIntentImpliesRef(void) {
 
 
 bool ClassType::implementedUsingCVals(void) {
-  if (value || union_value) {
+  if (value) {
     return true;
   } else {
     return false;
   }
+}
+
+
+UnionType::UnionType(void) :
+  ClassType(true, TYPE_UNION),
+  fieldSelector(NULL)
+{}
+
+
+char* UnionType::buildFieldSelectorName(char* fieldName) {
+  if (fieldName) {
+    return glomstrings(4, "_", symbol->name, "_union_id_", fieldName);
+  } else {
+    return glomstrings(3, "_", symbol->name, "_union_id");
+  }
+}
+
+
+void UnionType::buildFieldSelector(void) {
+  EnumSymbol* id_list = NULL;
+
+  /* build list of enum symbols */
+  char* id_name = buildFieldSelectorName("__uninitialized");
+  EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
+  id_list = appendLink(id_list, id_symbol);
+  forv_Vec(VarSymbol, tmp, fields) {
+    id_name = buildFieldSelectorName(tmp->name);
+    id_symbol = new EnumSymbol(id_name, NULL);
+    id_list = appendLink(id_list, id_symbol);
+  }
+  id_list->set_values();
+
+  /* build enum type */
+  EnumType* enum_type = new EnumType(id_list);
+  char* enum_name = buildFieldSelectorName(NULL);
+  TypeSymbol* enum_symbol = new TypeSymbol(enum_name, enum_type);
+  enum_type->addSymbol(enum_symbol);
+
+  /* build definition of enum */
+  DefExpr* def_expr = new DefExpr(enum_symbol);
+  enum_symbol->setDefPoint(def_expr);
+  id_list->setDefPoint(def_expr);
+  DefStmt* def_stmt = new DefStmt(def_expr);
+  symbol->defPoint->stmt->insertBefore(def_stmt);
+
+  fieldSelector = enum_type;
+}
+
+
+Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
+  Expr* arg1 = new Variable(_this);
+  Expr* arg2 = new Variable(fieldSelector->valList);
+  arg1 = appendLink(arg1, arg2);
+  FnCall* init_function = 
+    new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), arg1);
+  ExprStmt* init_stmt = new ExprStmt(init_function);
+  stmts = appendLink(stmts, init_stmt);
+  
+  return stmts;
+}
+
+
+void UnionType::codegenStructName(FILE* outfile) {
+  symbol->codegen(outfile);
+}
+
+
+void UnionType::codegenStartDefFields(FILE* outfile) {
+  fprintf(outfile, "_");
+  symbol->codegen(outfile);
+  fprintf(outfile, "_union_id _chpl_union_tag;\n");
+  fprintf(outfile, "union {\n");
+}
+
+
+void UnionType::codegenStopDefFields(FILE* outfile) {
+  fprintf(outfile, "} _chpl_union;\n");
+}
+
+
+void UnionType::codegenMemberAccessOp(FILE* outfile) {
+  fprintf(outfile, "._chpl_union.");
 }
 
 

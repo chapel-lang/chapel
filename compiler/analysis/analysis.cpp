@@ -792,13 +792,14 @@ build_types(Vec<BaseAST *> &syms) {
         }
         INT_FATAL(t, "No analysis support for 'like'");
       }
+      case TYPE_UNION:
+        t->asymbol->sym->is_union_class = 1;
+        /* fall through */
       case TYPE_CLASS: {
         ClassType *tt = dynamic_cast<ClassType*>(t);
         t->asymbol->sym->type_kind = Type_RECORD;
-        if (tt->value || tt->union_value)
+        if (tt->value)
           t->asymbol->sym->is_value_class = 1;
-        if (tt->union_value)
-          t->asymbol->sym->is_union_class = 1;
         if (tt->symbol) {
           tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
           tt->symbol->asymbol->symbol = tt->symbol;
@@ -1081,7 +1082,6 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 static int
 is_reference_type(BaseAST *t) {
   return (t && t->astType == TYPE_CLASS &&
-          !dynamic_cast<ClassType*>(t)->union_value &&
           !dynamic_cast<ClassType*>(t)->value);
 }
 
@@ -1105,9 +1105,10 @@ static void
 gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
   Code **c = &ast->code;
   Code *send = 0;
-  if (s->type->asymbol->symbol->astType == TYPE_CLASS) {
+  if (s->type->asymbol->symbol->astType == TYPE_CLASS ||
+      s->type->asymbol->symbol->astType == TYPE_UNION) {
     ClassType *ct = dynamic_cast<ClassType*>(type->asymbol->symbol);
-    if ((ct->value || ct->union_value) && s != _this)
+    if (ct->value && s != _this)
       send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
   }
   if (!send) 
@@ -1117,8 +1118,7 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
     // just set the first element
     ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
     if ((at->elementType->astType == TYPE_CLASS && 
-         (dynamic_cast<ClassType*>(at->elementType)->value || 
-          dynamic_cast<ClassType*>(at->elementType)->union_value)) ||
+         dynamic_cast<ClassType*>(at->elementType)->value) ||
         (at->elementType->astType == TYPE_ARRAY))
     {
       Sym *ret = new_sym();
@@ -1810,6 +1810,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
   case TYPE_USER:
   case TYPE_LIKE:
   case TYPE_CLASS:
+  case TYPE_UNION:
   case TYPE_TUPLE:
   case TYPE_SUM:
   case TYPE_VARIABLE:
@@ -1899,7 +1900,7 @@ static int
 build_classes(Vec<BaseAST *> &syms) {
   Vec<ClassType *> classes;
   forv_BaseAST(s, syms)
-    if (s->astType == TYPE_CLASS)
+    if (s->astType == TYPE_CLASS || s->astType == TYPE_UNION)
       classes.add(dynamic_cast<ClassType*>(s)); 
   if (verbose_level > 1)
     printf("build_classes: %d classes\n", classes.n);

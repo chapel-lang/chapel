@@ -198,12 +198,10 @@ class LikeType : public Type {
 class ClassType : public Type {
  public:
   bool value; /* true if this is a value class (aka record) */
-  bool union_value; /* true if this is a union */
   ClassType* parentClass;
   Stmt* constructor;
   SymScope* classScope;
   Stmt* declarationList;
-  EnumType* fieldSelector;
 
   Vec<VarSymbol*> fields;
   Vec<FnSymbol*> methods;
@@ -212,27 +210,44 @@ class ClassType : public Type {
   FnSymbol *defaultConstructor;
   
   ClassType(bool isValueClass,
-            bool isUnion,
-            ClassType* init_parentClass = NULL, 
-            Stmt* init_constructor = NULL,
-            SymScope* init_classScope = NULL);
+            astType_t astType = TYPE_CLASS);
   void addDeclarations(Stmt* newDeclarations,
                        Stmt* afterStmt = NULL);
+  virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
   void setClassScope(SymScope* init_classScope);
-  void addFieldSelector(EnumType* init_fieldSelector);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
 
   void codegen(FILE* outfile);
+  virtual void codegenStartDefFields(FILE* outfile);
+  virtual void codegenStopDefFields(FILE* outfile);
   void codegenDef(FILE* outfile);
+  void codegenStructName(FILE* outfile);
   void codegenPrototype(FILE* outfile);
   virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
                              Expr* format = NULL);
+  virtual void codegenMemberAccessOp(FILE* outfile);
 
   virtual bool blankIntentImpliesRef(void);
   virtual bool implementedUsingCVals(void);
+};
+
+
+class UnionType : public ClassType {
+ public:
+  EnumType* fieldSelector;
+
+  UnionType();
+  char* buildFieldSelectorName(char*);
+  void buildFieldSelector(void);
+
+  Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
+  void codegenStructName(FILE* outfile);
+  void codegenStartDefFields(FILE* outfile);
+  void codegenStopDefFields(FILE* outfile);
+  void codegenMemberAccessOp(FILE* outfile);
 };
 
 
