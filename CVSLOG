@@ -9535,3 +9535,28 @@ Modified files:
 Added files:
 	chapel/test/compflags/bradc/gdbddash/: PREDIFF 
 
+---------------------------------------------------------------------------
+
+11/15/04 11:40:02 -- deitz
+
+Log message:
+	Fixed the precedence of tokens in the parser so as to be the same as
+	in the Chapel specification and updated several test outputs.  Made
+	unary plus and minus higher in precedence than times and divide and
+	made the bitwise operators higher in precedence than the comparison
+	operators.  Added ':' and bitwise shift left and right.
+	
+	Changed use of ':' in domains to 'in' in keeping with the language and
+	updated a couple of test programs.  So [i: D] is now written [i in D].
+	
+	Improved the parser in general.  Lowered the shift/reduce errors from
+	358 to 185.  Lowered the reduce/reduce errors from 4 to 2.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+	                                     mvm-seq.chpl 
+	chapel/test/trivial/shannon/: compSampler.good 
+
