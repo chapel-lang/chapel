@@ -91,7 +91,7 @@ test: FORCE
 $(CHPL): $(PLATFORM)/$(CHPL)
 	cp -f $< $@
 
-$(PLATFORM)/$(CHPL): $(CHPL_OBJS)
+$(PLATFORM)/$(CHPL): $(PLATFORM_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
 	@etags 	$(D_PARSER_SRC_DIR)/*.h $(D_PARSER_SRC_DIR)/*.c \
