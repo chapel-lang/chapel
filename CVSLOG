@@ -11662,3 +11662,15 @@ Log message:
 Modified files:
 	chapel/compiler/vparser/: v.g 
 
+---------------------------------------------------------------------------
+
+12/13/04 17:34:49 -- bradc
+
+Log message:
+	In debugging a dependence problem, noticed that
+	v.g.d_parser.cpp is not getting blown away on a
+	make clean, as it probably should.
+
+Modified files:
+	chapel/compiler/vparser/: Makefile.share 
+
