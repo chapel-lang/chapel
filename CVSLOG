@@ -12671,3 +12671,52 @@ Modified files:
 	chapel/compiler/analysis/: fa.cpp pattern.cpp 
 	chapel/compiler/include/: fa.h fun.h map.h pattern.h 
 
+---------------------------------------------------------------------------
+
+12/22/04 16:23:42 -- bradc
+
+Log message:
+	Made two minor but substantial changes to the
+	AST traversal machinery:
+	
+	1) fixed a bug in which a traversal that removed
+	   the last node in a list resulted in a core
+	   dump due to failure to check for end-of-list
+	   prior to exploring the next node
+	
+	2) improved the clarity and perhaps performance
+	   of the traverseList calls by not having them
+	   drop down to ILink, then BaseAST, then Stmt,
+	   Expr, Symbol, Type via dynamic casts.  Now,
+	   a traverseList of type Stmt should call the
+	   traverseList of type Stmt.  The result is
+	   that the callstack isn't littered with calls
+	   to ILink's traversal calls when you're
+	   traversing a list of statements, for example.
+	
+	Also made the code management change:
+	
+	3) factored a lot of the code that was common
+	   to the various traversal macros into macros
+	   so that fixes like the above only have to be
+	   made in one place
+	
+	And the organizational change:
+	
+	4) moved all traversal macros into the traversal.h
+	   file (both because they're more similar than
+	   different, so it's nice to have them all in one
+	   place, and because it's the obvious place to look
+	   for them).
+	
+	Food for thought question for Steve: are the
+	traverseList methods used for any classes apart
+	from Stmt, Expr, Type, Symbol, and possibly ILink,
+	and BaseAST?  (in particular, would BlockStmt's
+	traverseList call ever be used?  My guess is not,
+	and that we could remove those calls.
+
+Modified files:
+	chapel/compiler/traversals/: traversal.h 
+	chapel/compiler/include/: expr.h link.h stmt.h symbol.h type.h 
+
