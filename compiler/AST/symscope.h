@@ -6,9 +6,10 @@
 #include "symbol.h"
 
 enum scopeType {
-  SCOPE_INTERNAL = -2,
   SCOPE_INTRINSIC = -1,
-  SCOPE_FILE = 0,
+  SCOPE_INTERNAL_PRELUDE = 0,
+  SCOPE_PRELUDE = 1,
+  SCOPE_FILE = 2,
   SCOPE_PARAM,
   SCOPE_FUNCTION,
   SCOPE_LOCAL,

@@ -6,8 +6,8 @@
 #include "stmt.h"
 #include "symbol.h"
 
-extern Stmt* program;
 extern Symbol* yypst;
+extern Stmt* yystmtlist;
 
 extern "C" {
 #endif

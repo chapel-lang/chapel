@@ -15,13 +15,17 @@
 #include "yy.h"
 
 
-Stmt* program;
+Stmt* yystmtlist = NULL;
+Stmt* internalPreludeStmts = NULL;
+Stmt* preludeStmts = NULL;
+Stmt* program = NULL;
 
 char* yyfilename;
 int yylineno;
 
 
-static void ParseFile(char* filename, bool prelude = false) {
+static Stmt* ParseFile(char* filename, bool prelude = false) {
+  Stmt* stmtList = nilStmt;
   yyfilename = filename;
   yylineno = 1;
 
@@ -34,8 +38,9 @@ static void ParseFile(char* filename, bool prelude = false) {
   if (yyin == NULL) {
     fail("Cannot read '%s'", filename);
   } else {
-    program = nilStmt;
+    yystmtlist = nilStmt;
     yyparse();
+    stmtList = yystmtlist;
 
     closeInputFile(yyin);
   }
@@ -43,6 +48,8 @@ static void ParseFile(char* filename, bool prelude = false) {
   if (!prelude) {
     Symboltable::popScope();
   }
+
+  return stmtList;
 }
 
 
@@ -103,22 +110,22 @@ Stmt* fileToAST(char* filename, int debug) {
   if (preludePath == NULL) {
     initNils();
     Symboltable::init();
-
-    preludePath = glomstrings(2, system_dir, "/AST/internal_prelude.chpl");
-    ParseFile(preludePath, true);
-    Symboltable::hideInternalPreludeScope();
-
     initType(); // BLC : clean these up
     initExpr();
 
+    Symboltable::parseInternalPrelude();
+    preludePath = glomstrings(2, system_dir, "/AST/internal_prelude.chpl");
+    internalPreludeStmts = ParseFile(preludePath, true);
+
+    Symboltable::parsePrelude();
     preludePath = glomstrings(2, system_dir, "/AST/prelude.chpl");
-    ParseFile(preludePath, true);
+    preludeStmts = ParseFile(preludePath, true);
 
     Symboltable::doneParsingPreludes();
   }
 
   yydebug = debug;
-  ParseFile(filename);
+  program = ParseFile(filename);
 
   //  extern void testGetStuff(Stmt*);
   //  testGetStuff(program);

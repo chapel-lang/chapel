@@ -122,7 +122,7 @@
 
 program:  
   statements
-    { program = $$; }
+    { yystmtlist = $$; }
 ;
 
 

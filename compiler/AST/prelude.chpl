@@ -13,7 +13,7 @@ const true: boolean = 1;
 -- math
 
 function sqrt(x: float): float {}
-function abs(x:?t): float {}  -- BLC: should be ": t"
+function abs(x: ?t): float {}  -- BLC: should be ": t"
 
 
 

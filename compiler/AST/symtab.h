@@ -9,7 +9,8 @@
 class Symboltable {
  public:
   static void init(void);
-  static void hideInternalPreludeScope(void);
+  static void parseInternalPrelude(void);
+  static void parsePrelude(void);
   static void doneParsingPreludes(void);
 
   static void pushScope(scopeType type);

@@ -99,7 +99,7 @@ void SymScope::addUndefinedToFile(UseBeforeDefSymbol* sym) {
   SymScope* scope = Symboltable::getCurrentScope();
 
   if (parsingInternalPrelude) {
-    scope = findEnclosingScopeType(SCOPE_INTERNAL);
+    scope = findEnclosingScopeType(SCOPE_INTERNAL_PRELUDE);
   } else if (parsingPrelude) {
     INT_FATAL(sym, "undefined symbol in prelude: %s", sym->name);
   } else {
@@ -136,12 +136,23 @@ void SymScope::handleUndefined(void) {
 static char* indentStr(FILE* outfile, int level) {
   static char* spaces = "                                                     "
                         "                          ";
+  int printLevel;
+  switch (level) {
+  case SCOPE_INTRINSIC:
+    printLevel = 0;
+    break;
+  case SCOPE_INTERNAL_PRELUDE:
+  case SCOPE_PRELUDE:
+    printLevel = 1;
+    break;
+  default:
+    printLevel = level;
+  }
+
   int maxspaces = strlen(spaces);
-  int offset = maxspaces-(2*(level-SCOPE_INTRINSIC));
+  int offset = maxspaces-(2*printLevel);
   if (offset < 0) {
     offset = 0;
-  } else if (offset > maxspaces) {
-    offset = maxspaces;
   }
 
   return spaces + offset;
@@ -162,11 +173,14 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
   fprintf(outfile, "%s", indent);
   fprintf(outfile, "SCOPE: ");
   switch (type) {
-  case SCOPE_INTERNAL:
-    fprintf(outfile, "internal, secret, intrinsic\n");
-    break;
   case SCOPE_INTRINSIC:
-    fprintf(outfile, "global, standard, intrinsic\n");
+    fprintf(outfile, "intrinsic\n");
+    break;
+  case SCOPE_INTERNAL_PRELUDE:
+    fprintf(outfile, "internal prelude\n");
+    break;
+  case SCOPE_PRELUDE:
+    fprintf(outfile, "prelude\n");
     break;
   case SCOPE_FILE:
     fprintf(outfile, "file\n");
@@ -214,35 +228,58 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
 }
 
 
-static int level = SCOPE_INTERNAL;
-static SymScope* internalScope = new SymScope(SCOPE_INTERNAL, level++);
-static SymScope* currentScope = internalScope;
+static int level = SCOPE_INTRINSIC;
 static SymScope* rootScope = NULL;
+static SymScope* internalScope = NULL;
+static SymScope* preludeScope = NULL;
+static SymScope* currentScope = NULL;
 static FnSymbol* currentFn = NULL;
 
 
 void Symboltable::init(void) {
-  rootScope = new SymScope(SCOPE_INTRINSIC, level++);
-  internalScope->sibling = rootScope;
+  rootScope = new SymScope(SCOPE_INTRINSIC, SCOPE_INTRINSIC);
+
+  currentScope = rootScope;
+  level = SCOPE_INTRINSIC;
+
   currentFn = nilFnSymbol;
-  parsingInternalPrelude = true;
 }
 
 
-void Symboltable::hideInternalPreludeScope(void) {
-  currentScope = rootScope;
+void Symboltable::parseInternalPrelude(void) {
+  internalScope = new SymScope(SCOPE_INTERNAL_PRELUDE, SCOPE_INTERNAL_PRELUDE);
+  internalScope->parent = rootScope;
+  rootScope->child = internalScope;
+
+  currentScope = internalScope;
+  level = SCOPE_PRELUDE;
+
+  parsingInternalPrelude = true;
+  parsingPrelude = false;
+}
+
+
+void Symboltable::parsePrelude(void) {
+  preludeScope = new SymScope(SCOPE_PRELUDE, SCOPE_PRELUDE);
+  preludeScope->parent = rootScope;
+  internalScope->sibling = preludeScope;
+
+  currentScope = preludeScope;
+  level = SCOPE_PRELUDE;
+  
   parsingInternalPrelude = false;
   parsingPrelude = true;
 }
 
 
 void Symboltable::doneParsingPreludes(void) {
+  parsingInternalPrelude = false;
   parsingPrelude = false;
 }
 
 
 void Symboltable::pushScope(scopeType type) {
-  SymScope* newScope = new SymScope(type, level++);
+  SymScope* newScope = new SymScope(type, ++level);
   SymScope* child = currentScope->child;
 
   if (child == NULL) {
@@ -501,7 +538,8 @@ ClassSymbol* Symboltable::startClassDef(char* name, ClassSymbol* parent) {
   } else {
     newdt = new ClassType(parent->getType());
   }
-  if (parent->scope->level == SCOPE_INTRINSIC && 
+  if (!parent->isNull() && 
+      parent->scope->level == SCOPE_PRELUDE && 
       strcmp(parent->name, "reduction") == 0) {
     newsym = new ReduceSymbol(name, newdt);
   } else {
@@ -579,5 +617,5 @@ static void dumpHelp(FILE* outfile, SymScope* scope) {
 
 
 void Symboltable::dump(FILE* outfile) {
-  dumpHelp(outfile, internalScope);
+  dumpHelp(outfile, rootScope);
 }

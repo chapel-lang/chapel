@@ -3,6 +3,10 @@
 
 #include "stmt.h"
 
+extern Stmt* internalPreludeStmts;
+extern Stmt* preludeStmts;
+extern Stmt* program;
+
 Stmt* fileToAST(char* filename, int debug);
 
 #endif
