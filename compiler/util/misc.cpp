@@ -24,11 +24,10 @@ static void cleanup(void) {
 
 void
 clean_exit(int status) {
-  if (!ignore_errors) {
-    cleanup();
-    exit(status);
-  }
+  cleanup();
+  exit(status);
 }
+
 
 char *
 loc_string(d_loc_t &l) {
@@ -219,7 +218,7 @@ void printProblem(char *fmt, ...) {
 
   printUsrLocation(NULL, 0);
 
-  if (isFatal) {
+  if (isFatal && !ignore_errors) {
     clean_exit(1);
   }
 }
@@ -241,7 +240,7 @@ void printProblem(AST* ast, char *fmt, ...) {
 
   printUsrLocation(usrfilename, usrlineno);
 
-  if (isFatal) {
+  if (isFatal && !ignore_errors) {
     clean_exit(1);
   }
 }
@@ -263,7 +262,7 @@ void printProblem(Loc* loc, char *fmt, ...) {
 
   printUsrLocation(usrfilename, usrlineno);
 
-  if (isFatal) {
+  if (isFatal && !ignore_errors) {
     clean_exit(1);
   }
 }
