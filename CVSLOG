@@ -18331,3 +18331,25 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+02/28/05 16:39:53 -- deitz
+
+Log message:
+	Made ExpandClassWiths put the fields inserted by a with statement in
+	the place that the with statement was.  They may be rearranged later
+	by analysis, but this is a good default.
+	
+	Added insert for Vec templates.  It inserts a new element of the Vec
+	before an existing one.
+	
+	Removed double traversal of symbols (def and regular).
+	
+	Replaced old resolve_symbol with resolve_member_access.
+
+Modified files:
+	chapel/compiler/AST/: nils.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h vec.h 
+	chapel/compiler/traversals/: expandClassWiths.cpp 
+	                             resolveSymbols.cpp 
+
