@@ -17438,3 +17438,30 @@ Added files:
 Removed files:
 	chapel/test/trivial/bradc/: defaultinit1a.future vardecls.future 
 
+---------------------------------------------------------------------------
+
+02/14/05 15:55:13 -- deitz
+
+Log message:
+	Added a few strange declaration test cases (all working):
+	
+	  var x : integer = y;
+	  var y : integer = x;
+	---
+	  var x = y;
+	  var y = 3.0;
+	---
+	  x = 12.0;
+	  var x = y;
+	  var y = x;
+
+Added files:
+	chapel/test/trivial/deitz/: test_var_decl_strange1.chpl 
+	                            test_var_decl_strange1.good 
+	                            test_var_decl_strange2.chpl 
+	                            test_var_decl_strange2.good 
+	                            test_var_decl_strange3.chpl 
+	                            test_var_decl_strange3.good 
+	                            test_var_decl_strange4.chpl 
+	                            test_var_decl_strange4.good 
+
