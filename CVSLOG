@@ -20319,3 +20319,46 @@ Modified files:
 	chapel/test/classes/jplevyak/: record_equal-1.future 
 	                               record_equal-2.future 
 
+---------------------------------------------------------------------------
+
+03/18/05 13:58:44 -- shannon
+
+Log message:
+	Added functionality to the memory wrapper functions with
+	the addition of a table that stores the address, number,
+	size, and description of allocated memory.  This
+	information will eventually be made available to the chpl
+	programmer per runtime flags.
+	
+	Specifically:
+	
+	* chplmem.c:  Added the data structure, memTableEntry, to
+	  hold memory information which is then stored in a table
+	  (hashed per memory address).  Added the usual hash table
+	  functions.  Modified _chpl_free to delete the memory
+	  information from the table.  Modified _chpl_realloc
+	  so that if a new pointer is returned the prior entry is
+	  removed from the table.  Also modified _chpl_realloc so
+	  that if memory of size 0 is requested the address is
+	  freed.
+	
+	* Added some tests.
+
+Modified files:
+	chapel/compiler/parser/: internal_prelude.chpl prelude.chpl 
+	chapel/runtime/include/: chplmem.h config.h stdchpl.h 
+	chapel/runtime/src/: Makefile chplmem.c chpltypes.c config.c 
+	                     main.c 
+Added files:
+	chapel/runtime/include/: chplmem_tests.h 
+	chapel/runtime/src/: chplmem_tests.c 
+	chapel/test/memory/shannon/: freedMalloc.chpl freedMalloc.good 
+	                             freedWithoutMalloc.chpl 
+	                             freedWithoutMalloc.good 
+	                             mallocOutOfMemory.chpl 
+	                             mallocOutOfMemory.good 
+	                             reallocWithoutMalloc.chpl 
+	                             reallocWithoutMalloc.good 
+	                             reallocZeroSize.chpl 
+	                             reallocZeroSize.good 
+
