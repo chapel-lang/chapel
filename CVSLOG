@@ -460,3 +460,21 @@ Log message:
 Modified files:
 	chapel/compiler/: chpl.g v.g 
 
+---------------------------------------------------------------------------
+
+04/02/12 18:31:40 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	add support for basic sequences of the form
+	
+	1..n by m
+	
+	some work on fa.cpp in preparation for more extensive changes
+	to support analysis of sequences and vectors.
+
+Modified files:
+	chapel/compiler/: TODO chpl.g fa.cpp fa.h prelude.chpl prelude.v 
+	                  prim_data.dat sym.h 
+Added files:
+	chapel/compiler/samples/: seq.chpl 
+
