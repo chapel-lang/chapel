@@ -26,6 +26,10 @@ ifeq ($(ARCH),i686)
 	ARCH = x86
 endif
 
+#
+# PLATFORM is simply the one-word description we'll use for all
+# platforms that we run on.
+#
 ifeq ($(OS_TYPE),CYGWIN)
 	PLATFORM=cygwin
 endif
@@ -95,8 +99,24 @@ CFLAGS += -DLEAK_DETECT -I$(GC_ROOT)/include
 LIBS += $(GC_ROOT)/lib/libleak.a
 endif
 
-
 #
 # include platform-specific settings
 #
 -include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)
+
+#
+# this rule assumes that the first rule in any Makefile is all
+# and is here to ensure that the following rule is not run when
+# "make" is typed by itself.
+#
+default: all
+
+#
+# this rule generates an error message if we're running on an
+# unknown platform
+#
+$(CHAPEL_ROOT)/make/Makefile.unknown:
+	@echo Unknown platform... exiting
+	@exit 1
+
+
