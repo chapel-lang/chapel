@@ -788,6 +788,25 @@ block
     ident a
     constraint
      qualified_ident
+      ident any
+   arg
+    const #"="
+   arg
+    ident b
+    constraint
+     qualified_ident
+      ident any
+  scope
+   qualified_ident
+    ident b
+ def_fun
+  qualified_ident
+   ident operator
+  pattern
+   arg
+    ident a
+    constraint
+     qualified_ident
       ident ref
    arg
     const #"*="
@@ -799,34 +818,12 @@ block
   scope
    op
     op
-     op
-      const #__primitive
-      const #^^
-      qualified_ident
-       ident a
+     const #__primitive
      const #^^
-     const #"="
+     const #"*"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"*"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -852,28 +849,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"/"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"/"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -899,28 +878,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"%"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"%"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -946,28 +907,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"+"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"+"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -993,28 +936,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"-"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"-"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -1040,28 +965,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"<<"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"<<"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -1087,28 +994,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #">>"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #">>"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -1134,28 +1023,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"&"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"&"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -1181,28 +1052,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"|"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"|"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -1228,28 +1081,10 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"^"
     const #^^
-    block
-     op
-      op
-       op
-        const #__primitive
-        const #^^
-        block
-         op
-          op
-           const #__primitive
-           const #^^
-           const #"*"
-          const #^^
-          qualified_ident
-           ident a
-       const #^^
-       const #"^"
-      const #^^
-      qualified_ident
-       ident b
+    qualified_ident
+     ident b
  def_fun
   qualified_ident
    ident operator
@@ -1371,24 +1206,9 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"+"
     const #^^
-    block
-     op
-      op
-       block
-        op
-         op
-          const #__primitive
-          const #^^
-          const #"*"
-         const #^^
-         qualified_ident
-          ident a
-       const #^^
-       const #"+"
-      const #^^
-      const 1
+    const 1
  def_fun
   qualified_ident
    ident operator
@@ -1409,24 +1229,9 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"-"
     const #^^
-    block
-     op
-      op
-       block
-        op
-         op
-          const #__primitive
-          const #^^
-          const #"*"
-         const #^^
-         qualified_ident
-          ident a
-       const #^^
-       const #"-"
-      const #^^
-      const 1
+    const 1
  def_fun
   qualified_ident
    ident operator
@@ -1625,24 +1430,9 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"+"
     const #^^
-    block
-     op
-      op
-       block
-        op
-         op
-          const #__primitive
-          const #^^
-          const #"*"
-         const #^^
-         qualified_ident
-          ident a
-       const #^^
-       const #"+"
-      const #^^
-      const 1
+    const 1
  def_fun
   qualified_ident
    ident operator
@@ -1663,24 +1453,9 @@ block
       qualified_ident
        ident a
      const #^^
-     const #"="
+     const #"-"
     const #^^
-    block
-     op
-      op
-       block
-        op
-         op
-          const #__primitive
-          const #^^
-          const #"*"
-         const #^^
-         qualified_ident
-          ident a
-       const #^^
-       const #"-"
-      const #^^
-      const 1
+    const 1
  def_type builtin sequence
   ident sequence
  def_type builtin domain
