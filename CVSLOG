@@ -22498,3 +22498,16 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+03/29/05 17:50:22 -- deitz
+
+Log message:
+	Made a few changes to the code that builds the visible function list.
+	This isn't working because the constructor is being called in the
+	wrong place.
+
+Modified files:
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         symscope.cpp 
+
