@@ -16604,3 +16604,63 @@ Modified files:
 	chapel/compiler/include/: symbol.h type.h 
 	chapel/compiler/traversals/: cleanup.cpp methodsToFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+02/04/05 12:11:42 -- bradc
+
+Log message:
+	Changed our write() implementation for floats so that
+	floats with 0 fractional bits (e.g., 3.0) would be
+	printed out as 3.0 rather than 3.  Updated test output
+	to reflect this change.
+	
+	Some notes: in order to do this, I used a pointer
+	comparison on the formatting string so that we
+	could tell whether it was the default format (which
+	we control so it makes sense to do this), or the user's
+	format (in which case we should do what they request).
+	Most of our formatting strings are stored as #defines,
+	which makes the pointer compare impossible, though we
+	wouldn't want a strcmp, because we'd want the user's
+	"%g" to behave as a true C "%g".  Thus, I made the format
+	for writing floats a char* variable rather than a #define.
+	
+	I didn't do this for all of the format strings because
+	in other cases (particularly reading), we rely on the
+	default format value to be a string literal so that we
+	can glom two of them together when looking for errors.
+	
+	In retrospect, the correct way to go might be to pass
+	in NULL as the format string if the user hasn't specified
+	one, and store all the format strings as #defines, plugging
+	the appropriate one in if a NULL is passed in.  This would
+	make detection of the default trivial, and would allow us
+	to keep using #defines for all format strings.  I didn't
+	make this change at this time, though.
+
+Modified files:
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+	chapel/test/classes/deitz/: test_class_with1.good 
+	                            test_class_with2.good 
+	                            test_class_with3.good 
+	                            test_method2.good test_record1.good 
+	                            test_record_method1.good 
+	                            test_record_method2.good 
+	                            test_record_with1.good 
+	chapel/test/trivial/bradc/: defaultinit.good 
+	chapel/test/trivial/shannon/: exp.good readWriteUserType.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_overload_integerfloat1.good 
+	                                         test_overload_integerfloat2.good 
+	                                         test_overload_integerfloat3.good 
+	                                         test_overload_integerfloat4.good 
+	chapel/test/types/type_variables/jplevyak/: test_coerse1.good 
+	                                            test_coerse2.good 
+Added files:
+	chapel/test/trivial/bradc/: declprintfloat.chpl 
+	                            declprintfloat.good 
+	                            defaultinit1a.chpl 
+	                            defaultinit1a.future 
+	                            defaultinit1a.good 
+
