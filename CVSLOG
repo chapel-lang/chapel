@@ -16578,3 +16578,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+02/04/05 11:08:30 -- bradc
+
+Log message:
+	Removing future test marker.
+
+Removed files:
+	chapel/test/functions/jplevyak/: intent-5-error.future 
+
