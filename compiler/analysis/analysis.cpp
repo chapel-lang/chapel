@@ -1594,17 +1594,40 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
 	  return -3;
       }
     }
-    if (!iv)
-      return -4;
-    BaseAST *sym = ((ASymbol*)iv)->xsymbol;
-    if (!sym)
-      return -5;
-    s = dynamic_cast<Symbol*>(sym);
-    if (!s)
-      return -6;
-  } else
-    return -7;
-  return 0;
+    if (iv) {
+      BaseAST *sym = ((ASymbol*)iv)->xsymbol;
+      if (!sym)
+	return -5;
+      s = dynamic_cast<Symbol*>(sym);
+      if (!s)
+	return -6;
+      return 0;
+    }
+    if (pn->lvals.v[0]->type->type_kind == Type_FUN && 
+	ma->parent && ma->parent->astType == EXPR_PARENOP) {
+      ParenOpExpr *p = dynamic_cast<ParenOpExpr*>(ma->parent);
+      if (p->baseExpr == ma) {
+	if (p->ainfo->pnodes.n != 1)
+	  return -7;
+	pn = p->ainfo->pnodes.v[0];
+	if (pn->code->kind != Code_SEND)
+	  return -8;
+	fns = ma->stmt->parentFn->asymbol->fun->calls.get(pn);
+	if (!fns)
+	  return -9;
+	if (fns->n > 1)
+	  return -10;
+	BaseAST *sym = ((ASymbol*)fns->v[0]->sym)->xsymbol;
+	if (!sym)
+	  return -11;
+	s = dynamic_cast<Symbol*>(sym);
+	if (!s)
+	  return -12;
+	return 0;
+      }
+    }
+  } 
+  return -13;
 }
 
 
