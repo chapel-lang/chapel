@@ -15813,3 +15813,60 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+01/28/05 14:29:25 -- deitz
+
+Log message:
+	Major restructuring of the AST.
+	
+	Decoupled declarations from FnDefStmts, VarDefStmts, and TypeDefStmts.
+	These are now declared when the scope is entered.  VarDefStmts are
+	still used by codegen to initialize variables.  The other statements
+	are NOOPS by the time we get to codegen.
+	
+	Added support for traversing the definitions of symbols to go
+	alongside traversing the definitions of types.  This is necessary
+	because we want to traverse the definition of VarSymbols and FnSymbols
+	without necessarily traversing a VarDefStmt or a FnDefStmt.
+	
+	Unfortunately this checkin breaks support for methods and some support
+	for arrays.  Hopefully John and I will get this working again soon.
+	The problem is that the way analysis has to figure out what methods
+	are where has changed.
+	
+	[Error matching compiler output for arrays/deitz/test_basic1d1]
+	[Error matching compiler output for classes/deitz/test_class_with2]
+	[Error matching compiler output for classes/deitz/test_method1]
+	[Error matching compiler output for classes/deitz/test_method1a]
+	[Error matching compiler output for classes/deitz/test_method2]
+	[Error matching compiler output for classes/deitz/test_method3]
+	[Error matching compiler output for classes/deitz/test_method4]
+	[Error matching compiler output for classes/deitz/test_method5]
+	[Error matching compiler output for classes/deitz/test_method6]
+	[Error matching compiler output for classes/deitz/test_method7]
+	[Error matching compiler output for classes/deitz/test_record_method1]
+	[Error matching compiler output for classes/deitz/test_record_method2]
+	[Error matching compiler output for classes/deitz/test_union_method1]
+	[Error matching compiler output for classes/deitz/test_union_method2]
+	[Error matching compiler output for classes/deitz/test_union_method3]
+	[Error matching compiler output for flowanalysis/newast/domarr]
+	[Error matching compiler output for flowanalysis/newast/enumarray]
+	[Error matching compiler output for flowanalysis/newast/formatoutput]
+	[Error matching compiler output for flowanalysis/newast/protoast_test]
+	[Error matching compiler output for trivial/bradc/formatoutput]
+	[Error matching compiler output for trivial/bradc/testAllScopes]
+	[Error matching compiler output for trivial/bradc/domarr/domarr]
+	[Error matching compiler output for trivial/bradc/domarr/enumarray]
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp link.cpp nils.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h link.h stmt.h symbol.h 
+	                          symscope.h type.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: cleanup.cpp fixup.cpp 
+	                             methodsToFunctions.cpp traversal.h 
+
