@@ -18286,3 +18286,15 @@ Added files:
 	                                  sum_type-2.chpl 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+02/28/05 12:12:07 -- jplevyak
+
+Log message:
+	sum_type-2 should fail as well (as it is the dual of the previous test).
+
+Modified files:
+	chapel/test/flowanalysis/newast/: sum_type-2.good 
+Added files:
+	chapel/test/flowanalysis/newast/: sum_type-2.future 
+
