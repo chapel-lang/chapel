@@ -1,0 +1,11 @@
+#!/opt/cpkg/v3/all/bin/perl
+
+@fnames = `find \* | grep \'\\\.future\$\'`;
+
+foreach $fname (@fnames) {
+  chomp $fname;
+  $worker = `head -n 1 $fname`;
+  chomp $worker;
+  $fname =~ s/(.*)\.future$/$1/;
+  print "$worker [$fname]\n";
+}
