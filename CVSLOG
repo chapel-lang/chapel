@@ -12892,3 +12892,72 @@ Removed files:
 	                                         test_typevar_function3.chpl 
 	                                         test_typevar_function4.chpl 
 
+---------------------------------------------------------------------------
+
+12/23/04 17:38:11 -- bradc
+
+Log message:
+	Continued work on parameter intents, and got them
+	working for an interesting integer case, but don't
+	have it working cleanly enough to not cause other
+	regressions, and don't have it working for non-scalar
+	types.  To that extent, this is a placeholder to
+	wipe my slate clean for the holdays.  Changes include:
+	
+	- improved AST rewrite to insert temps for the
+	  parameters, though still not perfect (in
+	  particular, Stmt::replace() wasn't working as
+	  I'd anticipated it to, so I use a hackier
+	  approach).
+	
+	- added a codegen method for the FnCall class that
+	  starts to understand what intents are and the
+	  different code that needs to be generated for
+	  them.
+	
+	- added a (commented out) INT_FATAL for attempts to
+	  codegen a ParenOpExpr.  ParenOpExprs should be
+	  converted to FnCalls or ArrayRefs prior to codegen.
+	  One big hole in our current code is that the
+	  methodsToFunctions conversion converts methods to
+	  parenOpExprs rather than FnCalls (which I believe
+	  would require an Expr::replace rather than the
+	  dynamic cast that is there now).  We should get
+	  this INT_FATAL uncommented sooner rather than later.
+	
+	- started adding methods to ParamSymbol and the
+	  Type hierarchy to interpret what different intents
+	  on different types mean in terms of codegen.
+	  These are currently only implemented for scalars
+	  which is a big part of why intents for non-scalar
+	  types don't work right yet.
+	
+	- changed the "this" parameter inserted for methods
+	  from a PARAM_INOUT (which means copy-in/copy-out)
+	  to a PARAM_BLANK (which, for classes at least,
+	  means pass-by-reference).  Perhaps I should've
+	  distinguished based on whether it was a class or
+	  a record?  I'm not sure -- do records' bound
+	  functions get a "this" inserted?  Perhaps I've
+	  fixed one case only to have broken another...
+	
+	- made cleanup convert obvious function calls from
+	  ParenOpExpr to FnCall.
+	
+	- fixed the copy methods for SizeofExpr and CastExpr,
+	  which were copying the types (which we don't want
+	  to do).  We should do a complete sweep of type
+	  copies at some point...
+	
+	- made an INT_FATAL message in ILink::replace() more
+	  succinct and arguably more understandable
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp link.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: expr.h symbol.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: cleanup.cpp processParameters.cpp 
+Added files:
+	chapel/test/functions/bradc/: intents.chpl intents.good 
+
