@@ -10,6 +10,7 @@
 #include "../symtab/legalizeCNames.h"
 
 #include "../traversals/checkIDs.h"
+#include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/cleanup.h"
 #include "../traversals/cloneAllFns.h"
@@ -34,6 +35,7 @@
 START_PASSLIST_REGISTRATION
 REGISTER(BuildBinary);
 REGISTER(CheckIDs);
+REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
 REGISTER(Cleanup);                // SJD: Post-parsing cleanup, e.g. resolve symbols, insert this
 REGISTER(CloneAllFns);

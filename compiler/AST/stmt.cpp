@@ -376,7 +376,7 @@ Stmt* VarDefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
     return
       Symboltable::defineVarDefStmt(var, var->type,
 				    var->init->copyInternal(clone, map, analysis_clone), 
-				    var->varClass, var->isConst);
+				    var->varClass, var->isConstant);
   }
   else {
     return new VarDefStmt(var);
@@ -405,7 +405,7 @@ void VarDefStmt::print(FILE* outfile) {
       fprintf(outfile, "state ");
       break;
     }
-    if (aVar->isConst) {
+    if (aVar->isConstant) {
       fprintf(outfile, "const ");
     } else {
       fprintf(outfile, "var ");

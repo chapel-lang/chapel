@@ -113,6 +113,7 @@ class Expr : public BaseAST {
 
   virtual Type* typeInfo(void);
   virtual bool isComputable(void);
+  virtual bool isConst(void);
   virtual long intVal(void);
   virtual int rank(void);
   virtual precedenceType precedence(void);
@@ -232,6 +233,7 @@ class Variable : public Expr {
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
+  virtual bool isConst(void);
   
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -311,6 +313,8 @@ class MemberAccess : public Expr {
 
   Type* typeInfo(void);
 
+  bool isConst(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
@@ -336,7 +340,8 @@ class ArrayRef : public ParenOpExpr {
  public:
   ArrayRef(Expr* init_base, Expr* init_arg = nilExpr);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
+  
+  bool isConst(void);
   Type* typeInfo();
 
   void codegen(FILE* outfile);

@@ -344,6 +344,11 @@ bool Expr::isComputable(void) {
 }
 
 
+bool Expr::isConst(void) {
+  return false;
+}
+
+
 long Expr::intVal(void) {
   INT_FATAL(this, "intVal() called on non-computable/non-int expression");
 
@@ -683,6 +688,11 @@ Type* Variable::typeInfo(void) {
 }
 
 
+bool Variable::isConst(void) {
+  return var->isConst();
+}
+
+
 void Variable::print(FILE* outfile) {
   var->print(outfile);
 }
@@ -933,6 +943,11 @@ Type* MemberAccess::typeInfo(void) {
 }
 
 
+bool MemberAccess::isConst(void) {
+  return (base->isConst() || member->isConst());
+}
+
+
 void MemberAccess::print(FILE* outfile) {
   base->print(outfile);
   fprintf(outfile, ".");
@@ -1054,6 +1069,11 @@ Type* ArrayRef::typeInfo(void) {
   // need to be taken to get that scheme implemented.  Just
   // trying to get something reasonable implemented now.
   return arrayType->elementType;
+}
+
+
+bool ArrayRef::isConst(void) {
+  return baseExpr->isConst();
 }
 
 

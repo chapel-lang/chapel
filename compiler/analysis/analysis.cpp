@@ -973,7 +973,7 @@ gen_vardef(BaseAST *a) {
     case VAR_CONFIG: s->is_external = 1; break;
     case VAR_STATE: assert(0); break;
   }
-  if (var->isConst)
+  if (var->isConstant)
     s->is_read_only = 1;
   return 0;
 }

@@ -41,6 +41,8 @@ class Symbol : public BaseAST {
   virtual void traverseSymbol(Traversal* traverse);
   virtual void traverseDefSymbol(Traversal* traverse);
 
+  virtual bool isConst(void);
+
   void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
   void printDefList(FILE* outfile, char* separator);
@@ -69,17 +71,18 @@ class UnresolvedSymbol : public Symbol {
 class VarSymbol : public Symbol {
  public:
   varType varClass;
-  bool isConst;
+  bool isConstant;
   Expr* init;
 
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
 	    Expr* init_expr = nilExpr,
-	    varType init_varClass = VAR_NORMAL, bool init_isConst = false);
+	    varType init_varClass = VAR_NORMAL, bool init_isConstant = false);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void traverseDefSymbol(Traversal* traverse);
 
   bool initializable(void);
+  bool isConst(void);
 
   virtual void codegenDef(FILE* outfile);
 
@@ -106,6 +109,7 @@ class ParamSymbol : public Symbol {
   bool requiresCPtr(void);
   bool requiresCopyBack(void);
   bool requiresCTmp(void);
+  bool isConst(void);
 
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);

@@ -31,6 +31,9 @@ PassInfo passlist[] = {
   RUN(ResolveSymbols, ""),
   RUN(FindUnknownTypes, ""),
 
+  // check the program's semantics
+  RUN(CheckSemantics, ""),
+
   //  RUN(Fixup, "hyper verify"),  // hyper verification!
 
   // eventually, optimizations will go here

@@ -501,7 +501,7 @@ VarDefStmt* Symboltable::defineVarDefStmt2(VarDefStmt* stmts,
   while (stmt) {
     VarSymbol* var = stmt->var;
     while (var) {
-      var->isConst = isConst;
+      var->isConstant = isConst;
       var->varClass = vartag;
       var = nextLink(VarSymbol, var);
     }

@@ -1,5 +1,6 @@
 TRAVERSALS_SRCS = \
 	checkIDs.cpp \
+	checkSemantics.cpp \
 	checkTypeInfo.cpp \
 	cleanup.cpp \
 	cloneAllFns.cpp \

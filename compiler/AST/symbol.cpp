@@ -118,6 +118,11 @@ void Symbol::traverseDefSymbol(Traversal* traversal) {
 }
 
 
+bool Symbol::isConst(void) {
+  return true;
+}
+
+
 void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
 }
@@ -201,10 +206,10 @@ VarSymbol::VarSymbol(char* init_name,
 		     Type* init_type,
 		     Expr* init_expr,
 		     varType init_varClass, 
-		     bool init_isConst) :
+		     bool init_isConstant) :
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
-  isConst(init_isConst),
+  isConstant(init_isConstant),
   init(init_expr)
 {
   Symboltable::define(this);
@@ -213,7 +218,7 @@ VarSymbol::VarSymbol(char* init_name,
 
 
 Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new VarSymbol(copystring(name), type, init, varClass, isConst);
+  return new VarSymbol(copystring(name), type, init, varClass, isConstant);
 }
 
 
@@ -258,12 +263,17 @@ bool VarSymbol::initializable(void) {
 }
 
 
+bool VarSymbol::isConst(void) {
+  return isConstant;
+}
+
+
 void VarSymbol::codegenDef(FILE* outfile) {
   if (parentScope->type == SCOPE_MODULE) {
     outfile = intheadfile;
     fprintf(outfile, "static ");
   }
-  if (isConst) {
+  if (isConstant) {
     fprintf(outfile, "const ");
   }
   type->codegen(outfile);
@@ -331,6 +341,12 @@ bool ParamSymbol::requiresCopyBack(void) {
 
 bool ParamSymbol::requiresCTmp(void) {
   return type->requiresCParamTmp(intent);
+}
+
+
+bool ParamSymbol::isConst(void) {
+  // TODO: need to also handle case of PARAM_BLANK for scalar types
+  return (intent == PARAM_CONST); 
 }
 
 
