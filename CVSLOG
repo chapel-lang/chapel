@@ -3463,3 +3463,21 @@ Modified files:
 Added files:
 	chapel/compiler/AST/: loc.cpp loc.h 
 
+---------------------------------------------------------------------------
+
+06/16/04 17:26:24 -- bradc
+
+Log message:
+	This is a really minor checkin that I've been sitting on
+	for awhile, waiting for a bigger checkin to attach it to.
+	It changes the way domains are set up to use a reference
+	parameter rather than returning a structure, for performance
+	reasons.
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+	chapel/runtime/include/: domain.h 
+	chapel/runtime/src/: domain.c 
+	chapel/test/trivial/bradc/: .cvsignore 
+	chapel/test/trivial/bradc/arrinit/: .cvsignore 
+
