@@ -16677,3 +16677,15 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.chpl 
 	                                         test_clone_class1a.good 
 
+---------------------------------------------------------------------------
+
+02/04/05 13:14:06 -- deitz
+
+Log message:
+	Added former version of test test_clone_class1a as future test test_clone_class1b which is waiting for a compiler error.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1b.chpl 
+	                                         test_clone_class1b.future 
+	                                         test_clone_class1b.good 
+
