@@ -9927,3 +9927,18 @@ Added files:
 	                            test_if_then_else.chpl 
 	                            test_if_then_else.good 
 
+---------------------------------------------------------------------------
+
+11/19/04 10:34:06 -- bradc
+
+Log message:
+	Updated LICENSE as requested by Cray legal.  The license is
+	currently worded quite strictly.  The assumption is that when
+	we're ready to drop an open source release, the license will
+	change accordingly (so this license is merely to prevent
+	copies of the code that escape from being used improperly --
+	not that we expect copies to escape).
+
+Modified files:
+	./: LICENSE 
+
