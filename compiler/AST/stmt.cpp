@@ -660,36 +660,55 @@ FnDefStmt* FnDefStmt::build(Map<Symbol *, Symbol *> *generic_substitutions,
 			    CloneCallback *clone_callback) {
   FnDefStmt* wrapper_stmt = NULL;
   static int uid = 1; // Unique ID for wrapped functions
-
-  FnSymbol* wrapper_symbol = new FnSymbol(fn->name);
+  FnSymbol* wrapper_symbol = (FnSymbol*)fn->copy(true, clone_callback); //new FnSymbol(fn->name);
   wrapper_symbol->cname =
       glomstrings(3, wrapper_symbol->cname, "_wrapper_", intstring(uid++));
   wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
-
-  Symbol* wrapper_formals = fn->formals->copyList();
-
+  Symbol* wrapper_formals = fn->formals->copyList(true, clone_callback);
+  Symbol* actuals = wrapper_formals;
+  Variable* argList = new Variable(actuals);
+  actuals = nextLink(Symbol, actuals);
+  while (actuals) {
+    argList->append(new Variable(actuals));
+    actuals = nextLink(Symbol, actuals);
+  }
+  Symboltable::pushScope(SCOPE_LOCAL);
+  Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(fn), argList));
   for (int i = 0; i < coercion_substitutions->n; i++) {
     int j = 1;
     MPosition p;
     Symbol* formal_change = wrapper_formals;
+    Variable* actual_change = argList;
     forv_MPosition(p, fn->asymbol->fun->numeric_arg_positions) {
       if (coercion_substitutions->e[i].key ==
 	  fn->asymbol->fun->numeric_arg_positions.e[j]) {
+	char* copy_name =
+	  glomstrings(3, formal_change->name, "_copy_", intstring(uid-1));
+	Symbol* copy_symbol = new VarSymbol(copy_name, formal_change->type);
+	Variable* copy_tmp = new Variable(copy_symbol);
+	Variable* copy_formal = new Variable(formal_change);
+	AssignOp* copy_assign = new AssignOp(GETS_NORM, copy_tmp, copy_formal);
+	ExprStmt* copy_stmt = new ExprStmt(copy_assign);
+	copy_stmt->append(wrapper_body);
+	wrapper_body = copy_stmt;
 	formal_change->type = coercion_substitutions->e[i].value->type;
+	actual_change->var = copy_symbol;
       }
       if (!formal_change->next->isNull()) {
 	formal_change = nextLink(Symbol, formal_change);
       }
+      if (!actual_change->next->isNull()) {
+	actual_change = nextLink(Variable, actual_change);
+      }
       j++;
     }
   }
-
-  Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(fn)));
-
+  SymScope* block_scope = Symboltable::popScope();
+  BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
+  wrapper_block->setBlkScope(block_scope);
   Type* wrapper_return_type = fn->retType;
-
   wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-					  wrapper_return_type, wrapper_body);
+					  wrapper_return_type, wrapper_block);
   insertBefore(wrapper_stmt);
   return wrapper_stmt;
 }
