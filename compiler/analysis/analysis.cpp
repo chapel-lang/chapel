@@ -732,8 +732,6 @@ gen_move(Sym *s, Expr *e) {
   return ss;
 }
 
-static Sym *fnsym = 0;
-
 static int
 gen_if1(BaseAST *ast) {
   // bottom's up
@@ -753,8 +751,7 @@ gen_if1(BaseAST *ast) {
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
-      Sym *fn = fnsym; // s->parentFn->asymbol;
-      //assert(s->parentSymbol);
+      Sym *fn = s->parentSymbol->asymbol;
       if (!s->expr->isNull()) {
 	if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
 	if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
@@ -1195,7 +1192,6 @@ build_function(FnDefStmt *f) {
   if (define_labels(f->fn->body, f->fn->asymbol->labelmap) < 0) return -1;
   Label *return_label = f->ainfo->label[0] = if1_alloc_label(if1);
   if (resolve_labels(f->fn->body, f->fn->asymbol->labelmap, return_label) < 0) return -1;
-  fnsym = f->fn->asymbol; // hack
   if (gen_if1(f->fn->body) < 0) return -1;
   if (gen_fun(f) < 0) return -1;
   return 0;
