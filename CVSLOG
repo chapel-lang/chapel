@@ -19757,3 +19757,15 @@ Modified files:
 	                             transformLetExprs.cpp 
 	                             verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+03/16/05 11:58:08 -- jplevyak
+
+Log message:
+	call_info now takes any Expr so that it can be used with BinOpExpr
+	among others.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+
