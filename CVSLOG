@@ -20523,3 +20523,14 @@ Added files:
 	chapel/test/classes/deitz/: test_record_equal2.chpl 
 	                            test_record_equal2.good 
 
+---------------------------------------------------------------------------
+
+03/21/05 11:22:58 -- jplevyak
+
+Log message:
+	Fixed SEGV when NO_RESOLVE_CONSTRUCTOR and CONSTRUCTOR_WITH_PARAMETERS is set.
+	The function _constructor_foo still isn't found.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
