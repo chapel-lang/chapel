@@ -24090,3 +24090,24 @@ Added files:
 	                                         localnamesavec.good 
 	                                         localnamesavec.preexec 
 
+---------------------------------------------------------------------------
+
+04/05/05 13:36:18 -- bradc
+
+Log message:
+	Added two new future tests for default/named parameters.
+	I was writing these tests to expose a concern I had about
+	the wrapper functions returning the call to the nested
+	function (which would preclude the execution of any copy
+	out statements that followed the function call), but
+	ended up finding other problems instead.  Assigned to
+	Steve/me.
+
+Added files:
+	chapel/test/functions/bradc/: defaultParamInOut.chpl 
+	                              defaultParamInOut.future 
+	                              defaultParamInOut.good 
+	                              nameDefaultParamInOut.chpl 
+	                              nameDefaultParamInOut.future 
+	                              nameDefaultParamInOut.good 
+
