@@ -10,9 +10,9 @@
 ::__init_enumarray ( __init_enumarray )
 ::__init_enumarray(enumarray.chpl:20) ( __init_enumarray )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::classVals ( classVals )
 ::i(enumarray.chpl:16) ( Index (internal_prelude.chpl:1) )
 ::i(internal_prelude.chpl:5) ( Index (internal_prelude.chpl:1) S (enumarray.chpl:1) W (enumarray.chpl:1) A (enumarray.chpl:1) B (enumarray.chpl:1) C (enumarray.chpl:1) D (enumarray.chpl:1) O (enumarray.chpl:1) )
@@ -31,8 +31,8 @@
 ::probSize(enumarray.chpl:5) ( )
 ::this ( )
 function __init_enumarray enumarray.chpl:20
-function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:59
+function __init_internal_prelude internal_prelude.chpl:24
+function __init_prelude prelude.chpl:54
 function this internal_prelude.chpl:5
 function this internal_prelude.chpl:5
 function this internal_prelude.chpl:5

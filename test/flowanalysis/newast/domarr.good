@@ -5,9 +5,9 @@
 ::__init_domarr(domarr.chpl:12) ( __init_domarr )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::i(domarr.chpl:9) ( Index (internal_prelude.chpl:1) )
 ::i(internal_prelude.chpl:8) ( Index (internal_prelude.chpl:1) )
 ::j(domarr.chpl:9) ( Index (internal_prelude.chpl:1) )
@@ -19,7 +19,7 @@
 ::null ( null null )
 ::this ( )
 function __init_domarr domarr.chpl:12
-function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:59
+function __init_internal_prelude internal_prelude.chpl:24
+function __init_prelude prelude.chpl:54
 function this internal_prelude.chpl:8
 globals

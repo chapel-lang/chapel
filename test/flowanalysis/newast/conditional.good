@@ -2,9 +2,9 @@
 ::__init_conditional(conditional.chpl:115) ( __init_conditional )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::a(conditional.chpl:2) ( int64 )
 ::b(conditional.chpl:3) ( int64 )
 ::c(conditional.chpl:4) ( int64 )
@@ -17,6 +17,6 @@
 ::main ( main )
 ::null ( null null )
 function __init_conditional conditional.chpl:115
-function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:59
+function __init_internal_prelude internal_prelude.chpl:24
+function __init_prelude prelude.chpl:54
 globals

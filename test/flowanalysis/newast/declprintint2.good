@@ -2,14 +2,14 @@
 ::__init_declprintint2(declprintint2.chpl:4) ( __init_declprintint2 )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::main ( main )
 ::main ( main )
 ::myvariable(declprintint2.chpl:1) ( int64 )
 ::null ( null null )
 function __init_declprintint2 declprintint2.chpl:4
-function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:59
+function __init_internal_prelude internal_prelude.chpl:24
+function __init_prelude prelude.chpl:54
 globals

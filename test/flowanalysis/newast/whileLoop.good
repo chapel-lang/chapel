@@ -1,15 +1,15 @@
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::__init_whileLoop ( __init_whileLoop )
 ::__init_whileLoop(whileLoop.chpl:24) ( __init_whileLoop )
 ::i(whileLoop.chpl:1) ( int64 )
 ::main ( main )
 ::main ( main )
 ::null ( null null )
-function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:59
+function __init_internal_prelude internal_prelude.chpl:24
+function __init_prelude prelude.chpl:54
 function __init_whileLoop whileLoop.chpl:24
 globals

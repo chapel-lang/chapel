@@ -3,15 +3,15 @@
 ::__init_enum ( __init_enum )
 ::__init_enum(enum.chpl:10) ( __init_enum )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::main ( main )
 ::main ( main )
 ::null ( null null )
 ::x(enum.chpl:3) ( B (enum.chpl:1) )
 ::y(enum.chpl:7) ( B (enum.chpl:1) )
 function __init_enum enum.chpl:10
-function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:59
+function __init_internal_prelude internal_prelude.chpl:24
+function __init_prelude prelude.chpl:54
 globals

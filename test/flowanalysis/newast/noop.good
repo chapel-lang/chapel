@@ -2,11 +2,11 @@
 ::D(noop.chpl:7) ( Domain (internal_prelude.chpl:13) )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_noop ( __init_noop )
 ::__init_noop(noop.chpl:22) ( __init_noop )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::false(prelude.chpl:10) ( int64 )
 ::foo(noop.chpl:20) ( foo )
 ::foo(noop.chpl:5) ( foo )
@@ -14,8 +14,8 @@
 ::main ( main )
 ::main ( main )
 ::null ( null null )
-function __init_internal_prelude internal_prelude.chpl:21
+function __init_internal_prelude internal_prelude.chpl:24
 function __init_noop noop.chpl:22
-function __init_prelude prelude.chpl:59
+function __init_prelude prelude.chpl:54
 function foo noop.chpl:4
 globals

@@ -4,11 +4,11 @@
  called from 4 in foo at mutrec.chpl:8
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_mutrec ( __init_mutrec )
 ::__init_mutrec(mutrec.chpl:22) ( __init_mutrec )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::a(mutrec.chpl:1) ( int64 )
 ::a(mutrec.chpl:10) ( int64 )
 ::bar(mutrec.chpl:17) ( bar )
@@ -20,9 +20,9 @@
 ::main ( main )
 ::main ( main )
 ::null ( null null )
-function __init_internal_prelude internal_prelude.chpl:21
+function __init_internal_prelude internal_prelude.chpl:24
 function __init_mutrec mutrec.chpl:22
-function __init_prelude prelude.chpl:59
+function __init_prelude prelude.chpl:54
 function bar mutrec.chpl:10
 function foo mutrec.chpl:1
 globals

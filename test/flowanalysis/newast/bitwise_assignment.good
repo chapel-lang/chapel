@@ -2,15 +2,15 @@
 ::__init_bitwise_assignment(bitwise_assignment.chpl:26) ( __init_bitwise_assignment )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:21) ( __init_internal_prelude )
+::__init_internal_prelude(internal_prelude.chpl:24) ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude(prelude.chpl:59) ( __init_prelude )
+::__init_prelude(prelude.chpl:54) ( __init_prelude )
 ::m(bitwise_assignment.chpl:1) ( int64 )
 ::main ( main )
 ::main ( main )
 ::n(bitwise_assignment.chpl:2) ( int64 )
 ::null ( null null )
 function __init_bitwise_assignment bitwise_assignment.chpl:26
-function __init_internal_prelude internal_prelude.chpl:21
-function __init_prelude prelude.chpl:59
+function __init_internal_prelude internal_prelude.chpl:24
+function __init_prelude prelude.chpl:54
 globals
