@@ -18474,3 +18474,18 @@ Log message:
 Modified files:
 	chapel/test/functions/bradc/: defaultParam.future 
 
+---------------------------------------------------------------------------
+
+03/01/05 12:26:16 -- deitz
+
+Log message:
+	Made a change so that types that are not used are not code-generated.
+	This uses analysis's type_is_used function.
+	
+	Patched type_is_used so that it works.  John, please take a look at my
+	changes.  I'll send you what breaks without them in a separate mail.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+
