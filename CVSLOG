@@ -20376,3 +20376,14 @@ Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 	chapel/test/functions/deitz/: test_named_param3.future 
 
+---------------------------------------------------------------------------
+
+03/18/05 15:13:58 -- jplevyak
+
+Log message:
+	The reorder map now contains all arguments instead of just the
+	ones that changed.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+
