@@ -125,7 +125,7 @@ mysystem("cd $chapeldir && make runtime", "making chapel runtime", 1, 1);
 #
 # run tests
 #
-`rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
+#`rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
 $stdstatus = mysystem("cd $testdir && ./start_test -logfile $rawstdlog", "running standard tests", 0, 0);
 $vgrstatus = mysystem("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog", "running valgrind tests", 0, 0);
 
@@ -143,12 +143,15 @@ if ($stdstatus == 0) {
 
     $oldstdsucc = &numsuccesses($oldstdsummary);
     $oldstdfail = &numfailures($oldstdsummary);
+    $oldstdfut  = &numfutures($oldstdsummary);
 
     $newstdsucc = &numsuccesses($newstdsummary);
     $newstdfail = &numfailures($newstdsummary);
+    $newstdfut  = &numfutures($newstdsummary);
 
     $delstdsucc = &delta($oldstdsucc, $newstdsucc);
     $delstdfail = &delta($oldstdfail, $newstdfail);
+    $delstdfut  = &delta($oldstdfut, $newstdfut);
 
     $stdsummary = "standard run: $newstdsucc Successes ($delstdsucc), $newstdfail Failures ($delstdfail)";
 } else {
@@ -163,12 +166,15 @@ if ($vgrstatus == 0) {
 
     $oldvgrsucc = &numsuccesses($oldvgrsummary);
     $oldvgrfail = &numfailures($oldvgrsummary);
+    $oldvgrfut  = &numfutures($oldvgrsummary);
 
     $newvgrsucc = &numsuccesses($newvgrsummary);
     $newvgrfail = &numfailures($newvgrsummary);
+    $newvgrfut  = &numfutures($newvgrsummary);
 
     $delvgrsucc = &delta($oldvgrsucc, $newvgrsucc);
     $delvgrfail = &delta($oldvgrfail, $newvgrfail);
+    $delvgrfut  = &delta($oldvgrfut, $newvgrfut);
 
     $vgrsummary = "valgrind run: $newvgrsucc Successes ($delvgrsucc), $newvgrfail Failures ($delvgrfail)";
 } else {
@@ -180,12 +186,12 @@ if ($stdstatus == 0) {
     $oldnumtests = $oldstdsucc + $oldstdfail;
     $newnumtests = $newstdsucc + $newstdfail;
     $deltests = &delta($oldnumtests, $newnumtests);
-    $numtestssummary = "$newnumtests Tests ($deltests)";
+    $numtestssummary = "$newnumtests Tests ($deltests), $newstdfut Futures ($delstdfut)";
 } elsif ($vgrstatus == 0) {
     $oldnumtests = $oldvgrsucc + $oldvgrfail;
     $newnumtests = $newvgrsucc + $newvgrfail;
     $deltests = &delta($oldnumtests, $newnumtests);
-    $numtestssummary = "$newnumtests Tests ($deltests)";
+    $numtestssummary = "$newnumtests Tests ($deltests), $newvgrfut Futures ($delvgrfut)";
 } else {
     $numtestssummary = "unknown number of Tests";
     $knownumtests = 0;
@@ -199,47 +205,84 @@ if ($stdstatus == 0) {
 #
 open(MAIL, $mailcommand);
 
-print MAIL "=== Summary ===================================================\n";
+print MAIL "=== Summary ==========================================================\n";
 print MAIL "$numtestssummary\n";
 print MAIL "$stdsummary\n";
 print MAIL "$vgrsummary\n";
-print MAIL "===============================================================\n";
+print MAIL "======================================================================\n";
 print MAIL "\n";
+$futuremarker = "^Future";
 
 if ($stdstatus == 0) {
-    print MAIL "--- New Errors (standard) -------------------------------------\n";
-    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+    print MAIL "--- New Errors (standard) --------------------------------------------\n";
+    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
     print MAIL "\n";
 }
 
 if ($vgrstatus == 0) {
-    print MAIL "--- New Errors (valgrind) -------------------------------------\n";
-    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
+    print MAIL "--- New Errors (valgrind) --------------------------------------------\n";
+    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
     print MAIL "\n";
 }
 
 if ($stdstatus == 0) {
-    print MAIL "--- Resolved Errors (standard) --------------------------------\n";
-    print MAIL `comm -23 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+    print MAIL "--- Resolved Errors (standard) ---------------------------------------\n";
+    print MAIL `comm -23 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
     print MAIL "\n";
 }
 
 if ($vgrstatus == 0) {
-    print MAIL "--- Resolved Errors (valgrind) --------------------------------\n";
-    print MAIL `comm -23 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
+    print MAIL "--- Resolved Errors (valgrind) ---------------------------------------\n";
+    print MAIL `comm -23 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
     print MAIL "\n";
 }
 
 if ($stdstatus == 0) {
-    print MAIL "--- Unresolved Errors (standard) ------------------------------\n";
-    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:"`;
+    print MAIL "--- Unresolved Errors (standard) -------------------------------------\n";
+    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
     print MAIL "\n";
 }
 
 if ($vgrstatus == 0) {
-    print MAIL "--- Unresolved Errors (valgrind) ------------------------------\n";
-    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:"`;
+    print MAIL "--- Unresolved Errors (valgrind) -------------------------------------\n";
+    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
     print MAIL "\n";
+}
+
+if ($stdstatus == 0) {
+    print MAIL "--- Passing Future tests (standard) ----------------------------------\n";
+    print MAIL `grep $futuremarker $sortedstdsummary | grep "Success"`;
+    print MAIL "\n";    
+}
+
+if ($vgrstatus == 0) {
+    print MAIL "--- Passing Future tests (valgrind) ----------------------------------\n";
+    print MAIL `grep $futuremarker $sortedvgrsummary | grep "Success"`;
+    print MAIL "\n";    
+}
+
+if ($stdstatus == 0) {
+    print MAIL "--- New Failing Future tests (standard) ----------------------------------\n";
+    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep $futuremarker | grep "Error"`;
+    print MAIL "\n";    
+}
+
+if ($vgrstatus == 0) {
+    print MAIL "--- New Failing Future tests (valgrind) ----------------------------------\n";
+    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep $futuremarker | grep "Error"`;
+    print MAIL "\n";    
+}
+
+if ($stdstatus == 0) {
+    print MAIL "--- Unresolved Future tests (standard) ----------------------------------\n";
+    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep $futuremarker | grep "Error"`;
+    print MAIL "\n";    
+}
+
+if ($vgrstatus == 0) {
+    print MAIL "--- Unresolved Future tests (valgrind) ----------------------------------\n";
+    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep $futuremarker | grep "Error"`;
+    print MAIL "\n";    
 }
 
 close(MAIL);
@@ -339,6 +382,13 @@ sub numsuccesses {
 sub numfailures {
   $mystr = $_[0];
   $mystr =~ s/.* #Failures = //;
+  $mystr =~ s/ \|.*//;
+  $mystr;
+}
+
+sub numfutures {
+  $mystr = $_[0];
+  $mystr =~ s/.* #Futures = //;
   $mystr =~ s/]//;
   $mystr;
 }
