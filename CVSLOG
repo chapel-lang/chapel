@@ -17391,3 +17391,50 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+02/14/05 15:38:55 -- deitz
+
+Log message:
+	Added a new traversal pass InsertVariableInitializations which inserts
+	up to two assignment statements for every variable declaration
+	statement.  It inserts a statement at the top of the variable's scope
+	that initializes it to the default value of its type.  It inserts a
+	statement at the place it is declared to initialize it to whatever the
+	user may initialize it too.  Eventually, dead assignment elimination
+	could help with excess computation.
+	
+	Added default values to tuple types.
+	
+	Added a couple of more error checks to DestructureTupleAssignments.
+	
+	Removed Stmt::codegenVarDefs, Stmt::codegenVarDef, and
+	VarDefStmt::codegenVarDef since it is not used.  It wasn't used before
+	this checkin.
+	
+	Removed code for handling initialization of variables within codegen
+	except for variables that are domains, arrays, or config.
+	
+	Fixed a couple bugs in which the stmtContexts for scopes were not
+	created when block statements were copied and new coercion wrapper
+	functions were created.
+	
+	Fixed good for defaultinit1a.  Removed futures for defaultinit1a and
+	vardecls.  Passed futures for test_tuple_simple1 and
+	test_tuple_simple4 to John.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: stmt.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share cleanup.cpp 
+	                             destructureTupleAssignments.cpp 
+	chapel/test/trivial/bradc/: defaultinit1a.good 
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.future 
+	                                test_tuple_simple4.future 
+Added files:
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+	                             insertVariableInitializations.h 
+Removed files:
+	chapel/test/trivial/bradc/: defaultinit1a.future vardecls.future 
+
