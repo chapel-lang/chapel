@@ -2231,3 +2231,15 @@ Added files:
 	chapel/test/trivial/bradc/: conditional.chk conditional.chpl 
 	                            printempty.chk printempty.chpl 
 
+---------------------------------------------------------------------------
+
+04/05/26 11:39:10 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fixed two bugs which were causing problems in the front end.
+	First, cannonicalize string was returning NULL in some cases.
+	Second, vector expansion was not clearing the new space correctly.
+
+Modified files:
+	chapel/compiler/: map.h vec.cpp 
+
