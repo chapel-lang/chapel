@@ -17,7 +17,7 @@ static int hitUnknown = 0;
 FILE* intheadfile;
 FILE* extheadfile;
 
-struct binOp {
+struct op {
   char* astSymName;
   char* astString;
   char* cName; 
@@ -25,9 +25,19 @@ struct binOp {
 
 };
 
+static op unOps[] = {
+  {"empty", "empty", "empty", 0}, /* Don't return an index of 0. */
+  {"++", "#++", "++", 0},
+  {"--", "#--", "--", 0},
+  {"+", "#+", "+", 0},
+  {"-", "#-", "-", 0},
+  {"~", "#~", "~", 0},
+  {"!", "#!", "!", 0}
 
-static binOp binOps[] = {
-  {"empty", "empty", "empty", 0}, /* I don't want to return an index of 0... */
+};
+
+static op binOps[] = {
+  {"empty", "empty", "empty", 0}, /* Don't return an index of 0. */
   {"*", "#*", "*", 0},
   {"/", "#/", "/", 0},
   {"%", "#%", "%", 0},
@@ -57,7 +67,6 @@ static binOp binOps[] = {
   {"&=", "#&=", "&=", 0},
   {"|=", "#|=", "|=", 0},
   {"^=", "#^=", "^=", 0},
-  {",", "#,", ",", 0}
 
 };
 
@@ -67,23 +76,60 @@ static int symDead(Sym* sym) {
 }
 
 
+static int findUnOp(FILE* outfile, AST* ast) {
+  int i;
+  int numUnOps    = sizeof(unOps) / sizeof(unOps[0]);
+
+  if (ast->v[0] && ast->v[0]->sym && 
+      ast->v[0]->sym->name && ast->v[0]->string) {
+
+    char* symName   = ast->v[0]->sym->name;
+    char* symString = ast->v[0]->string;
+
+    for (i = 1; i < numUnOps; i++) {
+      if (strcmp(symName, unOps[i].astSymName) == 0 &&
+	  strcmp(symString, unOps[i].astString) == 0) {
+	return i;
+      }
+    }
+  }
+
+  return 0;
+}
+
+
 static int findBinOp(FILE* outfile, AST* ast) {
   int i;
   int numBinOps = sizeof(binOps) / sizeof(binOps[0]);
 
-  for (i = 0; i < numBinOps; i++) {
-    if (strcmp(ast->v[1]->sym->name, binOps[i].astSymName) == 0 &&
-        strcmp(ast->v[1]->string, binOps[i].astString) == 0) {
-      return i;
+  if (ast->v[1] && ast->v[1]->sym && 
+      ast->v[1]->sym->name && ast->v[1]->string) {
+    
+    char* symName   = ast->v[1]->sym->name;
+    char* symString = ast->v[1]->string;
+
+    for (i = 1; i < numBinOps; i++) {
+      if (strcmp(symName, binOps[i].astSymName) == 0 &&
+	  strcmp(symString, binOps[i].astString) == 0) {
+	return i;
+      }
     }
   }
+  
+  return 0;
+}
+
+
+static int genUnOp(FILE* outfile, AST* ast, int index) {
+  fprintf(outfile, "%s", unOps[index].cName);
+  genAST(outfile, ast->v[1]);
   return 0;
 }
 
 
 static int genBinOp(FILE* outfile, AST* ast, int index) {
   genAST(outfile, ast->v[0]);
-  fprintf(outfile, binOps[index].cName);
+  fprintf(outfile, "%s", binOps[index].cName);
   genAST(outfile, ast->v[2]);
   return 0;
 }
@@ -354,7 +400,7 @@ void genAST(FILE* outfile, AST* ast) {
   case AST_op:
     {
       int i;
-      int binOpsIndex = 0;
+      int index = 0;
 
       if (strcmp(ast->v[1]->sym->name, "(") == 0 &&
 	  strcmp(ast->v[1]->string, "#(") == 0) {
@@ -373,18 +419,18 @@ void genAST(FILE* outfile, AST* ast) {
 	break;
       }
 
-      binOpsIndex = findBinOp(outfile, ast);
-      if (binOpsIndex) {
-	genBinOp(outfile, ast, binOpsIndex);
+      index = findUnOp(outfile, ast);
+      if (index) {
+        genUnOp(outfile, ast, index);
+        break;
+      }
+     
+      index = findBinOp(outfile, ast);
+      if (index) {
+	genBinOp(outfile, ast, index);
 	break;
       }
 
-      if (strcmp(ast->v[0]->sym->name, "!") == 0 &&
-		 strcmp(ast->v[0]->string, "#!") == 0) {
-	fprintf(outfile, "!");
-	genAST(outfile, ast->v[1]);
-	break;
-      }
     }
  
     /* FALL THROUGH */
