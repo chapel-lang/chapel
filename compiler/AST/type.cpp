@@ -27,14 +27,14 @@ Type::Type(void) :
   name(NULL)
 {}
 
-/*
-Type::Type(Symbol* init_name) :
-  name(init_name) {}
-*/
-
 
 void Type::addName(Symbol* newname) {
   name = newname;
+}
+
+
+int Type::rank(void) {
+  return 0;
 }
 
 
@@ -172,15 +172,20 @@ void EnumType::codegenDefaultFormat(FILE* outfile) {
 }
 
 
-DomainType::DomainType(int init_rank) :
-  rank(init_rank)
+DomainType::DomainType(int init_numdims) :
+  numdims(init_numdims)
 {}
+
+
+int DomainType::rank(void) {
+  return numdims;
+}
 
 
 void DomainType::print(FILE* outfile) {
   fprintf(outfile, "domain(");
-  if (rank != 0) {
-    fprintf(outfile, "%d", rank);
+  if (numdims != 0) {
+    fprintf(outfile, "%d", numdims);
   } else {
     fprintf(outfile, "???");
   }
@@ -189,14 +194,14 @@ void DomainType::print(FILE* outfile) {
 
 
 void DomainType::codegen(FILE* outfile) {
-  fprintf(outfile, "_domain%d", rank ? rank : 1);  // BLC: hack!
+  fprintf(outfile, "_domain%d", numdims ? numdims : 1);  // BLC: hack!
 }
 
 
 SubDomainType::SubDomainType(Symbol* init_parent) :
   parent(init_parent)
 {
-  rank = 777; // BLC -- fill in correctly!
+  numdims = 777; // BLC -- fill in correctly!
 }
 
 
@@ -207,15 +212,15 @@ void SubDomainType::print(FILE* outfile) {
 }
 
 
-IndexType::IndexType(int init_rank) :
-  DomainType(init_rank)
+IndexType::IndexType(int init_numdims) :
+  DomainType(init_numdims)
 {}
 
 
 void IndexType::print(FILE* outfile) {
   fprintf(outfile, "index(");
-  if (rank != 0) {
-    fprintf(outfile, "%d", rank);
+  if (numdims != 0) {
+    fprintf(outfile, "%d", numdims);
   } else {
     fprintf(outfile, "???");
   }
@@ -226,7 +231,7 @@ void IndexType::print(FILE* outfile) {
 SubIndexType::SubIndexType(Symbol* init_parent) :
   SubDomainType(init_parent)
 {
-  rank = 777; // BLC -- fill in correctly!
+  numdims = 777; // BLC -- fill in correctly!
 }
 
 
@@ -243,6 +248,31 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 {}
 
 
+int ArrayType::rank(void) {
+  return domain->rank();
+}
+
+
+void ArrayType::print(FILE* outfile) {
+  //  fprintf(outfile, "[");
+  domain->print(outfile);
+  //  fprintf(outfile, "] ");
+  fprintf(outfile, " ");
+  elementType->print(outfile);
+}
+
+
+void ArrayType::codegen(FILE* outfile) {
+  fprintf(outfile, "_array%d", domain->rank());
+  elementType->codegen(outfile);
+}
+
+
+void ArrayType::codegenDefaultFormat(FILE* outfile) {
+  elementType->codegenDefaultFormat(outfile);
+}
+
+
 UserType::UserType(Type* init_definition) :
   definition(init_definition)
 {}
@@ -253,17 +283,6 @@ void UserType::printDef(FILE* outfile) {
   name->print(outfile);
   fprintf(outfile, " = ");
   definition->print(outfile);
-}
-
-
-
-
-void ArrayType::print(FILE* outfile) {
-  //  fprintf(outfile, "[");
-  domain->print(outfile);
-  //  fprintf(outfile, "] ");
-  fprintf(outfile, " ");
-  elementType->print(outfile);
 }
 
 

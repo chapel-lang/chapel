@@ -15,6 +15,8 @@ class Type : public ILink {
 
   void addName(Symbol* newname);
 
+  virtual int rank(void);
+
   virtual void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
   virtual void codegen(FILE* outfile);
@@ -48,9 +50,11 @@ class EnumType : public Type {
 
 class DomainType : public Type {
  public:
-  int rank;
+  int numdims;
 
-  DomainType(int init_rank = 0);
+  DomainType(int init_numdims = 0);
+
+  int rank(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -90,7 +94,11 @@ class ArrayType : public Type {
 
   ArrayType(Expr* init_domain, Type* init_elementType);
 
+  int rank(void);
+
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
+  void codegenDefaultFormat(FILE* outfile);
 };
 
 

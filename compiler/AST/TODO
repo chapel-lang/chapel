@@ -37,7 +37,7 @@
 
 * should do export control of variables, types, all symbols
 
-* organize and lump files better
+* organize and lump files better -- into a static class, e.g.
 
 
 

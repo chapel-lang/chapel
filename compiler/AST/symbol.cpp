@@ -48,7 +48,7 @@ void Symbol::codegenDef(FILE* outfile) {
 void Symbol::codegenDefList(FILE* outfile, char* separator) {
   Symbol* ptr;
 
-  codegenDef(outfile);
+  codegenDef(outfile); // BLC -- is this right? do i need "this"
   ptr = nextLink(Symbol, this);
   while (ptr != NULL) {
     fprintf(outfile, "%s", separator);

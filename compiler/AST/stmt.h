@@ -119,6 +119,7 @@ class ForLoopStmt : public BlockStmt {
 	      Stmt* body);
 
   void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 

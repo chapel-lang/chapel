@@ -87,7 +87,7 @@ void VarDefStmt::codegen(FILE* outfile) {
     if (init != NULL && !init->isNull()) {
       if (typeid(*(aVar->type)) == typeid(DomainType)) {
 	DomainType* domtype = (DomainType*)aVar->type;
-	int rank = domtype->rank ? domtype->rank : 1; // BLC: hack!
+	int rank = domtype->numdims ? domtype->numdims : 1; // BLC: hack!
 	fprintf(outfile, "_init_domain_%dD(&(", rank);
 	aVar->codegen(outfile);
 	fprintf(outfile, ")");
@@ -139,9 +139,7 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
       fprintf(outfile, "const ");
     }
 
-    aVar->type->codegen(outfile);
-    fprintf(outfile, " ");
-    aVar->codegen(outfile);
+    aVar->codegenDef(outfile);
 
     fprintf(outfile, ";\n");
     aVar = nextLink(VarSymbol, aVar);
@@ -331,6 +329,46 @@ void ForLoopStmt::print(FILE* outfile) {
   domain->print(outfile);
   fprintf(outfile, " ");
   body->print(outfile);
+}
+
+
+void ForLoopStmt::codegen(FILE* outfile) {
+  VarSymbol* aVar = index;
+  fprintf(outfile, "{\n");
+  int rank = 0;
+
+  // TODO: Unify with VarDefStmt?  Have parser insert one here?
+  // is it a challenge that we may not know the domain exprs at that point?
+  while (aVar != NULL) {
+    aVar->codegenDef(outfile);
+    fprintf(outfile, ";\n");
+    rank++;
+
+    aVar = nextLink(VarSymbol, aVar);
+  }
+  fprintf(outfile, "\n");
+  
+  aVar = index;
+  for (int i=0; i<rank; i++) {
+    fprintf(outfile, "_FOR");
+    if (forall) {
+      fprintf(outfile, "ALL");
+    }
+    fprintf(outfile, "(");
+    aVar->codegen(outfile);
+    fprintf(outfile, ", ");
+    domain->codegen(outfile);
+    fprintf(outfile, ", %d) {\n", i);
+  }
+
+  body->codegen(outfile);
+  fprintf(outfile, "\n");
+
+  for (int i=0; i<rank; i++) {
+    fprintf(outfile, "}\n");
+  }
+  
+  fprintf(outfile, "}\n");
 }
 
 

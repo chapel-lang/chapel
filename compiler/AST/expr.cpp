@@ -78,6 +78,13 @@ long Expr::intVal(void) {
 }
 
 
+int Expr::rank(void) {
+  Type* exprType = this->typeInfo();
+
+  return exprType->rank();
+}
+
+
 bool NullExpr::isNull(void) {
   return true;
 }
@@ -431,6 +438,30 @@ ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
 {}
 
 
+Type* ArrayRef::typeInfo(void) {
+  ArrayType* arrayType = dynamic_cast<ArrayType*>(baseExpr->typeInfo());
+  if (arrayType == NULL) {
+    INT_FATAL(this, "array type is NULL?");
+  }
+  // BLC: Assumes that each array index fully indexes array.
+  // This isn't how David thinks about it, and more care would
+  // need to be taken to get that scheme implemented.  Just
+  // trying to get something reasonable implemented now.
+  return arrayType->elementType;
+}
+
+
+void ArrayRef::codegen(FILE* outfile) {
+  fprintf(outfile, "_ACC%d(", baseExpr->rank());
+  //  this->typeInfo()->codegen(outfile);
+  //  fprintf(outfile, ", ");
+  baseExpr->codegen(outfile);
+  fprintf(outfile, ", ");
+  argList->codegenList(outfile, ", ");
+  fprintf(outfile, ")");
+}
+
+
 void FloodExpr::print(FILE* outfile) {
   fprintf(outfile, "*");
 }
@@ -462,7 +493,19 @@ void DomainExpr::setForallExpr(Expr* exp) {
 
 
 Type* DomainExpr::typeInfo(void) {
-  return new DomainType();  // BLC: This is incomplete
+  Type* exprType = domains->typeInfo();
+
+  if (typeid(*exprType) == typeid(DomainType)) {
+    return exprType;
+  } else {
+    Expr* domainExprs = domains;
+    int rank = 0;
+    while (domainExprs) {
+      rank++;
+      domainExprs = nextLink(Expr, domainExprs);
+    }
+    return new DomainType(rank);
+  }
 }
 
 

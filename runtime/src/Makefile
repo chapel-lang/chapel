@@ -7,6 +7,7 @@ CC = gcc
 CFLAGS += -I../include
 
 CHPL_RT_SRCS = \
+	array.c \
 	chplio.c \
 	domain.c \
 

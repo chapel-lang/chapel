@@ -20,6 +20,7 @@ class Expr : public ILink {
   virtual Type* typeInfo(void);
   virtual bool isComputable(void);
   virtual long intVal(void);
+  virtual int rank(void);
 
   virtual void print(FILE* outfile) = 0;
   virtual void codegen(FILE* outfile) = 0;
@@ -288,6 +289,10 @@ class WriteCall : public FnCall {
 class ArrayRef : public ParenOpExpr {
  public:
   ArrayRef(Expr* init_base, Expr* init_arg = new NullExpr());
+
+  Type* typeInfo();
+
+  void codegen(FILE* outfile);
 };
 
 
