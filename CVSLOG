@@ -22079,3 +22079,36 @@ Modified files:
 	                             insertThisParameters.cpp 
 	                             resolveOverloadedOperators.cpp 
 
+---------------------------------------------------------------------------
+
+03/28/05 17:45:59 -- bradc
+
+Log message:
+	Fixed up the processParameters pass so that we
+	would be a bit more conservative about where
+	parameter temps are inserted.  In particular,
+	we previously weren't taking advantage of the
+	fact that C's pass-by-value semantics would
+	create a copy for us for scalar values passed
+	by in and const, so were creating additional
+	unnecessary copies.  This tries to cut down
+	on such copies.
+	
+	There is still some low-hanging fruit that
+	could be caught here.  In particular, when
+	passing strings around, we have to
+	conservatively create copies of them in
+	case there are aliases to them in other
+	parameters or via globals.  In many cases
+	(such as the description strings to our
+	memory allocation functions), we know that
+	this won't be the case, and could avoid
+	the temps, but currently don't.  Maybe this
+	will be the point where I resort to using
+	a pragma?  Shudder...
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: processParameters.cpp 
+
