@@ -22660,3 +22660,18 @@ Modified files:
 	chapel/test/classes/bradc/: writeunion-workaround.future 
 	                            writeunion.future 
 
+---------------------------------------------------------------------------
+
+03/30/05 13:40:13 -- bradc
+
+Log message:
+	Another simple future nil test that came out
+	of a discussion with John yesterday.  This
+	is nothing new, just another instance of an
+	existing problem and a test that seems worth
+	having in the long-run.
+
+Added files:
+	chapel/test/classes/bradc/: noinit2.chpl noinit2.future 
+	                            noinit2.good 
+
