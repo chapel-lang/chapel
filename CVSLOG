@@ -21134,3 +21134,17 @@ Added files:
 	                            test_nomembers1.future 
 	                            test_nomembers1.good 
 
+---------------------------------------------------------------------------
+
+03/23/05 14:40:46 -- jplevyak
+
+Log message:
+	There is now a new AST_is_used all which has the syntax of type_info but
+	returns whether or not the Expr value or SymbolVar was actually used in
+	the program.  A context sensitive interface allows queries of the form "is this
+	symbol dead here?"
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+
