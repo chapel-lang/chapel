@@ -12,7 +12,7 @@ enum varType {
   VAR_STATE
 };
 
-class Symbol : public Link {
+class Symbol : public ILink {
  public:
   char* name;
 

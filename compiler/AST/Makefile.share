@@ -1,0 +1,23 @@
+CXX_SRCS = \
+	expr.cpp \
+	link.cpp \
+	loc.cpp \
+	stmt.cpp \
+	symbol.cpp \
+        symtab.cpp \
+	type.cpp \
+
+C_SRCS = \
+	yy.c \
+
+CXX_C_SRCS = \
+	chapel.tab.c \
+	lex.yy.c \
+
+CVS_SRCS = $(CXX_SRCS) $(C_SRCS)
+SRCS = $(CVS_SRCS) $(CXX_C_SRCS)
+
+AST_OBJS = \
+	$(C_SRCS:%.c=$(AST_OBJDIR)/%.o) \
+	$(CXX_C_SRCS:%.c=$(AST_OBJDIR)/%.o) \
+	$(CXX_SRCS:%.cpp=$(AST_OBJDIR)/%.o)

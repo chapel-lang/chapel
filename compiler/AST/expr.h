@@ -7,7 +7,7 @@
 
 class Stmt;
 
-class Expr : public Link {
+class Expr : public ILink {
  public:
   Stmt* stmt;
 

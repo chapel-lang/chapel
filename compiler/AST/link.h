@@ -4,20 +4,20 @@
 #include <stdio.h>
 #include "loc.h"
 
-class Link : public Loc {
+class ILink : public Loc {
  public:
-  Link* prev;
-  Link* next;
+  ILink* prev;
+  ILink* next;
 
-  Link(void);
+  ILink(void);
 
   virtual void print(FILE*) = 0;
   virtual void printList(FILE* outfile, char* separator = ", ");
   virtual bool isNull(void);
 
-  void insert(Link* newlink);
-  void add(Link* newlink);
-  void append(Link* newlink);
+  void insert(ILink* newlink);
+  void add(ILink* newlink);
+  void append(ILink* newlink);
 };
 
 #endif

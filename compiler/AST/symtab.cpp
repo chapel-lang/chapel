@@ -8,7 +8,7 @@
 
 using namespace std;
 
-class SymLink : public Link {
+class SymLink : public ILink {
 public:
   Symbol* pSym;
   

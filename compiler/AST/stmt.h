@@ -6,7 +6,7 @@
 #include "symbol.h"
 class Expr;
 
-class Stmt : public Link {
+class Stmt : public ILink {
  public:
 };
 

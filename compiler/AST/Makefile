@@ -6,38 +6,17 @@ COMPILER_SUBDIR = AST
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-CFLAGS = -g -Wall -Werror -I$(GC_ROOT)/include/gc
-INCL = -I$(GC_ROOT)/include/gc
+INCL = -I.. -I$(GC_ROOT)/include/gc
+CFLAGS = -g -Wall -Werror $(INCL)
 
-CXX_SRCS = \
-	expr.cpp \
-	link.cpp \
-	loc.cpp \
-	main.cpp \
-	stmt.cpp \
-	stringutil.cpp \
-	symbol.cpp \
-        symtab.cpp \
-	type.cpp \
+include Makefile.share
 
-C_SRCS = \
-	yy.c \
-
-CXX_C_SRCS = \
-	chapel.tab.c \
-	lex.yy.c \
-
-CVS_SRCS = $(CXX_SRCS) $(C_SRCS)
-SRCS = $(CVS_SRCS) $(CXX_C_SRCS)
-
-OBJS=$(C_SRCS:%.c=$(PLATFORM)/%.o) $(CXX_C_SRCS:%.c=$(PLATFORM)/%.o) $(CXX_SRCS:%.cpp=$(PLATFORM)/%.o)
-
-all: bradast
+all: $(AST_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
-bradast: $(OBJS)
-	$(CXX) -o bradast $(OBJS) $(GC_ROOT)/lib/libgc.a
+bradast: $(AST_OBJS) $(PLATFORM)/main.o $(PLATFORM)/stringutil.o
+	$(CXX) -o bradast $(AST_OBJS) $(PLATFORM)/main.o $(PLATFORM)/stringutil.o $(GC_ROOT)/lib/libgc.a
 	@etags $(SRCS) *.h
 
 CLEAN_TARGS += \

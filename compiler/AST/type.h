@@ -6,7 +6,7 @@
 class Symbol;
 class Expr;
 
-class Type : public Link {
+class Type : public ILink {
  public:
   Symbol* name;
 

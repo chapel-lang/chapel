@@ -1,0 +1,284 @@
+enum classVals = S | W | A | B | C | D | U;
+const probSize: [S..O] integer = (32, 64, 256, 256, 512, 1024, 256);
+const numIters: [S..O] integer = (4, 40, 4, 20, 20, 50, 4);
+const checksum: [S..O] float = (0.0000530770700573, 0.00000000000000000250391406439, 0.000002433365309, 0.00000180056440132, 0.000000570674826298, 0.000000000158327506043, 0.0);
+config const Class: classVals = S;
+config const n: integer = probSize(Class);
+config const nx: integer = n;
+config const ny: integer = n;
+config const nz: integer = n;
+config const numLevels: integer = lg2(n);
+config const nit: integer = numIters(Class);
+config const verifyValue: float = checksum(Class);
+config const warmup: boolean = true;
+config const verbose: boolean = false;
+config const debug: boolean = false;
+type coeff = [0..3] float;
+const Levels: domain(1) = 1..numLevels;
+const Base: domain(3) = [1..nx, 1..ny, 1..nz];
+const Hier: [lvl:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
+const Stencil: domain(3) = [(-1..1), (-1..1), (-1..1)];
+var initTimer: timer;
+var benchTimer: timer;
+(initTimer.start());
+var V: [Base] float;
+var U: [lvl:Levels] [Hier(lvl)] float;
+var R: [lvl:Levels] [Hier(lvl)] float;
+initializeMG();
+inittime = warmupMG(V, U, R);
+(initTimer.stop());
+(benchTimer.start());
+var rnm2: float = computeMG(V, U, R);
+(benchTimer.stop());
+printResults(rnm2, (initTimer.read()), (benchTimer.read()));
+function initializeMG(inout V: ???;
+inout U: ???;
+inout R: ???) {
+writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
+writeln(" Size: ", nx, "x", ny, "x", nz);
+writeln(" Iterations: ", nit);
+writeln();
+initArrays(V, U, R);
+}
+
+
+function warmupMG(inout V: ???;
+inout U: ???;
+inout R: ???) {
+if (warmup) {
+mg3P(V, U, R);
+resid(R(1), V, U(1));
+initArrays(V, U, R);
+}
+}
+
+
+function computeMG(inout V: ???;
+inout U: ???;
+inout R: ???): float{
+resid(R(1), V, U(1));
+norm2u3(R(1));
+forall it in 1..nit {
+mg3P(V, U, R);
+resid(R(1), V, U(1));
+}
+rnm2 = norm2u3(R(1))(1);
+
+return rnm2;
+}
+
+
+function printResults(inout rnm2: ???;
+inout inittime: ???;
+inout runtime: ???) {
+var verified: boolean;
+if ((verifyValue!=0.0)) {
+const epsilon: float = 0.00000001;
+const delta: float = (rnm2-verifyValue);
+if ((abs(delta)<=epsilon)) {
+writeln(" VERIFICATION SUCCESSFUL ");
+writeln(" L2 Norm is ", rnm2);
+writeln(" Error is ", delta);
+} else {
+writeln(" VERIFICATION FAILED");
+writeln(" L2 norm is ", rnm2);
+writeln(" The correct L2 Norm is ", verifyValue);
+}
+} else {
+verified = false;
+writeln(" Problem size unknown");
+writeln(" NO VERIFICATION PERFORMED");
+}
+writeln(" MG Benchmark Completed.");
+writeln(" Size = ", nx, "x", ny, "x", nz);
+writeln(" Iterations = ", nit);
+writeln(" Time in seconds = ", runtime);
+writeln(" Mop/s total = ???");
+writeln(" Operation type = floating point");
+write("Verification = ");
+if (verified) {
+writeln("   SUCCESSFUL");
+} else {
+writeln(" UNSUCCESSFUL");
+}
+writeln(" Version = 2.4");
+}
+
+
+function mg3P(inout V: ???;
+inout U: ???;
+inout R: ???) {
+forall lvl in 2..numLevels {
+rprj3(R(lvl), R((lvl-1)));
+}
+U(numLevels) = 0.0;
+psinv(U(numLevels), R(numLevels));
+forall lvl in (2..(numLevels-1) by (-1)) {
+U(lvl) = 0.0;
+interp(U(lvl), U((lvl+1)));
+resid(R(lvl), R(lvl), U(lvl));
+psinv(U(lvl), R(lvl));
+}
+interp(U(1), U(2));
+resid(R(1), V, U(1));
+psinv(U(1), R(1));
+}
+
+
+function psinv(inout U: ???;
+inout R: ???) {
+state const c: coeff = initCValues();
+state const c3d: [i, j, k:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
+const RD: ??? = (R.Domain);
+const Rstr: ??? = (R.stride);
+U = [ijk:RD] reduce by sum [off:Stencil] (c3d*R((ijk+(Rstr*off))));
+}
+
+
+function resid(inout R: ???;
+inout V: ???;
+inout U: ???) {
+state const a: coeff = ((-(8.0/3.0)), 0.0, (1.0/6.0), (1.0/12.0));
+state const a3d: [i, j, k:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
+const UD: ??? = (U.Domain);
+const Ustr: ??? = (U.stride);
+R = (V-[ijk:UD] reduce by sum [off:Stencil] (a3d*U((ijk+(Ustr*off)))));
+}
+
+
+function rprj3(inout S: ???;
+inout R: ???) {
+state const w: coeff = (0.5, 0.25, 0.125, 0.0625);
+state const w3d: [i, j, k:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
+const RD: ??? = (R.Domain);
+const Rstr: ??? = (R.stride);
+S = [ijk:RD] reduce by sum [off:Stencil] (w3d*R((ijk+(Rstr*off))));
+}
+
+
+function interp(inout R: ???;
+inout S: ???) {
+state const IDom: domain(3) = [(-1..0), (-1..0), (-1..0)];
+state const IStn: [i, j, k:IDom] domain(3) = [i..0, j..0, k..0];
+state const w: [ijk:IDom] float = (1.0/(IStn.size()));
+const SD: ??? = (S.Domain());
+const Rstr: ??? = (R.stride);
+const Sstr: ??? = (S.stride);
+forall ioff in IDom {
+[ijk:SD] R((ijk+(Rstr*ioff))) = (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
+}
+}
+
+
+function norm2u3(inout R: ???): float{
+const rnm2: ??? = sqrt((reduce by sum (R**2)/((nx*ny)*nz)));
+const rnmu: ??? = reduce by max abs(R);
+
+return rnm2;
+}
+
+
+function initArrays(inout V: ???;
+inout U: ???;
+inout R: ???) {
+zran3(V);
+U(1) = 0.0;
+(V.outOfBounds(wrap));
+(U.outOfBounds(wrap));
+(R.outOfBounds(wrap));
+}
+
+
+function zran3(inout V: ???) {
+const ncharge: integer = 10;
+var POS: [1..ncharge] index(Base);
+var NEG: [1..ncharge] index(Base);
+V = [i, j, k:Base] longRandlc((((i-1)+((j-1)*nx))+(((k-1)*nx)*ny)));
+forall i in 1..ncharge {
+POS(i) = reduce by maxloc V;
+NEG(i) = reduce by minloc V;
+}
+V = 0.0;
+forall i in 1..ncharge {
+V(POS(i)) = 1.0;
+V(NEG(i)) = (-1.0);
+}
+}
+
+
+function longRandlc(inout n: ???): float{
+state const s: float = 314159265.0;
+state const arand: float = (5.0**13);
+var kk: integer = n;
+var t1: float = s;
+var t2: float = arand;
+var t3: float;
+while ((kk!=0)) {
+var ik: integer = (kk/2);
+if ((2*(ij!=kk))) {
+t3 = randlc(t1, t2);
+}
+if ((kk>0)) {
+t3 = randlc(t2, t2);
+}
+kk = k1;
+}
+
+return randlc(t1, arand);
+}
+
+
+function randlc(inout x: ???;
+inout a: ???): float{
+state const r23: float = (0.5**23);
+state const t23: float = (2**23);
+state const r46: float = (0.5**46);
+state const t46: float = (2**46);
+var t1: float;
+var t2: float;
+var t3: float;
+var t4: float;
+var a1: float;
+var a2: float;
+var x1: float;
+var x2: float;
+var y: float;
+t1 = (r23*x);
+a1 = integer(t1);
+a2 = (a-(t23*a1));
+t1 = (r23*x);
+x1 = integer(t1);
+x2 = (x-(t23*x1));
+t1 = ((a1*x2)+(a2*x1));
+t2 = integer((r23*t1));
+y = (t1-(t23*t2));
+t3 = ((t23*y)+(a2*x2));
+t3 = integer((r46*t3));
+x = (t3-(t46*t4));
+
+return (r46*x);
+}
+
+
+function initCValues(inout Class: ???): coeff{
+if ((Class==(A||(Class==(S||(Class==W)))))) {
+
+return (-(3.0/8.0));
+} else {
+
+return (-(3.0/17.0));
+}
+}
+
+
+function lg2(inout x: ???): integer{
+var lg: integer = (-1);
+while (x) {
+x = 1;
+lg = 1;
+}
+
+return lg;
+}
+
+

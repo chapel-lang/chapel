@@ -1,0 +1,5 @@
+AST_OBJDIR = $(COMPILER_ROOT)/AST/$(PLATFORM)
+
+include $(COMPILER_ROOT)/AST/Makefile.share
+
+CFLAGS += -IAST

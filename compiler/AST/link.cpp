@@ -2,19 +2,19 @@
 #include <stdio.h>
 #include "link.h"
 
-Link::Link(void) :
+ILink::ILink(void) :
   prev(NULL),
   next(NULL)
 {}
 
 
-bool Link::isNull(void) {
+bool ILink::isNull(void) {
   return false;
 }
 
 
-void Link::printList(FILE* outfile, char* separator) {
-  Link* ptr;
+void ILink::printList(FILE* outfile, char* separator) {
+  ILink* ptr;
 
   print(outfile);
   ptr = next;
@@ -26,7 +26,7 @@ void Link::printList(FILE* outfile, char* separator) {
 }
 
 
-void Link::insert(Link* newlink) {
+void ILink::insert(ILink* newlink) {
   if (prev != NULL) {
     prev->next = newlink;
   }
@@ -36,15 +36,15 @@ void Link::insert(Link* newlink) {
 }
 
 
-void Link::add(Link* newlink) {
+void ILink::add(ILink* newlink) {
   newlink->next = next;
   newlink->prev = this;
   next = newlink;
 }
 
 
-void Link::append(Link* newlink) {
-  Link* lastlink;
+void ILink::append(ILink* newlink) {
+  ILink* lastlink;
 
   lastlink = this;
   while (lastlink->next != NULL) {
