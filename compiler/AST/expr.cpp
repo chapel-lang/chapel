@@ -402,6 +402,12 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
 {}
 
 
+void MemberAccess::traverseExpr(Traversal* traversal) {
+  base->traverse(traversal, false);
+  member->traverse(traversal, false);
+}
+
+
 Type* MemberAccess::typeInfo(void) {
   return member->type;
 }
@@ -905,6 +911,16 @@ Tuple::Tuple(Expr* init_exprs) :
   Expr(EXPR_TUPLE),
   exprs(init_exprs)
 {}
+
+
+void Tuple::traverseExpr(Traversal* traversal) {
+  Expr* expr = exprs;
+  while (expr) {
+    expr->traverse(traversal, false);
+
+    expr = nextLink(Expr, expr);
+  }
+}
 
 
 void Tuple::print(FILE* outfile) {

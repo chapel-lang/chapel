@@ -131,8 +131,6 @@ class FnSymbol : public Symbol {
 
   bool isNull(void);
 
-  void traverseSymbol(Traversal*);
-
   void codegenDef(FILE* outfile);
   int getSymbols(Vec<BaseAST *> &stmts);
   int getStmts(Vec<BaseAST *> &stmts);

@@ -110,7 +110,6 @@ Stmt* fileToAST(char* filename, int debug) {
     initExpr();
 
     Symboltable::parseInternalPrelude();
-    //initInternalTypes();
     preludePath = glomstrings(2, system_dir, "/parser/internal_prelude.chpl");
     internalPreludeStmts = ParseFile(preludePath, true);
     findInternalTypes();

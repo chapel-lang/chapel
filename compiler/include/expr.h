@@ -201,6 +201,8 @@ class MemberAccess : public Expr {
 
   MemberAccess(Expr* init_base, Symbol* init_member);
 
+  void traverseExpr(Traversal* traversal);
+
   Type* typeInfo(void);
 
   void print(FILE* outfile);
@@ -387,6 +389,8 @@ class Tuple : public Expr {
   Expr* exprs;
 
   Tuple(Expr* init_exprs);
+
+  void traverseExpr(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);

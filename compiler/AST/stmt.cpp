@@ -79,6 +79,7 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
 
 void VarDefStmt::traverseStmt(Traversal* traversal) {
   var->traverseList(traversal, false);
+  var->type->traverse(traversal, false);
   init->traverse(traversal, false);
 }
 
@@ -224,6 +225,7 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 
 
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
+  type->name->traverse(traversal, false);
   type->traverse(traversal, false);
 }
 
@@ -262,6 +264,9 @@ FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
 
 void FnDefStmt::traverseStmt(Traversal* traversal) {
   fn->traverse(traversal, false);
+  fn->formals->traverseList(traversal, false);
+  fn->type->traverse(traversal, false);
+  fn->body->traverse(traversal, false);
 }
 
 

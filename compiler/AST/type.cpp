@@ -133,10 +133,7 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 
 
 void EnumType::traverseType(Traversal* traversal) {
-  bool saveTraverseChildSymbols = traversal->exploreChildSymbols;
-  traversal->exploreChildSymbols = false;
   valList->traverseList(traversal, false);
-  traversal->exploreChildSymbols = saveTraverseChildSymbols;
 }
 
 
@@ -392,7 +389,6 @@ void ClassType::addScope(SymScope* init_scope) {
 
 
 void ClassType::traverseType(Traversal* traversal) {
-  parentClass->traverse(traversal, false);
   definition->traverseList(traversal, false);
 }
 
@@ -515,13 +511,6 @@ void initTypes(void) {
   dtTimer = Symboltable::defineBuiltinType("timer", false);
 }
 
-
-void initInternalTypes(void) {
-  dtTuple = Symboltable::defineBuiltinType("Tuple");
-  dtIndex = Symboltable::defineBuiltinType("Index");
-  dtDomain = Symboltable::defineBuiltinType("Domain");
-  dtArray = Symboltable::defineBuiltinType("Array");
-}
 
 void findInternalTypes(void) {
   dtTuple = dynamic_cast<TypeSymbol *>(Symboltable::lookupInternal("Tuple"))->type;

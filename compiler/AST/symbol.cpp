@@ -39,7 +39,6 @@ void Symbol::traverse(Traversal* traversal, bool atTop) {
 
 
 void Symbol::traverseSymbol(Traversal* traversal) {
-  type->traverse(traversal, false);
 }
 
 
@@ -220,13 +219,6 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 
 bool FnSymbol::isNull(void) {
   return (this == nilFnSymbol);
-}
-
-
-void FnSymbol::traverseSymbol(Traversal* traversal) {
-  formals->traverseList(traversal, false);
-  type->traverse(traversal, false);
-  body->traverse(traversal, false);
 }
 
 

@@ -7,6 +7,7 @@
 #include "analysis.h"
 #include "expr.h"
 #include "files.h"
+#include "getstuff.h"
 #include "link.h"
 #include "misc.h"
 #include "stmt.h"
@@ -68,6 +69,11 @@ AST *AInfo::copy(Map<PNode *, PNode*> *nmap) {
 static void
 close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
+  // Have to add nilClassType by hand because traversals skip
+  // over it since isNull() is true.  Perhaps the abstract
+  // parent class should not be a nil?
+  if (set.set_add(nilClassType))
+    syms.add(nilClassType);
   forv_Stmt(a, stmts)
     while (a) {
       set.set_add(a);
@@ -75,12 +81,12 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       a = dynamic_cast<Stmt *>(a->next);
     }
   forv_BaseAST(s, syms) {
-    Vec<BaseAST *> moresyms;
-    s->getBaseASTs(moresyms);
-    forv_BaseAST(ss, moresyms) if (ss) {
+    GetStuff* getStuff = new GetStuff(GET_ALL);
+    s->traverse(getStuff);
+    forv_BaseAST(ss, getStuff->asts) if (ss) {
       assert(ss);
       if (set.set_add(ss))
-        syms.add(ss);
+	syms.add(ss);
     }
   }
 }
@@ -280,10 +286,10 @@ build_types(Vec<BaseAST *> &syms) {
 	break;
       case TYPE_ENUM: {
 	t->asymbol->type_kind = Type_TAGGED;
-	Vec<BaseAST *> syms;
-	t->getSymbols(syms);
-	for (int i = 0; i < syms.n; i++) {
-	  BaseAST *s = syms.v[i];
+	GetSymbols* getSymbols = new GetSymbols();
+	t->traverseList(getSymbols);
+	for (int i = 0; i < getSymbols->symbols.n; i++) {
+	  BaseAST *s = getSymbols->symbols.v[i];
 	  Sym *ss = dynamic_cast<Symbol*>(s)->asymbol;
 	  build_enum_element(ss, i);
 	  t->asymbol->has.add(ss);
@@ -502,9 +508,9 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
       break;
     default: break;
   }
-  Vec<BaseAST *> asts;
-  ast->getStmts(asts);
-  forv_BaseAST(a, asts)
+  GetStmts* getStmts = new GetStmts();
+  ast->traverseList(getStmts);
+  forv_BaseAST(a, getStmts->stmts)
     define_labels(a, labelmap);
 #endif
   return 0;
@@ -546,9 +552,9 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 #endif
     default: break;
   }
-  Vec<BaseAST *> asts;
-  ast->getStmts(asts);
-  forv_BaseAST(a, asts)
+  GetStmts* getStmts = new GetStmts();
+  ast->traverseList(getStmts);
+  forv_BaseAST(a, getStmts->stmts)
     if (resolve_labels(a, labelmap, return_label, break_label, continue_label) < 0)
       return -1;
   return 0;
@@ -679,9 +685,9 @@ static Sym *fnsym = 0;
 static int
 gen_if1(BaseAST *ast) {
   // bottom's up
-  Vec<BaseAST *> asts;
-  ast->getStmtExprs(asts);
-  forv_BaseAST(a, asts) 
+  GetStuff* getStuff = new GetStuff(GET_STMTS|GET_EXPRS);
+  ast->traverse(getStuff);
+  forv_BaseAST(a, getStuff->asts)
     if (gen_if1(a) < 0)
       return -1;
   switch (ast->astType) {
@@ -1186,11 +1192,11 @@ print_ast(BaseAST *a, Vec<BaseAST *> &asts) {
     return;
   }
   printf("(%d", (int)a->astType);
-  Vec<BaseAST *> aa;
-  a->getStmtExprs(aa);
-  if (aa.n)
+  GetStuff* getStuff = new GetStuff(GET_STMTS|GET_EXPRS);
+  a->traverse(getStuff);
+  if (getStuff->asts.n)
     printf(" ");
-  forv_BaseAST(b, aa)
+  forv_BaseAST(b, getStuff->asts)
     print_ast(b, asts);
   printf(")");
 }
@@ -1209,12 +1215,12 @@ print_baseast(BaseAST *a, Vec<BaseAST *> &asts) {
     return;
   }
   printf("(%d", (int)a->astType);
-  Vec<BaseAST *> aa;
-  a->getBaseASTs(aa);
-  if (aa.n)
+  GetStuff* getStuff = new GetStuff(GET_STMTS|GET_EXPRS);
+  a->traverse(getStuff);
+  if (getStuff->asts.n)
     printf(" ");
-  forv_BaseAST(b, aa) if (b)
-    print_baseast(b, asts);
+  forv_BaseAST(b, getStuff->asts)
+    print_ast(b, asts);
   printf(")");
 }
 
@@ -1340,9 +1346,9 @@ AST_to_IF1(Vec<Stmt *> &stmts) {
 
 void 
 print_AST_Expr_types(BaseAST *ast) {
-  Vec<BaseAST *> asts;
-  ast->getStmtExprs(asts);
-  forv_BaseAST(a, asts) 
+  GetStuff* getStuff = new GetStuff(GET_STMTS|GET_EXPRS);
+  ast->traverse(getStuff);
+  forv_BaseAST(a, getStuff->asts)
     print_AST_Expr_types(a);
   Expr *x = dynamic_cast<Expr*>(ast);
   if (x) {
