@@ -384,6 +384,7 @@ TYPE_EXTERN Type* dtFloat;
 TYPE_EXTERN Type* dtComplex;
 TYPE_EXTERN Type* dtString;
 
+TYPE_EXTERN Type* dtAny;
 TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN Type* dtObject;
 

@@ -1751,6 +1751,7 @@ void initTypes(void) {
   dtString = Symboltable::defineBuiltinType("string", "_string", 
                                             new StringLiteral(""));
   dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
+  dtAny = Symboltable::defineBuiltinType("any", "_any", NULL);
   dtObject = Symboltable::defineBuiltinType("object", "_object", NULL);
   dtLocale = Symboltable::defineBuiltinType("locale", "_locale", NULL);
 

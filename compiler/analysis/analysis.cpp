@@ -911,6 +911,7 @@ build_builtin_symbols() {
   sym_complex64 = dtComplex->asymbol->sym;
   sym_string = dtString->asymbol->sym;
   sym_anynum = dtNumeric->asymbol->sym;
+  sym_any = dtAny->asymbol->sym; 
   sym_object = dtObject->asymbol->sym; 
 
   new_lub_type(sym_anyclass, "anyclass", 0);
