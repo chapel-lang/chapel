@@ -3750,3 +3750,15 @@ Log message:
 Added files:
 	chapel/test/flowanalysis/jplevyak/: review2.chpl review2.good 
 
+---------------------------------------------------------------------------
+
+06/23/04 22:30:04 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Fix for bad sort.
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/: cs1.good cs3.good cs4.good 
+	                                    cs5.good review1.good 
+	                                    review2.good 
+
