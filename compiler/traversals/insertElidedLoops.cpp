@@ -8,16 +8,6 @@
 #include "stringutil.h"
 
 
-class InsertElidedIndices : public Traversal {
- public:
-  Symbol* indices;
-  bool insert;
-  InsertElidedIndices::InsertElidedIndices(Symbol* init_indices);
-  void preProcessExpr(Expr* expr);
-  void postProcessExpr(Expr* expr);
-};
-
-
 InsertElidedIndices::InsertElidedIndices(Symbol* init_indices) {
   indices = init_indices;
   insert = true;

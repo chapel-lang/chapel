@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include "insertVariableInitializations.h"
+#include "insertElidedLoops.h"
 #include "symtab.h"
 #include "symscope.h"
 #include "stmt.h"
@@ -83,14 +84,31 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
   FnCall* call = new FnCall(new Variable(init_array), args);
   ExprStmt* call_stmt = new ExprStmt(call);
   insert_user_init_stmt(stmt, call_stmt);
-  /*
+
+  ForallExpr* domain = dynamic_cast<ForallExpr*>(array_type->domain);
+
+  Symbol* indices = domain->indices;
+  if (!indices) {
+    // Here we create some indices (assuming arithmetic domain)
+    // This should eventually use the IndexType when that is in. --SJD
+    DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
+
+    if (!domain_type) {
+      INT_FATAL(domain, "Domain has no type");
+    }
+
+    for (int i = 0; i < domain_type->numdims; i++) {
+      char* name = glomstrings(2, "_ind_", intstring(i));
+      indices = appendLink(indices, new Symbol(SYMBOL, name));
+    }
+  }
   ForLoopStmt* loop =
-    Symboltable::startForLoop(true, NULL, array_type->domain->copy());
+    Symboltable::startForLoop(true, indices, array_type->domain->copy());
   NoOpStmt* noop_stmt = new NoOpStmt();
   loop = Symboltable::finishForLoop(loop, noop_stmt);
   insert_user_init_stmt(stmt, loop);
   insert_init(noop_stmt, var, array_type->elementType);
-  */
+  TRAVERSE(loop->body, new InsertElidedIndices(loop->index), true);
 }
 
 
