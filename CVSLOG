@@ -21838,3 +21838,22 @@ Added files:
 	chapel/test/classes/deitz/: test_type_in_class2.chpl 
 	                            test_type_in_class2.good 
 
+---------------------------------------------------------------------------
+
+03/28/05 12:26:03 -- deitz
+
+Log message:
+	Added a class called _seq to the internal prelude.  I copy this to
+	implement sequences now rather than build my own.  I also added a
+	bunch of commented out functions which I'll eventually copy but don't
+	yet.
+	
+	Simplified the code to finish creating sequence types.  It now copies
+	_seq from the internal prelude.
+	
+	Removed some old code and cleaned up class codegen.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+
