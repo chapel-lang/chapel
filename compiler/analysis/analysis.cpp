@@ -1019,32 +1019,6 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 	stmt->ainfo->label[0] = target->ainfo->label[0];
       break;
     }
-      /*
-    case STMT_BREAK: {
-      BreakStmt *s = dynamic_cast<BreakStmt*>(ast);
-      if (s->name) {
-	Stmt *target = labelmap->get(if1_cannonicalize_string(if1, s->name));
-	if (!target)
-	  return show_error("unresolved label %s", s->ainfo, s->name);
-	else 
-	  stmt->ainfo->label[0] = target->ainfo->label[1];
-      } else
-	stmt->ainfo->label[0] = break_label;
-      break;
-    }
-    case STMT_CONTINUE: {
-      ContinueStmt *s = dynamic_cast<ContinueStmt*>(ast);
-      if (s->name) {
-	Stmt *target = labelmap->get(if1_cannonicalize_string(if1, s->name));
-	if (!target)
-	  return show_error("unresolved label %s", s->ainfo, s->name);
-	else 
-	  stmt->ainfo->label[0] = target->ainfo->label[0];
-      } else
-	stmt->ainfo->label[0] = continue_label;
-      break;
-    }
-      */
     default: break;
   }
   GetStmts* getStmts = new GetStmts();
@@ -1232,14 +1206,14 @@ undef_or_fn_expr(Expr *ast) {
 }
 
 static int
-gen_if1(BaseAST *ast) {
+gen_if1(BaseAST *ast, BaseAST *parent = 0) {
   // bottom's up
   GetStuff getStuff(GET_STMTS|GET_EXPRS);
   TRAVERSE(ast, &getStuff, true);
   DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast);
   if (!def_stmt || !def_stmt->fnDef())
     forv_BaseAST(a, getStuff.asts)
-      if (gen_if1(a) < 0)
+      if (gen_if1(a, ast) < 0)
 	return -1;
   switch (ast->astType) {
     case STMT: assert(!ast); break;
@@ -1276,16 +1250,6 @@ gen_if1(BaseAST *ast) {
       c->ast = s->ainfo;
       break;
     }
-#if 0
-    case STMT_GOTO:
-    case STMT_BREAK:
-    case STMT_CONTINUE:
-    {
-      Code *c = if1_goto(i, &ast->code, ast->label[0]);
-      c->ast = ast;
-      break;
-    }
-#endif
     case STMT_BLOCK: {
       BlockStmt *s = dynamic_cast<BlockStmt*>(ast);
       Vec<Stmt *> stmts;
@@ -1346,7 +1310,10 @@ gen_if1(BaseAST *ast) {
       switch (sym->asymbol->symbol->astType) {
 	default: break;
 	case SYMBOL_TYPE: 
-	  sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym;
+	  if (parent && parent->astType == EXPR_MEMBERACCESS)
+	    sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym->meta_type;
+	  else
+	    sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym;
 	  break;
       }
       s->ainfo->sym = sym;
