@@ -11383,3 +11383,53 @@ Modified files:
 	chapel/test/compflags/bradc/passlist/: passlist.h test.good 
 	chapel/test/trivial/bradc/protoast/: mypasslist.h 
 
+---------------------------------------------------------------------------
+
+12/09/04 14:24:48 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Add a _this variable to FnSymbol to point to the added "this" field.
+	This also serves as an indicator that the function is a bound function.
+	
+	For non-primitive value classes declared as variables generate a "new"
+	primitive to allocate the object.
+	
+	Complex numbers of various sizes are now registered in IF1 so that
+	they can be declared as variables.
+	
+	Removed --noanalysis flag from classes/deitz/future.... this
+	results in 2 errors, both of which are caused by the way
+	x.grow() is handled.  I have already sent mail to Steve on this,
+	and the fix is simple depending on what the language spec says.
+	I think it is OK to checkin with broken tests if the problems are
+	known and we can expect to solve them relatively quickly.
+	
+	This checkin also fails for everything which uses array indexing.
+	The problem is that the "fixup" pass is not being run on the internal
+	prelude.  Again, Steve knows about this, but I want to checkpoint
+	my work, hence the checkin.
+	
+	Changed the way MemberAcceses are handled.  I now convert
+	 x.foo(...)
+	
+	to be foo(x, ...)
+	
+	We need to rename all member accesses "foo" to be something like "_member_foo"
+	as agreed in the last meeting to put them in different namespaces.
+	
+	Fixed a bug in IF1 printing which was mislabelling symbols.
+	
+	Fixed test cases classes/deitz/future/tesT_method_chpl, test_record1.chpl
+	  test_method2.chpl by handling instance variables and the new
+	  "this" parameter.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp if1.cpp 
+	                           sym.cpp 
+	chapel/compiler/include/: if1.h sym.h symbol.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
+	chapel/compiler/vparser/: parse_ast.cpp 
+	chapel/test/classes/deitz/future/: COMPOPTS 
+
