@@ -217,11 +217,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
   if (!exportMe) {
     fprintf(outfile, "static ");
   }
-  if (type->isNull()) {
-    fprintf(outfile, "void");
-  } else {
-    type->codegen(outfile);
-  }
+  type->codegen(outfile);
   fprintf(outfile, " ");
   this->codegen(outfile);
   fprintf(outfile, "(");

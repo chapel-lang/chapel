@@ -261,7 +261,7 @@ void FnDefStmt::print(FILE* outfile) {
   fprintf(outfile, "(");
   fn->formals->printDefList(outfile, ";\n");
   fprintf(outfile, ")");
-  if (fn->type->isNull()) {
+  if (fn->type == dtVoid) {
     fprintf(outfile, " ");
   } else {
     fprintf(outfile, ": ");

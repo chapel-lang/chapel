@@ -73,8 +73,7 @@ static Stmt* createInitFn(Stmt* program) {
   Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
                                                  : new NullStmt());
   FnSymbol* initFun = Symboltable::defineFunction("__init", new NullSymbol(), 
-						   new NullType(), 
-						   initFunBody, true);
+						   dtVoid, initFunBody, true);
   FnDefStmt* initFunDef = new FnDefStmt(initFun);
 
   program = appendLink(program, initFunDef);

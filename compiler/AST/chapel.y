@@ -287,7 +287,7 @@ formals:
 
 fnrettype:
   /* empty */
-    { $$ = new NullType(); }
+    { $$ = dtVoid; }
 | ':'
     { $$ = dtUnknown; }
 | ':' type

@@ -70,14 +70,20 @@ void Type::printDef(FILE* outfile) {
 }
 
 void Type::codegen(FILE* outfile) {
+  // BLC: Perhaps we should just rename the built-in types between
+  // parsing and codegen?
   if (this == dtInteger) {
     fprintf(outfile, "_integer64");
   } else if (this == dtFloat) {
     fprintf(outfile, "_float64");
   } else if (this == dtString) {
     fprintf(outfile, "_string");
-  } else {
+  } else if (this == dtVoid) {
+    fprintf(outfile, "void");
+  } else if (this == dtUnknown) {
     fprintf(outfile, "???");
+  } else {
+    INT_FATAL(this, "Don't know how to codegen() for all types yet");
   }
 }
 
