@@ -1066,8 +1066,10 @@ gen_if1(BaseAST *ast) {
       send->ast = s->ainfo;
       if (symbol)
 	if1_add_send_arg(if1, send, symbol);
-      else
-	if1_add_send_arg(if1, send, s->baseExpr->ainfo->rval);
+      else {
+	Sym *temp = gen_move(s->baseExpr->ainfo->rval, s);
+	if1_add_send_arg(if1, send, temp);
+      }
       forv_Vec(Expr, a, args)
 	if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
