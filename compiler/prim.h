@@ -42,12 +42,13 @@ class Prim : public gc {
   char *string;
   char *name;
   int nargs; // -n means at least n
+  int nrets;
   int pos;   // position of primitive symbol
   uint nonfunctional:1;
   PrimType *arg_types; // vector excluding primitive symbol
   PrimType *ret_types;
   Vec<AType *> args;
-  Prim(int aindex, char *astring, char *aname, int anargs, int apos, 
+  Prim(int aindex, char *astring, char *aname, int anargs, int apos, int anrets,
        PrimType *aarg_types, PrimType *aret_types, int options);
 };
 #define forv_Prim(_c, _v) forv_Vec(Prim, _c, _v)

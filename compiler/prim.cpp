@@ -11,13 +11,14 @@
 #include "ast.h"
 #include "parse_ast.h"
 
-Prim::Prim(int aindex, char *astring, char *aname, int anargs, int apos, 
+Prim::Prim(int aindex, char *astring, char *aname, int anargs, int apos, int anrets,
 	   PrimType *aarg_types, PrimType *aret_types, int options) {
   index = aindex;
   string = astring;
   name = aname;
   nargs = anargs;
   pos = apos;
+  nrets = anrets;
   arg_types = aarg_types;
   ret_types = aret_types;
   nonfunctional = options & PRIM_NON_FUNCTIONAL;

@@ -24,16 +24,16 @@
  called from 6 in __init at cs4.v:1
  called from 7 in __init at cs4.v:1
  called from 7 in __init at cs4.v:1
- called from 73 in new at prelude.v:73
- called from 73 in new at prelude.v:73
- called from 73 in new at prelude.v:73
- called from 73 in new at prelude.v:73
- called from 73 in new at prelude.v:73
- called from 74 in operator at prelude.v:74
- called from 74 in operator at prelude.v:74
- called from 74 in operator at prelude.v:74
- called from 74 in operator at prelude.v:74
- called from 74 in operator at prelude.v:74
+ called from 74 in new at prelude.v:74
+ called from 74 in new at prelude.v:74
+ called from 74 in new at prelude.v:74
+ called from 74 in new at prelude.v:74
+ called from 74 in new at prelude.v:74
+ called from 75 in operator at prelude.v:75
+ called from 75 in operator at prelude.v:75
+ called from 75 in operator at prelude.v:75
+ called from 75 in operator at prelude.v:75
+ called from 75 in operator at prelude.v:75
  called from 8 in __init at cs4.v:1
  called from 8 in __init at cs4.v:1
  called from 9 in __init at cs4.v:1
@@ -57,32 +57,32 @@ function makeD cs4.v:4
 function makeD cs4.v:4
 function makeD cs4.v:4
 function makeD cs4.v:4
-function new prelude.v:73
-function new prelude.v:73
-function new prelude.v:73
-function new prelude.v:73
-function new prelude.v:73
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:74
-function operator prelude.v:79
-function operator prelude.v:79
-function operator prelude.v:79
-function print prelude.v:133
+function new prelude.v:74
+function new prelude.v:74
+function new prelude.v:74
+function new prelude.v:74
+function new prelude.v:74
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:75
+function operator prelude.v:80
+function operator prelude.v:80
+function operator prelude.v:80
+function print prelude.v:134
 globals
 makeC::c(cs4.v:3) ( C (cs4.v:1) )
 makeC::c(cs4.v:3) ( C (cs4.v:1) )
@@ -96,47 +96,47 @@ makeD::d(cs4.v:4) ( D (cs4.v:2) )
 makeD::d(cs4.v:4) ( D (cs4.v:2) )
 makeD::d(cs4.v:4) ( D (cs4.v:2) )
 makeD::d(cs4.v:4) ( D (cs4.v:2) )
-new::a(prelude.v:73) ( C (cs4.v:1) )
-new::a(prelude.v:73) ( C (cs4.v:1) )
-new::a(prelude.v:73) ( D (cs4.v:2) )
-new::a(prelude.v:73) ( D (cs4.v:2) )
-new::a(prelude.v:73) ( D (cs4.v:2) )
-new::o(prelude.v:73) ( C (cs4.v:1) )
-new::o(prelude.v:73) ( C (cs4.v:1) )
-new::o(prelude.v:73) ( C (cs4.v:1) )
-new::o(prelude.v:73) ( C (cs4.v:1) )
-new::o(prelude.v:73) ( D (cs4.v:2) )
-new::o(prelude.v:73) ( D (cs4.v:2) )
-new::o(prelude.v:73) ( D (cs4.v:2) )
-new::o(prelude.v:73) ( D (cs4.v:2) )
-new::o(prelude.v:73) ( D (cs4.v:2) )
-new::o(prelude.v:73) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( C (cs4.v:1) )
-operator::a(prelude.v:74) ( C (cs4.v:1) )
-operator::a(prelude.v:74) ( C (cs4.v:1) )
-operator::a(prelude.v:74) ( C (cs4.v:1) )
-operator::a(prelude.v:74) ( C (cs4.v:1) )
-operator::a(prelude.v:74) ( C (cs4.v:1) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:74) ( D (cs4.v:2) )
-operator::a(prelude.v:79) ( float64 (prelude.v:42) )
-operator::a(prelude.v:79) ( float64 (prelude.v:42) )
-operator::a(prelude.v:79) ( int32 (prelude.v:29) )
-operator::b(prelude.v:79) ( float64 (prelude.v:42) )
-operator::b(prelude.v:79) ( float64 (prelude.v:42) )
-operator::b(prelude.v:79) ( float64 (prelude.v:42) )
-print::a(prelude.v:133) ( float64 (prelude.v:42) )
+new::a(prelude.v:74) ( C (cs4.v:1) )
+new::a(prelude.v:74) ( C (cs4.v:1) )
+new::a(prelude.v:74) ( D (cs4.v:2) )
+new::a(prelude.v:74) ( D (cs4.v:2) )
+new::a(prelude.v:74) ( D (cs4.v:2) )
+new::o(prelude.v:74) ( C (cs4.v:1) )
+new::o(prelude.v:74) ( C (cs4.v:1) )
+new::o(prelude.v:74) ( C (cs4.v:1) )
+new::o(prelude.v:74) ( C (cs4.v:1) )
+new::o(prelude.v:74) ( D (cs4.v:2) )
+new::o(prelude.v:74) ( D (cs4.v:2) )
+new::o(prelude.v:74) ( D (cs4.v:2) )
+new::o(prelude.v:74) ( D (cs4.v:2) )
+new::o(prelude.v:74) ( D (cs4.v:2) )
+new::o(prelude.v:74) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( C (cs4.v:1) )
+operator::a(prelude.v:75) ( C (cs4.v:1) )
+operator::a(prelude.v:75) ( C (cs4.v:1) )
+operator::a(prelude.v:75) ( C (cs4.v:1) )
+operator::a(prelude.v:75) ( C (cs4.v:1) )
+operator::a(prelude.v:75) ( C (cs4.v:1) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:75) ( D (cs4.v:2) )
+operator::a(prelude.v:80) ( float64 (prelude.v:37) )
+operator::a(prelude.v:80) ( float64 (prelude.v:37) )
+operator::a(prelude.v:80) ( int32 (prelude.v:24) )
+operator::b(prelude.v:80) ( float64 (prelude.v:37) )
+operator::b(prelude.v:80) ( float64 (prelude.v:37) )
+operator::b(prelude.v:80) ( float64 (prelude.v:37) )
+print::a(prelude.v:134) ( float64 (prelude.v:37) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:58) ( tuple (prelude.v:14) )
+system::null(prelude.v:59) ( tuple (prelude.v:14) )
 user::C(cs4.v:1) ( C (cs4.v:1) )
 user::D(cs4.v:2) ( D (cs4.v:2) )
 user::__init(cs4.v:1) ( __init (cs4.v:1) )

@@ -953,9 +953,11 @@ add_send_constraints(EntrySet *es) {
     if (p->prim) {
       int start = (p->rvals.v[0]->sym == sym_operator) ? 1 : 0;
       // return constraints
-      assert(p->lvals.n < 2);
       for (int i = 0; i < p->lvals.n; i++) {
-	switch (p->prim->ret_types[i]) {
+	int ii = i;
+	if (p->prim->nrets < 0 || p->prim->nrets <= i)
+	  ii = -p->prim->nrets -1; // last
+	switch (p->prim->ret_types[ii]) {
 	  case PRIM_TYPE_ANY: break;
 	  case PRIM_TYPE_BOOL: update_in(make_AVar(p->lvals.v[i], es), bool_type); break;
 	  case PRIM_TYPE_SIZE: update_in(make_AVar(p->lvals.v[i], es), size_type); break;

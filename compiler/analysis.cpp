@@ -33,6 +33,11 @@ static Sym *write_symbol = 0;
 static Sym *flood_symbol = 0;
 static Sym *completedim_symbol = 0;
 
+static Sym *sym_index = 0;
+static Sym *sym_domain = 0;
+static Sym *sym_array = 0;
+static Sym *sym_sequence = 0;
+
 ASymbol::ASymbol() : xsymbol(0) {
 }
 
@@ -231,14 +236,16 @@ build_types(Vec<BaseAST *> &syms) {
 	} else if (t == dtFloat) {
 	  t->asymbol->type_kind = Type_ALIAS;
 	  t->asymbol->alias = sym_float;
-	} else if (t == dtFloat) {
+	} else if (t == dtComplex) {
 	  t->asymbol->type_kind = Type_ALIAS;
-	  t->asymbol->alias = sym_float;
+	  t->asymbol->alias = sym_complex;
 	} else if (t == dtString) {
 	  t->asymbol->type_kind = Type_ALIAS;
 	  t->asymbol->alias = sym_string;
-	} else
+	} else if (t == dtUnknown) {
 	  t->asymbol->type_kind = Type_UNKNOWN;
+	} else
+	  assert(!"case");
 	break;
       case TYPE_ENUM: {
 	t->asymbol->type_kind = Type_TAGGED;
@@ -251,9 +258,26 @@ build_types(Vec<BaseAST *> &syms) {
 	}
 	break;
       }
-      case TYPE_DOMAIN: build_record_type(t, sym_domain); break;
-      case TYPE_INDEX: build_record_type(t, sym_tuple); break;
-      case TYPE_ARRAY: build_record_type(t, sym_array); break;
+      case TYPE_DOMAIN: 
+	build_record_type(t, sym_domain);
+	break;
+      case TYPE_INDEX: 
+	build_record_type(t, sym_tuple);
+	break;
+      case TYPE_ARRAY: 
+	  build_record_type(t, sym_array); 
+	break;
+      case TYPE_TUPLE: {	
+	TupleType *tt = dynamic_cast<TupleType*>(t);
+	forv_Vec(Type, c, tt->components) {
+	  Sym *x = new_sym();
+	  x->type = c->asymbol;
+	  t->asymbol->has.add(x);
+	}
+	t->asymbol->implements.add(sym_tuple);
+	t->asymbol->includes.add(sym_tuple);
+	break;
+      }
       case TYPE_USER: {
 	UserType *tt = dynamic_cast<UserType*>(t);
 	t->asymbol->type_kind = Type_ALIAS;
@@ -268,17 +292,6 @@ build_types(Vec<BaseAST *> &syms) {
 	  t->asymbol->implements.add(tt->parentClass->asymbol);
 	  t->asymbol->includes.add(tt->parentClass->asymbol);
 	}
-	break;
-      }
-      case TYPE_TUPLE: {	
-	TupleType *tt = dynamic_cast<TupleType*>(t);
-	forv_Vec(Type, c, tt->components) {
-	  Sym *x = new_sym();
-	  x->type = c->asymbol;
-	  t->asymbol->has.add(x);
-	}
-	t->asymbol->implements.add(sym_tuple);
-	t->asymbol->includes.add(sym_tuple);
 	break;
       }
     }
@@ -347,7 +360,6 @@ build_builtin_symbols() {
   new_primitive_type(sym_function, "function");
   new_primitive_type(sym_continuation, "continuation");
   new_primitive_type(sym_vector, "vector");
-  new_primitive_type(sym_tuple, "tuple");
   new_primitive_type(sym_void, "void");
   if (!sym_object)
     sym_object = new_sym("object", 1);
@@ -358,9 +370,6 @@ build_builtin_symbols() {
   new_primitive_type(sym_value, "value");
   new_primitive_type(sym_set, "set");
   new_primitive_type(sym_sequence, "sequence");
-  new_primitive_type(sym_index, "index");
-  new_primitive_type(sym_domain, "domain");
-  new_primitive_type(sym_array, "array");
   new_primitive_type(sym_int8, "int8");
   new_primitive_type(sym_int16, "int16");
   new_primitive_type(sym_int32, "int32");
@@ -381,12 +390,17 @@ build_builtin_symbols() {
   new_primitive_type(sym_enum_element, "enum_element");
   new_primitive_type(sym_float32, "float32");
   new_primitive_type(sym_float64, "float64");
-  new_primitive_type(sym_float80, "float80");
   new_primitive_type(sym_float128, "float128");
   new_primitive_type(sym_float, "float");
   new_sum_type(sym_anyfloat, "anyfloat", 
-	       sym_float32, sym_float64, sym_float80, sym_float128, 0);
-  new_sum_type(sym_anynum, "anynum", sym_anyint, sym_anyfloat, 0);
+	       sym_float32, sym_float64, sym_float128, 0);
+  new_primitive_type(sym_complex32, "complex32");
+  new_primitive_type(sym_complex64, "complex64");
+  new_primitive_type(sym_complex128, "complex128");
+  new_primitive_type(sym_complex, "complex");
+  new_sum_type(sym_anycomplex, "anycomplex", 
+	       sym_complex32, sym_complex64, sym_complex128, 0);
+  new_sum_type(sym_anynum, "anynum", sym_anyint, sym_anyfloat, sym_anycomplex, 0);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
   if (!sym_new_object) {
@@ -396,19 +410,25 @@ build_builtin_symbols() {
   
   new_global_variable(sym_null, "null");
   sym_init = new_sym(); // placeholder
+  ((ASymbol*)sym_void)->xsymbol = dtVoid;
+  ((ASymbol*)sym_bool)->xsymbol = dtBoolean;
+  ((ASymbol*)sym_int64)->xsymbol = dtInteger;
+  ((ASymbol*)sym_float64)->xsymbol = dtFloat;
+  ((ASymbol*)sym_complex64)->xsymbol = dtComplex;
+  ((ASymbol*)sym_string)->xsymbol = dtString;
+  sym_tuple = dtTuple->asymbol;
+  ((ASymbol*)sym_tuple)->xsymbol = dtTuple;
+  sym_index = dtIndex->asymbol;
+  ((ASymbol*)sym_index)->xsymbol = dtIndex;
+  sym_domain = dtDomain->asymbol;
+  ((ASymbol*)sym_domain)->xsymbol = dtDomain;
+  sym_array = dtArray->asymbol;
+  ((ASymbol*)sym_array)->xsymbol = dtArray;
+  // locale
+  // timer
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
 #undef S
-
-  ((ASymbol*)sym_int64)->xsymbol = dtInteger;
-  ((ASymbol*)sym_float64)->xsymbol = dtFloat;
-  ((ASymbol*)sym_string)->xsymbol = dtString;
-  ((ASymbol*)sym_bool)->xsymbol = dtBoolean;
-  ((ASymbol*)sym_index)->xsymbol = dtIndex;
-  ((ASymbol*)sym_domain)->xsymbol = dtDomain;
-  ((ASymbol*)sym_array)->xsymbol = dtArray;
-  ((ASymbol*)sym_tuple)->xsymbol = dtTuple;
-  ((ASymbol*)sym_void)->xsymbol = dtVoid;
 }
 
 static int
@@ -537,21 +557,26 @@ gen_for(BaseAST *a) {
   getLinkElements(body, s->body);
   forv_Stmt(ss, body)
     if1_gen(if1, &body_code, ss->ainfo->code);
-  Sym *index = s->index->asymbol;
+  Vec<Symbol*> indices;
+  getLinkElements(indices, s->index);
   Code *setup_code = 0;
   if1_gen(if1, &setup_code, s->domain->ainfo->code);
-  send = if1_send(if1, &setup_code, 3, 1, sym_primitive, domain_start_index_symbol, s->domain->ainfo->rval, 
-		  index);
+  send = if1_send(if1, &setup_code, 3, 0, sym_primitive, domain_start_index_symbol, 
+		  s->domain->ainfo->rval);
+  forv_Vec(Symbol, i, indices)
+    if1_add_send_result(if1, send, i->asymbol);
   send->ast = s->ainfo;
   Sym *condition_rval = new_sym();
   Code *condition_code = 0;
-  send = if1_send(if1, &condition_code, 4, 1, sym_primitive, domain_valid_index_symbol,
-		  s->domain->ainfo->rval, index,
-		  condition_rval);
+  send = if1_send(if1, &condition_code, 3, 1, sym_primitive, domain_valid_index_symbol,
+		  s->domain->ainfo->rval, condition_rval);
+  forv_Vec(Symbol, i, indices)
+    if1_add_send_arg(if1, send, i->asymbol);
   send->ast = s->ainfo;
-  send = if1_send(if1, &body_code, 4, 1, sym_primitive, domain_next_index_symbol, 
-		  s->domain->ainfo->rval, index, 
-		  condition_rval);
+  send = if1_send(if1, &body_code, 3, 1, sym_primitive, domain_next_index_symbol, 
+		  s->domain->ainfo->rval, condition_rval);
+  forv_Vec(Symbol, i, indices)
+    if1_add_send_arg(if1, send, i->asymbol);
   send->ast = s->ainfo;
   if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
 	   condition_rval, setup_code, 
@@ -1079,15 +1104,16 @@ finalize_symbols(IF1 *i) {
 
 static void
 domain_start_index(PNode *pn, EntrySet *es) {
-  AVar *container = make_AVar(pn->lvals.v[0], es);
-  creation_point(container, sym_index);
+  forv_Var(v, pn->lvals) {
+    AVar *index = make_AVar(v, es);
+    creation_point(index, sym_index);
+  }
 }
 
 static void
 domain_next_index(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  AVar *index = make_AVar(pn->rvals.v[3], es);
-  flow_vars(index, result);
+  update_in(result, make_abstract_type(sym_int));
 }
 
 static void

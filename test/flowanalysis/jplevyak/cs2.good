@@ -3,18 +3,18 @@
  called from 2 in __init at cs2.v:1
  called from 3 in __init at cs2.v:1
  called from 3 in __init at cs2.v:1
-aa::a(cs2.v:1) ( int32 (prelude.v:29) )
-aa::x(cs2.v:1) ( int32 (prelude.v:29) )
+aa::a(cs2.v:1) ( int32 (prelude.v:24) )
+aa::x(cs2.v:1) ( int32 (prelude.v:24) )
 function __init cs2.v:1
 function __init prelude.v:7
 function __init__ <unknown>:0
 function aa cs2.v:1
-function operator prelude.v:74
-function print prelude.v:133
+function operator prelude.v:75
+function print prelude.v:134
 globals
-operator::a(prelude.v:74) ( tuple (prelude.v:14) )
-print::a(prelude.v:133) ( int32 (prelude.v:29) )
+operator::a(prelude.v:75) ( tuple (prelude.v:14) )
+print::a(prelude.v:134) ( int32 (prelude.v:24) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:58) ( tuple (prelude.v:14) )
+system::null(prelude.v:59) ( tuple (prelude.v:14) )
 user::__init(cs2.v:1) ( __init (cs2.v:1) )
 user::a1(cs2.v:2) ( tuple (prelude.v:14) )

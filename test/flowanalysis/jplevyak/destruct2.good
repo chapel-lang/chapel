@@ -4,29 +4,29 @@
  called from 3 in __init at destruct2.v:1
  called from 4 in __init at destruct2.v:1
  called from 4 in __init at destruct2.v:1
- called from 73 in new at prelude.v:73
- called from 74 in operator at prelude.v:74
+ called from 74 in new at prelude.v:74
+ called from 75 in operator at prelude.v:75
 __init::self(destruct2.v:1) ( A (destruct2.v:1) )
 function __init destruct2.v:1
 function __init destruct2.v:1
 function __init prelude.v:7
 function __init__ <unknown>:0
 function f destruct2.v:2
-function new prelude.v:73
-function operator prelude.v:74
-function operator prelude.v:79
-function print prelude.v:133
+function new prelude.v:74
+function operator prelude.v:75
+function operator prelude.v:80
+function print prelude.v:134
 globals
-new::a(prelude.v:73) ( A (destruct2.v:1) )
-new::o(prelude.v:73) ( A (destruct2.v:1) )
-new::o(prelude.v:73) ( A (destruct2.v:1) )
-operator::a(prelude.v:74) ( A (destruct2.v:1) )
-operator::a(prelude.v:79) ( int32 (prelude.v:29) )
-operator::b(prelude.v:79) ( int32 (prelude.v:29) )
-print::a(prelude.v:133) ( int32 (prelude.v:29) )
+new::a(prelude.v:74) ( A (destruct2.v:1) )
+new::o(prelude.v:74) ( A (destruct2.v:1) )
+new::o(prelude.v:74) ( A (destruct2.v:1) )
+operator::a(prelude.v:75) ( A (destruct2.v:1) )
+operator::a(prelude.v:80) ( int32 (prelude.v:24) )
+operator::b(prelude.v:80) ( int32 (prelude.v:24) )
+print::a(prelude.v:134) ( int32 (prelude.v:24) )
 system::__init(prelude.v:7) ( __init (prelude.v:7) )
-system::null(prelude.v:58) ( tuple (prelude.v:14) )
+system::null(prelude.v:59) ( tuple (prelude.v:14) )
 user::A(destruct2.v:1) ( A (destruct2.v:1) )
 user::__init(destruct2.v:1) ( __init (destruct2.v:1) )
-user::x(destruct2.v:3) ( int32 (prelude.v:29) )
-user::y(destruct2.v:3) ( int32 (prelude.v:29) )
+user::x(destruct2.v:3) ( int32 (prelude.v:24) )
+user::y(destruct2.v:3) ( int32 (prelude.v:24) )

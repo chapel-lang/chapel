@@ -20,7 +20,7 @@ class Code;
 class LabelMap;
 
 enum IF1_num_kind {
-  IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT
+  IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
 };
 
 enum Type_kind {
@@ -55,6 +55,8 @@ union Immediate {
   int64 v_int64;
   float32 v_float32;
   float64 v_float64;
+  complex32 v_complex32;
+  complex64 v_complex64;
   char *v_string;
 };
 
@@ -94,7 +96,7 @@ class Sym : public gc {
   unsigned int		incomplete:1;		// used by clone.cpp
 
   unsigned int		type_kind:4;
-  unsigned int		num_kind:2;		// Sort of number class
+  unsigned int		num_kind:3;		// Sort of number class
   unsigned int		num_index:3;		// Precision of number class
 
   char			*alt_name;		// alternative name (pattern/extern)

@@ -17,12 +17,7 @@ type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";
 type value __name "value";
-
 type set __name "set";
-type sequence __name "sequence";
-type index __name "index";
-type domain __name "domain";
-type array __name "array";
 
 type int8 __name "int8";
 type int16 __name "int16";
@@ -40,13 +35,19 @@ type anyint __name "anyint" =
 
 type float32 __name "float32";
 type float64 __name "float64";
-type float80 __name "float80";
 type float128 __name "float128";
 type float __name "float" = float64;
 type anyfloat __name "anyfloat" = 
-  float32 | float64 | float80 | float128;
+  float32 | float64 | float128;
 
-type anynum __name "anynum" = anyint | anyfloat;
+type complex32 __name "complex32";
+type complex64 __name "complex64";
+type complex128 __name "complex128";
+type complex __name "complex" = complex64;
+type anycomplex __name "anycomplex" = 
+  complex32 | complex64 | complex128;
+
+type anynum __name "anynum" = anyint | anyfloat | anycomplex;
 type char __name "char" = uint8;
 type size __name "size" = uint32;
 type true __name "true"; type false __name "false"; type bool __name "bool" = true | false;

@@ -435,8 +435,10 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     case Builtin_uint64:
     case Builtin_float32:
     case Builtin_float64:
-    case Builtin_float80:
     case Builtin_float128:
+    case Builtin_complex32:
+    case Builtin_complex64:
+    case Builtin_complex128:
     case Builtin_string:
     case Builtin_function:
       sym->type_kind = Type_PRIMITIVE;
@@ -1388,9 +1390,6 @@ gen_constructor(IF1 *i, ParseAST *ast) {
       break;
     case AST_vector: 
       constructor = sym_make_vector; 
-      break;
-    case AST_index:
-      constructor = sym_sequence;
       break;
   }
   if1_add_send_arg(i, send, constructor);

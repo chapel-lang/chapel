@@ -492,7 +492,6 @@ anyint	 : char | int8 | uint8 | int16 | uint16 |
 base_float ::= "(([0-9]+.[0-9]*|[0-9]*.[0-9]+)([eE][\-\+]?[0-9]+)?|[0-9]+[eE][\-\+]?[0-9]+)";
 float32	   ::= base_float "(f|F)";
 float64	   ::= base_float "(d|D)";
-float80	   ::= base_float "(t|T)";
 float128   ::= base_float "(l|L)";
 float	   ::= base_float "/[^\.]";
 

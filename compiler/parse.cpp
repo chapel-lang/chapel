@@ -79,10 +79,10 @@ static char *v_int_type_names[IF1_INT_TYPE_NUM][2] = {
   { "uint64",  "int64" }
 };
 static char *v_float_type_names[IF1_FLOAT_TYPE_NUM] = {
-  "float32",  "float64", "float80", "float128"
+  "float32",  "float64", "float128"
 };
 static int v_float_type_sizes[IF1_FLOAT_TYPE_NUM] = {
-  32, 64, 80, 128
+  32, 64, 128
 };
 
 void
