@@ -10339,3 +10339,27 @@ Modified files:
 Added files:
 	chapel/test/dispatch/jplevyak/: dispatch-8.good dispatch-8.v 
 
+---------------------------------------------------------------------------
+
+11/24/04 13:32:11 -- deitz
+
+Log message:
+	Changed parsing of enum types so that they are constructed with commas
+	rather than bars.  Added a couple of new tests to test enums.  The one
+	in the future directory currently doesn't typecheck.
+	
+	Made a superficial change to how integer literals are parsed just so
+	they are handled in the same way as the other literals.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/flowanalysis/newast/: enum.chpl enumarray.chpl 
+	chapel/test/trivial/bradc/domarr/: enumarray.chpl 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq.chpl 
+	chapel/test/trivial/bradc/protoast/codegen/: enum.chpl 
+	chapel/test/trivial/shannon/: readWriteEnum.chpl 
+Added files:
+	chapel/test/types/enum/deitz/: test_enum1.chpl test_enum1.good 
+	chapel/test/types/enum/deitz/future/: NOTEST test_enum2.chpl 
+
