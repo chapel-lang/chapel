@@ -155,6 +155,8 @@ class FnSymbol : public Symbol {
   Symbol* formals;
   Type* retType;
   Symbol* _this;
+  VarSymbol* _setter; /* the variable this function sets if it is a setter */
+  VarSymbol* _getter; /* the variable this function gets if it is a getter */
   Stmt* body;
   Symbol* classBinding;
   _method_type method_type;

@@ -71,6 +71,44 @@ static void build_union_id_enum(StructuralType* structType) {
 }
 
 
+static void build_setters_and_getters(StructuralType* structType) {
+  forv_Vec(VarSymbol, tmp, structType->fields) {
+    char* setter_name = glomstrings(2, "set_", tmp->name);
+    FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
+    setter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_", setter_name);
+    ParamSymbol* setter_this = new ParamSymbol(PARAM_REF, "this", structType);
+    ParamSymbol* setter_arg = new ParamSymbol(PARAM_BLANK, "_arg", tmp->type);
+    setter_this->append(setter_arg);
+    Expr* setter_lhs = new MemberAccess(new Variable(setter_this), tmp);
+    Expr* setter_rhs = new Variable(setter_arg);
+    Expr* setter_assignment = new AssignOp(GETS_NORM, setter_lhs, setter_rhs);
+    Stmt* setter_stmt = new ExprStmt(setter_assignment);
+    Stmt* setter_body = new BlockStmt(setter_stmt);
+    DefExpr* setter_def_expr =
+      Symboltable::finishFnDef(setter_fn, setter_this, dtVoid, setter_body);
+    DefStmt* setter_def_stmt = new DefStmt(setter_def_expr);
+    structType->addDeclarations(setter_def_stmt);
+    setter_fn->classBinding = structType->symbol;
+    setter_fn->_this = setter_this;
+    setter_fn->_setter = tmp;
+
+    char* getter_name = glomstrings(2, "get_", tmp->name);
+    FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(getter_name));
+    getter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_", getter_name);
+    ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
+    Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
+    Stmt* getter_return = new ReturnStmt(getter_expr);
+    DefExpr* getter_def_expr =
+      Symboltable::finishFnDef(getter_fn, getter_this, tmp->type, getter_return);
+    DefStmt* getter_def_stmt = new DefStmt(getter_def_expr);
+    structType->addDeclarations(getter_def_stmt);
+    getter_fn->classBinding = structType->symbol;
+    getter_fn->_this = getter_this;
+    getter_fn->_getter = tmp;
+  }
+}
+
+
 static void build_record_equality_function(StructuralType* structType) {
   if (dynamic_cast<ClassType*>(structType)) {
     return;
@@ -171,6 +209,7 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
 
   if (TypeSymbol* type_symbol = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
     if (StructuralType* structType = dynamic_cast<StructuralType*>(type_symbol->type)) {
+      build_setters_and_getters(structType);
       build_union_id_enum(structType);
       build_constructor(structType);
       build_record_equality_function(structType);
