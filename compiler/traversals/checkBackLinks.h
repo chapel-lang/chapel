@@ -9,7 +9,7 @@ class CheckBackLinks : public Traversal {
   void preProcessExpr(Expr* expr);
   void preProcessSymbol(Symbol* symbol);
 
-  void run(Module* moduleList);
+  void run(ModuleSymbol* moduleList);
 };
 
 #endif

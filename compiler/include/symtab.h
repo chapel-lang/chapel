@@ -19,6 +19,7 @@ class Symboltable {
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);
+  static ModuleSymbol* getModuleList(void);
   static FnSymbol* getCurrentFn(void);
 
   static void define(Symbol* sym);
@@ -31,6 +32,7 @@ class Symboltable {
 
   static void startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(Stmt* body);
+  static ModuleSymbol* defineModule(char* name, bool internal = false);
   static TypeDefStmt* defineUserType(char* name, Type* definition, 
 				     Expr* initializer = nilExpr);
   static ParamSymbol* defineParams(paramType formaltag, Symbol* idents,

@@ -53,7 +53,7 @@ void CheckBackLinks::preProcessSymbol(Symbol* symbol) {
 }
 
 
-void CheckBackLinks::run(Module* moduleList) {
+void CheckBackLinks::run(ModuleSymbol* moduleList) {
   error = false;
   Traversal::run(moduleList);
   if (error) {

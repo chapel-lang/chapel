@@ -1,8 +1,8 @@
 #include <typeinfo>
 #define TYPE_EXTERN
 #include "expr.h"
+#include "files.h"
 #include "misc.h"
-#include "module.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
@@ -267,12 +267,12 @@ void EnumType::codegenIORoutines(FILE* outfile) {
   bool isRead;
 
   isRead = true;
-  codegenIOPrototype(currentModule->intheadfile, name, isRead);
-  fprintf(currentModule->intheadfile, ";\n");
+  codegenIOPrototype(intheadfile, name, isRead);
+  fprintf(intheadfile, ";\n");
   
   isRead = false;
-  codegenIOPrototype(currentModule->intheadfile, name, isRead);
-  fprintf(currentModule->intheadfile, ";\n\n");
+  codegenIOPrototype(intheadfile, name, isRead);
+  fprintf(intheadfile, ";\n\n");
 
   isRead = true;
   codegenIOPrototype(outfile, name, isRead);
@@ -558,12 +558,12 @@ void UserType::codegenIORoutines(FILE* outfile) {
   bool isRead;
 
   isRead = true;
-  codegenIOPrototype(currentModule->intheadfile, name, isRead);
-  fprintf(currentModule->intheadfile, ";\n");
+  codegenIOPrototype(intheadfile, name, isRead);
+  fprintf(intheadfile, ";\n");
 
   isRead = false;
-  codegenIOPrototype(currentModule->intheadfile, name, isRead);
-  fprintf(currentModule->intheadfile, ";\n\n");
+  codegenIOPrototype(intheadfile, name, isRead);
+  fprintf(intheadfile, ";\n\n");
 
   isRead = true;
   codegenIOPrototypeBody(outfile, name, definition, isRead);
@@ -661,12 +661,12 @@ void ClassType::codegenIORoutines(FILE* outfile) {
   bool isRead;
 
   isRead = true;
-  codegenIOPrototype(currentModule->intheadfile, name, isRead);
-  fprintf(currentModule->intheadfile, ";\n");
+  codegenIOPrototype(intheadfile, name, isRead);
+  fprintf(intheadfile, ";\n");
 
   isRead = false;
-  codegenIOPrototype(currentModule->intheadfile, name, isRead);
-  fprintf(currentModule->intheadfile, ";\n\n");
+  codegenIOPrototype(intheadfile, name, isRead);
+  fprintf(intheadfile, ";\n\n");
 
   isRead = true;
   codegenIOPrototype(outfile, name, isRead);

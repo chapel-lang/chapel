@@ -19,7 +19,6 @@
 #include "graph.h"
 #include "inline.h"
 #include "misc.h"
-#include "module.h"
 #include "mysystem.h"
 #include "nils.h"
 #include "pdb.h"
@@ -172,9 +171,9 @@ compile_all(void) {
     Symboltable::init();
     initTypes(); // BLC : clean these up
     initExpr();
-    Module* moduleList = Module::createModules(arg_state.nfile_arguments,
-					       arg_state.file_argument);
-    runPasses(passlist_filename, moduleList);
+    FnSymbol::init();
+    testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
+    runPasses(passlist_filename);
   } else
     for (int i = 0; i < arg_state.nfile_arguments; i++)
       if (compile_one_test_file(arg_state.file_argument[i])) break;

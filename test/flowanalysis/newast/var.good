@@ -4,19 +4,19 @@
 ::1(var.chpl:1) ( int64 (<unknown>:0) )
 ::2.0(var.chpl:2) ( float64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__init(<internal>:0) ( __init (<unknown>:0) )
-::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_var(<internal>:0) ( __init_var (<unknown>:0) )
+::__init_var(<unknown>:0) ( __init_var (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::x(<unknown>:0) ( int64 (<unknown>:0) )
 ::x(var.chpl:2) ( int64 (<unknown>:0) )
 ::x(var.chpl:2) ( int64 (<unknown>:0) )
 ::x(var.chpl:3) ( int64 (<unknown>:0) )
 function __entryPoint <internal>:0
-function __init <internal>:0
 function __initIntPrelude <internal>:0
 function __initPrelude <internal>:0
+function __init_var <internal>:0
 globals

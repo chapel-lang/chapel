@@ -11,6 +11,7 @@ class Loc : public gc {
 
   Loc(void);
 
+  char* stringLoc(void);
   void printLoc(FILE* outfile);
 };
 

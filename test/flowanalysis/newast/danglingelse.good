@@ -10,12 +10,12 @@
 ::2(danglingelse.chpl:3) ( int64 (<unknown>:0) )
 ::2(danglingelse.chpl:5) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__init(<internal>:0) ( __init (<unknown>:0) )
-::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_danglingelse(<internal>:0) ( __init_danglingelse (<unknown>:0) )
+::__init_danglingelse(<unknown>:0) ( __init_danglingelse (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(danglingelse.chpl:14) ( int64 (<unknown>:0) )
 ::a(danglingelse.chpl:27) ( int64 (<unknown>:0) )
@@ -36,7 +36,7 @@
 ::null(<unknown>:0) ( void (<unknown>:0) )
 ::when (a, b) is ((danglingelse.chpl:6) ( string (<unknown>:0) )
 function __entryPoint <internal>:0
-function __init <internal>:0
 function __initIntPrelude <internal>:0
 function __initPrelude <internal>:0
+function __init_danglingelse <internal>:0
 globals

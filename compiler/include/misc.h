@@ -28,6 +28,7 @@ char *loc_string(d_loc_t &l);
 
 #define INT_FATAL   setupIntError(__FILE__, __LINE__, true);  intProblem
 #define INT_WARNING setupIntError(__FILE__, __LINE__, false); intProblem
+void USR_FATAL(Loc* loc, char* str, ...);
 
 void setupIntError(char* filename, int lineno, bool error);
 void intProblem(char* fmt, ...);

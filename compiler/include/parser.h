@@ -1,8 +1,8 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
-#include "stmt.h"
+#include "symbol.h"
 
-Stmt* ParseFile(char* filename, bool prelude = false);
+ModuleSymbol* ParseFile(char* filename, bool prelude = false);
 
 #endif

@@ -2,21 +2,21 @@
 #include "driver.h"
 #include "filesToAST.h"
 #include "if1.h"
-#include "module.h"
 #include "runAnalysis.h"
+#include "symbol.h"
 
-void RunAnalysis::run(Module* moduleList) {
+void RunAnalysis::run(ModuleSymbol* moduleList) {
   if (analyzeNewAST) {
     if1->callback = new ACallbacks;
     init_ast();
     Vec<Stmt *> stmts;
-    stmts.add(internalPreludeStmts);
-    stmts.add(preludeStmts);
-    Module* mod = moduleList;
+    stmts.add(internalPrelude->stmts);
+    stmts.add(prelude->stmts);
+    ModuleSymbol* mod = moduleList;
     while (mod) {
       stmts.add(mod->stmts);
 
-      mod = nextLink(Module, mod);
+      mod = nextLink(ModuleSymbol, mod);
     }
     stmts.add(entryPoint);
     AST_to_IF1(stmts);

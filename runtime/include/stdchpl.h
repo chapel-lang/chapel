@@ -11,7 +11,5 @@
 #include "domain.h"
 #include "forall.h"
 
-void __init(void);
-
 #endif
 

@@ -5,7 +5,7 @@
 
 class PrintSymtab : public Pass {
  public:
-  void run(Module* moduleList);
+  void run(ModuleSymbol* moduleList);
 };
 
 #endif

@@ -6,6 +6,10 @@
 extern char executableFilename[FILENAME_MAX];
 extern char saveCDir[FILENAME_MAX];
 
+extern FILE* codefile;
+extern FILE* intheadfile;
+extern FILE* extheadfile;
+
 struct fileinfo {
   FILE* fptr;
   char* filename;
@@ -29,6 +33,8 @@ void closefile(fileinfo* thefile);
 
 FILE* openInputFile(char* filename);
 void closeInputFile(FILE* infile);
+void testInputFiles(int numFilenames, char* filename[]);
+char* nthFilename(int i);
 
 char* createGDBFile(int argc, char* argv[]);
 

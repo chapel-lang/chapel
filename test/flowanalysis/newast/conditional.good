@@ -10,12 +10,12 @@
 ::6(conditional.chpl:8) ( int64 (<unknown>:0) )
 ::7(conditional.chpl:9) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__init(<internal>:0) ( __init (<unknown>:0) )
-::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_conditional(<internal>:0) ( __init_conditional (<unknown>:0) )
+::__init_conditional(<unknown>:0) ( __init_conditional (<unknown>:0) )
 ::a(<unknown>:0) ( int64 (<unknown>:0) )
 ::a(conditional.chpl:12) ( int64 (<unknown>:0) )
 ::a(conditional.chpl:64) ( int64 (<unknown>:0) )
@@ -78,7 +78,7 @@
 ::took true path for g(conditional.chpl:54) ( string (<unknown>:0) )
 ::took true path for h(conditional.chpl:59) ( string (<unknown>:0) )
 function __entryPoint <internal>:0
-function __init <internal>:0
 function __initIntPrelude <internal>:0
 function __initPrelude <internal>:0
+function __init_conditional <internal>:0
 globals

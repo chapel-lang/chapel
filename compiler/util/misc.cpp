@@ -220,6 +220,17 @@ void intProblem(Loc* loc, char *fmt, ...) {
 }
 
 
+void USR_FATAL(Loc* loc, char* fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  loc->printLoc(stderr);
+  fprintf(stderr, ": ");
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  clean_exit(1);
+}
+
+
 static void handleInterrupt(int sig) {
   fail("received interrupt");
 }

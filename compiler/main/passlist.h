@@ -5,6 +5,7 @@
 #include "../passes/filesToAST.h"
 #include "../passes/printProgram.h"
 #include "../passes/printSymtab.h"
+#include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
 
 #include "../traversals/checkBackLinks.h"
@@ -31,6 +32,7 @@ Pass* passlist[] = {
   RUN(CheckBackLinks),
   RUN(RunAnalysis),
   RUN(FindUnknownTypes),
+  RUN(RenameCSymbols),
   RUN(Codegen),
 
   LAST

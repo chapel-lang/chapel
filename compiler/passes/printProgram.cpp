@@ -1,13 +1,12 @@
 #include "printProgram.h"
 #include "stmt.h"
-#include "module.h"
 
-void PrintProgram::run(Module* moduleList) {
-  Module* mod = moduleList;
+void PrintProgram::run(ModuleSymbol* moduleList) {
+  ModuleSymbol* mod = moduleList;
   while (mod) {
     mod->stmts->printList(stdout, "\n");
     printf("\n");
     
-    mod = nextLink(Module, mod);
+    mod = nextLink(ModuleSymbol, mod);
   }
 }

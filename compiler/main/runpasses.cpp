@@ -4,6 +4,7 @@
 #include "misc.h"
 #include "runpasses.h"
 #include "stringutil.h"
+#include "symtab.h"
 #include "../passes/pass.h"
 
 #define FIRST NULL
@@ -25,12 +26,12 @@ static Pass* stringToPass(char* passname) {
 }
 
 
-static void runPass(Pass* pass, Module* moduleList) {
-  pass->run(moduleList);
+static void runPass(Pass* pass) {
+  pass->run(Symboltable::getModuleList());
 }
 
 
-static void parsePassFile(char* passfilename, Module* moduleList) {
+static void parsePassFile(char* passfilename) {
   FILE* passfile = openInputFile(passfilename);
   char passname[80];
   int readword;
@@ -49,23 +50,23 @@ static void parsePassFile(char* passfilename, Module* moduleList) {
       int passnameLen = strlen(passnameStart);
       passnameStart[passnameLen-2] = '\0';
       Pass* pass = stringToPass(passnameStart);
-      runPass(pass, moduleList);
+      runPass(pass);
     }
   } while (readword == 1 && !done);
   closeInputFile(passfile);
 }
 
 
-void runPasses(char* passfilename, Module* moduleList) {
+void runPasses(char* passfilename) {
   if (strcmp(passfilename, "") == 0) {
     Pass** pass = passlist+1;  // skip over FIRST
     
     while ((*pass) != NULL) {
-      runPass(*pass, moduleList);
+      runPass(*pass);
       
       pass++;
     }
   } else {
-    parsePassFile(passfilename, moduleList);
+    parsePassFile(passfilename);
   }
 }

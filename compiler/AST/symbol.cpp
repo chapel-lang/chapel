@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include "analysis.h"
+#include "files.h"
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -267,6 +268,17 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
   type = init_retType;
   body = init_body;
   exportMe = init_exportMe;
+
+  if (strcmp(name, "main") == 0 && scope->type == SCOPE_MODULE && 
+      formals->isNull()) {
+    if (mainFn->isNull()) {
+      mainFn = this;
+      exportMe = true;
+    } else {
+      USR_FATAL(this, "main multiply defined -- first occurrence at %s\n",
+		mainFn->stringLoc());
+    }
+  }
 }
 
 
@@ -297,6 +309,13 @@ void FnSymbol::codegenDef(FILE* outfile) {
   fprintf(outfile, ")");
 }
 
+FnSymbol* FnSymbol::mainFn;
+
+void FnSymbol::init(void) {
+  mainFn = nilFnSymbol;
+}
+
+
 
 EnumSymbol::EnumSymbol(char* init_name, int init_val) :
   Symbol(SYMBOL_ENUM, init_name),
@@ -306,4 +325,28 @@ EnumSymbol::EnumSymbol(char* init_name, int init_val) :
 
 Symbol* EnumSymbol::copy(void) {
   return new EnumSymbol(copystring(name), val);
+}
+
+
+ModuleSymbol::ModuleSymbol(char* init_name) :
+  Symbol(SYMBOL_MODULE, init_name),
+  initFn(nilFnSymbol)
+{}
+
+
+void ModuleSymbol::codegen(void) {
+  fileinfo outfileinfo;
+  fileinfo extheadfileinfo;
+  fileinfo intheadfileinfo;
+
+  openCFiles(filename, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
+
+  fprintf(codefile, "#include \"stdchpl.h\"\n");
+  fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
+  fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
+  fprintf(codefile, "\n");
+
+  stmts->codegenList(codefile, "\n");
+
+  closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
 }

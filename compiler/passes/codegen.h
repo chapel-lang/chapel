@@ -4,7 +4,7 @@
 #include "pass.h"
 
 class Codegen : public Pass {
-  void run(Module* moduleList);
+  void run(ModuleSymbol* moduleList);
 };
 
 #endif

@@ -3,17 +3,16 @@
 
 #include "gc_cpp.h"
 
-class Module;
-class Stmt;
+class ModuleSymbol;
 
 class Pass : public gc {
  public:
-  virtual void run(Module* moduleList) = 0;
+  virtual void run(ModuleSymbol* moduleList) = 0;
 };
 
 class DummyPass : public Pass {
  public:
-  virtual void run(Module* moduleList);
+  virtual void run(ModuleSymbol* moduleList);
 };
 
 #endif

@@ -2,22 +2,22 @@
 #include "codegen.h"
 #include "driver.h"
 #include "files.h"
-#include "module.h"
 #include "nils.h"
+#include "symbol.h"
 
 
-void Codegen::run(Module* moduleList) {
+void Codegen::run(ModuleSymbol* moduleList) {
   if (suppressCodegen) {
     return;
   }
 
   openMakefile(moduleList->filename, system_dir);
 
-  currentModule = moduleList;
+  ModuleSymbol* currentModule = moduleList;
   while (currentModule) {
     currentModule->codegen();
 
-    currentModule = nextLink(Module, currentModule);
+    currentModule = nextLink(ModuleSymbol, currentModule);
   }
     
   verifyNilsUncorrupted();

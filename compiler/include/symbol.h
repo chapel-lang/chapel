@@ -141,8 +141,10 @@ class FnSymbol : public Symbol {
   bool isNull(void);
 
   void codegenDef(FILE* outfile);
-};
 
+  static FnSymbol* mainFn;
+  static void init(void);
+};
 
 
 class EnumSymbol : public Symbol {
@@ -151,6 +153,17 @@ class EnumSymbol : public Symbol {
 
   EnumSymbol(char* init_name, int init_val);
   virtual Symbol* copy(void);
+};
+
+
+class ModuleSymbol : public Symbol {
+ public:
+  Stmt* stmts;
+  FnSymbol* initFn;
+
+  ModuleSymbol(char* init_name);
+
+  void codegen(void);
 };
 
 #endif

@@ -1,6 +1,6 @@
 #include "driver.h"
+#include "files.h"
 #include "filesToAST.h"
-#include "module.h"
 #include "parser.h"
 #include "nils.h"
 #include "stringutil.h"
@@ -8,8 +8,9 @@
 #include "yy.h"
 
 
-Stmt* internalPreludeStmts = NULL;
-Stmt* preludeStmts = NULL;
+ModuleSymbol* internalPrelude = NULL;
+ModuleSymbol* prelude = NULL;
+ModuleSymbol* entry = NULL;
 Stmt* entryPoint = NULL;
 
 
@@ -23,71 +24,88 @@ static bool stmtIsGlob(ILink* link) {
 }
 
 
-static Stmt* createInitFn(Stmt* program, char* fnNameArg = 0) {
+static void createInitFn(ModuleSymbol* module, char* fnName) {
   ILink* globstmts;
   ILink* initstmts;
-  char *fnName = fnNameArg ? fnNameArg : (char*)"__entryPoint";
-  
+  Stmt* stmts = module->stmts;
 
-  program->filter(stmtIsGlob, &globstmts, &initstmts);
+  stmts->filter(stmtIsGlob, &globstmts, &initstmts);
 
   Stmt* initFunStmts = dynamic_cast<Stmt*>(initstmts);
-  program = dynamic_cast<Stmt*>(globstmts);
+  stmts = dynamic_cast<Stmt*>(globstmts);
   Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
                                                  : nilStmt);
   FnDefStmt* initFunDef = Symboltable::defineFunction(fnName, nilSymbol, 
 						      dtVoid, initFunBody, 
 						      true);
+  module->initFn = initFunDef->fn;
+
   {
-    FnSymbol* initFunSym = initFunDef->fn;
     Stmt* initstmt = initFunStmts;
     while (initstmt) {
-      initstmt->parentFn = initFunSym;
+      initstmt->parentFn = module->initFn;
       initstmt = nextLink(Stmt, initstmt);
     }
-    initFunBody->parentFn = initFunSym;
+    initFunBody->parentFn = module->initFn;
   }
 
+  stmts = appendLink(stmts, initFunDef);
 
-  program = appendLink(program, initFunDef);
-
-  if (fnNameArg) {
-    FnSymbol* initFunSym = initFunDef->fn;
-    FnCall* initFunCall = new FnCall(new Variable(initFunSym));
+  if (strcmp(fnName, "__entryPoint") != 0) {
+    FnCall* initFunCall = new FnCall(new Variable(module->initFn));
     ExprStmt* initFunCallStmt = new ExprStmt(initFunCall);
     entryPoint = appendLink(entryPoint, initFunCallStmt);
   }
 
-  return program;
+  module->stmts = stmts;
 }
 
 
-void FilesToAST::run(Module* moduleList) {
+void FilesToAST::run(ModuleSymbol* moduleList) {
   Symboltable::parseInternalPrelude();
   char* preludePath = glomstrings(2, system_dir, 
 				  "/parser/internal_prelude.chpl");
-  internalPreludeStmts = ParseFile(preludePath, true);
-  internalPreludeStmts = createInitFn(internalPreludeStmts, "__initIntPrelude");
+  internalPrelude = ParseFile(preludePath, true);
+  createInitFn(internalPrelude, "__initIntPrelude");
   findInternalTypes();
 
   Symboltable::parsePrelude();
   preludePath = glomstrings(2, system_dir, "/parser/prelude.chpl");
-  preludeStmts = ParseFile(preludePath, true);
-  preludeStmts = createInitFn(preludeStmts, "__initPrelude");
+  prelude = ParseFile(preludePath, true);
+  createInitFn(prelude, "__initPrelude");
+				
   
   Symboltable::doneParsingPreludes();
 
 
   yydebug = debugParserLevel;
-  Module* mod = moduleList;
-  while (mod) {
-    mod->stmts = ParseFile(mod->filename);
-    mod->stmts = createInitFn(mod->stmts, "__init");
 
-    mod = nextLink(Module, mod);
-  }
+  int filenum = 0;
+  char* inputFilename = NULL;
+  do {
+    inputFilename = nthFilename(filenum);
+    if (inputFilename) {
+      ModuleSymbol* mod = ParseFile(inputFilename);
+      createInitFn(mod, glomstrings(2, "__init_", mod->name));
+				
+
+      FnSymbol* mainFn = FnSymbol::mainFn;
+      if (!mainFn->isNull()) {
+	if (mainFn->scope->symContext == mod) {
+	  FnCall* initCall = new FnCall(new Variable(mod->initFn));
+	  ExprStmt* initStmt = new ExprStmt(initCall);
+	  initStmt->append(mainFn->body);
+	  mainFn->body = new BlockStmt(initStmt);
+	}
+      }
+    }
+    filenum++;
+  } while (inputFilename);
 
   Symboltable::doneParsingUserFiles();
 
-  entryPoint = createInitFn(entryPoint);
+  entry = new ModuleSymbol("entryPoint");
+  entry->stmts = entryPoint;
+  createInitFn(entry, "__entryPoint");
+  entryPoint = entry->stmts;
 }

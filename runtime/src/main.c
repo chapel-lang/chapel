@@ -1,5 +1,7 @@
 #include "stdchpl.h"
 
+extern void _chpl_main(void);
+
 /*** GLOBAL VARIABLES ***/
 static int gARGC;
 static char** gARGV;
@@ -50,7 +52,8 @@ int setInCommandLine(char* varName, _integer64* value) {
 int main(int argc, char* argv[]) {
   gARGC = argc;
   gARGV = argv;
-  __init();
+
+  _chpl_main();
 
   return 0;
 }

@@ -27,7 +27,7 @@ class Traversal : public Pass {
   virtual void preProcessType(Type* type);
   virtual void postProcessType(Type* type);
 
-  virtual void run(Module* moduleList);
+  virtual void run(ModuleSymbol* moduleList);
 };
 
 #endif

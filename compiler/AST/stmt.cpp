@@ -1,8 +1,8 @@
 #include <string.h>
 #include <typeinfo>
 #include "expr.h"
+#include "files.h"
 #include "misc.h"
-#include "module.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
@@ -241,8 +241,9 @@ void VarDefStmt::codegen(FILE* outfile) {
 void VarDefStmt::codegenVarDef(FILE* outfile) {
   VarSymbol* aVar = var;
 
-  if (aVar->scope->type == SCOPE_FILE) { /* if in file scope, hoist to internal header */
-    outfile = currentModule->intheadfile;
+/* if in module scope, hoist to internal header */  
+  if (aVar->scope->type == SCOPE_MODULE) { 
+    outfile = intheadfile;
   }
 
   // TODO: for certain cases, we could use a C initializer inline rather
@@ -294,8 +295,8 @@ void TypeDefStmt::codegen(FILE* outfile) {
   FILE* deffile = outfile;
   /* if in file scope, hoist to internal header so that it will be
      defined before global variables at file scope. */  
-  if (type->name->scope->type == SCOPE_FILE) { 
-    deffile = currentModule->intheadfile;
+  if (type->name->scope->type == SCOPE_MODULE) { 
+    deffile = intheadfile;
   }
   type->codegenDef(deffile);
 
@@ -378,9 +379,9 @@ void FnDefStmt::codegen(FILE* outfile) {
   FILE* headfile;
 
   if (fn->exportMe) {
-    headfile = currentModule->extheadfile;
+    headfile = extheadfile;
   } else {
-    headfile = currentModule->intheadfile;
+    headfile = intheadfile;
   }
   fn->codegenDef(headfile);
   fprintf(headfile, ";\n");

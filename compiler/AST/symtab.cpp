@@ -113,7 +113,7 @@ void SymScope::addUndefinedToFile(UnresolvedSymbol* sym) {
     INT_FATAL(sym, "undefined symbol in prelude: %s", sym->name);
     break;
   default:
-    scope = findEnclosingScopeType(SCOPE_FILE);
+    scope = findEnclosingScopeType(SCOPE_MODULE);
   }
   
   scope->addUndefined(sym);
@@ -193,8 +193,8 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
   case SCOPE_PRELUDE:
     fprintf(outfile, "prelude\n");
     break;
-  case SCOPE_FILE:
-    fprintf(outfile, "file\n");
+  case SCOPE_MODULE:
+    fprintf(outfile, "module\n");
     break;
   case SCOPE_PARAM:
     fprintf(outfile, "parameters\n");
@@ -249,10 +249,13 @@ static SymScope* preludeScope = NULL;
 static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
 static FnSymbol* currentFn = NULL;
+static ModuleSymbol* firstModule = NULL;
+static Symbol* mainFn = NULL;
 
 
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);
+  mainFn = nilSymbol;
 
   currentScope = rootScope;
 
@@ -348,6 +351,11 @@ SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
   currentLevel = newScope->level;
 
   return oldScope;
+}
+
+
+ModuleSymbol* Symboltable::getModuleList(void) {
+  return firstModule;
 }
 
 
@@ -452,6 +460,18 @@ BlockStmt* Symboltable::finishCompoundStmt(Stmt* body) {
   stmtScope->setContext(newStmt, currentFn);
 
   return newStmt;
+}
+
+
+ModuleSymbol* Symboltable::defineModule(char* name, bool internal) {
+  ModuleSymbol* newModule = new ModuleSymbol(name);
+
+  if (!internal) {
+    define(newModule);
+    firstModule = appendLink(firstModule, newModule);
+  }
+
+  return newModule;
 }
 
 

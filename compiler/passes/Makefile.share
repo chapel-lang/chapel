@@ -4,6 +4,7 @@ PASSES_SRCS = \
 	pass.cpp \
 	printProgram.cpp \
 	printSymtab.cpp \
+	renameCSymbols.cpp \
 	runAnalysis.cpp \
 
 CVS_SRCS = $(PASSES_SRCS)

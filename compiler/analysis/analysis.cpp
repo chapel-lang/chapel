@@ -169,7 +169,7 @@ map_symbols(Vec<BaseAST *> &syms) {
 	  case SCOPE_INTRINSIC:
 	  case SCOPE_INTERNAL_PRELUDE:
 	  case SCOPE_PRELUDE:
-	  case SCOPE_FILE:
+	  case SCOPE_MODULE:
 	  case SCOPE_POSTPARSE:
 	    sym->asymbol->global_scope = 1;
 	    break;
@@ -1102,6 +1102,7 @@ gen_if1(BaseAST *ast) {
     }
   case SYMBOL:
   case SYMBOL_UNRESOLVED:
+  case SYMBOL_MODULE:
   case SYMBOL_VAR:
   case SYMBOL_PARAM:
   case SYMBOL_TYPE:

@@ -1,10 +1,20 @@
 #include "loc.h"
+#include "stringutil.h"
 #include "yy.h"
 
 Loc::Loc(void) :
   filename(yyfilename), 
   lineno(yylineno)
 {}
+
+
+char* Loc::stringLoc(void) {
+  const int tmpBuffSize = 64;
+  char tmpBuff[tmpBuffSize];
+
+  snprintf(tmpBuff, tmpBuffSize, "%s:%d", filename, lineno);
+  return copystring(tmpBuff);
+}
 
 
 void Loc::printLoc(FILE* outfile) {

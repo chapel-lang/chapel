@@ -20,12 +20,12 @@
 ::D3(<unknown>:0) ( Domain (<unknown>:0) )
 ::D3(declprintdom.chpl:11) ( Domain (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__init(<internal>:0) ( __init (<unknown>:0) )
-::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_declprintdom(<internal>:0) ( __init_declprintdom (<unknown>:0) )
+::__init_declprintdom(<unknown>:0) ( __init_declprintdom (<unknown>:0) )
 ::m1(<unknown>:0) ( int64 (<unknown>:0) )
 ::m1(declprintdom.chpl:5) ( int64 (<unknown>:0) )
 ::m2(<unknown>:0) ( int64 (<unknown>:0) )
@@ -34,7 +34,7 @@
 ::m3(declprintdom.chpl:7) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 function __entryPoint <internal>:0
-function __init <internal>:0
 function __initIntPrelude <internal>:0
 function __initPrelude <internal>:0
+function __init_declprintdom <internal>:0
 globals

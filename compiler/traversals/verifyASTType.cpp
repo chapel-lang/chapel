@@ -193,6 +193,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_USEBEFOREDEF");
     }
     break;
+  case SYMBOL_MODULE:
+    if (typeid(*ast) != typeid(ModuleSymbol)) {
+      INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_MODULE");
+    }
+    break;
   case SYMBOL_VAR:
     if (typeid(*ast) != typeid(VarSymbol)) {
       INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_VAR");

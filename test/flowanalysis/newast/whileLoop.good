@@ -16,12 +16,12 @@
 ::5(whileLoop.chpl:17) ( int64 (<unknown>:0) )
 ::5(whileLoop.chpl:3) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__init(<internal>:0) ( __init (<unknown>:0) )
-::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_whileLoop(<internal>:0) ( __init_whileLoop (<unknown>:0) )
+::__init_whileLoop(<unknown>:0) ( __init_whileLoop (<unknown>:0) )
 ::i = (whileLoop.chpl:11) ( string (<unknown>:0) )
 ::i = (whileLoop.chpl:15) ( string (<unknown>:0) )
 ::i = (whileLoop.chpl:23) ( string (<unknown>:0) )
@@ -44,7 +44,7 @@
 ::i(whileLoop.chpl:9) ( int64 (<unknown>:0) )
 ::null(<unknown>:0) ( void (<unknown>:0) )
 function __entryPoint <internal>:0
-function __init <internal>:0
 function __initIntPrelude <internal>:0
 function __initPrelude <internal>:0
+function __init_whileLoop <internal>:0
 globals

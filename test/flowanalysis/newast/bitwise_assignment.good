@@ -6,12 +6,12 @@
 ::10(bitwise_assignment.chpl:21) ( int64 (<unknown>:0) )
 ::12(bitwise_assignment.chpl:2) ( int64 (<unknown>:0) )
 ::__entryPoint(<unknown>:0) ( __entryPoint (<internal>:0) )
-::__init(<internal>:0) ( __init (<unknown>:0) )
-::__init(<unknown>:0) ( __init (<unknown>:0) )
 ::__initIntPrelude(<internal>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initIntPrelude(<unknown>:0) ( __initIntPrelude (<unknown>:0) )
 ::__initPrelude(<internal>:0) ( __initPrelude (<unknown>:0) )
 ::__initPrelude(<unknown>:0) ( __initPrelude (<unknown>:0) )
+::__init_bitwise_assignment(<internal>:0) ( __init_bitwise_assignment (<unknown>:0) )
+::__init_bitwise_assignment(<unknown>:0) ( __init_bitwise_assignment (<unknown>:0) )
 ::actual answer = (bitwise_assignment.chpl:11) ( string (<unknown>:0) )
 ::actual answer = (bitwise_assignment.chpl:18) ( string (<unknown>:0) )
 ::actual answer = (bitwise_assignment.chpl:25) ( string (<unknown>:0) )
@@ -40,7 +40,7 @@
 ::test: m ^= n(bitwise_assignment.chpl:15) ( string (<unknown>:0) )
 ::test: m |= n(bitwise_assignment.chpl:22) ( string (<unknown>:0) )
 function __entryPoint <internal>:0
-function __init <internal>:0
 function __initIntPrelude <internal>:0
 function __initPrelude <internal>:0
+function __init_bitwise_assignment <internal>:0
 globals
