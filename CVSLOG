@@ -24027,3 +24027,18 @@ Log message:
 Modified files:
 	./: COPYRIGHT LICENSE 
 
+---------------------------------------------------------------------------
+
+04/05/05 12:52:20 -- bradc
+
+Log message:
+	Added options to the test system to provide a script
+	to be run before executing the generated executable
+	called PREEXEC.  Added the ability to generate this
+	script, or the PREDIFF script on a test-by-test
+	basis by specifying a foo.prediff or foo.preexec
+	file for a test foo.chpl.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+
