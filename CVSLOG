@@ -13440,3 +13440,15 @@ Log message:
 Modified files:
 	./: Makefile 
 
+---------------------------------------------------------------------------
+
+01/04/05 16:48:52 -- bradc
+
+Log message:
+	Took out Shannon's UW test line.  This will also serve
+	as a test of our ability to mail chapel_dev from UW (it
+	may be restricted to not accept external mails...?)
+
+Modified files:
+	./: Makefile 
+
