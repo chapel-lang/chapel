@@ -13842,3 +13842,23 @@ Modified files:
 	chapel/compiler/include/: analysis.h ast.h 
 	chapel/compiler/vparser/: parse_ast.cpp parse_ast.h 
 
+---------------------------------------------------------------------------
+
+01/06/05 17:04:34 -- deitz
+
+Log message:
+	Added two methods to Expr, isRead and isWritten, that say whether an
+	expression is read or written, respectively.  An expression passed to
+	an inout parameter would return true to both of these methods.  Though
+	not implemented, this should return a different value for blank
+	parameters depending on the type of the expression.
+	
+	These functions are now used in InsertUnionChecks, replacing the
+	facilities that were in that traversal.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/traversals/: insertUnionChecks.cpp 
+	                             insertUnionChecks.h 
+
