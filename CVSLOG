@@ -1306,3 +1306,71 @@ Added files:
 	chapel/runtime/include/: chplio.h chpltypes.h stdchpl.h 
 	chapel/runtime/src/: .cvsignore Makefile chplio.c main.c 
 
+---------------------------------------------------------------------------
+
+04/03/25 10:46:20 -- bradc
+
+Log message:
+	This checkin adds some flags to help control the compilation
+	process (1).  It also adds some better error messages when flags
+	are used improperly (2). Inserted some tests to protect these
+	error messages (3) and added a new (minor) test feature (4).
+	I also hoisted some code out of the geysa.h file into more specific
+	header files (5).
+	
+	(1) The new flags are:
+	
+	-o --output <exename> : specify the name of the final binary
+	--savec  <dir>    : save the intermediate C in the specified dir
+	--print-commands  : print the system() commands executed
+	
+	(2) The changes to how flags are handled are:
+	
+	* if a flag that requires an argument isn't followed by an argument,
+	an appropriate error message is printed out.
+	
+	* if an unrecognized flag is encountered, an appropriate error message
+	is printed out.
+	
+	* if the copyright flag is used, the usage() information isn't printed
+	
+	(3) The first tests!  I put these in a directory called compflags/ to
+	test compiler options.  I also added a DIRS file to the root test
+	directory to serve as a guide to the directories and what their
+	intention is.
+	
+	(4) The new feature in the testing system is support for a
+	LASTCOMPOPTS file, similar to the COMPOPTS file, but which
+	follows the source filename argument.  Thus, the most
+	general compile line will be:
+	
+	chpl <-compopts> <COMPOPTS> source.chpl <LASTCOMPOPTS>
+	
+	(5) The code hoisted out of geysa.h is as follows:
+	
+	chplalloc.h : memory allocation routines
+	chpltypes.h : basic integer typedefs (uint64, etc.)
+	extern.h    : EXTERN-related stuff
+	version.h   : moved get_version() prototype here
+
+Modified files:
+	chapel/compiler/: arg.cpp codegen.cpp driver.cpp files.cpp 
+	                  files.h geysa.h mysystem.cpp mysystem.h 
+	                  version.h 
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/compiler/: chplalloc.h chpltypes.h extern.h 
+	chapel/test/: DIRS 
+	chapel/test/compflags/bradc/badflagdash/: COMPOPTS declint.chk 
+	                                          declint.chpl 
+	chapel/test/compflags/bradc/badflagddash/: COMPOPTS declint.chk 
+	                                           declint.chpl 
+	chapel/test/compflags/bradc/copyright/: COMPOPTS declint.chk 
+	                                        declint.chpl 
+	chapel/test/compflags/bradc/missingargdash/: LASTCOMPOPTS 
+	                                             declint.chk 
+	                                             declint.chpl 
+	chapel/test/compflags/bradc/missingargddash/: LASTCOMPOPTS 
+	                                              declint.chk 
+	                                              declint.chpl 
+
