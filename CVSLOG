@@ -6896,3 +6896,16 @@ Log message:
 Modified files:
 	chapel/compiler/: createAST.cpp createAST.h 
 
+---------------------------------------------------------------------------
+
+09/10/04 15:29:38 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Worked on class member functions.
+	type_info now returns dtUnknown when it has incomplete information.
+	Fixed (hopefully) the instability which was causing random failures for Brad.
+
+Modified files:
+	chapel/compiler/: analysis.cpp fa.cpp 
+	chapel/compiler/AST/: type.cpp type.h 
+
