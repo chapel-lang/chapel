@@ -11,8 +11,8 @@
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
 
-static void build_constructor(ClassType* class_type) {
-  SymScope* saveScope = Symboltable::setCurrentScope(class_type->classScope);
+static void build_constructor(StructuralType* class_type) {
+  SymScope* saveScope = Symboltable::setCurrentScope(class_type->structScope);
 
   char* name = glomstrings(2, "_construct_", class_type->symbol->name);
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(name));
@@ -62,7 +62,7 @@ static void build_constructor(ClassType* class_type) {
 }
 
 
-static void build_union_id_enum(ClassType* class_type) {
+static void build_union_id_enum(StructuralType* class_type) {
   UnionType* unionType = dynamic_cast<UnionType*>(class_type);
   if (unionType) {
     unionType->buildFieldSelector();
@@ -70,7 +70,7 @@ static void build_union_id_enum(ClassType* class_type) {
 }
 
 
-static void build_record_equality_function(ClassType* class_type) {
+static void build_record_equality_function(StructuralType* class_type) {
   if (!class_type->value) {
     return;
   }
@@ -93,7 +93,7 @@ static void build_record_equality_function(ClassType* class_type) {
 }
 
 
-static void build_record_inequality_function(ClassType* class_type) {
+static void build_record_inequality_function(StructuralType* class_type) {
   if (!class_type->value) {
     return;
   }
@@ -117,7 +117,7 @@ static void build_record_inequality_function(ClassType* class_type) {
 }
 
 
-static void build_record_assignment_function(ClassType* class_type) {
+static void build_record_assignment_function(StructuralType* class_type) {
   if (!class_type->value) {
     return;
   }
@@ -169,7 +169,7 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
   }
 
   if (TypeSymbol* type_symbol = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
-    if (ClassType* class_type = dynamic_cast<ClassType*>(type_symbol->type)) {
+    if (StructuralType* class_type = dynamic_cast<StructuralType*>(type_symbol->type)) {
       build_union_id_enum(class_type);
       build_constructor(class_type);
       build_record_equality_function(class_type);

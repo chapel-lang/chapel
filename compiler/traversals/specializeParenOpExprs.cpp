@@ -13,7 +13,7 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
       paren_replacement = new ArrayRef(paren->baseExpr, paren->argList);
     }
     else if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
-      if (ClassType* ctype = dynamic_cast<ClassType*>(baseVar->var->type)) {
+      if (StructuralType* ctype = dynamic_cast<StructuralType*>(baseVar->var->type)) {
         if (!dynamic_cast<TypeSymbol*>(baseVar->var)) {
           USR_FATAL(expr, "Invalid class constructor");
         }

@@ -793,23 +793,21 @@ build_types(Vec<BaseAST *> &syms) {
         INT_FATAL(t, "No analysis support for 'like'");
       }
       case TYPE_SEQ:
-        /* fall through */
-      case TYPE_UNION:
-        if (t->astType != TYPE_SEQ) {
-          t->asymbol->sym->is_union_class = 1;
-        }
-        /* fall through */
-      case TYPE_CLASS: {
-        ClassType *tt = dynamic_cast<ClassType*>(t);
+      case TYPE_CLASS:
+      case TYPE_RECORD:
+      case TYPE_UNION: {
+        StructuralType *tt = dynamic_cast<StructuralType*>(t);
         t->asymbol->sym->type_kind = Type_RECORD;
-        if (tt->value)
+        if (t->astType == TYPE_RECORD || t->astType == TYPE_UNION)
           t->asymbol->sym->is_value_class = 1;
+        if (t->astType == TYPE_UNION)
+          t->asymbol->sym->is_union_class = 1;
         if (tt->symbol) {
           tt->symbol->asymbol = tt->asymbol->sym->meta_type->asymbol;
           tt->symbol->asymbol->symbol = tt->symbol;
         }
-        if (tt->parentClass)
-          t->asymbol->sym->inherits_add(tt->parentClass->asymbol->sym);
+        if (tt->parentStruct)
+          t->asymbol->sym->inherits_add(tt->parentStruct->asymbol->sym);
         else
           t->asymbol->sym->inherits_add(sym_object);
         break;
@@ -1089,8 +1087,7 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 
 static int
 is_reference_type(BaseAST *t) {
-  return (t && t->astType == TYPE_CLASS &&
-          !dynamic_cast<ClassType*>(t)->value);
+  return (t && t->astType == TYPE_CLASS);
 }
 
 static void
@@ -1114,8 +1111,9 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
   Code **c = &ast->code;
   Code *send = 0;
   if (s->type->asymbol->symbol->astType == TYPE_CLASS ||
+      s->type->asymbol->symbol->astType == TYPE_RECORD ||
       s->type->asymbol->symbol->astType == TYPE_UNION) {
-    ClassType *ct = dynamic_cast<ClassType*>(type->asymbol->symbol);
+    StructuralType *ct = dynamic_cast<StructuralType*>(type->asymbol->symbol);
     if (ct->value && s != _this)
       send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
   }
@@ -1125,8 +1123,8 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
   if (type->asymbol->symbol->astType == TYPE_ARRAY) {
     // just set the first element
     ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
-    if ((at->elementType->astType == TYPE_CLASS && 
-         dynamic_cast<ClassType*>(at->elementType)->value) ||
+    if ((at->elementType->astType == TYPE_RECORD || 
+         at->elementType->astType == TYPE_UNION) ||
         (at->elementType->astType == TYPE_ARRAY))
     {
       Sym *ret = new_sym();
@@ -1134,7 +1132,7 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
         gen_alloc(ret, at->elementType->asymbol->sym, ast);
       else {
         Code *new_element = 0;
-        ClassType *ct = dynamic_cast<ClassType*>(at->elementType);
+        StructuralType *ct = dynamic_cast<StructuralType*>(at->elementType);
         new_element = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, ret);
         new_element->ast = ast;
       }
@@ -1817,7 +1815,9 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
   case TYPE_ARRAY:
   case TYPE_USER:
   case TYPE_LIKE:
+  case TYPE_STRUCTURAL:
   case TYPE_CLASS:
+  case TYPE_RECORD:
   case TYPE_UNION:
   case TYPE_TUPLE:
   case TYPE_SUM:
@@ -1906,13 +1906,15 @@ build_function(FnSymbol *f) {
 
 static int
 build_classes(Vec<BaseAST *> &syms) {
-  Vec<ClassType *> classes;
+  Vec<StructuralType *> classes;
   forv_BaseAST(s, syms)
-    if (s->astType == TYPE_CLASS || s->astType == TYPE_UNION)
-      classes.add(dynamic_cast<ClassType*>(s)); 
+    if (s->astType == TYPE_CLASS || 
+        s->astType == TYPE_RECORD || 
+        s->astType == TYPE_UNION)
+      classes.add(dynamic_cast<StructuralType*>(s)); 
   if (verbose_level > 1)
     printf("build_classes: %d classes\n", classes.n);
-  forv_Vec(ClassType, c, classes) {
+  forv_Vec(StructuralType, c, classes) {
     Sym *csym = c->asymbol->sym;
     forv_Vec(VarSymbol, tmp, c->fields)
       csym->has.add(tmp->asymbol->sym);
@@ -2524,7 +2526,7 @@ resolve_member_access(MemberAccess *ma, int *offset, Type **type) {
 }
 
 void
-resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type) {
+resolve_member(StructuralType *t, VarSymbol *v, int *offset, Type **type) {
   member_info(t->asymbol->sym, v->name, offset, type);
 }
 

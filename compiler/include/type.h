@@ -207,13 +207,13 @@ class LikeType : public Type {
 };
 
 
-class ClassType : public Type {
+class StructuralType : public Type {
  public:
   bool value; /* true if this is a value class (aka record) */
-  ClassType* parentClass;
   Stmt* constructor;
-  SymScope* classScope;
+  SymScope* structScope;
   Stmt* declarationList;
+  StructuralType* parentStruct;
 
   Vec<VarSymbol*> fields;
   Vec<FnSymbol*> methods;
@@ -221,13 +221,14 @@ class ClassType : public Type {
 
   FnSymbol *defaultConstructor;
   
-  ClassType(bool isValueClass,
-            astType_t astType = TYPE_CLASS);
+  StructuralType(astType_t astType, bool isValueClass, 
+                 Expr* init_defaultVal = NULL);
   void addDeclarations(Stmt* newDeclarations,
                        Stmt* afterStmt = NULL);
   virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
-  void setClassScope(SymScope* init_classScope);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void setScope(SymScope* init_structScope);
+  void copyGuts(StructuralType* copy_type, bool clone, Map<BaseAST*,BaseAST*>* map, 
+                CloneCallback* analysis_clone);
 
   void traverseDefType(Traversal* traversal);
 
@@ -247,6 +248,20 @@ class ClassType : public Type {
 };
 
 
+class ClassType : public StructuralType {
+ public:
+  ClassType(astType_t astType = TYPE_CLASS);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+};
+
+
+class RecordType : public StructuralType {
+ public:
+  RecordType(void);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+};
+
+
 enum unionCall {
   UNION_SET = 0,
   UNION_CHECK,
@@ -256,13 +271,14 @@ enum unionCall {
 };
 
 
-class UnionType : public ClassType {
+class UnionType : public StructuralType {
  public:
   EnumType* fieldSelector;
 
   UnionType();
   void buildFieldSelector(void);
   FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
   void codegenStructName(FILE* outfile);

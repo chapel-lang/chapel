@@ -151,7 +151,7 @@ static void call_fixup(Stmt* stmt) {
   } else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(sym)) {
     TRAVERSE_LS(mod->stmts, fixup, true);
   } else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym)) {
-    if (ClassType* class_type = dynamic_cast<ClassType*>(type->type)) {
+    if (StructuralType* class_type = dynamic_cast<StructuralType*>(type->type)) {
 #if 0
       TRAVERSE(type->defPoint, fixup, true);
 #endif
@@ -341,16 +341,16 @@ WithStmt::WithStmt(Expr* init_withExpr) :
 }
 
 
-ClassType* WithStmt::getClass(void) {
+StructuralType* WithStmt::getStruct(void) {
   if (Variable* var = dynamic_cast<Variable*>(withExpr)) {
-    if (ClassType* result = 
-        dynamic_cast<ClassType*>(var->var->type)) {
+    if (StructuralType* result = 
+        dynamic_cast<StructuralType*>(var->var->type)) {
       return result;
     }
     else if (UnresolvedSymbol* unresolved = 
              dynamic_cast<UnresolvedSymbol*>(var->var)) {
-      if (ClassType* result = 
-          dynamic_cast<ClassType*>(Symboltable::lookup(unresolved->name)->type)) {
+      if (StructuralType* result = 
+          dynamic_cast<StructuralType*>(Symboltable::lookup(unresolved->name)->type)) {
         return result;
       }
       else {

@@ -1061,8 +1061,8 @@ void MemberAccess::traverseExpr(Traversal* traversal) {
 Type* MemberAccess::typeInfo(void) {
   if (member->type != dtUnknown) {
     return member->type;
-  } else if (ClassType* ctype = dynamic_cast<ClassType*>(base->typeInfo())) {
-    Symbol* sym = Symboltable::lookupInScope(member->name, ctype->classScope);
+  } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(base->typeInfo())) {
+    Symbol* sym = Symboltable::lookupInScope(member->name, ctype->structScope);
     if (sym && sym->type) {
       return sym->type;
     }
@@ -1084,7 +1084,7 @@ void MemberAccess::print(FILE* outfile) {
 
 
 void MemberAccess::codegen(FILE* outfile) {
-  ClassType* base_type = dynamic_cast<ClassType*>(base->typeInfo());
+  StructuralType* base_type = dynamic_cast<StructuralType*>(base->typeInfo());
   if (!base_type) {
     INT_FATAL(this, "Dot applied to non-class/record/union");
   }
@@ -1449,7 +1449,7 @@ void SizeofExpr::print(FILE* outfile) {
 
 void SizeofExpr::codegen(FILE* outfile) {
   fprintf(outfile, "sizeof(");
-  if (dynamic_cast<ClassType*>(type)) {
+  if (dynamic_cast<StructuralType*>(type)) {
     fprintf(outfile, "_");
   }
   type->codegen(outfile);

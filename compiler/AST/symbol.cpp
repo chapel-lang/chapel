@@ -425,7 +425,7 @@ Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCal
 TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned classes
 
-  ClassType* old_class_type = dynamic_cast<ClassType*>(type);
+  StructuralType* old_class_type = dynamic_cast<StructuralType*>(type);
 
   if (!old_class_type) {
     INT_FATAL(this, "Attempt to clone non-class type");
@@ -435,8 +435,8 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
 
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
 
-  ClassType* new_class_type =
-    dynamic_cast<ClassType*>(type->copy(true, map, clone_callback));
+  StructuralType* new_class_type =
+    dynamic_cast<StructuralType*>(type->copy(true, map, clone_callback));
 
   if (!new_class_type) {
     INT_FATAL(this, "Major error in TypeSymbol::clone");
@@ -446,7 +446,7 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
   TypeSymbol* new_type_sym = new TypeSymbol(clone_name, new_class_type);
   new_class_type->addSymbol(new_type_sym);
   DefExpr* new_def_expr = new DefExpr(new_type_sym);
-  new_class_type->classScope->setContext(NULL, new_type_sym, new_def_expr);
+  new_class_type->structScope->setContext(NULL, new_type_sym, new_def_expr);
   defPoint->insertBefore(new_def_expr);
 
   Symboltable::setCurrentScope(save_scope);

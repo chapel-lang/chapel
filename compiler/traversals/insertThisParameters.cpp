@@ -17,7 +17,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   if (!fn) {
     /*** mangle type names in class types ***/
     if (TypeSymbol* type_sym = def_stmt->typeDef()) {
-      if (ClassType* classType = dynamic_cast<ClassType*>(type_sym->type)) {
+      if (StructuralType* classType = dynamic_cast<StructuralType*>(type_sym->type)) {
         forv_Vec(TypeSymbol, type, classType->types) {
           type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
         }
@@ -34,13 +34,13 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     if (classBinding) {
       if (TypeSymbol* classBindingTypeSymbol =
           dynamic_cast<TypeSymbol*>(classBinding)) {
-        if (ClassType* classBindingType =
-            dynamic_cast<ClassType*>(classBindingTypeSymbol->type)) {
+        if (StructuralType* classBindingType =
+            dynamic_cast<StructuralType*>(classBindingTypeSymbol->type)) {
           fn->classBinding = classBinding;
           fn->method_type = SECONDARY_METHOD;
           classBindingType->methods.add(fn);
-          Symboltable::defineInScope(fn, classBindingType->classScope);
-          fn->paramScope->parent = classBindingType->classScope;
+          Symboltable::defineInScope(fn, classBindingType->structScope);
+          fn->paramScope->parent = classBindingType->structScope;
         }
         else {
           USR_FATAL(fn, "Function is not bound to legal class");
@@ -60,7 +60,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
    ***/
   
   if (TypeSymbol* class_symbol = dynamic_cast<TypeSymbol*>(fn->classBinding)) {
-    if (ClassType* class_type = dynamic_cast<ClassType*>(class_symbol->type)) {
+    if (StructuralType* class_type = dynamic_cast<StructuralType*>(class_symbol->type)) {
       fn->cname = glomstrings(4, "_", class_type->symbol->cname, "_", fn->cname);
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(fn->paramScope);

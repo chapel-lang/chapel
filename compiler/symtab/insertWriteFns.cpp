@@ -63,7 +63,7 @@ static Stmt* createUnionBody(Stmt* bodyStmts, UnionType* unionType,
 }
 
 
-static Stmt* createClassRecordBody(Stmt* bodyStmts, ClassType* classType,
+static Stmt* createClassRecordBody(Stmt* bodyStmts, StructuralType* classType,
                                    ParamSymbol* thisArg) {
   bool firstField = true;
 
@@ -80,8 +80,8 @@ static Stmt* createClassRecordBody(Stmt* bodyStmts, ClassType* classType,
 }
 
 
-static void createWriteFn(ClassType* classType) {
-  SymScope* prevScope = Symboltable::setCurrentScope(classType->classScope);
+static void createWriteFn(StructuralType* classType) {
+  SymScope* prevScope = Symboltable::setCurrentScope(classType->structScope);
   
   FnSymbol* writeFn = Symboltable::startFnDef(new FnSymbol("write", 
                                                            classType->symbol),
@@ -129,7 +129,7 @@ void InsertWriteFns::processSymbol(Symbol* sym) {
   if (typeSym != NULL) {
     Type* type = typeSym->type;
 
-    ClassType* classType = dynamic_cast<ClassType*>(type);
+    StructuralType* classType = dynamic_cast<StructuralType*>(type);
     if (classType != NULL) {
       //      fprintf(stderr, "Found a class function: %s\n", typeSym->name);
       forv_Symbol(method, classType->methods) {

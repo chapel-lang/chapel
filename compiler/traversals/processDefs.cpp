@@ -20,7 +20,7 @@ static void insert_default_init(Stmt* stmt, VarSymbol* var) {
   //     ClassName this;
   //     this = _construct_ClassName();  <=== Squelched
   //
-  if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
+  if (StructuralType* class_type = dynamic_cast<StructuralType*>(type)) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(class_type->constructor)) {
       if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
         if (def_expr->sym == stmt->parentSymbol) {

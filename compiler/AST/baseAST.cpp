@@ -29,7 +29,7 @@ int compar_baseast(const void *ai, const void *aj) {
   return 0;
 }
 
-char* astTypeName[] = {
+char* astTypeName[AST_TYPE_END+1] = {
   "Stmt",
   "NoOpStmt",
   "WithStmt",
@@ -94,9 +94,15 @@ char* astTypeName[] = {
   "ArrayType",
   "UserType",
   "LikeType",
+  "StructuralType",
   "ClassType",
+  "RecordType",
+  "UnionType",
   "TupleType",
   "SumType",
   "VariableType",
-  "UnresolvedType"
+  "UnresolvedType",
+  "NilType",
+
+  "AST_TYPE_END"
 };

@@ -18,7 +18,7 @@ GetClassMethods::GetClassMethods(Vec<FnSymbol*>* init_classMethods) {
 
 void GetClassMethods::processSymbol(Symbol* sym) {
   if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym)) {
-    if (ClassType* class_type = dynamic_cast<ClassType*>(type_sym->type)) {
+    if (StructuralType* class_type = dynamic_cast<StructuralType*>(type_sym->type)) {
       if (!class_type->value) {
         forv_Vec(FnSymbol, method, class_type->methods) {
           while (method) {

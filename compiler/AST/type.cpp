@@ -664,16 +664,16 @@ void IndexType::traverseDefType(Traversal* traversal) {
   TRAVERSE(defaultVal, traversal, false);
 }
 
+
 Type* IndexType::getType(){
   return idxType; 
 }
 
-SeqType::SeqType(Type* init_elementType) :
-  ClassType(false, TYPE_SEQ),
+
+SeqType::SeqType(Type* init_elementType):
+  ClassType(TYPE_SEQ),
   elementType(init_elementType)
-{
-  astType = TYPE_SEQ;
-}
+{}
 
 
 Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -756,14 +756,14 @@ void SeqType::buildImplementationClasses() {
 
   Symbol* _node = Symboltable::lookup("_node");
   _node->cname = glomstrings(2, symbol->name, _node->name);
-  SymScope* _node_scope = dynamic_cast<ClassType*>(_node->type)->classScope;
+  SymScope* _node_scope = dynamic_cast<ClassType*>(_node->type)->structScope;
   Symboltable::lookupInScope("element", _node_scope)->type = elementType;
   Symboltable::lookupInScope("next", _node_scope)->type = _node->type;
   Symboltable::lookup("first")->type = _node->type;
   Symboltable::lookup("last")->type = _node->type;
 
-  classScope = Symboltable::popScope();
-  classScope->setContext(NULL, symbol, symbol->defPoint);
+  structScope = Symboltable::popScope();
+  structScope->setContext(NULL, symbol, symbol->defPoint);
   TRAVERSE_LS(symbol->defPoint->stmt, new Fixup(), true);
 }
 
@@ -1024,16 +1024,14 @@ void LikeType::codegenDef(FILE* outfile) {
 }
 
 
-ClassType::ClassType(bool isValueClass,
-                     astType_t astType) :
-  Type(astType, ((isValueClass) ? 
-                 NULL : // SJD: Set to be constructor when that is built
-                 new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))),
+StructuralType::StructuralType(astType_t astType, bool isValueClass,
+                               Expr* init_defaultVal) :
+  Type(astType, init_defaultVal),
   value(isValueClass),
-  parentClass(NULL),
   constructor(NULL),
-  classScope(NULL),
-  declarationList(NULL)
+  structScope(NULL),
+  declarationList(NULL),
+  parentStruct(NULL)
 {
   fields.clear();
   methods.clear();
@@ -1042,8 +1040,8 @@ ClassType::ClassType(bool isValueClass,
 }
 
 
-Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  ClassType* copy_type = new ClassType(value);
+void StructuralType::copyGuts(StructuralType* copy_type, bool clone, 
+                              Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Symboltable::pushScope(SCOPE_CLASS);
   Stmt* new_decls = NULL;
   for (Stmt* old_decls = declarationList;
@@ -1059,12 +1057,11 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   }
   copy_type->addDeclarations(new_decls);
   SymScope* copy_scope = Symboltable::popScope();
-  copy_type->setClassScope(copy_scope);
-  return copy_type;
+  copy_type->setScope(copy_scope);
 }
 
 
-void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
+void StructuralType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
   Stmt* tmp = newDeclarations;
   while (tmp) {
     DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp);
@@ -1096,7 +1093,7 @@ void ClassType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
 
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
-Stmt* ClassType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
+Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
   ParamSymbol* ptmp = args;
 #endif
@@ -1107,7 +1104,7 @@ Stmt* ClassType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
 #else
     Expr* rhs = tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy();
     if (!rhs) {
-      if (ClassType* nested_class_type = dynamic_cast<ClassType*>(tmp->type)) {
+      if (StructuralType* nested_class_type = dynamic_cast<StructuralType*>(tmp->type)) {
         rhs = new ParenOpExpr(new Variable(nested_class_type->symbol), NULL);
       } else continue; // hack for classes that are cloned; we don't
       // actually want to build the constructor for
@@ -1139,26 +1136,26 @@ Stmt* ClassType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
 }
 
 
-void ClassType::setClassScope(SymScope* init_classScope) {
-  classScope = init_classScope;
+void StructuralType::setScope(SymScope* init_structScope) {
+  structScope = init_structScope;
 }
 
 
-void ClassType::traverseDefType(Traversal* traversal) {
+void StructuralType::traverseDefType(Traversal* traversal) {
   SymScope* prevScope;
-  if (classScope) {
-    prevScope = Symboltable::setCurrentScope(classScope);
+  if (structScope) {
+    prevScope = Symboltable::setCurrentScope(structScope);
   }
   TRAVERSE_LS(declarationList, traversal, false);
   TRAVERSE_LS(constructor, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
-  if (classScope) {
+  if (structScope) {
     Symboltable::setCurrentScope(prevScope);
   }
 }
 
 
-void ClassType::codegen(FILE* outfile) {
+void StructuralType::codegen(FILE* outfile) {
   if (symbol->isDead) {
     // BLC: theoretically, this case should only occur when a class
     // is never instantiated -- only nil references are used
@@ -1169,12 +1166,12 @@ void ClassType::codegen(FILE* outfile) {
 }
 
 
-void ClassType::codegenStartDefFields(FILE* outfile) {}
+void StructuralType::codegenStartDefFields(FILE* outfile) {}
 
-void ClassType::codegenStopDefFields(FILE* outfile) {}
+void StructuralType::codegenStopDefFields(FILE* outfile) {}
 
 
-void ClassType::codegenDef(FILE* outfile) {
+void StructuralType::codegenDef(FILE* outfile) {
   forv_Vec(TypeSymbol, type, types) {
     type->codegenDef(outfile);
     fprintf(outfile, "\n");
@@ -1223,7 +1220,7 @@ void ClassType::codegenDef(FILE* outfile) {
 }
 
 
-void ClassType::codegenStructName(FILE* outfile) {
+void StructuralType::codegenStructName(FILE* outfile) {
   if (value) {
     symbol->codegen(outfile);
   }
@@ -1236,7 +1233,7 @@ void ClassType::codegenStructName(FILE* outfile) {
 }
 
 
-void ClassType::codegenPrototype(FILE* outfile) {
+void StructuralType::codegenPrototype(FILE* outfile) {
   forv_Vec(TypeSymbol, type, types) {
     type->codegenPrototype(outfile);
     fprintf(outfile, "\n");
@@ -1249,7 +1246,7 @@ void ClassType::codegenPrototype(FILE* outfile) {
 }
 
 
-void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+void StructuralType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
                               Expr* format) {
   forv_Symbol(method, methods) {
     if (strcmp(method->name, "write") == 0) {
@@ -1280,7 +1277,7 @@ void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
 }
 
 
-void ClassType::codegenMemberAccessOp(FILE* outfile) {
+void StructuralType::codegenMemberAccessOp(FILE* outfile) {
   if (value) {              /* record */
     fprintf(outfile, ".");
   } else {                             /* class */
@@ -1289,7 +1286,7 @@ void ClassType::codegenMemberAccessOp(FILE* outfile) {
 }
 
 
-bool ClassType::blankIntentImpliesRef(void) {
+bool StructuralType::blankIntentImpliesRef(void) {
   if (value) {
     return false;
   } else {
@@ -1298,19 +1295,55 @@ bool ClassType::blankIntentImpliesRef(void) {
 }
 
 
-bool ClassType::implementedUsingCVals(void) {
+bool StructuralType::implementedUsingCVals(void) {
   if (value) {
     return true;
   } else {
     return false;
   }
+}
+
+
+ClassType::ClassType(astType_t astType) :
+  StructuralType(astType, false,
+                 new Variable(Symboltable::lookupInternal("nil", 
+                                                          SCOPE_INTRINSIC)))
+{}
+
+
+Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 
+                          CloneCallback* analysis_clone) {
+  ClassType* copy_type = new ClassType(astType);
+  copyGuts(copy_type, clone, map, analysis_clone);
+  return copy_type;
+}
+
+
+RecordType::RecordType(void) :
+  StructuralType(TYPE_RECORD, true)
+{}
+
+
+Type* RecordType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 
+                          CloneCallback* analysis_clone) {
+  RecordType* copy_type = new RecordType();
+  copyGuts(copy_type, clone, map, analysis_clone);
+  return copy_type;
 }
 
 
 UnionType::UnionType(void) :
-  ClassType(true, TYPE_UNION),
+  StructuralType(TYPE_UNION, true),
   fieldSelector(NULL)
 {}
+
+
+Type* UnionType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 
+                          CloneCallback* analysis_clone) {
+  UnionType* copy_type = new UnionType();
+  copyGuts(copy_type, clone, map, analysis_clone);
+  return copy_type;
+}
 
 
 static char* buildFieldSelectorName(UnionType* unionType, Symbol* field, 

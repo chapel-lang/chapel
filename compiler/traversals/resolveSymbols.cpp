@@ -22,10 +22,10 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     if (UnresolvedSymbol* UnresolvedMember =
         dynamic_cast<UnresolvedSymbol*>(dot->member)) {
       if (analyzeAST) {
-        if (ClassType* class_type = dynamic_cast<ClassType*>(dot->base->typeInfo())) {
+        if (StructuralType* class_type = dynamic_cast<StructuralType*>(dot->base->typeInfo())) {
           dot->member = 
             Symboltable::lookupInScope(UnresolvedMember->name,
-                                       class_type->classScope);
+                                       class_type->structScope);
         }
       } else {
         Expr* base = dot->base;
@@ -37,9 +37,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           while (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
             type = array_type->elementType;
           }
-          if (ClassType* class_type = dynamic_cast<ClassType*>(type)) {
+          if (StructuralType* class_type = dynamic_cast<StructuralType*>(type)) {
             Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
-                                                     class_type->classScope);
+                                                     class_type->structScope);
             if (sym) {
               dot->member = sym;
             } else {
@@ -49,9 +49,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             INT_FATAL(expr, "No Analysis Resolution Failure (NARF)");
           }
         } else if (MemberAccess* outer = dynamic_cast<MemberAccess*>(base)) {
-          if (ClassType* class_type = dynamic_cast<ClassType*>(outer->member->type)) {
+          if (StructuralType* class_type = dynamic_cast<StructuralType*>(outer->member->type)) {
             Symbol* sym = Symboltable::lookupInScope(UnresolvedMember->name,
-                                                     class_type->classScope);
+                                                     class_type->structScope);
             if (sym) {
               dot->member = sym;
             } else {

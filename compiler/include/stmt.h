@@ -56,7 +56,7 @@ class WithStmt : public Stmt {
   Expr* withExpr;
 
   WithStmt(Expr* init_withExpr);
-  ClassType* getClass(void);
+  StructuralType* getStruct(void);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);

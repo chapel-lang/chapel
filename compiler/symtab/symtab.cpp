@@ -655,13 +655,13 @@ DefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 
 
 TypeSymbol* Symboltable::startStructDef(structType type, char* name) {
-  ClassType* newType;
+  StructuralType* newType;
   switch (type) {
   case STRUCT_CLASS:
-    newType = new ClassType(false);
+    newType = new ClassType();
     break;
   case STRUCT_RECORD:
-    newType = new ClassType(true);
+    newType = new RecordType();
     break;
   case STRUCT_UNION:
     newType = new UnionType();
@@ -677,10 +677,10 @@ TypeSymbol* Symboltable::startStructDef(structType type, char* name) {
 
 DefExpr* Symboltable::finishStructDef(TypeSymbol* classSym, 
                                       Stmt* definition) {
-  ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
+  StructuralType* classType = dynamic_cast<StructuralType*>(classSym->type);
   classType->addDeclarations(definition);
   SymScope *classScope = Symboltable::popScope();
-  classType->setClassScope(classScope);
+  classType->setScope(classScope);
   DefExpr* classDefExpr = new DefExpr(classSym);
   classScope->setContext(NULL, classSym, classDefExpr);
 

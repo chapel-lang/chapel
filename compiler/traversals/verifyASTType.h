@@ -4,6 +4,9 @@
 #include "traversal.h"
 
 class VerifyASTType : public Traversal {
+ public:
+  VerifyASTType(void);
+
   void preProcessStmt(Stmt* stmt);
   void preProcessExpr(Expr* expr);
   void preProcessSymbol(Symbol* sym);

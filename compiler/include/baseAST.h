@@ -7,7 +7,7 @@
  **  Note: update astType and astName together always.
  **/
 enum astType_t {
-  STMT,
+  STMT = 0,
   STMT_NOOP,
   STMT_WITH,
   STMT_DEF,
@@ -71,7 +71,9 @@ enum astType_t {
   TYPE_ARRAY,
   TYPE_USER,
   TYPE_LIKE,
+  TYPE_STRUCTURAL,
   TYPE_CLASS,
+  TYPE_RECORD,
   TYPE_UNION,
   TYPE_TUPLE,
   TYPE_SUM,

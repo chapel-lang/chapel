@@ -47,7 +47,7 @@ void OmitForNoAnalysis::postProcessStmt(Stmt* stmt) {
                a symbol. Should ask Brad (BLC) about this. ***/
           if (ClassType* ctype = dynamic_cast<ClassType*>(sym->type)) {
             KillSubSymbols traversal;
-            Symboltable::traverseFromScope(&traversal, ctype->classScope);
+            Symboltable::traverseFromScope(&traversal, ctype->structScope);
           }
           sym = nextLink(Symbol, sym);
         }

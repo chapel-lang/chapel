@@ -19,7 +19,7 @@ class Stmt;
 class ASTCopyContext;
 class Sym;
 class TypeSymbol;
-class ClassType;
+class StructuralType;
 class VarSymbol;
 
 class ACallbacks : public Callbacks {
@@ -91,7 +91,7 @@ int constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s = 0);
 int resolve_symbol(UnresolvedSymbol *us, MemberAccess *ma, Symbol *&sym);
 /* ^^^^^^ DEPRECATED ^^^^^^ */
 void resolve_member_access(MemberAccess *ma, int *offset, Type **type); 
-void resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type); 
+void resolve_member(StructuralType *t, VarSymbol *v, int *offset, Type **type); 
 void structural_subtypes(Type *t, Vec<Type *> subtypes);
 
 #endif

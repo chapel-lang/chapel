@@ -312,9 +312,19 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_LIKE");
     }
     break;
+  case TYPE_STRUCTURAL:
+    if (typeid(*ast) != typeid(StructuralType)) {
+      INT_FATAL(ast, "Unexpected AST type type: TYPE_STRUCTURAL");
+    }
+    break;
   case TYPE_CLASS:
     if (typeid(*ast) != typeid(ClassType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_CLASS");
+    }
+    break;
+  case TYPE_RECORD:
+    if (typeid(*ast) != typeid(RecordType)) {
+      INT_FATAL(ast, "Unexpected AST type type: TYPE_RECORD");
     }
     break;
   case TYPE_UNION:
@@ -350,6 +360,13 @@ static void verifyASTType(BaseAST* ast) {
   case AST_TYPE_END:
     INT_FATAL(ast, "Unexpected AST type: AST_TYPE_END");
     break;
+  }
+}
+
+
+VerifyASTType::VerifyASTType(void) {
+  if (strcmp(astTypeName[AST_TYPE_END], "AST_TYPE_END") != 0) {
+    INT_FATAL("Not enough strings in astTypeName (baseAST.cpp");
   }
 }
 
