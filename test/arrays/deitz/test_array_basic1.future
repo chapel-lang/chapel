@@ -1,1 +1,7 @@
-jplevyak
+deitz
+
+This program is in error.  The fields are never set
+to any value so they are uninitialized when they are
+read.  I am not sure what we are intending to test,
+but perhaps we could add some initialization or 
+a constructor?
