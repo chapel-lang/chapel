@@ -1857,3 +1857,16 @@ Added files:
 	chapel/test/trivial/bradc/: declprintint2.chk declprintint2.chpl 
 	                            pareninit.chk pareninit.chpl 
 
+---------------------------------------------------------------------------
+
+04/05/03 12:53:43 -- bradc
+
+Log message:
+	Did an abort partway through the last checkin, and so some mods
+	in compiler/ weren't reflected in the log file.  The files that
+	changed there were: ast.h, codegen.cpp, and prelude.chpl.
+	Modified the CVSLOG file by hand to reflect this (ugh!).
+
+Modified files:
+	./: CVSLOG 
+
