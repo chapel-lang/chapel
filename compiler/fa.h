@@ -8,7 +8,7 @@
 #include "map.h"
 #include "sym.h"
 
-#define DEFAULT_NUM_CONSTANTS_PER_VARIABLE	4
+#define DEFAULT_NUM_CONSTANTS_PER_VARIABLE	0
 
 #define GLOBAL_CONTOUR ((void*)1)
 
