@@ -23,8 +23,6 @@ enum astType_t {
   STMT_COND,
   STMT_LABEL,
   STMT_GOTO,
-  STMT_BREAK,
-  STMT_CONTINUE,
 
   EXPR,
   EXPR_LITERAL,
@@ -62,6 +60,7 @@ enum astType_t {
   SYMBOL_TYPE,
   SYMBOL_FN,
   SYMBOL_ENUM,
+  SYMBOL_LABEL,
 
   TYPE,
   TYPE_BUILTIN,

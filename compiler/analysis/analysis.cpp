@@ -936,7 +936,7 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
 	  // handled below
 	  break;
       }
-      labelmap->put(if1_cannonicalize_string(if1, dynamic_cast<LabelStmt*>(stmt)->name), target);
+      labelmap->put(if1_cannonicalize_string(if1, dynamic_cast<LabelStmt*>(stmt)->label->name), target);
       break;
     }
     case STMT_WHILELOOP:
@@ -969,13 +969,14 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
       break;
     case STMT_GOTO: {
       GotoStmt *s = dynamic_cast<GotoStmt*>(ast);
-      Stmt *target = labelmap->get(if1_cannonicalize_string(if1, s->name));
+      Stmt *target = labelmap->get(if1_cannonicalize_string(if1, s->label->name));
       if (!target)
-	return show_error("unresolved label %s", s->ainfo, s->name);
+	return show_error("unresolved label %s", s->ainfo, s->label->name);
       else 
 	stmt->ainfo->label[0] = target->ainfo->label[0];
       break;
     }
+      /*
     case STMT_BREAK: {
       BreakStmt *s = dynamic_cast<BreakStmt*>(ast);
       if (s->name) {
@@ -1000,6 +1001,7 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 	stmt->ainfo->label[0] = continue_label;
       break;
     }
+      */
     default: break;
   }
   GetStmts* getStmts = new GetStmts();
@@ -1201,9 +1203,7 @@ gen_if1(BaseAST *ast) {
       if1_gen(if1, &s->ainfo->code, s->stmt->ainfo->code);
       break;
     }
-    case STMT_BREAK:
-    case STMT_GOTO:
-    case STMT_CONTINUE: {
+    case STMT_GOTO: {
       Stmt *s = dynamic_cast<Stmt*>(ast);
       Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
       c->ast = s->ainfo;
@@ -1626,6 +1626,7 @@ gen_if1(BaseAST *ast) {
   case SYMBOL_TYPE:
   case SYMBOL_FN:
   case SYMBOL_ENUM:
+  case SYMBOL_LABEL:
   case TYPE:
   case TYPE_BUILTIN:
   case TYPE_ENUM:

@@ -82,6 +82,10 @@ Stmt* Stmt::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 
 
 Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  if (!this) {
+    return this;
+  }
+
   Stmt* new_stmt = copyStmt(clone, map, analysis_clone);
 
   new_stmt->lineno = lineno;
@@ -931,9 +935,9 @@ void CondStmt::codegen(FILE* outfile) {
 
 
 
-LabelStmt::LabelStmt(char* init_name, Stmt* init_stmt) :
+LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
   Stmt(STMT_LABEL),
-  name(init_name),
+  label(init_label),
   stmt(init_stmt)
 {
   SET_BACK(stmt);
@@ -941,100 +945,89 @@ LabelStmt::LabelStmt(char* init_name, Stmt* init_stmt) :
 
 
 Stmt* LabelStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new LabelStmt(name, stmt->copyInternal(clone, map, analysis_clone));
+  return new LabelStmt(label, stmt->copyInternal(clone, map, analysis_clone));
 }
 
 
 void LabelStmt::traverseStmt(Traversal* traversal) {
+  TRAVERSE_DEF(label, traversal, false);
   TRAVERSE(stmt, traversal, false);
 }
 
 
 void LabelStmt::print(FILE* outfile) {
-  fprintf(outfile, "label %s ", name);
+  fprintf(outfile, "label ");
+  label->print(outfile);
+  fprintf(outfile, " ");
   stmt->print(outfile);
 }
 
+
 void LabelStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "%s:;\n", name);
+  label->codegen(outfile);
+  fprintf(outfile, ":;\n");
   stmt->codegen(outfile);
+  label->codegen(outfile);
+  fprintf(outfile, "_post:;\n");
 }
 
 
-
-GotoStmt::GotoStmt(char* init_name) :
+GotoStmt::GotoStmt(gotoType init_goto_type) :
   Stmt(STMT_GOTO),
-  name(init_name)
+  label(NULL),
+  goto_type(init_goto_type)
+{
+}
+
+
+GotoStmt::GotoStmt(gotoType init_goto_type, char* init_label) :
+  Stmt(STMT_GOTO),
+  label(new UnresolvedSymbol(init_label)),
+  goto_type(init_goto_type)
+{
+}
+
+
+GotoStmt::GotoStmt(gotoType init_goto_type, Symbol* init_label) :
+  Stmt(STMT_GOTO),
+  label(init_label),
+  goto_type(init_goto_type)
 {
 }
 
 
 Stmt* GotoStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new GotoStmt(name);
+  return new GotoStmt(goto_type, label);
 }
 
 
 void GotoStmt::traverseStmt(Traversal* traversal) {
+  TRAVERSE(label, traversal, false);
 }
 
 
 void GotoStmt::print(FILE* outfile) {
-  fprintf(outfile, "goto %s", name);
+  switch (goto_type) {
+  case goto_normal:
+    fprintf(outfile, "goto ");
+    break;
+  case goto_break:
+    fprintf(outfile, "break goto ");
+    break;
+  case goto_continue:
+    fprintf(outfile, "continue goto ");
+    break;
+  }
+  label->print(outfile);
+  fprintf(outfile, "\n");
 }
+
 
 void GotoStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "goto %s;\n", name);
+  fprintf(outfile, "goto ");
+  label->codegen(outfile);
+  if (goto_type == goto_break) {
+    fprintf(outfile, "_post");
+  }
+  fprintf(outfile, ";\n");
 }
-
-
-
-BreakStmt::BreakStmt(char* init_name) :
-  Stmt(STMT_BREAK),
-  name(init_name)
-{
-}
-
-
-Stmt* BreakStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new BreakStmt(name);
-}
-
-
-void BreakStmt::traverseStmt(Traversal* traversal) {
-}
-
-
-void BreakStmt::print(FILE* outfile) {
-  fprintf(outfile, "goto %s", name);
-}
-
-void BreakStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "goto %s;\n", name);
-}
-
-
-
-ContinueStmt::ContinueStmt(char* init_name) :
-  Stmt(STMT_CONTINUE),
-  name(init_name)
-{
-}
-
-
-Stmt* ContinueStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new ContinueStmt(name);
-}
-
-
-void ContinueStmt::traverseStmt(Traversal* traversal) {
-}
-
-
-void ContinueStmt::print(FILE* outfile) {
-  fprintf(outfile, "goto %s", name);
-}
-
-void ContinueStmt::codegen(FILE* outfile) {
-  fprintf(outfile, "goto %s;\n", name);
-}
-

@@ -612,17 +612,17 @@ function_body_stmt:
 statement:
   noop_stmt
 | TLABEL identifier statement
-    { $$ = new LabelStmt($2, $3); }
+    { $$ = new LabelStmt(new LabelSymbol($2), $3); }
 | TGOTO identifier TSEMI
-    { $$ = new GotoStmt($2); }
+    { $$ = new GotoStmt(goto_normal, $2); }
 | TBREAK identifier TSEMI
-    { $$ = new BreakStmt($2); }
+    { $$ = new GotoStmt(goto_break, $2); }
 | TBREAK TSEMI
-    { $$ = new BreakStmt(); }
+    { $$ = new GotoStmt(goto_break); }
 | TCONTINUE identifier TSEMI
-    { $$ = new ContinueStmt($2); }
+    { $$ = new GotoStmt(goto_continue, $2); }
 | TCONTINUE TSEMI
-    { $$ = new ContinueStmt(); }
+    { $$ = new GotoStmt(goto_continue); }
 | decl
 | assignment
 | conditional

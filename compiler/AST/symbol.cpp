@@ -999,3 +999,12 @@ void ModuleSymbol::createInitFn(void) {
 bool ModuleSymbol::isFileModule(void) {
   return (lineno == 0);
 }
+
+
+LabelSymbol::LabelSymbol(char* init_name) :
+  Symbol(SYMBOL_LABEL, init_name, NULL) {
+  Symboltable::define(this);
+}
+
+
+void LabelSymbol::codegenDef(FILE* outfile) { }

@@ -230,10 +230,10 @@ class CondStmt : public Stmt {
 
 class LabelStmt : public Stmt {
  public:
-  char *name;
-  Stmt *stmt;
+  LabelSymbol* label;
+  Stmt* stmt;
   
-  LabelStmt(char *name, Stmt *stmt);
+  LabelStmt(LabelSymbol* init_label, Stmt* init_stmt);
 
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
@@ -241,44 +241,24 @@ class LabelStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+};
+
+
+enum gotoType {
+  goto_normal = 0,
+  goto_break,
+  goto_continue
 };
 
 
 class GotoStmt : public Stmt {
  public:
-  char *name;
-  
-  GotoStmt(char *name);
+  Symbol* label;
+  gotoType goto_type;
 
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void traverseStmt(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class BreakStmt : public Stmt {
- public:
-  char *name;
-  
-  BreakStmt(char *name = NULL);
-
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void traverseStmt(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class ContinueStmt : public Stmt {
- public:
-  char *name;
-  
-  ContinueStmt(char *name = NULL);
+  GotoStmt(gotoType init_goto_type);
+  GotoStmt(gotoType init_goto_type, char* init_label);
+  GotoStmt(gotoType init_goto_type, Symbol* init_label);
 
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 

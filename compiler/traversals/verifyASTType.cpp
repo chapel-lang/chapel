@@ -87,16 +87,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_GOTO");
     }
     break;
-  case STMT_BREAK:
-    if (typeid(*ast) != typeid(BreakStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_BREAK");
-    }
-    break;
-  case STMT_CONTINUE:
-    if (typeid(*ast) != typeid(ContinueStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_CONTINUE");
-    }
-    break;
   case EXPR:
     if (typeid(*ast) != typeid(Expr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR");
@@ -266,6 +256,11 @@ static void verifyASTType(BaseAST* ast) {
   case SYMBOL_ENUM:
     if (typeid(*ast) != typeid(EnumSymbol)) {
       INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_ENUM");
+    }
+    break;
+  case SYMBOL_LABEL:
+    if (typeid(*ast) != typeid(LabelSymbol)) {
+      INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_LABEL");
     }
     break;
   case TYPE:

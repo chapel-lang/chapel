@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include "scopeResolveSymbols.h"
 #include "expr.h"
 #include "stmt.h"
@@ -33,6 +34,89 @@ static void resolve_type_helper(Type* &type) {
     tuple_type->rebuildDefaultVal();
   }
 }
+
+
+/** finds break or continue, i.e., a non-label goto **/
+class FindGoto : public Traversal {
+ public:
+  bool found;
+  FindGoto(void);
+  void preProcessStmt(Stmt* stmt);
+};
+
+FindGoto::FindGoto() {
+  found = false;
+}
+
+void FindGoto::preProcessStmt(Stmt* stmt) {
+  if (GotoStmt* goto_stmt = dynamic_cast<GotoStmt*>(stmt)) {
+    if (goto_stmt->label == NULL) {
+      found = true;
+    }
+  }
+}
+
+
+ScopeResolveSymbols::ScopeResolveSymbols() {
+  currentLoop = NULL;
+}
+
+
+void ScopeResolveSymbols::preProcessStmt(Stmt* stmt) {
+  static int uid = 1;
+
+  if (dynamic_cast<WhileLoopStmt*>(stmt) ||
+      dynamic_cast<ForLoopStmt*>(stmt)) { 
+
+    BlockStmt* loop_stmt = dynamic_cast<BlockStmt*>(stmt);
+
+    if (!loop_stmt) {
+      INT_FATAL(stmt, "BlockStmt expected in ScopeResolveSymbols");
+    }
+
+    FindGoto* traversal = new FindGoto();
+    TRAVERSE_LS(loop_stmt->body, traversal, true);
+    if (traversal->found) {
+      NoOpStmt* noop_stmt = new NoOpStmt();
+      loop_stmt->replace(noop_stmt);
+
+      char* label_name = glomstrings(2, "_loop_label_", intstring(uid++));
+      LabelSymbol* label_symbol = new LabelSymbol(label_name);
+      LabelStmt* label_stmt = new LabelStmt(label_symbol, loop_stmt);
+      noop_stmt->replace(label_stmt);
+      currentLoop = label_stmt;
+      return;
+    }
+  }
+
+  GotoStmt* goto_stmt = dynamic_cast<GotoStmt*>(stmt);
+
+  if (!goto_stmt) {
+    return;
+  }
+
+  if (!goto_stmt->label) {
+    if (!currentLoop) {
+      USR_FATAL(stmt, "break or continue is not in a loop");
+    }
+    else {
+      goto_stmt->label = currentLoop->label;
+    }
+  }
+  else if (dynamic_cast<UnresolvedSymbol*>(goto_stmt->label)) {
+    Symbol* new_symbol = Symboltable::lookup(goto_stmt->label->name);
+    if (typeid(*new_symbol) == typeid(LabelSymbol)) {
+      goto_stmt->label = new_symbol;
+    }
+    else {
+      INT_FATAL(stmt, "Unable to resolve goto label");
+    }
+  }
+  else {
+    INT_FATAL(stmt, "Label already resolved in goto");
+  }
+}
+
 
 void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
   if (CastExpr* cast_expr = dynamic_cast<CastExpr*>(expr)) {

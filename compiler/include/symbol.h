@@ -195,4 +195,12 @@ class ModuleSymbol : public Symbol {
   bool isFileModule(void);
 };
 
+
+class LabelSymbol : public Symbol {
+ public:
+  LabelSymbol(char* init_name);
+  virtual void codegenDef(FILE* outfile);
+};
+
+
 #endif
