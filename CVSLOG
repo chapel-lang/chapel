@@ -19686,3 +19686,28 @@ Added files:
 	                              test_operator_overloading1.future 
 	                              test_operator_overloading1.good 
 
+---------------------------------------------------------------------------
+
+03/15/05 14:55:29 -- bradc
+
+Log message:
+	Fixed tests that weren't working on the Sun to
+	improve portability.  These are minor changes:
+	Sun's grep didn't tack a newline onto the end
+	of files while Linux's does, so had to modify
+	a PREDIFF file to make things worked.  Suns
+	byte ordering also pointed out that in some
+	tests I was printing out 64-bit integers using
+	%d formatting strings rather than %lld.  This
+	implies that for the long-term, we should
+	probably invent our own formatting strings for
+	Chapel to avoid relying on the fact that C's
+	betray too much about the underlying types
+	used to represent Chapel's types.  For now,
+	C's seem fine, though.
+
+Modified files:
+	chapel/test/compflags/bradc/gdbddash/: PREDIFF 
+	chapel/test/trivial/bradc/: formatoutput.chpl 
+	chapel/test/trivial/bradc/domarr/: enumarray.chpl 
+
