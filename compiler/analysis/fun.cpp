@@ -198,6 +198,8 @@ Fun::copy() {
   f->ess.copy(ess);
   ASTCopyContext context;
   context.nmap = f->nmap;
+  context.vmap = f->vmap;
+  context.new_f = f;
   f->ast = ast ? ast->copy_tree(&context) : 0;
   return f;
 }

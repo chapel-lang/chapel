@@ -14,10 +14,13 @@ class Sym;
 class IF1;
 class AST;
 class BaseAST;
+class Var;
 
 class ASTCopyContext : public gc {
  public:
+  Fun *new_f;
   Map<PNode *, PNode *> *nmap;
+  Map<Var *, Var *> *vmap;
 };
 
 class AST : public gc {

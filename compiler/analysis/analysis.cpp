@@ -97,21 +97,30 @@ class AnalysisCloneCallback : public CloneCallback {
 
 void
 AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
-  Stmt *new_s = dynamic_cast<Stmt*>(new_ast);
-  if (new_s) {
+  if (isSomeStmt(new_ast->astType)) {
+    Stmt *new_s = dynamic_cast<Stmt*>(new_ast);
     Stmt *old_s = dynamic_cast<Stmt*>(old_ast);
     if (old_s->ainfo) {
       new_s->ainfo = (AInfo*)old_s->ainfo->copy_node(context);
       new_s->ainfo->xast = new_s;
     }
-  } else {
+  } else if (isSomeExpr(new_ast->astType)) {
     Expr *new_e = dynamic_cast<Expr*>(new_ast);
     Expr *old_e = dynamic_cast<Expr*>(old_ast);
     if (old_e->ainfo) {
       new_e->ainfo = (AInfo*)old_e->ainfo->copy_node(context);
       new_e->ainfo->xast = new_e;
     }
-  }
+  } else if (isSomeSymbol(new_ast->astType)) {
+    Symbol *new_s = dynamic_cast<Symbol*>(new_ast);
+    Symbol *old_s = dynamic_cast<Symbol*>(old_ast);
+    if (old_s->asymbol) {
+      new_s->asymbol = (ASymbol*)old_s->asymbol->copy();
+      new_s->asymbol->xsymbol = new_s;
+      new_s->asymbol->var = context->vmap->get(old_s->asymbol->var);
+    }
+  } else 
+    assert(!"clone of Type unsupported");
 }
 
 AST *
@@ -119,7 +128,9 @@ AInfo::copy_tree(ASTCopyContext* context) {
   AnalysisCloneCallback callback;
   callback.context = context;
   FnDefStmt *orig_fn = dynamic_cast<FnDefStmt*>(xast);  
-  return orig_fn->clone(&callback)->ainfo;
+  FnDefStmt *new_fn = orig_fn->clone(&callback);
+  //new_fn->fn->asymbol = (ASymbol*)context->new_f->sym;
+  return new_fn->ainfo;
 }
 
 static void
