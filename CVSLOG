@@ -12142,3 +12142,14 @@ Removed files:
 	                                          test_record_method2.good 
 	                                          test_record_with1.chpl 
 
+---------------------------------------------------------------------------
+
+12/17/04 10:43:55 -- deitz
+
+Log message:
+	Added an output file for test_class_with2.good which only fails in
+	analysis.
+
+Added files:
+	chapel/test/classes/deitz/future/: test_class_with2.good 
+
