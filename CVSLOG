@@ -11791,3 +11791,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+12/14/04 11:43:59 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Remove hack used to obtain surrounding function.  Now use parentSymbol.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
