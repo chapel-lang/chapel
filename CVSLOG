@@ -18110,3 +18110,21 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+02/25/05 16:49:46 -- deitz
+
+Log message:
+	Added intrinsic "numeric" which will be used by analysis to constrain
+	types.  It is an integer or float or boole?
+	
+	Type* dtNumeric points to this type.
+	
+	At this point, I think I exposed it to the user.  Perhaps we shouldn't
+	do this and it should be put in the InternalPrelude.  How should it be
+	specified there if that is the case?
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+
