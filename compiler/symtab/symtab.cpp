@@ -526,6 +526,9 @@ VarDefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type,
 
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
 static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = nilSymbol) {
+  if (expr->isNull()) {
+    return indices;
+  }
 
   for (Expr* tmp = expr; tmp && !(tmp->isNull()); tmp = nextLink(Expr, tmp)) {
     Variable* varTmp = dynamic_cast<Variable*>(tmp);
@@ -550,17 +553,11 @@ static Symbol* exprToIndexSymbols(Expr* expr, Symbol* indices = nilSymbol) {
 ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
 
-  Stmt* indexVars = nilStmt;
-  if (!indexExpr->isNull()) {
-    Symbol* newSyms = exprToIndexSymbols(indexExpr);
-    // HACK: this is a poor assumption -- that all index variables are
-    // integers
-    indexVars = Symboltable::defineVarDefStmt(newSyms, dtInteger, 
-						    nilExpr, VAR_NORMAL,
-						    false);
-  }
+  Symbol* indices = exprToIndexSymbols(indexExpr);
+  // HACK: this is a poor assumption -- that all index variables are
+  // integers
 
-  return new ForallExpr(domainExpr, indexVars);
+  return new ForallExpr(domainExpr, indices);
 }
 
 

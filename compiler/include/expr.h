@@ -492,12 +492,12 @@ class CompleteDimExpr : public Expr {
 class ForallExpr : public Expr {
  public:
   Expr* domains;
-  Stmt* indices;
+  Symbol* indices;
   Expr* forallExpr;
 
   SymScope* indexScope;
 
-  ForallExpr(Expr* init_domains, Stmt* init_indices = nilStmt,
+  ForallExpr(Expr* init_domains, Symbol* init_indices = nilSymbol,
 	     Expr* init_forallExpr = nilExpr);
   void setForallExpr(Expr* exp);
   void setIndexScope(SymScope* init_indexScope);

@@ -45,7 +45,11 @@ static void build_anon_type_defs(VarDefStmt* stmt, Type* type) {
 	      commonModule->stmts = appendLink(commonModule->stmts, array_type_def);
 	    }
 	    else {
-	      array_type->elementType->name->defPoint->insertAfter(array_type_def);
+	      Stmt* def_stmt = dynamic_cast<Stmt*>(array_type->elementType->name->defPoint);
+	      if (!def_stmt) {
+		INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
+	      }
+	      def_stmt->insertAfter(array_type_def);
 	    }
 	  }
 	}

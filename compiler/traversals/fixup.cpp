@@ -6,7 +6,7 @@
 #include "symtab.h"
 
 
-//static void verifySymbolDefPoint(Symbol* sym);
+static void verifySymbolDefPoint(Symbol* sym);
 static void verifySymbolScope(Symbol* sym);
 
 
@@ -109,7 +109,7 @@ void Fixup::preProcessExpr(Expr* expr) {
 void Fixup::preProcessSymbol(Symbol* sym) {
   if (verify) {
     verifySymbolScope(sym);
-    //    verifySymbolDefPoint(sym);  //SJD: Remove defPoint
+    verifySymbolDefPoint(sym);
   }
 }
 
@@ -175,13 +175,13 @@ static void verifySymbolScope(Symbol* sym) {
   }
 }
 
-/***
+
 static void verifySymbolDefPoint(Symbol* sym) {
   if (typeid(*sym) == typeid(UnresolvedSymbol)) {
     return;
   }
 
-  Stmt* defPoint = sym->defPoint;
+  BaseAST* defPoint = sym->defPoint;
   if (defPoint) {
     if (VarDefStmt* stmt = dynamic_cast<VarDefStmt*>(defPoint)) {
       Symbol* tmp = stmt->var;
@@ -240,6 +240,17 @@ static void verifySymbolDefPoint(Symbol* sym) {
       INT_FATAL(sym, "Incorrect ForLoopStmt defPoint "
 		"for symbol '%s'", sym->name);
     }
+    else if (ForallExpr* expr = dynamic_cast<ForallExpr*>(defPoint)) {
+      Symbol* tmp = expr->indices;
+      while (tmp) {
+	if (tmp == sym) {
+	  return;
+	}
+	tmp = nextLink(Symbol, tmp);
+      }
+      INT_FATAL(sym, "Incorrect ForallExpr defPoint "
+		"for symbol '%s'", sym->name);
+    }
     else if (defPoint->isNull()) {
       if (sym->parentScope->type != SCOPE_INTRINSIC) {
 	INT_FATAL(sym, "Nil defPoint for symbol '%s'", sym->name);
@@ -250,7 +261,7 @@ static void verifySymbolDefPoint(Symbol* sym) {
     }
   }
 }
-***/
+
 
 HyperCopyReplace::HyperCopyReplace(void) {
   processInternalModules = false;

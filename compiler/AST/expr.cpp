@@ -1562,7 +1562,7 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 }
 
 
-ForallExpr::ForallExpr(Expr* init_domains, Stmt* init_indices,
+ForallExpr::ForallExpr(Expr* init_domains, Symbol* init_indices,
 		       Expr* init_forallExpr) :
   Expr(EXPR_FORALL),
   domains(init_domains),
@@ -1570,7 +1570,6 @@ ForallExpr::ForallExpr(Expr* init_domains, Stmt* init_indices,
   forallExpr(init_forallExpr)
 {
   SET_BACK(domains);
-  SET_BACK(indices);
   SET_BACK(forallExpr);
 }
 
@@ -1587,7 +1586,7 @@ void ForallExpr::setIndexScope(SymScope* init_indexScope) {
 
 
 Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new ForallExpr(domains->copyListInternal(clone, map, analysis_clone), indices->copy(clone, map, analysis_clone), forallExpr->copyInternal(clone, map, analysis_clone));
+  return new ForallExpr(domains->copyListInternal(clone, map, analysis_clone), indices, forallExpr->copyInternal(clone, map, analysis_clone));
 }
 
 
@@ -1598,7 +1597,7 @@ void ForallExpr::traverseExpr(Traversal* traversal) {
   if (indexScope) {
     prevScope = Symboltable::setCurrentScope(indexScope);
   }
-  TRAVERSE_LS(indices, traversal, false);
+  TRAVERSE_DEF_LS(indices, traversal, false);
   TRAVERSE(forallExpr, traversal, false);
   if (indexScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -1626,13 +1625,7 @@ Type* ForallExpr::typeInfo(void) {
 void ForallExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
   if (!indices->isNull()) {
-    Stmt* tmp = indices;
-
-    while (tmp) {
-      VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp);
-      var_def_stmt->var->printList(outfile);
-      tmp = nextLink(Stmt, tmp);
-    }
+    indices->printList(outfile);
     fprintf(outfile, ":");
   }
   domains->printList(outfile);

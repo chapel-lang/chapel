@@ -518,16 +518,22 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
+  FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(defPoint);
+
+  if (!def_stmt) {
+    INT_FATAL(this, "Attempt to clone function not defined in FnDefStmt");
+  }
+
   map->clear();
   FnDefStmt* this_copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
   save_scope = Symboltable::setCurrentScope(parentScope);
-  Stmt* stmt_copy = defPoint->copy(true, map, clone_callback);
+  Stmt* stmt_copy = def_stmt->copy(true, map, clone_callback);
   if (this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
     this_copy->fn->cname =
       glomstrings(3, this_copy->fn->cname, "_clone_", intstring(uid++));
-    defPoint->insertBefore(this_copy);
+    def_stmt->insertBefore(this_copy);
   }
   else {
     INT_FATAL(this, "Unreachable statement in FnDefStmt::clone reached");
@@ -593,7 +599,13 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   Type* wrapper_return_type = retType;
   wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
 					  wrapper_return_type, wrapper_block);
-  defPoint->insertBefore(wrapper_stmt);
+  FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(defPoint);
+
+  if (!def_stmt) {
+    INT_FATAL(this, "Attempt to make coercion wrapper for function not defined in FnDefStmt");
+  }
+
+  def_stmt->insertBefore(wrapper_stmt);
   Symboltable::setCurrentScope(save_scope);
   return wrapper_stmt->fn;
 }
@@ -612,43 +624,19 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition *, MPosition *> *formals_to_actu
 
 
 FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutions) {
+  FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(defPoint);
+
+  if (!def_stmt) {
+    INT_FATAL(this, "Attempt to instantiate generic function not defined in FnDefStmt");
+  }
+
   FnDefStmt* this_copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
   save_scope = Symboltable::setCurrentScope(parentScope);
   Map<BaseAST*,BaseAST*> map;
-  Stmt* stmt_copy = defPoint->copy(true, &map);
+  Stmt* stmt_copy = def_stmt->copy(true, &map);
   if (this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
-    /*** OLD APPROACH, find type vars in formals and replace Had to
-	 look at old ones since new ones would not show up in sub
-	 list, already changed.  Then tried to plug in new type symbol
-	 for user type.  But symbols always point to types not to type
-	 symbols so this didn't work ***
-
-    Symbol* old_formals = formals;
-    Symbol* new_formals = this_copy->fn->formals;
-    while (old_formals && !old_formals->isNull()) {
-      if (!new_formals || new_formals->isNull()) {
-	INT_FATAL(this, "Error in FnSymbol::instantiate_generic");
-      }
-      if (dynamic_cast<TypeSymbol*>(old_formals)) {
-	new_formals->cname =
-	  glomstrings(3, new_formals->cname, "_instantiate_", intstring(uid));
-	Type* new_type = generic_substitutions->get(old_formals->type);
-	if (!new_type) {
-	  INT_FATAL(this, "Cannot resolve generic_substitutions in "
-		    "FnSymbol::instantiate_generic");
-	}
-	new_formals->type = new UserType(new_type);
-	new_formals->type->addName(new_formals);
-	TypeDefStmt* type_def = new TypeDefStmt(new_formals->type);
-	defPoint->insertBefore(type_def);
-      }
-      old_formals = nextLink(Symbol, old_formals);
-      new_formals = nextLink(Symbol, new_formals);
-    }
-    ***/
-
     for (int i = 0; i < map.n; i++) {
       if (map.v[i].key) {
 	if (Variable* var = dynamic_cast<Variable*>(map.v[i].key)) {
@@ -665,10 +653,9 @@ FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutio
 	}
       }
     }
-
     this_copy->fn->cname =
       glomstrings(3, this_copy->fn->cname, "_instantiate_", intstring(uid++));
-    defPoint->insertBefore(this_copy);
+    def_stmt->insertBefore(this_copy);
   }
   else {
     INT_FATAL(this, "Error in FnSymbol::instantiate_generic");

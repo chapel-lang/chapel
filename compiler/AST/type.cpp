@@ -739,6 +739,12 @@ ClassType::ClassType(bool isValueClass, bool isUnion,
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  TypeDefStmt* def_stmt = dynamic_cast<TypeDefStmt*>(name->defPoint);
+
+  if (!def_stmt) {
+    INT_FATAL(this, "Attempt to copy ClassType not defined in TypeDefStmt");
+  }
+
   static int uid = 0;
   ClassType* copy_type = new ClassType(value, union_value);
   TypeSymbol* copy_symbol = new TypeSymbol(glomstrings(3, name->name, "_copy_", intstring(uid++)), copy_type);
@@ -765,7 +771,7 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   TypeDefStmt* copy_def = new TypeDefStmt(copy_type);
   copy_symbol->setDefPoint(copy_def);
   copy_scope->setContext(copy_def, copy_symbol);
-  name->defPoint->insertBefore(copy_def);
+  def_stmt->insertBefore(copy_def);
   return copy_type;
 }
 

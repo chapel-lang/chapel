@@ -22,7 +22,7 @@ class Symbol : public BaseAST {
   char* name;
   char* cname;   /* Name of symbol for generating C code */
   Type* type;
-  Stmt* defPoint; /* Point of definition in AST */
+  BaseAST* defPoint; /* Point of definition in AST, A Stmt or Expr */
 
   SymScope* parentScope;
   ASymbol *asymbol;

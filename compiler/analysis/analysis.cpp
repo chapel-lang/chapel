@@ -193,7 +193,16 @@ AInfo::copy_tree(ASTCopyContext* context) {
   Map<BaseAST*,BaseAST*> clone_map;
   FnSymbol *orig_fn = dynamic_cast<FnDefStmt*>(xast)->fn;
   FnSymbol *new_fn = orig_fn->clone(&callback, &clone_map);
-  return new_fn->defPoint->ainfo;
+  if (Expr* expr = dynamic_cast<Expr*>(new_fn->defPoint)) {
+    return expr->ainfo;
+  }
+  else if (Stmt* stmt = dynamic_cast<Stmt*>(new_fn->defPoint)) {
+    return stmt->ainfo;
+  }
+  else {
+    INT_FATAL(orig_fn, "defPoint is not Stmt or Expr");
+    return 0;
+  }
 }
 
 static void
@@ -328,7 +337,11 @@ static Fun *
 install_new_function(FnSymbol *f) {
   Vec<Stmt *> all_stmts;
   Vec<BaseAST *> all_syms, syms;
-  all_stmts.add(f->defPoint);
+  FnDefStmt* def_stmt = dynamic_cast<FnDefStmt*>(f->defPoint);
+  if (!def_stmt) {
+    INT_FATAL(f, "Function not defined in FnDefStmt");
+  }
+  all_stmts.add(def_stmt);
   all_syms.add(f);
   close_symbols(all_stmts, all_syms);	
   forv_BaseAST(a, all_syms) {
@@ -1530,7 +1543,16 @@ gen_if1(BaseAST *ast) {
 static int
 gen_fun(FnSymbol *f) {
   Sym *fn = f->asymbol->sym;
-  AInfo *ast = f->defPoint->ainfo;
+  AInfo* ast;
+  if (Expr* expr = dynamic_cast<Expr*>(f->defPoint)) {
+    ast = expr->ainfo;
+  }
+  else if (Stmt* stmt = dynamic_cast<Stmt*>(f->defPoint)) {
+    ast = stmt->ainfo;
+  }
+  else {
+    INT_FATAL(f, "defPoint is not Stmt or Expr");
+  }
   Vec<Symbol *> args;
   Vec<Sym *> out_args;
   getLinkElements(args, f->formals);
@@ -1571,9 +1593,21 @@ init_function(FnSymbol *f) {
     sym_init = s;
   }
   s->cont = new_sym();
-  s->cont->ast = f->defPoint->ainfo;
+
+  AInfo* ast;
+  if (Expr* expr = dynamic_cast<Expr*>(f->defPoint)) {
+    ast = expr->ainfo;
+  }
+  else if (Stmt* stmt = dynamic_cast<Stmt*>(f->defPoint)) {
+    ast = stmt->ainfo;
+  }
+  else {
+    INT_FATAL(f, "defPoint is not Stmt or Expr");
+  }
+
+  s->cont->ast = ast;
   s->ret = new_sym();
-  s->ret->ast = f->defPoint->ainfo;
+  s->ret->ast = ast;
   s->ret->is_lvalue = 1;
   s->labelmap = new LabelMap;
   if (f->_this)
@@ -1585,7 +1619,17 @@ init_function(FnSymbol *f) {
 static int
 build_function(FnSymbol *f) {
   if (define_labels(f->body, f->asymbol->sym->labelmap) < 0) return -1;
-  Label *return_label = f->defPoint->ainfo->label[0] = if1_alloc_label(if1);
+  AInfo* ast;
+  if (Expr* expr = dynamic_cast<Expr*>(f->defPoint)) {
+    ast = expr->ainfo;
+  }
+  else if (Stmt* stmt = dynamic_cast<Stmt*>(f->defPoint)) {
+    ast = stmt->ainfo;
+  }
+  else {
+    INT_FATAL(f, "defPoint is not Stmt or Expr");
+  }
+  Label *return_label = ast->label[0] = if1_alloc_label(if1);
   if (resolve_labels(f->body, f->asymbol->sym->labelmap, return_label) < 0) return -1;
   if (gen_if1(f->body) < 0) return -1;
   if (gen_fun(f) < 0) return -1;

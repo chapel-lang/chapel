@@ -102,6 +102,7 @@ void InsertThis::preProcessStmt(Stmt* stmt) {
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(fn->paramScope);
       Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);
+      this_insert->defPoint = def;
       Symboltable::setCurrentScope(saveScope);
       this_insert = appendLink(this_insert, fn->formals);
       fn->formals = this_insert;

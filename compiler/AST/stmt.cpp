@@ -268,9 +268,11 @@ Stmt* Stmt::extract(void) {
   next = nilStmt;
   prev = nilStmt;
   */
+  /*
   if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(this)) {
     back = &fn_def_stmt->fn->defPoint; // SJD: UGH YUCK
   }
+  */
   return this;
 }
 
