@@ -19335,3 +19335,19 @@ Added files:
 Removed files:
 	chapel/test/trivial/jplevyak/: string-1.future 
 
+---------------------------------------------------------------------------
+
+03/11/05 16:57:17 -- deitz
+
+Log message:
+	Fixed a small bug in which a class instance could be used as the
+	constructor for a class.  This is now checked for more thoroughly.
+	
+	Removed .future for classes/bradc/weirdinit.
+
+Modified files:
+	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
+	chapel/test/classes/bradc/: weirdinit.good 
+Removed files:
+	chapel/test/classes/bradc/: weirdinit.future 
+
