@@ -591,3 +591,21 @@ Modified files:
 Added files:
 	chapel/compiler/samples/: mvm1.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/27 14:04:26 -- jplevyak (a.k.a. n10253, the android wonder)
+
+Log message:
+	- change verbose levels so that -v only returns types
+	- new "array" class which combines a domain and a vector
+	- support for generalized point-wise operations on arrays
+	- combine similar type violations
+	- use standard error reporting syntax to report type violations
+	- convert to using selectors instead of functions for globally declared
+	functions
+
+Modified files:
+	chapel/compiler/: TODO ast.cpp builtin_symbols.h cfg.cpp fa.cpp 
+	                  fa.h fa_extras.cpp fun.cpp if1.cpp 
+	                  prelude.chpl prelude.v ssu_extra.cpp vec.cpp 
+
