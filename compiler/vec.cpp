@@ -472,10 +472,11 @@ template class Vec<CDB_CreationSet *>;
 template class Vec<CDB_EntrySet *>;
 template class Vec<MapElem<Sym *, Vec<CDB_CreationSet *> *> >;
 template class Vec<MapElem<char *, Fun *> >;
-template class Vec<SSet *>;
-template class Vec<MapElem<unsigned int, List<SSet *> > >;
+template class Vec<SettersClasses *>;
+template class Vec<MapElem<unsigned int, List<SettersClasses *> > >;
 template class Vec<Setters *>;
 template class Vec<MapElem<unsigned int, List<Setters *> > >;
 template class Vec<MapElem<char *, AVar *> >;
 template class Vec<MapElem<AVar *, AVar *> >;
+template class Vec<MapElem<AVar *, Setters *> >;
 

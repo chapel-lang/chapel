@@ -18,6 +18,9 @@ class Edge;
 class AVar;
 class AEdge;
 class AType;
+class SettersClasses;
+class SettersHashFns;
+class Setters;
 class CreationSet;
 class ATypeViolation;
 class CDB;
@@ -85,24 +88,24 @@ class CreationSet : public gc {
 };
 #define forv_CreationSet(_p, _v) forv_Vec(CreationSet, _p, _v)
 
+class SettersClasses : public Vec<Setters *> {
+ public:
+  uint					hash;
+  Vec<Setters *>			sorted;
+  BlockHash<Setters *, SettersHashFns>	used_by;
+};
+#define forv_SettersClasses(_p, _v) forv_Vec(SettersClasses, _p, _v)
+
 class Setters : public Vec<AVar *> {
  public:
   uint			hash;
-  AVar			*ivar;
   Vec<AVar *>		sorted;
+  SettersClasses	*eq_classes;
+  Map<AVar *, Setters*>	add_map;
 
-  Setters(AVar *av) : ivar(av) {}
+  Setters() : hash(0), eq_classes(0) {}
 };
 #define forv_Setters(_p, _v) forv_Vec(Setters, _p, _v)
-
-class SSet : public Vec<Setters *> {
- public:
-  uint						hash;
-  Vec<Setters *>				sorted;
-
-  SSet() : hash(0) {}
-};
-#define forv_SSet(_p, _v) forv_Vec(SSet, _p, _v)
 
 class AVar : public gc {
  public:
@@ -110,12 +113,14 @@ class AVar : public gc {
   void			*contour;
   Vec<AVar *>		forward;
   Vec<AVar *>		backward;
+  AVar			*lvalue;
   AType 		*in;
   AType 		*out;
   AType			*restrict;
   ViolationMap		*violations;
   AVar			*container;
-  SSet			*sset;
+  Setters		*setters;
+  Setters		*setter_class;
   CreationSet		*creation_set;
   uint			in_send_worklist:1;
   uint			contour_is_entry_set:1;
@@ -156,10 +161,10 @@ class ATypeOpenHashFns {
   }
 };
 
-class SSetOpenHashFns {
+class SettersHashFns {
  public:
-  static uint hash(SSet *a) { return a->hash; }
-  static int equal(SSet *a, SSet *b) {
+  static uint hash(Setters *a) { return a->hash; }
+  static int equal(Setters *a, Setters *b) {
     if (a->sorted.n != b->sorted.n)
       return 0;
     for (int i = 0; i < a->sorted.n; i++)
@@ -169,12 +174,10 @@ class SSetOpenHashFns {
   }
 };
 
-class SettersCannonicalizeHashFns {
+class SettersClassesHashFns {
  public:
-  static uint hash(Setters *a) { return a->hash; }
-  static int equal(Setters *a, Setters *b) {
-    if (a->ivar != b->ivar)
-      return 0;
+  static uint hash(SettersClasses *a) { return a->hash; }
+  static int equal(SettersClasses *a, SettersClasses *b) {
     if (a->sorted.n != b->sorted.n)
       return 0;
     for (int i = 0; i < a->sorted.n; i++)

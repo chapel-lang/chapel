@@ -21,8 +21,8 @@ static Map<char *,Vec<Fun *> *> class_dispatch_table;
 static Map<char *,Vec<Fun *> *> self_dispatch_table;
 static Map<char *, TupleDispatchTable *> tuple_dispatch_table;
 static OpenHash<AType *, ATypeOpenHashFns> cannonical_atypes;
-static OpenHash<SSet *, SSetOpenHashFns> cannonical_ssets;
-static OpenHash<Setters *, SettersCannonicalizeHashFns> cannonical_setters;
+static OpenHash<Setters *, SettersHashFns> cannonical_setters;
+static OpenHash<SettersClasses *, SettersClassesHashFns> cannonical_setters_classes;
 static OpenHash<ATypeFold *, ATypeFoldOpenHashFns> type_fold_cache;
 
 static Var *element_var = 0;
@@ -39,8 +39,9 @@ static AType *type_cannonicalize(AType *t);
 static AType *make_AType(CreationSet *cs);
 
 AVar::AVar(Var *v, void *acontour) : 
-  var(v), contour(acontour), in(bottom_type), out(bottom_type), restrict(top_type), 
-  container(0), sset(0), creation_set(0), in_send_worklist(0), contour_is_entry_set(0)
+  var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), restrict(top_type), 
+  container(0), setters(0), setter_class(0), creation_set(0), in_send_worklist(0), 
+  contour_is_entry_set(0)
 {
 }
 
@@ -76,6 +77,10 @@ unique_AVar(Var *v, EntrySet *es) {
   av = new AVar(v, es);
   v->avars.put(es, av);
   av->contour_is_entry_set = 1;
+  if (v->sym->lvalue) {
+    av->lvalue = new AVar(new Var(v->sym), es);
+    av->lvalue->contour_is_entry_set = 1;
+  }
   return av;
 }
 
@@ -190,8 +195,31 @@ flow_var_to_var(AVar *a, AVar *b) {
 
 static void
 flow_vars_equal(AVar *v, AVar *vv) {
-  flow_var_to_var(v, vv);
-  flow_var_to_var(vv, v);
+  if (v->lvalue) {
+    if (vv->lvalue) {
+      flow_var_to_var(v, vv);
+      flow_var_to_var(vv->lvalue, v->lvalue);
+    } else {
+      flow_var_to_var(v, vv);
+      flow_var_to_var(vv, v->lvalue);
+    }
+  } else {
+    if (vv->lvalue) {
+      flow_var_to_var(v, vv);
+      flow_var_to_var(vv->lvalue, v);
+    } else {
+      assert(0);
+    }
+  }
+}
+
+static void
+flow_vars(AVar *v, AVar *vv) {
+  if (vv->lvalue && v->lvalue) {
+    flow_var_to_var(v, vv);
+    flow_var_to_var(vv->lvalue, v->lvalue);
+  } else
+    flow_var_to_var(v, vv);
 }
 
 // Initially create a unique creation set for each
@@ -518,7 +546,7 @@ entry_set_compatibility(AEdge *e, EntrySet *es) {
   int n = es->rets.n;
   if (e->rets.n < n) n = e->rets.n;
   for (int i = 0; i < n; i++) {
-    if (es->rets.v[i]->sset != e->rets.v[i]->sset) {
+    if (es->rets.v[i]->setter_class != e->rets.v[i]->setter_class) {
       val -= 2;
       break;
     }
@@ -650,6 +678,14 @@ fill_rets(EntrySet *es, int n) {
 }
 
 static void
+set_container(AVar *av, AVar *container) {
+  assert(!av->container || av->container == container);
+  av->container = container;
+  if (av->lvalue)
+    av->lvalue->container = container;
+}
+
+static void
 prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
   AVar *container = make_AVar(p->lvals.v[0], es);
   CreationSet *cs = creation_point(container, kind);
@@ -661,6 +697,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
     AVar *av = make_AVar(v, es);
     if (!p->tvals.v[i]) {
       Sym *s = if1_alloc_sym(fa->pdb->if1);
+      s->lvalue = v->sym->lvalue;
       s->in = es->fun->sym;
       p->tvals.v[i] = new Var(s);
       es->fun->fa_all_Vars.add(p->tvals.v[i]);
@@ -670,15 +707,12 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
       cs->vars.v[i] = unique_AVar(v, cs);
     AVar *iv = cs->vars.v[i];
     AVar *atv = make_AVar(tv, es);
-    assert(!atv->container || atv->container == container);
-    atv->container = container;
-    if (!ref && !v->sym->lvalue) {
-      flow_var_to_var(av, atv);
-      flow_var_to_var(atv, iv);
-    } else {
-      flow_vars_equal(av, atv);
+    set_container(atv, container);
+    flow_vars(av, atv);
+    if (!ref && !v->sym->lvalue)
+      flow_vars(atv, iv);
+    else
       flow_vars_equal(atv, iv);
-    }
     if (iv->var->sym->name)
       cs->var_map.put(iv->var->sym->name, iv);
   }
@@ -701,47 +735,58 @@ prim_make_list(PNode *p, EntrySet *es) {
   AVar *elem = get_element_avar(cs);
   for (int i = 0; i < p->rvals.n - 1; i++) {
     AVar *av = make_AVar(p->rvals.v[1 + i], es);
-    assert(!av->container || av->container == container);
-    av->container = container;
-    flow_var_to_var(av, elem);
+    set_container(av, container);
+    flow_vars(av, elem);
   }
 }
 
 static void
-vector_elems(int rank, AVar *e, AVar *elem, AVar *ret) {
+vector_elems(int rank, PNode *p, AVar *ae, AVar *elem, AVar *container, int n = 0) {
+  AVar *e = ae;
+  if (!e->contour_is_entry_set) {
+    p->tvals.fill(++n);
+    assert(container->contour_is_entry_set);
+    EntrySet *es = (EntrySet*)container->contour;
+    if (p->tvals.v[n-1])
+      e = make_AVar(p->tvals.v[n-1], es);
+    else {
+      Sym *s = if1_alloc_sym(fa->pdb->if1);
+      assert(!e->var->sym->lvalue);
+      s->in = es->fun->sym;
+      Var *v = new Var(s);
+      p->tvals.v[n-1] = v;
+      es->fun->fa_all_Vars.add(v);
+      e = make_AVar(v, es);
+    }
+    flow_vars(ae, e);
+  }
+  set_container(e, container);
   if (rank > 0) {
     forv_CreationSet(cs, *e->out) if (cs) {
       if (cs->sym != sym_tuple)
-	flow_vars_equal(e, elem);
+	flow_vars(e, elem);
       else {
-	e->arg_of_send.set_add(ret);
+	e->arg_of_send.set_add(container);
 	forv_AVar(av, cs->vars)
-	  vector_elems(rank - 1, av, elem, ret);
+	  vector_elems(rank - 1, p, av, elem, container, n+1);
       }
     }
   } else
-    flow_vars_equal(e, elem);
+    flow_vars(e, elem);
 }
 
 static void
-prim_make_vector(PNode *p, EntrySet *es, AVar *ret) {
+prim_make_vector(PNode *p, EntrySet *es) {
   AVar *container = make_AVar(p->lvals.v[0], es);
   CreationSet *cs = creation_point(container, sym_vector);
   AVar *elem = get_element_avar(cs);
   if (p->rvals.n > 2) {
     int rank = 0;
     p->rvals.v[1]->sym->imm_int(&rank);
-//    cs->vars.fill(p->rvals.n - 2);
     for (int i = 0; i < p->rvals.n - 2; i++) {
       Var *v = p->rvals.v[2 + i];
       AVar *av = make_AVar(v, es);
-//      if (!cs->vars.v[i])
-//	cs->vars.v[i] = unique_AVar(v, cs);
-//      AVar *iv = cs->vars.v[i];
-//      flow_var_to_var(av, iv);
-      assert(!av->container || av->container == container);
-      av->container = container;
-      vector_elems(rank, av, elem, ret);
+      vector_elems(rank, p, av, elem, container);
     }
   }
 }
@@ -779,16 +824,16 @@ add_send_constraints(EntrySet *es) {
 	default: break;
 	case P_prim_reply:
 	  fill_rets(es, p->rvals.n - 2);
-	  for (int i = 2; i < p->rvals.n; i++)
-	    flow_vars_equal(make_AVar(p->rvals.v[i], es), es->rets.v[i - 2]);
+	  for (int i = 2; i < p->rvals.n; i++) {
+	    AVar *r = make_AVar(p->rvals.v[i], es);
+	    flow_vars(r, es->rets.v[i - 2]);
+	  }
 	  break;
 	case P_prim_tuple: prim_make(p, es, sym_tuple); break;
 	case P_prim_list: prim_make_list(p, es); break;
-	case P_prim_vector: { 
-	  AVar *ret = make_AVar(p->lvals.v[0], es);
-	  prim_make_vector(p, es, ret);
+	case P_prim_vector:
+	  prim_make_vector(p, es);
 	  break;
-	}
 	case P_prim_continuation: prim_make(p, es, sym_continuation); break;
 	case P_prim_set: prim_make(p, es, sym_set); break;
 	case P_prim_ref: prim_make(p, es, sym_ref, 2, 1); break;
@@ -803,16 +848,16 @@ add_move_constraints(EntrySet *es) {
   forv_PNode(p, f->fa_phi_PNodes) {
     AVar *vv = make_AVar(p->lvals.v[0], es);
     forv_Var(v, p->rvals)
-      flow_var_to_var(make_AVar(v, es), vv);
+      flow_vars(make_AVar(v, es), vv);
   }
   forv_PNode(p, f->fa_phy_PNodes) {
     AVar *vv = make_AVar(p->rvals.v[0], es);
     forv_Var(v, p->lvals)
-      flow_var_to_var(vv, make_AVar(v, es));
+      flow_vars(vv, make_AVar(v, es));
   }
   forv_PNode(p, f->fa_move_PNodes) {
     for (int i = 0; i < p->rvals.n; i++)
-      flow_var_to_var(make_AVar(p->rvals.v[i], es), make_AVar(p->lvals.v[i], es));
+      flow_vars(make_AVar(p->rvals.v[i], es), make_AVar(p->lvals.v[i], es));
   }
 }
 
@@ -1058,7 +1103,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
       if (p->prim->ret_types[i] == PRIM_TYPE_ANY_NUM_AB)
 	update_in(make_AVar(p->lvals.v[i], es), type_num_fold(p->prim, a->out, b->out));
       if (p->prim->ret_types[i] == PRIM_TYPE_A)
-	flow_var_to_var(a, make_AVar(p->lvals.v[i], es));
+	flow_vars(a, make_AVar(p->lvals.v[i], es));
     }
     // specifics
     switch (p->prim->index) {
@@ -1068,17 +1113,15 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
 	update_in(ret, make_abstract_type(sym_int));
 	break;
       }
-      case P_prim_vector: {
-	AVar *ret = make_AVar(p->lvals.v[0], es);
-	prim_make_vector(p, es, ret); 
+      case P_prim_vector:
+	prim_make_vector(p, es);
 	break;
-      }
       case P_prim_index: {
 	AVar *result = make_AVar(p->lvals.v[0], es);
 	AVar *vec = make_AVar(p->rvals.v[1], es);
 	Sym *index = p->rvals.v[2]->sym;
 	vec->arg_of_send.set_add(result);
-	result->container = vec;
+	set_container(result, vec);
 	forv_CreationSet(cs, *vec->out) if (cs) {
 	  if (cs->sym == sym_tuple) {
 	    int i;
@@ -1117,15 +1160,11 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
 	AVar *selector = make_AVar(p->rvals.v[3], es);
 	obj->arg_of_send.set_add(result);
 	selector->arg_of_send.set_add(result);
-	assert(!result->container || result->container == obj);
-	result->container = obj;
+	set_container(result, obj);
 	forv_CreationSet(sel, *selector->out) if (sel) {
 	  char *symbol = sel->sym->name; assert(symbol);
 	  forv_CreationSet(cs, *obj->out) if (cs) {
 	    AVar *iv = cs->var_map.get(symbol);
-	    //if (!iv)
-	    //flow_var_type_restrict(obj, cs->sym);
-	    //else
 	    if (iv)
 	      flow_vars_equal(iv, result);
 	  }
@@ -1138,7 +1177,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es, int initial = 0) {
 	AVar *val = make_AVar(p->rvals.v[3], es);
 	forv_CreationSet(cs, *ref->out) if (cs) {
 	  AVar *av = cs->vars.v[0];
-	  flow_var_to_var(val, av);
+	  flow_vars(val, av);
 	}
 	flow_vars_equal(val, result);
 	break;
@@ -1214,12 +1253,8 @@ pattern_match(AVar *a, AVar *b, EntrySet *es) {
       if (cs->vars.n < s->has.n) // must have enough to cover args
 	continue;
       for (int i = 0; i < s->has.n; i++)
-	if (s->has.v[i]->var) { // if used
-	  if (!s->has.v[i]->var->sym->lvalue)
-	    flow_var_to_var(cs->vars.v[i], make_AVar(s->has.v[i]->var, es));
-	  else
-	    flow_vars_equal(cs->vars.v[i], make_AVar(s->has.v[i]->var, es));
-	}
+	if (s->has.v[i]->var) // if used
+	  flow_vars(cs->vars.v[i], make_AVar(s->has.v[i]->var, es));
     }
   }
 }
@@ -1271,10 +1306,7 @@ analyze_edge(AEdge *e) {
   for (int i = 0; i < e->args.n; i++) {
     AVar *a = e->args.v[i], *b = e->to->args.v[i];
     flow_var_type_permit(b, e->dispatch_filters.v[i]);
-    if (!b->var->sym->lvalue)
-      flow_var_to_var(a, b);
-    else
-      flow_vars_equal(a, b);
+    flow_vars(a, b);
     if (b->var->sym->pattern)
       pattern_match(a, b, e->to);
   }
@@ -1284,7 +1316,7 @@ analyze_edge(AEdge *e) {
   creation_point(make_AVar(e->fun->sym->cont->var, e->to), sym_continuation);
   for (int i = 0; i < e->pnode->lvals.n; i++) {
     fill_rets(e->to, e->pnode->lvals.n);
-    flow_vars_equal(e->to->rets.v[i], e->rets.v[i]);
+    flow_vars(e->to->rets.v[i], e->rets.v[i]);
   }
   if (!entry_set_done.set_in(e->to)) {
     entry_set_done.set_add(e->to);
@@ -1671,7 +1703,7 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   int n = es->rets.n;
   if (e->rets.n < n) n = e->rets.n;
   for (int i = 0; i < n; i++)
-    if (es->rets.v[i]->sset != e->rets.v[i]->sset)
+    if (es->rets.v[i]->setter_class != e->rets.v[i]->setter_class)
       return 0;
   return 1;
 }
@@ -1724,11 +1756,14 @@ static void
 clear_avar(AVar *av) {
   av->in = bottom_type;
   av->out = bottom_type;
-  av->sset = 0;
+  av->setters = 0;
+  av->setter_class = 0;
   av->restrict = top_type;
   av->backward.clear();
   av->forward.clear();
   av->arg_of_send.clear();
+  if (av->lvalue)
+    clear_avar(av->lvalue);
 }
 
 static void
@@ -1788,6 +1823,9 @@ clear_results() {
   forv_Fun(f, fa->funs)
     forv_EntrySet(es, f->ess) if (es)
       clear_es(es);
+  for (int i = 0; i < cannonical_setters.n; i++)
+    forc_List(Setters *, x, cannonical_setters.v[i].value)
+      x->car->eq_classes = NULL;
 }
 
 static Setters *
@@ -1797,17 +1835,16 @@ setters_cannonicalize(Setters *s) {
   if (s->sorted.n > 1)
     qsort_pointers((void**)&s->sorted.v[0], (void**)s->sorted.end());
   uint h = 0;
-  h += (uint)s->ivar * open_hash_multipliers[0];
   for (int i = 0; i < s->sorted.n; i++)
-    h = (uint)s->sorted.v[i] * open_hash_multipliers[(i + 1) % 256];
+    h = (uint)s->sorted.v[i] * open_hash_multipliers[i % 256];
   s->hash = h ? h : h + 1; // 0 is empty
   Setters *ss = cannonical_setters.put(s);
   if (!ss) ss = s;
   return ss;
 }
 
-static SSet *
-sset_cannonicalize(SSet *s) {
+static SettersClasses *
+setters_classes_cannonicalize(SettersClasses *s) {
   assert(!s->sorted.n);
   forv_Setters(x, *s) if (x) s->sorted.add(x);
   if (s->sorted.n > 1)
@@ -1816,190 +1853,84 @@ sset_cannonicalize(SSet *s) {
   for (int i = 0; i < s->sorted.n; i++)
     h = (uint)s->sorted.v[i] * open_hash_multipliers[i % 256];
   s->hash = h ? h : h + 1; // 0 is empty
-  SSet *ss = cannonical_ssets.put(s);
+  SettersClasses *ss = cannonical_setters_classes.put(s);
   if (!ss) ss = s;
   return ss;
 }
 
-static void sset_add(SSet *ss, Setters *s);
-
-static void
-sset_add_internal(SSet *ss, Setters *s) {
-  int j, k;
-  if (ss->n) {
-    uint h = ((uint)s);
-    h = h % ss->n;
-    for (k = h, j = 0;
-         k < ss->n && j < SET_MAX_SEQUENTIAL;
-         k = ((k + 1) % ss->n), j++)
-    {
-      if (!ss->v[k]) {
-        ss->v[k] = s;
-        return;
-      } else if (ss->v[k] == s)
-        return;
-    }
-  }
-  Vec<Setters *> vv(*ss);
-  ss->set_expand();
-  if (vv.v) {
-    for (int i = 0; i < vv.n; i++)
-      if (vv.v[i])
-	sset_add(ss, vv.v[i]);
-  }
-  return sset_add(ss, s);
-}
-
-static void 
-sset_add(SSet *ss, Setters *s) {
-  if (ss->n < VEC_INTEGRAL_SIZE) {
-    for (Setters **c = ss->v; c < ss->v + ss->n; c++)
-      if (*c == s)
-	return;
-    ss->add(s);
-    return;
-  }
-  if (ss->n == VEC_INTEGRAL_SIZE) {
-    Vec<Setters *> vv(*ss);
-    ss->clear();
-    for (Setters **c = vv.v; c < vv.v + vv.n; c++)
-      sset_add_internal(ss, *c);
-  }
-  sset_add_internal(ss, s);
-}
-
-static SSet *
-sset_union(SSet *s, SSet *ss) {
-  if (!s || s == ss)
-    return ss;
-  if (!ss)
-    return s;
-  SSet *new_s = new SSet;
-  new_s->copy(*s);
-  forv_Setters(x, *ss)
-    sset_add(new_s, x);
-  return sset_cannonicalize(new_s);
-}
-
-static SSet *
-sset_diff(SSet *s, SSet *ss) {
+static int 
+same_eq_classes(Setters *s, Setters *ss) {
   if (s == ss)
+    return 1;
+  if (!s || !ss)
     return 0;
-  assert(s);
-  if (!ss)
-    return s;
-  SSet *new_s = new SSet;
-  s->set_difference(*ss, *new_s);
-  return sset_cannonicalize(new_s);
-}
-
-static void
-update_sset(AVar *av, SSet *s) {
-  SSet *u = sset_union(av->sset, s);
-  if (u != av->sset) {
-    av->sset = u;
-    forv_AVar(x, av->backward) if (x)
-      update_sset(x, av->sset);
-  }
-}
-
-static Setters **
-sset_find(SSet *ss, Setters *s) {
-  if (ss->n <= VEC_INTEGRAL_SIZE) {
-    for (Setters **c = ss->v; c < ss->v + ss->n; c++)
-      if (*c == s)
-	return c;
-    return 0;
-  }
-  int j, k;
-  if (ss->n) {
-    uint h = ((uint)s);
-    h = h % ss->n;
-    for (k = h, j = 0;
-         k < ss->n && j < SET_MAX_SEQUENTIAL;
-         k = ((k + 1) % ss->n), j++)
-    {
-      if (!ss->v[k])
-	return 0;
-      else if (ss->v[k] == s)
-        return &ss->v[k];
-    }
-  }
-  return 0;
+  return s->eq_classes == ss->eq_classes;
 }
 
 static int
-update_setters(AVar *av, Setters *s) {
-  SSet *new_ss = new SSet;
-  if (!av->sset) {
-    sset_add(new_ss, s);
-    goto Lreturn;
-  }
-  {
-    new_ss->copy(*av->sset); 
-    Setters **x = sset_find(av->sset, s);
-    if (!x) {
-      sset_add(new_ss, s);
-      goto Lreturn;
-    }
-    if (s == *x)
+update_setter(AVar *av, AVar *s) {
+  Setters *new_setters = 0;
+  if (av->setters) {
+    if (av->setters->in(s))
       return 0;
-    Setters *new_s = new Setters(s->ivar);
-    new_s->set_union(*s);
-    new_s = setters_cannonicalize(new_s);
-    *x = new_s;
+    new_setters = av->setters->add_map.get(s);
+    if (new_setters)
+      goto Ldone;
   }
- Lreturn:
-  SSet *old_sset = av->sset;
-  av->sset = sset_cannonicalize(new_ss);
-  if (old_sset != av->sset) {
-    forv_AVar(x, av->backward) if (x)
-      update_sset(x, av->sset);
-    return 1;
-  }
-  return 0;
+  new_setters = new Setters;
+  if (av->setters)
+    new_setters->copy(*av->setters);
+  new_setters->add(s);
+  new_setters = setters_cannonicalize(new_setters);
+  if (av->setters)
+    av->setters->add_map.put(s, new_setters);
+ Ldone:
+  av->setters = new_setters;
+  forv_AVar(x, av->backward) if (x)
+    update_setter(x, s);
+  return 1;
 }
 
 static void
-collect_cs_sset_confluences(Vec<AVar *> &sset_confluences) {
-  sset_confluences.clear();
+collect_cs_setter_confluences(Vec<AVar *> &setters_confluences) {
+  setters_confluences.clear();
   forv_CreationSet(cs, fa->css) {
     forv_AVar(av, cs->vars) {
       forv_AVar(x, av->forward) if (x) {
 	if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-	  if (sset_diff(av->sset, x->sset)) {
-	    sset_confluences.set_add(av);
+	  if (!same_eq_classes(av->setters, x->setters)) {
+	    setters_confluences.set_add(av);
 	    break;
 	  }
 	}
       }
     }
   }
-  sset_confluences.set_to_vec();
+  setters_confluences.set_to_vec();
 }
 
 static void
-collect_sset_confluences(Vec<AVar *> &sset_confluences, Vec<AVar *> &sset_starters) {
+collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_starters) {
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *av = make_AVar(v, es);
-      if (av->sset) {
+      if (av->setters) {
 	forv_AVar(x, av->forward) if (x) {
-	  if (x->sset && sset_diff(av->sset, x->sset) != 0) {
-	    sset_confluences.set_add(av);
+	  if (x->setters && !same_eq_classes(av->setters, x->setters)) {
+	    setter_confluences.set_add(av);
 	    break;
 	  }
 	}
 	if (av->creation_set) {
-	  forv_Setters(s, *av->sset) if (s) {
-	    if (s->ivar->contour == av->creation_set)
-	      sset_starters.add(av);
+	  forv_AVar(s, *av->setters) if (s) {
+	    if (s->container->out->in(av->creation_set))
+	      setter_starters.add(av);
 	  }
 	}
       }
     }
   }
-  sset_confluences.set_to_vec();
+  setter_confluences.set_to_vec();
 }
 
 static int
@@ -2025,7 +1956,7 @@ split_css(Vec<AVar *> &starters) {
       AVar *av = starter_set.v[0];
       Vec<AVar *> compatible_set;
       forv_AVar(v, starter_set) {
-	if (v->sset == av->sset)
+	if (same_eq_classes(v->setters, av->setters))
 	  compatible_set.set_add(v);
 	else
 	  save.add(v);
@@ -2048,60 +1979,104 @@ split_css(Vec<AVar *> &starters) {
 }
 
 static int
-analyze_setters(Vec<Setters *> &ss, Map<AVar *, AVar *> &container_map) {
-  int ssets_changed = 0;
+split_for_setters() {
+  Vec<AVar *> setter_confluences, setter_starters;
+  collect_setter_confluences(setter_confluences, setter_starters);
+  if (split_ess(setter_confluences, 1))
+    return 1;
+  if (split_css(setter_starters))
+    return 1;
+  return 0;
+}
+
+static void
+split_eq_class(Setters *eq_class, Vec<AVar *> &diff) {
+  Setters *new_class = new Setters, *old_class = new Setters;
+  new_class->copy(diff);
+  new_class->set_difference(*eq_class, diff);
+  new_class = setters_cannonicalize(new_class);
+  eq_class->set_difference(*new_class, diff);
+  old_class->copy(diff);
+  old_class = setters_cannonicalize(old_class);
+  forv_AVar(x, *new_class) if (x)
+    x->setter_class = new_class;
+  forv_AVar(x, *old_class) if (x)
+    x->setter_class = old_class;
+}
+
+static void
+recompute_eq_classes(Vec<Setters *> &ss) {
   forv_Setters(s, ss) {
-    forv_AVar(av, *s) {
-      AVar *container = container_map.get(av);
-      ssets_changed = update_setters(container, s) || ssets_changed;
+    SettersClasses *new_sc = s->eq_classes;
+    if (!s->eq_classes)
+      new_sc = new SettersClasses;
+    forv_AVar(v, *s) if (v) {
+      if (v->setter_class) {
+	if (!s->eq_classes)
+	  new_sc->set_add(v->setter_class);
+      }  else {
+	assert(!s->eq_classes || s->eq_classes->in(s));
+	v->setter_class = s;
+	if (!s->eq_classes)
+	  new_sc->set_add(s);
+      }
+      if (!s->eq_classes) {
+	new_sc = setters_classes_cannonicalize(new_sc);
+	s->eq_classes = new_sc;
+	new_sc->used_by.put(s);
+      }
+    }
+    int changed = 0;
+    forv_Setters(x, *s->eq_classes) if (x) {
+      Vec<AVar *> diff;
+      x->set_difference(*s, diff);
+      if (diff.n) {
+	split_eq_class(x, diff);
+	changed = 1;
+      }
+    }
+    if (changed) {
+      new_sc = new SettersClasses;
+      forv_AVar(v, *s) if (v)
+	new_sc->set_add(v->setter_class);
+      new_sc = setters_classes_cannonicalize(new_sc);
+      s->eq_classes->used_by.del(s);
+      s->eq_classes = new_sc;
+      new_sc->used_by.put(s);
     }
   }
-  Vec<AVar *> sset_confluences, sset_starters;
-  collect_sset_confluences(sset_confluences, sset_starters);
-  if (split_ess(sset_confluences, 1))
-    return 2;
-  if (split_css(sset_starters))
-    return 2;
-  return ssets_changed;
 }
 
 static int
-analyze_confluence(AVar *av, int fsset = 0) {
+analyze_confluence(AVar *av, int fsetter = 0) {
+  int setters_changed = 0;
   Vec<Setters *> ss;
-  Map<AVar *, AVar *> container_map;
-  Vec<AVar *> eqvars, eqvars_set;
-  eqvars.add(av);
-  eqvars_set.set_add(av);
-  forv_AVar(v, eqvars) {
-    forv_AVar(x, v->backward) if (x) {
-      if (v->forward.in(x) && eqvars_set.set_add(x))
-	eqvars.add(x);
-    }
-  }
-  forv_AVar(v, eqvars) {
-    forv_AVar(x, v->backward) if (x && !eqvars.in(x)) {
-      assert(x->contour_is_entry_set);
-      container_map.put(x, v);
-      for (int i = 0; i < ss.n; i++) {
-	forv_AVar(a, *ss.v[i]) {
-	  if ((!fsset && a->out == x->out) || (fsset && a->sset == x->sset)) {
-	    ss.v[i]->set_add(x);
-	    goto Ldone;
-	  }
+  forv_AVar(x, av->backward) if (x) {
+    assert(x->contour_is_entry_set);
+    for (int i = 0; i < ss.n; i++) {
+      forv_AVar(a, *ss.v[i]) {
+	if ((!fsetter && a->out == x->out) || 
+	    (fsetter && same_eq_classes(a->setters, x->setters))) {
+	  ss.v[i]->set_add(x);
+	  goto Ldone;
 	}
       }
-      ss.add(new Setters(av));
-      ss.v[ss.n - 1]->set_add(x);
-    Ldone:;
-    } 
-  } 
+    }
+    ss.add(new Setters);
+    ss.v[ss.n - 1]->set_add(x);
+  Ldone:;
+  }
   for (int i = 0; i < ss.n; i++)
     ss.v[i] = setters_cannonicalize(ss.v[i]);
-  return analyze_setters(ss, container_map);
+  recompute_eq_classes(ss);
+  forv_AVar(x, av->backward) if (x)
+    setters_changed = update_setter(x->container, x) || setters_changed;
+  return setters_changed;
 }
 
 static int
 extend_analysis() {
+  // initialize
   int analyze_again = 0;
   compute_recursive_entry_sets();
   compute_recursive_entry_creation_sets();
@@ -2110,23 +2085,29 @@ extend_analysis() {
   forv_CreationSet(cs, fa->css) 
     cs->split = 0;
   Vec<AVar *> confluences;
+  // 1) split EntrySet(s) based on type
   collect_es_type_confluences(confluences);
   analyze_again = split_ess(confluences);
   if (!analyze_again) {
     collect_cs_type_confluences(confluences);
     forv_AVar(av, confluences)
-      if (analyze_confluence(av) > 1)
-	analyze_again = 1;
+      analyze_confluence(av);
+    if (split_for_setters())
+      analyze_again = 1;
   }
   while (!analyze_again) {
-    collect_cs_sset_confluences(confluences);
+    // 2) compute setters for ivar imprecisions
+    collect_cs_setter_confluences(confluences);
     int progress = 0;
-    forv_AVar(av, confluences) {
-      int r = analyze_confluence(av, 1);
-      analyze_again = (r == 2) || analyze_again;
-      progress = (r == 1) || progress;
-    }
+    forv_AVar(av, confluences)
+      progress = analyze_confluence(av, 1) || progress;
+    // 3) stop if no progress
     if (!progress) break;
+    // 4) split EntrySet(s) and CreationSet(s) for setter imprecisions
+    if (split_for_setters()) {
+      analyze_again = 1;
+      break;
+    }
   }
   if (analyze_again) {
     if (verbose_level) printf("extending analysis\n");
@@ -2211,6 +2192,9 @@ call_info(Fun *f, AST *a, Vec<Fun *> &funs) {
   funs.set_to_vec();
 }
 
+// Given a variable return the vector of constants
+// which that variable could take on.
+// Returns 0 for no constants or non-constant (e.g. some integer).
 int
 constant_info(Var *v, Vec<Sym *> &constants) {
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
