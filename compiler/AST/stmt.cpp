@@ -5,6 +5,7 @@
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "../symtab/symlink.h"
 #include "symscope.h"
 #include "symtab.h"
 #include "../traversals/fixup.h"
@@ -92,6 +93,11 @@ void Stmt::traverse(Traversal* traversal, bool atTop) {
 }
 
 
+void Stmt::traverseDef(Traversal* traversal, bool atTop) {
+  INT_FATAL(this, "Attempt to traverse the definition of a statement");
+}
+
+
 void Stmt::traverseStmt(Traversal* traversal) {
 }
 
@@ -107,24 +113,6 @@ void Stmt::codegenVarDefs(FILE* outfile) {
 
 
 void Stmt::codegenVarDef(FILE* outfile) { }
-
-
-/* printing out vardefs in a list, names modified by premod and postmod */
-void Stmt::codegenVarNames(FILE* outfile, char* premod, char* postmod) {
-  Stmt* nextStmt = this;
-
-  do {
-    nextStmt->codegenVarName(outfile, premod, postmod);
-    nextStmt = nextLink(Stmt, nextStmt);
-    if (nextStmt) {
-      fprintf(outfile, ",\n");
-    }
-  } while (nextStmt);
-  fprintf(outfile, "\n");
-}
-
-
-void Stmt::codegenVarName(FILE* outfile, char* premod, char* postmod) { }
 
 
 static void call_fixup(Stmt* stmt) {
@@ -518,32 +506,8 @@ void VarDefStmt::codegenVarDef(FILE* outfile) {
   // than separating the variable declaration from its initialization.
 
   while (aVar) {
-    if (aVar->parentScope->type == SCOPE_MODULE) {
-      fprintf(outfile, "static ");
-    }
-    if (aVar->isConst) {
-      fprintf(outfile, "const ");
-    }
-
     aVar->codegenDef(outfile);
-
-    fprintf(outfile, ";\n");
     aVar = nextLink(VarSymbol, aVar);
-  }
-}
-
-
-void VarDefStmt::codegenVarName(FILE* outfile, char* premod, char* postmod) {
-  VarSymbol* vsym = var;
-
-  while (vsym) {
-    fprintf(outfile, premod);
-    vsym->codegen(outfile);
-    fprintf(outfile, postmod);
-    vsym = nextLink(VarSymbol, vsym);
-    if (vsym) {
-      fprintf(outfile, ",\n");
-    }
   }
 }
 
@@ -582,7 +546,7 @@ TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback) {
 
 
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
-  type->traverseDef(type, traversal, false);
+  type->traverseDef(traversal, false);
 }
 
 
@@ -593,18 +557,18 @@ void TypeDefStmt::print(FILE* outfile) {
 
 
 void TypeDefStmt::codegen(FILE* outfile) {
-  FILE* deffile = outfile;
-  /* if in file scope, hoist to internal header so that it will be
-     defined before global variables at file scope. */  
-  if (type->name->parentScope->type == SCOPE_MODULE) { 
-    deffile = intheadfile;
-  }
-  type->codegenDef(deffile);
+//   FILE* deffile = outfile;
+//   /* if in file scope, hoist to internal header so that it will be
+//      defined before global variables at file scope. */  
+//   if (type->name->parentScope->type == SCOPE_MODULE) { 
+//     deffile = intheadfile;
+//   }
+//   type->codegenDef(deffile);
 
-  type->codegenStringToType(outfile);
-  type->codegenIORoutines(outfile);
-  type->codegenConfigVarRoutines(outfile);
-  type->codegenConstructors(outfile);
+//   type->codegenStringToType(outfile);
+//   type->codegenIORoutines(outfile);
+//   type->codegenConfigVarRoutines(outfile);
+//   type->codegenConstructors(outfile);
 }
 
 
@@ -629,6 +593,89 @@ Stmt* FnDefStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
     return new FnDefStmt(fn);
   }
 }
+
+
+/**************888
+FnDefStmt* FnDefStmt::clone(CloneCallback* clone_callback) {
+  FnDefStmt* this_copy = NULL;
+  static int uid = 1; // Unique ID for cloned functions
+  SymScope* save_scope;
+
+  save_scope = Symboltable::setCurrentScope(this->fn->parentScope);
+  Stmt* stmt_copy = copy(true, clone_callback);
+  if (this_copy = dynamic_cast<FnDefStmt*>(stmt_copy)) {
+    this_copy->fn->cname =
+      glomstrings(3, this_copy->fn->cname, "_clone_", intstring(uid++));
+    this->insertBefore(this_copy);
+  }
+  else {
+    INT_FATAL(this, "Unreachable statement in FnDefStmt::clone reached");
+  }
+  Symboltable::setCurrentScope(save_scope);
+  return this_copy;
+}
+
+
+FnDefStmt* FnDefStmt::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions) {
+  FnDefStmt* wrapper_stmt = NULL;
+  static int uid = 1; // Unique ID for wrapped functions
+  FnSymbol* wrapper_symbol;
+  SymScope* save_scope;
+
+  save_scope = Symboltable::setCurrentScope(this->fn->parentScope);
+  wrapper_symbol = new FnSymbol(fn->name);
+  wrapper_symbol->cname =
+    glomstrings(3, fn->cname, "_coercion_wrapper_", intstring(uid++));
+  wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
+  Symbol* wrapper_formals = fn->formals->copyList();
+  Symbol* actuals = wrapper_formals;
+  Variable* argList = new Variable(actuals);
+  actuals = nextLink(Symbol, actuals);
+  while (actuals) {
+    argList->append(new Variable(actuals));
+    actuals = nextLink(Symbol, actuals);
+  }
+  Symboltable::pushScope(SCOPE_LOCAL);
+  Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(fn), argList));
+  for (int i = 0; i < coercion_substitutions->n; i++) {
+    int j = 1;
+    MPosition p;
+    Symbol* formal_change = wrapper_formals;
+    Variable* actual_change = argList;
+    forv_MPosition(p, fn->asymbol->fun->numeric_arg_positions) {
+      if (coercion_substitutions->e[i].key ==
+	  fn->asymbol->fun->numeric_arg_positions.e[j]) {
+	char* temp_name =
+	  glomstrings(2, "_coercion_temp_", formal_change->name);
+	VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
+					       new Variable(formal_change));
+	Stmt* temp_def_stmt = new VarDefStmt(temp_symbol);
+	temp_symbol->setDefPoint(temp_def_stmt);
+	temp_def_stmt->append(wrapper_body);
+	wrapper_body = temp_def_stmt;
+	formal_change->type = coercion_substitutions->e[i].value->type;
+	actual_change->var = temp_symbol;
+      }
+      if (!formal_change->next->isNull()) {
+	formal_change = nextLink(Symbol, formal_change);
+      }
+      if (!actual_change->next->isNull()) {
+	actual_change = nextLink(Variable, actual_change);
+      }
+      j++;
+    }
+  }
+  SymScope* block_scope = Symboltable::popScope();
+  BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
+  wrapper_block->setBlkScope(block_scope);
+  Type* wrapper_return_type = fn->retType;
+  wrapper_stmt = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
+					  wrapper_return_type, wrapper_block);
+  insertBefore(wrapper_stmt);
+  Symboltable::setCurrentScope(save_scope);
+  return wrapper_stmt;
+}
+************************/
 
 
 bool FnDefStmt::isNull(void) {
@@ -674,6 +721,7 @@ void FnDefStmt::print(FILE* outfile) {
 
 
 void FnDefStmt::codegen(FILE* outfile) {
+  /*
   FILE* headfile;
 
   if (!function_is_used(fn)) {
@@ -692,6 +740,7 @@ void FnDefStmt::codegen(FILE* outfile) {
   fprintf(outfile, " ");
   fn->body->codegen(outfile);
   fprintf(outfile, "\n");
+  */
 }
 
 
@@ -834,7 +883,9 @@ void BlockStmt::print(FILE* outfile) {
 
 void BlockStmt::codegen(FILE* outfile) {
   fprintf(outfile, "{\n");
-  body->codegenVarDefs(outfile);
+  if (blkScope) {
+    blkScope->codegen(outfile, "\n");
+  }
   body->codegenList(outfile, "\n");
   fprintf(outfile, "\n");
   fprintf(outfile, "}");
@@ -977,7 +1028,6 @@ void ForLoopStmt::codegen(FILE* outfile) {
   // is it a challenge that we may not know the domain exprs at that point?
   while (aVar) {
     aVar->codegenDef(outfile);
-    fprintf(outfile, ";\n");
     rank++;
 
     aVar = nextLink(VarSymbol, aVar);

@@ -7,6 +7,7 @@
 #include "stringutil.h"
 #include "symtab.h"
 #include "yy.h"
+#include "../passes/filesToAST.h"
 
 
 enum parsePhaseType {
@@ -67,13 +68,18 @@ void Symboltable::doneParsingPreludes(void) {
   parsePhase = PARSING_USERFILES;
 
   // Setup common module and scope
-  // Hacked nested module, for declaring arrays-of-primitives types
+  // Hacked nested module, for declaring arrays-of-primitives types, e.g.
   commonModule = new ModuleSymbol("_CommonModule", false);
   commonModule->setModScope(new SymScope(SCOPE_MODULE));
   commonModule->modScope->parent = preludeScope;
   preludeScope->child = commonModule->modScope;
   currentScope = commonModule->modScope;
 
+  prelude->modScope = preludeScope;          // SJD: Why here?
+  internalPrelude->modScope = internalScope; // I just put it here
+                                             // But it should go elsewhere
+  preludeScope->symContext = prelude;
+  internalScope->symContext = internalPrelude;
 }
 
 
@@ -636,11 +642,11 @@ TypeSymbol* Symboltable::startClassDef(char* name, bool isValueClass, bool isUni
 
 TypeDefStmt* Symboltable::finishClassDef(TypeSymbol* classSym, 
 					 Stmt* definition) {
-  SymScope *classScope = Symboltable::popScope();
-
   ClassType* classType = dynamic_cast<ClassType*>(classSym->type);
-  classType->setClassScope(classScope);
   classType->addDefinition(definition);
+  SymScope *classScope = Symboltable::popScope();
+  classType->setClassScope(classScope);
+  classType->buildConstructor();
   TypeDefStmt* classdefStmt = new TypeDefStmt(classType);
   classSym->setDefPoint(classdefStmt);
   classScope->setContext(classdefStmt, classSym);

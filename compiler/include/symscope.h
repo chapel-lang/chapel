@@ -61,6 +61,8 @@ class SymScope : public gc {
   void printHeader(FILE* outfile);
   void printSymbols(FILE* outfile, bool tableOrder);
   void printFooter(FILE* outfile);
+
+  void codegen(FILE* outfile, char* separator);
 };
 
 #endif

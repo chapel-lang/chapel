@@ -223,3 +223,11 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
     printFooter(outfile);
   }
 }
+
+void SymScope::codegen(FILE* outfile, char* separator) {
+  for (SymLink* tmp = firstSym;
+       tmp && !tmp->isNull();
+       tmp = nextLink(SymLink, tmp)) {
+    tmp->pSym->codegenDefList(outfile, "\n");
+  }
+}

@@ -73,21 +73,21 @@ void Type::traverse(Traversal* traversal, bool atTop) {
 }
 
 
-void Type::traverseDef(Type* _this, Traversal* traversal, bool atTop) {
+void Type::traverseDef(Traversal* traversal, bool atTop) {
   if (isNull()) {
     return;
   }
 
   // expore Type and components
   if (traversal->processTop || !atTop) {
-    traversal->preProcessType(_this);
+    traversal->preProcessType(this);
   }
   if (atTop || traversal->exploreChildTypes) {
-    TRAVERSE(_this->name, traversal, false);
-    _this->traverseDefType(traversal);
+    TRAVERSE(name, traversal, false);
+    traverseDefType(traversal);
   }
   if (traversal->processTop || !atTop) {
-    traversal->postProcessType(_this);
+    traversal->postProcessType(this);
   }
 }
 
@@ -669,49 +669,96 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 
 ClassType::ClassType(bool isValueClass, bool isUnion,
-		     ClassType* init_parentClass, Stmt* init_definition,
-		     Stmt* init_constructor, SymScope* init_classScope) :
+		     ClassType* init_parentClass,
+		     Stmt* init_constructor,
+		     SymScope* init_classScope,
+		     FnSymbol* init_embeddedFnSymbols,
+		     VarSymbol* init_classVarSymbols,
+		     TypeSymbol* init_classTypeSymbols,
+		     FnSymbol* init_boundFnSymbols) :
   Type(TYPE_CLASS, nilExpr),
   value(isValueClass),
   union_value(isUnion),
   parentClass(init_parentClass),
   constructor(init_constructor),
-  classScope(init_classScope)
+  classScope(init_classScope),
+  embeddedFnSymbols(init_embeddedFnSymbols),
+  classVarSymbols(init_classVarSymbols),
+  classTypeSymbols(init_classTypeSymbols),
+  boundFnSymbols(init_boundFnSymbols)
 {
-  addDefinition(init_definition);
-  SET_BACK(definition);
-  constructor->back = &(Stmt*&)constructor; // UGH --SJD
+  SET_BACK(constructor);
 }
 
 
 Type* ClassType::copyType(bool clone, CloneCallback* analysis_clone) {
+  VarSymbol* classVarSymbolsCopy =
+    dynamic_cast<VarSymbol*>(classVarSymbols->copy(clone, analysis_clone));
+  if (classVarSymbols && !classVarSymbolsCopy) {
+    INT_FATAL(this, "Error copying class variables");
+  }
   Type* copy = new ClassType(value,
 			     union_value,
 			     parentClass,
-			     definition->copyList(clone, analysis_clone),
 			     constructor->copy(clone, analysis_clone),
-			     classScope);
+			     classScope,
+			     embeddedFnSymbols,
+			     classVarSymbolsCopy,
+			     classTypeSymbols,
+			     boundFnSymbols);
   copy->addName(name);
   return copy;
 }
 
 
 void ClassType::addDefinition(Stmt* init_definition) {
-  definition = init_definition;
-  SET_BACK(definition); // SJD: Eliminate please.
+  Stmt* tmp = init_definition;
+  while (tmp && !tmp->isNull()) {
+    if (FnDefStmt* fn_def_stmt = dynamic_cast<FnDefStmt*>(tmp)) {
+      embeddedFnSymbols = appendLink(embeddedFnSymbols, fn_def_stmt->fn);
+    }
+    else if (VarDefStmt* var_def_stmt = dynamic_cast<VarDefStmt*>(tmp)) {
+      classVarSymbols = appendLink(classVarSymbols, var_def_stmt->var);
+    }
+    else if (TypeDefStmt* type_def_stmt = dynamic_cast<TypeDefStmt*>(tmp)) {
+      if (TypeSymbol* type_symbol =
+	  dynamic_cast<TypeSymbol*>(type_def_stmt->type->name)) {
+	classTypeSymbols = appendLink(classTypeSymbols, type_symbol);
+      }
+      else {
+	INT_FATAL(type_def_stmt, "Major error in class definition");
+      }
+    }
+    else if (WithStmt* with_stmt = dynamic_cast<WithStmt*>(tmp)) {
+      ClassType* ctype = with_stmt->getClass();
+      FnSymbol* copyEmbeddedFnSymbols = dynamic_cast<FnSymbol*>(ctype->embeddedFnSymbols->copyList());
+      embeddedFnSymbols = appendLink(embeddedFnSymbols, copyEmbeddedFnSymbols);
+      /*SJD: change below too*/
+      classVarSymbols = appendLink(classVarSymbols, (VarSymbol*)ctype->classVarSymbols->copyList());
+      classTypeSymbols = appendLink(classTypeSymbols, (TypeSymbol*)ctype->classTypeSymbols->copyList());
+      boundFnSymbols = appendLink(boundFnSymbols, (FnSymbol*)ctype->boundFnSymbols->copyList());
+    }
+    tmp = nextLink(Stmt, tmp);
+  }
+  // Fake back
+  init_definition->back = &((Stmt*&)init_definition->next->prev);
+}
 
+
+void ClassType::buildConstructor(void) {
   if (!isNull() && Symboltable::parsingUserCode()) {
     /* create default constructor */
 
     char* constructorName = glomstrings(2, "_construct_", name->name);
     FnSymbol* newFunSym = Symboltable::startFnDef(new FnSymbol(constructorName));
     if (value || union_value) {
+      BlockStmt* body = Symboltable::startCompoundStmt();
       VarSymbol* this_insert = new VarSymbol("this", this);
       VarDefStmt* body1 = new VarDefStmt(this_insert);
       this_insert->setDefPoint(body1);
       ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
       body1->append(body2);
-      BlockStmt* body = new BlockStmt(body1);
+      Symboltable::finishCompoundStmt(body, body1);
       constructor = Symboltable::finishFnDef(newFunSym, nilSymbol, this, body);
     }
     else {
@@ -731,18 +778,16 @@ void ClassType::addDefinition(Stmt* init_definition) {
 	the union def stmt.
     **/
     if (union_value) {
-      Stmt* tmpStmt = definition;
+      Symbol* tmp = classVarSymbols;
 
-      while (tmpStmt) {
-	if (VarDefStmt* varStmt = dynamic_cast<VarDefStmt*>(tmpStmt)) {
-	  VarSymbol* idtag = new VarSymbol(glomstrings(4, "_", name->name, "_union_id_", varStmt->var->name));
-	  idtag->setDefPoint(NULL); // SHOULD BE REAL statement for declaring this enum, UGH...short-term
-	}
-	tmpStmt = nextLink(Stmt, tmpStmt);
+      while (tmp && !tmp->isNull()) {
+	EnumSymbol* idtag = new EnumSymbol(glomstrings(4, "_", name->name, "_union_id_", tmp->name), nilExpr);
+	idtag->setDefPoint(NULL); // SHOULD BE REAL statement for declaring this enum, UGH...short-term
+	tmp = nextLink(VarSymbol, tmp);
       }
     }
   }
-  constructor->back = &(Stmt*&)constructor; // UGH --SJD
+  SET_BACK(constructor);
 }
 
 
@@ -756,7 +801,24 @@ void ClassType::traverseDefType(Traversal* traversal) {
   if (classScope) {
     prevScope = Symboltable::setCurrentScope(classScope);
   }
-  TRAVERSE_LS(definition, traversal, false);
+  if (classTypeSymbols) TRAVERSE_DEF_LS(classTypeSymbols, traversal, false);
+  if (classVarSymbols) {
+    VarSymbol* tmp = classVarSymbols;
+    while (tmp && !tmp->isNull()) {
+      TRAVERSE(tmp->defPoint, traversal, false);
+      tmp = nextLink(VarSymbol, tmp);
+    }
+    // SJD) WANT: TRAVERSE_DEF_LS(classVarSymbols, traversal, false);
+  }
+  if (embeddedFnSymbols) {
+    FnSymbol* tmp = embeddedFnSymbols;
+    while (tmp && !tmp->isNull()) {
+      TRAVERSE(tmp->defPoint, traversal, false);
+      tmp = nextLink(FnSymbol, tmp);
+    }
+    // SJD) WANT: TRAVERSE_DEF_LS(embeddedFnSymbols, traversal, false);
+  }
+  if (boundFnSymbols) TRAVERSE_DEF_LS(boundFnSymbols, traversal, false);
   TRAVERSE_LS(constructor, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
   if (classScope) {
@@ -780,8 +842,16 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "typedef enum _");
     name->codegen(outfile);
     fprintf(outfile, "_union_id_def {\n");
-    definition->codegenVarNames(outfile, 
-				glomstrings(3, "_", name->name, "_union_id_"), "");
+    VarSymbol* tmp = classVarSymbols;
+    while (tmp && !tmp->isNull()) {
+      fprintf(outfile, "_%s_union_id_", name->name);
+      tmp->codegen(outfile);
+      tmp = nextLink(VarSymbol, tmp);
+      if (tmp) {
+	fprintf(outfile, ",");
+      }
+      fprintf(outfile, "\n");
+    }
     fprintf(outfile, "} _");
     name->codegen(outfile);
     fprintf(outfile, "_union_id;\n\n");
@@ -795,7 +865,7 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "_union_id _chpl_union_tag;\n");
     fprintf(outfile, "union _chpl_union_def {\n");
   }
-  definition->codegenVarDefs(outfile);
+  if (classVarSymbols) classVarSymbols->codegenDefList(outfile, "\n");
   if (union_value) {
     fprintf(outfile, "} _chpl_union;\n");
   }
@@ -811,6 +881,7 @@ void ClassType::codegenDef(FILE* outfile) {
     name->codegen(outfile);
     fprintf(outfile, ";\n\n");
   }
+  if (embeddedFnSymbols) embeddedFnSymbols->codegenDefList(codefile, "\n");
 }
 
 

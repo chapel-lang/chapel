@@ -9,6 +9,8 @@
 class Symbol;
 class EnumSymbol;
 class VarSymbol;
+class TypeSymbol;
+class FnSymbol;
 class Expr;
 class ASymbol;
 class SymScope;
@@ -47,7 +49,7 @@ class Type : public BaseAST {
   virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
   virtual void traverse(Traversal* traversal, bool atTop = true);
-  void traverseDef(Type* _this, Traversal* traversal, bool atTop = true);
+  virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseType(Traversal* traversal);
   virtual void traverseDefType(Traversal* traversal);
 
@@ -168,17 +170,24 @@ class ClassType : public Type {
   bool value; /* true if this is a value class (aka record) */
   bool union_value; /* true if this is a union */
   ClassType* parentClass;
-  Stmt* definition;
   Stmt* constructor;
   SymScope* classScope;
+  FnSymbol* embeddedFnSymbols;
+  VarSymbol* classVarSymbols;
+  TypeSymbol* classTypeSymbols;
+  FnSymbol* boundFnSymbols;
   
   ClassType(bool isValueClass,
 	    bool isUnion,
             ClassType* init_parentClass = nilClassType, 
-	    Stmt* init_definition = nilStmt,
 	    Stmt* init_constructor = nilStmt,
-	    SymScope* init_classScope = NULL);
+	    SymScope* init_classScope = NULL,
+	    FnSymbol* init_embeddedFnSymbols = NULL,
+	    VarSymbol* init_classVarSymbols = NULL,
+	    TypeSymbol* init_classTypeSymbols = NULL,
+	    FnSymbol* init_boundFnSymbols = NULL);
   void addDefinition(Stmt* init_definition);
+  void buildConstructor(void);
   void setClassScope(SymScope* init_classScope);
   virtual Type* copyType(bool clone, CloneCallback* analysis_clone);
 
