@@ -8025,3 +8025,29 @@ Added files:
 Removed files:
 	chapel/compiler/passes/: printAST.cpp 
 
+---------------------------------------------------------------------------
+
+09/20/04 15:12:40 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Added support for multiple returns of lvalues in the same function.
+	Currently only in the test parser.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/compiler/include/: parse_ast.h scope.h 
+	chapel/compiler/vparser/: parse_ast.cpp scope.cpp v.g 
+	chapel/test/flowanalysis/jplevyak/: badcall.good 
+	                                    badprimitive.good 
+	                                    badreturn.good classvar.good 
+	                                    cs4.good cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    literal.good memberfun.good 
+	                                    memberfun2.good 
+	                                    structtype.good 
+Added files:
+	chapel/test/flowanalysis/jplevyak/: assign1.good assign1.v 
+	                                    assign2.good assign2.v 
+Removed files:
+	chapel/compiler/vparser/: v.g.d_parser.cpp 
+
