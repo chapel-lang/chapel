@@ -10994,3 +10994,29 @@ Added files:
 	                                                z.chpl 
 	chapel/test/trivial/bradc/: redefinevar.chpl redefinevar.good 
 
+---------------------------------------------------------------------------
+
+12/02/04 13:47:50 -- bradc
+
+Log message:
+	Fixed a bug that Shannon found in which imaginary
+	numbers expressed with an integer value were not
+	being parsed correctly (e.g., 4i rather than 4.0i).
+	Added a test to lock this in.
+	
+	Also, renamed the --analyzeNewAST flag and variable
+	to --noanalysis and analyzeAST respectively, since
+	the sense of the flag has been reversed for awhile
+	now, and the emphasis on "new" ast seems less
+	important now.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symtab.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.lex 
+	chapel/compiler/passes/: runAnalysis.cpp 
+Added files:
+	chapel/test/types/complex/bradc/: intfloatelement.chpl 
+	                                  intfloatelement.good 
+
