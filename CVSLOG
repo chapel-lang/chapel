@@ -14826,3 +14826,17 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/traversals/: cleanup.cpp processParameters.cpp 
 
+---------------------------------------------------------------------------
+
+01/17/05 22:04:19 -- jplevyak
+
+Log message:
+	Added:
+	  Type *return_type_info(FnSymbol *fn)
+	to analysis.h.  Should return the type of the return type
+	of the function.  If you want a different interface, tell me.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+
