@@ -3037,3 +3037,19 @@ Added files:
 Removed files:
 	chapel/test/Share/: chain.chpl mutrec.chpl 
 
+---------------------------------------------------------------------------
+
+06/08/04 16:46:46 -- bradc
+
+Log message:
+	Beefed up domain support ever-so-slightly to handle cases
+	with constraint nodes attached (basically by skipping
+	over the constraint node and looking at the initializer
+	for now).
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+Added files:
+	chapel/test/trivial/bradc/: declprintdom2.chpl 
+	                            declprintdom2.good 
+
