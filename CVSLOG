@@ -8684,3 +8684,24 @@ Added files:
 	chapel/test/trivial/bradc/: opAssociativity.chpl 
 	                            opAssociativity.good 
 
+---------------------------------------------------------------------------
+
+10/06/04 15:04:24 -- shannon
+
+Log message:
+	Generated read statement for strings.  I chose an arbitrary
+	maximum string size of 256 for this implementation.  I
+	added two tests - one fails when given a string greater
+	than the maximum string size.
+
+Modified files:
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+Added files:
+	chapel/test/trivial/shannon/: readStringOverflow.chpl 
+	                              readStringOverflow.good 
+	                              readStringOverflow.stdin 
+	                              readWriteString.chpl 
+	                              readWriteString.good 
+	                              readWriteString.stdin 
+
