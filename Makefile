@@ -7,9 +7,9 @@ all:
 	@echo "Try make 'third-party' or 'compiler'"
 
 compiler: FORCE
-	cd compiler && make
+	cd compiler && $(MAKE)
 
 third-party: FORCE
-	cd third-party && make
+	cd third-party && $(MAKE)
 
 FORCE:

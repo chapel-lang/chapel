@@ -5,13 +5,13 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 all: $(THIRD_GC_DIRNAME) $(THIRD_DPARSE_DIRNAME)
 
 clean:
-	cd $(THIRD_GC_DIRNAME) && make clean
-	cd $(THIRD_DPARSE_DIRNAME) && make clean
+	cd $(THIRD_GC_DIRNAME) && $(MAKE) clean
+	cd $(THIRD_DPARSE_DIRNAME) && $(MAKE) clean
 
 $(THIRD_GC_DIRNAME): FORCE
-	cd $(THIRD_GC_DIRNAME) && make
+	cd $(THIRD_GC_DIRNAME) && $(MAKE)
 
 $(THIRD_DPARSE_DIRNAME): FORCE
-	cd $(THIRD_DPARSE_DIRNAME) && make
+	cd $(THIRD_DPARSE_DIRNAME) && $(MAKE)
 
 FORCE:
