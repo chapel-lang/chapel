@@ -21379,3 +21379,27 @@ Added files:
 	chapel/test/domains/roxana/: test_index_expr.good 
 	                             test_index_expr.chpl 
 
+---------------------------------------------------------------------------
+
+03/24/05 16:26:03 -- jplevyak
+
+Log message:
+	Added new test cases for tuple indexing.
+	Added new futures for those which do not work yet.
+	Made findUnknownTypes not try to find types for functions or unresolved
+	  things (like writeln)
+	Made ANALYSIS_MATCH check for dtUnknown and issue a INT_FATAL for return types.
+	Added operator= into Vec<> in vec.h.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: vec.h 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+Added files:
+	chapel/test/types/tuple/jplevyak/: tuple_index-1.chpl 
+	                                   tuple_index-1.future 
+	                                   tuple_index-1.good 
+	                                   tuple_index-2.chpl 
+	                                   tuple_index-2.future 
+	                                   tuple_index-2.good 
+
