@@ -10717,3 +10717,40 @@ Log message:
 Modified files:
 	chapel/test/execflags/shannon/configs/: configVarComplex.good 
 
+---------------------------------------------------------------------------
+
+12/01/04 10:22:33 -- deitz
+
+Log message:
+	Added immature support for methods within classes along with an
+	illustrative test case.  In addition to other limitations, the methods
+	cannot currently access the fields within the class.
+	
+	Added a new field in the base Symbol class called cname.  This is
+	different than name which is the Chapel name.  The cname is the
+	mangled name, the name that is code generated.  By default, it is set
+	to the same thing as name.  For the main symbol, cname is set to
+	_chpl_main whereas name is left as main.  For the class methods, cname
+	becomes an underscore followed by the name of the class followed by an
+	underscore followed by the name of the method.  A more sophisticated
+	name mangling scheme is desirable (eventually).
+	
+	The bulk of this checkin concerns the transformation from methods to
+	functions.  The method definitions are moved outside the class
+	definition, immediately after it, the name is mangled as above, and a
+	parameter called _this is put in the first position of the formals
+	parameter list.  Additionally, all method calls are changed into
+	function calls.  The base of the MemberAccess becomes the first
+	argument to the actuals parameter list and the member becomes simply
+	the function.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: renameCSymbols.cpp 
+	chapel/compiler/traversals/: methodsToFunctions.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_method1.chpl test_method1.good 
+Removed files:
+	chapel/test/classes/deitz/future/: test_method1.chpl 
+
