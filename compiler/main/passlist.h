@@ -12,6 +12,7 @@
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/cloneAllFns.h"
+#include "../traversals/fieldsToMemberAccesses.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/getstuff.h"
@@ -32,6 +33,7 @@ Pass* passlist[] = {
   RUN(FilesToAST),
   RUN(SetupStmtLinks),
   RUN(CheckBackLinks),
+  RUN(FieldsToMemberAccesses),
   RUN(RunAnalysis),
   RUN(ResolveSymbols2),
   RUN(FindUnknownTypes),

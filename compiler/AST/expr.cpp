@@ -138,6 +138,31 @@ void Expr::traverseExpr(Traversal* traversal) {
 }
 
 
+static void replace_helper(Expr** expr, Expr* old_expr, Expr* new_expr) {
+  Expr* tmp = *expr;
+  Expr* prev = NULL;
+
+  while (tmp) {
+    if (tmp == old_expr) {
+      if (prev) {
+	prev->next = new_expr;
+      }
+      else {
+	*expr = new_expr;
+      }
+      new_expr->next = tmp->next;
+      new_expr->prev = tmp->prev;
+    }
+    tmp = nextLink(Expr, tmp);
+  }
+}
+
+
+void Expr::replace(Expr* old_expr, Expr* new_expr) {
+
+}
+
+
 Type* Expr::typeInfo(void) {
   return dtUnknown;
 }
@@ -456,6 +481,11 @@ void UnOp::traverseExpr(Traversal* traversal) {
 }
 
 
+void UnOp::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&operand, old_expr, new_expr);
+}
+
+
 void UnOp::print(FILE* outfile) {
   fprintf(outfile, "(%s", cUnOp[type]);
   operand->print(outfile);
@@ -498,6 +528,12 @@ Expr* BinOp::copy(void) {
 void BinOp::traverseExpr(Traversal* traversal) {
   left->traverse(traversal, false);
   right->traverse(traversal, false);
+}
+
+
+void BinOp::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&left, old_expr, new_expr);
+  replace_helper(&right, old_expr, new_expr);
 }
 
 
@@ -649,6 +685,11 @@ void MemberAccess::traverseExpr(Traversal* traversal) {
 }
 
 
+void MemberAccess::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&base, old_expr, new_expr);
+}
+
+
 Type* MemberAccess::typeInfo(void) {
   return member->type;
 }
@@ -692,6 +733,12 @@ Expr* ParenOpExpr::copy(void) {
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
   baseExpr->traverse(traversal, false);
   argList->traverseList(traversal, false);
+}
+
+
+void ParenOpExpr::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&baseExpr, old_expr, new_expr);
+  replace_helper(&argList, old_expr, new_expr);
 }
 
 
@@ -937,6 +984,11 @@ void Tuple::traverseExpr(Traversal* traversal) {
 }
 
 
+void Tuple::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&exprs, old_expr, new_expr);
+}
+
+
 void Tuple::print(FILE* outfile) {
   fprintf(outfile, "(");
   Expr* expr = exprs;
@@ -1015,6 +1067,11 @@ void CastExpr::traverseExpr(Traversal* traversal) {
 }
 
 
+void CastExpr::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&expr, old_expr, new_expr);
+}
+
+
 Type* CastExpr::typeInfo(void) {
   return newType;
 }
@@ -1058,6 +1115,12 @@ void ReduceExpr::traverseExpr(Traversal* traversal) {
 }
 
 
+void ReduceExpr::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&redDim, old_expr, new_expr);
+  replace_helper(&argExpr, old_expr, new_expr);
+}
+
+
 void ReduceExpr::print(FILE* outfile) {
   fprintf(outfile, "reduce ");
   if (!redDim->isNull()) {
@@ -1093,6 +1156,13 @@ void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
   lo->traverse(traversal, false);
   hi->traverse(traversal, false);
   str->traverse(traversal, false);
+}
+
+
+void SimpleSeqExpr::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&lo, old_expr, new_expr);
+  replace_helper(&hi, old_expr, new_expr);
+  replace_helper(&str, old_expr, new_expr);
 }
 
 
@@ -1180,6 +1250,12 @@ void DomainExpr::traverseExpr(Traversal* traversal) {
   indices->traverseList(traversal, false);
   domains->traverseList(traversal, false);
   forallExpr->traverse(traversal, false);
+}
+
+
+void DomainExpr::replace(Expr* old_expr, Expr* new_expr) {
+  replace_helper(&domains, old_expr, new_expr);
+  replace_helper(&forallExpr, old_expr, new_expr);
 }
 
 

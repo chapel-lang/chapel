@@ -9,6 +9,7 @@ REGISTER(CheckTypeInfo);
 REGISTER(CloneAllFns);
 REGISTER(Codegen);
 REGISTER(DummyPass);
+REGISTER(FieldsToMemberAccesses); // SJD: Convert fields in methods to MemberAccesses
 REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);

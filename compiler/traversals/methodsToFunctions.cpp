@@ -6,8 +6,8 @@
 #include "symbol.h"
 #include "type.h"
 
+
 /***
- ***  Adds _this to formal argument list for methods
  ***  Mangles names of methods with "_"
  ***  Moves method's function definition statement after class definition statement
  ***/
@@ -22,12 +22,21 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
       while (stmt) {
 	Stmt* next = nextLink(Stmt, stmt);
 	if (FnDefStmt* method = dynamic_cast<FnDefStmt*>(stmt)) {
-	  VarSymbol* this_insert = new VarSymbol("_this", ctype);
-	  this_insert->next = method->fn->formals;
-	  method->fn->formals = this_insert;
+	  /* Done before analysis for now -SJD
+	    VarSymbol* this_insert = new VarSymbol("_this", ctype);
+	    this_insert->next = method->fn->formals;
+	    method->fn->formals = this_insert;
+	  */
 	  method->fn->cname = glomstrings(4, "_", ctype->name->name, "_", method->fn->name);
 	  method->next = tds->next;
 	  tds->next = method;
+
+	  /***  SJD: DON'T do this here unless this should be put in after
+		analysis (for not it is its own pass before analysis
+	      CurrentClass= ctype;
+	      FieldsToMemberAccesses* FTMA = new FieldsToMemberAccesses();
+	      method->fn->body->traverse(FTMA);
+	  ***/
 	}
 	stmt = next;
       }
@@ -38,6 +47,7 @@ void MethodsToFunctions::preProcessStmt(Stmt* stmt) {
 
 /***
  ***  Adds base in MemberAccess for method to a new first parameter to the method
+ ***  Makes MemberAccess for method a function on its own
  ***/
 void MethodsToFunctions::preProcessExpr(Expr* expr) {
   MemberAccess* method;
@@ -57,20 +67,4 @@ void MethodsToFunctions::preProcessExpr(Expr* expr) {
       }
     }
   }
-}
-
-
-void MethodsToFunctions::preProcessSymbol(Symbol* symbol) {
-}
-
-
-void MethodsToFunctions::preProcessType(Type* type) {
-}
-
-
-void MethodsToFunctions::run(ModuleSymbol* moduleList) {
-  Traversal::run(moduleList);
-
-
-
 }

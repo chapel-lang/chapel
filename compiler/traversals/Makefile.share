@@ -3,6 +3,7 @@ TRAVERSALS_SRCS = \
 	checkIDs.cpp \
 	checkTypeInfo.cpp \
 	cloneAllFns.cpp \
+	fieldsToMemberAccesses.cpp \
 	findUnknownTypes.cpp \
 	findUnresolvedSymbols.cpp \
 	getstuff.cpp \
