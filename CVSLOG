@@ -20864,3 +20864,25 @@ Log message:
 Added files:
 	chapel/test/types/tuple/jplevyak/: destruct-2.future 
 
+---------------------------------------------------------------------------
+
+03/22/05 17:31:53 -- bradc
+
+Log message:
+	Modified Roxana's future test a bit -- moved test from
+	.future file to .chpl file and added some output so we
+	could be more confident it worked properly.  Wrote a
+	.future file (Roxana, the .future file is a way of
+	tagging a .chpl test to indicate that it isn't expected
+	to work yet but that we hope it will someday.  Take a
+	look at what I've done and let me know if it's unclear.
+	I noticed this only because I was about to check in my
+	copy of your test and noticed that you had already done
+	so.
+
+Modified files:
+	chapel/test/trivial/roxana/: test_dead_var_decl.future 
+Added files:
+	chapel/test/trivial/roxana/: test_dead_var_decl.chpl 
+	                             test_dead_var_decl.good 
+
