@@ -3437,3 +3437,14 @@ Modified files:
 	                      link.h main.cpp stmt.cpp stmt.h symbol.cpp 
 	                      symbol.h type.cpp type.h 
 
+---------------------------------------------------------------------------
+
+06/16/04 15:48:36 -- bradc
+
+Log message:
+	late afternoon prototype AST checkin (mg-seq mostly codegens)
+
+Modified files:
+	chapel/compiler/AST/: chapel.lex chapel.y expr.cpp main.cpp 
+	                      stmt.cpp stmt.h type.h 
+
