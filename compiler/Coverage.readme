@@ -1,0 +1,12 @@
+To determine lines in the compiler that are never executed when the
+tests are run:
+
+1. cd compiler
+2. setenv CHPL_GCOV 1
+3. make clean
+4. make
+5. perl Coverage.pl
+
+This will print out filenames that have unexecuted code.  It is
+formatted to show the function followed by the lines that are not
+executed.  The line numbers correspond to the lines in the C++.

@@ -22,6 +22,11 @@ GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); pri
 # Flags
 #
 
+ifdef CHPL_GCOV
+CFLAGS += -fprofile-arcs -ftest-coverage
+LDFLAGS += -fprofile-arcs
+endif
+
 ifdef DEBUG
 CFLAGS += -g -DDEBUG=1
 else

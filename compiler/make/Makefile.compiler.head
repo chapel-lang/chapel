@@ -68,6 +68,9 @@ CFLAGS := $(CFLAGS) $(ONLYCFLAGS)
 #
 CLEAN_TARGS = \
 	./$(PLATFORM)/*.o \
+	./$(PLATFORM)/*.gcda \
+	./$(PLATFORM)/*.gcno \
+	./$(PLATFORM)/*.gcov \
 	core \
 	*.core \
 	*.gmon \
