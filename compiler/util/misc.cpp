@@ -1,6 +1,8 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include "driver.h"
+#include "../main/version.h"
 #include "files.h"
 #include "geysa.h"
 #include "../vparser/parse_structs.h"
@@ -126,15 +128,63 @@ void myassert(char *file, int line, char *str) {
 
 // Support for internal errors, adopted from ZPL compiler
 
-static bool isError = true;
+static bool isFatal = true;
 
-void setupIntError(char *filename, int lineno, bool error) {
-  if (error) {
-    fprintf(stderr, "%s:%d: internal error: ", filename, lineno);
-  } else {
-    fprintf(stderr, "%s:%d: internal warning: ", filename, lineno);
+
+static char* internalErrorCode(char* filename, int lineno) {
+  static char error[8];
+
+  char* filename_start = strrchr(filename, '/');
+  if (filename_start) {
+    filename_start++;
   }
-  isError = error;
+  else {
+    filename_start = filename;
+  }
+  strncpy(error, filename_start, 3);
+  sprintf(error, "%s%04d", error, lineno);
+  for (int i = 0; i < 7; i++) {
+    if (error[i] >= 'a' && error[i] <= 'z') {
+      error[i] += 'A' - 'a';
+    }
+  }
+  return error;
+}
+
+
+void setupDevelError(char *filename, int lineno, bool fatal, bool user) {
+  if (developer) {
+    fprintf(stderr, "[%s:%d] ", filename, lineno);
+  }
+
+  if (!user) {
+    if (fatal) {
+      fprintf(stderr, "Internal error: ");
+    }
+    else {
+      fprintf(stderr, "Internal warning: ");
+    }
+  }
+  else {
+    if (fatal) {
+      fprintf(stderr, "Error: ");
+    }
+    else {
+      fprintf(stderr, "Warning: ");
+    }
+  }
+
+  if (!user && !developer) {
+    char version[128];
+    fprintf(stderr, "%s ", internalErrorCode(filename, lineno));
+    get_version(version);
+    fprintf(stderr, "chpl Version %s\n", version);
+    if (fatal) {
+      clean_exit(1);
+    }
+  }
+
+  isFatal = fatal;
 }
 
 
@@ -158,7 +208,7 @@ static void printUsrLocation(char* filename, int lineno) {
 }
 
 
-void intProblem(char *fmt, ...) {
+void printProblem(char *fmt, ...) {
   va_list args;
 
   va_start(args, fmt);
@@ -167,13 +217,13 @@ void intProblem(char *fmt, ...) {
 
   printUsrLocation(NULL, 0);
 
-  if (isError) {
+  if (isFatal) {
     clean_exit(1);
   }
 }
 
 
-void intProblem(AST* ast, char *fmt, ...) {
+void printProblem(AST* ast, char *fmt, ...) {
   va_list args;
   int usrlineno = 0;
   char *usrfilename = NULL;
@@ -189,13 +239,13 @@ void intProblem(AST* ast, char *fmt, ...) {
 
   printUsrLocation(usrfilename, usrlineno);
 
-  if (isError) {
+  if (isFatal) {
     clean_exit(1);
   }
 }
 
 
-void intProblem(Loc* loc, char *fmt, ...) {
+void printProblem(Loc* loc, char *fmt, ...) {
   va_list args;
   int usrlineno = 0;
   char *usrfilename = NULL;
@@ -211,21 +261,9 @@ void intProblem(Loc* loc, char *fmt, ...) {
 
   printUsrLocation(usrfilename, usrlineno);
 
-  if (isError) {
+  if (isFatal) {
     clean_exit(1);
   }
-}
-
-
-void USR_FATAL(Loc* loc, char* fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  loc->printLoc(stderr);
-  fprintf(stderr, ": ");
-  vfprintf(stderr, fmt, ap);
-  va_end(ap);
-  fprintf(stderr, "\n");
-  clean_exit(1);
 }
 
 

@@ -1,1 +1,2 @@
-test_enum6.chpl:7: Enumerator value for NEG must be integer parameter
+Error: Enumerator value for NEG must be integer parameter (test_enum6.chpl:7)
+

@@ -213,6 +213,7 @@
 set user = `whoami`
 
 unsetenv CHPL_SYSTEM_DIR
+unsetenv CHPL_DEVELOPER
 
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 

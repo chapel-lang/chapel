@@ -44,6 +44,8 @@ int analyzeAST = 1;
 int suppressCodegen = 0;
 int debugParserLevel = 0;
 
+int developer = 0;
+
 int fdce_if1 = 1;
 int finline = 0;
 int fsimple_inline = 0;
@@ -64,6 +66,7 @@ static ArgumentDescription arg_desc[] = {
  {"print_call_depth", 'C', "Print Call Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
  {"constants_per_var", ' ', "# of Constants per Var", "I", &num_constants_per_variable, 
   "CHPL_CONSTANTS_PER_VARIABLE", NULL},
+ {"devel", ' ', "Developer Compile", "F", &developer, "CHPL_DEVELOPER", NULL},
  {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
  {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},

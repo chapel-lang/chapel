@@ -1,1 +1,2 @@
-redefinevar.chpl:2: redefinition of symbol x (previous definition at redefinevar.chpl:1)
+Error: redefinition of symbol x (previous definition at redefinevar.chpl:1) (redefinevar.chpl:2)
+

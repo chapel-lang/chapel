@@ -20,6 +20,7 @@ extern int parser_verbose_non_prelude;
 extern int analyzeAST;
 extern int debugParserLevel;
 extern int suppressCodegen;
+extern int developer;
 
 void do_analysis(char *fn);
 

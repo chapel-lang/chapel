@@ -135,7 +135,7 @@ void ResolveEasiest::preProcessExpr(Expr* expr) {
       }
       else {
 	if (strcmp(variable_expr->var->name, "__primitive")) {
-	  USR_FATAL(expr, "Error: cannot resolve symbol '%s'",
+	  USR_FATAL(expr, "Unable to resolve token '%s'",
 		    variable_expr->var->name);
 	}
       }

@@ -3,6 +3,8 @@
 #ifndef _misc_H_
 #define _misc_H_
 
+#include "driver.h"
+
 class d_loc_t;
 class AST;
 class Var;
@@ -25,14 +27,26 @@ char *loc_string(d_loc_t &l);
 // results in something like:
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
-#define INT_FATAL   setupIntError(__FILE__, __LINE__, true);  intProblem
-#define INT_WARNING setupIntError(__FILE__, __LINE__, false); intProblem
-void USR_FATAL(Loc* loc, char* str, ...);
+#define INT_FATAL \
+  setupDevelError(__FILE__, __LINE__, true , false); \
+  if (developer) printProblem
 
-void setupIntError(char* filename, int lineno, bool error);
-void intProblem(char* fmt, ...);
-void intProblem(AST* ast, char* fmt, ...);
-void intProblem(Loc* loc, char* fmt, ...);
+#define INT_WARNING \
+  setupDevelError(__FILE__, __LINE__, false, false); \
+  if (developer) printProblem
+
+#define USR_FATAL \
+  setupDevelError(__FILE__, __LINE__, true , true ); \
+  printProblem
+
+#define USR_WARNING \
+  setupDevelError(__FILE__, __LINE__, false, true ); \
+  printProblem
+
+void setupDevelError(char* filename, int lineno, bool fatal, bool user);
+void printProblem(char* fmt, ...);
+void printProblem(AST* ast, char* fmt, ...);
+void printProblem(Loc* loc, char* fmt, ...);
 void myassert(char *file, int line, char *str);
 
 void startCatchingSignals(void);

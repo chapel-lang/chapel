@@ -71,7 +71,7 @@ echo \[pwd: \"`pwd`\"\]
 # echo \[compiler: \"$compiler\"\]
 
 if (-r ./COMPOPTS) then
-    set globalCompopts = "$COMPOPTS`cat ./COMPOPTS`"
+    set globalCompopts = "$COMPOPTS `cat ./COMPOPTS`"
 else
     set globalCompopts = "$COMPOPTS"
 endif
@@ -83,7 +83,7 @@ else
 endif
 
 if (-r ./EXECOPTS) then
-    set globalExecopts = "$EXECOPTS`cat ./EXECOPTS`"
+    set globalExecopts = "$EXECOPTS `cat ./EXECOPTS`"
 else
     set globalExecopts = "$EXECOPTS"
 endif
@@ -147,13 +147,13 @@ foreach chplsrc ($testsrc)
     set execlog = $execfile.exec.out.tmp
 
     if (-r ./$execfile.compopts) then
-	set compopts = "$globalCompopts`cat ./$execfile.compopts`"
+	set compopts = "$globalCompopts `cat ./$execfile.compopts`"
     else
         set compopts = "$globalCompopts"
     endif
 
     if (-r ./$execfile.execopts) then
-	set execopts = "$globalExecopts`cat ./$execfile.execopts`"
+	set execopts = "$globalExecopts `cat ./$execfile.execopts`"
     else
         set execopts = "$globalExecopts"
     endif

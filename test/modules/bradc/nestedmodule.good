@@ -1,1 +1,2 @@
-nestedmodule.chpl:7: Can't handle nested modules yet
+Error: Can't handle nested modules yet (nestedmodule.chpl:7)
+
