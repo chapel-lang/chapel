@@ -86,12 +86,14 @@ fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
     fprintf(fp, "%s(%d) ", v->sym->name, v->sym->id);
   else
     fprintf(fp, "(%d) ", v->sym->id);
-  if (v->sym->constant)
-    fprintf(fp, "\"%s\" ", v->sym->constant);
-  else {
-    fprintf(fp, "\"");
-    print(fp, v->sym->imm, v->sym->type);
-    fprintf(fp, "\" ");
+  if (v->sym->is_constant) {
+    if (v->sym->constant)
+      fprintf(fp, "\"%s\" ", v->sym->constant);
+    else {
+      fprintf(fp, "\"");
+      print(fp, v->sym->imm, v->sym->type);
+      fprintf(fp, "\" ");
+    }
   }
   show_type(*av->out, fp);
   fprintf(fp, "\n");
