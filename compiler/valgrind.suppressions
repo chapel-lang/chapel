@@ -166,3 +166,36 @@
    fun:GC_reclaim_small_nonempty_block
    fun:GC_continue_reclaim
 }
+{
+   glib-dl1
+   Memcheck:Cond
+   fun:_dl_relocate_object
+   fun:dl_main
+   fun:_dl_sysdep_start
+   fun:_dl_start
+}
+{
+   boehm-memcheck21
+   Memcheck:Cond
+   fun:GC_promote_black_lists
+   fun:GC_try_to_collect_inner
+   fun:GC_collect_or_expand
+   fun:GC_allocobj
+}
+{
+   boehm-memcheck22
+   Memcheck:Cond
+   fun:GC_allochblk_nth
+   fun:GC_allochblk
+   fun:GC_new_hblk
+   fun:GC_allocobj
+}
+{
+   boehm-memcheck23
+   Memcheck:Cond
+   fun:GC_allochblk_nth
+   fun:GC_allochblk
+   fun:GC_alloc_large
+   fun:GC_generic_malloc
+}
+
