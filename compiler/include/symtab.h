@@ -7,6 +7,7 @@
 #include "symscope.h"
 
 extern ModuleSymbol* commonModule;
+extern SymScope* internalScope;
 
 class Symboltable {
  public:

@@ -23,7 +23,6 @@ static parsePhaseType parsePhase = PARSING_PRE;
 
 static int currentLevel = 0;
 static SymScope* rootScope = NULL;
-static SymScope* internalScope = NULL;
 static SymScope* preludeScope = NULL;
 static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
@@ -31,6 +30,7 @@ static ModuleSymbol* firstModule = NULL;
 static ModuleSymbol* currentModule = NULL;
 
 ModuleSymbol* commonModule = NULL;
+SymScope* internalScope = NULL;
 
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);

@@ -106,29 +106,49 @@ AInfo::copy_node(ASTCopyContext* context) {
 
 Vec<Fun *> *
 AInfo::visible_functions(Sym *arg0) {
-  char *name = arg0->name;
-  if (!scoping_test)
-    return 0;
+  if (arg0->fun) {
+    if (!arg0->fun->vec_of_one) {
+      arg0->fun->vec_of_one = new Vec<Fun *>;
+      arg0->fun->vec_of_one->add(arg0->fun);
+    }
+    return arg0->fun->vec_of_one;
+  }
+  Vec<Fun *> *v = 0;
+  char *name = 0;
+  if (arg0->is_symbol)
+    name = arg0->name;
+  else
+    name = if1_cannonicalize_string(if1, "this");
   Expr *e = dynamic_cast<Expr *>(this->xast);
   Stmt *s = 0;
   if (e)
     s = e->stmt;
   else
     s = dynamic_cast<Stmt *>(this->xast);
-  Vec<Fun *> *v = 0;
-  ScopeLookupCache *sym_cache = NULL;
-  Symbol *symbol = Symboltable::lookupInScope(name, s->parentSymbol->parentScope);
-  if (!symbol)
+  ScopeLookupCache *sym_cache = 0;
+  Symbol *symbol = Symboltable::lookupFromScope(name, s->parentSymbol->parentScope);
+  Symbol *internal_symbol = Symboltable::lookupInScope(name, internalScope);
+  if (!symbol && !internal_symbol)
     v = new Vec<Fun *>;
-  else {
-    sym_cache = symbol->parentScope->lookupCache;
+  else {	
+    Symbol *cache_symbol = symbol ? symbol : internal_symbol;
+    sym_cache = cache_symbol->parentScope->lookupCache;
     if (sym_cache && (v = sym_cache->get(name))) 
       return v;
     v = new Vec<Fun *>;
-    FnSymbol *fn = dynamic_cast<FnSymbol*>(symbol);
-    while (fn) {
-      v->set_add(fn->asymbol->sym->fun);
-      fn = fn->overload;
+    if (symbol) {
+      FnSymbol *fn = dynamic_cast<FnSymbol*>(symbol);
+      while (fn) {
+	v->set_add(fn->asymbol->sym->fun);
+	fn = fn->overload;
+      }
+    }
+    if (internal_symbol) {
+      FnSymbol *fn = dynamic_cast<FnSymbol*>(internal_symbol);
+      while (fn) {
+	v->set_add(fn->asymbol->sym->fun);
+	fn = fn->overload;
+      }
     }
   }
   Vec<Fun *> *universal = universal_lookup_cache.get(name);
@@ -1766,12 +1786,26 @@ build_functions(Vec<BaseAST *> &syms) {
   return 0;
 }
 
+static void
+add_to_universal_lookup_cache(char *name, Fun *fun) {
+  Vec<Fun *> *v = universal_lookup_cache.get(name);
+  if (!v)
+    v = new Vec<Fun *>;
+  v->add(fun);
+  universal_lookup_cache.put(name, v);
+}
+
 void
 ACallbacks::finalize_functions() {
   forv_Fun(fun, pdb->funs) {
     int added = 0;
     char *name = fun->sym->has.v[0]->name;
     assert(name);
+    FnSymbol *fs = dynamic_cast<FnSymbol*>(fun->sym->asymbol->symbol);
+    if (fs->method_type == PRIMARY_METHOD) {
+      add_to_universal_lookup_cache(name, fun);
+      added = 1;
+    }
     MPosition p;
     p.push(1);
     forv_Sym(s, fun->sym->has) {
@@ -1781,11 +1815,7 @@ ACallbacks::finalize_functions() {
       if (!added && s->must_specialize && 
 	  is_reference_type(s->must_specialize->asymbol->symbol)) 
       {
-	Vec<Fun *> *v = universal_lookup_cache.get(name);
-	if (!v)
-	  v = new Vec<Fun *>;
-	v->add(fun);
-	universal_lookup_cache.put(name, v);
+	add_to_universal_lookup_cache(name, fun);
 	added = 1;
       }
       // record default argument positions
