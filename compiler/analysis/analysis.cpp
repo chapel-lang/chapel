@@ -809,9 +809,9 @@ gen_vardef(BaseAST *a) {
       s->must_implement = unalias_type(var->type->asymbol);
   } else
     s->is_var = 1;
-  if (!def->init->isNull()) {
-    if1_gen(if1, &def->ainfo->code, def->init->ainfo->code);
-    Sym *val = def->init->ainfo->rval;
+  if (!def->var->init->isNull()) {
+    if1_gen(if1, &def->ainfo->code, def->var->init->ainfo->code);
+    Sym *val = def->var->init->ainfo->rval;
     if (s->type) {
       if (s->type->num_kind && s->type != val->type)
 	val = gen_coerce( val, s->type, &def->ainfo->code, def->ainfo);

@@ -707,7 +707,7 @@ void ClassType::addDefinition(Stmt* init_definition) {
     FnSymbol* newFunSym = Symboltable::startFnDef(new FnSymbol(constructorName));
     if (value || union_value) {
       VarSymbol* this_insert = new VarSymbol("this", this);
-      VarDefStmt* body1 = new VarDefStmt(this_insert, nilExpr);
+      VarDefStmt* body1 = new VarDefStmt(this_insert);
       this_insert->setDefPoint(body1);
       ReturnStmt* body2 =  new ReturnStmt(new Variable(this_insert));
       body1->append(body2);

@@ -23,16 +23,6 @@ bool Stmt::isNull(void) {
 }
 
 
-bool Stmt::canLiveAtFileScope(void) {
-  return false;
-}
-
-
-bool Stmt::topLevelExpr(Expr* expr) {
-  return false;
-}
-
-
 Stmt* Stmt::copyList(bool clone, CloneCallback* analysis_clone) {
   Stmt* newStmtList = copyListInternal(clone, analysis_clone);
   newStmtList->back = &newStmtList;  // in case, replaced by cleanup
@@ -381,37 +371,29 @@ void WithStmt::codegen(FILE* outfile) {
 }
 
 
-VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
+VarDefStmt::VarDefStmt(VarSymbol* init_var) :
   Stmt(STMT_VARDEF),
-  var(init_var),
-  init(init_init) 
-{
-  SET_BACK(init);
-}
+  var(init_var)
+{}
 
 
 Stmt* VarDefStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
   if (clone) {
     return
       Symboltable::defineVarDefStmt(var, var->type,
-				    init->copyInternal(clone, analysis_clone), 
+				    var->init->copyInternal(clone, analysis_clone), 
 				    var->varClass, var->isConst);
   }
   else {
-    return new VarDefStmt(var, init->copyInternal(clone, analysis_clone));
+    return new VarDefStmt(var);
   }
-}
-
-
-bool VarDefStmt::topLevelExpr(Expr* testExpr) {
-  return (testExpr == init);
 }
 
 
 void VarDefStmt::traverseStmt(Traversal* traversal) {
   TRAVERSE_LS(var, traversal, false);
   TRAVERSE(var->type, traversal, false);
-  TRAVERSE(init, traversal, false);
+  TRAVERSE(var->init, traversal, false);
 }
 
 
@@ -435,13 +417,13 @@ void VarDefStmt::print(FILE* outfile) {
       fprintf(outfile, "var ");
     }
     aVar->printDef(outfile);
-    if (!init->isNull()) {
+    if (!var->init->isNull()) {
       fprintf(outfile, " = ");
-      if (init->next->isNull()) {
-	init->print(outfile);
+      if (var->init->next->isNull()) {
+	var->init->print(outfile);
       } else {
 	fprintf(outfile, "(");
-	init->printList(outfile);
+	var->init->printList(outfile);
 	fprintf(outfile, ")");
       }
     }
@@ -460,10 +442,10 @@ void VarDefStmt::codegen(FILE* outfile) {
   
   while (aVar) {
     VarSymbol* nextVar = nextLink(VarSymbol, aVar);
-    if (init->isNull()) {
+    if (aVar->init->isNull()) {
       initExpr = aVar->type->defaultVal;
     } else {
-      initExpr = init;
+      initExpr = aVar->init;
     }
     if (aVar->type->needsInit()) {
       aVar->type->generateInit(outfile, aVar);
@@ -599,11 +581,6 @@ TypeDefStmt* TypeDefStmt::clone(CloneCallback* clone_callback) {
 }
 
 
-bool TypeDefStmt::canLiveAtFileScope(void) {
-  return true;
-}
-
-
 void TypeDefStmt::traverseStmt(Traversal* traversal) {
   type->traverseDef(type, traversal, false);
 }
@@ -676,11 +653,6 @@ FnDefStmt* FnDefStmt::clone(CloneCallback* clone_callback) {
 
 bool FnDefStmt::isNull(void) {
   return (this == nilFnDefStmt);
-}
-
-
-bool FnDefStmt::canLiveAtFileScope(void) {
-  return true;
 }
 
 
@@ -762,11 +734,6 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 
 Stmt* ExprStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
   return new ExprStmt(expr->copyInternal(clone, analysis_clone));
-}
-
-
-bool ExprStmt::topLevelExpr(Expr* testExpr) {
-  return (testExpr == expr);
 }
 
 
@@ -907,11 +874,6 @@ Stmt* WhileLoopStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
 }
 
 
-bool WhileLoopStmt::topLevelExpr(Expr* testExpr) {
-  return (testExpr == condition);
-}
-
-
 void WhileLoopStmt::traverseStmt(Traversal* traversal) {
   if (isWhileDo) {
     TRAVERSE(condition, traversal, false);
@@ -990,11 +952,6 @@ Stmt* ForLoopStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
   index_copy->setDefPoint(for_loop_stmt_copy);
   for_loop_stmt_copy->setIndexScope(index_scope);
   return for_loop_stmt_copy;
-}
-
-
-bool ForLoopStmt::topLevelExpr(Expr* testExpr) {
-  return (testExpr == domain);
 }
 
 
@@ -1084,11 +1041,6 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
 
 Stmt* CondStmt::copyStmt(bool clone, CloneCallback* analysis_clone) {
   return new CondStmt(condExpr->copyInternal(clone, analysis_clone), thenStmt->copyInternal(clone, analysis_clone), elseStmt->copyInternal(clone, analysis_clone));
-}
-
-
-bool CondStmt::topLevelExpr(Expr* testExpr) {
-  return (testExpr == condExpr);
 }
 
 

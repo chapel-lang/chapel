@@ -406,14 +406,14 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
     type = init->typeInfo();
   }
 
-  newVar = new VarSymbol(idents->name, type, vartag, isConst);
+  newVar = new VarSymbol(idents->name, type, init->copy(), vartag, isConst);
 
   varList = newVar;
   lastVar = newVar;
 
   idents = nextLink(Symbol, idents);
   while (idents != NULL) {
-    newVar = new VarSymbol(idents->name, type, vartag, isConst);
+    newVar = new VarSymbol(idents->name, type, init->copy(), vartag, isConst);
     lastVar->next = newVar;
     lastVar = newVar;
 
@@ -456,7 +456,7 @@ VarDefStmt* Symboltable::defineVarDefStmt(Symbol* idents, Type* type,
   }
 
   VarSymbol* varList = defineVars(idents, type, init, vartag, isConst);
-  VarDefStmt* stmt = new VarDefStmt(varList, init);
+  VarDefStmt* stmt = new VarDefStmt(varList);
   varList->setDefPoint(stmt);
   return stmt;
 }
@@ -481,7 +481,7 @@ VarDefStmt* Symboltable::defineVarDefStmt1(Symbol* idents, Type* type,
   }
 
   VarSymbol* varList = defineVars(idents, type, init);
-  VarDefStmt* stmt = new VarDefStmt(varList, init);
+  VarDefStmt* stmt = new VarDefStmt(varList);
   varList->setDefPoint(stmt);
   return stmt;
 }
@@ -663,7 +663,7 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
 
 ForallExpr* Symboltable::defineQueryDomain(char* name) {
   DomainType* unknownDomType = new DomainType();
-  VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, VAR_NORMAL, true);
+  VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, nilExpr, VAR_NORMAL, true);
   Variable* newDom = new Variable(newDomSym);
 
   return new ForallExpr(newDom);

@@ -65,8 +65,10 @@ class VarSymbol : public Symbol {
  public:
   varType varClass;
   bool isConst;
+  Expr* init;
 
-  VarSymbol(char* init_name, Type* init_type = dtUnknown, 
+  VarSymbol(char* init_name, Type* init_type = dtUnknown,
+	    Expr* init_expr = nilExpr,
 	    varType init_varClass = VAR_NORMAL, bool init_isConst = false);
   virtual Symbol* copySymbol(bool clone, CloneCallback* analysis_clone);
 

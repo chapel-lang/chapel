@@ -163,18 +163,23 @@ Symbol* UnresolvedSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) 
 }
 
 
-VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass, 
+VarSymbol::VarSymbol(char* init_name,
+		     Type* init_type,
+		     Expr* init_expr,
+		     varType init_varClass, 
 		     bool init_isConst) :
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
-  isConst(init_isConst)
+  isConst(init_isConst),
+  init(init_expr)
 {
   Symboltable::define(this);
+  SET_BACK(init);
 }
 
 
 Symbol* VarSymbol::copySymbol(bool clone, CloneCallback* analysis_clone) {
-  return new VarSymbol(copystring(name), type, varClass, isConst);
+  return new VarSymbol(copystring(name), type, init, varClass, isConst);
 }
 
 
@@ -444,7 +449,7 @@ static bool stmtIsGlob(ILink* link) {
   if (stmt == NULL) {
     INT_FATAL("Non-Stmt found in StmtIsGlob");
   }
-  return stmt->canLiveAtFileScope();
+  return dynamic_cast<TypeDefStmt*>(stmt) || dynamic_cast<FnDefStmt*>(stmt);
 }
 
 

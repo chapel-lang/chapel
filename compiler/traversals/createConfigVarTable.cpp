@@ -26,7 +26,7 @@ void CreateConfigVarTable::preProcessStmt(Stmt* stmt) {
 
     if (varDef->var->varClass == VAR_CONFIG) {
       fprintf(codefile, "installConfigVar(\"%s\", ", varDef->var->name);
-      varDef->init->printCfgInitString(codefile);
+      varDef->var->init->printCfgInitString(codefile);
       fprintf(codefile, ", \"%s\");\n", moduleName);
     }
   }
