@@ -10171,3 +10171,18 @@ Added files:
 	                                           configVar.chpl 
 	                                           configVar.good 
 
+---------------------------------------------------------------------------
+
+11/22/04 16:39:02 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	Move the code which creates the type hierarchy into analysis/ast.cpp (the
+	AST support code).  Move common function symbol initialization into
+	if1_closure (closure creation).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp fun.cpp 
+	                           if1.cpp 
+	chapel/compiler/include/: ast.h 
+	chapel/compiler/vparser/: ast_cf.cpp parse_ast.cpp 
+
