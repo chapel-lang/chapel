@@ -103,6 +103,7 @@ depend: $(DEPENDSUBDIRS) echocompilerdir $(PLATFORM_DIR)
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
 	  $(CCDEP) -MM -MG $(CFLAGS) $$file >> $(CVS_DEPENDS); \
 	done
+	@cat geysa.h | $(CCDEP) -E -MM -MG -MT GEYSA_INCLUDES $(CFLAGS) - | sed s/:/\ =/ >> $(CVS_DEPENDS)
 
 test: FORCE
 	cd test && $(MAKE) test
@@ -174,7 +175,6 @@ echocompilerdir:
 # non-obvious dependences
 #
 
-$(PLATFORM)/v.g.d_parser.o: prim_data.h
 $(PLATFORM)/ast_cf.o: cast_code.cpp
 
 

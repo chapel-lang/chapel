@@ -1,19 +1,19 @@
 #
+# dependences and misc. stuff
+#
+
+-include $(CVS_DEPENDS)
+
+#
 # pattern-based rules
 #
 
-%.g.d_parser.cpp: %.g
+%.g.d_parser.cpp: %.g $(GEYSA_INCLUDES)
 	$(MAKE_DPARSER) $(MAKE_DPARSER_FLAGS) $<
 
 $(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-
-#
-# dependences and misc. stuff
-#
-
--include $(CVS_DEPENDS)
 
 FORCE:
 
