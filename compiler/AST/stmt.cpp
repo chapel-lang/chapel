@@ -6,6 +6,22 @@
 #include "yy.h"
 
 
+void Stmt::traverse(Traversal* traversal) {
+  traversal->preProcessStmt(this);
+  if (traversal->exploreStmts) {
+    this->traverseStmt(traversal);
+  }
+  traversal->postProcessStmt(this);
+  if (next && !next->isNull()) {
+    next->traverse(traversal);
+  }
+}
+
+
+void Stmt::traverseStmt(Traversal* traversal) {
+}
+
+
 void Stmt::codegenVarDefs(FILE* outfile) {
   Stmt* nextStmt = this;
 
@@ -38,6 +54,12 @@ VarDefStmt::VarDefStmt(VarSymbol* init_var, Expr* init_init) :
   var(init_var),
   init(init_init) 
 {}
+
+
+void VarDefStmt::traverseStmt(Traversal* traversal) {
+  var->traverse(traversal);
+  init->traverse(traversal);
+}
 
 
 void VarDefStmt::print(FILE* outfile) {
@@ -152,10 +174,16 @@ TypeDefStmt::TypeDefStmt(Type* init_type) :
 {}
 
 
+void TypeDefStmt::traverseStmt(Traversal* traversal) {
+  type->traverse(traversal);
+}
+
+
 void TypeDefStmt::print(FILE* outfile) {
   type->printDef(outfile);
   fprintf(outfile, ";");
 }
+
 
 void TypeDefStmt::codegen(FILE* outfile) {
   FILE* deffile = outfile;
@@ -173,6 +201,11 @@ void TypeDefStmt::codegen(FILE* outfile) {
 FnDefStmt::FnDefStmt(FnSymbol* init_fn) :
   fn(init_fn)
 {}
+
+
+void FnDefStmt::traverseStmt(Traversal* traversal) {
+  fn->traverse(traversal);
+}
 
 
 void FnDefStmt::print(FILE* outfile) {
@@ -215,6 +248,11 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 {}
 
 
+void ExprStmt::traverseStmt(Traversal* traversal) {
+  expr->traverse(traversal);
+}
+
+
 void ExprStmt::print(FILE* outfile) {
   expr->print(outfile);
   fprintf(outfile, ";");
@@ -248,6 +286,11 @@ BlockStmt::BlockStmt(Stmt* init_body) :
 {}
 
 
+void BlockStmt::traverseStmt(Traversal* traversal) {
+  body->traverse(traversal);
+}
+
+
 void BlockStmt::print(FILE* outfile) {
   fprintf(outfile, "{\n");
   body->printList(outfile, "\n");
@@ -271,6 +314,17 @@ WhileLoopStmt::WhileLoopStmt(whileLoopType init_type,
     type(init_type), 
     condition(init_cond) 
 {}
+
+
+void WhileLoopStmt::traverseStmt(Traversal* traversal) {
+  if (type == LOOP_WHILEDO) {
+    condition->traverse(traversal);
+    body->traverse(traversal);
+  } else {
+    body->traverse(traversal);
+    condition->traverse(traversal);
+  }
+}
 
 
 void WhileLoopStmt::print(FILE* outfile) {
@@ -316,6 +370,13 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
     index(init_index),
     domain(init_domain) 
 {}
+
+
+void ForLoopStmt::traverseStmt(Traversal* traversal) {
+  index->traverse(traversal);
+  domain->traverse(traversal);
+  body->traverse(traversal);
+}
 
 
 void ForLoopStmt::print(FILE* outfile) {
@@ -378,6 +439,13 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
   thenStmt(init_thenStmt),
   elseStmt(init_elseStmt)
 {}
+
+
+void CondStmt::traverseStmt(Traversal* traversal) {
+  condExpr->traverse(traversal);
+  thenStmt->traverse(traversal);
+  elseStmt->traverse(traversal);
+}
 
 
 void CondStmt::print(FILE* outfile) {

@@ -2,6 +2,7 @@
 #define _SYMBOL_H_
 
 #include "link.h"
+#include "traversal.h"
 #include "type.h"
 
 class Stmt;
@@ -21,6 +22,9 @@ class Symbol : public ILink {
   ASymbol *asymbol;
   
   Symbol(char* init_name, Type* init_type = dtUnknown);
+
+  void traverse(Traversal* traverse);
+  virtual void traverseSymbol(Traversal* traverse);
 
   void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
@@ -50,8 +54,8 @@ class VarSymbol : public Symbol {
   varType varClass;
   bool isConst;
 
-  VarSymbol(char* init_name, varType init_varClass = VAR_NORMAL, 
-	    bool init_isConst = false, Type* init_type = dtUnknown);
+  VarSymbol(char* init_name, Type* init_type = dtUnknown, 
+	    varType init_varClass = VAR_NORMAL, bool init_isConst = false);
   
   void printWithType(FILE* outfile);
 };
@@ -123,6 +127,8 @@ class FnSymbol : public Symbol {
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
 	    Stmt* init_body, bool init_exportMe=false);
+
+  void traverseSymbol(Traversal*);
 
   void codegenDef(FILE* outfile);
 };

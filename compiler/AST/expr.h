@@ -17,6 +17,9 @@ class Expr : public ILink {
 
   Expr(void);
 
+  void traverse(Traversal* traversal);
+  virtual void traverseExpr(Traversal* traversal);
+
   virtual Type* typeInfo(void);
   virtual bool isComputable(void);
   virtual long intVal(void);
@@ -86,6 +89,8 @@ class Variable : public Expr {
 
   Variable(Symbol* init_var);
 
+  void traverseExpr(Traversal* traversal);
+
   Type* typeInfo(void);
   
   void print(FILE* outfile);
@@ -111,6 +116,8 @@ class UnOp : public Expr {
   Expr* operand;
 
   UnOp(unOpType init_type, Expr* op);
+
+  void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
 
@@ -157,6 +164,8 @@ class BinOp : public Expr {
   Expr* right;
 
   BinOp(binOpType init_type, Expr* l, Expr* r);
+
+  void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
 
@@ -208,6 +217,8 @@ class SimpleSeqExpr : public Expr {
   SimpleSeqExpr(Expr* init_lo, Expr* init_hi, 
                 Expr* init_str = new IntLiteral("1", 1));
 
+  void traverseExpr(Traversal* traversal);
+
   Type* typeInfo(void);
 
   void print(FILE* outfile);
@@ -236,8 +247,9 @@ class DomainExpr : public Expr {
   Expr* forallExpr;
 
   DomainExpr(Expr* init_domains, VarSymbol* init_indices = new NullVarSymbol());
-
   void setForallExpr(Expr* exp);
+
+  void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
 
@@ -253,6 +265,8 @@ class ParenOpExpr : public Expr {
 
   static ParenOpExpr* classify(Expr* base, Expr* arg);
 
+  void traverseExpr(Traversal* traversal);
+
   ParenOpExpr(Expr* init_base, Expr* init_arg = new NullExpr());
 
   virtual void print(FILE* outfile);
@@ -265,6 +279,8 @@ class CastExpr : public ParenOpExpr {
   Type* castType;
 
   CastExpr(Type* init_castType, Expr* init_argList);
+
+  void traverseExpr(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -280,7 +296,10 @@ class FnCall : public ParenOpExpr {
 class WriteCall : public FnCall {
  public:
   bool writeln;
+
   WriteCall(bool init_writeln, Expr* init_base, Expr* init_arg);
+
+  Type* typeInfo(void);
 
   void codegen(FILE* outfile);
 };
@@ -303,6 +322,8 @@ class ReduceExpr : public Expr {
   Expr* argExpr;
 
   ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, Expr* init_argExpr);
+
+  void traverseExpr(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);

@@ -61,6 +61,22 @@ Expr::Expr(void) :
 {}
 
 
+void Expr::traverse(Traversal* traversal) {
+  traversal->preProcessExpr(this);
+  if (traversal->exploreExprs) {
+    this->traverseExpr(traversal);
+  }
+  traversal->postProcessExpr(this);
+  if (next && !next->isNull()) {
+    next->traverse(traversal);
+  }
+}
+
+
+void Expr::traverseExpr(Traversal* traversal) {
+}
+
+
 Type* Expr::typeInfo(void) {
   return dtUnknown;
 }
@@ -173,6 +189,11 @@ Variable::Variable(Symbol* init_var) :
 {}
 
 
+void Variable::traverseExpr(Traversal* traversal) {
+  //  var->traverse(traversal);
+}
+
+
 Type* Variable::typeInfo(void) {
   return var->type;
 }
@@ -192,6 +213,11 @@ UnOp::UnOp(unOpType init_type, Expr* op) :
   operand(op) 
 {
   operand->parent = this;
+}
+
+
+void UnOp::traverseExpr(Traversal* traversal) {
+  operand->traverse(traversal);
 }
 
 
@@ -220,6 +246,12 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 {
   left->parent = this;
   right->parent = this;
+}
+
+
+void BinOp::traverseExpr(Traversal* traversal) {
+  left->traverse(traversal);
+  right->traverse(traversal);
 }
 
 
@@ -285,6 +317,13 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
 {}
 
 
+void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
+  lo->traverse(traversal);
+  hi->traverse(traversal);
+  str->traverse(traversal);
+}
+
+
 Type* SimpleSeqExpr::typeInfo(void) {
   return new DomainType(1);
 }
@@ -305,6 +344,7 @@ void SimpleSeqExpr::print(FILE* outfile) {
 void SimpleSeqExpr::codegen(FILE* outfile) {
   fprintf(outfile, "This is SimpleSeqExpr's codegen.\n");
 }
+
 
 
 ParenOpExpr* ParenOpExpr::classify(Expr* base, Expr* arg) {
@@ -360,6 +400,12 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
 {}
 
 
+void ParenOpExpr::traverseExpr(Traversal* traversal) {
+  baseExpr->traverse(traversal);
+  argList->traverse(traversal);
+}
+
+
 void ParenOpExpr::print(FILE* outfile) {
   baseExpr->print(outfile);
   fprintf(outfile, "(");
@@ -383,6 +429,12 @@ CastExpr::CastExpr(Type* init_castType, Expr* init_argList) :
   ParenOpExpr(NULL, init_argList),
   castType(init_castType)
 {}
+
+
+void CastExpr::traverseExpr(Traversal* traversal) {
+  castType->traverse(traversal);
+  argList->traverse(traversal);
+}
 
 
 void CastExpr::print(FILE* outfile) {
@@ -411,6 +463,11 @@ WriteCall::WriteCall(bool init_writeln, Expr* init_base, Expr* init_arg) :
   FnCall(init_base, init_arg),
   writeln(init_writeln)
 {}
+
+
+Type* WriteCall::typeInfo(void) {
+  return dtVoid;
+}
 
 
 void WriteCall::codegen(FILE* outfile) {
@@ -491,6 +548,13 @@ DomainExpr::DomainExpr(Expr* init_domains, VarSymbol* init_indices) :
 {}
 
 
+void DomainExpr::traverseExpr(Traversal* traversal) {
+  indices->traverse(traversal);
+  domains->traverse(traversal);
+  forallExpr->traverse(traversal);
+}
+
+
 void DomainExpr::setForallExpr(Expr* exp) {
   forallExpr = exp;
 }
@@ -538,6 +602,13 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
   redDim(init_redDim),
   argExpr(init_argExpr)
 {}
+
+
+void ReduceExpr::traverseExpr(Traversal* traversal) {
+  reduceType->traverse(traversal);
+  redDim->traverse(traversal);
+  argExpr->traverse(traversal);
+}
 
 
 void ReduceExpr::print(FILE* outfile) {

@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include "loc.h"
+#include "traversal.h"
 
 class ILink : public Loc {
  public:
@@ -10,6 +11,8 @@ class ILink : public Loc {
   ILink* next;
 
   ILink(void);
+
+  virtual void traverse(Traversal* traversal) = 0;
 
   virtual void print(FILE*) = 0;
   virtual void printList(FILE* outfile, char* separator = ", ");

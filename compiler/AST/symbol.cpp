@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include "misc.h"
+#include "stmt.h"
 #include "symbol.h"
 #include "symtab.h"
 
@@ -9,6 +10,23 @@ Symbol::Symbol(char* init_name, Type* init_type) :
   type(init_type),
   level(Symboltable::getLevel())
 {}
+
+
+void Symbol::traverse(Traversal* traversal) {
+  traversal->preProcessSymbol(this);
+  if (traversal->exploreSymbols) {
+    traverseSymbol(traversal);
+  }
+  traversal->postProcessSymbol(this);
+  if (next && !next->isNull()) {
+    next->traverse(traversal);
+  }
+}
+
+
+void Symbol::traverseSymbol(Traversal* traversal) {
+  type->traverse(traversal);
+}
 
 
 void Symbol::print(FILE* outfile) {
@@ -59,7 +77,7 @@ void Symbol::codegenDefList(FILE* outfile, char* separator) {
 
 
 NullSymbol::NullSymbol(void) :
-  Symbol("NullSymbol")
+  Symbol("NullSymbol", new NullType())
 {}
 
 
@@ -73,8 +91,8 @@ UseBeforeDefSymbol::UseBeforeDefSymbol(char* init_name) :
 {}
 
 
-VarSymbol::VarSymbol(char* init_name, varType init_varClass, bool init_isConst,
-		     Type* init_type) :
+VarSymbol::VarSymbol(char* init_name, Type* init_type, varType init_varClass, 
+		     bool init_isConst) :
   Symbol(init_name, init_type),
   varClass(init_varClass),
   isConst(init_isConst)
@@ -90,7 +108,7 @@ void VarSymbol::printWithType(FILE* outfile) {
 }
 
 NullVarSymbol::NullVarSymbol() :
-  VarSymbol("NullVarSymbol")
+  VarSymbol("NullVarSymbol", new NullType())
 {}
 
 
@@ -174,6 +192,12 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
   formals(init_formals),
   body(init_body)
 {}
+
+
+void FnSymbol::traverseSymbol(Traversal* traversal) {
+  formals->traverse(traversal);
+  body->traverse(traversal);
+}
 
 
 void FnSymbol::codegenDef(FILE* outfile) {

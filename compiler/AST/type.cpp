@@ -4,6 +4,7 @@
 #include "symbol.h"
 #include "type.h"
 
+Type* dtVoid;
 Type* dtInteger;
 Type* dtFloat;
 Type* dtString;
@@ -13,6 +14,7 @@ Type* dtLocale;
 
 Type* dtUnknown;
 
+Symbol* pstVoid;
 Symbol* pstInteger;
 Symbol* pstFloat;
 Symbol* pstString;
@@ -30,6 +32,22 @@ Type::Type(void) :
 
 void Type::addName(Symbol* newname) {
   name = newname;
+}
+
+
+void Type::traverse(Traversal* traversal) {
+  traversal->preProcessType(this);
+  if (traversal->exploreTypes) {
+    traverseType(traversal);
+  }
+  traversal->postProcessType(this);
+  if (next && !next-isNull()) {
+    next->traverse(traversal);
+  }
+}
+
+
+void Type::traverseType(Traversal* traversal) {
 }
 
 
@@ -98,6 +116,14 @@ EnumType::EnumType(EnumSymbol* init_valList) :
     val->type = this;
     val = nextLink(Symbol, val);
   }
+}
+
+
+void EnumType::traverseType(Traversal* traversal) {
+  bool saveTraverseSymbols = traversal->exploreSymbols;
+  traversal->exploreSymbols = false;
+  valList->traverse(traversal);
+  traversal->exploreSymbols = saveTraverseSymbols;
 }
 
 
@@ -252,6 +278,12 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 {}
 
 
+void ArrayType::traverseType(Traversal* traversal) {
+  domain->traverse(traversal);
+  elementType->traverse(traversal);
+}
+
+
 int ArrayType::rank(void) {
   return domain->rank();
 }
@@ -282,6 +314,11 @@ UserType::UserType(Type* init_definition) :
 {}
 
 
+void UserType::traverse(Traversal* traversal) {
+  definition->traverse(traversal);
+}
+
+
 void UserType::printDef(FILE* outfile) {
   fprintf(outfile, "type ");
   name->print(outfile);
@@ -308,6 +345,7 @@ static void newType(char* name, Type** dtHandle, Symbol** symHandle) {
 
 
 void initType(void) {
+  newType("void", &dtVoid, &pstVoid);
   newType("integer", &dtInteger, &pstInteger);
   newType("float", &dtFloat, &pstFloat);
   newType("string", &dtString, &pstString);

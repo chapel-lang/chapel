@@ -1,10 +1,12 @@
 CXX_SRCS = \
 	expr.cpp \
+	findUnknownTypes.cpp \
 	link.cpp \
 	loc.cpp \
 	stmt.cpp \
 	symbol.cpp \
         symtab.cpp \
+	traversal.cpp \
 	type.cpp \
 
 C_SRCS = \

@@ -18,6 +18,8 @@ public:
   
   SymLink(Symbol* init_pSym = NULL);
 
+  void traverse(Traversal* traversal);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
@@ -26,6 +28,15 @@ public:
 SymLink::SymLink(Symbol* init_pSym) :
   pSym(init_pSym)
 {}
+
+
+void SymLink::traverse(Traversal* traversal) {
+  traversal->preProcessSymbol(pSym);
+  traversal->postProcessSymbol(pSym);
+  if (next && !next->isNull()) {
+    next->traverse(traversal);
+  }
+}
 
 
 void SymLink::print(FILE* outfile) {
@@ -315,7 +326,7 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
     type = init->typeInfo();
   }
 
-  newVar = new VarSymbol(idents->name, vartag, isConst, type);
+  newVar = new VarSymbol(idents->name, type, vartag, isConst);
   define(newVar);
 
   varList = newVar;
@@ -323,7 +334,7 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
 
   idents = nextLink(Symbol, idents);
   while (idents != NULL) {
-    newVar = new VarSymbol(idents->name, vartag, isConst, type);
+    newVar = new VarSymbol(idents->name, type, vartag, isConst);
     define(newVar);    
     lastVar->next = newVar;
     lastVar = newVar;
@@ -406,7 +417,7 @@ void Symboltable::exitForLoop(void) {
 
 DomainExpr* Symboltable::defineQueryDomain(char* name) {
   DomainType* unknownDomType = new DomainType();
-  VarSymbol* newDomSym = new VarSymbol(name, VAR_NORMAL, true, unknownDomType);
+  VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, VAR_NORMAL, true);
   define(newDomSym); // may need to postpone this until statement point --BLC
   Variable* newDom = new Variable(newDomSym);
 

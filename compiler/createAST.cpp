@@ -3,6 +3,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "findUnknownTypes.h"
 #include "link.h"
 #include "misc.h"
 #include "stmt.h"
@@ -76,6 +77,9 @@ static Stmt* createInitFn(Stmt* program) {
   FnDefStmt* initFunDef = new FnDefStmt(initFun);
 
   program = appendLink(program, initFunDef);
+
+  //  program->traverse(new FindUnknownTypes());
+  //  program->traverse(new PrintStmts());
 
   return program;
 }

@@ -12,8 +12,10 @@ class Type : public ILink {
   Symbol* name;
 
   Type();
-
   void addName(Symbol* newname);
+
+  void traverse(Traversal* traversal);
+  virtual void traverseType(Traversal* traversal);
 
   virtual int rank(void);
 
@@ -39,6 +41,8 @@ class EnumType : public Type {
   EnumSymbol* valList;
 
   EnumType(EnumSymbol* init_valList);
+
+  void traverseType(Traversal* traversal);
 
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
@@ -94,6 +98,8 @@ class ArrayType : public Type {
 
   ArrayType(Expr* init_domain, Type* init_elementType);
 
+  void traverseType(Traversal* traversal);
+
   int rank(void);
 
   void print(FILE* outfile);
@@ -107,6 +113,8 @@ class UserType : public Type {
   Type* definition;
 
   UserType(Type* init_definition);
+
+  void traverse(Traversal* traversal);
 
   void printDef(FILE* outfile);
 };
@@ -124,6 +132,7 @@ class ClassType : public Type {
 
 // BLC: move these to standard prelude
 
+extern Type* dtVoid;
 extern Type* dtBoolean;
 extern Type* dtInteger;
 extern Type* dtFloat;
@@ -134,6 +143,7 @@ extern Type* dtLocale;
 
 extern Type* dtUnknown;
 
+extern Symbol* pstVoid;
 extern Symbol* pstBoolean;
 extern Symbol* pstInteger;
 extern Symbol* pstFloat;
