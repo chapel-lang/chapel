@@ -4989,3 +4989,14 @@ Log message:
 Modified files:
 	chapel/test/trivial/bradc/: conditional.chpl 
 
+---------------------------------------------------------------------------
+
+08/04/04 15:54:09 -- jplevyak (a.k.a. n10253)
+
+Log message:
+	regularize include files for generated files
+
+Modified files:
+	chapel/compiler/: chpl.g parse.h v.g 
+	chapel/compiler/make_prims/: make_prims.g 
+
