@@ -23534,3 +23534,15 @@ Log message:
 Added files:
 	chapel/test/: list_futures 
 
+---------------------------------------------------------------------------
+
+04/04/05 11:24:12 -- bradc
+
+Log message:
+	
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+
