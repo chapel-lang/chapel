@@ -18870,3 +18870,37 @@ Modified files:
 Removed files:
 	chapel/test/functions/bradc/: defaultParam.future 
 
+---------------------------------------------------------------------------
+
+03/04/05 12:50:13 -- deitz
+
+Log message:
+	Removed nils from the compiler, including nilType, nilStmt, nilILink,
+	nilExpr, nilSymbol, nilFnSymbol, ..., replacing references to them
+	with NULL.  Removed isNull() method.
+	
+	This checkin simplifies the implementation removing the need for
+	double checks like '(indices && !indices->isNull()).'
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share expr.cpp link.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h link.h stmt.h 
+	                          symbol.h symscope.h symtab.h type.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: codegen.cpp createEntryPoint.cpp 
+	chapel/compiler/symtab/: symlink.h symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             expandClassWiths.cpp 
+	                             findUnknownTypes.cpp fixup.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             transformLetExprs.cpp traversal.h 
+Removed files:
+	chapel/compiler/AST/: nils.cpp 
+	chapel/compiler/include/: nils.h 
+
