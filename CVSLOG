@@ -17289,3 +17289,14 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: legalizeCNames.cpp 
 
+---------------------------------------------------------------------------
+
+02/11/05 16:29:49 -- deitz
+
+Log message:
+	Improved the ignore_errors flag.  It now only applies to INT_FATAL and
+	USR_FATAL.  It no longer causes infinitely many seg faults.
+
+Modified files:
+	chapel/compiler/util/: misc.cpp 
+
