@@ -4313,3 +4313,16 @@ Modified files:
 	chapel/compiler/AST/: chapel.y expr.cpp stmt.cpp stmt.h 
 	                      symbol.cpp symbol.h symtab.cpp symtab.h 
 
+---------------------------------------------------------------------------
+
+07/26/04 11:14:42 -- bradc
+
+Log message:
+	More housecleaning: Wrapped ILink append() routine in a
+	macro (appendLink()) which handles NULL and isNull()
+	links more cleanly.
+
+Modified files:
+	chapel/compiler/: createAST.cpp 
+	chapel/compiler/AST/: TODO chapel.y link.cpp link.h symtab.cpp 
+
