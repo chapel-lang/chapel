@@ -23401,3 +23401,14 @@ Modified files:
 	                             insertUnionChecks.cpp 
 	                             verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+04/01/05 18:18:55 -- bradc
+
+Log message:
+	Oh yeah, I forgot about this one -- here's that other
+	nil test that John fixed yesterday.
+
+Removed files:
+	chapel/test/functions/bradc/: intents-classes4.future 
+
