@@ -15707,3 +15707,15 @@ Modified files:
 	                          stmt.h 
 	chapel/compiler/vparser/: parse_ast.h 
 
+---------------------------------------------------------------------------
+
+01/25/05 16:24:06 -- deitz
+
+Log message:
+	Removed futures for test_overload_integerfloat3,4
+
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overload_integerfloat3.future 
+	                                         test_overload_integerfloat4.future 
+
