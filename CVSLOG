@@ -16078,3 +16078,37 @@ Modified files:
 	chapel/compiler/include/: analysis.h ast.h sym.h 
 	chapel/compiler/vparser/: ast_cf.cpp parse_ast.cpp 
 
+---------------------------------------------------------------------------
+
+02/01/05 13:53:28 -- deitz
+
+Log message:
+	Added the following support function:
+	
+	void collect_symbols(Vec<Symbol*>* syms, FnSymbol* function);
+	
+	This function collects a vector of all the symbols defined inside the
+	specified function.  Note the function symbol itself is not collected.
+	
+	Usage:
+	
+	 #include "../symtab/collectSymbols.h"
+	 Vec<Symbol*> all_syms;
+	 FnSymbol* function = ...;
+	 collect_symbols(&all_syms, function);
+	
+	Added functionality to the relatively new symboltable traversal
+	mechanism.  A traversal can now be run on a function.
+	
+	Added one small test case of functions with and without local
+	variables and parameters.
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/symtab/: collectSymbols.cpp collectSymbols.h 
+	                         symtab.cpp symtabTraversal.cpp 
+	                         symtabTraversal.h 
+Added files:
+	chapel/test/trivial/deitz/: test_a_few_functions.chpl 
+	                            test_a_few_functions.good 
+
