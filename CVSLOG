@@ -4933,3 +4933,48 @@ Modified files:
 	                  var.cpp 
 	chapel/compiler/make/: Makefile.compiler.head 
 
+---------------------------------------------------------------------------
+
+08/04/04 15:40:25 -- bradc
+
+Log message:
+	A bunch of changes designed to get an initial 2D domain/array
+	code through the compiler.  It's not quite there yet, but close
+	and stable (and I'm getting distracted by other things, so time
+	to check in):
+	
+	* added ability to query an Expr or Type's rank() (only
+	partially implemented) -- the idea being that scalars are rank
+	0 and arrays are whatever rank they are.  (There's some
+	question about what an array of an array's rank should be, but
+	we'll cross that bridge when we get there...)
+	
+	* Added basic implementations of typeInfo() and codegen() for
+	ArrayRef expressions.
+	
+	* Improved typeInfo() for DomainExpr expressions
+	
+	* Added some basic codegen() for ForLoopStmt's
+	
+	* Improved the implementation of VarDefStmt's codegen() method.
+	
+	* Implemented codegenDefaultFormat() for arrays, since they
+	want to generate strings for their element types, not the
+	array as a whole.
+	
+	* Added some stuff to the runtime: float types, some basic array
+	code, basic forall loop macros, 2D domains.  Lots of this stuff
+	needs to be generalized and/or emitted on an as-needed basis,
+	but it seemed easier to lay in some specific instantiations
+	first and generalize later.
+
+Modified files:
+	chapel/compiler/AST/: TODO expr.cpp expr.h stmt.cpp stmt.h 
+	                      symbol.cpp type.cpp type.h 
+	chapel/runtime/include/: chplio.h chpltypes.h domain.h stdchpl.h 
+	chapel/runtime/src/: Makefile chplio.c domain.c 
+	chapel/test/trivial/bradc/: conditional.chpl 
+Added files:
+	chapel/runtime/include/: array.h forall.h 
+	chapel/runtime/src/: array.c 
+
