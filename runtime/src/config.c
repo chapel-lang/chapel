@@ -119,6 +119,12 @@ int installConfigVar(char* varName, char* value, int isDefaultValue) {
 
   if (configVar == NULL) {
     configVar = (configVarType*) malloc(sizeof(configVarType));
+    configVar->varName = NULL;
+    configVar->defaultValue = NULL;
+    configVar->setValue = NULL;
+    configVar->nextInList = NULL;
+    configVar->nextInstalled = NULL;
+
     hashValue = hash(varName);
     configVar->nextInList = configVarTable[hashValue]; 
     configVarTable[hashValue] = configVar;
@@ -129,15 +135,12 @@ int installConfigVar(char* varName, char* value, int isDefaultValue) {
       last->nextInstalled = configVar;
     }
     last = configVar;
-    configVar->varName = NULL;
     _copy_string(&configVar->varName, varName);
   } 
 
   if (isDefaultValue) {
-    configVar->defaultValue = NULL;
     _copy_string(&configVar->defaultValue, value);
   } else {
-    configVar->setValue = NULL;
     _copy_string(&configVar->setValue, value);
   }
   return 0;
