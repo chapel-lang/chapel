@@ -5503,3 +5503,16 @@ Modified files:
 Added files:
 	chapel/test/trivial/shannon/: whileLoop.chpl whileLoop.good 
 
+---------------------------------------------------------------------------
+
+08/20/04 13:56:35 -- bradc
+
+Log message:
+	Removing a line from the nightly regression test script that
+	was inserted as a debugging measure but had the effect of
+	inadvertantly preventing the /tmp directory created for the
+	tests from getting reclaimed.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
