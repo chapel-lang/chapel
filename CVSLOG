@@ -2505,3 +2505,22 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+06/03/04 12:03:29 -- bradc
+
+Log message:
+	Added support for writing multiple expressions in a
+	call to write()/writeln().  For example:
+	
+	write("The current value of n is: ", n,
+	"  the old value was: ", oldn);
+
+Modified files:
+	chapel/compiler/: codegen.cpp 
+Added files:
+	chapel/test/trivial/bradc/arrinit/: .cvsignore 
+	chapel/test/trivial/bradc/write/: .cvsignore writen.chpl 
+	                                  writen.good writetwo.chpl 
+	                                  writetwo.good 
+
