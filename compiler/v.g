@@ -351,7 +351,7 @@ binary_operator
   | '&='        $binary_op_left 8500
   | '|='        $binary_op_left 8500
   | '^='        $binary_op_left 8500
-  | ',' 	$binary_op_left 8400 
+  | ',' 	$binary_op_left 4000
   | '->*'       $binary_op_left 9900
   | '^^' 	$binary_op_left 7000
   |     	$binary_op_left 7000

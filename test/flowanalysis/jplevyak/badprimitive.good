@@ -1,4 +1,2 @@
-  called from badprimitive.v:2
-badprimitive.v:1: illegal primitive argument type 'a' illegal: ( ""hi"" ) 
 cat: log/log.F: No such file or directory
 fail: fatal error, program does not type

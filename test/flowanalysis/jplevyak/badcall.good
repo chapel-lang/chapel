@@ -1,6 +1,4 @@
   called from badcall.v:3
-  called from badcall.v:3
-badcall.v:2: illegal call argument type 'x' illegal: ( float64 ) 
 badcall.v:2: unresolved call 'f'
 badcall.v:4: unresolved call 'print'
 cat: log/log.F: No such file or directory

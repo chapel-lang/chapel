@@ -8,16 +8,21 @@
 #include "sym.h"
 #include "fa.h"
 
+#define int2Position(_i) ((void*)((intptr_t)-(_i)))
+#define Position2int(_p) (-((intptr_t)_p))
+
 class MPosition : public gc {
  public:
-  Vec<int> pos;
+  Vec<void*> pos;
   MPosition *parent;
-  void push() { pos.add(0); }
-  void push(int i) { pos.add(i); }
+  void set_top(void *p) { pos.v[pos.n-1] = p; }
+  void push(int i) { pos.add(int2Position(i)); }
+  void push(void *p) { pos.add(p); }
   void pop() { pos.n--; }
-  void inc() { pos.v[pos.n-1]++; }
-  void dec() { pos.v[pos.n-1]--; }
+  void inc() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) + 1); }
+  void dec() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) - 1); }
   MPosition() : parent(0) {}
+  MPosition(MPosition &p);
 };
 #define forv_MPosition(_p, _v) forv_Vec(MPosition, _p, _v)
 
@@ -26,7 +31,7 @@ class MPositionHashFuns : public gc {
   static uint hash(MPosition *x) {
     uint h = 1;
     for (int i = 0; i < x->pos.n; i++)
-      h += x->pos.v[i] * open_hash_multipliers[i];
+      h += ((uintptr_t)x->pos.v[i]) * open_hash_multipliers[i];
     if (!h)
       h = 1;
     return h;

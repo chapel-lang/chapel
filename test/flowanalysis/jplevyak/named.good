@@ -1,0 +1,26 @@
+f::a(named.v:1) ( float64 (prelude.v:42) )
+f::b(named.v:1) ( float64 (prelude.v:42) )
+f::c(named.v:1) ( float64 (prelude.v:42) )
+f::d(named.v:1) ( int32 (prelude.v:29) )
+function __init named.v:1 with 1 edges
+function __init prelude.v:7 with 1 edges
+function __init__ <none>:0 with 1 edges
+function f named.v:1 with 1 edges
+function operator prelude.v:91 with 1 edges
+function operator prelude.v:91 with 1 edges
+function operator prelude.v:91 with 1 edges
+function print prelude.v:140 with 1 edges
+globals
+operator::a(prelude.v:91) ( float64 (prelude.v:42) )
+operator::a(prelude.v:91) ( float64 (prelude.v:42) )
+operator::a(prelude.v:91) ( float64 (prelude.v:42) )
+operator::b(prelude.v:91) ( float64 (prelude.v:42) )
+operator::b(prelude.v:91) ( float64 (prelude.v:42) )
+operator::b(prelude.v:91) ( int32 (prelude.v:29) )
+print::a(prelude.v:140) ( float64 (prelude.v:42) )
+system::__init(prelude.v:7) ( __init (prelude.v:7) )
+system::null(prelude.v:58) ( tuple (prelude.v:13) )
+user::__init(named.v:1) ( __init (named.v:1) )
+user::c(named.v:3) ( float64 (prelude.v:42) )
+user::d(named.v:3) ( int32 (prelude.v:29) )
+user::z(named.v:2) ( float64 (prelude.v:42) )

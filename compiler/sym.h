@@ -118,6 +118,7 @@ class Sym : public gc {
 #define forv_Sym(_c, _v) forv_Vec(Sym, _c, _v)
 
 Sym *unalias_type(Sym *s);
+static inline int is_const(Sym *s) { return s->constant || s->symbol; }
 
 int pp(Immediate &imm, Sym *type);
 int print(FILE *fp, Immediate &imm, Sym *type);

@@ -926,25 +926,49 @@ gen_fun(IF1 *i, AST *ast) {
 }
 
 static int
-get_tuple_args(IF1 *i, Code *send, AST *ast) {
+get_tuple_args(IF1 *i, Code **c, AST *ast, Vec<Sym *> &args) {
   if (ast->kind == AST_op && ast->v[ast->op_index]->sym->name[0] == ',') {
-    int r = get_tuple_args(i, send, ast->v[0]);
-    if1_add_send_arg(i, send, ast->v[2]->rval);
+    int r = get_tuple_args(i, c, ast->v[0], args);
+    if (ast->v[2]->kind != AST_qualified_ident || is_const(ast->v[2]->rval))
+      args.add(ast->v[2]->rval);
+    else {
+      Sym *s = new_sym(i, ast->scope);
+      if1_move(i, c, ast->v[2]->rval, s, ast);
+      args.add(s);
+    }
     return 1 + r;
   }
-  if1_add_send_arg(i, send, ast->rval);
+  if (ast->kind != AST_qualified_ident || is_const(ast->rval))
+    args.add(ast->rval);
+  else {
+    Sym *s = new_sym(i, ast->scope);
+    if1_move(i, c, ast->rval, s, ast);
+    args.add(s);
+  }
   return 1;
 }
 
 static int
-get_apply_args(IF1 *i, Code *send, AST *ast) {
+get_apply_args(IF1 *i, Code **c, AST *ast, Vec<Sym *> &args) {
   if (ast->is_application) {
-    int r = get_apply_args(i, send, ast->v[0]);
-    if1_add_send_arg(i, send, ast->v[2]->rval);
-    return 1 + r;
+    int r = get_apply_args(i, c, ast->v[0], args);
+    if (ast->v[2]->kind != AST_qualified_ident || is_const(ast->v[2]->rval))
+      args.add(ast->v[2]->rval);
+    else {
+      Sym *s = new_sym(i, ast->scope);
+      if1_move(i, c, ast->v[2]->rval, s, ast);
+      args.add(s);
+    }
+     return 1 + r;
   }
-  if1_add_send_arg(i, send, ast->rval);
-  return 1;
+ if (ast->kind != AST_qualified_ident || is_const(ast->rval))
+    args.add(ast->rval);
+  else {
+    Sym *s = new_sym(i, ast->scope);
+    if1_move(i, c, ast->rval, s, ast);
+    args.add(s);
+  }
+   return 1;
 }
 
 static void
@@ -984,6 +1008,15 @@ gen_op(IF1 *i, AST *ast) {
   if (ast->is_comma) {
     if (ast->in_tuple)
       return;
+    Vec<Sym *> args;
+    get_tuple_args(i, c, a0, args);
+    if (a1->kind != AST_qualified_ident || is_const(a1->rval))
+      args.add(a1->rval);
+    else {
+      Sym *s = new_sym(i, ast->scope);
+      if1_move(i, c, a1->rval, s, ast);
+      args.add(s);
+    }
     send = if1_send1(i, c);
     send->ast = ast;
     Sym *constructor;
@@ -995,17 +1028,27 @@ gen_op(IF1 *i, AST *ast) {
     if1_add_send_arg(i, send, constructor);
     if (ast->constructor == Make_VECTOR)
       if1_add_send_arg(i, send, make_int(i, ast->rank));
-    get_tuple_args(i, send, a0);
-    if1_add_send_arg(i, send, a1->rval);
+    forv_Sym(a, args)
+      if1_add_send_arg(i, send, a);
     if1_add_send_result(i, send, ast->rval);
   } else if (ast->is_application) {
     if (ast->in_apply)
       return;
+    Vec<Sym *> args;
+    get_apply_args(i, c, a0, args);
+    if (a1) {
+      if (a1->kind != AST_qualified_ident || is_const(a1->rval))
+	args.add(a1->rval);
+      else {
+	Sym *s = new_sym(i, ast->scope);
+	if1_move(i, c, a1->rval, s, ast);
+	args.add(s);
+      }
+    }
     send = if1_send1(i, c);
     send->ast = ast;
-    get_apply_args(i, send, a0);
-    if (a1)
-      if1_add_send_arg(i, send, a1->rval);
+    forv_Sym(a, args)
+      if1_add_send_arg(i, send, a);
     if1_add_send_result(i, send, res);
     res->lvalue = 1;
   } else if (ast->is_simple_assign) {
@@ -1015,25 +1058,43 @@ gen_op(IF1 *i, AST *ast) {
     if1_move(i, c, a1->rval, res, ast);
   } else {
     Sym *args = new_sym(i, ast->scope);
-    Sym *aa0 = a0 ? a0->rval : 0;
+    Sym *aa0 = NULL, *aa1 = NULL;
+    if (a0) {
+      if (is_const(a0->rval)) {
+	aa0 = a0->rval;
+      } else {
+	Sym *s = new_sym(i, ast->scope);
+	if1_move(i, c, a0->rval, s, ast);
+	aa0 = s;
+      }
+    }
+    if (a1) {
+      if (is_const(a1->rval)) {
+	aa1 = a1->rval;
+      } else {
+	Sym *s = new_sym(i, ast->scope);
+	if1_move(i, c, a1->rval, s, ast);
+	aa1 = s;
+      }
+    }
     int binary = ast->n > 2;
     int post_inc_dec = ast->is_inc_dec && ast->op_index == 1;
     if (post_inc_dec) {
-      if1_move(i, c, a0->rval, res, ast);
+      if1_move(i, c, aa0, res, ast);
       res = new_sym(i, ast->scope);
     }
     if (binary)
-      send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->v[ast->op_index]->rval, a1->rval, args);
+      send = if1_send(i, c, 4, 1, sym_make_tuple, aa0, ast->v[ast->op_index]->rval, aa1, args);
     else if (a0)
       send = if1_send(i, c, 3, 1, sym_make_tuple, aa0, ast->v[ast->op_index]->rval, args);
     else
-      send = if1_send(i, c, 3, 1, sym_make_tuple, ast->v[ast->op_index]->rval, a1->rval, args);
+      send = if1_send(i, c, 3, 1, sym_make_tuple, ast->v[ast->op_index]->rval, aa1, args);
     send->ast = ast;
     send = if1_send(i, c, 2, 1, sym_operator, args, res);
     send->ast = ast;
     res->lvalue = 1;
     if (ast->is_ref)
-      a1->sym->lvalue = 1;
+      aa1->lvalue = 1;
     if (ast->is_assign) {
       if (a0)
 	if1_move(i, c, res, a0->rval, ast);
@@ -1093,8 +1154,16 @@ gen_constructor(IF1 *i, AST *ast) {
   Sym *constructor;
   Vec<Sym *> args;
   forv_AST(a, *ast) {
-    if1_gen(i, &ast->code, a->code);
-    args.add(a->rval); assert(a->rval);
+    if (a->kind != AST_qualified_ident || is_const(a->rval)) {
+      if1_gen(i, &ast->code, a->code);
+      args.add(a->rval); 
+      assert(a->rval);
+    } else {
+      if1_gen(i, &ast->code, a->code);
+      Sym *s = new_sym(i, ast->scope);
+      if1_move(i, &ast->code, a->rval, s, ast);
+      args.add(s); 
+    }
   }
   Code *send = if1_send1(i, &ast->code);
   send->ast = ast;

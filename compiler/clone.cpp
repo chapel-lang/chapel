@@ -32,8 +32,11 @@ initialize() {
     }
     forv_EntrySet(es, f->ess) if (es)
       forv_AEdge(e, es->out_edges) if (e)
-	forv_MPosition(p, e->match->fun->positions)
-          f->called_css.set_union(*e->args.get(p)->out);
+	forv_MPosition(p, e->match->fun->positions) {
+	  AVar *av = e->args.get(p);
+	  if (av)
+	    f->called_css.set_union(*av->out);
+      }
 
   }
 }
@@ -321,6 +324,8 @@ determine_clones() {
 		forv_MPosition(p, e1->match->fun->positions) {
 		  Vec<CreationSet *> d1, d2;
 		  AVar *a1 = e1->args.get(p), *a2 = e2->args.get(p);
+		  if (!a1 || !a2)
+		    continue;
 		  // this is why strict type systems bite
 		  ((VecCreationSet*)a1->out)->set_difference(*((VecCreationSet*)a2->out), d1);
 		  ((VecCreationSet*)a2->out)->set_difference(*((VecCreationSet*)a1->out), d2);

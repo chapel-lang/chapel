@@ -17,16 +17,20 @@
 // figure out what myclass does in Sather and Clu
 // optimize case of filters with no restrictions (sym_any) to prevent
 //   recomputation of dispatch functions
-// dispatch on return type and number!
+// dispatch on (declared) return type and number!
 // used MPosition to handle destructuring of return values
-// convert MPosition into an integer index into the in-order traversal of f->args
-// handle conflicts 
 // handle generalized structural types
+// optimize case where only 1 function is possible (just check)
 
 typedef Map<Fun *, Match *> MatchMap;
 typedef Vec<Vec<Fun *> *> PartialMatches;
 
 static OpenHash<MPosition *, MPositionHashFuns> cannonical_mposition;
+
+MPosition::MPosition(MPosition &p) {
+  pos.copy(p.pos);
+  parent = p.parent;
+}
 
 MPosition *
 cannonicalize_mposition(MPosition &p) {
@@ -40,20 +44,27 @@ cannonicalize_mposition(MPosition &p) {
 }
 
 static void
-insert_fun(FA *fa, Fun *f, Sym *a, MPosition &p) {
-  MPosition *cp = cannonicalize_mposition(p);
-  if (fa->patterns->types_set.set_add(a))
-    fa->patterns->types.add(a);
-  if (!a->match_type) {
-    a->match_type = new MType;
-    fa->patterns->mtypes.add(a->match_type);
+insert_fun(FA *fa, Fun *f, Sym *arg, Sym *s, MPosition &p) {
+  MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
+  if (arg->name && !is_const(arg)) {
+    MPosition pp(p);
+    pp.set_top(arg->name);
+    cpname = cannonicalize_mposition(pp);
   }
-  Vec<Fun *> *funs = a->match_type->funs.get(cp);
-  if (!funs) {
-    funs = new Vec<Fun *>;
-    a->match_type->funs.put(cp, funs);
+  for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
+    if (fa->patterns->types_set.set_add(s))
+      fa->patterns->types.add(s);
+    if (!s->match_type) {
+      s->match_type = new MType;
+      fa->patterns->mtypes.add(s->match_type);
+    }
+    Vec<Fun *> *funs = s->match_type->funs.get(cp);
+    if (!funs) {
+      funs = new Vec<Fun *>;
+      s->match_type->funs.put(cp, funs);
+    }
+    funs->set_add(f);
   }
-  funs->set_add(f);
 }
 
 static void
@@ -66,9 +77,9 @@ build_arg(FA *fa, Fun *f, Sym *a, MPosition &p) {
   } else {
     if ((a->symbol || (a->type && a->type->symbol))) {
       Sym *sel = a->symbol ? a : a->type;
-      insert_fun(fa, f, sel, p);
+      insert_fun(fa, f, a, sel, p);
     } else
-      insert_fun(fa, f, a->type ? a->type : sym_any, p);
+      insert_fun(fa, f, a, a->type ? a->type : sym_any, p);
   }
   p.inc();
 }
@@ -78,7 +89,7 @@ build(FA *fa) {
   forv_Fun(f, fa->pdb->funs) {
     MPosition p;
     p.push(1);
-    insert_fun(fa, f, f->sym, p);
+    insert_fun(fa, f, f->sym, f->sym, p);
     forv_Sym(a, f->sym->args)
       build_arg(fa, f, a, p);
   }
@@ -136,7 +147,12 @@ pattern_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
 	push_funs = new Vec<Fun *>(*partial_matches.v[partial_matches.n-1]);
       partial_matches.add(push_funs);
       forv_AVar(av, cs->vars) {
-	pattern_match_arg(fa, av, partial_matches, match_map, p, send, allpositions);
+	if (av->var->sym->name && !is_const(av->var->sym)) {
+	  MPosition pp(p);
+	  pp.set_top(av->var->sym->name);
+	  pattern_match_arg(fa, av, partial_matches, match_map, pp, send, allpositions);
+	} else
+	  pattern_match_arg(fa, av, partial_matches, match_map, p, send, allpositions);
 	if (!partial_matches.v[partial_matches.n-1] ||
 	    !partial_matches.v[partial_matches.n-1]->n)
 	  break;
@@ -208,7 +224,12 @@ best_match_arg(FA *fa, AVar *a, PartialMatches &partial_matches,
       if (!check_ambiguities) {
 	p.push(1);
 	forv_AVar(av, cs->vars) {
-	  best_match_arg(fa, av, partial_matches, match_map, p);
+	  if (av->var->sym->name && !is_const(av->var->sym)) {
+	    MPosition pp(p);
+	    pp.set_top(av->var->sym->name);
+	    best_match_arg(fa, av, partial_matches, match_map, pp);
+	  } else
+	    best_match_arg(fa, av, partial_matches, match_map, p);
 	  p.inc();
 	}
       } else {
@@ -301,19 +322,27 @@ build_patterns(FA *fa) {
 
 static void
 build_arg_position(Fun *f, Sym *a, MPosition &p, MPosition *parent = 0) {
-  MPosition *cp = cannonicalize_mposition(p);
-  cp->parent = parent;
-  f->positions.add(cp);
-  if (!a->var)
-    a->var = new Var(a);
-  f->arg_syms.put(cp, a);
-  if (a->pattern) {
-    p.push(1);
-    forv_Sym(aa, a->has) {
-      build_arg_position(f, aa, p, cp);
-      p.inc();
+  MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0;
+  if (a->name && !is_const(a)) {
+    MPosition pp(p);
+    pp.set_top(a->name);
+    cpname = cannonicalize_mposition(pp);
+  }
+  for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
+    cp->parent = parent;
+    f->positions.add(cp);
+    if (!a->var)
+      a->var = new Var(a);
+    f->arg_syms.put(cp, a);
+    if (a->pattern) {
+      MPosition pp(p);
+      pp.push(1);
+      forv_Sym(aa, a->has) {
+	build_arg_position(f, aa, pp, cp);
+	pp.inc();
+      }
+      pp.pop();
     }
-    p.pop();
   }
 }
 
