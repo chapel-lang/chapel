@@ -11339,3 +11339,47 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: fixup.cpp fixup.h 
 
+---------------------------------------------------------------------------
+
+12/09/04 14:08:08 -- bradc
+
+Log message:
+	Beefed up the passlist stuff a bit.
+	
+	All Passes now have a char* args field which can be
+	used to specify arguments for that pass.  When
+	invoking a Pass through the default passlist.h that
+	is compiled into the compiler or specified with the
+	--passlist option, the argument string is currently
+	specified as follows:
+	
+	  ...
+	  RUN(MyPass, "arguments"),
+	  ...
+	
+	which will cause "arguments" to be stored in the
+	Pass' args field before the Pass' run() method
+	is invoked.
+	
+	Reorganized the way the passlist.h and passlist.cpp
+	files work a bit so that the #inclusion of the
+	header file and the REGISTER-ation of the new pass
+	are both done in passlist.cpp, making the passlist.h
+	file shorter and sweeter (which seemed important
+	since this is a file that developers will be modifying
+	by hand if they use the --passlist flag.
+	
+	Added a new flag, --print-passes, which causes the
+	Pass names to be print out as they are run along
+	with timing information for how long they took.  In
+	the ZPL compiler we found this a nice, quick way to
+	find out which pass was Seg Faulting and/or causing
+	a huge performance bottleneck.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	                       runpasses.cpp runpasses.h 
+	chapel/compiler/passes/: pass.cpp pass.h 
+	chapel/test/compflags/bradc/passlist/: passlist.h test.good 
+	chapel/test/trivial/bradc/protoast/: mypasslist.h 
+
