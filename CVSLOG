@@ -18990,3 +18990,17 @@ Modified files:
 	                                  relational_ops.good var.good 
 	                                  var2.good whileLoop.good 
 
+---------------------------------------------------------------------------
+
+03/07/05 13:25:40 -- deitz
+
+Log message:
+	Added initial infrastructure support for looking at compiler code
+	coverage of the test suite.  Read Coverage.readme for how to do this.
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/make/: Makefile.gnu 
+Added files:
+	chapel/compiler/: Coverage.pl Coverage.readme 
+
