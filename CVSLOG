@@ -1621,3 +1621,21 @@ Log message:
 Modified files:
 	chapel/compiler/: driver.cpp fa.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/02 16:09:32 -- bradc
+
+Log message:
+	Added a new 0-argument option to the testing system: -valgrind
+	When used, the compiler is run under valgrind with the -q option
+	and the valgrind.suppressions file in the compiler directory.
+	Errors reported by valgrind will be part of the compilation output
+	and therefore mismatch the expected output by definition.
+	
+	Also added -h/-help options.  It seems before that help was printed
+	when there were an odd number of arguments (!?).  I'd never noticed
+	this before.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+
