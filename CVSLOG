@@ -11082,3 +11082,20 @@ Added files:
 	chapel/test/classes/deitz/future/: test_record_method2.chpl 
 	                                   test_record_method2.good 
 
+---------------------------------------------------------------------------
+
+12/03/04 09:43:21 -- deitz
+
+Log message:
+	Moved some of the record tests around.  In the future directory, the tests are run with the --noanalysis flag.  In the future/future directory, the tests are not run.
+
+Added files:
+	chapel/test/classes/deitz/future/: COMPOPTS 
+	chapel/test/classes/deitz/future/future/: NOTEST 
+	                                          test_record_method2.chpl 
+	                                          test_record_method2.good 
+Removed files:
+	chapel/test/classes/deitz/future/: NOTEST 
+	                                   test_record_method2.chpl 
+	                                   test_record_method2.good 
+
