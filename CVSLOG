@@ -16462,3 +16462,23 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/: test_secondary_method1.future 
 
+---------------------------------------------------------------------------
+
+02/03/05 17:01:46 -- deitz
+
+Log message:
+	Made a minor change to future test_secondary_method2 so it now works.
+	I was trying to initialize a variable in the class which is not yet
+	supported:
+	
+	class foo {
+	  var i : integer = 4;
+	  ...
+	}
+	...
+
+Modified files:
+	chapel/test/classes/deitz/: test_secondary_method2.chpl 
+Removed files:
+	chapel/test/classes/deitz/: test_secondary_method2.future 
+
