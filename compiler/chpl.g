@@ -216,9 +216,11 @@ parameterized_type
   | parameterized_type type_parameter_list $unary_left 200
 { $$.ast = new AST(AST_type_application, &$n); };
 
-array_descriptor : '[' (indices? ident)? ']';
+array_descriptor : '[' (indices_colon? ident)? ']';
 
-indices : ident (',' ident)* ':' 
+indices_colon : indices ':';
+
+indices : ident (',' ident)*
 { $$.ast = new AST(AST_indices, &$n); };
 
 enum_definition : '{' enumerator (',' enumerator)* '}';
@@ -454,7 +456,7 @@ vector_immediate: '#' '[' statement* expression? ']' {
   $$.ast = new AST(AST_vector, &$n);
 };
 
-square_forall: '[' loop_scope indices? expression ']' expression
+square_forall: '[' loop_scope indices_colon? expression ']' expression
 [ ${scope} = enter_D_Scope(${scope}, $n0.scope); ]
 { $$.ast = new AST(AST_forall, &$n); };
 
