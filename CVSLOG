@@ -11583,3 +11583,43 @@ Modified files:
 	chapel/compiler/traversals/: fieldsToMemberAccesses.cpp 
 	                             fieldsToMemberAccesses.h 
 
+---------------------------------------------------------------------------
+
+12/10/04 14:20:30 -- shannon
+
+Log message:
+	Added support for reading files of config vars of type string,
+	where the string is quoted.  Strings may use either the
+	single or double quote, but will throw an error if the quotes
+	are mismatched.  A string may include embedded quotes if
+	they differ from the enclosing quote.  Strings may not
+	include a newline.
+	
+	*  arg.c:  Refactored much of the parseArgs function,
+	   pulling all the code that handled strings into a
+	   separate function.
+	
+	* config.c:  Fixed a bug where a newly-malloced string sent
+	  to the _copy_string function was not first set to NULL.
+	
+	* Added a bunch of tests.
+
+Modified files:
+	chapel/runtime/src/: arg.c config.c 
+	chapel/test/execflags/shannon/configs/: configVarFile.good 
+	                                        configVarFile.input 
+Added files:
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarFileStrings.chpl 
+	                                        configVarFileStrings.execopts 
+	                                        configVarFileStrings.good 
+	                                        configVarFileStrings.input 
+	                                        configVarFileStringsMismatch.chpl 
+	                                        configVarFileStringsMismatch.execopts 
+	                                        configVarFileStringsMismatch.good 
+	                                        configVarFileStringsMismatch.input 
+	                                        configVarFileStringsNoEquals.chpl 
+	                                        configVarFileStringsNoEquals.execopts 
+	                                        configVarFileStringsNoEquals.good 
+	                                        configVarFileStringsNoEquals.input 
+
