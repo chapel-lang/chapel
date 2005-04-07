@@ -206,7 +206,16 @@ VarSymbol::VarSymbol(char* init_name,
   static int uid = 0;
   cname = glomstrings(4, name, "__", intstring(uid++), "__");
 #endif
-  Symboltable::define(this);
+  /** SJD hack because __init_fn is not set up with a scope **/
+  if (Symbol* init_fn = Symboltable::getCurrentScope()->symContext) {
+    if (!strncmp("__init_", init_fn->name, 7)) {
+      Symboltable::defineInScope(this, Symboltable::getCurrentScope()->parent);
+    } else {
+      Symboltable::define(this);
+    }
+  } else {
+    Symboltable::define(this);
+  }
   SET_BACK(init);
 }
 

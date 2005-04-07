@@ -18,6 +18,7 @@ TRAVERSALS_SRCS = \
 	insertAnonymousTypes.cpp \
 	insertElidedLoops.cpp \
 	insertFunctionTemps.cpp \
+	insertTemps.cpp \
 	insertThisParameters.cpp \
 	insertUnionChecks.cpp \
 	insertVariableInitializations.cpp \

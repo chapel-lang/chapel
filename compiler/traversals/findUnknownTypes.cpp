@@ -59,7 +59,7 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
 
 
 FindUnknownTypes::FindUnknownTypes(void) {
-  whichModules = MODULES_USER;
+  whichModules = MODULES_COMMON_AND_USER;
 }
 
 void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
@@ -84,6 +84,23 @@ void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
     }
 #endif
   }
+
+  /*** hack for for loops over sequences to not use dtInteger ***/
+  if (sym->astType == SYMBOL_VAR) {
+    if (sym->type == dtInteger) {
+      if (ForLoopStmt* for_loop =
+          dynamic_cast<ForLoopStmt*>(sym->defPoint->stmt)) {
+        if (DefExpr* def_expr = dynamic_cast<DefExpr*>(for_loop->indices)) {
+          if (def_expr->sym == sym) {
+            if (SeqType* seq_type = dynamic_cast<SeqType*>(for_loop->domain->typeInfo())) {
+              sym->type = seq_type->elementType;
+            }
+          }
+        }
+      }
+    }
+  }
+
   FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
   if (fn) {
     if (fn->retType == dtUnknown) {

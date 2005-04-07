@@ -132,8 +132,9 @@ pragma "omit for noanalysis" class _seq {
     return this;
   }
 
-  function append_sequence(s : _seq) : _seq {
+  function concat(s : _seq) : _seq {
     last.next = s.first;
+    last = s.last;
     length += s.length;
     return this;
   }

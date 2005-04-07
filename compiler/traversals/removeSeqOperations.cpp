@@ -35,21 +35,55 @@ void RemoveSeqOperations::postProcessExpr(Expr* expr) {
 
   SeqType* left_seq_type = dynamic_cast<SeqType*>(bin_expr->left->typeInfo());
   SeqType* right_seq_type = dynamic_cast<SeqType*>(bin_expr->right->typeInfo());
-
-  if (left_seq_type) {
-    SymScope* left_seq_scope = left_seq_type->structScope;
-    Symbol* append_sym = Symboltable::lookupInScope("append", left_seq_scope);
-
-    if (!append_sym) {
-      INT_FATAL(left_seq_type, "Cannot find append function in sequence type");
-    }
-
-    Expr* args = bin_expr->left->copy();
-    args->append(bin_expr->right->copy());
-    expr->replace(new FnCall(new Variable(append_sym), args));
-  } else if (right_seq_type) {
-
-  } else {
+  if (!left_seq_type && !right_seq_type) {
     INT_FATAL(expr, "Sequence concatenation of non-sequences");
   }
+
+  SymScope* seq_scope;
+  Symbol* seq_method;
+
+  if (left_seq_type) {
+    seq_scope = left_seq_type->structScope;
+  } else {
+    seq_scope = right_seq_type->structScope;
+  }
+
+  if (left_seq_type && right_seq_type) {
+    seq_method = Symboltable::lookupInScope("concat", seq_scope);
+  } else if (left_seq_type) {
+    seq_method = Symboltable::lookupInScope("append", seq_scope);
+  } else if (right_seq_type) {
+    seq_method = Symboltable::lookupInScope("prepend", seq_scope);
+  }
+
+  if (!seq_method) {
+    INT_FATAL(expr, "Cannot find builtin method in sequence type");
+  }
+
+  // This commented out code will eventually put in the sequence copy
+  // functions.
+
+//   Symbol* seq_copy = Symboltable::lookupInScope("copy", seq_scope);
+
+//   if (!seq_copy) {
+//     INT_FATAL(expr, "Cannot find copy method in sequence type");
+//   }
+
+   Expr* arg1;
+   Expr* arg2;
+
+//   if (left_seq_type) {
+//     arg1 = new FnCall(new Variable(seq_copy), bin_expr->left->copy());
+//   } else {
+     arg1 = bin_expr->left->copy(); 
+//   }
+
+//   if (right_seq_type) {
+//     arg2 = new FnCall(new Variable(seq_copy), bin_expr->right->copy());
+//   } else {
+     arg2 = bin_expr->right->copy(); 
+//   }
+
+  arg1->append(arg2);
+  expr->replace(new FnCall(new Variable(seq_method), arg1));
 }

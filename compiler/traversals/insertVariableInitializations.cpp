@@ -56,6 +56,12 @@ void insert_default_init_stmt(VarSymbol* var, Stmt* init_stmt) {
     else if (dynamic_cast<TypeSymbol*>(def_expr->sym)) {
       // Ignore case
     }
+    else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
+      /** basically for __init_fn which has no block_stmt scope **/
+      if (BlockStmt* block_stmt = dynamic_cast<BlockStmt*>(fn->body)) {
+        block_stmt->body->insertBefore(init_stmt);
+      }
+    }
     else {
       INT_FATAL(var, "SJD \"Where should I put the default init?\"");
     }

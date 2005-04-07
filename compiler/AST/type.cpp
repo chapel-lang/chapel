@@ -10,6 +10,7 @@
 #include "sym.h"
 #include "../traversals/fixup.h"
 #include "../traversals/updateSymbols.h"
+#include "../traversals/collectASTS.h"
 
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
@@ -786,6 +787,25 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   Symbol* _node = Symboltable::lookupInScope("_node", new_seq_scope);
   _node->cname = glomstrings(2, new_seq_name, _node->name);
 
+  /*
+  FnSymbol* copy_fn =
+    dynamic_cast<FnSymbol*>(Symboltable::lookupInScope("copy", new_seq_scope));
+
+  if (!copy_fn) {
+    INT_FATAL(new_seq_type, "No copy found in sequence type");
+  }
+
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, copy_fn);
+
+  forv_Vec(BaseAST*, ast, asts) {
+    if (ForLoopStmt* for_loop = dynamic_cast<ForLoopStmt*>(ast)) {
+      if (DefExpr* def_expr = dynamic_cast<DefExpr*>(for_loop->indices)) {
+        def_expr->sym->type = new_seq_type->elementType;
+      }
+    }
+  }
+  */
   return new_seq_type;
 }
 

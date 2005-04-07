@@ -25,6 +25,7 @@ PassInfo passlist[] = {
   RUN(InsertThisParameters, ""),
   RUN(ScopeResolveSymbols, ""),
   RUN(RenameOverloadedFunctions, ""),
+  RUN(InsertTemps, ""),
   RUN(InsertAnonymousDomains, ""),
   RUN(InsertAnonymousTypes, ""),
   RUN(InsertIndexType, ""),

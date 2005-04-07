@@ -702,6 +702,9 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
   // HACK: dtInteger is wrong -- same as with forallExpr HACK
   VarSymbol* indexVars = dynamic_cast<VarSymbol*>(indices);
   if (!indexVars) {
+    // SJD: It is my thought that dtInteger should be dtUnknown. Then
+    // analysis can figure it out based on the type of the "domain"
+    // which may not be a domain but an array or a sequence too.
     indexVars = defineVars(indices, dtInteger);
     //indexVars = defineVars(indices, new IndexType(domain));
   }
