@@ -426,6 +426,10 @@ Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCal
   Type* new_type = type->copy(clone, map, analysis_clone);
   TypeSymbol* new_type_symbol = new TypeSymbol(copystring(name), new_type);
   new_type->addSymbol(new_type_symbol);
+  if (StructuralType* stype =
+      dynamic_cast<StructuralType*>(new_type)) {
+    stype->structScope->setContext(NULL, new_type_symbol);
+  }
   return new_type_symbol;
 }
 

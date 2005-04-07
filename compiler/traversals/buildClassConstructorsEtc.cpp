@@ -72,6 +72,7 @@ static void build_union_id_enum(StructuralType* structType) {
 
 
 static void build_setters_and_getters(StructuralType* structType) {
+  SymScope* saveScope = Symboltable::setCurrentScope(structType->structScope);
   forv_Vec(VarSymbol, tmp, structType->fields) {
     char* setter_name = glomstrings(2, "set_", tmp->name);
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
@@ -106,6 +107,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     getter_fn->_this = getter_this;
     getter_fn->_getter = tmp;
   }
+  Symboltable::setCurrentScope(saveScope);
 }
 
 
