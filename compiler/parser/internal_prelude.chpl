@@ -11,6 +11,15 @@ pragma "omit for noanalysis" class Array {
   function this(i, j, k) {
     return __primitive("array_index", this, i, j, k);
   }
+  function set(i, x) {
+    return __primitive("array_set", this, i, x);
+  }
+  function set(i, j, x) {
+    return __primitive("array_set", this, i, j, x);
+  }
+  function set(i, j, k, x) {
+    return __primitive("array_set", this, i, j, k, x);
+  }
 }
 
 class Domain {

@@ -1808,7 +1808,13 @@ compar_tv_pos(const void *aa, const void *bb) {
   }
   int i = aast->line();
   int j = bast->line();
-  return (i > j) ? 1 : ((i < j) ? -1 : 0);
+  int x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+  if (x)
+    return x;
+  i = a->send ? a->send->id : 0;
+  j = b->send ? b->send->id : 0;
+  x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+  return x;
 }
 
 static void

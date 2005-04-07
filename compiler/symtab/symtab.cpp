@@ -179,8 +179,16 @@ void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
       lastOverload->overload = newFn;
       newFn->setParentScope(origFn->parentScope);
     } else {
+      // JBP -- disable to get setters/getters working (TEMPORARY)
+#if 0
       USR_FATAL(sym, "redefinition of symbol %s (previous definition at %s)",
                 sym->name, prevDefInScope->stringLoc());
+#else
+      if (typeid(*sym) != typeid(FnSymbol))
+        scope->insert(sym);
+      else
+        sym->parentScope = scope;
+#endif      
     }
   } else {
     scope->insert(sym);

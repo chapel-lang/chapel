@@ -77,6 +77,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     char* setter_name = glomstrings(2, "set_", tmp->name);
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
     setter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_", setter_name);
+    setter_fn->_setter = tmp;
     ParamSymbol* setter_this = new ParamSymbol(PARAM_REF, "this", structType);
     ParamSymbol* setter_arg = new ParamSymbol(PARAM_BLANK, "_arg", tmp->type);
     setter_this->append(setter_arg);
@@ -91,11 +92,15 @@ static void build_setters_and_getters(StructuralType* structType) {
     structType->addDeclarations(setter_def_stmt);
     setter_fn->classBinding = structType->symbol;
     setter_fn->_this = setter_this;
-    setter_fn->_setter = tmp;
 
+#if 0
     char* getter_name = glomstrings(2, "get_", tmp->name);
+#else
+    char* getter_name = tmp->name;
+#endif
     FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(getter_name));
     getter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_", getter_name);
+    getter_fn->_getter = tmp;
     ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
     Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
     Stmt* getter_return = new ReturnStmt(getter_expr);
@@ -105,7 +110,6 @@ static void build_setters_and_getters(StructuralType* structType) {
     structType->addDeclarations(getter_def_stmt);
     getter_fn->classBinding = structType->symbol;
     getter_fn->_this = getter_this;
-    getter_fn->_getter = tmp;
   }
   Symboltable::setCurrentScope(saveScope);
 }
