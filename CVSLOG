@@ -24602,3 +24602,19 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+04/07/05 15:58:31 -- bradc
+
+Log message:
+	Made default parameter function wrappers
+	do a better job of avoiding the insertion
+	of return statements on functions that
+	return dtVoid using John's new interface.
+	
+	Fixed up some tabbing, 80-column format
+	issues for type.cpp.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+
