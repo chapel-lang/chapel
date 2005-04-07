@@ -24458,3 +24458,19 @@ Added files:
 	                                         test_seq8.chpl 
 	                                         test_seq8.good 
 
+---------------------------------------------------------------------------
+
+04/07/05 11:28:26 -- deitz
+
+Log message:
+	Fixed a bug in which the setters and getters were being defined in the
+	same scope that the structure was defined in, not the structScope.
+	
+	Fixed a bug in which the symbol context of the scope of a structural
+	type within another type was not set if the outer type was copied.
+	This showed up in the sequence code as a result of the above fix.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
