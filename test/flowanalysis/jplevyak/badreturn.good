@@ -2,7 +2,7 @@
  called from 4 in __init at assign2.v:1
 __init::self(assign2.v:1) ( C (assign2.v:1) )
 badreturn.v:2: 'q' has no type
-badreturn.v:2: near 'q' unmatched type 'tuple'
+badreturn.v:2: near 'q' unmatched type: ( tuple ) 
 badreturn.v:3: expression has no type
 badreturn.v:3: expression has no type
 badreturn.v:3: illegal call argument type expression illegal: ( ) 

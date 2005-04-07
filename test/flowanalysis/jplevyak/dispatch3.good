@@ -1,5 +1,5 @@
-    dispatch3.v:1: : f( x : anynum, y : int32) : tuple
-    dispatch3.v:2: : f( x : int32, y : anynum) : tuple
+    dispatch3.v:1: : f, ( x : anynum, y : int32) : tuple
+    dispatch3.v:2: : f, ( x : int32, y : anynum) : tuple
   candidate functions:
  called from 2 in f at dispatch2.v:2
  called from 4 in __init at dispatch2.v:1

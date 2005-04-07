@@ -1605,14 +1605,21 @@ is_return_value(AVar *av) {
 
 static void
 show_type(Vec<CreationSet *> &t, FILE *fp) {
-  fprintf(fp, "( ");
+  Vec<Sym *> type;
   forv_CreationSet(cs, t) if (cs) {
-    if (cs->sym->name)
-      fprintf(fp, "%s ", cs->sym->name);
-    else if (cs->sym->constant)
-      fprintf(fp, "\"%s\" ", cs->sym->constant);
+    Sym *s = cs->sym;
+    if (!verbose_level)
+      s = s->type;
+    type.set_add(s);
+  }
+  fprintf(fp, "( ");
+  forv_Sym(s, type) if (s) {
+    if (s->name)
+      fprintf(fp, "%s ", s->name);
+    else if (s->constant)
+      fprintf(fp, "\"%s\" ", s->constant);
     else
-      fprintf(fp, "%d ", cs->sym->id);
+      fprintf(fp, "%d ", s->id);
   }
   fprintf(fp, ") ");
 }
@@ -1645,8 +1652,11 @@ show_sym(Sym *s, FILE *fp) {
 static void
 show_fun(Fun *f, FILE *fp) {
   fprintf(fp, "%s:%d: ", f->filename(), f->line());
-  forv_Sym(s, f->sym->has)
+  forv_Sym(s, f->sym->has) {
     show_sym(s, fp);
+    if (s != f->sym->has.v[f->sym->has.n-1])
+      fprintf(fp, ", ");
+  }
 }
 
 void
@@ -1866,15 +1876,12 @@ show_violations(FA *fa, FILE *fp) {
         }
         break;
       case ATypeViolation_MATCH:
-        if (v->type->n == 1)
-          fprintf(stderr, "near '%s' unmatched type '%s'\n", 
-                  v->av->var->sym->name ? v->av->var->sym->name : "<anonymous>", 
-                  v->type->v[0]->sym->name);
-        else {
-          fprintf(stderr, "near '%s' unmatched type\n");
-          forv_CreationSet(cs, *v->type)
-            fprintf(stderr, "  type '%s'\n", cs->sym->name);
-        }
+	if (v->av->var->sym->name)
+	  fprintf(stderr, "near '%s' unmatched type: ", v->av->var->sym->name);
+	else
+	  fprintf(stderr, "unmatched type: ");
+	show_type(*v->type, stderr);
+	fprintf(stderr, "\n");
         break;
       case ATypeViolation_NOTYPE:
         if (v->av->var->sym->name)
@@ -1893,8 +1900,7 @@ show_violations(FA *fa, FILE *fp) {
         else
           fprintf(stderr, "expression ");
         fprintf(stderr, "has mixed basic types:");
-        forv_CreationSet(cs, *v->type)
-          fprintf(stderr, " %s", cs->sym->name);
+	show_type(*v->type, stderr);
         fprintf(stderr, "\n");
         break;
     }
