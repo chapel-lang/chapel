@@ -239,73 +239,73 @@ $futuremarker = "^Future";
 
 if ($stdstatus == 0) {
     print MAIL "--- New Errors (standard) --------------------------------------------\n";
-    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
+    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
 if ($vgrstatus == 0) {
     print MAIL "--- New Errors (valgrind) --------------------------------------------\n";
-    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
+    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
 if ($stdstatus == 0) {
     print MAIL "--- Resolved Errors (standard) ---------------------------------------\n";
-    print MAIL `comm -23 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
+    print MAIL `comm -23 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
 if ($vgrstatus == 0) {
     print MAIL "--- Resolved Errors (valgrind) ---------------------------------------\n";
-    print MAIL `comm -23 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
+    print MAIL `comm -23 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
 if ($stdstatus == 0) {
     print MAIL "--- Unresolved Errors (standard) -------------------------------------\n";
-    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
+    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
 if ($vgrstatus == 0) {
     print MAIL "--- Unresolved Errors (valgrind) -------------------------------------\n";
-    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v $futuremarker`;
+    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
 if ($stdstatus == 0) {
     print MAIL "--- Passing Future tests (standard) ----------------------------------\n";
-    print MAIL `grep $futuremarker $sortedstdsummary | grep "Success"`;
+    print MAIL `grep "$futuremarker" $sortedstdsummary | grep "Success"`;
     print MAIL "\n";    
 }
 
 if ($vgrstatus == 0) {
     print MAIL "--- Passing Future tests (valgrind) ----------------------------------\n";
-    print MAIL `grep $futuremarker $sortedvgrsummary | grep "Success"`;
+    print MAIL `grep "$futuremarker" $sortedvgrsummary | grep "Success"`;
     print MAIL "\n";    
 }
 
 if ($stdstatus == 0) {
     print MAIL "--- New Failing Future tests (standard) ----------------------------------\n";
-    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep $futuremarker | grep "Error"`;
+    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
     print MAIL "\n";    
 }
 
 if ($vgrstatus == 0) {
     print MAIL "--- New Failing Future tests (valgrind) ----------------------------------\n";
-    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep $futuremarker | grep "Error"`;
+    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
     print MAIL "\n";    
 }
 
 if ($stdstatus == 0) {
     print MAIL "--- Unresolved Future tests (standard) ----------------------------------\n";
-    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep $futuremarker | grep "Error"`;
+    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
     print MAIL "\n";    
 }
 
 if ($vgrstatus == 0) {
     print MAIL "--- Unresolved Future tests (valgrind) ----------------------------------\n";
-    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep $futuremarker | grep "Error"`;
+    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
     print MAIL "\n";    
 }
 
