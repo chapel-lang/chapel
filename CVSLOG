@@ -24576,3 +24576,15 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+04/07/05 15:43:28 -- jplevyak
+
+Log message:
+	Fix instability in the order of error messages which was effecting
+	regressions results in some cases.  Some preliminary work on operator= overloading.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+
