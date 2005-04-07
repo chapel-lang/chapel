@@ -24588,3 +24588,17 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp fa.cpp 
 	chapel/compiler/parser/: internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+04/07/05 15:49:51 -- jplevyak
+
+Log message:
+	Reorder error messages on 2 tests.
+	Tighten up criteria for doing coercions on primitive types.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
