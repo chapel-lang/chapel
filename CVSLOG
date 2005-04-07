@@ -24514,3 +24514,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+04/07/05 14:50:19 -- jplevyak
+
+Log message:
+	Add interface function in analysis.h
+	
+	int function_returns_void(FnSymbol *fn);
+	
+	This works by just checking if there is a STMT_RETURN with s->expr != 0
+	somewhere in the function.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h sym.h 
+
