@@ -69,6 +69,8 @@ pragma "builtin" function by(a : numeric, b : numeric) { return __primitive(a, "
 pragma "builtin" function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
 pragma "builtin" function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
 
+pragma "builtin" function =(a : any, b : any) { return b; }
+
 function _chpl_malloc(number, size, description: string);
 function _chpl_calloc(number, size, description: string);
 function _chpl_free(memory);

@@ -1761,13 +1761,45 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
       }
       if (op) {
-        rval = new_sym();
-        rval->ast = s->ainfo;
-        Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
-                           s->left->ainfo->rval, s->right->ainfo->rval,
-                           rval);
-        c->ast = s->ainfo;
+	Sym *old_rval = rval;
+	rval = new_sym();
+	rval->ast = s->ainfo;
+	Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
+			   s->left->ainfo->rval, old_rval, rval);
+	c->ast = s->ainfo;
       }
+      Variable *variable = dynamic_cast<Variable*>(s->left);
+      Symbol *symbol = variable ? dynamic_cast<Symbol *>(variable->var) : 0;
+      Sym *type = symbol ? symbol->type->asymbol->sym->type : 0;
+      FnSymbol *f = dynamic_cast<FnSymbol*>(s->stmt->parentSymbol);
+      int constructor_assignment = 0;
+      if (f && f->isConstructor) {
+	MemberAccess *m = dynamic_cast<MemberAccess*>(s->left);
+	if (m) {
+	  Variable *v = dynamic_cast<Variable*>(m->base);
+	  if (v) {
+	    if (v->var->isThis())
+	      constructor_assignment = 1;
+	  }
+	}
+      }
+#if 1
+      (void)type;
+#else
+      if (!(constructor_assignment ||
+	    (symbol && (symbol->isThis() || 
+			(type && scalar_or_reference(type))))))
+      {
+	Sym *old_rval = rval;
+	rval = new_sym();
+	rval->ast = s->ainfo;
+        Sym *told_rval = new_sym();
+        if1_move(if1, &s->ainfo->code, old_rval, told_rval, s->ainfo);
+	Code *c = if1_send(if1, &s->ainfo->code, 3, 1, if1_make_symbol(if1, "="), 
+			   s->left->ainfo->rval, told_rval, rval);
+	c->ast = s->ainfo;
+      }
+#endif
       if (!s->left->ainfo->sym)
         show_error("assignment to non-lvalue", s->ainfo);
       if (s->left->ainfo->sym->is_var)

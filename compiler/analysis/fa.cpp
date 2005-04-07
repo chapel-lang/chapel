@@ -1811,10 +1811,35 @@ compar_tv_pos(const void *aa, const void *bb) {
   int x = (i > j) ? 1 : ((i < j) ? -1 : 0);
   if (x)
     return x;
-  i = a->send ? a->send->id : 0;
-  j = b->send ? b->send->id : 0;
-  x = (i > j) ? 1 : ((i < j) ? -1 : 0);
-  return x;
+  if (a->send && b->send) {
+    i = a->send->id;
+    j = b->send->id;
+    x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+    if (x)
+      return x;
+  }
+  if (a->av && b->av) {
+    if (a->av->var && b->av->var) {
+      if (a->av->var->sym && b->av->var->sym) {
+        i = a->av->var->sym->id;
+        j = b->av->var->sym->id;
+        x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+        if (x)
+          return x;
+      }
+      i = a->av->var->id;
+      j = b->av->var->id;
+      x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+      if (x)
+        return x;
+    }
+    i = a->av->id;
+    j = b->av->id;
+    x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+    if (x)
+      return x;
+  }
+  return 0;
 }
 
 static void
