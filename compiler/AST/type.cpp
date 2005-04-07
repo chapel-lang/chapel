@@ -597,10 +597,14 @@ bool DomainType::blankIntentImpliesRef(void) {
   return true;
 }
 
-IndexType::IndexType(Type* init_idxType):Type(TYPE_INDEX, init_idxType->defaultVal),
-        idxType(init_idxType) {
-        domainType = NULL;
+
+IndexType::IndexType(Type* init_idxType):
+  Type(TYPE_INDEX, init_idxType->defaultVal),
+  idxType(init_idxType) 
+{
+  domainType = NULL;
 }
+
 
 IndexType::IndexType(Expr* init_expr) :
   Type(TYPE_INDEX, NULL),
@@ -618,7 +622,9 @@ IndexType::IndexType(Expr* init_expr) :
   }
 }
 
-Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+
+Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 
+                          CloneCallback* analysis_clone) {
   Type* copy = new IndexType(idxType->copy(clone, map, analysis_clone));
   copy->addSymbol(symbol);
   return copy;
@@ -1389,7 +1395,9 @@ bool StructuralType::implementedUsingCVals(void) {
 
 
 ClassType::ClassType(astType_t astType) :
-  StructuralType(astType, new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))
+  StructuralType(astType, 
+                 new Variable(Symboltable::lookupInternal("nil", 
+                                                          SCOPE_INTRINSIC)))
 {}
 
 

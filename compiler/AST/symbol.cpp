@@ -695,7 +695,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
   Symboltable::pushScope(SCOPE_LOCAL);
   FnCall* fn_call = new FnCall(new Variable(this), argList);
   Stmt* wrapper_body;
-  if (retType == dtVoid) {
+  if (retType == dtVoid ||
+      (retType == dtUnknown && function_returns_void(this))) {
     wrapper_body = new ExprStmt(fn_call);
   } else {
     wrapper_body = new ReturnStmt(fn_call);
