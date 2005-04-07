@@ -24540,3 +24540,39 @@ Log message:
 Modified files:
 	chapel/compiler/main/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/07/05 15:28:12 -- jplevyak
+
+Log message:
+	Setters and getters for member accesses and for array element assignment
+	(I was already doing it for array element reads).  Accessors are
+	named "set_XXX" for the setter for member XXX and "XXX" for the getter
+	for member "XXX" so that "function A.x { ... }" will work for "a.x" in the
+	code.
+	
+	This also involved updating various tests since the flow analysis
+	results are superficially different.
+	
+	I also disabled the error messages for duplicate symbols in the
+	same scope which would have prevented building the getters.
+	
+	This results in failure of the test for the duplicate symbols error
+	message.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             fixup.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: domarr.good enumarray.good 
+	                                  formatoutput.good 
+	                                  protoast_test.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
