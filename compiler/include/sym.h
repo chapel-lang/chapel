@@ -109,6 +109,7 @@ class BasicSym : public gc {
   unsigned int          is_value_class:1;       // Sym is a value class
   unsigned int          is_union_class:1;       // Sym is a union
 
+  unsigned int          fun_returns_value:1;    // used by analysis.cpp
   unsigned int          live:1;                 // used by if1.cpp
   unsigned int          incomplete:1;           // used by clone.cpp
 

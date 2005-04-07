@@ -1396,6 +1396,7 @@ gen_if1(BaseAST *ast, BaseAST *parent = 0) {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
       Sym *fn = s->parentSymbol->asymbol->sym;
       if (s->expr) {
+        fn->fun_returns_value = 1;
         if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
         s->expr->ainfo->rval->is_lvalue = 1;
         if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
@@ -2547,4 +2548,9 @@ structural_subtypes(Type *t, Vec<Type *> subtypes) {
     Type *tt = dynamic_cast<Type *>(ss->asymbol->symbol); assert(tt);
     subtypes.add(tt);
   }
+}
+
+int
+function_returns_void(FnSymbol *fn) {
+  return !fn->asymbol->sym->fun_returns_value;
 }

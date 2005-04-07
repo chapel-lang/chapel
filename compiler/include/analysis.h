@@ -85,6 +85,7 @@ Type *return_type_info(FnSymbol *fn);
 int function_is_used(FnSymbol *fn);
 int type_is_used(TypeSymbol *fn);
 int AST_is_used(BaseAST *a, Symbol *s = 0);  
+int function_returns_void(FnSymbol *fn);
 void call_info(Expr *a, Vec<FnSymbol *> &fns);
 int constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s = 0);
 /* VVVVVV DEPRECATED VVVVVV */
