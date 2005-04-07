@@ -24618,3 +24618,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 
+---------------------------------------------------------------------------
+
+04/07/05 16:06:13 -- bradc
+
+Log message:
+	Turned on stricter checks for the C compilation of the
+	compiler-generated code to keep ourselves honest.
+
+Modified files:
+	chapel/runtime/etc/: Makefile.macros 
+
