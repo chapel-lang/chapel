@@ -24661,3 +24661,21 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: insertTemps.cpp insertTemps.h 
 
+---------------------------------------------------------------------------
+
+04/07/05 16:13:43 -- deitz
+
+Log message:
+	Added some --noanalysis-working future sequence tests to make sure
+	they keep working.
+
+Added files:
+	chapel/test/types/seq/deitz/noanalysis/: test_seq2.chpl 
+	                                         test_seq2.good 
+	                                         test_seq6.chpl 
+	                                         test_seq6.good 
+	                                         test_seq7.chpl 
+	                                         test_seq7.good 
+	                                         test_seq8b.chpl 
+	                                         test_seq8b.good 
+
