@@ -701,6 +701,34 @@ is_reference_type(BaseAST *t) {
   return (t && (t->astType == TYPE_NIL || t->astType == TYPE_CLASS));
 }
 
+static int
+is_scalar_type(BaseAST *t) {
+  return t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM;
+}
+
+#ifdef NO_ASSIGN_OPERATOR_FOR_RECORDS_UNIONS_INDEXES
+static int
+xis_reference_type(BaseAST *t) {
+  return (t && (t->astType == TYPE_NIL || t->astType == TYPE_CLASS || t->astType == TYPE_INDEX));
+}
+
+static inline int
+scalar_or_reference(Sym *s) {
+  return (s->type->num_kind ||
+	  s->type == sym_string ||
+	  s->type->type_kind == Type_TAGGED ||
+	  (s->asymbol && s->asymbol->symbol && xis_reference_type(s->asymbol->symbol)));
+}
+#else
+static inline int
+scalar_or_reference(Sym *s) {
+  return (sym_anynum->specializers.in(s->type) ||
+	  s->type == sym_string ||
+	  s->type->type_kind == Type_TAGGED ||
+	  (s->asymbol && s->asymbol->symbol && is_reference_type(s->asymbol->symbol)));
+}
+#endif
+
 static void
 build_symbols(Vec<BaseAST *> &syms) {
   forv_BaseAST(ss, syms) {
@@ -1802,10 +1830,11 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
 #endif
       if (!s->left->ainfo->sym)
         show_error("assignment to non-lvalue", s->ainfo);
-      if (s->left->ainfo->sym->is_var)
-        if (s->left->ainfo->sym->type) 
-          rval = gen_coerce(rval, s->left->ainfo->sym->type, &s->ainfo->code, s->ainfo);
+      if (symbol && symbol->type && symbol->type != dtUnknown && is_scalar_type(symbol->type))
+	rval = gen_coerce(rval, type, &s->ainfo->code, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
+      if (!symbol || !symbol->type || constructor_assignment || 
+	  is_scalar_type(symbol->type) || is_reference_type(symbol->type))
       if1_move(if1, &s->ainfo->code, s->ainfo->rval, s->left->ainfo->sym, s->ainfo);
       break;
     }
