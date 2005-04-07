@@ -24629,3 +24629,35 @@ Log message:
 Modified files:
 	chapel/runtime/etc/: Makefile.macros 
 
+---------------------------------------------------------------------------
+
+04/07/05 16:08:36 -- deitz
+
+Log message:
+	Made significant progress on support for sequences.  Added more
+	support for the # operator on two sequences or an element and a
+	sequence, not just a sequence and an element.
+	
+	Implemented a new pass to insert temps for all sequence literals that
+	are not in the top-level of a DefStmt (and thus the temp would be
+	pointless).  This pass is called InsertTemps as it will eventually be
+	used to insert temps for tuple literals as well.
+	
+	Made two more ugly hacks to deal with the __init_function being
+	different from all other functions.  I'll deal with this soon.
+	
+	Made a hack to retype indices in for loops after analysis if the for
+	loop is going over a sequence.  Change the dtInteger to whatever the
+	sequences elementType is.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share findUnknownTypes.cpp 
+	                             insertVariableInitializations.cpp 
+	                             removeSeqOperations.cpp 
+Added files:
+	chapel/compiler/traversals/: insertTemps.cpp insertTemps.h 
+
