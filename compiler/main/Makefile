@@ -25,7 +25,7 @@ FORCE:
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
 LICENSE: ../../LICENSE
-	cat $< | sed s/\"/\\\\\"/g | sed s/^/\"/g | sed s/\$$/\\\\n\"/g > $@
+	cat $< | sed s/\"/\\\\\"/g | sed s/\^/\"/g | sed s/$$/\\\\n\"/g > $@
 
 COPYRIGHT: ../../COPYRIGHT
-	cat $< | sed s/\"/\\\\\"/g | sed s/^/\"/g | sed s/\$$/\\\\n\"/g > $@
+	cat $< | sed s/\"/\\\\\"/g | sed s/\^/\"/g | sed s/\$$/\\\\n\"/g > $@
