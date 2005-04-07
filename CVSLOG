@@ -24415,3 +24415,46 @@ Log message:
 Modified files:
 	./: COPYRIGHT 
 
+---------------------------------------------------------------------------
+
+04/06/05 17:01:57 -- deitz
+
+Log message:
+	Added a new pass RemoveSeqOperations that converts "#" into a method
+	call into the sequence class.  This is necessarily done after analysis
+	since before analysis we do not necessarily know whether the left or
+	right hand expression is a sequence (as opposed to an element) or if
+	they are both sequences.
+	
+	Added non-analysis support for "#" used to append an element to a
+	sequence.  This uses the BINOP_SEQCAT that already existed but was
+	never used.
+	
+	Fixed a bug in ApplyThisParameters in which constructors were getting
+	a "this" wrapped around them.  That seems strange since we don't want
+	to move the "this" into the constructor.  I'm a little surprised it
+	was working.  Must not have been happening in general.
+	
+	Removed some dead code from the function that creates sequence types
+	from class types.
+	
+	Removed old runtime support macro _SEQ_APPEND.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	                         internal_prelude.chpl 
+	chapel/compiler/traversals/: Makefile.share 
+	                             applyThisParameters.cpp 
+	chapel/runtime/include/: seq.h 
+Added files:
+	chapel/compiler/traversals/: removeSeqOperations.cpp 
+	                             removeSeqOperations.h 
+	chapel/test/types/seq/deitz/noanalysis/: test_seq3.chpl 
+	                                         test_seq3.good 
+	                                         test_seq5.chpl 
+	                                         test_seq5.good 
+	                                         test_seq8.chpl 
+	                                         test_seq8.good 
+
