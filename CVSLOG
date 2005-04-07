@@ -24530,3 +24530,13 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: analysis.h sym.h 
 
+---------------------------------------------------------------------------
+
+04/07/05 14:52:55 -- bradc
+
+Log message:
+	Improved portability of sed scripts in main/Makefile.
+
+Modified files:
+	chapel/compiler/main/: Makefile 
+
