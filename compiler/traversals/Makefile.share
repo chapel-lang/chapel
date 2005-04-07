@@ -27,6 +27,7 @@ TRAVERSALS_SRCS = \
 	methodsToFunctions.cpp \
         omitForNoAnalysis.cpp \
 	removeNamedParameters.cpp \
+        removeSeqOperations.cpp \
 	resolveOverloadedOperators.cpp \
 	resolveSymbols.cpp \
 	scopeResolveSymbols.cpp \

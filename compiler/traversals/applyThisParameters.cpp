@@ -31,12 +31,18 @@ void ApplyThisParameters::postProcessStmt(Stmt* stmt) {
 void ApplyThisParameters::preProcessExpr(Expr* expr) {
   if (CurrentStruct) {
     if (Variable* member = dynamic_cast<Variable*>(expr)) {
-      if (Symboltable::lookupInScope(member->var->name, 
+      if (Symbol* symbol = Symboltable::lookupInScope(member->var->name, 
                                      CurrentStruct->structScope)) {
 
         /* replacement of expr variable by memberaccess */
         if (FnSymbol* parentFn =
             dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
+          if (FnSymbol* constructor = dynamic_cast<FnSymbol*>(symbol)) {
+            if (constructor->isConstructor) {
+              return;
+            }
+          }
+
           if (member->var == parentFn->_this) {
             return;
           }

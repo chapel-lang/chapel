@@ -107,6 +107,8 @@ with            return TWITH;
 
 "**"            return TEXP;
 
+"#"             return TSEQCAT;
+
 ":"             return TCOLON;
 ";"             return TSEMI;
 ","             return TCOMMA;

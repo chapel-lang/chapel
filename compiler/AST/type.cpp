@@ -779,11 +779,6 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
 
   Symbol* _node = Symboltable::lookupInScope("_node", new_seq_scope);
   _node->cname = glomstrings(2, new_seq_name, _node->name);
-  SymScope* _node_scope = dynamic_cast<StructuralType*>(_node->type)->structScope;
-  Symboltable::lookupInScope("element", _node_scope)->type = new_seq_type->elementType;
-  Symboltable::lookupInScope("next", _node_scope)->type = _node->type;
-  Symboltable::lookupInScope("first", new_seq_scope)->type = _node->type;
-  Symboltable::lookupInScope("last", new_seq_scope)->type = _node->type;
 
   return new_seq_type;
 }

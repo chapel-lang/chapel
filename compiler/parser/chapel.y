@@ -141,6 +141,7 @@
 %left TIN
 %left TBY
 %left TDOTDOT
+%left TSEQCAT
 %left TOR
 %left TAND
 %right TNOT
@@ -916,6 +917,8 @@ expr:
     { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
 | expr TEXP expr
     { $$ = new BinOp(BINOP_EXP, $1, $3); }
+| expr TSEQCAT expr
+    { $$ = new BinOp(BINOP_SEQCAT, $1, $3); }
 | expr TBY expr
     { $$ = new SpecialBinOp(BINOP_BY, $1, $3); }
 ;

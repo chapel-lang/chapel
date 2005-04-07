@@ -103,6 +103,7 @@ pragma "omit for noanalysis" class _seq {
       last = new;
     }
     length += 1;
+    return this;
   }
 
   function prepend(e : elementType) : _seq {
@@ -127,7 +128,8 @@ pragma "omit for noanalysis" class _seq {
   }
 
   function copy() : _seq {
-    var new : _seq = _seq();
+    var new : _seq;
+    new = _seq();
     for e in this {
       new.append(e);
     }

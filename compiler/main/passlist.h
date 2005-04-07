@@ -77,6 +77,7 @@ PassInfo passlist[] = {
   RUN(InsertVariableInitializations, ""),
   RUN(DestructureTupleAssignments, ""),
   RUN(ExpandSeqExprAssignments, ""),
+  RUN(RemoveSeqOperations, ""),
   RUN(InsertUnionChecks, ""),
   RUN(LegalizeCNames, ""), 
 

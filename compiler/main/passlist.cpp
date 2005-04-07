@@ -43,6 +43,7 @@
 #include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/specializeParenOpExprs.h"
 #include "../traversals/removeNamedParameters.h"
+#include "../traversals/removeSeqOperations.h"
 #include "../traversals/resolveOverloadedOperators.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
@@ -94,6 +95,7 @@ REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(RemoveDeadSymbols);
 REGISTER(RemoveLikeTypes);
 REGISTER(RemoveNamedParameters);
+REGISTER(RemoveSeqOperations);
 REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
