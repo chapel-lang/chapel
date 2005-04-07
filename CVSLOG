@@ -24498,3 +24498,19 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/07/05 14:41:18 -- jplevyak
+
+Log message:
+	Cleanup error messages so that types are displayed uniformlly within
+	parens to indicate that they are sets of concrete types.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/test/flowanalysis/jplevyak/: badreturn.good 
+	                                    dispatch3.good 
+	chapel/test/parsing/jplevyak/: module.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
