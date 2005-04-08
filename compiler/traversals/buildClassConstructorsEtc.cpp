@@ -46,7 +46,7 @@ static void build_constructor(StructuralType* structType) {
     Stmt* alloc_stmt = new ExprStmt(alloc_expr);
     stmts = appendLink(stmts, alloc_stmt);
   }
-  structType->buildConstructorBody(stmts, fn->_this);
+  structType->buildConstructorBody(stmts, fn->_this, args);
 
   stmts = appendLink(stmts, new ReturnStmt(new Variable(fn->_this)));
   body = Symboltable::finishCompoundStmt(body, stmts);

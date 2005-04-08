@@ -231,7 +231,7 @@ class StructuralType : public Type {
 
   void traverseDefType(Traversal* traversal);
 
-  virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
+  virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments);
   virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
   virtual Stmt* buildIOBodyStmts(ParamSymbol* thisArg);
 
@@ -294,7 +294,7 @@ class UnionType : public StructuralType {
   FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
   CondStmt* buildUnionFieldIO(CondStmt* prevStmt, VarSymbol* field, ParamSymbol* thisArg);
   virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
-  Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this);
+  Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments);
 
   void codegenStartDefFields(FILE* outfile);
   void codegenStopDefFields(FILE* outfile);

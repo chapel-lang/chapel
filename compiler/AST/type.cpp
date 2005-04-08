@@ -1174,7 +1174,7 @@ void StructuralType::traverseDefType(Traversal* traversal) {
 }
 
 
-Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
+Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments) {
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Stmt* assign_stmt;
@@ -1209,7 +1209,7 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
   }
 
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
-  ParamSymbol* ptmp = args;
+  ParamSymbol* ptmp = arguments;
 #endif
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
@@ -1608,7 +1608,7 @@ Stmt* UnionType::buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg) {
 }
 
 
-Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this) {
+Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments) {
   Expr* arg1 = new Variable(_this);
   Expr* arg2 = new Variable(fieldSelector->valList);
   arg1 = appendLink(arg1, arg2);
