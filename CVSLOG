@@ -24719,3 +24719,16 @@ Modified files:
 	chapel/compiler/symtab/: symtab.cpp 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/08/05 10:45:59 -- bradc
+
+Log message:
+	Updating some .cvsignores to keep cvs -nq update
+	clean.
+
+Modified files:
+	chapel/test/compflags/bradc/noexec/: .cvsignore 
+Added files:
+	chapel/test/classes/bradc/unions/: .cvsignore 
+
