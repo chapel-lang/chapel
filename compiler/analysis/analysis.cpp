@@ -1059,9 +1059,68 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
   return ret;
 }
 
-static void
-init_with_nil(Sym *s, AInfo *ast) {
-  if1_move(if1, &ast->code, sym_nil, s, ast);
+static int
+gen_one_vardef(VarSymbol *var, DefStmt *def) {
+  Sym *s = var->asymbol->sym;
+  AInfo *ast = def->ainfo;
+  ast->sym = s;
+  switch (var->varClass) {
+    case VAR_NORMAL: break;
+    case VAR_CONFIG: s->is_external = 1; break;
+    default: return show_error("unhandled variable class", ast);
+  }
+  switch (var->consClass) {
+    case VAR_CONST: s->is_read_only = 1; break;
+    case VAR_VAR: break;
+    case VAR_PARAM: break;
+    default: assert(!"unknown constant class");
+  }
+  if (var->type != dtUnknown) {
+    if (!is_reference_type(var->type)) {
+      s->type = unalias_type(var->type->asymbol->sym);
+      s->is_var = 1;
+    } else
+      s->must_implement = unalias_type(var->type->asymbol->sym);
+  }
+  if (var->init) {
+    if (s->is_var && var->type->astType == TYPE_ARRAY) {
+      ArrayType *at = dynamic_cast<ArrayType*>(var->type->asymbol->symbol);
+      if1_gen(if1, &ast->code, var->init->ainfo->code);
+      gen_alloc(s, s->type, ast);
+      gen_set_array(s, at, var->init->ainfo->rval, ast);
+    } else {
+      if1_gen(if1, &ast->code, var->init->ainfo->code);
+      Sym *val = var->init->ainfo->rval;
+      if (s->type) {
+        if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
+          val = gen_coerce(val, s->type, &ast->code, ast);
+        // else show_error("missing constructor", ast);
+      }
+      if1_move(if1, &ast->code, val, ast->sym, ast);
+    }
+  } 
+  else if (is_reference_type(var->type)) {
+    FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
+    if (!f || !f->isConstructor || !var->isThis())
+      if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
+  } else if (!s->is_var) {
+    if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
+    // return show_error("missing initializer", ast);
+  } else if (!s->type && !s->must_implement) {
+    if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
+    // return show_error("missing variable type", ast);
+  } else {
+    if (s->type) {
+      if (s->type->num_kind || s->type == sym_string)
+        s->is_external = 1; // hack
+      else {
+        FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
+        gen_alloc(s, s->type, ast, f->_this ? f->_this->asymbol->sym : 0);
+      }
+    } else
+      if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
+  }
+  return 0;
 }
 
 static int
@@ -1071,63 +1130,8 @@ gen_vardef(BaseAST *a) {
     DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
     for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym); var;
          var = dynamic_cast<VarSymbol*>(var->next)) 
-    {
-      Sym *s = var->asymbol->sym;
-      def->ainfo->sym = s;
-      if (var->type && var->type != dtUnknown) {
-        if (!is_reference_type(var->type)) {
-          s->type = unalias_type(var->type->asymbol->sym);
-          s->is_var = 1;
-        } else
-          s->must_implement = unalias_type(var->type->asymbol->sym);
-      } else
-        s->is_var = 1;
-      if (var->init) {
-        if (s->is_var && var->type->astType == TYPE_ARRAY) {
-          ArrayType *at = dynamic_cast<ArrayType*>(var->type->asymbol->symbol);
-          if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
-          gen_alloc(s, s->type, def->ainfo);
-          gen_set_array(s, at, var->init->ainfo->rval, def->ainfo);
-        } else {
-          if1_gen(if1, &def->ainfo->code, var->init->ainfo->code);
-          Sym *val = var->init->ainfo->rval;
-          if (s->type) {
-            if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
-              val = gen_coerce(val, s->type, &def->ainfo->code, def->ainfo);
-            // else show_error("missing constructor", def->ainfo);
-          }
-          if1_move(if1, &def->ainfo->code, val, def->ainfo->sym, def->ainfo);
-        }
-      } 
-      else if (is_reference_type(var->type)) {
-        FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
-        if (!f || !f->isConstructor || !var->isThis())
-          init_with_nil(def->ainfo->sym, def->ainfo);
-      } else if (!s->is_var) {
-        init_with_nil(def->ainfo->sym, def->ainfo);
-        // return show_error("missing initializer", def->ainfo);
-      } else if (!s->type && !s->must_implement) {
-        init_with_nil(def->ainfo->sym, def->ainfo);
-        // return show_error("missing variable type", def->ainfo);
-      } else {
-        if (s->type) {
-          if (s->type->num_kind || s->type == sym_string)
-            s->is_external = 1; // hack
-          else {
-            FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
-            gen_alloc(s, s->type, def->ainfo, f->_this ? f->_this->asymbol->sym : 0);
-          }
-        } else
-          if1_move(if1, &def->ainfo->code, sym_nil, def->ainfo->sym, def->ainfo);
-      }
-    switch (var->varClass) {
-      case VAR_NORMAL: break;
-      case VAR_CONFIG: s->is_external = 1; break;
-      case VAR_STATE: assert(0); break;
-      }
-    if (var->consClass == VAR_CONST)
-      s->is_read_only = 1;
-    }
+      if (gen_one_vardef(var, def))
+        return -1;
   }
   return 0;
 }
@@ -2554,7 +2558,7 @@ type_is_used(TypeSymbol *t) {
       if (!t->asymbol->sym->is_meta_class) {
         return t->asymbol->sym->creators.n != 0;
       } else
-        return true; // SJD: ??
+        return true;
     } else
       return false;
   } else

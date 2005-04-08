@@ -11,6 +11,8 @@
 #include "fun.h"
 #include "pattern.h"
 
+#define CALL_RETURN_TYPE_INFO   1       // JBP ? why is this necessary?
+
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type, 
                bool init_exportMe) :
   BaseAST(astType),
@@ -864,6 +866,10 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   if (!exportMe && !parentScope->commonModuleIsFirst()) {
     fprintf(outfile, "static ");
   }
+#ifdef CALL_RETURN_TYPE_INFO
+  if (retType == dtUnknown)
+    retType = return_type_info(this);
+#endif
   retType->codegen(outfile);
   fprintf(outfile, " ");
   this->codegen(outfile);
