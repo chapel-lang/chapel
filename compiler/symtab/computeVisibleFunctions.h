@@ -6,7 +6,7 @@
 class ComputeVisibleFunctions : public SymtabTraversal {
  public:
   Vec<FnSymbol*> classMethods;
-  void run(void);
+  ComputeVisibleFunctions::ComputeVisibleFunctions();
   void preProcessScope(SymScope*);
 };
 
