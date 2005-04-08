@@ -24818,3 +24818,23 @@ Modified files:
 	                              test_seq7.future test_seq8.future 
 	                              test_seq8b.future 
 
+---------------------------------------------------------------------------
+
+04/08/05 11:22:58 -- jplevyak
+
+Log message:
+	Operator= is now working.  There is a catch all in internal_prelude:
+	
+	   pragma "builtin" function =(a : any, b : any) { return b; }
+	
+	which will work for any types which do not implement there own
+	operator=.
+	
+	Implemented a new .= primitive which is the primitive setter.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp cg.cpp fa.cpp 
+	                           prim_data.dat 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
