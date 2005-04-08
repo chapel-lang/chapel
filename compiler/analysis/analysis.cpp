@@ -22,8 +22,6 @@
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 
-#define FORCE_RECORD_METHODS_GLOBAL 1
-
 class LabelMap : public Map<char *, Stmt *> {};
 
 static Sym *domain_start_index_symbol = 0;
@@ -133,41 +131,11 @@ AInfo::visible_functions(Sym *arg0) {
   ScopeLookupCache *sym_cache = 0;
   Symbol *symbol = 0;
   SymScope* scope = 0;
-  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(s->parentSymbol)) {
+  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(s->parentSymbol))
     scope = mod->modScope;
-  } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(s->parentSymbol)) {
+  else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(s->parentSymbol))
     scope = fn->paramScope;
-  }
-  else {
-    INT_FATAL(s, "Unexpected case");
-  }
-#if 0
-  symbol = Symboltable::lookupFromScope(name, scope);
-  Symbol *internal_symbol = Symboltable::lookupInScope(name, internalScope);
-  if (!symbol && !internal_symbol)
-    v = new Vec<Fun *>;
-  else {        
-    Symbol *cache_symbol = symbol ? symbol : internal_symbol;
-    sym_cache = cache_symbol->parentScope->lookupCache;
-    if (sym_cache && (v = sym_cache->get(name))) 
-      return v;
-    v = new Vec<Fun *>;
-    if (symbol) {
-      FnSymbol *fn = dynamic_cast<FnSymbol*>(symbol);
-      while (fn) {
-        v->set_add(fn->asymbol->sym->fun);
-        fn = fn->overload;
-      }
-    }
-    if (internal_symbol) {
-      FnSymbol *fn = dynamic_cast<FnSymbol*>(internal_symbol);
-      while (fn) {
-        v->set_add(fn->asymbol->sym->fun);
-        fn = fn->overload;
-      }
-    }
-  }
-#else
+  else { INT_FATAL(s, "Unexpected case"); }
   sym_cache = scope->lookupCache;
   if (sym_cache && (v = sym_cache->get(name))) 
     return v;
@@ -176,7 +144,6 @@ AInfo::visible_functions(Sym *arg0) {
   if (fss)
     forv_Vec(FnSymbol, x, *fss)
       v->set_add(x->asymbol->sym->fun);
-#endif
   Vec<Fun *> *universal = universal_lookup_cache.get(name);
   if (universal)
     v->set_union(*universal);
@@ -261,7 +228,6 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
       if (set.set_add(ss))
         syms.add(ss);
     }
-#if 1
     if (s->astType == SYMBOL_FN) {
       Vec<BaseAST*> asts;
       collect_asts(&asts, dynamic_cast<FnSymbol*>(s));
@@ -269,31 +235,6 @@ close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
         if (set.set_add(x))
           syms.add(x);
     }
-#else
-    switch (s->astType) {
-      default: break;
-      case SYMBOL_FN: {
-        Symbol *formals = dynamic_cast<FnSymbol*>(s)->formals;
-        while (formals) {
-          if (set.set_add(formals))
-            syms.add(formals);
-          ParamSymbol *p = dynamic_cast<ParamSymbol*>(formals);
-          if (p) {
-            Type *tt = dynamic_cast<Type*>(p->type);
-            if (tt) {
-              if (set.set_add(tt))
-                syms.add(tt);
-            }
-          }
-          formals = dynamic_cast<Symbol*>(formals->next);
-        }
-        Type *ret = dynamic_cast<FnSymbol*>(s)->retType;
-        if (set.set_add(ret))
-          syms.add(ret);
-        break;
-      }
-    }
-#endif
   }
   forv_Type(t, builtinTypes) {
     if (set.set_add(t))
@@ -409,61 +350,10 @@ finalize_symbols(IF1 *i) {
 
 static Fun *
 install_new_function(FnSymbol *f) {
-#if 0
-  Vec<Stmt *> all_stmts;
-  Vec<BaseAST *> all_syms, syms;
-  all_stmts.add(f->defPoint->stmt);
-  all_syms.add(f);
-  close_symbols(all_stmts, all_syms);   
-  forv_BaseAST(a, all_syms) {
-    Stmt *s = dynamic_cast<Stmt *>(a);
-    if (s && !s->ainfo)
-      syms.add(s);
-    else {
-      Expr *s = dynamic_cast<Expr *>(a);
-      if (s && !s->ainfo)
-        syms.add(s);
-      else {
-        Symbol *s = dynamic_cast<Symbol *>(a);
-        if (s && !s->asymbol)
-          syms.add(s);
-        else {
-          Type *s = dynamic_cast<Type *>(a);
-          if (s && !s->asymbol)
-            syms.add(s);
-        } 
-      } 
-    }
-  }
-#if 0
-  // BEGIN veryify collect_asts
-  Vec<BaseAST *> xsyms, ysyms, xysyms, yxsyms;
-  collect_asts(&xsyms, f);
-  ysyms.copy(syms);
-  xsyms.add(f);
-  xsyms.add(f->defPoint);
-  xsyms.vec_to_set();
-  ysyms.vec_to_set();
-  xsyms.set_difference(ysyms, xysyms);
-  ysyms.set_difference(xsyms, yxsyms);
-  if (xysyms.n) {
-    printf("BaseAST's found by collect_asts but not by close_symbols: %d\n", xysyms.set_count());
-    forv_BaseAST(b, xysyms) if (b)
-      printf("type %2d, id %ld\n", (int)b->astType, b->id);
-  }
-  if (yxsyms.n) {
-    printf("BaseAST's found by close_symbols but not by collect_asts: %d\n", yxsyms.set_count());
-    forv_BaseAST(b, yxsyms) if (b)
-      printf("type %2d, id %ld\n", (int)b->astType, b->id);
-  }
-  // END veryify collect_asts
-#endif
-#else
   Vec<BaseAST *> syms;
   collect_asts(&syms, f);
   syms.add(f);
   syms.add(f->defPoint);
-#endif
   map_symbols(syms);
   build_symbols(syms);
   build_types(syms);
@@ -706,20 +596,6 @@ is_scalar_type(BaseAST *t) {
   return t != dtUnknown && (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
 }
 
-#ifdef NO_ASSIGN_OPERATOR_FOR_RECORDS_UNIONS_INDEXES
-static int
-xis_reference_type(BaseAST *t) {
-  return (t && (t->astType == TYPE_NIL || t->astType == TYPE_CLASS || t->astType == TYPE_INDEX));
-}
-
-static inline int
-scalar_or_reference(Sym *s) {
-  return (s->type->num_kind ||
-	  s->type == sym_string ||
-	  s->type->type_kind == Type_TAGGED ||
-	  (s->asymbol && s->asymbol->symbol && xis_reference_type(s->asymbol->symbol)));
-}
-#else
 static inline int
 scalar_or_reference(Sym *s) {
   return (s->type->num_kind ||
@@ -727,7 +603,6 @@ scalar_or_reference(Sym *s) {
 	  s->type->type_kind == Type_TAGGED ||
 	  (s->asymbol && s->asymbol->symbol && is_reference_type(s->asymbol->symbol)));
 }
-#endif
 
 static void
 build_symbols(Vec<BaseAST *> &syms) {
@@ -901,7 +776,6 @@ new_lub_type(Sym *&sym, char *name, ...)  {
     ss->inherits_add(sym);
 }
 
-#if 0
 static void
 new_global_variable(Sym *&sym, char *name) {
   if (!sym)
@@ -909,7 +783,6 @@ new_global_variable(Sym *&sym, char *name) {
   sym->global_scope = 1;
   if1_set_builtin(if1, sym, name);
 }
-#endif
 
 static void
 builtin_Symbol(Type *dt, Sym **sym, char *name) {
@@ -1004,10 +877,10 @@ build_builtin_symbols() {
     sym_new_object = new_sym("new_object", 1);
     if1_set_builtin(if1, sym_new_object, "new_object");
   }
-  
+
+  new_global_variable(sym_nil, "nil");
   sym_nil->type = sym_null;
   sym_nil->is_external = 1;
-  if1_set_builtin(if1, sym_nil, "nil");
 
   sym_init = new_sym(); // placeholder
 
@@ -2218,11 +2091,7 @@ ACallbacks::finalize_functions() {
     assert(name);
     FnSymbol *fs = dynamic_cast<FnSymbol*>(fun->sym->asymbol->symbol);
     if (fs->classBinding && fs->classBinding->type) {
-      if (
-#ifdef FORCE_RECORD_METHODS_GLOBAL
-        1 || 
-#endif
-          is_reference_type(fs->classBinding->asymbol->symbol)) {
+      if (is_reference_type(fs->classBinding->asymbol->symbol)) {
         if (fs->method_type != NON_METHOD) {
           add_to_universal_lookup_cache(name, fun);
           added = 1;
@@ -2251,17 +2120,15 @@ ACallbacks::finalize_functions() {
       }
       p.inc();
     }
-#if 0
     // check pragmas
     Sym *fn = fun->sym;
     FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
     Pragma *pr = f->defPoint->pragmas;
     while (pr) {
-      if (!strcmp(pr->str, "clone_for_manifest_constants"))
-        fun->clone_for_manifest_constants = 1;
+      if (!strcmp(pr->str, "test pragma"))
+        printf("test pragma\n");
       pr = dynamic_cast<Pragma *>(pr->next);
     }
-#endif
   }
 }
 
