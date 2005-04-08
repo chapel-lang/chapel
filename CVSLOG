@@ -24925,3 +24925,14 @@ Modified files:
 	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
 	                         computeVisibleFunctions.h 
 
+---------------------------------------------------------------------------
+
+04/08/05 15:00:08 -- deitz
+
+Log message:
+	Forgot to update the output to this test with the change to the init
+	functions.
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+
