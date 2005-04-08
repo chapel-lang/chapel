@@ -24691,3 +24691,14 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/07/05 17:32:14 -- bradc
+
+Log message:
+	Stupid workaround to get around fact that sun doesn't
+	seem to have snprintf when -std=c99 is used.
+
+Modified files:
+	chapel/runtime/src/: chplio.c 
+
