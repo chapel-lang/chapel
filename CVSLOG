@@ -24764,3 +24764,15 @@ Modified files:
 	chapel/compiler/main/: passlist.h 
 	chapel/compiler/traversals/: removeSeqOperations.cpp 
 
+---------------------------------------------------------------------------
+
+04/08/05 11:14:18 -- deitz
+
+Log message:
+	Added last two of my initial sequence tests to seq/noanalysis
+	directory.
+
+Added files:
+	chapel/test/types/seq/deitz/noanalysis/: test_seq4.chpl 
+	                                         test_seq4.good 
+
