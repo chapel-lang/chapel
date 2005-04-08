@@ -24679,3 +24679,15 @@ Added files:
 	                                         test_seq8b.chpl 
 	                                         test_seq8b.good 
 
+---------------------------------------------------------------------------
+
+04/07/05 17:13:44 -- bradc
+
+Log message:
+	Made nightly script so that multiple nightly
+	regressions could be run on multiple platforms
+	without their output files colliding.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
