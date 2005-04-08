@@ -61,8 +61,6 @@ PassInfo passlist[] = {
   // passes to normalize the basic AST after analysis
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertWriteFns, ""),
-  RUN(InsertFunctionTemps, ""),
-  RUN(TransformLetExprs, ""),
   RUN(InsertElidedLoops, ""),
 
   // check the program's semantics
@@ -73,12 +71,14 @@ PassInfo passlist[] = {
 
   // passes to prepare for C code generation
   RUN(Fixup, "verify"), // this is a sanity check
+  RUN(RemoveSeqOperations, ""),
+  RUN(InsertFunctionTemps, ""),
+  RUN(TransformLetExprs, ""),
   RUN(MethodsToFunctions, ""),
   RUN(ProcessParameters, ""),
   RUN(InsertVariableInitializations, ""),
   RUN(DestructureTupleAssignments, ""),
   RUN(ExpandSeqExprAssignments, ""),
-  RUN(RemoveSeqOperations, ""),
   RUN(InsertUnionChecks, ""),
   RUN(LegalizeCNames, ""), 
 

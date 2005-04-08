@@ -60,29 +60,26 @@ void RemoveSeqOperations::postProcessExpr(Expr* expr) {
     INT_FATAL(expr, "Cannot find builtin method in sequence type");
   }
 
-  // This commented out code will eventually put in the sequence copy
-  // functions.
+  Symbol* seq_copy = Symboltable::lookupInScope("copy", seq_scope);
 
-//   Symbol* seq_copy = Symboltable::lookupInScope("copy", seq_scope);
+  if (!seq_copy) {
+    INT_FATAL(expr, "Cannot find copy method in sequence type");
+  }
 
-//   if (!seq_copy) {
-//     INT_FATAL(expr, "Cannot find copy method in sequence type");
-//   }
+  Expr* arg1;
+  Expr* arg2;
 
-   Expr* arg1;
-   Expr* arg2;
+  if (left_seq_type) {
+    arg1 = new FnCall(new Variable(seq_copy), bin_expr->left->copy());
+  } else {
+    arg1 = bin_expr->left->copy(); 
+  }
 
-//   if (left_seq_type) {
-//     arg1 = new FnCall(new Variable(seq_copy), bin_expr->left->copy());
-//   } else {
-     arg1 = bin_expr->left->copy(); 
-//   }
-
-//   if (right_seq_type) {
-//     arg2 = new FnCall(new Variable(seq_copy), bin_expr->right->copy());
-//   } else {
-     arg2 = bin_expr->right->copy(); 
-//   }
+  if (right_seq_type) {
+    arg2 = new FnCall(new Variable(seq_copy), bin_expr->right->copy());
+  } else {
+    arg2 = bin_expr->right->copy(); 
+  }
 
   arg1->append(arg2);
   expr->replace(new FnCall(new Variable(seq_method), arg1));
