@@ -1,10 +1,10 @@
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_logical_and(logical_and.chpl:13) ( __init_logical_and (logical_and.chpl:13) )
-::__init_logical_and(logical_and.chpl:13) ( __init_logical_and (logical_and.chpl:13) )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_logical_and ( __init_logical_and )
+::__init_logical_and ( __init_logical_and )
+::__init_prelude ( __init_prelude )
+::__init_prelude ( __init_prelude )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::and(internal_prelude.chpl:0) ( and )
 ::answer(logical_and.chpl:3) ( int64 )
@@ -15,5 +15,4 @@
 ::o(logical_and.chpl:1) ( int64 )
 ::p(logical_and.chpl:2) ( int64 )
 ::void ( void )
-function __init_logical_and logical_and.chpl:13
 globals

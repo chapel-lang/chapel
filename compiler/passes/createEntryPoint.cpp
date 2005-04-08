@@ -29,6 +29,17 @@ static ModuleSymbol* findUniqueUserModule(ModuleSymbol* moduleList) {
 
 
 void CreateEntryPoint::run(ModuleSymbol* moduleList) {
+
+  for (ModuleSymbol* mod = moduleList; mod; mod = nextLink(ModuleSymbol, mod)) {
+    if (mod->internal || !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
+      if (mod != commonModule) {
+        SymScope* saveScope = Symboltable::setCurrentScope(mod->modScope);
+        mod->createInitFn();
+        Symboltable::setCurrentScope(saveScope);
+      }
+    }
+  }
+
   // add prelude initialization code to the entry point
   // BLC: This assumes there is some useful init code in the preludes;
   // is there?

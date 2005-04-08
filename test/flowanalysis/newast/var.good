@@ -1,11 +1,11 @@
 ::+(internal_prelude.chpl:0) ( + )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_var(var.chpl:4) ( __init_var (var.chpl:4) )
-::__init_var(var.chpl:4) ( __init_var (var.chpl:4) )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude ( __init_prelude )
+::__init_var ( __init_var )
+::__init_var ( __init_var )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( float64 )
 ::int64 ( int64 )
@@ -13,5 +13,4 @@
 ::main ( main )
 ::void ( void )
 ::x(var.chpl:1) ( int64 )
-function __init_var var.chpl:4
 globals

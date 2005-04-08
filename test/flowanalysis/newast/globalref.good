@@ -1,11 +1,11 @@
- called from 20 in __init_globalref at globalref.chpl:27
+ called from 20 in __init_globalref at <internal>:0
 ::__init_entryPoint ( __init_entryPoint )
-::__init_globalref(globalref.chpl:27) ( __init_globalref (globalref.chpl:27) )
-::__init_globalref(globalref.chpl:27) ( __init_globalref (globalref.chpl:27) )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_globalref ( __init_globalref )
+::__init_globalref ( __init_globalref )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude ( __init_prelude )
 ::a(globalref.chpl:1) ( int64 )
 ::a(globalref.chpl:5) ( int64 )
 ::b(globalref.chpl:2) ( int64 )
@@ -15,6 +15,5 @@
 ::main ( main )
 ::main ( main )
 ::void ( void )
-function __init_globalref globalref.chpl:27
 function foo globalref.chpl:5
 globals

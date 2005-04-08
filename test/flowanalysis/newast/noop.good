@@ -1,12 +1,12 @@
- called from 19 in __init_noop at noop.chpl:21
+ called from 19 in __init_noop at <internal>:0
 ::D(noop.chpl:6) ( Domain )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_noop(noop.chpl:21) ( __init_noop (noop.chpl:21) )
-::__init_noop(noop.chpl:21) ( __init_noop (noop.chpl:21) )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_noop ( __init_noop )
+::__init_noop ( __init_noop )
+::__init_prelude ( __init_prelude )
+::__init_prelude ( __init_prelude )
 ::bool ( bool )
 ::false(prelude.chpl:0) ( bool )
 ::foo(noop.chpl:4) ( foo )
@@ -14,6 +14,5 @@
 ::main ( main )
 ::main ( main )
 ::void ( void )
-function __init_noop noop.chpl:21
 function foo noop.chpl:4
 globals

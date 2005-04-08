@@ -321,7 +321,7 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
   return newModule;
 }
 
-static bool ModuleDefContainsOnlyNestedModules(Stmt* def) {
+bool ModuleDefContainsOnlyNestedModules(Stmt* def) {
   Stmt* stmt = def;
 
   while (stmt) {
@@ -393,7 +393,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
     // in the module's scope, but that doesn't currently seem to
     // work.
     mod->stmts = definition;
-    mod->createInitFn();
+    // mod->createInitFn();
 
     // pop the module's scope
     if (!mod->internal) {

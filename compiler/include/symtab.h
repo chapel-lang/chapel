@@ -101,4 +101,6 @@ class Symboltable {
   static void dump(FILE* outfile = stderr);
 };
 
+bool ModuleDefContainsOnlyNestedModules(Stmt* def);
+
 #endif

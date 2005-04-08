@@ -1,11 +1,11 @@
- called from 15 in __init_codegen_test at codegen_test.chpl:17
-::__init_codegen_test(codegen_test.chpl:17) ( __init_codegen_test (codegen_test.chpl:17) )
-::__init_codegen_test(codegen_test.chpl:17) ( __init_codegen_test (codegen_test.chpl:17) )
+ called from 15 in __init_codegen_test at <internal>:0
+::__init_codegen_test ( __init_codegen_test )
+::__init_codegen_test ( __init_codegen_test )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude ( __init_prelude )
 ::a(codegen_test.chpl:8) ( int64 )
 ::foo(codegen_test.chpl:12) ( foo )
 ::int64 ( int64 )
@@ -15,6 +15,5 @@
 ::x(codegen_test.chpl:1) ( int64 )
 ::y(codegen_test.chpl:3) ( int64 )
 ::z(codegen_test.chpl:7) ( int64 )
-function __init_codegen_test codegen_test.chpl:17
 function foo codegen_test.chpl:7
 globals

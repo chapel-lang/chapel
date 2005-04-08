@@ -1,12 +1,11 @@
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_printempty(printempty.chpl:4) ( __init_printempty (printempty.chpl:4) )
-::__init_printempty(printempty.chpl:4) ( __init_printempty (printempty.chpl:4) )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_prelude ( __init_prelude )
+::__init_prelude ( __init_prelude )
+::__init_printempty ( __init_printempty )
+::__init_printempty ( __init_printempty )
 ::main ( main )
 ::main ( main )
 ::void ( void )
-function __init_printempty printempty.chpl:4
 globals

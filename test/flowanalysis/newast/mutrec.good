@@ -1,15 +1,15 @@
  called from 13 in bar at mutrec.chpl:17
- called from 19 in __init_mutrec at mutrec.chpl:22
- called from 20 in __init_mutrec at mutrec.chpl:22
+ called from 19 in __init_mutrec at <internal>:0
+ called from 20 in __init_mutrec at <internal>:0
  called from 4 in foo at mutrec.chpl:8
 ::==(internal_prelude.chpl:0) ( == )
 ::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_internal_prelude(internal_prelude.chpl:0) ( __init_internal_prelude )
-::__init_mutrec(mutrec.chpl:22) ( __init_mutrec (mutrec.chpl:22) )
-::__init_mutrec(mutrec.chpl:22) ( __init_mutrec (mutrec.chpl:22) )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
-::__init_prelude(prelude.chpl:0) ( __init_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_internal_prelude ( __init_internal_prelude )
+::__init_mutrec ( __init_mutrec )
+::__init_mutrec ( __init_mutrec )
+::__init_prelude ( __init_prelude )
+::__init_prelude ( __init_prelude )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(mutrec.chpl:1) ( int64 )
 ::a(mutrec.chpl:10) ( int64 )
@@ -19,7 +19,6 @@
 ::main ( main )
 ::main ( main )
 ::void ( void )
-function __init_mutrec mutrec.chpl:22
 function bar mutrec.chpl:10
 function foo mutrec.chpl:1
 globals
