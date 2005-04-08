@@ -1412,6 +1412,37 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
           make_closure(result);
         break;
       }
+      case P_prim_setter: {
+        AVar *obj = make_AVar(p->rvals.v[1], es);
+        AVar *selector = make_AVar(p->rvals.v[3], es);
+        AVar *val = make_AVar(p->rvals.v[4], es);
+        p->tvals.fill(1);
+        if (!p->tvals.v[0]) {
+          Sym *s = new_Sym();
+          s->function_scope = 1;
+          p->tvals.v[0] = new Var(s);
+          s->var = p->tvals.v[0];
+          p->tvals.v[0]->is_internal = 1;
+          es->fun->fa_all_Vars.add(p->tvals.v[0]);
+        }
+        AVar *tval = make_AVar(p->tvals.v[0], es);
+        flow_vars(val, tval);
+        set_container(tval, obj);
+        forv_CreationSet(sel, *selector->out) if (sel) {
+          char *symbol = sel->sym->name; assert(symbol);
+          forv_CreationSet(cs, *obj->out) if (cs) {
+            if (cs == null_type->v[0])
+              continue;
+            AVar *iv = cs->var_map.get(symbol);
+            if (iv)
+              flow_vars(tval, iv);
+            else
+              type_violation(ATypeViolation_MEMBER, selector, make_AType(cs), result);
+          }
+        }
+        flow_vars(val, result);
+        break;
+      }
       case P_prim_assign: {
         AVar *lhs = make_AVar(p->rvals.v[1], es);
         AVar *rhs = make_AVar(p->rvals.v[3], es);

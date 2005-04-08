@@ -181,6 +181,21 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
       }
       break;
     }
+    case P_prim_setter: {
+      Vec<Sym *> symbols;
+      symbol_info(n->rvals.v[3], symbols);
+      assert(symbols.n == 1);
+      char *symbol = symbols.v[0]->name;
+      Sym *obj = n->rvals.v[1]->type;
+      for (int i = 0; i < obj->has.n; i++) {
+        if (symbol == obj->has.v[i]->name) {
+          fprintf(fp, "%s->e%d = %s;\n", n->rvals.v[1]->cg_string, i, n->rvals.v[4]->cg_string);
+          fprintf(fp, "%s = %s->e%d;\n", n->lvals.v[0]->cg_string, n->rvals.v[1]->cg_string, i);
+          break;
+        }
+      }
+      break;
+    }
     case P_prim_apply: {
       int incomplete = n->lvals.n && n->lvals.v[0]->type->var &&
         n->lvals.v[0]->type->var->def == n;
