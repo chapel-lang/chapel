@@ -93,11 +93,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     setter_fn->classBinding = structType->symbol;
     setter_fn->_this = setter_this;
 
-#if 0
-    char* getter_name = glomstrings(2, "get_", tmp->name);
-#else
-    char* getter_name = tmp->name;
-#endif
+    char* getter_name = glomstrings(2, "_chplget_", tmp->name);
     FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(getter_name));
     getter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_", getter_name);
     getter_fn->_getter = tmp;
@@ -110,6 +106,10 @@ static void build_setters_and_getters(StructuralType* structType) {
     structType->addDeclarations(getter_def_stmt);
     getter_fn->classBinding = structType->symbol;
     getter_fn->_this = getter_this;
+    /**
+     **  Hack getter to have name of field (Can no longer lookup!)
+     **/
+    getter_fn->name = copystring(tmp->name);
   }
   Symboltable::setCurrentScope(saveScope);
 }
