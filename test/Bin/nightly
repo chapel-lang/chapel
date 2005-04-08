@@ -47,6 +47,10 @@ $pid = getpgrp();
 $user = `whoami`;
 chomp($user);
 $today = `date +%w-%a`; chomp($today);
+$platform = `uname -s`;
+chomp($platform);
+$platform = lc($platform);
+
 
 #
 # directory locations
@@ -58,9 +62,9 @@ $chplhome = $ENV{'CHPLHOME'};
 $logdir = "$chplhome/test/Logs/Nightly";
 $statdir = "$logdir/Stats";
 if ($debug == 1) {
-    $statfile = "$statdir/nightly.debug.dat";
+    $statfile = "$statdir/nightly.$platform-debug.dat";
 } else {
-    $statfile = "$statdir/nightly.cron.dat";
+    $statfile = "$statdir/nightly.$platform-cron.dat";
 }
 
 
@@ -68,11 +72,11 @@ if ($debug == 1) {
 # test log filenames
 #
 if ($debug == 1) {
-  $rawstdlog = "$logdir/debug-std.log";
-  $rawvgrlog = "$logdir/debug-vgr.log";
+  $rawstdlog = "$logdir/debug-$platform-std.log";
+  $rawvgrlog = "$logdir/debug-$platform-vgr.log";
 } else {
-  $rawstdlog = "$logdir/day$today-std.log";
-  $rawvgrlog = "$logdir/day$today-vgr.log";
+  $rawstdlog = "$logdir/day$today-$platform-std.log";
+  $rawvgrlog = "$logdir/day$today-$platform-vgr.log";
 }
 $rawstdsummary = "$rawstdlog.summary";
 $rawvgrsummary = "$rawvgrlog.summary";
@@ -80,8 +84,8 @@ $rawvgrsummary = "$rawvgrlog.summary";
 $sortedstdsummary = "$rawstdlog.sorted";
 $sortedvgrsummary = "$rawvgrlog.sorted";
 
-$prevstdsummary = "$logdir/last-std.log.sorted";
-$prevvgrsummary = "$logdir/last-vgr.log.sorted";
+$prevstdsummary = "$logdir/last-$platform-std.log.sorted";
+$prevvgrsummary = "$logdir/last-$platform-vgr.log.sorted";
 
 
 if ($debug == 1) {
@@ -326,7 +330,7 @@ if ($debug == 0) {
 
 
 #
-# write stats and build new graph
+# write stats and build new graph for linux only
 #
 if ($knownumtests == 1) {
     $testcol = "$newnumtests";
@@ -347,7 +351,9 @@ if ($vgrstatus == 0) {
 if ($debug == 0) {
     `ci -l -m"automated nightly checkin" $statfile`;
 }
-`cd $statdir && ./makeplot`;
+if ($platform eq "linux") {
+    `cd $statdir && ./makeplot`;
+}
 
 #
 # clean up
@@ -389,7 +395,9 @@ sub mysystem {
 	    if ($debug == 0) {
 		`ci -l -m"automated nightly checkin" $statfile`;
 	    }
-	    `cd $statdir && ./makeplot`;
+            if ($platform eq "linux") {
+                `cd $statdir && ./makeplot`;
+            }
 	    exit 1;
 	}
     }
