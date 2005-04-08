@@ -24956,3 +24956,30 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/08/05 16:42:06 -- jplevyak
+
+Log message:
+	Here is a weird one.   I am restructuring the variable definition code
+	and I noticed that
+	
+	functions/deitz/test_named_param3.chpl
+	
+	is failing because it doesn't know the return type of a function.
+	
+	Turns out, it isn't calling return_type_info() on that function!
+	
+	So I have added a #define CALL_RETURN_TYPE_INFO in codegenHeader
+	which if the retType is dtUnknown, calls return_type_info to get the
+	real value.
+	
+	Steve, could you please try undef'ing to see what the deal is?  This
+	function is live, but I think it is a wrapper which makes me think
+	that the code in findUnknownTypes.cpp may not always be finding all
+	the wrappers.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+
