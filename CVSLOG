@@ -24946,3 +24946,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/08/05 15:25:58 -- jplevyak
+
+Log message:
+	Remove more unnecessary #ifdefs
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
