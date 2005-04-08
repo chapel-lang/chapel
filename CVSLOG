@@ -24983,3 +24983,14 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/08/05 16:44:20 -- bradc
+
+Log message:
+	Making nightly work better for users other than the
+	nightly cron job based on Steve's feedback.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
