@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "chplio.h"
@@ -71,8 +72,13 @@ void _write_float64(FILE* outfile, char* format, _float64 val) {
   if (format != _default_format_write_float64) {
     fprintf(outfile, format, val);
   } else {
-    char buff[1024];
-    snprintf(buff, 1024, format, val);
+    const int floatBuffLen = 1024;
+    char buff[floatBuffLen];
+    sprintf(buff, format, val);
+    if (strlen(buff) > floatBuffLen-1) {
+      fprintf(stderr, "Error: float I/O buffer overrun\n");
+      exit(1);
+    }
     if (strchr(buff, '.') == NULL && strchr(buff, 'e') == NULL) {
       fprintf(outfile, "%s.0", buff);
     } else {
