@@ -24936,3 +24936,13 @@ Log message:
 Modified files:
 	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
 
+---------------------------------------------------------------------------
+
+04/08/05 15:14:51 -- jplevyak
+
+Log message:
+	Remove some unused #ifdefs.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
