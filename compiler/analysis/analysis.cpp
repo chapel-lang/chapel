@@ -1044,14 +1044,8 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
       StructuralType *ct = dynamic_cast<StructuralType*>(at->elementType);
       new_element = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, ret);
       new_element->ast = ast;
-    } else {
-#ifdef USE_TEMP_FOR_LITERALS
-      ret = new_sym();
-      if1_move(if1, c, sym_nil, ret, ast);
-#else
+    } else
       ret = sym_nil;;
-#endif
-    }
     gen_set_array(s, at, ret, ast);
   }
   send->ast = ast;
@@ -1067,13 +1061,7 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
 
 static void
 init_with_nil(Sym *s, AInfo *ast) {
-#ifdef USE_TEMP_FOR_LITERALS
-  Sym *n = new_sym();
-  if1_move(if1, &ast->code, sym_nil, n, ast);
-  if1_move(if1, &ast->code, n, s, ast);
-#else
   if1_move(if1, &ast->code, sym_nil, s, ast);
-#endif
 }
 
 static int
@@ -1326,13 +1314,7 @@ gen_get_member(MemberAccess *ma) {
   ast->rval = new_sym();
   ast->rval->ast = ast;
   if1_gen(if1, &ast->code, ma->base->ainfo->code);
-#if 0
-  char sel[1024];
-  strcpy(sel, "get_");
-  strcat(sel, ma->member->asymbol->sym->name);
-#else
   char *sel = ma->member->asymbol->sym->name;
-#endif
   Sym *selector = if1_make_symbol(if1, sel);
   Code *c = if1_send(if1, &ast->code, 3, 1, selector, method_symbol,
                      ma->base->ainfo->rval, ast->rval);
@@ -1419,9 +1401,6 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
     if1_add_send_arg(if1, send, r);
   if1_add_send_result(if1, send, ast->rval);
   send->partial = Partial_NEVER;
-#ifdef USE_LVALUE
-  ast->rval->is_lvalue = 1;
-#endif
   ast->sym = ast->rval;
   return 0;
 }
@@ -1482,9 +1461,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       if (s->expr) {
         fn->fun_returns_value = 1;
         if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
-#ifdef USE_LVALUE
-        s->expr->ainfo->rval->is_lvalue = 1;
-#endif
         if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
       }
       Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
@@ -1506,12 +1482,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR: {
       Expr *s = dynamic_cast<Expr*>(ast);
       assert(!ast); 
-#ifdef USE_TEMP_FOR_LITERALS
-      s->ainfo->rval = new_sym();
-      if1_move(if1, &s->ainfo->code, sym_nil, s->ainfo->rval, s->ainfo);
-#else
       s->ainfo->rval = sym_nil;
-#endif
       break;
     }
     case EXPR_LITERAL: assert(!"case"); break;
@@ -1519,36 +1490,21 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       BoolLiteral *s = dynamic_cast<BoolLiteral*>(ast);
       Sym *c = if1_const(if1, sym_bool, s->str);
       c->imm.v_bool = s->val;
-#ifdef USE_TEMP_FOR_LITERALS
-      s->ainfo->rval = new_sym();
-      if1_move(if1, &s->ainfo->code, c, s->ainfo->rval, s->ainfo);
-#else
       s->ainfo->rval = c;
-#endif
       break;
     }
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
       Sym *c = if1_const(if1, sym_int64, s->str);
       c->imm.v_int64 = s->val;
-#ifdef USE_TEMP_FOR_LITERALS
-      s->ainfo->rval = new_sym();
-      if1_move(if1, &s->ainfo->code, c, s->ainfo->rval, s->ainfo);
-#else
       s->ainfo->rval = c;
-#endif
       break;
     }
     case EXPR_FLOATLITERAL: {
       FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
       Sym *c = if1_const(if1, sym_float64, s->str);
       c->imm.v_float64 = s->val;
-#ifdef USE_TEMP_FOR_LITERALS
-      s->ainfo->rval = new_sym();
-      if1_move(if1, &s->ainfo->code, c, s->ainfo->rval, s->ainfo);
-#else
       s->ainfo->rval = c;
-#endif
       break;
     }
     case EXPR_COMPLEXLITERAL: {
@@ -1556,23 +1512,13 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Sym *c = if1_const(if1, sym_complex64, s->str);
       c->imm.v_complex64.r = s->realVal;
       c->imm.v_complex64.i = s->imagVal;
-#ifdef USE_TEMP_FOR_LITERALS
-      s->ainfo->rval = new_sym();
-      if1_move(if1, &s->ainfo->code, c, s->ainfo->rval, s->ainfo);
-#else
       s->ainfo->rval = c;
-#endif
       break;
     }
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
       Sym *c = if1_const(if1, sym_string, s->str);
-#ifdef USE_TEMP_FOR_LITERALS
-      s->ainfo->rval = new_sym();
-      if1_move(if1, &s->ainfo->code, c, s->ainfo->rval, s->ainfo);
-#else
       s->ainfo->rval = c;
-#endif
       break;
     }
     case EXPR_VARIABLE: {
@@ -1588,12 +1534,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
           break;
       }
       s->ainfo->sym = sym;
-#ifdef USE_TEMP_FOR_VARIABLES
-      s->ainfo->rval = new_sym();
-      if1_move(if1, &s->ainfo->code, c, s->ainfo->rval, s->ainfo);
-#else
       s->ainfo->rval = sym;
-#endif
       break;
     }
     case EXPR_VARINIT: break;
@@ -1681,9 +1622,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       c->ast = s->ainfo;
       c->partial = Partial_NEVER; // assume this is a member
       s->ainfo->send = c;
-#ifdef USE_LVALUE
-      s->ainfo->rval->is_lvalue = 1;
-#endif
       break;
     }
     case EXPR_ASSIGNOP: {
@@ -2023,9 +1961,6 @@ init_function(FnSymbol *f) {
   s->cont->ast = ast;
   s->ret = new_sym();
   s->ret->ast = ast;
-#ifdef USE_LVALUE
-  s->ret->is_lvalue = 1;
-#endif
   s->labelmap = new LabelMap;
   set_global_scope(s);
   return 0;
