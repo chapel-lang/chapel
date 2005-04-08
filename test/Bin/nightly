@@ -35,7 +35,7 @@ if ($printusage == 1) {
     print "\t-debug     : check out sources and run standard only\n";
     print "\t-debugvgr  : check out sources and run standard, valgrind\n";
     print "\t-cron      : use for nightly cron runs only\n";
-    print "\t-cronnovgr : user for nightly cron runs on platforms without valgrind\n";
+    print "\t-cronnovgr : use for nightly cron runs on platforms without valgrind\n";
     exit 1;
 }
 
@@ -58,8 +58,12 @@ $platform = lc($platform);
 $tmpdir = "/tmp/chapel-nightly.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
-$logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
 $statdir = $ENV{'CHPL_NIGHTLY_STATDIR'};
+$logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
+$cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
+if ($cronlogdir eq "") {
+    $cronlogdir = "/data/sea/cascade/chapel/Nightly";
+}
 if ($logdir eq "" || $statdir eq "") {
     print "Error: CHPL_NIGHTLY_LOGDIR and CHPL_NIGHTLY_STATDIR must be set\n";
     exit 1;
@@ -87,8 +91,8 @@ $rawvgrsummary = "$rawvgrlog.summary";
 $sortedstdsummary = "$rawstdlog.sorted";
 $sortedvgrsummary = "$rawvgrlog.sorted";
 
-$prevstdsummary = "$logdir/last-$platform-std.log.sorted";
-$prevvgrsummary = "$logdir/last-$platform-vgr.log.sorted";
+$prevstdsummary = "$cronlogdir/last-$platform-std.log.sorted";
+$prevvgrsummary = "$cronlogdir/last-$platform-vgr.log.sorted";
 
 
 if ($debug == 1) {
@@ -401,7 +405,7 @@ sub commitstats {
     if ($debug == 0) {
         `ci -l -m"automated nightly checkin" $statfile`;
     }
-    if ($platform eq "linux") {
+    if ($platform eq "linux" && $cronlogdir eq $logdir) {
         `cd $statdir && ./makeplot`;
     }
 }
