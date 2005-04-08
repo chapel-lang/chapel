@@ -24799,3 +24799,22 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/08/05 11:20:10 -- deitz
+
+Log message:
+	John, I'm passing these futures over to you.  Analysis doesn't know
+	about (/ ... /) which is a SeqExpr and # which is BINOP_SEQCAT.  Other
+	than that, sequences are implemented as classes and use class cloning
+	so these should be on track with other things we're working on.
+
+Modified files:
+	chapel/test/types/seq/deitz/: test_seq1.future test_seq1a.future 
+	                              test_seq1b.future 
+	                              test_seq1c.future test_seq2.future 
+	                              test_seq3.future test_seq4.future 
+	                              test_seq5.future test_seq6.future 
+	                              test_seq7.future test_seq8.future 
+	                              test_seq8b.future 
+
