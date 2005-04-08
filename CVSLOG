@@ -24901,3 +24901,16 @@ Modified files:
 	                                     mg-seq.good mvm-seq.good 
 	                                     test.good 
 
+---------------------------------------------------------------------------
+
+04/08/05 14:19:00 -- deitz
+
+Log message:
+	Fixed compilation for uncommenting of #define of
+	CONSTRUCTOR_WITH_PARAMETERS.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
