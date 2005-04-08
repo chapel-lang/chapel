@@ -24702,3 +24702,20 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplio.c 
 
+---------------------------------------------------------------------------
+
+04/08/05 10:03:31 -- deitz
+
+Log message:
+	Reinserted redefinition checking in the symboltable.
+	
+	Reworked handling of getter functions with the same name as the field.
+	We first name the getter "_chplget_$field" where $field is the name of
+	the field.  Then, later, we rename it "$field."  This means that it
+	can no longer be looked up in the Symboltable.  However, we don't
+	care.
+
+Modified files:
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
