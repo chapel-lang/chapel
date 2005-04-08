@@ -24732,3 +24732,19 @@ Modified files:
 Added files:
 	chapel/test/classes/bradc/unions/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/08/05 11:00:57 -- deitz
+
+Log message:
+	Made some minor change to CreateEntryPoint in a first attempt to move
+	this after fixup.  Noticing that it contains a call to createInitFn(),
+	I'll have to move these after first though.  This checkin is just an
+	effort to keep my code inline.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/passes/: createEntryPoint.cpp createEntryPoint.h 
+	                         runAnalysis.cpp runAnalysis.h 
+
