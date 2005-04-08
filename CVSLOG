@@ -24914,3 +24914,14 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/08/05 14:54:02 -- deitz
+
+Log message:
+	Reenabled ComputeVisibleFunctions on class methods.
+
+Modified files:
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         computeVisibleFunctions.h 
+
