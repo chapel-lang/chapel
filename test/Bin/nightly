@@ -55,12 +55,15 @@ $platform = lc($platform);
 #
 # directory locations
 #
-$tmpdir = "/tmp/chapel-nightly-uw.$user.$pid.deleteme";
+$tmpdir = "/tmp/chapel-nightly.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
-$chplhome = $ENV{'CHPLHOME'};
-$logdir = "$chplhome/test/Logs/Nightly";
-$statdir = "$logdir/Stats";
+$logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
+$statdir = $ENV{'CHPL_NIGHTLY_STATDIR'};
+if ($logdir eq "" || $statdir eq "") {
+    print "Error: CHPL_NIGHTLY_LOGDIR and CHPL_NIGHTLY_STATDIR must be set\n";
+    exit 1;
+}
 if ($debug == 1) {
     $statfile = "$statdir/nightly.$platform-debug.dat";
 } else {
@@ -89,9 +92,9 @@ $prevvgrsummary = "$logdir/last-$platform-vgr.log.sorted";
 
 
 if ($debug == 1) {
-    $mailcommand = "| Mail -s \"Chapel: Debug Results\" $user\@cray.com";
+    $mailcommand = "| Mail -s \"Chapel: Debug Results ($platform) \" $user\@cray.com";
 } else {
-    $mailcommand = "| Mail -s \"Chapel: Nightly Results\" chapel_dev\@cray.com";
+    $mailcommand = "| Mail -s \"Chapel: Nightly Results ($platform) \" chapel_dev\@cray.com";
 }
 $somethingfailed = 0;
 
@@ -348,12 +351,7 @@ if ($vgrstatus == 0) {
     $vgrcol = "-";
 }
 `echo "$statdate\t-\t$testcol\t$stdcol\t$vgrcol" >> $statfile`;
-if ($debug == 0) {
-    `ci -l -m"automated nightly checkin" $statfile`;
-}
-if ($platform eq "linux") {
-    `cd $statdir && ./makeplot`;
-}
+commitstats();
 
 #
 # clean up
@@ -391,17 +389,21 @@ sub mysystem {
 	}
 
 	if ($fatal != 0) {
-	    `echo "$statdate\t1" >> $statfile`;
-	    if ($debug == 0) {
-		`ci -l -m"automated nightly checkin" $statfile`;
-	    }
-            if ($platform eq "linux") {
-                `cd $statdir && ./makeplot`;
-            }
+            `echo "$statdate\t1" >> $statfile`;
+            commitstats();
 	    exit 1;
 	}
     }
     $status;
+}
+
+sub commitstats {
+    if ($debug == 0) {
+        `ci -l -m"automated nightly checkin" $statfile`;
+    }
+    if ($platform eq "linux") {
+        `cd $statdir && ./makeplot`;
+    }
 }
 
 sub numsuccesses {
