@@ -1,5 +1,4 @@
 #include "analysis.h"
-#include "createEntryPoint.h"
 #include "driver.h"
 #include "filesToAST.h"
 #include "if1.h"
@@ -9,6 +8,7 @@
 
 int RunAnalysis::runCount = 0;
 int RunAnalysis::isRunning = 0;
+Stmt* RunAnalysis::entryStmtList = NULL;
 
 void RunAnalysis::run(ModuleSymbol* moduleList) {
   if (analyzeAST) {
@@ -22,7 +22,9 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
 
       mod = nextLink(ModuleSymbol, mod);
     }
-    stmts.add(CreateEntryPoint::entryPoint);
+    for (Stmt* tmp = entryStmtList; tmp; tmp = nextLink(Stmt, tmp)) {
+      stmts.add(tmp);
+    }
     AST_to_IF1(stmts);
     // BLC: John, what filename should be passed in for multiple modules?
     // I'm just passing in the first non-internal module's filename

@@ -466,14 +466,6 @@ void ExprStmt::codegen(FILE* outfile) {
 }
 
 
-ExprStmt* ExprStmt::createFnCallStmt(FnSymbol* fnSym, Expr* argList) {
-  FnCall *e = new FnCall(new Variable(fnSym), argList);
-  ExprStmt *stmt = new ExprStmt(e);
-  e->stmt = stmt;
-  return stmt;
-}
-
-
 ReturnStmt::ReturnStmt(Expr* retExpr) :
   ExprStmt(retExpr)
 {

@@ -92,8 +92,6 @@ class ExprStmt : public Stmt {
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
-
-  static ExprStmt* createFnCallStmt(FnSymbol* fnSym, Expr* argList = NULL);
 };
 
 

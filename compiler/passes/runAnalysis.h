@@ -7,6 +7,7 @@ class RunAnalysis : public Pass {
  public:
   static int isRunning;
   static int runCount;
+  static Stmt* entryStmtList;
   void run(ModuleSymbol* moduleList);
 };
 

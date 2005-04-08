@@ -8,9 +8,7 @@ class Stmt;
 class CreateEntryPoint : public Pass {
  public:
   void run(ModuleSymbol* moduleList);
-
-  static Stmt* entryPoint;
-  static void addModuleInitToEntryPoint(ModuleSymbol* module);
+  Stmt* entryPoint;
 };
 
 #endif
