@@ -24748,3 +24748,19 @@ Modified files:
 	chapel/compiler/passes/: createEntryPoint.cpp createEntryPoint.h 
 	                         runAnalysis.cpp runAnalysis.h 
 
+---------------------------------------------------------------------------
+
+04/08/05 11:12:58 -- deitz
+
+Log message:
+	Reordered some passes to get InsertFunctionTemps down in the passlist.
+	This lets us insert many functions before that.  These later passes
+	are delicately ordered.
+	
+	Improved support for sequences so that sequences are liberally copied
+	to ensure correct semantics.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: removeSeqOperations.cpp 
+
