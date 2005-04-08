@@ -24776,3 +24776,26 @@ Added files:
 	chapel/test/types/seq/deitz/noanalysis/: test_seq4.chpl 
 	                                         test_seq4.good 
 
+---------------------------------------------------------------------------
+
+04/08/05 11:19:40 -- bradc
+
+Log message:
+	More improvements to the nightly regression testing
+	scripts for portability.  In order to run it, one
+	should now set two environment variables:
+	
+	        CHPL_NIGHTLY_LOGDIR -- directory for logs to go in
+	        CHPL_NIGHTLY_STATDIR -- directory for stats to go in
+	
+	Otherwise, everything should be reasonably platform
+	and user dependent (am about to do some testing to
+	be sure).
+	
+	John, I'm going to see if I can get regressions running on
+	the Suns over the weekend.  If so, then we'll add your
+	two platforms to the mix next week.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
