@@ -24994,3 +24994,27 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/08/05 17:42:58 -- deitz
+
+Log message:
+	Added a new pass InsertDefaultInitVariables that inserts variables for
+	every user-defined type that contain their default initialization.
+	These variables are then used to initialize the variables.
+	
+	Futurized my test for record assignment which does require the
+	overloaded = function to be used.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: fixup.cpp processParameters.cpp 
+	                             resolveSymbols.cpp 
+Added files:
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         insertDefaultInitVariables.h 
+	chapel/test/classes/deitz/: test_record_assign1.future 
+
