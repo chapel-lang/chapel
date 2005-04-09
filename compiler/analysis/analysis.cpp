@@ -599,9 +599,9 @@ is_scalar_type(BaseAST *t) {
 static inline int
 scalar_or_reference(Sym *s) {
   return (s->type->num_kind ||
-	  s->type == sym_string ||
-	  s->type->type_kind == Type_TAGGED ||
-	  (s->asymbol && s->asymbol->symbol && is_reference_type(s->asymbol->symbol)));
+          s->type == sym_string ||
+          s->type->type_kind == Type_TAGGED ||
+          (s->asymbol && s->asymbol->symbol && is_reference_type(s->asymbol->symbol)));
 }
 
 static void
@@ -1672,12 +1672,12 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
       }
       if (op) {
-	Sym *old_rval = rval;
-	rval = new_sym();
-	rval->ast = s->ainfo;
-	Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
-			   s->left->ainfo->rval, old_rval, rval);
-	c->ast = s->ainfo;
+        Sym *old_rval = rval;
+        rval = new_sym();
+        rval->ast = s->ainfo;
+        Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
+                           s->left->ainfo->rval, old_rval, rval);
+        c->ast = s->ainfo;
       }
       Variable *variable = dynamic_cast<Variable*>(s->left);
       Symbol *symbol = variable ? dynamic_cast<Symbol *>(variable->var) : 0;
@@ -1686,32 +1686,32 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       int constructor_assignment = 0;
       int getter_setter = f && (f->_setter || f->_getter);
       if (f && f->isConstructor) {
-	MemberAccess *m = dynamic_cast<MemberAccess*>(s->left);
-	if (m) {
-	  Variable *v = dynamic_cast<Variable*>(m->base);
-	  if (v) {
-	    if (v->var->isThis())
-	      constructor_assignment = 1;
-	  }
-	}
+        MemberAccess *m = dynamic_cast<MemberAccess*>(s->left);
+        if (m) {
+          Variable *v = dynamic_cast<Variable*>(m->base);
+          if (v) {
+            if (v->var->isThis())
+              constructor_assignment = 1;
+          }
+        }
       }
       int operator_equal = 
         !(constructor_assignment || getter_setter ||
-	    (symbol && (symbol->isThis() || (type && scalar_or_reference(type)))));
+            (symbol && (symbol->isThis() || (type && scalar_or_reference(type)))));
       if (operator_equal) {
-	Sym *old_rval = rval;
-	rval = new_sym();
-	rval->ast = s->ainfo;
+        Sym *old_rval = rval;
+        rval = new_sym();
+        rval->ast = s->ainfo;
         Sym *told_rval = new_sym();
         if1_move(if1, &s->ainfo->code, old_rval, told_rval, s->ainfo);
-	Code *c = if1_send(if1, &s->ainfo->code, 3, 1, if1_make_symbol(if1, "="), 
-			   s->left->ainfo->rval, told_rval, rval);
-	c->ast = s->ainfo;
+        Code *c = if1_send(if1, &s->ainfo->code, 3, 1, if1_make_symbol(if1, "="), 
+                           s->left->ainfo->rval, told_rval, rval);
+        c->ast = s->ainfo;
       }
       if (!s->left->ainfo->sym)
         show_error("assignment to non-lvalue", s->ainfo);
       if (symbol && symbol->type && is_scalar_type(symbol->type))
-	rval = gen_coerce(rval, type, &s->ainfo->code, s->ainfo);
+        rval = gen_coerce(rval, type, &s->ainfo->code, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
       if (!symbol || symbol->type == dtUnknown || !operator_equal)
         if1_move(if1, &s->ainfo->code, s->ainfo->rval, s->left->ainfo->sym, s->ainfo);

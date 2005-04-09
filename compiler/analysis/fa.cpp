@@ -1938,12 +1938,12 @@ show_violations(FA *fa, FILE *fp) {
         }
         break;
       case ATypeViolation_MATCH:
-	if (v->av->var->sym->name)
-	  fprintf(stderr, "near '%s' unmatched type: ", v->av->var->sym->name);
-	else
-	  fprintf(stderr, "unmatched type: ");
-	show_type(*v->type, stderr);
-	fprintf(stderr, "\n");
+        if (v->av->var->sym->name)
+          fprintf(stderr, "near '%s' unmatched type: ", v->av->var->sym->name);
+        else
+          fprintf(stderr, "unmatched type: ");
+        show_type(*v->type, stderr);
+        fprintf(stderr, "\n");
         break;
       case ATypeViolation_NOTYPE:
         if (v->av->var->sym->name)
@@ -1962,7 +1962,7 @@ show_violations(FA *fa, FILE *fp) {
         else
           fprintf(stderr, "expression ");
         fprintf(stderr, "has mixed basic types:");
-	show_type(*v->type, stderr);
+        show_type(*v->type, stderr);
         fprintf(stderr, "\n");
         break;
     }
