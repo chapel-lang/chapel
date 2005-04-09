@@ -7,6 +7,7 @@
 #include "../passes/runAnalysis.h"
 
 #include "../symtab/computeVisibleFunctions.h"
+#include "../symtab/insertDefaultInitVariables.h"
 #include "../symtab/insertWriteFns.h"
 #include "../symtab/legalizeCNames.h"
 #include "../symtab/printSymtab.h"
@@ -79,6 +80,7 @@ REGISTER(GetStuff);
 REGISTER(InsertIndexType);
 REGISTER(InsertAnonymousDomains);
 REGISTER(InsertAnonymousTypes);
+REGISTER(InsertDefaultInitVariables);
 REGISTER(InsertElidedLoops);
 REGISTER(InsertFunctionTemps);
 REGISTER(InsertTemps);

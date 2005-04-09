@@ -19,6 +19,14 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   }
 
   if (MemberAccess* dot = dynamic_cast<MemberAccess*>(expr)) {
+
+    /** Resolve methods with arguments at ParenOpExpr */
+//     if (ParenOpExpr* paren_op = dynamic_cast<ParenOpExpr*>(expr->parent)) {
+//       if (paren_op->baseExpr == expr) {
+//         return;
+//       }
+//     }
+
     if (UnresolvedSymbol* UnresolvedMember =
         dynamic_cast<UnresolvedSymbol*>(dot->member)) {
       if (analyzeAST) {
@@ -69,6 +77,18 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (typeid(*paren) == typeid(ParenOpExpr)) {
+
+      // Don't resolve defaultVal in Type REMOVE
+      if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(paren->stmt)) {
+        if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
+          if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
+            if (type_sym->type->defaultVal == paren) {
+              return;
+            }
+          }
+        }
+      }
+
       if (Variable* var = dynamic_cast<Variable*>(paren->baseExpr)) {
         if (UnresolvedSymbol* call = 
             dynamic_cast<UnresolvedSymbol*>(var->var)) {
@@ -79,10 +99,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
               call_info(paren, fns);
               if (fns.n != 1) {
                 INT_FATAL(expr, "Trouble resolving function call");
+              } else {
+                FnCall* fn = new FnCall(new Variable(fns.e[0]),
+                                        paren->argList->copyList());
+                expr->replace(fn);
               }
-              FnCall* fn = new FnCall(new Variable(fns.e[0]),
-                                      paren->argList->copyList());
-              expr->replace(fn);
             }
             else {
               if (Symbol* sym = Symboltable::lookup(call->name)) {

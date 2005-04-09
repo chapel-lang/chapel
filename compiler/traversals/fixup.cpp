@@ -48,6 +48,10 @@ void Fixup::preProcessStmt(Stmt* stmt) {
         if (m->initFn == parent) {
           ignore = true;
         }
+      } else if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(parent)) {
+        if (m->initFn == stmt->parentSymbol) {
+          ignore = true;
+        }
       }
       if (!ignore) {
         INT_FATAL(stmt, "Statement's parent is incorrect");

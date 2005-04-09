@@ -1115,6 +1115,10 @@ gen_one_vardef(VarSymbol *var, DefStmt *def) {
         s->is_external = 1; // hack
       else {
         FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
+        if (!f) {
+          ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->parentSymbol);
+          f = mod->initFn;
+        }
         gen_alloc(s, s->type, ast, f->_this ? f->_this->asymbol->sym : 0);
       }
     } else

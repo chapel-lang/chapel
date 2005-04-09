@@ -25,6 +25,18 @@ static bool tmpRequired(ParamSymbol* formal, Expr* actual) {
 
 void ProcessParameters::postProcessExpr(Expr* expr) {
   if (typeid(*expr) == typeid(ParenOpExpr)) {
+
+    // Don't resolve defaultVal in Type REMOVE
+    if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(expr->stmt)) {
+      if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
+        if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
+          if (type_sym->type->defaultVal == expr) {
+            return;
+          }
+        }
+      }
+    }
+
     fprintf(stderr, "ProcessParameters found a parenOpExpr:\n  ");
     expr->print(stderr);
     fprintf(stderr, "\n");

@@ -1046,7 +1046,7 @@ void ModuleSymbol::createInitFn(void) {
   Stmt* initFunStmts = dynamic_cast<Stmt*>(initstmts);
   definition = dynamic_cast<Stmt*>(globstmts);
   Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
-                                                 : NULL);
+                                                 : new NoOpStmt());
   //SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   DefStmt* initFunDef = Symboltable::defineFunction(fnName, NULL, 
                                                     dtVoid, initFunBody, 

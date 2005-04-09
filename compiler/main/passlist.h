@@ -26,14 +26,24 @@ PassInfo passlist[] = {
   RUN(ScopeResolveSymbols, ""),
   RUN(RenameOverloadedFunctions, ""),
   RUN(InsertTemps, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertAnonymousDomains, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertAnonymousTypes, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertIndexType, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(BuildClassConstructorsEtc, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(SpecializeParenOpExprs, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ApplyThisParameters, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ProcessDefs, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(RemoveLikeTypes, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
+  RUN(InsertDefaultInitVariables, ""),
 
   // passes to collect information for analysis
   RUN(Fixup, "verify"), // this is a sanity check
@@ -72,14 +82,23 @@ PassInfo passlist[] = {
   // passes to prepare for C code generation
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(RemoveSeqOperations, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertFunctionTemps, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(TransformLetExprs, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(MethodsToFunctions, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ProcessParameters, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertVariableInitializations, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(DestructureTupleAssignments, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ExpandSeqExprAssignments, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertUnionChecks, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(LegalizeCNames, ""), 
 
   // passes to generate code and compile
