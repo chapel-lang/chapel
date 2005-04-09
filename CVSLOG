@@ -25018,3 +25018,13 @@ Added files:
 	                         insertDefaultInitVariables.h 
 	chapel/test/classes/deitz/: test_record_assign1.future 
 
+---------------------------------------------------------------------------
+
+04/09/05 12:37:25 -- jplevyak
+
+Log message:
+	Untabify
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+
