@@ -25063,3 +25063,16 @@ Modified files:
 	chapel/compiler/traversals/: fixup.cpp insertAnonymousTypes.cpp 
 	                             removeSeqOperations.cpp 
 
+---------------------------------------------------------------------------
+
+04/11/05 11:46:22 -- bradc
+
+Log message:
+	Some helper scripts for running nightly cron jobs.
+	Made it easier to set up cron jobs on the Sun where
+	cron syntax is far more limited than Linux.
+
+Added files:
+	chapel/test/Bin/: nightly.cron nightly.debug.cron 
+	                  nightly.novgr.cron 
+
