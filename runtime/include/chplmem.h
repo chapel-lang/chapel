@@ -9,6 +9,7 @@ void initMemTable(void);
 void printMemTable(void);
 
 void setMemmax(_integer64 value);
+void setMemtable(void);
 void setMemthreshold(_integer64 value);
 void setMemtrace(char* memLogname);
 

@@ -1,5 +1,5 @@
 Jacobi computation complete.
 Delta is 9.68412e-06 (< epsilon = 1e-05)
 # of iterations: 79
-"malloc" called for "49" items of size "8" for "array A":  0xnnnnnnn
-"malloc" called for "49" items of size "8" for "array Temp":  0xnnnnnnn
+malloc called for 49 items of size 8 for array A:  0xnnnnnnn
+malloc called for 49 items of size 8 for array Temp:  0xnnnnnnn

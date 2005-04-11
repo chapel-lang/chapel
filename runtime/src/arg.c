@@ -8,168 +8,6 @@
 #include "chplrt.h"
 
 
-static void parseModVarName(char* modVarName, char** moduleName, 
-                            char** varName) {
-  char* dot = strrchr(modVarName, '.');
-  if (dot) {
-    *dot = '\0';
-    *moduleName = modVarName;
-    *varName = dot + 1;
-  } else {
-    *moduleName = "";
-    *varName = modVarName;
-  }
-}
-
-
-static void parseSingleArg(char* currentArg) {
-  char* equalsSign = strchr(currentArg, '=');     
-
-  if (equalsSign) {
-    *equalsSign = '\0';
-    char* value = equalsSign + 1;
-    
-    if (value) {
-      char* moduleName;
-      char* varName;
-      parseModVarName(currentArg, &moduleName, &varName);
-
-      if (*value == '\0') {
-        fprintf(stderr, "***Error:  Configuration variable \"%s\" is missing"
-                " its initialization value***\n", varName);
-        exit(0);
-      }
-      initSetValue(varName, value, moduleName);
-    } else {
-      fprintf(stderr, "***Error:  \"%s\" is not a valid value***\n", value);
-      exit(0);
-    }
-  } else {
-    fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n", 
-            currentArg);
-    exit(0);
-  }
-}
-
-
-/* This function parses a config var of type string, and sets its value in 
-   the hash table.  
-*/
-static int aParsedString(FILE* argFile, char* setConfigBuffer) {
-  char* equalsSign = strchr(setConfigBuffer, '=');
-  int stringLength = strlen(setConfigBuffer);
-
-  if (!equalsSign || !(equalsSign + 1)) {
-    return 0;
-  }
-  char firstChar = equalsSign[1];
-  if ((firstChar != '"') && (firstChar != '\'')) {
-    return 0;
-  }
-
-  char* value = equalsSign + 2;
-  *equalsSign = '\0';
-  char lastChar = setConfigBuffer[stringLength - 1];
-
-  char* moduleName;
-  char* varName;
-  parseModVarName(setConfigBuffer, &moduleName, &varName);
-  
-  if ((firstChar != lastChar) || (strlen(value) == 0)) {
-    char nextChar = fgetc(argFile);
-    do {
-      switch (nextChar) {
-      case EOF:
-        setConfigBuffer[stringLength] = '\0';
-        fprintf(stderr, "***Error:  Found end of file while "
-                "reading string: %c%s***\n", firstChar, value);
-        exit(0);
-        break;
-        
-      case '\n':
-        setConfigBuffer[stringLength] = '\0';
-        fprintf(stderr, "***Error:  Found newline while reading"
-                " string: %c%s***\n", firstChar, value);
-        exit(0);
-        break;
-        
-      default:
-        if (stringLength >= _default_string_length - 1) {
-          fprintf(stderr, "***Error:  String exceeds the "
-                  "maximum string length of %d***\n", 
-                  _default_string_length);
-          exit(0);
-        }
-        setConfigBuffer[stringLength] = nextChar;
-        stringLength++;
-        nextChar = fgetc(argFile);
-      }
-    } while (nextChar != firstChar);
-  } else {
-    stringLength--;
-  }
-  setConfigBuffer[stringLength] = '\0';
-  initSetValue(varName, value, moduleName);
-  return 1;
-}
-
-
-static _integer64 getIntArg(char* valueString, char* memFlag) {
-  char extraChars;
-  _integer64 value;
-
-  int numScans = sscanf(valueString, _default_format_read_integer64"%c", 
-                        &value, &extraChars);
-  if (numScans != 1) {
-    fprintf(stderr, "***Error:  The \"%s\" flag is missing its byte value"
-            "***\n", memFlag);
-    exit(0);
-  }
-  return value; 
-}
-
-
-static char* getStringArg(char* valueString, char* memFlag) {
-  if (!valueString) {
-    fprintf(stderr, "***Error:  The \"%s\" flag is missing its option***"
-            "\n", memFlag);
-    exit(0);
-  }
-  return valueString;
-}
-
-
-static void parseMemFlag(char* memFlag) {
-  char* equalsSign = strchr(memFlag, '=');
-  char* valueString = NULL;
-
-  if (equalsSign) {
-    *equalsSign = '\0';
-    valueString = equalsSign + 1;
-  } 
-
-  if (strcmp(memFlag, "memmax") == 0) {
-    _integer64 value;
-    value = getIntArg(valueString, memFlag);
-    setMemmax(value);
-
-  } else if ((strcmp(memFlag, "memthreshold") == 0) ||
-             (strcmp(memFlag, "memthresshold") == 0) ||
-             (strcmp(memFlag, "memthreshhold") == 0)) {
-    _integer64 value;
-    value = getIntArg(valueString, memFlag);
-    setMemthreshold(value);
-
-  } else if (strcmp(memFlag, "memtrace") == 0) {
-    valueString = getStringArg(valueString, memFlag);
-    setMemtrace(valueString);
-    
-  } else {
-    fprintf(stderr, "***Error:  \"%s\" is not a valid execution option***\n",
-            memFlag);
-  }
-}
-
 
 static void printHeaders(char thisType, char* lastType) {
   if (thisType != *lastType) {
@@ -237,6 +75,66 @@ void printHelpTable(void) {
 }
 
 
+static _integer64 getIntArg(char* valueString, char* memFlag) {
+  char extraChars;
+  _integer64 value;
+
+  int numScans = sscanf(valueString, _default_format_read_integer64"%c", 
+                        &value, &extraChars);
+  if (numScans != 1) {
+    fprintf(stderr, "***Error:  The \"%s\" flag is missing its byte value"
+            "***\n", memFlag);
+    exit(0);
+  }
+  return value; 
+}
+
+
+static char* getStringArg(char* valueString, char* memFlag) {
+  if (!valueString) {
+    fprintf(stderr, "***Error:  The \"%s\" flag is missing its option***"
+            "\n", memFlag);
+    exit(0);
+  }
+  return valueString;
+}
+
+
+static void parseMemFlag(char* memFlag) {
+  char* equalsSign = strchr(memFlag, '=');
+  char* valueString = NULL;
+
+  if (equalsSign) {
+    *equalsSign = '\0';
+    valueString = equalsSign + 1;
+  } 
+
+  if (strcmp(memFlag, "memmax") == 0) {
+    _integer64 value;
+    value = getIntArg(valueString, memFlag);
+    setMemmax(value);
+
+  } else if (strcmp(memFlag, "memtable") == 0) {
+    setMemtable();
+
+  } else if ((strcmp(memFlag, "memthreshold") == 0) ||
+             (strcmp(memFlag, "memthresshold") == 0) ||
+             (strcmp(memFlag, "memthreshhold") == 0)) {
+    _integer64 value;
+    value = getIntArg(valueString, memFlag);
+    setMemthreshold(value);
+
+  } else if (strcmp(memFlag, "memtrace") == 0) {
+    valueString = getStringArg(valueString, memFlag);
+    setMemtrace(valueString);
+    
+  } else {
+    fprintf(stderr, "***Error:  \"%s\" is not a valid execution option***\n",
+            memFlag);
+  }
+}
+
+
 void parseArgs(int argc, char* argv[]) {
   int i;
   
@@ -260,39 +158,25 @@ void parseArgs(int argc, char* argv[]) {
 
       case 'f':
         {
-          char* argFilename = currentArg + 2;
-          FILE* argFile = fopen(argFilename, "r");
-          if (!argFile) {
-            fprintf(stderr, "***Error:  Unable to open %s***\n", argFilename);
-            exit(0);
-          } 
-          while (!feof(argFile)) {
-            int numScans = 0;
-            char setConfigBuffer[_default_string_length];
-            numScans = fscanf(argFile, _default_format_read_string, 
-                              setConfigBuffer);
-            if (numScans == 1) {
-              if (!aParsedString(argFile, setConfigBuffer)) {
-                parseSingleArg(setConfigBuffer);
-              } 
-            }
-          }
-          fclose(argFile);
+          int isSingleArg = 0;
+          addToConfigList(currentArg + 2, isSingleArg);
           break;
         }
 
       case 's':
-        if (argLength < 3) {
-          fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n",
-                  currentArg);
-          exit(0);
+        {
+          if (argLength < 3) {
+            fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n",
+                    currentArg);
+            exit(0);
+          }
+          int isSingleArg = 1;
+          addToConfigList(currentArg + 2, isSingleArg);
+          break;
         }
-        parseSingleArg(currentArg + 2);
-        break;
 
       case 'h':
-        printHelpTable();
-        printConfigVarTable();
+        printHelpMessage();
         break;
 
       default:

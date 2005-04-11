@@ -15,7 +15,7 @@ void _chpl_memtest_freedMalloc(void) {
   printMemTable();
   _chpl_free(freedInt);
   fprintf(stdout, "And this is the memory hash table after the integer "
-          "variable has been freed:\n\n");
+          "variable has been freed:\n");
   printMemTable();
 }
 
@@ -37,7 +37,7 @@ void _chpl_memtest_reallocZeroSize(void) {
                                                       "_integer64");
   printMemTable();
   _chpl_realloc(makeMeZero, 0, sizeof(_integer64*), "_integer64");
-  fprintf(stdout, "After a call to realloc with size equal to 0:\n\n");
+  fprintf(stdout, "After a call to realloc with size equal to 0:\n");
   printMemTable();
 }
 

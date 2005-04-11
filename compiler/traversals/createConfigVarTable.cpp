@@ -27,12 +27,21 @@ void CreateConfigVarTable::processSymbol(Symbol* symbol) {
     fprintf(codefile, "installConfigVar(\"%s\", ", var->name);
     var->init->printCfgInitString(codefile);
     fprintf(codefile, ", \"%s\");\n", moduleName);
-  }
+  }  
 }
 
 
 void CreateConfigVarTable::closeCFile() {
   codefile = outfileinfo.fptr;
+
+  fprintf(codefile, "if (askedToParseArgs()) {\n");
+  fprintf(codefile, "parseConfigArgs();\n");
+  fprintf(codefile, "}\n");
+
+  fprintf(codefile, "if (askedToPrintHelpMessage()) {\n");
+  fprintf(codefile, "printHelpTable();\n");
+  fprintf(codefile, "printConfigVarTable();\n");
+  fprintf(codefile, "}\n");
   
   fprintf(codefile, "}\n");
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);

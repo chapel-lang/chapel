@@ -13,6 +13,11 @@
 #define _INIT_CONFIG(v, v_type, chapel_name, module_name) \
   (!setInCommandLine##v_type(chapel_name, &v, module_name))
 
+void addToConfigList(char* currentArg, int isSingleArg);
+int askedToParseArgs(void);
+void parseConfigArgs(void);
+void printHelpMessage(void);
+int askedToPrintHelpMessage(void);
 void initConfigVarTable(void);
 void printConfigVarTable(void);
 void initSetValue(char* varName, char* value, char* moduleName);

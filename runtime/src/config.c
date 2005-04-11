@@ -6,6 +6,7 @@
 #include "config.h"
 #include "chplrt.h"
 
+
 #define HASHSIZE 101
 
 typedef struct _configVarType { /* table entry */
@@ -21,8 +22,200 @@ typedef struct _configVarType { /* table entry */
 
 /* hash table */
 static configVarType* configVarTable[HASHSIZE]; 
-static configVarType* first = NULL;
-static configVarType* last = NULL;
+static configVarType* firstInTable = NULL;
+static configVarType* lastInTable = NULL;
+
+
+typedef struct _argType {
+  int isSingleArg;
+  char* input;
+
+  struct _argType* next;
+} argType;
+
+
+/* config var list */
+static argType* firstArg = NULL;
+static argType* lastArg = NULL;
+
+void addToConfigList(char* currentArg, int isSingleArg) {
+  char* description = _glom_strings(2, "argument list entry for ", currentArg);
+  argType* arg = (argType*) _chpl_calloc(1, sizeof(argType), description);
+  _chpl_free(description);
+
+  arg->isSingleArg = isSingleArg;
+  _copy_string(&arg->input, currentArg);
+  
+  if (firstArg == NULL) {
+    firstArg = arg;
+  } else {
+    lastArg->next = arg;
+  }
+  lastArg = arg;
+}
+
+
+int askedToParseArgs(void) {
+  int answer = 0;
+  if (firstArg != NULL) {
+    answer = 1;
+  }
+  return answer;
+}
+
+
+static void parseModVarName(char* modVarName, char** moduleName, 
+                            char** varName) {
+  char* dot = strrchr(modVarName, '.');
+  if (dot) {
+    *dot = '\0';
+    *moduleName = modVarName;
+    *varName = dot + 1;
+  } else {
+    *moduleName = "";
+    *varName = modVarName;
+  }
+}
+
+
+/* This function parses a config var of type string, and sets its value in 
+   the hash table.  
+*/
+static int aParsedString(FILE* argFile, char* setConfigBuffer) {
+  char* equalsSign = strchr(setConfigBuffer, '=');
+  int stringLength = strlen(setConfigBuffer);
+
+  if (!equalsSign || !(equalsSign + 1)) {
+    return 0;
+  }
+  char firstChar = equalsSign[1];
+  if ((firstChar != '"') && (firstChar != '\'')) {
+    return 0;
+  }
+
+  char* value = equalsSign + 2;
+  *equalsSign = '\0';
+  char lastChar = setConfigBuffer[stringLength - 1];
+
+  char* moduleName;
+  char* varName;
+  parseModVarName(setConfigBuffer, &moduleName, &varName);
+  
+  if ((firstChar != lastChar) || (strlen(value) == 0)) {
+    char nextChar = fgetc(argFile);
+    do {
+      switch (nextChar) {
+      case EOF:
+        setConfigBuffer[stringLength] = '\0';
+        fprintf(stderr, "***Error:  Found end of file while "
+                "reading string: %c%s***\n", firstChar, value);
+        exit(0);
+        break;
+        
+      case '\n':
+        setConfigBuffer[stringLength] = '\0';
+        fprintf(stderr, "***Error:  Found newline while reading"
+                " string: %c%s***\n", firstChar, value);
+        exit(0);
+        break;
+        
+      default:
+        if (stringLength >= _default_string_length - 1) {
+          fprintf(stderr, "***Error:  String exceeds the "
+                  "maximum string length of %d***\n", 
+                  _default_string_length);
+          exit(0);
+        }
+        setConfigBuffer[stringLength] = nextChar;
+        stringLength++;
+        nextChar = fgetc(argFile);
+      }
+    } while (nextChar != firstChar);
+  } else {
+    stringLength--;
+  }
+  setConfigBuffer[stringLength] = '\0';
+  initSetValue(varName, value, moduleName);
+  return 1;
+}
+
+
+static void parseSingleArg(char* currentArg) {
+  char* equalsSign = strchr(currentArg, '=');     
+
+  if (equalsSign) {
+    *equalsSign = '\0';
+    char* value = equalsSign + 1;
+    
+    if (value) {
+      char* moduleName;
+      char* varName;
+      parseModVarName(currentArg, &moduleName, &varName);
+
+      if (*value == '\0') {
+        fprintf(stderr, "***Error:  Configuration variable \"%s\" is missing"
+                " its initialization value***\n", varName);
+        exit(0);
+      }
+      initSetValue(varName, value, moduleName);
+    } else {
+      fprintf(stderr, "***Error:  \"%s\" is not a valid value***\n", value);
+      exit(0);
+    }
+  } else {
+    fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n", 
+            currentArg);
+    exit(0);
+  }
+}
+
+
+static void parseFileArgs(char* currentArg) {
+  char* argFilename = currentArg;
+  FILE* argFile = fopen(argFilename, "r");
+  if (!argFile) {
+    fprintf(stderr, "***Error:  Unable to open %s***\n", argFilename);
+    exit(0);
+  } 
+  while (!feof(argFile)) {
+    int numScans = 0;
+    char setConfigBuffer[_default_string_length];
+    numScans = fscanf(argFile, _default_format_read_string, 
+                      setConfigBuffer);
+    if (numScans == 1) {
+      if (!aParsedString(argFile, setConfigBuffer)) {
+        parseSingleArg(setConfigBuffer);
+      } 
+    }
+  }
+  fclose(argFile);
+}
+
+
+void parseConfigArgs(void) {
+  argType* thisArg = firstArg;
+  while (thisArg != NULL) {
+    if (thisArg->isSingleArg) {
+      parseSingleArg(thisArg->input);
+    } else {
+      parseFileArgs(thisArg->input);
+    }
+    thisArg = thisArg->next;
+  }
+}
+
+
+static int printHelp = 0; 
+
+void printHelpMessage(void) {
+  printHelp = 1;
+}
+
+
+int askedToPrintHelpMessage(void) {
+  return printHelp;
+}
+
 
 void initConfigVarTable(void) {
   int i;
@@ -47,12 +240,12 @@ void printConfigVarTable(void) {
   int longestName = 0;
   char* moduleName = NULL;
 
-  if (first) {
+  if (firstInTable) {
     fprintf(stdout, "CONFIG VARS:\n");
     fprintf(stdout, "============\n");
   }
 
-  for (configVar = first;
+  for (configVar = firstInTable;
        configVar != NULL;
        configVar = configVar->nextInstalled) {
 
@@ -62,13 +255,13 @@ void printConfigVarTable(void) {
     }
   }
 
-  for (configVar = first; 
+  for (configVar = firstInTable; 
        configVar != NULL; 
        configVar = configVar->nextInstalled) {
 
     if (moduleName == NULL) {
       moduleName = configVar->moduleName;
-      if (strcmp(first->moduleName, last->moduleName) != 0) {
+      if (strcmp(firstInTable->moduleName, lastInTable->moduleName) != 0) {
         fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
       }
     }
@@ -177,12 +370,12 @@ void installConfigVar(char* varName, char* value, char* moduleName) {
   hashValue = hash(varName);
   configVar->nextInBucket = configVarTable[hashValue]; 
   configVarTable[hashValue] = configVar;
-  if (first == NULL) {
-    first = configVar;
+  if (firstInTable == NULL) {
+    firstInTable = configVar;
   } else {
-    last->nextInstalled = configVar;
+    lastInTable->nextInstalled = configVar;
   }
-  last = configVar;
+  lastInTable = configVar;
   _copy_string(&configVar->varName, varName);
   _copy_string(&configVar->moduleName, moduleName);
   _copy_string(&configVar->defaultValue, value);
