@@ -25200,3 +25200,74 @@ Log message:
 Modified files:
 	chapel/test/classes/deitz/: test_record_assign1.future 
 
+---------------------------------------------------------------------------
+
+04/11/05 16:45:48 -- deitz
+
+Log message:
+	Added an init function to the common module that is called at the
+	beginning of the program.  This extends the functionality of the
+	common module.
+	
+	This checkin contains a patch of SymtabTraversal over the Common and
+	USER modules so that symbols are not traversed twice, care of Brad.
+	
+	Set the defaultVal of arrays to zero mostly as a stopgap although this
+	is also where we're headed.
+	
+	Removed "static" from variables that are declared in the common
+	module since these are "exported."
+	
+	Refuturized test_seq6 and test_seq7 until sequence initialization is
+	figured out.
+	
+	Updated flowanalysis ast output to take into account changes to init
+	in the common module.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         symtabTraversal.cpp 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             insertVariableInitializations.cpp 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+Added files:
+	chapel/test/classes/deitz/: test_record7.chpl test_record7.good 
+	                            test_record8.chpl test_record8.good 
+	chapel/test/types/seq/deitz/noanalysis/: test_seq6.future 
+	                                         test_seq7.future 
+
