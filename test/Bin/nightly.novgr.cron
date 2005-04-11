@@ -1,0 +1,3 @@
+#!/bin/tcsh
+source ~/.chapelcshrc-cron
+$CHPLHOME/test/Bin/nightly -cronnovgr
