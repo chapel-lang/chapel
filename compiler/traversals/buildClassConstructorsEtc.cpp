@@ -21,12 +21,13 @@ static void build_constructor(StructuralType* structType) {
   fn->cname = glomstrings(2, "_construct_", structType->symbol->cname);
 
   ParamSymbol* args = NULL;
-  forv_Vec(VarSymbol, tmp, structType->fields) {
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
-    args = appendLink(args, new ParamSymbol(PARAM_BLANK, tmp->name, tmp->type, tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy()));
-#else
-#endif
+  if (analyzeAST) {
+    forv_Vec(VarSymbol, tmp, structType->fields) {
+      args = appendLink(args, new ParamSymbol(PARAM_BLANK, tmp->name, tmp->type, tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy()));
+    }
   }
+#endif
 
   BlockStmt* body = Symboltable::startCompoundStmt();
   Stmt* stmts = NULL;

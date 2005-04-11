@@ -1208,7 +1208,16 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
-    Expr* rhs = new Variable(ptmp);
+    Expr* rhs = NULL;
+    if (analyzeAST) {
+      rhs = new Variable(ptmp);
+    } else {
+      if (tmp->init) {
+        rhs = tmp->init->copy();
+      } else if (tmp->type != dtUnknown) {
+        rhs = tmp->type->defaultVal->copy();
+      }
+    }
 #else
     Expr* rhs = tmp->init ? tmp->init->copy() : NULL;
     if (!rhs) {
@@ -1233,7 +1242,9 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
     stmts = appendLink(stmts, assign_stmt);
 
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
-    ptmp = nextLink(ParamSymbol, ptmp);
+    if (analyzeAST) {
+      ptmp = nextLink(ParamSymbol, ptmp);
+    }
 #endif
   }
   return stmts;
