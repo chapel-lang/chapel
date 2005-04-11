@@ -666,6 +666,9 @@ TypeSymbol* Symboltable::startStructDef(structType type, char* name) {
   case STRUCT_UNION:
     newType = new UnionType();
     break;
+  default:
+    INT_FATAL("Unknown Strucutural Type");
+    newType = NULL;
   }
   TypeSymbol* newsym = new TypeSymbol(name, newType);
   (newType)->addSymbol(newsym);

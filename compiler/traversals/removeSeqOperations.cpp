@@ -39,8 +39,8 @@ void RemoveSeqOperations::postProcessExpr(Expr* expr) {
     INT_FATAL(expr, "Sequence concatenation of non-sequences");
   }
 
-  SymScope* seq_scope;
-  Symbol* seq_method;
+  SymScope* seq_scope = NULL;
+  Symbol* seq_method = NULL;
 
   if (left_seq_type) {
     seq_scope = left_seq_type->structScope;

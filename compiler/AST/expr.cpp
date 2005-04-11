@@ -1700,7 +1700,7 @@ Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 
 
 void ForallExpr::traverseExpr(Traversal* traversal) {
-  SymScope* prevScope;
+  SymScope* prevScope = NULL;
 
   TRAVERSE_LS(domains, traversal, false);
   if (indexScope) {

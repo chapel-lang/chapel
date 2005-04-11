@@ -192,8 +192,8 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
 }
 
 void build_index_type_def(Stmt* stmt, Type** type) {
-        IndexType* index_type = dynamic_cast<IndexType*>(*type);
-        DomainType* domain_type;
+  IndexType* index_type = dynamic_cast<IndexType*>(*type);
+  DomainType* domain_type = NULL;
   
   if (!index_type) {
     INT_FATAL(*type, "Index type expected");
@@ -213,7 +213,7 @@ void build_index_type_def(Stmt* stmt, Type** type) {
   char* name = NULL; 
   
   if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
-        name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "d");
+    name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "d");
   }
   else{
     if (!domain_type->parent){

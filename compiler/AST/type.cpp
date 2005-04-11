@@ -1161,7 +1161,7 @@ void StructuralType::setScope(SymScope* init_structScope) {
 
 
 void StructuralType::traverseDefType(Traversal* traversal) {
-  SymScope* prevScope;
+  SymScope* prevScope = NULL;
   if (structScope) {
     prevScope = Symboltable::setCurrentScope(structScope);
   }

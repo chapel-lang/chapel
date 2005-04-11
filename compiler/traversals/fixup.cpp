@@ -33,10 +33,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
   // SJD: HACK for definitions of secondary methods
   DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt);
-  FnSymbol* fn;
-  if (def_stmt) {
-    fn = def_stmt->fnDef();
-  }
+  FnSymbol* fn = (def_stmt) ? def_stmt->fnDef() : NULL;
   if (!def_stmt || !fn || !fn->classBinding) {
     if (!verify) {
       stmt->parentSymbol = parent;

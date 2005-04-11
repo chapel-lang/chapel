@@ -11,7 +11,6 @@
 #include "fun.h"
 #include "pattern.h"
 
-#define CALL_RETURN_TYPE_INFO   1       // JBP ? why is this necessary?
 
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type, 
                bool init_exportMe) :
@@ -25,6 +24,7 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type,
   parentScope(NULL),
   asymbol(0)
 {}
+
 
 void Symbol::setParentScope(SymScope* init_parentScope) {
   parentScope = init_parentScope;
@@ -589,7 +589,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 
 
 void FnSymbol::traverseDefSymbol(Traversal* traversal) {
-  SymScope* saveScope;
+  SymScope* saveScope = NULL;
 
   TRAVERSE(this, traversal, false);
   if (paramScope) {
@@ -866,10 +866,10 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   if (!exportMe && !parentScope->commonModuleIsFirst()) {
     fprintf(outfile, "static ");
   }
-#ifdef CALL_RETURN_TYPE_INFO
-  if (retType == dtUnknown)
+  if (retType == dtUnknown) {
     retType = return_type_info(this);
-#endif
+    INT_WARNING(this, "return type unknown, calling analysis late");
+  }
   retType->codegen(outfile);
   fprintf(outfile, " ");
   this->codegen(outfile);
@@ -1002,7 +1002,7 @@ void ModuleSymbol::codegenDef(void) {
 
 
 void ModuleSymbol::startTraversal(Traversal* traversal) {
-  SymScope* prevScope;
+  SymScope* prevScope = NULL;
 
   if (modScope) {
     prevScope = Symboltable::setCurrentScope(modScope);

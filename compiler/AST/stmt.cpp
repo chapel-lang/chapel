@@ -535,7 +535,7 @@ Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 
 
 void BlockStmt::traverseStmt(Traversal* traversal) {
-  SymScope* prevScope;
+  SymScope* prevScope = NULL;
   if (blkScope) {
     prevScope = Symboltable::setCurrentScope(blkScope);
   }
@@ -664,7 +664,7 @@ Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
 
 
 void ForLoopStmt::traverseStmt(Traversal* traversal) {
-  SymScope* prevScope;
+  SymScope* prevScope = NULL;
 
   TRAVERSE(domain, traversal, false);
   if (indexScope) {
