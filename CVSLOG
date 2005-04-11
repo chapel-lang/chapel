@@ -25076,3 +25076,28 @@ Added files:
 	chapel/test/Bin/: nightly.cron nightly.debug.cron 
 	                  nightly.novgr.cron 
 
+---------------------------------------------------------------------------
+
+04/11/05 11:53:36 -- deitz
+
+Log message:
+	Improved --noanalysis resolution of function calls in an effort to
+	decrease the number of failing tests when the following are
+	uncommented:
+	
+	  //#define CONSTRUCTOR_WITH_PARAMETERS
+	  //#define NO_RESOLVE_CONSTRUCTOR
+	
+	This involved changing the resolution completely so that it uses the
+	visibleFunctions vectors.
+	
+	When --noanalysis is used, even if CONSTRUCTOR_WITH_PARAMETERS is set,
+	the constructor is created without parameters since the wrappers will
+	not be created.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             processParameters.cpp 
+	                             resolveSymbols.cpp 
+
