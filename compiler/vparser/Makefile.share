@@ -1,3 +1,8 @@
+ifdef LANG_V
+LANGS += v
+CXXFLAGS += -DLANG_V=1
+endif
+
 VPARSER_SRCS = \
 	ast_cf.cpp \
 	grammar.cpp \

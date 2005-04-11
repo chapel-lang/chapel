@@ -15,6 +15,7 @@
 #ifndef _list_H_
 #define _list_H_
 
+#include <stddef.h>
 #if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
 #else
 #include <inttypes.h>

@@ -1,8 +1,8 @@
 #ifndef _PASS_H_
 #define _PASS_H_
 
+#include "chplalloc.h"
 #include "chplenum.h"
-#include "gc_cpp.h"
 
 class ModuleSymbol;
 

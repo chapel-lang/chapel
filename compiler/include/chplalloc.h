@@ -19,6 +19,11 @@
 #define relloc dont_use_realloc_use_REALLOC_instead
 #define free dont_use_free_use_FREE_instead
 #else
+#include <stdlib.h>
+class gc {
+ public:
+  bool unused;
+};
 #define MALLOC malloc
 #define REALLOC realloc
 #define FREE free

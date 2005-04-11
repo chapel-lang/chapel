@@ -28,9 +28,7 @@ LDFLAGS += -fprofile-arcs
 endif
 
 ifdef DEBUG
-CFLAGS += -g -DDEBUG=1
-else
-CFLAGS += -DNDEBUG=1
+CFLAGS += -g
 endif
 
 ifdef OPTIMIZE
@@ -46,13 +44,13 @@ CFLAGS += -Wall
 
 
 # add error stuff
+# in general, can't set -Werror for C++ because of the use of offsetof
+# which requires -Wno-invalid-offsetof to get around... :(
 
 ONLYCFLAGS += -Werror
 
 ifeq ($(GNU_GCC_MAJOR_VERSION),3)
 ifeq ($(GNU_GCC_MINOR_VERSION),4)
-ONLYCXXFLAGS += -Wno-invalid-offsetof -Werror
-else
+ONLYCXXFLAGS += -Werror
 endif
-else
 endif

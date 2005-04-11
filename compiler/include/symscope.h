@@ -1,7 +1,7 @@
 #ifndef _SYMSCOPE_H_
 #define _SYMSCOPE_H_
 
-#include "gc_cpp.h"
+#include "chplalloc.h"
 #include "map.h"
 #include "symbol.h"
 

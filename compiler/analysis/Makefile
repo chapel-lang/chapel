@@ -4,6 +4,11 @@ COMPILER_SUBDIR = analysis
 SUBDIRS = \
 	make_prims \
 
+# 
+# some files in this directory (fa.cpp, ssu.cpp) need the
+# -Wno-invalid-offsetof flag
+#
+DIR_USES_OFFSETOF = 1
 
 #
 # standard header

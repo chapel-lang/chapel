@@ -49,13 +49,17 @@ endif
 
 
 #
-# test languages accepted by the tool and settings based on them
+# test languages accepted by the tool
 #
 LANG_V = 1
 
-ifdef LANG_V
-LANGS += v
-CFLAGS += -DLANG_V=1
+
+ifeq ($(DIR_USES_OFFSETOF), 1)
+ifeq ($(GNU_GCC_MAJOR_VERSION),3)
+ifeq ($(GNU_GCC_MINOR_VERSION),4)
+ONLYCXXFLAGS += -Wno-invalid-offsetof
+endif
+endif
 endif
 
 

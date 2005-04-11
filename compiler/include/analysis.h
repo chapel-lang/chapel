@@ -3,7 +3,7 @@
 
 #include "ast.h"
 #include "callbacks.h"
-#include "gc_cpp.h"
+#include "chplalloc.h"
 
 class Symbol;
 class UnresolvedSymbol;

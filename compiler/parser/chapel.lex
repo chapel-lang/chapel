@@ -1,10 +1,3 @@
-/*
- * A mini-Chapel scanner.  Derived from code that
- * Shannon wrote in learning to use flex.
- *
- * Brad, 6/2004
- */
-
 %{
 
 #include <stdio.h>
@@ -13,12 +6,14 @@
 #include "chapel.tab.h"
 
 /* make sure flex-generated code uses these */
+#ifdef USE_GC
 #undef malloc
 #undef realloc
 #undef free
 #define malloc MALLOC
 #define realloc REALLOC
 #define free FREE
+#endif
 
 /* avoid warnings */
 #define YY_NO_UNPUT

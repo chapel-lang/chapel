@@ -2,7 +2,7 @@
 #define _LOC_H_
 
 #include <stdio.h>
-#include "gc_cpp.h"
+#include "chplalloc.h"
 
 class Loc : public gc {
  public:

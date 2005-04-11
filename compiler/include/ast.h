@@ -4,7 +4,7 @@
 #define _ast_H_
 
 #include <stdio.h>
-#include "gc_cpp.h"
+#include "chplalloc.h"
 #include "map.h"
 #include "vec.h"
 
