@@ -1,3 +1,6 @@
-jplevyak
+bradc
 
-overloaded = for records
+Something is amiss with 
+the way strings are assigned.
+The assignment is overwriting
+both a1 and a2.
