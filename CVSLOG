@@ -25028,3 +25028,38 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp fa.cpp 
 
+---------------------------------------------------------------------------
+
+04/11/05 09:36:47 -- deitz
+
+Log message:
+	Fixed a bunch of compiler warnings that show up with
+	
+	  -O1 -Wuninitialized -Winit-self
+	
+	all of which I believe turned out to be false positives.
+	
+	Removed John's
+	
+	  #define CALL_RETURN_TYPE_INFO
+	
+	replacing it with an internal warning if the return type is ever not
+	known at codegen time.  I saw this in program
+	
+	  functions/deitz/test_default_param1.chpl
+	
+	not
+	
+	  functions/deitz/test_named_param3.chpl.
+	
+	Moreover, when I ran it in gdb or with valgrind, the error
+	disappeared.  I'm no longer seeing the error with the above innocuous
+	changes leading me to believe that there is some strange
+	initialization error.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp insertAnonymousTypes.cpp 
+	                             removeSeqOperations.cpp 
+
