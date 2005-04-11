@@ -25189,3 +25189,14 @@ Modified files:
 	chapel/compiler/vparser/: Makefile Makefile.share 
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+04/11/05 15:40:27 -- jplevyak
+
+Log message:
+	Something is amiss with string assignment, the assignment is overwriting
+	both a1.s and a2.s even though the code is only referring to a2.s.
+
+Modified files:
+	chapel/test/classes/deitz/: test_record_assign1.future 
+
