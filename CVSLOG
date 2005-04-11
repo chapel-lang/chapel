@@ -25150,3 +25150,42 @@ Added files:
 	                             reallocWithoutMalloc.execopts 
 	                             reallocZeroSize.execopts 
 
+---------------------------------------------------------------------------
+
+04/11/05 15:26:17 -- bradc
+
+Log message:
+	Started work on supporting the ability to build
+	the compiler without the garbage collection, but
+	didn't quite get it working yet.  This is a move
+	in that direction and also cleans up some aspects
+	of our make process:
+	
+	* Made all files that were #including gc_cpp.h #include chplalloc.h
+	  instead.
+	
+	* Fixed Chapel lexer macros to work when gc is not turned on.
+	
+	* Made list.h use of offsetof work when gc is not turned on.
+	
+	* Removed the -DDEBUG compiler flag which we never seem to use (and
+	  was probably too high up in the build tree anyway...).
+	
+	* Made the -Wno-invalid-offsetof flag only get used for directories
+	  that need it This can be selected by setting the DIR_USES_OFFSETOF
+	  macro in a subdirectory's Makefile (see analysis/Makefile for an
+	  example).
+	
+	* Made the -DLANG_V macro get set only in the vparser directory (the
+	  only place it was needed)
+
+Modified files:
+	chapel/compiler/analysis/: Makefile 
+	chapel/compiler/include/: analysis.h ast.h chplalloc.h list.h 
+	                          loc.h symscope.h 
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/compiler/parser/: chapel.lex 
+	chapel/compiler/passes/: pass.h 
+	chapel/compiler/vparser/: Makefile Makefile.share 
+	chapel/make/: Makefile.gnu 
+
