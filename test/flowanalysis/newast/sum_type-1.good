@@ -1,6 +1,8 @@
  called from 30 in __init_sum_type-1 at <internal>:0
  called from 31 in __init_sum_type-1 at <internal>:0
 ::*(internal_prelude.chpl:0) ( * )
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude ( __init_internal_prelude )

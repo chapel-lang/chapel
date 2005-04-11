@@ -1,4 +1,6 @@
  called from 20 in __init_globalref at <internal>:0
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_globalref ( __init_globalref )
 ::__init_globalref ( __init_globalref )

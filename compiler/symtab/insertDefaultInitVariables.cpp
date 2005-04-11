@@ -8,47 +8,32 @@
 
 
 InsertDefaultInitVariables::InsertDefaultInitVariables() {
-  whichModules = MODULES_USER;
+  whichModules = MODULES_COMMON_AND_USER;
 }
 
 
 void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
   static int uid = 1;
   if (dynamic_cast<TypeSymbol*>(sym)) {
+    if (dynamic_cast<ArrayType*>(sym->type)) { // bail on array types
+      if (sym->type->defaultVal) {
+        sym->type->defaultVal->extract();
+        sym->type->defaultVal = NULL;
+      }
+      return; // they don't get default initialized yet
+      // the problem with not bailing is that the domain may not be
+      // declared where the default initial value is setup like in the
+      // common module.
+    }
     if (sym->type->defaultVal) {
-      //      SymScope* saveScope;
-      DefStmt* def_stmt;
       char* temp_name = glomstrings(3, "_init_", sym->name, intstring(uid++));
       Type* temp_type = sym->type;
       Expr* temp_init = sym->type->defaultVal->copy();
-
-      /*
-      if (ModuleSymbol* mod =
-          dynamic_cast<ModuleSymbol*>(sym->defPoint->stmt->parentSymbol)) {
-        BlockStmt* block_stmt = dynamic_cast<BlockStmt*>(mod->initFn->body);
-        if (block_stmt->blkScope) {
-          saveScope = Symboltable::setCurrentScope(block_stmt->blkScope);
-        } else {
-          Symboltable::pushScope(SCOPE_FUNCTION);
-        }
-        def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
-                                                       temp_type,
-                                                       temp_init,
-                                                       VAR_NORMAL,
-                                                       VAR_VAR);
-        if (block_stmt->blkScope) {
-          Symboltable::setCurrentScope(saveScope);
-        } else {
-          block_stmt->blkScope = Symboltable::popScope();
-        }
-      } else {
-      */
-        def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
-                                                       temp_type,
-                                                       temp_init,
-                                                       VAR_NORMAL,
-                                                       VAR_VAR);
-        //}
+      DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
+                                                              temp_type,
+                                                              temp_init,
+                                                              VAR_NORMAL,
+                                                              VAR_VAR);
       Stmt* insert_point;
       if (ModuleSymbol* mod =
           dynamic_cast<ModuleSymbol*>(sym->defPoint->stmt->parentSymbol)) {

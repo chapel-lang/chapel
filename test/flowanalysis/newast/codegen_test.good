@@ -1,4 +1,6 @@
  called from 15 in __init_codegen_test at <internal>:0
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_codegen_test ( __init_codegen_test )
 ::__init_codegen_test ( __init_codegen_test )
 ::__init_entryPoint ( __init_entryPoint )

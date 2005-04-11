@@ -1,5 +1,7 @@
 ::A(domarr.chpl:6) ( _array_float_2d (domarr.chpl:6) )
 ::Mat(domarr.chpl:4) ( Domain )
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_domarr ( __init_domarr )
 ::__init_domarr ( __init_domarr )
 ::__init_entryPoint ( __init_entryPoint )

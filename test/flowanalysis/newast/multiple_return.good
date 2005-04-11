@@ -1,4 +1,6 @@
  called from 8 in __init_multiple_return at <internal>:0
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude ( __init_internal_prelude )

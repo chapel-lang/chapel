@@ -1,5 +1,7 @@
  called from 19 in __init_noop at <internal>:0
 ::D(noop.chpl:6) ( Domain )
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude ( __init_internal_prelude )

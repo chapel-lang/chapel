@@ -1,6 +1,8 @@
  called from 10 in __init_chain at <internal>:0
  called from 11 in __init_chain at <internal>:0
  called from 3 in foo at chain.chpl:4
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_chain ( __init_chain )
 ::__init_chain ( __init_chain )
 ::__init_entryPoint ( __init_entryPoint )

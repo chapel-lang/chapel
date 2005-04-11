@@ -18,11 +18,14 @@ void SymtabTraversal::run(ModuleSymbol* moduleList) {
     // start from root of symboltable rather than internal scopes in
     // this case
     Symboltable::traverse(this);
+  } else if (whichModules == MODULES_COMMON_AND_USER) {
+    // start from the common module's scope in this case
+    // all modules are sub modules of common as of 4/11/05
+    Symboltable::traverseFromScope(this, commonModule->modScope);
   } else {
     ModuleSymbol* mod = moduleList;
     while (mod) {
       Symboltable::traverseFromScope(this, mod->modScope);
-
       mod = nextLink(ModuleSymbol, mod);
     }
   }

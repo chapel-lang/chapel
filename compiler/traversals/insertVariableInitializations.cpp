@@ -325,7 +325,7 @@ static void insert_init_at_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
 
 
 InsertVariableInitializations::InsertVariableInitializations() {
-  whichModules = MODULES_USER;
+  whichModules = MODULES_COMMON_AND_USER;
 }
 
 

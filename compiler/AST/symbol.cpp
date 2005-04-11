@@ -319,7 +319,9 @@ bool Symbol::isThis(void) {
 void VarSymbol::codegenDef(FILE* outfile) {
   if (parentScope->type == SCOPE_MODULE) {
     outfile = intheadfile;
-    fprintf(outfile, "static ");
+    if (!parentScope->commonModuleIsFirst()) {
+      fprintf(outfile, "static ");
+    }
   }
 
   // need to ensure that this can be realized in C as a const, and

@@ -1,5 +1,7 @@
 ::A(protoast_test.chpl:7) ( _array_float_1d (protoast_test.chpl:7) )
 ::D(protoast_test.chpl:5) ( Domain )
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_internal_prelude ( __init_internal_prelude )

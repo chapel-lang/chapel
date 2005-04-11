@@ -6,6 +6,8 @@
 ::O(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::S(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::W(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_enumarray ( __init_enumarray )
 ::__init_enumarray ( __init_enumarray )

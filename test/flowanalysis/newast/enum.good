@@ -1,4 +1,6 @@
 ::B(enum.chpl:1) ( classVals (enum.chpl:1) )
+::__init__CommonModule ( __init__CommonModule )
+::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_enum ( __init_enum )
 ::__init_enum ( __init_enum )
