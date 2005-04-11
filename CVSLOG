@@ -25101,3 +25101,52 @@ Modified files:
 	                             processParameters.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/11/05 14:47:48 -- shannon
+
+Log message:
+	Implemented the --memtable runtime option.  This flag creates
+	a table to keep track of the memory allocated, and checks for
+	common errors.  The chapel developer may call the printMemTable()
+	function to print the contents of this table.
+	
+	Refactored the printHelpTable function, arg.c and config.c.
+	
+	Specifically:
+	
+	* createConfigVarTable.cpp:  This traversal writes to the
+	  rtconfig.c file calls to parse the config args as well as
+	  calls to print the help table and the config var table
+	  since these things can't be done until the config var table
+	  has been created (which is done after the call to parseArgs
+	  in main.c).
+	
+	* arg.c:  Moved a bunch of parsing functions out of arg.c and
+	  into config.c since parsing of config args is now done from
+	  rtconfig.c with a call into config.c.  Also refactored the
+	  printing of the help table, creating an array of flag structs
+	  for ease of adding more flags.
+	
+	* config.c:  When parseArgs is called, all config args are now
+	  passed from arg.c to config.c and added to a list to be parsed
+	  later, when the config var table has been created.
+	
+	* Changed the expected output for several tests, and added the
+	  --memtable execopt to some others.
+
+Modified files:
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	chapel/runtime/include/: arg.h chplmem.h config.h 
+	chapel/runtime/src/: arg.c chplmem.c chplmem_tests.c config.c 
+	                     main.c 
+	chapel/test/memory/shannon/: configVarFile.execopts 
+	                             configVarFile.good freedMalloc.good 
+	                             jacobi.execopts jacobi.good 
+	                             reallocZeroSize.good 
+Added files:
+	chapel/test/memory/shannon/: freedMalloc.execopts 
+	                             freedWithoutMalloc.execopts 
+	                             reallocWithoutMalloc.execopts 
+	                             reallocZeroSize.execopts 
+
