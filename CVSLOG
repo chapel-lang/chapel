@@ -25271,3 +25271,21 @@ Added files:
 	chapel/test/types/seq/deitz/noanalysis/: test_seq6.future 
 	                                         test_seq7.future 
 
+---------------------------------------------------------------------------
+
+04/12/05 09:17:51 -- jplevyak
+
+Log message:
+	Added ChainHashMap::del() and ChainHash::del().  These both take the key,
+	delete the first matching entry (there should only be one) and then
+	return 1 if something was deleted or 0 if nothing matching was found.
+	
+	Added tests for the above, updated the compiler/test directory to compile
+	and to contain the latest source code.
+
+Modified files:
+	chapel/compiler/adt/: list.cpp map.cpp 
+	chapel/compiler/include/: map.h 
+	chapel/compiler/test/: Makefile list.cpp map.cpp misc.cpp 
+	chapel/compiler/util/: misc.cpp 
+
