@@ -1,0 +1,8 @@
+CONFIG VARS:
+============
+module1's config vars:
+  x: 999 (default:  1)
+
+module2's config vars:
+  x: 2
+  z: 8888.88 (default:  2.2)
