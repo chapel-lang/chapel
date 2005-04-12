@@ -90,6 +90,12 @@ void setMemtrace(char* memlogname) {
 
 
 void printMemTable(void) {
+  if (!memtable) {
+    fprintf(stderr, "***printMemTable() only works with the --memtable flag"
+            "***\n");
+    exit(0);
+  }
+
   memTableEntry* memEntry = NULL;
  
   fprintf(stdout, "\n");
