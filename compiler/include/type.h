@@ -1,11 +1,13 @@
 #ifndef _TYPE_H_
 #define _TYPE_H_
 
+
 #include <stdio.h>
-#include "analysis.h"
 #include "baseAST.h"
+#include "analysis.h"
 #include "chplenum.h"
 #include "vec.h"
+
 
 class Symbol;
 class EnumSymbol;
@@ -19,16 +21,6 @@ class CondStmt;
 class ASymbol;
 class SymScope;
 
-
-enum structType {
-  STRUCT_CLASS,
-  STRUCT_RECORD,
-  STRUCT_UNION
-};
-
-
-
-// neither of these really seem like they should be here
 
 class Type : public BaseAST {
  public:
@@ -147,29 +139,6 @@ class IndexType : public Type {
   void print(FILE* outfile);
   void traverseDefType(Traversal* traversal);
   Type* getType();
-};
-
-
-class ArrayType : public Type {
- public:
-  Expr* domain;
-  DomainType* domainType;
-  Type* elementType;
-
-  ArrayType(Expr* init_domain, Type* init_elementType);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void traverseDefType(Traversal* traversal);
-
-  int rank(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-  void codegenDef(FILE* outfile);
-  void codegenPrototype(FILE* outfile);
-  void codegenDefaultFormat(FILE* outfile, bool isRead);
-
-  virtual bool blankIntentImpliesRef(void);
 };
 
 
@@ -302,25 +271,6 @@ class UnionType : public StructuralType {
 };
 
 
-class SeqType : public ClassType {
- public:
-  Type* elementType;
-
-  SeqType::SeqType(Type* init_elementType);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-  void traverseDefType(Traversal* traversal);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-  void codegenDef(FILE* outfile);
-  //void codegenPrototype(FILE* outfile);
-  void codegenDefaultFormat(FILE* outfile, bool isRead);
-  void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
-  bool implementedUsingCVals(void);
-  void buildImplementationClasses();
-  static SeqType* createSeqType(char* new_seq_name, Type* init_elementType);
-};
-
-
 class TupleType : public Type {
  public:
   Vec<Type*> components;
@@ -335,6 +285,47 @@ class TupleType : public Type {
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
+};
+
+
+class SeqType : public ClassType {
+ public:
+  Type* elementType;
+
+  SeqType::SeqType(Type* init_elementType);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void traverseDefType(Traversal* traversal);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
+  //void codegenPrototype(FILE* outfile);
+  void codegenDefaultFormat(FILE* outfile, bool isRead);
+  void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
+  bool implementedUsingCVals(void);
+  static SeqType* createSeqType(char* new_seq_name, Type* init_elementType);
+};
+
+
+class ArrayType : public Type {
+ public:
+  Expr* domain;
+  DomainType* domainType;
+  Type* elementType;
+
+  ArrayType(Expr* init_domain, Type* init_elementType);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void traverseDefType(Traversal* traversal);
+
+  int rank(void);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+  void codegenDef(FILE* outfile);
+  void codegenPrototype(FILE* outfile);
+  void codegenDefaultFormat(FILE* outfile, bool isRead);
+
+  virtual bool blankIntentImpliesRef(void);
 };
 
 

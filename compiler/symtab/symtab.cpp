@@ -654,27 +654,12 @@ DefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
 }
 
 
-TypeSymbol* Symboltable::startStructDef(structType type, char* name) {
-  StructuralType* newType;
-  switch (type) {
-  case STRUCT_CLASS:
-    newType = new ClassType();
-    break;
-  case STRUCT_RECORD:
-    newType = new RecordType();
-    break;
-  case STRUCT_UNION:
-    newType = new UnionType();
-    break;
-  default:
-    INT_FATAL("Unknown Strucutural Type");
-    newType = NULL;
-  }
-  TypeSymbol* newsym = new TypeSymbol(name, newType);
-  (newType)->addSymbol(newsym);
+TypeSymbol* Symboltable::startStructDef(Type* type, char* name) {
+  TypeSymbol* sym = new TypeSymbol(name, type);
+  type->addSymbol(sym);
   Symboltable::pushScope(SCOPE_CLASS);
 
-  return newsym;
+  return sym;
 }
                                         
 

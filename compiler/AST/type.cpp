@@ -761,7 +761,8 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   Symbol* _seq = Symboltable::lookupInternal("_seq");
   ClassType* _seq_type = dynamic_cast<ClassType*>(_seq->type);
   Symboltable::pushScope(SCOPE_CLASS);
-  Stmt* new_decls = dynamic_cast<Stmt*>(_seq_type->declarationList->next)->copyList(true);
+  Stmt* new_decls =
+    dynamic_cast<Stmt*>(_seq_type->declarationList->next)->copyList(true);
   new_seq_type->addDeclarations(new_decls);
   SymScope* new_seq_scope = Symboltable::popScope();
   new_seq_type->setScope(new_seq_scope);
@@ -773,7 +774,6 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   forv_Vec(FnSymbol, method, new_seq_type->methods) {
     method->classBinding = new_seq_sym;
     method->_this = method->formals;
-    /** mangle cname **/
     method->cname = glomstrings(3, new_seq_sym->name, "_", method->cname);
   }
 
@@ -787,50 +787,7 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   Symbol* _node = Symboltable::lookupInScope("_node", new_seq_scope);
   _node->cname = glomstrings(2, new_seq_name, _node->name);
 
-  /*
-  FnSymbol* copy_fn =
-    dynamic_cast<FnSymbol*>(Symboltable::lookupInScope("copy", new_seq_scope));
-
-  if (!copy_fn) {
-    INT_FATAL(new_seq_type, "No copy found in sequence type");
-  }
-
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, copy_fn);
-
-  forv_Vec(BaseAST*, ast, asts) {
-    if (ForLoopStmt* for_loop = dynamic_cast<ForLoopStmt*>(ast)) {
-      if (DefExpr* def_expr = dynamic_cast<DefExpr*>(for_loop->indices)) {
-        def_expr->sym->type = new_seq_type->elementType;
-      }
-    }
-  }
-  */
   return new_seq_type;
-}
-
-
-void SeqType::buildImplementationClasses() {
-  Symboltable::pushScope(SCOPE_CLASS);
-
-  Symbol* _seq = Symboltable::lookupInternal("_seq");
-  StructuralType* _seq_type = dynamic_cast<StructuralType*>(_seq->type);
-  // look at next because first one is the variable type
-  Stmt* decls = dynamic_cast<Stmt*>(_seq_type->declarationList->next);
-  Stmt* new_decls = decls->copyList(true);
-  addDeclarations(new_decls);
-
-  Symbol* _node = Symboltable::lookup("_node");
-  _node->cname = glomstrings(2, symbol->name, _node->name);
-  SymScope* _node_scope = dynamic_cast<StructuralType*>(_node->type)->structScope;
-  Symboltable::lookupInScope("element", _node_scope)->type = elementType;
-  Symboltable::lookupInScope("next", _node_scope)->type = _node->type;
-  Symboltable::lookup("first")->type = _node->type;
-  Symboltable::lookup("last")->type = _node->type;
-
-  structScope = Symboltable::popScope();
-  structScope->setContext(NULL, symbol, symbol->defPoint);
-  TRAVERSE_LS(symbol->defPoint->stmt, new Fixup(), true);
 }
 
 

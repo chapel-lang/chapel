@@ -20,7 +20,6 @@
   varType vt;
   consType ct;
   paramType pt;
-  structType st;
 
   Expr* pexpr;
   ForallExpr* pfaexpr;
@@ -127,7 +126,7 @@
 %type <defexpr> vardecl_inner vardecl_inner_ls
 %type <defstmt> vardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl block_stmt
-%type <st> structtype
+%type <pdt> structtype
 %type <stmt> typealias typedecl fndecl structdecl moduledecl function_body_stmt
 %type <pragmas> pragma pragmas
 
@@ -298,11 +297,11 @@ enumdecl:
 
 structtype:
   TCLASS
-    { $$ = STRUCT_CLASS; }
+    { $$ = new ClassType(); }
 | TRECORD
-    { $$ = STRUCT_RECORD; }
+    { $$ = new RecordType(); }
 | TUNION
-    { $$ = STRUCT_UNION; }
+    { $$ = new UnionType(); }
 ;
 
 

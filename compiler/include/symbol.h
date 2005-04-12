@@ -2,10 +2,9 @@
 #define _SYMBOL_H_
 
 #include "baseAST.h"
-#include "type.h"
 #include "analysis.h"
 #include "pragma.h"
-
+#include "type.h"
 
 class Stmt;
 class ASymbol;
