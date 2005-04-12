@@ -25319,3 +25319,16 @@ Modified files:
 	chapel/compiler/analysis/: ssu.cpp 
 	chapel/compiler/include/: prim.h 
 
+---------------------------------------------------------------------------
+
+04/12/05 11:09:16 -- deitz
+
+Log message:
+	Some minor type code cleanup.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: symbol.h symtab.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp symtab.cpp 
+
