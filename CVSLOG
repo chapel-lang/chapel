@@ -25515,3 +25515,15 @@ Added files:
 	chapel/test/execflags/shannon/configs/: 
 	                                        configVarModStrings2.cfghelp 
 
+---------------------------------------------------------------------------
+
+04/12/05 15:20:54 -- deitz
+
+Log message:
+	Moved defaultConstructor out of StructuralType and into Type so all
+	types now have a defaultVal and a defaultConstructor.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+
