@@ -171,6 +171,11 @@ void installMemory(void* memAlloc, size_t number, size_t size,
 
     memEntry->description = (char*) malloc((strlen(description) + 1)
                                            * sizeof(char));
+    if (!memEntry->description) {
+      fprintf(stderr, "***Error:  Out of memory allocating table entry for %s"
+              "***\n", description);
+      exit(0);
+    }
     strcpy(memEntry->description, description);
     memEntry->memAlloc = memAlloc;
   }  
