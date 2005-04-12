@@ -41,6 +41,7 @@ static Sym *array_set_symbol = 0;
 static Sym *sizeof_symbol = 0;
 static Sym *cast_symbol = 0;
 static Sym *method_symbol = 0;
+static Sym *make_seq_symbol = 0;
 
 static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
@@ -711,10 +712,17 @@ build_types(Vec<BaseAST *> &syms) {
         }
         INT_FATAL(t, "No analysis support for 'like'");
       }
-      case TYPE_SEQ:
+      case TYPE_SEQ: {
+        SeqType *tt = dynamic_cast<SeqType*>(t);
+        Sym *s = tt->asymbol->sym;
+        s->element = new_sym();
+        build_record_type(t, sym_sequence);
+        break;
+      }
       case TYPE_CLASS:
       case TYPE_RECORD:
-      case TYPE_UNION: {
+      case TYPE_UNION: 
+      {
         StructuralType *tt = dynamic_cast<StructuralType*>(t);
         t->asymbol->sym->type_kind = Type_RECORD;
         if (t->astType == TYPE_RECORD || t->astType == TYPE_UNION)
@@ -725,6 +733,8 @@ build_types(Vec<BaseAST *> &syms) {
           t->asymbol->sym->inherits_add(tt->parentStruct->asymbol->sym);
         else
           t->asymbol->sym->inherits_add(sym_object);
+        if (t->asymbol->sym == sym_sequence)
+          t->asymbol->sym->element = new_sym();
         break;
       }
       case TYPE_VARIABLE: {
@@ -837,7 +847,6 @@ build_builtin_symbols() {
   new_primitive_type(sym_ref, "ref");
   new_primitive_type(sym_value, "value");
   new_primitive_type(sym_set, "set");
-  new_primitive_type(sym_sequence, "sequence");
   new_primitive_type(sym_int8, "int8");
   new_primitive_type(sym_int16, "int16");
   new_primitive_type(sym_int32, "int32");
@@ -884,6 +893,7 @@ build_builtin_symbols() {
 
   sym_init = new_sym(); // placeholder
 
+  builtin_Symbol(dtSequence, &sym_sequence, "sequence");
   builtin_Symbol(dtTuple, &sym_tuple, "tuple");
   builtin_Symbol(dtIndex, &sym_index, "index");
   builtin_Symbol(dtDomain, &sym_domain, "domain");
@@ -1576,6 +1586,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Sym *op = 0;
       switch (s->type) {
         default: assert(!"case");
+        case BINOP_SEQCAT: op = if1_make_symbol(if1, "#"); break;
         case BINOP_PLUS: op = if1_make_symbol(if1, "+"); break;
         case BINOP_MINUS: op = if1_make_symbol(if1, "-"); break;
         case BINOP_MULT: op = if1_make_symbol(if1, "*"); break;
@@ -1718,7 +1729,20 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_SEQ: {
-      INT_FATAL(ast, "Sequences not handled in analysis yet");
+      SeqExpr *s = dynamic_cast<SeqExpr *>(ast);
+      s->ainfo->sym = s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
+      Vec<Expr *> args;
+      getLinkElements(args, s->exprls);
+      forv_Vec(Expr, a, args)
+        if1_gen(if1, &s->ainfo->code, a->ainfo->code);
+      Code *send = if1_send1(if1, &s->ainfo->code);
+      send->ast = s->ainfo;
+      if1_add_send_arg(if1, send, sym_primitive);
+      if1_add_send_arg(if1, send, make_seq_symbol);
+      forv_Vec(Expr, a, args)
+        if1_add_send_arg(if1, send, a->ainfo->rval);
+      if1_add_send_result(if1, send, s->ainfo->rval);
       break;
     }
     case EXPR_SIMPLESEQ: {
@@ -2088,6 +2112,7 @@ init_symbols() {
   sizeof_symbol = if1_make_symbol(if1, "sizeof");
   cast_symbol = if1_make_symbol(if1, "cast");
   method_symbol = if1_make_symbol(if1, "__method");
+  make_seq_symbol = if1_make_symbol(if1, "make_seq");
   write_symbol = if1_make_symbol(if1, "write");
   writeln_symbol = if1_make_symbol(if1, "writeln");
   read_symbol = if1_make_symbol(if1, "read");
@@ -2278,6 +2303,45 @@ array_pointwise_op(PNode *pn, EntrySet *es) {
   flow_vars(array, result);
 }
 
+static void
+make_seq(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  CreationSet *cs = creation_point(result, sym_sequence);
+  AVar *element = unique_AVar(sym_sequence->element->var, cs);
+  for (int i = 2; i < pn->rvals.n; i++) {
+    AVar *av = make_AVar(pn->rvals.v[i], es);
+    flow_vars(av, element);
+  }
+  update_in(result, make_AType(cs));
+}
+
+static void
+seqcat_seq(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *s1 = make_AVar(pn->rvals.v[2], es);
+  AVar *s2 = make_AVar(pn->rvals.v[2], es);
+  forv_CreationSet(a, *s1->out) if (a) {
+    AVar *ea = unique_AVar(a->sym->element->var, a);
+    forv_CreationSet(b, *s2->out) if (b) {
+      AVar *eb = unique_AVar(b->sym->element->var, b);
+      flow_vars(eb, ea);
+    }
+  }
+  flow_vars(s1, result);
+}
+
+static void
+seqcat_element(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *s1 = make_AVar(pn->rvals.v[2], es);
+  AVar *s2 = make_AVar(pn->rvals.v[2], es);
+  forv_CreationSet(a, *s1->out) if (a) {
+    AVar *ea = unique_AVar(a->sym->element->var, a);
+    flow_vars(s2, ea);
+  }
+  flow_vars(s1, result);
+}
+
 int 
 ast_to_if1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
@@ -2304,9 +2368,12 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   REG(read_symbol->name, read_transfer_function);
   REG(array_index_symbol->name, array_index);
   REG(array_set_symbol->name, array_set);
+  REG(make_seq_symbol->name, make_seq);
   REG(if1_cannonicalize_string(if1, "ptr_eq"), ptr_eq);
   REG(if1_cannonicalize_string(if1, "ptr_neq"), ptr_neq);
   REG(if1_cannonicalize_string(if1, "array_pointwise_op"), array_pointwise_op);
+  REG(if1_cannonicalize_string(if1, "seqcat_seq"), seqcat_seq);
+  REG(if1_cannonicalize_string(if1, "seqcat_element"), seqcat_element);
   build_type_hierarchy();
   finalize_symbols(if1);
   return 0;

@@ -289,6 +289,7 @@ void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
 int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
 int constant_info(Var *v, Vec<Sym *> &constants);
 int symbol_info(Var *v, Vec<Sym *> &symbols);
+AType *make_AType(CreationSet *cs);
 AType *make_AType(Vec<CreationSet *> &css);
 AType *make_abstract_type(Sym *s);
 void update_in(AVar *v, AType *t);

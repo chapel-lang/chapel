@@ -1774,6 +1774,7 @@ void initTypes(void) {
 
 
 void findInternalTypes(void) {
+  dtSequence = Symboltable::lookupInternalType("_seq")->type;
   dtTuple = Symboltable::lookupInternalType("Tuple")->type;
   dtIndex = Symboltable::lookupInternalType("Index")->type;
   dtDomain = Symboltable::lookupInternalType("Domain")->type;

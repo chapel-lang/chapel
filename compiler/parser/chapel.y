@@ -456,6 +456,8 @@ fname:
   { $$ = "or"; } 
 | TBY
   { $$ = "by"; } 
+| TSEQCAT
+  { $$ = "#"; } 
   ;
 
 fndecl:

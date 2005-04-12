@@ -150,6 +150,14 @@ pragma "omit for noanalysis" class _seq {
 
 }
 
+pragma "builtin" function #(a : _seq, b : any) { 
+  return __primitive("seqcat_element", a, b); 
+}
+
+pragma "builtin" function #(a : _seq, b : _seq) { 
+  return __primitive("seqcat_seq", a, b); 
+}
+
 pragma "omit for noanalysis" function _seq_append(s, e) {
   s.append(e);
 }
@@ -162,3 +170,4 @@ pragma "omit for noanalysis" function _seq_pound(s1, s2) {
   s1.append_sequence(s2);
 }
 */
+

@@ -1,2 +1,7 @@
-jplevyak
+deitz
+
+maybe you could take a look at this one.
+the problem seems to be that I am trying
+to clone _seq for integers, and it doesn't
+like that.
 

@@ -46,7 +46,6 @@ static Que(AVar, send_worklist_link) send_worklist;
 static Vec<EntrySet *> entry_set_done;
 static Vec<ATypeViolation *> type_violations;
 
-static AType *make_AType(CreationSet *cs);
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
                        Partial_kind partial);
 static void add_var_constraint(AVar *av);
@@ -147,7 +146,7 @@ make_AVar(Var *v, AEdge *e) {
   return make_AVar(v, e->to); 
 }
 
-static AType *
+AType *
 make_AType(CreationSet *cs) {
   if (cs->atype)
     return cs->atype;
