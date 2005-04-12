@@ -25357,3 +25357,27 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/12/05 11:36:37 -- jplevyak
+
+Log message:
+	Progress on support for sequences.  Sequences and their operators
+	are now understood by analysis.  Got as far as I could (easily) and
+	then transfered the .futures to Steve to take a look.  Feel free
+	to send them back if you find the problem is mine.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp prim_data.dat 
+	chapel/compiler/include/: fa.h type.h 
+	chapel/compiler/parser/: chapel.y internal_prelude.chpl 
+	chapel/test/flowanalysis/newast/: declprintdom.good 
+	chapel/test/types/seq/deitz/: test_seq1.future test_seq1a.future 
+	                              test_seq1b.future 
+	                              test_seq1c.future test_seq2.future 
+	                              test_seq3.future test_seq4.future 
+	                              test_seq5.future test_seq6.future 
+	                              test_seq7.future test_seq8.future 
+	                              test_seq8b.future 
+
