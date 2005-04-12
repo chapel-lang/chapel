@@ -25343,3 +25343,17 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/12/05 11:23:25 -- bradc
+
+Log message:
+	Pulling test back out of top-level Makefile
+	for the time being so that make depend will
+	work again for those that are stuck on it.
+	Will work on putting this back in once I
+	catch my breath.
+
+Modified files:
+	chapel/compiler/: Makefile 
+
