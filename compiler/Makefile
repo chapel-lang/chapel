@@ -20,7 +20,6 @@ SUBDIRS = \
 	parser \
 	passes \
 	symtab \
-	test \
 	traversals \
 	util \
 	vparser \
