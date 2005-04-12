@@ -46,6 +46,7 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
   symbol(NULL),
   defaultVal(init_defaultVal),
+  defaultConstructor(NULL),
   asymbol(NULL),
   parentType(NULL)
 {

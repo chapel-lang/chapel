@@ -26,6 +26,7 @@ class Type : public BaseAST {
  public:
   Symbol* symbol;
   Expr* defaultVal;
+  FnSymbol *defaultConstructor;
   ASymbol *asymbol;
   Type* parentType;
 
@@ -189,8 +190,6 @@ class StructuralType : public Type {
   Vec<FnSymbol*> methods;
   Vec<TypeSymbol*> types;
 
-  FnSymbol *defaultConstructor;
-  
   StructuralType(astType_t astType, Expr* init_defaultVal = NULL);
   void addDeclarations(Stmt* newDeclarations,
                        Stmt* afterStmt = NULL);
