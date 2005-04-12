@@ -25436,3 +25436,16 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplmem.c 
 
+---------------------------------------------------------------------------
+
+04/12/05 14:14:03 -- deitz
+
+Log message:
+	Added new method varDefSet() which returns a Vec<VarSymbol*>* to
+	DefStmt and DefExpr of all the VarSymbols defined in that statement or
+	expression.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+
