@@ -43,10 +43,7 @@ static void resolve_type_helper(Type* &type) {
 
 
 ScopeResolveSymbols::ScopeResolveSymbols() {
-}
-
-
-void ScopeResolveSymbols::preProcessStmt(Stmt* stmt) {
+  defList = new Map<SymScope*,Vec<VarSymbol*>*>();
 }
 
 
@@ -54,19 +51,58 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
   if (CastExpr* cast_expr = dynamic_cast<CastExpr*>(expr)) {
     resolve_type_helper(cast_expr->newType);
   }
-  if (Variable* variable_expr = dynamic_cast<Variable*>(expr)) {
-    if (dynamic_cast<UnresolvedSymbol*>(variable_expr->var)) {
-      Symbol* new_symbol = Symboltable::lookup(variable_expr->var->name);
-      if (new_symbol) {
-        if (!dynamic_cast<FnSymbol*>(new_symbol)) {
-          variable_expr->var = new_symbol;
+
+  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+    SymScope* currentScope = Symboltable::getCurrentScope();
+    Vec<VarSymbol*>* new_vars = def_expr->varDefSet();
+    if (new_vars) {
+      Vec<VarSymbol*>* old_vars = defList->get(currentScope);
+      if (old_vars) {
+        old_vars->set_union(*new_vars);
+      } else {
+        defList->put(currentScope, new_vars);
+      }
+    }
+  }
+
+  if (Variable* sym_use = dynamic_cast<Variable*>(expr)) {
+    if (dynamic_cast<UnresolvedSymbol*>(sym_use->var)) {
+      SymScope* currentScope = Symboltable::getCurrentScope();
+      char* name = sym_use->var->name;
+      
+      if (!strcmp(name, "__primitive")) {
+        return;
+      }
+      
+      VarSymbol* sym_in_scope =
+        dynamic_cast<VarSymbol*>(Symboltable::lookupInCurrentScope(name));
+      
+      if (sym_in_scope) {
+        Vec<VarSymbol*>* sym_defs = defList->get(currentScope);
+        if (!sym_defs || !sym_defs->set_in(sym_in_scope)) {
+          USR_FATAL(expr, "Variable '%s' used before it is defined", name);
         }
       }
-      else {
-        if (strcmp(variable_expr->var->name, "__primitive")) {
-          USR_FATAL(expr, "Unable to resolve token '%s'",
-                    variable_expr->var->name);
+      
+      Symbol* sym_resolve = Symboltable::lookup(name);
+      
+      if (VarSymbol* var_resolve = dynamic_cast<VarSymbol*>(sym_resolve)) {
+        ModuleSymbol* mod =
+          dynamic_cast<ModuleSymbol*>(var_resolve->parentScope->symContext);
+        if (mod && mod->initFn->paramScope == currentScope) {
+          Vec<VarSymbol*>* sym_defs = defList->get(currentScope);
+          if (!sym_defs || !sym_defs->set_in(var_resolve)) {
+            USR_FATAL(expr, "Variable '%s' used before it is defined", name);
+          }
         }
+      }
+
+      if (sym_resolve) {
+        if (!dynamic_cast<FnSymbol*>(sym_resolve)) {
+          sym_use->var = sym_resolve;
+        }
+      } else {
+        USR_FATAL(expr, "Symbol '%s' is not defined", name);
       }
     }
   }
