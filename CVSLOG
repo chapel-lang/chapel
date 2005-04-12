@@ -25425,3 +25425,14 @@ Added files:
 	chapel/test/memory/shannon/: printMemTable.chpl 
 	                             printMemTable.good 
 
+---------------------------------------------------------------------------
+
+04/12/05 14:13:23 -- shannon
+
+Log message:
+	Added error checking for a call to malloc that
+	doesn't use the _chpl_malloc wrapper.
+
+Modified files:
+	chapel/runtime/src/: chplmem.c 
+
