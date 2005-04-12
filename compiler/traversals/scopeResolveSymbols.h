@@ -10,11 +10,9 @@
 #define _SCOPE_RESOLVE_SYMBOLS_H_
 
 #include "traversal.h"
-#include "stmt.h"
 
 class ScopeResolveSymbols : public Traversal {
  public:
-  LabelStmt* currentLoop;
   ScopeResolveSymbols();
   void preProcessStmt(Stmt* stmt);
   void preProcessExpr(Expr* expr);

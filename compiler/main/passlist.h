@@ -24,6 +24,7 @@ PassInfo passlist[] = {
   RUN(ExpandClassWiths, ""),
   RUN(InsertThisParameters, ""),
   RUN(ScopeResolveSymbols, ""),
+  RUN(ScopeResolveGotos, ""),
   RUN(RenameOverloadedFunctions, ""),
   RUN(InsertTemps, ""),
   RUN(Fixup, "verify"), // this is a sanity check

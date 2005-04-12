@@ -42,6 +42,7 @@
 #include "../traversals/printAST.h"
 #include "../traversals/processDefs.h"
 #include "../traversals/processParameters.h"
+#include "../traversals/scopeResolveGotos.h"
 #include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/specializeParenOpExprs.h"
 #include "../traversals/removeNamedParameters.h"
@@ -107,6 +108,7 @@ REGISTER(RenameOverloadedFunctions);
 REGISTER(ResolveOverloadedOperators);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(RunAnalysis);
+REGISTER(ScopeResolveGotos);
 REGISTER(ScopeResolveSymbols);
 REGISTER(SpecializeParenOpExprs);
 REGISTER(TestGetStuff);
