@@ -25449,3 +25449,29 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp stmt.cpp 
 	chapel/compiler/include/: expr.h stmt.h 
 
+---------------------------------------------------------------------------
+
+04/12/05 14:17:21 -- deitz
+
+Log message:
+	Implemented new scope resolution of symbols to enforce that variables
+	are defined before they are used.  Functions, types, and modules do
+	not need to be defined before they are used.
+	
+	For cases like
+	
+	  var x : integer = 12;
+	  ...
+	  {
+	    ...
+	    writeln(x);
+	    ...
+	    var x : integer = 6;
+	
+	an error is still flagged.  We can change this later, but this error
+	is nice because this code is a little strange.
+
+Modified files:
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+
