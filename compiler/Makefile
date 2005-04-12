@@ -20,11 +20,10 @@ SUBDIRS = \
 	parser \
 	passes \
 	symtab \
+	test \
 	traversals \
 	util \
 	vparser \
-
-#	test \
 
 #
 # include standard header for compiler

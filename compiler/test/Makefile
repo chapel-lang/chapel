@@ -6,6 +6,7 @@ COMPILER_ROOT = ..
 COMPILER_SUBDIR = test
 USE_DPARSER = 1
 CFLAGS += -DTEST_LIB -Wno-invalid-offsetof
+VPATH = ../adt:../util:../backend
 
 #
 # standard header
@@ -19,14 +20,14 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 TEST_LIB = test_lib$(EXE_SUFFIX)
 COMPILER_SRCS = \
-	list.cpp \
-	map.cpp \
-	misc.cpp \
-	vec.cpp \
-	files.cpp \
-	beautify.cpp \
-	mysystem.cpp \
-	stringutil.cpp
+	list.test.cpp \
+	map.test.cpp \
+	misc.test.cpp \
+	vec.test.cpp \
+	files.test.cpp \
+	beautify.test.cpp \
+	mysystem.test.cpp \
+	stringutil.test.cpp
 TEST_CVS_SRCS = \
 	$(COMPILER_SRCS) \
 	test_lib.cpp
@@ -49,10 +50,7 @@ DEPEND_DEPS = $(COMPILER_SRCS)
 # rules
 #
 
-all:
-
-test: $(TEST_LIB)
-	./$(TEST_LIB)
+all: $(TEST_LIB)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
@@ -62,12 +60,16 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
 $(TEST_LIB): $(PLATFORM)/$(TEST_LIB)
 	cp $< $@
+	./$(TEST_LIB)
 
 $(PLATFORM)/$(TEST_LIB): $(TEST_OBJS)
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-%.cpp: ../%.cpp
+%.test.cpp: %.cpp
 	cp $< $@
+
+#clean:
+#	rm -f ./$(PLATFORM)/*.o core
 
 #
 # standard footer
