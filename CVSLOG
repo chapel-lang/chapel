@@ -25381,3 +25381,20 @@ Modified files:
 	                              test_seq7.future test_seq8.future 
 	                              test_seq8b.future 
 
+---------------------------------------------------------------------------
+
+04/12/05 11:40:03 -- deitz
+
+Log message:
+	Added new pass ScopeResolveGotos to decouple label resolution from
+	symbol resolution in ScopeResolveSymbols.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	                             scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+Added files:
+	chapel/compiler/traversals/: scopeResolveGotos.cpp 
+	                             scopeResolveGotos.h 
+
