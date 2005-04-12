@@ -25410,3 +25410,18 @@ Modified files:
 	chapel/test/flowanalysis/jplevyak/constants/: .cvsignore 
 	chapel/test/flowanalysis/jplevyak/loop/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/12/05 14:01:30 -- shannon
+
+Log message:
+	Added an error message to the printMemTable function
+	reminding the caller that this function must be
+	used in conjunction with the --memtable flag.
+
+Modified files:
+	chapel/runtime/src/: chplmem.c 
+Added files:
+	chapel/test/memory/shannon/: printMemTable.chpl 
+	                             printMemTable.good 
+
