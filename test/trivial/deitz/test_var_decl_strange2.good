@@ -1,2 +1,2 @@
-0.0
-3.0
+Error: Variable 'y' used before it is defined (test_var_decl_strange2.chpl:1)
+

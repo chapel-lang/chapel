@@ -1,0 +1,2 @@
+Error: Variable 'foo' used before it is defined (test_scope2.chpl:6)
+

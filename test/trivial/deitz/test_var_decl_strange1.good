@@ -1,2 +1,2 @@
-0
-0
+Error: Variable 'y' used before it is defined (test_var_decl_strange1.chpl:1)
+

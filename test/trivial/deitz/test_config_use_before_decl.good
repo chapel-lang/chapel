@@ -1,2 +1,2 @@
-0
-12
+Error: Variable 'x' used before it is defined (test_config_use_before_decl.chpl:1)
+

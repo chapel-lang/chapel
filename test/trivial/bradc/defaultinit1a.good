@@ -1,11 +1,2 @@
-a is: false
-b is: 0
-c is: 0.0
-d is: 0 + 0i
-e is: 
+Error: Variable 'a' used before it is defined (defaultinit1a.chpl:3)
 
-a is: true
-b is: 1
-c is: 1.2
-d is: 1.2 + 3.4i
-e is: nonempty

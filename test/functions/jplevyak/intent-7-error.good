@@ -1,2 +1,2 @@
-Error: Unable to resolve token 'y' (intent-7-error.chpl:9)
+Error: Symbol 'y' is not defined (intent-7-error.chpl:9)
 
