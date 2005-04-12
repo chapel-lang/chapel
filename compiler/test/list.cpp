@@ -2,6 +2,7 @@
   Copyright 2003 John Plevyak
 */
 
+#include <stddef.h>
 #include "geysa.h"
 
 #ifdef TEST_LIB

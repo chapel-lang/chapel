@@ -59,6 +59,8 @@ test_map() {
   assert(h.put(hhi) == hi);
   assert(h.get(hhi) == hi && h.get(hi) == hi && h.get(ho) == ho);
   assert(h.get("he") == 0 && h.get("hee") == 0);
+  h.del(ho);
+  assert(h.get(ho) == 0);
 
   StringBlockHash hh;
   hh.put(hi);
@@ -110,13 +112,15 @@ test_map() {
   assert(ssh.get(hum) == 3);
   assert(ssh.get("af") == 10);
   assert(ssh.get("ac") == 7);
+  ssh.del(ho);
+  assert(ssh.get(ho) == 0);
   
   Vec<int> ints;
   ssh.get_values(ints);
-  assert(ints.n == 9);
+  assert(ints.n == 8);
   Vec<char *> chars;
   ssh.get_keys(chars);
-  assert(chars.n == 9);
+  assert(chars.n == 8);
 }
 #endif
 

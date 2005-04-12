@@ -5,7 +5,7 @@
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = test
 USE_DPARSER = 1
-CFLAGS += -DTEST_LIB
+CFLAGS += -DTEST_LIB -Wno-invalid-offsetof
 
 #
 # standard header

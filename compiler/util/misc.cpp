@@ -74,6 +74,10 @@ show_error(char *str, Var *v, ...) {
   va_end(ap);
   return -1;
 }
+#else
+int ignore_errors = 0;
+int developer = 0;
+void get_version(char *) {}
 #endif
 
 int

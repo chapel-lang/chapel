@@ -84,6 +84,7 @@ template <class C, class AHashFns> class ChainHash : public Map<unsigned int, Li
   using Map<unsigned int, List<C> >::v;
   inline C put(C c);
   inline C get(C c);
+  inline int del(C avalue);
   inline void get_elements(Vec<C> &elements);
 };
 
@@ -92,8 +93,9 @@ template <class K, class AHashFns, class C> class ChainHashMap :
  public:
   using Map<unsigned int, List<MapElem<K, C> > >::n;
   using Map<unsigned int, List<MapElem<K, C> > >::v;
-  inline C get(K akey);
   inline MapElem<K,C> *put(K akey, C avalue);
+  inline C get(K akey);
+  inline int del(K akey);
   inline void get_keys(Vec<K> &keys);
   inline void get_values(Vec<C> &values);
 };
@@ -115,7 +117,7 @@ template <class C, class AHashFns, int N> class NBlockHash : public gc {
   inline C *last();
   inline C put(C c);
   inline C get(C c);
-  inline void del(C c);
+  inline int del(C c);
   inline void clear();
   inline int count();
   inline NBlockHash();
@@ -299,6 +301,30 @@ ChainHash<C, AHashFns>::get_elements(Vec<C> &elements) {
   }
 }
 
+template <class C, class AHashFns> int
+ChainHash<C, AHashFns>::del(C c) {
+  unsigned int h = AHashFns::hash(c);
+  List<C> *l;
+  MapElem<unsigned int,List<C> > e(h, (C)0);
+  MapElem<unsigned int,List<C> > *x = set_in(e);
+  if (x)
+    l = &x->value;
+  else
+    return 0;
+  ConsCell<C> *last = 0;
+  forc_List(C, x, *l) {
+    if (AHashFns::equal(c, x->car)) {
+      if (!last)
+        l->head = x->cdr;
+      else
+        last->cdr = x->cdr;
+      return 1;
+    }
+    last = x;
+  }
+  return 0;
+}
+
 template <class K, class AHashFns, class C>  MapElem<K,C> *
 ChainHashMap<K, AHashFns, C>::put(K akey, C avalue) {
   unsigned int h = AHashFns::hash(akey);
@@ -313,12 +339,11 @@ ChainHashMap<K, AHashFns, C>::put(K akey, C avalue) {
     l = &Map<unsigned int, List<MapElem<K,C> > >::put(h, c)->value;
     return &l->head->car;
   }
-  if (l->head) 
-    for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
-      if (AHashFns::equal(akey, p->car.key)) {
-        p->car.value = avalue;
-        return &p->car;
-      }
+  for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
+    if (AHashFns::equal(akey, p->car.key)) {
+      p->car.value = avalue;
+      return &p->car;
+    }
   l->push(c);
   return 0;
 }
@@ -336,6 +361,31 @@ ChainHashMap<K, AHashFns, C>::get(K akey) {
     for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
       if (AHashFns::equal(akey, p->car.key))
         return p->car.value;
+  return 0;
+}
+
+template <class K, class AHashFns, class C>  int
+ChainHashMap<K, AHashFns, C>::del(K akey) {
+  unsigned int h = AHashFns::hash(akey);
+  List<MapElem<K,C> > empty;
+  List<MapElem<K,C> > *l;
+  MapElem<unsigned int,List<MapElem<K,C> > > e(h, empty);
+  MapElem<unsigned int,List<MapElem<K,C> > > *x = set_in(e);
+  if (x)
+    l = &x->value;
+  else
+    return 0;
+  ConsCell<MapElem<K,C> > *last = 0;
+  for (ConsCell<MapElem<K,C> > *p = l->head; p; p = p->cdr) {
+    if (AHashFns::equal(akey, p->car.key)) {
+      if (!last)
+        l->head = p->cdr;
+      else
+        last->cdr = p->cdr;
+      return 1;
+    }
+    last = p;
+  }
   return 0;
 }
 
@@ -489,16 +539,16 @@ NBlockHash<C, AHashFns, N>::get(C c) {
   return (C)0;
 }
 
-template <class C, class AHashFns, int N> inline void
+template <class C, class AHashFns, int N> inline int
 NBlockHash<C, AHashFns, N>::del(C c) {
   int a, b;
   if (!n)
-    return;
+    return 0;
   unsigned int h = AHashFns::hash(c);
   C *x = &v[(h % n) * N];
   for (a = 0; a < N; a++) {
     if (!x[a])
-      return;
+      return 0;
     if (AHashFns::equal(c, x[a])) {
       if (a < N - 1) {
         for (b = a + 1; b < N; b++) {
@@ -508,10 +558,14 @@ NBlockHash<C, AHashFns, N>::del(C c) {
         if (b != a + 1)
           x[a] = x[b - 1];
         x[b - 1] = (C)0;
-      } else
+        return 1;
+      } else {
         x[N - 1] = (C)0;
+        return 1;
+      }
     }
   }
+  return 0;
 }
 
 template <class C, class AHashFns, int N> inline void
