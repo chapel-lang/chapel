@@ -25527,3 +25527,80 @@ Modified files:
 	chapel/compiler/AST/: type.cpp 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+04/12/05 16:52:19 -- shannon
+
+Log message:
+	Added the --memtable flag to the help message, and changed
+	the expected output in the help.good file.  I created a
+	new test directory, help, which is a subdirectory of
+	execflags/shannon/configs, and moved the nine tests that
+	use the -h exec option to this directory.  Brad's PREDIFF
+	file now autogenerates the .good files for these nine tests
+	from a cat of the help.good file and the $testname.cfghelp file
+	that contains the individual config var table output for each
+	test.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+	chapel/test/execflags/shannon/: help.good 
+Added files:
+	chapel/test/execflags/shannon/configs/help/: .cvsignore PREDIFF 
+	                                             configVar-Dash.cfghelp 
+	                                             configVar-Dash.chpl 
+	                                             configVar-Dash.execopts 
+	                                             configVarHelp.cfghelp 
+	                                             configVarHelp.chpl 
+	                                             configVarHelp.execopts 
+	                                             configVarModStrings1.cfghelp 
+	                                             configVarModStrings1.chpl 
+	                                             configVarModStrings1.execopts 
+	                                             configVarModStrings2.cfghelp 
+	                                             configVarModStrings2.chpl 
+	                                             configVarModStrings2.execopts 
+	                                             configVarSetOver.cfghelp 
+	                                             configVarSetOver.chpl 
+	                                             configVarSetOver.execopts 
+	                                             configVarSetTwoTypes.cfghelp 
+	                                             configVarSetTwoTypes.chpl 
+	                                             configVarSetTwoTypes.execopts 
+	                                             configVarTwoModules.cfghelp 
+	                                             configVarTwoModules.chpl 
+	                                             configVarTwoModules.execopts 
+	                                             varNameEnumQM.cfghelp 
+	                                             varNameEnumQM.chpl 
+	                                             varNameEnumQM.execopts 
+	                                             varNameQMark.cfghelp 
+	                                             varNameQMark.chpl 
+	                                             varNameQMark.execopts 
+Removed files:
+	chapel/test/execflags/shannon/configs/: configVar-Dash.chpl 
+	                                        configVar-Dash.execopts 
+	                                        configVar-Dash.good 
+	                                        configVarHelp.chpl 
+	                                        configVarHelp.execopts 
+	                                        configVarHelp.good 
+	                                        configVarModStrings1.chpl 
+	                                        configVarModStrings1.execopts 
+	                                        configVarModStrings1.good 
+	                                        configVarModStrings2.cfghelp 
+	                                        configVarModStrings2.chpl 
+	                                        configVarModStrings2.execopts 
+	                                        configVarModStrings2.good 
+	                                        configVarSetOver.chpl 
+	                                        configVarSetOver.execopts 
+	                                        configVarSetOver.good 
+	                                        configVarSetTwoTypes.chpl 
+	                                        configVarSetTwoTypes.execopts 
+	                                        configVarSetTwoTypes.good 
+	                                        configVarTwoModules.chpl 
+	                                        configVarTwoModules.execopts 
+	                                        configVarTwoModules.good 
+	                                        varNameEnumQM.chpl 
+	                                        varNameEnumQM.execopts 
+	                                        varNameEnumQM.good 
+	                                        varNameQMark.chpl 
+	                                        varNameQMark.execopts 
+	                                        varNameQMark.good 
+
