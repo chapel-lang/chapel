@@ -25308,3 +25308,14 @@ Removed files:
 	                       misc.cpp mysystem.cpp stringutil.cpp 
 	                       vec.cpp 
 
+---------------------------------------------------------------------------
+
+04/12/05 09:56:50 -- jplevyak
+
+Log message:
+	Fix 2 issues discovered by a non-GC valgrind run.
+
+Modified files:
+	chapel/compiler/analysis/: ssu.cpp 
+	chapel/compiler/include/: prim.h 
+
