@@ -25499,3 +25499,19 @@ Added files:
 	chapel/test/trivial/deitz/: test_scope1.chpl test_scope1.good 
 	                            test_scope2.chpl test_scope2.good 
 
+---------------------------------------------------------------------------
+
+04/12/05 15:20:51 -- bradc
+
+Log message:
+	Adding a simple test of the -h flag that Shannon
+	and I worked on together, as well as fodder for
+	manageably maintaining other tests that generate
+	-h output (work that she will pick up now).
+
+Added files:
+	chapel/test/execflags/shannon/: .cvsignore help.chpl 
+	                                help.execopts help.good 
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarModStrings2.cfghelp 
+
