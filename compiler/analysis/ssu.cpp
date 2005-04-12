@@ -277,7 +277,6 @@ build_regions(Fun *f, Vec<PNode *> &nodes, Vec<CQClass*> &cq_classes) {
   nest_regions(f->entry, f->region);
   forv_PNode(n, nodes) {
     n->mark = 0;
-    FREE(n->unode);
     n->unode = NULL;
   }
 }

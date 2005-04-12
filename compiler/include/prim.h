@@ -27,7 +27,7 @@ enum PrimOptions {
 
 class Primitives : public gc {
  public:
-  Map<char *, Prim *> prim_map[2][2];
+  Map<char *, Prim *> prim_map[3][2];
   Vec<Prim *> prims;
   Prim *find(ParseAST *c);
   Prim *find(Code *c);
