@@ -25398,3 +25398,15 @@ Added files:
 	chapel/compiler/traversals/: scopeResolveGotos.cpp 
 	                             scopeResolveGotos.h 
 
+---------------------------------------------------------------------------
+
+04/12/05 13:55:39 -- bradc
+
+Log message:
+	Updating .cvsignores to ignore .tmp files left
+	by the testing system.
+
+Modified files:
+	chapel/test/flowanalysis/jplevyak/constants/: .cvsignore 
+	chapel/test/flowanalysis/jplevyak/loop/: .cvsignore 
+
