@@ -25332,3 +25332,14 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/symtab/: removeDeadSymbols.cpp symtab.cpp 
 
+---------------------------------------------------------------------------
+
+04/12/05 11:12:23 -- bradc
+
+Log message:
+	Another bug fix to make nightly Sun regressions go
+	quietly.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
