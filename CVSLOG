@@ -25475,3 +25475,27 @@ Modified files:
 	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
 	                             scopeResolveSymbols.h 
 
+---------------------------------------------------------------------------
+
+04/12/05 14:21:42 -- deitz
+
+Log message:
+	Added two new tests and updated other outputs based on recent semantic
+	changes of the def-before-use enforcement rules.
+	
+	This fixes the regression on
+	
+	   trivial/deitz/test_var_decl_strange3.good
+
+Modified files:
+	chapel/test/functions/jplevyak/: intent-7-error.good 
+	chapel/test/trivial/bradc/: defaultinit1a.good vardecls.good 
+	chapel/test/trivial/deitz/: test_config_use_before_decl.good 
+	                            test_var_decl_strange1.good 
+	                            test_var_decl_strange2.good 
+	                            test_var_decl_strange3.good 
+	                            test_var_decl_strange4.good 
+Added files:
+	chapel/test/trivial/deitz/: test_scope1.chpl test_scope1.good 
+	                            test_scope2.chpl test_scope2.good 
+
