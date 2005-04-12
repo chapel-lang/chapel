@@ -78,6 +78,8 @@ public:
   FnSymbol* fnDef();
   TypeSymbol* typeDef();
   ModuleSymbol* moduleDef();
+
+  Vec<VarSymbol*>* varDefSet();
 };
 
 

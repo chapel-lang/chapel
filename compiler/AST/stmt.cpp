@@ -436,6 +436,21 @@ ModuleSymbol* DefStmt::moduleDef() {
 }
 
 
+Vec<VarSymbol*>* DefStmt::varDefSet() {
+  Vec<VarSymbol*>* var_set = new Vec<VarSymbol*>();
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(defExprList);
+  while (def_expr) {
+    VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym);
+    while (var) {
+      var_set->set_add(var);
+      var = nextLink(VarSymbol, var);
+    }
+    def_expr = nextLink(DefExpr, def_expr);
+  }
+  return var_set;
+}
+
+
 ExprStmt::ExprStmt(Expr* init_expr) :
   Stmt(STMT_EXPR),
   expr(init_expr) 
