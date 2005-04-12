@@ -1,0 +1,8 @@
+CONFIG VARS:
+============
+module1's config vars:
+  x: this is a test (default:  that seems to work)
+
+module2's config vars:
+  x: of setting strings in two modules (default:  the end)
+  z: this one doesn't require the module name
