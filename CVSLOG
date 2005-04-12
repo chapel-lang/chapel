@@ -25289,3 +25289,22 @@ Modified files:
 	chapel/compiler/test/: Makefile list.cpp map.cpp misc.cpp 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+04/12/05 09:42:38 -- jplevyak
+
+Log message:
+	Integrate the compiler/test directory into the build scheme.
+	It is now run every time, but only when the component files
+	have changed.
+	
+	It is a good place to put unit tests.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/test/: Makefile 
+Removed files:
+	chapel/compiler/test/: beautify.cpp files.cpp list.cpp map.cpp 
+	                       misc.cpp mysystem.cpp stringutil.cpp 
+	                       vec.cpp 
+
