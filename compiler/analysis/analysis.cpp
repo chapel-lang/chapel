@@ -1068,20 +1068,6 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
   return ret;
 }
 
-static Type *
-expr_type(Expr *e) {
-  switch (e->astType) {
-    case EXPR_VARIABLE: return dynamic_cast<Variable*>(e)->var->type;
-    case EXPR_BOOLLITERAL: return dtBoolean;
-    case EXPR_INTLITERAL: return dtInteger;
-    case EXPR_FLOATLITERAL: return dtFloat;
-    case EXPR_COMPLEXLITERAL: return dtComplex;
-    case EXPR_STRINGLITERAL: return dtString;
-    default: break;
-  }
-  return dtUnknown;
-}
-
 static int
 gen_one_vardef(VarSymbol *var, DefStmt *def) {
   Type *type = var->type;
@@ -1124,7 +1110,7 @@ gen_one_vardef(VarSymbol *var, DefStmt *def) {
     } else {
       if1_gen(if1, &ast->code, var->init->ainfo->code);
       Sym *val = var->init->ainfo->rval;
-      if (is_scalar_type(type) && type != expr_type(var->init))
+      if (is_scalar_type(type) && type != var->init->typeInfo())
         val = gen_coerce(val, s->type, &ast->code, ast);
       if1_move(if1, &ast->code, val, ast->sym, ast);
     }
@@ -1716,7 +1702,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       }
       if (!s->left->ainfo->sym)
         show_error("assignment to non-lvalue", s->ainfo);
-      if (symbol && symbol->type && is_scalar_type(symbol->type))
+      if (symbol && symbol->type && is_scalar_type(symbol->type) &&
+          !operator_equal && symbol->type != s->right->typeInfo())
         rval = gen_coerce(rval, type, &s->ainfo->code, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
       if (!symbol || symbol->type == dtUnknown || !operator_equal)
