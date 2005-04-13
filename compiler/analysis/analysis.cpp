@@ -598,11 +598,8 @@ is_scalar_type(BaseAST *t) {
 }
 
 static inline int
-scalar_or_reference(Sym *s) {
-  return (s->type->num_kind ||
-          s->type == sym_string ||
-          s->type->type_kind == Type_TAGGED ||
-          (s->asymbol && s->asymbol->symbol && is_reference_type(s->asymbol->symbol)));
+scalar_or_reference(Type *t) {
+  return is_scalar_type(t) || is_reference_type(t);
 }
 
 static void
@@ -1024,30 +1021,32 @@ gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
   return res;
 }
 
+static Sym *
+get_defaultVal(Type *t) {
+  Variable *v = dynamic_cast<Variable*>(t->defaultVal);
+  if (v)
+    return v->var->asymbol->sym;
+  if (!t->defaultVal->ainfo->sym)
+    gen_if1(t->defaultVal);
+  return t->defaultVal->ainfo->rval;
+}
+
 static void
-gen_alloc(Sym *s, Sym *type, AInfo *ast, Sym *_this = 0) {
+gen_alloc(Sym *s, Sym *type, AInfo *ast, int is_this = 0) {
   Code **c = &ast->code;
   Code *send = 0;
-  if (s->type->asymbol->symbol->astType == TYPE_CLASS ||
-      s->type->asymbol->symbol->astType == TYPE_RECORD ||
-      s->type->asymbol->symbol->astType == TYPE_UNION) {
-    StructuralType *ct = dynamic_cast<StructuralType*>(type->asymbol->symbol);
-    if ((ct->astType == TYPE_RECORD || ct->astType == TYPE_UNION) && s != _this)
-      send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
-  }
+  StructuralType *ct = dynamic_cast<StructuralType*>(type->asymbol->symbol);
+  if (ct && (ct->astType == TYPE_RECORD || ct->astType == TYPE_UNION) && !is_this)
+    send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
   if (!send) 
     send = if1_send(if1, c, 2, 1, sym_new, type, s);
   send->ast = ast;
   if (type->asymbol->symbol->astType == TYPE_ARRAY) {
-    // just set the first element
     ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
     Sym *ret = new_sym();
-    if (at->elementType->astType == TYPE_BUILTIN) {
-      gen_if1(at->elementType->defaultVal);
-      if1_gen(if1, c, at->elementType->defaultVal->ainfo->code);
-      assert(at->elementType->defaultVal->ainfo->rval);
-      if1_move(if1, c, at->elementType->defaultVal->ainfo->rval, ret, ast);
-    } else if (at->elementType->astType == TYPE_ARRAY) {
+    if (at->elementType->astType == TYPE_BUILTIN)
+      if1_move(if1, c, get_defaultVal(at->elementType), ret, ast);
+    else if (at->elementType->astType == TYPE_ARRAY) {
       gen_alloc(ret, at->elementType->asymbol->sym, ast);
     } else if (at->elementType->astType == TYPE_RECORD || at->elementType->astType == TYPE_UNION) {
       Code *new_element = 0;
@@ -1069,8 +1068,23 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
   return ret;
 }
 
+static Type *
+expr_type(Expr *e) {
+  switch (e->astType) {
+    case EXPR_VARIABLE: return dynamic_cast<Variable*>(e)->var->type;
+    case EXPR_BOOLLITERAL: return dtBoolean;
+    case EXPR_INTLITERAL: return dtInteger;
+    case EXPR_FLOATLITERAL: return dtFloat;
+    case EXPR_COMPLEXLITERAL: return dtComplex;
+    case EXPR_STRINGLITERAL: return dtString;
+    default: break;
+  }
+  return dtUnknown;
+}
+
 static int
 gen_one_vardef(VarSymbol *var, DefStmt *def) {
+  Type *type = var->type;
   Sym *s = var->asymbol->sym;
   AInfo *ast = def->ainfo;
   ast->sym = s;
@@ -1085,54 +1099,35 @@ gen_one_vardef(VarSymbol *var, DefStmt *def) {
     case VAR_PARAM: break;
     default: assert(!"unknown constant class");
   }
-  if (var->type != dtUnknown) {
-    if (!is_reference_type(var->type)) {
-      s->type = unalias_type(var->type->asymbol->sym);
+  if (type != dtUnknown) {
+    if (!is_reference_type(type)) {
+      s->type = unalias_type(type->asymbol->sym);
       s->is_var = 1;
     } else
-      s->must_implement = unalias_type(var->type->asymbol->sym);
+      s->must_implement = unalias_type(type->asymbol->sym);
+  }
+  FnSymbol *f = def->parentFunction();
+  int this_constructor = f && f->isConstructor && var->isThis();
+  if (s->is_var && !scalar_or_reference(type))
+    gen_alloc(s, s->type, ast, f && f->_this == var);
+  else if (!var->init) {
+    if (type != dtUnknown)
+      if1_move(if1, &ast->code, get_defaultVal(type), ast->sym, ast);
+    else if (!this_constructor)
+      if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
   }
   if (var->init) {
-    if (s->is_var && var->type->astType == TYPE_ARRAY) {
-      ArrayType *at = dynamic_cast<ArrayType*>(var->type->asymbol->symbol);
+    if (type->astType == TYPE_ARRAY) {
+      ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
       if1_gen(if1, &ast->code, var->init->ainfo->code);
-      gen_alloc(s, s->type, ast);
       gen_set_array(s, at, var->init->ainfo->rval, ast);
     } else {
       if1_gen(if1, &ast->code, var->init->ainfo->code);
       Sym *val = var->init->ainfo->rval;
-      if (s->type) {
-        if ((s->type->num_kind || s->type == sym_string) && s->type != val->type)
-          val = gen_coerce(val, s->type, &ast->code, ast);
-        // else show_error("missing constructor", ast);
-      }
+      if (is_scalar_type(type) && type != expr_type(var->init))
+        val = gen_coerce(val, s->type, &ast->code, ast);
       if1_move(if1, &ast->code, val, ast->sym, ast);
     }
-  } 
-  else if (is_reference_type(var->type)) {
-    FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
-    if (!f || !f->isConstructor || !var->isThis())
-      if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
-  } else if (!s->is_var) {
-    if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
-    // return show_error("missing initializer", ast);
-  } else if (!s->type && !s->must_implement) {
-    if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
-    // return show_error("missing variable type", ast);
-  } else {
-    if (s->type) {
-      if (s->type->num_kind || s->type == sym_string)
-        s->is_external = 1; // hack
-      else {
-        FnSymbol *f = dynamic_cast<FnSymbol*>(def->parentSymbol);
-        if (!f) {
-          ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->parentSymbol);
-          f = mod->initFn;
-        }
-        gen_alloc(s, s->type, ast, f->_this ? f->_this->asymbol->sym : 0);
-      }
-    } else
-      if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
   }
   return 0;
 }
@@ -1302,7 +1297,7 @@ is_this_member_access(BaseAST *a) {
 
 static int
 gen_set_member(MemberAccess *ma, Expr *rhs, Expr *base_ast) {
-  FnSymbol *fn = dynamic_cast<FnSymbol*>(ma->stmt->parentSymbol);
+  FnSymbol *fn = ma->stmt->parentFunction();
   AInfo *ast = base_ast->ainfo;
   ast->rval = new_sym();
   ast->rval->ast = ast;
@@ -1475,7 +1470,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
-      Sym *fn = s->parentSymbol->asymbol->sym;
+      Sym *fn = s->parentFunction()->asymbol->sym;
       if (s->expr) {
         fn->fun_returns_value = 1;
         if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
@@ -1614,15 +1609,15 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
-      FnSymbol *fn = dynamic_cast<FnSymbol*>(s->stmt->parentSymbol);
+      FnSymbol *fn = s->stmt->parentFunction();
       int in_assign_or_funcall = 
         parent && (parent->astType == EXPR_ASSIGNOP ||
                    parent->astType == EXPR_ARRAYREF ||
                    parent->astType == EXPR_TUPLESELECT ||
                    parent->astType == EXPR_FNCALL ||
                    parent->astType == EXPR_PARENOP);
-      if ((!fn || (!fn->_getter &&
-                   (!fn->isConstructor || !is_this_member_access(ast)))) 
+      if ((!fn->_getter &&
+                   (!fn->isConstructor || !is_this_member_access(ast))) 
           && !in_assign_or_funcall) 
       {
         if (gen_get_member(s) < 0)
@@ -1693,10 +1688,10 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Variable *variable = dynamic_cast<Variable*>(s->left);
       Symbol *symbol = variable ? dynamic_cast<Symbol *>(variable->var) : 0;
       Sym *type = symbol ? symbol->type->asymbol->sym->type : 0;
-      FnSymbol *f = dynamic_cast<FnSymbol*>(s->stmt->parentSymbol);
+      FnSymbol *f = s->stmt->parentFunction();
       int constructor_assignment = 0;
-      int getter_setter = f && (f->_setter || f->_getter);
-      if (f && f->isConstructor) {
+      int getter_setter = f->_setter || f->_getter;
+      if (f->isConstructor) {
         MemberAccess *m = dynamic_cast<MemberAccess*>(s->left);
         if (m) {
           Variable *v = dynamic_cast<Variable*>(m->base);
@@ -1708,7 +1703,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       }
       int operator_equal = 
         !(constructor_assignment || getter_setter ||
-            (symbol && (symbol->isThis() || (type && scalar_or_reference(type)))));
+            (symbol && (symbol->isThis() || (symbol && scalar_or_reference(symbol->type)))));
       if (operator_equal) {
         Sym *old_rval = rval;
         rval = new_sym();
@@ -2506,14 +2501,7 @@ return_type_info(FnSymbol *fn) {
 
 void 
 call_info(Expr* a, Vec<FnSymbol *> &fns) {
-  FnSymbol* f = dynamic_cast<FnSymbol*>(a->stmt->parentSymbol);
-  if (!f) {
-    if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(a->stmt->parentSymbol))
-      f = m->initFn;  // UGH!  SJD: parentSymbol is not set correctly
-      // See checkin Feb 16, 2005, On my to do list
-    else
-      INT_FATAL(a, "Function called from something not a function");
-  }
+  FnSymbol* f = a->stmt->parentFunction();
   fns.clear();
   Fun *ff = f->asymbol->sym->fun;
   AST *ast = 0;
@@ -2593,7 +2581,7 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
         pn = p->ainfo->pnodes.v[0];
         if (pn->code->kind != Code_SEND)
           return -8;
-        fns = ma->stmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
+        fns = ma->stmt->parentFunction()->asymbol->sym->fun->calls.get(pn);
         if (!fns)
           return -9;
         if (fns->n > 1)

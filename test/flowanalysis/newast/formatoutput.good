@@ -1,5 +1,5 @@
 ::A(formatoutput.chpl:8) ( _array_integer_1d (formatoutput.chpl:8) )
-::D(formatoutput.chpl:7) ( Domain )
+::D(formatoutput.chpl:7) ( Domain _domain_1d (formatoutput.chpl:7) )
 ::__init__CommonModule ( __init__CommonModule )
 ::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )

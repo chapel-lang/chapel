@@ -2,7 +2,7 @@
 ::B(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::C(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::D(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::DClass(enumarray.chpl:3) ( Domain )
+::DClass(enumarray.chpl:3) ( Domain _domain_1d (enumarray.chpl:3) )
 ::O(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::S(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
 ::W(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )

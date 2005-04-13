@@ -1,5 +1,5 @@
  called from 19 in __init_noop at <internal>:0
-::D(noop.chpl:6) ( Domain )
+::D(noop.chpl:6) ( Domain _domain_1d (noop.chpl:6) )
 ::__init__CommonModule ( __init__CommonModule )
 ::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
@@ -9,6 +9,7 @@
 ::__init_noop ( __init_noop )
 ::__init_prelude ( __init_prelude )
 ::__init_prelude ( __init_prelude )
+::_domain_1d(noop.chpl:6) ( _domain_1d )
 ::bool ( bool )
 ::false(prelude.chpl:0) ( bool )
 ::foo(noop.chpl:4) ( foo )

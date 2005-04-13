@@ -1235,9 +1235,10 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
       if (p->sym->must_specialize->specializers.in(cs->sym)) {
         for (int i = 0; i < p->sym->has.n; i++) {
           AVar *av = NULL;
-          if (cs->sym != sym_tuple && p->sym->has.v[i]->destruct_name)
+          int is_tuple = sym_tuple->specializers.set_in(cs->sym->type) != 0;
+          if (!is_tuple && p->sym->has.v[i]->destruct_name)
             av = cs->var_map.get(p->sym->has.v[i]->destruct_name);
-          else if (cs->sym == sym_tuple && i < cs->vars.n)
+          else if (is_tuple && i < cs->vars.n)
             av = cs->vars.v[i];
           if (!av) {
             violation = make_AVar(p->sym->has.v[i]->var, es);
@@ -2147,9 +2148,9 @@ static int
 mixed_basics(AVar *av) {
   Vec<Sym *> basics;
   forv_CreationSet(cs, *av->out) if (cs) {
-    Sym *b = to_basic_type(cs->sym);
+    Sym *b = to_basic_type(cs->sym->type);
     if (b)
-      basics.add(b);
+      basics.set_add(b);
   }
   return basics.n > 1;
 }
