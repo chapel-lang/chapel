@@ -25770,3 +25770,15 @@ Modified files:
 	chapel/test/dispatch/jplevyak/: Makefile.cg 
 	chapel/test/lowlevelcg/jplevyak/: Makefile.cg 
 
+---------------------------------------------------------------------------
+
+04/12/05 18:07:32 -- bradc
+
+Log message:
+	Added some new variations of a test whose intent changed
+	when the use-before-def semantics changed today.
+
+Added files:
+	chapel/test/trivial/bradc/: vardecls1a.chpl vardecls1a.good 
+	                            vardecls1b.chpl vardecls1b.good 
+
