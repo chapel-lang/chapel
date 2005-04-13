@@ -1,3 +1,4 @@
-jplevyak/deitz
+deitz
 
-Need to implement overloading of record =.
+When the user provides an over-loaded = for a
+record we shoudn't generate another one.

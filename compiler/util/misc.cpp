@@ -210,7 +210,7 @@ static void printUsrLocation(char* filename, int lineno) {
     }
     fprintf(stderr, ")");
   }
-  fprintf(stderr, "\n\n");
+  fprintf(stderr, "\n");
 }
 
 

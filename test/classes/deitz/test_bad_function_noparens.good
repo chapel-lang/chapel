@@ -1,2 +1,1 @@
 Error: Non-member functions must have parenthesized argument lists (test_bad_function_noparens.chpl:1)
-

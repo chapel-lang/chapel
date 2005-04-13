@@ -1,2 +1,1 @@
 Error: Variable 'x' used before it is defined (test_var_decl_strange3.chpl:1)
-

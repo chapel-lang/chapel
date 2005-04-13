@@ -1,3 +1,5 @@
-jplevyak
+deitz
 
-mixed array types float and integer, but it is declared integer
+We need to generate a setter for assignment to
+array elements.   The I (john) can put the
+coercion to integer in that setter.

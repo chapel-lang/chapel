@@ -1,3 +1,10 @@
-jplevyak
+deitz/jplevyak
 
-Tuple assignment
+The problem with this one is that Tuple is a class,
+not a TupleType.  In order to make the change
+we need to be able to create methods on TupleType's
+so that the tuple indexing function can be built
+in internal_prelude.chpl.   Alternatively, tuple
+indexing could be auto-built along with the other
+setters, getters.
+
