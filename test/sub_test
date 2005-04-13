@@ -175,10 +175,10 @@ foreach chplsrc ($testsrc)
     endif
 
     if (-r ./$execfile.future) then
-	set owner = `head -n 1 ./$execfile.future`
-	set futuretest = "Future ($owner) ";
+	set owner = "`head -n 1 ./$execfile.future`"
+	set futuretest = "Future ($owner) "
     else
-	set futuretest = "";
+	set futuretest = ""
     endif
 
     echo \[Executing: \"$valgrndcomp$compiler $compopts $chplsrc $lastcompopts \< $compstdin\"\]
