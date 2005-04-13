@@ -25660,3 +25660,113 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: processDefs.cpp processDefs.h 
 
+---------------------------------------------------------------------------
+
+04/12/05 18:01:52 -- bradc
+
+Log message:
+	Yesterday I built the compiler without GC and ran valgrind,
+	which revealed lots of problems.  This checkin fixes those
+	problems that previous peoples' checkins haven't already
+	addressed.
+	
+	The vast majority of the problems were use-before-def
+	problems that weren't an issue when using GC because it
+	zeroes out memory on the user's behalf.  I believe we
+	would like to avoid leaning on this feature so that we
+	can build without GC and so that we're more able to
+	remove our use of GC or switch do a different GC system
+	(which may not zero memory) down the road.  This would
+	be a good topic for discussion, especially if there's
+	disagreement.  Anyway, I'm proposing that people be
+	more careful about initializing their class' fields in
+	the constructors (if anyone knows of a g++ flag that
+	statically checks that class members are initialized,
+	I think it'd be reasonable to throw it as a way of
+	keeping ourselves honest).
+	
+	This experiment did catch some actual problems that
+	GC must have been masking somehow, and I believe
+	that these tests were behind the nondeterministic
+	failure of tests this past week or so (which is to
+	say, they seemed related to the problems, and I
+	haven't seen them failing sincce then, so I'm
+	optimistic).
+	
+	Apparent problem #1: wrapper construction for functions
+	       seemed to be accessing vectors out of the range
+	       that they were actually storing.  Steve helped
+	       me fix these.
+	
+	Apparent problem #2: an array out-of-bounds problem that
+	       John fixed last night or this morning.
+	
+	Apparent problem #3: the freeing of a pointer that
+	       couldn't legally be freed that John fixed with
+	       that same checkin.
+	
+	Apparent problem #4: a structure seems to be used after it
+	       was freed in parse.cpp (John, could you check this?
+	       I sent mail and marked it with a comment).
+	
+	The following are things that I added zero/NULL initializers
+	for in class constructors.  In some cases I was conservative
+	because it was taking too much time to determine whether
+	each individual field was or was not defined before it was
+	used.  The author of the code may wish to look in these cases
+	and decide if they think my zeroing was overly zealous.
+	In other cases, I only zeroed those fields that actually
+	seemed to trigger problems, though there may be other issues
+	lurking just under the surface:
+	
+	   AVar::is_lvalue
+	       ::is_dead
+	   BasicSym::*
+	   CountQueue::size
+	   CreateEntryPoint::entryPoint
+	   CreationSet::added_element_var
+	   DomainType::idxType
+	   Expr::pragmas
+	   Fixup::verify
+	   ForallExpr::indexScope
+	   Fun::sym;
+	   LoopNode::parent
+	   ParseAST::*
+	   PNode::next_callees
+	   Scope::in
+	   Stmt::parentSymbol
+	       ::pragmas
+	   Sym::*
+	   Symbol::pragmas
+	   SymScope::lookupCache
+	   Var::is_internal
+	      ::is_filtered
+	      ::is_formal
+	
+	Also changed the low-level codegen tests' Makefile.cg
+	so that they didn't rely on the compiler being built
+	with garbage collection on.
+	
+	This check-in causes one regression for
+	jplevyak/test_coerse2.chpl which is that
+	the change to j's initialization in coercion_wrapper
+	causes two coercion temps to be created with the
+	same name.  Yet Steve says that the test in question
+	shouldn't be creating coercion wrappers (and if it
+	did, it should presumably create them with
+	different names?).  So leaving this regressing as a
+	placeholder.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: cfg.cpp fa.cpp fun.cpp loop.cpp 
+	                           pnode.cpp sym.cpp 
+	chapel/compiler/include/: list.h sym.h var.h 
+	chapel/compiler/passes/: createEntryPoint.cpp createEntryPoint.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/test/: .cvsignore 
+	chapel/compiler/traversals/: fixup.cpp 
+	chapel/compiler/vparser/: parse.cpp parse_ast.cpp scope.h 
+	chapel/test/dispatch/jplevyak/: Makefile.cg 
+	chapel/test/lowlevelcg/jplevyak/: Makefile.cg 
+
