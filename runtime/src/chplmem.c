@@ -73,6 +73,10 @@ void setMemtable(void) {
 
 
 void setMemthreshold(_integer64 value) {
+  if (!memlog) {
+    fprintf(stderr, "--memthreshold useless when used without --memtrace\n");
+    exit(0);
+  }
   memthreshold = 1;
   memthresholdValue = value;
 }
@@ -91,8 +95,7 @@ void setMemtrace(char* memlogname) {
 
 void printMemTable(void) {
   if (!memtable) {
-    fprintf(stderr, "***printMemTable() only works with the --memtable flag"
-            "***\n");
+    fprintf(stderr, "printMemTable() only works with the --memtable flag\n");
     exit(0);
   }
 
