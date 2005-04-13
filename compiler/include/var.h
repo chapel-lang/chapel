@@ -29,8 +29,8 @@ class Var : public gc {
   char                  *cg_string; // used by cg.cpp
 
   Var *copy();
-  Var(Sym *s) : sym(s), mark(0), def(0), as_CreationSet(0),
-                cg_string(0) { id = var_id++; }
+  Var(Sym *s) : sym(s), mark(0), def(0), as_CreationSet(0), is_internal(0),
+                is_filtered(0), is_formal(0), cg_string(0) { id = var_id++; }
 };
 #define forv_Var(_p, _v) forv_Vec(Var, _p, _v)
 #define forv_AVarMapElem(_p, _v) forv_Vec(AVarMapElem, _p, _v)

@@ -89,7 +89,8 @@ Expr::Expr(astType_t astType) :
   stmt(NULL),
   ainfo(NULL),
   parent(NULL),
-  back(NULL)
+  back(NULL),
+  pragmas(NULL)
 {}
 
 
@@ -1688,7 +1689,8 @@ ForallExpr::ForallExpr(Expr* init_domains, Expr* init_indices,
   Expr(EXPR_FORALL),
   domains(init_domains),
   indices(init_indices),
-  forallExpr(init_forallExpr)
+  forallExpr(init_forallExpr),
+  indexScope(NULL)
 {
   SET_BACK(domains);
   SET_BACK(indices);

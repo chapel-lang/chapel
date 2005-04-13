@@ -53,7 +53,8 @@ static void add_var_constraint(AVar *av);
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
   restrict(0), container(0), setters(0), setter_class(0), creation_set(0), 
-  ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0)
+  ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), is_lvalue(0),
+  is_dead(0)
 {
   id = avar_id++;
 }
@@ -98,11 +99,13 @@ unique_AVar(Var *v, EntrySet *es) {
   return av;
 }
 
-CreationSet::CreationSet(Sym *s) : sym(s), clone_for_constants(0), atype(0), equiv(0) { 
+CreationSet::CreationSet(Sym *s) : sym(s), clone_for_constants(0), added_element_var(0), atype(0), equiv(0) { 
   id = creation_set_id++;
 }
 
-CreationSet::CreationSet(CreationSet *cs) {
+CreationSet::CreationSet(CreationSet *cs) :
+  added_element_var(0)
+{
   sym = cs->sym;
   id = creation_set_id++;
   clone_for_constants = cs->clone_for_constants;

@@ -7,8 +7,10 @@ class Stmt;
 
 class CreateEntryPoint : public Pass {
  public:
-  void run(ModuleSymbol* moduleList);
   Stmt* entryPoint;
+
+  CreateEntryPoint(void);
+  void run(ModuleSymbol* moduleList);
 };
 
 #endif

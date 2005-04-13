@@ -18,7 +18,9 @@ class HyperCopyReplace : public Traversal {
 };
 
 
-Fixup::Fixup(void) {
+Fixup::Fixup(void) :
+  verify(false)
+{
   exprParents.add(NULL);
   exprStmts.add(NULL);
 }

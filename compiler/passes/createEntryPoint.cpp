@@ -28,6 +28,11 @@ static ModuleSymbol* findUniqueUserModule(ModuleSymbol* moduleList) {
 }
 
 
+CreateEntryPoint::CreateEntryPoint(void) :
+  entryPoint(NULL)
+{}
+
+
 void CreateEntryPoint::run(ModuleSymbol* moduleList) {
 
   for (ModuleSymbol* mod = moduleList; mod; mod = nextLink(ModuleSymbol, mod)) {

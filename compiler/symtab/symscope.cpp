@@ -12,6 +12,7 @@
 SymScope::SymScope(scopeType init_type, int init_level) :
   type(init_type),
   level(init_level),
+  lookupCache(NULL),
   stmtContext(NULL),
   symContext(NULL),
   exprContext(NULL),

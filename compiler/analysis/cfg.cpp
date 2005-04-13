@@ -15,7 +15,7 @@ void
 Fun::build_cfg() {
   if (verbose_level > 2)
     if1_dump(stdout, sym->code);
-  if (!sym->code || (sym->code->is_group() && !sym->code->sub.n))
+  if (!sym || !sym->code || (sym->code->is_group() && !sym->code->sub.n))
     return;
   resolve_labels(sym->code);
   build_pn_cfg(pdb->if1, sym->code, NULL, NULL);

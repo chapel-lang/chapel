@@ -87,6 +87,7 @@ template <class C, int o>
 class CountQueue : public Queue<C, o> {
  public:
   int size; 
+  inline CountQueue(void) : size(0) {}
   inline void push(C *e);
   inline C *pop();
   inline void enqueue(C *e);

@@ -21,6 +21,7 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type,
   exportMe(init_exportMe),
   isDead(false),
   defPoint(NULL),
+  pragmas(NULL),
   parentScope(NULL),
   asymbol(0)
 {}
@@ -647,7 +648,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   Symboltable::pushScope(SCOPE_LOCAL);
   Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(this), argList));
   for (int i = 0; i < coercion_substitutions->n; i++) {
-    int j = 1;
+    int j = 0;
     MPosition p;
     Symbol* formal_change = wrapper_formals;
     Variable* actual_change = argList;
@@ -715,7 +716,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
     wrapper_body = new ReturnStmt(fn_call);
   }
   for (int i = 0; i < defaults->n; i++) {
-    int j = 1;
+    int j = 0;
     MPosition p;
     Symbol* formal_change = wrapper_formals;
     Variable* actual_change = argList;

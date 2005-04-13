@@ -116,8 +116,10 @@ load_file(char *fn, FrontEnd *fe) {
     pn = dparse(p, buf, len);
   else 
     fail("unable to read file '%s'", fn);
+  /*  John -- is this correct?  -BLC
   if (pn)
     free_D_ParseNode(p, pn);
+  */
   if (!pn || p->initial_globals->errors || p->syntax_errors) {
     fn = d_dup_pathname_str(p->loc.pathname);
     if (!pn)

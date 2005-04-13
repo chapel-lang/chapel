@@ -13,7 +13,7 @@
 //   1) build a tree of loops
 //   2) handle single node loops
 
-LoopNode::LoopNode(int i, void *n) : index(i), node(n), pre_dfs(-1), pre_dom(-1), 
+LoopNode::LoopNode(int i, void *n) : index(i), node(n), parent(NULL), pre_dfs(-1), pre_dom(-1), 
   processed(0), in_worklist(0) 
 {
 }

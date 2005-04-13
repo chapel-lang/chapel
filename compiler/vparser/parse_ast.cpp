@@ -302,8 +302,38 @@ ParseAST::copy_tree(ASTCopyContext *context) {
   return a;
 }
 
-ParseAST::ParseAST(AST_kind k, D_ParseNode *pn) {
-  // count on GC to clear the object ??
+ParseAST::ParseAST(AST_kind k, D_ParseNode *pn) :
+  scope_kind(0),
+  constructor(0),
+  intent(0),
+  def_ident_label(0),
+  op_index(0),
+  in_tuple(0),
+  in_apply(0),
+  is_assign(0),
+  is_simple_assign(0),
+  is_ref(0),
+  is_application(0),
+  is_comma(0),
+  is_inc_dec(0),
+  rank(0),
+  parent(NULL),
+  sym(NULL),
+  string(NULL),
+  destruct_name(NULL),
+  arg_name(NULL),
+  builtin(NULL),
+  prim(NULL),
+  _pathname(NULL),
+  _line(0),
+  scope(NULL),
+  constant_type(NULL),
+  container(NULL),
+  code(NULL),
+  rval(NULL)
+{
+  label[0] = NULL;
+  label[1] = NULL;
   kind = k;
   if (pn) {
     set_location(pn);

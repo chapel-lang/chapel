@@ -41,6 +41,7 @@ Fun::Fun(Sym *asym, int aninit_function) {
 }
 
 Fun::Fun() {
+  sym = NULL;
   init_fun();
 }
 

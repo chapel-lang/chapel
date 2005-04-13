@@ -118,6 +118,8 @@ class BasicSym : public gc {
   unsigned int          num_index:3;            // Precision of number class
 
   unsigned int          clone_for_constants:1;  // analysis should attempt to make this a constant
+
+  BasicSym(void);
 };
 
 class Sym : public BasicSym {
@@ -160,6 +162,7 @@ class Sym : public BasicSym {
 
   void                  *temp;                  // algorithmic temp             *type*
 
+  Sym(void);
   Sym *                 scalar_type();          // scalar inheritted from or NULL
   Sym *                 coerce_to(Sym *);
   char                  *pathname();

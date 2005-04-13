@@ -5,6 +5,46 @@
 #include "builtin.h"
 #include "analysis.h"
 
+BasicSym::BasicSym(void) :
+  name(NULL),
+  in(NULL),
+  type(NULL),
+  aspect(NULL),
+  must_specialize(NULL),
+  must_implement(NULL),
+  ast(NULL),
+  var(NULL),
+  asymbol(NULL),
+  cg_string(NULL),
+  is_builtin(0),
+  is_read_only(0),
+  is_constant(0),
+  is_lvalue(0),
+  is_var(0),
+  is_default_arg(0),
+  is_module(0),
+  is_fun(0),
+  is_symbol(0),
+  is_pattern(0),
+  is_rest(0),
+  is_external(0),
+  intent(0),
+  global_scope(0),
+  function_scope(0),
+  is_structure(0),
+  is_meta_class(0),
+  is_value_class(0),
+  is_union_class(0),
+  fun_returns_value(0),
+  live(0),
+  incomplete(0),
+  type_kind(0),
+  num_kind(0),
+  num_index(0),
+  clone_for_constants(0)
+{}
+
+
 Sym *
 meta_apply(Sym *fn, Sym *arg) {
   if (fn->type_kind != Type_APPLICATION)
@@ -12,6 +52,28 @@ meta_apply(Sym *fn, Sym *arg) {
   assert(0);
   return 0;
 }
+
+Sym::Sym() :
+  destruct_name(NULL),
+  arg_name(NULL),
+  constant(NULL),
+  size(0),
+  scope(NULL),
+  labelmap(NULL),
+  fun(NULL),
+  code(NULL),
+  self(NULL),
+  ret(NULL),
+  cont(NULL),
+  match_type(NULL),
+  abstract_type(NULL),
+  alias(NULL),
+  init(NULL),
+  meta_type(NULL),
+  element(NULL),
+  domain(NULL),
+  temp(NULL)
+{}
 
 char *
 Sym::pathname() {

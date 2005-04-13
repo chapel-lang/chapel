@@ -506,7 +506,8 @@ bool EnumType::implementedUsingCVals(void) {
 DomainType::DomainType(Expr* init_expr) :
   Type(TYPE_DOMAIN, NULL),
   numdims(0),
-  parent(NULL)
+  parent(NULL),
+  idxType(NULL)
 {
   if (init_expr) {
         
@@ -530,7 +531,8 @@ DomainType::DomainType(Expr* init_expr) :
 DomainType::DomainType(int init_numdims) :
   Type(TYPE_DOMAIN, NULL),
   numdims(init_numdims),
-  parent(NULL)
+  parent(NULL),
+  idxType(NULL)
 {}
 
 
