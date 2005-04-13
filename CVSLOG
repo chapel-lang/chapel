@@ -25966,3 +25966,14 @@ Modified files:
 	chapel/compiler/include/: stmt.h 
 	chapel/compiler/traversals/: fixup.cpp 
 
+---------------------------------------------------------------------------
+
+04/13/05 16:05:06 -- jplevyak
+
+Log message:
+	tuple and record assignment now work with anything that responds to
+	the indexing/getter methods.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
