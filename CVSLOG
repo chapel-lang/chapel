@@ -25647,3 +25647,16 @@ Modified files:
 	                             insertVariableInitializations.h 
 	                             processDefs.cpp 
 
+---------------------------------------------------------------------------
+
+04/12/05 17:48:50 -- deitz
+
+Log message:
+	Removed ProcessDefs pass as it is no longer necessary.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: processDefs.cpp processDefs.h 
+
