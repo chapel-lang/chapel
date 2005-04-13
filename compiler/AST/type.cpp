@@ -1157,6 +1157,11 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
       if (tmp->type->defaultVal) {
         Expr* assign_expr = new AssignOp(GETS_NORM, lhs, tmp->type->defaultVal->copy());
         assign_stmt = new ExprStmt(assign_expr);
+      } else if (tmp->type->defaultConstructor) {
+        Expr* constructor_var = new Variable(tmp->type->symbol);
+        Expr* rhs = new ParenOpExpr(constructor_var, NULL);
+        Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
+        assign_stmt = new ExprStmt(init_expr);
       } else
         continue;
 #endif
