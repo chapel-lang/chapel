@@ -25848,3 +25848,21 @@ Removed files:
 	chapel/test/types/seq/deitz/noanalysis/: test_seq6.future 
 	                                         test_seq7.future 
 
+---------------------------------------------------------------------------
+
+04/13/05 11:32:35 -- jplevyak
+
+Log message:
+	Cleanup of VarDefExpr handling.
+	Fixed bugs with tuples and mixed primitive handling.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/test/flowanalysis/newast/: declprintdom.good 
+	                                  declprintdom2.good domarr.good 
+	                                  enumarray.good 
+	                                  formatoutput.good noop.good 
+	                                  protoast_test.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+
