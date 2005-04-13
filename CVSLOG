@@ -25977,3 +25977,46 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/13/05 16:36:17 -- jplevyak
+
+Log message:
+	Update several .future files and remove a duplicate \n from the end of
+	warnings/errors.
+	
+	In particular, change a .future to note:
+	
+	The problem is that Tuple is a class,
+	not a TupleType.  In order to make the change
+	we need to be able to create methods on TupleType's
+	so that the tuple indexing function can be built
+	in internal_prelude.chpl.   Alternatively, tuple
+	indexing could be auto-built along with the other
+	setters, getters.
+
+Modified files:
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/arrays/deitz/: test_array_basic2.future 
+	chapel/test/classes/bradc/: weirdinit.good 
+	chapel/test/classes/deitz/: test_bad_function_noparens.good 
+	chapel/test/compflags/bradc/twomodulesnomain/: module1.good 
+	chapel/test/functions/jplevyak/: equal-8.future equal-9.chpl 
+	                                 equal-9.future 
+	                                 intent-5-error.good 
+	                                 intent-7-error.good 
+	chapel/test/modules/bradc/: nestedmodule.good 
+	chapel/test/modules/bradc/manymodules/: manymodules.good 
+	chapel/test/trivial/bradc/: defaultinit1a.good redefinevar.good 
+	                            vardecls.good vardecls1a.good 
+	chapel/test/trivial/bradc/entrypoint/: twomains.good 
+	chapel/test/trivial/deitz/: test_config_use_before_decl.good 
+	                            test_scope2.good 
+	                            test_var_decl_strange1.good 
+	                            test_var_decl_strange2.good 
+	                            test_var_decl_strange3.good 
+	                            test_var_decl_strange4.good 
+	chapel/test/trivial/roxana/: test_param_decl2.good 
+	                             test_param_decl3.good 
+	chapel/test/types/enum/deitz/: test_enum6.good 
+
