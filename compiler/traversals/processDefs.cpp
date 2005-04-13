@@ -5,37 +5,36 @@
 #include "expr.h"
 #include "type.h"
 #include "stringutil.h"
-#include "insertVariableInitializations.h"
 
 
 static void insert_default_init(Stmt* stmt, VarSymbol* var) {
-  Type* type = var->type;
+//   Type* type = var->type;
 
-  //
-  // SJD: This code squelches inserting the default init statement for
-  // classes within their own constructor.  This avoids generating
-  // code like the following which crashed my whole system:
-  //
-  //   ClassName _construct_ClassName(void) {
-  //     ClassName this;
-  //     this = _construct_ClassName();  <=== Squelched
-  //
-  if (StructuralType* class_type = dynamic_cast<StructuralType*>(type)) {
-    if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(class_type->constructor)) {
-      if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
-        if (def_expr->sym == stmt->parentSymbol) {
-          return;
-        }
-      }
-    }
-  }
+//   //
+//   // SJD: This code squelches inserting the default init statement for
+//   // classes within their own constructor.  This avoids generating
+//   // code like the following which crashed my whole system:
+//   //
+//   //   ClassName _construct_ClassName(void) {
+//   //     ClassName this;
+//   //     this = _construct_ClassName();  <=== Squelched
+//   //
+//   if (StructuralType* class_type = dynamic_cast<StructuralType*>(type)) {
+//     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(class_type->constructor)) {
+//       if (DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList)) {
+//         if (def_expr->sym == stmt->parentSymbol) {
+//           return;
+//         }
+//       }
+//     }
+//   }
 
-  if (var->consClass != VAR_VAR) {
-    return;
-  }
+//   if (var->consClass != VAR_VAR) {
+//     return;
+//   }
 
-  ExprStmt* assign_stmt = new ExprStmt(new VarInitExpr(new Variable(var)));
-  insert_default_init_stmt(var, assign_stmt);
+//   ExprStmt* assign_stmt = new ExprStmt(new VarInitExpr(new Variable(var)));
+//   //  insert_default_init_stmt(var, assign_stmt);
 }
 
 /*

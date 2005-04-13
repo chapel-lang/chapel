@@ -147,16 +147,18 @@ static void call_fixup(Stmt* stmt) {
   }
 
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
     TRAVERSE_LS(fn->body, fixup, true);
+    Symboltable::setCurrentScope(saveScope);
   } else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(sym)) {
+    SymScope* saveScope = Symboltable::setCurrentScope(mod->modScope);
     TRAVERSE_LS(mod->stmts, fixup, true);
+    Symboltable::setCurrentScope(saveScope);
   } else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym)) {
     if (StructuralType* class_type = dynamic_cast<StructuralType*>(type->type)) {
-#if 0
-      TRAVERSE(type->defPoint, fixup, true);
-#endif
+      SymScope* saveScope = Symboltable::setCurrentScope(class_type->structScope);
       TRAVERSE_LS(class_type->declarationList, fixup, true);
-      //      TRAVERSE_LS(class_type->constructor, fixup, true);
+      Symboltable::setCurrentScope(saveScope);
     } else {
       INT_FATAL(stmt, "Unexpected TypeSymbol in call_fixup");
     }

@@ -686,7 +686,9 @@ Type* IndexType::getType(){
 SeqType::SeqType(Type* init_elementType):
   ClassType(TYPE_SEQ),
   elementType(init_elementType)
-{}
+{
+  defaultVal = NULL; // override class defaultVal of nil
+}
 
 
 Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {

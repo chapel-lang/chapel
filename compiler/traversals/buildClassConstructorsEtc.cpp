@@ -55,11 +55,6 @@ static void build_constructor(StructuralType* structType) {
   structType->constructor = new DefStmt(fn_def);
   SET_BACK(structType->constructor);
   Symboltable::setCurrentScope(saveScope);
-  if (dynamic_cast<SeqType*>(structType) || dynamic_cast<RecordType*>(structType) ||
-      dynamic_cast<UnionType*>(structType)) {
-    structType->defaultVal = new FnCall(new Variable(structType->symbol), NULL);
-    SET_BACK(structType->defaultVal);
-  }
   TRAVERSE(structType->symbol->defPoint->stmt, new Fixup(), true);
 }
 
