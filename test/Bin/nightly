@@ -405,7 +405,10 @@ sub commitstats {
     if ($debug == 0) {
         `ci -l -m"automated nightly checkin" $statfile`;
     }
-    if ($platform eq "linux" && $cronlogdir eq $logdir) {
+    $makeplotunexe = system("test -x $statdir/makeplot");
+    if ($makeplotunexe) {
+        print "skipping makeplot step\n";
+    } else {
         `cd $statdir && ./makeplot`;
     }
 }
