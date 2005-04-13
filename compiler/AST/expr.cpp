@@ -225,7 +225,9 @@ static void call_fixup(Expr* expr) {
   if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(expr->stmt->parentSymbol)) {
     saveScope = Symboltable::setCurrentScope(mod->modScope);
   }
-  TRAVERSE(expr->stmt, new Fixup(), true);
+  Fixup* fixup = new Fixup();
+  fixup->stmtParents.add(expr->stmt->parent);
+  TRAVERSE(expr->stmt, fixup, true);
   if (saveScope) {
     Symboltable::setCurrentScope(saveScope);
   }

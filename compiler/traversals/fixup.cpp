@@ -6,16 +6,8 @@
 #include "symtab.h"
 
 
-static void verifySymbolDefPoint(Symbol* sym);
-static void verifySymbolScope(Symbol* sym);
-
-
-class HyperCopyReplace : public Traversal {
- public:
-  HyperCopyReplace(void);
-  void postProcessExpr(Expr* expr);
-  void postProcessStmt(Stmt* stmt);
-};
+static void verifyDefPoint(Symbol* sym);
+static void verifyParentScope(Symbol* sym);
 
 
 Fixup::Fixup(void) :
@@ -23,6 +15,7 @@ Fixup::Fixup(void) :
 {
   exprParents.add(NULL);
   exprStmts.add(NULL);
+  stmtParents.add(NULL);
 }
 
 
@@ -60,6 +53,20 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
   exprStmts.add(stmt);
 
+  Stmt* stmtParent = stmtParents.v[stmtParents.n-1];
+  if (verify) {
+    if (stmt->parent != stmtParent) {
+      INT_FATAL(stmt, "Stmt's parent is incorrect");
+      stmt->parent = stmtParent;
+    }
+  } else {
+    stmt->parent = stmtParent;
+  }
+
+  if (!dynamic_cast<DefStmt*>(stmt)) {
+    stmtParents.add(stmt);
+  }
+
   if (!stmt->back || *stmt->back != stmt) {
     INT_FATAL(stmt, "stmt back incorrect");
   }
@@ -68,6 +75,9 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
 void Fixup::postProcessStmt(Stmt* stmt) {
   exprStmts.pop();
+  if (!dynamic_cast<DefStmt*>(stmt)) {
+    stmtParents.pop();
+  }
 }
 
 
@@ -110,72 +120,71 @@ void Fixup::postProcessExpr(Expr* expr) {
 }
 
 
-void Fixup::preProcessSymbol(Symbol* sym) {
+void Fixup::postProcessSymbol(Symbol* sym) {
   if (verify) {
-    verifySymbolScope(sym);
-    verifySymbolDefPoint(sym);
+    verifyParentScope(sym);
+    verifyDefPoint(sym);
   }
 }
 
 
 void Fixup::run(ModuleSymbol* moduleList) {
   verify = !strcmp(args, "verify");
-
-  if (!strcmp(args, "hyper verify")) {
-    verify = 1;
-  }
-
-  ModuleSymbol* mod = moduleList;
-  while (mod) {
-    mod->startTraversal(this);
-    mod = nextLink(ModuleSymbol, mod);
-  }
-
-  if (!strcmp(args, "hyper verify")) {
-    HyperCopyReplace* hyper_copy_replace = new HyperCopyReplace();
-    hyper_copy_replace->run(moduleList);
-
-    ModuleSymbol* mod = moduleList;
-    while (mod) {
-      mod->startTraversal(this);
-      mod = nextLink(ModuleSymbol, mod);
-    }
-  }
+  Traversal::run(moduleList);
 }
 
 
-static void verifySymbolScope(Symbol* sym) {
-  if (typeid(*sym) == typeid(UnresolvedSymbol)) {
+/**
+ **  Verify that Symbol::parentScope back pointer is correct
+ **/
+static void verifyParentScope(Symbol* sym) {
+  /**
+   **  Unresolved symbols have no scope
+   **/
+  if (dynamic_cast<UnresolvedSymbol*>(sym)) {
     return;
   }
 
-  SymScope* parentScope = sym->parentScope;
-  if (parentScope) {
-    Symbol* match = Symboltable::lookupInScope(sym->name, parentScope);
-    if (match != sym) {
-      bool error = true;
-      FnSymbol* fnMatch = dynamic_cast<FnSymbol*>(match);
-      if (fnMatch) {
-        while (fnMatch) {
-          if (fnMatch == sym) {
-            error = false;
-          }
-          fnMatch = fnMatch->overload;
-        }
-      }
-      if (error) {
-      // JBP -- disable to get setters/getters working (TEMPORARY)
-#if 0        
-        INT_FATAL(sym, "Symbol '%s' and Scope don't refer to each other",
-                  sym->name);
-#endif
-      }
-    }
+  if (!sym->parentScope) {
+    return;
   }
+
+  Symbol* match = Symboltable::lookupInScope(sym->name, sym->parentScope);
+
+  /**
+   **  Symbol is match found in scope
+   **/
+  if (sym == match) {
+    return;
+  }
+
+  /**
+   **  Symbol is function overloaded to match found in scope
+   **/
+  FnSymbol* fn_match = dynamic_cast<FnSymbol*>(match);
+  while (fn_match) {
+    if (sym == fn_match) {
+      return;
+    }
+    fn_match = fn_match->overload;
+  }
+
+  /**
+   **  Symbol is getter of match found in scope
+   **/
+  FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(sym);
+  if (fn_sym && fn_sym->_getter == match) {
+    return;
+  }
+
+  INT_FATAL(sym, "Incorrect parentScope for symbol '%s'", sym->name);
 }
 
 
-static void verifySymbolDefPoint(Symbol* sym) {
+/**
+ **  Verify that Symbol::defPoint back pointer is correct
+ **/
+static void verifyDefPoint(Symbol* sym) {
   if (typeid(*sym) == typeid(UnresolvedSymbol)) {
     return;
   }
@@ -214,25 +223,4 @@ static void verifySymbolDefPoint(Symbol* sym) {
     }
   }
   INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
-}
-
-
-HyperCopyReplace::HyperCopyReplace(void) {
-  whichModules = MODULES_USER;
-}
-
-
-void HyperCopyReplace::postProcessExpr(Expr* expr) {
-  if (strcmp(expr->stmt->parentSymbol->name, "main")) {
-    Expr* expr_copy = expr->copy();
-    expr->replace(expr_copy);
-  }
-}
-
-
-void HyperCopyReplace::postProcessStmt(Stmt* stmt) {
-  if (strcmp(stmt->parentSymbol->name, "main")) {
-    Stmt* stmt_copy = stmt->copy();
-    stmt->replace(stmt_copy);
-  }
 }

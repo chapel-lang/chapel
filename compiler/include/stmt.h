@@ -15,6 +15,7 @@ class Stmt : public BaseAST {
  public:
   Symbol* parentSymbol;
   AInfo *ainfo;
+  Stmt* parent;
   Stmt** back;
   Pragma *pragmas;
 

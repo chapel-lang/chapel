@@ -17,6 +17,7 @@ Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
   parentSymbol(NULL),
   ainfo(NULL),
+  parent(NULL),
   back(NULL),
   pragmas(NULL)
 {}
