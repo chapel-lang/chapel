@@ -25822,3 +25822,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+04/13/05 10:33:37 -- bradc
+
+Log message:
+	Fixed a minor script incompatability
+	which was responsible for the Sun
+	nightlies seeming to have a dozen
+	or so fewer tests than Linux.
+	Tomorrow's run should be more accurate
+	as a result.
+
+Modified files:
+	chapel/test/: sub_test 
+
