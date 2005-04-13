@@ -25900,3 +25900,13 @@ Modified files:
 	chapel/compiler/include/: expr.h 
 	chapel/test/flowanalysis/newast/: pareninit.good 
 
+---------------------------------------------------------------------------
+
+04/13/05 14:45:17 -- jplevyak
+
+Log message:
+	Use Expr::typeInfo() to remove unnecessary coercions from the IF1 code.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
