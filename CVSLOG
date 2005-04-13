@@ -25866,3 +25866,15 @@ Modified files:
 	                                  sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+04/13/05 11:42:31 -- bradc
+
+Log message:
+	Improved logic to decide whether or not the
+	makeplot step should be run in the nightly
+	run.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
