@@ -40,8 +40,6 @@ PassInfo passlist[] = {
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(ApplyThisParameters, ""),
   RUN(Fixup, "verify"), // this is a sanity check
-  //RUN(ProcessDefs, ""),
-  RUN(Fixup, "verify"), // this is a sanity check
   RUN(RemoveLikeTypes, ""),
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertDefaultInitVariables, ""),
