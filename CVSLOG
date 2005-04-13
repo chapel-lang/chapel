@@ -25910,3 +25910,20 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/13/05 14:46:49 -- jplevyak
+
+Log message:
+	Remove unnecessary coersions (and the resulting type information)
+
+Modified files:
+	chapel/test/flowanalysis/newast/: assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  codegen_test.good 
+	                                  danglingelse.good 
+	                                  logical_not.good 
+	                                  unary_plusMinus.good 
+	                                  whileLoop.good 
+
