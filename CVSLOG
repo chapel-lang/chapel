@@ -25948,3 +25948,21 @@ Modified files:
 	chapel/compiler/include/: stmt.h 
 	chapel/compiler/traversals/: fixup.cpp fixup.h 
 
+---------------------------------------------------------------------------
+
+04/13/05 15:59:04 -- deitz
+
+Log message:
+	Renamed Stmt::parent to Stmt::parentStmt.  This seems more descriptive
+	and is in keeping with Stmt::parentSymbol which is the pointer to the
+	symbol that the statement came from.
+	
+	I'm thinking of renaming Expr::parent to Expr::parentExpr and
+	Expr::stmt to Expr::parentStmt as these seem more descriptive and more
+	in keepign with the statement naming scheme.  Any objections?
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/traversals/: fixup.cpp 
+
