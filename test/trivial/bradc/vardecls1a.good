@@ -1,0 +1,2 @@
+Error: Variable 'x' used before it is defined (vardecls1a.chpl:9)
+
