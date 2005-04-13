@@ -208,6 +208,11 @@ void Expr::traverseDef(Traversal* traversal, bool atTop) {
 }
 
 
+void Expr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  INT_FATAL(this, "Unexpected call to Expr::replaceExpr(old, new)");
+}
+
+
 void Expr::traverseExpr(Traversal* traversal) {
 }
 
@@ -866,6 +871,15 @@ long UnOp::intVal(void) {
 }
 
 
+void UnOp::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == operand) {
+    operand = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in UnOp::replaceExpr(old, new)");
+  }
+}
+
+
 void UnOp::traverseExpr(Traversal* traversal) {
   TRAVERSE(operand, traversal, false);
 }
@@ -915,6 +929,18 @@ bool BinOp::isComputable(void) {
                                                         
 }
 
+
+void BinOp::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == left) {
+    left = new_expr;
+  } if (old_expr == right) {
+    right = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in BinOp::replaceExpr(old, new)");
+  }
+}
+
+
 void BinOp::traverseExpr(Traversal* traversal) {
   TRAVERSE(left, traversal, false);
   TRAVERSE(right, traversal, false);
@@ -922,6 +948,10 @@ void BinOp::traverseExpr(Traversal* traversal) {
 
 
 Type* BinOp::typeInfo(void) {
+  if (analyzeAST && !RunAnalysis::runCount) {
+    return dtUnknown;
+  }
+
   Type* leftType = left->typeInfo();
   Type* rightType = right->typeInfo();
 
@@ -1075,6 +1105,15 @@ Expr* MemberAccess::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 }
 
 
+void MemberAccess::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == base) {
+    base = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in MemberAccess::replaceExpr(old, new)");
+  }
+}
+
+
 void MemberAccess::traverseExpr(Traversal* traversal) {
   TRAVERSE(base, traversal, false);
   TRAVERSE(member, traversal, false);
@@ -1084,7 +1123,8 @@ void MemberAccess::traverseExpr(Traversal* traversal) {
 Type* MemberAccess::typeInfo(void) {
   if (member->type != dtUnknown) {
     return member->type;
-  } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(base->typeInfo())) {
+  } else if (StructuralType* ctype =
+             dynamic_cast<StructuralType*>(base->typeInfo())) {
     Symbol* sym = Symboltable::lookupInScope(member->name, ctype->structScope);
     if (sym && sym->type) {
       return sym->type;
@@ -1151,6 +1191,17 @@ Expr* ParenOpExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
 }
 
 
+void ParenOpExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == baseExpr) {
+    baseExpr = new_expr;
+  } else if (old_expr == argList) {
+    argList = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in ParenOpExpr::replaceExpr(old, new)");
+  }
+}
+
+
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(baseExpr, traversal, false);
   TRAVERSE_LS(argList, traversal, false);
@@ -1185,6 +1236,10 @@ Expr* ArrayRef::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 
 
 Type* ArrayRef::typeInfo(void) {
+  if (analyzeAST && !RunAnalysis::runCount) {
+    return dtUnknown;
+  }
+
   // The Type of this expression may be a user type in which case we
   // need to walk past these names to the real definition of the array
   // type
@@ -1233,6 +1288,10 @@ Expr* TupleSelect::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
 
 
 Type* TupleSelect::typeInfo(void) {
+  if (analyzeAST && !RunAnalysis::runCount) {
+    return dtUnknown;
+  }
+
   // Simple typeInfo  --SJD 2/11/05
 
   TupleType* tuple_type = dynamic_cast<TupleType*>(baseExpr->typeInfo()->getType());
@@ -1301,6 +1360,10 @@ FnCall::FnCall(Expr* init_base, Expr* init_arg) :
 
 
 Type* FnCall::typeInfo(void) {
+  if (analyzeAST && !RunAnalysis::runCount) {
+    return dtUnknown;
+  }
+
   return findFnSymbol()->retType;
 }
 
@@ -1417,6 +1480,15 @@ Expr* Tuple::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* an
 }
 
 
+void Tuple::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == exprs) {
+    exprs = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in Tuple::replaceExpr(old, new)");
+  }
+}
+
+
 void Tuple::traverseExpr(Traversal* traversal) {
   TRAVERSE_LS(exprs, traversal, false);
 }
@@ -1494,6 +1566,15 @@ Expr* CastExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 }
 
 
+void CastExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == expr) {
+    expr = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in CastExpr::replaceExpr(old, new)");
+  }
+}
+
+
 void CastExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(newType, traversal, false);
   TRAVERSE(expr, traversal, false);
@@ -1539,6 +1620,17 @@ Expr* ReduceExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 }
 
 
+void ReduceExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == redDim) {
+    redDim = new_expr;
+  } else if (old_expr == argExpr) {
+    argExpr = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in ReduceExpr::replaceExpr(old, new)");
+  }
+}
+
+
 void ReduceExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(reduceType, traversal, false);
   TRAVERSE_LS(redDim, traversal, false);
@@ -1574,6 +1666,15 @@ SeqExpr::SeqExpr(Expr* init_exprls) :
 
 Expr* SeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new SeqExpr(exprls->copyListInternal(clone, map, analysis_clone));
+}
+
+
+void SeqExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == exprls) {
+    exprls = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in MemberAccess::replaceExpr(old, new)");
+  }
 }
 
 
@@ -1613,6 +1714,19 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
 
 Expr* SimpleSeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new SimpleSeqExpr(lo->copyInternal(clone, map, analysis_clone), hi->copyInternal(clone, map, analysis_clone), str->copyInternal(clone, map, analysis_clone));
+}
+
+
+void SimpleSeqExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == lo) {
+    lo = new_expr;
+  } else if (old_expr == hi) {
+    hi = new_expr;
+  } else if (old_expr == str) {
+    str = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in CastExpr::replaceExpr(old, new)");
+  }
 }
 
 
@@ -1716,6 +1830,19 @@ Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 }
 
 
+void ForallExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == domains) {
+    domains = new_expr;
+  } else if (old_expr == indices) {
+    indices = new_expr;
+  } else if (old_expr == forallExpr) {
+    forallExpr = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in ForallExpr::replaceExpr(old, new)");
+  }
+}
+
+
 void ForallExpr::traverseExpr(Traversal* traversal) {
   SymScope* prevScope = NULL;
 
@@ -1732,6 +1859,10 @@ void ForallExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* ForallExpr::typeInfo(void) {
+  if (analyzeAST && !RunAnalysis::runCount) {
+    return dtUnknown;
+  }
+
   Type* exprType = domains->typeInfo();
 
   if (typeid(*exprType) == typeid(DomainType)) {
@@ -1821,6 +1952,17 @@ Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
 }
 
 
+void LetExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == symDefs) {
+    symDefs = new_expr;
+  } else if (old_expr == innerExpr) {
+    innerExpr = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in LetExpr::replaceExpr(old, new)");
+  }
+}
+
+
 void LetExpr::traverseExpr(Traversal* traversal) {
   SymScope* saveScope = Symboltable::setCurrentScope(letScope);
   TRAVERSE_LS(symDefs, traversal, false);
@@ -1830,6 +1972,10 @@ void LetExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* LetExpr::typeInfo(void) {
+  if (analyzeAST && !RunAnalysis::runCount) {
+    return dtUnknown;
+  }
+
   return innerExpr->typeInfo();
 }
 
@@ -1855,6 +2001,15 @@ NamedExpr::NamedExpr(char* init_name, Expr* init_actual) :
 
 Expr* NamedExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new NamedExpr(copystring(name), actual->copyInternal(clone, map, analysis_clone));
+}
+
+
+void NamedExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == actual) {
+    actual = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in NamedExpr::replaceExpr(old, new)");
+  }
 }
 
 
@@ -1888,6 +2043,15 @@ VarInitExpr::VarInitExpr(Expr* init_expr) :
 
 Expr* VarInitExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new VarInitExpr(expr->copy(clone, map, analysis_clone));
+}
+
+
+void VarInitExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
+  if (old_expr == expr) {
+    expr = new_expr;
+  } else {
+    INT_FATAL(this, "Unexpected case in VarInitExpr::replaceExpr(old, new)");
+  }
 }
 
 
