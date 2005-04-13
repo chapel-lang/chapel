@@ -19,7 +19,6 @@
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
-::int64 ( int64 )
 ::m(assignment_expr.chpl:1) ( int64 )
 ::main ( main )
 ::main ( main )

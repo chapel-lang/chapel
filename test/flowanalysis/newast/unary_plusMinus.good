@@ -8,7 +8,6 @@
 ::__init_unary_plusMinus ( __init_unary_plusMinus )
 ::__init_unary_plusMinus ( __init_unary_plusMinus )
 ::answer(unary_plusMinus.chpl:3) ( int64 )
-::int64 ( int64 )
 ::m(unary_plusMinus.chpl:1) ( int64 )
 ::main ( main )
 ::main ( main )

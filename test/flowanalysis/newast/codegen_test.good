@@ -10,7 +10,6 @@
 ::__init_prelude ( __init_prelude )
 ::a(codegen_test.chpl:8) ( int64 )
 ::foo(codegen_test.chpl:12) ( foo )
-::int64 ( int64 )
 ::main ( main )
 ::main ( main )
 ::void ( void )
