@@ -25604,3 +25604,14 @@ Removed files:
 	                                        varNameQMark.execopts 
 	                                        varNameQMark.good 
 
+---------------------------------------------------------------------------
+
+04/12/05 17:37:06 -- deitz
+
+Log message:
+	Added trivial variable declaration test.
+
+Added files:
+	chapel/test/trivial/deitz/: test_var_decl_init4.chpl 
+	                            test_var_decl_init4.good 
+
