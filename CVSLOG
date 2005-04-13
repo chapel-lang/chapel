@@ -25615,3 +25615,35 @@ Added files:
 	chapel/test/trivial/deitz/: test_var_decl_init4.chpl 
 	                            test_var_decl_init4.good 
 
+---------------------------------------------------------------------------
+
+04/12/05 17:42:55 -- deitz
+
+Log message:
+	NOTE: This causes two regressions:
+	
+	  [Error matching compiler output for classes/deitz/test_nested_record1]
+	  [Error matching compiler output for classes/deitz/test_nested_record2]
+	
+	Rewrote variable initialization code.  We now initialize a variable
+	only at its declaration point (since there are no more uses before
+	defs).
+	
+	Fixed bugs in the insertion of default value temps for types having to
+	do with classes within classes and such.
+	
+	The ProcessDefs pass is no longer called and is dead.  This pass used
+	to insert default variable initializations before analysis using
+	VarInitExpr.
+	
+	Fixed a bug in call_fixup on statements.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertVariableInitializations.cpp 
+	                             insertVariableInitializations.h 
+	                             processDefs.cpp 
+
