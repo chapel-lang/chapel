@@ -226,7 +226,7 @@ static void call_fixup(Expr* expr) {
     saveScope = Symboltable::setCurrentScope(mod->modScope);
   }
   Fixup* fixup = new Fixup();
-  fixup->stmtParents.add(expr->stmt->parent);
+  fixup->stmtParents.add(expr->stmt->parentStmt);
   TRAVERSE(expr->stmt, fixup, true);
   if (saveScope) {
     Symboltable::setCurrentScope(saveScope);

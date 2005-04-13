@@ -55,12 +55,12 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
   Stmt* stmtParent = stmtParents.v[stmtParents.n-1];
   if (verify) {
-    if (stmt->parent != stmtParent) {
+    if (stmt->parentStmt != stmtParent) {
       INT_FATAL(stmt, "Stmt's parent is incorrect");
-      stmt->parent = stmtParent;
+      stmt->parentStmt = stmtParent;
     }
   } else {
-    stmt->parent = stmtParent;
+    stmt->parentStmt = stmtParent;
   }
 
   if (!dynamic_cast<DefStmt*>(stmt)) {
