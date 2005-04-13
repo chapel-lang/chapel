@@ -25792,3 +25792,21 @@ Log message:
 Modified files:
 	chapel/compiler/vparser/: parse.cpp 
 
+---------------------------------------------------------------------------
+
+04/13/05 06:30:01 -- shannon
+
+Log message:
+	Added an error message in the event --memthreshold is
+	used without also using the --memtrace option.  Also
+	modified a prior error message and its corresponding
+	test output.
+
+Modified files:
+	chapel/runtime/src/: chplmem.c 
+	chapel/test/memory/shannon/: printMemTable.good 
+Added files:
+	chapel/test/memory/shannon/: thresholdWithoutTrace.chpl 
+	                             thresholdWithoutTrace.execopts 
+	                             thresholdWithoutTrace.good 
+
