@@ -25878,3 +25878,25 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/13/05 14:12:06 -- deitz
+
+Log message:
+	Made Expr::typeInfo calls work before analysis, though very
+	conservatively.
+	
+	As a result of this change, I updated the output to
+	  test/flowanalysis/newast/pareninit.good
+	John, can you make sure this is okay.  It almost looks like integer is
+	known now.
+	
+	Started building replaceExpr functions to replace children pointers of
+	expressions.  These are currently not used but should eventually help
+	replace the "Expr** back" pointer to a pointer.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/test/flowanalysis/newast/: pareninit.good 
+
