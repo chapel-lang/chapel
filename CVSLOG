@@ -25927,3 +25927,24 @@ Modified files:
 	                                  unary_plusMinus.good 
 	                                  whileLoop.good 
 
+---------------------------------------------------------------------------
+
+04/13/05 15:32:56 -- deitz
+
+Log message:
+	Added Stmt* parent to Stmt so statements like expressions now have a
+	pointer to their parent statement.  This is set in Fixup and verified
+	in Fixup-verify.
+	
+	Reenabled verification of Symbol::parentScope in Fixup::verify.  This
+	was turned off in getting the getters in, but is now special cased for
+	getters (since getters are not in a scope and can thus not be looked
+	up).
+	
+	Fixed call_fixup on expressions to deal with the statement's parent.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/traversals/: fixup.cpp fixup.h 
+
