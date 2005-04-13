@@ -25782,3 +25782,13 @@ Added files:
 	chapel/test/trivial/bradc/: vardecls1a.chpl vardecls1a.good 
 	                            vardecls1b.chpl vardecls1b.good 
 
+---------------------------------------------------------------------------
+
+04/12/05 18:48:35 -- jplevyak
+
+Log message:
+	Fix free to be after the last potential use of the variable.
+
+Modified files:
+	chapel/compiler/vparser/: parse.cpp 
+
