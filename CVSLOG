@@ -26020,3 +26020,15 @@ Modified files:
 	                             test_param_decl3.good 
 	chapel/test/types/enum/deitz/: test_enum6.good 
 
+---------------------------------------------------------------------------
+
+04/13/05 16:47:57 -- bradc
+
+Log message:
+	Added some hooks to make nightly work on
+	cygwin and to work the first time it's
+	run without complaints.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
