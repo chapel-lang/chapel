@@ -94,6 +94,14 @@ $sortedvgrsummary = "$rawvgrlog.sorted";
 $prevstdsummary = "$cronlogdir/last-$platform-std.log.sorted";
 $prevvgrsummary = "$cronlogdir/last-$platform-vgr.log.sorted";
 
+#
+# make "prev" logs if they don't already exist
+#
+ensureSummaryExists($prevstdsummary);
+if ($valgrind == 1) {
+    ensureSummaryExists($prevvgrsummary);
+}
+
 
 if ($debug == 1) {
     $mailcommand = "| Mail -s \"Chapel: Debug Results ($platform) \" $user\@cray.com";
@@ -138,6 +146,13 @@ if ($debug == 0 && $platform eq "linux") {
   mysystem("cd $tmpdir && gzip chapel.tar", "gzipping chapel", 0, 1);
   mysystem("cd $tmpdir && mv chapel.tar.gz $archivedir/chapel.$todaydate.tar.gz", "storing chapel", 0, 1);
   mysystem("cd $archivedir && rm -f chapel.$lastmonth.tar.gz", "removing last month's chapel", 0, 0);
+}
+
+#
+# if on cygwin, blow away FILES files because they wreak havoc on stuff
+#
+if ($platform eq "cygwin_nt-5.1") {
+    mysystem("cd $chapeldir && find . -name FILES -exec rm {} \\;");
 }
 
 
@@ -442,3 +457,11 @@ sub delta {
   $delta;
 }
 
+sub ensureSummaryExists {
+    $summary = $_[0];
+    $nosummary = system("test -r $summary");
+    if ($nosummary) {
+        print "Creating $summary\n";
+        mysystem("echo \"[Summary: #Successes = 0 | #Failures = 0 | #Futures = 0]\" > $summary", "creating $summary", 1, 1);
+    }
+}
