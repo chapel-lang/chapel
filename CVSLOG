@@ -25837,3 +25837,14 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+04/13/05 11:03:37 -- deitz
+
+Log message:
+	Removed futures for noanalysis test_seq6 and test_seq7.
+
+Removed files:
+	chapel/test/types/seq/deitz/noanalysis/: test_seq6.future 
+	                                         test_seq7.future 
+
