@@ -25810,3 +25810,15 @@ Added files:
 	                             thresholdWithoutTrace.execopts 
 	                             thresholdWithoutTrace.good 
 
+---------------------------------------------------------------------------
+
+04/13/05 09:02:49 -- deitz
+
+Log message:
+	Fixed the building of constructors to use the defaultConstructor if
+	the defaultVal doesn't exist.  This fixes the test_nested_record
+	regressions.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
