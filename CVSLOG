@@ -26183,3 +26183,36 @@ Modified files:
 	                             scopeResolveSymbols.cpp 
 	                             transformLetExprs.cpp 
 
+---------------------------------------------------------------------------
+
+04/14/05 15:45:56 -- jplevyak
+
+Log message:
+	Patch for the coerce2 test.
+	
+	Note: this is not a fix for the underlying problem but an efficiency
+	at a higher level.
+	
+	There was an issue that the coersion wrappers were being calculated before
+	it was determined if the function was actually subsumed by another (more
+	precise) function.
+	
+	In this test, in the first analysis pass, there will still be a wrapper
+	built for foo(float, int) even though this doesn't occur in the program.
+	The reason for this is that operator = is now overloaded, and the
+	i and f variables are neither declared to have a type nor are they
+	initialized in the definition, so they are of unknown type.  The
+	overloaded = operator is first shared by the two calls which causes
+	the types of i and f to be confused.  Their actual types are determined
+	in the next pass, but not before the coercion wrapper for the impossible
+	case is created.
+	
+	(probably more information than you wanted to know)
+	
+	However, there is still likely a problem in the code which creates
+	the wrappers since I didn't change anything other than to avoid
+	additional, correct but unnecessary, wrapper creations.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+
