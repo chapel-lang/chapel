@@ -26216,3 +26216,21 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+04/14/05 15:49:23 -- jplevyak
+
+Log message:
+	Fix misspelling
+
+Added files:
+	chapel/test/types/type_variables/jplevyak/: test_coerce1.chpl 
+	                                            test_coerce1.good 
+	                                            test_coerce2.chpl 
+	                                            test_coerce2.good 
+Removed files:
+	chapel/test/types/type_variables/jplevyak/: test_coerse1.chpl 
+	                                            test_coerse1.good 
+	                                            test_coerse2.chpl 
+	                                            test_coerse2.good 
+
