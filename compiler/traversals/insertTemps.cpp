@@ -33,7 +33,7 @@ void InsertTemps::postProcessExpr(Expr* expr) {
                                                             VAR_NORMAL,
                                                             VAR_VAR);
 
-    expr->parentStmt->insertBefore(def_stmt);
+    expr->getStmt()->insertBefore(def_stmt);
 
     expr->replace(new Variable(def_stmt->varDef()));
   }

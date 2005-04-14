@@ -136,41 +136,6 @@ void Stmt::traverseStmt(Traversal* traversal) {
 }
 
 
-static void call_fixup(Stmt* stmt) {
-  Fixup* fixup = new Fixup();
-  Symbol* sym;
-
-  
-  sym = stmt->parentSymbol;
-  if (!sym) {
-    sym = Symboltable::getCurrentScope()->findEnclosingSymContext();
-    if (!sym) {
-      INT_FATAL(stmt, "Problem calling fixup");
-    }
-  }
-
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
-    TRAVERSE_LS(fn->body, fixup, true);
-    Symboltable::setCurrentScope(saveScope);
-  } else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(sym)) {
-    SymScope* saveScope = Symboltable::setCurrentScope(mod->modScope);
-    TRAVERSE_LS(mod->stmts, fixup, true);
-    Symboltable::setCurrentScope(saveScope);
-  } else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym)) {
-    if (StructuralType* class_type = dynamic_cast<StructuralType*>(type->type)) {
-      SymScope* saveScope = Symboltable::setCurrentScope(class_type->structScope);
-      TRAVERSE_LS(class_type->declarationList, fixup, true);
-      Symboltable::setCurrentScope(saveScope);
-    } else {
-      INT_FATAL(stmt, "Unexpected TypeSymbol in call_fixup");
-    }
-  } else {
-    INT_FATAL(stmt, "Error calling fixup");
-  }
-}
-
-
 void Stmt::replace(Stmt* new_stmt) {
   Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
   Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());

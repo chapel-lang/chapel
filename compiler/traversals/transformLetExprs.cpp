@@ -33,19 +33,19 @@ void TransformLetExprs::doTransformation(void) {
       INT_FATAL(ast, "LetExpr expected");
     }
     SymScope* save_scope = Symboltable::setCurrentScope(let_expr->letScope->parent);
-    Stmt* let_stmt = let_expr->parentStmt;
+    Stmt* let_stmt = let_expr->getStmt();
     SymScope* let_scope = let_expr->letScope;
     Expr* inner_copy = let_expr->innerExpr->copy(false, NULL, NULL, &lets);
     let_expr->replace(inner_copy);
     Stmt* let_stmt_copy = let_stmt->copy(false, NULL, NULL, &lets);
+    DefStmt* def_stmt = new DefStmt(let_expr->symDefs);
+    def_stmt->append(let_stmt_copy);
+    let_stmt_copy = def_stmt;
     BlockStmt* block_stmt = new BlockStmt(let_stmt_copy);
     let_scope->stmtContext = block_stmt;
     let_scope->exprContext = NULL;
     let_scope->type = SCOPE_LOCAL;
     block_stmt->setBlkScope(let_scope);
-    DefStmt* def_stmt = new DefStmt(let_expr->symDefs);
-    let_stmt_copy->insertBefore(def_stmt);
-
 
     DefExpr* def_expr = dynamic_cast<DefExpr*>(let_expr->symDefs);
     while (def_expr) {

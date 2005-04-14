@@ -86,6 +86,7 @@ static precedenceType binOpPrecedence[NUM_BINOPS] = {
 
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
+  parentSymbol(NULL),
   parentStmt(NULL),
   parentExpr(NULL),
   ainfo(NULL),
@@ -214,23 +215,6 @@ void Expr::replaceExpr(Expr* old_expr, Expr* new_expr) {
 
 
 void Expr::traverseExpr(Traversal* traversal) {
-}
-
-
-static void call_fixup(Expr* expr) {
-  if (!expr->parentStmt) {
-    INT_FATAL(expr, "Expr has no Stmt in call_fixup");
-  }
-  SymScope* saveScope = NULL;
-  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(expr->parentStmt->parentSymbol)) {
-    saveScope = Symboltable::setCurrentScope(mod->modScope);
-  }
-  Fixup* fixup = new Fixup();
-  fixup->stmtParents.add(expr->parentStmt->parentStmt);
-  TRAVERSE(expr->parentStmt, fixup, true);
-  if (saveScope) {
-    Symboltable::setCurrentScope(saveScope);
-  }
 }
 
 
@@ -519,6 +503,11 @@ bool Expr::isRead() {
 
 bool Expr::isWritten() {
   return expr_read_written(this) != expr_r;
+}
+
+
+Stmt* Expr::getStmt() {
+  return (parentStmt) ? parentStmt : parentSymbol->defPoint->getStmt();
 }
 
 

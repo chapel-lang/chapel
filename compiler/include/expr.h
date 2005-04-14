@@ -88,6 +88,7 @@ enum getsOpType {
 
 class Expr : public BaseAST {
  public:
+  Symbol* parentSymbol;
   Stmt* parentStmt;
   Expr* parentExpr;
   AInfo *ainfo;
@@ -131,6 +132,7 @@ class Expr : public BaseAST {
 
   bool isRead(void);
   bool isWritten(void);
+  Stmt* Expr::getStmt();
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 

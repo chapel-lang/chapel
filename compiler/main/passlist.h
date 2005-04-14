@@ -22,10 +22,15 @@ PassInfo passlist[] = {
   // passes to normalize the basic AST
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(ExpandClassWiths, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertThisParameters, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ScopeResolveSymbols, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ScopeResolveGotos, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(RenameOverloadedFunctions, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertTemps, ""),
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertAnonymousDomains, ""),

@@ -31,7 +31,11 @@ void MethodsToFunctions::preProcessExpr(Expr* expr) {
     }
     if (dynamic_cast<FnSymbol*>(method->member)) {
       FnCall* fn = new FnCall(new Variable(method->member), method->base);
-      expr->replace(fn);
+      if (dynamic_cast<ParenOpExpr*>(expr->parentExpr)) {
+        expr->parentExpr->replace(fn);
+      } else {
+        expr->replace(fn);
+      }
     }
   }
 }

@@ -2,13 +2,14 @@
 #define _FIXUP_H_
 
 #include "traversal.h"
+#include "baseAST.h"
 #include "vec.h"
 
 class Fixup : public Traversal {
  public:
-  Vec<Expr*> exprParents;
-  Vec<Stmt*> exprStmts;
-  Vec<Stmt*> stmtParents;
+  Vec<Expr*> parentExprs;
+  Vec<Stmt*> parentStmts;
+  Vec<Symbol*> parentSymbols;
   int verify;
 
   Fixup::Fixup();
@@ -19,5 +20,9 @@ class Fixup : public Traversal {
   virtual void postProcessSymbol(Symbol* sym);
   void run(ModuleSymbol* moduleList);
 };
+
+void fixup_stmt(Stmt* stmt);
+void fixup_expr(Expr* expr);
+void call_fixup(BaseAST* ast);
 
 #endif

@@ -55,7 +55,7 @@ static void build_constructor(StructuralType* structType) {
   structType->constructor = new DefStmt(fn_def);
   SET_BACK(structType->constructor);
   Symboltable::setCurrentScope(saveScope);
-  TRAVERSE(structType->symbol->defPoint->parentStmt, new Fixup(), true);
+  fixup_expr(structType->symbol->defPoint);
 }
 
 

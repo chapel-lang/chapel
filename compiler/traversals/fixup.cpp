@@ -13,61 +13,57 @@ static void verifyParentScope(Symbol* sym);
 Fixup::Fixup(void) :
   verify(false)
 {
-  exprParents.add(NULL);
-  exprStmts.add(NULL);
-  stmtParents.add(NULL);
+  parentExprs.add(NULL);
+  parentStmts.add(NULL);
+  parentSymbols.add(NULL);
+}
+
+
+/**
+ **  Hack for __init function
+ **  Call parentSymbols equal if they are or if
+ **   the one is the init function and the other is the module
+ **/
+static bool EQparentSymbol(Symbol* sym1, Symbol* sym2) {
+  if (sym1 == sym2) {
+    return true;
+  }
+  ModuleSymbol* mod1 = dynamic_cast<ModuleSymbol*>(sym1);
+  if (mod1 && mod1->initFn == sym2) {
+    return true;
+  }
+  ModuleSymbol* mod2 = dynamic_cast<ModuleSymbol*>(sym2);
+  if (mod2 && mod2->initFn == sym1) {
+    return true;
+  }
+  return false;
 }
 
 
 void Fixup::preProcessStmt(Stmt* stmt) {
-  Symbol* parent = Symboltable::getCurrentScope()->findEnclosingSymContext();
-
-  if (!parent) {
-    INT_FATAL(stmt, "Null Stmt ParentSymbol in Fixup");
-  }
-
-  // SJD: HACK for definitions of secondary methods
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt);
-  FnSymbol* fn = (def_stmt) ? def_stmt->fnDef() : NULL;
-  if (!def_stmt || !fn || !fn->classBinding) {
-    if (!verify) {
-      stmt->parentSymbol = parent;
-    }
-    else if (stmt->parentSymbol != parent) {
-      // SJD hack because of __init function
-      bool ignore = false;
-      if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(stmt->parentSymbol)) {
-        if (m->initFn == parent) {
-          ignore = true;
-        }
-      } else if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(parent)) {
-        if (m->initFn == stmt->parentSymbol) {
-          ignore = true;
-        }
-      }
-      if (!ignore) {
-        INT_FATAL(stmt, "Statement's parentSymbol is incorrect");
-      }
-    }
-  }
-
-  exprStmts.add(stmt);
-
-  Stmt* stmtParent = stmtParents.v[stmtParents.n-1];
+  Symbol* parentSymbol = parentSymbols.v[parentSymbols.n-1];
   if (verify) {
-    if (stmt->parentStmt != stmtParent) {
-      INT_FATAL(stmt, "Stmt's parentStmt is incorrect");
-    }
-    if (stmt->parentStmt && stmt->parentStmt->parentSymbol != stmt->parentSymbol) {
-      //INT_FATAL(stmt, "Stmt's parentStmt's parentSymbol is incorrect");
+    if (!EQparentSymbol(stmt->parentSymbol, parentSymbol)) {
+      INT_FATAL(stmt, "Stmt's parentSymbol is incorrect");
     }
   } else {
-    stmt->parentStmt = stmtParent;
+    stmt->parentSymbol = parentSymbol;
   }
 
-  if (!dynamic_cast<DefStmt*>(stmt)) {
-    stmtParents.add(stmt);
+  Stmt* parentStmt = parentStmts.v[parentStmts.n-1];
+  if (verify) {
+    if (stmt->parentStmt != parentStmt) {
+      INT_FATAL(stmt, "Stmt's parentStmt is incorrect");
+    }
+    if (stmt->parentStmt &&
+        !EQparentSymbol(stmt->parentStmt->parentSymbol, stmt->parentSymbol)) {
+      INT_FATAL(stmt, "Stmt's parentStmt's parentSymbol is incorrect");
+    }
+  } else {
+    stmt->parentStmt = parentStmt;
   }
+
+  parentStmts.add(stmt);
 
   if (!stmt->back || *stmt->back != stmt) {
     INT_FATAL(stmt, "stmt back incorrect");
@@ -76,40 +72,55 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
 
 void Fixup::postProcessStmt(Stmt* stmt) {
-  exprStmts.pop();
-  if (!dynamic_cast<DefStmt*>(stmt)) {
-    stmtParents.pop();
-  }
+  parentStmts.pop();
 }
 
 
 void Fixup::preProcessExpr(Expr* expr) {
-  Stmt* exprStmt = exprStmts.v[exprStmts.n-1];
-  if (exprStmt == NULL) {
-    INT_FATAL(expr, "Fixup cannot determine Expr's stmt");
-  }
+  Symbol* parentSymbol = parentSymbols.v[parentSymbols.n-1];
   if (verify) {
-    if (expr->parentStmt != exprStmt) {
-      INT_FATAL(expr, "Expr's parentStmt is incorrect");
+    if (!EQparentSymbol(expr->parentSymbol, parentSymbol)) {
+      INT_FATAL(expr, "Expr's parentSymbol is incorrect");
     }
   } else {
-    expr->parentStmt = exprStmt;
+    expr->parentSymbol = parentSymbol;
   }
 
-  Expr* exprParent = exprParents.v[exprParents.n-1];
+  Stmt* parentStmt = parentStmts.v[parentStmts.n-1];
   if (verify) {
-    if (expr->parentExpr != exprParent) {
+    if (expr->parentStmt != parentStmt) {
+      INT_FATAL(expr, "Expr's parentStmt is incorrect");
+    }
+    if (expr->parentStmt &&
+        !EQparentSymbol(expr->parentStmt->parentSymbol, expr->parentSymbol)) {
+      INT_FATAL(expr, "Expr's parentStmt's parentSymbol is incorrect");
+    }
+  } else {
+    expr->parentStmt = parentStmt;
+  }
+
+  Expr* parentExpr = parentExprs.v[parentExprs.n-1];
+  if (verify) {
+    if (expr->parentExpr != parentExpr) {
       INT_FATAL(expr, "Expr's parentExpr is incorrect");
     }
     if (expr->parentExpr && expr->parentExpr->parentStmt != expr->parentStmt) {
-      //INT_FATAL(expr, "Expr's parentExpr's parentStmt is incorrect");
+      INT_FATAL(expr, "Expr's parentExpr's parentStmt is incorrect");
+    }
+    if (expr->parentExpr &&
+        !EQparentSymbol(expr->parentExpr->parentSymbol, expr->parentSymbol)) {
+      INT_FATAL(expr, "Expr's parentExpr's parentSymbol is incorrect");
     }
   } else {
-    expr->parentExpr = exprParent;
+    expr->parentExpr = parentExpr;
   }
 
-  if (!dynamic_cast<DefExpr*>(expr)) {
-    exprParents.add(expr);
+  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+    parentExprs.add(NULL);
+    parentStmts.add(NULL);
+    parentSymbols.add(def_expr->sym);
+  } else {
+    parentExprs.add(expr);
   }
 
   if (!expr->back || *expr->back != expr) {
@@ -119,8 +130,12 @@ void Fixup::preProcessExpr(Expr* expr) {
 
 
 void Fixup::postProcessExpr(Expr* expr) {
-  if (!dynamic_cast<DefExpr*>(expr)) {
-    exprParents.pop();
+  if (dynamic_cast<DefExpr*>(expr)) {
+    parentExprs.pop();
+    parentStmts.pop();
+    parentSymbols.pop();
+  } else {
+    parentExprs.pop();
   }
 }
 
@@ -135,7 +150,14 @@ void Fixup::postProcessSymbol(Symbol* sym) {
 
 void Fixup::run(ModuleSymbol* moduleList) {
   verify = !strcmp(args, "verify");
-  Traversal::run(moduleList);
+  ModuleSymbol* mod = moduleList;
+  while (mod) {
+    parentSymbols.add(mod);
+    mod->startTraversal(this);
+    parentSymbols.pop();
+
+    mod = nextLink(ModuleSymbol, mod);
+  }
 }
 
 
@@ -228,4 +250,53 @@ static void verifyDefPoint(Symbol* sym) {
     }
   }
   INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
+}
+
+
+void fixup_symbol(Symbol* symbol) {
+  Fixup* fixup = new Fixup();
+  fixup->parentSymbols.add(symbol);
+  TRAVERSE_DEF(symbol, fixup, true);
+}
+
+
+void fixup_stmt(Stmt* stmt) {
+  Fixup* fixup = new Fixup();
+  fixup->parentSymbols.add(stmt->parentSymbol);
+  fixup->parentStmts.add(stmt->parentStmt);
+  TRAVERSE(stmt, fixup, true);
+}
+
+
+void fixup_expr(Expr* expr) {
+  Fixup* fixup = new Fixup();
+  fixup->parentSymbols.add(expr->parentSymbol);
+  fixup->parentStmts.add(expr->parentStmt);
+  fixup->parentExprs.add(expr->parentExpr);
+  TRAVERSE(expr, fixup, true);
+}
+
+
+void call_fixup(BaseAST* ast) {
+  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
+    if (stmt->parentStmt) {
+      fixup_stmt(stmt->parentStmt);
+    } else if (stmt->parentSymbol) {
+      fixup_symbol(stmt->parentSymbol);
+    } else {
+      INT_FATAL(ast, "Stmt has no parentStmt|Symbol in call_fixup");
+    }
+  } else if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    if (expr->parentExpr) {
+      fixup_expr(expr->parentExpr);
+    } else if (expr->parentStmt) {
+      fixup_stmt(expr->parentStmt);
+    } else if (expr->parentSymbol) {
+      fixup_symbol(expr->parentSymbol);
+    } else {
+      INT_FATAL(ast, "Expr has no parentExpr|Stmt|Symbol in call_fixup");
+    }
+  } else {
+    INT_FATAL(ast, "Stmt or Expr expected as argument to call_fixup");
+  }
 }
