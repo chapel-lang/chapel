@@ -26255,3 +26255,13 @@ Modified files:
 	chapel/compiler/vparser/: parse_ast.cpp 
 	chapel/runtime/src/: chplmem.c 
 
+---------------------------------------------------------------------------
+
+04/14/05 15:55:57 -- jplevyak
+
+Log message:
+	More x86_64 fixes... should be a clean build now.
+
+Modified files:
+	chapel/compiler/adt/: vec.cpp 
+
