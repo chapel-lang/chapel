@@ -26032,3 +26032,21 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/13/05 18:55:51 -- bradc
+
+Log message:
+	Added *.tmp to another .cvsignore file in the
+	testing directory.
+	
+	Reminder (because we all do it, including me):
+	whenever you create a new directory in the
+	testing system, add a .cvsignore file with *.tmp
+	in it so that cvs -nq update stays quiet for
+	those of us who depend on it like a security
+	blanket).
+
+Modified files:
+	chapel/test/memory/shannon/: .cvsignore 
+
