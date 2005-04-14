@@ -155,22 +155,22 @@ test_vec() {
   int tt = 99 * 50, t = 0;
   
   for (int i = 0; i < 100; i++)
-    v.add((void*)i);
+    v.add((void*)(intptr_t)i);
   for (int i = 0; i < 100; i++)
-    t += (int)v.v[i];
+    t += (int)(intptr_t)v.v[i];
   assert(t == tt);
 
   t = 0;
   for (int i = 1; i < 100; i++)
-    vv.set_add((void*)i);
+    vv.set_add((void*)(intptr_t)i);
   for (int i = 1; i < 100; i++)
-    vvv.set_add((void*)i);
+    vvv.set_add((void*)(intptr_t)i);
   for (int i = 1; i < 100; i++)
-    vvv.set_add((void*)(i * 1000));
+    vvv.set_add((void*)(intptr_t)(i * 1000));
   vv.set_union(vvv);
   for (int i = 0; i < vv.n; i++)
     if (vv.v[i])
-      t += (int)vv.v[i];
+      t += (int)(intptr_t)vv.v[i];
   assert(t == tt + 1000 * tt);
   
   Intervals in;
