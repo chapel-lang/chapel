@@ -3525,7 +3525,7 @@ VALGRIND=`which valgrind 2>&1`
 vgr_status=$?
 valgrind --help > /dev/null 2>&1
 vgr_help_status=$?
-if test $vgr_status -eq 0 && test $vgr_help_status -eq 0; then
+if test $vgr_status -eq 0 && test $vgr_help_status -eq 0 && test "$BUILD_X86_64" != "1"; then
   echo "found valgrind at $VALGRIND"
   VALGRIND_PATH=`echo $VALGRIND | sed s/valgrind$//`
 #  echo "path is $VALGRIND_PATH"
