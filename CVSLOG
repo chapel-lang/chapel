@@ -26086,3 +26086,36 @@ Modified files:
 	                             scopeResolveSymbols.cpp 
 	                             transformLetExprs.cpp 
 
+---------------------------------------------------------------------------
+
+04/14/05 14:07:20 -- bradc
+
+Log message:
+	Touched up the Makefile in the unit test directory
+	(compiler/test) to more closely follow our current
+	Makefile organization and work better overall
+	(improved making from a clean build -- in particular
+	one with no $PLATFORM subdirectory -- make depend,
+	etc.)
+	
+	The one ugliness here is that I had to pull out the
+	VPATH variable because it was finding the $PLATFORM
+	subdirectory elsewhere and not creating a new one
+	for this directory.  The result is that the origin
+	of the .test.cpp files has to be given more
+	explicitly.
+	
+	Re-enabled the building of the unit test directory
+	from the top-level compiler directory with every
+	compile.
+	
+	Am tempted to rename this directory unittest or
+	something like that because I always cd into it
+	accidentally when I want to go to the regression
+	test directory.  Thoughts?
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	chapel/compiler/test/: Makefile 
+
