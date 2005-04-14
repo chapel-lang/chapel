@@ -98,7 +98,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 
         fncall->setArgs(newActuals);
 
-        Stmt* origStmt = expr->stmt;
+        Stmt* origStmt = expr->parentStmt;
         Stmt* newStmt = origStmt->copy();
         body = appendLink(body, newStmt);
 

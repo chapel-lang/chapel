@@ -30,11 +30,11 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
       Type* temp_type = sym->type;
       Expr* temp_init = sym->type->defaultVal->copy();
 
-      Symbol* parent_symbol = sym->defPoint->stmt->parentSymbol;
+      Symbol* parent_symbol = sym->defPoint->parentStmt->parentSymbol;
       Symbol* outer_symbol = sym;
       while (dynamic_cast<TypeSymbol*>(parent_symbol)) {
-        parent_symbol = parent_symbol->defPoint->stmt->parentSymbol;
-        outer_symbol = outer_symbol->defPoint->stmt->parentSymbol;
+        parent_symbol = parent_symbol->defPoint->parentStmt->parentSymbol;
+        outer_symbol = outer_symbol->defPoint->parentStmt->parentSymbol;
       }
 
       SymScope* saveScope =
@@ -49,7 +49,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
         insert_point = dynamic_cast<BlockStmt*>(mod->initFn->body)->body;
       } else {
-        insert_point = outer_symbol->defPoint->stmt;
+        insert_point = outer_symbol->defPoint->parentStmt;
       }
       insert_point->insertBefore(def_stmt);
       sym->type->defaultVal->replace(new Variable(def_stmt->varDef()));

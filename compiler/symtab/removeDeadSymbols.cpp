@@ -21,7 +21,7 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
 
     if (sym->defPoint) {
       // BLC: This is overkill, but mirrors what removeDeadSymbols did
-      sym->defPoint->stmt->extract();
+      sym->defPoint->parentStmt->extract();
     }
     fprintf(stderr, "%s is dead\n", sym->name);
   }
@@ -35,14 +35,14 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
       // should pull just the defExpr (but this breaks other stuff
       // that assumes that every defStmt).
       if (sym->defPoint) // JBP 4/5/05 for intents-classes4.chpl this is NULL
-        sym->defPoint->stmt->extract();
+        sym->defPoint->parentStmt->extract();
     }
   }
   if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {
     if (!function_is_used(fnSym)) {
       fnSym->isDead = true;
       // BLC: see comment on previous conditional
-      sym->defPoint->stmt->extract();
+      sym->defPoint->parentStmt->extract();
     }
   }
 #endif

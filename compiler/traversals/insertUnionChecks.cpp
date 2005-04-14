@@ -24,11 +24,11 @@ void InsertUnionChecks::preProcessExpr(Expr* expr) {
         dynamic_cast<UnionType*>(unionExpr->base->typeInfo())) {
       if (expr->isWritten()) {
         ExprStmt* testStmt = buildCheckStmt(unionType, UNION_SET, unionExpr);
-        expr->stmt->insertAfter(testStmt);
+        expr->parentStmt->insertAfter(testStmt);
       }
       if (expr->isRead()) {
         ExprStmt* testStmt = buildCheckStmt(unionType, UNION_CHECK, unionExpr);
-        expr->stmt->insertBefore(testStmt);
+        expr->parentStmt->insertBefore(testStmt);
       }
     }
   }

@@ -126,7 +126,7 @@ AInfo::visible_functions(Sym *arg0) {
   Expr *e = dynamic_cast<Expr *>(this->xast);
   Stmt *s = 0;
   if (e)
-    s = e->stmt;
+    s = e->parentStmt;
   else
     s = dynamic_cast<Stmt *>(this->xast);
   ScopeLookupCache *sym_cache = 0;
@@ -1283,7 +1283,7 @@ is_this_member_access(BaseAST *a) {
 
 static int
 gen_set_member(MemberAccess *ma, Expr *rhs, Expr *base_ast) {
-  FnSymbol *fn = ma->stmt->parentFunction();
+  FnSymbol *fn = ma->parentStmt->parentFunction();
   AInfo *ast = base_ast->ainfo;
   ast->rval = new_sym();
   ast->rval->ast = ast;
@@ -1595,7 +1595,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
-      FnSymbol *fn = s->stmt->parentFunction();
+      FnSymbol *fn = s->parentStmt->parentFunction();
       int in_assign_or_funcall = 
         parent && (parent->astType == EXPR_ASSIGNOP ||
                    parent->astType == EXPR_ARRAYREF ||
@@ -1674,7 +1674,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Variable *variable = dynamic_cast<Variable*>(s->left);
       Symbol *symbol = variable ? dynamic_cast<Symbol *>(variable->var) : 0;
       Sym *type = symbol ? symbol->type->asymbol->sym->type : 0;
-      FnSymbol *f = s->stmt->parentFunction();
+      FnSymbol *f = s->parentStmt->parentFunction();
       int constructor_assignment = 0;
       int getter_setter = f->_setter || f->_getter;
       if (f->isConstructor) {
@@ -2488,7 +2488,7 @@ return_type_info(FnSymbol *fn) {
 
 void 
 call_info(Expr* a, Vec<FnSymbol *> &fns) {
-  FnSymbol* f = a->stmt->parentFunction();
+  FnSymbol* f = a->parentStmt->parentFunction();
   fns.clear();
   Fun *ff = f->asymbol->sym->fun;
   AST *ast = 0;
@@ -2533,12 +2533,12 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
   PNode *pn = ma->ainfo->pnodes.v[0];
   if (pn->code->kind != Code_SEND)
     return -2;
-  ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(ma->stmt->parentSymbol);
+  ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(ma->parentStmt->parentSymbol);
   Vec<Fun *> *fns = 0;
   if (mod)
     fns = mod->initFn->asymbol->sym->fun->calls.get(pn);
   else
-    fns = ma->stmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
+    fns = ma->parentStmt->parentSymbol->asymbol->sym->fun->calls.get(pn);
   if (!fns) {
     Sym *obj_type = pn->rvals.v[1]->type;
     char *sel = pn->rvals.v[3]->sym->name;
@@ -2560,15 +2560,15 @@ resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
         return -6;
       return 0;
     }
-    if (ma->parent && ma->parent->astType == EXPR_PARENOP) {
-      ParenOpExpr *p = dynamic_cast<ParenOpExpr*>(ma->parent);
+    if (ma->parentExpr && ma->parentExpr->astType == EXPR_PARENOP) {
+      ParenOpExpr *p = dynamic_cast<ParenOpExpr*>(ma->parentExpr);
       if (p->baseExpr == ma) {
         if (p->ainfo->pnodes.n != 1)
           return -7;
         pn = p->ainfo->pnodes.v[0];
         if (pn->code->kind != Code_SEND)
           return -8;
-        fns = ma->stmt->parentFunction()->asymbol->sym->fun->calls.get(pn);
+        fns = ma->parentStmt->parentFunction()->asymbol->sym->fun->calls.get(pn);
         if (!fns)
           return -9;
         if (fns->n > 1)

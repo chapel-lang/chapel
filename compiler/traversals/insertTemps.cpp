@@ -15,7 +15,8 @@ void InsertTemps::postProcessExpr(Expr* expr) {
     /**
      ** No temporary if the expression is top-level in a DefStmt
      **/
-    if (seq_expr->parent == NULL && dynamic_cast<DefStmt*>(seq_expr->stmt)) {
+    if (seq_expr->parentExpr == NULL &&
+        dynamic_cast<DefStmt*>(seq_expr->parentStmt)) {
       return;
     }
 
@@ -32,7 +33,7 @@ void InsertTemps::postProcessExpr(Expr* expr) {
                                                             VAR_NORMAL,
                                                             VAR_VAR);
 
-    expr->stmt->insertBefore(def_stmt);
+    expr->parentStmt->insertBefore(def_stmt);
 
     expr->replace(new Variable(def_stmt->varDef()));
   }

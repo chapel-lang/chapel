@@ -86,9 +86,9 @@ static precedenceType binOpPrecedence[NUM_BINOPS] = {
 
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
-  stmt(NULL),
+  parentStmt(NULL),
+  parentExpr(NULL),
   ainfo(NULL),
-  parent(NULL),
   back(NULL),
   pragmas(NULL)
 {}
@@ -218,16 +218,16 @@ void Expr::traverseExpr(Traversal* traversal) {
 
 
 static void call_fixup(Expr* expr) {
-  if (!expr->stmt) {
+  if (!expr->parentStmt) {
     INT_FATAL(expr, "Expr has no Stmt in call_fixup");
   }
   SymScope* saveScope = NULL;
-  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(expr->stmt->parentSymbol)) {
+  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(expr->parentStmt->parentSymbol)) {
     saveScope = Symboltable::setCurrentScope(mod->modScope);
   }
   Fixup* fixup = new Fixup();
-  fixup->stmtParents.add(expr->stmt->parentStmt);
-  TRAVERSE(expr->stmt, fixup, true);
+  fixup->stmtParents.add(expr->parentStmt->parentStmt);
+  TRAVERSE(expr->parentStmt, fixup, true);
   if (saveScope) {
     Symboltable::setCurrentScope(saveScope);
   }
@@ -470,8 +470,8 @@ Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
 typedef enum _EXPR_RW { expr_r, expr_w, expr_rw } EXPR_RW;
 
 static EXPR_RW expr_read_written(Expr* expr) {
-  if (expr->parent) {
-    Expr* parent = expr->parent;
+  if (expr->parentExpr) {
+    Expr* parent = expr->parentExpr;
     if (dynamic_cast<MemberAccess*>(parent)) {
       return expr_read_written(parent);
     }
@@ -975,15 +975,16 @@ void BinOp::print(FILE* outfile) {
 }
 
 void BinOp::codegen(FILE* outfile) {
-  bool parensRequired = parent ? precedence() <= parent->precedence() : true;
+  bool parensRequired =
+    parentExpr ? precedence() <= parentExpr->precedence() : true;
 
   /** Use parens in these cases too **/
-  if (parent &&
-      (parent->precedence() == PREC_BITOR ||
-       parent->precedence() == PREC_BITXOR ||
-       parent->precedence() == PREC_BITAND ||
-       parent->precedence() == PREC_LOGOR ||
-       parent->precedence() == PREC_LOGAND)) {
+  if (parentExpr &&
+      (parentExpr->precedence() == PREC_BITOR ||
+       parentExpr->precedence() == PREC_BITXOR ||
+       parentExpr->precedence() == PREC_BITAND ||
+       parentExpr->precedence() == PREC_LOGOR ||
+       parentExpr->precedence() == PREC_LOGAND)) {
     parensRequired = true;
   }
 

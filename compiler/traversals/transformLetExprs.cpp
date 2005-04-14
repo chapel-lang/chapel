@@ -33,7 +33,7 @@ void TransformLetExprs::doTransformation(void) {
       INT_FATAL(ast, "LetExpr expected");
     }
     SymScope* save_scope = Symboltable::setCurrentScope(let_expr->letScope->parent);
-    Stmt* let_stmt = let_expr->stmt;
+    Stmt* let_stmt = let_expr->parentStmt;
     SymScope* let_scope = let_expr->letScope;
     Expr* inner_copy = let_expr->innerExpr->copy(false, NULL, NULL, &lets);
     let_expr->replace(inner_copy);

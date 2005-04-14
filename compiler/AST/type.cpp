@@ -1521,7 +1521,7 @@ void UnionType::buildFieldSelector(void) {
   enum_symbol->setDefPoint(def_expr);
   id_list->setDefPoint(def_expr);
   DefStmt* def_stmt = new DefStmt(def_expr);
-  symbol->defPoint->stmt->insertBefore(def_stmt);
+  symbol->defPoint->parentStmt->insertBefore(def_stmt);
 
   fieldSelector = enum_type;
 }

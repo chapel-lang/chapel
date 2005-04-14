@@ -88,9 +88,9 @@ enum getsOpType {
 
 class Expr : public BaseAST {
  public:
-  Stmt* stmt;
+  Stmt* parentStmt;
+  Expr* parentExpr;
   AInfo *ainfo;
-  Expr* parent;
   Expr** back;
   Pragma *pragmas;
 

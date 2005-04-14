@@ -54,7 +54,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
             commonModule->stmts->insertAfter(array_type_def);
           }
           else {
-            Stmt* def_stmt = array_type->elementType->symbol->defPoint->stmt;
+            Stmt* def_stmt = array_type->elementType->symbol->defPoint->parentStmt;
             if (!def_stmt) {
               INT_FATAL(stmt, "Array with anonymous type not declared in statement not handled");
             }
@@ -102,7 +102,7 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
     if (Symboltable::getCurrentScope() == commonModule->modScope) {
       commonModule->stmts->insertAfter(seq_type_def);
     } else {
-      Stmt* def_stmt = seq_type->elementType->symbol->defPoint->stmt;
+      Stmt* def_stmt = seq_type->elementType->symbol->defPoint->parentStmt;
       if (!def_stmt) {
         INT_FATAL(stmt, "Seq with anonymous type not declared in statement not handled");
       }

@@ -46,7 +46,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
         }
       }
       if (!ignore) {
-        INT_FATAL(stmt, "Statement's parent is incorrect");
+        INT_FATAL(stmt, "Statement's parentSymbol is incorrect");
       }
     }
   }
@@ -56,8 +56,10 @@ void Fixup::preProcessStmt(Stmt* stmt) {
   Stmt* stmtParent = stmtParents.v[stmtParents.n-1];
   if (verify) {
     if (stmt->parentStmt != stmtParent) {
-      INT_FATAL(stmt, "Stmt's parent is incorrect");
-      stmt->parentStmt = stmtParent;
+      INT_FATAL(stmt, "Stmt's parentStmt is incorrect");
+    }
+    if (stmt->parentStmt && stmt->parentStmt->parentSymbol != stmt->parentSymbol) {
+      //INT_FATAL(stmt, "Stmt's parentStmt's parentSymbol is incorrect");
     }
   } else {
     stmt->parentStmt = stmtParent;
@@ -87,20 +89,23 @@ void Fixup::preProcessExpr(Expr* expr) {
     INT_FATAL(expr, "Fixup cannot determine Expr's stmt");
   }
   if (verify) {
-    if (expr->stmt != exprStmt) {
-      INT_FATAL(expr, "Expr's stmt is incorrect");
+    if (expr->parentStmt != exprStmt) {
+      INT_FATAL(expr, "Expr's parentStmt is incorrect");
     }
   } else {
-    expr->stmt = exprStmt;
+    expr->parentStmt = exprStmt;
   }
 
   Expr* exprParent = exprParents.v[exprParents.n-1];
   if (verify) {
-    if (expr->parent != exprParent) {
-      INT_FATAL(expr, "Expr's parent is incorrect");
+    if (expr->parentExpr != exprParent) {
+      INT_FATAL(expr, "Expr's parentExpr is incorrect");
+    }
+    if (expr->parentExpr && expr->parentExpr->parentStmt != expr->parentStmt) {
+      //INT_FATAL(expr, "Expr's parentExpr's parentStmt is incorrect");
     }
   } else {
-    expr->parent = exprParent;
+    expr->parentExpr = exprParent;
   }
 
   if (!dynamic_cast<DefExpr*>(expr)) {

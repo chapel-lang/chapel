@@ -36,7 +36,7 @@ void ApplyThisParameters::preProcessExpr(Expr* expr) {
 
         /* replacement of expr variable by memberaccess */
         if (FnSymbol* parentFn =
-            dynamic_cast<FnSymbol*>(member->stmt->parentSymbol)) {
+            dynamic_cast<FnSymbol*>(member->parentStmt->parentSymbol)) {
           if (FnSymbol* constructor = dynamic_cast<FnSymbol*>(symbol)) {
             if (constructor->isConstructor) {
               return;

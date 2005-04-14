@@ -89,7 +89,7 @@ void FindUnknownTypes::preProcessSymbol(Symbol* sym) {
   if (sym->astType == SYMBOL_VAR) {
     if (sym->type == dtInteger) {
       if (ForLoopStmt* for_loop =
-          dynamic_cast<ForLoopStmt*>(sym->defPoint->stmt)) {
+          dynamic_cast<ForLoopStmt*>(sym->defPoint->parentStmt)) {
         if (DefExpr* def_expr = dynamic_cast<DefExpr*>(for_loop->indices)) {
           if (def_expr->sym == sym) {
             if (SeqType* seq_type = dynamic_cast<SeqType*>(for_loop->domain->typeInfo())) {

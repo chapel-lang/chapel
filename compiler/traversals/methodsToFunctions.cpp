@@ -26,7 +26,7 @@ void MethodsToFunctions::preProcessExpr(Expr* expr) {
       }
     }
   } else if (MemberAccess* method = dynamic_cast<MemberAccess*>(expr)) {
-    if (dynamic_cast<FnCall*>(method->parent)) {
+    if (dynamic_cast<FnCall*>(method->parentExpr)) {
       return;
     }
     if (dynamic_cast<FnSymbol*>(method->member)) {

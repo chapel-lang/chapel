@@ -310,7 +310,7 @@ bool VarSymbol::isParam(void){
 }
 
 bool Symbol::isThis(void) {
-  FnSymbol *f = dynamic_cast<FnSymbol*>(defPoint->stmt->parentSymbol);
+  FnSymbol *f = dynamic_cast<FnSymbol*>(defPoint->parentStmt->parentSymbol);
   if (!f || !f->_this)
     return 0;
   else

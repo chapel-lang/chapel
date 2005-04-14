@@ -55,7 +55,7 @@ static void build_constructor(StructuralType* structType) {
   structType->constructor = new DefStmt(fn_def);
   SET_BACK(structType->constructor);
   Symboltable::setCurrentScope(saveScope);
-  TRAVERSE(structType->symbol->defPoint->stmt, new Fixup(), true);
+  TRAVERSE(structType->symbol->defPoint->parentStmt, new Fixup(), true);
 }
 
 
@@ -130,7 +130,7 @@ static void build_record_equality_function(StructuralType* structType) {
   }
   Stmt* body = new ReturnStmt(cond);
   DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
-  structType->symbol->defPoint->stmt->insertBefore(def_stmt);
+  structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
 
@@ -154,7 +154,7 @@ static void build_record_inequality_function(StructuralType* structType) {
   }
   Stmt* body = new ReturnStmt(cond);
   DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
-  structType->symbol->defPoint->stmt->insertBefore(def_stmt);
+  structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
 
@@ -177,7 +177,7 @@ static void build_record_assignment_function(StructuralType* structType) {
   }
   Stmt* block_stmt = new BlockStmt(body);
   DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt));
-  structType->symbol->defPoint->stmt->insertBefore(def_stmt);
+  structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
 
@@ -199,7 +199,7 @@ static void build_tuple_assignment_function(TupleType* tuple_type) {
   }
   BlockStmt* block_stmt = new BlockStmt(body);
   DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt));
-  tuple_type->symbol->defPoint->stmt->insertBefore(def_stmt);
+  tuple_type->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
 

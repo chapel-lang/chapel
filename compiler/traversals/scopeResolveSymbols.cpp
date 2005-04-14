@@ -27,7 +27,7 @@ static void resolve_type_helper(Type* &type) {
     if (!user_type->defaultVal) {
       user_type->defaultVal = user_type->definition->defaultVal;
       SET_BACK(user_type->defaultVal);
-      TRAVERSE(user_type->symbol->defPoint->stmt, new Fixup(), true);
+      TRAVERSE(user_type->symbol->defPoint->parentStmt, new Fixup(), true);
     }
   } else if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
     resolve_type_helper(array_type->elementType);
