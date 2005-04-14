@@ -1,2 +1,3 @@
+*.tmp
 jacobi.log
 configVarFile.log
