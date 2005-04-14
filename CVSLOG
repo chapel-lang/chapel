@@ -26129,3 +26129,57 @@ Log message:
 Modified files:
 	chapel/third-party/boehmgc/gc6.3/: configure 
 
+---------------------------------------------------------------------------
+
+04/14/05 15:42:44 -- deitz
+
+Log message:
+	The major change of interest to anyone in this checkin is as follows:
+	
+	Previously Expr::parentStmt (Expr::stmt a little longer ago) was set
+	for every expression.  This is no longer the case and doesn't really
+	make sense.  For example, the domain expression in the ArrayType and
+	the init expression in the Symbol had its parentStmt set even though
+	its parent is a symbol/type.  HOWEVER, because some code relied on
+	getting its parentStmt (which happened to be the DefStmt of the symbol
+	or type), I've added a new function Expr::getStmt() that gets this
+	statement.
+	
+	Now Expr::parentSymbol ***new*** and Stmt::parentSymbol are guaranteed
+	to be set.  These are a TypeSymbol for a StructuralType, a FnSymbol,
+	or a ModuleSymbol.
+	
+	---------
+	
+	Added Expr::parentSymbol because some expressions are in symbols or
+	types.  This is set and maintained by Fixup.
+	
+	Dramatically cleaned call_fixup.  You've got to see this code to
+	appreciate this change, though the old code was embarassing to me so
+	there is no need to go and appreciate it.  The new call_fixup calls
+	fixup on the parentExpr, parentStmt, or parentSymbol of an Expr or
+	parentStmt or parentSymbol of a Stmt whichever is set first.  This is
+	useful for replace, insertBefore, and insertAfter which can use this
+	function to Fixup what was just replaced or inserted next to.  Added
+	functions fixup_expr, fixup_stmt, and fixup_symbol to be used on
+	Exprs, Stmts, and Symbols already in the AST whose subASTS have been
+	modified.
+	
+	Enabled Fixup testing of all parents as well as parents of parents.
+	
+	Fixed a shocking bug in MethodsToFunctions that Fixup is now catching
+	in which the MemberAccess was replaced with a FnCall rather than the
+	ParenOpExpr.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             fixup.cpp fixup.h insertTemps.cpp 
+	                             methodsToFunctions.cpp 
+	                             processParameters.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             transformLetExprs.cpp 
+
