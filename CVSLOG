@@ -26234,3 +26234,24 @@ Removed files:
 	                                            test_coerse2.chpl 
 	                                            test_coerse2.good 
 
+---------------------------------------------------------------------------
+
+04/14/05 15:51:02 -- jplevyak
+
+Log message:
+	Fixes for compilation on x86_64.
+	
+	Note, if you want to cast a pointer to an integer it is best to use
+	
+	#include <stdint.h>
+	int x = (int)(intptr_t)p;  // where p is your pointer
+	
+	to avoid all the warnings.
+	
+	If you are printing out a pointer %p works.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/vparser/: parse_ast.cpp 
+	chapel/runtime/src/: chplmem.c 
+
