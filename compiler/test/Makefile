@@ -4,9 +4,18 @@
 
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = test
+
+#
+# This directory uses dparser
+# 
 USE_DPARSER = 1
-CFLAGS += -DTEST_LIB -Wno-invalid-offsetof
-VPATH = ../adt:../util:../backend
+
+# 
+# some files in this directory (list.test.cpp) need the
+# -Wno-invalid-offsetof flag
+#
+DIR_USES_OFFSETOF = 1
+
 
 #
 # standard header
@@ -15,23 +24,24 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 
 #
-# cast-specific variables
+# test-specific variables
 #
 
-TEST_LIB = test_lib$(EXE_SUFFIX)
-COMPILER_SRCS = \
+TEST_LIB = $(PLATFORM)/test_lib$(EXE_SUFFIX)
+TEST_CVS_SRCS = test_lib.cpp
+TEST_GEN_SRCS = \
+	beautify.test.cpp \
+	files.test.cpp \
 	list.test.cpp \
 	map.test.cpp \
 	misc.test.cpp \
-	vec.test.cpp \
-	files.test.cpp \
-	beautify.test.cpp \
 	mysystem.test.cpp \
-	stringutil.test.cpp
-TEST_CVS_SRCS = \
-	$(COMPILER_SRCS) \
-	test_lib.cpp
-TEST_SRCS = $(TEST_CVS_SRCS)
+	stringutil.test.cpp \
+	vec.test.cpp
+
+TEST_SRCS = \
+	$(TEST_CVS_SRCS) \
+	$(TEST_GEN_SRCS)
 TEST_OBJS = $(TEST_SRCS:%.cpp=$(PLATFORM)/%.o)
 
 
@@ -40,17 +50,10 @@ TEST_OBJS = $(TEST_SRCS:%.cpp=$(PLATFORM)/%.o)
 #
 
 CVS_SRCS = $(TEST_CVS_SRCS)
-GEN_SRCS = 
-EXECS = $(TEST_LIB)
-CLEAN_TARGS = $(COMPILER_SRCS)
-DEPEND_DEPS = $(COMPILER_SRCS)
+GEN_SRCS = $(TEST_GEN_SRCS)
+TARGETS = $(TEST_LIB)
+EXECS = $(TARGETS)
 
-
-#
-# rules
-#
-
-all: $(TEST_LIB)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
@@ -58,18 +61,41 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 # target-specific rules
 #
 
-$(TEST_LIB): $(PLATFORM)/$(TEST_LIB)
-	cp $< $@
-	./$(TEST_LIB)
-
-$(PLATFORM)/$(TEST_LIB): $(TEST_OBJS)
+$(TEST_LIB): $(TEST_OBJS)
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(TEST_LIB)
 
-%.test.cpp: %.cpp
+#
+# we can't seem to rely on VPATH for these because it prevents
+# the $(PLATFORM) subdirectory from being built because it
+# finds it somewhere else.
+#
+
+beautify.test.cpp: ../backend/beautify.cpp
 	cp $< $@
 
-#clean:
-#	rm -f ./$(PLATFORM)/*.o core
+list.test.cpp: ../adt/list.cpp
+	cp $< $@
+
+map.test.cpp: ../adt/map.cpp
+	cp $< $@
+
+vec.test.cpp: ../adt/vec.cpp
+	cp $< $@
+
+files.test.cpp: ../util/files.cpp
+	cp $< $@
+
+misc.test.cpp: ../util/misc.cpp
+	cp $< $@
+
+mysystem.test.cpp: ../util/mysystem.cpp
+	cp $< $@
+
+stringutil.test.cpp: ../util/stringutil.cpp
+	cp $< $@
+
+
 
 #
 # standard footer

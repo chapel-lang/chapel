@@ -36,6 +36,9 @@ echocompilerdir:
 %.g.d_parser.cpp: %.g
 	$(MAKE_DPARSER) $(MAKE_DPARSER_FLAGS) $<
 
+$(PLATFORM)/%.test.o: %.test.cpp $(PLATFORM_DIR)
+	$(CXX) -c -DTEST_LIB $(CXXFLAGS) -o $@ $<
+
 $(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
