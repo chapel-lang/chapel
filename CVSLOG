@@ -26050,3 +26050,39 @@ Log message:
 Modified files:
 	chapel/test/memory/shannon/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/14/05 11:34:52 -- deitz
+
+Log message:
+	Renamed Expr::parent to Expr::parentExpr to better say that this is
+	the parent of this expression and it is an Expr.  Renamed Expr::stmt
+	to Expr::parentStmt to better say that this is the parent of this
+	expression and it is a Stmt.
+	
+	Improved Fixup and added a new test (currently commented out) to make
+	sure that the parentStmt of a parentExpr of an Expr is the same as the
+	parentStmt of that Expr.  Also added a new test (currently commented
+	out) to make sure that the parentSymbol of the parentStmt of a Stmt is
+	the same as the parentSymbol of that Stmt.  These fail but motivate me
+	to fixup the __init function once and for all.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         removeDeadSymbols.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             buildClassConstructorsEtc.cpp 
+	                             findUnknownTypes.cpp fixup.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertTemps.cpp 
+	                             insertUnionChecks.cpp 
+	                             methodsToFunctions.cpp 
+	                             processParameters.cpp 
+	                             removeNamedParameters.cpp 
+	                             resolveOverloadedOperators.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             transformLetExprs.cpp 
+
