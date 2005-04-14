@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chpltypes.h"
@@ -123,8 +124,8 @@ void printMemTable(void) {
        memEntry != NULL;
        memEntry = memEntry->nextInstalled) {
 
-    fprintf(stdout, "%-*u%-*u%-*s\n", columnLength, memEntry->size, 
-            columnLength, memEntry->number, columnLength, 
+    fprintf(stdout, "%-*u%-*u%-*s\n", columnLength, (unsigned)memEntry->size, 
+            columnLength, (unsigned)memEntry->number, columnLength, 
             memEntry->description);
   }
   fprintf(stdout, "\n");
@@ -252,12 +253,12 @@ static void printToMemLog(size_t number, size_t size, char* description,
   if (chunk >= memthresholdValue) {
     if (moreMemAlloc && (moreMemAlloc != memAlloc)) {
       fprintf(memlog, "%s called for %u items of size %u"
-              " for %s:  0x%x -> 0x%x\n", memType, number, size, 
-              description, (unsigned)memAlloc, (unsigned)moreMemAlloc);     
+              " for %s:  0x%x -> 0x%x\n", memType, (unsigned)number, (unsigned)size, 
+              description, (unsigned)(intptr_t)memAlloc, (unsigned)(intptr_t)moreMemAlloc);     
     } else {
       fprintf(memlog, "%s called for %u items of size %u"
-              " for %s:  0x%x\n", memType, number, size, description, 
-              (unsigned)memAlloc);       
+              " for %s:  0x%x\n", memType, (unsigned)number, (unsigned)size, description, 
+              (unsigned)(intptr_t)memAlloc);       
     }
   }
 }

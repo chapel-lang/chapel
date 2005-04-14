@@ -415,7 +415,7 @@ type_cannonicalize(AType *t) {
     qsort_pointers((void**)&t->sorted.v[0], (void**)t->sorted.end());
   unsigned int h = 0;
   for (int i = 0; i < t->sorted.n; i++)
-    h = (uint)t->sorted.v[i] * open_hash_multipliers[i % 256];
+    h = (uint)(intptr_t)t->sorted.v[i] * open_hash_multipliers[i % 256];
   t->hash = h ? h : h + 1; // 0 is empty
   AType *tt = cannonical_atypes.put(t);
   if (!tt) tt = t;
@@ -2581,7 +2581,7 @@ setters_cannonicalize(Setters *s) {
     qsort_pointers((void**)&s->sorted.v[0], (void**)s->sorted.end());
   uint h = 0;
   for (int i = 0; i < s->sorted.n; i++)
-    h = (uint)s->sorted.v[i] * open_hash_multipliers[i % 256];
+    h = (uint)(intptr_t)s->sorted.v[i] * open_hash_multipliers[i % 256];
   s->hash = h ? h : h + 1; // 0 is empty
   Setters *ss = cannonical_setters.put(s);
   if (!ss) ss = s;

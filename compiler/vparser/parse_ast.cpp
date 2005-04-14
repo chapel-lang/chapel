@@ -670,7 +670,7 @@ define_types(IF1 *i, ParseAST *ast, Vec<ParseAST *> &funs, Scope *scope, int ski
         }
         scope = ast->sym->scope = new Scope(scope, Scope_RECURSIVE, ast->sym);
         if (verbose_level > 2)
-          printf("creating scope %X for %s\n", (int)ast->sym->scope, ast->sym->name);
+          printf("creating scope %X for %s\n", (int)(intptr_t)ast->sym->scope, ast->sym->name);
         switch (ast->last()->kind) {
           case AST_must_implement:
           case AST_def_type_param:

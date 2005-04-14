@@ -20,6 +20,8 @@
 #include "pattern.h"
 #include "clone.h"
 
+#define VARARG_END     0ll
+
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 
 class LabelMap : public Map<char *, Stmt *> {};
@@ -824,9 +826,9 @@ build_builtin_symbols() {
   sym_any = dtAny->asymbol->sym; 
   sym_object = dtObject->asymbol->sym; 
 
-  new_lub_type(sym_anyclass, "anyclass", 0);
+  new_lub_type(sym_anyclass, "anyclass", VARARG_END);
   sym_anyclass->meta_type = sym_anyclass;
-  new_lub_type(sym_any, "any", 0);
+  new_lub_type(sym_any, "any", VARARG_END);
   new_primitive_type(sym_null, "null");
   new_primitive_type(sym_module, "module");
   new_primitive_type(sym_symbol, "symbol");
@@ -861,7 +863,7 @@ build_builtin_symbols() {
   new_alias_type(sym_uint, "uint", sym_uint64);
   new_lub_type(sym_anyint, "anyint", 
                sym_int8, sym_int16, sym_int32, sym_int64, sym_bool,
-               sym_uint8, sym_uint16, sym_uint32, sym_uint64, 0);
+               sym_uint8, sym_uint16, sym_uint32, sym_uint64, VARARG_END);
   new_alias_type(sym_size, "size", sym_int64);
   new_alias_type(sym_enum_element, "enum_element", sym_int64);
   new_primitive_type(sym_float32, "float32");
@@ -869,14 +871,14 @@ build_builtin_symbols() {
   new_primitive_type(sym_float128, "float128");
   new_alias_type(sym_float, "float", sym_float64);
   new_lub_type(sym_anyfloat, "anyfloat", 
-               sym_float32, sym_float64, sym_float128, 0);
+               sym_float32, sym_float64, sym_float128, VARARG_END);
   new_primitive_type(sym_complex32, "complex32");
   new_primitive_type(sym_complex64, "complex64");
   new_primitive_type(sym_complex128, "complex128");
   new_primitive_type(sym_complex, "complex");
   new_lub_type(sym_anycomplex, "anycomplex", 
-               sym_complex32, sym_complex64, sym_complex128, 0);
-  new_lub_type(sym_anynum, "anynum", sym_bool, sym_anyint, sym_anyfloat, sym_anycomplex, 0);
+               sym_complex32, sym_complex64, sym_complex128, VARARG_END);
+  new_lub_type(sym_anynum, "anynum", sym_bool, sym_anyint, sym_anyfloat, sym_anycomplex, VARARG_END);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
   if (!sym_new_object) {
@@ -2381,7 +2383,7 @@ print_AST_Expr_types(BaseAST *ast) {
                            x->ainfo->rval->id, 
                            x->ainfo->rval->var->type->name ?  x->ainfo->rval->var->type->name : "", 
                            x->ainfo->rval->var->type->id);
-      printf("%X\n", (int)type_info(x->ainfo));
+      printf("%X\n", (int)(intptr_t)type_info(x->ainfo));
     }
     Type *t = type_info(ast);
     assert(t);
