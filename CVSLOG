@@ -26119,3 +26119,13 @@ Modified files:
 	chapel/compiler/make/: Makefile.compiler.foot 
 	chapel/compiler/test/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/14/05 14:37:43 -- jplevyak
+
+Log message:
+	Disable GC_VALGRIND_SUPPORT when doing x86_64 compiles.
+
+Modified files:
+	chapel/third-party/boehmgc/gc6.3/: configure 
+
