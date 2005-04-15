@@ -26617,3 +26617,14 @@ Modified files:
 	chapel/third-party/: Makefile 
 	chapel/third-party/dparser/: .cvsignore Makefile 
 
+---------------------------------------------------------------------------
+
+04/15/05 16:07:36 -- bradc
+
+Log message:
+	Oops, forgot some very basic ignoring of error codes
+	for the first time the third-party Makefiles are run.
+
+Modified files:
+	chapel/third-party/dparser/: Makefile 
+
