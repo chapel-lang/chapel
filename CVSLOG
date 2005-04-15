@@ -26577,3 +26577,24 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp stmt.cpp 
 	chapel/compiler/include/: expr.h stmt.h 
 
+---------------------------------------------------------------------------
+
+04/15/05 15:30:20 -- jplevyak
+
+Log message:
+	Add a primitive to permit setting of individual tuple elements.
+	Use the primitive to implement a setter for tuples analogous
+	to the way array elements are set.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp if1.cpp 
+	                           prim_data.dat 
+	chapel/compiler/include/: builtin_symbols.h code.h fa.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/vparser/: prelude.v 
+	chapel/test/flowanalysis/newast/: declprintdom.good 
+	                                  declprintdom2.good domarr.good 
+	                                  enumarray.good 
+	                                  formatoutput.good noop.good 
+	                                  protoast_test.good 
+
