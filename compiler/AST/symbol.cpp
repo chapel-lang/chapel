@@ -650,33 +650,28 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   }
   Symboltable::pushScope(SCOPE_LOCAL);
   Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(this), argList));
-  for (int i = 0; i < coercion_substitutions->n; i++) {
-    int j = 0;
-    MPosition p;
-    Symbol* formal_change = wrapper_formals;
-    Variable* actual_change = argList;
-    forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
-      if (coercion_substitutions->e[i].key ==
-          asymbol->sym->fun->positional_arg_positions.e[j]) {
-        char* temp_name =
-          glomstrings(2, "_coercion_temp_", formal_change->name);
-
-        VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
-                                               new Variable(formal_change));
-        DefExpr* temp_def_expr = new DefExpr(temp_symbol);
-        DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
-        temp_def_stmt->append(wrapper_body);
-        wrapper_body = temp_def_stmt;
-        formal_change->type = coercion_substitutions->e[i].value->type;
-        actual_change->var = temp_symbol;
-      }
-      if (formal_change->next) {
-        formal_change = nextLink(Symbol, formal_change);
-      }
-      if (actual_change->next) {
-        actual_change = nextLink(Variable, actual_change);
-      }
-      j++;
+  Symbol* formal_change = wrapper_formals;
+  Variable* actual_change = argList;
+  forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
+    Symbol* subsym = coercion_substitutions->get(p);
+    if (subsym) {
+      char* temp_name =
+        glomstrings(2, "_coercion_temp_", formal_change->name);
+      
+      VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
+                                             new Variable(formal_change));
+      DefExpr* temp_def_expr = new DefExpr(temp_symbol);
+      DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
+      temp_def_stmt->append(wrapper_body);
+      wrapper_body = temp_def_stmt;
+      formal_change->type = subsym->type;
+      actual_change->var = temp_symbol;
+    }
+    if (formal_change->next) {
+      formal_change = nextLink(Symbol, formal_change);
+    }
+    if (actual_change->next) {
+      actual_change = nextLink(Variable, actual_change);
     }
   }
   SymScope* block_scope = Symboltable::popScope();
