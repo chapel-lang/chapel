@@ -2492,6 +2492,8 @@ void
 call_info(Expr* a, Vec<FnSymbol *> &fns) {
   FnSymbol* f = a->getStmt()->parentFunction();
   fns.clear();
+  if (!f) // this is not executable code
+    return;
   Fun *ff = f->asymbol->sym->fun;
   AST *ast = 0;
   Expr *e = dynamic_cast<Expr *>(a);
