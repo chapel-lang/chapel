@@ -54,6 +54,13 @@ $today = `date +%w-%a`; chomp($today);
 $platform = `uname -s`;
 chomp($platform);
 $platform = lc($platform);
+if ($platform eq "linux") {
+    $machine = `uname -m`;
+    chomp($machine);
+    if ($machine eq "x86_64") {
+        $platform = "linux64";
+    }
+}
 
 
 #
@@ -139,7 +146,7 @@ mysystem("cd $tmpdir && cvs -d :pserver:$CHPL_UW_CVS_USERNAME\@gemelli.cs.washin
 #
 # make cache of UW distribution
 #
-if ($debug == 0 && $platform eq "linux") {
+if ($debug == 0 && $platform eq "linux" && $user eq "bradc") {
   $todaydate = `date +%m%d%y`;
   chomp($todaydate);
   $lastmonth = `date -d"1 month ago" +%m%d%y`;
