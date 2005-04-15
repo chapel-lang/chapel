@@ -26549,3 +26549,16 @@ Modified files:
 	chapel/compiler/traversals/: insertIndexType.cpp 
 	                             scopeResolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/15/05 14:10:02 -- bradc
+
+Log message:
+	Swapped John's #inclusion of stdint.h for
+	inttypes.h, as our Suns don't yet support
+	stdint.h.  This should fix the broken Sun
+	build from last night's regressions.
+
+Modified files:
+	chapel/runtime/src/: chplmem.c 
+
