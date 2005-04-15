@@ -360,6 +360,7 @@ install_new_function(FnSymbol *f) {
   map_symbols(syms);
   build_symbols(syms);
   build_types(syms);
+  finalize_types(if1);
   if (init_function(f) < 0 || build_function(f) < 0) 
     assert(!"unable to instantiate generic/wrapper");
   if1_finalize_closure(if1, f->asymbol->sym);
@@ -1050,15 +1051,13 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, int is_this = 0) {
   if (type->asymbol->symbol->astType == TYPE_ARRAY) {
     ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
     Sym *ret = new_sym();
-    if (at->elementType->astType == TYPE_BUILTIN)
-      if1_move(if1, c, get_defaultVal(at->elementType), ret, ast);
-    else if (at->elementType->astType == TYPE_ARRAY) {
+    if (at->elementType->astType == TYPE_ARRAY) {
       gen_alloc(ret, at->elementType->asymbol->sym, ast);
-    } else if (at->elementType->astType == TYPE_RECORD || at->elementType->astType == TYPE_UNION) {
-      Code *new_element = 0;
-      StructuralType *ct = dynamic_cast<StructuralType*>(at->elementType);
-      new_element = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, ret);
-      new_element->ast = ast;
+    } else if (at->elementType->defaultVal) {
+      if1_move(if1, c, get_defaultVal(at->elementType), ret, ast);
+    } else if (at->elementType->defaultConstructor) {
+      Code *send = if1_send(if1, c, 1, 1, at->elementType->defaultConstructor->asymbol->sym, ret);
+      send->ast = ast;
     } else
       ret = sym_nil;;
     gen_set_array(s, at, ret, ast);
@@ -1103,9 +1102,12 @@ gen_one_vardef(VarSymbol *var, DefStmt *def) {
   if (s->is_var && !scalar_or_reference(type))
     gen_alloc(s, s->type, ast, f && f->_this == var);
   else if (!var->init) {
-    if (type != dtUnknown)
-      if1_move(if1, &ast->code, get_defaultVal(type), ast->sym, ast);
-    else if (!this_constructor)
+    if (var->type->defaultVal) {
+      if1_move(if1, &ast->code, get_defaultVal(var->type), ast->sym, ast);
+    } else if (var->type->defaultConstructor) {
+      Code *send = if1_send(if1, &ast->code, 1, 1, var->type->defaultConstructor->asymbol->sym, ast->sym);
+      send->ast = ast;
+    } else if (!this_constructor)
       if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
   }
   if (var->init) {
@@ -2388,6 +2390,7 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   REG(if1_cannonicalize_string(if1, "seqcat_element"), seqcat_element);
   build_type_hierarchy();
   finalize_symbols(if1);
+  finalize_types(if1);  // again to catch any new ones
   return 0;
 }
 

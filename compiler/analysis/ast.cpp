@@ -5,6 +5,8 @@
 #include "if1.h"
 #include "pattern.h"
 
+static int finalized_types = 0;
+
 void AST::dump(FILE *fp, Fun *f) { }
 
 void AST::graph(FILE *fp) { }
@@ -45,8 +47,11 @@ void init_ast() {
 
 static void
 unalias_syms(IF1 *i) {
-  forv_Sym(s, i->allsyms) {
+  for (int x = finalized_types; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
     Sym *us = unalias_type(s);
+    if (us->id < finalized_types)
+      continue;
     if (s != us) {
       forv_Sym(ss, s->specializes) if (ss) {
         assert(ss != us);
@@ -62,7 +67,8 @@ unalias_syms(IF1 *i) {
       }
     }
   }
-  forv_Sym(s, i->allsyms) {
+  for (int x = finalized_types; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
     if (s->type_kind) {
       for (int x = 0; x < s->specializes.n; x++)
         s->specializes.v[x] = unalias_type(s->specializes.v[x]);
@@ -284,14 +290,18 @@ collect_include_vars(Sym *s, Sym *in = 0) {
 static void
 include_instance_variables(IF1 *i) {
   Vec<Sym *> include_set, includes;
-  forv_Sym(s, i->allsyms) {
+  for (int x = finalized_types; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
     Vec<Sym *> in_includes;
     if (s->type_kind && s->includes.n)
       collect_includes(s, include_set, includes, in_includes);
   }
-  forv_Sym(s, includes) 
+  forv_Sym(s, includes) {
+    if (s->id < finalized_types)
+      continue;
     if (s->includes.n)
       collect_include_vars(s);
+  }
 }
 
 static void
@@ -299,25 +309,29 @@ set_value_for_value_classes(IF1 *i) {
   sym_value->is_value_class = 1;
   sym_anynum->is_value_class = 1;
   Vec<Sym *> implementers;
-  forv_Sym(s, i->allsyms) {
+  for (int x = finalized_types; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
     if (s->type_kind && s->implements.n)
       implementers.add(s);
   }     
   int changed = 1;
   while (changed) {
     changed = 0;
-    forv_Sym(s, implementers)
+    for (int x = finalized_types; x < i->allsyms.n; x++) {
+      Sym *s = i->allsyms.v[x];
       forv_Sym(ss, s->implements)
         if (ss->is_value_class && !s->is_value_class) { 
           changed = 1;
           s->is_value_class = 1;
         }
+    }
   }
 }
 
 static void
 set_type_for_variables(IF1 *i) {
-  forv_Sym(s, i->allsyms) {
+  for (int x = finalized_types; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
     if (s->is_var && s->must_implement && s->must_implement->is_value_class)
       s->type = s->must_implement;
   }
@@ -340,18 +354,19 @@ static void
 make_meta_types(IF1 *i) {
   sym_anyclass->meta_type = sym_anyclass;
   sym_anyclass->is_meta_class = 1;
-  forv_Sym(s, i->allsyms) {
+  for (int x = finalized_types; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
     if (s->type_kind) {
       if (!s->meta_type)
         make_meta_type(s);
     }
- 
  }
 }
 
 static void
 compute_type_sizes(IF1 *i) {
-  forv_Sym(s, i->allsyms) {
+  for (int x = finalized_types; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
     if (s->type_kind || s->is_constant || s->is_symbol) {
       Sym *type = s->type;
       if (type->is_symbol || type->type_kind == Type_TAGGED) {
@@ -376,6 +391,7 @@ finalize_types(IF1 *i) {
   set_type_for_variables(i);
   make_meta_types(i);
   compute_type_sizes(i);
+  finalized_types = i->allsyms.n;
 }
 
 
