@@ -26529,3 +26529,23 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/15/05 12:20:04 -- deitz
+
+Log message:
+	Reworked the TupleType constructor to get it more inline with the
+	RecordType constructor so that I can make TupleType subclass
+	RecordType.  The change basically makes it no longer accept one type.
+	All the types are added in the addType method now.
+	
+	This required some changes to IndexType.  I added code to set up its
+	and its tuple's defaultVal because this wasn't being done.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: insertIndexType.cpp 
+	                             scopeResolveSymbols.cpp 
+
