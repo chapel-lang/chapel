@@ -60,6 +60,8 @@ if ($platform eq "linux") {
     if ($machine eq "x86_64") {
         $platform = "linux64";
     }
+} elsif ($platform eq "cygwin_nt-5.1") {
+    $platform = "cygwin";
 }
 
 
@@ -83,6 +85,15 @@ if ($debug == 1) {
     $statfile = "$statdir/nightly.$platform-debug.dat";
 } else {
     $statfile = "$statdir/nightly.$platform-cron.dat";
+}
+
+
+#
+# tools
+#
+$find = find;
+if ($platform eq "cygwin") {
+    $find = "/usr/bin/find";
 }
 
 
@@ -113,18 +124,33 @@ if ($valgrind == 1) {
     ensureSummaryExists($prevvgrsummary);
 }
 
+#
+# set mail options
+#
+$mailer = $ENV{'CHPL_MAILER'};
+if ($mailer eq "") {
+    $mailer = "Mail";
+}
+if ($debug == 1) {
+    $mailsubject = "Chapel: Debug Results ($platform)";
+} else {
+    $mailsubject = "Chapel: Nightly Results ($platform)";
+}
 
 if ($debug == 1) {
-    $mailcommand = "| Mail -s \"Chapel: Debug Results ($platform) \" $debugmail";
+    $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
 } else {
-    $mailcommand = "| Mail -s \"Chapel: Nightly Results ($platform) \" chapel_dev\@cray.com";
+    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_dev\@cray.com";
 }
+
+
 $somethingfailed = 0;
 
 #
 # make temp directory
 #
 mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
+
 
 
 #
@@ -162,8 +188,8 @@ if ($debug == 0 && $platform eq "linux" && $user eq "bradc") {
 #
 # if on cygwin, blow away FILES files because they wreak havoc on stuff
 #
-if ($platform eq "cygwin_nt-5.1") {
-    mysystem("cd $chapeldir && find . -name FILES -exec rm {} \\;");
+if ($platform eq "cygwin") {
+    mysystem("cd $chapeldir && $find . -name FILES -exec rm {} \\;");
 }
 
 
