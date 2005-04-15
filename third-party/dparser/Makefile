@@ -10,13 +10,13 @@ DIRS = \
 	$(PLATFORM)/man/man1
 
 all: $(DIRS)
-	@cp .lastbuild .lastbuild.tmp
+	@-cp .lastbuild .lastbuild.tmp
 	@echo "gc" > .lastbuild
 	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || $(MAKE) clean
 	cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) all install
 
 nogc: $(DIRS)
-	@cp .lastbuild .lastbuild.tmp
+	@-cp .lastbuild .lastbuild.tmp
 	@echo "nogc" > .lastbuild
 	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || $(MAKE) clean
 	cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) D_USE_GC= all install
