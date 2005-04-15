@@ -1151,7 +1151,7 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
       assign_stmt = new ExprStmt(call);
     } else {
 #ifdef USE_VAR_INIT_EXPR
-      Expr* assign_expr = new VarInitExpr(lhs);
+      Expr* assign_expr = new AssignOp(GETS_NORM, lhs, new VarInitExpr(tmp));
       assign_stmt = new ExprStmt(assign_expr);
 #else
       if (tmp->type->defaultVal) {
@@ -1162,8 +1162,9 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
         Expr* rhs = new ParenOpExpr(constructor_var, NULL);
         Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
         assign_stmt = new ExprStmt(init_expr);
-      } else
-        continue;
+      } else {
+        assign_stmt = new NoOpStmt();
+      }
 #endif
     }
     stmts = appendLink(stmts, assign_stmt);

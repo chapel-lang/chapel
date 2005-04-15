@@ -598,10 +598,9 @@ class NamedExpr : public Expr {
 
 class VarInitExpr : public Expr {
  public:
-  Expr* expr;
-  VarInitExpr(Expr* init_expr);
+  VarSymbol* symbol;
+  VarInitExpr(VarSymbol* init_symbol);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-  virtual void replaceExpr(Expr* old_expr, Expr* new_expr);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
   void print(FILE* outfile);

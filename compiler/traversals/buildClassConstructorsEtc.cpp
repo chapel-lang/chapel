@@ -24,7 +24,11 @@ static void build_constructor(StructuralType* structType) {
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
   if (analyzeAST) {
     forv_Vec(VarSymbol, tmp, structType->fields) {
-      args = appendLink(args, new ParamSymbol(PARAM_BLANK, tmp->name, tmp->type, tmp->init ? tmp->init->copy() : tmp->type->defaultVal->copy()));
+      char* name = tmp->name;
+      Type* type = tmp->type;
+      Expr* init = (tmp->init) ? tmp->init->copy() : new VarInitExpr(tmp);
+      ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, init);
+      args = appendLink(args, arg);
     }
   }
 #endif
