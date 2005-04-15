@@ -26628,3 +26628,15 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/15/05 16:29:16 -- jplevyak
+
+Log message:
+	My bits of the fix for Steve's code to use a constructor for
+	strings.  Basically slightly more generalization of the
+	VarDefExpr code.   Still has kludges in for Tuples and Arrays.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp 
+
