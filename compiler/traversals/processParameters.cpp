@@ -34,12 +34,6 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
     FnCall* fncall = dynamic_cast<FnCall*>(expr);
     if (fncall) {
       FnSymbol* fnSym = fncall->findFnSymbol();
-
-      /*** SJD: stopgap for _init_string until VarInitExpr is in place ***/
-      if (!strcmp(fnSym->name, "_init_string")) {
-        return;
-      }
-
       ParamSymbol* formal = dynamic_cast<ParamSymbol*>(fnSym->formals);
       Expr* actualList = fncall->argList;
       Expr* actual = actualList;

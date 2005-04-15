@@ -14,9 +14,6 @@
 
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
-#define USE_VAR_INIT_EXPR
-
-
 static void genIOReadWrite(FILE* outfile, ioCallType ioType) {
   switch (ioType) {
   case IO_WRITE:
@@ -163,11 +160,8 @@ void Type::codegenPrototype(FILE* outfile) { }
 
 
 void Type::codegenSafeInit(FILE* outfile) {
-  if (this == dtString) {
-    fprintf(outfile, " = NULL");
-  } else {
-    // Most types won't need an initializer to be safe, only correct
-  }
+  // SJD: Is this ever going to be used?
+  // Used to be used to initialize strings to NULL
 }
 
 
@@ -1139,34 +1133,8 @@ void StructuralType::traverseDefType(Traversal* traversal) {
 Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments) {
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
-    Stmt* assign_stmt;
-    /** stopgap: strings initialized using _init_string;
-        this will eventually use VarInitExpr **/
-    if (tmp->type == dtString) {
-      Expr* args = lhs;
-      args->append(new MemberAccess(new Variable(_this), tmp));
-      args->append(tmp->type->defaultVal->copy());
-      Symbol* init_string = Symboltable::lookupInternal("_init_string");
-      FnCall* call = new FnCall(new Variable(init_string), args);
-      assign_stmt = new ExprStmt(call);
-    } else {
-#ifdef USE_VAR_INIT_EXPR
-      Expr* assign_expr = new AssignOp(GETS_NORM, lhs, new VarInitExpr(tmp));
-      assign_stmt = new ExprStmt(assign_expr);
-#else
-      if (tmp->type->defaultVal) {
-        Expr* assign_expr = new AssignOp(GETS_NORM, lhs, tmp->type->defaultVal->copy());
-        assign_stmt = new ExprStmt(assign_expr);
-      } else if (tmp->type->defaultConstructor) {
-        Expr* constructor_var = new Variable(tmp->type->symbol);
-        Expr* rhs = new ParenOpExpr(constructor_var, NULL);
-        Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
-        assign_stmt = new ExprStmt(init_expr);
-      } else {
-        assign_stmt = new NoOpStmt();
-      }
-#endif
-    }
+    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, new VarInitExpr(tmp));
+    Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts = appendLink(stmts, assign_stmt);
   }
 
@@ -1193,20 +1161,8 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
     }
 #endif
 
-    Stmt* assign_stmt;
-    /** stopgap: strings initialized using _init_string;
-        this will eventually use VarInitExpr **/
-    if (tmp->type == dtString) {
-      Expr* args = lhs;
-      args->append(new MemberAccess(new Variable(_this), tmp));
-      args->append(rhs);
-      Symbol* init_string = Symboltable::lookupInternal("_init_string");
-      FnCall* call = new FnCall(new Variable(init_string), args);
-      assign_stmt = new ExprStmt(call);
-    } else {
-      Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
-      assign_stmt = new ExprStmt(assign_expr);
-    }
+    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
+    Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts = appendLink(stmts, assign_stmt);
 
 #ifdef CONSTRUCTOR_WITH_PARAMETERS
@@ -1758,8 +1714,7 @@ void initTypes(void) {
                                            new FloatLiteral("0.0", 0.0));
   dtComplex = Symboltable::defineBuiltinType("complex", "_complex128",
                                              new FloatLiteral("0.0", 0.0));
-  dtString = Symboltable::defineBuiltinType("string", "_string", 
-                                            new StringLiteral(""));
+  dtString = Symboltable::defineBuiltinType("string", "_string", NULL);
   dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
   dtAny = Symboltable::defineBuiltinType("any", "_any", NULL);
   dtObject = Symboltable::defineBuiltinType("object", "_object", NULL);

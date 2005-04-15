@@ -35,6 +35,11 @@ CreateEntryPoint::CreateEntryPoint(void) :
 
 void CreateEntryPoint::run(ModuleSymbol* moduleList) {
 
+  // SJD: Can't do this when dtString is defined because
+  // internalPrelude hasn't been made yet.  Need to do it after.
+  dtString->defaultConstructor =
+    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
+
   for (ModuleSymbol* mod = moduleList; mod; mod = nextLink(ModuleSymbol, mod)) {
     if (mod->internal || !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
       SymScope* saveScope = Symboltable::setCurrentScope(mod->modScope);

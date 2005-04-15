@@ -1037,6 +1037,7 @@ void AssignOp::print(FILE* outfile) {
 
 
 void AssignOp::codegen(FILE* outfile) {
+  bool string_init = false;
   Type* leftType = left->typeInfo();
   Type* rightType = right->typeInfo();
   if (leftType->isComplex()) {
@@ -1048,17 +1049,30 @@ void AssignOp::codegen(FILE* outfile) {
     fprintf(outfile, " %s ", cGetsOp[type]);
     right->codegenComplex(outfile, false);
   } else if (leftType == dtString) {
-    fprintf(outfile, "_copy_string(&(");
-    left->codegen(outfile);
-    fprintf(outfile, "), ");
-    if (right->typeInfo() == dtInteger) {
-      fprintf(outfile, "_int_string(");
+    if (FnCall* fn_call = dynamic_cast<FnCall*>(right)) {
+      if (Variable* fn_var = dynamic_cast<Variable*>(fn_call->baseExpr)) {
+        if (fn_var->var == dtString->defaultConstructor) {
+          string_init = true;
+        }
+      }
     }
-    right->codegen(outfile);
-    if (right->typeInfo() == dtInteger) {
+    if (string_init) {
+      left->codegen(outfile);
+      fprintf(outfile, " %s ", cGetsOp[type]);
+      right->codegen(outfile);
+    } else {
+      fprintf(outfile, "_copy_string(&(");
+      left->codegen(outfile);
+      fprintf(outfile, "), ");
+      if (right->typeInfo() == dtInteger) {
+        fprintf(outfile, "_int_string(");
+      }
+      right->codegen(outfile);
+      if (right->typeInfo() == dtInteger) {
+        fprintf(outfile, ")");
+      }
       fprintf(outfile, ")");
     }
-    fprintf(outfile, ")");
   } else if ((leftType == dtInteger || leftType == dtFloat) && rightType == dtNil) {
     left->codegen(outfile);
     fprintf(outfile, " %s (", cGetsOp[type]);
