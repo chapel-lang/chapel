@@ -26265,3 +26265,35 @@ Log message:
 Modified files:
 	chapel/compiler/adt/: vec.cpp 
 
+---------------------------------------------------------------------------
+
+04/14/05 17:25:44 -- deitz
+
+Log message:
+	NOTE: [Error matching compiler output for classes/deitz/test_type_in_class1]
+	
+	Cleaned up FnSymbol::copy and DefExpr::copy.
+	
+	Fixed a bug related to
+	
+	  #define NO_RESOLVE_CONSTRUCTOR
+	
+	in which not all constructors (cloned) were generated.
+	
+	I've now removed this #define.  There is one regression:
+	
+	  [Error matching compiler output for classes/deitz/test_type_in_class1]
+	
+	John, could you take a look at this.
+	
+	By removing this #define, constructors are no longer resolved before
+	analysis allowing wrappers and cloning of functions to occur.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertWriteFns.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             specializeParenOpExprs.cpp 
+
