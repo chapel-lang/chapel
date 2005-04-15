@@ -291,7 +291,7 @@ class BinOp : public Expr {
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
-        bool isComputable(void);
+  bool isComputable(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   precedenceType precedence(void);
@@ -305,6 +305,8 @@ class AssignOp : public BinOp {
   AssignOp(getsOpType init_type, Expr* l, Expr* r);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  Type* typeInfo(void);
+
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   precedenceType precedence(void);
@@ -315,6 +317,8 @@ class SpecialBinOp : public BinOp {
  public:
   SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  Type* typeInfo(void);
 
   precedenceType precedence(void);
 };

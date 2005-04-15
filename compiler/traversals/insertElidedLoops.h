@@ -6,10 +6,8 @@
 class InsertElidedIndices : public Traversal {
  public:
   Symbol* indices;
-  bool insert;
   InsertElidedIndices::InsertElidedIndices(Symbol* init_indices);
   void preProcessExpr(Expr* expr);
-  void postProcessExpr(Expr* expr);
 };
 
 class InsertElidedLoops : public Traversal {

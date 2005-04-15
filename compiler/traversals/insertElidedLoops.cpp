@@ -10,21 +10,12 @@
 
 InsertElidedIndices::InsertElidedIndices(Symbol* init_indices) {
   indices = init_indices;
-  insert = true;
 }
 
 
 void InsertElidedIndices::preProcessExpr(Expr* expr) {
-  if (!insert) {
-    return;
-  }
-
-  if (!dynamic_cast<ArrayType*>(expr->typeInfo())) {
-    insert = false;
-    return;
-  }
-
-  if (dynamic_cast<Variable*>(expr)) {
+  Variable* var = dynamic_cast<Variable*>(expr);
+  if (var && dynamic_cast<ArrayType*>(var->typeInfo())) {
     Expr* index_exprs = NULL;
     for (Symbol* tmp = indices; tmp; tmp = nextLink(Symbol, tmp)) {
       index_exprs = appendLink(index_exprs, new Variable(tmp));
@@ -32,11 +23,6 @@ void InsertElidedIndices::preProcessExpr(Expr* expr) {
     ArrayRef* array_ref = new ArrayRef(expr->copy(), index_exprs);
     expr->replace(array_ref);
   }
-}
-
-
-void InsertElidedIndices::postProcessExpr(Expr* expr) {
-  insert = true;
 }
 
 

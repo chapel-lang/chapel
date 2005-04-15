@@ -925,19 +925,40 @@ void BinOp::traverseExpr(Traversal* traversal) {
 
 
 Type* BinOp::typeInfo(void) {
-  if (analyzeAST && !RunAnalysis::runCount) {
-    return dtUnknown;
-  }
-
   Type* leftType = left->typeInfo();
   Type* rightType = right->typeInfo();
 
-  // TODO: This is a silly placeholder until we get type inference
-  // hooked in or implement something better here.
-  if (leftType != dtUnknown) {
-    return leftType;
-  } else {
-    return rightType;
+  switch (type) {
+  case BINOP_PLUS:
+  case BINOP_MINUS:
+  case BINOP_MULT:
+  case BINOP_DIV:
+  case BINOP_MOD:
+  case BINOP_BITAND:
+  case BINOP_BITOR:
+  case BINOP_BITXOR:
+  case BINOP_EXP:
+  case BINOP_SEQCAT:
+    if (leftType == rightType) {
+      return leftType;
+    } else {
+      return dtUnknown;
+    }
+  case BINOP_EQUAL:
+  case BINOP_LEQUAL:
+  case BINOP_GEQUAL:
+  case BINOP_GTHAN:
+  case BINOP_LTHAN:
+  case BINOP_NEQUAL:
+  case BINOP_LOGAND:
+  case BINOP_LOGOR:
+    return dtBoolean;
+  case BINOP_BY:
+  case BINOP_OTHER:
+  case NUM_BINOPS:
+  default:
+    INT_FATAL(this, "Unexpected case in BinOp::typeInfo()");
+    return dtUnknown;
   }
 }
 
@@ -1003,6 +1024,11 @@ Expr* AssignOp::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 }
 
 
+Type* AssignOp::typeInfo(void) {
+  return dtVoid; // These are always top-level in Chapel
+}
+
+
 void AssignOp::print(FILE* outfile) {
   left->print(outfile);
   fprintf(outfile, " %s ", cGetsOp[type]);
@@ -1061,6 +1087,11 @@ SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
 
 Expr* SpecialBinOp::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new SpecialBinOp(type, left->copyInternal(clone, map, analysis_clone), right->copyInternal(clone, map, analysis_clone));
+}
+
+
+Type* SpecialBinOp::typeInfo(void) {
+  return dtUnknown; // These are always top-level in Chapel
 }
 
 
