@@ -26444,3 +26444,21 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+04/14/05 18:33:00 -- bradc
+
+Log message:
+	Was trying to create a test that showed how
+	our use of C record assignment was problematic,
+	but wasn't successful.  Thought these were
+	interesting tests nonetheless.  One uses
+	sequences, and is therefore a future.
+
+Added files:
+	chapel/test/classes/bradc/records/: .cvsignore assignRecord.chpl 
+	                                    assignRecord.good 
+	                                    assignRecord2.chpl 
+	                                    assignRecord2.future 
+	                                    assignRecord2.good 
+
