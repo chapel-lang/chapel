@@ -14,7 +14,7 @@
 
 //#define CONSTRUCTOR_WITH_PARAMETERS
 
-//#define USE_VAR_INIT_EXPR
+#define USE_VAR_INIT_EXPR
 
 
 static void genIOReadWrite(FILE* outfile, ioCallType ioType) {
