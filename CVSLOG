@@ -26513,3 +26513,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+04/15/05 12:19:08 -- bradc
+
+Log message:
+	Changing nightly script to set $platform to
+	linux64 if running on a 64-bit linux machine
+	so that we can more easily distinguish
+	between John's nightly linux runs and ours.
+	
+	Also, disabled the caching of UW source
+	trees unless it's my linux cron job.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
