@@ -26598,3 +26598,22 @@ Modified files:
 	                                  formatoutput.good noop.good 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+04/15/05 16:01:37 -- bradc
+
+Log message:
+	Starting the process to make a GC-less build of
+	Chapel using the Makefiles.  Added logic so that
+	if "make nogc" is executed in the top-level,
+	third-party, or third-party/dparser directories,
+	dparser will be built without GC.  Put in some
+	clever logic so that the dparser/d directory will
+	only be cleaned out when the builder switches from
+	gc- to no-gc and back again.
+
+Modified files:
+	./: Makefile 
+	chapel/third-party/: Makefile 
+	chapel/third-party/dparser/: .cvsignore Makefile 
+
