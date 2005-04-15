@@ -26500,3 +26500,16 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             removeNamedParameters.cpp 
 
+---------------------------------------------------------------------------
+
+04/15/05 11:12:26 -- jplevyak
+
+Log message:
+	USE_VAR_INIT_EXPR is now defined with no regressions.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
