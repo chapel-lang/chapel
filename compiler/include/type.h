@@ -274,7 +274,7 @@ class TupleType : public Type {
  public:
   Vec<Type*> components;
 
-  TupleType(Type* init_type);
+  TupleType(void);
   void addType(Type* additionalType);
   void rebuildDefaultVal(void);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

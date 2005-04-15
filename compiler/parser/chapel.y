@@ -526,11 +526,14 @@ decls:
 
 tupleTypes:
   type
-    { $$ = new TupleType($1); }
+    {
+      $$ = new TupleType();
+      $$->addType($1);
+    }
 | tupleTypes TCOMMA type
     { 
-      $1->addType($3);
       $$ = $1;
+      $$->addType($3);
     }
 ;
 

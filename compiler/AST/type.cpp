@@ -616,8 +616,8 @@ IndexType::IndexType(Expr* init_expr) :
 {
   SET_BACK(idxExpr);
   if (typeid(*init_expr) == typeid(IntLiteral)) {
-    TupleType* newTType = new TupleType(init_expr->typeInfo());
-    for (int i = 1; i < init_expr->intVal(); i++){
+    TupleType* newTType = new TupleType();
+    for (int i = 0; i < init_expr->intVal(); i++){
       newTType->addType(init_expr->typeInfo());
     }
     idxType = newTType;
@@ -1611,20 +1611,13 @@ void UnionType::codegenMemberAccessOp(FILE* outfile) {
 }
 
 
-TupleType::TupleType(Type* firstType) :
-  Type(TYPE_TUPLE, NULL)
-{
-  components.add(firstType);
-  defaultVal = new Tuple(firstType->defaultVal->copy());
-  SET_BACK(defaultVal);
-}
+TupleType::TupleType() :
+  Type(TYPE_TUPLE, new Tuple(NULL))
+{ }
 
 
 void TupleType::addType(Type* additionalType) {
   components.add(additionalType);
-  if (Tuple* tuple = dynamic_cast<Tuple*>(defaultVal)) {
-    tuple->exprs = appendLink(tuple->exprs, additionalType->defaultVal->copy());
-  }
 }
 
 
@@ -1639,10 +1632,9 @@ void TupleType::rebuildDefaultVal(void) {
 
 
 Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  TupleType* newTupleType =
-    new TupleType(components.v[0]->copy(clone, map, analysis_clone));
-  for (int i=1; i<components.n; i++) {
-    newTupleType->addType(components.v[i]->copy(clone, map, analysis_clone));
+  TupleType* newTupleType = new TupleType();
+  forv_Vec(Type, component, components) {
+    newTupleType->addType(component->copy(clone, map, analysis_clone));
   }
   newTupleType->addSymbol(symbol);
   return newTupleType;

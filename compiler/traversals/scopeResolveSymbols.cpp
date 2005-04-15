@@ -25,10 +25,12 @@ static void resolve_type_helper(Type* &type) {
   } else if (UserType* user_type = dynamic_cast<UserType*>(type)) {
     resolve_type_helper(user_type->definition);
     if (!user_type->defaultVal) {
-      user_type->defaultVal = user_type->definition->defaultVal;
+      user_type->defaultVal = user_type->definition->defaultVal->copy();
       SET_BACK(user_type->defaultVal);
       fixup_expr(user_type->symbol->defPoint);
     }
+  } else if (IndexType* index_type = dynamic_cast<IndexType*>(type)) {
+    resolve_type_helper(index_type->idxType);
   } else if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
     resolve_type_helper(array_type->elementType);
   } else if (SeqType* seq_type = dynamic_cast<SeqType*>(type)) {

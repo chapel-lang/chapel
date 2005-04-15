@@ -6,6 +6,7 @@
 #include "symtab.h"
 #include "stringutil.h"
 #include "view.h"
+#include "fixup.h"
 
 void InsertIndexType::preProcessType(Type* type) {
   DomainType* domain_type = dynamic_cast<DomainType*>(type);
@@ -31,6 +32,15 @@ void InsertIndexType::preProcessType(Type* type) {
   Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);
   if (index_sym) {
     type = index_sym->type;
+    /*** SJD: I couldn't figure out where to put this, but the
+         defaultVal needs to be set for IndexTypes.  I don't know why
+         this was working without this. **/
+    if (TupleType* tuple_type = dynamic_cast<TupleType*>(type->getType())) {
+      tuple_type->rebuildDefaultVal();
+      type->defaultVal = tuple_type->defaultVal->copy();
+      SET_BACK(type->defaultVal);
+      fixup_expr(index_sym->defPoint);
+    }
   }
   else {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
