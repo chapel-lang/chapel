@@ -26640,3 +26640,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp ast.cpp 
 
+---------------------------------------------------------------------------
+
+04/15/05 16:31:54 -- jplevyak
+
+Log message:
+	Steve's bit of the string constructor code changes.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/traversals/: processParameters.cpp 
+
