@@ -26462,3 +26462,14 @@ Added files:
 	                                    assignRecord2.future 
 	                                    assignRecord2.good 
 
+---------------------------------------------------------------------------
+
+04/15/05 09:37:53 -- jplevyak
+
+Log message:
+	Add test to see if call_info() is called with code not
+	in a function (unexecutable code) and return.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
