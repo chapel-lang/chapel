@@ -209,8 +209,8 @@ void Expr::traverseDef(Traversal* traversal, bool atTop) {
 }
 
 
-void Expr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  INT_FATAL(this, "Unexpected call to Expr::replaceExpr(old, new)");
+void Expr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected call to Expr::replaceChild(old, new)");
 }
 
 
@@ -848,11 +848,11 @@ long UnOp::intVal(void) {
 }
 
 
-void UnOp::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == operand) {
-    operand = new_expr;
+void UnOp::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == operand) {
+    operand = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in UnOp::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in UnOp::replaceChild(old, new)");
   }
 }
 
@@ -907,13 +907,13 @@ bool BinOp::isComputable(void) {
 }
 
 
-void BinOp::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == left) {
-    left = new_expr;
-  } if (old_expr == right) {
-    right = new_expr;
+void BinOp::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == left) {
+    left = dynamic_cast<Expr*>(new_ast);
+  } if (old_ast == right) {
+    right = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in BinOp::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in BinOp::replaceChild(old, new)");
   }
 }
 
@@ -1114,11 +1114,11 @@ Expr* MemberAccess::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 }
 
 
-void MemberAccess::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == base) {
-    base = new_expr;
+void MemberAccess::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == base) {
+    base = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in MemberAccess::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in MemberAccess::replaceChild(old, new)");
   }
 }
 
@@ -1200,13 +1200,13 @@ Expr* ParenOpExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
 }
 
 
-void ParenOpExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == baseExpr) {
-    baseExpr = new_expr;
-  } else if (old_expr == argList) {
-    argList = new_expr;
+void ParenOpExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == baseExpr) {
+    baseExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == argList) {
+    argList = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in ParenOpExpr::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in ParenOpExpr::replaceChild(old, new)");
   }
 }
 
@@ -1489,11 +1489,11 @@ Expr* Tuple::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* an
 }
 
 
-void Tuple::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == exprs) {
-    exprs = new_expr;
+void Tuple::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == exprs) {
+    exprs = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in Tuple::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in Tuple::replaceChild(old, new)");
   }
 }
 
@@ -1575,11 +1575,11 @@ Expr* CastExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 }
 
 
-void CastExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == expr) {
-    expr = new_expr;
+void CastExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in CastExpr::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in CastExpr::replaceChild(old, new)");
   }
 }
 
@@ -1629,13 +1629,13 @@ Expr* ReduceExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 }
 
 
-void ReduceExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == redDim) {
-    redDim = new_expr;
-  } else if (old_expr == argExpr) {
-    argExpr = new_expr;
+void ReduceExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == redDim) {
+    redDim = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == argExpr) {
+    argExpr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in ReduceExpr::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in ReduceExpr::replaceChild(old, new)");
   }
 }
 
@@ -1678,11 +1678,11 @@ Expr* SeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
 }
 
 
-void SeqExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == exprls) {
-    exprls = new_expr;
+void SeqExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == exprls) {
+    exprls = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in MemberAccess::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in MemberAccess::replaceChild(old, new)");
   }
 }
 
@@ -1726,15 +1726,15 @@ Expr* SimpleSeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCall
 }
 
 
-void SimpleSeqExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == lo) {
-    lo = new_expr;
-  } else if (old_expr == hi) {
-    hi = new_expr;
-  } else if (old_expr == str) {
-    str = new_expr;
+void SimpleSeqExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == lo) {
+    lo = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == hi) {
+    hi = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == str) {
+    str = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in CastExpr::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in CastExpr::replaceChild(old, new)");
   }
 }
 
@@ -1839,15 +1839,15 @@ Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 }
 
 
-void ForallExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == domains) {
-    domains = new_expr;
-  } else if (old_expr == indices) {
-    indices = new_expr;
-  } else if (old_expr == forallExpr) {
-    forallExpr = new_expr;
+void ForallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == domains) {
+    domains = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == indices) {
+    indices = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == forallExpr) {
+    forallExpr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in ForallExpr::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in ForallExpr::replaceChild(old, new)");
   }
 }
 
@@ -1961,13 +1961,13 @@ Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
 }
 
 
-void LetExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == symDefs) {
-    symDefs = new_expr;
-  } else if (old_expr == innerExpr) {
-    innerExpr = new_expr;
+void LetExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == symDefs) {
+    symDefs = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == innerExpr) {
+    innerExpr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in LetExpr::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in LetExpr::replaceChild(old, new)");
   }
 }
 
@@ -2013,11 +2013,11 @@ Expr* NamedExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 }
 
 
-void NamedExpr::replaceExpr(Expr* old_expr, Expr* new_expr) {
-  if (old_expr == actual) {
-    actual = new_expr;
+void NamedExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == actual) {
+    actual = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in NamedExpr::replaceExpr(old, new)");
+    INT_FATAL(this, "Unexpected case in NamedExpr::replaceChild(old, new)");
   }
 }
 

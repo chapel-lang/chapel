@@ -29,6 +29,7 @@ class Stmt : public BaseAST {
   Stmt* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
@@ -59,6 +60,7 @@ class WithStmt : public Stmt {
   WithStmt(Expr* init_withExpr);
   StructuralType* getStruct(void);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -71,6 +73,7 @@ public:
 
   DefStmt(Expr* init_defExprList);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -91,6 +94,7 @@ class ExprStmt : public Stmt {
   ExprStmt(Expr* initExpr);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
   virtual void print(FILE* outfile);
@@ -119,6 +123,7 @@ class BlockStmt : public Stmt {
   void setBlkScope(SymScope* init_blkScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
@@ -134,6 +139,7 @@ class WhileLoopStmt : public BlockStmt {
   WhileLoopStmt(bool init_whileDo, Expr* init_cond, Stmt* body);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
@@ -154,6 +160,7 @@ class ForLoopStmt : public BlockStmt {
   void setIndexScope(SymScope* init_indexScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
@@ -172,6 +179,7 @@ class CondStmt : public Stmt {
   void addElseStmt(Stmt* init_elseStmt);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
@@ -188,6 +196,7 @@ class LabelStmt : public Stmt {
 
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);

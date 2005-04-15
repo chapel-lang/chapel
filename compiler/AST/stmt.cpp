@@ -114,6 +114,11 @@ Stmt* Stmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
 }
 
 
+void Stmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected call to Stmt::replaceChild(old, new)");
+}
+
+
 void Stmt::traverse(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
     traversal->preProcessStmt(this);
@@ -343,6 +348,15 @@ Stmt* WithStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 }
 
 
+void WithStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == withExpr) {
+    withExpr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in WithStmt::replaceChild(old, new)");
+  }
+}
+
+
 void WithStmt::traverseStmt(Traversal* traversal) {
   TRAVERSE(withExpr, traversal, false);
 }
@@ -370,6 +384,15 @@ DefStmt::DefStmt(Expr* init_defExprList) :
 
 Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new DefStmt(defExprList->copy(clone, map, analysis_clone));
+}
+
+
+void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defExprList) {
+    defExprList = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in DefStmt::replaceChild(old, new)");
+  }
 }
 
 
@@ -431,6 +454,15 @@ ExprStmt::ExprStmt(Expr* init_expr) :
 
 Stmt* ExprStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new ExprStmt(expr->copyInternal(clone, map, analysis_clone));
+}
+
+
+void ExprStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in ExprStmt::replaceChild(old, new)");
+  }
 }
 
 
@@ -519,6 +551,15 @@ Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
 }
 
 
+void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == body) {
+    body = dynamic_cast<Stmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild(old, new)");
+  }
+}
+
+
 void BlockStmt::traverseStmt(Traversal* traversal) {
   SymScope* prevScope = NULL;
   if (blkScope) {
@@ -565,6 +606,17 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 
 Stmt* WhileLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new WhileLoopStmt(isWhileDo, condition->copyInternal(clone, map, analysis_clone), body->copyInternal(clone, map, analysis_clone));
+}
+
+
+void WhileLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == condition) {
+    condition = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == body) {
+    body = dynamic_cast<Stmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in WhileLoopStmt::replaceChild(old, new)");
+  }
 }
 
 
@@ -645,6 +697,19 @@ Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallba
     new ForLoopStmt(forall, indices_copy, domain_copy, body_copy);
   for_loop_stmt_copy->setIndexScope(index_scope);
   return for_loop_stmt_copy;
+}
+
+
+void ForLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == indices) {
+    indices = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == domain) {
+    domain = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == body) {
+    body = dynamic_cast<Stmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in ForLoopStmt::replaceChild(old, new)");
+  }
 }
 
 
@@ -802,6 +867,19 @@ Stmt* CondStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 }
 
 
+void CondStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == condExpr) {
+    condExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == thenStmt) {
+    thenStmt = dynamic_cast<Stmt*>(new_ast);
+  } else if (old_ast == elseStmt) {
+    elseStmt = dynamic_cast<Stmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in CondStmt::replaceChild(old, new)");
+  }
+}
+
+
 void CondStmt::traverseStmt(Traversal* traversal) {
   TRAVERSE(condExpr, traversal, false);
   TRAVERSE(thenStmt, traversal, false);
@@ -846,6 +924,15 @@ LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
 
 Stmt* LabelStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new LabelStmt(label, stmt->copyInternal(clone, map, analysis_clone));
+}
+
+
+void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == stmt) {
+    stmt = dynamic_cast<Stmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in LabelStmt::replaceChild(old, new)");
+  }
 }
 
 
