@@ -26562,3 +26562,18 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplmem.c 
 
+---------------------------------------------------------------------------
+
+04/15/05 15:18:54 -- deitz
+
+Log message:
+	Added replaceChild routines to Exprs and Stmts eventually to replace
+	use of Back.
+	
+	These should remain unused for the time being as I still need to add
+	them to Symbols and Types.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+
