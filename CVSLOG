@@ -26429,3 +26429,18 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/14/05 18:30:16 -- bradc
+
+Log message:
+	Cleaned up the building of the coercion function
+	wrappers to use the Map<> that's passed in more
+	appropriately, to avoid an extra loop of iteration,
+	and to eliminate a handful of unnecessary variables.
+	The other wrapper creation functions could probably
+	benefit from similar rewrites.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
