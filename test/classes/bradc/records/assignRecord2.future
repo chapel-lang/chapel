@@ -1,0 +1,7 @@
+jplevyak/deitz
+
+I was trying to create a test that showed that our
+record assignment scheme (leveraging C's) is naive,
+but failed.  Still, this is an interesting test.
+Like most current sequence types, it fails in
+analysis.
