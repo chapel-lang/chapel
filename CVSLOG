@@ -26664,3 +26664,13 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/15/05 16:43:05 -- deitz
+
+Log message:
+	Runtime change with string constructor change.
+
+Modified files:
+	chapel/runtime/include/: chpltypes.h 
+
