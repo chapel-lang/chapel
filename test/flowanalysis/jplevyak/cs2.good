@@ -7,7 +7,4 @@ globals
 operator::a(prelude.v:0) ( tuple )
 operator::b(prelude.v:0) ( a )
 print::a(prelude.v:0) ( int32 )
-system::__init(prelude.v:0) ( __init )
-system::null(prelude.v:0) ( null )
-user::__init(cs2.v:1) ( __init (cs2.v:1) )
 user::a1(cs2.v:2) ( tuple )

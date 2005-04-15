@@ -3,8 +3,5 @@ globals
 operator::a(prelude.v:0) ( int32 )
 operator::b(prelude.v:0) ( float64 )
 print::a(prelude.v:0) ( float64 )
-system::__init(prelude.v:0) ( __init )
-system::null(prelude.v:0) ( null )
-user::__init(destruct.v:1) ( __init (destruct.v:1) )
 user::x(destruct.v:1) ( int32 )
 user::y(destruct.v:1) ( float64 )

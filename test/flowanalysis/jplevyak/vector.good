@@ -1,5 +1,2 @@
 function __init vector.v:3
 globals
-system::__init(prelude.v:0) ( __init )
-system::null(prelude.v:0) ( null )
-user::__init(vector.v:3) ( __init (vector.v:3) )

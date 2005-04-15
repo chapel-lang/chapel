@@ -1,17 +1,11 @@
  called from 1 in __init_usebeforedef at <internal>:0
 ::__init__CommonModule ( __init__CommonModule )
-::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
-::__init_prelude ( __init_prelude )
-::__init_usebeforedef ( __init_usebeforedef )
 ::__init_usebeforedef ( __init_usebeforedef )
 ::a(usebeforedef.chpl:3) ( int64 )
 ::foo(usebeforedef.chpl:5) ( foo )
 ::main ( main )
-::main ( main )
-::void ( void )
 function foo usebeforedef.chpl:3
 globals

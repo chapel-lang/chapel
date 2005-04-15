@@ -6,6 +6,3 @@ globals
 operator::a(prelude.v:0) ( int32 )
 operator::b(prelude.v:0) ( int32 )
 print::a(prelude.v:0) ( int32 )
-system::__init(prelude.v:0) ( __init )
-system::null(prelude.v:0) ( null )
-user::__init(dispatch1.v:1) ( __init (dispatch1.v:1) )

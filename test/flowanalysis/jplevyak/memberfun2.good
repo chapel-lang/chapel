@@ -2,7 +2,6 @@
  called from 2 in __init at memberfun2.v:2
  called from 5 in g at memberfun2.v:5
  called from 6 in __init at memberfun2.v:1
-A::__init(memberfun2.v:1) ( __init (memberfun2.v:1) )
 __init::self(memberfun2.v:1) ( B (memberfun2.v:2) )
 __init::self(memberfun2.v:2) ( B (memberfun2.v:2) )
 f::self(memberfun2.v:3) ( B (memberfun2.v:2) )
@@ -24,8 +23,4 @@ operator::b(prelude.v:0) ( g (memberfun2.v:5) )
 operator::b(prelude.v:0) ( int32 )
 operator::b(prelude.v:0) ( int32 )
 print::a(prelude.v:0) ( float64 )
-system::__init(prelude.v:0) ( __init )
-system::null(prelude.v:0) ( null )
-user::B(memberfun2.v:2) ( B (memberfun2.v:2) )
-user::__init(memberfun2.v:1) ( __init (memberfun2.v:1) )
 user::b(memberfun2.v:4) ( B (memberfun2.v:2) )

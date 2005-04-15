@@ -1,13 +1,7 @@
 ::__init__CommonModule ( __init__CommonModule )
-::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
 ::__init_prelude ( __init_prelude )
 ::__init_writen ( __init_writen )
-::__init_writen ( __init_writen )
 ::main ( main )
-::main ( main )
-::void ( void )
 globals

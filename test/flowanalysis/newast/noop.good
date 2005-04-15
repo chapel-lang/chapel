@@ -1,21 +1,13 @@
  called from 19 in __init_noop at <internal>:0
 ::D(noop.chpl:6) ( Domain _domain_1d (noop.chpl:6) )
 ::__init__CommonModule ( __init__CommonModule )
-::__init__CommonModule ( __init__CommonModule )
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_noop ( __init_noop )
 ::__init_noop ( __init_noop )
 ::__init_prelude ( __init_prelude )
-::__init_prelude ( __init_prelude )
-::_domain_1d(noop.chpl:6) ( _domain_1d )
-::bool ( bool )
 ::false(prelude.chpl:0) ( bool )
 ::foo(noop.chpl:4) ( foo )
 ::i(noop.chpl:8) ( int64 )
 ::main ( main )
-::main ( main )
-::void ( void )
 function foo noop.chpl:4
 globals

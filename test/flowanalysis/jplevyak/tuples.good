@@ -2,9 +2,6 @@ function __init tuples.v:7
 globals
 print::a(prelude.v:0) ( int32 )
 print::a(prelude.v:0) ( tuple )
-system::__init(prelude.v:0) ( __init )
-system::null(prelude.v:0) ( null )
-user::__init(tuples.v:7) ( __init (tuples.v:7) )
 user::tuple0(tuples.v:7) ( tuple )
 user::tuple1(tuples.v:8) ( int32 )
 user::tuple2(tuples.v:9) ( tuple )

@@ -4,7 +4,3 @@ function __init dispatch4.v:1
 function class dispatch4.v:3
 globals
 print::a(prelude.v:0) ( int32 )
-system::__init(prelude.v:0) ( __init )
-system::null(prelude.v:0) ( null )
-user::A(dispatch4.v:1) ( A (dispatch4.v:1) )
-user::__init(dispatch4.v:1) ( __init (dispatch4.v:1) )

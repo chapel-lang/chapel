@@ -5,9 +5,6 @@ function f constant_folding.v:16
 globals
 print::a(prelude.v:0) ( float64 )
 print::a(prelude.v:0) ( int32 )
-system::__init(prelude.v:0) ( __init )
-system::null(prelude.v:0) ( null )
-user::__init(constant_folding.v:7) ( __init (constant_folding.v:7) )
 user::c1(constant_folding.v:7) ( int32 )
 user::c2(constant_folding.v:8) ( int32 )
 user::c3(constant_folding.v:9) ( int32 )

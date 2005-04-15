@@ -823,7 +823,10 @@ log_test_fa(FA *fa) {
   gvars.set_to_vec();
   log(LOG_TEST_FA, "globals\n");
   forv_Var(v, gvars)
-    if ((!v->sym->is_constant || !v->sym->constant) && !v->sym->is_symbol)
+    if ((!v->sym->is_constant || !v->sym->constant) && 
+        !v->sym->is_symbol &&
+        !v->sym->type_kind &&
+        !v->sym->is_fun)
       log_var_types(v, 0);
 }
 
