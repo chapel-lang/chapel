@@ -587,7 +587,11 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 
 
 Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new FnSymbol(name, classBinding);
+  FnSymbol* copy = new FnSymbol(name, classBinding);
+  Symboltable::startFnDef(copy);
+  Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
+  Stmt* new_body = body->copyList(clone, map, analysis_clone);
+  return Symboltable::finishFnDef(copy, new_formals, type, new_body, exportMe);
 }
 
 
@@ -617,9 +621,8 @@ FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>*
   if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
     this_copy->sym->cname =
       glomstrings(3, this_copy->sym->cname, "_clone_", intstring(uid++));
-    defPoint->insertBefore(this_copy);
-  }
-  else {
+    defPoint->insertAfter(this_copy);
+  } else {
     INT_FATAL(this, "Unreachable statement in FnSymbol::clone reached");
   }
   Symboltable::setCurrentScope(save_scope);
@@ -681,8 +684,8 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   wrapper_block->setBlkScope(block_scope);
   block_scope->stmtContext = wrapper_block;
   Type* wrapper_return_type = retType;
-  DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-                                                   wrapper_return_type, wrapper_block);
+  DefExpr* wrapper_expr = new DefExpr(Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
+                                                   wrapper_return_type, wrapper_block));
   defPoint->insertBefore(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
@@ -758,8 +761,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
   BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
   wrapper_block->setBlkScope(block_scope);
   block_scope->stmtContext = wrapper_block;
-  DefExpr* wrapper_expr = Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-                                                   retType, wrapper_block);
+  DefExpr* wrapper_expr = new DefExpr(Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
+                                                   retType, wrapper_block));
   defPoint->insertAfter(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
@@ -802,7 +805,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
 
   Stmt* fn_call = new ExprStmt(new FnCall(new Variable(this), actuals));
   Stmt* body = new BlockStmt(fn_call);
-  DefExpr* def_expr = Symboltable::finishFnDef(wrapper_fn, wrapper_formals, retType, body);
+  DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, wrapper_formals, retType, body));
   defPoint->insertBefore(def_expr);
   Symboltable::setCurrentScope(save_scope);
   return wrapper_fn;

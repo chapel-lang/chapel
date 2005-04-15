@@ -51,7 +51,7 @@ static void build_constructor(StructuralType* structType) {
 
   stmts = appendLink(stmts, new ReturnStmt(new Variable(fn->_this)));
   body = Symboltable::finishCompoundStmt(body, stmts);
-  Expr* fn_def = Symboltable::finishFnDef(fn, args, structType, body);
+  Expr* fn_def = new DefExpr(Symboltable::finishFnDef(fn, args, structType, body));
   structType->constructor = new DefStmt(fn_def);
   SET_BACK(structType->constructor);
   Symboltable::setCurrentScope(saveScope);
@@ -82,8 +82,8 @@ static void build_setters_and_getters(StructuralType* structType) {
     Expr* setter_assignment = new AssignOp(GETS_NORM, setter_lhs, setter_rhs);
     Stmt* setter_stmt = new ExprStmt(setter_assignment);
     Stmt* setter_body = new BlockStmt(setter_stmt);
-    DefExpr* setter_def_expr =
-      Symboltable::finishFnDef(setter_fn, setter_this, dtVoid, setter_body);
+    DefExpr* setter_def_expr = new DefExpr(
+      Symboltable::finishFnDef(setter_fn, setter_this, dtVoid, setter_body));
     DefStmt* setter_def_stmt = new DefStmt(setter_def_expr);
     structType->addDeclarations(setter_def_stmt);
     setter_fn->classBinding = structType->symbol;
@@ -96,8 +96,8 @@ static void build_setters_and_getters(StructuralType* structType) {
     ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
     Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
     Stmt* getter_return = new ReturnStmt(getter_expr);
-    DefExpr* getter_def_expr =
-      Symboltable::finishFnDef(getter_fn, getter_this, tmp->type, getter_return);
+    DefExpr* getter_def_expr = new DefExpr(
+      Symboltable::finishFnDef(getter_fn, getter_this, tmp->type, getter_return));
     DefStmt* getter_def_stmt = new DefStmt(getter_def_expr);
     structType->addDeclarations(getter_def_stmt);
     getter_fn->classBinding = structType->symbol;
@@ -129,7 +129,7 @@ static void build_record_equality_function(StructuralType* structType) {
       : new BinOp(BINOP_EQUAL, left, right);
   }
   Stmt* body = new ReturnStmt(cond);
-  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
+  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtBoolean, body)));
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
@@ -153,7 +153,7 @@ static void build_record_inequality_function(StructuralType* structType) {
       : new BinOp(BINOP_NEQUAL, left, right);
   }
   Stmt* body = new ReturnStmt(cond);
-  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtBoolean, body));
+  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtBoolean, body)));
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
@@ -176,7 +176,7 @@ static void build_record_assignment_function(StructuralType* structType) {
     body = appendLink(body, new ExprStmt(assign_expr));
   }
   Stmt* block_stmt = new BlockStmt(body);
-  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt));
+  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt)));
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
@@ -198,7 +198,7 @@ static void build_tuple_assignment_function(TupleType* tuple_type) {
     body = appendLink(body, new ExprStmt(assign_expr));
   }
   BlockStmt* block_stmt = new BlockStmt(body);
-  DefStmt* def_stmt = new DefStmt(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt));
+  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt)));
   tuple_type->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 

@@ -749,32 +749,18 @@ DefExpr::DefExpr(Symbol* init_sym) :
   Expr(EXPR_DEF),
   sym(init_sym) 
 {
-  init_sym->setDefPoint(this);
+  sym->setDefPoint(this);
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    fn->formals->setDefPoint(this);
+    fn->paramScope->setContext(NULL, fn, this);
+  }
 }
 
 
 Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (clone) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-      FnSymbol* fncopy = dynamic_cast<FnSymbol*>(fn->copy(clone, map, analysis_clone));
-      Symboltable::startFnDef(fncopy);
-      Symbol* newformals = fn->formals->copyList(clone, map, analysis_clone);
-      return Symboltable::finishFnDef(fncopy, newformals, fn->type, 
-                                      fn->body->copyListInternal(clone, map, analysis_clone),
-                                      fn->exportMe);
-    }
-    else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym)) {
-      TypeSymbol* sym_copy = dynamic_cast<TypeSymbol*>(type_sym->copy(clone, map, analysis_clone));
-      return new DefExpr(sym_copy);
-    }
-    else if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
-      VarSymbol* sym_copy = dynamic_cast<VarSymbol*>(var->copyList(clone, map, analysis_clone));
-      DefExpr* def_expr = new DefExpr(sym_copy);
-      return def_expr;
-    }
-    return NULL;
-  }
-  else {
+    return new DefExpr(sym->copyList(clone, map, analysis_clone));
+  } else {
     return new DefExpr(sym);
   }
 }

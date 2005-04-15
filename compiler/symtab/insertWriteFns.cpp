@@ -21,7 +21,7 @@ static void createWriteFn(StructuralType* classType) {
   Stmt* bodyStmts = classType->buildIOBodyStmts(thisArg);
   Stmt* body = new BlockStmt(bodyStmts);
   
-  DefExpr* def = Symboltable::finishFnDef(writeFn, thisArg, dtVoid, body);
+  DefExpr* def = new DefExpr(Symboltable::finishFnDef(writeFn, thisArg, dtVoid, body));
   DefStmt* defstmt = new DefStmt(def);
   classType->addDeclarations(defstmt);
   

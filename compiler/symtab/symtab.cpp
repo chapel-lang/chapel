@@ -635,14 +635,12 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
 }
 
 
-DefExpr* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
+FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
                                   Type* retType, Stmt* body, bool isExtern) {
   SymScope* paramScope = Symboltable::popScope();
   fnsym->finishDef(formals, retType, body, paramScope, isExtern);
-  DefExpr* def_expr = new DefExpr(fnsym);
-  paramScope->setContext(NULL, fnsym, def_expr);
-  formals->setDefPoint(def_expr); /* SJD: Should formals have their own DefExprs? */
-  return def_expr;
+  paramScope->setContext(NULL, fnsym, NULL);
+  return fnsym;
 }
 
 
@@ -650,7 +648,7 @@ DefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
                                      Type* retType, Stmt* body, 
                                      bool isExtern) {
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
-  return new DefStmt(finishFnDef(fnsym, formals, retType, body, isExtern));
+  return new DefStmt(new DefExpr(finishFnDef(fnsym, formals, retType, body, isExtern)));
 }
 
 

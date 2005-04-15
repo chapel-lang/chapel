@@ -467,7 +467,7 @@ fndecl:
     }
                        TLP formals TRP fnrettype function_body_stmt
     {
-      $$ = new DefStmt(Symboltable::finishFnDef($<fnsym>3, $5, $7, $8));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $5, $7, $8)));
     }
 |
   TFUNCTION identifier TDOT fname
@@ -477,7 +477,7 @@ fndecl:
     }
                        TLP formals TRP fnrettype function_body_stmt
     {
-      $$ = new DefStmt(Symboltable::finishFnDef($<fnsym>5, $7, $9, $10));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $7, $9, $10)));
     }
 |
   TFUNCTION fname
@@ -486,7 +486,7 @@ fndecl:
     }
                        fnrettype function_body_stmt
     {
-      $$ = new DefStmt(Symboltable::finishFnDef($<fnsym>3, NULL, $4, $5));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, NULL, $4, $5)));
     }
 ;
 

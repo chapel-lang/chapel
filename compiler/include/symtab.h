@@ -83,9 +83,9 @@ class Symboltable {
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(FnSymbol* fnsym, bool noparens = false);
-  static DefExpr* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
-                              Type* retType, Stmt* body, 
-                              bool isExtern = false);
+  static FnSymbol* finishFnDef(FnSymbol* fnsym, Symbol* formals, 
+                               Type* retType, Stmt* body, 
+                               bool isExtern = false);
   static DefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
                                  Stmt* body, bool isExtern = false);
 
