@@ -26653,3 +26653,14 @@ Modified files:
 	chapel/compiler/passes/: createEntryPoint.cpp 
 	chapel/compiler/traversals/: processParameters.cpp 
 
+---------------------------------------------------------------------------
+
+04/15/05 16:37:07 -- bradc
+
+Log message:
+	Some changes to the nightly script to get it
+	working cleanly on cygwin.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
