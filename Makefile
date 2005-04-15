@@ -13,6 +13,11 @@ all:
 
 everything: third-party compiler runtime
 
+nogc: FORCE
+	cd third-party && $(MAKE) nogc
+	@echo
+	@echo "*** Can't yet build the compiler without gc from Makefiles"
+
 comprt: compiler runtime
 
 compiler: FORCE

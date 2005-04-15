@@ -5,6 +5,9 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 
 all: $(THIRD_GC_DIRNAME) $(THIRD_DPARSE_DIRNAME)
 
+nogc: FORCE
+	cd $(THIRD_DPARSE_DIRNAME) && $(MAKE) nogc
+
 clean:
 	cd $(THIRD_GC_DIRNAME) && $(MAKE) clean
 	cd $(THIRD_DPARSE_DIRNAME) && $(MAKE) clean
