@@ -26473,3 +26473,30 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/15/05 10:36:31 -- deitz
+
+Log message:
+	Changed VarInitExpr to contain a Symbol rather than an Expr.  This
+	makes more sense since this expression is a placeholder for either the
+	Symbol's Type's defaultVal expression or a FnCall of the Symbol's
+	Type's defaultConstructor if there was no defaultVal.
+	
+	Reworked the creation of the constructor body to be more inline with
+	our new take on how it should be done.  The following #defines should
+	be used:
+	
+	type.cpp:
+	//#define CONSTRUCTOR_WITH_PARAMETERS
+	//#define USE_VAR_INIT_EXPR
+	
+	buildClassConstructors.cpp:
+	//#define CONSTRUCTOR_WITH_PARAMETERS
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             removeNamedParameters.cpp 
+
