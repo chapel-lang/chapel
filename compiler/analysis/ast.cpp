@@ -34,6 +34,7 @@ void init_ast() {
   new_builtin_symbol(sym_make_set, "__make_set", "make_set");
   new_builtin_symbol(sym_new, "__new", "new");
   new_builtin_symbol(sym_index_object, "__index_object", "index_object");
+  new_builtin_symbol(sym_set_index_object, "__set_index_object", "set_index_object");
   new_builtin_symbol(sym_operator, "__operator", "operator");
   new_builtin_symbol(sym_destruct, "__destruct", "destruct");
   new_builtin_symbol(sym_meta_apply, "__meta_apply", "meta_apply");

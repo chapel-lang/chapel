@@ -1262,6 +1262,22 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
   }
 }
 
+static int
+get_tuple_index(AVar *index, int *i, int n) {
+  if (index->var->sym->type && index->var->sym->imm_int(i) == 0) {
+    *i -= fa->tuple_index_base;
+    if (*i >= 0 && *i < n)
+      return 1;
+  }
+  if (index->out->n == 1 && index->out->v[0]->sym->is_constant)
+    if (index->out->v[0]->sym->imm_int(i) == 0) {
+      *i -= fa->tuple_index_base;
+      if (*i >= 0 && *i < n)
+        return 1;
+    }
+  return 0;
+}
+
 // for send nodes, add call edges and more complex constraints
 // which depend on the computed types (compare to add_send_constraints)
 static void
@@ -1360,10 +1376,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         forv_CreationSet(cs, *vec->out) if (cs) {
           if (sym_tuple->specializers.set_in(cs->sym->type)) {
             int i;
-            if (((index->var->sym->type && index->var->sym->imm_int(&i) == 0) ||
-                 (index->out->n == 1 && index->out->v[0]->sym->is_constant &&
-                  index->out->v[0]->sym->imm_int(&i) == 0)) &&
-                (i >= 0 && i < cs->vars.n))
+            if (get_tuple_index(index, &i, cs->vars.n))
               flow_vars(cs->vars.v[i], result);
             else
               for (int i = 0; i < cs->vars.n; i++) // assume the worst
@@ -1373,6 +1386,27 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
             flow_vars(elem, result);
           }
         }
+        break;
+      }
+      case P_prim_set_index_object: {
+        AVar *vec = make_AVar(p->rvals.v[1], es);
+        AVar *index = make_AVar(p->rvals.v[2], es);
+        AVar *val = make_AVar(p->rvals.v[3], es);
+        set_container(val, vec);
+        forv_CreationSet(cs, *vec->out) if (cs) {
+          if (sym_tuple->specializers.set_in(cs->sym->type)) {
+            int i;
+            if (get_tuple_index(index, &i, cs->vars.n))
+              flow_vars(val, cs->vars.v[i]);
+            else
+              for (int i = 0; i < cs->vars.n; i++) 
+                flow_vars(val, cs->vars.v[i]);
+          } else {
+            AVar *elem = get_element_avar(cs);
+            flow_vars(val, elem);
+          }
+        }
+        flow_vars(val, result);
         break;
       }
       case P_prim_apply: {

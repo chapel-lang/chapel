@@ -1028,6 +1028,7 @@ get_defaultVal(Type *t) {
   Variable *v = dynamic_cast<Variable*>(t->defaultVal);
   if (v)
     return v->var->asymbol->sym;
+  assert(dynamic_cast<Literal*>(t->defaultVal));
   if (!t->defaultVal->ainfo->sym)
     gen_if1(t->defaultVal);
   return t->defaultVal->ainfo->rval;
@@ -1040,8 +1041,11 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, int is_this = 0) {
   StructuralType *ct = dynamic_cast<StructuralType*>(type->asymbol->symbol);
   if (ct && (ct->astType == TYPE_RECORD || ct->astType == TYPE_UNION) && !is_this)
     send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
-  if (!send) 
-    send = if1_send(if1, c, 2, 1, sym_new, type, s);
+  if (!send) {
+    Sym *tmp = new_sym();
+    send = if1_send(if1, c, 2, 1, sym_new, type, tmp);
+    if1_move(if1, c, tmp, s, ast);
+  }
   send->ast = ast;
   if (type->asymbol->symbol->astType == TYPE_ARRAY) {
     ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
@@ -1112,9 +1116,19 @@ gen_one_vardef(VarSymbol *var, DefStmt *def) {
     } else {
       if1_gen(if1, &ast->code, var->init->ainfo->code);
       Sym *val = var->init->ainfo->rval;
-      if (is_scalar_type(type) && type != var->init->typeInfo())
-        val = gen_coerce(val, s->type, &ast->code, ast);
-      if1_move(if1, &ast->code, val, ast->sym, ast);
+      if (is_scalar_type(type)) {
+        if (type != var->init->typeInfo())
+          val = gen_coerce(val, s->type, &ast->code, ast);
+        if1_move(if1, &ast->code, val, ast->sym, ast);
+      } else if (!is_reference_type(type) && type != dtUnknown) {
+        Sym *old_val = val;
+        val = new_sym();
+        Code *c = if1_send(if1, &ast->code, 3, 1, if1_make_symbol(if1, "="), 
+                           ast->sym, old_val, val);
+        
+        c->ast = ast;
+      } else 
+        if1_move(if1, &ast->code, val, ast->sym, ast);
     }
   }
   return 0;
@@ -2048,6 +2062,8 @@ add_to_universal_lookup_cache(char *name, Fun *fun) {
 void
 ACallbacks::finalize_functions() {
   pdb->fa->method_token = unique_AVar(new Var(method_symbol), GLOBAL_CONTOUR);
+  pdb->fa->array_index_base = 1;
+  pdb->fa->tuple_index_base = 1;
   forv_Fun(fun, pdb->funs) {
     int added = 0;
     char *name = fun->sym->has.v[0]->name;

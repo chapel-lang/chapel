@@ -126,6 +126,7 @@ operator(a:anynum, #"--")		   : a - 1;
 // tuples indexing
 
 tuple::self(a:anyint) : #__index_object self a;
+tuple::set(a:anyint, b) : #__set_index_object self a b;
 
 // vector indexing
 

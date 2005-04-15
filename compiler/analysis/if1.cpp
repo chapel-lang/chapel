@@ -211,6 +211,11 @@ if1_operator(IF1 *p, Code **c, Sym *a1, Sym *a2, Sym *a3) {
   return res;
 }
 
+void testme(Code *c) {
+  if (!c)
+    printf("hi");
+}
+
 Code *
 if1_send(IF1 *p, Code **c, int args, int results, ...) {
   va_list ap;

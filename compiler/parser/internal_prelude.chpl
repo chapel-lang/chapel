@@ -29,6 +29,9 @@ class Tuple {
   function this(pragma "clone_for_constants" i) {
     return __primitive("index_object", this, i);
   }
+  function set(pragma "clone_for_constants" i, x) {
+    return __primitive("set_index_object", this, i, x);
+  }
 }
 
 pragma "builtin" function +(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }

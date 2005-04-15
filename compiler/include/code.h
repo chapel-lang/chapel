@@ -21,6 +21,9 @@ enum Partial_kind { Partial_OK = 0, Partial_NEVER = 1, Partial_ALWAYS = 2 };
 EXTERN char *code_string[] EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
+class Code;
+void testme(Code *);
+
 class Code : public gc {
  public:
   Code_kind     kind;
@@ -44,7 +47,7 @@ class Code : public gc {
   Code          *cont;  // used by cfg.cpp
   PNode         *pn;    // used by cfg.cpp
 
-  Code(Code_kind k = Code_SUB) { memset(this, 0, sizeof *this); kind = k; }
+  Code(Code_kind k = Code_SUB) { memset(this, 0, sizeof *this); kind = k; testme(this); }
   int is_group() { return kind == Code_SUB || kind == Code_SEQ || kind == Code_CONC; }
 };
 #define forv_Code(_c, _v) forv_Vec(Code, _c, _v)
