@@ -46,9 +46,9 @@ if ($printusage == 1) {
 $pid = getpgrp();
 $user = `whoami`;
 chomp($user);
-$crayuser = $ENV{'CHPL_CRAY_USERNAME'};
-if ($crayuser eq "") {
-    $crayuser = $user;
+$debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
+if ($debugmail eq "") {
+    $debugmail = "$user\@cray.com";
 }
 $today = `date +%w-%a`; chomp($today);
 $platform = `uname -s`;
@@ -108,7 +108,7 @@ if ($valgrind == 1) {
 
 
 if ($debug == 1) {
-    $mailcommand = "| Mail -s \"Chapel: Debug Results ($platform) \" $crayuser\@cray.com";
+    $mailcommand = "| Mail -s \"Chapel: Debug Results ($platform) \" $debugmail";
 } else {
     $mailcommand = "| Mail -s \"Chapel: Nightly Results ($platform) \" chapel_dev\@cray.com";
 }
