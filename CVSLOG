@@ -26371,3 +26371,16 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+04/14/05 17:36:51 -- bradc
+
+Log message:
+	Made the runtime build an etags TAGS file for
+	the runtime directory whenever the runtime
+	library is rebuilt.  This gets placed in the
+	runtime/ directory.
+
+Modified files:
+	chapel/runtime/src/: Makefile 
+
