@@ -26384,3 +26384,21 @@ Log message:
 Modified files:
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/14/05 17:38:01 -- bradc
+
+Log message:
+	Improved typeInfo() for BinOp Exprs in order
+	to fix the like-1.chpl test.  Also cleaned up
+	the logic of insertElidedLoops so that it
+	didn't try to store state across subexpressions
+	but rather looks only at the local expression.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/traversals/: insertElidedLoops.cpp 
+	                             insertElidedLoops.h 
+	chapel/test/Bin/: nightly 
+
