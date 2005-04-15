@@ -26402,3 +26402,30 @@ Modified files:
 	                             insertElidedLoops.h 
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/14/05 17:45:53 -- bradc
+
+Log message:
+	My last checkin contained a change to nightly that
+	wasn't quite ready for primetime yet.  This one is
+	better, thanks to John's suggestion.
+	
+	Added the ability to set a new environment variable:
+	
+	        CHPL_NIGHTLY_DEBUG_EMAIL
+	
+	which specifies an email address to which the results
+	of a -debug run of the nightly script should be sent.
+	If the variable is unset, it will be sent to
+	$username@cray.com where $username is the login id of
+	the person running the script.  Thus, Cray users
+	should not need to set this environment variable, but
+	remote users will need to.
+	
+	When run in -cron mode (which should typically only be
+	done by cron scripts), the mail will be sent to chpl_dev.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
