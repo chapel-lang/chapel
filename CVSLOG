@@ -26889,3 +26889,25 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/18/05 15:37:32 -- shannon
+
+Log message:
+	Refactored the printing of the output of the
+	memory table, as well as modified the output itself.
+	
+	Added a test and updated the output of a couple others.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/runtime/include/: chplmem_tests.h 
+	chapel/runtime/src/: chplmem.c chplmem_tests.c 
+	chapel/test/: sub_test 
+	chapel/test/memory/shannon/: freedMalloc.good printMemTable.chpl 
+	                             printMemTable.good 
+	                             reallocZeroSize.good 
+Added files:
+	chapel/test/memory/shannon/: memtableFlag.chpl memtableFlag.good 
+	                             printMemTable.execopts 
+
