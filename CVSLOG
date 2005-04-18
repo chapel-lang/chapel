@@ -26721,3 +26721,13 @@ Log message:
 Added files:
 	chapel/compiler/symtab/: resolveTypes.cpp resolveTypes.h 
 
+---------------------------------------------------------------------------
+
+04/18/05 11:26:36 -- jplevyak
+
+Log message:
+	regressions file listing why things are regressing.
+
+Added files:
+	chapel/test/: REGRESSIONS 
+
