@@ -227,8 +227,19 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
       for (int i = 2; i < n->rvals.n; i++) fprintf(fp, "*");
       fprintf(fp, ")(%s))", n->rvals.v[1]->cg_string);
       for (int i = 2; i < n->rvals.n; i++) 
-        fprintf(fp, "[%s]", n->rvals.v[i]->cg_string);
+        fprintf(fp, "[%s-%d]", n->rvals.v[i]->cg_string, fa->tuple_index_base);
       fprintf(fp, " /* prim_index */ ;\n");
+      break;
+    }
+    case P_prim_set_index_object: {
+      fprintf(fp, "((%s", n->lvals.v[0]->type->cg_string);
+      for (int i = 2; i < n->rvals.n-1; i++) fprintf(fp, "*");
+      fprintf(fp, ")(%s))", n->rvals.v[1]->cg_string);
+      for (int i = 2; i < n->rvals.n-1; i++) 
+        fprintf(fp, "[%s-%d]", n->rvals.v[i]->cg_string, fa->tuple_index_base);
+      fprintf(fp, " = ");
+        fprintf(fp, "%s", n->rvals.v[n->rvals.n-1]->cg_string);
+      fprintf(fp, " /* prim_set_index */ ;\n");
       break;
     }
     case P_prim_new: {
