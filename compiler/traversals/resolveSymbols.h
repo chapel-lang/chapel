@@ -6,6 +6,7 @@
 
 class ResolveSymbols : public Traversal {
  public:
+  ResolveSymbols();
   void postProcessExpr(Expr* expr);
 };
 
