@@ -26946,3 +26946,13 @@ Log message:
 Modified files:
 	chapel/test/: start_test sub_test 
 
+---------------------------------------------------------------------------
+
+04/18/05 15:56:47 -- bradc
+
+Log message:
+	Added another missing initialization that valgrind caught.
+
+Modified files:
+	chapel/compiler/include/: var.h 
+
