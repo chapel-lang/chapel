@@ -1,13 +1,6 @@
 linux regressions
 =================
 
-[Error matching compiler output for classes/deitz/test_class_list1]
-
-This test is failing because the accessors are being created
-for clones.  They shouldn't be as analysis will clone the
-accessors separately.  New accessors should only be created
-for generic instantitation.
-
 [Error matching compiler output for classes/deitz/test_type_in_class1]
 
 This test is failing because it is attempting to resolveSymbols for
