@@ -68,7 +68,21 @@ if ($platform eq "linux") {
 #
 # directory locations
 #
-$tmpdir = "/tmp/chapel-nightly.$user.$pid.deleteme";
+$basetmpdir = $ENV{'CHPL_NIGHTLY_TMPDIR'};
+if ($basetmpdir eq "") {
+    $basetmpdir = $ENV{'TMPDIR'};
+}
+if ($basetmpdir eq "") {
+    $basetmpdir = "/tmp";
+}
+$make = $ENV{'CHPL_NIGHTLY_MAKE'};
+if ($make eq "") {
+    $make = $ENV{'MAKE'};
+}
+if ($make eq "") {
+    $make = "make";
+}
+$tmpdir = "$basetmpdir/chapel-nightly.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
 $statdir = $ENV{'CHPL_NIGHTLY_STATDIR'};
@@ -85,15 +99,6 @@ if ($debug == 1) {
     $statfile = "$statdir/nightly.$platform-debug.dat";
 } else {
     $statfile = "$statdir/nightly.$platform-cron.dat";
-}
-
-
-#
-# tools
-#
-$find = find;
-if ($platform eq "cygwin") {
-    $find = "/usr/bin/find";
 }
 
 
@@ -189,7 +194,7 @@ if ($debug == 0 && $platform eq "linux" && $user eq "bradc") {
 # if on cygwin, blow away FILES files because they wreak havoc on stuff
 #
 if ($platform eq "cygwin") {
-    mysystem("cd $chapeldir && $find . -name FILES -exec rm {} \\;");
+    mysystem("cd $chapeldir && find . -name FILES -exec rm {} \\;");
 }
 
 
