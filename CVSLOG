@@ -26956,3 +26956,15 @@ Log message:
 Modified files:
 	chapel/compiler/include/: var.h 
 
+---------------------------------------------------------------------------
+
+04/18/05 15:57:58 -- bradc
+
+Log message:
+	Oops, just noticed that I forgot to use the
+	$make variable that I inserted into the nightly
+	test to make BSD work better.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
