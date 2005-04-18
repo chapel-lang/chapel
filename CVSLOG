@@ -26690,3 +26690,24 @@ Modified files:
 	                                test_tuple_simple6.future 
 	                                test_tuple_simple7.future 
 
+---------------------------------------------------------------------------
+
+04/18/05 11:19:53 -- deitz
+
+Log message:
+	Added runtime flag checkAnalysisTypeinfo to set compiler variable of
+	the same name.  This replaces the ANALYSIS_MATCH #define and checks to
+	make sure that return_type_info and type_info are working.
+	
+	Rewrote FindUnknownTypes traversal as a symtab traversal called
+	ResolveTypes.  This now runs before ResolveSymbols replacing duplicate
+	code.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+	                             resolveSymbols.cpp 
+
