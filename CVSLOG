@@ -26808,3 +26808,17 @@ Modified files:
 	chapel/compiler/main/: passlist.h 
 	chapel/compiler/traversals/: resolveSymbols.cpp resolveSymbols.h 
 
+---------------------------------------------------------------------------
+
+04/18/05 13:50:22 -- deitz
+
+Log message:
+	Removed MethodsToFunctions traversal since it is no longer necessary.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: methodsToFunctions.cpp 
+	                             methodsToFunctions.h 
+
