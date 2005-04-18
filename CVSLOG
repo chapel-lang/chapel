@@ -26923,3 +26923,26 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/18/05 15:56:00 -- bradc
+
+Log message:
+	Modified the test system so that when it is run with
+	the -valgrind option, it will use the chpl-nogc
+	executable (built by the make nogc command) rather
+	than the normal compiler, since this seems to be the
+	more useful execution of valgrind and is what we'll
+	start doing in the nightly tests soon.  The
+	suppressions are no longer applied to the valgrind
+	runs on the compiler either.
+	
+	This can be overridden using the -compiler option.
+	However, note that if using valgrind with the normal
+	chapel compiler, you'll now have to specify the
+	suppressions using the CHPL_VALGRIND_OPTS environment
+	variable.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+
