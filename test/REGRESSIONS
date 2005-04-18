@@ -1,0 +1,25 @@
+[Error matching compiler output for classes/deitz/test_class_list1]
+
+This test is failing because the accessors are being created
+for clones.  They shouldn't be as analysis will clone the
+accessors separately.  New accessors should only be created
+for generic instantitation.
+
+[Error matching compiler output for classes/deitz/test_type_in_class1]
+
+This test is failing because it is attempting to resolveSymbols for
+the ->init in a VarDefStmt in a Type which is ever executed (it 
+is copied and the copy is executed) and so analysis knows nothing about it.
+
+[Error matching compiler output for types/tuple/bradc/writeTuple]
+
+This is failing because we currently cannot add methods to TupleTypes
+and tuple indexing is handled through methods so Tuple is a class
+which confuses codegen.
+
+[Error matching compiler output for types/tuple/deitz/test_tuple_simple1]
+
+This is failing because we currently cannot add methods to TupleTypes
+and tuple indexing is handled through methods so Tuple is a class
+which confuses codegen.
+
