@@ -615,8 +615,19 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
 
 
 Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  FnSymbol* copy = new FnSymbol(name, classBinding);
+  char* copy_name;
+  if (_getter) {
+    copy_name = glomstrings(2, "_chplget_", name);
+  } else {
+    copy_name = copystring(name);
+  }
+  FnSymbol* copy = new FnSymbol(copy_name, classBinding);
   Symboltable::startFnDef(copy);
+  if (_getter) {
+    copy->name = copystring(name);
+  }
+  copy->_getter = _getter; // If it is a cloned class we probably want this
+  copy->_setter = _setter; //  to point to the new member, but how do we do that
   Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
   Stmt* new_body = body->copyList(clone, map, analysis_clone);
   return Symboltable::finishFnDef(copy, new_formals, type, new_body, exportMe);
