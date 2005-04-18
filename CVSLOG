@@ -26754,3 +26754,43 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/18/05 13:36:44 -- bradc
+
+Log message:
+	Updated compiler's Makefiles so that a version of
+	the compiler could be made without using the BoehmGC
+	package.  This is done using the "make nogc" option
+	from any of the chapel/ compiler/ or compiler/*
+	subdirectories.
+	
+	Building in this mode creates object files of the form
+	$(PLATFORM)/expr.nogc.o, so it should be possible to
+	switch between gc and no-gc builds without doing any
+	cleaning steps in-between.  The compiler that's
+	produced in this compilation mode is currently called
+	chpl-nogc.
+	
+	Next step in this effort is to make the testing system
+	when run with valgrind use the chpl-nogc compiler by
+	default.
+
+Modified files:
+	./: Makefile 
+	chapel/compiler/: .cvsignore Makefile 
+	chapel/compiler/AST/: Makefile.share 
+	chapel/compiler/adt/: Makefile.share 
+	chapel/compiler/analysis/: Makefile.share 
+	chapel/compiler/backend/: Makefile.share 
+	chapel/compiler/main/: Makefile.share 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.head 
+	                       Makefile.compiler.subdirrules 
+	chapel/compiler/parser/: Makefile Makefile.share 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/compiler/util/: Makefile.share 
+	chapel/compiler/vparser/: Makefile.share 
+
