@@ -24,7 +24,6 @@ TRAVERSALS_SRCS = \
 	insertVariableInitializations.cpp \
 	printAST.cpp \
 	processParameters.cpp \
-	methodsToFunctions.cpp \
         omitForNoAnalysis.cpp \
 	removeNamedParameters.cpp \
         removeSeqOperations.cpp \

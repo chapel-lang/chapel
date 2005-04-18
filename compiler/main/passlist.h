@@ -92,8 +92,6 @@ PassInfo passlist[] = {
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(TransformLetExprs, ""),
   RUN(Fixup, "verify"), // this is a sanity check
-  //RUN(MethodsToFunctions, ""),
-  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ProcessParameters, ""),
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertVariableInitializations, ""),
