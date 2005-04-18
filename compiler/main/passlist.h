@@ -65,8 +65,9 @@ PassInfo passlist[] = {
   // passes to capture analysis information in the AST
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(RemoveDeadSymbols, ""),
+  RUN(ResolveTypes, ""),
   RUN(ResolveSymbols, ""),
-  RUN(FindUnknownTypes, ""),
+  //RUN(FindUnknownTypes, ""),
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
   RUN(ResolveOverloadedOperators, ""),

@@ -12,16 +12,10 @@
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
 
-  if (Variable* var_expr = dynamic_cast<Variable*>(expr)) {
-    if (var_expr->var->type == dtUnknown) {
-      var_expr->var->type = type_info(var_expr->var);
-    }
-  }
-
   if (MemberAccess* dot = dynamic_cast<MemberAccess*>(expr)) {
 
     /** Resolve methods with arguments at ParenOpExpr */
-//     if (ParenOpExpr* paren_op = dynamic_cast<ParenOpExpr*>(expr->parent)) {
+//     if (ParenOpExpr* paren_op = dynamic_cast<ParenOpExpr*>(expr->parentExpr)) {
 //       if (paren_op->baseExpr == expr) {
 //         return;
 //       }

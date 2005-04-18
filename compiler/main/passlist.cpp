@@ -14,6 +14,7 @@
 #include "../symtab/removeDeadSymbols.h"
 #include "../symtab/removeLikeTypes.h"
 #include "../symtab/renameOverloadedFunctions.h"
+#include "../symtab/resolveTypes.h"
 
 #include "../traversals/applyThisParameters.h"
 #include "../traversals/buildClassConstructorsEtc.h"
@@ -72,7 +73,7 @@ REGISTER(DestructureTupleAssignments);
 REGISTER(DummyPass);
 REGISTER(ExpandClassWiths);
 REGISTER(ExpandSeqExprAssignments);
-REGISTER(FindUnknownTypes);
+//REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
@@ -105,6 +106,7 @@ REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(RenameOverloadedFunctions);
 REGISTER(ResolveOverloadedOperators);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
+REGISTER(ResolveTypes);
 REGISTER(RunAnalysis);
 REGISTER(ScopeResolveGotos);
 REGISTER(ScopeResolveSymbols);

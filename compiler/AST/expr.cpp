@@ -1333,6 +1333,7 @@ Type* TupleSelect::typeInfo(void) {
       }
     } 
     INT_FATAL(this, "Tuple indexing on something not a tuple");
+    return dtUnknown;
   }
 
   IntLiteral* index = dynamic_cast<IntLiteral*>(argList);

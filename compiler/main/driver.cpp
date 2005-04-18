@@ -40,6 +40,7 @@ extern int d_verbose_level;
 int parser_verbose_non_prelude = 0;
 static int rungdb = 0;
 static int pre_malloc = 0;
+int checkAnalysisTypeinfo = 0;
 int analyzeAST = 1;
 int suppressCodegen = 0;
 int debugParserLevel = 0;
@@ -92,6 +93,7 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
+ {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},

@@ -9,6 +9,7 @@ SYMTAB_SRCS = \
 	removeDeadSymbols.cpp \
 	removeLikeTypes.cpp \
 	renameOverloadedFunctions.cpp \
+        resolveTypes.cpp \
 	symlink.cpp \
 	symscope.cpp \
         symtab.cpp \
