@@ -90,6 +90,16 @@ Type *Type::instantiate_generic(Map<Type *, Type *> &substitutions) {
   return 0;
 }
 
+
+void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defaultVal) {
+    defaultVal = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+  }
+}
+
+
 void Type::traverse(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
     traversal->preProcessType(this);
@@ -665,6 +675,17 @@ void IndexType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
 }
                           
 
+void IndexType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defaultVal) {
+    defaultVal = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == idxExpr) {
+    idxExpr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+  }
+}
+
+
 void IndexType::traverseDefType(Traversal* traversal) {
   if (!(typeid(*idxExpr) == typeid(IntLiteral))) {
     TRAVERSE(idxExpr, traversal, false);
@@ -804,6 +825,17 @@ Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
                              elementType->copy(clone, map, analysis_clone));
   copy->addSymbol(symbol);
   return copy;
+}
+
+
+void ArrayType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defaultVal) {
+    defaultVal = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == domain) {
+    domain = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+  }
 }
 
 
@@ -1023,6 +1055,17 @@ bool LikeType::isComplex(void) {
 }
 
 
+void LikeType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defaultVal) {
+    defaultVal = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+  }
+}
+
+
 void LikeType::traverseDefType(Traversal* traversal) {
   TRAVERSE(expr, traversal, false);
 }
@@ -1113,6 +1156,19 @@ void StructuralType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
 
 void StructuralType::setScope(SymScope* init_structScope) {
   structScope = init_structScope;
+}
+
+
+void StructuralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defaultVal) {
+    defaultVal = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == constructor) {
+    constructor = dynamic_cast<Stmt*>(new_ast);
+  } else if (old_ast == declarationList) {
+    declarationList = dynamic_cast<Stmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+  }
 }
 
 
@@ -1583,7 +1639,9 @@ void TupleType::rebuildDefaultVal(void) {
     tuple->exprs = appendLink(tuple->exprs, component->defaultVal->copy());
   }
   SET_BACK(tuple->exprs);
-  defaultVal->replace(tuple);
+  if (symbol) {
+    defaultVal->replace(tuple);
+  }
 }
 
 

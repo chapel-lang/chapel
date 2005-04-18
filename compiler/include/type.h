@@ -39,6 +39,7 @@ class Type : public BaseAST {
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   Type *instantiate_generic(Map<Type *, Type *> &substitutions);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseType(Traversal* traversal);
@@ -138,6 +139,7 @@ class IndexType : public Type {
                      Expr* format);
   
   void print(FILE* outfile);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
   Type* getType();
 };
@@ -171,6 +173,7 @@ class LikeType : public Type {
 
   bool isComplex(void);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
@@ -197,6 +200,7 @@ class StructuralType : public Type {
   void copyGuts(StructuralType* copy_type, bool clone, Map<BaseAST*,BaseAST*>* map, 
                 CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
 
   virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments);
@@ -314,6 +318,7 @@ class ArrayType : public Type {
   ArrayType(Expr* init_domain, Type* init_elementType);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
 
   int rank(void);

@@ -68,6 +68,11 @@ Symbol* Symbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 }
 
 
+void Symbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected call to Symbol::replaceChild(old, new)");
+}
+
+
 void Symbol::traverse(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
     traversal->preProcessSymbol(this);
@@ -228,6 +233,15 @@ Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCall
 }
 
 
+void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == init) {
+    init = dynamic_cast<Expr*>(new_ast);
+  } else {
+    type->replaceChild(old_ast, new_ast);
+  }
+}
+
+
 void VarSymbol::traverseDefSymbol(Traversal* traversal) {
   SymScope* saveScope = NULL;
   /** SJD: assumes no nested arrays, should use a traversal to push scopes **/
@@ -366,6 +380,15 @@ Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCa
 }
 
 
+void ParamSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == init) {
+    init = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in ParamSymbol::replaceChild(old, new)");
+  }
+}
+
+
 void ParamSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(this, traversal, false);
   TRAVERSE(type, traversal, false);
@@ -477,6 +500,11 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
 
   Symboltable::setCurrentScope(save_scope);
   return new_type_sym;
+}
+
+
+void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  type->replaceChild(old_ast, new_ast);
 }
 
 
@@ -592,6 +620,15 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
   Stmt* new_body = body->copyList(clone, map, analysis_clone);
   return Symboltable::finishFnDef(copy, new_formals, type, new_body, exportMe);
+}
+
+
+void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == body) {
+    body = dynamic_cast<Stmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild(old, new)");
+  }
 }
 
 
@@ -938,6 +975,15 @@ Symbol* EnumSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCal
 }
 
 
+void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == init) {
+    init = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild(old, new)");
+  }
+}
+
+
 void EnumSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(this, traversal, false);
 }
@@ -1011,6 +1057,15 @@ void ModuleSymbol::startTraversal(Traversal* traversal) {
   TRAVERSE_LS(stmts, traversal, true);
   if (modScope) {
     Symboltable::setCurrentScope(prevScope);
+  }
+}
+
+
+void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == stmts) {
+    stmts = dynamic_cast<Stmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild(old, new)");
   }
 }
 

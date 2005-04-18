@@ -218,6 +218,17 @@ void Expr::traverseExpr(Traversal* traversal) {
 }
 
 
+static void call_replace_child(Expr* old_expr, Expr* new_expr) {
+  if (old_expr->parentExpr) {
+    old_expr->parentExpr->replaceChild(old_expr, new_expr);
+  } else if (old_expr->parentStmt) {
+    old_expr->parentStmt->replaceChild(old_expr, new_expr);
+  } else {
+    old_expr->parentSymbol->replaceChild(old_expr, new_expr);
+  }
+}
+
+
 void Expr::replace(Expr* new_expr) {
   Expr* first = dynamic_cast<Expr*>(new_expr->head());
   Expr* last = dynamic_cast<Expr*>(new_expr->tail());
@@ -230,29 +241,24 @@ void Expr::replace(Expr* new_expr) {
     INT_FATAL(this, "Illegal replace, new_expr is not head of list");
   }
 
+  first->back = back; /*** MAINTAIN back ***/
+
   last->next = next;
   if (next) {
     next->prev = last;
-    Expr* tmp = dynamic_cast<Expr*>(next);
-    tmp->back = &(Expr*&)last->next; // UGH --SJD
+    Expr* tmp = dynamic_cast<Expr*>(next); /*** MAINTAIN back ***/
+    tmp->back = &(Expr*&)last->next;       /*** MAINTAIN back ***/
   }
+
   first->prev = prev;
-  first->back = back;
-  *back = first;
-  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev) {
-      prev->next = first;
-    }
-  */
-  /* while nulling the following out would be cleaner and purer,
-     in many cases (traversals, loops), it is convenient to keep
-     these pointing to the old nodes; an alternative would be to
-     require the user to set them back to something non-NULL if
-     that's what they wanted, but we are positing that this will
-     be the common case.  
-  prev = NULL;
-  next = NULL;
-  */
+  if (prev) {
+    prev->next = first;
+  }
+
+  if (!prev) {
+    call_replace_child(this, new_expr);
+  }
+
   call_fixup(this);
 }
 
@@ -910,7 +916,7 @@ bool BinOp::isComputable(void) {
 void BinOp::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == left) {
     left = dynamic_cast<Expr*>(new_ast);
-  } if (old_ast == right) {
+  } else if (old_ast == right) {
     right = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in BinOp::replaceChild(old, new)");
