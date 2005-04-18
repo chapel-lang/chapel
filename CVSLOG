@@ -26731,3 +26731,14 @@ Log message:
 Added files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/18/05 13:22:33 -- bradc
+
+Log message:
+	Updated the REGRESSIONS file to list regressions currently
+	found on non-linux platforms.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
