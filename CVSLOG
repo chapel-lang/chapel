@@ -26866,3 +26866,16 @@ Modified files:
 	chapel/compiler/include/: symbol.h type.h 
 	chapel/compiler/traversals/: destructureTupleAssignments.cpp 
 
+---------------------------------------------------------------------------
+
+04/18/05 15:08:02 -- deitz
+
+Log message:
+	Fixed regression for test_class_list1 by specialcasing the copying of
+	getters so that they are not added to the Symboltable and so that they
+	pass on their getter information.  Unfortunately for cloning classes,
+	the getter points to the old field, not the new one.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
