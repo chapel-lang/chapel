@@ -26879,3 +26879,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+04/18/05 15:10:01 -- deitz
+
+Log message:
+	Updated regressions info.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
