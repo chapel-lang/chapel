@@ -68,6 +68,7 @@ void setMemmax(_integer64 value) {
   memmaxValue = value;
 }
 
+
 void setMemtable(void) {
   memtable = 1;
 }
@@ -99,33 +100,50 @@ void printMemTable(void) {
     fprintf(stderr, "printMemTable() only works with the --memtable flag\n");
     exit(0);
   }
-
   memTableEntry* memEntry = NULL;
- 
   fprintf(stdout, "\n");
-  fprintf(stdout, "================\n"); 
-  fprintf(stdout, "Allocated Memory\n");
-  fprintf(stdout, "================\n");
 
-  char* column1    = "Size (in bytes):";
-  char* underline1 = "----------------";
-  char* column2    = "Number:";
-  char* underline2 = "-------";
-  char* column3    = "Description:";
-  char* underline3 = "------------";
-  int columnLength = 20;
+  int numberWidth   = 9;
+  int addressWidth  = 12;
+  int memAllocWidth = 10;
+  char* size        = "Size:";
+  char* bytes       = "(bytes)"; 
+  char* number      = "Number:";
+  char* total       = "Total:";
+  char* address     = "Address:";
+  char* description = "Description:";
+  char* line40      = "========================================";   
 
-  fprintf(stdout, "%-*s%-*s%-*s\n", columnLength, column1, columnLength, 
-          column2, columnLength, column3);
-  fprintf(stdout, "%-*s%-*s%-*s\n", columnLength, underline1,columnLength, 
-          underline2, columnLength, underline3);
+  fprintf(stdout, "%s%s\n", line40, line40);
+
+  fprintf(stdout, "----------------------\n");
+  fprintf(stdout, "***Allocated Memory***\n");
+  fprintf(stdout, "----------------------\n");
+
+  fprintf(stdout, "%-*s%-*s%-*s%-*s%-s\n", 
+          numberWidth, size, 
+          numberWidth, number, 
+          numberWidth, total, 
+          addressWidth, address, 
+          description);
+
+  fprintf(stdout, "%-*s%-*s%-*s\n", 
+          numberWidth, bytes, 
+          numberWidth, "", 
+          numberWidth, bytes);
+
+  fprintf(stdout, "%s%s\n", line40, line40);
 
   for (memEntry = first;
        memEntry != NULL;
        memEntry = memEntry->nextInstalled) {
-
-    fprintf(stdout, "%-*u%-*u%-*s\n", columnLength, (unsigned)memEntry->size, 
-            columnLength, (unsigned)memEntry->number, columnLength, 
+    
+    size_t chunk = memEntry->number * memEntry->size;
+    fprintf(stdout, "%-*u%-*u%-*u0x%-*x%-s\n", 
+            numberWidth, (unsigned)memEntry->size, 
+            numberWidth, (unsigned)memEntry->number, 
+            numberWidth, chunk, 
+            memAllocWidth, (unsigned)(intptr_t)memEntry->memAlloc, 
             memEntry->description);
   }
   fprintf(stdout, "\n");
@@ -253,12 +271,13 @@ static void printToMemLog(size_t number, size_t size, char* description,
   if (chunk >= memthresholdValue) {
     if (moreMemAlloc && (moreMemAlloc != memAlloc)) {
       fprintf(memlog, "%s called for %u items of size %u"
-              " for %s:  0x%x -> 0x%x\n", memType, (unsigned)number, (unsigned)size, 
-              description, (unsigned)(intptr_t)memAlloc, (unsigned)(intptr_t)moreMemAlloc);     
+              " for %s:  0x%x -> 0x%x\n", memType, (unsigned)number, 
+              (unsigned)size, description, (unsigned)(intptr_t)memAlloc, 
+              (unsigned)(intptr_t)moreMemAlloc);     
     } else {
       fprintf(memlog, "%s called for %u items of size %u"
-              " for %s:  0x%x\n", memType, (unsigned)number, (unsigned)size, description, 
-              (unsigned)(intptr_t)memAlloc);       
+              " for %s:  0x%x\n", memType, (unsigned)number, (unsigned)size, 
+              description, (unsigned)(intptr_t)memAlloc);       
     }
   }
 }

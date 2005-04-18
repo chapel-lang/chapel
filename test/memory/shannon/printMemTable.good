@@ -1,1 +1,28 @@
-printMemTable() only works with the --memtable flag
+
+================================================================================
+----------------------
+***Allocated Memory***
+----------------------
+Size:    Number:  Total:   Address:    Description:
+(bytes)           (bytes)  
+================================================================================
+1        7        7        0xnnnnnnn   control string buffer in _glom_strings
+4        3        12       0xnnnnnnn   stringlist buffer in _glom_strings
+24       1        24       0xnnnnnnn   config table entry for n
+1        2        2        0xnnnnnnn   string copy of "n"
+1        14       14       0xnnnnnnn   string copy of "printMemTable"
+1        2        2        0xnnnnnnn   string copy of "5"
+24       1        24       0xnnnnnnn   config table entry for epsilon
+1        8        8        0xnnnnnnn   string copy of "epsilon"
+1        14       14       0xnnnnnnn   string copy of "printMemTable"
+1        8        8        0xnnnnnnn   string copy of "0.00001"
+24       1        24       0xnnnnnnn   config table entry for verbose
+1        8        8        0xnnnnnnn   string copy of "verbose"
+1        14       14       0xnnnnnnn   string copy of "printMemTable"
+1        6        6        0xnnnnnnn   string copy of "false"
+8        49       392      0xnnnnnnn   array A
+8        49       392      0xnnnnnnn   array Temp
+
+Jacobi computation complete.
+Delta is 9.68412e-06 (< epsilon = 1e-05)
+# of iterations: 79

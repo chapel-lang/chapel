@@ -5,6 +5,11 @@
 #include "chpltypes.h"
 
 
+void _chpl_memtest_printMemTable(void) {
+  printMemTable();
+}
+
+
 void _chpl_memtest_freedMalloc(void) {
   _integer64* freedInt = (_integer64*) _chpl_malloc(1, sizeof(_integer64), 
                                                   "_integer64");

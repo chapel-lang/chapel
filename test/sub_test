@@ -88,10 +88,6 @@ else
     set globalExecopts = "$EXECOPTS"
 endif
 
-# shannon:  catfiles isn't going to have a environment variable set
-# like exec and compopts, which are picked up from the command line 
-# in start_test.
-
 if (-r ./CATFILES) then
     set globalCatfiles = `cat ./CATFILES`
 else
