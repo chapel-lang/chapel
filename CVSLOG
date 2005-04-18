@@ -26846,3 +26846,23 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/18/05 14:22:21 -- deitz
+
+Log message:
+	Added replaceChild routines to Symbols and Types.  I also rewrote
+	Expr::replace to use the replaceChild routines instead of the back
+	pointer.  It still maintains the back pointer but this indicates that
+	it can be removed.
+	
+	Added a stopgap EMPTY_TUPLE_STOPGAP to DestructureTupleAssignments.
+	It seems that IndexTypes don't have defaultVal set correctly so that
+	the InsertVariableInitializations is putting in a non-sensical
+	assignment statement.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/traversals/: destructureTupleAssignments.cpp 
+
