@@ -26711,3 +26711,13 @@ Modified files:
 	chapel/compiler/traversals/: findUnknownTypes.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/18/05 11:23:50 -- deitz
+
+Log message:
+	Forgot to add these with last commit.
+
+Added files:
+	chapel/compiler/symtab/: resolveTypes.cpp resolveTypes.h 
+
