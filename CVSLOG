@@ -26794,3 +26794,17 @@ Modified files:
 	chapel/compiler/util/: Makefile.share 
 	chapel/compiler/vparser/: Makefile.share 
 
+---------------------------------------------------------------------------
+
+04/18/05 13:39:45 -- deitz
+
+Log message:
+	Cleaned ResolveSymbols traversal.  Greatly improved its logic.
+	
+	Removed running of MethodsToFunctions since this is now done in
+	ResolveSymbols.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp resolveSymbols.h 
+
