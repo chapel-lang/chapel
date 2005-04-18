@@ -201,9 +201,9 @@ if ($platform eq "cygwin") {
 #
 # build stuff
 #
-mysystem("cd $chapeldir && make third-party", "making third-party", 1, 1);
-mysystem("cd $chapeldir && make compiler", "making chapel compiler", 1, 1);
-mysystem("cd $chapeldir && make runtime", "making chapel runtime", 1, 1);
+mysystem("cd $chapeldir && $make third-party", "making third-party", 1, 1);
+mysystem("cd $chapeldir && $make compiler", "making chapel compiler", 1, 1);
+mysystem("cd $chapeldir && $make runtime", "making chapel runtime", 1, 1);
 
 #
 # run tests
