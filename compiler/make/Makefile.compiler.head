@@ -40,6 +40,11 @@ ifdef USE_GC
 CFLAGS += -DUSE_GC
 CFLAGS += -I$(GC_ROOT)/include/gc
 LIBS += $(GC_ROOT)/lib/libgc.a
+OBJ_SUFFIX=o
+CHPL_MUNGE=
+else
+OBJ_SUFFIX=nogc.o
+CHPL_MUNGE=-nogc
 endif
 
 ifdef LEAK_DETECT

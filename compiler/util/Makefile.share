@@ -9,4 +9,4 @@ CVS_SRCS = $(UTIL_SRCS)
 SRCS = $(CVS_SRCS)
 
 UTIL_OBJS = \
-	$(UTIL_SRCS:%.cpp=$(UTIL_OBJDIR)/%.o)
+	$(UTIL_SRCS:%.cpp=$(UTIL_OBJDIR)/%.$(OBJ_SUFFIX))

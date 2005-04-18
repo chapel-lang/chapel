@@ -49,8 +49,17 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 $(PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(CFLAGS) -Wno-error -o $@ $<
 
+$(PLATFORM)/chapel.tab.nogc.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
+	$(CXX) -c $(CFLAGS) -Wno-error -o $@ $<
+
 $(PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
 	$(CXX) -c $(CFLAGS) -o $@ $<
 
+$(PLATFORM)/lex.yy.nogc.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
+	$(CXX) -c $(CFLAGS) -o $@ $<
+
 $(PLATFORM)/yy.o: yy.c $(PLATFORM_DIR)
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+$(PLATFORM)/yy.nogc.o: yy.c $(PLATFORM_DIR)
 	$(CC) -c $(CFLAGS) -o $@ $<

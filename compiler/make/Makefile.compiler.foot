@@ -39,6 +39,9 @@ echocompilerdir:
 $(PLATFORM)/%.test.o: %.test.cpp $(PLATFORM_DIR)
 	$(CXX) -c -DTEST_LIB $(CXXFLAGS) -o $@ $<
 
+$(PLATFORM)/%.nogc.o: %.cpp $(PLATFORM_DIR)
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
+
 $(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 

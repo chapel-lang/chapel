@@ -1,6 +1,9 @@
 
 all: $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
 
+nogc: FORCE
+	$(MAKE) USE_GC= all
+
 clean: $(CLEANSUBDIRS) echocompilerdir
 	rm -f $(CLEAN_TARGS)
 

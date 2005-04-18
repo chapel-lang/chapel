@@ -3,6 +3,7 @@ freebsd
 linux
 sun
 chpl
+chpl-nogc
 a.out
 output
 BROWSE

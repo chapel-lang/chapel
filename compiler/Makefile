@@ -48,7 +48,7 @@ include vparser/Makefile.include
 
 CVS_SRCS = 
 
-CHPL = chpl$(EXE_SUFFIX)
+CHPL = chpl$(CHPL_MUNGE)$(EXE_SUFFIX)
 CHPL_OBJS = \
 	$(AST_OBJS) \
 	$(ADT_OBJS) \

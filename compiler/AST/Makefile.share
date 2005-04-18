@@ -12,4 +12,4 @@ CVS_SRCS = $(AST_SRCS)
 SRCS = $(CVS_SRCS)
 
 AST_OBJS = \
-	$(AST_SRCS:%.cpp=$(AST_OBJDIR)/%.o)
+	$(AST_SRCS:%.cpp=$(AST_OBJDIR)/%.$(OBJ_SUFFIX))
