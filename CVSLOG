@@ -26674,3 +26674,19 @@ Log message:
 Modified files:
 	chapel/runtime/include/: chpltypes.h 
 
+---------------------------------------------------------------------------
+
+04/18/05 10:38:22 -- jplevyak
+
+Log message:
+	Fixed an issue in low level code generation with tuple indexing.
+	Updated some .future files related to tuples.
+
+Modified files:
+	chapel/compiler/analysis/: cg.cpp 
+	chapel/test/types/tuple/deitz/: test_tuple_simple3.future 
+	                                test_tuple_simple4.future 
+	                                test_tuple_simple5.future 
+	                                test_tuple_simple6.future 
+	                                test_tuple_simple7.future 
+
