@@ -26742,3 +26742,15 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/18/05 13:31:04 -- bradc
+
+Log message:
+	Oops -- Steve points out that I had accidentally
+	repeated some of the tests that John had already
+	covered.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
