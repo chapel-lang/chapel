@@ -26822,3 +26822,27 @@ Removed files:
 	chapel/compiler/traversals/: methodsToFunctions.cpp 
 	                             methodsToFunctions.h 
 
+---------------------------------------------------------------------------
+
+04/18/05 14:10:00 -- bradc
+
+Log message:
+	To improve portability of the nightly script for BSD,
+	added the ability to specify the base "tmp" directory
+	that the nightly script should run in via the variables
+	CHPL_NIGHTLY_TMPDIR or TMPDIR (the former overrides the
+	second, and /tmp is used if neither is specified, as it
+	is currently), and to specify the "make" utility to run
+	via CHPL_NIGHTLY_MAKE or MAKE ("make" is used if neither
+	is specified, as it is currently).
+	
+	John, let me know if this works, or if you find other
+	problems.
+	
+	Also, removed a hack that I'd inserted due to an
+	environment problem I was having on cygwin with cron
+	jobs.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
