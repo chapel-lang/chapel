@@ -40,17 +40,7 @@ memory/shannon/configVarFile -- sizeof() returning different sizes;
 sunos-only regressions
 ======================
 
-types/tuple/bradc/writeTuple -- internal error for unknown reason
-
-types/tuple/deitz/test_tuple_simple1 -- internal error for unknown
-  reason
-
 
 cygwin-only regressions
 =======================
-
-types/tuple/bradc/writeTuple -- internal error for unknown reason
-
-types/tuple/deitz/test_tuple_simple1 -- internal error for unknown
-  reason
 
