@@ -72,6 +72,12 @@ pragma "builtin" function by(a : numeric, b : numeric) { return __primitive(a, "
 pragma "builtin" function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
 pragma "builtin" function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
 
+pragma "builtin" function =(a : Index, b : any) { return __primitive("indextype_set", a, b); }
+pragma "builtin" function =(a : any, b : Index) { return __primitive("indextype_get", b); }
+pragma "builtin" function =(a : Index, b : Index) { 
+  return __primitive("indextype_set", a, __primitive("indextype_get", b)); 
+}
+
 pragma "builtin" function =(a : any, b : any) { return b; }
 
 function _chpl_malloc(number, size, description: string);

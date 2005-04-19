@@ -668,9 +668,18 @@ build_types(Vec<BaseAST *> &syms) {
       case TYPE_DOMAIN: 
         build_record_type(t, sym_domain);
         break;
-      case TYPE_INDEX: 
-        build_record_type(t, sym_tuple);
+      case TYPE_INDEX: {
+        IndexType *it = dynamic_cast<IndexType*>(t);
+        build_record_type(t, sym_index);
+        Sym *s = it->asymbol->sym;
+        s->element = new_sym();
+        s->element->type = it->idxType->asymbol->sym;
+        s->element->is_var = 1;
+        s->element->is_external = 1;
+        if (it->domainType)
+          s->domain = it->domainType->asymbol->sym;
         break;
+      }
       case TYPE_ARRAY: {
         ArrayType *at = dynamic_cast<ArrayType*>(t);
         build_record_type(t, sym_array); 
@@ -2357,6 +2366,28 @@ seqcat_element(PNode *pn, EntrySet *es) {
   flow_vars(s1, result);
 }
 
+static void
+indextype_get(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *i = make_AVar(pn->rvals.v[2], es);
+  forv_CreationSet(a, *i->out) if (a) {
+    AVar *ea = unique_AVar(a->sym->element->var, a);
+    flow_vars(ea, result);
+  }
+}
+
+static void
+indextype_set(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *i = make_AVar(pn->rvals.v[2], es);
+  AVar *x = make_AVar(pn->rvals.v[3], es);
+  forv_CreationSet(a, *i->out) if (a) {
+    AVar *ea = unique_AVar(a->sym->element->var, a);
+    flow_vars(x, ea);
+  }
+  flow_vars(x, result);
+}
+
 int 
 ast_to_if1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
@@ -2389,6 +2420,8 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   REG(if1_cannonicalize_string(if1, "array_pointwise_op"), array_pointwise_op);
   REG(if1_cannonicalize_string(if1, "seqcat_seq"), seqcat_seq);
   REG(if1_cannonicalize_string(if1, "seqcat_element"), seqcat_element);
+  REG(if1_cannonicalize_string(if1, "indextype_get"), indextype_get);
+  REG(if1_cannonicalize_string(if1, "indextype_set"), indextype_set);
   build_type_hierarchy();
   finalize_symbols(if1);
   finalize_types(if1);  // again to catch any new ones
