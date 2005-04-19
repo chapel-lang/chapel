@@ -38,7 +38,7 @@ void TransformLetExprs::doTransformation(void) {
     Expr* inner_copy = let_expr->innerExpr->copy(false, NULL, NULL, &lets);
     let_expr->replace(inner_copy);
     Stmt* let_stmt_copy = let_stmt->copy(false, NULL, NULL, &lets);
-    DefStmt* def_stmt = new DefStmt(let_expr->symDefs);
+    DefStmt* def_stmt = new DefStmt(dynamic_cast<DefExpr*>(let_expr->symDefs));
     def_stmt->append(let_stmt_copy);
     let_stmt_copy = def_stmt;
     BlockStmt* block_stmt = new BlockStmt(let_stmt_copy);

@@ -70,9 +70,9 @@ class WithStmt : public Stmt {
 
 class DefStmt : public Stmt {
 public:
-  Expr* defExprList;
+  DefExpr* defExprls;
 
-  DefStmt(Expr* init_defExprList);
+  DefStmt(DefExpr* init_defExprls);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);

@@ -354,20 +354,20 @@ void WithStmt::codegen(FILE* outfile) {
 }
 
 
-DefStmt::DefStmt(Expr* init_defExprList) :
+DefStmt::DefStmt(DefExpr* init_defExprls) :
   Stmt(STMT_DEF),
-  defExprList(init_defExprList)
+  defExprls(init_defExprls)
 { }
 
 
 Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new DefStmt(defExprList->copy(clone, map, analysis_clone));
+  return new DefStmt(dynamic_cast<DefExpr*>(defExprls->copy(clone, map, analysis_clone)));
 }
 
 
 void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defExprList) {
-    defExprList = dynamic_cast<Expr*>(new_ast);
+  if (old_ast == defExprls) {
+    defExprls = dynamic_cast<DefExpr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefStmt::replaceChild(old, new)");
   }
@@ -375,12 +375,12 @@ void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void DefStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE_LS(defExprList, traversal, false);
+  TRAVERSE_LS(defExprls, traversal, false);
 }
 
 
 void DefStmt::print(FILE* outfile) {
-  defExprList->printList(outfile);
+  defExprls->printList(outfile);
 }
 
 
@@ -388,28 +388,28 @@ void DefStmt::codegen(FILE* outfile) { /* Noop */ }
 
 
 VarSymbol* DefStmt::varDef() {
-  return dynamic_cast<VarSymbol*>(dynamic_cast<DefExpr*>(defExprList)->sym);
+  return dynamic_cast<VarSymbol*>(defExprls->sym);
 }
 
 
 FnSymbol* DefStmt::fnDef() {
-  return dynamic_cast<FnSymbol*>(dynamic_cast<DefExpr*>(defExprList)->sym);
+  return dynamic_cast<FnSymbol*>(defExprls->sym);
 }
 
 
 TypeSymbol* DefStmt::typeDef() {
-  return dynamic_cast<TypeSymbol*>(dynamic_cast<DefExpr*>(defExprList)->sym);
+  return dynamic_cast<TypeSymbol*>(defExprls->sym);
 }
 
 
 ModuleSymbol* DefStmt::moduleDef() {
-  return dynamic_cast<ModuleSymbol*>(dynamic_cast<DefExpr*>(defExprList)->sym);
+  return dynamic_cast<ModuleSymbol*>(defExprls->sym);
 }
 
 
 Vec<VarSymbol*>* DefStmt::varDefSet() {
   Vec<VarSymbol*>* var_set = new Vec<VarSymbol*>();
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(defExprList);
+  DefExpr* def_expr = defExprls;
   while (def_expr) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym);
     while (var) {

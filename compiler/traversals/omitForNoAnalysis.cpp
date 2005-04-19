@@ -34,7 +34,7 @@ void OmitForNoAnalysis::postProcessStmt(Stmt* stmt) {
   Pragma* pr = def_stmt->pragmas;
   while (pr) {
     if (!strcmp(pr->str, "omit for noanalysis")) {
-      DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList);
+      DefExpr* def_expr = def_stmt->defExprls;
       while (def_expr) {
         Symbol* sym = def_expr->sym;
         while (sym) {

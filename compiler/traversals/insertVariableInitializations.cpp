@@ -191,7 +191,7 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
       return;
     }
 
-    DefExpr* def_expr = dynamic_cast<DefExpr*>(def_stmt->defExprList);
+    DefExpr* def_expr = def_stmt->defExprls;
     while (def_expr) {
       VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym);
       while (var) {

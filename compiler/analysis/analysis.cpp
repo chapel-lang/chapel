@@ -1139,8 +1139,9 @@ gen_one_vardef(VarSymbol *var, DefStmt *def) {
 static int
 gen_vardef(BaseAST *a) {
   DefStmt *def = dynamic_cast<DefStmt*>(a);
-  for (Expr* expr = def->defExprList;expr;expr = dynamic_cast<Expr*>(expr->next)) {
-    DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
+  for (DefExpr* def_expr = def->defExprls;
+       def_expr;
+       def_expr = nextLink(DefExpr, def_expr)) {
     for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym); var;
          var = dynamic_cast<VarSymbol*>(var->next)) 
       if (gen_one_vardef(var, def))
