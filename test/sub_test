@@ -125,17 +125,18 @@ else
   set CHPL_VGRND_LINUX32 = "linux32 " 
 endif
 
-if ($CHPLTESTVGRND == "on") then
+if ($CHPL_TEST_VGRND_COMP == "on") then
   set valgrndcomp = "$CHPL_VGRND_LINUX32 valgrind $CHPL_VALGRIND_OPTS -q "
-  if ($vgrbin == "yes") then
-    set valgrndbin = "$CHPL_VGRND_LINUX32 valgrind $CHPL_VALGRIND_OPTS -q "
-  else
-    set valgrndbin = ""
-  endif
 else
   set valgrndcomp = ""
+endif
+
+if ($CHPL_TEST_VGRND_EXE == "on" && $vgrbin == "yes") then
+  set valgrndbin = "$CHPL_VGRND_LINUX32 valgrind $CHPL_VALGRIND_OPTS -q "
+else
   set valgrndbin = ""
 endif
+
 
 # compile, execute, and compare each source file
 foreach chplsrc ($testsrc)
@@ -245,7 +246,7 @@ foreach chplsrc ($testsrc)
 	        set redirectin = "/dev/null"
 	    endif
 
-	    echo \[Executing program $valgrndbin$execfile "$execopts" \< $redirectin at `date +"%H:%M:%S"`\]
+	    echo \[Executing program $valgrndbin./$binfile "$execopts" \< $redirectin at `date +"%H:%M:%S"`\]
 	    # Append program output to that of the 
 	    # compiler (in case warning were output
 	    # by compiler)

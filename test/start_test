@@ -75,6 +75,8 @@
 #
 # The -valgrind option specifies that the compiler and generated
 # executable should be run using valgrind in order to find errors.
+# The -valgrindexe option specifies that the generated executable
+# should be run using valgrind, but not the compiler.
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
@@ -244,6 +246,7 @@ set compopts = ""
 set startdir = "$testdir"
 set logfile = "$testdir/Logs/$user.log"
 set valgrind = 0
+set valgrindexe = 0
 
 while ( $#argv > 0 )
 	switch ( $argv[1] )
@@ -287,6 +290,11 @@ while ( $#argv > 0 )
 		shift
 		set valgrind = 1
 		breaksw
+        case -valgrindexe:
+        case --valgrindexe:
+                shift
+                set valgrindexe = 1
+                breaksw
 	case -h:
 	case -help:
         case --help
@@ -298,6 +306,7 @@ while ( $#argv > 0 )
 		echo "          -startdir ."
 		echo "          -logfile ./Logs/$user.log"
 		echo "          -valgrind"
+                echo "          -valgrindexe"
 		echo "          -h, -help"
 		exit 0
 		breaksw
@@ -312,7 +321,8 @@ end
 # see if valgrind is on.  If it is, reset the compiler
 if ($valgrind) then
     echo \[valgrind: ON\]
-    setenv CHPLTESTVGRND on
+    setenv CHPL_TEST_VGRND_COMP on
+    setenv CHPL_TEST_VGRND_EXE on
     which valgrind > /dev/null
     if ( $status != 0 ) then
 	echo ERROR: can\'t find valgrind |& tee -a $logtmp
@@ -322,8 +332,14 @@ if ($valgrind) then
         set compiler = "../compiler/chpl-nogc"
     endif
 else
-    echo \[valgrind: OFF\]
-    setenv CHPLTESTVGRND off
+    setenv CHPL_TEST_VGRND_COMP off
+    if ($valgrindexe) then
+        echo \[valgrind: EXE only\]
+        setenv CHPL_TEST_VGRND_EXE on
+    else
+        echo \[valgrind: OFF\]
+        setenv CHPL_TEST_VGRND_EXE off
+    endif
     if ($compiler == "") then
         set compiler = "../compiler/chpl"
     endif
