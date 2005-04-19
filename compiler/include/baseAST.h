@@ -91,9 +91,6 @@ extern char* astTypeName[];
 #define isSomeSymbol(_x) (((_x) >= SYMBOL) && (_x) < TYPE)
 #define isSomeType(_x) (((_x) >= TYPE) && (_x) < AST_TYPE_END)
 
-#define SET_BACK(ast) \
-  if (ast) (ast)->back = &(ast)
-
 class BaseAST : public ILink {
  public:
   //what class this class instance is

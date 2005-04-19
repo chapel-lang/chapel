@@ -38,7 +38,6 @@ void InsertIndexType::preProcessType(Type* type) {
     if (TupleType* tuple_type = dynamic_cast<TupleType*>(type->getType())) {
       tuple_type->rebuildDefaultVal();
       type->defaultVal = tuple_type->defaultVal->copy();
-      SET_BACK(type->defaultVal);
       fixup_expr(index_sym->defPoint);
     }
   }

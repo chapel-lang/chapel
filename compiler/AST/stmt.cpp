@@ -18,7 +18,6 @@ Stmt::Stmt(astType_t astType) :
   parentSymbol(NULL),
   parentStmt(NULL),
   ainfo(NULL),
-  back(NULL),
   pragmas(NULL)
 {}
 
@@ -184,12 +183,9 @@ void Stmt::replace(Stmt* new_stmt) {
     INT_FATAL(this, "Illegal replace, new_stmt is not head of list");
   }
 
-  first->back = back; /*** MAINTAIN back ***/
   last->next = next;
   if (next) {
     next->prev = last;
-    Stmt* tmp = dynamic_cast<Stmt*>(next); /*** MAINTAIN back ***/
-    tmp->back = &(Stmt*&)last->next;       /*** MAINTAIN back ***/
   }
   first->prev = prev;
   if (!prev) {
@@ -216,10 +212,8 @@ void Stmt::insertBefore(Stmt* new_stmt) {
     prev->next = first;
   }
   first->prev = prev;
-  first->back = back; /*** MAINTAIN back ***/
   prev = last;
   last->next = this;
-  back = &(Stmt*&)last->next; /*** MAINTAIN back ***/
 
   call_fixup(this);
 }
@@ -235,13 +229,10 @@ void Stmt::insertAfter(Stmt* new_stmt) {
 
   if (next) {
     next->prev = last;
-    Stmt* tmp = dynamic_cast<Stmt*>(next); /*** MAINTAIN back ***/
-    tmp->back = &(Stmt*&)last->next; /*** MAINTAIN back ***/
   }
   last->next = next;
   next = first;
   first->prev = this;
-  first->back = &(Stmt*&)next; /*** MAINTAIN back ***/
 
   call_fixup(this);
 }
@@ -262,8 +253,6 @@ void Stmt::append(ILink* new_stmt) {
 
   append_point->next = first;
   first->prev = append_point;
-  // UGH!! --SJD
-  first->back = &(Stmt*&)append_point->next;
 }
 
 
@@ -276,7 +265,6 @@ Stmt* Stmt::extract(void) {
   }
   if (next_stmt) {
     next->prev = prev;
-    next_stmt->back = back; /*** MAINTAIN back ***/
   }
   return this;
 }
@@ -299,16 +287,13 @@ void NoOpStmt::print(FILE* outfile) {
 
 void NoOpStmt::codegen(FILE* outfile) {
   //  fprintf(outfile, "{}\n");
-  //  SJD: Change back when _CommonModule gets an initFn
 }
 
 
 WithStmt::WithStmt(Expr* init_withExpr) :
   Stmt(STMT_WITH),
   withExpr(init_withExpr)
-{
-  SET_BACK(withExpr);
-}
+{ }
 
 
 StructuralType* WithStmt::getStruct(void) {
@@ -372,9 +357,7 @@ void WithStmt::codegen(FILE* outfile) {
 DefStmt::DefStmt(Expr* init_defExprList) :
   Stmt(STMT_DEF),
   defExprList(init_defExprList)
-{
-  SET_BACK(defExprList);
-}
+{ }
 
 
 Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -442,9 +425,7 @@ Vec<VarSymbol*>* DefStmt::varDefSet() {
 ExprStmt::ExprStmt(Expr* init_expr) :
   Stmt(STMT_EXPR),
   expr(init_expr) 
-{
-  SET_BACK(expr);
-}
+{ }
 
 
 Stmt* ExprStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -515,15 +496,12 @@ BlockStmt::BlockStmt(Stmt* init_body) :
   Stmt(STMT_BLOCK),
   body(init_body),
   blkScope(NULL)
-{
-  SET_BACK(body);
-}
+{ }
 
 
 void BlockStmt::addBody(Stmt* init_body) {
   if (!body) {
     body = init_body;
-    SET_BACK(body); // SJD: Eliminate please.
   } else {
     INT_FATAL(this, "Adding a body to a for loop that already has one");
   }
@@ -595,7 +573,6 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
     condition(init_cond) 
 {
   astType = STMT_WHILELOOP;
-  SET_BACK(condition);
 }
 
 
@@ -672,8 +649,6 @@ ForLoopStmt::ForLoopStmt(bool init_forall,
     indexScope(NULL)
 {
   astType = STMT_FORLOOP;
-  SET_BACK(indices);
-  SET_BACK(domain);
 }
 
 
@@ -841,11 +816,7 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
   condExpr(init_condExpr),
   thenStmt(init_thenStmt),
   elseStmt(init_elseStmt)
-{
-  SET_BACK(condExpr);
-  SET_BACK(thenStmt);
-  SET_BACK(elseStmt);
-}
+{ }
 
 
 void CondStmt::addElseStmt(Stmt* init_elseStmt) {
@@ -853,7 +824,6 @@ void CondStmt::addElseStmt(Stmt* init_elseStmt) {
     INT_FATAL(this, "overwriting existing else Stmt");
   }
   elseStmt = init_elseStmt;
-  SET_BACK(elseStmt);
 }
 
 
@@ -912,9 +882,7 @@ LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
   Stmt(STMT_LABEL),
   label(init_label),
   stmt(init_stmt)
-{
-  SET_BACK(stmt);
-}
+{ }
 
 
 Stmt* LabelStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {

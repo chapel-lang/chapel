@@ -64,10 +64,6 @@ void Fixup::preProcessStmt(Stmt* stmt) {
   }
 
   parentStmts.add(stmt);
-
-  if (!stmt->back || *stmt->back != stmt) {
-    INT_FATAL(stmt, "stmt back incorrect");
-  }
 }
 
 
@@ -121,10 +117,6 @@ void Fixup::preProcessExpr(Expr* expr) {
     parentSymbols.add(def_expr->sym);
   } else {
     parentExprs.add(expr);
-  }
-
-  if (!expr->back || *expr->back != expr) {
-    INT_FATAL(expr, "expr back incorrect");
   }
 }
 

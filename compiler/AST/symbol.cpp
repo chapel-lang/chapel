@@ -224,7 +224,6 @@ VarSymbol::VarSymbol(char* init_name,
   } else {
     Symboltable::define(this);
   }
-  SET_BACK(init);
 }
 
 
@@ -371,7 +370,6 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
   init(init_init)
 {
   Symboltable::define(this);
-  SET_BACK(init);
 }
 
 
@@ -594,7 +592,6 @@ void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
   type = init_retType;
   retType = init_retType;
   body = init_body;
-  SET_BACK(body);
   exportMe = init_exportMe;
   paramScope = init_paramScope;
 
@@ -976,7 +973,6 @@ EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
   init(init_init),
   val(init_val)
 {
-  SET_BACK(init);
   Symboltable::define(this);
 }
 
@@ -1135,7 +1131,6 @@ void ModuleSymbol::createInitFn(void) {
   }
 
   stmts = definition;
-  SET_BACK(stmts); // SJD: Eliminate please.
 }
 
 

@@ -57,7 +57,6 @@ static void build_constructor(StructuralType* structType) {
   body = Symboltable::finishCompoundStmt(body, stmts);
   Expr* fn_def = new DefExpr(Symboltable::finishFnDef(fn, args, structType, body));
   structType->constructor = new DefStmt(fn_def);
-  SET_BACK(structType->constructor);
   Symboltable::setCurrentScope(saveScope);
   fixup_expr(structType->symbol->defPoint);
 }

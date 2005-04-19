@@ -26,7 +26,6 @@ static void resolve_type_helper(Type* &type) {
     resolve_type_helper(user_type->definition);
     if (!user_type->defaultVal) {
       user_type->defaultVal = user_type->definition->defaultVal->copy();
-      SET_BACK(user_type->defaultVal);
       fixup_expr(user_type->symbol->defPoint);
     }
   } else if (IndexType* index_type = dynamic_cast<IndexType*>(type)) {

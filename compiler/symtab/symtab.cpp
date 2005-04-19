@@ -74,7 +74,6 @@ void Symboltable::doneParsingPreludes(void) {
   currentScope = commonModule->modScope;
 
   commonModule->stmts = new NoOpStmt();
-  SET_BACK(commonModule->stmts);
 
   firstModule = appendLink(firstModule, commonModule);
 

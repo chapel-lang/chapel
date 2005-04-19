@@ -90,7 +90,6 @@ Expr::Expr(astType_t astType) :
   parentStmt(NULL),
   parentExpr(NULL),
   ainfo(NULL),
-  back(NULL),
   pragmas(NULL)
 {}
 
@@ -263,12 +262,9 @@ void Expr::replace(Expr* new_expr) {
     INT_FATAL(this, "Illegal replace, new_expr is not head of list");
   }
 
-  first->back = back; /*** MAINTAIN back ***/
   last->next = next;
   if (next) {
     next->prev = last;
-    Expr* tmp = dynamic_cast<Expr*>(next); /*** MAINTAIN back ***/
-    tmp->back = &(Expr*&)last->next;       /*** MAINTAIN back ***/
   }
   first->prev = prev;
   if (!prev) {
@@ -295,10 +291,8 @@ void Expr::insertBefore(Expr* new_expr) {
     prev->next = first;
   }
   first->prev = prev;
-  first->back = back; /*** MAINTAIN back ***/
   prev = last;
   last->next = this;
-  back = &(Expr*&)last->next; /*** MAINTAIN back ***/
 
   call_fixup(this);
 }
@@ -314,13 +308,10 @@ void Expr::insertAfter(Expr* new_expr) {
 
   if (next) {
     next->prev = last;
-    Expr* tmp = dynamic_cast<Expr*>(next); /*** MAINTAIN back ***/
-    tmp->back = &(Expr*&)last->next; /*** MAINTAIN back ***/
   }
   last->next = next;
   next = first;
   first->prev = this;
-  first->back = &(Expr*&)next; /*** MAINTAIN back ***/
 
   call_fixup(this);
 }
@@ -341,7 +332,6 @@ void Expr::append(ILink* new_expr) {
 
   append_point->next = first;
   first->prev = append_point;
-  first->back = &(Expr*&)append_point->next; /*** MAINTAIN back ***/
 }
 
 
@@ -354,7 +344,6 @@ Expr* Expr::extract(void) {
   }
   if (next_expr) {
     next->prev = prev;
-    next_expr->back = back; /*** MAINTAIN back ***/
   }
   return this;
 }
@@ -459,7 +448,7 @@ static EXPR_RW expr_read_written(Expr* expr) {
       return expr_read_written(parent);
     }
     if (ArrayRef* array_expr = dynamic_cast<ArrayRef*>(parent)) {
-      if (*expr->back == array_expr->baseExpr) {
+      if (expr == array_expr->baseExpr) {
         return expr_read_written(parent);
       }
     }
@@ -814,9 +803,7 @@ UnOp::UnOp(unOpType init_type, Expr* op) :
   Expr(EXPR_UNOP),
   type(init_type),
   operand(op) 
-{
-  SET_BACK(operand);
-}
+{ }
 
 
 Expr* UnOp::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -887,8 +874,6 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
   left(l),
   right(r)
 {
-  SET_BACK(left);
-  SET_BACK(right);
 }
 
 
@@ -1114,9 +1099,7 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   Expr(EXPR_MEMBERACCESS),
   base(init_base),
   member(init_member)
-{
-  SET_BACK(base);
-}
+{ }
 
 
 Expr* MemberAccess::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1182,26 +1165,13 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
   baseExpr(init_base),
   argList(NULL) 
 {
-  if (baseExpr) {
-    SET_BACK(baseExpr);
-  }
   setArgs(init_arg);
 }
 
 
 void ParenOpExpr::setArgs(Expr* init_arg) {
-  // if argList already exists, unlink it
-  if (argList) {
-    argList->back = NULL;
-  }
-
   // assign new args
   argList = init_arg;
-
-  // setup back pointers for args
-  if (argList) {
-    SET_BACK(argList);
-  }
 }
 
 
@@ -1490,9 +1460,7 @@ void IOCall::codegen(FILE* outfile) {
 Tuple::Tuple(Expr* init_exprs) :
   Expr(EXPR_TUPLE),
   exprs(init_exprs)
-{
-  SET_BACK(exprs);
-}
+{ }
 
 
 Expr* Tuple::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1576,9 +1544,7 @@ CastExpr::CastExpr(Type* init_newType, Expr* init_expr) :
   Expr(EXPR_CAST),
   newType(init_newType),
   expr(init_expr)
-{
-  SET_BACK(expr);
-}
+{ }
 
 
 Expr* CastExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1629,10 +1595,7 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
   reduceType(init_reduceType),
   redDim(init_redDim),
   argExpr(init_argExpr)
-{
-  SET_BACK(redDim);
-  SET_BACK(argExpr);
-}
+{ }
 
 
 Expr* ReduceExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1679,9 +1642,7 @@ void ReduceExpr::codegen(FILE* outfile) {
 SeqExpr::SeqExpr(Expr* init_exprls) :
   Expr(EXPR_SEQ),
   exprls(init_exprls)
-{
-  SET_BACK(exprls);
-}
+{ }
 
 
 Expr* SeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1725,11 +1686,7 @@ SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
   lo(init_lo),
   hi(init_hi),
   str(init_str) 
-{
-  SET_BACK(lo);
-  SET_BACK(hi);
-  SET_BACK(str);
-}
+{ }
 
 
 Expr* SimpleSeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1825,16 +1782,11 @@ ForallExpr::ForallExpr(Expr* init_domains, Expr* init_indices,
   indices(init_indices),
   forallExpr(init_forallExpr),
   indexScope(NULL)
-{
-  SET_BACK(domains);
-  SET_BACK(indices);
-  SET_BACK(forallExpr);
-}
+{ }
 
 
 void ForallExpr::setForallExpr(Expr* exp) {
   forallExpr = exp;
-  SET_BACK(forallExpr);
 }
 
 
@@ -1940,21 +1892,16 @@ LetExpr::LetExpr(Expr* init_symDefs, Expr* init_innerExpr) :
   Expr(EXPR_LET),
   symDefs(init_symDefs),
   innerExpr(init_innerExpr)
-{
-  SET_BACK(symDefs);
-  SET_BACK(innerExpr);
-}
+{ }
 
 
 void LetExpr::setInnerExpr(Expr* expr) {
   innerExpr = expr;
-  SET_BACK(innerExpr);
 }
 
 
 void LetExpr::setSymDefs(Expr* expr) {
   symDefs = expr;
-  SET_BACK(symDefs);
 }
 
 
@@ -2014,9 +1961,7 @@ NamedExpr::NamedExpr(char* init_name, Expr* init_actual) :
   Expr(EXPR_NAMED),
   name(init_name),
   actual(init_actual)
-{
-  SET_BACK(actual);
-}
+{ }
 
 
 Expr* NamedExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {

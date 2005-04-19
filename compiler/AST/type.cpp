@@ -46,9 +46,7 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   defaultConstructor(NULL),
   asymbol(NULL),
   parentType(NULL)
-{
-  SET_BACK(defaultVal);
-}
+{ }
 
 
 void Type::addSymbol(Symbol* newsymbol) {
@@ -520,7 +518,6 @@ DomainType::DomainType(Expr* init_expr) :
     } else {
       numdims = init_expr->rank();
       parent = init_expr;
-      SET_BACK(parent);
     }
     idxType = new IndexType(init_expr);
     ((IndexType*)idxType)->domainType = this;
@@ -618,7 +615,6 @@ IndexType::IndexType(Expr* init_expr) :
   Type(TYPE_INDEX, NULL),
   idxExpr(init_expr)
 {
-  SET_BACK(idxExpr);
   if (typeid(*init_expr) == typeid(IntLiteral)) {
     TupleType* newTType = new TupleType();
     for (int i = 0; i < init_expr->intVal(); i++){
@@ -815,9 +811,7 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
   Type(TYPE_ARRAY, init_elementType->defaultVal),
   domain(init_domain),
   elementType(init_elementType)
-{
-  SET_BACK(domain);
-}
+{ }
 
 
 Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1038,9 +1032,7 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 LikeType::LikeType(Expr* init_expr) :
   Type(TYPE_LIKE, NULL),
   expr(init_expr)
-{
-  SET_BACK(expr);
-}
+{ }
 
 
 Type* LikeType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -1099,7 +1091,6 @@ StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
   fields.clear();
   methods.clear();
   types.clear();
-  SET_BACK(constructor);
 }
 
 
@@ -1144,7 +1135,6 @@ void StructuralType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
   }
   if (!declarationList) {
     declarationList = newDeclarations;
-    SET_BACK(declarationList);
   } else if (beforeStmt) {
     beforeStmt->insertBefore(newDeclarations);
   } else {
@@ -1638,7 +1628,6 @@ void TupleType::rebuildDefaultVal(void) {
   forv_Vec(Type, component, components) {
     tuple->exprs = appendLink(tuple->exprs, component->defaultVal->copy());
   }
-  SET_BACK(tuple->exprs);
   if (symbol) {
     defaultVal->replace(tuple);
   }

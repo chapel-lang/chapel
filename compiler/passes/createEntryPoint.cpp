@@ -84,7 +84,6 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
     ExprStmt* initStmt = buildFnCallStmt(mainModule->initFn);
     initStmt->append(mainFn->body);
     mainFn->body = new BlockStmt(initStmt);
-    SET_BACK(mainFn->body);  // SJD: Eliminate please.
   }
 
 

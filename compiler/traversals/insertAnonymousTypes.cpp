@@ -47,7 +47,6 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
           array_type->addSymbol(array_sym);
           array_type->domainType = domain_type;
           array_type->defaultVal = array_type->elementType->defaultVal->copy();
-          SET_BACK(array_type->defaultVal);
           DefExpr* def_expr = new DefExpr(array_sym);
           DefStmt* array_type_def = new DefStmt(def_expr);
           if (Symboltable::getCurrentScope() == commonModule->modScope) {
@@ -240,7 +239,6 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     index_type->addSymbol(index_sym);
     if (!index_type->defaultVal) {
       index_type->defaultVal = index_type->idxType->defaultVal->copy();
-      SET_BACK(index_type->defaultVal);
     }
     DefExpr* def_expr = new DefExpr(index_sym);
     DefStmt* index_type_def = new DefStmt(def_expr);

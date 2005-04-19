@@ -92,7 +92,6 @@ class Expr : public BaseAST {
   Stmt* parentStmt;
   Expr* parentExpr;
   AInfo *ainfo;
-  Expr** back;
   Pragma *pragmas;
 
 
