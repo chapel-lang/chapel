@@ -27021,3 +27021,41 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplmem.c 
 
+---------------------------------------------------------------------------
+
+04/19/05 09:39:44 -- deitz
+
+Log message:
+	Ding, Dong!  Expr** Expr::back and Stmt** Stmt::back are dead!
+	
+	Removed the SET_BACK macro and all references to back.
+	
+	Summary. There were major disadvantages to using "back" for replacing
+	child expressions and statements in the AST. This pointer to a pointer
+	was in every Expr and Stmt and pointed to the Expr* or Stmt* pointer
+	that pointed to the Expr or Stmt that it was in.  This allowed us to
+	easily update this pointer.
+	
+	Major disadvantages to "back" scheme:
+	
+	1. It didn't allow us to define pointers to subclasses of Expr or Stmt
+	   in the code.  For example, defExprList in DefStmt had to be an
+	   Expr* even though it was always a DefExpr*.  This was the major
+	   disadvantage.
+	
+	2. It led to gratuitously obfuscated code like "if (*expr->back =="
+	   that should have been written "if (expr ==."
+	
+	3. It led to clever code for implementing replace, insertBefore, and
+	   extract which are now much simpler.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             fixup.cpp insertAnonymousTypes.cpp 
+	                             insertIndexType.cpp 
+	                             scopeResolveSymbols.cpp 
+
