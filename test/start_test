@@ -379,7 +379,7 @@ endif
 #if logfile directory exists, then get absolute path for
 if ( -d `dirname $logfile` && -x `dirname $logfile` ) then
 	pushd `dirname $logfile` >& /dev/null
-	set logfile = $cwd/`basename $logfile`
+	set logfile = `pwd`/`basename $logfile`
 	popd >& /dev/null
 
 	echo \[logfile: \"$logfile\"\] |& tee -a $logtmp
