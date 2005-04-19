@@ -27158,3 +27158,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: clone.cpp 
 
+---------------------------------------------------------------------------
+
+04/19/05 13:43:06 -- jplevyak
+
+Log message:
+	Fixed SEGV, now fails in copyType()
+
+Modified files:
+	chapel/test/classes/bradc/records/: assignRecord2.future 
+
