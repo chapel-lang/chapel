@@ -27090,3 +27090,16 @@ Modified files:
 	chapel/compiler/include/: expr.h 
 	chapel/compiler/traversals/: transformLetExprs.cpp 
 
+---------------------------------------------------------------------------
+
+04/19/05 10:33:11 -- bradc
+
+Log message:
+	Cleaned up the cvs checkout of sources in the nightly
+	script to make it assume less about who expands which
+	variables (perl or the shell).  This should make it
+	work on BSD without problems.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
