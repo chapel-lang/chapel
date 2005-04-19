@@ -115,13 +115,6 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
 
 
 static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
-  /***  Note I'm assuming a tuple with component types that are all
-   ***  primitive types and I'm declaring this thing with a mangled
-   ***  name in the commonModule.  This won't be possible when we
-   ***  support tuples of different types.  In this case, they may
-   ***  have to be defined in the scope they are used.
-   ***/
-
   TupleType* tuple_type = dynamic_cast<TupleType*>(*type);
 
   if (!tuple_type) {
@@ -132,26 +125,10 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(tuple_type, "Tuple type already resolved");
   }
 
-  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  
-  char* name = glomstrings(1, "_tuple");
-  forv_Vec(Type, component, tuple_type->components) {
-    name = glomstrings(3, name, "_", component->symbol->name);
-  }
-  if (Symbol* tuple_sym = Symboltable::lookupInCurrentScope(name)) {
-    *type = tuple_sym->type;
-  }
-  else {
-    TupleType* copy = dynamic_cast<TupleType*>(tuple_type->copy());
-    TypeSymbol* tuple_sym = new TypeSymbol(name, copy);
-    copy->addSymbol(tuple_sym);
-    DefExpr* def_expr = new DefExpr(tuple_sym);
-    DefStmt* copy_def = new DefStmt(def_expr);
-    copy->structScope->setContext(NULL, tuple_sym, def_expr);
-    commonModule->stmts->insertBefore(copy_def);
-    *type = copy;
-  }
-  Symboltable::setCurrentScope(saveScope);
+  TypeSymbol* tupleSymbol = 
+    TypeSymbol::lookupOrDefineTupleTypeSymbol(&tuple_type->components);
+
+  *type = tupleSymbol->type;
 }
 
 

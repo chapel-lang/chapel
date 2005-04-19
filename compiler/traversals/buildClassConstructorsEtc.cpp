@@ -185,45 +185,47 @@ static void build_record_assignment_function(StructuralType* structType) {
 }
 
 
-static void build_tuple_assignment_function(TupleType* tuple_type) {
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
+// static void build_tuple_assignment_function(TupleType* tuple_type) {
+//   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
 
-  ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", tuple_type);
-  ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2",
-    (analyzeAST) ? dtUnknown : tuple_type);
-  arg1->append(arg2);
-  Stmt* body = NULL;
-  for (int i = 1; i <= tuple_type->components.n; i++) {
-    Expr* left =
-      new TupleSelect(new Variable(arg1), new IntLiteral(intstring(i), i));
-    Expr* right =
-      new TupleSelect(new Variable(arg2), new IntLiteral(intstring(i), i));
-    Expr* assign_expr = new AssignOp(GETS_NORM, left, right);
-    body = appendLink(body, new ExprStmt(assign_expr));
-  }
-  BlockStmt* block_stmt = new BlockStmt(body);
-  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt)));
-  tuple_type->symbol->defPoint->parentStmt->insertBefore(def_stmt);
+//   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", tuple_type);
+//   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2",
+//     (analyzeAST) ? dtUnknown : tuple_type);
+//   arg1->append(arg2);
+//   Stmt* body = NULL;
+//   for (int i = 1; i <= tuple_type->components.n; i++) {
+//     Expr* left =
+//       new TupleSelect(new Variable(arg1), new IntLiteral(intstring(i), i));
+//     Expr* right =
+//       new TupleSelect(new Variable(arg2), new IntLiteral(intstring(i), i));
+//     Expr* assign_expr = new AssignOp(GETS_NORM, left, right);
+//     body = appendLink(body, new ExprStmt(assign_expr));
+//   }
+//   BlockStmt* block_stmt = new BlockStmt(body);
+//   DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt)));
+//   tuple_type->symbol->defPoint->parentStmt->insertBefore(def_stmt);
+// }
+
+
+void buildDefaultStructuralTypeMethods(StructuralType* structuralType) {
+  build_setters_and_getters(structuralType);
+  build_union_id_enum(structuralType);
+  build_constructor(structuralType);
+  build_record_equality_function(structuralType);
+  build_record_inequality_function(structuralType);
+  build_record_assignment_function(structuralType);
 }
 
 
 void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
-
-  if (!def_expr) {
-    return;
-  }
-
-  if (TypeSymbol* type_symbol = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
-    if (StructuralType* structType = dynamic_cast<StructuralType*>(type_symbol->type)) {
-      build_setters_and_getters(structType);
-      build_union_id_enum(structType);
-      build_constructor(structType);
-      build_record_equality_function(structType);
-      build_record_inequality_function(structType);
-      build_record_assignment_function(structType);
-    } else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type_symbol->type)) {
-      build_tuple_assignment_function(tuple_type);
+  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
+    if (TypeSymbol* sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+      if (StructuralType* type = dynamic_cast<StructuralType*>(sym->type)) {
+        if (type->defaultConstructor) { /*** already done ***/
+          return;
+        }
+        buildDefaultStructuralTypeMethods(type);
+      }
     }
   }
 }

@@ -10,6 +10,7 @@
 #include "sym.h"
 #include "fun.h"
 #include "pattern.h"
+#include "../traversals/buildClassConstructorsEtc.h"
 
 
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type, 
@@ -542,6 +543,39 @@ void TypeSymbol::codegenDef(FILE* outfile) {
   type->codegenStringToType(outfile);
   type->codegenIORoutines(outfile);
   type->codegenConfigVarRoutines(outfile);
+}
+
+
+/***
+ *** SJD: I'm assuming a tuple with component types that are all
+ *** primitive types and I'm declaring this thing with a mangled name
+ *** in the commonModule.  This won't be possible when we support
+ *** tuples of different types.  In this case, they may have to be
+ *** defined in the scope they are used.
+ ***/
+TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
+  char* name = glomstrings(1, "_tuple");
+  forv_Vec(Type, component, *components) {
+    name = glomstrings(3, name, "_", component->symbol->name);
+  }
+  TypeSymbol* tupleSym =
+    dynamic_cast<TypeSymbol*>(Symboltable::lookupInCurrentScope(name));
+  if (!tupleSym) {
+    SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+    TupleType* tupleType = new TupleType();
+    forv_Vec(Type, component, *components) {
+      tupleType->addType(component);
+    }
+    tupleSym = new TypeSymbol(name, tupleType);
+    tupleType->addSymbol(tupleSym);
+    DefExpr* defExpr = new DefExpr(tupleSym);
+    DefStmt* defStmt = new DefStmt(defExpr);
+    tupleType->structScope->setContext(NULL, tupleSym, defExpr);
+    commonModule->stmts->insertBefore(defStmt);
+    buildDefaultStructuralTypeMethods(tupleType);
+    Symboltable::setCurrentScope(saveScope);
+  }
+  return tupleSym;
 }
 
 

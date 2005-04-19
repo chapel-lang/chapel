@@ -144,6 +144,8 @@ class TypeSymbol : public Symbol {
   virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
+
+  static TypeSymbol* lookupOrDefineTupleTypeSymbol(Vec<Type*>* components);
 };
 
 
