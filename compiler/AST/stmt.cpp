@@ -141,95 +141,107 @@ void Stmt::traverseStmt(Traversal* traversal) {
 }
 
 
-void Stmt::replace(Stmt* new_stmt) {
-  Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
-  Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());
-
-  if (!first || !last) {
-    INT_FATAL(this, "Illegal call to replace, new_stmt list invalid");
+static void call_replace_child(Stmt* old_stmt, Stmt* new_stmt) {
+  if (old_stmt->parentStmt) {
+    old_stmt->parentStmt->replaceChild(old_stmt, new_stmt);
+  } else {
+    old_stmt->parentSymbol->replaceChild(old_stmt, new_stmt);
   }
+}
+
+
+Stmt* Stmt::head(void) {
+  ILink* first = this;
+  while (first->prev) {
+    first = first->prev;
+  }
+  Stmt* head = dynamic_cast<Stmt*>(first);
+  if (!head) {
+    INT_FATAL(this, "Ill-formed statement list found in Stmt::head");
+  }
+  return head;
+}
+
+
+Stmt* Stmt::tail(void) {
+  ILink* last = this;
+  while (last->next) {
+    last = last->next;
+  }
+  Stmt* tail = dynamic_cast<Stmt*>(last);
+  if (!last) {
+    INT_FATAL(this, "Ill-formed statement list found in Stmt::last");
+  }
+  return tail;
+}
+
+
+void Stmt::replace(Stmt* new_stmt) {
+  Stmt* first = new_stmt->head();
+  Stmt* last = new_stmt->tail();
 
   if (first != new_stmt) {
     INT_FATAL(this, "Illegal replace, new_stmt is not head of list");
   }
 
+  first->back = back; /*** MAINTAIN back ***/
   last->next = next;
   if (next) {
-    Stmt* next_stmt = dynamic_cast<Stmt*>(next);
-    next_stmt->prev = last;
-    next_stmt->back = &(Stmt*&)last->next; // UGH --SJD
+    next->prev = last;
+    Stmt* tmp = dynamic_cast<Stmt*>(next); /*** MAINTAIN back ***/
+    tmp->back = &(Stmt*&)last->next;       /*** MAINTAIN back ***/
   }
   first->prev = prev;
-  first->back = back;
-  *back = first;
-  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev) {
-      prev->next = first;
-    }
-  */
-  /* while nulling the following out would be cleaner and purer,
-     in many cases (traversals, loops), it is convenient to keep
-     these pointing to the old nodes; an alternative would be to
-     require the user to set them back to something non-NULL if
-     that's what they wanted, but we are positing that this will
-     be the common case.
-  prev = NULL;
-  next = NULL;
-  */
+  if (!prev) {
+    call_replace_child(this, first);
+  } else {
+    prev->next = first;
+  }
+
   call_fixup(this);
 }
 
 
 void Stmt::insertBefore(Stmt* new_stmt) {
-  Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
-  Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());
-
-  if (!first || !last) {
-    INT_FATAL(this, "Illegal call to insertBefore, new_stmt list invalid");
-  }
+  Stmt* first = new_stmt->head();
+  Stmt* last = new_stmt->tail();
 
   if (first != new_stmt) {
     INT_FATAL(this, "Illegal insertBefore, new_stmt is not head of list");
   }
 
+  if (!prev) {
+    call_replace_child(this, first);
+  } else {
+    prev->next = first;
+  }
   first->prev = prev;
-  first->back = back;
-  *back = first;
-  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev) {
-      prev->next = first;
-    }
-  */
-  back = &(Stmt*&)last->next; // UGH --SJD
-
+  first->back = back; /*** MAINTAIN back ***/
   prev = last;
   last->next = this;
+  back = &(Stmt*&)last->next; /*** MAINTAIN back ***/
 
   call_fixup(this);
 }
 
 
 void Stmt::insertAfter(Stmt* new_stmt) {
-  Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
-  Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());
-
-  if (!first || !last) {
-    INT_FATAL(this, "Illegal call to insertAfter, new_stmt list invalid");
-  }
+  Stmt* first = new_stmt->head();
+  Stmt* last = new_stmt->tail();
 
   if (first != new_stmt) {
     INT_FATAL(this, "Illegal insertAfter, new_stmt is not head of list");
   }
 
-  last->next = next;
   if (next) {
     next->prev = last;
-    Stmt* tmp = dynamic_cast<Stmt*>(next);
-    tmp->back = &(Stmt*&)last->next; // UGH --SJD
+    Stmt* tmp = dynamic_cast<Stmt*>(next); /*** MAINTAIN back ***/
+    tmp->back = &(Stmt*&)last->next; /*** MAINTAIN back ***/
   }
+  last->next = next;
   next = first;
   first->prev = this;
-  first->back = &(Stmt*&)next; // UGH --SJD
+  first->back = &(Stmt*&)next; /*** MAINTAIN back ***/
 
   call_fixup(this);
 }
@@ -241,11 +253,6 @@ void Stmt::append(ILink* new_stmt) {
   }
 
   Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
-  Stmt* last = dynamic_cast<Stmt*>(new_stmt->tail());
-
-  if (!first || !last) {
-    INT_FATAL(this, "Illegal call to append, new_stmt list invalid");
-  }
 
   if (first != new_stmt) {
     INT_FATAL(this, "Illegal append, new_stmt is not head of list");
@@ -261,28 +268,16 @@ void Stmt::append(ILink* new_stmt) {
 
 
 Stmt* Stmt::extract(void) {
-  if (next) {
-    if (Stmt* next_stmt = dynamic_cast<Stmt*>(next)) { 
-      next_stmt->prev = prev;
-      next_stmt->back = back;
-      *back = next_stmt;
-      /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-         if (prev) {
-         prev->next = next;
-         }
-      */
-    }
-    else {
-      INT_FATAL(this, "Illegal call to extract, stmt is invalid");
-    }
+  Stmt* next_stmt = dynamic_cast<Stmt*>(next);
+  if (prev) {
+    prev->next = next;
+  } else {
+    call_replace_child(this, next_stmt);
   }
-  else {
-    *back = NULL;
+  if (next_stmt) {
+    next->prev = prev;
+    next_stmt->back = back; /*** MAINTAIN back ***/
   }
-  /* SEE NOTE IN REPLACE
-  next = NULL;
-  prev = NULL;
-  */
   return this;
 }
 

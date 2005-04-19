@@ -109,6 +109,9 @@ class Expr : public BaseAST {
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
 
+  Expr* head(void);
+  Expr* tail(void);
+
   virtual Type* typeInfo(void);
   virtual bool isComputable(void);
   

@@ -34,8 +34,15 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
       // then the whole statement can be extracted; instead, we
       // should pull just the defExpr (but this breaks other stuff
       // that assumes that every defStmt).
-      if (sym->defPoint) // JBP 4/5/05 for intents-classes4.chpl this is NULL
+      if (sym->defPoint) { // JBP 4/5/05 for intents-classes4.chpl this is NULL
+
+        // SJD: Don't want to remove function is parameter is dead
+        if (dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
+          return;
+        }
+
         sym->defPoint->parentStmt->extract();
+      }
     }
   }
   if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {

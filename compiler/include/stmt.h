@@ -34,6 +34,8 @@ class Stmt : public BaseAST {
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
 
+  Stmt* head(void);
+  Stmt* tail(void);
   void replace(Stmt* new_stmt);
   virtual void append(ILink* new_stmt);
   void insertBefore(Stmt* new_stmt);

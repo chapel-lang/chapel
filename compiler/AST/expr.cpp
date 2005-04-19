@@ -229,34 +229,52 @@ static void call_replace_child(Expr* old_expr, Expr* new_expr) {
 }
 
 
-void Expr::replace(Expr* new_expr) {
-  Expr* first = dynamic_cast<Expr*>(new_expr->head());
-  Expr* last = dynamic_cast<Expr*>(new_expr->tail());
-
-  if (!first || !last) {
-    INT_FATAL(this, "Illegal call to replace, new_expr list invalid");
+Expr* Expr::head(void) {
+  ILink* first = this;
+  while (first->prev) {
+    first = first->prev;
   }
+  Expr* head = dynamic_cast<Expr*>(first);
+  if (!head) {
+    INT_FATAL(this, "Ill-formed expression list found in Expr::head");
+  }
+  return head;
+}
+
+
+Expr* Expr::tail(void) {
+  ILink* last = this;
+  while (last->next) {
+    last = last->next;
+  }
+  Expr* tail = dynamic_cast<Expr*>(last);
+  if (!last) {
+    INT_FATAL(this, "Ill-formed expression list found in Expr::last");
+  }
+  return tail;
+}
+
+
+void Expr::replace(Expr* new_expr) {
+  Expr* first = new_expr->head();
+  Expr* last = new_expr->tail();
 
   if (first != new_expr) {
     INT_FATAL(this, "Illegal replace, new_expr is not head of list");
   }
 
   first->back = back; /*** MAINTAIN back ***/
-
   last->next = next;
   if (next) {
     next->prev = last;
     Expr* tmp = dynamic_cast<Expr*>(next); /*** MAINTAIN back ***/
     tmp->back = &(Expr*&)last->next;       /*** MAINTAIN back ***/
   }
-
   first->prev = prev;
-  if (prev) {
-    prev->next = first;
-  }
-
   if (!prev) {
-    call_replace_child(this, new_expr);
+    call_replace_child(this, first);
+  } else {
+    prev->next = first;
   }
 
   call_fixup(this);
@@ -264,55 +282,45 @@ void Expr::replace(Expr* new_expr) {
 
 
 void Expr::insertBefore(Expr* new_expr) {
-  Expr* first = dynamic_cast<Expr*>(new_expr->head());
-  Expr* last = dynamic_cast<Expr*>(new_expr->tail());
-
-  if (!first || !last) {
-    INT_FATAL(this, "Illegal call to insertBefore, new_expr list invalid");
-  }
+  Expr* first = new_expr->head();
+  Expr* last = new_expr->tail();
 
   if (first != new_expr) {
     INT_FATAL(this, "Illegal insertBefore, new_expr is not head of list");
   }
 
+  if (!prev) {
+    call_replace_child(this, first);
+  } else {
+    prev->next = first;
+  }
   first->prev = prev;
-  first->back = back;
-  *back = first;
-  /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-    if (prev) {
-      prev->next = first;
-    }
-  */
-  back = &(Expr*&)last->next; // UGH --SJD
-
+  first->back = back; /*** MAINTAIN back ***/
   prev = last;
   last->next = this;
+  back = &(Expr*&)last->next; /*** MAINTAIN back ***/
 
   call_fixup(this);
 }
 
 
 void Expr::insertAfter(Expr* new_expr) {
-  Expr* first = dynamic_cast<Expr*>(new_expr->head());
-  Expr* last = dynamic_cast<Expr*>(new_expr->tail());
-
-  if (!first || !last) {
-    INT_FATAL(this, "Illegal call to insertAfter, new_expr list invalid");
-  }
+  Expr* first = new_expr->head();
+  Expr* last = new_expr->tail();
 
   if (first != new_expr) {
     INT_FATAL(this, "Illegal insertAfter, new_expr is not head of list");
   }
 
-  last->next = next;
   if (next) {
     next->prev = last;
-    Expr* tmp = dynamic_cast<Expr*>(next);
-    tmp->back = &(Expr*&)last->next; // UGH --SJD
+    Expr* tmp = dynamic_cast<Expr*>(next); /*** MAINTAIN back ***/
+    tmp->back = &(Expr*&)last->next; /*** MAINTAIN back ***/
   }
+  last->next = next;
   next = first;
   first->prev = this;
-  first->back = &(Expr*&)next; // UGH --SJD
+  first->back = &(Expr*&)next; /*** MAINTAIN back ***/
 
   call_fixup(this);
 }
@@ -324,11 +332,6 @@ void Expr::append(ILink* new_expr) {
   }
 
   Expr* first = dynamic_cast<Expr*>(new_expr->head());
-  Expr* last = dynamic_cast<Expr*>(new_expr->tail());
-
-  if (!first || !last) {
-    INT_FATAL(this, "Illegal call to append, new_expr list invalid");
-  }
 
   if (first != new_expr) {
     INT_FATAL(this, "Illegal append, new_expr is not head of list");
@@ -338,34 +341,21 @@ void Expr::append(ILink* new_expr) {
 
   append_point->next = first;
   first->prev = append_point;
-  // UGH!! --SJD
-  first->back = &(Expr*&)append_point->next;
+  first->back = &(Expr*&)append_point->next; /*** MAINTAIN back ***/
 }
 
 
 Expr* Expr::extract(void) {
-  if (next) {
-    if (Expr* next_expr = dynamic_cast<Expr*>(next)) { 
-      next_expr->prev = prev;
-      next_expr->back = back;
-      *back = next_expr;
-      /* NOT NECESSARY BECAUSE OF PRECEDING LINE
-         if (prev) {
-         prev->next = next;
-         }
-      */
-    }
-    else {
-      INT_FATAL(this, "Illegal call to extract, expr is invalid");
-    }
+  Expr* next_expr = dynamic_cast<Expr*>(next);
+  if (prev) {
+    prev->next = next;
+  } else {
+    call_replace_child(this, next_expr);
   }
-  else {
-    *back = NULL;
+  if (next_expr) {
+    next->prev = prev;
+    next_expr->back = back; /*** MAINTAIN back ***/
   }
-  next = NULL;
-  prev = NULL;
-  back = NULL;
-
   return this;
 }
 
