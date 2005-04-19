@@ -26985,3 +26985,15 @@ Modified files:
 	chapel/compiler/include/: expr.h stmt.h 
 	chapel/compiler/symtab/: removeDeadSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/18/05 17:08:40 -- bradc
+
+Log message:
+	Updated the nightly script so that if it's run in valgrind
+	mode, it will build the no-GC version of the compiler in
+	order to run valgrind on it.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
