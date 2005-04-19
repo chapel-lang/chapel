@@ -27148,3 +27148,13 @@ Modified files:
 	                                  formatoutput.good noop.good 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+04/19/05 13:40:06 -- jplevyak
+
+Log message:
+	Fix SEGV in cloning.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp 
+
