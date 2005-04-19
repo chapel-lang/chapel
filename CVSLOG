@@ -27077,3 +27077,16 @@ Modified files:
 	                             omitForNoAnalysis.cpp 
 	                             transformLetExprs.cpp 
 
+---------------------------------------------------------------------------
+
+04/19/05 10:20:30 -- deitz
+
+Log message:
+	Changed the type of symDefs in LetExpr to DefExpr* from Expr*.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/traversals/: transformLetExprs.cpp 
+
