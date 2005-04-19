@@ -353,7 +353,7 @@ determine_layouts() {
     int offset = 0;
     forv_AVar(iv, cs->vars) {
       int size = 0;
-      forv_CreationSet(x, *iv->out) {
+      forv_CreationSet(x, *iv->out) if (x) {
         if (size && x->sym->size != size)
           fail("mismatched field sizes");
         size = x->sym->size;
