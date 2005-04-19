@@ -25,7 +25,7 @@ pragma "omit for noanalysis" class Array {
 class Domain {
 }
 
-class Tuple {
+record Tuple {
   function this(pragma "clone_for_constants" i) {
     return __primitive("index_object", this, i);
   }
@@ -72,11 +72,8 @@ pragma "builtin" function by(a : numeric, b : numeric) { return __primitive(a, "
 pragma "builtin" function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
 pragma "builtin" function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
 
-pragma "builtin" function =(a : Index, b : any) { return __primitive("indextype_set", a, b); }
-pragma "builtin" function =(a : any, b : Index) { return __primitive("indextype_get", b); }
-pragma "builtin" function =(a : Index, b : Index) { 
-  return __primitive("indextype_set", a, __primitive("indextype_get", b)); 
-}
+pragma "builtin" function =(a : Index, b : integer) { return __primitive("indextype_set", a, b); }
+pragma "builtin" function =(a : integer, b : Index) { return __primitive("indextype_get", b); }
 
 pragma "builtin" function =(a : any, b : any) { return b; }
 
