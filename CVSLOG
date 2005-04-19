@@ -26968,3 +26968,20 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/18/05 17:07:51 -- deitz
+
+Log message:
+	Rewrote Expr:: and Stmt:: replace, insertBefore, insertAfter, append,
+	and extract to use the new replaceChild function rather than the back
+	pointer to the pointer.
+	
+	Fixed a bug in RemoveDeadSymbols in which an entire function would be
+	removed if any formal parameter was flagged as dead.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+
