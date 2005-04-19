@@ -26997,3 +26997,17 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/18/05 17:24:48 -- bradc
+
+Log message:
+	Added a new flag -valgrindexe that causes the test system
+	to run valgrind on the generated executable but not on the
+	compiler itself.  This is designed to help people who are
+	developing the runtime valgrind their code without building
+	a -nogc version of the compiler.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+
