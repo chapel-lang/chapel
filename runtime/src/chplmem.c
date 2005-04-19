@@ -142,7 +142,7 @@ void printMemTable(void) {
     fprintf(stdout, "%-*u%-*u%-*u0x%-*x%-s\n", 
             numberWidth, (unsigned)memEntry->size, 
             numberWidth, (unsigned)memEntry->number, 
-            numberWidth, chunk, 
+            numberWidth, (unsigned)chunk, 
             memAllocWidth, (unsigned)(intptr_t)memEntry->memAlloc, 
             memEntry->description);
   }
