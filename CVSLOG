@@ -27201,3 +27201,20 @@ Modified files:
 	                                  formatoutput.good noop.good 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+04/19/05 14:26:44 -- jplevyak
+
+Log message:
+	"class Tuple" is now "record Tuple" sincce Tuples have value semantics.
+	The overloaded = on Index now assigns to and from integers only.
+	
+	We are going to have to build special versions of overloaded =
+	for Index types which have an idxType which is a Tuple (as we
+	have for tuples).  We are also going have to add either accessors
+	for the "fieldN" accessors to Index types which are of Tuples or
+	switch the Tuple = function to use numeric indexing functions.
+
+Modified files:
+	chapel/compiler/parser/: internal_prelude.chpl 
+
