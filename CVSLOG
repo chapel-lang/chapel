@@ -27131,3 +27131,20 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+04/19/05 13:10:11 -- jplevyak
+
+Log message:
+	Improve support for index types by building special purpose
+	operator= functions for assigning from and assigning to IndexTypes
+	things of the index type.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/test/flowanalysis/newast/: declprintdom2.good domarr.good 
+	                                  enumarray.good 
+	                                  formatoutput.good noop.good 
+	                                  protoast_test.good 
+
