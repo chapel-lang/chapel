@@ -27168,3 +27168,36 @@ Log message:
 Modified files:
 	chapel/test/classes/bradc/records/: assignRecord2.future 
 
+---------------------------------------------------------------------------
+
+04/19/05 13:50:20 -- deitz
+
+Log message:
+	Reworked TupleType to be a subclass of Structural Type.  It is now
+	treated very similarly to records.  When a type is added to TupleType
+	using the addType procedure, a field named _field# is added to the
+	structural type.
+	
+	TupleTypes have accessors and constructors now.  There is no longer a
+	->defaultVal associated with TupleTypes as initialization is now done
+	with a defaultConstructor much like with RecordType.
+	
+	I put in code to print out the old TupleType IO for IndexTypes as a
+	stopgap until IndexTypes use fully-defined tuples, TupleTypes with
+	symbols so they can be codegened and have constructors, etc.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/symtab/: insertWriteFns.cpp 
+	chapel/compiler/traversals/: checkSemantics.cpp 
+	                             destructureTupleAssignments.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertIndexType.cpp 
+	                             insertVariableInitializations.cpp 
+	                             specializeParenOpExprs.cpp 
+	chapel/test/flowanalysis/newast/: declprintdom2.good domarr.good 
+	                                  enumarray.good 
+	                                  formatoutput.good noop.good 
+	                                  protoast_test.good 
+
