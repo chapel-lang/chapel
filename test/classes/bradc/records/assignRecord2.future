@@ -1,4 +1,10 @@
-jplevyak/deitz
+deitz
+
+The test now fails in copyType when it tries
+to copy the _integer64 in a Sequence.
+
+
+HISTORY
 
 I was trying to create a test that showed that our
 record assignment scheme (leveraging C's) is naive,
