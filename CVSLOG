@@ -27011,3 +27011,13 @@ Log message:
 Modified files:
 	chapel/test/: start_test sub_test 
 
+---------------------------------------------------------------------------
+
+04/18/05 19:01:35 -- jplevyak
+
+Log message:
+	Fix Linux64 compilation with another format warning->error.
+
+Modified files:
+	chapel/runtime/src/: chplmem.c 
+
