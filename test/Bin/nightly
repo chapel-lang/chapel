@@ -171,7 +171,12 @@ delete($ENV{'CHPL_SYSTEM_DIR'});
 #
 # checkout sources
 #
-mysystem("cd $tmpdir && cvs -d :pserver:$CHPL_UW_CVS_USERNAME\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot checkout chapel", "cvs checkout", 1, 1);
+$uwusername = $ENV{'CHPL_UW_CVS_USERNAME'};
+if ($uwusername eq "") {
+    $uwusername = $user;
+}
+$cvsroot = ":pserver:$uwusername\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot";
+mysystem("cd $tmpdir && cvs -d $cvsroot checkout chapel", "cvs checkout", 1, 1);
 
 
 #
