@@ -27103,3 +27103,16 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/19/05 12:48:51 -- deitz
+
+Log message:
+	Futurized tuple regressions since they are not working for the same
+	reason that the other tuple tests are not working.  They had been
+	sneaking by for a little.
+
+Added files:
+	chapel/test/types/tuple/bradc/: writeTuple.future 
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.future 
+
