@@ -27218,3 +27218,35 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+04/19/05 15:27:49 -- deitz
+
+Log message:
+	Added a new static function to TypeSymbol
+	
+	  TypeSymbol*
+	  TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components)
+	
+	that either finds an existing tuple with the components passed or
+	creates one.  This will currently only work on tuples of primitive
+	types because the new tuple is created in _CommonModule.
+	
+	This function is used in InsertAnonymousTypes when inserting anonymous
+	tuple types and is intended to be used by analysis to create new tuple
+	types on the fly.
+	
+	This function builds all the standard tuple methods, like the
+	constructor, when it is called.
+	
+	Modified BuildClassConstructorsEtc not to build the default structural
+	type methods if they have already been built, since they have for
+	tuples now.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildClassConstructorsEtc.h 
+	                             insertAnonymousTypes.cpp 
+
