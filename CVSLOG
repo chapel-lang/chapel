@@ -27059,3 +27059,21 @@ Modified files:
 	                             insertIndexType.cpp 
 	                             scopeResolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/19/05 10:07:55 -- deitz
+
+Log message:
+	Renamed defExprList in DefStmt to defExprls and made it a DefExpr*.
+	It was previously an Expr*.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             omitForNoAnalysis.cpp 
+	                             transformLetExprs.cpp 
+
