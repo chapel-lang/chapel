@@ -27116,3 +27116,18 @@ Added files:
 	chapel/test/types/tuple/bradc/: writeTuple.future 
 	chapel/test/types/tuple/deitz/: test_tuple_simple1.future 
 
+---------------------------------------------------------------------------
+
+04/19/05 12:59:22 -- bradc
+
+Log message:
+	Changed a use of $cwd to pwd in order to
+	support logfile specifications that use
+	Windows-style // directory names to
+	refer to cross-mounted directories.
+	This allows cygwin's testing to write
+	its logs to our unix disks.
+
+Modified files:
+	chapel/test/: start_test 
+
