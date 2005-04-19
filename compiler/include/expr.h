@@ -563,14 +563,14 @@ void initExpr(void);
 
 class LetExpr : public Expr {
  public:
-  Expr* symDefs;
+  DefExpr* symDefs;
   Expr* innerExpr;
 
   SymScope* letScope;
 
-  LetExpr(Expr* init_symDefs, Expr* init_innerExpr);
+  LetExpr(DefExpr* init_symDefs, Expr* init_innerExpr);
   void setInnerExpr(Expr* expr);
-  void setSymDefs(Expr* expr);
+  void setSymDefs(DefExpr* expr);
   void setLetScope(SymScope* init_letScope);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 

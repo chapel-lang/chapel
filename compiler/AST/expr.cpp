@@ -1888,7 +1888,7 @@ void initExpr(void) {
 }
 
 
-LetExpr::LetExpr(Expr* init_symDefs, Expr* init_innerExpr) :
+LetExpr::LetExpr(DefExpr* init_symDefs, Expr* init_innerExpr) :
   Expr(EXPR_LET),
   symDefs(init_symDefs),
   innerExpr(init_innerExpr)
@@ -1900,7 +1900,7 @@ void LetExpr::setInnerExpr(Expr* expr) {
 }
 
 
-void LetExpr::setSymDefs(Expr* expr) {
+void LetExpr::setSymDefs(DefExpr* expr) {
   symDefs = expr;
 }
 
@@ -1912,7 +1912,7 @@ void LetExpr::setLetScope(SymScope* init_letScope) {
 
 Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   LetExpr* copy =
-    new LetExpr(symDefs->copyListInternal(clone, map, analysis_clone),
+    new LetExpr(dynamic_cast<DefExpr*>(symDefs->copyListInternal(clone, map, analysis_clone)),
                 innerExpr->copyInternal(clone, map, analysis_clone));
   copy->setLetScope(letScope);
   return copy;
@@ -1921,7 +1921,7 @@ Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* 
 
 void LetExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == symDefs) {
-    symDefs = dynamic_cast<Expr*>(new_ast);
+    symDefs = dynamic_cast<DefExpr*>(new_ast);
   } else if (old_ast == innerExpr) {
     innerExpr = dynamic_cast<Expr*>(new_ast);
   } else {

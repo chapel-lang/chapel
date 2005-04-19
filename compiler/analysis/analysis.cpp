@@ -1783,7 +1783,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_LET: {
       LetExpr *s = dynamic_cast<LetExpr *>(ast);
-      DefExpr* def_expr = dynamic_cast<DefExpr*>(s->symDefs);
+      DefExpr* def_expr = s->symDefs;
       while (def_expr) {
         VarSymbol *vs = dynamic_cast<VarSymbol*>(def_expr->sym);
         while (vs) {
