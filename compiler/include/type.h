@@ -274,7 +274,7 @@ class UnionType : public StructuralType {
 };
 
 
-class TupleType : public Type {
+class TupleType : public StructuralType {
  public:
   Vec<Type*> components;
 
@@ -285,9 +285,7 @@ class TupleType : public Type {
 
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
-  void codegenDef(FILE* outfile);
-  void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
+  virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
 };
 
 

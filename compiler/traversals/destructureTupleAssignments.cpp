@@ -4,7 +4,6 @@
 #include "type.h"
 #include "stringutil.h"
 
-#define EMPTY_TUPLE_STOPGAP
 
 void DestructureTupleAssignments::postProcessStmt(Stmt* stmt) {
   ExprStmt* assign_stmt = dynamic_cast<ExprStmt*>(stmt);
@@ -21,6 +20,10 @@ void DestructureTupleAssignments::postProcessStmt(Stmt* stmt) {
 
   TupleType* left_type = dynamic_cast<TupleType*>(assign_expr->left->typeInfo()->getType());
   TupleType* right_type = dynamic_cast<TupleType*>(assign_expr->right->typeInfo()->getType());
+
+  if (left_type && right_type) {
+    return;
+  }
 
   Tuple* left_tuple = dynamic_cast<Tuple*>(assign_expr->left);
   Tuple* right_tuple = dynamic_cast<Tuple*>(assign_expr->right);
@@ -41,13 +44,6 @@ void DestructureTupleAssignments::postProcessStmt(Stmt* stmt) {
     (left_type) 
     ? left_type->components.n 
     : left_tuple->exprs->length();
-
-#ifdef EMPTY_TUPLE_STOPGAP
-  if (right_tuple && !right_tuple->exprs) {
-    stmt->extract();
-    return;
-  }
-#endif
 
   int right_n =
     (right_type) 

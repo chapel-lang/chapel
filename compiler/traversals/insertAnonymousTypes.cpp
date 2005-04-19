@@ -142,11 +142,14 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
     *type = tuple_sym->type;
   }
   else {
-    TypeSymbol* tuple_sym = new TypeSymbol(name, tuple_type);
-    tuple_type->addSymbol(tuple_sym);
+    TupleType* copy = dynamic_cast<TupleType*>(tuple_type->copy());
+    TypeSymbol* tuple_sym = new TypeSymbol(name, copy);
+    copy->addSymbol(tuple_sym);
     DefExpr* def_expr = new DefExpr(tuple_sym);
-    DefStmt* tuple_type_def = new DefStmt(def_expr);
-    commonModule->stmts->insertBefore(tuple_type_def);
+    DefStmt* copy_def = new DefStmt(def_expr);
+    copy->structScope->setContext(NULL, tuple_sym, def_expr);
+    commonModule->stmts->insertBefore(copy_def);
+    *type = copy;
   }
   Symboltable::setCurrentScope(saveScope);
 }

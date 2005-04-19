@@ -28,20 +28,11 @@ void InsertIndexType::preProcessType(Type* type) {
   if (!index_type){
     return;
   } 
-  
+
   Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);
   if (index_sym) {
     type = index_sym->type;
-    /*** SJD: I couldn't figure out where to put this, but the
-         defaultVal needs to be set for IndexTypes.  I don't know why
-         this was working without this. **/
-    if (TupleType* tuple_type = dynamic_cast<TupleType*>(type->getType())) {
-      tuple_type->rebuildDefaultVal();
-      type->defaultVal = tuple_type->defaultVal->copy();
-      fixup_expr(index_sym->defPoint);
-    }
-  }
-  else {
+  } else {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     TypeSymbol* index_sym = new TypeSymbol(name, index_type);
     index_type->addSymbol(index_sym);

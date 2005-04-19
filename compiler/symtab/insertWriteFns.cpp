@@ -3,7 +3,7 @@
 #include "symtab.h"
 
 InsertWriteFns::InsertWriteFns(void) {
-  whichModules = MODULES_USER;
+  whichModules = MODULES_COMMON_AND_USER;
 }
 
 

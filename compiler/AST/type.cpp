@@ -667,7 +667,24 @@ void IndexType::codegenDef(FILE* outfile) {
 
 void IndexType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
                               Expr* format) {
-  idxType->codegenIOCall(outfile, ioType, arg, format);
+  if (TupleType* tupleType = dynamic_cast<TupleType*>(idxType)) {
+    /** STOPGAP use the old TupleType output code **/
+    fprintf(outfile, "fprintf(stdout, \"(\");\n");
+    int compNum = 0;
+    char compNumStr[80];
+    forv_Vec(Type, component, tupleType->components) {
+      if (compNum) {
+        fprintf(outfile, "fprintf(stdout, \", \");\n");
+      }
+      compNum++;
+      sprintf(compNumStr, "%d", compNum);
+      component->codegenIOCall(outfile, ioType, new TupleSelect(arg, new IntLiteral(compNumStr, compNum)));
+      fprintf(outfile, ";\n");
+    }
+    fprintf(outfile, "fprintf(stdout, \")\");\n");
+  } else {
+    idxType->codegenIOCall(outfile, ioType, arg, format);
+  }
 }
                           
 
@@ -1139,7 +1156,14 @@ void StructuralType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
     beforeStmt->insertBefore(newDeclarations);
   } else {
     Stmt* last = dynamic_cast<Stmt*>(declarationList->tail());
-    last->insertAfter(newDeclarations);
+    if (last->parentSymbol) { /** inserted in tree already **/
+      /** I do this conditional because TupleType addType is called
+          before it is inserted in the tree **/
+      /** really want insertAfter to do this **/
+      last->insertAfter(newDeclarations);
+    } else {
+      last->append(newDeclarations);
+    }
   }
 }
 
@@ -1614,12 +1638,19 @@ void UnionType::codegenMemberAccessOp(FILE* outfile) {
 
 
 TupleType::TupleType() :
-  Type(TYPE_TUPLE, new Tuple(NULL))
-{ }
+  StructuralType(TYPE_TUPLE)
+{
+  Symboltable::pushScope(SCOPE_CLASS);
+  setScope(Symboltable::popScope());
+}
 
 
 void TupleType::addType(Type* additionalType) {
+  SymScope* saveScope = Symboltable::setCurrentScope(structScope);
   components.add(additionalType);
+  char* field_name = glomstrings(2, "_field", intstring(components.n));
+  addDeclarations(new DefStmt(new DefExpr(new VarSymbol(field_name, additionalType))));
+  Symboltable::setCurrentScope(saveScope);
 }
 
 
@@ -1637,7 +1668,7 @@ void TupleType::rebuildDefaultVal(void) {
 Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   TupleType* newTupleType = new TupleType();
   forv_Vec(Type, component, components) {
-    newTupleType->addType(component->copy(clone, map, analysis_clone));
+    newTupleType->addType(component);
   }
   newTupleType->addSymbol(symbol);
   return newTupleType;
@@ -1648,7 +1679,7 @@ void TupleType::traverseDefType(Traversal* traversal) {
   for (int i=0; i<components.n; i++) {
     TRAVERSE(components.v[i], traversal, false);
   }
-  TRAVERSE(defaultVal, traversal, false);
+  StructuralType::traverseDefType(traversal);
 }
 
 
@@ -1664,44 +1695,19 @@ void TupleType::print(FILE* outfile) {
 }
 
 
-void TupleType::codegen(FILE* outfile) {
-  symbol->codegen(outfile);
-}
+Stmt* TupleType::buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg) {
+  bool firstField = true;
 
-
-void TupleType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef struct _");
-  symbol->codegen(outfile);
-  fprintf(outfile, " {\n");
-  int i = 0;
-  forv_Vec(Type, component, components) {
-    component->codegen(outfile);
-    fprintf(outfile, " _field%d;\n", ++i);
-  }
-  fprintf(outfile, "} ");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n\n");
-}
-
-
-void TupleType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                              Expr* format) {
-  fprintf(outfile, "fprintf(stdout, \"(\");\n");
-  int compNum = 0;
-  char compNumStr[80];
-  forv_Vec(Type, component, components) {
-    if (compNum) {
-      fprintf(outfile, "fprintf(stdout, \", \");\n");
+  forv_Vec(VarSymbol, field, fields) {
+    if (!firstField) {
+      bodyStmts = addIOStmt(bodyStmts, ", ");
+    } else {
+      firstField = false;
     }
-
-    compNum++;
-    sprintf(compNumStr, "%d", compNum);
-    component->codegenIOCall(outfile, ioType, new TupleSelect(arg, new IntLiteral(compNumStr, compNum)));
-    fprintf(outfile, ";\n");
+    bodyStmts = addIOStmt(bodyStmts, thisArg, field);
   }
-  fprintf(outfile, "fprintf(stdout, \")\");\n");
+  return bodyStmts;
 }
-
 
 
 SumType::SumType(Type* firstType) :

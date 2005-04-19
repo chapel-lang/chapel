@@ -9,6 +9,9 @@
 #include "stringutil.h"
 
 
+#define INDEX_ANON_TUPLE_STOPGAP
+
+
 static void insert_init(Stmt* stmt, VarSymbol* var, Type* type);
 
 
@@ -120,6 +123,9 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
     Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
     init_stmt = new ExprStmt(init_expr);
   } else {
+    if (dynamic_cast<IndexType*>(type)) {
+      return new NoOpStmt();
+    }
     INT_FATAL(var, "Failed to insert default initialization");
   }
   return init_stmt;

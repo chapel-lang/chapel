@@ -12,7 +12,10 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
       paren_replacement = new ArrayRef(paren->baseExpr, paren->argList);
     }
     else if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
-      if (StructuralType* ctype = dynamic_cast<StructuralType*>(baseVar->var->type)) {
+      if (!dynamic_cast<TypeSymbol*>(baseVar->var) && 
+          dynamic_cast<TupleType*>(baseVar->typeInfo())) {
+        paren_replacement = new TupleSelect(baseVar, paren->argList);
+      } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(baseVar->var->type)) {
         if (!dynamic_cast<TypeSymbol*>(baseVar->var)) {
           USR_FATAL(expr, "Invalid class constructor");
         }
@@ -27,20 +30,13 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
         else {
           INT_FATAL(expr, "constructor does not have a DefStmt");
         }
-      }
-      else if (dynamic_cast<TupleType*>(paren->baseExpr->typeInfo())) {
-        paren_replacement = new TupleSelect(baseVar, paren->argList);
-      }
-      else if (strcmp(baseVar->var->name, "write") == 0) {
+      } else if (strcmp(baseVar->var->name, "write") == 0) {
         paren_replacement = new IOCall(IO_WRITE, paren->baseExpr, paren->argList);
-      }
-      else if (strcmp(baseVar->var->name, "writeln") == 0) {
+      } else if (strcmp(baseVar->var->name, "writeln") == 0) {
         paren_replacement = new IOCall(IO_WRITELN, paren->baseExpr, paren->argList);
-      }
-      else if (strcmp(baseVar->var->name, "read") == 0) {
+      } else if (strcmp(baseVar->var->name, "read") == 0) {
         paren_replacement = new IOCall(IO_READ, paren->baseExpr, paren->argList);
-      }
-      else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
+      } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
         paren_replacement = new FnCall(baseVar, paren->argList);
       }
     }
