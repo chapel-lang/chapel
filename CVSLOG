@@ -27367,3 +27367,14 @@ Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y 
 	chapel/compiler/traversals/: verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/05 12:16:17 -- deitz
+
+Log message:
+	Fixed a bug in the new replaceChild facility in which a function
+	argument's default initialization expression could not be replaced.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
