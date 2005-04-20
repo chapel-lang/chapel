@@ -8,8 +8,6 @@
 #include "stringutil.h"
 #include "../traversals/fixup.h"
 
-//#define CONSTRUCTOR_WITH_PARAMETERS
-
 
 static void build_constructor(StructuralType* structType) {
   SymScope* saveScope = Symboltable::setCurrentScope(structType->structScope);
@@ -21,17 +19,18 @@ static void build_constructor(StructuralType* structType) {
   fn->cname = glomstrings(2, "_construct_", structType->symbol->cname);
 
   ParamSymbol* args = NULL;
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
-  if (analyzeAST) {
-    forv_Vec(VarSymbol, tmp, structType->fields) {
-      char* name = tmp->name;
-      Type* type = tmp->type;
-      Expr* init = (tmp->init) ? tmp->init->copy() : new VarInitExpr(tmp);
-      ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, init);
-      args = appendLink(args, arg);
+
+  if (useNewConstructor) {
+    if (analyzeAST) {
+      forv_Vec(VarSymbol, tmp, structType->fields) {
+        char* name = tmp->name;
+        Type* type = tmp->type;
+        Expr* init = (tmp->init) ? tmp->init->copy() : new VarInitExpr(tmp);
+        ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, init);
+        args = appendLink(args, arg);
+      }
     }
   }
-#endif
 
   BlockStmt* body = Symboltable::startCompoundStmt();
   Stmt* stmts = NULL;

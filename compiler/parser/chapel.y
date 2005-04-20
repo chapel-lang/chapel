@@ -120,7 +120,7 @@
 %type <pch> identifier query_identifier fname
 %type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
 %type <enumsym> enum_item enum_list
-%type <pexpr> lvalue atom expr exprlist expr_list_item nonemptyExprlist literal range seq_expr
+%type <pexpr> lvalue declarable_expr atom expr exprlist expr_list_item nonemptyExprlist literal range seq_expr
 %type <pexpr> reduction optional_init_expr assignExpr
 %type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
@@ -838,13 +838,9 @@ nonemptyExprlist:
 ;
 
 
-lvalue:
+declarable_expr:
   identifier
     { $$ = new Variable(new UnresolvedSymbol($1)); }
-| lvalue TDOT identifier
-    { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
-| lvalue TLP exprlist TRP
-    { $$ = new ParenOpExpr($1, $3); }
 | TLP nonemptyExprlist TRP 
     { 
       if (!$2->next) {
@@ -853,6 +849,14 @@ lvalue:
         $$ = new Tuple($2);
       }
     }
+;
+
+lvalue:
+  declarable_expr
+| lvalue TDOT identifier
+    { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
+| lvalue TLP exprlist TRP
+    { $$ = new ParenOpExpr($1, $3); }
 ;
 
 

@@ -12,8 +12,6 @@
 #include "../traversals/updateSymbols.h"
 #include "../traversals/collectASTS.h"
 
-//#define CONSTRUCTOR_WITH_PARAMETERS
-
 static void genIOReadWrite(FILE* outfile, ioCallType ioType) {
   switch (ioType) {
   case IO_WRITE:
@@ -1237,38 +1235,37 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
     stmts = appendLink(stmts, assign_stmt);
   }
 
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
+
   ParamSymbol* ptmp = arguments;
-#endif
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
     Expr* rhs = NULL;
-    if (analyzeAST) {
-      rhs = new Variable(ptmp);
+    if (useNewConstructor) {
+      if (analyzeAST) {
+        rhs = new Variable(ptmp);
+      } else {
+        if (tmp->init) {
+          rhs = tmp->init->copy();
+        } else if (tmp->type != dtUnknown) {
+          rhs = tmp->type->defaultVal->copy();
+        }
+      }
     } else {
-      if (tmp->init) {
-        rhs = tmp->init->copy();
-      } else if (tmp->type != dtUnknown) {
-        rhs = tmp->type->defaultVal->copy();
+      rhs = tmp->init ? tmp->init->copy() : NULL;
+      if (!rhs) {
+        continue;
       }
     }
-#else
-    Expr* rhs = tmp->init ? tmp->init->copy() : NULL;
-    if (!rhs) {
-      continue;
-    }
-#endif
 
     Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts = appendLink(stmts, assign_stmt);
 
-#ifdef CONSTRUCTOR_WITH_PARAMETERS
-    if (analyzeAST) {
-      ptmp = nextLink(ParamSymbol, ptmp);
+    if (useNewConstructor) {
+      if (analyzeAST) {
+        ptmp = nextLink(ParamSymbol, ptmp);
+      }
     }
-#endif
   }
   return stmts;
 }
