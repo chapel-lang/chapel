@@ -27328,3 +27328,22 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/05 11:21:01 -- shannon
+
+Log message:
+	Hopefully fixed the test that was failing on the
+	linux64 platform by increasing the memthreshold
+	value to filter out the config var table entry
+	that was causing the discrepancy in the output.
+	
+	Added the global match for the substitution
+	of the memory address.
+
+Modified files:
+	chapel/test/memory/shannon/: PREDIFF configVarFile.chpl 
+	                             configVarFile.execopts 
+	                             configVarFile.good 
+	                             configVarFile.input 
+
