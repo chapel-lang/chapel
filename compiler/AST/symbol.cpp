@@ -669,7 +669,17 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
     body = dynamic_cast<Stmt*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild(old, new)");
+    bool found = false;
+    for (Symbol* tmp = formals; tmp; tmp = nextLink(Symbol, tmp)) {
+      ParamSymbol* param = dynamic_cast<ParamSymbol*>(tmp);
+      if (old_ast == param->init) {
+        param->init = dynamic_cast<Expr*>(new_ast);
+        found = true;
+      }
+    }
+    if (!found) {
+      INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild(old, new)");
+    }
   }
 }
 
