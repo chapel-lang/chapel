@@ -2,7 +2,7 @@ config var i: integer = 0;
 config var f: float = 1.2;
 config var b: boolean = true;
 config var c: complex = 1.2+3.4i;
-config var s: string = "Georgie Porgie";
+config var s: string = "Pope Benedict XVI";
 
 writeln("i is initialized to 0");
 writeln("i at runtime is ", i);
@@ -12,5 +12,5 @@ writeln("b is initialized to true");
 writeln("b at runtime is ", b);
 writeln("c is initialized to 1.2+3.4i");
 writeln("c at runtime is ", c);
-writeln("s is initialized to Georgie Porgie");
+writeln("s is initialized to Pope Benedict XVI");
 writeln("s at runtime is ", s);

@@ -6,25 +6,9 @@ b is initialized to true
 b at runtime is false
 c is initialized to 1.2+3.4i
 c at runtime is 9.9 + 99.9i
-s is initialized to Georgie Porgie
-s at runtime is puddin' and pie
-malloc called for 25 items of size 1 for _glom_strings result:  0xnnnnnnn
-calloc called for 1 items of size 24 for config table entry for i:  0xnnnnnnn
-malloc called for 31 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 25 items of size 1 for _glom_strings result:  0xnnnnnnn
-calloc called for 1 items of size 24 for config table entry for f:  0xnnnnnnn
-malloc called for 31 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 25 items of size 1 for _glom_strings result:  0xnnnnnnn
-calloc called for 1 items of size 24 for config table entry for b:  0xnnnnnnn
-malloc called for 31 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 25 items of size 1 for _glom_strings result:  0xnnnnnnn
-calloc called for 1 items of size 24 for config table entry for c:  0xnnnnnnn
-malloc called for 31 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 28 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 25 items of size 1 for _glom_strings result:  0xnnnnnnn
-calloc called for 1 items of size 24 for config table entry for s:  0xnnnnnnn
-malloc called for 31 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 32 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 27 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 33 items of size 1 for _glom_strings result:  0xnnnnnnn
-malloc called for 33 items of size 1 for _glom_strings result:  0xnnnnnnn
+s is initialized to Pope Benedict XVI
+s at runtime is He is widely respected for his uncompromising if ultraconservative principles and his ability to be critical.
+malloc called for 127 items of size 1 for _glom_strings result:  0xnnnnnnn
+realloc called for 110 items of size 1 for string copy of "He is widely respected for his uncompromising if ultraconservative principles and his ability to be critical.":  0xnnnnnnn -> 0xnnnnnnn
+malloc called for 127 items of size 1 for _glom_strings result:  0xnnnnnnn
+realloc called for 110 items of size 1 for string copy of "He is widely respected for his uncompromising if ultraconservative principles and his ability to be critical.":  0xnnnnnnn -> 0xnnnnnnn

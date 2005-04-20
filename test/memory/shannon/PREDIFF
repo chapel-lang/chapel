@@ -4,5 +4,5 @@ set outfile  = $2
 
 set tmpfile = $outfile.prediff.tmp
 mv $outfile $tmpfile
-sed s/0x\[0-9a-f\]\*/0xnnnnnnn/ $tmpfile > $outfile
+sed s/0x\[0-9a-f\]\*/0xnnnnnnn/g $tmpfile > $outfile
 rm $tmpfile
