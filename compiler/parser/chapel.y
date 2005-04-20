@@ -73,6 +73,7 @@
 %token TTHEN
 %token TTYPE
 %token TUNION
+%token TUSE
 %token TVAL
 %token TVAR
 %token TWHILE
@@ -506,12 +507,15 @@ moduledecl:
 decl:
   TWITH lvalue TSEMI
     { $$ = new WithStmt($2); }
+| TUSE lvalue TSEMI
+    { $$ = new UseStmt($2); }
 | vardecl
     { $$ = $1; }
 | typedecl
 | fndecl
 | moduledecl
 ;
+
 
 decls:
   /* empty */

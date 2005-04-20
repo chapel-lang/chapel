@@ -54,20 +54,6 @@ class NoOpStmt : public Stmt {
 };
 
 
-class WithStmt : public Stmt {
- public:
-  Expr* withExpr;
-
-  WithStmt(Expr* init_withExpr);
-  StructuralType* getStruct(void);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 class DefStmt : public Stmt {
 public:
   DefExpr* defExprls;
@@ -105,7 +91,29 @@ class ExprStmt : public Stmt {
 
 class ReturnStmt : public ExprStmt {
  public:
-  ReturnStmt(Expr* retExpr);
+  ReturnStmt(Expr* initExpr);
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class WithStmt : public ExprStmt {
+ public:
+  WithStmt(Expr* initExpr);
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+
+  StructuralType* getStruct(void);
+};
+
+
+class UseStmt : public ExprStmt {
+ public:
+  UseStmt(Expr* initExpr);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void print(FILE* outfile);

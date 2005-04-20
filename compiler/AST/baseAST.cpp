@@ -32,10 +32,11 @@ int compar_baseast(const void *ai, const void *aj) {
 char* astTypeName[AST_TYPE_END+1] = {
   "Stmt",
   "NoOpStmt",
-  "WithStmt",
   "DefStmt",
   "ExprStmt",
   "ReturnStmt",
+  "WithStmt",
+  "UseStmt",
   "BlockStmt",
   "WhileLoopStmt",
   "ForLoopStmt",

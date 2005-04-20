@@ -68,6 +68,7 @@ static          return TSTATIC;
 then            return TTHEN;
 type            return TTYPE;
 union           return TUNION;
+use             return TUSE;
 var             return TVAR;
 while           return TWHILE;
 with            return TWITH;

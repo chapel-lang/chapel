@@ -1476,6 +1476,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case STMT_NOOP: break;
     case STMT_WITH: break;
+    case STMT_USE: break;
     case STMT_DEF:
       if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast)) {
         if (def_stmt->varDef() && gen_vardef(def_stmt) < 0) return -1;

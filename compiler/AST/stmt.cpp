@@ -290,70 +290,6 @@ void NoOpStmt::codegen(FILE* outfile) {
 }
 
 
-WithStmt::WithStmt(Expr* init_withExpr) :
-  Stmt(STMT_WITH),
-  withExpr(init_withExpr)
-{ }
-
-
-StructuralType* WithStmt::getStruct(void) {
-  if (Variable* var = dynamic_cast<Variable*>(withExpr)) {
-    if (StructuralType* result = 
-        dynamic_cast<StructuralType*>(var->var->type)) {
-      return result;
-    }
-    else if (UnresolvedSymbol* unresolved = 
-             dynamic_cast<UnresolvedSymbol*>(var->var)) {
-      if (StructuralType* result = 
-          dynamic_cast<StructuralType*>(Symboltable::lookup(unresolved->name)->type)) {
-        return result;
-      }
-      else {
-        INT_FATAL(this, "Bad with statement");
-      }
-    }
-    else {
-      INT_FATAL(this, "Bad with statement");
-    }
-  }
-  else {
-    INT_FATAL(this, "Bad with statement");
-  }
-  return NULL;
-}
-
-
-Stmt* WithStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new WithStmt(withExpr->copyInternal(clone, map, analysis_clone));
-}
-
-
-void WithStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == withExpr) {
-    withExpr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in WithStmt::replaceChild(old, new)");
-  }
-}
-
-
-void WithStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(withExpr, traversal, false);
-}
-
-
-void WithStmt::print(FILE* outfile) {
-  fprintf(outfile, "with ");
-  withExpr->print(outfile);
-  fprintf(outfile, "\n");
-}
-
-
-void WithStmt::codegen(FILE* outfile) {
-  INT_FATAL(this, "With statement encountered in codegen()");
-}
-
-
 DefStmt::DefStmt(DefExpr* init_defExprls) :
   Stmt(STMT_DEF),
   defExprls(init_defExprls)
@@ -422,9 +358,9 @@ Vec<VarSymbol*>* DefStmt::varDefSet() {
 }
 
 
-ExprStmt::ExprStmt(Expr* init_expr) :
+ExprStmt::ExprStmt(Expr* initExpr) :
   Stmt(STMT_EXPR),
-  expr(init_expr) 
+  expr(initExpr) 
 { }
 
 
@@ -459,8 +395,8 @@ void ExprStmt::codegen(FILE* outfile) {
 }
 
 
-ReturnStmt::ReturnStmt(Expr* retExpr) :
-  ExprStmt(retExpr)
+ReturnStmt::ReturnStmt(Expr* initExpr) :
+  ExprStmt(initExpr)
 {
   astType = STMT_RETURN;
 }
@@ -489,6 +425,77 @@ void ReturnStmt::codegen(FILE* outfile) {
     expr->codegen(outfile);
   }
   fprintf(outfile, ";");
+}
+
+
+WithStmt::WithStmt(Expr* initExpr) :
+  ExprStmt(initExpr)
+{
+  astType = STMT_WITH;
+}
+
+
+Stmt* WithStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new WithStmt(expr->copyInternal(clone, map, analysis_clone));
+}
+
+
+void WithStmt::print(FILE* outfile) {
+  fprintf(outfile, "with ");
+  expr->print(outfile);
+  fprintf(outfile, "\n");
+}
+
+
+void WithStmt::codegen(FILE* outfile) {
+  INT_FATAL(this, "With statement encountered in codegen()");
+}
+
+
+StructuralType* WithStmt::getStruct(void) {
+  if (Variable* var = dynamic_cast<Variable*>(expr)) {
+    if (StructuralType* result = 
+        dynamic_cast<StructuralType*>(var->var->type)) {
+      return result;
+    } else if (UnresolvedSymbol* unresolved = 
+             dynamic_cast<UnresolvedSymbol*>(var->var)) {
+      if (StructuralType* result = 
+          dynamic_cast<StructuralType*>(Symboltable::lookup(unresolved->name)->type)) {
+        return result;
+      } else {
+        INT_FATAL(this, "Bad with statement");
+      }
+    } else {
+      INT_FATAL(this, "Bad with statement");
+    }
+  } else {
+    INT_FATAL(this, "Bad with statement");
+  }
+  return NULL;
+}
+
+
+UseStmt::UseStmt(Expr* initExpr) :
+  ExprStmt(initExpr)
+{
+  astType = STMT_USE;
+}
+
+
+Stmt* UseStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new UseStmt(expr->copyInternal(clone, map, analysis_clone));
+}
+
+
+void UseStmt::print(FILE* outfile) {
+  fprintf(outfile, "use ");
+  expr->print(outfile);
+  fprintf(outfile, "\n");
+}
+
+
+void UseStmt::codegen(FILE* outfile) {
+  INT_FATAL(this, "Use statement encountered in codegen()");
 }
 
 
