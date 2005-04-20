@@ -27292,3 +27292,15 @@ Modified files:
 	                                         test_seq8.good 
 	                                         test_seq8b.good 
 
+---------------------------------------------------------------------------
+
+04/20/05 10:49:56 -- shannon
+
+Log message:
+	Added the --help option and updated the
+	--help output.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+	chapel/test/execflags/shannon/: help.good 
+
