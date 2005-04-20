@@ -1,4 +1,15 @@
-deitz/bradc
+bradc
+
+The main problem here is that parameter copy backs are
+inserted after the function call, but if the function
+call is in a return statement, this is not legal.  My
+sense is that the way to deal with this is to get rid
+or return statements, but I'm not ready to tackle that
+quite yet.
+
+----
+Here's my original entry:
+
 
 It seems that the default parameter wrappers aren't setting
 up default values for this test (though I'm pretty sure they

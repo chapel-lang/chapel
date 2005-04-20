@@ -532,9 +532,10 @@ DomainType::DomainType(Expr* init_expr) :
   idxType(NULL)
 {
   if (init_expr) {
-        
-    if (typeid(*init_expr) == typeid(IntLiteral)) {
-      numdims = init_expr->intVal();
+    
+    if ((typeid(*init_expr) == typeid(IntLiteral)) ||
+        (init_expr->isParam() && init_expr->typeInfo() == dtInteger)) {
+          numdims = init_expr->intVal();
     } else {
       numdims = init_expr->rank();
       parent = init_expr;
@@ -1475,7 +1476,7 @@ void ClassType::codegenMemberAccessOp(FILE* outfile) {
 
 
 bool ClassType::blankIntentImpliesRef(void) {
-  return true;
+  return false;  // BLC: it does, but not for the pointer that we're passing in
 }
 
 
