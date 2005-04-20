@@ -27489,3 +27489,48 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_coerce1.chpl 
 	                                         test_coerce1.good 
 
+---------------------------------------------------------------------------
+
+04/20/05 16:34:42 -- bradc
+
+Log message:
+	Adding a new test and several futures that I ran into
+	in getting the test working.  Most of these are high-level
+	futures, and ones that I've assigned to myself (with Steve
+	sometimes listed as a second in case he gets there before
+	I do).  The tests exercise:
+	
+	- domains defined via an integer parameter expression
+	  rather than an integer literal
+	
+	- functions that return a type variable that is also
+	  a parameter don't resolve properly
+	
+	- variables initialized using variables of the same
+	  name from an external scope currently don't resolve
+	  properly
+	
+	- another test of "var A: [i in D] type = i"
+
+Added files:
+	chapel/test/distributions/bradc/foundations/: .cvsignore 
+	                                              blockdist1.chpl 
+	                                              blockdist1.future 
+	                                              blockdist1.good 
+	                                              blockdist2.chpl 
+	                                              blockdist2.future 
+	                                              blockdist2.good 
+	                                              blockdist3.chpl 
+	                                              blockdist3.good 
+	chapel/test/domains/bradc/: paramRank.chpl paramRank.future 
+	                            paramRank.good 
+	chapel/test/functions/bradc/: typefn.chpl typefn.future 
+	                              typefn.good typefn2.chpl 
+	                              typefn2.future typefn2.good 
+	chapel/test/trivial/bradc/: initvarsamename.chpl 
+	                            initvarsamename.future 
+	                            initvarsamename.good 
+	                            initvarsamename2.chpl 
+	                            initvarsamename2.future 
+	                            initvarsamename2.good 
+
