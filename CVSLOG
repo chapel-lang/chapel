@@ -27315,3 +27315,16 @@ Added files:
 	chapel/test/types/seq/deitz/noanalysis/: test_array_of_seq1.chpl 
 	                                         test_array_of_seq1.good 
 
+---------------------------------------------------------------------------
+
+04/20/05 10:53:21 -- bradc
+
+Log message:
+	Fixed an uninitialized member problem that resulted
+	in last night's three linux-valgrind regressions --
+	IndexType::domainType was not initialized in one of
+	the two constructors.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
