@@ -27264,3 +27264,31 @@ Modified files:
 	chapel/compiler/parser/: internal_prelude.chpl 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/05 10:45:28 -- deitz
+
+Log message:
+	Change seq output, e.g., from "1 2 3" to "(/1, 2, 3/)" for (/1,2,3/).
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/test/types/seq/deitz/: test_seq1.good test_seq1a.good 
+	                              test_seq1b.good test_seq1c.good 
+	                              test_seq2.good test_seq3.good 
+	                              test_seq4.good test_seq5.good 
+	                              test_seq6.good test_seq7.good 
+	                              test_seq8.good test_seq8b.good 
+	chapel/test/types/seq/deitz/noanalysis/: test_seq1.good 
+	                                         test_seq1a.good 
+	                                         test_seq1b.good 
+	                                         test_seq1c.good 
+	                                         test_seq2.good 
+	                                         test_seq3.good 
+	                                         test_seq4.good 
+	                                         test_seq5.good 
+	                                         test_seq6.good 
+	                                         test_seq7.good 
+	                                         test_seq8.good 
+	                                         test_seq8b.good 
+
