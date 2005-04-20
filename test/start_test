@@ -177,10 +177,11 @@
 #
 #  - if the subdirectory contains an executable PREDIFF file, that
 #    file will be executed prior to running any diff command and
-#    will be sent two arguments: 1) the name of the current test
-#    and 2) the name of the output file that the diff is going to
-#    be taken against.  A test-specific PREDIFF script can be added 
-#    by using a foo.prediff script.
+#    will be sent three arguments: 1) the name of the current test,
+#    2) the name of the output file that the diff is going to
+#    be taken against, and 3) the compiler being used.  A 
+#    test-specific PREDIFF script can be added  by using a foo.prediff
+#    script.
 #
 #  - similarly, actions desired before running the generated
 #    executable can be specified using a PREEXEC or foo.preexec

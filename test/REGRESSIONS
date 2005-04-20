@@ -3,37 +3,57 @@ linux regressions
 
 [Error matching compiler output for classes/deitz/test_type_in_class1]
 
-This test is failing because it is attempting to resolveSymbols for
-the ->init in a VarDefStmt in a Type which is ever executed (it 
-is copied and the copy is executed) and so analysis knows nothing about it.
-
-[Error matching compiler output for types/tuple/bradc/writeTuple]
-
-This is failing because we currently cannot add methods to TupleTypes
-and tuple indexing is handled through methods so Tuple is a class
-which confuses codegen.
-
-[Error matching compiler output for types/tuple/deitz/test_tuple_simple1]
-
-This is failing because we currently cannot add methods to TupleTypes
-and tuple indexing is handled through methods so Tuple is a class
-which confuses codegen.
+  This test is failing because it is attempting to resolveSymbols for
+  the ->init in a VarDefStmt in a Type which is ever executed (it is
+  copied and the copy is executed) and so analysis knows nothing about
+  it.
 
 
-linux64-only regressions
-========================
 
-memory/shannon/mallocOutOfMemory -- causes OS to thrash around; need
-  to limit memory allocation for this test (shannon/bradc)
+linux valgrind regressions
+==========================
 
-memory/shannon/configVarFile -- sizeof() returning different sizes;
-  need to neutralize this somehow (shannon/bradc)
-
-
-sunos-only regressions
-======================
+memory/shannon/freedMalloc:
+memory/shannon/printMemTable:
+memory/shannon/reallocZeroSize:
+  
+  current address printing is too sensitive to address size (shannon)
 
 
-cygwin-only regressions
-=======================
+compflags/bradc/noexec/version:
+
+  this test needs to be generalized for the no-gc version of chpl (bradc)
+
+
+
+linux64-specific regressions
+============================
+
+memory/shannon/mallocOutOfMemory:
+
+  causes OS to thrash around; need to limit memory allocation for this
+  test (shannon/bradc)
+
+
+memory/shannon/configVarFile:
+
+  sizeof() returning different sizes; need to neutralize this somehow
+  (shannon/bradc)
+
+
+
+cygwin-specific regressions
+===========================
+
+
+
+freebsd-specific regressions
+============================
+
+compflags/bradc/gdbdash/declint -- ??? (bradc)
+
+
+
+sunos-specific regressions
+==========================
 

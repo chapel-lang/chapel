@@ -192,11 +192,11 @@ foreach chplsrc ($testsrc)
 
 	if (-x ./PREDIFF) then
             echo \[Executing PREDIFF\]
-	    ./PREDIFF $execfile $complog
+	    ./PREDIFF $execfile $complog $compiler
 	endif
         if (-x ./$execfile.prediff) then
             echo \[Executing $execfile.prediff\]
-            ./$execfile.prediff $execfile $complog
+            ./$execfile.prediff $execfile $complog $compiler
         endif
 
 	if ( ! -r $checkfile ) then
@@ -224,11 +224,11 @@ foreach chplsrc ($testsrc)
 
 	if (-x ./PREEXEC) then
             echo \[Executing PREEXEC\]
-	    ./PREEXEC $execfile $execlog
+	    ./PREEXEC $execfile $execlog $compiler
 	endif
         if (-x ./$execfile.preexec) then
             echo \[Executing $execfile.preexec\]
-            ./$execfile.preexec $execfile $complog
+            ./$execfile.preexec $execfile $complog $compiler
         endif
 
 
@@ -268,11 +268,11 @@ foreach chplsrc ($testsrc)
 
 	    if (-x ./PREDIFF) then
                 echo \[Executing PREDIFF\]
-		./PREDIFF $execfile $execlog
+		./PREDIFF $execfile $execlog $compiler
 	    endif
             if (-x ./$execfile.prediff) then
                 echo \[Executing $execfile.prediff\]
-                ./$execfile.prediff $execfile $complog
+                ./$execfile.prediff $execfile $complog $compiler
             endif
 
 
