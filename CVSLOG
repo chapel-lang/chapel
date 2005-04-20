@@ -27443,3 +27443,23 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/20/05 16:10:30 -- jplevyak
+
+Log message:
+	Generate the IF1 into the DefExpr instead of the DefStmt
+	so that constructors can be looked up on the DefExpr.
+	
+	One problem with this is that
+	
+	var x : foo = y;
+	
+	involves both a constructor and an overloaded = which is
+	going to have call_info as well.
+	
+	We might neecd a new call.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
