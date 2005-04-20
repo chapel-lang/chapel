@@ -27556,3 +27556,19 @@ Modified files:
 	                              intents-classes3.good 
 	                              intents-classes4.good 
 
+---------------------------------------------------------------------------
+
+04/20/05 16:59:07 -- deitz
+
+Log message:
+	Added flag ->noDefaultInit on VarSymbols to say that these VarSymbols
+	should not get default initializations.  Used for "this" in
+	constructors and the init variables for type's default values.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertVariableInitializations.cpp 
+
