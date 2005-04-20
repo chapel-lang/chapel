@@ -209,7 +209,8 @@ VarSymbol::VarSymbol(char* init_name,
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
-  init(init_expr)
+  init(init_expr),
+  noDefaultInit(false)
 {
 #ifdef NUMBER_VAR_SYMBOLS_UNIQUELY
   static int uid = 0;

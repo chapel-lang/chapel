@@ -105,18 +105,9 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
     Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
     init_stmt = new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
-
-    // SJD: This code squelches inserting the default init statement for
-    // records within their own constructor.  This avoids generating:
-    //
-    //   RecordName _construct_RecordName(void) {
-    //     RecordName this;
-    //     this = _construct_RecordName();  <=== Squelched
-    //
-    if (var == type->defaultConstructor->_this) {
+    if (var->noDefaultInit) {
       return new NoOpStmt();
     }
-
     Expr* lhs = new Variable(var);
     Expr* constructor_variable = new Variable(type->defaultConstructor);
     Expr* rhs = new FnCall(constructor_variable, NULL);

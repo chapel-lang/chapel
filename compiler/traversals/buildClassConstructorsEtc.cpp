@@ -35,6 +35,7 @@ static void build_constructor(StructuralType* structType) {
   BlockStmt* body = Symboltable::startCompoundStmt();
   Stmt* stmts = NULL;
   fn->_this = new VarSymbol("this", structType);
+  dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
   DefExpr* def_expr = new DefExpr(fn->_this);
   stmts = new DefStmt(def_expr);
   if (dynamic_cast<ClassType*>(structType)) {

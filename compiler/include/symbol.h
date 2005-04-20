@@ -90,6 +90,8 @@ class VarSymbol : public Symbol {
   //Replaced with
   consType consClass;
   Expr* init;
+  bool noDefaultInit;
+
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
             Expr* init_expr = NULL,

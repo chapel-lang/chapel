@@ -53,6 +53,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
       }
       insert_point->insertBefore(def_stmt);
       sym->type->defaultVal->replace(new Variable(def_stmt->varDef()));
+      def_stmt->varDef()->noDefaultInit = true;
     }
   }
 }
