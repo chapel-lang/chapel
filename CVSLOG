@@ -27534,3 +27534,25 @@ Added files:
 	                            initvarsamename2.future 
 	                            initvarsamename2.good 
 
+---------------------------------------------------------------------------
+
+04/20/05 16:55:31 -- bradc
+
+Log message:
+	Changed the implementation of parameter intents for
+	classes so that the class' variables are passed by
+	reference, but the pointer to the variables is
+	passed by "in" intent.  Thus, the class variable
+	can currently be assigned to, but such assignments
+	are not reflected back at the callsite.  Thanks
+	Steve for catching this.
+	
+	Updated expected test output to reflect this change.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/test/functions/bradc/: defaultParamInOut.future 
+	                              intents-classes2.good 
+	                              intents-classes3.good 
+	                              intents-classes4.good 
+
