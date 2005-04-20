@@ -1,0 +1,4 @@
+bradc/deitz
+
+Type parameters that also serve as return
+types don't seem to get resolved properly.

@@ -1,0 +1,4 @@
+bradc
+
+We don't yet support domains with parameter ranks
+that are not integer literals.

@@ -1,0 +1,4 @@
+bradc/deitz
+
+Symbol resolution is throwing an error when a function's
+parameter type is being returned as its return type.
