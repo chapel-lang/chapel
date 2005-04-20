@@ -27347,3 +27347,23 @@ Modified files:
 	                             configVarFile.good 
 	                             configVarFile.input 
 
+---------------------------------------------------------------------------
+
+04/20/05 11:31:48 -- deitz
+
+Log message:
+	Added new Stmt like a WithStmt called a UseStmt that deals with use
+	statements of modules.
+	
+	Reworked WithStmt to be a subclass of ExprStmt and share code.
+	UseStmt is also a subclass of ExprStmt.
+	
+	Added parsing support for UseStmts.  They fail at codegen time.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+
