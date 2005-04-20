@@ -179,8 +179,12 @@ static void build_record_assignment_function(StructuralType* structType) {
     Expr* assign_expr = new AssignOp(GETS_NORM, left, right);
     body = appendLink(body, new ExprStmt(assign_expr));
   }
+  
+  if (analyzeAST)
+    body = appendLink(body, new ReturnStmt(new Variable(arg2)));
+  Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
   Stmt* block_stmt = new BlockStmt(body);
-  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt)));
+  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, ret_type, block_stmt)));
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 

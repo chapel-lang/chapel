@@ -26,12 +26,16 @@ class Domain {
 }
 
 record Tuple {
-  function this(pragma "clone_for_constants" i) {
-    return __primitive("index_object", this, i);
+  function this(pragma "clone_for_constants" i) { 
+    return __primitive("index_object", this, i); 
   }
   function set(pragma "clone_for_constants" i, x) {
     return __primitive("set_index_object", this, i, x);
   }
+  function _field1 { return __primitive("index_object", this, 1); }
+  function set__field1(x) { return __primitive("set_index_object", this, 1, x); }
+  function _field2 { return __primitive("index_object", this, 2); }
+  function set__field2(x) { return __primitive("set_index_object", this, 2, x); }
 }
 
 pragma "builtin" function +(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
