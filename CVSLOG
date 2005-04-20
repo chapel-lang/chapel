@@ -27414,3 +27414,20 @@ Added files:
 	                            test_class3_useNewConstructor_stopgap.compopts 
 	                            test_class3_useNewConstructor_stopgap.good 
 
+---------------------------------------------------------------------------
+
+04/20/05 12:43:43 -- bradc
+
+Log message:
+	Updated REGRESSIONS file a bit to reflect last
+	night's changes.  Fixed version test for use
+	with -valgrind/chpl-nogc.  The testing system
+	now passes the commpiler as a third argument
+	to any PREDIFF/PREEXEC scripts, for those rare
+	cases that need it.
+
+Modified files:
+	chapel/test/: REGRESSIONS start_test sub_test 
+	chapel/test/compflags/bradc/noexec/: version.goodstart 
+	                                     version.prediff 
+
