@@ -739,14 +739,15 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   }
   Symboltable::pushScope(SCOPE_LOCAL);
   Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(this), argList));
-  Symbol* formal_change = wrapper_formals;
-  Variable* actual_change = argList;
+  int count = 0;
   forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
     Symbol* subsym = coercion_substitutions->get(p);
     if (subsym) {
-      char* temp_name =
-        glomstrings(2, "_coercion_temp_", formal_change->name);
-      
+      Symbol* formal_change =
+        dynamic_cast<Symbol*>(wrapper_formals->get(count));
+      Variable* actual_change =
+        dynamic_cast<Variable*>(argList->get(count));
+      char* temp_name = glomstrings(2, "_coercion_temp_", formal_change->name);
       VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
                                              new Variable(formal_change));
       DefExpr* temp_def_expr = new DefExpr(temp_symbol);
@@ -756,12 +757,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
       formal_change->type = subsym->type;
       actual_change->var = temp_symbol;
     }
-    if (formal_change->next) {
-      formal_change = nextLink(Symbol, formal_change);
-    }
-    if (actual_change->next) {
-      actual_change = nextLink(Variable, actual_change);
-    }
+    count++;
   }
   SymScope* block_scope = Symboltable::popScope();
   BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
@@ -776,7 +772,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
 }
 
 
-FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
+FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
   static int uid = 1; // Unique ID for wrapped functions
   FnSymbol* wrapper_symbol;
 
@@ -802,14 +798,15 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
   } else {
     wrapper_body = new ReturnStmt(fn_call);
   }
-  for (int i = 0; i < defaults->n; i++) {
-    int j = 0;
-    MPosition p;
-    Symbol* formal_change = wrapper_formals;
-    Variable* actual_change = argList;
+  int formals_count_adjust = 0;
+  forv_Vec(MPosition, mposition, *defaults) {
+    int count = 0;
     forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
-      if (defaults->v[i] ==
-          asymbol->sym->fun->positional_arg_positions.e[j]) {
+      if (mposition == p) {
+        Symbol* formal_change =
+          dynamic_cast<Symbol*>(wrapper_formals->get(count - formals_count_adjust));
+        Variable* actual_change =
+          dynamic_cast<Variable*>(argList->get(count));
         char* temp_name =
           glomstrings(2, "_default_param_temp_", formal_change->name);
         VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
@@ -831,14 +828,9 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition *> *defaults) {
         if (formal_change->next) {
           formal_change->next->prev = formal_change->prev;
         }
+        formals_count_adjust++;
       }
-      if (formal_change->next) {
-        formal_change = nextLink(Symbol, formal_change);
-      }
-      if (actual_change->next) {
-        actual_change = nextLink(Variable, actual_change);
-      }
-      j++;
+      count++;
     }
   }
   SymScope* block_scope = Symboltable::popScope();

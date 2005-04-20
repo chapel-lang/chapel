@@ -1,6 +1,15 @@
 linux regressions
 =================
 
+[Error matching compiler output for arrays/deitz/test_array_of_class1]
+[Error matching compiler output for arrays/deitz/test_array_of_record1]
+
+  Fails in wrapper of set accessor.  It looks like positional_arg_positions is too big.
+
+[Error matching program output for functions/deitz/test_default_param2]
+
+  Intermittent failures.  Examining.
+
 [Error matching compiler output for classes/deitz/test_type_in_class1]
 
   This test is failing because it is attempting to resolveSymbols for
