@@ -635,7 +635,8 @@ IndexType::IndexType(Type* init_idxType):
 
 IndexType::IndexType(Expr* init_expr) :
   Type(TYPE_INDEX, NULL),
-  idxExpr(init_expr)
+  idxExpr(init_expr),
+  domainType(NULL)
 {
   if (typeid(*init_expr) == typeid(IntLiteral)) {
     TupleType* newTType = new TupleType();
