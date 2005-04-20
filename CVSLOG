@@ -27463,3 +27463,29 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/05 16:33:08 -- deitz
+
+Log message:
+	Corrected bugs in the coercion and default parameter wrapper code.
+	
+	Added a new test_coerce test that would have caught the bug and added
+	a copy of test_class1 that uses the --useNewConstructor flag to keep
+	it from regressing again with this flag on.
+	
+	Updated regressions.  John can you take a look at a couple of these.
+	The default wrapper function looks like it is being called on the set
+	accessor.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/: REGRESSIONS 
+Added files:
+	chapel/test/classes/deitz/: 
+	                            test_class1_useNewConstructor_stopgap.chpl 
+	                            test_class1_useNewConstructor_stopgap.compopts 
+	                            test_class1_useNewConstructor_stopgap.good 
+	chapel/test/types/type_variables/deitz/: test_coerce1.chpl 
+	                                         test_coerce1.good 
+
