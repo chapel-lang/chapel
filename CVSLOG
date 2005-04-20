@@ -27431,3 +27431,15 @@ Modified files:
 	chapel/test/compflags/bradc/noexec/: version.goodstart 
 	                                     version.prediff 
 
+---------------------------------------------------------------------------
+
+04/20/05 12:45:48 -- bradc
+
+Log message:
+	Fixed a problem with using the CHPLDEVTMP environment
+	variable to store the dparser output that crept in
+	the other day.
+
+Modified files:
+	chapel/third-party/dparser/: Makefile 
+
