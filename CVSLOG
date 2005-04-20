@@ -27250,3 +27250,17 @@ Modified files:
 	                             buildClassConstructorsEtc.h 
 	                             insertAnonymousTypes.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/05 10:37:39 -- jplevyak
+
+Log message:
+	Add interm "field1" "set_field1" to class Tuple in internal_prelude
+	which map to tuple indexing.
+	function = on structural types now returns the RHS when analysis is
+	enabled.
+
+Modified files:
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
