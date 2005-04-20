@@ -27378,3 +27378,39 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/05 12:34:17 -- deitz
+
+Log message:
+	Replaced
+	
+	  #define CONSTRUCTOR_WITH_PARAMETERS
+	
+	with compiler flag --useNewConstructor to set global variable
+	useNewConstructor.
+	
+	Added a copy of test_class3 that uses the named parameters to the
+	constructor and is tested with this flag to make sure that keeps
+	working.
+	
+	Made a superficial change to the parser that will eventually help
+	allow declarations of the form
+	
+	  var (i, j) = tuple;
+	
+	though the implementation still needs to be done.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/classes/deitz/: test_class3.good 
+Added files:
+	chapel/test/classes/deitz/: 
+	                            test_class3_useNewConstructor_stopgap.chpl 
+	                            test_class3_useNewConstructor_stopgap.compopts 
+	                            test_class3_useNewConstructor_stopgap.good 
+
