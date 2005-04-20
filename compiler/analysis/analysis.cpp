@@ -1083,7 +1083,7 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
 }
 
 static int
-gen_one_vardef(VarSymbol *var, DefStmt *def) {
+gen_one_vardef(VarSymbol *var, DefExpr *def) {
   Type *type = var->type;
   Sym *s = var->asymbol->sym;
   AInfo *ast = def->ainfo;
@@ -1106,7 +1106,7 @@ gen_one_vardef(VarSymbol *var, DefStmt *def) {
     } else
       s->must_implement = unalias_type(type->asymbol->sym);
   }
-  FnSymbol *f = def->parentFunction();
+  FnSymbol *f = def->parentStmt->parentFunction();
   int this_constructor = f && f->isConstructor && var->isThis();
   if (s->is_var && !scalar_or_reference(type))
     gen_alloc(s, s->type, ast, f && f->_this == var);
@@ -1148,13 +1148,12 @@ gen_one_vardef(VarSymbol *var, DefStmt *def) {
 static int
 gen_vardef(BaseAST *a) {
   DefStmt *def = dynamic_cast<DefStmt*>(a);
-  for (DefExpr* def_expr = def->defExprls;
-       def_expr;
-       def_expr = nextLink(DefExpr, def_expr)) {
+  for (DefExpr* def_expr = def->defExprls; def_expr; def_expr = nextLink(DefExpr, def_expr)) {
     for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym); var;
-         var = dynamic_cast<VarSymbol*>(var->next)) 
-      if (gen_one_vardef(var, def))
+         var = dynamic_cast<VarSymbol*>(var->next))
+      if (gen_one_vardef(var, def_expr))
         return -1;
+    if1_gen(if1, &def->ainfo->code, def_expr->ainfo->code);
   }
   return 0;
 }
