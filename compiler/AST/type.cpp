@@ -505,6 +505,28 @@ bool EnumType::implementedUsingCVals(void) {
 }
 
 
+static Stmt* addIOStmt(Stmt* ioStmtList, Expr* argExpr) {
+  IOCall* ioExpr = new IOCall(IO_WRITE, new StringLiteral("write"), argExpr);
+  Stmt* ioStmt = new ExprStmt(ioExpr);
+  if (ioStmtList == NULL) {
+    ioStmtList = ioStmt;
+  } else {
+    ioStmtList->append(ioStmt);
+  }
+  return ioStmtList;
+}
+
+
+static Stmt* addIOStmt(Stmt* ioStmtList, ParamSymbol* _this, VarSymbol* field) {
+  return addIOStmt(ioStmtList, new MemberAccess(new Variable(_this), field));
+}
+
+
+static Stmt* addIOStmt(Stmt* ioStmtList, char* str) {
+  return addIOStmt(ioStmtList, new StringLiteral(str));
+}
+
+
 DomainType::DomainType(Expr* init_expr) :
   Type(TYPE_DOMAIN, NULL),
   numdims(0),
@@ -759,15 +781,21 @@ void SeqType::codegenDef(FILE* outfile) {
   symbol->codegen(codefile);
   fprintf(codefile, "(FILE* F, char* format, ");
   symbol->codegen(codefile);
-  fprintf(codefile, " seq) {\n");
+  fprintf(codefile, " seq) {\n"); 
   symbol->codegen(codefile);
   fprintf(codefile, "_node tmp = seq->first;\n");
-  fprintf(codefile, "while (tmp != nil) {\n");
-  fprintf(codefile, "  fprintf(F, format, tmp->element);\n");
-  fprintf(codefile, "  tmp = tmp->next;\n");
-  fprintf(codefile, "  if (tmp != nil) {\n");
-  fprintf(codefile, "  fprintf(F, \" \");\n");
-  fprintf(codefile, "}\n");
+  fprintf(codefile, "if (tmp != nil) {");
+  fprintf(codefile, "  fprintf(F, \"(/\");\n");
+  fprintf(codefile, "  while (tmp != nil) {\n");
+  fprintf(codefile, "    fprintf(F, format, tmp->element);\n");
+  fprintf(codefile, "    tmp = tmp->next;\n");
+  fprintf(codefile, "    if (tmp != nil) {\n");
+  fprintf(codefile, "      fprintf(F, \", \");\n");
+  fprintf(codefile, "    }\n");
+  fprintf(codefile, "  }\n");
+  fprintf(codefile, "  fprintf(F, \"/)\");\n");
+  fprintf(codefile, "} else {\n");
+  fprintf(codefile, "  fprintf(F, \"nil\");\n");
   fprintf(codefile, "}\n");
   fprintf(codefile, "}\n");
 }
@@ -1242,28 +1270,6 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
 #endif
   }
   return stmts;
-}
-
-
-static Stmt* addIOStmt(Stmt* ioStmtList, Expr* argExpr) {
-  IOCall* ioExpr = new IOCall(IO_WRITE, new StringLiteral("write"), argExpr);
-  Stmt* ioStmt = new ExprStmt(ioExpr);
-  if (ioStmtList == NULL) {
-    ioStmtList = ioStmt;
-  } else {
-    ioStmtList->append(ioStmt);
-  }
-  return ioStmtList;
-}
-
-
-static Stmt* addIOStmt(Stmt* ioStmtList, ParamSymbol* _this, VarSymbol* field) {
-  return addIOStmt(ioStmtList, new MemberAccess(new Variable(_this), field));
-}
-
-
-static Stmt* addIOStmt(Stmt* ioStmtList, char* str) {
-  return addIOStmt(ioStmtList, new StringLiteral(str));
 }
 
 
