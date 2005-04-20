@@ -28,18 +28,18 @@ clobber:
 	cd $(D_PARSER_DIRNAME) && $(MAKE) clean
 	rm -rf ./$(PLATFORM)
 
-$(PLATFORM)/bin:
+$(PLATFORM)/bin: $(PLATFORM_DIR)
 	mkdir -p ./$@
 
-$(PLATFORM)/include:
+$(PLATFORM)/include: $(PLATFORM_DIR)
 	mkdir -p ./$@
 
-$(PLATFORM)/lib:
+$(PLATFORM)/lib: $(PLATFORM_DIR)
 	mkdir -p ./$@
 
-$(PLATFORM)/man:
+$(PLATFORM)/man: $(PLATFORM_DIR)
 	mkdir -p ./$@
 
-$(PLATFORM)/man/man1:
+$(PLATFORM)/man/man1: $(PLATFORM_DIR) $(PLATFORM)/man
 	mkdir -p ./$@
 
