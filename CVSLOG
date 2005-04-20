@@ -27304,3 +27304,14 @@ Modified files:
 	chapel/runtime/src/: arg.c 
 	chapel/test/execflags/shannon/: help.good 
 
+---------------------------------------------------------------------------
+
+04/20/05 10:50:07 -- deitz
+
+Log message:
+	Added a --noanalysis-working array of sequences test.
+
+Added files:
+	chapel/test/types/seq/deitz/noanalysis/: test_array_of_seq1.chpl 
+	                                         test_array_of_seq1.good 
+
