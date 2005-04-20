@@ -41,7 +41,7 @@ void printHelpTable(void) {
   } flagType;
 
   static flagType flagList[] = {
-    {"-h", "print this message", 'g'},
+    {"-h, --help", "print this message", 'g'},
 
     {"-s<configVar>=<value>", "set the value of a config var", 'c'},    
     {"-f<filename>", "read in a file of config var assignments", 'c'},
@@ -154,8 +154,18 @@ void parseArgs(int argc, char* argv[]) {
     case '-':
       switch (currentArg[1]) {
       case '-':
-        parseMemFlag(currentArg + 2);
-        break;
+        {
+          char* flag = currentArg + 2;
+          if (strcmp(flag, "help") == 0) {
+            printHelpMessage();
+          } else if (flag[0] == 'm') {
+            parseMemFlag(flag);
+          } else {
+            fprintf(stderr, "***Error:  \"%s\" is not a valid execution option"
+                    "***\n", currentArg);
+          }
+          break;
+        }
 
       case 'f':
         {

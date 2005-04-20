@@ -1,7 +1,7 @@
 
 FLAGS:
 ======
-  -h                    -- print this message
+  -h, --help            -- print this message
 
 CONFIG VAR FLAGS:
 =================
