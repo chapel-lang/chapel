@@ -20,8 +20,12 @@ void DestructureTupleAssignments::postProcessStmt(Stmt* stmt) {
 
   TupleType* left_type = dynamic_cast<TupleType*>(assign_expr->left->typeInfo()->getType());
   TupleType* right_type = dynamic_cast<TupleType*>(assign_expr->right->typeInfo()->getType());
-
-  if (left_type && right_type) {
+  
+  //RED -- temporary workaround the situation when a index is assigned to a tuple
+  //the index->idxType may be a tuple and thus this test will pass
+  //the downside is that index to tuple assignment still has to be destructured so this
+  //leads to incorrect code generation
+  if (left_type && right_type && (assign_expr->left->typeInfo() == assign_expr->right->typeInfo())) {
     return;
   }
 
