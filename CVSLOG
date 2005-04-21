@@ -27651,3 +27651,14 @@ Removed files:
 	chapel/test/trivial/bradc/: initvarsamename.future 
 	                            initvarsamename2.future 
 
+---------------------------------------------------------------------------
+
+04/21/05 10:18:53 -- bradc
+
+Log message:
+	Updated regressions list w.r.t. last night's regressions
+	reports.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
