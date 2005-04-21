@@ -27608,3 +27608,24 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/05 17:49:04 -- bradc
+
+Log message:
+	Made an improvement to Steve's scopeResolveSymbols pass
+	so that a symbol's initialization expression is traversed
+	prior to the symbol's addition into the list of defined
+	symbols so that lines such as:
+	
+	        var x = x + 1;
+	
+	will result in "use before def" errors.  This resulted in
+	a nicer error message for weirdinit.chpl, so I updated its
+	output.
+
+Modified files:
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+	chapel/test/classes/bradc/: weirdinit.good 
+
