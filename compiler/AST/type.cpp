@@ -1673,9 +1673,9 @@ void TupleType::rebuildDefaultVal(void) {
 Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   TupleType* newTupleType = new TupleType();
   forv_Vec(Type, component, components) {
-    newTupleType->addType(component);
+    newTupleType->components.add(component);
   }
-  newTupleType->addSymbol(symbol);
+  copyGuts(newTupleType, clone, map, analysis_clone);
   return newTupleType;
 }
 
