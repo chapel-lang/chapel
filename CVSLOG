@@ -27662,3 +27662,32 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/21/05 13:45:03 -- deitz
+
+Log message:
+	Net Result: All DefExprs now contain a single Symbol.
+	
+	Previously, multiple VarSymbols were occasionally stored in the ->sym
+	field of a single DefExpr.
+	
+	This checkin required some changes to the indices of ForallExpr and
+	ForLoopStmt since they now have to be a list of DefExprs rather than a
+	single DefExpr with a list of symbols.
+	
+	Updated printing outputs of Forall expressions which now show type
+	information of the index variables.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp insertAnonymousTypes.cpp 
+	                             insertElidedLoops.cpp 
+	                             insertElidedLoops.h 
+	                             insertVariableInitializations.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+
