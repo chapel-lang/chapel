@@ -1603,7 +1603,7 @@ analyze_edge(AEdge *e) {
     flow_vars(actual, filtered);
     flow_vars(filtered, formal);
     if (p->pos.n > 1)
-      set_container(filtered, get_filtered(e, p->parent, e->to->args.get(p->parent)));
+      set_container(filtered, get_filtered(e, p->up, e->to->args.get(p->up)));
   }
   creation_point(make_AVar(e->match->fun->sym->cont->var, e->to), sym_continuation);
   for (int i = 0; i < e->pnode->lvals.n; i++)

@@ -12,6 +12,7 @@ class AVar;
 class CreationSet;
 
 #define MAX_ARGS 1000
+#define CANNONICAL_MPOSITION ((MPosition*)(intptr_t)(-1))
 
 #define int2Position(_i) ((void*)((intptr_t)-(_i)))
 #define Position2int(_p) (-((intptr_t)_p))
@@ -20,19 +21,30 @@ class CreationSet;
 class MPosition : public gc {
  public:
   Vec<void*> pos;
-  MPosition *parent;
+  MPosition *cp, *up, *next, *down;
   void copy(MPosition &p);
-  void set_top(void *p) { pos.v[pos.n-1] = p; }
-  void push(int i) { pos.add(int2Position(i)); }
-  void push(void *p) { pos.add(p); }
-  void pop() { pos.pop(); }
-  void inc() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) + 1); }
-  void dec() { pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) - 1); }
+  void set_top(void *p) { pos.v[pos.n-1] = p; cp = 0; }
+  void push(int i) { 
+    pos.add(int2Position(i));
+    if (cp && i == 1)
+      cp = cp->down;
+    else
+      cp = 0;
+  }
+  void push(void *p) { pos.add(p); cp = 0; }
+  void pop() { pos.pop(); if (cp) cp = cp->up; else cp = 0; }
+  void inc() { 
+    pos.v[pos.n-1] = int2Position(Position2int(pos.v[pos.n-1]) + 1); 
+    if (cp) 
+      cp = cp->next;
+    else
+      cp = 0;
+  }
   void *last() { return pos.v[pos.n -1]; }
   int is_positional() { for (int i = 0; i < pos.n; i++) if (!is_intPosition(pos.v[i])) return 0; return 1; }
   int last_is_positional() { return is_intPosition(last()); }
   int prefix_to_last(MPosition &p);
-  MPosition() : parent(0) {}
+  MPosition() : cp(0), up(0), next(0), down(0) {}
   MPosition(MPosition &p);
 };
 #define forv_MPosition(_p, _v) forv_Vec(MPosition, _p, _v)
@@ -111,6 +123,6 @@ void build_arg_positions(FA *fa);
 int positional_to_named(CreationSet *cs, AVar *av, MPosition &p, MPosition *result_p);
 int pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial_ok, Vec<Match *> *matches);
 MPosition *cannonicalize_mposition(MPosition &p);
-void build_arg_positions(Fun *f);
+MPosition *build_arg_positions(Fun *f, MPosition *up = 0);
 
 #endif

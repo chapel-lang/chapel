@@ -72,7 +72,12 @@ dispatch_type(Sym *a) {
 void
 MPosition::copy(MPosition &p) {
   pos.copy(p.pos);
-  parent = p.parent;
+  up = p.up;
+  next = p.next;
+  if (p.cp == CANNONICAL_MPOSITION)
+    cp = &p;
+  else
+    cp = p.cp;
 }
 
 MPosition::MPosition(MPosition &p) {
@@ -81,16 +86,21 @@ MPosition::MPosition(MPosition &p) {
 
 MPosition *
 cannonicalize_mposition(MPosition &p) {
+  if (p.cp)
+    return p.cp;
   MPosition *cp = cannonical_mposition.get(&p);
-  if (cp)
+  if (cp) {
+    p.cp = cp;
     return cp;
+  }
   cp = new MPosition;
   cp->pos.copy(p.pos);
   cannonical_mposition.put(cp);
+  cp->cp = CANNONICAL_MPOSITION;
   if (cp->pos.n > 1) {
     MPosition pp(*cp);
-    pp.pos.n--;
-    cp->parent = cannonicalize_mposition(pp);
+    pp.pop();
+    cp->up = cannonicalize_mposition(pp);
   }
   return cp;
 }
@@ -260,7 +270,7 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
       forv_Fun(f, saved_matches) if (f) {
         if (funs.set_in(f))
           (*local_matches)->set_add(f);
-        else if (acpp->parent && !f->arg_syms.get(to_formal(acpp->parent, match_map.get(f)))->is_pattern)
+        else if (acpp->up && !f->arg_syms.get(to_formal(acpp->up, match_map.get(f)))->is_pattern)
           (*local_matches)->set_add(f); 
       }
       (*local_matches)->set_union(funs);
@@ -293,8 +303,8 @@ Matcher::build_positional_map(MPosition &app, int nactuals, Vec<Fun *> **funs) {
         if (acp && !acp->last_is_positional() && acp->prefix_to_last(app)) {
           MPosition *acnp = acp;
           MPosition fnp;
-          if (acp->parent)
-            fnp.copy(*to_formal(acp->parent, m));
+          if (acp->up)
+            fnp.copy(*to_formal(acp->up, m));
           fnp.push(acp->last());
           MPosition *fcnp = cannonicalize_mposition(fnp);
           MPosition *acpp = m->actual_named_to_positional.get(acnp);
@@ -901,9 +911,13 @@ build_patterns(FA *fa) {
 // Build argument positions (MPosition)s for functions
 // 
 
-static void
-build_arg_position(Fun *f, Sym *a, MPosition &fpp) {
+static MPosition *
+build_arg_position(Fun *f, Sym *a, MPosition &fpp, MPosition *up) {
   MPosition *fcpp = cannonicalize_mposition(fpp), *fcnp = 0;
+  if (up) {
+    assert(!up->down || up->down == fcpp);
+    up->down = fcpp;
+  }
   if (a->name && !a->is_constant && !a->is_symbol) {
     MPosition fnp(fpp);
     fnp.set_top(a->name);
@@ -923,23 +937,44 @@ build_arg_position(Fun *f, Sym *a, MPosition &fpp) {
       if (a->is_pattern) {
         MPosition local_fpp(fpp);
         local_fpp.push(1);
+        MPosition *prev = 0;
         forv_Sym(aa, a->has) {
-          build_arg_position(f, aa, local_fpp);
+          MPosition *next = 
+            build_arg_position(f, aa, local_fpp, up);
+          if (prev) {
+            assert(!prev->next || prev->next == next);
+            prev->next = next;
+          }
+          prev = next;
+          up = 0;
           local_fpp.inc();
         }
         local_fpp.pop();
       }
     }
   }
+  return fcpp;
 }
 
-void
-build_arg_positions(Fun *f) {
+MPosition *
+build_arg_positions(Fun *f, MPosition *up) {
   MPosition fpp;
-  cannonicalize_mposition(fpp);
+  MPosition *cp = cannonicalize_mposition(fpp);
+  if (up) {
+    assert(!up->down || up->down == cp);
+    up->down = cp;
+  }
   fpp.push(1);
+  MPosition *prev = 0;
   forv_Sym(a, f->sym->has) {
-    build_arg_position(f, a, fpp);
+    MPosition *next = 
+      build_arg_position(f, a, fpp, up);
+    if (prev) {
+      assert(!prev->next || prev->next == next);
+      prev->next = next;
+    }
+    prev = next;
+    up = 0;
     fpp.inc();
   }
   forv_MPosition(p, f->positional_arg_positions) {
@@ -947,6 +982,7 @@ build_arg_positions(Fun *f) {
     f->args.put(p, s->var);
   }
   f->rets.add(f->sym->ret->var);
+  return cp;
 }
 
 void
