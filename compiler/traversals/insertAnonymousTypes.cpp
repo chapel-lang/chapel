@@ -253,8 +253,12 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (VarSymbol* var = def_stmt->varDef()) {
-      build_anon_type_def(stmt, &var->type);
+    DefExpr* def_expr = def_stmt->defExprls;
+    while (def_expr) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
+        build_anon_type_def(stmt, &var->type);
+      }
+      def_expr = nextLink(DefExpr, def_expr);
     }
   }
 }

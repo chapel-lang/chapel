@@ -1284,8 +1284,12 @@ gen_for(BaseAST *a) {
   forv_Stmt(ss, body_stmts)
     if1_gen(if1, &body, ss->ainfo->code);
   Vec<Symbol*> indices;
+  Vec<DefExpr*> indexDefs;
   DefExpr* index_def = dynamic_cast<DefExpr*>(s->indices);
-  getLinkElements(indices, index_def->sym);
+  getLinkElements(indexDefs, index_def);
+  forv_Vec(DefExpr, indexDef, indexDefs) {
+    indices.add(indexDef->sym);
+  }
   Vec<Expr*> domains;
   domains.add(s->domain);
   return gen_forall_internal(s->ainfo, body, indices, domains);

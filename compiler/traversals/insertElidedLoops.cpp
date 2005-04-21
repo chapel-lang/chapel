@@ -8,7 +8,7 @@
 #include "stringutil.h"
 
 
-InsertElidedIndices::InsertElidedIndices(Symbol* init_indices) {
+InsertElidedIndices::InsertElidedIndices(DefExpr* init_indices) {
   indices = init_indices;
 }
 
@@ -17,8 +17,8 @@ void InsertElidedIndices::preProcessExpr(Expr* expr) {
   Variable* var = dynamic_cast<Variable*>(expr);
   if (var && dynamic_cast<ArrayType*>(var->typeInfo())) {
     Expr* index_exprs = NULL;
-    for (Symbol* tmp = indices; tmp; tmp = nextLink(Symbol, tmp)) {
-      index_exprs = appendLink(index_exprs, new Variable(tmp));
+    for (DefExpr* tmp = indices; tmp; tmp = nextLink(DefExpr, tmp)) {
+      index_exprs = appendLink(index_exprs, new Variable(tmp->sym));
     }
     ArrayRef* array_ref = new ArrayRef(expr->copy(), index_exprs);
     expr->replace(array_ref);
@@ -40,7 +40,7 @@ void InsertElidedLoops::postProcessStmt(Stmt* stmt) {
         ForLoopStmt* loop = Symboltable::startForLoop(true, indices, array_type->domain->copy());
         loop = Symboltable::finishForLoop(loop, stmt->copy());
         stmt->replace(loop);
-        Symbol* indices_change = dynamic_cast<DefExpr*>(loop->indices)->sym;
+        DefExpr* indices_change = dynamic_cast<DefExpr*>(loop->indices);
         TRAVERSE(loop->body, new InsertElidedIndices(indices_change), true);
       }
     }

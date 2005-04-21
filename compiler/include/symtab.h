@@ -60,17 +60,12 @@ class Symboltable {
                                             consType constag = VAR_VAR);
   static ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
                                                 Type* type, Expr* init);
-        
-  static DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type, 
-                                                Expr* init, varType vartag, 
-                                                consType consTag);
   static DefExpr* Symboltable::defineVarDef1(Symbol* idents,
                                                  Type* type, 
                                                  Expr* init);
   static DefExpr* Symboltable::defineVarDef2(DefExpr* stmts,
                                                  varType vartag, 
                                                  consType constag);
-
   static DefStmt* Symboltable::defineSingleVarDefStmt(char* name, 
                                                       Type* type,
                                                       Expr* init,

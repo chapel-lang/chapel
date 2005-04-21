@@ -7,5 +7,5 @@ var Row: domain(2) = [1..m, *];
 var A: [Mat] float;
 var y: [Col] float;
 var x: [Row] float;
-A = [i, j:Mat] (((i-1)*n)+j);
-y = [i:Col] i;
+A = [var i: integer;, var j: integer;:Mat] (((i-1)*n)+j);
+y = [var i: integer;:Col] i;

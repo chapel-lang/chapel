@@ -17,14 +17,14 @@ config const debug: boolean = false;
 type coeff = [0..3] float;
 const Levels: domain(1) = [1..numLevels];
 const Base: domain(3) = [1..nx, 1..ny, 1..nz];
-const Hier: [lvl:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
+const Hier: [var lvl: integer;:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
 const Stencil: domain(3) = [(-1)..1, (-1)..1, (-1)..1];
 var initTimer: timer;
 var benchTimer: timer;
 initTimer.start();
 var V: [Base] float;
-var U: [lvl:Levels] [Hier(lvl)] float;
-var R: [lvl:Levels] [Hier(lvl)] float;
+var U: [var lvl: integer;:Levels] [Hier(lvl)] float;
+var R: [var lvl: integer;:Levels] [Hier(lvl)] float;
 initializeMG();
 warmupMG(V, U, R);
 initTimer.stop();
@@ -33,8 +33,8 @@ var rnm2: float = computeMG(V, U, R);
 benchTimer.stop();
 printResults(rnm2, initTimer.read(), benchTimer.read());
 function initializeMG(out V: [Base] float;
-out U: [lvl:Levels] [Hier(lvl)] float;
-out R: [lvl:Levels] [Hier(lvl)] float): ??? {
+out U: [var lvl: integer;:Levels] [Hier(lvl)] float;
+out R: [var lvl: integer;:Levels] [Hier(lvl)] float): ??? {
 writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
 writeln(" Size: ", nx, "x", ny, "x", nz);
 writeln(" Iterations: ", nit);
@@ -44,8 +44,8 @@ initArrays(V, U, R);
 
 
 function warmupMG(inout V: [Base] float;
-inout U: [lvl:Levels] [Hier(lvl)] float;
-inout R: [lvl:Levels] [Hier(lvl)] float): ??? {
+inout U: [var lvl: integer;:Levels] [Hier(lvl)] float;
+inout R: [var lvl: integer;:Levels] [Hier(lvl)] float): ??? {
 if (warmup) {
 mg3P(V, U, R);
 resid(R(1), V, U(1));
@@ -55,8 +55,8 @@ initArrays(V, U, R);
 
 
 function computeMG(in V: [Base] float;
-inout U: [lvl:Levels] [Hier(lvl)] float;
-inout R: [lvl:Levels] [Hier(lvl)] float): float {
+inout U: [var lvl: integer;:Levels] [Hier(lvl)] float;
+inout R: [var lvl: integer;:Levels] [Hier(lvl)] float): float {
 resid(R(1), V, U(1));
 norm2u3(R(1));
 for var it: integer; in 1..nit {
@@ -107,8 +107,8 @@ writeln(" Version = 2.4");
 
 
 function mg3P(inout V: [Base] float;
-inout U: [lvl:Levels] [Hier(lvl)] float;
-inout R: [lvl:Levels] [Hier(lvl)] float): ??? {
+inout U: [var lvl: integer;:Levels] [Hier(lvl)] float;
+inout R: [var lvl: integer;:Levels] [Hier(lvl)] float): ??? {
 for var lvl: integer; in 2..numLevels {
 rprj3(R(lvl), R((lvl-1)));
 }
@@ -129,9 +129,9 @@ psinv(U(1), R(1));
 function psinv(inout U: [?anonDomain] float;
 const R: [DUR] float): ??? {
 state const c: coeff = initCValues();
-state const c3d: [i, j, k:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
+state const c3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
 const Rstr: [1..3] integer = DUR.stride;
-U += [ijk:DUR] reduce by sum [off:Stencil] (c3d*R((ijk+(Rstr*off))));
+U += [var ijk: integer;:DUR] reduce by sum [var off: integer;:Stencil] (c3d*R((ijk+(Rstr*off))));
 }
 
 
@@ -139,30 +139,30 @@ function resid(out R: [?anonDomain] float;
 const V: [DUR] float;
 const U: [DUR] float): ??? {
 state const a: coeff = (((-8.0)/3.0), 0.0, (1.0/6.0), (1.0/12.0));
-state const a3d: [i, j, k:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
+state const a3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
 const Ustr: [1..3] integer = DUR.stride;
-R = (V-[ijk:DUR] reduce by sum [off:Stencil] (a3d*U((ijk+(Ustr*off)))));
+R = (V-[var ijk: integer;:DUR] reduce by sum [var off: integer;:Stencil] (a3d*U((ijk+(Ustr*off)))));
 }
 
 
 function rprj3(out S: [?anonDomain] float;
 in R: [?anonDomain] float): ??? {
 state const w: coeff = (0.5, 0.25, 0.125, 0.0625);
-state const w3d: [i, j, k:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
+state const w3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
 const Rstr: [1..3] integer = R.stride;
-S = [ijk:DR] reduce by sum [off:Stencil] (w3d*R((ijk+(Rstr*off))));
+S = [var ijk: integer;:DR] reduce by sum [var off: integer;:Stencil] (w3d*R((ijk+(Rstr*off))));
 }
 
 
 function interp(out R: [?anonDomain] float;
 const S: [?anonDomain] float): ??? {
 state const IDom: domain(3) = [(-1)..0, (-1)..0, (-1)..0];
-state const IStn: [i, j, k:IDom] domain(3) = (i..0, j..0, k..0);
-state const w: [ijk:IDom] float = (1.0/IStn.size());
+state const IStn: [var i: integer;, var j: integer;, var k: integer;:IDom] domain(3) = (i..0, j..0, k..0);
+state const w: [var ijk: integer;:IDom] float = (1.0/IStn.size());
 const Rstr: [1..3] integer = DR.stride;
 const Sstr: [1..3] integer = DS.stride;
 forall var ioff: integer; in IDom {
-forall var ijk: integer; in DS R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
+forall var ijk: integer; in DS R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [var off: integer;:IStn(ioff)] S((ijk+(Sstr*off))));
 }
 }
 
@@ -176,8 +176,8 @@ return (rnm2, rnmu);
 
 
 function initArrays(out V: [Base] float;
-out U: [lvl:Levels] [Hier(lvl)] float;
-out R: [lvl:Levels] [Hier(lvl)] float): ??? {
+out U: [var lvl: integer;:Levels] [Hier(lvl)] float;
+out R: [var lvl: integer;:Levels] [Hier(lvl)] float): ??? {
 zran3(V);
 U(1) = 0.0;
 V.outOfBounds(wrap);
@@ -190,7 +190,7 @@ function zran3(out V: [Base] float): ??? {
 const ncharge: integer = 10;
 var POS: [1..ncharge] index(Base);
 var NEG: [1..ncharge] index(Base);
-V = [i, j, k:Base] longRandlc((((i-1)+((j-1)*nx))+(((k-1)*nx)*ny)));
+V = [var i: integer;, var j: integer;, var k: integer;:Base] longRandlc((((i-1)+((j-1)*nx))+(((k-1)*nx)*ny)));
 for var i: integer; in 1..ncharge {
 POS(i) = reduce by maxloc V;
 NEG(i) = reduce by minloc V;

@@ -861,7 +861,7 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 
 Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Type* copy = new ArrayType(domain->copy(clone, map, analysis_clone),
-                             elementType->copy(clone, map, analysis_clone));
+                             elementType);
   copy->addSymbol(symbol);
   return copy;
 }

@@ -316,7 +316,7 @@ void DefStmt::traverseStmt(Traversal* traversal) {
 
 
 void DefStmt::print(FILE* outfile) {
-  defExprls->printList(outfile);
+  defExprls->printList(outfile, "\n");
 }
 
 
@@ -666,7 +666,7 @@ void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
 
 Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  Expr* indices_copy = indices->copyInternal(true, map, analysis_clone);
+  Expr* indices_copy = indices->copyListInternal(true, map, analysis_clone);
   Expr* domain_copy = domain->copyInternal(true, map, analysis_clone);
   Stmt* body_copy = body->copyInternal(true, map, analysis_clone);
   SymScope* index_scope = Symboltable::popScope();
@@ -697,7 +697,7 @@ void ForLoopStmt::traverseStmt(Traversal* traversal) {
   if (indexScope) {
     prevScope = Symboltable::setCurrentScope(indexScope);
   }
-  TRAVERSE(indices, traversal, false);
+  TRAVERSE_LS(indices, traversal, false);
   TRAVERSE(body, traversal, false);
   if (indexScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -711,7 +711,7 @@ void ForLoopStmt::print(FILE* outfile) {
     fprintf(outfile, "all");
   }
   fprintf(outfile, " ");
-  indices->print(outfile);
+  indices->printList(outfile);
   fprintf(outfile, " in ");
   domain->print(outfile);
   fprintf(outfile, " ");
@@ -747,21 +747,21 @@ void ForLoopStmt::codegen(FILE* outfile) {
     return;
   }
 
-  VarSymbol* aVar = dynamic_cast<VarSymbol*>(indices_def->sym);
+  DefExpr* aVar = indices_def;
   fprintf(outfile, "{\n");
   int rank = 0;
 
   // TODO: Unify with VarDefStmt?  Have parser insert one here?
   // is it a challenge that we may not know the domain exprs at that point?
   while (aVar) {
-    aVar->codegenDef(outfile);
+    aVar->sym->codegenDef(outfile);
     rank++;
 
-    aVar = nextLink(VarSymbol, aVar);
+    aVar = nextLink(DefExpr, aVar);
   }
   fprintf(outfile, "\n");
   
-  aVar = dynamic_cast<VarSymbol*>(indices_def->sym);
+  aVar = indices_def;
 
   Tuple* tuple = dynamic_cast<Tuple*>(domain);
 
@@ -777,7 +777,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
       }
       fprintf(outfile, "_DIM");
       fprintf(outfile, "(");
-      aVar->codegen(outfile);
+      aVar->sym->codegen(outfile);
       fprintf(outfile, ", ");
       seq->lo->codegen(outfile);
       fprintf(outfile, ", ");
@@ -786,7 +786,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
       seq->str->codegen(outfile);
       fprintf(outfile, ") {\n");
 
-      aVar = nextLink(VarSymbol, aVar);
+      aVar = nextLink(DefExpr, aVar);
       seq = nextLink(SimpleSeqExpr, seq);
     }
   }
@@ -797,12 +797,12 @@ void ForLoopStmt::codegen(FILE* outfile) {
         fprintf(outfile, "ALL");
       }
       fprintf(outfile, "(");
-      aVar->codegen(outfile);
+      aVar->sym->codegen(outfile);
       fprintf(outfile, ", ");
       domain->codegen(outfile);
       fprintf(outfile, ", %d) {\n", i);
 
-      aVar = nextLink(VarSymbol, aVar);
+      aVar = nextLink(DefExpr, aVar);
     }
   }
 

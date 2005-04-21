@@ -428,15 +428,26 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   if (type == dtUnknown && init) {
     type = init->typeInfo();
   }
-  
-  newVar = new VarSymbol(idents->name, type, init->copy(), vartag, constag);
+
+  // SJD: All this code is hacky. Let's copy the type because it has
+  // the domain expression and we need that to be duplicated for each
+  // array variable.
+  if (!type->symbol && dynamic_cast<ArrayType*>(type)) {
+    newVar = new VarSymbol(idents->name, type->copy(), init->copy(), vartag, constag);
+  } else {
+    newVar = new VarSymbol(idents->name, type, init->copy(), vartag, constag);
+  }
 
   varList = newVar;
   lastVar = newVar;
   //link.h=> next cell in list
   idents = nextLink(Symbol, idents);
   while (idents != NULL) {
-    newVar = new VarSymbol(idents->name, type, init->copy(), vartag, constag);
+    if (!type->symbol && dynamic_cast<ArrayType*>(type)) {
+      newVar = new VarSymbol(idents->name, type->copy(), init->copy(), vartag, constag);
+    } else {
+      newVar = new VarSymbol(idents->name, type, init->copy(), vartag, constag);
+    }
     lastVar->next = newVar;
     lastVar = newVar;
 
@@ -460,28 +471,6 @@ ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
   return list;
 }
 
-DefExpr* Symboltable::defineVarDef(Symbol* idents, Type* type, 
-                                       Expr* init, varType vartag, 
-                                       consType constag) {
-  /** SJD: This is a stopgap measure to deal with changing sequences
-      into domains when the type of a declared variable is a domain.
-      It replaces the syntax of assigning domains using square
-      brackets.
-  **/
-  if (dynamic_cast<DomainType*>(type) &&
-      !dynamic_cast<ForallExpr*>(init)) {
-    if (dynamic_cast<Tuple*>(init)) {
-      init = new ForallExpr(dynamic_cast<Tuple*>(init)->exprs);
-    }
-    else {
-      init = new ForallExpr(init);
-    }
-  }
-  VarSymbol* varList = defineVars(idents, type, init, vartag, constag);
-  DefExpr* expr = new DefExpr(varList);
-  return expr;
-}
-
 
 DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type, 
                                     Expr* init) {
@@ -503,13 +492,23 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
   }
 
   VarSymbol* varList = defineVars(idents, type, init);
-  DefExpr* expr = new DefExpr(varList);
-  return expr;
+
+  DefExpr* defExpr = new DefExpr(varList);
+  VarSymbol* var = varList;
+  while (var->next) {
+    VarSymbol* tmp = var;
+    var = nextLink(VarSymbol, var);
+    tmp->next = NULL;
+    var->prev = NULL;
+    defExpr->append(new DefExpr(var));
+  }
+  return defExpr;
 }
 
+
 DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
-                                        varType vartag, 
-                                        consType constag) {
+                                    varType vartag, 
+                                    consType constag) {
   DefExpr* expr = exprs;
   while (expr) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(expr->sym);
@@ -526,37 +525,51 @@ DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
   return exprs;
 }
 
+
 DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
                                              Expr* init, varType vartag, 
                                              consType constag) {
   Symbol* sym = new Symbol(SYMBOL, name);
-  return new DefStmt(defineVarDef(sym, type, init, vartag, constag));
+  DefExpr* defExpr = defineVarDef1(sym, type, init);
+  defExpr = defineVarDef2(defExpr, vartag, constag);
+  return new DefStmt(defExpr);
 }
 
+
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
-static Expr* exprToIndexSymbols(Expr* expr, Expr* domain, Symbol* indices = NULL) {
-  if (!expr) {
-    DefExpr* def_expr = new DefExpr(indices);
-    return def_expr;
-  }
-
-  for (Expr* tmp = expr; tmp; tmp = nextLink(Expr, tmp)) {
-    Variable* varTmp = dynamic_cast<Variable*>(tmp);
-
-    if (!varTmp) {
-      Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
-      if (!tupTmp) {
-        USR_FATAL(tmp, "Index variable expected");
+static Expr* exprToIndexSymbols(Expr* expr, Expr* domain, VarSymbol* indices = NULL) {
+  if (expr) {
+    for (Expr* tmp = expr; tmp; tmp = nextLink(Expr, tmp)) {
+      Variable* varTmp = dynamic_cast<Variable*>(tmp);
+      if (!varTmp) {
+        Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
+        if (!tupTmp) {
+          USR_FATAL(tmp, "Index variable expected");
+        } else {
+          return exprToIndexSymbols(tupTmp->exprs, domain, indices);
+        }
       } else {
-        return exprToIndexSymbols(tupTmp->exprs, domain, indices);
+        // SJD: It is my thought that dtInteger should be dtUnknown. Then
+        // analysis can figure it out based on the type of the "domain"
+        // which may not be a domain but an array or a sequence too.
+        indices = appendLink(indices, new VarSymbol(varTmp->var->name, dtInteger));
       }
-    } else {
-      indices = appendLink(indices, new VarSymbol(varTmp->var->name, dtInteger));
-      //indices = appendLink(indices, new VarSymbol(varTmp->var->name, new IndexType(domain)));
     }
   }
-  DefExpr* def_expr = new DefExpr(indices);
-  return def_expr;
+  if (indices) {
+    VarSymbol* var = indices;
+    DefExpr* defExpr = new DefExpr(var);
+    while (var->next) {
+      VarSymbol* tmp = var;
+      var = nextLink(VarSymbol, var);
+      tmp->next = NULL;
+      var->prev = NULL;
+      defExpr->append(new DefExpr(var));
+    }
+    return defExpr;
+  } else {
+    return NULL;
+  }
 }
 
 
@@ -676,17 +689,23 @@ DefExpr* Symboltable::finishStructDef(TypeSymbol* classSym,
 ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices, 
                                        Expr* domain) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  // HACK: dtInteger is wrong -- same as with forallExpr HACK
   VarSymbol* indexVars = dynamic_cast<VarSymbol*>(indices);
   if (!indexVars) {
     // SJD: It is my thought that dtInteger should be dtUnknown. Then
     // analysis can figure it out based on the type of the "domain"
     // which may not be a domain but an array or a sequence too.
     indexVars = defineVars(indices, dtInteger);
-    //indexVars = defineVars(indices, new IndexType(domain));
   }
-  DefExpr* indices_def = new DefExpr(indexVars);
-  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, indices_def, domain);
+  VarSymbol* var = indexVars;
+  DefExpr* defExpr = new DefExpr(var);
+  while (var->next) {
+    VarSymbol* tmp = var;
+    var = nextLink(VarSymbol, var);
+    tmp->next = NULL;
+    var->prev = NULL;
+    defExpr->append(new DefExpr(var));
+  }
+  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
   return for_loop_stmt;
 }
 

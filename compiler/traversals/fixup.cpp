@@ -115,6 +115,10 @@ void Fixup::preProcessExpr(Expr* expr) {
     parentExprs.add(NULL);
     parentStmts.add(NULL);
     parentSymbols.add(def_expr->sym);
+    /*** Verify only one symbol per DefExpr ***/
+    if (def_expr->sym && def_expr->sym->next) {
+      INT_FATAL(def_expr, "Multiple symbols in DefExpr");
+    }
   } else {
     parentExprs.add(expr);
   }

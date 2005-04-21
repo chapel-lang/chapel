@@ -2,11 +2,12 @@
 #define _INSERT_ELIDED_LOOPS_H_
 
 #include "traversal.h"
+#include "expr.h"
 
 class InsertElidedIndices : public Traversal {
  public:
-  Symbol* indices;
-  InsertElidedIndices::InsertElidedIndices(Symbol* init_indices);
+  DefExpr* indices;
+  InsertElidedIndices::InsertElidedIndices(DefExpr* init_indices);
   void preProcessExpr(Expr* expr);
 };
 

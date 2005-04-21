@@ -17,14 +17,14 @@ config const debug: boolean = false;
 type coeff = [0..3] float;
 const Levels: domain(1) = [1..numLevels];
 const Base: domain(3) = [1..nx, 1..ny, 1..nz];
-const Hier: [lvl:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
+const Hier: [var lvl: integer;:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
 const Stencil: domain(3) = [(-1)..1, (-1)..1, (-1)..1];
 var initTimer: timer;
 var benchTimer: timer;
 initTimer.start();
 var V: [Base] float;
-var U: [lvl:Levels] [Hier(lvl)] float;
-var R: [lvl:Levels] [Hier(lvl)] float;
+var U: [var lvl: integer;:Levels] [Hier(lvl)] float;
+var R: [var lvl: integer;:Levels] [Hier(lvl)] float;
 initializeMG();
 inittime = warmupMG(V, U, R);
 initTimer.stop();
@@ -129,10 +129,10 @@ psinv(U(1), R(1));
 function psinv( U: ???;
  R: ???): ??? {
 state const c: coeff = initCValues();
-state const c3d: [i, j, k:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
+state const c3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
 const RD: ??? = R.Domain;
 const Rstr: ??? = R.stride;
-U += [ijk:RD] reduce by sum [off:Stencil] (c3d*R((ijk+(Rstr*off))));
+U += [var ijk: integer;:RD] reduce by sum [var off: integer;:Stencil] (c3d*R((ijk+(Rstr*off))));
 }
 
 
@@ -140,33 +140,33 @@ function resid( R: ???;
  V: ???;
  U: ???): ??? {
 state const a: coeff = (((-8.0)/3.0), 0.0, (1.0/6.0), (1.0/12.0));
-state const a3d: [i, j, k:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
+state const a3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
 const UD: ??? = U.Domain;
 const Ustr: ??? = U.stride;
-R = (V-[ijk:UD] reduce by sum [off:Stencil] (a3d*U((ijk+(Ustr*off)))));
+R = (V-[var ijk: integer;:UD] reduce by sum [var off: integer;:Stencil] (a3d*U((ijk+(Ustr*off)))));
 }
 
 
 function rprj3( S: ???;
  R: ???): ??? {
 state const w: coeff = (0.5, 0.25, 0.125, 0.0625);
-state const w3d: [i, j, k:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
+state const w3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
 const RD: ??? = R.Domain;
 const Rstr: ??? = R.stride;
-S = [ijk:RD] reduce by sum [off:Stencil] (w3d*R((ijk+(Rstr*off))));
+S = [var ijk: integer;:RD] reduce by sum [var off: integer;:Stencil] (w3d*R((ijk+(Rstr*off))));
 }
 
 
 function interp( R: ???;
  S: ???): ??? {
 state const IDom: domain(3) = [(-1)..0, (-1)..0, (-1)..0];
-state const IStn: [i, j, k:IDom] domain(3) = (i..0, j..0, k..0);
-state const w: [ijk:IDom] float = (1.0/IStn.size());
+state const IStn: [var i: integer;, var j: integer;, var k: integer;:IDom] domain(3) = (i..0, j..0, k..0);
+state const w: [var ijk: integer;:IDom] float = (1.0/IStn.size());
 const SD: ??? = S.Domain();
 const Rstr: ??? = R.stride;
 const Sstr: ??? = S.stride;
 forall var ioff: integer; in IDom {
-forall var ijk: integer; in SD R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [off:IStn(ioff)] S((ijk+(Sstr*off))));
+forall var ijk: integer; in SD R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [var off: integer;:IStn(ioff)] S((ijk+(Sstr*off))));
 }
 }
 
@@ -194,7 +194,7 @@ function zran3( V: ???): ??? {
 const ncharge: integer = 10;
 var POS: [1..ncharge] index(Base);
 var NEG: [1..ncharge] index(Base);
-V = [i, j, k:Base] longRandlc((((i-1)+((j-1)*nx))+(((k-1)*nx)*ny)));
+V = [var i: integer;, var j: integer;, var k: integer;:Base] longRandlc((((i-1)+((j-1)*nx))+(((k-1)*nx)*ny)));
 for var i: integer; in 1..ncharge {
 POS(i) = reduce by maxloc V;
 NEG(i) = reduce by minloc V;

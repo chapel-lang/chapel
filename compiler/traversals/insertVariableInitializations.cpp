@@ -33,11 +33,11 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
   stmt->insertBefore(call_stmt);
 
   ForallExpr* domain = dynamic_cast<ForallExpr*>(array_type->domain);
-  Symbol* indices = dynamic_cast<DefExpr*>(domain->indices)->sym;
-  
+  Symbol* indices = NULL;
+
   // Here we create some indices (assuming arithmetic domain)
   // This should eventually use the IndexType when that is in. --SJD
-  if (!indices) {
+  if (!domain->indices) {
     DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
     if (!domain_type) {
       INT_FATAL(domain, "Domain has no type");
@@ -46,16 +46,23 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
       char* name = glomstrings(2, "_ind_", intstring(i));
       indices = appendLink(indices, new Symbol(SYMBOL, name));
     }
-  }
-
-  ForLoopStmt* loop =
-    Symboltable::startForLoop(true, indices, array_type->domain->copy());
+  } else {
+    DefExpr* def_expr = dynamic_cast<DefExpr*>(domain->indices);
+    while (def_expr) {
+      indices =
+        appendLink(indices, 
+                   new Symbol(SYMBOL, copystring(def_expr->sym->name)));
+      def_expr = nextLink(DefExpr, def_expr);
+    }
+  }    
+  ForLoopStmt* loop
+    = Symboltable::startForLoop(true, indices, array_type->domain->copy());
   NoOpStmt* noop_stmt = new NoOpStmt();
   BlockStmt* block_stmt = new BlockStmt(noop_stmt);
   loop = Symboltable::finishForLoop(loop, block_stmt);
   stmt->insertBefore(loop);
   insert_init(noop_stmt, var, array_type->elementType);
-  Symbol* indices_change = dynamic_cast<DefExpr*>(loop->indices)->sym;
+  DefExpr* indices_change = dynamic_cast<DefExpr*>(loop->indices);
   TRAVERSE(loop->body, new InsertElidedIndices(indices_change), true);
 }
 

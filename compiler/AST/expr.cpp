@@ -768,15 +768,8 @@ void DefExpr::print(FILE* outfile) {
     sym->type->printDef(outfile);
     fprintf(outfile, ";");
   } else if (dynamic_cast<VarSymbol*>(sym)) {
-    Symbol* tmp = sym;
-    while (tmp) {
-      tmp->printDef(outfile);
-      fprintf(outfile, ";");
-      tmp = nextLink(Symbol, tmp);
-      if (tmp) {
-        fprintf(outfile, "\n");
-      }
-    }
+    sym->printDef(outfile);
+    fprintf(outfile, ";");
   }
 }
 
@@ -1797,7 +1790,7 @@ void ForallExpr::setIndexScope(SymScope* init_indexScope) {
 
 Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new ForallExpr(domains->copyListInternal(clone, map, analysis_clone),
-                        indices->copyInternal(clone, map, analysis_clone),
+                        indices->copyListInternal(clone, map, analysis_clone),
                         forallExpr->copyInternal(clone, map, analysis_clone));
 }
 
@@ -1822,7 +1815,7 @@ void ForallExpr::traverseExpr(Traversal* traversal) {
   if (indexScope) {
     prevScope = Symboltable::setCurrentScope(indexScope);
   }
-  TRAVERSE(indices, traversal, false);
+  TRAVERSE_LS(indices, traversal, false);
   TRAVERSE(forallExpr, traversal, false);
   if (indexScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -1855,7 +1848,7 @@ void ForallExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
   DefExpr* indices_defs = dynamic_cast<DefExpr*>(indices);
   if (indices_defs && indices_defs->sym) {
-    indices_defs->sym->printList(outfile);
+    indices_defs->printList(outfile);
     fprintf(outfile, ":");
   }
   domains->printList(outfile);
