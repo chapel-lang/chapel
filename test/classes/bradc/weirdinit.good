@@ -1,1 +1,1 @@
-Error: Invalid class constructor (weirdinit.chpl:7)
+Error: Variable 'a' used before it is defined (weirdinit.chpl:7)

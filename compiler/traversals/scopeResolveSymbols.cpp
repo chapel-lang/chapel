@@ -53,19 +53,6 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
     resolve_type_helper(cast_expr->newType);
   }
 
-  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    SymScope* currentScope = Symboltable::getCurrentScope();
-    Vec<VarSymbol*>* new_vars = def_expr->varDefSet();
-    if (new_vars) {
-      Vec<VarSymbol*>* old_vars = defList->get(currentScope);
-      if (old_vars) {
-        old_vars->set_union(*new_vars);
-      } else {
-        defList->put(currentScope, new_vars);
-      }
-    }
-  }
-
   if (Variable* sym_use = dynamic_cast<Variable*>(expr)) {
     if (dynamic_cast<UnresolvedSymbol*>(sym_use->var)) {
       SymScope* currentScope = Symboltable::getCurrentScope();
@@ -104,6 +91,22 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
         }
       } else {
         USR_FATAL(expr, "Symbol '%s' is not defined", name);
+      }
+    }
+  }
+}
+
+
+void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
+  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+    SymScope* currentScope = Symboltable::getCurrentScope();
+    Vec<VarSymbol*>* new_vars = def_expr->varDefSet();
+    if (new_vars) {
+      Vec<VarSymbol*>* old_vars = defList->get(currentScope);
+      if (old_vars) {
+        old_vars->set_union(*new_vars);
+      } else {
+        defList->put(currentScope, new_vars);
       }
     }
   }
