@@ -71,7 +71,7 @@ class AInfo : public AST {
   Vec<Fun *> *visible_functions(Sym *arg0);
 
   BaseAST *xast;        // pointer to shadowed BaseAST
-  Code *code;           // IF1 Code
+  Code *code;           // IF1 Code (including children)
   Code *send;           // used for 0-arity parenops
   Label *label[2];      // before and after for loops (continue,break)
   Sym *sym, *rval;      // IF1 Syms

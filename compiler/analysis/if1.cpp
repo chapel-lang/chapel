@@ -674,8 +674,8 @@ print_syms(FILE *fp, Vec<Sym *> *syms) {
       fputs(" :EXTERNAL true", fp);
     if (s->global_scope)
       fputs(" :GLOBAL true", fp);
-    if (s->is_meta_class)
-      fputs(" :META_CLASS true", fp);
+    if (s->is_meta_type)
+      fputs(" :META_TYPE true", fp);
     if (s->is_value_class)
       fputs(" :VALUE true", fp);
     if (s->code) {

@@ -105,7 +105,7 @@ class BasicSym : public gc {
   unsigned int          function_scope:1;       // Sym is function unique
 
   unsigned int          is_structure:1;         // Sym is a structure (C compatibility)
-  unsigned int          is_meta_class:1;        // Sym is class of class
+  unsigned int          is_meta_type:1;        // Sym is class of class
   unsigned int          is_value_class:1;       // Sym is a value class
   unsigned int          is_union_class:1;       // Sym is a union
 

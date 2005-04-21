@@ -32,7 +32,7 @@ BasicSym::BasicSym(void) :
   global_scope(0),
   function_scope(0),
   is_structure(0),
-  is_meta_class(0),
+  is_meta_type(0),
   is_value_class(0),
   is_union_class(0),
   fun_returns_value(0),

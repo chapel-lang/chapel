@@ -1350,7 +1350,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         Sym *s;
         forv_CreationSet(cs1, *a1->out)
           forv_CreationSet(cs2, *a2->out)
-            if (cs1->sym->is_meta_class && cs2->sym->is_meta_class && 
+            if (cs1->sym->is_meta_type && cs2->sym->is_meta_type && 
                 (s = meta_apply(cs1->sym->meta_type, cs2->sym->meta_type)))
               update_in(result, make_abstract_type(s));
             else

@@ -461,7 +461,7 @@ ASymbol::clone(CloneCallback *callback) {
       callback->clone(old_type_symbol, new_type_symbol);
     new_type->meta_type = new_type_symbol->asymbol->sym;
     new_type_symbol->asymbol->sym->meta_type = new_type;
-    assert(new_type_symbol->asymbol->sym->is_meta_class);
+    assert(new_type_symbol->asymbol->sym->is_meta_type);
     for (int i = 0; i < new_type->has.n; i++)
       new_type->has.v[i] = c->context->smap.get(new_type->has.v[i]);
     return new_type;
@@ -1146,14 +1146,9 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
         int is_this = f && f->_this == var;
         if (!is_this)
           goto Lstandard;
-        Code *send = 0;
-        if (!is_this)
-          send = if1_send(if1, &ast->code, 1, 1, type->defaultConstructor->asymbol->sym, s);
-        if (!send) {
-          Sym *tmp = new_sym();
-          send = if1_send(if1, &ast->code, 2, 1, sym_new, type->asymbol->sym, tmp);
-          if1_move(if1, &ast->code, tmp, s, ast);
-        }
+        Sym *tmp = new_sym();
+        Code *send = if1_send(if1, &ast->code, 2, 1, sym_new, type->asymbol->sym, tmp);
+        if1_move(if1, &ast->code, tmp, s, ast);
         send->ast = ast;
         break;
       }
@@ -2728,7 +2723,7 @@ int
 type_is_used(TypeSymbol *t) {
   if (if1->callback) {
     if (t->asymbol) {
-      if (!t->asymbol->sym->is_meta_class) {
+      if (!t->asymbol->sym->is_meta_type) {
         return t->asymbol->sym->creators.n != 0;
       } else
         return true;

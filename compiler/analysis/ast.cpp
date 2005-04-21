@@ -217,12 +217,12 @@ build_type_hierarchy() {
     }
     if (s->type_kind)
       types.set_add(s);
-    if (s->is_meta_class)
+    if (s->is_meta_type)
       meta_types.add(s);
   }
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && s != sym_any && s != sym_void && s != sym_unknown) {
-      if (s->is_meta_class && (s != sym_anyclass))
+      if (s->is_meta_type && (s != sym_anyclass))
         implement_and_specialize(sym_anyclass, s, types);
       else if (s->is_value_class && (s != sym_value))
         implement_and_specialize(sym_value, s, types);
@@ -231,7 +231,7 @@ build_type_hierarchy() {
     }
   }
   // map subtyping and subclassing to meta_types
-  forv_Sym(s, meta_types) if (!s->is_meta_class) {
+  forv_Sym(s, meta_types) if (!s->is_meta_type) {
     forv_Sym(ss, s->implementors) if (ss)
       s->meta_type->implementors.set_add(ss->meta_type);
     forv_Sym(ss, s->specializers) if (ss)
@@ -341,7 +341,7 @@ void
 make_meta_type(Sym *s) {
   if (!s->meta_type)
     s->meta_type = new_Sym();
-  s->meta_type->is_meta_class = 1;
+  s->meta_type->is_meta_type = 1;
   s->meta_type->in = s->in;
   s->meta_type->name = s->name;
   s->meta_type->type = s->meta_type;
@@ -353,7 +353,7 @@ make_meta_type(Sym *s) {
 static void
 make_meta_types(IF1 *i) {
   sym_anyclass->meta_type = sym_anyclass;
-  sym_anyclass->is_meta_class = 1;
+  sym_anyclass->is_meta_type = 1;
   for (int x = finalized_types; x < i->allsyms.n; x++) {
     Sym *s = i->allsyms.v[x];
     if (s->type_kind) {
