@@ -27629,3 +27629,14 @@ Modified files:
 	                             scopeResolveSymbols.h 
 	chapel/test/classes/bradc/: weirdinit.good 
 
+---------------------------------------------------------------------------
+
+04/21/05 09:01:14 -- roxana
+
+Log message:
+	A small modification of this pass led to failure of
+	test_index_expr1.chpl. Corrected that.
+
+Modified files:
+	chapel/compiler/traversals/: destructureTupleAssignments.cpp 
+
