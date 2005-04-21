@@ -27729,3 +27729,17 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+04/21/05 16:48:14 -- jplevyak
+
+Log message:
+	Accelerate moving from one MPosition to another by caching
+	the cannonical representation of an MPositino and providing
+	up, down, and next pointers for moving through numeric positions
+	(and up from a by-name position to its parent).
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp pattern.cpp 
+	chapel/compiler/include/: pattern.h 
+
