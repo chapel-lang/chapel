@@ -27691,3 +27691,17 @@ Modified files:
 	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
 	                                     mg-seq.good mvm-seq.good 
 
+---------------------------------------------------------------------------
+
+04/21/05 14:55:52 -- jplevyak
+
+Log message:
+	emove some dead code.
+	Rename is_meta_class -> is_meta_type (since there are meta types for all
+	types not just classes)
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp cg.cpp fa.cpp 
+	                           if1.cpp sym.cpp 
+	chapel/compiler/include/: analysis.h sym.h 
+
