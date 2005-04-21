@@ -27640,3 +27640,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: destructureTupleAssignments.cpp 
 
+---------------------------------------------------------------------------
+
+04/21/05 09:08:12 -- bradc
+
+Log message:
+	Forgot to remove these two futures last night.
+
+Removed files:
+	chapel/test/trivial/bradc/: initvarsamename.future 
+	                            initvarsamename2.future 
+
