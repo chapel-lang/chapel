@@ -1108,10 +1108,63 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   }
   FnSymbol *f = def->parentStmt->parentFunction();
   int this_constructor = f && f->isConstructor && var->isThis();
-  if (s->is_var && !scalar_or_reference(type))
-    gen_alloc(s, s->type, ast, f && f->_this == var);
-  else if (!var->init) {
-    if (var->type->defaultVal) {
+  int this_is_init = type->defaultVal &&
+    dynamic_cast<Variable*>(type->defaultVal) &&
+    dynamic_cast<Variable*>(type->defaultVal)->var == var;
+  if (s->is_var && !scalar_or_reference(type)) {
+    switch (type->astType) { 
+        // ruled out by conditionals above
+      case TYPE_ENUM:
+      case TYPE_BUILTIN: 
+      case TYPE_CLASS:
+      case TYPE_NIL:
+        // do not make it to analysis
+      case TYPE_LIKE:
+      case TYPE_UNRESOLVED:
+      case TYPE_VARIABLE:
+      case TYPE_SUM:
+      case TYPE_STRUCTURAL:
+      default:
+        assert(!"impossible");
+        goto Lstandard; 
+      case TYPE_SEQ:
+      case TYPE_USER:
+      case TYPE_TUPLE: 
+        goto Lstandard;
+      case TYPE_DOMAIN:
+      case TYPE_INDEX:
+      {
+        Sym *tmp = new_sym();
+        Code *send = if1_send(if1, &ast->code, 2, 1, sym_new, type->asymbol->sym, tmp);
+        if1_move(if1, &ast->code, tmp, s, ast);
+        send->ast = ast;
+        break;
+      }
+      case TYPE_RECORD:
+      case TYPE_UNION:
+      {
+        int is_this = f && f->_this == var;
+        if (!is_this)
+          goto Lstandard;
+        Code *send = 0;
+        if (!is_this)
+          send = if1_send(if1, &ast->code, 1, 1, type->defaultConstructor->asymbol->sym, s);
+        if (!send) {
+          Sym *tmp = new_sym();
+          send = if1_send(if1, &ast->code, 2, 1, sym_new, type->asymbol->sym, tmp);
+          if1_move(if1, &ast->code, tmp, s, ast);
+        }
+        send->ast = ast;
+        break;
+      }
+      case TYPE_ARRAY:
+        gen_alloc(s, s->type, ast, f && f->_this == var);
+        break;
+    }
+  } else if (!var->init) {
+    // THIS IS THE STANDARD CODE
+  Lstandard:
+    if (!this_is_init && var->type->defaultVal) {
       if1_move(if1, &ast->code, get_defaultVal(var->type), ast->sym, ast);
     } else if (var->type->defaultConstructor) {
       Code *send = if1_send(if1, &ast->code, 1, 1, var->type->defaultConstructor->asymbol->sym, ast->sym);
@@ -1125,6 +1178,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       if1_gen(if1, &ast->code, var->init->ainfo->code);
       gen_set_array(s, at, var->init->ainfo->rval, ast);
     } else {
+      // THIS IS THE STANDARD CODE
       if1_gen(if1, &ast->code, var->init->ainfo->code);
       Sym *val = var->init->ainfo->rval;
       if (is_scalar_type(type)) {
