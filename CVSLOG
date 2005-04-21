@@ -27705,3 +27705,16 @@ Modified files:
 	                           if1.cpp sym.cpp 
 	chapel/compiler/include/: analysis.h sym.h 
 
+---------------------------------------------------------------------------
+
+04/21/05 15:07:23 -- jplevyak
+
+Log message:
+	Added NEW_COERCIONS_WRAPPER #define to symbol.h, and the appropriate
+	code to support it in analysis.cpp.
+	Uncomment the #define at the top of the file to get the new interface.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+
