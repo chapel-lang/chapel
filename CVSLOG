@@ -27718,3 +27718,14 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+04/21/05 16:22:59 -- deitz
+
+Log message:
+	Rewrote TupleType::copyType to be more faithful to the copy
+	infrastructure so that analysis's callbacks are used.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
