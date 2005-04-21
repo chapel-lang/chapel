@@ -27588,3 +27588,23 @@ Modified files:
 	chapel/test/trivial/bradc/: initvarsamename.good 
 	                            initvarsamename2.good 
 
+---------------------------------------------------------------------------
+
+04/20/05 17:48:39 -- jplevyak
+
+Log message:
+	New big switch statement to factor out the things which still do not
+	have defaultVal/defaultConstructor as well as the special cases related
+	to "this" and init variables.
+	
+	The special cases are:
+	
+	TYPE_DOMAIN
+	TYPE_INDEX
+	
+	"this" is treated specially for TYPE_RECORD and TYPE_UNION
+	"init" is treated specially by not using the defaultVal.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
