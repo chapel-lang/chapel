@@ -27572,3 +27572,19 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/05 17:26:15 -- bradc
+
+Log message:
+	Realized that I mis-created the expected output for
+	these two tests because I forgot that we decided
+	that any definition of a variable within a scope
+	shadowed all uses of the variable, even those that
+	preceded the variable definition statement (which
+	would then be marked as being illegal).
+
+Modified files:
+	chapel/test/trivial/bradc/: initvarsamename.good 
+	                            initvarsamename2.good 
+
