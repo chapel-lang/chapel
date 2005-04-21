@@ -405,11 +405,26 @@ Fun *
 ACallbacks::coercion_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
+#ifdef NEW_COERCION_WRAPPER
+  Map<Symbol *, Symbol *> coercions;
+  forv_MPosition(p, m->fun->positional_arg_positions) {
+    Sym *t = coercions.get(p);
+    if (t) {
+      Type *tt = dynamic_cast<Type*>(t);
+      Sym *a = m->fun->arg_syms.get(p);
+      if (a->asymbol && a->asymbol->symbol) {
+        Symbol *aa = dynamic_cast<Symbol*>(a);
+        coercions.put(aa, tt);
+      }
+    }
+  }
+#else
   Map<MPosition *, Symbol *> coercions;
   form_MPositionSym(s, m->coercion_substitutions) {
     Type *type = dynamic_cast<Type*>(s->value->asymbol->symbol);
     coercions.put(s->key, type->symbol);
   }
+#endif
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->coercion_wrapper(&coercions);
   Fun *fun = install_new_function(f);

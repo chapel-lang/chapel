@@ -11,6 +11,8 @@ class ASymbol;
 class SymScope;
 class MPosition;
 
+// #define NEW_COERCION_WRAPPER 1
+
 enum varType {
 //R:Maybe this should be VAR_NOTHING
   VAR_NORMAL,
@@ -184,7 +186,12 @@ class FnSymbol : public Symbol {
 
   FnSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
   FnSymbol* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals);
+#ifdef NEW_COERCION_WRAPPER
+  FnSymbol* coercion_wrapper(Map<Symbol *, Symbol *> *coercion_substitutions);
+  // the map is from (formal VarSymbol/ParamSymbol -> new TypeSymbol)
+#else
   FnSymbol* coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions);
+#endif
   FnSymbol* default_wrapper(Vec<MPosition *> *defaults);
   FnSymbol* instantiate_generic(Map<Type *, Type *> *generic_substitutions);
 
