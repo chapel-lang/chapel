@@ -27743,3 +27743,23 @@ Modified files:
 	chapel/compiler/analysis/: fa.cpp pattern.cpp 
 	chapel/compiler/include/: pattern.h 
 
+---------------------------------------------------------------------------
+
+04/22/05 11:32:49 -- shannon
+
+Log message:
+	Changed the format of the print of the memory address
+	in the printMemTable output to hopefully fix a few
+	test regressions when run with valgrind or on a Sun.
+	
+	Changed the substitution for the memory address output
+	to be 8-characters wide.  Updated test output to
+	reflect these changes.
+
+Modified files:
+	chapel/runtime/src/: chplmem.c 
+	chapel/test/memory/shannon/: PREDIFF configVarFile.good 
+	                             freedMalloc.good jacobi.good 
+	                             printMemTable.good 
+	                             reallocZeroSize.good 
+
