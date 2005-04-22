@@ -27805,3 +27805,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+04/22/05 14:20:09 -- jplevyak
+
+Log message:
+	Optimize sets_by_f to sets_by_f_transitive for those cases where
+	the equivilance relation is transitive.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp 
+
