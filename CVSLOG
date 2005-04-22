@@ -27816,3 +27816,15 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: clone.cpp 
 
+---------------------------------------------------------------------------
+
+04/22/05 15:17:39 -- roxana
+
+Log message:
+	Brad suggested I add the -f flag to the first line of prediff files.
+	I had some tests failing because my .cshrc has some conflicting
+	settings.
+
+Modified files:
+	chapel/test/memory/shannon/: PREDIFF 
+
