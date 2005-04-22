@@ -105,7 +105,8 @@ void printMemTable(void) {
 
   int numberWidth   = 9;
   int addressWidth  = 12;
-  int memAllocWidth = 10;
+  int precision     = 8;
+
   char* size        = "Size:";
   char* bytes       = "(bytes)"; 
   char* number      = "Number:";
@@ -139,11 +140,11 @@ void printMemTable(void) {
        memEntry = memEntry->nextInstalled) {
     
     size_t chunk = memEntry->number * memEntry->size;
-    fprintf(stdout, "%-*u%-*u%-*u0x%-*x%-s\n", 
+    fprintf(stdout, "%-*u%-*u%-*u%#-*.*x%-s\n", 
             numberWidth, (unsigned)memEntry->size, 
             numberWidth, (unsigned)memEntry->number, 
             numberWidth, (unsigned)chunk, 
-            memAllocWidth, (unsigned)(intptr_t)memEntry->memAlloc, 
+            addressWidth, precision, (unsigned)(intptr_t)memEntry->memAlloc, 
             memEntry->description);
   }
   fprintf(stdout, "\n");
