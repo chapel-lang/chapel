@@ -254,6 +254,7 @@ class CS_EQ_FN {
   }
 };
 
+
 // C++'s answer to higher order functions: YUCK
 template <class C, class FN>
 static void
@@ -276,6 +277,27 @@ sets_by_f(Vec<C *> &aset, Vec< Vec<C *> *> &asetset) {
       }
       asetset.add(equiv);
     }
+  }
+}
+
+template <class C, class FN>
+static void
+sets_by_f_transitive(Vec<C *> &aset, Vec< Vec<C *> *> &asetset) {
+  asetset.clear();
+  forv_Vec(C, x, aset) if (x) {
+    typedef Vec<C*> VecC;
+    forv_Vec(VecC, s, asetset) {
+      if (FN::equivalent(x, s->first())) {
+        s->set_add(x);
+        goto Lnext;
+      }
+    }
+    {
+      Vec<C *> *equiv = new Vec<C *>();
+      equiv->set_add(x);
+      asetset.add(equiv);
+    }
+  Lnext:;
   }
 }
 
@@ -302,7 +324,8 @@ make_not_equiv(CreationSet *a, CreationSet *b) {
 
 static void
 determine_basic_clones(Vec<Vec<CreationSet *> *> &css_sets_by_sym) {
-  sets_by_f<CreationSet, CS_SYM_FN>(fa->css, css_sets_by_sym);
+  Vec<Vec<CreationSet *> *> xx;
+  sets_by_f_transitive<CreationSet, CS_SYM_FN>(fa->css, css_sets_by_sym);
   // clone for unboxing of basic types
   for (int i = 0; i < css_sets_by_sym.n; i++) {
     for (int j = 0; j < css_sets_by_sym.v[i]->n; j++) {
@@ -416,7 +439,7 @@ determine_clones() {
         Vec<Vec<AEdge *> *> edge_sets;
         forv_EntrySet(es, *ess) if (es)
           calls_edges.set_union(es->out_edges);
-        sets_by_f<AEdge, AEDGE_FN>(calls_edges, edge_sets);
+        sets_by_f_transitive<AEdge, AEDGE_FN>(calls_edges, edge_sets);
         for (int i = 0; i < edge_sets.n; i++)
           for (int j = 0; j < edge_sets.v[i]->n; j++)
             for (int k = 0; k < j; k++) {
