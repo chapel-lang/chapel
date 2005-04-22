@@ -286,6 +286,7 @@ class FA : public gc {
 };
 
 AVar *make_AVar(Var *, EntrySet *);
+AVar *get_element_avar(CreationSet *);
 Sym *coerce_num(Sym *, Sym *);
 Sym *type_info(AST *a, Sym *s = 0);
 void call_info(Fun *f, AST *a, Vec<Fun *> &funs);

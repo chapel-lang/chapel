@@ -340,9 +340,22 @@ determine_basic_clones(Vec<Vec<CreationSet *> *> &css_sets_by_sym) {
           make_not_equiv(cs1, cs2);
           continue;
         }
+        // both have elemements or not
+        if (!!cs1->sym->element != !!cs2->sym->element) {
+          make_not_equiv(cs1, cs2);
+          continue;
+        }
         // for each variable
-        for (int v = 0; v < cs1->vars.n; v++) {
-          AVar *av1 = cs1->vars.v[v], *av2 = cs2->vars.v[v];
+        int start = cs1->sym->element ? -1 : 0;
+        for (int v = start; v < cs1->vars.n; v++) {
+          AVar *av1 = 0, *av2 = 0;
+          if (v < 0) {
+            av1 = get_element_avar(cs1);
+            av2 = get_element_avar(cs2);
+          } else {
+            av1 = cs1->vars.v[v]; 
+            av2 = cs2->vars.v[v];
+          }
           if (MERGE_UNIONS && cs1->sym->is_union_class && av1->out->n == 0 || av2->out->n == 0)
             continue;
           // if the boxing or basic type is different
@@ -682,15 +695,23 @@ resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
             n = cs->vars.n;
           }
           sym->has.fill(n);
-          for (int i = 0; i < n; i++) {
+          int start = sym->element ? -1 : 0;
+          sym->element = 0;
+          for (int i = start; i < n; i++) {
             Vec<Sym *> t;
             Sym *s = 0;
             forv_CreationSet(cs, *eqcss) if (cs) {
-              AVar *av = cs->vars.v[i];
+              AVar *av = i < 0 ? get_element_avar(cs) : cs->vars.v[i];
               if (!s) {
-                if (!sym->has.v[i])
-                  sym->has.v[i] = av->var->sym->copy();
-                s = sym->has.v[i];
+                if (i < 0) {
+                  if (!sym->element)
+                    s = sym->element = av->var->sym->copy();
+                  s = sym->element;
+                } else {
+                  if (!sym->has.v[i])
+                    sym->has.v[i] = av->var->sym->copy();
+                  s = sym->has.v[i];
+                }
               }
               forv_CreationSet(x, *av->out->type) if (x)
                 t.set_add(to_concrete_type(x->sym));

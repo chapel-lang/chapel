@@ -82,6 +82,7 @@ class AInfo : public AST {
 int AST_to_IF1(Vec<Stmt *> &stmts);
 Type *type_info(BaseAST *a, Symbol *s = 0);
 Type *return_type_info(FnSymbol *fn);
+Type *element_type_info(TypeSymbol *t);
 int function_is_used(FnSymbol *fn);
 int type_is_used(TypeSymbol *fn);
 int AST_is_used(BaseAST *a, Symbol *s = 0);  

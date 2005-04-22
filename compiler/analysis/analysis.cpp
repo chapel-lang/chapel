@@ -2327,7 +2327,9 @@ expr_reduce(PNode *pn, EntrySet *es) {
 static void
 expr_simple_seq(PNode *pn, EntrySet *es) {
   AVar *container = make_AVar(pn->lvals.v[0], es);
-  creation_point(container, sym_sequence);
+  CreationSet *cs = creation_point(container, sym_sequence);
+  AVar *element = get_element_avar(cs);
+  update_in(element,  make_abstract_type(sym_int));
 }
 
 static void
@@ -2354,10 +2356,8 @@ array_index(PNode *pn, EntrySet *es) {
   AVar *array = make_AVar(pn->rvals.v[2], es);
   set_container(result, array);
   forv_CreationSet(a, *array->out) if (a) {
-    if (a->sym->element) {
-      AVar *element = unique_AVar(a->sym->element->var, a);
-      flow_vars(element, result);
-    }
+    if (a->sym->element)
+      flow_vars(get_element_avar(a), result);
   }
 }
 
@@ -2368,10 +2368,8 @@ array_set(PNode *pn, EntrySet *es) {
   AVar *val = make_AVar(pn->rvals.v[pn->rvals.n-1], es);
   set_container(result, array);
   forv_CreationSet(a, *array->out) if (a) {
-    if (a->sym->element) {
-      AVar *element = unique_AVar(a->sym->element->var, a);
-      flow_vars(val, element);
-    }
+    if (a->sym->element)
+      flow_vars(val, get_element_avar(a));
   }
   flow_vars(array, result);
 }
@@ -2399,7 +2397,7 @@ static void
 make_seq(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   CreationSet *cs = creation_point(result, sym_sequence);
-  AVar *element = unique_AVar(sym_sequence->element->var, cs);
+  AVar *element = get_element_avar(cs);
   for (int i = 2; i < pn->rvals.n; i++) {
     AVar *av = make_AVar(pn->rvals.v[i], es);
     flow_vars(av, element);
@@ -2413,9 +2411,9 @@ seqcat_seq(PNode *pn, EntrySet *es) {
   AVar *s1 = make_AVar(pn->rvals.v[2], es);
   AVar *s2 = make_AVar(pn->rvals.v[2], es);
   forv_CreationSet(a, *s1->out) if (a) {
-    AVar *ea = unique_AVar(a->sym->element->var, a);
+    AVar *ea = get_element_avar(a);
     forv_CreationSet(b, *s2->out) if (b) {
-      AVar *eb = unique_AVar(b->sym->element->var, b);
+      AVar *eb = get_element_avar(b);
       flow_vars(eb, ea);
     }
   }
@@ -2428,7 +2426,7 @@ seqcat_element(PNode *pn, EntrySet *es) {
   AVar *s1 = make_AVar(pn->rvals.v[2], es);
   AVar *s2 = make_AVar(pn->rvals.v[2], es);
   forv_CreationSet(a, *s1->out) if (a) {
-    AVar *ea = unique_AVar(a->sym->element->var, a);
+    AVar *ea = get_element_avar(a);
     flow_vars(s2, ea);
   }
   flow_vars(s1, result);
@@ -2439,7 +2437,7 @@ indextype_get(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *i = make_AVar(pn->rvals.v[2], es);
   forv_CreationSet(a, *i->out) if (a) {
-    AVar *ea = unique_AVar(a->sym->element->var, a);
+    AVar *ea = get_element_avar(a);
     flow_vars(ea, result);
   }
 }
@@ -2450,7 +2448,7 @@ indextype_set(PNode *pn, EntrySet *es) {
   AVar *i = make_AVar(pn->rvals.v[2], es);
   AVar *x = make_AVar(pn->rvals.v[3], es);
   forv_CreationSet(a, *i->out) if (a) {
-    AVar *ea = unique_AVar(a->sym->element->var, a);
+    AVar *ea = get_element_avar(a);
     flow_vars(x, ea);
   }
   flow_vars(x, result);
@@ -2814,4 +2812,12 @@ structural_subtypes(Type *t, Vec<Type *> subtypes) {
 int
 function_returns_void(FnSymbol *fn) {
   return !fn->asymbol->sym->fun_returns_value;
+}
+
+Type *
+element_type_info(TypeSymbol *t) {
+  if (t->type->asymbol && t->type->asymbol->sym && t->type->asymbol->sym->element)
+    return to_AST_type(t->type->asymbol->sym->element->type);
+  else
+    return dtUnknown;  // analysis not run
 }

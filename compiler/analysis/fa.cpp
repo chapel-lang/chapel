@@ -894,7 +894,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
 
 AVar *
 get_element_avar(CreationSet *cs) {
-  AVar *elem = unique_AVar(element_var, cs);
+  AVar *elem = unique_AVar(cs->sym->element->var, cs);
   cs->added_element_var = 1;
   return elem;
 }
