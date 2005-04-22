@@ -27828,3 +27828,17 @@ Log message:
 Modified files:
 	chapel/test/memory/shannon/: PREDIFF 
 
+---------------------------------------------------------------------------
+
+04/22/05 15:41:21 -- roxana
+
+Log message:
+	There was another file.
+	
+	Brad suggested I add the -f flag to the first line of prediff files.
+	I had some tests failing because my .cshrc has some conflicting
+	settings.
+
+Modified files:
+	chapel/test/compflags/bradc/noexec/: version.prediff 
+
