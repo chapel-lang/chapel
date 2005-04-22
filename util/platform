@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+
+$platform = `uname -s`;
+chomp($platform);
+$platform = lc($platform);
+$underscore = index($platform, "_");
+if ($underscore != -1) {
+   @splitplatform = split("_", $platform);
+   $platform = @splitplatform[0];
+}
+if ($platform eq "linux") {
+    $machine = `uname -m`;
+    chomp($machine);
+    if ($machine eq "x86_64") {
+        $platform = "linux64";
+    }
+}
+
+print "$platform\n";
+exit(0);
+
+
