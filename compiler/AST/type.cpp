@@ -1336,6 +1336,9 @@ Stmt* StructuralType::buildIOBodyStmts(ParamSymbol* thisArg) {
 
 
 void StructuralType::codegen(FILE* outfile) {
+  if (this == dtSequence) {
+    INT_FATAL(this, "Cannot codegen a generic sequence");
+  }
   if (symbol->isDead) {
     // BLC: theoretically, this case should only occur when a class
     // is never instantiated -- only nil references are used
@@ -1373,25 +1376,7 @@ void StructuralType::codegenDef(FILE* outfile) {
     fprintf(outfile, "int _emptyStructPlaceholder;\n");
   }
   codegenStopDefFields(outfile);
-  /*
-  forv_Vec(VarSymbol, tmp, fields) {
-    tmp->codegenDef(outfile);
-    fprintf(outfile, "\n");
-  }
-  */
   fprintf(outfile, "};\n\n");
-  /*
-  if (value || union_value) {
-    symbol->codegen(outfile);
-    fprintf(outfile, ";\n\n");
-  }
-  else {
-    fprintf(outfile, "_");
-    symbol->codegen(outfile);
-    fprintf(outfile,", *");
-    symbol->codegen(outfile);
-    fprintf(outfile, ";\n\n");
-    }*/
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(constructor)) {
     def_stmt->fnDef()->codegenDef(codefile);
   }
