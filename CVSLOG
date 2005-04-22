@@ -27783,3 +27783,13 @@ Modified files:
 Removed files:
 	chapel/test/domains/bradc/: writeIndex.future 
 
+---------------------------------------------------------------------------
+
+04/22/05 12:24:10 -- jplevyak
+
+Log message:
+	Remove some unncessary casts.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp 
+
