@@ -27856,3 +27856,15 @@ Log message:
 Added files:
 	chapel/util/: platform 
 
+---------------------------------------------------------------------------
+
+04/22/05 16:55:40 -- jplevyak
+
+Log message:
+	Compute element_types more robustly through cloning and add
+	element_type_info() function to retrieve those types.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp 
+	chapel/compiler/include/: analysis.h fa.h 
+
