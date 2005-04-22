@@ -27763,3 +27763,23 @@ Modified files:
 	                             printMemTable.good 
 	                             reallocZeroSize.good 
 
+---------------------------------------------------------------------------
+
+04/22/05 11:37:10 -- roxana
+
+Log message:
+	Added support for index(1) to be correctly handled. Since tuple(1)
+	 does not work, special cased index type to become an integer instead
+	of a tuple(1). Also special cased the code generation for index
+	type and assignment operator to take this case into consideration.
+	This special casing is a bit ugly and it clutters the code. Hopefully
+	this can be polished later on.
+	
+	Removed the future associated with this problem.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+Removed files:
+	chapel/test/domains/bradc/: writeIndex.future 
+
