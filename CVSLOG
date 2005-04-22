@@ -27793,3 +27793,15 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: clone.cpp 
 
+---------------------------------------------------------------------------
+
+04/22/05 13:10:49 -- bradc
+
+Log message:
+	Put in an internal error if a generic sequence type is
+	codegen'd to make such problems clearer than they
+	currently are.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
