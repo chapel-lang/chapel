@@ -98,6 +98,8 @@ class DomainType : public Type {
   int numdims;
   Expr* parent;
   //upon creation, each domain creates an index type;
+  //RED -- it seems useful to keep track of the init expr
+  Expr* initExpr;  
   Type* idxType;
 
   DomainType(Expr* init_expr = NULL);

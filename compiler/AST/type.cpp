@@ -219,8 +219,19 @@ void Type::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
     fprintf(outfile, "&");
   }
 
-  arg->codegen(outfile);
-  fprintf(outfile, ")");
+   if (dynamic_cast<IndexType*>(arg->typeInfo())){
+    IndexType* idx = dynamic_cast<IndexType*>(arg->typeInfo());
+    if (idx->getType() == dtInteger){
+     if (Variable* var = dynamic_cast<Variable*>(arg)) {
+        var->var->codegen(outfile);
+        fprintf(outfile, "._field1");
+        fprintf(outfile, ")");
+      }  
+    }
+  } else {
+    arg->codegen(outfile);
+    fprintf(outfile, ")");
+  }
 }
 
 
@@ -529,6 +540,7 @@ DomainType::DomainType(Expr* init_expr) :
   Type(TYPE_DOMAIN, NULL),
   numdims(0),
   parent(NULL),
+  initExpr(init_expr),
   idxType(NULL)
 {
   if (init_expr) {
@@ -555,7 +567,11 @@ DomainType::DomainType(int init_numdims) :
   numdims(init_numdims),
   parent(NULL),
   idxType(NULL)
-{}
+{
+  //RED -- keep track of the initialization expression for domains
+  //can help with creating index types
+  initExpr = new IntLiteral(intstring(init_numdims), init_numdims);
+}
 
 
 Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
@@ -638,12 +654,23 @@ IndexType::IndexType(Expr* init_expr) :
   domainType(NULL)
 {
   if (typeid(*init_expr) == typeid(IntLiteral)) {
-    TupleType* newTType = new TupleType();
-    for (int i = 0; i < init_expr->intVal(); i++){
-      newTType->addType(init_expr->typeInfo());
+    //RED: ugly hack -- apparently Tuple(1) does not work...
+    //I am not sure I understand why...
+    if (init_expr->intVal() == 1) {
+      idxType = dtInteger;
     }
-    idxType = newTType;
+    else {
+      TupleType* newTType = new TupleType();
+      for (int i = 0; i < init_expr->intVal(); i++){
+        newTType->addType(init_expr->typeInfo());
+      }
+      //idxType->defaultVal = newTType->defaultVal->copy();
+      //TypeSymbol* tupleSymbol = TypeSymbol::lookupOrDefineTupleTypeSymbol(&newTType->components);
+      idxType = newTType;
+      //idxType = tupleSymbol->type;
+    } 
   } else {
+    //RED: init_expr in this case is a user-defined type
     idxType = init_expr->typeInfo(); 
   }
 }
@@ -665,9 +692,18 @@ void IndexType::print(FILE* outfile) {
 
 void IndexType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef ");
-  //idxType->codegenDef(outfile);
-  //idxType->print(stdout);
-  //if (typeid(*idxType) == typeid(Tuple))
+  if (typeid(*idxType) == typeid(*dtInteger)) {
+    fprintf(outfile, "struct {\n");
+    int i = 0;
+    idxType->codegen(outfile);
+     fprintf(outfile, " _field%d;\n", ++i);
+    fprintf(outfile, "} ");
+    fprintf(outfile, " ");
+    symbol->codegen(outfile);
+    fprintf(outfile, ";\n\n");
+    return;
+  }
+  //fprintf(outfile, "typedef ");
   TupleType* tt = dynamic_cast<TupleType*>(idxType);
   if (tt){
     fprintf(outfile, "struct {\n");
@@ -683,7 +719,7 @@ void IndexType::codegenDef(FILE* outfile) {
     idxType->codegenDef(outfile);
     symbol->codegen(outfile);
     fprintf(outfile, ";\n\n");
-  }
+  }   
 }
 
 

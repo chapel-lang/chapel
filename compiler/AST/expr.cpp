@@ -1012,8 +1012,8 @@ void AssignOp::print(FILE* outfile) {
 
 void AssignOp::codegen(FILE* outfile) {
   bool string_init = false;
-  Type* leftType = left->typeInfo();
-  Type* rightType = right->typeInfo();
+  Type* leftType = left->typeInfo()->getType();
+  Type* rightType = right->typeInfo()->getType();
   if (leftType->isComplex()) {
     left->codegenComplex(outfile, true);
     fprintf(outfile, " %s ", cGetsOp[type]);
@@ -1053,6 +1053,23 @@ void AssignOp::codegen(FILE* outfile) {
     leftType->codegen(outfile);
     fprintf(outfile, ")(intptr_t)");
     right->codegen(outfile);
+  } else if (dynamic_cast<IndexType*>(left->typeInfo()) || dynamic_cast<IndexType*>(right->typeInfo())) {
+    IndexType* origLeft = dynamic_cast<IndexType*>(left->typeInfo());
+    IndexType* origRight = dynamic_cast<IndexType*>(right->typeInfo());
+    
+    if ((origLeft != NULL ) && (origLeft->getType() == dtInteger)) { 
+      if (Variable* var = dynamic_cast<Variable*>(left)) {
+        var->var->codegen(outfile);
+        fprintf(outfile, "._field1");
+      } 
+    } else left->codegen(outfile);
+    fprintf(outfile, " %s ", cGetsOp[type]);
+    if ((origRight != NULL) && (origRight->getType() == dtInteger)){    
+      if (Variable* var = dynamic_cast<Variable*>(right)) {
+        var->var->codegen(outfile);
+        fprintf(outfile, "._field1");
+      }
+    }else right->codegen(outfile);
   } else {
     left->codegen(outfile);
     fprintf(outfile, " %s ", cGetsOp[type]);
