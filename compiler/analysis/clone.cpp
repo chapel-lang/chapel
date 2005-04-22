@@ -427,9 +427,8 @@ determine_clones() {
                   AVar *a1 = e1->args.get(p), *a2 = e2->args.get(p);
                   if (!a1 || !a2)
                     continue;
-                  // this is why strict type systems bite
-                  ((VecCreationSet*)a1->out)->set_difference(*((VecCreationSet*)a2->out), d1);
-                  ((VecCreationSet*)a2->out)->set_difference(*((VecCreationSet*)a1->out), d2);
+                  a1->out->set_difference(*a2->out, d1);
+                  a2->out->set_difference(*a1->out, d2);
                   forv_CreationSet(c1, d1) {
                     forv_CreationSet(c2, d2) {
                       if (c1->equiv == c2->equiv) 
