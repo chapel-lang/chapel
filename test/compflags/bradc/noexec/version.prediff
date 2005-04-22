@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 set compiler = $3
 echo compiler is `basename $compiler`
 echo -n `basename $compiler` > version.good
