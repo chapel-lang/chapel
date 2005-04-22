@@ -27842,3 +27842,17 @@ Log message:
 Modified files:
 	chapel/test/compflags/bradc/noexec/: version.prediff 
 
+---------------------------------------------------------------------------
+
+04/22/05 16:20:18 -- bradc
+
+Log message:
+	Checking in a utility script that returns the name that
+	we'll call a given platform.  I'm working on having other
+	things that determine the platform all refer to this
+	script so that we name platforms consistently across the
+	compiler.
+
+Added files:
+	chapel/util/: platform 
+
