@@ -27883,3 +27883,17 @@ Modified files:
 	./: Makefile 
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/22/05 17:32:20 -- bradc
+
+Log message:
+	New platform-specific Makefile settings, using the
+	new platform naming scheme.  Will remove old ones in
+	a subsequent update.
+
+Modified files:
+	chapel/make/: Makefile.linux 
+Added files:
+	chapel/make/: Makefile.linux64 Makefile.sunos 
+
