@@ -1,0 +1,7 @@
+# Makefile.cygwin: contains cygwin-specific variables
+#
+
+ECHO = /usr/ucb/echo
+
+-include $(CHAPEL_ROOT)/make/Makefile.gnu
+

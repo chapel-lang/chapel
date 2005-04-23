@@ -1,0 +1,4 @@
+# Makefile.linux64: contains linux64-specific variables
+#
+
+-include $(CHAPEL_ROOT)/make/Makefile.gnu
