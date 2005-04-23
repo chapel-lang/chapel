@@ -16,6 +16,8 @@ struct fileinfo {
   char* pathname;
 };
 
+char* sysdirToChplRoot(char* systemDir);
+
 void deleteTmpDir(void);
 
 void open_common(fileinfo* commonfile);
@@ -26,7 +28,7 @@ void closeCFiles(fileinfo* outfile,
 
 fileinfo* openTmpFile(char* tmpfilename);
 
-void openMakefile(char* srcfilename, char* compilerDir);
+void openMakefile(char* srcfilename, char* systemDir);
 void closeMakefile(void);
 
 void openfile(fileinfo* thefile, char* mode);

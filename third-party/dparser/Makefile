@@ -11,15 +11,13 @@ DIRS = \
 
 all: $(DIRS)
 	@-cp .lastbuild .lastbuild.tmp
-	@echo "gc" > .lastbuild
-	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || $(MAKE) clean
-	cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) all install
+	@echo "$(PLATFORM)-gc" > .lastbuild
+	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || ($(MAKE) clean && cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) all install)
 
 nogc: $(DIRS)
 	@-cp .lastbuild .lastbuild.tmp
-	@echo "nogc" > .lastbuild
-	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || $(MAKE) clean
-	cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) D_USE_GC= all install
+	@echo "$(PLATFORM)-nogc" > .lastbuild
+	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || ($(MAKE) clean && cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) D_USE_GC= all install)
 
 clean:
 	cd $(D_PARSER_DIRNAME) && $(MAKE) clean
@@ -30,16 +28,21 @@ clobber:
 
 $(PLATFORM)/bin: $(PLATFORM_DIR)
 	mkdir -p ./$@
+	@touch ./$@
 
 $(PLATFORM)/include: $(PLATFORM_DIR)
 	mkdir -p ./$@
+	@touch ./$@
 
 $(PLATFORM)/lib: $(PLATFORM_DIR)
 	mkdir -p ./$@
+	@touch ./$@
 
 $(PLATFORM)/man: $(PLATFORM_DIR)
 	mkdir -p ./$@
+	@touch ./$@
 
 $(PLATFORM)/man/man1: $(PLATFORM_DIR) $(PLATFORM)/man
 	mkdir -p ./$@
+	@touch ./$@
 

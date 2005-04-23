@@ -1,7 +1,8 @@
 cygwin
 freebsd
 linux
-sun
+linux64
+sunos
 chpl
 chpl-nogc
 a.out

@@ -21,18 +21,4 @@ endif
 # PLATFORM is simply the one-word description we'll use for all
 # platforms that we run on.
 #
-ifeq ($(OS_TYPE),CYGWIN)
-	PLATFORM=cygwin
-endif
-ifeq ($(OS_TYPE),SunOS)
-	PLATFORM=sun
-endif
-ifeq ($(OS_TYPE),Linux)
-	PLATFORM=linux
-endif
-ifeq ($(OS_TYPE),FreeBSD)
-	PLATFORM=freebsd
-endif
-ifndef PLATFORM
-	PLATFORM=unknown
-endif
+PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform)

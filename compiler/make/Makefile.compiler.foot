@@ -36,11 +36,22 @@ echocompilerdir:
 %.g.d_parser.cpp: %.g
 	$(MAKE_DPARSER) $(MAKE_DPARSER_FLAGS) $<
 
+$(PLATFORM)/%.test.nogc.o: %.test.cpp $(PLATFORM_DIR)
+	$(CXX) -c -DTEST_LIB $(CXXFLAGS) -o $@ $<
+
 $(PLATFORM)/%.test.o: %.test.cpp $(PLATFORM_DIR)
 	$(CXX) -c -DTEST_LIB $(CXXFLAGS) -o $@ $<
 
 $(PLATFORM)/%.nogc.o: %.cpp $(PLATFORM_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
+
+%.nogcdepend: %.nogc.cpp $(PLATFORM_DIR)
+	@$(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS)
+	@$(MAKEDEPEND) $(CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS)
+	@rm $<
+
+%.nogc.cpp: %.cpp
+	@cp $< $@
 
 $(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<

@@ -3,4 +3,5 @@ cast_code.cpp
 cygwin
 freebsd
 linux
-sun
+linux64
+sunos

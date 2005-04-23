@@ -1,6 +1,7 @@
 cygwin
 freebsd
 linux
-sun
+linux64
+sunos
 test_lib
 *.test.cpp

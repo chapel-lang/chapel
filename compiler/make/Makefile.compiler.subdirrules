@@ -16,8 +16,14 @@ clobber: $(CLOBBERSUBDIRS) echocompilerdir
 depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echocompilerdir
 	@echo Updating dependences...
 	@echo > $(CVS_DEPENDS)
-	@for file in $(CVS_SRCS); do \
+	-@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
 	  $(MAKEDEPEND) $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS); \
 	done
+	@echo Updating nogc dependences...
 	$(OTHER_DEPEND_RULES)
+	@$(MAKE) USE_GC= nogcdepend
+
+CVS_NOGC_DEPS= $(CVS_SRCS:%.cpp=%.nogcdepend)
+
+nogcdepend: $(CVS_NOGC_DEPS)

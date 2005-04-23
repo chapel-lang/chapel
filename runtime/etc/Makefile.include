@@ -1,5 +1,5 @@
-
-include $(CHPLRTDIR)/../make/Makefile.platform
+CHPLRTDIR = $(CHAPEL_ROOT)/runtime
+include $(CHAPEL_ROOT)/make/Makefile.platform
 include $(CHPLRTDIR)/etc/Makefile.macros
 
 all:

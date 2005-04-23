@@ -1,6 +1,7 @@
 cygwin
 freebsd
 linux
-sun
+linux64
+sunos
 prim_data.cpp
 prim_data.h

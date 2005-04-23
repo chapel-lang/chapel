@@ -14,15 +14,17 @@ ModuleSymbol* prelude = NULL;
 void FilesToAST::run(ModuleSymbol* moduleList) {
   // parse internal prelude
   Symboltable::parseInternalPrelude();
-  char* preludePath = glomstrings(2, system_dir, 
-                                  "/parser/internal_prelude.chpl");
+  char* chplroot = sysdirToChplRoot(system_dir);
+  char* parserPath = glomstrings(2, chplroot, "/compiler/parser");
+    
+  char* preludePath = glomstrings(2, parserPath, "/internal_prelude.chpl");
   internalPrelude = ParseFile(preludePath, true);
   //Type::findInternalType -> Symboltable::lookupXxxType
   findInternalTypes();
 
   // parse prelude
   Symboltable::parsePrelude();
-  preludePath = glomstrings(2, system_dir, "/parser/prelude.chpl");
+  preludePath = glomstrings(2, parserPath, "/prelude.chpl");
   //parser.cpp: -> Symboltable::Start/FinishModuleDefinition
   //parser.cpp: yyparse()
   prelude = ParseFile(preludePath, true);

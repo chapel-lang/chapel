@@ -249,6 +249,8 @@ set logfile = "$testdir/Logs/$user.log"
 set valgrind = 0
 set valgrindexe = 0
 
+set platform = `../util/platform`;
+
 while ( $#argv > 0 )
 	switch ( $argv[1] )
 	case -execopts:
@@ -301,7 +303,7 @@ while ( $#argv > 0 )
         case --help
 		echo Usage and defaults\:
 		echo "     start_test"
-		echo "          -compiler ../compiler/chpl"
+		echo "          -compiler ../compiler/$platform/chpl[.nogc]"
 		echo "          -compopts" \"\"
 		echo "          -execopts" \"\"
 		echo "          -startdir ."
@@ -319,6 +321,7 @@ while ( $#argv > 0 )
 end
 
 
+echo \[platform: $platform\]
 # see if valgrind is on.  If it is, reset the compiler
 if ($valgrind) then
     echo \[valgrind: ON\]
@@ -330,7 +333,7 @@ if ($valgrind) then
 	exit 1
     endif
     if ($compiler == "") then
-        set compiler = "../compiler/chpl-nogc"
+        set compiler = "../compiler/$platform/chpl-nogc"
     endif
 else
     setenv CHPL_TEST_VGRND_COMP off
@@ -342,7 +345,7 @@ else
         setenv CHPL_TEST_VGRND_EXE off
     endif
     if ($compiler == "") then
-        set compiler = "../compiler/chpl"
+        set compiler = "../compiler/$platform/chpl"
     endif
 endif
 

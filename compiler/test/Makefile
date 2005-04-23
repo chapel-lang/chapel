@@ -27,7 +27,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 # test-specific variables
 #
 
-TEST_LIB = $(PLATFORM)/test_lib$(EXE_SUFFIX)
+TEST_LIB = $(PLATFORM)/test_lib$(CHPL_MUNGE)$(EXE_SUFFIX)
 TEST_CVS_SRCS = test_lib.cpp
 TEST_GEN_SRCS = \
 	beautify.test.cpp \
@@ -42,7 +42,7 @@ TEST_GEN_SRCS = \
 TEST_SRCS = \
 	$(TEST_CVS_SRCS) \
 	$(TEST_GEN_SRCS)
-TEST_OBJS = $(TEST_SRCS:%.cpp=$(PLATFORM)/%.o)
+TEST_OBJS = $(TEST_SRCS:%.cpp=$(PLATFORM)/%.$(OBJ_SUFFIX))
 
 
 #
@@ -63,7 +63,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
 $(TEST_LIB): $(TEST_OBJS)
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
-	$(TEST_LIB)
+	-$(TEST_LIB)
 
 #
 # we can't seem to rely on VPATH for these because it prevents

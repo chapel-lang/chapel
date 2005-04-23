@@ -3,9 +3,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "beautify.h"
 #include "chplalloc.h"
 #include "chpltypes.h"
-#include "beautify.h"
 #include "files.h"
 #include "misc.h"
 #include "mysystem.h"
@@ -27,6 +27,28 @@ static FILE* makefile;
 static char* intExeFilename;
 static int numLibFlags = 0;
 static char** libFlag = NULL;
+
+
+char* sysdirToChplRoot(char* systemDir) {
+  char* chplroot = copystring(systemDir);
+  char* compilerSubdir = strstr(chplroot, "compiler");
+  if (!compilerSubdir) {
+    INT_FATAL("Can't convert systemDir to chapel root");
+  }
+  char* anotherCompilerSubdir;
+  do {
+    anotherCompilerSubdir = strstr(compilerSubdir+1, "compiler");
+    if (anotherCompilerSubdir) {
+      compilerSubdir = anotherCompilerSubdir;
+    }
+  } while (anotherCompilerSubdir);
+  if (compilerSubdir == chplroot) {
+    chplroot = copystring(".");
+  } else {
+    *(compilerSubdir-1) = '\0';
+  }
+  return chplroot;
+}
 
 
 void addLibInfo(char* libName) {
@@ -264,17 +286,7 @@ fileinfo* openTmpFile(char* tmpfilename) {
 }
 
 
-static char* compilerdir2runtimedir(char* compilerDir) {
-  char* runtimedirname = "../runtime";
-  char* runtimeDir = glomstrings(2, compilerDir, runtimedirname);
-    
-  return runtimeDir;
-}
-
-
-static void genMakefileHeader(char* srcfilename, char* compilerDir) {
-  char* runtimedir = compilerdir2runtimedir(compilerDir);
-
+static void genMakefileHeader(char* srcfilename, char* systemDir) {
   char* strippedExeFilename = stripdirectories(executableFilename);
   intExeFilename = genIntFilename(strippedExeFilename);
   // BLC: This condtitional is done so that cp won't complain if
@@ -291,7 +303,7 @@ static void genMakefileHeader(char* srcfilename, char* compilerDir) {
   // to specifying BINNAME on the C compiler command line.
   fprintf(makefile, "BINNAME = %s\n", executableFilename);
   fprintf(makefile, "TMPBINNAME = %s\n", intExeFilename);
-  fprintf(makefile, "CHPLRTDIR = %s\n", runtimedir);
+  fprintf(makefile, "CHAPEL_ROOT = %s\n", sysdirToChplRoot(systemDir));
   fprintf(makefile, "LIBS =");
   int i;
   for (i=0; i<numLibFlags; i++) {
@@ -302,16 +314,16 @@ static void genMakefileHeader(char* srcfilename, char* compilerDir) {
 }
 
 
-void openMakefile(char* srcfilename, char* compilerDir) {
+void openMakefile(char* srcfilename, char* systemDir) {
   char* makefilename = genIntFilename("Makefile");
   makefile = openfile(makefilename);
-  genMakefileHeader(srcfilename, compilerDir);
+  genMakefileHeader(srcfilename, systemDir);
 }
 
 
 void closeMakefile(void) {
   fprintf(makefile, "\n");
-  fprintf(makefile, "include $(CHPLRTDIR)/etc/Makefile.include\n");
+  fprintf(makefile, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.include\n");
 
   closefile(makefile);
 }

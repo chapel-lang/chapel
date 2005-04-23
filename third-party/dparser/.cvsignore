@@ -1,6 +1,7 @@
 cygwin
-linux
-sun
 freebsd
+linux
+linux64
+sunos
 .lastbuild
 .lastbuild.tmp

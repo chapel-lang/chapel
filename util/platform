@@ -5,8 +5,7 @@ chomp($platform);
 $platform = lc($platform);
 $underscore = index($platform, "_");
 if ($underscore != -1) {
-   @splitplatform = split("_", $platform);
-   $platform = @splitplatform[0];
+    substr($platform, $underscore) = "";
 }
 if ($platform eq "linux") {
     $machine = `uname -m`;
