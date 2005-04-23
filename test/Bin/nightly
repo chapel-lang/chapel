@@ -210,6 +210,7 @@ mysystem("cd $chapeldir && $make third-party", "making third-party", 1, 1);
 mysystem("cd $chapeldir && $make compiler", "making chapel compiler", 1, 1);
 mysystem("cd $chapeldir && $make runtime", "making chapel runtime", 1, 1);
 if ($valgrind == 1) {
+    mysystem("cd $chapeldir && $make third-party-nogc", "making no-GC third-party", 1, 1);
     mysystem("cd $chapeldir && $make nogc", "making no-GC version", 1, 1);
 }
 

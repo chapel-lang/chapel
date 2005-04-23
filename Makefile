@@ -14,7 +14,6 @@ all:
 everything: third-party compiler runtime
 
 nogc: FORCE
-	cd third-party && $(MAKE) nogc
 	cd compiler && $(MAKE) nogc
 
 comprt: compiler runtime
@@ -30,6 +29,9 @@ test: FORCE
 
 third-party: FORCE
 	cd third-party && $(MAKE)
+
+third-party-nogc: FORCE
+	cd third-party && $(MAKE) nogc
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
