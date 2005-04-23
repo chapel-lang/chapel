@@ -27897,3 +27897,108 @@ Modified files:
 Added files:
 	chapel/make/: Makefile.linux64 Makefile.sunos 
 
+---------------------------------------------------------------------------
+
+04/22/05 18:02:38 -- bradc
+
+Log message:
+	Lots of Makefile-related changes.  Please let me know if these break
+	anything on your platform.  The main goal in this work is to allow a
+	single filesystem to support multiple builds simultaneously without
+	rebuilding a lot of things unnecessarily.  We had the groundwork for
+	this before, but this makes a lot of it a bit firmer.
+	
+	Users who want to put "chpl" in their search path for multiple
+	platforms should replace lines of this form:
+	
+	set path = ($path $CHPL_SYSTEM_DIR/)
+	
+	with lines of this form:
+	
+	setenv CHPL_PLATFORM `$CHPLHOME/util/platform`
+	set path = ($path $CHPL_SYSTEM_DIR/$CHPL_PLATFORM)
+	
+	You will also find that start_test runs chpl from a platform-specific
+	subdirectory as well now.
+	
+	The other main way in which this check-in will affect people is that
+	those who are building on Suns will find that their platform-specific
+	subdirectories are renamed from "sun" to "sunos" and those building on
+	Linux64s will find their platform-specific subdirectories renamed from
+	"linux" to "linux64".
+	
+	The other main improvement of this check-in is that dependences are
+	now calculated for the nogc build when a "make depend" is done in the
+	compiler directory.
+	
+	Here are the changes in more detail:
+	
+	* switched platform names used by Makefiles to a more consistent
+	  scheme using the util/platform script
+	    linux -> split into linux and linux64 so that both builds could
+	      be done from one filesystem
+	    sun -> changed to sunos
+	    freebsd - stays the same
+	    cygwin: stays the same
+	
+	* made start_test use the platform-specific subdirectory version of
+	  the compiler by default (e.g., compiler/linux/chpl) so that multiple
+	  platforms could be tested simultaneously
+	
+	* .cvsignores : added linux64, sunos; removed sun
+	
+	* made compiler more robust when run from a platform-specific
+	  subdirectory of compiler (e.g., compiler/linux/chpl)
+	
+	* added the creation of dependences for nogc build of compiler when
+	  make depend is done -- previously, no dependences were made for the
+	  nogc build.
+	
+	* made the compiler/test/ directory more resilient to being built with
+	  the nogc option.  However, the unit tests fail when built without gc
+	  for some reason, so had to ignore the return code, which is
+	  unfortunate.
+	
+	* made the compiler-generated Makefile point to CHAPEL_ROOT rather
+	  than CHPLRTDIR, which allows us to get to other places easier
+	
+	* made the boehmgc directory not rebuild itself if the last build
+	  was done for the given platform.  This means if you build the
+	  third-party directory twice in a row on linux, the second build
+	  should not result in anything happening.  However, if you build
+	  for linux and then for sun, building for linux again will cause
+	  it to get rebuilt.  In principle, the third-party directory
+	  should only need to be built once per platform ever (unless its
+	  sources change, which is rare)
+	
+	* made the dparser directory take platform into account in a
+	  similar way.
+
+Modified files:
+	chapel/compiler/: .cvsignore 
+	chapel/compiler/AST/: .cvsignore 
+	chapel/compiler/adt/: .cvsignore 
+	chapel/compiler/analysis/: .cvsignore 
+	chapel/compiler/analysis/make_prims/: .cvsignore 
+	chapel/compiler/backend/: .cvsignore 
+	chapel/compiler/include/: files.h 
+	chapel/compiler/main/: .cvsignore 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.subdirrules 
+	chapel/compiler/parser/: .cvsignore 
+	chapel/compiler/passes/: .cvsignore filesToAST.cpp 
+	chapel/compiler/symtab/: .cvsignore 
+	chapel/compiler/test/: .cvsignore Makefile 
+	chapel/compiler/traversals/: .cvsignore 
+	chapel/compiler/util/: .cvsignore files.cpp 
+	chapel/compiler/vparser/: .cvsignore 
+	chapel/compiler/vparser/cast/: .cvsignore 
+	chapel/make/: Makefile.platform 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/test/: start_test 
+	chapel/third-party/boehmgc/: .cvsignore Makefile 
+	chapel/third-party/dparser/: .cvsignore Makefile 
+	chapel/util/: platform 
+Removed files:
+	chapel/make/: Makefile.sun 
+
