@@ -2,6 +2,7 @@
 #include "driver.h"
 #include "parse_structs.h"
 #include "dparse.h"
+#include "files.h"
 #include "if1.h"
 #include "grammar.h"
 #include "parse_ast.h"
@@ -148,8 +149,8 @@ load_one(char *fn) {
   if (l >= (int)numberof(langs))
     fail("unknown extension '%s'", fn);
 
-  strcpy(tmpfn, system_dir);
-  strcat(tmpfn, "vparser/");
+  char* chplroot = sysdirToChplRoot(system_dir);
+  sprintf(tmpfn, "%s/compiler/vparser/", chplroot);
   strcat(tmpfn, prelude_filename);
   strcat(tmpfn, ".");
   strcat(tmpfn, langs[l].extension);
