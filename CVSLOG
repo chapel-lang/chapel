@@ -28002,3 +28002,15 @@ Modified files:
 Removed files:
 	chapel/make/: Makefile.sun 
 
+---------------------------------------------------------------------------
+
+04/22/05 18:20:32 -- bradc
+
+Log message:
+	One change that didn't quite make it into the last
+	checkin -- updated vparser front-end to be able to
+	run from a compiler/<platform> subdirectory as well.
+
+Modified files:
+	chapel/compiler/vparser/: parse.cpp 
+
