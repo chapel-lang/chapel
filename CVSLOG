@@ -27868,3 +27868,18 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp 
 	chapel/compiler/include/: analysis.h fa.h 
 
+---------------------------------------------------------------------------
+
+04/22/05 17:25:23 -- bradc
+
+Log message:
+	Broke the nogc build of the third-party directory into
+	its own build target.  To build a GC-less version of
+	dparser, you now need to type "make third-party-nogc"
+	from the top-level directory, or "make nogc" from the
+	third-party directory.
+
+Modified files:
+	./: Makefile 
+	chapel/test/Bin/: nightly 
+
