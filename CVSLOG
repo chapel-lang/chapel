@@ -28089,3 +28089,18 @@ Log message:
 Modified files:
 	chapel/third-party/boehmgc/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/25/05 11:18:02 -- bradc
+
+Log message:
+	Shannon had to take off abruptly for family
+	stuff, so I checked in a better printMemTable.good
+	file, which 5/6 platforms seem to prefer.  It's
+	still a mystery why the valgrind run results in
+	the other...  Is it calling the malloc routines
+	in a different order?
+
+Modified files:
+	chapel/test/memory/shannon/: printMemTable.good 
+
