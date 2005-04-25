@@ -28053,3 +28053,28 @@ Log message:
 Modified files:
 	chapel/util/: platform 
 
+---------------------------------------------------------------------------
+
+04/25/05 10:57:05 -- bradc
+
+Log message:
+	Made the third-party Makefiles even smarter with
+	respect to avoiding duplicate rebuilds.  Got rid
+	of the ignored "missing .lastbuild" error.  Also,
+	made it so that if a build is interrupted, it
+	will not be considered the lastbuild -- only
+	successful builds will update the .lastbuild file.
+	
+	Added new targets:
+	
+	      all-force
+	      nogc-force (for dparser only)
+	
+	so that if one wants to force a build even though
+	the Makefile claims it is not necessary, it will
+	be done.
+
+Modified files:
+	chapel/third-party/boehmgc/: Makefile 
+	chapel/third-party/dparser/: Makefile 
+
