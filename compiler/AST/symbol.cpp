@@ -559,10 +559,10 @@ TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
   forv_Vec(Type, component, *components) {
     name = glomstrings(3, name, "_", component->symbol->name);
   }
+  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   TypeSymbol* tupleSym =
     dynamic_cast<TypeSymbol*>(Symboltable::lookupInCurrentScope(name));
   if (!tupleSym) {
-    SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     TupleType* tupleType = new TupleType();
     forv_Vec(Type, component, *components) {
       tupleType->addType(component);
@@ -574,8 +574,8 @@ TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
     tupleType->structScope->setContext(NULL, tupleSym, defExpr);
     commonModule->stmts->insertBefore(defStmt);
     buildDefaultStructuralTypeMethods(tupleType);
-    Symboltable::setCurrentScope(saveScope);
   }
+  Symboltable::setCurrentScope(saveScope);
   return tupleSym;
 }
 

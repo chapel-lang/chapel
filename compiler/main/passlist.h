@@ -66,6 +66,7 @@ PassInfo passlist[] = {
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(RemoveDeadSymbols, ""),
   RUN(ResolveTypes, ""),
+  RUN(ResolveTupleTypes, ""),
   RUN(ResolveSymbols, ""),
   //RUN(FindUnknownTypes, ""),
   RUN(RemoveTypeVariableActuals, ""),

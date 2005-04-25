@@ -21,7 +21,6 @@ void FindReturn::preProcessStmt(Stmt* stmt) {
   }
 }
 
-
 ResolveTypes::ResolveTypes() {
   whichModules = MODULES_COMMON_AND_USER;
 }
@@ -75,7 +74,6 @@ void ResolveTypes::processSymbol(Symbol* sym) {
       }
     }
   }
-
   /***
    ***  Hack: loops over sequences, types of index variables
    ***/
@@ -90,6 +88,24 @@ void ResolveTypes::processSymbol(Symbol* sym) {
             }
           }
         }
+      }
+    }
+  }
+}
+
+ResolveTupleTypes::ResolveTupleTypes() {
+  whichModules = MODULES_COMMON_AND_USER;
+}
+
+void ResolveTupleTypes::processSymbol(Symbol* sym) {
+  if (!analyzeAST)
+    return;
+  if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(sym)) {
+    if (TupleType *tt = dynamic_cast<TupleType*>(t->type)) {
+      tt->components.clear();
+      forv_Vec(VarSymbol, v, tt->fields) {
+        Type *t = type_info(v);
+        tt->components.add(t);
       }
     }
   }

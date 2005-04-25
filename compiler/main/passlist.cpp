@@ -105,6 +105,7 @@ REGISTER(RenameOverloadedFunctions);
 REGISTER(ResolveOverloadedOperators);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(ResolveTypes);
+REGISTER(ResolveTupleTypes);
 REGISTER(RunAnalysis);
 REGISTER(ScopeResolveGotos);
 REGISTER(ScopeResolveSymbols);
