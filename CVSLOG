@@ -28014,3 +28014,22 @@ Log message:
 Modified files:
 	chapel/compiler/vparser/: parse.cpp 
 
+---------------------------------------------------------------------------
+
+04/25/05 09:30:51 -- shannon
+
+Log message:
+	Changed the execution of the mallocOutOfMemory
+	test to limit the virtual memory use in order
+	to avoid crashing or bogging down the hardware.
+	'limit vmemoryuse' was set in a local copy of
+	sub_test, per Brad's instructions.
+
+Added files:
+	chapel/test/memory/shannon/outofmemory/: mallocOutOfMemory.chpl 
+	                                         mallocOutOfMemory.good 
+	                                         sub_test 
+Removed files:
+	chapel/test/memory/shannon/: mallocOutOfMemory.chpl 
+	                             mallocOutOfMemory.good 
+
