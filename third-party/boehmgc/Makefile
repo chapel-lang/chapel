@@ -8,9 +8,9 @@ all: $(PLATFORM_DIR) .lastbuild
 	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || $(MAKE) all-force
 
 all-force: $(PLATFORM_DIR) FORCE
-	$(MAKE) clean
 	cd $(GC_DIRNAME); \
 	./configure --prefix='$(CURDIR)/$(PLATFORM)' --disable-threads; \
+	$(MAKE) clean; \
 	$(MAKE); \
 	$(MAKE) check; \
 	$(MAKE) install
