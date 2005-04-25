@@ -9,15 +9,24 @@ DIRS = \
 	$(PLATFORM)/man \
 	$(PLATFORM)/man/man1
 
-all: $(DIRS)
-	@-cp .lastbuild .lastbuild.tmp
-	@echo "$(PLATFORM)-gc" > .lastbuild
-	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || ($(MAKE) clean && cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) all install)
+all: $(DIRS) .lastbuild
+	@echo "$(PLATFORM)-gc" > .lastbuild.tmp
+	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || $(MAKE) all-force
 
-nogc: $(DIRS)
-	@-cp .lastbuild .lastbuild.tmp
-	@echo "$(PLATFORM)-nogc" > .lastbuild
-	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || ($(MAKE) clean && cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) D_USE_GC= all install)
+
+all-force: $(DIRS) FORCE
+	$(MAKE) clean
+	cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) all install
+	cp .lastbuild.tmp .lastbuild
+
+nogc: $(DIRS) .lastbuild
+	@echo "$(PLATFORM)-nogc" > .lastbuild.tmp
+	@diff .lastbuild.tmp .lastbuild > /dev/null 2>&1 || $(MAKE) nogc-force
+
+nogc-force: $(DIRS) FORCE
+	$(MAKE) clean
+	cd $(D_PARSER_DIRNAME) && $(MAKE) PREFIX=../$(PLATFORM) GCROOT=../../boehmgc/$(PLATFORM) D_USE_GC= all install
+	cp .lastbuild.tmp .lastbuild
 
 clean:
 	cd $(D_PARSER_DIRNAME) && $(MAKE) clean
@@ -46,3 +55,7 @@ $(PLATFORM)/man/man1: $(PLATFORM_DIR) $(PLATFORM)/man
 	mkdir -p ./$@
 	@touch ./$@
 
+.lastbuild:
+	@echo "never-built" > .lastbuild
+
+FORCE:
