@@ -2307,7 +2307,7 @@ cast_value(PNode *pn, EntrySet *es) {
   assert(pn->rvals.n == 4);
   Sym *ts = t->var->sym->meta_type;
   if (ts) {
-    if (ts->num_kind)
+    if (ts->asymbol && is_scalar_type(ts->asymbol->symbol))
       update_in(result, make_abstract_type(ts));
     else
       creation_point(result, ts);
@@ -2368,8 +2368,13 @@ array_set(PNode *pn, EntrySet *es) {
   AVar *val = make_AVar(pn->rvals.v[pn->rvals.n-1], es);
   set_container(result, array);
   forv_CreationSet(a, *array->out) if (a) {
-    if (a->sym->element)
-      flow_vars(val, get_element_avar(a));
+    if (a->sym->element) {
+      if (a->sym->element->type && a->sym->element->type->asymbol 
+          && is_scalar_type(a->sym->element->type->asymbol->symbol))
+        update_in(get_element_avar(a), make_abstract_type(a->sym->element->type));
+      else
+        flow_vars(val, get_element_avar(a));
+    }
   }
   flow_vars(array, result);
 }

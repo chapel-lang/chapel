@@ -492,6 +492,57 @@ determine_clones() {
   }
 }
 
+static Sym *
+concrete_type_set_to_type(Vec<Sym *> &t) {
+  t.set_to_vec();
+  if (!t.n)
+    return sym_void;
+  else if (t.n == 1)
+    return t.v[0];
+  else {
+    Sym *tt = new_Sym();
+    tt->type_kind = Type_LUB;
+    tt->has.append(t);
+    tt = if1->callback->make_LUB_type(tt);
+    return tt;
+  }
+}
+
+static void
+compute_member_types(Vec<CreationSet *> *eqcss, int incomplete = 0) {
+  Sym *sym = eqcss->first()->type;
+  if (sym->is_fun)
+    return;
+  int n = 0;
+  forv_CreationSet(cs, *eqcss) if (cs) {
+    assert(!n || n == cs->vars.n);
+    n = cs->vars.n;
+  }
+  sym->has.fill(n);
+  int start = sym->element ? -1 : 0;
+  for (int i = start; i < n; i++) {
+    Vec<Sym *> t;
+    Sym *s = incomplete ? 0 : (i < 0 ? sym->element : sym->has.v[i]);
+    forv_CreationSet(cs, *eqcss) if (cs) {
+      AVar *av = i < 0 ? get_element_avar(cs) : cs->vars.v[i];
+      if (!s) {
+        if (i < 0) {
+          if (!sym->element)
+            s = sym->element = av->var->sym->copy();
+          s = sym->element;
+        } else {
+          if (!sym->has.v[i])
+            sym->has.v[i] = av->var->sym->copy();
+          s = sym->has.v[i];
+        }
+      }
+      forv_CreationSet(x, *av->out->type) if (x)
+        t.set_add(to_concrete_type(x->sym));
+    }
+    s->type = concrete_type_set_to_type(t);
+  }
+}
+
 // sets cs->sym to the new concrete symbol
 static void
 define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
@@ -518,6 +569,8 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
         if (!sym->creators.some_difference(creators)) {
           forv_CreationSet(cs, *eqcss) if (cs)
             cs->type = sym;
+          if (sym->element || sym->has.n)
+            compute_member_types(eqcss);
           continue;
         }
       }
@@ -688,52 +741,9 @@ resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
         case Type_REF:
         case Type_FUN:
         case Type_PRODUCT:
-        case Type_TAGGED: {
-          int n = 0;
-          forv_CreationSet(cs, *eqcss) if (cs) {
-            assert(!n || n == cs->vars.n);
-            n = cs->vars.n;
-          }
-          sym->has.fill(n);
-          int start = sym->element ? -1 : 0;
-          sym->element = 0;
-          for (int i = start; i < n; i++) {
-            Vec<Sym *> t;
-            Sym *s = 0;
-            forv_CreationSet(cs, *eqcss) if (cs) {
-              AVar *av = i < 0 ? get_element_avar(cs) : cs->vars.v[i];
-              if (!s) {
-                if (i < 0) {
-                  if (!sym->element)
-                    s = sym->element = av->var->sym->copy();
-                  s = sym->element;
-                } else {
-                  if (!sym->has.v[i])
-                    sym->has.v[i] = av->var->sym->copy();
-                  s = sym->has.v[i];
-                }
-              }
-              forv_CreationSet(x, *av->out->type) if (x)
-                t.set_add(to_concrete_type(x->sym));
-            }
-            t.set_to_vec();
-            if (t.n == 1)
-              s->type = t.v[0];
-            else {
-              if (t.n != 0) {
-                Sym *tt = new_Sym();
-                tt->type_kind = Type_LUB;
-                tt->has.append(t);
-                tt = if1->callback->make_LUB_type(tt);
-                forv_CreationSet(cs, *eqcss) if (cs)
-                  cs->type = tt;
-                s->type = tt;
-              } else
-                s->type = sym_void;
-            }
-          }
+        case Type_TAGGED: 
+          compute_member_types(eqcss, 1);
           break;
-        }
       }
     } else {
       // resolve types
