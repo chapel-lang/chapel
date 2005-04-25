@@ -28148,3 +28148,16 @@ Log message:
 Modified files:
 	chapel/third-party/boehmgc/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/25/05 14:50:49 -- roxana
+
+Log message:
+	Added support for indices to be created for anonymous
+	domains as well. To that effect, modified Domain type to keep
+	track of its initialization expression, so that indices can be created
+	based on this expression.
+
+Modified files:
+	chapel/compiler/traversals/: insertIndexType.cpp 
+
