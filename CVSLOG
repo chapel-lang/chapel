@@ -28125,3 +28125,14 @@ Modified files:
 	chapel/compiler/include/: fa.h 
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+04/25/05 13:36:51 -- jplevyak
+
+Log message:
+	Correctly handle coercion during array update.
+	Fixup types of member variables during cloning even if the type isn't cloned.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp 
+
