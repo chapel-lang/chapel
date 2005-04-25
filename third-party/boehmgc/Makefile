@@ -11,16 +11,16 @@ all-force: $(PLATFORM_DIR) FORCE
 	$(MAKE) clean
 	cd $(GC_DIRNAME); \
 	./configure --prefix='$(CURDIR)/$(PLATFORM)' --disable-threads; \
-	make; \
-	make check; \
-	make install
+	$(MAKE); \
+	$(MAKE) check; \
+	$(MAKE) install
 	cp .lastbuild.tmp .lastbuild
 
 clean:
-	cd $(GC_DIRNAME) && make clean
+	cd $(GC_DIRNAME) && $(MAKE) clean
 
 clobber:
-	cd $(GC_DIRNAME) && make clean
+	cd $(GC_DIRNAME) && $(MAKE) clean
 	rm -rf ./$(PLATFORM)
 
 .lastbuild:
