@@ -282,7 +282,8 @@ collect_include_vars(Sym *s, Sym *in = 0) {
   else
     in->has.append(s->has);
   forv_Sym(ss, s->includes)
-    collect_include_vars(ss, in ? in : s);
+    if (ss->type_kind == Type_RECORD)
+      collect_include_vars(ss, in ? in : s);
   if (!in)
     s->has.append(saved);
 }
@@ -293,7 +294,7 @@ include_instance_variables(IF1 *i) {
   for (int x = finalized_types; x < i->allsyms.n; x++) {
     Sym *s = i->allsyms.v[x];
     Vec<Sym *> in_includes;
-    if (s->type_kind && s->includes.n)
+    if (s->type_kind == Type_RECORD && s->includes.n)
       collect_includes(s, include_set, includes, in_includes);
   }
   forv_Sym(s, includes) {
