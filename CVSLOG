@@ -28104,3 +28104,13 @@ Log message:
 Modified files:
 	chapel/test/memory/shannon/: printMemTable.good 
 
+---------------------------------------------------------------------------
+
+04/25/05 11:55:23 -- jplevyak
+
+Log message:
+	Only include instance variables from parents for RECORD/class types.
+
+Modified files:
+	chapel/compiler/analysis/: ast.cpp 
+
