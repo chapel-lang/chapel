@@ -28114,3 +28114,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: ast.cpp 
 
+---------------------------------------------------------------------------
+
+04/25/05 11:56:21 -- jplevyak
+
+Log message:
+	Expose "make_prim" function for use in analysis.cpp
+
+Modified files:
+	chapel/compiler/include/: fa.h 
+	chapel/compiler/analysis/: fa.cpp 
+
