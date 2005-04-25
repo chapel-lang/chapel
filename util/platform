@@ -11,7 +11,10 @@ if ($platform eq "linux") {
     $machine = `uname -m`;
     chomp($machine);
     if ($machine eq "x86_64") {
-        $platform = "linux64";
+	$build64 = $ENV{'BUILD_X86_64'};
+	if ($build64 eq "1") {
+	    $platform = "linux64";
+	}
     }
 }
 
