@@ -28033,3 +28033,23 @@ Removed files:
 	chapel/test/memory/shannon/: mallocOutOfMemory.chpl 
 	                             mallocOutOfMemory.good 
 
+---------------------------------------------------------------------------
+
+04/25/05 10:20:07 -- bradc
+
+Log message:
+	Reworked platform script to improve the decision
+	between linux and linux64 (I had not realized
+	previously that one could do 32-bit builds on a
+	64-bit linux machine).  linux64 is now selected
+	iff BUILD_X86_64 is set to 1.  Otherwise, linux
+	is used.  This should be consistent with the
+	conventions used on John's machine (note that
+	the chapel account is currently set up to set
+	this variable to 1 by default, which is good
+	as it means those of us logging in to debug
+	linux64 issues will be able to do so trivially).
+
+Modified files:
+	chapel/util/: platform 
+
