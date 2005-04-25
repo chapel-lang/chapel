@@ -28136,3 +28136,15 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp clone.cpp 
 
+---------------------------------------------------------------------------
+
+04/25/05 13:40:43 -- bradc
+
+Log message:
+	Rassin-frassin Makefiles.  It seems I wrote a Makefile
+	that would only work after the configure script had been
+	run.  This should help, I believe.
+
+Modified files:
+	chapel/third-party/boehmgc/: Makefile 
+
