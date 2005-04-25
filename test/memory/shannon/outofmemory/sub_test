@@ -1,0 +1,5 @@
+#!/bin/csh -f
+
+limit vmemoryuse 32M
+
+source ../../../sub_test
