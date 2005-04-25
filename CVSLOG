@@ -28078,3 +28078,14 @@ Modified files:
 	chapel/third-party/boehmgc/: Makefile 
 	chapel/third-party/dparser/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/25/05 11:03:37 -- bradc
+
+Log message:
+	Caught a couple of instances of "make" rather
+	than "$(MAKE)" in our Makefiles.
+
+Modified files:
+	chapel/third-party/boehmgc/: Makefile 
+
