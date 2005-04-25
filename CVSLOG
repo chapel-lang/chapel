@@ -28161,3 +28161,19 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: insertIndexType.cpp 
 
+---------------------------------------------------------------------------
+
+04/25/05 14:53:56 -- jplevyak
+
+Log message:
+	Added a new pass ResolveTupleTypes to fixup the components bit of
+	tuples after analysis (by using the type_info() of the fields.
+	I believe that in lookupOrDefineTupleTypeSymbol we should be
+	setting the scope before we do the lookup since we want the
+	one in commonModule.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: resolveTypes.cpp resolveTypes.h 
+
