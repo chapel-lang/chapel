@@ -299,6 +299,7 @@ AType *make_abstract_type(Sym *s);
 void update_in(AVar *v, AType *t);
 void flow_vars(AVar *v, AVar *vv);
 CreationSet *creation_point(AVar *v, Sym *s);
+void prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0);
 void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,
                     Vec<Fun *> *funs = NULL);
 AType *type_cannonicalize(AType *t);

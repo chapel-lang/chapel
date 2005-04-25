@@ -860,8 +860,8 @@ set_container(AVar *av, AVar *container) {
     av->lvalue->container = container;
 }
 
-static void
-prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0) {
+void
+prim_make(PNode *p, EntrySet *es, Sym *kind, int start, int ref) {
   AVar *container = make_AVar(p->lvals.v[0], es);
   CreationSet *cs = creation_point(container, kind);
   cs->vars.fill(p->rvals.n - start);
