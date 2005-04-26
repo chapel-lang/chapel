@@ -28237,3 +28237,18 @@ Modified files:
 	chapel/compiler/symtab/: symtab.cpp 
 	chapel/compiler/include/: symtab.h 
 
+---------------------------------------------------------------------------
+
+04/26/05 11:16:07 -- shannon
+
+Log message:
+	Hopefully fixed a bug which was causing the printMemTable
+	test to fail.  On a realloc I was deleting the original
+	memory address from the table, then installing the
+	new address.  This caused a change in ordering of the
+	entries in the table.
+
+Modified files:
+	chapel/runtime/include/: chplmem.h 
+	chapel/runtime/src/: chplmem.c 
+
