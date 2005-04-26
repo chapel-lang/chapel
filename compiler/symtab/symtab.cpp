@@ -690,23 +690,59 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
                                        Expr* domain) {
   Symboltable::pushScope(SCOPE_FORLOOP);
   VarSymbol* indexVars = dynamic_cast<VarSymbol*>(indices);
-  if (!indexVars) {
-    // SJD: It is my thought that dtInteger should be dtUnknown. Then
-    // analysis can figure it out based on the type of the "domain"
-    // which may not be a domain but an array or a sequence too.
-    indexVars = defineVars(indices, dtInteger);
+  //RED: attempt to put in practice SJD's belief
+  if (!_dtinteger_IndexType_switch) {
+    if (!indexVars) {
+      // SJD: It is my thought that dtInteger should be dtUnknown. Then
+      // analysis can figure it out based on the type of the "domain"
+      // which may not be a domain but an array or a sequence too.
+      indexVars = defineVars(indices, dtInteger);
+    }
+    VarSymbol* var = indexVars;
+    DefExpr* defExpr = new DefExpr(var);
+    while (var->next) {
+      VarSymbol* tmp = var;
+      var = nextLink(VarSymbol, var);
+      tmp->next = NULL;
+      var->prev = NULL;
+      defExpr->append(new DefExpr(var));
+    }
+    ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
+    return for_loop_stmt;
   }
-  VarSymbol* var = indexVars;
-  DefExpr* defExpr = new DefExpr(var);
-  while (var->next) {
-    VarSymbol* tmp = var;
-    var = nextLink(VarSymbol, var);
-    tmp->next = NULL;
-    var->prev = NULL;
-    defExpr->append(new DefExpr(var));
+  //RED: here goes the index type logic
+  //Index type will typically be the domain->idxType if this is known
+  //E.g. for initialization of arrays
+  //Or dtUnknown, otherwise -- e.g. when after parsing a domain does not
+  //have an index type yet 
+  else{
+    if (!indexVars || (indexVars->type == dtUnknown)) {
+      DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
+      if (domain_type) {
+        indexVars = defineVars(indices, domain_type->idxType);
+      }
+      else{
+        //RED -- I think this should be dtUnknown if the index type of the domain is not known
+        //this is saving us from dangerous assumptions; another possibility was to make it dtinteger
+        //here, but I think that may cover incorrect behavior
+        indexVars = defineVars(indices, dtUnknown);
+      }
+      /*DefExpr* indices_def = new DefExpr(indexVars);
+      indexVars->setDefPoint(indices_def);
+      ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, indices_def, domain);*/
+      VarSymbol* var = indexVars;
+      DefExpr* defExpr = new DefExpr(var);
+      while (var->next) {
+        VarSymbol* tmp = var;
+        var = nextLink(VarSymbol, var);
+        tmp->next = NULL;
+        var->prev = NULL;
+        defExpr->append(new DefExpr(var));
+      }
+      ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
+      return for_loop_stmt;
+    }
   }
-  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
-  return for_loop_stmt;
 }
 
 
