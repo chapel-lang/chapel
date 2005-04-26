@@ -28252,3 +28252,15 @@ Modified files:
 	chapel/runtime/include/: chplmem.h 
 	chapel/runtime/src/: chplmem.c 
 
+---------------------------------------------------------------------------
+
+04/26/05 12:20:10 -- bradc
+
+Log message:
+	Breaking for lunch.
+
+Modified files:
+	bradcdoc/distNotes/: distNotes.tex 
+Added files:
+	bradcdoc/distNotes/: .cvsignore 
+
