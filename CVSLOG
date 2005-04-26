@@ -28264,3 +28264,34 @@ Modified files:
 Added files:
 	bradcdoc/distNotes/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/26/05 13:13:52 -- deitz
+
+Log message:
+	Added a new field
+	
+	  AssignOp* DefExpr::init
+	
+	that will eventually replace Expr* VarSymbol::init in assignment form
+	where the rhs is VarSymbol::init and the lhs is Variable of the
+	VarSymbol being defined in the DefExpr.
+	
+	I'm having trouble getting analysis to traverse this expression so,
+	John, could you take a look at it.  I added a runtime flag
+	--useNewInit for switching over to this.  This flag fills in this
+	expression, but VarSymbol::init remains as well.
+	
+	The major challenge to making this work was in Fixup to get it to
+	maintain the parentExpr and parentStmt of DefExpr::init, even though
+	it will be lost for the definitions of the symbols.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: driver.h expr.h symbol.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: checkSemantics.cpp fixup.cpp 
+	                             fixup.h insertAnonymousDomains.cpp 
+	                             resolveOverloadedOperators.cpp 
+
