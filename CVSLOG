@@ -28177,3 +28177,17 @@ Modified files:
 	chapel/compiler/main/: passlist.cpp passlist.h 
 	chapel/compiler/symtab/: resolveTypes.cpp resolveTypes.h 
 
+---------------------------------------------------------------------------
+
+04/25/05 18:57:44 -- jplevyak
+
+Log message:
+	Update the test results to reflect the new operator= for Index types.
+
+Modified files:
+	chapel/test/flowanalysis/newast/: declprintdom.good 
+	                                  declprintdom2.good 
+	                                  enumarray.good 
+	                                  formatoutput.good noop.good 
+	                                  protoast_test.good 
+
