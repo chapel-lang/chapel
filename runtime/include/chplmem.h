@@ -13,10 +13,6 @@ void setMemtable(void);
 void setMemthreshold(_integer64 value);
 void setMemtrace(char* memLogname);
 
-void installMemory(void* memPtr, size_t number, size_t size, 
-                   char* description);
-void removeMemory(void* memPtr);
-
 void* _chpl_malloc(size_t number, size_t size, char* description);
 void* _chpl_calloc(size_t number, size_t size, char* description);
 void  _chpl_free(void* ptr);

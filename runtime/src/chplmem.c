@@ -167,7 +167,7 @@ static memTableEntry* lookupMemory(void* memAlloc) {
 }
 
 
-void installMemory(void* memAlloc, size_t number, size_t size, 
+static void installMemory(void* memAlloc, size_t number, size_t size, 
                    char* description) {
   unsigned hashValue;
   memTableEntry* memEntry = lookupMemory(memAlloc);
@@ -207,7 +207,15 @@ void installMemory(void* memAlloc, size_t number, size_t size,
 }
 
 
-void removeMemory(void* memAlloc) {
+static void updateMemory(memTableEntry* memEntry, void* newAddress, 
+                         size_t number, size_t size) {
+  memEntry->memAlloc = newAddress;
+  memEntry->number = number;
+  memEntry->size = size;
+}
+
+
+static void removeMemory(void* memAlloc) {
   memTableEntry* memEntry = lookupMemory(memAlloc);
 
   if (memEntry) {
@@ -326,22 +334,30 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
     _chpl_free(memAlloc);
     return NULL;
   }
+
+  memTableEntry* memEntry;
   if (memtable) {
-    memTableEntry* memEntry = lookupMemory(memAlloc);
+    memEntry = lookupMemory(memAlloc);
     if (!memEntry && (memAlloc != NULL)) {
       fprintf(stderr, "***Error:  Attempting to realloc memory for %s that "
               "wasn't allocated***\n", description);
       exit(0);
     }
   }
+
   void* moreMemAlloc = realloc(memAlloc, chunk);
   confirm(moreMemAlloc, description);
+
   if (memtable) {
     if ((memAlloc != NULL)  && (moreMemAlloc != memAlloc)) {
-      removeMemory(memAlloc);
+      if (memEntry) {
+        updateMemory(memEntry, moreMemAlloc, number, size);
+      }
+    } else {
+      installMemory(moreMemAlloc, number, size, description);
     }
-    installMemory(moreMemAlloc, number, size, description);
   }
+
   if (memlog) {
     printToMemLog(number, size, description, "realloc", memAlloc, 
                   moreMemAlloc);
