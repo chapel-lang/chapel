@@ -108,22 +108,21 @@ void ResolveOverloadedOperators::postProcessExpr(Expr* expr) {
   if (fns.n != 1) {
     if (fns.n == 0) {
       INT_FATAL(expr, "Operator has no function");
-    }
-    else {
+    } else {
       INT_FATAL(expr, "Trouble resolving operator");
     }
-  }
-
-  Pragma* pr = fns.e[0]->defPoint->parentStmt->pragmas;
-  while (pr) {
-    if (!strcmp(pr->str, "builtin")) {
-      return;
+  } else {
+    Pragma* pr = fns.e[0]->defPoint->parentStmt->pragmas;
+    while (pr) {
+      if (!strcmp(pr->str, "builtin")) {
+        return;
+      }
+      pr = dynamic_cast<Pragma *>(pr->next);
     }
-    pr = dynamic_cast<Pragma *>(pr->next);
+    
+    Expr* args = op->left->copy();
+    args->append(op->right->copy());
+    FnCall* fn = new FnCall(new Variable(fns.e[0]), args);
+    expr->replace(fn);
   }
-
-  Expr* args = op->left->copy();
-  args->append(op->right->copy());
-  FnCall* fn = new FnCall(new Variable(fns.e[0]), args);
-  expr->replace(fn);
 }

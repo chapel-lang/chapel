@@ -16,6 +16,7 @@ Fixup::Fixup(void) :
   parentExprs.add(NULL);
   parentStmts.add(NULL);
   parentSymbols.add(NULL);
+  defSymbols.add(NULL);
 }
 
 
@@ -112,31 +113,45 @@ void Fixup::preProcessExpr(Expr* expr) {
   }
 
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    parentExprs.add(NULL);
-    parentStmts.add(NULL);
-    parentSymbols.add(def_expr->sym);
+    defSymbols.add(def_expr->sym);
     /*** Verify only one symbol per DefExpr ***/
     if (def_expr->sym && def_expr->sym->next) {
       INT_FATAL(def_expr, "Multiple symbols in DefExpr");
     }
-  } else {
-    parentExprs.add(expr);
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
+      if (useNewInit && var->init && !def_expr->init) {
+        INT_FATAL(def_expr, "Steve, DefExpr does not have VarSymbol->init");
+      }
+    }
   }
+
+  parentExprs.add(expr);
 }
 
 
 void Fixup::postProcessExpr(Expr* expr) {
   if (dynamic_cast<DefExpr*>(expr)) {
-    parentExprs.pop();
-    parentStmts.pop();
-    parentSymbols.pop();
-  } else {
-    parentExprs.pop();
+    defSymbols.pop();
+  }
+  parentExprs.pop();
+}
+
+
+void Fixup::preProcessSymbol(Symbol* sym) {
+  if (sym == defSymbols.v[defSymbols.n-1]) {
+    parentExprs.add(NULL);
+    parentStmts.add(NULL);
+    parentSymbols.add(sym);
   }
 }
 
 
 void Fixup::postProcessSymbol(Symbol* sym) {
+  if (sym == defSymbols.v[defSymbols.n-1]) {
+    parentExprs.pop();
+    parentStmts.pop();
+    parentSymbols.pop();
+  }
   if (verify) {
     verifyParentScope(sym);
     verifyDefPoint(sym);

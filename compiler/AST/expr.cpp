@@ -730,10 +730,14 @@ void Variable::codegen(FILE* outfile) {
 }
 
 
-DefExpr::DefExpr(Symbol* init_sym) :
+DefExpr::DefExpr(Symbol* initSym, AssignOp* initInit) :
   Expr(EXPR_DEF),
-  sym(init_sym) 
+  sym(initSym),
+  init(initInit)
 {
+  if (!useNewInit) {
+    init = NULL;
+  }
   sym->setDefPoint(this);
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     fn->formals->setDefPoint(this);
@@ -744,14 +748,25 @@ DefExpr::DefExpr(Symbol* init_sym) :
 
 Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (clone) {
-    return new DefExpr(sym->copyList(clone, map, analysis_clone));
+    return new DefExpr(sym->copy(clone, map, analysis_clone),
+                       dynamic_cast<AssignOp*>(init->copy(clone, map, analysis_clone)));
   } else {
-    return new DefExpr(sym);
+    return new DefExpr(sym, dynamic_cast<AssignOp*>(init->copy(clone, map, analysis_clone)));
+  }
+}
+
+
+void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == init) {
+    init = dynamic_cast<AssignOp*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in DefExpr::replaceChild(old, new)");
   }
 }
 
 
 void DefExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(init, traversal, false);
   TRAVERSE_DEF(sym, traversal, false);
 }
 

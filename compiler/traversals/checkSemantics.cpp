@@ -36,7 +36,9 @@ void CheckSemantics::preProcessExpr(Expr* expr) {
   AssignOp* assign = dynamic_cast<AssignOp*>(expr);
   if (assign){
     //printf("Assignment expression.\n"); 
-    checkAssignOp(assign);
+    if (!dynamic_cast<DefExpr*>(expr->parentExpr)) { // initialization okay
+      checkAssignOp(assign);
+    }
   }
   Variable* var = dynamic_cast<Variable*>(expr);
   if (var) {

@@ -87,9 +87,6 @@ class UnresolvedSymbol : public Symbol {
 class VarSymbol : public Symbol {
  public:
   varType varClass;
-  /*bool isConstant;
-  bool isParameter;*/
-  //Replaced with
   consType consClass;
   Expr* init;
   bool noDefaultInit;

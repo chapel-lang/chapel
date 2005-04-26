@@ -11,12 +11,14 @@ class Fixup : public Traversal {
   Vec<Stmt*> parentStmts;
   Vec<Symbol*> parentSymbols;
   int verify;
+  Vec<Symbol*> defSymbols;
 
   Fixup::Fixup();
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);
   virtual void postProcessExpr(Expr* expr);
+  virtual void preProcessSymbol(Symbol* sym);
   virtual void postProcessSymbol(Symbol* sym);
   void run(ModuleSymbol* moduleList);
 };

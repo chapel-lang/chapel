@@ -493,14 +493,22 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
 
   VarSymbol* varList = defineVars(idents, type, init);
 
-  DefExpr* defExpr = new DefExpr(varList);
+  AssignOp* assignOp =
+    (init) ? new AssignOp(GETS_NORM,
+                          new Variable(varList),
+                          useNewInit ? init->copy() : NULL) : NULL;
+  DefExpr* defExpr = new DefExpr(varList, assignOp);
   VarSymbol* var = varList;
   while (var->next) {
     VarSymbol* tmp = var;
     var = nextLink(VarSymbol, var);
     tmp->next = NULL;
     var->prev = NULL;
-    defExpr->append(new DefExpr(var));
+    AssignOp* assignOp =
+      (init) ? new AssignOp(GETS_NORM,
+                            new Variable(varList),
+                            useNewInit ? init->copy() : NULL) : NULL;
+    defExpr->append(new DefExpr(var, assignOp));
   }
   return defExpr;
 }

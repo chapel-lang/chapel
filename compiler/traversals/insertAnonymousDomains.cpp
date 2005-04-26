@@ -50,7 +50,11 @@ void InsertAnonymousDomains::preProcessType(Type* type) {
 
   SymScope* saveScope = Symboltable::setCurrentScope(currentScope);
   VarSymbol* domain_sym = new VarSymbol(name, domain_type, forall->copy());
-  DefExpr* def_expr = new DefExpr(domain_sym);
+  AssignOp* assignOp =
+    new AssignOp(GETS_NORM,
+                 new Variable(domain_sym),
+                 forall->copy());
+  DefExpr* def_expr = new DefExpr(domain_sym, assignOp);
   DefStmt* def_stmt = new DefStmt(def_expr);
   ForallExpr* new_forall = new ForallExpr(new Variable(domain_sym), forall->indices);
   array_type->domain->replace(new_forall);

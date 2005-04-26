@@ -224,41 +224,6 @@ class StringLiteral : public Literal {
 };
 
 
-class Variable : public Expr {
- public:
-  Symbol* var;
-
-  Variable(Symbol* init_var);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-
-  void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-  virtual bool isConst(void);
-  virtual bool isParam(void);
-  virtual bool isComputable();
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class DefExpr : public Expr {
- public:
-  Symbol* sym;
-
-  DefExpr(Symbol* init_sym);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-  void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-
-  Vec<VarSymbol*>* varDefSet();
-};
-
-
 class UnOp : public Expr {
  public:
   unOpType type;
@@ -323,6 +288,43 @@ class SpecialBinOp : public BinOp {
   Type* typeInfo(void);
 
   precedenceType precedence(void);
+};
+
+
+class DefExpr : public Expr {
+ public:
+  Symbol* sym;
+  AssignOp* init;
+
+  DefExpr(Symbol* initSym, AssignOp* initInit = NULL);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseExpr(Traversal* traversal);
+
+  Type* typeInfo(void);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+
+  Vec<VarSymbol*>* varDefSet();
+};
+
+
+class Variable : public Expr {
+ public:
+  Symbol* var;
+
+  Variable(Symbol* init_var);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  void traverseExpr(Traversal* traversal);
+
+  Type* typeInfo(void);
+  virtual bool isConst(void);
+  virtual bool isParam(void);
+  virtual bool isComputable();
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
