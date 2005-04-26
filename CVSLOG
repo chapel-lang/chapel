@@ -28191,3 +28191,26 @@ Modified files:
 	                                  formatoutput.good noop.good 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+04/25/05 20:55:34 -- bradc
+
+Log message:
+	Fixed a bug Roxana found with my third-party
+	make clobber rule in that it wouldn't blow
+	away the .lastbuild files that were created
+	and would therefore squelch future builds.
+	Clobber now blows them away.
+	
+	Clean does not because it does not blow away
+	the targets that were created (and tucked into
+	a platform-specific directory), so rebuilding
+	is not typically needed.  Cleaning in these
+	directories is designed more to clean out
+	the source directories themselves, as provided
+	by the third-parties.
+
+Modified files:
+	chapel/third-party/boehmgc/: Makefile 
+	chapel/third-party/dparser/: Makefile 
+
