@@ -33,7 +33,7 @@ clean:
 
 clobber:
 	cd $(D_PARSER_DIRNAME) && $(MAKE) clean
-	rm -rf ./$(PLATFORM)
+	rm -rf ./$(PLATFORM) .lastbuild .lastbuild.tmp
 
 $(PLATFORM)/bin: $(PLATFORM_DIR)
 	mkdir -p ./$@

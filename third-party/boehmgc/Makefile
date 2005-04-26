@@ -21,7 +21,7 @@ clean:
 
 clobber:
 	cd $(GC_DIRNAME) && $(MAKE) clean
-	rm -rf ./$(PLATFORM)
+	rm -rf ./$(PLATFORM) .lastbuild .lastbuild.tmp
 
 .lastbuild:
 	@echo "never-build" > .lastbuild
