@@ -28214,3 +28214,26 @@ Modified files:
 	chapel/third-party/boehmgc/: Makefile 
 	chapel/third-party/dparser/: Makefile 
 
+---------------------------------------------------------------------------
+
+04/26/05 09:54:56 -- roxana
+
+Log message:
+	Started integrating my index type insertion with Steve's dtInteger
+	assumption. The idea is to make the transition smoother and wait for changes to forall
+	loops to handle at least tuples of integers, rather that integer symbols.
+	
+	My version will work when the _dtInteger_IndexType_switch is
+	turned on. It will break most of the tests that are working under
+	Steve's assumption, but it will pass some tests that are not. For any
+	purpose other than local playing around with it, this flag should
+	be off.
+	
+	For now there is not much to play with -- checking in just to
+	avoid Steve's changes (typically to the same lines of code
+	I work on) mangling my code.
+
+Modified files:
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/include/: symtab.h 
+
