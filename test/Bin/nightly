@@ -176,7 +176,7 @@ if ($uwusername eq "") {
     $uwusername = $user;
 }
 $cvsroot = ":pserver:$uwusername\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot";
-mysystem("cd $tmpdir && cvs -d $cvsroot checkout chapel", "cvs checkout", 1, 1);
+mysystem("cd $tmpdir && cvs -d $cvsroot checkout nightly", "cvs checkout", 1, 1);
 
 
 #
