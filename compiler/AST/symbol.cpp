@@ -229,7 +229,10 @@ VarSymbol::VarSymbol(char* init_name,
 
 
 Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new VarSymbol(copystring(name), type, varClass, consClass);
+  VarSymbol* newVarSymbol = 
+    new VarSymbol(copystring(name), type, varClass, consClass);
+  newVarSymbol->noDefaultInit = noDefaultInit;
+  return newVarSymbol;
 }
 
 

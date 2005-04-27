@@ -118,9 +118,6 @@ void Fixup::preProcessExpr(Expr* expr) {
     if (def_expr->sym && def_expr->sym->next) {
       INT_FATAL(def_expr, "Multiple symbols in DefExpr");
     }
-//    if (!def_expr->init) {
-//      INT_FATAL(def_expr, "Steve, DefExpr does not have an init");
-//    }
   }
 
   parentExprs.add(expr);
@@ -153,6 +150,11 @@ void Fixup::postProcessSymbol(Symbol* sym) {
   if (verify) {
     verifyParentScope(sym);
     verifyDefPoint(sym);
+//     if (dynamic_cast<TypeSymbol*>(sym)) {
+//       if (sym->type->symbol != sym) {
+// 	INT_FATAL(sym, "(TypeSymbol)sym->type->symbol != sym!");
+//       }
+//     }
   }
 }
 

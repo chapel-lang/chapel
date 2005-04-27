@@ -105,28 +105,25 @@ static void insert_domain_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
 
 static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
-  Stmt* init_stmt = NULL;
-  if (type->defaultVal) {
+  if (var->noDefaultInit) {
+    return new NoOpStmt();
+  } else if (type->defaultVal) {
     Expr* lhs = new Variable(var);
     Expr* rhs = type->defaultVal->copy();
     Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
-    init_stmt = new ExprStmt(init_expr);
+    return new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
-    if (var->noDefaultInit) {
-      return new NoOpStmt();
-    }
     Expr* lhs = new Variable(var);
     Expr* constructor_variable = new Variable(type->defaultConstructor);
     Expr* rhs = new FnCall(constructor_variable, NULL);
     Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
-    init_stmt = new ExprStmt(init_expr);
+    return new ExprStmt(init_expr);
+  } else if (dynamic_cast<IndexType*>(type)) {
+    return new NoOpStmt();
   } else {
-    if (dynamic_cast<IndexType*>(type)) {
-      return new NoOpStmt();
-    }
     INT_FATAL(var, "Failed to insert default initialization");
+    return new NoOpStmt();
   }
-  return init_stmt;
 }
 
 
