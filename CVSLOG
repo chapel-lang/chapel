@@ -28295,3 +28295,23 @@ Modified files:
 	                             fixup.h insertAnonymousDomains.cpp 
 	                             resolveOverloadedOperators.cpp 
 
+---------------------------------------------------------------------------
+
+04/26/05 17:10:19 -- jplevyak
+
+Log message:
+	Move ->init from VarSymbol to DefExpr.
+	Also changed DefExpr::init from an AssignOp to an Expr.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             checkSemantics.cpp 
+	                             createConfigVarTable.cpp fixup.cpp 
+	                             insertAnonymousDomains.cpp 
+	                             insertVariableInitializations.cpp 
+
