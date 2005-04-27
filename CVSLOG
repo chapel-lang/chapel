@@ -28352,3 +28352,28 @@ Modified files:
 	                             removeSeqOperations.cpp 
 	                             updateSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/27/05 11:23:30 -- jplevyak
+
+Log message:
+	Added new UserInitExpr ast Type.
+	This is the type of DefExpr::init, and it is used to resolve
+	any overloaded = as a result of user initialization.  For example:
+	
+	  var x : C = b;
+	
+	Here the default constructor for C is classed and then an overloaded
+	operator = is called with arguments x and b.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: checkSemantics.cpp 
+	                             createConfigVarTable.cpp 
+	                             insertAnonymousDomains.cpp 
+	                             insertVariableInitializations.cpp 
+	                             verifyASTType.cpp 
+
