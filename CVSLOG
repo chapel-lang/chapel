@@ -28377,3 +28377,24 @@ Modified files:
 	                             insertVariableInitializations.cpp 
 	                             verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+04/27/05 15:09:13 -- deitz
+
+Log message:
+	Improved support for the noDefaultInit bool on VarSymbols.  If it is
+	set, we don't output defaultVal or defaultConstructor initialization.
+	We may want a bool for each.  Also, have we decided we'll output both
+	initializers if both exist or just one?  Also with this checkin, this
+	bool is copied when the VarSymbol is.
+	
+	Added commented-out code in Fixup to verify that
+	TypeSymbol::type::symbol == TypeSymbol.  I'll check this in.  We can
+	turn it on when we start instantiating type variables correctly.  I
+	think John is working on this.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: fixup.cpp 
+	                             insertVariableInitializations.cpp 
+
