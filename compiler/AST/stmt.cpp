@@ -93,7 +93,7 @@ Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 
   new_stmt->lineno = lineno;
   new_stmt->filename = filename;
-  //new_stmt->pragmas = pragmas;
+  new_stmt->pragmas = pragmas;
   if (!RunAnalysis::isRunning) {
     new_stmt->ainfo = ainfo;
   }

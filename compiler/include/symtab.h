@@ -32,6 +32,7 @@ class Symboltable {
   static ModuleSymbol* getModuleList(moduleSet modules);
   static FnSymbol* getCurrentFn(void);
 
+  static void undefineInScope(Symbol* sym, SymScope* scope);
   static void defineInScope(Symbol* sym, SymScope* scope);
   static void define(Symbol* sym);
 

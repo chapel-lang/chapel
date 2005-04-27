@@ -14,6 +14,9 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
   if (sym->parentScope->type == SCOPE_INTRINSIC) {
     return;
   }
+  if (sym->keepLive) {
+    return;
+  }
 
 #ifdef USE_AST_IS_USED
   if (!AST_is_used(sym)) {

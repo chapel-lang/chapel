@@ -2,22 +2,22 @@ class Index {
 }
 
 pragma "omit for noanalysis" class Array {
-  function this(i) {
+  pragma "omit for noanalysis" function this(i) {
     return __primitive("array_index", this, i);
   }
-  function this(i, j) {
+  pragma "omit for noanalysis" function this(i, j) {
     return __primitive("array_index", this, i, j);
   }
-  function this(i, j, k) {
+  pragma "omit for noanalysis" function this(i, j, k) {
     return __primitive("array_index", this, i, j, k);
   }
-  function set(i, x) {
+  pragma "omit for noanalysis" function set(i, x) {
     return __primitive("array_set", this, i, x);
   }
-  function set(i, j, x) {
+  pragma "omit for noanalysis" function set(i, j, x) {
     return __primitive("array_set", this, i, j, x);
   }
-  function set(i, j, k, x) {
+  pragma "omit for noanalysis" function set(i, j, k, x) {
     return __primitive("array_set", this, i, j, k, x);
   }
 }
@@ -112,7 +112,7 @@ pragma "omit for noanalysis" class _seq {
   var first : _node;
   var last : _node;
 
-  function append(e : elementType) : _seq {
+  pragma "omit for noanalysis" function append(e : elementType) : _seq {
     var new : _node;
     new = _node();
     new.element = e;
@@ -127,7 +127,7 @@ pragma "omit for noanalysis" class _seq {
     return this;
   }
 
-  function prepend(e : elementType) : _seq {
+  pragma "omit for noanalysis" function prepend(e : elementType) : _seq {
     var new : _node;
     new = _node();
     new.element = e;
@@ -142,14 +142,14 @@ pragma "omit for noanalysis" class _seq {
     return this;
   }
 
-  function concat(s : _seq) : _seq {
+  pragma "omit for noanalysis" function concat(s : _seq) : _seq {
     last.next = s.first;
     last = s.last;
     length += s.length;
     return this;
   }
 
-  function copy() : _seq {
+  pragma "omit for noanalysis" function copy() : _seq {
     var new : _seq;
     new = _seq();
     for e in this {

@@ -867,6 +867,26 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   TypeSymbol* new_seq_sym = new TypeSymbol(new_seq_name, new_seq_type);
   new_seq_type->addSymbol(new_seq_sym);
 
+  Symbol* _append = Symboltable::lookupInternal("append");
+  _append->keepLive = true;
+  DefStmt* appendDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_append->defPoint->copy(true)));
+  new_seq_type->addDeclarations(appendDefStmt);
+
+  Symbol* _prepend = Symboltable::lookupInternal("prepend");
+  _prepend->keepLive = true;
+  DefStmt* prependDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_prepend->defPoint->copy(true)));
+  new_seq_type->addDeclarations(prependDefStmt);
+
+  Symbol* _concat = Symboltable::lookupInternal("concat");
+  _concat->keepLive = true;
+  DefStmt* concatDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_concat->defPoint->copy(true)));
+  new_seq_type->addDeclarations(concatDefStmt);
+
+  Symbol* _copy = Symboltable::lookupInternal("copy");
+  _copy->keepLive = true;
+  DefStmt* copyDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_copy->defPoint->copy(true)));
+  new_seq_type->addDeclarations(copyDefStmt);
+
   /*** set class bindings and this ***/
   forv_Vec(FnSymbol, method, new_seq_type->methods) {
     method->classBinding = new_seq_sym;
@@ -874,11 +894,27 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
     method->cname = glomstrings(3, new_seq_sym->name, "_", method->cname);
   }
 
+  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
+  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
+  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
+  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
+  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
+  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
+  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
+
   /*** update _seq type to new type ***/
   Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
   map->put(_seq, new_seq_sym);
   map->put(_seq_type, new_seq_type);
   map->put(_seq_type->types.v[0]->type, new_seq_type->elementType);
+  map->put(_seq_type->types.v[1]->type, new_seq_type->types.v[0]->type);
+  map->put(dynamic_cast<StructuralType*>(_seq_type->types.v[1]->type)->fields.v[0],
+           dynamic_cast<StructuralType*>(new_seq_type->types.v[0]->type)->fields.v[0]);
+  map->put(dynamic_cast<StructuralType*>(_seq_type->types.v[1]->type)->fields.v[1],
+           dynamic_cast<StructuralType*>(new_seq_type->types.v[0]->type)->fields.v[1]);
+  map->put(_seq_type->fields.v[0], new_seq_type->fields.v[0]);
+  map->put(_seq_type->fields.v[1], new_seq_type->fields.v[1]);
+  map->put(_seq_type->fields.v[2], new_seq_type->fields.v[2]);
   TRAVERSE_LS(new_decls, new UpdateSymbols(map), true);
 
   Symbol* _node = Symboltable::lookupInScope("_node", new_seq_scope);
@@ -1216,6 +1252,9 @@ void StructuralType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
   }
   if (!declarationList) {
     declarationList = newDeclarations;
+    if (symbol && symbol->defPoint) {
+      fixup_expr(symbol->defPoint);
+    }
   } else if (beforeStmt) {
     beforeStmt->insertBefore(newDeclarations);
   } else {

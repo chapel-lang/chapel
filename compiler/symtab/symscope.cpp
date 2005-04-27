@@ -95,11 +95,10 @@ void SymScope::remove(Symbol* sym) {
   if (firstSym == lastSym) {
     FnSymbol* fn = dynamic_cast<FnSymbol*>(firstSym->pSym);
     if (!fn || !fn->overload) {
-      if (firstSym->pSym != sym) {
-        INT_FATAL(sym, "Symbol not found in scope from which deleted");
-      } else {
+      if (firstSym->pSym == sym) {
         firstSym = NULL;
         lastSym = NULL;
+        return;
       }
     } else {
       FnSymbol* prev = NULL;
@@ -149,13 +148,10 @@ void SymScope::remove(Symbol* sym) {
           fn = fn->overload;
         }
       }
-      if (tmp == lastSym) {
-        INT_FATAL(sym, "Symbol not found in scope from which deleted");
-      } else {
-        tmp = nextLink(SymLink, tmp);
-      }
+      tmp = nextLink(SymLink, tmp);
     }
   }
+  INT_FATAL(sym, "Symbol not found in scope from which deleted");
 }
 
 
@@ -400,16 +396,18 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   for(SymLink* tmp = firstSym; tmp; tmp = nextLink(SymLink, tmp)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp->pSym)) {
       while (fn) {
-        char *n = if1_cannonicalize_string(if1, fn->name);
-        Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-        if (!fs) fs = new Vec<FnSymbol*>;
-        fs->add(fn);
-        visibleFunctions.put(n, fs);
+        if (!fn->classBinding) {
+          char *n = if1_cannonicalize_string(if1, fn->name);
+          Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+          if (!fs) fs = new Vec<FnSymbol*>;
+          fs->add(fn);
+          visibleFunctions.put(n, fs);
+        }
         fn = fn->overload;
       }
     } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
       if (StructuralType* structType = dynamic_cast<StructuralType*>(type_sym->type)) {
-        if (dynamic_cast<RecordType*>(structType) || dynamic_cast<UnionType*>(structType)) {
+        if (!dynamic_cast<ClassType*>(structType)) {
           forv_Vec(FnSymbol, method, structType->methods) {
             while (method) {
               char *n = if1_cannonicalize_string(if1, method->name);

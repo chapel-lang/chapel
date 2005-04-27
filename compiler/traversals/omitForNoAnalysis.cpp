@@ -45,10 +45,13 @@ void OmitForNoAnalysis::postProcessStmt(Stmt* stmt) {
           /*** SJD: Ugh -- We only omit for sub symbols in a class type
                because it is difficult to start a symtab traversal on
                a symbol. Should ask Brad (BLC) about this. ***/
-          if (ClassType* ctype = dynamic_cast<ClassType*>(sym->type)) {
+          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+            KillSubSymbols traversal;
+            Symboltable::traverseFromScope(&traversal, fn->paramScope);
+          } else if (ClassType* ctype = dynamic_cast<ClassType*>(sym->type)) {
             KillSubSymbols traversal;
             Symboltable::traverseFromScope(&traversal, ctype->structScope);
-          }
+          } 
           sym = nextLink(Symbol, sym);
         }
         def_expr = nextLink(DefExpr, def_expr);

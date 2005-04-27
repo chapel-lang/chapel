@@ -162,6 +162,11 @@ ModuleSymbol* Symboltable::getModuleList(moduleSet whichModules) {
 }
 
 
+void Symboltable::undefineInScope(Symbol* sym, SymScope* scope) {
+  scope->remove(sym); // overload logic there, for some reason
+}
+
+
 void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
   Symbol* prevDefInScope = Symboltable::lookupInScope(sym->name, scope);
   if (prevDefInScope) {

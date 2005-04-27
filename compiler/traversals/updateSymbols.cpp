@@ -22,6 +22,16 @@ void UpdateSymbols::preProcessExpr(Expr* expr) {
         }
       }
     }
+  } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
+    for (int i = 0; i < copy_map->n; i++) {
+      if (copy_map->v[i].key == defExpr->sym->type) {
+        if (Type* new_type = dynamic_cast<Type*>(copy_map->v[i].value)) {
+          defExpr->sym->type = new_type;
+        } else {
+          INT_FATAL("Major error in UpdateSymbols");
+        }
+      }
+    }
   }
 }
 

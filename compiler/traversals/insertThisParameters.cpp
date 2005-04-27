@@ -40,16 +40,13 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
           classBindingType->methods.add(fn);
           Symboltable::defineInScope(fn, classBindingType->structScope);
           fn->paramScope->parent = classBindingType->structScope;
-        }
-        else {
+        } else {
           USR_FATAL(fn, "Function is not bound to legal class");
         }
-      }
-      else {
+      } else {
         USR_FATAL(fn, "Function is not bound to legal class");
       }
-    }
-    else {
+    } else {
       USR_FATAL(fn, "Function is not bound to legal class");
     }
   }
@@ -72,6 +69,24 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
       this_insert = appendLink(this_insert, fn->formals);
       fn->formals = this_insert;
       fn->_this = this_insert;
+    }
+  }
+
+  /***
+   *** Move function out of class scope
+   ***/
+  if (TypeSymbol* class_symbol = dynamic_cast<TypeSymbol*>(fn->classBinding)) {
+    if (def_stmt->parentSymbol == class_symbol) {
+      if (StructuralType* class_type = dynamic_cast<StructuralType*>(class_symbol->type)) {
+        class_symbol->defPoint->parentStmt->insertBefore(def_stmt->copy());
+        Symboltable::undefineInScope(fn, class_type->structScope);
+        fn->overload = NULL; // Drop it on the ground since we're
+                             // going to put all of the functions in
+                             // the class scope into the scope before.
+                             // They'll be rebuilt.
+        Symboltable::defineInScope(fn, class_symbol->parentScope);
+        def_stmt->extract();
+      }
     }
   }
 }

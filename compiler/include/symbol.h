@@ -36,6 +36,7 @@ class Symbol : public BaseAST {
   Type* type;
   bool exportMe;
   bool isDead;
+  bool keepLive;
   DefExpr* defPoint; /* Point of definition */
   Pragma *pragmas;
 

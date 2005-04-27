@@ -31,7 +31,13 @@ void ExpandSeqExprAssignments::postProcessStmt(Stmt* stmt) {
   }
 
   for (Expr* tmp = seq_expr->exprls; tmp; tmp = nextLink(Expr, tmp)) {
-    Symbol* fn = Symboltable::lookupInScope("append", seq_type->structScope);
+
+    FnSymbol* fn = NULL;
+    forv_Vec(FnSymbol, method, seq_type->methods) {
+      if (!strcmp(method->name, "append")) {
+        fn = method;
+      }
+    }
 
     if (!fn) {
       INT_FATAL(seq_type, "Cannot find append function in sequence type");
