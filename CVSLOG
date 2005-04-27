@@ -28326,3 +28326,29 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/27/05 10:20:09 -- deitz
+
+Log message:
+	Decoupled user-written methods from the class.  Their scope is now
+	reset when "this" is inserted into their formal parameter list.  For
+	user methods, this should allow the method to stay alive even if the
+	class dies.
+	
+	Added a new boolean to symbols called keepLive which we use not to
+	remove functions even if analysis thinks they are dead.  I'm not sure
+	this is necessary yet, but I think it is a worthwhile addition.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h symtab.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp symscope.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: expandSeqExprAssignments.cpp 
+	                             insertThisParameters.cpp 
+	                             omitForNoAnalysis.cpp 
+	                             removeSeqOperations.cpp 
+	                             updateSymbols.cpp 
+
