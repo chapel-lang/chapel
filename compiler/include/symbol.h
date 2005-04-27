@@ -88,12 +88,10 @@ class VarSymbol : public Symbol {
  public:
   varType varClass;
   consType consClass;
-  Expr* init;
   bool noDefaultInit;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
-            Expr* init_expr = NULL,
             varType init_varClass = VAR_NORMAL, consType init_consClass = VAR_VAR);
             
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

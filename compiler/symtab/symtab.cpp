@@ -433,9 +433,9 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   // the domain expression and we need that to be duplicated for each
   // array variable.
   if (!type->symbol && dynamic_cast<ArrayType*>(type)) {
-    newVar = new VarSymbol(idents->name, type->copy(), init->copy(), vartag, constag);
+    newVar = new VarSymbol(idents->name, type->copy(), vartag, constag);
   } else {
-    newVar = new VarSymbol(idents->name, type, init->copy(), vartag, constag);
+    newVar = new VarSymbol(idents->name, type, vartag, constag);
   }
 
   varList = newVar;
@@ -444,9 +444,9 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
   idents = nextLink(Symbol, idents);
   while (idents != NULL) {
     if (!type->symbol && dynamic_cast<ArrayType*>(type)) {
-      newVar = new VarSymbol(idents->name, type->copy(), init->copy(), vartag, constag);
+      newVar = new VarSymbol(idents->name, type->copy(), vartag, constag);
     } else {
-      newVar = new VarSymbol(idents->name, type, init->copy(), vartag, constag);
+      newVar = new VarSymbol(idents->name, type, vartag, constag);
     }
     lastVar->next = newVar;
     lastVar = newVar;
@@ -493,22 +493,13 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
 
   VarSymbol* varList = defineVars(idents, type, init);
 
-  AssignOp* assignOp =
-    (init) ? new AssignOp(GETS_NORM,
-                          new Variable(varList),
-                          useNewInit ? init->copy() : NULL) : NULL;
-  DefExpr* defExpr = new DefExpr(varList, assignOp);
+  DefExpr* defExpr = new DefExpr(varList, init ? init->copy() : NULL);
   VarSymbol* var = varList;
   while (var->next) {
     VarSymbol* tmp = var;
     var = nextLink(VarSymbol, var);
-    tmp->next = NULL;
-    var->prev = NULL;
-    AssignOp* assignOp =
-      (init) ? new AssignOp(GETS_NORM,
-                            new Variable(varList),
-                            useNewInit ? init->copy() : NULL) : NULL;
-    defExpr->append(new DefExpr(var, assignOp));
+    tmp->next = var->prev = NULL;
+    defExpr->append(new DefExpr(var, init ? init->copy() : NULL));
   }
   return defExpr;
 }
@@ -523,8 +514,8 @@ DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
     while (var) {
       var->consClass = constag;
       var->varClass = vartag;
-      if (constag == VAR_PARAM && !var->init){
-        USR_FATAL(var->init, "No initializer for parameter.");
+      if (constag == VAR_PARAM && !var->defPoint->init){
+        USR_FATAL(var->defPoint->init, "No initializer for parameter.");
       }
       var = nextLink(VarSymbol, var);
     }
@@ -767,7 +758,8 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
 
 ForallExpr* Symboltable::defineQueryDomain(char* name) {
   DomainType* unknownDomType = new DomainType();
-  VarSymbol* newDomSym = new VarSymbol(name, unknownDomType, NULL, VAR_NORMAL, VAR_CONST);
+  VarSymbol* newDomSym = 
+    new VarSymbol(name, unknownDomType, VAR_NORMAL, VAR_CONST);
   Variable* newDom = new Variable(newDomSym);
 
   return new ForallExpr(newDom);

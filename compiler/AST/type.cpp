@@ -1281,14 +1281,14 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
       if (analyzeAST) {
         rhs = new Variable(ptmp);
       } else {
-        if (tmp->init) {
-          rhs = tmp->init->copy();
+        if (tmp->defPoint->init) {
+          rhs = tmp->defPoint->init->copy();
         } else if (tmp->type != dtUnknown) {
           rhs = tmp->type->defaultVal->copy();
         }
       }
     } else {
-      rhs = tmp->init ? tmp->init->copy() : NULL;
+      rhs = tmp->defPoint->init ? tmp->defPoint->init->copy() : NULL;
       if (!rhs) {
         continue;
       }

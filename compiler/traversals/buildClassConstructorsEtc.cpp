@@ -25,7 +25,7 @@ static void build_constructor(StructuralType* structType) {
       forv_Vec(VarSymbol, tmp, structType->fields) {
         char* name = tmp->name;
         Type* type = tmp->type;
-        Expr* init = (tmp->init) ? tmp->init->copy() : new VarInitExpr(tmp);
+        Expr* init = (tmp->defPoint->init) ? tmp->defPoint->init->copy() : new VarInitExpr(tmp);
         ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, init);
         args = appendLink(args, arg);
       }

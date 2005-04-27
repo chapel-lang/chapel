@@ -96,7 +96,7 @@ static ArgumentDescription arg_desc[] = {
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
  {"useNewConstructor", ' ', "Use constructor with named parameters", "F", &useNewConstructor, NULL, NULL},
- {"useNewInit", ' ', "Use init on DefExpr", "F", &useNewInit, NULL, NULL},
+ {"useNewInit", ' ', "Use init on DefExpr", "F", &useNewInit, "CHPL_NEW_INIT", NULL},
  {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 

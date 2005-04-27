@@ -294,9 +294,9 @@ class SpecialBinOp : public BinOp {
 class DefExpr : public Expr {
  public:
   Symbol* sym;
-  AssignOp* init;
+  Expr* init;
 
-  DefExpr(Symbol* initSym, AssignOp* initInit = NULL);
+  DefExpr(Symbol* initSym, Expr* initInit = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);

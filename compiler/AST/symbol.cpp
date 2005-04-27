@@ -203,13 +203,11 @@ void UnresolvedSymbol::traverseDefSymbol(Traversal* traversal) {
 
 VarSymbol::VarSymbol(char* init_name,
                      Type* init_type,
-                     Expr* init_expr,
                      varType init_varClass, 
                      consType init_consClass) :
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
-  init(init_expr),
   noDefaultInit(false)
 {
 #ifdef NUMBER_VAR_SYMBOLS_UNIQUELY
@@ -230,16 +228,12 @@ VarSymbol::VarSymbol(char* init_name,
 
 
 Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new VarSymbol(copystring(name), type, init->copy(clone, map, analysis_clone), varClass, consClass);
+  return new VarSymbol(copystring(name), type, varClass, consClass);
 }
 
 
 void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == init) {
-    init = dynamic_cast<Expr*>(new_ast);
-  } else {
-    type->replaceChild(old_ast, new_ast);
-  }
+  type->replaceChild(old_ast, new_ast);
 }
 
 
@@ -254,7 +248,6 @@ void VarSymbol::traverseDefSymbol(Traversal* traversal) {
     }
   }
   TRAVERSE(type, traversal, false);
-  TRAVERSE(init, traversal, false);
   if (saveScope) {
     Symboltable::setCurrentScope(saveScope);
   }
@@ -280,16 +273,6 @@ void VarSymbol::printDef(FILE* outfile) {
   print(outfile);
   fprintf(outfile, ": ");
   type->print(outfile);
-  if (init) {
-    fprintf(outfile, " = ");
-    if (!init->next) {
-      init->print(outfile);
-    } else {
-      fprintf(outfile, "(");
-      init->printList(outfile);
-      fprintf(outfile, ")");
-    }
-  }
 }
 
 
@@ -749,9 +732,8 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
       Variable* actual_change =
         dynamic_cast<Variable*>(argList->get(count));
       char* temp_name = glomstrings(2, "_coercion_temp_", formal_change->name);
-      VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
-                                             new Variable(formal_change));
-      DefExpr* temp_def_expr = new DefExpr(temp_symbol);
+      VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type);
+      DefExpr* temp_def_expr = new DefExpr(temp_symbol, new Variable(formal_change));
       DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
       temp_def_stmt->append(wrapper_body);
       wrapper_body = temp_def_stmt;
@@ -810,9 +792,9 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
           dynamic_cast<Variable*>(argList->get(count));
         char* temp_name =
           glomstrings(2, "_default_param_temp_", formal_change->name);
-        VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type,
-                                               ((ParamSymbol*)formal_change)->init->copy());
-        DefExpr* temp_def_expr = new DefExpr(temp_symbol);
+        VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type);
+        DefExpr* temp_def_expr = new DefExpr(temp_symbol,
+                                             ((ParamSymbol*)formal_change)->init->copy());
         DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
         temp_def_stmt->append(wrapper_body);
         wrapper_body = temp_def_stmt;

@@ -1122,6 +1122,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       s->must_implement = unalias_type(type->asymbol->sym);
   }
   FnSymbol *f = def->parentStmt->parentFunction();
+  Expr *init = def->init;
   int this_constructor = f && f->isConstructor && var->isThis();
   int this_is_init = type->defaultVal &&
     dynamic_cast<Variable*>(type->defaultVal) &&
@@ -1171,7 +1172,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
         gen_alloc(s, s->type, ast, f && f->_this == var);
         break;
     }
-  } else if (!var->init) {
+  } else if (!init) {
     // THIS IS THE STANDARD CODE
   Lstandard:
     if (!this_is_init && var->type->defaultVal) {
@@ -1182,17 +1183,17 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
     } else if (!this_constructor)
       if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
   }
-  if (var->init) {
+  if (init) {
     if (type->astType == TYPE_ARRAY) {
       ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
-      if1_gen(if1, &ast->code, var->init->ainfo->code);
-      gen_set_array(s, at, var->init->ainfo->rval, ast);
+      if1_gen(if1, &ast->code, init->ainfo->code);
+      gen_set_array(s, at, init->ainfo->rval, ast);
     } else {
       // THIS IS THE STANDARD CODE
-      if1_gen(if1, &ast->code, var->init->ainfo->code);
-      Sym *val = var->init->ainfo->rval;
+      if1_gen(if1, &ast->code, init->ainfo->code);
+      Sym *val = init->ainfo->rval;
       if (is_scalar_type(type)) {
-        if (type != var->init->typeInfo())
+        if (type != init->typeInfo())
           val = gen_coerce(val, s->type, &ast->code, ast);
         if1_move(if1, &ast->code, val, ast->sym, ast);
       } else if (!is_reference_type(type) && type != dtUnknown) {
@@ -1864,8 +1865,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       while (def_expr) {
         VarSymbol *vs = dynamic_cast<VarSymbol*>(def_expr->sym);
         while (vs) {
-          if1_gen(if1, &s->ainfo->code, vs->init->ainfo->code);
-          if1_move(if1, &s->ainfo->code, vs->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
+          if1_gen(if1, &s->ainfo->code, def_expr->init->ainfo->code);
+          if1_move(if1, &s->ainfo->code, def_expr->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
           vs = dynamic_cast<VarSymbol*>(vs->next);
         }
         def_expr = nextLink(DefExpr, def_expr);

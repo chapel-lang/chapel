@@ -715,9 +715,9 @@ bool Variable::isParam(void){
 }
 //Roxana
 bool Variable::isComputable(void){
-        VarSymbol* vs = dynamic_cast<VarSymbol*>(var);
-        if (vs && vs->init) return vs->init->isComputable();
-        return false;
+  VarSymbol* vs = dynamic_cast<VarSymbol*>(var);
+  if (vs && vs->defPoint->init) return vs->defPoint->init->isComputable();
+  return false;
 }
 
 void Variable::print(FILE* outfile) {
@@ -730,14 +730,11 @@ void Variable::codegen(FILE* outfile) {
 }
 
 
-DefExpr::DefExpr(Symbol* initSym, AssignOp* initInit) :
+DefExpr::DefExpr(Symbol* initSym, Expr* initInit) :
   Expr(EXPR_DEF),
   sym(initSym),
   init(initInit)
 {
-  if (!useNewInit) {
-    init = NULL;
-  }
   sym->setDefPoint(this);
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     fn->formals->setDefPoint(this);
@@ -749,16 +746,16 @@ DefExpr::DefExpr(Symbol* initSym, AssignOp* initInit) :
 Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (clone) {
     return new DefExpr(sym->copy(clone, map, analysis_clone),
-                       dynamic_cast<AssignOp*>(init->copy(clone, map, analysis_clone)));
+                       init->copy(clone, map, analysis_clone));
   } else {
-    return new DefExpr(sym, dynamic_cast<AssignOp*>(init->copy(clone, map, analysis_clone)));
+    return new DefExpr(sym, init->copy(clone, map, analysis_clone));
   }
 }
 
 
 void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == init) {
-    init = dynamic_cast<AssignOp*>(new_ast);
+    init = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefExpr::replaceChild(old, new)");
   }
@@ -779,13 +776,17 @@ Type* DefExpr::typeInfo(void) {
 void DefExpr::print(FILE* outfile) {
   if (dynamic_cast<FnSymbol*>(sym)) {
     sym->printDef(outfile);
+    return;
   } else if (dynamic_cast<TypeSymbol*>(sym)) {
     sym->type->printDef(outfile);
-    fprintf(outfile, ";");
   } else if (dynamic_cast<VarSymbol*>(sym)) {
     sym->printDef(outfile);
-    fprintf(outfile, ";");
   }
+  if (init) {
+    fprintf(outfile, " = ");
+    init->print(outfile);
+  }
+  fprintf(outfile, ";");
 }
 
 

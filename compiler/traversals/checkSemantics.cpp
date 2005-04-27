@@ -19,7 +19,7 @@ static void checkVar(Variable* var){
     VarSymbol* vs = dynamic_cast<VarSymbol*>(var->var);
     if (vs){
       //printf("Var symbol: %s.\n", vs->name);
-      Expr* init = vs->init;
+      Expr* init = vs->defPoint->init;
       if (!init->isComputable()){
         //printf("Expression is computable.\n");
         USR_FATAL(init, "Initializing parameter to a variable expression.");

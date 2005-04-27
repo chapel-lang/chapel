@@ -78,11 +78,11 @@ static void insert_domain_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
   SimpleSeqExpr* seq_init;
 
-  if (ForallExpr* forall_init = dynamic_cast<ForallExpr*>(var->init)) {
+  if (ForallExpr* forall_init = dynamic_cast<ForallExpr*>(var->defPoint->init)) {
     seq_init = dynamic_cast<SimpleSeqExpr*>(forall_init->domains);
   }
   else {
-    seq_init = dynamic_cast<SimpleSeqExpr*>(var->init);
+    seq_init = dynamic_cast<SimpleSeqExpr*>(var->defPoint->init);
   }
 
   if (!seq_init) {
@@ -138,7 +138,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   // Need a traversal to change complex literals into complex variable
   // temporaries for function calls.
 
-  Expr* init_expr = var->init ? var->init : type->defaultVal;
+  Expr* init_expr = var->defPoint->init ? var->defPoint->init : type->defaultVal;
   Expr* args = new Variable(var);
   args->append(new Variable(type->symbol));
   args->append(new StringLiteral(copystring(var->name)));
@@ -155,9 +155,9 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
 static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
   Stmt* init_stmt = basic_default_init_stmt(stmt, var, type);
 
-  if (var->init) {
+  if (var->defPoint->init) {
     Expr* lhs = new Variable(var);
-    Expr* rhs = var->init->copy();
+    Expr* rhs = var->defPoint->init->copy();
     Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
     init_stmt->append(new ExprStmt(init_expr));
   }

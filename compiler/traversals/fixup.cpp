@@ -118,11 +118,9 @@ void Fixup::preProcessExpr(Expr* expr) {
     if (def_expr->sym && def_expr->sym->next) {
       INT_FATAL(def_expr, "Multiple symbols in DefExpr");
     }
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
-      if (useNewInit && var->init && !def_expr->init) {
-        INT_FATAL(def_expr, "Steve, DefExpr does not have VarSymbol->init");
-      }
-    }
+//    if (!def_expr->init) {
+//      INT_FATAL(def_expr, "Steve, DefExpr does not have an init");
+//    }
   }
 
   parentExprs.add(expr);
