@@ -734,7 +734,8 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
         dynamic_cast<Variable*>(argList->get(count));
       char* temp_name = glomstrings(2, "_coercion_temp_", formal_change->name);
       VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type);
-      DefExpr* temp_def_expr = new DefExpr(temp_symbol, new Variable(formal_change));
+      DefExpr* temp_def_expr = new DefExpr(temp_symbol, 
+                                           new UserInitExpr(new Variable(formal_change)));
       DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
       temp_def_stmt->append(wrapper_body);
       wrapper_body = temp_def_stmt;
@@ -795,7 +796,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
           glomstrings(2, "_default_param_temp_", formal_change->name);
         VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type);
         DefExpr* temp_def_expr = new DefExpr(temp_symbol,
-                                             ((ParamSymbol*)formal_change)->init->copy());
+                                             new UserInitExpr(((ParamSymbol*)formal_change)->init->copy()));
         DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
         temp_def_stmt->append(wrapper_body);
         wrapper_body = temp_def_stmt;

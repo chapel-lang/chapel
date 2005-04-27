@@ -498,13 +498,14 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
 
   VarSymbol* varList = defineVars(idents, type, init);
 
-  DefExpr* defExpr = new DefExpr(varList, init ? init->copy() : NULL);
+  DefExpr* defExpr = new DefExpr(varList, init ? 
+                                 new UserInitExpr(init->copy()) : NULL);
   VarSymbol* var = varList;
   while (var->next) {
     VarSymbol* tmp = var;
     var = nextLink(VarSymbol, var);
     tmp->next = var->prev = NULL;
-    defExpr->append(new DefExpr(var, init ? init->copy() : NULL));
+    defExpr->append(new DefExpr(var, init ? dynamic_cast<UserInitExpr*>(init->copy()) : NULL));
   }
   return defExpr;
 }

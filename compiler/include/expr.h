@@ -9,6 +9,7 @@
 
 class Stmt;
 class AInfo;
+class UserInitExpr;
 
 enum precedenceType {
   PREC_LOWEST = 0,
@@ -294,9 +295,9 @@ class SpecialBinOp : public BinOp {
 class DefExpr : public Expr {
  public:
   Symbol* sym;
-  Expr* init;
+  UserInitExpr* init;
 
-  DefExpr(Symbol* initSym, Expr* initInit = NULL);
+  DefExpr(Symbol* initSym, UserInitExpr* initInit = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -605,6 +606,19 @@ class VarInitExpr : public Expr {
   VarSymbol* symbol;
   VarInitExpr(VarSymbol* init_symbol);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  void traverseExpr(Traversal* traversal);
+  Type* typeInfo(void);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class UserInitExpr : public Expr {
+ public:
+  Expr* expr;
+  UserInitExpr(Expr* init_expr);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
   void print(FILE* outfile);

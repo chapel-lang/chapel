@@ -53,6 +53,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "StringLiteral",
   "Variable",
   "VarInit",
+  "UserInit",
   "DefExpr",
   "UnOp",
   "BinOp",

@@ -117,6 +117,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_VARINIT");
     }
     break;
+  case EXPR_USERINIT:
+    if (typeid(*ast) != typeid(UserInitExpr)) {
+      INT_FATAL(ast, "Unexpected AST expression type: EXPR_USERINIT");
+    }
+    break;
   case EXPR_DEF:
     if (typeid(*ast) != typeid(DefExpr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_DEF");

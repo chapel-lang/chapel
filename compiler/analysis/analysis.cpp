@@ -1190,21 +1190,24 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       gen_set_array(s, at, init->ainfo->rval, ast);
     } else {
       // THIS IS THE STANDARD CODE
-      if1_gen(if1, &ast->code, init->ainfo->code);
       Sym *val = init->ainfo->rval;
       if (is_scalar_type(type)) {
+        if1_gen(if1, &ast->code, init->ainfo->code);
         if (type != init->typeInfo())
           val = gen_coerce(val, s->type, &ast->code, ast);
         if1_move(if1, &ast->code, val, ast->sym, ast);
       } else if (!is_reference_type(type) && type != dtUnknown) {
         Sym *old_val = val;
         val = new_sym();
-        Code *c = if1_send(if1, &ast->code, 3, 1, if1_make_symbol(if1, "="), 
+        Code *c = if1_send(if1, &init->ainfo->code, 3, 1, if1_make_symbol(if1, "="), 
                            ast->sym, old_val, val);
         
-        c->ast = ast;
-      } else 
+        c->ast = init->ainfo;
+        if1_gen(if1, &ast->code, init->ainfo->code);
+      } else {
+        if1_gen(if1, &ast->code, init->ainfo->code);
         if1_move(if1, &ast->code, val, ast->sym, ast);
+      }
     }
   }
   return 0;
@@ -1298,9 +1301,8 @@ gen_for(BaseAST *a) {
   Vec<DefExpr*> indexDefs;
   DefExpr* index_def = dynamic_cast<DefExpr*>(s->indices);
   getLinkElements(indexDefs, index_def);
-  forv_Vec(DefExpr, indexDef, indexDefs) {
+  forv_Vec(DefExpr, indexDef, indexDefs)
     indices.add(indexDef->sym);
-  }
   Vec<Expr*> domains;
   domains.add(s->domain);
   return gen_forall_internal(s->ainfo, body, indices, domains);
@@ -1644,6 +1646,12 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         send->ast = s->ainfo;
       } else
         s->ainfo->rval = sym_nil;
+      break;
+    }
+    case EXPR_USERINIT: {
+      UserInitExpr *s = dynamic_cast<UserInitExpr*>(ast);
+      s->ainfo->code = s->expr->ainfo->code;
+      s->ainfo->rval = s->expr->ainfo->rval;
       break;
     }
     case EXPR_DEF: break;

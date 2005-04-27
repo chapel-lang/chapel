@@ -1321,13 +1321,13 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
         rhs = new Variable(ptmp);
       } else {
         if (tmp->defPoint->init) {
-          rhs = tmp->defPoint->init->copy();
+          rhs = tmp->defPoint->init->expr->copy();
         } else if (tmp->type != dtUnknown) {
           rhs = tmp->type->defaultVal->copy();
         }
       }
     } else {
-      rhs = tmp->defPoint->init ? tmp->defPoint->init->copy() : NULL;
+      rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : NULL;
       if (!rhs) {
         continue;
       }

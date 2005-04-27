@@ -716,7 +716,7 @@ bool Variable::isParam(void){
 //Roxana
 bool Variable::isComputable(void){
   VarSymbol* vs = dynamic_cast<VarSymbol*>(var);
-  if (vs && vs->defPoint->init) return vs->defPoint->init->isComputable();
+  if (vs && vs->defPoint->init) return vs->defPoint->init->expr->isComputable();
   return false;
 }
 
@@ -730,7 +730,7 @@ void Variable::codegen(FILE* outfile) {
 }
 
 
-DefExpr::DefExpr(Symbol* initSym, Expr* initInit) :
+DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit) :
   Expr(EXPR_DEF),
   sym(initSym),
   init(initInit)
@@ -746,16 +746,16 @@ DefExpr::DefExpr(Symbol* initSym, Expr* initInit) :
 Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   if (clone) {
     return new DefExpr(sym->copy(clone, map, analysis_clone),
-                       init->copy(clone, map, analysis_clone));
+                       dynamic_cast<UserInitExpr*>(init->copy(clone, map, analysis_clone)));
   } else {
-    return new DefExpr(sym, init->copy(clone, map, analysis_clone));
+    return new DefExpr(sym, dynamic_cast<UserInitExpr*>(init->copy(clone, map, analysis_clone)));
   }
 }
 
 
 void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == init) {
-    init = dynamic_cast<Expr*>(new_ast);
+    init = dynamic_cast<UserInitExpr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefExpr::replaceChild(old, new)");
   }
@@ -2058,3 +2058,44 @@ void VarInitExpr::codegen(FILE* outfile) {
   symbol->print(outfile);
   fprintf(outfile, "**/");
 }
+
+UserInitExpr::UserInitExpr(Expr* init_expr) :
+  Expr(EXPR_USERINIT),
+  expr(init_expr)
+{ }
+
+
+Expr* UserInitExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new UserInitExpr(expr->copyInternal(clone, map, analysis_clone));
+}
+
+
+void UserInitExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in UserInitExpr::replaceChild(old, new)");
+  }
+}
+
+
+void UserInitExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(expr, traversal, false);
+}
+
+
+Type* UserInitExpr::typeInfo(void) {
+  return expr->typeInfo();
+}
+
+
+void UserInitExpr::print(FILE* outfile) {
+  expr->print(outfile);
+}
+
+
+void UserInitExpr::codegen(FILE* outfile) {
+  expr->codegen(outfile);
+}
+
+

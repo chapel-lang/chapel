@@ -25,7 +25,7 @@ void CreateConfigVarTable::processSymbol(Symbol* symbol) {
   if (var && var->varClass == VAR_CONFIG) {
     char* moduleName = var->parentScope->symContext->name;
     fprintf(codefile, "installConfigVar(\"%s\", ", var->name);
-    var->defPoint->init->printCfgInitString(codefile);
+    var->defPoint->init->expr->printCfgInitString(codefile);
     fprintf(codefile, ", \"%s\");\n", moduleName);
   }  
 }
