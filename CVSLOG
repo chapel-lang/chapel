@@ -28315,3 +28315,14 @@ Modified files:
 	                             insertAnonymousDomains.cpp 
 	                             insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+04/27/05 10:08:44 -- bradc
+
+Log message:
+	Changed the way nightly does its cvs checkout to avoid
+	sending me cvs tracking mail.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
