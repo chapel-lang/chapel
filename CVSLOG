@@ -28565,3 +28565,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 16:08:48 -- deitz
+
+Log message:
+	Got classes/bradc/records/assignRecord2.chpl working with --noanalysis
+	(it uses sequences).
+	
+	The common modules init function was not called if the user specified
+	a main program.  It now is.
+
+Modified files:
+	chapel/compiler/passes/: createEntryPoint.cpp 
+
