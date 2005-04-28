@@ -28467,3 +28467,25 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: fixup.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 11:15:58 -- jplevyak
+
+Log message:
+	Use new lookupOrDefineTupleTypeSymbol interface to create tuple types.
+	
+	Remove stopgap accessors and setters in internal_prelude which
+	  mapped _field1 to the "index_object" primitive.
+	
+	Added new stopgap _seq to chplstd.h and special case "write" function
+	  for _seq, comment out error for codegen of dtSequence
+	
+	Factor map_symbols to permit a single symbol to be mapped (the new tuple symbol).
+	Factor build_type to permit a single type to be built.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/runtime/include/: stdchpl.h 
+
