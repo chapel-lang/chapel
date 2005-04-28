@@ -28455,3 +28455,15 @@ Log message:
 Added files:
 	chapel/test/classes/deitz/: test_class_list1.future 
 
+---------------------------------------------------------------------------
+
+04/28/05 11:04:27 -- deitz
+
+Log message:
+	Enabled verification that for TypeSymbol sym the following is true:
+	
+	  sym->type->symbol == sym
+
+Modified files:
+	chapel/compiler/traversals/: fixup.cpp 
+
