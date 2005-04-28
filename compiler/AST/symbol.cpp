@@ -728,7 +728,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
     Symbol* coercionSubstitution = coercion_substitutions->get(formal);
     if (coercionSubstitution) {
       char* tempName = glomstrings(2, "_coercion_temp_", formal->name);
-      VarSymbol* temp = new VarSymbol(tempName, coercionSubstitution->type);
+      VarSymbol* temp = new VarSymbol(tempName, formal->type);
       DefExpr* tempDefExpr = new DefExpr(temp, new UserInitExpr(new Variable(formal)));
       wrapperBody = appendLink(wrapperBody, new DefStmt(tempDefExpr));
       wrapperActuals = appendLink(wrapperActuals, new Variable(temp));
