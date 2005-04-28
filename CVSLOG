@@ -28555,3 +28555,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 15:35:57 -- jplevyak
+
+Log message:
+	Fixup NEW_COERCION_WRAPPER code. (compiles now)
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
