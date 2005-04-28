@@ -28499,3 +28499,35 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/28/05 12:55:15 -- deitz
+
+Log message:
+	Completed decoupling methods from classes.  Methods, including
+	getters, setters, and constructors, can now stay alive even if the
+	class dies.  This applies to records, unions, etc.
+	
+	Scopes of functions are now really only used for code generation and
+	for computing the visible functions list.
+	
+	Secondary methods are now in the scopes where they are defined.
+	
+	Cleaned up code for building constructor bodies.
+	
+	Code generation of a structural type no longer results in code
+	generation of its methods or constructors.
+	
+	Write functions are only inserted if the type is used.  If the type is
+	dead, a write function is not created.
+	
+	Fixes to gross sequence code.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/symtab/: insertWriteFns.cpp symscope.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             fixup.cpp insertThisParameters.cpp 
+	                             resolveSymbols.cpp 
+
