@@ -81,7 +81,8 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
     if (!mainModule) {
       INT_FATAL(mainFn, "main function's parent scope wasn't a module scope");
     }
-    ExprStmt* initStmt = buildFnCallStmt(mainModule->initFn);
+    ExprStmt* initStmt = buildFnCallStmt(commonModule->initFn);
+    initStmt->append(buildFnCallStmt(mainModule->initFn));
     initStmt->append(mainFn->body);
     mainFn->body = new BlockStmt(initStmt);
   }
