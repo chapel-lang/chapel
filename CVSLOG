@@ -28420,3 +28420,27 @@ Modified files:
 	chapel/compiler/symtab/: removeDeadSymbols.cpp 
 	chapel/compiler/traversals/: resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 10:33:35 -- jplevyak
+
+Log message:
+	Generic substitutions are now done by introducing a UserType
+	  which indirects to the substituted type.  This restores
+	  the Type->symbol->type and TypeSymbol->type->symbol identities.
+	
+	For instantiated types parameters, move them into the body of the function
+	  after analysis.
+	
+	collectASTs now collects Type s as well.
+	
+	Made type_is_used() to more conservative.  The big exception
+	  is IndexTypes which are special cased (everywhere).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/traversals/: collectASTS.cpp 
+	                             findUnknownTypes.cpp 
+	chapel/test/: REGRESSIONS 
+
