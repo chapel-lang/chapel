@@ -28579,3 +28579,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: createEntryPoint.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 16:14:25 -- jplevyak
+
+Log message:
+	Fix bug in NEW_COERCION_WRAPPER... looks like the call is right, but
+	the tests are still failing ?!?!
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
