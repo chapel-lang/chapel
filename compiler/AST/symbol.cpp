@@ -702,6 +702,55 @@ FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>*
   return dynamic_cast<FnSymbol*>(this_copy->sym);
 }
 
+#ifdef NEW_COERCION_WRAPPER
+
+FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions) {
+  static int uid = 1; // Unique ID for wrapped functions
+  SymScope* saveScope = Symboltable::setCurrentScope(parentScope);
+  FnSymbol* wrapperFn = new FnSymbol(name);
+  wrapperFn->cname = glomstrings(3, cname, "_coercion_wrapper_", intstring(uid++));
+  wrapperFn = Symboltable::startFnDef(wrapperFn);
+
+  Symbol* wrapperFormals = NULL;
+  for (Symbol* formal = formals; formal; formal = nextLink(Symbol, formal)) {
+    wrapperFormals = appendLink(wrapperFormals, formal->copy());
+    Symbol* coercionSubstitution = coercion_substitutions->get(formal);
+    if (coercionSubstitution) {
+      wrapperFormals->type = coercionSubstitution->type;
+    }
+  }
+
+  BlockStmt* wrapperBlock = Symboltable::startCompoundStmt();
+
+  Stmt* wrapperBody = NULL;
+  Variable* wrapperActuals = NULL;
+  for (Symbol* formal = formals; formal; formal = nextLink(Symbol, formal)) {
+    Symbol* coercionSubstitution = coercion_substitutions->get(formal);
+    if (coercionSubstitution) {
+      char* tempName = glomstrings(2, "_coercion_temp_", formal->name);
+      VarSymbol* temp = new VarSymbol(tempName, coercionSubstitution->type);
+      DefExpr* tempDefExpr = new DefExpr(temp, new UserInitExpr(new Variable(formal)));
+      wrapperBody = appendLink(wrapperBody, new DefStmt(tempDefExpr));
+      wrapperActuals = appendLink(wrapperActuals, new Variable(temp));
+    } else {
+      wrapperActuals = appendLink(wrapperActuals, new Variable(formal));
+    }
+  }
+  wrapperBody = appendLink(wrapperBody, 
+                           new ExprStmt(new FnCall(new Variable(this), wrapperActuals)));
+
+  wrapperBlock = Symboltable::finishCompoundStmt(wrapperBlock, wrapperBody);
+
+  DefExpr* defExpr = new DefExpr(Symboltable::finishFnDef(wrapperFn,
+                                                          wrapperFormals,
+                                                          retType,
+                                                          wrapperBlock));
+  defPoint->insertBefore(defExpr);
+  Symboltable::setCurrentScope(saveScope);
+  return wrapperFn;
+}
+
+#else
 
 FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions) {
   static int uid = 1; // Unique ID for wrapped functions
@@ -755,6 +804,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substi
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
 }
 
+#endif
 
 FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
   static int uid = 1; // Unique ID for wrapped functions
