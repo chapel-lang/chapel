@@ -317,11 +317,12 @@ ACallbacks::make_LUB_type(Sym *t) {
   Type *tt = find_or_make_sum_type(&types);
   if (tt->asymbol)
     return tt->asymbol->sym;
+  make_meta_type(t);
+  tt->symbol->asymbol = t->meta_type->asymbol;
+  tt->symbol->asymbol->sym = t->meta_type;
   tt->asymbol = t->asymbol;
   tt->asymbol->sym = t;
-  tt->asymbol->symbol = tt;
   assert(tt->asymbol->sym->type_kind == Type_LUB);
-  tt->symbol->asymbol = new_ASymbol(tt->symbol);
   return t;
 }
 
@@ -2750,10 +2751,15 @@ int
 type_is_used(TypeSymbol *t) {
   if (if1->callback) {
     if (t->asymbol) {
-      if (!t->asymbol->sym->is_meta_type) {
-        return t->asymbol->sym->creators.n != 0;
-      } else
+      assert(t->asymbol->sym->is_meta_type);
+      if (is_scalar_type(t->type) 
+          || t->type->astType == TYPE_SUM 
+          || t->type->astType == TYPE_INDEX
+          || (t->type->astType == TYPE_USER && 
+              type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->type)->definition->symbol))))
         return true;
+      int res = t->asymbol->sym->meta_type->creators.n != 0;
+      return res;
     } else
       return false;
   } else

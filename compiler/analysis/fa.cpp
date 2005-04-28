@@ -842,7 +842,7 @@ add_var_constraint(AVar *av) {
     if (s->is_symbol || s->is_fun) 
       update_in(av, s->abstract_type);
     if (s->type_kind != Type_NONE)
-      update_in(av, s->meta_type->abstract_type);
+      update_in(av, make_abstract_type(s->meta_type));
   }
 }
 

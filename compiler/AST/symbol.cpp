@@ -884,18 +884,27 @@ FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutio
   Map<BaseAST*,BaseAST*> map;
   Expr* expr_copy = defPoint->copy(true, &map);
   if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
-    for (int i = 0; i < map.n; i++) {
-      if (map.v[i].key) {
-        if (Variable* var = dynamic_cast<Variable*>(map.v[i].key)) {
-          if (Type* new_type = generic_substitutions->get(var->var->type)) {
-            Variable* new_var = dynamic_cast<Variable*>(map.v[i].value);
-            new_var->var->type = new_type;
+    for (int i = 0; i < map.n; i++) if (map.v[i].key) {
+      if (Symbol* sym = dynamic_cast<Symbol*>(map.v[i].key)) {
+        if (Type* new_type = generic_substitutions->get(sym->type)) {
+          Symbol* new_sym = dynamic_cast<Symbol*>(map.v[i].value);
+          if (dynamic_cast<TypeSymbol*>(sym)) {
+            new_sym->type = new UserType(new_type);
+            new_sym->type->addSymbol(new_sym);
+          } else {
+            new_sym->type = new_type;
           }
         }
-        else if (Symbol* sym = dynamic_cast<Symbol*>(map.v[i].key)) {
-          if (Type* new_type = generic_substitutions->get(sym->type)) {
-            Symbol* new_sym = dynamic_cast<Symbol*>(map.v[i].value);
-            new_sym->type = new_type;
+      }
+    }
+    for (int i = 0; i < map.n; i++) if (map.v[i].key) {
+      if (Variable* var = dynamic_cast<Variable*>(map.v[i].key)) {
+        if (Type* new_type = generic_substitutions->get(var->var->type)) {
+          Variable* new_var = dynamic_cast<Variable*>(map.v[i].value);
+          if (dynamic_cast<TypeSymbol*>(var->var)) {
+            new_var->var = new_type->symbol;
+          } else {
+            new_var->var->type = new_type;
           }
         }
       }

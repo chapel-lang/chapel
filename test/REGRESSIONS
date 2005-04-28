@@ -7,6 +7,7 @@ linux regressions
   Fails in wrapper of set accessor.  It looks like
   positional_arg_positions is too big.
 
+  NOTE: The interface for the coercion wrapper has been updated.
 
 [Error matching compiler output for classes/deitz/test_type_in_class1]
 
@@ -14,7 +15,6 @@ linux regressions
   the ->init in a VarDefStmt in a Type which is ever executed (it is
   copied and the copy is executed) and so analysis knows nothing about
   it.
-
 
 
 linux valgrind regressions

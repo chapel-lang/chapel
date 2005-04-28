@@ -20,5 +20,8 @@ void collect_asts(Vec<BaseAST*>* asts, FnSymbol* function) {
   TRAVERSE(function->body, traversal, true);
   Vec<BaseAST *> syms;
   collect_symbols((Vec<Symbol*> *)&syms, function);
+  forv_BaseAST(s, syms)
+    if (s->astType == SYMBOL_TYPE)
+      asts->add(((TypeSymbol*)s)->type);
   asts->append(syms);
 }
