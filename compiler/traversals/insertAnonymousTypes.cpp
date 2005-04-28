@@ -217,9 +217,11 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     TypeSymbol* index_sym = new TypeSymbol(name, index_type);
     index_type->addSymbol(index_sym);
-    if (!index_type->defaultVal) {
+    //RED: maybe this should be handled differently
+    //Since there is no initialization for index types yet, this can go out
+    /*if (!index_type->defaultVal) {
       index_type->defaultVal = index_type->idxType->defaultVal->copy();
-    }
+    }*/
     DefExpr* def_expr = new DefExpr(index_sym);
     DefStmt* index_type_def = new DefStmt(def_expr);
     commonModule->stmts->insertBefore(index_type_def);

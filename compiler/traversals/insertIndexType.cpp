@@ -8,6 +8,60 @@
 #include "view.h"
 #include "fixup.h"
 
+//RED: weird workaround for inserting the index type for an index i in forall i in D
+//since the domain type is not available when indices are inserted in the table
+//we get the i->type from D->idxType later on.
+/*void InsertIndexType::preProcessStmt(Stmt* stmt) {
+  ForLoopStmt* for_stmt = dynamic_cast<ForLoopStmt*>(stmt);
+  
+  if (!for_stmt){
+    return;    
+  }
+  DomainType* domain_type = dynamic_cast<DomainType*>(for_stmt->domain->typeInfo());
+  
+  if (!domain_type) {
+    return;
+  }
+  
+  DefExpr* indices_def = dynamic_cast<DefExpr*>(for_stmt->indices);
+  
+  if (for_stmt->indices && !indices_def) {
+    //INT_FATAL(this, "Indices in ForLoopStmt not defined in DefExpr");
+    printf("INT_FATAL(this, Indices in ForLoopStmt not defined in DefExpr");
+  }
+  
+  VarSymbol* aVar = dynamic_cast<VarSymbol*>(indices_def->sym);
+  int i = 0;
+
+  char* temp_name = aVar->name;
+  Type* temp_type = dtUnknown;
+
+  while (aVar) {
+      if (i != 0) temp_name = glomstrings(i + 3, "_", temp_name, aVar->name);
+      i++;
+      aVar = nextLink(VarSymbol, aVar);
+  }
+  //RED: naive special casing to distinguish the non-integer indices from the 
+  //list of integer symbols; hopefully better ways of testing will be revealed
+  //after better handling of forall (i, j, k, ...) in  ... 
+  if (i > 1) {
+    //Symbol* indices = new Symbol(SYMBOL, name);
+    //printf("Name is %s \n", name);
+    temp_type = domain_type->idxType;
+    //for_stmt->indices->replace(indices);
+    DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
+                                                            temp_type,
+                                                            for_stmt->indices->copy(),
+                                                            VAR_NORMAL,
+                                                            VAR_VAR);
+    for_stmt->indices->getStmt()->insertBefore(def_stmt);                                                          
+    for_stmt->indices->replace(new Variable(def_stmt->varDef()));
+  } else {
+    indices_def->sym->type = domain_type->idxType;
+    for_stmt->indices->replace(indices_def);
+  }
+}*/
+
 void InsertIndexType::preProcessType(Type* type) {
   DomainType* domain_type = dynamic_cast<DomainType*>(type);
 

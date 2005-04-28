@@ -750,62 +750,91 @@ void ForLoopStmt::codegen(FILE* outfile) {
   DefExpr* aVar = indices_def;
   fprintf(outfile, "{\n");
   int rank = 0;
-
-  // TODO: Unify with VarDefStmt?  Have parser insert one here?
-  // is it a challenge that we may not know the domain exprs at that point?
-  while (aVar) {
-    aVar->sym->codegenDef(outfile);
-    rank++;
-
-    aVar = nextLink(DefExpr, aVar);
-  }
-  fprintf(outfile, "\n");
+  IndexType* index_type = NULL;
   
-  aVar = indices_def;
-
-  Tuple* tuple = dynamic_cast<Tuple*>(domain);
-
-  SimpleSeqExpr* seq = (tuple)
-    ? dynamic_cast<SimpleSeqExpr*>(tuple->exprs)
-    : dynamic_cast<SimpleSeqExpr*>(domain);
-
-  if (seq) {
-    for (int i=0; i<rank; i++) {
-      fprintf(outfile, "_FOR");
-      if (forall) {
-        fprintf(outfile, "ALL");
-      }
-      fprintf(outfile, "_DIM");
-      fprintf(outfile, "(");
-      aVar->sym->codegen(outfile);
-      fprintf(outfile, ", ");
-      seq->lo->codegen(outfile);
-      fprintf(outfile, ", ");
-      seq->hi->codegen(outfile);
-      fprintf(outfile, ", ");
-      seq->str->codegen(outfile);
-      fprintf(outfile, ") {\n");
-
-      aVar = nextLink(DefExpr, aVar);
-      seq = nextLink(SimpleSeqExpr, seq);
+  //RED -- added support for generating code for IndexTypes which are tuples
+  //This extra branching is ugly, but the only way to get around a strong bias
+  //towards integer indices
+  index_type = dynamic_cast<IndexType*>(aVar->sym->type);
+  if (index_type){
+    //aVar->codegen(outfile);
+    indices_def->sym->codegenDef(outfile);
+    fprintf(outfile, "\n");
+    TupleType* tt = dynamic_cast<TupleType*>(index_type->getType());
+    if (tt){
+      rank = tt->components.n;
     }
-  }
-  else {
     for (int i=0; i<rank; i++) {
       fprintf(outfile, "_FOR");
       if (forall) {
         fprintf(outfile, "ALL");
       }
       fprintf(outfile, "(");
+      //aVar->sym->codegen(outfile);
       aVar->sym->codegen(outfile);
+      fprintf(outfile, "._field%d", i + 1);
+      
       fprintf(outfile, ", ");
       domain->codegen(outfile);
       fprintf(outfile, ", %d) {\n", i);
+    }
+  } else {    
+    // TODO: Unify with VarDefStmt?  Have parser insert one here?
+    // is it a challenge that we may not know the domain exprs at that point?
+    while (aVar) {
+      aVar->sym->codegenDef(outfile);
+      rank++;
 
       aVar = nextLink(DefExpr, aVar);
     }
-  }
+    fprintf(outfile, "\n");
+  
+    aVar = indices_def;
 
+    Tuple* tuple = dynamic_cast<Tuple*>(domain);
+
+    SimpleSeqExpr* seq = (tuple)
+      ? dynamic_cast<SimpleSeqExpr*>(tuple->exprs)
+      : dynamic_cast<SimpleSeqExpr*>(domain);
+
+    if (seq) {
+      for (int i=0; i<rank; i++) {
+        fprintf(outfile, "_FOR");
+        if (forall) {
+          fprintf(outfile, "ALL");
+        }
+        fprintf(outfile, "_DIM");
+        fprintf(outfile, "(");
+        aVar->sym->codegen(outfile);
+        fprintf(outfile, ", ");
+        seq->lo->codegen(outfile);
+        fprintf(outfile, ", ");
+        seq->hi->codegen(outfile);
+        fprintf(outfile, ", ");
+        seq->str->codegen(outfile);
+        fprintf(outfile, ") {\n");
+
+        aVar = nextLink(DefExpr, aVar);
+        seq = nextLink(SimpleSeqExpr, seq);
+      }
+    }
+    else {
+      for (int i=0; i<rank; i++) {
+        fprintf(outfile, "_FOR");
+        if (forall) {
+          fprintf(outfile, "ALL");
+        }
+        fprintf(outfile, "(");
+        aVar->sym->codegen(outfile);
+        fprintf(outfile, ", ");
+        domain->codegen(outfile);
+        fprintf(outfile, ", %d) {\n", i);
+
+        aVar = nextLink(DefExpr, aVar);
+      }
+    }
+  }
+  
   body->codegen(outfile);
   fprintf(outfile, "\n");
 

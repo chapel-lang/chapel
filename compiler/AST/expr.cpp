@@ -1285,8 +1285,31 @@ void ArrayRef::codegen(FILE* outfile) {
   fprintf(outfile, "_ACC%d(", baseExpr->rank());
   baseExpr->codegen(outfile);
   fprintf(outfile, ", ");
-  argList->codegenList(outfile, ", ");
-  fprintf(outfile, ")");
+  IndexType* index_type = dynamic_cast<IndexType*>(argList->typeInfo());
+  //RED -- added support for code generation in case of index type 
+  //Specialized for tuple and integer
+  if (index_type) {
+    int rank = 0;
+    TupleType* tt = dynamic_cast<TupleType*>(index_type->getType());
+    if (tt){
+      rank = tt->components.n;
+      for (int i=0; i<rank; i++) {
+        argList->codegen(outfile);
+        fprintf(outfile, "._field%d", i + 1);
+        if (i < rank - 1) fprintf(outfile, ",");
+     }
+    } else {
+      if (index_type->getType() == dtInteger){
+        int i = 0;
+        argList->codegen(outfile);
+        fprintf(outfile, "._field%d", i + 1);
+      }
+    } 
+    fprintf(outfile, ")");
+  } else {
+    argList->codegenList(outfile, ", ");
+    fprintf(outfile, ")");
+  }
 }
 
 

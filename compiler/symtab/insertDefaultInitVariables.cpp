@@ -25,9 +25,20 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
       // declared where the default initial value is setup like in the
       // common module.
     }
+    if (dynamic_cast<IndexType*>(sym->type)) { // RED: bail on index types
+      if (sym->type->defaultVal) {
+        sym->type->defaultVal->extract();
+        sym->type->defaultVal = NULL;
+      }
+      return; // they don't get default initialized yet
+      // the problem is that index variables have a type symbol,
+      //but not the tuples when the IndexType happens to have a index type tuple
+    }
     if (sym->type->defaultVal) {
       char* temp_name = glomstrings(3, "_init_", sym->name, intstring(uid++));
-      Type* temp_type = sym->type;
+      //RED -- initialization for index types.
+      //Type* temp_type = sym->type;
+      Type* temp_type = sym->type->getType();
       Expr* temp_init = sym->type->defaultVal->copy();
 
       Symbol* parent_symbol = sym->defPoint->parentStmt->parentSymbol;

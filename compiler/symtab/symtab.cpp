@@ -703,24 +703,13 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
       // which may not be a domain but an array or a sequence too.
       indexVars = defineVars(indices, dtInteger);
     }
-    VarSymbol* var = indexVars;
-    DefExpr* defExpr = new DefExpr(var);
-    while (var->next) {
-      VarSymbol* tmp = var;
-      var = nextLink(VarSymbol, var);
-      tmp->next = NULL;
-      var->prev = NULL;
-      defExpr->append(new DefExpr(var));
-    }
-    ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
-    return for_loop_stmt;
   }
   //RED: here goes the index type logic
   //Index type will typically be the domain->idxType if this is known
   //E.g. for initialization of arrays
   //Or dtUnknown, otherwise -- e.g. when after parsing a domain does not
   //have an index type yet 
-  else{
+  else {
     if (!indexVars || (indexVars->type == dtUnknown)) {
       DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
       if (domain_type) {
@@ -732,22 +721,19 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
         //here, but I think that may cover incorrect behavior
         indexVars = defineVars(indices, dtUnknown);
       }
-      /*DefExpr* indices_def = new DefExpr(indexVars);
-      indexVars->setDefPoint(indices_def);
-      ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, indices_def, domain);*/
-      VarSymbol* var = indexVars;
-      DefExpr* defExpr = new DefExpr(var);
-      while (var->next) {
-        VarSymbol* tmp = var;
-        var = nextLink(VarSymbol, var);
-        tmp->next = NULL;
-        var->prev = NULL;
-        defExpr->append(new DefExpr(var));
-      }
-      ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
-      return for_loop_stmt;
     }
   }
+  VarSymbol* var = indexVars;
+  DefExpr* defExpr = new DefExpr(var);
+  while (var->next) {
+    VarSymbol* tmp = var;
+    var = nextLink(VarSymbol, var);
+    tmp->next = NULL;
+    var->prev = NULL;
+    defExpr->append(new DefExpr(var));
+  }
+  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
+  return for_loop_stmt;
 }
 
 

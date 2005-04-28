@@ -33,26 +33,46 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
   stmt->insertBefore(call_stmt);
 
   ForallExpr* domain = dynamic_cast<ForallExpr*>(array_type->domain);
+  
+  IndexType* index_type = NULL;
   Symbol* indices = NULL;
 
-  // Here we create some indices (assuming arithmetic domain)
-  // This should eventually use the IndexType when that is in. --SJD
-  if (!domain->indices) {
-    DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
-    if (!domain_type) {
-      INT_FATAL(domain, "Domain has no type");
-    }
-    for (int i = 0; i < domain_type->numdims; i++) {
-      char* name = glomstrings(2, "_ind_", intstring(i));
-      indices = appendLink(indices, new Symbol(SYMBOL, name));
-    }
+  //RED We create one index per (anonymous) domain assuming Index Type. 
+  //However, this is not complete since index variables
+  //in forall are not handled well enough yet.
+  if (_dtinteger_IndexType_switch) {
+    if (!domain->indices) {
+      DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
+      if (!domain_type) {
+        INT_FATAL(domain, "Domain has no type");
+      }
+      index_type = dynamic_cast<IndexType*>(domain_type->idxType);
+      if (!index_type) {
+        INT_FATAL(stmt, "Domain index has no type");
+      }
+      char* name = glomstrings(1, "_idx_init");
+      indices = new Symbol(SYMBOL, name);
+    }  
   } else {
-    DefExpr* def_expr = dynamic_cast<DefExpr*>(domain->indices);
-    while (def_expr) {
-      indices =
-        appendLink(indices, 
-                   new Symbol(SYMBOL, copystring(def_expr->sym->name)));
-      def_expr = nextLink(DefExpr, def_expr);
+    // Here we create some indices (assuming arithmetic domain)
+    // This should eventually use the IndexType when that is in. --SJD  
+    if (!domain->indices) {
+      DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
+      if (!domain_type) {
+        INT_FATAL(domain, "Domain has no type");
+      }
+      for (int i = 0; i < domain_type->numdims; i++) {
+        char* name = glomstrings(2, "_ind_", intstring(i));
+        indices = appendLink(indices, new Symbol(SYMBOL, name));
+      }
+    } else {
+      DefExpr* def_expr = dynamic_cast<DefExpr*>(domain->indices);
+      while (def_expr) {
+        indices =
+          appendLink(indices, 
+                     new Symbol(SYMBOL, copystring(def_expr->sym->name)));
+        def_expr = nextLink(DefExpr, def_expr);
+      }
     }
   }    
   ForLoopStmt* loop
