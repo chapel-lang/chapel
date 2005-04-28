@@ -28531,3 +28531,13 @@ Modified files:
 	                             fixup.cpp insertThisParameters.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 14:19:50 -- deitz
+
+Log message:
+	Fixed a small bug in the default != function created for records.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
