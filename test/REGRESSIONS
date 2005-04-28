@@ -20,21 +20,16 @@ linux regressions
 linux valgrind regressions
 ==========================
 
-memory/shannon/freedMalloc:
-memory/shannon/printMemTable:
-memory/shannon/reallocZeroSize:
-  
-  current address printing is too sensitive to address size (shannon)
-
 
 
 linux64-specific regressions
 ============================
 
-memory/shannon/mallocOutOfMemory:
+memory/shannon/printMemTable
 
-  causes OS to thrash around; need to limit memory allocation for this
-  test (shannon/bradc)
+  need to implement a way to filter memtable when printing to filter
+  out small allocations that are platform-dependent (like structs
+  involving pointers) (shannon).
 
 
 
@@ -46,14 +41,11 @@ cygwin-specific regressions
 freebsd-specific regressions
 ============================
 
-compflags/bradc/gdbdash/declint: freeBSD's gdb startup results a bunch
-  of dwarf warnings and blank lines that I haven't figured out how to
-  filter out yet (bradc)
-
 memory/shannon/configVarFile:
 memory/shannon/jacobi:
 
-  ??? (shannon)
+  --memthreshold is not working because freebsd does not seem to
+  support %lld for reading a long long value in (shannon).
 
 
 
