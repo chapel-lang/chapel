@@ -28541,3 +28541,17 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 15:33:02 -- deitz
+
+Log message:
+	Implemented new coercion wrapper function.  This is untested and
+	currently off with the same #define in symbol.h that it was off with
+	before I implemented it.  There is a compilation problem in analysis.
+	John, I assume it won't work very well after you get it up and running
+	on your side, so let me know when you do this.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
