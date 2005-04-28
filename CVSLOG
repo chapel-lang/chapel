@@ -28590,3 +28590,45 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 16:19:45 -- roxana
+
+Log message:
+	Added support for code generation of array references if
+	indexed by indices of Index Type. Specialized for tuple
+	and integer.
+	
+	Added support for code generation of for loop  statements to
+	allow indices of IndexType to be used.
+	Bypass initialization of index variables of IndexType. The
+	problem seems to be that tuples have no type symbol in
+	indices which happen to have tuple type. I'll wait on that
+	until after tuples are more stable.
+	
+	Added support for index variables of Index Type in array
+	initialization.
+	
+	Added two new tests to test the functionality of index type
+	insertion. These are made futures since they fail with the
+	'dtInteger' version. To get these working one must change the
+	flag in symtab.h (_dtinteger_indexType_switch), as well as
+	uncomment preProcessStmt in insertIndexType.h and
+	insertIndexType.cpp.
+
+Modified files:
+	chapel/compiler/symtab/: symtab.cpp 
+	                         insertDefaultInitVariables.cpp 
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+	                             insertIndexType.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertIndexType.h 
+Added files:
+	chapel/test/domains/roxana/: test_index_expr2.future 
+	                             test_index_expr0.chpl 
+	                             test_index_expr0.good 
+	                             test_index_expr2.chpl 
+	                             test_index_expr0.future 
+	                             test_index_expr2.good 
+
