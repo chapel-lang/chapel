@@ -10,6 +10,16 @@ RemoveDeadSymbols::RemoveDeadSymbols(void) {
 }
 
 
+static void markAsDeadAndExtract(Symbol* sym) {
+  sym->isDead = true;
+  if (!sym->defPoint->next && !sym->defPoint->prev) {
+    sym->defPoint->parentStmt->extract();
+  } else {
+    sym->defPoint->extract();
+  }
+}
+
+
 void RemoveDeadSymbols::processSymbol(Symbol* sym) {
   if (sym->parentScope->type == SCOPE_INTRINSIC) {
     return;
@@ -20,43 +30,22 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
 
 #ifdef USE_AST_IS_USED
   if (!AST_is_used(sym)) {
-    sym->isDead = true;
-
-    if (sym->defPoint) {
-      // BLC: This is overkill, but mirrors what removeDeadSymbols did
-      sym->defPoint->parentStmt->extract();
-    }
+    markAsDeadAndExtract(sym);
     fprintf(stderr, "%s is dead\n", sym->name);
   }
 #else
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
     if (!type_is_used(typeSym)) {
-      typeSym->isDead = true;
-      
-      // BLC: this is a bad assumption: that if one DefExpr is dead
-      // then the whole statement can be extracted; instead, we
-      // should pull just the defExpr (but this breaks other stuff
-      // that assumes that every defStmt).
-      if (sym->defPoint) { // JBP 4/5/05 for intents-classes4.chpl this is NULL
-
-        // SJD: Don't want to remove function is parameter is dead
-        if (dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
-          return;
-        }
-
-        sym->defPoint->parentStmt->extract();
+      // SJD: Don't want to remove function if type variable parameter
+      // is dead
+      if (dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
+        return;
       }
+      markAsDeadAndExtract(sym);
     }
-  }
-  if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {
+  } else if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {
     if (!function_is_used(fnSym)) {
-      fnSym->isDead = true;
-      // BLC: see comment on previous conditional
-      if (!sym->defPoint->next && !sym->defPoint->prev) {
-	sym->defPoint->parentStmt->extract();
-      } else {
-	sym->defPoint->extract();
-      }
+      markAsDeadAndExtract(sym);
     }
   }
 #endif
