@@ -28398,3 +28398,25 @@ Modified files:
 	chapel/compiler/traversals/: fixup.cpp 
 	                             insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+04/27/05 17:09:41 -- deitz
+
+Log message:
+	Fixed a bug in RemoveDeadSymbols in which if multiple function's
+	DefExprs shared the same DefStmt, they would all be extracted if one
+	was dead.  Now just the DefExpr is extracted if there are multiple
+	DefExprs.  If there is a single DefExpr, the DefStmt is extracted.
+	
+	If --useNewConstructor is on, I now run call_info on the DefExpr to
+	find out about the defaultConstructor.  This causes one test to fail
+	so I only do it if the flag is on.
+	
+	This checkin gets the named parameter constructor working with most
+	record tests.  There are still a few failures with this flag so it is
+	not the default.
+
+Modified files:
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+
