@@ -211,8 +211,12 @@ static void verifyParentScope(Symbol* sym) {
    **  Symbol is getter of match found in scope
    **/
   FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(sym);
-  if (fn_sym && fn_sym->_getter == match) {
-    return;
+  if (fn_sym && fn_sym->_getter) {
+    match =
+      Symboltable::lookupInScope(sym->name, dynamic_cast<StructuralType*>(fn_sym->classBinding->type)->structScope);
+    if (fn_sym->_getter == match) {
+      return;
+    }
   }
 
   INT_FATAL(sym, "Incorrect parentScope for symbol '%s'", sym->name);

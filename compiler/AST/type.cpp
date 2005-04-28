@@ -894,14 +894,6 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
     method->cname = glomstrings(3, new_seq_sym->name, "_", method->cname);
   }
 
-  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
-  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
-  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
-  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
-  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
-  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
-  //// SJD: NEED TO UPDATE length, etc in copied SeqType methods
-
   /*** update _seq type to new type ***/
   Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
   map->put(_seq, new_seq_sym);
@@ -918,7 +910,7 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   TRAVERSE_LS(new_decls, new UpdateSymbols(map), true);
 
   Symbol* _node = Symboltable::lookupInScope("_node", new_seq_scope);
-  _node->cname = glomstrings(2, new_seq_name, _node->name);
+  _node->cname = glomstrings(2, new_seq_name, _node->cname);
 
   return new_seq_type;
 }
@@ -1311,36 +1303,22 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
     stmts = appendLink(stmts, assign_stmt);
   }
 
-
   ParamSymbol* ptmp = arguments;
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* rhs = NULL;
-    if (useNewConstructor) {
-      if (analyzeAST) {
-        rhs = new Variable(ptmp);
-      } else {
-        if (tmp->defPoint->init) {
-          rhs = tmp->defPoint->init->expr->copy();
-        } else if (tmp->type != dtUnknown) {
-          rhs = tmp->type->defaultVal->copy();
-        }
-      }
+    if (analyzeAST && useNewConstructor) {
+      rhs = new Variable(ptmp);
     } else {
       rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : NULL;
-      if (!rhs) {
-        continue;
-      }
     }
-
-    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
-    Stmt* assign_stmt = new ExprStmt(assign_expr);
-    stmts = appendLink(stmts, assign_stmt);
-
-    if (useNewConstructor) {
-      if (analyzeAST) {
-        ptmp = nextLink(ParamSymbol, ptmp);
-      }
+    if (rhs) {
+      Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
+      Stmt* assign_stmt = new ExprStmt(assign_expr);
+      stmts = appendLink(stmts, assign_stmt);
+    }
+    if (analyzeAST && useNewConstructor) {
+      ptmp = nextLink(ParamSymbol, ptmp);
     }
   }
   return stmts;
@@ -1416,16 +1394,16 @@ void StructuralType::codegenDef(FILE* outfile) {
   }
   codegenStopDefFields(outfile);
   fprintf(outfile, "};\n\n");
-  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(constructor)) {
-    def_stmt->fnDef()->codegenDef(codefile);
-  }
-  forv_Vec(FnSymbol, fn, methods) {
-    // Check to see if this is where it is defined
-    if (fn->parentScope->symContext->type == this) {
-      fn->codegenDef(codefile);
-    }
-    fprintf(codefile, "\n");
-  }
+//   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(constructor)) {
+//     def_stmt->fnDef()->codegenDef(codefile);
+//   }
+//   forv_Vec(FnSymbol, fn, methods) {
+//     // Check to see if this is where it is defined
+//     if (fn->parentScope->symContext->type == this) {
+//       fn->codegenDef(codefile);
+//     }
+//     fprintf(codefile, "\n");
+//   }
 }
 
 

@@ -38,7 +38,6 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
           fn->classBinding = classBinding;
           fn->method_type = SECONDARY_METHOD;
           classBindingType->methods.add(fn);
-          Symboltable::defineInScope(fn, classBindingType->structScope);
           fn->paramScope->parent = classBindingType->structScope;
         } else {
           USR_FATAL(fn, "Function is not bound to legal class");

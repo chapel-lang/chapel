@@ -10,8 +10,6 @@
 
 
 static void build_constructor(StructuralType* structType) {
-  SymScope* saveScope = Symboltable::setCurrentScope(structType->structScope);
-
   char* name = glomstrings(2, "_construct_", structType->symbol->name);
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(name));
   structType->defaultConstructor = fn;
@@ -58,7 +56,6 @@ static void build_constructor(StructuralType* structType) {
   DefExpr* fn_def =
     new DefExpr(Symboltable::finishFnDef(fn, args, structType, body));
   structType->constructor = new DefStmt(fn_def);
-  Symboltable::setCurrentScope(saveScope);
   fixup_expr(structType->symbol->defPoint);
 }
 
@@ -72,7 +69,6 @@ static void build_union_id_enum(StructuralType* structType) {
 
 
 static void build_setters_and_getters(StructuralType* structType) {
-  SymScope* saveScope = Symboltable::setCurrentScope(structType->structScope);
   forv_Vec(VarSymbol, tmp, structType->fields) {
     char* setter_name = glomstrings(2, "set_", tmp->name);
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
@@ -111,7 +107,6 @@ static void build_setters_and_getters(StructuralType* structType) {
      **/
     getter_fn->name = copystring(tmp->name);
   }
-  Symboltable::setCurrentScope(saveScope);
 }
 
 
@@ -212,12 +207,17 @@ static void build_record_assignment_function(StructuralType* structType) {
 
 
 void buildDefaultStructuralTypeMethods(StructuralType* structuralType) {
+  SymScope* newScope =
+    structuralType->structScope->findEnclosingScopeLessType(SCOPE_MODULE);
+  SymScope* saveScope =
+    Symboltable::setCurrentScope(newScope);
   build_setters_and_getters(structuralType);
   build_union_id_enum(structuralType);
   build_constructor(structuralType);
   build_record_equality_function(structuralType);
   build_record_inequality_function(structuralType);
   build_record_assignment_function(structuralType);
+  Symboltable::setCurrentScope(saveScope);
 }
 
 

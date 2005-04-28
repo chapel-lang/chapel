@@ -11,7 +11,7 @@ enum scopeType {
   SCOPE_INTERNAL_PRELUDE = -3,
   SCOPE_PRELUDE = -2,
   SCOPE_POSTPARSE = -1,
-  SCOPE_MODULE = 0,
+  SCOPE_MODULE = 0,           // less is all modules
   SCOPE_PARAM,
   SCOPE_FUNCTION,
   SCOPE_LOCAL,
@@ -60,6 +60,7 @@ class SymScope : public gc {
   void insert(Symbol* sym);
   void remove(Symbol* sym);
   SymScope* findEnclosingScopeType(scopeType t);
+  SymScope* findEnclosingScopeLessType(scopeType t);
 
   Symbol* findEnclosingSymContext();
   Stmt* findEnclosingStmtContext();

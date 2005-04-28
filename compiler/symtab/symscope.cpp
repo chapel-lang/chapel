@@ -167,6 +167,18 @@ SymScope* SymScope::findEnclosingScopeType(scopeType t) {
 }
 
 
+SymScope* SymScope::findEnclosingScopeLessType(scopeType t) {
+  if (type <= t) {
+    return this;
+  } else {
+    if (parent == NULL) {
+      INT_FATAL("can't find scope");
+    }
+    return parent->findEnclosingScopeLessType(t);
+  }
+}
+
+
 Symbol* SymScope::findEnclosingSymContext() {
   if (symContext) {
     return symContext;

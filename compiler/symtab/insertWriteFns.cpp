@@ -8,8 +8,10 @@ InsertWriteFns::InsertWriteFns(void) {
 
 
 static void createWriteFn(StructuralType* classType) {
-  SymScope* prevScope = Symboltable::setCurrentScope(classType->structScope);
-  
+  SymScope* newScope =
+    classType->structScope->findEnclosingScopeLessType(SCOPE_MODULE);
+  SymScope* saveScope =
+    Symboltable::setCurrentScope(newScope);
   FnSymbol* writeFn = Symboltable::startFnDef(new FnSymbol("write", 
                                                            classType->symbol),
                                               false);
@@ -24,15 +26,14 @@ static void createWriteFn(StructuralType* classType) {
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(writeFn, thisArg, dtVoid, body));
   DefStmt* defstmt = new DefStmt(def);
   classType->addDeclarations(defstmt);
-  
-  Symboltable::setCurrentScope(prevScope);
   //   Symboltable::dump(stderr);
+  Symboltable::setCurrentScope(saveScope);
 }
 
 
 void InsertWriteFns::processSymbol(Symbol* sym) {
   TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym);
-  if (typeSym != NULL) {
+  if (typeSym != NULL && !typeSym->isDead) {
     Type* type = typeSym->type;
 
     StructuralType* classType = dynamic_cast<StructuralType*>(type);

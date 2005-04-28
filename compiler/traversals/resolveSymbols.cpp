@@ -59,7 +59,9 @@ static void call_info_noanalysis(ParenOpExpr* expr, Vec<FnSymbol*>& fns) {
     }
     if (match) {
       if (candidate != NULL && candidate != fn) {
-        INT_FATAL(expr, "Unable to resolve function");
+        if (strncmp("_construct", fn->name, 10)) {
+          INT_FATAL(expr, "Unable to resolve function");
+        }
       }
       candidate = fn;
     }
