@@ -28632,3 +28632,14 @@ Added files:
 	                             test_index_expr0.future 
 	                             test_index_expr2.good 
 
+---------------------------------------------------------------------------
+
+04/28/05 16:35:58 -- deitz
+
+Log message:
+	Fixed small bug in coercion_wrapper, but the tests still fail with
+	NEW_COERCION_WRAPPER.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
