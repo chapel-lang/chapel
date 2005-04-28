@@ -148,7 +148,7 @@ static void build_record_inequality_function(StructuralType* structType) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
     cond = (cond)
-      ? new BinOp(BINOP_LOGOR, cond, new BinOp(BINOP_EQUAL, left, right))
+      ? new BinOp(BINOP_LOGOR, cond, new BinOp(BINOP_NEQUAL, left, right))
       : new BinOp(BINOP_NEQUAL, left, right);
   }
   Stmt* body = new ReturnStmt(cond);
