@@ -1375,9 +1375,9 @@ Stmt* StructuralType::buildIOBodyStmts(ParamSymbol* thisArg) {
 
 
 void StructuralType::codegen(FILE* outfile) {
-  if (this == dtSequence) {
-    INT_FATAL(this, "Cannot codegen a generic sequence");
-  }
+//  if (this == dtSequence) {
+//    INT_FATAL(this, "Cannot codegen a generic sequence");
+//  }
   if (symbol->isDead) {
     // BLC: theoretically, this case should only occur when a class
     // is never instantiated -- only nil references are used
@@ -1450,6 +1450,10 @@ void StructuralType::codegenPrototype(FILE* outfile) {
 
 void StructuralType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
                                    Expr* format) {
+  if (this == dtSequence) {
+    fprintf(outfile, "printf(\"Sequence\");");
+    return;
+  }
   forv_Symbol(method, methods) {
     if (strcmp(method->name, "write") == 0) {
       method->codegen(outfile);

@@ -44,6 +44,7 @@ static Sym *sizeof_symbol = 0;
 static Sym *cast_symbol = 0;
 static Sym *method_symbol = 0;
 static Sym *make_seq_symbol = 0;
+static Sym *make_chapel_tuple_symbol = 0;
 
 static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
@@ -53,7 +54,7 @@ static Sym *sym_locale = 0;
 
 static int init_function(FnSymbol *f);
 static int build_function(FnSymbol *f);
-static void map_symbols(Vec<BaseAST *> &syms);
+static void map_asts(Vec<BaseAST *> &syms);
 static void build_symbols(Vec<BaseAST *> &syms);
 static void build_types(Vec<BaseAST *> &syms);
 static int gen_if1(BaseAST *ast, BaseAST *parent = 0);
@@ -358,7 +359,7 @@ install_new_function(FnSymbol *f) {
   collect_asts(&syms, f);
   syms.add(f);
   syms.add(f->defPoint);
-  map_symbols(syms);
+  map_asts(syms);
   build_symbols(syms);
   build_types(syms);
   finalize_types(if1);
@@ -478,8 +479,11 @@ ASymbol::clone(CloneCallback *callback) {
     new_type->meta_type = new_type_symbol->asymbol->sym;
     new_type_symbol->asymbol->sym->meta_type = new_type;
     assert(new_type_symbol->asymbol->sym->is_meta_type);
-    for (int i = 0; i < new_type->has.n; i++)
-      new_type->has.v[i] = c->context->smap.get(new_type->has.v[i]);
+    for (int i = 0; i < new_type->has.n; i++) {
+      Sym *s = c->context->smap.get(new_type->has.v[i]);
+      assert(s);
+      new_type->has.v[i] = s;
+    }
     return new_type;
   }
 }
@@ -507,87 +511,91 @@ map_type(Type *t) {
 }
 
 static void
-map_symbols(Vec<BaseAST *> &syms) {
-  int symbols = 0, types = 0, exprs = 0, stmts = 0;
-  if (verbose_level > 1)
-    printf("map_symbols: %d\n", syms.n);
-  forv_BaseAST(s, syms) {
-    Symbol *sym = dynamic_cast<Symbol *>(s);
-    if (sym) {
-      int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
-      sym->asymbol = new_ASymbol(sym, basic);
-      sym->asymbol->symbol = sym;
-      if (sym->astType == SYMBOL_VAR && sym->type == dtNil) {
-        assert(!sym_nil);
-        sym_nil = sym->asymbol->sym;
-      }
-      if (!sym->parentScope) {
-        sym->asymbol->sym->global_scope = 1;
-      } else {
-        switch (sym->parentScope->type) {
-          default: assert(0);
-          case SCOPE_INTRINSIC:
-          case SCOPE_INTERNAL_PRELUDE:
-          case SCOPE_PRELUDE:
-          case SCOPE_MODULE:
-          case SCOPE_POSTPARSE:
-            sym->asymbol->sym->global_scope = 1;
-            break;
-          case SCOPE_LETEXPR:
-          case SCOPE_PARAM:
-          case SCOPE_FUNCTION:
-          case SCOPE_LOCAL:
-          case SCOPE_FORLOOP:
-          case SCOPE_FORALLEXPR:
-            sym->asymbol->sym->function_scope = 1;
-            break;
-          case SCOPE_CLASS: // handled as the symbols appears in code
-            break;
-        }
-      }
-      if (sym->astType == SYMBOL_PARAM) {
-        ParamSymbol *s = dynamic_cast<ParamSymbol *>(sym);
-        switch (s->intent) {
-          default: break;
-          case PARAM_IN: sym->asymbol->sym->intent = Sym_IN; break;
-          case PARAM_INOUT: sym->asymbol->sym->intent = Sym_INOUT; break;
-          case PARAM_OUT: sym->asymbol->sym->intent = Sym_OUT; break;
-          case PARAM_CONST: sym->asymbol->sym->is_read_only = 1; break;
-        }
-        // handle pragmas
-        Pragma *pr = sym->pragmas;
-        while (pr) {
-          if (!strcmp(pr->str, "clone_for_constants"))
-            s->asymbol->sym->clone_for_constants = 1;
-          pr = dynamic_cast<Pragma *>(pr->next);
-        }
-      }
-      symbols++;
-      if (verbose_level > 1 && sym->name)
-        printf("map_symbols: found Symbol '%s'\n", sym->name);
+map_baseast(BaseAST *s) {
+  Symbol *sym = dynamic_cast<Symbol *>(s);
+  if (sym) {
+    if (sym->asymbol)
+      return;
+    int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
+    sym->asymbol = new_ASymbol(sym, basic);
+    sym->asymbol->symbol = sym;
+    if (sym->astType == SYMBOL_VAR && sym->type == dtNil) {
+      assert(!sym_nil);
+      sym_nil = sym->asymbol->sym;
+    }
+    if (!sym->parentScope) {
+      sym->asymbol->sym->global_scope = 1;
     } else {
-      Type *t = dynamic_cast<Type *>(s);
-      if (t) {
-        map_type(t);
-        types++;
+      switch (sym->parentScope->type) {
+        default: assert(0);
+        case SCOPE_INTRINSIC:
+        case SCOPE_INTERNAL_PRELUDE:
+        case SCOPE_PRELUDE:
+        case SCOPE_MODULE:
+        case SCOPE_POSTPARSE:
+          sym->asymbol->sym->global_scope = 1;
+          break;
+        case SCOPE_LETEXPR:
+        case SCOPE_PARAM:
+        case SCOPE_FUNCTION:
+        case SCOPE_LOCAL:
+        case SCOPE_FORLOOP:
+        case SCOPE_FORALLEXPR:
+          sym->asymbol->sym->function_scope = 1;
+          break;
+        case SCOPE_CLASS: // handled as the symbols appears in code
+          break;
+      }
+    }
+    if (sym->astType == SYMBOL_PARAM) {
+      ParamSymbol *s = dynamic_cast<ParamSymbol *>(sym);
+      switch (s->intent) {
+        default: break;
+        case PARAM_IN: sym->asymbol->sym->intent = Sym_IN; break;
+        case PARAM_INOUT: sym->asymbol->sym->intent = Sym_INOUT; break;
+        case PARAM_OUT: sym->asymbol->sym->intent = Sym_OUT; break;
+        case PARAM_CONST: sym->asymbol->sym->is_read_only = 1; break;
+      }
+      // handle pragmas
+      Pragma *pr = sym->pragmas;
+      while (pr) {
+        if (!strcmp(pr->str, "clone_for_constants"))
+          s->asymbol->sym->clone_for_constants = 1;
+        pr = dynamic_cast<Pragma *>(pr->next);
+      }
+    }
+    if (verbose_level > 1 && sym->name)
+      printf("map_asts: found Symbol '%s'\n", sym->name);
+  } else {
+    Type *t = dynamic_cast<Type *>(s);
+    if (t) {
+      if (t->asymbol)
+        return;
+      map_type(t);
+    } else {
+      Expr *e = dynamic_cast<Expr *>(s);
+      if (e) {
+        if (e->ainfo)
+          return;
+        e->ainfo = new AInfo;
+        e->ainfo->xast = e;
       } else {
-        Expr *e = dynamic_cast<Expr *>(s);
-        if (e) {
-          e->ainfo = new AInfo;
-          e->ainfo->xast = e;
-          exprs++;
-        } else {
-          Stmt *st = dynamic_cast<Stmt *>(s);
-          st->ainfo = new AInfo;
-          st->ainfo->xast = s;
-          stmts++; 
-        }
+        Stmt *st = dynamic_cast<Stmt *>(s);
+        if (st->ainfo)
+          return;
+        st->ainfo = new AInfo;
+        st->ainfo->xast = s;
       }
     }
   }
+}
+
+static void
+map_asts(Vec<BaseAST *> &syms) {
   if (verbose_level > 1)
-    printf("map_symbols: BaseASTs: %d, Symbols: %d, Types: %d, Exprs: %d, Stmts: %d\n", 
-           syms.n, symbols, types, exprs, stmts);
+    printf("map_asts: %d\n", syms.n);
+  forv_BaseAST(s, syms)
+    map_baseast(s);
 }
 
 static void 
@@ -648,6 +656,127 @@ build_symbols(Vec<BaseAST *> &syms) {
   }
 }
 
+static Sym *
+build_type(Type *t) {
+  if (t->symbol) {
+    t->asymbol->sym->meta_type = t->symbol->asymbol->sym;
+    t->symbol->asymbol->sym->meta_type = t->asymbol->sym;
+  }
+  make_meta_type(t->asymbol->sym);
+  switch (t->astType) {
+    default: assert(!"case");
+    case TYPE:
+      t->asymbol->sym->type_kind = Type_UNKNOWN;
+      break;
+    case TYPE_BUILTIN: break;
+    case TYPE_ENUM: {
+      t->asymbol->sym->type_kind = Type_TAGGED;
+      t->asymbol->sym->inherits_add(sym_enum_element);
+      GetSymbols* getSymbols = new GetSymbols();
+      TRAVERSE_LS(t, getSymbols, true);
+      for (int i = 0; i < getSymbols->symbols.n; i++) {
+        BaseAST *s = getSymbols->symbols.v[i];
+        Sym *ss = dynamic_cast<Symbol*>(s)->asymbol->sym;
+        build_enum_element(t->asymbol->sym, ss, i);
+        t->asymbol->sym->has.add(ss);
+      }
+      break;
+    }
+    case TYPE_DOMAIN: 
+      build_record_type(t, sym_domain);
+      break;
+    case TYPE_INDEX: {
+      IndexType *it = dynamic_cast<IndexType*>(t);
+      build_record_type(t, sym_index);
+      Sym *s = it->asymbol->sym;
+      s->element = new_sym();
+      s->element->type = it->idxType->asymbol->sym;
+      s->element->is_var = 1;
+      s->element->is_external = 1;
+      if (it->domainType)
+        s->domain = it->domainType->asymbol->sym;
+      break;
+    }
+    case TYPE_ARRAY: {
+      ArrayType *at = dynamic_cast<ArrayType*>(t);
+      build_record_type(t, sym_array); 
+      Sym *s = at->asymbol->sym;
+      s->element = new_sym();
+      s->element->type = at->elementType->asymbol->sym;
+      s->element->is_var = 1;
+      s->element->is_external = 1;
+      s->domain = at->domainType->asymbol->sym;
+      break;
+    }
+    case TYPE_TUPLE: {
+#if 0
+      TupleType *tt = dynamic_cast<TupleType*>(t);
+      forv_Vec(Type, c, tt->components) {
+        Sym *x = new_sym();
+        x->ast = c->asymbol->sym->ast;
+        x->type = c->asymbol->sym;
+        t->asymbol->sym->has.add(x);
+      }
+#endif
+      t->asymbol->sym->type_kind = Type_PRODUCT;
+      t->asymbol->sym->inherits_add(sym_tuple);
+      break;
+    }
+    case TYPE_USER: {
+      UserType *tt = dynamic_cast<UserType*>(t);
+      t->asymbol->sym->type_kind = Type_ALIAS;
+      t->asymbol->sym->alias = tt->definition->asymbol->sym;
+      break;
+    }
+    case TYPE_LIKE: {
+      LikeType *tt = dynamic_cast<LikeType*>(t);
+      if (tt->expr->astType == EXPR_VARIABLE) {
+        Variable *v = (Variable*)tt->expr;
+        if (v->var->type && v->var->type != dtUnknown) {
+          t->asymbol->sym->type_kind = Type_ALIAS;
+          t->asymbol->sym->alias = v->var->type->asymbol->sym;
+          break;
+        }
+      }
+      INT_FATAL(t, "No analysis support for 'like'");
+    }
+    case TYPE_SEQ: {
+      SeqType *tt = dynamic_cast<SeqType*>(t);
+      Sym *s = tt->asymbol->sym;
+      s->element = new_sym();
+      build_record_type(t, sym_sequence);
+      break;
+    }
+    case TYPE_CLASS:
+    case TYPE_RECORD:
+    case TYPE_UNION: 
+    {
+      StructuralType *tt = dynamic_cast<StructuralType*>(t);
+      t->asymbol->sym->type_kind = Type_RECORD;
+      if (t->astType == TYPE_RECORD || t->astType == TYPE_UNION)
+        t->asymbol->sym->is_value_class = 1;
+      if (t->astType == TYPE_UNION)
+        t->asymbol->sym->is_union_class = 1;
+      if (tt->parentStruct)
+        t->asymbol->sym->inherits_add(tt->parentStruct->asymbol->sym);
+      else
+        t->asymbol->sym->inherits_add(sym_object);
+      if (t->asymbol->sym == sym_sequence)
+        t->asymbol->sym->element = new_sym();
+      break;
+    }
+    case TYPE_VARIABLE: {
+      VariableType *tt = dynamic_cast<VariableType*>(t);
+      tt->asymbol->sym->type_kind = Type_VARIABLE;
+      break;
+    }
+    case TYPE_NIL: {
+      break;
+    }
+  }
+  return t->asymbol->sym;
+}
+
 static void
 build_types(Vec<BaseAST *> &syms) {
   Vec<Type *> types;
@@ -656,122 +785,8 @@ build_types(Vec<BaseAST *> &syms) {
     if (t) 
       types.add(t);
   }
-  forv_Type(t, types) {
-    if (t->symbol) {
-      t->asymbol->sym->meta_type = t->symbol->asymbol->sym;
-      t->symbol->asymbol->sym->meta_type = t->asymbol->sym;
-    }
-    make_meta_type(t->asymbol->sym);
-    switch (t->astType) {
-      default: assert(!"case");
-      case TYPE:
-        t->asymbol->sym->type_kind = Type_UNKNOWN;
-        break;
-      case TYPE_BUILTIN: break;
-      case TYPE_ENUM: {
-        t->asymbol->sym->type_kind = Type_TAGGED;
-        t->asymbol->sym->inherits_add(sym_enum_element);
-        GetSymbols* getSymbols = new GetSymbols();
-        TRAVERSE_LS(t, getSymbols, true);
-        for (int i = 0; i < getSymbols->symbols.n; i++) {
-          BaseAST *s = getSymbols->symbols.v[i];
-          Sym *ss = dynamic_cast<Symbol*>(s)->asymbol->sym;
-          build_enum_element(t->asymbol->sym, ss, i);
-          t->asymbol->sym->has.add(ss);
-        }
-        break;
-      }
-      case TYPE_DOMAIN: 
-        build_record_type(t, sym_domain);
-        break;
-      case TYPE_INDEX: {
-        IndexType *it = dynamic_cast<IndexType*>(t);
-        build_record_type(t, sym_index);
-        Sym *s = it->asymbol->sym;
-        s->element = new_sym();
-        s->element->type = it->idxType->asymbol->sym;
-        s->element->is_var = 1;
-        s->element->is_external = 1;
-        if (it->domainType)
-          s->domain = it->domainType->asymbol->sym;
-        break;
-      }
-      case TYPE_ARRAY: {
-        ArrayType *at = dynamic_cast<ArrayType*>(t);
-        build_record_type(t, sym_array); 
-        Sym *s = at->asymbol->sym;
-        s->element = new_sym();
-        s->element->type = at->elementType->asymbol->sym;
-        s->element->is_var = 1;
-        s->element->is_external = 1;
-        s->domain = at->domainType->asymbol->sym;
-        break;
-      }
-      case TYPE_TUPLE: {        
-        TupleType *tt = dynamic_cast<TupleType*>(t);
-        forv_Vec(Type, c, tt->components) {
-          Sym *x = new_sym();
-          x->ast = c->asymbol->sym->ast;
-          x->type = c->asymbol->sym;
-          t->asymbol->sym->has.add(x);
-        }
-        t->asymbol->sym->type_kind = Type_PRODUCT;
-        t->asymbol->sym->inherits_add(sym_tuple);
-        break;
-      }
-      case TYPE_USER: {
-        UserType *tt = dynamic_cast<UserType*>(t);
-        t->asymbol->sym->type_kind = Type_ALIAS;
-        t->asymbol->sym->alias = tt->definition->asymbol->sym;
-        break;
-      }
-      case TYPE_LIKE: {
-        LikeType *tt = dynamic_cast<LikeType*>(t);
-        if (tt->expr->astType == EXPR_VARIABLE) {
-          Variable *v = (Variable*)tt->expr;
-          if (v->var->type && v->var->type != dtUnknown) {
-            t->asymbol->sym->type_kind = Type_ALIAS;
-            t->asymbol->sym->alias = v->var->type->asymbol->sym;
-            break;
-          }
-        }
-        INT_FATAL(t, "No analysis support for 'like'");
-      }
-      case TYPE_SEQ: {
-        SeqType *tt = dynamic_cast<SeqType*>(t);
-        Sym *s = tt->asymbol->sym;
-        s->element = new_sym();
-        build_record_type(t, sym_sequence);
-        break;
-      }
-      case TYPE_CLASS:
-      case TYPE_RECORD:
-      case TYPE_UNION: 
-      {
-        StructuralType *tt = dynamic_cast<StructuralType*>(t);
-        t->asymbol->sym->type_kind = Type_RECORD;
-        if (t->astType == TYPE_RECORD || t->astType == TYPE_UNION)
-          t->asymbol->sym->is_value_class = 1;
-        if (t->astType == TYPE_UNION)
-          t->asymbol->sym->is_union_class = 1;
-        if (tt->parentStruct)
-          t->asymbol->sym->inherits_add(tt->parentStruct->asymbol->sym);
-        else
-          t->asymbol->sym->inherits_add(sym_object);
-        if (t->asymbol->sym == sym_sequence)
-          t->asymbol->sym->element = new_sym();
-        break;
-      }
-      case TYPE_VARIABLE: {
-        VariableType *tt = dynamic_cast<VariableType*>(t);
-        tt->asymbol->sym->type_kind = Type_VARIABLE;
-        break;
-      }
-    case TYPE_NIL: {
-      break;
-    }
-    }
-  }
+  forv_Type(t, types)
+    build_type(t);
 }
 
 static void
@@ -951,7 +966,7 @@ build_builtin_symbols() {
 
 static int
 import_symbols(Vec<BaseAST *> &syms) {
-  map_symbols(syms);
+  map_asts(syms);
   build_builtin_symbols();
   build_symbols(syms);
   build_types(syms);
@@ -1980,7 +1995,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
       send->ast = s->ainfo;
-      if1_add_send_arg(if1, send, sym_make_tuple);
+      if1_add_send_arg(if1, send, sym_primitive);
+      if1_add_send_arg(if1, send, make_chapel_tuple_symbol);
       forv_Vec(Expr, a, args)
         if1_add_send_arg(if1, send, a->ainfo->rval);
       if1_add_send_result(if1, send, s->ainfo->rval);
@@ -2115,6 +2131,7 @@ build_classes(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms)
     if (s->astType == TYPE_CLASS || 
         s->astType == TYPE_RECORD || 
+        s->astType == TYPE_TUPLE || 
         s->astType == TYPE_UNION)
       classes.add(dynamic_cast<StructuralType*>(s)); 
   if (verbose_level > 1)
@@ -2215,6 +2232,7 @@ init_symbols() {
   cast_symbol = if1_make_symbol(if1, "cast");
   method_symbol = if1_make_symbol(if1, "__method");
   make_seq_symbol = if1_make_symbol(if1, "make_seq");
+  make_chapel_tuple_symbol = if1_make_symbol(if1, "make_chapel_tuple");
   write_symbol = if1_make_symbol(if1, "write");
   writeln_symbol = if1_make_symbol(if1, "writeln");
   read_symbol = if1_make_symbol(if1, "read");
@@ -2420,6 +2438,39 @@ make_seq(PNode *pn, EntrySet *es) {
   update_in(result, make_AType(cs));
 }
 
+static Sym *
+get_tuple_type(int n) {
+  Vec<Type *> components;
+  for (int i = 0; i < n; i++)
+    components.add(dtUnknown);
+  TypeSymbol *ts = TypeSymbol::lookupOrDefineTupleTypeSymbol(&components);
+  if (ts->asymbol)
+    return ts->type->asymbol->sym;
+  map_baseast(ts);
+  map_baseast(ts->type);
+  TupleType *tt = dynamic_cast<TupleType*>(ts->type);
+  forv_Vec(VarSymbol, x, tt->fields)
+    map_baseast(x);
+  Vec<BaseAST*> asts;
+  asts.add(ts->type);
+  build_classes(asts);
+  finalize_symbols(if1);
+  finalize_types(if1);
+  Sym *t = build_type(ts->type);
+  t->type = t;
+  forv_Sym(ss, t->has)
+    if (!ss->var)
+      ss->var = new Var(ss);
+  build_type_hierarchy();
+  return t;
+}
+
+static void
+make_chapel_tuple(PNode *pn, EntrySet *es) {
+  Sym *t = get_tuple_type(pn->rvals.n - 2);
+  prim_make(pn, es, t, 2);
+}
+
 static void
 seqcat_seq(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
@@ -2496,6 +2547,7 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   REG(array_index_symbol->name, array_index);
   REG(array_set_symbol->name, array_set);
   REG(make_seq_symbol->name, make_seq);
+  REG(make_chapel_tuple_symbol->name, make_chapel_tuple);
   REG(if1_cannonicalize_string(if1, "ptr_eq"), ptr_eq);
   REG(if1_cannonicalize_string(if1, "ptr_neq"), ptr_neq);
   REG(if1_cannonicalize_string(if1, "array_pointwise_op"), array_pointwise_op);

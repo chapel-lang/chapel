@@ -20,5 +20,7 @@
 #include "seq.h"
 #include "union.h"
 
+typedef void *_seq;
+
 #endif
 
