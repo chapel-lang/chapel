@@ -413,12 +413,13 @@ ACallbacks::coercion_wrapper(Match *m) {
     Sym *sym = m->fun->arg_syms.get(p);
     Symbol *symbol = sym->asymbol ? dynamic_cast<Symbol*>(sym->asymbol->symbol) : 0;
     if (symbol) {
-      TypeSymbol *t = dynamic_cast<TypeSymbol*>(coercions.get(symbol));
-      if (t) {
+      Sym *type_sym = m->coercion_substitutions.get(p);
+      if (type_sym) {
+        Type *type = dynamic_cast<Type*>(type_sym->asymbol->symbol);
         Sym *a = m->fun->arg_syms.get(p);
         if (a->asymbol && a->asymbol->symbol) {
           Symbol *aa = dynamic_cast<Symbol*>(a->asymbol->symbol);
-          coercions.put(aa, t);
+          coercions.put(aa, type->symbol);
         }
       }
     }
