@@ -28444,3 +28444,14 @@ Modified files:
 	                             findUnknownTypes.cpp 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/28/05 10:44:06 -- jplevyak
+
+Log message:
+	Add a .future... this test was working "by accident", and I have
+	  work around the issue
+
+Added files:
+	chapel/test/classes/deitz/: test_class_list1.future 
+
