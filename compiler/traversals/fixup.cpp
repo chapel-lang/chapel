@@ -150,11 +150,11 @@ void Fixup::postProcessSymbol(Symbol* sym) {
   if (verify) {
     verifyParentScope(sym);
     verifyDefPoint(sym);
-//     if (dynamic_cast<TypeSymbol*>(sym)) {
-//       if (sym->type->symbol != sym) {
-// 	INT_FATAL(sym, "(TypeSymbol)sym->type->symbol != sym!");
-//       }
-//     }
+    if (dynamic_cast<TypeSymbol*>(sym)) {
+      if (sym->type->symbol != sym) {
+ 	INT_FATAL(sym, "(TypeSymbol)sym->type->symbol != sym!");
+      }
+    }
   }
 }
 
