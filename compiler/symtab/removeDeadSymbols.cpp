@@ -52,7 +52,11 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
     if (!function_is_used(fnSym)) {
       fnSym->isDead = true;
       // BLC: see comment on previous conditional
-      sym->defPoint->parentStmt->extract();
+      if (!sym->defPoint->next && !sym->defPoint->prev) {
+	sym->defPoint->parentStmt->extract();
+      } else {
+	sym->defPoint->extract();
+      }
     }
   }
 #endif

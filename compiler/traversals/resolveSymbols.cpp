@@ -134,4 +134,16 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       }
     }
   }
+
+  if (useNewConstructor) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
+      if (analyzeAST) {
+	Vec<FnSymbol*> fns;
+	call_info(defExpr, fns);
+	if (fns.n == 1) {
+	  defExpr->sym->type->defaultConstructor = fns.v[0];
+	}
+      }
+    }
+  }
 }
