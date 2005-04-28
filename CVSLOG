@@ -28643,3 +28643,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 16:46:54 -- deitz
+
+Log message:
+	Cleaned and improved RemoveDeadSymbols.  It now only removes the
+	symbol that is dead.  Previously it removed the whole DefStmt even if
+	it contained other DefExprs than the one for the dead symbol.  Except
+	for functions which I fixed earlier.
+
+Modified files:
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+
