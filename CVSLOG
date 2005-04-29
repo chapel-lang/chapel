@@ -28919,3 +28919,23 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/29/05 15:03:21 -- jplevyak
+
+Log message:
+	Fixed a bug in FnSymbol::coercion_wrapper where the formal
+	was being used intead of the wrapperFormal in a couple places
+	(in particular, in the call to the wrapped function).
+	
+	I am kind of surprised that non of the Verify code found this
+	as the Symbol was appearing in a function in which it wasn't even
+	scoped.
+	
+	Removed the NEW_CONSTRUCTOR #define.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+
