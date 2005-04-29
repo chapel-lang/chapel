@@ -28897,3 +28897,13 @@ Added files:
 	                                         test_swap.future 
 	                                         test_swap.good 
 
+---------------------------------------------------------------------------
+
+04/29/05 14:42:37 -- deitz
+
+Log message:
+	Updated regressions log with my new understandings, or lack thereof.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
