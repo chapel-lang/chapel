@@ -28656,3 +28656,19 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: removeDeadSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/28/05 17:17:40 -- jplevyak
+
+Log message:
+	Indexes seem to have been changed back into integers, which
+	means that they nolonger use the overloaded = operators and
+	the analysis results are therefor different.
+
+Modified files:
+	chapel/test/flowanalysis/newast/: declprintdom.good 
+	                                  declprintdom2.good 
+	                                  enumarray.good 
+	                                  formatoutput.good noop.good 
+	                                  protoast_test.good 
+
