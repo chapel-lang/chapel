@@ -28785,3 +28785,33 @@ Log message:
 Modified files:
 	chapel/runtime/src/: arg.c 
 
+---------------------------------------------------------------------------
+
+04/29/05 10:30:18 -- deitz
+
+Log message:
+	Time to eat --useNewConstructor.
+	
+	Made --useNewConstructor the default and replaced it with
+	--useOldConstructor in case we need to look at the old behavior while
+	getting the remaining test cases working.
+	
+	Updated the REGRESSIONS file.
+	
+	Removed two useNewConstructor tests which duplicated what is now
+	tested by default.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             resolveSymbols.cpp 
+	chapel/test/: REGRESSIONS 
+Removed files:
+	chapel/test/classes/deitz/: 
+	                            test_class1_useNewConstructor_stopgap.chpl 
+	                            test_class1_useNewConstructor_stopgap.good 
+	                            test_class3_useNewConstructor_stopgap.chpl 
+	                            test_class3_useNewConstructor_stopgap.good 
+
