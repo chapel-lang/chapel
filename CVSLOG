@@ -28907,3 +28907,15 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+04/29/05 15:01:08 -- deitz
+
+Log message:
+	Updated regressions file with more understanding on
+	
+	  classes/deitz/test_type_in_class1
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
