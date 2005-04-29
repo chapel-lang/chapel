@@ -28939,3 +28939,18 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+04/29/05 15:34:19 -- deitz
+
+Log message:
+	Partially fixed regression test_type_in_class1.  It now no longer
+	fails because it is trying to resolve a ParenOpExpr in a type
+	declaration list but because it is trying to resolve a ParenOpExpr in
+	a default value to an argument, a ParamSymbol::init.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/: REGRESSIONS 
+
