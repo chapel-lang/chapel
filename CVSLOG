@@ -28867,3 +28867,21 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/traversals/: insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+04/29/05 14:30:55 -- deitz
+
+Log message:
+	Removed code I commented out in John's patch.
+	
+	Turned on the ->noDefaultInit bool for all variables that have no
+	declared types (type == dtUnknown before analysis) so that they do not
+	get a default initialization.
+	
+	This fixes classes/jplevyak/record_type_hierarchy-1.chpl and
+	classes/jplevyak/union_type_hierarchy-1.
+
+Modified files:
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+
