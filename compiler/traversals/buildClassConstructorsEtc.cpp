@@ -24,6 +24,9 @@ static void build_constructor(StructuralType* structType) {
         char* name = tmp->name;
         Type* type = tmp->type;
         Expr* init = (tmp->defPoint->init) ? tmp->defPoint->init->copy() : new VarInitExpr(tmp);
+        if (tmp->defPoint->init) {
+          tmp->defPoint->init->extract();
+        }
         ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, init);
         args = appendLink(args, arg);
       }

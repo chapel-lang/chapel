@@ -21,8 +21,8 @@ linux regressions
   copied and the copy is executed) and so analysis knows nothing about
   it.
 
-  SJD Update: I just checked this out and if I call type_is_used on
-  the Type I get a true.
+  The resolveSymbols is now on the default value (ParamSymbol::init)
+  to an argument to the constructor.
 
 [Error matching compiler output for classes/deitz/test_type_in_class2]
 [Error matching compiler output for classes/bradc/records/assignRecord]

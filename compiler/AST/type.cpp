@@ -1319,6 +1319,9 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
       rhs = new Variable(ptmp);
     } else {
       rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : NULL;
+      if (tmp->defPoint->init) {
+        tmp->defPoint->init->extract();
+      }
     }
     if (rhs) {
       Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
