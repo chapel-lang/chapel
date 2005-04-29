@@ -28774,3 +28774,14 @@ Added files:
 	                             printFinalMemStat.execopts 
 	                             printFinalMemStat.good 
 
+---------------------------------------------------------------------------
+
+04/29/05 10:00:43 -- bradc
+
+Log message:
+	Added a hack to getIntArg for freebsd which seems to have
+	problems scanf-ing variables of type "long long".
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+
