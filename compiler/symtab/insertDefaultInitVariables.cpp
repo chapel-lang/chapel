@@ -14,6 +14,16 @@ InsertDefaultInitVariables::InsertDefaultInitVariables() {
 
 void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
   static int uid = 1;
+
+
+  // No type, no default init
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
+    if (var->type == dtUnknown) {
+      var->noDefaultInit = true;
+    }
+  }
+
+
   if (dynamic_cast<TypeSymbol*>(sym)) {
     if (dynamic_cast<ArrayType*>(sym->type)) { // bail on array types
       if (sym->type->defaultVal) {

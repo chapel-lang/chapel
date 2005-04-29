@@ -134,17 +134,7 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
     return new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
     Expr* lhs = new Variable(var);
-    Expr* constructor_variable = NULL;
-//     if (analyzeAST && type != dtString) {
-//       Vec<FnSymbol *> fns;
-//       call_info(var->defPoint, fns);
-//       if (!fns.n) {
-//         return new NoOpStmt();
-//       }
-//       constructor_variable = new Variable(fns.v[0]);
-//     } else {
-      constructor_variable = new Variable(type->defaultConstructor);
-//     }
+    Expr* constructor_variable = new Variable(type->defaultConstructor);
     Expr* rhs = new FnCall(constructor_variable, NULL);
     Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
     return new ExprStmt(init_expr);
