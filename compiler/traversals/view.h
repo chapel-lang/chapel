@@ -9,7 +9,8 @@
 class View : public Traversal {
  public:
   int indent;
-  View::View();
+  bool numberSymbols;
+  View::View(bool initNumberSymbols = false);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);
@@ -21,5 +22,6 @@ class View : public Traversal {
 };
 
 extern void print_view(BaseAST* ast);
+extern void nprint_view(BaseAST* ast);
 
 #endif

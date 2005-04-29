@@ -7,8 +7,9 @@
 #include "symtab.h"
 #include "stringutil.h"
 
-View::View() {
+View::View(bool initNumberSymbols) {
   indent = 0;
+  numberSymbols = initNumberSymbols;
 }
 
 void View::preProcessStmt(Stmt* stmt) {
@@ -33,7 +34,11 @@ void View::preProcessExpr(Expr* expr) {
   printf("(%s", astTypeName[expr->astType]);
   indent += 2;
   if (IntLiteral* e = dynamic_cast<IntLiteral*>(expr)) {
-    printf(" '%ld'", e->val);
+    printf(" %ld", e->val);
+  } else if (StringLiteral* e = dynamic_cast<StringLiteral*>(expr)) {
+    printf(" \"%s\"", e->str);
+  } else if (SizeofExpr* e = dynamic_cast<SizeofExpr*>(expr)) {
+    printf(" 'type %s'", e->type->symbol->name);
   }
 }
 
@@ -43,7 +48,19 @@ void View::postProcessExpr(Expr* expr) {
 }
 
 void View::preProcessSymbol(Symbol* sym) {
-  printf(" '%s'", sym->name);
+  printf(" '");
+  if (dynamic_cast<FnSymbol*>(sym)) {
+    printf("fn ");
+  } else if (dynamic_cast<ParamSymbol*>(sym)) {
+    printf("arg ");
+  } else if (dynamic_cast<TypeSymbol*>(sym)) {
+    printf("type ");
+  }
+  printf("%s", sym->name);
+  if (numberSymbols) {
+    printf("[%ld]", sym->id);
+  }
+  printf("'");
 }
 
 void View::postProcessSymbol(Symbol* sym) {
@@ -60,6 +77,12 @@ void View::postProcessType(Type* type) {
 
 void print_view(BaseAST* ast) {
   TRAVERSE(ast, new View(), true);
+  printf("\n\n");
+  fflush(stdout);
+}
+
+void nprint_view(BaseAST* ast) {
+  TRAVERSE(ast, new View(true), true);
   printf("\n\n");
   fflush(stdout);
 }
