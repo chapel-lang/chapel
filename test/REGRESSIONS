@@ -24,6 +24,10 @@ linux regressions
   The resolveSymbols is now on the default value (ParamSymbol::init)
   to an argument to the constructor.
 
+  JBP: this code is also not executed, so it should not be
+  be resolved/traversed.  It is copied into any default wrappers
+  which are created.
+
 [Error matching compiler output for classes/deitz/test_type_in_class2]
 [Error matching compiler output for classes/bradc/records/assignRecord]
 
