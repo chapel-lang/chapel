@@ -137,7 +137,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     }
   }
 
-  if (useNewConstructor) {
+  if (!useOldConstructor) {
     if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
       if (analyzeAST) {
         Vec<FnSymbol*> fns;

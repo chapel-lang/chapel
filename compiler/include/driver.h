@@ -9,7 +9,7 @@
 
 // Begin temporary development flags
 extern int useNewInit;
-extern int useNewConstructor;
+extern int useOldConstructor;
 extern int checkAnalysisTypeinfo;
 // End temporary development flags
 

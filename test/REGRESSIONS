@@ -9,6 +9,12 @@ linux regressions
 
   NOTE: The interface for the coercion wrapper has been updated.
 
+[Error matching compiler output for arrays/deitz/test_array_basic1]
+
+  Fails because the new wrapper constructor for the class is not
+  called when the array is initialized.  The array needs a constructor
+  so that its initialization code can be analyzed.
+
 [Error matching compiler output for classes/deitz/test_type_in_class1]
 
   This test is failing because it is attempting to resolveSymbols for
@@ -16,6 +22,22 @@ linux regressions
   copied and the copy is executed) and so analysis knows nothing about
   it.
 
+[Error matching compiler output for classes/deitz/test_type_in_class2]
+
+  The type alias in the class is added to the parameter list.  I think
+  types that are fully defined (not type variables) should not be
+  added to the parameter list.
+
+[Error matching compiler output for classes/bradc/records/assignRecord]
+
+  Fails in analysis because of the new constructor with parameters.
+
+[Error matching compiler output for classes/jplevyak/record_type_hierarchy-1]
+[Error matching compiler output for classes/jplevyak/union_type_hierarchy-1]
+
+  The wrapper constructor is not used as the default constructor
+  because call_info on the DefExpr of the object doesn't return
+  anything.
 
 linux valgrind regressions
 ==========================
@@ -24,12 +46,6 @@ linux valgrind regressions
 
 linux64-specific regressions
 ============================
-
-memory/shannon/printMemTable
-
-  need to implement a way to filter memtable when printing to filter
-  out small allocations that are platform-dependent (like structs
-  involving pointers) (shannon).
 
 
 
@@ -41,14 +57,10 @@ cygwin-specific regressions
 freebsd-specific regressions
 ============================
 
-memory/shannon/configVarFile:
-memory/shannon/jacobi:
-
-  --memthreshold is not working because freebsd does not seem to
-  support %lld for reading a long long value in (shannon).
-
 
 
 sunos-specific regressions
 ==========================
+
+
 

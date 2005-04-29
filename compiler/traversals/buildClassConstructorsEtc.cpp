@@ -18,7 +18,7 @@ static void build_constructor(StructuralType* structType) {
 
   ParamSymbol* args = NULL;
 
-  if (useNewConstructor) {
+  if (!useOldConstructor) {
     if (analyzeAST) {
       forv_Vec(VarSymbol, tmp, structType->fields) {
         char* name = tmp->name;

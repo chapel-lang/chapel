@@ -1307,7 +1307,7 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* rhs = NULL;
-    if (analyzeAST && useNewConstructor) {
+    if (analyzeAST && !useOldConstructor) {
       rhs = new Variable(ptmp);
     } else {
       rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : NULL;
@@ -1317,7 +1317,7 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
       Stmt* assign_stmt = new ExprStmt(assign_expr);
       stmts = appendLink(stmts, assign_stmt);
     }
-    if (analyzeAST && useNewConstructor) {
+    if (analyzeAST && !useOldConstructor) {
       ptmp = nextLink(ParamSymbol, ptmp);
     }
   }
