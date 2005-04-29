@@ -1932,8 +1932,8 @@ void initExpr(void) {
   Variable* var = new Variable(pst);
   unknownDomain = new ForallExpr(var);
   
-  pst = new Symbol(SYMBOL, "nil");
-  Symboltable::defineVars(pst, dtNil, NULL, VAR_NORMAL, VAR_CONST);
+  gNil = Symboltable::defineSingleVarDefStmt("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->defExprls->sym;
+  dtNil->defaultVal = new Variable(gNil);
 }
 
 

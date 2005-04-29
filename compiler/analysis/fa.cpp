@@ -14,6 +14,7 @@
 
 static int avar_id = 1;
 static int creation_set_id = 1;
+static int extensions = 0;
 
 static FA *fa = 0;
 
@@ -2851,7 +2852,6 @@ static int
 extend_analysis() {
   // initialize
   int analyze_again = 0;
-  static int extensions = 0;
   compute_recursive_entry_sets();
   compute_recursive_entry_creation_sets();
   forv_EntrySet(es, fa->ess) 

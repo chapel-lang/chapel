@@ -1079,13 +1079,18 @@ get_defaultVal(Type *t) {
   return t->defaultVal->ainfo->rval;
 }
 
+static Sym *
+constructor_name(FnSymbol *f) {
+  return if1_make_symbol(if1, f->asymbol->sym->name);
+}
+
 static void
 gen_alloc(Sym *s, Sym *type, AInfo *ast, int is_this = 0) {
   Code **c = &ast->code;
   Code *send = 0;
   StructuralType *ct = dynamic_cast<StructuralType*>(type->asymbol->symbol);
   if (ct && (ct->astType == TYPE_RECORD || ct->astType == TYPE_UNION) && !is_this)
-    send = if1_send(if1, c, 1, 1, ct->defaultConstructor->asymbol->sym, s);
+    send = if1_send(if1, c, 1, 1, constructor_name(ct->defaultConstructor), s);
   if (!send) {
     Sym *tmp = new_sym();
     send = if1_send(if1, c, 2, 1, sym_new, type, tmp);
@@ -1100,7 +1105,7 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, int is_this = 0) {
     } else if (at->elementType->defaultVal) {
       if1_move(if1, c, get_defaultVal(at->elementType), ret, ast);
     } else if (at->elementType->defaultConstructor) {
-      Code *send = if1_send(if1, c, 1, 1, at->elementType->defaultConstructor->asymbol->sym, ret);
+      Code *send = if1_send(if1, c, 1, 1, constructor_name(at->elementType->defaultConstructor), ret);
       send->ast = ast;
     } else
       ret = sym_nil;;
@@ -1198,7 +1203,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
     if (!this_is_init && var->type->defaultVal) {
       if1_move(if1, &ast->code, get_defaultVal(var->type), ast->sym, ast);
     } else if (var->type->defaultConstructor) {
-      Code *send = if1_send(if1, &ast->code, 1, 1, var->type->defaultConstructor->asymbol->sym, ast->sym);
+      Code *send = if1_send(if1, &ast->code, 1, 1, constructor_name(var->type->defaultConstructor), ast->sym);
       send->ast = ast;
     } else if (!this_constructor)
       if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
@@ -1662,7 +1667,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         if1_move(if1, &s->ainfo->code, get_defaultVal(s->symbol->type), s->ainfo->rval, s->ainfo);
       } else if (s->symbol->type->defaultConstructor) {
         s->ainfo->rval = new_sym();
-        Code *send = if1_send(if1, &s->ainfo->code, 1, 1, s->symbol->type->defaultConstructor->asymbol->sym, s->ainfo->rval);
+        Code *send = if1_send(if1, &s->ainfo->code, 1, 1, constructor_name(s->symbol->type->defaultConstructor), s->ainfo->rval);
         send->ast = s->ainfo;
       } else
         s->ainfo->rval = sym_nil;
@@ -2706,6 +2711,8 @@ call_info(Expr* a, Vec<FnSymbol *> &fns) {
     if (stmt)
        ast = stmt->ainfo;
   }
+  if (!ast)
+    return; // this code is not known to analysis
   assert(ast);
   Vec<Fun *> funs;
   call_info(ff, ast, funs);

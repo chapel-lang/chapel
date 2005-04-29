@@ -12,6 +12,8 @@
 #include "pattern.h"
 #include "../traversals/buildClassConstructorsEtc.h"
 
+Symbol *gNil = 0;
+
 
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type, 
                bool init_exportMe) :

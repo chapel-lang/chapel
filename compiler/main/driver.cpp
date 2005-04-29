@@ -95,7 +95,7 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
- {"useNewConstructor", ' ', "Use constructor with named parameters", "F", &useNewConstructor, NULL, NULL},
+ {"useNewConstructor", ' ', "Use constructor with named parameters", "F", &useNewConstructor, "CHPL_USE_NEW_CONSTRUCTOR", NULL},
  {"useNewInit", ' ', "Use init on DefExpr", "F", &useNewInit, "CHPL_NEW_INIT", NULL},
  {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},

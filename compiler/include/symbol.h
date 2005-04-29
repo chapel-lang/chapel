@@ -241,5 +241,7 @@ class LabelSymbol : public Symbol {
   virtual void codegenDef(FILE* outfile);
 };
 
+extern Symbol *gNil;
+
 
 #endif

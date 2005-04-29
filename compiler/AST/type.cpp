@@ -1892,6 +1892,6 @@ NilType::NilType(void) :
 
 
 void NilType::codegen(FILE* outfile) {
-  INT_FATAL(this, "Trying to codegen a nil Type");
+  fprintf(outfile, "void* ");
 }
 
