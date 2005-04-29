@@ -1,0 +1,11 @@
+i is initialized to 0
+i at runtime is 0
+f is initialized to 1.2
+f at runtime is 1.2
+b is initialized to true
+b at runtime is true
+c is initialized to 1.2+3.4i
+c at runtime is 1.2 + 3.4i
+s is initialized to Pope Benedict XVI
+s at runtime is Pope Benedict XVI
+Final Memory Statistics:  totalMem=310, maxMem=345

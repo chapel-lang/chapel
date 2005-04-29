@@ -7,8 +7,12 @@
 
 void initMemTable(void);
 void printMemTable(void);
+void resetMemStat(void);
+void printMemStat(void);
+void printFinalMemStat(void);
 
 void setMemmax(_integer64 value);
+void setMemstat(void);
 void setMemtable(void);
 void setMemthreshold(_integer64 value);
 void setMemtrace(char* memLogname);

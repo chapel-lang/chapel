@@ -1,0 +1,1 @@
+printMemStat() only works with the --memstat flag

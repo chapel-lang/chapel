@@ -11,6 +11,7 @@ int main(int argc, char* argv[]) {
   CreateConfigVarTable();
 
   _chpl_main();
+  printFinalMemStat();
 
   return 0;
 }

@@ -10,6 +10,16 @@ void _chpl_memtest_printMemTable(void) {
 }
 
 
+void _chpl_memtest_printMemStat(void) {
+  printMemStat();
+}
+
+
+void _chpl_memtest_resetMemStat(void) {
+  resetMemStat();
+}
+
+
 void _chpl_memtest_freedMalloc(void) {
   _integer64* freedInt = (_integer64*) _chpl_malloc(1, sizeof(_integer64), 
                                                   "_integer64");

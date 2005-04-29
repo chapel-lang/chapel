@@ -46,11 +46,14 @@ static unsigned hash(void* memAlloc) {
 
 
 static int memmax = 0;
+static int memstat = 0;
 static int memtable = 0;
 static int memthreshold = 0;
 static FILE* memlog = NULL;
 static _integer64 memmaxValue = 0;
 static _integer64 memthresholdValue = 0;
+static size_t totalMem = 0;
+static size_t maxMem = 0;
 
 
 void initMemTable(void) {
@@ -66,6 +69,12 @@ void initMemTable(void) {
 void setMemmax(_integer64 value) {
   memmax = 1;
   memmaxValue = value;
+}
+
+
+void setMemstat(void) {
+  memstat = 1;
+  memtable = 1;
 }
 
 
@@ -92,6 +101,41 @@ void setMemtrace(char* memlogname) {
       exit(0);
     }
   } 
+}
+
+
+static void updateMemStat(size_t chunk) {
+  totalMem += chunk;
+  if (totalMem > maxMem) {
+    maxMem = totalMem;
+  }
+}
+
+
+void resetMemStat(void) {
+  totalMem = 0;
+  maxMem = 0;
+}
+
+static int alreadyPrintingStat = 0;
+
+void printMemStat(void) {
+  if (memstat) {
+    fprintf(stdout, "totalMem=%u, maxMem=%u\n", 
+            (unsigned)totalMem, (unsigned)maxMem);
+    alreadyPrintingStat = 1;
+  } else {
+    fprintf(stderr, "printMemStat() only works with the --memstat flag\n");
+    exit(0);
+  }
+}
+
+
+void printFinalMemStat(void) {
+  if (!alreadyPrintingStat && memstat) {
+    fprintf(stdout, "Final Memory Statistics:  ");
+    printMemStat();
+  }
 }
 
 
@@ -296,11 +340,15 @@ void* _chpl_malloc(size_t number, size_t size, char* description) {
   size_t chunk = number * size;
   void* memAlloc = malloc(chunk);
   confirm(memAlloc, description);
-  if (memtable) {
-    installMemory(memAlloc, number, size, description);  
-  }
+
   if (memlog) {
     printToMemLog(number, size, description, "malloc", memAlloc, NULL);
+  }
+  if (memtable) {
+    installMemory(memAlloc, number, size, description);  
+    if (memstat) {
+      updateMemStat(chunk);
+    }
   }
   return memAlloc;
 }
@@ -309,11 +357,17 @@ void* _chpl_malloc(size_t number, size_t size, char* description) {
 void* _chpl_calloc(size_t number, size_t size, char* description) {
   void* memAlloc = calloc(number, size);
   confirm(memAlloc, description);
-  if (memtable) {
-    installMemory(memAlloc, number, size, description);
-  }
+
   if (memlog) {
     printToMemLog(number, size, description, "calloc", memAlloc, NULL);
+  }
+
+  if (memtable) {
+    installMemory(memAlloc, number, size, description);
+    if (memstat) {
+      size_t chunk = number * size;
+      updateMemStat(chunk);
+    }
   }
   return memAlloc;
 }
@@ -321,6 +375,15 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
 
 void _chpl_free(void* memAlloc) {
   if (memtable) {
+    if (memstat) {
+      memTableEntry* memEntry = lookupMemory(memAlloc);
+      size_t chunk;
+      if (memEntry) {
+        chunk = memEntry->number * memEntry->size;
+        /* Subtract this chunk from the memory statistics. */
+        updateMemStat(-1 * chunk);
+      }
+    }
     removeMemory(memAlloc);
   }
   free(memAlloc);
@@ -351,10 +414,18 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
   if (memtable) {
     if ((memAlloc != NULL)  && (moreMemAlloc != memAlloc)) {
       if (memEntry) {
+        if (memstat) {
+          size_t origChunk =  memEntry->number * memEntry->size;
+          /* Subtract this chunk from the memory statistics. */
+          updateMemStat(-1 * origChunk);
+        }
         updateMemory(memEntry, moreMemAlloc, number, size);
       }
     } else {
       installMemory(moreMemAlloc, number, size, description);
+    }
+    if (memstat) {
+      updateMemStat(chunk);
     }
   }
 

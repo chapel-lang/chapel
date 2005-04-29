@@ -115,6 +115,9 @@ static void parseMemFlag(char* memFlag) {
     value = getIntArg(valueString, memFlag);
     setMemmax(value);
 
+  } else if (strcmp(memFlag, "memstat") == 0) {
+    setMemstat();
+
   } else if (strcmp(memFlag, "memtable") == 0) {
     setMemtable();
 
