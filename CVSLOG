@@ -28712,3 +28712,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+04/29/05 09:22:55 -- deitz
+
+Log message:
+	Detabified some compiler source.
+
+Modified files:
+	chapel/compiler/traversals/: fixup.cpp resolveSymbols.cpp 
+
