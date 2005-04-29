@@ -379,7 +379,6 @@ void ParamSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void ParamSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(this, traversal, false);
   TRAVERSE(type, traversal, false);
   TRAVERSE(init, traversal, false);
 }
@@ -673,7 +672,6 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void FnSymbol::traverseDefSymbol(Traversal* traversal) {
   SymScope* saveScope = NULL;
 
-  TRAVERSE(this, traversal, false);
   if (paramScope) {
     saveScope = Symboltable::setCurrentScope(paramScope);
   }
@@ -1072,9 +1070,7 @@ void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void EnumSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(this, traversal, false);
-}
+void EnumSymbol::traverseDefSymbol(Traversal* traversal) { }
 
 
 void EnumSymbol::set_values(void) {
