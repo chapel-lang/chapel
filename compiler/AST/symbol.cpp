@@ -702,7 +702,6 @@ FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>*
   return dynamic_cast<FnSymbol*>(this_copy->sym);
 }
 
-#ifdef NEW_COERCION_WRAPPER
 
 FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions) {
   static int uid = 1; // Unique ID for wrapped functions
@@ -724,16 +723,18 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
 
   Stmt* wrapperBody = NULL;
   Variable* wrapperActuals = NULL;
-  for (Symbol* formal = formals; formal; formal = nextLink(Symbol, formal)) {
+  for (Symbol* formal = formals, *wrapperFormal = wrapperFormals; formal; 
+       formal = nextLink(Symbol, formal), wrapperFormal = nextLink(Symbol, wrapperFormal)) 
+  {
     Symbol* coercionSubstitution = coercion_substitutions->get(formal);
     if (coercionSubstitution) {
       char* tempName = glomstrings(2, "_coercion_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->type);
-      DefExpr* tempDefExpr = new DefExpr(temp, new UserInitExpr(new Variable(formal)));
+      DefExpr* tempDefExpr = new DefExpr(temp, new UserInitExpr(new Variable(wrapperFormal)));
       wrapperBody = appendLink(wrapperBody, new DefStmt(tempDefExpr));
       wrapperActuals = appendLink(wrapperActuals, new Variable(temp));
     } else {
-      wrapperActuals = appendLink(wrapperActuals, new Variable(formal));
+      wrapperActuals = appendLink(wrapperActuals, new Variable(wrapperFormal));
     }
   }
   wrapperBody = appendLink(wrapperBody, 
@@ -750,61 +751,6 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   return wrapperFn;
 }
 
-#else
-
-FnSymbol* FnSymbol::coercion_wrapper(Map<MPosition *, Symbol *> *coercion_substitutions) {
-  static int uid = 1; // Unique ID for wrapped functions
-  FnSymbol* wrapper_symbol;
-  SymScope* save_scope;
-
-  save_scope = Symboltable::setCurrentScope(parentScope);
-  wrapper_symbol = new FnSymbol(name);
-  wrapper_symbol->cname =
-    glomstrings(3, cname, "_coercion_wrapper_", intstring(uid++));
-  wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
-  Symbol* wrapper_formals = formals->copyList();
-  Symbol* actuals = wrapper_formals;
-  Variable* argList = new Variable(actuals);
-  actuals = nextLink(Symbol, actuals);
-  while (actuals) {
-    argList->append(new Variable(actuals));
-    actuals = nextLink(Symbol, actuals);
-  }
-  Symboltable::pushScope(SCOPE_LOCAL);
-  Stmt* wrapper_body = new ExprStmt(new FnCall(new Variable(this), argList));
-  int count = 0;
-  forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
-    Symbol* subsym = coercion_substitutions->get(p);
-    if (subsym) {
-      Symbol* formal_change =
-        dynamic_cast<Symbol*>(wrapper_formals->get(count));
-      Variable* actual_change =
-        dynamic_cast<Variable*>(argList->get(count));
-      char* temp_name = glomstrings(2, "_coercion_temp_", formal_change->name);
-      VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type);
-      DefExpr* temp_def_expr = new DefExpr(temp_symbol, 
-                                           new UserInitExpr(new Variable(formal_change)));
-      DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
-      temp_def_stmt->append(wrapper_body);
-      wrapper_body = temp_def_stmt;
-      formal_change->type = subsym->type;
-      actual_change->var = temp_symbol;
-    }
-    count++;
-  }
-  SymScope* block_scope = Symboltable::popScope();
-  BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
-  wrapper_block->setBlkScope(block_scope);
-  block_scope->stmtContext = wrapper_block;
-  Type* wrapper_return_type = retType;
-  DefExpr* wrapper_expr = new DefExpr(Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-                                                   wrapper_return_type, wrapper_block));
-  defPoint->insertBefore(wrapper_expr);
-  Symboltable::setCurrentScope(save_scope);
-  return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
-}
-
-#endif
 
 FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
   static int uid = 1; // Unique ID for wrapped functions
