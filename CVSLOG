@@ -28722,3 +28722,20 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: fixup.cpp resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+04/29/05 09:51:33 -- deitz
+
+Log message:
+	Fixed the creation of new scopes so that if the visibleFunctions have
+	already been computed, they are computed for the new scopes as they
+	are popped.
+	
+	New functions created after the visibleFunctions have been computed
+	are not added to the list, however.
+	
+	This improves support for --useNewConstructor.
+
+Modified files:
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+
