@@ -28815,3 +28815,17 @@ Removed files:
 	                            test_class3_useNewConstructor_stopgap.chpl 
 	                            test_class3_useNewConstructor_stopgap.good 
 
+---------------------------------------------------------------------------
+
+04/29/05 11:01:03 -- deitz
+
+Log message:
+	Removed some double traversals of FnSymbols, ParamSymbols, and
+	EnumSymbols when being traversed as a definition.
+	
+	I was seeing this in the print_view mechanism which when used to print
+	out a function duplicated these symbols.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
