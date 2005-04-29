@@ -134,7 +134,17 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
     return new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
     Expr* lhs = new Variable(var);
-    Expr* constructor_variable = new Variable(type->defaultConstructor);
+    Expr* constructor_variable = NULL;
+//     if (analyzeAST && type != dtString) {
+//       Vec<FnSymbol *> fns;
+//       call_info(var->defPoint, fns);
+//       if (!fns.n) {
+//         return new NoOpStmt();
+//       }
+//       constructor_variable = new Variable(fns.v[0]);
+//     } else {
+      constructor_variable = new Variable(type->defaultConstructor);
+//     }
     Expr* rhs = new FnCall(constructor_variable, NULL);
     Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
     return new ExprStmt(init_expr);
@@ -170,13 +180,17 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
 
 static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
-  Stmt* init_stmt = basic_default_init_stmt(stmt, var, type);
+  Stmt* init_stmt = NULL;
+  
+  if (!is_Scalar_Type(type) || !var->defPoint->init) {
+    init_stmt = basic_default_init_stmt(stmt, var, type);
+  }
 
   if (var->defPoint->init) {
     Expr* lhs = new Variable(var);
     Expr* rhs = var->defPoint->init->expr->copy();
     Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
-    init_stmt->append(new ExprStmt(init_expr));
+    init_stmt = appendLink(init_stmt, new ExprStmt(init_expr));
   }
 
   stmt->insertBefore(init_stmt);

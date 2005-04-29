@@ -1295,8 +1295,16 @@ void StructuralType::traverseDefType(Traversal* traversal) {
 }
 
 
+int
+is_Scalar_Type(Type *t) {
+  return t != dtUnknown && t != dtString && (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
+}
+
+
 Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments) {
   forv_Vec(VarSymbol, tmp, fields) {
+    if (is_Scalar_Type(tmp->type))
+      continue;
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* assign_expr = new AssignOp(GETS_NORM, lhs, new VarInitExpr(tmp));
     Stmt* assign_stmt = new ExprStmt(assign_expr);
