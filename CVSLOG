@@ -28672,3 +28672,33 @@ Modified files:
 	                                  formatoutput.good noop.good 
 	                                  protoast_test.good 
 
+---------------------------------------------------------------------------
+
+04/28/05 18:54:13 -- jplevyak
+
+Log message:
+	Changes in support of USE_NEW_CONSTRUCTOR
+	
+	1. Made a defaultVal for dtNil, the "nil" global variable of type dtNull.
+	
+	2. Implemented a NullType::codegen which is "void *"
+	
+	3. defaultConstrutors are now accessed as the name of th
+	   function rather than the FnSymbol so that they can
+	   be overridden.
+	
+	4. useNewConstructor option now has an environment variable
+	   associated with it CHPL_USE_NEW_CONSTRUCTOR
+	
+	5. added inttypes.h to stdchpl.h so that intptr_t will be available
+	   to the generated code.
+	
+	The remaining problem is with visible_functions()
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/runtime/include/: stdchpl.h 
+
