@@ -28739,3 +28739,38 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
 
+---------------------------------------------------------------------------
+
+04/29/05 09:57:00 -- shannon
+
+Log message:
+	Added the --memstat runtime option.  If called on
+	a chapel executable the final memory statistics are
+	printed, e.g.:
+	
+	  > a.out --memstat
+	  Final Memory Statistics:  totalMem=310, maxMem=345
+	
+	totalMem is the amount of memory allocated at the
+	time the call is made, and maxMem is the maximum
+	amount of memory ever allocated during the run.
+	
+	A chapel developer can make user of the printMemStat()
+	and resetMemStat() functions.  resetMemStat() zeroes
+	the totalMem and maxMem variables.
+	
+	Added some tests.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/runtime/include/: chplmem.h chplmem_tests.h 
+	chapel/runtime/src/: arg.c chplmem.c chplmem_tests.c main.c 
+Added files:
+	chapel/test/memory/shannon/: memstatFlag.chpl memstatFlag.good 
+	                             memstatPrint.chpl 
+	                             memstatPrint.execopts 
+	                             memstatPrint.good 
+	                             printFinalMemStat.chpl 
+	                             printFinalMemStat.execopts 
+	                             printFinalMemStat.good 
+
