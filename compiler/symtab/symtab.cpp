@@ -128,6 +128,11 @@ SymScope* Symboltable::popScope(void) {
   } else {
     currentScope = prevScope;
   }
+
+  if (topScope->parent->visibleFunctions.n > 0) { // visibleFunctions already computed
+    topScope->setVisibleFunctions(NULL);
+  }
+
   return topScope;
 }
 

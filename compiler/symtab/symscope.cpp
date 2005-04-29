@@ -21,7 +21,9 @@ SymScope::SymScope(scopeType init_type, int init_level) :
   sibling(NULL),
   firstSym(NULL),
   lastSym(NULL)
-{}
+{
+  visibleFunctions.clear();
+}
 
 
 void SymScope::setContext(Stmt* stmt, Symbol* sym, Expr* expr) {
