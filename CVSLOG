@@ -28829,3 +28829,19 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+04/29/05 11:26:21 -- deitz
+
+Log message:
+	Improved print_view to print out extra information for some tail
+	expressions like StringLiteral and SizeofExpr along with IntLiteral
+	(already done).  When symbols are printed, FnSymbol, ParamSymbol, and
+	TypeSymbol are marked as such.
+	
+	Added new function nprint_view that prints out the id numbers next to
+	symbols and is useful if symbols share names.
+
+Modified files:
+	chapel/compiler/traversals/: view.cpp view.h 
+
