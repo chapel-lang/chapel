@@ -28702,3 +28702,13 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/runtime/include/: stdchpl.h 
 
+---------------------------------------------------------------------------
+
+04/29/05 08:39:53 -- jplevyak
+
+Log message:
+	Tighten up one of yesterdays checkins.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
