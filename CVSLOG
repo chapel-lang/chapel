@@ -28885,3 +28885,15 @@ Modified files:
 	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
 	chapel/compiler/traversals/: insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+04/29/05 14:38:44 -- deitz
+
+Log message:
+	New test for function cloning with future.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_swap.chpl 
+	                                         test_swap.future 
+	                                         test_swap.good 
+
