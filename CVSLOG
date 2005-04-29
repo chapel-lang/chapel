@@ -28845,3 +28845,25 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: view.cpp view.h 
 
+---------------------------------------------------------------------------
+
+04/29/05 14:07:23 -- deitz
+
+Log message:
+	Checking in some of John's patch, modified.  John, I got rid of the
+	goto, which was dead code.  I also commented out some code in
+	
+	 static Stmt* basic_default_init_stmt(Stmt*, VarSymbol*, Type*)
+	
+	that uses call_info way after analysis. I'd rather only use this in
+	the pass resolveSymbols and I'd like to figure out how we can make it
+	work there.
+	
+	Thus this checkin does not fix any regressions, nor does it break
+	anything.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+
