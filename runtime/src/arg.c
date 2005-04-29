@@ -78,7 +78,7 @@ void printHelpTable(void) {
 
 static _integer64 getIntArg(char* valueString, char* memFlag) {
   char extraChars;
-  _integer64 value;
+  _integer64 value = 0;  /* initialization is silly hack for freebsd */
 
   int numScans = sscanf(valueString, _default_format_read_integer64"%c", 
                         &value, &extraChars);
