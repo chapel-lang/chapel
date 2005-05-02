@@ -16,16 +16,7 @@ static bool tmpRequired(ParamSymbol* formal, Expr* actual) {
     return true;
   }
   if (formal->type != dtUnknown) {
-    if (formal->requiresCTmp()) {
-      if (Variable* variable = dynamic_cast<Variable*>(actual)) {
-        if (strstr(variable->var->name, "_default_param_temp_")) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return false;
-    }
+    return formal->requiresCTmp();
   } else {
     return actual->typeInfo()->requiresCParamTmp(formal->intent);
   }

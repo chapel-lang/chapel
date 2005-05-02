@@ -793,8 +793,11 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
         char* temp_name =
           glomstrings(2, "_default_param_temp_", formal_change->name);
         VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type);
-        DefExpr* temp_def_expr = new DefExpr(temp_symbol,
-                                             new UserInitExpr(((ParamSymbol*)formal_change)->init->copy()));
+        DefExpr* temp_def_expr =
+          new DefExpr(temp_symbol,
+                      (dynamic_cast<ParamSymbol*>(formal_change)->intent == PARAM_OUT)
+                      ? NULL
+                      : new UserInitExpr(((ParamSymbol*)formal_change)->init->copy()));
         DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
         temp_def_stmt->append(wrapper_body);
         wrapper_body = temp_def_stmt;
