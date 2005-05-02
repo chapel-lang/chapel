@@ -1312,6 +1312,15 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
   }
 
   ParamSymbol* ptmp = arguments;
+  forv_Vec(TypeSymbol, tmp, types) {
+    if (dynamic_cast<VariableType*>(tmp->type)) {
+      if (analyzeAST && !useOldConstructor) {
+        // Have type variable in class and type variable in parameter
+        // Should I do anything with these?
+        ptmp = nextLink(ParamSymbol, ptmp);
+      }
+    }
+  }
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* rhs = NULL;

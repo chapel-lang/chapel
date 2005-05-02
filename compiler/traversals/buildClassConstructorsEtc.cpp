@@ -20,6 +20,13 @@ static void build_constructor(StructuralType* structType) {
 
   if (!useOldConstructor) {
     if (analyzeAST) {
+      forv_Vec(TypeSymbol, tmp, structType->types) {
+        if (dynamic_cast<VariableType*>(tmp->type)) {
+          ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, tmp->name, tmp->type);
+          args = appendLink(args, arg);
+        }
+      }
+
       forv_Vec(VarSymbol, tmp, structType->fields) {
         char* name = tmp->name;
         Type* type = tmp->type;
