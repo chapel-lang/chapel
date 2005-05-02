@@ -29053,3 +29053,14 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_class1.future 
 
+---------------------------------------------------------------------------
+
+05/02/05 11:52:48 -- deitz
+
+Log message:
+	Removed unused compiler flag --useNewInit.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+
