@@ -29032,3 +29032,24 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+05/02/05 11:24:17 -- deitz
+
+Log message:
+	Added type variables in classes to the default constructor that is
+	built.  The types can now be passed to the constructor.  In the
+	constructor, nothing is done with the types.  The class should be
+	instantiated/cloned.
+	
+	Passed the test
+	  test/types/type_variables/deitz/test_typevar_class1.future
+	over to John to take a look at.  We'll have to pass this one back and
+	forth and come up with an interface for class instantiation I think.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class1.future 
+
