@@ -1915,3 +1915,6 @@ void NilType::codegen(FILE* outfile) {
   fprintf(outfile, "void* ");
 }
 
+void NilType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format) {
+  fprintf(outfile, "_write_string(stdout, _default_format_write_string, \"nil\");\n");
+}

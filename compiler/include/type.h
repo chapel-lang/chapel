@@ -360,6 +360,8 @@ class NilType : public Type {
  public:
   NilType(void);
   void codegen(FILE* outfile);
+  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
+                             Expr* format = NULL);
 };
 
 

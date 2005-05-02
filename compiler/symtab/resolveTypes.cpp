@@ -26,6 +26,18 @@ ResolveTypes::ResolveTypes() {
 }
 
 
+static bool types_match(Type* sub, Type* super) {
+  if (sub == super) {
+    return true;
+  } else if (dynamic_cast<StructuralType*>(sub) &&
+             dynamic_cast<NilType*>(super)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
 void ResolveTypes::processSymbol(Symbol* sym) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     if (fn->retType == dtUnknown) {
@@ -33,7 +45,7 @@ void ResolveTypes::processSymbol(Symbol* sym) {
         fn->retType = return_type_info(fn);
         if (checkAnalysisTypeinfo) {
           if (fn->retType == dtUnknown) {
-            INT_FATAL(fn, "Analysis unable to determine type");
+            INT_FATAL(fn, "Analysis unable to determine return type of '%s'", fn->cname);
           }
         }
       } else {
@@ -42,36 +54,48 @@ void ResolveTypes::processSymbol(Symbol* sym) {
         if (!findReturn->found) {
           fn->retType = dtVoid;
         } else {
-          INT_FATAL(fn, "Analysis required to determine return type");
+          INT_FATAL(fn, "Analysis required to determine return type of '%s'", fn->cname);
         }
       }
     } else if (analyzeAST) {
-      if (checkAnalysisTypeinfo) {
-        if (fn->retType != return_type_info(fn)) {
-          INT_WARNING(fn, "Analysis return type mismatch, using analysis type");
-          fn->retType = return_type_info(fn);
-          if (fn->retType == dtUnknown) {
-            INT_FATAL(fn, "Analysis unable to to determine type");
+      if (!types_match(fn->retType, return_type_info(fn))) {
+        if (checkAnalysisTypeinfo) {
+          INT_WARNING(fn, "Analysis return type mismatch (%s/%s) of '%s'",
+                      fn->retType->symbol->name,
+                      return_type_info(fn)->symbol->name,
+                      fn->cname);
+          if (return_type_info(fn) != dtUnknown) {
+            fn->retType = return_type_info(fn);
           }
         }
+      } else {
+        fn->retType = return_type_info(fn);
       }
     }
   } else if (sym->type == dtUnknown) {
-    sym->type = type_info(sym);
-    if (checkAnalysisTypeinfo) {
-      if (sym->type == dtUnknown) {
-        INT_FATAL(sym, "Analysis unable to determine type");
+    if (analyzeAST) {
+      sym->type = type_info(sym);
+      if (checkAnalysisTypeinfo) {
+        if (sym->type == dtUnknown) {
+          INT_FATAL(sym, "Analysis unable to determine type of '%s'", sym->cname);
+        }
       }
+    } else {
+      INT_FATAL(sym, "Analysis required to determine type of '%s'", sym->cname);
     }
   } else if (analyzeAST) {
-    if (checkAnalysisTypeinfo) {
-      if (sym->type != type_info(sym)) {
-        INT_WARNING(sym, "Analysis type mismatch, using analysis type");
+    if (!types_match(sym->type, type_info(sym))) {
+      if (checkAnalysisTypeinfo) {
+        INT_WARNING(sym, "Analysis type mismatch (%s/%s) of '%s'",
+                    sym->type->symbol->name,
+                    type_info(sym)->symbol->name,
+                    sym->cname);
+        if (type_info(sym) != dtUnknown) {
+          sym->type = type_info(sym);
+        }
       }
+    } else {
       sym->type = type_info(sym);
-      if (sym->type == dtUnknown) {
-        INT_FATAL(sym, "Analysis unable to determine type");
-      }
     }
   }
   /***
