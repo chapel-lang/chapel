@@ -8,7 +8,6 @@
 #define DEFAULT_SYSTEM_DIR      "."
 
 // Begin temporary development flags
-extern int useNewInit;
 extern int useOldConstructor;
 extern int checkAnalysisTypeinfo;
 // End temporary development flags
