@@ -29115,3 +29115,13 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/02/05 16:26:12 -- jplevyak
+
+Log message:
+	Insert an assert to catch a bad VarInit variable type.
+
+Modified files:
+	chapel/compiler/traversals/: removeNamedParameters.cpp 
+
