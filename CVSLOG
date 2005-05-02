@@ -29064,3 +29064,19 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+05/02/05 13:03:40 -- deitz
+
+Log message:
+	Fixed up resolution of types and made better error messages on
+	--checkAnalysisTypeinfo.  Made Analysis's return of NilType for
+	classes that are never constructed the type of these classes.  Added
+	NilType::codegenIOCall so that we can print out classes that are
+	always nil.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+
