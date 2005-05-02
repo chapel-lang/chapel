@@ -21,6 +21,16 @@ static void markAsDeadAndExtract(Symbol* sym) {
 
 
 void RemoveDeadSymbols::processSymbol(Symbol* sym) {
+
+  /***
+   ***  Remove ->init of ParamSymbols, wrappers have been built
+   ***/
+  if (ParamSymbol* arg = dynamic_cast<ParamSymbol*>(sym)) {
+    if (arg->init) {
+      arg->init->extract();
+    }
+  }
+
   if (sym->parentScope->type == SCOPE_INTRINSIC) {
     return;
   }

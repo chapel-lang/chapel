@@ -8,6 +8,7 @@
 
 #include "../symtab/computeVisibleFunctions.h"
 #include "../symtab/insertDefaultInitVariables.h"
+#include "../symtab/insertOutParameterInitializations.h"
 #include "../symtab/insertWriteFns.h"
 #include "../symtab/legalizeCNames.h"
 #include "../symtab/printSymtab.h"
@@ -83,6 +84,7 @@ REGISTER(InsertAnonymousTypes);
 REGISTER(InsertDefaultInitVariables);
 REGISTER(InsertElidedLoops);
 REGISTER(InsertFunctionTemps);
+REGISTER(InsertOutParameterInitializations);
 REGISTER(InsertTemps);
 REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions

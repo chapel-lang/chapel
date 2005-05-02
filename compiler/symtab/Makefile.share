@@ -3,6 +3,7 @@ SYMTAB_SRCS = \
 	collectSymbols.cpp \
 	computeVisibleFunctions.cpp \
         insertDefaultInitVariables.cpp \
+        insertOutParameterInitializations.cpp \
 	insertWriteFns.cpp \
 	legalizeCNames.cpp \
 	printSymtab.cpp \

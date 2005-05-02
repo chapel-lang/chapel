@@ -1,32 +1,12 @@
 linux regressions
 =================
 
-[Error matching compiler output for arrays/deitz/test_array_of_class1]
 [Error matching compiler output for arrays/deitz/test_array_of_record1]
 [Error matching compiler output for arrays/deitz/test_array_basic1]
 
-  Fail in wrapper of set accessor.  It looks like
-  positional_arg_positions is too big.
-
-  NOTE: The interface for the coercion wrapper has been updated.
-
-  Also fail because the new wrapper constructor for the class is not
-  called when the array is initialized.  The array needs a constructor
-  so that its initialization code can be analyzed.
-
-[Error matching compiler output for classes/deitz/test_type_in_class1]
-
-  This test is failing because it is attempting to resolveSymbols for
-  the ->init in a VarDefStmt in a Type which is ever executed (it is
-  copied and the copy is executed) and so analysis knows nothing about
-  it.
-
-  The resolveSymbols is now on the default value (ParamSymbol::init)
-  to an argument to the constructor.
-
-  JBP: this code is also not executed, so it should not be
-  be resolved/traversed.  It is copied into any default wrappers
-  which are created.
+  Fail because the new wrapper constructor for the class is not called
+  when the array is initialized.  The array needs a constructor so
+  that its initialization code can be analyzed.
 
 [Error matching compiler output for classes/deitz/test_type_in_class2]
 [Error matching compiler output for classes/bradc/records/assignRecord]

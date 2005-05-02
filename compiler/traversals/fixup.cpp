@@ -74,6 +74,11 @@ void Fixup::postProcessStmt(Stmt* stmt) {
 
 
 void Fixup::preProcessExpr(Expr* expr) {
+  if (verify && !expr->parentSymbol) {
+    INT_FATAL(expr, "Expr has no parentSymbol");
+  }
+
+
   Symbol* parentSymbol = parentSymbols.v[parentSymbols.n-1];
   if (verify) {
     if (!EQparentSymbol(expr->parentSymbol, parentSymbol)) {

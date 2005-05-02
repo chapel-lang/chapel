@@ -48,6 +48,8 @@ PassInfo passlist[] = {
   RUN(RemoveLikeTypes, ""),
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertDefaultInitVariables, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
+  RUN(InsertOutParameterInitializations, ""),
 
   // passes to collect information for analysis
   RUN(Fixup, "verify"), // this is a sanity check

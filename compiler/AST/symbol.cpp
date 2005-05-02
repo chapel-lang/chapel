@@ -756,6 +756,9 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
   static int uid = 1; // Unique ID for wrapped functions
   FnSymbol* wrapper_symbol;
 
+  Vec<Symbol*> for_removal;
+  for_removal.clear();
+
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   wrapper_symbol = new FnSymbol(name);
   wrapper_symbol->cname =
@@ -808,6 +811,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
         if (formal_change->next) {
           formal_change->next->prev = formal_change->prev;
         }
+        for_removal.add(formal_change);
         formals_count_adjust++;
       }
       count++;
@@ -819,6 +823,11 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
   block_scope->stmtContext = wrapper_block;
   DefExpr* wrapper_expr = new DefExpr(Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
                                                    retType, wrapper_block));
+
+  forv_Vec(Symbol, sym, for_removal) {
+    wrapper_symbol->paramScope->remove(sym);
+  }
+
   defPoint->insertAfter(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
