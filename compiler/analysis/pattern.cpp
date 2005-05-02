@@ -500,7 +500,7 @@ class DefaultCache { public: HashMap<Vec<MPosition*> *, DefaultCacheHashFns, Fun
 
 Fun *
 Matcher::build(Match *m, Vec<Fun *> &matches) {
-  Fun *f = m->fun;
+  Fun *f = m->fun, *orig_f = f;
   if (m->generic_substitutions.n) {
     GenericCache *c = f->generic_cache;
     if (!c) c = f->generic_cache = new GenericCache;
@@ -508,6 +508,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       f = if1->callback->instantiate_generic(m);
       c->cache.put(&m->generic_substitutions, f);
     }
+    m->fun = f;
   }
   if (m->default_args.n) {
     qsort(m->default_args.v, m->default_args.n, sizeof(void*), compar_last_position);
@@ -517,6 +518,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       f = if1->callback->default_wrapper(m);
       c->cache.put(&m->default_args, f);
     }
+    m->fun = f;
   }
   if (m->coercion_substitutions.n) {
     CoercionCache *c = f->coercion_cache;
@@ -525,6 +527,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       f = if1->callback->coercion_wrapper(m);
       c->cache.put(&m->coercion_substitutions, f);
     }
+    m->fun = f;
   }
   int order_change = 0;
   form_MPositionMPosition(p, m->formal_to_actual_position) {
@@ -541,9 +544,10 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       f = if1->callback->order_wrapper(m);
       c->cache.put(&m->order_substitutions, f);
     }
+    m->fun = f;
   } else
     m->order_substitutions.clear();
-  if (f != m->fun)
+  if (orig_f != m->fun)
     build_Match(f, m);
   return f;
 }

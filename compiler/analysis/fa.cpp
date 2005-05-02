@@ -841,7 +841,7 @@ add_var_constraint(AVar *av) {
     if (s->is_constant) // for constants, the abstract type is the concrete type
       update_in(av, make_abstract_type(s));
     if (s->is_symbol || s->is_fun) 
-      update_in(av, s->abstract_type);
+      update_in(av, make_abstract_type(s));
     if (s->type_kind != Type_NONE)
       update_in(av, make_abstract_type(s->meta_type));
   }

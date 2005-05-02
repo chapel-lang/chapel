@@ -638,6 +638,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
     copy_name = copystring(name);
   }
   FnSymbol* copy = new FnSymbol(copy_name, classBinding);
+  copy->method_type = method_type;
   Symboltable::startFnDef(copy);
   if (_getter) {
     copy->name = copystring(name);
@@ -709,6 +710,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   FnSymbol* wrapperFn = new FnSymbol(name);
   wrapperFn->cname = glomstrings(3, cname, "_coercion_wrapper_", intstring(uid++));
   wrapperFn = Symboltable::startFnDef(wrapperFn);
+  wrapperFn->method_type = method_type;
 
   Symbol* wrapperFormals = NULL;
   for (Symbol* formal = formals; formal; formal = nextLink(Symbol, formal)) {

@@ -114,9 +114,12 @@ AInfo::copy_node(ASTCopyContext* context) {
 Vec<Fun *> *
 AInfo::visible_functions(Sym *arg0) {
   if (arg0->fun) {
+    Fun *f = arg0->fun;
+    while (f->wraps)
+      f = f->wraps;
     if (!arg0->fun->vec_of_one) {
       arg0->fun->vec_of_one = new Vec<Fun *>;
-      arg0->fun->vec_of_one->add(arg0->fun);
+      arg0->fun->vec_of_one->add(f);
     }
     return arg0->fun->vec_of_one;
   }
@@ -374,6 +377,13 @@ install_new_function(FnSymbol *f) {
   return fun;
 }
 
+static Type *
+Sym_to_Type(Sym *s) {
+  if (Type *t = dynamic_cast<Type*>(s->asymbol->symbol))
+    return t;
+  return (dynamic_cast<TypeSymbol*>(s->asymbol->symbol))->type;
+}
+
 Sym *
 ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
   if (s->type_kind) {
@@ -381,12 +391,10 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     if (tt) {
       Map<Type *, Type *> subs;
       form_SymSym(s, substitutions)
-        subs.put(dynamic_cast<Type*>(s->key->asymbol->symbol), 
-                 dynamic_cast<Type*>(s->value->asymbol->symbol));
+        subs.put(dynamic_cast<Type*>(s->key->asymbol->symbol), Sym_to_Type(s->value));
       Type *type = dynamic_cast<Type*>(s->asymbol->symbol);
       Type *new_type = type->instantiate_generic(subs);
-      assert(tt == new_type->asymbol->sym);
-      return tt;
+      return new_type->asymbol->sym;
     }
   }
   return 0;
@@ -447,8 +455,7 @@ ACallbacks::instantiate_generic(Match *m) {
     return NULL;
   Map<Type *, Type *> substitutions;
   form_SymSym(s, m->generic_substitutions)
-    substitutions.put(dynamic_cast<Type*>(s->key->asymbol->symbol), 
-                      dynamic_cast<Type*>(s->value->asymbol->symbol));
+    substitutions.put(dynamic_cast<Type*>(s->key->asymbol->symbol), Sym_to_Type(s->value));
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->instantiate_generic(&substitutions);
   Fun *fun = install_new_function(f);
