@@ -16,6 +16,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
       if (var_init->symbol->type->defaultVal) {
         var_init->replace(var_init->symbol->type->defaultVal->copy());
       } else {
+        assert(var_init->symbol->type->defaultConstructor);
         var_init->replace(new FnCall(new Variable(var_init->symbol->type->defaultConstructor), NULL));
       }
     }
