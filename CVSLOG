@@ -29020,3 +29020,15 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/traversals/: processParameters.cpp 
 
+---------------------------------------------------------------------------
+
+05/02/05 10:43:24 -- deitz
+
+Log message:
+	Fixed a bug that led to valgrind errors on the noanalysis sequence
+	test in which primitive scalar fields like integers were not
+	initialized in class constructors.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
