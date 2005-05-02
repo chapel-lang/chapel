@@ -28966,3 +28966,40 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/02/05 10:06:13 -- deitz
+
+Log message:
+	Put in removeDeadSymbols a line to remove ParamSymbol::init.  This was
+	the default value, but now that the default wrappers have been made,
+	this is no longer executed code.
+	
+	Added a new pass InsertOutParameterInitializations that puts the
+	initialization line for out parameters in the top of a function.
+	
+	Fixed up default_wrapper function to remove formals not only from
+	formal list but also from paramScope of function.  These formals that
+	I put in and then take out were still being traversed in symtab
+	traversals because they weren't being fully removed.
+	
+	Added to fixup verification that every expression has a parentSymbol.
+	
+	This fixes regression test_type_in_class1.  Updated the regressions
+	file.
+	
+	Put a hack in ProcessParameters (with Brad) to not put in a temporary
+	for a default_param_temp.  This is somewhat off putting because of its
+	delicacy.  A general mechanism that flags temps that don't require
+	extra processing ProcessParameters may be better and more general.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share removeDeadSymbols.cpp 
+	chapel/compiler/traversals/: fixup.cpp processParameters.cpp 
+	chapel/test/: REGRESSIONS 
+Added files:
+	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
+	                         insertOutParameterInitializations.h 
+
