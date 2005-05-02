@@ -29003,3 +29003,20 @@ Added files:
 	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
 	                         insertOutParameterInitializations.h 
 
+---------------------------------------------------------------------------
+
+05/02/05 10:17:03 -- deitz
+
+Log message:
+	Out parameter is no longer initialized in default_wrapper function
+	because it is initialized in the function.
+	
+	Removed hack from ProcessParameters in which no temp was put in for
+	default_wrapper temps.  There is no reason to keep doing this and it
+	cleans up the code to remove it until a more general optimization is
+	put in to eliminate duplicate temps.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: processParameters.cpp 
+
