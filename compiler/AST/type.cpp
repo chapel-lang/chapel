@@ -1318,7 +1318,7 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
     if (analyzeAST && !useOldConstructor) {
       rhs = new Variable(ptmp);
     } else {
-      rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : NULL;
+      rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : new VarInitExpr(tmp);
       if (tmp->defPoint->init) {
         tmp->defPoint->init->extract();
       }
