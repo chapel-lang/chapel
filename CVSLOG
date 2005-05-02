@@ -29098,3 +29098,20 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
 
+---------------------------------------------------------------------------
+
+05/02/05 16:20:08 -- jplevyak
+
+Log message:
+	Clarify why /test/types/type_variables/deitz/test_typevar_class1.chpl
+	is failing:
+	
+	/test/types/type_variables/deitz/test_typevar_class1.chpl
+	
+	  Fails because FnSymbol::default_wrapper is copying
+	  formal_change->init which includes a VarInit which
+	  references the original (pre-copy) formal.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
