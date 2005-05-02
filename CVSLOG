@@ -29080,3 +29080,21 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/symtab/: resolveTypes.cpp 
 
+---------------------------------------------------------------------------
+
+05/02/05 15:18:16 -- jplevyak
+
+Log message:
+	Fixed several issues related to instantiation of generics
+	and wrappers of wrappers.
+	
+	test/types/type_variables/deitz/test_typevar_class1.chpl
+	
+	is now failing after the UserInitExpr created on symbol.cpp:803
+	is replaced with a call to the constructor (?) which is coming back
+	NULL.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
+
