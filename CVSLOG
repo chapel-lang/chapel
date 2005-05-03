@@ -29125,3 +29125,15 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: removeNamedParameters.cpp 
 
+---------------------------------------------------------------------------
+
+05/03/05 11:07:02 -- jplevyak
+
+Log message:
+	The IF1 log now includes all wrappers and generic instantiations.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp if1.cpp 
+	chapel/compiler/include/: if1.h 
+	chapel/compiler/main/: driver.cpp 
+
