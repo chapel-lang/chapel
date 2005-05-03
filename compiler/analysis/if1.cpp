@@ -583,10 +583,10 @@ print_code(FILE *fp, Code *code, int indent, int lf) {
 }
 
 void
-print_syms(FILE *fp, Vec<Sym *> *syms) {
+print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
   Sym *s;
 
-  for (int i = 0; i < syms->n; i++) {
+  for (int i = start; i < syms->n; i++) {
     s = syms->v[i];
     if (!s->live)
       continue;
@@ -804,9 +804,17 @@ if1_finalize_closure(IF1 *p, Sym *c) {
 }
 
 void
-if1_write(FILE *fp, IF1 *p) {
-  print_syms(fp, &p->allsyms);
+if1_write(FILE *fp, IF1 *p, int start) {
+  print_syms(fp, &p->allsyms, start);
   fflush(fp);
+}
+
+void
+if1_write_log() {
+  static int start = 0;
+  if (logging(LOG_IF1))
+    if1_write(log_fp(LOG_IF1), if1, start);
+  start = if1->allsyms.n;
 }
 
 char *

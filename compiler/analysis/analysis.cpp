@@ -374,6 +374,7 @@ install_new_function(FnSymbol *f) {
   Fun *fun = new Fun(f->asymbol->sym);
   build_arg_positions(fun);
   pdb->add(fun);
+  if1_write_log();
   return fun;
 }
 
@@ -646,9 +647,9 @@ build_symbols(Vec<BaseAST *> &syms) {
         }
         case SYMBOL_PARAM: {
           if (s->type && s->type != dtUnknown) {
-            if (s->asymbol->sym->intent != Sym_OUT)
+            if (s->asymbol->sym->intent != Sym_OUT) {
               s->asymbol->sym->must_implement_and_specialize(s->type->asymbol->sym);
-            else
+            } else
               s->asymbol->sym->must_implement = s->type->asymbol->sym;
           }
           break;
@@ -2470,6 +2471,7 @@ get_tuple_type(int n) {
     if (!ss->var)
       ss->var = new Var(ss);
   build_type_hierarchy();
+  if1_write_log();
   return t;
 }
 
