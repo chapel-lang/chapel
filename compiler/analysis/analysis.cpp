@@ -23,6 +23,7 @@
 #define VARARG_END     0ll
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
+#define KLUDGE_USER_TYPE_TO_BE_DEFINITION       1
 
 class LabelMap : public Map<char *, Stmt *> {};
 
@@ -647,9 +648,9 @@ build_symbols(Vec<BaseAST *> &syms) {
         }
         case SYMBOL_PARAM: {
           if (s->type && s->type != dtUnknown) {
-            if (s->asymbol->sym->intent != Sym_OUT) {
+            if (s->asymbol->sym->intent != Sym_OUT)
               s->asymbol->sym->must_implement_and_specialize(s->type->asymbol->sym);
-            } else
+            else
               s->asymbol->sym->must_implement = s->type->asymbol->sym;
           }
           break;
@@ -1125,6 +1126,10 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
 static int
 gen_one_vardef(VarSymbol *var, DefExpr *def) {
   Type *type = var->type;
+#ifdef KLUDGE_USER_TYPE_TO_BE_DEFINITION
+  if (type->astType == TYPE_USER)
+    type = ((UserType*)type)->definition;
+#endif
   Sym *s = var->asymbol->sym;
   AInfo *ast = def->ainfo;
   ast->sym = s;
@@ -1200,10 +1205,10 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   } else if (!init) {
     // THIS IS THE STANDARD CODE
   Lstandard:
-    if (!this_is_init && var->type->defaultVal) {
-      if1_move(if1, &ast->code, get_defaultVal(var->type), ast->sym, ast);
-    } else if (var->type->defaultConstructor) {
-      Code *send = if1_send(if1, &ast->code, 1, 1, constructor_name(var->type), ast->sym);
+    if (!this_is_init && type->defaultVal) {
+      if1_move(if1, &ast->code, get_defaultVal(type), ast->sym, ast);
+    } else if (type->defaultConstructor) {
+      Code *send = if1_send(if1, &ast->code, 1, 1, constructor_name(type), ast->sym);
       send->ast = ast;
     } else if (!this_constructor)
       if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
