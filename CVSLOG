@@ -29137,3 +29137,64 @@ Modified files:
 	chapel/compiler/include/: if1.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+05/03/05 11:38:17 -- jplevyak
+
+Log message:
+	Kludge to fix classes/deitz/test_type_in_class2
+	
+	The problem is a bit of a disconnect about UserTypes
+	and type variables.  Here is the test:
+	
+	*******************************************************
+	class node {
+	  type element_type : integer;
+	  var element : element_type;
+	}
+	
+	var n : node = node();
+	
+	n.element = 12;
+	
+	writeln(n.element);
+	*******************************************************
+	
+	Is 'element_type'is a type variable is being constrained to be some
+	subtype of integer, and it "node" a generic type ?
+	
+	I would say "yes". And:
+	
+	*******************************************************
+	class C { ... }
+	class B : C { ... }
+	
+	class node {
+	  type element_type : C;
+	  var element : element_type;
+	}
+	
+	var n : node = node(element_type = B);
+	
+	n.element = B();
+	
+	writeln(n.element);
+	*******************************************************
+	
+	is reasonable code which instantiates 'node' with B,
+	some subtype of C.
+	
+	Now it so happens that 'integer' can't have subtypes
+	(at least that is my current understanding),
+	so it is possible to recognize this case and remove
+	or at least default the type variable parameter variable
+	'element_type'.
+	
+	However the compiler treats 'element_type' in both cases
+	as UserType which it probably shouldn't.
+	
+	At least that is my take on it.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
