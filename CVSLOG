@@ -29210,3 +29210,15 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/04/05 10:16:54 -- bradc
+
+Log message:
+	Some minor script changes that have been languishing in my
+	directory.
+
+Modified files:
+	chapel/util/: lookForTabs.cron 
+	chapel/util/tokencount/: tokctnightly 
+
