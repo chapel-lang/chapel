@@ -24,6 +24,7 @@
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/destructureTupleAssignments.h"
+#include "../traversals/eliminateReturns.h"
 #include "../traversals/expandClassWiths.h"
 #include "../traversals/expandSeqExprAssignments.h"
 #include "../traversals/findUnknownTypes.h"
@@ -71,6 +72,7 @@ REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(DestructureTupleAssignments);
 REGISTER(DummyPass);
+REGISTER(EliminateReturns);
 REGISTER(ExpandClassWiths);
 REGISTER(ExpandSeqExprAssignments);
 //REGISTER(FindUnknownTypes);

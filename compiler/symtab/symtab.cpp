@@ -658,7 +658,8 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
 
 
 FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
-                                  Type* retType, Stmt* body, bool isExtern) {
+                                  Type* retType, BlockStmt* body, 
+                                   bool isExtern) {
   SymScope* paramScope = Symboltable::popScope();
   fnsym->finishDef(formals, retType, body, paramScope, isExtern);
   paramScope->setContext(NULL, fnsym, NULL);
@@ -667,7 +668,7 @@ FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals,
 
 
 DefStmt* Symboltable::defineFunction(char* name, Symbol* formals, 
-                                     Type* retType, Stmt* body, 
+                                     Type* retType, BlockStmt* body, 
                                      bool isExtern) {
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
   return new DefStmt(new DefExpr(finishFnDef(fnsym, formals, retType, body, isExtern)));

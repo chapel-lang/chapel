@@ -126,9 +126,10 @@
 %type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
 %type <defexpr> vardecl_inner vardecl_inner_ls
 %type <defstmt> vardecl
-%type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl block_stmt
+%type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl
 %type <pdt> structtype
-%type <stmt> typealias typedecl fndecl structdecl moduledecl function_body_stmt
+%type <stmt> typealias typedecl fndecl structdecl moduledecl function_body_single_stmt
+%type <blkstmt> block_stmt function_body_stmt
 %type <pragmas> pragma pragmas
 
 
@@ -622,12 +623,18 @@ statements:
 ;
 
 
-function_body_stmt:
+function_body_single_stmt:
   noop_stmt
 | conditional
 | loop
 | call_stmt
 | retStmt
+;
+
+
+function_body_stmt:
+  function_body_single_stmt
+    { $$ = new BlockStmt($1); }
 | block_stmt
 ;
 
@@ -655,6 +662,7 @@ statement:
     { $$ = new ExprStmt($1); }
 | retStmt
 | block_stmt
+    { $$ = $1; }
 | error
     { printf("syntax error"); exit(1); }
 ;

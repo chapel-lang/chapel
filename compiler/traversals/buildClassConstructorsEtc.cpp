@@ -91,7 +91,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     Expr* setter_rhs = new Variable(setter_arg);
     Expr* setter_assignment = new AssignOp(GETS_NORM, setter_lhs, setter_rhs);
     Stmt* setter_stmt = new ExprStmt(setter_assignment);
-    Stmt* setter_body = new BlockStmt(setter_stmt);
+    BlockStmt* setter_body = new BlockStmt(setter_stmt);
     DefExpr* setter_def_expr = new DefExpr(
       Symboltable::finishFnDef(setter_fn, setter_this, dtVoid, setter_body));
     DefStmt* setter_def_stmt = new DefStmt(setter_def_expr);
@@ -106,8 +106,9 @@ static void build_setters_and_getters(StructuralType* structType) {
     ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
     Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
     Stmt* getter_return = new ReturnStmt(getter_expr);
+    BlockStmt* getter_body = new BlockStmt(getter_return);
     DefExpr* getter_def_expr = new DefExpr(
-      Symboltable::finishFnDef(getter_fn, getter_this, tmp->type, getter_return));
+      Symboltable::finishFnDef(getter_fn, getter_this, tmp->type, getter_body));
     DefStmt* getter_def_stmt = new DefStmt(getter_def_expr);
     structType->addDeclarations(getter_def_stmt);
     getter_fn->classBinding = structType->symbol;
@@ -137,7 +138,8 @@ static void build_record_equality_function(StructuralType* structType) {
       ? new BinOp(BINOP_LOGAND, cond, new BinOp(BINOP_EQUAL, left, right))
       : new BinOp(BINOP_EQUAL, left, right);
   }
-  Stmt* body = new ReturnStmt(cond);
+  Stmt* retStmt = new ReturnStmt(cond);
+  BlockStmt* body = new BlockStmt(retStmt);
   DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtBoolean, body)));
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
@@ -161,7 +163,8 @@ static void build_record_inequality_function(StructuralType* structType) {
       ? new BinOp(BINOP_LOGOR, cond, new BinOp(BINOP_NEQUAL, left, right))
       : new BinOp(BINOP_NEQUAL, left, right);
   }
-  Stmt* body = new ReturnStmt(cond);
+  Stmt* retStmt = new ReturnStmt(cond);
+  BlockStmt* body = new BlockStmt(retStmt);
   DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtBoolean, body)));
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
@@ -188,7 +191,7 @@ static void build_record_assignment_function(StructuralType* structType) {
   if (analyzeAST)
     body = appendLink(body, new ReturnStmt(new Variable(arg2)));
   Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
-  Stmt* block_stmt = new BlockStmt(body);
+  BlockStmt* block_stmt = new BlockStmt(body);
   DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, ret_type, block_stmt)));
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }

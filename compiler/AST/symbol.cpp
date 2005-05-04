@@ -570,7 +570,7 @@ TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
 
 
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
-                   Type* init_retType, Stmt* init_body,
+                   Type* init_retType, BlockStmt* init_body,
                    bool init_exportMe, Symbol* init_classBinding) :
   Symbol(SYMBOL_FN, init_name, init_retType, init_exportMe),
   formals(init_formals),
@@ -606,7 +606,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
 
 
 void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
-                         Stmt* init_body, SymScope* init_paramScope,
+                         BlockStmt* init_body, SymScope* init_paramScope,
                          bool init_exportMe) {
   formals = init_formals;
   type = init_retType;
@@ -647,14 +647,18 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   copy->_getter = _getter; // If it is a cloned class we probably want this
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
-  Stmt* new_body = body->copyList(clone, map, analysis_clone);
+  BlockStmt* new_body = 
+    dynamic_cast<BlockStmt*>(body->copyList(clone, map, analysis_clone));
+  if (body != NULL && new_body == NULL) {
+    INT_FATAL(body, "function body was not a BlockStmt!?");
+  }
   return Symboltable::finishFnDef(copy, new_formals, type, new_body, exportMe);
 }
 
 
 void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
-    body = dynamic_cast<Stmt*>(new_ast);
+    body = dynamic_cast<BlockStmt*>(new_ast);
   } else {
     bool found = false;
     for (Symbol* tmp = formals; tmp; tmp = nextLink(Symbol, tmp)) {
@@ -878,7 +882,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
   }
 
   Stmt* fn_call = new ExprStmt(new FnCall(new Variable(this), actuals));
-  Stmt* body = new BlockStmt(fn_call);
+  BlockStmt* body = new BlockStmt(fn_call);
   DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, wrapper_formals, retType, body));
   defPoint->insertBefore(def_expr);
   Symboltable::setCurrentScope(save_scope);
@@ -1149,8 +1153,8 @@ void ModuleSymbol::createInitFn(void) {
 
   Stmt* initFunStmts = dynamic_cast<Stmt*>(initstmts);
   definition = dynamic_cast<Stmt*>(globstmts);
-  Stmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
-                                                 : new NoOpStmt());
+  BlockStmt* initFunBody = new BlockStmt(initFunStmts ? initFunStmts 
+                                                      : new NoOpStmt());
   DefStmt* initFunDef = Symboltable::defineFunction(fnName, NULL, 
                                                     dtVoid, initFunBody, 
                                                     true);

@@ -1,0 +1,93 @@
+#include <typeinfo>
+#include "eliminateReturns.h"
+#include "stmt.h"
+#include "symtab.h"
+
+EliminateReturns::EliminateReturns(void) {
+  whichModules = MODULES_USER;
+}
+
+
+static bool alreadyProcessedThisReturn(Expr* retExpr, Symbol* retval) {
+  if (typeid(*retExpr) == typeid(Variable)) {
+    Variable* retVar = dynamic_cast<Variable*>(retExpr);
+    if (retVar->var == retval) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+void EliminateReturns::preProcessStmt(Stmt* stmt) {
+  if (typeid(*stmt) == typeid(ReturnStmt)) {
+    ReturnStmt* retStmt = dynamic_cast<ReturnStmt*>(stmt);
+    Expr* retExpr = retStmt->expr;
+
+    if (retExpr == NULL) {
+      return;
+    }
+
+    //    fprintf(stderr, "\n\n\nFound a return statement: ");
+    //    retStmt->println(stderr);
+
+    FnSymbol* fnSym = retStmt->parentFunction();
+    if (fnSym == NULL) {
+      INT_FATAL(stmt, "Return statement doesn't have parent function");
+    }
+
+    //    fprintf(stderr, "Parent function is: %s\n", fnSym->name);
+    Type* retType = fnSym->retType;
+    //    fprintf(stderr, "Return type is: ");
+    //    retType->println(stderr);
+    Stmt* body = fnSym->body;
+    BlockStmt* blockBody = dynamic_cast<BlockStmt*>(body);
+    if (blockBody == NULL) {
+      INT_FATAL(fnSym, "Function symbol doesn't have blockstmt body");
+    }
+    
+    SymScope* fnScope = blockBody->blkScope;
+    if (fnScope == NULL) {
+      INT_FATAL(blockBody, "Block body has NULL blkScope");
+    }
+    SymScope* prevScope = Symboltable::setCurrentScope(fnScope);
+
+    LabelSymbol* retPtLabel;
+    Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
+    VarSymbol* retval = dynamic_cast<VarSymbol*>(retvalSym);
+    if (retval == NULL) {
+      DefStmt* retValDefStmt = Symboltable::defineSingleVarDefStmt("_retval", 
+                                                                   retType, 
+                                                                   NULL, 
+                                                                   VAR_NORMAL,
+                                                                   VAR_VAR);
+      retval = retValDefStmt->varDef();
+      retval->noDefaultInit = true;
+      blockBody->body->insertBefore(retValDefStmt);
+
+      ReturnStmt* newRetStmt = new ReturnStmt(new Variable(retval));
+      retPtLabel = new LabelSymbol("_retpt");
+      LabelStmt* newLabelStmt = new LabelStmt(retPtLabel, newRetStmt);
+      blockBody->body->append(newLabelStmt);
+    } else {
+      if (alreadyProcessedThisReturn(retExpr, retval)) {
+        Symboltable::setCurrentScope(prevScope);
+        return;
+      }
+      Symbol* retptSym = Symboltable::lookupInCurrentScope("_retpt");
+      retPtLabel = dynamic_cast<LabelSymbol*>(retptSym);
+      if (retPtLabel == NULL) {
+        INT_FATAL(retStmt, "Couldn't find _retpt label");
+      }
+    }
+
+    Variable* retVar = new Variable(retval);
+    AssignOp* assignRetVar = new AssignOp(GETS_NORM, retVar, retExpr->copy());
+    ExprStmt* assignStmt = new ExprStmt(assignRetVar);
+    retStmt->replace(assignStmt);
+    GotoStmt* gotoReturn = new GotoStmt(goto_normal, retPtLabel);
+    assignStmt->insertAfter(gotoReturn);
+    
+    Symboltable::setCurrentScope(prevScope);
+  }
+}

@@ -6,10 +6,13 @@
 #include "pragma.h"
 #include "type.h"
 
+class DefExpr;
 class Stmt;
+class BlockStmt;
 class ASymbol;
 class SymScope;
 class MPosition;
+
 
 enum varType {
 //R:Maybe this should be VAR_NOTHING
@@ -24,8 +27,6 @@ enum consType {
   VAR_CONST,
   VAR_PARAM
 };
-
-class DefExpr;
 
 class Symbol : public BaseAST {
  public:
@@ -160,7 +161,7 @@ class FnSymbol : public Symbol {
   Symbol* _this;
   VarSymbol* _setter; /* the variable this function sets if it is a setter */
   VarSymbol* _getter; /* the variable this function gets if it is a getter */
-  Stmt* body;
+  BlockStmt* body;
   Symbol* classBinding;
   _method_type method_type;
   SymScope* paramScope;
@@ -169,10 +170,10 @@ class FnSymbol : public Symbol {
   FnSymbol* overload;
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-           Stmt* init_body, bool init_exportMe=false,
+           BlockStmt* init_body, bool init_exportMe=false,
            Symbol* init_classBinding = NULL);
   FnSymbol(char* init_name, Symbol* init_classBinding = NULL);
-  void finishDef(Symbol* init_formals, Type* init_retType, Stmt* init_body,
+  void finishDef(Symbol* init_formals, Type* init_retType, BlockStmt* init_body,
                  SymScope* init_paramScope, bool init_exportMe=false);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
