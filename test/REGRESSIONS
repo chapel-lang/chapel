@@ -19,13 +19,34 @@ linux regressions
   formal_change->init which includes a VarInit which
   references the original (pre-copy) formal.
 
+
+
 linux valgrind regressions
 ==========================
+
+memory/shannon/memstatPrint:
+memory/shannon/printFinalMemStat:
+
+  Mem stat tests don't seem to be working on Sun, but haven't
+  investigated why -- would guess that it's due to realloc bug.
+  (shannon)
 
 
 
 linux64-specific regressions
 ============================
+
+memory/shannon/memstatPrint:
+memory/shannon/printFinalMemStat:
+
+  See linux valgrind report above.
+
+
+memory/shannon/printMemTable
+
+  need to implement a way to filter memtable when printing to filter
+  out small allocations that are platform-dependent (like structs with
+  pointer values).
 
 
 
@@ -42,5 +63,15 @@ freebsd-specific regressions
 sunos-specific regressions
 ==========================
 
+memory/shannon/memstatPrint:
+memory/shannon/printFinalMemStat:
+
+  (see linux valgrind entry above)
+
+
+trivial/shannon/compSampler:
+
+  GC complains about repeated allocation of very large block for
+  unknown reason (???)
 
 
