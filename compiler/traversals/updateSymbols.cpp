@@ -32,6 +32,16 @@ void UpdateSymbols::preProcessExpr(Expr* expr) {
         }
       }
     }
+  } else if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(expr)) {
+    for (int i = 0; i < copy_map->n; i++) {
+      if (copy_map->v[i].key == varInitExpr->symbol) {
+        if (VarSymbol* new_sym = dynamic_cast<VarSymbol*>(copy_map->v[i].value)) {
+          varInitExpr->symbol = new_sym;
+        } else {
+          INT_FATAL("Major error in UpdateSymbols");
+        }
+      }
+    }
   }
 }
 

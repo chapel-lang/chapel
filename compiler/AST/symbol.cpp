@@ -11,6 +11,7 @@
 #include "fun.h"
 #include "pattern.h"
 #include "../traversals/buildClassConstructorsEtc.h"
+#include "../traversals/clearTypes.h"
 
 Symbol *gNil = 0;
 
@@ -700,7 +701,10 @@ FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>*
     INT_FATAL(this, "Unreachable statement in FnSymbol::clone reached");
   }
   Symboltable::setCurrentScope(save_scope);
-  return dynamic_cast<FnSymbol*>(this_copy->sym);
+  TRAVERSE(this_copy, new ClearTypes(), true);
+  TRAVERSE(defPoint, new ClearTypes(), true); // only do this until uncloned is not used
+  FnSymbol* fn = dynamic_cast<FnSymbol*>(this_copy->sym);
+  return fn;
 }
 
 

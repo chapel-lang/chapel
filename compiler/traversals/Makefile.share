@@ -4,6 +4,7 @@ TRAVERSALS_SRCS = \
 	checkIDs.cpp \
 	checkSemantics.cpp \
 	checkTypeInfo.cpp \
+        clearTypes.cpp \
 	collectASTS.cpp \
 	createConfigVarTable.cpp \
 	destructureTupleAssignments.cpp \

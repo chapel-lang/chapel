@@ -5,15 +5,14 @@
 #include "baseAST.h"
 #include "vec.h"
 
+#include "map.h"
+#include "baseAST.h"
+
 /***
  *** This traversal is called by copy to update the symbols in an
  *** expression or a statement for those symbols that have themselves
  *** been copied.
  ***/
-
-#include "map.h"
-#include "baseAST.h"
-
 class UpdateSymbols : public Traversal {
  public:
   Map<BaseAST*,BaseAST*>* copy_map;
