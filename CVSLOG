@@ -29274,3 +29274,26 @@ Added files:
 	chapel/compiler/traversals/: eliminateReturns.cpp 
 	                             eliminateReturns.h 
 
+---------------------------------------------------------------------------
+
+05/04/05 12:40:01 -- deitz
+
+Log message:
+	Fixed Symboltable::dump() and the PrintSymtab traversal so that the
+	indentation does not require the "level" field of SymScope to be
+	correct.  It always just counts its distance to the top.
+	
+	Fixed a major bug in the insertion of the CommonModule in which
+	numerous scopes were unlinked from the Symboltable.
+	
+	Improved RemoveDeadSymbols to remove the scopes of classes that are
+	dead from the Symboltable.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: symscope.h symtab.h 
+	chapel/compiler/symtab/: printSymtab.cpp removeDeadSymbols.cpp 
+	                         removeDeadSymbols.h symscope.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: removeNamedParameters.cpp 
+
