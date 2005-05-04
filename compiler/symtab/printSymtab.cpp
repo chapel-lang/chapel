@@ -3,20 +3,23 @@
 
 PrintSymtab::PrintSymtab(FILE* init_outfile) :
   outfile(init_outfile)
-{}
+{ }
   
 void PrintSymtab::preProcessScope(SymScope* scope) {
-  if (!scope->isEmpty()) {
-    scope->printHeader(outfile);
-  }
+  //  if (!scope->isEmpty()) {
+    scope->printHeader(outfile, scope->parentLength() * 2);
+    //  }
 }
 
 void PrintSymtab::postProcessScope(SymScope* scope) {
-  if (!scope->isEmpty()) {
-    scope->printFooter(outfile);
-  }
+  //  if (!scope->isEmpty()) {
+    scope->printFooter(outfile, scope->parentLength() * 2);
+    //  }
 }
 
 void PrintSymtab::processSymbol(Symbol* sym) {
-  fprintf(outfile, "%s%s\n", sym->parentScope->indentStr(), sym->name);
+//   for (int i = 0; i < sym->parentScope->parentLength() * 2; i++) {
+//     printf(" ");
+//   }
+//   fprintf(outfile, "%s\n", sym->name);
 }

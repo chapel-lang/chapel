@@ -15,9 +15,10 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
     } else {
       if (var_init->symbol->type->defaultVal) {
         var_init->replace(var_init->symbol->type->defaultVal->copy());
-      } else {
-        assert(var_init->symbol->type->defaultConstructor);
+      } else if (var_init->symbol->type->defaultConstructor) {
         var_init->replace(new FnCall(new Variable(var_init->symbol->type->defaultConstructor), NULL));
+      } else {
+        INT_FATAL(expr, "VarInitExpr has no default initialization");
       }
     }
   }

@@ -25,6 +25,7 @@ class Symboltable {
   static void traverseFromScope(SymtabTraversal* traversal,
                                 SymScope* scope);
 
+  static void removeScope(SymScope* scope);
   static void pushScope(scopeType type);
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);

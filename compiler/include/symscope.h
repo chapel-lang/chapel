@@ -70,9 +70,10 @@ class SymScope : public gc {
 
   // these are "private"
   char* indentStr(void);
-  void printHeader(FILE* outfile);
+  int parentLength(void);
+  void printHeader(FILE* outfile, int indent = 0);
   void printSymbols(FILE* outfile, bool tableOrder);
-  void printFooter(FILE* outfile);
+  void printFooter(FILE* outfile, int indent = 0);
 
   void codegen(FILE* outfile, char* separator);
 

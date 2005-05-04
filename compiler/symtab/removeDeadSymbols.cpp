@@ -1,13 +1,9 @@
 #include "removeDeadSymbols.h"
 #include "analysis.h"
+#include "symtab.h"
 #include "stmt.h"
 #include "expr.h"
 #include "../traversals/view.h"
-
-
-RemoveDeadSymbols::RemoveDeadSymbols(void) {
-  //  whichModules = MODULES_USER;
-}
 
 
 static void markAsDeadAndExtract(Symbol* sym) {
@@ -38,12 +34,6 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
     return;
   }
 
-#ifdef USE_AST_IS_USED
-  if (!AST_is_used(sym)) {
-    markAsDeadAndExtract(sym);
-    fprintf(stderr, "%s is dead\n", sym->name);
-  }
-#else
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
     if (!type_is_used(typeSym)) {
       // SJD: Don't want to remove function if type variable parameter
@@ -52,11 +42,13 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
         return;
       }
       markAsDeadAndExtract(sym);
+      if (StructuralType* structuralType = dynamic_cast<StructuralType*>(sym->type)) {
+        Symboltable::removeScope(structuralType->structScope);
+      }
     }
   } else if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {
     if (!function_is_used(fnSym)) {
       markAsDeadAndExtract(sym);
     }
   }
-#endif
 }

@@ -220,6 +220,15 @@ Expr* SymScope::findEnclosingExprContext() {
 }
 
 
+int SymScope::parentLength(void) {
+  if (!parent) {
+    return 0;
+  } else {
+    return parent->parentLength() + 1;
+  }
+}
+
+
 char* SymScope::indentStr(void) {
   static char* spaces = "                                                     "
                         "                          ";
@@ -250,13 +259,15 @@ char* SymScope::indentStr(void) {
 static bool printEmpty = false;
 
 
-void SymScope::printHeader(FILE* outfile) {
-  char* indent = indentStr();
-
-  fprintf(outfile, "%s", indent);
+void SymScope::printHeader(FILE* outfile, int indent) {
+  for (int i = 0; i < indent; i++) {
+    printf(" ");
+  }
   fprintf(outfile, "======================================================\n");
 
-  fprintf(outfile, "%s", indent);
+  for (int i = 0; i < indent; i++) {
+    printf(" ");
+  }
   fprintf(outfile, "SCOPE: ");
   switch (type) {
   case SCOPE_INTRINSIC:
@@ -311,7 +322,9 @@ void SymScope::printHeader(FILE* outfile) {
   }
   fprintf(outfile, "\n");
 
-  fprintf(outfile, "%s", indent);
+  for (int i = 0; i < indent; i++) {
+    printf(" ");
+  }
   fprintf(outfile, "------------------------------------------------------\n");
 }
 
@@ -339,10 +352,10 @@ void SymScope::printSymbols(FILE* outfile, bool tableOrder) {
 }
 
 
-void SymScope::printFooter(FILE* outfile) {
-  char* indent = indentStr();
-
-  fprintf(outfile, "%s", indent);
+void SymScope::printFooter(FILE* outfile, int indent) {
+  for (int i = 0; i < indent; i++) {
+    printf(" ");
+  }
   fprintf(outfile, "======================================================\n");
 }
 

@@ -5,7 +5,6 @@
 
 class RemoveDeadSymbols : public SymtabTraversal {
  public:
-  RemoveDeadSymbols(void);
   void processSymbol(Symbol* sym);
 };
 

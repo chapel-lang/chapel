@@ -70,6 +70,7 @@ void Symboltable::doneParsingPreludes(void) {
   commonModule->modScope->parent = preludeScope;
   commonModule->modScope->setContext(NULL, commonModule);
 
+  commonModule->modScope->sibling = preludeScope->child;
   preludeScope->child = commonModule->modScope;
   currentScope = commonModule->modScope;
 
@@ -98,6 +99,22 @@ void Symboltable::doneParsingUserFiles(void) {
 
 bool Symboltable::parsingUserCode(void) {
   return (parsePhase == PARSING_USERFILES);
+}
+
+
+void Symboltable::removeScope(SymScope* scope) {
+  if (scope->parent->child == scope) {
+    scope->parent->child = scope->sibling;
+    return;
+  } else {
+    for (SymScope* tmp = scope->parent->child; tmp; tmp = tmp->sibling) {
+      if (tmp->sibling == scope) {
+        tmp->sibling = scope->sibling;
+        return;
+      }
+    }
+  }
+  INT_FATAL("Unable to remove SymScope");
 }
 
 

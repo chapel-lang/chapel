@@ -1178,10 +1178,14 @@ void MemberAccess::codegen(FILE* outfile) {
   StructuralType* base_type = dynamic_cast<StructuralType*>(base->typeInfo());
   if (!base_type) {
     INT_FATAL(this, "Dot applied to non-class/record/union");
+    base->codegen(outfile);
+    fprintf(outfile, "?.?");
+    member->codegen(outfile);
+  } else {
+    base->codegen(outfile);
+    base_type->codegenMemberAccessOp(outfile);
+    member->codegen(outfile);
   }
-  base->codegen(outfile);
-  base_type->codegenMemberAccessOp(outfile);
-  member->codegen(outfile);
 }
 
 
