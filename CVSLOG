@@ -29222,3 +29222,25 @@ Modified files:
 	chapel/util/: lookForTabs.cron 
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+05/04/05 10:23:40 -- deitz
+
+Log message:
+	Added a new traversal (not a pass) call ClearTypes that sets all the
+	types of defined symbols to dtUnknown.
+	
+	Made function cloning call the ClearTypes traversal since we will
+	require analysis to get the types for functions it clones.
+	
+	Added VarInitExpr to the UpdateSymbols traversal so that copying it
+	will update its symbol if that changed.  This doesn't yet seem to help
+	test_typevar_class1.chpl, but I'll look at it further.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: Makefile.share updateSymbols.cpp 
+	                             updateSymbols.h 
+Added files:
+	chapel/compiler/traversals/: clearTypes.cpp clearTypes.h 
+
