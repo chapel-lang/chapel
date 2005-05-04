@@ -29244,3 +29244,33 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: clearTypes.cpp clearTypes.h 
 
+---------------------------------------------------------------------------
+
+05/04/05 12:07:47 -- bradc
+
+Log message:
+	Switched FnSymbol body fields from Stmt to BlockStmt.
+	Even though a function body can be a single statement,
+	it is nice to always have a BlockStmt stored so that
+	new statements can be inserted before/after, symbols
+	can be added, etc. without doing the conversion after
+	the fact.
+	
+	This code also checks in a new traversal,
+	eliminateReturns that is designed to convert return
+	statements into jumps just before code generation,
+	which I'll document better once it's working.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h symtab.h 
+	chapel/compiler/main/: passlist.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertWriteFns.cpp symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             buildClassConstructorsEtc.cpp 
+	chapel/test/functions/bradc/: returnFnCallIntents.good 
+Added files:
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             eliminateReturns.h 
+
