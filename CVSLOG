@@ -29198,3 +29198,15 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/04/05 10:12:18 -- bradc
+
+Log message:
+	Updated platform-specific regressions and restored a linux64
+	regression that had been incorrectly removed in a previous
+	check-in.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
