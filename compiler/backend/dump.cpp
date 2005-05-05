@@ -31,9 +31,13 @@ dump_header(FILE *fp, char *fn) {
   fprintf(fp, "<li><a href=\"#CONCRETE_FUNCTIONS\">Concrete Functions</a>\n");
   fprintf(fp, "<li>Symbols</a>\n");
   fprintf(fp, "<ul>\n");
+#if 0
   fprintf(fp, "<li><a href=\"#FUNCTION_SYMBOLS\">Function Symbols</a>\n");
+#endif
   fprintf(fp, "<li><a href=\"#GLOBALS\">Global/Module Symbols</a>\n");
+#if 0
   fprintf(fp, "<li><a href=\"#SYMBOLS\">Local Symbols</a>\n");
+#endif
   fprintf(fp, "</ul>\n");
   fprintf(fp, "</ul>\n");
 }
@@ -51,13 +55,30 @@ is_internal_type(Sym *s) {
 }
 
 static void
-dump_sub_sym(FILE *fp, Sym *ss, char *title) {
-  if (ss) {
-    fprintf(fp, "<TR><TD><TD>%s<TD><a href=\"#SYM_%d\">%s (%d)</a>",
-            title,
+dump_sym_sym(FILE *fp, Sym *ss, int comma) {
+  if (comma)
+    fprintf(fp, ", "); 
+  if (!ss->type || ss->type == ss)
+    fprintf(fp, "<a href=\"#SYM_%d\">%s (%d)</a>", 
             ss->id,
             ss->name ? ss->name : ANON,
             ss->id);
+  else
+    fprintf(fp, "<a href=\"#SYM_%d\">%s (%d)</a> : <a href=\"#SYM_%d\">%s (%d)</a>", 
+            ss->id,
+            ss->name ? ss->name : ANON,
+            ss->id,
+            ss->type->id,
+            ss->type->name ? ss->type->name : ANON,
+            ss->type->id
+      );
+}
+
+static void
+dump_sub_sym(FILE *fp, Sym *ss, char *title) {
+  if (ss) {
+    fprintf(fp, "<TR><TD><TD>%s&nbsp;<TD>", title);
+    dump_sym_sym(fp, ss, 0);
   }
 }
 
@@ -70,10 +91,7 @@ dump_sym_list(FILE *fp, Sym *s, Vec<Sym *> &l, char *title, sym_pred_fn fn = 0) 
     if (v.n) {
       dump_sub_sym(fp, v.v[0], title);
       for (int i = 1; i < v.n; i++)
-        fprintf(fp, ", <a href=\"#SYM_%d\">%s (%d)</a>", 
-                v.v[i]->id,
-                v.v[i]->name ? v.v[i]->name : ANON,
-                v.v[i]->id);
+        dump_sym_sym(fp, v.v[i], 1);
       fprintf(fp, "\n");
     }
   }
@@ -85,8 +103,8 @@ dump_sym(FILE *fp, Sym *t) {
           t->name ? t->name : ANON,
           t->id);
   fprintf(fp, "<TABLE BORDER=0, CELLSPACING=0, CELLPADDING=0>\n");
-#if 0
   fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>ID<TD>%d\n",  t->id);
+#if 0
   if (t->name)
     fprintf(fp, "<TR><TD><TD>Name<TD>%s\n",  t->name);
 #endif
@@ -94,8 +112,11 @@ dump_sym(FILE *fp, Sym *t) {
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>%s %s\n", 
             t->in->is_module ? "module" : (t->type_kind != Type_NONE ? "type" : "function"), 
             t->in->name);
+#if 0
   else
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
+#endif
+  if (t->line() && t->filename() && *t->filename())
     fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->filename(), t->line());
   if (t->is_builtin) {
     char *name = if1->builtins_names.get(t);
@@ -104,15 +125,17 @@ dump_sym(FILE *fp, Sym *t) {
   dump_sub_sym(fp, t->aspect, "Aspect");
   if (t->type_kind != Type_NONE)
     fprintf(fp, "<TR><TD><TD>Type Kind<TD>%s\n", type_kind_string[t->type_kind]);
-  if (t->type) {
-    Sym *tt = t->type;
-    if (t->type == t && t->is_symbol)
-      tt = sym_symbol;
-    if (t != tt)
-      dump_sub_sym(fp, tt->type, "Type");
+  Sym *type = t->type;
+  if (!t->type && t->var && t->var->type)
+    type = t->var->type;
+  if (type) {
+    if (t->is_symbol)
+      type = sym_symbol;
+    if (t->type != type)
+      dump_sub_sym(fp, type, "Type");
   }
   dump_sym_list(fp, t, t->implements, "Implements", is_internal_type);
-  dump_sym_list(fp, t, t->specializes, "Specializes");
+  dump_sym_list(fp, t, t->specializes, "Specializes ");
   dump_sym_list(fp, t, t->includes, "Includes");
   if (t->must_specialize)
     dump_sub_sym(fp, t->must_specialize, "Must Specialize");
@@ -191,9 +214,12 @@ dump_functions(FILE *fp, FA *fa) {
     const char *name = f->sym->name ? f->sym->name : ANON;
     const char *sname = f->sym->in ? f->sym->in->name : "";
     if (!sname) sname = ANON;
-    fprintf(fp, "<b><A NAME=\"FUN_%d\">%s::%s (%d)</A></b>\n", f->id, sname, name, f->id);
+    if (!f->sym->in)
+      fprintf(fp, "<b><A NAME=\"FUN_%d\">%s::%s (%d)</A></b>\n", f->id, sname, name, f->id);
+    else
+      fprintf(fp, "<b><A NAME=\"FUN_%d\">%s (%d)</A></b>\n", f->id, name, f->id);
     fprintf(fp, "<TABLE BORDER=0, CELLSPACING=0, CELLPADDING=0>\n");
-    if (f->ast && f->filename())
+    if (f->ast && f->line())
       fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", f->filename(), f->line());
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>Args<TD>\n");
     dump_var_type_marg_positions(fp, f->positional_arg_positions, f->args);
@@ -227,8 +253,13 @@ dump_symbols(FILE *fp, FA *fa) {
   int again = 1;
   Vec<Sym *> syms, concrete_types, funs, globals, other, tmp;
   forv_CreationSet(cs, fa->css)
-    concrete_types.set_add(cs->type);
+    if (cs->type && 
+        cs->type->type_kind != Type_PRIMITIVE &&
+        (cs->type->type_kind != Type_RECORD ||
+         cs->type->creators.n))
+      concrete_types.set_add(cs->type);
   syms.copy(concrete_types);
+  again = 1;
   while (again) {
     again = 0;
     forv_Sym(s, syms) if (s) {
@@ -259,6 +290,22 @@ dump_symbols(FILE *fp, FA *fa) {
     }
   }
 
+#if 0
+  again = 1;
+  while (again) {
+    again = 0;
+    tmp.copy(concrete_types);
+    forv_Sym(s, tmp) if (s) {
+      forv_Sym(t, s->implements)
+        again = concrete_types.set_add(t) || again;
+      forv_Sym(t, s->specializes)
+        again = concrete_types.set_add(t) || again;
+      forv_Sym(t, s->includes)
+        again = concrete_types.set_add(t) || again;
+    }
+  }
+#endif
+
   tmp.move(concrete_types);
   forv_Sym(s, tmp) if (s)
     if (!s->is_symbol && !s->is_fun)
@@ -270,7 +317,11 @@ dump_symbols(FILE *fp, FA *fa) {
   syms.move(other);
   forv_EntrySet(es, fa->ess) 
     funs.set_add(es->fun->sym);
+#if 0
   syms.set_difference(funs, other);
+#else
+  other.move(syms);
+#endif
   funs.set_to_vec();
 
   tmp.clear();
@@ -303,22 +354,26 @@ dump_symbols(FILE *fp, FA *fa) {
   // Functions
   dump_functions(fp, fa);
 
+#if 0
   // Function Symbols
   fprintf(fp, "<H1><A NAME=\"FUNCTION_SYMBOLS\">Function Symbols</A></H1>\n\n");
   forv_Sym(t, funs)
     dump_sym(fp, t);
   fprintf(fp, "\n");
+#endif
   // Globals Symbols
   fprintf(fp, "<H1><A NAME=\"GLOBALS\">Global/Module Symbols</A></H1>\n\n");
   forv_Sym(t, globals)
     dump_sym(fp, t);
   fprintf(fp, "\n");
+#if 0
   // Other Symbols
   fprintf(fp, "<H1><A NAME=\"SYMBOLS\">Local Symbols</A></H1>\n\n");
   forv_Sym(t, other)
     if (!is_internal_type(t))
       dump_sym(fp, t);
   fprintf(fp, "\n");
+#endif
 }
 
 void 
