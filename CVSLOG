@@ -29408,3 +29408,15 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: printSymtab.cpp 
 
+---------------------------------------------------------------------------
+
+05/05/05 13:36:05 -- bradc
+
+Log message:
+	Fixed some bugs in printing the symboltable in
+	which stdout was used rather than the output
+	file that was specified.
+
+Modified files:
+	chapel/compiler/symtab/: printSymtab.cpp symscope.cpp 
+
