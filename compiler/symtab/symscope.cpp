@@ -40,14 +40,20 @@ void SymScope::traverse(SymtabTraversal* traversal) {
 
   SymLink* link = firstSym;
   while (link) {
+    SymLink* nextlink = nextLink(SymLink, link);
+    FnSymbol* nextfn = NULL;
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(link->pSym)) {
+      nextfn = fn->overload;
+    }
     traversal->processSymbol(link->pSym);
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(link->pSym)) {
-      while (fn->overload) {
-        fn = fn->overload;
+      while (nextfn) {
+        fn = nextfn;
+        nextfn = fn->overload;
         traversal->processSymbol(fn);
       }
     }
-    link = nextLink(SymLink, link);
+    link = nextlink;
   }
 
   traversal->postProcessScope(this);

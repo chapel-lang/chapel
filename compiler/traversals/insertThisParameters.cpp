@@ -77,6 +77,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   if (TypeSymbol* class_symbol = dynamic_cast<TypeSymbol*>(fn->classBinding)) {
     if (def_stmt->parentSymbol == class_symbol) {
       if (StructuralType* class_type = dynamic_cast<StructuralType*>(class_symbol->type)) {
+        def_stmt->extract();
         class_symbol->defPoint->parentStmt->insertBefore(def_stmt->copy());
         Symboltable::undefineInScope(fn, class_type->structScope);
         fn->overload = NULL; // Drop it on the ground since we're
@@ -84,7 +85,6 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
                              // the class scope into the scope before.
                              // They'll be rebuilt.
         Symboltable::defineInScope(fn, class_symbol->parentScope);
-        def_stmt->extract();
       }
     }
   }

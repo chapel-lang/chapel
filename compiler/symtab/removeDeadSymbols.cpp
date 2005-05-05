@@ -13,14 +13,16 @@ static void markAsDeadAndExtract(Symbol* sym) {
   } else {
     sym->defPoint->extract();
   }
+  sym->parentScope->remove(sym);
+  //  printf("Removed %s\n", sym->cname);
 }
 
 
 void RemoveDeadSymbols::processSymbol(Symbol* sym) {
 
-  /***
-   ***  Remove ->init of ParamSymbols, wrappers have been built
-   ***/
+  //
+  // Remove ->init of ParamSymbols, wrappers have been built
+  //
   if (ParamSymbol* arg = dynamic_cast<ParamSymbol*>(sym)) {
     if (arg->init) {
       arg->init->extract();
@@ -49,6 +51,7 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
   } else if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {
     if (!function_is_used(fnSym)) {
       markAsDeadAndExtract(sym);
+      Symboltable::removeScope(fnSym->paramScope);
     }
   }
 }
