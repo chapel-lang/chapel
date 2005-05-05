@@ -29398,3 +29398,13 @@ Modified files:
 	chapel/compiler/symtab/: removeDeadSymbols.cpp symscope.cpp 
 	chapel/compiler/traversals/: insertThisParameters.cpp 
 
+---------------------------------------------------------------------------
+
+05/05/05 13:17:14 -- deitz
+
+Log message:
+	Removed comments I accidentally left in the PrintSymtab traversal.
+
+Modified files:
+	chapel/compiler/symtab/: printSymtab.cpp 
+
