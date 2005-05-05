@@ -29352,3 +29352,18 @@ Removed files:
 	chapel/test/functions/bradc/: defaultParamInOut.future 
 	                              returnFnCallIntents.future 
 
+---------------------------------------------------------------------------
+
+05/04/05 17:08:41 -- jplevyak
+
+Log message:
+	Cleanup chpl -t (HTML output) so that it is more readable and
+	shows all the types and functions and their call trees.  Unfortunately
+	it does not show the AST nodes and the types and types and outgoing
+	calls because that was never reimplemented when we moved to the new AST :(
+	
+	However the output is still useful to see what is coming out of analysis.
+
+Modified files:
+	chapel/compiler/backend/: dump.cpp 
+
