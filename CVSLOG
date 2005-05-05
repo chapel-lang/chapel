@@ -29480,3 +29480,14 @@ Modified files:
 	                         symscope.cpp symtab.cpp 
 	                         symtabTraversal.cpp 
 
+---------------------------------------------------------------------------
+
+05/05/05 16:46:39 -- jplevyak
+
+Log message:
+	New option : NO_OPERATOR_EQ_FOR_UNTYPED_UNINITIALIZED to see if we can
+	avoid operator= for untyped uninitialized variables.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
