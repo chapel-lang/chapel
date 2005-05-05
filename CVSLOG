@@ -29420,3 +29420,63 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: printSymtab.cpp symscope.cpp 
 
+---------------------------------------------------------------------------
+
+05/05/05 15:10:04 -- bradc
+
+Log message:
+	A number of Symboltable cleanups.  The first is
+	the most important; the second the coolest; the
+	others are minor fixes:
+	
+	* Fixed an apparent bug in the SymtabTraversal in
+	  which all modules were being traversed if the
+	  traversal requested that only user modules be
+	  traversed.
+	
+	* Made the PrintSymtab pass support an argument in
+	  the passlist file so that only part of the symboltable
+	  may be printed.  If the argument string is set to
+	  "user", only the symboltable corresponding to the
+	  user's code will be printed out;  if set to "common"
+	  the common module and user code will be printed out.
+	  Otherwise, the whole thing will be printed out (as
+	  it had been before).  I find this helpful for
+	  avoiding the pages of code that are generated for
+	  the prelude files.
+	
+	* changed the way that indentations are printed to
+	  avoid having an fprintf in a for loop, and to reduce
+	  the number of places in the code where the indentation
+	  has to be computed.  It could be further improved, but
+	  this seems like a step in the right direction.
+	
+	* Removed the "level" member from the SymScope class
+	  as it is no longer used
+	
+	* Switched ModuleSymbol's boolean "internal" which was
+	  used to indicate whether the module was internal or
+	  external to "modtype" which can have the values:
+	     MOD_USER, MOD_INTERNAL, MOD_COMMON
+	
+	  because there are several places in the compiler where
+	  the commmon module is treated either as a user module
+	  or an internal module, depending on the context.  This
+	  replaces some pretty strange conditionals ("if the module
+	  is internal or common" or "if the module is not internal
+	  and is not the common module") with clearer logic.  Steve
+	  might argue that the common module should never be treated
+	  differently than user code, but since it currently is, I
+	  just tried to clean this up without trying to figure out
+	  whether it always could be.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h symscope.h symtab.h 
+	chapel/compiler/parser/: parser.cpp 
+	chapel/compiler/passes/: codegen.cpp createEntryPoint.cpp 
+	                         printProgram.cpp runAnalysis.cpp 
+	chapel/compiler/symtab/: printSymtab.cpp printSymtab.h 
+	                         symscope.cpp symtab.cpp 
+	                         symtabTraversal.cpp 
+
