@@ -29367,3 +29367,14 @@ Log message:
 Modified files:
 	chapel/compiler/backend/: dump.cpp 
 
+---------------------------------------------------------------------------
+
+05/04/05 17:17:49 -- deitz
+
+Log message:
+	Removed future for test_class3 which uses named parameters.  This has
+	been working for a little while now.
+
+Removed files:
+	chapel/test/classes/deitz/: test_class3.future 
+
