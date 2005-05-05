@@ -25,7 +25,9 @@ void SymtabTraversal::run(ModuleSymbol* moduleList) {
   } else {
     ModuleSymbol* mod = moduleList;
     while (mod) {
-      Symboltable::traverseFromScope(this, mod->modScope);
+      if (mod->modtype == MOD_USER) {
+        Symboltable::traverseFromScope(this, mod->modScope);
+      }
       mod = nextLink(ModuleSymbol, mod);
     }
   }

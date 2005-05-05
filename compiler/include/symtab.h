@@ -56,7 +56,7 @@ class Symboltable {
   static Expr* finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_expr);
   static BlockStmt* startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, Stmt* body);
-  static ModuleSymbol* startModuleDef(char* name, bool internal = false);
+  static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
   static DefExpr* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
   static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
                                             Expr* init = NULL, 

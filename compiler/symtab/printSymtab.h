@@ -8,6 +8,7 @@ class PrintSymtab : public SymtabTraversal {
   FILE* outfile;
 
   PrintSymtab(FILE* init_outfile = stderr);
+  void run(ModuleSymbol* moduleList);
   
   void preProcessScope(SymScope* scope);
   void postProcessScope(SymScope* scope);

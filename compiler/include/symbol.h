@@ -210,15 +210,22 @@ class EnumSymbol : public Symbol {
 };
 
 
+enum modType {
+  MOD_INTERNAL,
+  MOD_COMMON,
+  MOD_USER
+};
+
+
 class ModuleSymbol : public Symbol {
  public:
-  bool internal;
+  modType modtype;
   Stmt* stmts;
   FnSymbol* initFn;
 
   SymScope* modScope;
 
-  ModuleSymbol(char* init_name, bool init_internal);
+  ModuleSymbol(char* init_name, modType init_modtype);
   void setModScope(SymScope* init_modScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);

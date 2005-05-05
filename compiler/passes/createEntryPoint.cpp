@@ -15,7 +15,7 @@ static ModuleSymbol* findUniqueUserModule(ModuleSymbol* moduleList) {
   ModuleSymbol* userModule = NULL;
 
   while (moduleList) {
-    if (!moduleList->internal && moduleList != commonModule) {
+    if (moduleList->modtype == MOD_USER) {
       if (userModule == NULL) {
         userModule = moduleList;
       } else {
@@ -41,7 +41,8 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
     dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
 
   for (ModuleSymbol* mod = moduleList; mod; mod = nextLink(ModuleSymbol, mod)) {
-    if (mod->internal || !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
+    if (mod->modtype == MOD_INTERNAL || 
+        !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
       SymScope* saveScope = Symboltable::setCurrentScope(mod->modScope);
       mod->createInitFn();
       Symboltable::setCurrentScope(saveScope);
@@ -93,7 +94,7 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
   entryPoint = appendLink(entryPoint, mainCallStmt);
 
    // create the new entry point module
-  ModuleSymbol* entry = new ModuleSymbol("entryPoint", true);
+  ModuleSymbol* entry = new ModuleSymbol("entryPoint", MOD_INTERNAL);
   entry->stmts = entryPoint;
   entry->createInitFn();
   entryPoint = entry->stmts;

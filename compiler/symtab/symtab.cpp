@@ -20,7 +20,6 @@ enum parsePhaseType {
 static parsePhaseType parsePhase = PARSING_PRE;
 
 
-static int currentLevel = 0;
 static SymScope* rootScope = NULL;
 static SymScope* preludeScope = NULL;
 static SymScope* postludeScope = NULL;
@@ -65,14 +64,9 @@ void Symboltable::doneParsingPreludes(void) {
 
   // Setup common module and scope
   // Hacked nested module, for declaring arrays-of-primitives types, e.g.
-  commonModule = new ModuleSymbol("_CommonModule", false);
-  commonModule->setModScope(new SymScope(SCOPE_MODULE));
-  commonModule->modScope->parent = preludeScope;
-  commonModule->modScope->setContext(NULL, commonModule);
-
-  commonModule->modScope->sibling = preludeScope->child;
-  preludeScope->child = commonModule->modScope;
-  currentScope = commonModule->modScope;
+  commonModule = new ModuleSymbol("_CommonModule", MOD_COMMON);
+  Symboltable::pushScope(SCOPE_MODULE);
+  commonModule->setModScope(currentScope);
 
   commonModule->stmts = new NoOpStmt();
 
@@ -87,6 +81,8 @@ void Symboltable::doneParsingPreludes(void) {
 
 
 void Symboltable::doneParsingUserFiles(void) {
+  // pop common module scope
+  Symboltable::popScope();
   postludeScope = new SymScope(SCOPE_POSTPARSE);
   postludeScope->parent = rootScope;
   preludeScope->sibling = postludeScope;
@@ -119,7 +115,7 @@ void Symboltable::removeScope(SymScope* scope) {
 
 
 void Symboltable::pushScope(scopeType type) {
-  SymScope* newScope = new SymScope(type, ++currentLevel);
+  SymScope* newScope = new SymScope(type);
   SymScope* child = currentScope->child;
 
   if (child == NULL) {
@@ -136,7 +132,6 @@ void Symboltable::pushScope(scopeType type) {
 
 
 SymScope* Symboltable::popScope(void) {
-  currentLevel--;
   SymScope* topScope = currentScope;
   SymScope* prevScope = currentScope->parent;
 
@@ -163,7 +158,6 @@ SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
   SymScope* oldScope = currentScope;
 
   currentScope = newScope;
-  currentLevel = newScope->level;
 
   return oldScope;
 }
@@ -314,8 +308,8 @@ BlockStmt* Symboltable::finishCompoundStmt(BlockStmt* blkStmt, Stmt* body) {
 }
 
 
-ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
-  ModuleSymbol* newModule = new ModuleSymbol(name, internal);
+ModuleSymbol* Symboltable::startModuleDef(char* name, modType modtype) {
+  ModuleSymbol* newModule = new ModuleSymbol(name, modtype);
 
   // if this is a software rather than a file module and there
   // is a current module that is also a software module, then
@@ -324,7 +318,7 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, bool internal) {
       !currentModule->isFileModule()) {
     USR_FATAL(newModule, "Can't handle nested modules yet");
   } else {
-    if (!internal) {
+    if (modtype != MOD_INTERNAL) {
       // Typically all modules would push scopes;  however, if this
       // is a software module within a file module, and the file
       // module's scope is empty, we can re-use it for simplicity
@@ -384,7 +378,7 @@ static Stmt* ModuleDefContainsNestedModules(Stmt* def) {
 
 DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
   bool empty = false;
-  if (!mod->internal) {
+  if (mod->modtype != MOD_INTERNAL) {
     if (ModuleDefContainsOnlyNestedModules(definition)) {
       // This is the case for a file module that contains a number
       // of software modules and nothing else.  Such modules should
@@ -411,7 +405,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
 
   if (!empty) {
     firstModule = appendLink(firstModule, mod);
-    if (!mod->internal && firstUserModule == NULL) {
+    if (mod->modtype != MOD_INTERNAL && firstUserModule == NULL) {
       firstUserModule = mod;
     }
 
@@ -422,7 +416,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
     // mod->createInitFn();
 
     // pop the module's scope
-    if (!mod->internal) {
+    if (mod->modtype != MOD_INTERNAL) {
       SymScope* modScope = Symboltable::popScope();
       modScope->setContext(NULL, mod, defExpr);
       mod->setModScope(modScope);
@@ -431,7 +425,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
     // if this was a software scope within a file scope, we borrowed
     // its (empty) scope in startModuleDef.  Give it a new scope to
     // work with here.
-    if (!mod->internal) {
+    if (mod->modtype != MOD_INTERNAL) {
       if (!mod->isFileModule()) {
         Symboltable::pushScope(SCOPE_MODULE);
       }
@@ -813,7 +807,7 @@ void Symboltable::print(FILE* outfile) {
 
 void Symboltable::dump(FILE* outfile) {
   PrintSymtab* printit = new PrintSymtab(outfile);
-  printit->run();
+  printit->run(NULL);
 }
 
 

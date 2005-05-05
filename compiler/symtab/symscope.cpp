@@ -9,9 +9,8 @@
 #include "../passes/filesToAST.h"
 
 
-SymScope::SymScope(scopeType init_type, int init_level) :
+SymScope::SymScope(scopeType init_type) :
   type(init_type),
-  level(init_level),
   lookupCache(NULL),
   stmtContext(NULL),
   symContext(NULL),
@@ -237,21 +236,8 @@ int SymScope::parentLength(void) {
 
 char* SymScope::indentStr(void) {
   static char* spaces = "                                                     "
-                        "                          ";
-  int printLevel;
-  switch (type) {
-  case SCOPE_INTRINSIC:
-  case SCOPE_POSTPARSE:
-    printLevel = 0;
-    break;
-  case SCOPE_INTERNAL_PRELUDE:
-  case SCOPE_PRELUDE:
-    printLevel = 1;
-    break;
-  default:
-    printLevel = level+1;
-  }
-
+                        "                                                     ";
+  int printLevel = parentLength();
   int maxspaces = strlen(spaces);
   int offset = maxspaces-(2*printLevel);
   if (offset < 0) {
@@ -265,16 +251,11 @@ char* SymScope::indentStr(void) {
 static bool printEmpty = false;
 
 
-void SymScope::printHeader(FILE* outfile, int indent) {
-  for (int i = 0; i < indent; i++) {
-    fprintf(outfile, " ");
-  }
-  fprintf(outfile, "======================================================\n");
-
-  for (int i = 0; i < indent; i++) {
-    fprintf(outfile, " ");
-  }
-  fprintf(outfile, "SCOPE: ");
+void SymScope::printHeader(FILE* outfile) {
+  char* indent = indentStr();
+  fprintf(outfile, "%s======================================================\n",
+          indent);
+  fprintf(outfile, "%sSCOPE: ", indent);
   switch (type) {
   case SCOPE_INTRINSIC:
     fprintf(outfile, "intrinsic");
@@ -328,10 +309,8 @@ void SymScope::printHeader(FILE* outfile, int indent) {
   }
   fprintf(outfile, "\n");
 
-  for (int i = 0; i < indent; i++) {
-    fprintf(outfile, " ");
-  }
-  fprintf(outfile, "------------------------------------------------------\n");
+  fprintf(outfile, "%s------------------------------------------------------\n",
+          indent);
 }
 
 
@@ -358,11 +337,10 @@ void SymScope::printSymbols(FILE* outfile, bool tableOrder) {
 }
 
 
-void SymScope::printFooter(FILE* outfile, int indent) {
-  for (int i = 0; i < indent; i++) {
-    fprintf(outfile, " ");
-  }
-  fprintf(outfile, "======================================================\n");
+void SymScope::printFooter(FILE* outfile) {
+  char* indent = indentStr();
+  fprintf(outfile, "%s======================================================\n",
+          indent);
 }
 
 

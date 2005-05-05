@@ -1068,9 +1068,9 @@ void EnumSymbol::codegenDef(FILE* outfile) {
 }
 
 
-ModuleSymbol::ModuleSymbol(char* init_name, bool init_internal) :
+ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   Symbol(SYMBOL_MODULE, init_name),
-  internal(init_internal),
+  modtype(init_modtype),
   stmts(NULL),
   initFn(NULL),
   modScope(NULL)

@@ -21,7 +21,7 @@ void Codegen::run(ModuleSymbol* moduleList) {
   createConfigVarTable->closeCFile();
 
   while (currentModule) {
-    if (!currentModule->internal) {
+    if (currentModule->modtype != MOD_INTERNAL) {
       currentModule->codegenDef();
     }
     currentModule = nextLink(ModuleSymbol, currentModule);

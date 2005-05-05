@@ -28,7 +28,6 @@ class ScopeLookupCache;
 class SymScope : public gc {
  public:
   scopeType type;
-  int level;
   
   ScopeLookupCache *lookupCache;
 
@@ -49,7 +48,7 @@ class SymScope : public gc {
 
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
-  SymScope(scopeType init_type, int init_level = 0);
+  SymScope(scopeType init_type);
   void setContext(Stmt* stmt, Symbol* sym = NULL, Expr* expr = NULL);
 
   void traverse(SymtabTraversal* traversal);
@@ -71,9 +70,9 @@ class SymScope : public gc {
   // these are "private"
   char* indentStr(void);
   int parentLength(void);
-  void printHeader(FILE* outfile, int indent = 0);
+  void printHeader(FILE* outfile);
   void printSymbols(FILE* outfile, bool tableOrder);
-  void printFooter(FILE* outfile, int indent = 0);
+  void printFooter(FILE* outfile);
 
   void codegen(FILE* outfile, char* separator);
 

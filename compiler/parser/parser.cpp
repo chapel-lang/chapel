@@ -30,7 +30,10 @@ ModuleSymbol* ParseFile(char* filename, bool prelude) {
   yylineno = 0;
 
   char* modulename = filenameToModulename(filename);
-  ModuleSymbol* newModule = Symboltable::startModuleDef(modulename, prelude);
+  ModuleSymbol* newModule = Symboltable::startModuleDef(modulename, 
+                                                        (prelude ?
+                                                         MOD_INTERNAL : 
+                                                         MOD_USER));
 
   yylineno = 1;
   yyin = openInputFile(filename);

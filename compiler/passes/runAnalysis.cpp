@@ -30,7 +30,7 @@ void RunAnalysis::run(ModuleSymbol* moduleList) {
     // I'm just passing in the first non-internal module's filename
     // JBP: that's fine, it is only used for debug, HTML and low level cg files
     char* firstUserModuleName = NULL;
-    while (moduleList && (moduleList->internal || moduleList == commonModule)) {
+    while (moduleList && (moduleList->modtype != MOD_USER)) {
       moduleList = nextLink(ModuleSymbol, moduleList);
     }
     if (moduleList) {

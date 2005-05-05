@@ -4,7 +4,7 @@
 void PrintProgram::run(ModuleSymbol* moduleList) {
   ModuleSymbol* mod = moduleList;
   while (mod) {
-    if (!mod->internal) {
+    if (mod->modtype != MOD_INTERNAL) {
       mod->stmts->printList(stdout, "\n");
       printf("\n");
     }
