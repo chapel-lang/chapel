@@ -29297,3 +29297,58 @@ Modified files:
 	                         symtab.cpp 
 	chapel/compiler/traversals/: removeNamedParameters.cpp 
 
+---------------------------------------------------------------------------
+
+05/04/05 17:08:11 -- bradc
+
+Log message:
+	* improved my last checkin in which all functions have a BlockStmt for
+	  their body by setting up the BlockStmts to point to their scope (as
+	  they should have in the last check-in).  In order to support this,
+	  the creation of function calls through the Symboltable is now done
+	  using three calls rather than two:
+	
+	        Symboltable::startFnDef()
+	        Symboltable::continueFnDef()
+	        Symboltable::finishFnDef()
+	
+	  These are useful because startFnDef pushes the parameter scope
+	  (after which the parameters should be created and inserted into the
+	  right scope), continueFnDef pushes the top-level block statement's
+	  scope (which any variables defined within the body of the function
+	  will be stored in), and finishFnDef pops the scopes and stores them
+	  into the right places.  Added calls to continueFnDef() in all places
+	  that currently use this interface.
+	
+	* turned on my eliminateReturns pass which should actually now be
+	  called insertReturnTemps or something like that -- this pass inserts
+	  a temporary variable to capture the expression being returned so
+	  that in the event of complex return expressions, statements may be
+	  inserted by other compiler passes (such as ProcessParameters) before
+	  and after the evaluation of the return expression, yet still come
+	  before the return statement itself.  This fixes two future tests.  I
+	  won't rename this pass for now because eventually we will need to
+	  eliminate, or otherwise fix up more complex returns such as returns
+	  of arrays, and this pass would be a reasonable place to do so.
+	  Note that this no longer inserts gotos as it did when I checked it
+	  in last go-round.
+	
+	* made BlockStmt take an optional SymScope as its second constructor
+	  parameter since many BlockStmts are created with known scope --
+	  looked for obvious cases where this could be used rather than a
+	  separate setBlockScope call.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/include/: stmt.h symbol.h symtab.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertWriteFns.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             eliminateReturns.cpp 
+	                             transformLetExprs.cpp 
+	chapel/test/functions/bradc/: defaultParamInOut.good 
+Removed files:
+	chapel/test/functions/bradc/: defaultParamInOut.future 
+	                              returnFnCallIntents.future 
+
