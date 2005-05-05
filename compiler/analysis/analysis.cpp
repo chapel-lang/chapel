@@ -23,6 +23,7 @@
 #define VARARG_END     0ll
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
+//#define NO_OPERATOR_EQ_FOR_UNTYPED_UNINITIALIZED 1
 #define KLUDGE_USER_TYPE_TO_BE_DEFINITION       1
 
 class LabelMap : public Map<char *, Stmt *> {};
@@ -1836,7 +1837,10 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       }
       int operator_equal = 
         !(constructor_assignment || getter_setter ||
-            (symbol && (symbol->isThis() || (symbol && scalar_or_reference(symbol->type)))));
+#ifdef NO_OPERATOR_EQ_FOR_UNTYPED_UNINITIALIZED
+          (symbol && (symbol->type == dtUnknown && !symbol->defPoint->init)) ||
+#endif
+          (symbol && (symbol->isThis() || (symbol && scalar_or_reference(symbol->type)))));
       if (operator_equal) {
         Sym *old_rval = rval;
         rval = new_sym();
