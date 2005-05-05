@@ -1,6 +1,0 @@
-bradc
-
-Function intents don't work when the statement
-containing the function call is a return
-statement.  We either need to insert a temp
-or convert returns into parameters.

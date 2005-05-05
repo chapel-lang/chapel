@@ -605,12 +605,15 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
 }
 
 
-void FnSymbol::finishDef(Symbol* init_formals, Type* init_retType,
-                         BlockStmt* init_body, SymScope* init_paramScope,
-                         bool init_exportMe) {
+void FnSymbol::continueDef(Symbol* init_formals, Type* init_retType) {
   formals = init_formals;
   type = init_retType;
   retType = init_retType;
+}
+
+
+void FnSymbol::finishDef(BlockStmt* init_body, SymScope* init_paramScope,
+                         bool init_exportMe) {
   body = init_body;
   exportMe = init_exportMe;
   paramScope = init_paramScope;
@@ -647,12 +650,13 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   copy->_getter = _getter; // If it is a cloned class we probably want this
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
+  Symboltable::continueFnDef(copy, new_formals, type);
   BlockStmt* new_body = 
     dynamic_cast<BlockStmt*>(body->copyList(clone, map, analysis_clone));
   if (body != NULL && new_body == NULL) {
     INT_FATAL(body, "function body was not a BlockStmt!?");
   }
-  return Symboltable::finishFnDef(copy, new_formals, type, new_body, exportMe);
+  return Symboltable::finishFnDef(copy, new_body, exportMe);
 }
 
 
@@ -728,6 +732,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       wrapperFormals->type = coercionSubstitution->type;
     }
   }
+  Symboltable::continueFnDef(wrapperFn, wrapperFormals, retType);
 
   BlockStmt* wrapperBlock = Symboltable::startCompoundStmt();
 
@@ -753,8 +758,6 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   wrapperBlock = Symboltable::finishCompoundStmt(wrapperBlock, wrapperBody);
 
   DefExpr* defExpr = new DefExpr(Symboltable::finishFnDef(wrapperFn,
-                                                          wrapperFormals,
-                                                          retType,
                                                           wrapperBlock));
   defPoint->insertBefore(defExpr);
   Symboltable::setCurrentScope(saveScope);
@@ -831,11 +834,11 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
     }
   }
   SymScope* block_scope = Symboltable::popScope();
-  BlockStmt* wrapper_block = new BlockStmt(wrapper_body);
-  wrapper_block->setBlkScope(block_scope);
+  BlockStmt* wrapper_block = new BlockStmt(wrapper_body, block_scope);
+  Symboltable::continueFnDef(wrapper_symbol, wrapper_formals, retType);
   block_scope->stmtContext = wrapper_block;
-  DefExpr* wrapper_expr = new DefExpr(Symboltable::finishFnDef(wrapper_symbol, wrapper_formals,
-                                                   retType, wrapper_block));
+  DefExpr* wrapper_expr = new DefExpr(Symboltable::finishFnDef(wrapper_symbol,
+                                                               wrapper_block));
 
   forv_Vec(Symbol, sym, for_removal) {
     wrapper_symbol->paramScope->remove(sym);
@@ -868,6 +871,8 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
     }
   }
 
+  Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType);
+
   Expr* actuals = NULL;
   for (int i = 0; i < formals_to_actuals->n - 1; i++) {
     Symbol* tmp = wrapper_formals;
@@ -883,7 +888,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
 
   Stmt* fn_call = new ExprStmt(new FnCall(new Variable(this), actuals));
   BlockStmt* body = new BlockStmt(fn_call);
-  DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, wrapper_formals, retType, body));
+  DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, body));
   defPoint->insertBefore(def_expr);
   Symboltable::setCurrentScope(save_scope);
   return wrapper_fn;

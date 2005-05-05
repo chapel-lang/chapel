@@ -20,10 +20,12 @@ static void createWriteFn(StructuralType* classType) {
                                                    new Symbol(SYMBOL, "_this"),
                                                    classType, NULL);
   
+  Symboltable::continueFnDef(writeFn, thisArg, dtVoid);
+
   Stmt* bodyStmts = classType->buildIOBodyStmts(thisArg);
   BlockStmt* body = new BlockStmt(bodyStmts);
   
-  DefExpr* def = new DefExpr(Symboltable::finishFnDef(writeFn, thisArg, dtVoid, body));
+  DefExpr* def = new DefExpr(Symboltable::finishFnDef(writeFn, body));
   DefStmt* defstmt = new DefStmt(def);
   classType->addDeclarations(defstmt);
   //   Symboltable::dump(stderr);

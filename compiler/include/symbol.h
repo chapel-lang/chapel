@@ -173,8 +173,9 @@ class FnSymbol : public Symbol {
            BlockStmt* init_body, bool init_exportMe=false,
            Symbol* init_classBinding = NULL);
   FnSymbol(char* init_name, Symbol* init_classBinding = NULL);
-  void finishDef(Symbol* init_formals, Type* init_retType, BlockStmt* init_body,
-                 SymScope* init_paramScope, bool init_exportMe=false);
+  void continueDef(Symbol* init_formals, Type* init_retType);
+  void finishDef(BlockStmt* init_body, SymScope* init_paramScope, 
+                 bool init_exportMe=false);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);

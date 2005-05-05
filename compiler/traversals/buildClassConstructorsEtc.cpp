@@ -40,6 +40,8 @@ static void build_constructor(StructuralType* structType) {
     }
   }
 
+  Symboltable::continueFnDef(fn, args, structType);
+
   BlockStmt* body = Symboltable::startCompoundStmt();
   Stmt* stmts = NULL;
   fn->_this = new VarSymbol("this", structType);
@@ -64,7 +66,7 @@ static void build_constructor(StructuralType* structType) {
   stmts = appendLink(stmts, new ReturnStmt(new Variable(fn->_this)));
   body = Symboltable::finishCompoundStmt(body, stmts);
   DefExpr* fn_def =
-    new DefExpr(Symboltable::finishFnDef(fn, args, structType, body));
+    new DefExpr(Symboltable::finishFnDef(fn, body));
   structType->constructor = new DefStmt(fn_def);
   fixup_expr(structType->symbol->defPoint);
 }
@@ -87,13 +89,13 @@ static void build_setters_and_getters(StructuralType* structType) {
     ParamSymbol* setter_this = new ParamSymbol(PARAM_REF, "this", structType);
     ParamSymbol* setter_arg = new ParamSymbol(PARAM_BLANK, "_arg", tmp->type);
     setter_this->append(setter_arg);
+    Symboltable::continueFnDef(setter_fn, setter_this, dtVoid);
     Expr* setter_lhs = new MemberAccess(new Variable(setter_this), tmp);
     Expr* setter_rhs = new Variable(setter_arg);
     Expr* setter_assignment = new AssignOp(GETS_NORM, setter_lhs, setter_rhs);
     Stmt* setter_stmt = new ExprStmt(setter_assignment);
-    BlockStmt* setter_body = new BlockStmt(setter_stmt);
     DefExpr* setter_def_expr = new DefExpr(
-      Symboltable::finishFnDef(setter_fn, setter_this, dtVoid, setter_body));
+      Symboltable::finishFnDef(setter_fn, setter_stmt));
     DefStmt* setter_def_stmt = new DefStmt(setter_def_expr);
     structType->addDeclarations(setter_def_stmt);
     setter_fn->classBinding = structType->symbol;
@@ -104,11 +106,11 @@ static void build_setters_and_getters(StructuralType* structType) {
     getter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_", getter_name);
     getter_fn->_getter = tmp;
     ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
+    Symboltable::continueFnDef(getter_fn, getter_this, tmp->type);
     Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
     Stmt* getter_return = new ReturnStmt(getter_expr);
-    BlockStmt* getter_body = new BlockStmt(getter_return);
     DefExpr* getter_def_expr = new DefExpr(
-      Symboltable::finishFnDef(getter_fn, getter_this, tmp->type, getter_body));
+      Symboltable::finishFnDef(getter_fn, getter_return));
     DefStmt* getter_def_stmt = new DefStmt(getter_def_expr);
     structType->addDeclarations(getter_def_stmt);
     getter_fn->classBinding = structType->symbol;
@@ -130,6 +132,7 @@ static void build_record_equality_function(StructuralType* structType) {
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", structType);
   arg1->append(arg2);
+  Symboltable::continueFnDef(fn, arg1, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(VarSymbol, tmp, structType->fields) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
@@ -139,8 +142,9 @@ static void build_record_equality_function(StructuralType* structType) {
       : new BinOp(BINOP_EQUAL, left, right);
   }
   Stmt* retStmt = new ReturnStmt(cond);
-  BlockStmt* body = new BlockStmt(retStmt);
-  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtBoolean, body)));
+  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, 
+                                                                       retStmt))
+                                  );
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
@@ -155,6 +159,7 @@ static void build_record_inequality_function(StructuralType* structType) {
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", structType);
   arg1->append(arg2);
+  Symboltable::continueFnDef(fn, arg1, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(VarSymbol, tmp, structType->fields) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
@@ -164,8 +169,9 @@ static void build_record_inequality_function(StructuralType* structType) {
       : new BinOp(BINOP_NEQUAL, left, right);
   }
   Stmt* retStmt = new ReturnStmt(cond);
-  BlockStmt* body = new BlockStmt(retStmt);
-  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtBoolean, body)));
+  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, 
+                                                                       retStmt))
+                                  );
   structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
 }
 
@@ -180,7 +186,10 @@ static void build_record_assignment_function(StructuralType* structType) {
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2",
     (analyzeAST) ? dtUnknown : structType);
   arg1->append(arg2);
+  Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
+  Symboltable::continueFnDef(fn, arg1, ret_type);
   Stmt* body = NULL;
+  Symboltable::pushScope(SCOPE_LOCAL);
   forv_Vec(VarSymbol, tmp, structType->fields) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
@@ -190,10 +199,11 @@ static void build_record_assignment_function(StructuralType* structType) {
   
   if (analyzeAST)
     body = appendLink(body, new ReturnStmt(new Variable(arg2)));
-  Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
-  BlockStmt* block_stmt = new BlockStmt(body);
-  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, ret_type, block_stmt)));
-  structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
+  BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+  DefStmt* defStmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, 
+                                                                      block_stmt
+                                                                      )));
+  structType->symbol->defPoint->parentStmt->insertBefore(defStmt);
 }
 
 

@@ -41,11 +41,10 @@ void TransformLetExprs::doTransformation(void) {
     DefStmt* def_stmt = new DefStmt(let_expr->symDefs);
     def_stmt->append(let_stmt_copy);
     let_stmt_copy = def_stmt;
-    BlockStmt* block_stmt = new BlockStmt(let_stmt_copy);
+    BlockStmt* block_stmt = new BlockStmt(let_stmt_copy, let_scope);
     let_scope->stmtContext = block_stmt;
     let_scope->exprContext = NULL;
     let_scope->type = SCOPE_LOCAL;
-    block_stmt->setBlkScope(let_scope);
 
     DefExpr* def_expr = let_expr->symDefs;
     while (def_expr) {

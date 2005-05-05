@@ -127,7 +127,7 @@ class BlockStmt : public Stmt {
 
   SymScope* blkScope;
 
-  BlockStmt::BlockStmt(Stmt* init_body = NULL);
+  BlockStmt::BlockStmt(Stmt* init_body = NULL, SymScope* init_scope = NULL);
   void addBody(Stmt* init_body);
   void setBlkScope(SymScope* init_blkScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);

@@ -128,8 +128,8 @@
 %type <defstmt> vardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl
 %type <pdt> structtype
-%type <stmt> typealias typedecl fndecl structdecl moduledecl function_body_single_stmt
-%type <blkstmt> block_stmt function_body_stmt
+%type <stmt> typealias typedecl fndecl structdecl moduledecl
+%type <stmt> function_body_single_stmt function_body_stmt block_stmt
 %type <pragmas> pragma pragmas
 
 
@@ -467,9 +467,13 @@ fndecl:
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2));
     }
-                       TLP formals TRP fnrettype function_body_stmt
+                       TLP formals TRP fnrettype
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $5, $7, $8)));
+      Symboltable::continueFnDef($<fnsym>3, $5, $7);
+    }
+                                                 function_body_stmt
+    {
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $9)));
     }
 |
   TFUNCTION identifier TDOT fname
@@ -477,18 +481,26 @@ fndecl:
       $<fnsym>$ =
         Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
     }
-                       TLP formals TRP fnrettype function_body_stmt
+                                  TLP formals TRP fnrettype
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $7, $9, $10)));
+      Symboltable::continueFnDef($<fnsym>5, $7, $9);
+    }
+                                                            function_body_stmt
+    {
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $11)));
     }
 |
   TFUNCTION fname
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2), true);
     }
-                       fnrettype function_body_stmt
+                  fnrettype
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, NULL, $4, $5)));
+      Symboltable::continueFnDef($<fnsym>3, NULL, $4);
+    }
+                            function_body_stmt
+    {
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $6)));
     }
 ;
 
@@ -634,7 +646,6 @@ function_body_single_stmt:
 
 function_body_stmt:
   function_body_single_stmt
-    { $$ = new BlockStmt($1); }
 | block_stmt
 ;
 

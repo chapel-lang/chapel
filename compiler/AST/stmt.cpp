@@ -499,10 +499,10 @@ void UseStmt::codegen(FILE* outfile) {
 }
 
 
-BlockStmt::BlockStmt(Stmt* init_body) :
+BlockStmt::BlockStmt(Stmt* init_body, SymScope* init_scope) :
   Stmt(STMT_BLOCK),
   body(init_body),
-  blkScope(NULL)
+  blkScope(init_scope)
 { }
 
 
@@ -524,8 +524,7 @@ Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback
   Symboltable::pushScope(SCOPE_LOCAL);
   Stmt* body_copy = body->copyListInternal(true, map, analysis_clone);
   SymScope* block_scope = Symboltable::popScope();
-  BlockStmt* block_copy = new BlockStmt(body_copy);
-  block_copy->setBlkScope(block_scope);
+  BlockStmt* block_copy = new BlockStmt(body_copy, block_scope);
   block_scope->setContext(block_copy);
   return block_copy;
 }

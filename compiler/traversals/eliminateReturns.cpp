@@ -52,7 +52,6 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     }
     SymScope* prevScope = Symboltable::setCurrentScope(fnScope);
 
-    LabelSymbol* retPtLabel;
     Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
     VarSymbol* retval = dynamic_cast<VarSymbol*>(retvalSym);
     if (retval == NULL) {
@@ -62,31 +61,23 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
                                                                    VAR_NORMAL,
                                                                    VAR_VAR);
       retval = retValDefStmt->varDef();
-      retval->noDefaultInit = true;
+      if (retType != dtString) {
+        retval->noDefaultInit = true;
+      }
       blockBody->body->insertBefore(retValDefStmt);
-
-      ReturnStmt* newRetStmt = new ReturnStmt(new Variable(retval));
-      retPtLabel = new LabelSymbol("_retpt");
-      LabelStmt* newLabelStmt = new LabelStmt(retPtLabel, newRetStmt);
-      blockBody->body->append(newLabelStmt);
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
         Symboltable::setCurrentScope(prevScope);
         return;
-      }
-      Symbol* retptSym = Symboltable::lookupInCurrentScope("_retpt");
-      retPtLabel = dynamic_cast<LabelSymbol*>(retptSym);
-      if (retPtLabel == NULL) {
-        INT_FATAL(retStmt, "Couldn't find _retpt label");
       }
     }
 
     Variable* retVar = new Variable(retval);
     AssignOp* assignRetVar = new AssignOp(GETS_NORM, retVar, retExpr->copy());
     ExprStmt* assignStmt = new ExprStmt(assignRetVar);
-    retStmt->replace(assignStmt);
-    GotoStmt* gotoReturn = new GotoStmt(goto_normal, retPtLabel);
-    assignStmt->insertAfter(gotoReturn);
+    retStmt->insertBefore(assignStmt);
+    Variable* newRetExpr = new Variable(retval);
+    retExpr->replace(newRetExpr);
     
     Symboltable::setCurrentScope(prevScope);
   }

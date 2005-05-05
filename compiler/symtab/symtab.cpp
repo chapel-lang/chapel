@@ -674,11 +674,25 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
 }
 
 
-FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, Symbol* formals, 
-                                  Type* retType, BlockStmt* body, 
-                                   bool isExtern) {
+void Symboltable::continueFnDef(FnSymbol* fnsym, Symbol* formals, 
+                                Type* retType) {
+  fnsym->continueDef(formals, retType);
+  Symboltable::pushScope(SCOPE_FUNCTION);
+}
+
+
+FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, Stmt* body, bool isExtern) {
+  SymScope* fnScope = Symboltable::popScope();
   SymScope* paramScope = Symboltable::popScope();
-  fnsym->finishDef(formals, retType, body, paramScope, isExtern);
+  if (fnScope->type != SCOPE_FUNCTION ||
+      paramScope->type != SCOPE_PARAM) {
+    INT_FATAL(fnsym, "Scopes not popped correctly on finishFnDef");
+  }
+  BlockStmt* blockBody = dynamic_cast<BlockStmt*>(body);
+  if (blockBody == NULL) {
+    blockBody = new BlockStmt(body, fnScope);
+  }
+  fnsym->finishDef(blockBody, paramScope, isExtern);
   paramScope->setContext(NULL, fnsym, NULL);
   return fnsym;
 }
@@ -688,7 +702,8 @@ DefStmt* Symboltable::defineFunction(char* name, Symbol* formals,
                                      Type* retType, BlockStmt* body, 
                                      bool isExtern) {
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
-  return new DefStmt(new DefExpr(finishFnDef(fnsym, formals, retType, body, isExtern)));
+  continueFnDef(fnsym, formals, retType);
+  return new DefStmt(new DefExpr(finishFnDef(fnsym, body, isExtern)));
 }
 
 
