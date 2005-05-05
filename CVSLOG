@@ -29378,3 +29378,23 @@ Log message:
 Removed files:
 	chapel/test/classes/deitz/: test_class3.future 
 
+---------------------------------------------------------------------------
+
+05/04/05 17:18:37 -- deitz
+
+Log message:
+	Added code to remove dead symbols from their scopes and to remove the
+	ParamScopes of dead functions in RemoveDeadSymbols.
+	
+	Fixed a bug in the Symboltable traversal mechanism that showed up now
+	that symbols are removed from their scopes within RemoveDeadSymbols.
+	
+	Fixed a small inconsistency in InsertThisParameters in which a DefStmt
+	was copied and inserted before being extracted.  I'm not checking in
+	my code that caught this inconsistency as I don't think it is a
+	worthwhile inconsistency to catch.
+
+Modified files:
+	chapel/compiler/symtab/: removeDeadSymbols.cpp symscope.cpp 
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+
