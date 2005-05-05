@@ -267,12 +267,12 @@ static bool printEmpty = false;
 
 void SymScope::printHeader(FILE* outfile, int indent) {
   for (int i = 0; i < indent; i++) {
-    printf(" ");
+    fprintf(outfile, " ");
   }
   fprintf(outfile, "======================================================\n");
 
   for (int i = 0; i < indent; i++) {
-    printf(" ");
+    fprintf(outfile, " ");
   }
   fprintf(outfile, "SCOPE: ");
   switch (type) {
@@ -329,7 +329,7 @@ void SymScope::printHeader(FILE* outfile, int indent) {
   fprintf(outfile, "\n");
 
   for (int i = 0; i < indent; i++) {
-    printf(" ");
+    fprintf(outfile, " ");
   }
   fprintf(outfile, "------------------------------------------------------\n");
 }
@@ -360,7 +360,7 @@ void SymScope::printSymbols(FILE* outfile, bool tableOrder) {
 
 void SymScope::printFooter(FILE* outfile, int indent) {
   for (int i = 0; i < indent; i++) {
-    printf(" ");
+    fprintf(outfile, " ");
   }
   fprintf(outfile, "======================================================\n");
 }

@@ -19,7 +19,7 @@ void PrintSymtab::postProcessScope(SymScope* scope) {
 
 void PrintSymtab::processSymbol(Symbol* sym) {
   for (int i = 0; i < sym->parentScope->parentLength() * 2; i++) {
-    printf(" ");
+    fprintf(outfile, " ");
   }
   fprintf(outfile, "%s\n", sym->name);
 }
