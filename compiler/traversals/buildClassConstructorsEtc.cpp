@@ -56,7 +56,7 @@ static void build_constructor(StructuralType* structType) {
     Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");
     Expr* alloc_call = new FnCall(new Variable(alloc_sym), alloc_args);
     Expr* alloc_lhs = new Variable(fn->_this);
-    Expr* alloc_rhs = new CastExpr(structType, alloc_call);
+    Expr* alloc_rhs = new CastLikeExpr(new Variable(fn->_this), alloc_call);
     Expr* alloc_expr = new AssignOp(GETS_NORM, alloc_lhs, alloc_rhs);
     Stmt* alloc_stmt = new ExprStmt(alloc_expr);
     stmts = appendLink(stmts, alloc_stmt);

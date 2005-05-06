@@ -68,6 +68,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Sizeof",
   "ParenOp",
   "Cast",
+  "CastLike",
   "FnCall",
   "IOCall",
   "ArrayRef",

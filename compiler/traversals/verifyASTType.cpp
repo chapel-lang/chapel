@@ -192,6 +192,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_CAST");
     }
     break;
+  case EXPR_CAST_LIKE:
+    if (typeid(*ast) != typeid(CastLikeExpr)) {
+      INT_FATAL(ast, "Unexpected AST expression type: EXPR_CAST_LIKE");
+    }
+    break;
   case EXPR_FNCALL:
     if (typeid(*ast) != typeid(FnCall)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_FNCALL");

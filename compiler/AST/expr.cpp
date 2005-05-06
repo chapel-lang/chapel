@@ -1668,6 +1668,58 @@ void CastExpr::codegen(FILE* outfile) {
 }
 
 
+CastLikeExpr::CastLikeExpr(Variable* init_variable, Expr* init_expr) :
+  Expr(EXPR_CAST_LIKE),
+  variable(init_variable),
+  expr(init_expr)
+{ }
+
+
+Expr* CastLikeExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+  return new CastLikeExpr(dynamic_cast<Variable*>(variable->copyInternal(clone, map, analysis_clone)),
+                          expr->copyInternal(clone, map, analysis_clone));
+}
+
+
+void CastLikeExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == variable) {
+    variable = dynamic_cast<Variable*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in CastLikeExpr::replaceChild(old, new)");
+  }
+}
+
+
+void CastLikeExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(variable, traversal, false);
+  TRAVERSE(expr, traversal, false);
+}
+
+
+Type* CastLikeExpr::typeInfo(void) {
+  return variable->typeInfo();
+}
+
+
+void CastLikeExpr::print(FILE* outfile) {
+  variable->typeInfo()->print(outfile);
+  fprintf(outfile, "(");
+  expr->printList(outfile);
+  fprintf(outfile, ")");
+}
+
+
+void CastLikeExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "(");
+  variable->typeInfo()->codegen(outfile);
+  fprintf(outfile, ")(");
+  expr->codegenList(outfile);
+  fprintf(outfile, ")");
+}
+
+
 ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
                        Expr* init_argExpr) :
   Expr(EXPR_REDUCE),

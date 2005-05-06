@@ -1991,6 +1991,16 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       send->ast = s->ainfo;
       break;
     }
+    case EXPR_CAST_LIKE: {
+      CastLikeExpr *s = dynamic_cast<CastLikeExpr *>(ast);
+      s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
+      if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
+      Code *send = if1_send(if1, &s->ainfo->code, 4, 1, sym_primitive, cast_symbol, 
+                            s->variable->var->type->asymbol->sym->meta_type, s->expr->ainfo->rval, s->ainfo->rval);
+      send->ast = s->ainfo;
+      break;
+    }
     case EXPR_REDUCE: {
       ReduceExpr *s = dynamic_cast<ReduceExpr *>(ast);
       s->ainfo->rval = new_sym();

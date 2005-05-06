@@ -468,6 +468,24 @@ class CastExpr : public Expr {
 };
 
 
+class CastLikeExpr : public Expr {
+ public:
+  Variable* variable; // cast to type of this variable
+  Expr* expr;
+
+  CastLikeExpr(Variable* init_variable, Expr* init_expr);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseExpr(Traversal* traversal);
+
+  Type* typeInfo(void);
+
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 class ReduceExpr : public Expr {
  public:
   Symbol* reduceType;
