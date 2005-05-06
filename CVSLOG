@@ -29706,3 +29706,14 @@ Added files:
 	chapel/compiler/traversals/: resolveDomainRanks.cpp 
 	                             resolveDomainRanks.h 
 
+---------------------------------------------------------------------------
+
+05/06/05 11:28:51 -- bradc
+
+Log message:
+	This should've gone in with my last check-in, which
+	fixed this future.
+
+Removed files:
+	chapel/test/domains/bradc/: paramRank.future 
+
