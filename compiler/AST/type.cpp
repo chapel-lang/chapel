@@ -568,7 +568,7 @@ void DomainType::computeRank(void) {
       parent = initExpr;
     }
     idxType = new IndexType(initExpr->copy());
-    ((IndexType*)idxType)->domainType = this;
+    idxType->domainType = this;
   }
 }
 

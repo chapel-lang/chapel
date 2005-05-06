@@ -92,6 +92,7 @@ class EnumType : public Type {
   bool implementedUsingCVals(void);
 };
 
+class IndexType;  // break circular forward reference
 
 class DomainType : public Type {
  public:
@@ -100,7 +101,7 @@ class DomainType : public Type {
   //upon creation, each domain creates an index type;
   //RED -- it seems useful to keep track of the init expr
   Expr* initExpr;  
-  Type* idxType;
+  IndexType* idxType;
 
   DomainType(Expr* init_expr = NULL);
   DomainType(int init_numdims);

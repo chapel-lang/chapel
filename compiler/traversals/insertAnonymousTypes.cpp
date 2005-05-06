@@ -184,7 +184,7 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     Variable* var = dynamic_cast<Variable*>(index_type->idxExpr);
     if (var){
       domain_type = dynamic_cast<DomainType*>(var->var->type);
-      index_type->idxType = ((IndexType*)(domain_type->idxType))->idxType;
+      index_type->idxType = domain_type->idxType->idxType;
       printf("\n");
     }
     else{

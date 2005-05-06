@@ -82,8 +82,7 @@ void InsertIndexType::preProcessType(Type* type) {
     INT_FATAL(domain_type, "Domain has no initialization expression");
   }
   
-  IndexType* index_type = 
-  dynamic_cast<IndexType*>(domain_type->idxType);
+  IndexType* index_type = domain_type->idxType;
   if (!index_type){
     //RED This should be an anonymous domain, and thus, arithmetic
     //It would be more elegant if the domain type would have an init_expr field
@@ -92,8 +91,11 @@ void InsertIndexType::preProcessType(Type* type) {
 
   Symbol* index_sym = Symboltable::lookupInScope(name, commonModule->modScope);
   if (index_sym) {
-    index_type = (IndexType*)index_sym->type;
-    domain_type->idxType = index_sym->type;
+    index_type = dynamic_cast<IndexType*>(index_sym->type);
+    if (index_type == NULL) {
+      INT_FATAL(index_sym, "does not have IndexType type");
+    }
+    domain_type->idxType = index_type;
     type = domain_type;
     /*** SJD: I couldn't figure out where to put this, but the
          defaultVal needs to be set for IndexTypes.  I don't know why

@@ -46,7 +46,7 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
       if (!domain_type) {
         INT_FATAL(domain, "Domain has no type");
       }
-      index_type = dynamic_cast<IndexType*>(domain_type->idxType);
+      index_type = domain_type->idxType;
       if (!index_type) {
         INT_FATAL(stmt, "Domain index has no type");
       }
