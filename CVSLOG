@@ -29602,3 +29602,18 @@ Log message:
 Added files:
 	chapel/test/classes/deitz/: test_method8.chpl test_method8.good 
 
+---------------------------------------------------------------------------
+
+05/06/05 09:22:58 -- deitz
+
+Log message:
+	Removed "Stmt* constructor" from StructuralType.  Constructor DefStmts
+	are now stored outside of the class.  They are pointed to by
+	defaultConstructor.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             specializeParenOpExprs.cpp 
+
