@@ -2710,7 +2710,7 @@ type_info(BaseAST *a, Symbol *s) {
 Type *
 return_type_info(FnSymbol *fn) {
   if (fn->asymbol && fn->asymbol->sym)
-    return to_AST_type(fn->asymbol->sym->ret->var->type);
+    return to_AST_type(fn->asymbol->sym->fun->rets.v[0]->type);
   else
     return dtUnknown;  // analysis not run
 }
