@@ -18,7 +18,7 @@
 #include <stddef.h>
 #if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
 #else
-#include <inttypes.h>
+#include <stdint.h>
 #endif
 #include "chplalloc.h"
 

@@ -3,7 +3,7 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.macros
 
 CC = gcc
-CFLAGS += -I../include
+CFLAGS += -I../include/$(PLATFORM) -I../include
 
 CFLAGS += -Wall -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
 CFLAGS += $(ONLYCFLAGS)

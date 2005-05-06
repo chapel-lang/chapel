@@ -1,7 +1,7 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
-#include <inttypes.h>
+#include <stdint.h>
 
 typedef char int8;
 typedef unsigned char uint8;

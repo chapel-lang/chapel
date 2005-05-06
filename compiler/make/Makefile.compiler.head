@@ -17,7 +17,7 @@ CHAPEL_SUBDIR = compiler/$(COMPILER_SUBDIR)
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 
-CFLAGS += -I. -I$(COMPILER_ROOT)/include
+CFLAGS += -I. -I$(COMPILER_ROOT)/include/$(PLATFORM) -I$(COMPILER_ROOT)/include
 
 
 #

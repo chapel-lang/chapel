@@ -1,13 +1,12 @@
 #ifndef _stdchpl_H_
 #define _stdchpl_H_
 
-
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <inttypes.h>
 #include "arg.h"
 #include "array.h"
 #include "config.h"

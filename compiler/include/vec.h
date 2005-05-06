@@ -6,7 +6,7 @@
 #define _vec_H_
 
 #include <string.h>
-#include <inttypes.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include "chplalloc.h"
 #include "misc.h"
