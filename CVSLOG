@@ -29673,3 +29673,36 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             view.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 11:28:06 -- bradc
+
+Log message:
+	Previously, we tried to determine a DomainType's rank at parse-time.
+	This works OK for domains whose rank is specified with an integer
+	literal, but doesn't work so well for domains whose rank is specified
+	with a parameter expression since symbols are not resolved at
+	parse-time.  Took this logic out of the parser & domain constructor
+	and moved it to a new traversal called ResolveDomainRanks.  This is
+	currently run after symbols have been resolved.  Eventually we may
+	need to also run it after class cloning has occurred so that domain
+	class members that are based on a class parameter can be set up
+	properly.
+	
+	* added an implementation of Variable::intType() that computes the
+	  integer value of certain parameter and constant integer variable
+	  expressions.
+	
+	* fixed an apparent missing case in the DomainType traversal in which
+	  its initializing expression was not being traversed.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/trivial/bradc/protoast/: mypasslist.h 
+Added files:
+	chapel/compiler/traversals/: resolveDomainRanks.cpp 
+	                             resolveDomainRanks.h 
+
