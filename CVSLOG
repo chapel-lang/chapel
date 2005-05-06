@@ -29758,3 +29758,36 @@ Modified files:
 	                             insertIndexType.cpp 
 	                             insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 12:16:41 -- bradc
+
+Log message:
+	In a discussion about portability between gcc
+	on Sun vs. everything else, realized that I'm
+	increasingly offended by our need to #include
+	inttypes.h, and so came up with a hack that
+	allows us to use stdint.h (which also supports
+	other abilities to specialize for platforms
+	that we might anticipate needing).
+	
+	Added the ability to add a $PLATFORM-specific
+	subdirectory to the include/ directories in
+	the compiler and runtime, which will be
+	searched prior to the main include directory,
+	allowing platform-specific include files to
+	be created.  Instantiated this directory for
+	sunos, and put in a stdint.h file that
+	#includes inttypes.h.  Changed all #inclusions
+	of inttypes.h to stdint.h.
+
+Modified files:
+	chapel/compiler/include/: chpltypes.h list.h vec.h 
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/src/: Makefile chplmem.c 
+Added files:
+	chapel/compiler/include/sunos/: stdint.h 
+	chapel/runtime/include/sunos/: stdint.h 
+
