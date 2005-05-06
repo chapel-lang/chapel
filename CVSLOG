@@ -29830,3 +29830,13 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: resolveTypes.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 14:12:32 -- jplevyak
+
+Log message:
+	Fix return_type_info() which was returning the pre-clone type.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
