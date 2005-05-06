@@ -38,7 +38,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
           fn->classBinding = classBinding;
           fn->method_type = SECONDARY_METHOD;
           classBindingType->methods.add(fn);
-          fn->paramScope->parent = classBindingType->structScope;
+          // fn->paramScope->parent = classBindingType->structScope;
         } else {
           USR_FATAL(fn, "Function is not bound to legal class");
         }
@@ -72,20 +72,30 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   }
 
   /***
-   *** Move function out of class scope
+   *** Move function out of class scope, into module scope
    ***/
-  if (TypeSymbol* class_symbol = dynamic_cast<TypeSymbol*>(fn->classBinding)) {
-    if (def_stmt->parentSymbol == class_symbol) {
-      if (StructuralType* class_type = dynamic_cast<StructuralType*>(class_symbol->type)) {
-        def_stmt->extract();
-        class_symbol->defPoint->parentStmt->insertBefore(def_stmt->copy());
-        Symboltable::undefineInScope(fn, class_type->structScope);
-        fn->overload = NULL; // Drop it on the ground since we're
-                             // going to put all of the functions in
-                             // the class scope into the scope before.
-                             // They'll be rebuilt.
-        Symboltable::defineInScope(fn, class_symbol->parentScope);
+
+  if (fn->defPoint->parentSymbol == fn->classBinding) {
+    Stmt* insertPoint = fn->classBinding->defPoint->parentStmt;
+    while (!dynamic_cast<ModuleSymbol*>(insertPoint->parentSymbol)) {
+      insertPoint = insertPoint->parentSymbol->defPoint->parentStmt;
+    }
+    ModuleSymbol* moduleSymbol = dynamic_cast<ModuleSymbol*>(insertPoint->parentSymbol);
+    SymScope* saveScope =
+      Symboltable::setCurrentScope(moduleSymbol->modScope);
+    DefStmt* defStmt = dynamic_cast<DefStmt*>(fn->defPoint->parentStmt->copy(true));
+    FnSymbol* newFn = defStmt->fnDef();
+    newFn->cname = copystring(fn->cname);
+    insertPoint->insertBefore(defStmt);
+    fn->defPoint->parentStmt->extract();
+    fn->parentScope->remove(fn);
+    Symboltable::removeScope(fn->paramScope);
+    StructuralType* structuralType = dynamic_cast<StructuralType*>(fn->classBinding->type);
+    for (int i = 0; i < structuralType->methods.n; i++) {
+      if (structuralType->methods.v[i] == fn) {
+        structuralType->methods.v[i] = newFn;
       }
     }
+    Symboltable::setCurrentScope(saveScope);
   }
 }

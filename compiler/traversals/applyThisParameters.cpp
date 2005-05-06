@@ -5,57 +5,59 @@
 #include "symtab.h"
 
 ApplyThisParameters::ApplyThisParameters(void) {
-  CurrentStruct = NULL;
+  currentFunction = NULL;
 }
 
 void ApplyThisParameters::preProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
     if (FnSymbol* fn = def_stmt->fnDef()) {
-      if (fn->classBinding) {
-        CurrentStruct = dynamic_cast<StructuralType*>(fn->classBinding->type);
-      }
+      currentFunction = fn;
     }
   }
 }
 
 void ApplyThisParameters::postProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (FnSymbol* fn = def_stmt->fnDef()) {
-      if (fn->classBinding) {
-        CurrentStruct = NULL;
-      }
+    if (def_stmt->fnDef()) {
+      currentFunction = NULL;
     }
   }
 }
 
 void ApplyThisParameters::preProcessExpr(Expr* expr) {
-  if (CurrentStruct) {
-    if (Variable* member = dynamic_cast<Variable*>(expr)) {
-      if (Symbol* symbol = Symboltable::lookupInScope(member->var->name, 
-                                     CurrentStruct->structScope)) {
+  if (Variable* member = dynamic_cast<Variable*>(expr)) {
+    if (currentFunction && currentFunction->classBinding) {
 
-        /* replacement of expr variable by memberaccess */
-        if (FnSymbol* parentFn =
-            dynamic_cast<FnSymbol*>(member->parentStmt->parentSymbol)) {
-          if (FnSymbol* constructor = dynamic_cast<FnSymbol*>(symbol)) {
-            if (constructor->isConstructor) {
-              return;
-            }
-          }
+      if (member->var->parentScope && member->var->parentScope->type == SCOPE_CLASS) {
+        // Steve, this isn't the best test?  Is there a better way to
+        // know if we need a this applied here.  Can we do this in
+        // ScopeResolveSymbols??
 
-          if (member->var == parentFn->_this) {
+//       StructuralType* structuralType =
+//         dynamic_cast<StructuralType*>(currentFunction->classBinding->type);
+
+//       if (Symbol* symbol = Symboltable::lookupInScope(member->var->name, 
+//                                                       structuralType->structScope)) {
+
+        if (FnSymbol* constructor = dynamic_cast<FnSymbol*>(member->var)) {
+          if (constructor->isConstructor) {
             return;
           }
-          Variable* base = new Variable(parentFn->_this);
-          // propagate field's source location to the parent
-          base->filename = member->filename;
-          base->lineno = member->lineno;
-
-          MemberAccess* repl = new MemberAccess(base, member->var);
-          repl->lineno = expr->lineno;
-          repl->filename = expr->filename;
-          expr->replace(repl);
         }
+
+        if (member->var == currentFunction->_this) {
+          return;
+        }
+
+        Variable* base = new Variable(currentFunction->_this);
+        // propagate field's source location to the parent
+        base->filename = member->filename;
+        base->lineno = member->lineno;
+
+        MemberAccess* memberAccess = new MemberAccess(base, member->var);
+        memberAccess->lineno = expr->lineno;
+        memberAccess->filename = expr->filename;
+        expr->replace(memberAccess);
       }
     }
   }

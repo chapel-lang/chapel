@@ -16,6 +16,7 @@
 
 class ScopeResolveSymbols : public Traversal {
  public:
+  FnSymbol* currentFunction;
   Map<SymScope*,Vec<VarSymbol*>*>* defList;
   ScopeResolveSymbols();
   void preProcessExpr(Expr* expr);

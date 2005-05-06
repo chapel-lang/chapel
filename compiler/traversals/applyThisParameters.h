@@ -16,7 +16,7 @@
 
 class ApplyThisParameters : public Traversal {
  public:
-  StructuralType* CurrentStruct;
+  FnSymbol* currentFunction;
   ApplyThisParameters::ApplyThisParameters(void);
   void preProcessStmt(Stmt* stmt);
   void postProcessStmt(Stmt* stmt);

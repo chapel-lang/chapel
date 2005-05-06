@@ -649,6 +649,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   }
   copy->_getter = _getter; // If it is a cloned class we probably want this
   copy->_setter = _setter; //  to point to the new member, but how do we do that
+  copy->_this = _this;
   Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
   Symboltable::continueFnDef(copy, new_formals, type);
   BlockStmt* new_body = 
@@ -703,7 +704,7 @@ FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>*
   Expr* expr_copy = defPoint->copy(true, map, clone_callback);
   if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
     this_copy->sym->cname =
-      glomstrings(3, this_copy->sym->cname, "_clone_", intstring(uid++));
+      glomstrings(3, cname, "_clone_", intstring(uid++));
     defPoint->insertAfter(this_copy);
   } else {
     INT_FATAL(this, "Unreachable statement in FnSymbol::clone reached");
