@@ -68,6 +68,7 @@ static void build_constructor(StructuralType* structType) {
   DefExpr* fn_def =
     new DefExpr(Symboltable::finishFnDef(fn, body));
   structType->symbol->defPoint->parentStmt->insertBefore(new DefStmt(fn_def));
+  structType->methods.add(fn);
 }
 
 
@@ -96,7 +97,9 @@ static void build_setters_and_getters(StructuralType* structType) {
     DefExpr* setter_def_expr = new DefExpr(
       Symboltable::finishFnDef(setter_fn, setter_stmt));
     DefStmt* setter_def_stmt = new DefStmt(setter_def_expr);
-    structType->addDeclarations(setter_def_stmt);
+    structType->symbol->defPoint->parentStmt->insertBefore(setter_def_stmt);
+    structType->methods.add(setter_fn);
+    setter_fn->method_type = PRIMARY_METHOD;
     setter_fn->classBinding = structType->symbol;
     setter_fn->_this = setter_this;
 
@@ -111,7 +114,9 @@ static void build_setters_and_getters(StructuralType* structType) {
     DefExpr* getter_def_expr = new DefExpr(
       Symboltable::finishFnDef(getter_fn, getter_return));
     DefStmt* getter_def_stmt = new DefStmt(getter_def_expr);
-    structType->addDeclarations(getter_def_stmt);
+    structType->symbol->defPoint->parentStmt->insertBefore(getter_def_stmt);
+    structType->methods.add(getter_fn);
+    getter_fn->method_type = PRIMARY_METHOD;
     getter_fn->classBinding = structType->symbol;
     getter_fn->_this = getter_this;
     /**
@@ -204,28 +209,6 @@ static void build_record_assignment_function(StructuralType* structType) {
                                                                       )));
   structType->symbol->defPoint->parentStmt->insertBefore(defStmt);
 }
-
-
-// static void build_tuple_assignment_function(TupleType* tuple_type) {
-//   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
-
-//   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", tuple_type);
-//   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2",
-//     (analyzeAST) ? dtUnknown : tuple_type);
-//   arg1->append(arg2);
-//   Stmt* body = NULL;
-//   for (int i = 1; i <= tuple_type->components.n; i++) {
-//     Expr* left =
-//       new TupleSelect(new Variable(arg1), new IntLiteral(intstring(i), i));
-//     Expr* right =
-//       new TupleSelect(new Variable(arg2), new IntLiteral(intstring(i), i));
-//     Expr* assign_expr = new AssignOp(GETS_NORM, left, right);
-//     body = appendLink(body, new ExprStmt(assign_expr));
-//   }
-//   BlockStmt* block_stmt = new BlockStmt(body);
-//   DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, arg1, dtVoid, block_stmt)));
-//   tuple_type->symbol->defPoint->parentStmt->insertBefore(def_stmt);
-// }
 
 
 void buildDefaultStructuralTypeMethods(StructuralType* structuralType) {
