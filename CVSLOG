@@ -29819,3 +29819,14 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/traversals/: clearTypes.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 13:40:44 -- deitz
+
+Log message:
+	Added a couple temporaries to ResolveTypes so that return_type_info
+	and type_info are only called once per symbol.
+
+Modified files:
+	chapel/compiler/symtab/: resolveTypes.cpp 
+
