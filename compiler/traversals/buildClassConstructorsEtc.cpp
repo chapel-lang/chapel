@@ -67,8 +67,7 @@ static void build_constructor(StructuralType* structType) {
   body = Symboltable::finishCompoundStmt(body, stmts);
   DefExpr* fn_def =
     new DefExpr(Symboltable::finishFnDef(fn, body));
-  structType->constructor = new DefStmt(fn_def);
-  fixup_expr(structType->symbol->defPoint);
+  structType->symbol->defPoint->parentStmt->insertBefore(new DefStmt(fn_def));
 }
 
 

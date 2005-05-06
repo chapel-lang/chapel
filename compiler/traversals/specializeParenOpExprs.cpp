@@ -19,13 +19,8 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
         if (!dynamic_cast<TypeSymbol*>(baseVar->var)) {
           USR_FATAL(expr, "Invalid class constructor");
         }
-        DefStmt* constructor = dynamic_cast<DefStmt*>(ctype->constructor);
-        FnSymbol* fn = NULL;
-        if (constructor) {
-          fn = constructor->fnDef();
-        }
-        if (fn) {
-          paren_replacement = new ParenOpExpr(new Variable(new UnresolvedSymbol(fn->name)), paren->argList);
+        if (ctype->defaultConstructor) {
+          paren_replacement = new ParenOpExpr(new Variable(new UnresolvedSymbol(ctype->defaultConstructor->name)), paren->argList);
         }
         else {
           INT_FATAL(expr, "constructor does not have a DefStmt");

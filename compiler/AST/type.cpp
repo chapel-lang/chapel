@@ -1192,7 +1192,6 @@ void LikeType::codegenDef(FILE* outfile) {
 
 StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
   Type(astType, init_defaultVal),
-  constructor(NULL),
   structScope(NULL),
   declarationList(NULL),
   parentStruct(NULL)
@@ -1271,8 +1270,6 @@ void StructuralType::setScope(SymScope* init_structScope) {
 void StructuralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultVal) {
     defaultVal = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == constructor) {
-    constructor = dynamic_cast<Stmt*>(new_ast);
   } else if (old_ast == declarationList) {
     declarationList = dynamic_cast<Stmt*>(new_ast);
   } else {
@@ -1287,7 +1284,6 @@ void StructuralType::traverseDefType(Traversal* traversal) {
     prevScope = Symboltable::setCurrentScope(structScope);
   }
   TRAVERSE_LS(declarationList, traversal, false);
-  TRAVERSE_LS(constructor, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
   if (structScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -1414,16 +1410,6 @@ void StructuralType::codegenDef(FILE* outfile) {
   }
   codegenStopDefFields(outfile);
   fprintf(outfile, "};\n\n");
-//   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(constructor)) {
-//     def_stmt->fnDef()->codegenDef(codefile);
-//   }
-//   forv_Vec(FnSymbol, fn, methods) {
-//     // Check to see if this is where it is defined
-//     if (fn->parentScope->symContext->type == this) {
-//       fn->codegenDef(codefile);
-//     }
-//     fprintf(codefile, "\n");
-//   }
 }
 
 

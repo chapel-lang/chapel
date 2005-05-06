@@ -186,7 +186,6 @@ class LikeType : public Type {
 
 class StructuralType : public Type {
  public:
-  Stmt* constructor;
   SymScope* structScope;
   Stmt* declarationList;
   StructuralType* parentStruct;
