@@ -29591,3 +29591,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 08:54:55 -- deitz
+
+Log message:
+	Added a test case to ensure that methods with parameters that shadow
+	fields use the parameters instead of the fields.
+
+Added files:
+	chapel/test/classes/deitz/: test_method8.chpl test_method8.good 
+
