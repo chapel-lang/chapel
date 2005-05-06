@@ -51,7 +51,7 @@ static void build_constructor(StructuralType* structType) {
   if (dynamic_cast<ClassType*>(structType)) {
     char* description = glomstrings(2, "instance of class ", structType->symbol->name);
     Expr* alloc_args = new IntLiteral("1", 1);
-    alloc_args = appendLink(alloc_args, new SizeofExpr(structType));
+    alloc_args = appendLink(alloc_args, new SizeofExpr(new Variable(fn->_this)));
     alloc_args = appendLink(alloc_args, new StringLiteral(description));
     Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");
     Expr* alloc_call = new FnCall(new Variable(alloc_sym), alloc_args);

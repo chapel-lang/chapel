@@ -2025,7 +2025,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Code *send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, sizeof_symbol, 
-                            s->type->asymbol->sym->meta_type, s->ainfo->rval);
+                            s->variable->var->type->asymbol->sym->meta_type, s->ainfo->rval);
       send->ast = s->ainfo;
       break;
     }

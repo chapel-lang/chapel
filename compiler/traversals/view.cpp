@@ -42,8 +42,6 @@ void View::preProcessExpr(Expr* expr) {
     printf(" %ld", e->val);
   } else if (StringLiteral* e = dynamic_cast<StringLiteral*>(expr)) {
     printf(" \"%s\"", e->str);
-  } else if (SizeofExpr* e = dynamic_cast<SizeofExpr*>(expr)) {
-    printf(" 'type %s'", e->type->symbol->name);
   }
 }
 

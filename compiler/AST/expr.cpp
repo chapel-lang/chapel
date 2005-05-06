@@ -1555,19 +1555,28 @@ void Tuple::codegen(FILE* outfile) {
 }
 
 
-SizeofExpr::SizeofExpr(Type* init_type) :
+SizeofExpr::SizeofExpr(Variable* init_variable) :
   Expr(EXPR_SIZEOF),
-  type(init_type)
+  variable(init_variable)
 {}
 
 
 Expr* SizeofExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new SizeofExpr(type);
+  return new SizeofExpr(dynamic_cast<Variable*>(variable->copy(clone, map, analysis_clone)));
+}
+
+
+void SizeofExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == variable) {
+    variable = dynamic_cast<Variable*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in SizeofExpr::replaceChild(old, new)");
+  }
 }
 
 
 void SizeofExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(type, traversal, false);
+  TRAVERSE(variable, traversal, false);
 }
 
 
@@ -1578,17 +1587,17 @@ Type* SizeofExpr::typeInfo(void) {
 
 void SizeofExpr::print(FILE* outfile) {
   fprintf(outfile, "sizeof(");
-  type->print(outfile);
+  variable->typeInfo()->print(outfile);
   fprintf(outfile, ")");
 }
 
 
 void SizeofExpr::codegen(FILE* outfile) {
   fprintf(outfile, "sizeof(");
-  if (dynamic_cast<StructuralType*>(type)) {
+  if (dynamic_cast<StructuralType*>(variable->typeInfo())) {
     fprintf(outfile, "_");
   }
-  type->codegen(outfile);
+  variable->typeInfo()->codegen(outfile);
   fprintf(outfile, ")");
 }
 

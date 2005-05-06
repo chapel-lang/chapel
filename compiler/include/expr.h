@@ -434,11 +434,12 @@ class IOCall : public FnCall {
 
 class SizeofExpr : public Expr {
  public:
-  Type* type;
+  Variable* variable;
 
-  SizeofExpr(Type* init_type);
+  SizeofExpr(Variable* init_variable);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
   
   Type* typeInfo(void);

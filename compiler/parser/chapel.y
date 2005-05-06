@@ -901,7 +901,7 @@ expr:
     { $$ = Symboltable::finishLetExpr($<pexpr>2, $3, $5); }
 | reduction %prec TREDUCE
 | expr TCOLON type
-    { $$ = new CastExpr($3, $1); }
+  { $$ = new CastExpr($3, $1); }
 | range %prec TDOTDOT
 | seq_expr
 | forallExpr expr %prec TRSBR
