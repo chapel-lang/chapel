@@ -29791,3 +29791,15 @@ Added files:
 	chapel/compiler/include/sunos/: stdint.h 
 	chapel/runtime/include/sunos/: stdint.h 
 
+---------------------------------------------------------------------------
+
+05/06/05 12:50:31 -- bradc
+
+Log message:
+	Did a similar stdint.h hack for freebsd as it
+	didn't seem to support the file either.
+
+Added files:
+	chapel/compiler/include/freebsd/: stdint.h 
+	chapel/runtime/include/freebsd/: stdint.h 
+
