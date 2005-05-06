@@ -29656,3 +29656,20 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/symtab/: resolveTypes.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 11:17:37 -- deitz
+
+Log message:
+	Changed SizeofExpr to operate on a Variable* rather than a Type*.  It
+	still has the same meaning and can be passed a Variable of a
+	TypeSymbol if no variable is known.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             view.cpp 
+
