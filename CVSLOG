@@ -29491,3 +29491,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/05/05 17:00:56 -- jplevyak
+
+Log message:
+	Accidentially disable writing of the 'i' log in some cases... this restores it.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+
