@@ -29617,3 +29617,16 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             specializeParenOpExprs.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 09:45:25 -- deitz
+
+Log message:
+	Added constructor of a class to the class's list of methods.
+	
+	Made getters and setters be defined in statements outside of the
+	class.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
