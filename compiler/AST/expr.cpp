@@ -2160,7 +2160,7 @@ void VarInitExpr::print(FILE* outfile) {
 void VarInitExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "Unanticipated call to VarInitExpr::codegen");
   fprintf(outfile, "/*** VarInit of ");
-  symbol->print(outfile);
+  fprintf(outfile, "%s", symbol->cname);
   fprintf(outfile, "**/");
 }
 
