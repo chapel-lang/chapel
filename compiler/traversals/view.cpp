@@ -12,6 +12,11 @@ View::View(bool initNumberSymbols) {
   numberSymbols = initNumberSymbols;
 }
 
+void View::run(ModuleSymbol* moduleList) {
+  Traversal::run(moduleList);
+  printf("\n\n");
+}
+
 void View::preProcessStmt(Stmt* stmt) {
   printf("\n");
   for (int i = 0; i < indent; i++) {
