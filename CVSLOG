@@ -29717,3 +29717,27 @@ Log message:
 Removed files:
 	chapel/test/domains/bradc/: paramRank.future 
 
+---------------------------------------------------------------------------
+
+05/06/05 11:37:59 -- deitz
+
+Log message:
+	Added new AST expression CastLikeExpr that is similar to a CastExpr
+	but instead of a Type* newType, it has Variable* variable.  This casts
+	the expression to the type of the variable.
+	
+	This is useful in malloc, because when the constructor is cloned, we
+	want the type associated with the malloc to change.
+	
+	I'm a little concerned about casts and cloning though.  When a
+	function is cloned, should the cast be updated?  It seems like
+	sometimes it should be.  If we can get this working, I can undo my
+	last changes to SizeofExpr and this CastLikeExpr.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             verifyASTType.cpp 
+
