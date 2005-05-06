@@ -1470,7 +1470,9 @@ ClassType::ClassType(astType_t astType) :
   StructuralType(astType, 
                  new Variable(Symboltable::lookupInternal("nil", 
                                                           SCOPE_INTRINSIC)))
-{}
+{
+  parentClasses.clear();
+}
 
 
 Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 

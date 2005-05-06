@@ -481,6 +481,14 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
   }
   char* clone_name = glomstrings(3, name, "_clone_", intstring(uid++));
 
+  if (ClassType* newClassType = dynamic_cast<ClassType*>(new_class_type)) {
+    ClassType* oldClassType = dynamic_cast<ClassType*>(old_class_type);
+    if (!oldClassType) {
+      INT_FATAL(this, "Cloning of ClassType went horribly wrong");
+    }
+    newClassType->parentClasses.add(oldClassType);
+  }
+
   TypeSymbol* new_type_sym = new TypeSymbol(clone_name, new_class_type);
   new_class_type->addSymbol(new_type_sym);
   DefExpr* new_def_expr = new DefExpr(new_type_sym);

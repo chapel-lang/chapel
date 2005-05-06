@@ -225,6 +225,7 @@ class StructuralType : public Type {
 
 class ClassType : public StructuralType {
  public:
+  Vec<ClassType*> parentClasses;
   ClassType(astType_t astType = TYPE_CLASS);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 

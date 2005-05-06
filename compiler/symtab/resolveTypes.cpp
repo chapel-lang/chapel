@@ -26,15 +26,20 @@ ResolveTypes::ResolveTypes() {
 }
 
 
-static bool types_match(Type* sub, Type* super) {
+static bool types_match(Type* super, Type* sub) {
   if (sub == super) {
     return true;
-  } else if (dynamic_cast<StructuralType*>(sub) &&
-             dynamic_cast<NilType*>(super)) {
+  } else if (dynamic_cast<StructuralType*>(super) &&
+             dynamic_cast<NilType*>(sub)) {
     return true;
-  } else {
-    return false;
+  } else if (ClassType* superClass = dynamic_cast<ClassType*>(super)) {
+    if (ClassType* subClass = dynamic_cast<ClassType*>(sub)) {
+      if (subClass->parentClasses.in(superClass)) {
+        return true;
+      }
+    }
   }
+  return false;
 }
 
 
