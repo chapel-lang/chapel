@@ -29558,3 +29558,20 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: view.cpp view.h 
 
+---------------------------------------------------------------------------
+
+05/05/05 18:13:41 -- bradc
+
+Log message:
+	Updated my typefn futures and added some new ones.  I
+	think my new messages depend on some code I'm hoping
+	to check in in a minute, though.  :)
+
+Modified files:
+	chapel/test/functions/bradc/: typefn.future typefn2.future 
+Added files:
+	chapel/test/functions/bradc/: typefn3.chpl typefn3.future 
+	                              typefn3.good typefn4.chpl 
+	                              typefn4.good typefn5.chpl 
+	                              typefn5.future typefn5.good 
+
