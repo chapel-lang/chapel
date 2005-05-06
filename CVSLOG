@@ -29640,3 +29640,19 @@ Log message:
 Added files:
 	chapel/test/functions/bradc/: typefn4a.chpl typefn4a.good 
 
+---------------------------------------------------------------------------
+
+05/06/05 10:19:08 -- deitz
+
+Log message:
+	Added Vec<ClassType*> ClassType::parentClasses which stores the parent
+	classes of classes (for inheritance).  I added this because when a
+	class is cloned, the original is the clone's parent.  We need this to
+	allow ResolveTypes to resolve the type of an instance of the original
+	as the clone without generating an error message.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+
