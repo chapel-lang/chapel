@@ -29575,3 +29575,19 @@ Added files:
 	                              typefn4.good typefn5.chpl 
 	                              typefn5.future typefn5.good 
 
+---------------------------------------------------------------------------
+
+05/05/05 18:28:46 -- bradc
+
+Log message:
+	Fixed a problem in scopeResolveSymbols in which the
+	parameter scope was not being pushed before the
+	function return type was resolved -- since the
+	return type can be resolved using values from the
+	parameter list, this is necessary.  This change
+	gets the typefn tests that I just edited/added
+	working slightly better than they were previously.
+
+Modified files:
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+
