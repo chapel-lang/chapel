@@ -29501,3 +29501,14 @@ Log message:
 Modified files:
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+05/05/05 17:27:23 -- bradc
+
+Log message:
+	Registered the "View" traversal so that it might
+	be added to a user's passlist.h.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp 
+
