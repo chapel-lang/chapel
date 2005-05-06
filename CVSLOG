@@ -29512,3 +29512,37 @@ Log message:
 Modified files:
 	chapel/compiler/main/: passlist.cpp 
 
+---------------------------------------------------------------------------
+
+05/05/05 17:48:35 -- deitz
+
+Log message:
+	Reworked ScopeResolveSymbols to work on methods in classes even though
+	they are no longer scoped within the class.  This is a major change to
+	this traversal.
+	
+	Added functionality to InsertThisParameters to move methods out of
+	classes.  I did this before, but now it is done right, or at least,
+	righter.
+	
+	Reworked ApplyThisParameters to not use the scope to determine if a
+	symbol needs 'this' applied to it.  This can stand to be thought about
+	more and maybe moved into ScopeResolveSymbols.
+	
+	Fixed OmitForNoAnalysis to actually remove symbols that are omitted,
+	not just mangle their name.
+	
+	Added code to copy and update the _this field of a function if the
+	function is copied in UpdateSymbols (called by copy).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             applyThisParameters.h 
+	                             insertThisParameters.cpp 
+	                             omitForNoAnalysis.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+	                             updateSymbols.cpp 
+
