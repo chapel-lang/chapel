@@ -174,9 +174,27 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
 
 
 void ScopeResolveSymbols::preProcessSymbol(Symbol* sym) {
-  resolve_type_helper(currentFunction, sym->type);
+  SymScope* paramScope = NULL;
+  SymScope* saveScope = NULL;
+
   FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym);
   if (fnSym) {
+    paramScope = fnSym->paramScope;
+
+    /* for a function, its return type (also currently stored as its
+       type... grumble grumble) may be defined in terms of symbols
+       defined in the paramScope */
+    if (paramScope) {
+      saveScope = Symboltable::setCurrentScope(paramScope);
+    }
+  }
+
+  if (sym->type) {
+    resolve_type_helper(currentFunction, sym->type);
+  }
+
+  if (paramScope) {
     resolve_type_helper(currentFunction, fnSym->retType);
+    Symboltable::setCurrentScope(saveScope);
   }
 }
