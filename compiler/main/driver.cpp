@@ -168,6 +168,7 @@ static void handleLibPath(ArgumentState* arg_state, char* arg_unused) {
 void
 do_analysis(char *fn) {
   if1_finalize(if1);
+  if1_write_log();
   if (!fdce_if1)
     fail("unable to translate dead code... terminating");
   Sym *init = if1_get_builtin(if1, "init");
