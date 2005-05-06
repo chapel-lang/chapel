@@ -53,6 +53,7 @@
 #include "../traversals/testGetStuff.h"
 #include "../traversals/transformLetExprs.h"
 #include "../traversals/verifyASTType.h"
+#include "../traversals/view.h"
 
 /* any Passes or Traversals that are expected to be parsed as part of
    a command-line specified passlist.h file must be listed here in the
@@ -117,4 +118,5 @@ REGISTER(SpecializeParenOpExprs);
 REGISTER(TestGetStuff);
 REGISTER(TransformLetExprs);
 REGISTER(VerifyASTType);
+REGISTER(View);
 STOP_PASSLIST_REGISTRATION
