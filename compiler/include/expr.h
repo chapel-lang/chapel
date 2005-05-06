@@ -324,6 +324,7 @@ class Variable : public Expr {
   virtual bool isConst(void);
   virtual bool isParam(void);
   virtual bool isComputable();
+  virtual long intVal(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

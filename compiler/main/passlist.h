@@ -29,6 +29,8 @@ PassInfo passlist[] = {
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(ScopeResolveGotos, ""),
   RUN(Fixup, "verify"), // this is a sanity check
+  RUN(ResolveDomainRanks, ""),
+  RUN(Fixup, "verify"),
   RUN(RenameOverloadedFunctions, ""),
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertTemps, ""),

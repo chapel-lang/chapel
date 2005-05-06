@@ -542,24 +542,7 @@ DomainType::DomainType(Expr* init_expr) :
   parent(NULL),
   initExpr(init_expr),
   idxType(NULL)
-{
-  if (init_expr) {
-    
-    if ((typeid(*init_expr) == typeid(IntLiteral)) ||
-        (init_expr->isParam() && init_expr->typeInfo() == dtInteger)) {
-          numdims = init_expr->intVal();
-    } else {
-      numdims = init_expr->rank();
-      parent = init_expr;
-    }
-    idxType = new IndexType(init_expr);
-    ((IndexType*)idxType)->domainType = this;
-    /*if (typeid(*init_expr) == typeid(IntLiteral)){
-      ((IndexType*)idxType)->idxType = newTType;
-    } 
-    else*/ 
-  }
-}
+{}
 
 
 DomainType::DomainType(int init_numdims) :
@@ -571,6 +554,22 @@ DomainType::DomainType(int init_numdims) :
   //RED -- keep track of the initialization expression for domains
   //can help with creating index types
   initExpr = new IntLiteral(intstring(init_numdims), init_numdims);
+}
+
+
+void DomainType::computeRank(void) {
+  if (initExpr) {
+    if ((typeid(*initExpr) == typeid(IntLiteral)) ||
+        (initExpr->isParam() && initExpr->typeInfo() == dtInteger)) {
+      numdims = initExpr->intVal();
+      parent = NULL;
+    } else {
+      numdims = initExpr->rank();
+      parent = initExpr;
+    }
+    idxType = new IndexType(initExpr->copy());
+    ((IndexType*)idxType)->domainType = this;
+  }
 }
 
 
@@ -588,6 +587,11 @@ Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallbac
 
 int DomainType::rank(void) {
   return numdims;
+}
+
+
+void DomainType::traverseDefType(Traversal* traversal) {
+  TRAVERSE(initExpr, traversal, false);
 }
 
 

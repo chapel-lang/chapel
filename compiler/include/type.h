@@ -104,9 +104,12 @@ class DomainType : public Type {
 
   DomainType(Expr* init_expr = NULL);
   DomainType(int init_numdims);
+  void computeRank(void);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   int rank(void);
+
+  void traverseDefType(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegenDef(FILE* outfile);

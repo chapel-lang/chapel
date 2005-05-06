@@ -720,6 +720,23 @@ bool Variable::isComputable(void){
   return false;
 }
 
+
+long Variable::intVal(void) {
+  Expr* initExpr = var->defPoint->init->expr;
+  if (isParam() || (isConst() && initExpr->isComputable())) {
+    //    fprintf(stderr, "%s is a parameter with value %ld\n", var->name, initExpr->intVal());
+    return initExpr->intVal();
+  }
+  if (isComputable()) {
+    INT_FATAL(this, "isComputable() returns true, but not sure how to find "
+              "intVal");
+  } else {
+    INT_FATAL(this, "intVal() called on non-computable Variable\n");
+  }
+  return -999;
+}
+
+
 void Variable::print(FILE* outfile) {
   var->print(outfile);
 }
