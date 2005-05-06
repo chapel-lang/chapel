@@ -29803,3 +29803,19 @@ Added files:
 	chapel/compiler/include/freebsd/: stdint.h 
 	chapel/runtime/include/freebsd/: stdint.h 
 
+---------------------------------------------------------------------------
+
+05/06/05 12:54:22 -- deitz
+
+Log message:
+	If a function is cloned, the members of its MemberAccesses are made
+	unresolved.  It's likely that we should never try to resolve these
+	before analysis anyway.
+	
+	Made a minor improvement to VarInitExpr::codegen which should never be
+	executed unless something has gone wrong.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: clearTypes.cpp 
+
