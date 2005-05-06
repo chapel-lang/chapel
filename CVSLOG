@@ -29546,3 +29546,15 @@ Modified files:
 	                             scopeResolveSymbols.h 
 	                             updateSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+05/05/05 18:07:27 -- bradc
+
+Log message:
+	Overloaded run() for View traversal so that it would
+	print out some whitespace after it runs from the
+	passlist.
+
+Modified files:
+	chapel/compiler/traversals/: view.cpp view.h 
+
