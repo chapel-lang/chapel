@@ -29741,3 +29741,20 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 11:41:47 -- bradc
+
+Log message:
+	Changed DomainType::idxType from a Type* to an IndexType*
+	in order to remove the numerous static and dynamic casts
+	that were used to get it back to an IndexType in the
+	compiler.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             insertIndexType.cpp 
+	                             insertVariableInitializations.cpp 
+
