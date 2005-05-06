@@ -29630,3 +29630,13 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 10:05:31 -- bradc
+
+Log message:
+	Another typefn test.
+
+Added files:
+	chapel/test/functions/bradc/: typefn4a.chpl typefn4a.good 
+
