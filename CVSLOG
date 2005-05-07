@@ -29840,3 +29840,54 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/06/05 17:41:03 -- deitz
+
+Log message:
+	This checkin gets class cloning working!  At least on the simple test
+	cases that are written.
+	
+	Changed VarInitExpr to have an Expr rather than a VarSymbol.  I may
+	change it back.  Note that this is only and can only be used for the
+	default arguments to the default class constructor.
+	
+	Inserted code after resolveTypes in a new traversal called
+	PostAnalysisCleanup that resolves the types of parameters to default
+	constructors (and to default wrappers as they are copied).
+	
+	Fixed a bug in which the wrapper did not create ParenOpExprs but
+	rather FnCalls so they were not resolved.  The coercion wrapper still
+	creates a FnCall because it looks like call_info works wrong on it.
+	
+	Added new class cloning test
+	
+	  test/types/type_variables/deitz/test_clone_class2b
+	
+	as a simple test where the constructors are passed arguments.
+	
+	Removed futures for
+	
+	  test/types/type_variables/deitz/test_clone_class2
+	  test/types/type_variables/deitz/test_clone_class2a
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share removeDeadSymbols.cpp 
+	                         resolveTypes.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             removeNamedParameters.cpp 
+	                             updateSymbols.cpp 
+Added files:
+	chapel/compiler/symtab/: postAnalysisCleanup.cpp 
+	                         postAnalysisCleanup.h 
+	chapel/test/types/type_variables/deitz/: test_clone_class2b.chpl 
+	                                         test_clone_class2b.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class2.future 
+	                                         test_clone_class2a.future 
+
