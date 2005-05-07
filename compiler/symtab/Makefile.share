@@ -6,6 +6,7 @@ SYMTAB_SRCS = \
         insertOutParameterInitializations.cpp \
 	insertWriteFns.cpp \
 	legalizeCNames.cpp \
+        postAnalysisCleanup.cpp \
 	printSymtab.cpp \
 	removeDeadSymbols.cpp \
 	removeLikeTypes.cpp \

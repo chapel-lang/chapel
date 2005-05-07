@@ -2129,30 +2129,39 @@ void NamedExpr::codegen(FILE* outfile) {
 }
 
 
-VarInitExpr::VarInitExpr(VarSymbol* init_symbol) :
+VarInitExpr::VarInitExpr(Expr* init_expr) :
   Expr(EXPR_VARINIT),
-  symbol(init_symbol)
+  expr(init_expr)
 { }
 
 
 Expr* VarInitExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new VarInitExpr(symbol);
+  return new VarInitExpr(expr->copy(clone, map, analysis_clone));
+}
+
+
+void VarInitExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in VarInitExpr::replaceChild(old, new)");
+  }
 }
 
 
 void VarInitExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(symbol, traversal, false);
+  TRAVERSE(expr, traversal, false);
 }
 
 
 Type* VarInitExpr::typeInfo(void) {
-  return symbol->type;
+  return expr->typeInfo();
 }
 
 
 void VarInitExpr::print(FILE* outfile) {
   fprintf(outfile, "DefaultInit(");
-  symbol->print(outfile);
+  expr->print(outfile);
   fprintf(outfile, ")");
 }
 
@@ -2160,7 +2169,7 @@ void VarInitExpr::print(FILE* outfile) {
 void VarInitExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "Unanticipated call to VarInitExpr::codegen");
   fprintf(outfile, "/*** VarInit of ");
-  fprintf(outfile, "%s", symbol->cname);
+  expr->codegen(outfile);
   fprintf(outfile, "**/");
 }
 

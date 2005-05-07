@@ -11,6 +11,7 @@
 #include "../symtab/insertOutParameterInitializations.h"
 #include "../symtab/insertWriteFns.h"
 #include "../symtab/legalizeCNames.h"
+#include "../symtab/postAnalysisCleanup.h"
 #include "../symtab/printSymtab.h"
 #include "../symtab/removeDeadSymbols.h"
 #include "../symtab/removeLikeTypes.h"
@@ -96,6 +97,7 @@ REGISTER(InsertVariableInitializations);
 REGISTER(InsertWriteFns);
 REGISTER(LegalizeCNames);
 REGISTER(OmitForNoAnalysis);
+REGISTER(PostAnalysisCleanup);
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);

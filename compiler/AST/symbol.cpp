@@ -795,7 +795,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
     actuals = nextLink(Symbol, actuals);
   }
   Symboltable::pushScope(SCOPE_LOCAL);
-  FnCall* fn_call = new FnCall(new Variable(this), argList);
+  ParenOpExpr* fn_call = new ParenOpExpr(new Variable(this), argList);
   Stmt* wrapper_body;
   if (retType == dtVoid ||
       (retType == dtUnknown && function_returns_void(this))) {
@@ -895,7 +895,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
     }
   }
 
-  Stmt* fn_call = new ExprStmt(new FnCall(new Variable(this), actuals));
+  Stmt* fn_call = new ExprStmt(new ParenOpExpr(new Variable(this), actuals));
   BlockStmt* body = new BlockStmt(fn_call);
   DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, body));
   defPoint->insertBefore(def_expr);

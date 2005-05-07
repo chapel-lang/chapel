@@ -1668,12 +1668,12 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_VARINIT: {
       VarInitExpr *s = dynamic_cast<VarInitExpr*>(ast);
-      if (s->symbol->type->defaultVal) {
+      if (s->expr->typeInfo()->defaultVal) {
         s->ainfo->rval = new_sym();
-        if1_move(if1, &s->ainfo->code, get_defaultVal(s->symbol->type), s->ainfo->rval, s->ainfo);
-      } else if (s->symbol->type->defaultConstructor) {
+        if1_move(if1, &s->ainfo->code, get_defaultVal(s->expr->typeInfo()), s->ainfo->rval, s->ainfo);
+      } else if (s->expr->typeInfo()->defaultConstructor) {
         s->ainfo->rval = new_sym();
-        Code *send = if1_send(if1, &s->ainfo->code, 1, 1, constructor_name(s->symbol->type), s->ainfo->rval);
+        Code *send = if1_send(if1, &s->ainfo->code, 1, 1, constructor_name(s->expr->typeInfo()), s->ainfo->rval);
         send->ast = s->ainfo;
       } else
         s->ainfo->rval = sym_nil;

@@ -30,7 +30,7 @@ static void build_constructor(StructuralType* structType) {
       forv_Vec(VarSymbol, tmp, structType->fields) {
         char* name = tmp->name;
         Type* type = tmp->type;
-        Expr* init = (tmp->defPoint->init) ? tmp->defPoint->init->copy() : new VarInitExpr(tmp);
+        Expr* init = (tmp->defPoint->init) ? tmp->defPoint->init->copy() : new VarInitExpr(new Variable(tmp));
         if (tmp->defPoint->init) {
           tmp->defPoint->init->extract();
         }
@@ -46,6 +46,16 @@ static void build_constructor(StructuralType* structType) {
   Stmt* stmts = NULL;
   fn->_this = new VarSymbol("this", structType);
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
+
+  for (ParamSymbol* tmp = args; tmp; tmp = nextLink(ParamSymbol, tmp)) {
+    if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(tmp->init)) {
+      if (Variable* variable = dynamic_cast<Variable*>(varInitExpr->expr)) {
+        tmp->init =
+          new VarInitExpr(new MemberAccess(new Variable(fn->_this), variable->var));
+      }
+    }
+  }
+
   DefExpr* def_expr = new DefExpr(fn->_this);
   stmts = new DefStmt(def_expr);
   if (dynamic_cast<ClassType*>(structType)) {

@@ -1306,7 +1306,8 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
     if (is_Scalar_Type(tmp->type))
       continue;
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
-    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, new VarInitExpr(tmp));
+    Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
+    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, varInitExpr);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts = appendLink(stmts, assign_stmt);
   }
@@ -1327,7 +1328,8 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
     if (analyzeAST && !useOldConstructor) {
       rhs = new Variable(ptmp);
     } else {
-      rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : new VarInitExpr(tmp);
+      Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
+      rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : varInitExpr;
       if (tmp->defPoint->init) {
         tmp->defPoint->init->extract();
       }

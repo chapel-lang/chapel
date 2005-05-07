@@ -8,15 +8,15 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
   }
 
   if (VarInitExpr* var_init = dynamic_cast<VarInitExpr*>(expr)) {
-    if (dynamic_cast<ArrayType*>(var_init->symbol->type) ||
-        dynamic_cast<DomainType*>(var_init->symbol->type)) {
+    if (dynamic_cast<ArrayType*>(var_init->typeInfo()) ||
+        dynamic_cast<DomainType*>(var_init->typeInfo())) {
       // No Default Initialization for Arrays/Domains
       var_init->parentStmt->replace(new NoOpStmt());
     } else {
-      if (var_init->symbol->type->defaultVal) {
-        var_init->replace(var_init->symbol->type->defaultVal->copy());
-      } else if (var_init->symbol->type->defaultConstructor) {
-        var_init->replace(new FnCall(new Variable(var_init->symbol->type->defaultConstructor), NULL));
+      if (var_init->typeInfo()->defaultVal) {
+        var_init->replace(var_init->typeInfo()->defaultVal->copy());
+      } else if (var_init->typeInfo()->defaultConstructor) {
+        var_init->replace(new FnCall(new Variable(var_init->typeInfo()->defaultConstructor), NULL));
       } else {
         INT_FATAL(expr, "VarInitExpr has no default initialization");
       }

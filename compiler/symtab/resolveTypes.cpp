@@ -105,6 +105,7 @@ void ResolveTypes::processSymbol(Symbol* sym) {
       sym->type = analysisType;
     }
   }
+
   /***
    ***  Hack: loops over sequences, types of index variables
    ***/
