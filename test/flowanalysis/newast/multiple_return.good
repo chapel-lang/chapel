@@ -4,6 +4,7 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_multiple_return ( __init_multiple_return )
 ::__init_prelude ( __init_prelude )
+::_retval ( int64 )
 ::a(multiple_return.chpl:1) ( int64 )
 ::b(multiple_return.chpl:1) ( int64 )
 ::c(multiple_return.chpl:1) ( int64 )
