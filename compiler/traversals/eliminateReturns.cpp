@@ -68,6 +68,7 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
         Symboltable::setCurrentScope(prevScope);
+        assert(0); // we should never get here
         return;
       }
     }
@@ -75,10 +76,15 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     Variable* retVar = new Variable(retval);
     AssignOp* assignRetVar = new AssignOp(GETS_NORM, retVar, retExpr->copy());
     ExprStmt* assignStmt = new ExprStmt(assignRetVar);
-    retStmt->insertBefore(assignStmt);
+    BlockStmt *retBlock = new BlockStmt(assignStmt);
+    retStmt->replace(retBlock);
     Variable* newRetExpr = new Variable(retval);
-    retExpr->replace(newRetExpr);
+    ReturnStmt *newRetStmt = new ReturnStmt(newRetExpr);
+    assignStmt->insertAfter(newRetStmt);
     
     Symboltable::setCurrentScope(prevScope);
   }
 }
+
+
+

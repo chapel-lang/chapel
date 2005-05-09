@@ -23,8 +23,7 @@
 #define VARARG_END     0ll
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
-#define NO_OPERATOR_EQ_FOR_UNTYPED_UNINITIALIZED 1
-#define KLUDGE_USER_TYPE_TO_BE_DEFINITION       1
+#define MAKE_USER_TYPE_BE_DEFINITION       1
 
 class LabelMap : public Map<char *, Stmt *> {};
 
@@ -1129,7 +1128,7 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
 static int
 gen_one_vardef(VarSymbol *var, DefExpr *def) {
   Type *type = var->type;
-#ifdef KLUDGE_USER_TYPE_TO_BE_DEFINITION
+#ifdef MAKE_USER_TYPE_BE_DEFINITION
   if (type->astType == TYPE_USER)
     type = ((UserType*)type)->definition;
 #endif
@@ -1162,6 +1161,9 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
     dynamic_cast<Variable*>(type->defaultVal)->var == var;
   if (s->is_var && !scalar_or_reference(type)) {
     switch (type->astType) { 
+      case TYPE_VARIABLE:
+        type = dtUnknown;  // as yet unknown
+        break;
         // ruled out by conditionals above
       case TYPE_ENUM:
       case TYPE_BUILTIN: 
@@ -1170,7 +1172,6 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
         // do not make it to analysis
       case TYPE_LIKE:
       case TYPE_UNRESOLVED:
-      case TYPE_VARIABLE:
       case TYPE_SUM:
       case TYPE_STRUCTURAL:
       default:
@@ -1840,11 +1841,11 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
           }
         }
       }
+      VarSymbol *vs = variable ? dynamic_cast<VarSymbol*>(variable->var) : 0;
       int operator_equal = 
         !(constructor_assignment || getter_setter ||
-#ifdef NO_OPERATOR_EQ_FOR_UNTYPED_UNINITIALIZED
+          (vs && vs->noDefaultInit) ||
           (symbol && (symbol->type == dtUnknown && !symbol->defPoint->init)) ||
-#endif
           (symbol && (symbol->isThis() || (symbol && scalar_or_reference(symbol->type)))));
       if (operator_equal) {
         Sym *old_rval = rval;

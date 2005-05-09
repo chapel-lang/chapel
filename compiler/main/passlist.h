@@ -99,6 +99,7 @@ PassInfo passlist[] = {
   RUN(TransformLetExprs, ""),
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(EliminateReturns, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
   RUN(ProcessParameters, ""),
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertVariableInitializations, ""),
