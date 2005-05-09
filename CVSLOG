@@ -30028,3 +30028,14 @@ Added files:
 	chapel/test/functions/jplevyak/: type_var_fun-1.chpl 
 	                                 type_var_fun-1.good 
 
+---------------------------------------------------------------------------
+
+05/09/05 10:37:32 -- jplevyak
+
+Log message:
+	Add a pass of elminateReturns before analysis.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+
