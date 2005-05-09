@@ -30017,3 +30017,14 @@ Modified files:
 	chapel/compiler/main/: passlist.h 
 	chapel/compiler/traversals/: eliminateReturns.cpp 
 
+---------------------------------------------------------------------------
+
+05/09/05 10:36:41 -- jplevyak
+
+Log message:
+	New test to check for coercion of return values.
+
+Added files:
+	chapel/test/functions/jplevyak/: type_var_fun-1.chpl 
+	                                 type_var_fun-1.good 
+
