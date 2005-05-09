@@ -23,7 +23,7 @@
 #define VARARG_END     0ll
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
-//#define NO_OPERATOR_EQ_FOR_UNTYPED_UNINITIALIZED 1
+#define NO_OPERATOR_EQ_FOR_UNTYPED_UNINITIALIZED 1
 #define KLUDGE_USER_TYPE_TO_BE_DEFINITION       1
 
 class LabelMap : public Map<char *, Stmt *> {};
@@ -1208,13 +1208,15 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   } else if (!init) {
     // THIS IS THE STANDARD CODE
   Lstandard:
-    if (!this_is_init && type->defaultVal) {
-      if1_move(if1, &ast->code, get_defaultVal(type), ast->sym, ast);
-    } else if (type->defaultConstructor) {
-      Code *send = if1_send(if1, &ast->code, 1, 1, constructor_name(type), ast->sym);
-      send->ast = ast;
-    } else if (!this_constructor)
-      if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
+    if (!var->noDefaultInit) {
+      if (!this_is_init && type->defaultVal) {
+        if1_move(if1, &ast->code, get_defaultVal(type), ast->sym, ast);
+      } else if (type->defaultConstructor) {
+        Code *send = if1_send(if1, &ast->code, 1, 1, constructor_name(type), ast->sym);
+        send->ast = ast;
+      } else if (!this_constructor)
+        if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
+    }
   }
   if (init) {
     if (type->astType == TYPE_ARRAY) {
@@ -1229,7 +1231,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
         if (type != init->typeInfo())
           val = gen_coerce(val, s->type, &ast->code, ast);
         if1_move(if1, &ast->code, val, ast->sym, ast);
-      } else if (!is_reference_type(type) && type != dtUnknown) {
+      } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
         Sym *old_val = val;
         val = new_sym();
         Code *c = if1_send(if1, &init->ainfo->code, 3, 1, if1_make_symbol(if1, "="), 
@@ -1670,12 +1672,13 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_VARINIT: {
       VarInitExpr *s = dynamic_cast<VarInitExpr*>(ast);
-      if (s->expr->typeInfo()->defaultVal) {
+      Type *t = s->expr->typeInfo();
+      if (t->defaultVal) {
         s->ainfo->rval = new_sym();
-        if1_move(if1, &s->ainfo->code, get_defaultVal(s->expr->typeInfo()), s->ainfo->rval, s->ainfo);
-      } else if (s->expr->typeInfo()->defaultConstructor) {
+        if1_move(if1, &s->ainfo->code, get_defaultVal(t), s->ainfo->rval, s->ainfo);
+      } else if (t->defaultConstructor) {
         s->ainfo->rval = new_sym();
-        Code *send = if1_send(if1, &s->ainfo->code, 1, 1, constructor_name(s->expr->typeInfo()), s->ainfo->rval);
+        Code *send = if1_send(if1, &s->ainfo->code, 1, 1, constructor_name(t), s->ainfo->rval);
         send->ast = s->ainfo;
       } else
         s->ainfo->rval = sym_nil;
