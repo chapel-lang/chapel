@@ -68,7 +68,6 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
         Symboltable::setCurrentScope(prevScope);
-        assert(0); // we should never get here
         return;
       }
     }

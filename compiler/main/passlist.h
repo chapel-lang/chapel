@@ -52,6 +52,8 @@ PassInfo passlist[] = {
   RUN(InsertDefaultInitVariables, ""),
   RUN(Fixup, "verify"), // this is a sanity check
   RUN(InsertOutParameterInitializations, ""),
+  RUN(Fixup, "verify"), // this is a sanity check
+  RUN(EliminateReturns, ""),
 
   // passes to collect information for analysis
   RUN(Fixup, "verify"), // this is a sanity check
