@@ -29953,3 +29953,22 @@ Log message:
 Added files:
 	chapel/test/types/type_variables/deitz/: test_swap.future 
 
+---------------------------------------------------------------------------
+
+05/09/05 09:32:02 -- deitz
+
+Log message:
+	Pulled in John's change to ResolveTypes.
+	
+	Made it so that strings are default-initialized even if noDefaultInit
+	is set.  This is because strings need to be initialized to avoid seg
+	faults with the way we assign them.
+	
+	Removed test_swap future as it now works.
+
+Modified files:
+	chapel/compiler/symtab/: resolveTypes.cpp 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+Removed files:
+	chapel/test/types/type_variables/deitz/: test_swap.future 
+
