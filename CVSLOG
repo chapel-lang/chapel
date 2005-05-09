@@ -30050,3 +30050,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/09/05 11:13:49 -- jplevyak
+
+Log message:
+	Fix up headers
+
+Modified files:
+	chapel/compiler/include/: analysis.h 
+
