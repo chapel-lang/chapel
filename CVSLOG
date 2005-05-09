@@ -30039,3 +30039,14 @@ Modified files:
 	chapel/compiler/main/: passlist.h 
 	chapel/compiler/traversals/: eliminateReturns.cpp 
 
+---------------------------------------------------------------------------
+
+05/09/05 11:09:55 -- jplevyak
+
+Log message:
+	Add partial support for x.foo += x (AssignOp with operator used
+	with a setter).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
