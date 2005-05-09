@@ -29983,3 +29983,18 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_clone_class3.chpl 
 	                                         test_clone_class3.good 
 
+---------------------------------------------------------------------------
+
+05/09/05 09:53:30 -- deitz
+
+Log message:
+	Added two more complicated class cloning tests.  One of them fails and
+	I have the future.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_clone_class4.chpl 
+	                                         test_clone_class4.good 
+	                                         test_clone_class5.chpl 
+	                                         test_clone_class5.future 
+	                                         test_clone_class5.good 
+
