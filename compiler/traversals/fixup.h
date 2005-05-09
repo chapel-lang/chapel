@@ -7,13 +7,13 @@
 
 class Fixup : public Traversal {
  public:
+  bool verifyParents;
   Vec<Expr*> parentExprs;
   Vec<Stmt*> parentStmts;
   Vec<Symbol*> parentSymbols;
-  int verify;
   Vec<Symbol*> defSymbols;
 
-  Fixup::Fixup();
+  Fixup::Fixup(bool init_verifyParents = false);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);

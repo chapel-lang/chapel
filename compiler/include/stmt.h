@@ -29,6 +29,7 @@ class Stmt : public BaseAST {
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void verify(void);
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
@@ -189,6 +190,7 @@ class CondStmt : public Stmt {
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void verify(void);
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);

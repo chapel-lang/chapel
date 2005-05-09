@@ -54,6 +54,7 @@
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/transformLetExprs.h"
+#include "../traversals/verify.h"
 #include "../traversals/verifyASTType.h"
 #include "../traversals/view.h"
 
@@ -121,6 +122,7 @@ REGISTER(ScopeResolveSymbols);
 REGISTER(SpecializeParenOpExprs);
 REGISTER(TestGetStuff);
 REGISTER(TransformLetExprs);
+REGISTER(Verify);
 REGISTER(VerifyASTType);
 REGISTER(View);
 STOP_PASSLIST_REGISTRATION

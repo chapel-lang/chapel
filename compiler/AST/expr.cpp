@@ -190,6 +190,11 @@ Expr* Expr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
 }
 
 
+void Expr::verify(void) {
+
+}
+
+
 void Expr::traverse(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
     traversal->preProcessExpr(this);
@@ -775,6 +780,17 @@ void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     init = dynamic_cast<UserInitExpr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefExpr::replaceChild(old, new)");
+  }
+}
+
+
+void DefExpr::verify(void) {
+  if (!sym) {
+    INT_FATAL(this, "DefExpr has no sym");
+  }
+
+  if (sym->next || sym->prev) {
+    INT_FATAL(this, "DefExpr::sym is a list");
   }
 }
 
@@ -1927,9 +1943,15 @@ void ForallExpr::setIndexScope(SymScope* init_indexScope) {
 
 
 Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new ForallExpr(domains->copyListInternal(clone, map, analysis_clone),
-                        indices->copyListInternal(clone, map, analysis_clone),
-                        forallExpr->copyInternal(clone, map, analysis_clone));
+  Symboltable::pushScope(SCOPE_FORALLEXPR);
+  ForallExpr* copy =
+    new ForallExpr(domains->copyListInternal(clone, map, analysis_clone),
+                   indices->copyListInternal(true, map, analysis_clone),
+                   forallExpr->copyInternal(clone, map, analysis_clone));
+  SymScope* scope = Symboltable::popScope();
+  scope->setContext(NULL, NULL, forallExpr);
+  copy->setIndexScope(scope);
+  return copy;
 }
 
 

@@ -226,6 +226,6 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
       def_expr = nextLink(DefExpr, def_expr);
     }
     
-    def_stmt->extract();
+    //    def_stmt->extract();
   }
 }

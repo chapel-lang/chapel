@@ -105,6 +105,7 @@ class Expr : public BaseAST {
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void verify(void); 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
@@ -300,6 +301,7 @@ class DefExpr : public Expr {
   DefExpr(Symbol* initSym, UserInitExpr* initInit = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void verify(void); 
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);

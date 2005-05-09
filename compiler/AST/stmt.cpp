@@ -118,6 +118,11 @@ void Stmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
+void Stmt::verify(void) {
+
+}
+
+
 void Stmt::traverse(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
     traversal->preProcessStmt(this);
@@ -876,6 +881,29 @@ void CondStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     elseStmt = dynamic_cast<Stmt*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in CondStmt::replaceChild(old, new)");
+  }
+}
+
+
+void CondStmt::verify(void) {
+  if (!condExpr) {
+    INT_FATAL(this, "CondStmt has no condExpr");
+  }
+
+  if (!thenStmt) {
+    INT_FATAL(this, "CondStmt has no thenStmt");
+  }
+
+  if (condExpr->next || condExpr->prev) {
+    INT_FATAL(this, "CondStmt::condExpr is a list");
+  }
+
+  if (thenStmt->next || thenStmt->prev) {
+    INT_FATAL(this, "CondStmt::thenStmt is a list");
+  }
+
+  if (elseStmt && (elseStmt->next || elseStmt->prev)) {
+    INT_FATAL(this, "CondStmt::elseStmt is a list");
   }
 }
 

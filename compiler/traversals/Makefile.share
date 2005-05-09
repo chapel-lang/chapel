@@ -39,6 +39,7 @@ TRAVERSALS_SRCS = \
 	transformLetExprs.cpp \
 	traversal.cpp \
 	updateSymbols.cpp \
+        verify.cpp \
 	verifyASTType.cpp \
         view.cpp
 

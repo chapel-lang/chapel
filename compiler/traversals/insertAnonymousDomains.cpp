@@ -7,20 +7,16 @@
 #include "stringutil.h"
 #include "view.h"
 
+
 void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
   currentStmt = stmt;
+  currentScope = NULL;
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
     if (Symbol* sym = def_stmt->typeDef()) {
       currentScope = sym->parentScope;
-    }
-    else if (Symbol* sym = def_stmt->varDef()) {
+    } else if (Symbol* sym = def_stmt->varDef()) {
       currentScope = sym->parentScope;
-    } else {
-      currentScope = NULL;
     }
-  }
-  else {
-    currentScope = NULL;
   }
 }
 

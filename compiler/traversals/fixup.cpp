@@ -6,12 +6,8 @@
 #include "symtab.h"
 
 
-static void verifyDefPoint(Symbol* sym);
-static void verifyParentScope(Symbol* sym);
-
-
-Fixup::Fixup(void) :
-  verify(false)
+Fixup::Fixup(bool init_verifyParents) :
+  verifyParents(init_verifyParents)
 {
   parentExprs.add(NULL);
   parentStmts.add(NULL);
@@ -43,7 +39,7 @@ static bool EQparentSymbol(Symbol* sym1, Symbol* sym2) {
 
 void Fixup::preProcessStmt(Stmt* stmt) {
   Symbol* parentSymbol = parentSymbols.v[parentSymbols.n-1];
-  if (verify) {
+  if (verifyParents) {
     if (!EQparentSymbol(stmt->parentSymbol, parentSymbol)) {
       INT_FATAL(stmt, "Stmt's parentSymbol is incorrect");
     }
@@ -52,7 +48,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
   }
 
   Stmt* parentStmt = parentStmts.v[parentStmts.n-1];
-  if (verify) {
+  if (verifyParents) {
     if (stmt->parentStmt != parentStmt) {
       INT_FATAL(stmt, "Stmt's parentStmt is incorrect");
     }
@@ -74,13 +70,13 @@ void Fixup::postProcessStmt(Stmt* stmt) {
 
 
 void Fixup::preProcessExpr(Expr* expr) {
-  if (verify && !expr->parentSymbol) {
+  if (verifyParents && !expr->parentSymbol) {
     INT_FATAL(expr, "Expr has no parentSymbol");
   }
 
 
   Symbol* parentSymbol = parentSymbols.v[parentSymbols.n-1];
-  if (verify) {
+  if (verifyParents) {
     if (!EQparentSymbol(expr->parentSymbol, parentSymbol)) {
       INT_FATAL(expr, "Expr's parentSymbol is incorrect");
     }
@@ -89,7 +85,7 @@ void Fixup::preProcessExpr(Expr* expr) {
   }
 
   Stmt* parentStmt = parentStmts.v[parentStmts.n-1];
-  if (verify) {
+  if (verifyParents) {
     if (expr->parentStmt != parentStmt) {
       INT_FATAL(expr, "Expr's parentStmt is incorrect");
     }
@@ -102,7 +98,7 @@ void Fixup::preProcessExpr(Expr* expr) {
   }
 
   Expr* parentExpr = parentExprs.v[parentExprs.n-1];
-  if (verify) {
+  if (verifyParents) {
     if (expr->parentExpr != parentExpr) {
       INT_FATAL(expr, "Expr's parentExpr is incorrect");
     }
@@ -119,10 +115,6 @@ void Fixup::preProcessExpr(Expr* expr) {
 
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
     defSymbols.add(def_expr->sym);
-    /*** Verify only one symbol per DefExpr ***/
-    if (def_expr->sym && def_expr->sym->next) {
-      INT_FATAL(def_expr, "Multiple symbols in DefExpr");
-    }
   }
 
   parentExprs.add(expr);
@@ -152,124 +144,17 @@ void Fixup::postProcessSymbol(Symbol* sym) {
     parentStmts.pop();
     parentSymbols.pop();
   }
-  if (verify) {
-    verifyParentScope(sym);
-    verifyDefPoint(sym);
-    if (dynamic_cast<TypeSymbol*>(sym)) {
-      if (sym->type->symbol != sym) {
-        INT_FATAL(sym, "(TypeSymbol)sym->type->symbol != sym!");
-      }
-    }
-  }
 }
 
 
 void Fixup::run(ModuleSymbol* moduleList) {
-  verify = !strcmp(args, "verify");
   ModuleSymbol* mod = moduleList;
   while (mod) {
     parentSymbols.add(mod);
     mod->startTraversal(this);
     parentSymbols.pop();
-
     mod = nextLink(ModuleSymbol, mod);
   }
-}
-
-
-/**
- **  Verify that Symbol::parentScope back pointer is correct
- **/
-static void verifyParentScope(Symbol* sym) {
-  /**
-   **  Unresolved symbols have no scope
-   **/
-  if (dynamic_cast<UnresolvedSymbol*>(sym)) {
-    return;
-  }
-
-  if (!sym->parentScope) {
-    return;
-  }
-
-  Symbol* match = Symboltable::lookupInScope(sym->name, sym->parentScope);
-
-  /**
-   **  Symbol is match found in scope
-   **/
-  if (sym == match) {
-    return;
-  }
-
-  /**
-   **  Symbol is function overloaded to match found in scope
-   **/
-  FnSymbol* fn_match = dynamic_cast<FnSymbol*>(match);
-  while (fn_match) {
-    if (sym == fn_match) {
-      return;
-    }
-    fn_match = fn_match->overload;
-  }
-
-  /**
-   **  Symbol is getter of match found in scope
-   **/
-  FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(sym);
-  if (fn_sym && fn_sym->_getter) {
-    match =
-      Symboltable::lookupInScope(sym->name, dynamic_cast<StructuralType*>(fn_sym->classBinding->type)->structScope);
-    if (fn_sym->_getter == match) {
-      return;
-    }
-  }
-
-  INT_FATAL(sym, "Incorrect parentScope for symbol '%s'", sym->name);
-}
-
-
-/**
- **  Verify that Symbol::defPoint back pointer is correct
- **/
-static void verifyDefPoint(Symbol* sym) {
-  if (typeid(*sym) == typeid(UnresolvedSymbol)) {
-    return;
-  }
-  if (typeid(*sym) == typeid(LabelSymbol)) {
-    return;
-  }
-  if (sym->parentScope && sym->parentScope->type == SCOPE_INTRINSIC) {
-    return;
-  }
-
-  Symbol* tmp = sym->defPoint->sym;
-  while (tmp) {
-    if (tmp == sym) {
-      return;
-    }
-    tmp = nextLink(Symbol, tmp);
-  }
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
-    Symbol* formals = fn->formals;
-    while (formals) {
-      if (formals == sym) {
-        return;
-      }
-      formals = nextLink(Symbol, formals);
-    }
-  }
-  if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym->defPoint->sym)) {
-    if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
-      EnumSymbol* tmp = enum_type->valList;
-      while (tmp) {
-        if (tmp == sym) {
-          return;
-        }
-        tmp = nextLink(EnumSymbol, tmp);
-      }
-    }
-  }
-  INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
 }
 
 
