@@ -29972,3 +29972,14 @@ Modified files:
 Removed files:
 	chapel/test/types/type_variables/deitz/: test_swap.future 
 
+---------------------------------------------------------------------------
+
+05/09/05 09:46:01 -- deitz
+
+Log message:
+	Added a slightly more complicated class cloning test and it works.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_clone_class3.chpl 
+	                                         test_clone_class3.good 
+
