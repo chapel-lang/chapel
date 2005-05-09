@@ -29998,3 +29998,22 @@ Added files:
 	                                         test_clone_class5.future 
 	                                         test_clone_class5.good 
 
+---------------------------------------------------------------------------
+
+05/09/05 10:10:44 -- jplevyak
+
+Log message:
+	Add a Verify after the elminateReturns pass.
+	
+	  - Verify did not catch that elminateReturns was using insertAfter
+	    on something in a CondExpr but not a BlockExpr which resulted in
+	    a bogus AST structure.   We should probably check that.
+	
+	Fixed eliminateReturns to insert a BlockStmt to wrap the assignment
+	  to _ret_val and the return.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+
