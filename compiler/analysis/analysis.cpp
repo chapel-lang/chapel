@@ -372,6 +372,7 @@ install_new_function(FnSymbol *f) {
   if1_finalize_closure(if1, f->asymbol->sym);
   build_type_hierarchy();
   finalize_symbols(if1);
+  finalize_types(if1);
   Fun *fun = new Fun(f->asymbol->sym);
   build_arg_positions(fun);
   pdb->add(fun);
@@ -1415,14 +1416,50 @@ is_this_member_access(BaseAST *a) {
   return 0;
 }
 
+static Sym *
+gen_assign_op(AssignOp *s) {
+  s->ainfo->rval = new_sym();
+  s->ainfo->rval->ast = s->ainfo;
+  s->ainfo->sym = s->left->ainfo->sym;
+  if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
+  Sym *op = 0;
+  Sym *rval = s->right->ainfo->rval;
+  switch (s->type) {
+    default: assert(!"case");
+    case GETS_NORM: op = 0; break;
+    case GETS_PLUS: op = if1_make_symbol(if1, "+"); break;
+    case GETS_MINUS: op = if1_make_symbol(if1, "-"); break;
+    case GETS_MULT: op = if1_make_symbol(if1, "*"); break;
+    case GETS_DIV: op = if1_make_symbol(if1, "/"); break;
+    case GETS_BITAND: op = if1_make_symbol(if1, "&"); break;
+    case GETS_BITOR: op = if1_make_symbol(if1, "|"); break;
+    case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
+  }
+  if (op) {
+    Sym *old_rval = rval;
+    rval = new_sym();
+    rval->ast = s->ainfo;
+    Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
+                       s->left->ainfo->rval, old_rval, rval);
+    c->ast = s->ainfo;
+  } else {
+    Sym *old_rval = rval;
+    rval = new_sym();
+    rval->ast = s->ainfo;
+    if1_move(if1, &s->ainfo->code, old_rval, rval, s->ainfo);
+  }
+  return rval;
+}
+
 static int
-gen_set_member(MemberAccess *ma, Expr *rhs, Expr *base_ast) {
+gen_set_member(MemberAccess *ma, AssignOp *base_ast) {
   FnSymbol *fn = ma->getStmt()->parentFunction();
   AInfo *ast = base_ast->ainfo;
-  ast->rval = new_sym();
-  ast->rval->ast = ast;
   if1_gen(if1, &ast->code, ma->base->ainfo->code);
-  if1_gen(if1, &ast->code, rhs->ainfo->code);
+  if1_gen(if1, &base_ast->ainfo->code, base_ast->left->ainfo->code);
+  ast->rval = new_sym();
+  ast->rval->ast = base_ast->ainfo;
+  Sym *rhs = gen_assign_op(base_ast);
   Code *c = 0;
   if (!fn || (!fn->_setter && (!fn->isConstructor || !is_this_member_access(ma)))) {
     char sel[1024];
@@ -1430,11 +1467,11 @@ gen_set_member(MemberAccess *ma, Expr *rhs, Expr *base_ast) {
     strcat(sel, ma->member->asymbol->sym->name);
     Sym *selector = if1_make_symbol(if1, sel);
     c = if1_send(if1, &ast->code, 4, 1, selector, method_symbol,
-                 ma->base->ainfo->rval, rhs->ainfo->rval, ast->rval);
+                 ma->base->ainfo->rval, rhs, ast->rval);
   } else {
     Sym *selector = if1_make_symbol(if1, ma->member->asymbol->sym->name);
     c = if1_send(if1, &ast->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
-                 if1_make_symbol(if1, ".="), selector, rhs->ainfo->rval, ast->rval);
+                 if1_make_symbol(if1, ".="), selector, rhs, ast->rval);
   }
   c->ast = ast;
   c->partial = Partial_NEVER;
@@ -1786,7 +1823,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         break;
       }
       if (s->left->astType == EXPR_MEMBERACCESS) {
-        if (gen_set_member(dynamic_cast<MemberAccess*>(s->left), s->right, s) < 0)
+        if (gen_set_member(dynamic_cast<MemberAccess*>(s->left), s) < 0)
           return -1;
         break;
       }
@@ -1799,32 +1836,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
           return -1;
         break;
       }
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      s->ainfo->sym = s->left->ainfo->sym;
       if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
-      if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
-      Sym *op = 0;
-      Sym *rval = s->right->ainfo->rval;
-      switch (s->type) {
-        default: assert(!"case");
-        case GETS_NORM: op = 0; break;
-        case GETS_PLUS: op = if1_make_symbol(if1, "+"); break;
-        case GETS_MINUS: op = if1_make_symbol(if1, "-"); break;
-        case GETS_MULT: op = if1_make_symbol(if1, "*"); break;
-        case GETS_DIV: op = if1_make_symbol(if1, "/"); break;
-        case GETS_BITAND: op = if1_make_symbol(if1, "&"); break;
-        case GETS_BITOR: op = if1_make_symbol(if1, "|"); break;
-        case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
-      }
-      if (op) {
-        Sym *old_rval = rval;
-        rval = new_sym();
-        rval->ast = s->ainfo;
-        Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
-                           s->left->ainfo->rval, old_rval, rval);
-        c->ast = s->ainfo;
-      }
+      Sym *rval = gen_assign_op(s);
       Variable *variable = dynamic_cast<Variable*>(s->left);
       Symbol *symbol = variable ? dynamic_cast<Symbol *>(variable->var) : 0;
       Sym *type = symbol ? symbol->type->asymbol->sym->type : 0;
@@ -2765,66 +2778,6 @@ constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s) {
   return constants.n;
 }
 
-int 
-resolve_symbol(UnresolvedSymbol* us, MemberAccess* ma, Symbol* &s) {
-  if (ma->ainfo->pnodes.n != 1)
-    return -1;
-  PNode *pn = ma->ainfo->pnodes.v[0];
-  if (pn->code->kind != Code_SEND)
-    return -2;
-  ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(ma->getStmt()->parentSymbol);
-  Vec<Fun *> *fns = 0;
-  if (mod)
-    fns = mod->initFn->asymbol->sym->fun->calls.get(pn);
-  else
-    fns = ma->getStmt()->parentSymbol->asymbol->sym->fun->calls.get(pn);
-  if (!fns) {
-    Sym *obj_type = pn->rvals.v[1]->type;
-    char *sel = pn->rvals.v[3]->sym->name;
-    Sym *iv = 0;
-    forv_Sym(s, obj_type->has) {
-      if (s->name == sel) {
-        if (!iv)
-          iv = s;
-        else if (iv != s)
-          return -3;
-      }
-    }
-    if (iv) {
-      BaseAST *sym = iv->asymbol->symbol;
-      if (!sym)
-        return -5;
-      s = dynamic_cast<Symbol*>(sym);
-      if (!s)
-        return -6;
-      return 0;
-    }
-    if (ma->parentExpr && ma->parentExpr->astType == EXPR_PARENOP) {
-      ParenOpExpr *p = dynamic_cast<ParenOpExpr*>(ma->parentExpr);
-      if (p->baseExpr == ma) {
-        if (p->ainfo->pnodes.n != 1)
-          return -7;
-        pn = p->ainfo->pnodes.v[0];
-        if (pn->code->kind != Code_SEND)
-          return -8;
-        fns = ma->getStmt()->parentFunction()->asymbol->sym->fun->calls.get(pn);
-        if (!fns)
-          return -9;
-        if (fns->n > 1)
-          return -10;
-        BaseAST *sym = fns->v[0]->sym->asymbol->symbol;
-        if (!sym)
-          return -11;
-        s = dynamic_cast<Symbol*>(sym);
-        if (!s)
-          return -12;
-        return 0;
-      }
-    }
-  } 
-  return -13;
-}
-
 int
 function_is_used(FnSymbol *fn) {
   if (if1->callback) {
@@ -2872,6 +2825,7 @@ AST_is_used(BaseAST *a, Symbol *s) {
 static void
 member_info(Sym *t, char *name, int *offset, Type **type) {
   int oresult = -1;
+  Sym *iv_type = 0;
   Vec<Sym *> ttypes, *types = 0;
   if (t->type_kind == Type_LUB)
     types = &t->has;
@@ -2884,20 +2838,30 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
       AVar *iv = cs->var_map.get(name);
       if (iv) {
         if (oresult >= 0 && oresult != iv->ivar_offset)
-          fail("missmatched offsets");
+          fail("missmatched member offsets");
         oresult = iv->ivar_offset;
+        if (iv_type && iv_type != iv->var->type)
+          fail("missmatched member types");
+        iv_type = iv->var->type;
       }
     }
   }
   *offset = oresult;
-  *type = dynamic_cast<Type *>(t->asymbol->symbol);
+  if (iv_type)
+    *type = dynamic_cast<Type *>(iv_type->asymbol->symbol);
 }
 
 void
-resolve_member_access(MemberAccess *ma, int *offset, Type **type) {
-  assert(ma->ainfo->pnodes.n == 1);
-  PNode *pn = ma->ainfo->pnodes.v[0];
-  assert(pn->code->kind == Code_SEND);
+resolve_member_access(Expr *e, int *offset, Type **type) {
+  if (e->ainfo->pnodes.n != 1)
+    return;
+  PNode *pn = e->ainfo->pnodes.v[0];
+  if (pn->code->kind != Code_SEND)
+    return;
+  if (pn->rvals.n < 4)
+    return;
+  if (pn->rvals.v[0]->sym != sym_operator)
+    return;
   Sym *obj_type = pn->rvals.v[1]->type;
   char *sel = pn->rvals.v[3]->sym->name;
   member_info(obj_type, sel, offset, type);
