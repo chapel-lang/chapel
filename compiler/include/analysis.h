@@ -89,10 +89,7 @@ int AST_is_used(BaseAST *a, Symbol *s = 0);
 int function_returns_void(FnSymbol *fn);
 void call_info(Expr *a, Vec<FnSymbol *> &fns);
 int constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s = 0);
-/* VVVVVV DEPRECATED VVVVVV */
-int resolve_symbol(UnresolvedSymbol *us, MemberAccess *ma, Symbol *&sym);
-/* ^^^^^^ DEPRECATED ^^^^^^ */
-void resolve_member_access(MemberAccess *ma, int *offset, Type **type); 
+void resolve_member_access(Expr *e, int *offset, Type **type); 
 void resolve_member(StructuralType *t, VarSymbol *v, int *offset, Type **type); 
 void structural_subtypes(Type *t, Vec<Type *> subtypes);
 
