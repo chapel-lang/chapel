@@ -30060,3 +30060,15 @@ Log message:
 Modified files:
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+05/09/05 12:45:23 -- jplevyak
+
+Log message:
+	Update tests for ret_val change
+
+Modified files:
+	chapel/test/flowanalysis/newast/: multiple_return.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
