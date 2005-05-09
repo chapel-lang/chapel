@@ -29931,3 +29931,15 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
 	chapel/compiler/symtab/: resolveTypes.cpp 
 
+---------------------------------------------------------------------------
+
+05/09/05 09:08:49 -- jplevyak
+
+Log message:
+	Use the Symbol::noDefaultInit flag instead of trying go guess.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+Removed files:
+	chapel/test/types/type_variables/deitz/: test_swap.future 
+
