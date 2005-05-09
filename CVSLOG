@@ -29891,3 +29891,43 @@ Removed files:
 	                                         test_clone_class2.future 
 	                                         test_clone_class2a.future 
 
+---------------------------------------------------------------------------
+
+05/08/05 18:51:47 -- jplevyak
+
+Log message:
+	Fix problem with ../test/functions/bradc/typefn2.chpl
+	
+	The problem was that I was not doing generic instantiation for pure
+	type arguments.
+	
+	Preceeding examples were of the form:
+	
+	pragma "fast" function foo(type t, x:t)
+	
+	where some real variable "x" takes on a value of a type variable
+	argument (which would be unnecessaty if we supported foo(x : ?t)).
+	
+	However, typefn2 is
+	
+	function min(type t): t
+	
+	And since I was keying off real variables before and this has non,
+	I needed to add another case.
+	
+	In fixing this I discovered that there is a bug in generic instantiation
+	and/or resolveTypes with respect to type variable return types.
+	
+	In order to patch it, I made analysis's return_type_info() always
+	override whatever was in the AST.  This should likely be looked at.
+	
+	The line is commented at resolveTypes.cpp:77:
+	
+	        fn->retType = analysisRetType; // JBP: inserted to fix typefn2.chpl May 8, 2005
+	
+	Removing this line causes typefn2.chpl to FATAL.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+
