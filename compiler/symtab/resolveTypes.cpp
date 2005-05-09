@@ -74,6 +74,7 @@ void ResolveTypes::processSymbol(Symbol* sym) {
             fn->retType = analysisRetType;
           }
         }
+        fn->retType = analysisRetType; // JBP: inserted to fix typefn2.chpl May 8, 2005
       } else {
         fn->retType = analysisRetType;
       }

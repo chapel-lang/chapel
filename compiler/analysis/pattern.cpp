@@ -630,6 +630,17 @@ unify_generic_type(Sym *gtype, Sym *type, Map<Sym *, Sym *> &substitutions) {
   return result;
 }
 
+static Sym *
+get_generic_type(Match *m, MPosition *fcpp) {
+  Sym *formal = m->fun->arg_syms.get(fcpp);
+  Sym *formal_type = m->fun->arg_syms.get(fcpp)->must_specialize;
+  if (formal_type && is_generic_type(formal_type)) 
+    return formal_type;
+  if (formal->type && is_generic_type(formal->type))
+    return formal->type;
+  return 0;
+}
+
 static void
 instantiate_formal_types(Match *m) {
   form_MPositionSym(x, m->formal_dispatch_types) {
@@ -651,9 +662,9 @@ generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> args) {
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     concrete_type = concrete_type->type;
-    Sym *type = m->fun->arg_syms.get(fcpp)->must_specialize;
-    if (type && is_generic_type(type)) {
-      if (!unify_generic_type(type, concrete_type, m->generic_substitutions))
+    Sym *generic_type = get_generic_type(m, fcpp);
+    if (generic_type) {
+      if (!unify_generic_type(generic_type, concrete_type, m->generic_substitutions))
         return 0;
       instantiate_formal_types(m);
     }

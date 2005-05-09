@@ -774,6 +774,8 @@ build_type(Type *t) {
     case TYPE_VARIABLE: {
       VariableType *tt = dynamic_cast<VariableType*>(t);
       tt->asymbol->sym->type_kind = Type_VARIABLE;
+      tt->asymbol->sym->meta_type->type_kind = Type_NONE;
+      tt->asymbol->sym->meta_type->type = tt->asymbol->sym;
       break;
     }
     case TYPE_NIL: {
