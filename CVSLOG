@@ -29943,3 +29943,13 @@ Modified files:
 Removed files:
 	chapel/test/types/type_variables/deitz/: test_swap.future 
 
+---------------------------------------------------------------------------
+
+05/09/05 09:09:27 -- jplevyak
+
+Log message:
+	Change future to bradc since it seems to be a codegen problem.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_swap.future 
+
