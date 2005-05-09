@@ -30072,3 +30072,43 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/09/05 12:47:52 -- deitz
+
+Log message:
+	Added a new pass called Verify.  This replaces uses of Fixup-verify in
+	the passlist.  It calls Fixup-verify.
+	
+	Fixup-verify only checked the parent pointers.  Verify will eventually
+	check alot more.
+	
+	In addition to future verify checks for every kind of expression and
+	statement in a verify method, this verify pass checks to make sure all
+	the symbols in a Symboltable traversal are also define in an AST
+	traversal.  I was running into huge problems before because things
+	showed up in one kind of traversal and not the other.
+	
+	This test is currently off because IndexTypes are not fully defined.
+	
+	Stopped extracting the DefStmt in InsertVariableInitializations so
+	that the verify continues to work.  Maybe this should be done by
+	changing what is verified in the passlist.
+	
+	I added the CondStmt::verify and DefExpr::verify procedures but
+	eventually we want verify procedures in all statements and
+	expressions.  As an example of what these will do, the CondStmt makes
+	sure that condExpr and thenStmt are non-null and makes sure that
+	condExpr, thenStmt, and elseStmt are single expressions/statements
+	rather than lists.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share fixup.cpp fixup.h 
+	                             insertAnonymousDomains.cpp 
+	                             insertVariableInitializations.cpp 
+Added files:
+	chapel/compiler/traversals/: verify.cpp verify.h 
+
