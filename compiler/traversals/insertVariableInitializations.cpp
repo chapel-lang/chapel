@@ -125,7 +125,7 @@ static void insert_domain_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
 
 static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
-  if (var->noDefaultInit) {
+  if (var->noDefaultInit && var->type != dtString) {
     return new NoOpStmt();
   } else if (type->defaultVal) {
     Expr* lhs = new Variable(var);
