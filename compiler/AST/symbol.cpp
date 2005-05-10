@@ -12,6 +12,7 @@
 #include "pattern.h"
 #include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/clearTypes.h"
+#include "../traversals/updateSymbols.h"
 
 Symbol *gNil = 0;
 
@@ -471,7 +472,7 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
     INT_FATAL(this, "Attempt to clone non-class type");
   }
 
-  map->clear();
+  if (map) map->clear();
 
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
 
@@ -913,46 +914,60 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
 }
 
 
-FnSymbol* FnSymbol::instantiate_generic(Map<Type *, Type *> *generic_substitutions) {
-  DefExpr* this_copy = NULL;
+FnSymbol* FnSymbol::instantiate_generic(Map<Type*,Type*>* generic_substitutions) {
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
   save_scope = Symboltable::setCurrentScope(parentScope);
+
   Map<BaseAST*,BaseAST*> map;
-  Expr* expr_copy = defPoint->copy(true, &map);
-  if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
-    for (int i = 0; i < map.n; i++) if (map.v[i].key) {
-      if (Symbol* sym = dynamic_cast<Symbol*>(map.v[i].key)) {
-        if (Type* new_type = generic_substitutions->get(sym->type)) {
-          Symbol* new_sym = dynamic_cast<Symbol*>(map.v[i].value);
-          if (dynamic_cast<TypeSymbol*>(sym)) {
-            new_sym->type = new UserType(new_type);
-            new_sym->type->addSymbol(new_sym);
-          } else {
-            new_sym->type = new_type;
-          }
+  DefExpr* this_copy =
+    dynamic_cast<DefExpr*>(defPoint->copy(true, &map));
+
+  TypeSymbol* clone = NULL;
+  if (isConstructor) {
+    clone = dynamic_cast<TypeSymbol*>(retType->symbol)->clone(NULL, NULL);
+    Map<BaseAST*,BaseAST*> map;
+    for (int i = 0; i < generic_substitutions->n; i++) {
+      if (generic_substitutions->v[i].key) {
+        map.put(generic_substitutions->v[i].key,
+                generic_substitutions->v[i].value);
+        map.put(generic_substitutions->v[i].key->symbol,
+                generic_substitutions->v[i].value->symbol);
+      }
+    }
+    TRAVERSE(clone->defPoint, new UpdateSymbols(&map), true);
+  }
+
+  for (int i = 0; i < generic_substitutions->n; i++) {
+    if (generic_substitutions->v[i].key) {
+      for (int j = 0; j < map.n; j++) {
+        if (map.v[j].key == generic_substitutions->v[i].key) {
+          generic_substitutions->v[i].key = dynamic_cast<Type*>(map.v[j].value);
         }
       }
     }
-    for (int i = 0; i < map.n; i++) if (map.v[i].key) {
-      if (Variable* var = dynamic_cast<Variable*>(map.v[i].key)) {
-        if (Type* new_type = generic_substitutions->get(var->var->type)) {
-          Variable* new_var = dynamic_cast<Variable*>(map.v[i].value);
-          if (dynamic_cast<TypeSymbol*>(var->var)) {
-            new_var->var = new_type->symbol;
-          } else {
-            new_var->var->type = new_type;
-          }
-        }
-      }
+  }
+
+  map.clear();
+
+  for (int i = 0; i < generic_substitutions->n; i++) {
+    if (generic_substitutions->v[i].key) {
+      map.put(generic_substitutions->v[i].key,
+              generic_substitutions->v[i].value);
+      map.put(generic_substitutions->v[i].key->symbol,
+              generic_substitutions->v[i].value->symbol);
     }
-    this_copy->sym->cname =
-      glomstrings(3, this_copy->sym->cname, "_instantiate_", intstring(uid++));
-    defPoint->insertBefore(this_copy);
   }
-  else {
-    INT_FATAL(this, "Error in FnSymbol::instantiate_generic");
+  if (isConstructor) {
+    map.put(retType->symbol, clone);
+    map.put(retType, clone->type);
   }
+  TRAVERSE(this_copy, new UpdateSymbols(&map), true);
+
+  this_copy->sym->cname =
+    glomstrings(3, this_copy->sym->cname, "_instantiate_", intstring(uid++));
+  defPoint->insertBefore(this_copy);
+  
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(this_copy->sym);
 }
