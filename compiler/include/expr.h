@@ -65,7 +65,7 @@ enum binOpType {
   BINOP_BY,
 
   BINOP_OTHER,
-
+  
   NUM_BINOPS
 };
 /************* IF CHANGING THIS, change cBinOp as well... *****************/
@@ -252,6 +252,7 @@ class BinOp : public Expr {
   binOpType type;
   Expr* left;
   Expr* right;
+  FnSymbol *resolved;
 
   BinOp(binOpType init_type, Expr* l, Expr* r);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
@@ -336,6 +337,9 @@ class MemberAccess : public Expr {
  public:
   Expr* base;
   Symbol* member;
+
+  Type* member_type;
+  int member_offset;
 
   MemberAccess(Expr* init_base, Symbol* init_member);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
@@ -648,5 +652,6 @@ class UserInitExpr : public Expr {
   void codegen(FILE* outfile);
 };
 
+int is_ref(Expr *e);
 
 #endif

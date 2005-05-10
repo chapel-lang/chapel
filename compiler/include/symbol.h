@@ -17,6 +17,7 @@ class MPosition;
 enum varType {
 //R:Maybe this should be VAR_NOTHING
   VAR_NORMAL,
+  VAR_REF,
   VAR_CONFIG,
   VAR_STATE
 };

@@ -53,7 +53,7 @@ static void add_var_constraint(AVar *av);
 
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
-  restrict(0), container(0), setters(0), setter_class(0), creation_set(0), 
+  restrict(0), container(0), setters(0), setter_class(0), creation_set(0), type(0),
   ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), is_lvalue(0),
   is_dead(0)
 {

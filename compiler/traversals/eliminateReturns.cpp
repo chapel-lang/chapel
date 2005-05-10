@@ -54,11 +54,14 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
 
     Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
     VarSymbol* retval = dynamic_cast<VarSymbol*>(retvalSym);
+    varType var_type = VAR_NORMAL;
+    if (is_Value_Type(retType) && stmt->parentFunction()->_getter)
+      var_type = VAR_REF;
     if (retval == NULL) {
       DefStmt* retValDefStmt = Symboltable::defineSingleVarDefStmt("_retval", 
                                                                    retType, 
                                                                    NULL, 
-                                                                   VAR_NORMAL,
+                                                                   var_type,
                                                                    VAR_VAR);
       retval = retValDefStmt->varDef();
       if (retType != dtString) {

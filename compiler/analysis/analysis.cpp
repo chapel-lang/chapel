@@ -1138,6 +1138,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   ast->sym = s;
   switch (var->varClass) {
     case VAR_NORMAL: break;
+    case VAR_REF: break;
     case VAR_CONFIG: s->is_external = 1; break;
     default: return show_error("unhandled variable class", ast);
   }
@@ -2840,9 +2841,9 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
         if (oresult >= 0 && oresult != iv->ivar_offset)
           fail("missmatched member offsets");
         oresult = iv->ivar_offset;
-        if (iv_type && iv_type != iv->var->type)
+        if (iv_type && iv_type != iv->type)
           fail("missmatched member types");
-        iv_type = iv->var->type;
+        iv_type = iv->type;
       }
     }
   }
@@ -2853,7 +2854,7 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
 
 void
 resolve_member_access(Expr *e, int *offset, Type **type) {
-  if (e->ainfo->pnodes.n != 1)
+  if (e->ainfo->pnodes.n < 1)
     return;
   PNode *pn = e->ainfo->pnodes.v[0];
   if (pn->code->kind != Code_SEND)

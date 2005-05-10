@@ -914,7 +914,8 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
   Expr(EXPR_BINOP),
   type(init_type),
   left(l),
-  right(r)
+  right(r),
+  resolved(0)
 {
 }
 
@@ -1033,6 +1034,13 @@ precedenceType BinOp::precedence(void) {
   return binOpPrecedence[this->type];
 }
 
+#if 0
+static void
+xx(void *x) {
+  if ((int)x == 0x1)
+    printf("here\n");
+}
+#endif
 
 AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   BinOp(BINOP_OTHER, l, r),
@@ -1040,7 +1048,6 @@ AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
 {
   astType = EXPR_ASSIGNOP;
 }
-
 
 Expr* AssignOp::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   return new AssignOp(type, left->copyInternal(clone, map, analysis_clone), right->copyInternal(clone, map, analysis_clone));
@@ -1056,6 +1063,21 @@ void AssignOp::print(FILE* outfile) {
   left->print(outfile);
   fprintf(outfile, " %s ", cGetsOp[type]);
   right->print(outfile);
+}
+
+
+int
+is_ref(Expr *e) {
+  if (Variable* var = dynamic_cast<Variable*>(e))
+    if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var->var))
+      if (vs->varClass == VAR_REF)
+        return true;
+  if (FnCall *fc = dynamic_cast<FnCall*>(e))
+    if (Variable *fn_var = dynamic_cast<Variable*>(fc->baseExpr))
+      if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fn_var->var))
+        if (fn->_getter && is_Value_Type(fn->retType))
+          return true;
+  return false;
 }
 
 
@@ -1118,10 +1140,15 @@ void AssignOp::codegen(FILE* outfile) {
         var->var->codegen(outfile);
         fprintf(outfile, "._field1");
       }
-    }else right->codegen(outfile);
+    } else right->codegen(outfile);
   } else {
     left->codegen(outfile);
     fprintf(outfile, " %s ", cGetsOp[type]);
+    bool left_ref = is_ref(left), right_ref = is_ref(right);
+    if (left_ref && !right_ref)
+      fprintf(outfile, "&");
+    if (right_ref && !left_ref)
+      fprintf(outfile, "*");
     right->codegen(outfile);
   }
 }
@@ -1158,11 +1185,15 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   Expr(EXPR_MEMBERACCESS),
   base(init_base),
   member(init_member)
-{ }
+{ 
+}
 
 
 Expr* MemberAccess::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new MemberAccess(base->copyInternal(clone, map, analysis_clone), member);
+  MemberAccess *ma = new MemberAccess(base->copyInternal(clone, map, analysis_clone), member);
+  ma->member_type = member_type;
+  ma->member_offset = member_offset;
+  return ma;
 }
 
 
@@ -1196,7 +1227,7 @@ Type* MemberAccess::typeInfo(void) {
 
 
 bool MemberAccess::isConst(void) {
-  return (base->isConst() || member->isConst());
+  return (base->isConst() && member->isConst());
 }
 
 
@@ -1215,12 +1246,40 @@ void MemberAccess::codegen(FILE* outfile) {
     fprintf(outfile, "?.?");
     member->codegen(outfile);
   } else {
-    base->codegen(outfile);
-    base_type->codegenMemberAccessOp(outfile);
-    member->codegen(outfile);
+    if (member_type) {
+      switch (base_type->astType) {
+        default: 
+          // (*((T*)(((char*)(&(p)))+offset)))
+          fprintf(outfile, "(*((");
+          member_type->codegen(outfile);
+          fprintf(outfile, "*)(((char*)(&(");
+          base->codegen(outfile);
+          fprintf(outfile, ")))+%d)))",member_offset);
+          break;
+        case TYPE_CLASS:
+          // (*((T*)(((char*)(p))+offset)))
+          fprintf(outfile, "(*((");
+          member_type->codegen(outfile);
+          fprintf(outfile, "*)(((char*)(");
+          base->codegen(outfile);
+          fprintf(outfile, "))+%d)))",member_offset);
+          break;
+        case TYPE_UNION:
+          // (*((T*)(((char*)(&p._chpl_union)))))
+          fprintf(outfile, "(*((");
+          member_type->codegen(outfile);
+          fprintf(outfile, "*)(((char*)(&(");
+          base->codegen(outfile);
+          fprintf(outfile, ")._chpl_union)))))");
+          break;
+      }
+    } else {
+      base->codegen(outfile);
+      base_type->codegenMemberAccessOp(outfile);
+      member->codegen(outfile);
+    }
   }
 }
-
 
 
 ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
@@ -1477,14 +1536,24 @@ void FnCall::codegen(FILE* outfile) {
         fprintf(outfile, ", ");
       }
       bool ampersand = formals->requiresCPtr();
+      bool star = false;
+      if (Variable *v = dynamic_cast<Variable*>(actuals))
+        if (VarSymbol *vs = dynamic_cast<VarSymbol*>(v->var))
+          if (vs->varClass == VAR_REF) {
+            if (ampersand)
+              ampersand = false;
+            else
+              star = true;
+          }
       if (ampersand) {
         fprintf(outfile, "&(");
+      } else if (star) {
+        fprintf(outfile, "*(");
       }
       actuals->codegen(outfile);
-      if (ampersand) {
+      if (ampersand || star) {
         fprintf(outfile, ")");
       }
-
       formals = nextLink(ParamSymbol, formals);
       actuals = nextLink(Expr, actuals);
     }

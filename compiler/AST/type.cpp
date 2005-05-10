@@ -1297,7 +1297,20 @@ void StructuralType::traverseDefType(Traversal* traversal) {
 
 int
 is_Scalar_Type(Type *t) {
-  return t != dtUnknown && t != dtString && (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
+  return t && t != dtUnknown && t != dtString && 
+    (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
+}
+
+
+int
+is_Value_Type(Type *t) {
+  return t->astType == TYPE_RECORD || t->astType == TYPE_UNION;
+}
+
+
+int
+is_Reference_Type(Type *t) {
+  return t && t->astType == TYPE_CLASS;
 }
 
 

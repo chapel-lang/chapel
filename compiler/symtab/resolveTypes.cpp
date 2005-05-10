@@ -76,9 +76,14 @@ void ResolveTypes::processSymbol(Symbol* sym) {
         fn->retType = analysisRetType;
       }
     }
-  } else if (sym->type == dtUnknown) {
+  } else if (sym->type == dtUnknown || 
+             (analyzeAST && sym->type && !is_Scalar_Type(sym->type) && 
+              sym->type->astType != TYPE_USER))
+  {
     if (analyzeAST) {
-      sym->type = type_info(sym);
+      Type *t = type_info(sym);
+      if (t != dtUnknown)
+        sym->type = t;
       if (checkAnalysisTypeinfo) {
         if (sym->type == dtUnknown) {
           INT_FATAL(sym, "Analysis unable to determine type of '%s'", sym->cname);

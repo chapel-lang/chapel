@@ -77,6 +77,33 @@ ResolveSymbols::ResolveSymbols() {
   whichModules = MODULES_COMMON_AND_USER;
 }
 
+binOpType
+gets_to_binop(getsOpType i) {
+  switch (i) {
+    case GETS_PLUS: return BINOP_PLUS;
+    case GETS_MINUS: return BINOP_MINUS;
+    case GETS_MULT: return BINOP_MULT;
+    case GETS_DIV: return BINOP_DIV;
+    case GETS_BITAND: return BINOP_BITAND;
+    case GETS_BITOR: return BINOP_BITOR;
+    case GETS_BITXOR: return BINOP_BITXOR;
+    default: 
+      assert(!"bogus case");
+  }
+  return BINOP_PLUS;
+}
+
+static int
+is_builtin(FnSymbol *fn) {
+  Pragma* pr = fn->defPoint->parentStmt->pragmas;
+  while (pr) {
+    if (!strcmp(pr->str, "builtin")) {
+      return 1;
+    }
+    pr = dynamic_cast<Pragma *>(pr->next);
+  }
+  return 0;
+}
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (typeid(*expr) == typeid(ParenOpExpr)) {
@@ -85,7 +112,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 
     if (analyzeAST) {
       call_info(paren, fns);
-      if (fns.n == 0) {
+      if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
         call_info(paren->baseExpr, fns);
       }
       if (fns.n != 1) {
@@ -103,6 +130,60 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     expr->replace(new FnCall(function, arguments));
   }
 
+  if (AssignOp* aop = dynamic_cast<AssignOp*>(expr)) {
+    if (analyzeAST) {
+      if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(aop->left)) {
+        resolve_member_access(aop, &member_access->member_offset, 
+                              &member_access->member_type);
+        if (!member_access->member_type) {
+          Vec<FnSymbol *> fns;
+          call_info(aop, fns);
+          if (fns.n) {
+            FnSymbol *f_op = 0, *f_assign = 0;
+            if (aop->type == GETS_NORM) {
+              if (fns.n != 1)
+                INT_FATAL(expr, "Unable to resolve member access");
+              f_assign = fns.v[0];
+            } else {
+              if (fns.n != 2)
+                INT_FATAL(expr, "Unable to resolve member access");
+              char n = *fns.v[0]->name;
+              if (((n > ' ' && n < '0') || (n > '9' && n < 'A') ||
+                   (n > 'Z' && n < 'a') || (n > 'z'))
+                  && n != '_'&& n != '?' && n != '$') {
+                f_op = fns.v[0];
+                f_assign = fns.v[1];
+              } else {
+                f_op = fns.v[1];
+                f_assign = fns.v[0];
+              }
+            }
+            Expr *rhs = aop->right->copyList();
+            if (f_op) {
+              if (!is_builtin(f_op)) {
+                Expr* op_arguments = member_access->copy();
+                op_arguments = appendLink(op_arguments, rhs);
+                Expr* op_function = new Variable(f_op);
+                rhs = new FnCall(op_function, op_arguments);
+              } else {
+                BinOp *bop = new BinOp(gets_to_binop(aop->type), aop->left, aop->right);
+                bop->resolved = f_op;
+                rhs = bop;
+              }
+            }
+            Expr* assign_arguments = member_access->base->copy();
+            assign_arguments = appendLink(assign_arguments, rhs);
+            Expr* assign_function = new Variable(f_assign);
+            expr->replace(new FnCall(assign_function, assign_arguments));
+            if (aop->left->astType == EXPR_MEMBERACCESS) {
+              expr = aop->left;
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
 
     /***
@@ -113,26 +194,42 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         return;
       }
     }
-
-    if (dynamic_cast<UnresolvedSymbol*>(member_access->member)) {
-      if (analyzeAST) {
-        /*** Need to use call_info here once getters are working ***/
-      }
-
-      StructuralType* struct_scope =
-        dynamic_cast<StructuralType*>(member_access->base->typeInfo());
-      if (struct_scope) {
-        member_access->member = 
-          Symboltable::lookupInScope(member_access->member->name,
-                                     struct_scope->structScope);
-
-        if (dynamic_cast<FnSymbol*>(member_access->member)) {
+    if (analyzeAST) {
+      if (dynamic_cast<VarInitExpr*>(expr->parentExpr))
+        return;
+      if (AssignOp* aop = dynamic_cast<AssignOp*>(expr->parentExpr))
+        if (aop->left == expr)
+          return;
+      resolve_member_access(member_access, &member_access->member_offset, 
+                            &member_access->member_type);
+      if (!member_access->member_type) {
+        Vec<FnSymbol *> fns;
+        call_info(member_access, fns);
+        if (fns.n) {
+          assert(fns.n == 1); // we don't handle dispatch yet
           Expr* arguments = member_access->base->copy();
-          Expr* function = new Variable(member_access->member);
+          Expr* function = new Variable(fns.v[0]);
           expr->replace(new FnCall(function, arguments));
+        } else
+          INT_FATAL(expr, "Unable to resolve member access");
+      }
+    } else {
+      if (dynamic_cast<UnresolvedSymbol*>(member_access->member)) {
+        StructuralType* struct_scope =
+          dynamic_cast<StructuralType*>(member_access->base->typeInfo());
+        if (struct_scope) {
+          member_access->member = 
+            Symboltable::lookupInScope(member_access->member->name,
+                                       struct_scope->structScope);
+
+          if (dynamic_cast<FnSymbol*>(member_access->member)) {
+            Expr* arguments = member_access->base->copy();
+            Expr* function = new Variable(member_access->member);
+            expr->replace(new FnCall(function, arguments));
+          }
+        } else {
+          INT_FATAL(expr, "Cannot resolve MemberAccess");
         }
-      } else {
-        INT_FATAL(expr, "Cannot resolve MemberAccess");
       }
     }
   }

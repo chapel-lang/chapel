@@ -104,7 +104,10 @@ void ResolveOverloadedOperators::postProcessExpr(Expr* expr) {
   }
 
   Vec<FnSymbol*> fns;
-  call_info(op, fns);
+  if (op->resolved)
+    fns.add(op->resolved);
+  else
+    call_info(op, fns);
   if (fns.n != 1) {
     if (fns.n == 0) {
       INT_FATAL(expr, "Operator has no function");

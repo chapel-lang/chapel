@@ -676,8 +676,40 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
 }
 
 static void
+concretize_avar(AVar *av) {
+  Sym *sym = 0, *type = 0;
+  if (av->type)
+    return;
+  forv_CreationSet(cs, *av->out) if (cs) {
+    if (!sym)
+      sym = cs->type;
+    else {
+      if (sym != cs->type) {
+        if (!type) {
+          type = new_Sym();
+          type->type_kind = Type_LUB;
+          type->has.set_add(sym);
+        }
+        type->has.set_add(cs->type);
+      }
+    }
+  }
+  if (!type)
+    av->type = sym;
+  else {
+    type->has.set_to_vec();
+    if (type->has.n == 1)
+      av->type = type->has.v[0];
+    else
+      av->type = if1->callback->make_LUB_type(type);
+  }
+}
+
+static void
 concretize_var_type(Var *v) {
   Sym *sym = 0, *type = 0;
+  if (v->type)
+    return;
   for (int i = 0; i < v->avars.n; i++) {
     if (!v->avars.v[i].key)
       continue;
@@ -715,6 +747,10 @@ static void
 resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
   for (int i = 0; i < css_sets.n; i++) {
     Vec<CreationSet *> *eqcss = css_sets.v[i];
+    forv_CreationSet(cs, *eqcss) if (cs) {
+      forv_AVar(av, cs->vars)
+        concretize_avar(av);
+    }
     Sym *sym = eqcss->first()->type;
     if (sym->incomplete) {
       sym->incomplete = 0;

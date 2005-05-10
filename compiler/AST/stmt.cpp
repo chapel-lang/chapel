@@ -427,6 +427,11 @@ void ReturnStmt::codegen(FILE* outfile) {
   fprintf(outfile, "return");
   if (expr) {
     fprintf(outfile, " ");
+    if (is_ref(expr)) {
+      FnSymbol *fn = parentFunction();
+      if (!fn->_getter || !is_Value_Type(fn->retType))
+        fprintf(outfile, "*");
+    }
     expr->codegen(outfile);
   }
   fprintf(outfile, ";");

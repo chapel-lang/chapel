@@ -407,5 +407,7 @@ void initTypes(void);
 void findInternalTypes(void);
 Type *find_or_make_sum_type(Vec<Type *> *types);
 int is_Scalar_Type(Type *t);
+int is_Reference_Type(Type *t);
+int is_Value_Type(Type *t);
 
 #endif

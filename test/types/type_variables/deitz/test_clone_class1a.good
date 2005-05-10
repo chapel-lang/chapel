@@ -1,6 +1,6 @@
-test_clone_class1a.chpl:1: class foo:: 'x' has mixed basic types:( null float64 int64 ) 
 error: '_retval' has mixed basic types:( null float64 int64 ) 
   called from test_clone_class1a.chpl:4
+test_clone_class1a.chpl:1: class foo:: 'x' has mixed basic types:( null float64 int64 ) 
 <internal>:0: expression has mixed basic types:( null float64 int64 ) 
   called from test_clone_class1a.chpl:4
 <internal>:0: expression has mixed basic types:( null float64 int64 ) 

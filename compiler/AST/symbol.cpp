@@ -336,9 +336,11 @@ void VarSymbol::codegenDef(FILE* outfile) {
     fprintf(outfile, "const ");
   }
   type->codegen(outfile);
+  if (varClass == VAR_REF)
+    fprintf(outfile, "*");
   fprintf(outfile, " ");
   this->codegen(outfile);
-  if (this->initializable()) {
+  if (this->initializable() && varClass != VAR_REF) {
     type->codegenSafeInit(outfile);
   }
   fprintf(outfile, ";\n");
@@ -651,6 +653,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   }
   FnSymbol* copy = new FnSymbol(copy_name, classBinding);
   copy->method_type = method_type;
+  copy->isConstructor = isConstructor;
   Symboltable::startFnDef(copy);
   if (_getter) {
     copy->name = copystring(name);
@@ -732,6 +735,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   wrapperFn->cname = glomstrings(3, cname, "_coercion_wrapper_", intstring(uid++));
   wrapperFn = Symboltable::startFnDef(wrapperFn);
   wrapperFn->method_type = method_type;
+  wrapperFn->isConstructor = isConstructor;
 
   Symbol* wrapperFormals = NULL;
   for (Symbol* formal = formals; formal; formal = nextLink(Symbol, formal)) {
@@ -783,6 +787,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
 
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   wrapper_symbol = new FnSymbol(name);
+  wrapper_symbol->method_type = method_type;
+  wrapper_symbol->isConstructor = isConstructor;
   wrapper_symbol->cname =
     glomstrings(3, cname, "_default_params_wrapper_", intstring(uid++));
   wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
@@ -866,6 +872,8 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
   FnSymbol* wrapper_fn = new FnSymbol(name);
   wrapper_fn->cname = glomstrings(3, cname, "_ord_wrapper_", intstring(uid++));
   wrapper_fn = Symboltable::startFnDef(wrapper_fn);
+  wrapper_fn->method_type = method_type;
+  wrapper_fn->isConstructor = isConstructor;
 
   Symbol* wrapper_formals = NULL;
   for (int i = 0; i < formals_to_actuals->n - 1; i++) {
@@ -978,6 +986,8 @@ void FnSymbol::codegenHeader(FILE* outfile) {
     INT_WARNING(this, "return type unknown, calling analysis late");
   }
   retType->codegen(outfile);
+  if (is_Value_Type(retType) && _getter)
+    fprintf(outfile, "*");
   fprintf(outfile, " ");
   this->codegen(outfile);
   fprintf(outfile, "(");
