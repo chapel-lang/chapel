@@ -30248,3 +30248,26 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: verify.cpp 
 
+---------------------------------------------------------------------------
+
+05/10/05 12:37:29 -- deitz
+
+Log message:
+	Cleaned up types by removing various subtypes of Type::codegen() that
+	did the same thing.
+	
+	Removed StructuralType::codegen() which used to check to see if it was
+	not dead.  Since dead types are now really removed, this is no longer
+	necessary.
+	
+	It looks like analysis returns a dead type (for example, for the
+	default type initialization variable) so in resolveTypes.cpp, I added
+	a hack to make the type dtNil if the type analysis returns is dead.
+	John, please take a look at this.  This might not be a hack and may be
+	necessary (because this variable uses noDefaultInit).
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+
