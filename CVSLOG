@@ -30123,3 +30123,80 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/10/05 09:38:15 -- jplevyak
+
+Log message:
+	This is a relatively large change, and it is not cleaned up, but I thought
+	I had better checkpoint it now rather than risk divergence.
+	
+	The main change is to support setters and getters, but the changes are more
+	far reaching than that.
+	
+	1. Add a function is_ref(Expr*) which determines whether or not an expression
+	   returns a "reference".   This will be made into a member function.
+	
+	2. Using is_ref and a companion function on FnSymbols, as well as the exiting
+	   function requiresCPtr(), do the appropriate impedence matching between
+	   expressions, function arguments and function return values.
+	
+	3. Getters return reference when the thing being "got" is a value type.
+	
+	4. Members access are resolved into their component "member_type" and
+	   "member_offset" which allows for polymorphic functions.
+	
+	5. Codegen for member accesses uses the "member_type" and "member_offset"
+	   information when available.
+	
+	6. Added a new varType (varClass) VAR_REF which indicates that the
+	   variable is holding a reference.
+	
+	   A corresponding flag will be put into functions to indicate that they
+	   return references.
+	
+	7. ensured that "isConstructor" as well as "method_type" are preserved in
+	   wrappers and instantiated generics
+	
+	8. Add functions on types is_Value_Type and is_Reference_Type.
+	
+	   These could be made into member functions if we want (I wasn't
+	   planning on it).
+	
+	9. Concretized the ivars for each CreationSet coming out of analysis...
+	   this is used to provided more precise variable by variable ivar
+	   type and offset information.
+	
+	10. All AVar's now have a concretized type variable (though currently
+	    only instance variable AVar's use it).
+	
+	11. resolveTypes now more aggressively uses the type information provided
+	    by analysis.  In particular, analysis can override decalred reference types
+	    (since they are only bounds anyway).  Currently I still defer to
+	    declared scalar types since unused scalars would otherwise not have a
+	    type from analysis (we could handle these cases specially, perhaps
+	    emitting a warning).
+	
+	12. insertFunctionTemps and eliminateReturns now uses the new VAR_REF
+	    where appropriate
+	
+	13. Expr(s) can be pre-resolved by setting the "resolved" field.  This
+	    was introduced to deal with the phase ordering problem between
+	    resolveOverloadedOperators and resolveSymbols... if these passes
+	    are unified this could be removed.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp if1.cpp 
+	chapel/compiler/include/: expr.h fa.h symbol.h type.h 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             insertFunctionTemps.cpp 
+	                             removeNamedParameters.cpp 
+	                             resolveOverloadedOperators.cpp 
+	                             resolveSymbols.cpp 
+	chapel/test/classes/deitz/: test_union2.good test_union4.good 
+	                            test_union_method3.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
