@@ -30271,3 +30271,30 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/symtab/: resolveTypes.cpp 
 
+---------------------------------------------------------------------------
+
+05/10/05 15:14:48 -- deitz
+
+Log message:
+	Modified Symboltable::lookup etc. to lookup symbols in the class
+	type's scope at the appropriate point when looking up symbols in
+	methods.  The appropriate point is after the symbols in the parameter
+	list of the method are looked at.
+	
+	Simplified ScopeResolveSymbols by removing code to resolve symbols in
+	methods since this is now in lookup.
+	
+	Added a new kind of symbol called a ForwardingSymbol.  These symbols
+	will eventually be included in scopes that use the "use" keyword.  The
+	plan is that in the AST, the Variable* will refer directly to the
+	symbol that it is using.  It will also contain a ForwardingSymbol
+	field that will be used in code generation if the symbol was renamed.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+	                             verifyASTType.cpp 
+
