@@ -30237,3 +30237,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+05/10/05 11:48:46 -- deitz
+
+Log message:
+	Made small fix to verification though it is on the commented out part
+	of it.
+
+Modified files:
+	chapel/compiler/traversals/: verify.cpp 
+
