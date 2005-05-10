@@ -113,7 +113,7 @@
 %type <vt> vardecltag
 %type <pt> formaltag
 
-%type <boolval> fortype
+%type <boolval> fortype fnretref
 %type <pdt> type domainType indexType arrayType tupleType seqType
 %type <tupledt> tupleTypes
 %type <pdt> vardecltype typevardecltype fnrettype
@@ -402,6 +402,15 @@ fnrettype:
     { $$ = $2; }
 ;
 
+
+fnretref:
+  /* empty */
+    { $$ = false; }
+| TVAR
+    { $$ = true; }
+;
+
+
 fname:
   identifier
 | TASSIGN 
@@ -467,13 +476,13 @@ fndecl:
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2));
     }
-                       TLP formals TRP fnrettype
+                       TLP formals TRP fnretref fnrettype
     {
-      Symboltable::continueFnDef($<fnsym>3, $5, $7);
+      Symboltable::continueFnDef($<fnsym>3, $5, $8, $7);
     }
                                                  function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $9)));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $10)));
     }
 |
   TFUNCTION identifier TDOT fname
@@ -481,26 +490,26 @@ fndecl:
       $<fnsym>$ =
         Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
     }
-                                  TLP formals TRP fnrettype
+                                  TLP formals TRP fnretref fnrettype
     {
-      Symboltable::continueFnDef($<fnsym>5, $7, $9);
+      Symboltable::continueFnDef($<fnsym>5, $7, $10, $9);
     }
                                                             function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $11)));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $12)));
     }
 |
   TFUNCTION fname
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2), true);
     }
-                  fnrettype
+                  fnretref fnrettype
     {
-      Symboltable::continueFnDef($<fnsym>3, NULL, $4);
+      Symboltable::continueFnDef($<fnsym>3, NULL, $5, $4);
     }
                             function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $6)));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $7)));
     }
 ;
 

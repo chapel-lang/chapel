@@ -136,6 +136,7 @@ class Expr : public BaseAST {
 
   bool isRead(void);
   bool isWritten(void);
+  bool isRef(void);
   Stmt* Expr::getStmt();
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
@@ -652,6 +653,5 @@ class UserInitExpr : public Expr {
   void codegen(FILE* outfile);
 };
 
-int is_ref(Expr *e);
 
 #endif

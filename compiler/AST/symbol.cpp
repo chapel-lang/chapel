@@ -615,10 +615,11 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
 }
 
 
-void FnSymbol::continueDef(Symbol* init_formals, Type* init_retType) {
+void FnSymbol::continueDef(Symbol* init_formals, Type* init_retType, bool isRef) {
   formals = init_formals;
   type = init_retType;
   retType = init_retType;
+  retRef = isRef;
 }
 
 
@@ -662,7 +663,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
   Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
-  Symboltable::continueFnDef(copy, new_formals, type);
+  Symboltable::continueFnDef(copy, new_formals, type, retRef);
   BlockStmt* new_body = 
     dynamic_cast<BlockStmt*>(body->copyList(clone, map, analysis_clone));
   if (body != NULL && new_body == NULL) {
@@ -745,7 +746,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       wrapperFormals->type = coercionSubstitution->type;
     }
   }
-  Symboltable::continueFnDef(wrapperFn, wrapperFormals, retType);
+  Symboltable::continueFnDef(wrapperFn, wrapperFormals, retType, retRef);
 
   BlockStmt* wrapperBlock = Symboltable::startCompoundStmt();
 
@@ -850,7 +851,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
   }
   SymScope* block_scope = Symboltable::popScope();
   BlockStmt* wrapper_block = new BlockStmt(wrapper_body, block_scope);
-  Symboltable::continueFnDef(wrapper_symbol, wrapper_formals, retType);
+  Symboltable::continueFnDef(wrapper_symbol, wrapper_formals, retType, retRef);
   block_scope->stmtContext = wrapper_block;
   DefExpr* wrapper_expr = new DefExpr(Symboltable::finishFnDef(wrapper_symbol,
                                                                wrapper_block));
@@ -888,7 +889,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
     }
   }
 
-  Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType);
+  Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType, retRef);
 
   Expr* actuals = NULL;
   for (int i = 0; i < formals_to_actuals->n - 1; i++) {

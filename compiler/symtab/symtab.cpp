@@ -669,8 +669,8 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
 
 
 void Symboltable::continueFnDef(FnSymbol* fnsym, Symbol* formals, 
-                                Type* retType) {
-  fnsym->continueDef(formals, retType);
+                                Type* retType, bool isRef) {
+  fnsym->continueDef(formals, retType, isRef);
   Symboltable::pushScope(SCOPE_FUNCTION);
 }
 

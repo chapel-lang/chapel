@@ -1034,14 +1034,6 @@ precedenceType BinOp::precedence(void) {
   return binOpPrecedence[this->type];
 }
 
-#if 0
-static void
-xx(void *x) {
-  if ((int)x == 0x1)
-    printf("here\n");
-}
-#endif
-
 AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   BinOp(BINOP_OTHER, l, r),
   type(init_type)
@@ -1066,13 +1058,13 @@ void AssignOp::print(FILE* outfile) {
 }
 
 
-int
-is_ref(Expr *e) {
-  if (Variable* var = dynamic_cast<Variable*>(e))
+bool
+Expr::isRef(void) {
+  if (Variable* var = dynamic_cast<Variable*>(this))
     if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var->var))
       if (vs->varClass == VAR_REF)
         return true;
-  if (FnCall *fc = dynamic_cast<FnCall*>(e))
+  if (FnCall *fc = dynamic_cast<FnCall*>(this))
     if (Variable *fn_var = dynamic_cast<Variable*>(fc->baseExpr))
       if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fn_var->var))
         if (fn->_getter && is_Value_Type(fn->retType))
@@ -1144,7 +1136,7 @@ void AssignOp::codegen(FILE* outfile) {
   } else {
     left->codegen(outfile);
     fprintf(outfile, " %s ", cGetsOp[type]);
-    bool left_ref = is_ref(left), right_ref = is_ref(right);
+    bool left_ref = left->isRef(), right_ref = right->isRef();
     if (left_ref && !right_ref)
       fprintf(outfile, "&");
     if (right_ref && !left_ref)
