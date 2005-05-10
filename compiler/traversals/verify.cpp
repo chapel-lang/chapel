@@ -89,8 +89,7 @@ void Verify::run(ModuleSymbol* moduleList) {
     if (sym &&
         sym->parentScope->type != SCOPE_INTRINSIC &&
         !dynamic_cast<ModuleSymbol*>(sym) &&
-        !dynamic_cast<EnumSymbol*>(sym) &&
-        !dynamic_cast<LabelSymbol*>(sym) &&
+        !dynamic_cast<SumType*>(sym->type) &&
         strcmp("__init_entryPoint", sym->name)) {
       //      INT_FATAL(sym, "Symbol not in traversed DefExpr");
     }
