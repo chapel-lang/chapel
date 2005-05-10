@@ -30112,3 +30112,14 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: verify.cpp verify.h 
 
+---------------------------------------------------------------------------
+
+05/10/05 08:46:45 -- jplevyak
+
+Log message:
+	Fix a couple of mismatched error messages.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
