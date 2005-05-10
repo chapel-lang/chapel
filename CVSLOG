@@ -30200,3 +30200,30 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/10/05 10:22:44 -- jplevyak
+
+Log message:
+	Fixed those annoying test_clone_class1a problems... sorting Sum type output
+	to normalize it.
+	Made "is_ref" a member Expr::isRef().
+	Added support for
+	
+	function foo() var : integer {
+	}
+	
+	to the parser to indicate that the function foo() is both a setter
+	and a getter.
+	
+	(currently not supported beyond the parser
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/compiler/include/: expr.h symbol.h symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
