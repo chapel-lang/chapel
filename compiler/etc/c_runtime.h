@@ -32,6 +32,7 @@ typedef void *_CG_ref;
 #define _CG_make_tuple _CG_symbol
 #define _CG_Symbol(_x, _y) ((void*)(uintptr_t)_x)
 #define null ((void*)0)
+#define bool int
 #define __init ((void*)0)
 
 #define _CG_prim_coerce(_t, _v) ((_t)_v)

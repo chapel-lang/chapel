@@ -18,9 +18,11 @@
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::m(compSampler.chpl:1) ( int64 )
 ::main ( main )
 ::mod(internal_prelude.chpl:0) ( mod )
 ::n(compSampler.chpl:2) ( int64 )
 ::o(compSampler.chpl:3) ( int64 )
+::true(prelude.chpl:0) ( bool )
 globals

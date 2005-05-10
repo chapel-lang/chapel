@@ -8,3 +8,5 @@ function f rec.v:1
 globals
 operator::a(prelude.v:0) ( int32 )
 operator::b(prelude.v:0) ( int32 )
+system::__nil__(prelude.v:0) ( int32 )
+system::reply(prelude.v:0) ( reply )

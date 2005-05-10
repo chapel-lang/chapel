@@ -9,7 +9,9 @@
 ::a(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 ::x(pareninit.chpl:1) ( int64 )
 ::y(pareninit.chpl:2) ( int64 )
 globals

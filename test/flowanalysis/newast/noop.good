@@ -12,5 +12,6 @@
 ::foo(noop.chpl:4) ( foo )
 ::i(noop.chpl:8) ( int64 )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 function foo noop.chpl:4
 globals

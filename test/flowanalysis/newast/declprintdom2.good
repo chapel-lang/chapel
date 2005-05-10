@@ -12,6 +12,7 @@
 ::__init_prelude ( __init_prelude )
 ::a(internal_prelude.chpl:0) ( _domain_1d (declprintdom2.chpl:9) )
 ::b(internal_prelude.chpl:0) ( Domain )
+::false(prelude.chpl:0) ( bool )
 ::m4(declprintdom2.chpl:1) ( int64 )
 ::m5(declprintdom2.chpl:2) ( int64 )
 ::m6(declprintdom2.chpl:3) ( int64 )
@@ -19,4 +20,5 @@
 ::m8(declprintdom2.chpl:5) ( int64 )
 ::m9(declprintdom2.chpl:6) ( int64 )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 globals

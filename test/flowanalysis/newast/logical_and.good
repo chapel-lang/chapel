@@ -7,7 +7,9 @@
 ::and(internal_prelude.chpl:0) ( and )
 ::answer(logical_and.chpl:3) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::main ( main )
 ::o(logical_and.chpl:1) ( int64 )
 ::p(logical_and.chpl:2) ( int64 )
+::true(prelude.chpl:0) ( bool )
 globals

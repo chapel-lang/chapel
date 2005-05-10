@@ -15,8 +15,10 @@
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::m(assignment_expr.chpl:1) ( int64 )
 ::main ( main )
 ::n(assignment_expr.chpl:2) ( int64 )
 ::o(assignment_expr.chpl:3) ( int64 )
+::true(prelude.chpl:0) ( bool )
 globals

@@ -3,6 +3,9 @@
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
+::false(prelude.chpl:0) ( bool )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 ::x(deadvar.chpl:1) ( int64 )
+::y(deadvar.chpl:2) ( int64 )
 globals

@@ -3,6 +3,8 @@
 ::__init_entryPoint ( __init_entryPoint )
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
+::false(prelude.chpl:0) ( bool )
 ::main ( main )
 ::myvariable(declprintint.chpl:1) ( int64 )
+::true(prelude.chpl:0) ( bool )
 globals

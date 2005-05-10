@@ -6,6 +6,8 @@
 ::__init_var2 ( __init_var2 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( float64 )
+::false(prelude.chpl:0) ( bool )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 ::x(var2.chpl:1) ( int64 )
 globals

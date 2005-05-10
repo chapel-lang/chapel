@@ -1833,6 +1833,34 @@ show_illegal_type(FILE *fp, ATypeViolation *v) {
   fprintf(stderr, "\n");
 }
 
+static int
+compar_edge_pos(const void *aa, const void *bb) {
+  AEdge *a = (*(AEdge**)aa);
+  AEdge *b = (*(AEdge**)bb);
+  if (!a->pnode || !b->pnode)
+    return 0;
+  AST *aast = a->pnode->code->ast;
+  AST *bast = b->pnode->code->ast;
+  if (!aast || !bast) {
+    if (bast) return -1;
+    if (aast) return 1;
+    return 0;
+  }
+  if (!aast->pathname() || !bast->pathname()) {
+    if (bast->pathname()) return -1;
+    if (aast->pathname()) return 1;
+  } else {
+    int x = strcmp(aast->pathname(), bast->pathname());
+    if (x) return x;
+  }
+  int i = aast->line();
+  int j = bast->line();
+  int x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+  if (x)
+    return x;
+  return 0;
+}
+
 static void
 show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
   depth++;
@@ -1843,9 +1871,13 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
       fprintf(stderr, " ");
     fprintf(stderr, "called from %s:%d\n", p->code->filename(), p->code->line());
   }
+  Vec<AEdge*> edges;
   AEdge **last = es->edges.last();
   for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
-    show_call_tree(fp, (*x)->pnode, (*x)->from, depth);
+    edges.add(*x);
+  qsort(edges.v, edges.n, sizeof(edges.v[0]), compar_edge_pos);
+  forv_AEdge(e, edges)
+    show_call_tree(fp, e->pnode, e->from, depth);
 }
 
 static void

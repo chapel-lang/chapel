@@ -9,7 +9,9 @@
 ::d(conditional.chpl:5) ( int64 )
 ::e(conditional.chpl:6) ( int64 )
 ::f(conditional.chpl:7) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::g(conditional.chpl:8) ( int64 )
 ::h(conditional.chpl:9) ( int64 )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 globals

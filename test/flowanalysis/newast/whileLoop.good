@@ -9,6 +9,8 @@
 ::a(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::i(whileLoop.chpl:1) ( int64 )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 globals

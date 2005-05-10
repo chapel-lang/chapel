@@ -9,11 +9,13 @@
 ::__method(internal_prelude.chpl:0) ( __method )
 ::a(internal_prelude.chpl:0) ( _domain_1d (formatoutput.chpl:7) )
 ::b(internal_prelude.chpl:0) ( Domain )
+::false(prelude.chpl:0) ( bool )
 ::i(formatoutput.chpl:10) ( int64 )
 ::i(internal_prelude.chpl:0) ( int64 )
 ::main ( main )
 ::set(internal_prelude.chpl:0) ( set )
 ::this ( _array_integer_1d (formatoutput.chpl:8) )
+::true(prelude.chpl:0) ( bool )
 ::x(formatoutput.chpl:1) ( int64 )
 ::x(internal_prelude.chpl:0) ( int64 )
 globals

@@ -3,5 +3,7 @@ globals
 operator::a(prelude.v:0) ( int32 )
 operator::a(prelude.v:0) ( ref )
 print::a(prelude.v:0) ( int32 )
+system::__nil__(prelude.v:0) ( int32 )
+system::reply(prelude.v:0) ( reply )
 user::a(ref.v:2) ( int32 )
 user::b(ref.v:4) ( ref )

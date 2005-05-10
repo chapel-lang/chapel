@@ -688,6 +688,11 @@ print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
 
 static void
 if1_simple_dead_code_elimination(IF1 *p) {
+  for (int i = 0; i < p->allsyms.n; i++) {
+    Sym *s = p->allsyms.v[i];
+    if (s->global_scope)
+      mark_sym_live(s);
+  }
   for (int i = 0; i < p->allclosures.n; i++) {
     mark_sym_live(p->allclosures.v[i]);
     if (p->allclosures.v[i]->ret) 

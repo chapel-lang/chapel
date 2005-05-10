@@ -11,5 +11,7 @@
 ::b(danglingelse.chpl:4) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 globals

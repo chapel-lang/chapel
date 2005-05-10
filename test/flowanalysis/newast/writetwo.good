@@ -3,5 +3,7 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
 ::__init_writetwo ( __init_writetwo )
+::false(prelude.chpl:0) ( bool )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 globals

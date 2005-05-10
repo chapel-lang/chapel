@@ -9,6 +9,7 @@
 ::__method(internal_prelude.chpl:0) ( __method )
 ::a(internal_prelude.chpl:0) ( _domain_2d (domarr.chpl:4) )
 ::b(internal_prelude.chpl:0) ( Domain )
+::false(prelude.chpl:0) ( bool )
 ::i(domarr.chpl:8) ( int64 )
 ::i(internal_prelude.chpl:0) ( int64 )
 ::j(domarr.chpl:8) ( int64 )
@@ -18,5 +19,6 @@
 ::n(domarr.chpl:2) ( int64 )
 ::set(internal_prelude.chpl:0) ( set )
 ::this ( _array_float_2d (domarr.chpl:6) )
+::true(prelude.chpl:0) ( bool )
 ::x(internal_prelude.chpl:0) ( float64 )
 globals

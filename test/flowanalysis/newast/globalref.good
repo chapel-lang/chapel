@@ -9,7 +9,9 @@
 ::b(globalref.chpl:2) ( int64 )
 ::c(globalref.chpl:3) ( int64 )
 ::c(globalref.chpl:6) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::foo(globalref.chpl:12) ( foo )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 function foo globalref.chpl:5
 globals

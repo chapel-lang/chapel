@@ -4,7 +4,9 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_noargs ( __init_noargs )
 ::__init_prelude ( __init_prelude )
+::false(prelude.chpl:0) ( bool )
 ::foo(noargs.chpl:3) ( foo )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 function foo noargs.chpl:1
 globals

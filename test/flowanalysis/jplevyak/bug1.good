@@ -3,6 +3,8 @@ globals
 operator::a(prelude.v:0) ( int32 )
 operator::b(prelude.v:0) ( float64 )
 print::a(prelude.v:0) ( float64 )
+system::__nil__(prelude.v:0) ( int32 )
+system::reply(prelude.v:0) ( reply )
 user::a(bug1.v:1) ( int32 )
 user::b(bug1.v:2) ( float64 )
 user::c(bug1.v:3) ( float64 )

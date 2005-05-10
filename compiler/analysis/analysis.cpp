@@ -2797,6 +2797,7 @@ type_is_used(TypeSymbol *t) {
     if (t->asymbol) {
       assert(t->asymbol->sym->is_meta_type);
       if (is_scalar_type(t->type) 
+          || t->type == dtNil
           || t->type->astType == TYPE_SUM 
           || t->type->astType == TYPE_INDEX
           || (t->type->astType == TYPE_USER && 

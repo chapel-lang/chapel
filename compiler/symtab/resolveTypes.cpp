@@ -80,9 +80,7 @@ void ResolveTypes::processSymbol(Symbol* sym) {
              (analyzeAST && sym->type && !is_Scalar_Type(sym->type) && 
               sym->type->astType != TYPE_USER)) {
     if (analyzeAST) {
-      Type *t = type_info(sym);
-      if (t != dtUnknown)
-        sym->type = t;
+      sym->type = type_info(sym);
       if (checkAnalysisTypeinfo) {
         if (sym->type == dtUnknown) {
           INT_FATAL(sym, "Analysis unable to determine type of '%s'", sym->cname);
@@ -108,11 +106,10 @@ void ResolveTypes::processSymbol(Symbol* sym) {
     }
   }
 
-  // hack SJD: looks like analysisType is returning a dead type
   if (sym->type && !dynamic_cast<TypeSymbol*>(sym)) {
     TypeSymbol* symType = dynamic_cast<TypeSymbol*>(sym->type->symbol);
     if (!type_is_used(symType)) {
-      sym->type = dtNil;
+      // assert(0);  this would assert when sym is a FnSymbol
     }
   }
 

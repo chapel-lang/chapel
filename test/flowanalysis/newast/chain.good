@@ -9,8 +9,10 @@
 ::a(chain.chpl:1) ( int64 )
 ::a(chain.chpl:6) ( int64 )
 ::bar(chain.chpl:8) ( bar )
+::false(prelude.chpl:0) ( bool )
 ::foo(chain.chpl:4) ( foo )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 function bar chain.chpl:6
 function foo chain.chpl:1
 globals

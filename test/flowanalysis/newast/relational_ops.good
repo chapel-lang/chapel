@@ -16,9 +16,11 @@
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::m(relational_ops.chpl:1) ( int64 )
 ::main ( main )
 ::n(relational_ops.chpl:2) ( int64 )
 ::o(relational_ops.chpl:3) ( int64 )
 ::p(relational_ops.chpl:4) ( int64 )
+::true(prelude.chpl:0) ( bool )
 globals

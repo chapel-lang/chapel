@@ -4,6 +4,8 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
 ::answer(bitwise_negation.chpl:2) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::m(bitwise_negation.chpl:1) ( int64 )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 globals

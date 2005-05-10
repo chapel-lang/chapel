@@ -5,7 +5,9 @@
 ::__init_prelude ( __init_prelude )
 ::__init_usebeforedef ( __init_usebeforedef )
 ::a(usebeforedef.chpl:3) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::foo(usebeforedef.chpl:5) ( foo )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 function foo usebeforedef.chpl:3
 globals

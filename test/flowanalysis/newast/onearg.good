@@ -5,7 +5,9 @@
 ::__init_onearg ( __init_onearg )
 ::__init_prelude ( __init_prelude )
 ::a(onearg.chpl:1) ( int64 )
+::false(prelude.chpl:0) ( bool )
 ::foo(onearg.chpl:3) ( foo )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 function foo onearg.chpl:1
 globals

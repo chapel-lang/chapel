@@ -13,8 +13,10 @@
 ::__init_internal_prelude ( __init_internal_prelude )
 ::__init_prelude ( __init_prelude )
 ::__method(internal_prelude.chpl:0) ( __method )
+::_init_classVals1 ( classVals (enumarray.chpl:1) )
 ::a(internal_prelude.chpl:0) ( _domain_1d (enumarray.chpl:3) )
 ::b(internal_prelude.chpl:0) ( Domain )
+::false(prelude.chpl:0) ( bool )
 ::i(enumarray.chpl:16) ( int64 )
 ::i(internal_prelude.chpl:0) ( classVals (enumarray.chpl:1) )
 ::i(internal_prelude.chpl:0) ( classVals (enumarray.chpl:1) )
@@ -25,5 +27,6 @@
 ::this ( _array_integer_1d (enumarray.chpl:5) )
 ::this ( _array_integer_1d (enumarray.chpl:5) )
 ::this ( _array_integer_1d (enumarray.chpl:5) )
+::true(prelude.chpl:0) ( bool )
 ::x(internal_prelude.chpl:0) ( int64 )
 globals

@@ -13,8 +13,10 @@
 ::a(mutrec.chpl:10) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::bar(mutrec.chpl:17) ( bar )
+::false(prelude.chpl:0) ( bool )
 ::foo(mutrec.chpl:8) ( foo )
 ::main ( main )
+::true(prelude.chpl:0) ( bool )
 function bar mutrec.chpl:10
 function foo mutrec.chpl:1
 globals
