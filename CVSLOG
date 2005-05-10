@@ -30227,3 +30227,13 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/10/05 11:09:13 -- deitz
+
+Log message:
+	Instantiating a constructor now instantiates the class as well.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
