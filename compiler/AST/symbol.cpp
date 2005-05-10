@@ -1231,3 +1231,16 @@ LabelSymbol::LabelSymbol(char* init_name) :
 
 
 void LabelSymbol::codegenDef(FILE* outfile) { }
+
+
+ForwardingSymbol::ForwardingSymbol(Symbol* init_forward, char* rename) :
+  Symbol(SYMBOL_FORWARDING, rename, NULL),
+  forward(init_forward),
+  renamed(rename != NULL)
+{
+  if (!rename) {
+    name = copystring(forward->name);
+    cname = copystring(forward->cname);
+  }
+  Symboltable::define(this);
+}

@@ -239,6 +239,14 @@ class ModuleSymbol : public Symbol {
 };
 
 
+class ForwardingSymbol : public Symbol {
+ public:
+  Symbol* forward;
+  bool renamed;
+  ForwardingSymbol(Symbol* init_forward, char* rename = NULL);
+};
+
+
 class LabelSymbol : public Symbol {
  public:
   LabelSymbol(char* init_name);

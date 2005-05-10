@@ -282,6 +282,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_LABEL");
     }
     break;
+  case SYMBOL_FORWARDING:
+    if (typeid(*ast) != typeid(ForwardingSymbol)) {
+      INT_FATAL(ast, "Unexpected AST symbol type: SYMBOL_FORWARDING");
+    }
+    break;
   case TYPE:
     if (typeid(*ast) != typeid(Type)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE");

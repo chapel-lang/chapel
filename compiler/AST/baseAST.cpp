@@ -87,6 +87,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "FnSymbol",
   "EnumSymbol",
   "LabelSymbol",
+  "ForwardingSymbol",
 
   "Type",
   "BuiltinType",

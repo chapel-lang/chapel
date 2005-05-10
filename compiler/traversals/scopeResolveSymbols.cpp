@@ -9,24 +9,6 @@
 
 static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
   if (dynamic_cast<UnresolvedType*>(type)) {
-
-    //
-    // Resolve types in class methods
-    //
-    if (currentFunction && currentFunction->classBinding) {
-      StructuralType* structuralType =
-        dynamic_cast<StructuralType*>(currentFunction->classBinding->type);
-      if (!structuralType) {
-        INT_FATAL(type, "Error finding method's class's type");
-      }
-      Symbol* new_type = Symboltable::lookupFromScope(type->symbol->name,
-                                                      structuralType->structScope);
-      if (new_type && new_type->parentScope->type == SCOPE_CLASS) {
-        type = new_type->type;
-        return;
-      }
-    }
-    
     Symbol* new_type = Symboltable::lookup(type->symbol->name);
     if (new_type) {
       if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
@@ -87,22 +69,6 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
         return;
       }
 
-      //
-      // Resolve fields in class methods
-      //
-      Symbol* field = NULL;
-      if (currentFunction && currentFunction->classBinding) {
-        StructuralType* structuralType =
-          dynamic_cast<StructuralType*>(currentFunction->classBinding->type);
-        if (!structuralType) {
-          INT_FATAL(expr, "Error finding method's class's type");
-        }
-        field = Symboltable::lookupFromScope(name, structuralType->structScope);
-        if (field && field->parentScope->type != SCOPE_CLASS) {
-          field = NULL;
-        }
-      }
-
       VarSymbol* sym_in_scope =
         dynamic_cast<VarSymbol*>(Symboltable::lookupInCurrentScope(name));
       
@@ -126,24 +92,9 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
         }
       }
 
-      if (sym_resolve && field) {
-        if (sym_resolve->parentScope->parentLength() <
-            currentFunction->parentScope->parentLength()) {
-          if (!dynamic_cast<FnSymbol*>(field)) {
-            sym_use->var = field;
-          }
-        } else {
-          if (!dynamic_cast<FnSymbol*>(sym_resolve)) {
-            sym_use->var = sym_resolve;
-          }
-        }
-      } else if (sym_resolve) {
+      if (sym_resolve) {
         if (!dynamic_cast<FnSymbol*>(sym_resolve)) {
           sym_use->var = sym_resolve;
-        }
-      } else if (field) {
-        if (!dynamic_cast<FnSymbol*>(field)) {
-          sym_use->var = field;
         }
       } else {
         USR_FATAL(expr, "Symbol '%s' is not defined", name);

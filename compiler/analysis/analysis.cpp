@@ -2076,6 +2076,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case SYMBOL_FN:
   case SYMBOL_ENUM:
   case SYMBOL_LABEL:
+  case SYMBOL_FORWARDING:
   case TYPE:
   case TYPE_BUILTIN:
   case TYPE_ENUM:

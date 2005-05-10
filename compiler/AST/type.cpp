@@ -1605,7 +1605,7 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
                                             Symbol* field) {
   Expr* args = base->copy();
   char* id_tag = buildFieldSelectorName(this, field);
-  args->append(new Variable(Symboltable::lookup(id_tag)));
+  args->append(new Variable(Symboltable::lookupFromScope(id_tag, structScope)));
   if (type == UNION_CHECK) {
     args->append(new StringLiteral(base->filename));
     args->append(new IntLiteral(intstring(base->lineno), base->lineno));
@@ -1618,7 +1618,8 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
 
 CondStmt* UnionType::buildUnionFieldIO(CondStmt* prevStmt, VarSymbol* field, 
                                        ParamSymbol* thisArg) {
-  FnCall* checkFn = buildSafeUnionAccessCall(UNION_CHECK_QUIET, new Variable(thisArg),
+  FnCall* checkFn = buildSafeUnionAccessCall(UNION_CHECK_QUIET,
+                                             new Variable(thisArg),
                                              field);
   Stmt* condStmts = NULL;
   if (field) {

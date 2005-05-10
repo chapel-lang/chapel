@@ -223,13 +223,28 @@ Symbol* Symboltable::lookupInScope(char* name, SymScope* scope) {
 
 Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
                                      bool genError) {
-  if (scope == NULL) {
+  if (!scope) {
     INT_FATAL("NULL scope passed to lookupFromScope()");
   }
+
   while (scope != NULL) {
     Symbol* sym = lookupInScope(name, scope);
-    if (sym != NULL) {
+    if (sym) {
       return sym;
+    }
+    if (scope->type == SCOPE_PARAM) {
+      FnSymbol* fn = dynamic_cast<FnSymbol*>(scope->symContext);
+      if (!fn) {
+        INT_FATAL("Cannot find function from SCOPE_PARAM");
+      }
+      if (fn->classBinding) {
+        StructuralType* structuralType =
+          dynamic_cast<StructuralType*>(fn->classBinding->type);
+        Symbol* sym = lookupInScope(name, structuralType->structScope);
+        if (sym) {
+          return sym;
+        }
+      }
     }
     scope = scope->parent;
   }
