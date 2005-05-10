@@ -343,11 +343,6 @@ void EnumType::printDef(FILE* outfile) {
 }
 
 
-void EnumType::codegen(FILE* outfile) {
-  symbol->codegen(outfile);
-}
-
-
 void EnumType::codegenDef(FILE* outfile) {
   EnumSymbol* enumSym;
   int last = -1;
@@ -803,11 +798,6 @@ void SeqType::print(FILE* outfile) {
 }
 
 
-void SeqType::codegen(FILE* outfile) {
-  symbol->codegen(outfile);
-}
-
-
 void SeqType::codegenDef(FILE* outfile) {
   ClassType::codegenDef(outfile);
 
@@ -967,11 +957,6 @@ void ArrayType::print(FILE* outfile) {
 }
 
 
-void ArrayType::codegen(FILE* outfile) {
-  symbol->codegen(outfile);
-}
-
-
 void ArrayType::codegenDef(FILE* outfile) {
   fprintf(outfile, "struct _");
   symbol->codegen(outfile);
@@ -1078,11 +1063,6 @@ void UserType::printDef(FILE* outfile) {
   symbol->print(outfile);
   fprintf(outfile, " = ");
   definition->print(outfile);
-}
-
-
-void UserType::codegen(FILE* outfile) {
-  symbol->codegen(outfile);
 }
 
 
@@ -1384,20 +1364,6 @@ Stmt* StructuralType::buildIOBodyStmts(ParamSymbol* thisArg) {
   bodyStmts = addIOStmt(bodyStmts, ")");
 
   return bodyStmts;
-}
-
-
-void StructuralType::codegen(FILE* outfile) {
-//  if (this == dtSequence) {
-//    INT_FATAL(this, "Cannot codegen a generic sequence");
-//  }
-  if (symbol->isDead) {
-    // BLC: theoretically, this case should only occur when a class
-    // is never instantiated -- only nil references are used
-    fprintf(outfile, "void* ");
-  } else {
-    symbol->codegen(outfile);
-  }
 }
 
 
@@ -1808,7 +1774,7 @@ Type* VariableType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 
 
 void VariableType::codegen(FILE* outfile) {
-  INT_FATAL(this, "ERROR:  Cannot codegen a variable type.");
+  INT_FATAL(this, "Unanticipated call to VariableType::codegen");
 }
 
 
@@ -1824,7 +1790,7 @@ Type* UnresolvedType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCal
 
 
 void UnresolvedType::codegen(FILE* outfile) {
-  INT_FATAL(this, "ERROR:  Cannot codegen an unresolved type.");
+  INT_FATAL(this, "Unanticipated call to UnresolvedType::codegen");
 }
 
 
@@ -1921,6 +1887,7 @@ NilType::NilType(void) :
 void NilType::codegen(FILE* outfile) {
   fprintf(outfile, "void* ");
 }
+
 
 void NilType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format) {
   fprintf(outfile, "_write_string(stdout, _default_format_write_string, \"nil\");\n");

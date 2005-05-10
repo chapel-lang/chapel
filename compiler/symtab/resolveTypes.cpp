@@ -78,8 +78,7 @@ void ResolveTypes::processSymbol(Symbol* sym) {
     }
   } else if (sym->type == dtUnknown || 
              (analyzeAST && sym->type && !is_Scalar_Type(sym->type) && 
-              sym->type->astType != TYPE_USER))
-  {
+              sym->type->astType != TYPE_USER)) {
     if (analyzeAST) {
       Type *t = type_info(sym);
       if (t != dtUnknown)
@@ -106,6 +105,14 @@ void ResolveTypes::processSymbol(Symbol* sym) {
       }
     } else {
       sym->type = analysisType;
+    }
+  }
+
+  // hack SJD: looks like analysisType is returning a dead type
+  if (sym->type && !dynamic_cast<TypeSymbol*>(sym)) {
+    TypeSymbol* symType = dynamic_cast<TypeSymbol*>(sym->type->symbol);
+    if (!type_is_used(symType)) {
+      sym->type = dtNil;
     }
   }
 

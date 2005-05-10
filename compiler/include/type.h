@@ -83,7 +83,6 @@ class EnumType : public Type {
   void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
-  void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenStringToType(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
@@ -163,7 +162,6 @@ class UserType : public Type {
   void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
-  void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenIORoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
@@ -212,7 +210,6 @@ class StructuralType : public Type {
   virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
   virtual Stmt* buildIOBodyStmts(ParamSymbol* thisArg);
 
-  virtual void codegen(FILE* outfile);
   virtual void codegenStartDefFields(FILE* outfile);
   virtual void codegenStopDefFields(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
@@ -303,7 +300,6 @@ class SeqType : public ClassType {
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   //void codegenPrototype(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
@@ -328,7 +324,6 @@ class ArrayType : public Type {
   int rank(void);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenPrototype(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
