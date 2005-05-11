@@ -1892,10 +1892,6 @@ static int
 compar_tv_pos(const void *aa, const void *bb) {
   ATypeViolation *a = (*(ATypeViolation**)aa);
   ATypeViolation *b = (*(ATypeViolation**)bb);
-  if (a->kind < b->kind)
-    return -1;
-  if (b->kind < a->kind)
-    return 1;
   AST *aast = a->send ? a->send->var->def->code->ast : 0;
   if (!aast) aast = a->av->var->sym->ast;
   AST *bast = b->send ? b->send->var->def->code->ast : 0;
@@ -1903,7 +1899,7 @@ compar_tv_pos(const void *aa, const void *bb) {
   if (!aast || !bast) {
     if (bast) return -1;
     if (aast) return 1;
-    return 0;
+    goto Lskip;
   }
   if (!aast->pathname() || !bast->pathname()) {
     if (bast->pathname()) return -1;
@@ -1917,6 +1913,11 @@ compar_tv_pos(const void *aa, const void *bb) {
   int x = (i > j) ? 1 : ((i < j) ? -1 : 0);
   if (x)
     return x;
+ Lskip:
+  if (a->kind < b->kind)
+    return -1;
+  if (b->kind < a->kind)
+    return 1;
   if (a->send && b->send) {
     i = a->send->id;
     j = b->send->id;
