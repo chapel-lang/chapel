@@ -30562,3 +30562,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: view.cpp 
 
+---------------------------------------------------------------------------
+
+05/11/05 15:02:10 -- deitz
+
+Log message:
+	Updated regressions file, removing two tests that have been working
+	for a while.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
