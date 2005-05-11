@@ -30459,3 +30459,15 @@ Modified files:
 	chapel/compiler/include/: analysis.h 
 	chapel/compiler/traversals/: resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+05/11/05 07:35:58 -- jplevyak
+
+Log message:
+	Fix valgrind uninitialized variable "error" (GC zero's the data, so
+	this change doesn't actually change the behavior of the program).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+
