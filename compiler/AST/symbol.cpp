@@ -325,8 +325,8 @@ bool Symbol::isThis(void) {
 
 void VarSymbol::codegenDef(FILE* outfile) {
   if (parentScope->type == SCOPE_MODULE) {
-    outfile = intheadfile;
-    if (!parentScope->commonModuleIsFirst()) {
+    outfile = exportMe ? extheadfile : intheadfile;
+    if (!exportMe && !parentScope->commonModuleIsFirst()) {
       fprintf(outfile, "static ");
     }
   }
@@ -522,7 +522,7 @@ void TypeSymbol::codegenPrototype(FILE* outfile) {
   /* if in file scope, hoist to internal header so that it will be
      defined before global variables at file scope. */  
   if (type->symbol->parentScope->type == SCOPE_MODULE) { 
-    deffile = intheadfile;
+    deffile = exportMe ? extheadfile : intheadfile;
   }
   type->codegenPrototype(deffile);
 }
@@ -537,7 +537,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
   /* if in file scope, hoist to internal header so that it will be
      defined before global variables at file scope. */  
   if (type->symbol->parentScope->type == SCOPE_MODULE) { 
-    deffile = intheadfile;
+    deffile = exportMe ? extheadfile : intheadfile;
   }
   type->codegenDef(deffile);
 
@@ -1109,7 +1109,9 @@ ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   stmts(NULL),
   initFn(NULL),
   modScope(NULL)
-{}
+{
+  uses.clear();
+}
 
 
 void ModuleSymbol::setModScope(SymScope* init_modScope) {
@@ -1131,6 +1133,11 @@ void ModuleSymbol::codegenDef(void) {
   /** SJD: Better to export things? (above line) **/
   fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
   fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
+
+  forv_Vec(ModuleSymbol, use, uses) {
+    fprintf(codefile, "#include \"%s.h\"\n", use->name);
+  }
+
   fprintf(codefile, "\n");
 
   modScope->codegen(codefile, "\n");
@@ -1178,6 +1185,9 @@ static bool stmtIsGlob(ILink* link) {
     if (def_stmt->fnDef() || def_stmt->typeDef()) {
       return true;
     }
+  }
+  if (dynamic_cast<UseStmt*>(stmt)) {
+    return true;
   }
   return false;
 }

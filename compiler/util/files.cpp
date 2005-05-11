@@ -157,7 +157,7 @@ static char* stripdirectories(char* filename) {
 }
 
 
-static void genCFilenames(char* modulename, char** outfilename, 
+void genCFilenames(char* modulename, char** outfilename, 
                           char** extheadfilename, char** intheadfilename) {
   static char* outfilesuffix = ".c";
   static char* extheadsuffix = ".h";

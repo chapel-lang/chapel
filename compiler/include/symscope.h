@@ -78,6 +78,7 @@ class SymScope : public gc {
   void codegen(FILE* outfile, char* separator);
 
   bool commonModuleIsFirst();
+  ModuleSymbol* SymScope::getModule();
   void setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions);
   void printVisibleFunctions();
 };

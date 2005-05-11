@@ -119,6 +119,8 @@ class UseStmt : public ExprStmt {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+
+  ModuleSymbol* getModule(void);
 };
 
 

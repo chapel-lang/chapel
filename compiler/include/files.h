@@ -21,6 +21,8 @@ char* sysdirToChplRoot(char* systemDir);
 void deleteTmpDir(void);
 
 void open_common(fileinfo* commonfile);
+void genCFilenames(char* modulename, char** outfilename, 
+                   char** extheadfilename, char** intheadfilename);
 void openCFiles(char* modulename, fileinfo* outfile,
                 fileinfo* extheadfile, fileinfo* intheadfile);
 void closeCFiles(fileinfo* outfile, 

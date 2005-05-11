@@ -505,7 +505,22 @@ void UseStmt::print(FILE* outfile) {
 
 
 void UseStmt::codegen(FILE* outfile) {
-  INT_FATAL(this, "Use statement encountered in codegen()");
+  fprintf(outfile, "/* 'use ");
+  expr->codegen(outfile);
+  fprintf(outfile, "' was here */");
+}
+
+
+ModuleSymbol* UseStmt::getModule(void) {
+  if (Variable* variable = dynamic_cast<Variable*>(expr)) {
+    if (Symbol* symbol = variable->var) {
+      if (ModuleSymbol* module =
+          dynamic_cast<ModuleSymbol*>(Symboltable::lookup(symbol->name))) {
+        return module;
+      }
+    }
+  }
+  return NULL;
 }
 
 

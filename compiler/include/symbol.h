@@ -45,7 +45,7 @@ class Symbol : public BaseAST {
   ASymbol *asymbol;
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown,
-         bool init_exportMe = false);
+         bool init_exportMe = true);
   void setParentScope(SymScope* init_parentScope);
 
   Symbol* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
@@ -172,12 +172,12 @@ class FnSymbol : public Symbol {
   FnSymbol* overload;
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
-           BlockStmt* init_body, bool init_exportMe=false,
+           BlockStmt* init_body, bool init_exportMe=true,
            Symbol* init_classBinding = NULL);
   FnSymbol(char* init_name, Symbol* init_classBinding = NULL);
   void continueDef(Symbol* init_formals, Type* init_retType, bool isRef);
   void finishDef(BlockStmt* init_body, SymScope* init_paramScope, 
-                 bool init_exportMe=false);
+                 bool init_exportMe=true);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -226,6 +226,8 @@ class ModuleSymbol : public Symbol {
   FnSymbol* initFn;
 
   SymScope* modScope;
+
+  Vec<ModuleSymbol*> uses;
 
   ModuleSymbol(char* init_name, modType init_modtype);
   void setModScope(SymScope* init_modScope);

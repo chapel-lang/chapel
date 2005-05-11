@@ -163,6 +163,11 @@ SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
 }
 
 
+ModuleSymbol* Symboltable::getCurrentModule(void) {
+  return getCurrentScope()->getModule();
+}
+
+
 ModuleSymbol* Symboltable::getModuleList(moduleSet whichModules) {
   switch (whichModules) {
   case MODULES_USER:

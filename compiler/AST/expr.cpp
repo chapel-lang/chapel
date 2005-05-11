@@ -689,19 +689,21 @@ void StringLiteral::printCfgInitString(FILE* outfile) {
 }
 
 
-Variable::Variable(Symbol* init_var) :
+Variable::Variable(Symbol* init_var, ForwardingSymbol* init_forward) :
   Expr(EXPR_VARIABLE),
-  var(init_var) 
+  var(init_var),
+  forward(init_forward)
 {}
 
 
 Expr* Variable::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new Variable(var);
+  return new Variable(var, forward);
 }
 
 
 void Variable::traverseExpr(Traversal* traversal) {
   TRAVERSE(var, traversal, false);
+  // Should we traverse forward?  I don't know.  --SJD
 }
 
 

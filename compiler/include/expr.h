@@ -318,8 +318,9 @@ class DefExpr : public Expr {
 class Variable : public Expr {
  public:
   Symbol* var;
-
-  Variable(Symbol* init_var);
+  ForwardingSymbol* forward; // was this include by a use statement?
+                             // if so, it might be renamed.
+  Variable(Symbol* init_var, ForwardingSymbol* init_forward = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
 
   void traverseExpr(Traversal* traversal);

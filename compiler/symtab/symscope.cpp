@@ -384,7 +384,7 @@ void SymScope::codegen(FILE* outfile, char* separator) {
       if (!dynamic_cast<EnumType*>(type_sym->type)) {
         tmp->pSym->codegenDef(outfile);
       }
-    } else {
+    } else if (!dynamic_cast<ForwardingSymbol*>(tmp->pSym)) {
       tmp->pSym->codegenDef(outfile);
     }
   }
@@ -397,6 +397,15 @@ bool SymScope::commonModuleIsFirst() {
     return commonModule->modScope == this;
   } else {
     return parent->commonModuleIsFirst();
+  }
+}
+
+
+ModuleSymbol* SymScope::getModule() {
+  if (type == SCOPE_MODULE) {
+    return dynamic_cast<ModuleSymbol*>(symContext);
+  } else {
+    return parent->getModule();
   }
 }
 

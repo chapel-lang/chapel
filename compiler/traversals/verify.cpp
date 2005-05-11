@@ -169,6 +169,9 @@ static void verifyDefPoint(Symbol* sym) {
   if (typeid(*sym) == typeid(LabelSymbol)) {
     return;
   }
+  if (typeid(*sym) == typeid(ForwardingSymbol)) {
+    return;
+  }
   if (typeid(*sym->type) == typeid(SumType)) { // SHOULD BE REMOVED
     return;
   }

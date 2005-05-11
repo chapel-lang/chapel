@@ -30,6 +30,7 @@ class Symboltable {
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);
+  static ModuleSymbol* getCurrentModule(void);
   static ModuleSymbol* getModuleList(moduleSet modules);
   static FnSymbol* getCurrentFn(void);
 
@@ -85,7 +86,7 @@ class Symboltable {
   static void continueFnDef(FnSymbol* fnsym, Symbol* formals, 
                             Type* retType, bool isRef = false);
   static FnSymbol* finishFnDef(FnSymbol* fnsym, Stmt* body, 
-                               bool isExtern = false);
+                               bool isExtern = true);
   static DefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
                                  BlockStmt* body, bool isExtern = false);
 
