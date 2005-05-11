@@ -58,6 +58,7 @@ static int build_function(FnSymbol *f);
 static void map_asts(Vec<BaseAST *> &syms);
 static void build_symbols(Vec<BaseAST *> &syms);
 static void build_types(Vec<BaseAST *> &syms);
+static int build_classes(Vec<BaseAST *> &syms);
 static int gen_if1(BaseAST *ast, BaseAST *parent = 0);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
@@ -358,24 +359,40 @@ finalize_symbols(IF1 *i) {
 }
 
 static Fun *
-install_new_function(FnSymbol *f) {
+install_new_function(FnSymbol *f, FnSymbol *old_f) {
   Vec<BaseAST *> syms;
   collect_asts(&syms, f);
   syms.add(f);
   syms.add(f->defPoint);
+  int generic_constructor = !f->retType->asymbol;
+  if (generic_constructor) {
+    syms.add(f->retType);
+    syms.add(f->retType->symbol);
+    Vec<BaseAST *> csyms;
+    collect_symbols((Vec<Symbol*>*)&csyms, f->retType);
+    syms.append(csyms);
+  }
   map_asts(syms);
   build_symbols(syms);
+  if (generic_constructor) {
+    Sym *type_sym = f->retType->asymbol->sym, *old_type_sym = old_f->retType->asymbol->sym;
+    if (old_type_sym->specializers.set_add(type_sym))
+      type_sym->dispatch_order.add(old_type_sym);
+  }
   build_types(syms);
   finalize_types(if1);
   if (init_function(f) < 0 || build_function(f) < 0) 
     assert(!"unable to instantiate generic/wrapper");
   if1_finalize_closure(if1, f->asymbol->sym);
   build_type_hierarchy();
+  build_classes(syms);
   finalize_symbols(if1);
   finalize_types(if1);
   Fun *fun = new Fun(f->asymbol->sym);
   build_arg_positions(fun);
   pdb->add(fun);
+  if (generic_constructor)
+    initialize_Sym_for_fa(f->retType->asymbol->sym);
   if1_write_log();
   return fun;
 }
@@ -409,7 +426,7 @@ ACallbacks::order_wrapper(Match *m) {
     return NULL;
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->order_wrapper(&m->formal_to_actual_position);
-  Fun *fun = install_new_function(f);
+  Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
   return fun;
 }
@@ -436,7 +453,7 @@ ACallbacks::coercion_wrapper(Match *m) {
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->coercion_wrapper(&coercions);
-  Fun *fun = install_new_function(f);
+  Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
   return fun;
 }
@@ -447,7 +464,7 @@ ACallbacks::default_wrapper(Match *m) {
     return NULL;
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->default_wrapper(&m->default_args);
-  Fun *fun = install_new_function(f);
+  Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
   return fun;
 }
@@ -461,7 +478,7 @@ ACallbacks::instantiate_generic(Match *m) {
     substitutions.put(dynamic_cast<Type*>(s->key->asymbol->symbol), Sym_to_Type(s->value));
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   FnSymbol *f = fndef->instantiate_generic(&substitutions);
-  Fun *fun = install_new_function(f);
+  Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
   return fun;
 }
@@ -782,6 +799,8 @@ build_type(Type *t) {
       break;
     }
   }
+  if (t->parentType)
+    t->asymbol->sym->must_implement_and_specialize(t->parentType->asymbol->sym);
   return t->asymbol->sym;
 }
 
@@ -2139,7 +2158,7 @@ gen_fun(FnSymbol *f) {
   c->ast = ast;
   if1_closure(if1, fn, body, iarg, as);
   fn->ast = ast;
-  if (f->_this && iarg > 1)  // HACK FOR CONSTRUCTORS WHICH SET _this
+  if (f->_this && !f->isConstructor)
     fn->self = f->_this->asymbol->sym;
   return 0;
 }
@@ -2822,7 +2841,8 @@ int
 type_is_used(TypeSymbol *t) {
   if (if1->callback) {
     if (t->asymbol) {
-      assert(t->asymbol->sym->is_meta_type);
+      if (!t->asymbol->sym->is_meta_type)
+        return false;
       if (is_scalar_type(t->type) 
           || t->type == dtNil
           || t->type->astType == TYPE_SUM 

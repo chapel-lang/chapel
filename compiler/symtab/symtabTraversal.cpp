@@ -37,3 +37,8 @@ void SymtabTraversal::run(ModuleSymbol* moduleList) {
 void SymtabTraversal::run(FnSymbol* function) {
   Symboltable::traverseFromScope(this, function->paramScope);
 }
+
+void SymtabTraversal::run(Type* type) {
+  if (StructuralType *st = dynamic_cast<StructuralType*>(type))
+    Symboltable::traverseFromScope(this, st->structScope);
+}

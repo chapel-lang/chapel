@@ -1889,7 +1889,7 @@ show_call_tree(FILE *fp, AVar *av) {
 }
 
 static int
-compar_tv_pos(const void *aa, const void *bb) {
+compar_tv(const void *aa, const void *bb) {
   ATypeViolation *a = (*(ATypeViolation**)aa);
   ATypeViolation *b = (*(ATypeViolation**)bb);
   AST *aast = a->send ? a->send->var->def->code->ast : 0;
@@ -1899,7 +1899,24 @@ compar_tv_pos(const void *aa, const void *bb) {
   if (!aast || !bast) {
     if (bast) return -1;
     if (aast) return 1;
-    goto Lskip;
+    if (a->av && b->av) {
+      if (((EntrySet*)a->av->contour)->edges.n == 1 &&
+          !((EntrySet*)b->av->contour)->edges.n)
+        return -1;
+      if (((EntrySet*)b->av->contour)->edges.n == 1 &&
+          !((EntrySet*)a->av->contour)->edges.n)
+        return 1;
+      if (((EntrySet*)a->av->contour)->edges.n == 1 &&
+          ((EntrySet*)b->av->contour)->edges.n == 1) {
+        aast = ((EntrySet*)a->av->contour)->edges.v[0]->pnode->code->ast;
+        bast = ((EntrySet*)b->av->contour)->edges.v[0]->pnode->code->ast;
+      }
+    }
+    if (!aast || !bast) {
+      if (bast) return -1;
+      if (aast) return 1;
+      goto Lskip;
+    }
   }
   if (!aast->pathname() || !bast->pathname()) {
     if (bast->pathname()) return -1;
@@ -1918,13 +1935,6 @@ compar_tv_pos(const void *aa, const void *bb) {
     return -1;
   if (b->kind < a->kind)
     return 1;
-  if (a->send && b->send) {
-    i = a->send->id;
-    j = b->send->id;
-    x = (i > j) ? 1 : ((i < j) ? -1 : 0);
-    if (x)
-      return x;
-  }
   if (a->av && b->av) {
     if (a->av->var && b->av->var) {
       if (a->av->var->sym && b->av->var->sym) {
@@ -1946,6 +1956,13 @@ compar_tv_pos(const void *aa, const void *bb) {
     if (x)
       return x;
   }
+  if (a->send && b->send) {
+    i = a->send->id;
+    j = b->send->id;
+    x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+    if (x)
+      return x;
+  }
   return 0;
 }
 
@@ -1954,7 +1971,7 @@ show_violations(FA *fa, FILE *fp) {
   Vec<ATypeViolation *> vv;
   forv_ATypeViolation(v, type_violations) if (v)
     vv.add(v);
-  qsort(vv.v, vv.n, sizeof(vv.v[0]), compar_tv_pos);
+  qsort(vv.v, vv.n, sizeof(vv.v[0]), compar_tv);
   forv_ATypeViolation(v, vv) if (v) {
 #if 0
     if (!verbose_level && !v->av->var->sym->name)
@@ -2264,18 +2281,22 @@ collect_var_type_violations() {
   }
 }
 
+void 
+initialize_Sym_for_fa(Sym *s) {
+  if (s->is_symbol || s->is_fun || s->type_kind)
+    s->abstract_type = make_abstract_type(s);
+  if (s->is_fun || s->is_pattern || s->type_kind)
+    forv_Sym(ss, s->has)
+      if (!ss->var)
+        ss->var = new Var(ss);
+  if (s->type_kind && s->element)
+    s->element->var = new Var(s->element);
+}
+
 static void
 initialize_symbols() {
-  forv_Sym(s, fa->pdb->if1->allsyms) {
-    if (s->is_symbol || s->is_fun || s->type_kind)
-      s->abstract_type = make_abstract_type(s);
-    if (s->is_fun || s->is_pattern || s->type_kind)
-      forv_Sym(ss, s->has)
-        if (!ss->var)
-          ss->var = new Var(ss);
-    if (s->type_kind && s->element)
-      s->element->var = new Var(s->element);
-  }
+  forv_Sym(s, fa->pdb->if1->allsyms)
+    initialize_Sym_for_fa(s);
 }
 
 static void

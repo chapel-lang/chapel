@@ -12,6 +12,7 @@ class SymtabTraversal : public Pass {
 
   virtual void run(ModuleSymbol* moduleList = NULL);
   virtual void run(FnSymbol* function);
+  virtual void run(Type* type);
 };
 
 #endif

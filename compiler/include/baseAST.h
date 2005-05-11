@@ -112,6 +112,7 @@ class FnSymbol;
 
 void collect_symbols(Vec<Symbol*>* syms);
 void collect_symbols(Vec<Symbol*>* syms, FnSymbol* function);
+void collect_symbols(Vec<Symbol*>* syms, Type* type);
 // USAGE:
 //   Vec<Symbol*> all_syms;
 //   collect_symbols(&all_syms);

@@ -19,3 +19,8 @@ void collect_symbols(Vec<Symbol*>* syms, FnSymbol* function) {
   CollectSymbols* traversal = new CollectSymbols(syms);
   traversal->run(function);
 }
+
+void collect_symbols(Vec<Symbol*>* syms, Type* type) {
+  CollectSymbols* traversal = new CollectSymbols(syms);
+  traversal->run(type);
+}
