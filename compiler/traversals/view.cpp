@@ -63,6 +63,12 @@ void View::preProcessSymbol(Symbol* sym) {
   if (numberSymbols) {
     printf("[%ld]", sym->id);
   }
+  if (sym->type && sym->type->symbol) {
+    printf(":%s", sym->type->symbol->name);
+    if (numberSymbols) {
+      printf("[%ld]", sym->type->symbol->id);
+    }
+  }
   printf("'");
 }
 
