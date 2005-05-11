@@ -30499,3 +30499,25 @@ Modified files:
 	chapel/compiler/traversals/: fixup.cpp insertFunctionTemps.cpp 
 	                             insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+05/11/05 12:44:57 -- jplevyak
+
+Log message:
+	Added collect_symbols(... ,Type*) which works on new types, in
+	particular the new type created when a generic constructor is instantiated.
+	Added support for integrating the new type created when a generic
+	constructor is instantiated.
+	
+	types/type_variables/deitz/test_typevar_class1.chpl  now
+	fails because the _retval still has a type of 't' (the old
+	generic type) instead of the correct newly instantiated type).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: baseAST.h fa.h 
+	chapel/compiler/symtab/: collectSymbols.cpp symtabTraversal.cpp 
+	                         symtabTraversal.h 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class1.future 
+
