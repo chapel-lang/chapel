@@ -80,6 +80,10 @@ void Symbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void Symbol::traverse(Traversal* traversal, bool atTop) {
+  SymScope* saveScope = NULL;
+  if (atTop) {
+    saveScope = Symboltable::setCurrentScope(parentScope);
+  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessSymbol(this);
   }
@@ -94,16 +98,26 @@ void Symbol::traverse(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
     traversal->postProcessSymbol(this);
   }
+  if (atTop) {
+    Symboltable::setCurrentScope(saveScope);
+  }
 }
 
 
 void Symbol::traverseDef(Traversal* traversal, bool atTop) {
+  SymScope* saveScope = NULL;
+  if (atTop) {
+    saveScope = Symboltable::setCurrentScope(parentScope);
+  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessSymbol(this);
   }
   traverseDefSymbol(traversal);
   if (traversal->processTop || !atTop) {
     traversal->postProcessSymbol(this);
+  }
+  if (atTop) {
+    Symboltable::setCurrentScope(saveScope);
   }
 }
 
@@ -1153,7 +1167,7 @@ void ModuleSymbol::startTraversal(Traversal* traversal) {
   if (modScope) {
     prevScope = Symboltable::setCurrentScope(modScope);
   }
-  TRAVERSE_LS(stmts, traversal, true);
+  TRAVERSE_LS(stmts, traversal, false);
   if (modScope) {
     Symboltable::setCurrentScope(prevScope);
   }

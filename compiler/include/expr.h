@@ -92,6 +92,7 @@ class Expr : public BaseAST {
   Symbol* parentSymbol;
   Stmt* parentStmt;
   Expr* parentExpr;
+  SymScope* parentScope;
   AInfo *ainfo;
   Pragma *pragmas;
 

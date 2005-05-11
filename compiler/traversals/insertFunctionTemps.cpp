@@ -44,14 +44,11 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     collect(expr, &functions);
   }
   if (functions.n >= 2) {
-    /*    NoOpStmt* noop_stmt = new NoOpStmt();
-    stmt->replace(noop_stmt);
-    stmt->next = NULL;
-    stmt->prev = NULL;*/
+    BlockStmt* block_stmt = Symboltable::startCompoundStmt();
     Stmt* copy_stmt = stmt->copy(false, NULL, NULL, &functions);
-    BlockStmt* block_stmt = new BlockStmt(copy_stmt);
+    block_stmt = Symboltable::finishCompoundStmt(block_stmt, copy_stmt);
     stmt->replace(block_stmt);
-    Symboltable::pushScope(SCOPE_LOCAL);
+    SymScope* saveScope = Symboltable::setCurrentScope(block_stmt->blkScope);
     bool no_default_init = 0;
     forv_Vec(BaseAST, ast, functions) {
       FnCall* function = dynamic_cast<FnCall*>(ast);
@@ -79,8 +76,6 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
         function->replace(new Variable(def_stmt->varDef()));
       }
     }
-    SymScope* block_scope = Symboltable::popScope();
-    block_scope->setContext(block_stmt);
-    block_stmt->setBlkScope(block_scope);
+    Symboltable::setCurrentScope(saveScope);
   }
 }

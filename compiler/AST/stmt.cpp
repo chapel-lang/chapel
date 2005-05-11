@@ -17,6 +17,7 @@ Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
   parentSymbol(NULL),
   parentStmt(NULL),
+  parentScope(NULL),
   ainfo(NULL),
   pragmas(NULL)
 {}
@@ -124,6 +125,10 @@ void Stmt::verify(void) {
 
 
 void Stmt::traverse(Traversal* traversal, bool atTop) {
+  SymScope* saveScope = NULL;
+  if (atTop) {
+    saveScope = Symboltable::setCurrentScope(parentScope);
+  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessStmt(this);
   }
@@ -132,6 +137,9 @@ void Stmt::traverse(Traversal* traversal, bool atTop) {
   }
   if (traversal->processTop || !atTop) {
     traversal->postProcessStmt(this);
+  }
+  if (atTop) {
+    Symboltable::setCurrentScope(saveScope);
   }
 }
 

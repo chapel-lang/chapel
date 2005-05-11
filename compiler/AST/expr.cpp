@@ -89,6 +89,7 @@ Expr::Expr(astType_t astType) :
   parentSymbol(NULL),
   parentStmt(NULL),
   parentExpr(NULL),
+  parentScope(NULL),
   ainfo(NULL),
   pragmas(NULL)
 {}
@@ -196,6 +197,10 @@ void Expr::verify(void) {
 
 
 void Expr::traverse(Traversal* traversal, bool atTop) {
+  SymScope* saveScope = NULL;
+  if (atTop) {
+    saveScope = Symboltable::setCurrentScope(parentScope);
+  }
   if (traversal->processTop || !atTop) {
     traversal->preProcessExpr(this);
   }
@@ -204,6 +209,9 @@ void Expr::traverse(Traversal* traversal, bool atTop) {
   }
   if (traversal->processTop || !atTop) {
     traversal->postProcessExpr(this);
+  }
+  if (atTop) {
+    Symboltable::setCurrentScope(saveScope);
   }
 }
 

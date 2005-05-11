@@ -38,6 +38,19 @@ static bool EQparentSymbol(Symbol* sym1, Symbol* sym2) {
 
 
 void Fixup::preProcessStmt(Stmt* stmt) {
+  SymScope* parentScope = Symboltable::getCurrentScope();
+  if (verifyParents) {
+    if (stmt->parentScope != parentScope) {
+      INT_FATAL(stmt, "Stmt's parentScope is incorrect");
+    }
+  } else {
+    stmt->parentScope = parentScope;
+  }
+
+  if (verifyParents && !stmt->parentSymbol) {
+    INT_FATAL(stmt, "Stmt has no parentSymbol");
+  }
+
   Symbol* parentSymbol = parentSymbols.v[parentSymbols.n-1];
   if (verifyParents) {
     if (!EQparentSymbol(stmt->parentSymbol, parentSymbol)) {
@@ -70,10 +83,18 @@ void Fixup::postProcessStmt(Stmt* stmt) {
 
 
 void Fixup::preProcessExpr(Expr* expr) {
+  SymScope* parentScope = Symboltable::getCurrentScope();
+  if (verifyParents) {
+    if (expr->parentScope != parentScope) {
+      INT_FATAL(expr, "Expr's parentScope is incorrect");
+    }
+  } else {
+    expr->parentScope = parentScope;
+  }
+
   if (verifyParents && !expr->parentSymbol) {
     INT_FATAL(expr, "Expr has no parentSymbol");
   }
-
 
   Symbol* parentSymbol = parentSymbols.v[parentSymbols.n-1];
   if (verifyParents) {

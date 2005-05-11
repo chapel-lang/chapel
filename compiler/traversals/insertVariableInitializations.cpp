@@ -77,8 +77,9 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
   }    
   ForLoopStmt* loop
     = Symboltable::startForLoop(true, indices, array_type->domain->copy());
+  BlockStmt* block_stmt = Symboltable::startCompoundStmt();
   NoOpStmt* noop_stmt = new NoOpStmt();
-  BlockStmt* block_stmt = new BlockStmt(noop_stmt);
+  block_stmt = Symboltable::finishCompoundStmt(block_stmt, noop_stmt);
   loop = Symboltable::finishForLoop(loop, block_stmt);
   stmt->insertBefore(loop);
   insert_init(noop_stmt, var, array_type->elementType);
