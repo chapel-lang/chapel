@@ -30601,3 +30601,15 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/11/05 16:35:28 -- deitz
+
+Log message:
+	Added some functions, not used yet, for eventually reworking copy and
+	avoiding dynamic casts.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: baseAST.h 
+
