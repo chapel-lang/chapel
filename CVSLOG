@@ -30374,3 +30374,18 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+05/10/05 17:12:04 -- jplevyak
+
+Log message:
+	Introduce an assert to check that all types return true
+	for  type_is_used().
+	This involved adding an additional conditional so that
+	FnSymbol::type is not checked.
+	Yet another sort in the error message output.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+
