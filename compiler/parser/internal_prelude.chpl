@@ -82,7 +82,9 @@ function _chpl_calloc(number, size, description: string);
 function _chpl_free(memory);
 function _chpl_realloc(memory, number, size, description: string);
 
-function _init_string() : string;
+function _init_string() {
+  return "";
+}
 
 function _UNION_CHECK(u, tag, filename, lineno);
 function _UNION_SET(u, tag);
