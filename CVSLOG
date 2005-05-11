@@ -30445,3 +30445,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/10/05 20:00:37 -- jplevyak
+
+Log message:
+	Implement new interface to call_info which supports queries
+	over OPERATOR(s) FUNCTION(s) and SINGLE (only one call at
+	this AST).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+
