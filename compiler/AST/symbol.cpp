@@ -486,8 +486,6 @@ TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAS
     INT_FATAL(this, "Attempt to clone non-class type");
   }
 
-  if (map) map->clear();
-
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
 
   StructuralType* new_class_type =
@@ -725,7 +723,6 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 
 FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned functions
-  map->clear();
   DefExpr* this_copy = NULL;
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   Expr* expr_copy = defPoint->copy(true, map, clone_callback);
@@ -928,18 +925,19 @@ FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals
 }
 
 
-FnSymbol* FnSymbol::instantiate_generic(Map<Type*,Type*>* generic_substitutions) {
+FnSymbol* 
+FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
+                              Map<Type*,Type*>* generic_substitutions) {
   static int uid = 1; // Unique ID for cloned functions
   SymScope* save_scope;
   save_scope = Symboltable::setCurrentScope(parentScope);
 
-  Map<BaseAST*,BaseAST*> map;
   DefExpr* this_copy =
-    dynamic_cast<DefExpr*>(defPoint->copy(true, &map));
+    dynamic_cast<DefExpr*>(defPoint->copy(true, copyMap));
 
   TypeSymbol* clone = NULL;
   if (isConstructor) {
-    clone = dynamic_cast<TypeSymbol*>(retType->symbol)->clone(NULL, NULL);
+    clone = dynamic_cast<TypeSymbol*>(retType->symbol)->clone(NULL, copyMap);
     Map<BaseAST*,BaseAST*> map;
     for (int i = 0; i < generic_substitutions->n; i++) {
       if (generic_substitutions->v[i].key) {
@@ -954,16 +952,16 @@ FnSymbol* FnSymbol::instantiate_generic(Map<Type*,Type*>* generic_substitutions)
 
   for (int i = 0; i < generic_substitutions->n; i++) {
     if (generic_substitutions->v[i].key) {
-      for (int j = 0; j < map.n; j++) {
-        if (map.v[j].key == generic_substitutions->v[i].key) {
-          generic_substitutions->v[i].key = dynamic_cast<Type*>(map.v[j].value);
+      for (int j = 0; j < copyMap->n; j++) {
+        if (copyMap->v[j].key == generic_substitutions->v[i].key) {
+          generic_substitutions->v[i].key =
+            dynamic_cast<Type*>(copyMap->v[j].value);
         }
       }
     }
   }
 
-  map.clear();
-
+  Map<BaseAST*,BaseAST*> map;
   for (int i = 0; i < generic_substitutions->n; i++) {
     if (generic_substitutions->v[i].key) {
       map.put(generic_substitutions->v[i].key,

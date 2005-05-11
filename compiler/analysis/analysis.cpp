@@ -477,7 +477,8 @@ ACallbacks::instantiate_generic(Match *m) {
   form_SymSym(s, m->generic_substitutions)
     substitutions.put(dynamic_cast<Type*>(s->key->asymbol->symbol), Sym_to_Type(s->value));
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
-  FnSymbol *f = fndef->instantiate_generic(&substitutions);
+  Map<BaseAST*,BaseAST*> map;
+  FnSymbol *f = fndef->instantiate_generic(&map, &substitutions);
   Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
   return fun;

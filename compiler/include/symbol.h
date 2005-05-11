@@ -186,7 +186,8 @@ class FnSymbol : public Symbol {
   FnSymbol* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals);
   FnSymbol* coercion_wrapper(Map<Symbol *, Symbol *> *coercion_substitutions);
   FnSymbol* default_wrapper(Vec<MPosition *> *defaults);
-  FnSymbol* instantiate_generic(Map<Type *, Type *> *generic_substitutions);
+  FnSymbol* instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
+                                Map<Type*,Type*>* generic_substitutions);
 
   void codegenHeader(FILE* outfile);
   void codegenDef(FILE* outfile);
