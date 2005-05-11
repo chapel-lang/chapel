@@ -1892,6 +1892,10 @@ static int
 compar_tv_pos(const void *aa, const void *bb) {
   ATypeViolation *a = (*(ATypeViolation**)aa);
   ATypeViolation *b = (*(ATypeViolation**)bb);
+  if (a->kind < b->kind)
+    return -1;
+  if (b->kind < a->kind)
+    return 1;
   AST *aast = a->send ? a->send->var->def->code->ast : 0;
   if (!aast) aast = a->av->var->sym->ast;
   AST *bast = b->send ? b->send->var->def->code->ast : 0;

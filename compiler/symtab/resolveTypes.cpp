@@ -106,10 +106,13 @@ void ResolveTypes::processSymbol(Symbol* sym) {
     }
   }
 
-  if (sym->type && !dynamic_cast<TypeSymbol*>(sym)) {
+  if (sym->type && 
+      !dynamic_cast<TypeSymbol*>(sym) &&
+      !dynamic_cast<FnSymbol*>(sym)
+    ) {
     TypeSymbol* symType = dynamic_cast<TypeSymbol*>(sym->type->symbol);
     if (!type_is_used(symType)) {
-      // assert(0);  this would assert when sym is a FnSymbol
+      assert(0);
     }
   }
 
