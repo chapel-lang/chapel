@@ -8,17 +8,9 @@ linux regressions
   when the array is initialized.  The array needs a constructor so
   that its initialization code can be analyzed.
 
-[Error matching compiler output for classes/deitz/test_type_in_class2]
 [Error matching compiler output for classes/bradc/records/assignRecord]
 
   Fails in analysis because of the new constructor with parameters.
-
-/test/types/type_variables/deitz/test_typevar_class1.chpl
-
-  Fails because FnSymbol::default_wrapper is copying
-  formal_change->init which includes a VarInit which
-  references the original (pre-copy) formal.
-
 
 
 linux valgrind regressions
