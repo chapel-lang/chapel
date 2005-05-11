@@ -30389,3 +30389,49 @@ Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 	chapel/compiler/symtab/: resolveTypes.cpp 
 
+---------------------------------------------------------------------------
+
+05/10/05 17:33:01 -- deitz
+
+Log message:
+	Added initial support for chapel programs with multiple modules that
+	make "use" of the multiple modules.  Added two new tests, which work,
+	that test this new functionality slightly.
+	
+	In making this change, I made the default export true.  I would like
+	to discuss with Brad an option of having a single header file for
+	symbols that are exported.  Given the forwarding symbol and limited
+	code mangling, I think we can get away with this.
+	
+	Added a new pass ResolveModuleUses that adds forwarding symbols to
+	scopes where a use is used.  It also adds the module that is used to a
+	list of modules in the current module so that the module will #include
+	the other.  In addition, this pass adds a function call to the init
+	function of that module to the init function of the current module.
+	Perhaps it should be called at the site of the use instead.
+	
+	Added a forwarding symbol to variable.  I think this is unnecessary
+	unless we want to change the name of forwarded symbols.  While that
+	might be nice for code generation I think it will be needlessly
+	complicated.
+	
+	Added a function Symboltable::getCurrentModule() that returns the
+	current module during a traversal.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/include/: expr.h files.h stmt.h symbol.h 
+	                          symscope.h symtab.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             scopeResolveSymbols.cpp verify.cpp 
+	chapel/compiler/util/: files.cpp 
+Added files:
+	chapel/compiler/traversals/: resolveModuleUses.cpp 
+	                             resolveModuleUses.h 
+	chapel/test/modules/deitz/: test_module_use1.chpl 
+	                            test_module_use1.good 
+	                            test_module_use2.chpl 
+	                            test_module_use2.good 
+
