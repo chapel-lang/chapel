@@ -30521,3 +30521,34 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_class1.future 
 
+---------------------------------------------------------------------------
+
+05/11/05 13:13:16 -- deitz
+
+Log message:
+	Improved InsertFunctionTemps so that it doesn't insert a function temp
+	if the scope of the statement is different than the scope of the
+	function call.  This is the case, for example, when a function call is
+	in a let expression.  Also fixed a bug in InsertFunctionTemps in which
+	it did not insert function temps for function calls in the
+	initialization expressions to DefExprs.
+	
+	Made TransformLetExprs call InsertFunctionTemps on the block statement
+	it creates (since it will not have applied to this code before).
+	
+	Improved and rewrote TransformLetExprs to create a new scope and copy
+	the symbols deeply.  Previously I just stole the let expression scope
+	and stuck it in the block statement.  This new way is more robust.  It
+	was difficult before because copying and replacing weren't as good as
+	they are now.
+	
+	Added a test of 'record mycomplex' which will eventually be the code
+	we use for complex numbers.
+
+Modified files:
+	chapel/compiler/traversals/: insertFunctionTemps.cpp 
+	                             transformLetExprs.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_mycomplex_record.chpl 
+	                            test_mycomplex_record.good 
+
