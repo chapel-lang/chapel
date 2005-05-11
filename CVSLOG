@@ -30552,3 +30552,13 @@ Added files:
 	chapel/test/classes/deitz/: test_mycomplex_record.chpl 
 	                            test_mycomplex_record.good 
 
+---------------------------------------------------------------------------
+
+05/11/05 14:18:08 -- deitz
+
+Log message:
+	Added functionality to print_view to print out the types of symbols.
+
+Modified files:
+	chapel/compiler/traversals/: view.cpp 
+
