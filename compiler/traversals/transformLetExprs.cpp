@@ -5,6 +5,7 @@
 #include "type.h"
 #include "symtab.h"
 #include "stringutil.h"
+#include "insertFunctionTemps.h"
 
 
 TransformLetExprs::TransformLetExprs() {
@@ -13,8 +14,8 @@ TransformLetExprs::TransformLetExprs() {
 
 
 void TransformLetExprs::postProcessExpr(Expr* expr) {
-  if (LetExpr* let_expr = dynamic_cast<LetExpr*>(expr)) {
-    lets.add(let_expr);
+  if (LetExpr* letExpr = dynamic_cast<LetExpr*>(expr)) {
+    lets.add(letExpr);
   }
 }
 
@@ -28,34 +29,28 @@ void TransformLetExprs::run(ModuleSymbol* moduleList) {
 void TransformLetExprs::doTransformation(void) {
   static int uid = 1;
   forv_Vec(BaseAST, ast, lets) {
-    LetExpr* let_expr = dynamic_cast<LetExpr*>(ast);
-    if (!let_expr) {
+    LetExpr* letExpr = dynamic_cast<LetExpr*>(ast);
+    if (!letExpr) {
       INT_FATAL(ast, "LetExpr expected");
     }
-    SymScope* save_scope = Symboltable::setCurrentScope(let_expr->letScope->parent);
-    Stmt* let_stmt = let_expr->getStmt();
-    SymScope* let_scope = let_expr->letScope;
-    Expr* inner_copy = let_expr->innerExpr->copy(false, NULL, NULL, &lets);
-    let_expr->replace(inner_copy);
-    Stmt* let_stmt_copy = let_stmt->copy(false, NULL, NULL, &lets);
-    DefStmt* def_stmt = new DefStmt(let_expr->symDefs);
-    def_stmt->append(let_stmt_copy);
-    let_stmt_copy = def_stmt;
-    BlockStmt* block_stmt = new BlockStmt(let_stmt_copy, let_scope);
-    let_scope->stmtContext = block_stmt;
-    let_scope->exprContext = NULL;
-    let_scope->type = SCOPE_LOCAL;
+    Stmt* letStmt = letExpr->getStmt();
+    BlockStmt* blockStmt = Symboltable::startCompoundStmt();
+    Expr* innerCopy = letExpr->innerExpr->copy(false, NULL, NULL, &lets);
+    letExpr->replace(innerCopy);
+    Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
+    DefExpr* defExpr =
+      dynamic_cast<DefExpr*>(letExpr->symDefs->copyList(true, map, NULL, &lets));
+    Stmt* letStmtCopy = letStmt->copy(false, map, NULL, &lets);
+    DefStmt* defStmt = new DefStmt(defExpr);
+    defStmt->append(letStmtCopy);
+    blockStmt = Symboltable::finishCompoundStmt(blockStmt, defStmt);
 
-    DefExpr* def_expr = let_expr->symDefs;
-    while (def_expr) {
-      Symbol* tmp = def_expr->sym;
-      while (tmp) {
-        tmp->cname = glomstrings(3, tmp->cname, "_let_", intstring(uid++));
-        tmp = nextLink(Symbol, tmp);
-      }
-      def_expr = nextLink(DefExpr, def_expr);
+    for (DefExpr* tmp = defExpr; tmp; tmp = nextLink(DefExpr, tmp)) {
+      tmp->sym->cname =
+        glomstrings(3, tmp->sym->cname, "_let_", intstring(uid++));
     }
-    let_stmt->replace(block_stmt);
-    Symboltable::setCurrentScope(save_scope);
+
+    letStmt->replace(blockStmt);
+    TRAVERSE(blockStmt, new InsertFunctionTemps(), true);
   }
 }
