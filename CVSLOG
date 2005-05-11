@@ -30471,3 +30471,31 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/include/: expr.h 
 
+---------------------------------------------------------------------------
+
+05/11/05 11:16:05 -- deitz
+
+Log message:
+	Added Expr::parentScope and Stmt::parentScope which store the scope
+	that expressions and statements are in.  These are set in Fixup and
+	verified in Fixup-verify.
+	
+	Fixed a bug in the traversals in which the currentScope might not be
+	correct especially if the traversal was not started from a module.
+	
+	Changed atTop to be false when starting a traversal in a module so
+	that the top level statement is actually traversed.
+	
+	If atTop is true in a traversal (at the beginning), the currentScope
+	is set up.
+	
+	Fixed bugs in InsertFunctionTemps and InsertVariableInitializations in
+	which expressions and statements had the wrong scopes because block
+	statements were set up in ad hoc ways.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+	chapel/compiler/traversals/: fixup.cpp insertFunctionTemps.cpp 
+	                             insertVariableInitializations.cpp 
+
