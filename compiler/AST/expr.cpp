@@ -1178,7 +1178,9 @@ precedenceType SpecialBinOp::precedence(void) {
 MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   Expr(EXPR_MEMBERACCESS),
   base(init_base),
-  member(init_member)
+  member(init_member),
+  member_type(0),
+  member_offset(0)
 { 
 }
 

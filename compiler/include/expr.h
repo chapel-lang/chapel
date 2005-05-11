@@ -339,7 +339,6 @@ class MemberAccess : public Expr {
  public:
   Expr* base;
   Symbol* member;
-
   Type* member_type;
   int member_offset;
 
