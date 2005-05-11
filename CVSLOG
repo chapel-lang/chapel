@@ -30435,3 +30435,13 @@ Added files:
 	                            test_module_use2.chpl 
 	                            test_module_use2.good 
 
+---------------------------------------------------------------------------
+
+05/10/05 18:43:25 -- jplevyak
+
+Log message:
+	Make the error message sort more robust.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
