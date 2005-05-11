@@ -30573,3 +30573,18 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/11/05 15:31:21 -- deitz
+
+Log message:
+	Added Map<BaseAST*,BaseAST*>* as a parameter to
+	FnSymbol::instantiate_generic which will return a map of every AST
+	that was copied during an instantiation of a function (and if it is a
+	constructor, the corresponding class).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+
