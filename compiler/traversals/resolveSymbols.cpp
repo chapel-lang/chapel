@@ -136,28 +136,13 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         resolve_member_access(aop, &member_access->member_offset, 
                               &member_access->member_type);
         if (!member_access->member_type) {
-          Vec<FnSymbol *> fns;
-          call_info(aop, fns);
-          if (fns.n) {
-            FnSymbol *f_op = 0, *f_assign = 0;
-            if (aop->type == GETS_NORM) {
-              if (fns.n != 1)
-                INT_FATAL(expr, "Unable to resolve member access");
-              f_assign = fns.v[0];
-            } else {
-              if (fns.n != 2)
-                INT_FATAL(expr, "Unable to resolve member access");
-              char n = *fns.v[0]->name;
-              if (((n > ' ' && n < '0') || (n > '9' && n < 'A') ||
-                   (n > 'Z' && n < 'a') || (n > 'z'))
-                  && n != '_'&& n != '?' && n != '$') {
-                f_op = fns.v[0];
-                f_assign = fns.v[1];
-              } else {
-                f_op = fns.v[1];
-                f_assign = fns.v[0];
-              }
-            }
+            Vec<FnSymbol *> op_fns, assign_fns;
+            call_info(aop, op_fns, CALL_INFO_FIND_OPERATOR);
+            call_info(aop, assign_fns, CALL_INFO_FIND_FUNCTION);
+            if (op_fns.n > 1 || assign_fns.n != 1) 
+              INT_FATAL(expr, "Unable to resolve member access");
+            FnSymbol *f_op = op_fns.n ? op_fns.v[0] : 0;
+            FnSymbol *f_assign = assign_fns.v[0];
             Expr *rhs = aop->right->copyList();
             if (f_op) {
               if (!is_builtin(f_op)) {
@@ -178,7 +163,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             if (aop->left->astType == EXPR_MEMBERACCESS) {
               expr = aop->left;
             }
-          }
         }
       }
     }

@@ -2614,7 +2614,7 @@ ast_to_if1(Vec<Stmt *> &stmts) {
 int
 AST_to_IF1(Vec<Stmt *> &stmts) {
   if (ast_to_if1(stmts) < 0)
-    fail("unable to analyze AST\n");
+    fail("unable to analyze AST");
   return 0;
 }
 
@@ -2736,13 +2736,23 @@ return_type_info(FnSymbol *fn) {
     return dtUnknown;  // analysis not run
 }
 
-void 
-call_info(Expr* a, Vec<FnSymbol *> &fns) {
+static int
+is_operator_name(char *name) {
+  char n = *name;
+  if (((n > ' ' && n < '0') || (n > '9' && n < 'A') ||
+       (n > 'Z' && n < 'a') || (n > 'z'))
+      && n != '_'&& n != '?' && n != '$')
+    return true;
+  return false;
+}
+
+int
+call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
   FnSymbol* f = a->getStmt()->parentFunction();
   fns.clear();
   if (!f) // this is not executable code
-    return;
-  Fun *ff = f->asymbol->sym->fun;
+    return -1;
+  Fun *fun = f->asymbol->sym->fun;
   AST *ast = 0;
   Expr *e = dynamic_cast<Expr *>(a);
   if (e)
@@ -2753,15 +2763,32 @@ call_info(Expr* a, Vec<FnSymbol *> &fns) {
        ast = stmt->ainfo;
   }
   if (!ast)
-    return; // this code is not known to analysis
+    return -1; // this code is not known to analysis
   assert(ast);
-  Vec<Fun *> funs;
-  call_info(ff, ast, funs);
-  forv_Fun(f, funs) {
-    FnSymbol *fs = dynamic_cast<FnSymbol *>(f->sym->asymbol->symbol);
-    assert(fs);
-    fns.add(fs);
+  PNode *found = 0;
+  forv_PNode(n, ast->pnodes) {
+    if (n->code->kind != Code_SEND)
+      continue;
+    Vec<Fun *> *ff = fun->calls.get(n);
+    if (ff) {
+      forv_Fun(f, *ff) {
+        FnSymbol *fs = dynamic_cast<FnSymbol *>(f->sym->asymbol->symbol);
+        assert(fs);
+        if (find_type == CALL_INFO_FIND_OPERATOR) {
+          if (!is_operator_name(fs->name))
+            continue;
+        } else if (find_type == CALL_INFO_FIND_FUNCTION) {
+          if (is_operator_name(fs->name))
+            continue;
+        }
+        if (found && found != n)
+          fail("bad call to call_info");
+        found = n;
+        fns.add(fs);
+      }
+    }
   }
+  return 0;
 }
 
 int 
