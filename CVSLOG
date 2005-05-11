@@ -30588,3 +30588,16 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+05/11/05 16:28:30 -- jplevyak
+
+Log message:
+	init_string returns "".
+	sort the output of test_clone_class1a/b
+
+Modified files:
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
