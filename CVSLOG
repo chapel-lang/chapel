@@ -30640,3 +30640,62 @@ Added files:
 	                                         test_clone_class1a.prediff 
 	                                         test_clone_class1b.prediff 
 
+---------------------------------------------------------------------------
+
+05/12/05 10:13:16 -- jplevyak
+
+Log message:
+	Fix test_class_list1.future.
+	
+	The issue was how to handle dispatch on "nil".  The problem being
+	that the default constructor has a "nil" argument.
+	
+	class node {
+	  var next: node;
+	}
+	
+	the constructor is :
+	
+	function construct_node(var x : node) ...
+	
+	And the call from the default wrapper is:
+	
+	function defaulted_node() {
+	  return construct_node(next = nil);
+	}
+	
+	This will currently fail, because nil is not a subtype of node.
+	
+	There were two solutions, one of which would have been to remove the
+	type declaration for the constructor parameter.
+	
+	Solution 1:
+	
+	function construct_node(var x)  ...
+	
+	The second solution to use a "aspect" (a statement to
+	the compiler to use a particular type for dispatch purposes).
+	
+	Solution 2:
+	
+	function defaulted_node() {
+	  return construct_node(next = nil:node);
+	}
+	
+	The "aspect" tells the compiler what type to dispatch to for the nil.
+	
+	Generally, programmer's should be aware that they cannot dispatch on nil,
+	and we might want to provide a aspects, at least of nil, as a part of the
+	language.
+	
+	I implemented Solution 2 because it was the least intrusive.
+	
+	We might also want to consider also using Solution 1.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+	chapel/compiler/include/: symbol.h 
+Removed files:
+	chapel/test/classes/deitz/: test_class_list1.future 
+
