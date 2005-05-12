@@ -791,13 +791,10 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
 }
 
 
-FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
+FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   static int uid = 1; // Unique ID for wrapped functions
   FnSymbol* wrapper_symbol;
-
   Vec<Symbol*> for_removal;
-  for_removal.clear();
-
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   wrapper_symbol = new FnSymbol(name);
   wrapper_symbol->method_type = method_type;
@@ -813,52 +810,43 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
     argList->append(new Variable(actuals));
     actuals = nextLink(Symbol, actuals);
   }
-  Symboltable::pushScope(SCOPE_LOCAL);
   ParenOpExpr* fn_call = new ParenOpExpr(new Variable(this), argList);
-  Stmt* wrapper_body;
-  if (retType == dtVoid ||
-      (retType == dtUnknown && function_returns_void(this))) {
+  Symboltable::pushScope(SCOPE_LOCAL);
+  Stmt* wrapper_body = NULL;
+  if (retType == dtVoid || (retType == dtUnknown && function_returns_void(this))) {
     wrapper_body = new ExprStmt(fn_call);
   } else {
     wrapper_body = new ReturnStmt(fn_call);
   }
-  int formals_count_adjust = 0;
-  forv_Vec(MPosition, mposition, *defaults) {
-    int count = 0;
-    forv_MPosition(p, asymbol->sym->fun->positional_arg_positions) {
-      if (mposition == p) {
-        Symbol* formal_change =
-          dynamic_cast<Symbol*>(wrapper_formals->get(count - formals_count_adjust));
-        Variable* actual_change =
-          dynamic_cast<Variable*>(argList->get(count));
-        char* temp_name =
-          glomstrings(2, "_default_param_temp_", formal_change->name);
-        VarSymbol* temp_symbol = new VarSymbol(temp_name, formal_change->type);
-        DefExpr* temp_def_expr =
-          new DefExpr(temp_symbol,
-                      (dynamic_cast<ParamSymbol*>(formal_change)->intent == PARAM_OUT)
-                      ? NULL
-                      : new UserInitExpr(((ParamSymbol*)formal_change)->init->copy()));
-        DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
-        temp_def_stmt->append(wrapper_body);
-        wrapper_body = temp_def_stmt;
-        actual_change->var = temp_symbol;
-        if (formal_change == wrapper_formals) {
-          wrapper_formals = nextLink(Symbol, formal_change);
-          if (!wrapper_formals) {
-            wrapper_formals = NULL;
-          }
-        }
-        if (formal_change->prev) {
-          formal_change->prev->next = formal_change->next;
-        }
-        if (formal_change->next) {
-          formal_change->next->prev = formal_change->prev;
-        }
-        for_removal.add(formal_change);
-        formals_count_adjust++;
-      }
-      count++;
+  Vec<Symbol *> vformals, vwformals;
+  Vec<Variable *> vargs;
+  for (Symbol* formal = formals; formal; formal = nextLink(Symbol, formal))
+    vformals.add(formal);
+  for (Symbol* formal = wrapper_formals; formal; formal = nextLink(Symbol, formal))
+    vwformals.add(formal);
+  for (Variable* a = argList; a; a = nextLink(Variable, a)) 
+    vargs.add(a);
+  for (int i = 0; i< vwformals.n; i++) {
+    if (defaults->set_in(vformals.v[i])) {
+      Symbol *formal = vwformals.v[i];
+      char* temp_name = glomstrings(2, "_default_param_temp_", formal->name);
+      VarSymbol* temp_symbol = new VarSymbol(temp_name, formal->type);
+      DefExpr* temp_def_expr =
+        new DefExpr(temp_symbol,
+                    (dynamic_cast<ParamSymbol*>(formal)->intent == PARAM_OUT)
+                    ? NULL
+                    : new UserInitExpr(((ParamSymbol*)formal)->init->copy()));
+      DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
+      temp_def_stmt->append(wrapper_body);
+      wrapper_body = temp_def_stmt;
+      vargs.v[i]->var = temp_symbol;
+      if (formal == wrapper_formals)
+        wrapper_formals = nextLink(Symbol, formal);
+      if (formal->prev)
+        formal->prev->next = formal->next;
+      if (formal->next)
+        formal->next->prev = formal->prev;
+      for_removal.add(formal);
     }
   }
   SymScope* block_scope = Symboltable::popScope();
@@ -867,11 +855,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<MPosition*>* defaults) {
   block_scope->stmtContext = wrapper_block;
   DefExpr* wrapper_expr = new DefExpr(Symboltable::finishFnDef(wrapper_symbol,
                                                                wrapper_block));
-
-  forv_Vec(Symbol, sym, for_removal) {
+  forv_Vec(Symbol, sym, for_removal)
     wrapper_symbol->paramScope->remove(sym);
-  }
-
   defPoint->insertAfter(wrapper_expr);
   Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);

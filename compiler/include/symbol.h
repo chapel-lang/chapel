@@ -185,7 +185,7 @@ class FnSymbol : public Symbol {
   FnSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
   FnSymbol* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals);
   FnSymbol* coercion_wrapper(Map<Symbol *, Symbol *> *coercion_substitutions);
-  FnSymbol* default_wrapper(Vec<MPosition *> *defaults);
+  FnSymbol* default_wrapper(Vec<Symbol *> *defaults);
   FnSymbol* instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
                                 Map<Type*,Type*>* generic_substitutions);
 

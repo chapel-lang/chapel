@@ -462,8 +462,15 @@ Fun *
 ACallbacks::default_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
+  Vec<Symbol *> defaults;
+  forv_MPosition(p, m->default_args) {
+    Sym *sym = m->fun->arg_syms.get(p);
+    Symbol *symbol = sym->asymbol ? dynamic_cast<Symbol*>(sym->asymbol->symbol) : 0;
+    if (symbol)
+      defaults.set_add(symbol);
+  }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
-  FnSymbol *f = fndef->default_wrapper(&m->default_args);
+  FnSymbol *f = fndef->default_wrapper(&defaults);
   Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
   return fun;
