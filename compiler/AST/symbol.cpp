@@ -610,7 +610,6 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
-  type->symbol = this;
 }
 
  
@@ -628,7 +627,6 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
-  type->symbol = this;
 }
 
 
