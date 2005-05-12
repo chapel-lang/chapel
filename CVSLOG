@@ -30783,3 +30783,46 @@ Removed files:
 	chapel/test/functions/bradc/: typefn.future typefn2.future 
 	                              typefn3.future 
 
+---------------------------------------------------------------------------
+
+05/12/05 12:24:13 -- bradc
+
+Log message:
+	Small change to the way FnSymbols are stored.  Previously,
+	we were storing the function's return type as both its
+	FnSymbol::type and its FnSymbol::retType, and when we
+	wanted its return type, in some cases we would refer to
+	one field and in other cases the other.  This checkin causes
+	FnSymbol::type to no longer refer to the function's return
+	type, though it does not point to a correct concept of
+	function type yet either.
+	
+	What I've done is to create a new Type subclass -- FnType --
+	which is currently nothing other than a placeholder.
+	Eventually, function types should store the types (and names?)
+	of their parameters as well as the function's return type,
+	and will be used to represent the types of function variables
+	and parameters as well as Function Symbols themselves.  For
+	now, FnType is simply a placeholder to serve as a sentinel
+	that FnSymbol::type is no longer the function's return type.
+	Codegening a FnType results in an internal error, for example.
+	
+	In order to make analysis' switch statements cover all of the
+	type cases, I inserted the following case to build_type,
+	which may be completely wrong:
+	
+	    case TYPE_FN:
+	      t->asymbol->sym->type_kind = Type_FUN;
+	      break;
+	
+	However, it also didn't seem to break anything.  Put in a
+	comment marking it as questionable code which John could
+	pull out if it seems OK, or modify if it simply seems OK
+	for now (until we implement FnTypes more fully, e.g.)
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+
