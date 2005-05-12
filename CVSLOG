@@ -30896,3 +30896,31 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+05/12/05 16:02:45 -- bradc
+
+Log message:
+	Changed Roxana's #define and commented out code into
+	a temporary internal flag named "--tmpRoxIndexType"
+	which turns on the code in question.  This is done
+	in order to make her tests use this flag and ensure
+	that things don't regress without anyone noticing.
+	However, I haven't actually looked at getting the
+	tests themselves working yet.
+	
+	It seems like it would be good to have all of our
+	flags that are temporary workarounds have a common
+	prefix and/or be in a similar area of the --help
+	message so that we can prune them later if we lose
+	track of them.  That's what the "--tmp" in my flag
+	name is meant to suggest, but I'm open to other
+	schemes for keeping these flags straight.
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/symtab/: resolveTypes.cpp symtab.cpp 
+	chapel/compiler/traversals/: insertIndexType.cpp 
+	                             insertIndexType.h 
+
