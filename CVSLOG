@@ -30628,3 +30628,15 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+05/12/05 07:32:50 -- jplevyak
+
+Log message:
+	Forgot to checkin the prediff script
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1a.prediff 
+	                                         test_clone_class1b.prediff 
+
