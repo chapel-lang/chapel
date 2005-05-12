@@ -684,7 +684,7 @@ build_symbols(Vec<BaseAST *> &syms) {
         case SYMBOL_VAR: {
           VarSymbol *v = dynamic_cast<VarSymbol*>(s);
           if (v->aspect)
-            v->asymbol->sym->aspect = v->aspect->asymbol->sym;
+            v->asymbol->sym->aspect = unalias_type(v->aspect->asymbol->sym);
           break;
         }
         case SYMBOL_TYPE: {
