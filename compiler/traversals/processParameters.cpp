@@ -7,7 +7,7 @@
 
 
 ProcessParameters::ProcessParameters(void) {
-  whichModules = MODULES_USER;
+  whichModules = MODULES_COMMON_AND_USER;
 }
 
 
