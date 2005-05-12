@@ -30837,3 +30837,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/12/05 13:35:25 -- jplevyak
+
+Log message:
+	Change the last wrapper (the order_wrapper) to not depend on MPosition.
+	Removed "pattern.h" from the #includes in symbol.cpp!
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+
