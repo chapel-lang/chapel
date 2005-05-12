@@ -3,6 +3,6 @@
 
 #include "symbol.h"
 
-ModuleSymbol* ParseFile(char* filename, bool prelude = false);
+ModuleSymbol* ParseFile(char* filename, modType moduletype);
 
 #endif

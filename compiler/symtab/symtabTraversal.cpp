@@ -14,22 +14,28 @@ void SymtabTraversal::processSymbol(Symbol* sym) {
 
 
 void SymtabTraversal::run(ModuleSymbol* moduleList) {
-  if (whichModules == MODULES_ALL) {
-    // start from root of symboltable rather than internal scopes in
-    // this case
+  switch (whichModules) {
+  case MODULES_ALL:
     Symboltable::traverse(this);
-  } else if (whichModules == MODULES_COMMON_AND_USER) {
+    break;
+  case MODULES_CODEGEN:
     // start from the common module's scope in this case
-    // all modules are sub modules of common as of 4/11/05
+    // all non-internal modules are sub modules of common as of 5/12/05
     Symboltable::traverseFromScope(this, commonModule->modScope);
-  } else {
-    ModuleSymbol* mod = moduleList;
-    while (mod) {
-      if (mod->modtype == MOD_USER) {
-        Symboltable::traverseFromScope(this, mod->modScope);
+    break;
+  case MODULES_USER:
+    {
+      ModuleSymbol* mod = moduleList;
+      while (mod) {
+        if (mod->modtype == MOD_USER) {
+          Symboltable::traverseFromScope(this, mod->modScope);
+        }
+        mod = nextLink(ModuleSymbol, mod);
       }
-      mod = nextLink(ModuleSymbol, mod);
     }
+    break;
+  default:
+    INT_FATAL("Unexpected case in SymtabTraversal::run");
   }
 }
 

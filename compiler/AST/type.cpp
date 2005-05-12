@@ -1101,7 +1101,7 @@ static void codegenIOPrototypeBody(FILE* outfile, Symbol* symbol, Type* definiti
   if (isRead) {
     fprintf(outfile, " _read");
   } else {
-  fprintf(outfile, "  _write");
+    fprintf(outfile, "  _write");
   }
   definition->codegen(outfile);  
   if (isRead) {

@@ -8,7 +8,7 @@
 
 
 InsertOutParameterInitializations::InsertOutParameterInitializations() {
-  whichModules = MODULES_COMMON_AND_USER;
+  whichModules = MODULES_CODEGEN;
 }
 
 

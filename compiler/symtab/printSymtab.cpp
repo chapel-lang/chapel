@@ -10,7 +10,7 @@ void PrintSymtab::run(ModuleSymbol* moduleList) {
   if (strcmp(args, "user") == 0) {
     whichModules = MODULES_USER;
   } else if (strcmp(args, "common") == 0) {
-    whichModules = MODULES_COMMON_AND_USER;
+    whichModules = MODULES_CODEGEN;
   }
   SymtabTraversal::run(moduleList);
 }

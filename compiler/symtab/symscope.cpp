@@ -414,7 +414,11 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   visibleFunctions.clear();
 
   for(SymLink* tmp = firstSym; tmp; tmp = nextLink(SymLink, tmp)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp->pSym)) {
+    Symbol* sym = tmp->pSym;
+    while (ForwardingSymbol* forward = dynamic_cast<ForwardingSymbol*>(sym)) {
+      sym = forward->forward;
+    }
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
       while (fn) {
         if (!fn->classBinding) {
           char *n = if1_cannonicalize_string(if1, fn->name);
@@ -425,7 +429,7 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
         }
         fn = fn->overload;
       }
-    } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
+    } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym)) {
       if (StructuralType* structType = dynamic_cast<StructuralType*>(type_sym->type)) {
         if (!dynamic_cast<ClassType*>(structType)) {
           forv_Vec(FnSymbol, method, structType->methods) {

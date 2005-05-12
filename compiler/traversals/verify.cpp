@@ -163,18 +163,13 @@ static void verifyParentScope(Symbol* sym) {
  **  Verify that Symbol::defPoint is correct
  **/
 static void verifyDefPoint(Symbol* sym) {
-  if (typeid(*sym) == typeid(UnresolvedSymbol)) {
+  if (dynamic_cast<UnresolvedSymbol*>(sym) ||
+      dynamic_cast<LabelSymbol*>(sym) ||
+      dynamic_cast<ForwardingSymbol*>(sym) ||
+      dynamic_cast<SumType*>(sym->type)) {     // SJD: REMOVE
     return;
   }
-  if (typeid(*sym) == typeid(LabelSymbol)) {
-    return;
-  }
-  if (typeid(*sym) == typeid(ForwardingSymbol)) {
-    return;
-  }
-  if (typeid(*sym->type) == typeid(SumType)) { // SHOULD BE REMOVED
-    return;
-  }
+
   if (sym->parentScope && sym->parentScope->type == SCOPE_INTRINSIC) {
     return;
   }

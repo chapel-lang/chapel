@@ -11,10 +11,12 @@ static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
   if (dynamic_cast<UnresolvedType*>(type)) {
     Symbol* new_type = Symboltable::lookup(type->symbol->name);
     if (new_type) {
-      if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
+      if (ForwardingSymbol* forward =
+          dynamic_cast<ForwardingSymbol*>(new_type)) {
+        type = forward->forward->type;
+      } else if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
         type = new_type->type;
-      }
-      else {
+      } else {
         resolve_type_helper(currentFunction, new_type->type);
         type = new_type->type;
       }
@@ -51,8 +53,17 @@ ScopeResolveSymbols::ScopeResolveSymbols() {
 
 void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
-      currentFunction = fn;
+    if (def_expr->parentStmt) {
+      for (Pragma* pragma = def_expr->parentStmt->pragmas;
+           pragma;
+           pragma = dynamic_cast<Pragma*>(pragma->next)) {
+        if (!strncmp(pragma->str, "rename ", 7)) {
+          def_expr->sym->cname = copystring(pragma->str+7);
+        }
+      }
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
+        currentFunction = fn;
+      }
     }
   }
 

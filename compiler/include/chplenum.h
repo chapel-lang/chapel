@@ -3,8 +3,8 @@
 
 enum moduleSet {
   MODULES_USER = 0x1,
-  MODULES_COMMON_AND_USER = 0x2,
-  MODULES_ALL = 0x7
+  MODULES_CODEGEN = 0x7,
+  MODULES_ALL = 0x15
 };
 
 enum paramType {

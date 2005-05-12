@@ -180,7 +180,7 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(*type, "Index type expected");
   }
  
-  if (!(typeid(*index_type->idxExpr) == typeid(IntLiteral))){
+  if (!dynamic_cast<IntLiteral*>(index_type->idxExpr)) {
     Variable* var = dynamic_cast<Variable*>(index_type->idxExpr);
     if (var){
       domain_type = dynamic_cast<DomainType*>(var->var->type);
@@ -193,7 +193,7 @@ void build_index_type_def(Stmt* stmt, Type** type) {
   }
   char* name = NULL; 
   
-  if (typeid(*index_type->idxExpr) == typeid(IntLiteral)){
+  if (dynamic_cast<IntLiteral*>(index_type->idxExpr)) {
     name = glomstrings(3, "_index_", intstring(index_type->idxExpr->intVal()), "d");
   }
   else{
@@ -234,21 +234,17 @@ void build_index_type_def(Stmt* stmt, Type** type) {
  ***  get tuple_type etc. inside procedure
  ***/
 static void build_anon_type_def(Stmt* stmt, Type** type) {
-  if (typeid(**type) == typeid(ArrayType)) {
+  if (dynamic_cast<ArrayType*>(*type)) {
     ArrayType* array_type = dynamic_cast<ArrayType*>(*type);
     build_anon_type_def(stmt, &array_type->elementType);
     build_anon_array_type_def(stmt, type);
-  }
-  else if (typeid(**type) == typeid(DomainType)) {
+  } else if (dynamic_cast<DomainType*>(*type)) {
     build_anon_domain_type_def(stmt, type);
-  }
-  else if (typeid(**type) == typeid(TupleType)) {
+  } else if (dynamic_cast<TupleType*>(*type)) {
     build_anon_tuple_type_def(stmt, type);
-  }
-  else if (typeid(**type) == typeid(SeqType)) {
+  } else if (dynamic_cast<SeqType*>(*type)) {
     build_anon_seq_type_def(stmt, type);
-  }
-  if (typeid(**type) == typeid(IndexType)){
+  } else if (dynamic_cast<IndexType*>(*type)) {
     build_index_type_def(stmt, type);
   }
 }

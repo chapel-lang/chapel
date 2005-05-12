@@ -25,3 +25,15 @@ void ResolveModuleUses::preProcessStmt(Stmt* stmt) {
     currentModule->uses.add(module);
   }
 }
+
+void ResolveModuleUses::run(ModuleSymbol* moduleList) {
+//   for (ModuleSymbol* mod = moduleList; mod; mod = nextLink(ModuleSymbol, mod)) {
+//     if (mod->modtype == MOD_USER) {
+//       mod->stmts->insertBefore(
+//         new UseStmt(
+//           new Variable(
+//             new UnresolvedSymbol("_chpl_complex"))));
+//     }
+//   }
+  Traversal::run(moduleList);
+}

@@ -24,6 +24,7 @@
 #include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/createConfigVarTable.h"
+#include "../traversals/constructComplexLiterals.h"
 #include "../traversals/destructureTupleAssignments.h"
 #include "../traversals/eliminateReturns.h"
 #include "../traversals/expandClassWiths.h"
@@ -73,6 +74,7 @@ REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
 REGISTER(Codegen);
 REGISTER(ComputeVisibleFunctions);
+REGISTER(ConstructComplexLiterals);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(DestructureTupleAssignments);

@@ -3,6 +3,7 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "symtab.h"
+#include "symbol.h"
 #include "yy.h"
 
 Stmt* yystmtlist = NULL;
@@ -25,15 +26,13 @@ static char* filenameToModulename(char* filename) {
 }
 
 
-ModuleSymbol* ParseFile(char* filename, bool prelude) {
+ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   yyfilename = filename;
   yylineno = 0;
 
   char* modulename = filenameToModulename(filename);
   ModuleSymbol* newModule = Symboltable::startModuleDef(modulename, 
-                                                        (prelude ?
-                                                         MOD_INTERNAL : 
-                                                         MOD_USER));
+                                                        moduletype);
 
   yylineno = 1;
   yyin = openInputFile(filename);

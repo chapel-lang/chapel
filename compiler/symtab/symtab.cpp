@@ -171,12 +171,12 @@ ModuleSymbol* Symboltable::getCurrentModule(void) {
 
 ModuleSymbol* Symboltable::getModuleList(moduleSet whichModules) {
   switch (whichModules) {
-  case MODULES_USER:
-    return firstUserModule;
-  case MODULES_COMMON_AND_USER:
-    return commonModule;
   case MODULES_ALL:
     return firstModule;
+  case MODULES_CODEGEN:
+    return commonModule;
+  case MODULES_USER:
+    return firstUserModule;
   default:
     INT_FATAL("Unexpected case in getModuleList: %d\n", whichModules);
     return NULL;

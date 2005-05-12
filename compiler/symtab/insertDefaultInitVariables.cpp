@@ -8,7 +8,7 @@
 
 
 InsertDefaultInitVariables::InsertDefaultInitVariables() {
-  whichModules = MODULES_COMMON_AND_USER;
+  whichModules = MODULES_CODEGEN;
 }
 
 

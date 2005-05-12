@@ -1130,13 +1130,13 @@ void ModuleSymbol::codegenDef(void) {
 
   fprintf(codefile, "#include \"_CommonModule.h\"\n");
   fprintf(codefile, "#include \"_CommonModule-internal.h\"\n");
-  /** SJD: Better to export things? (above line) **/
-  fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
-  fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
 
   forv_Vec(ModuleSymbol, use, uses) {
     fprintf(codefile, "#include \"%s.h\"\n", use->name);
   }
+
+  fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
+  fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
 
   fprintf(codefile, "\n");
 

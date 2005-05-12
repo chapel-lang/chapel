@@ -74,7 +74,7 @@ static void call_info_noanalysis(ParenOpExpr* expr, Vec<FnSymbol*>& fns) {
 
 
 ResolveSymbols::ResolveSymbols() {
-  whichModules = MODULES_COMMON_AND_USER;
+  whichModules = MODULES_CODEGEN;
 }
 
 binOpType

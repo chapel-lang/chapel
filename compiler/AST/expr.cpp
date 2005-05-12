@@ -2174,7 +2174,7 @@ Type* LetExpr::typeInfo(void) {
 
 
 void LetExpr::print(FILE* outfile) {
-  INT_FATAL(this, "LetExpr::print not implemented");
+  fprintf(outfile, "Let Expr");
 }
 
 
