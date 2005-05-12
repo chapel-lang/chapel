@@ -30866,3 +30866,16 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+05/12/05 15:45:28 -- deitz
+
+Log message:
+	Added test that shows bug in user types of structural types.  This is
+	an IO codegen problem.
+
+Added files:
+	chapel/test/classes/deitz/: test_class_in_usertype.chpl 
+	                            test_class_in_usertype.future 
+	                            test_class_in_usertype.good 
+
