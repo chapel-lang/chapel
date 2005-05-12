@@ -30709,3 +30709,22 @@ Log message:
 Removed files:
 	chapel/test/functions/bradc/: typefn5.future 
 
+---------------------------------------------------------------------------
+
+05/12/05 10:54:23 -- deitz
+
+Log message:
+	Made the following traversals work on MODULES_USER and
+	MODULES_COMMON_AND_USER:
+	
+	     EliminateReturns
+	     ProcessParameters
+	     ResolveDomainRanks
+	
+	No changes to the traversals were required.
+
+Modified files:
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             processParameters.cpp 
+	                             resolveDomainRanks.cpp 
+
