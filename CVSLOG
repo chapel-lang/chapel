@@ -30924,3 +30924,13 @@ Modified files:
 	chapel/compiler/traversals/: insertIndexType.cpp 
 	                             insertIndexType.h 
 
+---------------------------------------------------------------------------
+
+05/12/05 16:04:57 -- jplevyak
+
+Log message:
+	Make sure to unalias aspects (dereference type variables used as an "aspect").
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
