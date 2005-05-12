@@ -4,6 +4,7 @@
 void _chpl_memtest_printMemTable(void);
 void _chpl_memtest_printMemStat(void);
 void _chpl_memtest_resetMemStat(void);
+void _chpl_memtest_allocAndFree(void);
 void _chpl_memtest_freedMalloc(void);
 void _chpl_memtest_freedWithoutMalloc(void);
 void _chpl_memtest_reallocWithoutMalloc(void);

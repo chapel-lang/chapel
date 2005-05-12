@@ -104,11 +104,22 @@ void setMemtrace(char* memlogname) {
 }
 
 
-static void updateMemStat(size_t chunk) {
-  totalMem += chunk;
+static void updateMaxMem(void) {
   if (totalMem > maxMem) {
     maxMem = totalMem;
   }
+}
+
+
+static void increaseMemStat(size_t chunk) {
+  totalMem += chunk;
+  updateMaxMem();
+}
+
+
+static void decreaseMemStat(size_t chunk) {
+  totalMem -= chunk;
+  updateMaxMem();
 }
 
 
@@ -251,8 +262,16 @@ static void installMemory(void* memAlloc, size_t number, size_t size,
 }
 
 
-static void updateMemory(memTableEntry* memEntry, void* newAddress, 
-                         size_t number, size_t size) {
+static void updateMemory(memTableEntry* memEntry, void* oldAddress, 
+                         void* newAddress, size_t number, size_t size) {
+  unsigned oldHashValue = hash(oldAddress);
+  unsigned newHashValue = hash(newAddress);
+
+  /* Rehash on the new memory location.  */
+  memTable[oldHashValue] = memEntry->nextInBucket;
+  memEntry->nextInBucket = memTable[newHashValue];
+  memTable[newHashValue] = memEntry;
+
   memEntry->memAlloc = newAddress;
   memEntry->number = number;
   memEntry->size = size;
@@ -347,7 +366,7 @@ void* _chpl_malloc(size_t number, size_t size, char* description) {
   if (memtable) {
     installMemory(memAlloc, number, size, description);  
     if (memstat) {
-      updateMemStat(chunk);
+      increaseMemStat(chunk);
     }
   }
   return memAlloc;
@@ -366,7 +385,7 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
     installMemory(memAlloc, number, size, description);
     if (memstat) {
       size_t chunk = number * size;
-      updateMemStat(chunk);
+      increaseMemStat(chunk);
     }
   }
   return memAlloc;
@@ -380,8 +399,7 @@ void _chpl_free(void* memAlloc) {
       size_t chunk;
       if (memEntry) {
         chunk = memEntry->number * memEntry->size;
-        /* Subtract this chunk from the memory statistics. */
-        updateMemStat(-1 * chunk);
+        decreaseMemStat(chunk);
       }
     }
     removeMemory(memAlloc);
@@ -392,12 +410,11 @@ void _chpl_free(void* memAlloc) {
 
 void* _chpl_realloc(void* memAlloc, size_t number, size_t size, 
                     char* description) {
-  size_t chunk = number * size;
-  if (!chunk) {
+  size_t newChunk = number * size;
+  if (!newChunk) {
     _chpl_free(memAlloc);
     return NULL;
   }
-
   memTableEntry* memEntry;
   if (memtable) {
     memEntry = lookupMemory(memAlloc);
@@ -407,28 +424,25 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
       exit(0);
     }
   }
-
-  void* moreMemAlloc = realloc(memAlloc, chunk);
+  void* moreMemAlloc = realloc(memAlloc, newChunk);
   confirm(moreMemAlloc, description);
 
-  if (memtable) {
-    if ((memAlloc != NULL)  && (moreMemAlloc != memAlloc)) {
+  if (memtable) { 
+    if (memAlloc != NULL) {
       if (memEntry) {
         if (memstat) {
-          size_t origChunk =  memEntry->number * memEntry->size;
-          /* Subtract this chunk from the memory statistics. */
-          updateMemStat(-1 * origChunk);
+          size_t oldChunk = memEntry->number * memEntry->size;
+          decreaseMemStat(oldChunk);
         }
-        updateMemory(memEntry, moreMemAlloc, number, size);
+        updateMemory(memEntry, memAlloc, moreMemAlloc, number, size);
       }
     } else {
       installMemory(moreMemAlloc, number, size, description);
     }
     if (memstat) {
-      updateMemStat(chunk);
+      increaseMemStat(newChunk);
     }
   }
-
   if (memlog) {
     printToMemLog(number, size, description, "realloc", memAlloc, 
                   moreMemAlloc);

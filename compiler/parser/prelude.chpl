@@ -55,8 +55,9 @@ class timer {
 -- memory tests (These tests will be moved to a module, once we have modules.)
 
 function _chpl_memtest_printMemTable();
-function _chpl_memtest_resetMemStat();
 function _chpl_memtest_printMemStat();
+function _chpl_memtest_resetMemStat();
+function _chpl_memtest_allocAndFree();
 function _chpl_memtest_freedMalloc();
 function _chpl_memtest_freedWithoutMalloc();
 function _chpl_memtest_reallocWithoutMalloc();

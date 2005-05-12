@@ -1,0 +1,10 @@
+malloc'd an int and a boolean
+totalMem=12, maxMem=12
+calloc'd a float and a complex
+totalMem=36, maxMem=36
+freed the int, the boolean, and the complex
+totalMem=8, maxMem=36
+realloc'd 10 times the float
+totalMem=80, maxMem=80
+freed the float
+totalMem=0, maxMem=80

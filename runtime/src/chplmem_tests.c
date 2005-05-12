@@ -20,6 +20,40 @@ void _chpl_memtest_resetMemStat(void) {
 }
 
 
+void _chpl_memtest_allocAndFree(void) {
+  resetMemStat();
+
+  _integer64* i = (_integer64*) _chpl_malloc(1, sizeof(_integer64), 
+                                             "_integer64");
+  _boolean* b = (_boolean*) _chpl_malloc(1, sizeof(_boolean), "_boolean");
+  fprintf(stdout, "malloc'd an int and a boolean\n");
+  printMemStat();
+
+  _float64* f = (_float64*) _chpl_calloc(1, sizeof(_float64), "_float64");
+  *f = 99.9;
+  _complex128* c = (_complex128*) _chpl_calloc(1, sizeof(_complex128), 
+                                               "_complex128");
+  c->re = 1.2;
+  c->im = 2.3;
+  fprintf(stdout, "calloc'd a float and a complex\n");
+  printMemStat();
+
+  _chpl_free(i);
+  _chpl_free(b);
+  _chpl_free(c);
+  fprintf(stdout, "freed the int, the boolean, and the complex\n");
+  printMemStat();
+
+  f = _chpl_realloc(f, 10, sizeof(_float64), "_float64");
+  fprintf(stdout, "realloc'd 10 times the float\n");
+  printMemStat();
+  
+  _chpl_free(f);
+  fprintf(stdout, "freed the float\n");
+  printMemStat();
+}
+
+
 void _chpl_memtest_freedMalloc(void) {
   _integer64* freedInt = (_integer64*) _chpl_malloc(1, sizeof(_integer64), 
                                                   "_integer64");
