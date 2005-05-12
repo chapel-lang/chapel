@@ -30934,3 +30934,66 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/12/05 16:36:59 -- deitz
+
+Log message:
+	See note below about what is commented out.  Complex is still handled
+	the old way.
+	
+	Added standard include module _chpl_complex.chpl in runtime/include/.
+	
+	This is now parsed in.  It is labeled as a MOD_STANDARD to distinguish
+	it from MOD_USER.
+	
+	Traversals can now be run on the following set of modules:
+	
+	  MODULES_USER - only user modules
+	  MODULES_CODEGEN - user modules, common module, standard modules
+	  MODULES_ALL - user, common, standard, and internal
+	
+	Traversals that are restricted now set whichModules to MODULES_CODEGEN
+	instead of MODULES_COMMON_AND_USER.
+	
+	Added a pragma for renaming a symbol.  So in the complex record, we
+	use a pragma to rename it (cname) to _chpl_complex because complex
+	clashes with the C compiler's complex.
+	
+	Added a pass to change complex literals to complex record constructor
+	invocations.
+	
+	NOTE: This pass is not invoked currently.  Also, the complex module is
+	not used by other modules.  The code to do these is commented out.
+	The main first problem is that read and write need to be made more
+	robust.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: chplenum.h parser.h symbol.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: parser.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         insertOutParameterInitializations.cpp 
+	                         insertWriteFns.cpp 
+	                         postAnalysisCleanup.cpp printSymtab.cpp 
+	                         resolveTypes.cpp symscope.cpp 
+	                         symtab.cpp symtabTraversal.cpp 
+	chapel/compiler/traversals/: Makefile.share eliminateReturns.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             resolveDomainRanks.cpp 
+	                             resolveModuleUses.cpp 
+	                             resolveModuleUses.h 
+	                             resolveSymbols.cpp 
+	                             scopeResolveSymbols.cpp verify.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+Added files:
+	chapel/compiler/traversals/: constructComplexLiterals.cpp 
+	                             constructComplexLiterals.h 
+	chapel/runtime/include/: _chpl_complex.chpl 
+
