@@ -30613,3 +30613,18 @@ Modified files:
 	chapel/compiler/AST/: baseAST.cpp 
 	chapel/compiler/include/: baseAST.h 
 
+---------------------------------------------------------------------------
+
+05/11/05 17:39:49 -- jplevyak
+
+Log message:
+	Changed the interface for the default_wrapper to use the same
+	sort of interface we are using for coercions: namely instead
+	of presenting MPositions provide Symbol * to indicate which
+	arguments are to be defaulted.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+
