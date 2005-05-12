@@ -9,7 +9,6 @@
 #include "../symtab/symlink.h"
 #include "sym.h"
 #include "fun.h"
-#include "pattern.h"
 #include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/clearTypes.h"
 #include "../traversals/updateSymbols.h"
@@ -868,7 +867,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
 }
 
 
-FnSymbol* FnSymbol::order_wrapper(Map<MPosition*,MPosition*>* formals_to_actuals) {
+FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
   static int uid = 1; // Unique ID for wrapped functions
 
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);

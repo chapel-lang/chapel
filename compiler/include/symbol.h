@@ -184,7 +184,7 @@ class FnSymbol : public Symbol {
   virtual void traverseDefSymbol(Traversal* traverse);
 
   FnSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
-  FnSymbol* order_wrapper(Map<MPosition *, MPosition *> *formals_to_actuals);
+  FnSymbol* order_wrapper(Map<Symbol *, Symbol *> *formals_to_actuals);
   FnSymbol* coercion_wrapper(Map<Symbol *, Symbol *> *coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol *> *defaults);
   FnSymbol* instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,

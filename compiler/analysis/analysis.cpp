@@ -425,7 +425,16 @@ ACallbacks::order_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
-  FnSymbol *f = fndef->order_wrapper(&m->formal_to_actual_position);
+  Map<Symbol *, Symbol *> formal_to_actual;
+  for (int i = 0; i < m->formal_to_actual_position.n; i++)
+    if (m->formal_to_actual_position.v[i].key) {
+      Sym *sym1 = m->fun->arg_syms.get(m->formal_to_actual_position.v[i].key);
+      Symbol *symbol1 = dynamic_cast<Symbol*>(sym1->asymbol->symbol);
+      Sym *sym2 = m->fun->arg_syms.get(m->formal_to_actual_position.v[i].value);
+      Symbol *symbol2 = dynamic_cast<Symbol*>(sym2->asymbol->symbol);   
+      formal_to_actual.put(symbol1, symbol2);
+    }
+  FnSymbol *f = fndef->order_wrapper(&formal_to_actual);
   Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
   return fun;
