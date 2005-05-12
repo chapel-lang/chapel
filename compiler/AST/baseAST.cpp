@@ -132,6 +132,7 @@ char* astTypeName[AST_TYPE_END+1] = {
 
   "Type",
   "BuiltinType",
+  "FnType",
   "EnumType",
   "DomainType",
   "IndexType",

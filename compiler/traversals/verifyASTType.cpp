@@ -297,6 +297,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_BUILTIN");
     }
     break;
+  case TYPE_FN:
+    if (typeid(*ast) != typeid(FnType)) {
+      INT_FATAL(ast, "Unexpected AST type type: TYPE_FN");
+    }
+    break;
   case TYPE_ENUM:
     if (typeid(*ast) != typeid(EnumType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_ENUM");
@@ -385,7 +390,8 @@ static void verifyASTType(BaseAST* ast) {
 
 
 VerifyASTType::VerifyASTType(void) {
-  if (strcmp(astTypeName[AST_TYPE_END], "AST_TYPE_END") != 0) {
+  if ((astTypeName[AST_TYPE_END] == NULL) ||
+      (strcmp(astTypeName[AST_TYPE_END], "AST_TYPE_END") != 0)) {
     INT_FATAL("Not enough strings in astTypeName (baseAST.cpp");
   }
 }

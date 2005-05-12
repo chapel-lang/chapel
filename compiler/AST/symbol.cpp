@@ -597,7 +597,7 @@ TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
                    Type* init_retType, BlockStmt* init_body,
                    bool init_exportMe, Symbol* init_classBinding) :
-  Symbol(SYMBOL_FN, init_name, init_retType, init_exportMe),
+  Symbol(SYMBOL_FN, init_name, new FnType(), init_exportMe),
   formals(init_formals),
   retType(init_retType),
   _this(NULL),
@@ -610,11 +610,12 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
+  type->symbol = this;
 }
 
  
 FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
-  Symbol(SYMBOL_FN, init_name, NULL),
+  Symbol(SYMBOL_FN, init_name, new FnType()),
   formals(NULL),
   retType(NULL),
   _this(NULL),
@@ -627,12 +628,12 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
+  type->symbol = this;
 }
 
 
 void FnSymbol::continueDef(Symbol* init_formals, Type* init_retType, bool isRef) {
   formals = init_formals;
-  type = init_retType;
   retType = init_retType;
   retRef = isRef;
 }
@@ -678,7 +679,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
   Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
-  Symboltable::continueFnDef(copy, new_formals, type, retRef);
+  Symboltable::continueFnDef(copy, new_formals, retType, retRef);
   BlockStmt* new_body = 
     dynamic_cast<BlockStmt*>(body->copyList(clone, map, analysis_clone));
   if (body != NULL && new_body == NULL) {
@@ -986,7 +987,7 @@ void FnSymbol::printDef(FILE* outfile) {
     fprintf(outfile, " ");
   } else {
     fprintf(outfile, ": ");
-    type->print(outfile);
+    retType->print(outfile);
     fprintf(outfile, " ");
   }
   body->print(outfile);

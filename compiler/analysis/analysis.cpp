@@ -706,6 +706,11 @@ build_type(Type *t) {
       t->asymbol->sym->type_kind = Type_UNKNOWN;
       break;
     case TYPE_BUILTIN: break;
+    case TYPE_FN:
+      // BLC: This may be completely wrong; I'm essentially just
+      // pattern-matching
+      t->asymbol->sym->type_kind = Type_FUN;
+      break;
     case TYPE_ENUM: {
       t->asymbol->sym->type_kind = Type_TAGGED;
       t->asymbol->sym->inherits_add(sym_enum_element);
@@ -2113,6 +2118,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case SYMBOL_FORWARDING:
   case TYPE:
   case TYPE_BUILTIN:
+  case TYPE_FN:
   case TYPE_ENUM:
   case TYPE_DOMAIN:
   case TYPE_INDEX:

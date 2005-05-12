@@ -70,6 +70,7 @@ enum astType_t {
 
   TYPE,
   TYPE_BUILTIN,
+  TYPE_FN,
   TYPE_ENUM,
   TYPE_DOMAIN,
   TYPE_INDEX,

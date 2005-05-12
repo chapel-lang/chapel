@@ -296,6 +296,22 @@ Type* Type::getType(){
   return this;
 }
 
+
+FnType::FnType(void) :
+  Type(TYPE_FN, NULL)
+{}
+
+
+void FnType::codegen(FILE* outfile) {
+  INT_FATAL(this, "FnType is not yet implemented!\n");
+}
+
+
+void FnType::codegenDef(FILE* outfile) {
+  INT_FATAL(this, "FnType is not yet implemented\n");
+}
+
+
 EnumType::EnumType(EnumSymbol* init_valList) :
   Type(TYPE_ENUM, new Variable(init_valList)),
   valList(init_valList)
