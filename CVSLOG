@@ -30728,3 +30728,41 @@ Modified files:
 	                             processParameters.cpp 
 	                             resolveDomainRanks.cpp 
 
+---------------------------------------------------------------------------
+
+05/12/05 11:09:11 -- shannon
+
+Log message:
+	Fixed a couple bugs and some other ugliness.
+	
+	Specifically:
+	
+	* chplmem.c:  Fixed a bug in the totalMem calculation
+	  where I had neglected to subtract from the total in
+	  the case where a new address was not returned on
+	  realloc yet the size of the chunk of memory had changed.
+	
+	  Fixed the updateMemory function to rehash on the new
+	  memory location returned on realloc so I can find the
+	  entry later..
+	
+	  Broke the updateMemStat function down into
+	  increaseMemStat and decreaseMemStat.  I was passing a
+	  negative value into an size_t argument.  Woops.
+	
+	* Added a test.
+	
+	* Updated the output of a couple of tests to reflect
+	  now-correct values.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/runtime/include/: chplmem_tests.h 
+	chapel/runtime/src/: chplmem.c chplmem_tests.c 
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+Added files:
+	chapel/test/memory/shannon/: allocAndFree.chpl 
+	                             allocAndFree.execopts 
+	                             allocAndFree.good 
+
