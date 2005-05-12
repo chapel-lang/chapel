@@ -666,6 +666,12 @@ build_symbols(Vec<BaseAST *> &syms) {
     Symbol *s = dynamic_cast<Symbol *>(ss);
     if (s) { 
       switch (s->astType) {
+        case SYMBOL_VAR: {
+          VarSymbol *v = dynamic_cast<VarSymbol*>(s);
+          if (v->aspect)
+            v->asymbol->sym->aspect = v->aspect->asymbol->sym;
+          break;
+        }
         case SYMBOL_TYPE: {
           TypeSymbol *t = dynamic_cast<TypeSymbol*>(s);
           if (t->type->astType == TYPE_VARIABLE)
@@ -1739,15 +1745,16 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_VARINIT: {
       VarInitExpr *s = dynamic_cast<VarInitExpr*>(ast);
       Type *t = s->expr->typeInfo();
-      if (t->defaultVal) {
-        s->ainfo->rval = new_sym();
+      s->ainfo->rval = new_sym();
+      if (t->defaultVal)
         if1_move(if1, &s->ainfo->code, get_defaultVal(t), s->ainfo->rval, s->ainfo);
-      } else if (t->defaultConstructor) {
-        s->ainfo->rval = new_sym();
+      else if (t->defaultConstructor) {
         Code *send = if1_send(if1, &s->ainfo->code, 1, 1, constructor_name(t), s->ainfo->rval);
         send->ast = s->ainfo;
-      } else
-        s->ainfo->rval = sym_nil;
+      } else {
+        if1_move(if1, &s->ainfo->code, sym_nil, s->ainfo->rval, s->ainfo);
+        s->ainfo->rval->aspect = t->asymbol->sym;
+      }
       break;
     }
     case EXPR_USERINIT: {

@@ -89,6 +89,7 @@ class VarSymbol : public Symbol {
  public:
   varType varClass;
   consType consClass;
+  Type *aspect;                 // the Type to dispatch to (e.g. "super" or for nil default args)
   bool noDefaultInit;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2

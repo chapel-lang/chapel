@@ -227,6 +227,7 @@ VarSymbol::VarSymbol(char* init_name,
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
+  aspect(NULL),
   noDefaultInit(false)
 {
 #ifdef NUMBER_VAR_SYMBOLS_UNIQUELY
@@ -249,6 +250,7 @@ VarSymbol::VarSymbol(char* init_name,
 Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(copystring(name), type, varClass, consClass);
+  newVarSymbol->aspect = aspect;
   newVarSymbol->noDefaultInit = noDefaultInit;
   return newVarSymbol;
 }
@@ -831,6 +833,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       Symbol *formal = vwformals.v[i];
       char* temp_name = glomstrings(2, "_default_param_temp_", formal->name);
       VarSymbol* temp_symbol = new VarSymbol(temp_name, formal->type);
+      if (formal->type != dtUnknown)
+        temp_symbol->aspect = formal->type;
       DefExpr* temp_def_expr =
         new DefExpr(temp_symbol,
                     (dynamic_cast<ParamSymbol*>(formal)->intent == PARAM_OUT)

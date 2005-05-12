@@ -248,7 +248,8 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
       forv_CreationSet(cs, *a->out) if (cs) {
         Sym *sym = cs->sym;
         if (a->var->sym->aspect) {
-          if (!a->var->sym->aspect->implementors.in(cs->sym))
+          if (!a->var->sym->aspect->implementors.in(cs->sym) &&
+              (cs->sym != sym_null || !sym_object->implementors.set_in(a->var->sym->aspect)))
             continue;
           sym = a->var->sym->aspect;
         }
