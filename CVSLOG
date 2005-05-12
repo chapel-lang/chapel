@@ -30699,3 +30699,13 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_class_list1.future 
 
+---------------------------------------------------------------------------
+
+05/12/05 10:35:27 -- jplevyak
+
+Log message:
+	The impossible is no longer happening.
+
+Removed files:
+	chapel/test/functions/bradc/: typefn5.future 
+
