@@ -30879,3 +30879,20 @@ Added files:
 	                            test_class_in_usertype.future 
 	                            test_class_in_usertype.good 
 
+---------------------------------------------------------------------------
+
+05/12/05 15:59:32 -- bradc
+
+Log message:
+	Based on John's note earlier about FnTypes' symbols
+	not appropriately pointing back to their FnSymbol,
+	set the symbol to NULL instead.  I was concerned
+	that if a type didn't have a symbol that something
+	downstream would choke, so used this as a short-term
+	hack.  It turns out that nothing does choke (nobody
+	must look at FnSymbol::type much), so I removed it
+	for now.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
