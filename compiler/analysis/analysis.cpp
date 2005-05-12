@@ -707,8 +707,6 @@ build_type(Type *t) {
       break;
     case TYPE_BUILTIN: break;
     case TYPE_FN:
-      // BLC: This may be completely wrong; I'm essentially just
-      // pattern-matching
       t->asymbol->sym->type_kind = Type_FUN;
       break;
     case TYPE_ENUM: {

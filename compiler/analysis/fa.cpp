@@ -1890,6 +1890,7 @@ show_call_tree(FILE *fp, AVar *av) {
 
 static int
 compar_tv(const void *aa, const void *bb) {
+  int i, j, x;
   ATypeViolation *a = (*(ATypeViolation**)aa);
   ATypeViolation *b = (*(ATypeViolation**)bb);
   AST *aast = a->send ? a->send->var->def->code->ast : 0;
@@ -1925,9 +1926,9 @@ compar_tv(const void *aa, const void *bb) {
     int x = strcmp(aast->pathname(), bast->pathname());
     if (x) return x;
   }
-  int i = aast->line();
-  int j = bast->line();
-  int x = (i > j) ? 1 : ((i < j) ? -1 : 0);
+  i = aast->line();
+  j = bast->line();
+  x = (i > j) ? 1 : ((i < j) ? -1 : 0);
   if (x)
     return x;
  Lskip:
