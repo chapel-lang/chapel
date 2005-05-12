@@ -30,6 +30,7 @@ static ModuleSymbol* currentModule = NULL;
 
 ModuleSymbol* commonModule = NULL;
 SymScope* internalScope = NULL;
+bool _dtinteger_IndexType_switch = false;
 
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);

@@ -11,7 +11,8 @@
 //RED: weird workaround for inserting the index type for an index i in forall i in D
 //since the domain type is not available when indices are inserted in the table
 //we get the i->type from D->idxType later on.
-/*void InsertIndexType::preProcessStmt(Stmt* stmt) {
+void InsertIndexType::preProcessStmt(Stmt* stmt) {
+  if (_dtinteger_IndexType_switch) {
   ForLoopStmt* for_stmt = dynamic_cast<ForLoopStmt*>(stmt);
   
   if (!for_stmt){
@@ -60,7 +61,8 @@
     indices_def->sym->type = domain_type->idxType;
     for_stmt->indices->replace(indices_def);
   }
-}*/
+}
+}
 
 void InsertIndexType::preProcessType(Type* type) {
   DomainType* domain_type = dynamic_cast<DomainType*>(type);

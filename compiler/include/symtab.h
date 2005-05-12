@@ -1,16 +1,16 @@
 #ifndef _SYMTAB_H_
 #define _SYMTAB_H_
 
-#define _dtinteger_IndexType_switch false
-
 #include "chplenum.h"
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "symscope.h"
 
+
 extern ModuleSymbol* commonModule;
 extern SymScope* internalScope;
+extern bool _dtinteger_IndexType_switch;
 
 class Symboltable {
  public:

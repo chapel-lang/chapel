@@ -112,7 +112,10 @@ void ResolveTypes::processSymbol(Symbol* sym) {
     ) {
     TypeSymbol* symType = dynamic_cast<TypeSymbol*>(sym->type->symbol);
     if (!type_is_used(symType)) {
-      assert(0);
+      INT_FATAL(sym, "type is used assertion failure");
+    }
+    if (symType == NULL) {
+      INT_FATAL("null symType");
     }
   }
 

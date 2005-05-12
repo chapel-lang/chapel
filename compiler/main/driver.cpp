@@ -96,6 +96,7 @@ static ArgumentDescription arg_desc[] = {
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
  {"useOldConstructor", ' ', "Use constructor without named parameters", "F", &useOldConstructor, "CHPL_USE_OLD_CONSTRUCTOR", NULL},
  {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
+ {"tmpRoxIndexType", ' ', "Roxana's index toggle", "F", &_dtinteger_IndexType_switch, "CHPL_DTINTEGER_INDEXTYPE_SWITCH", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
