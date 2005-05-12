@@ -216,7 +216,10 @@ AInfo::copy_tree(ASTCopyContext* context) {
   Map<BaseAST*,BaseAST*> clone_map;
   DefExpr* def_expr = dynamic_cast<DefExpr*>(xast);
   FnSymbol* orig_fn = dynamic_cast<FnSymbol*>(def_expr->sym);
-  FnSymbol *new_fn = orig_fn->clone(&callback, &clone_map);
+  FnSymbol *new_fn = orig_fn->clone(&clone_map);
+  for (int i = 0; i < clone_map.n; i++)
+    if (clone_map.v[i].key)
+      callback.clone(clone_map.v[i].key, clone_map.v[i].value);
   return new_fn->defPoint->ainfo;
 }
 
@@ -511,8 +514,11 @@ ASymbol::clone(CloneCallback *callback) {
     Type *type = dynamic_cast<Type*>(symbol);
     TypeSymbol *old_type_symbol = dynamic_cast<TypeSymbol*>(type->symbol);
     Map<BaseAST*,BaseAST*> clone_map;
-    TypeSymbol *new_type_symbol = old_type_symbol->clone(c, &clone_map);
+    TypeSymbol *new_type_symbol = old_type_symbol->clone(&clone_map);
     assert(new_type_symbol);
+    for (int i = 0; i < clone_map.n; i++)
+      if (clone_map.v[i].key)
+        callback->clone(clone_map.v[i].key, clone_map.v[i].value);
     Sym *new_type = c->context->smap.get(old_type_symbol->type->asymbol->sym);
     if (!new_type_symbol->asymbol) // SHOULD BE ASSERT
       callback->clone(old_type_symbol, new_type_symbol);

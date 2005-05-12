@@ -140,7 +140,7 @@ class TypeSymbol : public Symbol {
  public:
   TypeSymbol(char* init_name, Type* init_definition);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
-  TypeSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
+  TypeSymbol* clone(Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);
@@ -183,7 +183,7 @@ class FnSymbol : public Symbol {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
 
-  FnSymbol* clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map);
+  FnSymbol* clone(Map<BaseAST*,BaseAST*>* map);
   FnSymbol* order_wrapper(Map<Symbol *, Symbol *> *formals_to_actuals);
   FnSymbol* coercion_wrapper(Map<Symbol *, Symbol *> *coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol *> *defaults);

@@ -478,7 +478,8 @@ Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCal
 }
 
 
-TypeSymbol* TypeSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
+TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
+  CloneCallback* clone_callback = NULL;
   static int uid = 1; // Unique ID for cloned classes
 
   StructuralType* old_class_type = dynamic_cast<StructuralType*>(type);
@@ -723,11 +724,11 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 }
 
 
-FnSymbol* FnSymbol::clone(CloneCallback* clone_callback, Map<BaseAST*,BaseAST*>* map) {
+FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned functions
   DefExpr* this_copy = NULL;
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
-  Expr* expr_copy = defPoint->copy(true, map, clone_callback);
+  Expr* expr_copy = defPoint->copy(true, map, NULL);
   if (this_copy = dynamic_cast<DefExpr*>(expr_copy)) {
     this_copy->sym->cname =
       glomstrings(3, cname, "_clone_", intstring(uid++));
@@ -926,7 +927,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
 
   TypeSymbol* clone = NULL;
   if (isConstructor) {
-    clone = dynamic_cast<TypeSymbol*>(retType->symbol)->clone(NULL, copyMap);
+    clone = dynamic_cast<TypeSymbol*>(retType->symbol)->clone(copyMap);
     Map<BaseAST*,BaseAST*> map;
     for (int i = 0; i < generic_substitutions->n; i++) {
       if (generic_substitutions->v[i].key) {
