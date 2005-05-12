@@ -30766,3 +30766,20 @@ Added files:
 	                             allocAndFree.execopts 
 	                             allocAndFree.good 
 
+---------------------------------------------------------------------------
+
+05/12/05 11:10:07 -- jplevyak
+
+Log message:
+	UpdateSymbols was not updating the CastExpr::newType field which was
+	resulting in failures for instantiated generic functions which operated
+	on primitive (integer, etc) types.
+	
+	Removed the effected futures.
+
+Modified files:
+	chapel/compiler/traversals/: updateSymbols.cpp 
+Removed files:
+	chapel/test/functions/bradc/: typefn.future typefn2.future 
+	                              typefn3.future 
+
