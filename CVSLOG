@@ -30826,3 +30826,14 @@ Modified files:
 	chapel/compiler/include/: baseAST.h type.h 
 	chapel/compiler/traversals/: verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+05/12/05 12:56:29 -- jplevyak
+
+Log message:
+	Hopefully fix compilation on gcc 3.3.X for cygwin.
+	Moved declarations to the top of the function.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+
