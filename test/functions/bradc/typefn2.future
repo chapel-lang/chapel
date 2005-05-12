@@ -1,6 +1,0 @@
-bradc
-
-The references to t are not getting switched from
-VariableType to something else, nor getting their
-type fields filled in with something other than
-NULL.
