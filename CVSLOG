@@ -31038,3 +31038,36 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp clone.cpp 
 
+---------------------------------------------------------------------------
+
+05/12/05 17:50:19 -- bradc
+
+Log message:
+	Chaned Roxana's future tests that were working
+	under certain conditions when she checked her
+	code in on 4/28/05 to use the .compopts feature
+	with the new --tmp flag so that they will be
+	tested on a nightly basis.
+	
+	Re-enabled these tests by putting in yet
+	another conditional in resolveTypes that
+	determines whether or not a given type
+	should be replaced with the output of
+	analysis.  In particular, made IndexTypes
+	not get replaced by analysis because it
+	seems to replace them with integers.
+	
+	Hoisted the bulk of this conditional into
+	a helper function replaceTypeWithAnalysisType()
+	in an attempt to make the code a bit more
+	readable.
+
+Modified files:
+	chapel/compiler/symtab/: resolveTypes.cpp 
+Added files:
+	chapel/test/domains/roxana/: test_index_expr0.compopts 
+	                             test_index_expr2.compopts 
+Removed files:
+	chapel/test/domains/roxana/: test_index_expr0.future 
+	                             test_index_expr2.future 
+
