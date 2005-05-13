@@ -596,7 +596,7 @@ TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
 
 FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
                    Type* init_retType, BlockStmt* init_body,
-                   bool init_exportMe, Symbol* init_classBinding) :
+                   bool init_exportMe, Symbol* init_typeBinding) :
   Symbol(SYMBOL_FN, init_name, new FnType(), init_exportMe),
   formals(init_formals),
   retType(init_retType),
@@ -604,7 +604,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
   _setter(NULL),
   _getter(NULL),
   body(init_body),
-  classBinding(init_classBinding),
+  typeBinding(init_typeBinding),
   isConstructor(false),
   overload(NULL)
 {
@@ -613,7 +613,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
 }
 
  
-FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
+FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
   Symbol(SYMBOL_FN, init_name, new FnType()),
   formals(NULL),
   retType(NULL),
@@ -621,7 +621,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_classBinding) :
   _setter(NULL),
   _getter(NULL),
   body(NULL),
-  classBinding(init_classBinding),
+  typeBinding(init_typeBinding),
   isConstructor(false),
   overload(NULL)
 {
@@ -666,7 +666,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   } else {
     copy_name = copystring(name);
   }
-  FnSymbol* copy = new FnSymbol(copy_name, classBinding);
+  FnSymbol* copy = new FnSymbol(copy_name, typeBinding);
   copy->method_type = method_type;
   copy->isConstructor = isConstructor;
   Symboltable::startFnDef(copy);

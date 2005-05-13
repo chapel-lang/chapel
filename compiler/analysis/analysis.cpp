@@ -2278,8 +2278,8 @@ ACallbacks::finalize_functions() {
     char *name = fun->sym->has.v[0]->name;
     assert(name);
     FnSymbol *fs = dynamic_cast<FnSymbol*>(fun->sym->asymbol->symbol);
-    if (fs->classBinding && fs->classBinding->type) {
-      if (is_reference_type(fs->classBinding->asymbol->symbol)) {
+    if (fs->typeBinding && fs->typeBinding->type) {
+      if (is_reference_type(fs->typeBinding->asymbol->symbol)) {
         if (fs->method_type != NON_METHOD) {
           add_to_universal_lookup_cache(name, fun);
           added = 1;

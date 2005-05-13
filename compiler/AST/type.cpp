@@ -899,7 +899,7 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
 
   /*** set class bindings and this ***/
   forv_Vec(FnSymbol, method, new_seq_type->methods) {
-    method->classBinding = new_seq_sym;
+    method->typeBinding = new_seq_sym;
     method->_this = method->formals;
     method->cname = glomstrings(3, new_seq_sym->name, "_", method->cname);
   }
@@ -1231,7 +1231,7 @@ void StructuralType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
     TypeSymbol* type_sym;
     VarSymbol* var;
     if (def_stmt && (fn = def_stmt->fnDef())) {
-      fn->classBinding = this->symbol;
+      fn->typeBinding = this->symbol;
       fn->method_type = PRIMARY_METHOD;
       methods.add(fn);
     } else if (def_stmt && (type_sym = def_stmt->typeDef())) {

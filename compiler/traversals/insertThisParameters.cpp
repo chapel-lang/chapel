@@ -26,27 +26,17 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   }
 
   /***
-   *** Resolve classBinding
+   *** Resolve typeBinding
    ***/
-  if (dynamic_cast<UnresolvedSymbol*>(fn->classBinding)) {
-    Symbol* classBinding = Symboltable::lookup(fn->classBinding->name);
-    if (classBinding) {
-      if (TypeSymbol* classBindingTypeSymbol =
-          dynamic_cast<TypeSymbol*>(classBinding)) {
-        if (StructuralType* classBindingType =
-            dynamic_cast<StructuralType*>(classBindingTypeSymbol->type)) {
-          fn->classBinding = classBinding;
-          fn->method_type = SECONDARY_METHOD;
-          classBindingType->methods.add(fn);
-          // fn->paramScope->parent = classBindingType->structScope;
-        } else {
-          USR_FATAL(fn, "Function is not bound to legal class");
-        }
-      } else {
-        USR_FATAL(fn, "Function is not bound to legal class");
-      }
+  if (dynamic_cast<UnresolvedSymbol*>(fn->typeBinding)) {
+    Symbol* typeBindingSymbol = Symboltable::lookup(fn->typeBinding->name);
+    if (dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
+      Type* typeBinding = typeBindingSymbol->type;
+      fn->typeBinding = typeBindingSymbol;
+      fn->method_type = SECONDARY_METHOD;
+      typeBinding->methods.add(fn);
     } else {
-      USR_FATAL(fn, "Function is not bound to legal class");
+      USR_FATAL(fn, "Function is not bound to type");
     }
   }
   
@@ -54,29 +44,27 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
    *** Mangle code-generation name and insert this as first parameter
    ***/
   
-  if (TypeSymbol* class_symbol = dynamic_cast<TypeSymbol*>(fn->classBinding)) {
-    if (StructuralType* class_type = dynamic_cast<StructuralType*>(class_symbol->type)) {
-      fn->cname = glomstrings(4, "_", class_type->symbol->cname, "_", fn->cname);
-      SymScope* saveScope = Symboltable::getCurrentScope();
-      Symboltable::setCurrentScope(fn->paramScope);
-      Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", class_type);
+  if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
+    fn->cname = glomstrings(4, "_", typeSym->cname, "_", fn->cname);
+    SymScope* saveScope = Symboltable::getCurrentScope();
+    Symboltable::setCurrentScope(fn->paramScope);
+    Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);
 
-      /* SJD: Should ParamSymbols have defExprs of their own? */
-      this_insert->setDefPoint(def_stmt->defExprls);
+    /* SJD: Should ParamSymbols have defExprs of their own? */
+    this_insert->setDefPoint(def_stmt->defExprls);
 
-      Symboltable::setCurrentScope(saveScope);
-      this_insert = appendLink(this_insert, fn->formals);
-      fn->formals = this_insert;
-      fn->_this = this_insert;
-    }
+    Symboltable::setCurrentScope(saveScope);
+    this_insert = appendLink(this_insert, fn->formals);
+    fn->formals = this_insert;
+    fn->_this = this_insert;
   }
 
   /***
    *** Move function out of class scope, into module scope
    ***/
 
-  if (fn->defPoint->parentSymbol == fn->classBinding) {
-    Stmt* insertPoint = fn->classBinding->defPoint->parentStmt;
+  if (fn->defPoint->parentSymbol == fn->typeBinding) {
+    Stmt* insertPoint = fn->typeBinding->defPoint->parentStmt;
     while (!dynamic_cast<ModuleSymbol*>(insertPoint->parentSymbol)) {
       insertPoint = insertPoint->parentSymbol->defPoint->parentStmt;
     }
@@ -90,7 +78,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     fn->defPoint->parentStmt->extract();
     fn->parentScope->remove(fn);
     Symboltable::removeScope(fn->paramScope);
-    StructuralType* structuralType = dynamic_cast<StructuralType*>(fn->classBinding->type);
+    StructuralType* structuralType = dynamic_cast<StructuralType*>(fn->typeBinding->type);
     for (int i = 0; i < structuralType->methods.n; i++) {
       if (structuralType->methods.v[i] == fn) {
         structuralType->methods.v[i] = newFn;

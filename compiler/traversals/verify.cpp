@@ -149,7 +149,7 @@ static void verifyParentScope(Symbol* sym) {
   FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(sym);
   if (fn_sym && fn_sym->_getter) {
     match =
-      Symboltable::lookupInScope(sym->name, dynamic_cast<StructuralType*>(fn_sym->classBinding->type)->structScope);
+      Symboltable::lookupInScope(sym->name, dynamic_cast<StructuralType*>(fn_sym->typeBinding->type)->structScope);
     if (fn_sym->_getter == match) {
       return;
     }

@@ -243,12 +243,14 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
       if (!fn) {
         INT_FATAL("Cannot find function from SCOPE_PARAM");
       }
-      if (fn->classBinding) {
+      if (fn->typeBinding) {
         StructuralType* structuralType =
-          dynamic_cast<StructuralType*>(fn->classBinding->type);
-        Symbol* sym = lookupInScope(name, structuralType->structScope);
-        if (sym) {
-          return sym;
+          dynamic_cast<StructuralType*>(fn->typeBinding->type);
+        if (structuralType) {
+          Symbol* sym = lookupInScope(name, structuralType->structScope);
+          if (sym) {
+            return sym;
+          }
         }
       }
     }
@@ -677,7 +679,7 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
 FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
   if (noparens) {
     if (getCurrentScope()->type != SCOPE_CLASS &&
-        fnsym->classBinding == NULL) {
+        fnsym->typeBinding == NULL) {
       USR_FATAL(fnsym, 
                 "Non-member functions must have parenthesized argument lists");
     }

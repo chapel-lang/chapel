@@ -164,7 +164,7 @@ class FnSymbol : public Symbol {
   VarSymbol* _setter; /* the variable this function sets if it is a setter */
   VarSymbol* _getter; /* the variable this function gets if it is a getter */
   BlockStmt* body;
-  Symbol* classBinding;
+  Symbol* typeBinding;
   _method_type method_type;
   SymScope* paramScope;
   bool isConstructor;
@@ -174,8 +174,8 @@ class FnSymbol : public Symbol {
 
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
            BlockStmt* init_body, bool init_exportMe=true,
-           Symbol* init_classBinding = NULL);
-  FnSymbol(char* init_name, Symbol* init_classBinding = NULL);
+           Symbol* init_typeBinding = NULL);
+  FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
   void continueDef(Symbol* init_formals, Type* init_retType, bool isRef);
   void finishDef(BlockStmt* init_body, SymScope* init_paramScope, 
                  bool init_exportMe=true);

@@ -110,7 +110,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     structType->symbol->defPoint->parentStmt->insertBefore(setter_def_stmt);
     structType->methods.add(setter_fn);
     setter_fn->method_type = PRIMARY_METHOD;
-    setter_fn->classBinding = structType->symbol;
+    setter_fn->typeBinding = structType->symbol;
     setter_fn->_this = setter_this;
 
     char* getter_name = glomstrings(2, "_chplget_", tmp->name);
@@ -127,7 +127,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     structType->symbol->defPoint->parentStmt->insertBefore(getter_def_stmt);
     structType->methods.add(getter_fn);
     getter_fn->method_type = PRIMARY_METHOD;
-    getter_fn->classBinding = structType->symbol;
+    getter_fn->typeBinding = structType->symbol;
     getter_fn->_this = getter_this;
     /**
      **  Hack getter to have name of field (Can no longer lookup!)

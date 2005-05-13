@@ -26,7 +26,7 @@ void ApplyThisParameters::postProcessStmt(Stmt* stmt) {
 
 void ApplyThisParameters::preProcessExpr(Expr* expr) {
   if (Variable* member = dynamic_cast<Variable*>(expr)) {
-    if (currentFunction && currentFunction->classBinding) {
+    if (currentFunction && currentFunction->typeBinding) {
 
       if (member->var->parentScope && member->var->parentScope->type == SCOPE_CLASS) {
         // Steve, this isn't the best test?  Is there a better way to
@@ -34,7 +34,7 @@ void ApplyThisParameters::preProcessExpr(Expr* expr) {
         // ScopeResolveSymbols??
 
 //       StructuralType* structuralType =
-//         dynamic_cast<StructuralType*>(currentFunction->classBinding->type);
+//         dynamic_cast<StructuralType*>(currentFunction->typeBinding->type);
 
 //       if (Symbol* symbol = Symboltable::lookupInScope(member->var->name, 
 //                                                       structuralType->structScope)) {

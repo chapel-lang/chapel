@@ -420,7 +420,7 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
     }
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
       while (fn) {
-        if (!fn->classBinding) {
+        if (!fn->typeBinding) {
           char *n = if1_cannonicalize_string(if1, fn->name);
           Vec<FnSymbol*> *fs = visibleFunctions.get(n);
           if (!fs) fs = new Vec<FnSymbol*>;
@@ -429,28 +429,26 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
         }
         fn = fn->overload;
       }
-    } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym)) {
-      if (StructuralType* structType = dynamic_cast<StructuralType*>(type_sym->type)) {
-        if (!dynamic_cast<ClassType*>(structType)) {
-          forv_Vec(FnSymbol, method, structType->methods) {
-            while (method) {
-              char *n = if1_cannonicalize_string(if1, method->name);
-              Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-              if (!fs) fs = new Vec<FnSymbol*>;
-              fs->add(method);
-              visibleFunctions.put(n, fs);
-              method = method->overload;
-            }
-          }
-          FnSymbol* constructor = structType->defaultConstructor;
-          while (constructor) {
-            char *n = if1_cannonicalize_string(if1, constructor->name);
+    } else if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
+      if (!dynamic_cast<ClassType*>(typeSym->type)) {
+        forv_Vec(FnSymbol, method, typeSym->type->methods) {
+          while (method) {
+            char *n = if1_cannonicalize_string(if1, method->name);
             Vec<FnSymbol*> *fs = visibleFunctions.get(n);
             if (!fs) fs = new Vec<FnSymbol*>;
-            fs->add(constructor);
+            fs->add(method);
             visibleFunctions.put(n, fs);
-            constructor = constructor->overload;
+            method = method->overload;
           }
+        }
+        FnSymbol* constructor = typeSym->type->defaultConstructor;
+        while (constructor) {
+          char *n = if1_cannonicalize_string(if1, constructor->name);
+          Vec<FnSymbol*> *fs = visibleFunctions.get(n);
+          if (!fs) fs = new Vec<FnSymbol*>;
+          fs->add(constructor);
+          visibleFunctions.put(n, fs);
+          constructor = constructor->overload;
         }
       }
     }
