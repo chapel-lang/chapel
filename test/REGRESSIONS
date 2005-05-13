@@ -1,3 +1,18 @@
+# USAGE: the intent of this file is to keep track of current
+# regressions and to keep notes about why they are failing.  Since
+# linux is our main platform, linux regressions are listed first, and
+# will typically apply to all other platforms as well.  Variations on
+# linux (linux with valgrind and linux64) are listed next.  Other
+# platforms follow, listed alphabetically.  Regressions that are not
+# found on linux should be listed under the platforms in question.
+# Formatting for each entry can be loose, but should roughly follow
+# the format of test name(s), followed by a description of why that
+# test is failing, followed by an indication of whose court the
+# regression is in.
+
+
+
+=============================
 linux and general regressions
 =============================
 
@@ -9,8 +24,29 @@ linux and general regressions
   that its initialization code can be analyzed.
 
 
+
+==========================
+linux valgrind regressions
+==========================
+
+types/type_variables/deitz/test_clone_class1a:
+types/type_variables/deitz/test_clone_class1b:
+
+  Something is wrong in the qsort() done in fa.cpp which is causing
+  valgrind runs to choke (jplevyak)
+
+
+
+============================
 linux64-specific regressions
 ============================
+
+types/type_variables/deitz/test_clone_class3:
+types/type_variables/deitz/test_clone_class4:
+
+  Hit assertion error in resolveTypes::processSymbol type_is_used
+  check (???)
+
 
 memory/shannon/memstatPrint:
 memory/shannon/printFinalMemStat:
@@ -27,18 +63,28 @@ memory/shannon/printMemTable
 
 
 
+===========================
 cygwin-specific regressions
 ===========================
 
 
 
+============================
 freebsd-specific regressions
 ============================
 
 
 
+==========================
 sunos-specific regressions
 ==========================
+[Error matching compiler output for domains/roxana/test_index_expr0] 
+[Error matching compiler output for domains/roxana/test_index_expr2] 
+
+  It's not yet known why these are failing -- they may have never
+  worked on the Suns (bradc)
+
+
 trivial/shannon/compSampler:
 
   GC complains about repeated allocation of very large block for
