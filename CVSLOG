@@ -31110,3 +31110,20 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: eliminateReturns.cpp 
 
+---------------------------------------------------------------------------
+
+05/13/05 11:49:10 -- bradc
+
+Log message:
+	Updated regressions for other platforms that weren't
+	captured -- test_clone_class1a/b on linux valgrind
+	that are failing in qsort; test_clone_class3/4 on
+	linux64 that are hitting an assertion in resolveTypes
+	due to the result of type_is_used(); test_index_expr0/2
+	on SunOS for unknown reasons.  Also added usage info
+	at the top of the file to make the file's intent and
+	format somewhat documented.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
