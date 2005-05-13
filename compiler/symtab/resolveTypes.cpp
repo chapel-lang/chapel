@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include "resolveTypes.h"
 #include "analysis.h"
 #include "stmt.h"
@@ -43,6 +44,32 @@ static bool types_match(Type* super, Type* sub) {
 }
 
 
+static bool replaceTypeWithAnalysisType(Symbol* sym) {
+  if (!analyzeAST) {
+    // BLC: if analysis hasn't run, we can't use its result
+    return false;
+  }
+  if (sym->type == NULL) {
+    // BLC: if there's no type, apparently we can't call into analysis?
+    return false;
+  }
+  if (typeid(*(sym->type)) == typeid(IndexType)) {
+    // BLC: don't replace IndexTypes by what analysis has computed
+    // yet... it doesn't seem accurate enough yet
+    return false;
+  }
+  if (is_Scalar_Type(sym->type) || sym->type->astType == TYPE_USER) {
+    // BLC (quoting from John's 05/10/05 log message): "analysis
+    // defers to declared scalar types since unused scalars would
+    // otherwise not have a type from analysis (we could handle these
+    // cases specially, perhaps emitting a warning)"
+    return false;
+  }
+  // otherwise, use what analysis gives us
+  return true;
+}
+
+
 void ResolveTypes::processSymbol(Symbol* sym) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     if (fn->retType == dtUnknown) {
@@ -76,9 +103,7 @@ void ResolveTypes::processSymbol(Symbol* sym) {
         fn->retType = analysisRetType;
       }
     }
-  } else if (sym->type == dtUnknown || 
-             (analyzeAST && sym->type && !is_Scalar_Type(sym->type) && 
-              sym->type->astType != TYPE_USER)) {
+  } else if (sym->type == dtUnknown || replaceTypeWithAnalysisType(sym)) {
     if (analyzeAST) {
       sym->type = type_info(sym);
       if (checkAnalysisTypeinfo) {
