@@ -1787,22 +1787,21 @@ fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
 void
 fa_dump_types(FA *fa, FILE *fp) {
   Vec<Var *> gvars;
-  forv_Fun(f, fa->funs) {
-    forv_EntrySet(es, f->ess) {
-      if (f->sym->name)
-        fprintf(fp, "function %s (%d) ", f->sym->name, f->sym->id);
-      else
-        fprintf(fp, "function %d ", f->sym->id);
-      fprintf(fp, "entry set with %d edges\n", es->edges.count());
-      Vec<Var *> vars;
-      f->collect_Vars(vars);
-      forv_Var(v, vars) {
-        if (v->sym->global_scope) {
-          gvars.set_add(v);
-          continue;
-        }
-        fa_dump_var_types(make_AVar(v, es), fp);
+  forv_EntrySet(es, fa->ess) {
+    Fun *f = es->fun;
+    if (f->sym->name)
+      fprintf(fp, "function %s (%d) ", f->sym->name, f->sym->id);
+    else
+      fprintf(fp, "function %d ", f->sym->id);
+    fprintf(fp, "entry set with %d edges\n", es->edges.count());
+    Vec<Var *> vars;
+    f->collect_Vars(vars);
+    forv_Var(v, vars) {
+      if (v->sym->global_scope) {
+        gvars.set_add(v);
+        continue;
       }
+      fa_dump_var_types(make_AVar(v, es), fp);
     }
   }
   gvars.set_to_vec();
@@ -1900,7 +1899,10 @@ compar_tv(const void *aa, const void *bb) {
   if (!aast || !bast) {
     if (bast) return -1;
     if (aast) return 1;
-    if (a->av && b->av) {
+    if (a->av && b->av && 
+        a->av->contour != GLOBAL_CONTOUR &&
+        b->av->contour != GLOBAL_CONTOUR) 
+    {
       if (((EntrySet*)a->av->contour)->edges.n == 1 &&
           !((EntrySet*)b->av->contour)->edges.n)
         return -1;
@@ -1912,11 +1914,11 @@ compar_tv(const void *aa, const void *bb) {
         aast = ((EntrySet*)a->av->contour)->edges.v[0]->pnode->code->ast;
         bast = ((EntrySet*)b->av->contour)->edges.v[0]->pnode->code->ast;
       }
-    }
-    if (!aast || !bast) {
-      if (bast) return -1;
-      if (aast) return 1;
-      goto Lskip;
+      if (!aast || !bast) {
+        if (bast) return -1;
+        if (aast) return 1;
+        goto Lskip;
+      }
     }
   }
   if (!aast->pathname() || !bast->pathname()) {

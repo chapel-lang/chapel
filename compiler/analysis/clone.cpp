@@ -62,6 +62,15 @@ initialize() {
     if (!funs_set.in(f))
       f->ess.clear();
   }
+  forv_Sym(s, fa->pdb->if1->allsyms) {
+    if (s->creators.n) {
+      Vec<CreationSet*> creators;
+      creators.move(s->creators);
+      forv_CreationSet(cs, creators)
+        if (fa->css_set.set_in(cs))
+          s->creators.add(cs);
+    }
+  }
 }
 
 // object inlining placeholder
