@@ -28,15 +28,11 @@ BaseAST::BaseAST(astType_t type) :
 void BaseAST::copySupport(BaseAST* copy,
                           bool clone,
                           Map<BaseAST*,BaseAST*>* map,
-                          CloneCallback* analysis_clone,
                           Vec<BaseAST*>* update_list) {
   copy->lineno = lineno;
   copy->filename = filename;
   if (!RunAnalysis::isRunning) {
     //    copy->ainfo = ainfo;  // if we need this, we have to go to expr
-  }
-  if (analysis_clone) {
-    analysis_clone->clone(this, copy);
   }
   map->put(this, copy);
 }
@@ -45,7 +41,6 @@ void BaseAST::copySupport(BaseAST* copy,
 void BaseAST::copySupportTopLevel(BaseAST* copy,
                                   bool clone,
                                   Map<BaseAST*,BaseAST*>* map,
-                                  CloneCallback* analysis_clone,
                                   Vec<BaseAST*>* update_list) {
   if (update_list) {
     for (int j = 0; j < update_list->n; j++) {

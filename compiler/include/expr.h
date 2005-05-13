@@ -99,11 +99,11 @@ class Expr : public BaseAST {
 
   Expr(astType_t astType);
 
-  Expr* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL, Vec<BaseAST*>* update_list = NULL);
-  Expr* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL, Vec<BaseAST*>* update_list = NULL);
-  Expr* copyListInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
-  Expr* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  Expr* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, Vec<BaseAST*>* update_list = NULL);
+  Expr* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, Vec<BaseAST*>* update_list = NULL);
+  Expr* copyListInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
+  Expr* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 
@@ -148,7 +148,7 @@ class Literal : public Expr {
   char* str;
 
   Literal(astType_t astType, char* init_str);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   bool isComputable(void);
 
@@ -162,7 +162,7 @@ class BoolLiteral : public Literal {
   bool val;
 
   BoolLiteral(char* init_str, bool init_val);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   bool boolVal(void);
   
@@ -175,7 +175,7 @@ class IntLiteral : public Literal {
   long val;
 
   IntLiteral(char* init_str, int init_val);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   long intVal(void);
 
@@ -190,7 +190,7 @@ class FloatLiteral : public Literal {
   double val;
 
   FloatLiteral(char* init_str, double init_val);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 };
 
 
@@ -203,7 +203,7 @@ class ComplexLiteral : public Literal {
   ComplexLiteral(char* init_str, double init_imag, double init_real = 0.0,
                  char* init_realStr = "");
   void addReal(FloatLiteral* init_real);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void negateImag(void);
 
@@ -218,7 +218,7 @@ class ComplexLiteral : public Literal {
 class StringLiteral : public Literal {
  public:
   StringLiteral(char* init_val);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   Type* typeInfo(void);
 
@@ -234,7 +234,7 @@ class UnOp : public Expr {
   Expr* operand;
 
   UnOp(unOpType init_type, Expr* op);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   bool isComputable(void);
   long intVal(void);
 
@@ -257,7 +257,7 @@ class BinOp : public Expr {
   FnSymbol *resolved;
 
   BinOp(binOpType init_type, Expr* l, Expr* r);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -275,7 +275,7 @@ class AssignOp : public BinOp {
   getsOpType type;
 
   AssignOp(getsOpType init_type, Expr* l, Expr* r);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   Type* typeInfo(void);
 
@@ -288,7 +288,7 @@ class AssignOp : public BinOp {
 class SpecialBinOp : public BinOp {
  public:
   SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   Type* typeInfo(void);
 
@@ -302,7 +302,7 @@ class DefExpr : public Expr {
   UserInitExpr* init;
 
   DefExpr(Symbol* initSym, UserInitExpr* initInit = NULL);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 
   void traverseExpr(Traversal* traversal);
@@ -322,7 +322,7 @@ class Variable : public Expr {
   ForwardingSymbol* forward; // was this include by a use statement?
                              // if so, it might be renamed.
   Variable(Symbol* init_var, ForwardingSymbol* init_forward = NULL);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void traverseExpr(Traversal* traversal);
 
@@ -344,7 +344,7 @@ class MemberAccess : public Expr {
   int member_offset;
 
   MemberAccess(Expr* init_base, Symbol* init_member);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -363,7 +363,7 @@ class Tuple : public Expr {
   Expr* exprs;
 
   Tuple(Expr* init_exprs);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -380,7 +380,7 @@ class ParenOpExpr : public Expr {
 
   ParenOpExpr(Expr* init_base, Expr* init_arg = NULL);
   void setArgs(Expr* init_arg);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -393,7 +393,7 @@ class ParenOpExpr : public Expr {
 class ArrayRef : public ParenOpExpr {
  public:
   ArrayRef(Expr* init_base, Expr* init_arg = NULL);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   
   bool isConst(void);
   Type* typeInfo();
@@ -406,7 +406,7 @@ class TupleSelect : public ParenOpExpr {
  public:
   /* baseExpr is TupleExpr, argList is indexing expression (single expression) */
   TupleSelect(Expr* init_base, Expr* init_arg);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   bool isConst(void);
   Type* typeInfo(void);
@@ -418,7 +418,7 @@ class TupleSelect : public ParenOpExpr {
 class FnCall : public ParenOpExpr {
  public:
   FnCall(Expr* init_base, Expr* init_arg = NULL);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   Type* typeInfo(void);
 
@@ -433,7 +433,7 @@ class IOCall : public FnCall {
   ioCallType ioType;
 
   IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   Type* typeInfo(void);
 
@@ -446,7 +446,7 @@ class SizeofExpr : public Expr {
   Variable* variable;
 
   SizeofExpr(Variable* init_variable);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -464,7 +464,7 @@ class CastExpr : public Expr {
   Expr* expr;
 
   CastExpr(Type* init_newType, Expr* init_expr);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -482,7 +482,7 @@ class CastLikeExpr : public Expr {
   Expr* expr;
 
   CastLikeExpr(Variable* init_variable, Expr* init_expr);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -501,7 +501,7 @@ class ReduceExpr : public Expr {
   Expr* argExpr;
 
   ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, Expr* init_argExpr);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -516,7 +516,7 @@ class SeqExpr : public Expr {
   Expr* exprls;
 
   SeqExpr(Expr* init_exprls);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
@@ -533,7 +533,7 @@ class SimpleSeqExpr : public Expr {
 
   SimpleSeqExpr(Expr* init_lo, Expr* init_hi, 
                 Expr* init_str = new IntLiteral("1", 1));
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -548,7 +548,7 @@ class SimpleSeqExpr : public Expr {
 class FloodExpr : public Expr {
  public:
   FloodExpr(void);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -558,7 +558,7 @@ class FloodExpr : public Expr {
 class CompleteDimExpr : public Expr {
  public:
   CompleteDimExpr(void);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -577,7 +577,7 @@ class ForallExpr : public Expr {
              Expr* init_forallExpr = NULL);
   void setForallExpr(Expr* exp);
   void setIndexScope(SymScope* init_indexScope);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -603,7 +603,7 @@ class LetExpr : public Expr {
   void setInnerExpr(Expr* expr);
   void setSymDefs(DefExpr* expr);
   void setLetScope(SymScope* init_letScope);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -620,7 +620,7 @@ class NamedExpr : public Expr {
   char* name;
   Expr* actual;
   NamedExpr(char* init_name, Expr* init_actual);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
@@ -633,7 +633,7 @@ class VarInitExpr : public Expr {
  public:
   Expr* expr;
   VarInitExpr(Expr* init_expr);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
@@ -646,7 +646,7 @@ class UserInitExpr : public Expr {
  public:
   Expr* expr;
   UserInitExpr(Expr* init_expr);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);

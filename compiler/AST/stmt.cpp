@@ -32,11 +32,11 @@ FnSymbol *Stmt::parentFunction() {
 }
 
 
-Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
+Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list) {
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
   }
-  Stmt* newStmtList = copyListInternal(clone, map, analysis_clone);
+  Stmt* newStmtList = copyListInternal(clone, map);
   if (update_list) {
     for (int j = 0; j < update_list->n; j++) {
       for (int i = 0; i < map->n; i++) {
@@ -51,11 +51,11 @@ Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
 }
 
 
-Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list) {
+Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list) {
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
   }
-  Stmt* new_stmt = copyInternal(clone, map, analysis_clone);
+  Stmt* new_stmt = copyInternal(clone, map);
   if (update_list) {
     for (int j = 0; j < update_list->n; j++) {
       for (int i = 0; i < map->n; i++) {
@@ -70,13 +70,13 @@ Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
 }
 
 
-Stmt* Stmt::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* Stmt::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Stmt* newStmtList = NULL;
   Stmt* oldStmt = this;
 
   while (oldStmt) {
     newStmtList = appendLink(newStmtList, 
-                             oldStmt->copyInternal(clone, map, analysis_clone));
+                             oldStmt->copyInternal(clone, map));
     
     oldStmt = nextLink(Stmt, oldStmt);
   }
@@ -85,21 +85,18 @@ Stmt* Stmt::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
 }
 
 
-Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
   if (!this) {
     return this;
   }
 
-  Stmt* new_stmt = copyStmt(clone, map, analysis_clone);
+  Stmt* new_stmt = copyStmt(clone, map);
 
   new_stmt->lineno = lineno;
   new_stmt->filename = filename;
   new_stmt->pragmas = pragmas;
   if (!RunAnalysis::isRunning) {
     new_stmt->ainfo = ainfo;
-  }
-  if (analysis_clone) {
-    analysis_clone->clone(this, new_stmt);
   }
   if (map) {
     map->put(this, new_stmt);
@@ -108,7 +105,7 @@ Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 }
 
 
-Stmt* Stmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* Stmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
   INT_FATAL(this, "copy not implemented for Stmt subclass");
   return NULL;
 }
@@ -288,7 +285,7 @@ NoOpStmt::NoOpStmt(void) :
 {}
 
 
-Stmt* NoOpStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* NoOpStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new NoOpStmt();
 }
 
@@ -309,8 +306,8 @@ DefStmt::DefStmt(DefExpr* init_defExprls) :
 { }
 
 
-Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new DefStmt(dynamic_cast<DefExpr*>(defExprls->copy(clone, map, analysis_clone)));
+Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new DefStmt(dynamic_cast<DefExpr*>(defExprls->copy(clone, map)));
 }
 
 
@@ -377,8 +374,8 @@ ExprStmt::ExprStmt(Expr* initExpr) :
 { }
 
 
-Stmt* ExprStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new ExprStmt(expr->copyInternal(clone, map, analysis_clone));
+Stmt* ExprStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new ExprStmt(expr->copyInternal(clone, map));
 }
 
 
@@ -415,8 +412,8 @@ ReturnStmt::ReturnStmt(Expr* initExpr) :
 }
 
 
-Stmt* ReturnStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new ReturnStmt(expr->copyInternal(clone, map, analysis_clone));
+Stmt* ReturnStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new ReturnStmt(expr->copyInternal(clone, map));
 }
 
 
@@ -453,8 +450,8 @@ WithStmt::WithStmt(Expr* initExpr) :
 }
 
 
-Stmt* WithStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new WithStmt(expr->copyInternal(clone, map, analysis_clone));
+Stmt* WithStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new WithStmt(expr->copyInternal(clone, map));
 }
 
 
@@ -500,8 +497,8 @@ UseStmt::UseStmt(Expr* initExpr) :
 }
 
 
-Stmt* UseStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new UseStmt(expr->copyInternal(clone, map, analysis_clone));
+Stmt* UseStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new UseStmt(expr->copyInternal(clone, map));
 }
 
 
@@ -553,9 +550,9 @@ void BlockStmt::setBlkScope(SymScope* init_blkScope) {
 }
 
 
-Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_LOCAL);
-  Stmt* body_copy = body->copyListInternal(true, map, analysis_clone);
+  Stmt* body_copy = body->copyListInternal(true, map);
   SymScope* block_scope = Symboltable::popScope();
   BlockStmt* block_copy = new BlockStmt(body_copy, block_scope);
   block_scope->setContext(block_copy);
@@ -615,8 +612,8 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 }
 
 
-Stmt* WhileLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new WhileLoopStmt(isWhileDo, condition->copyInternal(clone, map, analysis_clone), body->copyInternal(clone, map, analysis_clone));
+Stmt* WhileLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new WhileLoopStmt(isWhileDo, condition->copyInternal(clone, map), body->copyInternal(clone, map));
 }
 
 
@@ -696,11 +693,11 @@ void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
 }
 
 
-Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  Expr* indices_copy = indices->copyListInternal(true, map, analysis_clone);
-  Expr* domain_copy = domain->copyInternal(true, map, analysis_clone);
-  Stmt* body_copy = body->copyInternal(true, map, analysis_clone);
+  Expr* indices_copy = indices->copyListInternal(true, map);
+  Expr* domain_copy = domain->copyInternal(true, map);
+  Stmt* body_copy = body->copyInternal(true, map);
   SymScope* index_scope = Symboltable::popScope();
   ForLoopStmt* for_loop_stmt_copy =
     new ForLoopStmt(forall, indices_copy, domain_copy, body_copy);
@@ -895,8 +892,8 @@ void CondStmt::addElseStmt(Stmt* init_elseStmt) {
 }
 
 
-Stmt* CondStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new CondStmt(condExpr->copyInternal(clone, map, analysis_clone), thenStmt->copyInternal(clone, map, analysis_clone), elseStmt->copyInternal(clone, map, analysis_clone));
+Stmt* CondStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new CondStmt(condExpr->copyInternal(clone, map), thenStmt->copyInternal(clone, map), elseStmt->copyInternal(clone, map));
 }
 
 
@@ -976,8 +973,8 @@ LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
 { }
 
 
-Stmt* LabelStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new LabelStmt(label, stmt->copyInternal(clone, map, analysis_clone));
+Stmt* LabelStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new LabelStmt(label, stmt->copyInternal(clone, map));
 }
 
 
@@ -1037,7 +1034,7 @@ GotoStmt::GotoStmt(gotoType init_goto_type, Symbol* init_label) :
 }
 
 
-Stmt* GotoStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Stmt* GotoStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new GotoStmt(goto_type, label);
 }
 

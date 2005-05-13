@@ -37,12 +37,12 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 }
 
 
-Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symbol* newSymbolList = NULL;
   Symbol* oldSymbol = this;
 
   while (oldSymbol) {
-    newSymbolList = appendLink(newSymbolList, oldSymbol->copy(clone, map, analysis_clone));
+    newSymbolList = appendLink(newSymbolList, oldSymbol->copy(clone, map));
 
     oldSymbol = nextLink(Symbol, oldSymbol);
   }
@@ -51,15 +51,11 @@ Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback*
 }
 
 
-Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Symbol* new_symbol = copySymbol(clone, map, analysis_clone);
+Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  Symbol* new_symbol = copySymbol(clone, map);
 
   new_symbol->lineno = lineno;
   new_symbol->filename = filename;
-
-  if (analysis_clone) {
-    analysis_clone->clone(this, new_symbol);
-  }
   if (map) {
     map->put(this, new_symbol);
   }
@@ -67,7 +63,7 @@ Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* ana
 }
 
 
-Symbol* Symbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Symbol* Symbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   INT_FATAL(this, "Symbol::copySymbol() not anticipated to be needed");
   return NULL;
 }
@@ -209,7 +205,7 @@ void UnresolvedSymbol::codegen(FILE* outfile) {
 }
 
 
-Symbol* UnresolvedSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Symbol* UnresolvedSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new UnresolvedSymbol(copystring(name));
 }
 
@@ -246,7 +242,7 @@ VarSymbol::VarSymbol(char* init_name,
 }
 
 
-Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(copystring(name), type, varClass, consClass);
   newVarSymbol->aspect = aspect;
@@ -383,8 +379,8 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 }
 
 
-Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new ParamSymbol(intent, copystring(name), type, init->copy(clone, map, analysis_clone));
+Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new ParamSymbol(intent, copystring(name), type, init->copy(clone, map));
 }
 
 
@@ -466,8 +462,8 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 }
 
 
-Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Type* new_type = type->copy(clone, map, analysis_clone);
+Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  Type* new_type = type->copy(clone, map);
   TypeSymbol* new_type_symbol = new TypeSymbol(copystring(name), new_type);
   new_type->addSymbol(new_type_symbol);
   if (StructuralType* stype =
@@ -479,7 +475,6 @@ Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCal
 
 
 TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
-  CloneCallback* clone_callback = NULL;
   static int uid = 1; // Unique ID for cloned classes
 
   StructuralType* old_class_type = dynamic_cast<StructuralType*>(type);
@@ -491,7 +486,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
 
   StructuralType* new_class_type =
-    dynamic_cast<StructuralType*>(type->copy(true, map, clone_callback));
+    dynamic_cast<StructuralType*>(type->copy(true, map));
 
   if (!new_class_type) {
     INT_FATAL(this, "Major error in TypeSymbol::clone");
@@ -659,7 +654,7 @@ void FnSymbol::finishDef(BlockStmt* init_body, SymScope* init_paramScope,
 }
 
 
-Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   char* copy_name;
   if (_getter) {
     copy_name = glomstrings(2, "_chplget_", name);
@@ -676,10 +671,10 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallb
   copy->_getter = _getter; // If it is a cloned class we probably want this
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
-  Symbol* new_formals = formals->copyList(clone, map, analysis_clone);
+  Symbol* new_formals = formals->copyList(clone, map);
   Symboltable::continueFnDef(copy, new_formals, retType, retRef);
   BlockStmt* new_body = 
-    dynamic_cast<BlockStmt*>(body->copyList(clone, map, analysis_clone));
+    dynamic_cast<BlockStmt*>(body->copyList(clone, map));
   if (body != NULL && new_body == NULL) {
     INT_FATAL(body, "function body was not a BlockStmt!?");
   }
@@ -1064,8 +1059,8 @@ EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
 }
 
 
-Symbol* EnumSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  return new EnumSymbol(copystring(name), init->copy(clone, map, analysis_clone), val);
+Symbol* EnumSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new EnumSymbol(copystring(name), init->copy(clone, map), val);
 }
 
 

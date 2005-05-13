@@ -50,7 +50,7 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
   }
   if (functions.n >= 2) {
     BlockStmt* blockStmt = Symboltable::startCompoundStmt();
-    Stmt* copyStmt = stmt->copy(false, NULL, NULL, &functions);
+    Stmt* copyStmt = stmt->copy(false, NULL, &functions);
     blockStmt = Symboltable::finishCompoundStmt(blockStmt, copyStmt);
     stmt->replace(blockStmt);
     SymScope* saveScope = Symboltable::setCurrentScope(blockStmt->blkScope);
@@ -68,7 +68,7 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
       if (function->parentScope == copyStmt->parentScope) {
         if (function->typeInfo() != dtVoid) {
           char* temp_name = glomstrings(2, "_fntemp_", intstring(uid++));
-          Expr* temp_init = function->copy(false, NULL, NULL, &functions);
+          Expr* temp_init = function->copy(false, NULL, &functions);
           Type* temp_type = function->typeInfo();
           varType var_type = VAR_NORMAL;
           if (Variable *fn_var = dynamic_cast<Variable*>(function->baseExpr)) {

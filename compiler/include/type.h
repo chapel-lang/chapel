@@ -36,8 +36,8 @@ class Type : public BaseAST {
 
   virtual bool isComplex(void);
 
-  Type* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, CloneCallback* analysis_clone = NULL);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  Type* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   Type *instantiate_generic(Map<Type *, Type *> &substitutions);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -87,7 +87,7 @@ class EnumType : public Type {
   EnumSymbol* valList;
 
   EnumType(EnumSymbol* init_valList);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void traverseDefType(Traversal* traversal);
 
@@ -114,7 +114,7 @@ class DomainType : public Type {
   DomainType(Expr* init_expr = NULL);
   DomainType(int init_numdims);
   void computeRank(void);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   int rank(void);
 
@@ -147,7 +147,7 @@ class IndexType : public Type {
   IndexType(Expr* init_expr = NULL);
   //IndexType(int init_numdims);
   IndexType(Type* init_idxType);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   void codegenDef(FILE* outfile);
   void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, 
                      Expr* format);
@@ -164,7 +164,7 @@ class UserType : public Type {
   Type* definition;
 
   UserType(Type* init_definition, Expr* init_defaultVal = NULL);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   bool isComplex(void);
 
@@ -182,7 +182,7 @@ class LikeType : public Type {
   Expr* expr;
 
   LikeType(Expr* init_expr);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   bool isComplex(void);
 
@@ -208,8 +208,7 @@ class StructuralType : public Type {
   void addDeclarations(Stmt* newDeclarations,
                        Stmt* afterStmt = NULL);
   void setScope(SymScope* init_structScope);
-  void copyGuts(StructuralType* copy_type, bool clone, Map<BaseAST*,BaseAST*>* map, 
-                CloneCallback* analysis_clone);
+  void copyGuts(StructuralType* copy_type, bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
@@ -236,7 +235,7 @@ class ClassType : public StructuralType {
  public:
   Vec<ClassType*> parentClasses;
   ClassType(astType_t astType = TYPE_CLASS);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual Stmt* buildIOBodyStmts(ParamSymbol* thisArg);
 
@@ -253,7 +252,7 @@ class ClassType : public StructuralType {
 class RecordType : public StructuralType {
  public:
   RecordType(void);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 };
 
 
@@ -271,7 +270,7 @@ class UnionType : public StructuralType {
   EnumType* fieldSelector;
 
   UnionType();
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void buildFieldSelector(void);
   FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
@@ -292,7 +291,7 @@ class TupleType : public StructuralType {
   TupleType(void);
   void addType(Type* additionalType);
   void rebuildDefaultVal(void);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
@@ -305,7 +304,7 @@ class SeqType : public ClassType {
   Type* elementType;
 
   SeqType::SeqType(Type* init_elementType);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -324,7 +323,7 @@ class ArrayType : public Type {
   Type* elementType;
 
   ArrayType(Expr* init_domain, Type* init_elementType);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
@@ -352,14 +351,14 @@ class VariableType : public Type {
  public:
   Type* type;
   VariableType(Type *init_type = NULL);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   void codegen(FILE* outfile);
 };
 
 class UnresolvedType : public Type {
  public:
   UnresolvedType(char* init_symbol);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   void codegen(FILE* outfile);
 };
 

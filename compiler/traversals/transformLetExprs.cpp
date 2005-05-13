@@ -35,12 +35,12 @@ void TransformLetExprs::doTransformation(void) {
     }
     Stmt* letStmt = letExpr->getStmt();
     BlockStmt* blockStmt = Symboltable::startCompoundStmt();
-    Expr* innerCopy = letExpr->innerExpr->copy(false, NULL, NULL, &lets);
+    Expr* innerCopy = letExpr->innerExpr->copy(false, NULL, &lets);
     letExpr->replace(innerCopy);
     Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
     DefExpr* defExpr =
-      dynamic_cast<DefExpr*>(letExpr->symDefs->copyList(true, map, NULL, &lets));
-    Stmt* letStmtCopy = letStmt->copy(false, map, NULL, &lets);
+      dynamic_cast<DefExpr*>(letExpr->symDefs->copyList(true, map, &lets));
+    Stmt* letStmtCopy = letStmt->copy(false, map, &lets);
     DefStmt* defStmt = new DefStmt(defExpr);
     defStmt->append(letStmtCopy);
     blockStmt = Symboltable::finishCompoundStmt(blockStmt, defStmt);

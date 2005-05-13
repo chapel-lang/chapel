@@ -57,14 +57,11 @@ bool Type::isComplex(void) {
 }
 
 
-Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Type* new_type = copyType(clone, map, analysis_clone);
+Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  Type* new_type = copyType(clone, map);
 
   new_type->lineno = lineno;
   new_type->filename = filename;
-  if (analysis_clone) {
-    analysis_clone->clone(this, new_type);
-  }
   if (map) {
     map->put(this, new_type);
   }
@@ -72,7 +69,7 @@ Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysi
 }
 
 
-Type* Type::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Type* Type::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   INT_FATAL(this, "Unanticipated call to Type::copyType");
   return NULL;
 }
@@ -324,13 +321,13 @@ EnumType::EnumType(EnumSymbol* init_valList) :
 }
 
 
-Type* EnumType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Type* EnumType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* copy = new EnumType(valList);
   copy->addSymbol(symbol);
   return copy;
 
     /*
-  Symbol* newSyms = valList->copyList(clone, map, analysis_clone);
+  Symbol* newSyms = valList->copyList(clone, map);
 
   if (typeid(*newSyms) != typeid(EnumSymbol)) {
     INT_FATAL(this, "valList is not EnumSymbol in EnumType::copyType()");
@@ -584,12 +581,12 @@ void DomainType::computeRank(void) {
 }
 
 
-Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* copy;
   if (!parent) {
     copy = new DomainType(numdims);
   } else {
-    copy = new DomainType(parent->copy(clone, map, analysis_clone));
+    copy = new DomainType(parent->copy(clone, map));
   }
   copy->addSymbol(symbol);
   return copy;
@@ -691,9 +688,8 @@ IndexType::IndexType(Expr* init_expr) :
 }
 
 
-Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 
-                          CloneCallback* analysis_clone) {
-  Type* copy = new IndexType(idxType->copy(clone, map, analysis_clone));
+Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  Type* copy = new IndexType(idxType->copy(clone, map));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -794,8 +790,8 @@ SeqType::SeqType(Type* init_elementType):
 }
 
 
-Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Type* new_type = new SeqType(elementType->copy(clone, map, analysis_clone));
+Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  Type* new_type = new SeqType(elementType->copy(clone, map));
   new_type->addSymbol(symbol);
   return new_type;
 }
@@ -933,8 +929,8 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 { }
 
 
-Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Type* copy = new ArrayType(domain->copy(clone, map, analysis_clone),
+Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  Type* copy = new ArrayType(domain->copy(clone, map),
                              elementType);
   copy->addSymbol(symbol);
   return copy;
@@ -1055,9 +1051,9 @@ UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
 {}
 
 
-Type* UserType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Type* UserType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* copy = new UserType(definition,
-                            defaultVal->copy(clone, map, analysis_clone));
+                            defaultVal->copy(clone, map));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -1144,8 +1140,8 @@ LikeType::LikeType(Expr* init_expr) :
 { }
 
 
-Type* LikeType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
-  Type* copy = new LikeType(expr->copy(clone, map, analysis_clone));
+Type* LikeType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  Type* copy = new LikeType(expr->copy(clone, map));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -1203,7 +1199,7 @@ StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
 
 
 void StructuralType::copyGuts(StructuralType* copy_type, bool clone, 
-                              Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+                              Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_CLASS);
   Stmt* new_decls = NULL;
   for (Stmt* old_decls = declarationList;
@@ -1214,7 +1210,7 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
     if (def && (fn = def->fnDef())) {
       copy_type->methods.add(fn);
     } else {
-      new_decls = appendLink(new_decls, old_decls->copy(true, map, analysis_clone));
+      new_decls = appendLink(new_decls, old_decls->copy(true, map));
     }
   }
   copy_type->addDeclarations(new_decls);
@@ -1476,10 +1472,9 @@ ClassType::ClassType(astType_t astType) :
 }
 
 
-Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 
-                          CloneCallback* analysis_clone) {
+Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ClassType* copy_type = new ClassType(astType);
-  copyGuts(copy_type, clone, map, analysis_clone);
+  copyGuts(copy_type, clone, map);
   return copy_type;
 }
 
@@ -1541,10 +1536,9 @@ RecordType::RecordType(void) :
 {}
 
 
-Type* RecordType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 
-                          CloneCallback* analysis_clone) {
+Type* RecordType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   RecordType* copy_type = new RecordType();
-  copyGuts(copy_type, clone, map, analysis_clone);
+  copyGuts(copy_type, clone, map);
   return copy_type;
 }
 
@@ -1555,10 +1549,9 @@ UnionType::UnionType(void) :
 {}
 
 
-Type* UnionType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, 
-                          CloneCallback* analysis_clone) {
+Type* UnionType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   UnionType* copy_type = new UnionType();
-  copyGuts(copy_type, clone, map, analysis_clone);
+  copyGuts(copy_type, clone, map);
   return copy_type;
 }
 
@@ -1722,12 +1715,12 @@ void TupleType::rebuildDefaultVal(void) {
 }
 
 
-Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   TupleType* newTupleType = new TupleType();
   forv_Vec(Type, component, components) {
     newTupleType->components.add(component);
   }
-  copyGuts(newTupleType, clone, map, analysis_clone);
+  copyGuts(newTupleType, clone, map);
   return newTupleType;
 }
 
@@ -1785,7 +1778,7 @@ VariableType::VariableType(Type *init_type) :
 {}
 
 
-Type* VariableType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Type* VariableType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new VariableType();
 }
 
@@ -1801,7 +1794,7 @@ UnresolvedType::UnresolvedType(char* init_symbol) :
 }
 
 
-Type* UnresolvedType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone) {
+Type* UnresolvedType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new UnresolvedType(copystring(symbol->name));
 }
 

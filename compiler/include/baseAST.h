@@ -111,8 +111,8 @@ class BaseAST : public ILink {
 
 // need to put this as default value to copy for new interface
 //    new Map<BaseAST*,BaseAST*>();
-  void copySupport(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list);
-  void copySupportTopLevel(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, CloneCallback* analysis_clone, Vec<BaseAST*>* update_list);
+  void copySupport(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list);
+  void copySupportTopLevel(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list);
 };
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)
 
