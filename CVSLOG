@@ -31071,3 +31071,19 @@ Removed files:
 	chapel/test/domains/roxana/: test_index_expr0.future 
 	                             test_index_expr2.future 
 
+---------------------------------------------------------------------------
+
+05/13/05 08:49:48 -- deitz
+
+Log message:
+	Removed CloneCallback from the copy and clone functions now that the
+	new Map interface is used.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h symbol.h 
+	                          type.h 
+	chapel/compiler/traversals/: insertFunctionTemps.cpp 
+	                             transformLetExprs.cpp 
+
