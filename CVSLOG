@@ -31026,3 +31026,15 @@ Added files:
 	                            test_integer_method2.future 
 	                            test_integer_method2.good 
 
+---------------------------------------------------------------------------
+
+05/12/05 17:39:49 -- jplevyak
+
+Log message:
+	Made sure that dead CreationSets were removed from the list of
+	creators of a type before cloning.
+	Do not print out debugging information on dead EntrySets.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp clone.cpp 
+
