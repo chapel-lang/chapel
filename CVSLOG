@@ -31087,3 +31087,14 @@ Modified files:
 	chapel/compiler/traversals/: insertFunctionTemps.cpp 
 	                             transformLetExprs.cpp 
 
+---------------------------------------------------------------------------
+
+05/13/05 11:10:34 -- shannon
+
+Log message:
+	Removed two now-passing tests and reordered the listing
+	of two tests to match the nightly output.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
