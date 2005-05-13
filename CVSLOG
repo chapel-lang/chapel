@@ -31098,3 +31098,15 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/13/05 11:18:23 -- bradc
+
+Log message:
+	Took out a special-casing for returning string types
+	that used to be required before Steve handled string
+	initialization differently in his 05/09/05 check-in.
+
+Modified files:
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+
