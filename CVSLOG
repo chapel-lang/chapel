@@ -30997,3 +30997,32 @@ Added files:
 	                             constructComplexLiterals.h 
 	chapel/runtime/include/: _chpl_complex.chpl 
 
+---------------------------------------------------------------------------
+
+05/12/05 17:15:19 -- deitz
+
+Log message:
+	Moved Vec<FnSymbol*> methods out of StructuralType:: and into Type::.
+	This means that a secondary method can be defined on any type.
+	
+	Renamed FnSymbol::classBinding to FnSymbol::typeBinding.
+	
+	Added a test case that defines a function integer.print() and calls it
+	as in i.print().  It works.  Added a test case that yields a syntax
+	error when you try to write 12.print().
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             buildClassConstructorsEtc.cpp 
+	                             insertThisParameters.cpp verify.cpp 
+Added files:
+	chapel/test/trivial/deitz/: test_integer_method.chpl 
+	                            test_integer_method.good 
+	                            test_integer_method2.chpl 
+	                            test_integer_method2.future 
+	                            test_integer_method2.good 
+
