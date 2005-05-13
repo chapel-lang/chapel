@@ -64,9 +64,7 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
                                                                    var_type,
                                                                    VAR_VAR);
       retval = retValDefStmt->varDef();
-      if (retType != dtString) {
-        retval->noDefaultInit = true;
-      }
+      retval->noDefaultInit = true;
       blockBody->body->insertBefore(retValDefStmt);
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
