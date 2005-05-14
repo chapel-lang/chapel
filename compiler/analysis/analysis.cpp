@@ -1370,6 +1370,10 @@ gen_forall_internal(AInfo *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> 
     if1_add_send_result(if1, send, i->asymbol->sym);
   send->ast = ainfo;
 
+  if (!ainfo->label[0])
+    ainfo->label[0] = if1_alloc_label(if1);
+  if (!ainfo->label[1])
+    ainfo->label[1] = if1_alloc_label(if1);
   // build loop
   if1_loop(if1, &ainfo->code, ainfo->label[0], ainfo->label[1],
            condition_rval, setup_code, 
