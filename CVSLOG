@@ -31127,3 +31127,13 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/13/05 21:11:57 -- jplevyak
+
+Log message:
+	Fix SEGV associated with IF1 translation of EXPR_FORALL
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
