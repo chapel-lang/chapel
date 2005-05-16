@@ -102,6 +102,7 @@ REGISTER(InsertWriteFns);
 REGISTER(LegalizeCNames);
 REGISTER(OmitForNoAnalysis);
 REGISTER(PostAnalysisCleanup);
+REGISTER(PreSpecializeParenOpExprs);
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);

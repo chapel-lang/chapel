@@ -106,17 +106,24 @@ is_builtin(FnSymbol *fn) {
 }
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
-  if (typeid(*expr) == typeid(ParenOpExpr)) {
+  if (typeid(*expr) == typeid(ParenOpExpr) 
+      || (analyzeAST && typeid(*expr) == typeid(FnCall) && expr->resolved)
+    ) 
+  {
     ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr);
     Vec<FnSymbol*> fns;
 
     if (analyzeAST) {
-      call_info(paren, fns);
-      if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
-        call_info(paren->baseExpr, fns);
-      }
-      if (fns.n != 1) {
-        INT_FATAL(expr, "Unable to resolve function");
+      if (paren->resolved) {
+        fns.add(paren->resolved);
+      } else {
+        call_info(paren, fns);
+        if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
+          call_info(paren->baseExpr, fns);
+        }
+        if (fns.n != 1) {
+          INT_FATAL(expr, "Unable to resolve function");
+        }
       }
     } else {
       call_info_noanalysis(paren, fns);

@@ -91,7 +91,8 @@ Expr::Expr(astType_t astType) :
   parentExpr(NULL),
   parentScope(NULL),
   ainfo(NULL),
-  pragmas(NULL)
+  pragmas(NULL),
+  resolved(0)
 {}
 
 
@@ -921,8 +922,7 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
   Expr(EXPR_BINOP),
   type(init_type),
   left(l),
-  right(r),
-  resolved(0)
+  right(r)
 {
 }
 

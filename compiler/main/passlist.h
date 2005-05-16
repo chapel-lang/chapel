@@ -47,7 +47,7 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(BuildClassConstructorsEtc, ""),
   RUN(Verify, ""), // this is a sanity check
-  RUN(SpecializeParenOpExprs, ""),
+  RUN(PreSpecializeParenOpExprs, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ApplyThisParameters, ""),
   RUN(Verify, ""), // this is a sanity check
@@ -78,6 +78,9 @@ PassInfo passlist[] = {
   RUN(ResolveTypes, ""),
   RUN(PostAnalysisCleanup, ""),
   RUN(ResolveTupleTypes, ""),
+  RUN(Verify, ""), // this is a sanity check
+  RUN(SpecializeParenOpExprs, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(ResolveSymbols, ""),
   //RUN(FindUnknownTypes, ""),
   RUN(RemoveTypeVariableActuals, ""),
@@ -89,6 +92,7 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertWriteFns, ""),
   RUN(InsertElidedLoops, ""),
+
 
   // check the program's semantics
   RUN(Verify, ""), // this is a sanity check

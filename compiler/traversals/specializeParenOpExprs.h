@@ -12,6 +12,11 @@
 
 #include "traversal.h"
 
+class PreSpecializeParenOpExprs : public Traversal {
+ public:
+  void postProcessExpr(Expr* expr);
+};
+
 class SpecializeParenOpExprs : public Traversal {
  public:
   void postProcessExpr(Expr* expr);

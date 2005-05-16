@@ -1899,31 +1899,7 @@ compar_tv(const void *aa, const void *bb) {
   if (!aast || !bast) {
     if (bast) return -1;
     if (aast) return 1;
-#if 0
-    if (a->av && b->av && 
-        a->av->contour != GLOBAL_CONTOUR && b->av->contour != GLOBAL_CONTOUR && 
-        a->av->contour_is_entry_set && b->av->contour_is_entry_set) 
-    {
-      if (((EntrySet*)a->av->contour)->edges.n == 1 &&
-          !((EntrySet*)b->av->contour)->edges.n)
-        return -1;
-      if (((EntrySet*)b->av->contour)->edges.n == 1 &&
-          !((EntrySet*)a->av->contour)->edges.n)
-        return 1;
-      if (((EntrySet*)a->av->contour)->edges.n == 1 &&
-          ((EntrySet*)b->av->contour)->edges.n == 1) {
-        aast = ((EntrySet*)a->av->contour)->edges.v[0]->pnode->code->ast;
-        bast = ((EntrySet*)b->av->contour)->edges.v[0]->pnode->code->ast;
-      }
-      if (!aast || !bast) {
-        if (bast) return -1;
-        if (aast) return 1;
-        goto Lskip;
-      }
-    }
-#else
     goto Lskip;
-#endif
   }
   if (!aast->pathname() || !bast->pathname()) {
     if (bast->pathname()) return -1;

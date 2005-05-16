@@ -95,6 +95,7 @@ class Expr : public BaseAST {
   SymScope* parentScope;
   AInfo *ainfo;
   Pragma *pragmas;
+  FnSymbol *resolved;
 
 
   Expr(astType_t astType);
@@ -254,7 +255,6 @@ class BinOp : public Expr {
   binOpType type;
   Expr* left;
   Expr* right;
-  FnSymbol *resolved;
 
   BinOp(binOpType init_type, Expr* l, Expr* r);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
