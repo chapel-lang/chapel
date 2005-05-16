@@ -31257,3 +31257,18 @@ Removed files:
 	chapel/test/types/tuple/jplevyak/: tuple_index-1.future 
 	                                   tuple_index-2.future 
 
+---------------------------------------------------------------------------
+
+05/16/05 15:07:48 -- bradc
+
+Log message:
+	Killed some dead code in the glomstrings routines that
+	a code review with Shannon turned up.
+
+Modified files:
+	chapel/compiler/util/: stringutil.cpp 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+	                             printMemTable.good 
+
