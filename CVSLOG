@@ -31244,3 +31244,16 @@ Modified files:
 	                             specializeParenOpExprs.cpp 
 	                             specializeParenOpExprs.h 
 
+---------------------------------------------------------------------------
+
+05/16/05 14:36:26 -- jplevyak
+
+Log message:
+	Remove some futures which are now working for the right reasons.
+
+Removed files:
+	chapel/test/functions/jplevyak/: equal-8.future 
+	chapel/test/types/tuple/deitz/: test_tuple_simple6.future 
+	chapel/test/types/tuple/jplevyak/: tuple_index-1.future 
+	                                   tuple_index-2.future 
+
