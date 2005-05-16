@@ -50,6 +50,8 @@ class Symbol : public BaseAST {
 
   Symbol* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   Symbol* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
+  Symbol* copyListInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
+  Symbol* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

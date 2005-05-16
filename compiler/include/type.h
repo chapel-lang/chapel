@@ -37,6 +37,7 @@ class Type : public BaseAST {
   virtual bool isComplex(void);
 
   Type* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
+  Type* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   Type *instantiate_generic(Map<Type *, Type *> &substitutions);
 

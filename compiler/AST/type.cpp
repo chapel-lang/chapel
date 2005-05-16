@@ -58,6 +58,20 @@ bool Type::isComplex(void) {
 
 
 Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  if (!this) {
+    return this;
+  }
+
+  if (map == NULL) {
+    map = new Map<BaseAST*,BaseAST*>();
+  }
+  Type* new_type = copyInternal(clone, map);
+  TRAVERSE(new_type, new UpdateSymbols(map), true);
+  return new_type;
+}
+
+
+Type* Type::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* new_type = copyType(clone, map);
 
   new_type->lineno = lineno;
@@ -586,7 +600,7 @@ Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   if (!parent) {
     copy = new DomainType(numdims);
   } else {
-    copy = new DomainType(parent->copy(clone, map));
+    copy = new DomainType(parent->copyInternal(clone, map));
   }
   copy->addSymbol(symbol);
   return copy;
@@ -689,7 +703,7 @@ IndexType::IndexType(Expr* init_expr) :
 
 
 Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy = new IndexType(idxType->copy(clone, map));
+  Type* copy = new IndexType(idxType->copyInternal(clone, map));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -791,7 +805,7 @@ SeqType::SeqType(Type* init_elementType):
 
 
 Type* SeqType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* new_type = new SeqType(elementType->copy(clone, map));
+  Type* new_type = new SeqType(elementType->copyInternal(clone, map));
   new_type->addSymbol(symbol);
   return new_type;
 }
@@ -930,7 +944,7 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 
 
 Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy = new ArrayType(domain->copy(clone, map),
+  Type* copy = new ArrayType(domain->copyInternal(clone, map),
                              elementType);
   copy->addSymbol(symbol);
   return copy;
@@ -1053,7 +1067,7 @@ UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
 
 Type* UserType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* copy = new UserType(definition,
-                            defaultVal->copy(clone, map));
+                            defaultVal->copyInternal(clone, map));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -1141,7 +1155,7 @@ LikeType::LikeType(Expr* init_expr) :
 
 
 Type* LikeType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy = new LikeType(expr->copy(clone, map));
+  Type* copy = new LikeType(expr->copyInternal(clone, map));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -1210,7 +1224,7 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
     if (def && (fn = def->fnDef())) {
       copy_type->methods.add(fn);
     } else {
-      new_decls = appendLink(new_decls, old_decls->copy(true, map));
+      new_decls = appendLink(new_decls, old_decls->copyInternal(true, map));
     }
   }
   copy_type->addDeclarations(new_decls);

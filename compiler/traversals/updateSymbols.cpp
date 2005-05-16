@@ -42,6 +42,16 @@ void UpdateSymbols::preProcessExpr(Expr* expr) {
         }
       }
     }
+  } else if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(expr)) {
+    for (int i = 0; i < copy_map->n; i++) {
+      if (copy_map->v[i].key == memberAccess->member) {
+        if (Symbol* new_sym = dynamic_cast<Symbol*>(copy_map->v[i].value)) {
+          memberAccess->member = new_sym;
+        } else {
+          INT_FATAL("Major error in UpdateSymbols");
+        }
+      }
+    }
   }
 }
 

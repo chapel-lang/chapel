@@ -2228,7 +2228,7 @@ VarInitExpr::VarInitExpr(Expr* init_expr) :
 
 
 Expr* VarInitExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new VarInitExpr(expr->copy(clone, map));
+  return new VarInitExpr(expr->copyInternal(clone, map));
 }
 
 

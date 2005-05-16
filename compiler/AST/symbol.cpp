@@ -38,11 +38,37 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 
 
 Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  if (!this) {
+    return this;
+  }
+  if (map == NULL) {
+    map = new Map<BaseAST*,BaseAST*>();
+  }
+  Symbol* newSymbolList = copyListInternal(clone, map);
+  TRAVERSE_LS(newSymbolList, new UpdateSymbols(map), true);
+  return newSymbolList;
+}
+
+
+Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  if (!this) {
+    return this;
+  }
+  if (map == NULL) {
+    map = new Map<BaseAST*,BaseAST*>();
+  }
+  Symbol* new_symbol = copyInternal(clone, map);
+  TRAVERSE(new_symbol, new UpdateSymbols(map), true);
+  return new_symbol;
+}
+
+
+Symbol* Symbol::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symbol* newSymbolList = NULL;
   Symbol* oldSymbol = this;
 
   while (oldSymbol) {
-    newSymbolList = appendLink(newSymbolList, oldSymbol->copy(clone, map));
+    newSymbolList = appendLink(newSymbolList, oldSymbol->copyInternal(clone, map));
 
     oldSymbol = nextLink(Symbol, oldSymbol);
   }
@@ -51,7 +77,7 @@ Symbol* Symbol::copyList(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
-Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
+Symbol* Symbol::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symbol* new_symbol = copySymbol(clone, map);
 
   new_symbol->lineno = lineno;
@@ -380,7 +406,7 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 
 
 Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ParamSymbol(intent, copystring(name), type, init->copy(clone, map));
+  return new ParamSymbol(intent, copystring(name), type, init->copyInternal(clone, map));
 }
 
 
@@ -463,7 +489,7 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 
 
 Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* new_type = type->copy(clone, map);
+  Type* new_type = type->copyInternal(clone, map);
   TypeSymbol* new_type_symbol = new TypeSymbol(copystring(name), new_type);
   new_type->addSymbol(new_type_symbol);
   if (StructuralType* stype =
@@ -671,10 +697,10 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   copy->_getter = _getter; // If it is a cloned class we probably want this
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
-  Symbol* new_formals = formals->copyList(clone, map);
+  Symbol* new_formals = formals->copyListInternal(clone, map);
   Symboltable::continueFnDef(copy, new_formals, retType, retRef);
   BlockStmt* new_body = 
-    dynamic_cast<BlockStmt*>(body->copyList(clone, map));
+    dynamic_cast<BlockStmt*>(body->copyListInternal(clone, map));
   if (body != NULL && new_body == NULL) {
     INT_FATAL(body, "function body was not a BlockStmt!?");
   }
@@ -908,42 +934,8 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
 }
 
 
-FnSymbol* 
-FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
-                              Map<Type*,Type*>* generic_substitutions) {
-  static int uid = 1; // Unique ID for cloned functions
-  SymScope* save_scope;
-  save_scope = Symboltable::setCurrentScope(parentScope);
-
-  DefExpr* this_copy =
-    dynamic_cast<DefExpr*>(defPoint->copy(true, copyMap));
-
-  TypeSymbol* clone = NULL;
-  if (isConstructor) {
-    clone = dynamic_cast<TypeSymbol*>(retType->symbol)->clone(copyMap);
-    Map<BaseAST*,BaseAST*> map;
-    for (int i = 0; i < generic_substitutions->n; i++) {
-      if (generic_substitutions->v[i].key) {
-        map.put(generic_substitutions->v[i].key,
-                generic_substitutions->v[i].value);
-        map.put(generic_substitutions->v[i].key->symbol,
-                generic_substitutions->v[i].value->symbol);
-      }
-    }
-    TRAVERSE(clone->defPoint, new UpdateSymbols(&map), true);
-  }
-
-  for (int i = 0; i < generic_substitutions->n; i++) {
-    if (generic_substitutions->v[i].key) {
-      for (int j = 0; j < copyMap->n; j++) {
-        if (copyMap->v[j].key == generic_substitutions->v[i].key) {
-          generic_substitutions->v[i].key =
-            dynamic_cast<Type*>(copyMap->v[j].value);
-        }
-      }
-    }
-  }
-
+static void
+instantiate_update_expr(Map<Type*,Type*>* generic_substitutions, Expr* expr) {
   Map<BaseAST*,BaseAST*> map;
   for (int i = 0; i < generic_substitutions->n; i++) {
     if (generic_substitutions->v[i].key) {
@@ -953,18 +945,77 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
               generic_substitutions->v[i].value->symbol);
     }
   }
-  if (isConstructor) {
-    map.put(retType->symbol, clone);
-    map.put(retType, clone->type);
-  }
-  TRAVERSE(this_copy, new UpdateSymbols(&map), true);
+  TRAVERSE(expr, new UpdateSymbols(&map), true);
+}
 
-  this_copy->sym->cname =
-    glomstrings(3, this_copy->sym->cname, "_instantiate_", intstring(uid++));
-  defPoint->insertBefore(this_copy);
+
+static void
+instantiate_add_subs(Map<Type*,Type*>* generic_substitutions,
+                     Map<BaseAST*,BaseAST*>* map) {
+  for (int i = 0; i < generic_substitutions->n; i++) {
+    if (generic_substitutions->v[i].key) {
+      for (int j = 0; j < map->n; j++) {
+        if (map->v[j].key == generic_substitutions->v[i].key) {
+          generic_substitutions->put(dynamic_cast<Type*>(map->v[j].value),
+                                     generic_substitutions->v[i].value);
+        }
+      }
+    }
+  }
+}
+
+
+FnSymbol* 
+FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
+                              Map<Type*,Type*>* generic_substitutions) {
+  FnSymbol* copy = NULL;
+
+  static int uid = 1; // Unique ID for cloned functions
+
+  TypeSymbol* clone = NULL;
+  if (isConstructor) {
+    TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
+    SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
+    clone = typeSym->clone(map);
+    instantiate_add_subs(generic_substitutions, map);
+    instantiate_update_expr(generic_substitutions, clone->defPoint);
+    generic_substitutions->put(typeSym->type, clone->type);
+    Symboltable::setCurrentScope(save_scope);
+    forv_Vec(FnSymbol, method, typeSym->type->methods) {
+      SymScope* save_scope = Symboltable::setCurrentScope(method->parentScope);
+      DefExpr* fnDef =
+        dynamic_cast<DefExpr*>(method->defPoint->copy(true, map));
+      instantiate_add_subs(generic_substitutions, map);
+      instantiate_update_expr(generic_substitutions, fnDef);
+      fnDef->sym->cname =
+        glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
+      method->defPoint->insertBefore(fnDef);
+      Symboltable::setCurrentScope(save_scope);
+      FnSymbol* methodClone = dynamic_cast<FnSymbol*>(fnDef->sym);
+      if (method == this) {
+        copy = methodClone;
+      }
+      clone->type->methods.add(methodClone);
+      methodClone->typeBinding = clone;
+      methodClone->method_type = method->method_type;
+    }
+  } else {
+    SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
+    DefExpr* fnDef = dynamic_cast<DefExpr*>(defPoint->copy(true, map));
+    instantiate_add_subs(generic_substitutions, map);
+    instantiate_update_expr(generic_substitutions, fnDef);
+    fnDef->sym->cname =
+      glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
+    defPoint->insertBefore(fnDef);
+    copy = dynamic_cast<FnSymbol*>(fnDef->sym);
+    Symboltable::setCurrentScope(save_scope);
+  }
+
+  if (!copy) {
+    INT_FATAL(this, "Instantiation error");
+  }
   
-  Symboltable::setCurrentScope(save_scope);
-  return dynamic_cast<FnSymbol*>(this_copy->sym);
+  return copy;
 }
 
 
@@ -1060,7 +1111,7 @@ EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
 
 
 Symbol* EnumSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new EnumSymbol(copystring(name), init->copy(clone, map), val);
+  return new EnumSymbol(copystring(name), init->copyInternal(clone, map), val);
 }
 
 
