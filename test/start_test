@@ -224,8 +224,19 @@
 
 set user = `whoami`
 
+#
+# unset things that users may have set in their environment
+#
 unsetenv CHPL_SYSTEM_DIR
 unsetenv CHPL_DEVELOPER
+
+#
+# try to squelch GC warnings about large allocations -- we may want
+# to debug this eventually; they seem to flit in and out 
+# nondeterministically from one run to the next.  For now, we'll just
+# turn them off.
+#
+setenv GC_NO_BLACKLIST_WARNING 1
 
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 
