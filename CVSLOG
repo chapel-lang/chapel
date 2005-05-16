@@ -31185,3 +31185,17 @@ Modified files:
 	chapel/compiler/include/: symbol.h type.h 
 	chapel/compiler/traversals/: updateSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+05/16/05 11:08:32 -- bradc
+
+Log message:
+	Fixed a bug in the test system pointed out by John in
+	which a future test whose program execution failed
+	(either through a fault or a non-zero status code)
+	would be flagged as a failure rather than a future
+	failure.
+
+Modified files:
+	chapel/test/: sub_test 
+
