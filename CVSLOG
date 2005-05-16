@@ -31160,3 +31160,28 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+05/16/05 10:57:28 -- deitz
+
+Log message:
+	Made FnSymbol::instantiate_generic instantiate all the methods of a
+	class when it is called on the constructor of that class.  It does not
+	copy other functions that act on the instantiated class yet.
+	
+	I also made it so that the Map<BaseAST*,BaseAST*>* parameter of
+	instantiate_generic is filled in.  This keeps track of everything that
+	is copied when instantiate_generic is called.
+	
+	Fixed a bug in the copy infrastructure in which copy rather than
+	copyInternal was called in VarInitExpr::copy.  Also I extended
+	copyInternal to work on Symbols and Types because these should call
+	the copyInternals of expressions and statements as well.
+	
+	Improved UpdateSymbols to update MemberAccesses.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/traversals/: updateSymbols.cpp 
+
