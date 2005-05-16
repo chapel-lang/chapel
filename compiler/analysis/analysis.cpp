@@ -1232,7 +1232,6 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
         goto Lstandard; 
       case TYPE_SEQ:
       case TYPE_USER:
-      case TYPE_TUPLE: 
         goto Lstandard;
       case TYPE_DOMAIN:
       case TYPE_INDEX:
@@ -1245,6 +1244,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       }
       case TYPE_RECORD:
       case TYPE_UNION:
+      case TYPE_TUPLE:
       {
         int is_this = f && f->_this == var;
         if (!is_this)
