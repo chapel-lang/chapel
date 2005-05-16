@@ -31199,3 +31199,15 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+05/16/05 11:28:25 -- bradc
+
+Log message:
+	Removed note about Sun regression due to GC warning as my
+	recent change to start_test seems to have successfully
+	squelched it.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
