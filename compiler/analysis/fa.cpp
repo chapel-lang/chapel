@@ -1899,9 +1899,10 @@ compar_tv(const void *aa, const void *bb) {
   if (!aast || !bast) {
     if (bast) return -1;
     if (aast) return 1;
+#if 0
     if (a->av && b->av && 
-        a->av->contour != GLOBAL_CONTOUR &&
-        b->av->contour != GLOBAL_CONTOUR) 
+        a->av->contour != GLOBAL_CONTOUR && b->av->contour != GLOBAL_CONTOUR && 
+        a->av->contour_is_entry_set && b->av->contour_is_entry_set) 
     {
       if (((EntrySet*)a->av->contour)->edges.n == 1 &&
           !((EntrySet*)b->av->contour)->edges.n)
@@ -1920,6 +1921,9 @@ compar_tv(const void *aa, const void *bb) {
         goto Lskip;
       }
     }
+#else
+    goto Lskip;
+#endif
   }
   if (!aast->pathname() || !bast->pathname()) {
     if (bast->pathname()) return -1;
