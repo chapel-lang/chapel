@@ -83,10 +83,3 @@ sunos-specific regressions
 
   It's not yet known why these are failing -- they may have never
   worked on the Suns (bradc)
-
-
-trivial/shannon/compSampler:
-
-  GC complains about repeated allocation of very large block for
-  unknown reason (???)
-
