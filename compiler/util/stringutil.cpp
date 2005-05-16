@@ -6,14 +6,7 @@
 #include "stringutil.h"
 
 char* glomstrings(int numstrings, ...) {
-  char* control = (char*)MALLOC((numstrings*2 + 1)*sizeof(char));
   int i;
-
-  for (i=0; i<numstrings; i++) {
-    control[2*i]     = '%';
-    control[2*i + 1] = 's';
-  }
-  control[2*numstrings] = '\0';
 
   char** stringlist = (char**)MALLOC(numstrings * sizeof(char*));
   va_list ap;

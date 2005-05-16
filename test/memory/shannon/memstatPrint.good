@@ -1,5 +1,5 @@
-totalMem=164, maxMem=188
+totalMem=157, maxMem=181
 Jacobi computation complete.
 Delta is 9.68412e-06 (< epsilon = 1e-05)
 # of iterations: 79
-totalMem=948, maxMem=948
+totalMem=941, maxMem=941

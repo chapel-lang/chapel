@@ -9,24 +9,15 @@
 void* nil = (void*)0x01;
 
 char* _glom_strings(int numstrings, ...) {
-  static int maxControlStrings = 0;
-  static char* control = NULL;
+  static int maxNumStrings = 0;
   static char** stringlist = NULL;
   int i;
 
-  if (numstrings > maxControlStrings) {
-    maxControlStrings = numstrings;
-    control = (char*)_chpl_realloc(control, (numstrings*2 + 1), sizeof(char),
-                                   "control string buffer in _glom_strings");
+  if (numstrings > maxNumStrings) {
+    maxNumStrings = numstrings;
     stringlist = (char**)_chpl_realloc(stringlist, numstrings, sizeof(char*),
                                        "stringlist buffer in _glom_strings");
   }
-
-  for (i=0; i<numstrings; i++) {
-    control[2*i]     = '%';
-    control[2*i + 1] = 's';
-  }
-  control[2*numstrings] = '\0';
 
   va_list ap;
   va_start(ap, numstrings);
