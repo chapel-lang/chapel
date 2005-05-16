@@ -31211,3 +31211,18 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/16/05 12:13:49 -- deitz
+
+Log message:
+	FnSymbol::instantiate on a class constructor now removes the type
+	variables that have been instantiated from the class.  A little work
+	is still required to get them removed from the constructors.
+	
+	Made UpdateSymbols update the _getter and _setter pointer of a FnSymbol.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/traversals/: updateSymbols.cpp 
+
