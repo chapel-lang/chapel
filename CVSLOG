@@ -31226,3 +31226,21 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 	chapel/compiler/traversals/: updateSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+05/16/05 14:18:59 -- jplevyak
+
+Log message:
+	Seperate SpecializeParenOpExprs into pre-analysis and post analysis
+	portions.  The latter to be ultimately merged into ResolveSymbols and
+	ReesolveOverloadedOperators.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+	                             specializeParenOpExprs.h 
+
