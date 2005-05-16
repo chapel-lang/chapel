@@ -31137,3 +31137,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/15/05 21:56:09 -- jplevyak
+
+Log message:
+	Fix 2 valgrind failures.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
