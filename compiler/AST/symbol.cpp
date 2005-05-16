@@ -978,6 +978,16 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
     instantiate_add_subs(generic_substitutions, map);
+    StructuralType* cloneType = dynamic_cast<StructuralType*>(clone->type);
+    for (int i = 0; i < cloneType->types.n; i++) {
+      for (int j = 0; j < generic_substitutions->n; j++) {
+        if (cloneType->types.v[i]->type == generic_substitutions->v[j].key) {
+          cloneType->types.v[i]->defPoint->parentStmt->extract();
+          cloneType->types.v[i]->parentScope->remove(cloneType->types.v[i]);
+          cloneType->types.v[i] = NULL;
+        }
+      }
+    }
     instantiate_update_expr(generic_substitutions, clone->defPoint);
     generic_substitutions->put(typeSym->type, clone->type);
     Symboltable::setCurrentScope(save_scope);

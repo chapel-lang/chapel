@@ -1400,8 +1400,10 @@ void StructuralType::codegenStopDefFields(FILE* outfile) {}
 
 void StructuralType::codegenDef(FILE* outfile) {
   forv_Vec(TypeSymbol, type, types) {
-    type->codegenDef(outfile);
-    fprintf(outfile, "\n");
+    if (type) {
+      type->codegenDef(outfile);
+      fprintf(outfile, "\n");
+    }
   }
   fprintf(outfile, "struct __");
   symbol->codegen(outfile);
@@ -1432,8 +1434,10 @@ void StructuralType::codegenStructName(FILE* outfile) {
 
 void StructuralType::codegenPrototype(FILE* outfile) {
   forv_Vec(TypeSymbol, type, types) {
-    type->codegenPrototype(outfile);
-    fprintf(outfile, "\n");
+    if (type) {
+      type->codegenPrototype(outfile);
+      fprintf(outfile, "\n");
+    }
   }
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);

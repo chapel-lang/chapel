@@ -89,5 +89,27 @@ void UpdateSymbols::preProcessSymbol(Symbol* sym) {
         }
       }
     }
+    if (fn->_setter) {
+      for (int i = 0; i < copy_map->n; i++) {
+        if (copy_map->v[i].key == fn->_setter) {
+          if (VarSymbol* new_sym = dynamic_cast<VarSymbol*>(copy_map->v[i].value)) {
+            fn->_setter = new_sym;
+          } else {
+            INT_FATAL("Major error in UpdateSymbols");
+          }
+        }
+      }
+    }
+    if (fn->_getter) {
+      for (int i = 0; i < copy_map->n; i++) {
+        if (copy_map->v[i].key == fn->_getter) {
+          if (VarSymbol* new_sym = dynamic_cast<VarSymbol*>(copy_map->v[i].value)) {
+            fn->_getter = new_sym;
+          } else {
+            INT_FATAL("Major error in UpdateSymbols");
+          }
+        }
+      }
+    }
   }
 }
