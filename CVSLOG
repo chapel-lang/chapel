@@ -31147,3 +31147,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/16/05 10:44:31 -- bradc
+
+Log message:
+	Attempting to set an environment variable to squelch
+	GC warnings about large block sizes.  We should debug
+	this eventually, but for now I just want to see if we
+	can turn them off.
+
+Modified files:
+	chapel/test/: start_test 
+
