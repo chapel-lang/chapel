@@ -254,7 +254,7 @@ foreach chplsrc ($testsrc)
 
 	    if ( $status != 0 ) then
 		cat $execlog
-		echo \[Error executing program $localdir/$execfile\]
+		echo "$futuretest""[Error executing program $localdir/$execfile]"
 		rm -f $binfile
 		continue
 	    else
