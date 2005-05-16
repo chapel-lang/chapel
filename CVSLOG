@@ -31272,3 +31272,58 @@ Modified files:
 	                             printFinalMemStat.good 
 	                             printMemTable.good 
 
+---------------------------------------------------------------------------
+
+05/16/05 15:08:16 -- jplevyak
+
+Log message:
+	Fixed an issue with constuctors for TYPE_TUPLE.
+	
+	The issue now for test_tuple_simple1/3/4/5 is in codegen:
+	
+	> In file included from /tmp/chpl-jplevyak-13063.deleteme/_CommonModule.c:2:
+	> /tmp/chpl-jplevyak-13063.deleteme/_CommonModule.h:16: warning: parameter has incomplete type
+	> In file included from /tmp/chpl-jplevyak-13063.deleteme/_chpl_complex.c:2:
+	> /tmp/chpl-jplevyak-13063.deleteme/_CommonModule.h:16: warning: parameter has incomplete type
+	> In file included from /tmp/chpl-jplevyak-13063.deleteme/test_tuple_simple5.c:2:
+	> /tmp/chpl-jplevyak-13063.deleteme/_CommonModule.h:16: warning: parameter has incomplete type
+	
+	Essentially there is an ordering problem in CommonModule.h
+	where ___tuple_QQQ_QQQ is being defined after it is used.
+	
+	This could be avoided by doing a forward definition:
+	
+	struct ___tuple_QQQ_QQQ;
+	...
+	_tuple_QQQ_QQQ _assign0(_tuple_integer_integer _arg1, struct _tuple_QQQ_QQQ _arg2);
+	
+	Or by doing the definition first.
+	
+	If you guys want I can take a look at it...
+	
+	*****************************************************************
+	
+	typedef struct ___tuple_integer_integer _tuple_integer_integer;
+	typedef struct ___tuple_QQQ_QQQ _tuple_QQQ_QQQ;
+	void __init__CommonModule(void);
+	struct ___tuple_integer_integer {
+	  _integer64 _field1;
+	  _integer64 _field2;
+	};
+	
+	void __tuple_integer_integer_set__field1(_tuple_integer_integer* const this, _integer64 _arg);
+	void __tuple_integer_integer_set__field2(_tuple_integer_integer* const this, _integer64 _arg);
+	_tuple_integer_integer _construct__tuple_integer_integer(_integer64 _field1, _integer64 _field2);
+	_tuple_integer_integer _construct__tuple_integer_integer_default_params_wrapper_1(void);
+	_tuple_QQQ_QQQ _assign0(_tuple_integer_integer _arg1, _tuple_QQQ_QQQ _arg2);
+	struct ___tuple_QQQ_QQQ {
+	  _integer64 _field1;
+	  _integer64 _field2;
+	};
+	
+	void __tuple_integer_integer_write(_tuple_integer_integer* const _this);
+	void __tuple_QQQ_QQQ_write(_tuple_QQQ_QQQ* const _this);
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
