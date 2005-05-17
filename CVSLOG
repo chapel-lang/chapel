@@ -31492,3 +31492,16 @@ Added files:
 	                                  test_complex_overload.future 
 	                                  test_complex_overload.good 
 
+---------------------------------------------------------------------------
+
+05/17/05 14:24:28 -- deitz
+
+Log message:
+	Functions that take enum types don't work.  A bogus coercion wrapper
+	is created and the original function is lost.
+
+Added files:
+	chapel/test/types/enum/deitz/: test_enum_overload.chpl 
+	                               test_enum_overload.future 
+	                               test_enum_overload.good 
+
