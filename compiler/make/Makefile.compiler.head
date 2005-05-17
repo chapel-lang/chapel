@@ -85,6 +85,7 @@ CLEAN_TARGS = \
 	*.gmon \
 	*.a \
 	$(GEN_SRCS) \
+        *.nogc.cpp \
 	$(EXECS)
 
 CLOBBER_TARGS = \
