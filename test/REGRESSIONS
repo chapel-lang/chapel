@@ -38,8 +38,16 @@ linux64-specific regressions
 types/type_variables/deitz/test_clone_class3:
 types/type_variables/deitz/test_clone_class4:
 
-  Hit assertion error in resolveTypes::processSymbol type_is_used
-  check (???)
+This is because on the 32-bit platform string is 32 bits and 
+on a 64-bit platform string is 64 bits (a pointer). 
+
+The problem actually stems from our lack of support for Sum types 
+since on the 32-bit platform the getter (y) is cloned for the
+different offset of "y" caused by the different size of "x" for
+the two classes (foo and foo_clone_2) while on the 64-bit platform 
+the getter is not cloned since the offsets are the same and
+the "this" variable has a sum type "foo | foo_clone_2" which
+is currently not supported. 
 
 
 memory/shannon/memstatPrint:
