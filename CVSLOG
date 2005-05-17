@@ -31463,3 +31463,19 @@ Log message:
 Modified files:
 	chapel/compiler/make/: Makefile.compiler.head 
 
+---------------------------------------------------------------------------
+
+05/17/05 11:06:47 -- bradc
+
+Log message:
+	Took out a handful of dynamic casts of FnSymbol::body to
+	BlockStmt that Steve pointed out I forgot to remove when
+	I converted body from a Stmt* to a BlockStmt*.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         insertOutParameterInitializations.cpp 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             findUnknownTypes.cpp 
+
