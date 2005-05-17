@@ -184,12 +184,12 @@ class ForLoopStmt : public BlockStmt {
 class CondStmt : public Stmt {
  public:
   Expr* condExpr;
-  Stmt* thenStmt;
-  Stmt* elseStmt;
+  BlockStmt* thenStmt;
+  BlockStmt* elseStmt;
 
-  CondStmt(Expr* init_condExpr, Stmt* init_thenStmt, 
-           Stmt* init_elseStmt = NULL);
-  void addElseStmt(Stmt* init_elseStmt);
+  CondStmt(Expr* init_condExpr, BlockStmt* init_thenStmt, 
+           BlockStmt* init_elseStmt = NULL);
+  void addElseStmt(BlockStmt* init_elseStmt);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -204,9 +204,9 @@ class CondStmt : public Stmt {
 class LabelStmt : public Stmt {
  public:
   LabelSymbol* label;
-  Stmt* stmt;
+  BlockStmt* stmt;
   
-  LabelStmt(LabelSymbol* init_label, Stmt* init_stmt);
+  LabelStmt(LabelSymbol* init_label, BlockStmt* init_stmt);
 
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 

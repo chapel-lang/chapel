@@ -165,7 +165,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   FnCall* call = new FnCall(new Variable(init_config), args);
   Expr* assign = new AssignOp(GETS_NORM, new Variable(var), init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);
-  CondStmt* cond_stmt = new CondStmt(call, assign_stmt);
+  CondStmt* cond_stmt = new CondStmt(call, new BlockStmt(assign_stmt));
   stmt->insertBefore(cond_stmt);
 }
 

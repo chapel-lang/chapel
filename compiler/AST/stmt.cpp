@@ -875,8 +875,9 @@ void ForLoopStmt::codegen(FILE* outfile) {
 }
 
 
-CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt, 
-                   Stmt* init_elseStmt) :
+CondStmt::CondStmt(Expr*  init_condExpr,
+                   BlockStmt* init_thenStmt, 
+                   BlockStmt* init_elseStmt) :
   Stmt(STMT_COND),
   condExpr(init_condExpr),
   thenStmt(init_thenStmt),
@@ -884,16 +885,20 @@ CondStmt::CondStmt(Expr*  init_condExpr, Stmt* init_thenStmt,
 { }
 
 
-void CondStmt::addElseStmt(Stmt* init_elseStmt) {
+//// DANGER //// See note below
+void CondStmt::addElseStmt(BlockStmt* init_elseStmt) {
   if (elseStmt) {
     INT_FATAL(this, "overwriting existing else Stmt");
   }
   elseStmt = init_elseStmt;
+  //SJD : this is not fixed up
 }
 
 
 Stmt* CondStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new CondStmt(condExpr->copyInternal(clone, map), thenStmt->copyInternal(clone, map), elseStmt->copyInternal(clone, map));
+  return new CondStmt(condExpr->copyInternal(clone, map),
+                      dynamic_cast<BlockStmt*>(thenStmt->copyInternal(clone, map)),
+                      dynamic_cast<BlockStmt*>(elseStmt->copyInternal(clone, map)));
 }
 
 
@@ -901,9 +906,9 @@ void CondStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == condExpr) {
     condExpr = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == thenStmt) {
-    thenStmt = dynamic_cast<Stmt*>(new_ast);
+    thenStmt = dynamic_cast<BlockStmt*>(new_ast);
   } else if (old_ast == elseStmt) {
-    elseStmt = dynamic_cast<Stmt*>(new_ast);
+    elseStmt = dynamic_cast<BlockStmt*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in CondStmt::replaceChild(old, new)");
   }
@@ -966,7 +971,7 @@ void CondStmt::codegen(FILE* outfile) {
 
 
 
-LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
+LabelStmt::LabelStmt(LabelSymbol* init_label, BlockStmt* init_stmt) :
   Stmt(STMT_LABEL),
   label(init_label),
   stmt(init_stmt)
@@ -974,13 +979,13 @@ LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
 
 
 Stmt* LabelStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new LabelStmt(label, stmt->copyInternal(clone, map));
+  return new LabelStmt(label, dynamic_cast<BlockStmt*>(stmt->copyInternal(clone, map)));
 }
 
 
 void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == stmt) {
-    stmt = dynamic_cast<Stmt*>(new_ast);
+    stmt = dynamic_cast<BlockStmt*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in LabelStmt::replaceChild(old, new)");
   }

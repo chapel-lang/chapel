@@ -1655,10 +1655,10 @@ CondStmt* UnionType::buildUnionFieldIO(CondStmt* prevStmt, VarSymbol* field,
   } else {
     condStmts = addIOStmt(condStmts, "uninitialized");
   }
-  Stmt* thenClause = new BlockStmt(condStmts);
+  BlockStmt* thenClause = new BlockStmt(condStmts);
   CondStmt* newCondStmt = new CondStmt(checkFn, thenClause, NULL);
   if (prevStmt) {
-    prevStmt->addElseStmt(newCondStmt);
+    prevStmt->addElseStmt(new BlockStmt(newCondStmt));
   }
   return newCondStmt;
 }

@@ -662,7 +662,7 @@ function_body_stmt:
 statement:
   noop_stmt
 | TLABEL identifier statement
-    { $$ = new LabelStmt(new LabelSymbol($2), $3); }
+{ $$ = new LabelStmt(new LabelSymbol($2), new BlockStmt($3)); }
 | TGOTO identifier TSEMI
     { $$ = new GotoStmt(goto_normal, $2); }
 | TBREAK identifier TSEMI
@@ -801,13 +801,13 @@ loop:
 
 conditional:
   TIF expr block_stmt %prec TNOELSE
-    { $$ = new CondStmt($2, $3); }
+    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3)); }
 | TIF expr TTHEN statement %prec TNOELSE
-    { $$ = new CondStmt($2, $4); }
+    { $$ = new CondStmt($2, new BlockStmt($4)); }
 | TIF expr block_stmt TELSE statement
-    { $$ = new CondStmt($2, $3, $5); }
+    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt($5)); }
 | TIF expr TTHEN statement TELSE statement
-    { $$ = new CondStmt($2, $4, $6); }
+    { $$ = new CondStmt($2, new BlockStmt($4), new BlockStmt($6)); }
 ;
 
 
