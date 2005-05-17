@@ -1,3 +1,0 @@
-jplevyak
-
-Functions that take enums create bogus coercion wrappers and lose the function

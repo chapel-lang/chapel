@@ -319,6 +319,8 @@ Sym::scalar_type() {
 
 Sym *
 Sym::coerce_to(Sym *to) {
+  if (this == to)
+    return this;
   Sym *s1 = this->scalar_type(), *s2 = to->scalar_type();
   if (s1 && s2) {
     Sym *t = coerce_num(s1, s2);

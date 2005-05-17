@@ -675,7 +675,7 @@ generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> args) {
 }
 
 static void
-coercion_uses(Match **am, MPosition &app, Vec<CreationSet*> args) {
+coercion_uses(Match **am, MPosition &app, Vec<CreationSet*> &args) {
   Match *m = *am;
   app.push(1);
   for (int i = 0; i < args.n; i++) {
