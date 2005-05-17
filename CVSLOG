@@ -31425,3 +31425,13 @@ Modified files:
 	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
 	                                     mg-seq.good 
 
+---------------------------------------------------------------------------
+
+05/17/05 10:50:59 -- jplevyak
+
+Log message:
+	Update information on Linux64 specific regressions
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
