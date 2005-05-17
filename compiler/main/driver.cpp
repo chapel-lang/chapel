@@ -38,17 +38,17 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 extern int d_verbose_level;
 int parser_verbose_non_prelude = 0;
-static int rungdb = 0;
+static bool rungdb = false;
 static int pre_malloc = 0;
-int checkAnalysisTypeinfo = 0;
-int useOldConstructor = 0;
-int analyzeAST = 1;
-int suppressCodegen = 0;
+bool checkAnalysisTypeinfo = false;
+bool useOldConstructor = false;
+bool analyzeAST = true;
+bool suppressCodegen = false;
 int debugParserLevel = 0;
 
-int developer = 0;
+bool developer = false;
 
-int ignore_errors = 0;
+bool ignore_errors = false;
 
 int fdce_if1 = 1;
 int finline = 0;

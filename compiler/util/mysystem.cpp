@@ -3,7 +3,7 @@
 #include "misc.h"
 #include "mysystem.h"
 
-int printSystemCommands = 0;
+bool printSystemCommands = false;
 
 int mysystem(const char* command, char* description, int ignorestatus) {
   if (printSystemCommands) {

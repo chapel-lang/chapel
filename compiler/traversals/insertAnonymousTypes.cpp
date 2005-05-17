@@ -185,7 +185,6 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     if (var){
       domain_type = dynamic_cast<DomainType*>(var->var->type);
       index_type->idxType = domain_type->idxType->idxType;
-      printf("\n");
     }
     else{
       INT_FATAL(index_type, "Invalid index expression.");

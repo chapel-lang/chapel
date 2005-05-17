@@ -8,8 +8,8 @@
 #define DEFAULT_SYSTEM_DIR      "."
 
 // Begin temporary development flags
-extern int useOldConstructor;
-extern int checkAnalysisTypeinfo;
+extern bool useOldConstructor;
+extern bool checkAnalysisTypeinfo;
 // End temporary development flags
 
 extern int fdce_if1;
@@ -22,13 +22,13 @@ extern char system_dir[FILENAME_MAX];
 extern int print_call_depth;
 extern int parser_verbose_non_prelude;
 
-extern int analyzeAST;
+extern bool analyzeAST;
 extern int debugParserLevel;
-extern int suppressCodegen;
-extern int developer;
+extern bool suppressCodegen;
+extern bool developer;
 extern int scoping_test;
 
-extern int ignore_errors;
+extern bool ignore_errors;
 
 void do_analysis(char *fn);
 

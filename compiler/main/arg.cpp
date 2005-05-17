@@ -46,7 +46,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
   if (desc[i].type) {
     char type = desc[i].type[0];
     if (type=='F'||type=='f')
-      *(int *)desc[i].location = type=='F'?1:0;
+      *(bool *)desc[i].location = type=='F' ? true : false;
     else if (type=='T')
       *(int *)desc[i].location = !*(int *)desc[i].location;
     else if (type == '+') 
