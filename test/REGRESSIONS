@@ -29,12 +29,6 @@ linux and general regressions
 linux valgrind regressions
 ==========================
 
-types/type_variables/deitz/test_clone_class1a:
-types/type_variables/deitz/test_clone_class1b:
-
-  Something is wrong in the qsort() done in fa.cpp which is causing
-  valgrind runs to choke (jplevyak)
-
 
 
 ============================
@@ -78,8 +72,3 @@ freebsd-specific regressions
 ==========================
 sunos-specific regressions
 ==========================
-[Error matching compiler output for domains/roxana/test_index_expr0] 
-[Error matching compiler output for domains/roxana/test_index_expr2] 
-
-  It's not yet known why these are failing -- they may have never
-  worked on the Suns (bradc)
