@@ -31449,3 +31449,17 @@ Added files:
 	                                            test_clone_class-1.future 
 	                                            test_clone_class-1.good 
 
+---------------------------------------------------------------------------
+
+05/17/05 11:03:44 -- bradc
+
+Log message:
+	It seems that when a nogc version of the compiler is
+	built, a bunch of *.nogc.cpp files are created against
+	my better wishes.  Will work on fixing this, but for
+	now, am adding *.nogc.cpp to the make clean rule so
+	that at least it's easy to clean up.
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.head 
+
