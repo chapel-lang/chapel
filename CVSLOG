@@ -31518,3 +31518,13 @@ Added files:
 	                            test_nested_record_function.future 
 	                            test_nested_record_function.good 
 
+---------------------------------------------------------------------------
+
+05/17/05 16:34:02 -- jplevyak
+
+Log message:
+	update .future
+
+Modified files:
+	chapel/test/types/complex/deitz/: test_complex_overload.future 
+
