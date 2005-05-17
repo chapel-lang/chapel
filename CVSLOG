@@ -31327,3 +31327,39 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/16/05 17:15:52 -- bradc
+
+Log message:
+	Changed implementation of argument types "F" and "f"
+	in arg.cpp to assume that the target is a bool
+	rather than an int and converted all such target
+	variables from ints to bools.
+	
+	This change was motivated by a subtle bug that showed
+	up on platforms with a different endianness (like sunos),
+	in which accidentally declaring the target as a bool
+	rather than an int would cause it to not be set
+	properly.  By making arg.cpp assume a bool target,
+	the reverse mistake (using an int that's used only as
+	a boolean value) should not result in a similar error
+	since integer tests are for zero vs. nonzero and ints
+	are bound to be at least as large as ints.  Moreover,
+	it seems reasonable to use bool values to represent
+	boolean toggles.
+	
+	Also, removed an extraneous linefeed from the
+	insertAnonymousTypes pass that only showed up for
+	Roxana's tests.  Updated the output of these tests
+	to get rid of the linefeed.
+
+Modified files:
+	chapel/compiler/include/: driver.h mysystem.h 
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	chapel/compiler/util/: mysystem.cpp 
+	chapel/test/domains/roxana/: test_index_assign.good 
+	                             test_index_expr.good 
+	                             test_index_expr0.good 
+
