@@ -31528,3 +31528,16 @@ Log message:
 Modified files:
 	chapel/test/types/complex/deitz/: test_complex_overload.future 
 
+---------------------------------------------------------------------------
+
+05/17/05 16:55:16 -- jplevyak
+
+Log message:
+	Fix overloading of enumerations.
+	Remove .future for the test which exposed the bug.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp sym.cpp 
+Removed files:
+	chapel/test/types/enum/deitz/: test_enum_overload.future 
+
