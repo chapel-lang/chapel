@@ -700,7 +700,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symbol* new_formals = formals->copyListInternal(clone, map);
   Symboltable::continueFnDef(copy, new_formals, retType, retRef);
   BlockStmt* new_body = 
-    dynamic_cast<BlockStmt*>(body->copyListInternal(clone, map));
+    dynamic_cast<BlockStmt*>(body->copyInternal(clone, map));
   if (body != NULL && new_body == NULL) {
     INT_FATAL(body, "function body was not a BlockStmt!?");
   }

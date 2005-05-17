@@ -40,15 +40,11 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     Type* retType = fnSym->retType;
     //    fprintf(stderr, "Return type is: ");
     //    retType->println(stderr);
-    Stmt* body = fnSym->body;
-    BlockStmt* blockBody = dynamic_cast<BlockStmt*>(body);
-    if (blockBody == NULL) {
-      INT_FATAL(fnSym, "Function symbol doesn't have blockstmt body");
-    }
+    BlockStmt* body = fnSym->body;
     
-    SymScope* fnScope = blockBody->blkScope;
+    SymScope* fnScope = body->blkScope;
     if (fnScope == NULL) {
-      INT_FATAL(blockBody, "Block body has NULL blkScope");
+      INT_FATAL(body, "Block body has NULL blkScope");
     }
     SymScope* prevScope = Symboltable::setCurrentScope(fnScope);
 
@@ -65,7 +61,7 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
                                                                    VAR_VAR);
       retval = retValDefStmt->varDef();
       retval->noDefaultInit = true;
-      blockBody->body->insertBefore(retValDefStmt);
+      body->body->insertBefore(retValDefStmt);
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
         Symboltable::setCurrentScope(prevScope);

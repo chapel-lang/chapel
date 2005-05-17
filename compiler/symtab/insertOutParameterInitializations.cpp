@@ -25,12 +25,7 @@ void InsertOutParameterInitializations::processSymbol(Symbol* sym) {
     INT_FATAL(sym, "Could not find function for ParamSymbol");
   }
 
-  BlockStmt* body = dynamic_cast<BlockStmt*>(fn->body);
-
-  if (!body) {
-    body = new BlockStmt(fn->body);
-    fn->body->replace(body);
-  }
+  BlockStmt* body = fn->body;
 
   Expr* assignExpr = new AssignOp(GETS_NORM, new Variable(arg), arg->init->copy());
   Stmt* initStmt = new ExprStmt(assignExpr);

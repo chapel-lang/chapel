@@ -32,7 +32,7 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
         new_formals = appendLink(new_formals, old_formals);
       } else {
         old_formals->next = 0;
-        (dynamic_cast<BlockStmt*>(fn->body))->body->insertBefore(new DefStmt(new DefExpr(old_formals)));
+        fn->body->body->insertBefore(new DefStmt(new DefExpr(old_formals)));
       }
       old_formals = next_old_formals;
     }
