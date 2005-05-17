@@ -31403,3 +31403,25 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+05/17/05 10:47:30 -- deitz
+
+Log message:
+	Minimal changes to turn Stmt* into BlockStmt* for the stmt within a
+	LabelStmt and the then and else statements within a CondStmt.  This
+	will allow for inserting before and after within either of these
+	blocks.
+	
+	Note that this change does not set up scopes for these block
+	statements.  This should be done with changes to the parser and the
+	addition of Symboltable::startCondStmt etc.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+
