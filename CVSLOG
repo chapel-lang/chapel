@@ -31363,3 +31363,14 @@ Modified files:
 	                             test_index_expr.good 
 	                             test_index_expr0.good 
 
+---------------------------------------------------------------------------
+
+05/16/05 17:28:13 -- bradc
+
+Log message:
+	Some fixes related to my last check-in that only showed up
+	when the unit tests were rebuilt.
+
+Modified files:
+	chapel/compiler/util/: misc.cpp 
+
