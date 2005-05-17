@@ -31388,3 +31388,18 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/17/05 10:31:42 -- bradc
+
+Log message:
+	Updated a comment concerning the codegen-ing of an
+	extra pair of braces around a function's body since
+	I thought they were no longer necessary and was about
+	to remove them.  Turns out that they still are
+	necessary, so clarified the comment a bit to avoid
+	making this mistake again.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
