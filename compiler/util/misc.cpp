@@ -75,8 +75,8 @@ show_error(char *str, Var *v, ...) {
   return -1;
 }
 #else
-int ignore_errors = 0;
-int developer = 0;
+bool ignore_errors = 0;
+bool developer = 0;
 void get_version(char *) {}
 #endif
 
