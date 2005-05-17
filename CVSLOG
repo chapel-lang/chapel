@@ -31374,3 +31374,17 @@ Log message:
 Modified files:
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+05/17/05 09:29:54 -- bradc
+
+Log message:
+	Removed regressions that have been fixed over the past
+	few days.  We're in our strongest standing we've been
+	in for awhile...  only a few linux64 regressions remain
+	apart from the two temporary intentional regressions
+	test_array_basic1 and test_array_of_record1.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
