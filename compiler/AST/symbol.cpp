@@ -1089,9 +1089,13 @@ void FnSymbol::codegenDef(FILE* outfile) {
     }
 
     codegenHeader(outfile);
-    // need an extra set of curly braces in case (a) body is
-    // non-compound statement, or (b) formal parameters share same name
-    // as local variable
+
+    // while these braces seem like they should be extraneous since
+    // all function bodies are BlockStmts, it turns out that they are
+    // not because in C the function's parameter scope is the same as
+    // its local variable scope; so if we have a parameter and a local
+    // variable of name x (as in trivial/bradc/vardecls1b.chpl), these
+    // extra braces are required to make the generated code work out.
     fprintf(outfile, " {\n");
     body->codegen(outfile);
     fprintf(outfile, "\n");
