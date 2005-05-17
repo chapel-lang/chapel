@@ -31505,3 +31505,16 @@ Added files:
 	                               test_enum_overload.future 
 	                               test_enum_overload.good 
 
+---------------------------------------------------------------------------
+
+05/17/05 15:03:11 -- deitz
+
+Log message:
+	This test shows a bug in passing a member access of a member access to
+	a function.  The new code generation scheme prints out a pointer.
+
+Added files:
+	chapel/test/classes/deitz/: test_nested_record_function.chpl 
+	                            test_nested_record_function.future 
+	                            test_nested_record_function.good 
+
