@@ -31479,3 +31479,16 @@ Modified files:
 	chapel/compiler/traversals/: eliminateReturns.cpp 
 	                             findUnknownTypes.cpp 
 
+---------------------------------------------------------------------------
+
+05/17/05 14:18:51 -- deitz
+
+Log message:
+	Uninitialized complex variables do not resolve in overloaded functions
+	correctly.  They are treated as floats.
+
+Added files:
+	chapel/test/types/complex/deitz/: test_complex_overload.chpl 
+	                                  test_complex_overload.future 
+	                                  test_complex_overload.good 
+
