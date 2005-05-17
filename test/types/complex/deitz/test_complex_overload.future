@@ -1,3 +1,18 @@
-jplevyak
+deitz
 
-Uninitialized complex is treated as a float for overloaded function calls.
+The problem is the _complex128 has a defaultVal which
+is a FLOAT_LITERAL:
+
+(gdb) call print_view(t->defaultVal)
+
+(FloatLiteral)
+
+(gdb) p t->symbol
+$1 = (class Symbol *) 0x8218dc0
+(gdb) p *t->symbol
+$2 = {<BaseAST> = {<ILink> = {<Loc> = {<gc> = {<No data fields>}, filename = 0x0, lineno = 0},
+      _vptr.ILink = 0x812c3a8, prev = 0x0, next = 0x0}, astType = SYMBOL_TYPE, id = 16},
+  name = 0x812d26a "complex", cname = 0x81e86f0 "_complex128", type = 0x81f5d20, 
+  exportMe = true, isDead = false, keepLive = false, defPoint = 0x0, pragmas = 0x0,
+  parentScope = 0x81efc78, asymbol = 0x84c9fd8}
+
