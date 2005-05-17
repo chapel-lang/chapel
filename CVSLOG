@@ -31435,3 +31435,17 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/17/05 10:58:29 -- jplevyak
+
+Log message:
+	Add a new test case which mirrors the Linux64 test failures
+	types/type_variables/deitz/test_clone_class3/4 on the 32-bit platforms.
+
+Added files:
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            test_clone_class-1.chpl 
+	                                            test_clone_class-1.future 
+	                                            test_clone_class-1.good 
+
