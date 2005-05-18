@@ -31854,3 +31854,24 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/18/05 13:27:01 -- deitz
+
+Log message:
+	Remembered that type variables in parameter lists to functions should
+	be ParamSymbols not TypeSymbols.  I made the parameter to constructors
+	for classes with type variables take a TypeSymbol.
+	
+	For discussion, and I think John wanted to do this, but we should
+	probably have another Type subtype that could point to a TypeSymbol
+	that is a VariableType.  I just use the TypeSymbol that is in the
+	class currently for the constructor, but when there are more
+	constructors, we may need multiple constructors with the type
+	parameter.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
