@@ -31704,3 +31704,21 @@ Added files:
 	                             memmaxBytes.execopts 
 	                             memmaxBytes.good 
 
+---------------------------------------------------------------------------
+
+05/18/05 10:43:51 -- jplevyak
+
+Log message:
+	Generic Instantiation of types and member functions when the contructor
+	is intantiated works up to codegen.
+	Changed the .future to reflect this.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp pattern.cpp 
+	                           sym.cpp 
+	chapel/compiler/include/: pattern.h sym.h 
+	chapel/compiler/traversals/: updateSymbols.cpp updateSymbols.h 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class1.future 
+
