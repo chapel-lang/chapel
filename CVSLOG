@@ -31875,3 +31875,28 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+05/18/05 16:13:14 -- deitz
+
+Log message:
+	This checkin implements read using overloaded functions.
+	
+	Read is still not implemented on structural types.
+	
+	In this checkin, test/trivial/shannon/readWriteComplexTuple became
+	futurized since formatted read is no longer supported.  We should come
+	up with a better story for this when we have the time.
+	
+	There is currently a stopgap for reading enums.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl prelude.chpl 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             specializeParenOpExprs.cpp 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+Added files:
+	chapel/test/trivial/shannon/: readWriteComplexTuple.future 
+
