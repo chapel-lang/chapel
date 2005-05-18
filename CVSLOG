@@ -31554,3 +31554,59 @@ Modified files:
 Removed files:
 	chapel/test/types/complex/deitz/: test_complex_overload.future 
 
+---------------------------------------------------------------------------
+
+05/18/05 09:23:55 -- deitz
+
+Log message:
+	Added new runtime procedures
+	
+	  char* _chpl_tostring_boolean(_boolean x, char* format)
+	  char* _chpl_tostring_integer(_integer64 x, char* format)
+	  char* _chpl_tostring_float(_float64 x, char* format)
+	  char* _chpl_tostring_complex(_complex128 x, char* format)
+	
+	that convert strings to boole, integer, float, and complex.
+	
+	Added support for converting primitive data types to strings using a
+	cast like mechanism.  For example,
+	
+	  var i : integer = 12;
+	  var s : string = i:"%5d";
+	
+	converts the value of i to a string using the format specified in the
+	format string.
+	
+	This is implemented in the parser so that when the :STRINGLITERAL is
+	parsed, the overloaded _chpl_tostring function call is created.
+	
+	Reimplemented the rename pragma to fire just before code generation.
+	This is important if it is used on functions that are overloaded or
+	whose names may be mangled by the compiler.  They are renamed after
+	all this mangling and can thus match up with functions in the runtime.
+	
+	I think this could be a more general mechanism for converting any type
+	to a string if we let the user overload this _chpl_tostring function
+	on their user-defined types.  We may even provide defaults for
+	structural types like we do with read and write.  We may want to
+	rename this function, something like tostring.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/parser/: chapel.y prelude.chpl 
+	chapel/compiler/symtab/: legalizeCNames.cpp 
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/arrays/bradc/: enumarray.chpl 
+	chapel/test/flowanalysis/newast/: enumarray.chpl 
+	                                  formatoutput.chpl 
+	chapel/test/trivial/bradc/: formatoutput.chpl 
+Added files:
+	chapel/test/arrays/bradc/: enumarray.future 
+	chapel/test/flowanalysis/newast/: enumarray.future 
+	                                  formatoutput.future 
+	chapel/test/trivial/bradc/: formatoutput.future 
+	chapel/test/trivial/deitz/: test_format_primitives.chpl 
+	                            test_format_primitives.good 
+
