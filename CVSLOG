@@ -31541,3 +31541,16 @@ Modified files:
 Removed files:
 	chapel/test/types/enum/deitz/: test_enum_overload.future 
 
+---------------------------------------------------------------------------
+
+05/17/05 17:13:04 -- deitz
+
+Log message:
+	Made defaultVal of dtComplex a ComplexLiteral.  It was erroneously a
+	FloatLiteral.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+Removed files:
+	chapel/test/types/complex/deitz/: test_complex_overload.future 
+
