@@ -362,42 +362,54 @@ finalize_symbols(IF1 *i) {
 }
 
 static Fun *
-install_new_function(FnSymbol *f, FnSymbol *old_f) {
+install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map = NULL) {
   Vec<BaseAST *> syms;
-  collect_asts(&syms, f);
-  syms.add(f);
-  syms.add(f->defPoint);
-  int generic_constructor = !f->retType->asymbol;
-  if (generic_constructor) {
-    syms.add(f->retType);
-    syms.add(f->retType->symbol);
-    Vec<BaseAST *> csyms;
-    collect_symbols((Vec<Symbol*>*)&csyms, f->retType);
-    syms.append(csyms);
+  Vec<FnSymbol *> funs;
+  if (map) {
+    for (int i = 0; i < map->n; i++) if (map->v[i].key) {
+      syms.add(map->v[i].value);
+      if (FnSymbol *fs = dynamic_cast<FnSymbol *>(map->v[i].value))
+        funs.add(fs);
+    }
+  } else {
+    collect_asts(&syms, f);
+    syms.add(f);
+    syms.add(f->defPoint);
+    funs.add(f);
   }
   map_asts(syms);
   build_symbols(syms);
-  if (generic_constructor) {
-    Sym *type_sym = f->retType->asymbol->sym, *old_type_sym = old_f->retType->asymbol->sym;
-    if (old_type_sym->specializers.set_add(type_sym))
-      type_sym->dispatch_order.add(old_type_sym);
+  if (map) {
+    for (int i = 0; i < map->n; i++) if (map->v[i].key)
+      if (Type *t = dynamic_cast<Type *>(map->v[i].key)) {
+        Type *new_t = dynamic_cast<Type *>(map->v[i].value);
+        new_t->asymbol->sym->dispatch_order.add(t->asymbol->sym);
+      }
   }
   build_types(syms);
   finalize_types(if1);
-  if (init_function(f) < 0 || build_function(f) < 0) 
-    assert(!"unable to instantiate generic/wrapper");
-  if1_finalize_closure(if1, f->asymbol->sym);
+  forv_Vec(FnSymbol, f, funs) {
+    if (init_function(f) < 0 || build_function(f) < 0) 
+      assert(!"unable to instantiate generic/wrapper");
+    if1_finalize_closure(if1, f->asymbol->sym);
+  }
   build_type_hierarchy();
   build_classes(syms);
   finalize_symbols(if1);
   finalize_types(if1);
-  Fun *fun = new Fun(f->asymbol->sym);
-  build_arg_positions(fun);
-  pdb->add(fun);
-  if (generic_constructor)
-    initialize_Sym_for_fa(f->retType->asymbol->sym);
+  forv_Vec(FnSymbol, f, funs) {
+    Fun *fun = new Fun(f->asymbol->sym);
+    build_arg_positions(fun);
+    pdb->add(fun);
+  }
+  forv_BaseAST(ast, syms) {
+    if (Symbol *s = dynamic_cast<Symbol *>(ast))
+      initialize_Sym_for_fa(s->asymbol->sym);
+    else if (Type *t = dynamic_cast<Type *>(ast))
+      initialize_Sym_for_fa(t->asymbol->sym);
+  }
   if1_write_log();
-  return fun;
+  return f->asymbol->sym->fun;
 }
 
 static Type *
@@ -498,7 +510,7 @@ ACallbacks::instantiate_generic(Match *m) {
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   Map<BaseAST*,BaseAST*> map;
   FnSymbol *f = fndef->instantiate_generic(&map, &substitutions);
-  Fun *fun = install_new_function(f, fndef);
+  Fun *fun = install_new_function(f, fndef, &map);
   fun->wraps = m->fun;
   return fun;
 }

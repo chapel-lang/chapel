@@ -528,6 +528,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   }
 
   TypeSymbol* new_type_sym = new TypeSymbol(clone_name, new_class_type);
+  map->put(this, new_type_sym);
   new_class_type->addSymbol(new_type_sym);
   DefExpr* new_def_expr = new DefExpr(new_type_sym);
   new_class_type->structScope->setContext(NULL, new_type_sym, new_def_expr);

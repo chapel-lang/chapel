@@ -663,6 +663,8 @@ generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> args) {
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     concrete_type = concrete_type->type;
+    if (concrete_type->is_meta_type)
+      concrete_type = concrete_type->meta_type;
     Sym *generic_type = get_generic_type(m, fcpp);
     if (generic_type) {
       if (!unify_generic_type(generic_type, concrete_type, m->generic_substitutions))
