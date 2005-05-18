@@ -49,5 +49,13 @@ void _write_complex128(FILE* outfile, char* format, _complex128 val);
 void _read_string(FILE* infile, char* format, _string* val);
 void _write_string(FILE* outfile, char* format, _string val);
 
+void _chpl_write_boolean(_boolean val);
+void _chpl_write_integer(_integer64 val);
+void _chpl_write_float(_float64 val);
+void _chpl_write_complex(_complex128 val);
+void _chpl_write_string(_string val);
+void _chpl_write_nil(void* val);
+void _chpl_write_linefeed(void);
+
 #endif
 

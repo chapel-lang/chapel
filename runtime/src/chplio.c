@@ -124,3 +124,46 @@ void _write_complex128(FILE* outfile, char* format, _complex128 val) {
 void _write_string(FILE* outfile, char* format, _string val) {
   fprintf(outfile, format, val);
 }
+
+
+void _chpl_write_boolean(_boolean val) {
+  printf(val ? "true" : "false");
+}
+
+void _chpl_write_integer(_integer64 val) {
+  printf("%lld", val);
+}
+
+void _chpl_write_float(_float64 val) {
+  const int floatBuffLen = 1024;
+  char buff[floatBuffLen];
+  sprintf(buff, "%g", val);
+  if (strlen(buff) > floatBuffLen-1) {
+    fprintf(stderr, "Error: float I/O buffer overrun\n");
+    exit(1);
+  }
+  if (strchr(buff, '.') == NULL && strchr(buff, 'e') == NULL) {
+    printf("%s.0", buff);
+  } else {
+    printf("%s", buff);
+  }
+}
+
+void _chpl_write_string(_string val) {
+  printf("%s", val);
+}
+
+void _chpl_write_nil(void* val) {
+  printf("nil");
+}
+
+void _chpl_write_linefeed(void) {
+  printf("\n");
+}
+
+void _chpl_write_complex(_complex128 val) {
+  _chpl_write_float(val.re);
+  _chpl_write_string(" + ");
+  _chpl_write_float(val.im);
+  _chpl_write_string("i");
+}
