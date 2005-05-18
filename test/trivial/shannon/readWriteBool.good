@@ -3,4 +3,4 @@ false
 That's the wrong answer, try again.
 true
 Is Bush a liar? (true or false)
-***ERROR:  Not of boolean type***
+***Error: Not of boolean type***

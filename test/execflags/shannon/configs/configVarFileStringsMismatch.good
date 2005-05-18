@@ -1,1 +1,1 @@
-***Error:  Found newline while reading string: "this test has mismatched quotes'***
+***Error: Found newline while reading string: "this test has mismatched quotes'***

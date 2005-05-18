@@ -6,6 +6,7 @@
 #include "chplmem.h"
 #include "config.h"
 #include "chplrt.h"
+#include "error.h"
 
 
 
@@ -83,9 +84,9 @@ static _integer64 getIntArg(char* valueString, char* memFlag) {
   int numScans = sscanf(valueString, _default_format_read_integer64"%c", 
                         &value, &extraChars);
   if (numScans != 1) {
-    fprintf(stderr, "***Error:  The \"%s\" flag is missing its byte value"
-            "***\n", memFlag);
-    exit(0);
+    char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
+                                  "its byte value");
+    printError(message);
   }
   return value; 
 }
@@ -93,9 +94,9 @@ static _integer64 getIntArg(char* valueString, char* memFlag) {
 
 static char* getStringArg(char* valueString, char* memFlag) {
   if (!valueString) {
-    fprintf(stderr, "***Error:  The \"%s\" flag is missing its option***"
-            "\n", memFlag);
-    exit(0);
+    char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
+                                  " its option");
+    printError(message);
   }
   return valueString;
 }
@@ -133,8 +134,9 @@ static void parseMemFlag(char* memFlag) {
     setMemtrace(valueString);
     
   } else {
-    fprintf(stderr, "***Error:  \"%s\" is not a valid execution option***\n",
-            memFlag);
+    char* message = _glom_strings(3, "\"", memFlag, "\" is not a valid "
+                                  "execution option");
+    printError(message);
   }
 }
 
@@ -148,9 +150,9 @@ void parseArgs(int argc, char* argv[]) {
     argLength = strlen(currentArg);
 
     if (argLength < 2) {
-      fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n", 
-              currentArg);
-      exit(0);
+      char* message = _glom_strings(3, "\"", currentArg, "\" is not a valid "
+                                    "argument");
+      printError(message);
     }
     
     switch (currentArg[0]) {
@@ -164,8 +166,9 @@ void parseArgs(int argc, char* argv[]) {
           } else if (flag[0] == 'm') {
             parseMemFlag(flag);
           } else {
-            fprintf(stderr, "***Error:  \"%s\" is not a valid execution option"
-                    "***\n", currentArg);
+            char* message = _glom_strings(3, "\"", currentArg, "\" is not a "
+                                          "valid execution option");
+            printError(message);
           }
           break;
         }
@@ -180,9 +183,9 @@ void parseArgs(int argc, char* argv[]) {
       case 's':
         {
           if (argLength < 3) {
-            fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n",
-                    currentArg);
-            exit(0);
+            char* message = _glom_strings(3, "\"", currentArg, "\" is not a "
+                                          "valid argument");
+            printError(message);
           }
           int isSingleArg = 1;
           addToConfigList(currentArg + 2, isSingleArg);
@@ -194,8 +197,11 @@ void parseArgs(int argc, char* argv[]) {
         break;
 
       default:
-        fprintf(stderr, "***Error: unexpected flag: '%s'\n", currentArg);
-        exit(0);
+        {
+          char* message = _glom_strings(3, "Unexpected flag:  \"", currentArg, 
+                                        "\"");
+          printError(message);
+        }
       }
     }
   }

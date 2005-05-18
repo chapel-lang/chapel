@@ -5,8 +5,14 @@
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chpltypes.h"
+#include "error.h"
+
 
 void* nil = (void*)0x01;
+
+
+/* _glom_strings() expects every argument after the first to be 
+   of type char*. */
 
 char* _glom_strings(int numstrings, ...) {
   static int maxNumStrings = 0;
@@ -39,8 +45,8 @@ char* _glom_strings(int numstrings, ...) {
   }
 
   if (strlen(newstring) > totlen) {
-    fprintf(stderr, "INTERNAL ERROR: _glom_strings() buffer overflow");
-    exit(1);
+    char* message = "_glom_strings() buffer overflow";
+    printInternalError(message);
   }
 
   return newstring;

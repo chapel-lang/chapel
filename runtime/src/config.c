@@ -3,8 +3,9 @@
 #include <string.h>
 #include "chplio.h"
 #include "chplmem.h"
-#include "config.h"
 #include "chplrt.h"
+#include "config.h"
+#include "error.h"
 
 
 #define HASHSIZE 101
@@ -88,6 +89,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
   if (!equalsSign || !(equalsSign + 1)) {
     return 0;
   }
+
   char firstChar = equalsSign[1];
   if ((firstChar != '"') && (firstChar != '\'')) {
     return 0;
@@ -106,29 +108,34 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
     do {
       switch (nextChar) {
       case EOF:
-        setConfigBuffer[stringLength] = '\0';
-        fprintf(stderr, "***Error:  Found end of file while "
-                "reading string: %c%s***\n", firstChar, value);
-        exit(0);
-        break;
-        
-      case '\n':
-        setConfigBuffer[stringLength] = '\0';
-        fprintf(stderr, "***Error:  Found newline while reading"
-                " string: %c%s***\n", firstChar, value);
-        exit(0);
-        break;
-        
-      default:
-        if (stringLength >= _default_string_length - 1) {
-          fprintf(stderr, "***Error:  String exceeds the "
-                  "maximum string length of %d***\n", 
-                  _default_string_length);
-          exit(0);
+        {
+          setConfigBuffer[stringLength] = '\0';
+          char* message = _glom_strings(2, "Found end of file while reading "
+                                        "string: ", equalsSign + 1);
+          printError(message);
+          break;
         }
-        setConfigBuffer[stringLength] = nextChar;
-        stringLength++;
-        nextChar = fgetc(argFile);
+      case '\n':
+        {
+          setConfigBuffer[stringLength] = '\0';
+          char* message = _glom_strings(2, "Found newline while reading "
+                                        "string: ", equalsSign + 1);
+          printError(message);
+          break;
+        }
+      default:
+        {
+          if (stringLength >= _default_string_length - 1) {
+            char dsl[1024];
+            sprintf(dsl, "%d", _default_string_length);
+            char* message = _glom_strings(2, "String exceeds the maximum "
+                                          "string length of ", dsl);
+            printError(message);
+          }
+          setConfigBuffer[stringLength] = nextChar;
+          stringLength++;
+          nextChar = fgetc(argFile);
+        }
       }
     } while (nextChar != firstChar);
   } else {
@@ -153,19 +160,20 @@ static void parseSingleArg(char* currentArg) {
       parseModVarName(currentArg, &moduleName, &varName);
 
       if (*value == '\0') {
-        fprintf(stderr, "***Error:  Configuration variable \"%s\" is missing"
-                " its initialization value***\n", varName);
-        exit(0);
+        char* message = _glom_strings(3, "Configuration variable \"", 
+                                      varName, "\" is missing its "
+                                      "initialization value");
+        printError(message);
       }
       initSetValue(varName, value, moduleName);
     } else {
-      fprintf(stderr, "***Error:  \"%s\" is not a valid value***\n", value);
-      exit(0);
+      char* message = _glom_strings(3, "\"", value, "\" is not a valid value");
+      printError(message);
     }
   } else {
-    fprintf(stderr, "***Error:  \"%s\" is not a valid argument***\n", 
-            currentArg);
-    exit(0);
+    char* message = _glom_strings(3, "\"", currentArg, "\" is not a valid "
+                                  "argument");
+    printError(message);
   }
 }
 
@@ -174,8 +182,8 @@ static void parseFileArgs(char* currentArg) {
   char* argFilename = currentArg;
   FILE* argFile = fopen(argFilename, "r");
   if (!argFile) {
-    fprintf(stderr, "***Error:  Unable to open %s***\n", argFilename);
-    exit(0);
+    char* message = _glom_strings(2, "Unable to open ", argFilename);
+    printError(message);
   } 
   while (!feof(argFile)) {
     int numScans = 0;
@@ -319,25 +327,26 @@ static configVarType* lookupConfigVar(char* varName, char* moduleName) {
 
 void initSetValue(char* varName, char* value, char* moduleName) {
   if  (*varName == '\0') {
-    fprintf(stderr, "***Error:  No variable name given***\n");
-    exit(0);
+    char* message = "No variable name given";
+    printError(message);
   }
   configVarType* configVar = lookupConfigVar(varName, moduleName);
   if (configVar == NULL) {
     if (strcmp(moduleName, "") != 0) {
-      fprintf(stderr, "***Error:  There is no \"%s\" config var in %s***\n", 
-              varName, moduleName);
-      exit(0);
+      char* message = _glom_strings(4, "There is no \"", varName, "\" config "
+                                    "var in ", moduleName);
+      printError(message);
     } else {
-      fprintf(stderr, "***Error:  There is no config var \"%s\" in the "
-              "program***\n", varName);
-      exit(0);
+      char* message = _glom_strings(3, "There is no config var \"", varName, 
+                                    "\" in the program");
+      printError(message);
     }
   } else if (configVar == ambiguousConfigVar) {
-    fprintf(stderr, "***Error:  Config var \"%s\" is defined in more than one "
-            "module.  Use \"-h\" for a list of config vars and \"-s<module>"
-            ".%s\" to indicate which to use.***\n", varName, varName);
-    exit(0);
+    char* message = _glom_strings(5, "Config var \"", varName, "\" is defined "
+                                  "in more than one module.  Use \"-h\" for "
+                                  "a list of config vars and \"-s<module>.", 
+                                  varName, "\" to indicate which to use.");
+    printError(message);
   }
   _copy_string(&configVar->setValue, value);
 }
@@ -345,9 +354,9 @@ void initSetValue(char* varName, char* value, char* moduleName) {
 
 char* lookupSetValue(char* varName, char* moduleName) {
   if (strcmp(moduleName, "") == 0) {
-    fprintf(stderr, "***Internal Error:  Attempted to lookup value with "
-            "the module name an empty string***\n");
-    exit(0);
+    char* message = "Attempted to lookup value with the module name an "
+      "empty string";
+    printInternalError(message);
   }
 
   configVarType* configVar;
@@ -385,7 +394,7 @@ void installConfigVar(char* varName, char* value, char* moduleName) {
 int setInCommandLine_integer64(char* varName, _integer64* value, 
                                char* moduleName) {
   int varSet = 0;
-  char *setValue = lookupSetValue(varName, moduleName);
+  char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     char extraChars;
@@ -394,9 +403,10 @@ int setInCommandLine_integer64(char* varName, _integer64* value,
     if (numScans == 1) {
       varSet = 1;
     } else {
-      fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-              " \"%s\" of type integer***\n", setValue, varName);
-      exit(0);
+      char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
+                                    "value for config var \"", varName, 
+                                    "\" of type integer");
+      printError(message);
     }
   }   
   return varSet;
@@ -415,9 +425,10 @@ int setInCommandLine_float64(char* varName, _float64* value,
     if (numScans == 1) {
       varSet = 1;
     } else {
-      fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-              " \"%s\" of type float***\n", setValue, varName);
-      exit(0);
+      char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
+                                    "value for config var \"", varName, 
+                                    "\" of type float");
+      printError(message);
     }
   }
   return varSet;
@@ -434,9 +445,10 @@ int setInCommandLine_boolean(char* varName, _boolean* value,
     if (validBoolean) {
       varSet = 1;
     } else {
-      fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var"
-              " \"%s\" of type boolean***\n", setValue, varName);
-      exit(0);
+      char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
+                                    "value for config var \"", varName, 
+                                    "\" of type boolean");
+      printError(message);
     }
   }
   return varSet;
@@ -468,9 +480,10 @@ int setInCommandLine_complex128(char* varName, _complex128* value,
     if ((numScans == 3) && (imaginaryI == 'i')) {
       varSet = 1;
     } else {
-      fprintf(stderr, "***Error:  \"%s\" is not a valid value for config var "
-              "\"%s\" of type complex***\n", setValue, varName); 
-      exit(0);
+      char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
+                                    "value for config var \"", varName, 
+                                    "\" of type complex");
+      printError(message);
     }
   }
   return varSet;

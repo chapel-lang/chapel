@@ -1,1 +1,1 @@
-printMemTable() only works with the --memtable flag
+***Error: printMemTable() only works with the --memtable flag***

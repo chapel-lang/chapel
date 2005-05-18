@@ -5,6 +5,7 @@
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chpltypes.h"
+#include "error.h"
 
 #undef malloc
 #undef calloc
@@ -85,8 +86,8 @@ void setMemtable(void) {
 
 void setMemthreshold(_integer64 value) {
   if (!memlog) {
-    fprintf(stderr, "--memthreshold useless when used without --memtrace\n");
-    exit(0);
+    char* message = "--memthreshold useless when used without --memtrace";
+    printError(message);
   }
   memthreshold = 1;
   memthresholdValue = value;
@@ -97,8 +98,9 @@ void setMemtrace(char* memlogname) {
   if (memlogname) {
     memlog = fopen(memlogname, "w");
     if (!memlog) {
-      fprintf(stderr, "***Error:  Unable to open \"%s\"***\n", memlogname);
-      exit(0);
+      char* message = _glom_strings(3, "Unable to open \"", memlogname, 
+                                    "\"");
+      printError(message);
     }
   } 
 }
@@ -136,8 +138,8 @@ void printMemStat(void) {
             (unsigned)totalMem, (unsigned)maxMem);
     alreadyPrintingStat = 1;
   } else {
-    fprintf(stderr, "printMemStat() only works with the --memstat flag\n");
-    exit(0);
+    char* message = "printMemStat() only works with the --memstat flag";
+    printError(message);
   }
 }
 
@@ -152,8 +154,8 @@ void printFinalMemStat(void) {
 
 void printMemTable(void) {
   if (!memtable) {
-    fprintf(stderr, "printMemTable() only works with the --memtable flag\n");
-    exit(0);
+    char* message = "printMemTable() only works with the --memtable flag";
+    printError(message);
   }
   memTableEntry* memEntry = NULL;
   fprintf(stdout, "\n");
@@ -230,9 +232,9 @@ static void installMemory(void* memAlloc, size_t number, size_t size,
   if (!memEntry) { 
     memEntry = (memTableEntry*) calloc(1, sizeof(memTableEntry));
     if (!memEntry) {
-      fprintf(stderr, "***Error:  Out of memory allocating table entry for %s"
-              "***\n", description);
-      exit(0);
+      char* message = _glom_strings(3, "Out of memory allocating table entry "
+                                    "for \"", description, "\"");
+      printError(message);
     }
 
     hashValue = hash(memAlloc);
@@ -250,9 +252,9 @@ static void installMemory(void* memAlloc, size_t number, size_t size,
     memEntry->description = (char*) malloc((strlen(description) + 1)
                                            * sizeof(char));
     if (!memEntry->description) {
-      fprintf(stderr, "***Error:  Out of memory allocating table entry for %s"
-              "***\n", description);
-      exit(0);
+      char* message = _glom_strings(3, "Out of memory allocating table entry "
+                                    "for \"", description, "\"");
+      printError(message);
     }
     strcpy(memEntry->description, description);
     memEntry->memAlloc = memAlloc;
@@ -320,18 +322,17 @@ static void removeMemory(void* memAlloc) {
     free(thisBucketEntry->description);
     free(thisBucketEntry);
   } else {
-    fprintf(stderr, "***Error:  Attempting to free memory that wasn't "
-            "allocated***\n");
-    exit(0);
+    char* message = "Attempting to free memory that wasn't allocated";
+    printError(message);
   }
 }
 
 
 static void confirm(void* memAlloc, char* description) {
   if (!memAlloc) {
-    fprintf(stderr, "***Error:  Out of memory allocating %s***\n", 
-            description);
-    exit(0);
+    char* message = _glom_strings(3, "Out of memory allocating \"", 
+                                  description, "\"");
+    printError(message);
   }
 }
 
@@ -419,9 +420,9 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
   if (memtable) {
     memEntry = lookupMemory(memAlloc);
     if (!memEntry && (memAlloc != NULL)) {
-      fprintf(stderr, "***Error:  Attempting to realloc memory for %s that "
-              "wasn't allocated***\n", description);
-      exit(0);
+      char* message = _glom_strings(3, "Attempting to realloc memory for ",
+                                    description, "that wasn't allocated");
+      printError(message);
     }
   }
   void* moreMemAlloc = realloc(memAlloc, newChunk);

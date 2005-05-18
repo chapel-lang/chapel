@@ -2,11 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "chplio.h"
-#include "domain.h"
 #include "chplrt.h"
+#include "domain.h"
+#include "error.h"
 
 
-char* _default_format_write_float64  = "%g";   // double
+char* _default_format_write_float64  = "%g";   /* double */
 
 void _write_linefeed(FILE* outfile) {
   fprintf(outfile, "\n");
@@ -38,8 +39,8 @@ void _read_boolean(FILE* infile, char* format, _boolean* val) {
 
   if (!validBoolean) {
     fflush(stdout);
-    fprintf(stderr, "***Error:  Not of boolean type***\n");
-    exit(0);
+    char* message = "Not of boolean type";
+    printError(message);
   }
 }
 
@@ -76,8 +77,8 @@ void _write_float64(FILE* outfile, char* format, _float64 val) {
     char buff[floatBuffLen];
     sprintf(buff, format, val);
     if (strlen(buff) > floatBuffLen-1) {
-      fprintf(stderr, "Error: float I/O buffer overrun\n");
-      exit(1);
+      char* message = "Float I/O buffer overrun";
+      printInternalError(message);
     }
     if (strchr(buff, '.') == NULL && strchr(buff, 'e') == NULL) {
       fprintf(outfile, "%s.0", buff);
@@ -90,12 +91,13 @@ void _write_float64(FILE* outfile, char* format, _float64 val) {
 
 void _read_string(FILE* infile, char* format, _string* val) {
   char localVal[_default_string_length];
+  char dsl[1024];
 
   fscanf(infile, format, localVal);
   if (strlen(localVal) == (_default_string_length - 1)) {
-    fprintf(stderr, "***Error:  The maximum string length is %d***\n", 
-            _default_string_length);
-    exit(0);
+    sprintf(dsl, "%d", _default_string_length);
+    char* message = _glom_strings(2, "The maximum string length is ", dsl);
+    printError(message);
   }
   _copy_string(val, localVal);
 }
@@ -104,14 +106,15 @@ void _read_string(FILE* infile, char* format, _string* val) {
 void _read_complex128(FILE* infile, char* format, _complex128* val) {
   char imaginaryI = 'i';
   int numScans;
-
-  // NOTE:  The imaginary "i" is stored and checked in the if statement below
-  // to ensure that it has been entered directly after the second double of 
-  // the complex number, with no intervening space.
+  /* 
+     NOTE:  The imaginary "i" is stored and checked in the if statement below
+     to ensure that it has been entered directly after the second double of 
+     the complex number, with no intervening space.
+  */
   numScans = fscanf(infile, format, &(val->re), &(val->im), &imaginaryI);
   if ((imaginaryI != 'i') || (numScans < 2)) {
-    fprintf(stderr, "***Error:  Incorrect format for complex numbers***\n");
-    exit(0);
+    char* message = "Incorrect format for complex numbers";
+    printError(message);
   }
 }
 

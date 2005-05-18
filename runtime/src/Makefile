@@ -17,6 +17,7 @@ CHPL_RT_SRCS = \
 	chpltypes.c \
 	config.c \
 	domain.c \
+	error.c \
 
 CHPL_RT_OBJS = $(CHPL_RT_SRCS:%.c=$(PLATFORM)/%.o)
 CHPL_RT_LIB = $(PLATFORM)/libchpl.a
