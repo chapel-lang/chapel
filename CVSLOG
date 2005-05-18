@@ -31639,3 +31639,17 @@ Modified files:
 	chapel/runtime/include/: chplio.h 
 	chapel/runtime/src/: chplio.c 
 
+---------------------------------------------------------------------------
+
+05/18/05 09:53:51 -- jplevyak
+
+Log message:
+	Fix bug where "isRef()" was not being consulted when codegen'ing
+	MemberAccesses.
+	Removed .future.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+Removed files:
+	chapel/test/classes/deitz/: test_nested_record_function.future 
+
