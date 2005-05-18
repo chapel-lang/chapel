@@ -1320,7 +1320,7 @@ is_Reference_Type(Type *t) {
 }
 
 
-Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments) {
+Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments) {
   forv_Vec(VarSymbol, tmp, fields) {
     if (is_Scalar_Type(tmp->type))
       continue;
@@ -1331,13 +1331,13 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymb
     stmts = appendLink(stmts, assign_stmt);
   }
 
-  ParamSymbol* ptmp = arguments;
+  Symbol* ptmp = arguments;
   forv_Vec(TypeSymbol, tmp, types) {
     if (dynamic_cast<VariableType*>(tmp->type)) {
       if (analyzeAST && !useOldConstructor) {
         // Have type variable in class and type variable in parameter
         // Should I do anything with these?
-        ptmp = nextLink(ParamSymbol, ptmp);
+        ptmp = nextLink(Symbol, ptmp);
       }
     }
   }
@@ -1675,7 +1675,7 @@ Stmt* UnionType::buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg) {
 }
 
 
-Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this, ParamSymbol* arguments) {
+Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments) {
   Expr* arg1 = new Variable(_this);
   Expr* arg2 = new Variable(fieldSelector->valList);
   arg1 = appendLink(arg1, arg2);

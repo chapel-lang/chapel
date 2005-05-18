@@ -17,14 +17,14 @@ static void build_constructor(StructuralType* structType) {
   fn->isConstructor = true;
   fn->cname = glomstrings(2, "_construct_", structType->symbol->cname);
 
-  ParamSymbol* args = NULL;
+  Symbol* args = NULL;
 
   if (!useOldConstructor) {
     if (analyzeAST) {
       forv_Vec(TypeSymbol, tmp, structType->types) {
         if (dynamic_cast<VariableType*>(tmp->type)) {
-          ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, tmp->name, tmp->type);
-          args = appendLink(args, arg);
+          tmp->defPoint->parentStmt->extract();
+          args = appendLink(args, tmp);
         }
       }
 
@@ -48,11 +48,13 @@ static void build_constructor(StructuralType* structType) {
   fn->_this = new VarSymbol("this", structType);
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
 
-  for (ParamSymbol* tmp = args; tmp; tmp = nextLink(ParamSymbol, tmp)) {
-    if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(tmp->init)) {
-      if (Variable* variable = dynamic_cast<Variable*>(varInitExpr->expr)) {
-        tmp->init =
-          new VarInitExpr(new MemberAccess(new Variable(fn->_this), variable->var));
+  for (Symbol* tmp = args; tmp; tmp = nextLink(Symbol, tmp)) {
+    if (ParamSymbol* param = dynamic_cast<ParamSymbol*>(tmp)) {
+      if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(param->init)) {
+        if (Variable* variable = dynamic_cast<Variable*>(varInitExpr->expr)) {
+          param->init =
+            new VarInitExpr(new MemberAccess(new Variable(fn->_this), variable->var));
+        }
       }
     }
   }
