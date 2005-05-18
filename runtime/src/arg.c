@@ -81,6 +81,11 @@ static _integer64 getIntArg(char* valueString, char* memFlag) {
   char extraChars;
   _integer64 value = 0;  /* initialization is silly hack for freebsd */
 
+  if (!valueString) {
+    char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
+                                  "its input");
+    printError(message);
+  }
   int numScans = sscanf(valueString, _default_format_read_integer64"%c", 
                         &value, &extraChars);
   if (numScans != 1) {
@@ -95,7 +100,7 @@ static _integer64 getIntArg(char* valueString, char* memFlag) {
 static char* getStringArg(char* valueString, char* memFlag) {
   if (!valueString) {
     char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
-                                  " its option");
+                                  "its input");
     printError(message);
   }
   return valueString;
