@@ -1253,7 +1253,7 @@ void MemberAccess::codegen(FILE* outfile) {
           // (*((T*)(((char*)(&(p)))+offset)))
           fprintf(outfile, "(*((");
           member_type->codegen(outfile);
-          fprintf(outfile, "*)(((char*)(&(");
+          fprintf(outfile, "*)(((char*)(%s(", base->isRef() ? "" : "&");
           base->codegen(outfile);
           fprintf(outfile, ")))+%d)))",member_offset);
           break;
@@ -1269,7 +1269,7 @@ void MemberAccess::codegen(FILE* outfile) {
           // (*((T*)(((char*)(&p._chpl_union)))))
           fprintf(outfile, "(*((");
           member_type->codegen(outfile);
-          fprintf(outfile, "*)(((char*)(&(");
+          fprintf(outfile, "*)(((char*)(%s(", base->isRef() ? "" : "&");
           base->codegen(outfile);
           fprintf(outfile, ")._chpl_union)))))");
           break;
