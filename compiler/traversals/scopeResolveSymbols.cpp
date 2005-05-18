@@ -53,17 +53,8 @@ ScopeResolveSymbols::ScopeResolveSymbols() {
 
 void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    if (def_expr->parentStmt) {
-      for (Pragma* pragma = def_expr->parentStmt->pragmas;
-           pragma;
-           pragma = dynamic_cast<Pragma*>(pragma->next)) {
-        if (!strncmp(pragma->str, "rename ", 7)) {
-          def_expr->sym->cname = copystring(pragma->str+7);
-        }
-      }
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
-        currentFunction = fn;
-      }
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
+      currentFunction = fn;
     }
   }
 

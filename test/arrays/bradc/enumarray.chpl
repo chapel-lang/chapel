@@ -14,6 +14,6 @@ probSize(O) = 901;
 
 writeln("probSize(S) = ", probSize(S));
 for i in DClass {   -- vvvv  BLC: can I get rid of this cast?
-  writeln("probSize(", i:classVals, ") = ", ("%3lld", probSize(i)));
+  writeln("probSize(", i:classVals, ") = ", probSize(i):"%3lld");
 }
-writeln("probSize = ", ("%.3lld", probSize));
+writeln("probSize = ", probSize:"%3lld");

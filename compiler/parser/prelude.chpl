@@ -4,6 +4,17 @@ function write() {}
 function writeln() {}
 function read() {}
 
+pragma "rename _chpl_tostring_boolean"
+function _chpl_tostring(x : boolean, format : string) : string;
+
+pragma "rename _chpl_tostring_integer"
+function _chpl_tostring(x : integer, format : string) : string;
+
+pragma "rename _chpl_tostring_float"
+function _chpl_tostring(x : float, format : string) : string;
+
+pragma "rename _chpl_tostring_complex"
+function _chpl_tostring(x : complex, format : string) : string;
 
 -- intrinsic type values
 

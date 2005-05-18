@@ -24,6 +24,10 @@ typedef char* _string;
 
 void _copy_string(_string* lhs, _string rhs);
 char* _glom_strings(int numstrings, ...);
-char* _int_string(int i);
+
+char* _chpl_tostring_boolean(_boolean x, char* format);
+char* _chpl_tostring_integer(_integer64 x, char* format);
+char* _chpl_tostring_float(_float64 x, char* format);
+char* _chpl_tostring_complex(_complex128 x, char* format);
 
 #endif

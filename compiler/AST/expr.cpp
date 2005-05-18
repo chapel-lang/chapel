@@ -1109,11 +1109,11 @@ void AssignOp::codegen(FILE* outfile) {
       left->codegen(outfile);
       fprintf(outfile, "), ");
       if (right->typeInfo() == dtInteger) {
-        fprintf(outfile, "_int_string(");
+        fprintf(outfile, "_chpl_tostring_integer(");
       }
       right->codegen(outfile);
       if (right->typeInfo() == dtInteger) {
-        fprintf(outfile, ")");
+        fprintf(outfile, ", \"%%d\")");
       }
       fprintf(outfile, ")");
     }

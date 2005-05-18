@@ -911,6 +911,14 @@ expr:
 | reduction %prec TREDUCE
 | expr TCOLON type
   { $$ = new CastExpr($3, $1); }
+| expr TCOLON STRINGLITERAL
+  { 
+    Variable* _chpl_tostring =
+      new Variable(new UnresolvedSymbol("_chpl_tostring"));
+    Expr* args = $1;
+    args->append(new StringLiteral($3));
+    $$ = new ParenOpExpr(_chpl_tostring, args);
+  }
 | range %prec TDOTDOT
 | seq_expr
 | forallExpr expr %prec TRSBR
