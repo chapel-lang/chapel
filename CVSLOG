@@ -31653,3 +31653,54 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_nested_record_function.future 
 
+---------------------------------------------------------------------------
+
+05/18/05 10:41:23 -- shannon
+
+Log message:
+	Standardized the runtime error messages with the addition
+	of a few functions in the error.c file:
+	
+	  printError(char* message)
+	  printWarning(char* message)
+	  printInternalError(char* message)
+	
+	Changed the expected output of a bunch of tests to reflect
+	the new standard.
+	
+	Added a test for when the --memmax flag is not given a
+	byte value.
+
+Modified files:
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/src/: Makefile arg.c chplio.c chplmem.c 
+	                     chpltypes.c config.c 
+	chapel/test/execflags/shannon/configs/: configVarDash.good 
+	                                        configVarDashS.good 
+	                                        configVarDashSVarEquals.good 
+	                                        configVarFileStringsMismatch.good 
+	                                        configVarFileStringsNoEquals.good 
+	                                        configVarInvalidBoolean.good 
+	                                        configVarInvalidComplex.good 
+	                                        configVarInvalidFloat.good 
+	                                        configVarInvalidInteger.good 
+	                                        configVarInvalidName.good 
+	                                        configVarSetNotDeclared.good 
+	                                        configVarTwoModsNoneSpecified.good 
+	                                        configVarWithSpaces.good 
+	chapel/test/memory/shannon/: freedWithoutMalloc.good 
+	                             memstatFlag.good memtableFlag.good 
+	                             reallocWithoutMalloc.good 
+	                             thresholdWithoutTrace.good 
+	chapel/test/memory/shannon/outofmemory/: mallocOutOfMemory.good 
+	chapel/test/trivial/shannon/: readStringOverflow.good 
+	                              readWriteBool.good 
+	                              readWriteComplex.good 
+	                              readWriteComplexFail1.good 
+Added files:
+	chapel/runtime/include/: error.h 
+	chapel/runtime/src/: error.c 
+	chapel/test/memory/shannon/: memmaxBytes.chpl 
+	                             memmaxBytes.execopts 
+	                             memmaxBytes.good 
+
