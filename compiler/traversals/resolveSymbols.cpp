@@ -7,7 +7,7 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
-
+#include "stringutil.h"
 
 static Expr* copy_argument_list(ParenOpExpr* expr) {
   Expr* args = NULL;
@@ -77,6 +77,7 @@ ResolveSymbols::ResolveSymbols() {
   whichModules = MODULES_CODEGEN;
 }
 
+
 binOpType
 gets_to_binop(getsOpType i) {
   switch (i) {
@@ -93,6 +94,7 @@ gets_to_binop(getsOpType i) {
   return BINOP_PLUS;
 }
 
+
 static int
 is_builtin(FnSymbol *fn) {
   Pragma* pr = fn->defPoint->parentStmt->pragmas;
@@ -105,10 +107,110 @@ is_builtin(FnSymbol *fn) {
   return 0;
 }
 
+
+static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
+  static int uid = 0;
+
+  Pragma* pr = fn->defPoint->parentStmt->pragmas;
+  while (pr) {
+    if (!strcmp(pr->str, "builtin")) {
+      return;
+    }
+    pr = dynamic_cast<Pragma *>(pr->next);
+  }
+
+  if (!strcmp(fn->name, "=")) {
+    fn->cname = glomstrings(2, "_assign", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "+")) {
+    fn->cname = glomstrings(2, "_plus", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "-")) {
+    fn->cname = glomstrings(2, "_minus", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "*")) {
+    fn->cname = glomstrings(2, "_times", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "/")) {
+    fn->cname = glomstrings(2, "_div", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "mod")) {
+    fn->cname = glomstrings(2, "_mod", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "==")) {
+    fn->cname = glomstrings(2, "_eq", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "!=")) {
+    fn->cname = glomstrings(2, "_ne", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "<=")) {
+    fn->cname = glomstrings(2, "_le", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, ">=")) {
+    fn->cname = glomstrings(2, "_ge", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "<")) {
+    fn->cname = glomstrings(2, "_lt", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, ">")) {
+    fn->cname = glomstrings(2, "_gt", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "&")) {
+    fn->cname = glomstrings(2, "_bitand", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "|")) {
+    fn->cname = glomstrings(2, "_bitor", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "^")) {
+    fn->cname = glomstrings(2, "_xor", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "and")) {
+    fn->cname = glomstrings(2, "_and", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "or")) {
+    fn->cname = glomstrings(2, "_or", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "**")) {
+    fn->cname = glomstrings(2, "_exponent", intstring(uid++));
+  }
+  else if (!strcmp(fn->name, "by")) {
+    fn->cname = glomstrings(2, "_by", intstring(uid++));
+  }
+}
+
+
 void ResolveSymbols::postProcessExpr(Expr* expr) {
-  if (typeid(*expr) == typeid(ParenOpExpr) 
-      || (analyzeAST && typeid(*expr) == typeid(FnCall) && expr->resolved)
-    ) 
+
+  if (analyzeAST) {
+    Expr* paren_replacement = NULL;
+    if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
+      if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
+        paren_replacement = new ArrayRef(paren->baseExpr, paren->argList);
+      } else if (dynamic_cast<TupleType*>(paren->baseExpr->typeInfo())) {
+        paren_replacement = new TupleSelect(paren->baseExpr, paren->argList);
+      } else if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
+        if (!dynamic_cast<TypeSymbol*>(baseVar->var) && 
+            dynamic_cast<TupleType*>(baseVar->typeInfo())) {
+          paren_replacement = new TupleSelect(baseVar, paren->argList);
+        } else if (dynamic_cast<FnSymbol*>(baseVar->var) && !dynamic_cast<FnCall*>(expr)) {
+          paren_replacement = new FnCall(baseVar, paren->argList);
+        }
+      }
+    }
+    if (paren_replacement) {
+      Vec<FnSymbol *> fns;
+      call_info(expr, fns);
+      if (fns.n > 1)
+        INT_FATAL(expr, "unable to resolve call");
+      if (fns.n == 1)
+        paren_replacement->resolved = fns.v[0];
+      expr->replace(paren_replacement);
+      expr = paren_replacement;
+    }
+  }
+
+  if (typeid(*expr) == typeid(ParenOpExpr) ||
+      (analyzeAST && typeid(*expr) == typeid(FnCall) && expr->resolved)) 
   {
     ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr);
     Vec<FnSymbol*> fns;
@@ -147,7 +249,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 
     Expr* arguments = copy_argument_list(paren);
     Expr* function = new Variable(fns.e[0]);
-    expr->replace(new FnCall(function, arguments));
+    Expr *new_expr = new FnCall(function, arguments);
+    expr->replace(new_expr);
+    expr = new_expr;
   }
 
   if (AssignOp* aop = dynamic_cast<AssignOp*>(expr)) {
@@ -213,7 +317,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           assert(fns.n == 1); // we don't handle dispatch yet
           Expr* arguments = member_access->base->copy();
           Expr* function = new Variable(fns.v[0]);
+          Expr *new_expr = new FnCall(function, arguments);
           expr->replace(new FnCall(function, arguments));
+          expr = new_expr;
         } else
           INT_FATAL(expr, "Unable to resolve member access");
       }
@@ -229,7 +335,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           if (dynamic_cast<FnSymbol*>(member_access->member)) {
             Expr* arguments = member_access->base->copy();
             Expr* function = new Variable(member_access->member);
-            expr->replace(new FnCall(function, arguments));
+            Expr *new_expr = new FnCall(function, arguments);
+            expr->replace(new_expr);
+            expr = new_expr;
           }
         } else {
           INT_FATAL(expr, "Cannot resolve MemberAccess");
@@ -247,6 +355,43 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           defExpr->sym->type->defaultConstructor = fns.v[0];
         }
       }
+    }
+  }
+  
+  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
+      if (fn->parentScope->type != SCOPE_INTERNAL_PRELUDE) {
+        mangle_overloaded_operator_function_names(fn);
+      }
+    }
+  }
+  if (analyzeAST && typeid(*expr) == typeid(BinOp)) {
+    BinOp* op = dynamic_cast<BinOp*>(expr);
+    Vec<FnSymbol*> fns;
+    if (op->resolved)
+      fns.add(op->resolved);
+    else
+      call_info(op, fns);
+    if (fns.n != 1) {
+      if (fns.n == 0) {
+        INT_FATAL(expr, "Operator has no function");
+      } else {
+        INT_FATAL(expr, "Trouble resolving operator");
+      }
+    } else {
+      Pragma* pr = fns.e[0]->defPoint->parentStmt->pragmas;
+      while (pr) {
+        if (!strcmp(pr->str, "builtin")) {
+          return;
+        }
+        pr = dynamic_cast<Pragma *>(pr->next);
+      }
+    
+      Expr* args = op->left->copy();
+      args->append(op->right->copy());
+      FnCall *new_expr = new FnCall(new Variable(fns.e[0]), args);
+      expr->replace(new_expr);
+      expr = new_expr;
     }
   }
 }

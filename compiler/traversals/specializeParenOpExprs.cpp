@@ -19,7 +19,7 @@ decomposeStmtFunction(ParenOpExpr* parenOpExpr, char* newFunctionName) {
 }
 
 
-void PreSpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
+void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
     if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(exprStmt->expr)) {
       if (Variable* baseVar = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
@@ -42,7 +42,7 @@ void PreSpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
 }
 
 
-void PreSpecializeParenOpExprs::postProcessExpr(Expr* expr) {
+void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
   Expr* paren_replacement = NULL;
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
@@ -82,36 +82,3 @@ void PreSpecializeParenOpExprs::postProcessExpr(Expr* expr) {
   }
 }
 
-
-void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
-  if (!analyzeAST)
-    return;
-  Expr* paren_replacement = NULL;
-  if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
-    if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
-      paren_replacement = new ArrayRef(paren->baseExpr, paren->argList);
-    } else if (dynamic_cast<TupleType*>(paren->baseExpr->typeInfo())) {
-      paren_replacement = new TupleSelect(paren->baseExpr, paren->argList);
-    } else if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
-      if (!dynamic_cast<TypeSymbol*>(baseVar->var) && 
-          dynamic_cast<TupleType*>(baseVar->typeInfo())) {
-        paren_replacement = new TupleSelect(baseVar, paren->argList);
-      } else if (dynamic_cast<StructuralType*>(baseVar->var->type)) {
-      } else if (strcmp(baseVar->var->name, "write") == 0) {
-      } else if (strcmp(baseVar->var->name, "writeln") == 0) {
-      } else if (strcmp(baseVar->var->name, "read") == 0) {
-      } else if (dynamic_cast<FnSymbol*>(baseVar->var) && !dynamic_cast<FnCall*>(expr)) {
-        paren_replacement = new FnCall(baseVar, paren->argList);
-      }
-    }
-  }
-  if (paren_replacement) {
-    Vec<FnSymbol *> fns;
-    call_info(expr, fns);
-    if (fns.n > 1)
-      INT_FATAL(expr, "unable to resolve call");
-    if (fns.n == 1)
-      paren_replacement->resolved = fns.v[0];
-    expr->replace(paren_replacement);
-  }
-}

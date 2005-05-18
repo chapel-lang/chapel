@@ -47,7 +47,7 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(BuildClassConstructorsEtc, ""),
   RUN(Verify, ""), // this is a sanity check
-  RUN(PreSpecializeParenOpExprs, ""),
+  RUN(SpecializeParenOpExprs, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ApplyThisParameters, ""),
   RUN(Verify, ""), // this is a sanity check
@@ -79,13 +79,11 @@ PassInfo passlist[] = {
   RUN(PostAnalysisCleanup, ""),
   RUN(ResolveTupleTypes, ""),
   RUN(Verify, ""), // this is a sanity check
-  RUN(SpecializeParenOpExprs, ""),
-  RUN(Verify, ""), // this is a sanity check
   RUN(ResolveSymbols, ""),
+  RUN(Verify, ""), // this is a sanity check
   //RUN(FindUnknownTypes, ""),
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
-  RUN(ResolveOverloadedOperators, ""),
   RUN(RemoveNamedParameters, ""),
 
   // passes to normalize the basic AST after analysis

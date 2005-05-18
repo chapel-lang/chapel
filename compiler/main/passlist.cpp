@@ -52,7 +52,6 @@
 #include "../traversals/removeSeqOperations.h"
 #include "../traversals/resolveDomainRanks.h"
 #include "../traversals/resolveModuleUses.h"
-#include "../traversals/resolveOverloadedOperators.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/transformLetExprs.h"
@@ -102,7 +101,6 @@ REGISTER(InsertWriteFns);
 REGISTER(LegalizeCNames);
 REGISTER(OmitForNoAnalysis);
 REGISTER(PostAnalysisCleanup);
-REGISTER(PreSpecializeParenOpExprs);
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
@@ -117,7 +115,6 @@ REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(RenameOverloadedFunctions);
 REGISTER(ResolveDomainRanks);
 REGISTER(ResolveModuleUses);
-REGISTER(ResolveOverloadedOperators);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(ResolveTypes);
 REGISTER(ResolveTupleTypes);
