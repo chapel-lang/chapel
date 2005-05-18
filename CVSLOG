@@ -31900,3 +31900,20 @@ Modified files:
 Added files:
 	chapel/test/trivial/shannon/: readWriteComplexTuple.future 
 
+---------------------------------------------------------------------------
+
+05/18/05 16:58:17 -- jplevyak
+
+Log message:
+	Step 1: merge all the code which attempts to resolve call targets
+	or modify ParenOps post-analysis into one file.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+	                             specializeParenOpExprs.h 
+Removed files:
+	chapel/compiler/traversals/: resolveOverloadedOperators.cpp 
+	                             resolveOverloadedOperators.h 
+
