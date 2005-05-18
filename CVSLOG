@@ -31744,3 +31744,15 @@ Log message:
 Modified files:
 	chapel/runtime/src/: arg.c 
 
+---------------------------------------------------------------------------
+
+05/18/05 12:04:50 -- deitz
+
+Log message:
+	Futurized this test.  It creates two identical unions.  These are
+	identical structural types.  We need to transform one of them into a
+	UserType.
+
+Added files:
+	chapel/test/classes/bradc/unions/: twounions.future 
+
