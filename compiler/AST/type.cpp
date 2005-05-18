@@ -1834,7 +1834,7 @@ void initTypes(void) {
   dtFloat = Symboltable::defineBuiltinType("float", "_float64",
                                            new FloatLiteral("0.0", 0.0));
   dtComplex = Symboltable::defineBuiltinType("complex", "_complex128",
-                                             new FloatLiteral("0.0", 0.0));
+                                             new ComplexLiteral("0.0i", 0.0, 0.0, "0.0"));
   dtString = Symboltable::defineBuiltinType("string", "_string", NULL);
   dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
   dtAny = Symboltable::defineBuiltinType("any", "_any", NULL);
