@@ -31626,3 +31626,16 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
 
+---------------------------------------------------------------------------
+
+05/18/05 09:45:06 -- deitz
+
+Log message:
+	Added some new runtime procedure for output of primitive types.  Once write is a normal overloaded function, these will be used and the others will not.
+	
+	This is an intermediary checkin and has no effect.
+
+Modified files:
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+
