@@ -31917,3 +31917,13 @@ Removed files:
 	chapel/compiler/traversals/: resolveOverloadedOperators.cpp 
 	                             resolveOverloadedOperators.h 
 
+---------------------------------------------------------------------------
+
+05/18/05 16:59:46 -- jplevyak
+
+Log message:
+	Update .future to use my username like all the other .futures.
+
+Modified files:
+	chapel/test/domains/roxana/: test_index_expr1.future 
+
