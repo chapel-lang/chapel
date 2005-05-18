@@ -353,6 +353,27 @@ static void build_write_function(EnumType* enumType) {
 }
 
 
+static void build_read_function(EnumType* enumType) {
+  SymScope* newScope =
+    enumType->symbol->parentScope->findEnclosingScopeLessType(SCOPE_MODULE);
+  SymScope* saveScope =
+    Symboltable::setCurrentScope(newScope);
+
+  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("read"));
+  fn->cname = glomstrings(3, "_auto_", enumType->symbol->name, "_read");
+  ParamSymbol* arg = new ParamSymbol(PARAM_INOUT, "val", enumType);
+  Symboltable::continueFnDef(fn, arg, dtVoid);
+  Symboltable::pushScope(SCOPE_LOCAL);
+
+  Stmt* body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumReadStopgap")), new Variable(arg)));
+  BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+  DefStmt* defStmt =
+    new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
+  enumType->symbol->defPoint->parentStmt->insertBefore(defStmt);
+  Symboltable::setCurrentScope(saveScope);
+}
+
+
 static void build_write_function(DomainType* domainType) {
   SymScope* newScope =
     domainType->symbol->parentScope->findEnclosingScopeLessType(SCOPE_MODULE);
@@ -386,6 +407,7 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
         build_write_function(type);
       } else if (EnumType* type = dynamic_cast<EnumType*>(sym->type)) {
         build_write_function(type);
+        build_read_function(type);
       } else if (DomainType* type = dynamic_cast<DomainType*>(sym->type)) {
         build_write_function(type);
       }

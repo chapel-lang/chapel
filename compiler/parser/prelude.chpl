@@ -25,16 +25,19 @@ pragma "rename _chpl_write_nil" function write(x : _nilType) : void {
 pragma "rename _chpl_write_linefeed" function writeln() : void {
          __primitive("writeln");
 }
-pragma "rename _chpl_read_boolean" function read(out x : boolean) : void {
+pragma "rename _chpl_read_boolean" function read(inout x : boolean) : void {
          __primitive("read", x);
 }
-pragma "rename _chpl_read_integer" function read(out x : integer) : void {
+pragma "rename _chpl_read_integer" function read(inout x : integer) : void {
          __primitive("read", x);
 }
-pragma "rename _chpl_read_float" function read(out x : float) : void {
+pragma "rename _chpl_read_float" function read(inout x : float) : void {
          __primitive("read", x);
 }
-pragma "rename _chpl_read_string" function read(out x : string) : void {
+pragma "rename _chpl_read_complex" function read(inout x : complex) : void {
+         __primitive("read", x);
+}
+pragma "rename _chpl_read_string" function read(inout x : string) : void {
          __primitive("read", x);
 }
 

@@ -23,7 +23,10 @@ void PreSpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
     if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(exprStmt->expr)) {
       if (Variable* baseVar = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
-        if (strcmp(baseVar->var->name, "write") == 0) {
+        if (strcmp(baseVar->var->name, "read") == 0) {
+          decomposeStmtFunction(parenOpExpr, "read");
+          parenOpExpr->parentStmt->extract();
+        } else if (strcmp(baseVar->var->name, "write") == 0) {
           decomposeStmtFunction(parenOpExpr, "write");
           parenOpExpr->parentStmt->extract();
         } else if (strcmp(baseVar->var->name, "writeln") == 0) {
@@ -68,7 +71,7 @@ void PreSpecializeParenOpExprs::postProcessExpr(Expr* expr) {
       } else if (strcmp(baseVar->var->name, "writeln") == 0) {
         //        paren_replacement = new IOCall(IO_WRITELN, paren->baseExpr, paren->argList);
       } else if (strcmp(baseVar->var->name, "read") == 0) {
-        paren_replacement = new IOCall(IO_READ, paren->baseExpr, paren->argList);
+        //        paren_replacement = new IOCall(IO_READ, paren->baseExpr, paren->argList);
       } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
         paren_replacement = new FnCall(baseVar, paren->argList);
       }

@@ -1618,6 +1618,25 @@ void FnCall::codegen(FILE* outfile) {
       }
       fprintf(outfile, "}\n");
       return;
+    } else if (variable->var == Symboltable::lookupInternal("_EnumReadStopgap")) {
+      EnumType* enumType = dynamic_cast<EnumType*>(argList->typeInfo());
+      fprintf(outfile, "char* inputString = NULL;\n");
+      fprintf(outfile, "_chpl_read_string(&inputString);\n");
+      EnumSymbol* enumSym = enumType->valList;
+      while (enumSym) {
+        fprintf(outfile, "if (strcmp(inputString, \"%s\") == 0) {\n", enumSym->cname);
+        fprintf(outfile, "  *val = %s;\n", enumSym->cname);
+        fprintf(outfile, "} else ");
+        enumSym = nextLink(EnumSymbol, enumSym);
+      }
+      fprintf(outfile, "{\n");
+      fprintf(outfile, "fflush(stdout);\n");
+      fprintf(outfile, "fprintf (stderr, \"***ERROR:  Not of ");
+      enumType->symbol->codegen(outfile);
+      fprintf(outfile, " type***\\n\");\n");
+      fprintf(outfile, "exit(0);\n");
+      fprintf(outfile, "}\n");
+      return;
     } else if (variable->var == Symboltable::lookupInternal("_SeqWriteStopgap")) {
       SeqType* seqType = dynamic_cast<SeqType*>(argList->typeInfo());
       fprintf(outfile, "%s tmp = val->first;\n", seqType->types.v[0]->cname);
