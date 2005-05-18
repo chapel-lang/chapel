@@ -31610,3 +31610,19 @@ Added files:
 	chapel/test/trivial/deitz/: test_format_primitives.chpl 
 	                            test_format_primitives.good 
 
+---------------------------------------------------------------------------
+
+05/18/05 09:28:12 -- jplevyak
+
+Log message:
+	Work on getting generic types along with all the related functions
+	instantiated.
+	Move to using the map returned by instantiate generics instead of using
+	collect_asts().
+	Fixed a bug whereby cloning of a FnSymbol didn't put the symbol itself
+	into the map.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+
