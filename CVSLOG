@@ -31722,3 +31722,13 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_class1.future 
 
+---------------------------------------------------------------------------
+
+05/18/05 11:34:58 -- jplevyak
+
+Log message:
+	Patch cg to handle "print" as __primitive("print", ... ) in lowlevelcodegen.
+
+Modified files:
+	chapel/compiler/analysis/: cg.cpp 
+
