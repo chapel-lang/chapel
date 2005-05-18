@@ -31732,3 +31732,15 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: cg.cpp 
 
+---------------------------------------------------------------------------
+
+05/18/05 11:37:01 -- shannon
+
+Log message:
+	Fixed a bug that caused a seg fault when the
+	--memthreshold flag was used without specifying
+	a byte value.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+
