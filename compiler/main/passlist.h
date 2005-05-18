@@ -90,7 +90,7 @@ PassInfo passlist[] = {
 
   // passes to normalize the basic AST after analysis
   RUN(Verify, ""), // this is a sanity check
-  RUN(InsertWriteFns, ""),
+  //  RUN(InsertWriteFns, ""),
   RUN(InsertElidedLoops, ""),
 
 

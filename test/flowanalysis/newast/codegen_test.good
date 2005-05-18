@@ -9,7 +9,12 @@
 ::foo(codegen_test.chpl:12) ( foo )
 ::main ( main )
 ::true(prelude.chpl:0) ( bool )
+::write(prelude.chpl:0) ( write )
+::write(prelude.chpl:0) ( write )
+::writeln(prelude.chpl:0) ( writeln )
 ::x(codegen_test.chpl:1) ( int64 )
+::x(prelude.chpl:0) ( int64 )
+::x(prelude.chpl:0) ( string )
 ::y(codegen_test.chpl:3) ( int64 )
 ::z(codegen_test.chpl:7) ( int64 )
 function foo codegen_test.chpl:7

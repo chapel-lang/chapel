@@ -183,7 +183,7 @@ Expr* Expr::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 Expr* Expr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
   if (this) {
-    INT_FATAL(this, "Expr::copy() not implemented yet");
+    INT_FATAL(this, "Expr::copyExpr() not implemented yet");
   }
   return NULL;
 }
@@ -1522,6 +1522,133 @@ FnSymbol* FnCall::findFnSymbol(void) {
 
 
 void FnCall::codegen(FILE* outfile) {
+
+  // This is Kludge until arrays, unions, enums have write functions
+
+  ///
+  /// BEGIN KLUDGE
+  ///
+
+  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+    if (variable->var == Symboltable::lookupInternal("_UnionWriteStopgap")) {
+      // STEVE:  You are implementing a stopgap write routine for unions in codegeneration
+      UnionType* unionType = dynamic_cast<UnionType*>(argList->typeInfo());
+      fprintf(outfile, "if (_UNION_CHECK_QUIET(val, _%s_union_id__uninitialized)) {\n",
+              unionType->symbol->cname);
+      fprintf(outfile, "_chpl_write_string(\"(uninitialized)\");\n");
+      forv_Vec(VarSymbol, field, unionType->fields) {
+        fprintf(outfile, "} else if (_UNION_CHECK_QUIET(val, _%s_union_id_%s)) {\n",
+                unionType->symbol->cname, field->name);
+        fprintf(outfile, "_chpl_write_string(\"(%s = \");\n", field->name);
+        if (field->type == dtInteger) {
+          fprintf(outfile, "_chpl_write_integer(val._chpl_union.%s);\n",
+                  field->cname);
+        } else if (field->type == dtFloat) {
+          fprintf(outfile, "_chpl_write_float(val._chpl_union.%s);\n",
+                  field->cname);
+        } else if (field->type == dtString) {
+          fprintf(outfile, "_chpl_write_string(val._chpl_union.%s);\n",
+                  field->cname);
+        } else if (field->type == dtBoolean) {
+          fprintf(outfile, "_chpl_write_boolean(val._chpl_union.%s);\n",
+                  field->cname);
+        }
+        fprintf(outfile, "_chpl_write_string(\")\");\n");
+      }
+      fprintf(outfile, "} else {\n");
+      fprintf(outfile, "_chpl_write_string(\"impossible\"); exit(0);\n");
+      fprintf(outfile, "}\n");
+      return;
+    } else if (variable->var == Symboltable::lookupInternal("_ArrayWriteStopgap")) {
+      ArrayType* arrayType = dynamic_cast<ArrayType*>(argList->typeInfo());
+      FnSymbol* innerFn;
+      if (ExprStmt* innerFnStmt = dynamic_cast<ExprStmt*>(parentStmt->next)) {
+
+        innerFn = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(dynamic_cast<FnCall*>(innerFnStmt->expr)->baseExpr)->var);
+
+      } else if (BlockStmt* innerFnStmt = dynamic_cast<BlockStmt*>(parentStmt->next)) {
+        Stmt* last = innerFnStmt->body;
+        while (last->next) {
+          last = nextLink(Stmt, last);
+        }
+        if (ExprStmt* innerFnStmt = dynamic_cast<ExprStmt*>(last)) {
+
+          innerFn = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(dynamic_cast<FnCall*>(innerFnStmt->expr)->baseExpr)->var);
+        }
+      }
+
+      for (int dim = 0; dim < arrayType->domainType->numdims; dim++) {
+        fprintf(outfile, "  int i%d;\n", dim);
+      }
+      arrayType->domainType->codegen(outfile);
+      fprintf(outfile, "* const dom = val->domain;\n\n");
+      for (int dim = 0; dim < arrayType->domainType->numdims; dim++) {
+        fprintf(outfile, "for (i%d=dom->dim_info[%d].lo; i%d<=dom"
+                "->dim_info[%d].hi; i%d+=dom->dim_info[%d].str) {\n",
+                dim, dim, dim, dim, dim, dim);
+      }
+      fprintf(outfile, "%s(_ACC%d((*val), i0", innerFn->cname, arrayType->domainType->numdims);
+      for (int dim = 1; dim < arrayType->domainType->numdims; dim++) {
+        fprintf(outfile, ", i%d", dim);
+      }
+      fprintf(outfile, "));\n");
+      fprintf(outfile, "if (i%d<dom->dim_info[%d].hi) {\n",
+              arrayType->domainType->numdims-1, arrayType->domainType->numdims-1);
+      fprintf(outfile, "_chpl_write_string(\" \");\n");
+      fprintf(outfile, "}\n");
+      fprintf(outfile, "}\n");
+      for (int dim = 1; dim < arrayType->domainType->numdims; dim++) {
+        fprintf(outfile, "_chpl_write_linefeed();\n");
+        fprintf(outfile, "}\n");
+      }
+      parentStmt->next = NULL;
+      return;
+    } else if (variable->var == Symboltable::lookupInternal("_EnumWriteStopgap")) {
+      EnumType* enumType = dynamic_cast<EnumType*>(argList->typeInfo());
+      fprintf(outfile, "switch (val) {\n");
+      EnumSymbol* enumSym = enumType->valList;
+      while (enumSym) {
+        fprintf(outfile, "case ");
+        enumSym->codegen(outfile);
+        fprintf(outfile, ":\n");
+        fprintf(outfile, "_chpl_write_string(\"%s\");\n", enumSym->name);
+        fprintf(outfile, "break;\n");
+
+        enumSym = nextLink(EnumSymbol, enumSym);
+      }
+      fprintf(outfile, "}\n");
+      return;
+    } else if (variable->var == Symboltable::lookupInternal("_SeqWriteStopgap")) {
+      SeqType* seqType = dynamic_cast<SeqType*>(argList->typeInfo());
+      fprintf(outfile, "%s tmp = val->first;\n", seqType->types.v[0]->cname);
+      fprintf(outfile, "if (tmp != nil) {");
+      fprintf(outfile, "  printf(\"(/\");\n");
+      fprintf(outfile, "  while (tmp != nil) {\n");
+      if (seqType->elementType == dtString) {
+        fprintf(outfile, "_chpl_write_string(tmp->element);\n");
+      } else if (seqType->elementType == dtInteger) {
+        fprintf(outfile, "_chpl_write_integer(tmp->element);\n");
+      }
+      fprintf(outfile, "    tmp = tmp->next;\n");
+      fprintf(outfile, "    if (tmp != nil) {\n");
+      fprintf(outfile, "      printf(\", \");\n");
+      fprintf(outfile, "    }\n");
+      fprintf(outfile, "  }\n");
+      fprintf(outfile, "  printf(\"/)\");\n");
+      fprintf(outfile, "} else {\n");
+      fprintf(outfile, "  printf(\"nil\");\n");
+      fprintf(outfile, "}\n");
+      return;
+    } else if (variable->var == Symboltable::lookupInternal("_DomainWriteStopgap")) {
+      fprintf(outfile, "_write_domain(stdout, (*val));\n");
+      return;
+    }
+  }
+
+  ///
+  /// END KLUDGE
+  ///
+
   baseExpr->codegen(outfile);
   fprintf(outfile, "(");
 

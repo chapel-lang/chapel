@@ -5,6 +5,40 @@
 #include "symtab.h"
 
 
+static void
+decomposeStmtFunction(ParenOpExpr* parenOpExpr, char* newFunctionName) {
+  Stmt* replacements = NULL;
+  for (Expr* arg = parenOpExpr->argList; arg; arg = nextLink(Expr, arg)) {
+    Variable* function = new Variable(new UnresolvedSymbol(newFunctionName));
+    Stmt* replacement = new ExprStmt(new ParenOpExpr(function, arg->copy()));
+    replacements = appendLink(replacements, replacement);
+  }
+  if (replacements) {
+    parenOpExpr->parentStmt->insertBefore(replacements);
+  }
+}
+
+
+void PreSpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
+  if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(exprStmt->expr)) {
+      if (Variable* baseVar = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
+        if (strcmp(baseVar->var->name, "write") == 0) {
+          decomposeStmtFunction(parenOpExpr, "write");
+          parenOpExpr->parentStmt->extract();
+        } else if (strcmp(baseVar->var->name, "writeln") == 0) {
+          decomposeStmtFunction(parenOpExpr, "write");
+          Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
+          Expr* callWriteln = new ParenOpExpr(writeln, NULL);
+          parenOpExpr->parentStmt->insertBefore(new ExprStmt(callWriteln));
+          parenOpExpr->parentStmt->extract();
+        }
+      }
+    }
+  }
+}
+
+
 void PreSpecializeParenOpExprs::postProcessExpr(Expr* expr) {
   Expr* paren_replacement = NULL;
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
@@ -30,9 +64,9 @@ void PreSpecializeParenOpExprs::postProcessExpr(Expr* expr) {
           INT_FATAL(expr, "constructor does not have a DefStmt");
         }
       } else if (strcmp(baseVar->var->name, "write") == 0) {
-        paren_replacement = new IOCall(IO_WRITE, paren->baseExpr, paren->argList);
+        //        paren_replacement = new IOCall(IO_WRITE, paren->baseExpr, paren->argList);
       } else if (strcmp(baseVar->var->name, "writeln") == 0) {
-        paren_replacement = new IOCall(IO_WRITELN, paren->baseExpr, paren->argList);
+        //        paren_replacement = new IOCall(IO_WRITELN, paren->baseExpr, paren->argList);
       } else if (strcmp(baseVar->var->name, "read") == 0) {
         paren_replacement = new IOCall(IO_READ, paren->baseExpr, paren->argList);
       } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {

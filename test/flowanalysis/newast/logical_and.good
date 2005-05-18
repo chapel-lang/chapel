@@ -12,4 +12,9 @@
 ::o(logical_and.chpl:1) ( int64 )
 ::p(logical_and.chpl:2) ( int64 )
 ::true(prelude.chpl:0) ( bool )
+::write(prelude.chpl:0) ( write )
+::write(prelude.chpl:0) ( write )
+::writeln(prelude.chpl:0) ( writeln )
+::x(prelude.chpl:0) ( int64 )
+::x(prelude.chpl:0) ( string )
 globals

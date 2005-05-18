@@ -9,5 +9,10 @@
 ::foo(onearg.chpl:3) ( foo )
 ::main ( main )
 ::true(prelude.chpl:0) ( bool )
+::write(prelude.chpl:0) ( write )
+::write(prelude.chpl:0) ( write )
+::writeln(prelude.chpl:0) ( writeln )
+::x(prelude.chpl:0) ( int64 )
+::x(prelude.chpl:0) ( string )
 function foo onearg.chpl:1
 globals

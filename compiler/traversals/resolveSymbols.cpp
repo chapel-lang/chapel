@@ -122,7 +122,20 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           call_info(paren->baseExpr, fns);
         }
         if (fns.n != 1) {
-          INT_FATAL(expr, "Unable to resolve function");
+
+          // HACK: Special case where write(:nilType) requires dynamic
+          // dispatch; Take the other one.
+          if (fns.n == 2 &&
+              !strcmp(fns.e[1]->name, "write") &&
+              fns.e[1]->formals->type->astType == TYPE_NIL) {
+          } else if (fns.n == 2 &&
+              !strcmp(fns.e[0]->name, "write") &&
+              fns.e[0]->formals->type->astType == TYPE_NIL) {
+            fns.v[0] = fns.v[1];
+          } else {
+            INT_FATAL(expr, "Unable to resolve function");
+          }
+
         }
       }
     } else {

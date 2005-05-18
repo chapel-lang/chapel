@@ -1,20 +1,62 @@
 -- I/O
 
-function write() {}
-function writeln() {}
+-- function write() {}
+-- function writeln() {}
 function read() {}
 
+pragma "rename _chpl_write_boolean" function write(x : boolean) : void {
+         __primitive("write", x);
+}
+pragma "rename _chpl_write_integer" function write(x : integer) : void {
+         __primitive("write", x);
+}
+pragma "rename _chpl_write_float" function write(x : float) : void {
+         __primitive("write", x);
+}
+pragma "rename _chpl_write_complex" function write(x : complex) : void {
+                __primitive("write", x);
+}
+pragma "rename _chpl_write_string" function write(x : string) : void {
+         __primitive("write", x);
+}
+pragma "rename _chpl_write_nil" function write(x : _nilType) : void {
+         __primitive("write", x);
+}
+pragma "rename _chpl_write_linefeed" function writeln() : void {
+         __primitive("writeln");
+}
+pragma "rename _chpl_read_boolean" function read(out x : boolean) : void {
+         __primitive("read", x);
+}
+pragma "rename _chpl_read_integer" function read(out x : integer) : void {
+         __primitive("read", x);
+}
+pragma "rename _chpl_read_float" function read(out x : float) : void {
+         __primitive("read", x);
+}
+pragma "rename _chpl_read_string" function read(out x : string) : void {
+         __primitive("read", x);
+}
+
 pragma "rename _chpl_tostring_boolean"
-function _chpl_tostring(x : boolean, format : string) : string;
+function _chpl_tostring(x : boolean, format : string) : string {
+         return __primitive("coerce", string, x);
+}
 
 pragma "rename _chpl_tostring_integer"
-function _chpl_tostring(x : integer, format : string) : string;
+function _chpl_tostring(x : integer, format : string) : string {
+         return __primitive("coerce", string, x);
+}
 
 pragma "rename _chpl_tostring_float"
-function _chpl_tostring(x : float, format : string) : string;
+function _chpl_tostring(x : float, format : string) : string {
+         return __primitive("coerce", string, x);
+}
 
 pragma "rename _chpl_tostring_complex"
-function _chpl_tostring(x : complex, format : string) : string;
+function _chpl_tostring(x : complex, format : string) : string {
+         return __primitive("coerce", string, x);
+}
 
 -- intrinsic type values
 

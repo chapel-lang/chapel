@@ -21,4 +21,9 @@
 ::n(assignment_expr.chpl:2) ( int64 )
 ::o(assignment_expr.chpl:3) ( int64 )
 ::true(prelude.chpl:0) ( bool )
+::write(prelude.chpl:0) ( write )
+::write(prelude.chpl:0) ( write )
+::writeln(prelude.chpl:0) ( writeln )
+::x(prelude.chpl:0) ( int64 )
+::x(prelude.chpl:0) ( string )
 globals

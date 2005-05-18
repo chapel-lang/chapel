@@ -23,6 +23,11 @@ linux and general regressions
   when the array is initialized.  The array needs a constructor so
   that its initialization code can be analyzed.
 
+[Error matching compiler output for domains/bradc/writeIndex]
+[Error matching compiler output for domains/bradc/writeIndex2]
+
+  There is something very wrong with IndexTypes.  They should not
+  need their own write function.
 
 
 ==========================

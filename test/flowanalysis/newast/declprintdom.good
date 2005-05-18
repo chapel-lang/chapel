@@ -2,6 +2,7 @@
 ::D1(declprintdom.chpl:5) ( _domain_1d (declprintdom.chpl:5) )
 ::D2(declprintdom.chpl:6) ( _domain_1d (declprintdom.chpl:5) )
 ::D3(declprintdom.chpl:7) ( _domain_1d (declprintdom.chpl:5) )
+::_DomainWriteStopgap(internal_prelude.chpl:0) ( _DomainWriteStopgap )
 ::__init__CommonModule ( __init__CommonModule )
 ::__init_declprintdom ( __init_declprintdom )
 ::__init_entryPoint ( __init_entryPoint )
@@ -15,4 +16,10 @@
 ::m3(declprintdom.chpl:3) ( int64 )
 ::main ( main )
 ::true(prelude.chpl:0) ( bool )
+::val ( _domain_1d (declprintdom.chpl:5) )
+::write ( write )
+::write(prelude.chpl:0) ( write )
+::writeln(prelude.chpl:0) ( writeln )
+::x(internal_prelude.chpl:0) ( _domain_1d (declprintdom.chpl:5) )
+::x(prelude.chpl:0) ( string )
 globals

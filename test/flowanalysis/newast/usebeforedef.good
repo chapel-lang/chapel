@@ -9,5 +9,10 @@
 ::foo(usebeforedef.chpl:5) ( foo )
 ::main ( main )
 ::true(prelude.chpl:0) ( bool )
+::write(prelude.chpl:0) ( write )
+::write(prelude.chpl:0) ( write )
+::writeln(prelude.chpl:0) ( writeln )
+::x(prelude.chpl:0) ( int64 )
+::x(prelude.chpl:0) ( string )
 function foo usebeforedef.chpl:3
 globals

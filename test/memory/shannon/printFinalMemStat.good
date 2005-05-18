@@ -8,4 +8,4 @@ c is initialized to 1.2+3.4i
 c at runtime is 1.2 + 3.4i
 s is initialized to Pope Benedict XVI
 s at runtime is Pope Benedict XVI
-Final Memory Statistics:  totalMem=290, maxMem=325
+Final Memory Statistics:  totalMem=531, maxMem=566

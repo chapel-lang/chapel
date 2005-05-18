@@ -1,4 +1,4 @@
 0.0
 It's a float!
-0 + 0i
+0.0 + 0.0i
 It's a complex!

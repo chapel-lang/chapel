@@ -97,6 +97,11 @@ function _INIT_DOMAIN_DIM(dom, dim, lo, hi, str);
 function _SEQ_APPEND(s, t, type_name);
 function _SEQ_INIT_NIL(s);
 
+function _UnionWriteStopgap(x) { }
+function _ArrayWriteStopgap(x) { }
+function _EnumWriteStopgap(x) { }
+function _DomainWriteStopgap(x) { }
+function _SeqWriteStopgap(x) { }
 
 pragma "omit for noanalysis" class _seq {
   type elementType;
