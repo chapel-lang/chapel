@@ -935,7 +935,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
 }
 
 
-static void
+static bool
 instantiate_update_expr(Map<Type*,Type*>* generic_substitutions, Expr* expr) {
   Map<BaseAST*,BaseAST*> map;
   for (int i = 0; i < generic_substitutions->n; i++) {
@@ -946,7 +946,9 @@ instantiate_update_expr(Map<Type*,Type*>* generic_substitutions, Expr* expr) {
               generic_substitutions->v[i].value->symbol);
     }
   }
-  TRAVERSE(expr, new UpdateSymbols(&map), true);
+  UpdateSymbols *updater = new UpdateSymbols(&map);
+  TRAVERSE(expr, updater, true);
+  return updater->changed;
 }
 
 
@@ -997,7 +999,8 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
       DefExpr* fnDef =
         dynamic_cast<DefExpr*>(method->defPoint->copy(true, map));
       instantiate_add_subs(generic_substitutions, map);
-      instantiate_update_expr(generic_substitutions, fnDef);
+      if (!instantiate_update_expr(generic_substitutions, fnDef))
+        continue;
       fnDef->sym->cname =
         glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
       method->defPoint->insertBefore(fnDef);

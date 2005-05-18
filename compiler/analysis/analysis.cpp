@@ -60,6 +60,7 @@ static void build_symbols(Vec<BaseAST *> &syms);
 static void build_types(Vec<BaseAST *> &syms);
 static int build_classes(Vec<BaseAST *> &syms);
 static int gen_if1(BaseAST *ast, BaseAST *parent = 0);
+static void finalize_function(Fun *fun);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 static ScopeLookupCache universal_lookup_cache;
@@ -361,6 +362,7 @@ finalize_symbols(IF1 *i) {
   finalized_symbols = i->allsyms.n;
 }
 
+// map is not NULL when f is a constuctor for a generic type
 static Fun *
 install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map = NULL) {
   Vec<BaseAST *> syms;
@@ -383,7 +385,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     for (int i = 0; i < map->n; i++) if (map->v[i].key)
       if (Type *t = dynamic_cast<Type *>(map->v[i].key)) {
         Type *new_t = dynamic_cast<Type *>(map->v[i].value);
-        new_t->asymbol->sym->dispatch_order.add(t->asymbol->sym);
+        new_t->asymbol->sym->instantiates = t->asymbol->sym;
       }
   }
   build_types(syms);
@@ -403,9 +405,14 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     pdb->add(fun);
   }
   forv_BaseAST(ast, syms) {
-    if (Symbol *s = dynamic_cast<Symbol *>(ast))
+    if (Symbol *s = dynamic_cast<Symbol *>(ast)) {
       initialize_Sym_for_fa(s->asymbol->sym);
-    else if (Type *t = dynamic_cast<Type *>(ast))
+      if (map) 
+        if (FnSymbol *fs = dynamic_cast<FnSymbol *>(s)) {
+          build_patterns(pdb->fa, fs->asymbol->sym->fun);
+          finalize_function(fs->asymbol->sym->fun);
+        }
+    } else if (Type *t = dynamic_cast<Type *>(ast))
       initialize_Sym_for_fa(t->asymbol->sym);
   }
   if1_write_log();
@@ -2284,58 +2291,61 @@ add_to_universal_lookup_cache(char *name, Fun *fun) {
   universal_lookup_cache.put(name, v);
 }
 
+static void 
+finalize_function(Fun *fun) {
+  int added = 0;
+  char *name = fun->sym->has.v[0]->name;
+  assert(name);
+  FnSymbol *fs = dynamic_cast<FnSymbol*>(fun->sym->asymbol->symbol);
+  if (fs->typeBinding && fs->typeBinding->type) {
+    if (is_reference_type(fs->typeBinding->asymbol->symbol)) {
+      if (fs->method_type != NON_METHOD) {
+        add_to_universal_lookup_cache(name, fun);
+        added = 1;
+      }
+    }
+  }
+  MPosition p;
+  p.push(1);
+  forv_Sym(s, fun->sym->has) {
+    assert(!s->is_pattern); // not yet supported
+    // non-scoped lookup if any parameteter is specialized on a reference type
+    // (is dispatched)
+    if (!added && s->must_specialize && 
+        is_reference_type(s->must_specialize->asymbol->symbol)) 
+    {
+      add_to_universal_lookup_cache(name, fun);
+      added = 1;
+    }
+    // record default argument positions
+    if (s->asymbol->symbol) {
+      ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
+      if (symbol && symbol->init) {
+        assert(symbol->init->ainfo);
+        fun->default_args.put(cannonicalize_mposition(p), symbol->init->ainfo);
+      }
+    }
+    p.inc();
+  }
+  // check pragmas
+  Sym *fn = fun->sym;
+  FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
+  Pragma *pr = f->defPoint->pragmas;
+  while (pr) {
+    if (!strcmp(pr->str, "test pragma"))
+      printf("test pragma\n");
+    pr = dynamic_cast<Pragma *>(pr->next);
+  }
+}
+
 void
 ACallbacks::finalize_functions() {
   pdb->fa->method_token = unique_AVar(new Var(method_symbol), GLOBAL_CONTOUR);
   pdb->fa->array_index_base = 1;
   pdb->fa->tuple_index_base = 1;
-  forv_Fun(fun, pdb->funs) {
-    int added = 0;
-    char *name = fun->sym->has.v[0]->name;
-    assert(name);
-    FnSymbol *fs = dynamic_cast<FnSymbol*>(fun->sym->asymbol->symbol);
-    if (fs->typeBinding && fs->typeBinding->type) {
-      if (is_reference_type(fs->typeBinding->asymbol->symbol)) {
-        if (fs->method_type != NON_METHOD) {
-          add_to_universal_lookup_cache(name, fun);
-          added = 1;
-        }
-      }
-    }
-    MPosition p;
-    p.push(1);
-    forv_Sym(s, fun->sym->has) {
-      assert(!s->is_pattern); // not yet supported
-      // non-scoped lookup if any parameteter is specialized on a reference type
-      // (is dispatched)
-      if (!added && s->must_specialize && 
-          is_reference_type(s->must_specialize->asymbol->symbol)) 
-      {
-        add_to_universal_lookup_cache(name, fun);
-        added = 1;
-      }
-      // record default argument positions
-      if (s->asymbol->symbol) {
-        ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
-        if (symbol && symbol->init) {
-          assert(symbol->init->ainfo);
-          fun->default_args.put(cannonicalize_mposition(p), symbol->init->ainfo);
-        }
-      }
-      p.inc();
-    }
-    // check pragmas
-    Sym *fn = fun->sym;
-    FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
-    Pragma *pr = f->defPoint->pragmas;
-    while (pr) {
-      if (!strcmp(pr->str, "test pragma"))
-        printf("test pragma\n");
-      pr = dynamic_cast<Pragma *>(pr->next);
-    }
-  }
+  forv_Fun(fun, pdb->funs)
+    finalize_function(fun);
 }
-
 
 static void
 init_symbols() {

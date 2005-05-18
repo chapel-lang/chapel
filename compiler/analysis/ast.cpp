@@ -219,6 +219,8 @@ build_type_hierarchy() {
       types.set_add(s);
     if (s->is_meta_type)
       meta_types.add(s);
+    if (s->instantiates) 
+      implement_and_specialize(s->instantiates, s, types);
   }
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && s != sym_any && s != sym_void && s != sym_unknown) {

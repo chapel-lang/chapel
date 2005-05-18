@@ -15,6 +15,7 @@
  ***/
 class UpdateSymbols : public Traversal {
  public:
+  bool changed;
   Map<BaseAST*,BaseAST*>* copy_map;
   UpdateSymbols(Map<BaseAST*,BaseAST*>* init_copy_map);
   void preProcessExpr(Expr* expr);

@@ -41,7 +41,10 @@ class MPosition : public gc {
       cp = 0;
   }
   void *last() { return pos.v[pos.n -1]; }
-  int is_positional() { for (int i = 0; i < pos.n; i++) if (!is_intPosition(pos.v[i])) return 0; return 1; }
+  int is_positional() { 
+    for (int i = 0; i < pos.n; i++) 
+      if (!is_intPosition(pos.v[i])) return 0; return 1; 
+  }
   int last_is_positional() { return is_intPosition(last()); }
   int prefix_to_last(MPosition &p);
   MPosition() : cp(0), up(0), next(0), down(0) {}
@@ -119,6 +122,7 @@ typedef MapElem<MPosition *, Sym *> MapMPositionSym;
 
 
 void build_patterns(FA *fa);
+void build_patterns(FA *fa, Fun *f);
 void build_arg_positions(FA *fa);
 int positional_to_named(CreationSet *cs, AVar *av, MPosition &p, MPosition *result_p);
 int pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial_ok, Vec<Match *> *matches);

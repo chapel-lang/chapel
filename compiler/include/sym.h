@@ -141,6 +141,7 @@ class Sym : public BasicSym {
   Sym                   *ret;                   // return value of functions    *fun*
   Sym                   *cont;                  // continuation (function returning ret) *fun*
 
+  Sym                   *instantiates;          
   Vec<Sym *>            implementors;           // used by fa.cpp, implementors *type*
   Vec<Sym *>            specializers;           // used by fa.cpp, specializers *type*
   Vec<Sym *>            dispatch_order;         // used by fa.cpp, pattern.cpp  *type*

@@ -65,6 +65,7 @@ Sym::Sym() :
   self(NULL),
   ret(NULL),
   cont(NULL),
+  instantiates(NULL),
   match_type(NULL),
   abstract_type(NULL),
   alias(NULL),
