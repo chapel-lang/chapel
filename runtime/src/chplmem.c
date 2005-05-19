@@ -46,15 +46,14 @@ static unsigned hash(void* memAlloc) {
 }
 
 
-static int memmax = 0;
 static int memstat = 0;
 static int memtable = 0;
 static int memthreshold = 0;
-static FILE* memlog = NULL;
 static _integer64 memmaxValue = 0;
 static _integer64 memthresholdValue = 0;
-static size_t totalMem = 0;
-static size_t maxMem = 0;
+static FILE* memlog = NULL;
+static size_t totalMem = 0;  /* total memory currently allocated */
+static size_t maxMem = 0;    /* maximum total memory during run  */
 
 
 void initMemTable(void) {
@@ -68,8 +67,8 @@ void initMemTable(void) {
 
 
 void setMemmax(_integer64 value) {
-  memmax = 1;
   memmaxValue = value;
+  setMemstat();
 }
 
 
@@ -115,6 +114,10 @@ static void updateMaxMem(void) {
 
 static void increaseMemStat(size_t chunk) {
   totalMem += chunk;
+  if (memmaxValue && (totalMem > memmaxValue)) {
+      char* message = "Exceeded memory limit";
+      printError(message);
+    }
   updateMaxMem();
 }
 
