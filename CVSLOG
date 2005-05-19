@@ -31983,3 +31983,21 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/runtime/src/: chplio.c error.c 
 
+---------------------------------------------------------------------------
+
+05/19/05 11:15:29 -- jplevyak
+
+Log message:
+	Cleanup of resolveSymbols.
+	Removed useOldConstructor flag which was nolonger used.
+	Removed Expr::resolved variable which is no longer needed to deal
+	with phase ordering problems.  Added more comments and moved
+	the "no analysis" code out of line to reduce clutter.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: driver.h expr.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             resolveSymbols.cpp 
+
