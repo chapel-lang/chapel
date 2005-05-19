@@ -48,7 +48,7 @@ void printHelpTable(void) {
     {"-f<filename>", "read in a file of config var assignments", 'c'},
 
     {"--memmax=<n>", "simulate 'n' bytes of memory available", 'm'}, 
-    {"--memtable", "track dynamic memory usage using a table", 'm'},
+    {"--memtrack", "track dynamic memory usage using a table", 'm'},
     {"--memtrace=<filename>", "write memory trace to filename", 'm'},
     {"--memthreshold=<n>", "filter memtrace for sizes >= 'n' bytes", 'm'},
 
@@ -124,8 +124,8 @@ static void parseMemFlag(char* memFlag) {
   } else if (strcmp(memFlag, "memstat") == 0) {
     setMemstat();
 
-  } else if (strcmp(memFlag, "memtable") == 0) {
-    setMemtable();
+  } else if (strcmp(memFlag, "memtrack") == 0) {
+    setMemtrack();
 
   } else if ((strcmp(memFlag, "memthreshold") == 0) ||
              (strcmp(memFlag, "memthresshold") == 0) ||

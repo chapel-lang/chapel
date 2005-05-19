@@ -13,7 +13,7 @@ void printFinalMemStat(void);
 
 void setMemmax(_integer64 value);
 void setMemstat(void);
-void setMemtable(void);
+void setMemtrack(void);
 void setMemthreshold(_integer64 value);
 void setMemtrace(char* memLogname);
 

@@ -47,7 +47,7 @@ static unsigned hash(void* memAlloc) {
 
 
 static int memstat = 0;
-static int memtable = 0;
+static int memtrack = 0;
 static int memthreshold = 0;
 static _integer64 memmaxValue = 0;
 static _integer64 memthresholdValue = 0;
@@ -57,7 +57,7 @@ static size_t maxMem = 0;    /* maximum total memory during run  */
 
 
 void initMemTable(void) {
-  if (memtable) {
+  if (memtrack) {
     int i;
     for (i = 0; i < HASHSIZE; i++) {
       memTable[i] = NULL;
@@ -74,12 +74,12 @@ void setMemmax(_integer64 value) {
 
 void setMemstat(void) {
   memstat = 1;
-  memtable = 1;
+  memtrack = 1;
 }
 
 
-void setMemtable(void) {
-  memtable = 1;
+void setMemtrack(void) {
+  memtrack = 1;
 }
 
 
@@ -156,8 +156,8 @@ void printFinalMemStat(void) {
 
 
 void printMemTable(void) {
-  if (!memtable) {
-    char* message = "printMemTable() only works with the --memtable flag";
+  if (!memtrack) {
+    char* message = "printMemTable() only works with the --memtrack flag";
     printError(message);
   }
   memTableEntry* memEntry = NULL;
@@ -367,7 +367,7 @@ void* _chpl_malloc(size_t number, size_t size, char* description) {
   if (memlog) {
     printToMemLog(number, size, description, "malloc", memAlloc, NULL);
   }
-  if (memtable) {
+  if (memtrack) {
     installMemory(memAlloc, number, size, description);  
     if (memstat) {
       increaseMemStat(chunk);
@@ -385,7 +385,7 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
     printToMemLog(number, size, description, "calloc", memAlloc, NULL);
   }
 
-  if (memtable) {
+  if (memtrack) {
     installMemory(memAlloc, number, size, description);
     if (memstat) {
       size_t chunk = number * size;
@@ -397,7 +397,7 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
 
 
 void _chpl_free(void* memAlloc) {
-  if (memtable) {
+  if (memtrack) {
     if (memstat) {
       memTableEntry* memEntry = lookupMemory(memAlloc);
       size_t chunk;
@@ -420,7 +420,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
     return NULL;
   }
   memTableEntry* memEntry;
-  if (memtable) {
+  if (memtrack) {
     memEntry = lookupMemory(memAlloc);
     if (!memEntry && (memAlloc != NULL)) {
       char* message = _glom_strings(3, "Attempting to realloc memory for ",
@@ -431,7 +431,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
   void* moreMemAlloc = realloc(memAlloc, newChunk);
   confirm(moreMemAlloc, description);
 
-  if (memtable) { 
+  if (memtrack) { 
     if (memAlloc != NULL) {
       if (memEntry) {
         if (memstat) {
