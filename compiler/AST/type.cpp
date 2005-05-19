@@ -13,6 +13,13 @@
 #include "../traversals/collectASTS.h"
 
 
+// Utilities for building write functions
+static void addWriteStmt(Stmt* body, Expr* arg) {
+  Expr* write = new Variable(new UnresolvedSymbol("write"));
+  body->append(new ExprStmt(new ParenOpExpr(write, arg)));
+}
+
+
 Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
   symbol(NULL),
@@ -239,6 +246,26 @@ Type* Type::getType(){
 }
 
 
+bool Type::hasDefaultWriteFunction(void) {
+  return false;
+}
+
+
+Stmt* Type::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return NULL;
+}
+
+
+bool Type::hasDefaultReadFunction(void) {
+  return false;
+}
+
+
+Stmt* Type::buildDefaultReadFunctionBody(ParamSymbol* arg) {
+  return NULL;
+}
+
+
 FnType::FnType(void) :
   Type(TYPE_FN, NULL)
 {}
@@ -400,6 +427,26 @@ bool EnumType::implementedUsingCVals(void) {
 }
 
 
+bool EnumType::hasDefaultWriteFunction(void) {
+  return true;
+}
+
+
+Stmt* EnumType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumWriteStopgap")), new Variable(arg)));
+}
+
+
+bool EnumType::hasDefaultReadFunction(void) {
+  return true;
+}
+
+
+Stmt* EnumType::buildDefaultReadFunctionBody(ParamSymbol* arg) {
+  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumReadStopgap")), new Variable(arg)));
+}
+
+
 DomainType::DomainType(Expr* init_expr) :
   Type(TYPE_DOMAIN, NULL),
   numdims(0),
@@ -487,6 +534,16 @@ void DomainType::codegenDef(FILE* outfile) {
 
 bool DomainType::blankIntentImpliesRef(void) {
   return true;
+}
+
+
+bool DomainType::hasDefaultWriteFunction(void) {
+  return true;
+}
+
+
+Stmt* DomainType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_DomainWriteStopgap")), new Variable(arg)));
 }
 
 
@@ -731,6 +788,16 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
 }
 
 
+bool SeqType::hasDefaultWriteFunction(void) {
+  return true;
+}
+
+
+Stmt* SeqType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_SeqWriteStopgap")), new Variable(arg)));
+}
+
+
 ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
   Type(TYPE_ARRAY, init_elementType->defaultVal),
   domain(init_domain),
@@ -851,6 +918,19 @@ void ArrayType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 bool ArrayType::blankIntentImpliesRef(void) {
   return true;
+}
+
+
+bool ArrayType::hasDefaultWriteFunction(void) {
+  return true;
+}
+
+
+Stmt* ArrayType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  Expr* zero_inds = new IntLiteral("0", 0);
+  Stmt* body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_ArrayWriteStopgap")), new Variable(arg)));
+  body->append(new ExprStmt(new ParenOpExpr(new Variable(new UnresolvedSymbol("write")), new ArrayRef(new Variable(arg), zero_inds))));
+  return body;
 }
 
 
@@ -1188,6 +1268,50 @@ bool StructuralType::implementedUsingCVals(void) {
 }
 
 
+bool StructuralType::hasDefaultWriteFunction(void) {
+  return true;
+}
+
+
+Stmt* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  Stmt* body = new NoOpStmt();
+  if (dynamic_cast<ClassType*>(this)) {
+    Expr* write = new Variable(new UnresolvedSymbol("write"));
+    ExprStmt* writeNil = new ExprStmt(new ParenOpExpr(write, new StringLiteral("nil")));
+    writeNil->next = new ReturnStmt(NULL);
+    BlockStmt* blockStmt = new BlockStmt(writeNil);
+    Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
+    Expr* argIsNil = new BinOp(BINOP_EQUAL, new Variable(arg), new Variable(nil));
+    body->append(new CondStmt(argIsNil, blockStmt));
+  }
+
+  if (dynamic_cast<ClassType*>(this)) {
+    addWriteStmt(body, new StringLiteral("{"));
+  } else {
+    addWriteStmt(body, new StringLiteral("("));
+  }
+
+  bool first = true;
+  forv_Vec(VarSymbol, tmp, fields) {
+    if (!first) {
+      addWriteStmt(body, new StringLiteral(", "));
+    }
+    addWriteStmt(body, new StringLiteral(tmp->name));
+    addWriteStmt(body, new StringLiteral(" = "));
+    addWriteStmt(body, new MemberAccess(new Variable(arg), tmp));
+    first = false;
+  }
+
+  if (dynamic_cast<ClassType*>(this)) {
+    addWriteStmt(body, new StringLiteral("}"));
+  } else {
+    addWriteStmt(body, new StringLiteral(")"));
+  }
+
+  return body;
+}
+
+
 ClassType::ClassType(astType_t astType) :
   StructuralType(astType, 
                  new Variable(Symboltable::lookupInternal("nil", 
@@ -1348,6 +1472,16 @@ void UnionType::codegenStopDefFields(FILE* outfile) {
 
 void UnionType::codegenMemberAccessOp(FILE* outfile) {
   fprintf(outfile, "._chpl_union.");
+}
+
+
+bool UnionType::hasDefaultWriteFunction(void) {
+  return true;
+}
+
+
+Stmt* UnionType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_UnionWriteStopgap")), new Variable(arg)));
 }
 
 

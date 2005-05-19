@@ -58,8 +58,7 @@ class SymScope : public gc {
 
   void insert(Symbol* sym);
   void remove(Symbol* sym);
-  SymScope* findEnclosingScopeType(scopeType t);
-  SymScope* findEnclosingScopeLessType(scopeType t);
+  SymScope* findModuleScope();
 
   Symbol* findEnclosingSymContext();
   Stmt* findEnclosingStmtContext();

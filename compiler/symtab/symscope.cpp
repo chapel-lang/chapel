@@ -162,26 +162,14 @@ void SymScope::remove(Symbol* sym) {
 }
 
 
-SymScope* SymScope::findEnclosingScopeType(scopeType t) {
-  if (type == t) {
+SymScope* SymScope::findModuleScope() {
+  if (type <= SCOPE_MODULE) {
     return this;
   } else {
     if (parent == NULL) {
-      INT_FATAL("can't find scope");
+      INT_FATAL("Unable to find module scope");
     }
-    return parent->findEnclosingScopeType(t);
-  }
-}
-
-
-SymScope* SymScope::findEnclosingScopeLessType(scopeType t) {
-  if (type <= t) {
-    return this;
-  } else {
-    if (parent == NULL) {
-      INT_FATAL("can't find scope");
-    }
-    return parent->findEnclosingScopeLessType(t);
+    return parent->findModuleScope();
   }
 }
 

@@ -222,193 +222,62 @@ static void build_record_assignment_function(StructuralType* structType) {
 }
 
 
-static void addWriteStmt(Stmt* body, Expr* arg) {
-  Expr* write = new Variable(new UnresolvedSymbol("write"));
-  body->append(new ExprStmt(new ParenOpExpr(write, arg)));
-}
-
-
-static void build_write_function(StructuralType* structuralType) {
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-  fn->cname = glomstrings(3, "_auto_", structuralType->symbol->name, "_write");
-  ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", structuralType);
-  Symboltable::continueFnDef(fn, arg, dtVoid);
-  Symboltable::pushScope(SCOPE_LOCAL);
-  Stmt* body = new NoOpStmt();
-
-  if (typeid(*structuralType) == typeid(UnionType)) {
-    body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_UnionWriteStopgap")), new Variable(arg)));
-    BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-    DefStmt* defStmt =
-      new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-    structuralType->symbol->defPoint->parentStmt->insertBefore(defStmt);
-    return;
-  }
-
-  if (typeid(*structuralType) == typeid(SeqType)) {
-    body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_SeqWriteStopgap")), new Variable(arg)));
-    BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-    DefStmt* defStmt =
-      new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-    structuralType->symbol->defPoint->parentStmt->insertBefore(defStmt);
-    return;
-  }
-
-  if (typeid(*structuralType) == typeid(ClassType)) {
-    Expr* write = new Variable(new UnresolvedSymbol("write"));
-    ExprStmt* writeNil = new ExprStmt(new ParenOpExpr(write, new StringLiteral("nil")));
-    writeNil->next = new ReturnStmt(NULL);
-    BlockStmt* blockStmt = new BlockStmt(writeNil);
-    Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
-    Expr* argIsNil = new BinOp(BINOP_EQUAL, new Variable(arg), new Variable(nil));
-    body->append(new CondStmt(argIsNil, blockStmt));
-  }
-
-  if (typeid(*structuralType) == typeid(ClassType)) {
-    addWriteStmt(body, new StringLiteral("{"));
-  } else if (typeid(*structuralType) == typeid(RecordType)) {
-    addWriteStmt(body, new StringLiteral("("));
-  }
-  bool first = true;
-  forv_Vec(VarSymbol, tmp, structuralType->fields) {
-    if (!first) {
-      addWriteStmt(body, new StringLiteral(", "));
-    }
-    addWriteStmt(body, new StringLiteral(tmp->name));
-    addWriteStmt(body, new StringLiteral(" = "));
-    addWriteStmt(body, new MemberAccess(new Variable(arg), tmp));
-    first = false;
-  }
-  if (typeid(*structuralType) == typeid(ClassType)) {
-    addWriteStmt(body, new StringLiteral("}"));
-  } else if (typeid(*structuralType) == typeid(RecordType)) {
-    addWriteStmt(body, new StringLiteral(")"));
-  }
-  BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-  DefStmt* defStmt =
-    new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-  structuralType->symbol->defPoint->parentStmt->insertBefore(defStmt);
-}
-
-
 void buildDefaultStructuralTypeMethods(StructuralType* structuralType) {
-  SymScope* newScope =
-    structuralType->structScope->findEnclosingScopeLessType(SCOPE_MODULE);
-  SymScope* saveScope =
-    Symboltable::setCurrentScope(newScope);
   build_setters_and_getters(structuralType);
   build_union_id_enum(structuralType);
   build_constructor(structuralType);
   build_record_equality_function(structuralType);
   build_record_inequality_function(structuralType);
   build_record_assignment_function(structuralType);
-  build_write_function(structuralType);
-  Symboltable::setCurrentScope(saveScope);
 }
 
 
-static void build_write_function(ArrayType* arrayType) {
-  SymScope* newScope =
-    arrayType->symbol->parentScope->findEnclosingScopeLessType(SCOPE_MODULE);
-  SymScope* saveScope =
-    Symboltable::setCurrentScope(newScope);
+static void buildDefaultIOFunctions(Type* type) {
+  if (type->hasDefaultWriteFunction()) {
+    FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
+    fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_write");
+    ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", type);
+    Symboltable::continueFnDef(fn, arg, dtVoid);
+    Symboltable::pushScope(SCOPE_LOCAL);
 
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-  fn->cname = glomstrings(3, "_auto_", arrayType->symbol->name, "_write");
-  ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", arrayType);
-  Symboltable::continueFnDef(fn, arg, dtVoid);
-  Symboltable::pushScope(SCOPE_LOCAL);
+    Stmt* body = type->buildDefaultWriteFunctionBody(arg);
 
-  Expr* zero_inds = new IntLiteral("0", 0);
-  Stmt* body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_ArrayWriteStopgap")), new Variable(arg)));
-  body->append(new ExprStmt(new ParenOpExpr(new Variable(new UnresolvedSymbol("write")), new ArrayRef(new Variable(arg), zero_inds))));
-  BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-  DefStmt* defStmt =
-    new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-  arrayType->symbol->defPoint->parentStmt->insertBefore(defStmt);
-  Symboltable::setCurrentScope(saveScope);
-}
+    BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+    DefStmt* defStmt =
+      new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
+    type->symbol->defPoint->parentStmt->insertBefore(defStmt);
+  }
 
+  if (type->hasDefaultReadFunction()) {
+    FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("read"));
+    fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_read");
+    ParamSymbol* arg = new ParamSymbol(PARAM_INOUT, "val", type);
+    Symboltable::continueFnDef(fn, arg, dtVoid);
+    Symboltable::pushScope(SCOPE_LOCAL);
 
-static void build_write_function(EnumType* enumType) {
-  SymScope* newScope =
-    enumType->symbol->parentScope->findEnclosingScopeLessType(SCOPE_MODULE);
-  SymScope* saveScope =
-    Symboltable::setCurrentScope(newScope);
+    Stmt* body = type->buildDefaultReadFunctionBody(arg);
 
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-  fn->cname = glomstrings(3, "_auto_", enumType->symbol->name, "_write");
-  ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", enumType);
-  Symboltable::continueFnDef(fn, arg, dtVoid);
-  Symboltable::pushScope(SCOPE_LOCAL);
-
-  Stmt* body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumWriteStopgap")), new Variable(arg)));
-  BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-  DefStmt* defStmt =
-    new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-  enumType->symbol->defPoint->parentStmt->insertBefore(defStmt);
-  Symboltable::setCurrentScope(saveScope);
-}
-
-
-static void build_read_function(EnumType* enumType) {
-  SymScope* newScope =
-    enumType->symbol->parentScope->findEnclosingScopeLessType(SCOPE_MODULE);
-  SymScope* saveScope =
-    Symboltable::setCurrentScope(newScope);
-
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("read"));
-  fn->cname = glomstrings(3, "_auto_", enumType->symbol->name, "_read");
-  ParamSymbol* arg = new ParamSymbol(PARAM_INOUT, "val", enumType);
-  Symboltable::continueFnDef(fn, arg, dtVoid);
-  Symboltable::pushScope(SCOPE_LOCAL);
-
-  Stmt* body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumReadStopgap")), new Variable(arg)));
-  BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-  DefStmt* defStmt =
-    new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-  enumType->symbol->defPoint->parentStmt->insertBefore(defStmt);
-  Symboltable::setCurrentScope(saveScope);
-}
-
-
-static void build_write_function(DomainType* domainType) {
-  SymScope* newScope =
-    domainType->symbol->parentScope->findEnclosingScopeLessType(SCOPE_MODULE);
-  SymScope* saveScope =
-    Symboltable::setCurrentScope(newScope);
-
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-  fn->cname = glomstrings(3, "_auto_", domainType->symbol->name, "_write");
-  ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", domainType);
-  Symboltable::continueFnDef(fn, arg, dtVoid);
-  Symboltable::pushScope(SCOPE_LOCAL);
-
-  Stmt* body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_DomainWriteStopgap")), new Variable(arg)));
-  BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-  DefStmt* defStmt =
-    new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-  domainType->symbol->defPoint->parentStmt->insertBefore(defStmt);
-  Symboltable::setCurrentScope(saveScope);
+    BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+    DefStmt* defStmt =
+      new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
+    type->symbol->defPoint->parentStmt->insertBefore(defStmt);
+  }
 }
 
 
 void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     if (TypeSymbol* sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+      SymScope* newScope = sym->parentScope->findModuleScope();
+      SymScope* saveScope = Symboltable::setCurrentScope(newScope);
+      buildDefaultIOFunctions(sym->type);
       if (StructuralType* type = dynamic_cast<StructuralType*>(sym->type)) {
         if (type->defaultConstructor) { /*** already done ***/
           return;
         }
         buildDefaultStructuralTypeMethods(type);
-      } else if (ArrayType* type = dynamic_cast<ArrayType*>(sym->type)) {
-        build_write_function(type);
-      } else if (EnumType* type = dynamic_cast<EnumType*>(sym->type)) {
-        build_write_function(type);
-        build_read_function(type);
-      } else if (DomainType* type = dynamic_cast<DomainType*>(sym->type)) {
-        build_write_function(type);
       }
+      Symboltable::setCurrentScope(saveScope);
     }
   }
 }

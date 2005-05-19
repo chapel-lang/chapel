@@ -67,6 +67,11 @@ class Type : public BaseAST {
   //RED: facility to treat a type like other than this, if needed.
   //E.g. an IndexType would be treated as TupleType in some situations.
   virtual Type* getType();
+
+  virtual bool hasDefaultWriteFunction(void);
+  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual bool hasDefaultReadFunction(void);
+  virtual Stmt* buildDefaultReadFunctionBody(ParamSymbol* arg);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -95,6 +100,11 @@ class EnumType : public Type {
   void codegenConfigVarRoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool implementedUsingCVals(void);
+
+  virtual bool hasDefaultWriteFunction(void);
+  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual bool hasDefaultReadFunction(void);
+  virtual Stmt* buildDefaultReadFunctionBody(ParamSymbol* arg);
 };
 
 class IndexType;  // break circular forward reference
@@ -121,6 +131,9 @@ class DomainType : public Type {
   void codegenDef(FILE* outfile);
 
   virtual bool blankIntentImpliesRef(void);
+
+  virtual bool hasDefaultWriteFunction(void);
+  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 //Roxana -- Index should not by subtype of Domain
@@ -216,6 +229,9 @@ class StructuralType : public Type {
 
   virtual bool blankIntentImpliesRef(void);
   virtual bool implementedUsingCVals(void);
+
+  virtual bool hasDefaultWriteFunction(void);
+  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 
@@ -263,6 +279,9 @@ class UnionType : public StructuralType {
   void codegenStartDefFields(FILE* outfile);
   void codegenStopDefFields(FILE* outfile);
   void codegenMemberAccessOp(FILE* outfile);
+
+  virtual bool hasDefaultWriteFunction(void);
+  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 
@@ -293,6 +312,9 @@ class SeqType : public ClassType {
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool implementedUsingCVals(void);
   static SeqType* createSeqType(char* new_seq_name, Type* init_elementType);
+
+  virtual bool hasDefaultWriteFunction(void);
+  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 
@@ -316,6 +338,9 @@ class ArrayType : public Type {
   void codegenDefaultFormat(FILE* outfile, bool isRead);
 
   virtual bool blankIntentImpliesRef(void);
+
+  virtual bool hasDefaultWriteFunction(void);
+  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 
