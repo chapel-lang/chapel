@@ -31959,3 +31959,15 @@ Modified files:
 Removed files:
 	chapel/compiler/symtab/: insertWriteFns.cpp insertWriteFns.h 
 
+---------------------------------------------------------------------------
+
+05/19/05 08:57:36 -- shannon
+
+Log message:
+	Changed a couple of codegen'd error messages to
+	reference the new runtime error message wrapper.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/test/trivial/shannon/: readWriteEnum.good 
+
