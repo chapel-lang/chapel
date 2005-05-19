@@ -1630,7 +1630,6 @@ void FnCall::codegen(FILE* outfile) {
         enumSym = nextLink(EnumSymbol, enumSym);
       }
       fprintf(outfile, "{\n");
-      fprintf(outfile, "fflush(stdout);\n");
       fprintf(outfile, "char* message = \"Not of ");
       enumType->symbol->codegen(outfile);
       fprintf(outfile, " type\";\n");

@@ -71,7 +71,6 @@ void _chpl_read_boolean(_boolean* val) {
   validBoolean = _string_to_boolean(inputString, val);
 
   if (!validBoolean) {
-    fflush(stdout);
     char* message = "Not of boolean type";
     printError(message);
   }
