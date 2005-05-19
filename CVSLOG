@@ -32047,3 +32047,20 @@ Log message:
 Modified files:
 	chapel/test/trivial/shannon/: readWriteComplex.good 
 
+---------------------------------------------------------------------------
+
+05/19/05 12:03:36 -- deitz
+
+Log message:
+	Put in a catch so that if the user defines a read or write function
+	for a type that has a default read or write function, the compiler
+	will not create its default read or write function.
+	
+	Added a test case that defines and uses a write function for a record.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_record_user_write.chpl 
+	                            test_record_user_write.good 
+
