@@ -48,6 +48,7 @@ void printHelpTable(void) {
     {"-f<filename>", "read in a file of config var assignments", 'c'},
 
     {"--memmax=<n>", "simulate 'n' bytes of memory available", 'm'}, 
+    {"--memstat", "print memory statistics", 'm'},
     {"--memtrack", "track dynamic memory usage using a table", 'm'},
     {"--memtrace=<filename>", "write memory trace to filename", 'm'},
     {"--memthreshold=<n>", "filter memtrace for sizes >= 'n' bytes", 'm'},
