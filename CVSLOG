@@ -32001,3 +32001,37 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+05/19/05 11:35:01 -- deitz
+
+Log message:
+	Refactored the code for building the write and read functions of
+	Types.  Types now have methods
+	
+	  bool Type::hasDefaultWriteFunction
+	  Stmt* Type::buildDefaultWriteFunctionBody
+	  bool Type::hasDefaultReadFunction
+	  Stmt* Type::buildDefaultReadFunctionBody
+	
+	that say whether the type has a default read or write function and
+	create the body of them.  These functions are called in
+	BuildClassConstructorsEtc.
+	
+	Removed
+	
+	  SymScope::findEnclosingScopeType
+	  SymScope::findEnclosingScopeLessType
+	
+	replacing them with
+	
+	  SymScope::findModuleScope.
+	
+	This function searches up the parents until it finds a module scope.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: symscope.h type.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
