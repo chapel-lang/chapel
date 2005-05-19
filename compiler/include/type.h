@@ -56,11 +56,8 @@ class Type : public BaseAST {
   virtual void codegenPrototype(FILE* outfile);
   virtual void codegenSafeInit(FILE* outfile);
   virtual void codegenStringToType(FILE* outfile);
-  virtual void codegenIORoutines(FILE* outfile);
   virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
-  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                             Expr* format = NULL);
 
   virtual bool outParamNeedsPtr(void);
   virtual bool requiresCParamTmp(paramType intent);
@@ -95,7 +92,6 @@ class EnumType : public Type {
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenStringToType(FILE* outfile);
-  void codegenIORoutines(FILE* outfile);
   void codegenConfigVarRoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool implementedUsingCVals(void);
@@ -123,8 +119,6 @@ class DomainType : public Type {
 
   void print(FILE* outfile);
   void codegenDef(FILE* outfile);
-  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                             Expr* format = NULL);
 
   virtual bool blankIntentImpliesRef(void);
 };
@@ -150,8 +144,6 @@ class IndexType : public Type {
   IndexType(Type* init_idxType);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   void codegenDef(FILE* outfile);
-  void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, 
-                     Expr* format);
   
   void print(FILE* outfile);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -173,7 +165,6 @@ class UserType : public Type {
 
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
-  void codegenIORoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
 };
 
@@ -215,16 +206,12 @@ class StructuralType : public Type {
   void traverseDefType(Traversal* traversal);
 
   virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments);
-  virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
-  virtual Stmt* buildIOBodyStmts(ParamSymbol* thisArg);
 
   virtual void codegenStartDefFields(FILE* outfile);
   virtual void codegenStopDefFields(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenStructName(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                             Expr* format = NULL);
   virtual void codegenMemberAccessOp(FILE* outfile);
 
   virtual bool blankIntentImpliesRef(void);
@@ -238,11 +225,7 @@ class ClassType : public StructuralType {
   ClassType(astType_t astType = TYPE_CLASS);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
-  virtual Stmt* buildIOBodyStmts(ParamSymbol* thisArg);
-
   virtual void codegenStructName(FILE* outfile);
-  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                             Expr* format = NULL);
   virtual void ClassType::codegenMemberAccessOp(FILE* outfile);
 
   virtual bool blankIntentImpliesRef(void);
@@ -275,8 +258,6 @@ class UnionType : public StructuralType {
 
   void buildFieldSelector(void);
   FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
-  CondStmt* buildUnionFieldIO(CondStmt* prevStmt, VarSymbol* field, ParamSymbol* thisArg);
-  virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
   Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments);
 
   void codegenStartDefFields(FILE* outfile);
@@ -296,7 +277,6 @@ class TupleType : public StructuralType {
 
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
-  virtual Stmt* buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg);
 };
 
 
@@ -311,7 +291,6 @@ class SeqType : public ClassType {
   void codegenDef(FILE* outfile);
   //void codegenPrototype(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
-  void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format);
   bool implementedUsingCVals(void);
   static SeqType* createSeqType(char* new_seq_name, Type* init_elementType);
 };
@@ -367,8 +346,6 @@ class NilType : public Type {
  public:
   NilType(void);
   void codegen(FILE* outfile);
-  virtual void codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                             Expr* format = NULL);
 };
 
 

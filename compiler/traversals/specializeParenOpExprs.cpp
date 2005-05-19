@@ -66,12 +66,9 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
         else {
           INT_FATAL(expr, "constructor does not have a DefStmt");
         }
-      } else if (strcmp(baseVar->var->name, "write") == 0) {
-        //        paren_replacement = new IOCall(IO_WRITE, paren->baseExpr, paren->argList);
-      } else if (strcmp(baseVar->var->name, "writeln") == 0) {
-        //        paren_replacement = new IOCall(IO_WRITELN, paren->baseExpr, paren->argList);
-      } else if (strcmp(baseVar->var->name, "read") == 0) {
-        //        paren_replacement = new IOCall(IO_READ, paren->baseExpr, paren->argList);
+      } else if ((strcmp(baseVar->var->name, "write") == 0) ||
+                 (strcmp(baseVar->var->name, "writeln") == 0) ||
+                 (strcmp(baseVar->var->name, "read") == 0)) {
       } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
         paren_replacement = new FnCall(baseVar, paren->argList);
       }

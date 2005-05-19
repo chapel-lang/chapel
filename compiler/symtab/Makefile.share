@@ -4,7 +4,6 @@ SYMTAB_SRCS = \
 	computeVisibleFunctions.cpp \
         insertDefaultInitVariables.cpp \
         insertOutParameterInitializations.cpp \
-	insertWriteFns.cpp \
 	legalizeCNames.cpp \
         postAnalysisCleanup.cpp \
 	printSymtab.cpp \

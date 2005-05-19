@@ -428,19 +428,6 @@ class FnCall : public ParenOpExpr {
 };
 
 
-class IOCall : public FnCall {
- public:
-  ioCallType ioType;
-
-  IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg);
-  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
-
-  Type* typeInfo(void);
-
-  void codegen(FILE* outfile);
-};
-
-
 class SizeofExpr : public Expr {
  public:
   Variable* variable;

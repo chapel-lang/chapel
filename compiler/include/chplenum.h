@@ -18,10 +18,4 @@ enum paramType {
   NUM_PARAM_TYPES
 };
 
-enum ioCallType {
-  IO_WRITE = 0, 
-  IO_WRITELN, 
-  IO_READ
-};
-
 #endif

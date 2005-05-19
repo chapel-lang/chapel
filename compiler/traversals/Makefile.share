@@ -32,7 +32,6 @@ TRAVERSALS_SRCS = \
         removeSeqOperations.cpp \
         resolveDomainRanks.cpp \
         resolveModuleUses.cpp \
-	resolveOverloadedOperators.cpp \
 	resolveSymbols.cpp \
         scopeResolveGotos.cpp \
 	scopeResolveSymbols.cpp \

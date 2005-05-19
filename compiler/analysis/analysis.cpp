@@ -2039,36 +2039,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       }
       break;
     }
-    case EXPR_IOCALL: {
-      IOCall *s = dynamic_cast<IOCall *>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      if1_gen(if1, &s->ainfo->code, s->baseExpr->ainfo->code);
-      Vec<Expr *> args;
-      getLinkElements(args, s->argList);
-      if (args.n == 1 && !args.v[0])
-        args.n--;
-      forv_Vec(Expr, a, args)
-        if1_gen(if1, &s->ainfo->code, a->ainfo->code);
-      Code *send = if1_send1(if1, &s->ainfo->code);
-      send->ast = s->ainfo;
-      if1_add_send_arg(if1, send, sym_primitive);
-      switch (s->ioType) {
-        case IO_WRITELN:
-          if1_add_send_arg(if1, send, writeln_symbol);
-          break;
-        case IO_WRITE:
-          if1_add_send_arg(if1, send, write_symbol);
-          break;
-        case IO_READ:
-          if1_add_send_arg(if1, send, read_symbol); 
-          break;
-      }
-      forv_Vec(Expr, a, args)
-        if1_add_send_arg(if1, send, a->ainfo->rval);
-      if1_add_send_result(if1, send, s->ainfo->rval);
-      break;
-    }
     case EXPR_ARRAYREF: // **************** CURRENTLY UNUSED ****************
     case EXPR_TUPLESELECT:
     case EXPR_FNCALL:

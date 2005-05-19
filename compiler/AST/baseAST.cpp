@@ -106,7 +106,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Cast",
   "CastLike",
   "FnCall",
-  "IOCall",
   "ArrayRef",
   "TupleSelect",
   "MemberAccess",

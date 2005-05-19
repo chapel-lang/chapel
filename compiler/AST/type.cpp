@@ -12,30 +12,6 @@
 #include "../traversals/updateSymbols.h"
 #include "../traversals/collectASTS.h"
 
-static void genIOReadWrite(FILE* outfile, ioCallType ioType) {
-  switch (ioType) {
-  case IO_WRITE:
-  case IO_WRITELN:
-    fprintf(outfile, "_write");
-    break;
-  case IO_READ:
-    fprintf(outfile, "_read");
-    break;
-  }
-}
-
-static void genIODefaultFile(FILE* outfile, ioCallType ioType) {
-  switch (ioType) {
-  case IO_WRITE:
-  case IO_WRITELN:
-    fprintf(outfile, "stdout, ");
-    break;
-  case IO_READ:
-    fprintf(outfile, "stdin, ");
-    break;
-  }
-}
-
 
 Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
@@ -186,10 +162,6 @@ void Type::codegenStringToType(FILE* outfile) {
 }
 
 
-void Type::codegenIORoutines(FILE* outfile) {
-}
-
-
 void Type::codegenConfigVarRoutines(FILE* outfile) {
 }
 
@@ -202,47 +174,6 @@ void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
     fprintf(outfile, "_write");
   }
   this->codegen(outfile);
-}
-
-
-void Type::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                         Expr* format) {
-  genIOReadWrite(outfile, ioType);
-  
-  if (this == dtUnknown) {
-    INT_FATAL(format, "unknown type encountered in codegen");
-  }
-
-  this->codegen(outfile);
-  fprintf(outfile, "(");
-
-  genIODefaultFile(outfile, ioType);
-
-  if (!format) {
-    bool isRead = (ioType == IO_READ);
-    codegenDefaultFormat(outfile, isRead);
-  } else {
-    format->codegen(outfile);
-  }
-  fprintf(outfile, ", ");
-
-  if (ioType == IO_READ) {
-    fprintf(outfile, "&");
-  }
-
-   if (dynamic_cast<IndexType*>(arg->typeInfo())){
-    IndexType* idx = dynamic_cast<IndexType*>(arg->typeInfo());
-    if (idx->getType() == dtInteger){
-     if (Variable* var = dynamic_cast<Variable*>(arg)) {
-        var->var->codegen(outfile);
-        fprintf(outfile, "._field1");
-        fprintf(outfile, ")");
-      }  
-    }
-  } else {
-    arg->codegen(outfile);
-    fprintf(outfile, ")");
-  }
 }
 
 
@@ -397,29 +328,6 @@ void EnumType::codegenDef(FILE* outfile) {
 }
 
 
-static void codegenIOPrototype(FILE* outfile, Symbol* symbol, bool isRead) {
-  fprintf(outfile, "void ");
-  if (isRead) {
-    fprintf(outfile, "_read");
-  } else {
-    fprintf(outfile, "_write");
-  }
-  symbol->codegen(outfile);
-  fprintf(outfile, "(FILE* ");
-  if (isRead) {
-    fprintf(outfile, "infile");
-  } else {
-    fprintf(outfile, "outfile");
-  }
-  fprintf(outfile, ", char* format, ");
-  symbol->codegen(outfile);
-  if (isRead) {
-    fprintf(outfile, "*");
-  }
-  fprintf(outfile, " val)");
-}
-
-
 void EnumType::codegenStringToType(FILE* outfile) {
   EnumSymbol* enumSym = valList;
 
@@ -443,53 +351,6 @@ void EnumType::codegenStringToType(FILE* outfile) {
   fprintf(outfile, "return 0;\n");
   fprintf(outfile, "}\n");
   fprintf(outfile, "return 1;\n}\n\n");
-}
-
-void EnumType::codegenIORoutines(FILE* outfile) {
-  EnumSymbol* enumSym = valList;
-  bool isRead;
-
-  isRead = true;
-  codegenIOPrototype(intheadfile, symbol, isRead);
-  fprintf(intheadfile, ";\n");
-  
-  isRead = false;
-  codegenIOPrototype(intheadfile, symbol, isRead);
-  fprintf(intheadfile, ";\n\n");
-
-  isRead = true;
-  codegenIOPrototype(outfile, symbol, isRead);
-  fprintf(outfile, " {\n");
-  fprintf(outfile, "char* inputString = NULL;\n");
-  fprintf(outfile, "_read_string(stdin, format, &inputString);\n");
-  fprintf(outfile, "if (!(_convert_string_to_enum");
-  symbol->codegen(outfile);
-  fprintf(outfile, "(inputString, val))) {\n");
-  fprintf(outfile, "fflush(stdout);\n");
-  fprintf(outfile, "fprintf (stderr, \"***ERROR:  Not of ");
-  symbol->codegen(outfile);
-  fprintf(outfile, " type***\\n\");\n");
-  fprintf(outfile, "exit(0);\n");
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "}\n\n");
-
-  isRead = false;
-  codegenIOPrototype(outfile, symbol, isRead);
-  fprintf(outfile, " {\n");
-  fprintf(outfile, "switch (val) {\n");
-  while (enumSym) {
-    fprintf(outfile, "case ");
-    enumSym->codegen(outfile);
-    fprintf(outfile, ":\n");
-    fprintf(outfile, "fprintf(outfile, format, \"");
-    enumSym->codegen(outfile);
-    fprintf(outfile, "\");\n");
-    fprintf(outfile, "break;\n");
-
-    enumSym = nextLink(EnumSymbol, enumSym);
-  }
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "}\n\n");
 }
 
 
@@ -533,28 +394,6 @@ void EnumType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 bool EnumType::implementedUsingCVals(void) {
   return true;
-}
-
-
-static Stmt* addIOStmt(Stmt* ioStmtList, Expr* argExpr) {
-  IOCall* ioExpr = new IOCall(IO_WRITE, new StringLiteral("write"), argExpr);
-  Stmt* ioStmt = new ExprStmt(ioExpr);
-  if (ioStmtList == NULL) {
-    ioStmtList = ioStmt;
-  } else {
-    ioStmtList->append(ioStmt);
-  }
-  return ioStmtList;
-}
-
-
-static Stmt* addIOStmt(Stmt* ioStmtList, ParamSymbol* _this, VarSymbol* field) {
-  return addIOStmt(ioStmtList, new MemberAccess(new Variable(_this), field));
-}
-
-
-static Stmt* addIOStmt(Stmt* ioStmtList, char* str) {
-  return addIOStmt(ioStmtList, new StringLiteral(str));
 }
 
 
@@ -640,24 +479,6 @@ void DomainType::codegenDef(FILE* outfile) {
   fprintf(outfile, "} ");
   symbol->codegen(outfile);
   fprintf(outfile, ";\n\n");
-}
-
-
-void DomainType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                               Expr* format) {
-  genIOReadWrite(outfile, ioType);
-
-  fprintf(outfile, "_domain");
-  fprintf(outfile, "(");
-
-  genIODefaultFile(outfile, ioType);
-
-  if (ioType == IO_READ) {
-    fprintf(outfile, "&");
-  }
-
-  arg->codegen(outfile);
-  fprintf(outfile, ")");
 }
 
 
@@ -748,29 +569,6 @@ void IndexType::codegenDef(FILE* outfile) {
 }
 
 
-void IndexType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                              Expr* format) {
-  if (TupleType* tupleType = dynamic_cast<TupleType*>(idxType)) {
-    /** STOPGAP use the old TupleType output code **/
-    fprintf(outfile, "fprintf(stdout, \"(\");\n");
-    int compNum = 0;
-    char compNumStr[80];
-    forv_Vec(Type, component, tupleType->components) {
-      if (compNum) {
-        fprintf(outfile, "fprintf(stdout, \", \");\n");
-      }
-      compNum++;
-      sprintf(compNumStr, "%d", compNum);
-      component->codegenIOCall(outfile, ioType, new TupleSelect(arg, new IntLiteral(compNumStr, compNum)));
-      fprintf(outfile, ";\n");
-    }
-    fprintf(outfile, "fprintf(stdout, \")\");\n");
-  } else {
-    idxType->codegenIOCall(outfile, ioType, arg, format);
-  }
-}
-                          
-
 void IndexType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultVal) {
     defaultVal = dynamic_cast<Expr*>(new_ast);
@@ -859,12 +657,6 @@ void SeqType::codegenDef(FILE* outfile) {
 
 void SeqType::codegenDefaultFormat(FILE* outfile, bool isRead) {
   elementType->codegenDefaultFormat(outfile, isRead);
-}
-
-
-void SeqType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                            Expr* format) {
-  Type::codegenIOCall(outfile, ioType, arg, format);
 }
 
 
@@ -1101,48 +893,6 @@ void UserType::codegenDef(FILE* outfile) {
 }
 
 
-// TODO: We should probably instead have types print out
-// their own write routines and have UserType print its
-// definition's write routine
-
-static void codegenIOPrototypeBody(FILE* outfile, Symbol* symbol, Type* definition, bool isRead) {
-  codegenIOPrototype(outfile, symbol, isRead);
-  fprintf(outfile, " {\n");
-  if (isRead) {
-    fprintf(outfile, " _read");
-  } else {
-    fprintf(outfile, "  _write");
-  }
-  definition->codegen(outfile);  
-  if (isRead) {
-    fprintf(outfile, "(infile, format, val);\n");
-  } else {
-    fprintf(outfile, "(outfile, format, val);\n");
-  }    
-  fprintf(outfile, "}\n");
-}    
-
-
-void UserType::codegenIORoutines(FILE* outfile) {
-  bool isRead;
-
-  isRead = true;
-  codegenIOPrototype(intheadfile, symbol, isRead);
-  fprintf(intheadfile, ";\n");
-
-  isRead = false;
-  codegenIOPrototype(intheadfile, symbol, isRead);
-  fprintf(intheadfile, ";\n\n");
-
-  isRead = true;
-  codegenIOPrototypeBody(outfile, symbol, definition, isRead);
-  fprintf(outfile, "\n\n");
-
-  isRead = false;
-  codegenIOPrototypeBody(outfile, symbol, definition, isRead);
-}
-
-
 void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
   definition->codegenDefaultFormat(outfile, isRead);
 }
@@ -1366,33 +1116,6 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* a
 }
 
 
-Stmt* StructuralType::buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg) {
-  bool firstField = true;
-
-  forv_Vec(VarSymbol, field, fields) {
-    if (!firstField) {
-      bodyStmts = addIOStmt(bodyStmts, ", ");
-    } else {
-      firstField = false;
-    }
-    bodyStmts = addIOStmt(bodyStmts, glomstrings(2, field->name, " = "));
-    bodyStmts = addIOStmt(bodyStmts, thisArg, field);
-  }
-  return bodyStmts;
-}
-
-
-Stmt* StructuralType::buildIOBodyStmts(ParamSymbol* thisArg) {
-  Stmt* bodyStmts = NULL;
-
-  bodyStmts = addIOStmt(bodyStmts, "(");
-  bodyStmts = buildIOBodyStmtsHelp(bodyStmts, thisArg);
-  bodyStmts = addIOStmt(bodyStmts, ")");
-
-  return bodyStmts;
-}
-
-
 void StructuralType::codegenStartDefFields(FILE* outfile) {}
 
 void StructuralType::codegenStopDefFields(FILE* outfile) {}
@@ -1447,25 +1170,6 @@ void StructuralType::codegenPrototype(FILE* outfile) {
 }
 
 
-void StructuralType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                                   Expr* format) {
-  if (this == dtSequence) {
-    fprintf(outfile, "printf(\"Sequence\");");
-    return;
-  }
-  forv_Symbol(method, methods) {
-    if (strcmp(method->name, "write") == 0) {
-      method->codegen(outfile);
-      fprintf(outfile, "(&(");
-      arg->codegen(outfile);
-      fprintf(outfile, "));");
-      return;
-    }
-  }
-  INT_FATAL("Couldn't find the IO call for a class");
-}
-
-
 void StructuralType::codegenMemberAccessOp(FILE* outfile) {
   fprintf(outfile, ".");
 }
@@ -1497,40 +1201,11 @@ Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
-Stmt* ClassType::buildIOBodyStmts(ParamSymbol* thisArg) {
-  Stmt* bodyStmts = NULL;
-
-  bodyStmts = addIOStmt(bodyStmts, "{");
-  bodyStmts = buildIOBodyStmtsHelp(bodyStmts, thisArg);
-  bodyStmts = addIOStmt(bodyStmts, "}");
-  
-  return bodyStmts;
-}
-
-
 void ClassType::codegenStructName(FILE* outfile) {
   fprintf(outfile, "_");
   symbol->codegen(outfile);
   fprintf(outfile,", *");
   symbol->codegen(outfile);
-}
-
-
-void ClassType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg,
-                              Expr* format) {
-  if (symbol->isDead) {
-    // BLC: theoretically, this should only happen if no
-    // instantiations of a class are ever made
-    fprintf(outfile, "fprintf(stdout, \"nil\");\n");
-    return;
-  }
-  fprintf(outfile, "if (");
-  arg->codegen(outfile);
-  fprintf(outfile, " == nil) {\n");
-  fprintf(outfile, "fprintf(stdout, \"nil\");\n");
-  fprintf(outfile, "} else {\n");
-  StructuralType::codegenIOCall(outfile, ioType, arg, format);
-  fprintf(outfile, "}\n");
 }
 
 
@@ -1643,38 +1318,6 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
 }
 
 
-CondStmt* UnionType::buildUnionFieldIO(CondStmt* prevStmt, VarSymbol* field, 
-                                       ParamSymbol* thisArg) {
-  FnCall* checkFn = buildSafeUnionAccessCall(UNION_CHECK_QUIET,
-                                             new Variable(thisArg),
-                                             field);
-  Stmt* condStmts = NULL;
-  if (field) {
-    condStmts = addIOStmt(condStmts, glomstrings(2, field->name, " = "));
-    condStmts = addIOStmt(condStmts, thisArg, field);
-  } else {
-    condStmts = addIOStmt(condStmts, "uninitialized");
-  }
-  BlockStmt* thenClause = new BlockStmt(condStmts);
-  CondStmt* newCondStmt = new CondStmt(checkFn, thenClause, NULL);
-  if (prevStmt) {
-    prevStmt->addElseStmt(new BlockStmt(newCondStmt));
-  }
-  return newCondStmt;
-}
-
-
-Stmt* UnionType::buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg) {
-  CondStmt* topStmt = buildUnionFieldIO(NULL, NULL, thisArg);
-  CondStmt* fieldIOStmt = topStmt;
-  forv_Vec(VarSymbol, field, fields) {
-    fieldIOStmt = buildUnionFieldIO(fieldIOStmt, field, thisArg);
-  }
-  bodyStmts->append(topStmt);
-  return bodyStmts;
-}
-
-
 Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments) {
   Expr* arg1 = new Variable(_this);
   Expr* arg2 = new Variable(fieldSelector->valList);
@@ -1760,21 +1403,6 @@ void TupleType::print(FILE* outfile) {
     components.v[i]->print(outfile);
   }
   fprintf(outfile, ")");
-}
-
-
-Stmt* TupleType::buildIOBodyStmtsHelp(Stmt* bodyStmts, ParamSymbol* thisArg) {
-  bool firstField = true;
-
-  forv_Vec(VarSymbol, field, fields) {
-    if (!firstField) {
-      bodyStmts = addIOStmt(bodyStmts, ", ");
-    } else {
-      firstField = false;
-    }
-    bodyStmts = addIOStmt(bodyStmts, thisArg, field);
-  }
-  return bodyStmts;
 }
 
 
@@ -1914,9 +1542,4 @@ NilType::NilType(void) :
 
 void NilType::codegen(FILE* outfile) {
   fprintf(outfile, "void* ");
-}
-
-
-void NilType::codegenIOCall(FILE* outfile, ioCallType ioType, Expr* arg, Expr* format) {
-  fprintf(outfile, "_write_string(stdout, _default_format_write_string, \"nil\");\n");
 }

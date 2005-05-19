@@ -1659,7 +1659,7 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, "}\n");
       return;
     } else if (variable->var == Symboltable::lookupInternal("_DomainWriteStopgap")) {
-      fprintf(outfile, "_write_domain(stdout, (*val));\n");
+      fprintf(outfile, "printf(\"%%d..%%d by %%d\", val->dim_info[0].lo, val->dim_info[0].hi, val->dim_info[0].str);\n");
       return;
     }
   }
@@ -1709,53 +1709,6 @@ void FnCall::codegen(FILE* outfile) {
     }
   }
   fprintf(outfile, ")");
-}
-
-
-IOCall::IOCall(ioCallType init_iotype, Expr* init_base, Expr* init_arg) :
-  FnCall(init_base, init_arg),
-  ioType(init_iotype)
-{
-  astType = EXPR_IOCALL;
-}
-
-
-Expr* IOCall::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new IOCall(ioType, baseExpr->copyInternal(clone, map), argList->copyListInternal(clone, map));
-}
-
-
-Type* IOCall::typeInfo(void) {
-  return dtVoid;
-}
-
-
-void IOCall::codegen(FILE* outfile) {
-  Expr* arg = argList;
-
-  while (arg) {
-    Expr* format = NULL;
-
-    // grab formatting string if there is one
-    if (typeid(*arg) == typeid(Tuple)) {
-      Tuple* tupleArg = dynamic_cast<Tuple*>(arg);
-      format = tupleArg->exprs;
-      arg = nextLink(Expr, format);
-    }
-
-    // print out call for this argument expression
-    Type* argdt = arg->typeInfo();
-    argdt->codegenIOCall(outfile, ioType, arg, format);
-
-    arg = nextLink(Expr, arg);
-    if (arg || (ioType == IO_WRITELN)) {
-      fprintf(outfile, ";\n");
-    } 
-  }
-
-  if (ioType == IO_WRITELN) {
-    fprintf(outfile, "_write_linefeed(stdout)");
-  } 
 }
 
 
