@@ -32064,3 +32064,26 @@ Added files:
 	chapel/test/classes/deitz/: test_record_user_write.chpl 
 	                            test_record_user_write.good 
 
+---------------------------------------------------------------------------
+
+05/19/05 14:10:17 -- shannon
+
+Log message:
+	Added the --memmax runtime option.  "--memmax=<n>"
+	simulates "n" bytes of memory available.
+	
+	For instance:
+	
+	  > a.out --memstat
+	  Final Memory Statistics:  totalMem=1012, maxMem=1047
+	
+	  > a.out --memmax=1000
+	  ***Error: Exceeded memory limit***
+
+Modified files:
+	chapel/runtime/src/: chplmem.c 
+Added files:
+	chapel/test/memory/shannon/: memmaxExceeds.chpl 
+	                             memmaxExceeds.execopts 
+	                             memmaxExceeds.good 
+
