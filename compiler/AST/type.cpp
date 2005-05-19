@@ -1087,7 +1087,7 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* a
   Symbol* ptmp = arguments;
   forv_Vec(TypeSymbol, tmp, types) {
     if (dynamic_cast<VariableType*>(tmp->type)) {
-      if (analyzeAST && !useOldConstructor) {
+      if (analyzeAST) {
         // Have type variable in class and type variable in parameter
         // Should I do anything with these?
         ptmp = nextLink(Symbol, ptmp);
@@ -1097,7 +1097,7 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* a
   forv_Vec(VarSymbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* rhs = NULL;
-    if (analyzeAST && !useOldConstructor) {
+    if (analyzeAST) {
       rhs = new Variable(ptmp);
     } else {
       Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
@@ -1111,7 +1111,7 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* a
       Stmt* assign_stmt = new ExprStmt(assign_expr);
       stmts = appendLink(stmts, assign_stmt);
     }
-    if (analyzeAST && !useOldConstructor) {
+    if (analyzeAST) {
       ptmp = nextLink(ParamSymbol, ptmp);
     }
   }

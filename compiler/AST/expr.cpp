@@ -91,8 +91,7 @@ Expr::Expr(astType_t astType) :
   parentExpr(NULL),
   parentScope(NULL),
   ainfo(NULL),
-  pragmas(NULL),
-  resolved(0)
+  pragmas(NULL)
 {}
 
 

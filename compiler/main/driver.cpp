@@ -41,7 +41,6 @@ int parser_verbose_non_prelude = 0;
 static bool rungdb = false;
 static int pre_malloc = 0;
 bool checkAnalysisTypeinfo = false;
-bool useOldConstructor = false;
 bool analyzeAST = true;
 bool suppressCodegen = false;
 int debugParserLevel = 0;
@@ -94,7 +93,6 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
- {"useOldConstructor", ' ', "Use constructor without named parameters", "F", &useOldConstructor, "CHPL_USE_OLD_CONSTRUCTOR", NULL},
  {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"tmpRoxIndexType", ' ', "Roxana's index toggle", "F", &_dtinteger_IndexType_switch, "CHPL_DTINTEGER_INDEXTYPE_SWITCH", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},

@@ -95,7 +95,6 @@ class Expr : public BaseAST {
   SymScope* parentScope;
   AInfo *ainfo;
   Pragma *pragmas;
-  FnSymbol *resolved;
 
 
   Expr(astType_t astType);

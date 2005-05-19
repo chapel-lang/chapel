@@ -8,7 +8,6 @@
 #define DEFAULT_SYSTEM_DIR      "."
 
 // Begin temporary development flags
-extern bool useOldConstructor;
 extern bool checkAnalysisTypeinfo;
 // End temporary development flags
 
