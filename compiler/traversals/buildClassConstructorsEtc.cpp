@@ -234,33 +234,55 @@ void buildDefaultStructuralTypeMethods(StructuralType* structuralType) {
 
 static void buildDefaultIOFunctions(Type* type) {
   if (type->hasDefaultWriteFunction()) {
-    FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-    fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_write");
-    ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", type);
-    Symboltable::continueFnDef(fn, arg, dtVoid);
-    Symboltable::pushScope(SCOPE_LOCAL);
-
-    Stmt* body = type->buildDefaultWriteFunctionBody(arg);
-
-    BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-    DefStmt* defStmt =
-      new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-    type->symbol->defPoint->parentStmt->insertBefore(defStmt);
+    bool userWriteDefined = false;
+    FnSymbol* write =
+      dynamic_cast<FnSymbol*>(Symboltable::lookupInCurrentScope("write"));
+    while (write) {
+      if (write->formals->type == type) {
+        userWriteDefined = true;
+        write->cname = glomstrings(3, "_user_", type->symbol->name, "_write");
+        break;
+      }
+      write = write->overload;
+    }
+    if (!userWriteDefined) {
+      FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
+      fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_write");
+      ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", type);
+      Symboltable::continueFnDef(fn, arg, dtVoid);
+      Symboltable::pushScope(SCOPE_LOCAL);
+      Stmt* body = type->buildDefaultWriteFunctionBody(arg);
+      BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+      DefStmt* defStmt =
+        new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
+      type->symbol->defPoint->parentStmt->insertBefore(defStmt);
+    }
   }
 
   if (type->hasDefaultReadFunction()) {
-    FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("read"));
-    fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_read");
-    ParamSymbol* arg = new ParamSymbol(PARAM_INOUT, "val", type);
-    Symboltable::continueFnDef(fn, arg, dtVoid);
-    Symboltable::pushScope(SCOPE_LOCAL);
-
-    Stmt* body = type->buildDefaultReadFunctionBody(arg);
-
-    BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-    DefStmt* defStmt =
-      new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-    type->symbol->defPoint->parentStmt->insertBefore(defStmt);
+    bool userReadDefined = false;
+    FnSymbol* read =
+      dynamic_cast<FnSymbol*>(Symboltable::lookupInCurrentScope("read"));
+    while (read) {
+      if (read->formals->type == type) {
+        userReadDefined = true;
+        read->cname = glomstrings(3, "_user_", type->symbol->name, "_read");
+        break;
+      }
+      read = read->overload;
+    }
+    if (!userReadDefined) {
+      FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("read"));
+      fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_read");
+      ParamSymbol* arg = new ParamSymbol(PARAM_INOUT, "val", type);
+      Symboltable::continueFnDef(fn, arg, dtVoid);
+      Symboltable::pushScope(SCOPE_LOCAL);
+      Stmt* body = type->buildDefaultReadFunctionBody(arg);
+      BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+      DefStmt* defStmt =
+        new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
+      type->symbol->defPoint->parentStmt->insertBefore(defStmt);
+    }
   }
 }
 
