@@ -32087,3 +32087,28 @@ Added files:
 	                             memmaxExceeds.execopts 
 	                             memmaxExceeds.good 
 
+---------------------------------------------------------------------------
+
+05/19/05 14:55:25 -- shannon
+
+Log message:
+	Changed the name of the "--memtable" runtime option
+	to "--memtrack".
+	
+	Changed the execopts file for several tests to reflect
+	this, modified the help message, and renamed a test.
+
+Modified files:
+	chapel/runtime/include/: chplmem.h 
+	chapel/runtime/src/: arg.c chplmem.c 
+	chapel/test/execflags/shannon/: help.good 
+	chapel/test/memory/shannon/: freedMalloc.execopts 
+	                             freedWithoutMalloc.execopts 
+	                             printMemTable.execopts 
+	                             reallocWithoutMalloc.execopts 
+	                             reallocZeroSize.execopts 
+Added files:
+	chapel/test/memory/shannon/: memtrackFlag.chpl memtrackFlag.good 
+Removed files:
+	chapel/test/memory/shannon/: memtableFlag.chpl memtableFlag.good 
+
