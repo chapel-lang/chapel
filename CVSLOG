@@ -32112,3 +32112,15 @@ Added files:
 Removed files:
 	chapel/test/memory/shannon/: memtableFlag.chpl memtableFlag.good 
 
+---------------------------------------------------------------------------
+
+05/19/05 15:18:43 -- shannon
+
+Log message:
+	Added the --memstat runtime option to the help
+	message.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+	chapel/test/execflags/shannon/: help.good 
+
