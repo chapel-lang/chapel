@@ -369,11 +369,14 @@ void EnumType::codegenConfigVarRoutines(FILE* outfile) {
   fprintf(outfile, "if (validEnum) {\n");
   fprintf(outfile, "varSet = 1;\n");
   fprintf(outfile, "} else {\n");
-  fprintf(outfile, "fprintf(stderr, \"***Error: \\\"%%s\\\" is not a valid "
-          "value for a config var \\\"%%s\\\" of type ");
+  fprintf(outfile, "char* message = _glom_strings(5, \"\\\"\", setValue, ");
+  fprintf(outfile, "\"\\\" is not a valid \"\n");
+  fprintf(outfile, "\"value for a config var \\\"\"");
+  fprintf(outfile, ", varName,\n");
+  fprintf(outfile, "\"\\\" of type ");
   symbol->codegen(outfile);
-  fprintf(outfile, "***\\n\", setValue, varName);\n");
-  fprintf(outfile, "exit(0);\n");
+  fprintf(outfile, "\");\n");
+  fprintf(outfile, "printError(message);\n");
   fprintf(outfile, "}\n");
   fprintf(outfile, "}\n");
   fprintf(outfile, "return varSet;\n");

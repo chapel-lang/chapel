@@ -1631,10 +1631,10 @@ void FnCall::codegen(FILE* outfile) {
       }
       fprintf(outfile, "{\n");
       fprintf(outfile, "fflush(stdout);\n");
-      fprintf(outfile, "fprintf (stderr, \"***ERROR:  Not of ");
+      fprintf(outfile, "char* message = \"Not of ");
       enumType->symbol->codegen(outfile);
-      fprintf(outfile, " type***\\n\");\n");
-      fprintf(outfile, "exit(0);\n");
+      fprintf(outfile, " type\";\n");
+      fprintf(outfile, "printError(message);\n");
       fprintf(outfile, "}\n");
       return;
     } else if (variable->var == Symboltable::lookupInternal("_SeqWriteStopgap")) {
