@@ -31971,3 +31971,15 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp type.cpp 
 	chapel/test/trivial/shannon/: readWriteEnum.good 
 
+---------------------------------------------------------------------------
+
+05/19/05 10:53:05 -- shannon
+
+Log message:
+	Added fflush(stdout) to my runtime error
+	message wrappers.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/runtime/src/: chplio.c error.c 
+
