@@ -32035,3 +32035,15 @@ Modified files:
 	chapel/compiler/symtab/: symscope.cpp 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+05/19/05 11:46:55 -- shannon
+
+Log message:
+	Forgot to include this with the last checkin.
+	Change the order of the test output thanks to
+	the fflush().
+
+Modified files:
+	chapel/test/trivial/shannon/: readWriteComplex.good 
+
