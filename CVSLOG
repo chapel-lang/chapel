@@ -31927,3 +31927,35 @@ Log message:
 Modified files:
 	chapel/test/domains/roxana/: test_index_expr1.future 
 
+---------------------------------------------------------------------------
+
+05/18/05 17:17:26 -- deitz
+
+Log message:
+	Removed dead code from my changes that made read, write, and writeln
+	overloaded chapel functions.
+	
+	Removed IOCall Expr and ioCallType enum.
+	
+	Removed all code that supported these.
+	
+	Removed Type::...IO... functions.
+	
+	Removed duplicated runtime code in chplio and chpltypes.  I had copied
+	things and made different names to make it easier to make my changes.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h chplenum.h expr.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share 
+	                             specializeParenOpExprs.cpp 
+	                             specializeParenOpExprs.h 
+	                             verifyASTType.cpp 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+Removed files:
+	chapel/compiler/symtab/: insertWriteFns.cpp insertWriteFns.h 
+
