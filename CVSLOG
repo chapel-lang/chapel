@@ -32124,3 +32124,22 @@ Modified files:
 	chapel/runtime/src/: arg.c 
 	chapel/test/execflags/shannon/: help.good 
 
+---------------------------------------------------------------------------
+
+05/19/05 17:25:30 -- deitz
+
+Log message:
+	Moved the overload pointer out of FnSymbol and into Symbol.  This is
+	because ForwardingSymbol may refer to a FnSymbol and it should be
+	overloaded with these.  This lets functions that are already named in
+	a module be extended with a set from a used module.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h symscope.h 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         renameOverloadedFunctions.cpp 
+	                         symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             verify.cpp 
+
