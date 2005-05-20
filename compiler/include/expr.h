@@ -124,7 +124,6 @@ class Expr : public BaseAST {
   virtual int rank(void);
   virtual precedenceType precedence(void);
 
-  virtual void codegenComplex(FILE* outfile, bool real);
   virtual void printCfgInitString(FILE* outfile);
 
   static Expr* newPlusMinus(binOpType op, Expr* l, Expr* r);
@@ -211,7 +210,6 @@ class ComplexLiteral : public Literal {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  void codegenComplex(FILE* outfile, bool real);
 };
 
 

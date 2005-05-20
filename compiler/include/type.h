@@ -34,8 +34,6 @@ class Type : public BaseAST {
   Type(astType_t astType, Expr* init_defaultVal);
   void addSymbol(Symbol* newSymbol);
 
-  virtual bool isComplex(void);
-
   Type* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   Type* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
@@ -172,8 +170,6 @@ class UserType : public Type {
   UserType(Type* init_definition, Expr* init_defaultVal = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
-  bool isComplex(void);
-
   void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
@@ -188,8 +184,6 @@ class LikeType : public Type {
 
   LikeType(Expr* init_expr);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
-
-  bool isComplex(void);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);

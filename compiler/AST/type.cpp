@@ -35,11 +35,6 @@ void Type::addSymbol(Symbol* newsymbol) {
 }
 
 
-bool Type::isComplex(void) {
-  return (this == dtComplex);
-}
-
-
 Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
   if (!this) {
     return this;
@@ -241,8 +236,7 @@ bool Type::blankIntentImpliesRef(void) {
 bool Type::implementedUsingCVals(void) {
   if (this == dtBoolean ||
       this == dtInteger ||
-      this == dtFloat || 
-      this == dtComplex) {
+      this == dtFloat) {
     return true;
   } else {
     return false;
@@ -956,11 +950,6 @@ Type* UserType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
-bool UserType::isComplex(void) {
-  return definition->isComplex();
-}
-
-
 void UserType::traverseDefType(Traversal* traversal) {
   TRAVERSE(definition, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
@@ -999,11 +988,6 @@ Type* LikeType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* copy = new LikeType(expr->copyInternal(clone, map));
   copy->addSymbol(symbol);
   return copy;
-}
-
-
-bool LikeType::isComplex(void) {
-  return expr->typeInfo()->isComplex();
 }
 
 
@@ -1606,8 +1590,10 @@ void initTypes(void) {
                                              new IntLiteral("0", 0));
   dtFloat = Symboltable::defineBuiltinType("float", "_float64",
                                            new FloatLiteral("0.0", 0.0));
-  dtComplex = Symboltable::defineBuiltinType("complex", "_complex128",
-                                             new ComplexLiteral("0.0i", 0.0, 0.0, "0.0"));
+  // We should eventually point this to the new complex
+  dtComplex =
+    Symboltable::defineBuiltinType("complex", "_complex128",
+                                   new ComplexLiteral("0.0i", 0.0, 0.0, "0.0"));
   dtString = Symboltable::defineBuiltinType("string", "_string", NULL);
   dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
   dtAny = Symboltable::defineBuiltinType("any", "_any", NULL);

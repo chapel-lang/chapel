@@ -400,27 +400,6 @@ precedenceType Expr::precedence(void) {
 }
 
 
-void Expr::codegenComplex(FILE* outfile, bool real) {
-  Type* type = this->typeInfo();
-  if (type->isComplex()) {
-    fprintf(outfile, "(");
-    this->codegen(outfile);
-    fprintf(outfile, ").");
-    if (real) {
-      fprintf(outfile, "re");
-    } else {
-      fprintf(outfile, "im");
-    }
-  } else {
-    if (real) {
-      this->codegen(outfile);
-    } else {
-      fprintf(outfile, "0.0");
-    }
-  } 
-}
-
-
 void Expr::printCfgInitString(FILE* outfile) {
   fprintf(outfile, "\"");
   print(outfile);
@@ -648,21 +627,6 @@ void ComplexLiteral::print(FILE* outfile) {
 
 void ComplexLiteral::codegen(FILE* outfile) {
   INT_FATAL(this, "codegen() called on a complex literal");
-}
-
-
-void ComplexLiteral::codegenComplex(FILE* outfile, bool real) {
-  if (real) {
-    fprintf(outfile, "%s", realStr);
-  } else {
-    char* imagval = copystring(str);
-    char* i = strrchr(imagval, 'i');
-    if (i != (imagval + strlen(imagval) - 1)) {
-      INT_FATAL(this, "imaginary literal ill-formed");
-    }
-    *i = '\0';
-    fprintf(outfile, "%s", imagval);
-  }
 }
 
 
@@ -1087,15 +1051,7 @@ void AssignOp::codegen(FILE* outfile) {
   bool string_init = false;
   Type* leftType = left->typeInfo()->getType();
   Type* rightType = right->typeInfo()->getType();
-  if (leftType->isComplex()) {
-    left->codegenComplex(outfile, true);
-    fprintf(outfile, " %s ", cGetsOp[type]);
-    right->codegenComplex(outfile, true);
-    fprintf(outfile, ";\n");
-    left->codegenComplex(outfile, false);
-    fprintf(outfile, " %s ", cGetsOp[type]);
-    right->codegenComplex(outfile, false);
-  } else if (leftType == dtString) {
+  if (leftType == dtString) {
     if (FnCall* fn_call = dynamic_cast<FnCall*>(right)) {
       if (Variable* fn_var = dynamic_cast<Variable*>(fn_call->baseExpr)) {
         if (fn_var->var == dtString->defaultConstructor) {
