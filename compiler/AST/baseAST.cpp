@@ -5,6 +5,7 @@
 #include "type.h"
 #include "map.h"
 #include "analysis.h"
+#include "stringutil.h"
 #include "../passes/runAnalysis.h"
 #include "../traversals/updateSymbols.h"
 
@@ -21,8 +22,20 @@ BaseAST::BaseAST(void) {
 
 BaseAST::BaseAST(astType_t type) :
   astType(type),
-  id(uid++)
-{}
+  id(uid++),
+  traversalInfo(NULL),
+  copyInfo(NULL)
+{
+  if (lineno == -1) {
+    if (currentTraversal) {
+      traversalInfo = copystring(currentTraversal);
+    }
+    if (currentLineno && currentFilename) {
+      lineno = currentLineno;
+      filename = copystring(currentFilename);
+    }
+  }
+}
 
 
 void BaseAST::copySupport(BaseAST* copy,
@@ -146,3 +159,7 @@ char* astTypeName[AST_TYPE_END+1] = {
 
   "AST_TYPE_END"
 };
+
+int currentLineno = 0;
+char* currentFilename = NULL;
+char* currentTraversal = NULL;

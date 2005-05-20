@@ -6,6 +6,7 @@
 #include "driver.h"
 
 class d_loc_t;
+class BaseAST;
 class AST;
 class Var;
 class Loc;
@@ -43,6 +44,7 @@ int setupDevelError(char* filename, int lineno, bool fatal, bool user);
 void printProblem(char* fmt, ...);
 void printProblem(AST* ast, char* fmt, ...);
 void printProblem(Loc* loc, char* fmt, ...);
+void printProblem(BaseAST* ast, char* fmt, ...);
 void myassert(char *file, int line, char *str);
 
 void startCatchingSignals(void);

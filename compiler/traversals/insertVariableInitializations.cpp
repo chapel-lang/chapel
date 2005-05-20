@@ -208,7 +208,6 @@ InsertVariableInitializations::InsertVariableInitializations() {
 
 void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-
     if (dynamic_cast<TypeSymbol*>(def_stmt->parentSymbol)) {
       return;
     }

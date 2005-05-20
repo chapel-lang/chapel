@@ -45,7 +45,7 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   Symboltable::finishModuleDef(newModule, yystmtlist);
 
   yyfilename = "<internal>";
-  yylineno = 0;
+  yylineno = -1;
 
   return newModule;
 }

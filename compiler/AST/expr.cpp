@@ -199,12 +199,16 @@ void Expr::traverse(Traversal* traversal, bool atTop) {
     saveScope = Symboltable::setCurrentScope(parentScope);
   }
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->preProcessExpr(this);
   }
   if (atTop || traversal->exploreChildExprs) {
     traverseExpr(traversal);
   }
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->postProcessExpr(this);
   }
   if (atTop) {

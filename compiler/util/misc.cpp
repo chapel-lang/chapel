@@ -13,6 +13,7 @@
 #include "loc.h"
 #include "var.h"
 #include "pnode.h"
+#include "baseAST.h"
 
 int verbose_level = 0;
 int *assert_NULL_var = 0;
@@ -266,6 +267,39 @@ void printProblem(Loc* loc, char *fmt, ...) {
   va_end(args);
 
   printUsrLocation(usrfilename, usrlineno);
+
+  if (isFatal && !ignore_errors) {
+    clean_exit(1);
+  }
+}
+
+
+void printProblem(BaseAST* ast, char *fmt, ...) {
+  va_list args;
+  int usrlineno = 0;
+  char *usrfilename = NULL;
+
+  if (ast) {
+    usrfilename = ast->filename;
+    usrlineno = ast->lineno;
+  }
+  
+  va_start(args, fmt);
+  vfprintf(stderr, fmt, args);
+  va_end(args);
+
+  printUsrLocation(usrfilename, usrlineno);
+
+  if (developer && ast) {
+    if (ast->traversalInfo) {
+      fprintf(stderr, "  Constructed in traversal %s\n", ast->traversalInfo);
+    }
+    if (ast->copyInfo) {
+      forv_Vec(char, str, *(ast->copyInfo)) {
+        fprintf(stderr, "  Copied in traversal %s\n", str);
+      }
+    }
+  }
 
   if (isFatal && !ignore_errors) {
     clean_exit(1);

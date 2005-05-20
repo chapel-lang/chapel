@@ -103,6 +103,9 @@ class BaseAST : public ILink {
   astType_t astType;
   long id;
 
+  char* traversalInfo; // holds the traversal where this was created
+  Vec<char*>* copyInfo; // holds a vec of traversals where this was copied
+
   static long getNumIDs(void);
 
   BaseAST(void);
@@ -139,6 +142,10 @@ void collect_asts(Vec<BaseAST*>* asts, FnSymbol* function);
 
 int compar_baseast(const void *ai, const void *aj);
 // for use with qsort
+
+extern int currentLineno;
+extern char* currentFilename;
+extern char* currentTraversal;
 
 #endif
 

@@ -127,12 +127,16 @@ void Stmt::traverse(Traversal* traversal, bool atTop) {
     saveScope = Symboltable::setCurrentScope(parentScope);
   }
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->preProcessStmt(this);
   }
   if (atTop || traversal->exploreChildStmts) {
     traverseStmt(traversal);
   }
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->postProcessStmt(this);
   }
   if (atTop) {

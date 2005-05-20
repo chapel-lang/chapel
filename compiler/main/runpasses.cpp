@@ -44,6 +44,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
   struct timeval stopTime;
   struct timezone timezone;
 
+  currentTraversal = copystring(passName);
   pass->setArgs(args);
   if (printPasses) {
     fprintf(stderr, "%32s :", passName);

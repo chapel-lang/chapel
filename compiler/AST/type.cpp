@@ -92,6 +92,8 @@ void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void Type::traverse(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->preProcessType(this);
   }
   if (atTop || traversal->exploreChildTypes) {
@@ -103,6 +105,8 @@ void Type::traverse(Traversal* traversal, bool atTop) {
     }
   }
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->postProcessType(this);
   }
 }
@@ -110,11 +114,15 @@ void Type::traverse(Traversal* traversal, bool atTop) {
 
 void Type::traverseDef(Traversal* traversal, bool atTop) {
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->preProcessType(this);
   }
   TRAVERSE(symbol, traversal, false);
   traverseDefType(traversal);
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->postProcessType(this);
   }
 }

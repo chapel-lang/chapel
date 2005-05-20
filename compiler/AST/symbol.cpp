@@ -107,6 +107,8 @@ void Symbol::traverse(Traversal* traversal, bool atTop) {
     saveScope = Symboltable::setCurrentScope(parentScope);
   }
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->preProcessSymbol(this);
   }
   if (atTop || traversal->exploreChildSymbols) {
@@ -118,6 +120,8 @@ void Symbol::traverse(Traversal* traversal, bool atTop) {
     }
   }
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->postProcessSymbol(this);
   }
   if (atTop) {
@@ -132,10 +136,14 @@ void Symbol::traverseDef(Traversal* traversal, bool atTop) {
     saveScope = Symboltable::setCurrentScope(parentScope);
   }
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->preProcessSymbol(this);
   }
   traverseDefSymbol(traversal);
   if (traversal->processTop || !atTop) {
+    currentLineno = lineno;
+    currentFilename = filename;
     traversal->postProcessSymbol(this);
   }
   if (atTop) {
