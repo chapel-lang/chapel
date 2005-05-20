@@ -32339,3 +32339,13 @@ Added files:
 Removed files:
 	chapel/runtime/include/: _chpl_complex.chpl 
 
+---------------------------------------------------------------------------
+
+05/20/05 15:15:02 -- deitz
+
+Log message:
+	Forgot to add future for test_mycomplex_record test.
+
+Added files:
+	chapel/test/classes/deitz/: test_mycomplex_record.future 
+
