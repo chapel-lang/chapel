@@ -32400,3 +32400,24 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/parser/: internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+05/20/05 16:31:08 -- deitz
+
+Log message:
+	Implemented low-hanging fruit: string concatenation.
+	
+	Added three test cases.
+
+Modified files:
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+Added files:
+	chapel/test/types/string/deitz/: test_string_concat1.chpl 
+	                                 test_string_concat1.good 
+	                                 test_string_concat2.chpl 
+	                                 test_string_concat2.good 
+	                                 test_string_concat3.chpl 
+	                                 test_string_concat3.good 
+
