@@ -133,14 +133,14 @@ static void verifyParentScope(Symbol* sym) {
   }
 
   /**
-   **  Symbol is function overloaded to match found in scope
+   **  Symbol is overloaded with match found in scope
    **/
-  FnSymbol* fn_match = dynamic_cast<FnSymbol*>(match);
-  while (fn_match) {
-    if (sym == fn_match) {
-      return;
+  if (match) {
+    for (Symbol* tmp = match->overload; tmp; tmp = tmp->overload) {
+      if (sym == tmp) {
+        return;
+      }
     }
-    fn_match = fn_match->overload;
   }
 
   /**

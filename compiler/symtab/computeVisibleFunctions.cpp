@@ -20,15 +20,16 @@ void GetClassMethods::processSymbol(Symbol* sym) {
   if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(type_sym->type)) {
       forv_Vec(FnSymbol, method, class_type->methods) {
-        while (method) {
+        for (Symbol* tmp = method; tmp; tmp = tmp->overload) {
+          FnSymbol* method = tmp->getFnSymbol();
           classMethods->add(method);
-          method = method->overload;
         }
       }
-      FnSymbol* constructor = class_type->defaultConstructor;
-      while (constructor) {
+      for (Symbol* tmp = class_type->defaultConstructor;
+           tmp;
+           tmp = tmp->overload) {
+        FnSymbol* constructor = tmp->getFnSymbol();
         classMethods->add(constructor);
-        constructor = constructor->overload;
       }
     }
   }

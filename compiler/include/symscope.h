@@ -44,7 +44,7 @@ class SymScope : public gc {
   SymLink* firstSym;
   SymLink* lastSym;
 
-  Map<char *,Vec<FnSymbol*> *> visibleFunctions;
+  Map<char*,Vec<FnSymbol*>*> visibleFunctions;
 
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 

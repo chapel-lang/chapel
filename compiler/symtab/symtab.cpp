@@ -192,18 +192,15 @@ void Symboltable::undefineInScope(Symbol* sym, SymScope* scope) {
 void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
   Symbol* prevDefInScope = Symboltable::lookupInScope(sym->name, scope);
   if (prevDefInScope) {
-    // only allow redefinition of functions in a single scope currently
-    if (typeid(*sym) == typeid(FnSymbol) &&
-        typeid(*prevDefInScope) == typeid(FnSymbol)) {
-      FnSymbol* origFn = dynamic_cast<FnSymbol*>(prevDefInScope);
-      FnSymbol* newFn = dynamic_cast<FnSymbol*>(sym);
-      FnSymbol* lastOverload = origFn;
-      while (lastOverload->overload) {
-        lastOverload = lastOverload->overload;
+    FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
+    ForwardingSymbol* forwarding = dynamic_cast<ForwardingSymbol*>(sym);
+    if (fn || (forwarding && dynamic_cast<FnSymbol*>(forwarding->forward))) {
+      Symbol* tmp = prevDefInScope;
+      while (tmp->overload) {
+        tmp = tmp->overload;
       }
-      // this is the equivalent of the .put above
-      lastOverload->overload = newFn;
-      newFn->setParentScope(origFn->parentScope);
+      tmp->overload = sym;
+      sym->setParentScope(prevDefInScope->parentScope);
     } else {
       USR_FATAL(sym, "redefinition of symbol %s (previous definition at %s)",
                 sym->name, prevDefInScope->stringLoc());

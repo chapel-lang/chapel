@@ -3,11 +3,11 @@
 
 static char* munger = "_user_overload_";
 
-static bool shouldRenameOverload(FnSymbol* fnsym) {
-  if (strstr(fnsym->cname, munger)) {
+static bool shouldRenameOverload(Symbol* fn) {
+  if (strstr(fn->cname, munger)) {
     return false;
   }
-  if (fnsym == FnSymbol::mainFn) {
+  if (fn == FnSymbol::mainFn) {
     return false;
   }
   return true;
@@ -17,10 +17,10 @@ static bool shouldRenameOverload(FnSymbol* fnsym) {
 void RenameOverloadedFunctions::processSymbol(Symbol* sym) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     if (fn->overload) {
-      FnSymbol* tmp = fn;
+      Symbol* tmp = fn;
 
       while (tmp) {
-        if (shouldRenameOverload(tmp)) {
+        if (dynamic_cast<FnSymbol*>(tmp) && shouldRenameOverload(tmp)) {
           tmp->cname = glomstrings(3, tmp->cname, munger, intstring(tmp->id));
         }
         tmp = tmp->overload;

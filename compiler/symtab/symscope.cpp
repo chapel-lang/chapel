@@ -40,17 +40,11 @@ void SymScope::traverse(SymtabTraversal* traversal) {
   SymLink* link = firstSym;
   while (link) {
     SymLink* nextlink = nextLink(SymLink, link);
-    FnSymbol* nextfn = NULL;
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(link->pSym)) {
-      nextfn = fn->overload;
-    }
-    traversal->processSymbol(link->pSym);
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(link->pSym)) {
-      while (nextfn) {
-        fn = nextfn;
-        nextfn = fn->overload;
-        traversal->processSymbol(fn);
-      }
+    Symbol* sym = link->pSym;
+    while (sym) {
+      Symbol* nextsym = sym->overload;
+      traversal->processSymbol(sym);
+      sym = nextsym;
     }
     link = nextlink;
   }
@@ -100,32 +94,32 @@ void SymScope::remove(Symbol* sym) {
     INT_FATAL(sym, "Symbol not found in scope from which deleted");
   }
   if (firstSym == lastSym) {
-    FnSymbol* fn = dynamic_cast<FnSymbol*>(firstSym->pSym);
-    if (!fn || !fn->overload) {
+    Symbol* tmp = firstSym->pSym;
+    if (!tmp->overload) {
       if (firstSym->pSym == sym) {
         firstSym = NULL;
         lastSym = NULL;
         return;
       }
     } else {
-      FnSymbol* prev = NULL;
-      while (fn) {
-        if (fn == sym) {
+      Symbol* prev = NULL;
+      while (tmp) {
+        if (tmp == sym) {
           if (!prev) {
-            firstSym->pSym = fn->overload;
+            firstSym->pSym = tmp->overload;
           } else {
-            prev->overload = fn->overload;
+            prev->overload = tmp->overload;
           }
           return;
         }
-        prev = fn;
-        fn = fn->overload;
+        prev = tmp;
+        tmp = tmp->overload;
       }
     }
   } else {
     SymLink* tmp = firstSym;
     while (tmp) {
-      FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp->pSym);
+      Symbol* fn = tmp->pSym;
       if (!fn || !fn->overload) {
         if (tmp->pSym == sym) {
           if (tmp == firstSym) {
@@ -141,7 +135,7 @@ void SymScope::remove(Symbol* sym) {
           return;
         }
       } else {
-        FnSymbol* prev = NULL;
+        Symbol* prev = NULL;
         while (fn) {
           if (fn == sym) {
             if (!prev) {
@@ -398,47 +392,55 @@ ModuleSymbol* SymScope::getModule() {
 }
 
 
+static void
+addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
+                          FnSymbol* fn) {
+  char *n = if1_cannonicalize_string(if1, fn->name);
+  Vec<FnSymbol*>* fs = visibleFunctions->get(n);
+  if (!fs) fs = new Vec<FnSymbol*>;
+  fs->add(fn);
+  visibleFunctions->put(n, fs);
+}
+
+
+static void
+addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
+                    Symbol* sym) {
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    if (!fn->typeBinding) {
+      addVisibleFunctionsHelper(visibleFunctions, fn);
+    }
+  }
+  if (sym->overload) {
+    addVisibleFunctions(visibleFunctions, sym->overload);
+  }
+  if (ForwardingSymbol* forward = dynamic_cast<ForwardingSymbol*>(sym)) {
+    addVisibleFunctions(visibleFunctions, forward->forward);
+  }
+}
+
+
 void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   visibleFunctions.clear();
 
   for(SymLink* tmp = firstSym; tmp; tmp = nextLink(SymLink, tmp)) {
     Symbol* sym = tmp->pSym;
-    while (ForwardingSymbol* forward = dynamic_cast<ForwardingSymbol*>(sym)) {
-      sym = forward->forward;
-    }
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-      while (fn) {
-        if (!fn->typeBinding) {
-          char *n = if1_cannonicalize_string(if1, fn->name);
-          Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-          if (!fs) fs = new Vec<FnSymbol*>;
-          fs->add(fn);
-          visibleFunctions.put(n, fs);
-        }
-        fn = fn->overload;
-      }
-    } else if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
+    if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
       if (!dynamic_cast<ClassType*>(typeSym->type)) {
         forv_Vec(FnSymbol, method, typeSym->type->methods) {
           while (method) {
-            char *n = if1_cannonicalize_string(if1, method->name);
-            Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-            if (!fs) fs = new Vec<FnSymbol*>;
-            fs->add(method);
-            visibleFunctions.put(n, fs);
-            method = method->overload;
+            addVisibleFunctionsHelper(&visibleFunctions, method);
+            method = dynamic_cast<FnSymbol*>(method->overload);
           }
         }
         FnSymbol* constructor = typeSym->type->defaultConstructor;
         while (constructor) {
-          char *n = if1_cannonicalize_string(if1, constructor->name);
-          Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-          if (!fs) fs = new Vec<FnSymbol*>;
-          fs->add(constructor);
-          visibleFunctions.put(n, fs);
-          constructor = constructor->overload;
+          addVisibleFunctionsHelper(&visibleFunctions, constructor);
+          constructor = dynamic_cast<FnSymbol*>(constructor->overload);
         }
       }
+    } else {
+      addVisibleFunctions(&visibleFunctions, sym);
     }
   }
 

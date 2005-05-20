@@ -28,7 +28,8 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type,
   defPoint(NULL),
   pragmas(NULL),
   parentScope(NULL),
-  asymbol(0)
+  asymbol(0),
+  overload(NULL)
 {}
 
 
@@ -214,6 +215,11 @@ void Symbol::setDefPoint(DefExpr* init_defPoint) {
     tmp->defPoint = init_defPoint;
     tmp = nextLink(Symbol, tmp);
   }
+}
+
+
+FnSymbol* Symbol::getFnSymbol(void) {
+  return NULL;
 }
 
 
@@ -626,8 +632,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_formals,
   _getter(NULL),
   body(init_body),
   typeBinding(init_typeBinding),
-  isConstructor(false),
-  overload(NULL)
+  isConstructor(false)
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
@@ -643,11 +648,15 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
   _getter(NULL),
   body(NULL),
   typeBinding(init_typeBinding),
-  isConstructor(false),
-  overload(NULL)
+  isConstructor(false)
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
+}
+
+
+FnSymbol* FnSymbol::getFnSymbol(void) {
+  return this;
 }
 
 
@@ -1105,7 +1114,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
     fprintf(outfile, "}\n");
     fprintf(outfile, "\n\n");
   }
- if (overload) {
+  if (overload) {
     overload->codegenDef(outfile);
   }
 }
@@ -1316,4 +1325,20 @@ ForwardingSymbol::ForwardingSymbol(Symbol* init_forward, char* rename) :
     cname = copystring(forward->cname);
   }
   Symboltable::define(this);
+}
+
+
+void ForwardingSymbol::codegenDef(FILE* outfile) {
+  if (overload) {
+    overload->codegenDef(outfile);
+  }
+}
+
+
+FnSymbol* ForwardingSymbol::getFnSymbol(void) {
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(forward)) {
+    return fn;
+  } else {
+    return NULL;
+  }
 }

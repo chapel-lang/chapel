@@ -235,10 +235,9 @@ void buildDefaultStructuralTypeMethods(StructuralType* structuralType) {
 static void buildDefaultIOFunctions(Type* type) {
   if (type->hasDefaultWriteFunction()) {
     bool userWriteDefined = false;
-    FnSymbol* write =
-      dynamic_cast<FnSymbol*>(Symboltable::lookupInCurrentScope("write"));
+    Symbol* write = Symboltable::lookupInCurrentScope("write");
     while (write) {
-      if (write->formals->type == type) {
+      if (write->getFnSymbol() && write->getFnSymbol()->formals->type == type) {
         userWriteDefined = true;
         write->cname = glomstrings(3, "_user_", type->symbol->name, "_write");
         break;
@@ -261,10 +260,9 @@ static void buildDefaultIOFunctions(Type* type) {
 
   if (type->hasDefaultReadFunction()) {
     bool userReadDefined = false;
-    FnSymbol* read =
-      dynamic_cast<FnSymbol*>(Symboltable::lookupInCurrentScope("read"));
+    Symbol* read = Symboltable::lookupInCurrentScope("read");
     while (read) {
-      if (read->formals->type == type) {
+      if (read->getFnSymbol() && read->getFnSymbol()->formals->type == type) {
         userReadDefined = true;
         read->cname = glomstrings(3, "_user_", type->symbol->name, "_read");
         break;

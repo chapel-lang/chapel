@@ -13,9 +13,7 @@ class ASymbol;
 class SymScope;
 class MPosition;
 
-
 enum varType {
-//R:Maybe this should be VAR_NOTHING
   VAR_NORMAL,
   VAR_REF,
   VAR_CONFIG,
@@ -23,7 +21,6 @@ enum varType {
 };
 
 enum consType {
-  //and this VAR_NOTMAL 
   VAR_VAR,
   VAR_CONST,
   VAR_PARAM
@@ -32,17 +29,16 @@ enum consType {
 class Symbol : public BaseAST {
  public:
   char* name;
-  char* cname;   /* Name of symbol for generating C code */
+  char* cname; // Name of symbol for generating C code
   Type* type;
   bool exportMe;
   bool isDead;
   bool keepLive;
-  DefExpr* defPoint; /* Point of definition */
+  DefExpr* defPoint; // Point of definition
   Pragma *pragmas;
-
-  //the scope in which the symbol was defined
-  SymScope* parentScope;
+  SymScope* parentScope;  // Scope in which the symbol was defined
   ASymbol *asymbol;
+  Symbol* overload; // Overloading (functions only, FnSymbol/ForwardingSymbol)
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown,
          bool init_exportMe = true);
@@ -72,6 +68,8 @@ class Symbol : public BaseAST {
   virtual void codegenPrototype(FILE* outfile);
   void codegenDefList(FILE* outfile, char* separator);
   void setDefPoint(DefExpr* init_defPoint);
+
+  virtual FnSymbol* getFnSymbol(void);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -171,12 +169,11 @@ class FnSymbol : public Symbol {
   bool isConstructor;
   bool retRef;
 
-  FnSymbol* overload;
-
   FnSymbol(char* init_name, Symbol* init_formals, Type* init_retType,
            BlockStmt* init_body, bool init_exportMe=true,
            Symbol* init_typeBinding = NULL);
   FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
+  virtual FnSymbol* getFnSymbol(void);
   void continueDef(Symbol* init_formals, Type* init_retType, bool isRef);
   void finishDef(BlockStmt* init_body, SymScope* init_paramScope, 
                  bool init_exportMe=true);
@@ -250,6 +247,8 @@ class ForwardingSymbol : public Symbol {
   Symbol* forward;
   bool renamed;
   ForwardingSymbol(Symbol* init_forward, char* rename = NULL);
+  virtual void codegenDef(FILE* outfile);
+  virtual FnSymbol* getFnSymbol(void);
 };
 
 
