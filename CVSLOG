@@ -32388,3 +32388,15 @@ Modified files:
 	                                  sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+05/20/05 16:12:44 -- jplevyak
+
+Log message:
+	Add "builtin" function +(a : string, b : string).
+	Fix bug whereby string and numeric where unordered in the type hiearchy.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+
