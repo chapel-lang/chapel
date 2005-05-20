@@ -32143,3 +32143,16 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             verify.cpp 
 
+---------------------------------------------------------------------------
+
+05/20/05 10:28:29 -- shannon
+
+Log message:
+	Bug fix for the mallocOutOfMemory test that is failing
+	on the linux64 platform.  For some reason this test
+	seg faults if the vmemoryuse limit is set to either 16M
+	or 32M.  Changed the limit to 24M..
+
+Modified files:
+	chapel/test/memory/shannon/outofmemory/: sub_test 
+
