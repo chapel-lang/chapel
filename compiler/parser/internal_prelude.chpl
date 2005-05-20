@@ -77,14 +77,14 @@ pragma "builtin" function =(a : integer, b : Index) { return __primitive("indext
 
 pragma "builtin" function =(a : any, b : any) { return b; }
 
+pragma "builtin" function +(a : string, b : string) : string { return __primitive("string_op", a, b); } 
+
 function _chpl_malloc(number, size, description: string);
 function _chpl_calloc(number, size, description: string);
 function _chpl_free(memory);
 function _chpl_realloc(memory, number, size, description: string);
 
-function _init_string() {
-  return "";
-}
+function _init_string() { return ""; }
 
 function _UNION_CHECK(u, tag, filename, lineno);
 function _UNION_SET(u, tag);

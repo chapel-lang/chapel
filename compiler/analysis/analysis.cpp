@@ -1058,7 +1058,7 @@ build_builtin_symbols() {
   sym_complex32->specializes.add(sym_complex64);
   sym_complex64->specializes.add(sym_complex128);
 
-  sym_complex128->specializes.add(sym_string);
+  sym_anynum->specializes.add(sym_string);
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
@@ -2551,6 +2551,12 @@ array_pointwise_op(PNode *pn, EntrySet *es) {
 }
 
 static void
+string_op(PNode *pn, EntrySet *es) {
+  AVar* result = make_AVar(pn->lvals.v[0], es);
+  update_in(result, make_abstract_type(sym_string));
+}
+
+static void
 make_seq(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   CreationSet *cs = creation_point(result, sym_sequence);
@@ -2676,6 +2682,7 @@ ast_to_if1(Vec<Stmt *> &stmts) {
   REG(if1_cannonicalize_string(if1, "ptr_eq"), ptr_eq);
   REG(if1_cannonicalize_string(if1, "ptr_neq"), ptr_neq);
   REG(if1_cannonicalize_string(if1, "array_pointwise_op"), array_pointwise_op);
+  REG(if1_cannonicalize_string(if1, "string_op"), string_op);
   REG(if1_cannonicalize_string(if1, "seqcat_seq"), seqcat_seq);
   REG(if1_cannonicalize_string(if1, "seqcat_element"), seqcat_element);
   REG(if1_cannonicalize_string(if1, "indextype_get"), indextype_get);
