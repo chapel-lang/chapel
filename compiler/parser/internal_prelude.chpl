@@ -77,7 +77,10 @@ pragma "builtin" function =(a : integer, b : Index) { return __primitive("indext
 
 pragma "builtin" function =(a : any, b : any) { return b; }
 
-pragma "builtin" function +(a : string, b : string) : string { return __primitive("string_op", a, b); } 
+pragma "rename _chpl_string_concat"
+function +(a : string, b : string) : string {
+  return __primitive("string_op", a, b);
+}
 
 function _chpl_malloc(number, size, description: string);
 function _chpl_calloc(number, size, description: string);

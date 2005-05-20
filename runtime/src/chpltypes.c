@@ -90,3 +90,8 @@ char* _chpl_tostring_complex(_complex128 x, char* format) {
   sprintf(buffer, format, x);
   return _glom_strings(1, buffer);
 }
+
+
+_string _chpl_string_concat(_string x, _string y) {
+  return _glom_strings(2, x, y);
+}

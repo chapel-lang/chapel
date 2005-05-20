@@ -30,4 +30,6 @@ char* _chpl_tostring_integer(_integer64 x, char* format);
 char* _chpl_tostring_float(_float64 x, char* format);
 char* _chpl_tostring_complex(_complex128 x, char* format);
 
+_string _chpl_string_concat(_string x, _string y);
+
 #endif

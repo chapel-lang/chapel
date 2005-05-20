@@ -1,0 +1,1 @@
+writeln("black" + " and " + "white");
