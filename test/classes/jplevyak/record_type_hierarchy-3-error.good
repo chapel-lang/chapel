@@ -1,7 +1,13 @@
-<internal>:0: unresolved call 'write'
-<internal>:0: illegal call argument type expression illegal: ( ) 
-<internal>:0: expression has no type
+record_type_hierarchy-3-error.chpl:16: unresolved call 'write'
+  called from record_type_hierarchy-3-error.chpl:14
 record_type_hierarchy-3-error.chpl:16: illegal call argument type 'b' illegal: ( C ) 
+  called from record_type_hierarchy-3-error.chpl:14
 record_type_hierarchy-3-error.chpl:16: unresolved call 'f'
+  called from record_type_hierarchy-3-error.chpl:14
+record_type_hierarchy-3-error.chpl:16: illegal call argument type expression illegal: ( ) 
+  called from record_type_hierarchy-3-error.chpl:14
 record_type_hierarchy-3-error.chpl:16: expression has no type
+  called from record_type_hierarchy-3-error.chpl:14
+record_type_hierarchy-3-error.chpl:16: expression has no type
+  called from record_type_hierarchy-3-error.chpl:14
 fail: fatal error, program does not type

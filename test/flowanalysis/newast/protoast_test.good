@@ -1,21 +1,33 @@
+ called from 7 in __init_entryPoint at protoast_test.chpl:7
+ called from 7 in __init_entryPoint at protoast_test.chpl:7
+ called from 7 in __init_entryPoint at protoast_test.chpl:7
+ called from 7 in __init_entryPoint at protoast_test.chpl:7
+ called from 7 in main at protoast_test.chpl:7
+ called from 7 in main at protoast_test.chpl:7
 ::=(internal_prelude.chpl:0) ( = )
 ::A(protoast_test.chpl:7) ( _array_float_1d (protoast_test.chpl:7) )
 ::D(protoast_test.chpl:5) ( _domain_1d (protoast_test.chpl:5) )
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
-::__init_protoast_test ( __init_protoast_test )
+::__init__CommonModule(protoast_test.chpl:7) ( __init__CommonModule (protoast_test.chpl:7) )
+::__init_entryPoint(protoast_test.chpl:7) ( __init_entryPoint (protoast_test.chpl:7) )
+::__init_internal_prelude(protoast_test.chpl:7) ( __init_internal_prelude (protoast_test.chpl:7) )
+::__init_prelude(protoast_test.chpl:7) ( __init_prelude (protoast_test.chpl:7) )
+::__init_protoast_test(protoast_test.chpl:7) ( __init_protoast_test (protoast_test.chpl:7) )
 ::__method(internal_prelude.chpl:0) ( __method )
 ::a(internal_prelude.chpl:0) ( _domain_1d (protoast_test.chpl:5) )
 ::b(internal_prelude.chpl:0) ( Domain )
 ::false(prelude.chpl:0) ( bool )
 ::i(internal_prelude.chpl:0) ( int64 )
 ::i(protoast_test.chpl:9) ( int64 )
-::main ( main )
+::main(protoast_test.chpl:7) ( main (protoast_test.chpl:7) )
 ::n(protoast_test.chpl:3) ( int64 )
 ::set(internal_prelude.chpl:0) ( set )
-::this ( _array_float_1d (protoast_test.chpl:7) )
+::this(internal_prelude.chpl:0) ( _array_float_1d (protoast_test.chpl:7) )
 ::true(prelude.chpl:0) ( bool )
 ::x(internal_prelude.chpl:0) ( int64 )
+function __init__CommonModule protoast_test.chpl:7
+function __init_entryPoint protoast_test.chpl:7
+function __init_internal_prelude protoast_test.chpl:7
+function __init_prelude protoast_test.chpl:7
+function __init_protoast_test protoast_test.chpl:7
+function main protoast_test.chpl:7
 globals

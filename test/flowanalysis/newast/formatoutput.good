@@ -1,21 +1,65 @@
-::=(internal_prelude.chpl:0) ( = )
-::A(formatoutput.chpl:8) ( _array_integer_1d (formatoutput.chpl:8) )
-::D(formatoutput.chpl:7) ( _domain_1d (formatoutput.chpl:7) )
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_formatoutput ( __init_formatoutput )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
-::__method(internal_prelude.chpl:0) ( __method )
-::a(internal_prelude.chpl:0) ( _domain_1d (formatoutput.chpl:7) )
-::b(internal_prelude.chpl:0) ( Domain )
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+  called from formatoutput.chpl:8
+ called from 4 in __init_entryPoint at equality_ops.chpl:4
+ called from 4 in __init_entryPoint at equality_ops.chpl:4
+ called from 4 in __init_entryPoint at equality_ops.chpl:4
+ called from 4 in __init_entryPoint at equality_ops.chpl:4
+ called from 4 in main at equality_ops.chpl:4
+ called from 4 in main at equality_ops.chpl:4
+::!=(internal_prelude.chpl:0) ( != )
+::==(internal_prelude.chpl:0) ( == )
+::__init__CommonModule(equality_ops.chpl:4) ( __init__CommonModule (equality_ops.chpl:4) )
+::__init_entryPoint(equality_ops.chpl:4) ( __init_entryPoint (equality_ops.chpl:4) )
+::__init_equality_ops(equality_ops.chpl:4) ( __init_equality_ops (equality_ops.chpl:4) )
+::__init_internal_prelude(equality_ops.chpl:4) ( __init_internal_prelude (equality_ops.chpl:4) )
+::__init_prelude(equality_ops.chpl:4) ( __init_prelude (equality_ops.chpl:4) )
+::a(internal_prelude.chpl:0) ( int64 )
+::a(internal_prelude.chpl:0) ( int64 )
+::answer(equality_ops.chpl:4) ( int64 )
+::b(internal_prelude.chpl:0) ( int64 )
+::b(internal_prelude.chpl:0) ( int64 )
 ::false(prelude.chpl:0) ( bool )
-::i(formatoutput.chpl:10) ( int64 )
-::i(internal_prelude.chpl:0) ( int64 )
-::main ( main )
-::set(internal_prelude.chpl:0) ( set )
-::this ( _array_integer_1d (formatoutput.chpl:8) )
+::m(equality_ops.chpl:1) ( int64 )
+::main(equality_ops.chpl:4) ( main (equality_ops.chpl:4) )
+::n(equality_ops.chpl:2) ( int64 )
+::o(equality_ops.chpl:3) ( int64 )
 ::true(prelude.chpl:0) ( bool )
-::x(formatoutput.chpl:1) ( int64 )
-::x(internal_prelude.chpl:0) ( int64 )
+::write(prelude.chpl:0) ( write )
+::write(prelude.chpl:0) ( write )
+::writeln(prelude.chpl:0) ( writeln )
+::x(prelude.chpl:0) ( int64 )
+::x(prelude.chpl:0) ( string )
+fail: fatal error, program does not type
+formatoutput.chpl:15: expression has no type
+formatoutput.chpl:15: expression has no type
+formatoutput.chpl:15: illegal call argument type 'A' illegal: ( _array_integer_1d ) 
+formatoutput.chpl:15: illegal call argument type expression illegal: ( ) 
+formatoutput.chpl:15: illegal call argument type expression illegal: ( string ) 
+formatoutput.chpl:15: unresolved call '_chpl_tostring'
+formatoutput.chpl:15: unresolved call 'write'
+formatoutput.chpl:16: expression has no type
+formatoutput.chpl:16: expression has no type
+formatoutput.chpl:16: illegal call argument type 'A' illegal: ( _array_integer_1d ) 
+formatoutput.chpl:16: illegal call argument type expression illegal: ( ) 
+formatoutput.chpl:16: illegal call argument type expression illegal: ( string ) 
+formatoutput.chpl:16: unresolved call '_chpl_tostring'
+formatoutput.chpl:16: unresolved call 'write'
+function __init__CommonModule equality_ops.chpl:4
+function __init_entryPoint equality_ops.chpl:4
+function __init_equality_ops equality_ops.chpl:4
+function __init_internal_prelude equality_ops.chpl:4
+function __init_prelude equality_ops.chpl:4
+function main equality_ops.chpl:4
 globals

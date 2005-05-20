@@ -1,3 +1,15 @@
+ called from 14 in __init_entryPoint at declprintdom2.chpl:14
+ called from 14 in __init_entryPoint at declprintdom2.chpl:14
+ called from 14 in __init_entryPoint at declprintdom2.chpl:14
+ called from 14 in __init_entryPoint at declprintdom2.chpl:14
+ called from 14 in main at declprintdom2.chpl:14
+ called from 14 in main at declprintdom2.chpl:14
+ called from 16 in __init_declprintdom2 at declprintdom2.chpl:14
+ called from 17 in __init_declprintdom2 at declprintdom2.chpl:14
+ called from 18 in __init_declprintdom2 at declprintdom2.chpl:14
+ called from 19 in __init_declprintdom2 at declprintdom2.chpl:14
+ called from 20 in __init_declprintdom2 at declprintdom2.chpl:14
+ called from 21 in __init_declprintdom2 at declprintdom2.chpl:14
 ::=(internal_prelude.chpl:0) ( = )
 ::D4(declprintdom2.chpl:9) ( _domain_1d (declprintdom2.chpl:9) )
 ::D5(declprintdom2.chpl:10) ( _domain_1d (declprintdom2.chpl:9) )
@@ -6,11 +18,11 @@
 ::D8(declprintdom2.chpl:13) ( _domain_1d (declprintdom2.chpl:9) )
 ::D9(declprintdom2.chpl:14) ( _domain_1d (declprintdom2.chpl:9) )
 ::_DomainWriteStopgap(internal_prelude.chpl:0) ( _DomainWriteStopgap )
-::__init__CommonModule ( __init__CommonModule )
-::__init_declprintdom2 ( __init_declprintdom2 )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
+::__init__CommonModule(declprintdom2.chpl:14) ( __init__CommonModule (declprintdom2.chpl:14) )
+::__init_declprintdom2(declprintdom2.chpl:14) ( __init_declprintdom2 (declprintdom2.chpl:14) )
+::__init_entryPoint(declprintdom2.chpl:14) ( __init_entryPoint (declprintdom2.chpl:14) )
+::__init_internal_prelude(declprintdom2.chpl:14) ( __init_internal_prelude (declprintdom2.chpl:14) )
+::__init_prelude(declprintdom2.chpl:14) ( __init_prelude (declprintdom2.chpl:14) )
 ::a(internal_prelude.chpl:0) ( _domain_1d (declprintdom2.chpl:9) )
 ::b(internal_prelude.chpl:0) ( Domain )
 ::false(prelude.chpl:0) ( bool )
@@ -20,12 +32,19 @@
 ::m7(declprintdom2.chpl:4) ( int64 )
 ::m8(declprintdom2.chpl:5) ( int64 )
 ::m9(declprintdom2.chpl:6) ( int64 )
-::main ( main )
+::main(declprintdom2.chpl:14) ( main (declprintdom2.chpl:14) )
 ::true(prelude.chpl:0) ( bool )
-::val ( _domain_1d (declprintdom2.chpl:9) )
-::write ( write )
+::val(declprintdom2.chpl:9) ( _domain_1d (declprintdom2.chpl:9) )
+::write(declprintdom2.chpl:9) ( write )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(internal_prelude.chpl:0) ( _domain_1d (declprintdom2.chpl:9) )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule declprintdom2.chpl:14
+function __init_declprintdom2 declprintdom2.chpl:14
+function __init_entryPoint declprintdom2.chpl:14
+function __init_internal_prelude declprintdom2.chpl:14
+function __init_prelude declprintdom2.chpl:14
+function main declprintdom2.chpl:14
+function write declprintdom2.chpl:9
 globals

@@ -1,13 +1,19 @@
  called from 13 in bar at mutrec.chpl:17
- called from 19 in __init_mutrec at <internal>:0
- called from 20 in __init_mutrec at <internal>:0
+ called from 19 in __init_mutrec at _chpl_complex.chpl:43
+ called from 20 in __init_mutrec at _chpl_complex.chpl:43
  called from 4 in foo at mutrec.chpl:8
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in main at _chpl_complex.chpl:43
+ called from 43 in main at _chpl_complex.chpl:43
 ::==(internal_prelude.chpl:0) ( == )
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_mutrec ( __init_mutrec )
-::__init_prelude ( __init_prelude )
+::__init__CommonModule(_chpl_complex.chpl:43) ( __init__CommonModule (_chpl_complex.chpl:43) )
+::__init_entryPoint(_chpl_complex.chpl:43) ( __init_entryPoint (_chpl_complex.chpl:43) )
+::__init_internal_prelude(_chpl_complex.chpl:43) ( __init_internal_prelude (_chpl_complex.chpl:43) )
+::__init_mutrec(_chpl_complex.chpl:43) ( __init_mutrec (_chpl_complex.chpl:43) )
+::__init_prelude(_chpl_complex.chpl:43) ( __init_prelude (_chpl_complex.chpl:43) )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(mutrec.chpl:1) ( int64 )
 ::a(mutrec.chpl:10) ( int64 )
@@ -15,11 +21,17 @@
 ::bar(mutrec.chpl:17) ( bar )
 ::false(prelude.chpl:0) ( bool )
 ::foo(mutrec.chpl:8) ( foo )
-::main ( main )
+::main(_chpl_complex.chpl:43) ( main (_chpl_complex.chpl:43) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule _chpl_complex.chpl:43
+function __init_entryPoint _chpl_complex.chpl:43
+function __init_internal_prelude _chpl_complex.chpl:43
+function __init_mutrec _chpl_complex.chpl:43
+function __init_prelude _chpl_complex.chpl:43
 function bar mutrec.chpl:10
 function foo mutrec.chpl:1
+function main _chpl_complex.chpl:43
 globals

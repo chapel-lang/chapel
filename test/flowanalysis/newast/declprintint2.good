@@ -1,13 +1,25 @@
-::__init__CommonModule ( __init__CommonModule )
-::__init_declprintint2 ( __init_declprintint2 )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
+ called from 1 in __init_entryPoint at declprintint2.chpl:1
+ called from 1 in __init_entryPoint at declprintint2.chpl:1
+ called from 1 in __init_entryPoint at declprintint2.chpl:1
+ called from 1 in __init_entryPoint at declprintint2.chpl:1
+ called from 1 in main at declprintint2.chpl:1
+ called from 1 in main at declprintint2.chpl:1
+::__init__CommonModule(declprintint2.chpl:1) ( __init__CommonModule (declprintint2.chpl:1) )
+::__init_declprintint2(declprintint2.chpl:1) ( __init_declprintint2 (declprintint2.chpl:1) )
+::__init_entryPoint(declprintint2.chpl:1) ( __init_entryPoint (declprintint2.chpl:1) )
+::__init_internal_prelude(declprintint2.chpl:1) ( __init_internal_prelude (declprintint2.chpl:1) )
+::__init_prelude(declprintint2.chpl:1) ( __init_prelude (declprintint2.chpl:1) )
 ::false(prelude.chpl:0) ( bool )
-::main ( main )
+::main(declprintint2.chpl:1) ( main (declprintint2.chpl:1) )
 ::myvariable(declprintint2.chpl:1) ( int64 )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
+function __init__CommonModule declprintint2.chpl:1
+function __init_declprintint2 declprintint2.chpl:1
+function __init_entryPoint declprintint2.chpl:1
+function __init_internal_prelude declprintint2.chpl:1
+function __init_prelude declprintint2.chpl:1
+function main declprintint2.chpl:1
 globals

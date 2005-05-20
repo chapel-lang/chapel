@@ -1,12 +1,19 @@
+ called from 11 in __init_domarr at domarr.chpl:6
+ called from 6 in __init_entryPoint at domarr.chpl:6
+ called from 6 in __init_entryPoint at domarr.chpl:6
+ called from 6 in __init_entryPoint at domarr.chpl:6
+ called from 6 in __init_entryPoint at domarr.chpl:6
+ called from 6 in main at domarr.chpl:6
+ called from 6 in main at domarr.chpl:6
 ::=(internal_prelude.chpl:0) ( = )
 ::A(domarr.chpl:6) ( _array_float_2d (domarr.chpl:6) )
 ::Mat(domarr.chpl:4) ( _domain_2d (domarr.chpl:4) )
 ::_ArrayWriteStopgap(internal_prelude.chpl:0) ( _ArrayWriteStopgap )
-::__init__CommonModule ( __init__CommonModule )
-::__init_domarr ( __init_domarr )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
+::__init__CommonModule(domarr.chpl:6) ( __init__CommonModule (domarr.chpl:6) )
+::__init_domarr(domarr.chpl:6) ( __init_domarr (domarr.chpl:6) )
+::__init_entryPoint(domarr.chpl:6) ( __init_entryPoint (domarr.chpl:6) )
+::__init_internal_prelude(domarr.chpl:6) ( __init_internal_prelude (domarr.chpl:6) )
+::__init_prelude(domarr.chpl:6) ( __init_prelude (domarr.chpl:6) )
 ::__method(internal_prelude.chpl:0) ( __method )
 ::a(internal_prelude.chpl:0) ( _domain_2d (domarr.chpl:4) )
 ::b(internal_prelude.chpl:0) ( Domain )
@@ -17,14 +24,14 @@
 ::j(domarr.chpl:8) ( int64 )
 ::j(internal_prelude.chpl:0) ( int64 )
 ::m(domarr.chpl:1) ( int64 )
-::main ( main )
+::main(domarr.chpl:6) ( main (domarr.chpl:6) )
 ::n(domarr.chpl:2) ( int64 )
 ::set(internal_prelude.chpl:0) ( set )
-::this ( _array_float_2d (domarr.chpl:6) )
-::this ( _array_float_2d (domarr.chpl:6) )
+::this(internal_prelude.chpl:0) ( _array_float_2d (domarr.chpl:6) )
+::this(internal_prelude.chpl:0) ( _array_float_2d (domarr.chpl:6) )
 ::true(prelude.chpl:0) ( bool )
-::val ( _array_float_2d (domarr.chpl:6) )
-::write ( write )
+::val(<internal>:-1) ( _array_float_2d (domarr.chpl:6) )
+::write(<internal>:-1) ( write )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
@@ -32,4 +39,11 @@
 ::x(internal_prelude.chpl:0) ( float64 )
 ::x(prelude.chpl:0) ( float64 )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule domarr.chpl:6
+function __init_domarr domarr.chpl:6
+function __init_entryPoint domarr.chpl:6
+function __init_internal_prelude domarr.chpl:6
+function __init_prelude domarr.chpl:6
+function main domarr.chpl:6
+function write <internal>:-1
 globals

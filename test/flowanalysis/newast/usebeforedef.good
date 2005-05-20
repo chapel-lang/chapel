@@ -1,18 +1,30 @@
- called from 1 in __init_usebeforedef at <internal>:0
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
-::__init_usebeforedef ( __init_usebeforedef )
+ called from 1 in __init_usebeforedef at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in main at _chpl_complex.chpl:43
+ called from 43 in main at _chpl_complex.chpl:43
+::__init__CommonModule(_chpl_complex.chpl:43) ( __init__CommonModule (_chpl_complex.chpl:43) )
+::__init_entryPoint(_chpl_complex.chpl:43) ( __init_entryPoint (_chpl_complex.chpl:43) )
+::__init_internal_prelude(_chpl_complex.chpl:43) ( __init_internal_prelude (_chpl_complex.chpl:43) )
+::__init_prelude(_chpl_complex.chpl:43) ( __init_prelude (_chpl_complex.chpl:43) )
+::__init_usebeforedef(_chpl_complex.chpl:43) ( __init_usebeforedef (_chpl_complex.chpl:43) )
 ::a(usebeforedef.chpl:3) ( int64 )
 ::false(prelude.chpl:0) ( bool )
 ::foo(usebeforedef.chpl:5) ( foo )
-::main ( main )
+::main(_chpl_complex.chpl:43) ( main (_chpl_complex.chpl:43) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule _chpl_complex.chpl:43
+function __init_entryPoint _chpl_complex.chpl:43
+function __init_internal_prelude _chpl_complex.chpl:43
+function __init_prelude _chpl_complex.chpl:43
+function __init_usebeforedef _chpl_complex.chpl:43
 function foo usebeforedef.chpl:3
+function main _chpl_complex.chpl:43
 globals

@@ -1,14 +1,20 @@
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_logical_and ( __init_logical_and )
-::__init_prelude ( __init_prelude )
+ called from 3 in __init_entryPoint at logical_and.chpl:3
+ called from 3 in __init_entryPoint at logical_and.chpl:3
+ called from 3 in __init_entryPoint at logical_and.chpl:3
+ called from 3 in __init_entryPoint at logical_and.chpl:3
+ called from 3 in main at logical_and.chpl:3
+ called from 3 in main at logical_and.chpl:3
+::__init__CommonModule(logical_and.chpl:3) ( __init__CommonModule (logical_and.chpl:3) )
+::__init_entryPoint(logical_and.chpl:3) ( __init_entryPoint (logical_and.chpl:3) )
+::__init_internal_prelude(logical_and.chpl:3) ( __init_internal_prelude (logical_and.chpl:3) )
+::__init_logical_and(logical_and.chpl:3) ( __init_logical_and (logical_and.chpl:3) )
+::__init_prelude(logical_and.chpl:3) ( __init_prelude (logical_and.chpl:3) )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::and(internal_prelude.chpl:0) ( and )
 ::answer(logical_and.chpl:3) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::false(prelude.chpl:0) ( bool )
-::main ( main )
+::main(logical_and.chpl:3) ( main (logical_and.chpl:3) )
 ::o(logical_and.chpl:1) ( int64 )
 ::p(logical_and.chpl:2) ( int64 )
 ::true(prelude.chpl:0) ( bool )
@@ -17,4 +23,10 @@
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule logical_and.chpl:3
+function __init_entryPoint logical_and.chpl:3
+function __init_internal_prelude logical_and.chpl:3
+function __init_logical_and logical_and.chpl:3
+function __init_prelude logical_and.chpl:3
+function main logical_and.chpl:3
 globals

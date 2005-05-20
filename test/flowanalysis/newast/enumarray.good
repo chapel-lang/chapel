@@ -1,32 +1,52 @@
-::=(internal_prelude.chpl:0) ( = )
-::A(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::B(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::C(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::D(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::DClass(enumarray.chpl:3) ( _domain_1d (enumarray.chpl:3) )
-::O(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::S(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::W(enumarray.chpl:1) ( classVals (enumarray.chpl:1) )
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_enumarray ( __init_enumarray )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
-::__method(internal_prelude.chpl:0) ( __method )
-::_init_classVals1 ( classVals (enumarray.chpl:1) )
-::a(internal_prelude.chpl:0) ( _domain_1d (enumarray.chpl:3) )
-::b(internal_prelude.chpl:0) ( Domain )
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+ called from 5 in __init_enum at enum.chpl:7
+ called from 7 in __init_entryPoint at enum.chpl:7
+ called from 7 in __init_entryPoint at enum.chpl:7
+ called from 7 in __init_entryPoint at enum.chpl:7
+ called from 7 in __init_entryPoint at enum.chpl:7
+ called from 7 in main at enum.chpl:7
+ called from 7 in main at enum.chpl:7
+::B(enum.chpl:1) ( classVals (enum.chpl:1) )
+::S(enum.chpl:1) ( classVals (enum.chpl:1) )
+::_EnumWriteStopgap(internal_prelude.chpl:0) ( _EnumWriteStopgap )
+::__init__CommonModule(enum.chpl:7) ( __init__CommonModule (enum.chpl:7) )
+::__init_entryPoint(enum.chpl:7) ( __init_entryPoint (enum.chpl:7) )
+::__init_enum(enum.chpl:7) ( __init_enum (enum.chpl:7) )
+::__init_internal_prelude(enum.chpl:7) ( __init_internal_prelude (enum.chpl:7) )
+::__init_prelude(enum.chpl:7) ( __init_prelude (enum.chpl:7) )
+::_init_classVals1(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::false(prelude.chpl:0) ( bool )
-::i(enumarray.chpl:16) ( int64 )
-::i(internal_prelude.chpl:0) ( classVals (enumarray.chpl:1) )
-::i(internal_prelude.chpl:0) ( classVals (enumarray.chpl:1) )
-::i(internal_prelude.chpl:0) ( int64 )
-::main ( main )
-::probSize(enumarray.chpl:5) ( _array_integer_1d (enumarray.chpl:5) )
-::set(internal_prelude.chpl:0) ( set )
-::this ( _array_integer_1d (enumarray.chpl:5) )
-::this ( _array_integer_1d (enumarray.chpl:5) )
-::this ( _array_integer_1d (enumarray.chpl:5) )
+::main(enum.chpl:7) ( main (enum.chpl:7) )
 ::true(prelude.chpl:0) ( bool )
-::x(internal_prelude.chpl:0) ( int64 )
+::val(enum.chpl:1) ( classVals (enum.chpl:1) )
+::write(enum.chpl:1) ( write )
+::write(prelude.chpl:0) ( write )
+::write(prelude.chpl:0) ( write )
+::writeln(prelude.chpl:0) ( writeln )
+::x(enum.chpl:3) ( classVals (enum.chpl:1) )
+::x(internal_prelude.chpl:0) ( classVals (enum.chpl:1) )
+::x(prelude.chpl:0) ( int64 )
+::x(prelude.chpl:0) ( string )
+::y(enum.chpl:7) ( int64 )
+enumarray.chpl:19: expression has no type
+enumarray.chpl:19: expression has no type
+enumarray.chpl:19: illegal call argument type 'probSize' illegal: ( _array_integer_1d ) 
+enumarray.chpl:19: illegal call argument type expression illegal: ( ) 
+enumarray.chpl:19: illegal call argument type expression illegal: ( string ) 
+enumarray.chpl:19: unresolved call '_chpl_tostring'
+enumarray.chpl:19: unresolved call 'write'
+fail: fatal error, program does not type
+function __init__CommonModule enum.chpl:7
+function __init_entryPoint enum.chpl:7
+function __init_enum enum.chpl:7
+function __init_internal_prelude enum.chpl:7
+function __init_prelude enum.chpl:7
+function main enum.chpl:7
+function write enum.chpl:1
 globals

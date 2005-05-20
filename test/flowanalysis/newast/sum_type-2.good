@@ -1,92 +1,128 @@
- called from 30 in __init_sum_type-2 at <internal>:0
- called from 31 in __init_sum_type-2 at <internal>:0
+ called from -1 in _construct_cpoint at <internal>:-1
+ called from -1 in _construct_point at <internal>:-1
+ called from 12 in length at sum_type-2.chpl:13
+ called from 12 in length at sum_type-2.chpl:13
+ called from 12 in length at sum_type-2.chpl:13
+ called from 12 in length at sum_type-2.chpl:13
+ called from 17 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 18 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 22 in __init_entryPoint at sum_type-2.chpl:22
+ called from 22 in __init_entryPoint at sum_type-2.chpl:22
+ called from 22 in __init_entryPoint at sum_type-2.chpl:22
+ called from 22 in __init_entryPoint at sum_type-2.chpl:22
+ called from 22 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 22 in main at sum_type-2.chpl:22
+ called from 22 in main at sum_type-2.chpl:22
+ called from 24 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 25 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 26 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 30 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 31 in __init_sum_type-2 at sum_type-2.chpl:22
 ::*(internal_prelude.chpl:0) ( * )
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
-::__init_sum_type-2 ( __init_sum_type-2 )
-::__method ( __method )
-::__method ( __method )
-::__method ( __method )
-::__method ( __method )
-::__method ( __method )
-::__method ( __method )
-::__method ( __method )
-::__method ( __method )
-::__method ( __method )
-::_arg ( float64 )
-::_arg ( float64 )
-::_arg ( float64 )
-::_arg ( float64 )
-::_arg ( int64 )
+::__init__CommonModule(sum_type-2.chpl:22) ( __init__CommonModule (sum_type-2.chpl:22) )
+::__init_entryPoint(sum_type-2.chpl:22) ( __init_entryPoint (sum_type-2.chpl:22) )
+::__init_internal_prelude(sum_type-2.chpl:22) ( __init_internal_prelude (sum_type-2.chpl:22) )
+::__init_prelude(sum_type-2.chpl:22) ( __init_prelude (sum_type-2.chpl:22) )
+::__init_sum_type-2(sum_type-2.chpl:22) ( __init_sum_type-2 (sum_type-2.chpl:22) )
+::__method(<internal>:-1) ( __method )
+::__method(<internal>:-1) ( __method )
+::__method(<internal>:-1) ( __method )
+::__method(<internal>:-1) ( __method )
+::__method(<internal>:-1) ( __method )
+::__method(<internal>:-1) ( __method )
+::__method(<internal>:-1) ( __method )
+::__method(<internal>:-1) ( __method )
+::__method(<internal>:-1) ( __method )
+::_arg(<internal>:-1) ( float64 )
+::_arg(<internal>:-1) ( float64 )
+::_arg(<internal>:-1) ( float64 )
+::_arg(<internal>:-1) ( float64 )
+::_arg(<internal>:-1) ( int64 )
 ::_chpl_malloc(internal_prelude.chpl:0) ( _chpl_malloc )
-::_construct_cpoint ( _construct_cpoint )
-::_construct_cpoint ( _construct_cpoint )
-::_construct_point ( _construct_point )
-::_construct_point ( _construct_point )
-::_default_param_temp_color ( int64 )
-::_default_param_temp_x ( float64 )
-::_default_param_temp_x ( float64 )
-::_default_param_temp_y ( float64 )
-::_default_param_temp_y ( float64 )
-::_init_cpoint2 ( null )
-::_init_point1 ( null )
-::_retval ( cpoint (sum_type-2.chpl:6) )
-::_retval ( float64 )
-::_retval ( float64 )
-::_retval ( float64 )
-::_retval ( float64 )
-::_retval ( float64 )
-::_retval ( float64 )
-::_retval ( point (sum_type-2.chpl:1) )
+::_construct_cpoint(<internal>:-1) ( _construct_cpoint (<internal>:-1) )
+::_construct_cpoint(<internal>:-1) ( _construct_cpoint )
+::_construct_point(<internal>:-1) ( _construct_point (<internal>:-1) )
+::_construct_point(<internal>:-1) ( _construct_point )
+::_default_param_temp_color(<internal>:-1) ( int64 )
+::_default_param_temp_x(<internal>:-1) ( float64 )
+::_default_param_temp_x(<internal>:-1) ( float64 )
+::_default_param_temp_y(<internal>:-1) ( float64 )
+::_default_param_temp_y(<internal>:-1) ( float64 )
+::_init_cpoint2(sum_type-2.chpl:6) ( null )
+::_init_point1(sum_type-2.chpl:1) ( null )
+::_retval(<internal>:-1) ( cpoint (sum_type-2.chpl:6) )
+::_retval(<internal>:-1) ( float64 )
+::_retval(<internal>:-1) ( float64 )
+::_retval(<internal>:-1) ( float64 )
+::_retval(<internal>:-1) ( float64 )
+::_retval(<internal>:-1) ( point (sum_type-2.chpl:1) )
+::_retval(sum_type-2.chpl:12) ( float64 )
+::_retval(sum_type-2.chpl:12) ( float64 )
 ::a(internal_prelude.chpl:0) ( float64 )
 ::a(sum_type-2.chpl:11) ( cpoint (sum_type-2.chpl:6) )
 ::a(sum_type-2.chpl:11) ( point (sum_type-2.chpl:1) )
 ::b(internal_prelude.chpl:0) ( float64 )
-::color ( int64 )
+::color(<internal>:-1) ( int64 )
 ::cp(sum_type-2.chpl:22) ( cpoint (sum_type-2.chpl:6) )
 ::description(internal_prelude.chpl:0) ( string )
 ::false(prelude.chpl:0) ( bool )
 ::length(sum_type-2.chpl:13) ( length )
 ::length(sum_type-2.chpl:13) ( length )
-::main ( main )
+::main(sum_type-2.chpl:22) ( main (sum_type-2.chpl:22) )
 ::nil ( null )
 ::number(internal_prelude.chpl:0) ( int64 )
 ::p(sum_type-2.chpl:15) ( point (sum_type-2.chpl:1) )
-::set_color ( set_color )
-::set_x ( set_x )
-::set_x ( set_x )
-::set_y ( set_y )
-::set_y ( set_y )
+::set_color(<internal>:-1) ( set_color )
+::set_x(<internal>:-1) ( set_x )
+::set_x(<internal>:-1) ( set_x )
+::set_y(<internal>:-1) ( set_y )
+::set_y(<internal>:-1) ( set_y )
 ::size(internal_prelude.chpl:0) ( int64 )
-::this ( cpoint (sum_type-2.chpl:6) )
-::this ( cpoint (sum_type-2.chpl:6) )
-::this ( cpoint (sum_type-2.chpl:6) )
-::this ( cpoint (sum_type-2.chpl:6) )
-::this ( cpoint (sum_type-2.chpl:6) )
-::this ( cpoint (sum_type-2.chpl:6) )
-::this ( point (sum_type-2.chpl:1) )
-::this ( point (sum_type-2.chpl:1) )
-::this ( point (sum_type-2.chpl:1) )
-::this ( point (sum_type-2.chpl:1) )
-::this ( point (sum_type-2.chpl:1) )
+::this(<internal>:-1) ( cpoint (sum_type-2.chpl:6) )
+::this(<internal>:-1) ( cpoint (sum_type-2.chpl:6) )
+::this(<internal>:-1) ( cpoint (sum_type-2.chpl:6) )
+::this(<internal>:-1) ( cpoint (sum_type-2.chpl:6) )
+::this(<internal>:-1) ( cpoint (sum_type-2.chpl:6) )
+::this(<internal>:-1) ( cpoint (sum_type-2.chpl:6) )
+::this(<internal>:-1) ( point (sum_type-2.chpl:1) )
+::this(<internal>:-1) ( point (sum_type-2.chpl:1) )
+::this(<internal>:-1) ( point (sum_type-2.chpl:1) )
+::this(<internal>:-1) ( point (sum_type-2.chpl:1) )
+::this(<internal>:-1) ( point (sum_type-2.chpl:1) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
-::x ( float64 )
-::x ( float64 )
-::x ( x )
-::x ( x )
+::x(<internal>:-1) ( float64 )
+::x(<internal>:-1) ( float64 )
+::x(<internal>:-1) ( x )
+::x(<internal>:-1) ( x )
 ::x(prelude.chpl:0) ( float64 )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
-::y ( float64 )
-::y ( float64 )
-::y ( y )
-::y ( y )
+::y(<internal>:-1) ( float64 )
+::y(<internal>:-1) ( float64 )
+::y(<internal>:-1) ( y )
+::y(<internal>:-1) ( y )
+function __init__CommonModule sum_type-2.chpl:22
+function __init_entryPoint sum_type-2.chpl:22
+function __init_internal_prelude sum_type-2.chpl:22
+function __init_prelude sum_type-2.chpl:22
+function __init_sum_type-2 sum_type-2.chpl:22
+function _construct_cpoint <internal>:-1
+function _construct_cpoint <internal>:-1
+function _construct_point <internal>:-1
 function length sum_type-2.chpl:11
 function length sum_type-2.chpl:11
+function main sum_type-2.chpl:22
+function set_color <internal>:-1
+function set_x <internal>:-1
+function set_x <internal>:-1
+function set_y <internal>:-1
+function set_y <internal>:-1
+function x <internal>:-1
+function x <internal>:-1
+function y <internal>:-1
+function y <internal>:-1
 globals

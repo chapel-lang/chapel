@@ -1,16 +1,28 @@
+ called from 1 in __init_entryPoint at var.chpl:1
+ called from 1 in __init_entryPoint at var.chpl:1
+ called from 1 in __init_entryPoint at var.chpl:1
+ called from 1 in __init_entryPoint at var.chpl:1
+ called from 1 in main at var.chpl:1
+ called from 1 in main at var.chpl:1
 ::+(internal_prelude.chpl:0) ( + )
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
-::__init_var ( __init_var )
+::__init__CommonModule(var.chpl:1) ( __init__CommonModule (var.chpl:1) )
+::__init_entryPoint(var.chpl:1) ( __init_entryPoint (var.chpl:1) )
+::__init_internal_prelude(var.chpl:1) ( __init_internal_prelude (var.chpl:1) )
+::__init_prelude(var.chpl:1) ( __init_prelude (var.chpl:1) )
+::__init_var(var.chpl:1) ( __init_var (var.chpl:1) )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( float64 )
 ::false(prelude.chpl:0) ( bool )
-::main ( main )
+::main(var.chpl:1) ( main (var.chpl:1) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 ::x(var.chpl:1) ( int64 )
+function __init__CommonModule var.chpl:1
+function __init_entryPoint var.chpl:1
+function __init_internal_prelude var.chpl:1
+function __init_prelude var.chpl:1
+function __init_var var.chpl:1
+function main var.chpl:1
 globals

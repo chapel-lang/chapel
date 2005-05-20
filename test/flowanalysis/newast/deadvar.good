@@ -1,10 +1,16 @@
-::__init__CommonModule ( __init__CommonModule )
-::__init_deadvar ( __init_deadvar )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
+ called from 2 in __init_entryPoint at deadvar.chpl:2
+ called from 2 in __init_entryPoint at deadvar.chpl:2
+ called from 2 in __init_entryPoint at deadvar.chpl:2
+ called from 2 in __init_entryPoint at deadvar.chpl:2
+ called from 2 in main at deadvar.chpl:2
+ called from 2 in main at deadvar.chpl:2
+::__init__CommonModule(deadvar.chpl:2) ( __init__CommonModule (deadvar.chpl:2) )
+::__init_deadvar(deadvar.chpl:2) ( __init_deadvar (deadvar.chpl:2) )
+::__init_entryPoint(deadvar.chpl:2) ( __init_entryPoint (deadvar.chpl:2) )
+::__init_internal_prelude(deadvar.chpl:2) ( __init_internal_prelude (deadvar.chpl:2) )
+::__init_prelude(deadvar.chpl:2) ( __init_prelude (deadvar.chpl:2) )
 ::false(prelude.chpl:0) ( bool )
-::main ( main )
+::main(deadvar.chpl:2) ( main (deadvar.chpl:2) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -13,4 +19,10 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 ::y(deadvar.chpl:2) ( int64 )
+function __init__CommonModule deadvar.chpl:2
+function __init_deadvar deadvar.chpl:2
+function __init_entryPoint deadvar.chpl:2
+function __init_internal_prelude deadvar.chpl:2
+function __init_prelude deadvar.chpl:2
+function main deadvar.chpl:2
 globals

@@ -1,13 +1,19 @@
- called from 15 in __init_codegen_test at <internal>:0
-::__init__CommonModule ( __init__CommonModule )
-::__init_codegen_test ( __init_codegen_test )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
+ called from 15 in __init_codegen_test at codegen_test.chpl:8
+ called from 8 in __init_entryPoint at codegen_test.chpl:8
+ called from 8 in __init_entryPoint at codegen_test.chpl:8
+ called from 8 in __init_entryPoint at codegen_test.chpl:8
+ called from 8 in __init_entryPoint at codegen_test.chpl:8
+ called from 8 in main at codegen_test.chpl:8
+ called from 8 in main at codegen_test.chpl:8
+::__init__CommonModule(codegen_test.chpl:8) ( __init__CommonModule (codegen_test.chpl:8) )
+::__init_codegen_test(codegen_test.chpl:8) ( __init_codegen_test (codegen_test.chpl:8) )
+::__init_entryPoint(codegen_test.chpl:8) ( __init_entryPoint (codegen_test.chpl:8) )
+::__init_internal_prelude(codegen_test.chpl:8) ( __init_internal_prelude (codegen_test.chpl:8) )
+::__init_prelude(codegen_test.chpl:8) ( __init_prelude (codegen_test.chpl:8) )
 ::a(codegen_test.chpl:8) ( int64 )
 ::false(prelude.chpl:0) ( bool )
 ::foo(codegen_test.chpl:12) ( foo )
-::main ( main )
+::main(codegen_test.chpl:8) ( main (codegen_test.chpl:8) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -17,5 +23,11 @@
 ::x(prelude.chpl:0) ( string )
 ::y(codegen_test.chpl:3) ( int64 )
 ::z(codegen_test.chpl:7) ( int64 )
+function __init__CommonModule codegen_test.chpl:8
+function __init_codegen_test codegen_test.chpl:8
+function __init_entryPoint codegen_test.chpl:8
+function __init_internal_prelude codegen_test.chpl:8
+function __init_prelude codegen_test.chpl:8
 function foo codegen_test.chpl:7
+function main codegen_test.chpl:8
 globals

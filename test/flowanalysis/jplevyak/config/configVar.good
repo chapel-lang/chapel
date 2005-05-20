@@ -1,10 +1,16 @@
-::__init__CommonModule ( __init__CommonModule )
-::__init_configVar ( __init_configVar )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
+ called from 1 in __init_entryPoint at configVar.chpl:1
+ called from 1 in __init_entryPoint at configVar.chpl:1
+ called from 1 in __init_entryPoint at configVar.chpl:1
+ called from 1 in __init_entryPoint at configVar.chpl:1
+ called from 1 in main at configVar.chpl:1
+ called from 1 in main at configVar.chpl:1
+::__init__CommonModule(configVar.chpl:1) ( __init__CommonModule (configVar.chpl:1) )
+::__init_configVar(configVar.chpl:1) ( __init_configVar (configVar.chpl:1) )
+::__init_entryPoint(configVar.chpl:1) ( __init_entryPoint (configVar.chpl:1) )
+::__init_internal_prelude(configVar.chpl:1) ( __init_internal_prelude (configVar.chpl:1) )
+::__init_prelude(configVar.chpl:1) ( __init_prelude (configVar.chpl:1) )
 ::false(prelude.chpl:0) ( bool )
-::main ( main )
+::main(configVar.chpl:1) ( main (configVar.chpl:1) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -12,4 +18,10 @@
 ::x(configVar.chpl:1) ( int64 )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule configVar.chpl:1
+function __init_configVar configVar.chpl:1
+function __init_entryPoint configVar.chpl:1
+function __init_internal_prelude configVar.chpl:1
+function __init_prelude configVar.chpl:1
+function main configVar.chpl:1
 globals

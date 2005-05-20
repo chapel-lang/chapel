@@ -1,12 +1,18 @@
+ called from 5 in __init_entryPoint at relational_ops.chpl:5
+ called from 5 in __init_entryPoint at relational_ops.chpl:5
+ called from 5 in __init_entryPoint at relational_ops.chpl:5
+ called from 5 in __init_entryPoint at relational_ops.chpl:5
+ called from 5 in main at relational_ops.chpl:5
+ called from 5 in main at relational_ops.chpl:5
 ::<(internal_prelude.chpl:0) ( < )
 ::<=(internal_prelude.chpl:0) ( <= )
 ::>(internal_prelude.chpl:0) ( > )
 ::>=(internal_prelude.chpl:0) ( >= )
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
-::__init_relational_ops ( __init_relational_ops )
+::__init__CommonModule(relational_ops.chpl:5) ( __init__CommonModule (relational_ops.chpl:5) )
+::__init_entryPoint(relational_ops.chpl:5) ( __init_entryPoint (relational_ops.chpl:5) )
+::__init_internal_prelude(relational_ops.chpl:5) ( __init_internal_prelude (relational_ops.chpl:5) )
+::__init_prelude(relational_ops.chpl:5) ( __init_prelude (relational_ops.chpl:5) )
+::__init_relational_ops(relational_ops.chpl:5) ( __init_relational_ops (relational_ops.chpl:5) )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
@@ -18,7 +24,7 @@
 ::b(internal_prelude.chpl:0) ( int64 )
 ::false(prelude.chpl:0) ( bool )
 ::m(relational_ops.chpl:1) ( int64 )
-::main ( main )
+::main(relational_ops.chpl:5) ( main (relational_ops.chpl:5) )
 ::n(relational_ops.chpl:2) ( int64 )
 ::o(relational_ops.chpl:3) ( int64 )
 ::p(relational_ops.chpl:4) ( int64 )
@@ -28,4 +34,10 @@
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule relational_ops.chpl:5
+function __init_entryPoint relational_ops.chpl:5
+function __init_internal_prelude relational_ops.chpl:5
+function __init_prelude relational_ops.chpl:5
+function __init_relational_ops relational_ops.chpl:5
+function main relational_ops.chpl:5
 globals

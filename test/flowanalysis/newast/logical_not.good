@@ -1,11 +1,17 @@
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_logical_not ( __init_logical_not )
-::__init_prelude ( __init_prelude )
+ called from 3 in __init_entryPoint at logical_not.chpl:3
+ called from 3 in __init_entryPoint at logical_not.chpl:3
+ called from 3 in __init_entryPoint at logical_not.chpl:3
+ called from 3 in __init_entryPoint at logical_not.chpl:3
+ called from 3 in main at logical_not.chpl:3
+ called from 3 in main at logical_not.chpl:3
+::__init__CommonModule(logical_not.chpl:3) ( __init__CommonModule (logical_not.chpl:3) )
+::__init_entryPoint(logical_not.chpl:3) ( __init_entryPoint (logical_not.chpl:3) )
+::__init_internal_prelude(logical_not.chpl:3) ( __init_internal_prelude (logical_not.chpl:3) )
+::__init_logical_not(logical_not.chpl:3) ( __init_logical_not (logical_not.chpl:3) )
+::__init_prelude(logical_not.chpl:3) ( __init_prelude (logical_not.chpl:3) )
 ::answer(logical_not.chpl:3) ( int64 )
 ::false(prelude.chpl:0) ( bool )
-::main ( main )
+::main(logical_not.chpl:3) ( main (logical_not.chpl:3) )
 ::o(logical_not.chpl:1) ( int64 )
 ::p(logical_not.chpl:2) ( int64 )
 ::true(prelude.chpl:0) ( bool )
@@ -14,4 +20,10 @@
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule logical_not.chpl:3
+function __init_entryPoint logical_not.chpl:3
+function __init_internal_prelude logical_not.chpl:3
+function __init_logical_not logical_not.chpl:3
+function __init_prelude logical_not.chpl:3
+function main logical_not.chpl:3
 globals

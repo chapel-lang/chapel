@@ -1,14 +1,20 @@
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_mod ( __init_mod )
-::__init_prelude ( __init_prelude )
+ called from 4 in __init_entryPoint at mod.chpl:4
+ called from 4 in __init_entryPoint at mod.chpl:4
+ called from 4 in __init_entryPoint at mod.chpl:4
+ called from 4 in __init_entryPoint at mod.chpl:4
+ called from 4 in main at mod.chpl:4
+ called from 4 in main at mod.chpl:4
+::__init__CommonModule(mod.chpl:4) ( __init__CommonModule (mod.chpl:4) )
+::__init_entryPoint(mod.chpl:4) ( __init_entryPoint (mod.chpl:4) )
+::__init_internal_prelude(mod.chpl:4) ( __init_internal_prelude (mod.chpl:4) )
+::__init_mod(mod.chpl:4) ( __init_mod (mod.chpl:4) )
+::__init_prelude(mod.chpl:4) ( __init_prelude (mod.chpl:4) )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::answer(mod.chpl:4) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
 ::false(prelude.chpl:0) ( bool )
 ::m(mod.chpl:1) ( int64 )
-::main ( main )
+::main(mod.chpl:4) ( main (mod.chpl:4) )
 ::mod(internal_prelude.chpl:0) ( mod )
 ::n(mod.chpl:2) ( int64 )
 ::o(mod.chpl:3) ( int64 )
@@ -18,4 +24,10 @@
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule mod.chpl:4
+function __init_entryPoint mod.chpl:4
+function __init_internal_prelude mod.chpl:4
+function __init_mod mod.chpl:4
+function __init_prelude mod.chpl:4
+function main mod.chpl:4
 globals

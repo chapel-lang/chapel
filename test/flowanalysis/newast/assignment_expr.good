@@ -1,12 +1,18 @@
+ called from 3 in __init_entryPoint at assignment_expr.chpl:3
+ called from 3 in __init_entryPoint at assignment_expr.chpl:3
+ called from 3 in __init_entryPoint at assignment_expr.chpl:3
+ called from 3 in __init_entryPoint at assignment_expr.chpl:3
+ called from 3 in main at assignment_expr.chpl:3
+ called from 3 in main at assignment_expr.chpl:3
 ::*(internal_prelude.chpl:0) ( * )
 ::+(internal_prelude.chpl:0) ( + )
 ::-(internal_prelude.chpl:0) ( - )
 ::/(internal_prelude.chpl:0) ( / )
-::__init__CommonModule ( __init__CommonModule )
-::__init_assignment_expr ( __init_assignment_expr )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_prelude ( __init_prelude )
+::__init__CommonModule(assignment_expr.chpl:3) ( __init__CommonModule (assignment_expr.chpl:3) )
+::__init_assignment_expr(assignment_expr.chpl:3) ( __init_assignment_expr (assignment_expr.chpl:3) )
+::__init_entryPoint(assignment_expr.chpl:3) ( __init_entryPoint (assignment_expr.chpl:3) )
+::__init_internal_prelude(assignment_expr.chpl:3) ( __init_internal_prelude (assignment_expr.chpl:3) )
+::__init_prelude(assignment_expr.chpl:3) ( __init_prelude (assignment_expr.chpl:3) )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
@@ -17,7 +23,7 @@
 ::b(internal_prelude.chpl:0) ( int64 )
 ::false(prelude.chpl:0) ( bool )
 ::m(assignment_expr.chpl:1) ( int64 )
-::main ( main )
+::main(assignment_expr.chpl:3) ( main (assignment_expr.chpl:3) )
 ::n(assignment_expr.chpl:2) ( int64 )
 ::o(assignment_expr.chpl:3) ( int64 )
 ::true(prelude.chpl:0) ( bool )
@@ -26,4 +32,10 @@
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule assignment_expr.chpl:3
+function __init_assignment_expr assignment_expr.chpl:3
+function __init_entryPoint assignment_expr.chpl:3
+function __init_internal_prelude assignment_expr.chpl:3
+function __init_prelude assignment_expr.chpl:3
+function main assignment_expr.chpl:3
 globals

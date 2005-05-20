@@ -1,15 +1,27 @@
- called from 5 in __init_noargs at <internal>:0
-::__init__CommonModule ( __init__CommonModule )
-::__init_entryPoint ( __init_entryPoint )
-::__init_internal_prelude ( __init_internal_prelude )
-::__init_noargs ( __init_noargs )
-::__init_prelude ( __init_prelude )
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in __init_entryPoint at _chpl_complex.chpl:43
+ called from 43 in main at _chpl_complex.chpl:43
+ called from 43 in main at _chpl_complex.chpl:43
+ called from 5 in __init_noargs at _chpl_complex.chpl:43
+::__init__CommonModule(_chpl_complex.chpl:43) ( __init__CommonModule (_chpl_complex.chpl:43) )
+::__init_entryPoint(_chpl_complex.chpl:43) ( __init_entryPoint (_chpl_complex.chpl:43) )
+::__init_internal_prelude(_chpl_complex.chpl:43) ( __init_internal_prelude (_chpl_complex.chpl:43) )
+::__init_noargs(_chpl_complex.chpl:43) ( __init_noargs (_chpl_complex.chpl:43) )
+::__init_prelude(_chpl_complex.chpl:43) ( __init_prelude (_chpl_complex.chpl:43) )
 ::false(prelude.chpl:0) ( bool )
 ::foo(noargs.chpl:3) ( foo )
-::main ( main )
+::main(_chpl_complex.chpl:43) ( main (_chpl_complex.chpl:43) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( string )
+function __init__CommonModule _chpl_complex.chpl:43
+function __init_entryPoint _chpl_complex.chpl:43
+function __init_internal_prelude _chpl_complex.chpl:43
+function __init_noargs _chpl_complex.chpl:43
+function __init_prelude _chpl_complex.chpl:43
 function foo noargs.chpl:1
+function main _chpl_complex.chpl:43
 globals
