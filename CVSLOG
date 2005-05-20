@@ -32361,3 +32361,30 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp type.cpp 
 	chapel/compiler/include/: expr.h type.h 
 
+---------------------------------------------------------------------------
+
+05/20/05 15:42:19 -- jplevyak
+
+Log message:
+	Spent a couple days trying to change a few lines of AST code.
+	Kind of like trying to juggle glass balls with clown gloves on.
+	Still not working, but I thought I should checkpoint it.
+	This goes a long way to using ParamSymbols with MetaType types
+	to handle generic type parameters.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp pattern.cpp 
+	                           sym.cpp 
+	chapel/compiler/include/: baseAST.h sym.h symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             findUnknownTypes.cpp 
+	                             scopeResolveSymbols.cpp verify.cpp 
+	                             verifyASTType.cpp 
+	chapel/compiler/vparser/: prelude.v 
+	chapel/test/flowanalysis/newast/: multiple_return.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+
