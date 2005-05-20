@@ -32234,3 +32234,108 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/20/05 14:16:32 -- deitz
+
+Log message:
+	Known regression:  trivial/deitz/test_format_primitives.chpl
+	
+	This checkin switches complex to the new class based implementation
+	and enables better support for modules.
+	
+	Made two subdirectories in the new top-level modules directory called
+	standard and provided.  These contains standard modules that are
+	included in all Chapel programs and provided modules that the Chapel
+	programmer can include with a use-statement.  Moved _chpl_complex.chpl
+	into modules/standard.
+	
+	Added hacks to maintain reading complexes, casting complexes to
+	strings, and setting complex config vars.
+	
+	Made ProcessParameters set the noDefaultInit flag of its temps.  This
+	is necessary when its temps are of class types and the constructor
+	would have need to be resolved by analysis.  I'm not sure why the
+	defaultConstructor is not set actually.  This should be examined to
+	see if it is necessary or why the defaultConstructor is not right.
+	
+	Added a "no codegen" pragma for functions that are in the runtime and
+	don't need to be codegened.  Of course this is the default with the
+	preludes, but for the complex read and tostring functions, they don't
+	need to be generated but can't be in the prelude for scoping reasons.
+	
+	Added a vec of SymScopes to every module to locate where the module
+	was used.  This is important because if after the uses are resolved,
+	something is added to the top-level of a module, it should be included
+	into that module.  This is now so.
+	
+	Enabled ConstructComplexLiterals to change complex literals into calls
+	to the complex constructor.
+	
+	Removed findModuleScope since getModule is just as good.  Beefed up
+	getModule function.
+	
+	Futurized classes/deitz/test_mycomplex_record since the complex is the
+	same.  It dawns on me that complex should be a class so that it is
+	nominally typed.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: symbol.h symscope.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl prelude.chpl 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             constructComplexLiterals.cpp 
+	                             processParameters.cpp 
+	                             resolveModuleUses.cpp 
+	                             resolveSymbols.cpp 
+	chapel/runtime/include/: chplio.h config.h 
+	chapel/runtime/src/: chplio.c config.c 
+	chapel/test/: REGRESSIONS 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good enumarray.good 
+	                                  equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+	chapel/test/memory/shannon/: printFinalMemStat.good 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+	chapel/test/types/complex/deitz/: test_complex2.chpl 
+	                                  test_complex2.good 
+Added files:
+	chapel/modules/standard/: _chpl_complex.chpl 
+Removed files:
+	chapel/runtime/include/: _chpl_complex.chpl 
+
