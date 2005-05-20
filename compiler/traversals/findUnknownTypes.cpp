@@ -12,6 +12,9 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
       if (Variable* var_arg = dynamic_cast<Variable*>(arg)) {
         if (dynamic_cast<TypeSymbol*>(var_arg->var)) {
           arg->extract();
+        } else if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(var_arg->var)) {
+          if (p->typeVariable)
+            arg->extract();
         }
       }
       arg = next_arg;

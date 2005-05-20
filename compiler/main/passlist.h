@@ -82,9 +82,9 @@ PassInfo passlist[] = {
   RUN(ResolveSymbols, ""),
   RUN(Verify, ""), // this is a sanity check
   //RUN(FindUnknownTypes, ""),
+  RUN(RemoveNamedParameters, ""),
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
-  RUN(RemoveNamedParameters, ""),
 
   // passes to normalize the basic AST after analysis
   RUN(Verify, ""), // this is a sanity check

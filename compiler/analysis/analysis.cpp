@@ -2910,6 +2910,7 @@ type_is_used(TypeSymbol *t) {
           || t->type == dtNil
           || t->type->astType == TYPE_SUM 
           || t->type->astType == TYPE_INDEX
+          || t->type->astType == TYPE_VARIABLE
           || (t->type->astType == TYPE_USER && 
               type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->type)->definition->symbol))))
         return true;

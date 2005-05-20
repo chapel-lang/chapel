@@ -1,6 +1,0 @@
-deitz
-
-The problem  stems from our lack of support for Sum types
-the getter for y is not cloned since the offsets are the same and
-the "this" variable has a sum type "foo | foo_clone_2" which
-is currently not supported.

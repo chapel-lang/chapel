@@ -440,6 +440,7 @@ void ParamSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void ParamSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
   TRAVERSE(init, traversal, false);
+  TRAVERSE(typeVariable, traversal, false);
 }
 
 
