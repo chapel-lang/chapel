@@ -272,7 +272,7 @@ typealias:
 typevardecl:
   TTYPE pragmas identifier TSEMI
     {
-      VariableType* new_type = new VariableType();
+      VariableType* new_type = new VariableType(getMetaType(0));
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
       new_symbol->pragmas = $2;
       new_type->addSymbol(new_symbol);
@@ -371,14 +371,16 @@ formal:
   formaltag ident_symbol_ls vardecltype optional_init_expr
     {
       $$ = Symboltable::defineParams($1, $2, $3, $4);
-      //      $$ = new ParamSymbol($1, $2, $3);
     }
-| TTYPE pragmas identifier typevardecltype
+| TTYPE ident_symbol typevardecltype
     {
-      VariableType* new_type = new VariableType($4);
-      $$ = new TypeSymbol($3, new_type);
-      $$->pragmas = $2;
-      new_type->addSymbol($$);
+      ParamSymbol *ps = Symboltable::defineParams(PARAM_BLANK, $2, getMetaType($3), NULL);
+      char *name = glomstrings(2, "__type_variable_", ps->name);
+      VariableType* new_type = new VariableType(getMetaType($3));
+      TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
+      new_type->addSymbol(new_type_symbol);
+      ps->typeVariable = new_type_symbol;
+      $$ = ps;
     }
 ;
 

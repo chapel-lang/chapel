@@ -26,7 +26,8 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   defaultVal(init_defaultVal),
   defaultConstructor(NULL),
   asymbol(NULL),
-  parentType(NULL)
+  parentType(NULL),
+  metaType(NULL)
 { }
 
 
@@ -66,6 +67,7 @@ Type* Type::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return NULL;
 }
 
+
 Type *Type::instantiate_generic(Map<Type *, Type *> &substitutions) {
   if (astType == TYPE_VARIABLE) {
     Type *t = substitutions.get(this);
@@ -73,6 +75,16 @@ Type *Type::instantiate_generic(Map<Type *, Type *> &substitutions) {
       return t;
   }
   return 0;
+}
+
+
+Type *Type::getMetaType() {
+  if (astType == TYPE_META) {
+    INT_FATAL(this, "Attempt to get MetaMeta Type");
+  }
+  if (metaType)
+    return metaType;
+  return metaType = new MetaType(this);
 }
 
 
@@ -1535,6 +1547,16 @@ void TupleType::print(FILE* outfile) {
 }
 
 
+MetaType::MetaType(Type* init_base) :
+  Type(TYPE_META, NULL),
+  base(init_base)
+{
+}
+
+void MetaType::traverseDefType(Traversal* traversal) {
+  TRAVERSE(base, traversal, false);
+}
+
 SumType::SumType(Type* firstType) :
   Type(TYPE_SUM, NULL)
 {
@@ -1554,7 +1576,7 @@ VariableType::VariableType(Type *init_type) :
 
 
 Type* VariableType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new VariableType();
+  return new VariableType(type);
 }
 
 
@@ -1562,6 +1584,9 @@ void VariableType::codegen(FILE* outfile) {
   INT_FATAL(this, "Unanticipated call to VariableType::codegen");
 }
 
+void VariableType::traverseDefType(Traversal* traversal) {
+  TRAVERSE(type, traversal, false);
+}
 
 UnresolvedType::UnresolvedType(char* init_symbol) :
   Type(TYPE_UNRESOLVED, NULL) {
@@ -1673,4 +1698,11 @@ NilType::NilType(void) :
 
 void NilType::codegen(FILE* outfile) {
   fprintf(outfile, "void* ");
+}
+
+Type *getMetaType(Type *t) {
+  if (t)
+    return t->getMetaType();
+  else
+    return dtAny->getMetaType();
 }

@@ -68,7 +68,7 @@ __init__ __name "init":0;
 reply: #reply __name "reply";
 
 // meta functions
-anyclass::class(a:anyclass)		   : #__meta_apply self a;
+//anyclass::class(a:anyclass)		   : #__meta_apply self a;
 
 // overloadable primitive operators
 

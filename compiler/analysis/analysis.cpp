@@ -380,6 +380,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     funs.add(f);
   }
   map_asts(syms);
+  build_types(syms);
   build_symbols(syms);
   if (map) {
     for (int i = 0; i < map->n; i++) if (map->v[i].key)
@@ -388,7 +389,6 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
         new_t->asymbol->sym->instantiates = t->asymbol->sym;
       }
   }
-  build_types(syms);
   finalize_types(if1);
   forv_Vec(FnSymbol, f, funs) {
     if (init_function(f) < 0 || build_function(f) < 0) 
@@ -428,16 +428,22 @@ Sym_to_Type(Sym *s) {
 
 Sym *
 ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
-  if (s->type_kind) {
-    Sym *tt = substitutions.get(s);
-    if (tt) {
-      Map<Type *, Type *> subs;
-      form_SymSym(s, substitutions)
-        subs.put(dynamic_cast<Type*>(s->key->asymbol->symbol), Sym_to_Type(s->value));
-      Type *type = dynamic_cast<Type*>(s->asymbol->symbol);
-      Type *new_type = type->instantiate_generic(subs);
-      return new_type->asymbol->sym;
+  Sym *tt = substitutions.get(s);
+  if (tt) {
+    Map<Type *, Type *> subs;
+    form_SymSym(ss, substitutions) {
+      if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(ss->key->asymbol->symbol))
+        subs.put(p->typeVariable->type, Sym_to_Type(ss->value));
+      else
+        subs.put(dynamic_cast<Type*>(ss->key->asymbol->symbol), Sym_to_Type(ss->value));
     }
+    Type *type = NULL;
+    if (ParamSymbol *p =dynamic_cast<ParamSymbol*>(s->asymbol->symbol))
+      type = p->typeVariable->type;
+    else
+      type = dynamic_cast<Type*>(s->asymbol->symbol);
+    Type *new_type = type->instantiate_generic(subs);
+    return new_type->asymbol->sym;
   }
   return 0;
 }
@@ -512,8 +518,14 @@ ACallbacks::instantiate_generic(Match *m) {
   if (!m->fun->ast) 
     return NULL;
   Map<Type *, Type *> substitutions;
-  form_SymSym(s, m->generic_substitutions)
-    substitutions.put(dynamic_cast<Type*>(s->key->asymbol->symbol), Sym_to_Type(s->value));
+  form_SymSym(s, m->generic_substitutions) {
+    Type *t = dynamic_cast<Type*>(s->key->asymbol->symbol);
+    if (!t) {
+      if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol))
+        t = p->typeVariable->type;
+    }
+    substitutions.put(t, Sym_to_Type(s->value));
+  }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   Map<BaseAST*,BaseAST*> map;
   FnSymbol *f = fndef->instantiate_generic(&map, &substitutions);
@@ -713,11 +725,17 @@ build_symbols(Vec<BaseAST *> &syms) {
           break;
         }
         case SYMBOL_PARAM: {
-          if (s->type && s->type != dtUnknown) {
-            if (s->asymbol->sym->intent != Sym_OUT)
-              s->asymbol->sym->must_implement_and_specialize(s->type->asymbol->sym);
-            else
-              s->asymbol->sym->must_implement = s->type->asymbol->sym;
+          if (s->type->astType == TYPE_META) {
+            MetaType *t = dynamic_cast<MetaType*>(s->type);
+            s->asymbol->sym->must_specialize = t->asymbol->sym;
+            s->asymbol->sym->is_generic = 1;
+          } else {
+            if (s->type && s->type != dtUnknown) {
+              if (s->asymbol->sym->intent != Sym_OUT)
+                s->asymbol->sym->must_implement_and_specialize(s->type->asymbol->sym);
+              else
+                s->asymbol->sym->must_implement = s->type->asymbol->sym;
+            }
           }
           break;
         }
@@ -837,6 +855,11 @@ build_type(Type *t) {
         t->asymbol->sym->inherits_add(sym_object);
       if (t->asymbol->sym == sym_sequence)
         t->asymbol->sym->element = new_sym();
+      break;
+    }
+    case TYPE_META: {
+      MetaType *tt = dynamic_cast<MetaType*>(t);
+      tt->asymbol->sym = tt->base->symbol->asymbol->sym;
       break;
     }
     case TYPE_VARIABLE: {
@@ -1046,8 +1069,8 @@ static int
 import_symbols(Vec<BaseAST *> &syms) {
   map_asts(syms);
   build_builtin_symbols();
-  build_symbols(syms);
   build_types(syms);
+  build_symbols(syms);
   return 0;
 }
 
@@ -1234,6 +1257,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   if (s->is_var && !scalar_or_reference(type)) {
     switch (type->astType) { 
       case TYPE_VARIABLE:
+      case TYPE_META:
         type = dtUnknown;  // as yet unknown
         break;
         // ruled out by conditionals above
@@ -1243,9 +1267,9 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       case TYPE_NIL:
         // do not make it to analysis
       case TYPE_LIKE:
-      case TYPE_UNRESOLVED:
       case TYPE_SUM:
       case TYPE_STRUCTURAL:
+      case TYPE_UNRESOLVED:
       default:
         assert(!"impossible");
         goto Lstandard; 
@@ -1289,7 +1313,8 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
         send->ast = ast;
       } else if (!this_constructor)
         if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
-    }
+    } else if (type == dtUnknown)
+      if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
   }
   if (init) {
     if (type->astType == TYPE_ARRAY) {
@@ -2137,6 +2162,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_RECORD:
   case TYPE_UNION:
   case TYPE_TUPLE:
+  case TYPE_META:
   case TYPE_SUM:
   case TYPE_VARIABLE:
   case TYPE_UNRESOLVED:

@@ -11,7 +11,9 @@ static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
   if (dynamic_cast<UnresolvedType*>(type)) {
     Symbol* new_type = Symboltable::lookup(type->symbol->name);
     if (new_type) {
-      if (ForwardingSymbol* forward =
+      if (ParamSymbol* param = dynamic_cast<ParamSymbol*>(new_type)) {
+        type = param->typeVariable->type;
+      } else if (ForwardingSymbol* forward =
           dynamic_cast<ForwardingSymbol*>(new_type)) {
         type = forward->forward->type;
       } else if (!dynamic_cast<UnresolvedType*>(new_type->type)) {

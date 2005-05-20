@@ -27,6 +27,7 @@ BasicSym::BasicSym(void) :
   is_symbol(0),
   is_pattern(0),
   is_rest(0),
+  is_generic(0),
   is_external(0),
   intent(0),
   global_scope(0),

@@ -21,9 +21,19 @@ static void build_constructor(StructuralType* structType) {
 
   if (analyzeAST) {
     forv_Vec(TypeSymbol, tmp, structType->types) {
-      if (dynamic_cast<VariableType*>(tmp->type)) {
+      if (VariableType *tv = dynamic_cast<VariableType*>(tmp->type)) {
+#if 1
+        (void)tv;
         tmp->defPoint->parentStmt->extract();
         args = appendLink(args, tmp);
+#else
+      char* name = tmp->name;
+      Type* type = tv->type;
+      tmp->defPoint->parentStmt->extract();
+      ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, NULL);
+      arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
+      args = appendLink(args, arg);
+#endif
       }
     }
 

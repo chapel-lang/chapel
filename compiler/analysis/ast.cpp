@@ -186,7 +186,7 @@ compute_structural_type_hierarchy(Vec<Sym *> types) {
 
 void
 build_type_hierarchy() {
-  Vec<Sym *> meta_types, types;
+  Vec<Sym *> types, meta_types;
   implement_and_specialize(sym_unknown, sym_any, types);
   implement_and_specialize(sym_object, sym_null, types);
   forv_Sym(s, if1->allsyms) {
@@ -217,8 +217,6 @@ build_type_hierarchy() {
     }
     if (s->type_kind)
       types.set_add(s);
-    if (s->is_meta_type)
-      meta_types.add(s);
     if (s->instantiates) 
       implement_and_specialize(s->instantiates, s, types);
   }
@@ -233,11 +231,11 @@ build_type_hierarchy() {
     }
   }
   // map subtyping and subclassing to meta_types
-  forv_Sym(s, meta_types) if (!s->is_meta_type) {
-    forv_Sym(ss, s->implementors) if (ss)
-      s->meta_type->implementors.set_add(ss->meta_type);
-    forv_Sym(ss, s->specializers) if (ss)
-      s->meta_type->specializers.set_add(ss->meta_type);
+  forv_Sym(s, types) if (s && !s->is_meta_type) {
+    forv_Sym(ss, s->implementors) if (ss && s != ss)
+      implement(s->meta_type, ss->meta_type, meta_types);
+    forv_Sym(ss, s->specializers) if (ss && s != ss)
+      specialize(s->meta_type, ss->meta_type, meta_types);
   }
   forv_Sym(s, types) if (s) {
     s->implementors.set_add(s);

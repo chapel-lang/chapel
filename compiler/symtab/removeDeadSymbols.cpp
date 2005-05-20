@@ -8,10 +8,12 @@
 
 static void markAsDeadAndExtract(Symbol* sym) {
   sym->isDead = true;
-  if (!sym->defPoint->next && !sym->defPoint->prev) {
-    sym->defPoint->parentStmt->extract();
-  } else {
-    sym->defPoint->extract();
+  if (sym->defPoint) {
+    if (!sym->defPoint->next && !sym->defPoint->prev) {
+      sym->defPoint->parentStmt->extract();
+    } else {
+      sym->defPoint->extract();
+    }
   }
   sym->parentScope->remove(sym);
   //  printf("Removed %s\n", sym->cname);
@@ -30,7 +32,7 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
     if (!type_is_used(typeSym)) {
       // SJD: Don't want to remove function if type variable parameter
       // is dead
-      if (dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
+      if (sym->defPoint && dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
         return;
       }
       markAsDeadAndExtract(sym);

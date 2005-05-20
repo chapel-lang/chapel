@@ -357,6 +357,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_TUPLE");
     }
     break;
+  case TYPE_META:
+    if (typeid(*ast) != typeid(MetaType)) {
+      INT_FATAL(ast, "Unexpected AST type type: TYPE_META");
+    }
+    break;
   case TYPE_SUM:
     if (typeid(*ast) != typeid(SumType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_SUM");

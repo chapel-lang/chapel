@@ -165,6 +165,7 @@ static void verifyParentScope(Symbol* sym) {
 static void verifyDefPoint(Symbol* sym) {
   if (dynamic_cast<UnresolvedSymbol*>(sym) ||
       dynamic_cast<LabelSymbol*>(sym) ||
+      dynamic_cast<TypeSymbol*>(sym) ||
       dynamic_cast<ForwardingSymbol*>(sym) ||
       dynamic_cast<SumType*>(sym->type)) {     // SJD: REMOVE
     return;

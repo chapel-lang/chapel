@@ -19,10 +19,13 @@
 ::f(multiple_return.chpl:6) ( f )
 ::false(prelude.chpl:0) ( bool )
 ::main(_chpl_complex.chpl:60) ( main (_chpl_complex.chpl:60) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
+::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
+::x(prelude.chpl:0) ( null )
 function __init__CommonModule _chpl_complex.chpl:60
 function __init__chpl_complex _chpl_complex.chpl:60
 function __init_entryPoint _chpl_complex.chpl:60

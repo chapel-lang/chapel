@@ -152,6 +152,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "RecordType",
   "UnionType",
   "TupleType",
+  "MetaType",
   "SumType",
   "VariableType",
   "UnresolvedType",

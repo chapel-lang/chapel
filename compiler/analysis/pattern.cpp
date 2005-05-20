@@ -599,45 +599,35 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
   return result;
 }
 
-static int 
-is_generic_type(Sym *t) {
-  return t->type_kind == Type_VARIABLE;
-}
-
 static int
-unify_generic_type(Sym *gtype, Sym *type, Map<Sym *, Sym *> &substitutions) {
-  int result = 1;
-  switch (gtype->type_kind) {
-    case Type_LUB: 
-    case Type_GLB: 
-    case Type_PRODUCT:
-    case Type_RECORD:
-    case Type_VECTOR:
-    case Type_FUN:
-    case Type_REF:
-    case Type_TAGGED:
-    case Type_PRIMITIVE:
-    case Type_APPLICATION:
-      return gtype == type;
-    case Type_VARIABLE:
-      substitutions.put(gtype, type);
-      break;
-    case Type_NONE: 
-    case Type_UNKNOWN: 
-    case Type_ALIAS:
-      assert(!"bad case");
+unify_generic_type(Sym *formal, Sym *gtype, Sym *type, Map<Sym *, Sym *> &substitutions) {
+  if (formal->is_generic) {
+    if (gtype->specializers.set_in(type->meta_type)) {
+      substitutions.put(formal, type);
+      return 1;
+    } else
       return 0;
   }
-  return result;
+  if (gtype == type)
+    return 1;
+  if (gtype->type_kind == Type_VARIABLE) {
+    substitutions.put(gtype, type);
+    return 1;
+  }
+  return 0;
 }
 
 static Sym *
-get_generic_type(Match *m, MPosition *fcpp) {
-  Sym *formal = m->fun->arg_syms.get(fcpp);
-  Sym *formal_type = m->fun->arg_syms.get(fcpp)->must_specialize;
-  if (formal_type && is_generic_type(formal_type)) 
+get_generic_type(Sym *formal) {
+  Sym *formal_type = formal->must_specialize;
+  if (formal->is_generic) {
+    if (formal_type)
+      return formal_type;
+    return formal->type;
+  }
+  if (formal_type && formal_type->type_kind == Type_VARIABLE)
     return formal_type;
-  if (formal->type && is_generic_type(formal->type))
+  if (formal->type && formal->type->type_kind == Type_VARIABLE)
     return formal->type;
   return 0;
 }
@@ -645,9 +635,14 @@ get_generic_type(Match *m, MPosition *fcpp) {
 static void
 instantiate_formal_types(Match *m) {
   form_MPositionSym(x, m->formal_dispatch_types) {
-    Sym *type = m->fun->arg_syms.get(x->key)->must_specialize;
-    if (is_generic_type(type))
-      x->value = if1->callback->instantiate(type, m->generic_substitutions);
+    Sym *formal = m->fun->arg_syms.get(x->key);
+    Sym *type = get_generic_type(formal);
+    if (type) {
+      Sym *generic = formal->is_generic ? formal : type;
+      Sym *instantiated = if1->callback->instantiate(generic, m->generic_substitutions);
+      if (instantiated)
+        x->value = instantiated;
+    }
   }
 }
 
@@ -665,9 +660,10 @@ generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> args) {
     concrete_type = concrete_type->type;
     if (concrete_type->is_meta_type)
       concrete_type = concrete_type->meta_type;
-    Sym *generic_type = get_generic_type(m, fcpp);
+    Sym *formal = m->fun->arg_syms.get(fcpp);
+    Sym *generic_type = get_generic_type(formal);
     if (generic_type) {
-      if (!unify_generic_type(generic_type, concrete_type, m->generic_substitutions))
+      if (!unify_generic_type(formal, generic_type, concrete_type, m->generic_substitutions))
         return 0;
       instantiate_formal_types(m);
     }
@@ -691,6 +687,7 @@ coercion_uses(Match **am, MPosition &app, Vec<CreationSet*> &args) {
     Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
     if (coerced_type && concrete_type != coerced_type) {
       m->coercion_substitutions.put(fcpp, concrete_type);
+      assert(coerced_type);
       m->formal_dispatch_types.put(fcpp, coerced_type);
     }
     app.inc();
@@ -719,6 +716,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
       }
       Sym *formal = m->fun->arg_syms.get(fcpp);
       Sym *formal_type = dispatch_type(formal);
+      assert(formal_type);
       m->formal_dispatch_types.put(fcpp, formal_type);
       app.inc();
     }
@@ -810,14 +808,9 @@ Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs,
     find_best_cs_match(csargs, app, matches, result, top_level);
   else {
     csargs.fill(iarg + 1);
-    if (!args.v[iarg]->out->n) {
-      csargs.v[iarg] = sym_unknown->abstract_type->v[0];
+    forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
+      csargs.v[iarg] = cs;
       find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
-    } else {
-      forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
-        csargs.v[iarg] = cs;
-        find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
-      }
     }
   }
 }

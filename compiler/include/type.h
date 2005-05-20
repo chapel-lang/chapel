@@ -30,6 +30,7 @@ class Type : public BaseAST {
   ASymbol *asymbol;
   Type* parentType;
   Vec<FnSymbol*> methods;
+  Type *metaType;
 
   Type(astType_t astType, Expr* init_defaultVal);
   void addSymbol(Symbol* newSymbol);
@@ -38,6 +39,7 @@ class Type : public BaseAST {
   Type* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   Type *instantiate_generic(Map<Type *, Type *> &substitutions);
+  Type *getMetaType();
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverse(Traversal* traversal, bool atTop = true);
@@ -311,7 +313,6 @@ class SeqType : public ClassType {
   virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
-
 class ArrayType : public Type {
  public:
   Expr* domain;
@@ -337,6 +338,13 @@ class ArrayType : public Type {
   virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
+class MetaType : public Type {
+ public:
+  Type* base;
+
+  void traverseDefType(Traversal* traversal);
+  MetaType(Type* init_base);
+};
 
 class SumType : public Type {
  public:
@@ -349,8 +357,10 @@ class SumType : public Type {
 class VariableType : public Type {
  public:
   Type* type;
+
   VariableType(Type *init_type = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  void traverseDefType(Traversal* traversal);
   void codegen(FILE* outfile);
 };
 
@@ -408,5 +418,6 @@ Type *find_or_make_sum_type(Vec<Type *> *types);
 int is_Scalar_Type(Type *t);
 int is_Reference_Type(Type *t);
 int is_Value_Type(Type *t);
+Type *getMetaType(Type *t);
 
 #endif

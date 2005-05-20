@@ -28,11 +28,12 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
       Symbol* next_old_formals = nextLink(Symbol, old_formals);
       old_formals->next = NULL;
       old_formals->prev = NULL;
-      if (dynamic_cast<ParamSymbol*>(old_formals)) {
-        new_formals = appendLink(new_formals, old_formals);
-      } else {
+      if (dynamic_cast<ParamSymbol*>(old_formals) &&
+          dynamic_cast<ParamSymbol*>(old_formals)->typeVariable) {
         old_formals->next = 0;
         fn->body->body->insertBefore(new DefStmt(new DefExpr(old_formals)));
+      } else {
+        new_formals = appendLink(new_formals, old_formals);
       }
       old_formals = next_old_formals;
     }

@@ -413,14 +413,18 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
                          Type* init_type, Expr* init_init) :
   Symbol(SYMBOL_PARAM, init_name, init_type),
   intent(init_intent),
-  init(init_init)
+  init(init_init),
+  typeVariable(NULL)
 {
   Symboltable::define(this);
 }
 
 
 Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ParamSymbol(intent, copystring(name), type, init->copyInternal(clone, map));
+  ParamSymbol *ps = new ParamSymbol(intent, copystring(name), type, init->copyInternal(clone, map));
+  if (typeVariable)
+    ps->typeVariable = typeVariable;//dynamic_cast<TypeSymbol*>(typeVariable->copyInternal(clone, map));
+  return ps;
 }
 
 
