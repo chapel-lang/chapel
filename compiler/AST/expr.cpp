@@ -1673,6 +1673,22 @@ void FnCall::codegen(FILE* outfile) {
   baseExpr->codegen(outfile);
   fprintf(outfile, "(");
 
+  /// KLUDGE for complex read and tostring functions
+  // runtime support for read, config, tostring require a cast of the
+  // compiler produced complex type to the runtime complex type;
+  // eventually there should be no runtime complex type
+  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+    if (!strcmp(variable->var->cname, "_chpl_tostring_complex") ||
+        !strcmp(variable->var->cname, "_chpl_read_complex")) {
+      fprintf(outfile, "(_complex128*)");
+    }
+    if (!strcmp(variable->var->cname, "_INIT_CONFIG")) {
+      if (!strcmp(argList->typeInfo()->symbol->cname, "_chpl_complex")) {
+        fprintf(outfile, "(_complex128*)");
+      }
+    }
+  }
+
   Expr* actuals = argList;
   if (actuals) {
     FnSymbol* fnSym = findFnSymbol();
@@ -1684,6 +1700,7 @@ void FnCall::codegen(FILE* outfile) {
       } else {
         fprintf(outfile, ", ");
       }
+
       bool ampersand = formals->requiresCPtr();
       bool star = false;
       if (Variable *v = dynamic_cast<Variable*>(actuals))

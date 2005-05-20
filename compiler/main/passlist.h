@@ -27,7 +27,7 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(ResolveModuleUses, ""),
   RUN(Verify, ""),
-  //  RUN(ConstructComplexLiterals, ""),
+  RUN(ConstructComplexLiterals, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ScopeResolveSymbols, ""),
   RUN(Verify, ""), // this is a sanity check

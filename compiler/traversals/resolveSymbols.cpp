@@ -41,6 +41,10 @@ static void call_info_noanalysis(ParenOpExpr* expr, Vec<FnSymbol*>& fns) {
       }
     }
   }
+  if (candidates.n == 1) {
+    fns.add(candidates.v[0]);
+    return;
+  }
   FnSymbol* candidate = NULL;
   forv_Vec(FnSymbol*, fn, candidates) {
     Symbol* formals = fn->formals;

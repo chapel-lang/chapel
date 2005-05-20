@@ -1,4 +1,5 @@
  called from 11 in __init_domarr at domarr.chpl:6
+ called from 6 in __init_domarr at domarr.chpl:6
  called from 6 in __init_entryPoint at domarr.chpl:6
  called from 6 in __init_entryPoint at domarr.chpl:6
  called from 6 in __init_entryPoint at domarr.chpl:6
@@ -10,6 +11,7 @@
 ::Mat(domarr.chpl:4) ( _domain_2d (domarr.chpl:4) )
 ::_ArrayWriteStopgap(internal_prelude.chpl:0) ( _ArrayWriteStopgap )
 ::__init__CommonModule(domarr.chpl:6) ( __init__CommonModule (domarr.chpl:6) )
+::__init__chpl_complex(domarr.chpl:6) ( __init__chpl_complex (domarr.chpl:6) )
 ::__init_domarr(domarr.chpl:6) ( __init_domarr (domarr.chpl:6) )
 ::__init_entryPoint(domarr.chpl:6) ( __init_entryPoint (domarr.chpl:6) )
 ::__init_internal_prelude(domarr.chpl:6) ( __init_internal_prelude (domarr.chpl:6) )
@@ -40,6 +42,7 @@
 ::x(prelude.chpl:0) ( float64 )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule domarr.chpl:6
+function __init__chpl_complex domarr.chpl:6
 function __init_domarr domarr.chpl:6
 function __init_entryPoint domarr.chpl:6
 function __init_internal_prelude domarr.chpl:6

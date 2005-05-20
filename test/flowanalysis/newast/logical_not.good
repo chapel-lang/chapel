@@ -2,9 +2,11 @@
  called from 3 in __init_entryPoint at logical_not.chpl:3
  called from 3 in __init_entryPoint at logical_not.chpl:3
  called from 3 in __init_entryPoint at logical_not.chpl:3
+ called from 3 in __init_logical_not at logical_not.chpl:3
  called from 3 in main at logical_not.chpl:3
  called from 3 in main at logical_not.chpl:3
 ::__init__CommonModule(logical_not.chpl:3) ( __init__CommonModule (logical_not.chpl:3) )
+::__init__chpl_complex(logical_not.chpl:3) ( __init__chpl_complex (logical_not.chpl:3) )
 ::__init_entryPoint(logical_not.chpl:3) ( __init_entryPoint (logical_not.chpl:3) )
 ::__init_internal_prelude(logical_not.chpl:3) ( __init_internal_prelude (logical_not.chpl:3) )
 ::__init_logical_not(logical_not.chpl:3) ( __init_logical_not (logical_not.chpl:3) )
@@ -21,6 +23,7 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule logical_not.chpl:3
+function __init__chpl_complex logical_not.chpl:3
 function __init_entryPoint logical_not.chpl:3
 function __init_internal_prelude logical_not.chpl:3
 function __init_logical_not logical_not.chpl:3

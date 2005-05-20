@@ -1,3 +1,4 @@
+ called from 1 in __init_declprintint2 at declprintint2.chpl:1
  called from 1 in __init_entryPoint at declprintint2.chpl:1
  called from 1 in __init_entryPoint at declprintint2.chpl:1
  called from 1 in __init_entryPoint at declprintint2.chpl:1
@@ -5,6 +6,7 @@
  called from 1 in main at declprintint2.chpl:1
  called from 1 in main at declprintint2.chpl:1
 ::__init__CommonModule(declprintint2.chpl:1) ( __init__CommonModule (declprintint2.chpl:1) )
+::__init__chpl_complex(declprintint2.chpl:1) ( __init__chpl_complex (declprintint2.chpl:1) )
 ::__init_declprintint2(declprintint2.chpl:1) ( __init_declprintint2 (declprintint2.chpl:1) )
 ::__init_entryPoint(declprintint2.chpl:1) ( __init_entryPoint (declprintint2.chpl:1) )
 ::__init_internal_prelude(declprintint2.chpl:1) ( __init_internal_prelude (declprintint2.chpl:1) )
@@ -17,6 +19,7 @@
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 function __init__CommonModule declprintint2.chpl:1
+function __init__chpl_complex declprintint2.chpl:1
 function __init_declprintint2 declprintint2.chpl:1
 function __init_entryPoint declprintint2.chpl:1
 function __init_internal_prelude declprintint2.chpl:1

@@ -1095,6 +1095,19 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 void FnSymbol::codegenDef(FILE* outfile) {
   FILE* headfile;
 
+  if (defPoint && defPoint->parentStmt) {
+    for (Pragma* pragma = defPoint->parentStmt->pragmas;
+         pragma;
+         pragma = dynamic_cast<Pragma*>(pragma->next)) {
+      if (!strcmp(pragma->str, "no codegen")) {
+        if (overload) {
+          overload->codegenDef(outfile);
+        }
+        return;
+      }
+    }
+  }
+
   if (!isDead) {
     if (exportMe) {
       headfile = extheadfile;
@@ -1265,9 +1278,6 @@ static bool stmtIsGlob(ILink* link) {
     if (def_stmt->fnDef() || def_stmt->typeDef()) {
       return true;
     }
-  }
-  if (dynamic_cast<UseStmt*>(stmt)) {
-    return true;
   }
   return false;
 }

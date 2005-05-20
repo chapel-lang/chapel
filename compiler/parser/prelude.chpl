@@ -120,3 +120,11 @@ function _chpl_memtest_reallocWithoutMalloc();
 function _chpl_memtest_reallocZeroSize();
 function _chpl_memtest_mallocOutOfMemory();
 function _chpl_memtest_reallocOutOfMemory();
+
+function _chpl_complex_read_hack(inout x) {
+  __primitive("read", x);
+}
+
+function _chpl_complex_tostring_hack(x, format : string) : string {
+  return __primitive("coerce", string, x);
+}

@@ -467,8 +467,8 @@ int setInCommandLine_string(char* varName, _string* value, char* moduleName) {
 }
 
 
-int setInCommandLine_complex128(char* varName, _complex128* value, 
-                                char* moduleName) {
+int setInCommandLine_chpl_complex(char* varName, _complex128* value, 
+                                  char* moduleName) {
   int varSet = 0;
   char* setValue = lookupSetValue(varName, moduleName);
 

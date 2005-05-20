@@ -156,15 +156,16 @@ void SymScope::remove(Symbol* sym) {
 }
 
 
-SymScope* SymScope::findModuleScope() {
+ModuleSymbol* SymScope::getModule() {
   if (type <= SCOPE_MODULE) {
-    return this;
-  } else {
-    if (parent == NULL) {
-      INT_FATAL("Unable to find module scope");
-    }
-    return parent->findModuleScope();
+    return dynamic_cast<ModuleSymbol*>(symContext);
   }
+
+  if (!parent) {
+    INT_FATAL("Scope not in module");
+  }
+
+  return parent->getModule();
 }
 
 
@@ -366,7 +367,7 @@ void SymScope::codegen(FILE* outfile, char* separator) {
       if (!dynamic_cast<EnumType*>(type_sym->type)) {
         tmp->pSym->codegenDef(outfile);
       }
-    } else if (!dynamic_cast<ForwardingSymbol*>(tmp->pSym)) {
+    } else {
       tmp->pSym->codegenDef(outfile);
     }
   }
@@ -379,15 +380,6 @@ bool SymScope::commonModuleIsFirst() {
     return commonModule->modScope == this;
   } else {
     return parent->commonModuleIsFirst();
-  }
-}
-
-
-ModuleSymbol* SymScope::getModule() {
-  if (type == SCOPE_MODULE) {
-    return dynamic_cast<ModuleSymbol*>(symContext);
-  } else {
-    return parent->getModule();
   }
 }
 

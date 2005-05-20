@@ -2,11 +2,13 @@
  called from 4 in __init_entryPoint at equality_ops.chpl:4
  called from 4 in __init_entryPoint at equality_ops.chpl:4
  called from 4 in __init_entryPoint at equality_ops.chpl:4
+ called from 4 in __init_equality_ops at equality_ops.chpl:4
  called from 4 in main at equality_ops.chpl:4
  called from 4 in main at equality_ops.chpl:4
 ::!=(internal_prelude.chpl:0) ( != )
 ::==(internal_prelude.chpl:0) ( == )
 ::__init__CommonModule(equality_ops.chpl:4) ( __init__CommonModule (equality_ops.chpl:4) )
+::__init__chpl_complex(equality_ops.chpl:4) ( __init__chpl_complex (equality_ops.chpl:4) )
 ::__init_entryPoint(equality_ops.chpl:4) ( __init_entryPoint (equality_ops.chpl:4) )
 ::__init_equality_ops(equality_ops.chpl:4) ( __init_equality_ops (equality_ops.chpl:4) )
 ::__init_internal_prelude(equality_ops.chpl:4) ( __init_internal_prelude (equality_ops.chpl:4) )
@@ -28,6 +30,7 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule equality_ops.chpl:4
+function __init__chpl_complex equality_ops.chpl:4
 function __init_entryPoint equality_ops.chpl:4
 function __init_equality_ops equality_ops.chpl:4
 function __init_internal_prelude equality_ops.chpl:4

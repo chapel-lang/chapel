@@ -1,3 +1,4 @@
+ called from 3 in __init_assignment_expr at assignment_expr.chpl:3
  called from 3 in __init_entryPoint at assignment_expr.chpl:3
  called from 3 in __init_entryPoint at assignment_expr.chpl:3
  called from 3 in __init_entryPoint at assignment_expr.chpl:3
@@ -9,6 +10,7 @@
 ::-(internal_prelude.chpl:0) ( - )
 ::/(internal_prelude.chpl:0) ( / )
 ::__init__CommonModule(assignment_expr.chpl:3) ( __init__CommonModule (assignment_expr.chpl:3) )
+::__init__chpl_complex(assignment_expr.chpl:3) ( __init__chpl_complex (assignment_expr.chpl:3) )
 ::__init_assignment_expr(assignment_expr.chpl:3) ( __init_assignment_expr (assignment_expr.chpl:3) )
 ::__init_entryPoint(assignment_expr.chpl:3) ( __init_entryPoint (assignment_expr.chpl:3) )
 ::__init_internal_prelude(assignment_expr.chpl:3) ( __init_internal_prelude (assignment_expr.chpl:3) )
@@ -33,6 +35,7 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule assignment_expr.chpl:3
+function __init__chpl_complex assignment_expr.chpl:3
 function __init_assignment_expr assignment_expr.chpl:3
 function __init_entryPoint assignment_expr.chpl:3
 function __init_internal_prelude assignment_expr.chpl:3

@@ -3,6 +3,23 @@ pragma "rename _chpl_complex" record complex {
   var im : float;
 }
 
+pragma "rename _chpl_write_complex"
+function write(x : complex) {
+  write(x.re, " + ", x.im, "i");
+}
+
+pragma "no codegen"
+pragma "rename _chpl_read_complex"
+function read(inout x : complex) {
+  _chpl_complex_read_hack(x);
+}
+
+pragma "no codegen"
+pragma "rename _chpl_tostring_complex"
+function _chpl_tostring(x : complex, format : string) : string {
+  return _chpl_complex_tostring_hack(x, format);
+}
+
 pragma "omit for noanalysis" function +(x : complex, y : complex)
   return complex(x.re + y.re, x.im + y.im);
 

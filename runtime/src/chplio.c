@@ -44,13 +44,6 @@ void _chpl_write_float(_float64 val) {
   }
 }
 
-void _chpl_write_complex(_complex128 val) {
-  _chpl_write_float(val.re);
-  _chpl_write_string(" + ");
-  _chpl_write_float(val.im);
-  _chpl_write_string("i");
-}
-
 void _chpl_write_string(_string val) {
   printf("%s", val);
 }
@@ -84,6 +77,20 @@ void _chpl_read_float(_float64* val) {
   scanf("%lg", val);
 }
 
+void _chpl_read_string(_string* val) {
+  char localVal[_default_string_length];
+  char dsl[1024];
+
+  scanf("%255s", localVal);
+  if (strlen(localVal) == (_default_string_length - 1)) {
+    sprintf(dsl, "%d", _default_string_length);
+    char* message = _glom_strings(2, "The maximum string length is ", dsl);
+    printError(message);
+  }
+  _copy_string(val, localVal);
+}
+
+
 void _chpl_read_complex(_complex128* val) {
   char imaginaryI = 'i';
   int numScans;
@@ -98,17 +105,4 @@ void _chpl_read_complex(_complex128* val) {
     char* message = "Incorrect format for complex numbers";
     printError(message);
   }
-}
-
-void _chpl_read_string(_string* val) {
-  char localVal[_default_string_length];
-  char dsl[1024];
-
-  scanf("%255s", localVal);
-  if (strlen(localVal) == (_default_string_length - 1)) {
-    sprintf(dsl, "%d", _default_string_length);
-    char* message = _glom_strings(2, "The maximum string length is ", dsl);
-    printError(message);
-  }
-  _copy_string(val, localVal);
 }

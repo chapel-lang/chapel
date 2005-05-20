@@ -74,6 +74,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
                                                   formal->type, initializer,
                                                   VAR_NORMAL, VAR_VAR);
             body = appendLink(body, newActualDecl);
+            newActualDecl->varDef()->noDefaultInit = true;
 
             newActualUse = new Variable(newActualDecl->varDef());
           } else {

@@ -1,31 +1,34 @@
- called from 43 in __init_entryPoint at _chpl_complex.chpl:43
- called from 43 in __init_entryPoint at _chpl_complex.chpl:43
- called from 43 in __init_entryPoint at _chpl_complex.chpl:43
- called from 43 in __init_entryPoint at _chpl_complex.chpl:43
- called from 43 in main at _chpl_complex.chpl:43
- called from 43 in main at _chpl_complex.chpl:43
- called from 8 in __init_multiple_return at _chpl_complex.chpl:43
-::__init__CommonModule(_chpl_complex.chpl:43) ( __init__CommonModule (_chpl_complex.chpl:43) )
-::__init_entryPoint(_chpl_complex.chpl:43) ( __init_entryPoint (_chpl_complex.chpl:43) )
-::__init_internal_prelude(_chpl_complex.chpl:43) ( __init_internal_prelude (_chpl_complex.chpl:43) )
-::__init_multiple_return(_chpl_complex.chpl:43) ( __init_multiple_return (_chpl_complex.chpl:43) )
-::__init_prelude(_chpl_complex.chpl:43) ( __init_prelude (_chpl_complex.chpl:43) )
+ called from 60 in __init_entryPoint at _chpl_complex.chpl:60
+ called from 60 in __init_entryPoint at _chpl_complex.chpl:60
+ called from 60 in __init_entryPoint at _chpl_complex.chpl:60
+ called from 60 in __init_entryPoint at _chpl_complex.chpl:60
+ called from 60 in __init_multiple_return at _chpl_complex.chpl:60
+ called from 60 in main at _chpl_complex.chpl:60
+ called from 60 in main at _chpl_complex.chpl:60
+ called from 8 in __init_multiple_return at _chpl_complex.chpl:60
+::__init__CommonModule(_chpl_complex.chpl:60) ( __init__CommonModule (_chpl_complex.chpl:60) )
+::__init__chpl_complex(_chpl_complex.chpl:60) ( __init__chpl_complex (_chpl_complex.chpl:60) )
+::__init_entryPoint(_chpl_complex.chpl:60) ( __init_entryPoint (_chpl_complex.chpl:60) )
+::__init_internal_prelude(_chpl_complex.chpl:60) ( __init_internal_prelude (_chpl_complex.chpl:60) )
+::__init_multiple_return(_chpl_complex.chpl:60) ( __init_multiple_return (_chpl_complex.chpl:60) )
+::__init_prelude(_chpl_complex.chpl:60) ( __init_prelude (_chpl_complex.chpl:60) )
 ::_retval(multiple_return.chpl:3) ( int64 )
 ::a(multiple_return.chpl:1) ( int64 )
 ::b(multiple_return.chpl:1) ( int64 )
 ::c(multiple_return.chpl:1) ( int64 )
 ::f(multiple_return.chpl:6) ( f )
 ::false(prelude.chpl:0) ( bool )
-::main(_chpl_complex.chpl:43) ( main (_chpl_complex.chpl:43) )
+::main(_chpl_complex.chpl:60) ( main (_chpl_complex.chpl:60) )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
-function __init__CommonModule _chpl_complex.chpl:43
-function __init_entryPoint _chpl_complex.chpl:43
-function __init_internal_prelude _chpl_complex.chpl:43
-function __init_multiple_return _chpl_complex.chpl:43
-function __init_prelude _chpl_complex.chpl:43
+function __init__CommonModule _chpl_complex.chpl:60
+function __init__chpl_complex _chpl_complex.chpl:60
+function __init_entryPoint _chpl_complex.chpl:60
+function __init_internal_prelude _chpl_complex.chpl:60
+function __init_multiple_return _chpl_complex.chpl:60
+function __init_prelude _chpl_complex.chpl:60
 function f multiple_return.chpl:1
-function main _chpl_complex.chpl:43
+function main _chpl_complex.chpl:60
 globals

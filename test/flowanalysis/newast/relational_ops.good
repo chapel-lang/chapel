@@ -2,6 +2,7 @@
  called from 5 in __init_entryPoint at relational_ops.chpl:5
  called from 5 in __init_entryPoint at relational_ops.chpl:5
  called from 5 in __init_entryPoint at relational_ops.chpl:5
+ called from 5 in __init_relational_ops at relational_ops.chpl:5
  called from 5 in main at relational_ops.chpl:5
  called from 5 in main at relational_ops.chpl:5
 ::<(internal_prelude.chpl:0) ( < )
@@ -9,6 +10,7 @@
 ::>(internal_prelude.chpl:0) ( > )
 ::>=(internal_prelude.chpl:0) ( >= )
 ::__init__CommonModule(relational_ops.chpl:5) ( __init__CommonModule (relational_ops.chpl:5) )
+::__init__chpl_complex(relational_ops.chpl:5) ( __init__chpl_complex (relational_ops.chpl:5) )
 ::__init_entryPoint(relational_ops.chpl:5) ( __init_entryPoint (relational_ops.chpl:5) )
 ::__init_internal_prelude(relational_ops.chpl:5) ( __init_internal_prelude (relational_ops.chpl:5) )
 ::__init_prelude(relational_ops.chpl:5) ( __init_prelude (relational_ops.chpl:5) )
@@ -35,6 +37,7 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule relational_ops.chpl:5
+function __init__chpl_complex relational_ops.chpl:5
 function __init_entryPoint relational_ops.chpl:5
 function __init_internal_prelude relational_ops.chpl:5
 function __init_prelude relational_ops.chpl:5

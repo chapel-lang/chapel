@@ -11,6 +11,7 @@
  called from 22 in __init_entryPoint at sum_type-2.chpl:22
  called from 22 in __init_entryPoint at sum_type-2.chpl:22
  called from 22 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 22 in __init_sum_type-2 at sum_type-2.chpl:22
  called from 22 in main at sum_type-2.chpl:22
  called from 22 in main at sum_type-2.chpl:22
  called from 24 in __init_sum_type-2 at sum_type-2.chpl:22
@@ -20,6 +21,7 @@
  called from 31 in __init_sum_type-2 at sum_type-2.chpl:22
 ::*(internal_prelude.chpl:0) ( * )
 ::__init__CommonModule(sum_type-2.chpl:22) ( __init__CommonModule (sum_type-2.chpl:22) )
+::__init__chpl_complex(sum_type-2.chpl:22) ( __init__chpl_complex (sum_type-2.chpl:22) )
 ::__init_entryPoint(sum_type-2.chpl:22) ( __init_entryPoint (sum_type-2.chpl:22) )
 ::__init_internal_prelude(sum_type-2.chpl:22) ( __init_internal_prelude (sum_type-2.chpl:22) )
 ::__init_prelude(sum_type-2.chpl:22) ( __init_prelude (sum_type-2.chpl:22) )
@@ -106,6 +108,7 @@
 ::y(<internal>:-1) ( y )
 ::y(<internal>:-1) ( y )
 function __init__CommonModule sum_type-2.chpl:22
+function __init__chpl_complex sum_type-2.chpl:22
 function __init_entryPoint sum_type-2.chpl:22
 function __init_internal_prelude sum_type-2.chpl:22
 function __init_prelude sum_type-2.chpl:22

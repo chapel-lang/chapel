@@ -68,6 +68,7 @@ void Symboltable::doneParsingPreludes(void) {
   commonModule = new ModuleSymbol("_CommonModule", MOD_COMMON);
   Symboltable::pushScope(SCOPE_MODULE);
   commonModule->setModScope(currentScope);
+  commonModule->modScope->setContext(NULL, commonModule, NULL);
 
   commonModule->stmts = new NoOpStmt();
 
@@ -207,6 +208,16 @@ void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
     }
   } else {
     scope->insert(sym);
+  }
+  if (!dynamic_cast<ForwardingSymbol*>(sym)) { // don't forward forwarding
+    if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(scope->symContext)) {
+      // Top level definition, add forwarding symbols to resolved uses
+      forv_Vec(SymScope, scope, mod->usedBy) {
+        SymScope* saveScope = Symboltable::setCurrentScope(scope);
+        new ForwardingSymbol(sym);
+        Symboltable::setCurrentScope(saveScope);
+      }
+    }
   }
 }
 

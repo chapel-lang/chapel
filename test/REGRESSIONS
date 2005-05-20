@@ -29,6 +29,10 @@ linux and general regressions
   There is something very wrong with IndexTypes.  They should not
   need their own write function.
 
+[Error matching compiler output for trivial/deitz/test_format_primitives]
+
+  Unknown at this point.
+
 
 ==========================
 linux valgrind regressions

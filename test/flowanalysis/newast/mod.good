@@ -2,9 +2,11 @@
  called from 4 in __init_entryPoint at mod.chpl:4
  called from 4 in __init_entryPoint at mod.chpl:4
  called from 4 in __init_entryPoint at mod.chpl:4
+ called from 4 in __init_mod at mod.chpl:4
  called from 4 in main at mod.chpl:4
  called from 4 in main at mod.chpl:4
 ::__init__CommonModule(mod.chpl:4) ( __init__CommonModule (mod.chpl:4) )
+::__init__chpl_complex(mod.chpl:4) ( __init__chpl_complex (mod.chpl:4) )
 ::__init_entryPoint(mod.chpl:4) ( __init_entryPoint (mod.chpl:4) )
 ::__init_internal_prelude(mod.chpl:4) ( __init_internal_prelude (mod.chpl:4) )
 ::__init_mod(mod.chpl:4) ( __init_mod (mod.chpl:4) )
@@ -25,6 +27,7 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule mod.chpl:4
+function __init__chpl_complex mod.chpl:4
 function __init_entryPoint mod.chpl:4
 function __init_internal_prelude mod.chpl:4
 function __init_mod mod.chpl:4

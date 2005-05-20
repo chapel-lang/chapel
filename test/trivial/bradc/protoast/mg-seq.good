@@ -1,5 +1,22 @@
 ;
 complex;
+function write( x: complex): ??? {
+write(x.re, " + ", x.im, "i");
+}
+
+
+function read(inout x: complex): ??? {
+_chpl_complex_read_hack(x);
+}
+
+
+function _chpl_tostring( x: complex;
+ format: string): string {
+
+return _chpl_complex_tostring_hack(x, format);
+}
+
+
 function +( x: complex;
  y: complex): ??? {
 

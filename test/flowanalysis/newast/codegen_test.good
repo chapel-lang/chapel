@@ -1,4 +1,5 @@
  called from 15 in __init_codegen_test at codegen_test.chpl:8
+ called from 8 in __init_codegen_test at codegen_test.chpl:8
  called from 8 in __init_entryPoint at codegen_test.chpl:8
  called from 8 in __init_entryPoint at codegen_test.chpl:8
  called from 8 in __init_entryPoint at codegen_test.chpl:8
@@ -6,6 +7,7 @@
  called from 8 in main at codegen_test.chpl:8
  called from 8 in main at codegen_test.chpl:8
 ::__init__CommonModule(codegen_test.chpl:8) ( __init__CommonModule (codegen_test.chpl:8) )
+::__init__chpl_complex(codegen_test.chpl:8) ( __init__chpl_complex (codegen_test.chpl:8) )
 ::__init_codegen_test(codegen_test.chpl:8) ( __init_codegen_test (codegen_test.chpl:8) )
 ::__init_entryPoint(codegen_test.chpl:8) ( __init_entryPoint (codegen_test.chpl:8) )
 ::__init_internal_prelude(codegen_test.chpl:8) ( __init_internal_prelude (codegen_test.chpl:8) )
@@ -24,6 +26,7 @@
 ::y(codegen_test.chpl:3) ( int64 )
 ::z(codegen_test.chpl:7) ( int64 )
 function __init__CommonModule codegen_test.chpl:8
+function __init__chpl_complex codegen_test.chpl:8
 function __init_codegen_test codegen_test.chpl:8
 function __init_entryPoint codegen_test.chpl:8
 function __init_internal_prelude codegen_test.chpl:8

@@ -1,3 +1,4 @@
+ called from 2 in __init_deadvar at deadvar.chpl:2
  called from 2 in __init_entryPoint at deadvar.chpl:2
  called from 2 in __init_entryPoint at deadvar.chpl:2
  called from 2 in __init_entryPoint at deadvar.chpl:2
@@ -5,6 +6,7 @@
  called from 2 in main at deadvar.chpl:2
  called from 2 in main at deadvar.chpl:2
 ::__init__CommonModule(deadvar.chpl:2) ( __init__CommonModule (deadvar.chpl:2) )
+::__init__chpl_complex(deadvar.chpl:2) ( __init__chpl_complex (deadvar.chpl:2) )
 ::__init_deadvar(deadvar.chpl:2) ( __init_deadvar (deadvar.chpl:2) )
 ::__init_entryPoint(deadvar.chpl:2) ( __init_entryPoint (deadvar.chpl:2) )
 ::__init_internal_prelude(deadvar.chpl:2) ( __init_internal_prelude (deadvar.chpl:2) )
@@ -20,6 +22,7 @@
 ::x(prelude.chpl:0) ( string )
 ::y(deadvar.chpl:2) ( int64 )
 function __init__CommonModule deadvar.chpl:2
+function __init__chpl_complex deadvar.chpl:2
 function __init_deadvar deadvar.chpl:2
 function __init_entryPoint deadvar.chpl:2
 function __init_internal_prelude deadvar.chpl:2

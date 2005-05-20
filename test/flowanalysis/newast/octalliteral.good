@@ -2,9 +2,11 @@
  called from 1 in __init_entryPoint at octalliteral.chpl:1
  called from 1 in __init_entryPoint at octalliteral.chpl:1
  called from 1 in __init_entryPoint at octalliteral.chpl:1
+ called from 1 in __init_octalliteral at octalliteral.chpl:1
  called from 1 in main at octalliteral.chpl:1
  called from 1 in main at octalliteral.chpl:1
 ::__init__CommonModule(octalliteral.chpl:1) ( __init__CommonModule (octalliteral.chpl:1) )
+::__init__chpl_complex(octalliteral.chpl:1) ( __init__chpl_complex (octalliteral.chpl:1) )
 ::__init_entryPoint(octalliteral.chpl:1) ( __init_entryPoint (octalliteral.chpl:1) )
 ::__init_internal_prelude(octalliteral.chpl:1) ( __init_internal_prelude (octalliteral.chpl:1) )
 ::__init_octalliteral(octalliteral.chpl:1) ( __init_octalliteral (octalliteral.chpl:1) )
@@ -19,6 +21,7 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule octalliteral.chpl:1
+function __init__chpl_complex octalliteral.chpl:1
 function __init_entryPoint octalliteral.chpl:1
 function __init_internal_prelude octalliteral.chpl:1
 function __init_octalliteral octalliteral.chpl:1

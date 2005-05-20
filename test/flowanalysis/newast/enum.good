@@ -3,12 +3,14 @@
  called from 7 in __init_entryPoint at enum.chpl:7
  called from 7 in __init_entryPoint at enum.chpl:7
  called from 7 in __init_entryPoint at enum.chpl:7
+ called from 7 in __init_enum at enum.chpl:7
  called from 7 in main at enum.chpl:7
  called from 7 in main at enum.chpl:7
 ::B(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::S(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::_EnumWriteStopgap(internal_prelude.chpl:0) ( _EnumWriteStopgap )
 ::__init__CommonModule(enum.chpl:7) ( __init__CommonModule (enum.chpl:7) )
+::__init__chpl_complex(enum.chpl:7) ( __init__chpl_complex (enum.chpl:7) )
 ::__init_entryPoint(enum.chpl:7) ( __init_entryPoint (enum.chpl:7) )
 ::__init_enum(enum.chpl:7) ( __init_enum (enum.chpl:7) )
 ::__init_internal_prelude(enum.chpl:7) ( __init_internal_prelude (enum.chpl:7) )
@@ -28,6 +30,7 @@
 ::x(prelude.chpl:0) ( string )
 ::y(enum.chpl:7) ( int64 )
 function __init__CommonModule enum.chpl:7
+function __init__chpl_complex enum.chpl:7
 function __init_entryPoint enum.chpl:7
 function __init_enum enum.chpl:7
 function __init_internal_prelude enum.chpl:7

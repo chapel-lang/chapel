@@ -2,11 +2,13 @@
  called from 2 in __init_entryPoint at pareninit.chpl:2
  called from 2 in __init_entryPoint at pareninit.chpl:2
  called from 2 in __init_entryPoint at pareninit.chpl:2
+ called from 2 in __init_pareninit at pareninit.chpl:2
  called from 2 in main at pareninit.chpl:2
  called from 2 in main at pareninit.chpl:2
 ::*(internal_prelude.chpl:0) ( * )
 ::+(internal_prelude.chpl:0) ( + )
 ::__init__CommonModule(pareninit.chpl:2) ( __init__CommonModule (pareninit.chpl:2) )
+::__init__chpl_complex(pareninit.chpl:2) ( __init__chpl_complex (pareninit.chpl:2) )
 ::__init_entryPoint(pareninit.chpl:2) ( __init_entryPoint (pareninit.chpl:2) )
 ::__init_internal_prelude(pareninit.chpl:2) ( __init_internal_prelude (pareninit.chpl:2) )
 ::__init_pareninit(pareninit.chpl:2) ( __init_pareninit (pareninit.chpl:2) )
@@ -24,6 +26,7 @@
 ::x(prelude.chpl:0) ( int64 )
 ::y(pareninit.chpl:2) ( int64 )
 function __init__CommonModule pareninit.chpl:2
+function __init__chpl_complex pareninit.chpl:2
 function __init_entryPoint pareninit.chpl:2
 function __init_internal_prelude pareninit.chpl:2
 function __init_pareninit pareninit.chpl:2

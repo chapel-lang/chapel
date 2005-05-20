@@ -5,17 +5,26 @@
   called from enumarray.chpl:5
   called from enumarray.chpl:5
   called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
+  called from enumarray.chpl:5
  called from 5 in __init_enum at enum.chpl:7
  called from 7 in __init_entryPoint at enum.chpl:7
  called from 7 in __init_entryPoint at enum.chpl:7
  called from 7 in __init_entryPoint at enum.chpl:7
  called from 7 in __init_entryPoint at enum.chpl:7
+ called from 7 in __init_enum at enum.chpl:7
  called from 7 in main at enum.chpl:7
  called from 7 in main at enum.chpl:7
 ::B(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::S(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::_EnumWriteStopgap(internal_prelude.chpl:0) ( _EnumWriteStopgap )
 ::__init__CommonModule(enum.chpl:7) ( __init__CommonModule (enum.chpl:7) )
+::__init__chpl_complex(enum.chpl:7) ( __init__chpl_complex (enum.chpl:7) )
 ::__init_entryPoint(enum.chpl:7) ( __init_entryPoint (enum.chpl:7) )
 ::__init_enum(enum.chpl:7) ( __init_enum (enum.chpl:7) )
 ::__init_internal_prelude(enum.chpl:7) ( __init_internal_prelude (enum.chpl:7) )
@@ -34,15 +43,23 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 ::y(enum.chpl:7) ( int64 )
+enumarray.chpl:17: expression has no type
+enumarray.chpl:17: expression has no type
+enumarray.chpl:17: illegal call argument type '_chpl_tostring' illegal: ( _chpl_tostring ) 
+enumarray.chpl:17: illegal call argument type expression illegal: ( ) 
+enumarray.chpl:17: illegal call argument type expression illegal: ( int64 ) 
+enumarray.chpl:17: illegal call argument type expression illegal: ( string ) 
+enumarray.chpl:17: unresolved call 'write'
 enumarray.chpl:19: expression has no type
 enumarray.chpl:19: expression has no type
+enumarray.chpl:19: illegal call argument type '_chpl_tostring' illegal: ( _chpl_tostring ) 
 enumarray.chpl:19: illegal call argument type 'probSize' illegal: ( _array_integer_1d ) 
 enumarray.chpl:19: illegal call argument type expression illegal: ( ) 
 enumarray.chpl:19: illegal call argument type expression illegal: ( string ) 
-enumarray.chpl:19: unresolved call '_chpl_tostring'
 enumarray.chpl:19: unresolved call 'write'
 fail: fatal error, program does not type
 function __init__CommonModule enum.chpl:7
+function __init__chpl_complex enum.chpl:7
 function __init_entryPoint enum.chpl:7
 function __init_enum enum.chpl:7
 function __init_internal_prelude enum.chpl:7

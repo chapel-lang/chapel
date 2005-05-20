@@ -1,3 +1,4 @@
+ called from 9 in __init_conditional at conditional.chpl:9
  called from 9 in __init_entryPoint at conditional.chpl:9
  called from 9 in __init_entryPoint at conditional.chpl:9
  called from 9 in __init_entryPoint at conditional.chpl:9
@@ -5,6 +6,7 @@
  called from 9 in main at conditional.chpl:9
  called from 9 in main at conditional.chpl:9
 ::__init__CommonModule(conditional.chpl:9) ( __init__CommonModule (conditional.chpl:9) )
+::__init__chpl_complex(conditional.chpl:9) ( __init__chpl_complex (conditional.chpl:9) )
 ::__init_conditional(conditional.chpl:9) ( __init_conditional (conditional.chpl:9) )
 ::__init_entryPoint(conditional.chpl:9) ( __init_entryPoint (conditional.chpl:9) )
 ::__init_internal_prelude(conditional.chpl:9) ( __init_internal_prelude (conditional.chpl:9) )
@@ -24,6 +26,7 @@
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule conditional.chpl:9
+function __init__chpl_complex conditional.chpl:9
 function __init_conditional conditional.chpl:9
 function __init_entryPoint conditional.chpl:9
 function __init_internal_prelude conditional.chpl:9

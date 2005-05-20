@@ -34,7 +34,7 @@ void FilesToAST::run(ModuleSymbol* moduleList) {
 
   yydebug = debugParserLevel;
 
-  ParseFile(glomstrings(2, chplroot, "/runtime/include/_chpl_complex.chpl"),
+  ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_complex.chpl"),
             MOD_STANDARD);
 
   int filenum = 0;

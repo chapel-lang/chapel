@@ -1,3 +1,4 @@
+ called from 14 in __init_declprintdom2 at declprintdom2.chpl:14
  called from 14 in __init_entryPoint at declprintdom2.chpl:14
  called from 14 in __init_entryPoint at declprintdom2.chpl:14
  called from 14 in __init_entryPoint at declprintdom2.chpl:14
@@ -19,6 +20,7 @@
 ::D9(declprintdom2.chpl:14) ( _domain_1d (declprintdom2.chpl:9) )
 ::_DomainWriteStopgap(internal_prelude.chpl:0) ( _DomainWriteStopgap )
 ::__init__CommonModule(declprintdom2.chpl:14) ( __init__CommonModule (declprintdom2.chpl:14) )
+::__init__chpl_complex(declprintdom2.chpl:14) ( __init__chpl_complex (declprintdom2.chpl:14) )
 ::__init_declprintdom2(declprintdom2.chpl:14) ( __init_declprintdom2 (declprintdom2.chpl:14) )
 ::__init_entryPoint(declprintdom2.chpl:14) ( __init_entryPoint (declprintdom2.chpl:14) )
 ::__init_internal_prelude(declprintdom2.chpl:14) ( __init_internal_prelude (declprintdom2.chpl:14) )
@@ -41,6 +43,7 @@
 ::x(internal_prelude.chpl:0) ( _domain_1d (declprintdom2.chpl:9) )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule declprintdom2.chpl:14
+function __init__chpl_complex declprintdom2.chpl:14
 function __init_declprintdom2 declprintdom2.chpl:14
 function __init_entryPoint declprintdom2.chpl:14
 function __init_internal_prelude declprintdom2.chpl:14

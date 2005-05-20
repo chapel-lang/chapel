@@ -2,12 +2,14 @@
  called from 7 in __init_entryPoint at protoast_test.chpl:7
  called from 7 in __init_entryPoint at protoast_test.chpl:7
  called from 7 in __init_entryPoint at protoast_test.chpl:7
+ called from 7 in __init_protoast_test at protoast_test.chpl:7
  called from 7 in main at protoast_test.chpl:7
  called from 7 in main at protoast_test.chpl:7
 ::=(internal_prelude.chpl:0) ( = )
 ::A(protoast_test.chpl:7) ( _array_float_1d (protoast_test.chpl:7) )
 ::D(protoast_test.chpl:5) ( _domain_1d (protoast_test.chpl:5) )
 ::__init__CommonModule(protoast_test.chpl:7) ( __init__CommonModule (protoast_test.chpl:7) )
+::__init__chpl_complex(protoast_test.chpl:7) ( __init__chpl_complex (protoast_test.chpl:7) )
 ::__init_entryPoint(protoast_test.chpl:7) ( __init_entryPoint (protoast_test.chpl:7) )
 ::__init_internal_prelude(protoast_test.chpl:7) ( __init_internal_prelude (protoast_test.chpl:7) )
 ::__init_prelude(protoast_test.chpl:7) ( __init_prelude (protoast_test.chpl:7) )
@@ -25,6 +27,7 @@
 ::true(prelude.chpl:0) ( bool )
 ::x(internal_prelude.chpl:0) ( int64 )
 function __init__CommonModule protoast_test.chpl:7
+function __init__chpl_complex protoast_test.chpl:7
 function __init_entryPoint protoast_test.chpl:7
 function __init_internal_prelude protoast_test.chpl:7
 function __init_prelude protoast_test.chpl:7

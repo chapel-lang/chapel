@@ -11,7 +11,7 @@
 ***/
 
 #define _INIT_CONFIG(v, v_type, chapel_name, module_name) \
-  (!setInCommandLine##v_type(chapel_name, &v, module_name))
+  (!setInCommandLine##v_type(chapel_name, v, module_name))
 
 void addToConfigList(char* currentArg, int isSingleArg);
 int askedToParseArgs(void);
@@ -30,8 +30,8 @@ int setInCommandLine_float64(char* varName, _float64* value,
 int setInCommandLine_boolean(char* varName, _boolean* value, 
                              char* moduleName);
 int setInCommandLine_string(char* varName, _string* value, char* moduleName);
-int setInCommandLine_complex128(char* varName, _complex128* value, 
-                                char* moduleName);
+int setInCommandLine_chpl_complex(char* varName, _complex128* value, 
+                                  char* moduleName);
 
 #endif
 

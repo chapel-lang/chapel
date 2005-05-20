@@ -229,6 +229,7 @@ class ModuleSymbol : public Symbol {
   SymScope* modScope;
 
   Vec<ModuleSymbol*> uses;
+  Vec<SymScope*> usedBy;   // list of SymScopes that use this module
 
   ModuleSymbol(char* init_name, modType init_modtype);
   void setModScope(SymScope* init_modScope);

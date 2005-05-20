@@ -1,3 +1,4 @@
+ called from 4 in __init_compSampler at compSampler.chpl:4
  called from 4 in __init_entryPoint at compSampler.chpl:4
  called from 4 in __init_entryPoint at compSampler.chpl:4
  called from 4 in __init_entryPoint at compSampler.chpl:4
@@ -9,6 +10,7 @@
 ::-(internal_prelude.chpl:0) ( - )
 ::/(internal_prelude.chpl:0) ( / )
 ::__init__CommonModule(compSampler.chpl:4) ( __init__CommonModule (compSampler.chpl:4) )
+::__init__chpl_complex(compSampler.chpl:4) ( __init__chpl_complex (compSampler.chpl:4) )
 ::__init_compSampler(compSampler.chpl:4) ( __init_compSampler (compSampler.chpl:4) )
 ::__init_entryPoint(compSampler.chpl:4) ( __init_entryPoint (compSampler.chpl:4) )
 ::__init_internal_prelude(compSampler.chpl:4) ( __init_internal_prelude (compSampler.chpl:4) )
@@ -37,6 +39,7 @@
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule compSampler.chpl:4
+function __init__chpl_complex compSampler.chpl:4
 function __init_compSampler compSampler.chpl:4
 function __init_entryPoint compSampler.chpl:4
 function __init_internal_prelude compSampler.chpl:4
