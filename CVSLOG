@@ -32421,3 +32421,31 @@ Added files:
 	                                 test_string_concat3.chpl 
 	                                 test_string_concat3.good 
 
+---------------------------------------------------------------------------
+
+05/20/05 16:48:34 -- jplevyak
+
+Log message:
+	Class instantiation by instantiation of the constructor finally seems
+	to be working.  Removed 3 .futures.
+	
+	- Reorder RemoveNamedParameters to be before RemoveTypeVariableActuals.
+	
+	- Add traversal of the ParamSymbol::typeVarible variable.
+	
+	- VARIABLE_TYPE things are always "used" ... this may indicate
+	  a problem... but the above passes should remove them.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             findUnknownTypes.cpp 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class5.future 
+	                                         test_typevar_class1.future 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            test_clone_class-1.future 
+
