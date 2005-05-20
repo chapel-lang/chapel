@@ -32156,3 +32156,33 @@ Log message:
 Modified files:
 	chapel/test/memory/shannon/outofmemory/: sub_test 
 
+---------------------------------------------------------------------------
+
+05/20/05 10:47:46 -- deitz
+
+Log message:
+	Greatly improved line number and filename information in the compiler.
+	
+	Also, if some of the AST is built after parsing in a traversal, the
+	name of the traversal is stored in the BaseAST under the field
+	traversalInfo.
+	
+	I also added a field copyInfo that is not yet used.  This will tell in
+	what traversal the ast was copied.  It is a vector of strings since it
+	could happen in multiple traversals.
+	
+	I think the traversalInfo should be a vector of strings too since new
+	ast nodes could be constructed based on new ast nodes.
+	
+	If the developer flag is set, the errors now print out information
+	about the traversals where the thing that led to an error was created.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: baseAST.h misc.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/parser/: parser.cpp 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+	chapel/compiler/util/: misc.cpp 
+
