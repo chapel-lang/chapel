@@ -453,7 +453,7 @@ Matcher::build_Match(Fun *f, Match *m) {
 }
 
 template <class C>
-class MapCacheHashFns  {
+class MapCacheHashFns : public gc {
  public:
   static unsigned int hash(C a) {
     unsigned int h = 0, x = 0;
@@ -476,9 +476,12 @@ class MapCacheHashFns  {
 typedef Map<MPosition *, Sym*> CoercionMap;
 typedef Map<Sym *, Sym*> GenericMap;
 typedef Map<MPosition *, MPosition*> OrderMap;
-class CoercionCache { public: HashMap<CoercionMap *, MapCacheHashFns<CoercionMap *>, Fun *> cache; };
-class GenericCache { public: HashMap<GenericMap *, MapCacheHashFns<GenericMap *>, Fun *> cache; };
-class OrderCache { public: HashMap<OrderMap *, MapCacheHashFns<OrderMap *>, Fun *> cache; };
+class CoercionCache : public gc { 
+ public: HashMap<CoercionMap *, MapCacheHashFns<CoercionMap *>, Fun *> cache; };
+class GenericCache : public gc { 
+ public: HashMap<GenericMap *, MapCacheHashFns<GenericMap *>, Fun *> cache; };
+class OrderCache : public gc { 
+ public: HashMap<OrderMap *, MapCacheHashFns<OrderMap *>, Fun *> cache; };
 
 class DefaultCacheHashFns  {
  public:
