@@ -1001,7 +1001,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   TypeSymbol* clone = NULL;
   if (isConstructor) {
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
-    printf("instantiating %s\n", typeSym->cname);
+    //    printf("instantiating %s\n", typeSym->cname);
     SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
     instantiate_add_subs(generic_substitutions, map);
@@ -1034,7 +1034,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
 
     forv_Vec(FnSymbol, fn, functions) {
       if (functionContainsVariableType(fn, &variableTypes)) {
-        printf("  instantiating %s\n", fn->cname);
+        //        printf("  instantiating %s\n", fn->cname);
         SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
         DefExpr* fnDef = dynamic_cast<DefExpr*>(fn->defPoint->copy(true, map));
         instantiate_add_subs(generic_substitutions, map);
@@ -1056,7 +1056,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
           fnClone->method_type = fn->method_type;
         }
       } else {
-        printf("  not instantiating %s\n", fn->cname);
+        //        printf("  not instantiating %s\n", fn->cname);
       }
     }
   } else {
