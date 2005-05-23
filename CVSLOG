@@ -32673,3 +32673,16 @@ Added files:
 	                                                   solaris_threads.h 
 	                                                   specific.h 
 
+---------------------------------------------------------------------------
+
+05/23/05 10:49:34 -- jplevyak
+
+Log message:
+	Switch over to GC 6.5
+	Found a bug where I wasn't using class XXX : private gc which was
+	causing GC to overwrite an array.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+	chapel/make/: Makefile.base 
+
