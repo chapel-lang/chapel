@@ -1,5 +1,7 @@
 #include "collectFunctions.h"
 #include "symbol.h"
+#include "symscope.h"
+#include "symtab.h"
 
 CollectFunctions::CollectFunctions(Vec<FnSymbol*>* init_functions) {
   functions = init_functions;
@@ -15,4 +17,9 @@ void CollectFunctions::processSymbol(Symbol* sym) {
 void collect_functions(Vec<FnSymbol*>* functions) {
   CollectFunctions* traversal = new CollectFunctions(functions);
   traversal->run();
+}
+
+void collectFunctionsFromScope(SymScope* scope, Vec<FnSymbol*>* functions) {
+  CollectFunctions* traversal = new CollectFunctions(functions);
+  Symboltable::traverseFromScope(traversal, scope);
 }

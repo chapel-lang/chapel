@@ -12,6 +12,7 @@ TRAVERSALS_SRCS = \
         eliminateReturns.cpp \
 	expandClassWiths.cpp \
 	expandSeqExprAssignments.cpp \
+        findTypeVariables.cpp \
 	findUnknownTypes.cpp \
 	findUnresolvedSymbols.cpp \
 	fixup.cpp \

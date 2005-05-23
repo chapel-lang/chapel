@@ -12,6 +12,8 @@
 #include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/clearTypes.h"
 #include "../traversals/updateSymbols.h"
+#include "../symtab/collectFunctions.h"
+#include "../traversals/findTypeVariables.h"
 
 Symbol *gNil = 0;
 
@@ -999,6 +1001,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   TypeSymbol* clone = NULL;
   if (isConstructor) {
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
+    printf("instantiating %s\n", typeSym->cname);
     SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
     instantiate_add_subs(generic_substitutions, map);
@@ -1015,24 +1018,46 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     instantiate_update_expr(generic_substitutions, clone->defPoint);
     generic_substitutions->put(typeSym->type, clone->type);
     Symboltable::setCurrentScope(save_scope);
-    forv_Vec(FnSymbol, method, typeSym->type->methods) {
-      SymScope* save_scope = Symboltable::setCurrentScope(method->parentScope);
-      DefExpr* fnDef =
-        dynamic_cast<DefExpr*>(method->defPoint->copy(true, map));
-      instantiate_add_subs(generic_substitutions, map);
-      if (!instantiate_update_expr(generic_substitutions, fnDef))
-        continue;
-      fnDef->sym->cname =
-        glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
-      method->defPoint->insertBefore(fnDef);
-      Symboltable::setCurrentScope(save_scope);
-      FnSymbol* methodClone = dynamic_cast<FnSymbol*>(fnDef->sym);
-      if (method == this) {
-        copy = methodClone;
+
+    Vec<FnSymbol*> functions;
+    collectFunctionsFromScope(typeSym->parentScope, &functions);
+
+    Vec<Type*> types;
+    generic_substitutions->get_keys(types);
+
+    Vec<VariableType*> variableTypes;
+    forv_Vec(Type, type, types) {
+      if (VariableType* variableType = dynamic_cast<VariableType*>(type)) {
+        variableTypes.add(variableType);
       }
-      clone->type->methods.add(methodClone);
-      methodClone->typeBinding = clone;
-      methodClone->method_type = method->method_type;
+    }
+
+    forv_Vec(FnSymbol, fn, functions) {
+      if (functionContainsVariableType(fn, &variableTypes)) {
+        printf("  instantiating %s\n", fn->cname);
+        SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
+        DefExpr* fnDef = dynamic_cast<DefExpr*>(fn->defPoint->copy(true, map));
+        instantiate_add_subs(generic_substitutions, map);
+        instantiate_update_expr(generic_substitutions, fnDef);
+        // What was this doing?, replaced with above line --SJD
+//         if (!instantiate_update_expr(generic_substitutions, fnDef))
+//           continue;
+        fnDef->sym->cname =
+          glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
+        fn->defPoint->insertBefore(fnDef);
+        Symboltable::setCurrentScope(save_scope);
+        FnSymbol* fnClone = dynamic_cast<FnSymbol*>(fnDef->sym);
+        if (fn == this) {
+          copy = fnClone;
+        }
+        if (fn->typeBinding == typeSym) {
+          clone->type->methods.add(fnClone);
+          fnClone->typeBinding = clone;
+          fnClone->method_type = fn->method_type;
+        }
+      } else {
+        printf("  not instantiating %s\n", fn->cname);
+      }
     }
   } else {
     SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
