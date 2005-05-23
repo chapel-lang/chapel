@@ -164,3 +164,259 @@ char* astTypeName[AST_TYPE_END+1] = {
 int currentLineno = 0;
 char* currentFilename = NULL;
 char* currentTraversal = NULL;
+
+#define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
+#define AST_ADD_LIST(_t, _m, _mt) \
+    for (_mt* tmp = ((_t*)a)->_m; tmp; tmp = nextLink(_mt, tmp)) \
+      asts.add(tmp)
+#define AST_ADD_VEC(_t, _m, _mt) \
+    forv_Vec(_mt, c, ((_t*)a)->_m) asts.add(c)
+
+#define ADD_CHILD(_t, _m) if (all) AST_ADD_CHILD(_t, _m)
+#define ADD_LIST(_t, _m, _mt) if (all) AST_ADD_LIST(_t, _m, _mt)
+#define ADD_VEC(_t, _m, _mt) if (all) AST_ADD_VEC(_t, _m, _mt)
+
+void
+get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
+  switch (a->astType) {
+  case STMT:
+  LStmtCommon:
+    ADD_CHILD(Stmt, parentSymbol);
+    ADD_CHILD(Stmt, parentStmt);
+    break;
+  case STMT_NOOP:
+    goto LStmtCommon;
+  case STMT_DEF:
+    AST_ADD_LIST(DefStmt, defExprls, DefExpr);
+    goto LStmtCommon;
+  case STMT_EXPR:
+  LExprStmtCommon:
+    AST_ADD_CHILD(ExprStmt, expr);
+    goto LStmtCommon;
+  case STMT_RETURN:
+  case STMT_WITH:
+  case STMT_USE:
+    goto LExprStmtCommon;
+  case STMT_BLOCK:
+  LBlockStmtCommon:
+    AST_ADD_LIST(BlockStmt, body, Stmt);
+    goto LStmtCommon;
+  case STMT_WHILELOOP:
+    AST_ADD_CHILD(WhileLoopStmt, condition);
+    goto LBlockStmtCommon;
+  case STMT_FORLOOP:
+    AST_ADD_CHILD(ForLoopStmt, indices);
+    AST_ADD_CHILD(ForLoopStmt, domain);
+    goto LBlockStmtCommon;
+  case STMT_COND:
+    AST_ADD_CHILD(CondStmt, condExpr);
+    AST_ADD_CHILD(CondStmt, thenStmt);
+    AST_ADD_CHILD(CondStmt, elseStmt);
+    goto LStmtCommon;
+  case STMT_LABEL:
+    ADD_CHILD(LabelStmt, label);
+    AST_ADD_CHILD(LabelStmt, stmt);
+    goto LStmtCommon;
+  case STMT_GOTO:
+    ADD_CHILD(GotoStmt, label);
+    goto LStmtCommon;
+  case EXPR:
+    LExprCommon:
+    ADD_CHILD(GotoStmt, label);
+    break;
+  case EXPR_LITERAL:
+  case EXPR_BOOLLITERAL:
+  case EXPR_INTLITERAL:
+  case EXPR_FLOATLITERAL:
+  case EXPR_COMPLEXLITERAL:
+  case EXPR_STRINGLITERAL:
+    goto LExprCommon;
+  case EXPR_VARIABLE:
+    ADD_CHILD(Variable, var);
+    ADD_CHILD(Variable, forward);
+    goto LExprCommon;
+  case EXPR_VARINIT:
+    AST_ADD_CHILD(VarInitExpr, expr);
+    goto LExprCommon;
+  case EXPR_USERINIT:
+    AST_ADD_CHILD(UserInitExpr, expr);
+    goto LExprCommon;
+  case EXPR_DEF:
+    ADD_CHILD(DefExpr, sym);
+    AST_ADD_CHILD(DefExpr, init);
+    goto LExprCommon;
+  case EXPR_UNOP:
+    AST_ADD_CHILD(UnOp, operand);
+    goto LExprCommon;
+  case EXPR_BINOP:
+  LBinOpCommon:
+    AST_ADD_CHILD(BinOp, left);
+    AST_ADD_CHILD(BinOp, right);
+    goto LExprCommon;
+  case EXPR_SPECIALBINOP:
+    goto LBinOpCommon;
+  case EXPR_ASSIGNOP:
+    goto LBinOpCommon;
+  case EXPR_SEQ:
+    AST_ADD_LIST(SeqExpr, exprls, Expr);
+    goto LExprCommon;
+  case EXPR_SIMPLESEQ:
+    AST_ADD_CHILD(SimpleSeqExpr, lo);
+    AST_ADD_CHILD(SimpleSeqExpr, hi);
+    AST_ADD_CHILD(SimpleSeqExpr, str);
+    goto LExprCommon;
+  case EXPR_FLOOD:
+    goto LExprCommon;
+  case EXPR_COMPLETEDIM:
+    goto LExprCommon;
+  case EXPR_LET:
+    AST_ADD_LIST(LetExpr, symDefs, DefExpr);
+    AST_ADD_CHILD(LetExpr, innerExpr);
+    goto LExprCommon;
+  case EXPR_FORALL:
+    AST_ADD_LIST(ForallExpr, domains, Expr);
+    AST_ADD_LIST(ForallExpr, indices, Expr);
+    AST_ADD_CHILD(ForallExpr, forallExpr);
+    goto LExprCommon;
+  case EXPR_SIZEOF:
+    AST_ADD_CHILD(SizeofExpr, variable);
+    goto LExprCommon;
+  case EXPR_PARENOP:
+  LParenOpCommon:
+    AST_ADD_CHILD(ParenOpExpr, baseExpr);
+    AST_ADD_LIST(ParenOpExpr, argList, Expr);
+    goto LExprCommon;
+  case EXPR_CAST:
+    ADD_CHILD(CastExpr, newType);
+    AST_ADD_CHILD(CastExpr, expr);
+    goto LExprCommon;
+  case EXPR_CAST_LIKE:
+    AST_ADD_CHILD(CastLikeExpr, variable);
+    AST_ADD_CHILD(CastLikeExpr, expr);
+    goto LExprCommon;
+  case EXPR_FNCALL:
+  case EXPR_ARRAYREF:
+  case EXPR_TUPLESELECT:
+    goto LParenOpCommon;
+  case EXPR_MEMBERACCESS:
+    AST_ADD_CHILD(MemberAccess, base);
+    ADD_CHILD(MemberAccess, member);
+    ADD_CHILD(MemberAccess, member_type);
+    goto LExprCommon;
+  case EXPR_REDUCE:
+    ADD_CHILD(ReduceExpr, reduceType);
+    AST_ADD_CHILD(ReduceExpr, redDim);
+    AST_ADD_CHILD(ReduceExpr, argExpr);
+    goto LExprCommon;
+  case EXPR_TUPLE:
+    AST_ADD_LIST(Tuple, exprs, Expr);
+    goto LExprCommon;
+  case EXPR_NAMED:
+    AST_ADD_CHILD(NamedExpr, actual);
+    goto LExprCommon;
+  case SYMBOL: case SYMBOL_UNRESOLVED: 
+  LSymbolCommon:
+    ADD_CHILD(Symbol, type);
+    break;
+  case SYMBOL_MODULE:
+    ADD_LIST(ModuleSymbol, stmts, Stmt);
+    ADD_CHILD(ModuleSymbol, initFn);
+    goto LSymbolCommon;
+  case SYMBOL_VAR: 
+    ADD_CHILD(VarSymbol, aspect);
+    goto LSymbolCommon;
+  case SYMBOL_PARAM: 
+    ADD_CHILD(ParamSymbol, init);
+    ADD_CHILD(ParamSymbol, typeVariable);
+    goto LSymbolCommon;
+  case SYMBOL_TYPE: goto LSymbolCommon;
+  case SYMBOL_FN:
+    ADD_LIST(FnSymbol, formals, Symbol);
+    ADD_CHILD(FnSymbol, body);
+    ADD_CHILD(FnSymbol, retType);
+    ADD_CHILD(FnSymbol, _this);
+    ADD_CHILD(FnSymbol, _setter);
+    ADD_CHILD(FnSymbol, _getter);
+    goto LSymbolCommon;
+  case SYMBOL_ENUM: case SYMBOL_LABEL: case SYMBOL_FORWARDING:
+    goto LSymbolCommon;
+  case TYPE:
+  LTypeCommon:
+    ADD_CHILD(Type, symbol);
+    ADD_CHILD(Type, defaultVal);
+    ADD_CHILD(Type, defaultConstructor);
+    ADD_CHILD(Type, parentType);
+    ADD_CHILD(Type, metaType);
+    break;
+  case TYPE_BUILTIN:
+  case TYPE_FN:
+    goto LTypeCommon;
+  case TYPE_ENUM:
+    ADD_LIST(EnumType, valList, EnumSymbol);
+    goto LTypeCommon;
+  case TYPE_DOMAIN:
+    ADD_CHILD(DomainType, parent);
+    ADD_CHILD(DomainType, initExpr);
+    ADD_CHILD(DomainType, idxType);
+    goto LTypeCommon;
+  case TYPE_INDEX:
+    ADD_CHILD(IndexType, idxExpr);
+    ADD_CHILD(IndexType, domainType);
+    ADD_CHILD(IndexType, idxType);
+    goto LTypeCommon;
+  case TYPE_SEQ:
+    ADD_CHILD(SeqType, elementType);
+    goto LClassTypeCommon;
+  case TYPE_ARRAY:
+    ADD_CHILD(ArrayType, domain);
+    ADD_CHILD(ArrayType, domainType);
+    ADD_CHILD(ArrayType, elementType);
+    goto LTypeCommon;
+  case TYPE_USER:
+    ADD_CHILD(UserType, definition);
+    goto LTypeCommon;
+  case TYPE_LIKE:
+    ADD_CHILD(LikeType, expr);
+    goto LTypeCommon;
+  case TYPE_STRUCTURAL:
+  LStructuralTypeCommon:
+    ADD_LIST(StructuralType, declarationList, Stmt);
+    ADD_CHILD(StructuralType, parentStruct);
+    ADD_VEC(StructuralType, fields, VarSymbol);
+    ADD_VEC(StructuralType, types, TypeSymbol);
+    goto LTypeCommon;
+  case TYPE_CLASS:
+  LClassTypeCommon:
+    ADD_VEC(ClassType, parentClasses, ClassType);
+    goto LStructuralTypeCommon;
+  case TYPE_RECORD:
+    goto LStructuralTypeCommon;
+  case TYPE_UNION:
+    ADD_CHILD(UnionType, fieldSelector);
+    goto LStructuralTypeCommon;
+  case TYPE_TUPLE:
+    ADD_VEC(TupleType, components, Type);
+    goto LStructuralTypeCommon;
+  case TYPE_META:
+    ADD_CHILD(MetaType, base);
+    goto LTypeCommon;
+  case TYPE_SUM:
+    ADD_VEC(SumType, components, Type);
+    goto LTypeCommon;
+  case TYPE_VARIABLE:
+    ADD_CHILD(VariableType, type);
+    goto LTypeCommon;
+  case TYPE_UNRESOLVED:
+  case TYPE_NIL:
+    goto LTypeCommon;
+  case AST_TYPE_END: break;
+  }
+}
+#undef AST_ADD_CHILD
+#undef AST_ADD_LIST
+#undef AST_ADD_VEC
+#undef ADD_CHILD
+#undef ADD_LIST
+#undef ADD_VEC
+
+
