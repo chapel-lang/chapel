@@ -32544,3 +32544,15 @@ Added files:
 	                                         test_myseq2.chpl 
 	                                         test_myseq2.good 
 
+---------------------------------------------------------------------------
+
+05/23/05 10:06:46 -- deitz
+
+Log message:
+	Forgot to add futures for the three tests I just checked in.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_myseq0.future 
+	                                         test_myseq1.future 
+	                                         test_myseq2.future 
+
