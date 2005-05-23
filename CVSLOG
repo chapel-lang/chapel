@@ -32449,3 +32449,21 @@ Removed files:
 	chapel/test/types/type_variables/jplevyak/: 
 	                                            test_clone_class-1.future 
 
+---------------------------------------------------------------------------
+
+05/22/05 19:52:50 -- jplevyak
+
+Log message:
+	Added an option to use a local optimized version of getStuff, getStmt.
+	This dramatically reduces CPU consumption for the AST_to_IF1 phase.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp if1.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.prediff 
+	                               union_type_hierarchy-3-error.prediff 
+
