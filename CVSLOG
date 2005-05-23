@@ -32717,3 +32717,13 @@ Added files:
 	chapel/compiler/traversals/: findTypeVariables.cpp 
 	                             findTypeVariables.h 
 
+---------------------------------------------------------------------------
+
+05/23/05 14:30:10 -- deitz
+
+Log message:
+	Forgot to comment out some printfs I put in before that last checkin.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
