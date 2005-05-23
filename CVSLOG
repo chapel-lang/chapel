@@ -32686,3 +32686,15 @@ Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 	chapel/make/: Makefile.base 
 
+---------------------------------------------------------------------------
+
+05/23/05 10:51:09 -- jplevyak
+
+Log message:
+	remove two futures fixed by last checkin.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class3.future 
+	                                         test_typevar_class7.future 
+
