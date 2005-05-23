@@ -32467,3 +32467,16 @@ Added files:
 	                               record_type_hierarchy-3-error.prediff 
 	                               union_type_hierarchy-3-error.prediff 
 
+---------------------------------------------------------------------------
+
+05/23/05 09:06:10 -- deitz
+
+Log message:
+	Added a test that instantiates two different classes from the same
+	class.  It works.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class2.chpl 
+	                                         test_typevar_class2.good 
+
