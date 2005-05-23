@@ -32750,3 +32750,13 @@ Modified files:
 	chapel/compiler/include/: baseAST.h 
 	chapel/compiler/AST/: baseAST.cpp 
 
+---------------------------------------------------------------------------
+
+05/23/05 15:25:34 -- jplevyak
+
+Log message:
+	Remove get_ast_children()
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
