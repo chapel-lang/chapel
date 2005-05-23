@@ -32480,3 +32480,17 @@ Added files:
 	                                         test_typevar_class2.chpl 
 	                                         test_typevar_class2.good 
 
+---------------------------------------------------------------------------
+
+05/23/05 09:09:38 -- deitz
+
+Log message:
+	Class instantiation test fails because of writelns at end.  This is
+	otherwise the same as test_typevar_class2.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class3.chpl 
+	                                         test_typevar_class3.future 
+	                                         test_typevar_class3.good 
+
