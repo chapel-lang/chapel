@@ -32528,3 +32528,19 @@ Added files:
 	                                         test_typevar_class9.chpl 
 	                                         test_typevar_class9.good 
 
+---------------------------------------------------------------------------
+
+05/23/05 10:04:23 -- deitz
+
+Log message:
+	Some tests that progressively approximate sequence class
+	instantiation.  I'm not sure that all of these should work.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_myseq0.chpl 
+	                                         test_myseq0.good 
+	                                         test_myseq1.chpl 
+	                                         test_myseq1.good 
+	                                         test_myseq2.chpl 
+	                                         test_myseq2.good 
+
