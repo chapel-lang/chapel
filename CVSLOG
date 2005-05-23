@@ -32727,3 +32727,15 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+05/23/05 14:39:50 -- jplevyak
+
+Log message:
+	remove unnecessary Makefiles which will be overwritten by "configure"
+
+Removed files:
+	chapel/third-party/boehmgc/gc6.5/: Makefile 
+	chapel/third-party/boehmgc/gc6.5/doc/: Makefile 
+	chapel/third-party/boehmgc/gc6.5/include/: Makefile 
+
