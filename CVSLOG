@@ -32494,3 +32494,22 @@ Added files:
 	                                         test_typevar_class3.future 
 	                                         test_typevar_class3.good 
 
+---------------------------------------------------------------------------
+
+05/23/05 09:38:24 -- deitz
+
+Log message:
+	Added four more class instantiation tests.  One is a future.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class4.chpl 
+	                                         test_typevar_class4.good 
+	                                         test_typevar_class5.chpl 
+	                                         test_typevar_class5.good 
+	                                         test_typevar_class6.chpl 
+	                                         test_typevar_class6.good 
+	                                         test_typevar_class7.chpl 
+	                                         test_typevar_class7.future 
+	                                         test_typevar_class7.good 
+
