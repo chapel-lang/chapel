@@ -32760,3 +32760,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/23/05 16:49:04 -- deitz
+
+Log message:
+	Futurized test pending sum types.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class9.future 
+
