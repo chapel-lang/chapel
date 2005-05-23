@@ -32698,3 +32698,22 @@ Removed files:
 	                                         test_typevar_class3.future 
 	                                         test_typevar_class7.future 
 
+---------------------------------------------------------------------------
+
+05/23/05 14:27:51 -- deitz
+
+Log message:
+	Instantiating classes now doesn't just instantiate methods but rather
+	all functions that use the type variable that is being instantiated.
+	
+	This seems to temporarily break
+	  types/type_variables/deitz/test_typevar_class9.chpl
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/symtab/: collectFunctions.cpp collectFunctions.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: findTypeVariables.cpp 
+	                             findTypeVariables.h 
+
