@@ -252,6 +252,7 @@ if1_send1(IF1 *p, Code **c) {
 }
 
 void if1_add_send_arg(IF1 *p, Code *c, Sym *a) { 
+  assert(a);
   c->rvals.add(a); 
 }
 
