@@ -32513,3 +32513,18 @@ Added files:
 	                                         test_typevar_class7.future 
 	                                         test_typevar_class7.good 
 
+---------------------------------------------------------------------------
+
+05/23/05 09:51:19 -- deitz
+
+Log message:
+	Two more class instantiation tests that instantiate a class from a
+	class.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class8.chpl 
+	                                         test_typevar_class8.good 
+	                                         test_typevar_class9.chpl 
+	                                         test_typevar_class9.good 
+
