@@ -32936,3 +32936,16 @@ Added files:
 	                            test_myseq_record3.future 
 	                            test_myseq_record3.good 
 
+---------------------------------------------------------------------------
+
+05/24/05 13:08:29 -- deitz
+
+Log message:
+	Added record type variable test with future.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record1.chpl 
+	                                         test_typevar_record1.future 
+	                                         test_typevar_record1.good 
+
