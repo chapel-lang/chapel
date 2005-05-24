@@ -32801,3 +32801,42 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/24/05 10:48:53 -- deitz
+
+Log message:
+	Fixed a bug in type cloning in which an infinite recursion would be
+	encountered if the type was recursive.
+	
+	Reworked the overloading code so that anything can be overloaded.
+	ScopeResolveSymbols now checks to make sure only functions are
+	overloaded.  After this, the compiler can overload other things.  This
+	is useful especially for type cloning.  I think we can also clean up
+	the getter so that it is just a part of overloading, overloaded with
+	the field.
+	
+	In ApplyThisParameters, this is no longer applied to types.
+	
+	Made some superficial changes to sequence handling.  This will all
+	disappear soon.
+	
+	Modified the error for redefinition of variables to print out all
+	redefinitions not just one.
+	
+	Removed futures for test_myseq0,1,2.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             scopeResolveSymbols.cpp 
+	chapel/runtime/include/: seq.h 
+	chapel/test/trivial/bradc/: redefinevar.good 
+	chapel/test/types/type_variables/deitz/: test_myseq2.chpl 
+	                                         test_myseq2.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: test_myseq0.future 
+	                                         test_myseq1.future 
+	                                         test_myseq2.future 
+
