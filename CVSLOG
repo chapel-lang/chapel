@@ -32861,3 +32861,16 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_class9.future 
 
+---------------------------------------------------------------------------
+
+05/24/05 11:18:19 -- jplevyak
+
+Log message:
+	Recognize -1 as a bogus line number in a couple more places.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp fa.cpp 
+	chapel/compiler/backend/: dump.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good sum_type-1.good 
+	                                  sum_type-2.good 
+
