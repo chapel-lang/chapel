@@ -32985,3 +32985,21 @@ Added files:
 	                            test_cond_expr1.future 
 	                            test_cond_expr1.good 
 
+---------------------------------------------------------------------------
+
+05/24/05 14:41:24 -- jplevyak
+
+Log message:
+	Add support for conditional expressions.
+	Renamed CondExpr::boolExpr to CondExpr::condExpr to match CondStmt.
+	I guess I could have gone the other direction and named it boolExpr, but
+	in any case I think CondExpr and StmtExpr should have a similar name
+	for the conditional expression for the sake of uniformity.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+Removed files:
+	chapel/test/trivial/deitz/: test_cond_expr1.future 
+
