@@ -32771,3 +32771,14 @@ Added files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_class9.future 
 
+---------------------------------------------------------------------------
+
+05/24/05 08:45:46 -- deitz
+
+Log message:
+	Cleared Vecs used in instantiate_generic in an attempt to fix valgrind
+	regressions.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
