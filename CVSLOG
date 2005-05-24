@@ -32782,3 +32782,22 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+05/24/05 10:12:47 -- jplevyak
+
+Log message:
+	Implemented Sum types.
+	Fixed a bug whereby we were passing pointers to pointers to functions taking
+	reference (class) types.
+	Handle -1 line numbers in some case to mean "no line number information".
+	This used to be signaled by 0... may more places need to be updated.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp 
+	chapel/compiler/include/: clone.h type.h 
+	chapel/test/flowanalysis/newast/: domarr.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
