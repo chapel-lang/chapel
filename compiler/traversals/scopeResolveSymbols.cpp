@@ -29,9 +29,23 @@ static void check_legal_overload(Symbol* sym) {
   }
 }
 
+
+static Symbol* resolveUnresolvedType(Vec<char*>* names) {
+  Symbol* typeSym = Symboltable::lookup(names->v[0]);
+  for (int i = 1; i < names->n; i++) {
+    if (typeSym) {
+      if (StructuralType* type = dynamic_cast<StructuralType*>(typeSym->type)) {
+        typeSym = Symboltable::lookupInScope(names->v[i], type->structScope);
+      }
+    }
+  }
+  return typeSym;
+}
+
+
 static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
-  if (dynamic_cast<UnresolvedType*>(type)) {
-    Symbol* new_type = Symboltable::lookup(type->symbol->name);
+  if (UnresolvedType* unresolvedType = dynamic_cast<UnresolvedType*>(type)) {
+    Symbol* new_type = resolveUnresolvedType(unresolvedType->names);
     if (new_type) {
       check_legal_overload(new_type);
       if (ParamSymbol* param = dynamic_cast<ParamSymbol*>(new_type)) {
@@ -45,8 +59,7 @@ static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
         resolve_type_helper(currentFunction, new_type->type);
         type = new_type->type;
       }
-    }
-    else {
+    } else {
       INT_FATAL(type, "Error resolving type");
     }
   } else if (UserType* user_type = dynamic_cast<UserType*>(type)) {

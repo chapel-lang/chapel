@@ -1596,14 +1596,27 @@ void VariableType::traverseDefType(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
 }
 
-UnresolvedType::UnresolvedType(char* init_symbol) :
-  Type(TYPE_UNRESOLVED, NULL) {
-  symbol = new UnresolvedSymbol(init_symbol);
+
+UnresolvedType::UnresolvedType(Vec<char*>* init_names) :
+  Type(TYPE_UNRESOLVED, NULL),
+  names(init_names) {
 }
 
 
 Type* UnresolvedType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new UnresolvedType(copystring(symbol->name));
+  Vec<char*>* new_names = new Vec<char*>();
+  forv_Vec(char, str, *names) {
+    new_names->add(str);
+  }
+  return new UnresolvedType(new_names);
+}
+
+
+void UnresolvedType::print(FILE* outfile) {
+  fprintf(outfile, "%s", names->v[0]);
+  for (int i = 1; i < names->n; i++) {
+    fprintf(outfile, ".%s", names->v[i]);
+  }
 }
 
 

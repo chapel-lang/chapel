@@ -30,6 +30,7 @@
   BlockStmt* blkstmt;
   Type* pdt;
   TupleType* tupledt;
+  UnresolvedType* unresolveddt;
   EnumSymbol* enumsym;
   Symbol* psym;
   VarSymbol* pvsym;
@@ -116,6 +117,7 @@
 %type <boolval> fortype fnretref
 %type <pdt> type domainType indexType arrayType tupleType seqType
 %type <tupledt> tupleTypes
+%type <unresolveddt> unresolvedType
 %type <pdt> vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier fname
 %type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
@@ -572,14 +574,28 @@ tupleType:
 ;
 
 
+unresolvedType:
+  unresolvedType TDOT identifier
+    {
+      $1->names->add($3);
+    }
+| identifier
+    {
+      Vec<char*>* new_names = new Vec<char*>();
+      new_names->add($1);
+      $$ = new UnresolvedType(new_names);
+    }
+;
+
+
 type:
   domainType
 | indexType
 | arrayType
 | seqType
 | tupleType
-| identifier
-    { $$ = new UnresolvedType($1); }
+| unresolvedType
+    { $$ = $1; }
 | query_identifier
     { $$ = dtUnknown; }
 ;

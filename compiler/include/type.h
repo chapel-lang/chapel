@@ -368,8 +368,11 @@ class VariableType : public Type {
 
 class UnresolvedType : public Type {
  public:
-  UnresolvedType(char* init_symbol);
+  Vec<char*>* names;
+
+  UnresolvedType(Vec<char*>* init_names);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 
