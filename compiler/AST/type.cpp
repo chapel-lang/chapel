@@ -1153,7 +1153,7 @@ is_Value_Type(Type *t) {
 
 int
 is_Reference_Type(Type *t) {
-  return t && t->astType == TYPE_CLASS;
+  return t && (t->astType == TYPE_CLASS || t->astType == TYPE_SUM);
 }
 
 
@@ -1558,16 +1558,25 @@ void MetaType::traverseDefType(Traversal* traversal) {
 }
 
 SumType::SumType(Type* firstType) :
-  Type(TYPE_SUM, NULL)
+  Type(TYPE_SUM, new Variable(Symboltable::lookupInternal("nil",
+                                                          SCOPE_INTRINSIC)))
 {
   components.add(firstType);
 }
-
 
 void SumType::addType(Type* additionalType) {
   components.add(additionalType);
 }
 
+void SumType::codegenDef(FILE* outfile) {
+  fprintf(outfile, "typedef void *");
+  symbol->codegen(outfile);
+  fprintf(outfile, ";");
+}
+
+void SumType::codegenStructName(FILE* outfile) {
+  symbol->codegen(outfile);
+}
 
 VariableType::VariableType(Type *init_type) :
   Type(TYPE_VARIABLE, NULL), 
@@ -1653,25 +1662,23 @@ void findInternalTypes(void) {
 
 class LUBCacheHashFns : public gc {
  public:
-  static unsigned int hash(Symbol *a) {
+  static unsigned int hash(SumType *a) {
     unsigned int h = 0;
-    Sym *s = a->asymbol->sym;
-    for (int i = 0; i < s->has.n; i++)
-      h += open_hash_multipliers[i % 256] * (uintptr_t)s->has.v[i];
+    for (int i = 0; i < a->components.n; i++)
+      h += open_hash_multipliers[i % 256] * (uintptr_t)a->components.v[i];
     return h;
   }
-  static int equal(Symbol *aa, Symbol *ab) { 
-    Sym *a = aa->asymbol->sym, *b = ab->asymbol->sym;
-    if (a->has.n != b->has.n)
+  static int equal(SumType *a, SumType *b) { 
+    if (a->components.n != b->components.n)
       return 0;
-    for (int i = 0; i < a->has.n; i++)
-      if (a->has.v[i] != b->has.v[i])
+    for (int i = 0; i < a->components.n; i++)
+      if (a->components.v[i] != b->components.v[i])
         return 0;
     return 1;
   }
 };
 
-static class BlockHash<Symbol *, LUBCacheHashFns> lub_cache;
+static class BlockHash<SumType *, LUBCacheHashFns> lub_cache;
 
 
 Type *find_or_make_sum_type(Vec<Type *> *types) {
@@ -1684,9 +1691,15 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   for (int i = 1; i <= types->n; i++) {
     new_sum_type->addType(types->v[i]);
   }
+  SumType *old_type = lub_cache.get(new_sum_type);
+  if (old_type)
+    return old_type;
+  lub_cache.put(new_sum_type);
   char* name = glomstrings(2, "_sum_type", intstring(uid++));
+  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   Symbol* sym = new TypeSymbol(name, new_sum_type);
   new_sum_type->addSymbol(sym);
+  Symboltable::setCurrentScope(saveScope);
   return new_sum_type;
 }
 

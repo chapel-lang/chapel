@@ -1199,14 +1199,10 @@ void MemberAccess::print(FILE* outfile) {
 
 
 void MemberAccess::codegen(FILE* outfile) {
-  StructuralType* base_type = dynamic_cast<StructuralType*>(base->typeInfo());
-  if (!base_type) {
-    INT_FATAL(this, "Dot applied to non-class/record/union");
-    base->codegen(outfile);
-    fprintf(outfile, "?.?");
-    member->codegen(outfile);
-  } else {
+    StructuralType* base_type = dynamic_cast<StructuralType*>(base->typeInfo());
     if (member_type) {
+      if (!base_type)
+        goto Lreftype;
       switch (base_type->astType) {
         default: 
           // (*((T*)(((char*)(&(p)))+offset)))
@@ -1217,6 +1213,7 @@ void MemberAccess::codegen(FILE* outfile) {
           fprintf(outfile, ")))+%d)))",member_offset);
           break;
         case TYPE_CLASS:
+          Lreftype:
           // (*((T*)(((char*)(p))+offset)))
           fprintf(outfile, "(*((");
           member_type->codegen(outfile);
@@ -1238,7 +1235,6 @@ void MemberAccess::codegen(FILE* outfile) {
       base_type->codegenMemberAccessOp(outfile);
       member->codegen(outfile);
     }
-  }
 }
 
 

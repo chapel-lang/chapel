@@ -352,6 +352,8 @@ class SumType : public Type {
 
   SumType(Type* init_type);
   void addType(Type* additionalType);
+  virtual void codegenStructName(FILE* outfile);
+  void codegenDef(FILE* outfile);
 };
 
 class VariableType : public Type {

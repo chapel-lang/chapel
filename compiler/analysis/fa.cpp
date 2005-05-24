@@ -1865,7 +1865,7 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
   depth++;
   if (depth > print_call_depth || !p->code)
     return;
-  if (depth > 1 && p->code->filename() && p->code->line()) {
+  if (depth > 1 && p->code->filename() && p->code->line() > 0) {
     for (int x = 0; x < depth; x++)
       fprintf(stderr, " ");
     fprintf(stderr, "called from %s:%d\n", p->code->filename(), p->code->line());
@@ -1960,10 +1960,10 @@ show_violations(FA *fa, FILE *fp) {
     if (!verbose_level && !v->av->var->sym->name)
       continue;
 #endif
-    if (v->send)
+    if (v->send && v->send->var->def->code->line() > 0)
       fprintf(stderr, "%s:%d: ", v->send->var->def->code->filename(), 
               v->send->var->def->code->line());
-    else if (v->av->var->sym->ast)
+    else if (v->av->var->sym->ast && v->av->var->sym->line() > 0)
       fprintf(stderr, "%s:%d: ", v->av->var->sym->filename(), 
               v->av->var->sym->line());
     else if (!v->av->contour_is_entry_set && v->av->contour != GLOBAL_CONTOUR) {
@@ -2072,7 +2072,7 @@ log_var_types(Var *v, Fun *f) {
   else
     log(LOG_TEST_FA, "%d::", v->sym->in->id);
   if (v->sym->name) {
-    if (v->sym->line())
+    if (v->sym->line() > 0)
       log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->filename()), v->sym->log_line());
     else
       log(LOG_TEST_FA, "%s ", v->sym->name);

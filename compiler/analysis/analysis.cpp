@@ -350,8 +350,10 @@ ACallbacks::make_LUB_type(Sym *t) {
   make_meta_type(t);
   tt->symbol->asymbol = t->meta_type->asymbol;
   tt->symbol->asymbol->sym = t->meta_type;
+  tt->symbol->asymbol->symbol = tt->symbol;
   tt->asymbol = t->asymbol;
   tt->asymbol->sym = t;
+  tt->asymbol->symbol = tt;
   assert(tt->asymbol->sym->type_kind == Type_LUB);
   return t;
 }
@@ -2955,7 +2957,7 @@ AST_is_used(BaseAST *a, Symbol *s) {
 static void
 member_info(Sym *t, char *name, int *offset, Type **type) {
   int oresult = -1;
-  Sym *iv_type = 0;
+  Vec<Sym *> iv_type;
   Vec<Sym *> ttypes, *types = 0;
   if (t->type_kind == Type_LUB)
     types = &t->has;
@@ -2970,15 +2972,17 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
         if (oresult >= 0 && oresult != iv->ivar_offset)
           fail("missmatched member offsets");
         oresult = iv->ivar_offset;
-        if (iv_type && iv_type != iv->type)
-          fail("missmatched member types");
-        iv_type = iv->type;
+        iv_type.set_add(iv->type);
       }
     }
   }
   *offset = oresult;
-  if (iv_type)
-    *type = dynamic_cast<Type *>(iv_type->asymbol->symbol);
+  Sym *tmp = 0;
+  if (iv_type.n == 1)
+    tmp = iv_type.v[0];
+   else 
+    tmp = concrete_type_set_to_type(iv_type);
+  *type = dynamic_cast<Type *>(tmp->asymbol->symbol);
 }
 
 void

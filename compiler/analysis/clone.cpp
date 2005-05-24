@@ -501,7 +501,7 @@ determine_clones() {
   }
 }
 
-static Sym *
+Sym *
 concrete_type_set_to_type(Vec<Sym *> &t) {
   t.set_to_vec();
   if (!t.n)
