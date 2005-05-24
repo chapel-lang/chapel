@@ -177,6 +177,11 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_LET");
     }
     break;
+  case EXPR_COND:
+    if (typeid(*ast) != typeid(CondExpr)) {
+      INT_FATAL(ast, "Unexpected AST statement type: EXPR_COND");
+    }
+    break;
   case EXPR_PARENOP:
     if (typeid(*ast) != typeid(ParenOpExpr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_PARENOP");

@@ -599,6 +599,22 @@ class LetExpr : public Expr {
 };
 
 
+class CondExpr : public Expr {
+ public:
+  Expr* boolExpr;
+  Expr* thenExpr;
+  Expr* elseExpr;
+
+  CondExpr(Expr* initBoolExpr, Expr* initThenExpr, Expr* initElseExpr);
+  virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseExpr(Traversal* traversal);
+  Type* typeInfo(void);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 class NamedExpr : public Expr {
  public:
   char* name;

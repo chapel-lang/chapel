@@ -123,7 +123,7 @@
 %type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
 %type <enumsym> enum_item enum_list
 %type <pexpr> lvalue declarable_expr atom expr exprlist expr_list_item nonemptyExprlist literal range seq_expr
-%type <pexpr> reduction optional_init_expr assignExpr
+%type <pexpr> reduction optional_init_expr assignExpr conditional_expr
 %type <pfaexpr> forallExpr
 %type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
 %type <defexpr> vardecl_inner vardecl_inner_ls
@@ -918,6 +918,14 @@ seq_expr:
 ;
 
 
+conditional_expr:
+  TLP TIF expr TTHEN expr TELSE expr TRP
+    {
+      $$ = new CondExpr($3, $5, $7);
+    }
+;
+
+
 expr: 
   atom
 | TNIL
@@ -938,6 +946,7 @@ expr:
     $$ = new ParenOpExpr(_chpl_tostring, args);
   }
 | range %prec TDOTDOT
+| conditional_expr
 | seq_expr
 | forallExpr expr %prec TRSBR
     { $$ = Symboltable::finishForallExpr($1, $2); }

@@ -113,6 +113,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Flood",
   "CompleteDim",
   "Let",
+  "CondExpr",
   "Forall",
   "Sizeof",
   "ParenOp",
@@ -272,6 +273,11 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case EXPR_LET:
     AST_ADD_LIST(LetExpr, symDefs, DefExpr);
     AST_ADD_CHILD(LetExpr, innerExpr);
+    goto LExprCommon;
+  case EXPR_COND:
+    AST_ADD_CHILD(CondExpr, boolExpr);
+    AST_ADD_CHILD(CondExpr, thenExpr);
+    AST_ADD_CHILD(CondExpr, elseExpr);
     goto LExprCommon;
   case EXPR_FORALL:
     AST_ADD_LIST(ForallExpr, domains, Expr);

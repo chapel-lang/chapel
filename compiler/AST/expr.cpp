@@ -2250,6 +2250,79 @@ void LetExpr::codegen(FILE* outfile) {
 }
 
 
+CondExpr::CondExpr(Expr* initBoolExpr, Expr* initThenExpr, Expr* initElseExpr) :
+  Expr(EXPR_COND),
+  boolExpr(initBoolExpr),
+  thenExpr(initThenExpr),
+  elseExpr(initElseExpr)
+{ }
+
+
+Expr* CondExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return
+    new CondExpr(dynamic_cast<Expr*>(boolExpr->copyListInternal(clone, map)),
+                 dynamic_cast<Expr*>(thenExpr->copyListInternal(clone, map)),
+                 dynamic_cast<Expr*>(elseExpr->copyListInternal(clone, map)));
+}
+
+
+void CondExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == boolExpr) {
+    boolExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == thenExpr) {
+    thenExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == elseExpr) {
+    elseExpr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in CondExpr::replaceChild(old, new)");
+  }
+}
+
+
+void CondExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(boolExpr, traversal, false);
+  TRAVERSE(thenExpr, traversal, false);
+  TRAVERSE(elseExpr, traversal, false);
+}
+
+
+// not yet implemented right
+Type* CondExpr::typeInfo(void) {
+  if (analyzeAST && !RunAnalysis::runCount) {
+    return dtUnknown;
+  }
+  return thenExpr->typeInfo();
+}
+
+
+void CondExpr::print(FILE* outfile) {
+  fprintf(outfile, "(if ");
+  boolExpr->print(outfile);
+  fprintf(outfile, " then ");
+  thenExpr->print(outfile);
+  if (elseExpr) {
+    fprintf(outfile, " else ");
+    elseExpr->print(outfile);
+  }
+  fprintf(outfile, ")");
+}
+
+
+void CondExpr::codegen(FILE* outfile) {
+  if (elseExpr) {
+    fprintf(outfile, "(");
+    boolExpr->codegen(outfile);
+    fprintf(outfile, " ? ");
+    thenExpr->codegen(outfile);
+    fprintf(outfile, " : ");
+    elseExpr->codegen(outfile);
+    fprintf(outfile, ")");
+  } else {
+    INT_FATAL(this, "CondExpr has no else");
+  }
+}
+
+
 NamedExpr::NamedExpr(char* init_name, Expr* init_actual) :
   Expr(EXPR_NAMED),
   name(init_name),

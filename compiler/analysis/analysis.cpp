@@ -2055,6 +2055,9 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = s->innerExpr->ainfo->rval;
       break;
     }
+    case EXPR_COND: {
+      INT_FATAL(ast, "No analysis support for conditional expressions");
+    }
     case EXPR_FORALL: {
       ForallExpr *s = dynamic_cast<ForallExpr *>(ast);
       s->ainfo->rval = new_sym();
