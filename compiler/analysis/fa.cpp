@@ -1721,7 +1721,8 @@ show_sym(Sym *s, FILE *fp) {
 
 static void
 show_fun(Fun *f, FILE *fp) {
-  fprintf(fp, "%s:%d: ", f->filename(), f->line());
+  if (f->line() > 0)
+    fprintf(fp, "%s:%d: ", f->filename(), f->line());
   forv_Sym(s, f->sym->has) {
     show_sym(s, fp);
     if (s != f->sym->has.v[f->sym->has.n-1])

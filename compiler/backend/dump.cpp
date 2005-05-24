@@ -116,7 +116,7 @@ dump_sym(FILE *fp, Sym *t) {
   else
     fprintf(fp, "<TR><TD WIDTH=30><TD WIDTH=100>In<TD>*global*\n");
 #endif
-  if (t->line() && t->filename() && *t->filename())
+  if (t->line() > 0 && t->filename() && *t->filename())
     fprintf(fp, "<TR><TD><TD>Location<TD>%s:%d\n", t->filename(), t->line());
   if (t->is_builtin) {
     char *name = if1->builtins_names.get(t);

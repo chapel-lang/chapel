@@ -898,12 +898,12 @@ void
 log_test_fa(FA *fa) {
   Vec<Var *> gvars;
   forv_Fun(f, fa->funs) {
-    if (f->sym->log_line()) {
+    if (f->sym->log_line() > 0) {
       log(LOG_TEST_FA, "function %s %s:%d\n", f->sym->name ? f->sym->name : "<anonymous>",
           f->sym->filename(), f->sym->log_line());
       forv_CallPoint(cp, f->called) {
         Fun *ff = cp->fun;
-        if (cp->pnode->code->line())
+        if (cp->pnode->code->line() > 0)
           log(LOG_TEST_FA, " called from %d in %s at %s:%d\n", 
               cp->pnode->code->log_line(),
               ff->sym->name ? ff->sym->name : "<anonymous>",
