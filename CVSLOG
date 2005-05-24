@@ -32949,3 +32949,16 @@ Added files:
 	                                         test_typevar_record1.future 
 	                                         test_typevar_record1.good 
 
+---------------------------------------------------------------------------
+
+05/24/05 14:03:07 -- jplevyak
+
+Log message:
+	Fix assert in analysis.cpp.
+	test_myseq_record2.chpl now looks to be in a infinite loop, but it
+	isn't.  Instead a single call to FnSymbol::instantiate_generic is taking
+	10s of seconds.  The function is very small.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
