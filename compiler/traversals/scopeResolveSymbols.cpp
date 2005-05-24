@@ -7,10 +7,33 @@
 #include "../traversals/fixup.h"
 
 
+static void check_legal_overload(Symbol* sym) {
+  if (sym->overload) {
+    int count = 0;
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+      if (!tmp->getFnSymbol()) {
+        count++;
+      }
+    }
+    if (count >= 2) {
+      char* redefinitionLocations = "";
+      for (Symbol* tmp = sym->overload; tmp; tmp = tmp->overload) {
+        if (!tmp->getFnSymbol()) {
+          redefinitionLocations =
+            glomstrings(3, redefinitionLocations, "\n  ", tmp->stringLoc());
+        }
+      }
+      USR_FATAL(sym, "'%s' has multiple definitions, redefined at:%s",
+                sym->name, redefinitionLocations);
+    }
+  }
+}
+
 static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
   if (dynamic_cast<UnresolvedType*>(type)) {
     Symbol* new_type = Symboltable::lookup(type->symbol->name);
     if (new_type) {
+      check_legal_overload(new_type);
       if (ParamSymbol* param = dynamic_cast<ParamSymbol*>(new_type)) {
         type = param->typeVariable->type;
       } else if (ForwardingSymbol* forward =
@@ -97,6 +120,7 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
       }
 
       if (sym_resolve) {
+        check_legal_overload(sym_resolve);
         if (!dynamic_cast<FnSymbol*>(sym_resolve)) {
           if (ForwardingSymbol* forward =
               dynamic_cast<ForwardingSymbol*>(sym_resolve)) {

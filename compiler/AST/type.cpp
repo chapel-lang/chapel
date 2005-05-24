@@ -710,8 +710,7 @@ void SeqType::codegenDef(FILE* outfile) {
   fprintf(codefile, "(FILE* F, char* format, ");
   symbol->codegen(codefile);
   fprintf(codefile, " seq) {\n"); 
-  symbol->codegen(codefile);
-  fprintf(codefile, "_node tmp = seq->first;\n");
+  fprintf(codefile, "%s tmp = seq->first;\n", types.v[0]->cname);
   fprintf(codefile, "if (tmp != nil) {");
   fprintf(codefile, "  fprintf(F, \"(/\");\n");
   fprintf(codefile, "  while (tmp != nil) {\n");
@@ -795,7 +794,7 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   map->put(_seq_type->fields.v[2], new_seq_type->fields.v[2]);
   TRAVERSE_LS(new_decls, new UpdateSymbols(map), true);
 
-  Symbol* _node = Symboltable::lookupInScope("_node", new_seq_scope);
+  Symbol* _node = new_seq_type->types.v[0];
   _node->cname = glomstrings(2, new_seq_name, _node->cname);
 
   return new_seq_type;

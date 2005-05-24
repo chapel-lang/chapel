@@ -336,39 +336,30 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
 }
 
 void SymScope::codegen(FILE* outfile, char* separator) {
-  // SJD UGH HACK  --  ORDER IS A PAIN
-  // I'm going to codegen EnumSymbols first, then the rest
-  // This is for unions so that I codegen the IDs first.
-
-
-  for (SymLink* tmp = firstSym;
-       tmp;
-       tmp = nextLink(SymLink, tmp)) {
-    if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
-      if (dynamic_cast<EnumType*>(type_sym->type)) {
-        tmp->pSym->codegenDef(outfile);
+  // codegen enums
+  for (SymLink* link = firstSym; link; link = nextLink(SymLink, link)) {
+    for (Symbol* sym = link->pSym; sym; sym = sym->overload) {
+      if (dynamic_cast<TypeSymbol*>(sym) && 
+          dynamic_cast<EnumType*>(sym->type)) {
+          sym->codegenDef(outfile);
       }
     }
   }
 
-  // Now let's codegen prototypes if they exist.
-  for (SymLink* tmp = firstSym;
-       tmp;
-       tmp = nextLink(SymLink, tmp)) {
-    tmp->pSym->codegenPrototype(outfile);
+  // codegen prototypes
+  for (SymLink* link = firstSym; link; link = nextLink(SymLink, link)) {
+    for (Symbol* sym = link->pSym; sym; sym = sym->overload) {
+      sym->codegenPrototype(outfile);
+    }
   }
 
-  for (SymLink* tmp = firstSym;
-       tmp;
-       tmp = nextLink(SymLink, tmp)) {
-    if (dynamic_cast<FnSymbol*>(tmp->pSym)) {
-      tmp->pSym->codegenDefList(outfile, "\n");
-    } else if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(tmp->pSym)) {
-      if (!dynamic_cast<EnumType*>(type_sym->type)) {
-        tmp->pSym->codegenDef(outfile);
+  // codegen definitions less enums
+  for (SymLink* link = firstSym; link; link = nextLink(SymLink, link)) {
+    for (Symbol* sym = link->pSym; sym; sym = sym->overload) {
+      if (!(dynamic_cast<TypeSymbol*>(sym) && 
+            dynamic_cast<EnumType*>(sym->type))) {
+        sym->codegenDef(outfile);
       }
-    } else {
-      tmp->pSym->codegenDef(outfile);
     }
   }
 }

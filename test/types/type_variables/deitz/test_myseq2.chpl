@@ -25,10 +25,10 @@ class myseq {
   }
 
   function print() {
-    writeln("Sequence (length = ", length, ") (/");
+    write("Sequence (length = ", length, ") (/");
     var tmp = first;
-    while tmp {
-      writeln(tmp.element, " ");
+    while tmp != nil {
+      write(tmp.element, " ");
       tmp = tmp.next;
     }
     writeln("/)");

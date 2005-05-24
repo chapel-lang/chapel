@@ -49,6 +49,10 @@ void ApplyThisParameters::preProcessExpr(Expr* expr) {
           return;
         }
 
+        if (dynamic_cast<TypeSymbol*>(member->var)) {
+          return;
+        }
+
         Variable* base = new Variable(currentFunction->_this);
         // propagate field's source location to the parent
         base->filename = member->filename;

@@ -759,7 +759,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
     INT_FATAL(this, "Indices in ForLoopStmt not defined in DefExpr");
   }
 
-  if (dynamic_cast<SeqType*>(domain->typeInfo())) {
+  if (SeqType* seqType = dynamic_cast<SeqType*>(domain->typeInfo())) {
     fprintf(outfile, "{\n");
     indices_def->sym->codegenDef(outfile);
     fprintf(outfile, "_FOR");
@@ -771,7 +771,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
     fprintf(outfile, ", ");
     domain->codegen(outfile);
     fprintf(outfile, ", ");
-    domain->typeInfo()->codegen(outfile);
+    fprintf(outfile, "%s", seqType->types.v[0]->cname);
     fprintf(outfile, ") {\n");
     body->codegen(outfile);
     fprintf(outfile, "\n");

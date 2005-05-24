@@ -1,1 +1,2 @@
-Error: redefinition of symbol x (previous definition at redefinevar.chpl:1) (redefinevar.chpl:2)
+Error: 'x' has multiple definitions, redefined at:
+  redefinevar.chpl:2 (redefinevar.chpl:1)

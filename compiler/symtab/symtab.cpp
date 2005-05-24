@@ -191,21 +191,13 @@ void Symboltable::undefineInScope(Symbol* sym, SymScope* scope) {
 
 
 void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
-  Symbol* prevDefInScope = Symboltable::lookupInScope(sym->name, scope);
-  if (prevDefInScope) {
-    FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
-    ForwardingSymbol* forwarding = dynamic_cast<ForwardingSymbol*>(sym);
-    if (fn || (forwarding && dynamic_cast<FnSymbol*>(forwarding->forward))) {
-      Symbol* tmp = prevDefInScope;
-      while (tmp->overload) {
-        tmp = tmp->overload;
-      }
-      tmp->overload = sym;
-      sym->setParentScope(prevDefInScope->parentScope);
-    } else {
-      USR_FATAL(sym, "redefinition of symbol %s (previous definition at %s)",
-                sym->name, prevDefInScope->stringLoc());
+  Symbol* overload = Symboltable::lookupInScope(sym->name, scope);
+  if (overload) {
+    while (overload->overload) {
+      overload = overload->overload;
     }
+    overload->overload = sym;
+    sym->setParentScope(overload->parentScope);
   } else {
     scope->insert(sym);
   }

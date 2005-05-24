@@ -523,40 +523,26 @@ Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned classes
-
   StructuralType* old_class_type = dynamic_cast<StructuralType*>(type);
-
   if (!old_class_type) {
     INT_FATAL(this, "Attempt to clone non-class type");
   }
-
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
-
-  StructuralType* new_class_type =
-    dynamic_cast<StructuralType*>(type->copy(true, map));
-
-  if (!new_class_type) {
-    INT_FATAL(this, "Major error in TypeSymbol::clone");
-  }
-  char* clone_name = glomstrings(3, name, "_clone_", intstring(uid++));
-
-  if (ClassType* newClassType = dynamic_cast<ClassType*>(new_class_type)) {
-    ClassType* oldClassType = dynamic_cast<ClassType*>(old_class_type);
+  TypeSymbol* clone = dynamic_cast<TypeSymbol*>(copy(true, map));
+  if (ClassType* newClassType = dynamic_cast<ClassType*>(clone->type)) {
+    ClassType* oldClassType = dynamic_cast<ClassType*>(type);
     if (!oldClassType) {
       INT_FATAL(this, "Cloning of ClassType went horribly wrong");
     }
     newClassType->parentClasses.add(oldClassType);
   }
-
-  TypeSymbol* new_type_sym = new TypeSymbol(clone_name, new_class_type);
-  map->put(this, new_type_sym);
-  new_class_type->addSymbol(new_type_sym);
-  DefExpr* new_def_expr = new DefExpr(new_type_sym);
-  new_class_type->structScope->setContext(NULL, new_type_sym, new_def_expr);
+  clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
+  DefExpr* new_def_expr = new DefExpr(clone);
+  StructuralType* new_class_type = dynamic_cast<StructuralType*>(clone->type);
+  new_class_type->structScope->setContext(NULL, clone, new_def_expr);
   defPoint->insertBefore(new_def_expr);
-
   Symboltable::setCurrentScope(save_scope);
-  return new_type_sym;
+  return clone;
 }
 
 
@@ -1133,9 +1119,6 @@ void FnSymbol::codegenDef(FILE* outfile) {
          pragma;
          pragma = dynamic_cast<Pragma*>(pragma->next)) {
       if (!strcmp(pragma->str, "no codegen")) {
-        if (overload) {
-          overload->codegenDef(outfile);
-        }
         return;
       }
     }
@@ -1167,9 +1150,6 @@ void FnSymbol::codegenDef(FILE* outfile) {
     fprintf(outfile, "\n");
     fprintf(outfile, "}\n");
     fprintf(outfile, "\n\n");
-  }
-  if (overload) {
-    overload->codegenDef(outfile);
   }
 }
 
@@ -1379,17 +1359,9 @@ ForwardingSymbol::ForwardingSymbol(Symbol* init_forward, char* rename) :
 }
 
 
-void ForwardingSymbol::codegenDef(FILE* outfile) {
-  if (overload) {
-    overload->codegenDef(outfile);
-  }
-}
+void ForwardingSymbol::codegenDef(FILE* outfile) { }
 
 
 FnSymbol* ForwardingSymbol::getFnSymbol(void) {
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(forward)) {
-    return fn;
-  } else {
-    return NULL;
-  }
+  return forward->getFnSymbol();
 }
