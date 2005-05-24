@@ -1,5 +1,0 @@
-deitz
-
-This tests whether or not the offset code works, it is
-failing because 'with' not putting the variables in
-in-order.
