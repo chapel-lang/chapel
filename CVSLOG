@@ -32962,3 +32962,26 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/24/05 14:09:12 -- deitz
+
+Log message:
+	Added high-level support for conditional expressions of the form
+	
+	  (if expr then expr else expr)
+	
+	There is no support yet for omitting the else in creation of a
+	sequence.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+Added files:
+	chapel/test/trivial/deitz/: test_cond_expr1.chpl 
+	                            test_cond_expr1.future 
+	                            test_cond_expr1.good 
+
