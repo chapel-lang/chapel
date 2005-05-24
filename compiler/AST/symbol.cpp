@@ -1020,12 +1020,15 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     Symboltable::setCurrentScope(save_scope);
 
     Vec<FnSymbol*> functions;
+    functions.clear();
     collectFunctionsFromScope(typeSym->parentScope, &functions);
 
     Vec<Type*> types;
+    types.clear();
     generic_substitutions->get_keys(types);
 
     Vec<VariableType*> variableTypes;
+    variableTypes.clear();
     forv_Vec(Type, type, types) {
       if (VariableType* variableType = dynamic_cast<VariableType*>(type)) {
         variableTypes.add(variableType);
