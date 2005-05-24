@@ -32840,3 +32840,24 @@ Removed files:
 	                                         test_myseq1.future 
 	                                         test_myseq2.future 
 
+---------------------------------------------------------------------------
+
+05/24/05 11:03:32 -- jplevyak
+
+Log message:
+	Update some of the futures.
+
+Modified files:
+	chapel/test/flowanalysis/newast/: enumarray.good 
+	                                  formatoutput.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+Removed files:
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.future 
+	                               sum_type-1.future 
+	                               union_type_hierarchy-2.future 
+	chapel/test/flowanalysis/newast/: sum_type-1.future 
+	                                  sum_type-2.future 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class9.future 
+
