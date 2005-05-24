@@ -2250,9 +2250,9 @@ void LetExpr::codegen(FILE* outfile) {
 }
 
 
-CondExpr::CondExpr(Expr* initBoolExpr, Expr* initThenExpr, Expr* initElseExpr) :
+CondExpr::CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr) :
   Expr(EXPR_COND),
-  boolExpr(initBoolExpr),
+  condExpr(initCondExpr),
   thenExpr(initThenExpr),
   elseExpr(initElseExpr)
 { }
@@ -2260,15 +2260,15 @@ CondExpr::CondExpr(Expr* initBoolExpr, Expr* initThenExpr, Expr* initElseExpr) :
 
 Expr* CondExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return
-    new CondExpr(dynamic_cast<Expr*>(boolExpr->copyListInternal(clone, map)),
+    new CondExpr(dynamic_cast<Expr*>(condExpr->copyListInternal(clone, map)),
                  dynamic_cast<Expr*>(thenExpr->copyListInternal(clone, map)),
                  dynamic_cast<Expr*>(elseExpr->copyListInternal(clone, map)));
 }
 
 
 void CondExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == boolExpr) {
-    boolExpr = dynamic_cast<Expr*>(new_ast);
+  if (old_ast == condExpr) {
+    condExpr = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == thenExpr) {
     thenExpr = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == elseExpr) {
@@ -2280,7 +2280,7 @@ void CondExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void CondExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(boolExpr, traversal, false);
+  TRAVERSE(condExpr, traversal, false);
   TRAVERSE(thenExpr, traversal, false);
   TRAVERSE(elseExpr, traversal, false);
 }
@@ -2297,7 +2297,7 @@ Type* CondExpr::typeInfo(void) {
 
 void CondExpr::print(FILE* outfile) {
   fprintf(outfile, "(if ");
-  boolExpr->print(outfile);
+  condExpr->print(outfile);
   fprintf(outfile, " then ");
   thenExpr->print(outfile);
   if (elseExpr) {
@@ -2311,7 +2311,7 @@ void CondExpr::print(FILE* outfile) {
 void CondExpr::codegen(FILE* outfile) {
   if (elseExpr) {
     fprintf(outfile, "(");
-    boolExpr->codegen(outfile);
+    condExpr->codegen(outfile);
     fprintf(outfile, " ? ");
     thenExpr->codegen(outfile);
     fprintf(outfile, " : ");

@@ -1465,19 +1465,10 @@ gen_for(BaseAST *a) {
 }
 
 static int
-gen_cond(BaseAST *a) {
-  CondStmt *s = dynamic_cast<CondStmt*>(a);
-  AInfo *ifelse;
-  if (!s->elseStmt) {
-    ifelse = 0;
-  }
-  else {
-    ifelse = s->elseStmt->ainfo;
-  }
-  if1_if(if1, &s->ainfo->code, s->condExpr->ainfo->code, s->condExpr->ainfo->rval, 
-         s->thenStmt->ainfo->code, s->thenStmt->ainfo->rval, ifelse ? ifelse->code : 0, 
-         ifelse ? ifelse->rval : 0, 
-         s->ainfo->rval, s->ainfo);
+gen_cond(AInfo *ast, AInfo *xcond, AInfo *xthen, AInfo *xelse) {
+  if1_if(if1, &ast->code, xcond->code, xcond->rval, 
+         xthen->code, xthen->rval, xelse ? xelse->code : 0, 
+         xelse ? xelse->rval : 0, ast->rval, ast);
   return 0;
 }
 
@@ -1766,8 +1757,12 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case STMT_WHILELOOP: gen_while(ast); break;
     case STMT_FORLOOP: gen_for(ast); break;
-    case STMT_COND: gen_cond(ast); break;
-      
+    case STMT_COND: {
+      CondStmt *s = dynamic_cast<CondStmt*>(ast);
+      gen_cond(s->ainfo, s->condExpr->ainfo, s->thenStmt->ainfo, 
+               s->elseStmt ? s->elseStmt->ainfo : 0); 
+      break;
+    }
     case EXPR: {
       Expr *s = dynamic_cast<Expr*>(ast);
       assert(!ast); 
@@ -2056,7 +2051,11 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_COND: {
-      INT_FATAL(ast, "No analysis support for conditional expressions");
+      CondExpr *s = dynamic_cast<CondExpr *>(ast);
+      s->ainfo->rval = new_sym();
+      s->ainfo->rval->ast = s->ainfo;
+      gen_cond(s->ainfo, s->condExpr->ainfo, s->thenExpr->ainfo, s->elseExpr->ainfo);
+      break;
     }
     case EXPR_FORALL: {
       ForallExpr *s = dynamic_cast<ForallExpr *>(ast);

@@ -275,7 +275,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(LetExpr, innerExpr);
     goto LExprCommon;
   case EXPR_COND:
-    AST_ADD_CHILD(CondExpr, boolExpr);
+    AST_ADD_CHILD(CondExpr, condExpr);
     AST_ADD_CHILD(CondExpr, thenExpr);
     AST_ADD_CHILD(CondExpr, elseExpr);
     goto LExprCommon;
