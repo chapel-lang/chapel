@@ -618,10 +618,6 @@ map_baseast(BaseAST *s) {
     int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
     sym->asymbol = new_ASymbol(sym, basic);
     sym->asymbol->symbol = sym;
-    if (sym->astType == SYMBOL_VAR && sym->type == dtNil) {
-      assert(!sym_nil);
-      sym_nil = sym->asymbol->sym;
-    }
     if (!sym->parentScope) {
       sym->asymbol->sym->global_scope = 1;
     } else {
@@ -1050,6 +1046,7 @@ build_builtin_symbols() {
     if1_set_builtin(if1, sym_new_object, "new_object");
   }
 
+  sym_nil = gNil->asymbol->sym;
   new_global_variable(sym_nil, "nil");
   sym_nil->type = sym_null;
   sym_nil->is_external = 1;
