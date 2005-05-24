@@ -129,6 +129,9 @@ static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
   else if (!strcmp(fn->name, "+")) {
     fn->cname = glomstrings(2, "_plus", intstring(uid++));
   }
+  else if (!strcmp(fn->name, "#")) {
+    fn->cname = glomstrings(2, "_pound", intstring(uid++));
+  }
   else if (!strcmp(fn->name, "-")) {
     fn->cname = glomstrings(2, "_minus", intstring(uid++));
   }
