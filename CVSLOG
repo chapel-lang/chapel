@@ -32874,3 +32874,42 @@ Modified files:
 	chapel/test/flowanalysis/newast/: domarr.good sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+05/24/05 12:15:57 -- deitz
+
+Log message:
+	Improved ScopeResolveSymbols to handle more complex unresolved types.
+	For example, given a class foo that contains a type t, foo.t is now an
+	unresolved type.  Modified UnresolvedType so that it now contains a
+	Vec<char*>* which contains the names for looking up that type.  For
+	foo.t, the strings foo and t would be stored in the UnresolvedType in
+	that order.
+	
+	Potential concern:
+	
+	  class foo {
+	    var x : integer = 12;
+	    type t : integer = x;
+	  }
+	
+	  var k : foo.t;
+	
+	The problem is that the default value of the type in the class is
+	dependent on an instance of that class.  We must disallow foo.t in
+	this case.
+	
+	Related, are we supporting something like f.t if f is an instance of
+	foo.  The problem with this is that we could not easily resolve the
+	type symbol in ScopeResolveSymbols, i.e., before analysis.  I assume
+	were not allowing something like that.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_type_in_class3.chpl 
+	                            test_type_in_class3.good 
+
