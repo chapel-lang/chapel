@@ -32913,3 +32913,26 @@ Added files:
 	chapel/test/classes/deitz/: test_type_in_class3.chpl 
 	                            test_type_in_class3.good 
 
+---------------------------------------------------------------------------
+
+05/24/05 12:38:48 -- deitz
+
+Log message:
+	Added code to mangle '#' in function cname when it is overloaded.
+	
+	Added three test cases for a full-blown sequence class.
+	
+	The second and third fail.
+
+Modified files:
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_myseq_record.chpl 
+	                            test_myseq_record.good 
+	                            test_myseq_record2.chpl 
+	                            test_myseq_record2.future 
+	                            test_myseq_record2.good 
+	                            test_myseq_record3.chpl 
+	                            test_myseq_record3.future 
+	                            test_myseq_record3.good 
+
