@@ -33024,3 +33024,55 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/24/05 17:20:07 -- deitz
+
+Log message:
+	Added new standard module _chpl_seq.chpl.
+	
+	I named the sequence class seq2 instead of seq for the time being.
+	
+	It is not included or parsed unless analysis is run (disabled for
+	--noanalysis).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/traversals/: resolveModuleUses.cpp 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+
