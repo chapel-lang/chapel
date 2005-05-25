@@ -33013,3 +33013,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: clone.cpp fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/24/05 17:14:26 -- jplevyak
+
+Log message:
+	Fixed issue with treating a set like a vector (need to check if elements
+	are NULL).
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
