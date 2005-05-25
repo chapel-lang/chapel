@@ -33076,3 +33076,20 @@ Modified files:
 	                                     mg-seq.good mvm-seq.good 
 	                                     test.good 
 
+---------------------------------------------------------------------------
+
+05/25/05 08:54:03 -- deitz
+
+Log message:
+	Added _chpl_seq module.  It was missing which caused full regressions.
+	Sorry about that.
+	
+	I'm hoping it is working now.  I blew away my copy after the OS
+	upgrade and so just tried to recreate it, but can't test because I'm
+	having trouble building the compiler.
+
+Modified files:
+	chapel/third-party/boehmgc/gc6.5/: libtool 
+Added files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+
