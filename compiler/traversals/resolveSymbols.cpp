@@ -115,12 +115,8 @@ is_builtin(FnSymbol *fn) {
 static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
   static int uid = 0;
 
-  Pragma* pr = fn->defPoint->parentStmt->pragmas;
-  while (pr) {
-    if (!strcmp(pr->str, "builtin")) {
-      return;
-    }
-    pr = dynamic_cast<Pragma *>(pr->next);
+  if (is_builtin(fn)) {
+    return;
   }
 
   if (!strcmp(fn->name, "=")) {
@@ -207,9 +203,14 @@ resolve_no_analysis(Expr *expr) {
     if (fns.n != 1) {
       INT_FATAL(expr, "Unable to resolve function without analysis");
     }
-    Expr* arguments = copy_argument_list(paren);
     Expr* function = new Variable(fns.e[0]);
-    Expr *new_expr = new FnCall(function, arguments);
+    Expr* arguments = copy_argument_list(paren);
+    if (!strcmp("this", fns.e[0]->name)) {
+      Expr* tmp = paren->baseExpr->copy();
+      tmp->append(arguments);
+      arguments = tmp;
+    }
+    Expr* new_expr = new FnCall(function, arguments);
     expr->replace(new_expr);
     expr = new_expr;
   }
@@ -324,6 +325,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 
     Expr* arguments = copy_argument_list(paren);
     Expr* function = new Variable(fns.e[0]);
+    if (!strcmp("this", fns.e[0]->name)) {
+      Expr* tmp = paren->baseExpr->copy();
+      tmp->append(arguments);
+      arguments = tmp;
+    }
     Expr *new_expr = new FnCall(function, arguments);
     expr->replace(new_expr);
     expr = new_expr;

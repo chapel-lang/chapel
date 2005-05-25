@@ -57,14 +57,12 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
         if (!analyzeAST)
           paren_replacement = new TupleSelect(baseVar, paren->argList);
       } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(baseVar->var->type)) {
-        if (!dynamic_cast<TypeSymbol*>(baseVar->var)) {
-          USR_FATAL(expr, "Invalid class constructor");
-        }
-        if (ctype->defaultConstructor) {
-          paren_replacement = new ParenOpExpr(new Variable(new UnresolvedSymbol(ctype->defaultConstructor->name)), paren->argList);
-        }
-        else {
-          INT_FATAL(expr, "constructor does not have a DefStmt");
+        if (dynamic_cast<TypeSymbol*>(baseVar->var)) {
+          if (ctype->defaultConstructor) {
+            paren_replacement = new ParenOpExpr(new Variable(new UnresolvedSymbol(ctype->defaultConstructor->name)), paren->argList);
+          } else {
+            INT_FATAL(expr, "constructor does not have a DefStmt");
+          }
         }
       } else if ((strcmp(baseVar->var->name, "write") == 0) ||
                  (strcmp(baseVar->var->name, "writeln") == 0) ||
