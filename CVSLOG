@@ -33093,3 +33093,16 @@ Modified files:
 Added files:
 	chapel/modules/standard/: _chpl_seq.chpl 
 
+---------------------------------------------------------------------------
+
+05/25/05 09:15:19 -- deitz
+
+Log message:
+	Made some changes to the _chpl_seq module and added a test case that
+	uses it.  Note that the sequence is called seq2 until I work it in.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+Added files:
+	chapel/test/classes/deitz/: test_seq2.chpl test_seq2.good 
+
