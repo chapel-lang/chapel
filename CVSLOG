@@ -33190,3 +33190,16 @@ Removed files:
 	                                         test_seq8b.chpl 
 	                                         test_seq8b.good 
 
+---------------------------------------------------------------------------
+
+05/25/05 13:54:30 -- deitz
+
+Log message:
+	Removed futures for some working sequence tests.
+
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq1.future test_seq1a.future 
+	                              test_seq1b.future 
+	                              test_seq1c.future test_seq2.future 
+	                              test_seq5.future 
+
