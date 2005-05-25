@@ -33106,3 +33106,18 @@ Modified files:
 Added files:
 	chapel/test/classes/deitz/: test_seq2.chpl test_seq2.good 
 
+---------------------------------------------------------------------------
+
+05/25/05 10:57:11 -- bradc
+
+Log message:
+	Set the following environment settings to try and
+	make start_test a bit more robust:
+	
+	setenv LC_ALL C
+	setenv LANG en_US
+	limit stacksize 8192k
+
+Modified files:
+	chapel/test/: start_test 
+
