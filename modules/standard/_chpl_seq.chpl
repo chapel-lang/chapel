@@ -1,81 +1,81 @@
 class _chplSeqNode {
-  type _chplElementType;
+  type _chplSeqElementType;
 
-  var _chplElement : _chplElementType;
-  var _chplNext : _chplSeqNode;
+  var _chplSeqElement : _chplSeqElementType;
+  var _chplSeqNext : _chplSeqNode;
 }
 
 class seq2 {
-  type _chplElementType;
+  type _chplSeqElementType;
 
   var length : integer;
-  var _chplFirst : _chplSeqNode;
-  var _chplLast : _chplSeqNode;
+  var _chplSeqFirst : _chplSeqNode;
+  var _chplSeqLast : _chplSeqNode;
 
-  function append(e : _chplElementType) : seq2 {
-    var new : _chplSeqNode = _chplSeqNode(_chplElementType);
-    new._chplElement = e;
+  function _chplSeqAppend(e : _chplSeqElementType) : seq2 {
+    var new : _chplSeqNode = _chplSeqNode(_chplSeqElementType);
+    new._chplSeqElement = e;
     if length > 0 {
-      _chplLast._chplNext = new;
-      _chplLast = new;
+      _chplSeqLast._chplSeqNext = new;
+      _chplSeqLast = new;
     } else {
-      _chplFirst = new;
-      _chplLast = new;
+      _chplSeqFirst = new;
+      _chplSeqLast = new;
     }
     length += 1;
     return this;
   }
 
-  function prepend(e : _chplElementType) : seq2 {
-    var new : _chplSeqNode = _chplSeqNode(_chplElementType);
-    new._chplElement = e;
+  function _chplSeqPrepend(e : _chplSeqElementType) : seq2 {
+    var new : _chplSeqNode = _chplSeqNode(_chplSeqElementType);
+    new._chplSeqElement = e;
     if length > 0 {
-      new._chplNext = _chplFirst;
-      _chplFirst = new;
+      new._chplSeqNext = _chplSeqFirst;
+      _chplSeqFirst = new;
     } else {
-      _chplFirst = new;
-      _chplLast = new;
+      _chplSeqFirst = new;
+      _chplSeqLast = new;
     }
     length += 1;
     return this;
   }
 
-  function concat(s : seq2) : seq2 {
-    _chplLast._chplNext = s._chplFirst;
-    _chplLast = s._chplLast;
+  function _chplSeqConcat(s : seq2) : seq2 {
+    _chplSeqLast._chplSeqNext = s._chplSeqFirst;
+    _chplSeqLast = s._chplSeqLast;
     length += s.length;
     return this;
   }
 
   function copy() : seq2 {
-    var new : seq2 = seq2(_chplElementType);
-    var tmp : _chplSeqNode = _chplFirst;
+    var new : seq2 = seq2(_chplSeqElementType);
+    var tmp : _chplSeqNode = _chplSeqFirst;
     while tmp != nil {
-      new = new.append(tmp._chplElement);
-      tmp = tmp.next;
+      new = new._chplSeqAppend(tmp._chplSeqElement);
+      tmp = tmp._chplSeqNext;
     }
     return new;
   }
 }
 
-function #(s : seq2, e : seq2._chplElementType) {
-  return s.append(e);
+function #(s : seq2, e : seq2._chplSeqElementType) {
+  return s._chplSeqAppend(e);
 }
 
-function #(e : seq2._chplElementType, s : seq2) {
-  return s.prepend(e);
+function #(e : seq2._chplSeqElementType, s : seq2) {
+  return s._chplSeqPrepend(e);
 }
 
 function #(s1 : seq2, s2 : seq2) {
-  return s1.concat(s2);
+  return s1._chplSeqConcat(s2);
 }
 
 function write(s : seq2) {
-  var tmp = s._chplFirst;
   write("(/");
+  var tmp = s._chplSeqFirst;
   while tmp != nil {
-    write(tmp._chplElement);
-    tmp = tmp._chplNext;
+    write(tmp._chplSeqElement);
+    tmp = tmp._chplSeqNext;
     if (tmp != nil) {
       write(", ");
     }
