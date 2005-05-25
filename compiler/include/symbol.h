@@ -118,6 +118,7 @@ class ParamSymbol : public Symbol {
   paramType intent;
   Expr* init;
   TypeSymbol *typeVariable;
+  bool isGeneric;
 
   ParamSymbol(paramType init_intent, char* init_name, 
               Type* init_type = dtUnknown, Expr* init_init = NULL);

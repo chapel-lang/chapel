@@ -382,6 +382,7 @@ formal:
       TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
       new_type->addSymbol(new_type_symbol);
       ps->typeVariable = new_type_symbol;
+      ps->isGeneric = 1;
       $$ = ps;
     }
 ;

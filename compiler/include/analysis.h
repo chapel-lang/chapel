@@ -27,6 +27,7 @@ public:
   void finalize_functions();
   Sym *make_LUB_type(Sym *);
   Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
+  Sym *formal_to_generic(Sym*);
   Sym *new_Sym(char *name = 0);
   Fun *order_wrapper(Match *);
   Fun *coercion_wrapper(Match *);

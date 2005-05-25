@@ -12,112 +12,53 @@ UpdateSymbols::UpdateSymbols(Map<BaseAST*,BaseAST*>* init_copy_map) {
 }
 
 
+#define XSUB(_x, _t) \
+    if (_x) { \
+      BaseAST *b = copy_map->get(_x); \
+      if (b) { \
+        if (_t new_sym = dynamic_cast<_t>(b)) { \
+          _x = new_sym; \
+          changed = true; \
+        } else { \
+          INT_FATAL("Major error in UpdateSymbols"); \
+        } \
+      } \
+    } \
+
+
 void UpdateSymbols::preProcessExpr(Expr* expr) {
   if (Variable* sym_expr = dynamic_cast<Variable*>(expr)) {
-    for (int i = 0; i < copy_map->n; i++) {
-      if (copy_map->v[i].key == sym_expr->var) {
-        if (Symbol* new_sym = dynamic_cast<Symbol*>(copy_map->v[i].value)) {
-          sym_expr->var = new_sym;
-          changed = true;
-        } else {
-          INT_FATAL("Major error in UpdateSymbols");
-        }
-      }
-    }
+    XSUB(sym_expr->var, Symbol*);
   } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
-    for (int i = 0; i < copy_map->n; i++) {
-      if (copy_map->v[i].key == defExpr->sym->type) {
-        if (Type* new_type = dynamic_cast<Type*>(copy_map->v[i].value)) {
-          defExpr->sym->type = new_type;
-          changed = true;
-        } else {
-          INT_FATAL("Major error in UpdateSymbols");
-        }
-      }
-    }
+    XSUB(defExpr->sym->type, Type*);
   } else if (CastExpr* castExpr = dynamic_cast<CastExpr*>(expr)) {
-    for (int i = 0; i < copy_map->n; i++) {
-      if (copy_map->v[i].key == castExpr->newType) {
-        if (Type* new_type = dynamic_cast<Type*>(copy_map->v[i].value)) {
-          castExpr->newType = new_type;
-          changed = true;
-        } else {
-          INT_FATAL("Major error in UpdateSymbols");
-        }
-      }
-    }
+    XSUB(castExpr->newType, Type*);
   } else if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(expr)) {
-    for (int i = 0; i < copy_map->n; i++) {
-      if (copy_map->v[i].key == memberAccess->member) {
-        if (Symbol* new_sym = dynamic_cast<Symbol*>(copy_map->v[i].value)) {
-          memberAccess->member = new_sym;
-          changed = true;
-        } else {
-          INT_FATAL("Major error in UpdateSymbols");
-        }
-      }
-    }
+    XSUB(memberAccess->member, Symbol*);
   }
 }
 
 
 void UpdateSymbols::preProcessSymbol(Symbol* sym) {
   if (!dynamic_cast<TypeSymbol*>(sym)) {
-    for (int i = 0; i < copy_map->n; i++) {
-      if (copy_map->v[i].key == sym->type) {
-        if (Type* new_type = dynamic_cast<Type*>(copy_map->v[i].value)) {
-          sym->type = new_type;
-          changed = true;
-        } else {
-          INT_FATAL("Major error in UpdateSymbols");
-        }
-      }
-    }
+    XSUB(sym->type, Type*);
   }
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    for (int i = 0; i < copy_map->n; i++) {
-      if (copy_map->v[i].key == fn->retType) {
-        if (Type* new_type = dynamic_cast<Type*>(copy_map->v[i].value)) {
-          fn->retType = new_type;
-          changed = true;
+    XSUB(fn->retType, Type*);
+    XSUB(fn->_this, Symbol*);
+    XSUB(fn->_setter, VarSymbol*);
+    XSUB(fn->_getter, VarSymbol*);
+  }
+  if (ParamSymbol* p = dynamic_cast<ParamSymbol*>(sym)) {
+    if (p->isGeneric && p->typeVariable) {
+      BaseAST *b = copy_map->get(p->typeVariable);
+      if (b) {
+        if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(b)) {
+          if (ts->type->astType != TYPE_VARIABLE)
+            p->isGeneric = 0;
+          p->typeVariable = ts;
         } else {
           INT_FATAL("Major error in UpdateSymbols");
-        }
-      }
-    }
-    if (fn->_this) {
-      for (int i = 0; i < copy_map->n; i++) {
-        if (copy_map->v[i].key == fn->_this) {
-          if (Symbol* new_sym = dynamic_cast<Symbol*>(copy_map->v[i].value)) {
-            fn->_this = new_sym;
-            changed = true;
-          } else {
-            INT_FATAL("Major error in UpdateSymbols");
-          }
-        }
-      }
-    }
-    if (fn->_setter) {
-      for (int i = 0; i < copy_map->n; i++) {
-        if (copy_map->v[i].key == fn->_setter) {
-          if (VarSymbol* new_sym = dynamic_cast<VarSymbol*>(copy_map->v[i].value)) {
-            fn->_setter = new_sym;
-            changed = true;
-          } else {
-            INT_FATAL("Major error in UpdateSymbols");
-          }
-        }
-      }
-    }
-    if (fn->_getter) {
-      for (int i = 0; i < copy_map->n; i++) {
-        if (copy_map->v[i].key == fn->_getter) {
-          if (VarSymbol* new_sym = dynamic_cast<VarSymbol*>(copy_map->v[i].value)) {
-            fn->_getter = new_sym;
-            changed = true;
-          } else {
-            INT_FATAL("Major error in UpdateSymbols");
-          }
         }
       }
     }

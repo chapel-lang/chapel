@@ -26,6 +26,7 @@ static void build_constructor(StructuralType* structType) {
       Type* type = tv->type;
       tmp->defPoint->parentStmt->extract();
       ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, NULL);
+      arg->isGeneric = true;
       arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
       args = appendLink(args, arg);
       }

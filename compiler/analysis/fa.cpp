@@ -1652,17 +1652,6 @@ make_top_edge(Fun *top) {
   return e;
 }
 
-#if 0
-static inline int
-is_formal_argument(AVar *av) {
-  forv_AVar(v, av->backward) if (v) {
-    if (v->arg_of_send.n)
-      return 1;
-  }
-  return 0;
-}
-#endif
-
 static inline int
 is_return_value(AVar *av) {
   EntrySet *es = (EntrySet*)av->contour;
@@ -1880,8 +1869,8 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
     show_call_tree(fp, e->pnode, e->from, depth);
 }
 
-static void
-show_call_tree(FILE *fp, AVar *av) {
+void
+show_avar_call_tree(FILE *fp, AVar *av) {
   EntrySet *es = (EntrySet*)av->contour;
   AEdge **last = es->edges.last();
   for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
@@ -2046,7 +2035,7 @@ show_violations(FA *fa, FILE *fp) {
     if (v->send)
       show_call_tree(fp, v->send->var->def, (EntrySet*)v->send->contour);
     else if (v->av->contour_is_entry_set)
-      show_call_tree(fp, v->av);
+      show_avar_call_tree(fp, v->av);
     else if (v->av->contour != GLOBAL_CONTOUR)
       show_call_tree(fp, ((CreationSet*)v->av->contour)->defs.v[0]->var->def,
                      (EntrySet*)((CreationSet*)v->av->contour)->defs.v[0]->contour, 1);

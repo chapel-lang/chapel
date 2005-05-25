@@ -460,7 +460,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
         subs.put(dynamic_cast<Type*>(ss->key->asymbol->symbol), Sym_to_Type(ss->value));
     }
     Type *type = NULL;
-    if (ParamSymbol *p =dynamic_cast<ParamSymbol*>(s->asymbol->symbol))
+    if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol))
       type = p->typeVariable->type;
     else
       type = dynamic_cast<Type*>(s->asymbol->symbol);
@@ -468,6 +468,14 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     return new_type->asymbol->sym;
   }
   return 0;
+}
+
+Sym *
+ACallbacks::formal_to_generic(Sym *s) {
+  ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
+  if (p->isGeneric && p->typeVariable)
+    return p->typeVariable->type->asymbol->sym;
+  return s;
 }
 
 Fun *
@@ -542,10 +550,12 @@ ACallbacks::instantiate_generic(Match *m) {
   Map<Type *, Type *> substitutions;
   form_SymSym(s, m->generic_substitutions) {
     Type *t = dynamic_cast<Type*>(s->key->asymbol->symbol);
-    if (!t) {
+    if (!t)
+      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s->key->asymbol->symbol))
+        t = ts->type;
+    if (!t)
       if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol))
         t = p->typeVariable->type;
-    }
     substitutions.put(t, Sym_to_Type(s->value));
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
@@ -743,10 +753,12 @@ build_symbols(Vec<BaseAST *> &syms) {
           break;
         }
         case SYMBOL_PARAM: {
+          ParamSymbol *p = dynamic_cast<ParamSymbol*>(s);
+          if (p->isGeneric)
+            s->asymbol->sym->is_generic = 1;
           if (s->type->astType == TYPE_META) {
             MetaType *t = dynamic_cast<MetaType*>(s->type);
             s->asymbol->sym->must_specialize = t->asymbol->sym;
-            s->asymbol->sym->is_generic = 1;
           } else {
             if (s->type && s->type != dtUnknown) {
               if (s->asymbol->sym->intent != Sym_OUT)
@@ -2673,6 +2685,7 @@ int
 ast_to_if1(Vec<Stmt *> &stmts) {
   Vec<BaseAST *> syms;
   close_symbols(stmts, syms);
+  qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   init_symbols();
   debug_new_ast(stmts, syms);
   if (import_symbols(syms) < 0) return -1;

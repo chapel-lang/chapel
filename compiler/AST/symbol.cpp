@@ -421,7 +421,8 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
   Symbol(SYMBOL_PARAM, init_name, init_type),
   intent(init_intent),
   init(init_init),
-  typeVariable(NULL)
+  typeVariable(NULL),
+  isGeneric(false)
 {
   Symboltable::define(this);
 }
@@ -430,7 +431,8 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ParamSymbol *ps = new ParamSymbol(intent, copystring(name), type, init->copyInternal(clone, map));
   if (typeVariable)
-    ps->typeVariable = typeVariable;//dynamic_cast<TypeSymbol*>(typeVariable->copyInternal(clone, map));
+    ps->typeVariable = typeVariable;
+  ps->isGeneric = isGeneric;
   return ps;
 }
 
@@ -967,16 +969,14 @@ instantiate_update_expr(Map<Type*,Type*>* generic_substitutions, Expr* expr) {
 
 
 static void
-instantiate_add_subs(Map<Type*,Type*>* generic_substitutions,
-                     Map<BaseAST*,BaseAST*>* map) {
-  for (int i = 0; i < generic_substitutions->n; i++) {
-    if (generic_substitutions->v[i].key) {
-      for (int j = 0; j < map->n; j++) {
-        if (map->v[j].key == generic_substitutions->v[i].key) {
-          generic_substitutions->put(dynamic_cast<Type*>(map->v[j].value),
-                                     generic_substitutions->v[i].value);
-        }
-      }
+instantiate_add_subs(Map<Type*,Type*>* generic_substitutions, Map<BaseAST*,BaseAST*>* map) {
+  Map<Type *, Type*> tmp;
+  tmp.copy(*generic_substitutions);
+  for (int i = 0; i < tmp.n; i++) {
+    if (tmp.v[i].key) {
+      BaseAST *b = map->get(tmp.v[i].key);
+      if (b)
+        generic_substitutions->put(dynamic_cast<Type*>(b), tmp.v[i].value);
     }
   }
 }
@@ -985,7 +985,6 @@ instantiate_add_subs(Map<Type*,Type*>* generic_substitutions,
 FnSymbol* 
 FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
                               Map<Type*,Type*>* generic_substitutions) {
-  //printf("instantiating %s\n", cname);
   FnSymbol* copy = NULL;
 
   static int uid = 1; // Unique ID for cloned functions

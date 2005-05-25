@@ -563,9 +563,11 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
     Match *m = match_map.get(f);
     f = build(m, matches);
     if (!m->partial)
-      complete.add(f);
-    new_matches.add(f);
+      complete.set_add(f);
+    new_matches.set_add(f);
   }
+  complete.set_to_vec();
+  new_matches.set_to_vec();
   if (complete.n > 1)
     type_violation(ATypeViolation_DISPATCH_AMBIGUITY, arg0, arg0->out, send, 
                    new Vec<Fun *>(complete));
@@ -606,7 +608,8 @@ static int
 unify_generic_type(Sym *formal, Sym *gtype, Sym *type, Map<Sym *, Sym *> &substitutions) {
   if (formal->is_generic) {
     if (gtype->specializers.set_in(type->meta_type)) {
-      substitutions.put(formal, type);
+      Sym *generic = if1->callback->formal_to_generic(formal);
+      substitutions.put(generic, type);
       return 1;
     } else
       return 0;
