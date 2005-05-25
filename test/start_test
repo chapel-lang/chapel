@@ -238,6 +238,14 @@ unsetenv CHPL_DEVELOPER
 #
 setenv GC_NO_BLACKLIST_WARNING 1
 
+#
+# some sets to get locale, environment reasonable
+#
+setenv LC_ALL C
+setenv LANG en_US
+limit stacksize 8192k
+
+
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 
 ## tester does
