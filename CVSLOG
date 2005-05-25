@@ -33232,3 +33232,19 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	                             updateSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+05/25/05 16:47:06 -- deitz
+
+Log message:
+	Implemented overloading of parentheses with 'this' method.
+	
+	Added a class instantiation test that has a 'this' method.
+
+Modified files:
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+Added files:
+	chapel/test/types/type_variables/deitz/: test_datablock.chpl 
+	                                         test_datablock.good 
+
