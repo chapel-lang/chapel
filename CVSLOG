@@ -33132,3 +33132,61 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_seq.chpl 
 
+---------------------------------------------------------------------------
+
+05/25/05 13:52:10 -- deitz
+
+Log message:
+	Implemented sequences using the seq2 class in the _chpl_seq standard
+	module.
+	
+	Sequence literals are dealt with before analysis, for now.  So they
+	can only be created if the type of the elements are known.
+	
+	Sequence class types are created in InsertAnonymousTypes.
+	
+	Added typeInfo to symbols which should be used to get the type.  This
+	handles ForwardingSymbols from module uses better.
+	
+	Removed noanalysis sequence tests and some of the support code.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             insertTemps.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+Removed files:
+	chapel/test/types/seq/deitz/noanalysis/: COMPOPTS 
+	                                         test_array_of_seq1.chpl 
+	                                         test_array_of_seq1.good 
+	                                         test_overload_noanalysis1.chpl 
+	                                         test_overload_noanalysis1.good 
+	                                         test_seq1.chpl 
+	                                         test_seq1.good 
+	                                         test_seq1a.chpl 
+	                                         test_seq1a.good 
+	                                         test_seq1b.chpl 
+	                                         test_seq1b.good 
+	                                         test_seq1c.chpl 
+	                                         test_seq1c.good 
+	                                         test_seq2.chpl 
+	                                         test_seq2.good 
+	                                         test_seq3.chpl 
+	                                         test_seq3.good 
+	                                         test_seq4.chpl 
+	                                         test_seq4.good 
+	                                         test_seq5.chpl 
+	                                         test_seq5.good 
+	                                         test_seq6.chpl 
+	                                         test_seq6.good 
+	                                         test_seq7.chpl 
+	                                         test_seq7.good 
+	                                         test_seq8.chpl 
+	                                         test_seq8.good 
+	                                         test_seq8b.chpl 
+	                                         test_seq8b.good 
+
