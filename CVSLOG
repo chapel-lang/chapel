@@ -33213,3 +33213,22 @@ Log message:
 Removed files:
 	chapel/test/types/complex/deitz/: test_complex2.future 
 
+---------------------------------------------------------------------------
+
+05/25/05 16:08:47 -- jplevyak
+
+Log message:
+	Added ParamSymbol::isGeneric.
+	Fixed potential bug and perfmance issies in instantiate_add_subs.
+	Fixed several issues in generic instantiation which were causing
+	  excessive instantiation in some test cases.
+	Optimized updateSymbols to take advantage of the hash nature of Map(s).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
+	chapel/compiler/include/: analysis.h callbacks.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             updateSymbols.cpp 
+
