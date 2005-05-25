@@ -33121,3 +33121,14 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+05/25/05 12:31:16 -- deitz
+
+Log message:
+	Changed names around in _chpl_seq.chpl to match names from before I
+	lost it.  This removes a few current regressions.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+
