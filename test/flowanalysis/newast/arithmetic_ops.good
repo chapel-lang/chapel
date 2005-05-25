@@ -1,4 +1,5 @@
  called from 4 in __init_arithmetic_ops at arithmetic_ops.chpl:4
+ called from 4 in __init_arithmetic_ops at arithmetic_ops.chpl:4
  called from 4 in __init_entryPoint at arithmetic_ops.chpl:4
  called from 4 in __init_entryPoint at arithmetic_ops.chpl:4
  called from 4 in __init_entryPoint at arithmetic_ops.chpl:4
@@ -11,10 +12,13 @@
 ::/(internal_prelude.chpl:0) ( / )
 ::__init__CommonModule(arithmetic_ops.chpl:4) ( __init__CommonModule (arithmetic_ops.chpl:4) )
 ::__init__chpl_complex(arithmetic_ops.chpl:4) ( __init__chpl_complex (arithmetic_ops.chpl:4) )
+::__init__chpl_seq(arithmetic_ops.chpl:4) ( __init__chpl_seq (arithmetic_ops.chpl:4) )
 ::__init_arithmetic_ops(arithmetic_ops.chpl:4) ( __init_arithmetic_ops (arithmetic_ops.chpl:4) )
 ::__init_entryPoint(arithmetic_ops.chpl:4) ( __init_entryPoint (arithmetic_ops.chpl:4) )
 ::__init_internal_prelude(arithmetic_ops.chpl:4) ( __init_internal_prelude (arithmetic_ops.chpl:4) )
 ::__init_prelude(arithmetic_ops.chpl:4) ( __init_prelude (arithmetic_ops.chpl:4) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
@@ -28,6 +32,7 @@
 ::m(arithmetic_ops.chpl:1) ( int64 )
 ::main(arithmetic_ops.chpl:4) ( main (arithmetic_ops.chpl:4) )
 ::n(arithmetic_ops.chpl:2) ( int64 )
+::nil ( null )
 ::o(arithmetic_ops.chpl:3) ( int64 )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
@@ -37,6 +42,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule arithmetic_ops.chpl:4
 function __init__chpl_complex arithmetic_ops.chpl:4
+function __init__chpl_seq arithmetic_ops.chpl:4
 function __init_arithmetic_ops arithmetic_ops.chpl:4
 function __init_entryPoint arithmetic_ops.chpl:4
 function __init_internal_prelude arithmetic_ops.chpl:4

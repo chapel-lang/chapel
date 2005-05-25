@@ -101,6 +101,43 @@ return Let Expr;
 }
 
 
+_chplSeqNode;
+seq2;
+function #( s: seq2;
+ e: seq2._chplSeqElementType): ??? {
+
+return s._chplSeqAppend(e);
+}
+
+
+function #( e: seq2._chplSeqElementType;
+ s: seq2): ??? {
+
+return s._chplSeqPrepend(e);
+}
+
+
+function #( s1: seq2;
+ s2: seq2): ??? {
+
+return s1._chplSeqConcat(s2);
+}
+
+
+function write( s: seq2): ??? {
+write("(/");
+var tmp: ??? = s._chplSeqFirst;
+while ((tmp!=nil)) {
+write(tmp._chplSeqElement);
+tmp = tmp._chplSeqNext;
+if ((tmp!=nil)) {
+write(", ");
+}
+}
+write("/)");
+}
+
+
 var m: integer = 100;
 var n: integer = 200;
 var Mat: domain(2) = [1..m, 1..n];

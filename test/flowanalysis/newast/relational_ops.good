@@ -3,6 +3,7 @@
  called from 5 in __init_entryPoint at relational_ops.chpl:5
  called from 5 in __init_entryPoint at relational_ops.chpl:5
  called from 5 in __init_relational_ops at relational_ops.chpl:5
+ called from 5 in __init_relational_ops at relational_ops.chpl:5
  called from 5 in main at relational_ops.chpl:5
  called from 5 in main at relational_ops.chpl:5
 ::<(internal_prelude.chpl:0) ( < )
@@ -11,10 +12,13 @@
 ::>=(internal_prelude.chpl:0) ( >= )
 ::__init__CommonModule(relational_ops.chpl:5) ( __init__CommonModule (relational_ops.chpl:5) )
 ::__init__chpl_complex(relational_ops.chpl:5) ( __init__chpl_complex (relational_ops.chpl:5) )
+::__init__chpl_seq(relational_ops.chpl:5) ( __init__chpl_seq (relational_ops.chpl:5) )
 ::__init_entryPoint(relational_ops.chpl:5) ( __init_entryPoint (relational_ops.chpl:5) )
 ::__init_internal_prelude(relational_ops.chpl:5) ( __init_internal_prelude (relational_ops.chpl:5) )
 ::__init_prelude(relational_ops.chpl:5) ( __init_prelude (relational_ops.chpl:5) )
 ::__init_relational_ops(relational_ops.chpl:5) ( __init_relational_ops (relational_ops.chpl:5) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
@@ -28,6 +32,7 @@
 ::m(relational_ops.chpl:1) ( int64 )
 ::main(relational_ops.chpl:5) ( main (relational_ops.chpl:5) )
 ::n(relational_ops.chpl:2) ( int64 )
+::nil ( null )
 ::o(relational_ops.chpl:3) ( int64 )
 ::p(relational_ops.chpl:4) ( int64 )
 ::true(prelude.chpl:0) ( bool )
@@ -38,6 +43,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule relational_ops.chpl:5
 function __init__chpl_complex relational_ops.chpl:5
+function __init__chpl_seq relational_ops.chpl:5
 function __init_entryPoint relational_ops.chpl:5
 function __init_internal_prelude relational_ops.chpl:5
 function __init_prelude relational_ops.chpl:5

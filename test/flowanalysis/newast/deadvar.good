@@ -1,4 +1,5 @@
  called from 2 in __init_deadvar at deadvar.chpl:2
+ called from 2 in __init_deadvar at deadvar.chpl:2
  called from 2 in __init_entryPoint at deadvar.chpl:2
  called from 2 in __init_entryPoint at deadvar.chpl:2
  called from 2 in __init_entryPoint at deadvar.chpl:2
@@ -7,12 +8,16 @@
  called from 2 in main at deadvar.chpl:2
 ::__init__CommonModule(deadvar.chpl:2) ( __init__CommonModule (deadvar.chpl:2) )
 ::__init__chpl_complex(deadvar.chpl:2) ( __init__chpl_complex (deadvar.chpl:2) )
+::__init__chpl_seq(deadvar.chpl:2) ( __init__chpl_seq (deadvar.chpl:2) )
 ::__init_deadvar(deadvar.chpl:2) ( __init_deadvar (deadvar.chpl:2) )
 ::__init_entryPoint(deadvar.chpl:2) ( __init_entryPoint (deadvar.chpl:2) )
 ::__init_internal_prelude(deadvar.chpl:2) ( __init_internal_prelude (deadvar.chpl:2) )
 ::__init_prelude(deadvar.chpl:2) ( __init_prelude (deadvar.chpl:2) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::false(prelude.chpl:0) ( bool )
 ::main(deadvar.chpl:2) ( main (deadvar.chpl:2) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -23,6 +28,7 @@
 ::y(deadvar.chpl:2) ( int64 )
 function __init__CommonModule deadvar.chpl:2
 function __init__chpl_complex deadvar.chpl:2
+function __init__chpl_seq deadvar.chpl:2
 function __init_deadvar deadvar.chpl:2
 function __init_entryPoint deadvar.chpl:2
 function __init_internal_prelude deadvar.chpl:2

@@ -1,4 +1,5 @@
  called from 1 in __init_declprintint at declprintint.chpl:1
+ called from 1 in __init_declprintint at declprintint.chpl:1
  called from 1 in __init_entryPoint at declprintint.chpl:1
  called from 1 in __init_entryPoint at declprintint.chpl:1
  called from 1 in __init_entryPoint at declprintint.chpl:1
@@ -7,18 +8,23 @@
  called from 1 in main at declprintint.chpl:1
 ::__init__CommonModule(declprintint.chpl:1) ( __init__CommonModule (declprintint.chpl:1) )
 ::__init__chpl_complex(declprintint.chpl:1) ( __init__chpl_complex (declprintint.chpl:1) )
+::__init__chpl_seq(declprintint.chpl:1) ( __init__chpl_seq (declprintint.chpl:1) )
 ::__init_declprintint(declprintint.chpl:1) ( __init_declprintint (declprintint.chpl:1) )
 ::__init_entryPoint(declprintint.chpl:1) ( __init_entryPoint (declprintint.chpl:1) )
 ::__init_internal_prelude(declprintint.chpl:1) ( __init_internal_prelude (declprintint.chpl:1) )
 ::__init_prelude(declprintint.chpl:1) ( __init_prelude (declprintint.chpl:1) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::false(prelude.chpl:0) ( bool )
 ::main(declprintint.chpl:1) ( main (declprintint.chpl:1) )
 ::myvariable(declprintint.chpl:1) ( int64 )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::x(prelude.chpl:0) ( int64 )
 function __init__CommonModule declprintint.chpl:1
 function __init__chpl_complex declprintint.chpl:1
+function __init__chpl_seq declprintint.chpl:1
 function __init_declprintint declprintint.chpl:1
 function __init_entryPoint declprintint.chpl:1
 function __init_internal_prelude declprintint.chpl:1

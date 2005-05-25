@@ -37,6 +37,11 @@ void FilesToAST::run(ModuleSymbol* moduleList) {
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_complex.chpl"),
             MOD_STANDARD);
 
+  if (analyzeAST) {
+    ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
+              MOD_STANDARD);
+  }
+
   int filenum = 0;
   char* inputFilename = NULL;
 

@@ -1,4 +1,5 @@
  called from 2 in __init_bitwise_negation at bitwise_negation.chpl:2
+ called from 2 in __init_bitwise_negation at bitwise_negation.chpl:2
  called from 2 in __init_entryPoint at bitwise_negation.chpl:2
  called from 2 in __init_entryPoint at bitwise_negation.chpl:2
  called from 2 in __init_entryPoint at bitwise_negation.chpl:2
@@ -7,14 +8,18 @@
  called from 2 in main at bitwise_negation.chpl:2
 ::__init__CommonModule(bitwise_negation.chpl:2) ( __init__CommonModule (bitwise_negation.chpl:2) )
 ::__init__chpl_complex(bitwise_negation.chpl:2) ( __init__chpl_complex (bitwise_negation.chpl:2) )
+::__init__chpl_seq(bitwise_negation.chpl:2) ( __init__chpl_seq (bitwise_negation.chpl:2) )
 ::__init_bitwise_negation(bitwise_negation.chpl:2) ( __init_bitwise_negation (bitwise_negation.chpl:2) )
 ::__init_entryPoint(bitwise_negation.chpl:2) ( __init_entryPoint (bitwise_negation.chpl:2) )
 ::__init_internal_prelude(bitwise_negation.chpl:2) ( __init_internal_prelude (bitwise_negation.chpl:2) )
 ::__init_prelude(bitwise_negation.chpl:2) ( __init_prelude (bitwise_negation.chpl:2) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::answer(bitwise_negation.chpl:2) ( int64 )
 ::false(prelude.chpl:0) ( bool )
 ::m(bitwise_negation.chpl:1) ( int64 )
 ::main(bitwise_negation.chpl:2) ( main (bitwise_negation.chpl:2) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -23,6 +28,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule bitwise_negation.chpl:2
 function __init__chpl_complex bitwise_negation.chpl:2
+function __init__chpl_seq bitwise_negation.chpl:2
 function __init_bitwise_negation bitwise_negation.chpl:2
 function __init_entryPoint bitwise_negation.chpl:2
 function __init_internal_prelude bitwise_negation.chpl:2

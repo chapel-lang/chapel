@@ -1,4 +1,5 @@
  called from 4 in __init_compSampler at compSampler.chpl:4
+ called from 4 in __init_compSampler at compSampler.chpl:4
  called from 4 in __init_entryPoint at compSampler.chpl:4
  called from 4 in __init_entryPoint at compSampler.chpl:4
  called from 4 in __init_entryPoint at compSampler.chpl:4
@@ -11,10 +12,13 @@
 ::/(internal_prelude.chpl:0) ( / )
 ::__init__CommonModule(compSampler.chpl:4) ( __init__CommonModule (compSampler.chpl:4) )
 ::__init__chpl_complex(compSampler.chpl:4) ( __init__chpl_complex (compSampler.chpl:4) )
+::__init__chpl_seq(compSampler.chpl:4) ( __init__chpl_seq (compSampler.chpl:4) )
 ::__init_compSampler(compSampler.chpl:4) ( __init_compSampler (compSampler.chpl:4) )
 ::__init_entryPoint(compSampler.chpl:4) ( __init_entryPoint (compSampler.chpl:4) )
 ::__init_internal_prelude(compSampler.chpl:4) ( __init_internal_prelude (compSampler.chpl:4) )
 ::__init_prelude(compSampler.chpl:4) ( __init_prelude (compSampler.chpl:4) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
@@ -31,6 +35,7 @@
 ::main(compSampler.chpl:4) ( main (compSampler.chpl:4) )
 ::mod(internal_prelude.chpl:0) ( mod )
 ::n(compSampler.chpl:2) ( int64 )
+::nil ( null )
 ::o(compSampler.chpl:3) ( int64 )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
@@ -40,6 +45,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule compSampler.chpl:4
 function __init__chpl_complex compSampler.chpl:4
+function __init__chpl_seq compSampler.chpl:4
 function __init_compSampler compSampler.chpl:4
 function __init_entryPoint compSampler.chpl:4
 function __init_internal_prelude compSampler.chpl:4

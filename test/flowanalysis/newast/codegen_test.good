@@ -1,5 +1,6 @@
  called from 15 in __init_codegen_test at codegen_test.chpl:8
  called from 8 in __init_codegen_test at codegen_test.chpl:8
+ called from 8 in __init_codegen_test at codegen_test.chpl:8
  called from 8 in __init_entryPoint at codegen_test.chpl:8
  called from 8 in __init_entryPoint at codegen_test.chpl:8
  called from 8 in __init_entryPoint at codegen_test.chpl:8
@@ -8,14 +9,18 @@
  called from 8 in main at codegen_test.chpl:8
 ::__init__CommonModule(codegen_test.chpl:8) ( __init__CommonModule (codegen_test.chpl:8) )
 ::__init__chpl_complex(codegen_test.chpl:8) ( __init__chpl_complex (codegen_test.chpl:8) )
+::__init__chpl_seq(codegen_test.chpl:8) ( __init__chpl_seq (codegen_test.chpl:8) )
 ::__init_codegen_test(codegen_test.chpl:8) ( __init_codegen_test (codegen_test.chpl:8) )
 ::__init_entryPoint(codegen_test.chpl:8) ( __init_entryPoint (codegen_test.chpl:8) )
 ::__init_internal_prelude(codegen_test.chpl:8) ( __init_internal_prelude (codegen_test.chpl:8) )
 ::__init_prelude(codegen_test.chpl:8) ( __init_prelude (codegen_test.chpl:8) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(codegen_test.chpl:8) ( int64 )
 ::false(prelude.chpl:0) ( bool )
 ::foo(codegen_test.chpl:12) ( foo )
 ::main(codegen_test.chpl:8) ( main (codegen_test.chpl:8) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -27,6 +32,7 @@
 ::z(codegen_test.chpl:7) ( int64 )
 function __init__CommonModule codegen_test.chpl:8
 function __init__chpl_complex codegen_test.chpl:8
+function __init__chpl_seq codegen_test.chpl:8
 function __init_codegen_test codegen_test.chpl:8
 function __init_entryPoint codegen_test.chpl:8
 function __init_internal_prelude codegen_test.chpl:8

@@ -1,4 +1,5 @@
  called from 5 in __init_bitwise_ops at bitwise_ops.chpl:5
+ called from 5 in __init_bitwise_ops at bitwise_ops.chpl:5
  called from 5 in __init_entryPoint at bitwise_ops.chpl:5
  called from 5 in __init_entryPoint at bitwise_ops.chpl:5
  called from 5 in __init_entryPoint at bitwise_ops.chpl:5
@@ -9,10 +10,13 @@
 ::^(internal_prelude.chpl:0) ( ^ )
 ::__init__CommonModule(bitwise_ops.chpl:5) ( __init__CommonModule (bitwise_ops.chpl:5) )
 ::__init__chpl_complex(bitwise_ops.chpl:5) ( __init__chpl_complex (bitwise_ops.chpl:5) )
+::__init__chpl_seq(bitwise_ops.chpl:5) ( __init__chpl_seq (bitwise_ops.chpl:5) )
 ::__init_bitwise_ops(bitwise_ops.chpl:5) ( __init_bitwise_ops (bitwise_ops.chpl:5) )
 ::__init_entryPoint(bitwise_ops.chpl:5) ( __init_entryPoint (bitwise_ops.chpl:5) )
 ::__init_internal_prelude(bitwise_ops.chpl:5) ( __init_internal_prelude (bitwise_ops.chpl:5) )
 ::__init_prelude(bitwise_ops.chpl:5) ( __init_prelude (bitwise_ops.chpl:5) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
@@ -26,6 +30,7 @@
 ::m(bitwise_ops.chpl:1) ( int64 )
 ::main(bitwise_ops.chpl:5) ( main (bitwise_ops.chpl:5) )
 ::n(bitwise_ops.chpl:2) ( int64 )
+::nil ( null )
 ::o(bitwise_ops.chpl:3) ( int64 )
 ::or(internal_prelude.chpl:0) ( or )
 ::p(bitwise_ops.chpl:4) ( int64 )
@@ -38,6 +43,7 @@
 ::|(internal_prelude.chpl:0) ( | )
 function __init__CommonModule bitwise_ops.chpl:5
 function __init__chpl_complex bitwise_ops.chpl:5
+function __init__chpl_seq bitwise_ops.chpl:5
 function __init_bitwise_ops bitwise_ops.chpl:5
 function __init_entryPoint bitwise_ops.chpl:5
 function __init_internal_prelude bitwise_ops.chpl:5

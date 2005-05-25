@@ -1,4 +1,5 @@
  called from 14 in __init_declprintdom2 at declprintdom2.chpl:14
+ called from 14 in __init_declprintdom2 at declprintdom2.chpl:14
  called from 14 in __init_entryPoint at declprintdom2.chpl:14
  called from 14 in __init_entryPoint at declprintdom2.chpl:14
  called from 14 in __init_entryPoint at declprintdom2.chpl:14
@@ -21,10 +22,13 @@
 ::_DomainWriteStopgap(internal_prelude.chpl:0) ( _DomainWriteStopgap )
 ::__init__CommonModule(declprintdom2.chpl:14) ( __init__CommonModule (declprintdom2.chpl:14) )
 ::__init__chpl_complex(declprintdom2.chpl:14) ( __init__chpl_complex (declprintdom2.chpl:14) )
+::__init__chpl_seq(declprintdom2.chpl:14) ( __init__chpl_seq (declprintdom2.chpl:14) )
 ::__init_declprintdom2(declprintdom2.chpl:14) ( __init_declprintdom2 (declprintdom2.chpl:14) )
 ::__init_entryPoint(declprintdom2.chpl:14) ( __init_entryPoint (declprintdom2.chpl:14) )
 ::__init_internal_prelude(declprintdom2.chpl:14) ( __init_internal_prelude (declprintdom2.chpl:14) )
 ::__init_prelude(declprintdom2.chpl:14) ( __init_prelude (declprintdom2.chpl:14) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( _domain_1d (declprintdom2.chpl:9) )
 ::b(internal_prelude.chpl:0) ( Domain )
 ::false(prelude.chpl:0) ( bool )
@@ -35,6 +39,7 @@
 ::m8(declprintdom2.chpl:5) ( int64 )
 ::m9(declprintdom2.chpl:6) ( int64 )
 ::main(declprintdom2.chpl:14) ( main (declprintdom2.chpl:14) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::val(declprintdom2.chpl:9) ( _domain_1d (declprintdom2.chpl:9) )
 ::write(declprintdom2.chpl:9) ( write )
@@ -44,6 +49,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule declprintdom2.chpl:14
 function __init__chpl_complex declprintdom2.chpl:14
+function __init__chpl_seq declprintdom2.chpl:14
 function __init_declprintdom2 declprintdom2.chpl:14
 function __init_entryPoint declprintdom2.chpl:14
 function __init_internal_prelude declprintdom2.chpl:14

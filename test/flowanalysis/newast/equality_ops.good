@@ -3,16 +3,20 @@
  called from 4 in __init_entryPoint at equality_ops.chpl:4
  called from 4 in __init_entryPoint at equality_ops.chpl:4
  called from 4 in __init_equality_ops at equality_ops.chpl:4
+ called from 4 in __init_equality_ops at equality_ops.chpl:4
  called from 4 in main at equality_ops.chpl:4
  called from 4 in main at equality_ops.chpl:4
 ::!=(internal_prelude.chpl:0) ( != )
 ::==(internal_prelude.chpl:0) ( == )
 ::__init__CommonModule(equality_ops.chpl:4) ( __init__CommonModule (equality_ops.chpl:4) )
 ::__init__chpl_complex(equality_ops.chpl:4) ( __init__chpl_complex (equality_ops.chpl:4) )
+::__init__chpl_seq(equality_ops.chpl:4) ( __init__chpl_seq (equality_ops.chpl:4) )
 ::__init_entryPoint(equality_ops.chpl:4) ( __init_entryPoint (equality_ops.chpl:4) )
 ::__init_equality_ops(equality_ops.chpl:4) ( __init_equality_ops (equality_ops.chpl:4) )
 ::__init_internal_prelude(equality_ops.chpl:4) ( __init_internal_prelude (equality_ops.chpl:4) )
 ::__init_prelude(equality_ops.chpl:4) ( __init_prelude (equality_ops.chpl:4) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::answer(equality_ops.chpl:4) ( int64 )
@@ -22,6 +26,7 @@
 ::m(equality_ops.chpl:1) ( int64 )
 ::main(equality_ops.chpl:4) ( main (equality_ops.chpl:4) )
 ::n(equality_ops.chpl:2) ( int64 )
+::nil ( null )
 ::o(equality_ops.chpl:3) ( int64 )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
@@ -31,6 +36,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule equality_ops.chpl:4
 function __init__chpl_complex equality_ops.chpl:4
+function __init__chpl_seq equality_ops.chpl:4
 function __init_entryPoint equality_ops.chpl:4
 function __init_equality_ops equality_ops.chpl:4
 function __init_internal_prelude equality_ops.chpl:4

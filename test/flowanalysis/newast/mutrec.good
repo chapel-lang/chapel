@@ -1,21 +1,25 @@
  called from 13 in bar at mutrec.chpl:17
- called from 19 in __init_mutrec at _chpl_complex.chpl:60
- called from 20 in __init_mutrec at _chpl_complex.chpl:60
+ called from 19 in __init_mutrec at _chpl_seq.chpl:75
+ called from 20 in __init_mutrec at _chpl_seq.chpl:75
  called from 4 in foo at mutrec.chpl:8
- called from 60 in __init_entryPoint at _chpl_complex.chpl:60
- called from 60 in __init_entryPoint at _chpl_complex.chpl:60
- called from 60 in __init_entryPoint at _chpl_complex.chpl:60
- called from 60 in __init_entryPoint at _chpl_complex.chpl:60
- called from 60 in __init_mutrec at _chpl_complex.chpl:60
- called from 60 in main at _chpl_complex.chpl:60
- called from 60 in main at _chpl_complex.chpl:60
+ called from 75 in __init_entryPoint at _chpl_seq.chpl:75
+ called from 75 in __init_entryPoint at _chpl_seq.chpl:75
+ called from 75 in __init_entryPoint at _chpl_seq.chpl:75
+ called from 75 in __init_entryPoint at _chpl_seq.chpl:75
+ called from 75 in __init_mutrec at _chpl_seq.chpl:75
+ called from 75 in __init_mutrec at _chpl_seq.chpl:75
+ called from 75 in main at _chpl_seq.chpl:75
+ called from 75 in main at _chpl_seq.chpl:75
 ::==(internal_prelude.chpl:0) ( == )
-::__init__CommonModule(_chpl_complex.chpl:60) ( __init__CommonModule (_chpl_complex.chpl:60) )
-::__init__chpl_complex(_chpl_complex.chpl:60) ( __init__chpl_complex (_chpl_complex.chpl:60) )
-::__init_entryPoint(_chpl_complex.chpl:60) ( __init_entryPoint (_chpl_complex.chpl:60) )
-::__init_internal_prelude(_chpl_complex.chpl:60) ( __init_internal_prelude (_chpl_complex.chpl:60) )
-::__init_mutrec(_chpl_complex.chpl:60) ( __init_mutrec (_chpl_complex.chpl:60) )
-::__init_prelude(_chpl_complex.chpl:60) ( __init_prelude (_chpl_complex.chpl:60) )
+::__init__CommonModule(_chpl_seq.chpl:75) ( __init__CommonModule (_chpl_seq.chpl:75) )
+::__init__chpl_complex(_chpl_seq.chpl:75) ( __init__chpl_complex (_chpl_seq.chpl:75) )
+::__init__chpl_seq(_chpl_seq.chpl:75) ( __init__chpl_seq (_chpl_seq.chpl:75) )
+::__init_entryPoint(_chpl_seq.chpl:75) ( __init_entryPoint (_chpl_seq.chpl:75) )
+::__init_internal_prelude(_chpl_seq.chpl:75) ( __init_internal_prelude (_chpl_seq.chpl:75) )
+::__init_mutrec(_chpl_seq.chpl:75) ( __init_mutrec (_chpl_seq.chpl:75) )
+::__init_prelude(_chpl_seq.chpl:75) ( __init_prelude (_chpl_seq.chpl:75) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(mutrec.chpl:1) ( int64 )
 ::a(mutrec.chpl:10) ( int64 )
@@ -23,18 +27,20 @@
 ::bar(mutrec.chpl:17) ( bar )
 ::false(prelude.chpl:0) ( bool )
 ::foo(mutrec.chpl:8) ( foo )
-::main(_chpl_complex.chpl:60) ( main (_chpl_complex.chpl:60) )
+::main(_chpl_seq.chpl:75) ( main (_chpl_seq.chpl:75) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( string )
-function __init__CommonModule _chpl_complex.chpl:60
-function __init__chpl_complex _chpl_complex.chpl:60
-function __init_entryPoint _chpl_complex.chpl:60
-function __init_internal_prelude _chpl_complex.chpl:60
-function __init_mutrec _chpl_complex.chpl:60
-function __init_prelude _chpl_complex.chpl:60
+function __init__CommonModule _chpl_seq.chpl:75
+function __init__chpl_complex _chpl_seq.chpl:75
+function __init__chpl_seq _chpl_seq.chpl:75
+function __init_entryPoint _chpl_seq.chpl:75
+function __init_internal_prelude _chpl_seq.chpl:75
+function __init_mutrec _chpl_seq.chpl:75
+function __init_prelude _chpl_seq.chpl:75
 function bar mutrec.chpl:10
 function foo mutrec.chpl:1
-function main _chpl_complex.chpl:60
+function main _chpl_seq.chpl:75
 globals

@@ -49,6 +49,12 @@ void ResolveModuleUses::run(ModuleSymbol* moduleList) {
         new UseStmt(
           new Variable(
             new UnresolvedSymbol("_chpl_complex"))));
+      if (analyzeAST) {
+        mod->initFn->body->body->insertBefore(
+          new UseStmt(
+            new Variable(
+              new UnresolvedSymbol("_chpl_seq"))));
+      }
     }
   }
   Traversal::run(moduleList);

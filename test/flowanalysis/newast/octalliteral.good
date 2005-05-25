@@ -3,16 +3,21 @@
  called from 1 in __init_entryPoint at octalliteral.chpl:1
  called from 1 in __init_entryPoint at octalliteral.chpl:1
  called from 1 in __init_octalliteral at octalliteral.chpl:1
+ called from 1 in __init_octalliteral at octalliteral.chpl:1
  called from 1 in main at octalliteral.chpl:1
  called from 1 in main at octalliteral.chpl:1
 ::__init__CommonModule(octalliteral.chpl:1) ( __init__CommonModule (octalliteral.chpl:1) )
 ::__init__chpl_complex(octalliteral.chpl:1) ( __init__chpl_complex (octalliteral.chpl:1) )
+::__init__chpl_seq(octalliteral.chpl:1) ( __init__chpl_seq (octalliteral.chpl:1) )
 ::__init_entryPoint(octalliteral.chpl:1) ( __init_entryPoint (octalliteral.chpl:1) )
 ::__init_internal_prelude(octalliteral.chpl:1) ( __init_internal_prelude (octalliteral.chpl:1) )
 ::__init_octalliteral(octalliteral.chpl:1) ( __init_octalliteral (octalliteral.chpl:1) )
 ::__init_prelude(octalliteral.chpl:1) ( __init_prelude (octalliteral.chpl:1) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::false(prelude.chpl:0) ( bool )
 ::main(octalliteral.chpl:1) ( main (octalliteral.chpl:1) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -22,6 +27,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule octalliteral.chpl:1
 function __init__chpl_complex octalliteral.chpl:1
+function __init__chpl_seq octalliteral.chpl:1
 function __init_entryPoint octalliteral.chpl:1
 function __init_internal_prelude octalliteral.chpl:1
 function __init_octalliteral octalliteral.chpl:1

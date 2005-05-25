@@ -1,4 +1,5 @@
  called from 9 in __init_conditional at conditional.chpl:9
+ called from 9 in __init_conditional at conditional.chpl:9
  called from 9 in __init_entryPoint at conditional.chpl:9
  called from 9 in __init_entryPoint at conditional.chpl:9
  called from 9 in __init_entryPoint at conditional.chpl:9
@@ -7,10 +8,13 @@
  called from 9 in main at conditional.chpl:9
 ::__init__CommonModule(conditional.chpl:9) ( __init__CommonModule (conditional.chpl:9) )
 ::__init__chpl_complex(conditional.chpl:9) ( __init__chpl_complex (conditional.chpl:9) )
+::__init__chpl_seq(conditional.chpl:9) ( __init__chpl_seq (conditional.chpl:9) )
 ::__init_conditional(conditional.chpl:9) ( __init_conditional (conditional.chpl:9) )
 ::__init_entryPoint(conditional.chpl:9) ( __init_entryPoint (conditional.chpl:9) )
 ::__init_internal_prelude(conditional.chpl:9) ( __init_internal_prelude (conditional.chpl:9) )
 ::__init_prelude(conditional.chpl:9) ( __init_prelude (conditional.chpl:9) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(conditional.chpl:2) ( int64 )
 ::b(conditional.chpl:3) ( int64 )
 ::c(conditional.chpl:4) ( int64 )
@@ -21,12 +25,14 @@
 ::g(conditional.chpl:8) ( int64 )
 ::h(conditional.chpl:9) ( int64 )
 ::main(conditional.chpl:9) ( main (conditional.chpl:9) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule conditional.chpl:9
 function __init__chpl_complex conditional.chpl:9
+function __init__chpl_seq conditional.chpl:9
 function __init_conditional conditional.chpl:9
 function __init_entryPoint conditional.chpl:9
 function __init_internal_prelude conditional.chpl:9

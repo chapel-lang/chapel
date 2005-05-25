@@ -3,16 +3,20 @@
  called from 1 in __init_entryPoint at whileLoop.chpl:1
  called from 1 in __init_entryPoint at whileLoop.chpl:1
  called from 1 in __init_whileLoop at whileLoop.chpl:1
+ called from 1 in __init_whileLoop at whileLoop.chpl:1
  called from 1 in main at whileLoop.chpl:1
  called from 1 in main at whileLoop.chpl:1
 ::+(internal_prelude.chpl:0) ( + )
 ::<=(internal_prelude.chpl:0) ( <= )
 ::__init__CommonModule(whileLoop.chpl:1) ( __init__CommonModule (whileLoop.chpl:1) )
 ::__init__chpl_complex(whileLoop.chpl:1) ( __init__chpl_complex (whileLoop.chpl:1) )
+::__init__chpl_seq(whileLoop.chpl:1) ( __init__chpl_seq (whileLoop.chpl:1) )
 ::__init_entryPoint(whileLoop.chpl:1) ( __init_entryPoint (whileLoop.chpl:1) )
 ::__init_internal_prelude(whileLoop.chpl:1) ( __init_internal_prelude (whileLoop.chpl:1) )
 ::__init_prelude(whileLoop.chpl:1) ( __init_prelude (whileLoop.chpl:1) )
 ::__init_whileLoop(whileLoop.chpl:1) ( __init_whileLoop (whileLoop.chpl:1) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( int64 )
 ::b(internal_prelude.chpl:0) ( int64 )
@@ -20,6 +24,7 @@
 ::false(prelude.chpl:0) ( bool )
 ::i(whileLoop.chpl:1) ( int64 )
 ::main(whileLoop.chpl:1) ( main (whileLoop.chpl:1) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -28,6 +33,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule whileLoop.chpl:1
 function __init__chpl_complex whileLoop.chpl:1
+function __init__chpl_seq whileLoop.chpl:1
 function __init_entryPoint whileLoop.chpl:1
 function __init_internal_prelude whileLoop.chpl:1
 function __init_prelude whileLoop.chpl:1

@@ -1,4 +1,5 @@
  called from 1 in __init_configVar at configVar.chpl:1
+ called from 1 in __init_configVar at configVar.chpl:1
  called from 1 in __init_entryPoint at configVar.chpl:1
  called from 1 in __init_entryPoint at configVar.chpl:1
  called from 1 in __init_entryPoint at configVar.chpl:1
@@ -7,12 +8,16 @@
  called from 1 in main at configVar.chpl:1
 ::__init__CommonModule(configVar.chpl:1) ( __init__CommonModule (configVar.chpl:1) )
 ::__init__chpl_complex(configVar.chpl:1) ( __init__chpl_complex (configVar.chpl:1) )
+::__init__chpl_seq(configVar.chpl:1) ( __init__chpl_seq (configVar.chpl:1) )
 ::__init_configVar(configVar.chpl:1) ( __init_configVar (configVar.chpl:1) )
 ::__init_entryPoint(configVar.chpl:1) ( __init_entryPoint (configVar.chpl:1) )
 ::__init_internal_prelude(configVar.chpl:1) ( __init_internal_prelude (configVar.chpl:1) )
 ::__init_prelude(configVar.chpl:1) ( __init_prelude (configVar.chpl:1) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::false(prelude.chpl:0) ( bool )
 ::main(configVar.chpl:1) ( main (configVar.chpl:1) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
 ::write(prelude.chpl:0) ( write )
@@ -22,6 +27,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule configVar.chpl:1
 function __init__chpl_complex configVar.chpl:1
+function __init__chpl_seq configVar.chpl:1
 function __init_configVar configVar.chpl:1
 function __init_entryPoint configVar.chpl:1
 function __init_internal_prelude configVar.chpl:1

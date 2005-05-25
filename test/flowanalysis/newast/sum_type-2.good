@@ -3,6 +3,7 @@
  called from 22 in __init_entryPoint at sum_type-2.chpl:22
  called from 22 in __init_entryPoint at sum_type-2.chpl:22
  called from 22 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 22 in __init_sum_type-2 at sum_type-2.chpl:22
  called from 22 in main at sum_type-2.chpl:22
  called from 22 in main at sum_type-2.chpl:22
  called from 30 in __init_sum_type-2 at sum_type-2.chpl:22
@@ -10,6 +11,7 @@
 ::*(internal_prelude.chpl:0) ( * )
 ::__init__CommonModule(sum_type-2.chpl:22) ( __init__CommonModule (sum_type-2.chpl:22) )
 ::__init__chpl_complex(sum_type-2.chpl:22) ( __init__chpl_complex (sum_type-2.chpl:22) )
+::__init__chpl_seq(sum_type-2.chpl:22) ( __init__chpl_seq (sum_type-2.chpl:22) )
 ::__init_entryPoint(sum_type-2.chpl:22) ( __init_entryPoint (sum_type-2.chpl:22) )
 ::__init_internal_prelude(sum_type-2.chpl:22) ( __init_internal_prelude (sum_type-2.chpl:22) )
 ::__init_prelude(sum_type-2.chpl:22) ( __init_prelude (sum_type-2.chpl:22) )
@@ -38,8 +40,10 @@
 ::_default_param_temp_x ( float64 )
 ::_default_param_temp_y ( float64 )
 ::_default_param_temp_y ( float64 )
-::_init_cpoint2(sum_type-2.chpl:6) ( null )
-::_init_point1(sum_type-2.chpl:1) ( null )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_cpoint4(sum_type-2.chpl:6) ( null )
+::_init_point3(sum_type-2.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::_retval ( cpoint (sum_type-2.chpl:6) )
 ::_retval ( float64 )
 ::_retval ( float64 )
@@ -99,6 +103,7 @@
 ::y ( y )
 function __init__CommonModule sum_type-2.chpl:22
 function __init__chpl_complex sum_type-2.chpl:22
+function __init__chpl_seq sum_type-2.chpl:22
 function __init_entryPoint sum_type-2.chpl:22
 function __init_internal_prelude sum_type-2.chpl:22
 function __init_prelude sum_type-2.chpl:22

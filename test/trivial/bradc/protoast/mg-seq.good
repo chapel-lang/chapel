@@ -101,6 +101,43 @@ return Let Expr;
 }
 
 
+_chplSeqNode;
+seq2;
+function #( s: seq2;
+ e: seq2._chplSeqElementType): ??? {
+
+return s._chplSeqAppend(e);
+}
+
+
+function #( e: seq2._chplSeqElementType;
+ s: seq2): ??? {
+
+return s._chplSeqPrepend(e);
+}
+
+
+function #( s1: seq2;
+ s2: seq2): ??? {
+
+return s1._chplSeqConcat(s2);
+}
+
+
+function write( s: seq2): ??? {
+write("(/");
+var tmp: ??? = s._chplSeqFirst;
+while ((tmp!=nil)) {
+write(tmp._chplSeqElement);
+tmp = tmp._chplSeqNext;
+if ((tmp!=nil)) {
+write(", ");
+}
+}
+write("/)");
+}
+
+
 enum classVals = S | W | A | B | C | D | O;
 const probSize: [S..O] integer = (32, 64, 256, 256, 512, 1024, 256);
 const numIters: [S..O] integer = (4, 40, 4, 20, 20, 50, 4);

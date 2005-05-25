@@ -980,6 +980,7 @@ instantiate_add_subs(Map<Type*,Type*>* generic_substitutions,
 FnSymbol* 
 FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
                               Map<Type*,Type*>* generic_substitutions) {
+  //printf("instantiating %s\n", cname);
   FnSymbol* copy = NULL;
 
   static int uid = 1; // Unique ID for cloned functions
@@ -987,7 +988,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   TypeSymbol* clone = NULL;
   if (isConstructor) {
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
-    //    printf("instantiating %s\n", typeSym->cname);
     SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
     instantiate_add_subs(generic_substitutions, map);
@@ -1023,14 +1023,14 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
 
     forv_Vec(FnSymbol, fn, functions) {
       if (functionContainsVariableType(fn, &variableTypes)) {
-        //        printf("  instantiating %s\n", fn->cname);
+        //printf("  instantiating %s\n", fn->cname);
         SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
         DefExpr* fnDef = dynamic_cast<DefExpr*>(fn->defPoint->copy(true, map));
         instantiate_add_subs(generic_substitutions, map);
         instantiate_update_expr(generic_substitutions, fnDef);
         // What was this doing?, replaced with above line --SJD
-//         if (!instantiate_update_expr(generic_substitutions, fnDef))
-//           continue;
+        // if (!instantiate_update_expr(generic_substitutions, fnDef))
+        //   continue;
         fnDef->sym->cname =
           glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
         fn->defPoint->insertBefore(fnDef);
@@ -1045,7 +1045,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
           fnClone->method_type = fn->method_type;
         }
       } else {
-        //        printf("  not instantiating %s\n", fn->cname);
+        //printf("  not instantiating %s\n", fn->cname);
       }
     }
   } else {
@@ -1063,6 +1063,8 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   if (!copy) {
     INT_FATAL(this, "Instantiation error");
   }
+
+  //printf("finished instantiating %s\n", cname);
   
   return copy;
 }

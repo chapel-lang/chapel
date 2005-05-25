@@ -1,6 +1,7 @@
  called from 10 in __init_declprintdom at declprintdom.chpl:7
  called from 11 in __init_declprintdom at declprintdom.chpl:7
  called from 7 in __init_declprintdom at declprintdom.chpl:7
+ called from 7 in __init_declprintdom at declprintdom.chpl:7
  called from 7 in __init_entryPoint at declprintdom.chpl:7
  called from 7 in __init_entryPoint at declprintdom.chpl:7
  called from 7 in __init_entryPoint at declprintdom.chpl:7
@@ -15,10 +16,13 @@
 ::_DomainWriteStopgap(internal_prelude.chpl:0) ( _DomainWriteStopgap )
 ::__init__CommonModule(declprintdom.chpl:7) ( __init__CommonModule (declprintdom.chpl:7) )
 ::__init__chpl_complex(declprintdom.chpl:7) ( __init__chpl_complex (declprintdom.chpl:7) )
+::__init__chpl_seq(declprintdom.chpl:7) ( __init__chpl_seq (declprintdom.chpl:7) )
 ::__init_declprintdom(declprintdom.chpl:7) ( __init_declprintdom (declprintdom.chpl:7) )
 ::__init_entryPoint(declprintdom.chpl:7) ( __init_entryPoint (declprintdom.chpl:7) )
 ::__init_internal_prelude(declprintdom.chpl:7) ( __init_internal_prelude (declprintdom.chpl:7) )
 ::__init_prelude(declprintdom.chpl:7) ( __init_prelude (declprintdom.chpl:7) )
+::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
+::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(internal_prelude.chpl:0) ( _domain_1d (declprintdom.chpl:5) )
 ::b(internal_prelude.chpl:0) ( _seq )
 ::false(prelude.chpl:0) ( bool )
@@ -26,6 +30,7 @@
 ::m2(declprintdom.chpl:2) ( int64 )
 ::m3(declprintdom.chpl:3) ( int64 )
 ::main(declprintdom.chpl:7) ( main (declprintdom.chpl:7) )
+::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::val(declprintdom.chpl:5) ( _domain_1d (declprintdom.chpl:5) )
 ::write(declprintdom.chpl:5) ( write )
@@ -35,6 +40,7 @@
 ::x(prelude.chpl:0) ( string )
 function __init__CommonModule declprintdom.chpl:7
 function __init__chpl_complex declprintdom.chpl:7
+function __init__chpl_seq declprintdom.chpl:7
 function __init_declprintdom declprintdom.chpl:7
 function __init_entryPoint declprintdom.chpl:7
 function __init_internal_prelude declprintdom.chpl:7
