@@ -70,6 +70,7 @@ class Symbol : public BaseAST {
   void setDefPoint(DefExpr* init_defPoint);
 
   virtual FnSymbol* getFnSymbol(void);
+  virtual Type* typeInfo(void);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -251,6 +252,7 @@ class ForwardingSymbol : public Symbol {
   ForwardingSymbol(Symbol* init_forward, char* rename = NULL);
   virtual void codegenDef(FILE* outfile);
   virtual FnSymbol* getFnSymbol(void);
+  virtual Type* typeInfo(void);
 };
 
 

@@ -1,3 +1,6 @@
+class _seq { -- this is no longer necessary
+}
+
 class Index {
 }
 
@@ -97,94 +100,8 @@ function _INIT_CONFIG(inout v, v_type, chapel_name, module_name);
 function _INIT_ARRAY(rank, arr, dom, elt_type);
 function _INIT_DOMAIN_DIM(dom, dim, lo, hi, str);
 
-function _SEQ_APPEND(s, t, type_name);
-function _SEQ_INIT_NIL(s);
-
 function _UnionWriteStopgap(x) { }
 function _ArrayWriteStopgap(x) { }
 function _EnumWriteStopgap(x) { }
 function _EnumReadStopgap(x) { }
 function _DomainWriteStopgap(x) { }
-function _SeqWriteStopgap(x) { }
-
-pragma "omit for noanalysis" class _seq {
-  type elementType;
-
-  class _node {
-    var element : elementType;
-    var next : _node;
-  }
-
-  var length : integer;
-  var first : _node;
-  var last : _node;
-
-  pragma "omit for noanalysis" function append(e : elementType) : _seq {
-    var new : _node;
-    new = _node();
-    new.element = e;
-    if length > 0 {
-      last.next = new;
-      last = new;
-    } else {
-      first = new;
-      last = new;
-    }
-    length += 1;
-    return this;
-  }
-
-  pragma "omit for noanalysis" function prepend(e : elementType) : _seq {
-    var new : _node;
-    new = _node();
-    new.element = e;
-    if length > 0 {
-      new.next = first;
-      first = new;
-    } else {
-      first = new;
-      last = new;
-    }
-    length += 1;
-    return this;
-  }
-
-  pragma "omit for noanalysis" function concat(s : _seq) : _seq {
-    last.next = s.first;
-    last = s.last;
-    length += s.length;
-    return this;
-  }
-
-  pragma "omit for noanalysis" function copy() : _seq {
-    var new : _seq;
-    new = _seq();
-    for e in this {
-      new.append(e);
-    }
-    return new;
-  }
-
-}
-
-pragma "builtin" function #(a : _seq, b : any) { 
-  return __primitive("seqcat_element", a, b); 
-}
-
-pragma "builtin" function #(a : _seq, b : _seq) { 
-  return __primitive("seqcat_seq", a, b); 
-}
-
-pragma "omit for noanalysis" function _seq_append(s, e) {
-  s.append(e);
-}
-/*
-pragma "omit for noanalysis" function _seq_pound(e, s) {
-  s.prepend(e);
-}
-
-pragma "omit for noanalysis" function _seq_pound(s1, s2) {
-  s1.append_sequence(s2);
-}
-*/
-

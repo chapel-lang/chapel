@@ -66,6 +66,7 @@ PassInfo passlist[] = {
 
   // passes to run analysis
   RUN(Verify, ""), // this is a sanity check
+
   RUN(RunAnalysis, ""),
 
   // passes to run if --noanalysis is used

@@ -71,46 +71,67 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 
 
 static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
+  if (!analyzeAST) {
+    INT_FATAL(stmt, "Analysis required for sequences");
+  }
+
   SeqType* seq_type = dynamic_cast<SeqType*>(*type);
 
   if (!seq_type) {
     INT_FATAL(stmt, "Seq type expected");
   }
 
-  if (seq_type->symbol) {
-    INT_FATAL(stmt, "Seq type already resolved");
-  }
+  // We want to build a type that is instantiated, but I'll build a
+  // new statement with a constructor to instantiate the type.  This
+  // can be cleaned up once we have seq(integer) as a type.
 
-  SymScope* saveScope;
-  /** SJD: Why is SCOPE_INTRINSIC not internal? **/
-  if (seq_type->elementType->symbol->parentScope->isInternal() ||
-      !seq_type->elementType->symbol->defPoint) {
-    saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  } else {
-    saveScope = Symboltable::setCurrentScope(seq_type->elementType->symbol->parentScope);
-  }
+  DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt);
+  DefExpr* defExpr = dynamic_cast<DefExpr*>(defStmt->defExprls);
+  VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
 
-  char* name = glomstrings(2, "_seq_", seq_type->elementType->symbol->name);
-  if (Symbol* seq_sym = Symboltable::lookupInCurrentScope(name)) {
-    *type = seq_sym->type;
-  } else {
-    SeqType* new_seq_type = SeqType::createSeqType(name, seq_type->elementType);
-    DefExpr* def_expr = new DefExpr(new_seq_type->symbol);
-    new_seq_type->structScope->setContext(NULL, new_seq_type->symbol, def_expr);
-    DefStmt* seq_type_def = new DefStmt(def_expr);
-    if (Symboltable::getCurrentScope() == commonModule->modScope) {
-      commonModule->stmts->insertAfter(seq_type_def);
-    } else {
-      Stmt* def_stmt = seq_type->elementType->symbol->defPoint->parentStmt;
-      if (!def_stmt) {
-        INT_FATAL(stmt, "Seq with anonymous type not declared in statement not handled");
-      }
-      def_stmt->insertAfter(seq_type_def);
-    }
-    *type = new_seq_type;
-    // seq_type->buildImplementationClasses();
+  var->type = Symboltable::lookup("seq2")->typeInfo();
+  UserInitExpr* var_init =
+    new UserInitExpr(
+      new ParenOpExpr(new Variable(Symboltable::lookup("seq2")->typeInfo()->symbol),
+                      new Variable(seq_type->elementType->symbol)));
+  stmt->insertBefore(new DefStmt(new DefExpr(var, var_init)));
+  if (defExpr->init) {
+    stmt->insertBefore(new ExprStmt(new AssignOp(GETS_NORM, new Variable(var), defExpr->init->expr->copy())));
   }
-  Symboltable::setCurrentScope(saveScope);
+  defStmt->extract();
+//   if (seq_type->symbol) {
+//     INT_FATAL(stmt, "Seq type already resolved");
+//   }
+
+//   SymScope* saveScope;
+//   if (seq_type->elementType->symbol->parentScope->isInternal() ||
+//       !seq_type->elementType->symbol->defPoint) {
+//     saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+//   } else {
+//     saveScope = Symboltable::setCurrentScope(seq_type->elementType->symbol->parentScope);
+//   }
+
+//   char* name = glomstrings(2, "_seq_", seq_type->elementType->symbol->name);
+//   if (Symbol* seq_sym = Symboltable::lookupInCurrentScope(name)) {
+//     *type = seq_sym->type;
+//   } else {
+//     SeqType* new_seq_type = SeqType::createSeqType(name, seq_type->elementType);
+//     DefExpr* def_expr = new DefExpr(new_seq_type->symbol);
+//     new_seq_type->structScope->setContext(NULL, new_seq_type->symbol, def_expr);
+//     DefStmt* seq_type_def = new DefStmt(def_expr);
+//     if (Symboltable::getCurrentScope() == commonModule->modScope) {
+//       commonModule->stmts->insertAfter(seq_type_def);
+//     } else {
+//       Stmt* def_stmt = seq_type->elementType->symbol->defPoint->parentStmt;
+//       if (!def_stmt) {
+//         INT_FATAL(stmt, "Seq with anonymous type not declared in statement not handled");
+//       }
+//       def_stmt->insertAfter(seq_type_def);
+//     }
+//     *type = new_seq_type;
+//     // seq_type->buildImplementationClasses();
+//   }
+//   Symboltable::setCurrentScope(saveScope);
 }
 
 

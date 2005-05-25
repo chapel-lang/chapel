@@ -1591,27 +1591,6 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, "printError(message);\n");
       fprintf(outfile, "}\n");
       return;
-    } else if (variable->var == Symboltable::lookupInternal("_SeqWriteStopgap")) {
-      SeqType* seqType = dynamic_cast<SeqType*>(argList->typeInfo());
-      fprintf(outfile, "%s tmp = val->first;\n", seqType->types.v[0]->cname);
-      fprintf(outfile, "if (tmp != nil) {");
-      fprintf(outfile, "  printf(\"(/\");\n");
-      fprintf(outfile, "  while (tmp != nil) {\n");
-      if (seqType->elementType == dtString) {
-        fprintf(outfile, "_chpl_write_string(tmp->element);\n");
-      } else if (seqType->elementType == dtInteger) {
-        fprintf(outfile, "_chpl_write_integer(tmp->element);\n");
-      }
-      fprintf(outfile, "    tmp = tmp->next;\n");
-      fprintf(outfile, "    if (tmp != nil) {\n");
-      fprintf(outfile, "      printf(\", \");\n");
-      fprintf(outfile, "    }\n");
-      fprintf(outfile, "  }\n");
-      fprintf(outfile, "  printf(\"/)\");\n");
-      fprintf(outfile, "} else {\n");
-      fprintf(outfile, "  printf(\"nil\");\n");
-      fprintf(outfile, "}\n");
-      return;
     } else if (variable->var == Symboltable::lookupInternal("_DomainWriteStopgap")) {
       fprintf(outfile, "printf(\"%%d..%%d by %%d\", val->dim_info[0].lo, val->dim_info[0].hi, val->dim_info[0].str);\n");
       return;

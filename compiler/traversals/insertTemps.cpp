@@ -12,29 +12,46 @@ void InsertTemps::postProcessExpr(Expr* expr) {
 
   if (SeqExpr* seq_expr = dynamic_cast<SeqExpr*>(expr)) {
 
-    /**
-     ** No temporary if the expression is top-level in a DefStmt
-     **/
-    if (seq_expr->parentExpr == NULL &&
-        dynamic_cast<DefStmt*>(seq_expr->parentStmt)) {
-      return;
+    if (!analyzeAST) {
+      INT_FATAL(expr, "Analysis required for sequences");
     }
 
     char* temp_name = glomstrings(2, "_seq_temp_", intstring(uid++));
-    Type* temp_type = dtUnknown;
+    Type* temp_type = Symboltable::lookup("seq2")->typeInfo();
 
-    if (!analyzeAST) {
-      temp_type = seq_expr->typeInfo();
+    Type* elt_type = seq_expr->exprls->typeInfo();
+
+    if (!elt_type || elt_type == dtUnknown) {
+      INT_FATAL(expr, "Sequence literal is of unknown type, not handled");
     }
+
+    Expr* temp_init =
+      new ParenOpExpr(new Variable(Symboltable::lookup("seq2")->typeInfo()->symbol),
+                      new Variable(elt_type->symbol));
 
     DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
                                                             temp_type,
-                                                            seq_expr->copy(),
+                                                            temp_init,
                                                             VAR_NORMAL,
                                                             VAR_VAR);
 
     expr->getStmt()->insertBefore(def_stmt);
 
-    expr->replace(new Variable(def_stmt->varDef()));
+
+    Symbol* seq = def_stmt->defExprls->sym;
+
+    BinOp* binOp = NULL;
+    for (Expr* tmp = seq_expr->exprls; tmp; tmp = nextLink(Expr, tmp)) {
+      if (binOp) {
+        binOp = new BinOp(BINOP_SEQCAT, binOp, tmp->copy());
+      } else {
+        binOp = new BinOp(BINOP_SEQCAT, new Variable(seq), tmp->copy());
+      }
+    }
+
+    expr->getStmt()->insertBefore(
+      new ExprStmt(new AssignOp(GETS_NORM, new Variable(seq), binOp)));
+
+    expr->replace(new Variable(seq));
   }
 }

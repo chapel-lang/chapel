@@ -1,3 +1,4 @@
+ called from 15 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 22 in __init_entryPoint at sum_type-1.chpl:22
  called from 22 in __init_entryPoint at sum_type-1.chpl:22
  called from 22 in __init_entryPoint at sum_type-1.chpl:22
@@ -108,6 +109,7 @@ function __init_entryPoint sum_type-1.chpl:22
 function __init_internal_prelude sum_type-1.chpl:22
 function __init_prelude sum_type-1.chpl:22
 function __init_sum_type-1 sum_type-1.chpl:22
+function _construct_point sum_type-1.chpl:22
 function length sum_type-1.chpl:11
 function length sum_type-1.chpl:11
 function main sum_type-1.chpl:22
