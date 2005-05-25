@@ -33003,3 +33003,13 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_cond_expr1.future 
 
+---------------------------------------------------------------------------
+
+05/24/05 17:00:19 -- jplevyak
+
+Log message:
+	Fixup comments in clone.cpp and a bug in error reporting in fa.cpp.
+
+Modified files:
+	chapel/compiler/analysis/: clone.cpp fa.cpp 
+
