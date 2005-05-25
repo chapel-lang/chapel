@@ -33203,3 +33203,13 @@ Removed files:
 	                              test_seq1c.future test_seq2.future 
 	                              test_seq5.future 
 
+---------------------------------------------------------------------------
+
+05/25/05 13:56:57 -- deitz
+
+Log message:
+	Removed future for complex arithmetic test.
+
+Removed files:
+	chapel/test/types/complex/deitz/: test_complex2.future 
+
