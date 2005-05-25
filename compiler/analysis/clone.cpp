@@ -349,7 +349,7 @@ determine_basic_clones(Vec<Vec<CreationSet *> *> &css_sets_by_sym) {
           make_not_equiv(cs1, cs2);
           continue;
         }
-        // both have elemements or not
+        // both have elements or not
         if (!!cs1->sym->element != !!cs2->sym->element) {
           make_not_equiv(cs1, cs2);
           continue;

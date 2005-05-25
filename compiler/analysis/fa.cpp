@@ -2179,7 +2179,9 @@ collect_argument_type_violations() {
   forv_Fun(f, fa->funs) {
     forv_PNode(p, f->fa_send_PNodes) {
       if (p->prim) continue; // primitives handled elsewhere
-      forv_EntrySet(from, f->ess) {
+      Vec<EntrySet *> ess;
+      f->ess.set_intersection(fa->ess_set, ess);
+      forv_EntrySet(from, ess) {
         FunAEdgeMap *m = from->out_edge_map.get(p);
         if (!m) {
           forv_Var(v, p->rvals) {
