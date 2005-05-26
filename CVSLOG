@@ -33248,3 +33248,22 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_datablock.chpl 
 	                                         test_datablock.good 
 
+---------------------------------------------------------------------------
+
+05/26/05 13:49:43 -- deitz
+
+Log message:
+	Implemented overloading of parentheses with 'set' method.  John is
+	working on changing this to the 'this' method.  The code I wrote will
+	be useful when that is done too, though the names may have changed.  I
+	wrote this stopgap so I could continue experimenting with the array
+	implementation.
+	
+	Added a test case to exercise it.
+
+Modified files:
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+Added files:
+	chapel/test/types/type_variables/deitz/: test_datablock2.chpl 
+	                                         test_datablock2.good 
+
