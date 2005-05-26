@@ -1,8 +1,14 @@
--- I/O
+class pragma "codegen data" _data { -- a c array, basically
+  type t;
+  pragma "rename _data_this" function this(i : integer) : t {
+    return __primitive("coerce", t, i);
+  }
+  pragma "rename _data_set" function set(i : integer, val : t) {
+    return __primitive("array_set", this, i, val);
+  }
+}
 
--- function write() {}
--- function writeln() {}
-function read() {}
+-- I/O
 
 pragma "rename _chpl_write_boolean" function write(x : boolean) : void {
          __primitive("write", x);

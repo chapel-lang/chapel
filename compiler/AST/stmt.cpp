@@ -284,6 +284,31 @@ Stmt* Stmt::extract(void) {
 }
 
 
+bool Stmt::hasPragma(char* str) {
+  Pragma* pr = pragmas;
+  while (pr) {
+    if (!strcmp(pr->str, str)) {
+      return true;
+    }
+    pr = dynamic_cast<Pragma *>(pr->next);
+  }
+  return false;
+}
+
+
+void Stmt::addPragma(char* str) {
+  if (pragmas) {
+    Pragma* pr = pragmas;
+    while (pr->next) {
+      pr = dynamic_cast<Pragma *>(pr->next);
+    }
+    pr->next = new Pragma(copystring(str));
+  } else {
+    pragmas = new Pragma(copystring(str));
+  }
+}
+
+
 NoOpStmt::NoOpStmt(void) :
   Stmt(STMT_NOOP)
 {}

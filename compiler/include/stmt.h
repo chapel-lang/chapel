@@ -42,6 +42,8 @@ class Stmt : public BaseAST {
   void insertBefore(Stmt* new_stmt);
   void insertAfter(Stmt* new_stmt);
   Stmt* extract(void);
+  bool hasPragma(char* str);
+  void addPragma(char* str);
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 

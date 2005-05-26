@@ -83,6 +83,7 @@ Symbol* Symbol::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
 Symbol* Symbol::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symbol* new_symbol = copySymbol(clone, map);
 
+  new_symbol->pragmas = pragmas;
   new_symbol->lineno = lineno;
   new_symbol->filename = filename;
   if (map) {
@@ -176,8 +177,40 @@ void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
 }
 
+
+bool Symbol::hasPragma(char* str) {
+  Pragma* pr = pragmas;
+  while (pr) {
+    if (!strcmp(pr->str, str)) {
+      return true;
+    }
+    pr = dynamic_cast<Pragma *>(pr->next);
+  }
+  return false;
+}
+
+
+void Symbol::addPragma(char* str) {
+  if (pragmas) {
+    Pragma* pr = pragmas;
+    while (pr->next) {
+      pr = dynamic_cast<Pragma *>(pr->next);
+    }
+    pr->next = new Pragma(copystring(str));
+  } else {
+    pragmas = new Pragma(copystring(str));
+  }
+}
+
+
 void Symbol::codegen(FILE* outfile) {
-  fprintf(outfile, "%s", cname);
+  if (hasPragma("codegen data")) {
+    StructuralType* dataType = dynamic_cast<StructuralType*>(type);
+    dataType->methods.v[0]->retType->codegen(outfile);
+    fprintf(outfile, "*", cname);
+  } else {
+    fprintf(outfile, "%s", cname);
+  }
 }
 
 

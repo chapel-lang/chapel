@@ -5,6 +5,9 @@
 #include "chpltypes.h" /* only needed while _DECL_ARRAY is instantiated here */
 #include "domain.h"
 
+#define _data_construct() nil
+#define _data_set(x, i, v) x[i] = v
+#define _data_this(x, i) x[i]
 
 typedef struct __arr_perdim {
   int off;

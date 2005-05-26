@@ -85,6 +85,9 @@ static void build_constructor(StructuralType* structType) {
     new DefExpr(Symboltable::finishFnDef(fn, body));
   structType->symbol->defPoint->parentStmt->insertBefore(new DefStmt(fn_def));
   structType->methods.add(fn);
+  if (structType->symbol->hasPragma("codegen data")) {
+    fn->defPoint->parentStmt->addPragma("rename _data_construct");
+  }
 }
 
 

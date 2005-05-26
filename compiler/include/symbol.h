@@ -71,6 +71,8 @@ class Symbol : public BaseAST {
 
   virtual FnSymbol* getFnSymbol(void);
   virtual Type* typeInfo(void);
+  bool hasPragma(char* str);
+  void addPragma(char* str);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
