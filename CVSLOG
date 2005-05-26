@@ -33282,3 +33282,19 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplmem.c 
 
+---------------------------------------------------------------------------
+
+05/26/05 15:25:09 -- shannon
+
+Log message:
+	Added a few .cvsignore files that were missed on the
+	move from gc6.3 to gc6.5.  I also deleted the libtool
+	file which is created in the build.
+
+Added files:
+	chapel/third-party/boehmgc/gc6.5/: .cvsignore 
+	chapel/third-party/boehmgc/gc6.5/doc/: .cvsignore 
+	chapel/third-party/boehmgc/gc6.5/include/: .cvsignore 
+Removed files:
+	chapel/third-party/boehmgc/gc6.5/: libtool 
+
