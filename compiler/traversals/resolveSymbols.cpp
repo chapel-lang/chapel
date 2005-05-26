@@ -310,6 +310,16 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
       call_info(paren->baseExpr, fns);
     }
+    if (fns.n == 0) { // for set function
+      if (paren->parentExpr && paren->parentExpr->astType == EXPR_ASSIGNOP) {
+        Vec<FnSymbol*> fns2;
+        call_info(paren->parentExpr, fns2);
+        if (fns2.n == 1 && !strcmp(fns2.v[0]->name, "set")) {
+          // handle this case in AssignOp below
+          return;
+        }
+      }
+    }
     if (fns.n != 1) {
       // HACK: Special case where write(:nilType) requires dynamic
       // dispatch; Take the other one.
@@ -320,6 +330,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         fns.v[0] = fns.v[1];
       } else {
         INT_FATAL(expr, "Unable to resolve function");
+        return;
       }
     }
 
@@ -335,9 +346,29 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     expr = new_expr;
   }
 
-  // Resolve AssignOp to members
+  // Resolve AssignOp to members or setter functions
   if (AssignOp* aop = dynamic_cast<AssignOp*>(expr)) {
-    if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(aop->left)) {
+
+    if (typeid(*aop->left) == typeid(ParenOpExpr)) {
+      ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(aop->left);
+      Vec<FnSymbol*> fns;
+      call_info(aop, fns);
+      if (fns.n == 1) {
+        if (!strcmp("set", fns.e[0]->name)) {
+          Expr* function = new Variable(fns.e[0]);
+          Expr* arguments = paren->baseExpr->copy();
+          arguments = appendLink(arguments, copy_argument_list(paren));
+          arguments = appendLink(arguments, aop->right->copy());
+          Expr *new_expr = new FnCall(function, arguments);
+          aop->replace(new_expr);
+          expr = new_expr;
+        } else {
+          INT_FATAL(expr, "Invalid set function");
+        }
+      } else {
+        INT_FATAL(expr, "Unable to resolve set function");
+      }
+    } else if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(aop->left)) {
       resolve_member_access(aop, &member_access->member_offset, 
                             &member_access->member_type);
       if (!member_access->member_type) {
