@@ -33298,3 +33298,25 @@ Added files:
 Removed files:
 	chapel/third-party/boehmgc/gc6.5/: libtool 
 
+---------------------------------------------------------------------------
+
+05/26/05 15:43:27 -- deitz
+
+Log message:
+	Added functions hasPragma and addPragma to symbol and stmt to make it
+	easier to check for pragmas, and add new ones.
+	
+	Added a _data class in the prelude. (We'll need to change the name or
+	something so the user doesn't grab it.) This class acts as a
+	one-dimensional C array which I'll use to implement our arrays.
+	
+	It is useless until I add an allocate function or a constructor though.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/include/: stmt.h symbol.h 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/runtime/include/: array.h 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+
