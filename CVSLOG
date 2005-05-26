@@ -33267,3 +33267,18 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_datablock2.chpl 
 	                                         test_datablock2.good 
 
+---------------------------------------------------------------------------
+
+05/26/05 15:18:11 -- shannon
+
+Log message:
+	Fixed a bug in the confirm() function.  This function prints
+	an error if the memory address passed to it is NULL.  However,
+	I was using _glom_strings() to create the error message which
+	makes a call to realloc.  Instead of attempting to get more
+	memory from a possibly depleted heap I now use stack memory
+	for the message.
+
+Modified files:
+	chapel/runtime/src/: chplmem.c 
+
