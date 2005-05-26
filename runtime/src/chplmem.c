@@ -333,8 +333,8 @@ static void removeMemory(void* memAlloc) {
 
 static void confirm(void* memAlloc, char* description) {
   if (!memAlloc) {
-    char* message = _glom_strings(3, "Out of memory allocating \"", 
-                                  description, "\"");
+    char message[1024];
+    sprintf(message, "Out of memory allocating \"%s\"", description);
     printError(message);
   }
 }
