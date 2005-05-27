@@ -1,0 +1,9 @@
+deitz
+
+The problem is that the chpl_complex.chpl module only has one version 
+of _chpl_tostring which only handles complex, as a result resolveSymbols 
+thinks it is not overloaded and subs in the FnSymbol which forces analysis 
+to use only that one version (which doesn't apply) for all other uses of _chpl_tostring....
+
+Since this has to do with module resolution which is a new feature and I
+wanted to record these observations I am making this a future.
