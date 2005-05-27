@@ -525,12 +525,11 @@ NBlockHash<C, AHashFns, N>::put(C c) {
 
 template <class C, class AHashFns, int N> inline C
 NBlockHash<C, AHashFns, N>::get(C c) {
-  int a;
   if (!n)
     return (C)0;
   unsigned int h = AHashFns::hash(c);
   C *x = &v[(h % n) * N];
-  for (a = 0; a < N; a++) {
+  for (int a = 0; a < N; a++) {
     if (!x[a])
       return (C)0;
     if (AHashFns::equal(c, x[a]))
@@ -576,12 +575,12 @@ NBlockHash<C, AHashFns, N>::clear() {
 
 template <class C, class AHashFns, int N> inline int
 NBlockHash<C, AHashFns, N>::count() {
-  int count = 0;
+  int nelements = 0;
   C *l = last();
   for (C *xx = first(); xx < l; xx++) 
     if (*xx)
-      count++;
-  return count;
+      nelements++;
+  return nelements;
 }
 
 void test_map();

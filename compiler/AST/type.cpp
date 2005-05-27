@@ -1690,7 +1690,6 @@ class LUBCacheHashFns : public gc {
 
 static class BlockHash<SumType *, LUBCacheHashFns> lub_cache;
 
-
 Type *find_or_make_sum_type(Vec<Type *> *types) {
   static int uid = 1;
   if (types->n < 2) {
@@ -1698,9 +1697,8 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   }
   qsort(types->v, types->n, sizeof(types->v[0]), compar_baseast);
   SumType* new_sum_type = new SumType(types->v[0]);
-  for (int i = 1; i <= types->n; i++) {
+  for (int i = 1; i < types->n; i++)
     new_sum_type->addType(types->v[i]);
-  }
   SumType *old_type = lub_cache.get(new_sum_type);
   if (old_type)
     return old_type;
