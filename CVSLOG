@@ -33388,3 +33388,13 @@ Added files:
 	                                 var_return-2.chpl 
 	                                 var_return-2.good 
 
+---------------------------------------------------------------------------
+
+05/27/05 11:28:58 -- deitz
+
+Log message:
+	Changed my _data class in the prelude to use the new =this function.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+
