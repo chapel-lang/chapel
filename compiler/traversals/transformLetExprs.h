@@ -10,7 +10,7 @@ class TransformLetExprs : public Traversal {
   Vec<BaseAST*> lets;
   TransformLetExprs();
   void postProcessExpr(Expr* expr);
-  void run(ModuleSymbol* moduleList);
+  void run(ModuleList* moduleList);
   void doTransformation(void);
 };
 

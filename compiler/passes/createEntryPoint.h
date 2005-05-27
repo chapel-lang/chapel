@@ -1,16 +1,17 @@
 #ifndef _CREATE_ENTRY_POINT_H_
 #define _CREATE_ENTRY_POINT_H_
 
+#include "alist.h"
 #include "pass.h"
 
 class Stmt;
 
 class CreateEntryPoint : public Pass {
  public:
-  Stmt* entryPoint;
+  AList<Stmt>* entryPoint;
 
   CreateEntryPoint(void);
-  void run(ModuleSymbol* moduleList);
+  void run(ModuleList* moduleList);
 };
 
 #endif

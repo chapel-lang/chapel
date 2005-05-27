@@ -72,7 +72,7 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     Variable* retVar = new Variable(retval);
     AssignOp* assignRetVar = new AssignOp(GETS_NORM, retVar, retExpr->copy());
     ExprStmt* assignStmt = new ExprStmt(assignRetVar);
-    BlockStmt *retBlock = new BlockStmt(assignStmt);
+    BlockStmt *retBlock = new BlockStmt(new AList<Stmt>(assignStmt));
     retStmt->replace(retBlock);
     Variable* newRetExpr = new Variable(retval);
     ReturnStmt *newRetStmt = new ReturnStmt(newRetExpr);

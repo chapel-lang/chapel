@@ -17,7 +17,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
       if (var_init->typeInfo()->defaultVal) {
         var_init->replace(var_init->typeInfo()->defaultVal->copy());
       } else if (var_init->typeInfo()->defaultConstructor) {
-        var_init->replace(new FnCall(new Variable(var_init->typeInfo()->defaultConstructor), NULL));
+        var_init->replace(new FnCall(new Variable(var_init->typeInfo()->defaultConstructor)));
       } else {
         INT_FATAL(expr, "VarInitExpr has no default initialization");
       }

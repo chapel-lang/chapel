@@ -4,6 +4,7 @@
 #include "ast.h"
 #include "callbacks.h"
 #include "chplalloc.h"
+#include "alist.h"
 
 class Symbol;
 class UnresolvedSymbol;
@@ -80,7 +81,7 @@ class AInfo : public AST {
   AInfo();
 };
 
-int AST_to_IF1(Vec<Stmt *> &stmts);
+int AST_to_IF1(Vec<AList<Stmt> *> &stmts);
 Type *type_info(BaseAST *a, Symbol *s = 0);
 Type *return_type_info(FnSymbol *fn);
 Type *element_type_info(TypeSymbol *t);

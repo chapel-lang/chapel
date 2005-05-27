@@ -38,7 +38,7 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
     }
 
     FindBreakOrContinue* traversal = new FindBreakOrContinue();
-    TRAVERSE_LS(loop_stmt->body, traversal, true);
+    loop_stmt->body->traverse(traversal, true);
     if (traversal->found) {
       NoOpStmt* noop_stmt = new NoOpStmt();
       loop_stmt->replace(noop_stmt);

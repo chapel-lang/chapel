@@ -19,7 +19,7 @@ void InsertTemps::postProcessExpr(Expr* expr) {
     char* temp_name = glomstrings(2, "_seq_temp_", intstring(uid++));
     Type* temp_type = Symboltable::lookup("seq2")->typeInfo();
 
-    Type* elt_type = seq_expr->exprls->typeInfo();
+    Type* elt_type = seq_expr->exprls->representative()->typeInfo();
 
     if (!elt_type || elt_type == dtUnknown) {
       INT_FATAL(expr, "Sequence literal is of unknown type, not handled");
@@ -27,7 +27,7 @@ void InsertTemps::postProcessExpr(Expr* expr) {
 
     Expr* temp_init =
       new ParenOpExpr(new Variable(Symboltable::lookup("seq2")->typeInfo()->symbol),
-                      new Variable(elt_type->symbol));
+                      new AList<Expr>(new Variable(elt_type->symbol)));
 
     DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
                                                             temp_type,
@@ -38,10 +38,10 @@ void InsertTemps::postProcessExpr(Expr* expr) {
     expr->getStmt()->insertBefore(def_stmt);
 
 
-    Symbol* seq = def_stmt->defExprls->sym;
+    Symbol* seq = def_stmt->defExprls->representative()->sym;
 
     BinOp* binOp = NULL;
-    for (Expr* tmp = seq_expr->exprls; tmp; tmp = nextLink(Expr, tmp)) {
+    for (Expr* tmp = seq_expr->exprls->first(); tmp; tmp = seq_expr->exprls->next()) {
       if (binOp) {
         binOp = new BinOp(BINOP_SEQCAT, binOp, tmp->copy());
       } else {

@@ -5,7 +5,7 @@
 
 class BuildBinary : public Pass {
  public:
-  void run(ModuleSymbol* moduleList);
+  void run(ModuleList* moduleList);
 };
 
 #endif

@@ -62,21 +62,23 @@ void RemoveSeqOperations::postProcessExpr(Expr* expr) {
     INT_FATAL(expr, "Cannot find copy method in sequence type");
   }
 
-  Expr* arg1;
+  AList<Expr>* args = new AList<Expr>();
   Expr* arg2;
 
   if (left_seq_type) {
-    arg1 = new FnCall(new Variable(seq_copy), bin_expr->left->copy());
+    args->add(new FnCall(new Variable(seq_copy), 
+                         new AList<Expr>(bin_expr->left->copy())));
   } else {
-    arg1 = bin_expr->left->copy(); 
+    args->add(bin_expr->left->copy()); 
   }
 
   if (right_seq_type) {
-    arg2 = new FnCall(new Variable(seq_copy), bin_expr->right->copy());
+    arg2 = new FnCall(new Variable(seq_copy), 
+                      new AList<Expr>(bin_expr->right->copy()));
   } else {
     arg2 = bin_expr->right->copy(); 
   }
 
-  arg1->append(arg2);
-  expr->replace(new FnCall(new Variable(seq_method), arg1));
+  args->add(arg2);
+  expr->replace(new FnCall(new Variable(seq_method), args));
 }

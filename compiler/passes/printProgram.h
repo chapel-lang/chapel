@@ -2,5 +2,6 @@
 
 class PrintProgram : public Pass {
  public:
-  void run(ModuleSymbol* moduleList);
+  PrintProgram(void);
+  void run(ModuleList* moduleList);
 };

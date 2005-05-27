@@ -1,3 +1,4 @@
+#include "moduleList.h"
 #include "stmt.h"
 #include "symtab.h"
 #include "traversal.h"
@@ -21,11 +22,11 @@ void Traversal::preProcessType(Type* type) {}
 void Traversal::postProcessType(Type* type) {}
 
 
-void Traversal::run(ModuleSymbol* moduleList) {
-  ModuleSymbol* mod = moduleList;
+void Traversal::run(ModuleList* moduleList) {
+  ModuleSymbol* mod = moduleList->first();
   while (mod) {
     mod->startTraversal(this);
     
-    mod = nextLink(ModuleSymbol, mod);
+    mod = moduleList->next();
   }
 }

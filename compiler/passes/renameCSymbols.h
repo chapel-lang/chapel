@@ -4,7 +4,7 @@
 #include "pass.h"
 
 class RenameCSymbols : public Pass {
-  void run(ModuleSymbol* moduleList);
+  void run(ModuleList* moduleList);
 };
 
 #endif

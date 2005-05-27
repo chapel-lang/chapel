@@ -10,8 +10,8 @@ public:
   
   SymLink(Symbol* init_pSym = NULL);
 
-  void traverse(Traversal* traversal);
-  //  void traverseLinks(SymtabTraversal* traversal);
+  void traverse(Traversal* traversal, bool atTop = true);
+  void traverse(SymtabTraversal* traversal);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);

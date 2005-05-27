@@ -11,7 +11,7 @@ ModuleSymbol* internalPrelude = NULL;
 ModuleSymbol* prelude = NULL;
 
 
-void FilesToAST::run(ModuleSymbol* moduleList) {
+void FilesToAST::run(ModuleList* moduleList) {
   // parse internal prelude
   Symboltable::parseInternalPrelude();
   char* chplroot = sysdirToChplRoot(system_dir);

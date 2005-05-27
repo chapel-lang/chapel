@@ -2,29 +2,29 @@
 #include "codegen.h"
 #include "driver.h"
 #include "files.h"
-#include "../traversals/createConfigVarTable.h"
+#include "moduleList.h"
 #include "symbol.h"
 #include "symtab.h"
+#include "../traversals/createConfigVarTable.h"
 
 
-void Codegen::run(ModuleSymbol* moduleList) {
+void Codegen::run(ModuleList* moduleList) {
   if (suppressCodegen) {
     return;
   }
 
   openMakefile(moduleList->filename, system_dir);
 
-  ModuleSymbol* currentModule = moduleList;
-
   CreateConfigVarTable* createConfigVarTable = new CreateConfigVarTable();
-  createConfigVarTable->run(currentModule);
+  createConfigVarTable->run(moduleList);
   createConfigVarTable->closeCFile();
 
+  ModuleSymbol* currentModule = moduleList->first();
   while (currentModule) {
     if (currentModule->modtype != MOD_INTERNAL) {
       currentModule->codegenDef();
     }
-    currentModule = nextLink(ModuleSymbol, currentModule);
+    currentModule = moduleList->next();
   }
 
   closeMakefile();

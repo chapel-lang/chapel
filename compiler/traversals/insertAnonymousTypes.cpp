@@ -28,10 +28,10 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
     saveScope = Symboltable::setCurrentScope(array_type->elementType->symbol->parentScope);
   }
   if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
-    if (Variable* var = dynamic_cast<Variable*>(forall->domains)) {
-      if (var->next) {
-        INT_FATAL(stmt, "Multiple domains not handled in declarations");
-      }
+    if (forall->domains->length() > 1) {
+      INT_FATAL(stmt, "Multiple domains not handled in declarations");
+    }
+    if (Variable* var = dynamic_cast<Variable*>(forall->domains->only())) {
       if (DomainType* domain_type = dynamic_cast<DomainType*>(var->var->type)) {
         char* name = glomstrings(5,
                                  "_array_",
@@ -86,14 +86,15 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
   // can be cleaned up once we have seq(integer) as a type.
 
   DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt);
-  DefExpr* defExpr = dynamic_cast<DefExpr*>(defStmt->defExprls);
+  AList<DefExpr>* defExprs = defStmt->defExprls;
+  DefExpr* defExpr = defExprs->only();
   VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
 
   var->type = Symboltable::lookup("seq2")->typeInfo();
   UserInitExpr* var_init =
     new UserInitExpr(
       new ParenOpExpr(new Variable(Symboltable::lookup("seq2")->typeInfo()->symbol),
-                      new Variable(seq_type->elementType->symbol)));
+                      new AList<Expr>(new Variable(seq_type->elementType->symbol))));
   stmt->insertBefore(new DefStmt(new DefExpr(var, var_init)));
   if (defExpr->init) {
     stmt->insertBefore(new ExprStmt(new AssignOp(GETS_NORM, new Variable(var), defExpr->init->expr->copy())));
@@ -271,12 +272,12 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    DefExpr* def_expr = def_stmt->defExprls;
+    DefExpr* def_expr = def_stmt->defExprls->first();
     while (def_expr) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
         build_anon_type_def(stmt, &var->type);
       }
-      def_expr = nextLink(DefExpr, def_expr);
+      def_expr = def_stmt->defExprls->next();
     }
   }
 }

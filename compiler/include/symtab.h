@@ -31,7 +31,7 @@ class Symboltable {
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);
   static ModuleSymbol* getCurrentModule(void);
-  static ModuleSymbol* getModuleList(moduleSet modules);
+  static ModuleList* getModuleList(moduleSet modules);
   static FnSymbol* getCurrentFn(void);
 
   static void undefineInScope(Symbol* sym, SymScope* scope);
@@ -54,46 +54,45 @@ class Symboltable {
   static TypeSymbol* lookupInternalType(char* name);
 
   static Expr* startLetExpr(void);
-  static Expr* finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_expr);
+  static Expr* finishLetExpr(Expr* let_expr, AList<DefExpr>* exprs, 
+                             Expr* inner_expr);
   static BlockStmt* startCompoundStmt(void);
-  static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, Stmt* body);
+  static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, AList<Stmt>* body);
   static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
-  static DefExpr* finishModuleDef(ModuleSymbol* mod, Stmt* definition);
-  static VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, 
-                                            Expr* init = NULL, 
-                                            varType vartag = VAR_NORMAL, 
-                                            consType constag = VAR_VAR);
-  static ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
-                                                Type* type, Expr* init);
-  static DefExpr* Symboltable::defineVarDef1(Symbol* idents,
-                                                 Type* type, 
-                                                 Expr* init);
-  static DefExpr* Symboltable::defineVarDef2(DefExpr* stmts,
-                                                 varType vartag, 
-                                                 consType constag);
+  static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
+  static AList<Symbol>* Symboltable::defineParams(paramType tag, 
+                                                  AList<Symbol>* syms,
+                                                  Type* type, Expr* init);
+  static AList<DefExpr>* Symboltable::defineVarDef1(AList<Symbol>* idents,
+                                                    Type* type, 
+                                                    Expr* init);
+  static void Symboltable::defineVarDef2(AList<DefExpr>* stmts, varType vartag, 
+                                         consType constag);
   static DefStmt* Symboltable::defineSingleVarDefStmt(char* name, 
                                                       Type* type,
                                                       Expr* init,
                                                       varType vartag,
                                                       consType constag);
-  static ForallExpr* startForallExpr(Expr* domainExpr, 
-                                     Expr* indexExpr = NULL);
+  static ForallExpr* startForallExpr(AList<Expr>* domainExpr, 
+                                     AList<Expr>* indexExpr = new AList<Expr>());
   static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 
                                       Expr* argExpr = NULL);
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(FnSymbol* fnsym, bool noparens = false);
-  static void continueFnDef(FnSymbol* fnsym, Symbol* formals, 
+  static void continueFnDef(FnSymbol* fnsym, AList<Symbol>* formals, 
                             Type* retType, bool isRef = false);
-  static FnSymbol* finishFnDef(FnSymbol* fnsym, Stmt* body, 
+  static FnSymbol* finishFnDef(FnSymbol* fnsym, BlockStmt* body, 
                                bool isExtern = true);
-  static DefStmt* defineFunction(char* name, Symbol* formals, Type* retType, 
-                                 BlockStmt* body, bool isExtern = false);
+  static DefStmt* defineFunction(char* name, AList<Symbol>* formals, 
+                                 Type* retType, BlockStmt* body, 
+                                 bool isExtern = false);
 
   static TypeSymbol* startStructDef(Type* type, char* name);
-  static DefExpr* finishStructDef(TypeSymbol* classSym, Stmt* definition);
+  static DefExpr* finishStructDef(TypeSymbol* classSym, AList<Stmt>* definition);
 
-  static ForLoopStmt* startForLoop(bool forall, Symbol* indices, Expr* domain);
+  static ForLoopStmt* startForLoop(bool forall, AList<Symbol>* indices, 
+                                   Expr* domain);
   static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);
 
   static ForallExpr* defineQueryDomain(char* name);
@@ -102,6 +101,6 @@ class Symboltable {
   static void dump(FILE* outfile = stderr);
 };
 
-bool ModuleDefContainsOnlyNestedModules(Stmt* def);
+bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def);
 
 #endif

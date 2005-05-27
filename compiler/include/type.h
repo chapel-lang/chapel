@@ -69,9 +69,9 @@ class Type : public BaseAST {
   virtual Type* getType();
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual Stmt* buildDefaultReadFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultReadFunctionBody(ParamSymbol* arg);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -87,9 +87,9 @@ class FnType : public Type {
 
 class EnumType : public Type {
  public:
-  EnumSymbol* valList;
+  AList<EnumSymbol>* valList;
 
-  EnumType(EnumSymbol* init_valList);
+  EnumType(AList<EnumSymbol>* init_valList);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void traverseDefType(Traversal* traversal);
@@ -102,9 +102,9 @@ class EnumType : public Type {
   bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual Stmt* buildDefaultReadFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultReadFunctionBody(ParamSymbol* arg);
 };
 
 class IndexType;  // break circular forward reference
@@ -133,7 +133,7 @@ class DomainType : public Type {
   virtual bool blankIntentImpliesRef(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 //Roxana -- Index should not by subtype of Domain
@@ -199,14 +199,14 @@ class LikeType : public Type {
 class StructuralType : public Type {
  public:
   SymScope* structScope;
-  Stmt* declarationList;
+  AList<Stmt>* declarationList;
   StructuralType* parentStruct;
 
   Vec<VarSymbol*> fields;
   Vec<TypeSymbol*> types;
 
   StructuralType(astType_t astType, Expr* init_defaultVal = NULL);
-  void addDeclarations(Stmt* newDeclarations,
+  void addDeclarations(AList<Stmt>* newDeclarations,
                        Stmt* afterStmt = NULL);
   void setScope(SymScope* init_structScope);
   void copyGuts(StructuralType* copy_type, bool clone, Map<BaseAST*,BaseAST*>* map);
@@ -214,7 +214,8 @@ class StructuralType : public Type {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
 
-  virtual Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments);
+  virtual void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
+                                    AList<Symbol>* arguments);
 
   virtual void codegenStartDefFields(FILE* outfile);
   virtual void codegenStopDefFields(FILE* outfile);
@@ -227,7 +228,7 @@ class StructuralType : public Type {
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 
@@ -270,14 +271,15 @@ class UnionType : public StructuralType {
 
   void buildFieldSelector(void);
   FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
-  Stmt* buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments);
+  void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
+                            AList<Symbol>* arguments);
 
   void codegenStartDefFields(FILE* outfile);
   void codegenStopDefFields(FILE* outfile);
   void codegenMemberAccessOp(FILE* outfile);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 
@@ -310,7 +312,7 @@ class SeqType : public ClassType {
   static SeqType* createSeqType(char* new_seq_name, Type* init_elementType);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 class ArrayType : public Type {
@@ -335,7 +337,7 @@ class ArrayType : public Type {
   virtual bool blankIntentImpliesRef(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual Stmt* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 class MetaType : public Type {

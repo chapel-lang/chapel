@@ -12,7 +12,7 @@ View::View(bool initNumberSymbols) {
   numberSymbols = initNumberSymbols;
 }
 
-void View::run(ModuleSymbol* moduleList) {
+void View::run(ModuleList* moduleList) {
   Traversal::run(moduleList);
   printf("\n\n");
 }

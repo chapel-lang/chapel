@@ -8,16 +8,17 @@ BuildLValueFunctions::BuildLValueFunctions(void) {
   whichModules = MODULES_CODEGEN;
 }
 
-static Stmt *
+static AList<Stmt> *
 handle_return_expr(Expr *e, Symbol *lvalue) {
-  if (!e)
-    return NULL;
-  if (CondExpr *ce = dynamic_cast<CondExpr *>(e)) {
-    return new CondStmt(ce->condExpr, 
-                        new BlockStmt(handle_return_expr(ce->thenExpr, lvalue)),
-                        new BlockStmt(handle_return_expr(ce->elseExpr, lvalue)));
-  } else
-    return new ExprStmt(new AssignOp(GETS_NORM, e, new Variable(lvalue)));
+  Stmt* newStmt = NULL;
+  if (e)
+    if (CondExpr *ce = dynamic_cast<CondExpr *>(e))
+      newStmt = new CondStmt(ce->condExpr, 
+                             new BlockStmt(handle_return_expr(ce->thenExpr, lvalue)),
+                             new BlockStmt(handle_return_expr(ce->elseExpr, lvalue)));
+    else
+      newStmt = new ExprStmt(new AssignOp(GETS_NORM, e, new Variable(lvalue)));
+  return new AList<Stmt>(newStmt);
 }
 
 
@@ -25,9 +26,9 @@ static void
 replace_return(BaseAST *ast, Symbol *lvalue) {
   if (ReturnStmt *ret = dynamic_cast<ReturnStmt *>(ast)) {
     Symboltable::pushScope(SCOPE_LOCAL);
-    Stmt *assign = handle_return_expr(ret->expr, lvalue);
-    ast = new BlockStmt(assign, Symboltable::popScope());
-    assign->append(new ReturnStmt(NULL));
+    AList<Stmt> *body = handle_return_expr(ret->expr, lvalue);
+    body->add(new ReturnStmt(NULL));
+    ast = new BlockStmt(body, Symboltable::popScope());
     ret->replace((Stmt*)ast);
     return;
   }
@@ -57,8 +58,8 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   old_def_stmt->insertAfter(def_stmt);
   Symboltable::setCurrentScope(fn->paramScope);
   Symbol* lvalue = new ParamSymbol(PARAM_BLANK, "_lvalue", old_fn->retType);
-  lvalue->setDefPoint(def_stmt->defExprls);
-  fn->formals = appendLink(fn->formals, lvalue);
+  lvalue->setDefPoint(def_stmt->defExprls->only());
+  fn->formals->add(lvalue);
   replace_return(fn->body, lvalue);
   Symboltable::setCurrentScope(saveScope);
 }

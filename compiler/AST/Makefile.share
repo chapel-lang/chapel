@@ -1,8 +1,10 @@
 AST_SRCS = \
+	alist.cpp \
 	baseAST.cpp \
 	expr.cpp \
 	link.cpp \
 	loc.cpp \
+	moduleList.cpp \
 	pragma.cpp \
 	stmt.cpp \
 	symbol.cpp \

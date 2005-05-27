@@ -2,6 +2,7 @@
 #include <typeinfo>
 #include "fixup.h"
 #include "expr.h"
+#include "moduleList.h"
 #include "stmt.h"
 #include "symtab.h"
 
@@ -168,13 +169,13 @@ void Fixup::postProcessSymbol(Symbol* sym) {
 }
 
 
-void Fixup::run(ModuleSymbol* moduleList) {
-  ModuleSymbol* mod = moduleList;
+void Fixup::run(ModuleList* moduleList) {
+  ModuleSymbol* mod = moduleList->first();
   while (mod) {
     parentSymbols.add(mod);
     mod->startTraversal(this);
     parentSymbols.pop();
-    mod = nextLink(ModuleSymbol, mod);
+    mod = moduleList->next();
   }
 }
 

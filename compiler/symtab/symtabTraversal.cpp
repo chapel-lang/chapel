@@ -1,3 +1,4 @@
+#include "moduleList.h"
 #include "symtab.h"
 #include "symtabTraversal.h"
 
@@ -13,7 +14,7 @@ void SymtabTraversal::processSymbol(Symbol* sym) {
 }
 
 
-void SymtabTraversal::run(ModuleSymbol* moduleList) {
+void SymtabTraversal::run(ModuleList* moduleList) {
   switch (whichModules) {
   case MODULES_ALL:
     Symboltable::traverse(this);
@@ -25,12 +26,12 @@ void SymtabTraversal::run(ModuleSymbol* moduleList) {
     break;
   case MODULES_USER:
     {
-      ModuleSymbol* mod = moduleList;
+      ModuleSymbol* mod = moduleList->first();
       while (mod) {
         if (mod->modtype == MOD_USER) {
           Symboltable::traverseFromScope(this, mod->modScope);
         }
-        mod = nextLink(ModuleSymbol, mod);
+        mod = moduleList->next();
       }
     }
     break;

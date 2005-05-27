@@ -124,7 +124,7 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
       if (VarSymbol* var_resolve = dynamic_cast<VarSymbol*>(sym_resolve)) {
         ModuleSymbol* mod =
           dynamic_cast<ModuleSymbol*>(var_resolve->parentScope->symContext);
-        if (mod && mod->initFn->paramScope == currentScope) {
+        if (mod && currentScope == mod->initFn->body->blkScope) {
           Vec<VarSymbol*>* sym_defs = defList->get(currentScope);
           if (!sym_defs || !sym_defs->set_in(var_resolve)) {
             USR_FATAL(expr, "Variable '%s' used before it is defined", name);

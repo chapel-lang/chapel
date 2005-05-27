@@ -9,7 +9,7 @@ extern ModuleSymbol* internalPrelude;
 extern ModuleSymbol* prelude;
 
 class FilesToAST : public Pass {
-  void run(ModuleSymbol* moduleList);
+  void run(ModuleList* moduleList);
 };
 
 #endif

@@ -30,7 +30,9 @@ void ExpandSeqExprAssignments::postProcessStmt(Stmt* stmt) {
     INT_FATAL(stmt, "Sequence type not found in assignment of sequence literal");
   }
 
-  for (Expr* tmp = seq_expr->exprls; tmp; tmp = nextLink(Expr, tmp)) {
+  for (Expr* tmp = seq_expr->exprls->first(); 
+       tmp; 
+       tmp = seq_expr->exprls->next()) {
 
     FnSymbol* fn = NULL;
     forv_Vec(FnSymbol, method, seq_type->methods) {
@@ -43,8 +45,8 @@ void ExpandSeqExprAssignments::postProcessStmt(Stmt* stmt) {
       INT_FATAL(seq_type, "Cannot find append function in sequence type");
     }
 
-    Expr* args = assign_expr->left->copy();
-    args->append(tmp->copy());
+    AList<Expr>* args = new AList<Expr>(assign_expr->left->copy());
+    args->add(tmp->copy());
     Expr* append_expr = new FnCall(new Variable(fn), args);
     stmt->insertBefore(new ExprStmt(append_expr));
   }

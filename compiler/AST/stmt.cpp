@@ -32,25 +32,6 @@ FnSymbol *Stmt::parentFunction() {
 }
 
 
-Stmt* Stmt::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list) {
-  if (map == NULL) {
-    map = new Map<BaseAST*,BaseAST*>();
-  }
-  Stmt* newStmtList = copyListInternal(clone, map);
-  if (update_list) {
-    for (int j = 0; j < update_list->n; j++) {
-      for (int i = 0; i < map->n; i++) {
-        if (update_list->v[j] == map->v[i].key) {
-          update_list->v[j] = map->v[i].value;
-        }
-      }
-    }
-  }
-  TRAVERSE_LS(newStmtList, new UpdateSymbols(map), true);
-  return newStmtList;
-}
-
-
 Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list) {
   if (map == NULL) {
     map = new Map<BaseAST*,BaseAST*>();
@@ -67,21 +48,6 @@ Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_
   }
   TRAVERSE(new_stmt, new UpdateSymbols(map), true);
   return new_stmt;
-}
-
-
-Stmt* Stmt::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Stmt* newStmtList = NULL;
-  Stmt* oldStmt = this;
-
-  while (oldStmt) {
-    newStmtList = appendLink(newStmtList, 
-                             oldStmt->copyInternal(clone, map));
-    
-    oldStmt = nextLink(Stmt, oldStmt);
-  }
-
-  return newStmtList;
 }
 
 
@@ -163,49 +129,16 @@ static void call_replace_child(Stmt* old_stmt, Stmt* new_stmt) {
 }
 
 
-Stmt* Stmt::head(void) {
-  ILink* first = this;
-  while (first->prev) {
-    first = first->prev;
-  }
-  Stmt* head = dynamic_cast<Stmt*>(first);
-  if (!head) {
-    INT_FATAL(this, "Ill-formed statement list found in Stmt::head");
-  }
-  return head;
-}
-
-
-Stmt* Stmt::tail(void) {
-  ILink* last = this;
-  while (last->next) {
-    last = last->next;
-  }
-  Stmt* tail = dynamic_cast<Stmt*>(last);
-  if (!last) {
-    INT_FATAL(this, "Ill-formed statement list found in Stmt::last");
-  }
-  return tail;
-}
-
-
 void Stmt::replace(Stmt* new_stmt) {
-  Stmt* first = new_stmt->head();
-  Stmt* last = new_stmt->tail();
-
-  if (first != new_stmt) {
-    INT_FATAL(this, "Illegal replace, new_stmt is not head of list");
-  }
-
-  last->next = next;
+  new_stmt->next = next;
   if (next) {
-    next->prev = last;
+    next->prev = new_stmt;
   }
-  first->prev = prev;
+  new_stmt->prev = prev;
   if (!prev) {
-    call_replace_child(this, first);
+    call_replace_child(this, new_stmt);
   } else {
-    prev->next = first;
+    prev->next = new_stmt;
   }
 
   call_fixup(this);
@@ -213,60 +146,28 @@ void Stmt::replace(Stmt* new_stmt) {
 
 
 void Stmt::insertBefore(Stmt* new_stmt) {
-  Stmt* first = new_stmt->head();
-  Stmt* last = new_stmt->tail();
-
-  if (first != new_stmt) {
-    INT_FATAL(this, "Illegal insertBefore, new_stmt is not head of list");
-  }
-
   if (!prev) {
-    call_replace_child(this, first);
+    call_replace_child(this, new_stmt);
   } else {
-    prev->next = first;
+    prev->next = new_stmt;
   }
-  first->prev = prev;
-  prev = last;
-  last->next = this;
+  new_stmt->prev = prev;
+  prev = new_stmt;
+  new_stmt->next = this;
 
   call_fixup(this);
 }
 
 
 void Stmt::insertAfter(Stmt* new_stmt) {
-  Stmt* first = new_stmt->head();
-  Stmt* last = new_stmt->tail();
-
-  if (first != new_stmt) {
-    INT_FATAL(this, "Illegal insertAfter, new_stmt is not head of list");
-  }
-
   if (next) {
-    next->prev = last;
+    next->prev = new_stmt;
   }
-  last->next = next;
-  next = first;
-  first->prev = this;
+  new_stmt->next = next;
+  next = new_stmt;
+  new_stmt->prev = this;
 
   call_fixup(this);
-}
-
-
-void Stmt::append(ILink* new_stmt) {
-  if (!new_stmt) {
-    return;
-  }
-
-  Stmt* first = dynamic_cast<Stmt*>(new_stmt->head());
-
-  if (first != new_stmt) {
-    INT_FATAL(this, "Illegal append, new_stmt is not head of list");
-  }
-
-  Stmt* append_point = dynamic_cast<Stmt*>(this->tail());
-
-  append_point->next = first;
-  first->prev = append_point;
 }
 
 
@@ -285,12 +186,12 @@ Stmt* Stmt::extract(void) {
 
 
 bool Stmt::hasPragma(char* str) {
-  Pragma* pr = pragmas;
+  Pragma* pr = pragmas->first();
   while (pr) {
     if (!strcmp(pr->str, str)) {
       return true;
     }
-    pr = dynamic_cast<Pragma *>(pr->next);
+    pr = pragmas->next();
   }
   return false;
 }
@@ -298,13 +199,9 @@ bool Stmt::hasPragma(char* str) {
 
 void Stmt::addPragma(char* str) {
   if (pragmas) {
-    Pragma* pr = pragmas;
-    while (pr->next) {
-      pr = dynamic_cast<Pragma *>(pr->next);
-    }
-    pr->next = new Pragma(copystring(str));
+    pragmas->add(new Pragma(copystring(str)));
   } else {
-    pragmas = new Pragma(copystring(str));
+    pragmas = new AList<Pragma>(new Pragma(copystring(str)));
   }
 }
 
@@ -331,18 +228,24 @@ void NoOpStmt::codegen(FILE* outfile) {
 
 DefStmt::DefStmt(DefExpr* init_defExprls) :
   Stmt(STMT_DEF),
+  defExprls(new AList<DefExpr>(init_defExprls))
+{}
+
+
+DefStmt::DefStmt(AList<DefExpr>* init_defExprls) :
+  Stmt(STMT_DEF),
   defExprls(init_defExprls)
-{ }
+{}
 
 
 Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new DefStmt(dynamic_cast<DefExpr*>(defExprls->copy(clone, map)));
+  return new DefStmt(defExprls->copy(clone, map));
 }
 
 
 void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defExprls) {
-    defExprls = dynamic_cast<DefExpr*>(new_ast);
+    defExprls = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefStmt::replaceChild(old, new)");
   }
@@ -350,12 +253,12 @@ void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void DefStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE_LS(defExprls, traversal, false);
+  defExprls->traverse(traversal, false);
 }
 
 
 void DefStmt::print(FILE* outfile) {
-  defExprls->printList(outfile, "\n");
+  defExprls->print(outfile, "\n");
 }
 
 
@@ -363,35 +266,44 @@ void DefStmt::codegen(FILE* outfile) { /* Noop */ }
 
 
 VarSymbol* DefStmt::varDef() {
-  return dynamic_cast<VarSymbol*>(defExprls->sym);
+  if (defExprls->isEmpty()) {
+    return NULL;
+  }
+  return dynamic_cast<VarSymbol*>(defExprls->first()->sym);
 }
 
 
 FnSymbol* DefStmt::fnDef() {
-  return dynamic_cast<FnSymbol*>(defExprls->sym);
+  if (defExprls->isEmpty()) {
+    return NULL;
+  }
+  return dynamic_cast<FnSymbol*>(defExprls->first()->sym);
 }
 
 
 TypeSymbol* DefStmt::typeDef() {
-  return dynamic_cast<TypeSymbol*>(defExprls->sym);
+  if (defExprls->isEmpty()) {
+    return NULL;
+  }
+  return dynamic_cast<TypeSymbol*>(defExprls->first()->sym);
 }
 
 
 ModuleSymbol* DefStmt::moduleDef() {
-  return dynamic_cast<ModuleSymbol*>(defExprls->sym);
+  if (defExprls->isEmpty()) {
+    return NULL;
+  }
+  return dynamic_cast<ModuleSymbol*>(defExprls->first()->sym);
 }
 
 
 Vec<VarSymbol*>* DefStmt::varDefSet() {
   Vec<VarSymbol*>* var_set = new Vec<VarSymbol*>();
-  DefExpr* def_expr = defExprls;
+  DefExpr* def_expr = defExprls->first();
   while (def_expr) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym);
-    while (var) {
-      var_set->set_add(var);
-      var = nextLink(VarSymbol, var);
-    }
-    def_expr = nextLink(DefExpr, def_expr);
+    var_set->set_add(var);
+    def_expr = defExprls->next();
   }
   return var_set;
 }
@@ -558,16 +470,16 @@ ModuleSymbol* UseStmt::getModule(void) {
 }
 
 
-BlockStmt::BlockStmt(Stmt* init_body, SymScope* init_scope) :
+BlockStmt::BlockStmt(AList<Stmt>* init_body, SymScope* init_scope) :
   Stmt(STMT_BLOCK),
   body(init_body),
   blkScope(init_scope)
-{ }
+{}
 
 
-void BlockStmt::addBody(Stmt* init_body) {
-  if (!body) {
-    body = init_body;
+void BlockStmt::addBody(AList<Stmt>* init_body) {
+  if (body->isEmpty()) {
+    body->add(init_body);
   } else {
     INT_FATAL(this, "Adding a body to a for loop that already has one");
   }
@@ -581,7 +493,7 @@ void BlockStmt::setBlkScope(SymScope* init_blkScope) {
 
 Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_LOCAL);
-  Stmt* body_copy = body->copyListInternal(true, map);
+  AList<Stmt>* body_copy = body->copyInternal(true, map);
   SymScope* block_scope = Symboltable::popScope();
   BlockStmt* block_copy = new BlockStmt(body_copy, block_scope);
   block_scope->setContext(block_copy);
@@ -591,7 +503,7 @@ Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
-    body = dynamic_cast<Stmt*>(new_ast);
+    body = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild(old, new)");
   }
@@ -603,7 +515,7 @@ void BlockStmt::traverseStmt(Traversal* traversal) {
   if (blkScope) {
     prevScope = Symboltable::setCurrentScope(blkScope);
   }
-  TRAVERSE_LS(body, traversal, false);
+  body->traverse(traversal, false);
   if (blkScope) {
     Symboltable::setCurrentScope(prevScope);
   }
@@ -613,7 +525,7 @@ void BlockStmt::traverseStmt(Traversal* traversal) {
 void BlockStmt::print(FILE* outfile) {
   fprintf(outfile, "{\n");
   if (body) {
-    body->printList(outfile, "\n");
+    body->print(outfile, "\n");
   fprintf(outfile, "\n");
   }
   fprintf(outfile, "}");
@@ -624,18 +536,18 @@ void BlockStmt::codegen(FILE* outfile) {
   if (blkScope) {
     blkScope->codegen(outfile, "\n");
   }
-  if (body) body->codegenList(outfile, "\n");
+  if (body) body->codegen(outfile, "\n");
   fprintf(outfile, "\n");
   fprintf(outfile, "}");
 }
 
 
-WhileLoopStmt::WhileLoopStmt(bool init_whileDo, 
-                             Expr* init_cond, 
-                             Stmt* init_body) 
-  : BlockStmt(init_body), 
-    isWhileDo(init_whileDo), 
-    condition(init_cond) 
+WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
+                             Expr* init_cond,
+                             AList<Stmt>* init_body) :
+  BlockStmt(init_body),
+  isWhileDo(init_whileDo),
+  condition(init_cond)
 {
   astType = STMT_WHILELOOP;
 }
@@ -650,7 +562,7 @@ void WhileLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == condition) {
     condition = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == body) {
-    body = dynamic_cast<Stmt*>(new_ast);
+    body = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in WhileLoopStmt::replaceChild(old, new)");
   }
@@ -704,9 +616,9 @@ void WhileLoopStmt::codegen(FILE* outfile) {
 
 
 ForLoopStmt::ForLoopStmt(bool init_forall,
-                         Expr* init_indices,
+                         AList<DefExpr>* init_indices,
                          Expr* init_domain,
-                         Stmt* body)
+                         AList<Stmt>* body)
   : BlockStmt(body),
     forall(init_forall),
     indices(init_indices),
@@ -724,9 +636,9 @@ void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
 
 Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  Expr* indices_copy = indices->copyListInternal(true, map);
+  AList<DefExpr>* indices_copy = indices->copyInternal(true, map);
   Expr* domain_copy = domain->copyInternal(true, map);
-  Stmt* body_copy = body->copyInternal(true, map);
+  AList<Stmt>* body_copy = body->copyInternal(true, map);
   SymScope* index_scope = Symboltable::popScope();
   ForLoopStmt* for_loop_stmt_copy =
     new ForLoopStmt(forall, indices_copy, domain_copy, body_copy);
@@ -737,11 +649,11 @@ Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void ForLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == indices) {
-    indices = dynamic_cast<Expr*>(new_ast);
+    indices = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else if (old_ast == domain) {
     domain = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == body) {
-    body = dynamic_cast<Stmt*>(new_ast);
+    body = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in ForLoopStmt::replaceChild(old, new)");
   }
@@ -755,7 +667,7 @@ void ForLoopStmt::traverseStmt(Traversal* traversal) {
   if (indexScope) {
     prevScope = Symboltable::setCurrentScope(indexScope);
   }
-  TRAVERSE_LS(indices, traversal, false);
+  indices->traverse(traversal, false);
   TRAVERSE(body, traversal, false);
   if (indexScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -769,7 +681,7 @@ void ForLoopStmt::print(FILE* outfile) {
     fprintf(outfile, "all");
   }
   fprintf(outfile, " ");
-  indices->printList(outfile);
+  indices->print(outfile);
   fprintf(outfile, " in ");
   domain->print(outfile);
   fprintf(outfile, " ");
@@ -778,11 +690,7 @@ void ForLoopStmt::print(FILE* outfile) {
 
 
 void ForLoopStmt::codegen(FILE* outfile) {
-  DefExpr* indices_def = dynamic_cast<DefExpr*>(indices);
-
-  if (indices && !indices_def) {
-    INT_FATAL(this, "Indices in ForLoopStmt not defined in DefExpr");
-  }
+  DefExpr* indices_def = indices->first();
 
   if (SeqType* seqType = dynamic_cast<SeqType*>(domain->typeInfo())) {
     fprintf(outfile, "{\n");
@@ -805,7 +713,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
     return;
   }
 
-  DefExpr* aVar = indices_def;
+  DefExpr* aVar = indices->first();
   fprintf(outfile, "{\n");
   int rank = 0;
   IndexType* index_type = NULL;
@@ -843,16 +751,16 @@ void ForLoopStmt::codegen(FILE* outfile) {
       aVar->sym->codegenDef(outfile);
       rank++;
 
-      aVar = nextLink(DefExpr, aVar);
+      aVar = indices->next();
     }
     fprintf(outfile, "\n");
   
-    aVar = indices_def;
+    aVar = indices->first();
 
     Tuple* tuple = dynamic_cast<Tuple*>(domain);
 
     SimpleSeqExpr* seq = (tuple)
-      ? dynamic_cast<SimpleSeqExpr*>(tuple->exprs)
+      ? dynamic_cast<SimpleSeqExpr*>(tuple->exprs->first())
       : dynamic_cast<SimpleSeqExpr*>(domain);
 
     if (seq) {
@@ -872,8 +780,10 @@ void ForLoopStmt::codegen(FILE* outfile) {
         seq->str->codegen(outfile);
         fprintf(outfile, ") {\n");
 
-        aVar = nextLink(DefExpr, aVar);
-        seq = nextLink(SimpleSeqExpr, seq);
+        aVar = indices->next();
+        if (tuple) {
+          seq = dynamic_cast<SimpleSeqExpr*>(tuple->exprs->next());
+        }
       }
     }
     else {
@@ -888,7 +798,7 @@ void ForLoopStmt::codegen(FILE* outfile) {
         domain->codegen(outfile);
         fprintf(outfile, ", %d) {\n", i);
 
-        aVar = nextLink(DefExpr, aVar);
+        aVar = indices->next();
       }
     }
   }
@@ -911,7 +821,11 @@ CondStmt::CondStmt(Expr*  init_condExpr,
   condExpr(init_condExpr),
   thenStmt(init_thenStmt),
   elseStmt(init_elseStmt)
-{ }
+{
+  if (condExpr->next || condExpr->prev) {
+    INT_FATAL(this, "condExpr is in a list");
+  }
+}
 
 
 //// DANGER //// See note below

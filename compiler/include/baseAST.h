@@ -3,10 +3,12 @@
 
 #include "link.h"
 #include "map.h"
-#include "analysis.h"
+
+class Symbol;
+class Type;
 
 /**
- **  Note: update astType and astName together always.
+ **  Note: update astType_t and astTypeName together always.
  **/
 enum astType_t {
   STMT = 0,
@@ -88,6 +90,10 @@ enum astType_t {
   TYPE_VARIABLE,
   TYPE_UNRESOLVED,
   TYPE_NIL,
+
+  LIST,
+
+  PRAGMA,
 
   AST_TYPE_END 
 };

@@ -247,14 +247,16 @@ AInfo::copy_tree(ASTCopyContext* context) {
 }
 
 static void
-close_symbols(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
+close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
-  forv_Stmt(a, stmts)
-    while (a) {
-      set.set_add(a);
-      syms.add(a);
-      a = dynamic_cast<Stmt *>(a->next);
+  forv_Vec(AList<Stmt>*, a, stmts) {
+    Stmt* stmt = a->first();
+    while (stmt) {
+      set.set_add(stmt);
+      syms.add(stmt);
+      stmt = a->next();
     }
+  }
   forv_BaseAST(s, syms) if (s) {
     GET_ALL_CHILDREN(s, getStuff);
     forv_BaseAST(ss, getStuff.asts) if (ss) {
@@ -663,11 +665,11 @@ map_baseast(BaseAST *s) {
         case PARAM_CONST: sym->asymbol->sym->is_read_only = 1; break;
       }
       // handle pragmas
-      Pragma *pr = sym->pragmas;
+      Pragma *pr = sym->pragmas->first();
       while (pr) {
         if (!strcmp(pr->str, "clone_for_constants"))
           s->asymbol->sym->clone_for_constants = 1;
-        pr = dynamic_cast<Pragma *>(pr->next);
+        pr = sym->pragmas->next();
       }
     }
     if (verbose_level > 1 && sym->name)
@@ -687,10 +689,14 @@ map_baseast(BaseAST *s) {
         e->ainfo->xast = e;
       } else {
         Stmt *st = dynamic_cast<Stmt *>(s);
-        if (st->ainfo)
-          return;
-        st->ainfo = new AInfo;
-        st->ainfo->xast = s;
+        if (st) {
+          if (st->ainfo)
+            return;
+          st->ainfo = new AInfo;
+          st->ainfo->xast = s;
+        } else {
+          INT_FATAL(s, "Unexpected AST type in map_baseast: %s\n", astTypeName[s->astType]);
+        }
       }
     }
   }
@@ -796,7 +802,7 @@ build_type(Type *t) {
       t->asymbol->sym->type_kind = Type_TAGGED;
       t->asymbol->sym->inherits_add(sym_enum_element);
       GetSymbols* getSymbols = new GetSymbols();
-      TRAVERSE_LS(t, getSymbols, true);
+      t->traverse(getSymbols, true);
       for (int i = 0; i < getSymbols->symbols.n; i++) {
         BaseAST *s = getSymbols->symbols.v[i];
         Sym *ss = dynamic_cast<Symbol*>(s)->asymbol->sym;
@@ -1381,7 +1387,9 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
 static int
 gen_vardef(BaseAST *a) {
   DefStmt *def = dynamic_cast<DefStmt*>(a);
-  for (DefExpr* def_expr = def->defExprls; def_expr; def_expr = nextLink(DefExpr, def_expr)) {
+  for (DefExpr* def_expr = def->defExprls->first(); 
+       def_expr; 
+       def_expr = def->defExprls->next()) {
     for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym); var;
          var = dynamic_cast<VarSymbol*>(var->next))
       if (gen_one_vardef(var, def_expr))
@@ -1402,7 +1410,7 @@ gen_while(BaseAST *a) {
   WhileLoopStmt *s = dynamic_cast<WhileLoopStmt*>(a);
   Code *body_code = 0;
   Vec<Stmt*> body;
-  getLinkElements(body, s->body);
+  s->body->getElements(body);
   forv_Stmt(ss, body)
     if1_gen(if1, &body_code, ss->ainfo->code);
   if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
@@ -1463,13 +1471,12 @@ gen_for(BaseAST *a) {
   ForLoopStmt *s = dynamic_cast<ForLoopStmt*>(a);
   Code *body = 0;
   Vec<Stmt*> body_stmts;
-  getLinkElements(body_stmts, s->body);
+  s->body->getElements(body_stmts);
   forv_Stmt(ss, body_stmts)
     if1_gen(if1, &body, ss->ainfo->code);
   Vec<Symbol*> indices;
   Vec<DefExpr*> indexDefs;
-  DefExpr* index_def = dynamic_cast<DefExpr*>(s->indices);
-  getLinkElements(indexDefs, index_def);
+  s->indices->getElements(indexDefs);
   forv_Vec(DefExpr, indexDef, indexDefs)
     indices.add(indexDef->sym);
   Vec<Expr*> domains;
@@ -1500,7 +1507,7 @@ gen_destruct_sym(Tuple *e, AST *ast) {
   s->is_pattern = 1;
   s->must_implement_and_specialize(sym_tuple);
   Vec<Expr *> exprs;
-  getLinkElements(exprs, e->exprs);
+  e->exprs->getElements(exprs);
   forv_Expr(ee, exprs) {
     if (ee->astType == EXPR_TUPLE)
       s->has.add(gen_destruct_sym(dynamic_cast<Tuple*>(ee), ast));
@@ -1633,7 +1640,7 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
   ast->rval->ast = ast;
   if1_gen(if1, &ast->code, s->baseExpr->ainfo->code);
   Vec<Expr *> args;
-  getLinkElements(args, s->argList);
+  s->argList->getElements(args);
   if (args.n == 1 && !args.v[0])
     args.n--;
   Vec<Sym *> rvals;
@@ -1763,7 +1770,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case STMT_BLOCK: {
       BlockStmt *s = dynamic_cast<BlockStmt*>(ast);
       Vec<Stmt *> stmts;
-      getLinkElements(stmts, s->body);
+      s->body->getElements(stmts);
       forv_Stmt(ss, stmts)
         if1_gen(if1, &s->ainfo->code, ss->ainfo->code);
       break;
@@ -2012,7 +2019,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->sym = s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> args;
-      getLinkElements(args, s->exprls);
+      s->exprls->getElements(args);
       forv_Vec(Expr, a, args)
         if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
@@ -2049,15 +2056,12 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_LET: {
       LetExpr *s = dynamic_cast<LetExpr *>(ast);
-      DefExpr* def_expr = s->symDefs;
+      DefExpr* def_expr = s->symDefs->first();
       while (def_expr) {
         VarSymbol *vs = dynamic_cast<VarSymbol*>(def_expr->sym);
-        while (vs) {
-          if1_gen(if1, &s->ainfo->code, def_expr->init->ainfo->code);
-          if1_move(if1, &s->ainfo->code, def_expr->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
-          vs = dynamic_cast<VarSymbol*>(vs->next);
-        }
-        def_expr = nextLink(DefExpr, def_expr);
+        if1_gen(if1, &s->ainfo->code, def_expr->init->ainfo->code);
+        if1_move(if1, &s->ainfo->code, def_expr->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
+        def_expr = s->symDefs->next();
       }
       if1_gen(if1, &s->ainfo->code, s->innerExpr->ainfo->code);
       s->ainfo->rval = s->innerExpr->ainfo->rval;
@@ -2075,11 +2079,17 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> domains;
-      getLinkElements(domains, s->domains);
+      s->domains->getElements(domains);
       Vec<Symbol *> indices;
-      DefExpr* def_expr = dynamic_cast<DefExpr*>(s->indices);
-      Symbol* indices_syms = def_expr ? def_expr->sym : 0;
-      getLinkElements(indices, indices_syms);
+      Vec<Expr*> indexdefs;
+      s->indices->getElements(indexdefs);
+      forv_Vec(Expr, expr, indexdefs) {
+        DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
+        if (def_expr == NULL) {
+          INT_FATAL(expr, "Expected a def_expr here");
+        }
+        indices.add(def_expr->sym);
+      }
       if (s->forallExpr) { // forall expression
         Code *body = 0;
         forv_Vec(Expr, d, domains)
@@ -2128,10 +2138,10 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       ReduceExpr *s = dynamic_cast<ReduceExpr *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
-      if1_gen(if1, &s->ainfo->code, s->redDim->ainfo->code);
+      if1_gen(if1, &s->ainfo->code, s->redDim->only()->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->argExpr->ainfo->code);
       Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_reduce_symbol, 
-                            s->reduceType->asymbol->sym, s->redDim->ainfo->rval, 
+                            s->reduceType->asymbol->sym, s->redDim->only()->ainfo->rval, 
                             s->argExpr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
       break;
@@ -2141,7 +2151,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->sym = s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> args;
-      getLinkElements(args, s->exprs);
+      s->exprs->getElements(args);
       forv_Vec(Expr, a, args)
         if1_gen(if1, &s->ainfo->code, a->ainfo->code);
       Code *send = if1_send1(if1, &s->ainfo->code);
@@ -2201,6 +2211,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_UNRESOLVED:
   case TYPE_NIL:
   case AST_TYPE_END:
+  case LIST:
+  case PRAGMA:
     assert(!"case");
     break;
   }
@@ -2213,7 +2225,7 @@ gen_fun(FnSymbol *f) {
   AInfo* ast = f->defPoint->ainfo;
   Vec<Symbol *> args;
   Vec<Sym *> out_args;
-  getLinkElements(args, f->formals);
+  f->formals->getElements(args);
   Sym *as[args.n + 3];
   int iarg = 0;
   assert(f->asymbol->sym->name);
@@ -2359,11 +2371,11 @@ finalize_function(Fun *fun) {
   // check pragmas
   Sym *fn = fun->sym;
   FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
-  Pragma *pr = f->defPoint->pragmas;
+  Pragma *pr = f->defPoint->pragmas->first();
   while (pr) {
     if (!strcmp(pr->str, "test pragma"))
       printf("test pragma\n");
-    pr = dynamic_cast<Pragma *>(pr->next);
+    pr = f->defPoint->pragmas->next();
   }
 }
 
@@ -2445,10 +2457,15 @@ print_one_baseast(BaseAST *a) {
 }
 
 static void
-debug_new_ast(Vec<Stmt *> &stmts, Vec<BaseAST *> &syms) {
+debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
   if (verbose_level > 1) {
-    forv_Stmt(s, stmts)
-      print_one_baseast(s);
+    forv_Vec(AList<Stmt>*, list, stmts) {
+      Stmt* s = list->first();
+      while (s) {
+        print_one_baseast(s);
+        s = list->next();
+      }
+    }
     forv_BaseAST(s, syms) {
       DefStmt* def_stmt = dynamic_cast<DefStmt*>(s);
       if (def_stmt && def_stmt->fnDef()) {
@@ -2684,7 +2701,7 @@ indextype_set(PNode *pn, EntrySet *es) {
 }
 
 int 
-ast_to_if1(Vec<Stmt *> &stmts) {
+ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   Vec<BaseAST *> syms;
   close_symbols(stmts, syms);
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
@@ -2727,7 +2744,7 @@ ast_to_if1(Vec<Stmt *> &stmts) {
 }
 
 int
-AST_to_IF1(Vec<Stmt *> &stmts) {
+AST_to_IF1(Vec<AList<Stmt> *> &stmts) {
   if (ast_to_if1(stmts) < 0)
     fail("unable to analyze AST");
   return 0;

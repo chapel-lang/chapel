@@ -1,10 +1,11 @@
 #include "omitForNoAnalysis.h"
 #include "stmt.h"
 #include "expr.h"
-#include "type.h"
+#include "moduleList.h"
 #include "symtab.h"
 #include "stringutil.h"
 #include "../symtab/symtabTraversal.h"
+#include "type.h"
 
 
 static int omit_for_noanalysis_uid = 0;
@@ -31,39 +32,36 @@ void OmitForNoAnalysis::postProcessStmt(Stmt* stmt) {
     return;
   }
 
-  Pragma* pr = def_stmt->pragmas;
+  Pragma* pr = def_stmt->pragmas->first();
   while (pr) {
     if (!strcmp(pr->str, "omit for noanalysis")) {
-      DefExpr* def_expr = def_stmt->defExprls;
+      DefExpr* def_expr = def_stmt->defExprls->first();
       while (def_expr) {
         Symbol* sym = def_expr->sym;
-        while (sym) {
-          sym->parentScope->remove(sym);
-          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-            Symboltable::removeScope(fn->paramScope);
-          } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(sym->type)) {
-            Symboltable::removeScope(ctype->structScope);
-          } 
-          sym = nextLink(Symbol, sym);
-        }
-        def_expr = nextLink(DefExpr, def_expr);
+        sym->parentScope->remove(sym);
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+          Symboltable::removeScope(fn->paramScope);
+        } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(sym->type)) {
+          Symboltable::removeScope(ctype->structScope);
+        } 
+        def_expr = def_stmt->defExprls->next();
       }
       def_stmt->extract();
       return;
     }
-    pr = dynamic_cast<Pragma *>(pr->next);
+    pr = def_stmt->pragmas->next();
   }
 }
 
 
-void OmitForNoAnalysis::run(ModuleSymbol* moduleList) {
+void OmitForNoAnalysis::run(ModuleList* moduleList) {
   if (analyzeAST) {
     return;
   }
-  ModuleSymbol* mod = moduleList;
+  ModuleSymbol* mod = moduleList->first();
   while (mod) {
     mod->startTraversal(this);
     
-    mod = nextLink(ModuleSymbol, mod);
+    mod = moduleList->next();
   }
 }

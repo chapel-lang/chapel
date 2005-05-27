@@ -6,7 +6,7 @@ PrintSymtab::PrintSymtab(FILE* init_outfile) :
 {}
 
 
-void PrintSymtab::run(ModuleSymbol* moduleList) {
+void PrintSymtab::run(ModuleList* moduleList) {
   if (strcmp(args, "user") == 0) {
     whichModules = MODULES_USER;
   } else if (strcmp(args, "common") == 0) {

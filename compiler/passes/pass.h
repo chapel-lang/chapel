@@ -5,6 +5,7 @@
 #include "chplenum.h"
 
 class ModuleSymbol;
+class ModuleList;
 
 class Pass : public gc {
  public:
@@ -14,12 +15,12 @@ class Pass : public gc {
   Pass(void);
 
   void setArgs(char* init_args);
-  virtual void run(ModuleSymbol* moduleList) = 0;
+  virtual void run(ModuleList* moduleList) = 0;
 };
 
 class DummyPass : public Pass {
  public:
-  virtual void run(ModuleSymbol* moduleList);
+  virtual void run(ModuleList* moduleList);
 };
 
 #endif

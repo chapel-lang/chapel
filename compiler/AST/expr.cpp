@@ -95,29 +95,6 @@ Expr::Expr(astType_t astType) :
 {}
 
 
-Expr* Expr::copyList(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list) {
-  if (!this) {
-    return this;
-  }
-
-  if (map == NULL) {
-    map = new Map<BaseAST*,BaseAST*>();
-  }
-  Expr* newExprList = copyListInternal(clone, map);
-  if (update_list) {
-    for (int j = 0; j < update_list->n; j++) {
-      for (int i = 0; i < map->n; i++) {
-        if (update_list->v[j] == map->v[i].key) {
-          update_list->v[j] = map->v[i].value;
-        }
-      }
-    }
-  }
-  TRAVERSE_LS(newExprList, new UpdateSymbols(map), true);
-  return newExprList;
-}
-
-
 Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list) {
   if (!this) {
     return this;
@@ -138,25 +115,6 @@ Expr* Expr::copy(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_
   }
   TRAVERSE(new_expr, new UpdateSymbols(map), true);
   return new_expr;
-}
-
-
-Expr* Expr::copyListInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  if (!this) {
-    return this;
-  }
-
-  Expr* newExprList = NULL;
-  Expr* oldExpr = this;
-
-  while (oldExpr) {
-    newExprList = appendLink(newExprList,
-                             oldExpr->copyInternal(clone, map));
-    
-    oldExpr = nextLink(Expr, oldExpr);
-  }
-  
-  return newExprList;
 }
 
 
@@ -242,49 +200,16 @@ static void call_replace_child(Expr* old_expr, Expr* new_expr) {
 }
 
 
-Expr* Expr::head(void) {
-  ILink* first = this;
-  while (first->prev) {
-    first = first->prev;
-  }
-  Expr* head = dynamic_cast<Expr*>(first);
-  if (!head) {
-    INT_FATAL(this, "Ill-formed expression list found in Expr::head");
-  }
-  return head;
-}
-
-
-Expr* Expr::tail(void) {
-  ILink* last = this;
-  while (last->next) {
-    last = last->next;
-  }
-  Expr* tail = dynamic_cast<Expr*>(last);
-  if (!last) {
-    INT_FATAL(this, "Ill-formed expression list found in Expr::last");
-  }
-  return tail;
-}
-
-
 void Expr::replace(Expr* new_expr) {
-  Expr* first = new_expr->head();
-  Expr* last = new_expr->tail();
-
-  if (first != new_expr) {
-    INT_FATAL(this, "Illegal replace, new_expr is not head of list");
-  }
-
-  last->next = next;
+  new_expr->next = next;
   if (next) {
-    next->prev = last;
+    next->prev = new_expr;
   }
-  first->prev = prev;
+  new_expr->prev = prev;
   if (!prev) {
-    call_replace_child(this, first);
+    call_replace_child(this, new_expr);
   } else {
-    prev->next = first;
+    prev->next = new_expr;
   }
 
   call_fixup(this);
@@ -292,60 +217,28 @@ void Expr::replace(Expr* new_expr) {
 
 
 void Expr::insertBefore(Expr* new_expr) {
-  Expr* first = new_expr->head();
-  Expr* last = new_expr->tail();
-
-  if (first != new_expr) {
-    INT_FATAL(this, "Illegal insertBefore, new_expr is not head of list");
-  }
-
   if (!prev) {
-    call_replace_child(this, first);
+    call_replace_child(this, new_expr);
   } else {
-    prev->next = first;
+    prev->next = new_expr;
   }
-  first->prev = prev;
-  prev = last;
-  last->next = this;
+  new_expr->prev = prev;
+  prev = new_expr;
+  new_expr->next = this;
 
   call_fixup(this);
 }
 
 
 void Expr::insertAfter(Expr* new_expr) {
-  Expr* first = new_expr->head();
-  Expr* last = new_expr->tail();
-
-  if (first != new_expr) {
-    INT_FATAL(this, "Illegal insertAfter, new_expr is not head of list");
-  }
-
   if (next) {
-    next->prev = last;
+    next->prev = new_expr;
   }
-  last->next = next;
-  next = first;
-  first->prev = this;
+  new_expr->next = next;
+  next = new_expr;
+  new_expr->prev = this;
 
   call_fixup(this);
-}
-
-
-void Expr::append(ILink* new_expr) {
-  if (!new_expr) {
-    return;
-  }
-
-  Expr* first = dynamic_cast<Expr*>(new_expr->head());
-
-  if (first != new_expr) {
-    INT_FATAL(this, "Illegal append, new_expr is not head of list");
-  }
-
-  Expr* append_point = dynamic_cast<Expr*>(this->tail());
-
-  append_point->next = first;
-  first->prev = append_point;
 }
 
 
@@ -453,10 +346,10 @@ static EXPR_RW expr_read_written(Expr* expr) {
     if (FnCall* fn_call = dynamic_cast<FnCall*>(parent)) {
       if (typeid(*fn_call) == typeid(FnCall)) {
         FnSymbol* fn = fn_call->findFnSymbol();
-        Symbol* formal = fn->formals;
-        for(Expr* actual = fn_call->argList;
+        Symbol* formal = fn->formals->first();
+        for(Expr* actual = fn_call->argList->first();
             actual;
-            actual = nextLink(Expr, actual)) {
+            actual = fn_call->argList->next()) {
           if (actual == expr) {
             if (ParamSymbol* formal_param = dynamic_cast<ParamSymbol*>(formal)) {
               if (formal_param->intent == PARAM_OUT) {
@@ -467,7 +360,7 @@ static EXPR_RW expr_read_written(Expr* expr) {
               }
             }
           }
-          formal = nextLink(Symbol, formal);
+          formal = fn->formals->next();
         }
       }
     }
@@ -732,10 +625,13 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit) :
   sym(initSym),
   init(initInit)
 {
-  sym->setDefPoint(this);
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    fn->formals->setDefPoint(this);
-    fn->paramScope->setContext(NULL, fn, this);
+  if (sym) {
+    sym->setDefPoint(this);
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+      //fprintf(stderr, "In DefExpr for %s, which is a fnsym\n", sym->name);
+      Symbol::setDefPoints(fn->formals, this);
+      fn->paramScope->setContext(NULL, fn, this);
+    }
   }
 }
 
@@ -803,11 +699,8 @@ void DefExpr::codegen(FILE* outfile) { /** noop **/ }
 
 Vec<VarSymbol*>* DefExpr::varDefSet() {
   Vec<VarSymbol*>* var_set = new Vec<VarSymbol*>();
-  for (VarSymbol* tmp = dynamic_cast<VarSymbol*>(sym);
-       tmp;
-       tmp = nextLink(VarSymbol, tmp)) {
-    var_set->set_add(tmp);
-  }
+  VarSymbol* tmp = dynamic_cast<VarSymbol*>(sym);
+  var_set->set_add(tmp);
   if (var_set->n > 0) {
     return var_set;
   } else {
@@ -1237,24 +1130,22 @@ void MemberAccess::codegen(FILE* outfile) {
     }
 }
 
-
-ParenOpExpr::ParenOpExpr(Expr* init_base, Expr* init_arg) :
+ParenOpExpr::ParenOpExpr(Expr* init_base, AList<Expr>* init_arg) :
   Expr(EXPR_PARENOP),
   baseExpr(init_base),
-  argList(NULL) 
-{
-  setArgs(init_arg);
-}
+  argList(init_arg) 
+{}
 
 
-void ParenOpExpr::setArgs(Expr* init_arg) {
+void ParenOpExpr::setArgs(AList<Expr>* init_arg) {
   // assign new args
   argList = init_arg;
 }
 
 
 Expr* ParenOpExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ParenOpExpr(baseExpr->copyInternal(clone, map), argList->copyListInternal(clone, map));
+  return new ParenOpExpr(baseExpr->copyInternal(clone, map), 
+                         argList->copyInternal(clone, map));
 }
 
 
@@ -1262,7 +1153,7 @@ void ParenOpExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == baseExpr) {
     baseExpr = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == argList) {
-    argList = dynamic_cast<Expr*>(new_ast);
+    argList = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in ParenOpExpr::replaceChild(old, new)");
   }
@@ -1271,7 +1162,7 @@ void ParenOpExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void ParenOpExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(baseExpr, traversal, false);
-  TRAVERSE_LS(argList, traversal, false);
+  argList->traverse(traversal, false);
 }
 
 
@@ -1279,7 +1170,7 @@ void ParenOpExpr::print(FILE* outfile) {
   baseExpr->print(outfile);
   fprintf(outfile, "(");
   if (argList) {
-    argList->printList(outfile);
+    argList->print(outfile);
   }
   fprintf(outfile, ")");
 }
@@ -1290,7 +1181,7 @@ void ParenOpExpr::codegen(FILE* outfile) {
 }
 
 
-ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
+ArrayRef::ArrayRef(Expr* init_base, AList<Expr>* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {
   astType = EXPR_ARRAYREF;
@@ -1298,7 +1189,8 @@ ArrayRef::ArrayRef(Expr* init_base, Expr* init_arg) :
 
 
 Expr* ArrayRef::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ArrayRef(baseExpr->copyInternal(clone, map), argList->copyListInternal(clone, map));
+  return new ArrayRef(baseExpr->copyInternal(clone, map), 
+                      argList->copyInternal(clone, map));
 }
 
 
@@ -1337,9 +1229,13 @@ void ArrayRef::codegen(FILE* outfile) {
   fprintf(outfile, "_ACC%d(", baseExpr->rank());
   baseExpr->codegen(outfile);
   fprintf(outfile, ", ");
-  IndexType* index_type = dynamic_cast<IndexType*>(argList->typeInfo());
+  // BLC: This seems like a hack since argList can be a list in general
+  IndexType* index_type = NULL;
   //RED -- added support for code generation in case of index type 
   //Specialized for tuple and integer
+  if (argList->length() == 1) {
+    index_type = dynamic_cast<IndexType*>(argList->only()->typeInfo());
+  }
   if (index_type) {
     int rank = 0;
     TupleType* tt = dynamic_cast<TupleType*>(index_type->getType());
@@ -1359,13 +1255,20 @@ void ArrayRef::codegen(FILE* outfile) {
     } 
     fprintf(outfile, ")");
   } else {
-    argList->codegenList(outfile, ", ");
+    argList->codegen(outfile, ", ");
     fprintf(outfile, ")");
   }
 }
 
 
 TupleSelect::TupleSelect(Expr* init_base, Expr* init_arg) :
+  ParenOpExpr(init_base, new AList<Expr>(init_arg))
+{
+  astType = EXPR_TUPLESELECT;
+}
+
+
+TupleSelect::TupleSelect(Expr* init_base, AList<Expr>* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {
   astType = EXPR_TUPLESELECT;
@@ -1373,7 +1276,8 @@ TupleSelect::TupleSelect(Expr* init_base, Expr* init_arg) :
 
 
 Expr* TupleSelect::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new TupleSelect(baseExpr->copyInternal(clone, map), argList->copyInternal(clone, map));
+  return new TupleSelect(baseExpr->copyInternal(clone, map), 
+                         argList->copyInternal(clone, map));
 }
 
 
@@ -1388,7 +1292,7 @@ Type* TupleSelect::typeInfo(void) {
 
   if (!tuple_type) {
     if (Tuple* tuple = dynamic_cast<Tuple*>(baseExpr)) {
-      IntLiteral* index = dynamic_cast<IntLiteral*>(argList);
+      IntLiteral* index = dynamic_cast<IntLiteral*>(argList->only());
 
       if (!index) {
         INT_FATAL(this, "Tuple indexing only support with integer literals");
@@ -1403,7 +1307,7 @@ Type* TupleSelect::typeInfo(void) {
     return dtUnknown;
   }
 
-  IntLiteral* index = dynamic_cast<IntLiteral*>(argList);
+  IntLiteral* index = dynamic_cast<IntLiteral*>(argList->only());
 
   if (!index) {
     INT_FATAL(this, "Tuple indexing only support with integer literals");
@@ -1424,7 +1328,7 @@ bool TupleSelect::isConst(void) {
 
 void TupleSelect::codegen(FILE* outfile) {
   if (Tuple* tuple = dynamic_cast<Tuple*>(baseExpr)) {
-    IntLiteral* index = dynamic_cast<IntLiteral*>(argList);
+    IntLiteral* index = dynamic_cast<IntLiteral*>(argList->only());
 
     if (!index) {
       INT_FATAL(this, "Tuple indexing only support with integer literals");
@@ -1443,7 +1347,7 @@ void TupleSelect::codegen(FILE* outfile) {
 }
 
 
-FnCall::FnCall(Expr* init_base, Expr* init_arg) :
+FnCall::FnCall(Expr* init_base, AList<Expr>* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {
   astType = EXPR_FNCALL;
@@ -1460,7 +1364,8 @@ Type* FnCall::typeInfo(void) {
 
 
 Expr* FnCall::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new FnCall(baseExpr->copyInternal(clone, map), argList->copyListInternal(clone, map));
+  return new FnCall(baseExpr->copyInternal(clone, map), 
+                    argList->copyInternal(clone, map));
 }
 
 
@@ -1487,7 +1392,7 @@ void FnCall::codegen(FILE* outfile) {
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     if (variable->var == Symboltable::lookupInternal("_UnionWriteStopgap")) {
       // STEVE:  You are implementing a stopgap write routine for unions in codegeneration
-      UnionType* unionType = dynamic_cast<UnionType*>(argList->typeInfo());
+      UnionType* unionType = dynamic_cast<UnionType*>(argList->only()->typeInfo());
       fprintf(outfile, "if (_UNION_CHECK_QUIET(val, _%s_union_id__uninitialized)) {\n",
               unionType->symbol->cname);
       fprintf(outfile, "_chpl_write_string(\"(uninitialized)\");\n");
@@ -1515,17 +1420,14 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, "}\n");
       return;
     } else if (variable->var == Symboltable::lookupInternal("_ArrayWriteStopgap")) {
-      ArrayType* arrayType = dynamic_cast<ArrayType*>(argList->typeInfo());
+      ArrayType* arrayType = dynamic_cast<ArrayType*>(argList->only()->typeInfo());
       FnSymbol* innerFn;
       if (ExprStmt* innerFnStmt = dynamic_cast<ExprStmt*>(parentStmt->next)) {
 
         innerFn = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(dynamic_cast<FnCall*>(innerFnStmt->expr)->baseExpr)->var);
 
       } else if (BlockStmt* innerFnStmt = dynamic_cast<BlockStmt*>(parentStmt->next)) {
-        Stmt* last = innerFnStmt->body;
-        while (last->next) {
-          last = nextLink(Stmt, last);
-        }
+        Stmt* last = innerFnStmt->body->last();
         if (ExprStmt* innerFnStmt = dynamic_cast<ExprStmt*>(last)) {
 
           innerFn = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(dynamic_cast<FnCall*>(innerFnStmt->expr)->baseExpr)->var);
@@ -1556,12 +1458,16 @@ void FnCall::codegen(FILE* outfile) {
         fprintf(outfile, "_chpl_write_linefeed();\n");
         fprintf(outfile, "}\n");
       }
-      parentStmt->next = NULL;
+      // This is a kludge to remove a statement that was inserted only to grab
+      // some information from it.  Once it is removed, we can also fix
+      // AList::codegen() to use a normal iterator (it currently uses one that
+      // doesn't cache a lookahead
+      parentStmt->next->remove();
       return;
     } else if (variable->var == Symboltable::lookupInternal("_EnumWriteStopgap")) {
-      EnumType* enumType = dynamic_cast<EnumType*>(argList->typeInfo());
+      EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "switch (val) {\n");
-      EnumSymbol* enumSym = enumType->valList;
+      EnumSymbol* enumSym = enumType->valList->first();
       while (enumSym) {
         fprintf(outfile, "case ");
         enumSym->codegen(outfile);
@@ -1569,20 +1475,20 @@ void FnCall::codegen(FILE* outfile) {
         fprintf(outfile, "_chpl_write_string(\"%s\");\n", enumSym->name);
         fprintf(outfile, "break;\n");
 
-        enumSym = nextLink(EnumSymbol, enumSym);
+        enumSym = enumType->valList->next();
       }
       fprintf(outfile, "}\n");
       return;
     } else if (variable->var == Symboltable::lookupInternal("_EnumReadStopgap")) {
-      EnumType* enumType = dynamic_cast<EnumType*>(argList->typeInfo());
+      EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "char* inputString = NULL;\n");
       fprintf(outfile, "_chpl_read_string(&inputString);\n");
-      EnumSymbol* enumSym = enumType->valList;
+      EnumSymbol* enumSym = enumType->valList->first();
       while (enumSym) {
         fprintf(outfile, "if (strcmp(inputString, \"%s\") == 0) {\n", enumSym->cname);
         fprintf(outfile, "  *val = %s;\n", enumSym->cname);
         fprintf(outfile, "} else ");
-        enumSym = nextLink(EnumSymbol, enumSym);
+        enumSym = enumType->valList->next();
       }
       fprintf(outfile, "{\n");
       fprintf(outfile, "char* message = \"Not of ");
@@ -1614,16 +1520,16 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, "(_complex128*)");
     }
     if (!strcmp(variable->var->cname, "_INIT_CONFIG")) {
-      if (!strcmp(argList->typeInfo()->symbol->cname, "_chpl_complex")) {
+      if (!strcmp(argList->representative()->typeInfo()->symbol->cname, "_chpl_complex")) {
         fprintf(outfile, "(_complex128*)");
       }
     }
   }
 
-  Expr* actuals = argList;
+  Expr* actuals = argList->first();
   if (actuals) {
     FnSymbol* fnSym = findFnSymbol();
-    ParamSymbol* formals = dynamic_cast<ParamSymbol*>(fnSym->formals);
+    ParamSymbol* formals = dynamic_cast<ParamSymbol*>(fnSym->formals->first());
     bool firstArg = true;
     while (actuals && formals) {
       if (firstArg) {
@@ -1651,8 +1557,8 @@ void FnCall::codegen(FILE* outfile) {
       if (ampersand || star) {
         fprintf(outfile, ")");
       }
-      formals = nextLink(ParamSymbol, formals);
-      actuals = nextLink(Expr, actuals);
+      formals = dynamic_cast<ParamSymbol*>(fnSym->formals->next());
+      actuals = argList->next();
     }
     if (formals || actuals) {
       INT_FATAL(this, "Number of formals and actuals didn't match");
@@ -1662,20 +1568,20 @@ void FnCall::codegen(FILE* outfile) {
 }
 
 
-Tuple::Tuple(Expr* init_exprs) :
+Tuple::Tuple(AList<Expr>* init_exprs) :
   Expr(EXPR_TUPLE),
   exprs(init_exprs)
 { }
 
 
 Expr* Tuple::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new Tuple(exprs->copyListInternal(clone, map));
+  return new Tuple(exprs->copyInternal(clone, map));
 }
 
 
 void Tuple::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == exprs) {
-    exprs = dynamic_cast<Expr*>(new_ast);
+    exprs = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Tuple::replaceChild(old, new)");
   }
@@ -1683,21 +1589,13 @@ void Tuple::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void Tuple::traverseExpr(Traversal* traversal) {
-  TRAVERSE_LS(exprs, traversal, false);
+  exprs->traverse(traversal, false);
 }
 
 
 void Tuple::print(FILE* outfile) {
   fprintf(outfile, "(");
-  Expr* expr = exprs;
-  while (expr) {
-    expr->print(outfile);
-
-    expr = nextLink(Expr, expr);
-    if (expr) {
-      fprintf(outfile, ", ");
-    }
-  }
+  exprs->print(outfile);
   fprintf(outfile, ")");
 }
 
@@ -1789,7 +1687,7 @@ Type* CastExpr::typeInfo(void) {
 void CastExpr::print(FILE* outfile) {
   newType->print(outfile);
   fprintf(outfile, "(");
-  expr->printList(outfile);
+  expr->print(outfile);
   fprintf(outfile, ")");
 }
 
@@ -1798,7 +1696,7 @@ void CastExpr::codegen(FILE* outfile) {
   fprintf(outfile, "(");
   newType->codegen(outfile);
   fprintf(outfile, ")(");
-  expr->codegenList(outfile);
+  expr->codegen(outfile);
   fprintf(outfile, ")");
 }
 
@@ -1841,7 +1739,7 @@ Type* CastLikeExpr::typeInfo(void) {
 void CastLikeExpr::print(FILE* outfile) {
   variable->typeInfo()->print(outfile);
   fprintf(outfile, "(");
-  expr->printList(outfile);
+  expr->print(outfile);
   fprintf(outfile, ")");
 }
 
@@ -1850,13 +1748,13 @@ void CastLikeExpr::codegen(FILE* outfile) {
   fprintf(outfile, "(");
   variable->typeInfo()->codegen(outfile);
   fprintf(outfile, ")(");
-  expr->codegenList(outfile);
+  expr->codegen(outfile);
   fprintf(outfile, ")");
 }
 
 
-ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, 
-                       Expr* init_argExpr) :
+ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_argExpr, 
+                       AList<Expr>* init_redDim) :
   Expr(EXPR_REDUCE),
   reduceType(init_reduceType),
   redDim(init_redDim),
@@ -1865,13 +1763,15 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_redDim,
 
 
 Expr* ReduceExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ReduceExpr(reduceType->copy(clone, map), redDim->copyInternal(clone, map), argExpr->copyInternal(clone, map));
+  return new ReduceExpr(reduceType->copy(clone, map), 
+                        argExpr->copyInternal(clone, map), 
+                        redDim->copyInternal(clone, map));
 }
 
 
 void ReduceExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == redDim) {
-    redDim = dynamic_cast<Expr*>(new_ast);
+    redDim = dynamic_cast<AList<Expr>*>(new_ast);
   } else if (old_ast == argExpr) {
     argExpr = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -1882,14 +1782,14 @@ void ReduceExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void ReduceExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(reduceType, traversal, false);
-  TRAVERSE_LS(redDim, traversal, false);
+  redDim->traverse(traversal, false);
   TRAVERSE(argExpr, traversal, false);
 }
 
 
 void ReduceExpr::print(FILE* outfile) {
   fprintf(outfile, "reduce ");
-  if (redDim) {
+  if (!redDim->isEmpty()) {
     fprintf(outfile, "(dim=");
     redDim->print(outfile);
     fprintf(outfile, ") ");
@@ -1905,20 +1805,20 @@ void ReduceExpr::codegen(FILE* outfile) {
 }
 
 
-SeqExpr::SeqExpr(Expr* init_exprls) :
+SeqExpr::SeqExpr(AList<Expr>* init_exprls) :
   Expr(EXPR_SEQ),
   exprls(init_exprls)
-{ }
+{}
 
 
 Expr* SeqExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new SeqExpr(exprls->copyListInternal(clone, map));
+  return new SeqExpr(exprls->copyInternal(clone, map));
 }
 
 
 void SeqExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == exprls) {
-    exprls = dynamic_cast<Expr*>(new_ast);
+    exprls = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in MemberAccess::replaceChild(old, new)");
   }
@@ -1926,18 +1826,18 @@ void SeqExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void SeqExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE_LS(exprls, traversal, false);
+  exprls->traverse(traversal, false);
 }
 
 
 Type* SeqExpr::typeInfo(void) {
-  return new SeqType(exprls->typeInfo());
+  return new SeqType(exprls->first()->typeInfo());
 }
 
 
 void SeqExpr::print(FILE* outfile) {
   printf("(/ ");
-  exprls->printList(outfile);
+  exprls->print(outfile);
   printf(" /)");
 }
 
@@ -2041,7 +1941,7 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 }
 
 
-ForallExpr::ForallExpr(Expr* init_domains, Expr* init_indices,
+ForallExpr::ForallExpr(AList<Expr>* init_domains, AList<Expr>* init_indices,
                        Expr* init_forallExpr) :
   Expr(EXPR_FORALL),
   domains(init_domains),
@@ -2064,8 +1964,8 @@ void ForallExpr::setIndexScope(SymScope* init_indexScope) {
 Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
   ForallExpr* copy =
-    new ForallExpr(domains->copyListInternal(clone, map),
-                   indices->copyListInternal(true, map),
+    new ForallExpr(domains->copyInternal(clone, map),
+                   indices->copyInternal(true, map),
                    forallExpr->copyInternal(clone, map));
   SymScope* scope = Symboltable::popScope();
   scope->setContext(NULL, NULL, forallExpr);
@@ -2076,9 +1976,9 @@ Expr* ForallExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void ForallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == domains) {
-    domains = dynamic_cast<Expr*>(new_ast);
+    domains = dynamic_cast<AList<Expr>*>(new_ast);
   } else if (old_ast == indices) {
-    indices = dynamic_cast<Expr*>(new_ast);
+    indices = dynamic_cast<AList<Expr>*>(new_ast);
   } else if (old_ast == forallExpr) {
     forallExpr = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -2090,11 +1990,11 @@ void ForallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void ForallExpr::traverseExpr(Traversal* traversal) {
   SymScope* prevScope = NULL;
 
-  TRAVERSE_LS(domains, traversal, false);
+  domains->traverse(traversal, false);
   if (indexScope) {
     prevScope = Symboltable::setCurrentScope(indexScope);
   }
-  TRAVERSE_LS(indices, traversal, false);
+  indices->traverse(traversal, false);
   TRAVERSE(forallExpr, traversal, false);
   if (indexScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -2107,16 +2007,16 @@ Type* ForallExpr::typeInfo(void) {
     return dtUnknown;
   }
 
-  Type* exprType = domains->typeInfo();
+  Type* exprType = domains->only()->typeInfo();
 
   if (typeid(*exprType) == typeid(DomainType)) {
     return exprType;
   } else {
-    Expr* domainExprs = domains;
+    Expr* domainExprs = domains->first();
     int rank = 0;
     while (domainExprs) {
       rank++;
-      domainExprs = nextLink(Expr, domainExprs);
+      domainExprs = domains->next();
     }
     return new DomainType(rank);
   }
@@ -2125,12 +2025,11 @@ Type* ForallExpr::typeInfo(void) {
 
 void ForallExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
-  DefExpr* indices_defs = dynamic_cast<DefExpr*>(indices);
-  if (indices_defs && indices_defs->sym) {
-    indices_defs->printList(outfile);
+  if (!indices->isEmpty()) {
+    indices->print(outfile);
     fprintf(outfile, ":");
   }
-  domains->printList(outfile);
+  domains->print(outfile);
   fprintf(outfile, "]");
   if (forallExpr) {
     fprintf(outfile, " ");
@@ -2140,7 +2039,7 @@ void ForallExpr::print(FILE* outfile) {
 
 
 void ForallExpr::codegen(FILE* outfile) {
-  if (!domains->next) {
+  if (domains->length() == 1) {
     domains->codegen(outfile);
   } else {
     INT_FATAL(this, "Don't know how to codegen lists of domains yet");
@@ -2153,14 +2052,14 @@ ForallExpr* unknownDomain;
 void initExpr(void) {
   Symbol* pst = new Symbol(SYMBOL, "?anonDomain");
   Variable* var = new Variable(pst);
-  unknownDomain = new ForallExpr(var);
+  unknownDomain = new ForallExpr(new AList<Expr>(var));
   
-  gNil = Symboltable::defineSingleVarDefStmt("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->defExprls->sym;
+  gNil = Symboltable::defineSingleVarDefStmt("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->defExprls->only()->sym;
   dtNil->defaultVal = new Variable(gNil);
 }
 
 
-LetExpr::LetExpr(DefExpr* init_symDefs, Expr* init_innerExpr) :
+LetExpr::LetExpr(AList<DefExpr>* init_symDefs, Expr* init_innerExpr) :
   Expr(EXPR_LET),
   symDefs(init_symDefs),
   innerExpr(init_innerExpr)
@@ -2172,8 +2071,11 @@ void LetExpr::setInnerExpr(Expr* expr) {
 }
 
 
-void LetExpr::setSymDefs(DefExpr* expr) {
-  symDefs = expr;
+void LetExpr::setSymDefs(AList<DefExpr>* expr) {
+  if (!symDefs->isEmpty()) {
+    INT_FATAL(this, "Setting symDefs, but it wasn't empty");
+  }
+  symDefs->add(expr);
 }
 
 
@@ -2183,9 +2085,8 @@ void LetExpr::setLetScope(SymScope* init_letScope) {
 
 
 Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  LetExpr* copy =
-    new LetExpr(dynamic_cast<DefExpr*>(symDefs->copyListInternal(clone, map)),
-                innerExpr->copyInternal(clone, map));
+  LetExpr* copy = new LetExpr(symDefs->copyInternal(clone, map),
+                              innerExpr->copyInternal(clone, map));
   copy->setLetScope(letScope);
   return copy;
 }
@@ -2193,7 +2094,7 @@ Expr* LetExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void LetExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == symDefs) {
-    symDefs = dynamic_cast<DefExpr*>(new_ast);
+    symDefs = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else if (old_ast == innerExpr) {
     innerExpr = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -2204,7 +2105,7 @@ void LetExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void LetExpr::traverseExpr(Traversal* traversal) {
   SymScope* saveScope = Symboltable::setCurrentScope(letScope);
-  TRAVERSE_LS(symDefs, traversal, false);
+  symDefs->traverse(traversal, false);
   TRAVERSE(innerExpr, traversal, false);
   Symboltable::setCurrentScope(saveScope);
 }
@@ -2239,9 +2140,9 @@ CondExpr::CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr) :
 
 Expr* CondExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return
-    new CondExpr(dynamic_cast<Expr*>(condExpr->copyListInternal(clone, map)),
-                 dynamic_cast<Expr*>(thenExpr->copyListInternal(clone, map)),
-                 dynamic_cast<Expr*>(elseExpr->copyListInternal(clone, map)));
+    new CondExpr(dynamic_cast<Expr*>(condExpr->copyInternal(clone, map)),
+                 dynamic_cast<Expr*>(thenExpr->copyInternal(clone, map)),
+                 dynamic_cast<Expr*>(elseExpr->copyInternal(clone, map)));
 }
 
 

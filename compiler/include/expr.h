@@ -2,10 +2,11 @@
 #define _EXPR_H_
 
 #include <stdio.h>
-#include "baseAST.h"
-#include "symbol.h"
+#include "alist.h"
 #include "analysis.h"
+#include "baseAST.h"
 #include "pragma.h"
+#include "symbol.h"
 
 class Stmt;
 class AInfo;
@@ -94,14 +95,13 @@ class Expr : public BaseAST {
   Expr* parentExpr;
   SymScope* parentScope;
   AInfo *ainfo;
-  Pragma *pragmas;
+  AList<Pragma> *pragmas;
+  FnSymbol *resolved;
 
 
-  Expr(astType_t astType);
+  Expr(astType_t astType = EXPR);
 
-  Expr* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, Vec<BaseAST*>* update_list = NULL);
   Expr* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, Vec<BaseAST*>* update_list = NULL);
-  Expr* copyListInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   Expr* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
@@ -110,9 +110,6 @@ class Expr : public BaseAST {
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
-
-  Expr* head(void);
-  Expr* tail(void);
 
   virtual Type* typeInfo(void);
   virtual bool isComputable(void);
@@ -131,7 +128,6 @@ class Expr : public BaseAST {
   void replace(Expr* new_expr);
   void insertBefore(Expr* new_expr);
   void insertAfter(Expr* new_expr);
-  virtual void append(ILink* new_expr);
   Expr* extract(void);
 
   bool isRead(void);
@@ -298,7 +294,7 @@ class DefExpr : public Expr {
   Symbol* sym;
   UserInitExpr* init;
 
-  DefExpr(Symbol* initSym, UserInitExpr* initInit = NULL);
+  DefExpr(Symbol* initSym = NULL, UserInitExpr* initInit = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 
@@ -357,9 +353,9 @@ class MemberAccess : public Expr {
 
 class Tuple : public Expr {
  public:
-  Expr* exprs;
+  AList<Expr>* exprs;
 
-  Tuple(Expr* init_exprs);
+  Tuple(AList<Expr>* init_exprs);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -373,10 +369,10 @@ class Tuple : public Expr {
 class ParenOpExpr : public Expr {
  public:
   Expr* baseExpr;
-  Expr* argList;
+  AList<Expr>* argList;
 
-  ParenOpExpr(Expr* init_base, Expr* init_arg = NULL);
-  void setArgs(Expr* init_arg);
+  ParenOpExpr(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>);
+  void setArgs(AList<Expr>* init_arg);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -389,7 +385,7 @@ class ParenOpExpr : public Expr {
 
 class ArrayRef : public ParenOpExpr {
  public:
-  ArrayRef(Expr* init_base, Expr* init_arg = NULL);
+  ArrayRef(Expr* init_base, AList<Expr>* init_arg);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   
   bool isConst(void);
@@ -403,6 +399,7 @@ class TupleSelect : public ParenOpExpr {
  public:
   /* baseExpr is TupleExpr, argList is indexing expression (single expression) */
   TupleSelect(Expr* init_base, Expr* init_arg);
+  TupleSelect(Expr* init_base, AList<Expr>* init_arg);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   bool isConst(void);
@@ -414,7 +411,7 @@ class TupleSelect : public ParenOpExpr {
 
 class FnCall : public ParenOpExpr {
  public:
-  FnCall(Expr* init_base, Expr* init_arg = NULL);
+  FnCall(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>());
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   Type* typeInfo(void);
@@ -481,10 +478,11 @@ class CastLikeExpr : public Expr {
 class ReduceExpr : public Expr {
  public:
   Symbol* reduceType;
-  Expr* redDim;
+  AList<Expr>* redDim;
   Expr* argExpr;
 
-  ReduceExpr(Symbol* init_reduceType, Expr* init_redDim, Expr* init_argExpr);
+  ReduceExpr(Symbol* init_reduceType, Expr* init_argExpr, 
+             AList<Expr>* init_redDim = new AList<Expr>());
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -497,9 +495,9 @@ class ReduceExpr : public Expr {
 
 class SeqExpr : public Expr {
  public:
-  Expr* exprls;
+  AList<Expr>* exprls;
 
-  SeqExpr(Expr* init_exprls);
+  SeqExpr(AList<Expr>* init_exprls);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -551,13 +549,14 @@ class CompleteDimExpr : public Expr {
 
 class ForallExpr : public Expr {
  public:
-  Expr* domains;
-  Expr* indices;    /* DefExpr of indices */
+  AList<Expr>* domains;
+  AList<Expr>* indices;    /* DefExpr of indices */
   Expr* forallExpr;
 
   SymScope* indexScope;
 
-  ForallExpr(Expr* init_domains, Expr* init_indices = NULL,
+  ForallExpr(AList<Expr>* init_domains, 
+             AList<Expr>* init_indices = new AList<Expr>(),
              Expr* init_forallExpr = NULL);
   void setForallExpr(Expr* exp);
   void setIndexScope(SymScope* init_indexScope);
@@ -578,14 +577,15 @@ void initExpr(void);
 
 class LetExpr : public Expr {
  public:
-  DefExpr* symDefs;
+  AList<DefExpr>* symDefs;
   Expr* innerExpr;
 
   SymScope* letScope;
 
-  LetExpr(DefExpr* init_symDefs, Expr* init_innerExpr);
+  LetExpr(AList<DefExpr>* init_symDefs = new AList<DefExpr>(), 
+          Expr* init_innerExpr = NULL);
   void setInnerExpr(Expr* expr);
-  void setSymDefs(DefExpr* expr);
+  void setSymDefs(AList<DefExpr>* expr);
   void setLetScope(SymScope* init_letScope);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 

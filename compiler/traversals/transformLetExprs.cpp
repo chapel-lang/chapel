@@ -20,7 +20,7 @@ void TransformLetExprs::postProcessExpr(Expr* expr) {
 }
 
 
-void TransformLetExprs::run(ModuleSymbol* moduleList) {
+void TransformLetExprs::run(ModuleList* moduleList) {
   Traversal::run(moduleList);
   doTransformation();
 }
@@ -38,14 +38,13 @@ void TransformLetExprs::doTransformation(void) {
     Expr* innerCopy = letExpr->innerExpr->copy(false, NULL, &lets);
     letExpr->replace(innerCopy);
     Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
-    DefExpr* defExpr =
-      dynamic_cast<DefExpr*>(letExpr->symDefs->copyList(true, map, &lets));
+    AList<DefExpr>* defExpr = letExpr->symDefs->copy(true, map, &lets);
     Stmt* letStmtCopy = letStmt->copy(false, map, &lets);
-    DefStmt* defStmt = new DefStmt(defExpr);
-    defStmt->append(letStmtCopy);
+    AList<Stmt>* defStmt = new AList<Stmt>(new DefStmt(defExpr));
+    defStmt->add(letStmtCopy);
     blockStmt = Symboltable::finishCompoundStmt(blockStmt, defStmt);
 
-    for (DefExpr* tmp = defExpr; tmp; tmp = nextLink(DefExpr, tmp)) {
+    for (DefExpr* tmp = defExpr->first(); tmp; tmp = defExpr->next()) {
       tmp->sym->cname =
         glomstrings(3, tmp->sym->cname, "_let_", intstring(uid++));
     }

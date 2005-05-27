@@ -2,10 +2,11 @@
 #define _STMT_H_
 
 #include <stdio.h>
-#include "baseAST.h"
-#include "symbol.h"
+#include "alist.h"
 #include "analysis.h"
+#include "baseAST.h"
 #include "pragma.h"
+#include "symbol.h"
 
 class Expr;
 class DefExpr;
@@ -17,15 +18,13 @@ class Stmt : public BaseAST {
   Stmt* parentStmt;
   SymScope* parentScope;
   AInfo *ainfo;
-  Pragma *pragmas;
+  AList<Pragma>* pragmas;
 
-  Stmt(astType_t astType);
+  Stmt(astType_t astType = STMT);
 
   FnSymbol *parentFunction();
 
-  Stmt* copyList(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, Vec<BaseAST*>* update_list = NULL);
   Stmt* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, Vec<BaseAST*>* update_list = NULL);
-  Stmt* copyListInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   Stmt* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
@@ -35,10 +34,7 @@ class Stmt : public BaseAST {
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
 
-  Stmt* head(void);
-  Stmt* tail(void);
   void replace(Stmt* new_stmt);
-  virtual void append(ILink* new_stmt);
   void insertBefore(Stmt* new_stmt);
   void insertAfter(Stmt* new_stmt);
   Stmt* extract(void);
@@ -60,9 +56,10 @@ class NoOpStmt : public Stmt {
 
 class DefStmt : public Stmt {
 public:
-  DefExpr* defExprls;
+  AList<DefExpr>* defExprls;
 
   DefStmt(DefExpr* init_defExprls);
+  DefStmt(AList<DefExpr>* init_defExprls);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
@@ -129,12 +126,13 @@ class UseStmt : public ExprStmt {
 
 class BlockStmt : public Stmt {
  public:
-  Stmt* body;
+  AList<Stmt>* body;
 
   SymScope* blkScope;
 
-  BlockStmt::BlockStmt(Stmt* init_body = NULL, SymScope* init_scope = NULL);
-  void addBody(Stmt* init_body);
+  BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
+                       SymScope* init_scope = NULL);
+  void addBody(AList<Stmt>* init_body);
   void setBlkScope(SymScope* init_blkScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
@@ -151,7 +149,7 @@ class WhileLoopStmt : public BlockStmt {
   bool isWhileDo;
   Expr* condition;
 
-  WhileLoopStmt(bool init_whileDo, Expr* init_cond, Stmt* body);
+  WhileLoopStmt(bool init_whileDo, Expr* init_cond, AList<Stmt>* body);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -165,13 +163,13 @@ class WhileLoopStmt : public BlockStmt {
 class ForLoopStmt : public BlockStmt {
  public:
   bool forall;
-  Expr* indices; // DefExpr* containing local index variables
+  AList<DefExpr>* indices; // DefExpr* containing local index variables
   Expr* domain;
 
   SymScope* indexScope;
 
-  ForLoopStmt(bool init_forall, Expr* init_indices, Expr* init_domain,
-              Stmt* body = NULL);
+  ForLoopStmt(bool init_forall, AList<DefExpr>* init_indices, Expr* init_domain,
+              AList<Stmt>* body = new AList<Stmt>());
   void setIndexScope(SymScope* init_indexScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 

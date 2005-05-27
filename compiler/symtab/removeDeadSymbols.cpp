@@ -15,8 +15,9 @@ static void markAsDeadAndExtract(Symbol* sym) {
       sym->defPoint->extract();
     }
   }
+  //  fprintf(stderr, "Removing %s\n", sym->name);
+  //  sym->printLoc(stderr); fprintf(stderr, "\n");
   sym->parentScope->remove(sym);
-  //  printf("Removed %s\n", sym->cname);
 }
 
 

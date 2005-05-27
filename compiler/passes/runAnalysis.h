@@ -7,8 +7,8 @@ class RunAnalysis : public Pass {
  public:
   static int isRunning;
   static int runCount;
-  static Stmt* entryStmtList;
-  void run(ModuleSymbol* moduleList);
+  static AList<Stmt>* entryStmtList;
+  void run(ModuleList* moduleList);
 };
 
 #endif

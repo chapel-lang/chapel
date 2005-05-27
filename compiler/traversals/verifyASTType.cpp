@@ -387,6 +387,13 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_NIL");
     }
     break;
+  case LIST: 
+    break;
+  case PRAGMA:
+    if (typeid(*ast) != typeid(Pragma)) {
+      INT_FATAL(ast, "Unexpected AST type pragma: PRAGMA");
+    }
+    break;
   case AST_TYPE_END:
     INT_FATAL(ast, "Unexpected AST type: AST_TYPE_END");
     break;

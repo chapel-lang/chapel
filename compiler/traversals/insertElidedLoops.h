@@ -6,8 +6,8 @@
 
 class InsertElidedIndices : public Traversal {
  public:
-  DefExpr* indices;
-  InsertElidedIndices::InsertElidedIndices(DefExpr* init_indices);
+  AList<DefExpr>* indices;
+  InsertElidedIndices::InsertElidedIndices(AList<DefExpr>* init_indices);
   void preProcessExpr(Expr* expr);
 };
 

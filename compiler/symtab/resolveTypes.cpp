@@ -82,7 +82,7 @@ void ResolveTypes::processSymbol(Symbol* sym) {
         }
       } else {
         FindReturn* findReturn = new FindReturn();
-        TRAVERSE_LS(fn->body, findReturn, true);
+        fn->body->traverse(findReturn, true);
         if (!findReturn->found) {
           fn->retType = dtVoid;
         } else {
@@ -137,7 +137,8 @@ void ResolveTypes::processSymbol(Symbol* sym) {
     ) {
     TypeSymbol* symType = dynamic_cast<TypeSymbol*>(sym->type->symbol);
     if (!type_is_used(symType)) {
-      INT_FATAL(sym, "type is used assertion failure");
+      INT_FATAL(sym, "type_is_used assertion failure\n"
+                "(likely to be due to dead code not being eliminated)");
     }
     if (symType == NULL) {
       INT_FATAL("null symType");
@@ -151,11 +152,10 @@ void ResolveTypes::processSymbol(Symbol* sym) {
     if (sym->type == dtInteger) {
       if (ForLoopStmt* for_loop =
           dynamic_cast<ForLoopStmt*>(sym->defPoint->parentStmt)) {
-        if (DefExpr* def_expr = dynamic_cast<DefExpr*>(for_loop->indices)) {
-          if (def_expr->sym == sym) {
-            if (SeqType* seq_type = dynamic_cast<SeqType*>(for_loop->domain->typeInfo())) {
-              sym->type = seq_type->elementType;
-            }
+        DefExpr* def_expr = for_loop->indices->first();
+        if (def_expr->sym == sym) {
+          if (SeqType* seq_type = dynamic_cast<SeqType*>(for_loop->domain->typeInfo())) {
+            sym->type = seq_type->elementType;
           }
         }
       }

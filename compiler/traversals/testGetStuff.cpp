@@ -32,9 +32,3 @@ void TestGetStuff::preProcessStmt(Stmt* stmt) {
     fprintf(stderr, "\n-----------------------------------------------\n");
   }
 }
-
-
-void testGetStuff(Stmt* program) {
-  TRAVERSE_LS(program, new TestGetStuff(), true);
-  exit(0);
-}

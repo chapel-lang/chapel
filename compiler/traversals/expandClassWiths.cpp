@@ -8,7 +8,7 @@ void ExpandClassWiths::preProcessStmt(Stmt* stmt) {
   if (WithStmt* with = dynamic_cast<WithStmt*>(stmt)) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(with->parentSymbol)) {
       if (StructuralType* class_type = dynamic_cast<StructuralType*>(symType->type)) {
-        Stmt* with_declarations = with->getStruct()->declarationList->copyList(true);
+        AList<Stmt>* with_declarations = with->getStruct()->declarationList->copy(true);
         class_type->addDeclarations(with_declarations, with);
         return;
       }

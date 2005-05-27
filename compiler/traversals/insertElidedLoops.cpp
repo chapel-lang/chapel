@@ -8,7 +8,7 @@
 #include "stringutil.h"
 
 
-InsertElidedIndices::InsertElidedIndices(DefExpr* init_indices) {
+InsertElidedIndices::InsertElidedIndices(AList<DefExpr>* init_indices) {
   indices = init_indices;
 }
 
@@ -16,9 +16,9 @@ InsertElidedIndices::InsertElidedIndices(DefExpr* init_indices) {
 void InsertElidedIndices::preProcessExpr(Expr* expr) {
   Variable* var = dynamic_cast<Variable*>(expr);
   if (var && dynamic_cast<ArrayType*>(var->typeInfo())) {
-    Expr* index_exprs = NULL;
-    for (DefExpr* tmp = indices; tmp; tmp = nextLink(DefExpr, tmp)) {
-      index_exprs = appendLink(index_exprs, new Variable(tmp->sym));
+    AList<Expr>* index_exprs = new AList<Expr>;
+    for (DefExpr* tmp = indices->first(); tmp; tmp = indices->next()) {
+      index_exprs->add(new Variable(tmp->sym));
     }
     ArrayRef* array_ref = new ArrayRef(expr->copy(), index_exprs);
     expr->replace(array_ref);
@@ -31,17 +31,16 @@ void InsertElidedLoops::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
     if (AssignOp* assign = dynamic_cast<AssignOp*>(expr_stmt->expr)) {
       if (ArrayType* array_type = dynamic_cast<ArrayType*>(assign->left->typeInfo())) {
-        Symbol* indices = NULL;
+        AList<Symbol>* indices = new AList<Symbol>();
         for (int i = 0; i < array_type->domainType->numdims; i++) {
           char* name = glomstrings(4, "_ind_", intstring(uid), "_", intstring(i));
-          indices = appendLink(indices, new Symbol(SYMBOL, name));
+          indices->add(new Symbol(SYMBOL, name));
         }
         uid++;
         ForLoopStmt* loop = Symboltable::startForLoop(true, indices, array_type->domain->copy());
         loop = Symboltable::finishForLoop(loop, stmt->copy());
         stmt->replace(loop);
-        DefExpr* indices_change = dynamic_cast<DefExpr*>(loop->indices);
-        TRAVERSE(loop->body, new InsertElidedIndices(indices_change), true);
+        TRAVERSE(loop->body, new InsertElidedIndices(loop->indices), true);
       }
     }
   }

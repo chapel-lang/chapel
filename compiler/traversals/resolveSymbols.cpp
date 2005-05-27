@@ -9,13 +9,13 @@
 #include "type.h"
 #include "stringutil.h"
 
-static Expr* copy_argument_list(ParenOpExpr* expr) {
-  Expr* args = NULL;
+static AList<Expr>* copy_argument_list(ParenOpExpr* expr) {
+  AList<Expr>* args = new AList<Expr>();
   MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr->baseExpr);
   if (member_access) {
-    args = member_access->base->copy();
+    args->add(member_access->base->copy());
   }
-  args = appendLink(args, expr->argList->copyList());
+  args->add(expr->argList->copy());
   return args;
 }
 
@@ -47,16 +47,17 @@ static void call_info_noanalysis(ParenOpExpr* expr, Vec<FnSymbol*>& fns) {
   }
   FnSymbol* candidate = NULL;
   forv_Vec(FnSymbol*, fn, candidates) {
-    Symbol* formals = fn->formals;
-    Expr* actuals = copy_argument_list(expr);
+    Symbol* formals = fn->formals->first();
+    AList<Expr>* actualList = copy_argument_list(expr);
+    Expr* actuals = actualList->first();
     bool match = true;
     while (actuals && formals) {
       if (actuals->typeInfo() != formals->type) {
         match = false;
         break;
       }
-      actuals = nextLink(Expr, actuals);
-      formals = nextLink(Symbol, formals);
+      actuals = actualList->next();
+      formals = fn->formals->next();
     }
     if (actuals || formals) {
       match = false;
@@ -101,12 +102,12 @@ gets_to_binop(getsOpType i) {
 
 static int
 is_builtin(FnSymbol *fn) {
-  Pragma* pr = fn->defPoint->parentStmt->pragmas;
+  Pragma* pr = fn->defPoint->parentStmt->pragmas->first();
   while (pr) {
     if (!strcmp(pr->str, "builtin")) {
       return 1;
     }
-    pr = dynamic_cast<Pragma *>(pr->next);
+    pr = fn->defPoint->parentStmt->pragmas->next();
   }
   return 0;
 }
@@ -205,12 +206,10 @@ resolve_no_analysis(Expr *expr) {
     if (fns.n != 1) {
       INT_FATAL(expr, "Unable to resolve function without analysis");
     }
+    AList<Expr>* arguments = copy_argument_list(paren);
     Expr* function = new Variable(fns.e[0]);
-    Expr* arguments = copy_argument_list(paren);
     if (!strcmp("this", fns.e[0]->name)) {
-      Expr* tmp = paren->baseExpr->copy();
-      tmp->append(arguments);
-      arguments = tmp;
+      arguments->insert(paren->baseExpr->copy());
     }
     Expr* new_expr = new FnCall(function, arguments);
     expr->replace(new_expr);
@@ -237,7 +236,7 @@ resolve_no_analysis(Expr *expr) {
         if (dynamic_cast<FnSymbol*>(member_access->member)) {
           Expr* arguments = member_access->base->copy();
           Expr* function = new Variable(member_access->member);
-          Expr *new_expr = new FnCall(function, arguments);
+          Expr *new_expr = new FnCall(function, new AList<Expr>(arguments));
           expr->replace(new_expr);
           expr = new_expr;
         }
@@ -265,16 +264,16 @@ resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0) {
       INT_FATAL(expr, "Trouble resolving operator");
     }
   } else {
-    Pragma* pr = fns.e[0]->defPoint->parentStmt->pragmas;
+    Pragma* pr = fns.e[0]->defPoint->parentStmt->pragmas->first();
     while (pr) {
       if (!strcmp(pr->str, "builtin")) {
         return expr;
       }
-      pr = dynamic_cast<Pragma *>(pr->next);
+      pr = fns.e[0]->defPoint->parentStmt->pragmas->next();
     }
     
-    Expr* args = op->left->copy();
-    args->append(op->right->copy());
+    AList<Expr>* args = new AList<Expr>(op->left->copy());
+    args->add(op->right->copy());
     FnCall *new_expr = new FnCall(new Variable(fns.e[0]), args);
     expr->replace(new_expr);
     expr = new_expr;
@@ -327,9 +326,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       // HACK: Special case where write(:nilType) requires dynamic
       // dispatch; Take the other one.
       if (fns.n == 2 && !strcmp(fns.e[1]->name, "write") &&
-          fns.e[1]->formals->type->astType == TYPE_NIL) {
+          fns.e[1]->formals->only()->type->astType == TYPE_NIL) {
       } else if (fns.n == 2 && !strcmp(fns.e[0]->name, "write") &&
-                 fns.e[0]->formals->type->astType == TYPE_NIL) {
+                 fns.e[0]->formals->only()->type->astType == TYPE_NIL) {
         fns.v[0] = fns.v[1];
       } else {
         INT_FATAL(expr, "Unable to resolve function");
@@ -337,12 +336,10 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       }
     }
 
-    Expr* arguments = copy_argument_list(paren);
+    AList<Expr>* arguments = copy_argument_list(paren);
     Expr* function = new Variable(fns.e[0]);
     if (!strcmp("this", fns.e[0]->name)) {
-      Expr* tmp = paren->baseExpr->copy();
-      tmp->append(arguments);
-      arguments = tmp;
+      arguments->insert(paren->baseExpr->copy());
     }
     Expr *new_expr = new FnCall(function, arguments);
     expr->replace(new_expr);
@@ -358,11 +355,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       call_info(aop, fns);
       if (fns.n == 1) {
         Expr* function = new Variable(fns.e[0]);
-        Expr* arguments = 0;
+        AList<Expr>* arguments = new AList<Expr>();
         if (!strcmp("=this", fns.e[0]->name))
-          arguments = paren->baseExpr->copy();
-        arguments = appendLink(arguments, copy_argument_list(paren));
-        arguments = appendLink(arguments, aop->right->copy());
+          arguments->add(paren->baseExpr->copy());
+        arguments->add(copy_argument_list(paren));
+        arguments->add(aop->right->copy());
         Expr *new_expr = new FnCall(function, arguments);
         aop->replace(new_expr);
         expr = new_expr;
@@ -380,11 +377,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           INT_FATAL(expr, "Unable to resolve member access");
         FnSymbol *f_op = op_fns.n ? op_fns.v[0] : 0;
         FnSymbol *f_assign = assign_fns.v[0];
-        Expr *rhs = aop->right->copyList();
+        Expr *rhs = aop->right->copy();
         if (f_op) {
           if (!is_builtin(f_op)) {
-            Expr* op_arguments = member_access->copy();
-            op_arguments = appendLink(op_arguments, rhs);
+            AList<Expr>* op_arguments = new AList<Expr>(member_access->copy());
+            op_arguments->add(rhs);
             Expr* op_function = new Variable(f_op);
             rhs = new FnCall(op_function, op_arguments);
           } else {
@@ -393,8 +390,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
               f_op);
           }
         }
-        Expr* assign_arguments = member_access->base->copy();
-        assign_arguments = appendLink(assign_arguments, rhs);
+        AList<Expr>* assign_arguments = new AList<Expr>(member_access->base->copy());
+        assign_arguments->add(rhs);
         Expr* assign_function = new Variable(f_assign);
         Expr *new_expr = new FnCall(assign_function, assign_arguments);
         expr->replace(new_expr);
@@ -428,8 +425,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       if (fns.n == 1) {
         Expr* arguments = member_access->base->copy();
         Expr* function = new Variable(fns.v[0]);
-        Expr *new_expr = new FnCall(function, arguments);
-        expr->replace(new FnCall(function, arguments));
+        Expr *new_expr = new FnCall(function, new AList<Expr>(arguments));
+        expr->replace(new FnCall(function, new AList<Expr>(arguments->copy())));
         expr = new_expr;
       } else
         INT_FATAL(expr, "Unable to resolve member access");

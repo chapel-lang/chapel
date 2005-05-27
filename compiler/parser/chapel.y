@@ -22,22 +22,28 @@
   paramType pt;
 
   Expr* pexpr;
+  AList<Expr>* exprlist;
   ForallExpr* pfaexpr;
   Stmt* stmt;
+  AList<Stmt>* stmtlist;
   DefStmt* defstmt;
   DefExpr* defexpr;
+  AList<DefExpr>* defexprls;
   ForLoopStmt* forstmt;
   BlockStmt* blkstmt;
   Type* pdt;
   TupleType* tupledt;
   UnresolvedType* unresolveddt;
   EnumSymbol* enumsym;
+  AList<EnumSymbol>* enumsymlist;
   Symbol* psym;
+  AList<Symbol>* symlist;
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
   FnSymbol* fnsym;
   ModuleSymbol* modsym;
-  Pragma *pragmas;
+  Pragma* pragma;
+  AList<Pragma>* pragmas;
 }
 
 %token TBREAK
@@ -120,19 +126,25 @@
 %type <unresolveddt> unresolvedType
 %type <pdt> vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier fname
-%type <psym> ident_symbol ident_symbol_ls formal formals indexes indexlist
-%type <enumsym> enum_item enum_list
-%type <pexpr> lvalue declarable_expr atom expr exprlist expr_list_item nonemptyExprlist literal range seq_expr
+%type <psym> ident_symbol
+%type <symlist> formal formals ident_symbol_ls indexes indexlist
+%type <enumsym> enum_item
+%type <enumsymlist> enum_list
+%type <pexpr> lvalue declarable_expr atom expr expr_list_item literal range seq_expr
+%type <exprlist> exprlist nonemptyExprlist
 %type <pexpr> reduction optional_init_expr assignExpr conditional_expr
 %type <pfaexpr> forallExpr
-%type <stmt> program modulebody statements statement call_stmt noop_stmt decls decl typevardecl
-%type <defexpr> vardecl_inner vardecl_inner_ls
+%type <stmt> statement call_stmt noop_stmt decl typevardecl
+%type <stmtlist> decls statements modulebody program
+%type <defexprls> vardecl_inner vardecl_inner_ls
 %type <defstmt> vardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl
 %type <pdt> structtype
 %type <stmt> typealias typedecl fndecl structdecl moduledecl
-%type <stmt> function_body_single_stmt function_body_stmt block_stmt
-%type <pragmas> pragma pragmas
+%type <stmt> function_body_single_stmt 
+%type <blkstmt> function_body_stmt block_stmt
+%type <pragma> pragma
+%type <pragmas> pragmas
 
 
 /* These are declared in increasing order of precedence. */
@@ -191,23 +203,18 @@ varconst:
 ;
         
 ident_symbol:
-   pragma ident_symbol
+ pragmas identifier
     { 
-      $$ = $2; 
-      $1->next = $$->pragmas;
+      $$ = new Symbol(SYMBOL, $2);
       $$->pragmas = $1;
     } 
-|  identifier
-    { $$ = new Symbol(SYMBOL, $1); } 
 ;
 
 ident_symbol_ls:
   ident_symbol
+    { $$ = new AList<Symbol>($1); }
 | ident_symbol_ls ident_symbol
-    {
-      $1->append($2);
-      $$ = $1;
-    }
+    { $1->add($2); }
 ;
 
 
@@ -238,16 +245,16 @@ vardecl_inner:
 vardecl_inner_ls:
   vardecl_inner
 | vardecl_inner_ls TCOMMA vardecl_inner
-    {
-      $1->append($3);
-      $$ = $1;
-    }
+    { $1->add($3); }
 ;
 
 
 vardecl:
   vardecltag varconst vardecl_inner_ls TSEMI
-    { $$ = new DefStmt(Symboltable::defineVarDef2($3, $1, $2)); }
+    {
+      Symboltable::defineVarDef2($3, $1, $2);
+      $$ = new DefStmt($3);
+    }
 ;
 
 typedecl:
@@ -287,13 +294,13 @@ typevardecl:
 enumdecl:
   TENUM pragmas identifier TLCBR enum_list TRCBR TSEMI
     {
-      $5->set_values();
+      EnumSymbol::setValues($5);
       EnumType* pdt = new EnumType($5);
       TypeSymbol* pst = new TypeSymbol($3, pdt);
       pst->pragmas = $2;
       pdt->addSymbol(pst);
       DefExpr* def_expr = new DefExpr(pst);
-      $5->setDefPoint(def_expr);  /* SJD: Should enums have more DefExprs? */
+      Symbol::setDefPoints($5, def_expr); /* SJD: Should enums have more DefExprs? */
       $$ = new DefStmt(def_expr);
     }
 ;
@@ -337,11 +344,11 @@ enum_item:
 enum_list:
   enum_item
     {
-      $$ = $1;
+      $$ = new AList<EnumSymbol>($1);
     }
 | enum_list TCOMMA enum_item
     {
-      $1->append($3);
+      $1->add($3);
       $$ = $1;
     }
 ;
@@ -376,27 +383,28 @@ formal:
     }
 | TTYPE ident_symbol typevardecltype
     {
-      ParamSymbol *ps = Symboltable::defineParams(PARAM_BLANK, $2, getMetaType($3), NULL);
+      AList<Symbol> *psl = Symboltable::defineParams(PARAM_BLANK, new AList<Symbol>($2), getMetaType($3), NULL);
+      ParamSymbol* ps = dynamic_cast<ParamSymbol*>(psl->only());
+      if (ps == NULL) {
+        INT_FATAL("problem in parsing type variables");
+      }
       char *name = glomstrings(2, "__type_variable_", ps->name);
       VariableType* new_type = new VariableType(getMetaType($3));
       TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
       new_type->addSymbol(new_type_symbol);
       ps->typeVariable = new_type_symbol;
       ps->isGeneric = 1;
-      $$ = ps;
+      $$ = psl;
     }
 ;
 
 
 formals:
   /* empty */
-    { $$ = NULL; }
+    { $$ = new AList<Symbol>(); }
 | formal
 | formals TCOMMA formal
-    {
-      $1->append($3);
-      $$ = $1;
-    }
+    { $1->add($3); }
 ;
 
 
@@ -512,7 +520,7 @@ fndecl:
     }
                   fnretref fnrettype
     {
-      Symboltable::continueFnDef($<fnsym>3, NULL, $5, $4);
+      Symboltable::continueFnDef($<fnsym>3, new AList<Symbol>(), $5, $4);
     }
                             function_body_stmt
     {
@@ -548,11 +556,11 @@ decl:
 
 decls:
   /* empty */
-    { $$ = NULL; }
+    { $$ = new AList<Stmt>(); }
 | decls pragmas decl
     {
-      $$ = appendLink($1, $3); 
       $3->pragmas = $2;
+      $1->add($3);
     }
 ;
 
@@ -656,11 +664,11 @@ seqType:
 
 statements:
   /* empty */
-    { $$ = NULL; }
+    { $$ = new AList<Stmt>(); }
 | statements pragmas statement
     { 
-      $$ = appendLink($1, $3); 
       $3->pragmas = $2;
+      $1->add($3);
     }
 ;
 
@@ -676,6 +684,7 @@ function_body_single_stmt:
 
 function_body_stmt:
   function_body_single_stmt
+    { $$ = new BlockStmt(new AList<Stmt>($1)); }
 | block_stmt
 ;
 
@@ -683,7 +692,8 @@ function_body_stmt:
 statement:
   noop_stmt
 | TLABEL identifier statement
-{ $$ = new LabelStmt(new LabelSymbol($2), new BlockStmt($3)); }
+    { $$ = new LabelStmt(new LabelSymbol($2), 
+           new BlockStmt(new AList<Stmt>($3))); }
 | TGOTO identifier TSEMI
     { $$ = new GotoStmt(goto_normal, $2); }
 | TBREAK identifier TSEMI
@@ -713,7 +723,13 @@ pragmas:
   /* empty */
     { $$ = NULL; }
 | pragmas pragma
-    { $$ = appendLink($1, $2); }
+    {
+      if ($1 == NULL) {
+        $$ = new AList<Pragma>($2);
+      } else {
+        $1->add($2);
+      }
+    }
 ;
 
 
@@ -761,11 +777,9 @@ fortype:
 
 indexes:
   ident_symbol
+    { $$ = new AList<Symbol>($1); }
 | indexes TCOMMA ident_symbol
-    {
-      $1->append($3);
-      $$ = $1;
-    }
+    { $1->add($3); }
 ;
 
 
@@ -806,11 +820,11 @@ forloop:
 
 whileloop:
 TWHILE expr TDO statement
-    { $$ = new WhileLoopStmt(true, $2, $4); }
+    { $$ = new WhileLoopStmt(true, $2, new AList<Stmt>($4)); }
 | TWHILE expr block_stmt
-    { $$ = new WhileLoopStmt(true, $2, $3); }
+    { $$ = new WhileLoopStmt(true, $2, new AList<Stmt>($3)); }
 | TDO statement TWHILE expr TSEMI
-    { $$ = new WhileLoopStmt(false, $4, $2); }
+    { $$ = new WhileLoopStmt(false, $4, new AList<Stmt>($2)); }
 ;
 
 
@@ -824,11 +838,11 @@ conditional:
   TIF expr block_stmt %prec TNOELSE
     { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3)); }
 | TIF expr TTHEN statement %prec TNOELSE
-    { $$ = new CondStmt($2, new BlockStmt($4)); }
+    { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4))); }
 | TIF expr block_stmt TELSE statement
-    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt($5)); }
+    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt(new AList<Stmt>($5))); }
 | TIF expr TTHEN statement TELSE statement
-    { $$ = new CondStmt($2, new BlockStmt($4), new BlockStmt($6)); }
+    { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4)), new BlockStmt(new AList<Stmt>($6))); }
 ;
 
 
@@ -866,7 +880,7 @@ assignment:
 
 exprlist:
   /* empty */
-    { $$ = NULL; }
+    { $$ = new AList<Expr>(); }
 | nonemptyExprlist
 ;
 
@@ -881,9 +895,9 @@ expr_list_item:
 
 nonemptyExprlist:
   pragmas expr_list_item
-    { $2->pragmas = $1; $$ = $2; }
+    { $2->pragmas = $1; $$ = new AList<Expr>($2); }
 | nonemptyExprlist TCOMMA pragmas expr_list_item
-    { $4->pragmas = $3; $1->append($4); }
+    { $4->pragmas = $3; $1->add($4); }
 ;
 
 
@@ -892,8 +906,8 @@ declarable_expr:
     { $$ = new Variable(new UnresolvedSymbol($1)); }
 | TLP nonemptyExprlist TRP 
     { 
-      if (!$2->next) {
-        $$ = $2;
+      if ($2->length() == 1) {
+        $$ = $2->popHead();
       } else {
         $$ = new Tuple($2);
       }
@@ -944,8 +958,8 @@ expr:
   { 
     Variable* _chpl_tostring =
       new Variable(new UnresolvedSymbol("_chpl_tostring"));
-    Expr* args = $1;
-    args->append(new StringLiteral($3));
+    AList<Expr>* args = new AList<Expr>($1);
+    args->add(new StringLiteral($3));
     $$ = new ParenOpExpr(_chpl_tostring, args);
   }
 | range %prec TDOTDOT
@@ -1003,7 +1017,7 @@ expr:
 
 reduction:
   identifier TREDUCE expr
-    { $$ = new ReduceExpr(new UnresolvedSymbol($1), NULL, $3); }
+    { $$ = new ReduceExpr(new UnresolvedSymbol($1), $3); }
 ;
 
 

@@ -1,40 +1,41 @@
+#include "alist.h"
 #include "analysis.h"
 #include "driver.h"
 #include "filesToAST.h"
 #include "if1.h"
+#include "moduleList.h"
 #include "runAnalysis.h"
 #include "symbol.h"
 #include "symtab.h"
 
 int RunAnalysis::runCount = 0;
 int RunAnalysis::isRunning = 0;
-Stmt* RunAnalysis::entryStmtList = NULL;
+AList<Stmt>* RunAnalysis::entryStmtList = NULL;
 
-void RunAnalysis::run(ModuleSymbol* moduleList) {
+void RunAnalysis::run(ModuleList* moduleList) {
   if (analyzeAST) {
     RunAnalysis::isRunning = 1;
     if1->callback = new ACallbacks;
     init_ast();
-    Vec<Stmt *> stmts;
-    ModuleSymbol* mod = moduleList;
+    Vec<AList<Stmt> *> stmts;
+    ModuleSymbol* mod = moduleList->first();
     while (mod) {
       stmts.add(mod->stmts);
 
-      mod = nextLink(ModuleSymbol, mod);
+      mod = moduleList->next();
     }
-    for (Stmt* tmp = entryStmtList; tmp; tmp = nextLink(Stmt, tmp)) {
-      stmts.add(tmp);
-    }
+    stmts.add(entryStmtList);
     AST_to_IF1(stmts);
     // BLC: John, what filename should be passed in for multiple modules?
     // I'm just passing in the first non-internal module's filename
     // JBP: that's fine, it is only used for debug, HTML and low level cg files
     char* firstUserModuleName = NULL;
-    while (moduleList && (moduleList->modtype != MOD_USER)) {
-      moduleList = nextLink(ModuleSymbol, moduleList);
+    mod = moduleList->first();
+    while (mod && (mod->modtype != MOD_USER)) {
+      mod = moduleList->next();
     }
-    if (moduleList) {
-      firstUserModuleName = moduleList->filename;
+    if (mod) {
+      firstUserModuleName = mod->filename;
     }
     //driver:do_analysis
     do_analysis(firstUserModuleName);

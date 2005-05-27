@@ -1,16 +1,22 @@
+#include "analysis.h"
 #include "baseAST.h"
 #include "expr.h"
+#include "map.h"
+#include "moduleList.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
-#include "map.h"
-#include "analysis.h"
-#include "stringutil.h"
 #include "../passes/runAnalysis.h"
 #include "../traversals/updateSymbols.h"
 
 
 static long uid = 1;
+
+// This is here so that we can break on the creation of a particular
+// BaseAST instance in gdb.
+static void checkid(long id) {
+}
 
 long BaseAST::getNumIDs(void) {
   return uid;
@@ -26,6 +32,7 @@ BaseAST::BaseAST(astType_t type) :
   traversalInfo(NULL),
   copyInfo(NULL)
 {
+  checkid(id);
   if (lineno == -1) {
     if (currentTraversal) {
       traversalInfo = copystring(currentTraversal);
@@ -159,6 +166,10 @@ char* astTypeName[AST_TYPE_END+1] = {
   "UnresolvedType",
   "NilType",
 
+  "List",
+
+  "Pragma",
+
   "AST_TYPE_END"
 };
 
@@ -168,7 +179,7 @@ char* currentTraversal = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
 #define AST_ADD_LIST(_t, _m, _mt) \
-    for (_mt* tmp = ((_t*)a)->_m; tmp; tmp = nextLink(_mt, tmp)) \
+  for (_mt* tmp = ((_t*)a)->_m->first(); tmp; tmp = ((_t*)a)->_m->next()) \
       asts.add(tmp)
 #define AST_ADD_VEC(_t, _m, _mt) \
     forv_Vec(_mt, c, ((_t*)a)->_m) asts.add(c)
@@ -204,7 +215,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(WhileLoopStmt, condition);
     goto LBlockStmtCommon;
   case STMT_FORLOOP:
-    AST_ADD_LIST(ForLoopStmt, indices, Expr);
+    AST_ADD_LIST(ForLoopStmt, indices, DefExpr);
     AST_ADD_CHILD(ForLoopStmt, domain);
     goto LBlockStmtCommon;
   case STMT_COND:
@@ -413,6 +424,12 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case TYPE_NIL:
     goto LTypeCommon;
   case AST_TYPE_END: break;
+  case LIST: 
+    INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (LIST)");
+    break;
+  case PRAGMA: 
+    INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (PRAGMA)");
+    break;
   }
 }
 #undef AST_ADD_CHILD

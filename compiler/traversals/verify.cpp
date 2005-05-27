@@ -3,6 +3,7 @@
 #include "verify.h"
 #include "fixup.h"
 #include "expr.h"
+#include "moduleList.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
@@ -41,7 +42,7 @@ void Verify::preProcessExpr(Expr* expr){
 
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
       Symbol* formal;
-      for (formal = fn->formals; formal; formal = nextLink(Symbol, formal)) {
+      for (formal = fn->formals->first(); formal; formal = fn->formals->next()) {
         if (!removeVerifySymbol(syms, formal)) {
           INT_FATAL(formal, "Formal not in Symboltable");
         }
@@ -51,7 +52,9 @@ void Verify::preProcessExpr(Expr* expr){
     if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
       if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
         EnumSymbol* tmp;
-        for (tmp = enum_type->valList; tmp; tmp = nextLink(EnumSymbol, tmp)) {
+        for (tmp = enum_type->valList->first(); 
+             tmp; 
+             tmp = enum_type->valList->next()) {
           if (!removeVerifySymbol(syms, tmp)) {
             INT_FATAL(tmp, "EnumSymbol not in Symboltable");
           }
@@ -62,7 +65,7 @@ void Verify::preProcessExpr(Expr* expr){
 }
 
 
-void Verify::run(ModuleSymbol* moduleList) {
+void Verify::run(ModuleList* moduleList) {
   Fixup* fixup = new Fixup(true);
   fixup->run(moduleList);
 
@@ -79,10 +82,10 @@ void Verify::run(ModuleSymbol* moduleList) {
     }
   }
 
-  ModuleSymbol* mod = moduleList;
+  ModuleSymbol* mod = moduleList->first();
   while (mod) {
     mod->startTraversal(this);
-    mod = nextLink(ModuleSymbol, mod);
+    mod = moduleList->next();
   }
 
   forv_Vec(Symbol, sym, *syms) {
@@ -176,29 +179,26 @@ static void verifyDefPoint(Symbol* sym) {
   }
 
   Symbol* tmp = sym->defPoint->sym;
-  while (tmp) {
-    if (tmp == sym) {
-      return;
-    }
-    tmp = nextLink(Symbol, tmp);
+  if (tmp == sym) {
+    return;
   }
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
-    Symbol* formals = fn->formals;
+    Symbol* formals = fn->formals->first();
     while (formals) {
       if (formals == sym) {
         return;
       }
-      formals = nextLink(Symbol, formals);
+      formals = fn->formals->next();
     }
   }
   if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym->defPoint->sym)) {
     if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
-      EnumSymbol* tmp = enum_type->valList;
+      EnumSymbol* tmp = enum_type->valList->first();
       while (tmp) {
         if (tmp == sym) {
           return;
         }
-        tmp = nextLink(EnumSymbol, tmp);
+        tmp = enum_type->valList->next();
       }
     }
   }

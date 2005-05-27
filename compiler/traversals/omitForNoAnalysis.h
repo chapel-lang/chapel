@@ -8,7 +8,7 @@
 class OmitForNoAnalysis : public Traversal {
  public:
   void postProcessStmt(Stmt* stmt);
-  void run(ModuleSymbol* moduleList);
+  void run(ModuleList* moduleList);
 };
 
 #endif

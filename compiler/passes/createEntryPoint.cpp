@@ -1,46 +1,48 @@
 #include "createEntryPoint.h"
-#include "runAnalysis.h"
 #include "expr.h"
 #include "filesToAST.h"
+#include "moduleList.h"
+#include "runAnalysis.h"
 #include "stmt.h"
 #include "symtab.h"
 
 
 static ExprStmt* buildFnCallStmt(FnSymbol* fn) {
-  return new ExprStmt(new FnCall(new Variable(fn), NULL));
+  return new ExprStmt(new FnCall(new Variable(fn)));
 }
 
 
-static ModuleSymbol* findUniqueUserModule(ModuleSymbol* moduleList) {
+static ModuleSymbol* findUniqueUserModule(ModuleList* moduleList) {
   ModuleSymbol* userModule = NULL;
 
-  while (moduleList) {
-    if (moduleList->modtype == MOD_USER) {
+  ModuleSymbol* mod = moduleList->first();
+  while (mod) {
+    if (mod->modtype == MOD_USER) {
       if (userModule == NULL) {
-        userModule = moduleList;
+        userModule = mod;
       } else {
         return NULL;  // two user modules defined
       }
     }
-    moduleList = nextLink(ModuleSymbol, moduleList);
+    mod = moduleList->next();
   }
   return userModule;
 }
 
 
 CreateEntryPoint::CreateEntryPoint(void) :
-  entryPoint(NULL)
+  entryPoint(new AList<Stmt>())
 {}
 
 
-void CreateEntryPoint::run(ModuleSymbol* moduleList) {
+void CreateEntryPoint::run(ModuleList* moduleList) {
 
   // SJD: Can't do this when dtString is defined because
   // internalPrelude hasn't been made yet.  Need to do it after.
   dtString->defaultConstructor =
     dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
 
-  for (ModuleSymbol* mod = moduleList; mod; mod = nextLink(ModuleSymbol, mod)) {
+  for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next()) {
     if (mod->modtype == MOD_INTERNAL || 
         !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
       SymScope* saveScope = Symboltable::setCurrentScope(mod->modScope);
@@ -52,25 +54,26 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
   // add prelude initialization code to the entry point
   // BLC: This assumes there is some useful init code in the preludes;
   // is there?
-  entryPoint = appendLink(entryPoint, buildFnCallStmt(internalPrelude->initFn));
-  entryPoint = appendLink(entryPoint, buildFnCallStmt(prelude->initFn));
-  entryPoint = appendLink(entryPoint, buildFnCallStmt(commonModule->initFn));
+  entryPoint->add(buildFnCallStmt(internalPrelude->initFn));
+  entryPoint->add(buildFnCallStmt(prelude->initFn));
+  entryPoint->add(buildFnCallStmt(commonModule->initFn));
 
   // find main function if it exists; create one if not
   FnSymbol* mainFn = FnSymbol::mainFn;
   if (!mainFn) {
     ModuleSymbol* userModule = findUniqueUserModule(moduleList);
     if (userModule) {
-      ExprStmt* initStmt = buildFnCallStmt(commonModule->initFn);
-      initStmt->append(buildFnCallStmt(userModule->initFn));
-      BlockStmt* mainBody = new BlockStmt(initStmt);
+      AList<Stmt>* initStmts = new AList<Stmt>();
+      initStmts->add(buildFnCallStmt(commonModule->initFn));
+      initStmts->add(buildFnCallStmt(userModule->initFn));
+      BlockStmt* mainBody = new BlockStmt(initStmts);
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(userModule->modScope);
       DefStmt* maindefstmt = Symboltable::defineFunction("main", NULL, 
                                                          dtVoid, mainBody, 
                                                          true);
       Symboltable::setCurrentScope(saveScope);
-      userModule->stmts->append(maindefstmt);
+      userModule->stmts->add(maindefstmt);
       mainFn = maindefstmt->fnDef();
     } else {
       USR_FATAL("Code defines multiple modules but no main function.");
@@ -82,22 +85,23 @@ void CreateEntryPoint::run(ModuleSymbol* moduleList) {
     if (!mainModule) {
       INT_FATAL(mainFn, "main function's parent scope wasn't a module scope");
     }
-    ExprStmt* initStmt = buildFnCallStmt(commonModule->initFn);
-    initStmt->append(buildFnCallStmt(mainModule->initFn));
-    initStmt->append(mainFn->body);
-    mainFn->body = new BlockStmt(initStmt);
+    AList<Stmt>* initStmts = new AList<Stmt>();
+    initStmts->add(buildFnCallStmt(commonModule->initFn));
+    initStmts->add(buildFnCallStmt(mainModule->initFn));
+    initStmts->add(mainFn->body);
+    mainFn->body = new BlockStmt(initStmts);
   }
 
 
   // add a call to main to the entry point's body
   ExprStmt* mainCallStmt = buildFnCallStmt(mainFn);
-  entryPoint = appendLink(entryPoint, mainCallStmt);
+  entryPoint->add(mainCallStmt);
 
    // create the new entry point module
   ModuleSymbol* entry = new ModuleSymbol("entryPoint", MOD_INTERNAL);
-  entry->stmts = entryPoint;
+  entry->stmts->add(entryPoint);
   entry->createInitFn();
   entryPoint = entry->stmts;
 
-  RunAnalysis::entryStmtList = entryPoint;
+  RunAnalysis::entryStmtList = entry->stmts;
 }

@@ -24,12 +24,7 @@ void InsertIndexType::preProcessStmt(Stmt* stmt) {
     return;
   }
   
-  DefExpr* indices_def = dynamic_cast<DefExpr*>(for_stmt->indices);
-  
-  if (for_stmt->indices && !indices_def) {
-    //INT_FATAL(this, "Indices in ForLoopStmt not defined in DefExpr");
-    printf("INT_FATAL(this, Indices in ForLoopStmt not defined in DefExpr");
-  }
+  DefExpr* indices_def = for_stmt->indices->first();
   
   VarSymbol* aVar = dynamic_cast<VarSymbol*>(indices_def->sym);
   int i = 0;
@@ -37,11 +32,8 @@ void InsertIndexType::preProcessStmt(Stmt* stmt) {
   char* temp_name = aVar->name;
   Type* temp_type = dtUnknown;
 
-  while (aVar) {
-      if (i != 0) temp_name = glomstrings(i + 3, "_", temp_name, aVar->name);
-      i++;
-      aVar = nextLink(VarSymbol, aVar);
-  }
+  if (i != 0) temp_name = glomstrings(i + 3, "_", temp_name, aVar->name);
+  i++;
   //RED: naive special casing to distinguish the non-integer indices from the 
   //list of integer symbols; hopefully better ways of testing will be revealed
   //after better handling of forall (i, j, k, ...) in  ... 
@@ -52,14 +44,13 @@ void InsertIndexType::preProcessStmt(Stmt* stmt) {
     //for_stmt->indices->replace(indices);
     DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
                                                             temp_type,
-                                                            for_stmt->indices->copy(),
+                                                            for_stmt->indices->first()->copy(),
                                                             VAR_NORMAL,
                                                             VAR_VAR);
-    for_stmt->indices->getStmt()->insertBefore(def_stmt);                                                          
-    for_stmt->indices->replace(new Variable(def_stmt->varDef()));
+    for_stmt->indices->first()->getStmt()->insertBefore(def_stmt);                                                          
+    for_stmt->indices->first()->replace(new Variable(def_stmt->varDef()));
   } else {
     indices_def->sym->type = domain_type->idxType;
-    for_stmt->indices->replace(indices_def);
   }
 }
 }

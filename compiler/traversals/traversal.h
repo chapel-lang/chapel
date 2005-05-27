@@ -27,19 +27,13 @@ class Traversal : public Pass {
   virtual void preProcessType(Type* type);
   virtual void postProcessType(Type* type);
 
-  virtual void run(ModuleSymbol* moduleList);
+  virtual void run(ModuleList* moduleList);
 };
 
 #define TRAVERSE(link, traversal, atTop) \
   if (link) link->traverse(traversal, atTop)
 
-#define TRAVERSE_LS(link, traversal, atTop) \
-  if (link) link->traverseList(traversal, atTop)
-
 #define TRAVERSE_DEF(link, traversal, atTop) \
   if (link) link->traverseDef(traversal, atTop)
-
-#define TRAVERSE_DEF_LS(link, traversal, atTop) \
-  if (link) link->traverseDefList(traversal, atTop)
 
 #endif

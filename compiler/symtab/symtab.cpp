@@ -2,6 +2,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "misc.h"
+#include "moduleList.h"
 #include "printSymtab.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -24,13 +25,26 @@ static SymScope* rootScope = NULL;
 static SymScope* preludeScope = NULL;
 static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
-static ModuleSymbol* firstModule = NULL;
-static ModuleSymbol* firstUserModule = NULL;
 static ModuleSymbol* currentModule = NULL;
 
 ModuleSymbol* commonModule = NULL;
 SymScope* internalScope = NULL;
 bool _dtinteger_IndexType_switch = false;
+
+static ModuleList* moduleList = new ModuleList();
+
+static void registerModule(ModuleSymbol* mod) {
+  switch (mod->modtype) {
+  case MOD_INTERNAL:
+  case MOD_STANDARD:
+  case MOD_COMMON:
+  case MOD_USER:
+    moduleList->add(mod);
+    break;
+  case MOD_SENTINEL:
+    INT_FATAL(mod, "Should never try to register a sentinel module");
+  }
+}
 
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);
@@ -70,9 +84,9 @@ void Symboltable::doneParsingPreludes(void) {
   commonModule->setModScope(currentScope);
   commonModule->modScope->setContext(NULL, commonModule, NULL);
 
-  commonModule->stmts = new NoOpStmt();
+  commonModule->stmts->add(new NoOpStmt());
 
-  firstModule = appendLink(firstModule, commonModule);
+  registerModule(commonModule);
 
   prelude->modScope = preludeScope;          // SJD: Why here?
   internalPrelude->modScope = internalScope; // I just put it here
@@ -170,14 +184,13 @@ ModuleSymbol* Symboltable::getCurrentModule(void) {
 }
 
 
-ModuleSymbol* Symboltable::getModuleList(moduleSet whichModules) {
+ModuleList* Symboltable::getModuleList(moduleSet whichModules) {
+  moduleList->filter = whichModules;
   switch (whichModules) {
   case MODULES_ALL:
-    return firstModule;
   case MODULES_CODEGEN:
-    return commonModule;
   case MODULES_USER:
-    return firstUserModule;
+    return moduleList;
   default:
     INT_FATAL("Unexpected case in getModuleList: %d\n", whichModules);
     return NULL;
@@ -320,7 +333,8 @@ BlockStmt* Symboltable::startCompoundStmt(void) {
 }
 
 
-BlockStmt* Symboltable::finishCompoundStmt(BlockStmt* blkStmt, Stmt* body) {
+BlockStmt* Symboltable::finishCompoundStmt(BlockStmt* blkStmt, 
+                                           AList<Stmt>* body) {
   blkStmt->addBody(body);
 
   SymScope* stmtScope = Symboltable::popScope();
@@ -364,52 +378,52 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, modType modtype) {
   return newModule;
 }
 
-bool ModuleDefContainsOnlyNestedModules(Stmt* def) {
-  Stmt* stmt = def;
+bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def) {
+  Stmt* stmt = def->first();
 
   while (stmt) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
       if (!def_stmt->moduleDef()) {
         return false;
       }
-    }
-    else {
+    } else {
       return false;
     }
     
-    stmt = nextLink(Stmt, stmt);
+    stmt = def->next();
   }
   return true;
 }
 
 
-static Stmt* ModuleDefContainsNestedModules(Stmt* def) {
-  Stmt* stmt = def;
+static Stmt* ModuleDefContainsNestedModules(AList<Stmt>* def) {
+  Stmt* stmt = def->first();
 
   while (stmt) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
       if (def_stmt->moduleDef()) {
+        def->reset();
         return stmt;
       }
     }
     
-    stmt = nextLink(Stmt, stmt);
+    stmt = def->next();
   }
   return NULL;
 }
 
 
-DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
+DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
   bool empty = false;
   if (mod->modtype != MOD_INTERNAL) {
-    if (ModuleDefContainsOnlyNestedModules(definition)) {
+    if (ModuleDefContainsOnlyNestedModules(def)) {
       // This is the case for a file module that contains a number
       // of software modules and nothing else.  Such modules should
       // essentially be dropped on the floor, as the file only
       // served as a container, not as a module
       empty = true;
     } else {
-      Stmt* moduleDef = ModuleDefContainsNestedModules(definition);
+      Stmt* moduleDef = ModuleDefContainsNestedModules(def);
       // if the definition contains anything other than module
       // definitions, then this is the case of a file that contains
       // a software module and some other stuff, which is a nested
@@ -427,15 +441,12 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
   DefExpr* defExpr = new DefExpr(mod);
 
   if (!empty) {
-    firstModule = appendLink(firstModule, mod);
-    if (mod->modtype != MOD_INTERNAL && firstUserModule == NULL) {
-      firstUserModule = mod;
-    }
+    registerModule(mod);
 
     // define the module's init function.  This should arguably go
     // in the module's scope, but that doesn't currently seem to
     // work.
-    mod->stmts = definition;
+    mod->stmts->add(def);
     // mod->createInitFn();
 
     // pop the module's scope
@@ -461,11 +472,10 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, Stmt* definition) {
   return defExpr;
 }
 
-VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
-                                   varType vartag, consType constag) {
-  VarSymbol* varList;
-  VarSymbol* newVar;
-  VarSymbol* lastVar;
+static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type, 
+                                    Expr* init = NULL, 
+                                    varType vartag = VAR_NORMAL, 
+                                    consType constag = VAR_VAR) {
 
   // BLC: Placeholder until low-level type inference is hooked in to
   // handle some cases -- infer type from initializer if possible
@@ -473,51 +483,45 @@ VarSymbol* Symboltable::defineVars(Symbol* idents, Type* type, Expr* init,
     type = init->typeInfo();
   }
 
-  // SJD: All this code is hacky. Let's copy the type because it has
-  // the domain expression and we need that to be duplicated for each
-  // array variable.
-  if (!type->symbol && dynamic_cast<ArrayType*>(type)) {
-    newVar = new VarSymbol(idents->name, type->copy(), vartag, constag);
-  } else {
-    newVar = new VarSymbol(idents->name, type, vartag, constag);
-  }
-
-  varList = newVar;
-  lastVar = newVar;
-  //link.h=> next cell in list
-  idents = nextLink(Symbol, idents);
-  while (idents != NULL) {
+  Symbol* ident = idents->first();
+  AList<VarSymbol>* varList = new AList<VarSymbol>();
+  while (ident) {
+    VarSymbol* newVar;
+    // SJD: All this code is hacky. Let's copy the type because it has
+    // the domain expression and we need that to be duplicated for each
+    // array variable.
     if (!type->symbol && dynamic_cast<ArrayType*>(type)) {
-      newVar = new VarSymbol(idents->name, type->copy(), vartag, constag);
+      newVar = new VarSymbol(ident->name, type->copy(), vartag, constag);
     } else {
-      newVar = new VarSymbol(idents->name, type, vartag, constag);
+      newVar = new VarSymbol(ident->name, type, vartag, constag);
     }
-    lastVar->next = newVar;
-    lastVar = newVar;
+    varList->add(newVar);
 
-    idents = nextLink(Symbol, idents);
+    ident = idents->next();
   }
 
   return varList;
 }
 
-ParamSymbol* Symboltable::defineParams(paramType tag, Symbol* syms,
-                                       Type* type, Expr* init) {
-  ParamSymbol* list = new ParamSymbol(tag, syms->name, type, init->copy());
-  list->pragmas = syms->pragmas;
-  syms = nextLink(Symbol, syms);
-  while (syms != NULL) {
-    ParamSymbol* s = new ParamSymbol(tag, syms->name, type, init->copy());
-    s->pragmas = syms->pragmas;
-    list->append(s);
-    syms = nextLink(Symbol, syms);
+AList<Symbol>* Symboltable::defineParams(paramType tag, 
+                                         AList<Symbol>* syms,
+                                         Type* type, Expr* init) {
+  Symbol* sym = syms->first();
+  AList<Pragma>* pragma = sym->pragmas;
+  AList<Symbol>* list = new AList<Symbol>();
+  while (sym) {
+    ParamSymbol* s = new ParamSymbol(tag, sym->name, type, init->copy());
+    s->pragmas = pragma;
+    list->add(s);
+    sym = syms->next();
   }
+
   return list;
 }
 
 
-DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type, 
-                                    Expr* init) {
+AList<DefExpr>* Symboltable::defineVarDef1(AList<Symbol>* idents, Type* type, 
+                                           Expr* init) {
 
   /** SJD: This is a stopgap measure to deal with changing sequences
       into domains when the type of a declared variable is a domain.
@@ -528,45 +532,41 @@ DefExpr* Symboltable::defineVarDef1(Symbol* idents, Type* type,
   if (dynamic_cast<DomainType*>(type) &&
       !dynamic_cast<ForallExpr*>(init)) {
     if (dynamic_cast<Tuple*>(init)) {
-      init = new ForallExpr(dynamic_cast<Tuple*>(init)->exprs);
+      init = new ForallExpr(dynamic_cast<Tuple*>(init)->exprs,
+                            new AList<Expr>());
     }
     else {
-      init = new ForallExpr(init);
+      init = new ForallExpr(new AList<Expr>(init));
     }
   }
 
-  VarSymbol* varList = defineVars(idents, type, init);
-
-  DefExpr* defExpr = new DefExpr(varList, init ? 
-                                 new UserInitExpr(init->copy()) : NULL);
-  VarSymbol* var = varList;
-  while (var->next) {
-    VarSymbol* tmp = var;
-    var = nextLink(VarSymbol, var);
-    tmp->next = var->prev = NULL;
-    defExpr->append(new DefExpr(var, init ? dynamic_cast<UserInitExpr*>(init->copy()) : NULL));
+  AList<VarSymbol>* varList = symsToVars(idents, type, init);
+  Symbol* var = varList->popHead();
+  AList<DefExpr>* defExprs = new AList<DefExpr>();
+  while (var) {
+    defExprs->add(new DefExpr(var, 
+                              init ? new UserInitExpr(init->copy()) : NULL));
+    
+    
+    var = varList->popHead();
   }
-  return defExpr;
+
+  return defExprs;
 }
 
 
-DefExpr* Symboltable::defineVarDef2(DefExpr* exprs,
-                                    varType vartag, 
-                                    consType constag) {
-  DefExpr* expr = exprs;
+void Symboltable::defineVarDef2(AList<DefExpr>* exprs, varType vartag, 
+                                consType constag) {
+  DefExpr* expr = exprs->first();
   while (expr) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(expr->sym);
-    while (var) {
-      var->consClass = constag;
-      var->varClass = vartag;
-      if (constag == VAR_PARAM && !var->defPoint->init){
-        USR_FATAL(var->defPoint->init, "No initializer for parameter.");
-      }
-      var = nextLink(VarSymbol, var);
+    var->consClass = constag;
+    var->varClass = vartag;
+    if (constag == VAR_PARAM && !var->defPoint->init){
+      USR_FATAL(var->defPoint->init, "No initializer for parameter.");
     }
-    expr = nextLink(DefExpr, expr);
+    expr = exprs->next();
   }
-  return exprs;
 }
 
 
@@ -574,16 +574,17 @@ DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type,
                                              Expr* init, varType vartag, 
                                              consType constag) {
   Symbol* sym = new Symbol(SYMBOL, name);
-  DefExpr* defExpr = defineVarDef1(sym, type, init);
-  defExpr = defineVarDef2(defExpr, vartag, constag);
+  AList<DefExpr>* defExpr = defineVarDef1(new AList<Symbol>(sym), type, init);
+  defineVarDef2(defExpr, vartag, constag);
   return new DefStmt(defExpr);
 }
 
 
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
-static Expr* exprToIndexSymbols(Expr* expr, Expr* domain, VarSymbol* indices = NULL) {
+static AList<Expr>* exprToIndexSymbols(AList<Expr>* expr, AList<Expr>* domain, 
+                                       AList<VarSymbol>* indices = new AList<VarSymbol>()) {
   if (expr) {
-    for (Expr* tmp = expr; tmp; tmp = nextLink(Expr, tmp)) {
+    for (Expr* tmp = expr->first(); tmp; tmp = expr->next()) {
       Variable* varTmp = dynamic_cast<Variable*>(tmp);
       if (!varTmp) {
         Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
@@ -596,34 +597,30 @@ static Expr* exprToIndexSymbols(Expr* expr, Expr* domain, VarSymbol* indices = N
         // SJD: It is my thought that dtInteger should be dtUnknown. Then
         // analysis can figure it out based on the type of the "domain"
         // which may not be a domain but an array or a sequence too.
-        indices = appendLink(indices, new VarSymbol(varTmp->var->name, dtInteger));
+        indices->add(new VarSymbol(varTmp->var->name, dtInteger));
       }
     }
   }
-  if (indices) {
-    VarSymbol* var = indices;
-    DefExpr* defExpr = new DefExpr(var);
-    while (var->next) {
-      VarSymbol* tmp = var;
-      var = nextLink(VarSymbol, var);
-      tmp->next = NULL;
-      var->prev = NULL;
-      defExpr->append(new DefExpr(var));
+  AList<Expr>* defExprs = new AList<Expr>();
+  if (!indices->isEmpty()) {
+    VarSymbol* var = indices->popHead();
+    while (var) {
+      defExprs->add(new DefExpr(var));
+      var = indices->popHead();
     }
-    return defExpr;
-  } else {
-    return NULL;
   }
+  return defExprs;
 }
 
 
 Expr* Symboltable::startLetExpr(void) {
   Symboltable::pushScope(SCOPE_LETEXPR);
-  return new LetExpr(NULL, NULL);
+  return new LetExpr();
 }
 
 
-Expr* Symboltable::finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_expr) {
+Expr* Symboltable::finishLetExpr(Expr* let_expr, AList<DefExpr>* exprs, 
+                                 Expr* inner_expr) {
   LetExpr* let = dynamic_cast<LetExpr*>(let_expr);
 
   if (!let) {
@@ -640,10 +637,11 @@ Expr* Symboltable::finishLetExpr(Expr* let_expr, DefExpr* exprs, Expr* inner_exp
 }
 
 
-ForallExpr* Symboltable::startForallExpr(Expr* domainExpr, Expr* indexExpr) {
+ForallExpr* Symboltable::startForallExpr(AList<Expr>* domainExpr, 
+                                         AList<Expr>* indexExpr) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
   
-  Expr* indices = exprToIndexSymbols(indexExpr, domainExpr);
+  AList<Expr>* indices = exprToIndexSymbols(indexExpr, domainExpr);
   // HACK: this is a poor assumption -- that all index variables are
   // integers
 
@@ -691,23 +689,23 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
 }
 
 
-void Symboltable::continueFnDef(FnSymbol* fnsym, Symbol* formals, 
+void Symboltable::continueFnDef(FnSymbol* fnsym, AList<Symbol>* formals, 
                                 Type* retType, bool isRef) {
   fnsym->continueDef(formals, retType, isRef);
   Symboltable::pushScope(SCOPE_FUNCTION);
 }
 
 
-FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, Stmt* body, bool isExtern) {
+FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, BlockStmt* blockBody, 
+                                   bool isExtern) {
   SymScope* fnScope = Symboltable::popScope();
   SymScope* paramScope = Symboltable::popScope();
   if (fnScope->type != SCOPE_FUNCTION ||
       paramScope->type != SCOPE_PARAM) {
     INT_FATAL(fnsym, "Scopes not popped correctly on finishFnDef");
   }
-  BlockStmt* blockBody = dynamic_cast<BlockStmt*>(body);
-  if (blockBody == NULL) {
-    blockBody = new BlockStmt(body, fnScope);
+  if (blockBody->blkScope == NULL) {
+    blockBody->blkScope = fnScope;
   }
   fnsym->finishDef(blockBody, paramScope, isExtern);
   paramScope->setContext(NULL, fnsym, NULL);
@@ -715,9 +713,12 @@ FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, Stmt* body, bool isExtern) {
 }
 
 
-DefStmt* Symboltable::defineFunction(char* name, Symbol* formals, 
+DefStmt* Symboltable::defineFunction(char* name, AList<Symbol>* formals, 
                                      Type* retType, BlockStmt* body, 
                                      bool isExtern) {
+  if (formals == NULL) {
+    formals = new AList<Symbol>();
+  }
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
   continueFnDef(fnsym, formals, retType);
   return new DefStmt(new DefExpr(finishFnDef(fnsym, body, isExtern)));
@@ -734,7 +735,7 @@ TypeSymbol* Symboltable::startStructDef(Type* type, char* name) {
                                         
 
 DefExpr* Symboltable::finishStructDef(TypeSymbol* classSym, 
-                                      Stmt* definition) {
+                                      AList<Stmt>* definition) {
   StructuralType* classType = dynamic_cast<StructuralType*>(classSym->type);
   classType->addDeclarations(definition);
   SymScope *classScope = Symboltable::popScope();
@@ -746,18 +747,16 @@ DefExpr* Symboltable::finishStructDef(TypeSymbol* classSym,
 }
 
 
-ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices, 
+ForLoopStmt* Symboltable::startForLoop(bool forall, AList<Symbol>* indices, 
                                        Expr* domain) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  VarSymbol* indexVars = dynamic_cast<VarSymbol*>(indices);
+  AList<VarSymbol>* indexVars = NULL;
   //RED: attempt to put in practice SJD's belief
   if (!_dtinteger_IndexType_switch) {
-    if (!indexVars) {
-      // SJD: It is my thought that dtInteger should be dtUnknown. Then
-      // analysis can figure it out based on the type of the "domain"
-      // which may not be a domain but an array or a sequence too.
-      indexVars = defineVars(indices, dtInteger);
-    }
+    // SJD: It is my thought that dtInteger should be dtUnknown. Then
+    // analysis can figure it out based on the type of the "domain"
+    // which may not be a domain but an array or a sequence too.
+    indexVars = symsToVars(indices, dtInteger);
   }
   //RED: here goes the index type logic
   //Index type will typically be the domain->idxType if this is known
@@ -765,27 +764,21 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
   //Or dtUnknown, otherwise -- e.g. when after parsing a domain does not
   //have an index type yet 
   else {
-    if (!indexVars || (indexVars->type == dtUnknown)) {
-      DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
-      if (domain_type) {
-        indexVars = defineVars(indices, domain_type->idxType);
-      }
-      else{
-        //RED -- I think this should be dtUnknown if the index type of the domain is not known
-        //this is saving us from dangerous assumptions; another possibility was to make it dtinteger
-        //here, but I think that may cover incorrect behavior
-        indexVars = defineVars(indices, dtUnknown);
-      }
+    DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
+    if (domain_type) {
+      indexVars = symsToVars(indices, domain_type->idxType);
+    } else{
+      //RED -- I think this should be dtUnknown if the index type of the domain is not known
+      //this is saving us from dangerous assumptions; another possibility was to make it dtinteger
+      //here, but I think that may cover incorrect behavior
+      indexVars = symsToVars(indices, dtUnknown);
     }
   }
-  VarSymbol* var = indexVars;
-  DefExpr* defExpr = new DefExpr(var);
-  while (var->next) {
-    VarSymbol* tmp = var;
-    var = nextLink(VarSymbol, var);
-    tmp->next = NULL;
-    var->prev = NULL;
-    defExpr->append(new DefExpr(var));
+  AList<DefExpr>* defExpr = new AList<DefExpr>();
+  VarSymbol* var = indexVars->popHead();
+  while (var) {
+    defExpr->add(new DefExpr(var));
+    var = indexVars->popHead();
   }
   ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
   return for_loop_stmt;
@@ -793,7 +786,7 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, Symbol* indices,
 
 
 ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
-  forstmt->addBody(body);
+  forstmt->addBody(new AList<Stmt>(body));
 
   SymScope* forScope = Symboltable::popScope();
   forScope->setContext(forstmt);
@@ -809,7 +802,7 @@ ForallExpr* Symboltable::defineQueryDomain(char* name) {
     new VarSymbol(name, unknownDomType, VAR_NORMAL, VAR_CONST);
   Variable* newDom = new Variable(newDomSym);
 
-  return new ForallExpr(newDom);
+  return new ForallExpr(new AList<Expr>(newDom));
 }
 
 

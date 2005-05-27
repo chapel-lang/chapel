@@ -66,13 +66,12 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
                                                               VAR_NORMAL,
                                                               VAR_VAR);
       Symboltable::setCurrentScope(saveScope);
-      Stmt* insert_point;
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
-        insert_point = mod->initFn->body->body;
+        mod->initFn->body->body->insertBefore(def_stmt);
       } else {
-        insert_point = outer_symbol->defPoint->parentStmt;
+        Stmt* insert_point = outer_symbol->defPoint->parentStmt;
+        insert_point->insertBefore(def_stmt);
       }
-      insert_point->insertBefore(def_stmt);
       sym->type->defaultVal->replace(new Variable(def_stmt->varDef()));
       def_stmt->varDef()->noDefaultInit = true;
     }

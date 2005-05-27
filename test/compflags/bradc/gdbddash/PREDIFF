@@ -8,7 +8,7 @@ set tmpfile = $outfile.raw.tmp
 # some gdbs print out extra stuff.  This filters it out
 #
 mv $outfile $tmpfile
-grep -v "Using host libthread_db library" $tmpfile > $outfile
+grep -v "Using host libthread_db library" $tmpfile | grep -v "Breakpoint 1 at" > $outfile
 rm $tmpfile
 
 #

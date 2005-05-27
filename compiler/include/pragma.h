@@ -3,10 +3,10 @@
 
 #include "baseAST.h"
 
-class Pragma : public ILink {
+class Pragma : public BaseAST {
  public:
   char *str;
-  Pragma(char *string);
+  Pragma(char *string = NULL);
 };
 
 #endif

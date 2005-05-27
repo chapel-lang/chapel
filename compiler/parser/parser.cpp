@@ -6,7 +6,7 @@
 #include "symbol.h"
 #include "yy.h"
 
-Stmt* yystmtlist = NULL;
+AList<Stmt>* yystmtlist = NULL;
 char* yyfilename;
 int yylineno;
 

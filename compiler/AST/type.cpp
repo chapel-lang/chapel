@@ -14,9 +14,9 @@
 
 
 // Utilities for building write functions
-static void addWriteStmt(Stmt* body, Expr* arg) {
+static void addWriteStmt(AList<Stmt>* body, Expr* arg) {
   Expr* write = new Variable(new UnresolvedSymbol("write"));
-  body->append(new ExprStmt(new ParenOpExpr(write, arg)));
+  body->add(new ExprStmt(new ParenOpExpr(write, new AList<Expr>(arg))));
 }
 
 
@@ -265,8 +265,8 @@ bool Type::hasDefaultWriteFunction(void) {
 }
 
 
-Stmt* Type::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return NULL;
+AList<Stmt>* Type::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new AList<Stmt>();
 }
 
 
@@ -275,8 +275,8 @@ bool Type::hasDefaultReadFunction(void) {
 }
 
 
-Stmt* Type::buildDefaultReadFunctionBody(ParamSymbol* arg) {
-  return NULL;
+AList<Stmt>* Type::buildDefaultReadFunctionBody(ParamSymbol* arg) {
+  return new AList<Stmt>();
 }
 
 
@@ -295,14 +295,14 @@ void FnType::codegenDef(FILE* outfile) {
 }
 
 
-EnumType::EnumType(EnumSymbol* init_valList) :
-  Type(TYPE_ENUM, new Variable(init_valList)),
+EnumType::EnumType(AList<EnumSymbol>* init_valList) :
+  Type(TYPE_ENUM, new Variable(init_valList->first())),
   valList(init_valList)
 {
-  Symbol* val = valList;
+  Symbol* val = valList->first();
   while (val) {
     val->type = this;
-    val = nextLink(Symbol, val);
+    val = valList->next();
   }
 }
 
@@ -311,25 +311,11 @@ Type* EnumType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* copy = new EnumType(valList);
   copy->addSymbol(symbol);
   return copy;
-
-    /*
-  Symbol* newSyms = valList->copyList(clone, map);
-
-  if (typeid(*newSyms) != typeid(EnumSymbol)) {
-    INT_FATAL(this, "valList is not EnumSymbol in EnumType::copyType()");
-    return NULL;
-  } else {
-    EnumSymbol* newEnums = (EnumSymbol*)newSyms;
-    Type* copy = new EnumType(newEnums);
-    copy->addSymbol(symbol);
-    return copy;
-  }
-    */
 }
 
 
 void EnumType::traverseDefType(Traversal* traversal) {
-  TRAVERSE_LS(valList, traversal, false);
+  valList->traverse(traversal, false);
   TRAVERSE(defaultVal, traversal, false);
 }
 
@@ -338,7 +324,7 @@ void EnumType::printDef(FILE* outfile) {
   printf("enum ");
   symbol->print(outfile);
   printf(" = ");
-  valList->printList(outfile, " | ");
+  valList->print(outfile, " | ");
 }
 
 
@@ -347,7 +333,7 @@ void EnumType::codegenDef(FILE* outfile) {
   int last = -1;
 
   fprintf(outfile, "typedef enum {\n");
-  enumSym = valList;
+  enumSym = valList->first();
   while (enumSym) {
     enumSym->printDef(outfile);
 
@@ -356,7 +342,7 @@ void EnumType::codegenDef(FILE* outfile) {
     }
     last = enumSym->val;
 
-    enumSym = nextLink(EnumSymbol, enumSym);
+    enumSym = valList->next();
 
     if (enumSym) {
       fprintf(outfile, ",");
@@ -370,7 +356,7 @@ void EnumType::codegenDef(FILE* outfile) {
 
 
 void EnumType::codegenStringToType(FILE* outfile) {
-  EnumSymbol* enumSym = valList;
+  EnumSymbol* enumSym = valList->first();
 
   fprintf(outfile, "int _convert_string_to_enum");
   symbol->codegen(outfile);
@@ -386,7 +372,7 @@ void EnumType::codegenStringToType(FILE* outfile) {
     enumSym->codegen(outfile);
     fprintf(outfile, ";\n");
     fprintf(outfile, "} else ");
-    enumSym = nextLink(EnumSymbol, enumSym);
+    enumSym = valList->next();
   }
   fprintf(outfile, "{ \n");
   fprintf(outfile, "return 0;\n");
@@ -446,8 +432,8 @@ bool EnumType::hasDefaultWriteFunction(void) {
 }
 
 
-Stmt* EnumType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumWriteStopgap")), new Variable(arg)));
+AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumWriteStopgap")), new AList<Expr>(new Variable(arg)))));
 }
 
 
@@ -456,8 +442,8 @@ bool EnumType::hasDefaultReadFunction(void) {
 }
 
 
-Stmt* EnumType::buildDefaultReadFunctionBody(ParamSymbol* arg) {
-  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumReadStopgap")), new Variable(arg)));
+AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ParamSymbol* arg) {
+  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumReadStopgap")), new AList<Expr>(new Variable(arg)))));
 }
 
 
@@ -556,8 +542,8 @@ bool DomainType::hasDefaultWriteFunction(void) {
 }
 
 
-Stmt* DomainType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_DomainWriteStopgap")), new Variable(arg)));
+AList<Stmt>* DomainType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_DomainWriteStopgap")), new AList<Expr>(new Variable(arg)))));
 }
 
 
@@ -743,8 +729,15 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   Symbol* _seq = Symboltable::lookupInternal("_seq");
   ClassType* _seq_type = dynamic_cast<ClassType*>(_seq->type);
   Symboltable::pushScope(SCOPE_CLASS);
-  Stmt* new_decls =
-    dynamic_cast<Stmt*>(_seq_type->declarationList->next)->copyList(true);
+  // we need to copy the sequence's definition except for its element
+  // type declaration.  While it's tempting to copy all and then pop
+  // the type declaration, this causes problems downstream.  So
+  // instead we remove the type declaration before copying and then
+  // re-insert it
+  Stmt* typeDecl = _seq_type->declarationList->popHead();
+  AList<Stmt>* new_decls = _seq_type->declarationList->copy(true);
+  _seq_type->declarationList->insert(typeDecl);
+
   new_seq_type->addDeclarations(new_decls);
   SymScope* new_seq_scope = Symboltable::popScope();
   new_seq_type->setScope(new_seq_scope);
@@ -755,27 +748,27 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   Symbol* _append = Symboltable::lookupInternal("append");
   _append->keepLive = true;
   DefStmt* appendDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_append->defPoint->copy(true)));
-  new_seq_type->addDeclarations(appendDefStmt);
+  new_seq_type->addDeclarations(new AList<Stmt>(appendDefStmt));
 
   Symbol* _prepend = Symboltable::lookupInternal("prepend");
   _prepend->keepLive = true;
   DefStmt* prependDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_prepend->defPoint->copy(true)));
-  new_seq_type->addDeclarations(prependDefStmt);
+  new_seq_type->addDeclarations(new AList<Stmt>(prependDefStmt));
 
   Symbol* _concat = Symboltable::lookupInternal("concat");
   _concat->keepLive = true;
   DefStmt* concatDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_concat->defPoint->copy(true)));
-  new_seq_type->addDeclarations(concatDefStmt);
+  new_seq_type->addDeclarations(new AList<Stmt>(concatDefStmt));
 
   Symbol* _copy = Symboltable::lookupInternal("copy");
   _copy->keepLive = true;
   DefStmt* copyDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_copy->defPoint->copy(true)));
-  new_seq_type->addDeclarations(copyDefStmt);
+  new_seq_type->addDeclarations(new AList<Stmt>(copyDefStmt));
 
   /*** set class bindings and this ***/
   forv_Vec(FnSymbol, method, new_seq_type->methods) {
     method->typeBinding = new_seq_sym;
-    method->_this = method->formals;
+    method->_this = method->formals->first();
     method->cname = glomstrings(3, new_seq_sym->name, "_", method->cname);
   }
 
@@ -792,7 +785,7 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   map->put(_seq_type->fields.v[0], new_seq_type->fields.v[0]);
   map->put(_seq_type->fields.v[1], new_seq_type->fields.v[1]);
   map->put(_seq_type->fields.v[2], new_seq_type->fields.v[2]);
-  TRAVERSE_LS(new_decls, new UpdateSymbols(map), true);
+  new_decls->traverse(new UpdateSymbols(map), true);
 
   Symbol* _node = new_seq_type->types.v[0];
   _node->cname = glomstrings(2, new_seq_name, _node->cname);
@@ -806,8 +799,8 @@ bool SeqType::hasDefaultWriteFunction(void) {
 }
 
 
-Stmt* SeqType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_SeqWriteStopgap")), new Variable(arg)));
+AList<Stmt>* SeqType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_SeqWriteStopgap")), new AList<Expr>(new Variable(arg)))));
 }
 
 
@@ -939,10 +932,12 @@ bool ArrayType::hasDefaultWriteFunction(void) {
 }
 
 
-Stmt* ArrayType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  Expr* zero_inds = new IntLiteral("0", 0);
-  Stmt* body = new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_ArrayWriteStopgap")), new Variable(arg)));
-  body->append(new ExprStmt(new ParenOpExpr(new Variable(new UnresolvedSymbol("write")), new ArrayRef(new Variable(arg), zero_inds))));
+AList<Stmt>* ArrayType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  AList<Expr>* zero_inds = new AList<Expr>(new IntLiteral("0", 0));
+  AList<Stmt>* body = new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_ArrayWriteStopgap")), new AList<Expr>(new Variable(arg)))));
+  // The addition of this statement is somewhat of a kludge.  See the notes
+  // related to it in expr.cpp
+  body->add(new ExprStmt(new ParenOpExpr(new Variable(new UnresolvedSymbol("write")), new AList<Expr>(new ArrayRef(new Variable(arg), zero_inds)))));
   return body;
 }
 
@@ -1039,7 +1034,7 @@ void LikeType::codegenDef(FILE* outfile) {
 StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
   Type(astType, init_defaultVal),
   structScope(NULL),
-  declarationList(NULL),
+  declarationList(new AList<Stmt>()),
   parentStruct(NULL)
 {
   fields.clear();
@@ -1051,16 +1046,16 @@ StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
 void StructuralType::copyGuts(StructuralType* copy_type, bool clone, 
                               Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_CLASS);
-  Stmt* new_decls = NULL;
-  for (Stmt* old_decls = declarationList;
+  AList<Stmt>* new_decls = new AList<Stmt>();
+  for (Stmt* old_decls = declarationList->first();
        old_decls;
-       old_decls = nextLink(Stmt, old_decls)) {
+       old_decls = declarationList->next()) {
     DefStmt* def = dynamic_cast<DefStmt*>(old_decls);
     FnSymbol* fn;
     if (def && (fn = def->fnDef())) {
       copy_type->methods.add(fn);
     } else {
-      new_decls = appendLink(new_decls, old_decls->copyInternal(true, map));
+      new_decls->add(old_decls->copyInternal(true, map));
     }
   }
   copy_type->addDeclarations(new_decls);
@@ -1069,40 +1064,43 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
 }
 
 
-void StructuralType::addDeclarations(Stmt* newDeclarations, Stmt* beforeStmt) {
-  Stmt* tmp = newDeclarations;
+void StructuralType::addDeclarations(AList<Stmt>* newDeclarations, 
+                                     Stmt* beforeStmt) {
+  Stmt* tmp = newDeclarations->first();
   while (tmp) {
     DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp);
-    FnSymbol* fn;
-    TypeSymbol* type_sym;
-    VarSymbol* var;
-    if (def_stmt && (fn = def_stmt->fnDef())) {
-      fn->typeBinding = this->symbol;
-      fn->method_type = PRIMARY_METHOD;
-      methods.add(fn);
-    } else if (def_stmt && (type_sym = def_stmt->typeDef())) {
-      types.add(type_sym);
-    } else if (def_stmt && (var = def_stmt->varDef())) {
-      fields.add(var);
+    if (def_stmt) {
+      FnSymbol* fn;
+      TypeSymbol* type_sym;
+      VarSymbol* var;
+      if (fn = def_stmt->fnDef()) {
+        fn->typeBinding = this->symbol;
+        fn->method_type = PRIMARY_METHOD;
+        methods.add(fn);
+      } else if (type_sym = def_stmt->typeDef()) {
+        types.add(type_sym);
+      } else if (var = def_stmt->varDef()) {
+        fields.add(var);
+      }
     }
-    tmp = nextLink(Stmt, tmp);
+    tmp = newDeclarations->next();
   }
-  if (!declarationList) {
+  if (declarationList->isEmpty()) {
     declarationList = newDeclarations;
     if (symbol && symbol->defPoint) {
       fixup_expr(symbol->defPoint);
     }
   } else if (beforeStmt) {
-    beforeStmt->insertBefore(newDeclarations);
+    declarationList->insertBefore(newDeclarations, beforeStmt);
   } else {
-    Stmt* last = dynamic_cast<Stmt*>(declarationList->tail());
+    Stmt* last = declarationList->last();
     if (last->parentSymbol) { /** inserted in tree already **/
       /** I do this conditional because TupleType addType is called
           before it is inserted in the tree **/
       /** really want insertAfter to do this **/
-      last->insertAfter(newDeclarations);
+      declarationList->insertAfter(newDeclarations);
     } else {
-      last->append(newDeclarations);
+      declarationList->add(newDeclarations);
     }
   }
 }
@@ -1117,7 +1115,7 @@ void StructuralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultVal) {
     defaultVal = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == declarationList) {
-    declarationList = dynamic_cast<Stmt*>(new_ast);
+    declarationList = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
   }
@@ -1129,7 +1127,7 @@ void StructuralType::traverseDefType(Traversal* traversal) {
   if (structScope) {
     prevScope = Symboltable::setCurrentScope(structScope);
   }
-  TRAVERSE_LS(declarationList, traversal, false);
+  declarationList->traverse(traversal, false);
   TRAVERSE(defaultVal, traversal, false);
   if (structScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -1156,7 +1154,8 @@ is_Reference_Type(Type *t) {
 }
 
 
-Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments) {
+void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
+                                          AList<Symbol>* arguments) {
   forv_Vec(VarSymbol, tmp, fields) {
     if (is_Scalar_Type(tmp->type))
       continue;
@@ -1164,16 +1163,16 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* a
     Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
     Expr* assign_expr = new AssignOp(GETS_NORM, lhs, varInitExpr);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
-    stmts = appendLink(stmts, assign_stmt);
+    stmts->add(assign_stmt);
   }
 
-  Symbol* ptmp = arguments;
+  ParamSymbol* ptmp = dynamic_cast<ParamSymbol*>(arguments->first());
   forv_Vec(TypeSymbol, tmp, types) {
     if (dynamic_cast<VariableType*>(tmp->type)) {
       if (analyzeAST) {
         // Have type variable in class and type variable in parameter
         // Should I do anything with these?
-        ptmp = nextLink(Symbol, ptmp);
+        ptmp = dynamic_cast<ParamSymbol*>(arguments->next());
       }
     }
   }
@@ -1192,13 +1191,12 @@ Stmt* StructuralType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* a
     if (rhs) {
       Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
       Stmt* assign_stmt = new ExprStmt(assign_expr);
-      stmts = appendLink(stmts, assign_stmt);
+      stmts->add(assign_stmt);
     }
     if (analyzeAST) {
-      ptmp = nextLink(ParamSymbol, ptmp);
+      ptmp = dynamic_cast<ParamSymbol*>(arguments->next());
     }
   }
-  return stmts;
 }
 
 
@@ -1219,7 +1217,7 @@ void StructuralType::codegenDef(FILE* outfile) {
   fprintf(outfile, " {\n");
   codegenStartDefFields(outfile);
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
-  for (Stmt* tmp = declarationList; tmp; tmp = nextLink(Stmt, tmp)) {
+  for (Stmt* tmp = declarationList->first(); tmp; tmp = declarationList->next()) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
       if (VarSymbol* var = def_stmt->varDef()) {
         var->codegenDef(outfile);
@@ -1276,16 +1274,16 @@ bool StructuralType::hasDefaultWriteFunction(void) {
 }
 
 
-Stmt* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  Stmt* body = new NoOpStmt();
+AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  AList<Stmt>* body = new AList<Stmt>(new NoOpStmt());
   if (dynamic_cast<ClassType*>(this)) {
     Expr* write = new Variable(new UnresolvedSymbol("write"));
-    ExprStmt* writeNil = new ExprStmt(new ParenOpExpr(write, new StringLiteral("nil")));
-    writeNil->next = new ReturnStmt(NULL);
+    AList<Stmt>* writeNil = new AList<Stmt>(new ExprStmt(new ParenOpExpr(write, new AList<Expr>(new StringLiteral("nil")))));
+    writeNil->add(new ReturnStmt(NULL));
     BlockStmt* blockStmt = new BlockStmt(writeNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
     Expr* argIsNil = new BinOp(BINOP_EQUAL, new Variable(arg), new Variable(nil));
-    body->append(new CondStmt(argIsNil, blockStmt));
+    body->add(new CondStmt(argIsNil, blockStmt));
   }
 
   if (dynamic_cast<ClassType*>(this)) {
@@ -1396,18 +1394,18 @@ static char* buildFieldSelectorName(UnionType* unionType, Symbol* field,
 
 
 void UnionType::buildFieldSelector(void) {
-  EnumSymbol* id_list = NULL;
+  AList<EnumSymbol>* id_list = new AList<EnumSymbol>();
 
   /* build list of enum symbols */
   char* id_name = buildFieldSelectorName(this, NULL);
   EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
-  id_list = appendLink(id_list, id_symbol);
+  id_list->add(id_symbol);
   forv_Vec(VarSymbol, tmp, fields) {
     id_name = buildFieldSelectorName(this, tmp);
     id_symbol = new EnumSymbol(id_name, NULL);
-    id_list = appendLink(id_list, id_symbol);
+    id_list->add(id_symbol);
   }
-  id_list->set_values();
+  EnumSymbol::setValues(id_list);
 
   /* build enum type */
   EnumType* enum_type = new EnumType(id_list);
@@ -1418,7 +1416,7 @@ void UnionType::buildFieldSelector(void) {
   /* build definition of enum */
   DefExpr* def_expr = new DefExpr(enum_symbol);
   enum_symbol->setDefPoint(def_expr);
-  id_list->setDefPoint(def_expr);
+  EnumSymbol::setDefPoints(id_list, def_expr);
   DefStmt* def_stmt = new DefStmt(def_expr);
   symbol->defPoint->parentStmt->insertBefore(def_stmt);
 
@@ -1435,12 +1433,12 @@ static char* unionCallName[NUM_UNION_CALLS] = {
 
 FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
                                             Symbol* field) {
-  Expr* args = base->copy();
+  AList<Expr>* args = new AList<Expr>(base->copy());
   char* id_tag = buildFieldSelectorName(this, field);
-  args->append(new Variable(Symboltable::lookupFromScope(id_tag, structScope)));
+  args->add(new Variable(Symboltable::lookupFromScope(id_tag, structScope)));
   if (type == UNION_CHECK) {
-    args->append(new StringLiteral(base->filename));
-    args->append(new IntLiteral(intstring(base->lineno), base->lineno));
+    args->add(new StringLiteral(base->filename));
+    args->add(new IntLiteral(intstring(base->lineno), base->lineno));
   }
   
   char* fnName = unionCallName[type];
@@ -1448,16 +1446,15 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
 }
 
 
-Stmt* UnionType::buildConstructorBody(Stmt* stmts, Symbol* _this, Symbol* arguments) {
-  Expr* arg1 = new Variable(_this);
-  Expr* arg2 = new Variable(fieldSelector->valList);
-  arg1 = appendLink(arg1, arg2);
+void UnionType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
+                                     AList<Symbol>* arguments) {
+  AList<Expr>* args = new AList<Expr>(new Variable(_this));
+  Expr* arg2 = new Variable(fieldSelector->valList->first());
+  args->add(arg2);
   FnCall* init_function = 
-    new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), arg1);
+    new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);
   ExprStmt* init_stmt = new ExprStmt(init_function);
-  stmts = appendLink(stmts, init_stmt);
-  
-  return stmts;
+  stmts->add(init_stmt);
 }
 
 
@@ -1483,8 +1480,8 @@ bool UnionType::hasDefaultWriteFunction(void) {
 }
 
 
-Stmt* UnionType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_UnionWriteStopgap")), new Variable(arg)));
+AList<Stmt>* UnionType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_UnionWriteStopgap")), new AList<Expr>(new Variable(arg)))));
 }
 
 
@@ -1500,16 +1497,17 @@ void TupleType::addType(Type* additionalType) {
   SymScope* saveScope = Symboltable::setCurrentScope(structScope);
   components.add(additionalType);
   char* field_name = glomstrings(2, "_field", intstring(components.n));
-  addDeclarations(new DefStmt(new DefExpr(new VarSymbol(field_name, additionalType))));
+  addDeclarations(new AList<Stmt>(new DefStmt(new DefExpr(new VarSymbol(field_name, additionalType)))));
   Symboltable::setCurrentScope(saveScope);
 }
 
 
 void TupleType::rebuildDefaultVal(void) {
-  Tuple* tuple = new Tuple(NULL);
+  AList<Expr>* exprs = new AList<Expr>();
   forv_Vec(Type, component, components) {
-    tuple->exprs = appendLink(tuple->exprs, component->defaultVal->copy());
+    exprs->add(component->defaultVal->copy());
   }
+  Tuple* tuple = new Tuple(exprs);
   if (symbol) {
     defaultVal->replace(tuple);
   }

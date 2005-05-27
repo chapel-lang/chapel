@@ -25,7 +25,7 @@ void CheckIDs::preProcessType(Type* type) {
 }
 
 
-void CheckIDs::run(ModuleSymbol* moduleList) {
+void CheckIDs::run(ModuleList* moduleList) {
   long numids = BaseAST::getNumIDs();
 
   astlist = (BaseAST**)MALLOC(numids * sizeof(BaseAST*));

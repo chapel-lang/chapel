@@ -37,7 +37,9 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     exprs.add(condStmt->condExpr);
   } else if (DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt)) {
     if (defStmt->varDef()) {
-      for (DefExpr* tmp = defStmt->defExprls; tmp; tmp = nextLink(DefExpr, tmp)) {
+      for (DefExpr* tmp = defStmt->defExprls->first(); 
+           tmp; 
+           tmp = defStmt->defExprls->next()) {
         exprs.add(tmp);
       }
     }
@@ -51,7 +53,8 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
   if (functions.n >= 2) {
     BlockStmt* blockStmt = Symboltable::startCompoundStmt();
     Stmt* copyStmt = stmt->copy(false, NULL, &functions);
-    blockStmt = Symboltable::finishCompoundStmt(blockStmt, copyStmt);
+    blockStmt = Symboltable::finishCompoundStmt(blockStmt, 
+                                                new AList<Stmt>(copyStmt));
     stmt->replace(blockStmt);
     SymScope* saveScope = Symboltable::setCurrentScope(blockStmt->blkScope);
     bool no_default_init = 0;

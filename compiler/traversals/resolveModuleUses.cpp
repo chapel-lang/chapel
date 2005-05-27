@@ -1,5 +1,6 @@
-#include "resolveModuleUses.h"
 #include "expr.h"
+#include "moduleList.h"
+#include "resolveModuleUses.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
@@ -21,17 +22,16 @@ void ResolveModuleUses::preProcessStmt(Stmt* stmt) {
         Symboltable::setCurrentScope(Symboltable::getCurrentModule()->modScope);
     }
 
-    for (SymLink* symLink = module->modScope->firstSym;
+    for (SymLink* symLink = module->modScope->syms->first();
          symLink;
-         symLink = nextLink(SymLink, symLink)) {
-      for (Symbol* sym = symLink->pSym; sym; sym = nextLink(Symbol, sym)) {
-        if (!dynamic_cast<ForwardingSymbol*>(sym)) {
-          new ForwardingSymbol(sym);
-        }
+         symLink = module->modScope->syms->next()) {
+      Symbol* sym = symLink->pSym;
+      if (!dynamic_cast<ForwardingSymbol*>(sym)) {
+        new ForwardingSymbol(sym);
       }
     }
 
-    FnCall* callInitFn = new FnCall(new Variable(module->initFn), NULL);
+    FnCall* callInitFn = new FnCall(new Variable(module->initFn));
     useStmt->insertBefore(new ExprStmt(callInitFn));
     module->usedBy.add(Symboltable::getCurrentScope());
     Symboltable::getCurrentModule()->uses.add(module);
@@ -42,8 +42,8 @@ void ResolveModuleUses::preProcessStmt(Stmt* stmt) {
   }
 }
 
-void ResolveModuleUses::run(ModuleSymbol* moduleList) {
-  for (ModuleSymbol* mod = moduleList; mod; mod = nextLink(ModuleSymbol, mod)) {
+void ResolveModuleUses::run(ModuleList* moduleList) {
+  for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next()) {
     if (mod->modtype == MOD_USER) {
       mod->initFn->body->body->insertBefore(
         new UseStmt(

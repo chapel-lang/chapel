@@ -5,8 +5,11 @@
 #include "map.h"
 
 
-Pragma::Pragma(char *init_str)
+Pragma::Pragma(char *init_str) :
+  BaseAST(PRAGMA)
 {
-  str = dupstr(init_str);
+  if (init_str) {
+    str = dupstr(init_str);
+  }
 }
 

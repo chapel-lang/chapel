@@ -7,14 +7,10 @@
 
 static void
 decomposeStmtFunction(ParenOpExpr* parenOpExpr, char* newFunctionName) {
-  Stmt* replacements = NULL;
-  for (Expr* arg = parenOpExpr->argList; arg; arg = nextLink(Expr, arg)) {
+  for (Expr* arg = parenOpExpr->argList->first(); arg; arg = parenOpExpr->argList->next()) {
     Variable* function = new Variable(new UnresolvedSymbol(newFunctionName));
-    Stmt* replacement = new ExprStmt(new ParenOpExpr(function, arg->copy()));
-    replacements = appendLink(replacements, replacement);
-  }
-  if (replacements) {
-    parenOpExpr->parentStmt->insertBefore(replacements);
+    Stmt* replacement = new ExprStmt(new ParenOpExpr(function, new AList<Expr>(arg->copy())));
+    parenOpExpr->parentStmt->insertBefore(replacement);
   }
 }
 
@@ -32,7 +28,7 @@ void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
         } else if (strcmp(baseVar->var->name, "writeln") == 0) {
           decomposeStmtFunction(parenOpExpr, "write");
           Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
-          Expr* callWriteln = new ParenOpExpr(writeln, NULL);
+          Expr* callWriteln = new ParenOpExpr(writeln);
           parenOpExpr->parentStmt->insertBefore(new ExprStmt(callWriteln));
           parenOpExpr->parentStmt->extract();
         }
