@@ -33398,3 +33398,19 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+05/27/05 14:14:39 -- shannon
+
+Log message:
+	Fixed a couple of memstat tests that were failing
+	on the linux64 platform due to the difference in
+	size of configVars by resetting the memstat counters
+	before the start of _chpl_main().
+
+Modified files:
+	chapel/runtime/src/: main.c 
+	chapel/test/memory/shannon/: memmaxExceeds.execopts 
+	                             memstatPrint.good 
+	                             printFinalMemStat.good 
+
