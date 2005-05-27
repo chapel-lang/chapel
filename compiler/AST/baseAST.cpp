@@ -182,8 +182,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   switch (a->astType) {
   case STMT:
   LStmtCommon:
-    ADD_CHILD(Stmt, parentSymbol);
-    ADD_CHILD(Stmt, parentStmt);
     break;
   case STMT_NOOP:
     goto LStmtCommon;
@@ -206,7 +204,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(WhileLoopStmt, condition);
     goto LBlockStmtCommon;
   case STMT_FORLOOP:
-    AST_ADD_CHILD(ForLoopStmt, indices);
+    AST_ADD_LIST(ForLoopStmt, indices, Expr);
     AST_ADD_CHILD(ForLoopStmt, domain);
     goto LBlockStmtCommon;
   case STMT_COND:
@@ -223,7 +221,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LStmtCommon;
   case EXPR:
     LExprCommon:
-    ADD_CHILD(GotoStmt, label);
     break;
   case EXPR_LITERAL:
   case EXPR_BOOLLITERAL:
@@ -311,7 +308,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LExprCommon;
   case EXPR_REDUCE:
     ADD_CHILD(ReduceExpr, reduceType);
-    AST_ADD_CHILD(ReduceExpr, redDim);
+    AST_ADD_LIST(ReduceExpr, redDim, Expr);
     AST_ADD_CHILD(ReduceExpr, argExpr);
     goto LExprCommon;
   case EXPR_TUPLE:
