@@ -3,7 +3,7 @@ class pragma "codegen data" _data { -- a c array, basically
   pragma "rename _data_this" function this(i : integer) : t {
     return __primitive("coerce", t, i);
   }
-  pragma "rename _data_set" function set(i : integer, val : t) {
+  pragma "rename _data_set" function =this(i : integer, val : t) {
     return __primitive("array_set", this, i, val);
   }
 }
