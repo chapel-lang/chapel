@@ -33362,3 +33362,29 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: baseAST.cpp 
 
+---------------------------------------------------------------------------
+
+05/27/05 10:57:02 -- jplevyak
+
+Log message:
+	Implemented "var" returning functions as settters.
+	Handled CondExpr so that you can return cond expressions.
+	Put in 2 test cases to test them and returning conditional expressions.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y internal_prelude.chpl 
+	chapel/compiler/traversals/: Makefile.share resolveSymbols.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good formatoutput.good 
+	                                  protoast_test.good 
+	                                  sum_type-1.good 
+	chapel/test/types/type_variables/deitz/: test_datablock2.chpl 
+Added files:
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+	                             buildLValueFunctions.h 
+	chapel/test/functions/jplevyak/: var_return-1.chpl 
+	                                 var_return-1.good 
+	                                 var_return-2.chpl 
+	                                 var_return-2.good 
+
