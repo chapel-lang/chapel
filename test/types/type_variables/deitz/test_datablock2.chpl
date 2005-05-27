@@ -11,7 +11,7 @@ class DataBlock {
     else
       return x3;
   }
-  function set(i : integer, val : t) {
+  function =this(i : integer, val : t) {
     if i == 1 then
       x1 = val;
     else if i == 2 then

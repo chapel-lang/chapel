@@ -7,6 +7,7 @@
  called from 6 in main at domarr.chpl:6
  called from 6 in main at domarr.chpl:6
 ::=(internal_prelude.chpl:0) ( = )
+::=this(internal_prelude.chpl:0) ( =this )
 ::A(domarr.chpl:6) ( _array_float_2d (domarr.chpl:6) )
 ::Mat(domarr.chpl:4) ( _domain_2d (domarr.chpl:4) )
 ::_ArrayWriteStopgap(internal_prelude.chpl:0) ( _ArrayWriteStopgap )
@@ -32,7 +33,6 @@
 ::main(domarr.chpl:6) ( main (domarr.chpl:6) )
 ::n(domarr.chpl:2) ( int64 )
 ::nil ( null )
-::set(internal_prelude.chpl:0) ( set )
 ::this(internal_prelude.chpl:0) ( _array_float_2d (domarr.chpl:6) )
 ::this(internal_prelude.chpl:0) ( _array_float_2d (domarr.chpl:6) )
 ::true(prelude.chpl:0) ( bool )

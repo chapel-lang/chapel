@@ -23,6 +23,8 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(ExpandClassWiths, ""),
   RUN(Verify, ""), // this is a sanity check
+  RUN(BuildLValueFunctions, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(InsertThisParameters, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ResolveModuleUses, ""),

@@ -418,6 +418,8 @@ fnretref:
 
 fname:
   identifier
+| TASSIGN identifier
+  { $$ = glomstrings(2, "=", $2); } 
 | TASSIGN 
   { $$ = "="; } 
 | TASSIGNPLUS

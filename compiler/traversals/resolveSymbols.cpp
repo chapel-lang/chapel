@@ -178,6 +178,8 @@ static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
   }
   else if (!strcmp(fn->name, "by")) {
     fn->cname = glomstrings(2, "_by", intstring(uid++));
+  } else if (*fn->name == '=') {
+    fn->cname = glomstrings(4, "_assign", intstring(uid++), "_", fn->name+1);
   }
 }
 
@@ -304,8 +306,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   // Resolve FnCalls
   if (typeid(*expr) == typeid(ParenOpExpr)) {
     ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr);
+    AssignOp *assign = dynamic_cast<AssignOp*>(paren->parentExpr);
+    if (!assign || assign->left != expr) {
     Vec<FnSymbol*> fns;
-
     call_info(paren, fns);
     if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
       call_info(paren->baseExpr, fns);
@@ -344,29 +347,27 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     Expr *new_expr = new FnCall(function, arguments);
     expr->replace(new_expr);
     expr = new_expr;
+    }
   }
 
   // Resolve AssignOp to members or setter functions
   if (AssignOp* aop = dynamic_cast<AssignOp*>(expr)) {
-
     if (typeid(*aop->left) == typeid(ParenOpExpr)) {
       ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(aop->left);
       Vec<FnSymbol*> fns;
       call_info(aop, fns);
       if (fns.n == 1) {
-        if (!strcmp("set", fns.e[0]->name)) {
-          Expr* function = new Variable(fns.e[0]);
-          Expr* arguments = paren->baseExpr->copy();
-          arguments = appendLink(arguments, copy_argument_list(paren));
-          arguments = appendLink(arguments, aop->right->copy());
-          Expr *new_expr = new FnCall(function, arguments);
-          aop->replace(new_expr);
-          expr = new_expr;
-        } else {
-          INT_FATAL(expr, "Invalid set function");
-        }
+        Expr* function = new Variable(fns.e[0]);
+        Expr* arguments = 0;
+        if (!strcmp("=this", fns.e[0]->name))
+          arguments = paren->baseExpr->copy();
+        arguments = appendLink(arguments, copy_argument_list(paren));
+        arguments = appendLink(arguments, aop->right->copy());
+        Expr *new_expr = new FnCall(function, arguments);
+        aop->replace(new_expr);
+        expr = new_expr;
       } else {
-        INT_FATAL(expr, "Unable to resolve set function");
+        INT_FATAL(expr, "Unable to resolve setter function");
       }
     } else if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(aop->left)) {
       resolve_member_access(aop, &member_access->member_offset, 

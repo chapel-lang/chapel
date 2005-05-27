@@ -7,6 +7,7 @@
  called from 7 in main at protoast_test.chpl:7
  called from 7 in main at protoast_test.chpl:7
 ::=(internal_prelude.chpl:0) ( = )
+::=this(internal_prelude.chpl:0) ( =this )
 ::A(protoast_test.chpl:7) ( _array_float_1d (protoast_test.chpl:7) )
 ::D(protoast_test.chpl:5) ( _domain_1d (protoast_test.chpl:5) )
 ::__init__CommonModule(protoast_test.chpl:7) ( __init__CommonModule (protoast_test.chpl:7) )
@@ -27,7 +28,6 @@
 ::main(protoast_test.chpl:7) ( main (protoast_test.chpl:7) )
 ::n(protoast_test.chpl:3) ( int64 )
 ::nil ( null )
-::set(internal_prelude.chpl:0) ( set )
 ::this(internal_prelude.chpl:0) ( _array_float_1d (protoast_test.chpl:7) )
 ::true(prelude.chpl:0) ( bool )
 ::x(internal_prelude.chpl:0) ( int64 )

@@ -14,13 +14,13 @@ pragma "omit for noanalysis" class Array {
   pragma "omit for noanalysis" function this(i, j, k) {
     return __primitive("array_index", this, i, j, k);
   }
-  pragma "omit for noanalysis" function set(i, x) {
+  pragma "omit for noanalysis" function =this(i, x) {
     return __primitive("array_set", this, i, x);
   }
-  pragma "omit for noanalysis" function set(i, j, x) {
+  pragma "omit for noanalysis" function =this(i, j, x) {
     return __primitive("array_set", this, i, j, x);
   }
-  pragma "omit for noanalysis" function set(i, j, k, x) {
+  pragma "omit for noanalysis" function =this(i, j, k, x) {
     return __primitive("array_set", this, i, j, k, x);
   }
 }
@@ -32,7 +32,7 @@ record Tuple {
   function this(pragma "clone_for_constants" i) { 
     return __primitive("index_object", this, i); 
   }
-  function set(pragma "clone_for_constants" i, x) {
+  function =this(pragma "clone_for_constants" i, x) {
     return __primitive("set_index_object", this, i, x);
   }
 }

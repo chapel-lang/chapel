@@ -25,6 +25,7 @@
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/constructComplexLiterals.h"
 #include "../traversals/destructureTupleAssignments.h"
+#include "../traversals/buildLValueFunctions.h"
 #include "../traversals/eliminateReturns.h"
 #include "../traversals/expandClassWiths.h"
 #include "../traversals/expandSeqExprAssignments.h"
@@ -77,6 +78,7 @@ REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(DestructureTupleAssignments);
 REGISTER(DummyPass);
+REGISTER(BuildLValueFunctions);
 REGISTER(EliminateReturns);
 REGISTER(ExpandClassWiths);
 REGISTER(ExpandSeqExprAssignments);

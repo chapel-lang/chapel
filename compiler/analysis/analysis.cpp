@@ -45,6 +45,7 @@ static Sym *array_set_symbol = 0;
 static Sym *sizeof_symbol = 0;
 static Sym *cast_symbol = 0;
 static Sym *method_symbol = 0;
+static Sym *set_symbol = 0;
 static Sym *make_seq_symbol = 0;
 static Sym *make_chapel_tuple_symbol = 0;
 
@@ -1638,14 +1639,13 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
   Vec<Sym *> rvals;
   if (rhs) {
     char nn[1024];
-    if (s->baseExpr->astType == SYMBOL_UNRESOLVED) {
-      strcpy(nn, "set_");
+    Variable *v = dynamic_cast<Variable*>(s->baseExpr);
+    if (v && v->var->astType == SYMBOL_UNRESOLVED) {
+      strcpy(nn, "=");
       strcat(nn, s->baseExpr->ainfo->sym->name);
       rvals.add(if1_make_symbol(if1, nn));
-      rvals.add(method_symbol);
     } else {
-      strcpy(nn, "set");
-      rvals.add(if1_make_symbol(if1, nn));
+      rvals.add(set_symbol);
       rvals.add(method_symbol);
       rvals.add(s->baseExpr->ainfo->rval);
     }
@@ -1706,7 +1706,7 @@ gen_set(ParenOpExpr *p, Expr *rhs, Expr *base_ast) {
   ast->rval->ast = ast;
   if1_gen(if1, &ast->code, p->baseExpr->ainfo->code);
   if1_gen(if1, &ast->code, rhs->ainfo->code);
-  Sym *selector = if1_make_symbol(if1, "set");
+  Sym *selector = set_symbol;
   Code *c = if1_send(if1, &ast->code, 4, 1, selector, method_symbol,
                      p->baseExpr->ainfo->rval, rhs->ainfo->rval, ast->rval);
   c->ast = ast;
@@ -1754,7 +1754,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         fn->fun_returns_value = 1;
         if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
         if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
-      }
+      } else 
+        if1_move(if1, &s->ainfo->code, sym_void, fn->ret, s->ainfo);
       Code *c = if1_goto(if1, &s->ainfo->code, s->ainfo->label[0]);
       c->ast = s->ainfo;
       break;
@@ -2387,6 +2388,7 @@ init_symbols() {
   sizeof_symbol = if1_make_symbol(if1, "sizeof");
   cast_symbol = if1_make_symbol(if1, "cast");
   method_symbol = if1_make_symbol(if1, "__method");
+  set_symbol = if1_make_symbol(if1, "=this");
   make_seq_symbol = if1_make_symbol(if1, "make_seq");
   make_chapel_tuple_symbol = if1_make_symbol(if1, "make_chapel_tuple");
   write_symbol = if1_make_symbol(if1, "write");

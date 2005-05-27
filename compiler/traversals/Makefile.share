@@ -9,6 +9,7 @@ TRAVERSALS_SRCS = \
         constructComplexLiterals.cpp \
 	createConfigVarTable.cpp \
 	destructureTupleAssignments.cpp \
+        buildLValueFunctions.cpp \
         eliminateReturns.cpp \
 	expandClassWiths.cpp \
 	expandSeqExprAssignments.cpp \
