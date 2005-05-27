@@ -33320,3 +33320,45 @@ Modified files:
 	chapel/runtime/include/: array.h 
 	chapel/test/flowanalysis/newast/: sum_type-1.good 
 
+---------------------------------------------------------------------------
+
+05/26/05 17:05:46 -- bradc
+
+Log message:
+	Fixed bugs and what seem to be redundancies in
+	get_ast_children.  A label was  being extracted
+	from all expressions whether they were goto
+	expressions or not.  Lists were being extracted
+	as though they were single elements.  Back
+	pointers were being extracted, which seem to
+	be unnecessary.
+	
+	Editorial: while the speed of the old GetStuff
+	means of getting children may have been lacking,
+	the maintainability of the current
+	get_ast_children() seems fairly fragile --
+	especially its reliance on static casts.  For
+	example, in the case of a label field being
+	extracted for all expressions, it resulted in
+	completely random fields being added to the
+	BaseAST vector, such that when later passes
+	tripped over them, it was quite difficult to
+	tell where they had been introduced.  For
+	example, with some rearrangement of the
+	fields (in my next checkin), a list of pragmas
+	was being inserted into the list, even though
+	a grep of places in the code where "pragma" is
+	referenced indicated that this shouldn't have
+	been possible.  In the past we've opted for
+	maintainability over performance -- I would've
+	preferred to see this performance problem be
+	addressed in a safer manner, and one that
+	didn't introduce a new category of thing that
+	has to be maintained when new fields are
+	added (especially one that will force them to
+	be the type it expects them to be, even if
+	it doesn't make sense).
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+
