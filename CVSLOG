@@ -33682,3 +33682,16 @@ Added files:
 	chapel/compiler/AST/: alist.cpp moduleList.cpp 
 	chapel/compiler/include/: alist.h moduleList.h 
 
+---------------------------------------------------------------------------
+
+05/27/05 16:54:53 -- jplevyak
+
+Log message:
+	Fix valgrind problem: off by one in loop was inserting uninitialized
+	value into an array.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/compiler/include/: map.h 
+
