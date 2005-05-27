@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
   initMemTable();
   CreateConfigVarTable();
 
+  resetMemStat();
   _chpl_main();
   printFinalMemStat();
 
