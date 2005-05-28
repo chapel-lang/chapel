@@ -33695,3 +33695,28 @@ Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 	chapel/compiler/include/: map.h 
 
+---------------------------------------------------------------------------
+
+05/27/05 17:07:49 -- bradc
+
+Log message:
+	Converted FnSymbol::formals from an AList<Symbol>
+	to AList<ParamSymbol>, thanks to the changes made
+	by John and Steve to make all parameters ParamSymbols
+	for consistency (but which I couldn't imagine
+	undertaking along with the rest of the list changes :).
+	Removes a number of dynamic casts from places that were
+	iterating over a parameter list.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h symtab.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             findUnknownTypes.cpp 
+	                             insertThisParameters.cpp 
+	                             processParameters.cpp 
+
