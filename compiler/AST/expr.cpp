@@ -346,12 +346,12 @@ static EXPR_RW expr_read_written(Expr* expr) {
     if (FnCall* fn_call = dynamic_cast<FnCall*>(parent)) {
       if (typeid(*fn_call) == typeid(FnCall)) {
         FnSymbol* fn = fn_call->findFnSymbol();
-        Symbol* formal = fn->formals->first();
+        ParamSymbol* formal = fn->formals->first();
         for(Expr* actual = fn_call->argList->first();
             actual;
             actual = fn_call->argList->next()) {
           if (actual == expr) {
-            if (ParamSymbol* formal_param = dynamic_cast<ParamSymbol*>(formal)) {
+            if (ParamSymbol* formal_param = formal) {
               if (formal_param->intent == PARAM_OUT) {
                 return expr_w;
               }
@@ -1529,7 +1529,7 @@ void FnCall::codegen(FILE* outfile) {
   Expr* actuals = argList->first();
   if (actuals) {
     FnSymbol* fnSym = findFnSymbol();
-    ParamSymbol* formals = dynamic_cast<ParamSymbol*>(fnSym->formals->first());
+    ParamSymbol* formals = fnSym->formals->first();
     bool firstArg = true;
     while (actuals && formals) {
       if (firstArg) {
@@ -1557,7 +1557,7 @@ void FnCall::codegen(FILE* outfile) {
       if (ampersand || star) {
         fprintf(outfile, ")");
       }
-      formals = dynamic_cast<ParamSymbol*>(fnSym->formals->next());
+      formals = fnSym->formals->next();
       actuals = argList->next();
     }
     if (formals || actuals) {

@@ -1155,7 +1155,7 @@ is_Reference_Type(Type *t) {
 
 
 void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                                          AList<Symbol>* arguments) {
+                                          AList<ParamSymbol>* arguments) {
   forv_Vec(VarSymbol, tmp, fields) {
     if (is_Scalar_Type(tmp->type))
       continue;
@@ -1166,13 +1166,13 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
     stmts->add(assign_stmt);
   }
 
-  ParamSymbol* ptmp = dynamic_cast<ParamSymbol*>(arguments->first());
+  ParamSymbol* ptmp = arguments->first();
   forv_Vec(TypeSymbol, tmp, types) {
     if (dynamic_cast<VariableType*>(tmp->type)) {
       if (analyzeAST) {
         // Have type variable in class and type variable in parameter
         // Should I do anything with these?
-        ptmp = dynamic_cast<ParamSymbol*>(arguments->next());
+        ptmp = arguments->next();
       }
     }
   }
@@ -1194,7 +1194,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
       stmts->add(assign_stmt);
     }
     if (analyzeAST) {
-      ptmp = dynamic_cast<ParamSymbol*>(arguments->next());
+      ptmp = arguments->next();
     }
   }
 }
@@ -1447,7 +1447,7 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
 
 
 void UnionType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                                     AList<Symbol>* arguments) {
+                                     AList<ParamSymbol>* arguments) {
   AList<Expr>* args = new AList<Expr>(new Variable(_this));
   Expr* arg2 = new Variable(fieldSelector->valList->first());
   args->add(arg2);

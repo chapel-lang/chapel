@@ -60,9 +60,9 @@ class Symboltable {
   static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, AList<Stmt>* body);
   static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
   static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
-  static AList<Symbol>* Symboltable::defineParams(paramType tag, 
-                                                  AList<Symbol>* syms,
-                                                  Type* type, Expr* init);
+  static AList<ParamSymbol>* Symboltable::defineParams(paramType tag, 
+                                                       AList<Symbol>* syms,
+                                                       Type* type, Expr* init);
   static AList<DefExpr>* Symboltable::defineVarDef1(AList<Symbol>* idents,
                                                     Type* type, 
                                                     Expr* init);
@@ -80,11 +80,11 @@ class Symboltable {
   // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(FnSymbol* fnsym, bool noparens = false);
-  static void continueFnDef(FnSymbol* fnsym, AList<Symbol>* formals, 
+  static void continueFnDef(FnSymbol* fnsym, AList<ParamSymbol>* formals, 
                             Type* retType, bool isRef = false);
   static FnSymbol* finishFnDef(FnSymbol* fnsym, BlockStmt* body, 
                                bool isExtern = true);
-  static DefStmt* defineFunction(char* name, AList<Symbol>* formals, 
+  static DefStmt* defineFunction(char* name, AList<ParamSymbol>* formals, 
                                  Type* retType, BlockStmt* body, 
                                  bool isExtern = false);
 

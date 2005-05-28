@@ -245,7 +245,7 @@ VarSymbol::VarSymbol(char* init_name,
   aspect(NULL),
   noDefaultInit(false)
 {
-  if (name) {
+  if (name) { // ensure this is not a sentinel
 #ifdef NUMBER_VAR_SYMBOLS_UNIQUELY
     static int uid = 0;
     cname = glomstrings(4, name, "__", intstring(uid++), "__");
@@ -399,7 +399,9 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
   typeVariable(NULL),
   isGeneric(false)
 {
-  Symboltable::define(this);
+  if (name) {  // ensure this is not a sentinel
+    Symboltable::define(this);
+  }
 }
 
 
@@ -604,7 +606,7 @@ TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
 }
 
 
-FnSymbol::FnSymbol(char* init_name, AList<Symbol>* init_formals,
+FnSymbol::FnSymbol(char* init_name, AList<ParamSymbol>* init_formals,
                    Type* init_retType, BlockStmt* init_body,
                    bool init_exportMe, Symbol* init_typeBinding) :
   Symbol(SYMBOL_FN, init_name, new FnType(), init_exportMe),
@@ -638,7 +640,7 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
 }
 
 
-void FnSymbol::continueDef(AList<Symbol>* init_formals, Type* init_retType, bool isRef) {
+void FnSymbol::continueDef(AList<ParamSymbol>* init_formals, Type* init_retType, bool isRef) {
   formals = init_formals;
   retType = init_retType;
   retRef = isRef;
@@ -689,7 +691,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   copy->_getter = _getter; // If it is a cloned class we probably want this
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
-  AList<Symbol>* new_formals = formals->copyInternal(clone, map);
+  AList<ParamSymbol>* new_formals = formals->copyInternal(clone, map);
   Symboltable::continueFnDef(copy, new_formals, retType, retRef);
   BlockStmt* new_body = 
     dynamic_cast<BlockStmt*>(body->copyInternal(clone, map));
@@ -705,8 +707,7 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     body = dynamic_cast<BlockStmt*>(new_ast);
   } else {
     bool found = false;
-    for (Symbol* tmp = formals->first(); tmp; tmp = formals->next()) {
-      ParamSymbol* param = dynamic_cast<ParamSymbol*>(tmp);
+    for (ParamSymbol* param = formals->first(); param; param = formals->next()) {
       if (old_ast == param->init) {
         param->init = dynamic_cast<Expr*>(new_ast);
         found = true;
@@ -764,9 +765,9 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   wrapperFn->method_type = method_type;
   wrapperFn->isConstructor = isConstructor;
 
-  AList<Symbol>* wrapperFormals = new AList<Symbol>();
-  for (Symbol* formal = formals->first(); formal; formal = formals->next()) {
-    Symbol* newFormal = formal->copy();
+  AList<ParamSymbol>* wrapperFormals = new AList<ParamSymbol>();
+  for (ParamSymbol* formal = formals->first(); formal; formal = formals->next()) {
+    ParamSymbol* newFormal = dynamic_cast<ParamSymbol*>(formal->copy());
     wrapperFormals->add(newFormal);
     Symbol* coercionSubstitution = coercion_substitutions->get(formal);
     if (coercionSubstitution) {
@@ -817,8 +818,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   wrapper_symbol->cname =
     glomstrings(3, cname, "_default_params_wrapper_", intstring(uid++));
   wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
-  AList<Symbol>* wrapper_formals = formals->copy();
-  Symbol* actuals = wrapper_formals->first();
+  AList<ParamSymbol>* wrapper_formals = formals->copy();
+  ParamSymbol* actuals = wrapper_formals->first();
   AList<Expr>* argList = new AList<Expr>(new Variable(actuals));
   actuals = wrapper_formals->next();
   while (actuals) {
@@ -833,11 +834,11 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   } else {
     wrapper_body->add(new ReturnStmt(fn_call));
   }
-  Vec<Symbol *> vformals, vwformals;
+  Vec<ParamSymbol *> vformals, vwformals;
   Vec<Variable *> vargs;
-  for (Symbol* formal = formals->first(); formal; formal = formals->next())
+  for (ParamSymbol* formal = formals->first(); formal; formal = formals->next())
     vformals.add(formal);
-  for (Symbol* formal = wrapper_formals->first(); formal; formal = wrapper_formals->next())
+  for (ParamSymbol* formal = wrapper_formals->first(); formal; formal = wrapper_formals->next())
     vwformals.add(formal);
   for (Expr* a = argList->first(); a; a = argList->next()) {
     Variable* var = dynamic_cast<Variable*>(a);
@@ -848,14 +849,14 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   }
   for (int i = 0; i< vwformals.n; i++) {
     if (defaults->set_in(vformals.v[i])) {
-      Symbol *formal = vwformals.v[i];
+      ParamSymbol *formal = vwformals.v[i];
       char* temp_name = glomstrings(2, "_default_param_temp_", formal->name);
       VarSymbol* temp_symbol = new VarSymbol(temp_name, formal->type);
       if (formal->type != dtUnknown)
         temp_symbol->aspect = formal->type;
       DefExpr* temp_def_expr =
         new DefExpr(temp_symbol,
-                    (dynamic_cast<ParamSymbol*>(formal)->intent == PARAM_OUT)
+                    (formal->intent == PARAM_OUT)
                     ? NULL
                     : new UserInitExpr(((ParamSymbol*)formal)->init->copy()));
       DefStmt* temp_def_stmt = new DefStmt(new AList<DefExpr>(temp_def_expr));
@@ -894,12 +895,12 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
   wrapper_fn->method_type = method_type;
   wrapper_fn->isConstructor = isConstructor;
 
-  AList<Symbol>* wrapper_formals = new AList<Symbol>();
+  AList<ParamSymbol>* wrapper_formals = new AList<ParamSymbol>();
   for (int i = 0; i < formals_to_actuals->n - 1; i++) {
-    Symbol* tmp = formals->first();
+    ParamSymbol* tmp = formals->first();
     for (int j = 0; j < formals_to_actuals->n - 1; j++) {
       if (formals_to_actuals->v[i].key == formals_to_actuals->v[j].value) {
-        wrapper_formals->add(tmp->copy());
+        wrapper_formals->add(dynamic_cast<ParamSymbol*>(tmp->copy()));
       }
       tmp = formals->next();
     }

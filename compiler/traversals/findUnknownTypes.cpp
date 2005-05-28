@@ -25,11 +25,10 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
 
 void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    Symbol* old_formal = fn->formals->popHead();
-    AList<Symbol>* new_formals = new AList<Symbol>();
+    ParamSymbol* old_formal = fn->formals->popHead();
+    AList<ParamSymbol>* new_formals = new AList<ParamSymbol>();
     while (old_formal) {
-      if (dynamic_cast<ParamSymbol*>(old_formal) &&
-          dynamic_cast<ParamSymbol*>(old_formal)->typeVariable) {
+      if (old_formal->typeVariable) {
         fn->body->body->insertBefore(new DefStmt(new DefExpr(old_formal)));
       } else {
         new_formals->add(old_formal);

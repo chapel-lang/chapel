@@ -123,7 +123,7 @@ class ParamSymbol : public Symbol {
   TypeSymbol *typeVariable;
   bool isGeneric;
 
-  ParamSymbol(paramType init_intent, char* init_name, 
+  ParamSymbol(paramType init_intent = PARAM_BLANK, char* init_name = NULL, 
               Type* init_type = dtUnknown, Expr* init_init = NULL);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
 
@@ -163,7 +163,7 @@ typedef enum __method_type {
 
 class FnSymbol : public Symbol {
  public:
-  AList<Symbol>* formals;
+  AList<ParamSymbol>* formals;
   Type* retType;
   Symbol* _this;
   VarSymbol* _setter; /* the variable this function sets if it is a setter */
@@ -175,11 +175,11 @@ class FnSymbol : public Symbol {
   bool isConstructor;
   bool retRef;
 
-  FnSymbol(char* init_name, AList<Symbol>* init_formals, Type* init_retType,
+  FnSymbol(char* init_name, AList<ParamSymbol>* init_formals, Type* init_retType,
            BlockStmt* init_body, bool init_exportMe=true,
            Symbol* init_typeBinding = NULL);
   FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
-  void continueDef(AList<Symbol>* init_formals, Type* init_retType, bool isRef);
+  void continueDef(AList<ParamSymbol>* init_formals, Type* init_retType, bool isRef);
   void finishDef(BlockStmt* init_body, SymScope* init_paramScope, 
                  bool init_exportMe=true);
   virtual FnSymbol* getFnSymbol(void);

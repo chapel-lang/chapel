@@ -34,7 +34,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
     FnCall* fncall = dynamic_cast<FnCall*>(expr);
     if (fncall) {
       FnSymbol* fnSym = fncall->findFnSymbol();
-      ParamSymbol* formal = dynamic_cast<ParamSymbol*>(fnSym->formals->first());
+      ParamSymbol* formal = fnSym->formals->first();
       AList<Expr>* actualList = fncall->argList;
       Expr* actual = actualList->first();
       AList<Expr>* newActuals = new AList<Expr>();
@@ -82,7 +82,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
           }
           newActuals->add(newActualUse);
         
-          formal = dynamic_cast<ParamSymbol*>(fnSym->formals->next());
+          formal = fnSym->formals->next();
           if (actual) {
             actual = actualList->next();
           }
@@ -98,7 +98,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         body->add(newStmt);
 
         /* generate copy out statements */
-        formal = dynamic_cast<ParamSymbol*>(fnSym->formals->first());
+        formal = fnSym->formals->first();
         actual = actualList->first();
         Expr* newActual = fncall->argList->first();
         if (formal && actual) {
@@ -110,7 +110,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
               body->add(copyBackStmt);
             }
 
-            formal = dynamic_cast<ParamSymbol*>(fnSym->formals->next());
+            formal = fnSym->formals->next();
             if (actual) {
               actual = actualList->next();
             }

@@ -2223,7 +2223,7 @@ static int
 gen_fun(FnSymbol *f) {
   Sym *fn = f->asymbol->sym;
   AInfo* ast = f->defPoint->ainfo;
-  Vec<Symbol *> args;
+  Vec<ParamSymbol *> args;
   Vec<Sym *> out_args;
   f->formals->getElements(args);
   Sym *as[args.n + 3];

@@ -48,7 +48,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     fn->cname = glomstrings(4, "_", typeSym->cname, "_", fn->cname);
     SymScope* saveScope = Symboltable::getCurrentScope();
     Symboltable::setCurrentScope(fn->paramScope);
-    Symbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);
+    ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);
 
     /* SJD: Should ParamSymbols have defExprs of their own? */
     this_insert->setDefPoint(def_stmt->defExprls->only());
