@@ -33759,3 +33759,21 @@ Added files:
 	                            test_class_construct1.future 
 	                            test_class_construct1.good 
 
+---------------------------------------------------------------------------
+
+05/31/05 09:56:23 -- deitz
+
+Log message:
+	Fixed test_format_primitives.
+	
+	The problem was that the forwarding symbol from a module was resolved
+	in ScopeResolveSymbols even though the forwarding symbol was for a
+	function.  Functions are not resolved until analysis so now the symbol
+	is left unresolved.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+Removed files:
+	chapel/test/trivial/deitz/: test_format_primitives.future 
+
