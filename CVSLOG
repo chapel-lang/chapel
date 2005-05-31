@@ -33777,3 +33777,17 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_format_primitives.future 
 
+---------------------------------------------------------------------------
+
+05/31/05 10:11:08 -- deitz
+
+Log message:
+	Removed four passing futures which now work because of general
+	improvements to I/O and type handling.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_array_float1.future 
+	chapel/test/classes/deitz/: test_class_in_usertype.future 
+	chapel/test/types/typedefs/bradc/: localType.future 
+	                                   localType2.future 
+
