@@ -11,6 +11,16 @@
 
 
 static void build_constructor(StructuralType* structType) {
+  Symbol* tmp = Symboltable::lookupInCurrentScope("initialize");
+  while (tmp) {
+    if (FnSymbol* userDefaultFn = dynamic_cast<FnSymbol*>(tmp)) {
+      if (userDefaultFn->retType == structType) {
+        structType->defaultConstructor = userDefaultFn;
+        return;
+      }
+    }
+    tmp = tmp->overload;
+  }
   char* name = glomstrings(2, "_construct_", structType->symbol->name);
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(name));
   structType->defaultConstructor = fn;

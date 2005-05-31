@@ -35,6 +35,7 @@ call            return TCALL;
 class           return TCLASS;
 config          return TCONFIG;
 const           return TCONST;
+constructor     return TCONSTRUCTOR;
 parameter       return TPARAM;
 continue        return TCONTINUE;
 do              return TDO;

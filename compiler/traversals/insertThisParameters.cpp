@@ -46,16 +46,40 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
     fn->cname = glomstrings(4, "_", typeSym->cname, "_", fn->cname);
-    SymScope* saveScope = Symboltable::getCurrentScope();
-    Symboltable::setCurrentScope(fn->paramScope);
-    ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);
-
-    /* SJD: Should ParamSymbols have defExprs of their own? */
-    this_insert->setDefPoint(def_stmt->defExprls->only());
-
-    Symboltable::setCurrentScope(saveScope);
-    fn->formals->insert(this_insert);
-    fn->_this = this_insert;
+    if (fn->isConstructor) {
+      SymScope* saveScope = Symboltable::setCurrentScope(fn->body->body->only()->parentScope);
+      DefStmt* this_decl = Symboltable::defineSingleVarDefStmt(copystring("this"),
+                                                               typeSym->type,
+                                                               NULL,
+                                                               VAR_NORMAL,
+                                                               VAR_VAR);
+      fn->_this = this_decl->varDef();
+      fn->retType = typeSym->type;
+      dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
+      fn->body->body->insertBefore(this_decl);
+      if (dynamic_cast<ClassType*>(typeSym->type)) {
+        char* description = glomstrings(2, "instance of class ", typeSym->name);
+        AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral("1", 1));
+        alloc_args->add(new SizeofExpr(new Variable(fn->_this)));
+        alloc_args->add(new StringLiteral(description));
+        Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");
+        Expr* alloc_call = new FnCall(new Variable(alloc_sym), alloc_args);
+        Expr* alloc_lhs = new Variable(fn->_this);
+        Expr* alloc_rhs = new CastLikeExpr(new Variable(fn->_this), alloc_call);
+        Expr* alloc_expr = new AssignOp(GETS_NORM, alloc_lhs, alloc_rhs);
+        Stmt* alloc_stmt = new ExprStmt(alloc_expr);
+        this_decl->insertAfter(alloc_stmt);
+      }
+      fn->body->body->insertAfter(new ReturnStmt(new Variable(fn->_this)));
+      Symboltable::setCurrentScope(saveScope);
+    } else {
+      SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
+      ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);
+      this_insert->setDefPoint(def_stmt->defExprls->only());
+      Symboltable::setCurrentScope(saveScope);
+      fn->formals->insert(this_insert);
+      fn->_this = this_insert;
+    }
   }
 
   /***

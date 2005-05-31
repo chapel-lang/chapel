@@ -52,6 +52,7 @@
 %token TCLASS
 %token TCONFIG
 %token TCONST
+%token TCONSTRUCTOR
 %token TPARAM
 %token TCONTINUE
 %token TDO
@@ -121,7 +122,7 @@
 %type <vt> vardecltag
 %type <pt> formaltag
 
-%type <boolval> fortype fnretref
+%type <boolval> fortype fnretref isconstructor
 %type <pdt> type domainType indexType arrayType tupleType seqType
 %type <tupledt> tupleTypes
 %type <unresolveddt> unresolvedType
@@ -488,10 +489,18 @@ fname:
   { $$ = "#"; } 
   ;
 
+isconstructor:
+  TFUNCTION
+    { $$ = false; }
+| TCONSTRUCTOR
+    { $$ = true; }
+;
+
 fndecl:
-  TFUNCTION fname
+  isconstructor fname
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2));
+      $<fnsym>$->isConstructor = $1;
     }
                        TLP formals TRP fnretref fnrettype
     {
@@ -502,10 +511,11 @@ fndecl:
       $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $10)));
     }
 |
-  TFUNCTION identifier TDOT fname
+  isconstructor identifier TDOT fname
     {
       $<fnsym>$ =
         Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
+      $<fnsym>$->isConstructor = $1;
     }
                                   TLP formals TRP fnretref fnrettype
     {
@@ -516,9 +526,10 @@ fndecl:
       $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $12)));
     }
 |
-  TFUNCTION fname
+  isconstructor fname
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2), true);
+      $<fnsym>$->isConstructor = $1;
     }
                   fnretref fnrettype
     {

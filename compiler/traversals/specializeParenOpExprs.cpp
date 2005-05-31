@@ -60,9 +60,6 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
             INT_FATAL(expr, "constructor does not have a DefStmt");
           }
         }
-      } else if ((strcmp(baseVar->var->name, "write") == 0) ||
-                 (strcmp(baseVar->var->name, "writeln") == 0) ||
-                 (strcmp(baseVar->var->name, "read") == 0)) {
       } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
         paren_replacement = new FnCall(baseVar, paren->argList);
       }
