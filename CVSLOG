@@ -33856,3 +33856,13 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_class_construct1.future 
 
+---------------------------------------------------------------------------
+
+05/31/05 11:24:08 -- bradc
+
+Log message:
+	Updated the regressions file a bit.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
