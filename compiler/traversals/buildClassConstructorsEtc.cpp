@@ -34,7 +34,6 @@ static void build_constructor(StructuralType* structType) {
       if (VariableType *tv = dynamic_cast<VariableType*>(tmp->type)) {
       char* name = tmp->name;
       Type* type = tv->type;
-      tmp->defPoint->parentStmt->extract();
       ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, NULL);
       arg->isGeneric = true;
       arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
