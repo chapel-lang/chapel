@@ -33885,3 +33885,15 @@ Modified files:
 	                                  sum_type-2.good 
 	chapel/test/parsing/jplevyak/: module.good 
 
+---------------------------------------------------------------------------
+
+05/31/05 13:24:12 -- deitz
+
+Log message:
+	The type variable is no longer extracted from the list of types in a
+	class when that class is instantiated.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/compiler/AST/: symbol.cpp 
+
