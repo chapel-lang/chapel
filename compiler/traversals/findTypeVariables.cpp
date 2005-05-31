@@ -4,6 +4,7 @@
 #include "symtab.h"
 
 FindVariableType::FindVariableType(Vec<VariableType*>* init_variableTypes) {
+  found = false;
   variableTypes = init_variableTypes;
 }
 
