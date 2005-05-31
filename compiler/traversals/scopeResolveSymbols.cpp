@@ -137,8 +137,10 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
         if (!dynamic_cast<FnSymbol*>(sym_resolve)) {
           if (ForwardingSymbol* forward =
               dynamic_cast<ForwardingSymbol*>(sym_resolve)) {
-            sym_use->var = forward->forward;
-            sym_use->forward = forward;
+            if (!dynamic_cast<FnSymbol*>(forward->forward)) {
+              sym_use->var = forward->forward;
+              sym_use->forward = forward;
+            }
           } else {
             sym_use->var = sym_resolve;
           }

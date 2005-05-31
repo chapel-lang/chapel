@@ -1515,8 +1515,9 @@ void FnCall::codegen(FILE* outfile) {
   // compiler produced complex type to the runtime complex type;
   // eventually there should be no runtime complex type
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
-    if (!strcmp(variable->var->cname, "_chpl_tostring_complex") ||
-        !strcmp(variable->var->cname, "_chpl_read_complex")) {
+    if (!strcmp(variable->var->cname, "_chpl_tostring_complex")) {
+      fprintf(outfile, "*(_complex128*)&");
+    } else if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
       fprintf(outfile, "(_complex128*)");
     }
     if (!strcmp(variable->var->cname, "_INIT_CONFIG")) {
