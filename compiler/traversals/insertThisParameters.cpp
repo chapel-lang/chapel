@@ -74,6 +74,23 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
       }
       fn->body->body->insertAfter(new ReturnStmt(new Variable(fn->_this)));
       Symboltable::setCurrentScope(saveScope);
+
+      // fix type variables, associate by name
+      if (StructuralType* structType = dynamic_cast<StructuralType*>(typeSym->type)) {
+        for (ParamSymbol* arg = fn->formals->first(); arg; arg = fn->formals->next()) {
+          if (arg->isGeneric) {
+            forv_Vec(TypeSymbol, tmp, structType->types) {
+              if (VariableType* variableType = dynamic_cast<VariableType*>(tmp->type)) {
+                if (!strcmp(tmp->name, arg->name)) {
+                  arg->type = variableType->type;
+                  arg->isGeneric = true;
+                  arg->typeVariable = tmp;
+                }
+              }
+            }
+          }
+        }
+      }
     } else {
       SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
       ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);

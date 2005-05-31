@@ -1527,6 +1527,15 @@ void FnCall::codegen(FILE* outfile) {
     }
   }
 
+  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+    if (!strcmp(variable->var->cname, "_data_alloc")) {
+      Variable* variable = dynamic_cast<Variable*>(argList->representative());
+      ClassType* classType = dynamic_cast<ClassType*>(variable->var->type);
+      classType->fields.v[0]->type->codegen(outfile);
+      fprintf(outfile, ", ");
+    }
+  }
+
   Expr* actuals = argList->first();
   if (actuals) {
     FnSymbol* fnSym = findFnSymbol();
