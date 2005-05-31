@@ -33,7 +33,9 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     if (dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
       Type* typeBinding = typeBindingSymbol->type;
       fn->typeBinding = typeBindingSymbol;
-      fn->method_type = SECONDARY_METHOD;
+      if (!fn->isConstructor) {
+        fn->method_type = SECONDARY_METHOD;
+      }
       typeBinding->methods.add(fn);
     } else {
       USR_FATAL(fn, "Function is not bound to type");

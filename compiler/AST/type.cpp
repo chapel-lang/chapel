@@ -1075,7 +1075,9 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
       VarSymbol* var;
       if (fn = def_stmt->fnDef()) {
         fn->typeBinding = this->symbol;
-        fn->method_type = PRIMARY_METHOD;
+        if (!fn->isConstructor) {
+          fn->method_type = PRIMARY_METHOD;
+        }
         methods.add(fn);
       } else if (type_sym = def_stmt->typeDef()) {
         types.add(type_sym);
