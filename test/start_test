@@ -242,6 +242,7 @@ setenv GC_NO_BLACKLIST_WARNING 1
 # some sets to get locale, environment reasonable
 #
 setenv LC_ALL C
+unsetenv LANG
 setenv LANG en_US
 limit stacksize 8192k
 
