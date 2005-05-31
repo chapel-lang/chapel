@@ -33897,3 +33897,15 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+05/31/05 13:28:12 -- bradc
+
+Log message:
+	Small change to get the setenv of LANG working
+	on solaris without complaining about not being
+	able to set locale correctly.
+
+Modified files:
+	chapel/test/: start_test 
+
