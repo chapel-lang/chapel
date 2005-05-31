@@ -1,23 +1,23 @@
-module.v:6: ambiguous call 'f'
-  candidate functions:
-    module.v:5: : f, a 
-    module.v:12: : f, a 
-    module.v:18: : f, a 
-module.v:13: ambiguous call 'f'
-  candidate functions:
-    module.v:5: : f, a 
-    module.v:12: : f, a 
-    module.v:18: : f, a 
-module.v:19: ambiguous call 'f'
-  candidate functions:
-    module.v:5: : f, a 
-    module.v:12: : f, a 
-    module.v:18: : f, a 
-module.v:21: ambiguous call 'f'
-  candidate functions:
-    module.v:5: : f, a 
-    module.v:12: : f, a 
-    module.v:18: : f, a 
+module.v:6: error: ambiguous call 'f'
+note: candidates are:
+module.v:5: _ : f, a
+module.v:12: _ : f, a
+module.v:18: _ : f, a
+module.v:13: error: ambiguous call 'f'
+note: candidates are:
+module.v:5: _ : f, a
+module.v:12: _ : f, a
+module.v:18: _ : f, a
+module.v:19: error: ambiguous call 'f'
+note: candidates are:
+module.v:5: _ : f, a
+module.v:12: _ : f, a
+module.v:18: _ : f, a
+module.v:21: error: ambiguous call 'f'
+note: candidates are:
+module.v:5: _ : f, a
+module.v:12: _ : f, a
+module.v:18: _ : f, a
 697 states 390 scans 134 shifts 397 reductions 17 compares 0 ambiguities
 (( in  my_module  ; )((( v ) : (( 0 ))) ; )(((( f ) a  : )(( v ) + ( a ))) ; )((( f )(( 1 ))) ; )(((( g ) b  : )((( 7 )) + ( b ))) ; )( in  my_module2  ; )((( v ) : (( 1 ))) ; )(((( f ) a  : )((( v ) + ( a )) + (( 1 )))) ; )((( f )(( 2 ))) ; )( in  user  ; )((( v ) : (( 2 ))) ; )(((( f ) a  : )((( v ) + ( a )) + (( 2 )))) ; )((( f )(( 3 ))) ; )(((( my_module  :: ) f )( v )) ; ))
 fail: fatal error, program does not type

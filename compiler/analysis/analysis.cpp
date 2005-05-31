@@ -21,7 +21,6 @@
 #include "clone.h"
 
 #define VARARG_END     0ll
-#define LOCAL_TRAVERSE 1
 
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 #define MAKE_USER_TYPE_BE_DEFINITION       1
@@ -68,15 +67,6 @@ class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 static ScopeLookupCache universal_lookup_cache;
 static int finalized_symbols = 0;
 
-#ifndef LOCAL_TRAVERSE
-#define GET_ALL_CHILDREN(_s, _x) \
-  GetStuff _x(GET_ALL); \
-  TRAVERSE(_s, &_x, true);
-
-#define GET_AST_CHILDREN(_s, _x) \
-  GetStuff _x(GET_STMTS|GET_EXPRS); \
-  TRAVERSE(_s, &_x, true);
-#else
 struct TraverseASTs {
   Vec<BaseAST *> asts;
 };
@@ -87,7 +77,6 @@ struct TraverseASTs {
 #define GET_AST_CHILDREN(_s, _x) \
   TraverseASTs _x;\
   get_ast_children(_s, _x.asts);
-#endif
 
 ASymbol::ASymbol() : symbol(0), sym(0) {
 }
@@ -1267,6 +1256,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   Sym *s = var->asymbol->sym;
   AInfo *ast = def->ainfo;
   ast->sym = s;
+  s->ast = ast;
   switch (var->varClass) {
     case VAR_NORMAL: break;
     case VAR_REF: break;

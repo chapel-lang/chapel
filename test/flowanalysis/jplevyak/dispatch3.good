@@ -1,10 +1,9 @@
-    dispatch3.v:1: : f, ( x : anynum, y : int32) : tuple
-    dispatch3.v:2: : f, ( x : int32, y : anynum) : tuple
-  candidate functions:
  called from 2 in f at dispatch2.v:2
  called from 4 in __init at dispatch2.v:1
  called from 5 in __init at dispatch2.v:1
-dispatch3.v:3: ambiguous call 'f'
+dispatch3.v:1: _ : f, ( x : anynum, y : int32) : tuple
+dispatch3.v:2: _ : f, ( x : int32, y : anynum) : tuple
+dispatch3.v:3: error: ambiguous call 'f'
 f::x(dispatch2.v:2) ( float64 )
 f::x(dispatch2.v:3) ( int32 )
 fail: fatal error, program does not type
@@ -14,6 +13,7 @@ function f dispatch2.v:3
 function g dispatch2.v:1
 g::x(dispatch2.v:1) ( float64 )
 globals
+note: candidates are:
 operator::a(prelude.v:0) ( int32 )
 operator::b(prelude.v:0) ( int32 )
 print::a(prelude.v:0) ( float64 )

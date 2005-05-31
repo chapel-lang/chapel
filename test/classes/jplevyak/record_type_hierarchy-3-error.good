@@ -1,7 +1,34 @@
+_chpl_complex.chpl:9: write, x : complex
+_chpl_seq.chpl:6: write, val : _chplSeqNode
+_chpl_seq.chpl:84: write, s : seq2
 fail: fatal error, program does not type
+internal_prelude.chpl:26: write, val : Array
+internal_prelude.chpl:29: write, val : Domain
+internal_prelude.chpl:2: write, val : _seq
+internal_prelude.chpl:38: write, val : Tuple
+internal_prelude.chpl:5: write, val : Index
+note: candidates are:
+note: candidates are:
+prelude.chpl:100: write, val : min
+prelude.chpl:103: write, val : maxloc
+prelude.chpl:106: write, val : minloc
+prelude.chpl:115: write, val : timer
+prelude.chpl:15: write, x : bool
+prelude.chpl:18: write, x : int64
+prelude.chpl:21: write, x : float64
+prelude.chpl:24: write, x : complex64
+prelude.chpl:27: write, x : string
+prelude.chpl:30: write, x : null
+prelude.chpl:91: write, val : reduction
+prelude.chpl:94: write, val : sum
+prelude.chpl:97: write, val : max
+prelude.chpl:9: write, val : _data
+record_type_hierarchy-3-error.chpl:12: f, a : D
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: illegal call argument type 'b' illegal: ( C ) 
 record_type_hierarchy-3-error.chpl:16: illegal call argument type expression illegal: ( ) 
 record_type_hierarchy-3-error.chpl:16: unresolved call 'f'
 record_type_hierarchy-3-error.chpl:16: unresolved call 'write'
+record_type_hierarchy-3-error.chpl:3: write, val : C
+record_type_hierarchy-3-error.chpl:8: write, val : D
