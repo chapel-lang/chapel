@@ -155,9 +155,10 @@ void printFinalMemStat(void) {
 }
 
 
-void printMemTable(void) {
+void printMemTable(_integer64 threshold) {
   if (!memtrack) {
-    char* message = "printMemTable() only works with the --memtrack flag";
+    char* message = "The printMemTable function only works with the "
+      "--memtrack flag";
     printError(message);
   }
   memTableEntry* memEntry = NULL;
@@ -180,32 +181,34 @@ void printMemTable(void) {
   fprintf(stdout, "----------------------\n");
   fprintf(stdout, "***Allocated Memory***\n");
   fprintf(stdout, "----------------------\n");
-
+  
   fprintf(stdout, "%-*s%-*s%-*s%-*s%-s\n", 
           numberWidth, size, 
           numberWidth, number, 
           numberWidth, total, 
           addressWidth, address, 
           description);
-
+  
   fprintf(stdout, "%-*s%-*s%-*s\n", 
           numberWidth, bytes, 
           numberWidth, "", 
           numberWidth, bytes);
-
+  
   fprintf(stdout, "%s%s\n", line40, line40);
-
+  
   for (memEntry = first;
        memEntry != NULL;
        memEntry = memEntry->nextInstalled) {
     
     size_t chunk = memEntry->number * memEntry->size;
-    fprintf(stdout, "%-*u%-*u%-*u%#-*.*x%-s\n", 
-            numberWidth, (unsigned)memEntry->size, 
-            numberWidth, (unsigned)memEntry->number, 
-            numberWidth, (unsigned)chunk, 
-            addressWidth, precision, (unsigned)(intptr_t)memEntry->memAlloc, 
-            memEntry->description);
+    if (chunk > threshold) {      
+      fprintf(stdout, "%-*u%-*u%-*u%#-*.*x%-s\n", 
+              numberWidth, (unsigned)memEntry->size, 
+              numberWidth, (unsigned)memEntry->number, 
+              numberWidth, (unsigned)chunk, 
+              addressWidth, precision, (unsigned)(intptr_t)memEntry->memAlloc, 
+              memEntry->description);
+    }
   }
   fprintf(stdout, "\n");
 }

@@ -6,7 +6,7 @@
 #include "chpltypes.h"
 
 void initMemTable(void);
-void printMemTable(void);
+void printMemTable(_integer64 threshold);
 void resetMemStat(void);
 void printMemStat(void);
 void printFinalMemStat(void);
