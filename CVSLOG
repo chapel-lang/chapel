@@ -33909,3 +33909,20 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+05/31/05 16:20:32 -- shannon
+
+Log message:
+	Fixed the printMemTable test that was failing
+	on the linux64 platform due to the difference
+	in size of configVars by adding an argument
+	to the print function to limit the size of
+	what gets printed.
+
+Modified files:
+	chapel/runtime/include/: chplmem.h 
+	chapel/runtime/src/: chplmem.c chplmem_tests.c 
+	chapel/test/memory/shannon/: memtrackFlag.good 
+	                             printMemTable.good 
+
