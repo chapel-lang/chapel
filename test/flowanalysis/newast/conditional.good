@@ -1,11 +1,5 @@
  called from 9 in __init_conditional at conditional.chpl:9
  called from 9 in __init_conditional at conditional.chpl:9
- called from 9 in __init_entryPoint at conditional.chpl:9
- called from 9 in __init_entryPoint at conditional.chpl:9
- called from 9 in __init_entryPoint at conditional.chpl:9
- called from 9 in __init_entryPoint at conditional.chpl:9
- called from 9 in main at conditional.chpl:9
- called from 9 in main at conditional.chpl:9
 ::__init__CommonModule(conditional.chpl:9) ( __init__CommonModule (conditional.chpl:9) )
 ::__init__chpl_complex(conditional.chpl:9) ( __init__chpl_complex (conditional.chpl:9) )
 ::__init__chpl_seq(conditional.chpl:9) ( __init__chpl_seq (conditional.chpl:9) )

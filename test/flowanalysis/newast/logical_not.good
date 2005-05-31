@@ -1,11 +1,5 @@
- called from 3 in __init_entryPoint at logical_not.chpl:3
- called from 3 in __init_entryPoint at logical_not.chpl:3
- called from 3 in __init_entryPoint at logical_not.chpl:3
- called from 3 in __init_entryPoint at logical_not.chpl:3
  called from 3 in __init_logical_not at logical_not.chpl:3
  called from 3 in __init_logical_not at logical_not.chpl:3
- called from 3 in main at logical_not.chpl:3
- called from 3 in main at logical_not.chpl:3
 ::__init__CommonModule(logical_not.chpl:3) ( __init__CommonModule (logical_not.chpl:3) )
 ::__init__chpl_complex(logical_not.chpl:3) ( __init__chpl_complex (logical_not.chpl:3) )
 ::__init__chpl_seq(logical_not.chpl:3) ( __init__chpl_seq (logical_not.chpl:3) )

@@ -8,7 +8,13 @@
 
 
 static ExprStmt* buildFnCallStmt(FnSymbol* fn) {
-  return new ExprStmt(new FnCall(new Variable(fn)));
+  Variable* variable = new Variable(fn);
+  variable->lineno = -1;
+  FnCall* fnCall = new FnCall(variable);
+  fnCall->lineno = -1;
+  ExprStmt* exprStmt = new ExprStmt(fnCall);
+  exprStmt->lineno = -1;
+  return exprStmt;
 }
 
 

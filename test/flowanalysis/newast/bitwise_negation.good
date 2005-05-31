@@ -1,11 +1,5 @@
  called from 2 in __init_bitwise_negation at bitwise_negation.chpl:2
  called from 2 in __init_bitwise_negation at bitwise_negation.chpl:2
- called from 2 in __init_entryPoint at bitwise_negation.chpl:2
- called from 2 in __init_entryPoint at bitwise_negation.chpl:2
- called from 2 in __init_entryPoint at bitwise_negation.chpl:2
- called from 2 in __init_entryPoint at bitwise_negation.chpl:2
- called from 2 in main at bitwise_negation.chpl:2
- called from 2 in main at bitwise_negation.chpl:2
 ::__init__CommonModule(bitwise_negation.chpl:2) ( __init__CommonModule (bitwise_negation.chpl:2) )
 ::__init__chpl_complex(bitwise_negation.chpl:2) ( __init__chpl_complex (bitwise_negation.chpl:2) )
 ::__init__chpl_seq(bitwise_negation.chpl:2) ( __init__chpl_seq (bitwise_negation.chpl:2) )

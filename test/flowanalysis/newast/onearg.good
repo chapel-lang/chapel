@@ -1,12 +1,6 @@
  called from 5 in __init_onearg at _chpl_seq.chpl:75
- called from 75 in __init_entryPoint at _chpl_seq.chpl:75
- called from 75 in __init_entryPoint at _chpl_seq.chpl:75
- called from 75 in __init_entryPoint at _chpl_seq.chpl:75
- called from 75 in __init_entryPoint at _chpl_seq.chpl:75
  called from 75 in __init_onearg at _chpl_seq.chpl:75
  called from 75 in __init_onearg at _chpl_seq.chpl:75
- called from 75 in main at _chpl_seq.chpl:75
- called from 75 in main at _chpl_seq.chpl:75
 ::__init__CommonModule(_chpl_seq.chpl:75) ( __init__CommonModule (_chpl_seq.chpl:75) )
 ::__init__chpl_complex(_chpl_seq.chpl:75) ( __init__chpl_complex (_chpl_seq.chpl:75) )
 ::__init__chpl_seq(_chpl_seq.chpl:75) ( __init__chpl_seq (_chpl_seq.chpl:75) )

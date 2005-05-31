@@ -1,12 +1,6 @@
  called from 20 in __init_globalref at globalref.chpl:6
- called from 6 in __init_entryPoint at globalref.chpl:6
- called from 6 in __init_entryPoint at globalref.chpl:6
- called from 6 in __init_entryPoint at globalref.chpl:6
- called from 6 in __init_entryPoint at globalref.chpl:6
  called from 6 in __init_globalref at globalref.chpl:6
  called from 6 in __init_globalref at globalref.chpl:6
- called from 6 in main at globalref.chpl:6
- called from 6 in main at globalref.chpl:6
 ::__init__CommonModule(globalref.chpl:6) ( __init__CommonModule (globalref.chpl:6) )
 ::__init__chpl_complex(globalref.chpl:6) ( __init__chpl_complex (globalref.chpl:6) )
 ::__init__chpl_seq(globalref.chpl:6) ( __init__chpl_seq (globalref.chpl:6) )

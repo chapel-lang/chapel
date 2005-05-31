@@ -1,11 +1,5 @@
  called from 1 in __init_declprintint2 at declprintint2.chpl:1
  called from 1 in __init_declprintint2 at declprintint2.chpl:1
- called from 1 in __init_entryPoint at declprintint2.chpl:1
- called from 1 in __init_entryPoint at declprintint2.chpl:1
- called from 1 in __init_entryPoint at declprintint2.chpl:1
- called from 1 in __init_entryPoint at declprintint2.chpl:1
- called from 1 in main at declprintint2.chpl:1
- called from 1 in main at declprintint2.chpl:1
 ::__init__CommonModule(declprintint2.chpl:1) ( __init__CommonModule (declprintint2.chpl:1) )
 ::__init__chpl_complex(declprintint2.chpl:1) ( __init__chpl_complex (declprintint2.chpl:1) )
 ::__init__chpl_seq(declprintint2.chpl:1) ( __init__chpl_seq (declprintint2.chpl:1) )

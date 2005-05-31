@@ -1,12 +1,6 @@
  called from 15 in __init_codegen_test at codegen_test.chpl:8
  called from 8 in __init_codegen_test at codegen_test.chpl:8
  called from 8 in __init_codegen_test at codegen_test.chpl:8
- called from 8 in __init_entryPoint at codegen_test.chpl:8
- called from 8 in __init_entryPoint at codegen_test.chpl:8
- called from 8 in __init_entryPoint at codegen_test.chpl:8
- called from 8 in __init_entryPoint at codegen_test.chpl:8
- called from 8 in main at codegen_test.chpl:8
- called from 8 in main at codegen_test.chpl:8
 ::__init__CommonModule(codegen_test.chpl:8) ( __init__CommonModule (codegen_test.chpl:8) )
 ::__init__chpl_complex(codegen_test.chpl:8) ( __init__chpl_complex (codegen_test.chpl:8) )
 ::__init__chpl_seq(codegen_test.chpl:8) ( __init__chpl_seq (codegen_test.chpl:8) )

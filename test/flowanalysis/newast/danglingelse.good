@@ -1,11 +1,5 @@
  called from 4 in __init_danglingelse at danglingelse.chpl:4
  called from 4 in __init_danglingelse at danglingelse.chpl:4
- called from 4 in __init_entryPoint at danglingelse.chpl:4
- called from 4 in __init_entryPoint at danglingelse.chpl:4
- called from 4 in __init_entryPoint at danglingelse.chpl:4
- called from 4 in __init_entryPoint at danglingelse.chpl:4
- called from 4 in main at danglingelse.chpl:4
- called from 4 in main at danglingelse.chpl:4
 ::+(internal_prelude.chpl:0) ( + )
 ::<(internal_prelude.chpl:0) ( < )
 ::__init__CommonModule(danglingelse.chpl:4) ( __init__CommonModule (danglingelse.chpl:4) )

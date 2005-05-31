@@ -1,11 +1,5 @@
  called from 1 in __init_configVar at configVar.chpl:1
  called from 1 in __init_configVar at configVar.chpl:1
- called from 1 in __init_entryPoint at configVar.chpl:1
- called from 1 in __init_entryPoint at configVar.chpl:1
- called from 1 in __init_entryPoint at configVar.chpl:1
- called from 1 in __init_entryPoint at configVar.chpl:1
- called from 1 in main at configVar.chpl:1
- called from 1 in main at configVar.chpl:1
 ::__init__CommonModule(configVar.chpl:1) ( __init__CommonModule (configVar.chpl:1) )
 ::__init__chpl_complex(configVar.chpl:1) ( __init__chpl_complex (configVar.chpl:1) )
 ::__init__chpl_seq(configVar.chpl:1) ( __init__chpl_seq (configVar.chpl:1) )

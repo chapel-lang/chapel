@@ -1,11 +1,5 @@
  called from 6 in __init_domarr at domarr.chpl:6
  called from 6 in __init_domarr at domarr.chpl:6
- called from 6 in __init_entryPoint at domarr.chpl:6
- called from 6 in __init_entryPoint at domarr.chpl:6
- called from 6 in __init_entryPoint at domarr.chpl:6
- called from 6 in __init_entryPoint at domarr.chpl:6
- called from 6 in main at domarr.chpl:6
- called from 6 in main at domarr.chpl:6
 ::=(internal_prelude.chpl:0) ( = )
 ::=this(internal_prelude.chpl:0) ( =this )
 ::A(domarr.chpl:6) ( _array_float_2d (domarr.chpl:6) )

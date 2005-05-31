@@ -1,11 +1,5 @@
- called from 4 in __init_entryPoint at mod.chpl:4
- called from 4 in __init_entryPoint at mod.chpl:4
- called from 4 in __init_entryPoint at mod.chpl:4
- called from 4 in __init_entryPoint at mod.chpl:4
  called from 4 in __init_mod at mod.chpl:4
  called from 4 in __init_mod at mod.chpl:4
- called from 4 in main at mod.chpl:4
- called from 4 in main at mod.chpl:4
 ::__init__CommonModule(mod.chpl:4) ( __init__CommonModule (mod.chpl:4) )
 ::__init__chpl_complex(mod.chpl:4) ( __init__chpl_complex (mod.chpl:4) )
 ::__init__chpl_seq(mod.chpl:4) ( __init__chpl_seq (mod.chpl:4) )

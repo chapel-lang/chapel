@@ -1,11 +1,5 @@
  called from 3 in __init_assignment_expr at assignment_expr.chpl:3
  called from 3 in __init_assignment_expr at assignment_expr.chpl:3
- called from 3 in __init_entryPoint at assignment_expr.chpl:3
- called from 3 in __init_entryPoint at assignment_expr.chpl:3
- called from 3 in __init_entryPoint at assignment_expr.chpl:3
- called from 3 in __init_entryPoint at assignment_expr.chpl:3
- called from 3 in main at assignment_expr.chpl:3
- called from 3 in main at assignment_expr.chpl:3
 ::*(internal_prelude.chpl:0) ( * )
 ::+(internal_prelude.chpl:0) ( + )
 ::-(internal_prelude.chpl:0) ( - )

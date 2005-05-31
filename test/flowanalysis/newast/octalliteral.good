@@ -1,11 +1,5 @@
- called from 1 in __init_entryPoint at octalliteral.chpl:1
- called from 1 in __init_entryPoint at octalliteral.chpl:1
- called from 1 in __init_entryPoint at octalliteral.chpl:1
- called from 1 in __init_entryPoint at octalliteral.chpl:1
  called from 1 in __init_octalliteral at octalliteral.chpl:1
  called from 1 in __init_octalliteral at octalliteral.chpl:1
- called from 1 in main at octalliteral.chpl:1
- called from 1 in main at octalliteral.chpl:1
 ::__init__CommonModule(octalliteral.chpl:1) ( __init__CommonModule (octalliteral.chpl:1) )
 ::__init__chpl_complex(octalliteral.chpl:1) ( __init__chpl_complex (octalliteral.chpl:1) )
 ::__init__chpl_seq(octalliteral.chpl:1) ( __init__chpl_seq (octalliteral.chpl:1) )

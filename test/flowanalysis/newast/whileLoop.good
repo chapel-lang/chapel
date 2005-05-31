@@ -1,11 +1,5 @@
- called from 1 in __init_entryPoint at whileLoop.chpl:1
- called from 1 in __init_entryPoint at whileLoop.chpl:1
- called from 1 in __init_entryPoint at whileLoop.chpl:1
- called from 1 in __init_entryPoint at whileLoop.chpl:1
  called from 1 in __init_whileLoop at whileLoop.chpl:1
  called from 1 in __init_whileLoop at whileLoop.chpl:1
- called from 1 in main at whileLoop.chpl:1
- called from 1 in main at whileLoop.chpl:1
 ::+(internal_prelude.chpl:0) ( + )
 ::<=(internal_prelude.chpl:0) ( <= )
 ::__init__CommonModule(whileLoop.chpl:1) ( __init__CommonModule (whileLoop.chpl:1) )

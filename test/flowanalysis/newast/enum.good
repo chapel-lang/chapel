@@ -1,12 +1,6 @@
  called from 5 in __init_enum at enum.chpl:7
- called from 7 in __init_entryPoint at enum.chpl:7
- called from 7 in __init_entryPoint at enum.chpl:7
- called from 7 in __init_entryPoint at enum.chpl:7
- called from 7 in __init_entryPoint at enum.chpl:7
  called from 7 in __init_enum at enum.chpl:7
  called from 7 in __init_enum at enum.chpl:7
- called from 7 in main at enum.chpl:7
- called from 7 in main at enum.chpl:7
 ::B(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::S(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::_EnumWriteStopgap(internal_prelude.chpl:0) ( _EnumWriteStopgap )

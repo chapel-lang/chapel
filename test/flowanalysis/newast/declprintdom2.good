@@ -1,11 +1,5 @@
  called from 14 in __init_declprintdom2 at declprintdom2.chpl:14
  called from 14 in __init_declprintdom2 at declprintdom2.chpl:14
- called from 14 in __init_entryPoint at declprintdom2.chpl:14
- called from 14 in __init_entryPoint at declprintdom2.chpl:14
- called from 14 in __init_entryPoint at declprintdom2.chpl:14
- called from 14 in __init_entryPoint at declprintdom2.chpl:14
- called from 14 in main at declprintdom2.chpl:14
- called from 14 in main at declprintdom2.chpl:14
  called from 16 in __init_declprintdom2 at declprintdom2.chpl:14
  called from 17 in __init_declprintdom2 at declprintdom2.chpl:14
  called from 18 in __init_declprintdom2 at declprintdom2.chpl:14

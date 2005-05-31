@@ -1,11 +1,5 @@
- called from 1 in __init_entryPoint at var.chpl:1
- called from 1 in __init_entryPoint at var.chpl:1
- called from 1 in __init_entryPoint at var.chpl:1
- called from 1 in __init_entryPoint at var.chpl:1
  called from 1 in __init_var at var.chpl:1
  called from 1 in __init_var at var.chpl:1
- called from 1 in main at var.chpl:1
- called from 1 in main at var.chpl:1
 ::+(internal_prelude.chpl:0) ( + )
 ::__init__CommonModule(var.chpl:1) ( __init__CommonModule (var.chpl:1) )
 ::__init__chpl_complex(var.chpl:1) ( __init__chpl_complex (var.chpl:1) )

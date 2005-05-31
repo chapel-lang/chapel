@@ -1,12 +1,6 @@
  called from 15 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 22 in __init_entryPoint at sum_type-2.chpl:22
- called from 22 in __init_entryPoint at sum_type-2.chpl:22
- called from 22 in __init_entryPoint at sum_type-2.chpl:22
- called from 22 in __init_entryPoint at sum_type-2.chpl:22
  called from 22 in __init_sum_type-2 at sum_type-2.chpl:22
  called from 22 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 22 in main at sum_type-2.chpl:22
- called from 22 in main at sum_type-2.chpl:22
  called from 30 in __init_sum_type-2 at sum_type-2.chpl:22
  called from 31 in __init_sum_type-2 at sum_type-2.chpl:22
 ::*(internal_prelude.chpl:0) ( * )

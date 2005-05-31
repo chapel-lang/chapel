@@ -1,11 +1,5 @@
- called from 5 in __init_entryPoint at relational_ops.chpl:5
- called from 5 in __init_entryPoint at relational_ops.chpl:5
- called from 5 in __init_entryPoint at relational_ops.chpl:5
- called from 5 in __init_entryPoint at relational_ops.chpl:5
  called from 5 in __init_relational_ops at relational_ops.chpl:5
  called from 5 in __init_relational_ops at relational_ops.chpl:5
- called from 5 in main at relational_ops.chpl:5
- called from 5 in main at relational_ops.chpl:5
 ::<(internal_prelude.chpl:0) ( < )
 ::<=(internal_prelude.chpl:0) ( <= )
 ::>(internal_prelude.chpl:0) ( > )

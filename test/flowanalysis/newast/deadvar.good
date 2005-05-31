@@ -1,11 +1,5 @@
  called from 2 in __init_deadvar at deadvar.chpl:2
  called from 2 in __init_deadvar at deadvar.chpl:2
- called from 2 in __init_entryPoint at deadvar.chpl:2
- called from 2 in __init_entryPoint at deadvar.chpl:2
- called from 2 in __init_entryPoint at deadvar.chpl:2
- called from 2 in __init_entryPoint at deadvar.chpl:2
- called from 2 in main at deadvar.chpl:2
- called from 2 in main at deadvar.chpl:2
 ::__init__CommonModule(deadvar.chpl:2) ( __init__CommonModule (deadvar.chpl:2) )
 ::__init__chpl_complex(deadvar.chpl:2) ( __init__chpl_complex (deadvar.chpl:2) )
 ::__init__chpl_seq(deadvar.chpl:2) ( __init__chpl_seq (deadvar.chpl:2) )

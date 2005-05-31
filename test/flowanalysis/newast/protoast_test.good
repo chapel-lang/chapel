@@ -1,11 +1,5 @@
- called from 7 in __init_entryPoint at protoast_test.chpl:7
- called from 7 in __init_entryPoint at protoast_test.chpl:7
- called from 7 in __init_entryPoint at protoast_test.chpl:7
- called from 7 in __init_entryPoint at protoast_test.chpl:7
  called from 7 in __init_protoast_test at protoast_test.chpl:7
  called from 7 in __init_protoast_test at protoast_test.chpl:7
- called from 7 in main at protoast_test.chpl:7
- called from 7 in main at protoast_test.chpl:7
 ::=(internal_prelude.chpl:0) ( = )
 ::=this(internal_prelude.chpl:0) ( =this )
 ::A(protoast_test.chpl:7) ( _array_float_1d (protoast_test.chpl:7) )

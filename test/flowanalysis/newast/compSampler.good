@@ -1,11 +1,5 @@
  called from 4 in __init_compSampler at compSampler.chpl:4
  called from 4 in __init_compSampler at compSampler.chpl:4
- called from 4 in __init_entryPoint at compSampler.chpl:4
- called from 4 in __init_entryPoint at compSampler.chpl:4
- called from 4 in __init_entryPoint at compSampler.chpl:4
- called from 4 in __init_entryPoint at compSampler.chpl:4
- called from 4 in main at compSampler.chpl:4
- called from 4 in main at compSampler.chpl:4
 ::!=(internal_prelude.chpl:0) ( != )
 ::+(internal_prelude.chpl:0) ( + )
 ::-(internal_prelude.chpl:0) ( - )

@@ -2,12 +2,6 @@
  called from 11 in __init_declprintdom at declprintdom.chpl:7
  called from 7 in __init_declprintdom at declprintdom.chpl:7
  called from 7 in __init_declprintdom at declprintdom.chpl:7
- called from 7 in __init_entryPoint at declprintdom.chpl:7
- called from 7 in __init_entryPoint at declprintdom.chpl:7
- called from 7 in __init_entryPoint at declprintdom.chpl:7
- called from 7 in __init_entryPoint at declprintdom.chpl:7
- called from 7 in main at declprintdom.chpl:7
- called from 7 in main at declprintdom.chpl:7
  called from 9 in __init_declprintdom at declprintdom.chpl:7
 ::=(internal_prelude.chpl:0) ( = )
 ::D1(declprintdom.chpl:5) ( _domain_1d (declprintdom.chpl:5) )
