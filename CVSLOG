@@ -33731,3 +33731,31 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: findTypeVariables.cpp 
 
+---------------------------------------------------------------------------
+
+05/31/05 09:22:00 -- deitz
+
+Log message:
+	Implemented non-analysis support for user-defined default constructors.
+	
+	Added constructor keyword to grammar.  Added ability to specify a
+	user-defined default constructor by calling the constructor
+	'initialize' though I would like to change it to be the class name
+	instead.
+	
+	The constructor is modifed in InsertThisParameters where 'this' is
+	declared at the top of the constructor and returned at the end.  The
+	normal default constructor is not built for a class if the user
+	already specified one.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertThisParameters.cpp 
+	                             resolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_class_construct1.chpl 
+	                            test_class_construct1.future 
+	                            test_class_construct1.good 
+
