@@ -33926,3 +33926,31 @@ Modified files:
 	chapel/test/memory/shannon/: memtrackFlag.good 
 	                             printMemTable.good 
 
+---------------------------------------------------------------------------
+
+05/31/05 16:38:07 -- deitz
+
+Log message:
+	Linked type variable in user-defined constructor to type variable in
+	class (by name).
+	
+	Added ability to allocate memory to special _data class (that
+	implements C array) in prelude using alloc method.
+	
+	Added two new tests to test these additions.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+	                             removeNamedParameters.cpp 
+	chapel/runtime/include/: array.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/types/type_variables/deitz/: test_datablock3.chpl 
+	                                         test_datablock3.good 
+	                                         test_instantiate_construct1.chpl 
+	                                         test_instantiate_construct1.good 
+
