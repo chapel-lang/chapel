@@ -27,50 +27,34 @@ linux and general regressions
 [Error matching compiler output for domains/bradc/writeIndex2]
 
   There is something very wrong with IndexTypes.  They should not
-  need their own write function.
+  need their own write function (bradc).
 
-[Error matching compiler output for trivial/deitz/test_format_primitives]
+[Error matching compiler output for flowanalysis/newast/sum_type-1]
 
-  Unknown at this point.
+  ???
 
 
 ==========================
 linux valgrind regressions
 ==========================
 
+[Error matching compiler output for trivial/shannon/compSampler]
+
+A few of the passes take far too long to complete due to
+inefficiencies in the insertBefore/After calls attributable to both
+their use and implementation, resulting in a timeout when running
+under valgrind (bradc/deitz)
 
 
 ============================
 linux64-specific regressions
 ============================
 
-types/type_variables/deitz/test_clone_class3:
-types/type_variables/deitz/test_clone_class4:
-
-This is because on the 32-bit platform string is 32 bits and 
-on a 64-bit platform string is 64 bits (a pointer). 
-
-The problem actually stems from our lack of support for Sum types 
-since on the 32-bit platform the getter (y) is cloned for the
-different offset of "y" caused by the different size of "x" for
-the two classes (foo and foo_clone_2) while on the 64-bit platform 
-the getter is not cloned since the offsets are the same and
-the "this" variable has a sum type "foo | foo_clone_2" which
-is currently not supported. 
-
-
-memory/shannon/memstatPrint:
-memory/shannon/printFinalMemStat:
-
-  I fixed these regressions on the Sun and valgrind linux runs, but I'm 
-  not sure why it's still failing here.  I'll take a look.  (shannon)
-
-
 memory/shannon/printMemTable
 
   need to implement a way to filter memtable when printing to filter
   out small allocations that are platform-dependent (like structs with
-  pointer values).
+  pointer values) (shannon)
 
 
 
@@ -78,6 +62,9 @@ memory/shannon/printMemTable
 cygwin-specific regressions
 ===========================
 
+[Error matching compiler output for flowanalysis/newast/sum_type-2]
+
+  ???
 
 
 ============================
