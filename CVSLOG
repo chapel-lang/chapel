@@ -33720,3 +33720,14 @@ Modified files:
 	                             insertThisParameters.cpp 
 	                             processParameters.cpp 
 
+---------------------------------------------------------------------------
+
+05/30/05 19:56:17 -- jplevyak
+
+Log message:
+	Fix uninitialized variable which was causing valgrind failures.
+	(the "found" variable was not initialised to "false").
+
+Modified files:
+	chapel/compiler/traversals/: findTypeVariables.cpp 
+
