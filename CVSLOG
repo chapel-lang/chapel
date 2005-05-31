@@ -33866,3 +33866,22 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+05/31/05 12:10:15 -- jplevyak
+
+Log message:
+	When a function is unresolved, the compiler now prints out an error message
+	which includes a list of all the candidate functions.  Syntax looks
+	a bit (more) like gcc.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/jplevyak/: dispatch3.good 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/parsing/jplevyak/: module.good 
+
