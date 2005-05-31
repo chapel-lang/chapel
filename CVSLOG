@@ -33840,3 +33840,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/31/05 11:16:43 -- deitz
+
+Log message:
+	Made it so that constructors are not marked as primary or secondary
+	methods.
+	
+	Removed future for first user-defined default constructor test.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+Removed files:
+	chapel/test/classes/deitz/: test_class_construct1.future 
+
