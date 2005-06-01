@@ -34038,3 +34038,17 @@ Modified files:
 	                             omitForNoAnalysis.cpp 
 	                             specializeParenOpExprs.cpp 
 
+---------------------------------------------------------------------------
+
+06/01/05 11:32:32 -- deitz
+
+Log message:
+	Changed the AList<SymLink>* of syms in SymScope to a Vec<Symbol*>.
+	This simplifies the code base so we can specialize ILink and AList to
+	BaseAST further.
+
+Modified files:
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: resolveModuleUses.cpp 
+
