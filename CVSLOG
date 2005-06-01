@@ -33980,3 +33980,16 @@ Modified files:
 	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp 
 	chapel/compiler/include/: baseAST.h expr.h stmt.h 
 
+---------------------------------------------------------------------------
+
+06/01/05 08:55:13 -- jplevyak
+
+Log message:
+	Introduce intermediate in DefExpr to handle case where the result
+	is a global variable (analysis uses the result variable, which is
+	content sensitive, to stand for the particular context sensitive
+	function call, so it requires it to be local).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
