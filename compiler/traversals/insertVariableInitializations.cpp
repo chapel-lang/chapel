@@ -66,10 +66,10 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
         indices->add(new Symbol(SYMBOL, name));
       }
     } else {
-      DefExpr* def_expr = dynamic_cast<DefExpr*>(domain->indices->first());
+      DefExpr* def_expr = domain->indices->first();
       while (def_expr) {
         indices->add(new Symbol(SYMBOL, copystring(def_expr->sym->name)));
-        def_expr = dynamic_cast<DefExpr*>(domain->indices->next());
+        def_expr = domain->indices->next();
       }
     }
   }    
