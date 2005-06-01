@@ -34003,3 +34003,14 @@ Log message:
 Modified files:
 	chapel/test/flowanalysis/newast/: sum_type-1.good 
 
+---------------------------------------------------------------------------
+
+06/01/05 10:10:25 -- bradc
+
+Log message:
+	Removed some dynamic casts that should've gone in
+	with my last check-in.
+
+Modified files:
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+
