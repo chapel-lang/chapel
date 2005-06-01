@@ -34052,3 +34052,18 @@ Modified files:
 	chapel/compiler/symtab/: symscope.cpp 
 	chapel/compiler/traversals/: resolveModuleUses.cpp 
 
+---------------------------------------------------------------------------
+
+06/01/05 11:57:15 -- deitz
+
+Log message:
+	Removed dead SymLink code.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/symtab/: Makefile.share symscope.cpp 
+	chapel/compiler/traversals/: resolveModuleUses.cpp 
+Removed files:
+	chapel/compiler/symtab/: symlink.cpp symlink.h 
+
