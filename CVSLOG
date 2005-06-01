@@ -34088,3 +34088,24 @@ Added files:
 	                                            where-1.future 
 	                                            where-1.good 
 
+---------------------------------------------------------------------------
+
+06/01/05 13:32:33 -- deitz
+
+Log message:
+	Moved check that parameters are initialized into CheckSemantics pass
+	which follows analysis.  Updated test to show line number information.
+	
+	Added parameter field instantiation test.  This class should be
+	instantiated because of the parameter in it.
+
+Modified files:
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: checkSemantics.cpp 
+	chapel/test/trivial/roxana/: test_param_decl3.good 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_paramvar_class1.chpl 
+	                                         test_paramvar_class1.future 
+	                                         test_paramvar_class1.good 
+
