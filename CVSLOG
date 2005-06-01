@@ -34014,3 +34014,27 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+06/01/05 10:14:12 -- deitz
+
+Log message:
+	Combined functionality of remove and extract.  The new function is
+	called remove.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp link.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         postAnalysisCleanup.cpp 
+	                         removeDeadSymbols.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             destructureTupleAssignments.cpp 
+	                             expandSeqExprAssignments.cpp 
+	                             findUnknownTypes.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             omitForNoAnalysis.cpp 
+	                             specializeParenOpExprs.cpp 
+
