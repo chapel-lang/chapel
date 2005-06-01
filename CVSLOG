@@ -34067,3 +34067,24 @@ Modified files:
 Removed files:
 	chapel/compiler/symtab/: symlink.cpp symlink.h 
 
+---------------------------------------------------------------------------
+
+06/01/05 13:05:30 -- jplevyak
+
+Log message:
+	Support for the "where" clause syntax as part of a function and
+	as a general decl (so that it can be included in a class).
+	Added 2 new binary operators: BINOP_SUBTYPE ( : ) and BINOP_NOTSUBTYPE( !: ).
+	Aded %left declartions for TCOLON TNOTCOLON and TCOMMA and TDOT.
+	The "where" clauses currently generate Exprs, but they are not
+	stored via Symboltable::xxxxDef.
+
+Modified files:
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/test/flowanalysis/newast/: sum_type-2.good 
+Added files:
+	chapel/test/types/type_variables/jplevyak/: where-1.chpl 
+	                                            where-1.future 
+	                                            where-1.good 
+
