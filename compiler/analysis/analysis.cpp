@@ -2071,13 +2071,9 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Vec<Expr *> domains;
       s->domains->getElements(domains);
       Vec<Symbol *> indices;
-      Vec<Expr*> indexdefs;
+      Vec<DefExpr*> indexdefs;
       s->indices->getElements(indexdefs);
-      forv_Vec(Expr, expr, indexdefs) {
-        DefExpr* def_expr = dynamic_cast<DefExpr*>(expr);
-        if (def_expr == NULL) {
-          INT_FATAL(expr, "Expected a def_expr here");
-        }
+      forv_Vec(DefExpr, def_expr, indexdefs) {
         indices.add(def_expr->sym);
       }
       if (s->forallExpr) { // forall expression

@@ -550,13 +550,13 @@ class CompleteDimExpr : public Expr {
 class ForallExpr : public Expr {
  public:
   AList<Expr>* domains;
-  AList<Expr>* indices;    /* DefExpr of indices */
+  AList<DefExpr>* indices;
   Expr* forallExpr;
 
   SymScope* indexScope;
 
   ForallExpr(AList<Expr>* init_domains, 
-             AList<Expr>* init_indices = new AList<Expr>(),
+             AList<DefExpr>* init_indices = new AList<DefExpr>(),
              Expr* init_forallExpr = NULL);
   void setForallExpr(Expr* exp);
   void setIndexScope(SymScope* init_indexScope);

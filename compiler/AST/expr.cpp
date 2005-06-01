@@ -1951,7 +1951,7 @@ void CompleteDimExpr::codegen(FILE* outfile) {
 }
 
 
-ForallExpr::ForallExpr(AList<Expr>* init_domains, AList<Expr>* init_indices,
+ForallExpr::ForallExpr(AList<Expr>* init_domains, AList<DefExpr>* init_indices,
                        Expr* init_forallExpr) :
   Expr(EXPR_FORALL),
   domains(init_domains),
@@ -1988,7 +1988,7 @@ void ForallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == domains) {
     domains = dynamic_cast<AList<Expr>*>(new_ast);
   } else if (old_ast == indices) {
-    indices = dynamic_cast<AList<Expr>*>(new_ast);
+    indices = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else if (old_ast == forallExpr) {
     forallExpr = dynamic_cast<Expr*>(new_ast);
   } else {

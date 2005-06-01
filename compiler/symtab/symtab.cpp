@@ -533,7 +533,7 @@ AList<DefExpr>* Symboltable::defineVarDef1(AList<Symbol>* idents, Type* type,
       !dynamic_cast<ForallExpr*>(init)) {
     if (dynamic_cast<Tuple*>(init)) {
       init = new ForallExpr(dynamic_cast<Tuple*>(init)->exprs,
-                            new AList<Expr>());
+                            new AList<DefExpr>());
     }
     else {
       init = new ForallExpr(new AList<Expr>(init));
@@ -581,8 +581,9 @@ DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type,
 
 
 /* Converts expressions like i and j in [(i,j) in D] to symbols */
-static AList<Expr>* exprToIndexSymbols(AList<Expr>* expr, AList<Expr>* domain, 
-                                       AList<VarSymbol>* indices = new AList<VarSymbol>()) {
+static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* expr,
+                                          AList<Expr>* domain, 
+                                          AList<VarSymbol>* indices = new AList<VarSymbol>()) {
   if (expr) {
     for (Expr* tmp = expr->first(); tmp; tmp = expr->next()) {
       Variable* varTmp = dynamic_cast<Variable*>(tmp);
@@ -601,7 +602,7 @@ static AList<Expr>* exprToIndexSymbols(AList<Expr>* expr, AList<Expr>* domain,
       }
     }
   }
-  AList<Expr>* defExprs = new AList<Expr>();
+  AList<DefExpr>* defExprs = new AList<DefExpr>();
   if (!indices->isEmpty()) {
     VarSymbol* var = indices->popHead();
     while (var) {
@@ -641,7 +642,7 @@ ForallExpr* Symboltable::startForallExpr(AList<Expr>* domainExpr,
                                          AList<Expr>* indexExpr) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
   
-  AList<Expr>* indices = exprToIndexSymbols(indexExpr, domainExpr);
+  AList<DefExpr>* indices = exprToIndexSymbols(indexExpr, domainExpr);
   // HACK: this is a poor assumption -- that all index variables are
   // integers
 
