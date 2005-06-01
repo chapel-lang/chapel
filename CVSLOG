@@ -33968,3 +33968,15 @@ Modified files:
 	chapel/compiler/include/: expr.h 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+05/31/05 17:23:57 -- deitz
+
+Log message:
+	Moved extract method to BaseAST.  Rearranged replaceChild and
+	callReplaceChild to support this move.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h 
+
