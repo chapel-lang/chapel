@@ -130,7 +130,7 @@
 %type <tupledt> tupleTypes
 %type <unresolveddt> unresolvedType
 %type <pdt> vardecltype typevardecltype fnrettype
-%type <pch> identifier query_identifier fname
+%type <pch> identifier query_identifier fname opt_identifier
 %type <psym> ident_symbol
 %type <symlist> ident_symbol_ls indexes indexlist
 %type <paramlist> formal formals
@@ -155,8 +155,11 @@
 
 /* These are declared in increasing order of precedence. */
 
+
 %left TNOELSE
 %left TELSE
+
+%left TCOMMA
 
 %left TCOLON
 %left TNOTCOLON
@@ -170,7 +173,7 @@
 %left TAND
 %right TNOT
 %left TEQUAL TNOTEQUAL
-%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER TCOMMA
+%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
 %left TBOR
 %left TBXOR
 %left TBAND
@@ -179,6 +182,7 @@
 %right TUPLUS TUMINUS TREDUCE TBNOT
 %right TEXP
 
+%left TLP
 %left TDOT
 
 %% 
@@ -563,6 +567,10 @@ whereexpr:
     { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
 | TLP whereexpr TRP
     { $$ = $2; }
+| structtype pragmas opt_identifier TLCBR decls TRCBR
+    { $$ = NULL; }
+| whereexpr TLP exprlist TRP   
+    { $$ = new ParenOpExpr($1, $3); }
 ;
 
 
@@ -1132,6 +1140,11 @@ identifier:
   TIDENT
     { $$ = copystring(yytext); }
 ;
+
+
+opt_identifier:
+    { $$ = NULL; }
+| identifier;
 
 
 query_identifier:
