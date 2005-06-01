@@ -6,7 +6,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
-#include "../symtab/symlink.h"
 #include "sym.h"
 #include "fun.h"
 #include "../traversals/buildClassConstructorsEtc.h"

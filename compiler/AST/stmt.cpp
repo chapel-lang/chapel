@@ -5,7 +5,6 @@
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "../symtab/symlink.h"
 #include "symscope.h"
 #include "symtab.h"
 #include "../traversals/fixup.h"

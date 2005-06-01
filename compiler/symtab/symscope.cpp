@@ -1,7 +1,6 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "symlink.h"
 #include "symscope.h"
 #include "symtab.h"
 #include "symtabTraversal.h"

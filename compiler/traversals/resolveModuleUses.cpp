@@ -5,7 +5,6 @@
 #include "stringutil.h"
 #include "symtab.h"
 #include "symscope.h"
-#include "../symtab/symlink.h"
 
 void ResolveModuleUses::preProcessStmt(Stmt* stmt) {
   SymScope* saveScope = NULL;

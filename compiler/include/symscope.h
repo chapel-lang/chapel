@@ -21,7 +21,6 @@ enum scopeType {
   SCOPE_CLASS,
 };
 
-//class SymLink;
 class SymtabTraversal;
 class ScopeLookupCache;
 
@@ -40,7 +39,6 @@ class SymScope : public gc {
   SymScope* sibling;
 
   Vec<Symbol*> symbols;
-  //  AList<SymLink>* syms;
 
   Map<char*,Vec<FnSymbol*>*> visibleFunctions;
 
