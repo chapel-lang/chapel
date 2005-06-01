@@ -22,10 +22,7 @@ void ResolveModuleUses::preProcessStmt(Stmt* stmt) {
         Symboltable::setCurrentScope(Symboltable::getCurrentModule()->modScope);
     }
 
-    for (SymLink* symLink = module->modScope->syms->first();
-         symLink;
-         symLink = module->modScope->syms->next()) {
-      Symbol* sym = symLink->pSym;
+    forv_Vec(Symbol, sym, module->modScope->symbols) {
       if (!dynamic_cast<ForwardingSymbol*>(sym)) {
         new ForwardingSymbol(sym);
       }

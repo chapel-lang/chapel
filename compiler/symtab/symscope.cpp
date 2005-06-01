@@ -17,10 +17,9 @@ SymScope::SymScope(scopeType init_type) :
   exprContext(NULL),
   parent(NULL),
   child(NULL),
-  sibling(NULL),
-  syms(new AList<SymLink>())
+  sibling(NULL)
 {
-  syms->debugNestedTraversals = true;
+  symbols.clear();
   visibleFunctions.clear();
 }
 
@@ -37,7 +36,14 @@ void SymScope::traverse(SymtabTraversal* traversal) {
 
   traversal->preProcessScope(this);
 
-  syms->traverse(traversal);
+  forv_Vec(Symbol, sym, symbols) {
+    Symbol* overload = sym;
+    while (overload) {
+      Symbol* next = overload->overload;
+      traversal->processSymbol(overload);
+      overload = next;
+    }
+  }
 
   traversal->postProcessScope(this);
 
@@ -46,7 +52,7 @@ void SymScope::traverse(SymtabTraversal* traversal) {
 
 
 bool SymScope::isEmpty(void) {
-  return syms->isEmpty();
+  return symbols.n == 0;
 }
 
 
@@ -66,39 +72,27 @@ bool SymScope::isInternal(void) {
 void SymScope::insert(Symbol* sym) {
   table.put(sym->name, sym);
   sym->setParentScope(this);
-
-  SymLink* newLink = new SymLink(sym);
-
-  syms->add(newLink);
+  symbols.add(sym);
 }
 
 
 void SymScope::remove(Symbol* sym) {
-  if (syms->isEmpty()) {
-    INT_FATAL(sym, "Symbol not found in scope from which deleted");
-  }
-  SymLink* node = syms->first();
-  while (node) {
-    Symbol* prev = NULL;
-    Symbol* tmp = node->pSym;
-    while (tmp) {
-      if (tmp == sym) {
-        if (!prev) {
-          if (tmp->overload) {
-            node->pSym = tmp->overload;
-          } else {
-            syms->remove(node);
-          }
-        } else {
-          prev->overload = tmp->overload;
-        }
-        syms->reset();
+  for (int i = 0; i < symbols.n; i++) {
+    if (symbols.v[i]) {
+      if (symbols.v[i] == sym) {
+        symbols.v[i] = sym->overload;
         return;
+      } else {
+        Symbol* tmp = symbols.v[i];
+        while (tmp->overload) {
+          if (tmp->overload == sym) {
+            tmp->overload = sym->overload;
+            return;
+          }
+          tmp = tmp->overload;
+        }
       }
-      prev = tmp;
-      tmp = tmp->overload;
     }
-    node = syms->next();
   }
   INT_FATAL(sym, "Symbol not found in scope from which deleted");
 }
@@ -259,9 +253,12 @@ void SymScope::printSymbols(FILE* outfile, bool tableOrder) {
       fprintf(outfile, "\n");
     }
   } else {
-    if (!syms->isEmpty()) {
+    if (!isEmpty()) {
       fprintf(outfile, "%s", indent);
-      syms->print(outfile, glomstrings(2, "L\n", indent));
+      forv_Vec(Symbol, sym, symbols) {
+        sym->print(outfile);
+        fprintf(outfile, "L\n%s", indent);
+      }
       fprintf(outfile, "\n");
     }
   }
@@ -285,30 +282,28 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
 
 void SymScope::codegen(FILE* outfile, char* separator) {
   // codegen enums
-  for (SymLink* link = syms->first();
-       link;
-       link = syms->next()) {
-    for (Symbol* sym = link->pSym; sym; sym = sym->overload) {
-      if (dynamic_cast<TypeSymbol*>(sym) && 
-          dynamic_cast<EnumType*>(sym->type)) {
-        sym->codegenDef(outfile);
+  forv_Vec(Symbol, sym, symbols) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+      if (dynamic_cast<TypeSymbol*>(tmp) && 
+          dynamic_cast<EnumType*>(tmp->type)) {
+        tmp->codegenDef(outfile);
       }
     }
   }
 
   // codegen prototypes
-  for (SymLink* link = syms->first(); link; link = syms->next()) {
-    for (Symbol* sym = link->pSym; sym; sym = sym->overload) {
-      sym->codegenPrototype(outfile);
+  forv_Vec(Symbol, sym, symbols) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+      tmp->codegenPrototype(outfile);
     }
   }
 
   // codegen definitions less enums
-  for (SymLink* link = syms->first(); link; link = syms->next()) {
-    for (Symbol* sym = link->pSym; sym; sym = sym->overload) {
-      if (!(dynamic_cast<TypeSymbol*>(sym) && 
-            dynamic_cast<EnumType*>(sym->type))) {
-        sym->codegenDef(outfile);
+  forv_Vec(Symbol, sym, symbols) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+      if (!(dynamic_cast<TypeSymbol*>(tmp) && 
+            dynamic_cast<EnumType*>(tmp->type))) {
+        tmp->codegenDef(outfile);
       }
     }
   }
@@ -356,8 +351,7 @@ addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
 void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   visibleFunctions.clear();
 
-  for(SymLink* tmp = syms->first(); tmp; tmp = syms->next()) {
-    Symbol* sym = tmp->pSym;
+  forv_Vec(Symbol, sym, symbols) {
     if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
       if (!dynamic_cast<ClassType*>(typeSym->type)) {
         forv_Vec(FnSymbol, method, typeSym->type->methods) {
@@ -372,7 +366,7 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
           constructor = dynamic_cast<FnSymbol*>(constructor->overload);
         }
       }
-    } else {
+    } else if (sym) {
       addVisibleFunctions(&visibleFunctions, sym);
     }
   }
