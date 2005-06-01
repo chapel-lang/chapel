@@ -71,6 +71,7 @@ type            return TTYPE;
 union           return TUNION;
 use             return TUSE;
 var             return TVAR;
+where           return TWHERE;
 while           return TWHILE;
 with            return TWITH;
 
@@ -106,6 +107,7 @@ with            return TWITH;
 
 "#"             return TSEQCAT;
 
+"!:"            return TNOTCOLON;
 ":"             return TCOLON;
 ";"             return TSEMI;
 ","             return TCOMMA;

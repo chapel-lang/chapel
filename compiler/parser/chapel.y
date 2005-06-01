@@ -85,6 +85,7 @@
 %token TUSE
 %token TVAL
 %token TVAR
+%token TWHERE
 %token TWHILE
 %token TWITH
 
@@ -112,6 +113,8 @@
 %token TRSBR;
 %token TLCBR;
 %token TRCBR;
+%token TCOLON
+%token TNOTCOLON
 
 
 %token TQUESTION;
@@ -133,7 +136,7 @@
 %type <paramlist> formal formals
 %type <enumsym> enum_item
 %type <enumsymlist> enum_list
-%type <pexpr> lvalue declarable_expr atom expr expr_list_item literal range seq_expr
+%type <pexpr> lvalue declarable_expr atom expr expr_list_item literal range seq_expr where whereexpr
 %type <exprlist> exprlist nonemptyExprlist
 %type <pexpr> reduction optional_init_expr assignExpr conditional_expr
 %type <pfaexpr> forallExpr
@@ -155,6 +158,9 @@
 %left TNOELSE
 %left TELSE
 
+%left TCOLON
+%left TNOTCOLON
+
 %left TRSBR
 %left TIN
 %left TBY
@@ -164,7 +170,7 @@
 %left TAND
 %right TNOT
 %left TEQUAL TNOTEQUAL
-%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
+%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER TCOMMA
 %left TBOR
 %left TBXOR
 %left TBAND
@@ -172,7 +178,8 @@
 %left TSTAR TDIVIDE TMOD
 %right TUPLUS TUMINUS TREDUCE TBNOT
 %right TEXP
-%left TCOLON
+
+%left TDOT
 
 %% 
 
@@ -496,19 +503,82 @@ isconstructor:
     { $$ = true; }
 ;
 
+where:
+  /* empty */
+    { $$ = NULL; }
+| TWHERE whereexpr
+    { $$ = $2; }
+;
+
+whereexpr: 
+  identifier
+    { $$ = new Variable(new UnresolvedSymbol($1)); }
+| TTYPE identifier
+    { $$ = new DefExpr(new TypeSymbol($2, new VariableType)); }
+| TNOT whereexpr
+    { $$ = new UnOp(UNOP_LOGNOT, $2); }
+| TBNOT whereexpr
+    { $$ = new UnOp(UNOP_BITNOT, $2); }
+| whereexpr TPLUS whereexpr
+    { $$ = Expr::newPlusMinus(BINOP_PLUS, $1, $3); }
+| whereexpr TMINUS whereexpr
+    { $$ = Expr::newPlusMinus(BINOP_MINUS, $1, $3); }
+| whereexpr TSTAR whereexpr
+    { $$ = new BinOp(BINOP_MULT, $1, $3); }
+| whereexpr TDIVIDE whereexpr
+    { $$ = new BinOp(BINOP_DIV, $1, $3); }
+| whereexpr TMOD whereexpr
+    { $$ = new BinOp(BINOP_MOD, $1, $3); }
+| whereexpr TEQUAL whereexpr
+    { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
+| whereexpr TNOTEQUAL whereexpr
+    { $$ = new BinOp(BINOP_NEQUAL, $1, $3); }
+| whereexpr TLESSEQUAL whereexpr
+    { $$ = new BinOp(BINOP_LEQUAL, $1, $3); }
+| whereexpr TGREATEREQUAL whereexpr
+    { $$ = new BinOp(BINOP_GEQUAL, $1, $3); }
+| whereexpr TLESS whereexpr
+    { $$ = new BinOp(BINOP_LTHAN, $1, $3); }
+| whereexpr TGREATER whereexpr
+    { $$ = new BinOp(BINOP_GTHAN, $1, $3); }
+| whereexpr TBAND whereexpr
+    { $$ = new BinOp(BINOP_BITAND, $1, $3); }
+| whereexpr TBOR whereexpr
+    { $$ = new BinOp(BINOP_BITOR, $1, $3); }
+| whereexpr TBXOR whereexpr
+    { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
+| whereexpr TAND whereexpr
+    { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
+| whereexpr TCOMMA whereexpr
+    { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
+| whereexpr TOR whereexpr
+    { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
+| whereexpr TEXP whereexpr
+    { $$ = new BinOp(BINOP_EXP, $1, $3); }
+| whereexpr TCOLON whereexpr
+    { $$ = new BinOp(BINOP_SUBTYPE, $1, $3); }
+| whereexpr TNOTCOLON whereexpr
+    { $$ = new BinOp(BINOP_NOTSUBTYPE, $1, $3); }
+| whereexpr TDOT identifier
+    { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
+| TLP whereexpr TRP
+    { $$ = $2; }
+;
+
+
 fndecl:
   isconstructor fname
     {
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2));
       $<fnsym>$->isConstructor = $1;
     }
-                       TLP formals TRP fnretref fnrettype
+                       TLP formals TRP fnretref fnrettype where
     {
       Symboltable::continueFnDef($<fnsym>3, $5, $8, $7);
     }
                                                  function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $10)));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $11)));
     }
 |
   isconstructor identifier TDOT fname
@@ -517,13 +587,13 @@ fndecl:
         Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
       $<fnsym>$->isConstructor = $1;
     }
-                                  TLP formals TRP fnretref fnrettype
+                                  TLP formals TRP fnretref fnrettype where
     {
       Symboltable::continueFnDef($<fnsym>5, $7, $10, $9);
     }
                                                             function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $12)));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $13)));
     }
 |
   isconstructor fname
@@ -531,13 +601,13 @@ fndecl:
       $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2), true);
       $<fnsym>$->isConstructor = $1;
     }
-                  fnretref fnrettype
+                  fnretref fnrettype where
     {
       Symboltable::continueFnDef($<fnsym>3, new AList<ParamSymbol>(), $5, $4);
     }
                             function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $7)));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $8)));
     }
 ;
 
@@ -559,6 +629,8 @@ decl:
     { $$ = new WithStmt($2); }
 | TUSE lvalue TSEMI
     { $$ = new UseStmt($2); }
+| TWHERE whereexpr TSEMI
+    { $$ = new ExprStmt($2); }
 | vardecl
     { $$ = $1; }
 | typedecl
