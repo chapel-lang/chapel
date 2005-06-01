@@ -562,9 +562,6 @@ void Symboltable::defineVarDef2(AList<DefExpr>* exprs, varType vartag,
     VarSymbol* var = dynamic_cast<VarSymbol*>(expr->sym);
     var->consClass = constag;
     var->varClass = vartag;
-    if (constag == VAR_PARAM && !var->defPoint->init){
-      USR_FATAL(var->defPoint->init, "No initializer for parameter.");
-    }
     expr = exprs->next();
   }
 }

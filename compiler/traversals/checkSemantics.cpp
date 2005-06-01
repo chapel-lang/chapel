@@ -45,5 +45,12 @@ void CheckSemantics::preProcessExpr(Expr* expr) {
     //printf("Variable.\n");
     checkVar(var);
   }
+  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
+      if (var->isParam() && !defExpr->init) {
+        USR_FATAL(defExpr, "No initializer for parameter");
+      }
+    }
+  }
 }
 
