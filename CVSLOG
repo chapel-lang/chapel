@@ -34119,3 +34119,14 @@ Log message:
 Modified files:
 	chapel/test/trivial/roxana/: test_param_decl3.good 
 
+---------------------------------------------------------------------------
+
+06/01/05 15:13:28 -- jplevyak
+
+Log message:
+	Add 2 new "where" constraint types: an anonymous class declaration, and
+	an application (ParenOp) which can be used to instantiate other types.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
