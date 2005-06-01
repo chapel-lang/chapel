@@ -33993,3 +33993,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+06/01/05 08:58:20 -- jplevyak
+
+Log message:
+	Patch some bit of tempermentalness the log.i results.
+
+Modified files:
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+
