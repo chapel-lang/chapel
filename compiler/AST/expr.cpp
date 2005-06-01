@@ -189,13 +189,13 @@ void Expr::traverseExpr(Traversal* traversal) {
 }
 
 
-static void call_replace_child(Expr* old_expr, Expr* new_expr) {
-  if (old_expr->parentExpr) {
-    old_expr->parentExpr->replaceChild(old_expr, new_expr);
-  } else if (old_expr->parentStmt) {
-    old_expr->parentStmt->replaceChild(old_expr, new_expr);
+void Expr::callReplaceChild(BaseAST* new_ast) {
+  if (parentExpr) {
+    parentExpr->replaceChild(this, new_ast);
+  } else if (parentStmt) {
+    parentStmt->replaceChild(this, new_ast);
   } else {
-    old_expr->parentSymbol->replaceChild(old_expr, new_expr);
+    parentSymbol->replaceChild(this, new_ast);
   }
 }
 
@@ -207,7 +207,7 @@ void Expr::replace(Expr* new_expr) {
   }
   new_expr->prev = prev;
   if (!prev) {
-    call_replace_child(this, new_expr);
+    callReplaceChild(new_expr);
   } else {
     prev->next = new_expr;
   }
@@ -218,7 +218,7 @@ void Expr::replace(Expr* new_expr) {
 
 void Expr::insertBefore(Expr* new_expr) {
   if (!prev) {
-    call_replace_child(this, new_expr);
+    callReplaceChild(new_expr);
   } else {
     prev->next = new_expr;
   }
@@ -239,20 +239,6 @@ void Expr::insertAfter(Expr* new_expr) {
   new_expr->prev = this;
 
   call_fixup(this);
-}
-
-
-Expr* Expr::extract(void) {
-  Expr* next_expr = dynamic_cast<Expr*>(next);
-  if (prev) {
-    prev->next = next;
-  } else {
-    call_replace_child(this, next_expr);
-  }
-  if (next_expr) {
-    next->prev = prev;
-  }
-  return this;
 }
 
 

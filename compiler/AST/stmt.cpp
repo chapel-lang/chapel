@@ -120,11 +120,11 @@ void Stmt::traverseStmt(Traversal* traversal) {
 }
 
 
-static void call_replace_child(Stmt* old_stmt, Stmt* new_stmt) {
-  if (old_stmt->parentStmt) {
-    old_stmt->parentStmt->replaceChild(old_stmt, new_stmt);
+void Stmt::callReplaceChild(BaseAST* new_ast) {
+  if (parentStmt) {
+    parentStmt->replaceChild(this, new_ast);
   } else {
-    old_stmt->parentSymbol->replaceChild(old_stmt, new_stmt);
+    parentSymbol->replaceChild(this, new_ast);
   }
 }
 
@@ -136,7 +136,7 @@ void Stmt::replace(Stmt* new_stmt) {
   }
   new_stmt->prev = prev;
   if (!prev) {
-    call_replace_child(this, new_stmt);
+    callReplaceChild(new_stmt);
   } else {
     prev->next = new_stmt;
   }
@@ -147,7 +147,7 @@ void Stmt::replace(Stmt* new_stmt) {
 
 void Stmt::insertBefore(Stmt* new_stmt) {
   if (!prev) {
-    call_replace_child(this, new_stmt);
+    callReplaceChild(new_stmt);
   } else {
     prev->next = new_stmt;
   }
@@ -168,20 +168,6 @@ void Stmt::insertAfter(Stmt* new_stmt) {
   new_stmt->prev = this;
 
   call_fixup(this);
-}
-
-
-Stmt* Stmt::extract(void) {
-  Stmt* next_stmt = dynamic_cast<Stmt*>(next);
-  if (prev) {
-    prev->next = next;
-  } else {
-    call_replace_child(this, next_stmt);
-  }
-  if (next_stmt) {
-    next->prev = prev;
-  }
-  return this;
 }
 
 

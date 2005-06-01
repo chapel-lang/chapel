@@ -45,6 +45,31 @@ BaseAST::BaseAST(astType_t type) :
 }
 
 
+void BaseAST::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected call to BaseAST::replaceChild(old, new)");
+}
+
+
+void BaseAST::callReplaceChild(BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected call to BaseAST::callReplaceChild(new)");
+}
+
+
+BaseAST* BaseAST::extract(void) {
+  if ((prev && !next) || (!prev && next)) {
+    INT_FATAL(this, "Method extract called on ill-formed list");
+  }
+
+  if (prev && next) { // extract from list
+    prev->next = next;
+    next->prev = prev;
+  } else {
+    this->callReplaceChild(NULL);
+  }
+  return this;
+}
+
+
 void BaseAST::copySupport(BaseAST* copy,
                           bool clone,
                           Map<BaseAST*,BaseAST*>* map,

@@ -105,6 +105,7 @@ class Expr : public BaseAST {
   Expr* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
+  virtual void callReplaceChild(BaseAST* new_ast);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 
   virtual void traverse(Traversal* traversal, bool atTop = true);
@@ -128,7 +129,6 @@ class Expr : public BaseAST {
   void replace(Expr* new_expr);
   void insertBefore(Expr* new_expr);
   void insertAfter(Expr* new_expr);
-  Expr* extract(void);
 
   bool isRead(void);
   bool isWritten(void);

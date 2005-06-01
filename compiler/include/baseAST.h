@@ -119,6 +119,11 @@ class BaseAST : public ILink {
   BaseAST(void);
   BaseAST(astType_t type);
 
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void callReplaceChild(BaseAST* new_ast);
+
+  BaseAST* extract(void);
+
 // need to put this as default value to copy for new interface
 //    new Map<BaseAST*,BaseAST*>();
   void copySupport(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list);

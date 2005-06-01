@@ -28,6 +28,7 @@ class Stmt : public BaseAST {
   Stmt* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
+  virtual void callReplaceChild(BaseAST* new_ast);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void);
   virtual void traverse(Traversal* traversal, bool atTop = true);
@@ -37,7 +38,6 @@ class Stmt : public BaseAST {
   void replace(Stmt* new_stmt);
   void insertBefore(Stmt* new_stmt);
   void insertAfter(Stmt* new_stmt);
-  Stmt* extract(void);
   bool hasPragma(char* str);
   void addPragma(char* str);
 };
