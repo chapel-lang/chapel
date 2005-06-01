@@ -46,7 +46,7 @@ static void build_constructor(StructuralType* structType) {
       Type* type = tmp->type;
       Expr* init = (tmp->defPoint->init) ? tmp->defPoint->init->copy() : new VarInitExpr(new Variable(tmp));
       if (tmp->defPoint->init) {
-        tmp->defPoint->init->extract();
+        tmp->defPoint->init->remove();
       }
       ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, init);
       args->add(arg);

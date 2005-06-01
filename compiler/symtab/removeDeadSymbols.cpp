@@ -10,9 +10,9 @@ static void markAsDeadAndExtract(Symbol* sym) {
   sym->isDead = true;
   if (sym->defPoint) {
     if (!sym->defPoint->next && !sym->defPoint->prev) {
-      sym->defPoint->parentStmt->extract();
+      sym->defPoint->parentStmt->remove();
     } else {
-      sym->defPoint->extract();
+      sym->defPoint->remove();
     }
   }
   //  fprintf(stderr, "Removing %s\n", sym->name);

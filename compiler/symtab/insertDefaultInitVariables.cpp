@@ -27,7 +27,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
   if (dynamic_cast<TypeSymbol*>(sym)) {
     if (dynamic_cast<ArrayType*>(sym->type)) { // bail on array types
       if (sym->type->defaultVal) {
-        sym->type->defaultVal->extract();
+        sym->type->defaultVal->remove();
         sym->type->defaultVal = NULL;
       }
       return; // they don't get default initialized yet
@@ -37,7 +37,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
     }
     if (dynamic_cast<IndexType*>(sym->type)) { // RED: bail on index types
       if (sym->type->defaultVal) {
-        sym->type->defaultVal->extract();
+        sym->type->defaultVal->remove();
         sym->type->defaultVal = NULL;
       }
       return; // they don't get default initialized yet

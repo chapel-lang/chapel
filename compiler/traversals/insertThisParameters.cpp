@@ -117,7 +117,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     FnSymbol* newFn = defStmt->fnDef();
     newFn->cname = copystring(fn->cname);
     insertPoint->insertBefore(defStmt);
-    fn->defPoint->parentStmt->extract();
+    fn->defPoint->parentStmt->remove();
     fn->parentScope->remove(fn);
     Symboltable::removeScope(fn->paramScope);
     StructuralType* structuralType = dynamic_cast<StructuralType*>(fn->typeBinding->type);

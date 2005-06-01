@@ -122,7 +122,7 @@ class BaseAST : public ILink {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void callReplaceChild(BaseAST* new_ast);
 
-  BaseAST* extract(void);
+  BaseAST* remove(void);
 
 // need to put this as default value to copy for new interface
 //    new Map<BaseAST*,BaseAST*>();

@@ -72,5 +72,5 @@ void DestructureTupleAssignments::postProcessStmt(Stmt* stmt) {
     ExprStmt* new_assign_stmt = new ExprStmt(new_assign_expr);
     stmt->insertBefore(new_assign_stmt);
   }
-  stmt->extract();
+  stmt->remove();
 }

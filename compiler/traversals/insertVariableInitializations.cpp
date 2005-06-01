@@ -219,6 +219,6 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
       def_expr = def_stmt->defExprls->next();
     }
     
-    //    def_stmt->extract();
+    //    def_stmt->remove();
   }
 }

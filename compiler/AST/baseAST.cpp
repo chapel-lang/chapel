@@ -55,14 +55,9 @@ void BaseAST::callReplaceChild(BaseAST* new_ast) {
 }
 
 
-BaseAST* BaseAST::extract(void) {
-  if ((prev && !next) || (!prev && next)) {
-    INT_FATAL(this, "Method extract called on ill-formed list");
-  }
-
-  if (prev && next) { // extract from list
-    prev->next = next;
-    next->prev = prev;
+BaseAST* BaseAST::remove(void) {
+  if (prev || next) {
+    ILink::remove();
   } else {
     this->callReplaceChild(NULL);
   }

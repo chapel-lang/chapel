@@ -43,7 +43,7 @@ void PostAnalysisCleanup::processSymbol(Symbol* sym) {
   //
   if (ParamSymbol* arg = dynamic_cast<ParamSymbol*>(sym)) {
     if (arg->init) {
-      arg->init->extract();
+      arg->init->remove();
     }
   }
 }

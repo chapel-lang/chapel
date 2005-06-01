@@ -50,7 +50,7 @@ void ILink::codegen(FILE* outfile) {
 
 
 void ILink::remove(void) {
-  if (next == NULL || prev == NULL) {
+  if (!next || !prev) {
     INT_FATAL("Calling remove() on an ILink that's not in a list");
   }
   next->prev = prev;

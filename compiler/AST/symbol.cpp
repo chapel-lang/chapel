@@ -977,7 +977,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
       for (int j = 0; j < generic_substitutions->n; j++) {
         if (cloneType->types.v[i] && 
             cloneType->types.v[i]->type == generic_substitutions->v[j].key) {
-          cloneType->types.v[i]->defPoint->parentStmt->extract();
+          cloneType->types.v[i]->defPoint->parentStmt->remove();
           cloneType->types.v[i]->parentScope->remove(cloneType->types.v[i]);
           cloneType->types.v[i] = NULL;
         }

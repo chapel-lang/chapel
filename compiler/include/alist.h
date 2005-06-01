@@ -334,18 +334,10 @@ void AList<elemType>::insertAfter(AList<elemType>* firstNode) {
 
 template <class elemType>
 void AList<elemType>::remove(elemType* node) {
-  if (node->prev == NULL || node->next == NULL) {
-    INT_FATAL(node, "Trying to remove a node that's not in a list");
-  }
-  elemType* prevNode = dynamic_cast<elemType*>(node->prev);
-  elemType* nextNode = dynamic_cast<elemType*>(node->next);
-  prevNode->next = nextNode;
-  nextNode->prev = prevNode;
-  node->next = NULL;
-  node->prev = NULL;
   if (cursor == node) {
-    cursor = prevNode;
+    cursor = dynamic_cast<elemType*>(node->prev);
   }
+  node->remove();
 }
 
 

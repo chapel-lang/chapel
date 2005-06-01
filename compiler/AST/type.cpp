@@ -1187,7 +1187,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
       Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
       rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : varInitExpr;
       if (tmp->defPoint->init) {
-        tmp->defPoint->init->extract();
+        tmp->defPoint->init->remove();
       }
     }
     if (rhs) {

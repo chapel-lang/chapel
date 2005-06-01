@@ -99,7 +99,7 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
   if (defExpr->init) {
     stmt->insertBefore(new ExprStmt(new AssignOp(GETS_NORM, new Variable(var), defExpr->init->expr->copy())));
   }
-  defStmt->extract();
+  defStmt->remove();
 //   if (seq_type->symbol) {
 //     INT_FATAL(stmt, "Seq type already resolved");
 //   }

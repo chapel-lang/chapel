@@ -46,7 +46,7 @@ void OmitForNoAnalysis::postProcessStmt(Stmt* stmt) {
         } 
         def_expr = def_stmt->defExprls->next();
       }
-      def_stmt->extract();
+      def_stmt->remove();
       return;
     }
     pr = def_stmt->pragmas->next();
