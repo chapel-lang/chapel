@@ -34109,3 +34109,13 @@ Added files:
 	                                         test_paramvar_class1.future 
 	                                         test_paramvar_class1.good 
 
+---------------------------------------------------------------------------
+
+06/01/05 13:52:26 -- deitz
+
+Log message:
+	Fixed filename in error message in this test.
+
+Modified files:
+	chapel/test/trivial/roxana/: test_param_decl3.good 
+
