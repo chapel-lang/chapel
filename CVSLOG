@@ -33954,3 +33954,17 @@ Added files:
 	                                         test_instantiate_construct1.chpl 
 	                                         test_instantiate_construct1.good 
 
+---------------------------------------------------------------------------
+
+05/31/05 17:21:19 -- bradc
+
+Log message:
+	Changed ForallExpr::indices from a list of Expr to
+	a list of DefExpr.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/symtab/: symtab.cpp 
+
