@@ -1337,7 +1337,9 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       if (!this_is_init && type->defaultVal) {
         if1_move(if1, &ast->code, get_defaultVal(type), ast->sym, ast);
       } else if (type->defaultConstructor) {
-        Code *send = if1_send(if1, &ast->code, 1, 1, constructor_name(type), ast->sym);
+        Sym *tmp = new_sym();
+        Code *send = if1_send(if1, &ast->code, 1, 1, constructor_name(type), tmp);
+        if1_move(if1, &ast->code, tmp, ast->sym, ast);
         send->ast = ast;
       } else if (!this_constructor)
         if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
