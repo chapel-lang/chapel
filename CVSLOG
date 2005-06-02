@@ -34152,3 +34152,17 @@ Added files:
 	chapel/test/ssca/ssca2/: NOTEST ssca2.orig.chpl 
 	                         ssca2.parses.chpl 
 
+---------------------------------------------------------------------------
+
+06/02/05 11:14:38 -- jplevyak
+
+Log message:
+	Changed names of setters to =varname to match the =functionname
+	used for lvalue functions.  This prevents a potential name space conflict.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+
