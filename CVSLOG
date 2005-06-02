@@ -34330,3 +34330,19 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_complex.chpl 
 
+---------------------------------------------------------------------------
+
+06/02/05 16:21:27 -- jplevyak
+
+Log message:
+	Implement new "primitive chapel_defvar" instead of hard-coding
+	ExprDefs as IF1 code. Currently this is only used for
+	the well behaved types (not Arrays, Domains, etc), but it should
+	give us more flexibility to handle things like "like" particularly
+	when all types have defaultVal or defaultConstructor.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: driver.h fa.h 
+	chapel/compiler/main/: driver.cpp 
+
