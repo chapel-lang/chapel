@@ -41,7 +41,7 @@ void TransformLetExprs::doTransformation(void) {
     AList<DefExpr>* defExpr = letExpr->symDefs->copy(true, map, &lets);
     Stmt* letStmtCopy = letStmt->copy(false, map, &lets);
     AList<Stmt>* defStmt = new AList<Stmt>(new DefStmt(defExpr));
-    defStmt->add(letStmtCopy);
+    defStmt->insertAtTail(letStmtCopy);
     blockStmt = Symboltable::finishCompoundStmt(blockStmt, defStmt);
 
     for (DefExpr* tmp = defExpr->first(); tmp; tmp = defExpr->next()) {

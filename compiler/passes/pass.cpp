@@ -1,4 +1,4 @@
-#include "link.h"
+#include "baseAST.h"
 #include "pass.h"
 #include "stringutil.h"
 

@@ -66,10 +66,10 @@ void RemoveSeqOperations::postProcessExpr(Expr* expr) {
   Expr* arg2;
 
   if (left_seq_type) {
-    args->add(new FnCall(new Variable(seq_copy), 
+    args->insertAtTail(new FnCall(new Variable(seq_copy), 
                          new AList<Expr>(bin_expr->left->copy())));
   } else {
-    args->add(bin_expr->left->copy()); 
+    args->insertAtTail(bin_expr->left->copy()); 
   }
 
   if (right_seq_type) {
@@ -79,6 +79,6 @@ void RemoveSeqOperations::postProcessExpr(Expr* expr) {
     arg2 = bin_expr->right->copy(); 
   }
 
-  args->add(arg2);
+  args->insertAtTail(arg2);
   expr->replace(new FnCall(new Variable(seq_method), args));
 }

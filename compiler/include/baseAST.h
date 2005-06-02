@@ -1,11 +1,12 @@
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
-#include "link.h"
 #include "map.h"
 
 class Symbol;
 class Type;
+class Traversal;
+class SymScope;
 
 /**
  **  Note: update astType_t and astTypeName together always.
@@ -105,30 +106,52 @@ extern char* astTypeName[];
 #define isSomeSymbol(_x) (((_x) >= SYMBOL) && (_x) < TYPE)
 #define isSomeType(_x) (((_x) >= TYPE) && (_x) < AST_TYPE_END)
 
-class BaseAST : public ILink {
+class BaseAST : public gc {
  public:
-  //what class this class instance is
-  astType_t astType;
-  long id;
+  astType_t astType;    // BaseAST subclass
+  long id;              // Unique ID
 
-  char* traversalInfo; // holds the traversal where this was created
-  Vec<char*>* copyInfo; // holds a vec of traversals where this was copied
+  BaseAST* prev;        // List previous pointer
+  BaseAST* next;        // List next pointer
+
+  SymScope* parentScope;
+
+  char* filename;       // filename of location
+  int lineno;           // line number of location
+  char* traversalInfo;  // traversal where this was created
+  Vec<char*>* copyInfo; // traversals where this was copied
 
   static long getNumIDs(void);
 
   BaseAST(void);
   BaseAST(astType_t type);
 
+  virtual void traverse(Traversal* traversal, bool atTop = true);
+  virtual void traverseDef(Traversal* traversal, bool atTop = true);
+
+  virtual void print(FILE* outfile);
+  virtual void printDef(FILE* outfile);
+  void println(FILE* outfile);
+
+  virtual void codegen(FILE* outfile);
+
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void callReplaceChild(BaseAST* new_ast);
 
-  BaseAST* remove(void);
+  void remove(void);
+  void replace(BaseAST* new_ast);
+  void insertBefore(BaseAST* new_ast);
+  void insertAfter(BaseAST* new_ast);
 
 // need to put this as default value to copy for new interface
 //    new Map<BaseAST*,BaseAST*>();
   void copySupport(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list);
   void copySupportTopLevel(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list);
+
+  char* stringLoc(void);
+  void printLoc(FILE* outfile);
 };
+
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)
 
 class FnSymbol;

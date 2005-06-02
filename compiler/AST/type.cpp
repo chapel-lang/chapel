@@ -16,7 +16,7 @@
 // Utilities for building write functions
 static void addWriteStmt(AList<Stmt>* body, Expr* arg) {
   Expr* write = new Variable(new UnresolvedSymbol("write"));
-  body->add(new ExprStmt(new ParenOpExpr(write, new AList<Expr>(arg))));
+  body->insertAtTail(new ExprStmt(new ParenOpExpr(write, new AList<Expr>(arg))));
 }
 
 
@@ -736,7 +736,7 @@ SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
   // re-insert it
   Stmt* typeDecl = _seq_type->declarationList->popHead();
   AList<Stmt>* new_decls = _seq_type->declarationList->copy(true);
-  _seq_type->declarationList->insert(typeDecl);
+  _seq_type->declarationList->insertAtHead(typeDecl);
 
   new_seq_type->addDeclarations(new_decls);
   SymScope* new_seq_scope = Symboltable::popScope();
@@ -937,7 +937,7 @@ AList<Stmt>* ArrayType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_ArrayWriteStopgap")), new AList<Expr>(new Variable(arg)))));
   // The addition of this statement is somewhat of a kludge.  See the notes
   // related to it in expr.cpp
-  body->add(new ExprStmt(new ParenOpExpr(new Variable(new UnresolvedSymbol("write")), new AList<Expr>(new ArrayRef(new Variable(arg), zero_inds)))));
+  body->insertAtTail(new ExprStmt(new ParenOpExpr(new Variable(new UnresolvedSymbol("write")), new AList<Expr>(new ArrayRef(new Variable(arg), zero_inds)))));
   return body;
 }
 
@@ -1055,7 +1055,7 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
     if (def && (fn = def->fnDef())) {
       copy_type->methods.add(fn);
     } else {
-      new_decls->add(old_decls->copyInternal(true, map));
+      new_decls->insertAtTail(old_decls->copyInternal(true, map));
     }
   }
   copy_type->addDeclarations(new_decls);
@@ -1087,23 +1087,12 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
     }
     tmp = newDeclarations->next();
   }
-  if (declarationList->isEmpty()) {
-    declarationList = newDeclarations;
-    if (symbol && symbol->defPoint) {
-      fixup_expr(symbol->defPoint);
+  if (beforeStmt) {
+    while (Stmt* tmp = newDeclarations->popHead()) {
+      beforeStmt->insertBefore(tmp);
     }
-  } else if (beforeStmt) {
-    declarationList->insertBefore(newDeclarations, beforeStmt);
   } else {
-    Stmt* last = declarationList->last();
-    if (last->parentSymbol) { /** inserted in tree already **/
-      /** I do this conditional because TupleType addType is called
-          before it is inserted in the tree **/
-      /** really want insertAfter to do this **/
-      declarationList->insertAfter(newDeclarations);
-    } else {
-      declarationList->add(newDeclarations);
-    }
+    declarationList->add(newDeclarations);
   }
 }
 
@@ -1165,7 +1154,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
     Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
     Expr* assign_expr = new AssignOp(GETS_NORM, lhs, varInitExpr);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
-    stmts->add(assign_stmt);
+    stmts->insertAtTail(assign_stmt);
   }
 
   ParamSymbol* ptmp = arguments->first();
@@ -1193,7 +1182,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
     if (rhs) {
       Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
       Stmt* assign_stmt = new ExprStmt(assign_expr);
-      stmts->add(assign_stmt);
+      stmts->insertAtTail(assign_stmt);
     }
     if (analyzeAST) {
       ptmp = arguments->next();
@@ -1281,11 +1270,11 @@ AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
   if (dynamic_cast<ClassType*>(this)) {
     Expr* write = new Variable(new UnresolvedSymbol("write"));
     AList<Stmt>* writeNil = new AList<Stmt>(new ExprStmt(new ParenOpExpr(write, new AList<Expr>(new StringLiteral("nil")))));
-    writeNil->add(new ReturnStmt(NULL));
+    writeNil->insertAtTail(new ReturnStmt(NULL));
     BlockStmt* blockStmt = new BlockStmt(writeNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
     Expr* argIsNil = new BinOp(BINOP_EQUAL, new Variable(arg), new Variable(nil));
-    body->add(new CondStmt(argIsNil, blockStmt));
+    body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
   if (dynamic_cast<ClassType*>(this)) {
@@ -1401,11 +1390,11 @@ void UnionType::buildFieldSelector(void) {
   /* build list of enum symbols */
   char* id_name = buildFieldSelectorName(this, NULL);
   EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
-  id_list->add(id_symbol);
+  id_list->insertAtTail(id_symbol);
   forv_Vec(VarSymbol, tmp, fields) {
     id_name = buildFieldSelectorName(this, tmp);
     id_symbol = new EnumSymbol(id_name, NULL);
-    id_list->add(id_symbol);
+    id_list->insertAtTail(id_symbol);
   }
   EnumSymbol::setValues(id_list);
 
@@ -1437,10 +1426,10 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
                                             Symbol* field) {
   AList<Expr>* args = new AList<Expr>(base->copy());
   char* id_tag = buildFieldSelectorName(this, field);
-  args->add(new Variable(Symboltable::lookupFromScope(id_tag, structScope)));
+  args->insertAtTail(new Variable(Symboltable::lookupFromScope(id_tag, structScope)));
   if (type == UNION_CHECK) {
-    args->add(new StringLiteral(base->filename));
-    args->add(new IntLiteral(intstring(base->lineno), base->lineno));
+    args->insertAtTail(new StringLiteral(base->filename));
+    args->insertAtTail(new IntLiteral(intstring(base->lineno), base->lineno));
   }
   
   char* fnName = unionCallName[type];
@@ -1452,11 +1441,11 @@ void UnionType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
                                      AList<ParamSymbol>* arguments) {
   AList<Expr>* args = new AList<Expr>(new Variable(_this));
   Expr* arg2 = new Variable(fieldSelector->valList->first());
-  args->add(arg2);
+  args->insertAtTail(arg2);
   FnCall* init_function = 
     new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);
   ExprStmt* init_stmt = new ExprStmt(init_function);
-  stmts->add(init_stmt);
+  stmts->insertAtTail(init_stmt);
 }
 
 
@@ -1507,7 +1496,7 @@ void TupleType::addType(Type* additionalType) {
 void TupleType::rebuildDefaultVal(void) {
   AList<Expr>* exprs = new AList<Expr>();
   forv_Vec(Type, component, components) {
-    exprs->add(component->defaultVal->copy());
+    exprs->insertAtTail(component->defaultVal->copy());
   }
   Tuple* tuple = new Tuple(exprs);
   if (symbol) {

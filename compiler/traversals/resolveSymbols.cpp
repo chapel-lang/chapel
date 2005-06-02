@@ -13,7 +13,7 @@ static AList<Expr>* copy_argument_list(ParenOpExpr* expr) {
   AList<Expr>* args = new AList<Expr>();
   MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr->baseExpr);
   if (member_access) {
-    args->add(member_access->base->copy());
+    args->insertAtTail(member_access->base->copy());
   }
   args->add(expr->argList->copy());
   return args;
@@ -213,7 +213,7 @@ resolve_no_analysis(Expr *expr) {
     AList<Expr>* arguments = copy_argument_list(paren);
     Expr* function = new Variable(fns.e[0]);
     if (!strcmp("this", fns.e[0]->name)) {
-      arguments->insert(paren->baseExpr->copy());
+      arguments->insertAtHead(paren->baseExpr->copy());
     }
     Expr* new_expr = new FnCall(function, arguments);
     expr->replace(new_expr);
@@ -277,7 +277,7 @@ resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0) {
     }
     
     AList<Expr>* args = new AList<Expr>(op->left->copy());
-    args->add(op->right->copy());
+    args->insertAtTail(op->right->copy());
     FnCall *new_expr = new FnCall(new Variable(fns.e[0]), args);
     expr->replace(new_expr);
     expr = new_expr;
@@ -343,7 +343,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     AList<Expr>* arguments = copy_argument_list(paren);
     Expr* function = new Variable(fns.e[0]);
     if (!strcmp("this", fns.e[0]->name)) {
-      arguments->insert(paren->baseExpr->copy());
+      arguments->insertAtHead(paren->baseExpr->copy());
     }
     Expr *new_expr = new FnCall(function, arguments);
     expr->replace(new_expr);
@@ -361,9 +361,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         Expr* function = new Variable(fns.e[0]);
         AList<Expr>* arguments = new AList<Expr>();
         if (!strcmp("=this", fns.e[0]->name))
-          arguments->add(paren->baseExpr->copy());
+          arguments->insertAtTail(paren->baseExpr->copy());
         arguments->add(copy_argument_list(paren));
-        arguments->add(aop->right->copy());
+        arguments->insertAtTail(aop->right->copy());
         Expr *new_expr = new FnCall(function, arguments);
         aop->replace(new_expr);
         expr = new_expr;
@@ -385,7 +385,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         if (f_op) {
           if (!is_builtin(f_op)) {
             AList<Expr>* op_arguments = new AList<Expr>(member_access->copy());
-            op_arguments->add(rhs);
+            op_arguments->insertAtTail(rhs);
             Expr* op_function = new Variable(f_op);
             rhs = new FnCall(op_function, op_arguments);
           } else {
@@ -395,7 +395,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           }
         }
         AList<Expr>* assign_arguments = new AList<Expr>(member_access->base->copy());
-        assign_arguments->add(rhs);
+        assign_arguments->insertAtTail(rhs);
         Expr* assign_function = new Variable(f_assign);
         Expr *new_expr = new FnCall(assign_function, assign_arguments);
         expr->replace(new_expr);

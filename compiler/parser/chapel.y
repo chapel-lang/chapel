@@ -228,7 +228,7 @@ ident_symbol_ls:
   ident_symbol
     { $$ = new AList<Symbol>($1); }
 | ident_symbol_ls ident_symbol
-    { $1->add($2); }
+    { $1->insertAtTail($2); }
 ;
 
 
@@ -362,7 +362,7 @@ enum_list:
     }
 | enum_list TCOMMA enum_item
     {
-      $1->add($3);
+      $1->insertAtTail($3);
       $$ = $1;
     }
 ;
@@ -653,7 +653,7 @@ decls:
 | decls pragmas decl
     {
       $3->pragmas = $2;
-      $1->add($3);
+      $1->insertAtTail($3);
     }
 ;
 
@@ -761,7 +761,7 @@ statements:
 | statements pragmas statement
     { 
       $3->pragmas = $2;
-      $1->add($3);
+      $1->insertAtTail($3);
     }
 ;
 
@@ -820,7 +820,7 @@ pragmas:
       if ($1 == NULL) {
         $$ = new AList<Pragma>($2);
       } else {
-        $1->add($2);
+        $1->insertAtTail($2);
       }
     }
 ;
@@ -872,7 +872,7 @@ indexes:
   ident_symbol
     { $$ = new AList<Symbol>($1); }
 | indexes TCOMMA ident_symbol
-    { $1->add($3); }
+    { $1->insertAtTail($3); }
 ;
 
 
@@ -990,7 +990,7 @@ nonemptyExprlist:
   pragmas expr_list_item
     { $2->pragmas = $1; $$ = new AList<Expr>($2); }
 | nonemptyExprlist TCOMMA pragmas expr_list_item
-    { $4->pragmas = $3; $1->add($4); }
+    { $4->pragmas = $3; $1->insertAtTail($4); }
 ;
 
 
@@ -1052,7 +1052,7 @@ expr:
     Variable* _chpl_tostring =
       new Variable(new UnresolvedSymbol("_chpl_tostring"));
     AList<Expr>* args = new AList<Expr>($1);
-    args->add(new StringLiteral($3));
+    args->insertAtTail(new StringLiteral($3));
     $$ = new ParenOpExpr(_chpl_tostring, args);
   }
 | range %prec TDOTDOT

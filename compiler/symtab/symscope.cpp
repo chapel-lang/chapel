@@ -218,7 +218,7 @@ void SymScope::printHeader(FILE* outfile) {
     fprintf(outfile, "post parsing");
     break;
   }
-  Loc* scopeLoc = NULL;
+  BaseAST* scopeLoc = NULL;
   if (symContext) {
     fprintf(outfile, " ");
     symContext->print(outfile);

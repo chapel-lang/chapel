@@ -9,12 +9,12 @@ void ConstructComplexLiterals::postProcessExpr(Expr* expr) {
     AList<Expr>* argList = new AList<Expr>();
     FloatLiteral* realPart = new FloatLiteral(complexLiteral->realStr,
                                               complexLiteral->realVal);
-    argList->add(realPart);
+    argList->insertAtTail(realPart);
     // remove i, why is this here anyway?  --SJD
     complexLiteral->str[strlen(complexLiteral->str)-1] = '\0';
     FloatLiteral* imagPart = new FloatLiteral(complexLiteral->str,
                                               complexLiteral->imagVal);
-    argList->add(imagPart);
+    argList->insertAtTail(imagPart);
     complexLiteral->replace(new ParenOpExpr(new Variable(new UnresolvedSymbol("complex")), argList));
   }
 }

@@ -10,7 +10,6 @@
 #include "dparse_tables.h"
 #include "ast.h"
 #include "if1.h"
-#include "loc.h"
 #include "var.h"
 #include "pnode.h"
 #include "baseAST.h"
@@ -244,28 +243,6 @@ void printProblem(AST* ast, char *fmt, ...) {
   if (ast) {
     usrlineno = ast->line();
     usrfilename = ast->pathname();
-  }
-  
-  va_start(args, fmt);
-  vfprintf(stderr, fmt, args);
-  va_end(args);
-
-  printUsrLocation(usrfilename, usrlineno);
-
-  if (isFatal && !ignore_errors) {
-    clean_exit(1);
-  }
-}
-
-
-void printProblem(Loc* loc, char *fmt, ...) {
-  va_list args;
-  int usrlineno = 0;
-  char *usrfilename = NULL;
-
-  if (loc) {
-    usrfilename = loc->filename;
-    usrlineno = loc->lineno;
   }
   
   va_start(args, fmt);

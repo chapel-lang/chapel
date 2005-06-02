@@ -16,7 +16,6 @@ class Stmt : public BaseAST {
  public:
   Symbol* parentSymbol;
   Stmt* parentStmt;
-  SymScope* parentScope;
   AInfo *ainfo;
   AList<Pragma>* pragmas;
 
@@ -29,15 +28,11 @@ class Stmt : public BaseAST {
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void callReplaceChild(BaseAST* new_ast);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void);
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
 
-  void replace(Stmt* new_stmt);
-  void insertBefore(Stmt* new_stmt);
-  void insertAfter(Stmt* new_stmt);
   bool hasPragma(char* str);
   void addPragma(char* str);
 };

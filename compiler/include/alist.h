@@ -45,22 +45,11 @@ class AList : public BaseAST {
   elemType* get(int index); // get the index-th element in a list
 
   // add element(s) before an insertion point or at beginning of list
-  void insert(AList<elemType>* newElems, elemType* insertPt);
-  void insert(elemType* newElem, elemType* insertPt);
-  void insert(elemType* newElem);
-  // calls fixup in addition to inserting
-  void insertBefore(AList<elemType>* newElems, elemType* insertPt);
-  void insertBefore(elemType* newElems, elemType* insertPt);
-  void insertBefore(elemType* newElems);
-  // add element(s) at end of list
-  void add(elemType* newElem);
-  void add(AList<elemType>* newList); 
-  // same, but with fixup called
-  void insertAfter(elemType* elem);
-  void insertAfter(AList<elemType>* elem);
+  void insertAtHead(elemType* newElem);
 
-  // remove element
-  void remove(elemType* elem);
+  // add element(s) at end of list
+  void insertAtTail(elemType* newElem);
+  void add(AList<elemType>* newList); 
 
   // pop front of list off and return it
   elemType* popHead(void);
@@ -93,7 +82,7 @@ class AList : public BaseAST {
 // removed or something
 #define _for_all_elems(node)                                            \
   elemType* node;                                                       \
-  ILink* nextNode;                                                      \
+  BaseAST* nextNode;                                                      \
   for (node = dynamic_cast<elemType*>(head->next), nextNode = node->next; \
        node != tail;                                                    \
        node = dynamic_cast<elemType*>(nextNode), nextNode = node->next)
@@ -127,7 +116,7 @@ AList<elemType>::AList(elemType* initList) :
 {
   clear();
   if (initList) {
-    insert(initList);
+    insertAtHead(initList);
   }
 }
 
@@ -245,99 +234,14 @@ elemType* AList<elemType>::get(int index) {
 
 
 template <class elemType>
-void AList<elemType>::insert(elemType* newElem, elemType* insertPt) {
-  if (newElem->prev != NULL || newElem->next != NULL) {
-    INT_FATAL(newElem, "trying to insert a node that seems to be linked in");
-  }
-  elemType* nodeBeforeInsertPt = dynamic_cast<elemType*>(insertPt->prev);
-  insertPt->prev = newElem;
-  newElem->next = insertPt;
-  nodeBeforeInsertPt->next = newElem;
-  newElem->prev = nodeBeforeInsertPt;
+void AList<elemType>::insertAtHead(elemType* newElem) {
+  head->next->insertBefore(newElem);
 }
 
 
 template <class elemType>
-void AList<elemType>::insert(AList<elemType>* newElems, elemType* insertPt) {
-  elemType* nodeBeforeInsertPt = dynamic_cast<elemType*>(insertPt->prev);
-  elemType* firstNewNode = newElems->first();
-  elemType* lastNewNode = newElems->last();
-  // insert list
-  insertPt->prev = lastNewNode;
-  lastNewNode->next = insertPt;
-  nodeBeforeInsertPt->next = firstNewNode;
-  firstNewNode->prev = nodeBeforeInsertPt;
-  // clear out old list
-  newElems->clear();
-}
-
-
-template <class elemType>
-void AList<elemType>::insert(elemType* newElems) {
-  insert(newElems, dynamic_cast<elemType*>(head->next));
-}
-
-
-template <class elemType>
-void AList<elemType>::insertBefore(AList<elemType>* newElems, 
-                                   elemType* insertPt) {
-  elemType* oldFirst = dynamic_cast<elemType*>(head->next);
-  insert(newElems, insertPt);
-  call_fixup(oldFirst);
-}
-
-
-template <class elemType>
-void AList<elemType>::insertBefore(elemType* newElems, elemType* insertPt) {
-  elemType* oldFirst = dynamic_cast<elemType*>(head->next);
-  if (oldFirst == tail) {
-    INT_FATAL("insert before called on an empty list");
-  }
-  insert(newElems, insertPt);
-  call_fixup(oldFirst);
-}
-
-
-template <class elemType>
-void AList<elemType>::insertBefore(elemType* newElems) {
-  insertBefore(newElems, dynamic_cast<elemType*>(head->next));
-}
-
-
-template <class elemType>
-void AList<elemType>::add(elemType* newElem) {
-  if (newElem->prev != NULL || newElem->next != NULL) {
-    INT_FATAL(newElem, "trying to insert a node that seems to be linked in");
-  }
-  tail->prev->next = newElem;
-  newElem->prev = tail->prev;
-  tail->prev = newElem;
-  newElem->next = tail;
-}
-
-
-template <class elemType>
-void AList<elemType>::insertAfter(elemType* firstNode) {
-  elemType* oldLast = dynamic_cast<elemType*>(tail->prev);
-  add(firstNode);
-  call_fixup(oldLast);
-}
-
-
-template <class elemType>
-void AList<elemType>::insertAfter(AList<elemType>* firstNode) {
-  elemType* oldLast = dynamic_cast<elemType*>(tail->prev);
-  add(firstNode);
-  call_fixup(oldLast);
-}
-
-
-template <class elemType>
-void AList<elemType>::remove(elemType* node) {
-  if (cursor == node) {
-    cursor = dynamic_cast<elemType*>(node->prev);
-  }
-  node->remove();
+void AList<elemType>::insertAtTail(elemType* newElem) {
+  tail->prev->insertAfter(newElem);
 }
 
 
@@ -355,7 +259,7 @@ void AList<elemType>::add(AList<elemType>* newList) {
   } else {
     elemType* node = newList->popHead();
     while (node) {
-      add(node);
+      insertAtTail(node);
       node = newList->popHead();
     }
   }
@@ -460,7 +364,7 @@ AList<elemType>* AList<elemType>::copyInternal(bool clone,
     elemType* newnode = dynamic_cast<elemType*>(node->copyInternal(clone, map));
     newnode->next = NULL;
     newnode->prev = NULL;
-    newList->add(newnode);
+    newList->insertAtTail(newnode);
   }
 
   return newList;
@@ -513,9 +417,9 @@ void AList<elemType>::filter(bool filter(elemType*),
   elemType* node = popHead();
   while (node) {
     if (filter(node)) {
-      trueElems->add(node);
+      trueElems->insertAtTail(node);
     } else {
-      falseElems->add(node);
+      falseElems->insertAtTail(node);
     }
 
     node = popHead();

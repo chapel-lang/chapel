@@ -24,9 +24,9 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
   int rank = array_type->domainType->numdims;
   AList<Expr>* args = new AList<Expr>(new IntLiteral(intstring(rank), rank));
-  args->add(new Variable(var));
-  args->add(array_type->domain->copy());
-  args->add(new Variable(array_type->elementType->symbol));
+  args->insertAtTail(new Variable(var));
+  args->insertAtTail(array_type->domain->copy());
+  args->insertAtTail(new Variable(array_type->elementType->symbol));
   Symbol* init_array = Symboltable::lookupInternal("_INIT_ARRAY");
   FnCall* call = new FnCall(new Variable(init_array), args);
   ExprStmt* call_stmt = new ExprStmt(call);
@@ -51,7 +51,7 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
         INT_FATAL(stmt, "Domain index has no type");
       }
       char* name = glomstrings(1, "_idx_init");
-      indices->add(new Symbol(SYMBOL, name));
+      indices->insertAtTail(new Symbol(SYMBOL, name));
     }  
   } else {
     // Here we create some indices (assuming arithmetic domain)
@@ -63,12 +63,12 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
       }
       for (int i = 0; i < domain_type->numdims; i++) {
         char* name = glomstrings(2, "_ind_", intstring(i));
-        indices->add(new Symbol(SYMBOL, name));
+        indices->insertAtTail(new Symbol(SYMBOL, name));
       }
     } else {
       DefExpr* def_expr = domain->indices->first();
       while (def_expr) {
-        indices->add(new Symbol(SYMBOL, copystring(def_expr->sym->name)));
+        indices->insertAtTail(new Symbol(SYMBOL, copystring(def_expr->sym->name)));
         def_expr = domain->indices->next();
       }
     }
@@ -110,10 +110,10 @@ static void insert_domain_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
   for (int i = 0; i < rank; i++) {
     AList<Expr>* args = new AList<Expr>(new Variable(var));
-    args->add(new IntLiteral(intstring(i), i));
-    args->add(seq_init->lo->copy());
-    args->add(seq_init->hi->copy());
-    args->add(seq_init->str->copy());
+    args->insertAtTail(new IntLiteral(intstring(i), i));
+    args->insertAtTail(seq_init->lo->copy());
+    args->insertAtTail(seq_init->hi->copy());
+    args->insertAtTail(seq_init->str->copy());
     Symbol* init_domain_dim = Symboltable::lookupInternal("_INIT_DOMAIN_DIM");
     FnCall* call = new FnCall(new Variable(init_domain_dim), args);
     ExprStmt* call_stmt = new ExprStmt(call);
@@ -158,9 +158,9 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
   Expr* init_expr = var->defPoint->init ? var->defPoint->init->expr : type->defaultVal;
   AList<Expr>* args = new AList<Expr>(new Variable(var));
-  args->add(new Variable(type->symbol));
-  args->add(new StringLiteral(copystring(var->name)));
-  args->add(new StringLiteral(var->parentScope->symContext->name));
+  args->insertAtTail(new Variable(type->symbol));
+  args->insertAtTail(new StringLiteral(copystring(var->name)));
+  args->insertAtTail(new StringLiteral(var->parentScope->symContext->name));
   Symbol* init_config = Symboltable::lookupInternal("_INIT_CONFIG");
   FnCall* call = new FnCall(new Variable(init_config), args);
   Expr* assign = new AssignOp(GETS_NORM, new Variable(var), init_expr->copy());

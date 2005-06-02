@@ -23,8 +23,7 @@ class Fixup : public Traversal {
   void run(ModuleList* moduleList);
 };
 
-void fixup_stmt(Stmt* stmt);
-void fixup_expr(Expr* expr);
-void call_fixup(BaseAST* ast);
+void fixup(BaseAST* ast);
+void fixup(BaseAST* ast, BaseAST* ref);
 
 #endif

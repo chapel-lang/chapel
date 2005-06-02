@@ -29,9 +29,9 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
     AList<ParamSymbol>* new_formals = new AList<ParamSymbol>();
     while (old_formal) {
       if (old_formal->typeVariable) {
-        fn->body->body->insertBefore(new DefStmt(new DefExpr(old_formal)));
+        fn->body->body->insertAtHead(new DefStmt(new DefExpr(old_formal)));
       } else {
-        new_formals->add(old_formal);
+        new_formals->insertAtTail(old_formal);
       }
       old_formal = fn->formals->popHead();
     }

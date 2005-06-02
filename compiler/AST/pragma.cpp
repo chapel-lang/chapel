@@ -1,6 +1,6 @@
 #include <string.h>
 #include <typeinfo>
-#include "link.h"
+#include "baseAST.h"
 #include "pragma.h"
 #include "map.h"
 

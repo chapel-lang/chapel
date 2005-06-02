@@ -4,7 +4,7 @@
 #include "expr.h"
 #include "files.h"
 #include "../traversals/getstuff.h"
-#include "link.h"
+#include "baseAST.h"
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"

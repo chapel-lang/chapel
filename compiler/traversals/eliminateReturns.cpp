@@ -61,7 +61,7 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
                                                                    VAR_VAR);
       retval = retValDefStmt->varDef();
       retval->noDefaultInit = true;
-      body->body->insertBefore(retValDefStmt);
+      body->body->insertAtHead(retValDefStmt);
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
         Symboltable::setCurrentScope(prevScope);

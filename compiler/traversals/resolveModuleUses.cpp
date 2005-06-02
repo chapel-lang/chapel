@@ -41,12 +41,12 @@ void ResolveModuleUses::preProcessStmt(Stmt* stmt) {
 void ResolveModuleUses::run(ModuleList* moduleList) {
   for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next()) {
     if (mod->modtype == MOD_USER) {
-      mod->initFn->body->body->insertBefore(
+      mod->initFn->body->body->insertAtHead(
         new UseStmt(
           new Variable(
             new UnresolvedSymbol("_chpl_complex"))));
       if (analyzeAST) {
-        mod->initFn->body->body->insertBefore(
+        mod->initFn->body->body->insertAtHead(
           new UseStmt(
             new Variable(
               new UnresolvedSymbol("_chpl_seq"))));

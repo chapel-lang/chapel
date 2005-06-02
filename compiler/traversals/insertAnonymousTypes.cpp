@@ -50,7 +50,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
           DefExpr* def_expr = new DefExpr(array_sym);
           DefStmt* array_type_def = new DefStmt(def_expr);
           if (Symboltable::getCurrentScope() == commonModule->modScope) {
-            commonModule->stmts->insertAfter(array_type_def);
+            commonModule->stmts->insertAtTail(array_type_def);
           }
           else {
             Stmt* def_stmt = array_type->elementType->symbol->defPoint->parentStmt;
@@ -188,7 +188,7 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     domain_type->addSymbol(domain_sym);
     DefExpr* def_expr = new DefExpr(domain_sym);
     DefStmt* domain_type_def = new DefStmt(def_expr);
-    commonModule->stmts->insertBefore(domain_type_def);
+    commonModule->stmts->insertAtHead(domain_type_def);
     Symboltable::setCurrentScope(saveScope);
     *type = domain_type;
   }
@@ -245,7 +245,7 @@ void build_index_type_def(Stmt* stmt, Type** type) {
     }*/
     DefExpr* def_expr = new DefExpr(index_sym);
     DefStmt* index_type_def = new DefStmt(def_expr);
-    commonModule->stmts->insertBefore(index_type_def);
+    commonModule->stmts->insertAtHead(index_type_def);
     Symboltable::setCurrentScope(saveScope);
     *type = index_type;
   }

@@ -99,7 +99,7 @@ void InsertIndexType::preProcessType(Type* type) {
     if (TupleType* tuple_type = dynamic_cast<TupleType*>(index_type->getType())) {
       tuple_type->rebuildDefaultVal();
       index_type->defaultVal = tuple_type->defaultVal->copy();
-      fixup_expr(index_sym->defPoint);
+      fixup(index_sym->defPoint);
     }
   } else {
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
@@ -110,7 +110,7 @@ void InsertIndexType::preProcessType(Type* type) {
     if (!index_type->defaultVal) {
       index_type->defaultVal = index_type->idxType->defaultVal->copy();
     }
-    commonModule->stmts->insertBefore(def_stmt);
+    commonModule->stmts->insertAtHead(def_stmt);
     Symboltable::setCurrentScope(saveScope);
   }
 }

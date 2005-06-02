@@ -37,7 +37,7 @@ static void build_constructor(StructuralType* structType) {
       ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, NULL);
       arg->isGeneric = true;
       arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
-      args->add(arg);
+      args->insertAtTail(arg);
       }
     }
 
@@ -49,7 +49,7 @@ static void build_constructor(StructuralType* structType) {
         tmp->defPoint->init->remove();
       }
       ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, init);
-      args->add(arg);
+      args->insertAtTail(arg);
     }
   }
 
@@ -70,23 +70,23 @@ static void build_constructor(StructuralType* structType) {
   }
 
   DefExpr* def_expr = new DefExpr(fn->_this);
-  stmts->add(new DefStmt(def_expr));
+  stmts->insertAtTail(new DefStmt(def_expr));
   if (dynamic_cast<ClassType*>(structType)) {
     char* description = glomstrings(2, "instance of class ", structType->symbol->name);
     AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral("1", 1));
-    alloc_args->add(new SizeofExpr(new Variable(fn->_this)));
-    alloc_args->add(new StringLiteral(description));
+    alloc_args->insertAtTail(new SizeofExpr(new Variable(fn->_this)));
+    alloc_args->insertAtTail(new StringLiteral(description));
     Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");
     Expr* alloc_call = new FnCall(new Variable(alloc_sym), alloc_args);
     Expr* alloc_lhs = new Variable(fn->_this);
     Expr* alloc_rhs = new CastLikeExpr(new Variable(fn->_this), alloc_call);
     Expr* alloc_expr = new AssignOp(GETS_NORM, alloc_lhs, alloc_rhs);
     Stmt* alloc_stmt = new ExprStmt(alloc_expr);
-    stmts->add(alloc_stmt);
+    stmts->insertAtTail(alloc_stmt);
   }
   structType->buildConstructorBody(stmts, fn->_this, args);
 
-  stmts->add(new ReturnStmt(new Variable(fn->_this)));
+  stmts->insertAtTail(new ReturnStmt(new Variable(fn->_this)));
   body = Symboltable::finishCompoundStmt(body, stmts);
   DefExpr* fn_def =
     new DefExpr(Symboltable::finishFnDef(fn, body));
@@ -115,7 +115,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     ParamSymbol* setter_this = new ParamSymbol(PARAM_REF, "this", structType);
     AList<ParamSymbol>* args = new AList<ParamSymbol>(setter_this);
     ParamSymbol* setter_arg = new ParamSymbol(PARAM_BLANK, "_arg", tmp->type);
-    args->add(setter_arg);
+    args->insertAtTail(setter_arg);
     Symboltable::continueFnDef(setter_fn, args, dtVoid);
     Expr* setter_lhs = new MemberAccess(new Variable(setter_this), tmp);
     Expr* setter_rhs = new Variable(setter_arg);
@@ -163,7 +163,7 @@ static void build_record_equality_function(StructuralType* structType) {
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
   AList<ParamSymbol>* args = new AList<ParamSymbol>(arg1);
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", structType);
-  args->add(arg2);
+  args->insertAtTail(arg2);
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(VarSymbol, tmp, structType->fields) {
@@ -191,7 +191,7 @@ static void build_record_inequality_function(StructuralType* structType) {
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
   AList<ParamSymbol>* args = new AList<ParamSymbol>(arg1);
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", structType);
-  args->add(arg2);
+  args->insertAtTail(arg2);
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(VarSymbol, tmp, structType->fields) {
@@ -219,7 +219,7 @@ static void build_record_assignment_function(StructuralType* structType) {
   AList<ParamSymbol>* args = new AList<ParamSymbol>(arg1);
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2",
     (analyzeAST) ? dtUnknown : structType);
-  args->add(arg2);
+  args->insertAtTail(arg2);
   Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
   Symboltable::continueFnDef(fn, args, ret_type);
   AList<Stmt>* body = new AList<Stmt>();
@@ -228,11 +228,11 @@ static void build_record_assignment_function(StructuralType* structType) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
     Expr* assign_expr = new AssignOp(GETS_NORM, left, right);
-    body->add(new ExprStmt(assign_expr));
+    body->insertAtTail(new ExprStmt(assign_expr));
   }
   
   if (analyzeAST)
-    body->add(new ReturnStmt(new Variable(arg2)));
+    body->insertAtTail(new ReturnStmt(new Variable(arg2)));
   BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
   DefStmt* defStmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, 
                                                                       block_stmt

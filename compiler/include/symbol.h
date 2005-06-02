@@ -38,8 +38,6 @@ class Symbol : public BaseAST {
   DefExpr* defPoint; // Point of definition
   AList<Pragma> *pragmas;
 
-
-  SymScope* parentScope;  // Scope in which the symbol was defined
   ASymbol *asymbol;
   Symbol* overload; // Overloading (functions only, FnSymbol/ForwardingSymbol)
 

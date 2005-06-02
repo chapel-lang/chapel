@@ -16,7 +16,6 @@ Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
   parentSymbol(NULL),
   parentStmt(NULL),
-  parentScope(NULL),
   ainfo(NULL),
   pragmas(NULL)
 {}
@@ -76,11 +75,6 @@ Stmt* Stmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
-void Stmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected call to Stmt::replaceChild(old, new)");
-}
-
-
 void Stmt::verify(void) {
 
 }
@@ -128,48 +122,6 @@ void Stmt::callReplaceChild(BaseAST* new_ast) {
 }
 
 
-void Stmt::replace(Stmt* new_stmt) {
-  new_stmt->next = next;
-  if (next) {
-    next->prev = new_stmt;
-  }
-  new_stmt->prev = prev;
-  if (!prev) {
-    callReplaceChild(new_stmt);
-  } else {
-    prev->next = new_stmt;
-  }
-
-  call_fixup(this);
-}
-
-
-void Stmt::insertBefore(Stmt* new_stmt) {
-  if (!prev) {
-    callReplaceChild(new_stmt);
-  } else {
-    prev->next = new_stmt;
-  }
-  new_stmt->prev = prev;
-  prev = new_stmt;
-  new_stmt->next = this;
-
-  call_fixup(this);
-}
-
-
-void Stmt::insertAfter(Stmt* new_stmt) {
-  if (next) {
-    next->prev = new_stmt;
-  }
-  new_stmt->next = next;
-  next = new_stmt;
-  new_stmt->prev = this;
-
-  call_fixup(this);
-}
-
-
 bool Stmt::hasPragma(char* str) {
   Pragma* pr = pragmas->first();
   while (pr) {
@@ -184,7 +136,7 @@ bool Stmt::hasPragma(char* str) {
 
 void Stmt::addPragma(char* str) {
   if (pragmas) {
-    pragmas->add(new Pragma(copystring(str)));
+    pragmas->insertAtTail(new Pragma(copystring(str)));
   } else {
     pragmas = new AList<Pragma>(new Pragma(copystring(str)));
   }

@@ -66,7 +66,7 @@ static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
     resolve_type_helper(currentFunction, user_type->definition);
     if (!user_type->defaultVal) {
       user_type->defaultVal = user_type->definition->defaultVal->copy();
-      fixup_expr(user_type->symbol->defPoint);
+      fixup(user_type->symbol->defPoint);
     }
   } else if (IndexType* index_type = dynamic_cast<IndexType*>(type)) {
     resolve_type_helper(currentFunction, index_type->idxType);

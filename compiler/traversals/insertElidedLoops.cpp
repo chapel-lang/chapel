@@ -18,7 +18,7 @@ void InsertElidedIndices::preProcessExpr(Expr* expr) {
   if (var && dynamic_cast<ArrayType*>(var->typeInfo())) {
     AList<Expr>* index_exprs = new AList<Expr>;
     for (DefExpr* tmp = indices->first(); tmp; tmp = indices->next()) {
-      index_exprs->add(new Variable(tmp->sym));
+      index_exprs->insertAtTail(new Variable(tmp->sym));
     }
     ArrayRef* array_ref = new ArrayRef(expr->copy(), index_exprs);
     expr->replace(array_ref);
@@ -34,7 +34,7 @@ void InsertElidedLoops::postProcessStmt(Stmt* stmt) {
         AList<Symbol>* indices = new AList<Symbol>();
         for (int i = 0; i < array_type->domainType->numdims; i++) {
           char* name = glomstrings(4, "_ind_", intstring(uid), "_", intstring(i));
-          indices->add(new Symbol(SYMBOL, name));
+          indices->insertAtTail(new Symbol(SYMBOL, name));
         }
         uid++;
         ForLoopStmt* loop = Symboltable::startForLoop(true, indices, array_type->domain->copy());

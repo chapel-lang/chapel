@@ -10,21 +10,13 @@
 
 void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
   currentStmt = stmt;
-  currentScope = NULL;
-  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (Symbol* sym = def_stmt->typeDef()) {
-      currentScope = sym->parentScope;
-    } else if (Symbol* sym = def_stmt->varDef()) {
-      currentScope = sym->parentScope;
-    }
-  }
 }
 
 
 void InsertAnonymousDomains::preProcessType(Type* type) {
   static int uid = 1;
 
-  if (!currentScope || !currentStmt) {
+  if (!currentStmt) {
     return;
   }
 
@@ -44,20 +36,25 @@ void InsertAnonymousDomains::preProcessType(Type* type) {
 
   DomainType* domain_type = new DomainType(forall->domains->length());
 
-  SymScope* saveScope = Symboltable::setCurrentScope(currentScope);
+  SymScope* saveScope = Symboltable::setCurrentScope(currentStmt->parentScope);
   VarSymbol* domain_sym = new VarSymbol(name, domain_type);
   DefExpr* def_expr = new DefExpr(domain_sym, 
                                   new UserInitExpr(forall->copy()));
   DefStmt* def_stmt = new DefStmt(def_expr);
-  ForallExpr* new_forall = new ForallExpr(new AList<Expr>(new Variable(domain_sym)), 
-                                          forall->indices);
-  array_type->domain->replace(new_forall);
   currentStmt->insertBefore(def_stmt);
+
+  ForallExpr* new_forall =
+    new ForallExpr(new AList<Expr>(new Variable(domain_sym)), 
+                   forall->indices->copy());
+
+  // wierd scoping issues
+  array_type->domain->parentScope = currentStmt->parentScope;
+
+  array_type->domain->replace(new_forall);
   Symboltable::setCurrentScope(saveScope);
 }
 
 
 void InsertAnonymousDomains::postProcessStmt(Stmt* stmt) {
   currentStmt = NULL;
-  currentScope = NULL;
 }

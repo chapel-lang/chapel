@@ -9,7 +9,6 @@ class d_loc_t;
 class BaseAST;
 class AST;
 class Var;
-class Loc;
 
 void clean_exit(int status);
 
@@ -43,7 +42,6 @@ char *loc_string(d_loc_t &l);
 int setupDevelError(char* filename, int lineno, bool fatal, bool user);
 void printProblem(char* fmt, ...);
 void printProblem(AST* ast, char* fmt, ...);
-void printProblem(Loc* loc, char* fmt, ...);
 void printProblem(BaseAST* ast, char* fmt, ...);
 void myassert(char *file, int line, char *str);
 

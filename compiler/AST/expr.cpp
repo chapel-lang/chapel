@@ -89,7 +89,6 @@ Expr::Expr(astType_t astType) :
   parentSymbol(NULL),
   parentStmt(NULL),
   parentExpr(NULL),
-  parentScope(NULL),
   ainfo(NULL),
   pragmas(NULL)
 {}
@@ -180,11 +179,6 @@ void Expr::traverseDef(Traversal* traversal, bool atTop) {
 }
 
 
-void Expr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected call to Expr::replaceChild(old, new)");
-}
-
-
 void Expr::traverseExpr(Traversal* traversal) {
 }
 
@@ -197,48 +191,6 @@ void Expr::callReplaceChild(BaseAST* new_ast) {
   } else {
     parentSymbol->replaceChild(this, new_ast);
   }
-}
-
-
-void Expr::replace(Expr* new_expr) {
-  new_expr->next = next;
-  if (next) {
-    next->prev = new_expr;
-  }
-  new_expr->prev = prev;
-  if (!prev) {
-    callReplaceChild(new_expr);
-  } else {
-    prev->next = new_expr;
-  }
-
-  call_fixup(this);
-}
-
-
-void Expr::insertBefore(Expr* new_expr) {
-  if (!prev) {
-    callReplaceChild(new_expr);
-  } else {
-    prev->next = new_expr;
-  }
-  new_expr->prev = prev;
-  prev = new_expr;
-  new_expr->next = this;
-
-  call_fixup(this);
-}
-
-
-void Expr::insertAfter(Expr* new_expr) {
-  if (next) {
-    next->prev = new_expr;
-  }
-  new_expr->next = next;
-  next = new_expr;
-  new_expr->prev = this;
-
-  call_fixup(this);
 }
 
 

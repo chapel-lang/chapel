@@ -27,7 +27,7 @@ replace_return(BaseAST *ast, Symbol *lvalue) {
   if (ReturnStmt *ret = dynamic_cast<ReturnStmt *>(ast)) {
     Symboltable::pushScope(SCOPE_LOCAL);
     AList<Stmt> *body = handle_return_expr(ret->expr, lvalue);
-    body->add(new ReturnStmt(NULL));
+    body->insertAtTail(new ReturnStmt(NULL));
     ast = new BlockStmt(body, Symboltable::popScope());
     ret->replace((Stmt*)ast);
     return;
@@ -59,7 +59,7 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   Symboltable::setCurrentScope(fn->paramScope);
   ParamSymbol* lvalue = new ParamSymbol(PARAM_BLANK, "_lvalue", old_fn->retType);
   lvalue->setDefPoint(def_stmt->defExprls->only());
-  fn->formals->add(lvalue);
+  fn->formals->insertAtTail(lvalue);
   replace_return(fn->body, lvalue);
   Symboltable::setCurrentScope(saveScope);
 }

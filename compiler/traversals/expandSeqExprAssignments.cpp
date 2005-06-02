@@ -46,7 +46,7 @@ void ExpandSeqExprAssignments::postProcessStmt(Stmt* stmt) {
     }
 
     AList<Expr>* args = new AList<Expr>(assign_expr->left->copy());
-    args->add(tmp->copy());
+    args->insertAtTail(tmp->copy());
     Expr* append_expr = new FnCall(new Variable(fn), args);
     stmt->insertBefore(new ExprStmt(append_expr));
   }

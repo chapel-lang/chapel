@@ -96,7 +96,6 @@ class Expr : public BaseAST {
   Symbol* parentSymbol;
   Stmt* parentStmt;
   Expr* parentExpr;
-  SymScope* parentScope;
   AInfo *ainfo;
   AList<Pragma> *pragmas;
   FnSymbol *resolved;
@@ -109,7 +108,6 @@ class Expr : public BaseAST {
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void callReplaceChild(BaseAST* new_ast);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
@@ -128,10 +126,6 @@ class Expr : public BaseAST {
   virtual void printCfgInitString(FILE* outfile);
 
   static Expr* newPlusMinus(binOpType op, Expr* l, Expr* r);
-
-  void replace(Expr* new_expr);
-  void insertBefore(Expr* new_expr);
-  void insertAfter(Expr* new_expr);
 
   bool isRead(void);
   bool isWritten(void);

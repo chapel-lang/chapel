@@ -58,12 +58,12 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
       fn->_this = this_decl->varDef();
       fn->retType = typeSym->type;
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
-      fn->body->body->insertBefore(this_decl);
+      fn->body->body->insertAtHead(this_decl);
       if (dynamic_cast<ClassType*>(typeSym->type)) {
         char* description = glomstrings(2, "instance of class ", typeSym->name);
         AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral("1", 1));
-        alloc_args->add(new SizeofExpr(new Variable(fn->_this)));
-        alloc_args->add(new StringLiteral(description));
+        alloc_args->insertAtTail(new SizeofExpr(new Variable(fn->_this)));
+        alloc_args->insertAtTail(new StringLiteral(description));
         Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");
         Expr* alloc_call = new FnCall(new Variable(alloc_sym), alloc_args);
         Expr* alloc_lhs = new Variable(fn->_this);
@@ -72,7 +72,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
         Stmt* alloc_stmt = new ExprStmt(alloc_expr);
         this_decl->insertAfter(alloc_stmt);
       }
-      fn->body->body->insertAfter(new ReturnStmt(new Variable(fn->_this)));
+      fn->body->body->insertAtTail(new ReturnStmt(new Variable(fn->_this)));
       Symboltable::setCurrentScope(saveScope);
 
       // fix type variables, associate by name
@@ -96,7 +96,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
       ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);
       this_insert->setDefPoint(def_stmt->defExprls->only());
       Symboltable::setCurrentScope(saveScope);
-      fn->formals->insert(this_insert);
+      fn->formals->insertAtHead(this_insert);
       fn->_this = this_insert;
     }
   }

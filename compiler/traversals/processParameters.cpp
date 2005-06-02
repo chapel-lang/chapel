@@ -73,14 +73,14 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
               Symboltable::defineSingleVarDefStmt(newActualName,
                                                   formal->type, initializer,
                                                   VAR_NORMAL, VAR_VAR);
-            body->add(newActualDecl);
+            body->insertAtTail(newActualDecl);
             newActualDecl->varDef()->noDefaultInit = true;
 
             newActualUse = new Variable(newActualDecl->varDef());
           } else {
             newActualUse = actual->copy();
           }
-          newActuals->add(newActualUse);
+          newActuals->insertAtTail(newActualUse);
         
           formal = fnSym->formals->next();
           if (actual) {
@@ -95,7 +95,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
 
         Stmt* origStmt = expr->getStmt();
         Stmt* newStmt = origStmt->copy();
-        body->add(newStmt);
+        body->insertAtTail(newStmt);
 
         /* generate copy out statements */
         formal = fnSym->formals->first();
@@ -107,7 +107,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
               Expr* copyBack = new AssignOp(GETS_NORM, actual->copy(),
                                             newActual->copy());
               ExprStmt* copyBackStmt = new ExprStmt(copyBack);
-              body->add(copyBackStmt);
+              body->insertAtTail(copyBackStmt);
             }
 
             formal = fnSym->formals->next();

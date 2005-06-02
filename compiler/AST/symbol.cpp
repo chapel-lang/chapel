@@ -28,7 +28,6 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type,
   keepLive(false),
   defPoint(NULL),
   pragmas(NULL),
-  parentScope(NULL),
   asymbol(0),
   overload(NULL)
 {}
@@ -164,7 +163,7 @@ bool Symbol::hasPragma(char* str) {
 
 void Symbol::addPragma(char* str) {
   if (pragmas) {
-    pragmas->add(new Pragma(copystring(str)));
+    pragmas->insertAtTail(new Pragma(copystring(str)));
   } else {
     pragmas = new AList<Pragma>(new Pragma(copystring(str)));
   }
@@ -597,7 +596,7 @@ TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
     DefExpr* defExpr = new DefExpr(tupleSym);
     DefStmt* defStmt = new DefStmt(new AList<DefExpr>(defExpr));
     tupleType->structScope->setContext(NULL, tupleSym, defExpr);
-    commonModule->stmts->insertBefore(defStmt);
+    commonModule->stmts->insertAtHead(defStmt);
     buildDefaultStructuralTypeMethods(tupleType);
   }
   Symboltable::setCurrentScope(saveScope);
@@ -767,7 +766,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   AList<ParamSymbol>* wrapperFormals = new AList<ParamSymbol>();
   for (ParamSymbol* formal = formals->first(); formal; formal = formals->next()) {
     ParamSymbol* newFormal = dynamic_cast<ParamSymbol*>(formal->copy());
-    wrapperFormals->add(newFormal);
+    wrapperFormals->insertAtTail(newFormal);
     Symbol* coercionSubstitution = coercion_substitutions->get(formal);
     if (coercionSubstitution) {
       newFormal->type = coercionSubstitution->type;
@@ -787,14 +786,14 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       char* tempName = glomstrings(2, "_coercion_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->type);
       DefExpr* tempDefExpr = new DefExpr(temp, new UserInitExpr(new Variable(wrapperFormal)));
-      wrapperBody->add(new DefStmt(new AList<DefExpr>(tempDefExpr)));
-      wrapperActuals->add(new Variable(temp));
+      wrapperBody->insertAtTail(new DefStmt(new AList<DefExpr>(tempDefExpr)));
+      wrapperActuals->insertAtTail(new Variable(temp));
     } else {
-      wrapperActuals->add(new Variable(wrapperFormal));
+      wrapperActuals->insertAtTail(new Variable(wrapperFormal));
     }
   }
-  wrapperBody->add(new ExprStmt(new FnCall(new Variable(this), 
-                                           wrapperActuals)));
+  wrapperBody->insertAtTail(new ExprStmt(new FnCall(new Variable(this), 
+                                                    wrapperActuals)));
 
   wrapperBlock = Symboltable::finishCompoundStmt(wrapperBlock, wrapperBody);
 
@@ -822,16 +821,16 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   AList<Expr>* argList = new AList<Expr>(new Variable(actuals));
   actuals = wrapper_formals->next();
   while (actuals) {
-    argList->add(new Variable(actuals));
+    argList->insertAtTail(new Variable(actuals));
     actuals = wrapper_formals->next();
   }
   ParenOpExpr* fn_call = new ParenOpExpr(new Variable(this), argList);
   Symboltable::pushScope(SCOPE_LOCAL);
   AList<Stmt>* wrapper_body = new AList<Stmt>();
   if (retType == dtVoid || (retType == dtUnknown && function_returns_void(this))) {
-    wrapper_body->add(new ExprStmt(fn_call));
+    wrapper_body->insertAtTail(new ExprStmt(fn_call));
   } else {
-    wrapper_body->add(new ReturnStmt(fn_call));
+    wrapper_body->insertAtTail(new ReturnStmt(fn_call));
   }
   Vec<ParamSymbol *> vformals, vwformals;
   Vec<Variable *> vargs;
@@ -859,7 +858,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
                     ? NULL
                     : new UserInitExpr(((ParamSymbol*)formal)->init->copy()));
       DefStmt* temp_def_stmt = new DefStmt(new AList<DefExpr>(temp_def_expr));
-      wrapper_body->insert(temp_def_stmt);
+      wrapper_body->insertAtHead(temp_def_stmt);
       vargs.v[i]->var = temp_symbol;
       if (formal == wrapper_formals->first())
         wrapper_formals->popHead();
@@ -899,7 +898,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
     ParamSymbol* tmp = formals->first();
     for (int j = 0; j < formals_to_actuals->n - 1; j++) {
       if (formals_to_actuals->v[i].key == formals_to_actuals->v[j].value) {
-        wrapper_formals->add(dynamic_cast<ParamSymbol*>(tmp->copy()));
+        wrapper_formals->insertAtTail(dynamic_cast<ParamSymbol*>(tmp->copy()));
       }
       tmp = formals->next();
     }
@@ -912,7 +911,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
     Symbol* tmp = wrapper_formals->first();
     for (int j = 0; j < formals_to_actuals->n - 1; j++) {
       if (formals_to_actuals->v[i].value == formals_to_actuals->v[j].key) {
-        actuals->add(new Variable(tmp));
+        actuals->insertAtTail(new Variable(tmp));
       }
       tmp = wrapper_formals->next();
     }
@@ -1309,7 +1308,7 @@ void ModuleSymbol::createInitFn(void) {
     initFunBody->parentSymbol = initFn;
   }
 
-  definition->add(initFunDef);
+  definition->insertAtTail(initFunDef);
 
   stmts = definition;
 }

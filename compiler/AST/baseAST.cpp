@@ -7,8 +7,10 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "yy.h"
 #include "../passes/runAnalysis.h"
 #include "../traversals/updateSymbols.h"
+#include "../traversals/fixup.h"
 
 
 static long uid = 1;
@@ -29,6 +31,11 @@ BaseAST::BaseAST(void) {
 BaseAST::BaseAST(astType_t type) :
   astType(type),
   id(uid++),
+  prev(NULL),
+  next(NULL),
+  parentScope(NULL),
+  filename(yyfilename), 
+  lineno(yylineno),
   traversalInfo(NULL),
   copyInfo(NULL)
 {
@@ -45,6 +52,45 @@ BaseAST::BaseAST(astType_t type) :
 }
 
 
+void BaseAST::traverse(Traversal* traversal, bool atTop) {
+  INT_FATAL(this, "Cannot traverse BaseAST");
+}
+
+
+void BaseAST::traverseDef(Traversal* traversal, bool atTop) {
+  INT_FATAL(this, "Cannot traverse definitions of BaseAST");
+}
+
+
+void BaseAST::print(FILE* outfile) {
+  if (!this) {
+    INT_FATAL("Calling print() on a Null AST");
+  } else {
+    INT_FATAL("print() is unimplemented for a subclass of BaseAST");
+  }
+}
+
+
+void BaseAST::printDef(FILE* outfile) {
+  INT_FATAL("printDef() is unimplemented for a subclass of BaseAST");
+}
+
+
+void BaseAST::println(FILE* outfile) {
+  print(outfile);
+  fprintf(outfile, "\n");
+}
+
+
+void BaseAST::codegen(FILE* outfile) {
+  if (!this) {
+    INT_FATAL("Calling codegen() on a Null AST");
+  } else {
+    INT_FATAL("codegen() is unimplemented for a subclass of BaseAST");
+  }
+}
+
+
 void BaseAST::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected call to BaseAST::replaceChild(old, new)");
 }
@@ -55,13 +101,62 @@ void BaseAST::callReplaceChild(BaseAST* new_ast) {
 }
 
 
-BaseAST* BaseAST::remove(void) {
+void BaseAST::remove(void) {
   if (prev || next) {
-    ILink::remove();
+    if (!prev || !next) {
+      INT_FATAL("Ill-formed list in BaseAST::remove");
+    }
+    next->prev = prev;
+    prev->next = next;
+    next = NULL;
+    prev = NULL;
   } else {
-    this->callReplaceChild(NULL);
+    callReplaceChild(NULL);
   }
-  return this;
+}
+
+
+void BaseAST::replace(BaseAST* new_ast) {
+  if (prev || next) {
+    if (!prev || !next) {
+      INT_FATAL("Ill-formed list in BaseAST::replace");
+    }
+    new_ast->prev = prev;
+    new_ast->next = next;
+    next->prev = new_ast;
+    prev->next = new_ast;
+    next = NULL;
+    prev = NULL;
+  } else {
+    callReplaceChild(new_ast);
+  }
+  fixup(new_ast, this);
+}
+
+
+void BaseAST::insertBefore(BaseAST* new_ast) {
+  if (prev) {
+    new_ast->prev = prev;
+    new_ast->next = this;
+    prev->next = new_ast;
+    prev = new_ast;
+  } else {
+    INT_FATAL("Ill-formed list in BaseAST::insertBefore");
+  }
+  fixup(new_ast, this);
+}
+
+
+void BaseAST::insertAfter(BaseAST* new_ast) {
+  if (next) {
+    new_ast->prev = this;
+    new_ast->next = next;
+    next->prev = new_ast;
+    next = new_ast;
+  } else {
+    INT_FATAL("Ill-formed list in BaseAST::insertAfter");
+  }
+  fixup(new_ast, this);
 }
 
 
@@ -92,6 +187,20 @@ void BaseAST::copySupportTopLevel(BaseAST* copy,
     }
   }
   TRAVERSE(copy, new UpdateSymbols(map), true);
+}
+
+
+char* BaseAST::stringLoc(void) {
+  const int tmpBuffSize = 64;
+  char tmpBuff[tmpBuffSize];
+
+  snprintf(tmpBuff, tmpBuffSize, "%s:%d", filename, lineno);
+  return copystring(tmpBuff);
+}
+
+
+void BaseAST::printLoc(FILE* outfile) {
+  fprintf(outfile, "%s:%d", filename, lineno);
 }
 
 

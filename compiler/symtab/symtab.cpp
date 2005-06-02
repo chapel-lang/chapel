@@ -39,7 +39,7 @@ static void registerModule(ModuleSymbol* mod) {
   case MOD_STANDARD:
   case MOD_COMMON:
   case MOD_USER:
-    moduleList->add(mod);
+    moduleList->insertAtTail(mod);
     break;
   case MOD_SENTINEL:
     INT_FATAL(mod, "Should never try to register a sentinel module");
@@ -84,7 +84,7 @@ void Symboltable::doneParsingPreludes(void) {
   commonModule->setModScope(currentScope);
   commonModule->modScope->setContext(NULL, commonModule, NULL);
 
-  commonModule->stmts->add(new NoOpStmt());
+  commonModule->stmts->insertAtTail(new NoOpStmt());
 
   registerModule(commonModule);
 
@@ -495,7 +495,7 @@ static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type,
     } else {
       newVar = new VarSymbol(ident->name, type, vartag, constag);
     }
-    varList->add(newVar);
+    varList->insertAtTail(newVar);
 
     ident = idents->next();
   }
@@ -512,7 +512,7 @@ AList<ParamSymbol>* Symboltable::defineParams(paramType tag,
   while (sym) {
     ParamSymbol* s = new ParamSymbol(tag, sym->name, type, init->copy());
     s->pragmas = pragma;
-    list->add(s);
+    list->insertAtTail(s);
     sym = syms->next();
   }
 
@@ -544,7 +544,7 @@ AList<DefExpr>* Symboltable::defineVarDef1(AList<Symbol>* idents, Type* type,
   Symbol* var = varList->popHead();
   AList<DefExpr>* defExprs = new AList<DefExpr>();
   while (var) {
-    defExprs->add(new DefExpr(var, 
+    defExprs->insertAtTail(new DefExpr(var, 
                               init ? new UserInitExpr(init->copy()) : NULL));
     
     
@@ -595,7 +595,7 @@ static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* expr,
         // SJD: It is my thought that dtInteger should be dtUnknown. Then
         // analysis can figure it out based on the type of the "domain"
         // which may not be a domain but an array or a sequence too.
-        indices->add(new VarSymbol(varTmp->var->name, dtInteger));
+        indices->insertAtTail(new VarSymbol(varTmp->var->name, dtInteger));
       }
     }
   }
@@ -603,7 +603,7 @@ static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* expr,
   if (!indices->isEmpty()) {
     VarSymbol* var = indices->popHead();
     while (var) {
-      defExprs->add(new DefExpr(var));
+      defExprs->insertAtTail(new DefExpr(var));
       var = indices->popHead();
     }
   }
@@ -775,7 +775,7 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, AList<Symbol>* indices,
   AList<DefExpr>* defExpr = new AList<DefExpr>();
   VarSymbol* var = indexVars->popHead();
   while (var) {
-    defExpr->add(new DefExpr(var));
+    defExpr->insertAtTail(new DefExpr(var));
     var = indexVars->popHead();
   }
   ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);

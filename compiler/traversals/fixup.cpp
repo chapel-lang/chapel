@@ -180,50 +180,29 @@ void Fixup::run(ModuleList* moduleList) {
 }
 
 
-void fixup_symbol(Symbol* symbol) {
-  Fixup* fixup = new Fixup();
-  fixup->parentSymbols.add(symbol);
-  TRAVERSE_DEF(symbol, fixup, true);
+void fixup(BaseAST* ast) {
+  fixup(ast, ast);
 }
 
 
-void fixup_stmt(Stmt* stmt) {
-  Fixup* fixup = new Fixup();
-  fixup->parentSymbols.add(stmt->parentSymbol);
-  fixup->parentStmts.add(stmt->parentStmt);
-  TRAVERSE(stmt, fixup, true);
-}
-
-
-void fixup_expr(Expr* expr) {
-  Fixup* fixup = new Fixup();
-  fixup->parentSymbols.add(expr->parentSymbol);
-  fixup->parentStmts.add(expr->parentStmt);
-  fixup->parentExprs.add(expr->parentExpr);
-  TRAVERSE(expr, fixup, true);
-}
-
-
-void call_fixup(BaseAST* ast) {
-  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
-    if (stmt->parentStmt) {
-      fixup_stmt(stmt->parentStmt);
-    } else if (stmt->parentSymbol) {
-      fixup_symbol(stmt->parentSymbol);
-    } else {
-      INT_FATAL(ast, "Stmt has no parentStmt|Symbol in call_fixup");
-    }
-  } else if (Expr* expr = dynamic_cast<Expr*>(ast)) {
-    if (expr->parentExpr) {
-      fixup_expr(expr->parentExpr);
-    } else if (expr->parentStmt) {
-      fixup_stmt(expr->parentStmt);
-    } else if (expr->parentSymbol) {
-      fixup_symbol(expr->parentSymbol);
-    } else {
-      INT_FATAL(ast, "Expr has no parentExpr|Stmt|Symbol in call_fixup");
-    }
-  } else {
-    INT_FATAL(ast, "Stmt or Expr expected as argument to call_fixup");
+void fixup(BaseAST* ast, BaseAST* ref) {
+  Symbol* parentSymbol = NULL;
+  Stmt* parentStmt = NULL;
+  Expr* parentExpr = NULL;
+  if (Stmt* stmt = dynamic_cast<Stmt*>(ref)) {
+    parentStmt = stmt->parentStmt;
+    parentSymbol = stmt->parentSymbol;
+  } else if (Expr* expr = dynamic_cast<Expr*>(ref)) {
+    parentExpr = expr->parentExpr;
+    parentStmt = expr->parentStmt;
+    parentSymbol = expr->parentSymbol;
+  }
+  if (parentSymbol) {
+    Fixup* fixup = new Fixup();
+    fixup->parentSymbols.add(parentSymbol);
+    fixup->parentStmts.add(parentStmt);
+    fixup->parentExprs.add(parentExpr);
+    ast->parentScope = ref->parentScope;
+    TRAVERSE(ast, fixup, true);
   }
 }
