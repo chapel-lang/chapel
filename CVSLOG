@@ -34130,3 +34130,25 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+06/01/05 17:34:40 -- bradc
+
+Log message:
+	Captured code from David's SSCA2 whitepaper
+	into a .chpl file, primped it up slightly
+	and checked it in as ssca2.orig.chpl for
+	reference.  ssca2.parses.chpl comments out
+	things that don't currently parse.
+	
+	Checking these in so that we can spend some
+	time rewriting them to use fewer features
+	over time, or to more suit our style, as
+	we move toward MS5 at the end of July.
+	
+	These are currently not tested.
+
+Added files:
+	chapel/test/ssca/ssca2/: NOTEST ssca2.orig.chpl 
+	                         ssca2.parses.chpl 
+
