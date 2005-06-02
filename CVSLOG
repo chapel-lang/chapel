@@ -34292,3 +34292,23 @@ Added files:
 	chapel/runtime/src/: exit.c 
 	chapel/test/trivial/shannon/quit/: exit.chpl exit.good 
 
+---------------------------------------------------------------------------
+
+06/02/05 15:11:43 -- deitz
+
+Log message:
+	Added parsing support for parameters in functions.
+	
+	Added a test case of a parameter in a function.  The function should
+	now be instantiated.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: chplenum.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_paramvar_function1.chpl 
+	                                         test_paramvar_function1.future 
+	                                         test_paramvar_function1.good 
+
