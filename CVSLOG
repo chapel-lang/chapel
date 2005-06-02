@@ -34312,3 +34312,21 @@ Added files:
 	                                         test_paramvar_function1.future 
 	                                         test_paramvar_function1.good 
 
+---------------------------------------------------------------------------
+
+06/02/05 16:00:17 -- jplevyak
+
+Log message:
+	Remove fake complex conversions.
+	
+	Complex coercions wrappers work fine.  The problem is that
+	the front end defines two different "complex" types: one
+	is a class defined in _chpl_complex and the other is
+	a BUILTIN_TYPE defined in type.cpp.
+	
+	Either one of these will work, both create problems.  Steve: do you
+	want to pick one to remove?
+
+Modified files:
+	chapel/modules/standard/: _chpl_complex.chpl 
+
