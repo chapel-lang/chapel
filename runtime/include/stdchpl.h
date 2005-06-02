@@ -17,6 +17,7 @@
 #include "chpltypes.h"
 #include "domain.h"
 #include "error.h"
+#include "exit.h"
 #include "forall.h"
 #include "seq.h"
 #include "union.h"

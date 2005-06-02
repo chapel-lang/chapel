@@ -116,6 +116,11 @@ class timer {
   function read(): float;
 }
 
+
+-- exits
+
+pragma "rename _chpl_exit" function exit(status : integer);
+
 -- memory tests (These tests will be moved to a module, once we have modules.)
 
 function _chpl_memtest_printMemTable();
