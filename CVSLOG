@@ -34166,3 +34166,32 @@ Modified files:
 	chapel/test/flowanalysis/newast/: sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+06/02/05 13:41:26 -- bradc
+
+Log message:
+	NOTE: developers who use the log files from
+	the testing system a lot will want to check
+	the second paragraph below.
+	
+	This is another change to try and get the testing
+	system working on Suns well again.  This time I
+	went for the hacky-er approach: I no longer set
+	LANG or LC_ALL when we're running on the Suns (I
+	couldn't find a setting that didn't cause it
+	to complain during our system() calls at compile
+	time for all programs).
+	
+	Also in this change: the default logfile name
+	created by the test system is now
+	$user.platform.log rather than just $user.log
+	so that the testing system may be run on two
+	platforms simultaneously (for example, I test
+	Sun and Linux simultaneously, and could
+	imagine doing the same for netbsd and linux64
+	on John's system).
+
+Modified files:
+	chapel/test/: start_test 
+
