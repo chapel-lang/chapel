@@ -34275,3 +34275,20 @@ Removed files:
 	chapel/compiler/AST/: link.cpp loc.cpp 
 	chapel/compiler/include/: link.h loc.h 
 
+---------------------------------------------------------------------------
+
+06/02/05 14:46:34 -- shannon
+
+Log message:
+	Added the _chpl_exit() function, renamed to exit() in
+	the prelude, which does nothing but call exit()..
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/src/: Makefile 
+Added files:
+	chapel/runtime/include/: exit.h 
+	chapel/runtime/src/: exit.c 
+	chapel/test/trivial/shannon/quit/: exit.chpl exit.good 
+
