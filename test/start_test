@@ -41,7 +41,7 @@
 #   -compopts  <option list>          ""
 #   -execopts  <option list>          ""
 #   -startdir  <test subdir>          .
-#   -logfile   <log filename>         ./Logs/<username>.log
+#   -logfile   <log filename>         ./Logs/<username>.<platform>.log
 #   -valgrind
 #
 # These options can be used with a double-dash as well 
@@ -238,15 +238,6 @@ unsetenv CHPL_DEVELOPER
 #
 setenv GC_NO_BLACKLIST_WARNING 1
 
-#
-# some sets to get locale, environment reasonable
-#
-setenv LC_ALL C
-unsetenv LANG
-setenv LANG en_US
-limit stacksize 8192k
-
-
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 
 ## tester does
@@ -261,15 +252,26 @@ echo \[Starting Chapel regression tests - $datestr\] |& tee $logtmp
 set testdir = $cwd
 echo \[pwd: \"$testdir\"\] |& tee -a $logtmp
 
+set platform = `../util/platform`;
+
+#
+# some sets to get locale, environment reasonable
+#
+if ($platform != "sunos") then
+    setenv LC_ALL C
+    setenv LANG en_US
+endif
+limit stacksize 8192k
+
+
 set execopts = ""
 set compiler = ""
 set compopts = ""
 set startdir = "$testdir"
-set logfile = "$testdir/Logs/$user.log"
+set logfile = "$testdir/Logs/$user.$platform.log"
 set valgrind = 0
 set valgrindexe = 0
 
-set platform = `../util/platform`;
 
 while ( $#argv > 0 )
 	switch ( $argv[1] )
@@ -327,7 +329,7 @@ while ( $#argv > 0 )
 		echo "          -compopts" \"\"
 		echo "          -execopts" \"\"
 		echo "          -startdir ."
-		echo "          -logfile ./Logs/$user.log"
+		echo "          -logfile ./Logs/$user.$platform.log"
 		echo "          -valgrind"
                 echo "          -valgrindexe"
 		echo "          -h, -help"
