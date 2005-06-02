@@ -44,11 +44,9 @@ bool checkAnalysisTypeinfo = false;
 bool analyzeAST = true;
 bool suppressCodegen = false;
 int debugParserLevel = 0;
-
 bool developer = false;
-
 bool ignore_errors = false;
-
+int fnewvardef = 1;
 int fdce_if1 = 1;
 int finline = 0;
 int fsimple_inline = 0;
@@ -68,7 +66,7 @@ static ArgumentDescription arg_desc[] = {
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"scoping", ' ', "Scoping Test", "T", &scoping_test, "CHPL_SCOPING_TEST", NULL},
  {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
- {"print_call_depth", 'C', "Print Call Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
+ {"print-call-depth", 'C', "Print Call Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
  {"constants_per_var", ' ', "# of Constants per Var", "I", &num_constants_per_variable, 
   "CHPL_CONSTANTS_PER_VARIABLE", NULL},
  {"devel", ' ', "Developer Compile", "F", &developer, "CHPL_DEVELOPER", NULL},
@@ -96,6 +94,7 @@ static ArgumentDescription arg_desc[] = {
  {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"tmpRoxIndexType", ' ', "Roxana's index toggle", "F", &_dtinteger_IndexType_switch, "CHPL_DTINTEGER_INDEXTYPE_SWITCH", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
+ {"newvardef", ' ', "New Var Def code", "T", &fnewvardef, "CHPL_NEWVARDEF", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 

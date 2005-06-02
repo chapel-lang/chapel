@@ -47,6 +47,7 @@ static Sym *method_symbol = 0;
 static Sym *set_symbol = 0;
 static Sym *make_seq_symbol = 0;
 static Sym *make_chapel_tuple_symbol = 0;
+static Sym *chapel_vardef_symbol = 0;
 
 static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
@@ -772,12 +773,25 @@ build_symbols(Vec<BaseAST *> &syms) {
 }
 
 static Sym *
+get_defaultVal(Type *t) {
+  Variable *v = dynamic_cast<Variable*>(t->defaultVal);
+  if (v)
+    return v->var->asymbol->sym;
+  assert(dynamic_cast<Literal*>(t->defaultVal));
+  if (!t->defaultVal->ainfo->sym)
+    gen_if1(t->defaultVal);
+  return t->defaultVal->ainfo->rval;
+}
+
+static Sym *
 build_type(Type *t) {
   if (t->symbol) {
     t->asymbol->sym->meta_type = t->symbol->asymbol->sym;
     t->symbol->asymbol->sym->meta_type = t->asymbol->sym;
   }
   make_meta_type(t->asymbol->sym);
+  if (t->defaultVal)
+    get_defaultVal(t);
   switch (t->astType) {
     default: assert(!"case");
     case TYPE:
@@ -1193,19 +1207,22 @@ gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
 }
 
 static Sym *
-get_defaultVal(Type *t) {
-  Variable *v = dynamic_cast<Variable*>(t->defaultVal);
-  if (v)
-    return v->var->asymbol->sym;
-  assert(dynamic_cast<Literal*>(t->defaultVal));
-  if (!t->defaultVal->ainfo->sym)
-    gen_if1(t->defaultVal);
-  return t->defaultVal->ainfo->rval;
+make_symbol(char *name) {
+  Sym *s = if1_make_symbol(if1, name);
+  s->global_scope = 1;
+  return s;
+}
+
+static Sym *
+make_const(Sym *type, char *c) {
+  Sym *s = if1_const(if1, type, c);
+  s->global_scope = 1;
+  return s;
 }
 
 static Sym *
 constructor_name(Type *t) {
-  return if1_make_symbol(if1, t->defaultConstructor->asymbol->sym->name);
+  return make_symbol(t->defaultConstructor->asymbol->sym->name);
 }
 
 static void
@@ -1232,7 +1249,7 @@ gen_alloc(Sym *s, Sym *type, AInfo *ast, int is_this = 0) {
       Code *send = if1_send(if1, c, 1, 1, constructor_name(at->elementType), ret);
       send->ast = ast;
     } else
-      ret = sym_nil;;
+      ret = sym_nil;
     gen_set_array(s, at, ret, ast);
   }
   send->ast = ast;
@@ -1334,7 +1351,13 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
     // THIS IS THE STANDARD CODE
   Lstandard:
     if (!var->noDefaultInit) {
-      if (!this_is_init && type->defaultVal) {
+      if (fnewvardef) {
+        Sym *tmp = new_sym();
+        Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
+                           chapel_vardef_symbol, type->asymbol->sym, tmp);
+        if1_move(if1, &ast->code, tmp, s, ast);
+        c->ast = ast;
+      } else if (!this_is_init && type->defaultVal) {
         if1_move(if1, &ast->code, get_defaultVal(type), ast->sym, ast);
       } else if (type->defaultConstructor) {
         Sym *tmp = new_sym();
@@ -1362,9 +1385,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
         Sym *old_val = val;
         val = new_sym();
-        Code *c = if1_send(if1, &init->ainfo->code, 3, 1, if1_make_symbol(if1, "="), 
-                           ast->sym, old_val, val);
-        
+        Code *c = if1_send(if1, &init->ainfo->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
         c->ast = init->ainfo;
         if1_gen(if1, &ast->code, init->ainfo->code);
       } else {
@@ -1549,13 +1570,13 @@ gen_assign_op(AssignOp *s) {
   switch (s->type) {
     default: assert(!"case");
     case GETS_NORM: op = 0; break;
-    case GETS_PLUS: op = if1_make_symbol(if1, "+"); break;
-    case GETS_MINUS: op = if1_make_symbol(if1, "-"); break;
-    case GETS_MULT: op = if1_make_symbol(if1, "*"); break;
-    case GETS_DIV: op = if1_make_symbol(if1, "/"); break;
-    case GETS_BITAND: op = if1_make_symbol(if1, "&"); break;
-    case GETS_BITOR: op = if1_make_symbol(if1, "|"); break;
-    case GETS_BITXOR: op = if1_make_symbol(if1, "^"); break;
+    case GETS_PLUS: op = make_symbol("+"); break;
+    case GETS_MINUS: op = make_symbol("-"); break;
+    case GETS_MULT: op = make_symbol("*"); break;
+    case GETS_DIV: op = make_symbol("/"); break;
+    case GETS_BITAND: op = make_symbol("&"); break;
+    case GETS_BITOR: op = make_symbol("|"); break;
+    case GETS_BITXOR: op = make_symbol("^"); break;
   }
   if (op) {
     Sym *old_rval = rval;
@@ -1587,13 +1608,13 @@ gen_set_member(MemberAccess *ma, AssignOp *base_ast) {
     char sel[1024];
     strcpy(sel, "=");
     strcat(sel, ma->member->asymbol->sym->name);
-    Sym *selector = if1_make_symbol(if1, sel);
+    Sym *selector = make_symbol(sel);
     c = if1_send(if1, &ast->code, 4, 1, selector, method_symbol,
                  ma->base->ainfo->rval, rhs, ast->rval);
   } else {
-    Sym *selector = if1_make_symbol(if1, ma->member->asymbol->sym->name);
+    Sym *selector = make_symbol(ma->member->asymbol->sym->name);
     c = if1_send(if1, &ast->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
-                 if1_make_symbol(if1, ".="), selector, rhs, ast->rval);
+                 make_symbol(".="), selector, rhs, ast->rval);
   }
   c->ast = ast;
   c->partial = Partial_NEVER;
@@ -1607,7 +1628,7 @@ gen_get_member(MemberAccess *ma) {
   ast->rval->ast = ast;
   if1_gen(if1, &ast->code, ma->base->ainfo->code);
   char *sel = ma->member->asymbol->sym->name;
-  Sym *selector = if1_make_symbol(if1, sel);
+  Sym *selector = make_symbol(sel);
   Code *c = if1_send(if1, &ast->code, 3, 1, selector, method_symbol,
                      ma->base->ainfo->rval, ast->rval);
   c->ast = ast;
@@ -1642,7 +1663,7 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
     if (v && v->var->astType == SYMBOL_UNRESOLVED) {
       strcpy(nn, "=");
       strcat(nn, s->baseExpr->ainfo->sym->name);
-      rvals.add(if1_make_symbol(if1, nn));
+      rvals.add(make_symbol(nn));
     } else {
       rvals.add(set_symbol);
       rvals.add(method_symbol);
@@ -1670,14 +1691,14 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
     } else if (args.n == 3 && dynamic_cast<StringLiteral*>(args.v[1]) &&
                if1->primitives->prim_map[1][1].get(
                  if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[1])->str))) {
-      rvals.v[1] = if1_make_symbol(if1, rvals.v[1]->constant);
+      rvals.v[1] = make_symbol(rvals.v[1]->constant);
       base = sym_operator;
     } else
       base = sym_primitive;
   } else if (base_symbol == SYMBOL_UNRESOLVED) {
     assert(n);
     if (!rhs)
-      base = if1_make_symbol(if1, n);
+      base = make_symbol(n);
   } else if (base_symbol == SYMBOL_FN)
     base = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(s->baseExpr)->var)->asymbol->sym;
   else {
@@ -1784,28 +1805,28 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_LITERAL: assert(!"case"); break;
     case EXPR_BOOLLITERAL: {
       BoolLiteral *s = dynamic_cast<BoolLiteral*>(ast);
-      Sym *c = if1_const(if1, sym_bool, s->str);
+      Sym *c = make_const(sym_bool, s->str);
       c->imm.v_bool = s->val;
       s->ainfo->rval = c;
       break;
     }
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
-      Sym *c = if1_const(if1, sym_int64, s->str);
+      Sym *c = make_const(sym_int64, s->str);
       c->imm.v_int64 = s->val;
       s->ainfo->rval = c;
       break;
     }
     case EXPR_FLOATLITERAL: {
       FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
-      Sym *c = if1_const(if1, sym_float64, s->str);
+      Sym *c = make_const(sym_float64, s->str);
       c->imm.v_float64 = s->val;
       s->ainfo->rval = c;
       break;
     }
     case EXPR_COMPLEXLITERAL: {
       ComplexLiteral *s = dynamic_cast<ComplexLiteral*>(ast);
-      Sym *c = if1_const(if1, sym_complex64, s->str);
+      Sym *c = make_const(sym_complex64, s->str);
       c->imm.v_complex64.r = s->realVal;
       c->imm.v_complex64.i = s->imagVal;
       s->ainfo->rval = c;
@@ -1813,7 +1834,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
-      Sym *c = if1_const(if1, sym_string, s->str);
+      Sym *c = make_const(sym_string, s->str);
       s->ainfo->rval = c;
       break;
     }
@@ -1863,10 +1884,10 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Sym *op = 0;
       switch (s->type) {
         default: assert(!"case");
-        case UNOP_PLUS: op = if1_make_symbol(if1, "+"); break;
-        case UNOP_MINUS: op = if1_make_symbol(if1, "-"); break;
-        case UNOP_LOGNOT: op = if1_make_symbol(if1, "!"); break;
-        case UNOP_BITNOT: op = if1_make_symbol(if1, "~"); break;
+        case UNOP_PLUS: op = make_symbol("+"); break;
+        case UNOP_MINUS: op = make_symbol("-"); break;
+        case UNOP_LOGNOT: op = make_symbol("!"); break;
+        case UNOP_BITNOT: op = make_symbol("~"); break;
       }
       
       Code *c = if1_send(if1, &s->ainfo->code, 3, 1, sym_operator, op, 
@@ -1884,25 +1905,25 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Sym *op = 0;
       switch (s->type) {
         default: assert(!"case");
-        case BINOP_SEQCAT: op = if1_make_symbol(if1, "#"); break;
-        case BINOP_PLUS: op = if1_make_symbol(if1, "+"); break;
-        case BINOP_MINUS: op = if1_make_symbol(if1, "-"); break;
-        case BINOP_MULT: op = if1_make_symbol(if1, "*"); break;
-        case BINOP_DIV: op = if1_make_symbol(if1, "/"); break;
-        case BINOP_MOD: op = if1_make_symbol(if1, "mod"); break;
-        case BINOP_EQUAL: op = if1_make_symbol(if1, "=="); break;
-        case BINOP_LEQUAL: op = if1_make_symbol(if1, "<="); break;
-        case BINOP_GEQUAL: op = if1_make_symbol(if1, ">="); break;
-        case BINOP_GTHAN: op = if1_make_symbol(if1, ">"); break;
-        case BINOP_LTHAN: op = if1_make_symbol(if1, "<"); break;
-        case BINOP_NEQUAL: op = if1_make_symbol(if1, "!="); break;
-        case BINOP_BITAND: op = if1_make_symbol(if1, "&"); break;
-        case BINOP_BITOR: op = if1_make_symbol(if1, "|"); break;
-        case BINOP_BITXOR: op = if1_make_symbol(if1, "^"); break;
-        case BINOP_LOGAND: op = if1_make_symbol(if1, "and"); break;
-        case BINOP_LOGOR: op = if1_make_symbol(if1, "or"); break;
-        case BINOP_EXP: op = if1_make_symbol(if1, "**"); break;
-        case BINOP_BY: op = if1_make_symbol(if1, "by"); break;
+        case BINOP_SEQCAT: op = make_symbol("#"); break;
+        case BINOP_PLUS: op = make_symbol("+"); break;
+        case BINOP_MINUS: op = make_symbol("-"); break;
+        case BINOP_MULT: op = make_symbol("*"); break;
+        case BINOP_DIV: op = make_symbol("/"); break;
+        case BINOP_MOD: op = make_symbol("mod"); break;
+        case BINOP_EQUAL: op = make_symbol("=="); break;
+        case BINOP_LEQUAL: op = make_symbol("<="); break;
+        case BINOP_GEQUAL: op = make_symbol(">="); break;
+        case BINOP_GTHAN: op = make_symbol(">"); break;
+        case BINOP_LTHAN: op = make_symbol("<"); break;
+        case BINOP_NEQUAL: op = make_symbol("!="); break;
+        case BINOP_BITAND: op = make_symbol("&"); break;
+        case BINOP_BITOR: op = make_symbol("|"); break;
+        case BINOP_BITXOR: op = make_symbol("^"); break;
+        case BINOP_LOGAND: op = make_symbol("and"); break;
+        case BINOP_LOGOR: op = make_symbol("or"); break;
+        case BINOP_EXP: op = make_symbol("**"); break;
+        case BINOP_BY: op = make_symbol("by"); break;
       }
       Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
                          s->left->ainfo->rval, s->right->ainfo->rval,
@@ -1931,8 +1952,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval->ast = s->ainfo;
       s->ainfo->sym = s->ainfo->rval;
       if1_gen(if1, &s->ainfo->code, s->base->ainfo->code);
-      Sym *op = if1_make_symbol(if1, ".");
-      Sym *selector = if1_make_symbol(if1, s->member->asymbol->sym->name);
+      Sym *op = make_symbol(".");
+      Sym *selector = make_symbol(s->member->asymbol->sym->name);
       Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
                          s->base->ainfo->rval, op, selector,
                          s->ainfo->rval);
@@ -1992,7 +2013,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         rval->ast = s->ainfo;
         Sym *told_rval = new_sym();
         if1_move(if1, &s->ainfo->code, old_rval, told_rval, s->ainfo);
-        Code *c = if1_send(if1, &s->ainfo->code, 3, 1, if1_make_symbol(if1, "="), 
+        Code *c = if1_send(if1, &s->ainfo->code, 3, 1, make_symbol("="), 
                            s->left->ainfo->rval, told_rval, rval);
         c->ast = s->ainfo;
       }
@@ -2220,7 +2241,7 @@ gen_fun(FnSymbol *f) {
   if (strcmp(f->asymbol->sym->name, "this") != 0) {
     Sym *s = new_sym(f->asymbol->sym->name);
     s->ast = ast;
-    s->must_specialize = if1_make_symbol(if1, f->asymbol->sym->name);
+    s->must_specialize = make_symbol(f->asymbol->sym->name);
     as[iarg++] = s;
     if (f->method_type != NON_METHOD) {
       Sym *s = new_sym(method_symbol->name);
@@ -2378,26 +2399,27 @@ ACallbacks::finalize_functions() {
 
 static void
 init_symbols() {
-  domain_start_index_symbol = if1_make_symbol(if1, "domain_start_index");
-  domain_next_index_symbol = if1_make_symbol(if1, "domain_next_index");
-  domain_valid_index_symbol = if1_make_symbol(if1, "domain_valid_index");
-  expr_simple_seq_symbol = if1_make_symbol(if1, "expr_simple_seq");
-  expr_domain_symbol = if1_make_symbol(if1, "expr_domain");
-  expr_create_domain_symbol = if1_make_symbol(if1, "expr_create_domain");
-  expr_reduce_symbol = if1_make_symbol(if1, "expr_reduce");
-  sizeof_symbol = if1_make_symbol(if1, "sizeof");
-  cast_symbol = if1_make_symbol(if1, "cast");
-  method_symbol = if1_make_symbol(if1, "__method");
-  set_symbol = if1_make_symbol(if1, "=this");
-  make_seq_symbol = if1_make_symbol(if1, "make_seq");
-  make_chapel_tuple_symbol = if1_make_symbol(if1, "make_chapel_tuple");
-  write_symbol = if1_make_symbol(if1, "write");
-  writeln_symbol = if1_make_symbol(if1, "writeln");
-  read_symbol = if1_make_symbol(if1, "read");
-  array_index_symbol = if1_make_symbol(if1, "array_index");
-  array_set_symbol = if1_make_symbol(if1, "array_set");
-  flood_symbol = if1_make_symbol(if1, "*");
-  completedim_symbol = if1_make_symbol(if1, "..");
+  domain_start_index_symbol = make_symbol("domain_start_index");
+  domain_next_index_symbol = make_symbol("domain_next_index");
+  domain_valid_index_symbol = make_symbol("domain_valid_index");
+  expr_simple_seq_symbol = make_symbol("expr_simple_seq");
+  expr_domain_symbol = make_symbol("expr_domain");
+  expr_create_domain_symbol = make_symbol("expr_create_domain");
+  expr_reduce_symbol = make_symbol("expr_reduce");
+  sizeof_symbol = make_symbol("sizeof");
+  cast_symbol = make_symbol("cast");
+  method_symbol = make_symbol("__method");
+  set_symbol = make_symbol("=this");
+  make_seq_symbol = make_symbol("make_seq");
+  make_chapel_tuple_symbol = make_symbol("make_chapel_tuple");
+  chapel_vardef_symbol = make_symbol("chapel_vardef");
+  write_symbol = make_symbol("write");
+  writeln_symbol = make_symbol("writeln");
+  read_symbol = make_symbol("read");
+  array_index_symbol = make_symbol("array_index");
+  array_set_symbol = make_symbol("array_set");
+  flood_symbol = make_symbol("*");
+  completedim_symbol = make_symbol("..");
 }
 
 static void
@@ -2688,6 +2710,40 @@ indextype_set(PNode *pn, EntrySet *es) {
   flow_vars(x, result);
 }
 
+static void
+chapel_vardef(PNode *pn, EntrySet *es) {
+  AVar *tav = make_AVar(pn->rvals.v[2], es);
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  forv_CreationSet(tt, *tav->out) if (tt) {
+    Sym *type_sym = tt->sym->meta_type;
+    Type *type = dynamic_cast<Type*>(type_sym->asymbol ? type_sym->asymbol->symbol : 0);
+    if (!type)
+      creation_point(result, type_sym);
+    else {
+      if (type->defaultVal) {
+        Sym *val = get_defaultVal(type);
+        Var *v = val->var;
+        if (!v)
+          v = val->var = new Var(val);
+        AVar *av = make_AVar(v, es);
+        add_var_constraint(av);
+        flow_vars(av, result);
+      } if (type->defaultConstructor) {
+        Sym *c = constructor_name(type);
+        Var *cvar = c->var;
+        if (!cvar)
+          cvar = c->var = new Var(c);
+        AVar *cavar = make_AVar(cvar, es);
+        AType *ctype = make_abstract_type(c);
+        CreationSet *cs = ctype->v[0];
+        update_in(cavar, ctype);
+        Vec<AVar *> args;
+        function_dispatch(pn, es, cavar, cs, args, Partial_NEVER);
+      }
+    }
+  }
+}
+
 int 
 ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   Vec<BaseAST *> syms;
@@ -2717,6 +2773,7 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   REG(array_set_symbol->name, array_set);
   REG(make_seq_symbol->name, make_seq);
   REG(make_chapel_tuple_symbol->name, make_chapel_tuple);
+  REG(chapel_vardef_symbol->name, chapel_vardef);
   REG(if1_cannonicalize_string(if1, "ptr_eq"), ptr_eq);
   REG(if1_cannonicalize_string(if1, "ptr_neq"), ptr_neq);
   REG(if1_cannonicalize_string(if1, "array_pointwise_op"), array_pointwise_op);

@@ -5,6 +5,7 @@
 #include "map.h"
 #include "sym.h"
 #include "extern.h"
+#include "code.h"
 
 #define DEFAULT_NUM_CONSTANTS_PER_VARIABLE      1
 
@@ -314,6 +315,10 @@ AVar * unique_AVar(Var *v, void *contour);
 AVar *unique_AVar(Var *v, EntrySet *es);
 void qsort_pointers(void **left, void **right);
 void initialize_Sym_for_fa(Sym *s);
+int function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args,
+                      Partial_kind partial);
+void add_var_constraint(AVar *av);
+
 
 extern AType *bottom_type;
 extern AType *void_type;

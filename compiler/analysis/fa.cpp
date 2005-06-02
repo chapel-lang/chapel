@@ -49,7 +49,6 @@ static Vec<ATypeViolation *> type_violations;
 
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
                        Partial_kind partial);
-static void add_var_constraint(AVar *av);
 
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
@@ -831,7 +830,7 @@ flow_var_type_permit(AVar *v, Sym *s) {
   flow_var_type_permit(v, make_abstract_type(s)); 
 }
 
-static void
+void
 add_var_constraint(AVar *av) {
   Sym *s = av->var->sym;
   if (s->type && !s->is_pattern) {
@@ -1161,7 +1160,7 @@ record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
   }
 }
 
-static int
+int
 function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args, 
                   Partial_kind partial) 
 {

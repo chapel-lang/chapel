@@ -11,6 +11,7 @@
 extern bool checkAnalysisTypeinfo;
 // End temporary development flags
 
+extern int fnewvardef;
 extern int fdce_if1;
 extern int finline;
 extern int fgraph;
