@@ -34195,3 +34195,83 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+06/02/05 13:59:33 -- deitz
+
+Log message:
+	Collapsed Loc:: ILink:: BaseAST:: hierarchy.  There is no longer Loc
+	or ILink, just BaseAST.  This allows us to clean up the code in some
+	non-superficial ways.  Moved prev, next, filename, and lineno into
+	BaseAST.
+	
+	Moved parentScope out of Symbol, Stmt, and Expr, and into BaseAST.  It
+	is not currently used in Type or AList.
+	
+	Changed call_fixup to just fixup and made it more focused.  This
+	greatly improves the performance of compilation.  For example,
+	SpecializeParenOps on trivial/shannon/compSampler now takes 0.056
+	seconds on my machine rather than 12.87 seconds!
+	
+	Unified remove, insertBefore, insertAfter, etc.  The current functions
+	can now be called when the nodes are in the AST and when they are not.
+	If they are, fixup is called, otherwise it is not.
+	
+	  BaseAST::insertBefore(BaseAST* new_ast) inserts new_ast before this
+	    in a list
+	
+	  BaseAST::insertAfter(BaseAST* new_ast) inserts new_ast after this in
+	    a list
+	
+	  BaseAST::replace(BaseAST* new_ast) replaces this with new_ast
+	
+	  BaseAST::remove() removes this from the AST, remove does not yet
+	    take into account symbols and removing them from the symboltable
+	
+	The functions on AList now include
+	
+	  AList<...>::insertAtTail(elem) inserts elem at the end of the list
+	
+	  AList<...>::insertAtHead(elem) inserts elem at the beginning of the
+	    list
+	
+	  AList<...>::add(alist) inserts the contents of a list at the end of
+	    the list
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share baseAST.cpp expr.cpp 
+	                      pragma.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h misc.h stmt.h 
+	                          symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp pass.cpp 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         insertOutParameterInitializations.cpp 
+	                         symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             constructComplexLiterals.cpp 
+	                             eliminateReturns.cpp 
+	                             expandSeqExprAssignments.cpp 
+	                             findUnknownTypes.cpp fixup.cpp 
+	                             fixup.h insertAnonymousDomains.cpp 
+	                             insertAnonymousDomains.h 
+	                             insertAnonymousTypes.cpp 
+	                             insertElidedLoops.cpp 
+	                             insertIndexType.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             removeSeqOperations.cpp 
+	                             resolveModuleUses.cpp 
+	                             resolveSymbols.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             transformLetExprs.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Removed files:
+	chapel/compiler/AST/: link.cpp loc.cpp 
+	chapel/compiler/include/: link.h loc.h 
+
