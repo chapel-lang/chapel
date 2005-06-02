@@ -36,7 +36,7 @@ class           return TCLASS;
 config          return TCONFIG;
 const           return TCONST;
 constructor     return TCONSTRUCTOR;
-parameter       return TPARAM;
+parameter       return TPARAMETER;
 continue        return TCONTINUE;
 do              return TDO;
 domain          return TDOMAIN;

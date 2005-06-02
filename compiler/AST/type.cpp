@@ -233,6 +233,8 @@ bool Type::requiresCParamTmp(paramType intent) {
   case PARAM_REF:
     // here, a temp should never be needed
     return false;
+  case PARAM_PARAMETER:
+    INT_FATAL(this, "should be eliminated before this point");
   default:
     INT_FATAL(this, "case not handled in requiresCParamTmp");
     return false;
