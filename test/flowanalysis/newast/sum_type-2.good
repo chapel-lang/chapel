@@ -4,6 +4,11 @@
  called from 30 in __init_sum_type-2 at sum_type-2.chpl:22
  called from 31 in __init_sum_type-2 at sum_type-2.chpl:22
 ::*(internal_prelude.chpl:0) ( * )
+::=color ( =color )
+::=x ( =x )
+::=x ( =x )
+::=y ( =y )
+::=y ( =y )
 ::__init__CommonModule(sum_type-2.chpl:22) ( __init__CommonModule (sum_type-2.chpl:22) )
 ::__init__chpl_complex(sum_type-2.chpl:22) ( __init__chpl_complex (sum_type-2.chpl:22) )
 ::__init__chpl_seq(sum_type-2.chpl:22) ( __init__chpl_seq (sum_type-2.chpl:22) )
@@ -61,11 +66,6 @@
 ::nil ( null )
 ::number(internal_prelude.chpl:0) ( int64 )
 ::p(sum_type-2.chpl:15) ( point (sum_type-2.chpl:1) )
-::set_color ( set_color )
-::set_x ( set_x )
-::set_x ( set_x )
-::set_y ( set_y )
-::set_y ( set_y )
 ::size(internal_prelude.chpl:0) ( int64 )
 ::this ( cpoint (sum_type-2.chpl:6) )
 ::this ( cpoint (sum_type-2.chpl:6) )

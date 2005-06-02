@@ -108,9 +108,9 @@ static void build_union_id_enum(StructuralType* structType) {
 
 static void build_setters_and_getters(StructuralType* structType) {
   forv_Vec(VarSymbol, tmp, structType->fields) {
-    char* setter_name = glomstrings(2, "set_", tmp->name);
+    char* setter_name = glomstrings(2, "=", tmp->name);
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
-    setter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_", setter_name);
+    setter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_set_", tmp->name);
     setter_fn->_setter = tmp;
     ParamSymbol* setter_this = new ParamSymbol(PARAM_REF, "this", structType);
     AList<ParamSymbol>* args = new AList<ParamSymbol>(setter_this);
@@ -130,9 +130,8 @@ static void build_setters_and_getters(StructuralType* structType) {
     setter_fn->typeBinding = structType->symbol;
     setter_fn->_this = setter_this;
 
-    char* getter_name = glomstrings(2, "_chplget_", tmp->name);
-    FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(getter_name));
-    getter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_", getter_name);
+    FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(tmp->name));
+    getter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_get_", tmp->name);
     getter_fn->_getter = tmp;
     ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
     AList<ParamSymbol>* getter_args = new AList<ParamSymbol>(getter_this);

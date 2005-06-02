@@ -1585,7 +1585,7 @@ gen_set_member(MemberAccess *ma, AssignOp *base_ast) {
   Code *c = 0;
   if (!fn || (!fn->_setter && (!fn->isConstructor || !is_this_member_access(ma)))) {
     char sel[1024];
-    strcpy(sel, "set_");
+    strcpy(sel, "=");
     strcat(sel, ma->member->asymbol->sym->name);
     Sym *selector = if1_make_symbol(if1, sel);
     c = if1_send(if1, &ast->code, 4, 1, selector, method_symbol,
@@ -2855,12 +2855,14 @@ return_type_info(FnSymbol *fn) {
     return dtUnknown;  // analysis not run
 }
 
+#define OPERATOR_CHAR(_c) \
+(((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
+  (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
+   _c != '_'&& _c != '?' && _c != '$')                \
+
 static int
 is_operator_name(char *name) {
-  char n = *name;
-  if (((n > ' ' && n < '0') || (n > '9' && n < 'A') ||
-       (n > 'Z' && n < 'a') || (n > 'z'))
-      && n != '_'&& n != '?' && n != '$')
+  if (OPERATOR_CHAR(name[0]) && (!name[1] || OPERATOR_CHAR(name[1])))
     return true;
   return false;
 }
