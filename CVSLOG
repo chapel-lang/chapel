@@ -34525,3 +34525,19 @@ Log message:
 Modified files:
 	chapel/test/ssca/ssca2/: ssca2.parses.chpl 
 
+---------------------------------------------------------------------------
+
+06/03/05 15:08:48 -- shannon
+
+Log message:
+	Added a future test to capture a bug found
+	with the --memtrace runtime option.  Make the
+	error message more informative when no
+	filename is given.
+
+Added files:
+	chapel/test/memory/shannon/: memtraceNoFilename.chpl 
+	                             memtraceNoFilename.execopts 
+	                             memtraceNoFilename.future 
+	                             memtraceNoFilename.good 
+
