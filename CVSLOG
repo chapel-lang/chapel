@@ -34541,3 +34541,19 @@ Added files:
 	                             memtraceNoFilename.future 
 	                             memtraceNoFilename.good 
 
+---------------------------------------------------------------------------
+
+06/03/05 15:20:09 -- shannon
+
+Log message:
+	Added a future test to capture a bug found
+	with the --memstat and --memtrack runtime
+	options.  I need to hrow an error if either
+	flag is followed by an equals sign.
+
+Added files:
+	chapel/test/memory/shannon/: memstatEquals.chpl 
+	                             memstatEquals.execopts 
+	                             memstatEquals.future 
+	                             memstatEquals.good 
+
