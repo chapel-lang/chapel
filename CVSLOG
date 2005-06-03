@@ -34427,3 +34427,42 @@ Added files:
 	                             memmaxIntOnly.future 
 	                             memmaxIntOnly.good 
 
+---------------------------------------------------------------------------
+
+06/03/05 12:05:27 -- bradc
+
+Log message:
+	Fixed a number of issues related to byte-ordering that
+	were causing failures on the Suns:
+	
+	- when I switched the 'f'/'F' flags from int to bool,
+	  I switched the command-line parsing of them, but
+	  failed to switch the environment variable parsing,
+	  such that environment variables (like CHPL_DEVELOPER)
+	  weren't necessarily working correctly on Suns.
+	
+	- switched a use of _chpl_tostring_integer from using
+	  "%d" as its output format to _default_write_integer64
+	  which should be more portable and immune to byte
+	  ordering.
+	
+	- fixed _chpl_tostring_complex to not rely on byte
+	  ordering of the .re and .im fields in the complex
+	  value by accessing them directly.
+	
+	- switched formatting strings in test_format_primitives
+	  to use %lld rather than %d for now since we don't
+	  do our own Chapel-oriented parsing of formatting
+	  strings yet.  This is consistent with other tests, if
+	  unfortunate.
+	
+	-Brad
+
+Modified files:
+	./: log.txt 
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/backend/: beautify.cpp 
+	chapel/compiler/main/: arg.cpp 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/trivial/deitz/: test_format_primitives.chpl 
+
