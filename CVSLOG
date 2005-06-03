@@ -34515,3 +34515,13 @@ Modified files:
 	chapel/compiler/include/: chplenum.h symbol.h type.h 
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+06/03/05 14:46:49 -- deitz
+
+Log message:
+	very small amount of initial comments
+
+Modified files:
+	chapel/test/ssca/ssca2/: ssca2.parses.chpl 
+
