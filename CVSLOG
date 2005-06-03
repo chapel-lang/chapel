@@ -34466,3 +34466,38 @@ Modified files:
 	chapel/runtime/src/: chpltypes.c 
 	chapel/test/trivial/deitz/: test_format_primitives.chpl 
 
+---------------------------------------------------------------------------
+
+06/03/05 13:54:43 -- deitz
+
+Log message:
+	Added support for the alternative syntax for anonymous record types:
+	
+	  var r : (x : integer, y : string);
+	
+	This syntax requires that the type be specified, otherwise it is
+	indistinguishable from a tuple type.
+	
+	Eliminated DefStmt::typeDef() and DefStmt::moduleDef().  Started to
+	remove DefStmt::fnDef() and DefStmt::varDef().  These are bad
+	functions because they only return a single symbol though multiple may
+	exist.  Added functions DefStmt::definesTypes, definesFunctions, and
+	definesVariables that return true if the DefStmt only defines those
+	symbols.
+	
+	Removed the future for test_anon_record3 and added a new test that
+	declares two fields in a class in the same line.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+	chapel/test/ssca/ssca2/: ssca2.parses.chpl 
+Added files:
+	chapel/test/classes/deitz/: test_record9.chpl test_record9.good 
+Removed files:
+	chapel/test/classes/deitz/: test_anon_record3.future 
+
