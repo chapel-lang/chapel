@@ -34346,3 +34346,54 @@ Modified files:
 	chapel/compiler/include/: driver.h fa.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+06/03/05 10:03:35 -- deitz
+
+Log message:
+	Added support for anonymous record types like
+	
+	  var r : record { var x : integer; var y : string; };
+	
+	I didn't add the alternative syntax
+	
+	  var r : (x : integer, y : string);
+	
+	because of a shift/reduce conflict with tuple types.  This may require
+	a little effort but could be worthwhile cleaning of tuples.
+	
+	Codegen now declares enums followed by type prototypes followed by
+	type definitions followed by other prototypes followed by other
+	definitions.  This is because a type needs to be fully specified
+	before it can be in a function prototype.
+	
+	Added support anonymous record types in InsertAnonymousTypes so they
+	get symbols.
+	
+	Cleaned up the way structs are parsed and built in support of this
+	change.
+	
+	Added three tests, one works, two are futures.  The two futures look
+	at anonymous record types with primary methods and the alternative
+	syntax.
+	
+	Added new out for sum_type tests.  This is a line number inconsistency
+	that I'll try to look at when it fails next.
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+Added files:
+	chapel/test/classes/deitz/: test_anon_record1.chpl 
+	                            test_anon_record1.good 
+	                            test_anon_record2.chpl 
+	                            test_anon_record2.future 
+	                            test_anon_record2.good 
+	                            test_anon_record3.chpl 
+	                            test_anon_record3.future 
+	                            test_anon_record3.good 
+
