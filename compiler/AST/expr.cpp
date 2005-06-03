@@ -903,7 +903,9 @@ void AssignOp::codegen(FILE* outfile) {
       }
       right->codegen(outfile);
       if (right->typeInfo() == dtInteger) {
-        fprintf(outfile, ", \"%%d\")");
+        fprintf(outfile, ", ");
+        right->typeInfo()->codegenDefaultFormat(outfile, false);
+        fprintf(outfile, ")");
       }
       fprintf(outfile, ")");
     }

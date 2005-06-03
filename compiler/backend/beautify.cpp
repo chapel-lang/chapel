@@ -263,7 +263,8 @@ void beautify(fileinfo* origfile) {
   mysystem(command, "moving beautified file");
   
   if (justification.n != 0) {
-    INT_FATAL( "Parentheses or curly braces are not balanced in codegen.");
+    INT_FATAL( "Parentheses or curly braces are not balanced "
+               "in codegen for %s.", origfile->pathname);
   }
 
 }

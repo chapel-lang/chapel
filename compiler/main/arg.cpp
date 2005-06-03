@@ -104,7 +104,7 @@ process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
         case '+': (*(int *)desc[i].location)++; break;
         case 'f': 
         case 'F': 
-          *(int *)desc[i].location = type=='F'?1:0; break;
+          *(bool *)desc[i].location = type=='F'?1:0; break;
         case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
         case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
         case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
@@ -217,7 +217,7 @@ usage(ArgumentState *arg_state, char *arg_unused) {
         fprintf(stderr, " %-9d", *(int *)desc[i].location);
         break;
       case 'T': case 'f': case 'F':
-        fprintf(stderr, " %-9s", *(int *)desc[i].location?"true ":"false");
+        fprintf(stderr, " %-9s", *(bool *)desc[i].location?"true ":"false");
         break;
     }
     fprintf(stderr," %s\n",desc[i].description);

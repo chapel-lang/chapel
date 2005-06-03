@@ -1,180 +1,25 @@
-This is a big check-in to remove our ad-hoc lists from the compiler
-and replace them with a templatized List class.  Most of the work
-here was in changing the client code from using the ad-hoc lists
-to using a list class.  More on the details of the specific list
-class in a sec.  First, two minor changes that go along with this 
-and may be helpful for others debugging as it was for mine:
+Fixed a number of issues related to byte-ordering that
+were causing failures on the Suns:
 
-(1) made the --gdb flag set a breakpoint so that if the compiler is
-    exited with a nonzero status code, it will stop before exiting.
-    When INT_FATAL() or other erroneous ways of exiting the program
-    are used, this allows one to get a stacktrace of where the error
-    occurred without setting a breakpoint manually.  While this
-    seems like a minor advantage, it turns out to be one of the easiest 
-    ways to debug problems in templatized code since setting breakpoints
-    in templatized code is somewhat crufty.  The only negative effect
-    that I found with this is that breakpoints you set by hand will start
-    being numbered at 2 rather than 1.
+- when I switched the 'f'/'F' flags from int to bool,
+  I switched the command-line parsing of them, but
+  failed to switch the environment variable parsing,
+  such that environment variables (like CHPL_DEVELOPER)
+  weren't necessarily working correctly on Suns.
 
-(2) added a no-op call named "checkid" that is called for every
-    BaseAST that is constructed.  This is beneficial for answering
-    the question, "I wonder when node #n is created in the AST?"
-    since it is also difficult to set breakpoints on constructors.
-    Thus, one would now debug this case using: "break checkid"
-    followed by "cond <bkptnum> (id == n)" and rerunning.  This
-    makes it trivial to locate the creation of the AST (if Steve's
-    recent backtrace info wasn't help enough).
+- switched a use of _chpl_tostring_integer from using
+  "%d" as its output format to _default_write_integer64
+  which should be more portable and immune to byte
+  ordering.
 
-About ALists
-============
+- fixed _chpl_tostring_complex to not rely on byte
+  ordering of the .re and .im fields in the complex
+  value by accessing them directly.
 
-Created a new List class called AList which is templatized via a
-class that has next and previous pointers.  This decision was made
-so that items (like statements) could remove themselves from lists
-without having a handle on the list itself.  Sentinel nodes are
-created for the list head and tail for ease of implementation and
-so that all list members can be treated consistently.  This
-causes the class being used to instantiate the list to require a
-0-argument constructor.
+- switched formatting strings in test_format_primitives
+  to use %lld rather than %d for now since we don't
+  do our own Chapel-oriented parsing of formatting
+  strings yet.  This is consistent with other tests, if
+  unfortunate.
 
-The name AList is meant to signify "ASTList" or "a list".
-To a large extent, it's a placeholder name that we can replace
-with another name or with another list implementation if people
-want to.  Changing it from here should be simpler since the
-distinction between lists and elements has been made manifest in
-the rest of the compiler now.
-
-ALists can be constructed using a 0-argument constructor (which
-creates an empty AList containing only the sentinel nodes) or 
-by passing in a single instance of the class being used to 
-instantiate the AList, in which case it will be the sole element 
-of the list.  A warning will be generated if the element that's 
-being passed in is already a member of another list (that is, 
-if its next or prev pointers are non-NULL).
-
-To add to an AList, the current methods are insert() (which puts 
-the new node at the front of the list), and add() (which puts the 
-new node at the end of the list).  Each of these can also take a
-whole list which will result in the argument list being emptied
-out -- as we discussed in this week's meeting, the decision to 
-allow nodes to be a member of only one node was deliberate -- use 
-the copy() methods in order to create a duplicate list for 
-concatenation).
-
-The suggested way to traverse a list is using the first() and next()
-methods, which return the first element in the list and subsequent
-elements, respectively.  When the end of the list is reached, 
-next() returns NULL.  If the list is empty, first() returns NULL.
-This implementation uses a cursor embedded in the list, so a single
-list should not be iterated over using first() and next() twice
-within a single dynamic range.  There is a check to ensure that
-this does not occur, but it currently is off by default (because
-I currently use first() in the compiler for things other than
-iteration, which I shouldn't do).  Set the debugNestedTraversals 
-flag to turn it on.  A good TODO item is to get this turned on
-using the only() and representative() calls (described below).
-Another would be to wrap the first() and next() calls in a for-loop
-style macro for convenience.
-
-The only() call is used in cases where there is an assumption being
-made that there is only one item in a list (these were typically
-embedded in the old code by accessing the first element in a field
-that represented a list without looking at the rest of the elements).
-It throws an error if there is more than one element in the list.
-Arguably, code should be rewritten to try and avoid the use of 
-only()
-
-The representative() call is used in cases where the code just
-accessed the first elemente in a list but the list had more than
-one element.  Arguably, these should be rewritten to try and
-avoid the use of representative(), though there may be cases
-in which the list is known to be homogenous with respect to
-a property, in which case this would be OK.
-
-Elements may be removed from an AList using remove() which pulls
-the element from the list.  Currently there is no check to ensure
-that the element is in the list, for efficiency.  remove() may
-be called directly on the element itself if it is a subclass of
-ILink (or otherwise implements a removal that updates its next
-and prev links to point to one another).
-
-Elements may also be popped from the front of an AList() using
-popHead(), because the code did this in a number of places
-manually with the old ad hoc lists.
-
-Implemented variations of insertBefore() and insertAfter() to
-have the same semantics they do for other AST nodes -- implying
-a fixup should occur after the insertion.  The new list
-structure should allow this code to be cleaned up significantly
-so that different calls don't need to be made, but that's a
-separate checkin (and one likely to be undertaken by Steve).
-
-Lists support print(), printDef(), codegen(), codegenDef(),
-and traversal() methods, which behave like their corresponding
-AST calls, with the exception that the print and codegen
-routines take a separator string, as the printList() and
-codegenList() routines did previously.
-
-getElements() converts the AList into a vector, as 
-getLinkElements did previously.  filter() filters a list into 
-two different lists, as supported on ILinks previously.
-
-The size of an AList may be checked with isEmpty() (which is O(1)),
-or length() (which is O(n).
-
-As a policy decision, any AST node fields which can be lists
-I store as empty lists when they're empty rather than NULL
-to avoid having to special case NULL lists elsewhere in the
-code.  The one exception to this are pragma lists, due to
-their pervasiveness.  We may want to rethink this over time
-(in either direction).
-
-The perceived advantages of introducing ALists are:
-
-(1) cleaner documentation of which AST nodes are and are not
-    lists
-(2) more structured access to those lists, allowing for the
-    list implementation to be changed without touching as
-    much code as this change does
-(3) faster insertion at the ends of lists than our old scheme
-(4) more consistent access to list elements due to the sentinel
-    elements at the head and tail; allows list elements to be
-    manipulated without the list being directly involved.
-(5) removal of distinction between xxx() and xxxList() routines
-    that we used to have.  Now, call xxx() on any BaseAST node.
-
-
-Here are some related changes:
-
-* changed all passes and traversals to take a ModuleList (an
-  AList<ModuleSymbol>) rather than a ModuleList* representing
-  a list.  Named this class ModuleList to avoid a circular
-  dependence between alist.h, traversal.h, and pass.h.  This
-  should also make the passes/traversals more resilient to
-  any future changes that may need to occur.
-
-* made AList and Pragma be subclasses of BaseAST.  AList so 
-  that it could be passed to replace().  Both so that their 
-  creation location could more easily be debugged.
-
-* killed list-specific functions copyList/copyListInternal,
-  printList/codegenList, traverseList/traverseDefList, TRAVERSE_LS
-
-* got rid of link-related functions that acted as list functions
-  such as append, nextLink, filter, head, tail, length, get.
-
-* made some constructors of basic types be 0-argument constructors,
-  as the AList class needs to create instances of such classes for
-  its sentinel nodes
-
-* removed some traversals over ad-hoc lists of symbols per DefExpr,
-  because we have only had one Symbol per DefExpr for some time now
-  
-* replaced most constructors that took an ad-hoc list with constructors
-  that take an AList<>.  In some cases, kept the old constructors, but
-  these will reject nodes that are already part of a list in the call
-  to the AList constructor that's made.  Others accepting a singleton
-  should be added as a TODO item for convenience (e.g., we create a 
-  lot of BlockStmts with just a single initial statement; same with
-  ParenOpExpr and DefExpr).
-
+-Brad

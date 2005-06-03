@@ -1,10 +1,10 @@
 var i : integer = 3;
 
-writeln(i:"%d");
+writeln(i:"%lld");
 
 var s : string;
 
-s = i:"%d";
+s = i:"%lld";
 
 writeln(s);
 

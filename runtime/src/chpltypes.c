@@ -87,7 +87,7 @@ char* _chpl_tostring_float(_float64 x, char* format) {
 
 char* _chpl_tostring_complex(_complex128 x, char* format) {
   char buffer[256];
-  sprintf(buffer, format, x);
+  sprintf(buffer, format, x.re, x.im);
   return _glom_strings(1, buffer);
 }
 
