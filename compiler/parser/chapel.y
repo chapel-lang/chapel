@@ -126,11 +126,11 @@
 %type <pt> formaltag
 
 %type <boolval> fortype fnretref isconstructor
-%type <pdt> type domainType indexType arrayType tupleType seqType
+%type <pdt> type domainType indexType arrayType tupleType seqType anon_record_type
 %type <tupledt> tupleTypes
 %type <unresolveddt> unresolvedType
 %type <pdt> vardecltype typevardecltype fnrettype
-%type <pch> identifier query_identifier fname opt_identifier
+%type <pch> identifier query_identifier fname optional_identifier
 %type <psym> ident_symbol
 %type <symlist> ident_symbol_ls indexes indexlist
 %type <paramlist> formal formals
@@ -145,7 +145,7 @@
 %type <defexprls> vardecl_inner vardecl_inner_ls
 %type <defstmt> vardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl
-%type <pdt> structtype
+%type <pdt> class_record_union
 %type <stmt> typealias typedecl fndecl structdecl moduledecl
 %type <stmt> function_body_single_stmt 
 %type <blkstmt> function_body_stmt block_stmt
@@ -320,7 +320,7 @@ enumdecl:
 ;
 
 
-structtype:
+class_record_union:
   TCLASS
     { $$ = new ClassType(); }
 | TRECORD
@@ -331,15 +331,42 @@ structtype:
 
 
 structdecl:
-  structtype pragmas identifier TLCBR
+  class_record_union pragmas identifier TLCBR
     {
-      $<ptsym>$ = Symboltable::startStructDef($1, $3);
-      $<ptsym>$->pragmas = $2;
+      Symboltable::pushScope(SCOPE_CLASS);
     }
-                                      decls TRCBR
+                                              decls TRCBR
     {
-      $$ = new DefStmt(Symboltable::finishStructDef($<ptsym>5, $6));
+      SymScope *scope = Symboltable::popScope();
+      Type* type = Symboltable::defineStructType($3, $1, scope, $6);
+      type->symbol->pragmas = $2;
+      $$ = new DefStmt(type->symbol->defPoint);
     }
+;
+
+
+anon_record_type:
+  TRECORD TLCBR
+    {
+      Symboltable::pushScope(SCOPE_CLASS);
+    }
+                decls TRCBR
+    {
+      SymScope *scope = Symboltable::popScope();
+      $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, $4);
+    }
+/* alternative syntax, shift/reduce with tuple
+| TLP
+    {
+      Symboltable::pushScope(SCOPE_CLASS);
+    }
+      vardecl_inner_ls TRP
+    {
+      SymScope *scope = Symboltable::popScope();
+      $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, 
+                                         new DefStmt($3));
+    }
+*/
 ;
 
 
@@ -569,7 +596,7 @@ whereexpr:
     { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
 | TLP whereexpr TRP
     { $$ = $2; }
-| structtype pragmas opt_identifier TLCBR decls TRCBR
+| class_record_union pragmas optional_identifier TLCBR decls TRCBR
     { $$ = NULL; }
 | whereexpr TLP exprlist TRP   
     { $$ = new ParenOpExpr($1, $3); }
@@ -700,6 +727,7 @@ type:
 | arrayType
 | seqType
 | tupleType
+| anon_record_type
 | unresolvedType
     { $$ = $1; }
 | query_identifier
@@ -1144,7 +1172,7 @@ identifier:
 ;
 
 
-opt_identifier:
+optional_identifier:
     { $$ = NULL; }
 | identifier;
 

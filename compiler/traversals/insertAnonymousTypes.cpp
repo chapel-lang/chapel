@@ -100,39 +100,6 @@ static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
     stmt->insertBefore(new ExprStmt(new AssignOp(GETS_NORM, new Variable(var), defExpr->init->expr->copy())));
   }
   defStmt->remove();
-//   if (seq_type->symbol) {
-//     INT_FATAL(stmt, "Seq type already resolved");
-//   }
-
-//   SymScope* saveScope;
-//   if (seq_type->elementType->symbol->parentScope->isInternal() ||
-//       !seq_type->elementType->symbol->defPoint) {
-//     saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-//   } else {
-//     saveScope = Symboltable::setCurrentScope(seq_type->elementType->symbol->parentScope);
-//   }
-
-//   char* name = glomstrings(2, "_seq_", seq_type->elementType->symbol->name);
-//   if (Symbol* seq_sym = Symboltable::lookupInCurrentScope(name)) {
-//     *type = seq_sym->type;
-//   } else {
-//     SeqType* new_seq_type = SeqType::createSeqType(name, seq_type->elementType);
-//     DefExpr* def_expr = new DefExpr(new_seq_type->symbol);
-//     new_seq_type->structScope->setContext(NULL, new_seq_type->symbol, def_expr);
-//     DefStmt* seq_type_def = new DefStmt(def_expr);
-//     if (Symboltable::getCurrentScope() == commonModule->modScope) {
-//       commonModule->stmts->insertAfter(seq_type_def);
-//     } else {
-//       Stmt* def_stmt = seq_type->elementType->symbol->defPoint->parentStmt;
-//       if (!def_stmt) {
-//         INT_FATAL(stmt, "Seq with anonymous type not declared in statement not handled");
-//       }
-//       def_stmt->insertAfter(seq_type_def);
-//     }
-//     *type = new_seq_type;
-//     // seq_type->buildImplementationClasses();
-//   }
-//   Symboltable::setCurrentScope(saveScope);
 }
 
 
@@ -151,6 +118,40 @@ static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
     TypeSymbol::lookupOrDefineTupleTypeSymbol(&tuple_type->components);
 
   *type = tupleSymbol->type;
+}
+
+
+static void build_anon_structural_type_def(Stmt* stmt, Type** type) {
+  StructuralType* structType = dynamic_cast<StructuralType*>(*type);
+
+  if (!structType) {
+    INT_FATAL(*type, "Structural type expected");
+  }
+
+  if (structType->symbol) {
+    return;
+  }
+
+  SymScope* saveScope = NULL;
+  if (Symboltable::getCurrentModule()->initFn == stmt->parentFunction()) {
+    saveScope = Symboltable::setCurrentScope(Symboltable::getCurrentModule()->modScope);
+  }
+
+  char* name = glomstrings(2, "_anon_type_", intstring(structType->id));
+  TypeSymbol* typeSymbol = new TypeSymbol(name, structType);
+  structType->addSymbol(typeSymbol);
+  forv_Vec(FnSymbol, method, structType->methods) {
+    method->typeBinding = typeSymbol;
+  }
+  DefExpr* defExpr = new DefExpr(typeSymbol);
+  structType->structScope->setContext(NULL, typeSymbol, defExpr);
+  DefStmt* defStmt = new DefStmt(defExpr);
+  if (saveScope) {
+    Symboltable::setCurrentScope(saveScope);
+    Symboltable::getCurrentModule()->stmts->insertAtHead(defStmt);
+  } else {
+    stmt->insertBefore(defStmt);
+  }
 }
 
 
@@ -267,8 +268,11 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
     build_anon_seq_type_def(stmt, type);
   } else if (dynamic_cast<IndexType*>(*type)) {
     build_index_type_def(stmt, type);
+  } else if (dynamic_cast<StructuralType*>(*type)) {
+    build_anon_structural_type_def(stmt, type);
   }
 }
+
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {

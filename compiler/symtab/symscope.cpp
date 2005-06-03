@@ -290,18 +290,39 @@ void SymScope::codegen(FILE* outfile, char* separator) {
     }
   }
 
-  // codegen prototypes
+  // codegen type prototypes
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      tmp->codegenPrototype(outfile);
+      if (dynamic_cast<TypeSymbol*>(tmp) &&
+          !dynamic_cast<EnumType*>(tmp->type)) {
+        tmp->codegenPrototype(outfile);
+      }
     }
   }
 
-  // codegen definitions less enums
+  // codegen types less enums
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (!(dynamic_cast<TypeSymbol*>(tmp) && 
-            dynamic_cast<EnumType*>(tmp->type))) {
+      if (dynamic_cast<TypeSymbol*>(tmp) &&
+          !dynamic_cast<EnumType*>(tmp->type)) {
+        tmp->codegenDef(outfile);
+      }
+    }
+  }
+
+  // codegen other prototypes
+  forv_Vec(Symbol, sym, symbols) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+      if (!dynamic_cast<TypeSymbol*>(tmp)) {
+        tmp->codegenPrototype(outfile);
+      }
+    }
+  }
+
+  // codegen definitions less types and enums
+  forv_Vec(Symbol, sym, symbols) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+      if (!dynamic_cast<TypeSymbol*>(tmp)) {
         tmp->codegenDef(outfile);
       }
     }

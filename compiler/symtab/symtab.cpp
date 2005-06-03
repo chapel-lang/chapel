@@ -723,25 +723,25 @@ DefStmt* Symboltable::defineFunction(char* name, AList<ParamSymbol>* formals,
 }
 
 
-TypeSymbol* Symboltable::startStructDef(Type* type, char* name) {
-  TypeSymbol* sym = new TypeSymbol(name, type);
-  type->addSymbol(sym);
-  Symboltable::pushScope(SCOPE_CLASS);
+Type* Symboltable::defineStructType(char* name, // NULL = anonymous
+                                    Type* type,
+                                    SymScope* scope,
+                                    AList<Stmt>* def) {
+  StructuralType* structType = dynamic_cast<StructuralType*>(type);
 
-  return sym;
-}
-                                        
+  if (!structType) {
+    INT_FATAL(type, "defineStructType called on non StructuralType");
+  }
 
-DefExpr* Symboltable::finishStructDef(TypeSymbol* classSym, 
-                                      AList<Stmt>* definition) {
-  StructuralType* classType = dynamic_cast<StructuralType*>(classSym->type);
-  classType->addDeclarations(definition);
-  SymScope *classScope = Symboltable::popScope();
-  classType->setScope(classScope);
-  DefExpr* classDefExpr = new DefExpr(classSym);
-  classScope->setContext(NULL, classSym, classDefExpr);
-
-  return classDefExpr;
+  if (name) {
+    TypeSymbol* sym = new TypeSymbol(name, structType);
+    structType->addSymbol(sym);
+    DefExpr* defExpr = new DefExpr(sym);
+    scope->setContext(NULL, sym, defExpr);
+  }
+  structType->setScope(scope);
+  structType->addDeclarations(def);
+  return structType;
 }
 
 

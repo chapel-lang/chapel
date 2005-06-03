@@ -1,0 +1,3 @@
+deitz
+
+I think the problem is that InsertAnonymousTypes is run after ScopeResolveSymbols.  Unfortunately it has to be now.  I think when arrays are classes, this can be moved up.

@@ -88,9 +88,8 @@ class Symboltable {
                                  Type* retType, BlockStmt* body, 
                                  bool isExtern = false);
 
-  static TypeSymbol* startStructDef(Type* type, char* name);
-  static DefExpr* finishStructDef(TypeSymbol* classSym, AList<Stmt>* definition);
-
+  static Type* defineStructType(char* name, Type* type,
+                                SymScope* scope, AList<Stmt>* def);
   static ForLoopStmt* startForLoop(bool forall, AList<Symbol>* indices, 
                                    Expr* domain);
   static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);
