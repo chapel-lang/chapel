@@ -34412,3 +34412,18 @@ Added files:
 	                                spellingTest.future 
 	                                spellingTest.good 
 
+---------------------------------------------------------------------------
+
+06/03/05 11:35:40 -- shannon
+
+Log message:
+	Added a future test to capture a bug found
+	with the --memmax runtime option.  Make the
+	error message more accurate.
+
+Added files:
+	chapel/test/memory/shannon/: memmaxIntOnly.chpl 
+	                             memmaxIntOnly.execopts 
+	                             memmaxIntOnly.future 
+	                             memmaxIntOnly.good 
+
