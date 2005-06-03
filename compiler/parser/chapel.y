@@ -126,12 +126,12 @@
 %type <pt> formaltag
 
 %type <boolval> fortype fnretref isconstructor
-%type <pdt> type domainType indexType arrayType tupleType seqType anon_record_type
-%type <tupledt> tupleTypes
+%type <pdt> type domainType indexType arrayType seqType record_tuple_type record_tuple_inner_type
+%type <tupledt> tuple_inner_types
 %type <unresolveddt> unresolvedType
-%type <pdt> vardecltype typevardecltype fnrettype
+%type <pdt> opt_vardecltype vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier fname optional_identifier
-%type <psym> ident_symbol
+%type <psym> ident_symbol ident_symbol_nopragma
 %type <symlist> ident_symbol_ls indexes indexlist
 %type <paramlist> formal formals
 %type <enumsym> enum_item
@@ -142,7 +142,7 @@
 %type <pfaexpr> forallExpr
 %type <stmt> statement call_stmt noop_stmt decl typevardecl
 %type <stmtlist> decls statements modulebody program
-%type <defexprls> vardecl_inner vardecl_inner_ls
+%type <defexprls> vardecl_inner vardecl_inner_ls record_inner_vars
 %type <defstmt> vardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl
 %type <pdt> class_record_union
@@ -217,12 +217,20 @@ varconst:
 ;
         
 ident_symbol:
- pragmas identifier
+  pragmas identifier
     { 
       $$ = new Symbol(SYMBOL, $2);
       $$->pragmas = $1;
     } 
 ;
+
+ident_symbol_nopragma:
+  identifier
+    {
+      $$ = new Symbol(SYMBOL, $1);
+    }
+;
+
 
 ident_symbol_ls:
   ident_symbol
@@ -233,12 +241,17 @@ ident_symbol_ls:
 
 
 vardecltype:
-  /* nothing */
-    { $$ = dtUnknown; }
-| TCOLON type
+  TCOLON type
     { $$ = $2; }
 | TLIKE expr
     { $$ = new LikeType($2); }
+;
+
+
+opt_vardecltype:
+  /* nothing */
+    { $$ = dtUnknown; }
+| vardecltype
 ;
 
 
@@ -251,7 +264,7 @@ optional_init_expr:
 
 
 vardecl_inner:
-  ident_symbol_ls vardecltype optional_init_expr
+  ident_symbol_ls opt_vardecltype optional_init_expr
     { $$ = Symboltable::defineVarDef1($1, $2, $3); }
 ;
 
@@ -345,7 +358,49 @@ structdecl:
 ;
 
 
-anon_record_type:
+tuple_inner_types:
+  type
+    {
+      $$ = new TupleType();
+      $$->addType($1);
+    }
+| tuple_inner_types TCOMMA type
+    { 
+      $$ = $1;
+      $$->addType($3);
+    }
+;
+
+
+record_inner_vars:
+  ident_symbol_nopragma vardecltype optional_init_expr
+    {
+      $$ = Symboltable::defineVarDef1(new AList<Symbol>($1), $2, $3);
+    }
+| record_inner_vars TCOMMA ident_symbol vardecltype
+    {
+      $1->add(Symboltable::defineVarDef1(new AList<Symbol>($3), $4, NULL));
+      $$ = $1;
+    }
+;
+
+
+record_tuple_inner_type:
+  record_inner_vars TRP
+    {
+      SymScope *scope = Symboltable::popScope();
+      $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, 
+                                         new AList<Stmt>(new DefStmt($1)));
+    }
+| tuple_inner_types TRP
+    {
+      Symboltable::popScope();
+      $$ = $1;
+    }
+;
+
+
+record_tuple_type:
   TRECORD TLCBR
     {
       Symboltable::pushScope(SCOPE_CLASS);
@@ -355,18 +410,14 @@ anon_record_type:
       SymScope *scope = Symboltable::popScope();
       $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, $4);
     }
-/* alternative syntax, shift/reduce with tuple
 | TLP
     {
       Symboltable::pushScope(SCOPE_CLASS);
     }
-      vardecl_inner_ls TRP
+      record_tuple_inner_type
     {
-      SymScope *scope = Symboltable::popScope();
-      $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, 
-                                         new DefStmt($3));
+      $$ = $3;
     }
-*/
 ;
 
 
@@ -420,7 +471,7 @@ typevardecltype:
 
 
 formal:
-  formaltag ident_symbol_ls vardecltype optional_init_expr
+  formaltag ident_symbol_ls opt_vardecltype optional_init_expr
     {
       $$ = Symboltable::defineParams($1, $2, $3, $4);
     }
@@ -687,26 +738,6 @@ decls:
 ;
 
 
-tupleTypes:
-  type
-    {
-      $$ = new TupleType();
-      $$->addType($1);
-    }
-| tupleTypes TCOMMA type
-    { 
-      $$ = $1;
-      $$->addType($3);
-    }
-;
-
-
-tupleType:
-  TLP tupleTypes TRP
-    { $$ = $2; }
-;
-
-
 unresolvedType:
   unresolvedType TDOT identifier
     {
@@ -726,8 +757,7 @@ type:
 | indexType
 | arrayType
 | seqType
-| tupleType
-| anon_record_type
+| record_tuple_type
 | unresolvedType
     { $$ = $1; }
 | query_identifier

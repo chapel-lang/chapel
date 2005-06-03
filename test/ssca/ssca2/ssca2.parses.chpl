@@ -1,4 +1,4 @@
-module declareGlobals {
+/*TMP module declareGlobals {*/
   config var ENABLE_K2 = true;
   config var ENABLE_K3 = true;
   config var ENABLE_K4 = true;
@@ -44,17 +44,13 @@ module declareGlobals {
     with Numbers;
     var Cliques : domain(1);
     var cliqueSizes : [Cliques] integer; 
-/* TMP
     var VsInClique : [Cliques] (first:integer, last:integer);
-*/
     var numEdgesPlaced  : integer;
     var Edges : domain(1); -- 1..numEdgesPlaced
-/* TMP
     var edges : [Edges] record { 
                           with EndPoints;
                           var weight :Weight;
                         };
-*/
     var numEdgesPlacedInCliques : integer;
     var numEdgesPlacedOutside   : integer;
   }
@@ -101,7 +97,7 @@ module declareGlobals {
     function adjMatrix [i:AdjD] { return weights(i).length; }
 */
   }
-}
+/*TMP }*/
 
 function main() {
   -- Scalable Data Generator parameters.

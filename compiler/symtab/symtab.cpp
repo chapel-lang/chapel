@@ -383,8 +383,12 @@ bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def) {
 
   while (stmt) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-      if (!def_stmt->moduleDef()) {
-        return false;
+      for (DefExpr* defExpr = def_stmt->defExprls->first();
+           defExpr;
+           defExpr = def_stmt->defExprls->next()) {
+        if (!dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+          return false;
+        }
       }
     } else {
       return false;
@@ -401,9 +405,14 @@ static Stmt* ModuleDefContainsNestedModules(AList<Stmt>* def) {
 
   while (stmt) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-      if (def_stmt->moduleDef()) {
-        def->reset();
-        return stmt;
+      for (DefExpr* defExpr = def_stmt->defExprls->first();
+           defExpr;
+           defExpr = def_stmt->defExprls->next()) {
+        if (dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+          def->reset();
+          def_stmt->defExprls->reset();
+          return stmt;
+        }
       }
     }
     

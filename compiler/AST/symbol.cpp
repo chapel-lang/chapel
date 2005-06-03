@@ -1271,7 +1271,7 @@ static bool stmtIsGlob(Stmt* stmt) {
     INT_FATAL("Non-Stmt found in StmtIsGlob");
   }
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (def_stmt->fnDef() || def_stmt->typeDef()) {
+    if (def_stmt->definesFunctions() || def_stmt->definesTypes()) {
       return true;
     }
   }
@@ -1298,7 +1298,7 @@ void ModuleSymbol::createInitFn(void) {
   DefStmt* initFunDef = Symboltable::defineFunction(fnName, NULL, 
                                                     dtVoid, initFunBody, 
                                                     true);
-  initFn = initFunDef->fnDef();
+  initFn = dynamic_cast<FnSymbol*>(initFunDef->defExprls->only()->sym);
   {
     Stmt* initstmt = initstmts->first();
     while (initstmt) {

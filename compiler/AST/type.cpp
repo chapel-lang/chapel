@@ -1053,9 +1053,14 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
        old_decls;
        old_decls = declarationList->next()) {
     DefStmt* def = dynamic_cast<DefStmt*>(old_decls);
-    FnSymbol* fn;
-    if (def && (fn = def->fnDef())) {
-      copy_type->methods.add(fn);
+    if (def && def->definesFunctions()) {
+      for (DefExpr* defExpr = def->defExprls->first();
+           defExpr;
+           defExpr = def->defExprls->next()) {
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+          copy_type->methods.add(fn);
+        }
+      }
     } else {
       new_decls->insertAtTail(old_decls->copyInternal(true, map));
     }
@@ -1072,19 +1077,30 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
   while (tmp) {
     DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp);
     if (def_stmt) {
-      FnSymbol* fn;
-      TypeSymbol* type_sym;
-      VarSymbol* var;
-      if (fn = def_stmt->fnDef()) {
-        fn->typeBinding = this->symbol;
-        if (!fn->isConstructor) {
-          fn->method_type = PRIMARY_METHOD;
+      if (def_stmt->definesFunctions()) {
+        for (DefExpr* defExpr = def_stmt->defExprls->first();
+             defExpr;
+             defExpr = def_stmt->defExprls->next()) {
+          FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym);
+          fn->typeBinding = this->symbol;
+          if (!fn->isConstructor) {
+            fn->method_type = PRIMARY_METHOD;
+          }
+          methods.add(fn);
         }
-        methods.add(fn);
-      } else if (type_sym = def_stmt->typeDef()) {
-        types.add(type_sym);
-      } else if (var = def_stmt->varDef()) {
-        fields.add(var);
+      } else if (def_stmt->definesTypes()) {
+        for (DefExpr* defExpr = def_stmt->defExprls->first();
+             defExpr;
+             defExpr = def_stmt->defExprls->next()) {
+          types.add(dynamic_cast<TypeSymbol*>(defExpr->sym));
+        }
+      } else if (def_stmt->definesVariables()) {
+        for (DefExpr* defExpr = def_stmt->defExprls->first();
+             defExpr;
+             defExpr = def_stmt->defExprls->next()) {
+          VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
+          fields.add(var);
+        }
       }
     }
     tmp = newDeclarations->next();
@@ -1212,9 +1228,14 @@ void StructuralType::codegenDef(FILE* outfile) {
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   for (Stmt* tmp = declarationList->first(); tmp; tmp = declarationList->next()) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
-      if (VarSymbol* var = def_stmt->varDef()) {
-        var->codegenDef(outfile);
-        printedSomething = true;
+      if (def_stmt->definesVariables()) {
+        for (DefExpr* defExpr = def_stmt->defExprls->first();
+             defExpr;
+             defExpr = def_stmt->defExprls->next()) {
+          VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
+          var->codegenDef(outfile);
+          printedSomething = true;
+        }
       }
     }
   }

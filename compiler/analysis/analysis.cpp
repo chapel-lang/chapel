@@ -1739,7 +1739,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   // bottom's up
   GET_AST_CHILDREN(ast, getStuff);
   DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast);
-  if (!def_stmt || !def_stmt->fnDef())
+  if (!def_stmt || !def_stmt->definesFunctions())
     forv_BaseAST(a, getStuff.asts)
       if (gen_if1(a, ast) < 0)
         return -1;
@@ -2478,8 +2478,10 @@ debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
     }
     forv_BaseAST(s, syms) {
       DefStmt* def_stmt = dynamic_cast<DefStmt*>(s);
-      if (def_stmt && def_stmt->fnDef()) {
-        print_ast(def_stmt->fnDef()->body);
+      if (def_stmt && def_stmt->definesFunctions()) {
+        //SJD: This only prints out one of the function bodies
+        // The def_stmt can define more than one function.
+        print_ast(dynamic_cast<FnSymbol*>(def_stmt->defExprls->first()->sym)->body);
       } else {
         Type *t = dynamic_cast<Type*>(s); 
         if (t) 
@@ -2819,7 +2821,7 @@ print_AST_types() {
   forv_Fun(f, pdb->fa->funs) {
     AInfo *a = dynamic_cast<AInfo *>(f->ast);
     DefStmt* def_stmt = dynamic_cast<DefStmt*>(a->xast);
-    FnSymbol* fn = def_stmt->fnDef();
+    FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->defExprls->first()->sym);
     print_AST_Expr_types(fn->body);
   }
 }

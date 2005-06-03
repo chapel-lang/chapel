@@ -63,9 +63,10 @@ public:
 
   VarSymbol* varDef();
   FnSymbol* fnDef();
-  TypeSymbol* typeDef();
-  ModuleSymbol* moduleDef();
 
+  bool definesTypes();
+  bool definesFunctions();
+  bool definesVariables();
   Vec<VarSymbol*>* varDefSet();
 };
 

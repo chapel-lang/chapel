@@ -218,19 +218,48 @@ FnSymbol* DefStmt::fnDef() {
 }
 
 
-TypeSymbol* DefStmt::typeDef() {
+bool DefStmt::definesTypes() {
   if (defExprls->isEmpty()) {
-    return NULL;
+    return false;
   }
-  return dynamic_cast<TypeSymbol*>(defExprls->first()->sym);
+  for (DefExpr* defExpr = defExprls->first();
+       defExpr;
+       defExpr = defExprls->next()) {
+    if (!dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 
-ModuleSymbol* DefStmt::moduleDef() {
+bool DefStmt::definesFunctions() {
   if (defExprls->isEmpty()) {
-    return NULL;
+    return false;
   }
-  return dynamic_cast<ModuleSymbol*>(defExprls->first()->sym);
+  for (DefExpr* defExpr = defExprls->first();
+       defExpr;
+       defExpr = defExprls->next()) {
+    if (!dynamic_cast<FnSymbol*>(defExpr->sym)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+bool DefStmt::definesVariables() {
+  if (defExprls->isEmpty()) {
+    return false;
+  }
+  for (DefExpr* defExpr = defExprls->first();
+       defExpr;
+       defExpr = defExprls->next()) {
+    if (!dynamic_cast<VarSymbol*>(defExpr->sym)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 
