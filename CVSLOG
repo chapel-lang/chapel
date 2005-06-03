@@ -34397,3 +34397,18 @@ Added files:
 	                            test_anon_record3.future 
 	                            test_anon_record3.good 
 
+---------------------------------------------------------------------------
+
+06/03/05 11:03:41 -- shannon
+
+Log message:
+	Added a future test to capture a bug found
+	with the -h option.  I need to throw an
+	error if any characters follow 'h'.
+
+Added files:
+	chapel/test/execflags/shannon/: spellingTest.chpl 
+	                                spellingTest.execopts 
+	                                spellingTest.future 
+	                                spellingTest.good 
+
