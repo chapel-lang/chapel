@@ -1,0 +1,7 @@
+shannon
+
+shannon@delta> a.out --memmax=1.1
+***Error: The "memmax" flag is missing its byte value***
+
+Make this error message more informative.  It should point
+out that the value should be an integer.
