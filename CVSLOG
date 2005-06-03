@@ -34501,3 +34501,17 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/: test_anon_record3.future 
 
+---------------------------------------------------------------------------
+
+06/03/05 14:11:37 -- jplevyak
+
+Log message:
+	Implemented instantiate_generic for param types (and FnSymbol and UndefinedSymbol)
+	up to UndateSymbols.... I think we need an "UpdateExpr".
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+	chapel/compiler/include/: chplenum.h symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+
