@@ -400,6 +400,8 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
   if (name) {  // ensure this is not a sentinel
     Symboltable::define(this);
   }
+  if (intent == PARAM_PARAMETER || intent == PARAM_TYPE)
+    isGeneric = true;
 }
 
 
@@ -927,16 +929,13 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
 
 
 static bool
-instantiate_update_expr(Map<Type*,Type*>* generic_substitutions, Expr* expr) {
-  Map<BaseAST*,BaseAST*> map;
-  for (int i = 0; i < generic_substitutions->n; i++) {
-    if (generic_substitutions->v[i].key) {
-      map.put(generic_substitutions->v[i].key,
-              generic_substitutions->v[i].value);
-      map.put(generic_substitutions->v[i].key->symbol,
-              generic_substitutions->v[i].value->symbol);
-    }
-  }
+instantiate_update_expr(Map<BaseAST*,BaseAST*>* substitutions, Expr* expr) {
+  Map<BaseAST *, BaseAST *> map;
+  map.copy(*substitutions);
+  for (int i = 0; i < substitutions->n; i++)
+    if (Type *t = dynamic_cast<Type*>(substitutions->v[i].key))
+      if (Type *tt = dynamic_cast<Type*>(substitutions->v[i].value))
+        map.put(t->symbol, tt->symbol);
   UpdateSymbols *updater = new UpdateSymbols(&map);
   TRAVERSE(expr, updater, true);
   return updater->changed;
@@ -944,14 +943,13 @@ instantiate_update_expr(Map<Type*,Type*>* generic_substitutions, Expr* expr) {
 
 
 static void
-instantiate_add_subs(Map<Type*,Type*>* generic_substitutions, Map<BaseAST*,BaseAST*>* map) {
-  Map<Type *, Type*> tmp;
-  tmp.copy(*generic_substitutions);
+instantiate_add_subs(Map<BaseAST*,BaseAST*>* substitutions, Map<BaseAST*,BaseAST*>* map) {
+  Map<BaseAST *, BaseAST*> tmp;
+  tmp.copy(*substitutions);
   for (int i = 0; i < tmp.n; i++) {
     if (tmp.v[i].key) {
-      BaseAST *b = map->get(tmp.v[i].key);
-      if (b)
-        generic_substitutions->put(dynamic_cast<Type*>(b), tmp.v[i].value);
+      if (BaseAST *b = map->get(tmp.v[i].key))
+        substitutions->put(b, tmp.v[i].value);
     }
   }
 }
@@ -959,7 +957,7 @@ instantiate_add_subs(Map<Type*,Type*>* generic_substitutions, Map<BaseAST*,BaseA
 
 FnSymbol* 
 FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
-                              Map<Type*,Type*>* generic_substitutions) {
+                              Map<BaseAST*,BaseAST*>* substitutions) {
   FnSymbol* copy = NULL;
 
   static int uid = 1; // Unique ID for cloned functions
@@ -969,34 +967,28 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
     SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
-    instantiate_add_subs(generic_substitutions, map);
+    instantiate_add_subs(substitutions, map);
     StructuralType* cloneType = dynamic_cast<StructuralType*>(clone->type);
     for (int i = 0; i < cloneType->types.n; i++) {
-      for (int j = 0; j < generic_substitutions->n; j++) {
-        if (cloneType->types.v[i] && 
-            cloneType->types.v[i]->type == generic_substitutions->v[j].key) {
-          cloneType->types.v[i]->defPoint->parentStmt->remove();
-          cloneType->types.v[i]->parentScope->remove(cloneType->types.v[i]);
-          cloneType->types.v[i] = NULL;
-        }
+      if (cloneType->types.v[i] && substitutions->get(cloneType->types.v[i]->type)) {
+        cloneType->types.v[i]->defPoint->parentStmt->remove();
+        cloneType->types.v[i]->parentScope->remove(cloneType->types.v[i]);
+        cloneType->types.v[i] = NULL;
       }
     }
-    instantiate_update_expr(generic_substitutions, clone->defPoint);
-    generic_substitutions->put(typeSym->type, clone->type);
+    instantiate_update_expr(substitutions, clone->defPoint);
+    substitutions->put(typeSym->type, clone->type);
     Symboltable::setCurrentScope(save_scope);
 
     Vec<FnSymbol*> functions;
-    functions.clear();
     collectFunctionsFromScope(typeSym->parentScope, &functions);
 
-    Vec<Type*> types;
-    types.clear();
-    generic_substitutions->get_keys(types);
+    Vec<BaseAST *> keys;
+    substitutions->get_keys(keys);
 
     Vec<VariableType*> variableTypes;
-    variableTypes.clear();
-    forv_Vec(Type, type, types) {
-      if (VariableType* variableType = dynamic_cast<VariableType*>(type)) {
+    forv_Vec(BaseAST, k, keys) {
+      if (VariableType* variableType = dynamic_cast<VariableType*>(k)) {
         variableTypes.add(variableType);
       }
     }
@@ -1006,10 +998,10 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         //printf("  instantiating %s\n", fn->cname);
         SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
         DefExpr* fnDef = dynamic_cast<DefExpr*>(fn->defPoint->copy(true, map));
-        instantiate_add_subs(generic_substitutions, map);
-        instantiate_update_expr(generic_substitutions, fnDef);
+        instantiate_add_subs(substitutions, map);
+        instantiate_update_expr(substitutions, fnDef);
         // What was this doing?, replaced with above line --SJD
-        // if (!instantiate_update_expr(generic_substitutions, fnDef))
+        // if (!instantiate_update_expr(substitutions, fnDef))
         //   continue;
         fnDef->sym->cname =
           glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
@@ -1031,8 +1023,8 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   } else {
     SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
     DefExpr* fnDef = dynamic_cast<DefExpr*>(defPoint->copy(true, map));
-    instantiate_add_subs(generic_substitutions, map);
-    instantiate_update_expr(generic_substitutions, fnDef);
+    instantiate_add_subs(substitutions, map);
+    instantiate_update_expr(substitutions, fnDef);
     fnDef->sym->cname =
       glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
     defPoint->insertBefore(fnDef);

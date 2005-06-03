@@ -68,10 +68,9 @@ Type* Type::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
-Type *Type::instantiate_generic(Map<Type *, Type *> &substitutions) {
+Type *Type::instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions) {
   if (astType == TYPE_VARIABLE) {
-    Type *t = substitutions.get(this);
-    if (t)
+    if (Type *t = dynamic_cast<Type*>(substitutions.get(this)))
       return t;
   }
   return 0;
@@ -234,6 +233,7 @@ bool Type::requiresCParamTmp(paramType intent) {
     // here, a temp should never be needed
     return false;
   case PARAM_PARAMETER:
+  case PARAM_TYPE:
     INT_FATAL(this, "should be eliminated before this point");
   default:
     INT_FATAL(this, "case not handled in requiresCParamTmp");

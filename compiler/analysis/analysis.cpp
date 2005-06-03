@@ -67,6 +67,7 @@ static void finalize_function(Fun *fun);
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 static ScopeLookupCache universal_lookup_cache;
 static int finalized_symbols = 0;
+static Map<Sym *, Expr *> constant_cache;
 
 struct TraverseASTs {
   Vec<BaseAST *> asts;
@@ -441,22 +442,75 @@ Sym_to_Type(Sym *s) {
   return (dynamic_cast<TypeSymbol*>(s->asymbol->symbol))->type;
 }
 
+static Expr *
+get_constant_Expr(Sym *c) {
+  Expr *e = constant_cache.get(c);
+  if (e)
+    return e;
+  if (c->type && c->type->num_kind) {
+    char name[256];
+    sprint(name, c->imm, c->type);
+    switch (c->type->num_kind) {
+      default: fail("type unsupported in AST");
+      case IF1_NUM_KIND_INT:
+        switch (c->type->num_index) {
+          default: fail("type unsupported in AST");
+          case IF1_INT_TYPE_1:
+            e = new BoolLiteral(name, c->imm.v_bool);
+            break;
+          case IF1_INT_TYPE_64:
+            e = new IntLiteral(name, c->imm.v_int64);
+            break;
+        }
+        break;
+      case IF1_NUM_KIND_FLOAT:
+        switch (c->type->num_index) {
+          default: fail("type unsupported in AST");
+          case IF1_FLOAT_TYPE_64:
+            e = new FloatLiteral(name, c->imm.v_int64);
+            break;
+        }
+        break;
+      case IF1_NUM_KIND_COMPLEX:
+        switch (c->type->num_index) {
+          default: fail("type unsupported in AST");
+          case IF1_FLOAT_TYPE_64:
+            e = new ComplexLiteral(name, c->imm.v_complex64.r, c->imm.v_complex64.i);
+            break;
+        }
+        break;
+    }
+  } else if (c->type == sym_string) {
+    e = new StringLiteral(c->name);
+  } else if (c->is_fun || c->is_symbol) {
+    e = new Variable(dynamic_cast<Symbol*>(c->asymbol->symbol));
+  } else
+    fail("type unsupported by get_constant_Expr");
+  constant_cache.put(c, e);
+  return e;
+}
+
 Sym *
 ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
   Sym *tt = substitutions.get(s);
   if (tt) {
-    Map<Type *, Type *> subs;
-    form_SymSym(ss, substitutions) {
-      if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(ss->key->asymbol->symbol))
-        subs.put(p->typeVariable->type, Sym_to_Type(ss->value));
-      else
-        subs.put(dynamic_cast<Type*>(ss->key->asymbol->symbol), Sym_to_Type(ss->value));
-    }
     Type *type = NULL;
     if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol))
-      type = p->typeVariable->type;
+      type = p->typeVariable ? p->typeVariable->type : 0;
     else
       type = dynamic_cast<Type*>(s->asymbol->symbol);
+    if (!type)
+      return 0;
+    Map<BaseAST *, BaseAST *> subs;
+    form_SymSym(ss, substitutions) {
+      if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(ss->key->asymbol->symbol)) {
+        if (p->typeVariable)
+          subs.put(p->typeVariable->type, Sym_to_Type(ss->value));
+        else
+          subs.put(p, get_constant_Expr(ss->value));
+      } else
+        subs.put(dynamic_cast<Type*>(ss->key->asymbol->symbol), Sym_to_Type(ss->value));
+    }
     Type *new_type = type->instantiate_generic(subs);
     return new_type->asymbol->sym;
   }
@@ -540,16 +594,20 @@ Fun *
 ACallbacks::instantiate_generic(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  Map<Type *, Type *> substitutions;
+  Map<BaseAST *, BaseAST *> substitutions;
   form_SymSym(s, m->generic_substitutions) {
     Type *t = dynamic_cast<Type*>(s->key->asymbol->symbol);
+    ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol);
     if (!t)
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s->key->asymbol->symbol))
         t = ts->type;
     if (!t)
-      if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol))
+      if (p && p->typeVariable)
         t = p->typeVariable->type;
-    substitutions.put(t, Sym_to_Type(s->value));
+    if (t)
+      substitutions.put(t, Sym_to_Type(s->value));
+    else
+      substitutions.put(p, get_constant_Expr(s->value));
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   Map<BaseAST*,BaseAST*> map;

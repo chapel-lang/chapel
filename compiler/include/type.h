@@ -38,7 +38,7 @@ class Type : public BaseAST {
   Type* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   Type* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
-  Type *instantiate_generic(Map<Type *, Type *> &substitutions);
+  Type *instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions);
   Type *getMetaType();
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

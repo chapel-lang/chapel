@@ -190,7 +190,7 @@ class FnSymbol : public Symbol {
   FnSymbol* coercion_wrapper(Map<Symbol *, Symbol *> *coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol *> *defaults);
   FnSymbol* instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
-                                Map<Type*,Type*>* generic_substitutions);
+                                Map<BaseAST*,BaseAST*>* substitutions);
 
   void codegenHeader(FILE* outfile);
   void codegenDef(FILE* outfile);

@@ -477,7 +477,7 @@ formal:
     }
 | TTYPE ident_symbol typevardecltype
     {
-      AList<ParamSymbol> *psl = Symboltable::defineParams(PARAM_BLANK, new AList<Symbol>($2), getMetaType($3), NULL);
+      AList<ParamSymbol> *psl = Symboltable::defineParams(PARAM_TYPE, new AList<Symbol>($2), getMetaType($3), NULL);
       ParamSymbol* ps = psl->only();
       if (ps == NULL) {
         INT_FATAL("problem in parsing type variables");
@@ -487,7 +487,6 @@ formal:
       TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
       new_type->addSymbol(new_type_symbol);
       ps->typeVariable = new_type_symbol;
-      ps->isGeneric = 1;
       $$ = psl;
     }
 ;

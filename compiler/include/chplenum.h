@@ -15,6 +15,7 @@ enum paramType {
   PARAM_CONST,
   PARAM_REF,
   PARAM_PARAMETER,
+  PARAM_TYPE,
 
   NUM_PARAM_TYPES
 };

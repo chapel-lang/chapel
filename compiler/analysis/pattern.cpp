@@ -605,19 +605,26 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
 }
 
 static int
-unify_generic_type(Sym *formal, Sym *gtype, Sym *type, Map<Sym *, Sym *> &substitutions) {
+unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym *> &substitutions) {
+  Sym *concrete_type = concrete_value->type;
+  if (concrete_type->is_meta_type)
+    concrete_type = concrete_type->meta_type;
   if (formal->is_generic) {
-    if (gtype->specializers.set_in(type->meta_type)) {
+    if (gtype->specializers.set_in(concrete_type->meta_type)) {
       Sym *generic = if1->callback->formal_to_generic(formal);
-      substitutions.put(generic, type);
+      substitutions.put(generic, concrete_type);
       return 1;
-    } else
-      return 0;
+    }
+    if (gtype->specializers.set_in(concrete_type)) {
+      substitutions.put(formal, concrete_value);
+      return 1;
+    }
+    return 0;
   }
-  if (gtype == type)
+  if (gtype == concrete_type)
     return 1;
   if (gtype->type_kind == Type_VARIABLE) {
-    substitutions.put(gtype, type);
+    substitutions.put(gtype, concrete_type);
     return 1;
   }
   return 0;
@@ -663,9 +670,6 @@ generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> args) {
     AVar *a = m->actuals.get(acpp);
     CreationSet *cs = args.v[i];
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
-    concrete_type = concrete_type->type;
-    if (concrete_type->is_meta_type)
-      concrete_type = concrete_type->meta_type;
     Sym *formal = m->fun->arg_syms.get(fcpp);
     Sym *generic_type = get_generic_type(formal);
     if (generic_type) {
