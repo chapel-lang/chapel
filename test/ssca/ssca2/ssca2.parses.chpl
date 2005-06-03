@@ -1,4 +1,15 @@
-/*TMP module declareGlobals {*/
+/* TMP
+
+-- SJD: Why should we use a nested module?  There is no reason for
+-- this module to be nested (since it doesn't refer to anything in the
+-- outer module).  Also it is not used in the code by a use statement.
+-- I think that is an error.
+
+module declareGlobals {
+*/
+
+-- SJD: Should we support config const?
+
   config var ENABLE_K2 = true;
   config var ENABLE_K3 = true;
   config var ENABLE_K4 = true;
@@ -18,6 +29,12 @@
     var i : integer;
     var s : string;
 /* TMP
+
+-- SJD: Need to implement typeselect on union.  I think this is
+-- central but also easy.  It should be translated into a normal
+-- select during compilation.  We also need to implement the normal
+-- select statement.
+
     function is_string {
       typeselect (this) {
         when s     return true;
@@ -63,6 +80,10 @@
     -- separate integer and string subgraps that
     -- share the above two domains
 /* TMP
+
+-- SJD: I think domains should be passed by reference so I don't think
+-- this => is necessary at this point.
+
     var intg = Subgraph(wtype=integer,
                         VertexD=>VertexD,
                         ParEdgeD=>ParEdgeD);
@@ -83,21 +104,33 @@
     var ParEdgeD : domain(1); 
     -- sparse matrix index by directed vertex pairs
 /* TMP
+
+-- SJD: Domains of domains and sparse! If we're not doing sparse this
+-- will be relatively easy.
+
     var AdjD  : domain sparse (VertexD * VertexD) = nil;
 */
     -- holds count of edges between vertex pairs
     var weights : [AdjD] seq of wtype;
 /* TMP
+
+-- SJD: What??
+
     constructor EndPoints ( (s,e) : AdjD ) {
       start = s;
       end   = e;
     }
 */
 /* TMP
+
+-- SJD: What's with the square brackets?
+
     function adjMatrix [i:AdjD] { return weights(i).length; }
 */
   }
-/*TMP }*/
+/* TMP
+}
+*/
 
 function main() {
   -- Scalable Data Generator parameters.
