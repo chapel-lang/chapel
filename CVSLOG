@@ -34557,3 +34557,23 @@ Added files:
 	                             memstatEquals.future 
 	                             memstatEquals.good 
 
+---------------------------------------------------------------------------
+
+06/03/05 17:43:02 -- deitz
+
+Log message:
+	Added support to UpdateSymbols so that a symbol can be replaced by an
+	expression (as is the case when a parameter is instantiated).
+	
+	The parameter is not currently removed from the function, but it is a
+	dead argument.
+	
+	Removed future for test_paramvar_function1.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/traversals/: updateSymbols.cpp updateSymbols.h 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_paramvar_function1.future 
+
