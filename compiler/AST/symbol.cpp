@@ -929,14 +929,15 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
 
 
 static bool
-instantiate_update_expr(Map<BaseAST*,BaseAST*>* substitutions, Expr* expr) {
+instantiate_update_expr(Map<BaseAST*,BaseAST*>* substitutions, Expr* expr,
+                        Map<BaseAST*,BaseAST*>* copyMap) {
   Map<BaseAST *, BaseAST *> map;
   map.copy(*substitutions);
   for (int i = 0; i < substitutions->n; i++)
     if (Type *t = dynamic_cast<Type*>(substitutions->v[i].key))
       if (Type *tt = dynamic_cast<Type*>(substitutions->v[i].value))
         map.put(t->symbol, tt->symbol);
-  UpdateSymbols *updater = new UpdateSymbols(&map);
+  UpdateSymbols *updater = new UpdateSymbols(&map, copyMap);
   TRAVERSE(expr, updater, true);
   return updater->changed;
 }
@@ -976,7 +977,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         cloneType->types.v[i] = NULL;
       }
     }
-    instantiate_update_expr(substitutions, clone->defPoint);
+    instantiate_update_expr(substitutions, clone->defPoint, map);
     substitutions->put(typeSym->type, clone->type);
     Symboltable::setCurrentScope(save_scope);
 
@@ -999,9 +1000,9 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
         DefExpr* fnDef = dynamic_cast<DefExpr*>(fn->defPoint->copy(true, map));
         instantiate_add_subs(substitutions, map);
-        instantiate_update_expr(substitutions, fnDef);
+        instantiate_update_expr(substitutions, fnDef, map);
         // What was this doing?, replaced with above line --SJD
-        // if (!instantiate_update_expr(substitutions, fnDef))
+        // if (!instantiate_update_expr(substitutions, fnDef, map))
         //   continue;
         fnDef->sym->cname =
           glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
@@ -1024,7 +1025,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
     DefExpr* fnDef = dynamic_cast<DefExpr*>(defPoint->copy(true, map));
     instantiate_add_subs(substitutions, map);
-    instantiate_update_expr(substitutions, fnDef);
+    instantiate_update_expr(substitutions, fnDef, map);
     fnDef->sym->cname =
       glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
     defPoint->insertBefore(fnDef);

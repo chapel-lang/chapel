@@ -3,32 +3,39 @@
 #include "symbol.h"
 #include "stringutil.h"
 
-UpdateSymbols::UpdateSymbols(Map<BaseAST*,BaseAST*>* init_copy_map) {
+UpdateSymbols::UpdateSymbols(Map<BaseAST*,BaseAST*>* init_updateMap,
+                             Map<BaseAST*,BaseAST*>* init_copyMap) {
   changed = false;
-  copy_map = init_copy_map;
+  updateMap = init_updateMap;
+  copyMap = init_copyMap;
   /** Prune for symbols? **/ /** Performance reasons --SJD */
   /** If so, prune a local copy! **/ /** Also make it a hash */
   /** types too now **/
 }
 
 
-#define XSUB(_x, _t) \
-    if (_x) { \
-      BaseAST *b = copy_map->get(_x); \
-      if (b) { \
-        if (_t new_sym = dynamic_cast<_t>(b)) { \
-          _x = new_sym; \
-          changed = true; \
-        } else { \
-          INT_FATAL("Major error in UpdateSymbols"); \
-        } \
-      } \
-    } \
-
+#define XSUB(_x, _t)                                 \
+  if (_x) {                                          \
+    BaseAST *b = updateMap->get(_x);                  \
+    if (b) {                                         \
+      if (_t new_sym = dynamic_cast<_t>(b)) {        \
+        _x = new_sym;                                \
+        changed = true;                              \
+      } else {                                       \
+        INT_FATAL("Major error in UpdateSymbols");   \
+      }                                              \
+    }                                                \
+  }                                                  \
+  
 
 void UpdateSymbols::preProcessExpr(Expr* expr) {
   if (Variable* sym_expr = dynamic_cast<Variable*>(expr)) {
-    XSUB(sym_expr->var, Symbol*);
+    Expr* newExpr = dynamic_cast<Expr*>(updateMap->get(sym_expr->var));
+    if (newExpr) {
+      sym_expr->replace(newExpr->copy(false, copyMap));
+    } else {
+      XSUB(sym_expr->var, Symbol*);
+    }
   } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     XSUB(defExpr->sym->type, Type*);
   } else if (CastExpr* castExpr = dynamic_cast<CastExpr*>(expr)) {
@@ -51,7 +58,7 @@ void UpdateSymbols::preProcessSymbol(Symbol* sym) {
   }
   if (ParamSymbol* p = dynamic_cast<ParamSymbol*>(sym)) {
     if (p->isGeneric && p->typeVariable) {
-      BaseAST *b = copy_map->get(p->typeVariable);
+      BaseAST *b = updateMap->get(p->typeVariable);
       if (b) {
         if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(b)) {
           if (ts->type->astType != TYPE_VARIABLE)

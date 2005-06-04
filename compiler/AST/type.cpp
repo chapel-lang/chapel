@@ -234,7 +234,7 @@ bool Type::requiresCParamTmp(paramType intent) {
     return false;
   case PARAM_PARAMETER:
   case PARAM_TYPE:
-    INT_FATAL(this, "should be eliminated before this point");
+    return false;  // Should never be encountered EVENTUALLY
   default:
     INT_FATAL(this, "case not handled in requiresCParamTmp");
     return false;
