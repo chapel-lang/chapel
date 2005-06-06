@@ -45,6 +45,7 @@ void CheckSemantics::preProcessExpr(Expr* expr) {
     //printf("Variable.\n");
     checkVar(var);
   }
+#if 0
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
       if (var->isParam() && !defExpr->init) {
@@ -52,5 +53,6 @@ void CheckSemantics::preProcessExpr(Expr* expr) {
       }
     }
   }
+#endif
 }
 

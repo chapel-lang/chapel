@@ -7,14 +7,14 @@
 
 class FindVariableType : public Traversal {
  public:
-  Vec<VariableType*>* variableTypes;
+  Vec<BaseAST*>* asts;
   bool found;
-  FindVariableType(Vec<VariableType*>* init_variableTypes);
+  FindVariableType(Vec<BaseAST*>* init_asts);
   void preProcessSymbol(Symbol* symbol);
   void preProcessType(Type* type);
 };
 
 bool
-functionContainsVariableType(FnSymbol* fn, Vec<VariableType*>* variableTypes);
+functionContainsAnyAST(FnSymbol* fn, Vec<BaseAST*>* asts_set);
 
 #endif

@@ -3,34 +3,23 @@
 #include "symbol.h"
 #include "symtab.h"
 
-FindVariableType::FindVariableType(Vec<VariableType*>* init_variableTypes) {
+FindVariableType::FindVariableType(Vec<BaseAST*>* init_asts) {
   found = false;
-  variableTypes = init_variableTypes;
+  asts = init_asts;
 }
 
 void FindVariableType::preProcessSymbol(Symbol* symbol) {
-  if (dynamic_cast<TypeSymbol*>(symbol)) {
-    forv_Vec(VariableType, variableType, *variableTypes) {
-      if (variableType == symbol->type) {
-        found = true;
-      }
-    }
-  }
+  if (asts->set_in(symbol))
+    found = true;
 }
 
 void FindVariableType::preProcessType(Type* type) {
-  if (dynamic_cast<VariableType*>(type)) {
-    forv_Vec(VariableType, variableType, *variableTypes) {
-      if (variableType == type) {
-        found = true;
-      }
-    }
-  }
+  if (asts->set_in(type))
+    found = true;
 }
 
-bool functionContainsVariableType(FnSymbol* fn,
-                                  Vec<VariableType*>* variableTypes) {
-  FindVariableType* traversal = new FindVariableType(variableTypes);
+bool functionContainsAnyAST(FnSymbol* fn, Vec<BaseAST*>* asts_set) {
+  FindVariableType* traversal = new FindVariableType(asts_set);
   TRAVERSE(fn, traversal, true);
   return traversal->found;
 }

@@ -938,6 +938,7 @@ instantiate_update_expr(Map<BaseAST*,BaseAST*>* substitutions, Expr* expr,
                         Map<BaseAST*,BaseAST*>* copyMap) {
   Map<BaseAST *, BaseAST *> map;
   map.copy(*substitutions);
+  // for type variables, add TypeSymbols into the map as well
   for (int i = 0; i < substitutions->n; i++)
     if (Type *t = dynamic_cast<Type*>(substitutions->v[i].key))
       if (Type *tt = dynamic_cast<Type*>(substitutions->v[i].value))
@@ -965,7 +966,6 @@ FnSymbol*
 FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
                               Map<BaseAST*,BaseAST*>* substitutions) {
   FnSymbol* copy = NULL;
-
   static int uid = 1; // Unique ID for cloned functions
   currentLineno = lineno;
   currentFilename = filename;
@@ -989,19 +989,18 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
 
     Vec<FnSymbol*> functions;
     collectFunctionsFromScope(typeSym->parentScope, &functions);
-
-    Vec<BaseAST *> keys;
-    substitutions->get_keys(keys);
-
-    Vec<VariableType*> variableTypes;
-    forv_Vec(BaseAST, k, keys) {
-      if (VariableType* variableType = dynamic_cast<VariableType*>(k)) {
-        variableTypes.add(variableType);
-      }
-    }
+    
+    Vec<BaseAST*> genericParameters;
+    for (int i = 0; i < substitutions->n; i++)
+      if (VariableType *t = dynamic_cast<VariableType*>(substitutions->v[i].key)) {
+        genericParameters.set_add(t);
+        genericParameters.set_add(t->symbol);
+      } else if (ParamSymbol *s = dynamic_cast<ParamSymbol*>(substitutions->v[i].key))
+        if (s->isGeneric)
+          genericParameters.set_add(s);
 
     forv_Vec(FnSymbol, fn, functions) {
-      if (functionContainsVariableType(fn, &variableTypes)) {
+      if (functionContainsAnyAST(fn, &genericParameters)) {
         //printf("  instantiating %s\n", fn->cname);
         SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
         DefExpr* fnDef = dynamic_cast<DefExpr*>(fn->defPoint->copy(true, map));
