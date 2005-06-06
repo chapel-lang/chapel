@@ -34750,3 +34750,21 @@ Modified files:
 	                             findTypeVariables.cpp 
 	                             findTypeVariables.h 
 
+---------------------------------------------------------------------------
+
+06/06/05 14:41:25 -- jplevyak
+
+Log message:
+	Fix test_paramvar_class1.  The problem was that
+	        fn->defPoint->insertBefore(fnDef);
+	needed to be before
+	        instantiate_add_subs(substitutions, map);
+	        instantiate_update_expr(substitutions, fnDef, map);
+	Since ->replace() doesn't work on something which hasn't been fixup'ed.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_paramvar_class1.future 
+
