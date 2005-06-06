@@ -34600,3 +34600,96 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: insertThisParameters.cpp 
 
+---------------------------------------------------------------------------
+
+06/06/05 10:32:01 -- bradc
+
+Log message:
+	These are a bunch of tests that approximate the
+	implementation of a sequential reduction using
+	user-defined classes with type instantiation.
+	
+	In looking through SSCA2, was thinking about
+	reductions and scans, implementing them via
+	an early source-to-source conversion, and was
+	curious to see what would happen if I tried
+	to write the code which would result from such
+	a transformation manually in Chapel, since it
+	relied on instantiating classes using types.
+	It worked out really nicely in most cases, so
+	I wrote many versions as an exploration as to
+	how hard the type variable instantiation of
+	classes can be pushed (in directions that the
+	reductions might require) and was very impressed
+	at how well it worked.  Which isn't to say that
+	there weren't cases that failed, but many of
+	these I knew were going to be pushing the limits.
+	
+	Some of these tests would seem to relate to
+	David's desire to query the type variables of
+	classes from yesterday's email discussion,
+	and are perhaps good fodder for discussion
+	for that reason.
+	
+	Here are the futures, categorized:
+	
+	Futures I believe ought to work, but don't:
+	
+	- inferstatetype2.chpl (john, could you look at
+	  this?)
+	- threeuses-cast.chpl (deitz, bradc: seems to be
+	  simple integer->string conversion problem)
+	- usestate.chpl (john, could you look at this one
+	  too?  May be related to inferstatetype2.chpl)
+	
+	Futures that seem related to our email discussion
+	of last week:
+	
+	- threeclasstypes.chpl
+	- threeclasstypes-construct.chpl
+	- usetype.chpl
+	- usetype2.chpl
+	
+	Futures that I believe we know don't work yet:
+	- promote.chpl (relies on promotion)
+
+Added files:
+	chapel/test/reductions/bradc/manual/: .cvsignore README 
+	                                      identisinferredvar.chpl 
+	                                      identisinferredvar.good 
+	                                      identisvar.chpl 
+	                                      identisvar.good 
+	                                      inferstatetype.chpl 
+	                                      inferstatetype.good 
+	                                      inferstatetype2.chpl 
+	                                      inferstatetype2.future 
+	                                      inferstatetype2.good 
+	                                      manual.chpl manual.good 
+	                                      promote.chpl 
+	                                      promote.future 
+	                                      promote.good 
+	                                      threeclasstypes-construct.chpl 
+	                                      threeclasstypes-construct.future 
+	                                      threeclasstypes-construct.good 
+	                                      threeclasstypes-manual.chpl 
+	                                      threeclasstypes-manual.good 
+	                                      threeclasstypes.chpl 
+	                                      threeclasstypes.future 
+	                                      threeclasstypes.good 
+	                                      threeuses-cast.chpl 
+	                                      threeuses-cast.future 
+	                                      threeuses-cast.good 
+	                                      threeuses.chpl 
+	                                      threeuses.good 
+	                                      twouses.chpl twouses.good 
+	                                      usestate.chpl 
+	                                      usestate.future 
+	                                      usestate.good 
+	                                      usestate2.chpl 
+	                                      usestate2.good 
+	                                      usetype.chpl 
+	                                      usetype.future 
+	                                      usetype.good usetype2.chpl 
+	                                      usetype2.future 
+	                                      usetype2.good 
+
