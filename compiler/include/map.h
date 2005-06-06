@@ -34,6 +34,7 @@ template <class K, class C> class Map : public Vec<MapElem<K,C> > {
   inline MapElem<K,C> *put(K akey, C avalue);
   inline C get(K akey);
   inline void get_keys(Vec<K> &keys);
+  inline void get_keys_set(Vec<K> &keys);
   inline void get_values(Vec<C> &values);
 };
 
@@ -171,6 +172,13 @@ Map<K,C>::get_keys(Vec<K> &keys) {
   for (int i = 0; i < n; i++)
     if (v[i].key)
       keys.add(v[i].key);
+}
+
+template <class K, class C> inline void
+Map<K,C>::get_keys_set(Vec<K> &keys) {
+  for (int i = 0; i < n; i++)
+    if (v[i].key)
+      keys.set_add(v[i].key);
 }
 
 template <class K, class C> inline void
