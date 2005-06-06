@@ -1,0 +1,7 @@
+???
+
+Here's another good one for discussion.  This one is not
+expected to work yet because we don't yet implement arrays
+as classes.  But assuming we did, it seems like it would
+be nice to be able to refer to its element type and use
+that to instantiate another class.  Is this legal?

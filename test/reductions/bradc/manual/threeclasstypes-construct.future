@@ -1,0 +1,6 @@
+???
+
+This tries to call a user-supplied default constructor that
+takes a type parameter, which doesn't seem to be implemented
+yet.  This relates somewhat to the email conversation we
+were having at and after last week's meeting (June 2nd).

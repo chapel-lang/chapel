@@ -1,0 +1,5 @@
+jplevyak
+
+It seems that the return type of mysumreduce.ident() is not being
+inferred to be type t -- should it be?  Note that if it is explicitly
+declared as type t (in inferstatetype.chpl), things seem to work fine.

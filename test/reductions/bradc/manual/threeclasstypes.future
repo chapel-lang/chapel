@@ -1,0 +1,7 @@
+???
+
+This implementation tries to create three type variables
+within a class (to meet an external interface, e.g.) which
+doesn't seem to work as I've written it.  I think there's
+a question here as to whether I've written something legal,
+and if not, how I ought to write it.
