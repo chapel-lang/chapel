@@ -34577,3 +34577,14 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_paramvar_function1.future 
 
+---------------------------------------------------------------------------
+
+06/06/05 07:38:43 -- shannon
+
+Log message:
+	Woops.  Forgot to include the contents of this
+	file on my prior commit..
+
+Modified files:
+	chapel/test/memory/shannon/: memstatEquals.future 
+
