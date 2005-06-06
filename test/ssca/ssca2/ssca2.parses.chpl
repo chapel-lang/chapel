@@ -1,33 +1,31 @@
-/* TMP
-
 -- SJD: Why should we use a nested module?  There is no reason for
 -- this module to be nested (since it doesn't refer to anything in the
 -- outer module).  Also it is not used in the code by a use statement.
 -- I think that is an error.
+-- BLC: I agree; removed the module
 
-module declareGlobals {
-*/
 
 -- SJD: Should we support config const?
+-- BLC: I think we do
 
-  config var ENABLE_K2 = true;
-  config var ENABLE_K3 = true;
-  config var ENABLE_K4 = true;
-  config var DECOR_VERTICES = true;
-  config var ENABLE_PAUSE = false;
-  config var ENABLE_PLOTS = false;
-  config var ENABLE_VERIF = true;
-  config var ENABLE_MDUMP = false;
-  config var ENABLE_DEBUG = false;
-  config var FIGNUM = 0 ;
-  config var ENABLE_PLOT_ROSE  = false;
-  config var ENABLE_PLOT_COLOR = false;
-  config var ENABLE_PLOT_K3    = false;
-  config var ENABLE_PLOT_K3DB  = false;
+config var ENABLE_K2 = true;
+config var ENABLE_K3 = true;
+config var ENABLE_K4 = true;
+config var DECOR_VERTICES = true;
+config var ENABLE_PAUSE = false;
+config var ENABLE_PLOTS = false;
+config var ENABLE_VERIF = true;
+config var ENABLE_MDUMP = false;
+config var ENABLE_DEBUG = false;
+config var FIGNUM = 0 ;
+config var ENABLE_PLOT_ROSE  = false;
+config var ENABLE_PLOT_COLOR = false;
+config var ENABLE_PLOT_K3    = false;
+config var ENABLE_PLOT_K3DB  = false;
 
-  union Weight {
-    var i : integer;
-    var s : string;
+union Weight {
+  var i : integer;
+  var s : string;
 /* TMP
 
 -- SJD: Need to implement typeselect on union.  I think this is
@@ -35,102 +33,111 @@ module declareGlobals {
 -- select during compilation.  We also need to implement the normal
 -- select statement.
 
-    function is_string {
-      typeselect (this) {
-        when s     return true;
-        otherwise  return false;
-      }
+  function is_string {
+    typeselect (this) {
+      when s     return true;
+      otherwise  return false;
     }
+  }
 */
-  }
+}
 
-  record Numbers {
-    var totVertices : integer; 
-    var maxParallelEdge : integer;
-    var numIntEdges : integer; 
-    var numStrEdges : integer;
-    var maxIntWeight : integer;
-  }
+record Numbers {
+  var totVertices : integer; 
+  var maxParallelEdge : integer;
+  var numIntEdges : integer; 
+  var numStrEdges : integer;
+  var maxIntWeight : integer;
+}
 
-  record EndPoints { 
-    var start : integer;
-    var end : integer;
-  }
+record EndPoints { 
+  var start : integer;
+  var end : integer;
+}
 
-  class Edges { 
-    with Numbers;
-    var Cliques : domain(1);
-    var cliqueSizes : [Cliques] integer; 
-    var VsInClique : [Cliques] (first:integer, last:integer);
-    var numEdgesPlaced  : integer;
-    var Edges : domain(1); -- 1..numEdgesPlaced
-    var edges : [Edges] record { 
-                          with EndPoints;
-                          var weight :Weight;
-                        };
-    var numEdgesPlacedInCliques : integer;
-    var numEdgesPlacedOutside   : integer;
-  }
+class Edges { 
+  with Numbers;
+  var Cliques : domain(1);
+  var cliqueSizes : [Cliques] integer; 
+  var VsInClique : [Cliques] (first:integer, last:integer);
+  var numEdgesPlaced  : integer;
+  var Edges : domain(1); -- 1..numEdgesPlaced
+  var edges : [Edges] record { 
+                        with EndPoints;
+                        var weight :Weight;
+                      };
+  var numEdgesPlacedInCliques : integer;
+  var numEdgesPlacedOutside   : integer;
+}
 
-  class Graph {
-    with Numbers; 
-    var VertexD  : domain(1);  -- 1..totVertices
-    var ParEdgeD : domain(1) ; -- 1..maxParallelEdge
+class Graph {
+  with Numbers; 
+  var VertexD  : domain(1);  -- 1..totVertices
+  var ParEdgeD : domain(1) ; -- 1..maxParallelEdge
 
-    -- separate integer and string subgraps that
-    -- share the above two domains
+  -- separate integer and string subgraps that
+  -- share the above two domains
 /* TMP
 
 -- SJD: I think domains should be passed by reference so I don't think
 -- this => is necessary at this point.
+-- BLC: I tend to agree
 
-    var intg = Subgraph(wtype=integer,
-                        VertexD=>VertexD,
-                        ParEdgeD=>ParEdgeD);
-    var strg = Subgraph(wtype=string,
-                        VertexD=>VertexD,
-                        ParEdgeD=>ParEdgeD);
+  var intg = Subgraph(wtype=integer,
+                      VertexD=>VertexD,
+                      ParEdgeD=>ParEdgeD);
+  var strg = Subgraph(wtype=string,
+                      VertexD=>VertexD,
+                      ParEdgeD=>ParEdgeD);
 */
 
-    function copy(s : Graph) {
-      return Graph(VerteD  =s.VertexD,
-                   ParEdgeD=s.ParEdgeD);
-    }
+  function copy(s : Graph) {
+    return Graph(VerteD  =s.VertexD,
+                 ParEdgeD=s.ParEdgeD);
   }
+}
 
-  class Subgraph {
-    type wtype;
-    var VertexD : domain(1);
-    var ParEdgeD : domain(1); 
-    -- sparse matrix index by directed vertex pairs
+class Subgraph {
+  type wtype;
+  var VertexD : domain(1);
+  var ParEdgeD : domain(1); 
+  -- sparse matrix index by directed vertex pairs
 /* TMP
 
 -- SJD: Domains of domains and sparse! If we're not doing sparse this
 -- will be relatively easy.
 
-    var AdjD  : domain sparse (VertexD * VertexD) = nil;
+  var AdjD  : domain sparse (VertexD * VertexD) = nil;
 */
-    -- holds count of edges between vertex pairs
-    var weights : [AdjD] seq of wtype;
+  -- holds count of edges between vertex pairs
+  var weights : [AdjD] seq of wtype;
 /* TMP
 
 -- SJD: What??
+-- BLC: The syntax in the last version was meant to imply an index,
+--      but I believe we abandoned it.  Switched to index syntax.
+-- BLC: This relies on parameter destructuring, which doesn't parse
+--      yet
 
-    constructor EndPoints ( (s,e) : AdjD ) {
-      start = s;
-      end   = e;
-    }
+  constructor EndPoints ( (s,e) : index(AdjD)) {
+    start = s;
+    end   = e;
+  }
 */
 /* TMP
 
 -- SJD: What's with the square brackets?
+-- BLC: This was a concept which David had of a function that
+--      had a domain;  I've never been sure of its purpose and
+--      believe that in any case for this benchmark it could be 
+--      written:
+-- 
+--   function adjMatrix [i:AdjD] { return weights(i).length; }
+*/
 
-    function adjMatrix [i:AdjD] { return weights(i).length; }
-*/
-  }
-/* TMP
+  function adjMatrix(i: index(AdjD)) { return weights(i).length; }
 }
-*/
+
 
 function main() {
   -- Scalable Data Generator parameters.
@@ -221,6 +228,8 @@ function main() {
     
     -- Find clusters in the graph.
 /* TMP
+-- BLC: This relies on tuple destructuring at variable declaration
+--      time which doesn't parse yet
     var (cutG, intVertexRemap, strVertexRemap) 
           = cutClusters( G, MAX_CLUSTER_SIZE, ALPHA );
 */
@@ -243,6 +252,9 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
                      maxIntWeightP, probInterclEdges) {
 
 /* TMP
+-- BLC: This relies us to do a restricted module use statement (one
+--      which only imports some symbols but not all).  If we have
+--      module use implemented, this doesn't seem much harder...
   use Random only RandomNumbers;
 */
   var random_numbers = RandomNumbers();
@@ -261,6 +273,8 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
   -- Sum up vertices in each clique.
 /* TMP
+-- BLC: We currently don't parse scans, though this should be
+--      easy to add
   VsInCliques.last = scan cliqueSizes by +;
 */
 
@@ -280,12 +294,22 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
   -- create the edges within the cliques
 /* TMP
+-- BLC: This is a concept that David had which I've always found
+--      somewhat strange.  I'd consider this an array of domains
+--      instead and write it as:
+--      var AdjDomain : [i in Cliques] domain(2) =
+--                        let k = cliqueSize(i) in (1..k, 1..k);
+
   var AdjDomain : domain [i in Cliques] * (2) =  
                     let k = cliqueSize(i) in (1..k, 1..k);
 */
 
   -- fill matrix with random numbers
 /* TMP
+-- BLC: This doesn't work because of the inferred array element
+--      type.  I believe that if specified, it should be integer 
+--      or index(VertexD)
+
   var cliqueAdjMatrix: [AdjDomain] = 
     reshape(let n = AdjDomain.extent; 
                 in ceil(maxParalEdges*random_numbers.generate(n)));
@@ -296,13 +320,23 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
   -- build cumulative sum of edge counts by clique and level
 /* TMP
+-- BLC: this is meant to be a product domain, which we don't
+--      support in the parser yet.
+
   var edgeDomain : domain Cliques * (1..maxParalEdges);
 */
 /* TMP
+-- BLC: Another that fails due to the missing array element type.
+--      In this case, I believe it should be integer
+
   var edgeCounts: [(c,i) in edgeDomain] =  
         sum ([m in cliqueAdjMatrix(c)] m >=i);
 */
 /* TMP
+-- BLC: And another.  I think this one should be integer, though
+--      if we were to declare the 1..numEdgesPlacedInCliques
+--      domain below, we could use an index of that domain instead.
+
   var edgeStarts: [edgeDomain] = scan edgeCounts by + ;
 */
 
@@ -315,6 +349,8 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   forall (c,m) in edgeDomain {
     var first = VsInClique(c).first;
 /* TMP
+-- BLC: This fails to parse due to the indefinite domain range
+
     intraEdges[edgeStarts(c,m)..] = 
       [(i,j) in AdjDomain(c)] 
         (if (cliqueAdjMatrix(c,i,j) >= m)
@@ -325,9 +361,16 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   -- connect the cliques
   -- build a map from vertex number to the clique it is in
 /* TMP
+-- BLC: Another elided array element type. This one should be
+--      index(Clique) or integer
+
   var toClique: [1..totalVertices];
 */
 /* TMP
+-- BLC: I think the slice syntax here is not supported in the
+-- parser yet.  Or perhaps its the square brackets, or both.
+-- I don't believe the square brackets are required here.
+
   forall c in Cliques do
     toClique[VsInClique(c).first..VsInClique(c).last] = c;
 */
@@ -338,30 +381,41 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
   -- foreach probability level, there are 'up' and 'down' edges
 /* TMP
+-- BLC: This domain syntax simply isn't supported yet (if it ought
+--      to be.  We could rewrite this:
+--               : domain(3) = (1..totalVertices, 1..log2Dist, -1..1 by 2);
+
   var bitsDomain : domain(1..totalVertices, 1..log2Dist, -1..1 by 2);
 */
   var bits : [bitsDomain] boole;
 /* TMP
+-- BLC: We don't parse index tuple destructuring in forall loops yet
+
   forall ((ix, d, dir), r) in (bitsDomain ,
                                reshape(random_numbers.generate(bitsDomain.extent),
                                        bitDomain)) {
+*/
     if (r <= probInterclEdges**d) {
-      var jx = mod(ix-1 + dir*2**d,totVertices) + 1;
+      var jx = (ix-1 + dir*2**d mod totVertices) + 1;
       bits(ix,d,dir) = toClique(ix) != toClique(jx);
     } else bits(ix,d,dir) = false;
+/*
+-- BLC: This is the other half of the forall just previous
   }
 */
 
 /* TMP
+-- BLC: Another array with its element type unspecified.  This one
+--      should be integer, though if the 1..numPlacedOutside
+--      domain below was named, it could be an index of that domain.
+
   var offset: [bitsDomain] = scan (if bits then 1 else 0) by +;
 */
   numPlacedOutside = offset(bitsDomain.last);
   var interEdges: [1..numPlacedOutside] EndPoints;
   forall (ix, d, dir) in bitsDomain do
     if (bits(ix,d, dir)) {
-/* TMP
-      var jx = mod(ix-1 + dir*2**d,totVertices) + 1;
-*/
+      var jx = (ix-1 + dir*2**d mod totVertices) + 1;
       interEdges(offset(ix,d,dir)) = (start=ix, end=jx);
     }
 
@@ -370,13 +424,17 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   Edges = 1..numEdgesPlaced;
 
 /* TMP
+-- BLC: lhs type coercions don't parse yet
+
   edges:EndPoints = intraEdges # interEdges;
 */
 
-
-  var sought_stirng : string;
+  var sought_string : string;
 
 /* TMP
+-- BLC: elided array element type here.  This one should be a
+--      string, though I'd argue we should support "string(2)"
+
   var strAlphabet: [1..26**2] = 
         reshape([i in 'A'..'Z'][j in 'A'..'Z'] i+j);
 */
@@ -399,10 +457,15 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   if (i == 0) 
     then error("no strings");
 /* TMP
+-- BLC: I don't believe we support parsing of else-less conditional
+--      expressions yet
+
   var j = ([e in Edges] (if is_str(e) then e)) (i);
 */
   var sought_string;
 /* TMP
+-- BLC: typeselect isn't supported yet; this syntax may be wrong
+
   typeselect (w = edges(j).weight) {
     when s    sought_string = w;
   }
@@ -411,23 +474,31 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   return (fedges, sought_string);
 }
 
-
 /* TMP
 function binsearch(x : [?lo..?hi] , y]) {
-  if (hi < lo  ) return lo;
-  if (x(hi) > y) return hi;
-  if (y <= x(lo) return lo;
+*/
+  if (hi < lo  ) then return lo;
+  if (x(hi) > y) then return hi;
+  if (y <= x(lo)) then return lo;
 
   while (lo+1 < hi) {
+/* TMP
+-- BLC: we don't parse asserts yet; this may not be the syntax
     assert  x(lo) < y and y <= x(hi) ;
+*/
 
     var mid = (hi+lo)/2;
-    if (x[mid] < y) 
+/* TMP
+-- BLC: we don't support indexing by square brackets yet
+/*
+    if (x[mid] < y) then
       lo = mid;
     else
       hi = mid;
+*/
   }
   return hi;
+/* TMP
 }
 */
 
@@ -435,16 +506,22 @@ function computeGraph(edges , totVertices, maxParalEdges,
                       maxIntWeight ) : Graph {
   var G = Graph();
 /* TMP
+-- BLC: lhs casts don't parse yet
+
   G:Numbers = edges;
 */
 
+
 /* TMP
+-- BLC: we don't parse restricted with statements yet
+
   with G only VertexD, ParEdgeD, intg, strg;
 */
 
   VertexD = 1..totVertices;
   ParEdgeD = 1..maxParalEdge;
 /* TMP
+-- BLC: We don't parse else-less conditional expressions yet
   intg.AdjD = [e in edges.edges] (if not e.weight.is_string?
                                   then (e.start, e.end));
   strg.AdjD = [e in edges.edges] (if e.weight.is_string?
@@ -452,6 +529,7 @@ function computeGraph(edges , totVertices, maxParalEdges,
 */
   forall e in edges.edges do
 /* TMP
+-- BLC: We don't parse typeselects yet
     typeselect (s = e.weight) {
       when i atomic intg.weights(e.start,e.end) #= s;
       when s atomic strg.weights(e.start,e.end) #= s;
@@ -466,10 +544,12 @@ function sortWeights( G : Graph, soughtString : string ) {
 
   function Subgraph.select(value) {
 /* TMP
+-- BLC: We don't parse else-less conditional expressions yet
     return [e in AdjD] if (weights(e) == value) then EndPoints(e);
 */
   }
 /* TMP
+-- BLC: We don't parse restricted with statements yet
   with G only intg, strg;
 */
   var maxWeight = max(intg.weights);
@@ -494,19 +574,34 @@ function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : integer,
   }
 
 /* TMP
+-- BLC: this is another array with inferred type.  This one should
+--      either be Graph or SubGraph, I'm not sure which
   var subgraphs: [1..(startSetIntVPairs.length+startSetStrVPairs.length)];
 */
   -- Loop over vertex pairs in the int starting set.
 /* TMP
+-- BLC: we don't parse cobegins yet
   cobegin {
+*/
+/* TMP
+-- BLC: nor destructured index variables
     forall (i,v) in (1.., startSetIntVPairs) {
+*/
       subgraphs(i) = copy(this);
       subgraphs(i).intg.expand_subgraph(v, intg);
+/* TMP
+-- BLC: ditto
     }
     forall (i,v) in (startSetIntVPairs+1.., startSetStrVPairs); {
+*/
       subgraphs(i) = copy(this);
       subgraphs(i).strg.expand_subgraph(v, strg);
+/* TMP
+-- BLC: this ends the second forall
     }
+*/
+/* TMP
+-- BLC: this ends the cobegin
   }
 */
   return subgraphs;
@@ -523,17 +618,26 @@ function cutClusters(G, cutBoxSize, alpha) {
     var startSearch = ceil(alpha * cutBoxSize); 
 
 /* TMP
+-- BLC: restricted with statements don't parse
     with AdjMatrix only VertexD, AdjD;
 */
 /* TMP
+-- BLC: another inferred element type; this one should be integer
     var adjCounts: [v in VertexD] = length(AdjD(v,*) # AdjD(*,v));
 */
 /* TMP
+-- BLC: we don't parse sparse domains yet.  I prefer the syntax:
+--            : sparse domain(VertexD) = nil;
+
      type Set : domain sparse VertexD = nil;
 */
+
 /* TMP
-    type Seq : seq of index of VertexD = nill;
+-- BLC: I think this fails because we current try to do too much
+--      at IndexType constructor time
+    type Seq : seq of index of VertexD = nil;
 */
+
 
     var setG : Set = VertexD;
     var setClusters : Seq;     -- set of nodes in clusters.
@@ -550,6 +654,7 @@ function cutClusters(G, cutBoxSize, alpha) {
         var cnCut = totVertices+1;   -- minimum contour number so far.
         for i in 1..cutBoxSize {
 /* TMP
+-- BLC: it seems we don't parse the #= operator currently?
           setIter #= vMin;         -- add vMin to the iterating set.
 */
     
@@ -571,6 +676,7 @@ function cutClusters(G, cutBoxSize, alpha) {
           -- Pick the next vertex to be processed from among the adjacent 
           -- vertices, the one which minimizes the adjacency count.
 /* TMP
+-- BLC: element type elided;  should be integers
           var cnt: [ setAdj ] ;
 */
           forall v in setAdj {
@@ -578,6 +684,7 @@ function cutClusters(G, cutBoxSize, alpha) {
             var vAdj like setAdj = setAdj # AdjD(v,*) # AdjD(*,v);
             vAdj -= setIter # setN2;
 /* TMP
+-- BLC: can't parse square bracket indexing yet
             cnt[v] = vAdj.extent;
 */
           }
@@ -591,6 +698,7 @@ function cutClusters(G, cutBoxSize, alpha) {
       }
 
 /* TMP
+-- BLC: can't parse #= yet
       setClusters #= setIter(1..iCut);
       setN2       #= iAdj;
 */
@@ -605,9 +713,12 @@ function cutClusters(G, cutBoxSize, alpha) {
 
   function remap(oldg, newg, vertexRemap) {
 /* TMP
+-- BLC: element type missing; should be integer; could also be index(Vertex)
     var map: [G.VertexD];
 */
 /* TMP
+-- BLC: zippered iteration with an indefinite domain and square-bracket 
+--      indexing
     forall (new, old) in (1.., vertexRemap) do 
       map[old] = new;
 */

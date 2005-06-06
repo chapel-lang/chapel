@@ -1,93 +1,92 @@
-module declareGlobals {
-  config var ENABLE_K2 = true;
-  config var ENABLE_K3 = true;
-  config var ENABLE_K4 = true;
-  config var DECOR_VERTICES = true;
-  config var ENABLE_PAUSE = false;
-  config var ENABLE_PLOTS = false;
-  config var ENABLE_VERIF = true;
-  config var ENABLE_MDUMP = false;
-  config var ENABLE_DEBUG = false;
-  config var FIGNUM = 0 ;
-  config var ENABLE_PLOT_ROSE  = false;
-  config var ENABLE_PLOT_COLOR = false;
-  config var ENABLE_PLOT_K3    = false;
-  config var ENABLE_PLOT_K3DB  = false;
+config var ENABLE_K2 = true;
+config var ENABLE_K3 = true;
+config var ENABLE_K4 = true;
+config var DECOR_VERTICES = true;
+config var ENABLE_PAUSE = false;
+config var ENABLE_PLOTS = false;
+config var ENABLE_VERIF = true;
+config var ENABLE_MDUMP = false;
+config var ENABLE_DEBUG = false;
+config var FIGNUM = 0 ;
+config var ENABLE_PLOT_ROSE  = false;
+config var ENABLE_PLOT_COLOR = false;
+config var ENABLE_PLOT_K3    = false;
+config var ENABLE_PLOT_K3DB  = false;
 
-  union Weight {
-    var i : integer;
-    var s : string;
-    function is_string {
-      typeselect (this) {
-        when s     return true;
-        otherwise  return false;
-      }
+union Weight {
+  var i : integer;
+  var s : string;
+  function is_string {
+    typeselect (this) {
+      when s     return true;
+      otherwise  return false;
     }
-  }
-
-  record Numbers {
-    var totVertices : integer; 
-    var maxParallelEdge : integer;
-    var numIntEdges : integer; 
-    var numStrEdges : integer;
-    var maxIntWeight : integer;
-  }
-
-  record EndPoints { 
-    var start : integer;
-    var end : integer;
-  }
-
-  class Edges { 
-    with Numbers;
-    var Cliques : domain(1);
-    var cliqueSizes : [Cliques] integer; 
-    var VsInClique : [Cliques] (first:integer, last:integer);
-    var numEdgesPlaced  : integer;
-    var Edges : domain(1); -- 1..numEdgesPlaced
-    var edges : [Edges] record { 
-                          with EndPoints;
-                          var weight :Weight;
-                        };
-    var numEdgesPlacedInCliques : integer;
-    var numEdgesPlacedOutside   : integer;
-  }
-
-  class Graph {
-    with Numbers; 
-    var VertexD  : domain(1);  -- 1..totVertices
-    var ParEdgeD : domain(1) ; -- 1..maxParallelEdge
-
-    -- separate integer and string subgraps that
-    -- share the above two domains
-    var intg = Subgraph(wtype=integer,
-                        VertexD=>VertexD,
-                        ParEdgeD=>ParEdgeD);
-    var strg = Subgraph(wtype=string,
-                        VertexD=>VertexD,
-                        ParEdgeD=>ParEdgeD);
-
-    function copy(s : Graph) {
-      return Graph(VerteD  =s.VertexD,
-                   ParEdgeD=s.ParEdgeD);
-    }
-  }
-
-  class Subgraph {
-    type wtype;
-    var VertexD : domain(1);
-    var ParEdgeD : domain(1); 
-    -- sparse matrix index by directed vertex pairs
-    var AdjD  : domain sparse (VertexD * VertexD) = nil;
-    -- holds count of edges between vertex pairs
-    var weights : [AdjD] seq of wtype;
-    constructor EndPoints ( (s,e) : AdjD ) {
-      start = s;
-      end   = e;
-    }
-    function adjMatrix [i:AdjD] { return weights(i).length; }
   }
 }
+
+record Numbers {
+  var totVertices : integer; 
+  var maxParallelEdge : integer;
+  var numIntEdges : integer; 
+  var numStrEdges : integer;
+  var maxIntWeight : integer;
+}
+
+record EndPoints { 
+  var start : integer;
+  var end : integer;
+}
+
+class Edges { 
+  with Numbers;
+  var Cliques : domain(1);
+  var cliqueSizes : [Cliques] integer; 
+  var VsInClique : [Cliques] (first:integer, last:integer);
+  var numEdgesPlaced  : integer;
+  var Edges : domain(1); -- 1..numEdgesPlaced
+  var edges : [Edges] record { 
+                        with EndPoints;
+                        var weight :Weight;
+                      };
+  var numEdgesPlacedInCliques : integer;
+  var numEdgesPlacedOutside   : integer;
+}
+
+class Graph {
+  with Numbers; 
+  var VertexD  : domain(1);  -- 1..totVertices
+  var ParEdgeD : domain(1) ; -- 1..maxParallelEdge
+
+  -- separate integer and string subgraps that
+  -- share the above two domains
+  var intg = Subgraph(wtype=integer,
+                      VertexD=>VertexD,
+                      ParEdgeD=>ParEdgeD);
+  var strg = Subgraph(wtype=string,
+                      VertexD=>VertexD,
+                      ParEdgeD=>ParEdgeD);
+
+  function copy(s : Graph) {
+    return Graph(VerteD  =s.VertexD,
+                 ParEdgeD=s.ParEdgeD);
+  }
+}
+
+class Subgraph {
+  type wtype;
+  var VertexD : domain(1);
+  var ParEdgeD : domain(1); 
+  -- sparse matrix index by directed vertex pairs
+  var AdjD  : domain sparse (VertexD * VertexD) = nil;
+  -- holds count of edges between vertex pairs
+  var weights : [AdjD] seq of wtype;
+  constructor EndPoints ( (s,e) : index(AdjD)) {
+    start = s;
+    end   = e;
+  }
+  function adjMatrix [i:AdjD] { return weights(i).length; }
+}
+
 
 function main() {
   -- Scalable Data Generator parameters.
@@ -332,15 +331,15 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
 
 function binsearch(x : [?lo..?hi] , y]) {
-  if (hi < lo  ) return lo;
-  if (x(hi) > y) return hi;
-  if (y <= x(lo) return lo;
+  if (hi < lo  ) then return lo;
+  if (x(hi) > y) then return hi;
+  if (y <= x(lo)) then return lo;
 
   while (lo+1 < hi) {
     assert  x(lo) < y and y <= x(hi) ;
 
     var mid = (hi+lo)/2;
-    if (x[mid] < y) 
+    if (x[mid] < y) then 
       lo = mid;
     else
       hi = mid;
