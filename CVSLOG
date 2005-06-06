@@ -34768,3 +34768,15 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_paramvar_class1.future 
 
+---------------------------------------------------------------------------
+
+06/06/05 14:58:03 -- deitz
+
+Log message:
+	Added a test that instantiates a class with a class.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_instantiate1.chpl 
+	                                         test_instantiate1.future 
+	                                         test_instantiate1.good 
+
