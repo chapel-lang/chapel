@@ -34803,3 +34803,17 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_instantiate1.future 
 
+---------------------------------------------------------------------------
+
+06/06/05 15:34:47 -- jplevyak
+
+Log message:
+	Fix .future and .good.  The variable "x" is initialized to null (as
+	it should be).   The test was incorrect.   Perhaps a record was intended?
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_instantiate2.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_instantiate2.future 
+
