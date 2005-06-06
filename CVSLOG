@@ -34792,3 +34792,14 @@ Added files:
 	                                         test_instantiate2.future 
 	                                         test_instantiate2.good 
 
+---------------------------------------------------------------------------
+
+06/06/05 15:32:40 -- jplevyak
+
+Log message:
+	Update .future file.  foo is marked as dead because it *is* dead.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_instantiate1.future 
+
