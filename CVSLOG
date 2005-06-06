@@ -34693,3 +34693,13 @@ Added files:
 	                                      usetype2.future 
 	                                      usetype2.good 
 
+---------------------------------------------------------------------------
+
+06/06/05 10:47:09 -- jplevyak
+
+Log message:
+	Add function to get the set of keys from a Map.
+
+Modified files:
+	chapel/compiler/include/: map.h 
+
