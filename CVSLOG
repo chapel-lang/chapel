@@ -34588,3 +34588,15 @@ Log message:
 Modified files:
 	chapel/test/memory/shannon/: memstatEquals.future 
 
+---------------------------------------------------------------------------
+
+06/06/05 10:30:59 -- bradc
+
+Log message:
+	A small change in which AList::only() was being used
+	on statement lists that weren't guaranteed to just
+	have a single element in them.
+
+Modified files:
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+
