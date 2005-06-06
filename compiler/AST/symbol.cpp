@@ -1004,14 +1004,10 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         //printf("  instantiating %s\n", fn->cname);
         SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
         DefExpr* fnDef = dynamic_cast<DefExpr*>(fn->defPoint->copy(true, map));
+        fnDef->sym->cname = glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
+        fn->defPoint->insertBefore(fnDef);
         instantiate_add_subs(substitutions, map);
         instantiate_update_expr(substitutions, fnDef, map);
-        // What was this doing?, replaced with above line --SJD
-        // if (!instantiate_update_expr(substitutions, fnDef, map))
-        //   continue;
-        fnDef->sym->cname =
-          glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
-        fn->defPoint->insertBefore(fnDef);
         Symboltable::setCurrentScope(save_scope);
         FnSymbol* fnClone = dynamic_cast<FnSymbol*>(fnDef->sym);
         if (fn == this) {
