@@ -34730,3 +34730,23 @@ Modified files:
 	chapel/test/flowanalysis/newast/: sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+06/06/05 14:23:09 -- jplevyak
+
+Log message:
+	Change findTypeVariables to find any type of AST and use it to detect
+	a generic ParamSymbol.  This causes test_paramvar_class1.chpl to
+	SEGV when it encounters an Expr with a null parentExpr and parentStmt
+	(as well as parentSymbol).
+	
+	Commented out checkSemantics check for ParamSymbols::init being non-NULL...
+	I don't know if this is a good idea, as it causes trivial/roxana/test_param_decl3
+	to fail, but it is easy for Steve to reverse this after his class.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: checkSemantics.cpp 
+	                             findTypeVariables.cpp 
+	                             findTypeVariables.h 
+
