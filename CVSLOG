@@ -34832,3 +34832,16 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_instantiate3.chpl 
 	                                         test_instantiate3.good 
 
+---------------------------------------------------------------------------
+
+06/06/05 16:25:04 -- jplevyak
+
+Log message:
+	Test case for declaring a variable based on a type variable.
+	The "r.t" reference doesn't make it to analysis.
+
+Added files:
+	chapel/test/types/type_variables/jplevyak/: typevar_use-1.chpl 
+	                                            typevar_use-1.future 
+	                                            typevar_use-1.good 
+
