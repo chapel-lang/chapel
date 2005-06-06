@@ -34817,3 +34817,18 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_instantiate2.future 
 
+---------------------------------------------------------------------------
+
+06/06/05 15:39:54 -- deitz
+
+Log message:
+	Added new class test like I wanted.  It works.
+	
+	Updated .good for test_instantiate1.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_instantiate1.good 
+Added files:
+	chapel/test/types/type_variables/deitz/: test_instantiate3.chpl 
+	                                         test_instantiate3.good 
+
