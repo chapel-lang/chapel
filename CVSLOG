@@ -34715,3 +34715,18 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_paramvar_function1.good 
 
+---------------------------------------------------------------------------
+
+06/06/05 13:44:24 -- jplevyak
+
+Log message:
+	Set the line number globals before each wrapper is created.
+	Convert VAR_PARAM into PARAM_PARAMETER when building a constructor.
+	sum_type-1 and 2 should be stable now.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+
