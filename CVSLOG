@@ -34869,3 +34869,24 @@ Added files:
 	                            test_select1.future 
 	                            test_select1.good 
 
+---------------------------------------------------------------------------
+
+06/06/05 16:55:29 -- bradc
+
+Log message:
+	Took a pass over ssca2.parses.chpl to update comments,
+	respond to some of Steve's comments, and mark why other
+	things are commented out for future reference.
+	
+	Updated some bugs/typos in ssca2.orig.chpl.
+	
+	Added ssca2.chpl, with the intention of evolving this
+	code to be our best ssca2 implementation at any time
+	(with ssca.orig.chpl serving as a placeholder for
+	something approximating the whitepaper's implementation).
+
+Modified files:
+	chapel/test/ssca/ssca2/: ssca2.orig.chpl ssca2.parses.chpl 
+Added files:
+	chapel/test/ssca/ssca2/: ssca2.chpl 
+
