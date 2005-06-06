@@ -54,7 +54,8 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
     fn->cname = glomstrings(4, "_", typeSym->cname, "_", fn->cname);
     if (fn->isConstructor) {
-      SymScope* saveScope = Symboltable::setCurrentScope(fn->body->body->only()->parentScope);
+      SymScope* saveScope = Symboltable::setCurrentScope(fn->body->body->first()->parentScope);
+      fn->body->body->reset(); // reset iteration
       DefStmt* this_decl = Symboltable::defineSingleVarDefStmt(copystring("this"),
                                                                typeSym->type,
                                                                NULL,
