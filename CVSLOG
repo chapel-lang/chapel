@@ -34845,3 +34845,27 @@ Added files:
 	                                            typevar_use-1.future 
 	                                            typevar_use-1.good 
 
+---------------------------------------------------------------------------
+
+06/06/05 16:50:34 -- deitz
+
+Log message:
+	Added high-level support for select and when statements which store
+	Chapel's version of the case statement.  After this is in, we can go
+	ahead with typeselect for unions.
+	
+	John, can you look into adding analysis support.
+	
+	Added one test case.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+Added files:
+	chapel/test/trivial/deitz/: test_select1.chpl 
+	                            test_select1.future 
+	                            test_select1.good 
+
