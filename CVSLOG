@@ -34780,3 +34780,15 @@ Added files:
 	                                         test_instantiate1.future 
 	                                         test_instantiate1.good 
 
+---------------------------------------------------------------------------
+
+06/06/05 15:05:49 -- deitz
+
+Log message:
+	Added another test of instantiating a class with a class.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_instantiate2.chpl 
+	                                         test_instantiate2.future 
+	                                         test_instantiate2.good 
+
