@@ -34703,3 +34703,15 @@ Log message:
 Modified files:
 	chapel/compiler/include/: map.h 
 
+---------------------------------------------------------------------------
+
+06/06/05 13:22:41 -- bradc
+
+Log message:
+	Fixing this .good file.  I think Steve just had a thinko
+	in his check-in.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_paramvar_function1.good 
+
