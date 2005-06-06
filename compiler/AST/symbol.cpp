@@ -758,6 +758,8 @@ FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
 
 FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions) {
   static int uid = 1; // Unique ID for wrapped functions
+  currentLineno = lineno;
+  currentFilename = filename;
   SymScope* saveScope = Symboltable::setCurrentScope(parentScope);
   FnSymbol* wrapperFn = new FnSymbol(name);
   wrapperFn->cname = glomstrings(3, cname, "_coercion_wrapper_", intstring(uid++));
@@ -809,6 +811,8 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
 
 FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   static int uid = 1; // Unique ID for wrapped functions
+  currentLineno = lineno;
+  currentFilename = filename;
   FnSymbol* wrapper_symbol;
   Vec<Symbol*> for_removal;
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
@@ -887,7 +891,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
 
 FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
   static int uid = 1; // Unique ID for wrapped functions
-
+  currentLineno = lineno;
+  currentFilename = filename;
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   FnSymbol* wrapper_fn = new FnSymbol(name);
   wrapper_fn->cname = glomstrings(3, cname, "_ord_wrapper_", intstring(uid++));
@@ -962,7 +967,8 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   FnSymbol* copy = NULL;
 
   static int uid = 1; // Unique ID for cloned functions
-
+  currentLineno = lineno;
+  currentFilename = filename;
   TypeSymbol* clone = NULL;
   if (isConstructor) {
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);

@@ -120,10 +120,10 @@ function __init_entryPoint sum_type-2.chpl:22
 function __init_internal_prelude sum_type-2.chpl:22
 function __init_prelude sum_type-2.chpl:22
 function __init_sum_type-2 sum_type-2.chpl:22
-function _construct_cpoint sum_type-2.chpl:4
+function _construct_cpoint sum_type-2.chpl:9
 function _construct_cpoint sum_type-2.chpl:9
 function _construct_point sum_type-2.chpl:4
-function _construct_point sum_type-2.chpl:9
+function _construct_point sum_type-2.chpl:4
 function length sum_type-2.chpl:11
 function length sum_type-2.chpl:11
 function main sum_type-2.chpl:22

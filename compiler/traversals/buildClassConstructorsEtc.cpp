@@ -48,7 +48,8 @@ static void build_constructor(StructuralType* structType) {
       if (tmp->defPoint->init) {
         tmp->defPoint->init->remove();
       }
-      ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, init);
+      ParamSymbol* arg = new ParamSymbol(
+        tmp->consClass == VAR_PARAM ? PARAM_PARAMETER : PARAM_BLANK, name, type, init);
       args->insertAtTail(arg);
     }
   }
