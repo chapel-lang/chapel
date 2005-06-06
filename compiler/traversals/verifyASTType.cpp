@@ -62,6 +62,16 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_COND");
     }
     break;
+  case STMT_WHEN:
+    if (typeid(*ast) != typeid(WhenStmt)) {
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_WHEN");
+    }
+    break;
+  case STMT_SELECT:
+    if (typeid(*ast) != typeid(SelectStmt)) {
+      INT_FATAL(ast, "Unexpected AST statement type: STMT_SELECT");
+    }
+    break;
   case STMT_LABEL:
     if (typeid(*ast) != typeid(LabelStmt)) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_LABEL");

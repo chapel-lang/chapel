@@ -226,6 +226,8 @@ char* astTypeName[AST_TYPE_END+1] = {
   "WhileLoopStmt",
   "ForLoopStmt",
   "CondStmt",
+  "WhenStmt",
+  "SelectStmt",
   "LabelStmt",
   "GotoStmt",
 
@@ -351,6 +353,14 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(CondStmt, condExpr);
     AST_ADD_CHILD(CondStmt, thenStmt);
     AST_ADD_CHILD(CondStmt, elseStmt);
+    goto LStmtCommon;
+  case STMT_WHEN:
+    AST_ADD_LIST(WhenStmt, caseExprs, Expr);
+    AST_ADD_CHILD(WhenStmt, doStmt);
+    goto LStmtCommon;
+  case STMT_SELECT:
+    AST_ADD_CHILD(SelectStmt, caseExpr);
+    AST_ADD_LIST(SelectStmt, whenStmts, WhenStmt);
     goto LStmtCommon;
   case STMT_LABEL:
     ADD_CHILD(LabelStmt, label);

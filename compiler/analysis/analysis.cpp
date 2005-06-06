@@ -1854,6 +1854,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
                s->elseStmt ? s->elseStmt->ainfo : 0); 
       break;
     }
+    case STMT_WHEN: INT_FATAL(ast, "WhenStmt not handled by analysis"); break;
+    case STMT_SELECT: INT_FATAL(ast, "SelectStmt not handled by analysis"); break;
     case EXPR: {
       Expr *s = dynamic_cast<Expr*>(ast);
       assert(!ast); 

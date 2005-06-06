@@ -879,6 +879,123 @@ void CondStmt::codegen(FILE* outfile) {
 }
 
 
+WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, BlockStmt* init_doStmt) :
+  Stmt(STMT_WHEN),
+  caseExprs(init_caseExprs),
+  doStmt(init_doStmt)
+{ }
+
+
+Stmt* WhenStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new WhenStmt(caseExprs->copyInternal(clone, map),
+                      dynamic_cast<BlockStmt*>(doStmt->copyInternal(clone, map)));
+}
+
+
+void WhenStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == caseExprs) {
+    caseExprs = dynamic_cast<AList<Expr>*>(new_ast);
+  } else if (old_ast == doStmt) {
+    doStmt = dynamic_cast<BlockStmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in WhenStmt::replaceChild(old, new)");
+  }
+}
+
+
+void WhenStmt::traverseStmt(Traversal* traversal) {
+  caseExprs->traverse(traversal, false);
+  TRAVERSE(doStmt, traversal, false);
+}
+
+
+void WhenStmt::print(FILE* outfile) {
+  fprintf(outfile, "when ");
+  caseExprs->print(outfile);
+  fprintf(outfile, " do ");
+  doStmt->print(outfile);
+}
+
+
+void WhenStmt::codegen(FILE* outfile) {
+  INT_FATAL(this, "WhenStmt::codegen encountered");
+}
+
+
+SelectStmt::SelectStmt(Expr* init_caseExpr, AList<WhenStmt>* init_whenStmts) :
+  Stmt(STMT_SELECT),
+  caseExpr(init_caseExpr),
+  whenStmts(init_whenStmts)
+{ }
+
+
+Stmt* SelectStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new SelectStmt(caseExpr->copyInternal(clone, map),
+                        whenStmts->copyInternal(clone, map));
+}
+
+
+void SelectStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == caseExpr) {
+    caseExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == whenStmts) {
+    whenStmts = dynamic_cast<AList<WhenStmt>*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in SelectStmt::replaceChild(old, new)");
+  }
+}
+
+
+void SelectStmt::traverseStmt(Traversal* traversal) {
+  TRAVERSE(caseExpr, traversal, false);
+  whenStmts->traverse(traversal, false);
+}
+
+
+void SelectStmt::print(FILE* outfile) {
+  fprintf(outfile, "select ");
+  caseExpr->print(outfile);
+  fprintf(outfile, " {\n");
+  whenStmts->print(outfile);
+  fprintf(outfile, "}\n");
+}
+
+
+void SelectStmt::codegen(FILE* outfile) {
+  bool firstWhenStmt = true;
+  for (WhenStmt* whenStmt = whenStmts->first();
+       whenStmt;
+       whenStmt = whenStmts->next()) {
+    if (!firstWhenStmt) {
+      fprintf(outfile, " else ");
+    } else {
+      firstWhenStmt = false;
+    }
+    fprintf(outfile, "if (");
+    if (!whenStmt->caseExprs->isEmpty()) {
+      bool firstCaseExpr = true;
+      for (Expr* expr = whenStmt->caseExprs->first();
+           expr;
+           expr = whenStmt->caseExprs->next()) {
+        if (!firstCaseExpr) {
+          fprintf(outfile, " || ");
+        } else {
+          firstCaseExpr = false;
+        }
+        fprintf(outfile, "(");
+        caseExpr->codegen(outfile);
+        fprintf(outfile, " == ");
+        expr->codegen(outfile);
+        fprintf(outfile, ")");
+      }
+      fprintf(outfile, ") ");
+    } else {
+      fprintf(outfile, "true) /* otherwise */ ");
+    }
+    whenStmt->doStmt->codegen(outfile);
+  }
+}
+
 
 LabelStmt::LabelStmt(LabelSymbol* init_label, BlockStmt* init_stmt) :
   Stmt(STMT_LABEL),

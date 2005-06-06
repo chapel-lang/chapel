@@ -26,6 +26,8 @@
   ForallExpr* pfaexpr;
   Stmt* stmt;
   AList<Stmt>* stmtlist;
+  AList<WhenStmt>* whenstmtlist;
+  WhenStmt* whenstmt;
   DefStmt* defstmt;
   DefExpr* defexpr;
   AList<DefExpr>* defexprls;
@@ -72,11 +74,13 @@
 %token TMODULE
 %token TNIL
 %token TOF
+%token TOTHERWISE
 %token TOUT
 %token TPRAGMA
 %token TRECORD
 %token TREF
 %token TRETURN
+%token TSELECT
 %token TSEQ
 %token TSTATIC
 %token TTHEN
@@ -85,6 +89,7 @@
 %token TUSE
 %token TVAL
 %token TVAR
+%token TWHEN
 %token TWHERE
 %token TWHILE
 %token TWITH
@@ -145,6 +150,9 @@
 %type <defexprls> vardecl_inner vardecl_inner_ls record_inner_vars
 %type <defstmt> vardecl
 %type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl
+%type <whenstmtlist> when_stmts
+%type <whenstmt> when_stmt
+%type <stmt> select_stmt
 %type <pdt> class_record_union
 %type <stmt> typealias typedecl fndecl structdecl moduledecl
 %type <stmt> function_body_single_stmt 
@@ -828,6 +836,7 @@ statements:
 function_body_single_stmt:
   noop_stmt
 | conditional
+| select_stmt
 | loop
 | call_stmt
 | retStmt
@@ -859,6 +868,7 @@ statement:
 | decl
 | assignment
 | conditional
+| select_stmt
 | loop
 | call_stmt
 | lvalue TSEMI
@@ -995,6 +1005,42 @@ conditional:
     { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt(new AList<Stmt>($5))); }
 | TIF expr TTHEN statement TELSE statement
     { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4)), new BlockStmt(new AList<Stmt>($6))); }
+;
+
+
+when_stmt:
+  TWHEN nonemptyExprlist TDO statement
+    {
+      $$ = new WhenStmt($2, new BlockStmt(new AList<Stmt>($4)));
+    }
+| TWHEN nonemptyExprlist block_stmt
+    {
+      $$ = new WhenStmt($2, $3);
+    }
+| TOTHERWISE statement
+    {
+      $$ = new WhenStmt(new AList<Expr>(), new BlockStmt(new AList<Stmt>($2)));
+    }
+;
+
+
+when_stmts:
+  /* empty */
+    {
+      $$ = new AList<WhenStmt>();
+    }
+| when_stmts when_stmt
+    {
+      $1->insertAtTail($2);
+    }
+; 
+
+
+select_stmt:
+  TSELECT expr TLCBR when_stmts TRCBR
+    {
+      $$ = new SelectStmt($2, $4);
+    }
 ;
 
 

@@ -197,6 +197,34 @@ class CondStmt : public Stmt {
 };
 
 
+class WhenStmt : public Stmt {
+ public:
+  AList<Expr>* caseExprs;
+  BlockStmt* doStmt;
+
+  WhenStmt(AList<Expr>* init_caseExprs = NULL, BlockStmt* init_doStmt = NULL);
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseStmt(Traversal* traversal);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
+class SelectStmt : public Stmt {
+ public:
+  Expr* caseExpr;
+  AList<WhenStmt>* whenStmts;
+
+  SelectStmt(Expr* init_caseExpr = NULL, AList<WhenStmt>* init_whenStmts = NULL);
+  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseStmt(Traversal* traversal);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+};
+
+
 class LabelStmt : public Stmt {
  public:
   LabelSymbol* label;
