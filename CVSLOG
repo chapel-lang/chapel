@@ -35056,3 +35056,13 @@ Added files:
 	                           test_array_class2.future 
 	                           test_array_class2.good 
 
+---------------------------------------------------------------------------
+
+06/07/05 15:50:53 -- deitz
+
+Log message:
+	Added a mark showing that sequence literals do not make it to analysis.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
