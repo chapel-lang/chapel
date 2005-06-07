@@ -34903,3 +34903,13 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_select1.future 
 
+---------------------------------------------------------------------------
+
+06/07/05 11:28:27 -- jplevyak
+
+Log message:
+	Added prim_equal so that test_select1 works from low level codegen.
+
+Modified files:
+	chapel/compiler/etc/: c_runtime.h 
+
