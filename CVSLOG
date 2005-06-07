@@ -35122,3 +35122,33 @@ Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y 
 	chapel/test/ssca/ssca2/: ssca2.chpl ssca2.parses.chpl 
 
+---------------------------------------------------------------------------
+
+06/07/05 16:58:36 -- bradc
+
+Log message:
+	Updated some future tests of user-defined I/O
+	functions to use the current global-function-based
+	approach rather than the method-based approach
+	that I'd anticipated (this change made half of my
+	tests irrelevant, so those got removed).
+	
+	Made a slight change to buildClassConstructorsEtc.cpp
+	so that it wouldn't choke if the user created a write
+	function with more or fewer than one argument.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/classes/bradc/: writeclass1a.chpl writerecord1a.chpl 
+Added files:
+	chapel/test/reductions/bradc/: .cvsignore 
+Removed files:
+	chapel/test/classes/bradc/: writeclass1a.future 
+	                            writeclass1b.chpl 
+	                            writeclass1b.future 
+	                            writeclass1b.good 
+	                            writerecord1a.future 
+	                            writerecord1b.chpl 
+	                            writerecord1b.future 
+	                            writerecord1b.good 
+
