@@ -35079,3 +35079,25 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/records/: assignRecord2.future 
 
+---------------------------------------------------------------------------
+
+06/07/05 16:39:48 -- deitz
+
+Log message:
+	Added methods real and imag (that take no parentheses) to complex
+	record.  Added a future test to use these two methods.
+	
+	Removed future on test_mycomplex_record.
+
+Modified files:
+	chapel/modules/standard/: _chpl_complex.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/types/complex/deitz/: test_complex3.chpl 
+	                                  test_complex3.future 
+	                                  test_complex3.good 
+Removed files:
+	chapel/test/classes/deitz/: test_mycomplex_record.future 
+
