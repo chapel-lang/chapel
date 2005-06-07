@@ -34988,3 +34988,14 @@ Added files:
 	                           test_array_class1.future 
 	                           test_array_class1.good 
 
+---------------------------------------------------------------------------
+
+06/07/05 14:04:10 -- bradc
+
+Log message:
+	Oops, this was supposed to be a completely local file,
+	never checked in.  Sorry `bout that.
+
+Removed files:
+	./: log.txt 
+
