@@ -257,7 +257,9 @@ static void buildDefaultIOFunctions(Type* type) {
     bool userWriteDefined = false;
     Symbol* write = Symboltable::lookupInCurrentScope("write");
     while (write) {
-      if (write->getFnSymbol() && write->getFnSymbol()->formals->only()->type == type) {
+      if (write->getFnSymbol() && 
+          write->getFnSymbol()->formals->length() == 1 &&
+          write->getFnSymbol()->formals->only()->type == type) {
         userWriteDefined = true;
         write->cname = glomstrings(3, "_user_", type->symbol->name, "_write");
         break;

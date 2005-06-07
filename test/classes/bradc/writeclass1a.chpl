@@ -1,10 +1,10 @@
 class myclass {
   var x: integer;
   var y: float;
+}
 
-  function write(): void { 
-    write(x, " ", y);
-  }
+function write(c:myclass) {
+  write(c.x, " ", c.y);
 }
 
 var a: myclass = myclass();

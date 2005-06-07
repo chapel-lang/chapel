@@ -7,6 +7,10 @@ record myrecord {
   }
 }
 
+function write(a: myrecord) {
+  write(a.x, " ", a.y);
+}
+
 var a: myrecord;
 var b: myrecord;
 
