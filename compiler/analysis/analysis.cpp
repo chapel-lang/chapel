@@ -1118,7 +1118,7 @@ build_builtin_symbols() {
   new_primitive_type(sym_complex, "complex");
   new_lub_type(sym_anycomplex, "anycomplex", 
                sym_complex32, sym_complex64, sym_complex128, VARARG_END);
-  new_lub_type(sym_anynum, "anynum", sym_bool, sym_anyint, sym_anyfloat, sym_anycomplex, VARARG_END);
+  new_lub_type(sym_anynum, "anynum", sym_anyint, sym_anyfloat, sym_anycomplex, VARARG_END);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
   if (!sym_new_object) {
@@ -1793,14 +1793,72 @@ gen_set(ParenOpExpr *p, Expr *rhs, Expr *base_ast) {
 }
 
 static int
+gen_when(WhenStmt *s, SelectStmt *ss, Label *l) {
+  Vec<Expr*> cases;
+  s->caseExprs->getElements(cases);
+  Sym *cond = NULL;
+  forv_Expr(x, cases) {
+    if (gen_if1(x, s) < 0) return -1;
+    if1_gen(if1, &s->ainfo->code, x->ainfo->code);
+    Sym *tmp = new_sym();
+    Code *c = if1_send(if1, &s->ainfo->code, 3, 1, make_symbol("=="),
+                       ss->caseExpr->ainfo->rval, x->ainfo->rval, tmp);
+    c->ast = s->ainfo;
+    if (!cond)
+      cond = tmp;
+    else {
+      Sym *new_cond = new_sym();
+      c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator, cond, make_symbol("&&"), tmp, new_cond);
+      c->ast = s->ainfo;
+      cond = new_cond;
+    }
+  }
+  if (gen_if1(s->doStmt, s) < 0) return -1;
+  if (cond) {
+    Code *ifgoto = if1_if_goto(if1, &s->ainfo->code, cond, s->ainfo);
+    if1_if_label_true(if1, ifgoto, if1_label(if1, &s->ainfo->code, s->ainfo));
+    if1_gen(if1, &s->ainfo->code, s->doStmt->ainfo->code);
+    if1_goto(if1, &s->ainfo->code, l);
+    if1_if_label_false(if1, ifgoto, if1_label(if1, &s->ainfo->code, s->ainfo));
+  } else {
+    if1_gen(if1, &s->ainfo->code, s->doStmt->ainfo->code);
+    if1_goto(if1, &s->ainfo->code, l);
+  }
+  return 0;
+}
+
+static int
+gen_select(BaseAST *a) {
+  SelectStmt *s = dynamic_cast<SelectStmt*>(a);
+  Vec<WhenStmt*> whens;
+  s->whenStmts->getElements(whens);
+  gen_if1(s->caseExpr, s);
+  if1_gen(if1, &s->ainfo->code, s->caseExpr->ainfo->code);
+  Label *l = if1_alloc_label(if1);
+  forv_Vec(WhenStmt, x, whens) {
+    if (gen_when(x, s, l) < 0) return -1;
+    if1_gen(if1, &s->ainfo->code, x->ainfo->code);
+  }
+  if1_label(if1, &s->ainfo->code, s->ainfo, l);
+  return 0;
+}
+
+static int
 gen_if1(BaseAST *ast, BaseAST *parent) {
-  // bottom's up
+  // special cases
+  switch (ast->astType) {
+    default: break;
+    case STMT_WHEN: return 0;
+    case STMT_SELECT: gen_select(ast); return 0;
+  }
+  // recurse
   GET_AST_CHILDREN(ast, getStuff);
   DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast);
   if (!def_stmt || !def_stmt->definesFunctions())
     forv_BaseAST(a, getStuff.asts)
       if (gen_if1(a, ast) < 0)
         return -1;
+  // bottom's up
   switch (ast->astType) {
     case STMT: assert(!ast); break;
     case STMT_LABEL: {
@@ -1854,8 +1912,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
                s->elseStmt ? s->elseStmt->ainfo : 0); 
       break;
     }
-    case STMT_WHEN: INT_FATAL(ast, "WhenStmt not handled by analysis"); break;
-    case STMT_SELECT: INT_FATAL(ast, "SelectStmt not handled by analysis"); break;
+    case STMT_WHEN: assert(!"case"); break;
+    case STMT_SELECT: assert(!"case"); break;
     case EXPR: {
       Expr *s = dynamic_cast<Expr*>(ast);
       assert(!ast); 

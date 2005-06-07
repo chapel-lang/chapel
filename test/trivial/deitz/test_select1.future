@@ -1,3 +1,0 @@
-jplevyak
-
-I think it's better not to translate Select into conditionals too early as we can optimize these well especially for ordinal types.

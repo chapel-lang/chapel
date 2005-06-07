@@ -54,7 +54,7 @@ Code    *if1_send(IF1 *p, Code **c, int args, int results, ...);
 Code    *if1_send1(IF1 *p, Code **c);
 void    if1_add_send_arg(IF1 *p, Code *c, Sym *a);
 void    if1_add_send_result(IF1 *p, Code *c, Sym *r);
-Code    *if1_if_goto(IF1 *p, Code **t, Sym ifcond, AST *ast = 0);
+Code    *if1_if_goto(IF1 *p, Code **t, Sym *ifcond, AST *ast = 0);
 void    if1_set_goto(IF1 *p, Code *go, Label *label);
 void    if1_if_label_true(IF1 *p, Code *ifcode, Label *l, AST *ast = 0);
 void    if1_if_label_false(IF1 *p, Code *ifcode, Label *l, AST *ast = 0);
