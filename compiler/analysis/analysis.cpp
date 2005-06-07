@@ -2148,6 +2148,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_SEQ: {
+      INT_FATAL(ast, "Sequence literals are eliminated before analysis");
       SeqExpr *s = dynamic_cast<SeqExpr *>(ast);
       s->ainfo->sym = s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
