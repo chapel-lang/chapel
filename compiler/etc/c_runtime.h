@@ -53,6 +53,7 @@ typedef void *_CG_ref;
 #define _CG_prim_land(_a, _op, _b) ((_a) && (_b))
 #define _CG_prim_bnot(_op, _a) (~(_a))
 #define _CG_prim_lessorequal(_a, _op, _b) ((_a) <= (_b))
+#define _CG_prim_equal(_a, _op, _b) ((_a) == (_b))
 #define _CG_prim_paren(_f, _a) ((*(_f))((_f), (_a)))
 #define _CG_prim_set(_a, _b) (_a) = (_b)
 #define _CG_prim_apply(_a, _b) ((*(_a)->e0)((_a)->e1))
