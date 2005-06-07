@@ -1656,13 +1656,15 @@ static int
 gen_set_member(MemberAccess *ma, AssignOp *base_ast) {
   FnSymbol *fn = ma->getStmt()->parentFunction();
   AInfo *ast = base_ast->ainfo;
-  if1_gen(if1, &ast->code, ma->base->ainfo->code);
-  if1_gen(if1, &base_ast->ainfo->code, base_ast->left->ainfo->code);
+  int equal = !fn || (!fn->_setter && (!fn->isConstructor || !is_this_member_access(ma)));
+  if1_gen(if1, &base_ast->ainfo->code, ma->base->ainfo->code);
+  if (equal)
+    if1_gen(if1, &base_ast->ainfo->code, base_ast->left->ainfo->code);
   ast->rval = new_sym();
   ast->rval->ast = base_ast->ainfo;
   Sym *rhs = gen_assign_op(base_ast);
   Code *c = 0;
-  if (!fn || (!fn->_setter && (!fn->isConstructor || !is_this_member_access(ma)))) {
+  if (equal) {
     char sel[1024];
     strcpy(sel, "=");
     strcat(sel, ma->member->asymbol->sym->name);
