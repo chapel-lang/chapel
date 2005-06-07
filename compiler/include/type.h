@@ -177,6 +177,8 @@ class UserType : public Type {
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
+
+  Type* getType();
 };
 
 

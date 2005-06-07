@@ -131,6 +131,8 @@ class Expr : public BaseAST {
   bool isWritten(void);
   bool isRef(void);
   Stmt* Expr::getStmt();
+
+  void codegenCastToString(FILE* outfile);
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 

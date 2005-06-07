@@ -1,5 +1,0 @@
-deitz/bradc
-
-It seems that an assignment of 0 to string is not getting
-assigned a coercion from integer to string as in other
-cases.

@@ -320,6 +320,34 @@ Stmt* Expr::getStmt() {
 }
 
 
+void Expr::codegenCastToString(FILE* outfile) {
+  Type* exprType = typeInfo();
+  // BLC: could we fold this into typeInfo somehow?
+  exprType = exprType->getType();
+  if (exprType == dtString) {
+    codegen(outfile);
+  } else {
+    fprintf(outfile, "_chpl_tostring_");
+    if (exprType == dtBoolean) {
+      fprintf(outfile, "boolean");
+    } else if (exprType == dtInteger) {
+      fprintf(outfile, "integer");
+    } else if (exprType == dtFloat) {
+      fprintf(outfile, "float");
+    } else if (exprType == dtComplex) {
+      fprintf(outfile, "complex");
+    } else {
+      INT_FATAL(this, "Unexpected type case in codegenCastToString");
+    }
+    fprintf(outfile, "(");
+    codegen(outfile);
+    fprintf(outfile, ", ");
+    exprType->codegenDefaultFormat(outfile, false);
+    fprintf(outfile, ")");
+  }
+}
+
+
 Literal::Literal(astType_t astType, char* init_str) :
   Expr(astType),
   str(copystring(init_str))
@@ -898,15 +926,7 @@ void AssignOp::codegen(FILE* outfile) {
       fprintf(outfile, "_copy_string(&(");
       left->codegen(outfile);
       fprintf(outfile, "), ");
-      if (right->typeInfo() == dtInteger) {
-        fprintf(outfile, "_chpl_tostring_integer(");
-      }
-      right->codegen(outfile);
-      if (right->typeInfo() == dtInteger) {
-        fprintf(outfile, ", ");
-        right->typeInfo()->codegenDefaultFormat(outfile, false);
-        fprintf(outfile, ")");
-      }
+      right->codegenCastToString(outfile);
       fprintf(outfile, ")");
     }
   } else if ((leftType == dtInteger || leftType == dtFloat) && rightType == dtNil) {
@@ -1006,7 +1026,9 @@ void MemberAccess::traverseExpr(Traversal* traversal) {
 
 
 Type* MemberAccess::typeInfo(void) {
-  if (member->type != dtUnknown) {
+  if (member_type != NULL && member_type != dtUnknown) {
+    return member_type;
+  } else if (member->type != dtUnknown) {
     return member->type;
   } else if (StructuralType* ctype =
              dynamic_cast<StructuralType*>(base->typeInfo())) {
@@ -1643,11 +1665,15 @@ void CastExpr::print(FILE* outfile) {
 
 
 void CastExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "(");
-  newType->codegen(outfile);
-  fprintf(outfile, ")(");
-  expr->codegen(outfile);
-  fprintf(outfile, ")");
+  if (newType == dtString) {
+    expr->codegenCastToString(outfile);
+  } else {
+    fprintf(outfile, "(");
+    newType->codegen(outfile);
+    fprintf(outfile, ")(");
+    expr->codegen(outfile);
+    fprintf(outfile, ")");
+  }
 }
 
 

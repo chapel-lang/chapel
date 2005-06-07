@@ -917,6 +917,11 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
+Type* UserType::getType(void) {
+  return definition;
+}
+
+
 LikeType::LikeType(Expr* init_expr) :
   Type(TYPE_LIKE, NULL),
   expr(init_expr)
