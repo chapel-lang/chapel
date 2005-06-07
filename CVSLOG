@@ -35025,3 +35025,18 @@ Modified files:
 Removed files:
 	chapel/test/reductions/bradc/manual/: threeuses-cast.future 
 
+---------------------------------------------------------------------------
+
+06/07/05 15:04:47 -- deitz
+
+Log message:
+	Added a macro to run through the elements in an AList (last checkin)
+	and made some uses of it (this checkin).  The macro is
+	
+	  for_alist(Type, var, AList)
+	
+	and it works similarly to forv_Vec.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
