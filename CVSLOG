@@ -34976,3 +34976,15 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+06/07/05 13:54:44 -- deitz
+
+Log message:
+	Added a test case that starts to build up a domain class.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_class1.chpl 
+	                           test_array_class1.future 
+	                           test_array_class1.good 
+
