@@ -34962,3 +34962,17 @@ Removed files:
 	chapel/test/types/seq/deitz/: test_seq3.future test_seq6.future 
 	                              test_seq7.future test_seq8.future 
 
+---------------------------------------------------------------------------
+
+06/07/05 13:45:33 -- jplevyak
+
+Log message:
+	Eliminated some extra IF1 code which was being generated on
+	AssignOp(MemberAccesss,...)) and made the complementary changes
+	to the test cases.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
