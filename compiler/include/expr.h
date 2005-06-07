@@ -479,9 +479,10 @@ class ReduceExpr : public Expr {
   Symbol* reduceType;
   AList<Expr>* redDim;
   Expr* argExpr;
+  bool isScan;
 
   ReduceExpr(Symbol* init_reduceType, Expr* init_argExpr, 
-             AList<Expr>* init_redDim = new AList<Expr>());
+             bool init_isScan, AList<Expr>* init_redDim = new AList<Expr>());
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -604,7 +605,7 @@ class CondExpr : public Expr {
   Expr* thenExpr;
   Expr* elseExpr;
 
-  CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr);
+  CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);

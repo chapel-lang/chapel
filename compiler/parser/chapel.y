@@ -187,7 +187,7 @@
 %left TBAND
 %left TPLUS TMINUS
 %left TSTAR TDIVIDE TMOD
-%right TUPLUS TUMINUS TREDUCE TBNOT
+%right TUPLUS TUMINUS TREDUCE TSCAN TBNOT
 %right TEXP
 
 %left TLP
@@ -1138,6 +1138,8 @@ conditional_expr:
     {
       $$ = new CondExpr($3, $5, $7);
     }
+| TLP TIF expr TTHEN expr TRP
+    { $$ = new CondExpr($3, $5); }
 ;
 
 
@@ -1215,7 +1217,9 @@ expr:
 
 reduction:
   identifier TREDUCE expr
-    { $$ = new ReduceExpr(new UnresolvedSymbol($1), $3); }
+    { $$ = new ReduceExpr(new UnresolvedSymbol($1), $3, false); }
+| identifier TSCAN expr
+    { $$ = new ReduceExpr(new UnresolvedSymbol($1), $3, true); }
 ;
 
 

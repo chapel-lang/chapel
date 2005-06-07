@@ -1723,17 +1723,20 @@ void CastLikeExpr::codegen(FILE* outfile) {
 
 
 ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_argExpr, 
-                       AList<Expr>* init_redDim) :
+                       bool init_isScan, AList<Expr>* init_redDim) :
+                       
   Expr(EXPR_REDUCE),
   reduceType(init_reduceType),
   redDim(init_redDim),
-  argExpr(init_argExpr)
+  argExpr(init_argExpr),
+  isScan(init_isScan)
 { }
 
 
 Expr* ReduceExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new ReduceExpr(reduceType->copy(clone, map), 
                         argExpr->copyInternal(clone, map), 
+                        isScan,
                         redDim->copyInternal(clone, map));
 }
 

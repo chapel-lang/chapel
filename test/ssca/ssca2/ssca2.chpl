@@ -339,7 +339,7 @@ function binsearch(x : [?lo..?hi] , y]) {
     assert  x(lo) < y and y <= x(hi) ;
 
     var mid = (hi+lo)/2;
-    if (x[mid] < y) then 
+    if (x(mid) < y) then
       lo = mid;
     else
       hi = mid;
@@ -372,12 +372,12 @@ function computeGraph(edges , totVertices, maxParalEdges,
 
 function sortWeights( G : Graph, soughtString : string ) {
 
-  function Subgraph.select(value) {
-    return [e in AdjD] if (weights(e) == value) then EndPoints(e);
+  function Subgraph.choose(value) {
+    return [e in AdjD] (if (weights(e) == value) then EndPoints(e));
   }
   with G only intg, strg;
   var maxWeight = max(intg.weights);
-  return (intg.select(maxWeight), maxWeight, strg.select(soughtString));
+  return (intg.choose(maxWeight), maxWeight, strg.choose(soughtString));
 }
 
 
@@ -460,14 +460,14 @@ function cutClusters(G, cutBoxSize, alpha) {
 
           -- Pick the next vertex to be processed from among the adjacent 
           -- vertices, the one which minimizes the adjacency count.
-          var cnt: [ setAdj ] ;
+          var count: [ setAdj ] ;
           forall v in setAdj {
             -- Find the sets of vertices that are adjacent to v.
             var vAdj like setAdj = setAdj # AdjD(v,*) # AdjD(*,v);
             vAdj -= setIter # setN2;
-            cnt[v] = vAdj.extent;
+            count(v) = vAdj.extent;
           }
-          vMin = minloc(cnt);
+          vMin = minloc(count);
         }
 
         if iCut == 0 {                      -- If no cutting point,
@@ -490,7 +490,7 @@ function cutClusters(G, cutBoxSize, alpha) {
   function remap(oldg, newg, vertexRemap) {
     var map: [G.VertexD];
     forall (new, old) in (1.., vertexRemap) do 
-      map[old] = new;
+      map(old) = new;
     newg.AdjD = [ (i,j) in oldg.Adj ] (map(i), map(j));
     
     forall (i,j) in newg.AdjD do

@@ -272,11 +272,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
     ceil(maxCliqueSize*random_numbers.generate(estTotCliques));
 
   -- Sum up vertices in each clique.
-/* TMP
--- BLC: We currently don't parse scans, though this should be
---      easy to add
-  VsInCliques.last = scan cliqueSizes by +;
-*/
+  VsInCliques.last = sum scan cliqueSizes;
 
   -- Find where this is greater than totVertices.
   var totCliques = binsearch(VsInCliquess.last, totVertices);
@@ -337,7 +333,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 --      if we were to declare the 1..numEdgesPlacedInCliques
 --      domain below, we could use an index of that domain instead.
 
-  var edgeStarts: [edgeDomain] = scan edgeCounts by + ;
+  var edgeStarts: [edgeDomain] = sum scan edgeCounts;
 */
 
   numEdgesPlacedInCliques = edgeStarts(edgeDomain.last);
@@ -366,14 +362,9 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
   var toClique: [1..totalVertices];
 */
-/* TMP
--- BLC: I think the slice syntax here is not supported in the
--- parser yet.  Or perhaps its the square brackets, or both.
--- I don't believe the square brackets are required here.
 
   forall c in Cliques do
-    toClique[VsInClique(c).first..VsInClique(c).last] = c;
-*/
+    toClique(VsInClique(c).first..VsInClique(c).last) = c;
 
   -- the probability of an edge between two cliques
   -- which is related to distance.
@@ -409,7 +400,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 --      should be integer, though if the 1..numPlacedOutside
 --      domain below was named, it could be an index of that domain.
 
-  var offset: [bitsDomain] = scan (if bits then 1 else 0) by +;
+  var offset: [bitsDomain] = sum scan (if bits then 1 else 0);
 */
   numPlacedOutside = offset(bitsDomain.last);
   var interEdges: [1..numPlacedOutside] EndPoints;
@@ -456,12 +447,9 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   var i  = ceil(count(is_str) * random_numbers.next);
   if (i == 0) 
     then error("no strings");
-/* TMP
--- BLC: I don't believe we support parsing of else-less conditional
---      expressions yet
 
   var j = ([e in Edges] (if is_str(e) then e)) (i);
-*/
+
   var sought_string;
 /* TMP
 -- BLC: typeselect isn't supported yet; this syntax may be wrong
@@ -475,6 +463,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 }
 
 /* TMP
+-- BLC: This queried range throws the compiler off...
 function binsearch(x : [?lo..?hi] , y]) {
 */
   if (hi < lo  ) then return lo;
@@ -488,14 +477,10 @@ function binsearch(x : [?lo..?hi] , y]) {
 */
 
     var mid = (hi+lo)/2;
-/* TMP
--- BLC: we don't support indexing by square brackets yet
-/*
-    if (x[mid] < y) then
+    if (x(mid) < y) then
       lo = mid;
     else
       hi = mid;
-*/
   }
   return hi;
 /* TMP
@@ -520,13 +505,10 @@ function computeGraph(edges , totVertices, maxParalEdges,
 
   VertexD = 1..totVertices;
   ParEdgeD = 1..maxParalEdge;
-/* TMP
--- BLC: We don't parse else-less conditional expressions yet
   intg.AdjD = [e in edges.edges] (if not e.weight.is_string?
                                   then (e.start, e.end));
   strg.AdjD = [e in edges.edges] (if e.weight.is_string?
                                   then (e.start, e.end));
-*/
   forall e in edges.edges do
 /* TMP
 -- BLC: We don't parse typeselects yet
@@ -542,18 +524,15 @@ function computeGraph(edges , totVertices, maxParalEdges,
 
 function sortWeights( G : Graph, soughtString : string ) {
 
-  function Subgraph.select(value) {
-/* TMP
--- BLC: We don't parse else-less conditional expressions yet
-    return [e in AdjD] if (weights(e) == value) then EndPoints(e);
-*/
+  function Subgraph.choose(value) {
+    return [e in AdjD] (if (weights(e) == value) then EndPoints(e));
   }
 /* TMP
 -- BLC: We don't parse restricted with statements yet
   with G only intg, strg;
 */
   var maxWeight = max(intg.weights);
-  return (intg.select(maxWeight), maxWeight, strg.select(soughtString));
+  return (intg.choose(maxWeight), maxWeight, strg.choose(soughtString));
 }
 
 
@@ -677,18 +656,15 @@ function cutClusters(G, cutBoxSize, alpha) {
           -- vertices, the one which minimizes the adjacency count.
 /* TMP
 -- BLC: element type elided;  should be integers
-          var cnt: [ setAdj ] ;
+          var count: [ setAdj ] ;
 */
           forall v in setAdj {
             -- Find the sets of vertices that are adjacent to v.
             var vAdj like setAdj = setAdj # AdjD(v,*) # AdjD(*,v);
             vAdj -= setIter # setN2;
-/* TMP
--- BLC: can't parse square bracket indexing yet
-            cnt[v] = vAdj.extent;
-*/
+            count(v) = vAdj.extent;
           }
-          vMin = minloc(cnt);
+          vMin = minloc(count);
         }
 
         if iCut == 0 {                      -- If no cutting point,
@@ -720,8 +696,8 @@ function cutClusters(G, cutBoxSize, alpha) {
 -- BLC: zippered iteration with an indefinite domain and square-bracket 
 --      indexing
     forall (new, old) in (1.., vertexRemap) do 
-      map[old] = new;
 */
+      map(old) = new;
     newg.AdjD = [ (i,j) in oldg.Adj ] (map(i), map(j));
     
     forall (i,j) in newg.AdjD do
