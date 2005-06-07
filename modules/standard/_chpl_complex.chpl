@@ -1,11 +1,13 @@
 pragma "rename _chpl_complex" record complex {
-  var re : float;
-  var im : float;
+  var _chpl_re : float;
+  var _chpl_im : float;
+  function real : float { return _chpl_re; }
+  function imag : float { return _chpl_im; }
 }
 
 pragma "rename _chpl_write_complex"
 function write(x : complex) {
-  write(x.re, " + ", x.im, "i");
+  write(x._chpl_re, " + ", x._chpl_im, "i");
 }
 
 pragma "no codegen"
@@ -21,15 +23,17 @@ function _chpl_tostring(x : complex, format : string) : string {
 }
 
 pragma "omit for noanalysis" function +(x : complex, y : complex)
-  return complex(x.re + y.re, x.im + y.im);
+  return complex(x._chpl_re + y._chpl_re, x._chpl_im + y._chpl_im);
 
 pragma "omit for noanalysis" function -(x : complex, y : complex)
-  return complex(x.re - y.re, x.im - y.im);
+  return complex(x._chpl_re - y._chpl_re, x._chpl_im - y._chpl_im);
 
 pragma "omit for noanalysis" function *(x : complex, y : complex)
-  return complex(x.re*y.re - x.im*y.im, x.im*y.re + x.re*y.im);
+  return complex(x._chpl_re*y._chpl_re - x._chpl_im*y._chpl_im,
+                 x._chpl_im*y._chpl_re + x._chpl_re*y._chpl_im);
 
 pragma "omit for noanalysis" function /(x : complex, y : complex)
-  return let d = y.re*y.re + y.im*y.im in
-    complex((x.re*y.re + x.im*y.im)/d, (x.im*y.re - x.re*y.im)/d);
+  return let d = y._chpl_re*y._chpl_re + y._chpl_im*y._chpl_im in
+    complex((x._chpl_re*y._chpl_re + x._chpl_im*y._chpl_im)/d,
+            (x._chpl_im*y._chpl_re - x._chpl_re*y._chpl_im)/d);
 
