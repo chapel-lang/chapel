@@ -75,7 +75,8 @@ class AList : public BaseAST {
               AList<elemType>*& falseElems);
 };
 
-
+#define for_alist(basetype, variable, list) \
+  for (basetype* variable = list->first(); variable; variable = list->next())
 
 // this is intended for internal use only
 // note that we store a node one ahead in case the current node is

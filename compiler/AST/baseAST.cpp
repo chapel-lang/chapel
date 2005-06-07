@@ -117,9 +117,12 @@ void BaseAST::remove(void) {
 
 
 void BaseAST::replace(BaseAST* new_ast) {
+  if (new_ast->prev || new_ast->next) {
+    INT_FATAL(new_ast, "Argument is in a list in BaseAST::replace");
+  }
   if (prev || next) {
     if (!prev || !next) {
-      INT_FATAL("Ill-formed list in BaseAST::replace");
+      INT_FATAL(this, "Ill-formed list in BaseAST::replace");
     }
     new_ast->prev = prev;
     new_ast->next = next;
@@ -135,26 +138,32 @@ void BaseAST::replace(BaseAST* new_ast) {
 
 
 void BaseAST::insertBefore(BaseAST* new_ast) {
+  if (new_ast->prev || new_ast->next) {
+    INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertBefore");
+  }
   if (prev) {
     new_ast->prev = prev;
     new_ast->next = this;
     prev->next = new_ast;
     prev = new_ast;
   } else {
-    INT_FATAL("Ill-formed list in BaseAST::insertBefore");
+    INT_FATAL(this, "Ill-formed list in BaseAST::insertBefore");
   }
   fixup(new_ast, this);
 }
 
 
 void BaseAST::insertAfter(BaseAST* new_ast) {
+  if (new_ast->prev || new_ast->next) {
+    INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertAfter");
+  }
   if (next) {
     new_ast->prev = this;
     new_ast->next = next;
     next->prev = new_ast;
     next = new_ast;
   } else {
-    INT_FATAL("Ill-formed list in BaseAST::insertAfter");
+    INT_FATAL(this, "Ill-formed list in BaseAST::insertAfter");
   }
   fixup(new_ast, this);
 }

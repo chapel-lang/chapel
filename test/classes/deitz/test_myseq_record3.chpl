@@ -58,28 +58,28 @@ class mySeq {
   }
 }
 
-function #(s : mySeq, e : mySeq.elementType) {
+function +(s : mySeq, e : mySeq.elementType) {
   return s.append(e);
 }
 
-function #(e : mySeq.elementType, s : mySeq) {
+function +(e : mySeq.elementType, s : mySeq) {
   return s.prepend(e);
 }
 
-function #(s1 : mySeq, s2 : mySeq) {
+function +(s1 : mySeq, s2 : mySeq) {
   return s1.concat(s2);
 }
 
 var s : mySeq = mySeq(integer);
 
-s = s # 1;
-s = s # 2;
-s = s # 3;
+s = s + 1;
+s = s + 2;
+s = s + 3;
 
 writeln(s);
 
-s = 4 # s;
-s = 5 # s;
-s = 6 # s;
+s = 4 + s;
+s = 5 + s;
+s = 6 + s;
 
 writeln(s);

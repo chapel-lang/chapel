@@ -309,7 +309,6 @@ class SeqType : public ClassType {
   //void codegenPrototype(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool implementedUsingCVals(void);
-  static SeqType* createSeqType(char* new_seq_name, Type* init_elementType);
 
   virtual bool hasDefaultWriteFunction(void);
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);

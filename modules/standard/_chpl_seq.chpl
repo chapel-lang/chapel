@@ -58,6 +58,7 @@ class seq2 {
   }
 }
 
+/*** Need where clauses to get all these working
 function #(s : seq2, e : seq2._chplSeqElementType) {
   return s._chplSeqAppend(e);
 }
@@ -65,6 +66,7 @@ function #(s : seq2, e : seq2._chplSeqElementType) {
 function #(e : seq2._chplSeqElementType, s : seq2) {
   return s._chplSeqPrepend(e);
 }
+***/
 
 function #(s1 : seq2, s2 : seq2) {
   return s1._chplSeqConcat(s2);

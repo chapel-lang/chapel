@@ -1,19 +1,19 @@
- called from 1 in __init_usebeforedef at _chpl_seq.chpl:75
- called from 75 in __init_usebeforedef at _chpl_seq.chpl:75
- called from 75 in __init_usebeforedef at _chpl_seq.chpl:75
-::__init__CommonModule(_chpl_seq.chpl:75) ( __init__CommonModule (_chpl_seq.chpl:75) )
-::__init__chpl_complex(_chpl_seq.chpl:75) ( __init__chpl_complex (_chpl_seq.chpl:75) )
-::__init__chpl_seq(_chpl_seq.chpl:75) ( __init__chpl_seq (_chpl_seq.chpl:75) )
-::__init_entryPoint(_chpl_seq.chpl:75) ( __init_entryPoint (_chpl_seq.chpl:75) )
-::__init_internal_prelude(_chpl_seq.chpl:75) ( __init_internal_prelude (_chpl_seq.chpl:75) )
-::__init_prelude(_chpl_seq.chpl:75) ( __init_prelude (_chpl_seq.chpl:75) )
-::__init_usebeforedef(_chpl_seq.chpl:75) ( __init_usebeforedef (_chpl_seq.chpl:75) )
+ called from 1 in __init_usebeforedef at _chpl_seq.chpl:77
+ called from 77 in __init_usebeforedef at _chpl_seq.chpl:77
+ called from 77 in __init_usebeforedef at _chpl_seq.chpl:77
+::__init__CommonModule(_chpl_seq.chpl:77) ( __init__CommonModule (_chpl_seq.chpl:77) )
+::__init__chpl_complex(_chpl_seq.chpl:77) ( __init__chpl_complex (_chpl_seq.chpl:77) )
+::__init__chpl_seq(_chpl_seq.chpl:77) ( __init__chpl_seq (_chpl_seq.chpl:77) )
+::__init_entryPoint(_chpl_seq.chpl:77) ( __init_entryPoint (_chpl_seq.chpl:77) )
+::__init_internal_prelude(_chpl_seq.chpl:77) ( __init_internal_prelude (_chpl_seq.chpl:77) )
+::__init_prelude(_chpl_seq.chpl:77) ( __init_prelude (_chpl_seq.chpl:77) )
+::__init_usebeforedef(_chpl_seq.chpl:77) ( __init_usebeforedef (_chpl_seq.chpl:77) )
 ::_init__chplSeqNode1(_chpl_seq.chpl:1) ( null )
 ::_init_seq22(_chpl_seq.chpl:8) ( null )
 ::a(usebeforedef.chpl:3) ( int64 )
 ::false(prelude.chpl:0) ( bool )
 ::foo(usebeforedef.chpl:5) ( foo )
-::main(_chpl_seq.chpl:75) ( main (_chpl_seq.chpl:75) )
+::main(_chpl_seq.chpl:77) ( main (_chpl_seq.chpl:77) )
 ::nil ( null )
 ::true(prelude.chpl:0) ( bool )
 ::write(prelude.chpl:0) ( write )
@@ -21,13 +21,13 @@
 ::writeln(prelude.chpl:0) ( writeln )
 ::x(prelude.chpl:0) ( int64 )
 ::x(prelude.chpl:0) ( string )
-function __init__CommonModule _chpl_seq.chpl:75
-function __init__chpl_complex _chpl_seq.chpl:75
-function __init__chpl_seq _chpl_seq.chpl:75
-function __init_entryPoint _chpl_seq.chpl:75
-function __init_internal_prelude _chpl_seq.chpl:75
-function __init_prelude _chpl_seq.chpl:75
-function __init_usebeforedef _chpl_seq.chpl:75
+function __init__CommonModule _chpl_seq.chpl:77
+function __init__chpl_complex _chpl_seq.chpl:77
+function __init__chpl_seq _chpl_seq.chpl:77
+function __init_entryPoint _chpl_seq.chpl:77
+function __init_internal_prelude _chpl_seq.chpl:77
+function __init_prelude _chpl_seq.chpl:77
+function __init_usebeforedef _chpl_seq.chpl:77
 function foo usebeforedef.chpl:3
-function main _chpl_seq.chpl:75
+function main _chpl_seq.chpl:77
 globals

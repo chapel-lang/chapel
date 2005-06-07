@@ -658,7 +658,8 @@ void ForLoopStmt::print(FILE* outfile) {
 void ForLoopStmt::codegen(FILE* outfile) {
   DefExpr* indices_def = indices->first();
 
-  if (SeqType* seqType = dynamic_cast<SeqType*>(domain->typeInfo())) {
+  if (domain->typeInfo()->symbol &&
+      !strcmp(domain->typeInfo()->symbol->name, "seq2")) {
     fprintf(outfile, "{\n");
     indices_def->sym->codegenDef(outfile);
     fprintf(outfile, "_FOR");
@@ -670,7 +671,8 @@ void ForLoopStmt::codegen(FILE* outfile) {
     fprintf(outfile, ", ");
     domain->codegen(outfile);
     fprintf(outfile, ", ");
-    fprintf(outfile, "%s", seqType->types.v[0]->cname);
+    ClassType* seqType = dynamic_cast<ClassType*>(domain->typeInfo());
+    fprintf(outfile, "%s", seqType->fields.v[1]->type->symbol->cname);
     fprintf(outfile, ") {\n");
     body->codegen(outfile);
     fprintf(outfile, "\n");

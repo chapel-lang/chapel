@@ -11,6 +11,7 @@
 #include "../traversals/fixup.h"
 #include "../traversals/updateSymbols.h"
 #include "../traversals/collectASTS.h"
+#include "../passes/filesToAST.h"
 
 
 // Utilities for building write functions
@@ -723,76 +724,6 @@ void SeqType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 
 bool SeqType::implementedUsingCVals(void) {
   return false;
-}
-
-
-SeqType* SeqType::createSeqType(char* new_seq_name, Type* init_elementType) {
-  SeqType* new_seq_type = new SeqType(init_elementType);
-  Symbol* _seq = Symboltable::lookupInternal("_seq");
-  ClassType* _seq_type = dynamic_cast<ClassType*>(_seq->type);
-  Symboltable::pushScope(SCOPE_CLASS);
-  // we need to copy the sequence's definition except for its element
-  // type declaration.  While it's tempting to copy all and then pop
-  // the type declaration, this causes problems downstream.  So
-  // instead we remove the type declaration before copying and then
-  // re-insert it
-  Stmt* typeDecl = _seq_type->declarationList->popHead();
-  AList<Stmt>* new_decls = _seq_type->declarationList->copy(true);
-  _seq_type->declarationList->insertAtHead(typeDecl);
-
-  new_seq_type->addDeclarations(new_decls);
-  SymScope* new_seq_scope = Symboltable::popScope();
-  new_seq_type->setScope(new_seq_scope);
-
-  TypeSymbol* new_seq_sym = new TypeSymbol(new_seq_name, new_seq_type);
-  new_seq_type->addSymbol(new_seq_sym);
-
-  Symbol* _append = Symboltable::lookupInternal("append");
-  _append->keepLive = true;
-  DefStmt* appendDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_append->defPoint->copy(true)));
-  new_seq_type->addDeclarations(new AList<Stmt>(appendDefStmt));
-
-  Symbol* _prepend = Symboltable::lookupInternal("prepend");
-  _prepend->keepLive = true;
-  DefStmt* prependDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_prepend->defPoint->copy(true)));
-  new_seq_type->addDeclarations(new AList<Stmt>(prependDefStmt));
-
-  Symbol* _concat = Symboltable::lookupInternal("concat");
-  _concat->keepLive = true;
-  DefStmt* concatDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_concat->defPoint->copy(true)));
-  new_seq_type->addDeclarations(new AList<Stmt>(concatDefStmt));
-
-  Symbol* _copy = Symboltable::lookupInternal("copy");
-  _copy->keepLive = true;
-  DefStmt* copyDefStmt = new DefStmt(dynamic_cast<DefExpr*>(_copy->defPoint->copy(true)));
-  new_seq_type->addDeclarations(new AList<Stmt>(copyDefStmt));
-
-  /*** set class bindings and this ***/
-  forv_Vec(FnSymbol, method, new_seq_type->methods) {
-    method->typeBinding = new_seq_sym;
-    method->_this = method->formals->first();
-    method->cname = glomstrings(3, new_seq_sym->name, "_", method->cname);
-  }
-
-  /*** update _seq type to new type ***/
-  Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
-  map->put(_seq, new_seq_sym);
-  map->put(_seq_type, new_seq_type);
-  map->put(_seq_type->types.v[0]->type, new_seq_type->elementType);
-  map->put(_seq_type->types.v[1]->type, new_seq_type->types.v[0]->type);
-  map->put(dynamic_cast<StructuralType*>(_seq_type->types.v[1]->type)->fields.v[0],
-           dynamic_cast<StructuralType*>(new_seq_type->types.v[0]->type)->fields.v[0]);
-  map->put(dynamic_cast<StructuralType*>(_seq_type->types.v[1]->type)->fields.v[1],
-           dynamic_cast<StructuralType*>(new_seq_type->types.v[0]->type)->fields.v[1]);
-  map->put(_seq_type->fields.v[0], new_seq_type->fields.v[0]);
-  map->put(_seq_type->fields.v[1], new_seq_type->fields.v[1]);
-  map->put(_seq_type->fields.v[2], new_seq_type->fields.v[2]);
-  new_decls->traverse(new UpdateSymbols(map), true);
-
-  Symbol* _node = new_seq_type->types.v[0];
-  _node->cname = glomstrings(2, new_seq_name, _node->cname);
-
-  return new_seq_type;
 }
 
 
@@ -1670,7 +1601,6 @@ void initTypes(void) {
 
 
 void findInternalTypes(void) {
-  dtSequence = Symboltable::lookupInternalType("_seq")->type;
   dtTuple = Symboltable::lookupInternalType("Tuple")->type;
   dtIndex = Symboltable::lookupInternalType("Index")->type;
   dtDomain = Symboltable::lookupInternalType("Domain")->type;

@@ -9,7 +9,7 @@
 
 ModuleSymbol* internalPrelude = NULL;
 ModuleSymbol* prelude = NULL;
-
+ModuleSymbol* seqModule = NULL;
 
 void FilesToAST::run(ModuleList* moduleList) {
   // parse internal prelude
@@ -38,8 +38,10 @@ void FilesToAST::run(ModuleList* moduleList) {
             MOD_STANDARD);
 
   if (analyzeAST) {
-    ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
-              MOD_STANDARD);
+    seqModule = ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
+                          MOD_STANDARD);
+    dtSequence = Symboltable::lookupInternalType("_seq")->type;
+    //    dtSequence = Symboltable::lookupInScope("seq2", seqModule->modScope)->type;
   }
 
   int filenum = 0;
