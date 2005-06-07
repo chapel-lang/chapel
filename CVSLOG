@@ -35101,3 +35101,24 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/: test_mycomplex_record.future 
 
+---------------------------------------------------------------------------
+
+06/07/05 16:49:11 -- bradc
+
+Log message:
+	Continuing to work through the ssca2 code, did some
+	fairly innocuous changes: added "scan" to the parser
+	(and tucked it into ReduceExpr, adding a boolean to
+	indicate whether it's a scan or reduce -- all stuff
+	we'll want to reconsider when we actually implement
+	these); added else-less conditional expressions to
+	the parser; and removed square brackets from the ssca2
+	codes as an indexing mechanism (should be legal
+	eventually, but easier to just rewrite for now).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/test/ssca/ssca2/: ssca2.chpl ssca2.parses.chpl 
+
