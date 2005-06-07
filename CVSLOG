@@ -34913,3 +34913,52 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: c_runtime.h 
 
+---------------------------------------------------------------------------
+
+06/07/05 12:48:21 -- deitz
+
+Log message:
+	Removed support for # used to append or prepend to a sequence.  This
+	operator can only be used for sequence concatenation now.  Added hack
+	to support prepending and appending integers and strings since we can
+	tell they are not sequences before analysis.
+	
+	Cleaned up support for sequences.
+	
+	Readded a test in insertBefore, insertAfter, and replace to make sure
+	that what is being added is not in a list already (and thus needs to
+	be copied).  Maybe this should also check the parents (since then it
+	would need to be copied as well).
+	
+	Removed four more sequence futures.  The current two sequence failures
+	are caused by:
+	
+	  1. not copying a sequence that is appended/prepended/concatenated to
+	     and is not dead.
+	
+	  2. iterating over a sequence that is not a sequence of integers.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp type.cpp 
+	chapel/compiler/include/: alist.h type.h 
+	chapel/compiler/passes/: filesToAST.cpp filesToAST.h 
+	chapel/compiler/traversals/: insertTemps.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/runtime/include/: seq.h 
+	chapel/test/classes/deitz/: test_myseq_record.chpl 
+	                            test_myseq_record2.chpl 
+	                            test_myseq_record3.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: chain.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  onearg.good printempty.good 
+	                                  printstring.good 
+	                                  usebeforedef.good var2.good 
+	                                  writen.good writetwo.good 
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq3.future test_seq6.future 
+	                              test_seq7.future test_seq8.future 
+
