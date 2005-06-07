@@ -35066,3 +35066,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+06/07/05 16:11:30 -- deitz
+
+Log message:
+	Removed future.  This test failed because it used sequences.  It now
+	works.  Fixed its .good.
+
+Modified files:
+	chapel/test/classes/bradc/records/: assignRecord2.good 
+Removed files:
+	chapel/test/classes/bradc/records/: assignRecord2.future 
+
