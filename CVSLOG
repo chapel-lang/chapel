@@ -34999,3 +34999,29 @@ Log message:
 Removed files:
 	./: log.txt 
 
+---------------------------------------------------------------------------
+
+06/07/05 14:08:34 -- bradc
+
+Log message:
+	* factored code that generated casts-to-strings
+	  (_chpl_tostring*) at codegen time into a helper
+	  function so that it could be called from multiple
+	  places with less code duplication.
+	
+	* improved typeInfo for MemberAccess expressions
+	  to use John's member_type information.
+	
+	* implemented UserType::getType()
+	
+	* added code generation for CastExpr's of type
+	  string.
+	
+	* removed future for threeuses-cast.future.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h type.h 
+Removed files:
+	chapel/test/reductions/bradc/manual/: threeuses-cast.future 
+
