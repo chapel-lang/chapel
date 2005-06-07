@@ -285,9 +285,7 @@ static EXPR_RW expr_read_written(Expr* expr) {
       if (typeid(*fn_call) == typeid(FnCall)) {
         FnSymbol* fn = fn_call->findFnSymbol();
         ParamSymbol* formal = fn->formals->first();
-        for(Expr* actual = fn_call->argList->first();
-            actual;
-            actual = fn_call->argList->next()) {
+        for_alist(Expr, actual, fn_call->argList) {
           if (actual == expr) {
             if (ParamSymbol* formal_param = formal) {
               if (formal_param->intent == PARAM_OUT) {
@@ -1429,15 +1427,12 @@ void FnCall::codegen(FILE* outfile) {
     } else if (variable->var == Symboltable::lookupInternal("_EnumWriteStopgap")) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "switch (val) {\n");
-      EnumSymbol* enumSym = enumType->valList->first();
-      while (enumSym) {
+      for_alist(EnumSymbol, enumSym, enumType->valList) {
         fprintf(outfile, "case ");
         enumSym->codegen(outfile);
         fprintf(outfile, ":\n");
         fprintf(outfile, "_chpl_write_string(\"%s\");\n", enumSym->name);
         fprintf(outfile, "break;\n");
-
-        enumSym = enumType->valList->next();
       }
       fprintf(outfile, "}\n");
       return;
@@ -1445,12 +1440,10 @@ void FnCall::codegen(FILE* outfile) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "char* inputString = NULL;\n");
       fprintf(outfile, "_chpl_read_string(&inputString);\n");
-      EnumSymbol* enumSym = enumType->valList->first();
-      while (enumSym) {
+      for_alist(EnumSymbol, enumSym, enumType->valList) {
         fprintf(outfile, "if (strcmp(inputString, \"%s\") == 0) {\n", enumSym->cname);
         fprintf(outfile, "  *val = %s;\n", enumSym->cname);
         fprintf(outfile, "} else ");
-        enumSym = enumType->valList->next();
       }
       fprintf(outfile, "{\n");
       fprintf(outfile, "char* message = \"Not of ");
@@ -1988,11 +1981,9 @@ Type* ForallExpr::typeInfo(void) {
   if (typeid(*exprType) == typeid(DomainType)) {
     return exprType;
   } else {
-    Expr* domainExprs = domains->first();
     int rank = 0;
-    while (domainExprs) {
+    for_alist(Expr, domainExprs, domains) {
       rank++;
-      domainExprs = domains->next();
     }
     return new DomainType(rank);
   }
