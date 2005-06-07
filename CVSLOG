@@ -34890,3 +34890,16 @@ Modified files:
 Added files:
 	chapel/test/ssca/ssca2/: ssca2.chpl 
 
+---------------------------------------------------------------------------
+
+06/07/05 11:27:55 -- jplevyak
+
+Log message:
+	Support for the "select" and "when" statements.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: if1.h 
+Removed files:
+	chapel/test/trivial/deitz/: test_select1.future 
+
