@@ -35257,3 +35257,20 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp if1.cpp 
 	chapel/compiler/include/: code.h 
 
+---------------------------------------------------------------------------
+
+06/08/05 16:16:25 -- deitz
+
+Log message:
+	Factored ResolveDomainRanks into InsertAnonymousDomains in one of many
+	steps to clean up handling of domains.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	                             insertAnonymousDomains.cpp 
+	                             insertAnonymousDomains.h 
+Removed files:
+	chapel/compiler/traversals/: resolveDomainRanks.cpp 
+	                             resolveDomainRanks.h 
+
