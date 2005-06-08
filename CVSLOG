@@ -35235,3 +35235,13 @@ Removed files:
 	                                test_tuple_simple5.future 
 	                                test_tuple_simple7.future 
 
+---------------------------------------------------------------------------
+
+06/08/05 11:51:39 -- deitz
+
+Log message:
+	Fixed passlist, replacing old verify calls with new ones.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+
