@@ -35221,3 +35221,17 @@ Added files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-1.chpl 
 	                                 zeroarity-bound-1.good 
 
+---------------------------------------------------------------------------
+
+06/08/05 11:31:17 -- deitz
+
+Log message:
+	Removed tuple futures.
+
+Removed files:
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.future 
+	                                test_tuple_simple3.future 
+	                                test_tuple_simple4.future 
+	                                test_tuple_simple5.future 
+	                                test_tuple_simple7.future 
+
