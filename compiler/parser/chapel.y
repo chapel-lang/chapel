@@ -1156,11 +1156,11 @@ expr:
   { $$ = new CastExpr($3, $1); }
 | expr TCOLON STRINGLITERAL
   { 
-    Variable* _chpl_tostring =
-      new Variable(new UnresolvedSymbol("_chpl_tostring"));
+    Variable* _tostring =
+      new Variable(new UnresolvedSymbol("_tostring"));
     AList<Expr>* args = new AList<Expr>($1);
     args->insertAtTail(new StringLiteral($3));
-    $$ = new ParenOpExpr(_chpl_tostring, args);
+    $$ = new ParenOpExpr(_tostring, args);
   }
 | range %prec TDOTDOT
 | conditional_expr

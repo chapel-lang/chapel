@@ -26,12 +26,12 @@ static void handleBasicSequenceAppendPrependOperations(BinOp* binOp) {
   if (notSequenceType(leftType)) {
     binOp->replace(new ParenOpExpr(
                      new MemberAccess(binOp->right->copy(),
-                       new UnresolvedSymbol("_chplSeqPrepend")),
+                       new UnresolvedSymbol("_prepend")),
                      new AList<Expr>(binOp->left->copy())));
   } else if (notSequenceType(rightType)) {
     binOp->replace(new ParenOpExpr(
                      new MemberAccess(binOp->left->copy(),
-                       new UnresolvedSymbol("_chplSeqAppend")),
+                       new UnresolvedSymbol("_append")),
                      new AList<Expr>(binOp->right->copy())));
   }
 }
@@ -54,7 +54,7 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
   Expr* init =
     new ParenOpExpr(new Variable(new UnresolvedSymbol("seq2")),
                     new AList<Expr>(new Variable(elt_type->symbol)));
-  
+
   DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(name,
                                                           dtUnknown,
                                                           init,
@@ -73,7 +73,7 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
       new ParenOpExpr(
                       new MemberAccess(
                                        new Variable(seq),
-                                       new UnresolvedSymbol("_chplSeqAppend")),
+                                       new UnresolvedSymbol("_append")),
                       new AList<Expr>(tmp->copy()));
     seqExpr->getStmt()->insertBefore(new ExprStmt(append));
   }

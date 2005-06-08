@@ -50,22 +50,22 @@ pragma "rename _chpl_read_string" function read(inout x : string) : void {
 }
 
 pragma "rename _chpl_tostring_boolean"
-function _chpl_tostring(x : boolean, format : string) : string {
+function _tostring(x : boolean, format : string) : string {
          return __primitive("coerce", string, x);
 }
 
 pragma "rename _chpl_tostring_integer"
-function _chpl_tostring(x : integer, format : string) : string {
+function _tostring(x : integer, format : string) : string {
          return __primitive("coerce", string, x);
 }
 
 pragma "rename _chpl_tostring_float"
-function _chpl_tostring(x : float, format : string) : string {
+function _tostring(x : float, format : string) : string {
          return __primitive("coerce", string, x);
 }
 
 pragma "rename _chpl_tostring_complex"
-function _chpl_tostring(x : complex, format : string) : string {
+function _tostring(x : complex, format : string) : string {
          return __primitive("coerce", string, x);
 }
 
@@ -138,10 +138,10 @@ function _chpl_memtest_reallocZeroSize();
 function _chpl_memtest_mallocOutOfMemory();
 function _chpl_memtest_reallocOutOfMemory();
 
-function _chpl_complex_read_hack(inout x) {
+function _complex_read_hack(inout x) {
   __primitive("read", x);
 }
 
-function _chpl_complex_tostring_hack(x, format : string) : string {
+function _complex_tostring_hack(x, format : string) : string {
   return __primitive("coerce", string, x);
 }
