@@ -35245,3 +35245,15 @@ Log message:
 Modified files:
 	chapel/compiler/main/: passlist.h 
 
+---------------------------------------------------------------------------
+
+06/08/05 16:02:02 -- jplevyak
+
+Log message:
+	Fix SEGV caused by insertion of duplicate Code nodes into the tree.
+	Introduced an assert to detect this at the point of insertion.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp if1.cpp 
+	chapel/compiler/include/: code.h 
+
