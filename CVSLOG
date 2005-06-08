@@ -35205,3 +35205,19 @@ Modified files:
 Added files:
 	chapel/test/trivial/shannon/quit/: halt.chpl halt.good 
 
+---------------------------------------------------------------------------
+
+06/08/05 10:53:38 -- jplevyak
+
+Log message:
+	Fix for uninitialized variable in member_access_info.
+	Additional test for 0-arity bound functions which
+	exposed the bug.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+Added files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-1.chpl 
+	                                 zeroarity-bound-1.good 
+
