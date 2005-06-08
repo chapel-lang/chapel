@@ -109,10 +109,21 @@ if1_nop(IF1 *p, Code **c) {
   return cc;
 }
 
+#if 0
+static void
+traverse(Code *c) {
+  if (c->is_group()) {
+    forv_Code(cc, c->sub)
+      traverse(cc);
+  }
+}
+#endif
+
 void
 if1_gen(IF1 *p, Code **c, Code *cc) {
   if (!cc)
     return;
+  // traverse(cc);
   if (c) {
     if (!*c) *c = new Code;
     (*c)->sub.add(cc);
@@ -721,6 +732,8 @@ if1_simple_dead_code_elimination(IF1 *p) {
 
 void
 if1_flatten_code(Code *c, Code_kind k, Vec<Code *> *v) {
+  assert(!c->flattened);
+  c->flattened = 1;
   switch (c->kind) {
     case Code_MOVE:
     case Code_SEND:

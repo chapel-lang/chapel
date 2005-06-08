@@ -44,6 +44,7 @@ class Code : public gc {
   unsigned int  partial:2;
   unsigned int  live:1;
   unsigned int  dead:1; // used by if1.cpp
+  unsigned int  flattened:1;
   Code          *cont;  // used by cfg.cpp
   PNode         *pn;    // used by cfg.cpp
 
