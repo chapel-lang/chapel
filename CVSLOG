@@ -35274,3 +35274,22 @@ Removed files:
 	chapel/compiler/traversals/: resolveDomainRanks.cpp 
 	                             resolveDomainRanks.h 
 
+---------------------------------------------------------------------------
+
+06/08/05 16:46:30 -- jplevyak
+
+Log message:
+	Add code to restrict newly instantiated functions to handle only those
+	data flow values which their new types can handle rather than the boader
+	set potentially allowed to initiate instantiation (i.e. prepare for
+	"where" clauses).
+	
+	Fix minor issue with handling of bound function names.
+	
+	Fixed test/reductions/bradc/manual/usestate and removed future.
+
+Modified files:
+	chapel/compiler/analysis/: ast.cpp pattern.cpp 
+Removed files:
+	chapel/test/reductions/bradc/manual/: usestate.future 
+
