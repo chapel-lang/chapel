@@ -3179,15 +3179,21 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
   }
   *offset = oresult;
   Sym *tmp = 0;
-  if (iv_type.n == 1)
-    tmp = iv_type.v[0];
-   else 
-    tmp = concrete_type_set_to_type(iv_type);
-  *type = dynamic_cast<Type *>(tmp->asymbol->symbol);
+  if (!iv_type.n)
+    *type = NULL;
+  else {
+    if (iv_type.n == 1)
+      tmp = iv_type.v[0];
+    else 
+      tmp = concrete_type_set_to_type(iv_type);
+    *type = dynamic_cast<Type *>(tmp->asymbol->symbol);
+  }
 }
 
 void
 resolve_member_access(Expr *e, int *offset, Type **type) {
+  *offset = -1;
+  *type = 0;
   if (e->ainfo->pnodes.n < 1)
     return;
   PNode *pn = e->ainfo->pnodes.v[0];

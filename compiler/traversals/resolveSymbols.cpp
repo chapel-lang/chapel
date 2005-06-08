@@ -9,6 +9,7 @@
 #include "type.h"
 #include "stringutil.h"
 
+
 static AList<Expr>* copy_argument_list(ParenOpExpr* expr) {
   AList<Expr>* args = new AList<Expr>();
   MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr->baseExpr);
@@ -373,7 +374,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     } else if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(aop->left)) {
       resolve_member_access(aop, &member_access->member_offset, 
                             &member_access->member_type);
-      if (!member_access->member_type) {
+      if (member_access->member_offset < 0) {
         Vec<FnSymbol *> op_fns, assign_fns;
         call_info(aop, op_fns, CALL_INFO_FIND_OPERATOR);
         call_info(aop, assign_fns, CALL_INFO_FIND_FUNCTION);
@@ -421,9 +422,10 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     if (AssignOp* aop = dynamic_cast<AssignOp*>(expr->parentExpr))
       if (aop->left == expr)
         return;
-    resolve_member_access(member_access, &member_access->member_offset, 
+
+    resolve_member_access(member_access, &member_access->member_offset,
                           &member_access->member_type);
-    if (!member_access->member_type) {
+    if (member_access->member_offset < 0) {
       Vec<FnSymbol *> fns;
       call_info(member_access, fns);
       if (fns.n == 1) {
