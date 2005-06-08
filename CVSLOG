@@ -35152,3 +35152,15 @@ Removed files:
 	                            writerecord1b.future 
 	                            writerecord1b.good 
 
+---------------------------------------------------------------------------
+
+06/08/05 09:57:16 -- bradc
+
+Log message:
+	Made this sub_test script a tcsh script in order
+	to get access to limit vmemorysize on sunos (it
+	wasn't available under csh).
+
+Modified files:
+	chapel/test/memory/shannon/outofmemory/: sub_test 
+
