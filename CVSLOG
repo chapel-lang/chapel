@@ -35164,3 +35164,25 @@ Log message:
 Modified files:
 	chapel/test/memory/shannon/outofmemory/: sub_test 
 
+---------------------------------------------------------------------------
+
+06/08/05 10:17:02 -- deitz
+
+Log message:
+	Combined traversals ConstructComplexLiterals (which replace complex
+	literals with calls to the complex constructor) and InsertTemps (which
+	replaced sequence literals with a temporary and built them up) into a
+	new traversal InsertLiteralTemps meant to simplify Chapel literals in
+	general.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             insertLiteralTemps.h 
+Removed files:
+	chapel/compiler/traversals/: constructComplexLiterals.cpp 
+	                             constructComplexLiterals.h 
+	                             insertTemps.cpp insertTemps.h 
+
