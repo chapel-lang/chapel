@@ -35186,3 +35186,22 @@ Removed files:
 	                             constructComplexLiterals.h 
 	                             insertTemps.cpp insertTemps.h 
 
+---------------------------------------------------------------------------
+
+06/08/05 10:40:18 -- shannon
+
+Log message:
+	Added the halt() function for the chapel user.  Halt is
+	converted to some number of write statements, a writeln
+	statement, and an exit statement with status "0".
+	
+	Usage:
+	
+	  halt("x and y are not equal!\n", "x = ", x, ", y = ", y);
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
+Added files:
+	chapel/test/trivial/shannon/quit/: halt.chpl halt.good 
+
