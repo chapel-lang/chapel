@@ -35,8 +35,6 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(ScopeResolveGotos, ""),
   RUN(Verify, ""), // this is a sanity check
-  RUN(ResolveDomainRanks, ""),
-  RUN(Verify, ""), // this is a sanity check
   RUN(RenameOverloadedFunctions, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertAnonymousDomains, ""),

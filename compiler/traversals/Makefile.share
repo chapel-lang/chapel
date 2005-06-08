@@ -31,7 +31,6 @@ TRAVERSALS_SRCS = \
         omitForNoAnalysis.cpp \
 	removeNamedParameters.cpp \
         removeSeqOperations.cpp \
-        resolveDomainRanks.cpp \
         resolveModuleUses.cpp \
 	resolveSymbols.cpp \
         scopeResolveGotos.cpp \

@@ -13,7 +13,12 @@ void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
 }
 
 
-void InsertAnonymousDomains::preProcessType(Type* type) {
+void InsertAnonymousDomains::postProcessType(Type* type) {
+  if (DomainType* domainType = dynamic_cast<DomainType*>(type)) {
+    domainType->computeRank();
+    return;
+  }
+
   static int uid = 1;
 
   if (!currentStmt) {

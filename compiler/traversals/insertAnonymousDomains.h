@@ -7,7 +7,7 @@ class InsertAnonymousDomains : public Traversal {
  public:
   Stmt* currentStmt;
   void preProcessStmt(Stmt* stmt);
-  void preProcessType(Type* type);
+  void postProcessType(Type* type);
   void postProcessStmt(Stmt* stmt);
 };
 

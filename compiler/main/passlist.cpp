@@ -49,7 +49,6 @@
 #include "../traversals/specializeParenOpExprs.h"
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeSeqOperations.h"
-#include "../traversals/resolveDomainRanks.h"
 #include "../traversals/resolveModuleUses.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
@@ -111,7 +110,6 @@ REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(RenameOverloadedFunctions);
-REGISTER(ResolveDomainRanks);
 REGISTER(ResolveModuleUses);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(ResolveTypes);
