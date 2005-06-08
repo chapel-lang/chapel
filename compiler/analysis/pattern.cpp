@@ -48,7 +48,7 @@ class Matcher {
   void instantiation_wrappers_and_partial_application(Vec<Fun *> &);
   Fun *build(Match *m, Vec<Fun *> &matches);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
-  void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &);
+  void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
   void cannonicalize_matches();
 
   Matcher(AVar *send, AVar *arg0, Partial_kind partial, Vec<Match *> *matches);
@@ -422,8 +422,12 @@ subsumes(Match *x, Match *y, MPosition &app, int nargs) {
 }
 
 void
-Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &matches) {
-  forv_Fun(f, matches) {
+Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &matches, 
+                     int top_level) 
+{
+  Vec<Fun *> mm;
+  mm.move(matches);
+  forv_Fun(f, mm) {
     Match *m = match_map.get(f);
     app.push(1);
     for (int i = 0; i < csargs.n; i++) {
@@ -437,6 +441,33 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &mat
       app.inc();
     }
     app.pop();
+    if (top_level) {
+      // re-verify filters after instantiation
+      int ok = 1;
+      forv_MPosition(p, f->positional_arg_positions) {
+        AType *t = m->formal_filters.get(p);
+        if (t) {
+          Sym *m_type = dispatch_type(m->fun->arg_syms.get(p));
+          Sym *actual = m->actuals.get(to_actual(p, m))->var->sym;
+          Vec<CreationSet *> newt;
+          forv_CreationSet(cs, *t) if (cs) {
+            if (cs->sym == sym_null && actual->aspect &&
+                sym_object->implementors.set_in(actual->aspect)) {
+              if (m_type->specializers.set_in(actual->aspect))
+                newt.set_add(cs);
+            } else 
+              if (m_type->specializers.set_in(cs->sym->type))
+                newt.set_add(cs);
+          }
+          if (!newt.n)
+            ok = 0;
+          t->move(newt);
+        }
+      }
+      if (ok)
+        matches.add(f);
+    } else
+      matches.add(f);
   }
 }
 
@@ -609,6 +640,8 @@ unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym 
   Sym *concrete_type = concrete_value->type;
   if (concrete_type->is_meta_type)
     concrete_type = concrete_type->meta_type;
+  if (concrete_type == sym_null)
+    return 0;
   if (formal->is_generic) {
     if (gtype->specializers.set_in(concrete_type->meta_type)) {
       Sym *generic = if1->callback->formal_to_generic(formal);
@@ -803,7 +836,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
   }
   if (top_level)
     instantiation_wrappers_and_partial_application(matches);
-  set_filters(csargs, app, matches);
+  set_filters(csargs, app, matches, top_level);
   result.set_union(matches);
 }
 

@@ -209,7 +209,7 @@ build_type_hierarchy() {
     // functions implement and specializes of the initial symbol in their pattern
     // which may be a constant or a constant constrainted variable
     if (s->is_fun && s->has.n) {
-      Sym *a = s->self ? s->has.v[1] : s->has.v[0];
+      Sym *a = s->has.v[0];
       if (a->is_symbol && a->name == s->name)
         implement_and_specialize(a, s, types);
       else if (a->must_specialize && a->must_specialize->is_symbol && a->must_specialize->name == s->name)
