@@ -56,7 +56,7 @@ PassInfo passlist[] = {
   RUN(InsertDefaultInitVariables, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertOutParameterInitializations, ""),
-  RUN(Fixup, "verify"), // this is a sanity check
+  RUN(Verify, ""), // this is a sanity check
   RUN(EliminateReturns, ""),
 
   // passes to collect information for analysis
@@ -82,7 +82,6 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(ResolveSymbols, ""),
   RUN(Verify, ""), // this is a sanity check
-  //RUN(FindUnknownTypes, ""),
   RUN(RemoveNamedParameters, ""),
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
@@ -107,7 +106,7 @@ PassInfo passlist[] = {
   RUN(TransformLetExprs, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(EliminateReturns, ""),
-  RUN(Fixup, "verify"), // this is a sanity check
+  RUN(Verify, ""), // this is a sanity check
   RUN(ProcessParameters, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertVariableInitializations, ""),
