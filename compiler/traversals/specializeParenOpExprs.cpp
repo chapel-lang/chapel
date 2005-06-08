@@ -19,7 +19,18 @@ void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
     if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(exprStmt->expr)) {
       if (Variable* baseVar = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
-        if (strcmp(baseVar->var->name, "read") == 0) {
+        if (strcmp(baseVar->var->name, "halt") == 0) {
+          decomposeStmtFunction(parenOpExpr, "write");
+          Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
+          Expr* callWriteln = new ParenOpExpr(writeln);
+          parenOpExpr->parentStmt->insertBefore(new ExprStmt(callWriteln));
+          Expr* rtexit = new Variable(new UnresolvedSymbol("exit"));
+          IntLiteral* exitZero = new IntLiteral("0", 0);
+          AList<Expr>* status = new AList<Expr>(exitZero);
+          Expr* callRtexit = new ParenOpExpr(rtexit, status);
+          parenOpExpr->parentStmt->insertBefore(new ExprStmt(callRtexit));
+          parenOpExpr->parentStmt->remove();
+        } else if (strcmp(baseVar->var->name, "read") == 0) {
           decomposeStmtFunction(parenOpExpr, "read");
           parenOpExpr->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "write") == 0) {

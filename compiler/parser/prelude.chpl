@@ -116,10 +116,14 @@ class timer {
   function read(): float;
 }
 
-
 -- exits
 
 pragma "rename _chpl_exit" function exit(status : integer);
+
+function halt() {
+  __primitive("halt");
+}
+
 
 -- memory tests (These tests will be moved to a module, once we have modules.)
 
