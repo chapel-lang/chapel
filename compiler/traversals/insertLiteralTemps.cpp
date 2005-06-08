@@ -1,4 +1,4 @@
-#include "insertTemps.h"
+#include "insertLiteralTemps.h"
 #include "symtab.h"
 #include "symscope.h"
 #include "symbol.h"
@@ -37,7 +37,7 @@ static void handleBasicSequenceAppendPrependOperations(BinOp* binOp) {
 }
 
 
-static void insertSequenceLiteralTemp(SeqExpr* seqExpr) {
+static void replaceSequenceLiteral(SeqExpr* seqExpr) {
   static int uid = 1;
 
   if (!analyzeAST) {
@@ -45,7 +45,6 @@ static void insertSequenceLiteralTemp(SeqExpr* seqExpr) {
   }
 
   char* name = glomstrings(2, "_seq_temp_", intstring(uid++));
-  Type* type = Symboltable::lookup("seq2")->typeInfo();
   Type* elt_type = seqExpr->exprls->representative()->typeInfo();
 
   if (!elt_type || elt_type == dtUnknown) {
@@ -53,15 +52,15 @@ static void insertSequenceLiteralTemp(SeqExpr* seqExpr) {
   }
 
   Expr* init =
-    new ParenOpExpr(new Variable(Symboltable::lookup("seq2")->typeInfo()->symbol),
+    new ParenOpExpr(new Variable(new UnresolvedSymbol("seq2")),
                     new AList<Expr>(new Variable(elt_type->symbol)));
   
   DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(name,
-                                                          type,
+                                                          dtUnknown,
                                                           init,
                                                           VAR_NORMAL,
                                                           VAR_VAR);
-  
+
   seqExpr->getStmt()->insertBefore(def_stmt);
   
   Symbol* seq = def_stmt->defExprls->representative()->sym;
@@ -82,9 +81,25 @@ static void insertSequenceLiteralTemp(SeqExpr* seqExpr) {
 }
 
 
-void InsertTemps::postProcessExpr(Expr* expr) {
-  if (SeqExpr* seqExpr = dynamic_cast<SeqExpr*>(expr)) {
-    insertSequenceLiteralTemp(seqExpr);
+static void replaceComplexLiteral(ComplexLiteral* complexLiteral) {
+  AList<Expr>* argList = new AList<Expr>();
+  FloatLiteral* realPart = new FloatLiteral(complexLiteral->realStr,
+                                            complexLiteral->realVal);
+  argList->insertAtTail(realPart);
+  // remove i, why is this here anyway?  --SJD
+  complexLiteral->str[strlen(complexLiteral->str)-1] = '\0';
+  FloatLiteral* imagPart = new FloatLiteral(complexLiteral->str,
+                                            complexLiteral->imagVal);
+  argList->insertAtTail(imagPart);
+  complexLiteral->replace(new ParenOpExpr(new Variable(new UnresolvedSymbol("complex")), argList));
+}
+
+
+void InsertLiteralTemps::postProcessExpr(Expr* expr) {
+  if (SeqExpr* seqLiteral = dynamic_cast<SeqExpr*>(expr)) {
+    replaceSequenceLiteral(seqLiteral);
+  } else if (ComplexLiteral* complexLiteral = dynamic_cast<ComplexLiteral*>(expr)) {
+    replaceComplexLiteral(complexLiteral);
   } else if (BinOp* binOp = dynamic_cast<BinOp*>(expr)) {
     if (binOp->type == BINOP_SEQCAT) {
       handleBasicSequenceAppendPrependOperations(binOp);

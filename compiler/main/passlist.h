@@ -27,19 +27,17 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertThisParameters, ""),
   RUN(Verify, ""), // this is a sanity check
+  RUN(InsertLiteralTemps, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(ResolveModuleUses, ""),
-  RUN(Verify, ""),
-  RUN(ConstructComplexLiterals, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ScopeResolveSymbols, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ScopeResolveGotos, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ResolveDomainRanks, ""),
-  RUN(Verify, ""),
-  RUN(RenameOverloadedFunctions, ""),
   RUN(Verify, ""), // this is a sanity check
-  RUN(InsertTemps, ""),
+  RUN(RenameOverloadedFunctions, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertAnonymousDomains, ""),
   RUN(Verify, ""), // this is a sanity check

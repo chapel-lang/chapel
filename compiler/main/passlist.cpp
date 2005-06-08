@@ -23,7 +23,6 @@
 #include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/createConfigVarTable.h"
-#include "../traversals/constructComplexLiterals.h"
 #include "../traversals/destructureTupleAssignments.h"
 #include "../traversals/buildLValueFunctions.h"
 #include "../traversals/eliminateReturns.h"
@@ -38,7 +37,7 @@
 #include "../traversals/insertAnonymousTypes.h"
 #include "../traversals/insertElidedLoops.h"
 #include "../traversals/insertFunctionTemps.h"
-#include "../traversals/insertTemps.h"
+#include "../traversals/insertLiteralTemps.h"
 #include "../traversals/insertThisParameters.h"
 #include "../traversals/insertUnionChecks.h"
 #include "../traversals/insertVariableInitializations.h"
@@ -73,7 +72,6 @@ REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
 REGISTER(Codegen);
 REGISTER(ComputeVisibleFunctions);
-REGISTER(ConstructComplexLiterals);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(DestructureTupleAssignments);
@@ -93,8 +91,8 @@ REGISTER(InsertAnonymousTypes);
 REGISTER(InsertDefaultInitVariables);
 REGISTER(InsertElidedLoops);
 REGISTER(InsertFunctionTemps);
+REGISTER(InsertLiteralTemps);
 REGISTER(InsertOutParameterInitializations);
-REGISTER(InsertTemps);
 REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);

@@ -6,7 +6,6 @@ TRAVERSALS_SRCS = \
 	checkTypeInfo.cpp \
         clearTypes.cpp \
 	collectASTS.cpp \
-        constructComplexLiterals.cpp \
 	createConfigVarTable.cpp \
 	destructureTupleAssignments.cpp \
         buildLValueFunctions.cpp \
@@ -23,7 +22,7 @@ TRAVERSALS_SRCS = \
 	insertAnonymousTypes.cpp \
 	insertElidedLoops.cpp \
 	insertFunctionTemps.cpp \
-	insertTemps.cpp \
+        insertLiteralTemps.cpp \
 	insertThisParameters.cpp \
 	insertUnionChecks.cpp \
 	insertVariableInitializations.cpp \
