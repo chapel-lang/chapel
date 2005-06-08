@@ -35293,3 +35293,50 @@ Modified files:
 Removed files:
 	chapel/test/reductions/bradc/manual/: usestate.future 
 
+---------------------------------------------------------------------------
+
+06/08/05 16:55:30 -- deitz
+
+Log message:
+	Cleaned up complex and seq modules to use an _ before all identifiers
+	that we want to hide from the user rather than a longer mangled name
+	that made the code more difficult to deal with.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y prelude.chpl 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl _chpl_seq.chpl 
+	chapel/runtime/include/: seq.h 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+
