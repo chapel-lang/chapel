@@ -1,6 +1,0 @@
-deitz
-
-Analysis is working, but then resolveSymbols is trying to 
-assert that "t" is a function name?  I think it is because
-t is not of declared type... but that is not reason enough
-to decide it must be a function name.

@@ -1,7 +1,0 @@
-deitz
-
-This is caused by the fact that currently the generic
-Tuple (for literals) is a class which is because we
-can't currently define methods on non-structural types
-and TupleType is non-structural.
-
