@@ -35382,3 +35382,20 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+06/09/05 09:04:14 -- jplevyak
+
+Log message:
+	test_complex3.chpl was incorrectly using x.imag and x.real to
+	access the components of a complex number whereas _chpl_complex.chpl
+	was defining them to be _re and _im.  Corrected the test.
+	
+	Removed 2 futures for tests which work.
+
+Modified files:
+	chapel/test/types/complex/deitz/: test_complex3.chpl 
+Removed files:
+	chapel/test/reductions/bradc/manual/: inferstatetype2.future 
+	chapel/test/types/complex/deitz/: test_complex3.future 
+
