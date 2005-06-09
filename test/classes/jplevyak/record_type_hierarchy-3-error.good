@@ -1,6 +1,6 @@
 _chpl_complex.chpl:11: write, x : complex
-_chpl_seq.chpl:6: write, val : _chplSeqNode
-_chpl_seq.chpl:86: write, s : seq2
+_chpl_seq.chpl:16: write, s : seq2
+_chpl_seq.chpl:23: write, val : _seqNode
 fail: fatal error, program does not type
 internal_prelude.chpl:26: write, val : Array
 internal_prelude.chpl:29: write, val : Domain
