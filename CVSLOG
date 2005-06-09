@@ -35542,3 +35542,30 @@ Log message:
 Modified files:
 	chapel/test/types/complex/deitz/: test_complex3.future 
 
+---------------------------------------------------------------------------
+
+06/09/05 13:51:59 -- deitz
+
+Log message:
+	Fixed a bug in which the real and imag methods in the complex record
+	could not be called from other modules.  In general, there was a
+	problem including methods in a record into the visible functions of a
+	module that used that record.
+	
+	Modified the real and imag methods to be var returns so that the user
+	can change the _re and _im fields of a complex.  Unfortunately the
+	=real and =imag functions don't show up, but I bet I can fix this.
+	
+	Added Symbol::getSymbol() that returns the real symbol in the case of
+	a ForwardingSymbol.  This is kind of like Type::getType.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl 
+Added files:
+	chapel/test/types/complex/deitz/: test_complex4.chpl 
+	                                  test_complex4.future 
+	                                  test_complex4.good 
+
