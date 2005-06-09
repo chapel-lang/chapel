@@ -1,0 +1,9 @@
+deitz
+
+The problem is that the "real" method is not being returned by
+visible_functions().  Likely because module scoping isn't working
+correctly.
+
+The reason this works for classes and not for the record "complex" is
+because all members for classes are universally available and don't
+depend on scoping.
