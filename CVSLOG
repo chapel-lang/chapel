@@ -35434,3 +35434,19 @@ Added files:
 	                              test_var_function_access2.good 
 	chapel/test/types/complex/deitz/: test_complex3.future 
 
+---------------------------------------------------------------------------
+
+06/09/05 10:28:40 -- jplevyak
+
+Log message:
+	Add new test that just tries to print a complex:
+	it fails because:
+	There are 2 versions of function write(x : complex) and two versions
+	of _tostring (one in prelude.chpl and one in _chpl_complex.chpl...
+	we should have only one.
+
+Added files:
+	chapel/test/types/complex/jplevyak/: complex-1.chpl 
+	                                     complex-1.future 
+	                                     complex-1.good 
+
