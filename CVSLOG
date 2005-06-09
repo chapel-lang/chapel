@@ -35569,3 +35569,17 @@ Added files:
 	                                  test_complex4.future 
 	                                  test_complex4.good 
 
+---------------------------------------------------------------------------
+
+06/09/05 15:12:00 -- deitz
+
+Log message:
+	Fixed a bug in which setters for methods were not added to the method
+	list.  This now allows us to assign to real or imag methods of the
+	complex record.
+
+Modified files:
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+Removed files:
+	chapel/test/types/complex/deitz/: test_complex4.future 
+
