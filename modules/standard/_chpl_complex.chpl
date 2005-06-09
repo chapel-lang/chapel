@@ -1,8 +1,8 @@
 pragma "rename _chpl_complex" record complex {
   var _re : float;
   var _im : float;
-  function real : float { return _re; }
-  function imag : float { return _im; }
+  function real var : float { return _re; }
+  function imag var : float { return _im; }
 }
 
 pragma "rename _chpl_write_complex"

@@ -372,22 +372,24 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   visibleFunctions.clear();
 
   forv_Vec(Symbol, sym, symbols) {
-    if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
-      if (!dynamic_cast<ClassType*>(typeSym->type)) {
-        forv_Vec(FnSymbol, method, typeSym->type->methods) {
-          while (method) {
-            addVisibleFunctionsHelper(&visibleFunctions, method);
-            method = dynamic_cast<FnSymbol*>(method->overload);
+    if (sym) {
+      if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym->getSymbol())) {
+        if (!dynamic_cast<ClassType*>(typeSym->type)) {
+          forv_Vec(FnSymbol, method, typeSym->type->methods) {
+            while (method) {
+              addVisibleFunctionsHelper(&visibleFunctions, method);
+              method = dynamic_cast<FnSymbol*>(method->overload);
+            }
+          }
+          FnSymbol* constructor = typeSym->type->defaultConstructor;
+          while (constructor) {
+            addVisibleFunctionsHelper(&visibleFunctions, constructor);
+            constructor = dynamic_cast<FnSymbol*>(constructor->overload);
           }
         }
-        FnSymbol* constructor = typeSym->type->defaultConstructor;
-        while (constructor) {
-          addVisibleFunctionsHelper(&visibleFunctions, constructor);
-          constructor = dynamic_cast<FnSymbol*>(constructor->overload);
-        }
+      } else {
+        addVisibleFunctions(&visibleFunctions, sym);
       }
-    } else if (sym) {
-      addVisibleFunctions(&visibleFunctions, sym);
     }
   }
 

@@ -68,6 +68,7 @@ class Symbol : public BaseAST {
   template <class elemType>
   static void setDefPoints(AList<elemType>* symList, DefExpr* init_defPoint);
   virtual FnSymbol* getFnSymbol(void);
+  virtual Symbol* getSymbol(void);
   virtual Type* typeInfo(void);
   bool hasPragma(char* str);
   void addPragma(char* str);
@@ -254,8 +255,9 @@ class ForwardingSymbol : public Symbol {
   bool renamed;
   ForwardingSymbol(Symbol* init_forward, char* rename = NULL);
   virtual void codegenDef(FILE* outfile);
-  virtual FnSymbol* getFnSymbol(void);
   virtual Type* typeInfo(void);
+  virtual FnSymbol* getFnSymbol(void);
+  virtual Symbol* getSymbol(void);
 };
 
 

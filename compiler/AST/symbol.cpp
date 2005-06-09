@@ -204,6 +204,11 @@ FnSymbol* Symbol::getFnSymbol(void) {
 }
 
 
+Symbol* Symbol::getSymbol(void) {
+  return this;
+}
+
+
 Type* Symbol::typeInfo(void) {
   return type;
 }
@@ -1340,6 +1345,11 @@ void ForwardingSymbol::codegenDef(FILE* outfile) { }
 
 FnSymbol* ForwardingSymbol::getFnSymbol(void) {
   return forward->getFnSymbol();
+}
+
+
+Symbol* ForwardingSymbol::getSymbol(void) {
+  return forward->getSymbol();
 }
 
 
