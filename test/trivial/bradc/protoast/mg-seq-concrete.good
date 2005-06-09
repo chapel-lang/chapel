@@ -14,10 +14,10 @@ config const warmup: boolean = true;
 config const verbose: boolean = false;
 config const debug: boolean = false;
 type coeff = [0..3] float;
-const Levels: domain(1) = [1..numLevels];
-const Base: domain(3) = [1..nx, 1..ny, 1..nz];
-const Hier: [var lvl: integer;:Levels] domain(Base) = (Base by (-(2**(lvl-1))));
-const Stencil: domain(3) = [(-1)..1, (-1)..1, (-1)..1];
+const Levels: domain(???) = [1..numLevels];
+const Base: domain(???) = [1..nx, 1..ny, 1..nz];
+const Hier: [var lvl: integer;:Levels] domain(???) = (Base by (-(2**(lvl-1))));
+const Stencil: domain(???) = [(-1)..1, (-1)..1, (-1)..1];
 var initTimer: timer;
 var benchTimer: timer;
 initTimer.start();
@@ -161,8 +161,8 @@ S = [var ijk: integer;:DR] reduce by sum [var off: integer;:Stencil] (w3d*R((ijk
 
 function interp(out R: [?anonDomain] float;
 const S: [?anonDomain] float): ??? {
-state const IDom: domain(3) = [(-1)..0, (-1)..0, (-1)..0];
-state const IStn: [var i: integer;, var j: integer;, var k: integer;:IDom] domain(3) = (i..0, j..0, k..0);
+state const IDom: domain(???) = [(-1)..0, (-1)..0, (-1)..0];
+state const IStn: [var i: integer;, var j: integer;, var k: integer;:IDom] domain(???) = (i..0, j..0, k..0);
 state const w: [var ijk: integer;:IDom] float = (1.0/IStn.size());
 const Rstr: [1..3] integer = DR.stride;
 const Sstr: [1..3] integer = DS.stride;
