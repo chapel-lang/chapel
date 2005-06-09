@@ -622,7 +622,8 @@ FnSymbol::FnSymbol(char* init_name, AList<ParamSymbol>* init_formals,
   _getter(NULL),
   body(init_body),
   typeBinding(init_typeBinding),
-  isConstructor(false)
+  isConstructor(false),
+  whereExpr(NULL)
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
@@ -638,17 +639,19 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
   _getter(NULL),
   body(NULL),
   typeBinding(init_typeBinding),
-  isConstructor(false)
+  isConstructor(false),
+  whereExpr(NULL)
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
 }
 
 
-void FnSymbol::continueDef(AList<ParamSymbol>* init_formals, Type* init_retType, bool isRef) {
+void FnSymbol::continueDef(AList<ParamSymbol>* init_formals, Type* init_retType, bool isRef, Expr *init_whereExpr) {
   formals = init_formals;
   retType = init_retType;
   retRef = isRef;
+  whereExpr = init_whereExpr;
 }
 
 
@@ -689,6 +692,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   FnSymbol* copy = new FnSymbol(copy_name, typeBinding);
   copy->method_type = method_type;
   copy->isConstructor = isConstructor;
+  copy->whereExpr = whereExpr->copyInternal(clone, map);
   Symboltable::startFnDef(copy);
   if (_getter) {
     copy->name = copystring(name);
@@ -710,6 +714,8 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
 void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
     body = dynamic_cast<BlockStmt*>(new_ast);
+  } else if (old_ast == whereExpr) {
+    whereExpr = dynamic_cast<Expr*>(new_ast);
   } else {
     bool found = false;
     for (ParamSymbol* param = formals->first(); param; param = formals->next()) {
@@ -735,6 +741,7 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
   TRAVERSE(body, traversal, false);
   TRAVERSE(retType, traversal, false);
+  TRAVERSE(whereExpr, traversal, false);
   if (paramScope) {
     Symboltable::setCurrentScope(saveScope);
   }

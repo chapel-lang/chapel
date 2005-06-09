@@ -663,9 +663,8 @@ map_type(Type *t) {
   if (t->symbol) {
     t->asymbol = new_ASymbol(t->symbol->name);
     t->asymbol->symbol = t;
-  }
-  else {
-    t->asymbol = new_ASymbol("BOGUS");
+  } else {
+    t->asymbol = new_ASymbol("<anonymous>");
     t->asymbol->symbol = t;
   }
 }
@@ -853,6 +852,7 @@ build_type(Type *t) {
   switch (t->astType) {
     default: assert(!"case");
     case TYPE:
+    case TYPE_UNRESOLVED:
       t->asymbol->sym->type_kind = Type_UNKNOWN;
       break;
     case TYPE_BUILTIN: break;
@@ -957,7 +957,8 @@ build_type(Type *t) {
     }
     case TYPE_META: {
       MetaType *tt = dynamic_cast<MetaType*>(t);
-      tt->asymbol->sym = tt->base->symbol->asymbol->sym;
+      if (tt->base->symbol)
+        tt->asymbol->sym = tt->base->symbol->asymbol->sym;
       break;
     }
     case TYPE_VARIABLE: {
@@ -1364,7 +1365,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   if (s->is_var && !scalar_or_reference(type)) {
     switch (type->astType) { 
       case TYPE_EXPR:
-      INT_FATAL(type, "ExprType not handled by analysis");
+        INT_FATAL(type, "ExprType not handled by analysis");
       break;
       case TYPE_VARIABLE:
       case TYPE_META:

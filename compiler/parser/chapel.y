@@ -667,7 +667,7 @@ fndecl:
     }
                        TLP formals TRP fnretref fnrettype where
     {
-      Symboltable::continueFnDef($<fnsym>3, $5, $8, $7);
+      Symboltable::continueFnDef($<fnsym>3, $5, $8, $7, $9);
     }
                                                  function_body_stmt
     {
@@ -682,7 +682,7 @@ fndecl:
     }
                                   TLP formals TRP fnretref fnrettype where
     {
-      Symboltable::continueFnDef($<fnsym>5, $7, $10, $9);
+      Symboltable::continueFnDef($<fnsym>5, $7, $10, $9, $11);
     }
                                                             function_body_stmt
     {
@@ -696,7 +696,7 @@ fndecl:
     }
                   fnretref fnrettype where
     {
-      Symboltable::continueFnDef($<fnsym>3, new AList<ParamSymbol>(), $5, $4);
+      Symboltable::continueFnDef($<fnsym>3, new AList<ParamSymbol>(), $5, $4, $6);
     }
                             function_body_stmt
     {

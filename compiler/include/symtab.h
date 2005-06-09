@@ -81,7 +81,7 @@ class Symboltable {
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
   static FnSymbol* startFnDef(FnSymbol* fnsym, bool noparens = false);
   static void continueFnDef(FnSymbol* fnsym, AList<ParamSymbol>* formals, 
-                            Type* retType, bool isRef = false);
+                            Type* retType, bool isRef = false, Expr *whereExp = NULL);
   static FnSymbol* finishFnDef(FnSymbol* fnsym, BlockStmt* body, 
                                bool isExtern = true);
   static DefStmt* defineFunction(char* name, AList<ParamSymbol>* formals, 

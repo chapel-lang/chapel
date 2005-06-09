@@ -697,8 +697,8 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
 
 
 void Symboltable::continueFnDef(FnSymbol* fnsym, AList<ParamSymbol>* formals, 
-                                Type* retType, bool isRef) {
-  fnsym->continueDef(formals, retType, isRef);
+                                Type* retType, bool isRef, Expr *whereExpr) {
+  fnsym->continueDef(formals, retType, isRef, whereExpr);
   Symboltable::pushScope(SCOPE_FUNCTION);
 }
 

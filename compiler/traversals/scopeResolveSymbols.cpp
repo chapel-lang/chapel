@@ -79,6 +79,26 @@ static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
       resolve_type_helper(currentFunction, tuple_type->components.v[i]);
     }
     tuple_type->rebuildDefaultVal();
+  } else if (MetaType* metaType = dynamic_cast<MetaType*>(type)) {
+    if (UnresolvedType* unresolvedType = dynamic_cast<UnresolvedType*>(metaType->base)) {
+      Symbol* new_type = resolveUnresolvedType(unresolvedType->names);
+      if (new_type) {
+        check_legal_overload(new_type);
+        if (ParamSymbol* param = dynamic_cast<ParamSymbol*>(new_type)) {
+          type = getMetaType(param->typeVariable->type);
+        } else if (ForwardingSymbol* forward =
+                   dynamic_cast<ForwardingSymbol*>(new_type)) {
+          type = getMetaType(forward->forward->type);
+        } else if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
+          type = getMetaType(new_type->type);
+        } else {
+          resolve_type_helper(currentFunction, new_type->type);
+          type = getMetaType(new_type->type);
+        }
+      } else {
+        INT_FATAL(type, "Error resolving type");
+      }
+    }
   }
 }
 
