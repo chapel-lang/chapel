@@ -304,6 +304,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "SumType",
   "VariableType",
   "UnresolvedType",
+  "ExprType",
   "NilType",
 
   "List",
@@ -567,6 +568,9 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LTypeCommon;
   case TYPE_VARIABLE:
     ADD_CHILD(VariableType, type);
+    goto LTypeCommon;
+  case TYPE_EXPR:
+    ADD_CHILD(ExprType, expr);
     goto LTypeCommon;
   case TYPE_UNRESOLVED:
   case TYPE_NIL:

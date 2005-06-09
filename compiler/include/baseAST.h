@@ -92,6 +92,7 @@ enum astType_t {
   TYPE_SUM,
   TYPE_VARIABLE,
   TYPE_UNRESOLVED,
+  TYPE_EXPR,
   TYPE_NIL,
 
   LIST,

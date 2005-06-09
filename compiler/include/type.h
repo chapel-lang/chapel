@@ -369,6 +369,17 @@ class VariableType : public Type {
   void codegen(FILE* outfile);
 };
 
+class ExprType : public Type {
+ public:
+  Expr* expr;
+
+  ExprType(Expr *init_expr = NULL);
+  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  void traverseDefType(Traversal* traversal);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void codegen(FILE* outfile);
+};
+
 class UnresolvedType : public Type {
  public:
   Vec<char*>* names;

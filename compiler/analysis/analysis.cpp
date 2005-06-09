@@ -967,6 +967,10 @@ build_type(Type *t) {
       tt->asymbol->sym->meta_type->type = tt->asymbol->sym;
       break;
     }
+    case TYPE_EXPR: {
+      INT_FATAL(t, "ExprType not handled by analysis");
+      break;
+    }
     case TYPE_NIL: {
       break;
     }
@@ -1359,6 +1363,9 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
     dynamic_cast<Variable*>(type->defaultVal)->var == var;
   if (s->is_var && !scalar_or_reference(type)) {
     switch (type->astType) { 
+      case TYPE_EXPR:
+      INT_FATAL(type, "ExprType not handled by analysis");
+      break;
       case TYPE_VARIABLE:
       case TYPE_META:
         type = dtUnknown;  // as yet unknown
@@ -2340,6 +2347,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_SUM:
   case TYPE_VARIABLE:
   case TYPE_UNRESOLVED:
+  case TYPE_EXPR:
   case TYPE_NIL:
   case AST_TYPE_END:
   case LIST:

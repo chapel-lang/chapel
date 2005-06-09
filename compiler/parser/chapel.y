@@ -35,7 +35,6 @@
   BlockStmt* blkstmt;
   Type* pdt;
   TupleType* tupledt;
-  UnresolvedType* unresolveddt;
   EnumSymbol* enumsym;
   AList<EnumSymbol>* enumsymlist;
   Symbol* psym;
@@ -131,9 +130,8 @@
 %type <pt> formaltag
 
 %type <boolval> fortype fnretref isconstructor
-%type <pdt> type domainType indexType arrayType seqType record_tuple_type record_tuple_inner_type
+%type <pdt> type domainType indexType arrayType seqType record_tuple_type record_tuple_inner_type exprType
 %type <tupledt> tuple_inner_types
-%type <unresolveddt> unresolvedType
 %type <pdt> opt_vardecltype vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier fname optional_identifier
 %type <psym> ident_symbol ident_symbol_nopragma
@@ -141,7 +139,7 @@
 %type <paramlist> formal formals
 %type <enumsym> enum_item
 %type <enumsymlist> enum_list
-%type <pexpr> lvalue declarable_expr atom expr expr_list_item literal range seq_expr where whereexpr
+%type <pexpr> paren_op_expr member_access_expr non_tuple_lvalue lvalue tuple_paren_expr atom expr expr_list_item literal range seq_expr where whereexpr
 %type <exprlist> exprlist nonemptyExprlist
 %type <pexpr> reduction optional_init_expr assignExpr conditional_expr
 %type <pfaexpr> forallExpr
@@ -745,16 +743,20 @@ decls:
 ;
 
 
-unresolvedType:
-  unresolvedType TDOT identifier
-    {
-      $1->names->add($3);
-    }
-| identifier
+exprType:
+  identifier
     {
       Vec<char*>* new_names = new Vec<char*>();
       new_names->add($1);
       $$ = new UnresolvedType(new_names);
+    }
+| member_access_expr
+    {
+      $$ = new ExprType($1);
+    }
+| paren_op_expr
+    {
+      $$ = new ExprType($1);
     }
 ;
 
@@ -765,8 +767,7 @@ type:
 | arrayType
 | seqType
 | record_tuple_type
-| unresolvedType
-    { $$ = $1; }
+| exprType
 | query_identifier
     { $$ = dtUnknown; }
 ;
@@ -1099,10 +1100,8 @@ nonemptyExprlist:
 ;
 
 
-declarable_expr:
-  identifier
-    { $$ = new Variable(new UnresolvedSymbol($1)); }
-| TLP nonemptyExprlist TRP 
+tuple_paren_expr:
+  TLP nonemptyExprlist TRP 
     { 
       if ($2->length() == 1) {
         $$ = $2->popHead();
@@ -1112,12 +1111,30 @@ declarable_expr:
     }
 ;
 
-lvalue:
-  declarable_expr
-| lvalue TDOT identifier
-    { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
-| lvalue TLP exprlist TRP
+
+paren_op_expr:
+  non_tuple_lvalue TLP exprlist TRP
     { $$ = new ParenOpExpr($1, $3); }
+;
+
+
+member_access_expr:
+  non_tuple_lvalue TDOT identifier
+    { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
+;
+
+
+non_tuple_lvalue:
+  identifier
+    { $$ = new Variable(new UnresolvedSymbol($1)); }
+| paren_op_expr
+| member_access_expr
+;
+
+
+lvalue:
+  non_tuple_lvalue
+| tuple_paren_expr
 ;
 
 

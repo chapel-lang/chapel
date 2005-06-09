@@ -1573,6 +1573,38 @@ void UnresolvedType::codegen(FILE* outfile) {
 }
 
 
+ExprType::ExprType(Expr *init_expr) :
+  Type(TYPE_EXPR, NULL),
+  expr(init_expr)
+{ }
+
+
+Type* ExprType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new ExprType(expr);
+}
+
+
+void ExprType::traverseDefType(Traversal* traversal) {
+  TRAVERSE(expr, traversal, false);
+}
+
+
+void ExprType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defaultVal) {
+    defaultVal = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in ExprType::replaceChild(old, new)");
+  }
+}
+
+
+void ExprType::codegen(FILE* outfile) {
+  INT_FATAL(this, "Unanticipated call to ExprType::codegen");
+}
+
+
 void initTypes(void) {
   // define built-in types
   dtUnknown = Symboltable::defineBuiltinType("???", "???", NULL);
