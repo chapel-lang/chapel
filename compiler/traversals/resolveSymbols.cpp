@@ -312,43 +312,43 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr);
     AssignOp *assign = dynamic_cast<AssignOp*>(paren->parentExpr);
     if (!assign || assign->left != expr) {
-    Vec<FnSymbol*> fns;
-    call_info(paren, fns);
-    if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
-      call_info(paren->baseExpr, fns);
-    }
-    if (fns.n == 0) { // for set function
-      if (paren->parentExpr && paren->parentExpr->astType == EXPR_ASSIGNOP) {
-        Vec<FnSymbol*> fns2;
-        call_info(paren->parentExpr, fns2);
-        if (fns2.n == 1 && !strcmp(fns2.v[0]->name, "set")) {
-          // handle this case in AssignOp below
+      Vec<FnSymbol*> fns;
+      call_info(paren, fns);
+      if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
+        call_info(paren->baseExpr, fns);
+      }
+      if (fns.n == 0) { // for set function
+        if (paren->parentExpr && paren->parentExpr->astType == EXPR_ASSIGNOP) {
+          Vec<FnSymbol*> fns2;
+          call_info(paren->parentExpr, fns2);
+          if (fns2.n == 1 && !strcmp(fns2.v[0]->name, "set")) {
+            // handle this case in AssignOp below
+            return;
+          }
+        }
+      }
+      if (fns.n != 1) {
+        // HACK: Special case where write(:nilType) requires dynamic
+        // dispatch; Take the other one.
+        if (fns.n == 2 && !strcmp(fns.e[1]->name, "write") &&
+            fns.e[1]->formals->only()->type->astType == TYPE_NIL) {
+        } else if (fns.n == 2 && !strcmp(fns.e[0]->name, "write") &&
+                   fns.e[0]->formals->only()->type->astType == TYPE_NIL) {
+          fns.v[0] = fns.v[1];
+        } else {
+          INT_FATAL(expr, "Unable to resolve function");
           return;
         }
       }
-    }
-    if (fns.n != 1) {
-      // HACK: Special case where write(:nilType) requires dynamic
-      // dispatch; Take the other one.
-      if (fns.n == 2 && !strcmp(fns.e[1]->name, "write") &&
-          fns.e[1]->formals->only()->type->astType == TYPE_NIL) {
-      } else if (fns.n == 2 && !strcmp(fns.e[0]->name, "write") &&
-                 fns.e[0]->formals->only()->type->astType == TYPE_NIL) {
-        fns.v[0] = fns.v[1];
-      } else {
-        INT_FATAL(expr, "Unable to resolve function");
-        return;
-      }
-    }
 
-    AList<Expr>* arguments = copy_argument_list(paren);
-    Expr* function = new Variable(fns.e[0]);
-    if (!strcmp("this", fns.e[0]->name)) {
-      arguments->insertAtHead(paren->baseExpr->copy());
-    }
-    Expr *new_expr = new FnCall(function, arguments);
-    expr->replace(new_expr);
-    expr = new_expr;
+      AList<Expr>* arguments = copy_argument_list(paren);
+      Expr* function = new Variable(fns.e[0]);
+      if (!strcmp("this", fns.e[0]->name)) {
+        arguments->insertAtHead(paren->baseExpr->copy());
+      }
+      Expr *new_expr = new FnCall(function, arguments);
+      expr->replace(new_expr);
+      expr = new_expr;
     }
   }
 
@@ -403,6 +403,13 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         if (aop->left->astType == EXPR_MEMBERACCESS) {
           expr = aop->left;
         }
+      } else {
+        if (StructuralType* struct_scope =
+            dynamic_cast<StructuralType*>(member_access->base->typeInfo())) {
+          member_access->member = 
+            Symboltable::lookupInScope(member_access->member->name,
+                                       struct_scope->structScope);
+        }
       }
     }
   }
@@ -436,6 +443,13 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         expr = new_expr;
       } else
         INT_FATAL(expr, "Unable to resolve member access");
+    } else {
+      if (StructuralType* struct_scope =
+          dynamic_cast<StructuralType*>(member_access->base->typeInfo())) {
+        member_access->member = 
+          Symboltable::lookupInScope(member_access->member->name,
+                                     struct_scope->structScope);
+      }
     }
   }
 
