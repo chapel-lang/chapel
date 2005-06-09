@@ -1,3 +1,6 @@
-jplevyak
+deitz
 
-real and imag functions not working in complex record
+These are failing because real and imag are not
+being returned by visible_functions(), proabably
+because of module scoping issues.
+
