@@ -35399,3 +35399,16 @@ Removed files:
 	chapel/test/reductions/bradc/manual/: inferstatetype2.future 
 	chapel/test/types/complex/deitz/: test_complex3.future 
 
+---------------------------------------------------------------------------
+
+06/09/05 09:09:19 -- jplevyak
+
+Log message:
+	Fixed the SEGV, reassigned back to Steve. These are large tests which
+	should probably be broken up into little tests as they raise a number
+	of issues which would probably be better tacked seperately.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_class1.future 
+	                           test_array_class2.future 
+
