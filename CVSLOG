@@ -35450,3 +35450,13 @@ Added files:
 	                                     complex-1.future 
 	                                     complex-1.good 
 
+---------------------------------------------------------------------------
+
+06/09/05 10:32:08 -- jplevyak
+
+Log message:
+	Add back in update of member_access->member
+
+Modified files:
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+
