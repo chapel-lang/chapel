@@ -292,8 +292,11 @@ class DefExpr : public Expr {
  public:
   Symbol* sym;
   UserInitExpr* init;
+  Expr* exprType;
 
-  DefExpr(Symbol* initSym = NULL, UserInitExpr* initInit = NULL);
+  DefExpr(Symbol* initSym = NULL,
+          UserInitExpr* initInit = NULL,
+          Expr* initExprType = NULL);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 

@@ -584,10 +584,11 @@ void Variable::codegen(FILE* outfile) {
 }
 
 
-DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit) :
+DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
   Expr(EXPR_DEF),
   sym(initSym),
-  init(initInit)
+  init(initInit),
+  exprType(initExprType)
 {
   if (sym) {
     sym->setDefPoint(this);
@@ -596,6 +597,9 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit) :
       Symbol::setDefPoints(fn->formals, this);
       fn->paramScope->setContext(NULL, fn, this);
     }
+    if (ExprType* symExprType = dynamic_cast<ExprType*>(sym->type)) {
+      exprType = symExprType->expr->copy();
+    }
   }
 }
 
@@ -603,9 +607,12 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit) :
 Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
   if (clone) {
     return new DefExpr(sym->copy(clone, map),
-                       dynamic_cast<UserInitExpr*>(init->copy(clone, map)));
+                       dynamic_cast<UserInitExpr*>(init->copyInternal(clone, map)),
+                       exprType->copyInternal(clone, map));
   } else {
-    return new DefExpr(sym, dynamic_cast<UserInitExpr*>(init->copy(clone, map)));
+    return new DefExpr(sym,
+                       dynamic_cast<UserInitExpr*>(init->copyInternal(clone, map)),
+                       exprType->copyInternal(clone, map));
   }
 }
 
@@ -613,6 +620,8 @@ Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
 void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == init) {
     init = dynamic_cast<UserInitExpr*>(new_ast);
+  } else if (old_ast == exprType) {
+    exprType = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefExpr::replaceChild(old, new)");
   }
@@ -632,6 +641,7 @@ void DefExpr::verify(void) {
 
 void DefExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(init, traversal, false);
+  TRAVERSE(exprType, traversal, false);
   TRAVERSE_DEF(sym, traversal, false);
 }
 
