@@ -35372,3 +35372,13 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+06/09/05 08:57:52 -- deitz
+
+Log message:
+	Small fix to _data class in prelude.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+
