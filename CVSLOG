@@ -35340,3 +35340,17 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+06/08/05 17:03:11 -- deitz
+
+Log message:
+	Fixed temporary regressions by changing local passlist in testing
+	directory.  Ugh.  It seems okay like now since it doesn't use any pass
+	that actually does anything, but it's still not ideal to me.
+
+Modified files:
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     mypasslist.h test.good 
+
