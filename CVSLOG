@@ -35594,3 +35594,38 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/include/: expr.h 
 
+---------------------------------------------------------------------------
+
+06/09/05 16:17:56 -- jplevyak
+
+Log message:
+	Added support for storing the "where" expression in the FnSymbol.
+	Tried to get the copyXXX traversalXXX and replaceXXX functions
+	right...
+	Added support for constraining type variable parameters:
+	  function f(type t : numeric, y) ..
+	Added test cases for this and some other test cases for ?t which
+	  is currently unsupported yet.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp 
+	chapel/compiler/include/: symbol.h symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: scopeResolveSymbols.cpp 
+Added files:
+	chapel/test/types/type_variables/jplevyak/: where-2-error.chpl 
+	                                            where-2-error.good 
+	                                            where-2.chpl 
+	                                            where-2.good 
+	                                            where-3-error.chpl 
+	                                            where-3-error.future 
+	                                            where-3-error.good 
+	                                            where-3.chpl 
+	                                            where-3.future 
+	                                            where-3.good 
+	                                            where-4.chpl 
+	                                            where-4.future 
+	                                            where-4.good 
+
