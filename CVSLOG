@@ -35532,3 +35532,13 @@ Removed files:
 	chapel/test/classes/deitz/: test_myseq_record.chpl 
 	                            test_myseq_record.good 
 
+---------------------------------------------------------------------------
+
+06/09/05 11:59:15 -- jplevyak
+
+Log message:
+	Update .future.
+
+Modified files:
+	chapel/test/types/complex/deitz/: test_complex3.future 
+
