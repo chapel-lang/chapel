@@ -35493,3 +35493,42 @@ Added files:
 	                                     complex-2.future 
 	                                     complex-2.good 
 
+---------------------------------------------------------------------------
+
+06/09/05 11:11:04 -- deitz
+
+Log message:
+	Added support for ExprType : Type.  It parses and heads to analysis.
+	
+	This adds support for things like
+	
+	  x.t
+	
+	and
+	
+	  var f : foo(t = integer)
+	
+	Futurized a few tests that use the former construct in a very simple
+	way that used to work, but not very well.
+	
+	Added a new test to also look at this.
+	
+	Removed an old sequence test that seemed basically dead.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_type_in_class3.future 
+	                            test_type_in_class4.chpl 
+	                            test_type_in_class4.future 
+	                            test_type_in_class4.good 
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-manual.future 
+Removed files:
+	chapel/test/classes/deitz/: test_myseq_record.chpl 
+	                            test_myseq_record.good 
+
