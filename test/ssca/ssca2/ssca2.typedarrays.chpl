@@ -1,3 +1,13 @@
+-- SJD: Why should we use a nested module?  There is no reason for
+-- this module to be nested (since it doesn't refer to anything in the
+-- outer module).  Also it is not used in the code by a use statement.
+-- I think that is an error.
+-- BLC: I agree; removed the module
+
+
+-- SJD: Should we support config const?
+-- BLC: I think we do
+
 config var ENABLE_K2 = true;
 config var ENABLE_K3 = true;
 config var ENABLE_K4 = true;
@@ -16,12 +26,20 @@ config var ENABLE_PLOT_K3DB  = false;
 union Weight {
   var i : integer;
   var s : string;
+/* TMP
+
+-- SJD: Need to implement typeselect on union.  I think this is
+-- central but also easy.  It should be translated into a normal
+-- select during compilation.  We also need to implement the normal
+-- select statement.
+
   function is_string {
     typeselect (this) {
       when s     return true;
       otherwise  return false;
     }
   }
+*/
 }
 
 record Numbers {
@@ -59,12 +77,19 @@ class Graph {
 
   -- separate integer and string subgraps that
   -- share the above two domains
+/* TMP
+
+-- SJD: I think domains should be passed by reference so I don't think
+-- this => is necessary at this point.
+-- BLC: I tend to agree
+
   var intg = Subgraph(wtype=integer,
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
   var strg = Subgraph(wtype=string,
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
+*/
 
   function copy(s : Graph) {
     return Graph(VerteD  =s.VertexD,
@@ -77,14 +102,40 @@ class Subgraph {
   var VertexD : domain(1);
   var ParEdgeD : domain(1); 
   -- sparse matrix index by directed vertex pairs
+/* TMP
+
+-- SJD: Domains of domains and sparse! If we're not doing sparse this
+-- will be relatively easy.
+
   var AdjD  : domain sparse (VertexD * VertexD) = nil;
+
+-- BLC: could write this as:
+-- var DenseAdj : domain(2) = [VertexD, VertexD];
+-- var AdjD : sparse domain(DenseAdj) = nil;
+
+*/
   -- holds count of edges between vertex pairs
   var weights : [AdjD] seq of wtype;
+/* TMP
+-- BLC: This relies on parameter destructuring, which doesn't parse
+--      yet
 
   constructor EndPoints.EndPoints ( (s,e) : index(AdjD)) {
     start = s;
     end   = e;
   }
+*/
+/* TMP
+
+-- SJD: What's with the square brackets?
+-- BLC: This was a concept which David had of a function that
+--      had a domain;  I've never been sure of its purpose and
+--      believe that in any case for this benchmark it could be 
+--      written:
+-- 
+--   function adjMatrix [i:AdjD] { return weights(i).length; }
+*/
+
   function adjMatrix(i: index(AdjD)) { return weights(i).length; }
 }
 
@@ -177,8 +228,12 @@ function main() {
     var startTime = clock; --  Start performance timing.
     
     -- Find clusters in the graph.
+/* TMP
+-- BLC: This relies on tuple destructuring at variable declaration
+--      time which doesn't parse yet
     var (cutG, intVertexRemap, strVertexRemap) 
           = cutClusters( G, MAX_CLUSTER_SIZE, ALPHA );
+*/
     
     writeln('\n\tcutClusters() completed execution.\n');
     
@@ -197,7 +252,12 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
                      percentIntWeights, 
                      maxIntWeightP, probInterclEdges) {
 
+/* TMP
+-- BLC: This relies us to do a restricted module use statement (one
+--      which only imports some symbols but not all).  If we have
+--      module use implemented, this doesn't seem much harder...
   use Random only RandomNumbers;
+*/
   var random_numbers = RandomNumbers();
   var fedges = Edges();
   use fedges;
@@ -230,22 +290,38 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
 
   -- create the edges within the cliques
+/* TMP
+-- BLC: This is a concept that David had which I've always found
+--      somewhat strange.  I'd consider this an array of domains
+--      instead and write it as:
+--      var AdjDomain : [i in Cliques] domain(2) =
+--                        let k = cliqueSize(i) in (1..k, 1..k);
+
   var AdjDomain : domain [i in Cliques] * (2) =  
                     let k = cliqueSize(i) in (1..k, 1..k);
+*/
 
   -- fill matrix with random numbers
-  var cliqueAdjMatrix: [AdjDomain] = 
-    reshape(let n = AdjDomain.extent; 
+
+  var cliqueAdjMatrix: [AdjDomain] index(VertexD) = 
+    reshape(let n = AdjDomain.extent
                 in ceil(maxParalEdges*random_numbers.generate(n)));
 
   -- zero out the diagonals 
   [c in Cliques][i in 1..cliqueSize(c)] cliqueAdjMaxtrix(c,i,i) = 0;
 
   -- build cumulative sum of edge counts by clique and level
+/* TMP
+-- BLC: this is meant to be a product domain, which we don't
+--      support in the parser yet.
+
   var edgeDomain : domain Cliques * (1..maxParalEdges);
-  var edgeCounts: [(c,i) in edgeDomain] =  
+*/
+
+  var edgeCounts: [(c,i) in edgeDomain] integer =  
         sum ([m in cliqueAdjMatrix(c)] m >=i);
-  var edgeStarts: [edgeDomain] = sum scan edgeCounts;
+
+  var edgeStarts: [edgeDomain] integer = sum scan edgeCounts;
 
   numEdgesPlacedInCliques = edgeStarts(edgeDomain.last);
 
@@ -255,15 +331,22 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   -- now build tine intra-clique edges
   forall (c,m) in edgeDomain {
     var first = VsInClique(c).first;
+/* TMP
+-- BLC: This fails to parse due to the indefinite domain range
+
     intraEdges[edgeStarts(c,m)..] = 
       [(i,j) in AdjDomain(c)] 
         (if (cliqueAdjMatrix(c,i,j) >= m)
          then (start=i+first, end=j+first));
+*/
   }
 
   -- connect the cliques
   -- build a map from vertex number to the clique it is in
-  var toClique: [1..totalVertices];
+
+  var toClique: [1..totalVertices] index(Clique);
+
+
   forall c in Cliques do
     toClique(VsInClique(c).first..VsInClique(c).last) = c;
 
@@ -272,18 +355,32 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   var log2Dist = ceil(log(totVertices,2))-1;
 
   -- foreach probability level, there are 'up' and 'down' edges
+/* TMP
+-- BLC: This domain syntax simply isn't supported yet (if it ought
+--      to be.  We could rewrite this:
+--               : domain(3) = (1..totalVertices, 1..log2Dist, -1..1 by 2);
+
   var bitsDomain : domain(1..totalVertices, 1..log2Dist, -1..1 by 2);
+*/
   var bits : [bitsDomain] boole;
+/* TMP
+-- BLC: We don't parse index tuple destructuring in forall loops yet
+
   forall ((ix, d, dir), r) in (bitsDomain ,
                                reshape(random_numbers.generate(bitsDomain.extent),
                                        bitDomain)) {
+*/
     if (r <= probInterclEdges**d) {
       var jx = (ix-1 + dir*2**d mod totVertices) + 1;
       bits(ix,d,dir) = toClique(ix) != toClique(jx);
     } else bits(ix,d,dir) = false;
+/*
+-- BLC: This is the other half of the forall just previous
   }
+*/
 
-  var offset: [bitsDomain] = sum scan (if bits then 1 else 0);
+  var offset: [bitsDomain] integer = sum scan (if bits then 1 else 0);
+
   numPlacedOutside = offset(bitsDomain.last);
   var interEdges: [1..numPlacedOutside] EndPoints;
   forall (ix, d, dir) in bitsDomain do
@@ -296,13 +393,17 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   numEdgesPlaced = numPlacedInCliques + numPlacedOutside;
   Edges = 1..numEdgesPlaced;
 
-  edges:EndPoints = intraEdges # interEdges;
+/* TMP
+-- BLC: lhs type coercions don't parse yet
 
+  edges:EndPoints = intraEdges # interEdges;
+*/
 
   var sought_string : string;
 
-  var strAlphabet: [1..26**2] = 
+  var strAlphabet: [1..26**2] string = 
         reshape([i in 'A'..'Z'][j in 'A'..'Z'] i+j);
+
   var maxLenAlphabet = strAlphabet.extent;
   var is_str : [Edges] boole;
   forall (e, r1, r2) in (Edges,
@@ -321,17 +422,28 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   var i  = ceil(count(is_str) * random_numbers.next);
   if (i == 0) 
     then halt("no strings");
+
+/* TMP
+-- BLC: We apparently can't currently index into expressions?
   var j = ([e in Edges] (if is_str(e) then e)) (i);
+*/
+
   var sought_string;
+/* TMP
+-- BLC: typeselect isn't supported yet; this syntax may be wrong
+
   typeselect (w = edges(j).weight) {
     when s    sought_string = w;
   }
+*/
 
   return (fedges, sought_string);
 }
 
-
+/* TMP
+-- BLC: This queried range throws the compiler off...
 function binsearch(x : [?lo..?hi] , y]) {
+*/
   if (hi < lo  ) then return lo;
   if (x(hi) > y) then return hi;
   if (y <= x(lo)) then return lo;
@@ -346,14 +458,25 @@ function binsearch(x : [?lo..?hi] , y]) {
       hi = mid;
   }
   return hi;
+/* TMP
 }
+*/
 
 function computeGraph(edges , totVertices, maxParalEdges, 
                       maxIntWeight ) : Graph {
   var G = Graph();
+/* TMP
+-- BLC: lhs casts don't parse yet
+
   G:Numbers = edges;
+*/
+
+
+/* TMP
+-- BLC: we don't parse restricted with statements yet
 
   use G only VertexD, ParEdgeD, intg, strg;
+*/
 
   VertexD = 1..totVertices;
   ParEdgeD = 1..maxParalEdge;
@@ -362,10 +485,13 @@ function computeGraph(edges , totVertices, maxParalEdges,
   strg.AdjD = [e in edges.edges] (if e.weight.is_string?
                                   then (e.start, e.end));
   forall e in edges.edges do
+/* TMP
+-- BLC: We don't parse typeselects yet
     typeselect (s = e.weight) {
       when i atomic intg.weights(e.start,e.end) #= s;
       when s atomic strg.weights(e.start,e.end) #= s;
     }
+*/
 
   return G;
 }
@@ -376,7 +502,10 @@ function sortWeights( G : Graph, soughtString : string ) {
   function Subgraph.choose(value) {
     return [e in AdjD] (if (weights(e) == value) then EndPoints(e));
   }
+/* TMP
+-- BLC: We don't parse restricted with statements yet
   use G only intg, strg;
+*/
   var maxWeight = max(intg.weights);
   return (intg.choose(maxWeight), maxWeight, strg.choose(soughtString));
 }
@@ -398,18 +527,36 @@ function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : integer,
     [e in AdjD] weights(e) =  complete.weights(e);
   }
 
-  var subgraphs: [1..(startSetIntVPairs.length+startSetStrVPairs.length)];
+-- BLC: this is another array with inferred type.  This one should
+--      either be Graph or SubGraph, I'm not sure which
+  var subgraphs: [1..(startSetIntVPairs.length+startSetStrVPairs.length)] Graph;
+
   -- Loop over vertex pairs in the int starting set.
+/* TMP
+-- BLC: we don't parse cobegins yet
   cobegin {
+*/
+/* TMP
+-- BLC: nor destructured index variables
     forall (i,v) in (1.., startSetIntVPairs) {
+*/
       subgraphs(i) = copy(this);
       subgraphs(i).intg.expand_subgraph(v, intg);
+/* TMP
+-- BLC: ditto
     }
     forall (i,v) in (startSetIntVPairs+1.., startSetStrVPairs); {
+*/
       subgraphs(i) = copy(this);
       subgraphs(i).strg.expand_subgraph(v, strg);
+/* TMP
+-- BLC: this ends the second forall
     }
+*/
+/* TMP
+-- BLC: this ends the cobegin
   }
+*/
   return subgraphs;
 }
 
@@ -423,10 +570,26 @@ function cutClusters(G, cutBoxSize, alpha) {
       then halt('alpha must be between 0 and 1 inclusive.');
     var startSearch = ceil(alpha * cutBoxSize); 
 
+/* TMP
+-- BLC: restricted with statements don't parse
     use AdjMatrix only VertexD, AdjD;
-    var adjCounts: [v in VertexD] = length(AdjD(v,*) # AdjD(*,v));
+*/
+
+    var adjCounts: [v in VertexD] integer = length(AdjD(v,*) # AdjD(*,v));
+
+/* TMP
+-- BLC: we don't parse sparse domains yet.  I prefer the syntax:
+--            : sparse domain(VertexD) = nil;
+
      type Set : domain sparse VertexD = nil;
+*/
+
+/* TMP
+-- BLC: I think this fails because we current try to do too much
+--      at IndexType constructor time
     type Seq : seq of index of VertexD = nil;
+*/
+
 
     var setG : Set = VertexD;
     var setClusters : Seq;     -- set of nodes in clusters.
@@ -442,7 +605,10 @@ function cutClusters(G, cutBoxSize, alpha) {
         var vMin = setG(minloc(adjCounts(setG)));
         var cnCut = totVertices+1;   -- minimum contour number so far.
         for i in 1..cutBoxSize {
+/* TMP
+-- BLC: it seems we don't parse the #= operator currently?
           setIter #= vMin;         -- add vMin to the iterating set.
+*/
     
           -- Find the sets of vertices that are adjacent to vMin.
           -- Form setAdj by excluding the already accounted for vertices.
@@ -461,7 +627,9 @@ function cutClusters(G, cutBoxSize, alpha) {
 
           -- Pick the next vertex to be processed from among the adjacent 
           -- vertices, the one which minimizes the adjacency count.
-          var count: [ setAdj ] ;
+
+          var count: [ setAdj ] integer;
+
           forall v in setAdj {
             -- Find the sets of vertices that are adjacent to v.
             var vAdj like setAdj = setAdj # AdjD(v,*) # AdjD(*,v);
@@ -477,8 +645,11 @@ function cutClusters(G, cutBoxSize, alpha) {
         }
       }
 
+/* TMP
+-- BLC: can't parse #= yet
       setClusters #= setIter(1..iCut);
       setN2       #= iAdj;
+*/
       setG  -= setIter # iAdj;
     }
     return setClusters # setN2;
@@ -489,8 +660,14 @@ function cutClusters(G, cutBoxSize, alpha) {
   var cutG = Graph.copy(G);
 
   function remap(oldg, newg, vertexRemap) {
-    var map: [G.VertexD];
+
+    var map: [G.VertexD] index(Vertex);
+
+/* TMP
+-- BLC: zippered iteration with an indefinite domain and square-bracket 
+--      indexing
     forall (new, old) in (1.., vertexRemap) do 
+*/
       map(old) = new;
     newg.AdjD = [ (i,j) in oldg.Adj ] (map(i), map(j));
     

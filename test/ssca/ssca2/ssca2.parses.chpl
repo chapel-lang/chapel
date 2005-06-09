@@ -108,18 +108,19 @@ class Subgraph {
 -- will be relatively easy.
 
   var AdjD  : domain sparse (VertexD * VertexD) = nil;
+
+-- BLC: could write this as:
+-- var DenseAdj : domain(2) = [VertexD, VertexD];
+-- var AdjD : sparse domain(DenseAdj) = nil;
+
 */
   -- holds count of edges between vertex pairs
   var weights : [AdjD] seq of wtype;
 /* TMP
-
--- SJD: What??
--- BLC: The syntax in the last version was meant to imply an index,
---      but I believe we abandoned it.  Switched to index syntax.
 -- BLC: This relies on parameter destructuring, which doesn't parse
 --      yet
 
-  constructor EndPoints ( (s,e) : index(AdjD)) {
+  constructor EndPoints.EndPoints ( (s,e) : index(AdjD)) {
     start = s;
     end   = e;
   }
@@ -259,13 +260,13 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 */
   var random_numbers = RandomNumbers();
   var fedges = Edges();
-  with fedges;
+  use fedges;
   maxIntWeight = maxIntWeightP;
 
   -- Estimate number of cliques needed and pad by 50%.
   var estTotCliques = 
         ceil( (1.5*totVertices) / ((1.0 + maxCliqueSize) / 2 ));
-  Cliques = 1..estTotCliquesd;
+  Cliques = 1..estTotCliques;
 
   -- Generate random clique sizes.
   cliqueSizes = 
@@ -446,9 +447,12 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
   var i  = ceil(count(is_str) * random_numbers.next);
   if (i == 0) 
-    then error("no strings");
+    then halt("no strings");
 
+/* TMP
+-- BLC: We apparently can't currently index into expressions?
   var j = ([e in Edges] (if is_str(e) then e)) (i);
+*/
 
   var sought_string;
 /* TMP
@@ -471,10 +475,7 @@ function binsearch(x : [?lo..?hi] , y]) {
   if (y <= x(lo)) then return lo;
 
   while (lo+1 < hi) {
-/* TMP
--- BLC: we don't parse asserts yet; this may not be the syntax
-    assert  x(lo) < y and y <= x(hi) ;
-*/
+    assert(x(lo) < y and y <= x(hi));
 
     var mid = (hi+lo)/2;
     if (x(mid) < y) then
@@ -500,7 +501,7 @@ function computeGraph(edges , totVertices, maxParalEdges,
 /* TMP
 -- BLC: we don't parse restricted with statements yet
 
-  with G only VertexD, ParEdgeD, intg, strg;
+  use G only VertexD, ParEdgeD, intg, strg;
 */
 
   VertexD = 1..totVertices;
@@ -529,7 +530,7 @@ function sortWeights( G : Graph, soughtString : string ) {
   }
 /* TMP
 -- BLC: We don't parse restricted with statements yet
-  with G only intg, strg;
+  use G only intg, strg;
 */
   var maxWeight = max(intg.weights);
   return (intg.choose(maxWeight), maxWeight, strg.choose(soughtString));
@@ -542,7 +543,7 @@ function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : integer,
                             : seq of Graph {
     
   function Subgraph.expandSubGraphs(start, complete:subgraph) {
-    var frontier like Adj = (start.start, start.end);
+    var frontier like AdjD = (start.start, start.end);
     AdjD = start;
     for k in 2..SUBGR_EDGE_LENGTH {
       frontier = [(_,e) in frontier] complete.AdjD(e,*);
@@ -591,14 +592,14 @@ function cutClusters(G, cutBoxSize, alpha) {
   function cutClustersCommon( adjMatrix : Subgraph,
                               cutBoxSize, alpha) {
     if cutBoxSize < 1
-      then error('cutBoxSize must be a least one.');
+      then halt('cutBoxSize must be a least one.');
     if alpha < 0 or alpha > 1
-      then error('alpha must be between 0 and 1 inclusive.');
+      then halt('alpha must be between 0 and 1 inclusive.');
     var startSearch = ceil(alpha * cutBoxSize); 
 
 /* TMP
 -- BLC: restricted with statements don't parse
-    with AdjMatrix only VertexD, AdjD;
+    use AdjMatrix only VertexD, AdjD;
 */
 /* TMP
 -- BLC: another inferred element type; this one should be integer
