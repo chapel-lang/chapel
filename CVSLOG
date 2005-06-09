@@ -35412,3 +35412,25 @@ Modified files:
 	chapel/test/arrays/deitz/: test_array_class1.future 
 	                           test_array_class2.future 
 
+---------------------------------------------------------------------------
+
+06/09/05 10:18:08 -- deitz
+
+Log message:
+	Added two test cases that modify a member access of a function return.
+	
+	Reinstated test_complex3 test and future.
+	
+	Superficial changes to test_array_class1.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_class1.chpl 
+	chapel/test/types/complex/deitz/: test_complex3.chpl 
+Added files:
+	chapel/test/functions/deitz/: test_var_function_access.chpl 
+	                              test_var_function_access.good 
+	                              test_var_function_access2.chpl 
+	                              test_var_function_access2.future 
+	                              test_var_function_access2.good 
+	chapel/test/types/complex/deitz/: test_complex3.future 
+
