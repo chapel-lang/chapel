@@ -35460,3 +35460,16 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+06/09/05 10:59:34 -- deitz
+
+Log message:
+	Changed the record instantiation test to be written more how we want
+	to write it.  It currently doesn't parse, but will with my next
+	checkin.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record1.chpl 
+
