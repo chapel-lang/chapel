@@ -35629,3 +35629,25 @@ Added files:
 	                                            where-4.future 
 	                                            where-4.good 
 
+---------------------------------------------------------------------------
+
+06/09/05 16:25:19 -- bradc
+
+Log message:
+	Some more modifications to ssca2 versions
+	based on latest pass through them -- Mack
+	pointed out we changed from "with" to "use"
+	to refer to an instance's fields in an
+	execution context; put error/assert syntax
+	into that which Shannon is implementing;
+	fixed up some other small things.
+	
+	Also wrote a variation on ssca2.parses.chpl
+	which provides element types for all of its
+	arrays.
+
+Modified files:
+	chapel/test/ssca/ssca2/: ssca2.chpl ssca2.parses.chpl 
+Added files:
+	chapel/test/ssca/ssca2/: ssca2.typedarrays.chpl 
+
