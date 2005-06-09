@@ -35354,3 +35354,21 @@ Modified files:
 	                                     mg-seq.good mvm-seq.good 
 	                                     mypasslist.h test.good 
 
+---------------------------------------------------------------------------
+
+06/09/05 08:17:53 -- jplevyak
+
+Log message:
+	Fix for altered line numbers in _chpl_XXX file.
+	We need to a way for me to query a filename to see if
+	it is a "builtin" file so as not to output those line
+	numbers into the logs so that regressions will not result
+	when the builtin files are updated.  Currently I have
+	hardcoded the preludes, but now that we have whole directories
+	that is nolonger feasible.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
