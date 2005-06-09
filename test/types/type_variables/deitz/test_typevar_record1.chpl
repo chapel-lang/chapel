@@ -6,8 +6,14 @@ record foo {
   }
 }
 
-var f : foo = foo(t=integer);
+var f : foo(t=integer);
 
 f.x = 2;
 
 f.print();
+
+var g : foo(t=string);
+
+g.x = "hello world";
+
+g.print();
