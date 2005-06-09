@@ -35583,3 +35583,14 @@ Modified files:
 Removed files:
 	chapel/test/types/complex/deitz/: test_complex4.future 
 
+---------------------------------------------------------------------------
+
+06/09/05 15:54:41 -- deitz
+
+Log message:
+	Copied ExprType::expr into DefExpr::exprType.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+
