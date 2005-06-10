@@ -35769,3 +35769,14 @@ Added files:
 	                           test_array_class_trial3.future 
 	                           test_array_class_trial3.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 10:51:57 -- jplevyak
+
+Log message:
+	update .future
+
+Modified files:
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-manual.future 
+
