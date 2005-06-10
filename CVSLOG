@@ -35757,3 +35757,15 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_seq.chpl 
 
+---------------------------------------------------------------------------
+
+06/10/05 10:44:59 -- deitz
+
+Log message:
+	Added another array class trial test.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_class_trial3.chpl 
+	                           test_array_class_trial3.future 
+	                           test_array_class_trial3.good 
+
