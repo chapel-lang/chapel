@@ -35993,3 +35993,17 @@ Log message:
 Added files:
 	chapel/test/trivial/shannon/quit/: assert.chpl assert.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 16:25:34 -- jplevyak
+
+Log message:
+	added hack for primitive_chapel_vardef for low level code generation.
+	fixed a bug in collect_PNodes which was causing SEGV in programs
+	  with particularly complex structure.
+	this fixed test_array_class_trial2.chpl
+
+Modified files:
+	chapel/compiler/analysis/: fun.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+
