@@ -35933,3 +35933,24 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_type_in_class4.future 
 
+---------------------------------------------------------------------------
+
+06/10/05 13:35:52 -- jplevyak
+
+Log message:
+	Add code to build getters for type variables in classes.
+	Add an option to control the above.
+	Add a test which uses the option.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             updateSymbols.cpp 
+Added files:
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            test_typevar_class1.chpl 
+	                                            test_typevar_class1.compopts 
+	                                            test_typevar_class1.future 
+	                                            test_typevar_class1.good 
+
