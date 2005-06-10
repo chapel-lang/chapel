@@ -15,6 +15,8 @@ function write(s : seq2) {
   write("/)");
 }
 
+
+
 class _seqNode {
   type _elementType;
 
@@ -31,6 +33,16 @@ class seq2 {
 
   function length : integer
     return _length;
+
+  function reverse : seq2 {
+    var new_seq : seq2 = seq2(_elementType);
+    var tmp = _first;
+    while (tmp != nil) {
+      new_seq._prepend(tmp._element);
+      tmp  = tmp._next;    
+    }
+    return new_seq;     
+  }
 
   function _append(e : _elementType) : seq2 {
     var new : _seqNode = _seqNode(_elementType);
