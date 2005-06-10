@@ -35691,3 +35691,20 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+06/10/05 09:20:14 -- jplevyak
+
+Log message:
+	Add 2 new tests to see if we can pass around types.  This
+	is going to be necessary to handle things like C(t = c.t) where
+	t is a type variable.
+
+Added files:
+	chapel/test/types/type_variables/jplevyak/: type_variable-2.chpl 
+	                                            type_variable-2.future 
+	                                            type_variable-2.good 
+	                                            type_variables-1.chpl 
+	                                            type_variables-1.future 
+	                                            type_variables-1.good 
+
