@@ -35954,3 +35954,15 @@ Added files:
 	                                            test_typevar_class1.future 
 	                                            test_typevar_class1.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 14:12:46 -- deitz
+
+Log message:
+	Added where restricting parameter test case.
+
+Added files:
+	chapel/test/functions/deitz/: test_where_param1.chpl 
+	                              test_where_param1.future 
+	                              test_where_param1.good 
+
