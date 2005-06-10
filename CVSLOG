@@ -35918,3 +35918,18 @@ Log message:
 Removed files:
 	chapel/test/classes/deitz/: test_record_assign1.future 
 
+---------------------------------------------------------------------------
+
+06/10/05 12:52:53 -- jplevyak
+
+Log message:
+	Implement x.t (the ability to use member access to access a USER_TYPE in
+	an object).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Removed files:
+	chapel/test/classes/deitz/: test_type_in_class4.future 
+
