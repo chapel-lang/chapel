@@ -36007,3 +36007,15 @@ Modified files:
 	chapel/compiler/analysis/: fun.cpp 
 	chapel/compiler/etc/: c_runtime.h 
 
+---------------------------------------------------------------------------
+
+06/10/05 16:49:50 -- bradc
+
+Log message:
+	Added a test of empty sequence literals, motivated by
+	Mack's explorations.  Not high priority.
+
+Added files:
+	chapel/test/types/seq/bradc/: emptySeq.chpl emptySeq.future 
+	                              emptySeq.good 
+
