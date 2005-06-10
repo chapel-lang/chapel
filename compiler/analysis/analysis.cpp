@@ -3014,12 +3014,24 @@ type_info(BaseAST *a, Symbol *s) {
 #endif
   if (!sym)
     return dtUnknown;
-  if (sym->type) {
+  if (sym->type_kind && sym->type_kind != Type_VARIABLE) {
+    type = sym->meta_type;
+    goto Ldone;
+  }
+  if (sym->type && sym->type->type_kind == Type_TAGGED) {
     type = sym->type;
     goto Ldone;
   }
-  if (sym->var) {
+  if (sym->var && sym->var->type) {
+    assert(!sym->type 
+           || sym->type->type_kind == Type_UNKNOWN 
+           || sym->var->type == sym->type 
+      );
     type = sym->var->type;
+    goto Ldone;
+  }
+  if (sym->type) {
+    type = sym->type;
     goto Ldone;
   }
  Ldone:
