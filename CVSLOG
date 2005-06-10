@@ -35670,3 +35670,14 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_record1.future 
 
+---------------------------------------------------------------------------
+
+06/10/05 08:55:53 -- mjoyner
+
+Log message:
+	Added reverse function to sequences.
+
+Added files:
+	chapel/test/trivial/mjoyner/seq/: seq_reverse.chpl 
+	                                  seq_reverse.good 
+
