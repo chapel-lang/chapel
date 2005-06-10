@@ -35792,3 +35792,16 @@ Modified files:
 	chapel/test/classes/deitz/: test_myseq_record2.future 
 	                            test_myseq_record3.future 
 
+---------------------------------------------------------------------------
+
+06/10/05 11:00:41 -- jplevyak
+
+Log message:
+	Pushed the test farther along by returning the correct type for TypeExpr
+	things.  Test now fails in codegen.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record1.future 
+
