@@ -35805,3 +35805,86 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_record1.future 
 
+---------------------------------------------------------------------------
+
+06/10/05 12:21:44 -- bradc
+
+Log message:
+	A mess of new tests -- some working, some future --
+	which came out of the latest report card update.
+	I don't think any of these futures are particularly
+	top priority, though the twoRecords.chpl test is fairly
+	mysterious and seems likely to cause problems sooner
+	rather than later.
+	
+	(Here is a short description of the future tests
+	that I wrote up as much for my own sake as anybody's):
+	
+	twoRecords.chpl : it seems as though if we have two
+	  records with similar field names, the getters/setters
+	  choke a bit
+	
+	assignRecord3.chpl : this assigns two records with the
+	  same field names, but different types; causes problems
+	  in addition to those experienced in twoRecords.chpl
+	
+	noelemtype.chpl : test of array declarations in which
+	  element type is inferred
+	
+	intents-arrays.chpl : ordering problem in codegen -- low
+	  priority
+	
+	arrayArg-explicit.chpl : problem when argument array type
+	  is expressed
+	
+	returnSeq2.chpl : copies aren't made when assigning/
+	  passing/returning sequences
+	
+	sumreduce.chpl : a reduction test; these are not yet
+	  implemented
+	
+	returnTuple.chpl :
+	returnTuple2.chpl : some tests that try to return tuples
+	  in various ways and fail
+	
+	returnTuple3.chpl : this one works, but exhibits that
+	  printing tuples doesn't use a very good format,
+	  currently.
+
+Added files:
+	chapel/test/arrays/bradc/: noelemtype.chpl noelemtype.future 
+	                           noelemtype.good 
+	chapel/test/classes/bradc/records/: assignRecord3.chpl 
+	                                    assignRecord3.future 
+	                                    assignRecord3.good 
+	                                    twoRecords.chpl 
+	                                    twoRecords.future 
+	                                    twoRecords.good 
+	                                    twoRecords2.chpl 
+	                                    twoRecords2.good 
+	chapel/test/functions/bradc/: arrayArg-explicit.chpl 
+	                              arrayArg-explicit.future 
+	                              arrayArg-explicit.good 
+	                              arrayArg.chpl arrayArg.good 
+	                              intents-arrays.chpl 
+	                              intents-arrays.future 
+	                              intents-arrays.good 
+	                              intents-arrays2.chpl 
+	                              intents-arrays2.good 
+	chapel/test/reductions/bradc/: sumreduce.chpl sumreduce.future 
+	                               sumreduce.good 
+	chapel/test/types/seq/bradc/: .cvsignore length.chpl length.good 
+	                              length.modify.chpl 
+	                              length.modify.good returnSeq.chpl 
+	                              returnSeq.good returnSeq2.chpl 
+	                              returnSeq2.future returnSeq2.good 
+	chapel/test/types/tuple/bradc/: returnTuple.chpl 
+	                                returnTuple.future 
+	                                returnTuple.good 
+	                                returnTuple2.chpl 
+	                                returnTuple2.future 
+	                                returnTuple2.good 
+	                                returnTuple3.chpl 
+	                                returnTuple3.future 
+	                                returnTuple3.good 
+
