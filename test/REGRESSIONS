@@ -29,10 +29,13 @@ linux and general regressions
   There is something very wrong with IndexTypes.  They should not
   need their own write function (bradc).
 
-[Error matching compiler output for flowanalysis/newast/sum_type-1]
+[Error matching compiler output for types/type_variables/deitz/test_datablock3]
 
   ???
 
+[Error matching program output for trivial/roxana/test_param_decl3]
+
+  Parameters need to be initialized in certain contexts, we should check for this.
 
 ==========================
 linux valgrind regressions
