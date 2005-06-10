@@ -35747,3 +35747,13 @@ Added files:
 	                           test_array_class_trial2.future 
 	                           test_array_class_trial2.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 10:11:27 -- mjoyner
+
+Log message:
+	Added reverse function to sequences.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+
