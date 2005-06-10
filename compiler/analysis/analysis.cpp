@@ -2425,6 +2425,9 @@ build_classes(Vec<BaseAST *> &syms) {
     Sym *csym = c->asymbol->sym;
     forv_Vec(VarSymbol, tmp, c->fields)
       csym->has.add(tmp->asymbol->sym);
+    forv_Vec(TypeSymbol, tmp, c->types) if (tmp)
+      if (tmp->type->astType == TYPE_USER)
+        csym->has.add(tmp->asymbol->sym);
   }
   return 0;
 }

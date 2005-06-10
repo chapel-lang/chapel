@@ -165,8 +165,8 @@ class FnSymbol : public Symbol {
   AList<ParamSymbol>* formals;
   Type* retType;
   Symbol* _this;
-  VarSymbol* _setter; /* the variable this function sets if it is a setter */
-  VarSymbol* _getter; /* the variable this function gets if it is a getter */
+  Symbol* _setter; /* the variable this function sets if it is a setter */
+  Symbol* _getter; /* the variable this function gets if it is a getter */
   BlockStmt* body;
   Symbol* typeBinding;
   _method_type method_type;

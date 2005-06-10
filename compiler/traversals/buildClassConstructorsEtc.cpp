@@ -107,6 +107,29 @@ static void build_union_id_enum(StructuralType* structType) {
 }
 
 
+static void build_getter(StructuralType* structType, Symbol *tmp) {
+    FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(tmp->name));
+    getter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_get_", tmp->name);
+    getter_fn->_getter = tmp;
+    ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
+    AList<ParamSymbol>* getter_args = new AList<ParamSymbol>(getter_this);
+    Symboltable::continueFnDef(getter_fn, getter_args, tmp->type);
+    Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
+    BlockStmt* getter_return = new BlockStmt(new AList<Stmt>(new ReturnStmt(getter_expr)));
+    DefExpr* getter_def_expr = new DefExpr(
+      Symboltable::finishFnDef(getter_fn, getter_return));
+    DefStmt* getter_def_stmt = new DefStmt(getter_def_expr);
+    structType->symbol->defPoint->parentStmt->insertBefore(getter_def_stmt);
+    structType->methods.add(getter_fn);
+    getter_fn->method_type = PRIMARY_METHOD;
+    getter_fn->typeBinding = structType->symbol;
+    getter_fn->_this = getter_this;
+    /**
+     **  Hack getter to have name of field (Can no longer lookup!)
+     **/
+    getter_fn->name = copystring(tmp->name);
+}
+
 static void build_setters_and_getters(StructuralType* structType) {
   forv_Vec(VarSymbol, tmp, structType->fields) {
     char* setter_name = glomstrings(2, "=", tmp->name);
@@ -131,26 +154,12 @@ static void build_setters_and_getters(StructuralType* structType) {
     setter_fn->typeBinding = structType->symbol;
     setter_fn->_this = setter_this;
 
-    FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(tmp->name));
-    getter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_get_", tmp->name);
-    getter_fn->_getter = tmp;
-    ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
-    AList<ParamSymbol>* getter_args = new AList<ParamSymbol>(getter_this);
-    Symboltable::continueFnDef(getter_fn, getter_args, tmp->type);
-    Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
-    BlockStmt* getter_return = new BlockStmt(new AList<Stmt>(new ReturnStmt(getter_expr)));
-    DefExpr* getter_def_expr = new DefExpr(
-      Symboltable::finishFnDef(getter_fn, getter_return));
-    DefStmt* getter_def_stmt = new DefStmt(getter_def_expr);
-    structType->symbol->defPoint->parentStmt->insertBefore(getter_def_stmt);
-    structType->methods.add(getter_fn);
-    getter_fn->method_type = PRIMARY_METHOD;
-    getter_fn->typeBinding = structType->symbol;
-    getter_fn->_this = getter_this;
-    /**
-     **  Hack getter to have name of field (Can no longer lookup!)
-     **/
-    getter_fn->name = copystring(tmp->name);
+    build_getter(structType, tmp);
+  }
+  forv_Vec(TypeSymbol, tmp, structType->types) {
+    // this should really by TYPE_VARIABLE -jbp
+    if (tmp->type->astType == TYPE_USER)
+      build_getter(structType, tmp);
   }
 }
 
