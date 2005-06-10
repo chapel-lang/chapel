@@ -1030,6 +1030,9 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
           fnClone->typeBinding = clone;
           fnClone->method_type = fn->method_type;
         }
+        if (typeSym->type->defaultConstructor == fn) {
+          clone->type->defaultConstructor = fnClone;
+        }
       } else {
         //printf("  not instantiating %s\n", fn->cname);
       }
