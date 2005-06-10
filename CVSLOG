@@ -35708,3 +35708,16 @@ Added files:
 	                                            type_variables-1.future 
 	                                            type_variables-1.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 09:20:36 -- deitz
+
+Log message:
+	Instantiated types now have their default constructors set.
+	
+	The test test_typevar_record1 now has problems in resolve types.  A
+	variable's type remains an ExprType.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
