@@ -35732,3 +35732,18 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_record1.future 
 
+---------------------------------------------------------------------------
+
+06/10/05 09:46:37 -- deitz
+
+Log message:
+	Added two trial array tests. The second seg faults in analysis. The
+	first works.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_class_trial1.chpl 
+	                           test_array_class_trial1.good 
+	                           test_array_class_trial2.chpl 
+	                           test_array_class_trial2.future 
+	                           test_array_class_trial2.good 
+
