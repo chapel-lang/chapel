@@ -53,8 +53,8 @@ void UpdateSymbols::preProcessSymbol(Symbol* sym) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     XSUB(fn->retType, Type*);
     XSUB(fn->_this, Symbol*);
-    XSUB(fn->_setter, VarSymbol*);
-    XSUB(fn->_getter, VarSymbol*);
+    XSUB(fn->_setter, Symbol*);
+    XSUB(fn->_getter, Symbol*);
   }
   if (ParamSymbol* p = dynamic_cast<ParamSymbol*>(sym)) {
     if (p->isGeneric && p->typeVariable) {

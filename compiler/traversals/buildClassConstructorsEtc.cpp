@@ -157,8 +157,8 @@ static void build_setters_and_getters(StructuralType* structType) {
     build_getter(structType, tmp);
   }
   forv_Vec(TypeSymbol, tmp, structType->types) {
-    // this should really by TYPE_VARIABLE -jbp
-    if (tmp->type->astType == TYPE_USER)
+    if (tmp->type->astType == TYPE_USER || 
+        (fnewvardef && tmp->type->astType == TYPE_VARIABLE))
       build_getter(structType, tmp);
   }
 }
