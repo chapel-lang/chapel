@@ -35903,3 +35903,18 @@ Added files:
 	                           test_array_class_trial5.future 
 	                           test_array_class_trial5.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 12:31:27 -- bradc
+
+Log message:
+	Removing this future.  This test is getting
+	the right results for the wrong reasons, but
+	we now have other tests that exhibit this
+	incorrect behavior, so I'm removing this
+	future so that I don't look at it every few
+	weeks.
+
+Removed files:
+	chapel/test/classes/deitz/: test_record_assign1.future 
+
