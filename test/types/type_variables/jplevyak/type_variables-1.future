@@ -1,0 +1,4 @@
+deitz
+
+The code which removes "type" parameters could be based on 
+the fact that the argument is a MetaType...

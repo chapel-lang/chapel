@@ -1,0 +1,4 @@
+deitz
+
+getters (and setters) are not being created for type variables.   In order to
+handle c.t we need these.
