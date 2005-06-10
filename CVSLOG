@@ -35966,3 +35966,20 @@ Added files:
 	                              test_where_param1.future 
 	                              test_where_param1.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 14:21:56 -- shannon
+
+Log message:
+	Added the assert() function for the chapel user.
+	Assert takes a test expression, and prints a
+	simple error message on failure.
+	
+	Usage:
+	------
+	  assert(x != 10);
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
+
