@@ -124,6 +124,10 @@ function halt() {
   __primitive("halt");
 }
 
+function assert() {
+  __primitive("assert");
+}
+
 
 -- memory tests (These tests will be moved to a module, once we have modules.)
 
