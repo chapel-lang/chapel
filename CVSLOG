@@ -35780,3 +35780,15 @@ Modified files:
 	chapel/test/reductions/bradc/manual/: 
 	                                      threeclasstypes-manual.future 
 
+---------------------------------------------------------------------------
+
+06/10/05 10:58:43 -- jplevyak
+
+Log message:
+	update .future : these are large tests which probably need to be broken up and
+	should probably have some comment as to why they are failing.
+
+Modified files:
+	chapel/test/classes/deitz/: test_myseq_record2.future 
+	                            test_myseq_record3.future 
+
