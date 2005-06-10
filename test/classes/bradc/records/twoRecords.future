@@ -1,0 +1,8 @@
+deitz/jplevyak
+
+Two records with the same field names seems to cause
+their setters and getters to collide.  Not sure why.
+
+After clearing this one up, assignRecord3.future
+will probably work at least somewhat better.
+

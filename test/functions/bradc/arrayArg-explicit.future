@@ -1,0 +1,5 @@
+???
+
+seg fault in analysis due to inclusion of explicit
+array type in formal parameter list; could be that
+a domain isn't being resolved correctly?

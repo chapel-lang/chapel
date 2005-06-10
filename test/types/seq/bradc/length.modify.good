@@ -1,0 +1,6 @@
+length.modify.chpl:8: illegal call argument type '__method' illegal: ( __method ) 
+length.modify.chpl:8: illegal call argument type 's' illegal: ( seq2 ) 
+length.modify.chpl:8: illegal call argument type expression illegal: ( int64 ) 
+length.modify.chpl:8: unresolved call '=length'
+length.modify.chpl:8: expression has no type
+fail: fatal error, program does not type

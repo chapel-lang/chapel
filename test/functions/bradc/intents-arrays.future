@@ -1,0 +1,6 @@
+deitz
+
+Eww, more codegen ordering problems.  It seems that if a domain is
+declared globally but an array locally that they may be codegen'd in
+an illegal order in the common module...
+

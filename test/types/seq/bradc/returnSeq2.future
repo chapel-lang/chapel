@@ -1,0 +1,4 @@
+deitz
+
+We are missing a copy either on passing sequences into functions
+or on returning them or on assigning them.
