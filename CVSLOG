@@ -35651,3 +35651,22 @@ Modified files:
 Added files:
 	chapel/test/ssca/ssca2/: ssca2.typedarrays.chpl 
 
+---------------------------------------------------------------------------
+
+06/09/05 18:01:32 -- jplevyak
+
+Log message:
+	Fix get_ast_children which wasn't updated to include exprType.
+	Removed some cruft from analysis.cpp
+	Add code to handle ExprType.
+	Updated .future with current status: the problem
+	  with test_typevar_record1 now is that instantaited types don't
+	  have their defaultConstructor set.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record1.future 
+
