@@ -136,12 +136,12 @@ void ResolveTypes::processSymbol(Symbol* sym) {
       !dynamic_cast<FnSymbol*>(sym)
     ) {
     TypeSymbol* symType = dynamic_cast<TypeSymbol*>(sym->type->symbol);
+    if (symType == NULL) {
+      INT_FATAL("null symType");
+    }
     if (!type_is_used(symType)) {
       INT_FATAL(sym, "type_is_used assertion failure\n"
                 "(likely to be due to dead code not being eliminated)");
-    }
-    if (symType == NULL) {
-      INT_FATAL("null symType");
     }
   }
 

@@ -402,6 +402,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case EXPR_DEF:
     ADD_CHILD(DefExpr, sym);
     AST_ADD_CHILD(DefExpr, init);
+    AST_ADD_CHILD(DefExpr, exprType);
     goto LExprCommon;
   case EXPR_UNOP:
     AST_ADD_CHILD(UnOp, operand);

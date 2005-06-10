@@ -899,15 +899,6 @@ build_type(Type *t) {
       break;
     }
     case TYPE_TUPLE: {
-#if 0
-      TupleType *tt = dynamic_cast<TupleType*>(t);
-      forv_Vec(Type, c, tt->components) {
-        Sym *x = new_sym();
-        x->ast = c->asymbol->sym->ast;
-        x->type = c->asymbol->sym;
-        t->asymbol->sym->has.add(x);
-      }
-#endif
       t->asymbol->sym->type_kind = Type_PRODUCT;
       t->asymbol->sym->inherits_add(sym_tuple);
       break;
@@ -968,13 +959,11 @@ build_type(Type *t) {
       tt->asymbol->sym->meta_type->type = tt->asymbol->sym;
       break;
     }
-    case TYPE_EXPR: {
-      INT_FATAL(t, "ExprType not handled by analysis");
+    case TYPE_EXPR:
+      t->asymbol->sym->type_kind = Type_UNKNOWN;
       break;
-    }
-    case TYPE_NIL: {
+    case TYPE_NIL:
       break;
-    }
   }
   if (t->parentType)
     t->asymbol->sym->must_implement_and_specialize(t->parentType->asymbol->sym);
@@ -1337,6 +1326,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   AInfo *ast = def->ainfo;
   ast->sym = s;
   s->ast = ast;
+  s->is_var = 1;
   switch (var->varClass) {
     case VAR_NORMAL: break;
     case VAR_REF: break;
@@ -1350,23 +1340,18 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
     default: assert(!"unknown constant class");
   }
   if (type != dtUnknown) {
-    if (!is_reference_type(type)) {
+    if (!is_reference_type(type))
       s->type = unalias_type(type->asymbol->sym);
-      s->is_var = 1;
-    } else
+    else
       s->must_implement = unalias_type(type->asymbol->sym);
   }
-  FnSymbol *f = def->parentStmt->parentFunction();
   Expr *init = def->init;
-  int this_constructor = f && f->isConstructor && var->isThis();
-  int this_is_init = type->defaultVal &&
-    dynamic_cast<Variable*>(type->defaultVal) &&
-    dynamic_cast<Variable*>(type->defaultVal)->var == var;
-  if (s->is_var && !scalar_or_reference(type)) {
+  FnSymbol *f = def->parentStmt->parentFunction();
+  if (type != dtUnknown && s->is_var && !scalar_or_reference(type)) {
     switch (type->astType) { 
       case TYPE_EXPR:
-        INT_FATAL(type, "ExprType not handled by analysis");
-      break;
+        type = dtUnknown;
+        goto Lstandard;
       case TYPE_VARIABLE:
       case TYPE_META:
         type = dtUnknown;  // as yet unknown
@@ -1417,21 +1402,15 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
     // THIS IS THE STANDARD CODE
   Lstandard:
     if (!var->noDefaultInit) {
-      if (fnewvardef) {
-        Sym *tmp = new_sym();
-        Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                           chapel_vardef_symbol, type->asymbol->sym, tmp);
-        if1_move(if1, &ast->code, tmp, s, ast);
-        c->ast = ast;
-      } else if (!this_is_init && type->defaultVal) {
-        if1_move(if1, &ast->code, get_defaultVal(type), ast->sym, ast);
-      } else if (type->defaultConstructor) {
-        Sym *tmp = new_sym();
-        Code *send = if1_send(if1, &ast->code, 1, 1, constructor_name(type), tmp);
-        if1_move(if1, &ast->code, tmp, ast->sym, ast);
-        send->ast = ast;
-      } else if (!this_constructor)
-        if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
+      Sym *tmp = new_sym();
+      if (def->exprType)
+        if1_gen(if1, &ast->code, def->exprType->ainfo->code);
+      Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
+                         chapel_vardef_symbol, type->asymbol->sym, tmp);
+      if (def->exprType)
+        if1_add_send_arg(if1, c, def->exprType->ainfo->rval);
+      if1_move(if1, &ast->code, tmp, s, ast);
+      c->ast = ast;
     } else if (type == dtUnknown)
       if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
   }
@@ -2847,12 +2826,18 @@ static void
 chapel_vardef(PNode *pn, EntrySet *es) {
   AVar *tav = make_AVar(pn->rvals.v[2], es);
   AVar *result = make_AVar(pn->lvals.v[0], es);
+  int type_expr = pn->rvals.n > 3;
+  if (type_expr)
+    tav = make_AVar(pn->rvals.v[3], es);
   forv_CreationSet(tt, *tav->out) if (tt) {
-    Sym *type_sym = tt->sym->meta_type;
+    Sym *type_sym = !type_expr ? tt->sym->meta_type : tt->sym;
     Type *type = dynamic_cast<Type*>(type_sym->asymbol ? type_sym->asymbol->symbol : 0);
-    if (!type)
-      creation_point(result, type_sym);
-    else {
+    if (!type) {
+      if (!type_expr)
+        creation_point(result, type_sym);
+      else
+        update_in(result, make_AType(tt));
+    } else {
       if (type->defaultVal) {
         Sym *val = get_defaultVal(type);
         Var *v = val->var;
@@ -2861,18 +2846,22 @@ chapel_vardef(PNode *pn, EntrySet *es) {
         AVar *av = make_AVar(v, es);
         add_var_constraint(av);
         flow_vars(av, result);
-      } if (type->defaultConstructor) {
-        Sym *c = constructor_name(type);
-        Var *cvar = c->var;
-        if (!cvar)
-          cvar = c->var = new Var(c);
-        AVar *cavar = make_AVar(cvar, es);
-        AType *ctype = make_abstract_type(c);
-        CreationSet *cs = ctype->v[0];
-        update_in(cavar, ctype);
-        Vec<AVar *> args;
-        function_dispatch(pn, es, cavar, cs, args, Partial_NEVER);
-      }
+      } else if (type->defaultConstructor) {
+        if (!type_expr) {
+          Sym *c = constructor_name(type);
+          Var *cvar = c->var;
+          if (!cvar)
+            cvar = c->var = new Var(c);
+          AVar *cavar = make_AVar(cvar, es);
+          AType *ctype = make_abstract_type(c);
+          CreationSet *cs = ctype->v[0];
+          update_in(cavar, ctype);
+          Vec<AVar *> args;
+          function_dispatch(pn, es, cavar, cs, args, Partial_NEVER);
+        } else
+          update_in(result, make_AType(tt));
+      } else
+        fail("Type without defaultVal or defaultConstructor");
     }
   }
 }
