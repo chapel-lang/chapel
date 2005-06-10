@@ -35888,3 +35888,18 @@ Added files:
 	                                returnTuple3.future 
 	                                returnTuple3.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 12:26:44 -- deitz
+
+Log message:
+	Two more array class trial tests failing for currently unknown reasons.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_class_trial4.chpl 
+	                           test_array_class_trial4.future 
+	                           test_array_class_trial4.good 
+	                           test_array_class_trial5.chpl 
+	                           test_array_class_trial5.future 
+	                           test_array_class_trial5.good 
+
