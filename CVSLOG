@@ -35983,3 +35983,13 @@ Modified files:
 	chapel/compiler/parser/: prelude.chpl 
 	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
 
+---------------------------------------------------------------------------
+
+06/10/05 14:23:24 -- shannon
+
+Log message:
+	Added a test to lock in the new assert().
+
+Added files:
+	chapel/test/trivial/shannon/quit/: assert.chpl assert.good 
+
