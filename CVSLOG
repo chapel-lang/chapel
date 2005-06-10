@@ -35681,3 +35681,13 @@ Added files:
 	chapel/test/trivial/mjoyner/seq/: seq_reverse.chpl 
 	                                  seq_reverse.good 
 
+---------------------------------------------------------------------------
+
+06/10/05 09:19:08 -- deitz
+
+Log message:
+	Updated regressions file.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
