@@ -35,6 +35,7 @@ typedef void *_CG_ref;
 #define bool int
 #define __init ((void*)0)
 
+#define _CG_prim_primitive_chapel_vardef(_c) ((void*)0)
 #define _CG_prim_coerce(_t, _v) ((_t)_v)
 #define _CG_prim_closure(_c) (_c)GC_MALLOC(sizeof(*((_c)0)))
 #define _CG_prim_tuple(_c) (_c)GC_MALLOC(sizeof(*((_c)0)))

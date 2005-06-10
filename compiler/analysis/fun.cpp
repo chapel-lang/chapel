@@ -71,7 +71,7 @@ Fun::collect_PNodes(Vec<PNode *> &v) {
   v.add(exit);
   sv.set_add(exit);
   for (int i = 0; i < v.n; i++)
-    forv_PNode(p, v.v[i]->cfg_pred)
+    forv_PNode(p, v.v[i]->cfg_pred) if (p)
       if (sv.set_add(p))
         v.add(p);
 }
