@@ -35721,3 +35721,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+06/10/05 09:21:35 -- deitz
+
+Log message:
+	Updated future.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record1.future 
+
