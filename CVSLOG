@@ -36307,3 +36307,14 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/test/functions/deitz/: test_where_param1.future 
 
+---------------------------------------------------------------------------
+
+06/13/05 16:03:56 -- jplevyak
+
+Log message:
+	make the corresponding change in analysis to remove the __method_token
+	for useGettersSetters.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
