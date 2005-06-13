@@ -467,6 +467,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   mangle_overloaded_operator_function_names(expr);
 
   // Resolve overloaded binary operators 
-  if (typeid(*expr) == typeid(BinOp)) 
-    expr = resolve_binary_operator(dynamic_cast<BinOp*>(expr));
+  if (dynamic_cast<BinOp*>(expr)) {
+    if (typeid(BinOp) == typeid(*expr)) { // SJD: WANT TO REMOVE
+      expr = resolve_binary_operator(dynamic_cast<BinOp*>(expr));
+    }
+  }
 }

@@ -1,3 +1,13 @@
+jplevyak
+
+ResolveSymbols doesn't seem to call resolve_binary_operator on
+assignment.  I added a comment next to a line that should be removed,
+but then a function isn't found every time.  For example, when the
+assignment LHS is a MemberAccess and requires a setter.  There are a
+few other cases in this example.
+
+HISTORY
+
 deitz
 
 When the user provides an over-loaded = for a

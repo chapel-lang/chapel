@@ -224,6 +224,16 @@ static void build_record_assignment_function(StructuralType* structType) {
     return;
   }
 
+  Symbol* tmp = Symboltable::lookupInCurrentScope("=");
+  while (tmp) {
+    if (FnSymbol* assignFn = dynamic_cast<FnSymbol*>(tmp)) {
+      if (assignFn->formals->first()->type == structType) {
+        return;
+      }
+    }
+    tmp = tmp->overload;
+  }
+
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
   AList<ParamSymbol>* args = new AList<ParamSymbol>(arg1);
