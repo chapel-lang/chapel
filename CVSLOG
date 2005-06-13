@@ -36293,3 +36293,17 @@ Added files:
 	                                 equal_method-1.compopts 
 	                                 equal_method-1.good 
 
+---------------------------------------------------------------------------
+
+06/13/05 15:45:24 -- deitz
+
+Log message:
+	Small changes to parsing of where expressions which lets the where
+	expression in test/functions/deitz/test_where_param1.chpl parse.  This
+	test now flags an ambiguous function since it doesn't look at the
+	where clause yet.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/functions/deitz/: test_where_param1.future 
+
