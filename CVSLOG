@@ -36116,3 +36116,14 @@ Log message:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_class_trial2.future 
 
+---------------------------------------------------------------------------
+
+06/13/05 10:27:00 -- jplevyak
+
+Log message:
+	remove instantiated types from the StructuralType::types array instead
+	of just setting the pointer to NULL.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
