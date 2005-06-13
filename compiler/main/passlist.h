@@ -49,6 +49,8 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(ApplyThisParameters, ""),
   RUN(Verify, ""), // this is a sanity check
+  RUN(ApplyGettersSetters, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(RemoveLikeTypes, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertDefaultInitVariables, ""),

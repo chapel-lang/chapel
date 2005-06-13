@@ -9,6 +9,7 @@
 
 // Begin temporary development flags
 extern bool checkAnalysisTypeinfo;
+extern bool applyGettersSetters;
 // End temporary development flags
 
 extern int fnewvardef;

@@ -12,11 +12,10 @@
 #define _APPLY_THIS_PARAMETERS_H_
 
 #include "traversal.h"
-#include "type.h"
 
 class ApplyThisParameters : public Traversal {
  public:
-  void preProcessExpr(Expr* expr);
+  void postProcessExpr(Expr* expr);
 };
 
 #endif

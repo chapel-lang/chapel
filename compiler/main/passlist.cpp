@@ -17,6 +17,7 @@
 #include "../symtab/renameOverloadedFunctions.h"
 #include "../symtab/resolveTypes.h"
 
+#include "../traversals/applyGettersSetters.h"
 #include "../traversals/applyThisParameters.h"
 #include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/checkIDs.h"
@@ -63,6 +64,7 @@
    the pass above.  */
 
 START_PASSLIST_REGISTRATION
+REGISTER(ApplyGettersSetters);
 REGISTER(ApplyThisParameters);
 REGISTER(BuildBinary);
 REGISTER(BuildClassConstructorsEtc);

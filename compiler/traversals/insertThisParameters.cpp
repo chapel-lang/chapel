@@ -104,6 +104,13 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
       Symboltable::setCurrentScope(saveScope);
       fn->formals->insertAtHead(this_insert);
       fn->_this = this_insert;
+      if (applyGettersSetters) {
+        SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
+        ParamSymbol* token_dummy = new ParamSymbol(PARAM_REF, "_methodTokenDummy", Symboltable::lookupInternal("_methodTokenType")->type);
+        token_dummy->setDefPoint(def_stmt->defExprls->only());
+        Symboltable::setCurrentScope(saveScope);
+        fn->formals->insertAtHead(token_dummy);
+      }
     }
   }
 

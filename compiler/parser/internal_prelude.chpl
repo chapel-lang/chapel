@@ -1,3 +1,9 @@
+record _methodTokenType {
+  var _methodTokenTypeFieldDummy : integer;
+}
+
+var _methodToken : _methodTokenType;
+
 class _seq { -- this is no longer necessary
 }
 

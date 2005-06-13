@@ -1,9 +1,3 @@
-record _methodTokenType {
-  var _methodTokenTypeFieldDummy : integer;
-}
-
-var _methodToken : _methodTokenType;
-
 class pragma "codegen data" _data { -- a c array, basically
   type t;
   var x : t; -- dummy

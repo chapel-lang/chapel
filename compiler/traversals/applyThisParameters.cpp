@@ -5,7 +5,7 @@
 #include "symtab.h"
 
 
-void ApplyThisParameters::preProcessExpr(Expr* expr) {
+void ApplyThisParameters::postProcessExpr(Expr* expr) {
   if (Variable* member = dynamic_cast<Variable*>(expr)) {
     if (member->parentStmt &&
         member->parentStmt->parentFunction() &&
