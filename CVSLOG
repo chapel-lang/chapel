@@ -36270,3 +36270,26 @@ Added files:
 	chapel/compiler/traversals/: applyGettersSetters.cpp 
 	                             applyGettersSetters.h 
 
+---------------------------------------------------------------------------
+
+06/13/05 15:11:02 -- jplevyak
+
+Log message:
+	Added code to optionally make = a bound member and to resolve
+	operator =.  Add a test case to show that it works.  This has
+	a number of problems with Tuples/Arrays as well a problem with
+	re-resolving BinOps.  More work required.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: internal_prelude.chpl 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             resolveSymbols.cpp 
+	chapel/test/functions/jplevyak/: equal-9.future 
+Added files:
+	chapel/test/functions/jplevyak/: equal_method-1.chpl 
+	                                 equal_method-1.compopts 
+	                                 equal_method-1.good 
+
