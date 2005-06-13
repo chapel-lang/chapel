@@ -36106,3 +36106,13 @@ Modified files:
 	chapel/test/arrays/deitz/: test_array_class_trial2.chpl 
 	                           test_array_class_trial2.good 
 
+---------------------------------------------------------------------------
+
+06/13/05 10:25:47 -- jplevyak
+
+Log message:
+	Remove .future for working test.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_array_class_trial2.future 
+
