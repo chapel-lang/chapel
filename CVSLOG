@@ -36329,3 +36329,17 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: findUnknownTypes.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/05 16:54:15 -- deitz
+
+Log message:
+	No longer change MemberAccess in VarInitExpr into getter call.  I
+	think this should just be a symbol anyway, but has not been updated.
+	
+	This gets classes/deitz/test_class2.chpl working with
+	--apply-getters-setters.
+
+Modified files:
+	chapel/compiler/traversals/: applyGettersSetters.cpp 
+
