@@ -36318,3 +36318,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/05 16:45:52 -- deitz
+
+Log message:
+	Added code to remove the _methodToken from the formal and actual
+	arguments of functions.
+
+Modified files:
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+
