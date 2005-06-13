@@ -600,8 +600,7 @@ where:
 ;
 
 whereexpr: 
-  identifier
-    { $$ = new Variable(new UnresolvedSymbol($1)); }
+  atom
 | TTYPE identifier
     { $$ = new DefExpr(new TypeSymbol($2, new VariableType)); }
 | TNOT whereexpr
@@ -648,14 +647,8 @@ whereexpr:
     { $$ = new BinOp(BINOP_SUBTYPE, $1, $3); }
 | whereexpr TNOTCOLON whereexpr
     { $$ = new BinOp(BINOP_NOTSUBTYPE, $1, $3); }
-| whereexpr TDOT identifier
-    { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
-| TLP whereexpr TRP
-    { $$ = $2; }
 | class_record_union pragmas optional_identifier TLCBR decls TRCBR
     { $$ = NULL; }
-| whereexpr TLP exprlist TRP   
-    { $$ = new ParenOpExpr($1, $3); }
 ;
 
 
