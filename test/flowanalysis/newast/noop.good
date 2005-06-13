@@ -10,8 +10,13 @@
 ::__init_internal_prelude(noop.chpl:6) ( __init_internal_prelude (noop.chpl:6) )
 ::__init_noop(noop.chpl:6) ( __init_noop (noop.chpl:6) )
 ::__init_prelude(noop.chpl:6) ( __init_prelude (noop.chpl:6) )
-::_init__seqNode1(_chpl_seq.chpl:18) ( null )
-::_init_seq22(_chpl_seq.chpl:25) ( null )
+::_construct__methodTokenType(prelude.chpl:0) ( _construct__methodTokenType )
+::_construct__methodTokenType(prelude.chpl:0) ( _construct__methodTokenType )
+::_default_param_temp__methodTokenTypeFieldDummy(prelude.chpl:0) ( int64 )
+::_init__seqNode1(_chpl_seq.chpl:20) ( null )
+::_init_seq22(_chpl_seq.chpl:27) ( null )
+::_methodToken(prelude.chpl:0) ( _methodTokenType )
+::_methodTokenTypeFieldDummy(prelude.chpl:0) ( int64 )
 ::a(internal_prelude.chpl:0) ( _domain_1d (noop.chpl:6) )
 ::b(internal_prelude.chpl:0) ( Domain )
 ::false(prelude.chpl:0) ( bool )
@@ -19,6 +24,7 @@
 ::i(noop.chpl:8) ( int64 )
 ::main(noop.chpl:6) ( main (noop.chpl:6) )
 ::nil ( null )
+::this(prelude.chpl:0) ( _methodTokenType )
 ::true(prelude.chpl:0) ( bool )
 function __init__CommonModule noop.chpl:6
 function __init__chpl_complex noop.chpl:6
