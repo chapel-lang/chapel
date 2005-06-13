@@ -988,12 +988,14 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     clone = typeSym->clone(map);
     instantiate_add_subs(substitutions, map);
     StructuralType* cloneType = dynamic_cast<StructuralType*>(clone->type);
-    for (int i = 0; i < cloneType->types.n; i++) {
-      if (cloneType->types.v[i] && substitutions->get(cloneType->types.v[i]->type)) {
-        cloneType->types.v[i]->defPoint->parentStmt->remove();
-        cloneType->types.v[i]->parentScope->remove(cloneType->types.v[i]);
-        cloneType->types.v[i] = NULL;
-      }
+    Vec<TypeSymbol *> types;
+    types.move(cloneType->types);
+    for (int i = 0; i < types.n; i++) {
+      if (types.v[i] && substitutions->get(types.v[i]->type)) {
+        types.v[i]->defPoint->parentStmt->remove();
+        types.v[i]->parentScope->remove(types.v[i]);
+      } else
+        cloneType->types.add(types.v[i]);
     }
     instantiate_update_expr(substitutions, clone->defPoint, map);
     substitutions->put(typeSym->type, clone->type);
