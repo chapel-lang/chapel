@@ -16,6 +16,9 @@ void ApplyGettersSetters::postProcessExpr(Expr* expr) {
   if (fn && (fn->_setter || fn->_getter || fn->isConstructor)) {
     return;
   }
+  if (dynamic_cast<VarInitExpr*>(expr->parentExpr)) {
+    return;
+  }
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(expr)) {
     AList<Expr>* arguments = new AList<Expr>();
     arguments->insertAtTail(new Variable(Symboltable::lookupInternal("_methodToken")));
