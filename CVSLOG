@@ -36093,3 +36093,16 @@ Modified files:
 	                             resolveSymbols.cpp 
 	chapel/test/functions/jplevyak/: equal-9.future 
 
+---------------------------------------------------------------------------
+
+06/13/05 10:25:33 -- jplevyak
+
+Log message:
+	update the test to be deterministic about the output (the current
+	one depended on the order of computation of intermediates).
+	updated the .good file to reflect the new order of output
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_class_trial2.chpl 
+	                           test_array_class_trial2.good 
+
