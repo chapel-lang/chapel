@@ -43,7 +43,7 @@ static Sym *array_index_symbol = 0;
 static Sym *array_set_symbol = 0;
 static Sym *sizeof_symbol = 0;
 static Sym *cast_symbol = 0;
-static Sym *method_symbol = 0;
+static Sym *method_token = 0;
 static Sym *set_symbol = 0;
 static Sym *make_seq_symbol = 0;
 static Sym *make_chapel_tuple_symbol = 0;
@@ -1439,7 +1439,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
         Sym *old_val = val;
         val = new_sym();
         if (f_equal_method) {
-          Code *c = if1_send(if1, &init->ainfo->code, 4, 1, make_symbol("="), method_symbol, ast->sym, old_val, val);
+          Code *c = if1_send(if1, &init->ainfo->code, 4, 1, make_symbol("="), method_token, ast->sym, old_val, val);
           c->ast = init->ainfo;
         } else {
           Code *c = if1_send(if1, &init->ainfo->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
@@ -1670,7 +1670,7 @@ gen_set_member(MemberAccess *ma, AssignOp *base_ast) {
     strcpy(sel, "=");
     strcat(sel, ma->member->asymbol->sym->name);
     Sym *selector = make_symbol(sel);
-    c = if1_send(if1, &ast->code, 4, 1, selector, method_symbol,
+    c = if1_send(if1, &ast->code, 4, 1, selector, method_token,
                  ma->base->ainfo->rval, rhs, ast->rval);
   } else {
     Sym *selector = make_symbol(ma->member->asymbol->sym->name);
@@ -1690,7 +1690,7 @@ gen_get_member(MemberAccess *ma) {
   if1_gen(if1, &ast->code, ma->base->ainfo->code);
   char *sel = ma->member->asymbol->sym->name;
   Sym *selector = make_symbol(sel);
-  Code *c = if1_send(if1, &ast->code, 3, 1, selector, method_symbol,
+  Code *c = if1_send(if1, &ast->code, 3, 1, selector, method_token,
                      ma->base->ainfo->rval, ast->rval);
   c->ast = ast;
   c->partial = Partial_NEVER;
@@ -1727,7 +1727,7 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
       rvals.add(make_symbol(nn));
     } else {
       rvals.add(set_symbol);
-      rvals.add(method_symbol);
+      rvals.add(method_token);
       rvals.add(s->baseExpr->ainfo->rval);
     }
   }
@@ -1788,7 +1788,7 @@ gen_set(ParenOpExpr *p, Expr *rhs, Expr *base_ast) {
   if1_gen(if1, &ast->code, p->baseExpr->ainfo->code);
   if1_gen(if1, &ast->code, rhs->ainfo->code);
   Sym *selector = set_symbol;
-  Code *c = if1_send(if1, &ast->code, 4, 1, selector, method_symbol,
+  Code *c = if1_send(if1, &ast->code, 4, 1, selector, method_token,
                      p->baseExpr->ainfo->rval, rhs->ainfo->rval, ast->rval);
   c->ast = ast;
   c->partial = Partial_NEVER;
@@ -2135,7 +2135,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         Sym *told_rval = new_sym();
         if1_move(if1, &s->ainfo->code, old_rval, told_rval, s->ainfo);
         if (f_equal_method) {
-          Code *c = if1_send(if1, &s->ainfo->code, 4, 1, make_symbol("="), method_symbol,
+          Code *c = if1_send(if1, &s->ainfo->code, 4, 1, make_symbol("="), method_token,
                              s->left->ainfo->rval, told_rval, rval);
           c->ast = s->ainfo;
         } else {
@@ -2372,10 +2372,10 @@ gen_fun(FnSymbol *f) {
     s->ast = ast;
     s->must_specialize = make_symbol(f->asymbol->sym->name);
     as[iarg++] = s;
-    if (f->method_type != NON_METHOD) {
-      Sym *s = new_sym(method_symbol->name);
+    if (!applyGettersSetters && f->method_type != NON_METHOD) {
+      Sym *s = new_sym(method_token->name);
       s->ast = ast;
-      s->must_specialize = method_symbol;
+      s->must_specialize = method_token;
       as[iarg++] = s;
     }
   }
@@ -2523,7 +2523,7 @@ finalize_function(Fun *fun) {
 
 void
 ACallbacks::finalize_functions() {
-  pdb->fa->method_token = unique_AVar(new Var(method_symbol), GLOBAL_CONTOUR);
+  pdb->fa->method_token = unique_AVar(new Var(method_token), GLOBAL_CONTOUR);
   pdb->fa->array_index_base = 1;
   pdb->fa->tuple_index_base = 1;
   forv_Fun(fun, pdb->funs)
@@ -2541,7 +2541,8 @@ init_symbols() {
   expr_reduce_symbol = make_symbol("expr_reduce");
   sizeof_symbol = make_symbol("sizeof");
   cast_symbol = make_symbol("cast");
-  method_symbol = make_symbol("__method");
+  if (!applyGettersSetters)
+    method_token = make_symbol("__method");
   set_symbol = make_symbol("=this");
   make_seq_symbol = make_symbol("make_seq");
   make_chapel_tuple_symbol = make_symbol("make_chapel_tuple");
@@ -2897,6 +2898,8 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   init_symbols();
   debug_new_ast(stmts, syms);
   if (import_symbols(syms) < 0) return -1;
+  if (applyGettersSetters)
+    method_token = Symboltable::lookupInternal("_methodToken")->asymbol->sym;
   if1_set_primitive_types(if1);
   if (build_classes(syms) < 0) return -1;
   finalize_types(if1);
