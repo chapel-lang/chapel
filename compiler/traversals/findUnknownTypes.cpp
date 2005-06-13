@@ -2,6 +2,7 @@
 #include "expr.h"
 #include "symbol.h"
 #include "stmt.h"
+#include "symtab.h"
 
 
 void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
@@ -15,6 +16,8 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
         } else if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(var_arg->var)) {
           if (p->typeVariable)
             arg->remove();
+        } else if (var_arg->var == Symboltable::lookupInternal("_methodToken")) {
+          arg->remove();
         }
       }
       arg = next_arg;
@@ -30,6 +33,9 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
     while (old_formal) {
       if (old_formal->typeVariable) {
         fn->body->body->insertAtHead(new DefStmt(new DefExpr(old_formal)));
+      } else if (old_formal->type->symbol ==
+                 Symboltable::lookupInternal("_methodTokenType")) {
+        old_formal->parentScope->remove(old_formal);
       } else {
         new_formals->insertAtTail(old_formal);
       }
