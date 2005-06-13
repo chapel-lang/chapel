@@ -36187,3 +36187,86 @@ Modified files:
 	chapel/compiler/include/: analysis.h fa.h log.h sym.h 
 	chapel/compiler/traversals/: resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/05 12:32:47 -- deitz
+
+Log message:
+	Added compiler flag
+	
+	  --apply-getters-setters
+	
+	to enable this change.
+	
+	Added a new pass ApplyGettersSetters that changes all MemberAccesses
+	outside of getters, setters, and constructors into function calls so
+	that
+	
+	  x.a
+	
+	becomes
+	
+	  a(x)
+	
+	This checkin also adds a fake _methodTokenType argument as the first
+	parameter to distinguish methods from functions with the same type
+	signatures so it really becomes
+	
+	  a(_methodToken, x)
+	
+	The getter is
+	
+	  a(_methodTokenType, ClassType)
+	
+	This code was originally done on the low-level.  This moves this
+	transformation up to the high-level, but awaits symmetric changes in
+	the low-level.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/parser/: internal_prelude.chpl prelude.chpl 
+	chapel/compiler/traversals/: Makefile.share 
+	                             applyThisParameters.cpp 
+	                             applyThisParameters.h 
+	                             buildClassConstructorsEtc.cpp 
+	                             insertThisParameters.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+Added files:
+	chapel/compiler/traversals/: applyGettersSetters.cpp 
+	                             applyGettersSetters.h 
+
