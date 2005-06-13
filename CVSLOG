@@ -36127,3 +36127,63 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/05 12:27:25 -- jplevyak
+
+Log message:
+	Added new log:  chpl -dd
+	which logs dispatch information into log/log.d
+	the log looks like the:
+	
+	2126- pass: 0 visible: 7
+	2126- destructure_level: 0 candidates: 3 arguments: 3
+	2126- arg 0 : =
+	2126- arg 1 : foo
+	2126- arg 2 : foo
+	2126- cover_formals: 3
+	2126- candidates:
+	2126- 1: internal_prelude.chpl:81 Sym: 271 AST_id: 2372
+	2126- 2: equal-9.chpl:2 Sym: 597 AST_id: 5761
+	2126- 3: internal_prelude.chpl:38 Sym: 769 AST_id: 7403
+	2126- unsubsumed: 1
+	2126- candidates:
+	2126- 1: equal-9.chpl:2 Sym: 597 AST_id: 5761
+	2126- unambiguous: 1
+	2126- destructure_level: 0 matches: 1
+	2126- candidates:
+	2126- 1: equal-9.chpl:2 Sym: 597 AST_id: 5761
+	
+	And should be accessed by "grep ^####-" where #### is the
+	FUTURE # for the expression in question in the IF1 which is
+	obtained from by chpl -di in the log: log/log.i and looks like:
+	
+	...
+	  (MOVE (var "y" 603) (temp 2125))
+	  (MOVE (temp 2125) (temp 2127))
+	  (SEND (FUTURE (temp 2126)) (var "=" 14) (var "x" 602) (temp 2127))
+	...
+	
+	% grep ^2126- log/log.d
+	
+	will give the above output. which says that in pass 0
+	there are 7 visibile functions at the call site at
+	the top destructuring level (0). There are 3 candidates
+	where each argument matches independently the
+	arguments with the types (=, foo, foo) where =
+	is just the name of the function.  All 3 candidates
+	are applicable at all argument sites for these arguments
+	and they are given (by line number and FnSymbol id).
+	One subsumes the others and it is at equal-9.chpl:2.
+	It is unambiguous and (after recursing through any
+	destructurings (there are none)) it remains the sole match.
+	
+	Please tell me if there is any aspect of this which you think
+	could be improved.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
+	                           sym.cpp 
+	chapel/compiler/include/: analysis.h fa.h log.h sym.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+
