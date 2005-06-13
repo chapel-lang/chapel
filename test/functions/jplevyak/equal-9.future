@@ -1,3 +1,14 @@
+deitz/jplevyak
+
+there is now an option for it to do so and to make
+the = operator be a bound member.  Unfortunately
+there are issues with Tuples and Arrays.
+
+Also, it tries to reresolve the newly inserted BinOp..
+probably need use get_ast_children to control recursion.
+
+HISTORY
+
 jplevyak
 
 ResolveSymbols doesn't seem to call resolve_binary_operator on
@@ -6,7 +17,6 @@ but then a function isn't found every time.  For example, when the
 assignment LHS is a MemberAccess and requires a setter.  There are a
 few other cases in this example.
 
-HISTORY
 
 deitz
 

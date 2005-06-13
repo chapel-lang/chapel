@@ -239,8 +239,10 @@ static void build_record_assignment_function(StructuralType* structType) {
   }
 
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
-  ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
-  AList<ParamSymbol>* args = new AList<ParamSymbol>(arg1);
+  ParamSymbol* _arg1 = 
+    f_equal_method ? new ParamSymbol(PARAM_REF, "this", structType)
+    : new ParamSymbol(PARAM_BLANK, "_arg1", structType);
+  AList<ParamSymbol>* args = new AList<ParamSymbol>(_arg1);
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2",
     (analyzeAST) ? dtUnknown : structType);
   args->insertAtTail(arg2);
@@ -249,7 +251,7 @@ static void build_record_assignment_function(StructuralType* structType) {
   AList<Stmt>* body = new AList<Stmt>();
   Symboltable::pushScope(SCOPE_LOCAL);
   forv_Vec(VarSymbol, tmp, structType->fields) {
-    Expr* left = new MemberAccess(new Variable(arg1), tmp);
+    Expr* left = new MemberAccess(new Variable(_arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
     Expr* assign_expr = new AssignOp(GETS_NORM, left, right);
     body->insertAtTail(new ExprStmt(assign_expr));
@@ -262,6 +264,12 @@ static void build_record_assignment_function(StructuralType* structType) {
                                                                       block_stmt
                                                                       )));
   structType->symbol->defPoint->parentStmt->insertBefore(defStmt);
+  if (f_equal_method) {
+    structType->methods.add(fn);
+    fn->method_type = PRIMARY_METHOD;
+    fn->typeBinding = structType->symbol;
+    fn->_this = _arg1;
+  }
 }
 
 

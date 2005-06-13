@@ -255,7 +255,7 @@ resolve_no_analysis(Expr *expr) {
 
 
 static Expr *
-resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0, bool none_ok = false) {
+resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0) {
   Expr *expr = op;
   Vec<FnSymbol*> fns;
   if (resolved)
@@ -264,9 +264,7 @@ resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0, bool none_ok = false)
     call_info(expr, fns);
   if (fns.n != 1) {
     if (fns.n == 0) {
-      if (none_ok)
-        return expr;
-      INT_FATAL(expr, "Operator has no function");
+      return expr;
     } else {
       INT_FATAL(expr, "Trouble resolving operator");
     }
@@ -413,11 +411,38 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
                                        struct_scope->structScope);
         }
       }
-    } else {
-      //expr = resolve_binary_operator(dynamic_cast<BinOp*>(expr), 0, true);
+    } else if (f_equal_method) {
+      Vec<FnSymbol *> op_fns, assign_fns;
+      call_info(aop, op_fns, CALL_INFO_FIND_OPERATOR);
+      call_info(aop, assign_fns, CALL_INFO_FIND_FUNCTION);
+      if (op_fns.n || assign_fns.n) {
+        FnSymbol *f_op = op_fns.n ? op_fns.v[0] : 0;
+        FnSymbol *f_assign = assign_fns.n ? assign_fns.v[0] : 0;
+        Expr *rhs = aop->right->copy();
+        if (f_op) {
+          if (!is_builtin(f_op)) {
+            AList<Expr>* op_arguments = new AList<Expr>(member_access->copy());
+            op_arguments->insertAtTail(rhs);
+            Expr* op_function = new Variable(f_op);
+            Expr *new_rhs = new FnCall(op_function, op_arguments);
+            rhs->replace(new_rhs);
+          } else {
+            rhs = resolve_binary_operator(
+              new BinOp(gets_to_binop(aop->type), aop->left, aop->right),
+              f_op);
+          }
+        }
+        if (f_assign) {
+          AList<Expr>* assign_arguments = new AList<Expr>(aop->left->copy());
+          assign_arguments->insertAtTail(rhs);
+          Expr* assign_function = new Variable(f_assign);
+          Expr *new_expr = new FnCall(assign_function, assign_arguments);
+          expr->replace(new_expr);
+          expr = new_expr;
+        }
+      }
     }    
   }
-
 
   // Resolve MemberAccesses
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {

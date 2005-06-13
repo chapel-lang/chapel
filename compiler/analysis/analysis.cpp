@@ -1438,8 +1438,13 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
         Sym *old_val = val;
         val = new_sym();
-        Code *c = if1_send(if1, &init->ainfo->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
-        c->ast = init->ainfo;
+        if (f_equal_method) {
+          Code *c = if1_send(if1, &init->ainfo->code, 4, 1, make_symbol("="), method_symbol, ast->sym, old_val, val);
+          c->ast = init->ainfo;
+        } else {
+          Code *c = if1_send(if1, &init->ainfo->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
+          c->ast = init->ainfo;
+        }
         if1_gen(if1, &ast->code, init->ainfo->code);
       } else {
         if1_gen(if1, &ast->code, init->ainfo->code);
@@ -2129,9 +2134,15 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         rval->ast = s->ainfo;
         Sym *told_rval = new_sym();
         if1_move(if1, &s->ainfo->code, old_rval, told_rval, s->ainfo);
-        Code *c = if1_send(if1, &s->ainfo->code, 3, 1, make_symbol("="), 
-                           s->left->ainfo->rval, told_rval, rval);
-        c->ast = s->ainfo;
+        if (f_equal_method) {
+          Code *c = if1_send(if1, &s->ainfo->code, 4, 1, make_symbol("="), method_symbol,
+                             s->left->ainfo->rval, told_rval, rval);
+          c->ast = s->ainfo;
+        } else {
+          Code *c = if1_send(if1, &s->ainfo->code, 3, 1, make_symbol("="), 
+                             s->left->ainfo->rval, told_rval, rval);
+          c->ast = s->ainfo;
+        }
       }
       if (!s->left->ainfo->sym)
         show_error("assignment to non-lvalue", s->ainfo);
@@ -3065,6 +3076,8 @@ return_type_info(FnSymbol *fn) {
 
 static int
 is_operator_name(char *name) {
+  if (name[0] == '=' && !name[1])
+    return false;
   if (OPERATOR_CHAR(name[0]) && (!name[1] || OPERATOR_CHAR(name[1])))
     return true;
   return false;

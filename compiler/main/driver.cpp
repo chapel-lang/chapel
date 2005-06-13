@@ -59,6 +59,7 @@ int fcg = 0;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int print_call_depth = 2;
 int scoping_test = 0;
+int f_equal_method = 0;
 
 static ArgumentDescription arg_desc[] = {
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
@@ -97,6 +98,7 @@ static ArgumentDescription arg_desc[] = {
  {"tmpRoxIndexType", ' ', "Roxana's index toggle", "F", &_dtinteger_IndexType_switch, "CHPL_DTINTEGER_INDEXTYPE_SWITCH", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"newvardef", ' ', "New Var Def code", "T", &fnewvardef, "CHPL_NEWVARDEF", NULL},
+ {"equal_method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
  {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
  {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 

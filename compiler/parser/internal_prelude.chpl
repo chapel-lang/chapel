@@ -81,9 +81,12 @@ pragma "builtin" function by(a : numeric, b : numeric) { return __primitive(a, "
 pragma "builtin" function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
 pragma "builtin" function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
 
-pragma "builtin" function =(a : Index, b : integer) { return __primitive("indextype_set", a, b); }
-pragma "builtin" function =(a : integer, b : Index) { return __primitive("indextype_get", b); }
+pragma "builtin" function Index.=(b : integer) { return __primitive("indextype_set", this, b); }
+pragma "builtin" function integer.=(b : Index) { return __primitive("indextype_get", b); }
+pragma "builtin" function any.=(b : any) { return b; }
 
+pragma "builtin" function =(a : Index, b : integer) { return __primitive("indextype_set", this, b); }
+pragma "builtin" function =(a : integer, b : Index) { return __primitive("indextype_get", b); }
 pragma "builtin" function =(a : any, b : any) { return b; }
 
 pragma "rename _chpl_string_concat"

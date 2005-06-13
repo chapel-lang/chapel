@@ -12,6 +12,7 @@ extern bool checkAnalysisTypeinfo;
 extern bool applyGettersSetters;
 // End temporary development flags
 
+extern int f_equal_method;
 extern int fnewvardef;
 extern int fdce_if1;
 extern int finline;
