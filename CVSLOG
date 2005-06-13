@@ -36073,3 +36073,23 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+06/13/05 10:10:00 -- deitz
+
+Log message:
+	A builtin assignment function is no longer created for a record if one
+	is provided.  Perhaps this is better to implement using function
+	priorities where the automatically generated functions are resolved to
+	with a lower priority.
+	
+	Added a comment to ResolveSymbols to the effect that assignment is not
+	being resolved as a binary operator.
+	
+	Updated future of functions/jplevyak/equal-9.chpl.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             resolveSymbols.cpp 
+	chapel/test/functions/jplevyak/: equal-9.future 
+
