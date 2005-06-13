@@ -255,7 +255,7 @@ resolve_no_analysis(Expr *expr) {
 
 
 static Expr *
-resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0) {
+resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0, bool none_ok = false) {
   Expr *expr = op;
   Vec<FnSymbol*> fns;
   if (resolved)
@@ -264,6 +264,8 @@ resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0) {
     call_info(expr, fns);
   if (fns.n != 1) {
     if (fns.n == 0) {
+      if (none_ok)
+        return expr;
       INT_FATAL(expr, "Operator has no function");
     } else {
       INT_FATAL(expr, "Trouble resolving operator");
@@ -411,8 +413,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
                                        struct_scope->structScope);
         }
       }
-    }
+    } else {
+      //expr = resolve_binary_operator(dynamic_cast<BinOp*>(expr), 0, true);
+    }    
   }
+
 
   // Resolve MemberAccesses
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {

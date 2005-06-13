@@ -54,6 +54,12 @@ class Matcher {
   Matcher(AVar *send, AVar *arg0, Partial_kind partial, Vec<Match *> *matches);
 };
 
+static void log_dispatch_pattern_match(Matcher &);
+static void log_dispatch_cs_match(Matcher &matcher, Vec<CreationSet *> &csargs, 
+                                  MPosition &app, Vec<Fun *> &local_matches);
+static void log_dispatch_matches(Matcher &matcher, Vec<Match *> &matches);
+static void log_dispatch_funs(Matcher &matcher, Vec<Fun *> &funs);
+
 static ChainHash<MPosition *, MPositionHashFuns> cannonical_mposition;
 
 static Sym *
@@ -743,6 +749,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
                             Vec<Fun *> &local_matches, 
                             Vec<Fun *> &result, int top_level)
 {
+  log_dispatch_cs_match(*this, csargs, app, local_matches);
   Vec<Match *> covered;
   // collect the matches which cover the argument CreationSets
   forv_Fun(f, local_matches) if (f) {
@@ -769,8 +776,11 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
       covered.set_add(m);
   LnextFun:;
   }
+  log(LOG_DISPATCH, "%d- cover_formals: %d\n", send->var->sym->id, covered.n);
+  log_dispatch_matches(*this, covered);
   if (!covered.n)
     return;
+
   Vec<Match *> unsubsumed, subsumed;
   // eliminate those which are subsumed by some other function
   for (int i = 0; i < covered.n; i++) if (covered.v[i]) {
@@ -786,7 +796,10 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
     unsubsumed.add(covered.v[i]);
   LnextCovered:;
   }
- Vec<Match *> applicable;
+  log(LOG_DISPATCH, "%d- unsubsumed: %d\n", send->var->sym->id, unsubsumed.n);
+  log_dispatch_matches(*this, unsubsumed);
+
+  Vec<Match *> applicable;
   // record generic substitutions and point-wise applications
   for (int i = 0; i < unsubsumed.n; i++) {
     if (!generic_substitutions(&unsubsumed.v[i], app, csargs))
@@ -819,6 +832,8 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
     LnextApplicable:;
       app.pop();
     }
+    log(LOG_DISPATCH, "%d- unambiguous: %d\n", send->var->sym->id, similar.n);
+
     // for similar functions recurse for patterns to check for subsumption and ambiguities
     app.push(1);
     for (int i = 0; i < csargs.n; i++) {
@@ -837,6 +852,9 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
   if (top_level)
     instantiation_wrappers_and_partial_application(matches);
   set_filters(csargs, app, matches, top_level);
+  log(LOG_DISPATCH, "%d- destructure_level: %d matches: %d\n", send->var->sym->id, 
+      app.pos.n, matches.n);
+  log_dispatch_funs(*this, matches);
   result.set_union(matches);
 }
 
@@ -884,6 +902,7 @@ Matcher::cannonicalize_matches() {
 int
 pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial, Vec<Match *> *matches) {
   Matcher matcher(send, args.v[0], partial, matches);
+  log_dispatch_pattern_match(matcher);
   {
     MPosition app;
     matcher.find_all_matches(0, args, &matcher.partial_matches, app, 0);
@@ -1043,3 +1062,59 @@ build_arg_positions(FA *fa) {
   forv_Fun(f, fa->pdb->funs)
     build_arg_positions(f);
 }
+
+void log_dispatch_pattern_match(Matcher &matcher) {
+  if (matcher.all_matches)
+    log(LOG_DISPATCH, "%d- pass: %d visible: %d\n", 
+        matcher.send->var->sym->id, analysis_pass, matcher.all_matches->n);
+  else
+    log(LOG_DISPATCH, "%d- pass: %d visible: ALL\n", 
+        matcher.send->var->sym->id, analysis_pass);
+}
+
+void log_dispatch_cs_match(Matcher &matcher, Vec<CreationSet *> &csargs, 
+                           MPosition &app, Vec<Fun *> &local_matches)
+{
+  if (!logging(LOG_DISPATCH)) return;
+  log(LOG_DISPATCH, "%d- destructure_level: %d candidates: %d arguments: %d\n",
+      matcher.send->var->sym->id, app.pos.n, local_matches.n, csargs.n);
+  for (int i = 0; i < csargs.n; i++) {
+    Sym *s = csargs.v[i]->sym;
+    log(LOG_DISPATCH, "%d- arg %d : ", matcher.send->var->sym->id, i);
+    if (s->name)
+      log(LOG_DISPATCH, "%s\n", s->name);
+    else if (s->constant)
+      log(LOG_DISPATCH, "%s\n", s->constant);
+    else
+      log(LOG_DISPATCH, "%d\n", s->id);
+  }
+}
+
+void log_dispatch_funs(Matcher &matcher, Vec<Fun *> &funs) {
+  if (!logging(LOG_DISPATCH)) return;
+  log(LOG_DISPATCH, "%d- candidates:\n", matcher.send->var->sym->id);
+  if (funs.n > 10) {
+    log(LOG_DISPATCH, "%d- too many candidates: %d:\n", matcher.send->var->sym->id,
+        funs.n);
+    return;
+  }
+  for (int i = 0; i < funs.n; i++) {
+    Sym *fn = funs.v[i]->sym;
+    if (fn->filename() && fn->line() > 0)
+      log(LOG_DISPATCH, "%d- %d: %s:%d Sym: %d AST_id: %d\n", matcher.send->var->sym->id, i + 1, 
+          fn->filename(), fn->line(), fn->id, fn->ast_id());
+    else
+      log(LOG_DISPATCH, "%d- %d: _:-1 Sym: %d AST_id: %d\n", matcher.send->var->sym->id, i + 1, 
+          fn->id, fn->ast_id());
+  }
+}
+
+void log_dispatch_matches(Matcher &matcher, Vec<Match *> &matches) {
+  if (!logging(LOG_DISPATCH)) return;
+  Vec<Fun *> funs;
+  forv_Match(m, matches)
+    funs.add(m->fun);
+  log_dispatch_funs(matcher, funs);
+}
+
+

@@ -54,6 +54,7 @@ class ASymbol : public gc {
   Sym *clone(CloneCallback *);
   char *pathname();
   int line();
+  int ast_id();
   ASymbol *copy();
 
   BaseAST *symbol;

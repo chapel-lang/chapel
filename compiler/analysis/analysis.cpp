@@ -99,6 +99,14 @@ ASymbol::line() {
     return 0;
 }
 
+int 
+ASymbol::ast_id() {
+  if (symbol)
+    return symbol->id;
+  else
+    return 0;
+}
+
 AInfo::AInfo() : xast(0), code(0), sym(0), rval(0) {
   label[0] = label[1] = 0;
 }

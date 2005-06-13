@@ -39,6 +39,7 @@ class ArgumentState;
 #define LOG_AST         'a'
 #define LOG_IF1         'i'
 #define LOG_TEST_FA     'F'
+#define LOG_DISPATCH    'd'
 
 EXTERN char log_dir[FILENAME_MAX] EXTERN_INIT("./log");
 EXTERN char log_tag[256];

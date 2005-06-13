@@ -171,6 +171,7 @@ class Sym : public BasicSym {
   int                   line();
   int                   log_line();             // squelch line numbers of prelude in log
   char                  *filename();
+  int                   ast_id();
   Sym *                 clone(CloneCallback *);
 
   void                  copy_values(Sym *);

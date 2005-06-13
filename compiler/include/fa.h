@@ -334,6 +334,8 @@ extern AType *symbol_type;
 extern AType *fun_symbol_type;
 extern AType *anyclass_type;
 
+extern int analysis_pass;
+
 EXTERN int num_constants_per_variable EXTERN_INIT(DEFAULT_NUM_CONSTANTS_PER_VARIABLE);
 
 #endif

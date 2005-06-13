@@ -14,7 +14,7 @@
 
 static int avar_id = 1;
 static int creation_set_id = 1;
-static int extensions = 0;
+int analysis_pass = 0;
 
 static FA *fa = 0;
 
@@ -2931,8 +2931,8 @@ extend_analysis() {
     }
   }
   if (analyze_again) {
-    ++extensions;
-    if (verbose_level) printf("extending analysis %d\n", extensions);
+    ++analysis_pass;
+    if (verbose_level) printf("extending analysis %d\n", analysis_pass);
     clear_results();
     return 1;
   }
