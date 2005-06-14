@@ -36486,3 +36486,75 @@ Added files:
 	                              intents-arrays2a.future 
 	                              intents-arrays2a.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 12:32:32 -- jplevyak
+
+Log message:
+	All symbols in builtin and standard modules are now excluded
+	from the flow analysis dump used in the regressions.
+	This should make the tests resilient to changes in the
+	standard headers.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp sym.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/test/flowanalysis/jplevyak/: assign1.good assign2.good 
+	                                    badcall.good 
+	                                    badprimitive.good 
+	                                    badreturn.good bug1.good 
+	                                    classvar.good cs1.good 
+	                                    cs2.good cs3.good cs4.good 
+	                                    cs5.good cs6.good 
+	                                    destruct.good destruct2.good 
+	                                    dispatch1.good 
+	                                    dispatch2.good 
+	                                    dispatch3.good 
+	                                    dispatch4.good literal.good 
+	                                    memberfun.good 
+	                                    memberfun2.good 
+	                                    multipledef.good 
+	                                    multiplereturn.good 
+	                                    named.good ref.good 
+	                                    sample.good structtype.good 
+	                                    tuples.good var.good 
+	                                    vector.good 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/jplevyak/constants/: const.good 
+	                                              constant_folding.good 
+	chapel/test/flowanalysis/jplevyak/loop/: loop1.good loop2.good 
+	                                         loop_endless.good 
+	                                         rec.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good equality_ops.good 
+	                                  formatoutput.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+
