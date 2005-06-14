@@ -36656,3 +36656,14 @@ Added files:
 	                           test_array_class_trial6.future 
 	                           test_array_class_trial6.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:44:16 -- deitz
+
+Log message:
+	Oops, fixed test I just handled in.  It works.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_class_trial4a.chpl 
+	                           test_array_class_trial4a.good 
+
