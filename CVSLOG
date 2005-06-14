@@ -36677,3 +36677,16 @@ Log message:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_class_trial4a.future 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:48:20 -- deitz
+
+Log message:
+	Added another array class trial test that tests out x.f()(i) future
+	intermediate approach.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_class_trial5a.chpl 
+	                           test_array_class_trial5a.future 
+	                           test_array_class_trial5a.good 
+
