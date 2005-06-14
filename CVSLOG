@@ -36452,3 +36452,16 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_record1.future 
 
+---------------------------------------------------------------------------
+
+06/14/05 12:09:25 -- jplevyak
+
+Log message:
+	Add a new test case which demonstrates some syntax which either
+	needs to have a new error or be made to work.
+
+Added files:
+	chapel/test/types/type_variables/jplevyak/: construct-1.chpl 
+	                                            construct-1.future 
+	                                            construct-1.good 
+
