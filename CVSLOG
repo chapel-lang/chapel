@@ -36583,3 +36583,15 @@ Log message:
 Modified files:
 	chapel/test/functions/bradc/: intents-arrays.chpl 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:00:27 -- deitz
+
+Log message:
+	Fixed code for applying getters and setters to work on methods.
+	
+	The only thing not working now is arrays, I think.
+
+Modified files:
+	chapel/compiler/traversals/: applyGettersSetters.cpp 
+
