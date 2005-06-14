@@ -20,8 +20,10 @@ void ApplyGettersSetters::postProcessExpr(Expr* expr) {
     return;
   }
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(expr)) {
-    if (dynamic_cast<ParenOpExpr*>(memberAccess->parentExpr)) {
-      return;
+    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(memberAccess->parentExpr)) {
+      if (parenOpExpr->baseExpr == memberAccess) {
+        return;
+      }
     }
     AList<Expr>* arguments = new AList<Expr>();
     arguments->insertAtTail(new Variable(Symboltable::lookupInternal("_methodToken")));
