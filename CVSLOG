@@ -36382,3 +36382,17 @@ Modified files:
 	                             resolveSymbols.cpp 
 	                             scopeResolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+06/14/05 10:10:36 -- deitz
+
+Log message:
+	Fixed tuple's write function.  Uncommented out line in Brad's test
+	that he commented wasn't working but now is.  Removed future.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/test/types/tuple/bradc/: writeTuple.chpl writeTuple.good 
+Removed files:
+	chapel/test/types/tuple/bradc/: writeTuple.future 
+
