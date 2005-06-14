@@ -36641,3 +36641,18 @@ Added files:
 	chapel/test/modules/bradc/: use-mutrec.chpl use-mutrec.good 
 	                            use.chpl use.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:42:57 -- deitz
+
+Log message:
+	Added a couple new array class trials.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_class_trial4a.chpl 
+	                           test_array_class_trial4a.future 
+	                           test_array_class_trial4a.good 
+	                           test_array_class_trial6.chpl 
+	                           test_array_class_trial6.future 
+	                           test_array_class_trial6.good 
+
