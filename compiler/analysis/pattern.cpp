@@ -658,6 +658,10 @@ unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym 
       substitutions.put(formal, concrete_value);
       return 1;
     }
+    if (gtype == concrete_value) {
+      substitutions.put(formal, concrete_value);
+      return 1;
+    }
     return 0;
   }
   if (gtype == concrete_type)

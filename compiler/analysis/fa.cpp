@@ -1661,6 +1661,16 @@ is_return_value(AVar *av) {
 }
 
 static void
+show_sym_name(Sym *s, FILE *fp) {
+  if (s->name)
+    fprintf(fp, "%s", s->name);
+  else if (s->constant)
+    fprintf(fp, "\"%s\"", s->constant);
+  else
+    fprintf(fp, "%d", s->id);
+}
+
+static void
 show_type(Vec<CreationSet *> &t, FILE *fp) {
   Vec<Sym *> type;
   forv_CreationSet(cs, t) if (cs) {
@@ -1672,12 +1682,8 @@ show_type(Vec<CreationSet *> &t, FILE *fp) {
   qsort(type.v, type.n, sizeof(type.v[0]), compar_syms);
   fprintf(fp, "( ");
   forv_Sym(s, type) if (s) {
-    if (s->name)
-      fprintf(fp, "%s ", s->name);
-    else if (s->constant)
-      fprintf(fp, "\"%s\" ", s->constant);
-    else
-      fprintf(fp, "%d ", s->id);
+    show_sym_name(s, fp);
+    fprintf(fp, " ");
   }
   fprintf(fp, ") ");
 }
@@ -1701,12 +1707,16 @@ show_sym(Sym *s, FILE *fp) {
   if (s->type && s->type->name)
     fprintf(fp, " = %s", s->type->name);
   else if (s->must_implement && 
-           s->must_implement == s->must_specialize)
-    fprintf(fp, " : %s", s->must_implement->name);
-  else if (s->must_implement)
-    fprintf(fp, " < %s", s->must_implement->name);
-  else if (s->must_specialize && !s->must_specialize->is_symbol)
-    fprintf(fp, " @ %s", s->must_specialize->name);
+           s->must_implement == s->must_specialize) {
+    fprintf(fp, " : ");
+    show_sym_name(s->must_implement, fp);
+  } else if (s->must_implement) {
+    fprintf(fp, " < ");
+    show_sym_name(s->must_implement, fp);
+  } else if (s->must_specialize && !s->must_specialize->is_symbol) {
+    fprintf(fp, " @ ", s->must_specialize);
+    show_sym_name(s->must_specialize, fp);
+  }
 }
 
 static void

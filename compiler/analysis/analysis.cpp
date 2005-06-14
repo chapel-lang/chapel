@@ -2357,6 +2357,63 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   return 0;
 }
 
+static void
+fun_where_equal_constant(FnSymbol *f, Variable *v, Literal *c) {
+  if (ParamSymbol *s = dynamic_cast<ParamSymbol*>(v->var)) {
+    if (!s->isGeneric) {
+      show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
+      return;
+    }
+    gen_if1(c);
+    s->asymbol->sym->must_implement = c->ainfo->rval;
+    s->asymbol->sym->must_specialize =  c->ainfo->rval;
+  }
+}
+
+#if 0
+static void
+fun_where_equal_constant(Variable *v, Variable *v2) {
+  ParamSymbol *s = 0;
+  if ((s = dynamic_cast<ParamSymbol*>(v->var))) {
+    if (!s->isGeneric) {
+      show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
+      return;
+    }
+  } else if ((s = dynamic_cast<ParamSymbol*>(v2->var))) {
+    if (!s->isGeneric) {
+      show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
+      return;
+    }
+    v2 = v;
+  } else
+    return;
+  if (TypeSymbol *t = dynamic_cast<TypeSymbol *>(v2->var)) {
+    if (t->type->astType != TYPE_VARIABLE) {
+    }
+  }
+}
+#endif
+
+static void
+fun_where_clause(FnSymbol *f, Expr *w) {
+  BinOp *op = dynamic_cast<BinOp*>(w);
+  if (!op)
+    return;
+  if (op->type == BINOP_LOGAND) {
+    fun_where_clause(f, op->left);
+    fun_where_clause(f, op->right);
+  } if (op->type == BINOP_EQUAL) {
+    Literal *c = 0;
+    Variable *v = 0;
+    if ((c = dynamic_cast<Literal*>(op->left)) && 
+        (v = dynamic_cast<Variable*>(op->right))) 
+      fun_where_equal_constant(f, v, c);
+    else if ((c = dynamic_cast<Literal*>(op->right)) &&
+             (v = dynamic_cast<Variable*>(op->left))) 
+      fun_where_equal_constant(f, v, c);
+  }
+}
+
 static int
 gen_fun(FnSymbol *f) {
   Sym *fn = f->asymbol->sym;
@@ -2396,6 +2453,7 @@ gen_fun(FnSymbol *f) {
   fn->ast = ast;
   if (f->_this && !f->isConstructor)
     fn->self = f->_this->asymbol->sym;
+  fun_where_clause(f, f->whereExpr);
   return 0;
 }
 
