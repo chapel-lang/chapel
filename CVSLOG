@@ -36610,3 +36610,14 @@ Added files:
 	                              emptySeq2a.good emptySeq3.chpl 
 	                              emptySeq3.future emptySeq3.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:19:41 -- deitz
+
+Log message:
+	Fixed a small bug with --apply-getters-setters in which arguments to a
+	ParenOpExpr were not handled.
+
+Modified files:
+	chapel/compiler/traversals/: applyGettersSetters.cpp 
+
