@@ -36396,3 +36396,13 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/bradc/: writeTuple.future 
 
+---------------------------------------------------------------------------
+
+06/14/05 10:29:00 -- jplevyak
+
+Log message:
+	fix SEGV in graphing
+
+Modified files:
+	chapel/compiler/backend/: graph.cpp 
+
