@@ -36343,3 +36343,18 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: applyGettersSetters.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/05 17:56:03 -- jplevyak
+
+Log message:
+	Implement simple where causes which test that parameter are
+	equal to a constant.
+	Remove .future for corresponding test case.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
+Removed files:
+	chapel/test/functions/deitz/: test_where_param1.future 
+
