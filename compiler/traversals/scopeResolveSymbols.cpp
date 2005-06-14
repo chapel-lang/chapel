@@ -78,7 +78,6 @@ static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
     for (int i = 0; i < tuple_type->components.n; i++) {
       resolve_type_helper(currentFunction, tuple_type->components.v[i]);
     }
-    tuple_type->rebuildDefaultVal();
   } else if (MetaType* metaType = dynamic_cast<MetaType*>(type)) {
     if (UnresolvedType* unresolvedType = dynamic_cast<UnresolvedType*>(metaType->base)) {
       Symbol* new_type = resolveUnresolvedType(unresolvedType->names);

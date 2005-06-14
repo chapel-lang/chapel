@@ -290,12 +290,11 @@ class TupleType : public StructuralType {
   Vec<Type*> components;
 
   TupleType(void);
-  void addType(Type* additionalType);
-  void rebuildDefaultVal(void);
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
-
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
+
+  void addType(Type* additionalType);
 };
 
 

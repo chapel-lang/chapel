@@ -96,9 +96,7 @@ void InsertIndexType::preProcessType(Type* type) {
          //RED -- this code was never executed -- wonder how it worked with it :)
          //since type is always domain at this point...
     //if (TupleType* tuple_type = dynamic_cast<TupleType*>(type->getType())) {
-    if (TupleType* tuple_type = dynamic_cast<TupleType*>(index_type->getType())) {
-      tuple_type->rebuildDefaultVal();
-      index_type->defaultVal = tuple_type->defaultVal->copy();
+    if (dynamic_cast<TupleType*>(index_type->getType())) {
       fixup(index_sym->defPoint);
     }
   } else {

@@ -441,7 +441,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           expr = new_expr;
         }
       }
-    }    
+    }
   }
 
   // Resolve MemberAccesses

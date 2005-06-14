@@ -1452,18 +1452,6 @@ void TupleType::addType(Type* additionalType) {
 }
 
 
-void TupleType::rebuildDefaultVal(void) {
-  AList<Expr>* exprs = new AList<Expr>();
-  forv_Vec(Type, component, components) {
-    exprs->insertAtTail(component->defaultVal->copy());
-  }
-  Tuple* tuple = new Tuple(exprs);
-  if (symbol) {
-    defaultVal->replace(tuple);
-  }
-}
-
-
 Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
   TupleType* newTupleType = new TupleType();
   forv_Vec(Type, component, components) {
