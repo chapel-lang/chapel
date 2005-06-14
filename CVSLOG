@@ -36595,3 +36595,18 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: applyGettersSetters.cpp 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:03:00 -- bradc
+
+Log message:
+	Some more empty sequence tests to follow up on the ones
+	Mack and I submitted the other week.  These are very
+	low priority... just wrote them up for my curiosity.
+
+Added files:
+	chapel/test/types/seq/bradc/: emptySeq2.chpl emptySeq2.future 
+	                              emptySeq2.good emptySeq2a.chpl 
+	                              emptySeq2a.good emptySeq3.chpl 
+	                              emptySeq3.future emptySeq3.good 
+
