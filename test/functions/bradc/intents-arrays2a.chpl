@@ -12,6 +12,7 @@ function callin(in x) {
 
 
 function callout(out x) {
+  writeln("in callout, x is: ", x);
   forall i in D {
     x(i) = i;
   }

@@ -1,0 +1,7 @@
+bradc/deitz
+
+If I've got the language semantics correct, I believe we need
+to be inserting an initializer for the out parameter of 
+callout().  Without valgrind this works accidentally; with
+valgrind, the read-before write is called, as expected.
+
