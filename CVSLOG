@@ -36690,3 +36690,16 @@ Added files:
 	                           test_array_class_trial5a.future 
 	                           test_array_class_trial5a.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:51:12 -- deitz
+
+Log message:
+	Moved InsertAnonymousDomains earlier in the passlist, a better place
+	for it, I'd like to move InsertAnonymousTypes up there as well.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/traversals/: insertAnonymousDomains.cpp 
+	                             insertAnonymousTypes.cpp 
+
