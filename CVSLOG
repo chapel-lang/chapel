@@ -36434,3 +36434,21 @@ Added files:
 	chapel/test/types/seq/deitz/: test_seq9.chpl test_seq9.future 
 	                              test_seq9.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 12:05:34 -- jplevyak
+
+Log message:
+	Fixed test_typevar_record1.
+	Set defaultConstructor from DefExpr::typeExpr to handle cases like:
+	  var r : R(t = integer);
+	that is, records of instantiated type.
+
+Modified files:
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record1.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record1.future 
+
