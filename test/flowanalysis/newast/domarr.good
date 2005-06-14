@@ -1,56 +1,9 @@
- called from 6 in __init_domarr at domarr.chpl:6
- called from 6 in __init_domarr at domarr.chpl:6
-::=(internal_prelude.chpl:0) ( = )
-::=this(internal_prelude.chpl:0) ( =this )
-::A(domarr.chpl:6) ( _array_float_2d (domarr.chpl:6) )
-::Mat(domarr.chpl:4) ( _domain_2d (domarr.chpl:4) )
-::_ArrayWriteStopgap(internal_prelude.chpl:0) ( _ArrayWriteStopgap )
-::__init__CommonModule(domarr.chpl:6) ( __init__CommonModule (domarr.chpl:6) )
-::__init__chpl_complex(domarr.chpl:6) ( __init__chpl_complex (domarr.chpl:6) )
-::__init__chpl_seq(domarr.chpl:6) ( __init__chpl_seq (domarr.chpl:6) )
-::__init_domarr(domarr.chpl:6) ( __init_domarr (domarr.chpl:6) )
-::__init_entryPoint(domarr.chpl:6) ( __init_entryPoint (domarr.chpl:6) )
-::__init_internal_prelude(domarr.chpl:6) ( __init_internal_prelude (domarr.chpl:6) )
-::__init_prelude(domarr.chpl:6) ( __init_prelude (domarr.chpl:6) )
-::__method(internal_prelude.chpl:0) ( __method )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::a(internal_prelude.chpl:0) ( _domain_2d (domarr.chpl:4) )
-::b(internal_prelude.chpl:0) ( Domain )
-::false(prelude.chpl:0) ( bool )
+::A(domarr.chpl:6) ( _array_float_2d )
+::Mat(domarr.chpl:4) ( _domain_2d )
 ::i(domarr.chpl:8) ( int64 )
-::i(internal_prelude.chpl:0) ( int64 )
-::i(internal_prelude.chpl:0) ( int64 )
 ::j(domarr.chpl:8) ( int64 )
-::j(internal_prelude.chpl:0) ( int64 )
 ::m(domarr.chpl:1) ( int64 )
-::main(domarr.chpl:6) ( main (domarr.chpl:6) )
 ::n(domarr.chpl:2) ( int64 )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _array_float_2d (domarr.chpl:6) )
-::this(internal_prelude.chpl:0) ( _array_float_2d (domarr.chpl:6) )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::val ( _array_float_2d (domarr.chpl:6) )
-::write ( write )
-::write(prelude.chpl:0) ( write )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
-::x(internal_prelude.chpl:0) ( _array_float_2d (domarr.chpl:6) )
-::x(internal_prelude.chpl:0) ( float64 )
-::x(prelude.chpl:0) ( float64 )
-::x(prelude.chpl:0) ( string )
-function __init__CommonModule domarr.chpl:6
-function __init__chpl_complex domarr.chpl:6
-function __init__chpl_seq domarr.chpl:6
 function __init_domarr domarr.chpl:6
-function __init_entryPoint domarr.chpl:6
-function __init_internal_prelude domarr.chpl:6
-function __init_prelude domarr.chpl:6
 function main domarr.chpl:6
 globals

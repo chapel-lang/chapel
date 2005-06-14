@@ -1,46 +1,11 @@
  called from 5 in __init_enum at enum.chpl:7
- called from 7 in __init_enum at enum.chpl:7
- called from 7 in __init_enum at enum.chpl:7
-::B(enum.chpl:1) ( classVals (enum.chpl:1) )
-::S(enum.chpl:1) ( classVals (enum.chpl:1) )
-::_EnumWriteStopgap(internal_prelude.chpl:0) ( _EnumWriteStopgap )
-::__init__CommonModule(enum.chpl:7) ( __init__CommonModule (enum.chpl:7) )
-::__init__chpl_complex(enum.chpl:7) ( __init__chpl_complex (enum.chpl:7) )
-::__init__chpl_seq(enum.chpl:7) ( __init__chpl_seq (enum.chpl:7) )
-::__init_entryPoint(enum.chpl:7) ( __init_entryPoint (enum.chpl:7) )
-::__init_enum(enum.chpl:7) ( __init_enum (enum.chpl:7) )
-::__init_internal_prelude(enum.chpl:7) ( __init_internal_prelude (enum.chpl:7) )
-::__init_prelude(enum.chpl:7) ( __init_prelude (enum.chpl:7) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_classVals3(enum.chpl:1) ( classVals (enum.chpl:1) )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::false(prelude.chpl:0) ( bool )
-::main(enum.chpl:7) ( main (enum.chpl:7) )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::val(enum.chpl:1) ( classVals (enum.chpl:1) )
-::write(enum.chpl:1) ( write )
-::write(prelude.chpl:0) ( write )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
-::x(enum.chpl:3) ( classVals (enum.chpl:1) )
-::x(internal_prelude.chpl:0) ( classVals (enum.chpl:1) )
-::x(prelude.chpl:0) ( int64 )
-::x(prelude.chpl:0) ( string )
+::B(enum.chpl:1) ( classVals )
+::S(enum.chpl:1) ( classVals )
+::_init_classVals3(enum.chpl:1) ( classVals )
+::val(enum.chpl:1) ( classVals )
+::x(enum.chpl:3) ( classVals )
 ::y(enum.chpl:7) ( int64 )
-function __init__CommonModule enum.chpl:7
-function __init__chpl_complex enum.chpl:7
-function __init__chpl_seq enum.chpl:7
-function __init_entryPoint enum.chpl:7
 function __init_enum enum.chpl:7
-function __init_internal_prelude enum.chpl:7
-function __init_prelude enum.chpl:7
 function main enum.chpl:7
 function write enum.chpl:1
 globals

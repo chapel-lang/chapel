@@ -13,17 +13,6 @@ function aa cs3.v:1
 function aa cs3.v:1
 function bb cs3.v:2
 globals
-operator::a(prelude.v:0) ( int32 )
-operator::a(prelude.v:0) ( tuple )
-operator::a(prelude.v:0) ( tuple )
-operator::a(prelude.v:0) ( tuple )
-operator::b(prelude.v:0) ( a )
-operator::b(prelude.v:0) ( a )
-operator::b(prelude.v:0) ( b )
-operator::b(prelude.v:0) ( float64 )
-print::a(prelude.v:0) ( float64 )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )
 user::a1(cs3.v:3) ( tuple )
 user::a2(cs3.v:5) ( tuple )
 user::b1(cs3.v:4) ( tuple )

@@ -3,8 +3,3 @@ f::x(dispatch1.v:3) ( int32 )
 function __init dispatch1.v:1
 function f dispatch1.v:3
 globals
-operator::a(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( int32 )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )

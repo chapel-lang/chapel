@@ -100,6 +100,16 @@ ASymbol::line() {
 }
 
 int 
+ASymbol::log_line() {
+  if (symbol && symbol->parentScope) {
+    ModuleSymbol *m = symbol->parentScope->getModule();
+    if (m && m->modtype == MOD_USER)
+      return symbol->lineno;
+  }
+  return 0;
+}
+
+int 
 ASymbol::ast_id() {
   if (symbol)
     return symbol->id;

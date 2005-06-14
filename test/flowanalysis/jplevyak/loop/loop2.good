@@ -15,11 +15,3 @@ f::j(loop2.v:3) ( int32 )
 function __init loop2.v:1
 function f loop2.v:1
 globals
-operator::a(prelude.v:0) ( int32 )
-operator::a(prelude.v:0) ( int32 )
-operator::a(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( int32 )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )

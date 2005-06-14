@@ -1,43 +1,10 @@
  called from 20 in __init_globalref at globalref.chpl:6
- called from 6 in __init_globalref at globalref.chpl:6
- called from 6 in __init_globalref at globalref.chpl:6
-::__init__CommonModule(globalref.chpl:6) ( __init__CommonModule (globalref.chpl:6) )
-::__init__chpl_complex(globalref.chpl:6) ( __init__chpl_complex (globalref.chpl:6) )
-::__init__chpl_seq(globalref.chpl:6) ( __init__chpl_seq (globalref.chpl:6) )
-::__init_entryPoint(globalref.chpl:6) ( __init_entryPoint (globalref.chpl:6) )
-::__init_globalref(globalref.chpl:6) ( __init_globalref (globalref.chpl:6) )
-::__init_internal_prelude(globalref.chpl:6) ( __init_internal_prelude (globalref.chpl:6) )
-::__init_prelude(globalref.chpl:6) ( __init_prelude (globalref.chpl:6) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
 ::a(globalref.chpl:1) ( int64 )
 ::a(globalref.chpl:5) ( int64 )
 ::b(globalref.chpl:2) ( int64 )
 ::c(globalref.chpl:3) ( int64 )
 ::c(globalref.chpl:6) ( int64 )
-::false(prelude.chpl:0) ( bool )
-::foo(globalref.chpl:12) ( foo )
-::main(globalref.chpl:6) ( main (globalref.chpl:6) )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::write(prelude.chpl:0) ( write )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
-::x(prelude.chpl:0) ( int64 )
-::x(prelude.chpl:0) ( string )
-function __init__CommonModule globalref.chpl:6
-function __init__chpl_complex globalref.chpl:6
-function __init__chpl_seq globalref.chpl:6
-function __init_entryPoint globalref.chpl:6
 function __init_globalref globalref.chpl:6
-function __init_internal_prelude globalref.chpl:6
-function __init_prelude globalref.chpl:6
 function foo globalref.chpl:5
 function main globalref.chpl:6
 globals

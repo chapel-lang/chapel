@@ -115,6 +115,8 @@ Sym::ast_id() {
 
 int
 Sym::log_line() {
+  if (asymbol)
+    return asymbol->log_line();
   if (strstr(filename(), "prelude"))
     return 0;
   return line();

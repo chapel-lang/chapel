@@ -4,15 +4,6 @@ function __init multiplereturn.v:1
 function f multiplereturn.v:1
 function g multiplereturn.v:6
 globals
-operator::a(prelude.v:0) ( int32 )
-operator::a(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( float64 )
-operator::b(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( float64 )
-print::a(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( tuple )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )
 user::a(multiplereturn.v:2) ( int32 )
 user::b(multiplereturn.v:2) ( float64 )
 user::c(multiplereturn.v:2) ( tuple )

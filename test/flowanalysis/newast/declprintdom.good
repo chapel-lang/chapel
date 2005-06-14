@@ -1,50 +1,9 @@
- called from 10 in __init_declprintdom at declprintdom.chpl:7
- called from 11 in __init_declprintdom at declprintdom.chpl:7
- called from 7 in __init_declprintdom at declprintdom.chpl:7
- called from 7 in __init_declprintdom at declprintdom.chpl:7
- called from 9 in __init_declprintdom at declprintdom.chpl:7
-::=(internal_prelude.chpl:0) ( = )
-::D1(declprintdom.chpl:5) ( _domain_1d (declprintdom.chpl:5) )
-::D2(declprintdom.chpl:6) ( _domain_1d (declprintdom.chpl:5) )
-::D3(declprintdom.chpl:7) ( _domain_1d (declprintdom.chpl:5) )
-::_DomainWriteStopgap(internal_prelude.chpl:0) ( _DomainWriteStopgap )
-::__init__CommonModule(declprintdom.chpl:7) ( __init__CommonModule (declprintdom.chpl:7) )
-::__init__chpl_complex(declprintdom.chpl:7) ( __init__chpl_complex (declprintdom.chpl:7) )
-::__init__chpl_seq(declprintdom.chpl:7) ( __init__chpl_seq (declprintdom.chpl:7) )
-::__init_declprintdom(declprintdom.chpl:7) ( __init_declprintdom (declprintdom.chpl:7) )
-::__init_entryPoint(declprintdom.chpl:7) ( __init_entryPoint (declprintdom.chpl:7) )
-::__init_internal_prelude(declprintdom.chpl:7) ( __init_internal_prelude (declprintdom.chpl:7) )
-::__init_prelude(declprintdom.chpl:7) ( __init_prelude (declprintdom.chpl:7) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::a(internal_prelude.chpl:0) ( _domain_1d (declprintdom.chpl:5) )
-::b(internal_prelude.chpl:0) ( _seq )
-::false(prelude.chpl:0) ( bool )
+::D1(declprintdom.chpl:5) ( _domain_1d )
+::D2(declprintdom.chpl:6) ( _domain_1d )
+::D3(declprintdom.chpl:7) ( _domain_1d )
 ::m1(declprintdom.chpl:1) ( int64 )
 ::m2(declprintdom.chpl:2) ( int64 )
 ::m3(declprintdom.chpl:3) ( int64 )
-::main(declprintdom.chpl:7) ( main (declprintdom.chpl:7) )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::val(declprintdom.chpl:5) ( _domain_1d (declprintdom.chpl:5) )
-::write(declprintdom.chpl:5) ( write )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
-::x(internal_prelude.chpl:0) ( _domain_1d (declprintdom.chpl:5) )
-::x(prelude.chpl:0) ( string )
-function __init__CommonModule declprintdom.chpl:7
-function __init__chpl_complex declprintdom.chpl:7
-function __init__chpl_seq declprintdom.chpl:7
 function __init_declprintdom declprintdom.chpl:7
-function __init_entryPoint declprintdom.chpl:7
-function __init_internal_prelude declprintdom.chpl:7
-function __init_prelude declprintdom.chpl:7
 function main declprintdom.chpl:7
-function write declprintdom.chpl:5
 globals

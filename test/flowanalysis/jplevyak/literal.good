@@ -1,18 +1,5 @@
 function __init literal.v:7
 globals
-print::a(prelude.v:0) ( float32 )
-print::a(prelude.v:0) ( float64 )
-print::a(prelude.v:0) ( int16 )
-print::a(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( int64 )
-print::a(prelude.v:0) ( int8 )
-print::a(prelude.v:0) ( string )
-print::a(prelude.v:0) ( uint16 )
-print::a(prelude.v:0) ( uint32 )
-print::a(prelude.v:0) ( uint64 )
-print::a(prelude.v:0) ( uint8 )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )
 user::a_character1(literal.v:23) ( uint8 )
 user::a_character2(literal.v:24) ( uint8 )
 user::a_character3(literal.v:25) ( uint8 )

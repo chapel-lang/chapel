@@ -1,43 +1,5 @@
- called from 4 in __init_danglingelse at danglingelse.chpl:4
- called from 4 in __init_danglingelse at danglingelse.chpl:4
-::+(internal_prelude.chpl:0) ( + )
-::<(internal_prelude.chpl:0) ( < )
-::__init__CommonModule(danglingelse.chpl:4) ( __init__CommonModule (danglingelse.chpl:4) )
-::__init__chpl_complex(danglingelse.chpl:4) ( __init__chpl_complex (danglingelse.chpl:4) )
-::__init__chpl_seq(danglingelse.chpl:4) ( __init__chpl_seq (danglingelse.chpl:4) )
-::__init_danglingelse(danglingelse.chpl:4) ( __init_danglingelse (danglingelse.chpl:4) )
-::__init_entryPoint(danglingelse.chpl:4) ( __init_entryPoint (danglingelse.chpl:4) )
-::__init_internal_prelude(danglingelse.chpl:4) ( __init_internal_prelude (danglingelse.chpl:4) )
-::__init_prelude(danglingelse.chpl:4) ( __init_prelude (danglingelse.chpl:4) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
 ::a(danglingelse.chpl:2) ( int64 )
-::a(internal_prelude.chpl:0) ( int64 )
-::a(internal_prelude.chpl:0) ( int64 )
 ::b(danglingelse.chpl:4) ( int64 )
-::b(internal_prelude.chpl:0) ( int64 )
-::b(internal_prelude.chpl:0) ( int64 )
-::false(prelude.chpl:0) ( bool )
-::main(danglingelse.chpl:4) ( main (danglingelse.chpl:4) )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::write(prelude.chpl:0) ( write )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
-::x(prelude.chpl:0) ( int64 )
-::x(prelude.chpl:0) ( string )
-function __init__CommonModule danglingelse.chpl:4
-function __init__chpl_complex danglingelse.chpl:4
-function __init__chpl_seq danglingelse.chpl:4
 function __init_danglingelse danglingelse.chpl:4
-function __init_entryPoint danglingelse.chpl:4
-function __init_internal_prelude danglingelse.chpl:4
-function __init_prelude danglingelse.chpl:4
 function main danglingelse.chpl:4
 globals

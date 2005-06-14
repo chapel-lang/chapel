@@ -911,11 +911,13 @@ log_test_fa(FA *fa) {
       }
     }
     forv_Var(v, f->fa_all_Vars) {
-      if (!v->sym->function_scope) {
-        gvars.set_add(v);
-        continue;
-      } else
-        log_var_types(v, f);
+      if (v->sym->log_line()) {
+        if (!v->sym->function_scope) {
+          gvars.set_add(v);
+          continue;
+        } else
+          log_var_types(v, f);
+      }
     }
   }
   gvars.set_to_vec();

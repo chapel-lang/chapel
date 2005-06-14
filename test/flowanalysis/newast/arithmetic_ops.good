@@ -1,51 +1,7 @@
- called from 4 in __init_arithmetic_ops at arithmetic_ops.chpl:4
- called from 4 in __init_arithmetic_ops at arithmetic_ops.chpl:4
-::*(internal_prelude.chpl:0) ( * )
-::+(internal_prelude.chpl:0) ( + )
-::-(internal_prelude.chpl:0) ( - )
-::/(internal_prelude.chpl:0) ( / )
-::__init__CommonModule(arithmetic_ops.chpl:4) ( __init__CommonModule (arithmetic_ops.chpl:4) )
-::__init__chpl_complex(arithmetic_ops.chpl:4) ( __init__chpl_complex (arithmetic_ops.chpl:4) )
-::__init__chpl_seq(arithmetic_ops.chpl:4) ( __init__chpl_seq (arithmetic_ops.chpl:4) )
-::__init_arithmetic_ops(arithmetic_ops.chpl:4) ( __init_arithmetic_ops (arithmetic_ops.chpl:4) )
-::__init_entryPoint(arithmetic_ops.chpl:4) ( __init_entryPoint (arithmetic_ops.chpl:4) )
-::__init_internal_prelude(arithmetic_ops.chpl:4) ( __init_internal_prelude (arithmetic_ops.chpl:4) )
-::__init_prelude(arithmetic_ops.chpl:4) ( __init_prelude (arithmetic_ops.chpl:4) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::a(internal_prelude.chpl:0) ( int64 )
-::a(internal_prelude.chpl:0) ( int64 )
-::a(internal_prelude.chpl:0) ( int64 )
-::a(internal_prelude.chpl:0) ( int64 )
 ::answer(arithmetic_ops.chpl:4) ( int64 )
-::b(internal_prelude.chpl:0) ( int64 )
-::b(internal_prelude.chpl:0) ( int64 )
-::b(internal_prelude.chpl:0) ( int64 )
-::b(internal_prelude.chpl:0) ( int64 )
-::false(prelude.chpl:0) ( bool )
 ::m(arithmetic_ops.chpl:1) ( int64 )
-::main(arithmetic_ops.chpl:4) ( main (arithmetic_ops.chpl:4) )
 ::n(arithmetic_ops.chpl:2) ( int64 )
-::nil ( null )
 ::o(arithmetic_ops.chpl:3) ( int64 )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::write(prelude.chpl:0) ( write )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
-::x(prelude.chpl:0) ( int64 )
-::x(prelude.chpl:0) ( string )
-function __init__CommonModule arithmetic_ops.chpl:4
-function __init__chpl_complex arithmetic_ops.chpl:4
-function __init__chpl_seq arithmetic_ops.chpl:4
 function __init_arithmetic_ops arithmetic_ops.chpl:4
-function __init_entryPoint arithmetic_ops.chpl:4
-function __init_internal_prelude arithmetic_ops.chpl:4
-function __init_prelude arithmetic_ops.chpl:4
 function main arithmetic_ops.chpl:4
 globals

@@ -1,36 +1,4 @@
- called from 1 in __init_configVar at configVar.chpl:1
- called from 1 in __init_configVar at configVar.chpl:1
-::__init__CommonModule(configVar.chpl:1) ( __init__CommonModule (configVar.chpl:1) )
-::__init__chpl_complex(configVar.chpl:1) ( __init__chpl_complex (configVar.chpl:1) )
-::__init__chpl_seq(configVar.chpl:1) ( __init__chpl_seq (configVar.chpl:1) )
-::__init_configVar(configVar.chpl:1) ( __init_configVar (configVar.chpl:1) )
-::__init_entryPoint(configVar.chpl:1) ( __init_entryPoint (configVar.chpl:1) )
-::__init_internal_prelude(configVar.chpl:1) ( __init_internal_prelude (configVar.chpl:1) )
-::__init_prelude(configVar.chpl:1) ( __init_prelude (configVar.chpl:1) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::false(prelude.chpl:0) ( bool )
-::main(configVar.chpl:1) ( main (configVar.chpl:1) )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::write(prelude.chpl:0) ( write )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
 ::x(configVar.chpl:1) ( int64 )
-::x(prelude.chpl:0) ( int64 )
-::x(prelude.chpl:0) ( string )
-function __init__CommonModule configVar.chpl:1
-function __init__chpl_complex configVar.chpl:1
-function __init__chpl_seq configVar.chpl:1
 function __init_configVar configVar.chpl:1
-function __init_entryPoint configVar.chpl:1
-function __init_internal_prelude configVar.chpl:1
-function __init_prelude configVar.chpl:1
 function main configVar.chpl:1
 globals

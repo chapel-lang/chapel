@@ -1,34 +1,4 @@
- called from 1 in __init_declprintint2 at declprintint2.chpl:1
- called from 1 in __init_declprintint2 at declprintint2.chpl:1
-::__init__CommonModule(declprintint2.chpl:1) ( __init__CommonModule (declprintint2.chpl:1) )
-::__init__chpl_complex(declprintint2.chpl:1) ( __init__chpl_complex (declprintint2.chpl:1) )
-::__init__chpl_seq(declprintint2.chpl:1) ( __init__chpl_seq (declprintint2.chpl:1) )
-::__init_declprintint2(declprintint2.chpl:1) ( __init_declprintint2 (declprintint2.chpl:1) )
-::__init_entryPoint(declprintint2.chpl:1) ( __init_entryPoint (declprintint2.chpl:1) )
-::__init_internal_prelude(declprintint2.chpl:1) ( __init_internal_prelude (declprintint2.chpl:1) )
-::__init_prelude(declprintint2.chpl:1) ( __init_prelude (declprintint2.chpl:1) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::false(prelude.chpl:0) ( bool )
-::main(declprintint2.chpl:1) ( main (declprintint2.chpl:1) )
 ::myvariable(declprintint2.chpl:1) ( int64 )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
-::x(prelude.chpl:0) ( int64 )
-function __init__CommonModule declprintint2.chpl:1
-function __init__chpl_complex declprintint2.chpl:1
-function __init__chpl_seq declprintint2.chpl:1
 function __init_declprintint2 declprintint2.chpl:1
-function __init_entryPoint declprintint2.chpl:1
-function __init_internal_prelude declprintint2.chpl:1
-function __init_prelude declprintint2.chpl:1
 function main declprintint2.chpl:1
 globals

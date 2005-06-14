@@ -3,16 +3,4 @@ __init::self(classvar.v:2) ( Vars (classvar.v:2) )
 function __init classvar.v:2
 function __init classvar.v:2
 globals
-new::a(prelude.v:0) ( Vars (classvar.v:2) )
-new::o(prelude.v:0) ( Vars (classvar.v:2) )
-operator::a(prelude.v:0) ( Vars (classvar.v:2) )
-operator::a(prelude.v:0) ( Vars (classvar.v:2) )
-operator::a(prelude.v:0) ( Vars (classvar.v:2) )
-operator::b(prelude.v:0) ( __init )
-operator::b(prelude.v:0) ( x )
-operator::b(prelude.v:0) ( y )
-print::a(prelude.v:0) ( float64 )
-print::a(prelude.v:0) ( int32 )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )
 user::v(classvar.v:7) ( Vars (classvar.v:2) )

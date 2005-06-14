@@ -1,41 +1,11 @@
- called from 9 in __init_conditional at conditional.chpl:9
- called from 9 in __init_conditional at conditional.chpl:9
-::__init__CommonModule(conditional.chpl:9) ( __init__CommonModule (conditional.chpl:9) )
-::__init__chpl_complex(conditional.chpl:9) ( __init__chpl_complex (conditional.chpl:9) )
-::__init__chpl_seq(conditional.chpl:9) ( __init__chpl_seq (conditional.chpl:9) )
-::__init_conditional(conditional.chpl:9) ( __init_conditional (conditional.chpl:9) )
-::__init_entryPoint(conditional.chpl:9) ( __init_entryPoint (conditional.chpl:9) )
-::__init_internal_prelude(conditional.chpl:9) ( __init_internal_prelude (conditional.chpl:9) )
-::__init_prelude(conditional.chpl:9) ( __init_prelude (conditional.chpl:9) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
 ::a(conditional.chpl:2) ( int64 )
 ::b(conditional.chpl:3) ( int64 )
 ::c(conditional.chpl:4) ( int64 )
 ::d(conditional.chpl:5) ( int64 )
 ::e(conditional.chpl:6) ( int64 )
 ::f(conditional.chpl:7) ( int64 )
-::false(prelude.chpl:0) ( bool )
 ::g(conditional.chpl:8) ( int64 )
 ::h(conditional.chpl:9) ( int64 )
-::main(conditional.chpl:9) ( main (conditional.chpl:9) )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-::write(prelude.chpl:0) ( write )
-::writeln(prelude.chpl:0) ( writeln )
-::x(prelude.chpl:0) ( string )
-function __init__CommonModule conditional.chpl:9
-function __init__chpl_complex conditional.chpl:9
-function __init__chpl_seq conditional.chpl:9
 function __init_conditional conditional.chpl:9
-function __init_entryPoint conditional.chpl:9
-function __init_internal_prelude conditional.chpl:9
-function __init_prelude conditional.chpl:9
 function main conditional.chpl:9
 globals

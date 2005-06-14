@@ -12,17 +12,4 @@ function f memberfun2.v:3
 function g memberfun2.v:5
 g::self(memberfun2.v:5) ( B (memberfun2.v:2) )
 globals
-new::a(prelude.v:0) ( B (memberfun2.v:2) )
-new::o(prelude.v:0) ( B (memberfun2.v:2) )
-operator::a(prelude.v:0) ( B (memberfun2.v:2) )
-operator::a(prelude.v:0) ( B (memberfun2.v:2) )
-operator::a(prelude.v:0) ( float64 )
-operator::a(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( __init )
-operator::b(prelude.v:0) ( g (memberfun2.v:5) )
-operator::b(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( float64 )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )
 user::b(memberfun2.v:4) ( B (memberfun2.v:2) )

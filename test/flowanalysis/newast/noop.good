@@ -1,38 +1,7 @@
  called from 19 in __init_noop at noop.chpl:6
- called from 6 in __init_noop at noop.chpl:6
- called from 6 in __init_noop at noop.chpl:6
-::=(internal_prelude.chpl:0) ( = )
-::D(noop.chpl:6) ( _domain_1d (noop.chpl:6) )
-::__init__CommonModule(noop.chpl:6) ( __init__CommonModule (noop.chpl:6) )
-::__init__chpl_complex(noop.chpl:6) ( __init__chpl_complex (noop.chpl:6) )
-::__init__chpl_seq(noop.chpl:6) ( __init__chpl_seq (noop.chpl:6) )
-::__init_entryPoint(noop.chpl:6) ( __init_entryPoint (noop.chpl:6) )
-::__init_internal_prelude(noop.chpl:6) ( __init_internal_prelude (noop.chpl:6) )
-::__init_noop(noop.chpl:6) ( __init_noop (noop.chpl:6) )
-::__init_prelude(noop.chpl:6) ( __init_prelude (noop.chpl:6) )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_construct__methodTokenType(internal_prelude.chpl:0) ( _construct__methodTokenType )
-::_default_param_temp__methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::_init__seqNode1(_chpl_seq.chpl:20) ( null )
-::_init_seq22(_chpl_seq.chpl:27) ( null )
-::_methodToken(internal_prelude.chpl:0) ( _methodTokenType )
-::_methodTokenTypeFieldDummy(internal_prelude.chpl:0) ( int64 )
-::a(internal_prelude.chpl:0) ( _domain_1d (noop.chpl:6) )
-::b(internal_prelude.chpl:0) ( Domain )
-::false(prelude.chpl:0) ( bool )
-::foo(noop.chpl:4) ( foo )
+::D(noop.chpl:6) ( _domain_1d )
 ::i(noop.chpl:8) ( int64 )
-::main(noop.chpl:6) ( main (noop.chpl:6) )
-::nil ( null )
-::this(internal_prelude.chpl:0) ( _methodTokenType )
-::true(prelude.chpl:0) ( bool )
-function __init__CommonModule noop.chpl:6
-function __init__chpl_complex noop.chpl:6
-function __init__chpl_seq noop.chpl:6
-function __init_entryPoint noop.chpl:6
-function __init_internal_prelude noop.chpl:6
 function __init_noop noop.chpl:6
-function __init_prelude noop.chpl:6
 function foo noop.chpl:4
 function main noop.chpl:6
 globals

@@ -5,14 +5,5 @@ function __init destruct2.v:1
 function __init destruct2.v:1
 function f destruct2.v:2
 globals
-new::a(prelude.v:0) ( A (destruct2.v:1) )
-new::o(prelude.v:0) ( A (destruct2.v:1) )
-operator::a(prelude.v:0) ( A (destruct2.v:1) )
-operator::a(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( __init )
-operator::b(prelude.v:0) ( float64 )
-print::a(prelude.v:0) ( float64 )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )
 user::x(destruct2.v:3) ( int32 )
 user::y(destruct2.v:3) ( float64 )

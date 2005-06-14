@@ -1,11 +1,3 @@
 function __init loop_endless.v:1
 globals
-operator::a(prelude.v:0) ( int32 )
-operator::a(prelude.v:0) ( int32 )
-operator::a(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( int32 )
-operator::b(prelude.v:0) ( int32 )
-print::a(prelude.v:0) ( int32 )
-system::__nil__(prelude.v:0) ( int32 )
-system::reply(prelude.v:0) ( reply )
 user::j(loop_endless.v:2) ( int32 )
