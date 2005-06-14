@@ -36571,3 +36571,15 @@ Added files:
 	chapel/test/types/complex/jplevyak/: .cvsignore 
 	chapel/test/types/tuple/deitz/noanalysis/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+06/14/05 13:02:10 -- bradc
+
+Log message:
+	It seems that I accidentally overwrote the .chpl
+	file with the .good file before checking this in
+	the first time around.  This should fix it.
+
+Modified files:
+	chapel/test/functions/bradc/: intents-arrays.chpl 
+
