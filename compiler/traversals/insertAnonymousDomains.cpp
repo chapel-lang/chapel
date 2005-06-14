@@ -14,11 +14,6 @@ void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
 
 
 void InsertAnonymousDomains::postProcessType(Type* type) {
-  if (DomainType* domainType = dynamic_cast<DomainType*>(type)) {
-    domainType->computeRank();
-    return;
-  }
-
   static int uid = 1;
 
   if (!currentStmt) {
@@ -52,7 +47,7 @@ void InsertAnonymousDomains::postProcessType(Type* type) {
     new ForallExpr(new AList<Expr>(new Variable(domain_sym)), 
                    forall->indices->copy());
 
-  // wierd scoping issues
+  // weird scoping issues
   array_type->domain->parentScope = currentStmt->parentScope;
 
   array_type->domain->replace(new_forall);

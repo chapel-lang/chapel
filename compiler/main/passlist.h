@@ -25,6 +25,8 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(BuildLValueFunctions, ""),
   RUN(Verify, ""), // this is a sanity check
+  RUN(InsertAnonymousDomains, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(InsertThisParameters, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertLiteralTemps, ""),
@@ -36,8 +38,6 @@ PassInfo passlist[] = {
   RUN(ScopeResolveGotos, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(RenameOverloadedFunctions, ""),
-  RUN(Verify, ""), // this is a sanity check
-  RUN(InsertAnonymousDomains, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertAnonymousTypes, ""),
   RUN(Verify, ""), // this is a sanity check

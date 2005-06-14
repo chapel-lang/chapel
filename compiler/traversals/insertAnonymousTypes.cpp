@@ -166,6 +166,8 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     INT_FATAL(*type, "Domain type expected");
   }
 
+  domain_type->computeRank();
+
   if (domain_type->symbol) {
     INT_FATAL(domain_type, "Domain type already resolved");
   }
