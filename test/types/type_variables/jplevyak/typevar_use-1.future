@@ -1,4 +1,3 @@
-deitz/jplevyak
+deitz
 
-Use of a type variable.  Need to get it to analysis
-and then though analysis.
+Need getters for type variables.
