@@ -36368,3 +36368,17 @@ Log message:
 Modified files:
 	chapel/test/types/type_variables/jplevyak/: typevar_use-1.future 
 
+---------------------------------------------------------------------------
+
+06/14/05 09:42:59 -- deitz
+
+Log message:
+	Tuples no longer have defaultVal, but a defaultConstructor instead.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/traversals/: insertIndexType.cpp 
+	                             resolveSymbols.cpp 
+	                             scopeResolveSymbols.cpp 
+
