@@ -36465,3 +36465,24 @@ Added files:
 	                                            construct-1.future 
 	                                            construct-1.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 12:30:07 -- bradc
+
+Log message:
+	Updated regressions file slightly.  Found that the
+	valgrind run of intents-arrays2.chpl was showing
+	an error that I hadn't noticed before, so made the
+	test a future (intents-arrays2a) and took out the line
+	in question for the existing test since most of it
+	seemed to work well.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+	chapel/test/functions/bradc/: intents-arrays2.chpl 
+	                              intents-arrays2.good 
+Added files:
+	chapel/test/functions/bradc/: intents-arrays2a.chpl 
+	                              intents-arrays2a.future 
+	                              intents-arrays2a.good 
+
