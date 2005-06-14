@@ -36422,3 +36422,15 @@ Added files:
 	                                  seq_index2.good 
 	                                  seq_index2.future 
 
+---------------------------------------------------------------------------
+
+06/14/05 11:48:06 -- deitz
+
+Log message:
+	Added another sequence test that declares two sequences of different
+	instantiated types.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_seq9.chpl test_seq9.future 
+	                              test_seq9.good 
+
