@@ -33,6 +33,8 @@ typedef void *_CG_ref;
 #define _CG_Symbol(_x, _y) ((void*)(uintptr_t)_x)
 #define null ((void*)0)
 #define bool int
+#define true 1
+#define false 0
 #define __init ((void*)0)
 
 #define _CG_prim_primitive_chapel_vardef(_c) ((void*)0)

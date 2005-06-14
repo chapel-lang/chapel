@@ -63,40 +63,44 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
   entryPoint->insertAtTail(buildFnCallStmt(internalPrelude->initFn));
   entryPoint->insertAtTail(buildFnCallStmt(prelude->initFn));
   entryPoint->insertAtTail(buildFnCallStmt(commonModule->initFn));
+  entryPoint->insertAtTail(new UseStmt(new Variable(new UnresolvedSymbol("_chpl_complex"))));
 
   // find main function if it exists; create one if not
   FnSymbol* mainFn = FnSymbol::mainFn;
+  BlockStmt* mainBody;
+  ModuleSymbol* mainModule;
   if (!mainFn) {
-    ModuleSymbol* userModule = findUniqueUserModule(moduleList);
-    if (userModule) {
-      AList<Stmt>* initStmts = new AList<Stmt>();
-      initStmts->insertAtTail(buildFnCallStmt(commonModule->initFn));
-      initStmts->insertAtTail(buildFnCallStmt(userModule->initFn));
-      BlockStmt* mainBody = new BlockStmt(initStmts);
+    mainModule = findUniqueUserModule(moduleList);
+    if (mainModule) {
+      mainBody = new BlockStmt();
       SymScope* saveScope = Symboltable::getCurrentScope();
-      Symboltable::setCurrentScope(userModule->modScope);
+      Symboltable::setCurrentScope(mainModule->modScope);
       DefStmt* maindefstmt = Symboltable::defineFunction("main", NULL, 
                                                          dtVoid, mainBody, 
                                                          true);
       Symboltable::setCurrentScope(saveScope);
-      userModule->stmts->insertAtTail(maindefstmt);
+      mainModule->stmts->insertAtTail(maindefstmt);
       mainFn = maindefstmt->fnDef();
     } else {
       USR_FATAL("Code defines multiple modules but no main function.");
     }
   } else {
     // tack call to main fn module's init call onto main fn's body
-    ModuleSymbol* mainModule = 
-      dynamic_cast<ModuleSymbol*>(mainFn->parentScope->symContext);
+    mainModule = dynamic_cast<ModuleSymbol*>(mainFn->parentScope->symContext);
     if (!mainModule) {
       INT_FATAL(mainFn, "main function's parent scope wasn't a module scope");
     }
-    AList<Stmt>* initStmts = new AList<Stmt>();
-    initStmts->insertAtTail(buildFnCallStmt(commonModule->initFn));
-    initStmts->insertAtTail(buildFnCallStmt(mainModule->initFn));
-    initStmts->insertAtTail(mainFn->body);
-    mainFn->body = new BlockStmt(initStmts);
+    mainBody = mainFn->body;
   }
+  mainBody->body->insertAtHead(buildFnCallStmt(mainModule->initFn));
+  mainBody->body->insertAtHead(buildFnCallStmt(commonModule->initFn));
+  // BLC: the following also seems reasonable, but we have to do this
+  // for user modules as well so that they can access the symbols in
+  // question, so it's not crucial.  moreover, it seems that these
+  // symbols are never resolved if the --noanalysis flag is used, for
+  // some reason...
+  //  mainBody->body->insertAtHead(new UseStmt(new Variable(new UnresolvedSymbol("_chpl_complex"))));
+  //  mainBody->body->insertAtHead(new UseStmt(new Variable(new UnresolvedSymbol("_chpl_seq"))));
 
 
   // add a call to main to the entry point's body

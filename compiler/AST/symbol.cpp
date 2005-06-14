@@ -1296,6 +1296,30 @@ void ModuleSymbol::createInitFn(void) {
   AList<Stmt>* initstmts = NULL;
   AList<Stmt>* definition = stmts;
 
+  // BLC: code to run user modules once only
+  char* runOnce = NULL;
+  if (modtype == MOD_USER) {
+    runOnce = glomstrings(3, "__run_", name, "_firsttime");
+    SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
+    // create a boolean variable to guard module initialization
+    DefStmt* varDefStmt = Symboltable::defineSingleVarDefStmt(runOnce,
+                                                              dtBoolean,
+                                                              new BoolLiteral("true", true),
+                                                              VAR_NORMAL,
+                                                              VAR_VAR);
+    // insert its definition in the common module's init function
+    commonModule->initFn->body->body->insertAtHead(varDefStmt);
+    Symboltable::setCurrentScope(saveScope);
+ 
+    // insert a set to false at the beginning of the current module's
+    // definition (we'll wrap it in a conditional just below, after
+    // filtering)
+    Expr* assignVar = new AssignOp(GETS_NORM, 
+                                   new Variable(new UnresolvedSymbol(runOnce)), 
+                                   new BoolLiteral("false", false));
+    definition->insertAtHead(new ExprStmt(assignVar));
+  }
+
   definition->filter(stmtIsGlob, globstmts, initstmts);
 
   definition = globstmts;
@@ -1305,7 +1329,15 @@ void ModuleSymbol::createInitFn(void) {
   } else {
     initFunBody = new BlockStmt(initstmts);
   }
-
+  
+  if (runOnce) {
+    // wrap initializer function body in conditional
+    Stmt* testRun = new CondStmt(new Variable(new UnresolvedSymbol(runOnce)), 
+                                 initFunBody);
+    // and replace it
+    initFunBody = new BlockStmt(new AList<Stmt>(testRun));
+  }
+                    
   DefStmt* initFunDef = Symboltable::defineFunction(fnName, NULL, 
                                                     dtVoid, initFunBody, 
                                                     true);
