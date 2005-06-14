@@ -36558,3 +36558,16 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	                                  writen.good writetwo.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 12:35:07 -- bradc
+
+Log message:
+	Added some missing .cvsignores to the test system to
+	ignore *.tmp, a.out.
+
+Added files:
+	chapel/test/trivial/mjoyner/seq/: .cvsignore 
+	chapel/test/types/complex/jplevyak/: .cvsignore 
+	chapel/test/types/tuple/deitz/noanalysis/: .cvsignore 
+
