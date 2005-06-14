@@ -491,6 +491,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       defExpr->sym->type->defaultConstructor = fns.v[0];
     } if (fns.n > 1) {
       INT_FATAL(expr, "Unable to resolve default constructor");
+    } else if (defExpr->exprType) {
+      if (FnCall *fc = dynamic_cast<FnCall*>(defExpr->exprType))
+        if (Variable *v = dynamic_cast<Variable*>(fc->baseExpr))
+          if (FnSymbol *fn = dynamic_cast<FnSymbol*>(v->var))
+            defExpr->sym->type->defaultConstructor = fn;
     }
   }
 
