@@ -1247,8 +1247,10 @@ AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     if (!first) {
       addWriteStmt(body, new StringLiteral(", "));
     }
-    addWriteStmt(body, new StringLiteral(tmp->name));
-    addWriteStmt(body, new StringLiteral(" = "));
+    if (!dynamic_cast<TupleType*>(this)) {
+      addWriteStmt(body, new StringLiteral(tmp->name));
+      addWriteStmt(body, new StringLiteral(" = "));
+    }
     addWriteStmt(body, new MemberAccess(new Variable(arg), tmp));
     first = false;
   }
