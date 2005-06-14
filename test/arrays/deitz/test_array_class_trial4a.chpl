@@ -28,7 +28,7 @@ class array1d {
 
 var a : array1d = array1d(integer);
 
-a()(1) = 3;
-a()(2) = 2;
-a()(3) = 1;
-writeln(a()(1), a()(2), a()(3));
+a(1) = 3;
+a(2) = 2;
+a(3) = 1;
+writeln(a(1), a(2), a(3));
