@@ -36406,3 +36406,19 @@ Log message:
 Modified files:
 	chapel/compiler/backend/: graph.cpp 
 
+---------------------------------------------------------------------------
+
+06/14/05 11:37:54 -- mjoyner
+
+Log message:
+	Added ability to index into sequences.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+Added files:
+	chapel/test/trivial/mjoyner/seq/: seq_index1.chpl 
+	                                  seq_index1.good 
+	                                  seq_index2.chpl 
+	                                  seq_index2.good 
+	                                  seq_index2.future 
+
