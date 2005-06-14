@@ -407,12 +407,13 @@ graph_fun_node(FILE *fp, Fun *f) {
   char title[256] = "";
   strcat_sym_node(title, f->sym);
   forv_MPosition(p, f->arg_positions) {
-    Var *a = f->args.get(p);
-    strcat(title, " ");
-    if (!a->sym->is_pattern)
-      strcat_sym_node(title, a->sym);
-    else
-      strcat_pattern(title, a->sym);
+    if (Var *a = f->args.get(p)) {
+      strcat(title, " ");
+      if (!a->sym->is_pattern)
+        strcat_sym_node(title, a->sym);
+      else
+        strcat_pattern(title, a->sym);
+    }
   }
   if (fgraph_frequencies)
     sprintf(title + strlen(title), "freq(%f)", f->execution_frequency);
