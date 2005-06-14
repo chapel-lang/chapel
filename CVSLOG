@@ -36621,3 +36621,23 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: applyGettersSetters.cpp 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:21:36 -- bradc
+
+Log message:
+	Added tests of using user modules -- a simple use and
+	a test of two modules mutually using one another.
+	Added machinery to module initializers so that a
+	module's initializer would only be run once.  Still
+	no support for user-specified module initialize()
+	functions as Mack was trying last week...
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+Added files:
+	chapel/test/modules/bradc/: use-mutrec.chpl use-mutrec.good 
+	                            use.chpl use.good 
+
