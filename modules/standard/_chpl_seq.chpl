@@ -31,6 +31,23 @@ class seq2 {
   var _first : _seqNode;
   var _last : _seqNode;
 
+  function this(i : integer) var {
+    var start_index : integer = 1;
+    var end_index : integer = _length;
+    if (i >= start_index and i <= end_index) {
+      var cntr : integer = i - start_index;
+      var tmp = _first;
+      while(cntr != 0) {
+        tmp = tmp._next;
+        cntr-= 1;
+      }
+      return tmp._element;
+    }
+    else 
+      halt("error: sequence index out-of-bounds, index is ", i);
+
+  }
+
   function length : integer
     return _length;
 

@@ -1,0 +1,6 @@
+sequ1(1) is 5
+sequ2(2) is 18
+sequ4(1) is 1
+sequ4(4) is 4
+sequ4(7) is 7
+sequ4(8) is error: sequence index out-of-bounds, index is 8
