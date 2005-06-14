@@ -36667,3 +36667,13 @@ Modified files:
 	chapel/test/arrays/deitz/: test_array_class_trial4a.chpl 
 	                           test_array_class_trial4a.good 
 
+---------------------------------------------------------------------------
+
+06/14/05 14:44:41 -- deitz
+
+Log message:
+	Removed future of test.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_array_class_trial4a.future 
+
