@@ -36358,3 +36358,13 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/: test_where_param1.future 
 
+---------------------------------------------------------------------------
+
+06/13/05 18:00:36 -- jplevyak
+
+Log message:
+	updated with specific issue.
+
+Modified files:
+	chapel/test/types/type_variables/jplevyak/: typevar_use-1.future 
+
