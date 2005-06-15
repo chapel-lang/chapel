@@ -36917,3 +36917,13 @@ Added files:
 	                                 call_mapping-1.future 
 	                                 call_mapping-1.good 
 
+---------------------------------------------------------------------------
+
+06/15/05 14:33:54 -- jplevyak
+
+Log message:
+	Revert mistaken checkin
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+
