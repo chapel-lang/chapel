@@ -1133,7 +1133,7 @@ all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, Partial_ki
 }
 
 static int
-partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> &args, Partial_kind partial) {
+partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> args, Partial_kind partial) {
   AVar *result = make_AVar(p->lvals.v[0], es);
   AVar *fun = cs->vars.v[0];
   for (int i = cs->vars.n - 1; i >= 1; i--) {
@@ -1167,7 +1167,7 @@ record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
 }
 
 int
-function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args, 
+function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> args, 
                   Partial_kind partial) 
 {
   Vec<AVar *> a;
