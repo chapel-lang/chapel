@@ -36703,3 +36703,18 @@ Modified files:
 	chapel/compiler/traversals/: insertAnonymousDomains.cpp 
 	                             insertAnonymousTypes.cpp 
 
+---------------------------------------------------------------------------
+
+06/14/05 17:33:43 -- jplevyak
+
+Log message:
+	Add some more tests.   Several trival array problems.
+
+Added files:
+	chapel/test/arrays/jplevyak/: simple-1.chpl simple-1.future 
+	                              simple-1.good simple-2.chpl 
+	                              simple-2.future simple-2.good 
+	                              simple-3.chpl simple-3.future 
+	                              simple-3.good 
+	chapel/test/flowanalysis/jplevyak/: destruct3.good destruct3.v 
+
