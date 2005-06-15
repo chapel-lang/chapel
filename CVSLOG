@@ -36939,3 +36939,14 @@ Log message:
 Modified files:
 	chapel/third-party/boehmgc/: Makefile 
 
+---------------------------------------------------------------------------
+
+06/15/05 15:54:01 -- deitz
+
+Log message:
+	Fixed a bug in which visible functions were not propagated correctly
+	if they were already computed.
+
+Modified files:
+	chapel/compiler/symtab/: symtab.cpp 
+
