@@ -8,6 +8,8 @@
 #include "pragma.h"
 #include "symbol.h"
 
+extern bool printCppLineno;
+
 class Expr;
 class DefExpr;
 class AInfo;
@@ -27,6 +29,8 @@ class Stmt : public BaseAST {
   Stmt* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
+  void codegen(FILE* outfile);
+  virtual void codegenStmt(FILE* outfile);
   virtual void callReplaceChild(BaseAST* new_ast);
   virtual void verify(void);
   virtual void traverse(Traversal* traversal, bool atTop = true);
@@ -45,7 +49,7 @@ class NoOpStmt : public Stmt {
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -59,7 +63,7 @@ public:
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 
   VarSymbol* varDef();
   FnSymbol* fnDef();
@@ -82,7 +86,7 @@ class ExprStmt : public Stmt {
   void traverseStmt(Traversal* traversal);
 
   virtual void print(FILE* outfile);
-  virtual void codegen(FILE* outfile);
+  virtual void codegenStmt(FILE* outfile);
 };
 
 
@@ -92,7 +96,7 @@ class ReturnStmt : public ExprStmt {
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -102,7 +106,7 @@ class WithStmt : public ExprStmt {
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 
   StructuralType* getStruct(void);
 };
@@ -114,7 +118,7 @@ class UseStmt : public ExprStmt {
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 
   ModuleSymbol* getModule(void);
 };
@@ -136,7 +140,7 @@ class BlockStmt : public Stmt {
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -152,7 +156,7 @@ class WhileLoopStmt : public BlockStmt {
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -173,7 +177,7 @@ class ForLoopStmt : public BlockStmt {
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -193,7 +197,7 @@ class CondStmt : public Stmt {
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -207,7 +211,7 @@ class WhenStmt : public Stmt {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -221,7 +225,7 @@ class SelectStmt : public Stmt {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -238,7 +242,7 @@ class LabelStmt : public Stmt {
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 
@@ -263,7 +267,7 @@ class GotoStmt : public Stmt {
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  void codegenStmt(FILE* outfile);
 };
 
 

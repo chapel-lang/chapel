@@ -11,6 +11,7 @@
 #include "../traversals/updateSymbols.h"
 #include "../passes/runAnalysis.h"
 
+bool printCppLineno = false;
 
 Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
@@ -72,6 +73,21 @@ Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
 Stmt* Stmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
   INT_FATAL(this, "copy not implemented for Stmt subclass");
   return NULL;
+}
+
+
+void Stmt::codegen(FILE* outfile) {
+  if (printCppLineno) {
+    if (lineno > 0) {
+      fprintf(outfile, "/* ZLINE: %d %s */\n", lineno, filename);
+    } 
+  }
+  codegenStmt(outfile);
+}
+
+
+void Stmt::codegenStmt(FILE* outfile) {
+  INT_FATAL(this, "codegenStmt not implemented for Stmt subclass");
 }
 
 
@@ -158,7 +174,7 @@ void NoOpStmt::print(FILE* outfile) {
 }
 
 
-void NoOpStmt::codegen(FILE* outfile) {
+void NoOpStmt::codegenStmt(FILE* outfile) {
   //  fprintf(outfile, "{}\n");
 }
 
@@ -199,7 +215,7 @@ void DefStmt::print(FILE* outfile) {
 }
 
 
-void DefStmt::codegen(FILE* outfile) { /* Noop */ }
+void DefStmt::codegenStmt(FILE* outfile) { /* Noop */ }
 
 
 VarSymbol* DefStmt::varDef() {
@@ -306,7 +322,7 @@ void ExprStmt::print(FILE* outfile) {
 }
 
 
-void ExprStmt::codegen(FILE* outfile) {
+void ExprStmt::codegenStmt(FILE* outfile) {
   expr->codegen(outfile);
   fprintf(outfile, ";");
 }
@@ -335,7 +351,7 @@ void ReturnStmt::print(FILE* outfile) {
 }
 
 
-void ReturnStmt::codegen(FILE* outfile) {
+void ReturnStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "return");
   if (expr) {
     fprintf(outfile, " ");
@@ -369,8 +385,8 @@ void WithStmt::print(FILE* outfile) {
 }
 
 
-void WithStmt::codegen(FILE* outfile) {
-  INT_FATAL(this, "With statement encountered in codegen()");
+void WithStmt::codegenStmt(FILE* outfile) {
+  INT_FATAL(this, "With statement encountered in codegenStmt()");
 }
 
 
@@ -416,7 +432,7 @@ void UseStmt::print(FILE* outfile) {
 }
 
 
-void UseStmt::codegen(FILE* outfile) {
+void UseStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "/* 'use ");
   expr->codegen(outfile);
   fprintf(outfile, "' was here */");
@@ -497,7 +513,7 @@ void BlockStmt::print(FILE* outfile) {
   fprintf(outfile, "}");
 }
 
-void BlockStmt::codegen(FILE* outfile) {
+void BlockStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "{\n");
   if (blkScope) {
     blkScope->codegen(outfile, "\n");
@@ -563,7 +579,7 @@ void WhileLoopStmt::print(FILE* outfile) {
 }
 
 
-void WhileLoopStmt::codegen(FILE* outfile) {
+void WhileLoopStmt::codegenStmt(FILE* outfile) {
 
   if (isWhileDo) {
     fprintf(outfile, "while (");
@@ -655,7 +671,7 @@ void ForLoopStmt::print(FILE* outfile) {
 }
 
 
-void ForLoopStmt::codegen(FILE* outfile) {
+void ForLoopStmt::codegenStmt(FILE* outfile) {
   DefExpr* indices_def = indices->first();
 
   if (domain->typeInfo()->symbol &&
@@ -867,15 +883,15 @@ void CondStmt::print(FILE* outfile) {
   }
 }
 
-void CondStmt::codegen(FILE* outfile) {
+void CondStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "if (");
   condExpr->codegen(outfile);
   fprintf(outfile, ") {\n");
-  thenStmt->codegen(outfile);
+  thenStmt->codegenStmt(outfile);
   fprintf(outfile, "\n}");
   if (elseStmt) {
     fprintf(outfile, " else {\n");
-    elseStmt->codegen(outfile);
+    elseStmt->codegenStmt(outfile);
     fprintf(outfile, "\n}");
   }
 }
@@ -919,8 +935,8 @@ void WhenStmt::print(FILE* outfile) {
 }
 
 
-void WhenStmt::codegen(FILE* outfile) {
-  INT_FATAL(this, "WhenStmt::codegen encountered");
+void WhenStmt::codegenStmt(FILE* outfile) {
+  INT_FATAL(this, "WhenStmt::codegenStmt encountered");
 }
 
 
@@ -963,7 +979,7 @@ void SelectStmt::print(FILE* outfile) {
 }
 
 
-void SelectStmt::codegen(FILE* outfile) {
+void SelectStmt::codegenStmt(FILE* outfile) {
   bool firstWhenStmt = true;
   for (WhenStmt* whenStmt = whenStmts->first();
        whenStmt;
@@ -994,7 +1010,7 @@ void SelectStmt::codegen(FILE* outfile) {
     } else {
       fprintf(outfile, "true) /* otherwise */ ");
     }
-    whenStmt->doStmt->codegen(outfile);
+    whenStmt->doStmt->codegenStmt(outfile);
   }
 }
 
@@ -1034,10 +1050,10 @@ void LabelStmt::print(FILE* outfile) {
 }
 
 
-void LabelStmt::codegen(FILE* outfile) {
+void LabelStmt::codegenStmt(FILE* outfile) {
   label->codegen(outfile);
   fprintf(outfile, ":;\n");
-  stmt->codegen(outfile);
+  stmt->codegenStmt(outfile);
   label->codegen(outfile);
   fprintf(outfile, "_post:;\n");
 }
@@ -1094,7 +1110,7 @@ void GotoStmt::print(FILE* outfile) {
 }
 
 
-void GotoStmt::codegen(FILE* outfile) {
+void GotoStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "goto ");
   label->codegen(outfile);
   if (goto_type == goto_break) {

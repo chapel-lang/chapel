@@ -19,6 +19,7 @@
 #include "mysystem.h"
 #include "pdb.h"
 #include "runpasses.h"
+#include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
 #include "version.h"
@@ -87,6 +88,7 @@ static ArgumentDescription arg_desc[] = {
   "CHPL_GRAPH_FREQUENCIES", NULL},
  {"log_dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'd', "Debug Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
+ {"codegen-cpp-lines", ' ', "Enable #line directives", "F", &printCppLineno, NULL, NULL},
  {"", 'l', "Library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"", 'L', "Library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},

@@ -42,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "mysystem.h"
 #include "vec.h"
 
-#define ZLINEFORMAT "# %d \"%s\"\n"
+#define ZLINEFORMAT "#line %d \"%s\"\n"
 #define ZLINEINPUT "/* ZLINE: "
 #define ZLINEINPUTFORMAT "/* ZLINE: %d %s"
 #define ZLINEINPUTLEN strlen(ZLINEINPUT)
