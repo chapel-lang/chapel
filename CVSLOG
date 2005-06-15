@@ -36927,3 +36927,15 @@ Log message:
 Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 
+---------------------------------------------------------------------------
+
+06/15/05 14:36:51 -- jplevyak
+
+Log message:
+	If the gc6.X directory has never been built, it doesn't
+	have a Makefile, so "make clean" will produce and error
+	which should be ignored.
+
+Modified files:
+	chapel/third-party/boehmgc/: Makefile 
+
