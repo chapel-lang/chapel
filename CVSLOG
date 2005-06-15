@@ -36729,3 +36729,31 @@ Added files:
 	chapel/test/arrays/jplevyak/: simple-4.chpl simple-4.future 
 	                              simple-4.good 
 
+---------------------------------------------------------------------------
+
+06/15/05 10:05:59 -- jplevyak
+
+Log message:
+	Support y.a()(2) = x syntax.
+	In a number of cases x.a was being generated as a primitive
+	intead of a(_method_token, x), these have been fixed.  This
+	change resulted in a number of tests requring changes as well,
+	and in the f(x.i) where f takes an OUT argument failing (as
+	Steve said it should).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp 
+	chapel/compiler/include/: fa.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/test/classes/deitz/: test_union2.good test_union4.good 
+	                            test_union_method3.good 
+	chapel/test/flowanalysis/jplevyak/: badcall.good badreturn.good 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/functions/jplevyak/: equal_method-1.chpl 
+	chapel/test/types/seq/bradc/: length.modify.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/classes/deitz/: test_union3.future 
+
