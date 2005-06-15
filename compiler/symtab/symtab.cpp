@@ -143,6 +143,12 @@ void Symboltable::pushScope(scopeType type) {
     child->sibling = newScope;
   }
   newScope->parent = currentScope;
+
+  if (currentScope->visibleFunctions.n > 0) {
+    // visibleFunctions already computed
+    newScope->setVisibleFunctions(NULL);
+  }
+
   currentScope = newScope;
 }
 
@@ -155,10 +161,6 @@ SymScope* Symboltable::popScope(void) {
     INT_FATAL("ERROR: popping too many scopes");
   } else {
     currentScope = prevScope;
-  }
-
-  if (topScope->parent->visibleFunctions.n > 0) { // visibleFunctions already computed
-    topScope->setVisibleFunctions(NULL);
   }
 
   return topScope;
