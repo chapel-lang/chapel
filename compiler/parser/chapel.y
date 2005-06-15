@@ -743,6 +743,14 @@ exprType:
       new_names->add($1);
       $$ = new UnresolvedType(new_names);
     }
+| non_tuple_lvalue TOF identifier
+    {
+      $$ = new ExprType(
+             new ParenOpExpr($1, 
+               new AList<Expr>(
+                 new Variable(
+                   new UnresolvedSymbol($3)))));
+    }
 | member_access_expr
     {
       $$ = new ExprType($1);
