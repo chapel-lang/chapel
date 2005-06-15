@@ -36718,3 +36718,14 @@ Added files:
 	                              simple-3.good 
 	chapel/test/flowanalysis/jplevyak/: destruct3.good destruct3.v 
 
+---------------------------------------------------------------------------
+
+06/14/05 17:35:46 -- jplevyak
+
+Log message:
+	Another odd array problem
+
+Added files:
+	chapel/test/arrays/jplevyak/: simple-4.chpl simple-4.future 
+	                              simple-4.good 
+
