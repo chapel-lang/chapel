@@ -36831,3 +36831,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+06/15/05 12:06:40 -- jplevyak
+
+Log message:
+	Re-fix the bug from a bad checkin.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
