@@ -36803,3 +36803,20 @@ Modified files:
 	                           test_array_class_trial6.chpl 
 	                           test_array_class_trial6.good 
 
+---------------------------------------------------------------------------
+
+06/15/05 11:13:23 -- jplevyak
+
+Log message:
+	Fixed test_array_class_trial5a.chpl which was incorrect.
+	Removed .futures for working tests.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_class_trial5a.chpl 
+	                           test_array_class_trial5a.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_class_trial4.future 
+	                           test_array_class_trial5.future 
+	                           test_array_class_trial5a.future 
+	                           test_array_class_trial6.future 
+
