@@ -1,1 +1,6 @@
-needs updating
+[Write on 1 sets 3]
+[Write on 2 sets 2]
+[Write on 3 sets 1]
+[Read on 1 returns 3]3[Read on 2 returns 2]2[Read on 3 returns 1]1
+[Write on 1 sets 4]
+[Read on 1 returns 4]4

@@ -4,7 +4,7 @@ class array1d {
   var x2 : t;
   var x3 : t;
   function indexedby(i : integer) var : t {
-    write("\n[Access of ", i, "]\n");
+    write("[Access of ", i, "]");
     select i {
       when 1 do return x1;
       when 2 do return x2;
