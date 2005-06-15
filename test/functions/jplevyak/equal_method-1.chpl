@@ -1,4 +1,5 @@
 record foo { var a : integer;  }
+pragma "rename _foo_eq"
 function foo.=(b) {
   a = b.a + 10;
 }

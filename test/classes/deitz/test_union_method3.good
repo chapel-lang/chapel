@@ -1,4 +1,4 @@
 x: (2.2)
 x: (-1)
 Hello
-f value: ERROR: Union type error (test_union_method3.chpl:8)
+f value: ERROR: Union type error (test_union_method3.chpl:10)

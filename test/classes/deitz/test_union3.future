@@ -1,0 +1,4 @@
+deitz
+
+need an intermediate for x.i and copy it back after the function call to
+handle the out param

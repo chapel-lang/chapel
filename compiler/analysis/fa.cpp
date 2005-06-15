@@ -991,7 +991,13 @@ make_closure(AVar *result) {
   PNode *partial_application = result->var->def;
   EntrySet *es = (EntrySet*)result->contour;
   if (partial_application->prim) { // apply and period
-    if (pn->prim == prim_period && fa->method_token) {
+    if (pn->prim == prim_setter && fa->setter_token) {
+      pn->tvals.fill(4);
+      make_closure_var(partial_application->rvals.v[4], es, cs, result, add, 0);
+      make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 1);
+      make_closure_var(fa->setter_token->var, es, cs, result, add, 2);
+      make_closure_var(partial_application->rvals.v[1], es, cs, result, add, 3);
+    } else if (pn->prim == prim_period && fa->method_token) {
       pn->tvals.fill(3);
       make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 0);
       make_closure_var(fa->method_token->var, es, cs, result, add, 1);
@@ -1453,6 +1459,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         AVar *obj = make_AVar(p->rvals.v[1], es);
         AVar *selector = make_AVar(p->rvals.v[3], es);
         AVar *val = make_AVar(p->rvals.v[4], es);
+        int partial = 0;
         p->tvals.fill(1);
         if (!p->tvals.v[0]) {
           Sym *s = new_Sym();
@@ -1473,10 +1480,22 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
             AVar *iv = cs->var_map.get(symbol);
             if (iv)
               flow_vars(tval, iv);
-            else
-              type_violation(ATypeViolation_MEMBER, selector, make_AType(cs), result);
+            else {
+              Vec<AVar *> args;
+              args.add(obj);
+              if (fa->setter_token)
+                args.add(fa->setter_token);
+              args.add(val);
+              int res = application(p, es, selector, cs, args, (Partial_kind)p->code->partial);
+              if (res > 0)
+                partial = 1;
+              else if (res < 0)
+                type_violation(ATypeViolation_MEMBER, selector, make_AType(cs), result);
+            }
           }
         }
+        if (partial)
+          make_closure(result);
         flow_vars(val, result);
         break;
       }
@@ -2196,10 +2215,12 @@ collect_argument_type_violations() {
       forv_EntrySet(from, ess) if (from) {
         FunAEdgeMap *m = from->out_edge_map.get(p);
         if (!m) {
-          forv_Var(v, p->rvals) {
-            AVar *av = make_AVar(v, from);
-            type_violation(ATypeViolation_SEND_ARGUMENT, av, av->out, 
-                           make_AVar(p->lvals.v[0], from));
+          if (p->code->partial == Partial_NEVER) {
+            forv_Var(v, p->rvals) {
+              AVar *av = make_AVar(v, from);
+              type_violation(ATypeViolation_SEND_ARGUMENT, av, av->out, 
+                             make_AVar(p->lvals.v[0], from));
+            }
           }
         } else {
           AEdge *base_e = 0;
@@ -2354,6 +2375,8 @@ initialize_pass() {
   refresh_top_edge(fa->top_edge);
   if (fa->method_token)
     fa->method_token->out = make_abstract_type(fa->method_token->var->sym);
+  if (fa->setter_token)
+    fa->setter_token->out = make_abstract_type(fa->setter_token->var->sym);
 }
 
 enum { DFS_white = 0, DFS_grey, DFS_black };
@@ -2661,6 +2684,8 @@ clear_results() {
       x->car->eq_classes = NULL;
   if (fa->method_token)
     clear_var(fa->method_token->var);
+  if (fa->setter_token)
+    clear_var(fa->setter_token->var);
 }
 
 static Setters *

@@ -210,9 +210,9 @@ build_type_hierarchy() {
     // which may be a constant or a constant constrainted variable
     if (s->is_fun && s->has.n) {
       Sym *a = s->has.v[0];
-      if (a->is_symbol && a->name == s->name)
+      if (a->is_symbol)
         implement_and_specialize(a, s, types);
-      else if (a->must_specialize && a->must_specialize->is_symbol && a->must_specialize->name == s->name)
+      else if (a->must_specialize && a->must_specialize->is_symbol)
         implement_and_specialize(a->must_specialize, s, types);
     }
     if (s->type_kind)

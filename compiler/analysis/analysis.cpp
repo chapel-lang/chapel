@@ -25,6 +25,11 @@
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 #define MAKE_USER_TYPE_BE_DEFINITION       1
 
+#define OPERATOR_CHAR(_c) \
+(((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
+  (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
+   _c != '_'&& _c != '?' && _c != '$')                \
+
 class LabelMap : public Map<char *, Stmt *> {};
 
 static Sym *domain_start_index_symbol = 0;
@@ -44,6 +49,7 @@ static Sym *array_set_symbol = 0;
 static Sym *sizeof_symbol = 0;
 static Sym *cast_symbol = 0;
 static Sym *method_token = 0;
+static Sym *setter_token = 0;
 static Sym *set_symbol = 0;
 static Sym *make_seq_symbol = 0;
 static Sym *make_chapel_tuple_symbol = 0;
@@ -1667,21 +1673,15 @@ gen_set_member(MemberAccess *ma, AssignOp *base_ast) {
   FnSymbol *fn = ma->getStmt()->parentFunction();
   AInfo *ast = base_ast->ainfo;
   int equal = !fn || (!fn->_setter && (!fn->isConstructor || !is_this_member_access(ma)));
-  if (equal)
-    if1_gen(if1, &base_ast->ainfo->code, base_ast->left->ainfo->code);
-  else
-    if1_gen(if1, &base_ast->ainfo->code, ma->base->ainfo->code);
   ast->rval = new_sym();
   ast->rval->ast = base_ast->ainfo;
+  if1_gen(if1, &ast->code, ma->ainfo->code);
   Sym *rhs = gen_assign_op(base_ast);
   Code *c = 0;
   if (equal) {
-    char sel[1024];
-    strcpy(sel, "=");
-    strcat(sel, ma->member->asymbol->sym->name);
-    Sym *selector = make_symbol(sel);
-    c = if1_send(if1, &ast->code, 4, 1, selector, method_token,
-                 ma->base->ainfo->rval, rhs, ast->rval);
+    Sym *selector = make_symbol(ma->member->asymbol->sym->name);
+    c = if1_send(if1, &ast->code, 5, 1, selector, method_token, 
+                 ma->base->ainfo->rval, setter_token, rhs, ast->rval);
   } else {
     Sym *selector = make_symbol(ma->member->asymbol->sym->name);
     c = if1_send(if1, &ast->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
@@ -1697,6 +1697,7 @@ gen_get_member(MemberAccess *ma) {
   AInfo *ast = ma->ainfo;
   ast->rval = new_sym();
   ast->rval->ast = ast;
+  ast->sym = ast->rval;
   if1_gen(if1, &ast->code, ma->base->ainfo->code);
   char *sel = ma->member->asymbol->sym->name;
   Sym *selector = make_symbol(sel);
@@ -1704,6 +1705,7 @@ gen_get_member(MemberAccess *ma) {
                      ma->base->ainfo->rval, ast->rval);
   c->ast = ast;
   c->partial = Partial_NEVER;
+  ma->ainfo->send = c;
   return 0;
 }
 
@@ -1711,14 +1713,17 @@ static int
 gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
   if (!ast)
     ast = s->ainfo;
-  if (s->baseExpr->astType == EXPR_MEMBERACCESS && !rhs) {
-    if (!s->argList) {
-      ast->rval = s->baseExpr->ainfo->rval;
-      ast->code = s->baseExpr->ainfo->code;
-      s->baseExpr->ainfo->send->partial = Partial_NEVER;
-      return 0;
-    } else
-      s->baseExpr->ainfo->send->partial = Partial_ALWAYS;
+  MemberAccess *ma = dynamic_cast<MemberAccess*>(s->baseExpr);
+  if (ma) {
+    if (!rhs) {
+      if (!s->argList) {
+        ast->rval = s->baseExpr->ainfo->rval;
+        ast->code = s->baseExpr->ainfo->code;
+        s->baseExpr->ainfo->send->partial = Partial_NEVER;
+        return 0;
+      } else
+        s->baseExpr->ainfo->send->partial = Partial_ALWAYS;
+    }
   }
   ast->rval = new_sym();
   ast->rval->ast = ast;
@@ -1729,16 +1734,13 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
     args.n--;
   Vec<Sym *> rvals;
   if (rhs) {
-    char nn[1024];
     Variable *v = dynamic_cast<Variable*>(s->baseExpr);
     if (v && v->var->astType == SYMBOL_UNRESOLVED) {
-      strcpy(nn, "=");
-      strcat(nn, s->baseExpr->ainfo->sym->name);
-      rvals.add(make_symbol(nn));
+      rvals.add(make_symbol(s->baseExpr->ainfo->sym->name));
+      rvals.add(setter_token);
     } else {
-      rvals.add(set_symbol);
-      rvals.add(method_token);
       rvals.add(s->baseExpr->ainfo->rval);
+      rvals.add(setter_token);
     }
   }
   forv_Vec(Expr, a, args) {
@@ -1785,23 +1787,6 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
   if1_add_send_result(if1, send, ast->rval);
   send->partial = Partial_NEVER;
   ast->sym = ast->rval;
-  return 0;
-}
-
-static int
-gen_set(ParenOpExpr *p, Expr *rhs, Expr *base_ast) {
-  AInfo *ast = base_ast->ainfo;
-  if (1 || p->baseExpr->astType == EXPR_MEMBERACCESS)
-    return gen_paren_op(p, rhs, ast);
-  ast->rval = new_sym();
-  ast->rval->ast = ast;
-  if1_gen(if1, &ast->code, p->baseExpr->ainfo->code);
-  if1_gen(if1, &ast->code, rhs->ainfo->code);
-  Sym *selector = set_symbol;
-  Code *c = if1_send(if1, &ast->code, 4, 1, selector, method_token,
-                     p->baseExpr->ainfo->rval, rhs->ainfo->rval, ast->rval);
-  c->ast = ast;
-  c->partial = Partial_NEVER;
   return 0;
 }
 
@@ -2065,16 +2050,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       FnSymbol *fn = s->getStmt()->parentFunction();
-      int in_assign_or_funcall = 
-        parent && (parent->astType == EXPR_ASSIGNOP ||
-                   parent->astType == EXPR_ARRAYREF ||
-                   parent->astType == EXPR_TUPLESELECT ||
-                   parent->astType == EXPR_FNCALL ||
-                   parent->astType == EXPR_PARENOP);
-      if ((!fn->_getter &&
-                   (!fn->isConstructor || !is_this_member_access(ast))) 
-          && !in_assign_or_funcall) 
-      {
+      if (!fn->_getter && !fn->_setter && (!fn->isConstructor || !is_this_member_access(ast))) {
         if (gen_get_member(s) < 0)
           return -1;
         break;
@@ -2089,7 +2065,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
                          s->base->ainfo->rval, op, selector,
                          s->ainfo->rval);
       c->ast = s->ainfo;
-      c->partial = Partial_NEVER; // assume this is a member
+      c->partial = Partial_NEVER;
       s->ainfo->send = c;
       break;
     }
@@ -2110,7 +2086,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
           s->left->astType == EXPR_FNCALL ||
           s->left->astType == EXPR_PARENOP) 
       {
-        if (gen_set(dynamic_cast<ParenOpExpr*>(s->left), s->right, s) < 0)
+        if (gen_paren_op(dynamic_cast<ParenOpExpr*>(s->left), s->right, s->ainfo) < 0)
           return -1;
         break;
       }
@@ -2431,13 +2407,28 @@ gen_fun(FnSymbol *f) {
   Vec<ParamSymbol *> args;
   Vec<Sym *> out_args;
   f->formals->getElements(args);
-  Sym *as[args.n + 3];
+  Sym *as[args.n + 4];
   int iarg = 0;
   assert(f->asymbol->sym->name);
-  if (strcmp(f->asymbol->sym->name, "this") != 0) {
-    Sym *s = new_sym(f->asymbol->sym->name);
+  if (strcmp(f->asymbol->sym->name, "=this") == 0) {
+    if (is_Sym_OUT(args.v[0]->asymbol->sym))
+      out_args.add(args.v[0]->asymbol->sym);
+    as[iarg++] = args.v[0]->asymbol->sym;
+    Sym *s = new_sym(setter_token->name);
     s->ast = ast;
-    s->must_specialize = make_symbol(f->asymbol->sym->name);
+    s->must_specialize = setter_token;
+    as[iarg++] = s;
+  } else if (strcmp(f->asymbol->sym->name, "this") == 0) {
+    if (is_Sym_OUT(args.v[0]->asymbol->sym))
+      out_args.add(args.v[0]->asymbol->sym);
+    as[iarg++] = args.v[0]->asymbol->sym;
+  } else {
+    int setter = f->asymbol->sym->name[0] == '=' && 
+      f->asymbol->sym->name[1] &&
+      !OPERATOR_CHAR(f->asymbol->sym->name[1]);
+    Sym *s = new_sym(f->asymbol->sym->name + (setter ? 1 : 0));
+    s->ast = ast;
+    s->must_specialize = make_symbol(s->name);
     as[iarg++] = s;
     if (!applyGettersSetters && f->method_type != NON_METHOD) {
       Sym *s = new_sym(method_token->name);
@@ -2445,8 +2436,29 @@ gen_fun(FnSymbol *f) {
       s->must_specialize = method_token;
       as[iarg++] = s;
     }
+    if (f->method_type != NON_METHOD) {
+      // this
+      if (args.n) {
+        if (is_Sym_OUT(args.v[0]->asymbol->sym))
+          out_args.add(args.v[0]->asymbol->sym);
+        as[iarg++] = args.v[0]->asymbol->sym;
+      }
+    }
+    if (setter) {
+      Sym *s = new_sym(setter_token->name);
+      s->ast = ast;
+      s->must_specialize = setter_token;
+      as[iarg++] = s;
+    }
+    if (f->method_type == NON_METHOD) {
+      if (args.n) {
+        if (is_Sym_OUT(args.v[0]->asymbol->sym))
+          out_args.add(args.v[0]->asymbol->sym);
+        as[iarg++] = args.v[0]->asymbol->sym;
+      }
+    }
   }
-  for (int i = 0; i < args.n; i++) {
+  for (int i = 1; i < args.n; i++) {
     if (is_Sym_OUT(args.v[i]->asymbol->sym))
       out_args.add(args.v[i]->asymbol->sym);
     as[iarg++] = args.v[i]->asymbol->sym;
@@ -2609,8 +2621,10 @@ init_symbols() {
   expr_reduce_symbol = make_symbol("expr_reduce");
   sizeof_symbol = make_symbol("sizeof");
   cast_symbol = make_symbol("cast");
-  if (!applyGettersSetters)
+  if (!applyGettersSetters) {
     method_token = make_symbol("__method");
+    setter_token = make_symbol("__setter");
+  }
   set_symbol = make_symbol("=this");
   make_seq_symbol = make_symbol("make_seq");
   make_chapel_tuple_symbol = make_symbol("make_chapel_tuple");
@@ -3117,10 +3131,6 @@ type_info(BaseAST *a, Symbol *s) {
     goto Ldone;
   }
   if (sym->var && sym->var->type) {
-    assert(!sym->type 
-           || sym->type->type_kind == Type_UNKNOWN 
-           || sym->var->type == sym->type 
-      );
     type = sym->var->type;
     goto Ldone;
   }
@@ -3139,11 +3149,6 @@ return_type_info(FnSymbol *fn) {
   else
     return dtUnknown;  // analysis not run
 }
-
-#define OPERATOR_CHAR(_c) \
-(((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
-  (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
-   _c != '_'&& _c != '?' && _c != '$')                \
 
 static int
 is_operator_name(char *name) {
@@ -3233,7 +3238,9 @@ type_is_used(TypeSymbol *t) {
       if (!t->asymbol->sym->is_meta_type)
         return false;
       if (is_scalar_type(t->type) 
+          || t->type->asymbol->sym->is_builtin
           || t->type == dtNil
+          || t->type == dtUnknown
           || t->type->astType == TYPE_SUM 
           || t->type->astType == TYPE_INDEX
           || t->type->astType == TYPE_VARIABLE

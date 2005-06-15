@@ -1,2 +1,2 @@
 x: (-1)
-x: (ERROR: Union type error (test_union2.chpl:14)
+x: (ERROR: Union type error (test_union2.chpl:4)

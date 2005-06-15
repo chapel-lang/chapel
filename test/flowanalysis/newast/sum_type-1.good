@@ -4,11 +4,21 @@
  called from 12 in length at sum_type-1.chpl:13
  called from 15 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 17 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 17 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 18 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 18 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 20 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 20 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 22 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 24 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 24 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 25 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 25 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 26 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 26 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 28 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 28 in __init_sum_type-1 at sum_type-1.chpl:22
+ called from 28 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 30 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 31 in __init_sum_type-1 at sum_type-1.chpl:22
  called from 4 in _construct_point at sum_type-1.chpl:4
@@ -33,6 +43,7 @@
 ::_retval(sum_type-1.chpl:9) ( cpoint )
 ::_retval(sum_type-1.chpl:9) ( float64 )
 ::_retval(sum_type-1.chpl:9) ( float64 )
+::_retval(sum_type-1.chpl:9) ( int64 )
 ::a(sum_type-1.chpl:11) ( cpoint )
 ::a(sum_type-1.chpl:11) ( point )
 ::color(sum_type-1.chpl:9) ( int64 )
@@ -43,6 +54,7 @@
 ::this(sum_type-1.chpl:4) ( point )
 ::this(sum_type-1.chpl:4) ( point )
 ::this(sum_type-1.chpl:4) ( point )
+::this(sum_type-1.chpl:9) ( cpoint )
 ::this(sum_type-1.chpl:9) ( cpoint )
 ::this(sum_type-1.chpl:9) ( cpoint )
 ::this(sum_type-1.chpl:9) ( cpoint )
@@ -63,6 +75,7 @@ function _construct_cpoint sum_type-1.chpl:9
 function _construct_cpoint sum_type-1.chpl:9
 function _construct_point sum_type-1.chpl:4
 function _construct_point sum_type-1.chpl:4
+function color sum_type-1.chpl:9
 function length sum_type-1.chpl:11
 function length sum_type-1.chpl:11
 function main sum_type-1.chpl:22

@@ -274,6 +274,7 @@ class FA : public gc {
   ChainHashMap<char*, StringHashFns, RegisteredPrim*> primitive_transfer_functions;
 
   AVar *method_token;
+  AVar *setter_token;
   bool permit_boxing;
   bool no_unused_instance_variables;
   int array_index_base;

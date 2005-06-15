@@ -1,7 +1,5 @@
   called from badcall.v:3
   called from badcall.v:3
-  called from badcall.v:3
-  called from badcall.v:3
   called from badcall.v:4
   called from badcall.v:4
  called from 0 in operator at prelude.v:0
@@ -9,14 +7,10 @@
 __init::self(assign2.v:1) ( C (assign2.v:1) )
 badcall.v:2: expression has no type
 badcall.v:2: expression has no type
-badcall.v:2: illegal call argument type 'x' illegal: ( float64 ) 
-badcall.v:2: unresolved call 'f'
 badcall.v:3: expression has no type
 badcall.v:3: expression has no type
 badcall.v:4: expression has no type
 badcall.v:4: expression has no type
-badcall.v:4: illegal call argument type expression illegal: ( ) 
-badcall.v:4: unresolved call 'print'
 f::c2(assign2.v:3) ( C (assign2.v:1) )
 fail: fatal error, program does not type
 function __init assign2.v:1

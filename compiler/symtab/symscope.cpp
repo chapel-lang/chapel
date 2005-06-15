@@ -7,6 +7,11 @@
 #include "if1.h"
 #include "../passes/filesToAST.h"
 
+#define OPERATOR_CHAR(_c) \
+(((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
+  (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
+   _c != '_'&& _c != '?' && _c != '$')                \
+
 
 SymScope::SymScope(scopeType init_type) :
   type(init_type),
@@ -343,7 +348,8 @@ bool SymScope::commonModuleIsFirst() {
 static void
 addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
                           FnSymbol* fn) {
-  char *n = if1_cannonicalize_string(if1, fn->name);
+  int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]));
+  char *n = if1_cannonicalize_string(if1, fn->name + (is_setter ? 1 : 0));
   Vec<FnSymbol*>* fs = visibleFunctions->get(n);
   if (!fs) fs = new Vec<FnSymbol*>;
   fs->add(fn);
