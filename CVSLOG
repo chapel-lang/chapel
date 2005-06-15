@@ -36905,3 +36905,15 @@ Modified files:
 	chapel/compiler/include/: stmt.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+06/15/05 14:02:38 -- jplevyak
+
+Log message:
+	Test for the various types of calls a.x(i) = j, for example.
+
+Added files:
+	chapel/test/functions/jplevyak/: call_mapping-1.chpl 
+	                                 call_mapping-1.future 
+	                                 call_mapping-1.good 
+
