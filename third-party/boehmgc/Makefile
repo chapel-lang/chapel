@@ -20,7 +20,7 @@ clean:
 	cd $(GC_DIRNAME) && $(MAKE) clean
 
 clobber:
-	cd $(GC_DIRNAME) && $(MAKE) clean
+	-cd $(GC_DIRNAME) && $(MAKE) clean
 	rm -rf ./$(PLATFORM) .lastbuild .lastbuild.tmp
 
 .lastbuild:
