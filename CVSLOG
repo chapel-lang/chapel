@@ -36877,3 +36877,31 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+06/15/05 13:58:01 -- shannon
+
+Log message:
+	Added a new compilation flag, --codegen-cpp-lines.
+	When this flag is used a #line directive is generated
+	for each line of C code.  You can now set breakpoints
+	for your chpl code:
+	
+	  (gdb) break cppLines.chpl:12
+	  Breakpoint 2 at 0x804924e: file cppLines.chpl, line 12.
+	
+	  (gdb) info break
+	  Num Type           Disp Enb Address    What
+	  2   breakpoint     keep y   0x0804924e in __init_cppLines at cppLines.chpl:12
+	
+	  (gdb) r
+	  Starting program: /users/shannon/CHAPEL/chapel/test/compflags/shannon/a.out
+	
+	  Breakpoint 2, __init_cppLines () at cppLines.chpl:12
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/backend/: beautify.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/main/: driver.cpp 
+
