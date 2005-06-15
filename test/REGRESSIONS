@@ -42,6 +42,12 @@ linux and general regressions
   been instantiated so that the test would pass for all parameters.
   (deitz/bradc)
 
+[Error matching compiler output for types/type_variables/deitz/test_typevar_record3]
+[Error matching compiler output for types/type_variables/deitz/test_typevar_record4]
+
+  Both of these are caused by visible_functions not returning the write for
+  strings when called on a location in an instantiated function.
+
 ==========================
 linux valgrind regressions
 ==========================
