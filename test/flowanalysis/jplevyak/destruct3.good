@@ -1,0 +1,9 @@
+ called from 0 in operator at prelude.v:0
+ called from 3 in __init at destruct3.v:1
+__init::self(destruct3.v:1) ( A (destruct3.v:1) )
+function __init destruct3.v:1
+function __init destruct3.v:1
+function f destruct3.v:2
+globals
+user::x(destruct3.v:3) ( float64 )
+user::y(destruct3.v:3) ( int32 )
