@@ -36,10 +36,10 @@ writeln(a(1), a(2), a(3));
 class array2d {
   type t;
   var data : array1d = array1d(t);
-  function indexedby(i : integer, j : integer) : t {
+  function this(i : integer, j : integer) : t {
     return data()((i - 1) * 2 + j);
   }
-  function =indexedby(i : integer, j : integer, val : t) : t {
+  function =this(i : integer, j : integer, val : t) : t {
     data()((i - 1) * 2 + j) = val;
     return val;
   }
