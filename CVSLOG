@@ -36790,3 +36790,16 @@ Added files:
 	                                         test_typevar_record6.future 
 	                                         test_typevar_record6.good 
 
+---------------------------------------------------------------------------
+
+06/15/05 10:49:59 -- deitz
+
+Log message:
+	Updated output files of array class trial tests.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_class_trial4.good 
+	                           test_array_class_trial5.good 
+	                           test_array_class_trial6.chpl 
+	                           test_array_class_trial6.good 
+
