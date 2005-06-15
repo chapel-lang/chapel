@@ -36852,3 +36852,13 @@ Log message:
 Added files:
 	chapel/test/functions/jplevyak/: equal_method-1.future 
 
+---------------------------------------------------------------------------
+
+06/15/05 13:30:29 -- jplevyak
+
+Log message:
+	update for change in error messages
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+
