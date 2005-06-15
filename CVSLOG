@@ -36757,3 +36757,36 @@ Modified files:
 Added files:
 	chapel/test/classes/deitz/: test_union3.future 
 
+---------------------------------------------------------------------------
+
+06/15/05 10:21:56 -- deitz
+
+Log message:
+	Added more record instantiation tests that pave the way to sequences
+	as records.  Two of these fail.
+	
+	Added support for syntax
+	
+	  var f : foo of integer;
+	
+	which is the same as
+	
+	  var f : foo(integer);
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record2.chpl 
+	                                         test_typevar_record2.good 
+	                                         test_typevar_record3.chpl 
+	                                         test_typevar_record3.good 
+	                                         test_typevar_record4.chpl 
+	                                         test_typevar_record4.good 
+	                                         test_typevar_record5.chpl 
+	                                         test_typevar_record5.future 
+	                                         test_typevar_record5.good 
+	                                         test_typevar_record6.chpl 
+	                                         test_typevar_record6.future 
+	                                         test_typevar_record6.good 
+
