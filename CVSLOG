@@ -36841,3 +36841,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+06/15/05 13:28:39 -- jplevyak
+
+Log message:
+	The partial implementation of = as a method was broken by the
+	last checkin... make it a future (it never worked in general).
+
+Added files:
+	chapel/test/functions/jplevyak/: equal_method-1.future 
+
