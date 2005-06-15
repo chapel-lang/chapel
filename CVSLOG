@@ -36862,3 +36862,18 @@ Log message:
 Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 
+---------------------------------------------------------------------------
+
+06/15/05 13:33:19 -- jplevyak
+
+Log message:
+	Update to describe problem with:
+	
+	[Error matching compiler output for types/type_variables/deitz/test_typevar_record3]
+	[Error matching compiler output for types/type_variables/deitz/test_typevar_record4]
+	
+	the problem is that visible_functions() is not returning the write for strings.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
