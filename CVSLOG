@@ -36820,3 +36820,14 @@ Removed files:
 	                           test_array_class_trial5a.future 
 	                           test_array_class_trial6.future 
 
+---------------------------------------------------------------------------
+
+06/15/05 12:05:54 -- jplevyak
+
+Log message:
+	Fix a bug where partial applications could build up excessive
+	argument lists.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
