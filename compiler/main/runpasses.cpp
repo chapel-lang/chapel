@@ -71,7 +71,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
   }
   if (fdump_html) {
     if (strcmp(passName, "Verify")) {
-      view_file = fopen(view_filename, "w");
+      view_file = fopen(glomstrings(2, log_dir, view_filename), "w");
       View* view = new View(false, view_file);
       view->setArgs(glomstrings(2, "html ", passName));
       view->run(Symboltable::getModuleList(MODULES_ALL));

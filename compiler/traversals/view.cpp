@@ -94,14 +94,13 @@ void View::preProcessStmt(Stmt* stmt) {
         return;
       }
     }
-
+    fprintf(html_file, "<BR>");
+    for (int i = 0; i < indent; i++) {
+      fprintf(html_file, "&nbsp;");
+    }
     if (dynamic_cast<BlockStmt*>(stmt)) {
-      fprintf(html_file, "<BR>{<BR>");
+      fprintf(html_file, "{");
     } else {
-      fprintf(html_file, "<BR>");
-      for (int i = 0; i < indent; i++) {
-        fprintf(html_file, "&nbsp;");
-      }
       fprintf(html_file, "(%s", astTypeName[stmt->astType]);
     }
   } else {
@@ -122,7 +121,11 @@ void View::postProcessStmt(Stmt* stmt) {
       }
     }
     if (dynamic_cast<BlockStmt*>(stmt)) {
-      fprintf(html_file, "<BR>}");
+      fprintf(html_file, "<BR>");
+      for (int i = 0; i < indent; i++) {
+        fprintf(html_file, "&nbsp;");
+      }
+      fprintf(html_file, "}");
     } else {
       fprintf(html_file, ")");
     }
