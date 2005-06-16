@@ -36991,3 +36991,14 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+06/16/05 11:15:14 -- deitz
+
+Log message:
+	Undo last checkin, removed dummy variable from tuple.  I'll have to
+	fix this another way.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+
