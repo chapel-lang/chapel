@@ -37018,3 +37018,14 @@ Modified files:
 	chapel/compiler/main/: driver.cpp runpasses.cpp 
 	chapel/compiler/traversals/: view.cpp view.h 
 
+---------------------------------------------------------------------------
+
+06/16/05 13:52:22 -- deitz
+
+Log message:
+	Small fixes to last checkin.
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/traversals/: view.cpp 
+
