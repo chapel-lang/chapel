@@ -50,7 +50,7 @@ class Symboltable {
   static Symbol* lookup(char* name, bool genError = false);
 
   static Symbol* lookupInternal(char* name, 
-                                scopeType scope = SCOPE_INTERNAL_PRELUDE);
+                                scopeType scope = SCOPE_PRELUDE);
   static TypeSymbol* lookupInternalType(char* name);
 
   static Expr* startLetExpr(void);

@@ -20,7 +20,6 @@ void FilesToAST::run(ModuleList* moduleList) {
   char* preludePath = glomstrings(2, parserPath, "/internal_prelude.chpl");
   internalPrelude = ParseFile(preludePath, MOD_INTERNAL);
   //Type::findInternalType -> Symboltable::lookupXxxType
-  findInternalTypes();
 
   // parse prelude
   Symboltable::parsePrelude();
@@ -28,6 +27,8 @@ void FilesToAST::run(ModuleList* moduleList) {
   //parser.cpp: -> Symboltable::Start/FinishModuleDefinition
   //parser.cpp: yyparse()
   prelude = ParseFile(preludePath, MOD_INTERNAL);
+
+  findInternalTypes();
 
   // parse user files
   Symboltable::doneParsingPreludes();

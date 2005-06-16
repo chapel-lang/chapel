@@ -315,7 +315,7 @@ Symbol* Symboltable::lookupInternal(char* name, scopeType scope) {
 
 
 TypeSymbol* Symboltable::lookupInternalType(char* name) {
-  Symbol* sym = lookupInternal(name, SCOPE_INTERNAL_PRELUDE);
+  Symbol* sym = lookupInternal(name, SCOPE_PRELUDE);
   TypeSymbol* retsym = dynamic_cast<TypeSymbol *>(sym);
   if (retsym == NULL) {
     INT_FATAL("lookupInternalType failed");
