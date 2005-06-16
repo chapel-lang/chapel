@@ -190,7 +190,6 @@ class Domain {
 }
 
 record Tuple {
-  var dummyTuple : integer;
   function this(pragma "clone_for_constants" i) { 
     return __primitive("index_object", this, i); 
   }
