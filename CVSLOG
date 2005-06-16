@@ -36979,3 +36979,15 @@ Log message:
 Modified files:
 	chapel/compiler/include/: fa.h 
 
+---------------------------------------------------------------------------
+
+06/16/05 10:46:46 -- deitz
+
+Log message:
+	Added dummy field to Tuple class to keep it from being used for some
+	other purposes.  Why is this necessary?, I wonder.  This fixes the new
+	regression of test_typevar_record3.chpl.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+
