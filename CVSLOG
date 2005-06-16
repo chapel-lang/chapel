@@ -37002,3 +37002,19 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+06/16/05 13:45:14 -- deitz
+
+Log message:
+	Added initial support for printing out (html) the tree between every
+	pass of compilation using the -t flag.  The file log/index.html
+	contains the passlist.  Clicking on a pass shows the AST after that
+	pass.
+
+Modified files:
+	chapel/compiler/backend/: dump.cpp 
+	chapel/compiler/include/: driver.h dump.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+	chapel/compiler/traversals/: view.cpp view.h 
+
