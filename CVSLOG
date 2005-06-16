@@ -36950,3 +36950,21 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+06/15/05 17:03:34 -- deitz
+
+Log message:
+	Moved everything from the internal prelude into the prelude,
+	effectively getting rid of it.  There were some dependency problems
+	that made it difficult to deal with.
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: internal_prelude.chpl prelude.chpl 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
