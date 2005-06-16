@@ -30,7 +30,7 @@ int setInCommandLine_float64(char* varName, _float64* value,
 int setInCommandLine_boolean(char* varName, _boolean* value, 
                              char* moduleName);
 int setInCommandLine_string(char* varName, _string* value, char* moduleName);
-int setInCommandLine_chpl_complex(char* varName, _complex128* value, 
+int setInCommandLine_chpl_complex(char* varName, _complex128** value, 
                                   char* moduleName);
 
 #endif

@@ -15,7 +15,7 @@ prelude.chpl:166: write, val : Index
 prelude.chpl:17: write, x : bool
 prelude.chpl:187: write, val : Array
 prelude.chpl:190: write, val : Domain
-prelude.chpl:199: write, val : Tuple
+prelude.chpl:200: write, val : Tuple
 prelude.chpl:20: write, x : int64
 prelude.chpl:23: write, x : float64
 prelude.chpl:26: write, x : complex64

@@ -2,10 +2,10 @@
 #define _union_H_
 
 #define _UNION_SET(u, tag) \
-  (u)._chpl_union_tag = (tag);
+  (u)->_chpl_union_tag = (tag);
 
 #define _UNION_CHECK_QUIET(u, tag) \
-  ((u)._chpl_union_tag == (tag))
+  ((u)->_chpl_union_tag == (tag))
 
 #define _UNION_CHECK(u, tag, filename, lineno) \
   if (!_UNION_CHECK_QUIET(u, tag)) { \

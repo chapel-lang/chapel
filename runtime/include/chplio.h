@@ -38,7 +38,7 @@ void _chpl_read_float(_float64* val);
 void _chpl_read_string(_string* val);
 
 
-void _chpl_read_complex(_complex128* val);
+void _chpl_read_complex(_complex128** val);
 
 #endif
 

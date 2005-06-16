@@ -467,7 +467,7 @@ int setInCommandLine_string(char* varName, _string* value, char* moduleName) {
 }
 
 
-int setInCommandLine_chpl_complex(char* varName, _complex128* value, 
+int setInCommandLine_chpl_complex(char* varName, _complex128** value, 
                                   char* moduleName) {
   int varSet = 0;
   char* setValue = lookupSetValue(varName, moduleName);
@@ -475,8 +475,10 @@ int setInCommandLine_chpl_complex(char* varName, _complex128* value,
   if (setValue) {
     char extraChars;
     char imaginaryI = 'i';
-    int numScans = sscanf(setValue, _default_format_read_complex128"%c", 
-                      &(value->re), &(value->im), &imaginaryI, &extraChars);
+    int numScans;
+    *value = (_complex128*)_chpl_malloc(1, sizeof(_complex128), "config complex");
+    numScans = sscanf(setValue, _default_format_read_complex128"%c", 
+                      &((*value)->re), &((*value)->im), &imaginaryI, &extraChars);
     if ((numScans == 3) && (imaginaryI == 'i')) {
       varSet = 1;
     } else {

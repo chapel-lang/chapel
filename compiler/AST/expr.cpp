@@ -597,9 +597,6 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
       Symbol::setDefPoints(fn->formals, this);
       fn->paramScope->setContext(NULL, fn, this);
     }
-    if (ExprType* symExprType = dynamic_cast<ExprType*>(sym->type)) {
-      exprType = symExprType->expr->copy();
-    }
   }
 }
 
@@ -1064,35 +1061,44 @@ void MemberAccess::print(FILE* outfile) {
 void MemberAccess::codegen(FILE* outfile) {
     StructuralType* base_type = dynamic_cast<StructuralType*>(base->typeInfo());
     if (member_type) {
-      if (!base_type)
-        goto Lreftype;
-      switch (base_type->astType) {
-        default: 
-          // (*((T*)(((char*)(&(p)))+offset)))
-          fprintf(outfile, "(*((");
-          member_type->codegen(outfile);
-          fprintf(outfile, "*)(((char*)(%s(", base->isRef() ? "" : "&");
-          base->codegen(outfile);
-          fprintf(outfile, ")))+%d)))",member_offset);
-          break;
-        case TYPE_CLASS:
-          Lreftype:
-          // (*((T*)(((char*)(p))+offset)))
-          fprintf(outfile, "(*((");
-          member_type->codegen(outfile);
-          fprintf(outfile, "*)(((char*)(");
-          base->codegen(outfile);
-          fprintf(outfile, "))+%d)))",member_offset);
-          break;
-        case TYPE_UNION:
-          // (*((T*)(((char*)(&p._chpl_union)))))
-          fprintf(outfile, "(*((");
-          member_type->codegen(outfile);
-          fprintf(outfile, "*)(((char*)(%s(", base->isRef() ? "" : "&");
-          base->codegen(outfile);
-          fprintf(outfile, ")._chpl_union)))))");
-          break;
+//       if (!base_type)
+//         goto Lreftype;
+//       switch (base_type->astType) {
+//         default: 
+//           // (*((T*)(((char*)(&(p)))+offset)))
+//           fprintf(outfile, "(*((");
+//           member_type->codegen(outfile);
+//           fprintf(outfile, "*)(((char*)(%s(", base->isRef() ? "" : "&");
+//           base->codegen(outfile);
+//           fprintf(outfile, ")))+%d)))",member_offset);
+//           break;
+//         case TYPE_CLASS:
+//           Lreftype:
+      if (dynamic_cast<UnionType*>(base_type)) {
+        // (*((T*)(((char*)(p->_chpl_union)))))
+        fprintf(outfile, "(*((");
+        member_type->codegen(outfile);
+        fprintf(outfile, "*)(&(");
+        base->codegen(outfile);
+        fprintf(outfile, "->_chpl_union))))");
+      } else {
+        // (*((T*)(((char*)(p))+offset)))
+        fprintf(outfile, "(*((");
+        member_type->codegen(outfile);
+        fprintf(outfile, "*)(((char*)(");
+        base->codegen(outfile);
+        fprintf(outfile, "))+%d)))",member_offset);
       }
+//           break;
+//         case TYPE_UNION:
+
+//           fprintf(outfile, "(*((");
+//           member_type->codegen(outfile);
+//           fprintf(outfile, "*)(((char*)(%s(", base->isRef() ? "" : "&");
+//           base->codegen(outfile);
+//           fprintf(outfile, ")._chpl_union)))))");
+//           break;
+//       }
     } else {
       base->codegen(outfile);
       base_type->codegenMemberAccessOp(outfile);
@@ -1308,7 +1314,7 @@ void TupleSelect::codegen(FILE* outfile) {
   }
   else if (Variable* var = dynamic_cast<Variable*>(baseExpr)) {
     var->var->codegen(outfile);
-    fprintf(outfile, "._field");
+    fprintf(outfile, "->_field");
     argList->codegen(outfile);
   }
   else {
@@ -1481,13 +1487,13 @@ void FnCall::codegen(FILE* outfile) {
   // eventually there should be no runtime complex type
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_chpl_tostring_complex")) {
-      fprintf(outfile, "*(_complex128*)&");
+      fprintf(outfile, "*(_complex128*)");
     } else if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
-      fprintf(outfile, "(_complex128*)");
+      fprintf(outfile, "(_complex128**)");
     }
     if (!strcmp(variable->var->cname, "_INIT_CONFIG")) {
       if (!strcmp(argList->representative()->typeInfo()->symbol->cname, "_chpl_complex")) {
-        fprintf(outfile, "(_complex128*)");
+        fprintf(outfile, "(_complex128**)");
       }
     }
   }

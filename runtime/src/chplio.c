@@ -91,7 +91,7 @@ void _chpl_read_string(_string* val) {
 }
 
 
-void _chpl_read_complex(_complex128* val) {
+void _chpl_read_complex(_complex128** val) {
   char imaginaryI = 'i';
   int numScans;
   /* 
@@ -100,7 +100,7 @@ void _chpl_read_complex(_complex128* val) {
      the complex number, with no intervening space.
   */
   numScans =
-    scanf("%lg  +  %lg%c", &(val->re), &(val->im), &imaginaryI);
+    scanf("%lg  +  %lg%c", &((*val)->re), &((*val)->im), &imaginaryI);
   if ((imaginaryI != 'i') || (numScans < 2)) {
     char* message = "Incorrect format for complex numbers";
     printError(message);

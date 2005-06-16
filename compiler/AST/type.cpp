@@ -1095,7 +1095,7 @@ is_Value_Type(Type *t) {
 
 int
 is_Reference_Type(Type *t) {
-  return t && (t->astType == TYPE_CLASS || t->astType == TYPE_SUM);
+  return t && (dynamic_cast<StructuralType*>(t) || t->astType == TYPE_SUM);
 }
 
 
@@ -1184,8 +1184,10 @@ void StructuralType::codegenDef(FILE* outfile) {
 
 
 void StructuralType::codegenStructName(FILE* outfile) {
+  fprintf(outfile, "_");
   symbol->codegen(outfile);
-  
+  fprintf(outfile,", *");
+  symbol->codegen(outfile);
 }
 
 
@@ -1205,7 +1207,7 @@ void StructuralType::codegenPrototype(FILE* outfile) {
 
 
 void StructuralType::codegenMemberAccessOp(FILE* outfile) {
-  fprintf(outfile, ".");
+  fprintf(outfile, "->");
 }
 
 
@@ -1215,7 +1217,7 @@ bool StructuralType::blankIntentImpliesRef(void) {
 
 
 bool StructuralType::implementedUsingCVals(void) {
-  return true;
+  return false;
 }
 
 
@@ -1423,7 +1425,7 @@ void UnionType::codegenStopDefFields(FILE* outfile) {
 
 
 void UnionType::codegenMemberAccessOp(FILE* outfile) {
-  fprintf(outfile, "._chpl_union.");
+  fprintf(outfile, "->_chpl_union.");
 }
 
 
@@ -1508,7 +1510,7 @@ void SumType::addType(Type* additionalType) {
 void SumType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef void *");
   symbol->codegen(outfile);
-  fprintf(outfile, ";");
+  fprintf(outfile, ";\n");
 }
 
 void SumType::codegenStructName(FILE* outfile) {
@@ -1570,7 +1572,7 @@ ExprType::ExprType(Expr *init_expr) :
 
 
 Type* ExprType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ExprType(expr);
+  return new ExprType(expr->copyInternal(clone, map));
 }
 
 
