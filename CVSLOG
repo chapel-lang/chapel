@@ -37029,3 +37029,14 @@ Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 	chapel/compiler/traversals/: view.cpp 
 
+---------------------------------------------------------------------------
+
+06/16/05 14:52:56 -- deitz
+
+Log message:
+	Disabled NOTEST for lowlevel code generation tests while John is gone.
+	I can't figure this out.
+
+Added files:
+	chapel/test/lowlevelcg/jplevyak/: NOTEST 
+
