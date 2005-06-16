@@ -36968,3 +36968,14 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+06/16/05 10:42:38 -- deitz
+
+Log message:
+	Fixed uninitialized field bug in analysis, cause of last night's
+	valgrind regressions.
+
+Modified files:
+	chapel/compiler/include/: fa.h 
+
