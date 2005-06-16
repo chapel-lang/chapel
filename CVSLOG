@@ -37040,3 +37040,56 @@ Log message:
 Added files:
 	chapel/test/lowlevelcg/jplevyak/: NOTEST 
 
+---------------------------------------------------------------------------
+
+06/16/05 15:38:54 -- deitz
+
+Log message:
+	Fixed a bug in how ExprTypes were copied.  Also, the ExprType expr is
+	now put in the DefExpr and removed from the ExprType expr.
+	
+	Made all structural types codegen to pointers.  This eliminates using
+	C's semantics to copy records (something we can't do in the long run)
+	and forces records to have a constructor.
+	
+	Simplified code in RemoveDeadSymbols.
+	
+	Changed complex runtime code to take into account pointer codegen of
+	records.
+	
+	Futurized tests that involved simple record assignment (since this no
+	longer works in the simple case and never really did) and tests that
+	involved tuples of inferred types since tuple literals are not really
+	handled well yet.
+	
+	Added a commented line in the prelude to stick something into the
+	Tuple class.  Uncommented, a number of important tests start to work
+	(sometimes).  Note to self, this non-determinism is a real pain.  I
+	find that I get an error and then when I try to see what the C code
+	looks like, using --savec output, I get a different error.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertThisParameters.cpp 
+	chapel/runtime/include/: chplio.h config.h union.h 
+	chapel/runtime/src/: chplio.c config.c 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/memory/shannon/: printFinalMemStat.good 
+Added files:
+	chapel/test/classes/bradc/: writerecord.future 
+	                            writerecord1a.future 
+	                            writeunion-workaround.future 
+	                            writeunion.future 
+	chapel/test/classes/bradc/records/: assignRecord2.future 
+	chapel/test/functions/jplevyak/: equal-8.future 
+	chapel/test/types/tuple/deitz/: test_tuple_simple6.future 
+	                                test_tuple_simple7.future 
+	chapel/test/types/tuple/jplevyak/: tuple_index-1.future 
+	                                   tuple_index-2.future 
+
