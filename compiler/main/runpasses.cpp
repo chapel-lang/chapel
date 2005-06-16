@@ -3,6 +3,8 @@
 #include <sys/time.h>
 #include "files.h"
 #include "misc.h"
+#include "log.h"
+#include "dump.h"
 #include "runpasses.h"
 #include "stringutil.h"
 #include "symtab.h"
@@ -43,9 +45,18 @@ static void runPass(char* passName, Pass* pass, char* args) {
   struct timeval startTime;
   struct timeval stopTime;
   struct timezone timezone;
+  char* view_filename = NULL;
+  FILE* view_file = NULL;
+  static int uid = 1;
 
   currentTraversal = copystring(passName);
   pass->setArgs(args);
+  if (fdump_html) {
+    if (strcmp(passName, "Verify")) {
+      view_filename = glomstrings(3, "pass", intstring(uid++), ".html");
+      fprintf(html_index_file, "<a href=\"%s\">%s</a><BR>\n", view_filename, passName);
+    }
+  }
   if (printPasses) {
     fprintf(stderr, "%32s :", passName);
     fflush(stderr);
@@ -57,6 +68,15 @@ static void runPass(char* passName, Pass* pass, char* args) {
     fprintf(stderr, "%8.3f seconds\n",  
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
+  }
+  if (fdump_html) {
+    if (strcmp(passName, "Verify")) {
+      view_file = fopen(view_filename, "w");
+      View* view = new View(false, view_file);
+      view->setArgs(glomstrings(2, "html ", passName));
+      view->run(Symboltable::getModuleList(MODULES_ALL));
+      fclose(view_file);
+    }
   }
 }
 
@@ -115,6 +135,10 @@ static void parsePassFile(char* passfilename) {
 
 
 void runPasses(char* passfilename) {
+  if (fdump_html) {
+    html_index_file = fopen(glomstrings(2, log_dir, "index.html"), "w");
+    dump_index_header(html_index_file);
+  }
   if (strcmp(passfilename, "") == 0) {
     PassInfo* pass = passlist+1;  // skip over FIRST
     
@@ -125,5 +149,9 @@ void runPasses(char* passfilename) {
     }
   } else {
     parsePassFile(passfilename);
+  }
+  if (fdump_html) {
+    dump_index_footer(html_index_file);
+    fclose(html_index_file);
   }
 }

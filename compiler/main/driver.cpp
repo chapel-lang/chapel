@@ -31,8 +31,9 @@ static void copyright(ArgumentState *arg_state, char *arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
 
+FILE* html_index_file = NULL;
 
-static int fdump_html = 0;
+int fdump_html = 0;
 char prelude_filename[FILENAME_MAX] = "prelude";
 static char passlist_filename[FILENAME_MAX] = "";
 static char libraryFilename[FILENAME_MAX] = "";

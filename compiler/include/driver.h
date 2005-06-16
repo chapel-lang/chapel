@@ -7,11 +7,14 @@
 
 #define DEFAULT_SYSTEM_DIR      "."
 
+extern FILE* html_index_file;
+
 // Begin temporary development flags
 extern bool checkAnalysisTypeinfo;
 extern bool applyGettersSetters;
 // End temporary development flags
 
+extern int fdump_html;
 extern int f_equal_method;
 extern int fnewvardef;
 extern int fdce_if1;

@@ -10,7 +10,9 @@ class View : public Traversal {
  public:
   int indent;
   bool numberSymbols;
-  View::View(bool initNumberSymbols = false);
+  char* html;
+  FILE* html_file;
+  View::View(bool initNumberSymbols = false, FILE* init_html_file = NULL);
   virtual void run(ModuleList* moduleList);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
