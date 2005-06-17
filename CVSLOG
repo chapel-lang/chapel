@@ -37200,3 +37200,13 @@ Modified files:
 Added files:
 	chapel/compiler/etc/www/: fnhtml.pl 
 
+---------------------------------------------------------------------------
+
+06/17/05 11:17:40 -- deitz
+
+Log message:
+	Small fix so return starts showing up in the html dump again.
+
+Modified files:
+	chapel/compiler/traversals/: view.cpp 
+
