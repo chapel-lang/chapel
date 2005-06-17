@@ -611,25 +611,6 @@ TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
 }
 
 
-FnSymbol::FnSymbol(char* init_name, AList<ParamSymbol>* init_formals,
-                   Type* init_retType, BlockStmt* init_body,
-                   bool init_exportMe, Symbol* init_typeBinding) :
-  Symbol(SYMBOL_FN, init_name, new FnType(), init_exportMe),
-  formals(init_formals),
-  retType(init_retType),
-  _this(NULL),
-  _setter(NULL),
-  _getter(NULL),
-  body(init_body),
-  typeBinding(init_typeBinding),
-  isConstructor(false),
-  whereExpr(NULL)
-{
-  Symboltable::define(this);
-  method_type = NON_METHOD;
-}
-
- 
 FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
   Symbol(SYMBOL_FN, init_name, new FnType()),
   formals(NULL),

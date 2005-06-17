@@ -175,9 +175,6 @@ class FnSymbol : public Symbol {
   bool retRef;
   Expr *whereExpr;
 
-  FnSymbol(char* init_name, AList<ParamSymbol>* init_formals, Type* init_retType,
-           BlockStmt* init_body, bool init_exportMe=true,
-           Symbol* init_typeBinding = NULL);
   FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
   void continueDef(AList<ParamSymbol>* init_formals, Type* init_retType, 
                    bool isRef, Expr *whereExpr);

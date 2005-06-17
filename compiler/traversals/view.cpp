@@ -42,6 +42,16 @@ static void html_print_fnsymbol(FILE* html_file, FnSymbol* fn) {
     html_print_symbol(html_file, arg);
   }
   fprintf(html_file, " ) ");
+  if (fn->retType->symbol) {
+  fprintf(html_file, " : ");
+    html_print_symbol(html_file, fn->retType->symbol);
+  }
+}
+
+static void html_indent(FILE* html_file, int indent) {
+  for (int i = 0; i < indent; i++) {
+    fprintf(html_file, "&nbsp;&nbsp;&nbsp;");
+  }
 }
 
 View::View(bool initNumberSymbols, FILE* init_html_file) {
@@ -89,15 +99,11 @@ void View::run(ModuleList* moduleList) {
 
 void View::preProcessStmt(Stmt* stmt) {
   if (html) {
-    if (DefStmt* s = dynamic_cast<DefStmt*>(stmt)) {
-      if (s->definesFunctions() || s->definesTypes()) {
-        return;
-      }
+    if (dynamic_cast<DefStmt*>(stmt)) {
+      return;
     }
     fprintf(html_file, "<BR>");
-    for (int i = 0; i < indent; i++) {
-      fprintf(html_file, "&nbsp;");
-    }
+    html_indent(html_file, indent);
     if (dynamic_cast<BlockStmt*>(stmt)) {
       fprintf(html_file, "{");
     } else {
@@ -115,17 +121,15 @@ void View::preProcessStmt(Stmt* stmt) {
 
 void View::postProcessStmt(Stmt* stmt) {
   if (html) {
-    if (DefStmt* s = dynamic_cast<DefStmt*>(stmt)) {
-      if (s->definesFunctions() || s->definesTypes()) {
-        return;
-      }
+    if (dynamic_cast<DefStmt*>(stmt)) {
+      return;
     }
     if (dynamic_cast<BlockStmt*>(stmt)) {
       fprintf(html_file, "<BR>");
-      for (int i = 0; i < indent; i++) {
-        fprintf(html_file, "&nbsp;");
-      }
+      indent -= 2;
+      html_indent(html_file, indent);
       fprintf(html_file, "}");
+      return;
     } else {
       fprintf(html_file, ")");
     }
@@ -137,35 +141,43 @@ void View::postProcessStmt(Stmt* stmt) {
 
 void View::preProcessExpr(Expr* expr) {
   if (html) {
-    fprintf(html_file, "<BR>\n");
-    for (int i = 0; i < indent; i++) {
-      fprintf(html_file, "&nbsp;");
+    if (dynamic_cast<MemberAccess*>(expr)) {
+      return;
     }
+    fprintf(html_file, "<BR>\n");
+    html_indent(html_file, indent);
     if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
         fprintf(html_file, "<UL CLASS =\"mktree\">\n");
         fprintf(html_file, "<LI><B>function ");
         html_print_fnsymbol(html_file, fn);
         fprintf(html_file, "</B><UL>\n");
-      } else if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(e->sym)) {
+      } else if (dynamic_cast<TypeSymbol*>(e->sym) &&
+                 dynamic_cast<StructuralType*>(e->sym->type)) {
         fprintf(html_file, "<UL CLASS =\"mktree\">\n");
         fprintf(html_file, "<LI><B>type ");
-        html_print_symbol(html_file, ts);
+        html_print_symbol(html_file, e->sym);
         fprintf(html_file, "</B><UL>\n");
+      } else if (dynamic_cast<TypeSymbol*>(e->sym)) {
+        fprintf(html_file, "<B>type ");
+        html_print_symbol(html_file, e->sym);
+        fprintf(html_file, "</B>");
+      } else if (dynamic_cast<VarSymbol*>(e->sym)) {
+        fprintf(html_file, "<B>var ");
+        html_print_symbol(html_file, e->sym);
+        fprintf(html_file, "</B>");
       } else {
         fprintf(html_file, "(%s ", astTypeName[expr->astType]);
         html_print_symbol(html_file, e->sym);
       }
+    } else if (IntLiteral* e = dynamic_cast<IntLiteral*>(expr)) {
+      fprintf(html_file, "<FONT COLOR=\"lightblue\">'%ld'</FONT>", e->val);
+    } else if (StringLiteral* e = dynamic_cast<StringLiteral*>(expr)) {
+      fprintf(html_file, "<FONT COLOR=\"lightblue\">'%s'</FONT>", e->str);
+    } else if (Variable* e = dynamic_cast<Variable*>(expr)) {
+      html_print_symbol(html_file, e->var);
     } else {
       fprintf(html_file, "(%s", astTypeName[expr->astType]);
-    }
-    if (IntLiteral* e = dynamic_cast<IntLiteral*>(expr)) {
-      fprintf(html_file, " <FONT COLOR=\"lightblue\">%ld</FONT>", e->val);
-    } else if (StringLiteral* e = dynamic_cast<StringLiteral*>(expr)) {
-      fprintf(html_file, " <FONT COLOR=\"lightblue\">\"%s\"</FONT>", e->str);
-    } else if (Variable* e = dynamic_cast<Variable*>(expr)) {
-      fprintf(html_file, " ");
-      html_print_symbol(html_file, e->var);
     }
   } else {
     printf("\n");
@@ -188,13 +200,16 @@ void View::postProcessExpr(Expr* expr) {
     if (MemberAccess* e = dynamic_cast<MemberAccess*>(expr)) {
       fprintf(html_file, " . ");
       html_print_symbol(html_file, e->member);
+      return;
     } else if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
       if (dynamic_cast<FnSymbol*>(e->sym) || 
-          dynamic_cast<TypeSymbol*>(e->sym)) {
+          (dynamic_cast<TypeSymbol*>(e->sym) &&
+           dynamic_cast<StructuralType*>(e->sym->type))) {
         fprintf(html_file, "</UL></UL>\n");
-      } else {
-        fprintf(html_file, ")");
       }
+    } else if (dynamic_cast<IntLiteral*>(expr)) {
+    } else if (dynamic_cast<StringLiteral*>(expr)) {
+    } else if (dynamic_cast<Variable*>(expr)) {
     } else {
       fprintf(html_file, ")");
     }
