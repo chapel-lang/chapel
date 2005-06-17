@@ -1,6 +1,0 @@
-deitz
-
-These are failing because real and imag are not
-being returned by visible_functions(), proabably
-because of module scoping issues.
-
