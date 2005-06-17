@@ -80,7 +80,6 @@
 %token TREF
 %token TRETURN
 %token TSELECT
-%token TSEQ
 %token TSTATIC
 %token TTHEN
 %token TTYPE
@@ -130,7 +129,7 @@
 %type <pt> formaltag
 
 %type <boolval> fortype fnretref isconstructor
-%type <pdt> type domainType indexType arrayType seqType record_tuple_type record_tuple_inner_type exprType
+%type <pdt> type domainType indexType arrayType record_tuple_type record_tuple_inner_type exprType
 %type <tupledt> tuple_inner_types
 %type <pdt> opt_vardecltype vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier fname optional_identifier
@@ -766,7 +765,6 @@ type:
   domainType
 | indexType
 | arrayType
-| seqType
 | record_tuple_type
 | exprType
 | query_identifier
@@ -813,14 +811,6 @@ arrayType:
       Symboltable::finishForallExpr($1);
       $$ = new ArrayType($1, $2);
     }
-;
-
-
-seqType:
-  TSEQ TOF type
-    { $$ = new SeqType($3); }
-| TSEQ TLP type TRP
-    { $$ = new SeqType($3); }
 ;
 
 

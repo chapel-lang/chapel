@@ -67,7 +67,6 @@ reduce          return TREDUCE;
 return          return TRETURN;
 scan            return TSCAN;
 select          return TSELECT;
-seq             return TSEQ;
 static          return TSTATIC;
 then            return TTHEN;
 type            return TTYPE;

@@ -42,7 +42,7 @@ void FilesToAST::run(ModuleList* moduleList) {
     seqModule = ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
                           MOD_STANDARD);
     dtSequence = Symboltable::lookupInternalType("_seq")->type;
-    //    dtSequence = Symboltable::lookupInScope("seq2", seqModule->modScope)->type;
+    //    dtSequence = Symboltable::lookupInScope("seq", seqModule->modScope)->type;
   }
 
   int filenum = 0;

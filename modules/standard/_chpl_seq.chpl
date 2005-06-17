@@ -1,8 +1,8 @@
-function #(s1 : seq2, s2 : seq2) {
+function #(s1 : seq, s2 : seq) {
   return s1._concat(s2);
 }
 
-function write(s : seq2) {
+function write(s : seq) {
   write("(/");
   var tmp = s._first;
   while tmp != nil {
@@ -15,8 +15,6 @@ function write(s : seq2) {
   write("/)");
 }
 
-
-
 class _seqNode {
   type _elementType;
 
@@ -24,7 +22,7 @@ class _seqNode {
   var _next : _seqNode;
 }
 
-class seq2 {
+record seq {
   type _elementType;
 
   var _length : integer;
@@ -51,8 +49,8 @@ class seq2 {
   function length : integer
     return _length;
 
-  function reverse : seq2 {
-    var new_seq : seq2 = seq2(_elementType);
+  function reverse {
+    var new_seq : seq(_elementType);
     var tmp = _first;
     while (tmp != nil) {
       new_seq._prepend(tmp._element);
@@ -61,7 +59,7 @@ class seq2 {
     return new_seq;     
   }
 
-  function _append(e : _elementType) : seq2 {
+  function _append(e : _elementType) {
     var new : _seqNode = _seqNode(_elementType);
     new._element = e;
     if _length > 0 {
@@ -75,7 +73,7 @@ class seq2 {
     return this;
   }
 
-  function _prepend(e : _elementType) : seq2 {
+  function _prepend(e : _elementType) {
     var new : _seqNode = _seqNode(_elementType);
     new._element = e;
     if _length > 0 {
@@ -89,15 +87,15 @@ class seq2 {
     return this;
   }
 
-  function _concat(s : seq2) : seq2 {
+  function _concat(s : seq) {
     _last._next = s._first;
     _last = s._last;
     _length += s._length;
     return this;
   }
 
-  function _copy() : seq2 {
-    var new : seq2 = seq2(_elementType);
+  function _copy() {
+    var new : seq(_elementType);
     var tmp : _seqNode = _first;
     while tmp != nil {
       new = new._append(tmp._element);
@@ -108,11 +106,11 @@ class seq2 {
 }
 
 /*** Need where clauses to get all these working
-function #(s : seq2, e : seq2._elementType) {
+function #(s : seq, e : seq._elementType) {
   return s._append(e);
 }
 
-function #(e : seq2._elementType, s : seq2) {
+function #(e : seq._elementType, s : seq) {
   return s._prepend(e);
 }
 ***/

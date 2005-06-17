@@ -39,35 +39,34 @@ static void handleBasicSequenceAppendPrependOperations(BinOp* binOp) {
 
 static void replaceSequenceLiteral(SeqExpr* seqExpr) {
   static int uid = 1;
-
   if (!analyzeAST) {
     INT_FATAL(seqExpr, "Analysis required for sequences");
   }
-
   char* name = glomstrings(2, "_seq_temp_", intstring(uid++));
   Type* elt_type = seqExpr->exprls->representative()->typeInfo();
-
   if (!elt_type || elt_type == dtUnknown) {
     INT_FATAL(seqExpr, "Sequence literal is of unknown type, not handled");
   }
-
-  Expr* init =
-    new ParenOpExpr(new Variable(new UnresolvedSymbol("seq2")),
-                    new AList<Expr>(new Variable(elt_type->symbol)));
-
+//   Expr* init =
+//     new ParenOpExpr(new Variable(new UnresolvedSymbol("seq2")),
+//                     new AList<Expr>(new Variable(elt_type->symbol)));
   DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(name,
                                                           dtUnknown,
-                                                          init,
+                                                          NULL,
                                                           VAR_NORMAL,
                                                           VAR_VAR);
+  DefExpr* def_expr = def_stmt->defExprls->only();
+  def_expr->sym->type =
+    new ExprType(
+      new ParenOpExpr(
+        new Variable(
+          new UnresolvedSymbol("seq")),
+        new AList<Expr>(
+          new Variable(elt_type->symbol))));
 
   seqExpr->getStmt()->insertBefore(def_stmt);
-  
-  Symbol* seq = def_stmt->defExprls->representative()->sym;
-  
-  //
-  // Eventually, want to use overloaded # operator (as below)
-  //
+
+  Symbol* seq = def_expr->sym;
   for_alist(Expr, tmp, seqExpr->exprls) {
     Expr* append =
       new ParenOpExpr(
