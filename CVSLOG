@@ -37093,3 +37093,49 @@ Added files:
 	chapel/test/types/tuple/jplevyak/: tuple_index-1.future 
 	                                   tuple_index-2.future 
 
+---------------------------------------------------------------------------
+
+06/16/05 17:30:57 -- deitz
+
+Log message:
+	Effectively removed SeqType.  Sequences are now parsed as the record
+	in the module.  Literals are handled by the compiler.  The token 'seq'
+	is no longer a keyword.
+	
+	I had to add a dummy field to the Tuple class in the prelude.  In
+	doing so, I was forced to futurize a few more tuple tests.  We need to
+	handle tuple literals correctly.
+	
+	Removed an old test that explicitly tested the now gone seq2 class.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/parser/: chapel.lex chapel.y prelude.chpl 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             insertLiteralTemps.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: chain.good enum.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  onearg.good printempty.good 
+	                                  printstring.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  usebeforedef.good var2.good 
+	                                  writen.good writetwo.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_reverse1.chpl 
+	                              test_seq_reverse1.good 
+	chapel/test/types/tuple/bradc/: writeTuple.future 
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.future 
+	                                test_tuple_simple3.future 
+	                                test_tuple_simple4.future 
+	                                test_tuple_simple5.future 
+Removed files:
+	chapel/test/classes/deitz/: test_seq2.chpl test_seq2.good 
+
