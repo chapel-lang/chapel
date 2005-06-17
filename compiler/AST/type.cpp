@@ -54,6 +54,7 @@ Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
 Type* Type::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* new_type = copyType(clone, map);
 
+  new_type->copyFrom = this;
   new_type->lineno = lineno;
   new_type->filename = filename;
   if (map) {

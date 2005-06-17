@@ -122,6 +122,7 @@ class BaseAST : public gc {
   int lineno;           // line number of location
   char* traversalInfo;  // traversal where this was created
   Vec<char*>* copyInfo; // traversals where this was copied
+  BaseAST* copyFrom;    // if this was created in a copy, from what?
 
   static long getNumIDs(void);
 

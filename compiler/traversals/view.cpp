@@ -159,6 +159,9 @@ void View::preProcessExpr(Expr* expr) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
         fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
         fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
+        for (BaseAST* tmp = fn->copyFrom; tmp; tmp = tmp->copyFrom) {
+          fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", tmp->id);
+        }
         fprintf(html_file, "<B>function ");
         html_print_fnsymbol(html_file, fn);
         fprintf(html_file, "</B><UL>\n");
@@ -221,6 +224,9 @@ void View::postProcessExpr(Expr* expr) {
            dynamic_cast<StructuralType*>(e->sym->type))) {
         fprintf(html_file, "</UL>\n");
         if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
+          for (BaseAST* tmp = fn->copyFrom; tmp; tmp = tmp->copyFrom) {
+            fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", tmp->id);
+          }
           fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
         }
         fprintf(html_file, "</UL>\n");

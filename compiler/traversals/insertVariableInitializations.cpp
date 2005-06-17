@@ -172,7 +172,16 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
 static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
   if (!is_Scalar_Type(type) || !var->defPoint->init) {
-    stmt->insertBefore(basic_default_init_stmt(stmt, var, type));
+    if (!var->defPoint->exprType) { // SJD: UGH
+      stmt->insertBefore(basic_default_init_stmt(stmt, var, type));
+    }
+  }
+
+  if (var->defPoint->exprType) {
+    Expr* lhs = new Variable(var);
+    Expr* rhs = var->defPoint->exprType->copy();
+    Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
+    stmt->insertBefore(new ExprStmt(init_expr));
   }
 
   if (var->defPoint->init) {

@@ -57,6 +57,7 @@ Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
   Stmt* new_stmt = copyStmt(clone, map);
 
+  new_stmt->copyFrom = this;
   new_stmt->lineno = lineno;
   new_stmt->filename = filename;
   new_stmt->pragmas = pragmas;

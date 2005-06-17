@@ -124,6 +124,7 @@ Expr* Expr::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
   Expr* new_expr = copyExpr(clone, map);
 
+  new_expr->copyFrom = this;
   new_expr->lineno = lineno;
   new_expr->filename = filename;
   //new_expr->pragmas = pragmas;

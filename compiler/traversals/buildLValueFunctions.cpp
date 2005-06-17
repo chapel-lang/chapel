@@ -53,16 +53,17 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   fn->retType = dtVoid;
   fn->name = glomstrings(2, "=", old_fn->name);
   fn->cname = glomstrings(2, "_setter_", old_fn->cname);
-  fn->parentScope->remove(fn);
-  fn->parentScope->insert(fn);
+  Symboltable::undefineInScope(fn, fn->parentScope);
+  Symboltable::defineInScope(fn, fn->parentScope);
   old_def_stmt->insertAfter(def_stmt);
   Symboltable::setCurrentScope(fn->paramScope);
   ParamSymbol* lvalue = new ParamSymbol(PARAM_BLANK, "_lvalue", old_fn->retType);
-  lvalue->setDefPoint(def_stmt->defExprls->only());
+  lvalue->setDefPoint(fn->defPoint);
   fn->formals->insertAtTail(lvalue);
   replace_return(fn->body, lvalue);
   if (old_fn->typeBinding) {
     old_fn->typeBinding->type->methods.add(fn);
+    fn->typeBinding = old_fn->typeBinding;
   }
   Symboltable::setCurrentScope(saveScope);
 }

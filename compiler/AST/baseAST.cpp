@@ -37,7 +37,8 @@ BaseAST::BaseAST(astType_t type) :
   filename(yyfilename), 
   lineno(yylineno),
   traversalInfo(NULL),
-  copyInfo(NULL)
+  copyInfo(NULL),
+  copyFrom(NULL)
 {
   checkid(id);
   if (lineno == -1) {

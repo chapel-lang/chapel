@@ -54,6 +54,7 @@ Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
 Symbol* Symbol::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symbol* new_symbol = copySymbol(clone, map);
 
+  new_symbol->copyFrom = this;
   new_symbol->pragmas = pragmas;
   new_symbol->lineno = lineno;
   new_symbol->filename = filename;
@@ -673,7 +674,6 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   FnSymbol* copy = new FnSymbol(copy_name, typeBinding);
   copy->method_type = method_type;
   copy->isConstructor = isConstructor;
-  copy->whereExpr = whereExpr->copyInternal(clone, map);
   Symboltable::startFnDef(copy);
   if (_getter) {
     copy->name = copystring(name);
@@ -682,7 +682,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
   AList<ParamSymbol>* new_formals = formals->copyInternal(clone, map);
-  Symboltable::continueFnDef(copy, new_formals, retType, retRef);
+  Symboltable::continueFnDef(copy, new_formals, retType, retRef, whereExpr->copyInternal(clone, map));
   BlockStmt* new_body = 
     dynamic_cast<BlockStmt*>(body->copyInternal(clone, map));
   if (body != NULL && new_body == NULL) {
@@ -1023,11 +1023,11 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   } else {
     SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
     DefExpr* fnDef = dynamic_cast<DefExpr*>(defPoint->copy(true, map));
+    defPoint->insertBefore(fnDef);
     instantiate_add_subs(substitutions, map);
     instantiate_update_expr(substitutions, fnDef, map);
     fnDef->sym->cname =
       glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
-    defPoint->insertBefore(fnDef);
     copy = dynamic_cast<FnSymbol*>(fnDef->sym);
     Symboltable::setCurrentScope(save_scope);
   }
