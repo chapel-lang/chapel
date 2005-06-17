@@ -37153,3 +37153,27 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/traversals/: view.cpp 
 
+---------------------------------------------------------------------------
+
+06/17/05 10:38:22 -- deitz
+
+Log message:
+	Removed lots of code related to SeqType and special-casing sequences.
+	Removed two passes.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             insertAnonymousTypes.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             verifyASTType.cpp 
+Removed files:
+	chapel/compiler/traversals/: expandSeqExprAssignments.cpp 
+	                             expandSeqExprAssignments.h 
+	                             removeSeqOperations.cpp 
+	                             removeSeqOperations.h 
+
