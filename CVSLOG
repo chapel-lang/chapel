@@ -37272,3 +37272,30 @@ Added files:
 	                                test_tuple_record_implementation9.chpl 
 	                                test_tuple_record_implementation9.good 
 
+---------------------------------------------------------------------------
+
+06/17/05 16:20:09 -- deitz
+
+Log message:
+	Added a copyFrom pointer to BaseAST that points to what a BaseAST was
+	copied from.  This may be overkill and may not let garbage collection
+	work well.  I really only want to keep track of cloned/copied function
+	ids.
+	
+	Fixed a bug in InsertVariableInitializations having to do with the new
+	exprType of DefExpr and record constructors.
+	
+	Fixed a bug in BuildLValueFunctions in which overloaded functions
+	could not have var set.
+	
+	Fixed a bug in which the whereexpr was copied and then lost in
+	FnSymbol::copy.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+	                             insertVariableInitializations.cpp 
+	                             view.cpp 
+
