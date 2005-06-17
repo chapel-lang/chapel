@@ -144,23 +144,6 @@ void ResolveTypes::processSymbol(Symbol* sym) {
                 "(likely to be due to dead code not being eliminated)");
     }
   }
-
-  /***
-   ***  Hack: loops over sequences, types of index variables
-   ***/
-  if (dynamic_cast<VarSymbol*>(sym)) {
-    if (sym->type == dtInteger) {
-      if (ForLoopStmt* for_loop =
-          dynamic_cast<ForLoopStmt*>(sym->defPoint->parentStmt)) {
-        DefExpr* def_expr = for_loop->indices->first();
-        if (def_expr->sym == sym) {
-          if (SeqType* seq_type = dynamic_cast<SeqType*>(for_loop->domain->typeInfo())) {
-            sym->type = seq_type->elementType;
-          }
-        }
-      }
-    }
-  }
 }
 
 ResolveTupleTypes::ResolveTupleTypes() {

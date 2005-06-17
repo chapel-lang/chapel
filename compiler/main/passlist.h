@@ -99,8 +99,6 @@ PassInfo passlist[] = {
 
   // passes to prepare for C code generation
   RUN(Verify, ""), // this is a sanity check
-  RUN(RemoveSeqOperations, ""),
-  RUN(Verify, ""), // this is a sanity check
   RUN(InsertFunctionTemps, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(TransformLetExprs, ""),
@@ -112,8 +110,6 @@ PassInfo passlist[] = {
   RUN(InsertVariableInitializations, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(DestructureTupleAssignments, ""),
-  RUN(Verify, ""), // this is a sanity check
-  RUN(ExpandSeqExprAssignments, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertUnionChecks, ""),
   RUN(Verify, ""), // this is a sanity check

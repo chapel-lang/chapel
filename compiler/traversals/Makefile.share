@@ -12,7 +12,6 @@ TRAVERSALS_SRCS = \
         buildLValueFunctions.cpp \
         eliminateReturns.cpp \
 	expandClassWiths.cpp \
-	expandSeqExprAssignments.cpp \
         findTypeVariables.cpp \
 	findUnknownTypes.cpp \
 	findUnresolvedSymbols.cpp \
@@ -31,7 +30,6 @@ TRAVERSALS_SRCS = \
 	processParameters.cpp \
         omitForNoAnalysis.cpp \
 	removeNamedParameters.cpp \
-        removeSeqOperations.cpp \
         resolveModuleUses.cpp \
 	resolveSymbols.cpp \
         scopeResolveGotos.cpp \

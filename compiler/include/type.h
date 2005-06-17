@@ -298,23 +298,6 @@ class TupleType : public StructuralType {
 };
 
 
-class SeqType : public ClassType {
- public:
-  Type* elementType;
-
-  SeqType::SeqType(Type* init_elementType);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
-  void traverseDefType(Traversal* traversal);
-  void print(FILE* outfile);
-  void codegenDef(FILE* outfile);
-  //void codegenPrototype(FILE* outfile);
-  void codegenDefaultFormat(FILE* outfile, bool isRead);
-  bool implementedUsingCVals(void);
-
-  virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
-};
-
 class ArrayType : public Type {
  public:
   Expr* domain;

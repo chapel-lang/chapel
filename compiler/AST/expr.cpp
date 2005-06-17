@@ -1819,7 +1819,8 @@ void SeqExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* SeqExpr::typeInfo(void) {
-  return new SeqType(exprls->first()->typeInfo());
+  INT_FATAL(this, "SeqExpr::typeInfo not implemented");
+  return NULL;
 }
 
 

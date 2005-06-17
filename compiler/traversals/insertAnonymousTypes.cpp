@@ -71,39 +71,6 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
 }
 
 
-// static void build_anon_seq_type_def(Stmt* stmt, Type** type) {
-//   if (!analyzeAST) {
-//     INT_FATAL(stmt, "Analysis required for sequences");
-//   }
-
-//   SeqType* seq_type = dynamic_cast<SeqType*>(*type);
-
-//   if (!seq_type) {
-//     INT_FATAL(stmt, "Seq type expected");
-//   }
-
-//   // We want to build a type that is instantiated, but I'll build a
-//   // new statement with a constructor to instantiate the type.  This
-//   // can be cleaned up once we have seq(integer) as a type.
-
-//   DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt);
-//   AList<DefExpr>* defExprs = defStmt->defExprls;
-//   DefExpr* defExpr = defExprs->only();
-//   VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
-
-//   var->type = Symboltable::lookup("seq2")->typeInfo();
-//   UserInitExpr* var_init =
-//     new UserInitExpr(
-//       new ParenOpExpr(new Variable(Symboltable::lookup("seq2")->typeInfo()->symbol),
-//                       new AList<Expr>(new Variable(seq_type->elementType->symbol))));
-//   stmt->insertBefore(new DefStmt(new DefExpr(var, var_init)));
-//   if (defExpr->init) {
-//     stmt->insertBefore(new ExprStmt(new AssignOp(GETS_NORM, new Variable(var), defExpr->init->expr->copy())));
-//   }
-//   defStmt->remove();
-// }
-
-
 static void build_anon_tuple_type_def(Stmt* stmt, Type** type) {
   TupleType* tuple_type = dynamic_cast<TupleType*>(*type);
 
@@ -267,8 +234,6 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
     build_anon_domain_type_def(stmt, type);
   } else if (dynamic_cast<TupleType*>(*type)) {
     build_anon_tuple_type_def(stmt, type);
-//   } else if (dynamic_cast<SeqType*>(*type)) {
-//     build_anon_seq_type_def(stmt, type);
   } else if (dynamic_cast<IndexType*>(*type)) {
     build_index_type_def(stmt, type);
   } else if (dynamic_cast<StructuralType*>(*type)) {

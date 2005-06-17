@@ -79,7 +79,6 @@ enum astType_t {
   TYPE_ENUM,
   TYPE_DOMAIN,
   TYPE_INDEX,
-  TYPE_SEQ,
   TYPE_ARRAY,
   TYPE_USER,
   TYPE_LIKE,

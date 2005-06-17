@@ -291,7 +291,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "EnumType",
   "DomainType",
   "IndexType",
-  "SeqType",
   "ArrayType",
   "UserType",
   "LikeType",
@@ -529,9 +528,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(IndexType, domainType);
     ADD_CHILD(IndexType, idxType);
     goto LTypeCommon;
-  case TYPE_SEQ:
-    ADD_CHILD(SeqType, elementType);
-    goto LClassTypeCommon;
   case TYPE_ARRAY:
     ADD_CHILD(ArrayType, domain);
     ADD_CHILD(ArrayType, domainType);
@@ -551,7 +547,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_VEC(StructuralType, types, TypeSymbol);
     goto LTypeCommon;
   case TYPE_CLASS:
-  LClassTypeCommon:
     ADD_VEC(ClassType, parentClasses, ClassType);
     goto LStructuralTypeCommon;
   case TYPE_RECORD:

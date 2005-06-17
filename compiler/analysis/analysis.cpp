@@ -945,6 +945,8 @@ build_type(Type *t) {
       }
       INT_FATAL(t, "No analysis support for 'like'");
     }
+      /*** John:  There is no longer a TYPE_SEQ
+           It's now a record that we'll eventually flag.
     case TYPE_SEQ: {
       SeqType *tt = dynamic_cast<SeqType*>(t);
       Sym *s = tt->asymbol->sym;
@@ -952,6 +954,7 @@ build_type(Type *t) {
       build_record_type(t, sym_sequence);
       break;
     }
+      ***/
     case TYPE_CLASS:
     case TYPE_RECORD:
     case TYPE_UNION: 
@@ -1393,7 +1396,6 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       default:
         assert(!"impossible");
         goto Lstandard; 
-      case TYPE_SEQ:
       case TYPE_USER:
         goto Lstandard;
       case TYPE_DOMAIN:
@@ -2319,7 +2321,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_ENUM:
   case TYPE_DOMAIN:
   case TYPE_INDEX:
-  case TYPE_SEQ:
   case TYPE_ARRAY:
   case TYPE_USER:
   case TYPE_LIKE:

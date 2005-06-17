@@ -327,11 +327,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_INDEX");
     }
     break;
-  case TYPE_SEQ:
-    if (typeid(*ast) != typeid(SeqType)) {
-      INT_FATAL(ast, "Unexpected AST type type: TYPE_SEQ");
-    }
-    break;
   case TYPE_ARRAY:
     if (typeid(*ast) != typeid(ArrayType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_ARRAY");

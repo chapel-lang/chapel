@@ -72,8 +72,6 @@ static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
     resolve_type_helper(currentFunction, index_type->idxType);
   } else if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
     resolve_type_helper(currentFunction, array_type->elementType);
-  } else if (SeqType* seq_type = dynamic_cast<SeqType*>(type)) {
-    resolve_type_helper(currentFunction, seq_type->elementType);
   } else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type)) {
     for (int i = 0; i < tuple_type->components.n; i++) {
       resolve_type_helper(currentFunction, tuple_type->components.v[i]);
