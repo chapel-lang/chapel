@@ -37210,3 +37210,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: view.cpp 
 
+---------------------------------------------------------------------------
+
+06/17/05 15:28:16 -- deitz
+
+Log message:
+	Added working var method test.
+
+Added files:
+	chapel/test/functions/deitz/: test_var_method.chpl 
+	                              test_var_method.good 
+
