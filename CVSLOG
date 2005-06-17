@@ -37221,3 +37221,54 @@ Added files:
 	chapel/test/functions/deitz/: test_var_method.chpl 
 	                              test_var_method.good 
 
+---------------------------------------------------------------------------
+
+06/17/05 15:44:55 -- deitz
+
+Log message:
+	Added many tests dealing with how tuples can be implemented, where
+	parameters, and type variables.  Some work, some don't.
+
+Added files:
+	chapel/test/functions/deitz/: test_typeconstraint1.chpl 
+	                              test_typeconstraint1.future 
+	                              test_typeconstraint1.good 
+	                              test_where_param2.chpl 
+	                              test_where_param2.future 
+	                              test_where_param2.good 
+	                              test_where_param3.chpl 
+	                              test_where_param3.good 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation1.chpl 
+	                                test_tuple_record_implementation1.future 
+	                                test_tuple_record_implementation1.good 
+	                                test_tuple_record_implementation10.chpl 
+	                                test_tuple_record_implementation10.good 
+	                                test_tuple_record_implementation11.chpl 
+	                                test_tuple_record_implementation11.future 
+	                                test_tuple_record_implementation11.good 
+	                                test_tuple_record_implementation12.chpl 
+	                                test_tuple_record_implementation12.good 
+	                                test_tuple_record_implementation13.chpl 
+	                                test_tuple_record_implementation13.future 
+	                                test_tuple_record_implementation13.good 
+	                                test_tuple_record_implementation2.chpl 
+	                                test_tuple_record_implementation2.future 
+	                                test_tuple_record_implementation2.good 
+	                                test_tuple_record_implementation3.chpl 
+	                                test_tuple_record_implementation3.future 
+	                                test_tuple_record_implementation3.good 
+	                                test_tuple_record_implementation4.chpl 
+	                                test_tuple_record_implementation4.good 
+	                                test_tuple_record_implementation5.chpl 
+	                                test_tuple_record_implementation5.future 
+	                                test_tuple_record_implementation5.good 
+	                                test_tuple_record_implementation6.chpl 
+	                                test_tuple_record_implementation6.good 
+	                                test_tuple_record_implementation7.chpl 
+	                                test_tuple_record_implementation7.good 
+	                                test_tuple_record_implementation8.chpl 
+	                                test_tuple_record_implementation8.good 
+	                                test_tuple_record_implementation9.chpl 
+	                                test_tuple_record_implementation9.good 
+
