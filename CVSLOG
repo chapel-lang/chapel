@@ -37177,3 +37177,26 @@ Removed files:
 	                             removeSeqOperations.cpp 
 	                             removeSeqOperations.h 
 
+---------------------------------------------------------------------------
+
+06/17/05 11:08:34 -- deitz
+
+Log message:
+	Html dump of the compiler output now creates many more files, one for
+	each module for each pass.  This slows things down during compilation
+	with the -t flag, but it's more tractable for browsing.
+	
+	Made some improvements to the html dump.
+	
+	Added a script to take a look at a single function throughout
+	compilation.  This is not linked into the web yet, but should be a
+	simple CGI script if we have the ability to run it locally.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/traversals/: view.cpp view.h 
+Added files:
+	chapel/compiler/etc/www/: fnhtml.pl 
+
