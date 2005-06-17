@@ -107,7 +107,7 @@ void View::run(ModuleList* moduleList) {
 void View::preProcessStmt(Stmt* stmt) {
   if (html) {
     if (dynamic_cast<DefStmt*>(stmt) ||
-        dynamic_cast<ExprStmt*>(stmt)) {
+        typeid(ExprStmt) == typeid(*stmt)) {
       return;
     }
     fprintf(html_file, "<BR>");
@@ -130,7 +130,7 @@ void View::preProcessStmt(Stmt* stmt) {
 void View::postProcessStmt(Stmt* stmt) {
   if (html) {
     if (dynamic_cast<DefStmt*>(stmt) ||
-        dynamic_cast<ExprStmt*>(stmt)) {
+        typeid(ExprStmt) == typeid(*stmt)) {
       return;
     }
     if (dynamic_cast<BlockStmt*>(stmt)) {
