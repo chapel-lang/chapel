@@ -37299,3 +37299,16 @@ Modified files:
 	                             insertVariableInitializations.cpp 
 	                             view.cpp 
 
+---------------------------------------------------------------------------
+
+06/17/05 16:50:36 -- deitz
+
+Log message:
+	Removed three futures for tests that are now working.
+
+Removed files:
+	chapel/test/functions/deitz/: test_var_function_access2.future 
+	chapel/test/types/complex/deitz/: test_complex3.future 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record6.future 
+
