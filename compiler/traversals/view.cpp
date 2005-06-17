@@ -7,6 +7,7 @@
 #include "type.h"
 #include "symtab.h"
 #include "stringutil.h"
+#include "log.h"
 
 static void html_print_symbol(FILE* html_file, Symbol* sym) {
   if (dynamic_cast<FnSymbol*>(sym)) {
@@ -54,44 +55,50 @@ static void html_indent(FILE* html_file, int indent) {
   }
 }
 
-View::View(bool initNumberSymbols, FILE* init_html_file) {
+View::View(bool initNumberSymbols) {
   indent = 0;
   numberSymbols = initNumberSymbols;
-  html_file = init_html_file;
 }
 
 void View::run(ModuleList* moduleList) {
+  static int uid = 1;
+  char* filename;
   if (!strncmp(args, "html ", 5)) {
     html = copystring(args+5);
-    fprintf(html_file, "<HTML>\n");
-    fprintf(html_file, "<HEAD>\n");
-    fprintf(html_file, "<TITLE> AST after pass %s </TITLE>\n", html);
-    fprintf(html_file, "<SCRIPT SRC=\"%s/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
-           system_dir);
-    fprintf(html_file, "<LINK REL=\"stylesheet\" HREF=\"%s/etc/www/mktree.css\">", 
-            system_dir);
-    fprintf(html_file, "</HEAD>\n");
-    fprintf(html_file, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
-    fprintf(html_file, "AST after Pass %s <br><br></span></big></big>\n", html);
-    fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
+
   }
   ModuleSymbol* mod = moduleList->first();
   while (mod) {
     if (html) {
-      fprintf(html_file, "<UL CLASS=\"mktree\">\n");
-      fprintf(html_file, "<LI><B>module %s</B>\n", mod->name);
-      fprintf(html_file, "<UL>\n");
+      filename = glomstrings(5, "pass", intstring(uid), "_module_", mod->name, ".html");
+      fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">ast&nbsp;%s</a>\n", filename, mod->name);
+      html_file = fopen(glomstrings(2, log_dir, filename), "w");
+      fprintf(html_file, "<CHPLTAG=\"%s\">\n", html);
+      fprintf(html_file, "<HTML>\n");
+      fprintf(html_file, "<HEAD>\n");
+      fprintf(html_file, "<TITLE> AST for Module %s after Pass %s </TITLE>\n", mod->name, html);
+      fprintf(html_file, "<SCRIPT SRC=\"%s/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
+              system_dir);
+      fprintf(html_file, "<LINK REL=\"stylesheet\" HREF=\"%s/etc/www/mktree.css\">", 
+              system_dir);
+      fprintf(html_file, "</HEAD>\n");
+      fprintf(html_file, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
+      fprintf(html_file, "AST for Module %s after Pass %s <br><br></span></big></big>\n", mod->name, html);
+      fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
+      fprintf(html_file, "<B>module %s</B>\n", mod->name);
     } else {
       printf("\nMODULE: %s\n", mod->name);
     }
     mod->startTraversal(this);
     if (html) {
-      fprintf(html_file, "</UL></UL>\n");
+      fprintf(html_file, "</HTML>\n");
+      fclose(html_file);
     }
     mod = moduleList->next();
   }
+  uid++;
   if (html) {
-    fprintf(html_file, "\n</HTML>\n");
+    fprintf(html_index_file, "<BR>\n");
   } else {
     printf("\n\n");
   }
@@ -99,7 +106,8 @@ void View::run(ModuleList* moduleList) {
 
 void View::preProcessStmt(Stmt* stmt) {
   if (html) {
-    if (dynamic_cast<DefStmt*>(stmt)) {
+    if (dynamic_cast<DefStmt*>(stmt) ||
+        dynamic_cast<ExprStmt*>(stmt)) {
       return;
     }
     fprintf(html_file, "<BR>");
@@ -121,7 +129,8 @@ void View::preProcessStmt(Stmt* stmt) {
 
 void View::postProcessStmt(Stmt* stmt) {
   if (html) {
-    if (dynamic_cast<DefStmt*>(stmt)) {
+    if (dynamic_cast<DefStmt*>(stmt) ||
+        dynamic_cast<ExprStmt*>(stmt)) {
       return;
     }
     if (dynamic_cast<BlockStmt*>(stmt)) {
@@ -148,8 +157,9 @@ void View::preProcessExpr(Expr* expr) {
     html_indent(html_file, indent);
     if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
-        fprintf(html_file, "<UL CLASS =\"mktree\">\n");
-        fprintf(html_file, "<LI><B>function ");
+        fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
+        fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
+        fprintf(html_file, "<B>function ");
         html_print_fnsymbol(html_file, fn);
         fprintf(html_file, "</B><UL>\n");
       } else if (dynamic_cast<TypeSymbol*>(e->sym) &&
@@ -170,12 +180,16 @@ void View::preProcessExpr(Expr* expr) {
         fprintf(html_file, "(%s ", astTypeName[expr->astType]);
         html_print_symbol(html_file, e->sym);
       }
-    } else if (IntLiteral* e = dynamic_cast<IntLiteral*>(expr)) {
-      fprintf(html_file, "<FONT COLOR=\"lightblue\">'%ld'</FONT>", e->val);
-    } else if (StringLiteral* e = dynamic_cast<StringLiteral*>(expr)) {
+    } else if (Literal* e = dynamic_cast<Literal*>(expr)) {
       fprintf(html_file, "<FONT COLOR=\"lightblue\">'%s'</FONT>", e->str);
     } else if (Variable* e = dynamic_cast<Variable*>(expr)) {
       html_print_symbol(html_file, e->var);
+    } else if (AssignOp* e = dynamic_cast<AssignOp*>(expr)) {
+      fprintf(html_file, "(%s", cGetsOp[e->type]);
+    } else if (BinOp* e = dynamic_cast<BinOp*>(expr)) {
+      fprintf(html_file, "(%s", cBinOp[e->type]);
+    } else if (UnOp* e = dynamic_cast<UnOp*>(expr)) {
+      fprintf(html_file, "(%s", cUnOp[e->type]);
     } else {
       fprintf(html_file, "(%s", astTypeName[expr->astType]);
     }
@@ -205,10 +219,13 @@ void View::postProcessExpr(Expr* expr) {
       if (dynamic_cast<FnSymbol*>(e->sym) || 
           (dynamic_cast<TypeSymbol*>(e->sym) &&
            dynamic_cast<StructuralType*>(e->sym->type))) {
-        fprintf(html_file, "</UL></UL>\n");
+        fprintf(html_file, "</UL>\n");
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
+          fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
+        }
+        fprintf(html_file, "</UL>\n");
       }
-    } else if (dynamic_cast<IntLiteral*>(expr)) {
-    } else if (dynamic_cast<StringLiteral*>(expr)) {
+    } else if (dynamic_cast<Literal*>(expr)) {
     } else if (dynamic_cast<Variable*>(expr)) {
     } else {
       fprintf(html_file, ")");

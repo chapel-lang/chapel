@@ -14,7 +14,7 @@
 #include "../passes/runAnalysis.h"
 
 
-static char* cUnOp[NUM_UNOPS] = {
+char* cUnOp[NUM_UNOPS] = {
   "+",
   "-",
   "!",
@@ -22,7 +22,7 @@ static char* cUnOp[NUM_UNOPS] = {
 };
 
 
-static char* cBinOp[NUM_BINOPS] = {
+char* cBinOp[NUM_BINOPS] = {
   "+",
   "-",
   "*",
@@ -48,7 +48,7 @@ static char* cBinOp[NUM_BINOPS] = {
 };
 
 
-static char* cGetsOp[NUM_GETS_OPS] = {
+char* cGetsOp[NUM_GETS_OPS] = {
   "=",
   "+=",
   "-=",

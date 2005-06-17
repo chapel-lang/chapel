@@ -12,6 +12,10 @@ class Stmt;
 class AInfo;
 class UserInitExpr;
 
+extern char* cUnOp[];
+extern char* cBinOp[];
+extern char* cGetsOp[];
+
 enum precedenceType {
   PREC_LOWEST = 0,
   PREC_LOGOR,

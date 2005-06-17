@@ -12,7 +12,7 @@ class View : public Traversal {
   bool numberSymbols;
   char* html;
   FILE* html_file;
-  View::View(bool initNumberSymbols = false, FILE* init_html_file = NULL);
+  View::View(bool initNumberSymbols = false);
   virtual void run(ModuleList* moduleList);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
