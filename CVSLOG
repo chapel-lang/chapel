@@ -37139,3 +37139,17 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/: test_seq2.chpl test_seq2.good 
 
+---------------------------------------------------------------------------
+
+06/16/05 17:31:17 -- deitz
+
+Log message:
+	Removed unused FnSymbol constructor.
+	
+	Improved html output for compilation dump.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: view.cpp 
+
