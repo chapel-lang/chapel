@@ -955,9 +955,39 @@ instantiate_add_subs(Map<BaseAST*,BaseAST*>* substitutions, Map<BaseAST*,BaseAST
 }
 
 
+/** This is a quick cache implementation that isn't perfect **/
+class Inst : public gc {
+ public:
+  FnSymbol* fn;
+  FnSymbol* newfn;
+  Map<BaseAST*,BaseAST*>* subs;
+};
+
+static Vec<Inst*>* icache = NULL;
+
 FnSymbol* 
 FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
                               Map<BaseAST*,BaseAST*>* substitutions) {
+  if (!icache) {
+    icache = new Vec<Inst*>();
+  } else {
+    forv_Vec(Inst, tmp, *icache) {
+      if (tmp->fn == this) {
+        if (substitutions->n == 1 &&
+            tmp->subs->n == 1 &&
+            substitutions->v[0].key == tmp->subs->v[0].key &&
+            substitutions->v[0].value == tmp->subs->v[0].value) {
+          return tmp->newfn;
+          /** already instantiated **/
+        }
+      }
+    }
+  }
+  Inst* inst = new Inst();
+  inst->fn = this;
+  inst->subs = new Map<BaseAST*,BaseAST*>();
+  inst->subs->copy(*substitutions);
+
   FnSymbol* copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
   currentLineno = lineno;
@@ -1035,6 +1065,9 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   if (!copy) {
     INT_FATAL(this, "Instantiation error");
   }
+
+  inst->newfn = copy;
+  icache->add(inst);
 
   //printf("finished instantiating %s\n", cname);
   
