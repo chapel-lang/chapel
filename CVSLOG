@@ -37312,3 +37312,37 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_record6.future 
 
+---------------------------------------------------------------------------
+
+06/17/05 17:04:05 -- deitz
+
+Log message:
+	Added a simple cache to instantiate_generics so that it won't
+	instantiate the same function in the same way multiple times.  This
+	leads to function resolution ambiguities.  This cache needs to be
+	improved and it's probably worthwhile figuring out why we need a cache
+	now.  I thought we weren't going to need one yet.
+	
+	This fixes all of my tuple record implementation tests and sets the
+	stage for a real tuple implementation.
+	
+	Added a 14th and 15th tuple record implementation test.  It's a big
+	win that these worked.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation14.chpl 
+	                                test_tuple_record_implementation14.good 
+	                                test_tuple_record_implementation15.chpl 
+	                                test_tuple_record_implementation15.good 
+Removed files:
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation1.future 
+	                                test_tuple_record_implementation11.future 
+	                                test_tuple_record_implementation13.future 
+	                                test_tuple_record_implementation2.future 
+	                                test_tuple_record_implementation3.future 
+	                                test_tuple_record_implementation5.future 
+
