@@ -69,3 +69,9 @@ typedef void *_CG_ref;
 static inline int _CG_prim_primitive_write(_CG_symbol s, ...) {
   return 0;
 }
+
+/* BLC: These seem to be required due to the new methodTokenType
+   code inserted at the high-level */
+#define _CG_prim_primitive_sizeof(x) sizeof(x)
+#define _methodTokenType char
+#define _CG_prim_primitive_cast(type, x) (x)
