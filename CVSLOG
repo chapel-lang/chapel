@@ -37346,3 +37346,21 @@ Removed files:
 	                                test_tuple_record_implementation3.future 
 	                                test_tuple_record_implementation5.future 
 
+---------------------------------------------------------------------------
+
+06/20/05 12:20:00 -- bradc
+
+Log message:
+	Added some code to c_runtime.h so that low-level codegen
+	tests could be re-enabled.  This new code seems to be
+	related to the _methodTokenType that the high-level is
+	now inserting, so another way to handle this code might
+	be to squelch it before the low-level codegen takes place.
+	
+	John, you may want to review my changes when you get back.
+
+Modified files:
+	chapel/compiler/etc/: c_runtime.h 
+Removed files:
+	chapel/test/lowlevelcg/jplevyak/: NOTEST 
+
