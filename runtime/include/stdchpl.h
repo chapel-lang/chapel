@@ -19,6 +19,7 @@
 #include "error.h"
 #include "exit.h"
 #include "forall.h"
+#include "locales.h"
 #include "seq.h"
 #include "union.h"
 

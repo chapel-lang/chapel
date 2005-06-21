@@ -29,14 +29,15 @@ floatLiteral    {digit}+"."{digit}+
 %%
 
 and             return TAND;
+atomic          return TATOMIC;
 break           return TBREAK;
 by              return TBY;
 call            return TCALL;
 class           return TCLASS;
+cobegin         return TCOBEGIN;
 config          return TCONFIG;
 const           return TCONST;
 constructor     return TCONSTRUCTOR;
-parameter       return TPARAMETER;
 continue        return TCONTINUE;
 do              return TDO;
 domain          return TDOMAIN;
@@ -61,6 +62,7 @@ of              return TOF;
 or              return TOR;
 otherwise       return TOTHERWISE;
 out             return TOUT;
+parameter       return TPARAMETER;
 pragma          return TPRAGMA;
 record          return TRECORD;
 reduce          return TREDUCE;
@@ -86,6 +88,7 @@ with            return TWITH;
 "&="            return TASSIGNBAND;
 "|="            return TASSIGNBOR;
 "^="            return TASSIGNBXOR;
+"#="            return TASSIGNSEQCAT;
 
 ".."            return TDOTDOT;
 

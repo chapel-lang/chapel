@@ -124,14 +124,23 @@ class UseStmt : public ExprStmt {
 };
 
 
+enum blockStmtType {
+  BLOCK_NORMAL = 0,
+  BLOCK_ATOMIC,
+  BLOCK_COBEGIN
+};
+
+
 class BlockStmt : public Stmt {
  public:
+  blockStmtType blockType;
   AList<Stmt>* body;
 
   SymScope* blkScope;
 
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
-                       SymScope* init_scope = NULL);
+                       SymScope* init_scope = NULL, 
+                       blockStmtType init_blockType = BLOCK_NORMAL);
   void addBody(AList<Stmt>* init_body);
   void setBlkScope(SymScope* init_blkScope);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);

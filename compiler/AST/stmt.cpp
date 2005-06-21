@@ -453,8 +453,10 @@ ModuleSymbol* UseStmt::getModule(void) {
 }
 
 
-BlockStmt::BlockStmt(AList<Stmt>* init_body, SymScope* init_scope) :
+BlockStmt::BlockStmt(AList<Stmt>* init_body, SymScope* init_scope,
+                     blockStmtType init_blockType) :
   Stmt(STMT_BLOCK),
+  blockType(init_blockType),
   body(init_body),
   blkScope(init_scope)
 {}
@@ -506,6 +508,15 @@ void BlockStmt::traverseStmt(Traversal* traversal) {
 
 
 void BlockStmt::print(FILE* outfile) {
+  switch (blockType) {
+  case BLOCK_NORMAL:
+    break;
+  case BLOCK_ATOMIC:
+    fprintf(outfile, "atomic ");
+    break;
+  case BLOCK_COBEGIN:
+    fprintf(outfile, "cobegin ");
+  }
   fprintf(outfile, "{\n");
   if (body) {
     body->print(outfile, "\n");

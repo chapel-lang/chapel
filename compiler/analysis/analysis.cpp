@@ -1653,6 +1653,7 @@ gen_assign_op(AssignOp *s) {
     case GETS_BITAND: op = make_symbol("&"); break;
     case GETS_BITOR: op = make_symbol("|"); break;
     case GETS_BITXOR: op = make_symbol("^"); break;
+    case GETS_SEQCAT: op = make_symbol("#"); break;
   }
   if (op) {
     Sym *old_rval = rval;

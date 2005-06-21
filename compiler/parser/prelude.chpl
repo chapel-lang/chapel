@@ -79,6 +79,21 @@ const true: boolean = 1;
 
 function sqrt(x: float): float {}
 function abs(x: ?t): float {}  -- BLC: should be ": t"
+function ceil(x: float): float {}
+function min(x, y) {
+  if (x < y) {
+    return x;
+  } else {
+    return y;
+  }
+}
+function max(x, y) {
+  if (x > y) {
+    return x;
+  } else {
+    return y;
+  }
+}
 
 
 
@@ -149,6 +164,11 @@ function _complex_read_hack(inout x) {
 function _complex_tostring_hack(x, format : string) : string {
   return __primitive("coerce", string, x);
 }
+
+
+
+
+const numLocales: integer = 1;
 
 
 -- FROM INTERNAL PRELUDE

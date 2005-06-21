@@ -89,6 +89,7 @@ enum getsOpType {
   GETS_BITAND,
   GETS_BITOR,
   GETS_BITXOR,
+  GETS_SEQCAT,
 
   NUM_GETS_OPS
 };

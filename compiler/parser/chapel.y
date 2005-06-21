@@ -5,8 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+/* NOTE: all chapel.y #includes should go in lexyacc.h so make depend works */
 #include "lexyacc.h"
-#include "chplalloc.h"
+/* NOTE: all chapel.y #includes should go in lexyacc.h so make depend works */
 
 %}
 
@@ -20,6 +21,7 @@
   varType vt;
   consType ct;
   paramType pt;
+  blockStmtType blktype;
 
   Expr* pexpr;
   AList<Expr>* exprlist;
@@ -48,9 +50,11 @@
   AList<Pragma>* pragmas;
 }
 
+%token TATOMIC
 %token TBREAK
 %token TCALL
 %token TCLASS
+%token TCOBEGIN
 %token TCONFIG
 %token TCONST
 %token TCONSTRUCTOR
@@ -104,6 +108,7 @@
 %token TASSIGNBAND;
 %token TASSIGNBOR;
 %token TASSIGNBXOR;
+%token TASSIGNSEQCAT;
 
 %token TSEMI;
 %token TCOMMA;
@@ -153,7 +158,8 @@
 %type <pdt> class_record_union
 %type <stmt> typealias typedecl fndecl structdecl moduledecl
 %type <stmt> function_body_single_stmt 
-%type <blkstmt> function_body_stmt block_stmt
+%type <blkstmt> function_body_stmt block_stmt par_block_stmt
+%type <blktype> par_block_header
 %type <pragma> pragma
 %type <pragmas> pragmas
 
@@ -542,6 +548,8 @@ fname:
   { $$ = "|="; } 
 | TASSIGNBXOR
   { $$ = "^="; } 
+| TASSIGNSEQCAT
+  { $$ = "#="; }
 | TBAND
   { $$ = "&"; } 
 | TBOR
@@ -868,6 +876,8 @@ statement:
 | retStmt
 | block_stmt
     { $$ = $1; }
+| par_block_stmt
+    { $$ = $1; }
 | error
     { printf("syntax error"); exit(1); }
 ;
@@ -910,6 +920,23 @@ block_stmt:
     { $<blkstmt>$ = Symboltable::startCompoundStmt(); }
         statements TRCBR
     { $$ = Symboltable::finishCompoundStmt($<blkstmt>2, $3); }
+;
+
+
+par_block_header:
+  TATOMIC
+    { $$ = BLOCK_ATOMIC; }
+| TCOBEGIN
+    { $$ = BLOCK_COBEGIN; }
+;
+
+
+par_block_stmt:
+  par_block_header block_stmt
+    { 
+      $2->blockType = $1;
+      $$ = $2;
+    }
 ;
 
 
@@ -1053,6 +1080,8 @@ assignOp:
     { $$ = GETS_BITOR; }
 | TASSIGNBXOR
     { $$ = GETS_BITXOR; }
+| TASSIGNSEQCAT
+    { $$ = GETS_SEQCAT; }
 ;
 
 
