@@ -37439,3 +37439,18 @@ Added files:
 	chapel/runtime/include/: locales.h 
 	chapel/test/ssca/ssca2/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+06/21/05 15:22:15 -- bradc
+
+Log message:
+	A cute test that makes sure call-by-name
+	parameters for constructors distinguish
+	between local identifiers and the
+	identifiers used for the fields.  I'm
+	happy to say it worked the first time!
+	(can't take any credit for it, though).
+
+Added files:
+	chapel/test/classes/bradc/: namecheck.chpl namecheck.good 
+
