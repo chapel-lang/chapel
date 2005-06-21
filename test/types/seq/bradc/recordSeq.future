@@ -1,0 +1,4 @@
+deitz
+
+sequences of records don't seem to work because 
+insertLiteralTemps runs before scopeResolveSymbols
