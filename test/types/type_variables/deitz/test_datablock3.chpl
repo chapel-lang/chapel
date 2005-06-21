@@ -1,4 +1,4 @@
-var d : _data = _data(integer);
+var d : _data(integer);
 
 d.alloc(3, "_data");
 

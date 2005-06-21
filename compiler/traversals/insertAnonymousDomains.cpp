@@ -8,29 +8,10 @@
 #include "view.h"
 
 
-void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
-  currentStmt = stmt;
-}
-
-
-void InsertAnonymousDomains::postProcessType(Type* type) {
+static void insertDomainTemp(ForallExpr* forall,
+                             Stmt* currentStmt,
+                             ArrayType* array_type) {
   static int uid = 1;
-
-  if (!currentStmt) {
-    return;
-  }
-
-  ArrayType* array_type = dynamic_cast<ArrayType*>(type);
-
-  if (!array_type) {
-    return;
-  }
-
-  ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain);
-
-  if (!forall || dynamic_cast<Variable*>(forall->domains->first())) {
-    return;
-  }
 
   char* name = glomstrings(2, "_anon_domain_", intstring(uid++));
 
@@ -52,6 +33,32 @@ void InsertAnonymousDomains::postProcessType(Type* type) {
 
   array_type->domain->replace(new_forall);
   Symboltable::setCurrentScope(saveScope);
+}
+
+
+void InsertAnonymousDomains::preProcessStmt(Stmt* stmt) {
+  currentStmt = stmt;
+}
+
+
+void InsertAnonymousDomains::postProcessType(Type* type) {
+  if (!currentStmt) {
+    return;
+  }
+
+  ArrayType* array_type = dynamic_cast<ArrayType*>(type);
+
+  if (!array_type) {
+    return;
+  }
+
+  ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain);
+
+  if (!forall || dynamic_cast<Variable*>(forall->domains->first())) {
+    return;
+  }
+
+  insertDomainTemp(forall, currentStmt, array_type);
 }
 
 

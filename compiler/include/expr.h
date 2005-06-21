@@ -190,6 +190,7 @@ class FloatLiteral : public Literal {
 
   FloatLiteral(char* init_str, double init_val);
   virtual Expr* copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map);
+  virtual Type* typeInfo(void);
 };
 
 

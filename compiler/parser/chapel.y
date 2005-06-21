@@ -16,7 +16,6 @@
 %union  {
   bool boolval;
   char* pch;
-
   getsOpType got;
   varType vt;
   consType ct;
@@ -100,32 +99,32 @@
 %token INTLITERAL FLOATLITERAL COMPLEXLITERAL
 %token <pch> STRINGLITERAL
 
-%token TASSIGN;
-%token TASSIGNPLUS;
-%token TASSIGNMINUS;
-%token TASSIGNMULTIPLY;
-%token TASSIGNDIVIDE;
-%token TASSIGNBAND;
-%token TASSIGNBOR;
-%token TASSIGNBXOR;
-%token TASSIGNSEQCAT;
+%token TASSIGN
+%token TASSIGNPLUS
+%token TASSIGNMINUS
+%token TASSIGNMULTIPLY
+%token TASSIGNDIVIDE
+%token TASSIGNBAND
+%token TASSIGNBOR
+%token TASSIGNBXOR
+%token TASSIGNSEQCAT
 
-%token TSEMI;
-%token TCOMMA;
-%token TDOT;
-%token TLP;
-%token TRP;
-%token TSEQBEGIN;
-%token TSEQEND;
-%token TLSBR;
-%token TRSBR;
-%token TLCBR;
-%token TRCBR;
+%token TSEMI
+%token TCOMMA
+%token TDOT
+%token TLP
+%token TRP
+%token TSEQBEGIN
+%token TSEQEND
+%token TLSBR
+%token TRSBR
+%token TLCBR
+%token TRCBR
 %token TCOLON
 %token TNOTCOLON
 
 
-%token TQUESTION;
+%token TQUESTION
 
 %type <ct> varconst
  
@@ -135,7 +134,7 @@
 
 %type <boolval> fortype fnretref isconstructor
 %type <pdt> type domainType indexType arrayType record_tuple_type record_tuple_inner_type exprType
-%type <tupledt> tuple_inner_types
+%type <exprlist> tuple_inner_types
 %type <pdt> opt_vardecltype vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier fname optional_identifier
 %type <psym> ident_symbol ident_symbol_nopragma
@@ -370,15 +369,14 @@ structdecl:
 
 
 tuple_inner_types:
-  type
+  lvalue
     {
-      $$ = new TupleType();
-      $$->addType($1);
+      $$ = new AList<Expr>($1);
     }
-| tuple_inner_types TCOMMA type
+| tuple_inner_types TCOMMA lvalue
     { 
+      $1->insertAtTail($3);
       $$ = $1;
-      $$->addType($3);
     }
 ;
 
@@ -406,7 +404,10 @@ record_tuple_inner_type:
 | tuple_inner_types TRP
     {
       Symboltable::popScope();
-      $$ = $1;
+      char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
+      $$ = new ExprType(
+             new ParenOpExpr(
+               new Variable(new UnresolvedSymbol(tupleName)), $1));
     }
 ;
 

@@ -1,11 +1,13 @@
-class pragma "codegen data" _data { -- a c array, basically
+record pragma "codegen data" _data { -- a c array, basically
   type t;
-  var x : t; -- dummy
+  var _data_dummy : t;
   pragma "rename _data_this" function this(i : integer) : t {
-    return __primitive("array_index", t, i);
+    return _data_dummy;
+    -- return __primitive("array_index", this, i);
   }
   pragma "rename _data_set" function =this(i : integer, val : t) : t {
-    return __primitive("array_set", this, i, val);
+    _data_dummy = val;
+    -- return __primitive("array_set", this, i, val);
   }
   pragma "rename _data_alloc" function alloc(size, description) {  }
 }

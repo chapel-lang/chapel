@@ -12,7 +12,7 @@ resolveDefaultConstructorParameters(Symbol* sym,
 
 
 PostAnalysisCleanup::PostAnalysisCleanup() {
-  whichModules = MODULES_CODEGEN;
+  //  whichModules = MODULES_CODEGEN;
 }
 
 
@@ -21,7 +21,7 @@ void PostAnalysisCleanup::processSymbol(Symbol* sym) {
    ***  Hack: change default constructor parameter types
    ***/
   if (dynamic_cast<NilType*>(sym->type)) {
-    if (sym->defPoint->init) {
+    if (sym->defPoint && sym->defPoint->init) {
       if (VarInitExpr* init = dynamic_cast<VarInitExpr*>(sym->defPoint->init->expr)) {
         FnSymbol* constructor = dynamic_cast<FnSymbol*>(sym->defPoint->parentSymbol);
         resolveDefaultConstructorParameters(sym, constructor, init);

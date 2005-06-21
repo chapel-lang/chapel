@@ -23,7 +23,7 @@ void FindReturn::preProcessStmt(Stmt* stmt) {
 }
 
 ResolveTypes::ResolveTypes() {
-  whichModules = MODULES_CODEGEN;
+  //  whichModules = MODULES_CODEGEN;
 }
 
 
@@ -147,7 +147,7 @@ void ResolveTypes::processSymbol(Symbol* sym) {
 }
 
 ResolveTupleTypes::ResolveTupleTypes() {
-  whichModules = MODULES_CODEGEN;
+  //  whichModules = MODULES_CODEGEN;
 }
 
 void ResolveTupleTypes::processSymbol(Symbol* sym) {

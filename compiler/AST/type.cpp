@@ -1513,6 +1513,11 @@ void ExprType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
+void ExprType::print(FILE* outfile) {
+  expr->print(outfile);
+}
+
+
 void ExprType::codegen(FILE* outfile) {
   INT_FATAL(this, "Unanticipated call to ExprType::codegen");
 }

@@ -84,7 +84,7 @@ static void call_info_noanalysis(ParenOpExpr* expr, Vec<FnSymbol*>& fns) {
 
 
 ResolveSymbols::ResolveSymbols() {
-  whichModules = MODULES_CODEGEN;
+  //  whichModules = MODULES_CODEGEN;
 }
 
 
@@ -310,6 +310,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   // Resolve FnCalls
   if (typeid(*expr) == typeid(ParenOpExpr)) {
     ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr);
+    if (Variable* variable = dynamic_cast<Variable*>(paren->baseExpr)) {
+      if (!strcmp(variable->var->name, "__primitive")) {
+        return;
+      }
+    }
     AssignOp *assign = dynamic_cast<AssignOp*>(paren->parentExpr);
     if (!assign || assign->left != expr) {
       Vec<FnSymbol*> fns;

@@ -443,6 +443,11 @@ Expr* FloatLiteral::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
+Type* FloatLiteral::typeInfo(void) {
+  return dtFloat;
+}
+
+
 ComplexLiteral::ComplexLiteral(char* init_str, double init_imag, 
                                double init_real, char* init_realStr) :
   Literal(EXPR_COMPLEXLITERAL, init_str),
@@ -1503,7 +1508,7 @@ void FnCall::codegen(FILE* outfile) {
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_alloc")) {
       Variable* variable = dynamic_cast<Variable*>(argList->representative());
-      ClassType* classType = dynamic_cast<ClassType*>(variable->var->type);
+      StructuralType* classType = dynamic_cast<StructuralType*>(variable->var->type);
       classType->fields.v[0]->type->codegen(outfile);
       fprintf(outfile, ", ");
     }

@@ -10,8 +10,6 @@
 # test is failing, followed by an indication of whose court the
 # regression is in.
 
-
-
 =============================
 linux and general regressions
 =============================
@@ -23,15 +21,15 @@ linux and general regressions
   when the array is initialized.  The array needs a constructor so
   that its initialization code can be analyzed.
 
+[Error matching compiler output for arrays/deitz/test_array_integer_3d]
+
+  Arrays are not classes so we can't worry about everything.
+
 [Error matching compiler output for domains/bradc/writeIndex]
 [Error matching compiler output for domains/bradc/writeIndex2]
 
   There is something very wrong with IndexTypes.  They should not
   need their own write function (bradc).
-
-[Error matching compiler output for types/type_variables/deitz/test_datablock3]
-
-  ???
 
 [Error matching program output for trivial/roxana/test_param_decl3]
 
@@ -41,12 +39,6 @@ linux and general regressions
   instantiation set up a new initializer for the parameter after its
   been instantiated so that the test would pass for all parameters.
   (deitz/bradc)
-
-[Error matching compiler output for types/type_variables/deitz/test_typevar_record3]
-[Error matching compiler output for types/type_variables/deitz/test_typevar_record4]
-
-  Both of these are caused by visible_functions not returning the write for
-  strings when called on a location in an instantiated function.
 
 ==========================
 linux valgrind regressions

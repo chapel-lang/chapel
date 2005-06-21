@@ -172,7 +172,7 @@ forall var ijk: integer; in DS R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [v
 }
 
 
-function norm2u3(const R: [?anonDomain] float): (float, float) {
+function norm2u3(const R: [?anonDomain] float): _tuple2(float, float) {
 const rnm2: float = sqrt((reduce by sum (R**2)/((nx*ny)*nz)));
 const rnmu: float = reduce by max abs(R);
 

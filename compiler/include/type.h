@@ -359,6 +359,7 @@ class ExprType : public Type {
   virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   void traverseDefType(Traversal* traversal);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 
