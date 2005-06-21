@@ -37387,3 +37387,55 @@ Added files:
 	                              hashEquals.good recordSeq.chpl 
 	                              recordSeq.future recordSeq.good 
 
+---------------------------------------------------------------------------
+
+06/21/05 15:11:14 -- bradc
+
+Log message:
+	Some rather superficial changes related to getting more
+	code in my SSCA2 rewrite through the front-end:
+	
+	- added #= to the lexer and parser; this is stored
+	  as an AssignOp as type GETS_SEQCAT.  Pattern-matched
+	  its insertion into analysis.cpp, but none of the
+	  rest of the compiler does anything with it yet, so
+	  this is only useful for parsing for the time being.
+	
+	- added cobegin and atomic blocks to the front-end.
+	  These are stored as an instance of BlockStmt, which
+	  now has a blockType flag that is set to BLOCK_NORMAL,
+	  BLOCK_ATOMIC, or BLOCK_COBEGIN.  We're not planning
+	  on doing anything for atomic or cobegin blocks in the
+	  sequential implementation, so this field can simply
+	  be ignored for now.
+	
+	- fixed up #includes for chapel.y -- all #includes need
+	  to go into lexyacc.h in order for make depend to work.
+	
+	- added some more simple math functions to the prelude
+	  -- some of these are implemented inline in a generic
+	  way (min, max); others are prototyped as poorly as
+	  the previous ones were.  This is just a placeholder
+	  until we do math functions correctly.
+	
+	- added a built-in "numLocales" constant, initialized to
+	  1, to the prelude and runtime.  Again, this is a
+	  placeholder while we're doing the sequential build.
+	  Again, we'll want to implement this better once arrays
+	  are supported and we can create an array of locales.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+	chapel/compiler/parser/: chapel.lex chapel.y lexyacc.h 
+	                         prelude.chpl 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/distributions/bradc/foundations/: blockdist3.chpl 
+Added files:
+	chapel/runtime/include/: locales.h 
+	chapel/test/ssca/ssca2/: .cvsignore 
+
