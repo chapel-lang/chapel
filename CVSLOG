@@ -37364,3 +37364,26 @@ Modified files:
 Removed files:
 	chapel/test/lowlevelcg/jplevyak/: NOTEST 
 
+---------------------------------------------------------------------------
+
+06/21/05 13:48:50 -- bradc
+
+Log message:
+	Two future tests regarding sequences, motivated by my
+	attempt to rewrite SSCA2.  hashEquals uses the #= operator,
+	which is not yet implemented.  recordSeq attempts to
+	create a sequence of records, but fails because the pass
+	to insert sequence literals runs before symbols are
+	resolved, so the type of the variable cannot be determined,
+	even if it is given in the declaration.
+	
+	In general, if anyone has recommendations about adding
+	records to a sequence of records, let me know -- I
+	couldn't find a way to do it that works with the
+	current compiler.
+
+Added files:
+	chapel/test/types/seq/bradc/: hashEquals.chpl hashEquals.future 
+	                              hashEquals.good recordSeq.chpl 
+	                              recordSeq.future recordSeq.good 
+
