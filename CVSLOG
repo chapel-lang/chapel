@@ -37454,3 +37454,77 @@ Log message:
 Added files:
 	chapel/test/classes/bradc/: namecheck.chpl namecheck.good 
 
+---------------------------------------------------------------------------
+
+06/21/05 15:49:42 -- deitz
+
+Log message:
+	Tuples are now records.  This gets rid of lots of special-cased code
+	and is a symmetric change to my recent sequence improvements.  Next is
+	arrays and domains.
+	
+	Unlike the sequence record, the tuple record is created in the
+	compiler since it has a different number of types, fields and
+	functions depending on how many elements are in the tuple.  These
+	records are still instantiated, they are just created by the compiler
+	rather than parsed in.
+	
+	PostAnalysisCleanup, ResolveTypes, and ResolveSymbols now run on all
+	modules, not just codegened ones.  This is necessary as code in the
+	prelude may have to be instantiated.
+	
+	Added typeInfo to FloatLiteral.
+	
+	Removed ';' from after %token declarations in parser.  This is an
+	error on the Mac.
+	
+	Added a new tuple implementation test and two new simple tuple tests.
+	
+	Removed many tuple futures.
+	
+	Fixed datablock in prelude and datablock regression.
+	
+	New regression: arrays/deitz/test_array_integer_3d.
+	
+	Updated regression file.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.y prelude.chpl 
+	chapel/compiler/symtab/: postAnalysisCleanup.cpp 
+	                         resolveTypes.cpp 
+	chapel/compiler/traversals/: insertAnonymousDomains.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertLiteralTemps.h 
+	                             resolveSymbols.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+	chapel/test/types/type_variables/deitz/: test_datablock3.chpl 
+Added files:
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation16.chpl 
+	                                test_tuple_record_implementation16.good 
+	                                test_tuple_type1.chpl 
+	                                test_tuple_type1.good 
+	                                test_tuple_type2.chpl 
+	                                test_tuple_type2.good 
+Removed files:
+	chapel/test/functions/jplevyak/: equal-8.future 
+	chapel/test/types/tuple/bradc/: returnTuple3.chpl 
+	                                writeTuple.chpl 
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.chpl 
+	                                test_tuple_simple3.chpl 
+	                                test_tuple_simple4.chpl 
+	                                test_tuple_simple5.chpl 
+	                                test_tuple_simple6.chpl 
+	                                test_tuple_simple7.chpl 
+	chapel/test/types/tuple/jplevyak/: tuple_index-1.chpl 
+	                                   tuple_index-2.chpl 
+
