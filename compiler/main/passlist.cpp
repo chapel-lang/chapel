@@ -12,6 +12,7 @@
 #include "../symtab/legalizeCNames.h"
 #include "../symtab/postAnalysisCleanup.h"
 #include "../symtab/printSymtab.h"
+#include "../symtab/reconstructIterators.h"
 #include "../symtab/removeDeadSymbols.h"
 #include "../symtab/removeLikeTypes.h"
 #include "../symtab/renameOverloadedFunctions.h"
@@ -100,6 +101,7 @@ REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
+REGISTER(ReconstructIterators);
 REGISTER(RemoveDeadSymbols);
 REGISTER(RemoveLikeTypes);
 REGISTER(RemoveNamedParameters);
