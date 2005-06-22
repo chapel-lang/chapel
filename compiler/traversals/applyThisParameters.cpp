@@ -14,7 +14,7 @@ void ApplyThisParameters::postProcessExpr(Expr* expr) {
       if (member->var->parentScope &&
           member->var->parentScope->type == SCOPE_CLASS) {
         if (FnSymbol* constructor = dynamic_cast<FnSymbol*>(member->var)) {
-          if (constructor->isConstructor) {
+          if (constructor->fnClass == FN_CONSTRUCTOR) {
             return;
           }
         }

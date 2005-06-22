@@ -51,6 +51,7 @@ if              return TIF;
 in              return TIN;
 index           return TINDEX;
 inout           return TINOUT;
+iterator        return TITERATOR;
 label           return TLABEL;
 let             return TLET;
 like            return TLIKE;
@@ -79,6 +80,7 @@ when            return TWHEN;
 where           return TWHERE;
 while           return TWHILE;
 with            return TWITH;
+yield           return TYIELD;
 
 "="             return TASSIGN;
 "+="            return TASSIGNPLUS;

@@ -38,7 +38,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     if (dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
       Type* typeBinding = typeBindingSymbol->type;
       fn->typeBinding = typeBindingSymbol;
-      if (!fn->isConstructor) {
+      if (fn->fnClass != FN_CONSTRUCTOR) {
         fn->method_type = SECONDARY_METHOD;
       }
       typeBinding->methods.add(fn);
@@ -53,7 +53,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
     fn->cname = glomstrings(4, "_", typeSym->cname, "_", fn->cname);
-    if (fn->isConstructor) {
+    if (fn->fnClass == FN_CONSTRUCTOR) {
       SymScope* saveScope = Symboltable::setCurrentScope(fn->body->body->first()->parentScope);
       fn->body->body->reset(); // reset iteration
       DefStmt* this_decl = Symboltable::defineSingleVarDefStmt(copystring("this"),

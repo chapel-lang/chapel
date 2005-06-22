@@ -13,7 +13,7 @@ void ApplyGettersSetters::postProcessExpr(Expr* expr) {
   if (expr->parentStmt) {
     fn = expr->parentStmt->parentFunction();
   }
-  if (fn && (fn->_setter || fn->_getter || fn->isConstructor)) {
+  if (fn && (fn->_setter || fn->_getter || fn->fnClass == FN_CONSTRUCTOR)) {
     return;
   }
   if (dynamic_cast<VarInitExpr*>(expr->parentExpr)) {

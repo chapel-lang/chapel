@@ -21,6 +21,7 @@
   consType ct;
   paramType pt;
   blockStmtType blktype;
+  fnType ft;
 
   Expr* pexpr;
   AList<Expr>* exprlist;
@@ -70,6 +71,7 @@
 %token TIN
 %token TINDEX
 %token TINOUT
+%token TITERATOR
 %token TLABEL
 %token TLET
 %token TLIKE
@@ -94,6 +96,7 @@
 %token TWHERE
 %token TWHILE
 %token TWITH
+%token TYIELD
 
 %token TIDENT QUERY_IDENT
 %token INTLITERAL FLOATLITERAL COMPLEXLITERAL
@@ -131,15 +134,17 @@
 %type <got> assignOp
 %type <vt> vardecltag
 %type <pt> formaltag
+%type <ft> fntag
 
-%type <boolval> fortype fnretref isconstructor
+%type <boolval> fortype fnretref
 %type <pdt> type domainType indexType arrayType record_tuple_type record_tuple_inner_type exprType
 %type <exprlist> tuple_inner_types
 %type <pdt> opt_vardecltype vardecltype typevardecltype fnrettype
 %type <pch> identifier query_identifier fname optional_identifier
 %type <psym> ident_symbol ident_symbol_nopragma
+%type <fnsym> function
 %type <symlist> ident_symbol_ls indexes indexlist
-%type <paramlist> formal formals
+%type <paramlist> formal formals optional_formals
 %type <enumsym> enum_item
 %type <enumsymlist> enum_list
 %type <pexpr> paren_op_expr member_access_expr non_tuple_lvalue lvalue tuple_paren_expr atom expr expr_list_item literal range seq_expr where whereexpr
@@ -513,6 +518,12 @@ formals:
 ;
 
 
+optional_formals:
+  { $$ = NULL; }
+| TLP formals TRP
+  { $$ = $2; }
+;
+
 fnrettype:
   /* empty */
     { $$ = dtUnknown; }
@@ -593,11 +604,13 @@ fname:
   { $$ = "#"; } 
   ;
 
-isconstructor:
+fntag:
   TFUNCTION
-    { $$ = false; }
+    { $$ = FN_FUNCTION; }
 | TCONSTRUCTOR
-    { $$ = true; }
+    { $$ = FN_CONSTRUCTOR; }
+| TITERATOR
+    { $$ = FN_ITERATOR; }
 ;
 
 where:
@@ -660,48 +673,31 @@ whereexpr:
 ;
 
 
+function:
+  fname
+    { $$ = new FnSymbol($1); }
+| identifier TDOT fname
+    { $$ = new FnSymbol($3, new UnresolvedSymbol($1)); }
+;
+
+
 fndecl:
-  isconstructor fname
+  fntag function
     {
-      $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2));
-      $<fnsym>$->isConstructor = $1;
+      $<fnsym>$ = Symboltable::startFnDef($2);
+      $<fnsym>$->fnClass = $1;
     }
-                       TLP formals TRP fnretref fnrettype where
+                       optional_formals fnretref fnrettype where
     {
-      Symboltable::continueFnDef($<fnsym>3, $5, $8, $7, $9);
+      if (!$4) {
+        $4 = new AList<ParamSymbol>();
+        $<fnsym>3->noparens = true;
+      }
+      Symboltable::continueFnDef($<fnsym>3, $4, $6, $5, $7);
     }
                                                  function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $11)));
-    }
-|
-  isconstructor identifier TDOT fname
-    {
-      $<fnsym>$ =
-        Symboltable::startFnDef(new FnSymbol($4, new UnresolvedSymbol($2)));
-      $<fnsym>$->isConstructor = $1;
-    }
-                                  TLP formals TRP fnretref fnrettype where
-    {
-      Symboltable::continueFnDef($<fnsym>5, $7, $10, $9, $11);
-    }
-                                                            function_body_stmt
-    {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>5, $13)));
-    }
-|
-  isconstructor fname
-    {
-      $<fnsym>$ = Symboltable::startFnDef(new FnSymbol($2), true);
-      $<fnsym>$->isConstructor = $1;
-    }
-                  fnretref fnrettype where
-    {
-      Symboltable::continueFnDef($<fnsym>3, new AList<ParamSymbol>(), $5, $4, $6);
-    }
-                            function_body_stmt
-    {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $8)));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $9)));
     }
 ;
 
@@ -946,6 +942,10 @@ retStmt:
     { $$ = new ReturnStmt(NULL); }
 | TRETURN expr TSEMI
     { $$ = new ReturnStmt($2); }
+| TYIELD TSEMI
+    { $$ = new ReturnStmt(NULL, true); }
+| TYIELD expr TSEMI
+    { $$ = new ReturnStmt($2, true); }
 ;
 
 

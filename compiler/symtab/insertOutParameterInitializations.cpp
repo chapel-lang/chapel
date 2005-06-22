@@ -13,6 +13,12 @@ InsertOutParameterInitializations::InsertOutParameterInitializations() {
 
 
 void InsertOutParameterInitializations::processSymbol(Symbol* sym) {
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    if (fn->noparens && !fn->typeBinding) {
+      USR_FATAL(fn, "Non-member functions must have parenthesized argument lists");
+    }
+  }
+
   ParamSymbol* arg = dynamic_cast<ParamSymbol*>(sym);
 
   if (!arg || !arg->init || arg->intent != PARAM_OUT) {

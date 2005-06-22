@@ -14,6 +14,12 @@ class ASymbol;
 class SymScope;
 class MPosition;
 
+enum fnType {
+  FN_FUNCTION,
+  FN_CONSTRUCTOR,
+  FN_ITERATOR
+};
+
 enum varType {
   VAR_NORMAL,
   VAR_REF,
@@ -171,9 +177,10 @@ class FnSymbol : public Symbol {
   Symbol* typeBinding;
   _method_type method_type;
   SymScope* paramScope;
-  bool isConstructor;
+  fnType fnClass;
   bool retRef;
   Expr *whereExpr;
+  bool noparens;
 
   FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
   void continueDef(AList<ParamSymbol>* init_formals, Type* init_retType, 

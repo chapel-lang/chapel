@@ -24,7 +24,7 @@ static void build_constructor(StructuralType* structType) {
   char* name = glomstrings(2, "_construct_", structType->symbol->name);
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(name));
   structType->defaultConstructor = fn;
-  fn->isConstructor = true;
+  fn->fnClass = FN_CONSTRUCTOR;
   fn->cname = glomstrings(2, "_construct_", structType->symbol->cname);
 
   AList<ParamSymbol>* args = new AList<ParamSymbol>();

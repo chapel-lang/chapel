@@ -940,7 +940,7 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
              defExpr = def_stmt->defExprls->next()) {
           FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym);
           fn->typeBinding = this->symbol;
-          if (!fn->isConstructor) {
+          if (fn->fnClass != FN_CONSTRUCTOR) {
             fn->method_type = PRIMARY_METHOD;
           }
           methods.add(fn);

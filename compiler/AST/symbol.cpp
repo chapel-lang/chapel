@@ -621,8 +621,9 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
   _getter(NULL),
   body(NULL),
   typeBinding(init_typeBinding),
-  isConstructor(false),
-  whereExpr(NULL)
+  fnClass(FN_FUNCTION),
+  whereExpr(NULL),
+  noparens(false)
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
@@ -673,7 +674,7 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   }
   FnSymbol* copy = new FnSymbol(copy_name, typeBinding);
   copy->method_type = method_type;
-  copy->isConstructor = isConstructor;
+  copy->fnClass = fnClass;
   Symboltable::startFnDef(copy);
   if (_getter) {
     copy->name = copystring(name);
@@ -758,7 +759,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   wrapperFn->cname = glomstrings(3, cname, "_coercion_wrapper_", intstring(uid++));
   wrapperFn = Symboltable::startFnDef(wrapperFn);
   wrapperFn->method_type = method_type;
-  wrapperFn->isConstructor = isConstructor;
+  wrapperFn->fnClass = fnClass;
 
   AList<ParamSymbol>* wrapperFormals = new AList<ParamSymbol>();
   for (ParamSymbol* formal = formals->first(); formal; formal = formals->next()) {
@@ -811,7 +812,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   wrapper_symbol = new FnSymbol(name);
   wrapper_symbol->method_type = method_type;
-  wrapper_symbol->isConstructor = isConstructor;
+  wrapper_symbol->fnClass = fnClass;
   wrapper_symbol->cname =
     glomstrings(3, cname, "_default_params_wrapper_", intstring(uid++));
   wrapper_symbol = Symboltable::startFnDef(wrapper_symbol);
@@ -891,7 +892,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
   wrapper_fn->cname = glomstrings(3, cname, "_ord_wrapper_", intstring(uid++));
   wrapper_fn = Symboltable::startFnDef(wrapper_fn);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->isConstructor = isConstructor;
+  wrapper_fn->fnClass = fnClass;
 
   AList<ParamSymbol>* wrapper_formals = new AList<ParamSymbol>();
   for (int i = 0; i < formals_to_actuals->n - 1; i++) {
@@ -993,7 +994,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   currentLineno = lineno;
   currentFilename = filename;
   TypeSymbol* clone = NULL;
-  if (isConstructor) {
+  if (fnClass == FN_CONSTRUCTOR) {
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
     SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
@@ -1140,7 +1141,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
     codegenHeader(headfile);
     fprintf(headfile, ";\n");
 
-    if (isConstructor) {
+    if (fnClass == FN_CONSTRUCTOR) {
       fprintf(outfile, "/* constructor */\n");
     }
 

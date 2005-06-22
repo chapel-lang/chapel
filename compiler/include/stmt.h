@@ -92,7 +92,8 @@ class ExprStmt : public Stmt {
 
 class ReturnStmt : public ExprStmt {
  public:
-  ReturnStmt(Expr* initExpr);
+  bool yield;
+  ReturnStmt(Expr* initExpr, bool init_yield = false);
   virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   void print(FILE* outfile);

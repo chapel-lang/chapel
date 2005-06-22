@@ -1675,7 +1675,7 @@ static int
 gen_set_member(MemberAccess *ma, AssignOp *base_ast) {
   FnSymbol *fn = ma->getStmt()->parentFunction();
   AInfo *ast = base_ast->ainfo;
-  int equal = !fn || (!fn->_setter && (!fn->isConstructor || !is_this_member_access(ma)));
+  int equal = !fn || (!fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ma)));
   ast->rval = new_sym();
   ast->rval->ast = base_ast->ainfo;
   if1_gen(if1, &ast->code, ma->ainfo->code);
@@ -2053,7 +2053,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       FnSymbol *fn = s->getStmt()->parentFunction();
-      if (!fn->_getter && !fn->_setter && (!fn->isConstructor || !is_this_member_access(ast))) {
+      if (!fn->_getter && !fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ast))) {
         if (gen_get_member(s) < 0)
           return -1;
         break;
@@ -2101,7 +2101,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       FnSymbol *f = s->getStmt()->parentFunction();
       int constructor_assignment = 0;
       int getter_setter = f->_setter || f->_getter;
-      if (f->isConstructor) {
+      if (f->fnClass == FN_CONSTRUCTOR) {
         MemberAccess *m = dynamic_cast<MemberAccess*>(s->left);
         if (m) {
           Variable *v = dynamic_cast<Variable*>(m->base);
@@ -2475,7 +2475,7 @@ gen_fun(FnSymbol *f) {
   c->ast = ast;
   if1_closure(if1, fn, body, iarg, as);
   fn->ast = ast;
-  if (f->_this && !f->isConstructor)
+  if (f->_this && f->fnClass != FN_CONSTRUCTOR)
     fn->self = f->_this->asymbol->sym;
   fun_where_clause(f, f->whereExpr);
   return 0;

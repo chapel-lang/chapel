@@ -329,8 +329,9 @@ void ExprStmt::codegenStmt(FILE* outfile) {
 }
 
 
-ReturnStmt::ReturnStmt(Expr* initExpr) :
-  ExprStmt(initExpr)
+ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
+  ExprStmt(initExpr),
+  yield(init_yield)
 {
   astType = STMT_RETURN;
 }
@@ -343,7 +344,7 @@ Stmt* ReturnStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void ReturnStmt::print(FILE* outfile) {
   fprintf(outfile, "\n");
-  fprintf(outfile, "return");
+  fprintf(outfile, yield ? "yield" : "return");
   if (expr) {
     fprintf(outfile, " ");
     expr->print(outfile);
@@ -353,6 +354,9 @@ void ReturnStmt::print(FILE* outfile) {
 
 
 void ReturnStmt::codegenStmt(FILE* outfile) {
+  if (yield) {
+    INT_FATAL(this, "Yield should be removed before codegen");
+  }
   fprintf(outfile, "return");
   if (expr) {
     fprintf(outfile, " ");
