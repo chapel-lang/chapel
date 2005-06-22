@@ -37549,3 +37549,15 @@ Removed files:
 	                                           test_tuple_simple5.chpl 
 	                                           test_tuple_simple5.good 
 
+---------------------------------------------------------------------------
+
+06/22/05 10:34:15 -- deitz
+
+Log message:
+	Sequence literal types no longer need to be known, but it is very
+	touchy.  I basically just instantiate the seq record on dtUnknown
+	rather than flag an error now.
+
+Modified files:
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+
