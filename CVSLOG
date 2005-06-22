@@ -37647,3 +37647,19 @@ Added files:
 Removed files:
 	chapel/test/functions/deitz/: test_iterator1.future 
 
+---------------------------------------------------------------------------
+
+06/22/05 14:00:06 -- deitz
+
+Log message:
+	Added a couple future tests that show a bug when an instantiable
+	record contains a field whose type is another instantiable record.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_class_trial5b.chpl 
+	                           test_array_class_trial5b.future 
+	                           test_array_class_trial5b.good 
+	                           test_record_of_record_instantiated.chpl 
+	                           test_record_of_record_instantiated.future 
+	                           test_record_of_record_instantiated.good 
+
