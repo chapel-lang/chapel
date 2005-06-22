@@ -37528,3 +37528,24 @@ Removed files:
 	chapel/test/types/tuple/jplevyak/: tuple_index-1.chpl 
 	                                   tuple_index-2.chpl 
 
+---------------------------------------------------------------------------
+
+06/21/05 17:39:20 -- deitz
+
+Log message:
+	Removed noanalysis tuple tests which I failed to remove on my last
+	checkin.
+
+Removed files:
+	chapel/test/types/tuple/deitz/noanalysis/: .cvsignore COMPOPTS 
+	                                           test_tuple_simple1.chpl 
+	                                           test_tuple_simple1.good 
+	                                           test_tuple_simple2.chpl 
+	                                           test_tuple_simple2.good 
+	                                           test_tuple_simple3.chpl 
+	                                           test_tuple_simple3.good 
+	                                           test_tuple_simple4.chpl 
+	                                           test_tuple_simple4.good 
+	                                           test_tuple_simple5.chpl 
+	                                           test_tuple_simple5.good 
+
