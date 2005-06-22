@@ -37618,3 +37618,32 @@ Added files:
 	chapel/test/types/seq/deitz/: test_seq_return1.chpl 
 	                              test_seq_return1.good 
 
+---------------------------------------------------------------------------
+
+06/22/05 12:57:47 -- deitz
+
+Log message:
+	Added a pass to convert interators into functions that return
+	sequences of whatever they returned before.
+	
+	The current plan for arrays and domains is to make these classes that
+	contain a special iterator method.  Then for/forall loops over
+	sequences, arrays, and domains can be supported by changing them into
+	while loops over the sequences returned by the special iterator
+	method.
+	
+	The longer term approach may be to have a set of iterators for domains
+	and arrays that can be chosen from past analysis depending on compiler
+	optimizations.  We'll discuss this with John when he comes back.
+	
+	Removed iterator future.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share 
+Added files:
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	                         reconstructIterators.h 
+Removed files:
+	chapel/test/functions/deitz/: test_iterator1.future 
+
