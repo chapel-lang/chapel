@@ -43,16 +43,19 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
     INT_FATAL(seqExpr, "Analysis required for sequences");
   }
   char* name = glomstrings(2, "_seq_temp_", intstring(uid++));
-  Type* elt_type = seqExpr->exprls->representative()->typeInfo();
-  if (!elt_type || elt_type == dtUnknown) {
-    INT_FATAL(seqExpr, "Sequence literal is of unknown type, not handled");
-  }
   DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(name,
                                                           dtUnknown,
                                                           NULL,
                                                           VAR_NORMAL,
                                                           VAR_VAR);
   DefExpr* def_expr = def_stmt->defExprls->only();
+  Type* elt_type = dtUnknown;
+  if (seqExpr->exprls->length() > 0) {
+    elt_type = seqExpr->exprls->representative()->typeInfo();
+    if (!elt_type->symbol) {
+      elt_type = dtUnknown;
+    }
+  }
   def_expr->sym->type =
     new ExprType(
       new ParenOpExpr(
@@ -67,10 +70,10 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
   for_alist(Expr, tmp, seqExpr->exprls) {
     Expr* append =
       new ParenOpExpr(
-                      new MemberAccess(
-                                       new Variable(seq),
-                                       new UnresolvedSymbol("_append")),
-                      new AList<Expr>(tmp->copy()));
+        new MemberAccess(
+          new Variable(seq),
+          new UnresolvedSymbol("_append")),
+        new AList<Expr>(tmp->copy()));
     seqExpr->getStmt()->insertBefore(new ExprStmt(append));
   }
   seqExpr->replace(new Variable(seq));
