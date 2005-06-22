@@ -37574,3 +37574,47 @@ Added files:
 	                              test_return1.future 
 	                              test_return1.good 
 
+---------------------------------------------------------------------------
+
+06/22/05 12:00:47 -- deitz
+
+Log message:
+	Added parsing support for iterators.
+	
+	Added bool 'yield' field to ReturnStmt to indicate that it is a yield
+	rather than a return.
+	
+	Changed bool 'isConstructor' field in FnSymbol to 'fnClass' which can
+	be any of FN_FUNCTION, FN_CONSTRUCTOR, or FN_ITERATOR.
+	
+	Added bool 'noparens' field to FnSymbol that is true if the function
+	was defined without parentheses.
+	
+	Cleaned up parsing of functions.  There is now only one case for
+	fndecl rather than three.
+	
+	Moved check that empty parens are only used on members to a later pass
+	(stuck it in though this should be part of a preanalysis
+	checkSemantics pass).
+	
+	Added sequence return test.
+	
+	Added a future iterator test.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h symbol.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
+	chapel/compiler/traversals/: applyGettersSetters.cpp 
+	                             applyThisParameters.cpp 
+	                             buildClassConstructorsEtc.cpp 
+	                             insertThisParameters.cpp 
+Added files:
+	chapel/test/functions/deitz/: test_iterator1.chpl 
+	                              test_iterator1.future 
+	                              test_iterator1.good 
+	chapel/test/types/seq/deitz/: test_seq_return1.chpl 
+	                              test_seq_return1.good 
+
