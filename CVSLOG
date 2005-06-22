@@ -37561,3 +37561,16 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: insertLiteralTemps.cpp 
 
+---------------------------------------------------------------------------
+
+06/22/05 11:44:32 -- deitz
+
+Log message:
+	Added a function that analysis may think doesn't always return
+	something.  Should the error be updated or is this legal?
+
+Added files:
+	chapel/test/functions/deitz/: test_return1.chpl 
+	                              test_return1.future 
+	                              test_return1.good 
+
