@@ -8,10 +8,6 @@
 
 extern FuncLeaves* _leaf_functions;
 
-InlineFunctions::InlineFunctions() {
-  _formal_to_actual_arg_map = new Map<BaseAST*,BaseAST*>();
-}
-
 void InlineFunctions::postProcessExpr(Expr* expr) {
   //function call
   if (FnCall* fn_call = dynamic_cast<FnCall*>(expr)) {
@@ -21,8 +17,8 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
     if (fn_sym  && (fn_sym->_getter || fn_sym->_setter))
       if (isLeafFunction(fn_sym)) { 
         //map formal parameters to actual arguments
-        createFormalToActualArgMappings(fn_call, fn_sym->formals);
-        Stmt* inlined_body = fn_sym->body->copy(false,_formal_to_actual_arg_map,NULL);
+        Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = createFormalToActualArgMappings(fn_call, fn_sym->formals);
+        Stmt* inlined_body = fn_sym->body->copy(false,formal_to_actual_arg_map,NULL);
         //create a temp variable
         if (fn_sym->retType && (fn_sym->retType != dtVoid)) {
           DefStmt* temp_def_stmt = createTempVariable(fn_sym->retType);
@@ -49,7 +45,7 @@ DefStmt* InlineFunctions::createTempVariable(Type* type, Expr* init) {
   return temp_def_stmt;
 }
 
-void InlineFunctions::createFormalToActualArgMappings(FnCall* fn_call, AList<ParamSymbol>* formal_params) {
+Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(FnCall* fn_call, AList<ParamSymbol>* formal_params) {
   Expr* curr_arg;
   ParamSymbol* curr_param;
   AList<Expr>* actual_args = fn_call->argList;
@@ -58,6 +54,7 @@ void InlineFunctions::createFormalToActualArgMappings(FnCall* fn_call, AList<Par
     curr_param = formal_params->first();
   }
   //go through all the actual arguments
+  Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = new Map<BaseAST*,BaseAST*>();
   while(curr_arg) {
     //create temporary variable and initialize it with the actual argument 
     DefStmt* temp_def_stmt = createTempVariable(curr_arg->typeInfo(), curr_arg->copy());
@@ -65,11 +62,11 @@ void InlineFunctions::createFormalToActualArgMappings(FnCall* fn_call, AList<Par
     //map variable of param symbol to tempsymbol so that when copy is passed the map, it
     //will replace the formal parameter symbol with the temp symbol
     DefExpr* temp_def_expr = temp_def_stmt->defExprls->only();
-    _formal_to_actual_arg_map->put(curr_param, temp_def_expr->sym);
+    formal_to_actual_arg_map->put(curr_param, temp_def_expr->sym);
     curr_arg = actual_args->next();
     curr_param = formal_params->next();
   }
-
+  return formal_to_actual_arg_map;
 }
 
 bool InlineFunctions::isLeafFunction(FnSymbol* fs) {
