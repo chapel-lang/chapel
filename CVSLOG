@@ -37663,3 +37663,16 @@ Added files:
 	                           test_record_of_record_instantiated.future 
 	                           test_record_of_record_instantiated.good 
 
+---------------------------------------------------------------------------
+
+06/23/05 16:11:17 -- mjoyner
+
+Log message:
+	Created traversals to find leaf functions and inline them.  Currently, getter/setter functions are the only functions being inlined.
+
+Added files:
+	chapel/compiler/traversals/: findLeafFunctions.h 
+	                             findLeafFunctions.cpp 
+	                             inlineFunctions.h 
+	                             inlineFunctions.cpp 
+
