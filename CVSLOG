@@ -37676,3 +37676,14 @@ Added files:
 	                             inlineFunctions.h 
 	                             inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+06/23/05 16:45:06 -- mjoyner
+
+Log message:
+	Got rid of global variable in inlineFunction traversal.
+
+Modified files:
+	chapel/compiler/traversals/: inlineFunctions.h 
+	                             inlineFunctions.cpp 
+
