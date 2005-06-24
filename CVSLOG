@@ -37699,3 +37699,14 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: replaceReturns.h replaceReturns.cpp 
 
+---------------------------------------------------------------------------
+
+06/24/05 15:10:46 -- deitz
+
+Log message:
+	Added inline pragma to getter, setter, and wrapper function symbols.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
