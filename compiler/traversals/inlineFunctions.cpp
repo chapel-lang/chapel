@@ -14,22 +14,30 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
     //for now, only leaf getter/setter functions will be inlined 
     FnSymbol* fn_sym = fn_call->findFnSymbol();
     // found getter/setter function call
-    if (fn_sym  && (fn_sym->_getter || fn_sym->_setter))
-      if (isLeafFunction(fn_sym)) { 
-        //map formal parameters to actual arguments
-        Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = createFormalToActualArgMappings(fn_call, fn_sym->formals);
-        Stmt* inlined_body = fn_sym->body->copy(false,formal_to_actual_arg_map,NULL);
+    //if (fn_sym  && (fn_sym->_getter || fn_sym->_setter))
+    if (isLeafFunction(fn_sym)) { 
+      //map formal parameters to actual arguments
+      Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = createFormalToActualArgMappings(fn_call, fn_sym->formals);
+      Stmt* inlined_body = fn_sym->body->copy(false,formal_to_actual_arg_map,NULL);
+        ReplaceReturns* rep_returns;
+        DefExpr* temp_def_expr;
         //create a temp variable
         if (fn_sym->retType && (fn_sym->retType != dtVoid)) {
           DefStmt* temp_def_stmt = createTempVariable(fn_sym->retType);
-          // DefExpr* temp_def_expr = temp_def_stmt->defExprls->only();
+          temp_def_expr = temp_def_stmt->defExprls->only();
   
           fn_call->parentStmt->insertBefore(temp_def_stmt);
-          //ReplaceReturns* rep_returns = new ReplaceReturns(temp_def_expr->sym);
-          //inlined_body->traverse(rep_returns);
+          rep_returns = new ReplaceReturns(temp_def_expr->sym);
+          inlined_body->traverse(rep_returns);
+          //inlined function
+          fn_call->parentStmt->insertBefore(inlined_body);
+          fn_call->replace(new Variable(temp_def_expr->sym));
         }
-        //inlined function
-        fn_call->parentStmt->insertBefore(inlined_body);  
+        else {
+          //inlined function
+          fn_call->parentStmt->insertBefore(inlined_body);
+          fn_call->parentStmt->replace(new NoOpStmt());
+        }
       }
   }
 }
@@ -59,7 +67,7 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(FnCall*
     //create temporary variable and initialize it with the actual argument 
     DefStmt* temp_def_stmt = createTempVariable(curr_arg->typeInfo(), curr_arg->copy());
     fn_call->parentStmt->insertBefore(temp_def_stmt);
-    //map variable of param symbol to tempsymbol so that when copy is passed the map, it
+    //map variable of param symbol to temp symbol so that when copy is passed the map, it
     //will replace the formal parameter symbol with the temp symbol
     DefExpr* temp_def_expr = temp_def_stmt->defExprls->only();
     formal_to_actual_arg_map->put(curr_param, temp_def_expr->sym);
@@ -70,7 +78,13 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(FnCall*
 }
 
 bool InlineFunctions::isLeafFunction(FnSymbol* fs) {
-  return true;
+  FuncLeaves* temp_func_leaves = _leaf_functions;
+  while(temp_func_leaves) {
+    if (fs == temp_func_leaves->first)
+      return true;
+    temp_func_leaves = temp_func_leaves->next;
+  }
+  return false;
 }
 
 InlineFunctions::~InlineFunctions() {
