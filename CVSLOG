@@ -37687,3 +37687,15 @@ Modified files:
 	chapel/compiler/traversals/: inlineFunctions.h 
 	                             inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+06/24/05 12:05:06 -- mjoyner
+
+Log message:
+	Inlining function traversal works for all leaf functions now.  Note that the inlining function traversal assumes that the code has previously been put in a canonical form.
+
+Modified files:
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+Added files:
+	chapel/compiler/traversals/: replaceReturns.h replaceReturns.cpp 
+
