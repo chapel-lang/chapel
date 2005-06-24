@@ -107,6 +107,7 @@ static void build_union_id_enum(StructuralType* structType) {
 
 static void build_getter(StructuralType* structType, Symbol *tmp) {
   FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(tmp->name));
+  getter_fn->addPragma("inline");
   getter_fn->cname =
     glomstrings(4, "_", structType->symbol->cname, "_get_", tmp->cname);
   getter_fn->_getter = tmp;
@@ -133,6 +134,7 @@ static void build_setters_and_getters(StructuralType* structType) {
   forv_Vec(VarSymbol, tmp, structType->fields) {
     char* setter_name = glomstrings(2, "=", tmp->name);
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
+    setter_fn->addPragma("inline");
     setter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_set_", tmp->name);
     setter_fn->_setter = tmp;
     ParamSymbol* setter_this = new ParamSymbol(PARAM_REF, "this", structType);

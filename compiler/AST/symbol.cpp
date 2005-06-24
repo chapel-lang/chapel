@@ -760,7 +760,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   wrapperFn = Symboltable::startFnDef(wrapperFn);
   wrapperFn->method_type = method_type;
   wrapperFn->fnClass = fnClass;
-
+  wrapperFn->addPragma("inline");
   AList<ParamSymbol>* wrapperFormals = new AList<ParamSymbol>();
   for (ParamSymbol* formal = formals->first(); formal; formal = formals->next()) {
     ParamSymbol* newFormal = dynamic_cast<ParamSymbol*>(formal->copy());
@@ -811,6 +811,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   Vec<Symbol*> for_removal;
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   wrapper_symbol = new FnSymbol(name);
+  wrapper_symbol->addPragma("inline");
   wrapper_symbol->method_type = method_type;
   wrapper_symbol->fnClass = fnClass;
   wrapper_symbol->cname =
@@ -889,6 +890,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
   currentFilename = filename;
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   FnSymbol* wrapper_fn = new FnSymbol(name);
+  wrapper_fn->addPragma("inline");
   wrapper_fn->cname = glomstrings(3, cname, "_ord_wrapper_", intstring(uid++));
   wrapper_fn = Symboltable::startFnDef(wrapper_fn);
   wrapper_fn->method_type = method_type;
