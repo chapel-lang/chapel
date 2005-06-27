@@ -37748,3 +37748,36 @@ Modified files:
 	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
 	                                     mg-seq.good 
 
+---------------------------------------------------------------------------
+
+06/27/05 11:30:04 -- deitz
+
+Log message:
+	Removed DestructureTupleAssignments pass as this is now done before
+	analysis in InsertLiteralTemps.
+	
+	Removed some uses of TupleType but they are in the current IndexType
+	so I left them for now.
+	
+	Update _data record to allocate on construction.
+	
+	Added a "keep types" pragma for not removing a type from a function
+	before codegen.  This can be useful in a new version of malloc that
+	takes a type.  It is used now in the _data constructor.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y prelude.chpl 
+	chapel/compiler/traversals/: Makefile.share 
+	                             buildClassConstructorsEtc.cpp 
+	                             findUnknownTypes.cpp 
+	                             insertLiteralTemps.cpp 
+	chapel/runtime/include/: array.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/type_variables/deitz/: test_datablock3.chpl 
+Removed files:
+	chapel/compiler/traversals/: destructureTupleAssignments.cpp 
+	                             destructureTupleAssignments.h 
+
