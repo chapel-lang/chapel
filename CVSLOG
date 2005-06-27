@@ -37710,3 +37710,41 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+06/27/05 10:55:44 -- deitz
+
+Log message:
+	Changed the formals of a function from ParamSymbols to DefExprs.
+	Removed the init field of ParamSymbols as it can now use the init
+	field of the DefExpr.
+	
+	The only symbols not defined in their own DefExprs now are
+	EnumSymbols.
+	
+	Added a mechanism to traverse an AList backwards (for_alist_backward).
+	
+	Cleaned and rewrote the code to insert the default wrapper.  It used
+	to copy the whole formal list and then remove the formals that didn't
+	need to go in the wrapper.  It now simply puts the ones that need to
+	be in in.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: alist.h symbol.h symtab.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
+	                         postAnalysisCleanup.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             clearTypes.cpp findUnknownTypes.cpp 
+	                             fixup.cpp insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             processParameters.cpp 
+	                             resolveSymbols.cpp verify.cpp 
+	                             view.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+
