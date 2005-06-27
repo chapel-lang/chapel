@@ -8,7 +8,6 @@ TRAVERSALS_SRCS = \
         clearTypes.cpp \
 	collectASTS.cpp \
 	createConfigVarTable.cpp \
-	destructureTupleAssignments.cpp \
         buildLValueFunctions.cpp \
         eliminateReturns.cpp \
 	expandClassWiths.cpp \

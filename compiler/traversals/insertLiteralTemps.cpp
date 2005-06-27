@@ -224,76 +224,6 @@ static void createTupleBaseType(int size) {
 }
 
 
-static void createAnonTupleBaseType(int size) {
-  createTupleBaseType(size);
-  return;
-
-  char *name = glomstrings(2, "_anonTuple", intstring(size));
-  if (Symboltable::lookupInScope(name, commonModule->modScope)) {
-    return;
-  }
-  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  Symboltable::pushScope(SCOPE_CLASS);
-  AList<Stmt>* decls = new AList<Stmt>();
-  Vec<VarSymbol*> fields;
-  for (int i = 1; i <= size; i++) {
-    DefStmt* defStmt = 
-      Symboltable::defineSingleVarDefStmt(glomstrings(2, "_f", intstring(i)),
-                                          dtUnknown,
-                                          NULL,
-                                          VAR_NORMAL,
-                                          VAR_VAR);
-    decls->insertAtTail(defStmt);
-    fields.add(defStmt->varDef());
-  }
-  for (int i = 1; i <= size; i++) {
-    FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("this"));
-    ParamSymbol* paramSymbol =
-      new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
-    AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
-    Expr* where = new BinOp(BINOP_EQUAL, new Variable(paramSymbol),
-                            new IntLiteral(intstring(i), i));
-    Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
-    AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new Variable(fields.v[i-1])));
-    Symboltable::finishFnDef(fn, new BlockStmt(body));
-    decls->insertAtTail(new DefStmt(new DefExpr(fn)));
-  }
-  SymScope *scope = Symboltable::popScope();
-  Type* type = Symboltable::defineStructType(name, new RecordType(), scope, decls);
-  DefStmt* defStmt = new DefStmt(type->symbol->defPoint);
-  commonModule->stmts->insertAtHead(defStmt);
-
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-  Vec<char*>* uname = new Vec<char*>();
-  uname->add(glomstrings(2, "_tuple", intstring(size)));
-  UnresolvedType* utype = new UnresolvedType(uname);
-  ParamSymbol* paramSymbol =
-    new ParamSymbol(PARAM_BLANK, "val", utype);
-  AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
-  Symboltable::continueFnDef(fn, formals, dtUnknown, false, NULL);
-  AList<Expr>* args = new AList<Expr>();
-  args->insertAtTail(new StringLiteral(copystring("(")));
-  for (int i = 1; i <= size; i++) {
-    if (i != 1) {
-      args->insertAtTail(new StringLiteral(copystring(", ")));
-    }
-    args->insertAtTail(new MemberAccess(new Variable(new UnresolvedSymbol("val")),
-                                        new UnresolvedSymbol(glomstrings(2, "_f", intstring(i)))));
-  }
-  args->insertAtTail(new StringLiteral(copystring(")")));
-  Stmt* writeBody =
-    new ExprStmt(
-      new ParenOpExpr(
-        new Variable(
-          new UnresolvedSymbol("write")),
-        args));
-  AList<Stmt>* body = new AList<Stmt>(writeBody);
-  Symboltable::finishFnDef(fn, new BlockStmt(body));
-  commonModule->stmts->insertAtTail(new DefStmt(new DefExpr(fn)));
-  Symboltable::setCurrentScope(saveScope);
-}
-
-
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
   if (SeqExpr* seqLiteral = dynamic_cast<SeqExpr*>(expr)) {
     replaceSequenceLiteral(seqLiteral);
@@ -304,7 +234,7 @@ void InsertLiteralTemps::postProcessExpr(Expr* expr) {
       handleBasicSequenceAppendPrependOperations(binOp);
     }
   } else if (Tuple* tuple = dynamic_cast<Tuple*>(expr)) {
-    createAnonTupleBaseType(tuple->exprs->length());
+    createTupleBaseType(tuple->exprs->length());
     if (dynamic_cast<ForLoopStmt*>(tuple->parentStmt)) {
       return;  // HACK for domains
     }

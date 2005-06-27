@@ -95,6 +95,7 @@ static void build_constructor(StructuralType* structType) {
   structType->methods.add(fn);
   if (structType->symbol->hasPragma("codegen data")) {
     fn->defPoint->parentStmt->addPragma("rename _data_construct");
+    fn->defPoint->parentStmt->addPragma("keep types");
   }
 }
 

@@ -5,7 +5,7 @@
 #include "chpltypes.h" /* only needed while _DECL_ARRAY is instantiated here */
 #include "domain.h"
 
-#define _data_construct() nil
+#define _data_construct(t, size) _chpl_malloc(size, sizeof(t), "_data")
 #define _data_alloc(t, x, size, desc) x = _chpl_malloc(size, sizeof(t), desc)
 #define _data_set(x, i, v) x[i] = v
 #define _data_this(x, i) (x[i])

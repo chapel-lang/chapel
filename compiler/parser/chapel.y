@@ -36,7 +36,6 @@
   ForLoopStmt* forstmt;
   BlockStmt* blkstmt;
   Type* pdt;
-  TupleType* tupledt;
   EnumSymbol* enumsym;
   AList<EnumSymbol>* enumsymlist;
   Symbol* psym;

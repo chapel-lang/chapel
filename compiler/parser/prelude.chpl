@@ -1,5 +1,6 @@
 record pragma "codegen data" _data { -- a c array, basically
   type t;
+  parameter size : integer;
   var _data_dummy : t;
   pragma "rename _data_this" function this(i : integer) : t {
     return _data_dummy;

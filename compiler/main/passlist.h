@@ -111,8 +111,6 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertVariableInitializations, ""),
   RUN(Verify, ""), // this is a sanity check
-  RUN(DestructureTupleAssignments, ""),
-  RUN(Verify, ""), // this is a sanity check
   RUN(InsertUnionChecks, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(LegalizeCNames, ""), 

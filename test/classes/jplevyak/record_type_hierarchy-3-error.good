@@ -4,26 +4,26 @@ _chpl_seq.chpl:23: write, val : _seqNode
 fail: fatal error, program does not type
 note: candidates are:
 note: candidates are:
-prelude.chpl:110: write, val : reduction
-prelude.chpl:113: write, val : sum
-prelude.chpl:116: write, val : max
-prelude.chpl:119: write, val : min
-prelude.chpl:122: write, val : maxloc
-prelude.chpl:125: write, val : minloc
-prelude.chpl:134: write, val : timer
-prelude.chpl:13: write, val : _data
-prelude.chpl:180: write, val : _methodTokenType
-prelude.chpl:185: write, val : _seq
-prelude.chpl:188: write, val : Index
-prelude.chpl:19: write, x : bool
-prelude.chpl:209: write, val : Array
-prelude.chpl:212: write, val : Domain
-prelude.chpl:222: write, val : Tuple
-prelude.chpl:22: write, x : int64
-prelude.chpl:25: write, x : float64
-prelude.chpl:28: write, x : complex64
-prelude.chpl:31: write, x : string
-prelude.chpl:34: write, x : null
+prelude.chpl:111: write, val : reduction
+prelude.chpl:114: write, val : sum
+prelude.chpl:117: write, val : max
+prelude.chpl:120: write, val : min
+prelude.chpl:123: write, val : maxloc
+prelude.chpl:126: write, val : minloc
+prelude.chpl:135: write, val : timer
+prelude.chpl:14: write, val : _data
+prelude.chpl:181: write, val : _methodTokenType
+prelude.chpl:186: write, val : _seq
+prelude.chpl:189: write, val : Index
+prelude.chpl:20: write, x : bool
+prelude.chpl:210: write, val : Array
+prelude.chpl:213: write, val : Domain
+prelude.chpl:223: write, val : Tuple
+prelude.chpl:23: write, x : int64
+prelude.chpl:26: write, x : float64
+prelude.chpl:29: write, x : complex64
+prelude.chpl:32: write, x : string
+prelude.chpl:35: write, x : null
 record_type_hierarchy-3-error.chpl:12: f, a : D
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type

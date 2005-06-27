@@ -25,7 +25,6 @@
 #include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/createConfigVarTable.h"
-#include "../traversals/destructureTupleAssignments.h"
 #include "../traversals/buildLValueFunctions.h"
 #include "../traversals/eliminateReturns.h"
 #include "../traversals/expandClassWiths.h"
@@ -74,7 +73,6 @@ REGISTER(Codegen);
 REGISTER(ComputeVisibleFunctions);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
-REGISTER(DestructureTupleAssignments);
 REGISTER(DummyPass);
 REGISTER(BuildLValueFunctions);
 REGISTER(EliminateReturns);
