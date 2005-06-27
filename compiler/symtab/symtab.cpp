@@ -514,16 +514,16 @@ static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type,
   return varList;
 }
 
-AList<ParamSymbol>* Symboltable::defineParams(paramType tag, 
-                                              AList<Symbol>* syms,
-                                              Type* type, Expr* init) {
+AList<DefExpr>* Symboltable::defineParams(paramType tag, 
+                                          AList<Symbol>* syms,
+                                          Type* type, Expr* init) {
   Symbol* sym = syms->first();
   AList<Pragma>* pragma = sym->pragmas;
-  AList<ParamSymbol>* list = new AList<ParamSymbol>();
+  AList<DefExpr>* list = new AList<DefExpr>();
   while (sym) {
-    ParamSymbol* s = new ParamSymbol(tag, sym->name, type, init->copy());
+    ParamSymbol* s = new ParamSymbol(tag, sym->name, type);
     s->pragmas = pragma;
-    list->insertAtTail(s);
+    list->insertAtTail(new DefExpr(s, init ? new UserInitExpr(init) : NULL));
     sym = syms->next();
   }
 
@@ -698,7 +698,7 @@ FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
 }
 
 
-void Symboltable::continueFnDef(FnSymbol* fnsym, AList<ParamSymbol>* formals, 
+void Symboltable::continueFnDef(FnSymbol* fnsym, AList<DefExpr>* formals, 
                                 Type* retType, bool isRef, Expr *whereExpr) {
   fnsym->continueDef(formals, retType, isRef, whereExpr);
   Symboltable::pushScope(SCOPE_FUNCTION);
@@ -722,11 +722,11 @@ FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, BlockStmt* blockBody,
 }
 
 
-DefStmt* Symboltable::defineFunction(char* name, AList<ParamSymbol>* formals, 
+DefStmt* Symboltable::defineFunction(char* name, AList<DefExpr>* formals, 
                                      Type* retType, BlockStmt* body, 
                                      bool isExtern) {
   if (formals == NULL) {
-    formals = new AList<ParamSymbol>();
+    formals = new AList<DefExpr>();
   }
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
   continueFnDef(fnsym, formals, retType);

@@ -16,6 +16,7 @@ class TypeSymbol;
 class ParamSymbol;
 class FnSymbol;
 class Expr;
+class DefExpr;
 class FnCall;
 class CondStmt;
 class ASymbol;
@@ -217,7 +218,7 @@ class StructuralType : public Type {
   void traverseDefType(Traversal* traversal);
 
   virtual void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                                    AList<ParamSymbol>* arguments);
+                                    AList<DefExpr>* arguments);
 
   virtual void codegenStartDefFields(FILE* outfile);
   virtual void codegenStopDefFields(FILE* outfile);
@@ -274,7 +275,7 @@ class UnionType : public StructuralType {
   void buildFieldSelector(void);
   FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
   void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                            AList<ParamSymbol>* arguments);
+                            AList<DefExpr>* arguments);
 
   void codegenStartDefFields(FILE* outfile);
   void codegenStopDefFields(FILE* outfile);

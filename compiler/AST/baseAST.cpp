@@ -490,12 +490,11 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(VarSymbol, aspect);
     goto LSymbolCommon;
   case SYMBOL_PARAM: 
-    ADD_CHILD(ParamSymbol, init);
     ADD_CHILD(ParamSymbol, typeVariable);
     goto LSymbolCommon;
   case SYMBOL_TYPE: goto LSymbolCommon;
   case SYMBOL_FN:
-    ADD_LIST(FnSymbol, formals, Symbol);
+    ADD_LIST(FnSymbol, formals, DefExpr);
     AST_ADD_CHILD(FnSymbol, body);
     ADD_CHILD(FnSymbol, retType);
     ADD_CHILD(FnSymbol, _this);

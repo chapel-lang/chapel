@@ -34,13 +34,13 @@ static void html_print_fnsymbol(FILE* html_file, FnSymbol* fn) {
   html_print_symbol(html_file, fn);
   fprintf(html_file, " ( ");
   bool first = true;
-  for_alist(ParamSymbol, arg, fn->formals) {
+  for_alist(DefExpr, arg, fn->formals) {
     if (!first) {
       fprintf(html_file, " , ");
     } else {
       first = false;
     }
-    html_print_symbol(html_file, arg);
+    html_print_symbol(html_file, arg->sym);
   }
   fprintf(html_file, " ) ");
   if (fn->retType->symbol) {

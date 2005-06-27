@@ -27,17 +27,17 @@ static void build_constructor(StructuralType* structType) {
   fn->fnClass = FN_CONSTRUCTOR;
   fn->cname = glomstrings(2, "_construct_", structType->symbol->cname);
 
-  AList<ParamSymbol>* args = new AList<ParamSymbol>();
+  AList<DefExpr>* args = new AList<DefExpr>();
 
   if (analyzeAST) {
     forv_Vec(TypeSymbol, tmp, structType->types) {
       if (VariableType *tv = dynamic_cast<VariableType*>(tmp->type)) {
-      char* name = tmp->name;
-      Type* type = tv->type;
-      ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type, NULL);
-      arg->isGeneric = true;
-      arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
-      args->insertAtTail(arg);
+        char* name = tmp->name;
+        Type* type = tv->type;
+        ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type);
+        arg->isGeneric = true;
+        arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
+        args->insertAtTail(new DefExpr(arg));
       }
     }
 
@@ -49,8 +49,8 @@ static void build_constructor(StructuralType* structType) {
         tmp->defPoint->init->remove();
       }
       ParamSymbol* arg = new ParamSymbol(
-        tmp->consClass == VAR_PARAM ? PARAM_PARAMETER : PARAM_BLANK, name, type, init);
-      args->insertAtTail(arg);
+        tmp->consClass == VAR_PARAM ? PARAM_PARAMETER : PARAM_BLANK, name, type);
+      args->insertAtTail(new DefExpr(arg, new UserInitExpr(init)));
     }
   }
 
@@ -61,11 +61,13 @@ static void build_constructor(StructuralType* structType) {
   fn->_this = new VarSymbol("this", structType);
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
 
-  for (ParamSymbol* param = args->first(); param; param = args->next()) {
-    if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(param->init)) {
-      if (Variable* variable = dynamic_cast<Variable*>(varInitExpr->expr)) {
-        param->init =
-          new VarInitExpr(new MemberAccess(new Variable(fn->_this), variable->var));
+  for_alist(DefExpr, param, args) {
+    if (param->sym->defPoint->init) {
+      if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(param->sym->defPoint->init->expr)) {
+        if (Variable* variable = dynamic_cast<Variable*>(varInitExpr->expr)) {
+          param->sym->defPoint->init =
+            new UserInitExpr(new VarInitExpr(new MemberAccess(new Variable(fn->_this), variable->var)));
+        }
       }
     }
   }
@@ -112,9 +114,9 @@ static void build_getter(StructuralType* structType, Symbol *tmp) {
     glomstrings(4, "_", structType->symbol->cname, "_get_", tmp->cname);
   getter_fn->_getter = tmp;
   ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
-  AList<ParamSymbol>* getter_args = new AList<ParamSymbol>(getter_this);
+  AList<DefExpr>* getter_args = new AList<DefExpr>(new DefExpr(getter_this));
   if (applyGettersSetters) {
-    getter_args->insertAtHead(new ParamSymbol(PARAM_REF, "_methodTokenDummy", Symboltable::lookupInternal("_methodTokenType")->type));
+    getter_args->insertAtHead(new DefExpr(new ParamSymbol(PARAM_REF, "_methodTokenDummy", Symboltable::lookupInternal("_methodTokenType")->type)));
   }
   Symboltable::continueFnDef(getter_fn, getter_args, tmp->type);
   Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
@@ -138,12 +140,12 @@ static void build_setters_and_getters(StructuralType* structType) {
     setter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_set_", tmp->name);
     setter_fn->_setter = tmp;
     ParamSymbol* setter_this = new ParamSymbol(PARAM_REF, "this", structType);
-    AList<ParamSymbol>* args = new AList<ParamSymbol>(setter_this);
+    AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(setter_this));
     if (applyGettersSetters) {
-      args->insertAtHead(new ParamSymbol(PARAM_REF, "_methodTokenDummy", Symboltable::lookupInternal("_methodTokenType")->type));
+      args->insertAtHead(new DefExpr(new ParamSymbol(PARAM_REF, "_methodTokenDummy", Symboltable::lookupInternal("_methodTokenType")->type)));
     }
     ParamSymbol* setter_arg = new ParamSymbol(PARAM_BLANK, "_arg", tmp->type);
-    args->insertAtTail(setter_arg);
+    args->insertAtTail(new DefExpr(setter_arg));
     Symboltable::continueFnDef(setter_fn, args, dtVoid);
     Expr* setter_lhs = new MemberAccess(new Variable(setter_this), tmp);
     Expr* setter_rhs = new Variable(setter_arg);
@@ -175,9 +177,9 @@ static void build_record_equality_function(StructuralType* structType) {
 
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("=="));
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
-  AList<ParamSymbol>* args = new AList<ParamSymbol>(arg1);
+  AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", structType);
-  args->insertAtTail(arg2);
+  args->insertAtTail(new DefExpr(arg2));
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(VarSymbol, tmp, structType->fields) {
@@ -203,9 +205,9 @@ static void build_record_inequality_function(StructuralType* structType) {
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("!="));
 
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
-  AList<ParamSymbol>* args = new AList<ParamSymbol>(arg1);
+  AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2", structType);
-  args->insertAtTail(arg2);
+  args->insertAtTail(new DefExpr(arg2));
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(VarSymbol, tmp, structType->fields) {
@@ -231,7 +233,7 @@ static void build_record_assignment_function(StructuralType* structType) {
   Symbol* tmp = Symboltable::lookupInCurrentScope("=");
   while (tmp) {
     if (FnSymbol* assignFn = dynamic_cast<FnSymbol*>(tmp)) {
-      if (assignFn->formals->first()->type == structType) {
+      if (assignFn->formals->first()->sym->type == structType) {
         return;
       }
     }
@@ -242,10 +244,10 @@ static void build_record_assignment_function(StructuralType* structType) {
   ParamSymbol* _arg1 = 
     f_equal_method ? new ParamSymbol(PARAM_REF, "this", structType)
     : new ParamSymbol(PARAM_BLANK, "_arg1", structType);
-  AList<ParamSymbol>* args = new AList<ParamSymbol>(_arg1);
+  AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(_arg1));
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2",
     (analyzeAST) ? dtUnknown : structType);
-  args->insertAtTail(arg2);
+  args->insertAtTail(new DefExpr(arg2));
   Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
   Symboltable::continueFnDef(fn, args, ret_type);
   AList<Stmt>* body = new AList<Stmt>();
@@ -290,7 +292,7 @@ static void buildDefaultIOFunctions(Type* type) {
     while (write) {
       if (write->getFnSymbol() && 
           write->getFnSymbol()->formals->length() == 1 &&
-          write->getFnSymbol()->formals->only()->type == type) {
+          write->getFnSymbol()->formals->only()->sym->type == type) {
         userWriteDefined = true;
         write->cname = glomstrings(3, "_user_", type->symbol->name, "_write");
         break;
@@ -301,7 +303,7 @@ static void buildDefaultIOFunctions(Type* type) {
       FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
       fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_write");
       ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", type);
-      Symboltable::continueFnDef(fn, new AList<ParamSymbol>(arg), dtVoid);
+      Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(arg)), dtVoid);
       Symboltable::pushScope(SCOPE_LOCAL);
       AList<Stmt>* body = type->buildDefaultWriteFunctionBody(arg);
       BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
@@ -315,7 +317,7 @@ static void buildDefaultIOFunctions(Type* type) {
     bool userReadDefined = false;
     Symbol* read = Symboltable::lookupInCurrentScope("read");
     while (read) {
-      if (read->getFnSymbol() && read->getFnSymbol()->formals->only()->type == type) {
+      if (read->getFnSymbol() && read->getFnSymbol()->formals->only()->sym->type == type) {
         userReadDefined = true;
         read->cname = glomstrings(3, "_user_", type->symbol->name, "_read");
         break;
@@ -326,7 +328,7 @@ static void buildDefaultIOFunctions(Type* type) {
       FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("read"));
       fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_read");
       ParamSymbol* arg = new ParamSymbol(PARAM_INOUT, "val", type);
-      Symboltable::continueFnDef(fn, new AList<ParamSymbol>(arg), dtVoid);
+      Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(arg)), dtVoid);
       Symboltable::pushScope(SCOPE_LOCAL);
       AList<Stmt>* body = type->buildDefaultReadFunctionBody(arg);
       BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());

@@ -36,10 +36,11 @@ class AList : public BaseAST {
   // iteration
   elemType* first(void); // begin iteration over a list
   elemType* next(void);  // continue iteration over the list
+  elemType* last(void);  // begin backwards iteration over a list
+  elemType* prev(void);  // continue backward iteration over the list
   void reset(void); // reset iteration if terminated prematurely
 
   // other ways to get elements from the list
-  elemType* last(void);  // get last element
   elemType* representative(void); // return an arbitrary element in a list
   elemType* only(void); // return the single element in a list
   elemType* get(int index); // get the index-th element in a list
@@ -77,6 +78,9 @@ class AList : public BaseAST {
 
 #define for_alist(basetype, variable, list) \
   for (basetype* variable = list->first(); variable; variable = list->next())
+
+#define for_alist_backward(basetype, variable, list) \
+  for (basetype* variable = list->last(); variable; variable = list->prev())
 
 // this is intended for internal use only
 // note that we store a node one ahead in case the current node is
@@ -179,18 +183,37 @@ elemType* AList<elemType>::next(void) {
 
 
 template <class elemType>
-void AList<elemType>::reset(void) {
-  cursor = NULL;
+elemType* AList<elemType>::last(void) {
+  if (this == NULL) {
+    return NULL;
+  }
+  if (cursor != NULL) {
+    if (debugNestedTraversals) {
+      INT_FATAL(this, "Nested list iteration detected\n");
+    }
+  }
+  if (isEmpty()) {
+    cursor = NULL;
+  } else {
+    cursor = dynamic_cast<elemType*>(tail->prev);
+  }
+  return cursor;
 }
 
 
 template <class elemType>
-elemType* AList<elemType>::last(void) {
-  if (tail->prev != head) {
-    return dynamic_cast<elemType*>(tail->prev);
-  } else {
-    return NULL;
+elemType* AList<elemType>::prev(void) {
+  cursor = dynamic_cast<elemType*>(cursor->prev);
+  if (cursor == head) {
+    cursor = NULL;
   }
+  return cursor;
+}
+
+
+template <class elemType>
+void AList<elemType>::reset(void) {
+  cursor = NULL;
 }
 
 
@@ -374,6 +397,10 @@ AList<elemType>* AList<elemType>::copyInternal(bool clone,
 
 template <class elemType>
 void AList<elemType>::traverse(Traversal* traversal, bool atTop) {
+  if (dynamic_cast<Fixup*>(traversal)) {
+    head->traverse(traversal, false);
+    tail->traverse(traversal, false);
+  }
   _for_all_elems(node) {
     node->traverse(traversal, false);
   }

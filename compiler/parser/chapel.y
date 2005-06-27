@@ -41,7 +41,6 @@
   AList<EnumSymbol>* enumsymlist;
   Symbol* psym;
   AList<Symbol>* symlist;
-  AList<ParamSymbol>* paramlist;
   VarSymbol* pvsym;
   TypeSymbol* ptsym;
   FnSymbol* fnsym;
@@ -144,7 +143,7 @@
 %type <psym> ident_symbol ident_symbol_nopragma
 %type <fnsym> function
 %type <symlist> ident_symbol_ls indexes indexlist
-%type <paramlist> formal formals optional_formals
+%type <defexprls> formal formals optional_formals
 %type <enumsym> enum_item
 %type <enumsymlist> enum_list
 %type <pexpr> paren_op_expr member_access_expr non_tuple_lvalue lvalue tuple_paren_expr atom expr expr_list_item literal range seq_expr where whereexpr
@@ -494,8 +493,8 @@ formal:
     }
 | TTYPE ident_symbol typevardecltype
     {
-      AList<ParamSymbol> *psl = Symboltable::defineParams(PARAM_TYPE, new AList<Symbol>($2), getMetaType($3), NULL);
-      ParamSymbol* ps = psl->only();
+      AList<DefExpr> *psl = Symboltable::defineParams(PARAM_TYPE, new AList<Symbol>($2), getMetaType($3), NULL);
+      ParamSymbol* ps = dynamic_cast<ParamSymbol*>(psl->only()->sym);
       if (ps == NULL) {
         INT_FATAL("problem in parsing type variables");
       }
@@ -511,7 +510,7 @@ formal:
 
 formals:
   /* empty */
-    { $$ = new AList<ParamSymbol>(); }
+    { $$ = new AList<DefExpr>(); }
 | formal
 | formals TCOMMA formal
     { $1->add($3); }
@@ -690,7 +689,7 @@ fndecl:
                        optional_formals fnretref fnrettype where
     {
       if (!$4) {
-        $4 = new AList<ParamSymbol>();
+        $4 = new AList<DefExpr>();
         $<fnsym>3->noparens = true;
       }
       Symboltable::continueFnDef($<fnsym>3, $4, $6, $5, $7);

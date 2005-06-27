@@ -124,12 +124,11 @@ class VarSymbol : public Symbol {
 class ParamSymbol : public Symbol {
  public:
   paramType intent;
-  Expr* init;
   TypeSymbol *typeVariable;
   bool isGeneric;
 
   ParamSymbol(paramType init_intent = PARAM_BLANK, char* init_name = NULL, 
-              Type* init_type = dtUnknown, Expr* init_init = NULL);
+              Type* init_type = dtUnknown);
   virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -168,7 +167,7 @@ typedef enum __method_type {
 
 class FnSymbol : public Symbol {
  public:
-  AList<ParamSymbol>* formals;
+  AList<DefExpr>* formals;
   Type* retType;
   Symbol* _this;
   Symbol* _setter; /* the variable this function sets if it is a setter */
@@ -183,7 +182,7 @@ class FnSymbol : public Symbol {
   bool noparens;
 
   FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
-  void continueDef(AList<ParamSymbol>* init_formals, Type* init_retType, 
+  void continueDef(AList<DefExpr>* init_formals, Type* init_retType, 
                    bool isRef, Expr *whereExpr);
   void finishDef(BlockStmt* init_body, SymScope* init_paramScope, 
                  bool init_exportMe=true);

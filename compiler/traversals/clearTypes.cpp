@@ -7,8 +7,8 @@ void ClearTypes::preProcessExpr(Expr* expr) {
     defExpr->sym->type = dtUnknown;
 
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-      for (Symbol* tmp = fn->formals->first(); tmp; tmp = fn->formals->next()) {
-        tmp->type = dtUnknown;
+      for_alist(DefExpr, tmp, fn->formals) {
+        tmp->sym->type = dtUnknown;
       }
       fn->retType = dtUnknown;
     }

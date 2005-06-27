@@ -203,6 +203,9 @@ void fixup(BaseAST* ast, BaseAST* ref) {
     fixup->parentStmts.add(parentStmt);
     fixup->parentExprs.add(parentExpr);
     ast->parentScope = ref->parentScope;
+    if (ast->parentScope == NULL) {
+      ast->parentScope = Symboltable::getCurrentScope();
+    }
     TRAVERSE(ast, fixup, true);
   }
 }

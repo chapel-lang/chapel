@@ -29,22 +29,12 @@ void PostAnalysisCleanup::processSymbol(Symbol* sym) {
       }
     }
   }
-  if (ParamSymbol* arg = dynamic_cast<ParamSymbol*>(sym)) {
-    if (arg->init) {
-      if (VarInitExpr* init = dynamic_cast<VarInitExpr*>(arg->init)) {
-        FnSymbol* constructor = dynamic_cast<FnSymbol*>(sym->defPoint->sym);
-        resolveDefaultConstructorParameters(sym, constructor, init);
-      }
+  if (dynamic_cast<ParamSymbol*>(sym) && sym->defPoint->init) {
+    if (VarInitExpr* init = dynamic_cast<VarInitExpr*>(sym->defPoint->init)) {
+      FnSymbol* constructor = dynamic_cast<FnSymbol*>(sym->defPoint->parentSymbol);
+      resolveDefaultConstructorParameters(sym, constructor, init);
     }
-  }
-
-  //
-  // Remove ->init of ParamSymbols, wrappers have been built
-  //
-  if (ParamSymbol* arg = dynamic_cast<ParamSymbol*>(sym)) {
-    if (arg->init) {
-      arg->init->remove();
-    }
+    sym->defPoint->init->remove();
   }
 }
 

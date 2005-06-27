@@ -31,9 +31,9 @@ benchTimer.start();
 var rnm2: float = computeMG(V, U, R);
 benchTimer.stop();
 printResults(rnm2, initTimer.read(), benchTimer.read());
-function initializeMG( V: ???;
- U: ???;
- R: ???): ??? {
+function initializeMG(;;
+;;
+;): ??? {
 writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
 writeln(" Size: ", nx, "x", ny, "x", nz);
 writeln(" Iterations: ", nit);
@@ -42,9 +42,9 @@ initArrays(V, U, R);
 }
 
 
-function warmupMG( V: ???;
- U: ???;
- R: ???): ??? {
+function warmupMG(;;
+;;
+;): ??? {
 if (warmup) {
 mg3P(V, U, R);
 resid(R(1), V, U(1));
@@ -53,9 +53,9 @@ initArrays(V, U, R);
 }
 
 
-function computeMG( V: ???;
- U: ???;
- R: ???): float {
+function computeMG(;;
+;;
+;): float {
 resid(R(1), V, U(1));
 norm2u3(R(1));
 for var it: integer; in 1..nit {
@@ -68,9 +68,9 @@ return rnm2;
 }
 
 
-function printResults( rnm2: ???;
- inittime: ???;
- runtime: ???): ??? {
+function printResults(;;
+;;
+;): ??? {
 var verified: boolean;
 if ((verifyValue!=0.0)) {
 const epsilon: float = 0.00000001;
@@ -111,9 +111,9 @@ writeln(" Version = 2.4");
 }
 
 
-function mg3P( V: ???;
- U: ???;
- R: ???): ??? {
+function mg3P(;;
+;;
+;): ??? {
 for var lvl: integer; in 2..numLevels {
 rprj3(R(lvl), R((lvl-1)));
 }
@@ -131,8 +131,8 @@ psinv(U(1), R(1));
 }
 
 
-function psinv( U: ???;
- R: ???): ??? {
+function psinv(;;
+;): ??? {
 state const c: coeff = initCValues();
 state const c3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = c((((i!=0)+(j!=0))+(k!=0)));
 const RD: ??? = R.Domain;
@@ -141,9 +141,9 @@ U += [var ijk: integer;:RD] reduce by sum [var off: integer;:Stencil] (c3d*R((ij
 }
 
 
-function resid( R: ???;
- V: ???;
- U: ???): ??? {
+function resid(;;
+;;
+;): ??? {
 state const a: coeff = (((-8.0)/3.0), 0.0, (1.0/6.0), (1.0/12.0));
 state const a3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = a((((i!=0)+(j!=0))+(k!=0)));
 const UD: ??? = U.Domain;
@@ -152,8 +152,8 @@ R = (V-[var ijk: integer;:UD] reduce by sum [var off: integer;:Stencil] (a3d*U((
 }
 
 
-function rprj3( S: ???;
- R: ???): ??? {
+function rprj3(;;
+;): ??? {
 state const w: coeff = (0.5, 0.25, 0.125, 0.0625);
 state const w3d: [var i: integer;, var j: integer;, var k: integer;:Stencil] float = w((((i!=0)+(j!=0))+(k!=0)));
 const RD: ??? = R.Domain;
@@ -162,8 +162,8 @@ S = [var ijk: integer;:RD] reduce by sum [var off: integer;:Stencil] (w3d*R((ijk
 }
 
 
-function interp( R: ???;
- S: ???): ??? {
+function interp(;;
+;): ??? {
 state const IDom: domain(???) = [(-1)..0, (-1)..0, (-1)..0];
 state const IStn: [var i: integer;, var j: integer;, var k: integer;:IDom] domain(???) = (i..0, j..0, k..0);
 state const w: [var ijk: integer;:IDom] float = (1.0/IStn.size());
@@ -176,7 +176,7 @@ forall var ijk: integer; in SD R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [v
 }
 
 
-function norm2u3( R: ???): _tuple2(float, float) {
+function norm2u3(;): _tuple2(float, float) {
 const rnm2: ??? = sqrt((reduce by sum (R**2)/((nx*ny)*nz)));
 const rnmu: ??? = reduce by max abs(R);
 
@@ -184,9 +184,9 @@ return (rnm2, rnmu);
 }
 
 
-function initArrays( V: ???;
- U: ???;
- R: ???): ??? {
+function initArrays(;;
+;;
+;): ??? {
 zran3(V);
 U(1) = 0.0;
 V.outOfBounds(wrap);
@@ -195,7 +195,7 @@ R.outOfBounds(wrap);
 }
 
 
-function zran3( V: ???): ??? {
+function zran3(;): ??? {
 const ncharge: integer = 10;
 var POS: [1..ncharge] index(Base);
 var NEG: [1..ncharge] index(Base);
@@ -212,7 +212,7 @@ V(NEG(i)) = (-1.0);
 }
 
 
-function longRandlc( n: ???): float {
+function longRandlc(;): float {
 state const s: float = 314159265.0;
 state const arand: float = (5.0**13);
 var kk: integer = n;
@@ -234,8 +234,8 @@ return randlc(t1, arand);
 }
 
 
-function randlc( x: ???;
- a: ???): float {
+function randlc(;;
+;): float {
 state const r23: float = (0.5**23);
 state const t23: float = (2**23);
 state const r46: float = (0.5**46);
@@ -266,7 +266,7 @@ return (r46*x);
 }
 
 
-function initCValues( Class: ???): coeff {
+function initCValues(;): coeff {
 if ((((Class==A)||(Class==S))||(Class==W))) {
 
 return (((-3.0)/8.0), (1.0/32.0), ((-1.0)/64.0), 0.0);
@@ -279,7 +279,7 @@ return (((-3.0)/17.0), (1.0/33.0), ((-1.0)/61.0), 0.0);
 }
 
 
-function lg2( x: ???): integer {
+function lg2(;): integer {
 var lg: integer = (-1);
 while (x) {
 x *= 2;

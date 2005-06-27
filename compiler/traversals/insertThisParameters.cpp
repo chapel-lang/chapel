@@ -81,14 +81,14 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
 
       // fix type variables, associate by name
       if (StructuralType* structType = dynamic_cast<StructuralType*>(typeSym->type)) {
-        for (ParamSymbol* arg = fn->formals->first(); arg; arg = fn->formals->next()) {
-          if (arg->isGeneric) {
+        for_alist(DefExpr, arg, fn->formals) {
+          if (dynamic_cast<ParamSymbol*>(arg->sym)->isGeneric) {
             forv_Vec(TypeSymbol, tmp, structType->types) {
               if (VariableType* variableType = dynamic_cast<VariableType*>(tmp->type)) {
-                if (!strcmp(tmp->name, arg->name)) {
-                  arg->type = variableType->type;
-                  arg->isGeneric = true;
-                  arg->typeVariable = tmp;
+                if (!strcmp(tmp->name, arg->sym->name)) {
+                  arg->sym->type = variableType->type;
+                  dynamic_cast<ParamSymbol*>(arg->sym)->isGeneric = true;
+                  dynamic_cast<ParamSymbol*>(arg->sym)->typeVariable = tmp;
                 }
               }
             }
@@ -98,16 +98,14 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
     } else {
       SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
       ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);
-      this_insert->setDefPoint(def_stmt->defExprls->only());
       Symboltable::setCurrentScope(saveScope);
-      fn->formals->insertAtHead(this_insert);
+      fn->formals->insertAtHead(new DefExpr(this_insert));
       fn->_this = this_insert;
       if (applyGettersSetters) {
         SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
         ParamSymbol* token_dummy = new ParamSymbol(PARAM_REF, "_methodTokenDummy", Symboltable::lookupInternal("_methodTokenType")->type);
-        token_dummy->setDefPoint(def_stmt->defExprls->only());
         Symboltable::setCurrentScope(saveScope);
-        fn->formals->insertAtHead(token_dummy);
+        fn->formals->insertAtHead(new DefExpr(token_dummy));
       }
     }
   }

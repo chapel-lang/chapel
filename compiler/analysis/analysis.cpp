@@ -2408,7 +2408,9 @@ gen_fun(FnSymbol *f) {
   AInfo* ast = f->defPoint->ainfo;
   Vec<ParamSymbol *> args;
   Vec<Sym *> out_args;
-  f->formals->getElements(args);
+  for_alist(DefExpr, formal, f->formals) {
+    args.add(dynamic_cast<ParamSymbol*>(formal->sym));
+  }
   Sym *as[args.n + 4];
   int iarg = 0;
   assert(f->asymbol->sym->name);
@@ -2585,9 +2587,9 @@ finalize_function(Fun *fun) {
     // record default argument positions
     if (s->asymbol->symbol) {
       ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
-      if (symbol && symbol->init) {
-        assert(symbol->init->ainfo);
-        fun->default_args.put(cannonicalize_mposition(p), symbol->init->ainfo);
+      if (symbol && symbol->defPoint->init) {
+        assert(symbol->defPoint->init->ainfo);
+        fun->default_args.put(cannonicalize_mposition(p), symbol->defPoint->init->ainfo);
       }
     }
     p.inc();

@@ -286,10 +286,10 @@ static EXPR_RW expr_read_written(Expr* expr) {
     if (FnCall* fn_call = dynamic_cast<FnCall*>(parent)) {
       if (typeid(*fn_call) == typeid(FnCall)) {
         FnSymbol* fn = fn_call->findFnSymbol();
-        ParamSymbol* formal = fn->formals->first();
+        DefExpr* formal = fn->formals->first();
         for_alist(Expr, actual, fn_call->argList) {
           if (actual == expr) {
-            if (ParamSymbol* formal_param = formal) {
+            if (ParamSymbol* formal_param = dynamic_cast<ParamSymbol*>(formal->sym)) {
               if (formal_param->intent == PARAM_OUT) {
                 return expr_w;
               }
@@ -600,8 +600,6 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
   if (sym) {
     sym->setDefPoint(this);
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-      //fprintf(stderr, "In DefExpr for %s, which is a fnsym\n", sym->name);
-      Symbol::setDefPoints(fn->formals, this);
       fn->paramScope->setContext(NULL, fn, this);
     }
   }
@@ -609,15 +607,9 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
 
 
 Expr* DefExpr::copyExpr(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  if (clone) {
-    return new DefExpr(sym->copy(clone, map),
-                       dynamic_cast<UserInitExpr*>(init->copyInternal(clone, map)),
-                       exprType->copyInternal(clone, map));
-  } else {
-    return new DefExpr(sym,
-                       dynamic_cast<UserInitExpr*>(init->copyInternal(clone, map)),
-                       exprType->copyInternal(clone, map));
-  }
+  return new DefExpr((clone) ? sym->copy(true, map) : sym,
+                     dynamic_cast<UserInitExpr*>(init->copyInternal(clone, map)),
+                     exprType->copyInternal(clone, map));
 }
 
 
@@ -1517,7 +1509,7 @@ void FnCall::codegen(FILE* outfile) {
   Expr* actuals = argList->first();
   if (actuals) {
     FnSymbol* fnSym = findFnSymbol();
-    ParamSymbol* formals = fnSym->formals->first();
+    DefExpr* formals = fnSym->formals->first();
     bool firstArg = true;
     while (actuals && formals) {
       if (firstArg) {
@@ -1526,7 +1518,7 @@ void FnCall::codegen(FILE* outfile) {
         fprintf(outfile, ", ");
       }
 
-      bool ampersand = formals->requiresCPtr();
+      bool ampersand = dynamic_cast<ParamSymbol*>(formals->sym)->requiresCPtr();
       bool star = false;
       if (Variable *v = dynamic_cast<Variable*>(actuals))
         if (VarSymbol *vs = dynamic_cast<VarSymbol*>(v->var))

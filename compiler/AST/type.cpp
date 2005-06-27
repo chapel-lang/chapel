@@ -1021,7 +1021,7 @@ is_Reference_Type(Type *t) {
 
 
 void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                                          AList<ParamSymbol>* arguments) {
+                                          AList<DefExpr>* arguments) {
   forv_Vec(VarSymbol, tmp, fields) {
     if (is_Scalar_Type(tmp->type))
       continue;
@@ -1032,7 +1032,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
     stmts->insertAtTail(assign_stmt);
   }
 
-  ParamSymbol* ptmp = arguments->first();
+  DefExpr* ptmp = arguments->first();
   forv_Vec(TypeSymbol, tmp, types) {
     if (dynamic_cast<VariableType*>(tmp->type)) {
       if (analyzeAST) {
@@ -1046,7 +1046,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* rhs = NULL;
     if (analyzeAST) {
-      rhs = new Variable(ptmp);
+      rhs = new Variable(ptmp->sym);
     } else {
       Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
       rhs = tmp->defPoint->init ? tmp->defPoint->init->expr->copy() : varInitExpr;
@@ -1322,7 +1322,7 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
 
 
 void UnionType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                                     AList<ParamSymbol>* arguments) {
+                                     AList<DefExpr>* arguments) {
   AList<Expr>* args = new AList<Expr>(new Variable(_this));
   Expr* arg2 = new Variable(fieldSelector->valList->first());
   args->insertAtTail(arg2);

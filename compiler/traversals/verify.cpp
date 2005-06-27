@@ -40,15 +40,6 @@ void Verify::preProcessExpr(Expr* expr){
       INT_FATAL(defExpr, "Symbol in DefExpr not in Symboltable");
     }
 
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-      Symbol* formal;
-      for (formal = fn->formals->first(); formal; formal = fn->formals->next()) {
-        if (!removeVerifySymbol(syms, formal)) {
-          INT_FATAL(formal, "Formal not in Symboltable");
-        }
-      }
-    }
-
     if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
       if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
         EnumSymbol* tmp;
@@ -181,15 +172,6 @@ static void verifyDefPoint(Symbol* sym) {
   Symbol* tmp = sym->defPoint->sym;
   if (tmp == sym) {
     return;
-  }
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
-    Symbol* formals = fn->formals->first();
-    while (formals) {
-      if (formals == sym) {
-        return;
-      }
-      formals = fn->formals->next();
-    }
   }
   if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym->defPoint->sym)) {
     if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {

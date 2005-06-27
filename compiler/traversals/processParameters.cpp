@@ -34,7 +34,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
     FnCall* fncall = dynamic_cast<FnCall*>(expr);
     if (fncall) {
       FnSymbol* fnSym = fncall->findFnSymbol();
-      ParamSymbol* formal = fnSym->formals->first();
+      DefExpr* formal = fnSym->formals->first();
       AList<Expr>* actualList = fncall->argList;
       Expr* actual = actualList->first();
       AList<Expr>* newActuals = new AList<Expr>();
@@ -55,23 +55,23 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         while (formal) {
           Expr* newActualUse = NULL;
 
-          if (tmpRequired(formal, actual)) {
+          if (tmpRequired(dynamic_cast<ParamSymbol*>(formal->sym), actual)) {
             tmpsRequired = true;
 
             Expr* initializer;
-            if (formal->intent == PARAM_OUT || (actual == NULL)) {
-              if (formal->init) {
-                initializer = formal->init->copy();
+            if (dynamic_cast<ParamSymbol*>(formal->sym)->intent == PARAM_OUT || (actual == NULL)) {
+              if (formal->sym->defPoint->init) {
+                initializer = formal->sym->defPoint->init->copy();
               } else {
-                initializer = formal->type->defaultVal->copy();
+                initializer = formal->sym->type->defaultVal->copy();
               }
             } else {
               initializer = actual->copy();
             }
-            char* newActualName = glomstrings(2, "_", formal->name);
+            char* newActualName = glomstrings(2, "_", formal->sym->name);
             DefStmt* newActualDecl = 
               Symboltable::defineSingleVarDefStmt(newActualName,
-                                                  formal->type, initializer,
+                                                  formal->sym->type, initializer,
                                                   VAR_NORMAL, VAR_VAR);
             body->insertAtTail(newActualDecl);
             newActualDecl->varDef()->noDefaultInit = true;
@@ -103,7 +103,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         Expr* newActual = fncall->argList->first();
         if (formal && actual) {
           while (formal) {
-            if (formal->requiresCopyBack() && actual) {
+            if (dynamic_cast<ParamSymbol*>(formal->sym)->requiresCopyBack() && actual) {
               Expr* copyBack = new AssignOp(GETS_NORM, actual->copy(),
                                             newActual->copy());
               ExprStmt* copyBackStmt = new ExprStmt(copyBack);

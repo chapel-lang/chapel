@@ -179,8 +179,8 @@ static void createTupleBaseType(int size) {
   for (int i = 1; i <= size; i++) {
     FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("this"));
     ParamSymbol* paramSymbol =
-      new ParamSymbol(PARAM_PARAMETER, "index", dtInteger, NULL);
-    AList<ParamSymbol>* formals = new AList<ParamSymbol>(paramSymbol);
+      new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
+    AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
     Expr* where = new BinOp(BINOP_EQUAL, new Variable(paramSymbol),
                             new IntLiteral(intstring(i), i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
@@ -198,8 +198,8 @@ static void createTupleBaseType(int size) {
   uname->add(glomstrings(2, "_tuple", intstring(size)));
   UnresolvedType* utype = new UnresolvedType(uname);
   ParamSymbol* paramSymbol =
-    new ParamSymbol(PARAM_BLANK, "val", utype, NULL);
-  AList<ParamSymbol>* formals = new AList<ParamSymbol>(paramSymbol);
+    new ParamSymbol(PARAM_BLANK, "val", utype);
+  AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
   Symboltable::continueFnDef(fn, formals, dtUnknown, false, NULL);
   AList<Expr>* args = new AList<Expr>();
   args->insertAtTail(new StringLiteral(copystring("(")));
@@ -249,8 +249,8 @@ static void createAnonTupleBaseType(int size) {
   for (int i = 1; i <= size; i++) {
     FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("this"));
     ParamSymbol* paramSymbol =
-      new ParamSymbol(PARAM_PARAMETER, "index", dtInteger, NULL);
-    AList<ParamSymbol>* formals = new AList<ParamSymbol>(paramSymbol);
+      new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
+    AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
     Expr* where = new BinOp(BINOP_EQUAL, new Variable(paramSymbol),
                             new IntLiteral(intstring(i), i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
@@ -268,8 +268,8 @@ static void createAnonTupleBaseType(int size) {
   uname->add(glomstrings(2, "_tuple", intstring(size)));
   UnresolvedType* utype = new UnresolvedType(uname);
   ParamSymbol* paramSymbol =
-    new ParamSymbol(PARAM_BLANK, "val", utype, NULL);
-  AList<ParamSymbol>* formals = new AList<ParamSymbol>(paramSymbol);
+    new ParamSymbol(PARAM_BLANK, "val", utype);
+  AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
   Symboltable::continueFnDef(fn, formals, dtUnknown, false, NULL);
   AList<Expr>* args = new AList<Expr>();
   args->insertAtTail(new StringLiteral(copystring("(")));

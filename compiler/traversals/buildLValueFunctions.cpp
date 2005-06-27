@@ -58,8 +58,7 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   old_def_stmt->insertAfter(def_stmt);
   Symboltable::setCurrentScope(fn->paramScope);
   ParamSymbol* lvalue = new ParamSymbol(PARAM_BLANK, "_lvalue", old_fn->retType);
-  lvalue->setDefPoint(fn->defPoint);
-  fn->formals->insertAtTail(lvalue);
+  fn->formals->insertAtTail(new DefExpr(lvalue));
   replace_return(fn->body, lvalue);
   if (old_fn->typeBinding) {
     old_fn->typeBinding->type->methods.add(fn);

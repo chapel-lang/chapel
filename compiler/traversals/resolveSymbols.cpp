@@ -52,12 +52,12 @@ static void call_info_noanalysis(ParenOpExpr* expr, Vec<FnSymbol*>& fns) {
   }
   FnSymbol* candidate = NULL;
   forv_Vec(FnSymbol*, fn, candidates) {
-    Symbol* formals = fn->formals->first();
+    DefExpr* formals = fn->formals->first();
     AList<Expr>* actualList = copy_argument_list(expr);
     Expr* actuals = actualList->first();
     bool match = true;
     while (actuals && formals) {
-      if (actuals->typeInfo() != formals->type) {
+      if (actuals->typeInfo() != formals->sym->type) {
         match = false;
         break;
       }
@@ -336,9 +336,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         // HACK: Special case where write(:nilType) requires dynamic
         // dispatch; Take the other one.
         if (fns.n == 2 && !strcmp(fns.e[1]->name, "write") &&
-            fns.e[1]->formals->only()->type->astType == TYPE_NIL) {
+            fns.e[1]->formals->only()->sym->type->astType == TYPE_NIL) {
         } else if (fns.n == 2 && !strcmp(fns.e[0]->name, "write") &&
-                   fns.e[0]->formals->only()->type->astType == TYPE_NIL) {
+                   fns.e[0]->formals->only()->sym->type->astType == TYPE_NIL) {
           fns.v[0] = fns.v[1];
         } else {
           INT_FATAL(expr, "Unable to resolve function");

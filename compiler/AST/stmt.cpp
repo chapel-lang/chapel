@@ -938,7 +938,7 @@ void WhenStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void WhenStmt::traverseStmt(Traversal* traversal) {
-  caseExprs->traverse(traversal, false);
+  TRAVERSE(caseExprs, traversal, false);
   TRAVERSE(doStmt, traversal, false);
 }
 

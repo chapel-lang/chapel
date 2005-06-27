@@ -28,19 +28,15 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
 
 void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    ParamSymbol* old_formal = fn->formals->popHead();
-    AList<ParamSymbol>* new_formals = new AList<ParamSymbol>();
-    while (old_formal) {
-      if (old_formal->typeVariable) {
-        fn->body->body->insertAtHead(new DefStmt(new DefExpr(old_formal)));
-      } else if (old_formal->type->symbol ==
+    for_alist(DefExpr, formal, fn->formals) {
+      if (dynamic_cast<ParamSymbol*>(formal->sym)->typeVariable) {
+        formal->remove();
+        fn->body->body->insertAtHead(new DefStmt(dynamic_cast<DefExpr*>(formal->copy())));
+      } else if (formal->sym->type->symbol ==
                  Symboltable::lookupInternal("_methodTokenType")) {
-        old_formal->parentScope->remove(old_formal);
-      } else {
-        new_formals->insertAtTail(old_formal);
+        formal->sym->parentScope->remove(formal->sym);
+        formal->remove();
       }
-      old_formal = fn->formals->popHead();
     }
-    fn->formals = new_formals;
   }
 }
